@@ -7,7 +7,7 @@ using System.Reflection;
 using System.Resources;
 using System.Runtime.CompilerServices;
 
-
+#if !NET_NATIVE
 namespace System.Xml.Serialization
 {
     using System;
@@ -777,80 +777,76 @@ namespace System.Xml.Serialization
             if (o is Type)
             {
                 Ldtoken((Type)o);
-                Call(typeof(Type).GetMethod("GetTypeFromHandle", new Type[] { typeof(RuntimeTypeHandle) }));
+                Call(typeof(Type).GetMethod("GetTypeFromHandle", BindingFlags.Static | BindingFlags.Public, new Type[] { typeof(RuntimeTypeHandle) }));
             }
             else if (valueType.GetTypeInfo().IsEnum)
             {
-                Ldc(((IConvertible)o).ToType(Enum.GetUnderlyingType(valueType), null));
+                Ldc(Convert.ChangeType(o, Enum.GetUnderlyingType(valueType), null));
             }
             else
             {
-                if (valueType == typeof(bool))
+                switch (valueType.GetTypeCode())
                 {
-                    Ldc((bool)o);
-                }
-                else if (valueType == typeof(Char))
-                {
-                    Debug.Assert(false, "Char is not a valid schema primitive and should be treated as int in DataContract");
-                    throw new NotSupportedException("Char is not a valid schema primitive and should be treated as int in DataContract");
-                }
-                else if ((valueType == typeof(SByte)) || (valueType == typeof(Byte)) || (valueType == typeof(Int16)) || (valueType == typeof(UInt16)))
-                {
-                    Ldc(((IConvertible)o).ToInt32(CultureInfo.InvariantCulture));
-                }
-                else if (valueType == typeof(Int32))
-                {
-                    Ldc((int)o);
-                }
-                else if (valueType == typeof(UInt32))
-                {
-                    Ldc((int)(uint)o);
-                }
-                else if (valueType == typeof(UInt64))
-                {
-                    Ldc((long)(ulong)o);
-                }
-                else if (valueType == typeof(Int64))
-                {
-                    Ldc((long)o);
-                }
-                else if (valueType == typeof(Single))
-                {
-                    Ldc((float)o);
-                }
-                else if (valueType == typeof(Double))
-                {
-                    Ldc((double)o);
-                }
-                else if (valueType == typeof(String))
-                {
-                    Ldstr((string)o);
-                }
-                else if (valueType == typeof(Decimal))
-                {
-                    ConstructorInfo Decimal_ctor = typeof(Decimal).GetConstructor(
+                    case TypeCode.Boolean:
+                        Ldc((bool)o);
+                        break;
+                    case TypeCode.Char:
+                        Debug.Assert(false, "Char is not a valid schema primitive and should be treated as int in DataContract");
+                        throw new NotSupportedException("Char is not a valid schema primitive and should be treated as int in DataContract");
+                    case TypeCode.SByte:
+                    case TypeCode.Byte:
+                    case TypeCode.Int16:
+                    case TypeCode.UInt16:
+                        Ldc(Convert.ToInt32(o, CultureInfo.InvariantCulture));
+                        break;
+                    case TypeCode.Int32:
+                        Ldc((int)o);
+                        break;
+                    case TypeCode.UInt32:
+                        Ldc((int)(uint)o);
+                        break;
+                    case TypeCode.UInt64:
+                        Ldc((long)(ulong)o);
+                        break;
+                    case TypeCode.Int64:
+                        Ldc((long)o);
+                        break;
+                    case TypeCode.Single:
+                        Ldc((float)o);
+                        break;
+                    case TypeCode.Double:
+                        Ldc((double)o);
+                        break;
+                    case TypeCode.String:
+                        Ldstr((string)o);
+                        break;
+                    case TypeCode.Decimal:
+                        ConstructorInfo Decimal_ctor = typeof(Decimal).GetConstructor(
+                             CodeGenerator.InstanceBindingFlags,
                              new Type[] { typeof(Int32), typeof(Int32), typeof(Int32), typeof(Boolean), typeof(Byte) }
                              );
-                    int[] bits = Decimal.GetBits((decimal)o);
-                    Ldc(bits[0]); // digit
-                    Ldc(bits[1]); // digit
-                    Ldc(bits[2]); // digit
-                    Ldc((bits[3] & 0x80000000) == 0x80000000); // sign
-                    Ldc((Byte)((bits[3] >> 16) & 0xFF)); // decimal location
-                    New(Decimal_ctor);
-                }
-                else if (valueType == typeof(DateTime))
-                {
-                    ConstructorInfo DateTime_ctor = typeof(DateTime).GetConstructor(
+                        int[] bits = Decimal.GetBits((decimal)o);
+                        Ldc(bits[0]); // digit
+                        Ldc(bits[1]); // digit
+                        Ldc(bits[2]); // digit
+                        Ldc((bits[3] & 0x80000000) == 0x80000000); // sign
+                        Ldc((Byte)((bits[3] >> 16) & 0xFF)); // decimal location
+                        New(Decimal_ctor);
+                        break;
+                    case TypeCode.DateTime:
+                        ConstructorInfo DateTime_ctor = typeof(DateTime).GetConstructor(
+                            CodeGenerator.InstanceBindingFlags,
                             new Type[] { typeof(Int64) }
                             );
-                    Ldc(((DateTime)o).Ticks); // ticks
-                    New(DateTime_ctor);
-                }
-                else // If Object, null, or default
-                {
-                    Debug.Assert(false, "UnknownConstantType");
-                    throw new NotSupportedException("UnknownConstantType"); //.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.GetString(SR.UnknownConstantType, DataContract.GetClrTypeFullName(valueType))));
+                        Ldc(((DateTime)o).Ticks); // ticks
+                        New(DateTime_ctor);
+                        break;
+                    case TypeCode.Object:
+                    case TypeCode.Empty:
+                    case TypeCode.DBNull:
+                    default:
+                        Debug.Assert(false, "UnknownConstantType");
+                        throw new NotSupportedException("UnknownConstantType"); //.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.GetString(SR.UnknownConstantType, DataContract.GetClrTypeFullName(valueType))));
                 }
             }
         }
@@ -974,66 +970,6 @@ namespace System.Xml.Serialization
             Ldloc(local);
         }
 
-#if NotUsed
-        internal void Ldloc(int slot)
-        {
-            switch (slot)
-            {
-            case 0:
-                ilGen.Emit(OpCodes.Ldloc_0);
-                break;
-            case 1:
-                ilGen.Emit(OpCodes.Ldloc_1);
-                break;
-            case 2:
-                ilGen.Emit(OpCodes.Ldloc_2);
-                break;
-            case 3:
-                ilGen.Emit(OpCodes.Ldloc_3);
-                break;
-            default:
-                if (slot <= 255)
-                    ilGen.Emit(OpCodes.Ldloc_S, slot);
-                else
-                    ilGen.Emit(OpCodes.Ldloc, slot);
-                break;
-            }
-        }
-
-        internal void Stloc(int slot)
-        {
-            switch (slot)
-            {
-            case 0:
-                ilGen.Emit(OpCodes.Stloc_0);
-                break;
-            case 1:
-                ilGen.Emit(OpCodes.Stloc_1);
-                break;
-            case 2:
-                ilGen.Emit(OpCodes.Stloc_2);
-                break;
-            case 3:
-                ilGen.Emit(OpCodes.Stloc_3);
-                break;
-            default:
-                if (slot <= 255)
-                    ilGen.Emit(OpCodes.Stloc_S, slot);
-                else
-                    ilGen.Emit(OpCodes.Stloc, slot);
-                break;
-            }
-        }
-
-        internal void Ldloca(int slot)
-        {
-            if (slot <= 255)
-                ilGen.Emit(OpCodes.Ldloca_S, slot);
-            else
-                ilGen.Emit(OpCodes.Ldloca, slot);
-        }
-#endif
-
         internal void Ldloca(LocalBuilder localBuilder)
         {
             _ilGen.Emit(OpCodes.Ldloca, localBuilder);
@@ -1082,21 +1018,6 @@ namespace System.Xml.Serialization
             }
         }
 
-#if NotUsed
-        internal void Starg(ArgBuilder arg)
-        {
-            Starg(arg.Index);
-        }
-
-        internal void Starg(int slot)
-        {
-            if (slot <= 255)
-                ilGen.Emit(OpCodes.Starg_S, slot);
-            else
-                ilGen.Emit(OpCodes.Starg, slot);
-        }
-#endif
-
         internal void Ldarga(ArgBuilder argBuilder)
         {
             Ldarga(argBuilder.Index);
@@ -1138,38 +1059,9 @@ namespace System.Xml.Serialization
             OpCodes.Ldelem_Ref,//String = 18,
         };
 
-        private OpCode GetLdelemOpCode(Type type)
+        private OpCode GetLdelemOpCode(TypeCode typeCode)
         {
-            if (type == typeof(Object))
-                return OpCodes.Ldelem_Ref;// TypeCode.Object:
-            if (type == typeof(Boolean))
-                return OpCodes.Ldelem_I1;// TypeCode.Boolean:
-            if (type == typeof(Char))
-                return OpCodes.Ldelem_I2;// TypeCode.Char:
-            if (type == typeof(SByte))
-                return OpCodes.Ldelem_I1;// TypeCode.SByte:
-            if (type == typeof(Byte))
-                return OpCodes.Ldelem_U1;// TypeCode.Byte:
-            if (type == typeof(Int16))
-                return OpCodes.Ldelem_I2;// TypeCode.Int16:
-            if (type == typeof(UInt16))
-                return OpCodes.Ldelem_U2;// TypeCode.UInt16:
-            if (type == typeof(Int32))
-                return OpCodes.Ldelem_I4;// TypeCode.Int32:
-            if (type == typeof(UInt32))
-                return OpCodes.Ldelem_U4;// TypeCode.UInt32:
-            if (type == typeof(Int64))
-                return OpCodes.Ldelem_I8;// TypeCode.Int64:
-            if (type == typeof(UInt64))
-                return OpCodes.Ldelem_I8;// TypeCode.UInt64:
-            if (type == typeof(Single))
-                return OpCodes.Ldelem_R4;// TypeCode.Single:
-            if (type == typeof(Double))
-                return OpCodes.Ldelem_R8;// TypeCode.Double:
-            if (type == typeof(String))
-                return OpCodes.Ldelem_Ref;// TypeCode.String:
-
-            return OpCodes.Nop;
+            return s_ldelemOpCodes[(int)typeCode];
         }
 
         internal void Ldelem(Type arrayElementType)
@@ -1180,7 +1072,7 @@ namespace System.Xml.Serialization
             }
             else
             {
-                OpCode opCode = GetLdelemOpCode(arrayElementType);
+                OpCode opCode = GetLdelemOpCode(arrayElementType.GetTypeCode());
                 Debug.Assert(!opCode.Equals(OpCodes.Nop));
                 if (opCode.Equals(OpCodes.Nop))
                     throw new InvalidOperationException("ArrayTypeIsNotSupported"); //.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.GetString(SR.ArrayTypeIsNotSupported, DataContract.GetClrTypeFullName(arrayElementType))));
@@ -1215,38 +1107,9 @@ namespace System.Xml.Serialization
             OpCodes.Stelem_Ref,//String = 18,
         };
 
-        private OpCode GetStelemOpCode(Type type)
+        private OpCode GetStelemOpCode(TypeCode typeCode)
         {
-            if (type == typeof(Object))
-                return OpCodes.Stelem_Ref;// TypeCode.Object:
-            if (type == typeof(Boolean))
-                return OpCodes.Stelem_I1;// TypeCode.Boolean:
-            if (type == typeof(Char))
-                return OpCodes.Stelem_I2;// TypeCode.Char:
-            if (type == typeof(SByte))
-                return OpCodes.Stelem_I1;// TypeCode.SByte:
-            if (type == typeof(Byte))
-                return OpCodes.Stelem_I1;// TypeCode.Byte:
-            if (type == typeof(Int16))
-                return OpCodes.Stelem_I2;// TypeCode.Int16:
-            if (type == typeof(UInt16))
-                return OpCodes.Stelem_I2;// TypeCode.UInt16:
-            if (type == typeof(Int32))
-                return OpCodes.Stelem_I4;// TypeCode.Int32:
-            if (type == typeof(UInt32))
-                return OpCodes.Stelem_I4;// TypeCode.UInt32:
-            if (type == typeof(Int64))
-                return OpCodes.Stelem_I8;// TypeCode.Int64:
-            if (type == typeof(UInt64))
-                return OpCodes.Stelem_I8;// TypeCode.UInt64:
-            if (type == typeof(Single))
-                return OpCodes.Stelem_R4;// TypeCode.Single:
-            if (type == typeof(Double))
-                return OpCodes.Stelem_R8;// TypeCode.Double:
-            if (type == typeof(String))
-                return OpCodes.Stelem_Ref;// TypeCode.String:
-
-            return OpCodes.Nop;
+            return s_stelemOpCodes[(int)typeCode];
         }
 
         internal void Stelem(Type arrayElementType)
@@ -1255,7 +1118,7 @@ namespace System.Xml.Serialization
                 Stelem(Enum.GetUnderlyingType(arrayElementType));
             else
             {
-                OpCode opCode = GetStelemOpCode(arrayElementType);
+                OpCode opCode = GetStelemOpCode(arrayElementType.GetTypeCode());
                 if (opCode.Equals(OpCodes.Nop))
                     throw new InvalidOperationException("ArrayTypeIsNotSupported"); //.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.GetString(SR.ArrayTypeIsNotSupported, DataContract.GetClrTypeFullName(arrayElementType))));
                 _ilGen.Emit(opCode);
@@ -1281,27 +1144,6 @@ namespace System.Xml.Serialization
         {
             _ilGen.Emit(OpCodes.Add);
         }
-
-#if NotUsed
-        internal void Subtract()
-        {
-            ilGen.Emit(OpCodes.Sub);
-        }
-
-        internal void And()
-        {
-            ilGen.Emit(OpCodes.And);
-        }
-        internal void Or()
-        {
-            ilGen.Emit(OpCodes.Or);
-        }
-
-        internal void Not()
-        {
-            ilGen.Emit(OpCodes.Not);
-        }
-#endif
 
         internal void Ret()
         {
@@ -1343,31 +1185,6 @@ namespace System.Xml.Serialization
             _ilGen.Emit(OpCodes.Dup);
         }
 
-#if !SILVERLIGHT // Not in SL
-        internal void Ldftn(MethodInfo methodInfo)
-        {
-            _ilGen.Emit(OpCodes.Ldftn, methodInfo);
-        }
-#endif
-
-#if NotUsed
-        void LoadThis(object thisObj, MethodInfo methodInfo)
-        {
-            if (thisObj != null && !methodInfo.IsStatic)
-            {
-                LoadAddress(thisObj);
-                ConvertAddress(GetVariableType(thisObj), methodInfo.DeclaringType);
-            }
-        }
-
-        void LoadParam(object arg, int oneBasedArgIndex, MethodBase methodInfo)
-        {
-            Load(arg);
-            if (arg != null)
-                ConvertValue(GetVariableType(arg), methodInfo.GetParameters()[oneBasedArgIndex - 1].ParameterType);
-        }
-#endif
-
         private void InternalIf(bool negate)
         {
             IfState ifState = new IfState();
@@ -1402,33 +1219,9 @@ namespace System.Xml.Serialization
             OpCodes.Nop,//String = 18,
         };
 
-        private OpCode GetConvOpCode(Type type)
+        private OpCode GetConvOpCode(TypeCode typeCode)
         {
-            if (type == typeof(Boolean))
-                return OpCodes.Conv_I1;// TypeCode.Boolean:
-            if (type == typeof(Char))
-                return OpCodes.Conv_I2;// TypeCode.Char:
-            if (type == typeof(SByte))
-                return OpCodes.Conv_I1;// TypeCode.SByte:
-            if (type == typeof(Byte))
-                return OpCodes.Conv_U1;// TypeCode.Byte:
-            if (type == typeof(Int16))
-                return OpCodes.Conv_I2;// TypeCode.Int16:
-            if (type == typeof(UInt16))
-                return OpCodes.Conv_U2;// TypeCode.UInt16:
-            if (type == typeof(Int32))
-                return OpCodes.Conv_I4;// TypeCode.Int32:
-            if (type == typeof(UInt32))
-                return OpCodes.Conv_U4;// TypeCode.UInt32:
-            if (type == typeof(Int64))
-                return OpCodes.Conv_I8;// TypeCode.Int64:
-            if (type == typeof(UInt64))
-                return OpCodes.Conv_U8;// TypeCode.UInt64:
-            if (type == typeof(Single))
-                return OpCodes.Conv_R4;// TypeCode.Single:
-            if (type == typeof(Double))
-                return OpCodes.Conv_R8;// TypeCode.Double:
-            return OpCodes.Nop;
+            return s_convOpCodes[(int)typeCode];
         }
 
         private void InternalConvert(Type source, Type target, bool isAddress)
@@ -1439,10 +1232,9 @@ namespace System.Xml.Serialization
             {
                 if (source.GetTypeInfo().IsValueType)
                 {
-                    OpCode opCode = GetConvOpCode(target);
+                    OpCode opCode = GetConvOpCode(target.GetTypeCode());
                     if (opCode.Equals(OpCodes.Nop))
                     {
-                        //.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.GetString(SR.NoConversionPossibleTo, DataContract.GetClrTypeFullName(target))));
                         throw new CodeGeneratorConversionException(source, target, isAddress, "NoConversionPossibleTo");
                     }
                     else
@@ -1458,7 +1250,6 @@ namespace System.Xml.Serialization
                 }
                 else
                 {
-                    //.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.GetString(SR.IsNotAssignableFrom, DataContract.GetClrTypeFullName(target), DataContract.GetClrTypeFullName(source))));
                     throw new CodeGeneratorConversionException(source, target, isAddress, "IsNotAssignableFrom");
                 }
             }
@@ -1473,7 +1264,6 @@ namespace System.Xml.Serialization
             }
             else if (source.IsAssignableFrom(target))
             {
-                //assert(source.IsValueType == false);
                 Castclass(target);
             }
             else if (target.GetTypeInfo().IsInterface || source.GetTypeInfo().IsInterface)
@@ -1482,7 +1272,6 @@ namespace System.Xml.Serialization
             }
             else
             {
-                //.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.GetString(SR.IsNotAssignableFrom, DataContract.GetClrTypeFullName(target), DataContract.GetClrTypeFullName(source))));
                 throw new CodeGeneratorConversionException(source, target, isAddress, "IsNotAssignableFrom");
             }
         }
@@ -1503,23 +1292,6 @@ namespace System.Xml.Serialization
             return AssemblyBuilder.DefineDynamicAssembly(assemblyName, AssemblyBuilderAccess.Run);
         }
 
-        private static string s_tempFilesLocation = null;
-        internal static string TempFilesLocation
-        {
-            get
-            {
-                if (s_tempFilesLocation == null)
-                {
-                    s_tempFilesLocation = Path.GetTempPath();
-                }
-                return s_tempFilesLocation;
-            }
-            set
-            {
-                s_tempFilesLocation = value;
-            }
-        }
-
         static internal ModuleBuilder CreateModuleBuilder(AssemblyBuilder assemblyBuilder, string name)
         {
             return assemblyBuilder.DefineDynamicModule(name);
@@ -1530,181 +1302,6 @@ namespace System.Xml.Serialization
             return moduleBuilder.DefineType(TempAssembly.GeneratedAssemblyNamespace + "." + name,
                 attributes, parent, interfaces);
         }
-
-#if NotUsed
-        internal void EmitSourceInstruction(string line)
-        {
-            EmitSourceLine("    " + line);
-        }
-
-        internal void EmitSourceLabel(string line)
-        {
-            EmitSourceLine(line);
-        }
-
-        internal void EmitSourceComment(string comment)
-        {
-            EmitSourceInstruction("// " + comment);
-        }
-
-        internal void EmitSourceLine(string line)
-        {
-            if (codeGenTrace != CodeGenTrace.None)
-                Console.WriteLine(String.Format("{0:X4}: {1}", lineNo++, line));
-            SerializationTrace.WriteInstruction(lineNo++, line);
-            if (ilGen != null && codeGenTrace == CodeGenTrace.Tron)
-            {
-                ilGen.Emit(OpCodes.Ldstr, string.Format(CultureInfo.InvariantCulture, "{0:00000}: {1}", lineNo-1, line));
-                ilGen.Emit(OpCodes.Call, XmlFormatGeneratorStatics.TraceInstructionMethod);
-            }
-        }
-
-        internal void EmitStackTop(Type stackTopType)
-        {
-            if (codeGenTrace != CodeGenTrace.Tron)
-                return;
-            codeGenTrace = CodeGenTrace.None;
-            Dup();
-            ToString(stackTopType);
-            LocalBuilder topValue = DeclareLocal(Globals.TypeOfString, "topValue");
-            Store(topValue);
-            Load("//value = ");
-            Load(topValue);
-            Concat2();
-            Call(XmlFormatGeneratorStatics.TraceInstructionMethod);
-            codeGenTrace = CodeGenTrace.Tron;
-        }
-
-        internal void ToString(Type type)
-        {
-            if (type.IsValueType)
-            {
-                Box(type);
-                Call(ObjectToString);
-            }
-            else
-            {
-                Dup();
-                Load(null);
-                If(Cmp.EqualTo);
-                Pop();
-                Load("<null>");
-                Else();
-                if (type.IsArray)
-                {
-                    LocalBuilder arrayVar = DeclareLocal(type, "arrayVar");
-                    Store(arrayVar);
-                    Load("{ ");
-                    LocalBuilder arrayValueString = DeclareLocal(typeof(string), "arrayValueString");
-                    Store(arrayValueString);
-                    LocalBuilder i = DeclareLocal(typeof(int), "i");
-                    For(i, 0, arrayVar);
-                    Load(arrayValueString);
-                    LoadArrayElement(arrayVar, i);
-                    ToString(arrayVar.LocalType.GetElementType());
-                    Load(", ");
-                    Concat3();
-                    Store(arrayValueString);
-                    EndFor();
-                    Load(arrayValueString);
-                    Load("}");
-                    Concat2();
-                }
-                else
-                    Call(ObjectToString);
-                EndIf();
-            }
-        }
-
-        internal void Concat2()
-        {
-            Call(StringConcat2);
-        }
-
-        internal void Concat3()
-        {
-            Call(StringConcat3);
-        }
-
-        internal Label[] Switch(int labelCount)
-        {
-            SwitchState switchState = new SwitchState(DefineLabel(), DefineLabel());
-            Label[] caseLabels = new Label[labelCount];
-            for (int i = 0; i < caseLabels.Length; i++)
-                caseLabels[i] = DefineLabel();
-
-            if (codeGenTrace != CodeGenTrace.None)
-            {
-                EmitSourceInstruction("switch (");
-                foreach (Label l in caseLabels)
-                    EmitSourceInstruction("    " + l.GetHashCode());
-                EmitSourceInstruction(") {");
-            }
-            ilGen.Emit(OpCodes.Switch, caseLabels);
-            Br(switchState.DefaultLabel);
-            blockStack.Push(switchState);
-            return caseLabels;
-        }
-        internal void Case(Label caseLabel1, string caseLabelName)
-        {
-            if (codeGenTrace != CodeGenTrace.None)
-                EmitSourceInstruction("case " + caseLabelName + "{");
-            MarkLabel(caseLabel1);
-        }
-
-        internal void EndCase()
-        {
-            object stackTop = blockStack.Peek();
-            SwitchState switchState = stackTop as SwitchState;
-            if (switchState == null)
-                ThrowMismatchException(stackTop);
-            Br(switchState.EndOfSwitchLabel);
-            if (codeGenTrace != CodeGenTrace.None)
-                EmitSourceInstruction("} //end case ");
-        }
-
-        internal void DefaultCase()
-        {
-            object stackTop = blockStack.Peek();
-            SwitchState switchState = stackTop as SwitchState;
-            if (switchState == null)
-                ThrowMismatchException(stackTop);
-            MarkLabel(switchState.DefaultLabel);
-            switchState.DefaultDefined = true;
-        }
-
-        internal void EndSwitch()
-        {
-            object stackTop = blockStack.Pop();
-            SwitchState switchState = stackTop as SwitchState;
-            if (switchState == null)
-                ThrowMismatchException(stackTop);
-            if (codeGenTrace != CodeGenTrace.None)
-                EmitSourceInstruction("} //end switch");
-            if (!switchState.DefaultDefined)
-                MarkLabel(switchState.DefaultLabel);
-            MarkLabel(switchState.EndOfSwitchLabel);
-        }
-
-        internal void CallStringFormat(string msg, params object[] values)
-        {
-            NewArray(typeof(object), values.Length);
-            if (stringFormatArray == null)
-                stringFormatArray = DeclareLocal(typeof(object[]), "stringFormatArray");
-            Stloc(stringFormatArray);
-            for (int i = 0; i < values.Length; i++)
-                StoreArrayElement(stringFormatArray, i, values[i]);
-
-            Load(msg);
-            Load(stringFormatArray);
-            Call(StringFormat);
-        }
-
-        static MethodInfo stringEquals = typeof(string).GetMethod("Equals", new Type[]{ typeof(string), typeof(string)});
-        static MethodInfo stringCompare = typeof(string).GetMethod("Compare", new Type[]{ typeof(string), typeof(string)});
-        static ConstructorInfo permissionSetCtor = typeof(PermissionSet).GetConstructor(new Type[]{ typeof(PermissionState)});
-        static MethodInfo permissionSetDemand = typeof(PermissionSet).GetMethod("Demand", new Type[0]);
-#endif
 
         private int _initElseIfStack = -1;
         private IfState _elseIfState;
@@ -1766,136 +1363,10 @@ namespace System.Xml.Serialization
             Brfalse(ifState.ElseBegin);
         }
 
-#if NotUsed
-        internal void ElseIf(object boolVal)
-        {
-            InternalElseIf(boolVal, false);
-        }
-        void InternalElseIf(object boolVal, bool negate)
-        {
-            IfState ifState = (IfState)blockStack.Pop();
-            Br(ifState.EndIf);
-            MarkLabel(ifState.ElseBegin);
-
-            Load(boolVal);
-            ifState.ElseBegin = DefineLabel();
-            if (negate)
-                Brtrue(ifState.ElseBegin);
-            else
-                Brfalse(ifState.ElseBegin);
-            blockStack.Push(ifState);
-        }
-
-        internal void IfString(object s1, Cmp cmpOp, object s2)
-        {
-            Load(s1);
-            Load(s2);
-            Call(stringCompare);
-            Load(0);
-            If(cmpOp);
-        }
-
-        internal void ElseIfString(object s1, Cmp cmpOp, object s2)
-        {
-            IfState ifState = (IfState)blockStack.Pop();
-            Br(ifState.EndIf);
-            MarkLabel(ifState.ElseBegin);
-
-            Load(s1);
-            Load(s2);
-            Call(stringCompare);
-            Load(0);
-            ifState.ElseBegin = DefineLabel();
-
-            if (codeGenTrace != CodeGenTrace.None)
-                EmitSourceInstruction("Branch if " + CmpInverse[(int) cmpOp].ToString() + " to " + ifState.ElseBegin.GetHashCode().ToString(NumberFormatInfo.InvariantInfo));
-
-            ilGen.Emit(BranchCode[(int)cmpOp], ifState.ElseBegin);
-            blockStack.Push(ifState);
-        }
-
-        internal void While(object value1, Cmp cmpOp, object value2)
-        {
-            IfState ifState = new IfState();
-            ifState.EndIf = DefineLabel();
-            ifState.ElseBegin = DefineLabel();
-            ilGen.MarkLabel(ifState.ElseBegin);
-            Load(value1);
-            Load(value2);
-            if (codeGenTrace != CodeGenTrace.None)
-                EmitSourceInstruction("Branch if " + CmpInverse[(int) cmpOp].ToString() + " to " + ifState.ElseBegin.GetHashCode().ToString());
-            ilGen.Emit(BranchCode[(int)cmpOp], ifState.EndIf);
-            blockStack.Push(ifState);
-        }
-
-        internal void EndWhile()
-        {
-            IfState ifState = PopIfState();
-            Br(ifState.ElseBegin);
-            MarkLabel(ifState.EndIf);
-        }
-
-        internal void ElseIfNot(object boolVal)
-        {
-            InternalElseIf(boolVal, true);
-        }
-
-        internal void Ldc(long l)
-        {
-            if (codeGenTrace != CodeGenTrace.None)
-                EmitSourceInstruction("Ldc.i8 " + l);
-            ilGen.Emit(OpCodes.Ldc_I8, l);
-        }
-
-        internal void Ldc(float f)
-        {
-            if (codeGenTrace != CodeGenTrace.None)
-                EmitSourceInstruction("Ldc.r4 " + f);
-            ilGen.Emit(OpCodes.Ldc_R4, f);
-        }
-
-        internal void Ldc(double d)
-        {
-            if (codeGenTrace != CodeGenTrace.None)
-                EmitSourceInstruction("Ldc.r8 " + d);
-            ilGen.Emit(OpCodes.Ldc_R8, d);
-        }
-#endif
-
         internal void IsInst(Type type)
         {
             _ilGen.Emit(OpCodes.Isinst, type);
         }
-
-#if NotUsed
-        internal void Clt()
-        {
-            if (codeGenTrace != CodeGenTrace.None)
-                EmitSourceInstruction("Clt");
-            ilGen.Emit(OpCodes.Clt);
-        }
-
-        internal void StringEquals()
-        {
-            Call(stringEquals);
-        }
-
-        internal void StringEquals(object s1, object s2)
-        {
-            Load(s1);
-            ConvertValue(GetVariableType(s1), typeof(string));
-            Load(s2);
-            ConvertValue(GetVariableType(s2), typeof(string));
-            StringEquals();
-        }
-
-        internal void Bge(Label label)
-        {
-            if (codeGenTrace != CodeGenTrace.None)
-                EmitSourceInstruction("Bge " + label.GetHashCode());
-            ilGen.Emit(OpCodes.Bge, label);
-        }
-#endif
 
         internal void Beq(Label label)
         {
@@ -1906,83 +1377,6 @@ namespace System.Xml.Serialization
         {
             _ilGen.Emit(OpCodes.Bne_Un, label);
         }
-
-#if NotUsed
-        internal void ResizeArray(object arrayVar, object sizeVar)
-        {
-            if (codeGenTrace != CodeGenTrace.None)
-                EmitSourceComment("ResizeArray() {");
-
-            Label doResize = DefineLabel();
-            Load(arrayVar);
-            Load(null);
-            Beq(doResize);
-            Ldlen(arrayVar);
-            Load(sizeVar);
-            If(Cmp.NotEqualTo);
-            MarkLabel(doResize);
-            Type arrayType = GetVariableType(arrayVar);
-            Type elementType = arrayType.GetElementType();
-            LocalBuilder tempArray = DeclareLocal(arrayType, "tempArray");
-            NewArray(elementType, sizeVar);
-            Store(tempArray);
-            CopyArray(arrayVar, tempArray, sizeVar);
-            Load(tempArray);
-            Store(arrayVar);
-            EndIf();
-
-            if (codeGenTrace != CodeGenTrace.None)
-                EmitSourceComment("} // ResizeArray");
-        }
-
-        LocalBuilder resizeLen, resizeCounter;
-        internal void EnsureArrayCapacity(object arrayVar, object lastElementVar)
-        {
-            if (codeGenTrace != CodeGenTrace.None)
-                EmitSourceComment("EnsureArrayCapacity() {");
-
-            Type arrayType = GetVariableType(arrayVar);
-            Type elementType = arrayType.GetElementType();
-            If(arrayVar, Cmp.EqualTo, null);
-            NewArray(elementType, 4);
-            Store(arrayVar);
-            Else();
-            Load(lastElementVar);
-            Ldlen(arrayVar);
-            If(Cmp.GreaterThanOrEqualTo);
-            LocalBuilder tempArray = DeclareLocal(arrayType, "tempArray");
-            if (resizeLen == null)
-                resizeLen = DeclareLocal(typeof(int), "resizeLen");
-            Load(lastElementVar);
-            Load(2);
-            Mul();
-            Store(resizeLen);
-            NewArray(elementType, resizeLen);
-            Store(tempArray);
-            CopyArray(arrayVar, tempArray, arrayVar);
-            Load(tempArray);
-            Store(arrayVar);
-            EndIf();
-            EndIf();
-
-            if (codeGenTrace != CodeGenTrace.None)
-                EmitSourceComment("} // EnsureArrayCapacity");
-        }
-
-        internal void CopyArray(object sourceArray, object destArray, object length)
-        {
-            If(sourceArray, Cmp.NotEqualTo, null);
-            if (resizeCounter == null)
-                resizeCounter = DeclareLocal(typeof(int), "resizeCounter");
-            For(resizeCounter, 0, length);
-            Load(destArray);
-            Load(resizeCounter);
-            LoadArrayElement(sourceArray, resizeCounter);
-            Stelem(GetVariableType(destArray).GetElementType());
-            EndFor();
-            EndIf();
-        }
-#endif
 
         internal void GotoMethodEnd()
         {
@@ -2054,164 +1448,6 @@ namespace System.Xml.Serialization
             WhileState whileState = (WhileState)_whileStack.Peek();
             Brtrue(whileState.StartLabel);
         }
-
-#if NotUsed
-        internal void AndWhile(Cmp cmpOp)
-        {
-            object startWhile = blockStack.Pop();
-            AndIf(cmpOp);
-            blockStack.Push(startWhile);
-        }
-
-        internal void BeginWhileBody()
-        {
-            Label startWhile = (Label) blockStack.Pop();
-            If();
-            blockStack.Push(startWhile);
-        }
-
-        internal void BeginWhileBody(Cmp cmpOp)
-        {
-            Label startWhile = (Label) blockStack.Pop();
-            If(cmpOp);
-            blockStack.Push(startWhile);
-        }
-
-        internal Label BeginWhileCondition()
-        {
-            Label startWhile = DefineLabel();
-            MarkLabel(startWhile);
-            blockStack.Push(startWhile);
-            return startWhile;
-        }
-
-        internal void Cne()
-        {
-            Ceq();
-            Load(0);
-            Ceq();
-        }
-
-        internal void New(ConstructorInfo constructorInfo, object param1, object param2)
-        {
-            LoadParam(param1, 1, constructorInfo);
-            LoadParam(param2, 2, constructorInfo);
-            New(constructorInfo);
-        }
-
-        //This code is not tested
-        internal void Stind(Type type)
-        {
-            OpCode opCode = StindOpCodes[(int) Type.GetTypeCode(type)];
-            if (!opCode.Equals(OpCodes.Nop))
-            {
-                if (codeGenTrace != CodeGenTrace.None)
-                    EmitSourceInstruction(opCode.ToString());
-                ilGen.Emit(opCode);
-            }
-            else
-            {
-                if (codeGenTrace != CodeGenTrace.None)
-                    EmitSourceInstruction("Stobj " + type);
-                ilGen.Emit(OpCodes.Stobj, type);
-            }
-        }
-        //This code is not tested
-        internal void StoreOutParam(ArgBuilder arg, object value)
-        {
-            Type destType = arg.ArgType;
-            if (!destType.IsByRef)
-                throw new InvalidOperationException(nameof(OutParametersMustBeByRefTypeReceived)); //.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.GetString(SR.OutParametersMustBeByRefTypeReceived, DataContract.GetClrTypeFullName(destType))));
-            destType = destType.GetElementType();
-
-            Type sourceType;
-            if (value is ArgBuilder)
-                sourceType = ((ArgBuilder) value).ArgType;
-            else if (value is LocalBuilder)
-                sourceType = ((LocalBuilder) value).LocalType;
-            else if (value != null)
-                sourceType = value.GetType();
-            else
-                sourceType = null;
-
-            Load(arg);
-            Load(value);
-            if (sourceType != null)
-                ConvertAddress(sourceType, destType);
-            Stind(destType);
-        }
-        void CheckSecurity(FieldInfo field)
-        {
-            if (fullTrustDemanded)
-                return;
-            if (IsProtectedWithSecurity(field))
-                DemandFullTrust();
-        }
-
-        void CheckSecurity(MethodBase method)
-        {
-            if (fullTrustDemanded)
-                return;
-            if (IsProtectedWithSecurity(method))
-                DemandFullTrust();
-        }
-
-        void CheckSecurity(Type type)
-        {
-            if (fullTrustDemanded)
-                return;
-            if (IsProtectedWithSecurity(type))
-                DemandFullTrust();
-        }
-
-        void CheckSecurity(Assembly assembly)
-        {
-            if (fullTrustDemanded)
-                return;
-            if (IsProtectedWithSecurity(assembly))
-                DemandFullTrust();
-        }
-
-        static bool IsProtectedWithSecurity(FieldInfo field)
-        {
-            return IsProtectedWithSecurity(field.DeclaringType);
-        }
-
-        static bool IsProtectedWithSecurity(Type type)
-        {
-            return IsProtectedWithSecurity(type.Assembly) || (type.Attributes & TypeAttributes.HasSecurity) != 0;
-        }
-
-        static bool IsProtectedWithSecurity(Assembly assembly)
-        {
-            object[] attrs = assembly.GetCustomAttributes(typeof(AllowPartiallyTrustedCallersAttribute), true);
-            bool hasAptca = attrs != null && attrs.Length > 0;
-            return !hasAptca;
-        }
-
-        void DemandFullTrust()
-        {
-            fullTrustDemanded = true;
-/*
-            if (codeGenTrace != CodeGenTrace.None)
-                EmitSourceComment("DemandFullTrust() {");
-
-            Ldc(PermissionState.Unrestricted);
-            New(permissionSetCtor);
-            Call(permissionSetDemand);
-
-            if (codeGenTrace != CodeGenTrace.None)
-                EmitSourceComment("}");
-*/
-        }
-
-        static bool IsProtectedWithSecurity(MethodBase method)
-        {
-            return false;
-            //return (method.Attributes & MethodAttributes.HasSecurity) != 0;
-        }
-
-#endif
     }
 
 
@@ -2395,143 +1631,6 @@ namespace System.Xml.Serialization
         }
     }
 
-#if NotUsed
-    internal class BitFlagsGenerator
-    {
-        LocalBuilder[] locals;
-        CodeGenerator ilg;
-        int bitCount;
-        internal BitFlagsGenerator(int bitCount, CodeGenerator ilg, string localName)
-        {
-            this.ilg = ilg;
-            this.bitCount = bitCount;
-            int localCount = (bitCount+7)/8;
-            locals = new LocalBuilder[localCount];
-            for (int i=0;i<locals.Length;i++)
-                locals[i] = ilg.DeclareLocal(Globals.TypeOfByte, localName+i, (byte)0);
-        }
-        internal void Store(int bitIndex, bool value)
-        {
-            LocalBuilder local = locals[GetByteIndex(bitIndex)];
-            byte bitValue = GetBitValue(bitIndex);
-            if (value)
-            {
-                ilg.Load(local);
-                ilg.Load(bitValue);
-                ilg.Or();
-                ilg.Stloc(local);
-            }
-            else
-            {
-                ilg.Load(local);
-                ilg.Load(bitValue);
-                ilg.Not();
-                ilg.And();
-                ilg.Stloc(local);
-            }
-        }
-
-        internal void Load(int bitIndex)
-        {
-            LocalBuilder local = locals[GetByteIndex(bitIndex)];
-            byte bitValue = GetBitValue(bitIndex);
-            ilg.Load(local);
-            ilg.Load(bitValue);
-            ilg.And();
-            ilg.Load(bitValue);
-            ilg.Ceq();
-        }
-
-        internal void LoadArray()
-        {
-            LocalBuilder localArray = ilg.DeclareLocal(Globals.TypeOfByteArray, "localArray");
-            ilg.NewArray(Globals.TypeOfByte, locals.Length);
-            ilg.Store(localArray);
-            for (int i=0;i<locals.Length;i++)
-                ilg.StoreArrayElement(localArray, i, locals[i]);
-            ilg.Load(localArray);
-        }
-
-        internal int GetLocalCount()
-        {
-            return locals.Length;
-        }
-
-        internal int GetBitCount()
-        {
-            return bitCount;
-        }
-
-        internal LocalBuilder GetLocal(int i)
-        {
-            return locals[i];
-        }
-
-        internal static bool IsBitSet(byte[] bytes, int bitIndex)
-        {
-            int byteIndex = GetByteIndex(bitIndex);
-            byte bitValue = GetBitValue(bitIndex);
-            return (bytes[byteIndex] & bitValue) == bitValue;
-        }
-
-        internal static void SetBit(byte[] bytes, int bitIndex)
-        {
-            int byteIndex = GetByteIndex(bitIndex);
-            byte bitValue = GetBitValue(bitIndex);
-            bytes[byteIndex] |= bitValue;
-        }
-
-        static int GetByteIndex(int bitIndex)
-        {
-            return bitIndex >> 3;
-        }
-
-        static byte GetBitValue(int bitIndex)
-        {
-            return (byte)(1 << (bitIndex & 7));
-        }
-    }
-
-    internal class SwitchState
-    {
-        Label defaultLabel;
-        Label endOfSwitchLabel;
-        bool defaultDefined;
-        internal SwitchState(Label defaultLabel, Label endOfSwitchLabel)
-        {
-            this.defaultLabel = defaultLabel;
-            this.endOfSwitchLabel = endOfSwitchLabel;
-            this.defaultDefined = false;
-        }
-        internal Label DefaultLabel
-        {
-            get
-            {
-                return defaultLabel;
-            }
-        }
-
-        internal Label EndOfSwitchLabel
-        {
-            get
-            {
-                return endOfSwitchLabel;
-            }
-        }
-        internal bool DefaultDefined
-        {
-            get
-            {
-                return defaultDefined;
-            }
-            set
-            {
-                defaultDefined = value;
-            }
-        }
-    }
-#endif
-
     internal class MethodBuilderInfo
     {
         public readonly MethodBuilder MethodBuilder;
@@ -2572,3 +1671,4 @@ namespace System.Xml.Serialization
         }
     }
 }
+#endif
