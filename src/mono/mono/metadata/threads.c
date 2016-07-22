@@ -3157,7 +3157,7 @@ remove_and_abort_threads (gpointer key, gpointer value, gpointer user)
 		wait->num++;
 
 		THREAD_DEBUG (g_print ("%s: Aborting id: %"G_GSIZE_FORMAT"\n", __func__, (gsize)thread->tid));
-		mono_thread_internal_stop (thread);
+		mono_thread_internal_abort (thread);
 		return TRUE;
 	}
 
