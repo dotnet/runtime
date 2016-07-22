@@ -177,7 +177,7 @@ namespace System.Xml.Serialization
             if (attrs.Count() == 0)
             {
                 // Guess serializer name: if parent assembly signed use strong name 
-                AssemblyName name = GetName(type.GetTypeInfo().Assembly, true);
+                AssemblyName name = type.GetTypeInfo().Assembly.GetName();
                 serializerName = Compiler.GetTempAssemblyName(name, defaultNamespace);
                 // use strong name 
                 name.Name = serializerName;
@@ -250,11 +250,6 @@ namespace System.Xml.Serialization
                 return serializer;
 
             return null;
-        }
-
-        private static AssemblyName GetName(Assembly assembly, bool copyName)
-        {
-            throw new NotImplementedException();
         }
 
         // SxS: This method does not take any resource name and does not expose any resources to the caller.
