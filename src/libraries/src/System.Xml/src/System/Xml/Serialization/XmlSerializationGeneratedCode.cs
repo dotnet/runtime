@@ -17,8 +17,6 @@ namespace System.Xml.Serialization
     ///<internalonly/>
     public abstract class XmlSerializationGeneratedCode
     {
-        private ResolveEventHandler _assemblyResolver;
-
         internal void Init(TempAssembly tempAssembly)
         {
         }
