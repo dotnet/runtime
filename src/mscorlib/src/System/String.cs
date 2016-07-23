@@ -1703,6 +1703,8 @@ namespace System {
             Contract.Assert(end[0] == 0 || end[1] == 0);
             if (end[0] != 0) end++;
 #else // !BIT64
+            // Based on https://graphics.stanford.edu/~seander/bithacks.html#ZeroInWord
+
             // 64-bit implementation: process 1 ulong (word) at a time
 
             // What we do here is add 0x7fff from each of the
