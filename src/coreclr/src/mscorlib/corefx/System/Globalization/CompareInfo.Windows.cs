@@ -10,11 +10,15 @@ namespace System.Globalization
     {      
         internal unsafe CompareInfo(CultureInfo culture)
         {
-            const uint LCMAP_SORTHANDLE = 0x20000000;
-
             this.m_name = culture.m_name;
+            InitSort(culture);
+        }
+
+        private void InitSort(CultureInfo culture)
+        {
             this.m_sortName = culture.SortName;
 
+            const uint LCMAP_SORTHANDLE = 0x20000000;
             long handle;
             int ret = Interop.mincore.LCMapStringEx(m_sortName, LCMAP_SORTHANDLE, null, 0, (IntPtr)(&handle), IntPtr.Size, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero);
 
@@ -192,6 +196,7 @@ namespace System.Globalization
         }
 
         // PAL ends here
+        [NonSerialized]
         private readonly IntPtr _sortHandle;
 
         private const uint LCMAP_HASH = 0x00040000;

@@ -234,6 +234,11 @@ namespace System.Globalization
             get { return Environment.GetResourceString("Overflow_TimeSpanTooLong"); }
         }
 
+        public static string Serialization_MemberOutOfRange
+        {
+            get { return Environment.GetResourceString("Serialization_MemberOutOfRange"); }
+        }
+
         public static string Format(string formatString, params object[] args)
         {
             return string.Format(CultureInfo.CurrentCulture, formatString, args);
