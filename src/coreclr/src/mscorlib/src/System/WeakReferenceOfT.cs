@@ -18,14 +18,9 @@ namespace System
     using System.Runtime.Versioning;
     using System.Diagnostics.Contracts;
 
-#if FEATURE_SERIALIZATION
     [Serializable]
-#endif
     // This class is sealed to mitigate security issues caused by Object::MemberwiseClone.
-    public sealed class WeakReference<T>
-#if FEATURE_SERIALIZATION
-        : ISerializable 
-#endif
+    public sealed class WeakReference<T> : ISerializable 
         where T : class
     {
         // If you fix bugs here, please fix them in WeakReference at the same time.

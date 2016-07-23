@@ -19,15 +19,10 @@ namespace System {
     using System.Security;
     using System.Diagnostics.Contracts;
 
-#if FEATURE_SERIALIZATION
     [Serializable]
-#endif
     [CLSCompliant(false)] 
     [System.Runtime.InteropServices.ComVisible(true)]
-    public struct UIntPtr
-#if FEATURE_SERIALIZATION
-        : ISerializable
-#endif
+    public struct UIntPtr : ISerializable
     {
         [SecurityCritical]
         unsafe private void* m_value;
@@ -72,7 +67,6 @@ namespace System {
             m_value = (void *)l;
         }
 
-#if FEATURE_SERIALIZATION
         [System.Security.SecurityCritical]
         unsafe void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
         {
@@ -82,7 +76,6 @@ namespace System {
             Contract.EndContractBlock();
             info.AddValue("value", (ulong)m_value);
         }
-#endif
 
         [System.Security.SecuritySafeCritical]  // auto-generated
         public unsafe override bool Equals(Object obj) {

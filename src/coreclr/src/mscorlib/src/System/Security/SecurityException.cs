@@ -31,9 +31,7 @@ namespace System.Security
     using System.Diagnostics.Contracts;
 
     [System.Runtime.InteropServices.ComVisible(true)]
-#if FEATURE_SERIALIZATION
     [Serializable]
-#endif
     public class SecurityException : SystemException
     {
 #if FEATURE_CAS_POLICY        

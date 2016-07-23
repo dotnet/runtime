@@ -21,13 +21,8 @@ namespace System {
 #if !FEATURE_CORECLR
     [SecurityPermissionAttribute(SecurityAction.InheritanceDemand, Flags=SecurityPermissionFlag.UnmanagedCode)] // Don't call Object::MemberwiseClone.
 #endif
-#if FEATURE_SERIALIZATION
     [Serializable]
-#endif
-    public class WeakReference
-#if FEATURE_SERIALIZATION
-        : ISerializable 
-#endif
+    public class WeakReference : ISerializable 
     {
         // If you fix bugs here, please fix them in WeakReference<T> at the same time.
 

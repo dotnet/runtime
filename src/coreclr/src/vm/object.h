@@ -2668,9 +2668,7 @@ class AssemblyNameBaseObject : public Object
     OBJECTREF     m_pCodeBase;
     OBJECTREF     m_pVersion;
     OBJECTREF     m_StrongNameKeyPair;
-#ifdef FEATURE_SERIALIZATION
     OBJECTREF     m_siInfo;
-#endif
     U1ARRAYREF    m_HashForControl;
     DWORD         m_HashAlgorithm;
     DWORD         m_HashAlgorithmForControl;
