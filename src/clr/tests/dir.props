@@ -44,7 +44,7 @@
     <ProhibitFloatingDependencies>true</ProhibitFloatingDependencies>
 
     <CoreFxExpectedPrerelease>rc3-24117-00</CoreFxExpectedPrerelease>
-    <CoreClrPackageVersion>beta-24314-02</CoreClrPackageVersion>
+    <CoreClrPackageVersion>1.0.4-beta-24322-04</CoreClrPackageVersion>
 
     <CoreFxVersionsIdentityRegex>^(?i)((System\..*)|(Microsoft\.CSharp)|(Microsoft\.NETCore.*)|(Microsoft\.Win32\..*)|(Microsoft\.VisualBasic))(?&lt;!TestData)$</CoreFxVersionsIdentityRegex>
   </PropertyGroup>
