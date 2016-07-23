@@ -66,9 +66,6 @@ namespace System.Reflection.Emit.Tests
 
     public class MethodBuilderSetCustomAttribute
     {
-        private const int ByteArraySize = 128;
-        private static readonly RandomDataGenerator s_randomDataGenerator = new RandomDataGenerator();
-
         [Fact]
         public void SetCustomAttribute_CustomAttributeBuilder()
         {
@@ -107,8 +104,7 @@ namespace System.Reflection.Emit.Tests
         [Fact]
         public void SetCustomAttribute_ConstructorInfo_ByteArray()
         {
-            byte[] binaryAttribute = new byte[ByteArraySize];
-            s_randomDataGenerator.GetBytes(binaryAttribute);
+            byte[] binaryAttribute = Enumerable.Range(0, 128).Select(i => (byte)i).ToArray();
 
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Abstract);
             MethodBuilder method = type.DefineMethod("TestMethod", MethodAttributes.Public);

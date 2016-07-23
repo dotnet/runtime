@@ -2,76 +2,78 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using TestLibrary;
-using System.Reflection;
-using System.Reflection.Emit;
-using System.Runtime.CompilerServices;
-using Xunit;
 using System.Linq;
+using Xunit;
 
 namespace System.Reflection.Emit.Tests
 {
-    public class TBMyAttribute1 : Attribute
-    {
-        public TBMyAttribute1(int mc)
-        {
-            m_ctorType2 = mc;
-        }
-
-        public string Field12345;
-        public int m_ctorType2;
-    }
-
     public class TypeBuilderSetCustomAttribute
     {
         [Fact]
-        public void TestSetCustomAttribute()
+        public void SetCustomAttribute_CustomAttributeBuilder()
         {
-            string name = "Assembly1";
-            AssemblyName asmname = new AssemblyName();
-            asmname.Name = name;
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.NotPublic);
 
-            AssemblyBuilder asmbuild = AssemblyBuilder.DefineDynamicAssembly(asmname, AssemblyBuilderAccess.Run);
+            Type attributeType = typeof(TypeBuilderIntAttribute);
+            ConstructorInfo attriubteConstructor = attributeType.GetConstructors()[0];
+            FieldInfo attributeField = attributeType.GetField("Field12345");
 
-            ModuleBuilder modbuild = TestLibrary.Utilities.GetModuleBuilder(asmbuild, "Module1");
-            TypeBuilder tpbuild = modbuild.DefineType("C1");
+            CustomAttributeBuilder attribute = new CustomAttributeBuilder(attriubteConstructor, new object[] { 4 }, new FieldInfo[] { attributeField }, new object[] { "hello" });
+            type.SetCustomAttribute(attribute);
+            type.CreateTypeInfo().AsType();
+            
+            object[] attributes = type.GetCustomAttributes(false).ToArray();
+            Assert.Equal(1, attributes.Length);
 
-            Type attrType = typeof(TBMyAttribute1);
-            ConstructorInfo ci = attrType.GetConstructors()[0];
-            FieldInfo fi = attrType.GetField("Field12345");
-
-
-            CustomAttributeBuilder cab = new CustomAttributeBuilder(ci,
-                                                                    new object[] { 4 },
-                                                                    new FieldInfo[] { fi },
-                                                                    new object[] { "hello" });
-            tpbuild.SetCustomAttribute(cab);
-            tpbuild.CreateTypeInfo().AsType();
-
-            // VERIFY
-            object[] attribs = tpbuild.GetCustomAttributes(false).Select(a => (object)a).ToArray();
-
-            Assert.Equal(1, attribs.Length);
-            TBMyAttribute1 obj = (TBMyAttribute1)attribs[0];
-
+            TypeBuilderIntAttribute obj = (TypeBuilderIntAttribute)attributes[0];
             Assert.Equal("hello", obj.Field12345);
             Assert.Equal(4, obj.m_ctorType2);
         }
 
+        [Fact]
+        public void SetCustomAttribute_CustomAttributeBuilder_NullBuilder_ThrowsArgumentNullException()
+        {
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
+            Assert.Throws<ArgumentNullException>("customBuilder", () => type.SetCustomAttribute(null));
+        }
 
         [Fact]
-        public void TestThrowsExceptionForNullBuilder()
+        public void SetCustomAttribute()
         {
-            string name = "Assembly1";
-            AssemblyName asmname = new AssemblyName();
-            asmname.Name = name;
-            AssemblyBuilder asmbuild = AssemblyBuilder.DefineDynamicAssembly(asmname, AssemblyBuilderAccess.Run);
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.NotPublic);
+            ConstructorInfo constructor = typeof(TypeBuilderStringAttribute).GetConstructor(new Type[] { typeof(string) });
+            CustomAttributeBuilder cuatbu = new CustomAttributeBuilder(constructor, new object[] { "hello" });
+            type.SetCustomAttribute(cuatbu);
 
-            ModuleBuilder modbuild = TestLibrary.Utilities.GetModuleBuilder(asmbuild, "Module1");
-            TypeBuilder tpbuild = modbuild.DefineType("C1", TypeAttributes.Public);
-
-            Assert.Throws<ArgumentNullException>(() => { tpbuild.SetCustomAttribute(null); });
+            type.CreateTypeInfo().AsType();
+            
+            object[] attributes = type.GetCustomAttributes(false).ToArray();
+            Assert.Equal(1, attributes.Length);
+            Assert.True(attributes[0] is TypeBuilderStringAttribute);
+            Assert.Equal("hello", ((TypeBuilderStringAttribute)attributes[0]).Creator);
         }
+
+        public class TypeBuilderStringAttribute : Attribute
+        {
+            private string _creator;
+            public string Creator { get { return _creator; } }
+
+            public TypeBuilderStringAttribute(string name)
+            {
+                _creator = name;
+            }
+        }
+
+        public class TypeBuilderIntAttribute : Attribute
+        {
+            public TypeBuilderIntAttribute(int mc)
+            {
+                m_ctorType2 = mc;
+            }
+
+            public string Field12345;
+            public int m_ctorType2;
+        }
+
     }
 }
