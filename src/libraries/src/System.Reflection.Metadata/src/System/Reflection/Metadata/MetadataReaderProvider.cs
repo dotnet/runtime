@@ -128,6 +128,8 @@ namespace System.Reflection.Metadata
         /// specified, the caller retains full ownership of the stream and is assured that it will not be manipulated by the <see cref="MetadataReaderProvider"/>
         /// after construction.
         /// </param>
+        /// <exception cref="ArgumentNullException"><paramref name="stream"/> is null.</exception>
+        /// <exception cref="ArgumentException"><paramref name="stream"/> doesn't support read and seek operations.</exception>
         /// <exception cref="ArgumentOutOfRangeException">Size is negative or extends past the end of the stream.</exception>
         public static MetadataReaderProvider FromPortablePdbStream(Stream stream, MetadataStreamOptions options = MetadataStreamOptions.Default, int size = 0) => FromMetadataStream(stream, options, size);
 
@@ -151,7 +153,10 @@ namespace System.Reflection.Metadata
         /// specified, the caller retains full ownership of the stream and is assured that it will not be manipulated by the <see cref="MetadataReaderProvider"/>
         /// after construction.
         /// </param>
+        /// <exception cref="ArgumentNullException"><paramref name="stream"/> is null.</exception>
+        /// <exception cref="ArgumentException"><paramref name="stream"/> doesn't support read and seek operations.</exception>
         /// <exception cref="ArgumentOutOfRangeException">Size is negative or extends past the end of the stream.</exception>
+        /// <exception cref="IOException">Error reading from the stream (only when <see cref="MetadataStreamOptions.PrefetchMetadata"/> is specified).</exception>
         public static MetadataReaderProvider FromMetadataStream(Stream stream, MetadataStreamOptions options = MetadataStreamOptions.Default, int size = 0)
         {
             if (stream == null)
