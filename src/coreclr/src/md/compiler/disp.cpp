@@ -152,7 +152,7 @@ Disp::DefineScope(
         BOOL fResult = SUCCEEDED(hr);
         // print out a message so people know what's happening
         printf("Defining scope for EnC using %S %s\n", 
-                            szFileNameSuffix, fResult ? "succeeded" : "failed");
+                            static_cast<LPCWSTR>(szFileNameSuffix), fResult ? "succeeded" : "failed");
 
         goto ErrExit;
     }
