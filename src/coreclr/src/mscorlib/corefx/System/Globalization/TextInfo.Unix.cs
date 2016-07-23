@@ -10,7 +10,7 @@ namespace System.Globalization
 {
     public partial class TextInfo
     {
-        private readonly bool m_needsTurkishCasing;
+        private bool m_needsTurkishCasing;
 
         //////////////////////////////////////////////////////////////////////////
         ////
@@ -24,7 +24,12 @@ namespace System.Globalization
             m_cultureData = cultureData;
             m_cultureName = m_cultureData.CultureName;
             m_textInfoName = m_cultureData.STEXTINFO;
-            m_needsTurkishCasing = NeedsTurkishCasing(m_textInfoName);
+            FinishInitialization(m_textInfoName);
+        }
+
+        private void FinishInitialization(string textInfoName)
+        {
+            m_needsTurkishCasing = NeedsTurkishCasing(textInfoName);
         }
 
         [SecuritySafeCritical]
