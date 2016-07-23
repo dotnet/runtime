@@ -98,12 +98,12 @@ namespace System.Transactions
         {
             if (null == cookie)
             {
-                throw new ArgumentNullException("cookie");
+                throw new ArgumentNullException(nameof(cookie));
             }
 
             if (cookie.Length < 32)
             {
-                throw new ArgumentException(SR.InvalidArgument, "cookie");
+                throw new ArgumentException(SR.InvalidArgument, nameof(cookie));
             }
 
             if (DiagnosticTrace.Verbose)

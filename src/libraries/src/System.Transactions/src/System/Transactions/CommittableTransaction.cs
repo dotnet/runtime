@@ -52,7 +52,7 @@ namespace System.Transactions
 
             if (Disposed)
             {
-                throw new ObjectDisposedException("Transaction");
+                throw new ObjectDisposedException(nameof(CommittableTransaction));
             }
 
             lock (_internalTransaction)
@@ -87,7 +87,7 @@ namespace System.Transactions
 
             if (Disposed)
             {
-                throw new ObjectDisposedException("Transaction");
+                throw new ObjectDisposedException(nameof(CommittableTransaction));
             }
 
             lock (_internalTransaction)
@@ -161,7 +161,7 @@ namespace System.Transactions
 
             if (asyncResult != ((object)this))
             {
-                throw new ArgumentException(SR.BadAsyncResult, "asyncResult");
+                throw new ArgumentException(SR.BadAsyncResult, nameof(asyncResult));
             }
 
             lock (_internalTransaction)
