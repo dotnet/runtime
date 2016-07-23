@@ -8,11 +8,13 @@
 
 using System;
 using System.Threading;
+using System.Runtime.Serialization;
 
 namespace System.Globalization
 {
+    [Serializable]
     [System.Runtime.InteropServices.ComVisible(true)]
-    public class CultureNotFoundException : ArgumentException
+    public class CultureNotFoundException : ArgumentException, ISerializable
     {
         private string m_invalidCultureName; // unrecognized culture name
 
@@ -48,6 +50,22 @@ namespace System.Globalization
             m_invalidCultureName = invalidCultureName;
         }
 
+        protected CultureNotFoundException(SerializationInfo info, StreamingContext context) : base(info, context)
+        {
+            m_invalidCultureName = (string)info.GetValue("InvalidCultureName", typeof(string));
+        }
+
+        [System.Security.SecurityCritical]  // auto-generated_required
+        public override void GetObjectData(SerializationInfo info, StreamingContext context)
+        {
+            if (info == null)
+            {
+                throw new ArgumentNullException("info");
+            }
+
+            base.GetObjectData(info, context);
+            info.AddValue("InvalidCultureName", m_invalidCultureName, typeof(string));
+        }
 
         public virtual string InvalidCultureName
         {

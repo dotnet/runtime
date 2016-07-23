@@ -20,14 +20,18 @@
 
 using System;
 using System.Diagnostics.Contracts;
+using System.Runtime.Serialization;
 
 namespace System.Globalization
 {
+    [Serializable]
     [System.Runtime.InteropServices.ComVisible(true)]
     public class StringInfo
     {
+        [OptionalField(VersionAdded = 2)] 
         private String m_str;
 
+        [NonSerialized]
         private int[] m_indexes;
 
         // Legacy constructor
@@ -37,6 +41,21 @@ namespace System.Globalization
         public StringInfo(String value)
         {
             this.String = value;
+        }
+
+        [OnDeserializing]
+        private void OnDeserializing(StreamingContext ctx)
+        {
+            m_str = String.Empty;
+        }
+
+        [OnDeserialized]
+        private void OnDeserialized(StreamingContext ctx)
+        {
+            if (m_str.Length == 0)
+            {
+                m_indexes = null;
+            }
         }
 
         [System.Runtime.InteropServices.ComVisible(false)]
