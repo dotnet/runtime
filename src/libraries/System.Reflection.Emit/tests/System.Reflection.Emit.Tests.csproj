@@ -119,19 +119,12 @@
     <Compile Include="TypeBuilder\TypeBuilderCreateType.cs" />
     <Compile Include="TypeBuilder\TypeBuilderDeclaringMethod.cs" />
     <Compile Include="TypeBuilder\TypeBuilderDeclaringType.cs" />
-    <Compile Include="TypeBuilder\TypeBuilderDefineConstructor1.cs" />
+    <Compile Include="TypeBuilder\TypeBuilderDefineConstructor.cs" />
     <Compile Include="TypeBuilder\TypeBuilderDefineDefaultConstructor.cs" />
     <Compile Include="TypeBuilder\TypeBuilderDefineEvent.cs" />
     <Compile Include="TypeBuilder\TypeBuilderDefineMethodOverride.cs" />
-    <Compile Include="TypeBuilder\TypeBuilderDefineNestedType1.cs" />
-    <Compile Include="TypeBuilder\TypeBuilderDefineNestedType2.cs" />
-    <Compile Include="TypeBuilder\TypeBuilderDefineNestedType3.cs" />
-    <Compile Include="TypeBuilder\TypeBuilderDefineNestedType4.cs" />
-    <Compile Include="TypeBuilder\TypeBuilderDefineNestedType5.cs" />
-    <Compile Include="TypeBuilder\TypeBuilderDefineNestedType6.cs" />
+    <Compile Include="TypeBuilder\TypeBuilderDefineNestedType.cs" />
     <Compile Include="TypeBuilder\TypeBuilderDefineProperty.cs" />
-    <Compile Include="TypeBuilder\TypeBuilderDefineProperty1.cs" />
-    <Compile Include="TypeBuilder\TypeBuilderDefineProperty2.cs" />
     <Compile Include="TypeBuilder\TypeBuilderDefineTypeInitializer.cs" />
     <Compile Include="TypeBuilder\TypeBuilderFullName.cs" />
     <Compile Include="TypeBuilder\TypeBuilderGenericParameterAttributes.cs" />
@@ -145,8 +138,7 @@
     <Compile Include="TypeBuilder\TypeBuilderIsGenericParameter.cs" />
     <Compile Include="TypeBuilder\TypeBuilderIsGenericType.cs" />
     <Compile Include="TypeBuilder\TypeBuilderIsGenericTypeDefinition.cs" />
-    <Compile Include="TypeBuilder\TypeBuilderMakeArrayType1.cs" />
-    <Compile Include="TypeBuilder\TypeBuilderMakeArrayType2.cs" />
+    <Compile Include="TypeBuilder\TypeBuilderMakeArrayType.cs" />
     <Compile Include="TypeBuilder\TypeBuilderMakeByRefType.cs" />
     <Compile Include="TypeBuilder\TypeBuilderMakeGenericType.cs" />
     <Compile Include="TypeBuilder\TypeBuilderMakePointerType.cs" />
@@ -154,12 +146,10 @@
     <Compile Include="TypeBuilder\TypeBuilderNamespace.cs" />
     <Compile Include="TypeBuilder\TypeBuilderPackingSize.cs" />
     <Compile Include="TypeBuilder\TypeBuilderSetCustomAttribute.cs" />
-    <Compile Include="TypeBuilder\TypeBuilderSetCustomAttribute1.cs" />
     <Compile Include="TypeBuilder\TypeBuilderSetParent.cs" />
     <Compile Include="TypeBuilder\TypeBuilderSize.cs" />
     <Compile Include="TypeBuilder\TypeBuilderToString.cs" />
     <Compile Include="Utilities.cs" />
-    <Compile Include="$(CommonTestPath)\System\RandomDataGenerator.cs" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

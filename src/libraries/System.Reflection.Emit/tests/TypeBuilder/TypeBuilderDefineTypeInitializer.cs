@@ -2,12 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-
-using TestLibrary;
-using System.Reflection;
-using System.Reflection.Emit;
-using System.Runtime.CompilerServices;
 using Xunit;
 
 namespace System.Reflection.Emit.Tests
@@ -15,54 +9,32 @@ namespace System.Reflection.Emit.Tests
     public class MethodBuilderDefineTypeInitializer
     {
         [Fact]
-        public void TestDefineTypeInitializer()
+        public void DefineTypeInitializer()
         {
-            string name = "Assembly1";
-            AssemblyName asmname = new AssemblyName();
-            asmname.Name = name;
-
-            AssemblyBuilder asmbuild = AssemblyBuilder.DefineDynamicAssembly(asmname, AssemblyBuilderAccess.Run);
-            ModuleBuilder modbuild = TestLibrary.Utilities.GetModuleBuilder(asmbuild, "Module1");
-            TypeBuilder tpbuild = modbuild.DefineType("C1", TypeAttributes.Public);
-
-            // Define a private string field named "Greeting" in the type.
-            FieldBuilder greetingField = tpbuild.DefineField("Greeting", typeof(string),
-                                                                     FieldAttributes.Private | FieldAttributes.Static);
-
-            // Create the constructor.
-            ConstructorBuilder constructor = tpbuild.DefineTypeInitializer();
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
+            
+            FieldBuilder greetingField = type.DefineField("Greeting", typeof(string), FieldAttributes.Private | FieldAttributes.Static);            
+            ConstructorBuilder constructor = type.DefineTypeInitializer();
 
             // Generate IL for the method. The constructor calls its base class
             // constructor. The constructor stores its argument in the private field.
+            ILGenerator constructorIlGenerator = constructor.GetILGenerator();
+            constructorIlGenerator.Emit(OpCodes.Ldstr, "hello");
+            constructorIlGenerator.Emit(OpCodes.Stsfld, greetingField);
+            constructorIlGenerator.Emit(OpCodes.Ret);
 
-            ILGenerator constructorIL = constructor.GetILGenerator();
-            constructorIL.Emit(OpCodes.Ldstr, "hello");
-            constructorIL.Emit(OpCodes.Stsfld, greetingField);
-            constructorIL.Emit(OpCodes.Ret);
-
-            Type tp = tpbuild.CreateTypeInfo().AsType();
-
-            FieldInfo fi = tp.GetField("Greeting", BindingFlags.NonPublic | BindingFlags.Static);
-            string fieldVal = (string)fi.GetValue(Activator.CreateInstance(tp));
-
-
-            Assert.Equal("hello", fieldVal);
+            Type createdType = type.CreateTypeInfo().AsType();
+            FieldInfo createdField = createdType.GetField("Greeting", BindingFlags.NonPublic | BindingFlags.Static);
+            Assert.Equal("hello", createdField.GetValue(Activator.CreateInstance(createdType)));
         }
 
         [Fact]
-        public void TestThrowsExceptionForCreateTypeCalled()
+        public void DefineTypeInitializer_TypeCreated_ThrowsInvalidOperationException()
         {
-            string name = "Assembly1";
-            AssemblyName asmname = new AssemblyName();
-            asmname.Name = name;
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
+            type.CreateTypeInfo().AsType();
 
-            AssemblyBuilder asmbuild = AssemblyBuilder.DefineDynamicAssembly(asmname, AssemblyBuilderAccess.Run);
-            ModuleBuilder modbuild = TestLibrary.Utilities.GetModuleBuilder(asmbuild, "Module1");
-            TypeBuilder tpbuild = modbuild.DefineType("C1", TypeAttributes.Public);
-
-            tpbuild.CreateTypeInfo().AsType();
-
-            Assert.Throws<InvalidOperationException>(() => { tpbuild.DefineTypeInitializer(); });
+            Assert.Throws<InvalidOperationException>(() => type.DefineTypeInitializer());
         }
     }
 }

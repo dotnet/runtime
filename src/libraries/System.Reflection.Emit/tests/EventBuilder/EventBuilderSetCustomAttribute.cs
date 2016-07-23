@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Linq;
 using Xunit;
 
 namespace System.Reflection.Emit.Tests
@@ -9,7 +10,6 @@ namespace System.Reflection.Emit.Tests
     public class EventBuilderSetCustomAttribute
     {
         public delegate void TestEventHandler(object sender, object arg);
-        private static readonly RandomDataGenerator s_randomDataGenerator = new RandomDataGenerator();
 
         [Fact]
         public void SetCustomAttribute_ConstructorInfo_ByteArray()
@@ -17,8 +17,7 @@ namespace System.Reflection.Emit.Tests
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Abstract);
             EventBuilder eventBuilder = type.DefineEvent("TestEvent", EventAttributes.None, typeof(TestEventHandler));
             ConstructorInfo atrtributeConstructor = typeof(EmptyAttribute).GetConstructor(new Type[0]);
-            byte[] bytes = new byte[256];
-            s_randomDataGenerator.GetBytes(bytes);
+            byte[] bytes = Enumerable.Range(0, 256).Select(i => (byte)i).ToArray();
 
             eventBuilder.SetCustomAttribute(atrtributeConstructor, bytes);
         }
@@ -47,8 +46,7 @@ namespace System.Reflection.Emit.Tests
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Abstract);
             EventBuilder eventBuilder = type.DefineEvent("TestEvent", EventAttributes.None, typeof(TestEventHandler));
             ConstructorInfo attributeConstructor = typeof(EmptyAttribute).GetConstructor(new Type[0]);
-            byte[] bytes = new byte[256];
-            s_randomDataGenerator.GetBytes(bytes);
+            byte[] bytes = Enumerable.Range(0, 256).Select(i => (byte)i).ToArray();
             type.CreateTypeInfo().AsType();
 
             Assert.Throws<InvalidOperationException>(() => eventBuilder.SetCustomAttribute(attributeConstructor, bytes));

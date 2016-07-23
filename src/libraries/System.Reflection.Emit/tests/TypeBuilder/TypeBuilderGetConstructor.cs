@@ -2,11 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-
-using System.Reflection;
-using System.Reflection.Emit;
-using TestLibrary;
 using Xunit;
 
 namespace System.Reflection.Emit.Tests
@@ -14,131 +9,61 @@ namespace System.Reflection.Emit.Tests
     public class TypeBuilderGetConstructor
     {
         [Fact]
-        public void TestThrowsExceptionForDeclaringTypeOfConstructorNotGenericTypeDefinition()
+        public void GetConstructor_DeclaringTypeOfConstructorNotGenericTypeDefinition_ThrowsArgumentException()
         {
-            AssemblyName myAsmName =
-                new AssemblyName("TypeBuilderGetMethodTest");
-            AssemblyBuilder myAssembly = AssemblyBuilder.DefineDynamicAssembly(
-                 myAsmName, AssemblyBuilderAccess.Run);
-            ModuleBuilder myModule = TestLibrary.Utilities.GetModuleBuilder(myAssembly, "Module1");
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Class | TypeAttributes.Public);
+            type.DefineGenericParameters("T");
 
+            ConstructorBuilder ctor = type.DefineDefaultConstructor(MethodAttributes.PrivateScope | MethodAttributes.Public | MethodAttributes.HideBySig | MethodAttributes.SpecialName | MethodAttributes.RTSpecialName);
 
-            TypeBuilder myType = myModule.DefineType("Sample",
-                TypeAttributes.Class | TypeAttributes.Public);
-
-            string[] typeParamNames = { "T" };
-            GenericTypeParameterBuilder[] typeParams =
-                myType.DefineGenericParameters(typeParamNames);
-
-            ConstructorBuilder ctor = myType.DefineDefaultConstructor(
-                 MethodAttributes.PrivateScope | MethodAttributes.Public |
-                 MethodAttributes.HideBySig | MethodAttributes.SpecialName |
-                 MethodAttributes.RTSpecialName);
-
-            Assert.Throws<ArgumentException>(() =>
-            {
-                ConstructorInfo ci = TypeBuilder.GetConstructor(myType.AsType(), ctor);
-            });
+            Assert.Throws<ArgumentException>("type", () => TypeBuilder.GetConstructor(type.AsType(), ctor));
         }
 
         [Fact]
-        public void TestGetConstructor()
+        public void GetConstructor()
         {
-            AssemblyName myAsmName =
-                new AssemblyName("TypeBuilderGetMethodTest");
-            AssemblyBuilder myAssembly = AssemblyBuilder.DefineDynamicAssembly(
-                 myAsmName, AssemblyBuilderAccess.Run);
-            ModuleBuilder myModule = TestLibrary.Utilities.GetModuleBuilder(myAssembly, "Module1");
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Class | TypeAttributes.Public);
+            type.DefineGenericParameters("T");
 
+            ConstructorBuilder ctor = type.DefineDefaultConstructor(MethodAttributes.PrivateScope | MethodAttributes.Public | MethodAttributes.HideBySig | MethodAttributes.SpecialName | MethodAttributes.RTSpecialName);
 
-            TypeBuilder myType = myModule.DefineType("Sample",
-                TypeAttributes.Class | TypeAttributes.Public);
-
-            string[] typeParamNames = { "T" };
-            GenericTypeParameterBuilder[] typeParams =
-                myType.DefineGenericParameters(typeParamNames);
-
-
-            ConstructorBuilder ctor = myType.DefineDefaultConstructor(
-                 MethodAttributes.PrivateScope | MethodAttributes.Public |
-                 MethodAttributes.HideBySig | MethodAttributes.SpecialName |
-                 MethodAttributes.RTSpecialName);
-
-            Type SampleOfInt =
-                myType.MakeGenericType(typeof(int));
-            ConstructorInfo ci = TypeBuilder.GetConstructor(SampleOfInt,
-                ctor);
-
-            Assert.False(ci.IsGenericMethodDefinition);
+            Type genericIntType = type.MakeGenericType(typeof(int));
+            ConstructorInfo constructor = TypeBuilder.GetConstructor(genericIntType, ctor);
+            Assert.False(constructor.IsGenericMethodDefinition);
         }
 
         [Fact]
-        public void TestThrowsExceptionForTypeNotTypeBuilder()
+        public void GetConstructor_TypeNotTypeBuilder_ThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>(() => { TypeBuilder.GetConstructor(typeof(int), typeof(int).GetConstructor(new Type[0])); });
+            Assert.Throws<ArgumentException>(null, () => TypeBuilder.GetConstructor(typeof(int), typeof(int).GetConstructor(new Type[0])));
         }
 
         [Fact]
-        public void TestThrowsExceptionForDeclaringTypeOfConstructorNotGenericTypeDefinitionOfType()
+        public void GetConstructor_DeclaringTypeOfConstructorNotGenericTypeDefinitionOfType_ThrowsArgumentException()
         {
-            AssemblyName myAsmName =
-                new AssemblyName("TypeBuilderGetMethodTest");
-            AssemblyBuilder myAssembly = AssemblyBuilder.DefineDynamicAssembly(
-                 myAsmName, AssemblyBuilderAccess.Run);
-            ModuleBuilder myModule = TestLibrary.Utilities.GetModuleBuilder(myAssembly, "Module1");
+            ModuleBuilder module = Helpers.DynamicModule();
+            TypeBuilder type1 = module.DefineType("TestType1", TypeAttributes.Class | TypeAttributes.Public);
+            type1.DefineGenericParameters("T");
 
+            TypeBuilder type2 = module.DefineType("TestType2", TypeAttributes.Class | TypeAttributes.Public);
+            type2.DefineGenericParameters("T");
 
-            TypeBuilder myType = myModule.DefineType("Sample",
-                TypeAttributes.Class | TypeAttributes.Public);
-            string[] typeParamNames = { "T" };
-            GenericTypeParameterBuilder[] typeParams =
-                myType.DefineGenericParameters(typeParamNames);
+            ConstructorBuilder ctor1 = type1.DefineDefaultConstructor(MethodAttributes.PrivateScope | MethodAttributes.Public | MethodAttributes.HideBySig | MethodAttributes.SpecialName | MethodAttributes.RTSpecialName);
 
-            TypeBuilder myType2 = myModule.DefineType("Sample2",
-                TypeAttributes.Class | TypeAttributes.Public);
-            GenericTypeParameterBuilder[] typeParams2 =
-                myType2.DefineGenericParameters(typeParamNames);
+            ConstructorBuilder ctor2 = type2.DefineDefaultConstructor(MethodAttributes.PrivateScope | MethodAttributes.Public | MethodAttributes.HideBySig | MethodAttributes.SpecialName | MethodAttributes.RTSpecialName);
 
-            ConstructorBuilder ctor = myType.DefineDefaultConstructor(
-                 MethodAttributes.PrivateScope | MethodAttributes.Public |
-                 MethodAttributes.HideBySig | MethodAttributes.SpecialName |
-                 MethodAttributes.RTSpecialName);
-
-            ConstructorBuilder ctor2 = myType2.DefineDefaultConstructor(
-                 MethodAttributes.PrivateScope | MethodAttributes.Public |
-                 MethodAttributes.HideBySig | MethodAttributes.SpecialName |
-                 MethodAttributes.RTSpecialName);
-
-            Type SampleOfInt =
-                myType.MakeGenericType(typeof(int));
-
-            Assert.Throws<ArgumentException>(() =>
-            {
-                ConstructorInfo ci = TypeBuilder.GetConstructor(SampleOfInt, ctor2);
-            });
+            Type genericInt = type1.MakeGenericType(typeof(int));
+            Assert.Throws<ArgumentException>("type", () => TypeBuilder.GetConstructor(genericInt, ctor2));
         }
 
         [Fact]
-        public void TestThrowsExceptionForTypeNotGeneric()
+        public void GetConstructor_TypeNotGeneric_ThrowsArgumentException()
         {
-            AssemblyName myAsmName =
-                new AssemblyName("TypeBuilderGetMethodTest");
-            AssemblyBuilder myAssembly = AssemblyBuilder.DefineDynamicAssembly(
-                 myAsmName, AssemblyBuilderAccess.Run);
-            ModuleBuilder myModule = TestLibrary.Utilities.GetModuleBuilder(myAssembly, "Module1");
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Class | TypeAttributes.Public);
 
-            TypeBuilder myType = myModule.DefineType("Sample",
-                TypeAttributes.Class | TypeAttributes.Public);
+            ConstructorBuilder ctor = type.DefineDefaultConstructor(MethodAttributes.PrivateScope | MethodAttributes.Public | MethodAttributes.HideBySig | MethodAttributes.SpecialName | MethodAttributes.RTSpecialName);
 
-            ConstructorBuilder ctor = myType.DefineDefaultConstructor(
-                 MethodAttributes.PrivateScope | MethodAttributes.Public |
-                 MethodAttributes.HideBySig | MethodAttributes.SpecialName |
-                 MethodAttributes.RTSpecialName);
-
-            Assert.Throws<ArgumentException>(() =>
-            {
-                ConstructorInfo ci = TypeBuilder.GetConstructor(myType.AsType(), ctor);
-            });
+            Assert.Throws<ArgumentException>("constructor", () => TypeBuilder.GetConstructor(type.AsType(), ctor));
         }
     }
 }
