@@ -202,6 +202,7 @@ namespace System.Diagnostics.Contracts {
         }
     }
 
+    [Serializable]
     [SuppressMessage("Microsoft.Design", "CA1064:ExceptionsShouldBePublic")]
     internal sealed class ContractException : Exception
     {
