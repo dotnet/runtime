@@ -17,14 +17,16 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics.Contracts;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Serialization;
 using System.Threading;
-using System.Diagnostics.Contracts;
 
 namespace System.Globalization
 {
     [Flags]
+    [Serializable]
     [System.Runtime.InteropServices.ComVisible(true)]
     public enum CompareOptions
     {
@@ -39,8 +41,9 @@ namespace System.Globalization
         Ordinal = 0x40000000,   // This flag can not be used with other flags.
     }
 
+    [Serializable]
     [System.Runtime.InteropServices.ComVisible(true)]
-    public partial class CompareInfo
+    public partial class CompareInfo : IDeserializationCallback
     {
         // Mask used to check if IndexOf()/LastIndexOf()/IsPrefix()/IsPostfix() has the right flags.
         private const CompareOptions ValidIndexMaskOffFlags =
@@ -63,8 +66,10 @@ namespace System.Globalization
         // The interesting part is that since haw-US doesn't have its own sort, it has to point at another
         // locale, which is what SCOMPAREINFO does.
 
-        private readonly String m_name;  // The name used to construct this CompareInfo
-        private readonly String m_sortName; // The name that defines our behavior
+        [OptionalField(VersionAdded = 2)]
+        private String m_name;  // The name used to construct this CompareInfo
+        [NonSerialized] 
+        private String m_sortName; // The name that defines our behavior
 
         /*=================================GetCompareInfo==========================
         **Action: Get the CompareInfo for the specified culture.
@@ -86,6 +91,33 @@ namespace System.Globalization
             return CultureInfo.GetCultureInfo(name).CompareInfo;
         }
 
+        [OnDeserializing]
+        private void OnDeserializing(StreamingContext ctx)
+        {
+            m_name = null;
+        }
+
+        void IDeserializationCallback.OnDeserialization(Object sender)
+        {
+            OnDeserialized();
+        }
+
+        [OnDeserialized]
+        private void OnDeserialized(StreamingContext ctx)
+        {
+            OnDeserialized();
+        }
+
+        private void OnDeserialized()
+        {
+            if (m_name != null)
+            {
+                InitSort(CultureInfo.GetCultureInfo(m_name));
+            }
+        }
+
+        [OnSerializing]
+        private void OnSerializing(StreamingContext ctx) { }
 
         ///////////////////////////----- Name -----/////////////////////////////////
         //

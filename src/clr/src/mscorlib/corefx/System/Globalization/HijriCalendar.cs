@@ -44,6 +44,7 @@ namespace System.Globalization
     **      Hijri       0001/01/01   9666/04/03
     */
 
+    [Serializable]
     [System.Runtime.InteropServices.ComVisible(true)]
     public partial class HijriCalendar : Calendar
     {

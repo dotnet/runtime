@@ -1875,9 +1875,7 @@ private:
 #ifdef FEATURE_LEAK_CULTURE_INFO
     CLR_BOOL m_isSafeCrossDomain;
 #endif // FEATURE_LEAK_CULTURE_INFO
-#ifndef FEATURE_COREFX_GLOBALIZATION
     CLR_BOOL m_useUserOverride;
-#endif
 
 public:
     CULTUREINFOBASEREF GetParent()

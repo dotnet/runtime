@@ -3,13 +3,14 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Security;
-using System.Threading;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 using System.Runtime.InteropServices;
+using System.Runtime.Serialization;
+using System.Security;
 using System.Text;
+using System.Threading;
 
 namespace System.Globalization
 {
@@ -53,7 +54,7 @@ namespace System.Globalization
     }
 
 
-
+    [Serializable]
     [System.Runtime.InteropServices.ComVisible(true)]
     public sealed class DateTimeFormatInfo : IFormatProvider, ICloneable
     {
@@ -62,19 +63,24 @@ namespace System.Globalization
         private static volatile DateTimeFormatInfo invariantInfo;
 
         // an index which points to a record in Culture Data Table.
+        [NonSerialized]
         private CultureData m_cultureData;
 
         // The culture name used to create this DTFI.
 
+        [OptionalField(VersionAdded = 2)]
         internal String m_name = null;
 
         // The language name of the culture used to create this DTFI.
+        [NonSerialized]
         private String m_langName = null;
 
         // CompareInfo usually used by the parser.
+        [NonSerialized]
         private CompareInfo m_compareInfo = null;
 
         // Culture matches current DTFI. mainly used for string comparisons during parsing.
+        [NonSerialized]
         private CultureInfo m_cultureInfo = null;
 
         //
@@ -148,6 +154,7 @@ namespace System.Globalization
         internal String longTimePattern = null;
         internal String shortTimePattern = null;
 
+        [OptionalField(VersionAdded = 3)]
         private String[] allYearMonthPatterns = null;
         internal String[] allShortDatePatterns = null;
         internal String[] allLongDatePatterns = null;
@@ -357,10 +364,72 @@ namespace System.Globalization
             Contract.Assert(this.allYearMonthPatterns.Length > 0, "[DateTimeFormatInfo.Populate] Expected some year month patterns");
         }
 
+        [OptionalField(VersionAdded = 1)]
+        private bool m_useUserOverride;
+
         // This was synthesized by Whidbey so we knew what words might appear in the middle of a date string
         // Now we always synthesize so its not helpful
 
         internal String[] m_dateWords = null;
+
+        [OnSerializing]
+        private void OnSerializing(StreamingContext ctx)
+        {
+            m_name = this.CultureName; // make sure the m_name is initialized.
+            m_useUserOverride = this.m_cultureData.UseUserOverride;
+
+            // Important to initialize these fields otherwise we may run into exception when deserializing on Whidbey
+            // because Whidbey try to initialize some of these fields using calendar data which could be null values 
+            // and then we get exceptions.  So we call the accessors to force the caches to get loaded.
+            Object o;
+            o = this.LongTimePattern;
+            o = this.LongDatePattern;
+            o = this.ShortTimePattern;
+            o = this.ShortDatePattern;
+            o = this.YearMonthPattern;
+            o = this.AllLongTimePatterns;
+            o = this.AllLongDatePatterns;
+            o = this.AllShortTimePatterns;
+            o = this.AllShortDatePatterns;
+            o = this.AllYearMonthPatterns;
+        }
+
+        [OnDeserialized]
+        private void OnDeserialized(StreamingContext ctx)
+        {
+            if (m_name != null)
+            {
+                m_cultureData = CultureData.GetCultureData(m_name, m_useUserOverride);
+                if (m_cultureData == null)
+                {
+                    throw new CultureNotFoundException("m_name", m_name, SR.Argument_CultureNotSupported);
+                }
+            }
+
+            if (calendar == null)
+            {
+                calendar = (Calendar)GregorianCalendar.GetDefaultInstance().Clone();
+                calendar.SetReadOnlyState(m_isReadOnly);
+            }
+
+            InitializeOverridableProperties(m_cultureData, calendar.ID);
+
+            //
+            //  turn off read only state till we finish initializing all fields and then store read only state after we are done.
+            //
+            bool isReadOnly = m_isReadOnly;
+            m_isReadOnly = false;
+
+            // If we deserialized defaults ala Whidbey, make sure they're still defaults
+            // Whidbey's arrays could get a bit mixed up.
+            if (longDatePattern != null) this.LongDatePattern = longDatePattern;
+            if (shortDatePattern != null) this.ShortDatePattern = shortDatePattern;
+            if (yearMonthPattern != null) this.YearMonthPattern = yearMonthPattern;
+            if (longTimePattern != null) this.LongTimePattern = longTimePattern;
+            if (shortTimePattern != null) this.ShortTimePattern = shortTimePattern;
+
+            m_isReadOnly = isReadOnly;
+        }
 
         // Returns a default DateTimeFormatInfo that will be universally
         // supported and constant irrespective of the current culture.

@@ -16,15 +16,19 @@ namespace System.Globalization
         //////////////////////////////////////////////////////////////////////////
         internal unsafe TextInfo(CultureData cultureData)
         {
-            const uint LCMAP_SORTHANDLE = 0x20000000;
-
             // This is our primary data source, we don't need most of the rest of this
             this.m_cultureData = cultureData;
             this.m_cultureName = this.m_cultureData.CultureName;
             this.m_textInfoName = this.m_cultureData.STEXTINFO;
+            FinishInitialization(this.m_textInfoName);
+        }
+
+        private void FinishInitialization(string textInfoName)
+        {
+            const uint LCMAP_SORTHANDLE = 0x20000000;
 
             long handle;
-            int ret = Interop.mincore.LCMapStringEx(m_textInfoName, LCMAP_SORTHANDLE, null, 0, (IntPtr)(&handle), IntPtr.Size, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero);
+            int ret = Interop.mincore.LCMapStringEx(textInfoName, LCMAP_SORTHANDLE, null, 0, (IntPtr)(&handle), IntPtr.Size, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero);
 
             _sortHandle = ret > 0 ? (IntPtr)handle : IntPtr.Zero;
         }
