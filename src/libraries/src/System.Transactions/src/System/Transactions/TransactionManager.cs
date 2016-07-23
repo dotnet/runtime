@@ -62,9 +62,11 @@ namespace System.Transactions
         {
             lock (PromotedTransactionTable)
             {
-                foreach (DictionaryEntry entry in PromotedTransactionTable)
+                // Manual use of IDictionaryEnumerator instead of foreach to avoid DictionaryEntry box allocations.
+                IDictionaryEnumerator e = PromotedTransactionTable.GetEnumerator();
+                while (e.MoveNext())
                 {
-                    WeakReference weakRef = (WeakReference)entry.Value;
+                    WeakReference weakRef = (WeakReference)e.Value;
                     Transaction tx = (Transaction)weakRef.Target;
                     if (tx != null)
                     {
