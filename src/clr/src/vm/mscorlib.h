@@ -267,9 +267,7 @@ DEFINE_FIELD_U(_PublicKeyToken,            AssemblyNameBaseObject, m_pPublicKeyT
 DEFINE_FIELD_U(_CultureInfo,               AssemblyNameBaseObject, m_pCultureInfo)
 DEFINE_FIELD_U(_CodeBase,                  AssemblyNameBaseObject, m_pCodeBase)
 DEFINE_FIELD_U(_Version,                   AssemblyNameBaseObject, m_pVersion)
-#ifdef FEATURE_SERIALIZATION
 DEFINE_FIELD_U(m_siInfo,                   AssemblyNameBaseObject, m_siInfo)
-#endif
 DEFINE_FIELD_U(_HashForControl,            AssemblyNameBaseObject, m_HashForControl)
 DEFINE_FIELD_U(_HashAlgorithm,             AssemblyNameBaseObject, m_HashAlgorithm)
 DEFINE_FIELD_U(_HashAlgorithmForControl, AssemblyNameBaseObject, m_HashAlgorithmForControl)
@@ -865,13 +863,11 @@ DEFINE_FIELD(IDENTITY,              LEASE,                  _lease)
 DEFINE_FIELD(IDENTITY,              OBJURI,                 _ObjURI)
 #endif
 
-#ifdef FEATURE_SERIALIZATION
 DEFINE_CLASS(ISERIALIZABLE,         Serialization,          ISerializable)
 DEFINE_CLASS(IOBJECTREFERENCE,      Serialization,          IObjectReference)
 DEFINE_CLASS(IDESERIALIZATIONCB,    Serialization,          IDeserializationCallback)
 DEFINE_CLASS(STREAMING_CONTEXT,     Serialization,          StreamingContext)
 DEFINE_CLASS(SERIALIZATION_INFO,    Serialization,          SerializationInfo)
-#endif
 
 #ifdef FEATURE_REMOTING
 DEFINE_CLASS(OBJECTCLONEHELPER,     Serialization,          ObjectCloneHelper)

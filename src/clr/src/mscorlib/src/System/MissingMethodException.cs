@@ -19,9 +19,7 @@ namespace System {
     using System.Runtime.CompilerServices;
     using System.Globalization;
     [System.Runtime.InteropServices.ComVisible(true)]
-#if FEATURE_SERIALIZATION
     [Serializable]
-#endif
     public class MissingMethodException : MissingMemberException, ISerializable {
         public MissingMethodException() 
             : base(Environment.GetResourceString("Arg_MissingMethodException")) {

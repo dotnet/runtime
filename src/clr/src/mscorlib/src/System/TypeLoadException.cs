@@ -23,9 +23,7 @@ namespace System {
     using System.Security.Permissions;
     using System.Diagnostics.Contracts;
 
-#if FEATURE_SERIALIZATION
     [Serializable]
-#endif
     [System.Runtime.InteropServices.ComVisible(true)]
     public class TypeLoadException : SystemException, ISerializable {
 

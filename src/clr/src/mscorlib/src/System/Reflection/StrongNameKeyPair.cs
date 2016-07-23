@@ -40,9 +40,7 @@ namespace System.Reflection
         }
     }
 #else
-#if FEATURE_SERIALIZATION
     [Serializable]
-#endif
     [System.Runtime.InteropServices.ComVisible(true)]
     public class StrongNameKeyPair : IDeserializationCallback, ISerializable 
     {
@@ -173,7 +171,6 @@ namespace System.Reflection
             return publicKey;
         }
 
-#if FEATURE_SERIALIZATION
         /// <internalonly/>
         [System.Security.SecurityCritical]
         void ISerializable.GetObjectData (SerializationInfo info, StreamingContext context) {
@@ -185,7 +182,6 @@ namespace System.Reflection
 
         /// <internalonly/>
         void IDeserializationCallback.OnDeserialization (Object sender) {}
-#endif
 
         // Internal routine used to retrieve key pair info from unmanaged code.
         private bool GetKeyPair(out Object arrayOrContainer)

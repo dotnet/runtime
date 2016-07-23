@@ -18,9 +18,7 @@ using System.Runtime.Serialization;
 
 namespace System.IO {
 
-#if FEATURE_SERIALIZATION
     [Serializable]
-#endif
     [System.Runtime.InteropServices.ComVisible(true)]
     public class IOException : SystemException
     {

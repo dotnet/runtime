@@ -46,9 +46,7 @@ namespace System
     /// using parameters to the type's constructors.
     /// </para>
     /// </remarks>
-#if FEATURE_SERIALIZATION
     [Serializable]
-#endif
     [ComVisible(false)]
 #if !FEATURE_CORECLR
     [HostProtection(Synchronization = true, ExternalThreading = true)]
