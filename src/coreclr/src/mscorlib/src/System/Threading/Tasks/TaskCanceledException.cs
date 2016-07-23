@@ -20,9 +20,7 @@ namespace System.Threading.Tasks
     /// <summary>
     /// Represents an exception used to communicate task cancellation.
     /// </summary>
-#if FEATURE_SERIALIZATION
     [Serializable]
-#endif
     public class TaskCanceledException : OperationCanceledException
     {
 

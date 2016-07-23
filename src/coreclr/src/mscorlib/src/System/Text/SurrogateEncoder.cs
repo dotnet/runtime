@@ -19,13 +19,8 @@ namespace System.Text
     ** Appropriate Whidbey (V2.0) objects.
     ==============================================================================*/
 
-#if FEATURE_SERIALIZATION
     [Serializable]
-#endif
-    internal sealed class SurrogateEncoder : IObjectReference
-#if FEATURE_SERIALIZATION
-        , ISerializable
-#endif
+    internal sealed class SurrogateEncoder : IObjectReference, ISerializable
     {
         // Might need this when GetRealObjecting
         [NonSerialized]
@@ -50,7 +45,6 @@ namespace System.Text
             return this.realEncoding.GetEncoder();
         }
 
-#if FEATURE_SERIALIZATION
         // ISerializable implementation
         [System.Security.SecurityCritical]  // auto-generated_required
         void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
@@ -59,7 +53,6 @@ namespace System.Text
             Contract.Assert(false, "Didn't expect to make it to SurrogateEncoder.GetObjectData");
             throw new ArgumentException(Environment.GetResourceString("Arg_ExecutionEngineException"));
         }
-#endif
     }
 }
 

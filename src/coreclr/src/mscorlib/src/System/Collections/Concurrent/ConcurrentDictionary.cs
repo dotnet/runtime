@@ -39,9 +39,7 @@ namespace System.Collections.Concurrent
     /// concurrently from multiple threads.
     /// </remarks>
 #if !FEATURE_CORECLR
-#if FEATURE_SERIALIZATION
     [Serializable]
-#endif
 #endif
     [ComVisible(false)]
     [DebuggerTypeProxy(typeof(Mscorlib_DictionaryDebugView<,>))]

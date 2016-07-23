@@ -64,14 +64,9 @@ namespace System.Globalization {
     }
 
 
-#if FEATURE_SERIALIZATION
     [Serializable]
-#endif
     [System.Runtime.InteropServices.ComVisible(true)]
-    public class CompareInfo
-#if FEATURE_SERIALIZATION
-    : IDeserializationCallback
-#endif
+    public class CompareInfo : IDeserializationCallback
     {
         // Mask used to check if IndexOf()/LastIndexOf()/IsPrefix()/IsPostfix() has the right flags.
         private const CompareOptions ValidIndexMaskOffFlags =
@@ -245,7 +240,6 @@ namespace System.Globalization {
         }
 
 
-#if FEATURE_SERIALIZATION // Only defined when FEATURE_USE_LCID is also defined
 #region Serialization
         // the following fields are defined to keep the compatibility with Whidbey.
         // don't change/remove the names/types of these fields.
@@ -266,15 +260,18 @@ namespace System.Globalization {
             // If we didn't have a name, use the LCID
             if (this.m_name == null)
             {
+#if FEATURE_USE_LCID
                 // From whidbey, didn't have a name
                 ci = CultureInfo.GetCultureInfo(this.culture);
                 this.m_name = ci.m_name;
+                this.m_sortName = ci.SortName;
+#endif
             }
             else
             {
                 ci = CultureInfo.GetCultureInfo(m_name);
+                this.m_sortName = ci.SortName;
             }
-            this.m_sortName = ci.SortName;
 
             IntPtr handleOrigin;
             this.m_dataHandle = InternalInitSortHandle(m_sortName, out handleOrigin);
@@ -291,9 +288,11 @@ namespace System.Globalization {
         [OnSerializing]
         private void OnSerializing(StreamingContext ctx)
         {
+#if FEATURE_USE_LCID
             // This is merely for serialization compatibility with Whidbey/Orcas, it can go away when we don't want that compat any more.
             culture = CultureInfo.GetCultureInfo(this.Name).LCID; // This is the lcid of the constructing culture (still have to dereference to get target sort)
             Contract.Assert(m_name != null, "CompareInfo.OnSerializing - expected m_name to be set already");
+#endif
         }
 
         void IDeserializationCallback.OnDeserialization(Object sender)
@@ -302,7 +301,6 @@ namespace System.Globalization {
         }
 
 #endregion Serialization
-#endif // FEATURE_SERIALIZATION
 
 
         ///////////////////////////----- Name -----/////////////////////////////////

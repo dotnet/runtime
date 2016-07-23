@@ -13,9 +13,7 @@ namespace System {
     ///       disposed.</para>
     /// </devdoc>
     [System.Runtime.InteropServices.ComVisible(true)]
-#if FEATURE_SERIALIZATION
     [Serializable]
-#endif
     public class ObjectDisposedException : InvalidOperationException {
         private String objectName;
 

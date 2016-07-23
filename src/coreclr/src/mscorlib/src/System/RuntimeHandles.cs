@@ -24,9 +24,7 @@ namespace System
     using System.Diagnostics.Contracts;
     using StackCrawlMark = System.Threading.StackCrawlMark;
 
-#if FEATURE_SERIALIZATION
     [Serializable]
-#endif
     [System.Runtime.InteropServices.ComVisible(true)]
     public unsafe struct RuntimeTypeHandle : ISerializable
     {
@@ -920,9 +918,7 @@ namespace System
         }
     }
 
-#if FEATURE_SERIALIZATION
     [Serializable]
-#endif
     [System.Runtime.InteropServices.ComVisible(true)]
     public unsafe struct RuntimeMethodHandle : ISerializable
     {
@@ -1470,9 +1466,7 @@ namespace System
         }
     }
 
-#if FEATURE_SERIALIZATION
     [Serializable]
-#endif
     [System.Runtime.InteropServices.ComVisible(true)]
     public unsafe struct RuntimeFieldHandle : ISerializable
     {

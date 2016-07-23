@@ -17,9 +17,7 @@ using System.Threading;
 
 namespace System {
 
-#if FEATURE_SERIALIZATION
     [Serializable]
-#endif
     [System.Runtime.InteropServices.ComVisible(true)]
     public class OperationCanceledException : SystemException
     {

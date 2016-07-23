@@ -16,9 +16,7 @@ namespace System {
     // member fails.
     // 
     [System.Runtime.InteropServices.ComVisible(true)]
-#if FEATURE_SERIALIZATION
     [Serializable]
-#endif
     public class MemberAccessException : SystemException {
         
         // Creates a new MemberAccessException with its message string set to

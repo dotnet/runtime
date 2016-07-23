@@ -16,9 +16,7 @@ namespace System.Reflection
     using System.Security.Permissions;
     using RuntimeTypeCache = System.RuntimeType.RuntimeTypeCache;
 
-#if FEATURE_SERIALIZATION
     [Serializable]
-#endif
     [ClassInterface(ClassInterfaceType.None)]
     [ComDefaultInterface(typeof(_EventInfo))]
 #pragma warning disable 618
@@ -225,9 +223,7 @@ namespace System.Reflection
 #endif
     }
 
-#if FEATURE_SERIALIZATION
     [Serializable]
-#endif
     internal unsafe sealed class RuntimeEventInfo : EventInfo, ISerializable
     {
         #region Private Data Members
