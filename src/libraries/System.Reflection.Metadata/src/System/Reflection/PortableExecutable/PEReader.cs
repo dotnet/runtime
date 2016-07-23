@@ -95,9 +95,8 @@ namespace System.Reflection.PortableExecutable
         /// </param>
         /// <exception cref="ArgumentNullException"><paramref name="peStream"/> is null.</exception>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="options"/> has an invalid value.</exception>
-        /// <exception cref="BadImageFormatException">
-        /// <see cref="PEStreamOptions.PrefetchMetadata"/> is specified and the PE headers of the image are invalid.
-        /// </exception>
+        /// <exception cref="IOException">Error reading from the stream (only when prefetching data).</exception>
+        /// <exception cref="BadImageFormatException"><see cref="PEStreamOptions.PrefetchMetadata"/> is specified and the PE headers of the image are invalid.</exception>
         public PEReader(Stream peStream, PEStreamOptions options)
             : this(peStream, options, 0)
         {
@@ -125,6 +124,7 @@ namespace System.Reflection.PortableExecutable
         /// </param>
         /// <exception cref="ArgumentOutOfRangeException">Size is negative or extends past the end of the stream.</exception>
         /// <exception cref="IOException">Error reading from the stream (only when prefetching data).</exception>
+        /// <exception cref="BadImageFormatException"><see cref="PEStreamOptions.PrefetchMetadata"/> is specified and the PE headers of the image are invalid.</exception>
         public unsafe PEReader(Stream peStream, PEStreamOptions options, int size)
         {
             if (peStream == null)
