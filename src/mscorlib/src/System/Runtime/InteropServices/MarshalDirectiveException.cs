@@ -17,9 +17,7 @@ namespace System.Runtime.InteropServices {
     using System.Runtime.Serialization;
 
     [System.Runtime.InteropServices.ComVisible(true)]
-#if FEATURE_SERIALIZATION
     [Serializable]
-#endif
     public class MarshalDirectiveException : SystemException {
         public MarshalDirectiveException() 
             : base(Environment.GetResourceString("Arg_MarshalDirectiveException")) {

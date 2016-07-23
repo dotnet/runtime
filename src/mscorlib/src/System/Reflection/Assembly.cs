@@ -28,9 +28,6 @@ namespace System.Reflection
     using System.Configuration.Assemblies;
     using StackCrawlMark = System.Threading.StackCrawlMark;
     using System.Runtime.InteropServices;
-#if FEATURE_SERIALIZATION
-    using BinaryFormatter = System.Runtime.Serialization.Formatters.Binary.BinaryFormatter;
-#endif // FEATURE_SERIALIZATION
     using System.Runtime.CompilerServices;
     using SecurityZone = System.Security.SecurityZone;
     using IEvidenceFactory = System.Security.IEvidenceFactory;
@@ -42,16 +39,12 @@ namespace System.Reflection
     using System.Diagnostics.Contracts;
 
 
-#if FEATURE_SERIALIZATION
     [Serializable]
-#endif
     [System.Runtime.InteropServices.ComVisible(true)]
     public delegate Module ModuleResolveEventHandler(Object sender, ResolveEventArgs e);
 
 
-#if FEATURE_SERIALIZATION
     [Serializable]
-#endif
     [ClassInterface(ClassInterfaceType.None)]
     [ComDefaultInterface(typeof(_Assembly))]
     [System.Runtime.InteropServices.ComVisible(true)]

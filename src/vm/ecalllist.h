@@ -2100,9 +2100,7 @@ FCFuncStart(gWeakReferenceOfTFuncs)
     FCFuncElement("Finalize", WeakReferenceOfTNative::Finalize)
     FCFuncElement("get_Target", WeakReferenceOfTNative::GetTarget)
     FCFuncElement("set_Target", WeakReferenceOfTNative::SetTarget)
-#ifndef FEATURE_CORECLR
     FCFuncElement("IsTrackResurrection", WeakReferenceOfTNative::IsTrackResurrection)
-#endif
 FCFuncEnd()
 
 #ifdef FEATURE_COMINTEROP

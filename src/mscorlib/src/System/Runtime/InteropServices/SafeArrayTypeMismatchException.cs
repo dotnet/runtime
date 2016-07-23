@@ -17,9 +17,7 @@ namespace System.Runtime.InteropServices {
     using System.Runtime.Serialization;
 
     [System.Runtime.InteropServices.ComVisible(true)]
-#if FEATURE_SERIALIZATION
     [Serializable]
-#endif
     public class SafeArrayTypeMismatchException : SystemException {
         public SafeArrayTypeMismatchException() 
             : base(Environment.GetResourceString("Arg_SafeArrayTypeMismatchException")) {

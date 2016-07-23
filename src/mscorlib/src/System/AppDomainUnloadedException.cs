@@ -16,9 +16,7 @@ namespace System {
     using System.Runtime.Serialization;
 
     [System.Runtime.InteropServices.ComVisible(true)]
-#if FEATURE_SERIALIZATION
     [Serializable]
-#endif
     public class AppDomainUnloadedException : SystemException {
         public AppDomainUnloadedException() 
             : base(Environment.GetResourceString("Arg_AppDomainUnloadedException")) {

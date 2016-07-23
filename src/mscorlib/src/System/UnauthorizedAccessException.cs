@@ -19,9 +19,7 @@ using System.Runtime.Serialization;
 namespace System {
     // The UnauthorizedAccessException is thrown when access errors 
     // occur from IO or other OS methods.  
-#if FEATURE_SERIALIZATION
     [Serializable]
-#endif
     [System.Runtime.InteropServices.ComVisible(true)]
     public class UnauthorizedAccessException : SystemException {
         public UnauthorizedAccessException() 

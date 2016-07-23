@@ -29,9 +29,7 @@ namespace System {
 
     [ClassInterface(ClassInterfaceType.None)]
     [ComDefaultInterface(typeof(_Exception))]
-#if FEATURE_SERIALIZATION
     [Serializable]
-#endif
     [ComVisible(true)]
     public class Exception : ISerializable, _Exception
     {

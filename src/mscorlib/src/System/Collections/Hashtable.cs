@@ -70,9 +70,7 @@ namespace System.Collections {
     [DebuggerTypeProxy(typeof(System.Collections.Hashtable.HashtableDebugView))]
     [DebuggerDisplay("Count = {Count}")]
     [System.Runtime.InteropServices.ComVisible(true)]
-#if FEATURE_SERIALIZATION
     [Serializable]
-#endif
     public class Hashtable : IDictionary, ISerializable, IDeserializationCallback, ICloneable {
         /*
           Implementation Notes:
