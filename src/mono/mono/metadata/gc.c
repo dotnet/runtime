@@ -49,7 +49,13 @@
 
 typedef struct DomainFinalizationReq {
 	MonoDomain *domain;
+#ifdef TARGET_WIN32
 	HANDLE done_event;
+#else
+	gboolean done;
+	MonoCoopCond cond;
+	MonoCoopMutex mutex;
+#endif
 } DomainFinalizationReq;
 
 static gboolean gc_disabled = FALSE;
@@ -91,6 +97,51 @@ guarded_wait (HANDLE handle, guint32 timeout, gboolean alertable)
 	MONO_EXIT_GC_SAFE;
 
 	return result;
+}
+
+typedef struct {
+	MonoCoopCond *cond;
+	MonoCoopMutex *mutex;
+} BreakCoopAlertableWaitUD;
+
+static inline void
+break_coop_alertable_wait (gpointer user_data)
+{
+	BreakCoopAlertableWaitUD *ud = (BreakCoopAlertableWaitUD*)user_data;
+
+	mono_coop_mutex_lock (ud->mutex);
+	mono_coop_cond_signal (ud->cond);
+	mono_coop_mutex_unlock (ud->mutex);
+}
+
+/*
+ * coop_cond_timedwait_alertable:
+ *
+ *   Wait on COND/MUTEX. If ALERTABLE is non-null, the wait can be interrupted.
+ * In that case, *ALERTABLE will be set to TRUE, and 0 is returned.
+ */
+static inline gint
+coop_cond_timedwait_alertable (MonoCoopCond *cond, MonoCoopMutex *mutex, guint32 timeout_ms, gboolean *alertable)
+{
+	int res;
+
+	if (alertable) {
+		BreakCoopAlertableWaitUD ud;
+
+		*alertable = FALSE;
+		ud.cond = cond;
+		ud.mutex = mutex;
+		mono_thread_info_install_interrupt (break_coop_alertable_wait, &ud, alertable);
+		if (*alertable)
+			return 0;
+	}
+	res = mono_coop_cond_timedwait (cond, mutex, timeout_ms);
+	if (alertable) {
+		mono_thread_info_uninstall_interrupt (alertable);
+		if (*alertable)
+			return 0;
+	}
+	return res;
 }
 
 static gboolean
@@ -382,8 +433,6 @@ gboolean
 mono_domain_finalize (MonoDomain *domain, guint32 timeout) 
 {
 	DomainFinalizationReq *req;
-	guint32 res;
-	HANDLE done_event;
 	MonoInternalThread *thread = mono_thread_internal_current ();
 
 #if defined(__native_client__)
@@ -408,14 +457,19 @@ mono_domain_finalize (MonoDomain *domain, guint32 timeout)
 
 	mono_gc_collect (mono_gc_max_generation ());
 
-	done_event = CreateEvent (NULL, TRUE, FALSE, NULL);
-	if (done_event == NULL) {
-		return FALSE;
-	}
-
 	req = g_new0 (DomainFinalizationReq, 1);
 	req->domain = domain;
-	req->done_event = done_event;
+
+#ifdef TARGET_WIN32
+	req->done_event = CreateEvent (NULL, TRUE, FALSE, NULL);
+	if (req->done_event == NULL) {
+		g_free (req);
+		return FALSE;
+	}
+#else
+	mono_coop_cond_init (&req->cond);
+	mono_coop_mutex_init (&req->mutex);
+#endif
 
 	if (domain == mono_get_root_domain ())
 		finalizing_root_domain = TRUE;
@@ -432,8 +486,9 @@ mono_domain_finalize (MonoDomain *domain, guint32 timeout)
 	if (timeout == -1)
 		timeout = INFINITE;
 
+#if TARGET_WIN32
 	while (TRUE) {
-		res = guarded_wait (done_event, timeout, TRUE);
+		guint32 res = guarded_wait (done_event, timeout, TRUE);
 		/* printf ("WAIT RES: %d.\n", res); */
 
 		if (res == WAIT_IO_COMPLETION) {
@@ -448,6 +503,31 @@ mono_domain_finalize (MonoDomain *domain, guint32 timeout)
 	}
 
 	CloseHandle (done_event);
+#else
+	mono_coop_mutex_lock (&req->mutex);
+	while (!req->done) {
+		gboolean alerted;
+		int res = coop_cond_timedwait_alertable (&req->cond, &req->mutex, timeout, &alerted);
+		if (alerted) {
+			if ((thread->state & (ThreadState_StopRequested | ThreadState_SuspendRequested)) != 0) {
+				mono_coop_mutex_unlock (&req->mutex);
+				return FALSE;
+			}
+		} else if (res == ETIMEDOUT) {
+			/* We leak the cond/mutex here */
+			mono_coop_mutex_unlock (&req->mutex);
+			return FALSE;
+		} else {
+			break;
+		}
+	}
+	mono_coop_mutex_unlock (&req->mutex);
+
+	/* When we reach here, the other thread has already exited the critical section, so this is safe to free */
+	mono_coop_cond_destroy (&req->cond);
+	mono_coop_mutex_destroy (&req->mutex);
+	g_free (req);
+#endif
 
 	if (domain == mono_get_root_domain ()) {
 		mono_threadpool_ms_cleanup ();
@@ -726,10 +806,17 @@ finalize_domain_objects (DomainFinalizationReq *req)
 	reference_queue_clear_for_domain (domain);
 	
 	/* printf ("DONE.\n"); */
+#if TARGET_WIN32
 	SetEvent (req->done_event);
 
 	/* The event is closed in mono_domain_finalize if we get here */
 	g_free (req);
+#else
+	mono_coop_mutex_lock (&req->mutex);
+	req->done = TRUE;
+	mono_coop_cond_signal (&req->cond);
+	mono_coop_mutex_unlock (&req->mutex);
+#endif
 }
 
 static guint32
