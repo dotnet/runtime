@@ -5,6 +5,7 @@
       <Member Name="#ctor" />
       <Member Name="#ctor(System.String)" />
       <Member Name="#ctor(System.String,System.Exception)" />
+      <Member Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
       <Member MemberType="Field" Name="_accessType" />
       <Member MemberType="Field" Name="_ip" />
       <Member MemberType="Field" Name="_target" />
@@ -120,6 +121,7 @@
       <Member Name="#ctor" />
       <Member Name="#ctor(System.String)" />
       <Member Name="#ctor(System.String,System.Exception)" />
+      <Member Status="ImplRoot" Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
     </Type>
     <Type Name="System.AppContext">
       <Member Name="get_BaseDirectory" />
@@ -135,6 +137,7 @@
       <Member Name="#ctor" />
       <Member Name="#ctor(System.String)" />
       <Member Name="#ctor(System.String,System.Exception)" />
+      <Member Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
     </Type>
     <Type Status="ImplRoot" Name="System.Collections.ArrayList">
       <Member Name="ReadOnly(System.Collections.IList)" />
@@ -145,6 +148,7 @@
       <Member Name="#ctor(System.String,System.Exception)" />
       <Member Name="#ctor(System.String,System.String)" />
       <Member Name="#ctor(System.String,System.String,System.Exception)" />
+      <Member Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
       <Member Name="get_ParamName" />
       <Member MemberType="Property" Name="ParamName" />
     </Type>
@@ -153,6 +157,7 @@
       <Member Name="#ctor(System.String)" />
       <Member Name="#ctor(System.String,System.String)" />
       <Member Name="#ctor(System.String,System.Exception)" />
+      <Member Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
     </Type>
     <Type Name="System.ArgumentOutOfRangeException">
       <Member Name="#ctor" />
@@ -160,6 +165,7 @@
       <Member Name="#ctor(System.String,System.String)" />
       <Member Name="#ctor(System.String,System.Exception)" />
       <Member Name="#ctor(System.String,System.Object,System.String)" />
+      <Member Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
       <Member Name="get_ActualValue" />
       <Member MemberType="Property" Name="ActualValue" />
     </Type>
@@ -167,6 +173,7 @@
       <Member Name="#ctor" />
       <Member Name="#ctor(System.String)" />
       <Member Name="#ctor(System.String,System.Exception)" />
+      <Member Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
     </Type>
     <Type Name="System.Array">
       <Member Name="AsReadOnly&lt;T&gt;(T[])" />
@@ -296,6 +303,7 @@
       <Member Name="#ctor" />
       <Member Name="#ctor(System.String)" />
       <Member Name="#ctor(System.String,System.Exception)" />
+      <Member Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
     </Type>
     <Type Name="System.AsyncCallback">
       <Member Name="#ctor(System.Object,System.IntPtr)" />
@@ -411,6 +419,7 @@
       <Member Status="ImplRoot" Name="#ctor(System.String,System.String,System.Int32)" />
       <Member Name="#ctor(System.String,System.String)" />
       <Member Name="#ctor(System.String,System.String,System.Exception)" />
+      <Member Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
       <Member Name="get_FileName" />
       <Member MemberType="Property" Name="FileName" />
     </Type>
@@ -460,6 +469,7 @@
       <Member Name="#ctor" />
       <Member Name="#ctor(System.String)" />
       <Member Name="#ctor(System.String,System.Exception)" />
+      <Member Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
     </Type>
     <Type Name="System.Char">
       <Member MemberType="Field" Name="MaxValue" />
@@ -594,6 +604,7 @@
       <Member Name="#ctor(System.Collections.Generic.IEqualityComparer&lt;TKey&gt;)" />
       <Member Name="#ctor(System.Int32)" />
       <Member Name="#ctor(System.Int32,System.Collections.Generic.IEqualityComparer&lt;TKey&gt;)" />
+      <Member Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
       <Member Name="Add(TKey,TValue)" />
       <Member Name="Clear" />
       <Member Name="ContainsKey(TKey)" />
@@ -719,6 +730,7 @@
       <Member Name="#ctor" />
       <Member Name="#ctor(System.String)" />
       <Member Name="#ctor(System.String,System.Exception)" />
+      <Member Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
     </Type>
     <Type Name="System.Collections.Generic.KeyValuePair&lt;TKey,TValue&gt;">
       <Member Name="#ctor(TKey,TValue)" />
@@ -1004,6 +1016,7 @@
       <Member Name="#ctor" />
       <Member Name="#ctor(System.String)" />
       <Member Name="#ctor(System.String,System.Exception)" />
+      <Member Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
     </Type>
     <Type Name="System.ContextStaticAttribute">
         <Member Name="#ctor" />
@@ -1331,6 +1344,7 @@
       <Member Name="#ctor" />
       <Member Name="#ctor(System.String)" />
       <Member Name="#ctor(System.String,System.Exception)" />
+      <Member Status="ImplRoot" Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
     </Type>
     <Type Name="System.DateTime">
       <Member MemberType="Field" Name="MaxValue" />
@@ -1346,6 +1360,7 @@
       <Member Name="#ctor(System.Int32,System.Int32,System.Int32,System.Int32,System.Int32,System.Int32,System.Int32,System.Globalization.Calendar,System.DateTimeKind)" />
       <Member Name="#ctor(System.Int64)" />
       <Member Name="#ctor(System.Int64,System.DateTimeKind)" />
+      <Member Status="ImplRoot" Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
       <Member Name="Add(System.TimeSpan)" />
       <Member Name="AddDays(System.Double)" />
       <Member Name="AddHours(System.Double)" />
@@ -1458,6 +1473,7 @@
       <Member Name="#ctor(System.Int32,System.Int32,System.Int32,System.Int32,System.Int32,System.Int32,System.Int32,System.TimeSpan)" />
       <Member Name="#ctor(System.Int32,System.Int32,System.Int32,System.Int32,System.Int32,System.Int32,System.Int32,System.Globalization.Calendar,System.TimeSpan)" />
       <Member Name="#ctor(System.Int64,System.TimeSpan)" />
+      <Member Status="ImplRoot" Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
       <Member Name="Add(System.TimeSpan)" />
       <Member Name="AddDays(System.Double)" />
       <Member Name="AddHours(System.Double)" />
@@ -1559,10 +1575,11 @@
       <Member MemberType="Field" Name="Wednesday" />
     </Type>
     <Type Name="System.DBNull" >
-        <Member MemberType="Field" Name="Value" />
-        <Member Name="GetTypeCode" />
-        <Member Name="ToString" />
-        <Member Name="ToString(System.IFormatProvider)" />
+      <Member Status="ImplRoot" Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
+      <Member MemberType="Field" Name="Value" />
+      <Member Name="GetTypeCode" />
+      <Member Name="ToString" />
+      <Member Name="ToString(System.IFormatProvider)" />
     </Type>
     <Type Name="System.Diagnostics.StackFrame">
       <Member MemberType="Field" Name="OFFSET_UNKNOWN" />
@@ -1731,6 +1748,9 @@
       <Member MemberType="Property" Name="Method" />
       <Member Status="ImplRoot" Name="DelegateConstruct(System.Object,System.IntPtr)" /> <!-- EE -->
     </Type>
+    <Type Status="ImplRoot" Name="System.DelegateSerializationHolder">
+      <Member Status="ImplRoot" Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
+    </Type>
     <Type Name="System.Diagnostics.ConditionalAttribute">
       <Member Name="#ctor(System.String)" />
       <Member Name="get_ConditionString" />
@@ -1812,11 +1832,13 @@
       <Member Name="#ctor" />
       <Member Name="#ctor(System.String)" />
       <Member Name="#ctor(System.String,System.Exception)" />
+      <Member Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
     </Type>
     <Type Name="System.DllNotFoundException">
       <Member Name="#ctor" />
       <Member Name="#ctor(System.String)" />
       <Member Name="#ctor(System.String,System.Exception)" />
+      <Member Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
     </Type>
     <Type Name="System.Double">
       <Member MemberType="Field" Name="Epsilon" />
@@ -1857,11 +1879,13 @@
       <Member Name="#ctor(System.String)" />
       <Member Name="#ctor(System.String,System.Exception)" />
       <Member Name="#ctor(System.String,System.String)" />
+      <Member Status="ImplRoot" Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
     </Type>
     <Type Name="System.EntryPointNotFoundException">
       <Member Name="#ctor" />
       <Member Name="#ctor(System.String)" />
       <Member Name="#ctor(System.String,System.Exception)" />
+      <Member Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
     </Type>
     <Type Name="System.Enum">
       <Member Name="#ctor" />
@@ -1956,6 +1980,7 @@
       <Member Name="#ctor" />
       <Member Name="#ctor(System.String)" />
       <Member Name="#ctor(System.String,System.Exception)" />
+      <Member Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
       <Member Name="get_Data" />
       <Member Name="get_HelpLink" />
       <Member Name="get_HResult" />
@@ -1994,11 +2019,13 @@
       <Member Name="#ctor" />
       <Member Name="#ctor(System.String)" />
       <Member Name="#ctor(System.String,System.Exception)" />
+      <Member Status="ImplRoot" Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
     </Type>
     <Type Name="System.FieldAccessException">
       <Member Name="#ctor" />
       <Member Name="#ctor(System.String)" />
       <Member Name="#ctor(System.String,System.Exception)" />
+      <Member Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
     </Type>
     <Type Name="System.FlagsAttribute">
       <Member Name="#ctor" />
@@ -2007,6 +2034,7 @@
       <Member Name="#ctor" />
       <Member Name="#ctor(System.String)" />
       <Member Name="#ctor(System.String,System.Exception)" />
+      <Member Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
     </Type>
     <Type Name="System.FormattableString">
       <Member Name="#ctor" />
@@ -2292,6 +2320,7 @@
       <Member Name="#ctor(System.String,System.Exception)" />
       <Member Name="#ctor(System.String,System.String,System.String)" />
       <Member Name="#ctor(System.String,System.String,System.Exception)" />
+      <Member Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
       <Member Name="get_InvalidCultureName" />
       <Member Name="get_Message" />
       <Member MemberType="Property" Name="InvalidCultureName" />
@@ -3085,11 +3114,13 @@
       <Member Name="#ctor" />
       <Member Name="#ctor(System.String)" />
       <Member Name="#ctor(System.String,System.Exception)" />
+      <Member Status="ImplRoot" Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
     </Type>
     <Type Name="System.InsufficientExecutionStackException">
       <Member Name="#ctor" />
       <Member Name="#ctor(System.String)" />
       <Member Name="#ctor(System.String,System.Exception)" />
+      <Member Status="ImplRoot" Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
     </Type>
     <Type Status="ImplRoot" Name="System.Internal">
       <Member Status="ImplRoot" Name="CommonlyUsedGenericInstantiations" />
@@ -3160,6 +3191,7 @@
       <Member Name="#ctor(System.Int32)" />
       <Member Name="#ctor(System.Int64)" />
       <Member Name="#ctor(System.Void*)" />
+      <Member Status="ImplRoot" Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
       <Member Name="Add(System.IntPtr,System.Int32)" />
       <Member Name="Equals(System.Object)" />
       <Member Name="get_Size" />
@@ -3187,21 +3219,25 @@
       <Member Name="#ctor(System.String)" />
       <Member Name="#ctor(System.String,System.Exception)" />
       <Member Name="#ctor(System.String,System.Int32)" />
+      <Member Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
     </Type>
     <Type Name="System.InvalidOperationException">
       <Member Name="#ctor" />
       <Member Name="#ctor(System.String)" />
       <Member Name="#ctor(System.String,System.Exception)" />
+      <Member Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
     </Type>
     <Type Name="System.InvalidProgramException">
       <Member Name="#ctor" />
       <Member Name="#ctor(System.String)" />
       <Member Name="#ctor(System.String,System.Exception)" />
+      <Member Status="ImplRoot" Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
     </Type>
     <Type Name="System.InvalidTimeZoneException">
       <Member Name="#ctor" />
       <Member Name="#ctor(System.String)" />
       <Member Name="#ctor(System.String,System.Exception)" />
+      <Member Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
     </Type>
     <Type Status="ApiFxInternal" Name="System.IO.BufferedStream">
       <Member Name="#ctor(System.IO.Stream,System.Int32)" />
@@ -3215,6 +3251,7 @@
       <Member Name="#ctor(System.String,System.String)" />
       <Member Name="#ctor(System.String,System.String,System.Exception)" />
       <Member Name="#ctor(System.String,System.String,System.Int32)" /> <!-- Used by EE, do not remove -->
+      <Member Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
       <Member Name="get_FileName" />
     </Type>
     <Type Name="System.IObservable&lt;T&gt;">
@@ -3334,11 +3371,13 @@
       <Member Name="#ctor" />
       <Member Name="#ctor(System.String)" />
       <Member Name="#ctor(System.String,System.Exception)" />
+      <Member Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
     </Type>
     <Type Name="System.MethodAccessException">
       <Member Name="#ctor" />
       <Member Name="#ctor(System.String)" />
       <Member Name="#ctor(System.String,System.Exception)" />
+      <Member Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
     </Type>
     <Type Name="System.MidpointRounding">
       <Member MemberType="Field" Name="AwayFromZero" />
@@ -3349,16 +3388,19 @@
       <Member Name="#ctor" />
       <Member Name="#ctor(System.String)" />
       <Member Name="#ctor(System.String,System.Exception)" />
+      <Member Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
     </Type>
     <Type Name="System.MissingMemberException">
       <Member Name="#ctor" />
       <Member Name="#ctor(System.String)" />
       <Member Name="#ctor(System.String,System.Exception)" />
+      <Member Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
     </Type>
     <Type Name="System.MissingMethodException">
       <Member Name="#ctor" />
       <Member Name="#ctor(System.String)" />
       <Member Name="#ctor(System.String,System.Exception)" />
+      <Member Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
     </Type>
     <Type Name="System.MTAThreadAttribute">
       <Member Name="#ctor" />
@@ -3392,6 +3434,7 @@
       <Member Name="#ctor" />
       <Member Name="#ctor(System.String)" />
       <Member Name="#ctor(System.String,System.Exception)" />
+      <Member Status="ImplRoot" Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
     </Type>
     <Type Name="System.NonSerializedAttribute">
       <Member Name="#ctor" />
@@ -3403,6 +3446,7 @@
       <Member Name="#ctor(System.String,System.Double)" />
       <Member Name="#ctor(System.String,System.Exception)" />
       <Member Name="#ctor(System.String,System.Double,System.Exception)" />
+      <Member Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
       <Member Name="get_OffendingNumber" />
       <Member MemberType="Property" Name="OffendingNumber" />
     </Type>
@@ -3410,11 +3454,13 @@
       <Member Name="#ctor" />
       <Member Name="#ctor(System.String)" />
       <Member Name="#ctor(System.String,System.Exception)" />
+      <Member Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
     </Type>
     <Type Name="System.NotSupportedException">
       <Member Name="#ctor" />
       <Member Name="#ctor(System.String)" />
       <Member Name="#ctor(System.String,System.Exception)" />
+      <Member Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
     </Type>
     <Type Name="System.Nullable">
       <Member Name="Compare&lt;T&gt;(System.Nullable&lt;T&gt;,System.Nullable&lt;T&gt;)" />
@@ -3439,6 +3485,7 @@
       <Member Name="#ctor" />
       <Member Name="#ctor(System.String)" />
       <Member Name="#ctor(System.String,System.Exception)" />
+      <Member Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
     </Type>
     <Type Name="System.Object">
       <Member Name="#ctor" />
@@ -3457,6 +3504,7 @@
       <Member Name="#ctor(System.String)" />
       <Member Name="#ctor(System.String,System.Exception)" />
       <Member Name="#ctor(System.String,System.String)" />
+      <Member Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
       <Member Name="get_ObjectName" />
       <Member MemberType="Property" Name="ObjectName" />
     </Type>
@@ -3472,6 +3520,7 @@
     <Type Status="ImplRoot" Name="System.OleAutBinder" Condition="FEATURE_COMINTEROP" />
     <Type Name="System.OperatingSystem">
       <Member Name="#ctor(System.PlatformID,System.Version)" />
+      <Member Status="ImplRoot" Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
       <Member Name="Clone" />
       <Member Name="get_Platform" />
       <Member Name="get_Version" />
@@ -3483,11 +3532,13 @@
       <Member Name="#ctor" />
       <Member Name="#ctor(System.String)" />
       <Member Name="#ctor(System.String,System.Exception)" />
+      <Member Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
     </Type>
     <Type Name="System.OverflowException">
       <Member Name="#ctor" />
       <Member Name="#ctor(System.String)" />
       <Member Name="#ctor(System.String,System.Exception)" />
+      <Member Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
     </Type>
     <Type Name="System.ParamArrayAttribute">
       <Member Name="#ctor" />
@@ -3502,6 +3553,7 @@
       <Member Name="#ctor" />
       <Member Name="#ctor(System.String)" />
       <Member Name="#ctor(System.String,System.Exception)" />
+      <Member Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
     </Type>
     <Type Name="System.Predicate&lt;T&gt;">
       <Member Name="#ctor(System.Object,System.IntPtr)" />
@@ -3529,11 +3581,13 @@
       <Member Name="#ctor" />
       <Member Name="#ctor(System.String)" />
       <Member Name="#ctor(System.String,System.Exception)" />
+      <Member Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
     </Type>
     <Type Name="System.Reflection.AmbiguousMatchException">
       <Member Name="#ctor" />
       <Member Name="#ctor(System.String)" />
       <Member Name="#ctor(System.String,System.Exception)" />
+      <Member Status="ImplRoot" Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
     </Type>
     <Type Name="System.Reflection.AssemblyContentType">
         <Member MemberType="Field" Name="Default"/>
@@ -3715,6 +3769,7 @@
     </Type>
     <Type Name="System.Reflection.AssemblyName">
       <Member Name="#ctor" />
+      <Member Status="ImplRoot" Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
       <Member Name="get_CultureInfo" />
       <Member Name="get_CultureName" />
       <Member Name="get_ContentType" />
@@ -3917,6 +3972,7 @@
       <Member Name="#ctor" />
       <Member Name="#ctor(System.String)" />
       <Member Name="#ctor(System.String,System.Exception)" />
+      <Member Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
     </Type>
     <Type Name="System.Reflection.DefaultMemberAttribute">
       <Member Name="#ctor(System.String)" />
@@ -4008,6 +4064,7 @@
       <Member Status="ImplRoot" MemberType="Field" Name="m_g" />
     </Type>
     <Type Name="System.RuntimeTypeHandle">
+      <Member Status="ImplRoot" Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
       <Member Name="Equals(System.RuntimeTypeHandle)" />
       <Member Name="op_Equality(System.Object,System.RuntimeTypeHandle)" />
       <Member Name="op_Equality(System.RuntimeTypeHandle,System.Object)" />
@@ -5153,6 +5210,7 @@
       <Member Name="#ctor" />
       <Member Name="#ctor(System.String)" />
       <Member Name="#ctor(System.String,System.Exception)" />
+      <Member Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
     </Type>
     <Type Name="System.Reflection.InterfaceMapping">
       <Member MemberType="Field" Name="InterfaceMethods" />
@@ -5484,16 +5542,19 @@
 	  <Member Name="#ctor" />
       <Member Name="#ctor(System.String)" />
       <Member Name="#ctor(System.String,System.Exception)" />
-	</Type>
+      <Member Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
+    </Type>
     <Type Name="System.Reflection.TargetInvocationException">
       <Member Name="#ctor(System.Exception)" />
       <Member Name="#ctor(System.String)" />
       <Member Name="#ctor(System.String,System.Exception)" />
+      <Member Status="ImplRoot" Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
     </Type>
     <Type Name="System.Reflection.TargetParameterCountException">
       <Member Name="#ctor" />
       <Member Name="#ctor(System.String)" />
       <Member Name="#ctor(System.String,System.Exception)" />
+      <Member Status="ImplRoot" Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
     </Type>
     <Type Name="System.Reflection.TypeAttributes">
       <Member MemberType="Field" Name="Abstract" />
@@ -5551,6 +5612,7 @@
       <Member Name="#ctor" />
       <Member Name="#ctor(System.String)" />
       <Member Name="#ctor(System.String,System.Exception)" />
+      <Member Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
     </Type>
     <Type Name="System.Resources.NeutralResourcesLanguageAttribute">
       <Member Name="#ctor(System.String)" />
@@ -5903,6 +5965,7 @@
       <Member Name="#ctor" />
       <Member Name="#ctor(System.String)" />
       <Member Name="#ctor(System.String,System.Exception)" />
+      <Member Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
     </Type>
     <Type Name="System.Runtime.InteropServices.ComImportAttribute"> <!-- MC++ compiler asserts for no particularly good reason if this type is not public -->
       <Member Name="#ctor" />
@@ -6032,16 +6095,19 @@
       <Member Name="#ctor" />
       <Member Name="#ctor(System.String)" />
       <Member Name="#ctor(System.String,System.Exception)" />
+      <Member Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
     </Type>
     <Type Name="System.Runtime.InteropServices.SafeArrayRankMismatchException">
       <Member Name="#ctor" />
       <Member Name="#ctor(System.String)" />
       <Member Name="#ctor(System.String,System.Exception)" />
+      <Member Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
     </Type>
     <Type Name="System.Runtime.InteropServices.SafeArrayTypeMismatchException">
       <Member Name="#ctor" />
       <Member Name="#ctor(System.String)" />
       <Member Name="#ctor(System.String,System.Exception)" />
+      <Member Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
     </Type>
     <Type Name="System.Runtime.InteropServices.LayoutKind">
       <Member MemberType="Field" Name="Auto" />
@@ -6212,6 +6278,7 @@
       <Member Name="#ctor" />
       <Member Name="#ctor(System.String)" />
       <Member Name="#ctor(System.String,System.Exception)" />
+      <Member Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
     </Type>
     <Type Name="System.Runtime.InteropServices.OptionalAttribute">
       <Member Name="#ctor" />
@@ -6269,6 +6336,7 @@
       <Member Name="#ctor" />
       <Member Name="#ctor(System.String)" />
       <Member Name="#ctor(System.String,System.Exception)" />
+      <Member Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
       <Member Name="CanResume" />
     </Type>
     <Type Name="System.Runtime.InteropServices.StructLayoutAttribute">
@@ -6341,11 +6409,13 @@
       <Member MemberType="Field" Name="value__" />
     </Type>
     <Type Name="System.RuntimeFieldHandle">
-      <Member Name="Equals(System.RuntimeFieldHandle)" />
+      <Member Status="ImplRoot" Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
+      <Member Name="Equals(System.RuntimeFieldHandle)" />      
       <Member Name="op_Equality(System.RuntimeFieldHandle,System.RuntimeFieldHandle)" />
       <Member Name="op_Inequality(System.RuntimeFieldHandle,System.RuntimeFieldHandle)" />
     </Type>
     <Type Name="System.RuntimeMethodHandle">
+      <Member Status="ImplRoot" Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
       <Member Name="Equals(System.RuntimeMethodHandle)" />
       <Member Status="ImplRoot" Name="GetValueInternal(System.RuntimeMethodHandle)" />
       <Member Name="get_Value" />
@@ -6427,6 +6497,7 @@
       <Member Name="#ctor" />
       <Member Name="#ctor(System.String)" />
       <Member Name="#ctor(System.String,System.Exception)" />
+      <Member Status="ImplRoot" Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
     </Type>
     <Type Name="System.STAThreadAttribute">
         <Member Name="#ctor" />
@@ -6618,6 +6689,7 @@
       <Member Name="#ctor" />
       <Member Name="#ctor(System.String)" />
       <Member Name="#ctor(System.String,System.Exception)" />
+      <Member Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
     </Type>
     <Type Name="System.Text.ASCIIEncoding">
       <Member Name="#ctor" />
@@ -6716,6 +6788,7 @@
       <Member Name="#ctor(System.String)" />
       <Member Name="#ctor(System.String,System.Exception)" />
       <Member Name="#ctor(System.String,System.Byte[],System.Int32)" />
+      <Member Status="ImplRoot" Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
       <Member Name="get_BytesUnknown" />
       <Member Name="get_Index" />
       <Member MemberType="Property" Name="BytesUnknown" />
@@ -6781,6 +6854,7 @@
       <Member Name="#ctor(System.String,System.Exception)" />
       <Member Name="#ctor(System.String,System.Char,System.Int32)" />
       <Member Name="#ctor(System.String,System.Char,System.Char,System.Int32)" />
+      <Member Status="ImplRoot" Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
       <Member Name="IsUnknownSurrogate" />
       <Member Name="get_CharUnknown" />
       <Member Name="get_CharUnknownHigh" />
@@ -6905,6 +6979,7 @@
       <Member Name="#ctor(System.String)" />
       <Member Name="#ctor(System.String,System.Int32)" />
       <Member Name="#ctor(System.String,System.Int32,System.Int32,System.Int32)" />
+      <Member Status="ImplRoot" Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
       <Member Name="Append(System.Boolean)" />
       <Member Name="Append(System.Byte)" />
       <Member Name="Append(System.Char)" />
@@ -7072,6 +7147,7 @@
       <Member Name="#ctor(System.String,System.Exception)" />
       <Member Name="#ctor(System.String,System.Exception,System.Int32,System.Threading.WaitHandle)" />
       <Member Name="#ctor(System.String,System.Int32,System.Threading.WaitHandle)" />
+      <Member Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
       <Member MemberType="Property" Name="Mutex" />
       <Member MemberType="Property" Name="MutexIndex" />
     </Type>
@@ -7115,6 +7191,7 @@
       <Member Name="#ctor" />
       <Member Name="#ctor(System.String)" />
       <Member Name="#ctor(System.String,System.Exception)" />
+      <Member Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
     </Type>
     <Type Name="System.Threading.Mutex">
       <Member Name="#ctor" />
@@ -7199,6 +7276,7 @@
       <Member Name="#ctor" />
       <Member Name="#ctor(System.String)" />
       <Member Name="#ctor(System.String,System.Exception)" />
+      <Member Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
     </Type>
     <Type Name="System.Threading.Thread">
       <Member Name="#ctor(System.Threading.ThreadStart)" />
@@ -7237,6 +7315,7 @@
       <Member Status="ImplRoot" MemberType="Field" Name="m_ThreadStartArg" />
     </Type>
     <Type Name="System.Threading.ThreadAbortException">
+      <Member Status="ImplRoot" Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
     </Type>
     <Type Name="System.Threading.ThreadPool">
       <Member Name="GetMaxThreads(System.Int32@,System.Int32@)" />
@@ -7310,11 +7389,13 @@
     </Type>
     <Type Name="System.Threading.ThreadStartException">
       <Member Status="ImplRoot" Name="#ctor(System.Exception)" /><!-- EE -->
+      <Member Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
     </Type>
     <Type Name="System.Threading.ThreadStateException">
       <Member Name="#ctor" />
       <Member Name="#ctor(System.String)" />
       <Member Name="#ctor(System.String,System.Exception)" />
+      <Member Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
     </Type>
     <Type Name="System.Threading.Timeout">
       <Member MemberType="Field" Name="Infinite" />
@@ -7375,11 +7456,13 @@
       <Member Name="#ctor" />
       <Member Name="#ctor(System.String)" />
       <Member Name="#ctor(System.String,System.Exception)" />
+      <Member Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
     </Type>
     <Type Name="System.TimeoutException">
       <Member Name="#ctor" />
       <Member Name="#ctor(System.String)" />
       <Member Name="#ctor(System.String,System.Exception)" />
+      <Member Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
     </Type>
     <Type Name="System.TimeSpan">
       <Member MemberType="Field" Name="MaxValue" />
@@ -7459,6 +7542,7 @@
       <Member MemberType="Property" Name="TotalSeconds" />
     </Type>
     <Type Name="System.TimeZoneInfo">
+      <Member Status="ImplRoot" Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
       <Member Name="ClearCachedData" />
       <Member Name="ConvertTime(System.DateTime,System.TimeZoneInfo)" />
       <Member Name="ConvertTime(System.DateTime,System.TimeZoneInfo,System.TimeZoneInfo)" />
@@ -7509,10 +7593,12 @@
       <Member MemberType="Property" Name="Utc" />
     </Type>
     <Type Name="System.TimeZoneInfo+AdjustmentRule">
+      <Member Status="ImplRoot" Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
       <!-- CreateAdjustmentRule doesn't have a public contract, but tests and other callers can use Reflection to invoke it, so ensure it is left in mscorlib. -->
       <Member Status="ApiRoot" Name="CreateAdjustmentRule(System.DateTime,System.DateTime,System.TimeSpan,System.TimeZoneInfo+TransitionTime,System.TimeZoneInfo+TransitionTime)" />
     </Type>
     <Type Name="System.TimeZoneInfo+TransitionTime">
+      <Member Status="ImplRoot" Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
       <Member Name="CreateFixedDateRule(System.DateTime,System.Int32,System.Int32)" />
       <Member Name="CreateFloatingDateRule(System.DateTime,System.Int32,System.Int32,System.DayOfWeek)" />
       <Member Name="Equals(System.Object)" />
@@ -7881,6 +7967,7 @@
       <Member Name="#ctor" />
       <Member Name="#ctor(System.String)" />
       <Member Name="#ctor(System.String,System.Exception)" />
+      <Member Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
     </Type>
     <Type Name="System.TypeCode">
       <Member MemberType="Field" Name="Boolean" />
@@ -7905,6 +7992,7 @@
     </Type>
     <Type Name="System.TypeInitializationException" >
       <Member Name="#ctor(System.String,System.Exception)" />
+      <Member Status="ImplRoot" Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
       <Member Name="get_TypeName" />
       <Member MemberType="Property" Name="TypeName" />
     </Type>
@@ -7914,6 +8002,7 @@
       <Member Name="#ctor(System.String)" />
       <Member Name="#ctor(System.String,System.Exception)" />
       <Member Status="ImplRoot" Name="#ctor(System.String,System.String,System.String,System.Int32)" />
+      <Member Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
       <Member Name="get_TypeName" />
       <Member MemberType="Property" Name="TypeName" />
     </Type>
@@ -7982,6 +8071,7 @@
       <Member Name="#ctor(System.UInt32)" />
       <Member Name="#ctor(System.UInt64)" />
       <Member Name="#ctor(System.Void*)" />
+      <Member Status="ImplRoot" Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
       <Member Name="Add(System.UIntPtr,System.Int32)" />
       <Member Name="Equals(System.Object)" />
       <Member Name="get_Size" />
@@ -8007,6 +8097,7 @@
       <Member Name="#ctor" />
       <Member Name="#ctor(System.String)" />
       <Member Name="#ctor(System.String,System.Exception)" />
+      <Member Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
     </Type>
     <Type Name="System.UnhandledExceptionEventArgs">
       <Member Name="#ctor(System.Object,System.Boolean)" />
@@ -8020,6 +8111,9 @@
       <Member Name="BeginInvoke(System.Object,System.UnhandledExceptionEventArgs,System.AsyncCallback,System.Object)" />
       <Member Name="EndInvoke(System.IAsyncResult)" />
       <Member Name="Invoke(System.Object,System.UnhandledExceptionEventArgs)" />
+    </Type>
+    <Type Status="ImplRoot" Name="System.UnitySerializationHolder">
+      <Member Status="ImplRoot" Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
     </Type>
     <Type Name="System.ValueType">
       <Member Name="#ctor" />
@@ -8073,6 +8167,7 @@
     <Type Name="System.WeakReference">
       <Member Name="#ctor(System.Object)" />
       <Member Name="#ctor(System.Object,System.Boolean)" />
+      <Member Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
       <Member Name="#ctor" />
       <Member Name="get_IsAlive" />
       <Member Name="get_Target" />
@@ -8085,6 +8180,7 @@
     <Type Status="ApiRoot" Name="System.WeakReference&lt;T&gt;">
       <Member Name="#ctor(T)" />
       <Member Name="#ctor(T,System.Boolean)" />
+      <Member Status="ImplRoot" Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
       <Member Name="SetTarget(T)" />
       <Member Name="TryGetTarget(T@)" />
       <Member Status="ImplRoot" Name="Finalize" />
@@ -8233,11 +8329,13 @@
       <Member Name="#ctor" />
       <Member Name="#ctor(System.String)" />
       <Member Name="#ctor(System.String,System.Exception)" />
+      <Member Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
     </Type>
     <Type Name="System.IO.EndOfStreamException">
       <Member Name="#ctor" />
       <Member Name="#ctor(System.String)" />
       <Member Name="#ctor(System.String,System.Exception)" />
+      <Member Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
     </Type>
     <Type Name="System.IO.FileNotFoundException">
       <Member Name="#ctor" />
@@ -8245,6 +8343,7 @@
       <Member Name="#ctor(System.String,System.Exception)" />
       <Member Name="#ctor(System.String,System.String)" />
       <Member Name="#ctor(System.String,System.String,System.Exception)" />
+      <Member Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
       <Member Name="get_FileName" />
       <Member MemberType="Property" Name="FileName" />
       <Member Status="ImplRoot" Name="#ctor(System.String,System.String,System.Int32)" />
@@ -8254,6 +8353,7 @@
       <Member Name="#ctor(System.String)" />
       <Member Name="#ctor(System.String,System.Exception)" />
       <Member Name="#ctor(System.String,System.Int32)"  />
+      <Member Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
     </Type>
     <Type Name="System.IO.MemoryStream">
       <Member Name="#ctor" />
@@ -8322,6 +8422,7 @@
       <Member Name="#ctor" />
       <Member Name="#ctor(System.String)" />
       <Member Name="#ctor(System.String,System.Exception)" />
+      <Member Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
     </Type>
     <Type Name="System.IO.SearchOption" Condition="FEATURE_LEGACYSURFACE">
       <Member MemberType="Field" Name="TopDirectoryOnly" />
@@ -8736,6 +8837,7 @@
     <Type Status="ImplRoot" Name="System.Diagnostics.Contracts.ContractException">
       <Member Name="#ctor" />
       <Member Name="#ctor(System.Diagnostics.Contracts.ContractFailureKind,System.String,System.String,System.String,System.Exception)" />
+      <Member Status="ImplRoot" Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
       <Member MemberType="Property" Name="Condition" />
       <Member MemberType="Property" Name="Failure" />
       <Member MemberType="Property" Name="Kind" />
@@ -8967,6 +9069,7 @@
       <Member Name="#ctor" />
       <Member Name="#ctor(System.String)" />
       <Member Name="#ctor(System.String,System.Exception)" />
+      <Member Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
     </Type>
     <Type Name="System.Diagnostics.Tracing.EventSourceOptions">
       <Member MemberType="Property" Name="Keywords" />
@@ -9050,6 +9153,7 @@
       <Member Name="#ctor(System.Threading.CancellationToken)" />
       <Member Name="#ctor(System.String,System.Threading.CancellationToken)" />
       <Member Name="#ctor(System.String,System.Exception,System.Threading.CancellationToken)" />
+      <Member Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
       <Member Name="get_CancellationToken" />
     </Type>
     <Type Status="ImplRoot" Name="System.Reflection.CustomAttributeCtorParameter" />
@@ -9088,6 +9192,7 @@
     <Type Name="System.Reflection.ReflectionTypeLoadException">
       <Member Name="#ctor(System.Type[],System.Exception[])" />
       <Member Name="#ctor(System.Type[],System.Exception[],System.String)" />
+      <Member Status="ImplRoot" Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
       <Member MemberType="Property" Name="LoaderExceptions" />
       <Member MemberType="Property" Name="Types" />
       <Member Name="get_LoaderExceptions" />
@@ -9160,6 +9265,7 @@
       <Member Name="#ctor" />
       <Member Name="#ctor(System.String)" />
       <Member Name="#ctor(System.String,System.Exception)" />
+      <Member Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
     </Type>
     <Type Status="ImplRoot" Name="System.Runtime.InteropServices.WindowsRuntime.IStringable" Condition="FEATURE_COMINTEROP">
       <Member Name="ToString"/>
@@ -9586,6 +9692,7 @@
       <Member Name="#ctor" />
       <Member Name="#ctor(System.String)" />
       <Member Name="#ctor(System.String,System.Exception)" />
+      <Member Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
     </Type>
     <Type Name="System.Runtime.Serialization.SerializationInfo">
       <Member Name="#ctor(System.Type,System.Runtime.Serialization.IFormatterConverter)" />
@@ -9826,7 +9933,9 @@
     </Type>
     <Type Status="ImplRoot" Name="System.Threading.InternalCrossContextDelegate" />
     <Type Status="ImplRoot" Name="System.Threading.OverlappedData" />
-    <Type Status="ImplRoot" Name="System.Threading.ThreadInterruptedException" />
+    <Type Status="ImplRoot" Name="System.Threading.ThreadInterruptedException">
+      <Member Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
+    </Type>
     <Type Name="System.ThreadStaticAttribute">
         <Member Name="#ctor" />
     </Type>
@@ -10649,6 +10758,7 @@
       <Member Name="#ctor(System.Exception)" />
       <Member Name="#ctor(System.String)" />
       <Member Name="#ctor(System.String,System.Exception)" />
+      <Member Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
     </Type>
     <Type Name="System.Threading.Tasks.Task">
       <Member Name="#ctor(System.Action)" />
@@ -10815,6 +10925,7 @@
       <Member Name="#ctor(System.Threading.Tasks.Task)" />
       <Member Name="#ctor(System.String)" />
       <Member Name="#ctor(System.String,System.Exception)" />
+      <Member Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
       <Member Name="get_Task" />
     </Type>
     <Type Name="System.Threading.Tasks.TaskCompletionSource&lt;TResult&gt;">
@@ -11144,6 +11255,7 @@
       <Member Name="#ctor(System.String,System.Exception[])"/>
       <Member Name="#ctor(System.String,System.Collections.Generic.IList&lt;System.Exception&gt;)"/>
       <Member Name="#ctor(System.String,System.Exception)"/>
+      <Member Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
       <Member Name="get_InnerExceptions" />
       <Member Name="Handle(System.Func&lt;System.Exception,System.Boolean&gt;)"/>
       <Member Name="Flatten"/>
@@ -11311,6 +11423,7 @@
       <Member Name="#ctor" />
       <Member Name="#ctor(System.String)" />
       <Member Name="#ctor(System.String,System.Exception)" />
+      <Member Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
     </Type>
     <Type Name="System.Threading.ThreadLocal&lt;T&gt;">
       <Member Name="#ctor"/>
