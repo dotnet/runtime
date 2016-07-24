@@ -5,6 +5,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -37,6 +38,29 @@ namespace System.Tests
         public static unsafe void Ctor_CharPtr_Empty()
         {
             Assert.Same(string.Empty, new string((char*)null));
+        }
+
+        [Fact]
+        public static unsafe void Ctor_CharPtr_OddAddressShouldStillWork()
+        {
+            // We need to get an odd address, so allocate a byte[] and
+            // take the address of the second element
+            byte[] bytes = { 0xff, 0x12, 0x34, 0x00, 0x00 };
+            fixed (byte* pBytes = bytes)
+            {
+                // The address of a fixed byte[] should always be even
+                Debug.Assert((int)pBytes % 2 == 0);
+                char* pCh = (char*)(pBytes + 1);
+                
+                // This should handle the odd address when trying to get
+                // the length of the string to allocate
+                string actual = new string(pCh);
+
+                // Since we're casting between pointers of types with different sizes,
+                // the result will vary on little/big endian platforms
+                string expected = BitConverter.IsLittleEndian ? "\u3412" : "\u1234";
+                Assert.Equal(expected, actual);
+            }
         }
 
         [Theory]
