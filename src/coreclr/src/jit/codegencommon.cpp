@@ -1391,10 +1391,6 @@ void                CodeGenInterface::reloadFloatReg(var_types type, TempDsc* tm
 regNumber           CodeGenInterface::genGetThisArgReg(GenTreePtr  call)
 {
     noway_assert(call->IsCall());
-#if RETBUFARG_PRECEDES_THIS
-    if (call->AsCall()->HasRetBufArg())
-        return REG_ARG_1;
-#endif // RETBUFARG_PRECEEDS_THIS
     return REG_ARG_0;
 }
 
@@ -7812,6 +7808,18 @@ void                CodeGen::genFinalizeFrame()
     genCheckUseBlockInit();
 
     // Set various registers as "modified" for special code generation scenarios: Edit & Continue, P/Invoke calls, etc.
+
+#if defined(_TARGET_X86_)
+    if (compiler->compTailCallUsed)
+    {
+        // If we are generating a helper-based tailcall, we've set the tailcall helper "flags"
+        // argument to "1", indicating to the tailcall helper that we've saved the callee-saved
+        // registers (ebx, esi, edi). So, we need to make sure all the callee-saved registers
+        // actually get saved.
+
+        regSet.rsSetRegsModified(RBM_INT_CALLEE_SAVED);
+    }
+#endif // _TARGET_X86_
 
 #if defined(_TARGET_ARMARCH_)
     // We need to determine if we will change SP larger than a specific amount to determine if we want to use a loop

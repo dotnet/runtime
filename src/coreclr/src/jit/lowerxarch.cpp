@@ -1398,13 +1398,29 @@ Lowering::TreeNodeInfoInitCall(GenTreeCall* call)
 
                 // If the child of GT_PUTARG_STK is a constant, we don't need a register to 
                 // move it to memory (stack location).
-                // We don't want to make 0 contained, because we can generate smaller code
-                // by zeroing a register and then storing it.
+                //
+                // On AMD64, we don't want to make 0 contained, because we can generate smaller code
+                // by zeroing a register and then storing it. E.g.:
+                //      xor rdx, rdx
+                //      mov gword ptr [rsp+28H], rdx
+                // is 2 bytes smaller than:
+                //      mov gword ptr [rsp+28H], 0
+                //
+                // On x86, we push stack arguments; we don't use 'mov'. So:
+                //      push 0
+                // is 1 byte smaller than:
+                //      xor rdx, rdx
+                //      push rdx
+
                 argInfo->dstCount = 0;
                 if (arg->gtOper == GT_PUTARG_STK) 
                 {
                     GenTree* op1 = arg->gtOp.gtOp1;
-                    if (IsContainableImmed(arg, op1) && !op1->IsIntegralConst(0))
+                    if (IsContainableImmed(arg, op1)
+#if defined(_TARGET_AMD64_)
+                        && !op1->IsIntegralConst(0)
+#endif // _TARGET_AMD64_
+                        )
                     {
                         MakeSrcContained(arg, op1);
                     }
