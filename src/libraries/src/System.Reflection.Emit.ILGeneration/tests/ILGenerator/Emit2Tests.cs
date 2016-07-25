@@ -2,43 +2,18 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Reflection;
-using System.Reflection.Emit;
+using System.Collections.Generic;
 using Xunit;
 
-namespace System.Reflection.Emit.ILGeneration.Tests
+namespace System.Reflection.Emit.Tests
 {
     public class ILGeneratorEmit2
     {
-        private const string AssemblyName = "ILGeneratorEmit10";
-        private const string DefaultModuleName = "DynamicModule";
-        private const string DefaultTypeName = "DynamicType";
-        private const AssemblyBuilderAccess DefaultAssemblyBuilderAccess = AssemblyBuilderAccess.Run;
-        private const MethodAttributes DefaultMethodAttribute = MethodAttributes.Public | MethodAttributes.Static;
-
-        private static TypeBuilder s_testTypeBuilder;
-
-        private static TypeBuilder TestTypeBuilder
-        {
-            get
-            {
-                if (s_testTypeBuilder == null)
-                {
-                    AssemblyName name = new AssemblyName(AssemblyName);
-                    AssemblyBuilder assembly = AssemblyBuilder.DefineDynamicAssembly(name, DefaultAssemblyBuilderAccess);
-                    ModuleBuilder module = TestLibrary.Utilities.GetModuleBuilder(assembly, AssemblyName);
-                    s_testTypeBuilder = module.DefineType(DefaultTypeName);
-                }
-
-                return s_testTypeBuilder;
-            }
-        }
-
         [Fact]
         public void PosTest1()
         {
-            MethodBuilder method = TestTypeBuilder.DefineMethod("PosTest1_Method", DefaultMethodAttribute);
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.NotPublic);
+            MethodBuilder method = type.DefineMethod("Method", MethodAttributes.Public | MethodAttributes.Static);
             ILGenerator generator = method.GetILGenerator();
             LocalBuilder arg = generator.DeclareLocal(typeof(int));
 
@@ -52,7 +27,8 @@ namespace System.Reflection.Emit.ILGeneration.Tests
         [Fact]
         public void PosTest2()
         {
-            MethodBuilder method = TestTypeBuilder.DefineMethod("PosTest2_Method", DefaultMethodAttribute);
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.NotPublic);
+            MethodBuilder method = type.DefineMethod("Method", MethodAttributes.Public | MethodAttributes.Static);
             ILGenerator generator = method.GetILGenerator();
             LocalBuilder arg = generator.DeclareLocal(typeof(ILGeneratorEmit2));
 
@@ -70,7 +46,8 @@ namespace System.Reflection.Emit.ILGeneration.Tests
         [Fact]
         public void PosTest3()
         {
-            MethodBuilder method = TestTypeBuilder.DefineMethod("PosTest3_Method", DefaultMethodAttribute);
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.NotPublic);
+            MethodBuilder method = type.DefineMethod("Method", MethodAttributes.Public | MethodAttributes.Static);
             ILGenerator generator = method.GetILGenerator();
             LocalBuilder arg = generator.DeclareLocal(typeof(object));
 
@@ -87,7 +64,8 @@ namespace System.Reflection.Emit.ILGeneration.Tests
         [Fact]
         public void PosTest4()
         {
-            MethodBuilder method = TestTypeBuilder.DefineMethod("PosTest4_Method", DefaultMethodAttribute);
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.NotPublic);
+            MethodBuilder method = type.DefineMethod("Method", MethodAttributes.Public | MethodAttributes.Static);
             ILGenerator generator = method.GetILGenerator();
             LocalBuilder arg = generator.DeclareLocal(typeof(int));
 
@@ -106,7 +84,8 @@ namespace System.Reflection.Emit.ILGeneration.Tests
         [Fact]
         public void PosTest5()
         {
-            MethodBuilder method = TestTypeBuilder.DefineMethod("PosTest5_Method", DefaultMethodAttribute);
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.NotPublic);
+            MethodBuilder method = type.DefineMethod("Method", MethodAttributes.Public | MethodAttributes.Static);
             ILGenerator generator = method.GetILGenerator();
             LocalBuilder arg = generator.DeclareLocal(typeof(int));
 
@@ -125,7 +104,8 @@ namespace System.Reflection.Emit.ILGeneration.Tests
         [Fact]
         public void PosTest6()
         {
-            MethodBuilder method = TestTypeBuilder.DefineMethod("PosTest6_Method", DefaultMethodAttribute);
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.NotPublic);
+            MethodBuilder method = type.DefineMethod("Method", MethodAttributes.Public | MethodAttributes.Static);
             ILGenerator generator = method.GetILGenerator();
             LocalBuilder arg = generator.DeclareLocal(typeof(int));
 
@@ -144,7 +124,8 @@ namespace System.Reflection.Emit.ILGeneration.Tests
         [Fact]
         public void PosTest7()
         {
-            MethodBuilder method = TestTypeBuilder.DefineMethod("PosTest7_Method", DefaultMethodAttribute);
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.NotPublic);
+            MethodBuilder method = type.DefineMethod("Method", MethodAttributes.Public | MethodAttributes.Static);
             ILGenerator generator = method.GetILGenerator();
             LocalBuilder arg = generator.DeclareLocal(typeof(int));
 
@@ -154,32 +135,34 @@ namespace System.Reflection.Emit.ILGeneration.Tests
             // Try emit opcode which takes multiple args
             generator.Emit(OpCodes.Add, arg);
         }
-
+        
         [Fact]
-        public void NegTest1()
+        public void Emit_OpCodes_LocalBuilder_NullLocal_ThrowsArgumentNullException()
         {
-            MethodBuilder method = TestTypeBuilder.DefineMethod("NegTest1_Method", DefaultMethodAttribute);
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.NotPublic);
+            MethodBuilder method = type.DefineMethod("Method", MethodAttributes.Public | MethodAttributes.Static);
             ILGenerator generator = method.GetILGenerator();
-            LocalBuilder arg = null;
 
-            Assert.Throws<ArgumentNullException>(() => { generator.Emit(OpCodes.Ldarg_0, arg); });
+            Assert.Throws<ArgumentNullException>("local", () => generator.Emit(OpCodes.Ldarg_0, (LocalBuilder)null));
         }
 
         [Fact]
-        public void NegTest2()
+        public void Emit_OpCodes_LocalBuilder_LocalFromDifferentMethod_ThrowsArgumentException()
         {
-            MethodBuilder method1 = TestTypeBuilder.DefineMethod("NegTest2_Method1", DefaultMethodAttribute);
-            MethodBuilder method2 = TestTypeBuilder.DefineMethod("NegTest2_Method2", DefaultMethodAttribute);
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.NotPublic);
+            MethodBuilder method1 = type.DefineMethod("Method1", MethodAttributes.Public | MethodAttributes.Static);
+            MethodBuilder method2 = type.DefineMethod("Method2", MethodAttributes.Public | MethodAttributes.Static);
             ILGenerator generator = method1.GetILGenerator();
-            LocalBuilder arg = method2.GetILGenerator().DeclareLocal(typeof(int));
+            LocalBuilder local = method2.GetILGenerator().DeclareLocal(typeof(int));
 
-            Assert.Throws<ArgumentException>(() => { generator.Emit(OpCodes.Ldarg_0, arg); });
+            Assert.Throws<ArgumentException>("local", () => generator.Emit(OpCodes.Ldarg_0, local));
         }
 
         [Fact]
-        public void NegTest3()
+        public void Emit_OpCodes_LocalBuilder_TooManyLocals_ThrowsInvalidOperationException()
         {
-            MethodBuilder method = TestTypeBuilder.DefineMethod("NegTest3_Method", DefaultMethodAttribute);
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.NotPublic);
+            MethodBuilder method = type.DefineMethod("NegTest3_Method", MethodAttributes.Public | MethodAttributes.Static);
             ILGenerator generator = method.GetILGenerator();
             for (int i = 0; i <= byte.MaxValue; ++i)
             {
@@ -187,7 +170,7 @@ namespace System.Reflection.Emit.ILGeneration.Tests
             }
             LocalBuilder arg = generator.DeclareLocal(typeof(int));
 
-            Assert.Throws<InvalidOperationException>(() => { generator.Emit(OpCodes.Br_S, arg); });
+            Assert.Throws<InvalidOperationException>(() => generator.Emit(OpCodes.Br_S, arg));
         }
     }
 }
