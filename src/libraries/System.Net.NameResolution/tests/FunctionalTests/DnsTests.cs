@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections.Generic;
 using System.Net;
 using System.Threading.Tasks;
 
@@ -27,9 +28,12 @@ namespace System.Net.NameResolution.Tests
             Assert.NotNull(list2);
 
             Assert.Equal(list1.Length, list2.Length);
+
+            var set = new HashSet<IPAddress>();
             for (int i = 0; i < list1.Length; i++)
             {
                 Assert.Equal(list1[i], list2[i]);
+                Assert.True(set.Add(list1[i]), "Multiple entries for address " + list1[i]);
             }
         }
 
