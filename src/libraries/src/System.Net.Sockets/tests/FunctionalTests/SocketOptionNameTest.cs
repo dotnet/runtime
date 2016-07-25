@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Net.Test.Common;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Threading.Tasks;
 
 using Xunit;
 
@@ -94,28 +95,26 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        private static bool IsNotFedora23 => !PlatformDetection.IsFedora23;
-
-        [ConditionalFact(nameof(IsNotFedora23))] // (#9538) Receive times out
-        public void MulticastInterface_Set_AnyInterface_Succeeds()
+        [Fact]
+        public async Task MulticastInterface_Set_AnyInterface_Succeeds()
         {
             // On all platforms, index 0 means "any interface"
-            MulticastInterface_Set_Helper(0);
+            await MulticastInterface_Set_Helper(0);
         }
 
         [Fact]
         [PlatformSpecific(PlatformID.Windows)] // see comment below
-        public void MulticastInterface_Set_Loopback_Succeeds()
+        public async Task MulticastInterface_Set_Loopback_Succeeds()
         {
             // On Windows, we can apparently assume interface 1 is "loopback."  On other platforms, this is not a
             // valid assumption.  We could maybe use NetworkInterface.LoopbackInterfaceIndex to get the index, but
             // this would introduce a dependency on System.Net.NetworkInformation, which depends on System.Net.Sockets,
             // which is what we're testing here....  So for now, we'll just assume "loopback == 1" and run this on
             // Windows only.
-            MulticastInterface_Set_Helper(1);
+            await MulticastInterface_Set_Helper(1);
         }
 
-        private void MulticastInterface_Set_Helper(int interfaceIndex)
+        private async Task MulticastInterface_Set_Helper(int interfaceIndex)
         {
             IPAddress multicastAddress = IPAddress.Parse("239.1.2.3");
             string message = "hello";
@@ -129,13 +128,15 @@ namespace System.Net.Sockets.Tests
 
                 sendSocket.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.MulticastInterface, IPAddress.HostToNetworkOrder(interfaceIndex));
 
+                var receiveBuffer = new byte[1024];
+                var receiveTask = receiveSocket.ReceiveAsync(new ArraySegment<byte>(receiveBuffer), SocketFlags.None);
+
                 for (int i = 0; i < TestSettings.UDPRedundancy; i++)
                 {
                     sendSocket.SendTo(Encoding.UTF8.GetBytes(message), new IPEndPoint(multicastAddress, port));
                 }
 
-                var receiveBuffer = new byte[1024];
-                int bytesReceived = receiveSocket.Receive(receiveBuffer);
+                int bytesReceived = await receiveTask;
                 string receivedMessage = Encoding.UTF8.GetString(receiveBuffer, 0, bytesReceived);
 
                 Assert.Equal(receivedMessage, message);
