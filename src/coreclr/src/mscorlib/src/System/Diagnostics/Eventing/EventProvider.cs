@@ -496,7 +496,7 @@ namespace System.Diagnostics.Tracing
             {
                 foreach (string valueName in key.GetValueNames())
                 {
-                    if (valueName.StartsWith("ControllerData_Session_"))
+                    if (valueName.StartsWith("ControllerData_Session_", StringComparison.Ordinal))
                     {
                         string strId = valueName.Substring(23);      // strip of the ControllerData_Session_
                         int etwSessionId;
@@ -508,7 +508,7 @@ namespace System.Diagnostics.Tracing
                             if (data != null)
                             {
                                 var dataAsString = System.Text.Encoding.UTF8.GetString(data);
-                                int keywordIdx = dataAsString.IndexOf("EtwSessionKeyword");
+                                int keywordIdx = dataAsString.IndexOf("EtwSessionKeyword", StringComparison.Ordinal);
                                 if (0 <= keywordIdx)
                                 {
                                     int startIdx = keywordIdx + 18;
