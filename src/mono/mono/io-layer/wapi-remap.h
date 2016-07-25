@@ -96,6 +96,5 @@
 #define WaitForSingleObjectEx wapi_WaitForSingleObjectEx
 #define SignalObjectAndWait wapi_SignalObjectAndWait
 #define WaitForMultipleObjectsEx wapi_WaitForMultipleObjectsEx
-#define WaitForInputIdle wapi_WaitForInputIdle
 
 #endif /* __WAPI_REMAP_H__ */
