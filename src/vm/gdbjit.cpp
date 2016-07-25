@@ -167,9 +167,10 @@ struct jit_descriptor
   struct jit_code_entry *relevant_entry;
   struct jit_code_entry *first_entry;
 };
-/* GDB puts a breakpoint in this function.  */
+// GDB puts a breakpoint in this function.
+// To prevent from inlining we add noinline attribute and inline assembler statement.
 extern "C"
-void __attribute__((noinline)) __jit_debug_register_code() { };
+void __attribute__((noinline)) __jit_debug_register_code() { __asm__(""); };
 
 /* Make sure to specify the version statically, because the
    debugger may check the version before we can set it.  */
