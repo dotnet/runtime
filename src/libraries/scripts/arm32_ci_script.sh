@@ -78,7 +78,15 @@ function check_git_head {
 function unmount_rootfs {
     local rootfsFolder="$1"
 
-    if grep -qs "$rootfsFolder" /proc/mounts; then
+    #Check if there are any open files in this directory.
+    if [ -d $rootfsFolder ]; then
+        #If we find information about the file
+        if sudo lsof +D $rootfsFolder; then
+            (set +x; echo 'See above for lsof information. Continuing with the build.')
+        fi
+    fi
+
+    if mountpoint -q -- "$rootfsFolder"; then
         sudo umount "$rootfsFolder"
     fi
 }
