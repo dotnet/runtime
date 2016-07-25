@@ -2,7 +2,7 @@
 #AC_PREREQ([2.62])
 
 # when bumping version number below, keep it in sync with man/mono.1 too
-AC_INIT(mono, [4.5.2],
+AC_INIT(mono, [4.7.0],
         [http://bugzilla.xamarin.com/enter_bug.cgi?classification=Mono])
 
 AC_CONFIG_SRCDIR([README.md])
