@@ -2,68 +2,27 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Reflection.Emit;
-using System.Reflection;
-using System.Threading;
 using Xunit;
 
-namespace System.Reflection.Emit.ILGeneration.Tests
+namespace System.Reflection.Emit.Tests
 {
     public class LocalBuilderLocalType
     {
-        private const string TestDynamicAssemblyName = "TestDynamicAssembly";
-        private const string TestModuleName = "TestModuleName";
-        private const string TestTypeName = "TestTypeName";
-        private const string TestMethodName = "TestMethodName";
-
-        private TypeBuilder GetCustomType(string name, AssemblyBuilderAccess access)
+        [Theory]
+        [InlineData(typeof(string))]
+        [InlineData(typeof(int))]
+        [InlineData(typeof(LocalTypeClass))]
+        public void LocalType(Type localType)
         {
-            AssemblyName myAsmName = new AssemblyName();
-            myAsmName.Name = name;
-            AssemblyBuilder myAsmBuilder = AssemblyBuilder.DefineDynamicAssembly(myAsmName, access);
-            ModuleBuilder moduleBuilder = TestLibrary.Utilities.GetModuleBuilder(myAsmBuilder, TestModuleName);
-            return moduleBuilder.DefineType(TestTypeName);
-        }
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.NotPublic);
+            MethodBuilder method = type.DefineMethod("Method", MethodAttributes.Public);
+            ILGenerator ilGenerator = method.GetILGenerator();
+            ilGenerator.Emit(OpCodes.Ret);
 
-        [Fact]
-        public void PosTest1()
-        {
-            TypeBuilder typeBuilder = this.GetCustomType(TestDynamicAssemblyName, AssemblyBuilderAccess.Run);
-            MethodBuilder methodBuilder = typeBuilder.DefineMethod(TestMethodName, MethodAttributes.Public);
-            ILGenerator iLGenerator = methodBuilder.GetILGenerator();
-            iLGenerator.Emit(OpCodes.Ret);
-            LocalBuilder localBuilder = iLGenerator.DeclareLocal(typeof(string));
-            Type type = localBuilder.LocalType;
-            Assert.Equal(type, typeof(string));
-        }
-
-        [Fact]
-        public void PosTest2()
-        {
-            TypeBuilder typeBuilder = this.GetCustomType(TestDynamicAssemblyName, AssemblyBuilderAccess.Run);
-            MethodBuilder methodBuilder = typeBuilder.DefineMethod(TestMethodName, MethodAttributes.Public);
-            ILGenerator iLGenerator = methodBuilder.GetILGenerator();
-            iLGenerator.Emit(OpCodes.Ret);
-            LocalBuilder localBuilder = iLGenerator.DeclareLocal(typeof(int));
-            Type type = localBuilder.LocalType;
-            Assert.Equal(type, typeof(int));
-        }
-
-        [Fact]
-        public void PosTest3()
-        {
-            TypeBuilder typeBuilder = this.GetCustomType(TestDynamicAssemblyName, AssemblyBuilderAccess.Run);
-            MethodBuilder methodBuilder = typeBuilder.DefineMethod(TestMethodName, MethodAttributes.Public);
-            ILGenerator iLGenerator = methodBuilder.GetILGenerator();
-            iLGenerator.Emit(OpCodes.Ret);
-            LocalBuilder localBuilder = iLGenerator.DeclareLocal(typeof(MyClassLocalType));
-            Type type = localBuilder.LocalType;
-            Assert.Equal(type, typeof(MyClassLocalType));
+            LocalBuilder localBuilder = ilGenerator.DeclareLocal(localType);
+            Assert.Equal(localType, localBuilder.LocalType);
         }
     }
 
-    public class MyClassLocalType
-    {
-    }
+    public class LocalTypeClass { }
 }

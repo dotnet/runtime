@@ -2,149 +2,59 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-
-using System.Reflection.Emit;
 using System.Linq;
 using Xunit;
 
-namespace System.Reflection.Emit.ILGeneration.Tests
+namespace System.Reflection.Emit.Tests
 {
     public class CustomAttributeBuilderCtor1
     {
-        private readonly RandomDataGenerator _generator = new RandomDataGenerator();
-
-        [Fact]
-        public void PosTest1()
+        [Theory]
+        [InlineData(new Type[] { typeof(string) }, new object[] { "TestString" })]
+        [InlineData(new Type[0], new object[0])]
+        [InlineData(new Type[] { typeof(string), typeof(bool) }, new object[] { "TestString", true })]
+        public void ConstructorInfo_ObjectArray(Type[] paramTypes, object[] paramValues)
         {
-            string str = "PosTest1";
-            Type[] ctorParams = new Type[] { typeof(string) };
-            object[] paramValues = new object[] { str };
-            CustomAttributeBuilder cab = new CustomAttributeBuilder(
-                typeof(ObsoleteAttribute).GetConstructor(ctorParams), paramValues);
-
-            Assert.NotNull(cab);
+            ConstructorInfo constructor = typeof(ObsoleteAttribute).GetConstructor(paramTypes);
+            CustomAttributeBuilder attribute = new CustomAttributeBuilder(constructor, paramValues);
         }
 
         [Fact]
-        public void PosTest2()
+        public void ConstructorInfo_ObjectArray_StaticCtor_ThrowsArgumentException()
         {
-            Type[] ctorParams = new Type[] { };
-            object[] paramValues = new object[] { };
-
-            CustomAttributeBuilder cab = new CustomAttributeBuilder(
-                typeof(ObsoleteAttribute).GetConstructor(ctorParams), paramValues);
-
-            Assert.NotNull(cab);
+            ConstructorInfo constructor = typeof(TestConstructor).GetConstructors(BindingFlags.Static | BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic).Where(c => c.IsStatic).First();
+            Assert.Throws<ArgumentException>(null, () => new CustomAttributeBuilder(constructor, new object[0]));
         }
 
         [Fact]
-        public void PosTest3()
+        public void ConstructorInfo_ObjectArray_PrivateCtor_ThrowsArgumentException()
         {
-            string str = "PosTest3";
-            bool b = _generator.GetByte() > byte.MaxValue / 2;
+            ConstructorInfo constructor = typeof(TestConstructor).GetConstructors(BindingFlags.Static | BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic).Where(c => c.IsPrivate).First();
 
-            Type[] ctorParams = new Type[] { typeof(string), typeof(bool) };
-            object[] paramValues = new object[] { str, b };
+            Assert.Throws<ArgumentException>(null, () => new CustomAttributeBuilder(constructor, new object[] { false }));
+        }
 
-            CustomAttributeBuilder cab = new CustomAttributeBuilder(
-                typeof(ObsoleteAttribute).GetConstructor(ctorParams), paramValues);
+        [Theory]
+        [InlineData(new Type[] { typeof(string) }, new object[] { "TestString", false })]
+        [InlineData(new Type[] { typeof(string), typeof(bool) }, new object[] { false, "TestString" })]
+        public void ConstructorInfo_ObjectArray_NonMatching_ThrowsArgumentException(Type[] paramTypes, object[] paramValues)
+        {
+            ConstructorInfo constructor = typeof(ObsoleteAttribute).GetConstructor(paramTypes);
 
-            Assert.NotNull(cab);
+            Assert.Throws<ArgumentException>(null, () => new CustomAttributeBuilder(constructor, paramValues));
         }
 
         [Fact]
-        public void NegTest1()
+        public void ConstructorInfo_ObjectArray_NullCtor_ThrowsArgumentNullException()
         {
-            object[] paramValues = new object[] { };
-
-            Assert.Throws<ArgumentException>(() =>
-            {
-                CustomAttributeBuilder cab = new CustomAttributeBuilder(
-                typeof(TestConstructor).GetConstructors(BindingFlags.Static | BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic)
-                .Where(c => c.IsStatic).First(), paramValues);
-            });
+            Assert.Throws<ArgumentNullException>("con", () => new CustomAttributeBuilder(null, new object[0]));
         }
 
         [Fact]
-        public void NegTest2()
+        public void ConstructorInfo_ObjectArray_NullConstructorArgs_ThrowsArgumentNullException()
         {
-            object[] paramValues = new object[]
-            {
-                false
-            };
-
-            Assert.Throws<ArgumentException>(() =>
-            {
-                CustomAttributeBuilder cab = new CustomAttributeBuilder(
-                 typeof(TestConstructor).GetConstructors(BindingFlags.Static | BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic)
-                 .Where(c => c.IsPrivate).First(), paramValues);
-            });
+            ConstructorInfo constructor = typeof(ObsoleteAttribute).GetConstructor(new Type[] { typeof(string), typeof(bool) });
+            Assert.Throws<ArgumentNullException>("constructorArgs", () => new CustomAttributeBuilder(constructor, null));
         }
-
-        [Fact]
-        public void NegTest3()
-        {
-            string str = "NegTest3";
-            bool b = false;
-
-            Type[] ctorParams = new Type[] { typeof(string) };
-            object[] paramValues = new object[] { str, b };
-
-            Assert.Throws<ArgumentException>(() =>
-            {
-                CustomAttributeBuilder cab = new CustomAttributeBuilder(
-                       typeof(ObsoleteAttribute).GetConstructor(ctorParams), paramValues);
-            });
-        }
-
-        [Fact]
-        public void NegTest4()
-        {
-            string str = "NegTest4";
-            bool b = true;
-
-            Type[] ctorParams = new Type[] { typeof(string), typeof(bool) };
-            object[] paramValues = new object[] { b, str };
-
-            Assert.Throws<ArgumentException>(() =>
-            {
-                CustomAttributeBuilder cab = new CustomAttributeBuilder(
-                       typeof(ObsoleteAttribute).GetConstructor(ctorParams), paramValues);
-            });
-        }
-
-        [Fact]
-        public void NegTest5()
-        {
-            string str = "NegTest5";
-            bool b = false;
-
-            object[] paramValues = new object[] { str, b };
-
-            Assert.Throws<ArgumentNullException>(() =>
-            {
-                CustomAttributeBuilder cab = new CustomAttributeBuilder(
-                       null, paramValues);
-            });
-        }
-
-        [Fact]
-        public void NegTest6()
-        {
-            Type[] ctorParams = new Type[] { typeof(bool), typeof(string) };
-
-            Assert.Throws<ArgumentNullException>(() =>
-            {
-                CustomAttributeBuilder cab = new CustomAttributeBuilder(
-                       typeof(ObsoleteAttribute).GetConstructor(ctorParams), null);
-            });
-        }
-    }
-
-    public class TestConstructor
-    {
-        static TestConstructor() { }
-        internal TestConstructor(bool b) { }
     }
 }
