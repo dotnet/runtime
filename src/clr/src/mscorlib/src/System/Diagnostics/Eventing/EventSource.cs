@@ -3259,10 +3259,10 @@ namespace System.Diagnostics.Tracing
                 // are the typenames equal and the namespaces under "Diagnostics.Tracing" (typically
                 // either Microsoft.Diagnostics.Tracing or System.Diagnostics.Tracing)?
                     string.Equals(attributeType.Name, reflectedAttributeType.Name, StringComparison.Ordinal) &&
-                    attributeType.Namespace.EndsWith("Diagnostics.Tracing") &&
-                    (reflectedAttributeType.Namespace.EndsWith("Diagnostics.Tracing")
+                    attributeType.Namespace.EndsWith("Diagnostics.Tracing", StringComparison.Ordinal) &&
+                    (reflectedAttributeType.Namespace.EndsWith("Diagnostics.Tracing", StringComparison.Ordinal)
 #if EVENT_SOURCE_LEGACY_NAMESPACE_SUPPORT
-                     || reflectedAttributeType.Namespace.EndsWith("Diagnostics.Eventing")
+                     || reflectedAttributeType.Namespace.EndsWith("Diagnostics.Eventing", StringComparison.Ordinal)
 #endif
 );
         }
@@ -6610,7 +6610,7 @@ namespace System.Diagnostics.Tracing
                 if (localizedString != null)
                 {
                     value = localizedString;
-                    if (etwFormat && key.StartsWith("event_"))
+                    if (etwFormat && key.StartsWith("event_", StringComparison.Ordinal))
                     {
                         var evtName = key.Substring("event_".Length);
                         value = TranslateToManifestConvention(value, evtName);
