@@ -12,17 +12,6 @@ using Xunit;
 
 namespace System.Net.Sockets.Tests
 {
-    // TODO (#7852):
-    //
-    // - Connect(EndPoint):
-    //   - disconnected socket
-    // - Accept(EndPoint):
-    //   - disconnected socket
-    //
-    // End*:
-    // - Invalid asyncresult type
-    // - asyncresult from different object
-    // - asyncresult with end already called
     public class ArgumentValidation
     {
         // This type is used to test Socket.Select's argument validation.
