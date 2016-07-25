@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Diagnostics;
 using System.Dynamic.Utils;
 
@@ -354,16 +353,30 @@ namespace System.Linq.Expressions
         /// </returns>
         public static GotoExpression MakeGoto(GotoExpressionKind kind, LabelTarget target, Expression value, Type type)
         {
-            ValidateGoto(target, ref value, nameof(target), nameof(value));
+            ValidateGoto(target, ref value, nameof(target), nameof(value), type);
             return new GotoExpression(kind, target, value, type);
         }
 
-        private static void ValidateGoto(LabelTarget target, ref Expression value, string targetParameter, string valueParameter)
+        private static void ValidateGoto(LabelTarget target, ref Expression value, string targetParameter, string valueParameter, Type type)
         {
             ContractUtils.RequiresNotNull(target, targetParameter);
             if (value == null)
             {
                 if (target.Type != typeof(void)) throw Error.LabelMustBeVoidOrHaveExpression(nameof(target));
+
+                if (type != null)
+                {
+                    TypeUtils.ValidateType(type, nameof(type));
+                    if (type.IsByRef)
+                    {
+                        throw Error.TypeMustNotBeByRef(nameof(type));
+                    }
+
+                    if (type.IsPointer)
+                    {
+                        throw Error.TypeMustNotBePointer(nameof(type));
+                    }
+                }
             }
             else
             {
