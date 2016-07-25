@@ -1,12 +1,12 @@
 {
   "dependencies": {
-    "Microsoft.NETCore.Platforms": "1.0.2-beta-24325-02",
-    "System.Collections": "4.0.12-beta-24325-02",
-    "System.Console": "4.0.1-beta-24325-02",
-    "System.Diagnostics.Debug": "4.0.12-beta-24325-02",
-    "System.IO": "4.1.1-beta-24325-02",
-    "System.Runtime": "4.1.1-beta-24325-02",
-    "System.Text.Encoding": "4.0.12-beta-24325-02"
+    "Microsoft.NETCore.Platforms": "1.0.2-beta-24325-03",
+    "System.Collections": "4.0.12-beta-24325-03",
+    "System.Console": "4.0.1-beta-24325-03",
+    "System.Diagnostics.Debug": "4.0.12-beta-24325-03",
+    "System.IO": "4.1.1-beta-24325-03",
+    "System.Runtime": "4.1.1-beta-24325-03",
+    "System.Text.Encoding": "4.0.12-beta-24325-03"
   },
   "frameworks": {
     "netstandard1.3": {}
