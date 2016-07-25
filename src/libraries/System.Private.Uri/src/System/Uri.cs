@@ -335,7 +335,7 @@ namespace System
         [Obsolete("The constructor has been deprecated. Please use new Uri(string). The dontEscape parameter is deprecated and is always false. http://go.microsoft.com/fwlink/?linkid=14202")]
         public Uri(string uriString, bool dontEscape)
         {
-            if ((object)uriString == null)
+            if (uriString == null)
                 throw new ArgumentNullException(nameof(uriString));
 
             CreateThis(uriString, dontEscape, UriKind.Absolute);
@@ -350,7 +350,7 @@ namespace System
         [Obsolete("The constructor has been deprecated. Please new Uri(Uri, string). The dontEscape parameter is deprecated and is always false. http://go.microsoft.com/fwlink/?linkid=14202")]
         public Uri(Uri baseUri, string relativeUri, bool dontEscape)
         {
-            if ((object)baseUri == null)
+            if (baseUri == null)
                 throw new ArgumentNullException(nameof(baseUri));
 
             if (!baseUri.IsAbsoluteUri)
@@ -1427,15 +1427,10 @@ namespace System
         //
         public static bool IsHexEncoding(string pattern, int index)
         {
-            if ((pattern.Length - index) < 3)
-            {
-                return false;
-            }
-            if ((pattern[index] == '%') && UriHelper.EscapedAscii(pattern[index + 1], pattern[index + 2]) != c_DummyChar)
-            {
-                return true;
-            }
-            return false;
+            return
+                (pattern.Length - index) >= 3 &&
+                pattern[index] == '%' &&
+                UriHelper.EscapedAscii(pattern[index + 1], pattern[index + 2]) != c_DummyChar;
         }
 
         //
@@ -5240,7 +5235,7 @@ namespace System
         [Obsolete("The method has been deprecated. Please use MakeRelativeUri(Uri uri). http://go.microsoft.com/fwlink/?linkid=14202")]
         public string MakeRelative(Uri toUri)
         {
-            if ((object)toUri == null)
+            if (toUri == null)
                 throw new ArgumentNullException(nameof(toUri));
 
             if (IsNotAbsoluteUri || toUri.IsNotAbsoluteUri)
@@ -5310,14 +5305,14 @@ namespace System
             // This method just does not make sense as protected
             // It should go public static asap
 
-            if ((object)str == null)
+            if (str == null)
             {
                 return string.Empty;
             }
 
             int destStart = 0;
             char[] dest = UriHelper.EscapeString(str, 0, str.Length, null, ref destStart, true, '?', '#', '%');
-            if ((object)dest == null)
+            if (dest == null)
                 return str;
             return new string(dest, 0, destStart);
         }
@@ -5333,14 +5328,6 @@ namespace System
         {
             // This method just does not make sense
             // Should be deprecated and removed asap.
-
-            if (Scheme == "telnet")
-            {
-                //
-                // remove everything after ';' for telnet
-                //
-
-            }
         }
 
         //
