@@ -921,6 +921,7 @@ mono_assembly_addref (MonoAssembly *assembly)
 #define WINFX_KEY "31bf3856ad364e35"
 #define ECMA_KEY "b77a5c561934e089"
 #define MSFINAL_KEY "b03f5f7f11d50a3a"
+#define COMPACTFRAMEWORK_KEY "969db8053d3322ac"
 
 typedef struct {
 	const char *name;
@@ -929,20 +930,34 @@ typedef struct {
 } KeyRemapEntry;
 
 static KeyRemapEntry key_remap_table[] = {
+	{ "CustomMarshalers", COMPACTFRAMEWORK_KEY, MSFINAL_KEY },
 	{ "Microsoft.CSharp", WINFX_KEY, MSFINAL_KEY },
+	{ "Microsoft.VisualBasic", COMPACTFRAMEWORK_KEY, MSFINAL_KEY },
 	{ "System", SILVERLIGHT_KEY, ECMA_KEY },
+	{ "System", COMPACTFRAMEWORK_KEY, ECMA_KEY },
 	{ "System.ComponentModel.Composition", WINFX_KEY, ECMA_KEY },
 	{ "System.ComponentModel.DataAnnotations", "ddd0da4d3e678217", WINFX_KEY },
 	{ "System.Core", SILVERLIGHT_KEY, ECMA_KEY },
+	{ "System.Core", COMPACTFRAMEWORK_KEY, ECMA_KEY },
+	{ "System.Data", COMPACTFRAMEWORK_KEY, ECMA_KEY },
+	{ "System.Data.DataSetExtensions", COMPACTFRAMEWORK_KEY, ECMA_KEY },
+	{ "System.Drawing", COMPACTFRAMEWORK_KEY, MSFINAL_KEY },
+	{ "System.Messaging", COMPACTFRAMEWORK_KEY, MSFINAL_KEY },
 	// FIXME: MS uses MSFINAL_KEY for .NET 4.5
 	{ "System.Net", SILVERLIGHT_KEY, MSFINAL_KEY },
 	{ "System.Numerics", WINFX_KEY, ECMA_KEY },
 	{ "System.Runtime.Serialization", SILVERLIGHT_KEY, ECMA_KEY },
+	{ "System.Runtime.Serialization", COMPACTFRAMEWORK_KEY, ECMA_KEY },
 	{ "System.ServiceModel", WINFX_KEY, ECMA_KEY },
+	{ "System.ServiceModel", COMPACTFRAMEWORK_KEY, ECMA_KEY },
 	{ "System.ServiceModel.Web", SILVERLIGHT_KEY, WINFX_KEY },
+	{ "System.Web.Services", COMPACTFRAMEWORK_KEY, MSFINAL_KEY },
 	{ "System.Windows", SILVERLIGHT_KEY, MSFINAL_KEY },
+	{ "System.Windows.Forms", COMPACTFRAMEWORK_KEY, ECMA_KEY },
 	{ "System.Xml", SILVERLIGHT_KEY, ECMA_KEY },
+	{ "System.Xml", COMPACTFRAMEWORK_KEY, ECMA_KEY },
 	{ "System.Xml.Linq", WINFX_KEY, ECMA_KEY },
+	{ "System.Xml.Linq", COMPACTFRAMEWORK_KEY, ECMA_KEY },
 	{ "System.Xml.Serialization", WINFX_KEY, ECMA_KEY }
 };
 
