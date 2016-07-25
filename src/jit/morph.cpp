@@ -2594,15 +2594,112 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
     // following the normal calling convention or in the normal argument registers. We either mark existing
     // arguments as non-standard (such as the x8 return buffer register on ARM64), or we manually insert the
     // non-standard arguments into the argument list, below.
-    struct NonStandardArg
+    class NonStandardArgs
     {
-        regNumber reg;      // The register to be assigned to this non-standard argument.
-        GenTree*  node;     // The tree node representing this non-standard argument.
-                            //   Note that this must be updated if the tree node changes due to morphing!
-    };
+        struct NonStandardArg
+        {
+            regNumber reg;      // The register to be assigned to this non-standard argument.
+            GenTree*  node;     // The tree node representing this non-standard argument.
+                                //   Note that this must be updated if the tree node changes due to morphing!
+        };
 
-    ArrayStack<NonStandardArg> nonStandardArgs(this, 3);  // We will have at most 3 non-standard arguments
+        ArrayStack<NonStandardArg> args;
+
+    public:
+        NonStandardArgs(Compiler* compiler)
+            : args(compiler, 3)  // We will have at most 3 non-standard arguments
+        {
+        }
+
+        //-----------------------------------------------------------------------------
+        // Add: add a non-standard argument to the table of non-standard arguments
+        //
+        // Arguments:
+        //    node - a GenTree node that has a non-standard argument.
+        //    reg - the register to assign to this node.
+        //
+        // Return Value:
+        //    None.
+        //
+        void Add(GenTree* node, regNumber reg)
+        {
+            NonStandardArg nsa = { reg, node };
+            args.Push(nsa);
+        }
+
+        //-----------------------------------------------------------------------------
+        // Find: Look for a GenTree* in the set of non-standard args.
+        //
+        // Arguments:
+        //    node - a GenTree node to look for
+        //
+        // Return Value:
+        //    The index of the non-standard argument (a non-negative, unique, stable number).
+        //    If the node is not a non-standard argument, return -1.
+        //
+        int Find(GenTree* node)
+        {
+            for (int i = 0; i < args.Height(); i++)
+            {
+                if (node == args.Index(i).node)
+                {
+                    return i;
+                }
+            }
+            return -1;
+        }
+
+        //-----------------------------------------------------------------------------
+        // FindReg: Look for a GenTree node in the non-standard arguments set. If found,
+        // set the register to use for the node.
+        //
+        // Arguments:
+        //    node - a GenTree node to look for
+        //    pReg - an OUT argument. *pReg is set to the non-standard register to use if
+        //           'node' is found in the non-standard argument set.
+        //
+        // Return Value:
+        //    'true' if 'node' is a non-standard argument. In this case, *pReg is set to the
+        //          register to use.
+        //    'false' otherwise (in this case, *pReg is unmodified).
+        //
+        bool FindReg(GenTree* node, regNumber* pReg)
+        {
+            for (int i = 0; i < args.Height(); i++)
+            {
+                NonStandardArg& nsa = args.IndexRef(i);
+                if (node == nsa.node)
+                {
+                    *pReg = nsa.reg;
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        //-----------------------------------------------------------------------------
+        // Replace: Replace the non-standard argument node at a given index. This is done when
+        // the original node was replaced via morphing, but we need to continue to assign a
+        // particular non-standard arg to it.
+        //
+        // Arguments:
+        //    index - the index of the non-standard arg. It must exist.
+        //    node - the new GenTree node.
+        //
+        // Return Value:
+        //    None.
+        //
+        void Replace(int index, GenTree* node)
+        {
+            args.IndexRef(index).node = node;
+        }
+
+    } nonStandardArgs(this);
 #endif // !LEGACY_BACKEND
+
+    // Count of args. On first morph, this is counted before we've filled in the arg table.
+    // On remorph, we grab it from the arg table.
+    unsigned numArgs = 0;
 
     // Process the late arguments (which were determined by a previous caller).
     // Do this before resetting fgPtrArgCntCur as fgMorphTree(call->gtCallLateArgs)
@@ -2631,11 +2728,12 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
         fgPtrArgCntCur -= callStkLevel;
         assert(call->fgArgInfo != nullptr);
         call->fgArgInfo->RemorphReset();
+
+        numArgs = call->fgArgInfo->ArgCount();
     }
     else
     {
         // First we need to count the args
-        unsigned numArgs = 0;
         if (call->gtCallObjp)
             numArgs++;
         for (args = call->gtCallArgs; (args != nullptr); args = args->gtOp.gtOp2)
@@ -2660,8 +2758,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
             GenTreeArgList* args = call->gtCallArgs;
             GenTree* arg1 = args->Current();
             assert(arg1 != nullptr);
-            NonStandardArg nsa = { REG_PINVOKE_FRAME, arg1 };
-            nonStandardArgs.Push(nsa);
+            nonStandardArgs.Add(arg1, REG_PINVOKE_FRAME);
         }
 #endif // !defined(LEGACY_BACKEND) && defined(_TARGET_X86_)
 
@@ -2682,8 +2779,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
 
             // We don't increment numArgs here, since we already counted this argument above.
 
-            NonStandardArg nsa = {theFixedRetBuffReg(), argx};
-            nonStandardArgs.Push(nsa);
+            nonStandardArgs.Add(argx, theFixedRetBuffReg());
         }
 
         // We are allowed to have a Fixed Return Buffer argument combined
@@ -2699,8 +2795,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
             call->gtCallArgs = gtNewListNode(cns, call->gtCallArgs);
             numArgs++;
 
-            NonStandardArg nsa = {REG_PINVOKE_COOKIE_PARAM, cns};
-            nonStandardArgs.Push(nsa);
+            nonStandardArgs.Add(cns, REG_PINVOKE_COOKIE_PARAM);
         }
         else if (call->IsVirtualStub() &&
                  (call->gtCallType == CT_INDIRECT) &&
@@ -2732,8 +2827,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
             call->gtCallArgs = gtNewListNode(arg, call->gtCallArgs);
             numArgs++;
 
-            NonStandardArg nsa = {REG_VIRTUAL_STUB_PARAM, arg};
-            nonStandardArgs.Push(nsa);
+            nonStandardArgs.Add(arg, REG_VIRTUAL_STUB_PARAM);
         }
         else if (call->gtCallType == CT_INDIRECT && call->gtCallCookie)
         {
@@ -2747,16 +2841,14 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
             call->gtCallArgs = gtNewListNode(arg, call->gtCallArgs);
             numArgs++;
 
-            NonStandardArg nsa = {REG_PINVOKE_COOKIE_PARAM, arg};
-            nonStandardArgs.Push(nsa);
+            nonStandardArgs.Add(arg, REG_PINVOKE_COOKIE_PARAM);
 
             // put destination into R10
             arg = gtClone(call->gtCallAddr, true);
             call->gtCallArgs = gtNewListNode(arg, call->gtCallArgs);
             numArgs++;
 
-            NonStandardArg nsa2 = {REG_PINVOKE_TARGET_PARAM, arg};
-            nonStandardArgs.Push(nsa2);
+            nonStandardArgs.Add(arg, REG_PINVOKE_TARGET_PARAM);
 
             // finally change this call to a helper call
             call->gtCallType = CT_HELPER;
@@ -2930,20 +3022,10 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
 #endif // FEATURE_MULTIREG_ARGS
 
 #ifndef LEGACY_BACKEND
-        int nonStandard_index = -1;
+        // Record the index of any nonStandard arg that we may be processing here, as we are
+        // about to call fgMorphTree on it and fgMorphTree may replace it with a new tree.
         GenTreePtr orig_argx = *parentArgx;
-        // Record the index of any nonStandard arg that we may be processing here
-        // as we are about to call fgMorphTree on it
-        // and fgMorphTree may replace it with a new tree
-        //
-        for (int i = 0; i < nonStandardArgs.Height(); i++)
-        {
-            if (orig_argx == nonStandardArgs.Index(i).node)
-            {
-                nonStandard_index = i;
-                break;
-            }
-        }
+        int nonStandard_index = nonStandardArgs.Find(orig_argx);
 #endif // !LEGACY_BACKEND
 
         argx = fgMorphTree(*parentArgx);
@@ -2958,7 +3040,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
         {
             // We need to update the node field for this nonStandard arg here
             // as it was changed by the call to fgMorphTree
-            nonStandardArgs.IndexRef(nonStandard_index).node = argx;
+            nonStandardArgs.Replace(nonStandard_index, argx);
         }
 #endif // !LEGACY_BACKEND
 
@@ -3673,7 +3755,22 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
             {
                 isRegArg = false;
             }
-        }
+
+#if defined(_TARGET_X86_) && !defined(LEGACY_BACKEND)
+            if (call->IsTailCallViaHelper())
+            {
+                // We have already (before calling fgMorphArgs()) appended the 4 special args
+                // required by the x86 tailcall helper. These args are required to go on the
+                // stack. Force them to the stack here.
+                assert(numArgs >= 4);
+                if (argIndex >= numArgs - 4)
+                {
+                    isRegArg = false;
+                }
+            }
+#endif // defined(_TARGET_X86_) && !defined(LEGACY_BACKEND)
+
+        } // end !lateArgsComputed
 
         //
         // Now we know if the argument goes in registers or not and how big it is,
@@ -3766,15 +3863,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
                 // 
                 // They should not affect the placement of any other args or stack space required.
                 // Example: on AMD64 R10 and R11 are used for indirect VSD (generic interface) and cookie calls.
-                for (int i = 0; i < nonStandardArgs.Height(); i++)
-                {
-                    if (argx == nonStandardArgs.Index(i).node)
-                    {
-                        nextRegNum = nonStandardArgs.Index(i).reg;
-                        isNonStandard = true;
-                        break;
-                    }
-                }
+                isNonStandard = nonStandardArgs.FindReg(argx, &nextRegNum);
 #endif // !LEGACY_BACKEND
 
                 // This is a register argument - put it in the table
@@ -3878,6 +3967,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
                 call->fgArgInfo->AddStkArg(argIndex, argx, args, size, argAlign FEATURE_UNIX_AMD64_STRUCT_PASSING_ONLY_ARG(isStructArg));
             }
         }
+
         if (copyBlkClass != NO_CLASS_HANDLE)
         {
             noway_assert(!lateArgsComputed);
@@ -6495,10 +6585,10 @@ bool                Compiler::fgCanFastTailCall(GenTreeCall* callee)
  */
 void                Compiler::fgMorphTailCall(GenTreeCall* call)
 {
-    // x86 classic codegen doesn't require any morphing
-#if defined(_TARGET_X86_) && !defined(LEGACY_BACKEND)
-    NYI_X86("Tail call morphing");
-#elif defined(_TARGET_ARM_)
+    JITDUMP("fgMorphTailCall (before):\n");
+    DISPTREE(call);
+
+#if defined(_TARGET_ARM_)
     // For the helper-assisted tail calls, we need to push all the arguments
     // into a single list, and then add a few extra at the beginning
 
@@ -6545,13 +6635,7 @@ void                Compiler::fgMorphTailCall(GenTreeCall* call)
             call->gtFlags &= ~GTF_CALL_NULLCHECK;
         }
 
-        GenTreeArgList** pList = &call->gtCallArgs;
-#if RETBUFARG_PRECEDES_THIS
-        if (call->HasRetBufArg()) {
-           pList = &(*pList)->Rest();
-        }
-#endif // RETBUFARG_PRECEDES_THIS
-        *pList = gtNewListNode(objp, *pList);
+        call->gtCallArgs = gtNewListNode(objp, call->gtCallArgs);
     }
 
     // Add the extra VSD parameter if needed
@@ -6632,14 +6716,47 @@ void                Compiler::fgMorphTailCall(GenTreeCall* call)
     call->gtCallMoreFlags = GTF_CALL_M_VARARGS | GTF_CALL_M_TAILCALL;
     call->gtFlags &= ~GTF_CALL_POP_ARGS;
 
-#elif defined(_TARGET_AMD64_)
+#elif defined(_TARGET_XARCH_) && !defined(LEGACY_BACKEND)
+
+    // x86 classic codegen doesn't require any morphing
+
     // For the helper-assisted tail calls, we need to push all the arguments
-    // into a single list, and then add a few extra at the beginning.
+    // into a single list, and then add a few extra at the beginning or end.
     //
-    // TailCallHelper(void *copyRoutine, void *callTarget, ....) - i.e We need to add
-    // copyRoutine and callTarget extra params at the beginning.  But callTarget is
-    // determined by Lower phase.  Therefore, we add a place holder arg for callTarget
-    // here which will be later replaced with callTarget in tail call lowering.
+    // For AMD64, the tailcall helper (JIT_TailCall) is defined as:
+    //
+    //      JIT_TailCall(void* copyRoutine, void* callTarget, <function args>)
+    //
+    // We need to add "copyRoutine" and "callTarget" extra params at the beginning.
+    // But callTarget is determined by the Lower phase. Therefore, we add a placeholder arg
+    // for callTarget here which will be replaced later with callTarget in tail call lowering.
+    //
+    // For x86, the tailcall helper is defined as:
+    //
+    //      JIT_TailCall(<function args>, int numberOfOldStackArgsWords, int numberOfNewStackArgsWords, int flags, void* callTarget)
+    //
+    // Note that the special arguments are on the stack, whereas the function arguments follow
+    // the normal convention: there might be register arguments in ECX and EDX. The stack will
+    // look like (highest address at the top):
+    //      first normal stack argument
+    //      ...
+    //      last normal stack argument
+    //      numberOfOldStackArgs
+    //      numberOfNewStackArgs
+    //      flags
+    //      callTarget
+    //
+    // Each special arg is 4 bytes.
+    //
+    // 'flags' is a bitmask where:
+    //      1 == restore callee-save registers (EDI,ESI,EBX). The JIT always saves all
+    //          callee-saved registers for tailcall functions. Note that the helper assumes
+    //          that the callee-saved registers live immediately below EBP, and must have been
+    //          pushed in this order: EDI, ESI, EBX.
+    //      2 == call target is a virtual stub dispatch.
+    //
+    // The x86 tail call helper lives in VM\i386\jithelp.asm. See that function for more details
+    // on the custom calling convention.
 
     // Check for PInvoke call types that we don't handle in codegen yet.
     assert(!call->IsUnmanaged());
@@ -6655,17 +6772,56 @@ void                Compiler::fgMorphTailCall(GenTreeCall* call)
     assert(!call->IsImplicitTailCall());
     assert(!fgCanFastTailCall(call));
 
-     // First move the this pointer (if any) onto the regular arg list    
+    // First move the 'this' pointer (if any) onto the regular arg list. We do this because
+    // we are going to prepend special arguments onto the argument list (for non-x86 platforms),
+    // and thus shift where the 'this' pointer will be passed to a later argument slot. In
+    // addition, for all platforms, we are going to change the call into a helper call. Our code
+    // generation code for handling calls to helpers does not handle 'this' pointers. So, when we
+    // do this transformation, we must explicitly create a null 'this' pointer check, if required,
+    // since special 'this' pointer handling will no longer kick in.
+    //
+    // Some call types, such as virtual vtable calls, require creating a call address expression
+    // that involves the "this" pointer. Lowering will sometimes create an embedded statement
+    // to create a temporary that is assigned to the "this" pointer expression, and then use
+    // that temp to create the call address expression. This temp creation embedded statement
+    // will occur immediately before the "this" pointer argument, and then will be used for both
+    // the "this" pointer argument as well as the call address expression. In the normal ordering,
+    // the embedded statement establishing the "this" pointer temp will execute before both uses
+    // of the temp. However, for tail calls via a helper, we move the "this" pointer onto the
+    // normal call argument list, and insert a placeholder which will hold the call address
+    // expression. For non-x86, things are ok, because the order of execution of these is not
+    // altered. However, for x86, the call address expression is inserted as the *last* argument
+    // in the argument list, *after* the "this" pointer. It will be put on the stack, and be
+    // evaluated first. To ensure we don't end up with out-of-order temp definition and use,
+    // for those cases where call lowering creates an embedded form temp of "this", we will
+    // create a temp here, early, that will later get morphed correctly.
+
     if (call->gtCallObjp)
     {
         GenTreePtr thisPtr = nullptr;
         GenTreePtr objp = call->gtCallObjp;
         call->gtCallObjp = nullptr;
 
+#ifdef _TARGET_X86_
+        if ((call->IsDelegateInvoke() || call->IsVirtualVtable()) && !objp->IsLocal())
+        {
+            // tmp = "this"            
+            unsigned lclNum = lvaGrabTemp(true DEBUGARG("tail call thisptr"));
+            GenTreePtr asg  = gtNewTempAssign(lclNum, objp);
+                
+            // COMMA(tmp = "this", tmp)
+            var_types vt = objp->TypeGet();
+            GenTreePtr tmp = gtNewLclvNode(lclNum, vt);
+            thisPtr = gtNewOperNode(GT_COMMA, vt, asg, tmp);
+
+            objp = thisPtr;
+        }
+#endif // _TARGET_X86_
+
         if (call->NeedsNullCheck())
-        {            
+        {
             // clone "this" if "this" has no side effects.
-            if (!(objp->gtFlags & GTF_SIDE_EFFECT))
+            if ((thisPtr == nullptr) && !(objp->gtFlags & GTF_SIDE_EFFECT))
             {                
                 thisPtr = gtClone(objp, true);
             }
@@ -6701,18 +6857,13 @@ void                Compiler::fgMorphTailCall(GenTreeCall* call)
             thisPtr = objp;
         }
 
-        GenTreeArgList** pList = &call->gtCallArgs;
-#if RETBUFARG_PRECEDES_THIS
-        if (call->HasRetBufArg()) {
-           pList = &(*pList)->Rest();
-        }
-#endif // RETBUFARG_PRECEDES_THIS
-
         // During rationalization tmp="this" and null check will
         // materialize as embedded stmts in right execution order.
         assert(thisPtr != nullptr);
-        *pList = gtNewListNode(thisPtr, *pList);
+        call->gtCallArgs = gtNewListNode(thisPtr, call->gtCallArgs);
     }
+
+#if defined(_TARGET_AMD64_)
 
     // Add the extra VSD parameter to arg list in case of VSD calls.
     // Tail call arg copying thunk will move this extra VSD parameter
@@ -6752,12 +6903,50 @@ void                Compiler::fgMorphTailCall(GenTreeCall* call)
     arg = gtNewIconHandleNode(ssize_t(pfnCopyArgs), GTF_ICON_FTN_ADDR);
     call->gtCallArgs = gtNewListNode(arg, call->gtCallArgs);
 
+#else // !_TARGET_AMD64_
+
+    // Find the end of the argument list. ppArg will point at the last pointer; setting *ppArg will
+    // append to the list.
+    GenTreeArgList** ppArg = &call->gtCallArgs;
+    for (GenTreeArgList* args = call->gtCallArgs; args != nullptr; args = args->Rest())
+    {
+        ppArg = (GenTreeArgList**)&args->gtOp2;
+    }
+    assert(ppArg != nullptr);
+    assert(*ppArg == nullptr);
+
+    unsigned nOldStkArgsWords = (compArgSize - (codeGen->intRegState.rsCalleeRegArgCount * REGSIZE_BYTES)) / REGSIZE_BYTES;
+    GenTree* arg3 = gtNewIconNode((ssize_t)nOldStkArgsWords, TYP_I_IMPL);
+    *ppArg = gtNewListNode(arg3, nullptr); // numberOfOldStackArgs
+    ppArg = (GenTreeArgList**)&((*ppArg)->gtOp2);
+
+    // Inject a placeholder for the count of outgoing stack arguments that the Lowering phase will generate.
+    // The constant will be replaced.
+    GenTree* arg2 = gtNewIconNode(9, TYP_I_IMPL);
+    *ppArg = gtNewListNode(arg2, nullptr); // numberOfNewStackArgs
+    ppArg = (GenTreeArgList**)&((*ppArg)->gtOp2);
+
+    // Inject a placeholder for the flags.
+    // The constant will be replaced.
+    GenTree* arg1 = gtNewIconNode(8, TYP_I_IMPL);
+    *ppArg = gtNewListNode(arg1, nullptr);
+    ppArg = (GenTreeArgList**)&((*ppArg)->gtOp2);
+
+    // Inject a placeholder for the real call target that the Lowering phase will generate.
+    // The constant will be replaced.
+    GenTree* arg0 = gtNewIconNode(7, TYP_I_IMPL);
+    *ppArg = gtNewListNode(arg0, nullptr);
+
+#endif // !_TARGET_AMD64_
+
     // It is now a varargs tail call dispatched via helper.
     call->gtCallMoreFlags |= GTF_CALL_M_VARARGS | GTF_CALL_M_TAILCALL | GTF_CALL_M_TAILCALL_VIA_HELPER;
     call->gtFlags &= ~GTF_CALL_POP_ARGS;
 
-#endif  //_TARGET_AMD64_
+#endif // _TARGET_*
 
+    JITDUMP("fgMorphTailCall (after):\n");
+    DISPTREE(call);
 }
 
 //------------------------------------------------------------------------------
