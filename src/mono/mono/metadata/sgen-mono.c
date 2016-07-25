@@ -529,9 +529,15 @@ object_in_domain_predicate (MonoObject *obj, void *user_data)
  * @suspend is used for early termination of the enqueuing process.
  */
 void
-mono_gc_finalize_domain (MonoDomain *domain, volatile gboolean *suspend)
+mono_gc_finalize_domain (MonoDomain *domain)
 {
-	sgen_finalize_if (object_in_domain_predicate, domain, suspend);
+	sgen_finalize_if (object_in_domain_predicate, domain);
+}
+
+void
+mono_gc_suspend_finalizers (void)
+{
+	sgen_set_suspend_finalizers ();
 }
 
 /*

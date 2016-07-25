@@ -58,6 +58,7 @@ static gboolean finalizing_root_domain = FALSE;
 
 gboolean log_finalizers = FALSE;
 gboolean mono_do_not_finalize = FALSE;
+volatile gboolean suspend_finalizers = FALSE;
 gchar **mono_do_not_finalize_class_names = NULL;
 
 #define mono_finalizer_lock() mono_coop_mutex_lock (&finalizer_mutex)
@@ -105,7 +106,6 @@ add_thread_to_finalize (MonoInternalThread *thread, MonoError *error)
 	return is_ok (error);
 }
 
-static volatile gboolean suspend_finalizers = FALSE;
 /* 
  * actually, we might want to queue the finalize requests in a separate thread,
  * but we need to be careful about the execution domain of the thread...
@@ -718,7 +718,7 @@ finalize_domain_objects (DomainFinalizationReq *req)
 		g_ptr_array_free (objs, TRUE);
 	}
 #elif defined(HAVE_SGEN_GC)
-	mono_gc_finalize_domain (domain, &suspend_finalizers);
+	mono_gc_finalize_domain (domain);
 	mono_gc_invoke_finalizers ();
 #endif
 
@@ -885,6 +885,7 @@ mono_gc_cleanup (void)
 
 				/* Set a flag which the finalizer thread can check */
 				suspend_finalizers = TRUE;
+				mono_gc_suspend_finalizers ();
 
 				/* Try to abort the thread, in the hope that it is running managed code */
 				mono_thread_internal_abort (gc_thread);
