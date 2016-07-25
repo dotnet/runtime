@@ -892,7 +892,10 @@ AM_CONDITIONAL(INSTALL_MOBILE_STATIC, [test "x$with_mobile_static" != "xno"])
 
 AC_SUBST(INSTALL_MOBILE_STATIC)
 
-AC_SUBST(BITCODE)
+AM_COND_IF(BITCODE, [
+	BITCODE=TRUE
+	AC_SUBST(BITCODE)
+])
 
 default_profile=net_4_x
 if test -z "$INSTALL_MONODROID_TRUE"; then :
