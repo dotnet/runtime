@@ -108,6 +108,7 @@
     <Compile Include="Goto\Continue.cs" />
     <Compile Include="Goto\Goto.cs" />
     <Compile Include="Goto\GotoExpressionTests.cs" />
+    <Compile Include="Goto\MakeGoto.cs" />
     <Compile Include="Goto\Return.cs" />
     <Compile Include="HelperTypes.cs" />
     <Compile Include="Invoke\InvocationTests.cs" />
