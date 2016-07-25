@@ -488,7 +488,7 @@ mono_domain_finalize (MonoDomain *domain, guint32 timeout)
 
 #if TARGET_WIN32
 	while (TRUE) {
-		guint32 res = guarded_wait (done_event, timeout, TRUE);
+		guint32 res = guarded_wait (req->done_event, timeout, TRUE);
 		/* printf ("WAIT RES: %d.\n", res); */
 
 		if (res == WAIT_IO_COMPLETION) {
@@ -502,7 +502,7 @@ mono_domain_finalize (MonoDomain *domain, guint32 timeout)
 		}
 	}
 
-	CloseHandle (done_event);
+	CloseHandle (req->done_event);
 #else
 	mono_coop_mutex_lock (&req->mutex);
 	while (!req->done) {
