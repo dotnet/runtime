@@ -30,8 +30,6 @@ extern guint32 WaitForSingleObjectEx(gpointer handle, guint32 timeout,
 					gboolean alertable);
 extern guint32 SignalObjectAndWait(gpointer signal_handle, gpointer wait,
 				   guint32 timeout, gboolean alertable);
-extern guint32 WaitForMultipleObjects(guint32 numobjects, gpointer *handles,
-				      gboolean waitall, guint32 timeout);
 extern guint32 WaitForMultipleObjectsEx(guint32 numobjects, gpointer *handles,
 				      gboolean waitall, guint32 timeout, gboolean alertable);
 extern guint32 WaitForInputIdle(gpointer handle, guint32 timeout);

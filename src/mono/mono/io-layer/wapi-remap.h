@@ -95,7 +95,6 @@
 #define VerLanguageName wapi_VerLanguageName 
 #define WaitForSingleObjectEx wapi_WaitForSingleObjectEx
 #define SignalObjectAndWait wapi_SignalObjectAndWait
-#define WaitForMultipleObjects wapi_WaitForMultipleObjects
 #define WaitForMultipleObjectsEx wapi_WaitForMultipleObjectsEx
 #define WaitForInputIdle wapi_WaitForInputIdle
 

@@ -155,12 +155,6 @@ guint32 WaitForMultipleObjectsEx(guint32 numobjects, gpointer *handles,
 		g_error ("%s: unknown ret value %d", __func__, ret);
 }
 
-guint32 WaitForMultipleObjects(guint32 numobjects, gpointer *handles,
-			       gboolean waitall, guint32 timeout)
-{
-	return WaitForMultipleObjectsEx(numobjects, handles, waitall, timeout, FALSE);
-}
-
 /**
  * WaitForInputIdle:
  * @handle: a handle to the process to wait for
