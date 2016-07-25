@@ -104,11 +104,13 @@ The .NET Core copyright is held by ".NET Foundation and Contributors". See [.NET
 Source License
 --------------
 
-The .NET Core project uses multiple licenses for the various project repositories.  Most projects use the [MIT License](https://opensource.org/licenses/MIT) for code and the [Creative Commons Attribution 4.0 International Public License (CC-BY)](https://creativecommons.org/licenses/by/4.0/) license for documentation. The  [Apache 2 License](https://opensource.org/licenses/Apache-2.0) is also used. See the license file at the root of project repos for the specific license.
+The .NET Core project uses multiple licenses for the various project repositories.  Most projects use the [MIT License](https://opensource.org/licenses/MIT) for code and the [Creative Commons Attribution 4.0 International Public License (CC-BY)](https://creativecommons.org/licenses/by/4.0/) license for documentation. The  [Apache 2 License](https://opensource.org/licenses/Apache-2.0) is also used. 
 
-- Example [MIT](https://opensource.org/licenses/MIT) use: [CoreCLR](https://github.com/dotnet/coreclr/blob/master/LICENSE.TXT).
-- Example [Apache 2](https://opensource.org/licenses/Apache-2.0) use: [Roslyn](https://github.com/dotnet/roslyn/blob/master/License.txt).
-- Example [CC-BY](https://creativecommons.org/licenses/by/4.0/) use: [core-docs](https://github.com/dotnet/core-docs/blob/master/license.txt).
+See the license file at the root of project repositories for the specific license, such as with the following examples:
+
+- [CoreCLR](https://github.com/dotnet/coreclr/blob/master/LICENSE.TXT) [(MIT)](https://opensource.org/licenses/MIT).
+- [Roslyn](https://github.com/dotnet/roslyn/blob/master/License.txt) [(Apache 2)](https://opensource.org/licenses/Apache-2.0).
+- [core-docs](https://github.com/dotnet/core-docs/blob/master/license.txt) [(CC-BY)](https://creativecommons.org/licenses/by/4.0/).
 
 Binary License
 --------------
