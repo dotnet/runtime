@@ -172,5 +172,20 @@ namespace System.Linq.Expressions.Tests
             Assert.True(isActStr(a));
             Assert.False(isActStr(b));
         }
+
+        [Theory, PerCompilationType(nameof(TypeArguments))]
+        public void TypeEqualConstant(Type type, bool useInterpreter)
+        {
+            Func<bool> isNullOfType = Expression.Lambda<Func<bool>>(
+                Expression.TypeEqual(Expression.Constant(null), type)
+                ).Compile(useInterpreter);
+            Assert.False(isNullOfType());
+
+            isNullOfType = Expression.Lambda<Func<bool>>(
+                Expression.TypeEqual(Expression.Constant(null, typeof(string)), type)
+                ).Compile(useInterpreter);
+
+            Assert.False(isNullOfType());
+        }
     }
 }
