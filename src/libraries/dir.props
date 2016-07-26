@@ -62,10 +62,6 @@
   <Import Project="$(ToolRuntimePath)BuildVersion.targets" Condition="Exists('$(ToolRuntimePath)BuildVersion.targets')" />
 
   <PropertyGroup>
-    <!-- temporarily increase assembly version of corefx impl of desktop inbox contracts to allow folks
-         to move to the latest packages.  Remove once the full stack is on the latest packages
-         https://github.com/dotnet/corefx/issues/7114 -->
-    <AssemblyVersionTransition>true</AssemblyVersionTransition>
     <GenFacadesArgs>-ignoreBuildAndRevisionMismatch</GenFacadesArgs>
   </PropertyGroup>
 
