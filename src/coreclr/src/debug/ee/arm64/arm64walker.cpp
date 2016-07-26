@@ -194,6 +194,7 @@ BYTE*  NativeWalker::SetupOrSimulateInstructionForPatchSkip(T_CONTEXT * context,
             RegContents = (PCODE)GetMem(ip);
             if ((opcode & 0x4000000)) //LDR literal for SIMD
             {
+                NEON128 SimdRegContents;
                 LOG((LF_CORDB, LL_INFO100000, "Arm64Walker::Simulate opcode: %x to LDR V%d %p\n", opcode, RegNum, offset));
                 short opc = (opcode >> 30);
                 switch (opc)
@@ -206,7 +207,7 @@ BYTE*  NativeWalker::SetupOrSimulateInstructionForPatchSkip(T_CONTEXT * context,
                     break;
 
                 case 2: //SIMD 16 byte data
-                    NEON128 SimdRegContents = GetSimdMem(ip);
+                    SimdRegContents = GetSimdMem(ip);
                     SetSimdReg(context, RegNum, SimdRegContents);
                     break;
                 default:
