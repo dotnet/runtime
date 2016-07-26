@@ -1097,7 +1097,7 @@ void ShimStackWalk::AppendChain(ChainInfo * pChainInfo, StackWalkInfo * pStackWa
             // We need to send an extra enter-managed chain.
             _ASSERTE(pChainInfo->m_fLeafNativeContextIsValid);
             BYTE * sp = reinterpret_cast<BYTE *>(CORDbgGetSP(&(pChainInfo->m_leafNativeContext)));
-#ifndef _TARGET_ARM_
+#if !defined(_TARGET_ARM_) &&  !defined(_TARGET_ARM64_)
             // Dev11 324806: on ARM we use the caller's SP for a frame's ending delimiter so we cannot
             // subtract 4 bytes from the chain's ending delimiter else the frame might never be in range.
             // TODO: revisit overlapping ranges on ARM, it would be nice to make it consistent with the other architectures.

@@ -10,19 +10,26 @@ if (CLR_CMAKE_PLATFORM_ARCH_I386)
   list (APPEND ASM_OPTIONS /safeseh)
 endif (CLR_CMAKE_PLATFORM_ARCH_I386)
 
-# Need to compile asm file using custom command as include directories are not provided to asm compiler
-add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/dbghelpers.obj
-                   COMMAND ${CMAKE_ASM_MASM_COMPILER} ${ASM_INCLUDE_DIRECTORIES} ${ASM_DEFINITIONS} ${ASM_OPTIONS} /Fo${CMAKE_CURRENT_BINARY_DIR}/dbghelpers.obj /Ta${CORDBEE_DIR}/${ARCH_SOURCES_DIR}/dbghelpers.asm
-                   DEPENDS ${CORDBEE_DIR}/${ARCH_SOURCES_DIR}/dbghelpers.asm
-                   COMMENT "Compiling dbghelpers.asm")
+set(ASM_FILE ${CORDBEE_DIR}/${ARCH_SOURCES_DIR}/dbghelpers.asm)
+# asm files require preprocessing using cl.exe on arm64
+  if(CLR_CMAKE_PLATFORM_ARCH_ARM64)
+      get_filename_component(name ${ASM_FILE} NAME_WE)
+      set(ASM_PREPROCESSED_FILE ${CMAKE_CURRENT_BINARY_DIR}/${name}.asm)
+      preprocess_def_file(${ASM_FILE} ${ASM_PREPROCESSED_FILE})
+      set(CORDBEE_SOURCES_WKS_PREPROCESSED_ASM  ${ASM_PREPROCESSED_FILE})
+      set_property(SOURCE ${CORDBEE_SOURCES_WKS_PREPROCESSED_ASM} PROPERTY COMPILE_DEFINITIONS ${ASM_DEFINITIONS})
+      set_property(SOURCE ${CORDBEE_SOURCES_WKS_PREPROCESSED_ASM} PROPERTY COMPILE_DEFINITIONS ${ASM_OPTIONS})
+      add_library_clr(cordbee_wks ${CORDBEE_SOURCES_WKS} ${CORDBEE_SOURCES_WKS_PREPROCESSED_ASM})
+  else ()
 
-if(CLR_CMAKE_PLATFORM_ARCH_ARM64)
-  #mark obj as source that does not require compile
-  set_source_files_properties(${CMAKE_CURRENT_BINARY_DIR}/dbghelpers.obj PROPERTIES EXTERNAL_OBJECT TRUE)
-  add_library_clr(cordbee_wks ${CORDBEE_SOURCES_WKS})
-else()
-  add_library_clr(cordbee_wks ${CORDBEE_SOURCES_WKS} ${CMAKE_CURRENT_BINARY_DIR}/dbghelpers.obj)
-endif()
+      # Need to compile asm file using custom command as include directories are not provided to asm compiler
+      add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/dbghelpers.obj
+                           COMMAND ${CMAKE_ASM_MASM_COMPILER} ${ASM_INCLUDE_DIRECTORIES} ${ASM_DEFINITIONS} ${ASM_OPTIONS} /Fo${CMAKE_CURRENT_BINARY_DIR}/dbghelpers.obj /Ta${ASM_FILE}
+                           DEPENDS ${ASM_FILE}
+                           COMMENT "Compiling dbghelpers.asm")
+
+      add_library_clr(cordbee_wks ${CORDBEE_SOURCES_WKS} ${CMAKE_CURRENT_BINARY_DIR}/dbghelpers.obj)
+  endif(CLR_CMAKE_PLATFORM_ARCH_ARM64)
 
 else ()
 
