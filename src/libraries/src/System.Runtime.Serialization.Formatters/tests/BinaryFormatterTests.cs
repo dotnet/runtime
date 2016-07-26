@@ -509,6 +509,14 @@ namespace System.Runtime.Serialization.Formatters.Tests
             Assert.Equal(null, result.Value);
         }
 
+        [Fact]
+        public void ObjectReference_RealObjectSerialized()
+        {
+            var obj = new ObjRefReturnsObj { Real = 42 };
+            object real = FormatterClone<object>(obj);
+            Assert.Equal(42, real);
+        }
+
         public static IEnumerable<object[]> Deserialize_FuzzInput_MemberData()
         {
             var rand = new Random(42);
