@@ -99,6 +99,9 @@ PEFile::PEFile(PEImage *identity, BOOL fCheckAuthenticodeSignature/*=TRUE*/) :
     ,m_securityManagerLock(CrstPEFileSecurityManager)
 #endif // FEATURE_CAS_POLICY
     ,m_pHostAssembly(nullptr)
+#if defined(FEATURE_HOST_ASSEMBLY_RESOLVER)
+    ,m_pFallbackLoadContextBinder(nullptr)
+#endif // defined(FEATURE_HOST_ASSEMBLY_RESOLVER)
 {
     CONTRACTL
     {

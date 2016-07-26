@@ -659,6 +659,17 @@ public:
 protected:
     PTR_ICLRPrivAssembly m_pHostAssembly;
 
+#if defined(FEATURE_HOST_ASSEMBLY_RESOLVER)
+    // For certain assemblies, we do not have m_pHostAssembly since they are not bound using an actual binder.
+    // An example is Ref-Emitted assemblies. Thus, when such assemblies trigger load of their dependencies, 
+    // we need to ensure they are loaded in appropriate load context.
+    //
+    // To enable this, we maintain a concept of "Fallback LoadContext", which will be set to the Binder of the
+    // assembly that created the dynamic assembly. If the creator assembly is dynamic itself, then its fallback
+    // load context would be propagated to the assembly being dynamically generated.
+    ICLRPrivBinder *m_pFallbackLoadContextBinder;
+#endif // defined(FEATURE_HOST_ASSEMBLY_RESOLVER)
+
 protected:
 
     friend class CLRPrivBinderFusion;
@@ -684,6 +695,21 @@ public:
 
     bool CanUseWithBindingCache()
     { LIMITED_METHOD_CONTRACT; return !HasHostAssembly(); }
+
+#if defined(FEATURE_HOST_ASSEMBLY_RESOLVER)
+    void SetFallbackLoadContextBinder(ICLRPrivBinder *pFallbackLoadContextBinder)
+    { 
+        LIMITED_METHOD_CONTRACT; 
+        m_pFallbackLoadContextBinder = pFallbackLoadContextBinder; 
+    }
+
+    ICLRPrivBinder *GetFallbackLoadContextBinder()
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        return m_pFallbackLoadContextBinder;
+    }
+#endif //defined(FEATURE_HOST_ASSEMBLY_RESOLVER)
 };  // class PEFile
 
 
