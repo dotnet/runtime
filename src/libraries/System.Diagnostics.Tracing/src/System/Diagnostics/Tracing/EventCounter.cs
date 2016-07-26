@@ -434,7 +434,7 @@ namespace System.Diagnostics.Tracing
 
     // This class a work-around because .NET V4.6.2 did not make EventSourceIndex public (it was only protected)
     // We make this helper class to get around that protection.   We want V4.6.3 to make this public at which
-    // point this class is no longer needed and can be removed.  
+    // point this class is no longer needed and can be removed.
     internal class EventListenerHelper : EventListener {
         public new static int EventSourceIndex(EventSource eventSource) { return EventListener.EventSourceIndex(eventSource); }
         protected override void OnEventWritten(EventWrittenEventArgs eventData) { } // override abstact methods to keep compiler happy
