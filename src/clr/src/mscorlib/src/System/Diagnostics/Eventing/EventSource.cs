@@ -404,7 +404,7 @@ namespace System.Diagnostics.Tracing
         public static Guid GetGuid(Type eventSourceType)
         {
             if (eventSourceType == null)
-                throw new ArgumentNullException("eventSourceType");
+                throw new ArgumentNullException(nameof(eventSourceType));
             Contract.EndContractBlock();
 
             EventSourceAttribute attrib = (EventSourceAttribute)GetCustomAttributeHelper(eventSourceType, typeof(EventSourceAttribute));
@@ -429,7 +429,7 @@ namespace System.Diagnostics.Tracing
 
             if (name == null)
             {
-                throw new ArgumentException(Resources.GetResourceString("Argument_InvalidTypeName"), "eventSourceType");
+                throw new ArgumentException(Resources.GetResourceString("Argument_InvalidTypeName"), nameof(eventSourceType));
             }
             return GenerateGuidFromName(name.ToUpperInvariant());       // Make it case insensitive.  
         }
@@ -472,7 +472,7 @@ namespace System.Diagnostics.Tracing
         public static string GenerateManifest(Type eventSourceType, string assemblyPathToIncludeInManifest, EventManifestOptions flags)
         {
             if (eventSourceType == null)
-                throw new ArgumentNullException("eventSourceType");
+                throw new ArgumentNullException(nameof(eventSourceType));
             Contract.EndContractBlock();
 
             byte[] manifestBytes = EventSource.CreateManifestAndDescriptors(eventSourceType, assemblyPathToIncludeInManifest, null, flags);
@@ -511,12 +511,12 @@ namespace System.Diagnostics.Tracing
         public static void SendCommand(EventSource eventSource, EventCommand command, IDictionary<string, string> commandArguments)
         {
             if (eventSource == null)
-                throw new ArgumentNullException("eventSource");
+                throw new ArgumentNullException(nameof(eventSource));
 
             // User-defined EventCommands should not conflict with the reserved commands.
             if ((int)command <= (int)EventCommand.Update && (int)command != (int)EventCommand.SendManifest)
             {
-                throw new ArgumentException(Resources.GetResourceString("EventSource_InvalidCommand"), "command");
+                throw new ArgumentException(Resources.GetResourceString("EventSource_InvalidCommand"), nameof(command));
             }
 
             eventSource.SendCommand(null, 0, 0, command, true, EventLevel.LogAlways, EventKeywords.None, commandArguments);
@@ -1451,7 +1451,7 @@ namespace System.Diagnostics.Tracing
                 m_traits = traits;
                 if (m_traits != null && m_traits.Length % 2 != 0)
                 {
-                    throw new ArgumentException(Resources.GetResourceString("TraitEven"), "traits");
+                    throw new ArgumentException(Resources.GetResourceString("TraitEven"), nameof(traits));
                 }
 
                 if (eventSourceGuid == Guid.Empty)
@@ -1543,7 +1543,7 @@ namespace System.Diagnostics.Tracing
         private static string GetName(Type eventSourceType, EventManifestOptions flags)
         {
             if (eventSourceType == null)
-                throw new ArgumentNullException("eventSourceType");
+                throw new ArgumentNullException(nameof(eventSourceType));
             Contract.EndContractBlock();
 
             EventSourceAttribute attrib = (EventSourceAttribute)GetCustomAttributeHelper(eventSourceType, typeof(EventSourceAttribute), flags);
@@ -3672,7 +3672,7 @@ namespace System.Diagnostics.Tracing
             if (eventData == null || eventData.Length <= eventAttribute.EventId)
             {
                 EventMetadata[] newValues = new EventMetadata[Math.Max(eventData.Length + 16, eventAttribute.EventId + 1)];
-                Array.Copy(eventData, newValues, eventData.Length);
+                Array.Copy(eventData, 0, newValues, 0, eventData.Length);
                 eventData = newValues;
             }
 
@@ -3711,7 +3711,7 @@ namespace System.Diagnostics.Tracing
             if (eventData.Length - idx > 2)      // allow one wasted slot. 
             {
                 EventMetadata[] newValues = new EventMetadata[idx + 1];
-                Array.Copy(eventData, newValues, newValues.Length);
+                Array.Copy(eventData, 0, newValues, 0, newValues.Length);
                 eventData = newValues;
             }
         }
@@ -3994,7 +3994,7 @@ namespace System.Diagnostics.Tracing
                                 EventSourceSettings.EtwSelfDescribingEventFormat;
             if ((settings & evtFormatMask) == evtFormatMask)
             {
-                throw new ArgumentException(Resources.GetResourceString("EventSource_InvalidEventFormat"), "settings");
+                throw new ArgumentException(Resources.GetResourceString("EventSource_InvalidEventFormat"), nameof(settings));
             }
 
             // If you did not explicitly ask for manifest, you get self-describing.  
@@ -4351,7 +4351,7 @@ namespace System.Diagnostics.Tracing
         {
             if (eventSource == null)
             {
-                throw new ArgumentNullException("eventSource");
+                throw new ArgumentNullException(nameof(eventSource));
             }
             Contract.EndContractBlock();
 
@@ -4366,7 +4366,7 @@ namespace System.Diagnostics.Tracing
         {
             if (eventSource == null)
             {
-                throw new ArgumentNullException("eventSource");
+                throw new ArgumentNullException(nameof(eventSource));
             }
             Contract.EndContractBlock();
 
@@ -6000,7 +6000,7 @@ namespace System.Diagnostics.Tracing
         internal bool m_activityFilteringEnabled;     // does THIS EventSource have activity filtering turned on for this listener?
 #endif // FEATURE_ACTIVITYSAMPLING
 
-        // Only guarenteed to exist after a InsureInit()
+        // Only guaranteed to exist after a InsureInit()
         internal EventDispatcher m_Next;              // These form a linked list in code:EventSource.m_Dispatchers
         // Of all listeners for that eventSource.  
     }
