@@ -72,16 +72,35 @@ void __stdcall jitStartup(ICorJitHost* jitHost)
 #else
     if (jitstdout == nullptr)
     {
-        int jitstdoutFd = _dup(_fileno(procstdout()));
-        _setmode(jitstdoutFd, _O_TEXT);
-        jitstdout = _fdopen(jitstdoutFd, "w");
-        assert(jitstdout != nullptr);
+        int stdoutFd = _fileno(procstdout());
+        // Check fileno error output(s) -1 may overlap with errno result
+        // but is included for completness.
+        // We want to detect the case where the initial handle is null
+        // or bogus and avoid making further calls.
+        if ((stdoutFd != -1) && (stdoutFd != -2) && (errno != EINVAL))
+        {
+            int jitstdoutFd = _dup(_fileno(procstdout()));
+            // Check the error status returned by dup.
+            if (jitstdoutFd != -1)
+            {
+                _setmode(jitstdoutFd, _O_TEXT);
+                jitstdout = _fdopen(jitstdoutFd, "w");
+                assert(jitstdout != nullptr);
 
-        // Prevent the FILE* from buffering its output in order to avoid calls to
-        // `fflush()` throughout the code.
-        setvbuf(jitstdout, nullptr, _IONBF, 0);
+                // Prevent the FILE* from buffering its output in order to avoid calls to
+                // `fflush()` throughout the code.
+                setvbuf(jitstdout, nullptr, _IONBF, 0);
+            }
+        }
     }
-#endif
+
+    // If jitstdout is still null, fallback to whatever procstdout() was
+    // initially set to.
+    if (jitstdout == nullptr)
+    {
+        jitstdout = procstdout();
+    }
+#endif // PLATFORM_UNIX
 
 #ifdef FEATURE_TRACELOGGING
     JitTelemetry::NotifyDllProcessAttach();
