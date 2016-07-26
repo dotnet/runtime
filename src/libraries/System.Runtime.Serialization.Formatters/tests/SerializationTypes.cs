@@ -348,6 +348,13 @@ namespace System.Runtime.Serialization.Formatters.Tests
         private void OnDeserializedMethod(StreamingContext context) => DerivedIncrementedDuringOnDeserializedMethod++;
     }
 
+    [Serializable]
+    public sealed class ObjRefReturnsObj : IObjectReference
+    {
+        public object Real;
+        public object GetRealObject(StreamingContext context) => Real;
+    }
+
     internal sealed class NonSerializablePair<T1, T2>
     {
         public T1 Value1;

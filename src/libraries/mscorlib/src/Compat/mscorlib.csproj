@@ -10,6 +10,15 @@
     <BaselineAllAPICompatError>true</BaselineAllAPICompatError>
     <ContractProject>..\..\ref\Compat\mscorlib.csproj</ContractProject>
   </PropertyGroup>
+  <ItemGroup>
+    <!-- We need to add this for now because these two types exist in System.Globalization and System.Runtime. This should be removed once we update corefx packages again. -->
+    <SeedTypePreference Include="System.Globalization.Calendar">
+      <Assembly>System.Runtime</Assembly>
+    </SeedTypePreference>
+    <SeedTypePreference Include="System.Globalization.CalendarWeekRule">
+      <Assembly>System.Runtime</Assembly>
+    </SeedTypePreference>
+  </ItemGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
