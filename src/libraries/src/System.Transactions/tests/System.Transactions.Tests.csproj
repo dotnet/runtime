@@ -15,6 +15,10 @@
     <Compile Include="TransactionScopeTest.cs" />
     <Compile Include="AsyncTest.cs" />
     <Compile Include="EnlistTest.cs" />
+    <Compile Include="CloneTxTests.cs" />
+    <Compile Include="LTMEnlistmentTests.cs" />
+    <Compile Include="HelperFunctions.cs" />
+    <Compile Include="TestEnlistments.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\pkg\System.Transactions.pkgproj">
