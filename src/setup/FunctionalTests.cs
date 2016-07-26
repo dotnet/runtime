@@ -93,17 +93,17 @@ namespace Microsoft.Extensions.DependencyModel
         private void ValidateRuntimeLibrariesFullClr(CommandResult result, string appname)
         {
             // entry assembly
-            result.Should().HaveStdOutContaining($"Runtime {appname}:{appname}");
+            result.Should().HaveStdOutContaining($"Runtime {appname.ToLowerInvariant()}:{appname}");
             // project dependency
-            result.Should().HaveStdOutContaining("Runtime DependencyContextValidator:DependencyContextValidator");
+            result.Should().HaveStdOutContaining("Runtime dependencycontextvalidator:DependencyContextValidator");
         }
 
         private void ValidateCompilationLibrariesFullClr(CommandResult result, string appname)
         {
             // entry assembly
-            result.Should().HaveStdOutContaining($"Compilation {appname}:{appname}.exe");
+            result.Should().HaveStdOutContaining($"Compilation {appname.ToLowerInvariant()}:{appname}.exe");
             // project dependency
-            result.Should().HaveStdOutContaining("Compilation DependencyContextValidator:DependencyContextValidator.dll");
+            result.Should().HaveStdOutContaining("Compilation dependencycontextvalidator:DependencyContextValidator.dll");
             // system assembly
             result.Should().HaveStdOutContaining("Compilation mscorlib:mscorlib.dll");
         }
@@ -112,22 +112,21 @@ namespace Microsoft.Extensions.DependencyModel
         private void ValidateRuntimeLibraries(CommandResult result, string appname)
         {
             // entry assembly
-            result.Should().HaveStdOutContaining($"Runtime {appname}:{appname}");
+            result.Should().HaveStdOutContaining($"Runtime {appname.ToLowerInvariant()}:{appname}");
             // project dependency
-            result.Should().HaveStdOutContaining("Runtime DependencyContextValidator:DependencyContextValidator");
+            result.Should().HaveStdOutContaining("Runtime dependencycontextvalidator:DependencyContextValidator");
             // system assembly
-            result.Should().HaveStdOutContaining("Runtime System.Linq:System.Linq");
+            result.Should().HaveStdOutContainingIgnoreCase("Runtime System.Linq:System.Linq");
         }
 
         private void ValidateCompilationLibraries(CommandResult result, string appname)
         {
             // entry assembly
-            result.Should().HaveStdOutContaining($"Compilation {appname}:{appname}.dll");
+            result.Should().HaveStdOutContaining($"Compilation {appname.ToLowerInvariant()}:{appname}.dll");
             // project dependency
-            result.Should().HaveStdOutContaining("Compilation DependencyContextValidator:DependencyContextValidator.dll");
+            result.Should().HaveStdOutContaining("Compilation dependencycontextvalidator:DependencyContextValidator.dll");
             // system assembly
-            result.Should().HaveStdOutContaining("Compilation System.Linq:System.Linq.dll");
+            result.Should().HaveStdOutContainingIgnoreCase("Compilation System.Linq:System.Linq.dll");
         }
-
     }
 }
