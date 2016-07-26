@@ -29,87 +29,63 @@ function TileWindows
     $shell.TileHorizontally()
 }
 
-function CurrentPath
-{
-    return (Get-Item -Path ".\" -Verbose).FullName
-}
-
-function ParseCurrentPath
-{
-    $p = CurrentPath
-    
-    $test_found = $false
-    $contract_found = $false
-    $root_found = $false
-    
-    while ((-not $root_found) -and ($p -ne ""))
-    {
-      $leaf = Split-Path $p -Leaf
-      
-      if (Test-Path (Join-Path $p 'build.cmd'))
-      {
-          $Global:RootPath = $p
-          $root_found = $true
-      }
-      
-      if ($test_found -and (-not $contract_found))
-      {
-          $Global:ContractName = $leaf
-          $contract_found = $true
-      }
-      
-      if ($leaf -eq "tests")
-      {
-          $test_found = $true
-      }
-      
-      $p = Split-Path $p
-    }
-    
-    if (-not $test_found)
-    {
-       throw "This folder doesn't appear to be part of a test (looking for ...\contract\tests\...)." 
-    }
-}
-
 function ParseTestExecutionCommand($msBuildOutput)
 {
-    $foundTestExecution = $false
+    $testSectionDelimiter = "*RunTestsForProject:*"
+    $foundTestSectionDelimiter = $false
+    
+    $pathDelimiter = "*Executing in*"
+    $foundPath = $false
+
+    $commandDelimiter = "*Command(s):*"
+    $foundCommandDelimiter = $false
+
     $cmdLine = ""
+    $pathLine = ""
 
     foreach ($line in $msBuildOutput)
     {
-        if ($foundTestExecution -eq $true)
+        if (-not $foundTestSectionDelimiter)
+        {
+            if ($line -like $testSectionDelimiter)
+            {
+                $foundTestSectionDelimiter = $true
+            }
+        }
+        elseif (-not $foundPath)
+        {
+            if ($line -like $pathDelimiter)
+            {
+                $pathLine = $line.Split()[4]
+                $foundPath = $true
+            }
+        }
+        elseif (-not $foundCommandDelimiter)
+        {
+            if ($line -like $commandDelimiter)
+            {
+                $foundCommandDelimiter = $true
+            }
+        }
+        else
         {
             $cmdLine = $line
-            break
-        }
-        
-        if ($line.Contains("RunTestsForProject:"))
-        {
-            $foundTestExecution = $true
+            break;
         }
     }
 
-    if (-not $foundTestExecution)
+    if (-not $foundCommandDelimiter)
     {
         throw "Cannot parse MSBuild output: please ensure that the current folder contains a test."
     }
 
-    $Global:TestCommand = $cmdLine.Trim()
-}
-
-function ParseTestFolder($testExecutionCmdLine)
-{
-    $coreRunPath = $testExecutionCmdLine.Split()[0]
-    return Split-Path $coreRunPath
+    $Global:TestPath = $pathLine.Trim()
+    $Global:TestCommand = $cmdLine.Trim() -replace ("call ", ".\")
 }
 
 function Initialize
 {
-    ParseCurrentPath
-
-    Write-Host -NoNewline "Initializing tests for $($Global:ContractName) . . . "
+    Write-Host -NoNewline "Initializing tests . . . "
 
     try
     {
@@ -125,8 +101,13 @@ function Initialize
     }
 }
 
-function RunOne($testCommand)
+function RunOne($testPath, $testCommand)
 {
+    if ($testPath -ne "")
+    {
+        $Global:TestPath = $testPath
+    }
+
     if ($testCommand -ne "")
     {
         $Global:TestCommand = $testCommand
@@ -137,12 +118,10 @@ function RunOne($testCommand)
         throw "Run Initialize first or pass the test command line as a parameter."
     }
 
-    Write-Host $Global:TestCommand
-    $path = ParseTestFolder($Global:TestCommand)
-    Write-Host "$path"
+    Write-Host "Path: $($Global:TestPath) Command: $($Global:TestCommand)"
 
     Push-Location
-    cd $path
+    cd $Global:TestPath
     Invoke-Expression $Global:TestCommand
     if ($lastexitcode -ne 0)
     {
@@ -152,14 +131,13 @@ function RunOne($testCommand)
     Pop-Location
 }
 
-function RunUntilFailed($testCommand, $delayVarianceMilliseconds = 0)
+function RunUntilFailed($testPath, $testCommand, $delayVarianceMilliseconds = 0)
 {
-
     try
     {
         while($true)
         {
-            RunOne $testCommand
+            RunOne $testPath $testCommand
 
             if ($delayVarianceMilliseconds -ne 0)
             {
@@ -187,8 +165,7 @@ function RunMultiple(
     }
 
     $script = $PSCommandPath
-    $testCommand = $Global:TestCommand
-    
+        
     if ($untilFailed)
     {
         $executionMethod = "RunUntilFailed"
@@ -198,7 +175,7 @@ function RunMultiple(
         $executionMethod = "RunOne"
     }
 
-    $cmdArguments = "-Command `"&{. $script; $executionMethod '$testCommand' $RandomDelayVarianceMilliseconds}`""
+    $cmdArguments = "-Command `"&{. $script; $executionMethod '$Global:TestPath' '$Global:TestCommand' $RandomDelayVarianceMilliseconds}`""
 
     $processes = @()
 
