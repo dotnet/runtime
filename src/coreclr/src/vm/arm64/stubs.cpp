@@ -1051,23 +1051,6 @@ AdjustContextForVirtualStub(
 }
 #endif // !(DACCESS_COMPILE && CROSSGEN_COMPILE)
 
-extern "C" {
-
-void FuncEvalHijack(void)
-{
-    _ASSERTE(!"ARM64:NYI");
-}
-
-void ExceptionHijack(void)
-{
-    _ASSERTE(!"ARM64:NYI");
-}
-void ExceptionHijackEnd(void)
-{
-    _ASSERTE(!"ARM64:NYI");
-}
-};
-
 #ifdef FEATURE_COMINTEROP
 extern "C" void GenericComPlusCallStub(void)
 {
