@@ -752,27 +752,27 @@ unsigned __int8     getU1LittleEndian(const BYTE * ptr)
 
 inline
 unsigned __int16    getU2LittleEndian(const BYTE * ptr)
-{ return *(UNALIGNED unsigned __int16 *)ptr; }
+{ return GET_UNALIGNED_VAL16(ptr); }
 
 inline
 unsigned __int32    getU4LittleEndian(const BYTE * ptr)
-{ return *(UNALIGNED unsigned __int32*)ptr; }
+{ return GET_UNALIGNED_VAL32(ptr); }
 
 inline
   signed __int8     getI1LittleEndian(const BYTE * ptr)
-{ return * (UNALIGNED signed __int8 *)ptr; }
+{ return *(UNALIGNED signed __int8 *)ptr; }
 
 inline
   signed __int16    getI2LittleEndian(const BYTE * ptr)
-{ return * (UNALIGNED signed __int16 *)ptr; }
+{ return GET_UNALIGNED_VAL16(ptr); }
 
 inline
   signed __int32    getI4LittleEndian(const BYTE * ptr)
-{ return *(UNALIGNED signed __int32*)ptr; }
+{ return GET_UNALIGNED_VAL32(ptr); }
 
 inline
   signed __int64    getI8LittleEndian(const BYTE * ptr)
-{ return *(UNALIGNED signed __int64*)ptr; }
+{ return GET_UNALIGNED_VAL64(ptr); }
 
 inline
 float               getR4LittleEndian(const BYTE * ptr)
