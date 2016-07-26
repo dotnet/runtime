@@ -44,7 +44,10 @@ RUN apt-get update && \
 # liblldb is needed so deb package build does not throw missing library info errors
 RUN wget -O - http://llvm.org/apt/llvm-snapshot.gpg.key|sudo apt-key add -
 RUN echo "deb http://llvm.org/apt/jessie/ llvm-toolchain-jessie-3.6 main" > /etc/apt/sources.list.d/llvm-toolchain.list
-RUN apt-get update && apt-get -qqy install liblldb-3.6
+RUN apt-get update && \
+    apt-get -qqy install liblldb-3.6 && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
 
 # Use clang as c++ compiler
 RUN update-alternatives --install /usr/bin/c++ c++ /usr/bin/clang++-3.5 100
