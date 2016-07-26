@@ -213,6 +213,9 @@ public:
         *(reinterpret_cast<DWORD*>(BypassBuffer)) = SentinelValue;
         RipTargetFixup = 0;
         RipTargetFixupSize = 0;
+#elif _TARGET_ARM64_
+        RipTargetFixup = 0;
+        
 #endif
     }
 
@@ -251,6 +254,8 @@ public:
 
     UINT_PTR                RipTargetFixup;
     BYTE                    RipTargetFixupSize;
+#elif defined(_TARGET_ARM64_)
+    UINT_PTR                RipTargetFixup;
 #endif
 
 private:

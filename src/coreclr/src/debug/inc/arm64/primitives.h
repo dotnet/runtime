@@ -13,10 +13,11 @@
 #ifndef PRIMITIVES_H_
 #define PRIMITIVES_H_
 
+typedef NEON128                     FPRegister64;
 typedef const BYTE                  CORDB_ADDRESS_TYPE;
 typedef DPTR(CORDB_ADDRESS_TYPE)    PTR_CORDB_ADDRESS_TYPE;
 
-#define MAX_INSTRUCTION_LENGTH 8
+#define MAX_INSTRUCTION_LENGTH 4
 
 // Given a return address retrieved during stackwalk,
 // this is the offset by which it should be decremented to land at the call instruction.
@@ -25,6 +26,16 @@ typedef DPTR(CORDB_ADDRESS_TYPE)    PTR_CORDB_ADDRESS_TYPE;
 #define PRD_TYPE                               LONG
 #define CORDbg_BREAK_INSTRUCTION_SIZE 4
 #define CORDbg_BREAK_INSTRUCTION (LONG)0xD43E0000
+
+#define NZCV_N 0x80000000  
+#define NZCV_Z 0x40000000  
+#define NZCV_C 0x20000000  
+#define NZCV_V 0x10000000  
+
+#define NZCV_N_BIT 0x1f  
+#define NZCV_Z_BIT 0x1e  
+#define NZCV_C_BIT 0x1d  
+#define NZCV_V_BIT 0x1c  
 
 inline CORDB_ADDRESS GetPatchEndAddr(CORDB_ADDRESS patchAddr)
 {
@@ -169,6 +180,7 @@ inline bool IsSSFlagEnabled(DT_CONTEXT * pContext)
     _ASSERTE(pContext != NULL);
     return (pContext->Cpsr & 0x00200000) != 0;
 }
+
 
 #include "arm_primitives.h"
 #endif // PRIMITIVES_H_
