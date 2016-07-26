@@ -635,6 +635,9 @@ worker_thread (gpointer data)
 			if (retire)
 				retire = FALSE;
 
+			/* The tpdomain->domain might have unloaded, while this thread was parked */
+			previous_tpdomain = NULL;
+
 			continue;
 		}
 
