@@ -2,9 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
-using System.Net;
 using System.Net.Sockets;
 using System.Threading.Tasks;
 
@@ -40,9 +38,12 @@ namespace System.Net.NameResolution.Tests
             Assert.NotNull(list2);
 
             Assert.Equal(list1.Length, list2.Length);
-            for (var i = 0; i < list1.Length; i++)
+
+            var set = new HashSet<IPAddress>();
+            for (int i = 0; i < list1.Length; i++)
             {
                 Assert.Equal(list1[i], list2[i]);
+                Assert.True(set.Add(list1[i]), "Multiple entries for address " + list1[i]);
             }
         }
 
@@ -99,7 +100,7 @@ namespace System.Net.NameResolution.Tests
             string longHostName = new string('a', maxHostName - 1);
             string longHostNameWithDot = longHostName + ".";
 
-            SocketException ex = await Assert.ThrowsAsync<SocketException>(
+            SocketException ex = await Assert.ThrowsAnyAsync<SocketException>(
                 () => Dns.GetHostAddressesAsync(longHostNameWithDot));
 
             Assert.Equal(SocketError.HostNotFound, ex.SocketErrorCode);
@@ -133,16 +134,15 @@ namespace System.Net.NameResolution.Tests
 
         public static IEnumerable<object[]> GetInvalidAddresses()
         {
-            yield return new object[] {IPAddress.Any};
+            yield return new object[] { IPAddress.Any };
             yield return new object[] { IPAddress.IPv6Any };
             yield return new object[] { IPAddress.IPv6None };
         }
 
         [Theory]
         [MemberData(nameof(GetInvalidAddresses))]
-        public async Task Dns_GetHostEntryAsync_AnyIPAddress_Fail(object addressParam)
+        public async Task Dns_GetHostEntryAsync_AnyIPAddress_Fail(IPAddress address)
         {
-            var address = (IPAddress)addressParam;
             string addressString = address.ToString();
 
             await Assert.ThrowsAsync<ArgumentException>(() => Dns.GetHostEntryAsync(address));
@@ -154,11 +154,11 @@ namespace System.Net.NameResolution.Tests
             yield return new object[] { IPAddress.None };
         }
 
+        [ActiveIssue(10345, PlatformID.AnyUnix)]
         [Theory]
         [MemberData(nameof(GetNoneAddresses))]
-        public async Task Dns_GetHostEntryAsync_NoneIPAddress_Ok(object addressParam)
+        public async Task Dns_GetHostEntryAsync_NoneIPAddress_Fail(IPAddress address)
         {
-            var address = (IPAddress)addressParam;
             string addressString = address.ToString();
 
             await Assert.ThrowsAsync<SocketException>(() => Dns.GetHostEntryAsync(address));
