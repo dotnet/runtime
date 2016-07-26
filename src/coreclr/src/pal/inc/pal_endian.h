@@ -98,8 +98,12 @@ inline void SwapGuid(GUID *pGuid)
 #define VALPTR(x) VAL32(x)
 #endif
 
-#if defined(ALIGN_ACCESS) && !defined(_MSC_VER)
+#ifdef _ARM_
+#define LOG2_PTRSIZE	2
+#define ALIGN_ACCESS    ((1<<LOG2_PTRSIZE)-1)
+#endif
 
+#if defined(ALIGN_ACCESS) && !defined(_MSC_VER)
 #ifdef __cplusplus
 extern "C++" {
 // Get Unaligned values from a potentially unaligned object
@@ -138,7 +142,7 @@ inline void SET_UNALIGNED_64(void *pObject, UINT64 Value)
 }
 #endif // __cplusplus
 
-#else
+#else // defined(ALIGN_ACCESS) && !defined(_MSC_VER)
 
 // Get Unaligned values from a potentially unaligned object
 #define GET_UNALIGNED_16(_pObject)  (*(UINT16 UNALIGNED *)(_pObject))
@@ -150,7 +154,7 @@ inline void SET_UNALIGNED_64(void *pObject, UINT64 Value)
 #define SET_UNALIGNED_32(_pObject, _Value)  (*(UNALIGNED UINT32 *)(_pObject)) = (UINT32)(_Value)
 #define SET_UNALIGNED_64(_pObject, _Value)  (*(UNALIGNED UINT64 *)(_pObject)) = (UINT64)(_Value) 
 
-#endif
+#endif // defined(ALIGN_ACCESS) && !defined(_MSC_VER)
 
 // Get Unaligned values from a potentially unaligned object and swap the value
 #define GET_UNALIGNED_VAL16(_pObject) VAL16(GET_UNALIGNED_16(_pObject))
