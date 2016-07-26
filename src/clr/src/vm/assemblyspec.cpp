@@ -1256,26 +1256,40 @@ ICLRPrivBinder* AssemblySpec::GetBindingContextFromParentAssembly(AppDomain *pDo
         
         // ICLRPrivAssembly implements ICLRPrivBinder and thus, "is a" binder in a manner of semantics.
         pParentAssemblyBinder = pParentPEAssembly->GetBindingContext();
-        
-#if defined(FEATURE_HOST_ASSEMBLY_RESOLVER)
-        if (pParentAssemblyBinder != NULL)
-        {
-            CLRPrivBinderCoreCLR *pTPABinder = pDomain->GetTPABinderContext();
-            if (AreSameBinderInstance(pTPABinder, pParentAssemblyBinder))
-            {
-                // If the parent assembly is a platform (TPA) assembly, then its binding context will always be the TPABinder context. In 
-                // such case, we will return the default context for binding to allow the bind to go
-                // via the custom binder context, if it was overridden. If it was not overridden, then we will get the expected
-                // TPABinder context anyways.
-                //
-                // Get the reference to the default binding context (this could be the TPABinder context or custom AssemblyLoadContext)
-                pParentAssemblyBinder = static_cast<ICLRPrivBinder*>(pDomain->GetFusionContext());
-            }
-        }
-#endif // defined(FEATURE_HOST_ASSEMBLY_RESOLVER)
     }
-       
+
 #if defined(FEATURE_HOST_ASSEMBLY_RESOLVER)
+    if (pParentAssemblyBinder == NULL)
+    {
+        // If the parent assembly binder is not available, then we maybe dealing with one of the following
+        // assembly scenarios:
+        //
+        // 1) Domain Neutral assembly
+        // 2) RefEmitted assembly
+        // 3) Entrypoint assembly
+        //
+        // For (1) and (3), we will need to bind against the DefaultContext binder (aka TPA Binder). This happens
+        // below if we do not find the parent assembly binder.
+        //
+        // For (2), check if we have the fallback load context binder for the requesting dynamic assembly available.
+        
+        pParentAssemblyBinder = GetFallbackLoadContextBinderForRequestingAssembly();
+    }
+
+    if (pParentAssemblyBinder != NULL)
+    {
+        CLRPrivBinderCoreCLR *pTPABinder = pDomain->GetTPABinderContext();
+        if (AreSameBinderInstance(pTPABinder, pParentAssemblyBinder))
+        {
+            // If the parent assembly is a platform (TPA) assembly, then its binding context will always be the TPABinder context. In 
+            // such case, we will return the default context for binding to allow the bind to go
+            // via the custom binder context, if it was overridden. If it was not overridden, then we will get the expected
+            // TPABinder context anyways.
+            //
+            // Get the reference to the default binding context (this could be the TPABinder context or custom AssemblyLoadContext)
+            pParentAssemblyBinder = static_cast<ICLRPrivBinder*>(pDomain->GetFusionContext());
+        }
+    }
 
 #if defined(FEATURE_COMINTEROP)
     if (!IsContentType_WindowsRuntime() && (pParentAssemblyBinder != NULL))
@@ -1295,10 +1309,10 @@ ICLRPrivBinder* AssemblySpec::GetBindingContextFromParentAssembly(AppDomain *pDo
     
     if (!pParentAssemblyBinder)
     {
-        // We can be here when loading assemblies via the host (e.g. ICLRRuntimeHost2::ExecuteAssembly) or when attempting
-        // to load assemblies via custom AssemblyLoadContext implementation. 
+        // We can be here when loading assemblies via the host (e.g. ICLRRuntimeHost2::ExecuteAssembly) or dealing with assemblies
+        // whose parent is a domain neutral assembly (see comment above for details).
         //
-        // In such a case, the parent assembly (semantically) is mscorlib and thus, the default binding context should be 
+        // In such a case, the parent assembly (semantically) is CoreLibrary and thus, the default binding context should be 
         // used as the parent assembly binder.
         pParentAssemblyBinder = static_cast<ICLRPrivBinder*>(pDomain->GetFusionContext());
     }

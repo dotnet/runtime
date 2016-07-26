@@ -1902,6 +1902,16 @@ DomainAssembly * LoadDomainAssembly(
         spec.SetParentAssembly(pRequestingAssembly->GetDomainAssembly());
     }
     
+#if defined(FEATURE_HOST_ASSEMBLY_RESOLVER)    
+    // If the requesting assembly has Fallback LoadContext binder available,
+    // then set it up in the AssemblySpec.
+    if (pRequestingAssembly != NULL)
+    {
+        PEFile *pRequestingAssemblyManifestFile = pRequestingAssembly->GetManifestFile();
+        spec.SetFallbackLoadContextBinderForRequestingAssembly(pRequestingAssemblyManifestFile->GetFallbackLoadContextBinder());
+    }
+#endif // defined(FEATURE_HOST_ASSEMBLY_RESOLVER)
+
     if (bThrowIfNotFound)
     {
         pDomainAssembly = spec.LoadDomainAssembly(FILE_LOADED);
