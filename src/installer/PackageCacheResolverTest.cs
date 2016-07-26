@@ -19,7 +19,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
         [Fact]
         public void SholdUseEnvironmentVariableToGetDefaultLocation()
         {
-            var result = PackageCacheCompilationAssemblyResolver.GetDefaultPackageCacheDirectory(GetDefaultEnviroment());
+            var result = PackageCacheCompilationAssemblyResolver.GetDefaultPackageCacheDirectory(GetDefaultEnvironment());
 
             result.Should().Be(CachePath);
         }
@@ -55,10 +55,10 @@ namespace Microsoft.Extensions.DependencyModel.Tests
         [Fact]
         public void ChecksHashFile()
         {
-            var packagePath = Path.Combine(CachePath, F.DefaultPackageName, F.DefaultVersion);
+            var packagePath = GetPackagesPath(F.DefaultPackageName, F.DefaultVersion);
             var fileSystem = FileSystemMockBuilder.Create()
                 .AddFile(
-                    Path.Combine(packagePath, $"{F.DefaultPackageName}.{F.DefaultVersion}.nupkg.{F.DefaultHashAlgoritm}"),
+                    GetHashFilePath(packagePath),
                     "WRONGHASH"
                 )
                 .AddFiles(packagePath, F.DefaultAssemblies)
@@ -74,10 +74,10 @@ namespace Microsoft.Extensions.DependencyModel.Tests
         [Fact]
         public void ResolvesAllAssemblies()
         {
-            var packagePath = Path.Combine(CachePath, F.DefaultPackageName, F.DefaultVersion);
+            var packagePath = GetPackagesPath(F.DefaultPackageName, F.DefaultVersion);
             var fileSystem = FileSystemMockBuilder.Create()
                 .AddFile(
-                    Path.Combine(packagePath, $"{F.DefaultPackageName}.{F.DefaultVersion}.nupkg.{F.DefaultHashAlgoritm}"),
+                    GetHashFilePath(packagePath),
                     F.DefaultHashValue
                 )
                 .AddFiles(packagePath, F.TwoAssemblies)
@@ -98,10 +98,10 @@ namespace Microsoft.Extensions.DependencyModel.Tests
         [Fact]
         public void FailsWhenOneOfAssembliesNotFound()
         {
-            var packagePath = Path.Combine(CachePath, F.DefaultPackageName, F.DefaultVersion);
+            var packagePath = GetPackagesPath(F.DefaultPackageName, F.DefaultVersion);
             var fileSystem = FileSystemMockBuilder.Create()
                 .AddFile(
-                    Path.Combine(packagePath, $"{F.DefaultPackageName}.{F.DefaultVersion}.nupkg.{F.DefaultHashAlgoritm}"),
+                    GetHashFilePath(packagePath),
                     F.DefaultHashValue
                 )
                 .AddFiles(packagePath, F.DefaultAssemblyPath)
@@ -117,13 +117,23 @@ namespace Microsoft.Extensions.DependencyModel.Tests
                 .And.Contain(library.Name);
         }
 
-        private IEnvironment GetDefaultEnviroment()
+        private IEnvironment GetDefaultEnvironment()
         {
             return EnvironmentMockBuilder.Create()
                 .AddVariable("DOTNET_PACKAGES_CACHE", CachePath)
                 .Build();
         }
 
+        private static string GetPackagesPath(string id, string version)
+        {
+            return PackageResolverTest.GetPackagesPath(CachePath, id, version);
+        }
 
+        private static string GetHashFilePath(string packagePath)
+        {
+            return Path.Combine(
+                packagePath,
+                $"{F.DefaultPackageName.ToLowerInvariant()}.{F.DefaultVersion.ToLowerInvariant()}.nupkg.{F.DefaultHashAlgoritm}");
+        }
     }
 }

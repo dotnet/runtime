@@ -17,7 +17,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
         private static string PackagesPath = Path.Combine("package", "directory", "location");
 
         [Fact]
-        public void SholdUseEnvironmentVariableToGetDefaultLocation()
+        public void ShouldUseEnvironmentVariableToGetDefaultLocation()
         {
             var environment = EnvironmentMockBuilder.Create()
                 .AddVariable("NUGET_PACKAGES", PackagesPath)
@@ -29,7 +29,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
 
 
         [Fact]
-        public void SholdUseNugetUnderUserProfileOnWindows()
+        public void ShouldUseNugetUnderUserProfileOnWindows()
         {
             var environment = EnvironmentMockBuilder.Create()
                 .AddVariable("USERPROFILE", "User Profile")
@@ -40,7 +40,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
         }
 
         [Fact]
-        public void SholdUseNugetUnderHomeOnNonWindows()
+        public void ShouldUseNugetUnderHomeOnNonWindows()
         {
             var environment = EnvironmentMockBuilder.Create()
                 .AddVariable("HOME", "User Home")
@@ -53,7 +53,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
         [Fact]
         public void ResolvesAllAssemblies()
         {
-            var packagePath = Path.Combine(PackagesPath, F.DefaultPackageName, F.DefaultVersion);
+            var packagePath = GetPackagesPath(F.DefaultPackageName, F.DefaultVersion);
             var fileSystem = FileSystemMockBuilder.Create()
                 .AddFiles(packagePath, F.TwoAssemblies)
                 .Build();
@@ -73,7 +73,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
         [Fact]
         public void FailsWhenOneOfAssembliesNotFound()
         {
-            var packagePath = Path.Combine(PackagesPath, F.DefaultPackageName, F.DefaultVersion);
+            var packagePath = GetPackagesPath(F.DefaultPackageName, F.DefaultVersion);
             var fileSystem = FileSystemMockBuilder.Create()
                 .AddFiles(packagePath, F.DefaultAssemblyPath)
                 .Build();
@@ -86,6 +86,16 @@ namespace Microsoft.Extensions.DependencyModel.Tests
             exception.Message.Should()
                 .Contain(F.SecondAssemblyPath)
                 .And.Contain(library.Name);
+        }
+
+        private static string GetPackagesPath(string id, string version)
+        {
+            return GetPackagesPath(PackagesPath, id, version);
+        }
+
+        internal static string GetPackagesPath(string basePath, string id, string version)
+        {
+            return Path.Combine(basePath, id.ToLowerInvariant(), version.ToLowerInvariant());
         }
     }
 }
