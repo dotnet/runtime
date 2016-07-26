@@ -28,7 +28,7 @@ namespace Microsoft.DotNet.Cli.Build
         public DebPackageCreator(
             DotNetCli dotnet,
             string intermediateDirectory,
-            string dotnetDebToolVersion = "1.0.0-*",
+            string dotnetDebToolVersion = "1.0.1-*",
             string dotnetDebToolPackageSource = null)
         {
             _dotnet = dotnet;

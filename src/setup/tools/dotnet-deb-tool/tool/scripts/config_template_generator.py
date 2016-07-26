@@ -17,6 +17,7 @@ FILE_CHANGELOG = 'changelog'
 FILE_CONTROL = 'control'
 FILE_COPYRIGHT = 'copyright'
 FILE_SYMLINK_FORMAT = '{package_name}.links'
+FILE_RULES = 'rules'
 
 PACKAGE_ROOT_FORMAT = "usr/share/{package_name}"
 CHANGELOG_DATE_FORMAT = "%a, %d %b %Y %H:%M:%S %z"
@@ -44,6 +45,7 @@ def generate_and_write_all(config_data, template_dir, output_dir, package_name=N
         control_contents = generate_control(config_data, template_dir, package_name=package_name)
         copyright_contents = generate_copyright(config_data, template_dir)
         symlink_contents = generate_symlinks(config_data, package_name=package_name)
+        rules_contents = generate_rules(config_data, template_dir)
     except Exception as exc:
       print exc
       help_and_exit("Error: Generation Failed, check your config file.")
@@ -51,6 +53,7 @@ def generate_and_write_all(config_data, template_dir, output_dir, package_name=N
     write_file(changelog_contents, output_dir, FILE_CHANGELOG)
     write_file(control_contents, output_dir, FILE_CONTROL)
     write_file(copyright_contents, output_dir, FILE_COPYRIGHT)
+    write_file(rules_contents, output_dir, FILE_RULES)
 
     # Symlink File is optional
     if symlink_contents:
@@ -58,6 +61,20 @@ def generate_and_write_all(config_data, template_dir, output_dir, package_name=N
         write_file(symlink_contents, output_dir, symlink_filename)
 
     return
+
+def generate_rules(config_data, template_dir):
+    template = get_template(template_dir, FILE_RULES)
+
+    ignored_dependency_packages = config_data.get("debian_ignored_dependencies", None)
+    override_text = ""
+
+    if ignored_dependency_packages != None:
+        override_text = "override_dh_shlibdeps:\n\tdh_shlibdeps --dpkg-shlibdeps-params="
+
+        for package in ignored_dependency_packages:
+            override_text += "-x{0} ".format(package)
+
+    return template.format(overrides=override_text)
 
 def generate_changelog(config_data, template_dir, package_version=None, package_name=None):
     template = get_template(template_dir, FILE_CHANGELOG)
