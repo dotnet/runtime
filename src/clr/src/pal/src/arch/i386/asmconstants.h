@@ -65,7 +65,7 @@
 #define CONTEXT_Xmm13 CONTEXT_Xmm12+16
 #define CONTEXT_Xmm14 CONTEXT_Xmm13+16
 #define CONTEXT_Xmm15 CONTEXT_Xmm14+16
-#define CONTEXT_VectorRegister CONTEXT_Xmm15+16
+#define CONTEXT_VectorRegister CONTEXT_FltSave+FLOATING_SAVE_AREA_SIZE
 #define CONTEXT_VectorControl CONTEXT_VectorRegister+16*26
 #define CONTEXT_DebugControl CONTEXT_VectorControl+8
 #define CONTEXT_LastBranchToRip CONTEXT_DebugControl+8
