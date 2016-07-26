@@ -1424,7 +1424,7 @@ StackWalkAction DebuggerWalkStackProc(CrawlFrame *pCF, void *data)
 
         d->info.fp = GetFramePointerForDebugger(d, pCF);
 
-#if defined(_DEBUG) && !defined(_TARGET_ARM_)
+#if defined(_DEBUG) && !defined(_TARGET_ARM_) && !defined(_TARGET_ARM64_)
         // Make sure the stackwalk is making progress.
 		// On ARM this is invalid as the stack pointer does necessarily have to move when unwinding a frame.
         _ASSERTE(IsCloserToLeaf(d->previousFP, d->info.fp));

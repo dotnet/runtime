@@ -8380,7 +8380,7 @@ FramePointer GetHandlerFramePointer(BYTE *pStack)
 {
     FramePointer handlerFP;
 
-#if !defined(_TARGET_ARM_)
+#if !defined(_TARGET_ARM_) && !defined(_TARGET_ARM64_) 
     // Refer to the comment in DispatchUnwind() to see why we have to add
     // sizeof(LPVOID) to the handler ebp.
     handlerFP = FramePointer::MakeFramePointer(LPVOID(pStack + sizeof(void*)));
@@ -11888,7 +11888,7 @@ HRESULT Debugger::GetAndSendInterceptCommand(DebuggerIPCEvent *event)
                                                               csi.m_activeFrame.MethodToken,
                                                               csi.m_activeFrame.md,
                                                               foundOffset,
-#ifdef _TARGET_ARM_
+#if defined (_TARGET_ARM_ )|| defined (_TARGET_ARM64_ )
                                                               // ARM requires the caller stack pointer, not the current stack pointer
                                                               CallerStackFrame::FromRegDisplay(&(csi.m_activeFrame.registers)),
 #else
@@ -15359,6 +15359,8 @@ HRESULT Debugger::FuncEvalSetup(DebuggerIPCE_FuncEvalInfo *pEvalInfo,
 #endif // !UNIX_AMD64_ABI
 #elif defined(_TARGET_ARM_)
         filterContext->R0 = (DWORD)pDE;
+#elif defined(_TARGET_ARM64_)
+        filterContext->X0 = (SIZE_T)pDE;
 #else
         PORTABILITY_ASSERT("Debugger::FuncEvalSetup is not implemented on this platform.");
 #endif
@@ -15453,6 +15455,8 @@ HRESULT Debugger::FuncEvalSetupReAbort(Thread *pThread, Thread::ThreadAbortReque
     filterContext->Rcx = (SIZE_T)pDE;
 #elif defined(_TARGET_ARM_)
     filterContext->R0 = (DWORD)pDE;
+#elif defined(_TARGET_ARM64_)
+    filterContext->X0 = (SIZE_T)pDE;
 #else
     PORTABILITY_ASSERT("FuncEvalSetupReAbort (Debugger.cpp) is not implemented on this platform.");
 #endif

@@ -2457,7 +2457,7 @@ CLRUnwindStatus ExceptionTracker::ProcessManagedCallFrame(
     PTR_EXCEPTION_CLAUSE_TOKEN pLimitClauseToken     = NULL;
     if (!fIgnoreThisFrame && !fIsFirstPass && !m_sfResumeStackFrame.IsNull() && (sf >= m_sfResumeStackFrame))
     {
-        CONSISTENCY_CHECK_MSG(sf == m_sfResumeStackFrame, "Passed initial resume frame and fIgnoreThisFrame wasn't set!");
+        EH_LOG((LL_INFO100, "  RESUMEFRAME:  sf is  %p and  m_sfResumeStackFrame: %p\n", sf.SP, m_sfResumeStackFrame.SP));
         EH_LOG((LL_INFO100, "  RESUMEFRAME:  %s initial resume frame: %p\n", (sf == m_sfResumeStackFrame) ? "REACHED" : "PASSED" , m_sfResumeStackFrame.SP));
 
         // process this frame to call handlers
@@ -2469,6 +2469,7 @@ CLRUnwindStatus ExceptionTracker::ProcessManagedCallFrame(
         // as the last clause we process in the "inital resume frame".  Anything further
         // down the list of clauses is skipped along with all call frames up to the actual
         // resume frame.
+        CONSISTENCY_CHECK_MSG(sf == m_sfResumeStackFrame, "Passed initial resume frame and fIgnoreThisFrame wasn't set!");
     }
     //
     // END resume frame code

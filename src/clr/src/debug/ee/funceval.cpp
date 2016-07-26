@@ -3962,6 +3962,12 @@ FuncEvalHijackPersonalityRoutine(IN     PEXCEPTION_RECORD   pExceptionRecord
     // in FuncEvalHijack we allocate 8 bytes of stack space and then store R0 at the current SP, so if we subtract 8 from
     // the establisher frame we can get the stack location where R0 was stored.
     pDE = *(DebuggerEval**)(pDispatcherContext->EstablisherFrame - 8);
+
+#elif defined(_TARGET_ARM64_)
+    // on ARM64 the establisher frame is the SP of the caller of FuncEvalHijack.
+    // in FuncEvalHijack we allocate 32 bytes of stack space and then store R0 at the current SP + 16, so if we subtract 16 from
+    // the establisher frame we can get the stack location where R0 was stored.
+    pDE = *(DebuggerEval**)(pDispatcherContext->EstablisherFrame - 16);
 #else
     _ASSERTE(!"NYI - FuncEvalHijackPersonalityRoutine()");
 #endif

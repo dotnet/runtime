@@ -76,7 +76,11 @@
     <CppCompile Include="@(SourcesPublish)" />
     <CppCompile Include="@(SourcesShim)" />
     <CppCompile Include="@(SourcesRightside)" />
-    <AssembleAmd64 Condition="'$(BuildArchitecture)' == 'amd64'" Include="..\amd64\floatconversion.asm" />
+    <AssembleAmd64 Condition="'$(BuildArchitecture)' == 'amd64' and '$(CrossTargetArchitecture)' != 'arm64'" Include="..\amd64\floatconversion.asm" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(BuildArchitecture)' == 'arm64'">
+    <PreprocessAssembleArm Include="..\arm64\floatconversion.asm" />
+    <AssembleArm64  Include="$(IntermediateOutputDirectory)\floatconversion.i" />
   </ItemGroup>
   <!--Import the targets-->
 </Project>
