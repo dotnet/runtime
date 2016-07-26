@@ -756,6 +756,55 @@ Assembly *Assembly::CreateDynamic(AppDomain *pDomain, CreateDynamicAssemblyArgs 
                                                    name, &assemData, dwFlags,
                                                    &ma));
         pFile = PEAssembly::Create(pCallerAssembly->GetManifestFile(), pAssemblyEmit, args->access & ASSEMBLY_ACCESS_REFLECTION_ONLY);
+
+#if defined(FEATURE_HOST_ASSEMBLY_RESOLVER)
+        // Dynamically created modules (aka RefEmit assemblies) do not have a LoadContext associated with them since they are not bound
+        // using an actual binder. As a result, we will assume the same binding/loadcontext information for the dynamic assembly as its
+        // caller/creator to ensure that any assembly loads triggered by the dynamic assembly are resolved using the intended load context.
+        //
+        // If the creator assembly has a HostAssembly associated with it, then use it for binding. Otherwise, ithe creator is dynamic
+        // and will have a fallback load context binder associated with it.
+        ICLRPrivBinder *pFallbackLoadContextBinder = nullptr;
+        
+        // There is always a manifest file - wehther working with static or dynamic assemblies.
+        PEFile *pCallerAssemblyManifestFile = pCallerAssembly->GetManifestFile();
+        _ASSERTE(pCallerAssemblyManifestFile != NULL);
+
+        if (!pCallerAssemblyManifestFile->IsDynamic())
+        {
+            // Static assemblies with do not have fallback load context
+            _ASSERTE(pCallerAssemblyManifestFile->GetFallbackLoadContextBinder() == nullptr);
+
+            if (pCallerAssemblyManifestFile->IsSystem())
+            {
+                // CoreLibrary is always bound to TPA binder
+                pFallbackLoadContextBinder = pDomain->GetTPABinderContext();
+            }
+            else
+            {
+                // Fetch the binder from the host assembly
+                PTR_ICLRPrivAssembly pCallerAssemblyHostAssembly = pCallerAssemblyManifestFile->GetHostAssembly();
+                _ASSERTE(pCallerAssemblyHostAssembly != nullptr);
+
+                UINT_PTR assemblyBinderID = 0;
+                IfFailThrow(pCallerAssemblyHostAssembly->GetBinderID(&assemblyBinderID));
+                pFallbackLoadContextBinder = reinterpret_cast<ICLRPrivBinder *>(assemblyBinderID);
+            }
+        }
+        else
+        {
+            // Creator assembly is dynamic too, so use its fallback load context for the one
+            // we are creating.
+            pFallbackLoadContextBinder = pCallerAssemblyManifestFile->GetFallbackLoadContextBinder(); 
+        }
+
+        // At this point, we should have a fallback load context binder to work with
+        _ASSERTE(pFallbackLoadContextBinder != nullptr);
+
+        // Set it as the fallback load context binder for the dynamic assembly being created
+        pFile->SetFallbackLoadContextBinder(pFallbackLoadContextBinder);
+#endif // defined(FEATURE_HOST_ASSEMBLY_RESOLVER)
+
     }            
     
     AssemblyLoadSecurity loadSecurity;

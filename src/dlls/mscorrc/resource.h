@@ -946,3 +946,5 @@
 #endif // FEATURE_HOST_ASSEMBLY_RESOLVER
 
 #define IDS_NATIVE_IMAGE_CANNOT_BE_LOADED_MULTIPLE_TIMES                               0x263a
+
+
