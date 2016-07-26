@@ -16,7 +16,7 @@
     <Project Include="redist\System.Runtime.InteropServices.depproj">
       <TargetGroup>netcore50aot</TargetGroup>
     </Project>
-    <Project Include="redist\net462\System.Runtime.InteropServices.depproj">
+    <Project Include="redist\System.Runtime.InteropServices.depproj">
       <TargetGroup>net462</TargetGroup>
     </Project>
   </ItemGroup>
