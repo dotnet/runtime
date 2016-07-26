@@ -210,7 +210,7 @@ A typical use of the AllListeners static property looks like this:
 
 ```C#
 	// We are using  to turn a Action<DiagnosticListener> into a IObserver<DiagnosticListener>  
-	static IDisposeable listenerSubscription = DiagnosticListener.AllListeners.Subscribe(delegate (DiagnosticListener listener)
+	static IDisposable listenerSubscription = DiagnosticListener.AllListeners.Subscribe(delegate (DiagnosticListener listener)
 	{
 		// We get a callback of every Diagnostics Listener that is active in the system (past present or future)
 		if (listener.Name == "System.Net.Http")
@@ -251,7 +251,7 @@ A DiagnosticListener implements the IObservable<KeyValuePair<string, object>> in
 call 'Subscribe' on it as well.  Thus we can fill out the previous example a bit 
 
 ```C#
-	static IDisposeable listenerSubscription = DiagnosticListener.AllListeners.Subscribe(delegate (DiagnosticListener listener)
+	static IDisposable listenerSubscription = DiagnosticListener.AllListeners.Subscribe(delegate (DiagnosticListener listener)
 	static IDisposable networkSubscription = null;
 	{
 		if (listener.Name == "System.Net.Http")
