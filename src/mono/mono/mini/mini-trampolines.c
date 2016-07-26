@@ -1522,8 +1522,7 @@ mono_create_jit_trampoline (MonoDomain *domain, MonoMethod *method, MonoError *e
 		if (code)
 			return code;
 		if (mono_llvm_only) {
-			if (method->wrapper_type == MONO_WRAPPER_PROXY_ISINST ||
-				method->wrapper_type == MONO_WRAPPER_STFLD_REMOTE)
+			if (method->wrapper_type == MONO_WRAPPER_PROXY_ISINST)
 				/* These wrappers are not generated */
 				return method_not_found;
 			/* Methods are lazily initialized on first call, so this can't lead recursion */
