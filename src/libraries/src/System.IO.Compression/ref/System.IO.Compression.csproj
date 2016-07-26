@@ -6,7 +6,7 @@
     <AssemblyVersion>4.1.2.0</AssemblyVersion>
     <OutputType>Library</OutputType>
     <PackageTargetFramework>netstandard1.3</PackageTargetFramework>
-    <NuGetTargetMoniker>.NETStandard,Version=v1.3</NuGetTargetMoniker>
+    <NuGetTargetMoniker>.NETStandard,Version=v1.6</NuGetTargetMoniker>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.IO.Compression.cs" />
