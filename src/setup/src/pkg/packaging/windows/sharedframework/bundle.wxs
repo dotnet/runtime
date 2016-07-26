@@ -7,7 +7,7 @@
 
   <Bundle Name="$(var.ProductName)" Manufacturer="$(var.Manufacturer)"
           Version="$(var.DisplayVersion)" UpgradeCode="$(var.UpgradeCode)"
-          AboutUrl="http://dotnet.github.io/"
+          AboutUrl="https://www.microsoft.com/net/core"
           Compressed="yes">
     
     <bal:Condition
