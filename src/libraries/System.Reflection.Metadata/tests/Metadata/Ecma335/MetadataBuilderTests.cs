@@ -675,5 +675,224 @@ namespace System.Reflection.Metadata.Ecma335.Tests
             Assert.Throws<ArgumentOutOfRangeException>(() => builder.SetCapacity(HeapIndex.String, -1));
             Assert.Throws<ArgumentOutOfRangeException>(() => builder.SetCapacity((HeapIndex)0xff, 10));
         }
+
+        [Fact]
+        public void ValidateClassLayoutTable()
+        {
+            var builder = new MetadataBuilder();
+            builder.AddTypeLayout(MetadataTokens.TypeDefinitionHandle(2), 1, 1);
+            builder.AddTypeLayout(MetadataTokens.TypeDefinitionHandle(1), 1, 1);
+            Assert.Throws<InvalidOperationException>(() => builder.ValidateOrder());
+
+            builder = new MetadataBuilder();
+            builder.AddTypeLayout(MetadataTokens.TypeDefinitionHandle(1), 1, 1);
+            builder.AddTypeLayout(MetadataTokens.TypeDefinitionHandle(1), 1, 1);
+            Assert.Throws<InvalidOperationException>(() => builder.ValidateOrder());
+        }
+
+        [Fact]
+        public void ValidateFieldLayoutTable()
+        {
+            var builder = new MetadataBuilder();
+            builder.AddFieldLayout(MetadataTokens.FieldDefinitionHandle(2), 1);
+            builder.AddFieldLayout(MetadataTokens.FieldDefinitionHandle(1), 1);
+            Assert.Throws<InvalidOperationException>(() => builder.ValidateOrder());
+
+            builder = new MetadataBuilder();
+            builder.AddFieldLayout(MetadataTokens.FieldDefinitionHandle(1), 1);
+            builder.AddFieldLayout(MetadataTokens.FieldDefinitionHandle(1), 1);
+            Assert.Throws<InvalidOperationException>(() => builder.ValidateOrder());
+        }
+
+        [Fact]
+        public void ValidateFieldRvaTable()
+        {
+            var builder = new MetadataBuilder();
+            builder.AddFieldRelativeVirtualAddress(MetadataTokens.FieldDefinitionHandle(2), 1);
+            builder.AddFieldRelativeVirtualAddress(MetadataTokens.FieldDefinitionHandle(1), 1);
+            Assert.Throws<InvalidOperationException>(() => builder.ValidateOrder());
+
+            builder = new MetadataBuilder();
+            builder.AddFieldRelativeVirtualAddress(MetadataTokens.FieldDefinitionHandle(1), 1);
+            builder.AddFieldRelativeVirtualAddress(MetadataTokens.FieldDefinitionHandle(1), 1);
+            Assert.Throws<InvalidOperationException>(() => builder.ValidateOrder());
+        }
+
+        [Fact]
+        public void ValidateGenericParamTable()
+        {
+            var builder = new MetadataBuilder();
+            builder.AddGenericParameter(MetadataTokens.TypeDefinitionHandle(2), default(GenericParameterAttributes), default(StringHandle), index: 0);
+            builder.AddGenericParameter(MetadataTokens.TypeDefinitionHandle(1), default(GenericParameterAttributes), default(StringHandle), index: 0);
+            Assert.Throws<InvalidOperationException>(() => builder.ValidateOrder());
+
+            builder = new MetadataBuilder();
+            builder.AddGenericParameter(MetadataTokens.MethodDefinitionHandle(2), default(GenericParameterAttributes), default(StringHandle), index: 0);
+            builder.AddGenericParameter(MetadataTokens.MethodDefinitionHandle(1), default(GenericParameterAttributes), default(StringHandle), index: 0);
+            Assert.Throws<InvalidOperationException>(() => builder.ValidateOrder());
+
+            builder = new MetadataBuilder();
+            builder.AddGenericParameter(MetadataTokens.MethodDefinitionHandle(2), default(GenericParameterAttributes), default(StringHandle), index: 0);
+            builder.AddGenericParameter(MetadataTokens.TypeDefinitionHandle(1), default(GenericParameterAttributes), default(StringHandle), index: 0);
+            Assert.Throws<InvalidOperationException>(() => builder.ValidateOrder());
+
+            builder = new MetadataBuilder();
+            builder.AddGenericParameter(MetadataTokens.TypeDefinitionHandle(2), default(GenericParameterAttributes), default(StringHandle), index: 0);
+            builder.AddGenericParameter(MetadataTokens.MethodDefinitionHandle(1), default(GenericParameterAttributes), default(StringHandle), index: 0);
+            Assert.Throws<InvalidOperationException>(() => builder.ValidateOrder());
+
+            builder = new MetadataBuilder();
+            builder.AddGenericParameter(MetadataTokens.TypeDefinitionHandle(1), default(GenericParameterAttributes), default(StringHandle), index: 0);
+            builder.AddGenericParameter(MetadataTokens.TypeDefinitionHandle(1), default(GenericParameterAttributes), default(StringHandle), index: 0);
+            Assert.Throws<InvalidOperationException>(() => builder.ValidateOrder());
+
+            builder = new MetadataBuilder();
+            builder.AddGenericParameter(MetadataTokens.TypeDefinitionHandle(1), default(GenericParameterAttributes), default(StringHandle), index: 1);
+            builder.AddGenericParameter(MetadataTokens.TypeDefinitionHandle(1), default(GenericParameterAttributes), default(StringHandle), index: 0);
+            Assert.Throws<InvalidOperationException>(() => builder.ValidateOrder());
+
+            builder = new MetadataBuilder();
+            builder.AddGenericParameter(MetadataTokens.MethodDefinitionHandle(1), default(GenericParameterAttributes), default(StringHandle), index: 0);
+            builder.AddGenericParameter(MetadataTokens.TypeDefinitionHandle(1), default(GenericParameterAttributes), default(StringHandle), index: 0);
+            Assert.Throws<InvalidOperationException>(() => builder.ValidateOrder());
+        }
+
+        [Fact]
+        public void ValidateGenericParamConstaintTable()
+        {
+            var builder = new MetadataBuilder();
+            builder.AddGenericParameterConstraint(MetadataTokens.GenericParameterHandle(2), default(TypeDefinitionHandle));
+            builder.AddGenericParameterConstraint(MetadataTokens.GenericParameterHandle(1), default(TypeDefinitionHandle));
+            Assert.Throws<InvalidOperationException>(() => builder.ValidateOrder());
+
+            builder = new MetadataBuilder();
+            builder.AddGenericParameterConstraint(MetadataTokens.GenericParameterHandle(1), default(TypeDefinitionHandle));
+            builder.AddGenericParameterConstraint(MetadataTokens.GenericParameterHandle(1), default(TypeDefinitionHandle));
+            builder.ValidateOrder(); // ok
+        }
+
+        [Fact]
+        public void ValidateImplMapTable()
+        {
+            var builder = new MetadataBuilder();
+            builder.AddMethodImport(MetadataTokens.MethodDefinitionHandle(2), default(MethodImportAttributes), default(StringHandle), default(ModuleReferenceHandle));
+            builder.AddMethodImport(MetadataTokens.MethodDefinitionHandle(1), default(MethodImportAttributes), default(StringHandle), default(ModuleReferenceHandle));
+            Assert.Throws<InvalidOperationException>(() => builder.ValidateOrder());
+
+            builder = new MetadataBuilder();
+            builder.AddMethodImport(MetadataTokens.MethodDefinitionHandle(1), default(MethodImportAttributes), default(StringHandle), default(ModuleReferenceHandle));
+            builder.AddMethodImport(MetadataTokens.MethodDefinitionHandle(1), default(MethodImportAttributes), default(StringHandle), default(ModuleReferenceHandle));
+            Assert.Throws<InvalidOperationException>(() => builder.ValidateOrder());
+        }
+
+        [Fact]
+        public void ValidateInterfaceImplTable()
+        {
+            var builder = new MetadataBuilder();
+            builder.AddInterfaceImplementation(MetadataTokens.TypeDefinitionHandle(2), MetadataTokens.TypeDefinitionHandle(1));
+            builder.AddInterfaceImplementation(MetadataTokens.TypeDefinitionHandle(1), MetadataTokens.TypeDefinitionHandle(1));
+            Assert.Throws<InvalidOperationException>(() => builder.ValidateOrder());
+
+            builder = new MetadataBuilder();
+            builder.AddInterfaceImplementation(MetadataTokens.TypeDefinitionHandle(1), MetadataTokens.TypeDefinitionHandle(1));
+            builder.AddInterfaceImplementation(MetadataTokens.TypeDefinitionHandle(1), MetadataTokens.TypeDefinitionHandle(1));
+            Assert.Throws<InvalidOperationException>(() => builder.ValidateOrder());
+
+            builder = new MetadataBuilder();
+            builder.AddInterfaceImplementation(MetadataTokens.TypeDefinitionHandle(1), MetadataTokens.TypeDefinitionHandle(2));
+            builder.AddInterfaceImplementation(MetadataTokens.TypeDefinitionHandle(1), MetadataTokens.TypeDefinitionHandle(1));
+            Assert.Throws<InvalidOperationException>(() => builder.ValidateOrder());
+
+            builder = new MetadataBuilder();
+            builder.AddInterfaceImplementation(MetadataTokens.TypeDefinitionHandle(1), MetadataTokens.TypeReferenceHandle(2));
+            builder.AddInterfaceImplementation(MetadataTokens.TypeDefinitionHandle(1), MetadataTokens.TypeReferenceHandle(1));
+            Assert.Throws<InvalidOperationException>(() => builder.ValidateOrder());
+
+            builder = new MetadataBuilder();
+            builder.AddInterfaceImplementation(MetadataTokens.TypeDefinitionHandle(1), MetadataTokens.TypeSpecificationHandle(2));
+            builder.AddInterfaceImplementation(MetadataTokens.TypeDefinitionHandle(1), MetadataTokens.TypeSpecificationHandle(1));
+            Assert.Throws<InvalidOperationException>(() => builder.ValidateOrder());
+
+            builder = new MetadataBuilder();
+            builder.AddInterfaceImplementation(MetadataTokens.TypeDefinitionHandle(1), MetadataTokens.TypeReferenceHandle(1));
+            builder.AddInterfaceImplementation(MetadataTokens.TypeDefinitionHandle(1), MetadataTokens.TypeDefinitionHandle(1));
+            Assert.Throws<InvalidOperationException>(() => builder.ValidateOrder());
+
+            builder = new MetadataBuilder();
+            builder.AddInterfaceImplementation(MetadataTokens.TypeDefinitionHandle(1), MetadataTokens.TypeSpecificationHandle(1));
+            builder.AddInterfaceImplementation(MetadataTokens.TypeDefinitionHandle(1), MetadataTokens.TypeReferenceHandle(1));
+            Assert.Throws<InvalidOperationException>(() => builder.ValidateOrder());
+
+            builder = new MetadataBuilder();
+            builder.AddInterfaceImplementation(MetadataTokens.TypeDefinitionHandle(1), MetadataTokens.TypeSpecificationHandle(1));
+            builder.AddInterfaceImplementation(MetadataTokens.TypeDefinitionHandle(1), MetadataTokens.TypeDefinitionHandle(1));
+            Assert.Throws<InvalidOperationException>(() => builder.ValidateOrder());
+        }
+
+        [Fact]
+        public void ValidateMethodImplTable()
+        {
+            var builder = new MetadataBuilder();
+            builder.AddMethodImplementation(MetadataTokens.TypeDefinitionHandle(2), default(MethodDefinitionHandle), default(MethodDefinitionHandle));
+            builder.AddMethodImplementation(MetadataTokens.TypeDefinitionHandle(1), default(MethodDefinitionHandle), default(MethodDefinitionHandle));
+            Assert.Throws<InvalidOperationException>(() => builder.ValidateOrder());
+
+            builder = new MetadataBuilder();
+            builder.AddMethodImplementation(MetadataTokens.TypeDefinitionHandle(1), default(MethodDefinitionHandle), default(MethodDefinitionHandle));
+            builder.AddMethodImplementation(MetadataTokens.TypeDefinitionHandle(1), default(MethodDefinitionHandle), default(MethodDefinitionHandle));
+            builder.ValidateOrder(); // ok
+        }
+
+        [Fact]
+        public void ValidateNestedClassTable()
+        {
+            var builder = new MetadataBuilder();
+            builder.AddNestedType(MetadataTokens.TypeDefinitionHandle(2), default(TypeDefinitionHandle));
+            builder.AddNestedType(MetadataTokens.TypeDefinitionHandle(1), default(TypeDefinitionHandle));
+            Assert.Throws<InvalidOperationException>(() => builder.ValidateOrder());
+
+            builder = new MetadataBuilder();
+            builder.AddNestedType(MetadataTokens.TypeDefinitionHandle(1), default(TypeDefinitionHandle));
+            builder.AddNestedType(MetadataTokens.TypeDefinitionHandle(1), default(TypeDefinitionHandle));
+            Assert.Throws<InvalidOperationException>(() => builder.ValidateOrder());
+        }
+
+        [Fact]
+        public void ValidateLocalScopeTable()
+        {
+            var builder = new MetadataBuilder();
+            builder.AddLocalScope(MetadataTokens.MethodDefinitionHandle(2), default(ImportScopeHandle), default(LocalVariableHandle), default(LocalConstantHandle), startOffset: 0, length: 1);
+            builder.AddLocalScope(MetadataTokens.MethodDefinitionHandle(1), default(ImportScopeHandle), default(LocalVariableHandle), default(LocalConstantHandle), startOffset: 0, length: 1);
+            Assert.Throws<InvalidOperationException>(() => builder.ValidateOrder());
+
+            builder = new MetadataBuilder();
+            builder.AddLocalScope(MetadataTokens.MethodDefinitionHandle(1), default(ImportScopeHandle), default(LocalVariableHandle), default(LocalConstantHandle), startOffset: 1, length: 1);
+            builder.AddLocalScope(MetadataTokens.MethodDefinitionHandle(1), default(ImportScopeHandle), default(LocalVariableHandle), default(LocalConstantHandle), startOffset: 0, length: 1);
+            Assert.Throws<InvalidOperationException>(() => builder.ValidateOrder());
+
+            builder = new MetadataBuilder();
+            builder.AddLocalScope(MetadataTokens.MethodDefinitionHandle(1), default(ImportScopeHandle), default(LocalVariableHandle), default(LocalConstantHandle), startOffset: 0, length: 1);
+            builder.AddLocalScope(MetadataTokens.MethodDefinitionHandle(1), default(ImportScopeHandle), default(LocalVariableHandle), default(LocalConstantHandle), startOffset: 0, length: 2);
+            Assert.Throws<InvalidOperationException>(() => builder.ValidateOrder());
+
+            builder = new MetadataBuilder();
+            builder.AddLocalScope(MetadataTokens.MethodDefinitionHandle(1), default(ImportScopeHandle), default(LocalVariableHandle), default(LocalConstantHandle), startOffset: 0, length: 1);
+            builder.AddLocalScope(MetadataTokens.MethodDefinitionHandle(1), default(ImportScopeHandle), default(LocalVariableHandle), default(LocalConstantHandle), startOffset: 0, length: 1);
+            builder.ValidateOrder(); // ok
+        }
+
+        [Fact]
+        public void ValidateStateMachineMethodTable()
+        {
+            var builder = new MetadataBuilder();
+            builder.AddStateMachineMethod(MetadataTokens.MethodDefinitionHandle(2), default(MethodDefinitionHandle));
+            builder.AddStateMachineMethod(MetadataTokens.MethodDefinitionHandle(1), default(MethodDefinitionHandle));
+            Assert.Throws<InvalidOperationException>(() => builder.ValidateOrder());
+
+            builder = new MetadataBuilder();
+            builder.AddStateMachineMethod(MetadataTokens.MethodDefinitionHandle(1), default(MethodDefinitionHandle));
+            builder.AddStateMachineMethod(MetadataTokens.MethodDefinitionHandle(1), default(MethodDefinitionHandle));
+            Assert.Throws<InvalidOperationException>(() => builder.ValidateOrder());
+        }
     }
 }

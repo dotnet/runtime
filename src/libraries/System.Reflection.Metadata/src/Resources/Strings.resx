@@ -184,7 +184,7 @@
     <value>Unknown PE Magic value.</value>
   </data>
   <data name="MetadataTableNotSorted" xml:space="preserve">
-    <value>Metadata table 0x{0:x2} not sorted.</value>
+    <value>Metadata table {0} not sorted.</value>
   </data>
   <data name="AssemblyTableInvalidNumberOfRows" xml:space="preserve">
     <value>Invalid number of rows of Assembly table: {0}.</value>
