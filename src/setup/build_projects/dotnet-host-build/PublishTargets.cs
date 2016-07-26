@@ -245,7 +245,7 @@ namespace Microsoft.DotNet.Host.Build
             nameof(PublishSharedFrameworkDebToDebianRepo),
             nameof(PublishHostFxrDebToDebianRepo),
             nameof(PublishSharedHostDebToDebianRepo))]
-        [BuildPlatforms(BuildPlatform.Ubuntu)]
+        [BuildPlatforms(BuildPlatform.Ubuntu, BuildPlatform.Debian)]
         public static BuildTargetResult PublishDebFilesToDebianRepo(BuildTargetContext c)
         {
             return c.Success();
@@ -359,7 +359,7 @@ namespace Microsoft.DotNet.Host.Build
         }
 
         [Target]
-        [BuildPlatforms(BuildPlatform.Ubuntu)]
+        [BuildPlatforms(BuildPlatform.Ubuntu, BuildPlatform.Debian))]
         public static BuildTargetResult PublishSharedFrameworkDebToDebianRepo(BuildTargetContext c)
         {
             var version = SharedFrameworkNugetVersion;
@@ -377,7 +377,7 @@ namespace Microsoft.DotNet.Host.Build
         }
 
         [Target]
-        [BuildPlatforms(BuildPlatform.Ubuntu)]
+        [BuildPlatforms(BuildPlatform.Ubuntu, BuildPlatform.Debian))]
         public static BuildTargetResult PublishSharedHostDebToDebianRepo(BuildTargetContext c)
         {
             var version = SharedHostNugetVersion;
@@ -395,7 +395,7 @@ namespace Microsoft.DotNet.Host.Build
         }
 
         [Target]
-        [BuildPlatforms(BuildPlatform.Ubuntu)]
+        [BuildPlatforms(BuildPlatform.Ubuntu, BuildPlatform.Debian))]
         public static BuildTargetResult PublishHostFxrDebToDebianRepo(BuildTargetContext c)
         {
             var version = HostFxrNugetVersion;
