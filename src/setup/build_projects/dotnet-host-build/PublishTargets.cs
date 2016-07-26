@@ -232,7 +232,7 @@ namespace Microsoft.DotNet.Host.Build
             nameof(PublishTargets.PublishHostFxrInstallerFileToAzure),
             nameof(PublishTargets.PublishSharedFrameworkInstallerFileToAzure),
             nameof(PublishTargets.PublishCombinedMuxerHostFxrFrameworkInstallerFileToAzure))]
-        [BuildPlatforms(BuildPlatform.Ubuntu, BuildPlatform.OSX, BuildPlatform.Windows, , BuildPlatform.Debian)]
+        [BuildPlatforms(BuildPlatform.Ubuntu, BuildPlatform.OSX, BuildPlatform.Windows, BuildPlatform.Debian)]
         public static BuildTargetResult PublishInstallerFilesToAzure(BuildTargetContext c) => c.Success();
 
         [Target(
