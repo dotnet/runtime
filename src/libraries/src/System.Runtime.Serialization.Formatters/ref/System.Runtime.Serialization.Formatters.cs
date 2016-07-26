@@ -29,6 +29,10 @@ namespace System
 
 namespace System.Runtime.Serialization
 {
+    public interface IObjectReference
+    {
+        object GetRealObject(StreamingContext context);
+    }
     [System.AttributeUsageAttribute(System.AttributeTargets.Field, Inherited = false)]
     public sealed partial class OptionalFieldAttribute : System.Attribute
     {
