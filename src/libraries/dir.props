@@ -88,7 +88,7 @@
     <ValidatePackageVersions>true</ValidatePackageVersions>
     <ProhibitFloatingDependencies>true</ProhibitFloatingDependencies>
 
-    <CoreFxExpectedPrerelease>beta-24325-03</CoreFxExpectedPrerelease>
+    <CoreFxExpectedPrerelease>beta-24326-03</CoreFxExpectedPrerelease>
     <CoreClrExpectedPrerelease>beta-24326-02</CoreClrExpectedPrerelease>
     <ExternalExpectedPrerelease>beta-24325-00</ExternalExpectedPrerelease>
 
