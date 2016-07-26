@@ -1045,7 +1045,7 @@ fi
 if [ -z "$mscorlibDir" ]; then
     mscorlibDir=$coreClrBinDir
 fi
-if [ -d $mscorlibDir/bin ]; then
+if [ -d "$mscorlibDir" ] && [ -d "$mscorlibDir/bin" ]; then
     cp $mscorlibDir/bin/* $mscorlibDir
 fi
 
