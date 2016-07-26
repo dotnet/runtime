@@ -7,7 +7,7 @@
 
   <Bundle Name="$(var.ProductName)" Manufacturer="$(var.Manufacturer)"
           Version="$(var.DisplayVersion)" UpgradeCode="$(var.UpgradeCode)"
-          AboutUrl="https://www.microsoft.com/net/core"
+          AboutUrl="https://dot.net/core"
           Compressed="yes">
     
     <bal:Condition
