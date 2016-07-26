@@ -178,5 +178,41 @@ namespace System.Linq.Expressions.Tests
             };
             Assert.Equal(expected.OrderBy(kvp => kvp.Key), func().OrderBy(kvp => kvp.Key));
         }
+
+        [Fact]
+        public void UpdateSameReturnsSame()
+        {
+            var init = Expression.ListInit(
+                Expression.New(typeof(List<int>)),
+                Expression.Constant(1),
+                Expression.Constant(2),
+                Expression.Constant(3));
+            Assert.Same(init, init.Update(init.NewExpression, init.Initializers));
+        }
+
+        [Fact]
+        public void UpdateDifferentNewReturnsDifferent()
+        {
+            var init = Expression.ListInit(
+                Expression.New(typeof(List<int>)),
+                Expression.Constant(1),
+                Expression.Constant(2),
+                Expression.Constant(3));
+            Assert.NotSame(init, init.Update(Expression.New(typeof(List<int>)), init.Initializers));
+        }
+
+        [Fact]
+        public void UpdateDifferentInitializersReturnsDifferent()
+        {
+            var meth = typeof(List<int>).GetMethod("Add");
+            var inits = new[]
+            {
+                Expression.ElementInit(meth, Expression.Constant(1)),
+                Expression.ElementInit(meth, Expression.Constant(2)),
+                Expression.ElementInit(meth, Expression.Constant(3))
+            };
+            var init = Expression.ListInit(Expression.New(typeof(List<int>)), inits);
+            Assert.NotSame(init, init.Update(Expression.New(typeof(List<int>)), inits));
+        }
     }
 }

@@ -11,7 +11,7 @@ namespace System.Linq.Expressions.Tests
     public static class AsNullableTests
     {
         [Fact]
-        public static void NotLiftedEvenOnNullableOperandOrType()
+        public static void NotLiftedEvenOnNullableOperand()
         {
             Assert.False(Expression.TypeAs(Expression.Constant(E.A, typeof(E?)), typeof(E?)).IsLifted);
             Assert.False(Expression.TypeAs(Expression.Constant(E.A, typeof(E?)), typeof(Enum)).IsLifted);
