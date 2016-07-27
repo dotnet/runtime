@@ -240,9 +240,9 @@ public:
     //  specified, it returns amount of actual physical memory.
     static uint64_t GetPhysicalMemoryLimit();
 
-    // Get global memory status
+    // Get memory status
     // Parameters:
-    //  memory_load - A number between 0 and 100 that specifies the approximate percentage of physical memory 
+    //  memory_load - A number between 0 and 100 that specifies the approximate percentage of physical memory
     //      that is in use (0 indicates no memory use and 100 indicates full memory use).
     //  available_physical - The amount of physical memory currently available, in bytes.
     //  available_page_file - The maximum amount of memory the current process can commit, in bytes.
