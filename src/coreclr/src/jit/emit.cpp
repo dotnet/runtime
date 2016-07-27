@@ -2953,7 +2953,7 @@ void                emitter::emitDispVarSet()
 /*****************************************************************************/
 #endif//DEBUG
 
-#if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+#if MULTIREG_HAS_SECOND_GC_RET
 //------------------------------------------------------------------------  
 // emitSetSecondRetRegGCType: Sets the GC type of the second return register for instrDescCGCA struct.  
 //  
@@ -2980,7 +2980,7 @@ void            emitter::emitSetSecondRetRegGCType(instrDescCGCA* id, emitAttr s
         id->idSecondGCref(GCT_NONE);
     }
 }
-#endif // defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+#endif // MULTIREG_HAS_SECOND_GC_RET
 
 /*****************************************************************************
  *
@@ -2993,13 +2993,13 @@ void            emitter::emitSetSecondRetRegGCType(instrDescCGCA* id, emitAttr s
  *  address mode displacement.
  */
 
-emitter::instrDesc  * emitter::emitNewInstrCallInd(int                                                 argCnt,
-                                                   ssize_t                                             disp,
-                                                   VARSET_VALARG_TP                                    GCvars,
-                                                   regMaskTP                                           gcrefRegs,
-                                                   regMaskTP                                           byrefRegs,
-                                                   emitAttr                                            retSizeIn
-                                                   FEATURE_UNIX_AMD64_STRUCT_PASSING_ONLY_ARG(emitAttr secondRetSize))
+emitter::instrDesc  * emitter::emitNewInstrCallInd(int                                          argCnt,
+                                                   ssize_t                                      disp,
+                                                   VARSET_VALARG_TP                             GCvars,
+                                                   regMaskTP                                    gcrefRegs,
+                                                   regMaskTP                                    byrefRegs,
+                                                   emitAttr                                     retSizeIn
+                                                   MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr  secondRetSize))
 {
     emitAttr       retSize = (retSizeIn != EA_UNKNOWN) ? retSizeIn : EA_PTRSIZE;
 
@@ -3022,7 +3022,7 @@ emitter::instrDesc  * emitter::emitNewInstrCallInd(int                          
          (argCnt > ID_MAX_SMALL_CNS)                ||  // too many args
          (argCnt < 0)                                   // caller pops arguments
                                                         // There is a second ref/byref return register.  
-         FEATURE_UNIX_AMD64_STRUCT_PASSING_ONLY(    || EA_IS_GCREF_OR_BYREF(secondRetSize)))
+         MULTIREG_HAS_SECOND_GC_RET_ONLY(    || EA_IS_GCREF_OR_BYREF(secondRetSize)))
     {
         instrDescCGCA* id;
 
@@ -3036,9 +3036,9 @@ emitter::instrDesc  * emitter::emitNewInstrCallInd(int                          
         id->idcArgCnt         = argCnt;
         id->idcDisp           = disp;
 
-#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+#if MULTIREG_HAS_SECOND_GC_RET 
         emitSetSecondRetRegGCType(id, secondRetSize);
-#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING  
+#endif // MULTIREG_HAS_SECOND_GC_RET 
 
         return  id;
     }
@@ -3073,12 +3073,12 @@ emitter::instrDesc  * emitter::emitNewInstrCallInd(int                          
  *  and an arbitrarily large argument count.
  */
 
-emitter::instrDesc *emitter::emitNewInstrCallDir(int                                                 argCnt,
-                                                 VARSET_VALARG_TP                                    GCvars,
-                                                 regMaskTP                                           gcrefRegs,
-                                                 regMaskTP                                           byrefRegs,
-                                                 emitAttr                                            retSizeIn
-                                                 FEATURE_UNIX_AMD64_STRUCT_PASSING_ONLY_ARG(emitAttr secondRetSize))
+emitter::instrDesc *emitter::emitNewInstrCallDir(int                                           argCnt,
+                                                 VARSET_VALARG_TP                              GCvars,
+                                                 regMaskTP                                     gcrefRegs,
+                                                 regMaskTP                                     byrefRegs,
+                                                 emitAttr                                      retSizeIn
+                                                 MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr  secondRetSize))
 {
     emitAttr       retSize = (retSizeIn != EA_UNKNOWN) ? retSizeIn : EA_PTRSIZE;
 
@@ -3098,7 +3098,7 @@ emitter::instrDesc *emitter::emitNewInstrCallDir(int                            
          (argCnt > ID_MAX_SMALL_CNS)                ||   // too many args
          (argCnt < 0)                                    // caller pops arguments
                                                          // There is a second ref/byref return register.  
-        FEATURE_UNIX_AMD64_STRUCT_PASSING_ONLY(     || EA_IS_GCREF_OR_BYREF(secondRetSize)))
+        MULTIREG_HAS_SECOND_GC_RET_ONLY(     || EA_IS_GCREF_OR_BYREF(secondRetSize)))
     {
         instrDescCGCA* id = emitAllocInstrCGCA(retSize);
 
@@ -3112,9 +3112,9 @@ emitter::instrDesc *emitter::emitNewInstrCallDir(int                            
         id->idcDisp           = 0;  
         id->idcArgCnt         = argCnt;
 
-#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+#if MULTIREG_HAS_SECOND_GC_RET
         emitSetSecondRetRegGCType(id, secondRetSize);
-#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
+#endif // MULTIREG_HAS_SECOND_GC_RET
 
         return  id;
     }

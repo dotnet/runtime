@@ -131,46 +131,28 @@ void                Compiler::lvaInitTypeRef()
     //
     const bool hasRetBuffArg = impMethodInfo_hasRetBuffArg(info.compMethodInfo);
 
-    // Change the compRetNativeType if we are returning a struct by value in a register
+    // Possibly change the compRetNativeType from TYP_STRUCT to a "primitive" type
+    // when we are returning a struct by value and it fits in one register
+    //
     if (!hasRetBuffArg && varTypeIsStruct(info.compRetNativeType))
     {
-#if FEATURE_MULTIREG_RET && defined(FEATURE_HFA)
-        if (!info.compIsVarArgs && IsHfa(info.compMethodInfo->args.retTypeClass))
-        {
-            info.compRetNativeType = TYP_STRUCT;
-        }
-        else
-#endif // FEATURE_MULTIREG_RET && defined(FEATURE_HFA)
-        {
-#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING            
-            ReturnTypeDesc retTypeDesc;
-            retTypeDesc.InitializeReturnType(this, info.compMethodInfo->args.retTypeClass);
+        CORINFO_CLASS_HANDLE retClsHnd = info.compMethodInfo->args.retTypeClass;
 
-            if (retTypeDesc.GetReturnRegCount() > 1)
-            {
-                info.compRetNativeType = TYP_STRUCT;
-            }
-            else
-            {
-                info.compRetNativeType = retTypeDesc.GetReturnRegType(0);
-            }
-#else // !FEATURE_UNIX_AMD64_STRUCT_PASSING
-            // Check for TYP_STRUCT argument that can fit into a single register
-            structPassingKind howToReturnStruct;
-            var_types returnType = getReturnTypeForStruct(info.compMethodInfo->args.retTypeClass, &howToReturnStruct);
-            assert(howToReturnStruct != SPK_ByReference);  // hasRetBuffArg is false, so we can't have this answer here
+        Compiler::structPassingKind  howToReturnStruct;
+        var_types returnType = getReturnTypeForStruct(retClsHnd, &howToReturnStruct);
+
+        if (howToReturnStruct == SPK_PrimitiveType)
+        {
+            assert(returnType != TYP_UNKNOWN);
+            assert(returnType != TYP_STRUCT);
+
             info.compRetNativeType = returnType;
-            if (returnType == TYP_UNKNOWN)
-            {
-                assert(!"Unexpected size when returning struct by value");
-            }
 
             // ToDo: Refactor this common code sequence into its own method as it is used 4+ times
             if ((returnType == TYP_LONG) && (compLongUsed == false))
                 compLongUsed = true;
             else if (((returnType == TYP_FLOAT) || (returnType == TYP_DOUBLE)) && (compFloatingPointUsed == false))
                 compFloatingPointUsed = true;
-#endif // !FEATURE_UNIX_AMD64_STRUCT_PASSING
         }
     }
 
@@ -548,8 +530,8 @@ void                Compiler::lvaInitUserArgs(InitVarDscInfo *      varDscInfo)
         CORINFO_CLASS_HANDLE typeHnd = NULL;
 
         CorInfoTypeWithMod corInfoType = info.compCompHnd->getArgType(&info.compMethodInfo->args,
-            argLst,
-            &typeHnd);
+                                                                      argLst,
+                                                                      &typeHnd);
         varDsc->lvIsParam = 1;
 #if ASSERTION_PROP
         varDsc->lvSingleDef = 1;
@@ -917,13 +899,23 @@ void                Compiler::lvaInitUserArgs(InitVarDscInfo *      varDscInfo)
         } // end if (canPassArgInRegisters) 
         else
         {
-#ifdef _TARGET_ARM_
+#if defined(_TARGET_ARM_)
+
             varDscInfo->setAllRegArgUsed(argType);
             if (varTypeIsFloating(argType))
             {
                 varDscInfo->setAnyFloatStackArgs();
             }
-#endif
+
+#elif defined(_TARGET_ARM64_)
+
+            // If we needed to use the stack in order to pass this argument then
+            // record the fact that we have used up any remaining registers of this 'type'
+            // This prevents any 'backfilling' from occuring on ARM64
+            //
+            varDscInfo->setAllRegArgUsed(argType);
+
+#endif // _TARGET_XXX_
         }
 
 #ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
@@ -1943,6 +1935,37 @@ void               Compiler::lvaSetVarDoNotEnregister(unsigned varNum DEBUGARG(D
     }
 #endif
 }
+
+// Returns true if this local var is a multireg struct
+bool Compiler::lvaIsMultiregStruct(LclVarDsc*   varDsc)
+{
+    if (varDsc->TypeGet() == TYP_STRUCT)
+    {            
+        CORINFO_CLASS_HANDLE clsHnd = varDsc->lvVerTypeInfo.GetClassHandleForValueClass();
+        structPassingKind howToPassStruct;
+        
+        var_types type = getArgTypeForStruct(clsHnd, 
+                                             &howToPassStruct, 
+                                             varDsc->lvExactSize);
+
+        if (howToPassStruct == SPK_ByValueAsHfa)
+        {
+            assert(type = TYP_STRUCT);
+            return true;
+        }
+
+#if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING) || defined(_TARGET_ARM64_)
+        if (howToPassStruct == SPK_ByValue)
+        {
+            assert(type = TYP_STRUCT);
+            return true;
+        }
+#endif
+
+    }
+    return false;
+}
+
 
 /*****************************************************************************
  * Set the lvClass for a local variable of a struct type */
@@ -5952,7 +5975,7 @@ void   Compiler::lvaDumpEntry(unsigned lclNum, FrameLayoutState curState, size_t
         }
         else if (varDsc->lvOnFrame == 0)
         {
-            printf("multi-reg  ");
+            printf("registers  ");
         }
         else
         {
@@ -5985,12 +6008,16 @@ void   Compiler::lvaDumpEntry(unsigned lclNum, FrameLayoutState curState, size_t
         if (varDsc->lvLclFieldExpr)                printf("F");
         if (varDsc->lvLclBlockOpAddr)              printf("B");
         if (varDsc->lvLiveAcrossUCall)             printf("U");
+        if (varDsc->lvIsMultiRegArg)               printf("A");
+        if (varDsc->lvIsMultiRegRet)               printf("R");
 #ifdef JIT32_GCENCODER
         if (varDsc->lvPinned)                      printf("P");
 #endif // JIT32_GCENCODER
         printf("]");
     }
 
+    if (varDsc->lvIsMultiRegArg)             printf(" multireg-arg");
+    if (varDsc->lvIsMultiRegRet)             printf(" multireg-ret");
     if (varDsc->lvMustInit)                  printf(" must-init");
     if (varDsc->lvAddrExposed)               printf(" addr-exposed");
     if (varDsc->lvHasLdAddrOp)               printf(" ld-addr-op");
