@@ -25,7 +25,7 @@
 
     <ArchitectureSpecificNativeSymbol Include="@(ArchitectureSpecificNativeFile -> '%(RelativeDir)PDB\%(FileName).pdb')" />
     <AdditionalSymbolPackageExcludes Include="%2A%2A\%2A.dll" />
-    <ArchitectureSpecificNativeSymbol Include="..\_.pdb" />
+    <ArchitectureSpecificNativeSymbol Include="..\..\_.pdb" />
     <CrossArchitectureSpecificNativeSymbol Condition="'$(HasCrossTargetComponents)' == 'true'" Include="@(CrossArchitectureSpecificNativeFile -> '%(RelativeDir)PDB\%(FileName).pdb')" />
     <File Include="@(ArchitectureSpecificNativeSymbol)">
       <TargetPath>runtimes/$(PackageTargetRuntime)/native</TargetPath>
