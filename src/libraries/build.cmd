@@ -60,12 +60,6 @@ if "%__buildSpec%"=="managed"  goto :BuildManaged
 :BuildNative
 :: Run the Native Windows build
 echo [%time%] Building Native Libraries...
-:: Generate Native versioning assets
-set __binDir=%~dp0bin
-set __versionLog=%~dp0version.log
-if not exist "%__binDir%\obj\_version.h" (
-    msbuild "%~dp0build.proj" /nologo /t:GenerateVersionHeader /p:GenerateNativeVersionInfo=true > "%__versionLog%"
-)
 IF EXIST "%~dp0src\native\Windows\build-native.cmd" (
     call %~dp0src\native\Windows\build-native.cmd %__args% >nativebuild.log
     IF ERRORLEVEL 1 (
