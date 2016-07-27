@@ -85,13 +85,14 @@ namespace System.Tests
             Assert.False(iList.Contains(null));
             Assert.False(iList.Contains("1")); // Value not an int
         }
-
-
+        
         [Fact]
         public static void AsReadOnly()
         {
             var array = new string[] { "a", "b" };
             System.Collections.ObjectModel.ReadOnlyCollection<string> ro = Array.AsReadOnly(array);
+            Assert.Equal(array, ro);
+            Assert.Equal(new System.Collections.ObjectModel.ReadOnlyCollection<string>(array), ro);
         }
 
         [Fact]
@@ -556,17 +557,15 @@ namespace System.Tests
             // Did not throw; no items
 
             int counter = 0;
-            Array.ForEach<int>(new int[] { 1, 2, 3 }, new Action<int>(i => counter += i));
-            Assert.Equal(6, counter);
-
-            // Only works on one dimensional arrays
+            int exp = 0;
+            Array.ForEach<int>(new int[] { 1, 2, 3 }, new Action<int>(i => { counter += i; exp = (i==1)?1:(i==2)?3:6; Assert.Equal(exp, counter); }));
         }
 
         [Fact]
         public static void ForEach_Invalid()
         {
-            Assert.Throws<ArgumentNullException>(() => { Array.ForEach<short>(null, new Action<short>(i => i++)); });  // Array is null
-            Assert.Throws<ArgumentNullException>(() => { Array.ForEach<string>(new string[] { }, null); }); // Action is null
+            Assert.Throws<ArgumentNullException>("array", () => { Array.ForEach<short>(null, new Action<short>(i => i++)); });  // Array is null
+            Assert.Throws<ArgumentNullException>("action", () => { Array.ForEach<string>(new string[] { }, null); }); // Action is null
             Assert.Throws<InvalidOperationException>(() => {
                 Array.ForEach<string>(new string[] { "a" }, i => { throw new InvalidOperationException(); }); // Action throws
             });
@@ -1103,15 +1102,13 @@ namespace System.Tests
 
             result2 = Array.ConvertAll<int, string>(new int[] { 1 }, new Converter<int, string>(i => null));
             Assert.Equal(new string[] { null }, result2);
-
-            // ConvertAll only handles one dimensional arrays
         }
 
         [Fact]
         public static void ConvertAll_Invalid()
         {
-            Assert.Throws<ArgumentNullException>(() => { Array.ConvertAll<short, short>(null, i => i); });  // Array is null
-            Assert.Throws<ArgumentNullException>(() => { Array.ConvertAll<string, string>(new string[] { }, null); }); // Converter is null
+            Assert.Throws<ArgumentNullException>("array", () => { Array.ConvertAll<short, short>(null, i => i); });  // Array is null
+            Assert.Throws<ArgumentNullException>("converter", () => { Array.ConvertAll<string, string>(new string[] { }, null); }); // Converter is null
             Assert.Throws<InvalidOperationException>(() => {
                 Array.ConvertAll<string, string>(new string[] { "x" }, i => { throw new InvalidOperationException(); }); // Converter throws
             });
@@ -2136,7 +2133,7 @@ namespace System.Tests
         public static void SyncRoot_Equals_This()
         {
             var array = new string[] { };
-            Assert.Equal(array, array.SyncRoot);
+            Assert.Same(array, array.SyncRoot);
         }
             
         public static IEnumerable<object[]> TrueForAll_TestData()
