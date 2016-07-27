@@ -14,7 +14,7 @@ namespace System.Transactions.Tests
     {
         public static void PromoteTx(Transaction tx)
         {
-            TransactionInterop.GetDtcTransaction(tx);
+             TransactionInterop.GetDtcTransaction(tx);
         }
     }
 }
