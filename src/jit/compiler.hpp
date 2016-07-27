@@ -657,10 +657,6 @@ bool   Compiler::VarTypeIsMultiByteAndCanEnreg(var_types type,
     if (varTypeIsStruct(type))
     {
         size = info.compCompHnd->getClassSize(typeClass);
-#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
-        // Account for the classification of the struct.
-        result = IsRegisterPassable(typeClass);
-#else // !FEATURE_UNIX_AMD64_STRUCT_PASSING
         if (forReturn)
         {
             structPassingKind howToReturnStruct;
@@ -675,7 +671,6 @@ bool   Compiler::VarTypeIsMultiByteAndCanEnreg(var_types type,
         {
             result = true;
         }
-#endif // !FEATURE_UNIX_AMD64_STRUCT_PASSING
     }
     else
     {
@@ -1517,10 +1512,13 @@ void                GenTree::ChangeOperUnchecked(genTreeOps oper)
 inline
 bool                GenTree::IsVarAddr() const
 {
-    if (gtOper == GT_ADDR && (gtFlags & GTF_ADDR_ONSTACK))
+    if (gtOper == GT_ADDR)
     {
-        assert((gtType == TYP_BYREF) || (gtType == TYP_I_IMPL));
-        return true;
+        if (gtFlags & GTF_ADDR_ONSTACK)
+        {
+            assert((gtType == TYP_BYREF) || (gtType == TYP_I_IMPL));
+            return true;
+        }
     }
     return false;
 }

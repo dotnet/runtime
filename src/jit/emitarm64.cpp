@@ -6817,6 +6817,7 @@ void                emitter::emitIns_Call(EmitCallType  callType,
                                           void*         addr,
                                           ssize_t       argSize,
                                           emitAttr      retSize,
+                                          emitAttr      secondRetSize,
                                           VARSET_VALARG_TP ptrVars,
                                           regMaskTP     gcrefRegs,
                                           regMaskTP     byrefRegs,
@@ -6918,7 +6919,13 @@ void                emitter::emitIns_Call(EmitCallType  callType,
 
         assert(callType == EC_INDIR_R);
 
-        id  = emitNewInstrCallInd(argCnt, disp, ptrVars, gcrefRegs, byrefRegs, retSize);
+        id  = emitNewInstrCallInd(argCnt, 
+                                  disp, 
+                                  ptrVars, 
+                                  gcrefRegs, 
+                                  byrefRegs, 
+                                  retSize,
+                                  secondRetSize);
     }
     else
     {
@@ -6928,7 +6935,12 @@ void                emitter::emitIns_Call(EmitCallType  callType,
         assert(callType == EC_FUNC_TOKEN ||
                callType == EC_FUNC_ADDR);
 
-        id  = emitNewInstrCallDir(argCnt, ptrVars, gcrefRegs, byrefRegs, retSize);
+        id  = emitNewInstrCallDir(argCnt,
+                                  ptrVars, 
+                                  gcrefRegs, 
+                                  byrefRegs, 
+                                  retSize,
+                                  secondRetSize);
     }
 
     /* Update the emitter's live GC ref sets */
@@ -8435,7 +8447,7 @@ unsigned emitter::emitOutputCall(insGroup  *ig, BYTE *dst, instrDesc *id, code_t
     //
     assert(outputInstrSize == callInstrSize);
 
-    // If the method returns a GC ref, mark R0 appropriately.
+    // If the method returns a GC ref, mark INTRET (R0) appropriately.
     if       (id->idGCref() == GCT_GCREF)
     {
         gcrefRegs |= RBM_INTRET;
@@ -8443,6 +8455,20 @@ unsigned emitter::emitOutputCall(insGroup  *ig, BYTE *dst, instrDesc *id, code_t
     else if  (id->idGCref() == GCT_BYREF)
     {
         byrefRegs |= RBM_INTRET;
+    }
+
+    // If is a multi-register return method is called, mark INTRET_1 (X1) appropriately
+    if (id->idIsLargeCall())
+    {
+        instrDescCGCA* idCall = (instrDescCGCA*)id;
+        if (idCall->idSecondGCref() == GCT_GCREF)
+        {
+            gcrefRegs |= RBM_INTRET_1;
+        }
+        else if (idCall->idSecondGCref() == GCT_BYREF)
+        {
+            byrefRegs |= RBM_INTRET_1;
+        }
     }
 
     // If the GC register set has changed, report the new set.

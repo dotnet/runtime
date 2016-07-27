@@ -256,6 +256,18 @@ struct CLRConfig
 #define UNIX_AMD64_ABI_ONLY(x)
 #endif // defined(UNIX_AMD64_ABI)
 
+#if defined(UNIX_AMD64_ABI) || defined(_TARGET_ARM64_)
+#define MULTIREG_HAS_SECOND_GC_RET  1
+#define MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(x)   , x
+#define MULTIREG_HAS_SECOND_GC_RET_ONLY(x)         x
+#else // !defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+#define MULTIREG_HAS_SECOND_GC_RET  0
+#define MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(x)
+#define MULTIREG_HAS_SECOND_GC_RET_ONLY(x)
+#endif // defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+
+
+
 // To get rid of warning 4701 : local variable may be used without being initialized
 #define DUMMY_INIT(x)       (x)
 
