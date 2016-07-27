@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using Internal.Runtime.Augments;
+using Microsoft.Win32;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -72,25 +73,27 @@ namespace System
             {
                 return GetEnvironmentVariableCore(variable);
             }
-            else if (target == EnvironmentVariableTarget.Machine)
-            {
-                // TODO #8533: Uncomment/fix when registry APIs available
-                //using (RegistryKey environmentKey = Registry.LocalMachine.OpenSubKey(@"System\CurrentControlSet\Control\Session Manager\Environment", false))
-                //{
-                //    return environmentKey?.GetValue(variable) as string ?? null;
-                //}
-                return null;
-            }
             else
             {
-                Debug.Assert(target == EnvironmentVariableTarget.User);
+                RegistryKey baseKey;
+                string keyName;
 
-                // TODO #8533: Uncomment/fix when registry APIs available
-                //using (RegistryKey environmentKey = Registry.CurrentUser.OpenSubKey("Environment", false))
-                //{
-                //    return environmentKey?.GetValue(variable) as string ?? null;
-                //}
-                return null;
+                if (target == EnvironmentVariableTarget.Machine)
+                {
+                    baseKey = Registry.LocalMachine;
+                    keyName = @"System\CurrentControlSet\Control\Session Manager\Environment";
+                }
+                else
+                {
+                    Debug.Assert(target == EnvironmentVariableTarget.User);
+                    baseKey = Registry.CurrentUser;
+                    keyName = "Environment";
+                }
+
+                using (RegistryKey environmentKey = baseKey.OpenSubKey(keyName, writable: false))
+                {
+                    return environmentKey?.GetValue(variable) as string;
+                }
             }
         }
 
@@ -145,43 +148,36 @@ namespace System
             {
                 return GetEnvironmentVariablesCore();
             }
-
-            var results = new LowLevelDictionary<string, string>();
-            if (target == EnvironmentVariableTarget.Machine)
-            {
-                // TODO #8533: Uncomment/fix when registry APIs available
-                //using (RegistryKey environmentKey = Registry.LocalMachine.OpenSubKey(@"System\CurrentControlSet\Control\Session Manager\Environment", false))
-                //{
-                //    return GetRegistryKeyNameValuePairs(environmentKey);
-                //}
-            }
             else
             {
-                Debug.Assert(target == EnvironmentVariableTarget.User);
-                // TODO #8533: Uncomment/fix when registry APIs available
-                //using (RegistryKey environmentKey = Registry.CurrentUser.OpenSubKey("Environment", false))
-                //{
-                //    return GetRegistryKeyNameValuePairs(environmentKey);
-                //}
-            }
-            return results;
-        }
+                RegistryKey baseKey;
+                string keyName;
+                if (target == EnvironmentVariableTarget.Machine)
+                {
+                    baseKey = Registry.LocalMachine;
+                    keyName = @"System\CurrentControlSet\Control\Session Manager\Environment";
+                }
+                else
+                {
+                    Debug.Assert(target == EnvironmentVariableTarget.User);
+                    baseKey = Registry.CurrentUser;
+                    keyName = @"Environment";
+                }
 
-        // TODO #8533: Uncomment/fix when registry APIs available
-        //private static IDictionary GetRegistryKeyNameValuePairs(RegistryKey registryKey)
-        //{
-        //    Hashtable table = new Hashtable(20);
-        //    if (registryKey != null)
-        //    {
-        //        string[] names = registryKey.GetValueNames();
-        //        foreach (string name in names)
-        //        {
-        //            string value = registryKey.GetValue(name, "").ToString();
-        //            table.Add(name, value);
-        //        }
-        //    }
-        //    return table;
-        //}
+                using (RegistryKey environmentKey = baseKey.OpenSubKey(keyName, writable: false))
+                {
+                    var table = new LowLevelDictionary<string, string>();
+                    if (environmentKey != null)
+                    {
+                        foreach (string name in environmentKey.GetValueNames())
+                        {
+                            table.Add(name, environmentKey.GetValue(name, "").ToString());
+                        }
+                    }
+                    return table;
+                }
+            }
+        }
 
         private unsafe static char[] GetEnvironmentCharArray()
         {
@@ -326,38 +322,45 @@ namespace System
             {
                 SetEnvironmentVariableCore(variable, value);
             }
-            else if (target == EnvironmentVariableTarget.Machine)
-            {
-                // TODO #8533: Uncomment/fix when registry APIs available
-                //using (RegistryKey environmentKey = Registry.LocalMachine.OpenSubKey(@"System\CurrentControlSet\Control\Session Manager\Environment", true))
-                //{
-                //    if (environmentKey != null)
-                //    {
-                //        if (value == null) environmentKey.DeleteValue(variable, false);
-                //        else environmentKey.SetValue(variable, value);
-                //    }
-                //}
-            }
             else
             {
-                Debug.Assert(target == EnvironmentVariableTarget.User);
+                RegistryKey baseKey;
+                string keyName;
 
-                // User-wide environment variables stored in the registry are limited to 255 chars for the environment variable name.
-                const int MaxUserEnvVariableLength = 255;
-                if (variable.Length >= MaxUserEnvVariableLength)
+                if (target == EnvironmentVariableTarget.Machine)
                 {
-                    throw new ArgumentException(SR.Argument_LongEnvVarValue, nameof(variable));
+                    baseKey = Registry.LocalMachine;
+                    keyName = @"System\CurrentControlSet\Control\Session Manager\Environment";
+                }
+                else
+                {
+                    Debug.Assert(target == EnvironmentVariableTarget.User);
+
+                    // User-wide environment variables stored in the registry are limited to 255 chars for the environment variable name.
+                    const int MaxUserEnvVariableLength = 255;
+                    if (variable.Length >= MaxUserEnvVariableLength)
+                    {
+                        throw new ArgumentException(SR.Argument_LongEnvVarValue, nameof(variable));
+                    }
+
+                    baseKey = Registry.CurrentUser;
+                    keyName = "Environment";
                 }
 
-                // TODO #8533: Uncomment/fix when registry APIs available
-                //using (RegistryKey environmentKey = Registry.CurrentUser.OpenSubKey("Environment", true))
-                //{
-                //    if (environmentKey != null)
-                //    {
-                //        if (value == null) environmentKey.DeleteValue(variable, false);
-                //        else environmentKey.SetValue(variable, value);
-                //    }
-                //}
+                using (RegistryKey environmentKey = baseKey.OpenSubKey(keyName, writable: true))
+                {
+                    if (environmentKey != null)
+                    {
+                        if (value == null)
+                        {
+                            environmentKey.DeleteValue(variable, throwOnMissingValue: false);
+                        }
+                        else
+                        {
+                            environmentKey.SetValue(variable, value);
+                        }
+                    }
+                }
             }
 
             //// Desktop sends a WM_SETTINGCHANGE message to all windows.  Not available on all platforms.

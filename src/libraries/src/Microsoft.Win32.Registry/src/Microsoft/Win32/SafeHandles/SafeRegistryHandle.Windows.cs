@@ -6,7 +6,12 @@ using System.Runtime.InteropServices;
 
 namespace Microsoft.Win32.SafeHandles
 {
-    public sealed partial class SafeRegistryHandle : SafeHandle
+#if REGISTRY_ASSEMBLY
+    public
+#else
+    internal
+#endif
+    sealed partial class SafeRegistryHandle : SafeHandle
     {
         protected override bool ReleaseHandle() =>
             Interop.mincore.RegCloseKey(handle) == Interop.mincore.Errors.ERROR_SUCCESS;
