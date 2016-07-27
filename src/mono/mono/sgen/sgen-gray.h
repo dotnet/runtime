@@ -97,7 +97,6 @@ struct _SgenGrayQueue {
 #ifdef SGEN_CHECK_GRAY_OBJECT_ENQUEUE
 	GrayQueueEnqueueCheckFunc enqueue_check_func;
 #endif
-	void *alloc_prepare_data;
 };
 
 typedef struct _SgenSectionGrayQueue SgenSectionGrayQueue;
@@ -130,13 +129,10 @@ GrayQueueEntry sgen_gray_object_dequeue (SgenGrayQueue *queue);
 GrayQueueSection* sgen_gray_object_dequeue_section (SgenGrayQueue *queue);
 void sgen_gray_object_enqueue_section (SgenGrayQueue *queue, GrayQueueSection *section);
 void sgen_gray_object_queue_trim_free_list (SgenGrayQueue *queue);
-void sgen_gray_object_queue_init (SgenGrayQueue *queue, GrayQueueEnqueueCheckFunc enqueue_check_func);
-void sgen_gray_object_queue_init_invalid (SgenGrayQueue *queue);
-void sgen_gray_queue_set_alloc_prepare (SgenGrayQueue *queue, GrayQueueAllocPrepareFunc alloc_prepare_func, void *data);
-void sgen_gray_object_queue_init_with_alloc_prepare (SgenGrayQueue *queue, GrayQueueEnqueueCheckFunc enqueue_check_func,
-		GrayQueueAllocPrepareFunc func, void *data);
+void sgen_gray_object_queue_init (SgenGrayQueue *queue, GrayQueueEnqueueCheckFunc enqueue_check_func, gboolean reuse_free_list);
+void sgen_gray_object_queue_dispose (SgenGrayQueue *queue);
+void sgen_gray_queue_set_alloc_prepare (SgenGrayQueue *queue, GrayQueueAllocPrepareFunc alloc_prepare_func);
 void sgen_gray_object_queue_deinit (SgenGrayQueue *queue);
-void sgen_gray_object_queue_disable_alloc_prepare (SgenGrayQueue *queue);
 void sgen_gray_object_alloc_queue_section (SgenGrayQueue *queue);
 void sgen_gray_object_free_queue_section (GrayQueueSection *section);
 

@@ -563,14 +563,38 @@ ms_alloc_block (int size_index, gboolean pinned, gboolean has_references)
 }
 
 static gboolean
-ptr_is_from_pinned_alloc (char *ptr)
+ptr_is_in_major_block (char *ptr, char **start, gboolean *pinned)
 {
 	MSBlockInfo *block;
 
 	FOREACH_BLOCK_NO_LOCK (block) {
-		if (ptr >= MS_BLOCK_FOR_BLOCK_INFO (block) && ptr <= MS_BLOCK_FOR_BLOCK_INFO (block) + MS_BLOCK_SIZE)
-			return block->pinned;
+		if (ptr >= MS_BLOCK_FOR_BLOCK_INFO (block) && ptr <= MS_BLOCK_FOR_BLOCK_INFO (block) + MS_BLOCK_SIZE) {
+			int count = MS_BLOCK_FREE / block->obj_size;
+			int i;
+
+			if (start)
+				*start = NULL;
+			for (i = 0; i <= count; ++i) {
+				if (ptr >= (char*)MS_BLOCK_OBJ (block, i) && ptr < (char*)MS_BLOCK_OBJ (block, i + 1)) {
+					if (start)
+						*start = (char *)MS_BLOCK_OBJ (block, i);
+					break;
+				}
+			}
+			if (pinned)
+				*pinned = block->pinned;
+			return TRUE;
+		}
 	} END_FOREACH_BLOCK_NO_LOCK;
+	return FALSE;
+}
+
+static gboolean
+ptr_is_from_pinned_alloc (char *ptr)
+{
+	gboolean pinned;
+	if (ptr_is_in_major_block (ptr, NULL, &pinned))
+		return pinned;
 	return FALSE;
 }
 
@@ -772,23 +796,9 @@ major_is_object_live (GCObject *obj)
 static gboolean
 major_ptr_is_in_non_pinned_space (char *ptr, char **start)
 {
-	MSBlockInfo *block;
-
-	FOREACH_BLOCK_NO_LOCK (block) {
-		if (ptr >= MS_BLOCK_FOR_BLOCK_INFO (block) && ptr <= MS_BLOCK_FOR_BLOCK_INFO (block) + MS_BLOCK_SIZE) {
-			int count = MS_BLOCK_FREE / block->obj_size;
-			int i;
-
-			*start = NULL;
-			for (i = 0; i <= count; ++i) {
-				if (ptr >= (char*)MS_BLOCK_OBJ (block, i) && ptr < (char*)MS_BLOCK_OBJ (block, i + 1)) {
-					*start = (char *)MS_BLOCK_OBJ (block, i);
-					break;
-				}
-			}
-			return !block->pinned;
-		}
-	} END_FOREACH_BLOCK_NO_LOCK;
+	gboolean pinned;
+	if (ptr_is_in_major_block (ptr, start, &pinned))
+		return !pinned;
 	return FALSE;
 }
 

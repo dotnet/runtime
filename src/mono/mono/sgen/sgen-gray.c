@@ -38,6 +38,12 @@ guint64 stat_gray_queue_dequeue_slow_path;
 #define STATE_ASSERT(s,v)
 #endif
 
+/*
+ * Whenever we dispose a gray queue, we save its free list.  Then, in the next collection,
+ * we reuse that free list for the new gray queue.
+ */
+static GrayQueueSection *last_gray_queue_free_list;
+
 void
 sgen_gray_object_alloc_queue_section (SgenGrayQueue *queue)
 {
@@ -212,48 +218,40 @@ sgen_gray_object_queue_trim_free_list (SgenGrayQueue *queue)
 }
 
 void
-sgen_gray_object_queue_init (SgenGrayQueue *queue, GrayQueueEnqueueCheckFunc enqueue_check_func)
+sgen_gray_object_queue_init (SgenGrayQueue *queue, GrayQueueEnqueueCheckFunc enqueue_check_func, gboolean reuse_free_list)
 {
-	g_assert (sgen_gray_object_queue_is_empty (queue));
+	memset (queue, 0, sizeof (SgenGrayQueue));
 
-	queue->alloc_prepare_func = NULL;
-	queue->alloc_prepare_data = NULL;
 #ifdef SGEN_CHECK_GRAY_OBJECT_ENQUEUE
 	queue->enqueue_check_func = enqueue_check_func;
 #endif
 
+	if (reuse_free_list) {
+		queue->free_list = last_gray_queue_free_list;
+		last_gray_queue_free_list = NULL;
+	}
+}
+
+void
+sgen_gray_object_queue_dispose (SgenGrayQueue *queue)
+{
+	SGEN_ASSERT (0, sgen_gray_object_queue_is_empty (queue), "Why are we disposing a gray queue that's not empty?");
+
 	/* Free the extra sections allocated during the last collection */
 	sgen_gray_object_queue_trim_free_list (queue);
-}
 
-static void
-invalid_prepare_func (SgenGrayQueue *queue)
-{
-	g_assert_not_reached ();
-}
+	SGEN_ASSERT (0, !last_gray_queue_free_list, "Are we disposing two gray queues after another?");
+	last_gray_queue_free_list = queue->free_list;
 
-void
-sgen_gray_object_queue_init_invalid (SgenGrayQueue *queue)
-{
-	sgen_gray_object_queue_init (queue, NULL);
-	queue->alloc_prepare_func = invalid_prepare_func;
-	queue->alloc_prepare_data = NULL;
+	/* just to make sure */
+	memset (queue, 0, sizeof (SgenGrayQueue));
 }
 
 void
-sgen_gray_queue_set_alloc_prepare (SgenGrayQueue *queue, GrayQueueAllocPrepareFunc alloc_prepare_func, void *data)
+sgen_gray_queue_set_alloc_prepare (SgenGrayQueue *queue, GrayQueueAllocPrepareFunc alloc_prepare_func)
 {
-	SGEN_ASSERT (0, !queue->alloc_prepare_func && !queue->alloc_prepare_data, "Can't set gray queue alloc-prepare twice");
+	SGEN_ASSERT (0, !queue->alloc_prepare_func, "Can't set gray queue alloc-prepare twice");
 	queue->alloc_prepare_func = alloc_prepare_func;
-	queue->alloc_prepare_data = data;
-}
-
-void
-sgen_gray_object_queue_init_with_alloc_prepare (SgenGrayQueue *queue, GrayQueueEnqueueCheckFunc enqueue_check_func,
-		GrayQueueAllocPrepareFunc alloc_prepare_func, void *data)
-{
-	sgen_gray_object_queue_init (queue, enqueue_check_func);
-	sgen_gray_queue_set_alloc_prepare (queue, alloc_prepare_func, data);
 }
 
 void
@@ -266,13 +264,6 @@ sgen_gray_object_queue_deinit (SgenGrayQueue *queue)
 		sgen_gray_object_free_queue_section (queue->free_list);
 		queue->free_list = next;
 	}
-}
-
-void
-sgen_gray_object_queue_disable_alloc_prepare (SgenGrayQueue *queue)
-{
-	queue->alloc_prepare_func = NULL;
-	queue->alloc_prepare_data = NULL;
 }
 
 static void

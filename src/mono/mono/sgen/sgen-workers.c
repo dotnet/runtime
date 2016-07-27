@@ -77,7 +77,7 @@ state_is_working_or_enqueued (State state)
 	return state == STATE_WORKING || state == STATE_WORK_ENQUEUED;
 }
 
-void
+static void
 sgen_workers_ensure_awake (void)
 {
 	State old_state;
@@ -177,7 +177,8 @@ static void
 init_private_gray_queue (WorkerData *data)
 {
 	sgen_gray_object_queue_init (&data->private_gray_queue,
-			sgen_get_major_collector ()->is_concurrent ? concurrent_enqueue_check : NULL);
+			sgen_get_major_collector ()->is_concurrent ? concurrent_enqueue_check : NULL,
+			FALSE);
 }
 
 static void
@@ -354,10 +355,29 @@ sgen_workers_are_working (void)
 	return state_is_working_or_enqueued (workers_state);
 }
 
-SgenSectionGrayQueue*
-sgen_workers_get_distribute_section_gray_queue (void)
+void
+sgen_workers_assert_gray_queue_is_empty (void)
 {
-	return &workers_distribute_gray_queue;
+	SGEN_ASSERT (0, sgen_section_gray_queue_is_empty (&workers_distribute_gray_queue), "Why is the workers gray queue not empty?");
+}
+
+void
+sgen_workers_take_from_queue_and_awake (SgenGrayQueue *queue)
+{
+	gboolean wake = FALSE;
+
+	for (;;) {
+		GrayQueueSection *section = sgen_gray_object_dequeue_section (queue);
+		if (!section)
+			break;
+		sgen_section_gray_queue_enqueue (&workers_distribute_gray_queue, section);
+		wake = TRUE;
+	}
+
+	if (wake) {
+		SGEN_ASSERT (0, sgen_concurrent_collection_in_progress (), "Why is there work to take when there's no concurrent collection in progress?");
+		sgen_workers_ensure_awake ();
+	}
 }
 
 #endif

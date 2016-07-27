@@ -262,27 +262,33 @@ binary_protocol_check_file_overflow (void)
  *
  * The protocol entries that do flush have `FLUSH()` in their definition.
  */
-void
+gboolean
 binary_protocol_flush_buffers (gboolean force)
 {
 #ifdef HAVE_UNISTD_H
 	int num_buffers = 0, i;
+	BinaryProtocolBuffer *header;
 	BinaryProtocolBuffer *buf;
 	BinaryProtocolBuffer **bufs;
 
 	if (binary_protocol_file == -1)
-		return;
+		return FALSE;
 
 	if (!force && !try_lock_exclusive ())
-		return;
+		return FALSE;
 
-	for (buf = binary_protocol_buffers; buf != NULL; buf = buf->next)
+	header = binary_protocol_buffers;
+	for (buf = header; buf != NULL; buf = buf->next)
 		++num_buffers;
 	bufs = (BinaryProtocolBuffer **)sgen_alloc_internal_dynamic (num_buffers * sizeof (BinaryProtocolBuffer*), INTERNAL_MEM_BINARY_PROTOCOL, TRUE);
-	for (buf = binary_protocol_buffers, i = 0; buf != NULL; buf = buf->next, i++)
+	for (buf = header, i = 0; buf != NULL; buf = buf->next, i++)
 		bufs [i] = buf;
 	SGEN_ASSERT (0, i == num_buffers, "Binary protocol buffer count error");
 
+	/*
+	 * This might be incorrect when forcing, but all bets are off in that case, anyway,
+	 * because we're trying to figure out a bug in the debugger.
+	 */
 	binary_protocol_buffers = NULL;
 
 	for (i = num_buffers - 1; i >= 0; --i) {
@@ -294,6 +300,8 @@ binary_protocol_flush_buffers (gboolean force)
 
 	if (!force)
 		unlock_exclusive ();
+
+	return TRUE;
 #endif
 }
 

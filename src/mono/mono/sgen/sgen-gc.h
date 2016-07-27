@@ -557,6 +557,7 @@ typedef struct {
 	GCObject* (*alloc_for_promotion) (GCVTable vtable, GCObject *obj, size_t objsize, gboolean has_references);
 
 	SgenObjectOperations serial_ops;
+	SgenObjectOperations serial_ops_with_concurrent_major;
 
 	void (*prepare_to_space) (char *to_space_bitmap, size_t space_bitmap_size);
 	void (*clear_fragments) (void);
@@ -1012,7 +1013,7 @@ GCObject* sgen_alloc_obj_mature (GCVTable vtable, size_t size);
 
 /* Debug support */
 
-void sgen_check_consistency (void);
+void sgen_check_remset_consistency (void);
 void sgen_check_mod_union_consistency (void);
 void sgen_check_major_refs (void);
 void sgen_check_whole_heap (gboolean allow_missing_pinning);
