@@ -103,22 +103,24 @@ namespace System.Transactions.Tests
                 HelperFunctions.PromoteTx(tx);
             }
 
-            Assert.True(clone.IsolationLevel == tx.IsolationLevel, "Clone's IsolationLevel does not match original");
-            Assert.True(clone.TransactionInformation.Status == tx.TransactionInformation.Status, "Clone's Status does not match original");
-            Assert.True(clone.TransactionInformation.LocalIdentifier == tx.TransactionInformation.LocalIdentifier, "Clone's LocalIdentifier does not match original");
-            Assert.True(clone.TransactionInformation.DistributedIdentifier == tx.TransactionInformation.DistributedIdentifier, "Clone's DistributedIdentifier does not match original");
+            Assert.Equal(clone.IsolationLevel, tx.IsolationLevel);
+            Assert.Equal(clone.TransactionInformation.Status, tx.TransactionInformation.Status);
+            Assert.Equal(clone.TransactionInformation.LocalIdentifier, tx.TransactionInformation.LocalIdentifier);
+            Assert.Equal(clone.TransactionInformation.DistributedIdentifier, tx.TransactionInformation.DistributedIdentifier);
 
             CommittableTransaction cloneCommittable = clone as CommittableTransaction;
-            Assert.True(cloneCommittable == null, "Clone is castable as a CommittableTransaction");
+            Assert.Null(cloneCommittable);
 
             try
             {
                 tx.Commit();
             }
             catch (TransactionAbortedException)
-            { }
+            {
+                Assert.Equal(expectedStatus, TransactionStatus.Aborted);
+            }
 
-            Assert.True(tx.TransactionInformation.Status == expectedStatus, "Unexpected TransactionStatus (" + tx.TransactionInformation.Status.ToString());
+            Assert.Equal(expectedStatus, tx.TransactionInformation.Status);
         }
     }
 }

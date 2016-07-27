@@ -97,6 +97,7 @@ namespace System.Transactions.Tests
                     }
 
                     TestEnlistment durable = new TestEnlistment(Phase1Vote.Prepared, expectedDurableOutcome);
+                    // TODO: Issue #10353 - This needs to change once we have promotion support.
                     Assert.Throws<PlatformNotSupportedException>(() => // Creation of two phase durable enlistment attempts to promote to MSDTC
                     {
                         tx.EnlistDurable(Guid.NewGuid(), durable, durableEnlistmentOption);
