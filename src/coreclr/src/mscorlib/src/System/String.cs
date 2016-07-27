@@ -100,31 +100,52 @@ namespace System {
         }
 
         [ComVisible(false)]
-        public static String Join<T>(String separator, IEnumerable<T> values) {
+        public static String Join<T>(String separator, IEnumerable<T> values)
+        {
             if (values == null)
                 throw new ArgumentNullException("values");
             Contract.Ensures(Contract.Result<String>() != null);
             Contract.EndContractBlock();
 
-            using(IEnumerator<T> en = values.GetEnumerator()) {
+            using (IEnumerator<T> en = values.GetEnumerator())
+            {
                 if (!en.MoveNext())
-                    return String.Empty;
-
-                StringBuilder result = StringBuilderCache.Acquire();
+                    return string.Empty;
+                
+                // We called MoveNext once, so this will be the first item
                 T currentValue = en.Current;
 
-                if (currentValue != null) {
-                    result.Append(currentValue.ToString());
+                // Call ToString before calling MoveNext again, since
+                // we want to stay consistent with the below loop
+                // Everything should be called in the order
+                // MoveNext-Current-ToString, unless further optimizations
+                // can be made, to avoid breaking changes
+                string firstString = currentValue?.ToString();
+
+                // If there's only 1 item, simply call ToString on that
+                if (!en.MoveNext())
+                {
+                    // We have to handle the case of either currentValue
+                    // or its ToString being null
+                    return firstString ?? string.Empty;
                 }
 
-                while (en.MoveNext()) {
+                StringBuilder result = StringBuilderCache.Acquire();
+                
+                result.Append(firstString);
+
+                do
+                {
                     currentValue = en.Current;
 
                     result.Append(separator);
-                    if (currentValue != null) {
+                    if (currentValue != null)
+                    {
                         result.Append(currentValue.ToString());
                     }
-                }            
+                }
+                while (en.MoveNext());
+
                 return StringBuilderCache.GetStringAndRelease(result);
             }
         }
@@ -160,15 +181,6 @@ namespace System {
                 return StringBuilderCache.GetStringAndRelease(result);
             }
         }
-
-
-#if BIT64
-        private const int charPtrAlignConst = 3;
-        private const int alignConst        = 7;
-#else
-        private const int charPtrAlignConst = 1;
-        private const int alignConst        = 3;
-#endif
 
         internal char FirstChar { get { return m_firstChar; } }
 
