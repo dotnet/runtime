@@ -2152,9 +2152,24 @@ namespace System
     }
     public partial class Uri
     {
+        public static readonly string SchemeDelimiter;
+        public static readonly string UriSchemeFile;
+        public static readonly string UriSchemeFtp;
+        public static readonly string UriSchemeGopher;
+        public static readonly string UriSchemeHttp;
+        public static readonly string UriSchemeHttps;
+        public static readonly string UriSchemeMailto;
+        public static readonly string UriSchemeNetPipe;
+        public static readonly string UriSchemeNetTcp;
+        public static readonly string UriSchemeNews;
+        public static readonly string UriSchemeNntp;
         public Uri(string uriString) { }
         public Uri(string uriString, System.UriKind uriKind) { }
+        [System.ObsoleteAttribute]
+        public Uri(string uriString, bool dontEscape) { }
         public Uri(System.Uri baseUri, string relativeUri) { }
+        [System.ObsoleteAttribute("dontEscape is always false")]
+        public Uri(System.Uri baseUri, string relativeUri, bool dontEscape) { }
         public Uri(System.Uri baseUri, System.Uri relativeUri) { }
         public string AbsolutePath { get { return default(string); } }
         public string AbsoluteUri { get { return default(string); } }
@@ -2182,20 +2197,42 @@ namespace System
         public static bool CheckSchemeName(string schemeName) { return default(bool); }
         public static int Compare(System.Uri uri1, System.Uri uri2, System.UriComponents partsToCompare, System.UriFormat compareFormat, System.StringComparison comparisonType) { return default(int); }
         public override bool Equals(object comparand) { return default(bool); }
+        [System.ObsoleteAttribute]
+        protected virtual void Escape() { }
         public static string EscapeDataString(string stringToEscape) { return default(string); }
+        [System.ObsoleteAttribute]
+        protected static string EscapeString(string str) { return default(string); }
         public static string EscapeUriString(string stringToEscape) { return default(string); }
+        public static int FromHex(char digit) { return default(int); }
         public string GetComponents(System.UriComponents components, System.UriFormat format) { return default(string); }
         public override int GetHashCode() { return default(int); }
         public bool IsBaseOf(System.Uri uri) { return default(bool); }
+        public string GetLeftPart(System.UriPartial part) { return default(string); }
+        public static string HexEscape(char character) { return default(string); }
+        public static char HexUnescape(string pattern, ref int index) { return default(char); }
+        [System.ObsoleteAttribute]
+        protected virtual bool IsBadFileSystemCharacter(char character) { return default(bool); }
+        [System.ObsoleteAttribute]
+        protected static bool IsExcludedCharacter(char character) { return default(bool); }
+        public static bool IsHexDigit(char character) { return default(bool); }
+        public static bool IsHexEncoding(string pattern, int index) { return default(bool); }
+        [System.ObsoleteAttribute]
+        protected virtual bool IsReservedCharacter(char character) { return default(bool); }
         public bool IsWellFormedOriginalString() { return default(bool); }
         public static bool IsWellFormedUriString(string uriString, System.UriKind uriKind) { return default(bool); }
+        [System.ObsoleteAttribute("Use MakeRelativeUri(Uri uri) instead.")]
+        public string MakeRelative(System.Uri toUri) { return default(string); }
         public System.Uri MakeRelativeUri(System.Uri uri) { return default(System.Uri); }
         public static bool operator ==(System.Uri uri1, System.Uri uri2) { return default(bool); }
         public static bool operator !=(System.Uri uri1, System.Uri uri2) { return default(bool); }
+        [System.ObsoleteAttribute("The method has been deprecated. It is not used by the system.")]
+        protected virtual void Parse() { }
         public override string ToString() { return default(string); }
         public static bool TryCreate(string uriString, System.UriKind uriKind, out System.Uri result) { result = default(System.Uri); return default(bool); }
         public static bool TryCreate(System.Uri baseUri, string relativeUri, out System.Uri result) { result = default(System.Uri); return default(bool); }
         public static bool TryCreate(System.Uri baseUri, System.Uri relativeUri, out System.Uri result) { result = default(System.Uri); return default(bool); }
+        [System.ObsoleteAttribute]
+        protected virtual string Unescape(string path) { return default(string); }
         public static string UnescapeDataString(string stringToUnescape) { return default(string); }
     }
     [System.FlagsAttribute]
@@ -2244,6 +2281,13 @@ namespace System
         Absolute = 1,
         Relative = 2,
         RelativeOrAbsolute = 0,
+    }
+    public enum UriPartial
+    {
+        Authority = 1,
+        Path = 2,
+        Query = 3,
+        Scheme = 0,
     }
     public abstract partial class ValueType
     {
