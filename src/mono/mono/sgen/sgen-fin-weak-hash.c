@@ -558,7 +558,7 @@ sgen_object_register_for_finalization (GCObject *obj, void *user_data)
 
 /* LOCKING: requires that the GC lock is held */
 static void
-finalize_with_predicate (SgenObjectPredicateFunc predicate, void *user_data, volatile gboolean *suspend, SgenHashTable *hash_table)
+finalize_with_predicate (SgenObjectPredicateFunc predicate, void *user_data, SgenHashTable *hash_table)
 {
 	GCObject *object;
 	gpointer dummy G_GNUC_UNUSED;
@@ -575,7 +575,7 @@ finalize_with_predicate (SgenObjectPredicateFunc predicate, void *user_data, vol
 			SGEN_LOG (5, "Enqueuing object for finalization: %p (%s) (%d)", object, sgen_client_vtable_get_name (SGEN_LOAD_VTABLE (object)), sgen_hash_table_num_entries (hash_table));
 		}
 
-		if (*suspend)
+		if (sgen_suspend_finalizers)
 			break;
 	} SGEN_HASH_TABLE_FOREACH_END;
 }
@@ -597,12 +597,12 @@ finalize_with_predicate (SgenObjectPredicateFunc predicate, void *user_data, vol
  * objects are still alive.
  */
 void
-sgen_finalize_if (SgenObjectPredicateFunc predicate, void *user_data, volatile gboolean *suspend)
+sgen_finalize_if (SgenObjectPredicateFunc predicate, void *user_data)
 {
 	LOCK_GC;
 	sgen_process_fin_stage_entries ();
-	finalize_with_predicate (predicate, user_data, suspend, &minor_finalizable_hash);
-	finalize_with_predicate (predicate, user_data, suspend, &major_finalizable_hash);
+	finalize_with_predicate (predicate, user_data, &minor_finalizable_hash);
+	finalize_with_predicate (predicate, user_data, &major_finalizable_hash);
 	UNLOCK_GC;
 }
 

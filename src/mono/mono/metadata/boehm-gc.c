@@ -829,6 +829,11 @@ mono_gc_clear_domain (MonoDomain *domain)
 {
 }
 
+void
+mono_gc_suspend_finalizers (void)
+{
+}
+
 int
 mono_gc_get_suspend_signal (void)
 {
