@@ -86,6 +86,7 @@ struct _MonoDebugMethodJitInfo {
 	const mono_byte *wrapper_addr;
 	uint32_t num_line_numbers;
 	MonoDebugLineNumberEntry *line_numbers;
+	uint32_t has_var_info;
 	uint32_t num_params;
 	MonoDebugVarInfo *this_var;
 	MonoDebugVarInfo *params;

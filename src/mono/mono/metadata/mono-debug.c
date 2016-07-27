@@ -459,23 +459,25 @@ mono_debug_add_method (MonoMethod *method, MonoDebugMethodJitInfo *jit, MonoDoma
 		write_sleb128 (lne->il_offset, ptr, &ptr);
 		write_sleb128 (lne->native_offset, ptr, &ptr);
 	}
+	write_leb128 (jit->has_var_info, ptr, &ptr);
+	if (jit->has_var_info) {
+		*ptr++ = jit->this_var ? 1 : 0;
+		if (jit->this_var)
+			write_variable (jit->this_var, ptr, &ptr);
 
-	*ptr++ = jit->this_var ? 1 : 0;
-	if (jit->this_var)
-		write_variable (jit->this_var, ptr, &ptr);
+		write_leb128 (jit->num_params, ptr, &ptr);
+		for (i = 0; i < jit->num_params; i++)
+			write_variable (&jit->params [i], ptr, &ptr);
 
-	write_leb128 (jit->num_params, ptr, &ptr);
-	for (i = 0; i < jit->num_params; i++)
-		write_variable (&jit->params [i], ptr, &ptr);
+		write_leb128 (jit->num_locals, ptr, &ptr);
+		for (i = 0; i < jit->num_locals; i++)
+			write_variable (&jit->locals [i], ptr, &ptr);
 
-	write_leb128 (jit->num_locals, ptr, &ptr);
-	for (i = 0; i < jit->num_locals; i++)
-		write_variable (&jit->locals [i], ptr, &ptr);
-
-	*ptr++ = jit->gsharedvt_info_var ? 1 : 0;
-	if (jit->gsharedvt_info_var) {
-		write_variable (jit->gsharedvt_info_var, ptr, &ptr);
-		write_variable (jit->gsharedvt_locals_var, ptr, &ptr);
+		*ptr++ = jit->gsharedvt_info_var ? 1 : 0;
+		if (jit->gsharedvt_info_var) {
+			write_variable (jit->gsharedvt_info_var, ptr, &ptr);
+			write_variable (jit->gsharedvt_locals_var, ptr, &ptr);
+		}
 	}
 
 	size = ptr - oldptr;
@@ -623,27 +625,29 @@ mono_debug_read_method (MonoDebugMethodAddress *address)
 		lne->il_offset = read_sleb128 (ptr, &ptr);
 		lne->native_offset = read_sleb128 (ptr, &ptr);
 	}
+	jit->has_var_info = read_leb128 (ptr, &ptr);
+	if (jit->has_var_info) {
+		if (*ptr++) {
+			jit->this_var = g_new0 (MonoDebugVarInfo, 1);
+			read_variable (jit->this_var, ptr, &ptr);
+		}
 
-	if (*ptr++) {
-		jit->this_var = g_new0 (MonoDebugVarInfo, 1);
-		read_variable (jit->this_var, ptr, &ptr);
-	}
+		jit->num_params = read_leb128 (ptr, &ptr);
+		jit->params = g_new0 (MonoDebugVarInfo, jit->num_params);
+		for (i = 0; i < jit->num_params; i++)
+			read_variable (&jit->params [i], ptr, &ptr);
 
-	jit->num_params = read_leb128 (ptr, &ptr);
-	jit->params = g_new0 (MonoDebugVarInfo, jit->num_params);
-	for (i = 0; i < jit->num_params; i++)
-		read_variable (&jit->params [i], ptr, &ptr);
+		jit->num_locals = read_leb128 (ptr, &ptr);
+		jit->locals = g_new0 (MonoDebugVarInfo, jit->num_locals);
+		for (i = 0; i < jit->num_locals; i++)
+			read_variable (&jit->locals [i], ptr, &ptr);
 
-	jit->num_locals = read_leb128 (ptr, &ptr);
-	jit->locals = g_new0 (MonoDebugVarInfo, jit->num_locals);
-	for (i = 0; i < jit->num_locals; i++)
-		read_variable (&jit->locals [i], ptr, &ptr);
-
-	if (*ptr++) {
-		jit->gsharedvt_info_var = g_new0 (MonoDebugVarInfo, 1);
-		jit->gsharedvt_locals_var = g_new0 (MonoDebugVarInfo, 1);
-		read_variable (jit->gsharedvt_info_var, ptr, &ptr);
-		read_variable (jit->gsharedvt_locals_var, ptr, &ptr);
+		if (*ptr++) {
+			jit->gsharedvt_info_var = g_new0 (MonoDebugVarInfo, 1);
+			jit->gsharedvt_locals_var = g_new0 (MonoDebugVarInfo, 1);
+			read_variable (jit->gsharedvt_info_var, ptr, &ptr);
+			read_variable (jit->gsharedvt_locals_var, ptr, &ptr);
+		}
 	}
 
 	return jit;
