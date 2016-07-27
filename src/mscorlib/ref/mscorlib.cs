@@ -11418,6 +11418,7 @@ namespace System.Runtime.Serialization
         public ulong GetUInt64(string name) { throw null; }
         public object GetValue(string name, Type type) { throw null; }
         public void SetType(Type type) { }
+        public void UpdateValue(string name, object value, Type type) { }
     }
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public sealed class SerializationInfoEnumerator : System.Collections.IEnumerator
