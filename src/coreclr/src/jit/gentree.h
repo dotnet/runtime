@@ -2412,8 +2412,12 @@ public:
         Reset();
     }
 
-    // Initialize the return type descriptor given its type handle
-    void InitializeReturnType(Compiler* comp, CORINFO_CLASS_HANDLE retClsHnd);
+    // Initialize the Return Type Descriptor for a method that returns a struct type
+    void InitializeStructReturnType(Compiler* comp, CORINFO_CLASS_HANDLE retClsHnd);
+
+    // Initialize the Return Type Descriptor for a method that returns a TYP_LONG
+    // Only needed for X86 
+    void InitializeLongReturnType(Compiler* comp);
 
     // Reset type descriptor to defaults
     void Reset()
@@ -2832,14 +2836,13 @@ struct GenTreeCall final : public GenTree
     //     This is implemented only for x64 Unix and yet to be implemented for
     //     other multi-reg return target arch (arm64/arm32/x86).
     //
-    // TODO-ARM: Implement this routine for Arm64 and Arm32
     bool HasMultiRegRetVal() const 
-    { 
-#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
-        return varTypeIsStruct(gtType) && !HasRetBufArg(); 
-#elif defined(_TARGET_X86_) && !defined(LEGACY_BACKEND)
+    {
+#if defined(_TARGET_X86_) && !defined(LEGACY_BACKEND)
         // LEGACY_BACKEND does not use multi reg returns for calls with long return types
         return varTypeIsLong(gtType);
+#elif FEATURE_MULTIREG_RET
+        return varTypeIsStruct(gtType) && !HasRetBufArg();
 #else
         return false;
 #endif
