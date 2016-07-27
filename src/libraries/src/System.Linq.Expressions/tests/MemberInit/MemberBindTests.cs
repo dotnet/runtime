@@ -23,6 +23,25 @@ namespace System.Linq.Expressions.Tests
 #pragma warning restore 649
         }
 
+        public class Inner
+        {
+            public int Value { get; set; }
+        }
+
+        public class Outer
+        {
+            public Inner InnerProperty { get; set; } = new Inner();
+            public Inner InnerField = new Inner();
+            public Inner ReadonlyInnerProperty { get; } = new Inner();
+            public Inner WriteonlyInnerProperty { set { } }
+            public readonly Inner ReadonlyInnerField = new Inner();
+            public static Inner StaticInnerProperty { get; set; } = new Inner();
+            public static Inner StaticInnerField = new Inner();
+            public static Inner StaticReadonlyInnerProperty { get; } = new Inner();
+            public static readonly Inner StaticReadonlyInnerField = new Inner();
+            public static Inner StaticWriteonlyInnerProperty { set { } }
+        }
+
         [Fact]
         public void NullMethodOrMemberInfo()
         {
@@ -68,7 +87,150 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public void MemberBindingMustBeMemberOfType()
         {
-            
+            var bind = Expression.MemberBind(
+                typeof(Outer).GetProperty(nameof(Outer.InnerProperty)),
+                Expression.Bind(typeof(Inner).GetProperty(nameof(Inner.Value)), Expression.Constant(3))
+                );
+            var newExp = Expression.New(typeof(PropertyAndFields));
+            Assert.Throws<ArgumentException>(() => Expression.MemberInit(newExp, bind));
+        }
+
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public void InnerProperty(bool useInterpreter)
+        {
+            var exp = Expression.Lambda<Func<Outer>>(
+                Expression.MemberInit(
+                    Expression.New(typeof(Outer)),
+                    Expression.MemberBind(
+                        typeof(Outer).GetProperty(nameof(Outer.InnerProperty)),
+                        Expression.Bind(typeof(Inner).GetProperty(nameof(Inner.Value)), Expression.Constant(3))
+                        )
+                    )
+                );
+            var func = exp.Compile(useInterpreter);
+            Assert.Equal(3, func().InnerProperty.Value);
+        }
+
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public void InnerField(bool useInterpreter)
+        {
+            var exp = Expression.Lambda<Func<Outer>>(
+                Expression.MemberInit(
+                    Expression.New(typeof(Outer)),
+                    Expression.MemberBind(
+                        typeof(Outer).GetField(nameof(Outer.InnerField)),
+                        Expression.Bind(typeof(Inner).GetProperty(nameof(Inner.Value)), Expression.Constant(4))
+                        )
+                    )
+                );
+            var func = exp.Compile(useInterpreter);
+            Assert.Equal(4, func().InnerField.Value);
+        }
+
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public void StaticInnerProperty(bool useInterpreter)
+        {
+            var exp = Expression.Lambda<Func<Outer>>(
+                Expression.MemberInit(
+                    Expression.New(typeof(Outer)),
+                    Expression.MemberBind(
+                        typeof(Outer).GetProperty(nameof(Outer.StaticInnerProperty)),
+                        Expression.Bind(typeof(Inner).GetProperty(nameof(Inner.Value)), Expression.Constant(5))
+                        )
+                    )
+                );
+            Assert.Throws<InvalidProgramException>(() => exp.Compile(useInterpreter));
+        }
+
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public void StaticInnerField(bool useInterpreter)
+        {
+            var exp = Expression.Lambda<Func<Outer>>(
+                Expression.MemberInit(
+                    Expression.New(typeof(Outer)),
+                    Expression.MemberBind(
+                        typeof(Outer).GetField(nameof(Outer.StaticInnerField)),
+                        Expression.Bind(typeof(Inner).GetProperty(nameof(Inner.Value)), Expression.Constant(6))
+                        )
+                    )
+                );
+            Assert.Throws<InvalidProgramException>(() => exp.Compile(useInterpreter));
+        }
+
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public void ReadonlyInnerProperty(bool useInterpreter)
+        {
+            var exp = Expression.Lambda<Func<Outer>>(
+                Expression.MemberInit(
+                    Expression.New(typeof(Outer)),
+                    Expression.MemberBind(
+                        typeof(Outer).GetProperty(nameof(Outer.ReadonlyInnerProperty)),
+                        Expression.Bind(typeof(Inner).GetProperty(nameof(Inner.Value)), Expression.Constant(7))
+                        )
+                    )
+                );
+            var func = exp.Compile(useInterpreter);
+            Assert.Equal(7, func().ReadonlyInnerProperty.Value);
+        }
+
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public void ReadonlyInnerField(bool useInterpreter)
+        {
+            var exp = Expression.Lambda<Func<Outer>>(
+                Expression.MemberInit(
+                    Expression.New(typeof(Outer)),
+                    Expression.MemberBind(
+                        typeof(Outer).GetField(nameof(Outer.ReadonlyInnerField)),
+                        Expression.Bind(typeof(Inner).GetProperty(nameof(Inner.Value)), Expression.Constant(8))
+                        )
+                    )
+                );
+            var func = exp.Compile(useInterpreter);
+            Assert.Equal(8, func().ReadonlyInnerField.Value);
+        }
+
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public void StaticReadonlyInnerProperty(bool useInterpreter)
+        {
+            var exp = Expression.Lambda<Func<Outer>>(
+                Expression.MemberInit(
+                    Expression.New(typeof(Outer)),
+                    Expression.MemberBind(
+                        typeof(Outer).GetProperty(nameof(Outer.StaticReadonlyInnerProperty)),
+                        Expression.Bind(typeof(Inner).GetProperty(nameof(Inner.Value)), Expression.Constant(5))
+                        )
+                    )
+                );
+            Assert.Throws<InvalidProgramException>(() => exp.Compile(useInterpreter));
+        }
+
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public void StaticReadonlyInnerField(bool useInterpreter)
+        {
+            var exp = Expression.Lambda<Func<Outer>>(
+                Expression.MemberInit(
+                    Expression.New(typeof(Outer)),
+                    Expression.MemberBind(
+                        typeof(Outer).GetField(nameof(Outer.StaticReadonlyInnerField)),
+                        Expression.Bind(typeof(Inner).GetProperty(nameof(Inner.Value)), Expression.Constant(6))
+                        )
+                    )
+                );
+            Assert.Throws<InvalidProgramException>(() => exp.Compile(useInterpreter));
+        }
+
+        public void WriteOnlyInnerProperty()
+        {
+            var bind = Expression.Bind(typeof(Inner).GetProperty(nameof(Inner.Value)), Expression.Constant(0));
+            var property = typeof(Outer).GetProperty(nameof(Outer.WriteonlyInnerProperty));
+            Assert.Throws<ArgumentException>(() => Expression.MemberBind(property, bind));
+        }
+
+        public void StaticWriteOnlyInnerProperty()
+        {
+            var bind = Expression.Bind(typeof(Inner).GetProperty(nameof(Inner.Value)), Expression.Constant(0));
+            var property = typeof(Outer).GetProperty(nameof(Outer.StaticWriteonlyInnerProperty));
+            Assert.Throws<ArgumentException>(() => Expression.MemberBind(property, bind));
         }
     }
 }
