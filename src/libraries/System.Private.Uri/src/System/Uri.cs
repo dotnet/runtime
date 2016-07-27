@@ -11,19 +11,19 @@ namespace System
 {
     public partial class Uri
     {
-        internal static readonly string UriSchemeFile = UriParser.FileUri.SchemeName;
-        internal static readonly string UriSchemeFtp = UriParser.FtpUri.SchemeName;
-        internal static readonly string UriSchemeGopher = UriParser.GopherUri.SchemeName;
-        internal static readonly string UriSchemeHttp = UriParser.HttpUri.SchemeName;
-        internal static readonly string UriSchemeHttps = UriParser.HttpsUri.SchemeName;
+        public static readonly string UriSchemeFile = UriParser.FileUri.SchemeName;
+        public static readonly string UriSchemeFtp = UriParser.FtpUri.SchemeName;
+        public static readonly string UriSchemeGopher = UriParser.GopherUri.SchemeName;
+        public static readonly string UriSchemeHttp = UriParser.HttpUri.SchemeName;
+        public static readonly string UriSchemeHttps = UriParser.HttpsUri.SchemeName;
         internal static readonly string UriSchemeWs = UriParser.WsUri.SchemeName;
         internal static readonly string UriSchemeWss = UriParser.WssUri.SchemeName;
-        internal static readonly string UriSchemeMailto = UriParser.MailToUri.SchemeName;
-        internal static readonly string UriSchemeNews = UriParser.NewsUri.SchemeName;
-        internal static readonly string UriSchemeNntp = UriParser.NntpUri.SchemeName;
-        internal static readonly string UriSchemeNetTcp = UriParser.NetTcpUri.SchemeName;
-        internal static readonly string UriSchemeNetPipe = UriParser.NetPipeUri.SchemeName;
-        internal static readonly string SchemeDelimiter = "://";
+        public static readonly string UriSchemeMailto = UriParser.MailToUri.SchemeName;
+        public static readonly string UriSchemeNews = UriParser.NewsUri.SchemeName;
+        public static readonly string UriSchemeNntp = UriParser.NntpUri.SchemeName;
+        public static readonly string UriSchemeNetTcp = UriParser.NetTcpUri.SchemeName;
+        public static readonly string UriSchemeNetPipe = UriParser.NetPipeUri.SchemeName;
+        public static readonly string SchemeDelimiter = "://";
 
 
         internal const int c_MaxUriBufferSize = 0xFFF0;
@@ -325,6 +325,38 @@ namespace System
                 throw new ArgumentNullException(nameof(uriString));
 
             CreateThis(uriString, false, UriKind.Absolute);
+        }
+
+        //
+        // Uri(string, bool)
+        //
+        //  Uri constructor. Assumes that input string is canonically escaped
+        //
+        [Obsolete("The constructor has been deprecated. Please use new Uri(string). The dontEscape parameter is deprecated and is always false. http://go.microsoft.com/fwlink/?linkid=14202")]
+        public Uri(string uriString, bool dontEscape)
+        {
+            if (uriString == null)
+                throw new ArgumentNullException(nameof(uriString));
+
+            CreateThis(uriString, dontEscape, UriKind.Absolute);
+        }
+
+        //
+        // Uri(Uri, string, bool)
+        //
+        //  Uri combinatorial constructor. Do not perform character escaping if
+        //  DontEscape is true
+        //
+        [Obsolete("The constructor has been deprecated. Please new Uri(Uri, string). The dontEscape parameter is deprecated and is always false. http://go.microsoft.com/fwlink/?linkid=14202")]
+        public Uri(Uri baseUri, string relativeUri, bool dontEscape)
+        {
+            if (baseUri == null)
+                throw new ArgumentNullException(nameof(baseUri));
+
+            if (!baseUri.IsAbsoluteUri)
+                throw new ArgumentOutOfRangeException(nameof(baseUri));
+
+            CreateUri(baseUri, relativeUri, dontEscape);
         }
 
         //
@@ -1266,7 +1298,7 @@ namespace System
         // Throws:
         //  UriFormatException if URI type doesn't have host-port or authority parts
         //
-        internal string GetLeftPart(UriPartial part)
+        public string GetLeftPart(UriPartial part)
         {
             if (IsNotAbsoluteUri)
             {
@@ -1310,6 +1342,98 @@ namespace System
         }
 
         //
+        //
+        /// Transforms a character into its hexadecimal representation.
+        public static string HexEscape(char character)
+        {
+            if (character > '\xff')
+            {
+                throw new ArgumentOutOfRangeException(nameof(character));
+            }
+            char[] chars = new char[3];
+            int pos = 0;
+            UriHelper.EscapeAsciiChar(character, chars, ref pos);
+            return new string(chars);
+        }
+
+        //
+        // HexUnescape
+        //
+        //  Converts a substring of the form "%XX" to the single character represented
+        //  by the hexadecimal value XX. If the substring s[Index] does not conform to
+        //  the hex encoding format then the character at s[Index] is returned
+        //
+        // Inputs:
+        //  <argument>  pattern
+        //      String from which to read the hexadecimal encoded substring
+        //
+        //  <argument>  index
+        //      Offset within <pattern> from which to start reading the hexadecimal
+        //      encoded substring
+        //
+        // Outputs:
+        //  <argument>  index
+        //      Incremented to the next character position within the string. This
+        //      may be EOS if this was the last character/encoding within <pattern>
+        //
+        // Returns:
+        //  Either the converted character if <pattern>[<index>] was hex encoded, or
+        //  the character at <pattern>[<index>]
+        //
+        // Throws:
+        //  ArgumentOutOfRangeException
+        //
+
+        public static char HexUnescape(string pattern, ref int index)
+        {
+            if ((index < 0) || (index >= pattern.Length))
+            {
+                throw new ArgumentOutOfRangeException(nameof(index));
+            }
+            if ((pattern[index] == '%')
+                && (pattern.Length - index >= 3))
+            {
+                char ret = UriHelper.EscapedAscii(pattern[index + 1], pattern[index + 2]);
+                if (ret != c_DummyChar)
+                {
+                    index += 3;
+                    return ret;
+                }
+            }
+            return pattern[index++];
+        }
+
+        //
+        // IsHexEncoding
+        //
+        //  Determines whether a substring has the URI hex encoding format of '%'
+        //  followed by 2 hexadecimal characters
+        //
+        // Inputs:
+        //  <argument>  pattern
+        //      String to check
+        //
+        //  <argument>  index
+        //      Offset in <pattern> at which to check substring for hex encoding
+        //
+        // Assumes:
+        //  0 <= <index> < <pattern>.Length
+        //
+        // Returns:
+        //  true if <pattern>[<index>] is hex encoded, else false
+        //
+        // Throws:
+        //  Nothing
+        //
+        public static bool IsHexEncoding(string pattern, int index)
+        {
+            return
+                (pattern.Length - index) >= 3 &&
+                pattern[index] == '%' &&
+                UriHelper.EscapedAscii(pattern[index + 1], pattern[index + 2]) != c_DummyChar;
+        }
+
+        //
         // CheckSchemeName
         //
         //  Determines whether a string is a valid scheme name according to RFC 2396.
@@ -1335,6 +1459,52 @@ namespace System
                 }
             }
             return true;
+        }
+
+        //
+        // IsHexDigit
+        //
+        //  Determines whether a character is a valid hexadecimal digit in the range
+        //  [0..9] | [A..F] | [a..f]
+        //
+        // Inputs:
+        //  <argument>  character
+        //      Character to test
+        //
+        // Returns:
+        //  true if <character> is a hexadecimal digit character
+        //
+        // Throws:
+        //  Nothing
+        //
+        public static bool IsHexDigit(char character)
+        {
+            return ((character >= '0') && (character <= '9'))
+                || ((character >= 'A') && (character <= 'F'))
+                || ((character >= 'a') && (character <= 'f'));
+        }
+
+        //
+        // Returns:
+        //  Number in the range 0..15
+        //
+        // Throws:
+        //  ArgumentException
+        //
+        public static int FromHex(char digit)
+        {
+            if (((digit >= '0') && (digit <= '9'))
+                || ((digit >= 'A') && (digit <= 'F'))
+                || ((digit >= 'a') && (digit <= 'f')))
+            {
+                return (digit <= '9')
+                    ? ((int)digit - (int)'0')
+                    : (((digit <= 'F')
+                    ? ((int)digit - (int)'A')
+                    : ((int)digit - (int)'a'))
+                    + 10);
+            }
+            throw new ArgumentException(nameof(digit));
         }
 
         //
@@ -5043,6 +5213,225 @@ namespace System
             if (relPath.Length == 0 && path2.Length - 1 == si)
                 return "./"; // Truncate the file name
             return relPath.ToString() + path2.Substring(si + 1);
+        }
+
+        //
+        // MakeRelative (toUri)
+        //
+        //  Return a relative path which when applied to this Uri would create the
+        //  resulting Uri <toUri>
+        //
+        // Inputs:
+        //  <argument>  toUri
+        //      Uri to which we calculate the transformation from this Uri
+        //
+        // Returns:
+        //  If the 2 Uri are common except for a relative path difference, then that
+        //  difference, else the display name of this Uri
+        //
+        // Throws:
+        //  ArgumentNullException, InvalidOperationException
+        //
+        [Obsolete("The method has been deprecated. Please use MakeRelativeUri(Uri uri). http://go.microsoft.com/fwlink/?linkid=14202")]
+        public string MakeRelative(Uri toUri)
+        {
+            if (toUri == null)
+                throw new ArgumentNullException(nameof(toUri));
+
+            if (IsNotAbsoluteUri || toUri.IsNotAbsoluteUri)
+                throw new InvalidOperationException(SR.net_uri_NotAbsolute);
+
+            if ((Scheme == toUri.Scheme) && (Host == toUri.Host) && (Port == toUri.Port))
+                return PathDifference(AbsolutePath, toUri.AbsolutePath, !IsUncOrDosPath);
+
+            return toUri.ToString();
+        }
+
+        /// <internalonly/>
+        [Obsolete("The method has been deprecated. It is not used by the system. http://go.microsoft.com/fwlink/?linkid=14202")]
+        protected virtual void Canonicalize()
+        {
+            // this method if suppressed by the derived class
+            // would lead to supressing of a path compression
+            // It does not make much sense and violates Fxcop on calling a virtual method in the ctor.
+            // Should be deprecated and removed asap.
+        }
+
+        /// <internalonly/>
+        [Obsolete("The method has been deprecated. It is not used by the system. http://go.microsoft.com/fwlink/?linkid=14202")]
+        protected virtual void Parse()
+        {
+            // this method if suppressed by the derived class
+            // would lead to an unconstructed Uri instance.
+            // It does not make any sense and violates Fxcop on calling a virtual method in the ctor.
+            // Should be deprecated and removed asap.
+        }
+
+        /// <internalonly/>
+        [Obsolete("The method has been deprecated. It is not used by the system. http://go.microsoft.com/fwlink/?linkid=14202")]
+        protected virtual void Escape()
+        {
+            // this method if suppressed by the derived class
+            // would lead to the same effect as dontEscape=true.
+            // It does not make much sense and violates Fxcop on calling a virtual method in the ctor.
+            // Should be deprecated and removed asap.
+        }
+
+        //
+        // Unescape
+        //
+        //  Convert any escape sequences in <path>. Escape sequences can be
+        //  hex encoded reserved characters (e.g. %40 == '@') or hex encoded
+        //  UTF-8 sequences (e.g. %C4%D2 == 'Latin capital Ligature Ij')
+        //
+        /// <internalonly/>
+        [Obsolete("The method has been deprecated. Please use GetComponents() or static UnescapeDataString() to unescape a Uri component or a string. http://go.microsoft.com/fwlink/?linkid=14202")]
+        protected virtual string Unescape(string path)
+        {
+            // This method is dangerous since it gives path unescaping control
+            // to the derived class without any permission demand.
+            // Should be deprecated and removed asap.
+
+            char[] dest = new char[path.Length];
+            int count = 0;
+            dest = UriHelper.UnescapeString(path, 0, path.Length, dest, ref count, c_DummyChar, c_DummyChar,
+                c_DummyChar, UnescapeMode.Unescape | UnescapeMode.UnescapeAll, null, false);
+            return new string(dest, 0, count);
+        }
+
+        [Obsolete("The method has been deprecated. Please use GetComponents() or static EscapeUriString() to escape a Uri component or a string. http://go.microsoft.com/fwlink/?linkid=14202")]
+        protected static string EscapeString(string str)
+        {
+            // This method just does not make sense as protected
+            // It should go public static asap
+
+            if (str == null)
+            {
+                return string.Empty;
+            }
+
+            int destStart = 0;
+            char[] dest = UriHelper.EscapeString(str, 0, str.Length, null, ref destStart, true, '?', '#', '%');
+            if (dest == null)
+                return str;
+            return new string(dest, 0, destStart);
+        }
+
+        //
+        // CheckSecurity
+        //
+        //  Check for any invalid or problematic character sequences
+        //
+        /// <internalonly/>
+        [Obsolete("The method has been deprecated. It is not used by the system. http://go.microsoft.com/fwlink/?linkid=14202")]
+        protected virtual void CheckSecurity()
+        {
+            // This method just does not make sense
+            // Should be deprecated and removed asap.
+        }
+
+        //
+        // IsReservedCharacter
+        //
+        //  Determine whether a character is part of the reserved set
+        //
+        // Returns:
+        //  true if <character> is reserved else false
+        //
+        /// <internalonly/>
+        [Obsolete("The method has been deprecated. It is not used by the system. http://go.microsoft.com/fwlink/?linkid=14202")]
+        protected virtual bool IsReservedCharacter(char character)
+        {
+            // This method just does not make sense as protected virtual
+            // It should go public static asap
+
+            return (character == ';')
+                || (character == '/')
+                || (character == ':')
+                || (character == '@')   // OK FS char
+                || (character == '&')
+                || (character == '=')
+                || (character == '+')   // OK FS char
+                || (character == '$')   // OK FS char
+                || (character == ',')
+                ;
+        }
+
+        //
+        // IsExcludedCharacter
+        //
+        //  Determine if a character should be exluded from a URI and therefore be
+        //  escaped
+        //
+        // Returns:
+        //  true if <character> should be escaped else false
+        //
+        /// <internalonly/>
+        [Obsolete("The method has been deprecated. It is not used by the system. http://go.microsoft.com/fwlink/?linkid=14202")]
+        protected static bool IsExcludedCharacter(char character)
+        {
+            // This method just does not make sense as protected
+            // It should go public static asap
+
+            //
+            // the excluded characters...
+            //
+
+            return (character <= 0x20)
+                || (character >= 0x7f)
+                || (character == '<')
+                || (character == '>')
+                || (character == '#')
+                || (character == '%')
+                || (character == '"')
+
+                //
+                // the 'unwise' characters...
+                //
+
+                || (character == '{')
+                || (character == '}')
+                || (character == '|')
+                || (character == '\\')
+                || (character == '^')
+                || (character == '[')
+                || (character == ']')
+                || (character == '`')
+                ;
+        }
+
+        //
+        // IsBadFileSystemCharacter
+        //
+        //  Determine whether a character would be an invalid character if used in
+        //  a file system name. Note, this is really based on NTFS rules
+        //
+        // Returns:
+        //  true if <character> would be a treated as a bad file system character
+        //  else false
+        //
+        [Obsolete("The method has been deprecated. It is not used by the system. http://go.microsoft.com/fwlink/?linkid=14202")]
+        protected virtual bool IsBadFileSystemCharacter(char character)
+        {
+            // This method just does not make sense as protected virtual
+            // It should go public static asap
+
+            return (character < 0x20)
+                || (character == ';')
+                || (character == '/')
+                || (character == '?')
+                || (character == ':')
+                || (character == '&')
+                || (character == '=')
+                || (character == ',')
+                || (character == '*')
+                || (character == '<')
+                || (character == '>')
+                || (character == '"')
+                || (character == '|')
+                || (character == '\\')
+                || (character == '^')
+                ;
         }
 
         //Used by UriBuilder

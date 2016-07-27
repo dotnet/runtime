@@ -4,7 +4,7 @@
 
 namespace System
 {
-    internal enum UriPartial
+    public enum UriPartial
     {
         Scheme,
         Authority,
