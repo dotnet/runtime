@@ -9599,6 +9599,9 @@
       <Member MemberType="Property" Name="Value" />
       <Member MemberType="Property" Name="ObjectType" />
     </Type>
+    <Type Name="System.Runtime.Serialization.IObjectReference">
+      <Member Name="GetRealObject(System.Runtime.Serialization.StreamingContext)" />
+    </Type>
     <Type Name="System.Runtime.Serialization.ISerializable">
       <Member Name="GetObjectData(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
     </Type>
