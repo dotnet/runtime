@@ -11372,6 +11372,8 @@ namespace System.Runtime.Serialization
         public SerializationInfo(Type type, IFormatterConverter converter) { }
         public string AssemblyName { get { throw null; } set { } }
         public string FullTypeName { get { throw null; } set { } }
+        public bool IsFullTypeNameSetExplicit { get { throw null; } }
+        public bool IsAssemblyNameSetExplicit { get { throw null; } }
         public int MemberCount { get { throw null; } }
         public Type ObjectType { get { throw null; } }
         public void AddValue(string name, bool value) { }
