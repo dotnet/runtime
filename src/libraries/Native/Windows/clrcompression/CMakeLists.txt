@@ -34,7 +34,7 @@ set(NATIVECOMPRESSION_SOURCES
 )
 endif()
 
-if($ENV{__BuildArch} STREQUAL arm)
+if($ENV{__BuildArch} STREQUAL arm OR $ENV{__BuildArch} STREQUAL arm64)
 set(NATIVECOMPRESSION_SOURCES
     clrcompression.def
     zlib/adler32.c
