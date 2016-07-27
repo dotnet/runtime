@@ -73,19 +73,19 @@ namespace System.Transactions.Tests
 
         public void Commit(Enlistment enlistment)
         {
-            Assert.True(_expectedOutcome == EnlistmentOutcome.Committed, "Unexpected EnlistmentOutcome.Committed");
+            Assert.Equal(_expectedOutcome, EnlistmentOutcome.Committed);
             enlistment.Done();
         }
 
         public void Rollback(Enlistment enlistment)
         {
-            Assert.True(_expectedOutcome == EnlistmentOutcome.Aborted, "Unexpected EnlistmentOutcome.Aborted");
+            Assert.Equal(_expectedOutcome, EnlistmentOutcome.Aborted);
             enlistment.Done();
         }
 
         public void InDoubt(Enlistment enlistment)
         {
-            Assert.True(_expectedOutcome == EnlistmentOutcome.InDoubt, "Unexpected EnlistmentOutcome.InDoubt");
+            Assert.Equal(_expectedOutcome, EnlistmentOutcome.InDoubt);
             enlistment.Done();
         }
     }
@@ -121,11 +121,11 @@ namespace System.Transactions.Tests
                             try
                             {
                                 _txToEnlist.EnlistVolatile(newVol, EnlistmentOptions.None);
-                                Assert.True(_expectEnlistToSucceed, "Unexpected - EnlistVolatile during Prepare succeeded");
+                                Assert.Equal(_expectEnlistToSucceed, true);
                             }
-                            catch (Exception ex)
+                            catch (Exception)
                             {
-                                Assert.True(!_expectEnlistToSucceed, "Unexpected - EnlistVolatile during Prepare failed - " + ex.GetType().ToString() + " : " + ex.Message);
+                                Assert.Equal(_expectEnlistToSucceed, false);
                             }
                         }
                         preparingEnlistment.Prepared();
@@ -154,7 +154,7 @@ namespace System.Transactions.Tests
 
         public void Commit(Enlistment enlistment)
         {
-            Assert.True(_expectedOutcome == EnlistmentOutcome.Committed, "Unexpected EnlistmentOutcome.Committed");
+            Assert.Equal(_expectedOutcome, EnlistmentOutcome.Committed);
             if (_outcomeReceived != null)
             {
                 _outcomeReceived.Set();
@@ -164,7 +164,7 @@ namespace System.Transactions.Tests
 
         public void Rollback(Enlistment enlistment)
         {
-            Assert.True(_expectedOutcome == EnlistmentOutcome.Aborted, "Unexpected EnlistmentOutcome.Aborted");
+            Assert.Equal(_expectedOutcome, EnlistmentOutcome.Aborted);
             if (_outcomeReceived != null)
             {
                 _outcomeReceived.Set();
@@ -174,7 +174,7 @@ namespace System.Transactions.Tests
 
         public void InDoubt(Enlistment enlistment)
         {
-            Assert.True(_expectedOutcome == EnlistmentOutcome.InDoubt, "Unexpected EnlistmentOutcome.InDoubt");
+            Assert.Equal(_expectedOutcome, EnlistmentOutcome.InDoubt);
             if (_outcomeReceived != null)
             {
                 _outcomeReceived.Set();

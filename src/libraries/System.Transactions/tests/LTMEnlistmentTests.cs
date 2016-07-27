@@ -12,6 +12,8 @@ namespace System.Transactions.Tests
 {
     public class LTMEnlistmentTests
     {
+        const int MaxTransactionCommitTimeoutInSeconds = 5;
+
         public LTMEnlistmentTests()
         {
         }
@@ -54,17 +56,21 @@ namespace System.Transactions.Tests
                 }
             }
             catch (TransactionInDoubtException)
-            { }
+            {
+                Assert.Equal(expectedTxStatus, TransactionStatus.InDoubt);
+            }
             catch (TransactionAbortedException)
-            { }
+            {
+                Assert.Equal(expectedTxStatus, TransactionStatus.Aborted);
+            }
 
 
-            Assert.True(tx != null, "Transaction is not expected to be null");
-            Assert.True(tx.TransactionInformation.Status == expectedTxStatus, "Unexpected TransactionStatus - " + tx.TransactionInformation.Status.ToString());
+            Assert.NotNull(tx);
+            Assert.Equal(expectedTxStatus, tx.TransactionInformation.Status);
         }
 
         [Theory]
-        // This test needs to change once we have promotion support.
+        // TODO: Issue #10353 - This test needs to change once we have promotion support.
         // Right now any attempt to create a two phase durable enlistment will attempt to promote and will fail because promotion is not supported. This results in the transaction being
         // aborted.
         [InlineData(0, EnlistmentOptions.None, EnlistmentOptions.None, Phase1Vote.Prepared, Phase1Vote.Prepared, true, EnlistmentOutcome.Aborted, EnlistmentOutcome.Aborted, TransactionStatus.Aborted)]
@@ -103,12 +109,16 @@ namespace System.Transactions.Tests
                 }
             }
             catch (TransactionInDoubtException)
-            { }
+            {
+                Assert.Equal(expectedTxStatus, TransactionStatus.InDoubt);
+            }
             catch (TransactionAbortedException)
-            { }
+            {
+                Assert.Equal(expectedTxStatus, TransactionStatus.Aborted);
+            }
 
-            Assert.True(tx != null, "Transaction is not expected to be null");
-            Assert.True(tx.TransactionInformation.Status == expectedTxStatus, "Unexpected TransactionStatus - " + tx.TransactionInformation.Status.ToString());
+            Assert.NotNull(tx);
+            Assert.Equal(expectedTxStatus, tx.TransactionInformation.Status);
         }
 
         [Theory]
@@ -134,13 +144,17 @@ namespace System.Transactions.Tests
                 }
             }
             catch (TransactionInDoubtException)
-            { }
+            {
+                Assert.Equal(expectedTxStatus, TransactionStatus.InDoubt);
+            }
             catch (TransactionAbortedException)
-            { }
+            {
+                Assert.Equal(expectedTxStatus, TransactionStatus.Aborted);
+            }
 
-            Assert.True(outcomeEvent.WaitOne(TimeSpan.FromSeconds(5)));
-            Assert.True(tx != null, "Transaction is not expected to be null");
-            Assert.True(tx.TransactionInformation.Status == expectedTxStatus, "Unexpected TransactionStatus - " + tx.TransactionInformation.Status.ToString());
+            Assert.True(outcomeEvent.WaitOne(TimeSpan.FromSeconds(MaxTransactionCommitTimeoutInSeconds)));
+            Assert.NotNull(tx);
+            Assert.Equal(expectedTxStatus, tx.TransactionInformation.Status);
         }
 
         [Theory]
@@ -179,13 +193,17 @@ namespace System.Transactions.Tests
                 }
             }
             catch (TransactionInDoubtException)
-            { }
+            {
+                Assert.Equal(expectedTxStatus, TransactionStatus.InDoubt);
+            }
             catch (TransactionAbortedException)
-            { }
+            {
+                Assert.Equal(expectedTxStatus, TransactionStatus.Aborted);
+            }
 
-            Assert.True(AutoResetEvent.WaitAll(outcomeEvents, TimeSpan.FromSeconds(5)));
-            Assert.True(tx != null, "Transaction is not expected to be null");
-            Assert.True(tx.TransactionInformation.Status == expectedTxStatus, "Unexpected TransactionStatus - " + tx.TransactionInformation.Status.ToString());
+            Assert.True(AutoResetEvent.WaitAll(outcomeEvents, TimeSpan.FromSeconds(MaxTransactionCommitTimeoutInSeconds)));
+            Assert.NotNull(tx);
+            Assert.Equal(expectedTxStatus, tx.TransactionInformation.Status);
         }
 
     }
