@@ -570,10 +570,11 @@ namespace System.Reflection.Metadata.Ecma335.Tests
         {
             var mdBuilder = new MetadataBuilder();
 
-            Blob guidFixup, usFixup;
+            var guid = mdBuilder.ReserveGuid();
+            var us = mdBuilder.ReserveUserString(3);
 
-            Assert.Equal(MetadataTokens.GuidHandle(1), mdBuilder.ReserveGuid(out guidFixup));
-            Assert.Equal(MetadataTokens.UserStringHandle(1), mdBuilder.ReserveUserString(3, out usFixup));
+            Assert.Equal(MetadataTokens.GuidHandle(1), guid.Handle);
+            Assert.Equal(MetadataTokens.UserStringHandle(1), us.Handle);
 
             var serialized = mdBuilder.GetSerializedMetadata(MetadataRootBuilder.EmptyRowCounts, 12, isStandaloneDebugMetadata: false);
 
@@ -592,8 +593,8 @@ namespace System.Reflection.Metadata.Ecma335.Tests
                 0x00, 0x00, 0x00, 0x00
             }, builder.ToArray());
 
-            new BlobWriter(guidFixup).WriteGuid(new Guid("D39F3559-476A-4D1E-B6D2-88E66395230B"));
-            new BlobWriter(usFixup).WriteUserString("bar");
+            guid.CreateWriter().WriteGuid(new Guid("D39F3559-476A-4D1E-B6D2-88E66395230B"));
+            us.CreateWriter().WriteUserString("bar");
 
             AssertEx.Equal(new byte[]
             {

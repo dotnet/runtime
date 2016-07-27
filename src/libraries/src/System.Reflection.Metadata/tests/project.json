@@ -22,6 +22,7 @@
     "System.Threading.Tasks": "4.0.12-beta-24327-03",
     "System.Threading.Tasks.Parallel": "4.0.2-beta-24327-03",
     "System.Security.Cryptography.Algorithms": "4.2.1-beta-24327-03",
+    "System.ValueTuple": "4.0.1-beta-24327-03",
     "test-runtime": {
       "target": "project",
       "exclude": "compile"
