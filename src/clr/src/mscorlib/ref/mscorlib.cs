@@ -11314,6 +11314,11 @@ namespace System.Runtime.Serialization
         DateTime ToDateTime(object value);
         String ToString(object value);
     }
+    [System.Runtime.InteropServices.ComVisible(true)]
+    public interface IObjectReference
+    {
+        object GetRealObject(StreamingContext context);
+    }
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public interface ISerializable
     {
