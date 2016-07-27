@@ -9583,6 +9583,7 @@
       <Member Name="GetDecimal(System.String)" />
       <Member Name="GetDateTime(System.String)" />
       <Member Name="GetString(System.String)" />
+      <Member Name="UpdateValue(System.String,System.Object,System.Type)" />
       <Member MemberType="Property" Name="FullTypeName" />
       <Member MemberType="Property" Name="AssemblyName" />
       <Member MemberType="Property" Name="MemberCount" />
