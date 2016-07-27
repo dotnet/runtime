@@ -11,11 +11,27 @@ namespace System.Tests
     public class GetEnvironmentVariable
     {
         [Fact]
-        public void NullVariableThrowsArgumentNull()
+        public void InvalidArguments_ThrowsExceptions()
         {
-            Assert.Throws<ArgumentNullException>(() => Environment.GetEnvironmentVariable(null));
-            Assert.Throws<ArgumentNullException>(() => Environment.SetEnvironmentVariable(null, "test"));
-            Assert.Throws<ArgumentException>(() => Environment.SetEnvironmentVariable("", "test"));
+            Assert.Throws<ArgumentNullException>("variable", () => Environment.GetEnvironmentVariable(null));
+            Assert.Throws<ArgumentNullException>("variable", () => Environment.GetEnvironmentVariable(null, EnvironmentVariableTarget.Process));
+
+            Assert.Throws<ArgumentNullException>("variable", () => Environment.SetEnvironmentVariable(null, "test"));
+            Assert.Throws<ArgumentNullException>("variable", () => Environment.SetEnvironmentVariable(null, "test", EnvironmentVariableTarget.User));
+
+            Assert.Throws<ArgumentException>("variable", () => Environment.SetEnvironmentVariable("", "test"));
+            Assert.Throws<ArgumentException>("variable", () => Environment.SetEnvironmentVariable("", "test", EnvironmentVariableTarget.Machine));
+
+            Assert.Throws<ArgumentOutOfRangeException>("target", () => Environment.GetEnvironmentVariable("test", (EnvironmentVariableTarget)42));
+            Assert.Throws<ArgumentOutOfRangeException>("target", () => Environment.SetEnvironmentVariable("test", "test", (EnvironmentVariableTarget)(-1)));
+            Assert.Throws<ArgumentOutOfRangeException>("target", () => Environment.GetEnvironmentVariables((EnvironmentVariableTarget)(3)));
+
+            Assert.Throws<ArgumentException>("value", () => Environment.SetEnvironmentVariable("test", new string('s', 65 * 1024)));
+
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                Assert.Throws<ArgumentException>("variable", () => Environment.SetEnvironmentVariable(new string('s', 256), "value", EnvironmentVariableTarget.User));
+            }
         }
 
         [Fact]
@@ -117,6 +133,37 @@ namespace System.Tests
                 // Clear the variables we just set
                 Environment.SetEnvironmentVariable(envVar1, null);
                 Environment.SetEnvironmentVariable(envVar2, null);
+            }
+        }
+
+        [OuterLoop] // manipulating environment variables broader in scope than the process
+        [Theory]
+        [InlineData(EnvironmentVariableTarget.Process)]
+        [InlineData(EnvironmentVariableTarget.Machine)]
+        [InlineData(EnvironmentVariableTarget.User)]
+        public void EnumerateEnvironmentVariables(EnvironmentVariableTarget target)
+        {
+            IDictionary results = Environment.GetEnvironmentVariables(target);
+            foreach (DictionaryEntry result in results)
+            {
+                string key = (string)result.Key;
+                string value = (string)result.Value ?? string.Empty;
+
+                // Make sure the iterated value we got matches the one we get explicitly
+                Assert.NotNull(result.Key as string);
+                Assert.Equal(value, Environment.GetEnvironmentVariable(key, target));
+
+                try
+                {
+                    // Change it to something else.  Not all values can be changed and will silently
+                    // not change, so we don't re-check and assert for equality.
+                    Environment.SetEnvironmentVariable(key, value + "changed", target);
+                }
+                finally
+                {
+                    // Change it back
+                    Environment.SetEnvironmentVariable(key, value, target);
+                }
             }
         }
 

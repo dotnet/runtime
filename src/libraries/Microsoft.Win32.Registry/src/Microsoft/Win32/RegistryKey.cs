@@ -13,7 +13,12 @@ using System.Text;
 namespace Microsoft.Win32
 {
     /// <summary>Registry encapsulation. To get an instance of a RegistryKey use the Registry class's static members then call OpenSubKey.</summary>
-    public sealed partial class RegistryKey : IDisposable
+#if REGISTRY_ASSEMBLY
+    public
+#else
+    internal
+#endif
+    sealed partial class RegistryKey : IDisposable
     {
         private static readonly IntPtr HKEY_CLASSES_ROOT = new IntPtr(unchecked((int)0x80000000));
         private static readonly IntPtr HKEY_CURRENT_USER = new IntPtr(unchecked((int)0x80000001));
