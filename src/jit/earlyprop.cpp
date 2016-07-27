@@ -43,15 +43,14 @@ bool Compiler::gtIsVtableRef(GenTreePtr tree)
 {
     if (tree->OperGet() == GT_IND)
     {
-        GenTreeIndir* indir = tree->AsIndir();
+        GenTree* addr = tree->AsIndir()->Addr();
 
-        if (!indir->HasIndex())
+        if (addr->OperIsAddrMode())
         {
-            // Check if the base is an reference pointer.
-            if (indir->Base()->TypeGet() == TYP_REF)
-            {
-                return true;
-            }
+            GenTreeAddrMode* addrMode = addr->AsAddrMode();
+
+            return (!addrMode->HasIndex() &&
+                    (addrMode->Base()->TypeGet() == TYP_REF));
         }
     }
 
