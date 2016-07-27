@@ -74,12 +74,14 @@ public:
     // "numRegs" must be "2" to allocate an ARM double-precision floating-point register.
     bool canEnreg(var_types type, unsigned numRegs = 1);
 
-#ifdef _TARGET_ARM_
-
+    // Set the fact that we have used up all remaining registers of 'type'
+    //
     void setAllRegArgUsed(var_types type)
     {
         regArgNum(type) = maxRegArgNum(type);
     }
+
+#ifdef _TARGET_ARM_
 
     void setAnyFloatStackArgs()
     {

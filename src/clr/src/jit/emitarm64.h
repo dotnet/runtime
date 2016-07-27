@@ -75,14 +75,16 @@ private:
                                          VARSET_VALARG_TP GCvars,
                                          regMaskTP  gcrefRegs,
                                          regMaskTP  byrefRegs,
-                                         emitAttr   retSize);
+                                         emitAttr   retSize,
+                                         emitAttr  secondRetSize);
 
     instrDesc      *emitNewInstrCallInd( int        argCnt,
                                          ssize_t    disp,
                                          VARSET_VALARG_TP GCvars,
                                          regMaskTP  gcrefRegs,
                                          regMaskTP  byrefRegs,
-                                         emitAttr   retSize);
+                                         emitAttr   retSize,
+                                         emitAttr  secondRetSize);
 
     void            emitGetInsCns   (instrDesc *id, CnsVal *cv);
     ssize_t         emitGetInsAmdCns(instrDesc *id, CnsVal *cv);
@@ -886,6 +888,7 @@ public:
                                     void*           addr,
                                     ssize_t         argSize,
                                     emitAttr        retSize,
+                                    emitAttr        secondRetSize,
                                     VARSET_VALARG_TP ptrVars,
                                     regMaskTP       gcrefRegs,
                                     regMaskTP       byrefRegs,

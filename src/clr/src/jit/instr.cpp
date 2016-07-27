@@ -1204,10 +1204,10 @@ void                CodeGen::sched_AM(instruction  ins,
  *  Emit a "call [r/m]" instruction (the r/m operand given by a tree).
  */
 
-void                CodeGen::instEmit_indCall(GenTreePtr                                call,
-                                              size_t                                    argSize,
-                                              emitAttr                                  retSize
-                                              FEATURE_UNIX_AMD64_STRUCT_PASSING_ONLY_ARG(emitAttr    secondRetSize))
+void                CodeGen::instEmit_indCall(GenTreePtr  call,
+                                              size_t      argSize,
+                                              emitAttr    retSize
+          MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr    secondRetSize))
 {
     GenTreePtr              addr;
 
@@ -1250,7 +1250,7 @@ void                CodeGen::instEmit_indCall(GenTreePtr                        
                                        (void*) funcPtr,
                                        argSize,
                                        retSize
-                                       FEATURE_UNIX_AMD64_STRUCT_PASSING_ONLY_ARG(secondRetSize),
+                                       MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize),
                                        gcInfo.gcVarPtrSetCur,
                                        gcInfo.gcRegGCrefSetCur,
                                        gcInfo.gcRegByrefSetCur);
@@ -1312,7 +1312,7 @@ void                CodeGen::instEmit_indCall(GenTreePtr                        
                                            (void*) funcPtr,
                                            argSize,
                                            retSize
-                                           FEATURE_UNIX_AMD64_STRUCT_PASSING_ONLY_ARG(secondRetSize),
+                                           MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize),
                                            gcInfo.gcVarPtrSetCur,
                                            gcInfo.gcRegGCrefSetCur,
                                            gcInfo.gcRegByrefSetCur);
@@ -1377,7 +1377,7 @@ void                CodeGen::instEmit_indCall(GenTreePtr                        
                                NULL,                 // addr
                                argSize,
                                retSize
-                               FEATURE_UNIX_AMD64_STRUCT_PASSING_ONLY_ARG(secondRetSize),
+                               MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize),
                                gcInfo.gcVarPtrSetCur,
                                gcInfo.gcRegGCrefSetCur,
                                gcInfo.gcRegByrefSetCur,
