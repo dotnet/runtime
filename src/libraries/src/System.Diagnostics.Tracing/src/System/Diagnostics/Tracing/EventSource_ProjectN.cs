@@ -32,7 +32,33 @@ namespace System.Diagnostics.Tracing
         [System.Security.SecuritySafeCritical]
         public static void SetCurrentThreadActivityId(Guid activityId)
         {
-            throw new NotSupportedException("Old style activities are not supported!");
+            if (TplEtwProvider.Log != null)
+                TplEtwProvider.Log.SetActivityId(activityId);
+#if FEATURE_MANAGED_ETW
+#if FEATURE_ACTIVITYSAMPLING
+            Guid newId = activityId;
+#endif // FEATURE_ACTIVITYSAMPLING
+            // We ignore errors to keep with the convention that EventSources do not throw errors.
+            // Note we can't access m_throwOnWrites because this is a static method.  
+
+            if (UnsafeNativeMethods.ManifestEtw.EventActivityIdControl(
+                UnsafeNativeMethods.ManifestEtw.ActivityControl.EVENT_ACTIVITY_CTRL_GET_SET_ID,
+                ref activityId) == 0)
+            {
+#if FEATURE_ACTIVITYSAMPLING
+                var activityDying = s_activityDying;
+                if (activityDying != null && newId != activityId)
+                {
+                    if (activityId == Guid.Empty)
+                    {
+                        activityId = FallbackActivityId;
+                    }
+                    // OutputDebugString(string.Format("Activity dying: {0} -> {1}", activityId, newId));
+                    activityDying(activityId);     // This is actually the OLD activity ID.  
+                }
+#endif // FEATURE_ACTIVITYSAMPLING
+            }
+#endif // FEATURE_MANAGED_ETW
         }
 
         /// <summary>
@@ -57,7 +83,20 @@ namespace System.Diagnostics.Tracing
         [System.Security.SecuritySafeCritical]
         public static void SetCurrentThreadActivityId(Guid activityId, out Guid oldActivityThatWillContinue)
         {
-            throw new NotSupportedException("Old style activities are not supported!");
+            oldActivityThatWillContinue = activityId;
+#if FEATURE_MANAGED_ETW
+            // We ignore errors to keep with the convention that EventSources do not throw errors.
+            // Note we can't access m_throwOnWrites because this is a static method.  
+
+            UnsafeNativeMethods.ManifestEtw.EventActivityIdControl(
+                UnsafeNativeMethods.ManifestEtw.ActivityControl.EVENT_ACTIVITY_CTRL_GET_SET_ID,
+                    ref oldActivityThatWillContinue);
+#endif // FEATURE_MANAGED_ETW
+
+            // We don't call the activityDying callback here because the caller has declared that
+            // it is not dying.  
+            if (TplEtwProvider.Log != null)
+                TplEtwProvider.Log.SetActivityId(activityId);
         }
 
         /// <summary>
@@ -68,7 +107,15 @@ namespace System.Diagnostics.Tracing
             [System.Security.SecuritySafeCritical]
             get
             {
-                throw new NotSupportedException("Old style activities are not supported!");
+                // We ignore errors to keep with the convention that EventSources do not throw 
+                // errors. Note we can't access m_throwOnWrites because this is a static method.
+                Guid retVal = new Guid();
+#if FEATURE_MANAGED_ETW
+                UnsafeNativeMethods.ManifestEtw.EventActivityIdControl(
+                    UnsafeNativeMethods.ManifestEtw.ActivityControl.EVENT_ACTIVITY_CTRL_GET_ID,
+                    ref retVal);
+#endif // FEATURE_MANAGED_ETW
+                return retVal;
             }
         }
 
@@ -256,7 +303,7 @@ namespace System.Diagnostics.Tracing
                     status = UnsafeNativeMethods.ManifestEtw.EventSetInformation(
                         m_regHandle,
                         eventInfoClass,
-                        (void*)data,
+                        (void *)data,
                         (int)dataSize);
                 }
                 catch (TypeLoadException)
