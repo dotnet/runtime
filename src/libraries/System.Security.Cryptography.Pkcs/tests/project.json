@@ -1,13 +1,13 @@
 {
   "dependencies": {
-    "Microsoft.NETCore.Platforms": "1.0.2-beta-24327-02",
-    "System.Collections": "4.0.12-beta-24327-02",
-    "System.Diagnostics.Debug": "4.0.12-beta-24327-02",
-    "System.Linq": "4.1.1-beta-24327-02",
-    "System.Runtime": "4.1.1-beta-24327-02",
-    "System.Security.Cryptography.Encoding": "4.0.1-beta-24327-02",
-    "System.Security.Cryptography.Primitives": "4.0.1-beta-24327-02",
-    "System.Security.Cryptography.X509Certificates": "4.1.1-beta-24327-02",
+    "Microsoft.NETCore.Platforms": "1.0.2-beta-24327-03",
+    "System.Collections": "4.0.12-beta-24327-03",
+    "System.Diagnostics.Debug": "4.0.12-beta-24327-03",
+    "System.Linq": "4.1.1-beta-24327-03",
+    "System.Runtime": "4.1.1-beta-24327-03",
+    "System.Security.Cryptography.Encoding": "4.0.1-beta-24327-03",
+    "System.Security.Cryptography.Primitives": "4.0.1-beta-24327-03",
+    "System.Security.Cryptography.X509Certificates": "4.1.1-beta-24327-03",
     "test-runtime": {
       "target": "project",
       "exclude": "compile"
