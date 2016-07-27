@@ -1801,6 +1801,9 @@ void                Compiler::compInit(ArenaAllocator * pAlloc, InlineInfo * inl
     //Used by fgFindJumpTargets for inlining heuristics.
     opts.instrCount  = 0;
 
+    // Used to track when we should consider running EarlyProp
+    optMethodFlags = 0;
+
     for (unsigned i = 0; i < MAX_LOOP_NUM; i++)
     {
         AllVarSetOps::AssignNoCopy(this, optLoopTable[i].lpAsgVars, AllVarSetOps::UninitVal());
