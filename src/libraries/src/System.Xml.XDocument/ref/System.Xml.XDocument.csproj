@@ -9,7 +9,7 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\System.Xml.Linq\ref\System.Xml.Linq.csproj" />
-    <ProjectReference Include="..\..\System.Xml\ref\System.Xml.csproj" />
+    <ProjectReference Include="..\..\System.Private.Xml\ref\System.Xml.csproj" />
     <ProjectReference Include="..\..\System.Xml.ReaderWriter\ref\System.Xml.ReaderWriter.csproj" />
     <Compile Include="System.Xml.XDocument.Forwards.cs" />
   </ItemGroup>

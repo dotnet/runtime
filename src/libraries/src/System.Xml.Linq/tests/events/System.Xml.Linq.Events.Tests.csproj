@@ -32,7 +32,7 @@
       <Project>{442c5a88-29c2-4b00-b1df-730d646d3861}</Project>
       <Name>System.Xml.Linq</Name>
     </ProjectReference>
-    <ProjectReference Include="..\..\..\System.Xml\src\System.Xml.csproj">
+    <ProjectReference Include="..\..\..\System.Private.Xml\src\System.Xml.csproj">
       <Project>{C427CE0D-0740-41F3-9C3A-552BEA3DDB0D}</Project>
       <Name>System.Xml</Name>
     </ProjectReference>
