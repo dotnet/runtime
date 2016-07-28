@@ -14,7 +14,7 @@
 
 // All COM+ exceptions are expressed as a RaiseException with this exception
 // code.  If you change this value, you must also change
-// bcl\src\system\Exception.cs's _COMPlusExceptionCode value.
+// mscorlib\src\system\Exception.cs's _COMPlusExceptionCode value.
 
 #define EXCEPTION_MSVC    0xe06d7363    // 0xe0000000 | 'msc'
 
