@@ -159,7 +159,8 @@ mono_hwcap_arch_init (void)
 
 	if (file) {
 		while ((line = fgets (buf, 512, file))) {
-			if (!strncmp (line, "Processor", 9)) {
+			if (!strncmp (line, "Processor", 9) ||
+			    !strncmp (line, "model name", 10)) {
 				char *ver = strstr (line, "(v");
 
 				if (ver) {

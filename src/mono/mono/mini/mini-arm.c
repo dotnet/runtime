@@ -880,6 +880,21 @@ mono_arch_init (void)
 	v6_supported = mono_hwcap_arm_is_v6;
 	v7_supported = mono_hwcap_arm_is_v7;
 
+	/*
+	 * On weird devices, the hwcap code may fail to detect
+	 * the ARM version. In that case, we can at least safely
+	 * assume the version the runtime was compiled for.
+	 */
+#ifdef HAVE_ARMV5
+	v5_supported = TRUE;
+#endif
+#ifdef HAVE_ARMV6
+	v6_supported = TRUE;
+#endif
+#ifdef HAVE_ARMV7
+	v7_supported = TRUE;
+#endif
+
 #if defined(__APPLE__)
 	/* iOS is special-cased here because we don't yet
 	   have a way to properly detect CPU features on it. */
