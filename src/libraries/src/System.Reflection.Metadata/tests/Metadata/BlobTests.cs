@@ -688,6 +688,14 @@ namespace System.Reflection.Metadata.Tests
             TestCompressedUnsignedInteger(new byte[] { 0xBF, 0xFF }, 0x3FFF);
             TestCompressedUnsignedInteger(new byte[] { 0xC0, 0x00, 0x40, 0x00 }, 0x4000);
             TestCompressedUnsignedInteger(new byte[] { 0xDF, 0xFF, 0xFF, 0xFF }, 0x1FFFFFFF);
+
+            var writer = new BlobWriter(4);
+            var builder = new BlobBuilder();
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => writer.WriteCompressedInteger(-1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => writer.WriteCompressedInteger(BlobWriterImpl.MaxCompressedIntegerValue + 1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => builder.WriteCompressedInteger(-1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => builder.WriteCompressedInteger(BlobWriterImpl.MaxCompressedIntegerValue + 1));
         }
 
         [Fact]
@@ -705,6 +713,14 @@ namespace System.Reflection.Metadata.Tests
             TestCompressedSignedInteger(new byte[] { 0x80, 0x01 }, -8192);
             TestCompressedSignedInteger(new byte[] { 0xDF, 0xFF, 0xFF, 0xFE }, 268435455);
             TestCompressedSignedInteger(new byte[] { 0xC0, 0x00, 0x00, 0x01 }, -268435456);
+
+            var writer = new BlobWriter(4);
+            var builder = new BlobBuilder();
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => writer.WriteCompressedSignedInteger(BlobWriterImpl.MinSignedCompressedIntegerValue - 1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => writer.WriteCompressedSignedInteger(BlobWriterImpl.MaxSignedCompressedIntegerValue + 1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => builder.WriteCompressedSignedInteger(BlobWriterImpl.MinSignedCompressedIntegerValue - 1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => builder.WriteCompressedSignedInteger(BlobWriterImpl.MaxSignedCompressedIntegerValue + 1));
         }
 
         [Fact]
@@ -955,6 +971,43 @@ namespace System.Reflection.Metadata.Tests
                 0x00, 0xF0, 0x90, 0x80, 0x80,
                 0x00, 0xEF, 0xBF, 0xBD, 0xEF, 0xBF, 0xBD
             }, writer.ToArray());
+        }
+
+        [Fact]
+        public void WriteUTF8_Substring()
+        {
+            var writer = new BlobBuilder(4);
+            writer.WriteUTF8("abc", 0, 0, allowUnpairedSurrogates: true, prependSize: false);
+            AssertEx.Equal(new byte[0], writer.ToArray());
+            writer.Clear();
+
+            writer.WriteUTF8("abc", 0, 1, allowUnpairedSurrogates: true, prependSize: false);
+            AssertEx.Equal(new[] { (byte)'a' }, writer.ToArray());
+            writer.Clear();
+
+            writer.WriteUTF8("abc", 0, 2, allowUnpairedSurrogates: true, prependSize: false);
+            AssertEx.Equal(new[] { (byte)'a', (byte)'b' }, writer.ToArray());
+            writer.Clear();
+
+            writer.WriteUTF8("abc", 0, 3, allowUnpairedSurrogates: true, prependSize: false);
+            AssertEx.Equal(new[] { (byte)'a', (byte)'b', (byte)'c' }, writer.ToArray());
+            writer.Clear();
+
+            writer.WriteUTF8("abc", 1, 0, allowUnpairedSurrogates: true, prependSize: false);
+            AssertEx.Equal(new byte[0], writer.ToArray());
+            writer.Clear();
+
+            writer.WriteUTF8("abc", 1, 1, allowUnpairedSurrogates: true, prependSize: false);
+            AssertEx.Equal(new[] { (byte)'b' }, writer.ToArray());
+            writer.Clear();
+
+            writer.WriteUTF8("abc", 1, 2, allowUnpairedSurrogates: true, prependSize: false);
+            AssertEx.Equal(new[] { (byte)'b', (byte)'c' }, writer.ToArray());
+            writer.Clear();
+
+            writer.WriteUTF8("abc", 2, 1, allowUnpairedSurrogates: true, prependSize: false);
+            AssertEx.Equal(new[] { (byte)'c' }, writer.ToArray());
+            writer.Clear();
         }
 
         [Fact]

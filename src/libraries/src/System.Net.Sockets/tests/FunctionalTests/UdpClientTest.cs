@@ -51,7 +51,7 @@ namespace System.Net.Sockets.Tests
             _waitHandle.Reset();
             udpClient.BeginSend(sendBytes, sendBytes.Length, remoteServer, new AsyncCallback(AsyncCompleted), udpClient);
 
-            Assert.True(_waitHandle.WaitOne(Configuration.PassingTestTimeout), "Timed out while waiting for connection");
+            Assert.True(_waitHandle.WaitOne(TestSettings.PassingTestTimeout), "Timed out while waiting for connection");
         }
 
         [Fact]
@@ -67,7 +67,7 @@ namespace System.Net.Sockets.Tests
         
         [Fact]
         [ActiveIssue(9189, PlatformID.AnyUnix)]
-        public async Task ConnectAsync_Success()
+        public async Task ConnectAsync_StringHost_Success()
         {
             using (var c = new UdpClient())
             {
@@ -76,12 +76,30 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
+        public async Task ConnectAsync_IPAddressHost_Success()
+        {
+            using (var c = new UdpClient())
+            {
+                await c.Client.ConnectAsync(IPAddress.Parse("114.114.114.114"), 53);
+            }
+        }
+
+        [Fact]
         [ActiveIssue(9189, PlatformID.AnyUnix)]
-        public void Connect_Success()
+        public void Connect_StringHost_Success()
         {
             using (var c = new UdpClient())
             {
                 c.Client.Connect("114.114.114.114", 53);
+            }
+        }
+
+        [Fact]
+        public void Connect_IPAddressHost_Success()
+        {
+            using (var c = new UdpClient())
+            {
+                c.Client.Connect(IPAddress.Parse("114.114.114.114"), 53);
             }
         }
 

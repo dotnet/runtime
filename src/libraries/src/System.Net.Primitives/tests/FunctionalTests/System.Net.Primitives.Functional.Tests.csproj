@@ -9,6 +9,7 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{4FE5ECEE-ACC5-4558-A946-573426599B73}</ProjectGuid>
     <OutputType>Library</OutputType>
+    <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
   </PropertyGroup>
   <!-- Help VS understand available configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Debug|AnyCPU'" />
@@ -32,7 +33,7 @@
     <Compile Include="SocketAddressTest.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\src\System.Net.Primitives.csproj">
+    <ProjectReference Include="..\..\pkg\System.Net.Primitives.pkgproj">
       <Project>{8772BC91-7B55-49B9-94FA-4B1BE5BEAB55}</Project>
       <Name>System.Net.Primitives</Name>
     </ProjectReference>

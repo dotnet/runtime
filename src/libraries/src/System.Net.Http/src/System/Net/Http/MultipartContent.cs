@@ -3,13 +3,14 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
-using System.Threading.Tasks;
-using System.IO;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Net.Http.Headers;
 using System.Diagnostics.Contracts;
+using System.IO;
+using System.Net.Http.Headers;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace System.Net.Http
 {
@@ -184,35 +185,9 @@ namespace System.Net.Http
                 var output = new StringBuilder();
                 for (int contentIndex = 0; contentIndex < _nestedContent.Count; contentIndex++)
                 {
-                    output.Clear();
-                    HttpContent content = _nestedContent[contentIndex];
-
-                    // Add divider.
-                    if (contentIndex != 0) // Write divider for all but the first content.
-                    {
-                        output.Append(CrLf + "--"); // const strings
-                        output.Append(_boundary);
-                        output.Append(CrLf);
-                    }
-
-                    // Add headers.
-                    foreach (KeyValuePair<string, IEnumerable<string>> headerPair in content.Headers)
-                    {
-                        output.Append(headerPair.Key);
-                        output.Append(": ");
-                        string delim = string.Empty;
-                        foreach (string value in headerPair.Value)
-                        {
-                            output.Append(delim);
-                            output.Append(value);
-                            delim = ", ";
-                        }
-                        output.Append(CrLf);
-                    }
-                    output.Append(CrLf); // Extra CRLF to end headers (even if there are no headers).
-
                     // Write divider, headers, and content.
-                    await EncodeStringToStreamAsync(stream, output.ToString()).ConfigureAwait(false);
+                    HttpContent content = _nestedContent[contentIndex];
+                    await EncodeStringToStreamAsync(stream, SerializeHeadersToString(output, contentIndex, content)).ConfigureAwait(false);
                     await content.CopyToAsync(stream).ConfigureAwait(false);
                 }
 
@@ -229,10 +204,92 @@ namespace System.Net.Http
             }
         }
 
+        protected override async Task<Stream> CreateContentReadStreamAsync()
+        {
+            try
+            {
+                var streams = new Stream[2 + (_nestedContent.Count*2)];
+                var scratch = new StringBuilder();
+                int streamIndex = 0;
+
+                // Start boundary.
+                streams[streamIndex++] = EncodeStringToNewStream("--" + _boundary + CrLf);
+
+                // Each nested content.
+                for (int contentIndex = 0; contentIndex < _nestedContent.Count; contentIndex++)
+                {
+                    HttpContent nestedContent = _nestedContent[contentIndex];
+                    streams[streamIndex++] = EncodeStringToNewStream(SerializeHeadersToString(scratch, contentIndex, nestedContent));
+
+                    Stream readStream = (await nestedContent.ReadAsStreamAsync().ConfigureAwait(false)) ?? new MemoryStream();
+                    if (!readStream.CanSeek)
+                    {
+                        // Seekability impacts whether HttpClientHandlers are able to rewind.  To maintain compat
+                        // and to allow such use cases when a nested stream isn't seekable (which should be rare),
+                        // we fall back to the base behavior.  We don't dispose of the streams already obtained
+                        // as we don't necessarily own them yet.
+                        return await base.CreateContentReadStreamAsync().ConfigureAwait(false);
+                    }
+                    streams[streamIndex++] = readStream;
+                }
+
+                // Footer boundary.
+                streams[streamIndex] = EncodeStringToNewStream(CrLf + "--" + _boundary + "--" + CrLf);
+
+                return new ContentReadStream(streams);
+            }
+            catch (Exception ex)
+            {
+                if (NetEventSource.Log.IsEnabled())
+                {
+                    NetEventSource.Exception(NetEventSource.ComponentType.Http, this, nameof(CreateContentReadStreamAsync), ex);
+                }
+                throw;
+            }
+        }
+
+        private string SerializeHeadersToString(StringBuilder scratch, int contentIndex, HttpContent content)
+        {
+            scratch.Clear();
+
+            // Add divider.
+            if (contentIndex != 0) // Write divider for all but the first content.
+            {
+                scratch.Append(CrLf + "--"); // const strings
+                scratch.Append(_boundary);
+                scratch.Append(CrLf);
+            }
+
+            // Add headers.
+            foreach (KeyValuePair<string, IEnumerable<string>> headerPair in content.Headers)
+            {
+                scratch.Append(headerPair.Key);
+                scratch.Append(": ");
+                string delim = string.Empty;
+                foreach (string value in headerPair.Value)
+                {
+                    scratch.Append(delim);
+                    scratch.Append(value);
+                    delim = ", ";
+                }
+                scratch.Append(CrLf);
+            }
+
+            // Extra CRLF to end headers (even if there are no headers).
+            scratch.Append(CrLf);
+
+            return scratch.ToString();
+        }
+
         private static Task EncodeStringToStreamAsync(Stream stream, string input)
         {
             byte[] buffer = HttpRuleParser.DefaultHttpEncoding.GetBytes(input);
             return stream.WriteAsync(buffer, 0, buffer.Length);
+        }
+
+        private static Stream EncodeStringToNewStream(string input)
+        {
+            return new MemoryStream(HttpRuleParser.DefaultHttpEncoding.GetBytes(input), writable: false);
         }
 
         protected internal override bool TryComputeLength(out long length)
@@ -299,6 +356,201 @@ namespace System.Net.Http
         private static int GetEncodedLength(string input)
         {
             return HttpRuleParser.DefaultHttpEncoding.GetByteCount(input);
+        }
+
+        private sealed class ContentReadStream : Stream
+        {
+            private readonly Stream[] _streams;
+            private readonly long _length;
+
+            private int _next;
+            private Stream _current;
+            private long _position;
+
+            internal ContentReadStream(Stream[] streams)
+            {
+                Debug.Assert(streams != null);
+                _streams = streams;
+                foreach (Stream stream in streams)
+                {
+                    _length += stream.Length;
+                }
+            }
+
+            protected override void Dispose(bool disposing)
+            {
+                if (disposing)
+                {
+                    foreach (Stream s in _streams)
+                    {
+                        s.Dispose();
+                    }
+                }
+            }
+
+            public override bool CanRead => true;
+            public override bool CanSeek => true;
+            public override bool CanWrite => false;
+
+            public override int Read(byte[] buffer, int offset, int count)
+            {
+                ValidateReadArgs(buffer, offset, count);
+                if (count == 0)
+                {
+                    return 0;
+                }
+
+                while (true)
+                {
+                    if (_current != null)
+                    {
+                        int bytesRead = _current.Read(buffer, offset, count);
+                        if (bytesRead != 0)
+                        {
+                            _position += bytesRead;
+                            return bytesRead;
+                        }
+
+                        _current = null;
+                    }
+
+                    if (_next >= _streams.Length)
+                    {
+                        return 0;
+                    }
+
+                    _current = _streams[_next++];
+                }
+            }
+
+            public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+            {
+                ValidateReadArgs(buffer, offset, count);
+                return ReadAsyncPrivate(buffer, offset, count, cancellationToken);
+            }
+
+            public async Task<int> ReadAsyncPrivate(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+            {
+                if (count == 0)
+                {
+                    return 0;
+                }
+
+                while (true)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+
+                    if (_current != null)
+                    {
+                        int bytesRead = await _current.ReadAsync(buffer, offset, count).ConfigureAwait(false);
+                        if (bytesRead != 0)
+                        {
+                            _position += bytesRead;
+                            return bytesRead;
+                        }
+
+                        _current = null;
+                    }
+
+                    if (_next >= _streams.Length)
+                    {
+                        return 0;
+                    }
+
+                    _current = _streams[_next++];
+                }
+            }
+
+            public override long Position
+            {
+                get { return _position; }
+                set
+                {
+                    if (value < 0)
+                    {
+                        throw new ArgumentOutOfRangeException(nameof(value));
+                    }
+
+                    long previousStreamsLength = 0;
+                    for (int i = 0; i < _streams.Length; i++)
+                    {
+                        Stream curStream = _streams[i];
+                        long curLength = curStream.Length;
+
+                        if (value < previousStreamsLength + curLength)
+                        {
+                            _current = curStream;
+                            i++;
+                            _next = i;
+
+                            curStream.Position = value - previousStreamsLength;
+                            for (; i < _streams.Length; i++)
+                            {
+                                _streams[i].Position = 0;
+                            }
+
+                            _position = value;
+                            return;
+                        }
+
+                        previousStreamsLength += curLength;
+                    }
+
+                    _current = null;
+                    _next = _streams.Length;
+                    _position = value;
+                }
+            }
+
+            public override long Seek(long offset, SeekOrigin origin)
+            {
+                switch (origin)
+                {
+                    case SeekOrigin.Begin:
+                        Position = offset;
+                        break;
+
+                    case SeekOrigin.Current:
+                        Position += offset;
+                        break;
+
+                    case SeekOrigin.End:
+                        Position = _length + offset;
+                        break;
+
+                    default:
+                        throw new ArgumentOutOfRangeException(nameof(origin));
+                }
+
+                return Position;
+            }
+
+            public override long Length => _length;
+
+            private static void ValidateReadArgs(byte[] buffer, int offset, int count)
+            {
+                if (buffer == null)
+                {
+                    throw new ArgumentNullException(nameof(buffer));
+                }
+                if (offset < 0)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(offset));
+                }
+                if (count < 0)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(count));
+                }
+                if (offset > buffer.Length - count)
+                {
+                    throw new ArgumentException(SR.net_http_buffer_insufficient_length, nameof(buffer));
+                }
+            }
+
+            public override void Flush() { }
+            public override void SetLength(long value) { throw new NotSupportedException(); }
+            public override void Write(byte[] buffer, int offset, int count) { throw new NotSupportedException(); }
+            public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) { throw new NotSupportedException(); }
         }
         #endregion Serialization
     }

@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
   <PropertyGroup>
     <Configuration Condition="'$(Configuration)'==''">netcore50_Debug</Configuration>
@@ -8,7 +8,7 @@
     <AssemblyName>System.IO.IsolatedStorage</AssemblyName>
     <ProjectGuid>{FAF5D1E4-BA43-4663-8429-C069066D75CB}</ProjectGuid>
     <EnableWinRT>true</EnableWinRT>
-    <AssemblyVersion>4.0.1.0</AssemblyVersion>
+    <AssemblyVersion>4.0.2.0</AssemblyVersion>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the options -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcore50_Debug|AnyCPU'" />

@@ -4,7 +4,6 @@
 
 using System.Net.Sockets;
 using System.Net.Test.Common;
-using System.Net.Tests;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading.Tasks;
@@ -27,7 +26,7 @@ namespace System.Net.Security.Tests
         [PlatformSpecific(PlatformID.Windows)]
         public async Task SslStream_ClientAndServerUsesAuxRecord_Ok()
         {
-            X509Certificate2 serverCert = CertificateConfiguration.GetServerCertificate();
+            X509Certificate2 serverCert = Configuration.Certificates.GetServerCertificate();
             var server = new SchSendAuxRecordTestServer(serverCert);
 
             int port = server.StartServer();

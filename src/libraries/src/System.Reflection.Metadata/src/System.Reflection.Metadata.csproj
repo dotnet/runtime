@@ -11,7 +11,8 @@
     <DefaultLanguage>en-US</DefaultLanguage>
     <NoWarn>1591</NoWarn>
     <CLSCompliant>false</CLSCompliant>
-    <AssemblyVersion>1.4.0.0</AssemblyVersion>
+    <!-- rev'ed to 1.4.1 so that we can drop pre-release down to beta -->
+    <AssemblyVersion>1.4.1.0</AssemblyVersion>
     <DefineConstants>$(DefineConstants)</DefineConstants>
     <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.0</NuGetTargetMoniker>
   </PropertyGroup>
@@ -37,8 +38,12 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Reflection\Internal\Utilities\ExceptionUtilities.cs" />
+    <Compile Include="System\Reflection\Metadata\Ecma335\Encoding\FunctionPointerAttributes.cs" />
     <Compile Include="System\Reflection\Metadata\Ecma335\Encoding\MethodBodiesEncoder.cs" />
     <Compile Include="System\Reflection\Metadata\Ecma335\Encoding\MethodBodyAttributes.cs" />
+    <Compile Include="System\Reflection\Metadata\Ecma335\MetadataBuilder.cs" />
+    <Compile Include="System\Reflection\Metadata\Ecma335\MetadataRootBuilder.cs" />
+    <Compile Include="System\Reflection\Metadata\Ecma335\SerializedMetadataHeaps.cs" />
     <Compile Include="System\Reflection\Metadata\EntityHandle.cs" />
     <Compile Include="System\Reflection\Metadata\PooledBlobBuilder.cs" />
     <Compile Include="System\Reflection\Metadata\Blob.cs" />
@@ -50,6 +55,7 @@
     <Compile Include="System\Reflection\Internal\Utilities\DecimalUtilities.cs" />
     <Compile Include="System\Reflection\Internal\Utilities\EnumerableExtensions.cs" />
     <Compile Include="System\Reflection\Metadata\Ecma335\CustomAttributeDecoder.cs" />
+    <Compile Include="System\Reflection\Metadata\PortablePdb\PortablePdbVersions.cs" />
     <Compile Include="System\Reflection\Metadata\Signatures\CustomAttributeNamedArgument.cs" />
     <Compile Include="System\Reflection\Metadata\Signatures\CustomAttributeTypedArgument.cs" />
     <Compile Include="System\Reflection\Metadata\Signatures\CustomAttributeValue.cs" />
@@ -60,7 +66,7 @@
     <Compile Include="System\Reflection\Metadata\Ecma335\Encoding\LabelHandle.cs" />
     <Compile Include="System\Reflection\Metadata\IL\ILOpCode.cs" />
     <Compile Include="System\Reflection\Metadata\Ecma335\CodedIndex.cs" />
-    <Compile Include="System\Reflection\Metadata\Ecma335\MetadataSerializer.cs" />
+    <Compile Include="System\Reflection\Metadata\Ecma335\PortablePdbBuilder.cs" />
     <Compile Include="System\Reflection\Metadata\Ecma335\MetadataBuilder.Tables.cs" />
     <Compile Include="System\Reflection\Metadata\Ecma335\Encoding\BlobEncoders.cs" />
     <Compile Include="System\Reflection\Metadata\Ecma335\Encoding\MethodBodyEncoder.cs" />

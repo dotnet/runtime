@@ -13,7 +13,7 @@ namespace System.Linq.Tests
         public void SameResultsRepeatCallsIntQuery()
         {
             var q = from x in new[] { 9999, 0, 888, -1, 66, -777, 1, 2, -12345 }
-                    where x > Int32.MinValue
+                    where x > int.MinValue
                     select x;
 
             Assert.Equal(q.Average(), q.Average());
@@ -22,13 +22,13 @@ namespace System.Linq.Tests
         [Fact]
         public void SameResultsRepeatCallsNullableLongQuery()
         {
-            var q = from x in new long?[] { Int32.MaxValue, 0, 255, 127, 128, 1, 33, 99, null, Int32.MinValue }
+            var q = from x in new long?[] { int.MaxValue, 0, 255, 127, 128, 1, 33, 99, null, int.MinValue }
                     select x;
 
             Assert.Equal(q.Average(), q.Average());
         }
 
-        public static IEnumerable<object[]> Average_NullableFloat_TestData()
+        public static IEnumerable<object[]> NullableFloat_TestData()
         {
             yield return new object[] { new float?[0], null };
             yield return new object[] { new float?[] { float.MinValue }, float.MinValue };
@@ -41,46 +41,29 @@ namespace System.Linq.Tests
         }
 
         [Theory]
-        [MemberData(nameof(Average_NullableFloat_TestData))]
-        public void Average_NullableFoat(float?[] source, float? expected)
+        [MemberData(nameof(NullableFloat_TestData))]
+        public void NullableFoat(float?[] source, float? expected)
         {
             Assert.Equal(expected, source.Average());
+            Assert.Equal(expected, source.Average(x => x));
         }
 
         [Fact]
-        public void Average_NullableFloat_EmptySourceWithSelector()
-        {
-            float?[] source = { };
-            float? expected = null;
-
-            Assert.Equal(expected, source.Average(i => i));
-        }
-
-        [Fact]
-        public void Average_NullableFloat_NullSource_ThrowsArgumentNullException()
+        public void NullableFloat_NullSource_ThrowsArgumentNullException()
         {
             Assert.Throws<ArgumentNullException>("source", () => ((IEnumerable<float?>)null).Average());
             Assert.Throws<ArgumentNullException>("source", () => ((IEnumerable<float?>)null).Average(i => i));
         }
 
         [Fact]
-        public void Average_NullableFloat_NullSelector_ThrowsArgumentNullException()
+        public void NullableFloat_NullSelector_ThrowsArgumentNullException()
         {
             Func<float?, float?> selector = null;
             Assert.Throws<ArgumentNullException>("selector", () => Enumerable.Empty<float?>().Average(selector));
         }
-
+        
         [Fact]
-        public void Average_NullableFloat_AllNullWithSelector()
-        {
-            float?[] source = { null, null, null, null, null };
-            float? expected = null;
-
-            Assert.Equal(expected, source.Average(i => i));
-        }
-
-        [Fact]
-        public void Average_NullableFloat_WithSelector()
+        public void NullableFloat_WithSelector()
         {
             var source = new []
             {
@@ -94,7 +77,7 @@ namespace System.Linq.Tests
         }
 
         [Fact]
-        public void Average_Int_EmptySource_ThrowsInvalidOperationException()
+        public void Int_EmptySource_ThrowsInvalidOperationException()
         {
             int[] source = new int[0];
             
@@ -103,20 +86,20 @@ namespace System.Linq.Tests
         }
 
         [Fact]
-        public void Average_Int_NullSource_ThrowsArgumentNullException()
+        public void Int_NullSource_ThrowsArgumentNullException()
         {
             Assert.Throws<ArgumentNullException>("source", () => ((IEnumerable<int>)null).Average());
             Assert.Throws<ArgumentNullException>("source", () => ((IEnumerable<int>)null).Average(i => i));
         }
 
         [Fact]
-        public void Average_Int_NullSelector_ThrowsArgumentNullException()
+        public void Int_NullSelector_ThrowsArgumentNullException()
         {
             Func<int, int> selector = null;
             Assert.Throws<ArgumentNullException>("selector", () => Enumerable.Empty<int>().Average(selector));
         }
 
-        public static IEnumerable<object[]> Average_Int_TestData()
+        public static IEnumerable<object[]> Int_TestData()
         {
             yield return new object[] { new int[] { 5 }, 5 };
             yield return new object[] { new int[] { 0, 0, 0, 0, 0 }, 0 };
@@ -124,14 +107,15 @@ namespace System.Linq.Tests
         }
 
         [Theory]
-        [MemberData(nameof(Average_Int_TestData))]
-        public void Average_Int(int[] source, double expected)
+        [MemberData(nameof(Int_TestData))]
+        public void Int(int[] source, double expected)
         {
             Assert.Equal(expected, source.Average());
+            Assert.Equal(expected, source.Average(x => x));
         }
 
         [Fact]
-        public void Average_Int_WithSelector()
+        public void Int_WithSelector()
         {
             var source = new []
             {
@@ -144,7 +128,7 @@ namespace System.Linq.Tests
             Assert.Equal(expected, source.Average(e => e.num));
         }
 
-        public static IEnumerable<object[]> Average_NullableInt_TestData()
+        public static IEnumerable<object[]> NullableInt_TestData()
         {
             yield return new object[] { new int?[0], null };
             yield return new object[] { new int?[] { -5 }, -5.0 };
@@ -155,46 +139,29 @@ namespace System.Linq.Tests
         }
 
         [Theory]
-        [MemberData(nameof(Average_NullableInt_TestData))]
-        public void Average_NullableInt(int?[] source, double? expected)
+        [MemberData(nameof(NullableInt_TestData))]
+        public void NullableInt(int?[] source, double? expected)
         {
             Assert.Equal(expected, source.Average());
+            Assert.Equal(expected, source.Average(x => x));
         }
-
+        
         [Fact]
-        public void Average_NullableInt_EmptySourceWithSelector()
-        {
-            int?[] source = { };
-            double? expected = null;
-
-            Assert.Equal(expected, source.Average(i => i));
-        }
-
-        [Fact]
-        public void Average_NullableInt_NullSource_ThrowsArgumentNullException()
+        public void NullableInt_NullSource_ThrowsArgumentNullException()
         {
             Assert.Throws<ArgumentNullException>("source", () => ((IEnumerable<int?>)null).Average());
             Assert.Throws<ArgumentNullException>("source", () => ((IEnumerable<int?>)null).Average(i => i));
         }
 
         [Fact]
-        public void Average_NullableInt_NullSelector_ThrowsArgumentNullException()
+        public void NullableInt_NullSelector_ThrowsArgumentNullException()
         {
             Func<int?, int?> selector = null;
             Assert.Throws<ArgumentNullException>("selector", () => Enumerable.Empty<int?>().Average(selector));
         }
-
+        
         [Fact]
-        public void Average_NullableInt_AllNullWithSelector()
-        {
-            int?[] source = { null, null, null, null, null };
-            double? expected = null;
-
-            Assert.Equal(expected, source.Average(i => i));
-        }
-
-        [Fact]
-        public void Average_NullableInt_WithSelector()
+        public void NullableInt_WithSelector()
         {
             var source = new []
             {
@@ -208,7 +175,7 @@ namespace System.Linq.Tests
         }
 
         [Fact]
-        public void Average_Long_EmptySource_ThrowsInvalidOperationException()
+        public void Long_EmptySource_ThrowsInvalidOperationException()
         {
             long[] source = new long[0];
 
@@ -217,20 +184,20 @@ namespace System.Linq.Tests
         }
 
         [Fact]
-        public void Average_Long_NullSource_ThrowsArgumentNullException()
+        public void Long_NullSource_ThrowsArgumentNullException()
         {
             Assert.Throws<ArgumentNullException>("source", () => ((IEnumerable<long>)null).Average());
             Assert.Throws<ArgumentNullException>("source", () => ((IEnumerable<long>)null).Average(i => i));
         }
 
         [Fact]
-        public void Average_Long_NullSelector_ThrowsArgumentNullException()
+        public void Long_NullSelector_ThrowsArgumentNullException()
         {
             Func<long, long> selector = null;
             Assert.Throws<ArgumentNullException>("selector", () => Enumerable.Empty<long>().Average(selector));
         }
 
-        public static IEnumerable<object[]> Average_Long_TestData()
+        public static IEnumerable<object[]> Long_TestData()
         {
             yield return new object[] { new long[] { long.MaxValue }, long.MaxValue };
             yield return new object[] { new long[] { 0, 0, 0, 0, 0 }, 0 };
@@ -238,14 +205,15 @@ namespace System.Linq.Tests
         }
         
         [Theory]
-        [MemberData(nameof(Average_Long_TestData))]
-        public void Average_Long(long[] source, double expected)
+        [MemberData(nameof(Long_TestData))]
+        public void Long(long[] source, double expected)
         {
             Assert.Equal(expected, source.Average());
+            Assert.Equal(expected, source.Average(x => x));
         }
 
         [Fact]
-        public void Average_Long_FromSelector()
+        public void Long_FromSelector()
         {
             var source = new []
             {
@@ -259,14 +227,14 @@ namespace System.Linq.Tests
         }
 
         [Fact]
-        public void Average_Long_SumTooLarge_ThrowsOverflowException()
+        public void Long_SumTooLarge_ThrowsOverflowException()
         {
             long[] source = new long[] { long.MaxValue, long.MaxValue };
 
             Assert.Throws<OverflowException>(() => source.Average());
         }
 
-        public static IEnumerable<object[]> Average_NullableLong_TestData()
+        public static IEnumerable<object[]> NullableLong_TestData()
         {
             yield return new object[] { new long?[0], null };
             yield return new object[] { new long?[] { long.MaxValue }, (double)long.MaxValue };
@@ -277,46 +245,29 @@ namespace System.Linq.Tests
         }
 
         [Theory]
-        [MemberData(nameof(Average_NullableLong_TestData))]
-        public void Average_NullableLong(long?[] source, double? expected)
+        [MemberData(nameof(NullableLong_TestData))]
+        public void NullableLong(long?[] source, double? expected)
         {
             Assert.Equal(expected, source.Average());
+            Assert.Equal(expected, source.Average(x => x));
         }
-
+        
         [Fact]
-        public void Average_NullableLong_EmptySourceWithSelector()
-        {
-            long?[] source = { };
-            double? expected = null;
-
-            Assert.Equal(expected, source.Average(i => i));
-        }
-
-        [Fact]
-        public void Average_NullableLong_NullSource_ThrowsArgumentNullException()
+        public void NullableLong_NullSource_ThrowsArgumentNullException()
         {
             Assert.Throws<ArgumentNullException>("source", () => ((IEnumerable<long?>)null).Average());
             Assert.Throws<ArgumentNullException>("source", () => ((IEnumerable<long?>)null).Average(i => i));
         }
 
         [Fact]
-        public void Average_NullableLong_NullSelector_ThrowsArgumentNullException()
+        public void NullableLong_NullSelector_ThrowsArgumentNullException()
         {
             Func<long?, long?> selector = null;
             Assert.Throws<ArgumentNullException>("selector", () => Enumerable.Empty<long?>().Average(selector));
         }
-
+        
         [Fact]
-        public void Average_NullableLong_AllNullWithSelector()
-        {
-            long?[] source = { null, null, null, null, null };
-            double? expected = null;
-
-            Assert.Equal(expected, source.Average(i => i));
-        }
-
-        [Fact]
-        public void Average_NullableLong_WithSelector()
+        public void NullableLong_WithSelector()
         {
             var source = new []
             {
@@ -330,7 +281,7 @@ namespace System.Linq.Tests
         }
 
         [Fact]
-        public void Average_Double_EmptySource_ThrowsInvalidOperationException()
+        public void Double_EmptySource_ThrowsInvalidOperationException()
         {
             double[] source = new double[0];
 
@@ -339,20 +290,20 @@ namespace System.Linq.Tests
         }
 
         [Fact]
-        public void Average_Double_NullSource_ThrowsArgumentNullException()
+        public void Double_NullSource_ThrowsArgumentNullException()
         {
             Assert.Throws<ArgumentNullException>("source", () => ((IEnumerable<double>)null).Average());
             Assert.Throws<ArgumentNullException>("source", () => ((IEnumerable<double>)null).Average(i => i));
         }
 
         [Fact]
-        public void Average_Double_NullSelector_ThrowsArgumentNullException()
+        public void Double_NullSelector_ThrowsArgumentNullException()
         {
             Func<double, double> selector = null;
             Assert.Throws<ArgumentNullException>("selector", () => Enumerable.Empty<double>().Average(selector));
         }
 
-        public static IEnumerable<object[]> Average_Double_TestData()
+        public static IEnumerable<object[]> Double_TestData()
         {
             yield return new object[] { new double[] { double.MaxValue }, double.MaxValue };
             yield return new object[] { new double[] { 0.0, 0.0, 0.0, 0.0, 0.0 }, 0 };
@@ -361,14 +312,15 @@ namespace System.Linq.Tests
         }
 
         [Theory]
-        [MemberData(nameof(Average_Double_TestData))]
+        [MemberData(nameof(Double_TestData))]
         public void Average_Double(double[] source, double expected)
         {
             Assert.Equal(expected, source.Average());
+            Assert.Equal(expected, source.Average(x => x));
         }
 
         [Fact]
-        public void Average_Double_WithSelector()
+        public void Double_WithSelector()
         {
             var source = new []
             {
@@ -381,56 +333,41 @@ namespace System.Linq.Tests
             Assert.Equal(expected, source.Average(e => e.num));
         }
 
-        public static IEnumerable<object[]> Average_NullableDouble_TestData()
+        public static IEnumerable<object[]> NullableDouble_TestData()
         {
             yield return new object[] { new double?[0], null };
             yield return new object[] { new double?[] { double.MinValue }, double.MinValue };
-            yield return new object[] { new double?[] { 0, 0, 0, 0, 0 }, 0 };
+            yield return new object[] { new double?[] { 0, 0, 0, 0, 0 }, 0.0 };
             yield return new object[] { new double?[] { 5.5, 0, null, null, null, 15.5, 40.5, null, null, -23.5 }, 7.6 };
-            yield return new object[] { new double?[] { null, null, null, null, 45 }, 45 };
-            yield return new object[] { new double?[] { -23.5, 0, Double.NaN, 54.3, 0.56 }, double.NaN };
+            yield return new object[] { new double?[] { null, null, null, null, 45 }, 45.0 };
+            yield return new object[] { new double?[] { -23.5, 0, double.NaN, 54.3, 0.56 }, double.NaN };
             yield return new object[] { new double?[] { null, null, null, null, null }, null };
         }
 
-        public void Average_NullableDouble(double?[] source, double? expected)
+        [Theory]
+        [MemberData(nameof(NullableDouble_TestData))]
+        public void NullableDouble(double?[] source, double? expected)
         {
             Assert.Equal(expected, source.Average());
+            Assert.Equal(expected, source.Average(x => x));
         }
-
+        
         [Fact]
-        public void Average_NullableDouble_EmptySourceWithSelector()
-        {
-            double?[] source = { };
-            double? expected = null;
-
-            Assert.Equal(expected, source.Average(i => i));
-        }
-
-        [Fact]
-        public void Average_NullableDouble_NullSource_ThrowsArgumentNullException()
+        public void NullableDouble_NullSource_ThrowsArgumentNullException()
         {
             Assert.Throws<ArgumentNullException>("source", () => ((IEnumerable<double?>)null).Average());
             Assert.Throws<ArgumentNullException>("source", () => ((IEnumerable<double?>)null).Average(i => i));
         }
 
         [Fact]
-        public void Average_NullableDouble_NullSelector_ThrowsArgumentNullException()
+        public void NullableDouble_NullSelector_ThrowsArgumentNullException()
         {
             Func<double?, double?> selector = null;
             Assert.Throws<ArgumentNullException>("selector", () => Enumerable.Empty<double?>().Average(selector));
         }
-
+        
         [Fact]
-        public void Average_NullableDouble_AllNullWithSelector()
-        {
-            double?[] source = { null, null, null, null, null };
-            double? expected = null;
-
-            Assert.Equal(expected, source.Average(i => i));
-        }
-
-        [Fact]
-        public void Average_NullableDouble_WithSelector()
+        public void NullableDouble_WithSelector()
         {
             var source = new[]
             {
@@ -444,7 +381,7 @@ namespace System.Linq.Tests
         }
 
         [Fact]
-        public void Average_Decimal_EmptySource_ThrowsInvalidOperationException()
+        public void Decimal_EmptySource_ThrowsInvalidOperationException()
         {
             decimal[] source = new decimal[0];
 
@@ -453,20 +390,20 @@ namespace System.Linq.Tests
         }
 
         [Fact]
-        public void Average_Decimal_NullSource_ThrowsArgumentNullException()
+        public void Decimal_NullSource_ThrowsArgumentNullException()
         {
             Assert.Throws<ArgumentNullException>("source", () => ((IEnumerable<decimal>)null).Average());
             Assert.Throws<ArgumentNullException>("source", () => ((IEnumerable<decimal>)null).Average(i => i));
         }
 
         [Fact]
-        public void Average_Decimal_NullSelector_ThrowsArgumentNullException()
+        public void Decimal_NullSelector_ThrowsArgumentNullException()
         {
             Func<decimal, decimal> selector = null;
             Assert.Throws<ArgumentNullException>("selector", () => Enumerable.Empty<decimal>().Average(selector));
         }
 
-        public static IEnumerable<object[]> Average_Decimal_TestData()
+        public static IEnumerable<object[]> Decimal_TestData()
         {
             yield return new object[] { new decimal[] { decimal.MaxValue }, decimal.MaxValue };
             yield return new object[] { new decimal[] { 0.0m, 0.0m, 0.0m, 0.0m, 0.0m }, 0 };
@@ -474,14 +411,15 @@ namespace System.Linq.Tests
         }
 
         [Theory]
-        [MemberData(nameof(Average_Decimal_TestData))]
-        public void Average_Decimal(decimal[] source, decimal expected)
+        [MemberData(nameof(Decimal_TestData))]
+        public void Decimal(decimal[] source, decimal expected)
         {
             Assert.Equal(expected, source.Average());
+            Assert.Equal(expected, source.Average(x => x));
         }
 
         [Fact]
-        public void Average_Decimal_WithSelector()
+        public void Decimal_WithSelector()
         {
             var source = new[]
             {
@@ -494,7 +432,7 @@ namespace System.Linq.Tests
             Assert.Equal(expected, source.Average(e => e.num));
         }
 
-        public static IEnumerable<object[]> Average_NullableDecimal_TestData()
+        public static IEnumerable<object[]> NullableDecimal_TestData()
         {
             yield return new object[] { new decimal?[0], null };
             yield return new object[] { new decimal?[] { decimal.MinValue }, decimal.MinValue };
@@ -505,46 +443,29 @@ namespace System.Linq.Tests
         }
 
         [Theory]
-        [MemberData(nameof(Average_NullableDecimal_TestData))]
-        public void Average_NullableDecimal(decimal?[] source, decimal? expected)
+        [MemberData(nameof(NullableDecimal_TestData))]
+        public void NullableDecimal(decimal?[] source, decimal? expected)
         {
             Assert.Equal(expected, source.Average());
+            Assert.Equal(expected, source.Average(x => x));
         }
 
         [Fact]
-        public void Average_NullableDecimal_EmptySourceWithSelector()
-        {
-            decimal?[] source = { };
-            decimal? expected = null;
-
-            Assert.Equal(expected, source.Average(i => i));
-        }
-
-        [Fact]
-        public void Average_NullableDecimal_NullSource_ThrowsArgumentNullException()
+        public void NullableDecimal_NullSource_ThrowsArgumentNullException()
         {
             Assert.Throws<ArgumentNullException>("source", () => ((IEnumerable<decimal?>)null).Average());
             Assert.Throws<ArgumentNullException>("source", () => ((IEnumerable<decimal?>)null).Average(i => i));
         }
 
         [Fact]
-        public void Average_NullableDecimal_NullSelector_ThrowsArgumentNullException()
+        public void NullableDecimal_NullSelector_ThrowsArgumentNullException()
         {
             Func<decimal?, decimal?> selector = null;
             Assert.Throws<ArgumentNullException>("selector", () => Enumerable.Empty<decimal?>().Average(selector));
         }
 
         [Fact]
-        public void Average_NullableDecimal_AllNullWithSelector()
-        {
-            decimal?[] source = { null, null, null, null, null };
-            decimal? expected = null;
-
-            Assert.Equal(expected, source.Average(i => i));
-        }
-
-        [Fact]
-        public void Average_NullableDecimal_WithSelector()
+        public void NullableDecimal_WithSelector()
         {
             var source = new[]
             {
@@ -558,7 +479,7 @@ namespace System.Linq.Tests
         }
 
         [Fact]
-        public void Average_NullableDecimal_SumTooLarge_ThrowsOverflowException()
+        public void NullableDecimal_SumTooLarge_ThrowsOverflowException()
         {
             decimal?[] source = new decimal?[] { decimal.MaxValue, decimal.MaxValue };
 
@@ -566,7 +487,7 @@ namespace System.Linq.Tests
         }
 
         [Fact]
-        public void Average_Float_EmptySource_ThrowsInvalidOperationException()
+        public void Float_EmptySource_ThrowsInvalidOperationException()
         {
             float[] source = new float[0];
 
@@ -575,20 +496,20 @@ namespace System.Linq.Tests
         }
 
         [Fact]
-        public void Average_Float_NullSource_ThrowsArgumentNullException()
+        public void Float_NullSource_ThrowsArgumentNullException()
         {
             Assert.Throws<ArgumentNullException>("source", () => ((IEnumerable<float>)null).Average());
             Assert.Throws<ArgumentNullException>("source", () => ((IEnumerable<float>)null).Average(i => i));
         }
 
         [Fact]
-        public void Average_Float_NullSelector_ThrowsArgumentNullException()
+        public void Float_NullSelector_ThrowsArgumentNullException()
         {
             Func<float, float> selector = null;
             Assert.Throws<ArgumentNullException>("selector", () => Enumerable.Empty<float>().Average(selector));
         }
 
-        public static IEnumerable<object[]> Average_Float_TestData()
+        public static IEnumerable<object[]> Float_TestData()
         {
             yield return new object[] { new float[] { float.MaxValue }, float.MaxValue };
             yield return new object[] { new float[] { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f }, 0f };
@@ -596,14 +517,15 @@ namespace System.Linq.Tests
         }
 
         [Theory]
-        [MemberData(nameof(Average_Float_TestData))]
-        public void Average_Float(float[] source, float expected)
+        [MemberData(nameof(Float_TestData))]
+        public void Float(float[] source, float expected)
         {
             Assert.Equal(expected, source.Average());
+            Assert.Equal(expected, source.Average(x => x));
         }
 
         [Fact]
-        public void Average_Float_WithSelector()
+        public void Float_WithSelector()
         {
             var source = new[]
             {

@@ -945,8 +945,17 @@ namespace System.Net.Sockets
                 throw new NotSupportedException(SR.net_invalidversion);
             }
 
-            IPAddress[] addresses = Dns.GetHostAddressesAsync(host).GetAwaiter().GetResult();
-            Connect(addresses, port);
+            IPAddress parsedAddress;
+            if (IPAddress.TryParse(host, out parsedAddress))
+            {
+                Connect(parsedAddress, port);
+            }
+            else
+            {
+                IPAddress[] addresses = Dns.GetHostAddressesAsync(host).GetAwaiter().GetResult();
+                Connect(addresses, port);
+            }
+
             if (s_loggingEnabled)
             {
                 NetEventSource.Exit(NetEventSource.ComponentType.Socket, this, nameof(Connect), null);
@@ -2293,7 +2302,7 @@ namespace System.Net.Sockets
                 return BeginConnect(dnsEP.Host, dnsEP.Port, callback, state);
             }
 
-            return BeginConnectEx(remoteEP, true, callback, state);
+            return UnsafeBeginConnect(remoteEP, callback, state, flowContext:true);
         }
 
         private bool CanUseConnectEx(EndPoint remoteEP)
@@ -2302,11 +2311,11 @@ namespace System.Net.Sockets
                 (_rightEndPoint != null || remoteEP.GetType() == typeof(IPEndPoint));
         }
 
-        internal IAsyncResult UnsafeBeginConnect(IPEndPoint remoteEP, AsyncCallback callback, object state)
+        internal IAsyncResult UnsafeBeginConnect(EndPoint remoteEP, AsyncCallback callback, object state, bool flowContext = false)
         {
             if (CanUseConnectEx(remoteEP))
             {
-                return BeginConnectEx(remoteEP, false, callback, state);
+                return BeginConnectEx(remoteEP, flowContext, callback, state);
             }
 
             EndPoint endPointSnapshot = remoteEP;
@@ -2349,6 +2358,17 @@ namespace System.Net.Sockets
             if (_isListening)
             {
                 throw new InvalidOperationException(SR.net_sockets_mustnotlisten);
+            }
+
+            IPAddress parsedAddress;
+            if (IPAddress.TryParse(host, out parsedAddress))
+            {
+                IAsyncResult r = BeginConnect(parsedAddress, port, requestCallback, state);
+                if (s_loggingEnabled)
+                {
+                    NetEventSource.Exit(NetEventSource.ComponentType.Socket, this, nameof(BeginConnect), r);
+                }
+                return r;
             }
 
             ThrowIfNotSupportsMultipleConnectAttempts();
@@ -5913,7 +5933,7 @@ namespace System.Net.Sockets
                     connectSocket = context._lastAttemptSocket;
                 }
 
-                IAsyncResult connectResult = connectSocket.UnsafeBeginConnect((IPEndPoint)endPoint, CachedMultipleAddressConnectCallback, context);
+                IAsyncResult connectResult = connectSocket.UnsafeBeginConnect(endPoint, CachedMultipleAddressConnectCallback, context);
                 if (connectResult.CompletedSynchronously)
                 {
                     return connectResult;

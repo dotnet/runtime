@@ -3,6 +3,8 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.IO;
+using System.IO.Compression;
 using System.Reflection.Metadata;
 
 namespace System.Reflection.PortableExecutable
@@ -51,14 +53,55 @@ namespace System.Reflection.PortableExecutable
             
             AddEntry(
                 type: DebugDirectoryEntryType.CodeView,
+                version: (portablePdbVersion == 0) ? 0 : PortablePdbVersions.DebugDirectoryEntryVersion(portablePdbVersion),
                 stamp: pdbContentId.Stamp,
-                version: (portablePdbVersion == 0) ? 0 : ('P' << 24 | 'M' << 16 | (uint)portablePdbVersion),
                 dataSize: dataSize);
         }
 
         public void AddReproducibleEntry()
         {
-            AddEntry(type: DebugDirectoryEntryType.Reproducible, stamp: 0, version: 0);
+            AddEntry(type: DebugDirectoryEntryType.Reproducible, version: 0, stamp: 0);
+        }
+
+        public void AddEmbeddedPortablePdbEntry(BlobBuilder debugMetadata, ushort portablePdbVersion)
+        {
+            if (debugMetadata == null)
+            {
+                Throw.ArgumentNull(nameof(debugMetadata));
+            }
+
+            int dataSize = WriteEmbeddedPortablePdbData(_dataBuilder, debugMetadata);
+
+            AddEntry(
+                type: DebugDirectoryEntryType.EmbeddedPortablePdb, 
+                version: PortablePdbVersions.DebugDirectoryEmbeddedVersion(portablePdbVersion),
+                stamp: 0,
+                dataSize: dataSize);
+        }
+
+        private static int WriteEmbeddedPortablePdbData(BlobBuilder builder, BlobBuilder debugMetadata)
+        {
+            int start = builder.Count;
+
+            // header (signature, decompressed size):
+            builder.WriteUInt32(PortablePdbVersions.DebugDirectoryEmbeddedSignature);
+            builder.WriteInt32(debugMetadata.Count);
+
+            // compressed data:
+            var compressed = new MemoryStream();
+            using (var deflate = new DeflateStream(compressed, CompressionLevel.Optimal, leaveOpen: true))
+            {
+                foreach (var blob in debugMetadata.GetBlobs())
+                {
+                    var segment = blob.GetBytes();
+                    deflate.Write(segment.Array, segment.Offset, segment.Count);
+                }
+            }
+
+            // TODO: avoid multiple copies:
+            builder.WriteBytes(compressed.ToArray());
+
+            return builder.Count - start;
         }
 
         private static int WriteCodeViewData(BlobBuilder builder, string pdbPath, Guid pdbGuid)

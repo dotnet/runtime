@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
 using Xunit;
 
@@ -14,90 +13,58 @@ namespace System.Linq.Tests
         public void SameResultsRepeatCallsIntQuery()
         {
             var q = from x in new[] { 9999, 0, 888, -1, 66, -777, 1, 2, -12345 }
-                    where x > Int32.MinValue
+                    where x > int.MinValue
                     select x;
 
             Func<int, bool> predicate = IsEven;
-
             Assert.Equal(q.All(predicate), q.All(predicate));
         }
 
         [Fact]
         public void SameResultsRepeatCallsStringQuery()
         {
-            var q = from x in new[] { "!@#$%^", "C", "AAA", "", "Calling Twice", "SoS", String.Empty }
+            var q = from x in new[] { "!@#$%^", "C", "AAA", "", "Calling Twice", "SoS", string.Empty }
                     select x;
 
-            Func<string, bool> predicate = String.IsNullOrEmpty;
-
+            Func<string, bool> predicate = string.IsNullOrEmpty;
             Assert.Equal(q.All(predicate), q.All(predicate));
         }
 
-        [Fact]
-        public void SourceIsEmpty()
+        public static IEnumerable<object[]> All_TestData()
         {
-            int[] source = { };
+            Func<int, bool> isEvenFunc = IsEven;
+            yield return new object[] { new int[0], isEvenFunc, true };
+            yield return new object[] { new int[] { 3 }, isEvenFunc, false };
+            yield return new object[] { new int[] { 4 }, isEvenFunc, true };
+            yield return new object[] { new int[] { 3 }, isEvenFunc, false };
+            yield return new object[] { new int[] { 4, 8, 3, 5, 10, 20, 12 }, isEvenFunc, false };
+            yield return new object[] { new int[] { 4, 2, 10, 12, 8, 6, 3 }, isEvenFunc, false };
+            yield return new object[] { new int[] { 4, 2, 10, 12, 8, 6, 14 }, isEvenFunc, true };
 
-            Assert.True(source.All(IsEven));
+            int[] range = Enumerable.Range(1, 10).ToArray();
+            yield return new object[] { range, (Func<int, bool>)(i => i > 0), true };
+            for (int j = 1; j <= 10; j++)
+            {
+                int k = j; // Local copy for iterator
+                yield return new object[] { range, (Func<int, bool>)(i => i > k), false };
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(All_TestData))]
+        public void All(IEnumerable<int> source, Func<int, bool> predicate, bool expected)
+        {
+            Assert.Equal(expected, source.All(predicate));
         }
 
         [Fact]
-        public void OneElementPredicateFalse()
-        {
-            int[] source = { 3 };
-
-            Assert.False(source.All(IsEven));
-        }
-
-        [Fact]
-        public void OneElementPredicateTrue()
-        {
-            int[] source = { 4 };
-
-            Assert.True(source.All(IsEven));
-        }
-
-        [Fact]
-        public void PredicateTrueOnSomeButNotAll()
-        {
-            int[] source = { 4, 8, 3, 5, 10, 20, 12 };
-
-            Assert.False(source.All(IsEven));
-        }
-
-        [Fact]
-        public void PredicateTrueAllExceptLast()
-        {
-            int[] source = { 4, 2, 10, 12, 8, 6, 3 };
-
-            Assert.False(source.All(IsEven));
-        }
-
-        [Fact]
-        public void TrueForAll()
-        {
-            int[] source = { 4, 2, 10, 12, 8, 6, 14 };
-
-            Assert.True(source.All(IsEven));
-        }
-
-        [Fact]
-        public void RangeAllWithinRange()
-        {
-            var array = Enumerable.Range(1, 10).ToArray();
-            Assert.True(array.All(i => i > 0));
-            for (var j = 1; j <= 10; j++)
-                Assert.False(array.All(i => i > j));
-        }
-
-        [Fact]
-        public void NullSource()
+        public void NullSource_ThrowsArgumentNullException()
         {
             Assert.Throws<ArgumentNullException>("source", () => ((IEnumerable<int>)null).All(i => i != 0));
         }
 
         [Fact]
-        public void NullPredicateUsed()
+        public void NullPredicate_ThrowsArgumentNullException()
         {
             Func<int, bool> predicate = null;
             Assert.Throws<ArgumentNullException>("predicate", () => Enumerable.Range(0, 3).All(predicate));

@@ -13,8 +13,6 @@ using X509IssuerSerial = System.Security.Cryptography.Xml.X509IssuerSerial;
 
 using Microsoft.Win32.SafeHandles;
 
-using Internal.NativeCrypto;
-
 using static Interop.Crypt32;
 
 namespace Internal.Cryptography.Pal.Windows
@@ -135,7 +133,7 @@ namespace Internal.Cryptography.Pal.Windows
         /// </summary>
         public static AlgId ToAlgId(this string oidValue)
         {
-            CRYPT_OID_INFO info = OidInfo.FindOidInfo(CryptOidInfoKeyType.CRYPT_OID_INFO_OID_KEY, oidValue, OidGroup.All, false);
+            CRYPT_OID_INFO info = Interop.Crypt32.FindOidInfo(CryptOidInfoKeyType.CRYPT_OID_INFO_OID_KEY, oidValue, OidGroup.All, false);
             return (AlgId)(info.AlgId);
         }
 

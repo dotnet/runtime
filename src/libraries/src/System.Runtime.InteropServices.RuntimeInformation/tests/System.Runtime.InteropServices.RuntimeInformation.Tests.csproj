@@ -13,6 +13,7 @@
     <RootNamespace>System.Runtime.InteropServices.RuntimeInformation.Tests</RootNamespace>
     <AssemblyName>System.Runtime.InteropServices.RuntimeInformation.Tests</AssemblyName>
     <ProjectGuid>{9B4D1DA9-AA4C-428F-9F66-D45C924025A5}</ProjectGuid>
+    <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -23,7 +24,7 @@
     <None Include="project.json" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\src\System.Runtime.InteropServices.RuntimeInformation.csproj">
+    <ProjectReference Include="..\pkg\System.Runtime.InteropServices.RuntimeInformation.pkgproj">
       <Project>{F9DF2357-81B4-4317-908E-512DA9395583}</Project>
       <Name>System.Runtime.InteropServices.RuntimeInformation</Name>
     </ProjectReference>

@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
@@ -8,7 +8,8 @@
     <ProjectGuid>{3F0326A1-9E19-4A6C-95CE-63E65C9D2030}</ProjectGuid>
     <RootNamespace>System.ComponentModel.TypeConverter.Tests</RootNamespace>
     <AssemblyName>System.ComponentModel.TypeConverter.Tests</AssemblyName>
-    <IncludePerformanceTests>true</IncludePerformanceTests>
+    <NugetTargetMoniker>.NETStandard,Version=v1.5</NugetTargetMoniker>
+    <DefineConstants>$(DefineConstants);FUNCTIONAL_TESTS</DefineConstants>
   </PropertyGroup>
   <PropertyGroup>
     <DebugEngines>{2E36F1D4-B23C-435D-AB41-18E608940038}</DebugEngines>
@@ -65,15 +66,9 @@
     <Compile Include="UInt32ConverterTests.cs" />
     <Compile Include="UInt64ConverterTests.cs" />
     <Compile Include="UriTypeConverterTests.cs" />
-    <!-- Performance Tests -->
-    <Compile Include="Performance\Perf.TypeDescriptorTests.cs" />
-    <Compile Include="$(CommonTestPath)\System\PerfUtils.cs">
-      <Link>Common\System\PerfUtils.cs</Link>
-    </Compile>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\src\System.ComponentModel.TypeConverter.csproj">
-      <Name>System.ComponentModel.TypeConverter</Name>
+    <ProjectReference Include="..\pkg\System.ComponentModel.TypeConverter.pkgproj">
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>

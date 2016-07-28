@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using Test.Cryptography;
@@ -24,6 +25,27 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             using (var cert = new X509Certificate2(TestData.DssCer))
             {
                 return cert.PublicKey;
+            }
+        }
+
+        /// <summary>
+        /// First parameter is the cert, the second is a hash of "Hello"
+        /// </summary>
+        public static IEnumerable<object[]> BrainpoolCurves
+        {
+            get
+            {
+#if NETNATIVE
+                yield break;
+#else
+                yield return new object[] {
+                    TestData.ECDsabrainpoolP160r1_CertificatePemBytes,
+                    "9145C79DD4DF758EB377D13B0DB81F83CE1A63A4099DDC32FE228B06EB1F306423ED61B6B4AF4691".HexToByteArray() };
+
+                yield return new object[] {
+                    TestData.ECDsabrainpoolP160r1_ExplicitCertificatePemBytes,
+                    "6D74F1C9BCBBA5A25F67E670B3DABDB36C24E8FAC3266847EB2EE7E3239208ADC696BB421AB380B4".HexToByteArray() };
+#endif
             }
         }
 
@@ -151,6 +173,35 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
+        [Theory, MemberData(nameof(BrainpoolCurves))]
+        public static void TestKey_ECDsabrainpool_PublicKey(byte[] curveData, byte[] notUsed)
+        {
+            byte[] helloBytes = Encoding.ASCII.GetBytes("Hello");
+
+            try
+            {
+                using (var cert = new X509Certificate2(curveData))
+                {
+                    using (ECDsa ec = cert.GetECDsaPublicKey())
+                    {
+                        Assert.Equal(160, ec.KeySize);
+
+                        // The public key should be unable to sign.
+                        Assert.ThrowsAny<CryptographicException>(() => ec.SignData(helloBytes, HashAlgorithmName.SHA256));
+                    }
+                }
+            }
+            catch (CryptographicException)
+            {
+                // Windows 7, Windows 8, Ubuntu 14, CentOS can fail. Verify known good platforms don't fail.
+                Assert.False(PlatformDetection.IsWindows && PlatformDetection.WindowsVersion >= 10);
+                Assert.False(PlatformDetection.IsUbuntu1604);
+                Assert.False(PlatformDetection.IsOSX);
+
+                return;
+            }
+        }
+
         [Fact]
         public static void TestECDsaPublicKey()
         {
@@ -202,6 +253,45 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
                 bool isSignatureValid = publicKey.VerifyData(helloBytes, existingSignature, HashAlgorithmName.SHA256);
                 Assert.True(isSignatureValid, "isSignatureValid");
+            }
+        }
+
+        [Theory, MemberData(nameof(BrainpoolCurves))]
+        public static void TestECDsaPublicKey_BrainpoolP160r1_ValidatesSignature(byte[] curveData, byte[] existingSignature)
+        {
+            byte[] helloBytes = Encoding.ASCII.GetBytes("Hello");
+
+            try
+            {
+                using (var cert = new X509Certificate2(curveData))
+                {
+                    using (ECDsa publicKey = cert.GetECDsaPublicKey())
+                    {
+                        Assert.Equal(160, publicKey.KeySize);
+
+                        // It is an Elliptic Curve Cryptography public key.
+                        Assert.Equal("1.2.840.10045.2.1", cert.PublicKey.Oid.Value);
+
+                        bool isSignatureValid = publicKey.VerifyData(helloBytes, existingSignature, HashAlgorithmName.SHA256);
+                        Assert.True(isSignatureValid, "isSignatureValid");
+
+                        unchecked
+                        {
+                            --existingSignature[existingSignature.Length - 1];
+                        }
+                        isSignatureValid = publicKey.VerifyData(helloBytes, existingSignature, HashAlgorithmName.SHA256);
+                        Assert.False(isSignatureValid, "isSignatureValidNeg");
+                    }
+                }
+            }
+            catch (CryptographicException)
+            {
+                // Windows 7, Windows 8, Ubuntu 14, CentOS can fail. Verify known good platforms don't fail.
+                Assert.False(PlatformDetection.IsWindows && PlatformDetection.WindowsVersion >= 10);
+                Assert.False(PlatformDetection.IsUbuntu1604);
+                Assert.False(PlatformDetection.IsOSX);
+
+                return;
             }
         }
 
@@ -274,6 +364,16 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         public static void TestKey_ECDsaCng521()
         {
             TestKey_ECDsaCng(TestData.ECDsa521Certificate, TestData.ECDsaCng521PublicKey);
+        }
+
+        [Fact]
+        [PlatformSpecific(PlatformID.Windows)]
+        public static void TestKey_BrainpoolP160r1()
+        {
+            if (PlatformDetection.WindowsVersion >= 10)
+            {
+                TestKey_ECDsaCng(TestData.ECDsabrainpoolP160r1_CertificatePemBytes, TestData.ECDsabrainpoolP160r1_PublicKey);
+            }
         }
 
         private static void TestKey_ECDsaCng(byte[] certBytes, TestData.ECDsaCngKeyValues expected)

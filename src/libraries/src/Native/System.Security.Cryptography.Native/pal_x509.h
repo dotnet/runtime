@@ -293,3 +293,13 @@ Shims the i2d_X509_PUBKEY method, providing X509_get_X509_PUBKEY(x) as the input
 Returns the number of bytes written to buf.
 */
 extern "C" int32_t CryptoNative_EncodeX509SubjectPublicKeyInfo(X509* x, uint8_t* buf);
+
+/*
+Increases the reference count of the X509*, thereby increasing the number of calls
+required to the free function.
+
+Unlike X509Duplicate, this modifies an existing object, so no new memory is allocated.
+
+Returns the input value.
+*/
+extern "C" X509* CryptoNative_X509UpRef(X509* x509);

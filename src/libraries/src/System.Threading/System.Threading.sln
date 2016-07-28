@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.23107.0
+# Visual Studio 2013
+VisualStudioVersion = 12.0.21005.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Threading", "src\System.Threading.csproj", "{604027F5-1DFC-42F4-B4FE-61F8789BA647}"
 EndProject
@@ -14,6 +14,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Threading", "ref\System.Threading.csproj", "{E74C2D00-5541-4FF8-B44E-5C605AFDB07E}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Threading.Tests", "tests\System.Threading.Tests.csproj", "{33F5A50E-B823-4FDD-8571-365C909ACEAE}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Threading.Performance.Tests", "tests\Performance\System.Threading.Performance.Tests.csproj", "{D27C698A-17E7-4A19-90CD-0A650F4F2B7F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -61,6 +63,18 @@ Global
 		{33F5A50E-B823-4FDD-8571-365C909ACEAE}.netcore50aot_Release|Any CPU.Build.0 = Release|Any CPU
 		{33F5A50E-B823-4FDD-8571-365C909ACEAE}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{33F5A50E-B823-4FDD-8571-365C909ACEAE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D27C698A-17E7-4A19-90CD-0A650F4F2B7F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D27C698A-17E7-4A19-90CD-0A650F4F2B7F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D27C698A-17E7-4A19-90CD-0A650F4F2B7F}.net46_Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D27C698A-17E7-4A19-90CD-0A650F4F2B7F}.net46_Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D27C698A-17E7-4A19-90CD-0A650F4F2B7F}.net46_Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D27C698A-17E7-4A19-90CD-0A650F4F2B7F}.net46_Release|Any CPU.Build.0 = Release|Any CPU
+		{D27C698A-17E7-4A19-90CD-0A650F4F2B7F}.netcore50aot_Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D27C698A-17E7-4A19-90CD-0A650F4F2B7F}.netcore50aot_Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D27C698A-17E7-4A19-90CD-0A650F4F2B7F}.netcore50aot_Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D27C698A-17E7-4A19-90CD-0A650F4F2B7F}.netcore50aot_Release|Any CPU.Build.0 = Release|Any CPU
+		{D27C698A-17E7-4A19-90CD-0A650F4F2B7F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D27C698A-17E7-4A19-90CD-0A650F4F2B7F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

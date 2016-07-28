@@ -7,11 +7,12 @@
     <ProjectGuid>{ED453083-A80F-480C-AD25-5B8618E8A303}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AssemblyName>System.IO.Compression.ZipFile.Tests</AssemblyName>
+    <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
   <ItemGroup>
-    <ProjectReference Include="..\src\System.IO.Compression.ZipFile.csproj">
+    <ProjectReference Include="..\pkg\System.IO.Compression.ZipFile.pkgproj">
       <Project>{A8CF61F0-56EA-4b5f-9375-0723DF4250C0}</Project>
       <Name>System.IO.Compression.ZipFile</Name>
       <Private>True</Private>
@@ -19,9 +20,17 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ZipFileConvenienceMethods.cs" />
-    <Compile Include="ZipFileTests.cs" />
     <Compile Include="ZipFileInvalidFileTests.cs" />
     <Compile Include="ZipFileReadOpenUpdateTests.cs" />
+    <Compile Include="$(CommonTestPath)\System\IO\FileCleanupTestBase.cs">
+      <Link>Common\System\IO\FileCleanupTestBase.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\IO\TempFile.cs">
+      <Link>Common\System\IO\TempFile.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\IO\TempDirectory.cs">
+      <Link>Common\System\IO\TempDirectory.cs</Link>
+    </Compile>
     <Compile Include="$(CommonTestPath)\System\IO\Compression\CRC.cs">
       <Link>Common\System\IO\Compression\CRC.cs</Link>
     </Compile>

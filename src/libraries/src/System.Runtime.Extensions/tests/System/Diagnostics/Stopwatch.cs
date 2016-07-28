@@ -69,9 +69,23 @@ namespace System.Diagnostics.Tests
             TimeSpan elapsedSinceStart = watch.Elapsed;
             Assert.True(elapsedSinceStart > TimeSpan.Zero);
 
-            watch.Restart();
-            Assert.True(watch.IsRunning);
-            Assert.True(watch.Elapsed < elapsedSinceStart);
+            const int MaxAttempts = 5; // The comparison below could fail if we get very unlucky with when the thread gets preempted
+            int attempt = 0;
+            while (true)
+            {
+                watch.Restart();
+                Assert.True(watch.IsRunning);
+                try
+                {
+                    Assert.True(watch.Elapsed < elapsedSinceStart);
+                }
+                catch
+                {
+                    if (++attempt < MaxAttempts) continue;
+                    throw;
+                }
+                break;
+            }
         }
 
         private static void Sleep(int milliseconds = 1)

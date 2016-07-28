@@ -1,6 +1,6 @@
 {
   "dependencies": {
-    "System.Xml.XmlSerializer": "4.0.0"
+    "System.Xml.XmlSerializer": "4.0.12-beta-24322-03"
   },
   "frameworks": {
     "netstandard1.0": {

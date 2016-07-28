@@ -44,21 +44,7 @@ namespace System.Reflection.Internal
             _pointer = null;
         }
 
-        public override byte* Pointer
-        {
-            get { return _pointer; }
-        }
-
-        public override int Size
-        {
-            get { return _size; }
-        }
-
-        public override ImmutableArray<byte> GetContent(int offset)
-        {
-            var result = CreateImmutableArray(this.Pointer + offset, this.Size - offset);
-            GC.KeepAlive(this);
-            return result;
-        }
+        public override byte* Pointer => _pointer;
+        public override int Size => _size;
     }
 }

@@ -17,14 +17,14 @@ RuntimeOS=ubuntu.14.04
 OSName=$(uname -s)
 case $OSName in
     Darwin)
-        # Darwin version can be three sets of digits (e.g. 10.10.3), we want just the first two
-        DarwinVersion=$(sw_vers -productVersion | awk 'match($0, /[0-9]+\.[0-9]+/) { print substr($0, RSTART, RLENGTH) }')
+        # Darwin version can be three sets of digits (e.g. 10.10.3), we want just the first one
+        DarwinVersion=$(sw_vers -productVersion | awk 'match($0, /[0-9]+/) { print substr($0, RSTART, RLENGTH) }')
         RuntimeOS=osx.$DarwinVersion
         ;;
 
     FreeBSD|NetBSD)
         # TODO this doesn't seem correct
-        RuntimeOS=osx.10.10
+        RuntimeOS=osx.10
         ;;
 
     Linux)
@@ -60,8 +60,8 @@ fi
 echo "Running init-tools.sh"
 $working_tree_root/init-tools.sh
 
-echo -e "\n$working_tree_root/Tools/corerun $working_tree_root/Tools/MSBuild.exe $working_tree_root/src/packages.builds $options $allargs" >> $build_packages_log
-$working_tree_root/Tools/corerun $working_tree_root/Tools/MSBuild.exe $working_tree_root/src/packages.builds $options $allargs
+echo -e "\n$working_tree_root/Tools/dotnetcli/dotnet $working_tree_root/Tools/MSBuild.exe $working_tree_root/src/packages.builds $options $allargs" >> $build_packages_log
+$working_tree_root/Tools/dotnetcli/dotnet $working_tree_root/Tools/MSBuild.exe $working_tree_root/src/packages.builds $options $allargs
 
 
 if [ $? -ne 0 ]; then

@@ -25,8 +25,8 @@ fi
 echo "Running init-tools.sh"
 $working_tree_root/init-tools.sh
 
-echo -e "\n$working_tree_root/Tools/corerun $working_tree_root/Tools/MSBuild.exe $working_tree_root/src/tests.builds $options $allargs" >> $build_tests_log
-$working_tree_root/Tools/corerun $working_tree_root/Tools/MSBuild.exe $working_tree_root/src/tests.builds $options $allargs
+echo -e "\n$working_tree_root/Tools/dotnetcli/dotnet $working_tree_root/Tools/MSBuild.exe $working_tree_root/src/tests.builds $options $allargs" >> $build_tests_log
+$working_tree_root/Tools/dotnetcli/dotnet $working_tree_root/Tools/MSBuild.exe $working_tree_root/src/tests.builds $options $allargs
 
 
 if [ $? -ne 0 ]; then

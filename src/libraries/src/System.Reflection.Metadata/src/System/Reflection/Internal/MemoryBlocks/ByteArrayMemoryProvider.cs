@@ -3,21 +3,23 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Immutable;
+using System.Diagnostics;
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
-using System.Runtime.CompilerServices;
 
 namespace System.Reflection.Internal
 {
     internal sealed class ByteArrayMemoryProvider : MemoryBlockProvider
     {
-        internal readonly ImmutableArray<byte> array;
+        private readonly ImmutableArray<byte> _array;
         private StrongBox<GCHandle> _pinned;
 
         public ByteArrayMemoryProvider(ImmutableArray<byte> array)
         {
-            this.array = array;
+            Debug.Assert(!array.IsDefault);
+            _array = array;
         }
 
         ~ByteArrayMemoryProvider()
@@ -27,20 +29,12 @@ namespace System.Reflection.Internal
 
         protected override void Dispose(bool disposing)
         {
-            if (_pinned != null)
-            {
-                _pinned.Value.Free();
-                _pinned = null;
-            }
+            _pinned?.Value.Free();
+            _pinned = null;
         }
 
-        public override int Size
-        {
-            get
-            {
-                return array.Length;
-            }
-        }
+        public override int Size => _array.Length;
+        public ImmutableArray<byte> Array => _array;
 
         protected override AbstractMemoryBlock GetMemoryBlockImpl(int start, int size)
         {
@@ -50,7 +44,7 @@ namespace System.Reflection.Internal
         public override Stream GetStream(out StreamConstraints constraints)
         {
             constraints = new StreamConstraints(null, 0, Size);
-            return new ImmutableMemoryStream(array);
+            return new ImmutableMemoryStream(_array);
         }
 
         internal unsafe byte* Pointer
@@ -60,7 +54,7 @@ namespace System.Reflection.Internal
                 if (_pinned == null)
                 {
                     var newPinned = new StrongBox<GCHandle>(
-                        GCHandle.Alloc(ImmutableByteArrayInterop.DangerousGetUnderlyingArray(array), GCHandleType.Pinned));
+                        GCHandle.Alloc(ImmutableByteArrayInterop.DangerousGetUnderlyingArray(_array), GCHandleType.Pinned));
 
                     if (Interlocked.CompareExchange(ref _pinned, newPinned, null) != null)
                     {

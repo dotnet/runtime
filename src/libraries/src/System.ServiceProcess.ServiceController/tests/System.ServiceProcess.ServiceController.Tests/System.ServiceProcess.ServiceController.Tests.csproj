@@ -8,6 +8,7 @@
     <RootNamespace>System.ServiceProcess.ServiceController.Tests</RootNamespace>
     <AssemblyName>System.ServiceProcess.ServiceController.Tests</AssemblyName>
     <ProjectGuid>{F7D9984B-02EB-4573-84EF-00FFFBFB872C}</ProjectGuid>
+    <NugetTargetMoniker>.NETStandard,Version=v1.4</NugetTargetMoniker>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU'" />
@@ -20,7 +21,7 @@
     <None Include="project.json" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\src\System.ServiceProcess.ServiceController.csproj">
+    <ProjectReference Include="..\..\pkg\System.ServiceProcess.ServiceController.pkgproj">
       <Project>{f4821cb6-91a3-4546-bc4f-e00dbfbdaa05}</Project>
       <Name>System.ServiceProcess.ServiceController</Name>
     </ProjectReference>

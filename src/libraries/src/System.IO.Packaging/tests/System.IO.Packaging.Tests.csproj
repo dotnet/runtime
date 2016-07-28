@@ -10,6 +10,7 @@
     <AssemblyName>System.IO.Packaging.Tests</AssemblyName>
     <FileAlignment>512</FileAlignment>
     <NuGetPackageImportStamp>824750ed</NuGetPackageImportStamp>
+    <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
   </PropertyGroup>
@@ -25,7 +26,7 @@
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\src\System.IO.Packaging.csproj">
+    <ProjectReference Include="..\pkg\System.IO.Packaging.pkgproj">
       <Project>{1f827c19-6023-48d3-909f-9f43ab42faf0}</Project>
       <Name>System.IO.Packaging</Name>
     </ProjectReference>

@@ -5,18 +5,15 @@
     <OutputType>Library</OutputType>
     <AssemblyName>System.Threading.Tasks.Tests</AssemblyName>
     <ProjectGuid>{B6C09633-D161-499A-8FE1-46B2D53A16E7}</ProjectGuid>
+    <NugetTargetMoniker>.NETStandard,Version=v1.5</NugetTargetMoniker>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
   <ItemGroup>
     <!-- Compile tests against the System.Runtime contract, but copy our local-built implementation for testing -->
-    <ProjectReference Include="..\src\System.Threading.Tasks.csproj">
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-      <OutputItemType>Content</OutputItemType>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <Targets>Build;DebugSymbolsProjectOutputGroup</Targets>
-    </ProjectReference>
+    <ProjectReference Include="..\pkg\System.Threading.Tasks.pkgproj"/>
+    <ProjectReference Include="..\..\System.Diagnostics.Debug\pkg\System.Diagnostics.Debug.pkgproj"/>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="XunitAssemblyAttributes.cs" />
@@ -56,6 +53,9 @@
     <Compile Include="System.Runtime.CompilerServices\TaskAwaiterTests.cs" />
     <Compile Include="System.Runtime.CompilerServices\YieldAwaitableTests.cs" />
     <Compile Include="System.Runtime.CompilerServices\AsyncTaskMethodBuilderTests.cs" />
+    <Compile Include="$(CommonTestPath)\System\Threading\ThreadPoolHelpers.cs">
+      <Link>CommonTest\System\Threading\ThreadPoolHelpers.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />

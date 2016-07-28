@@ -750,8 +750,9 @@ namespace System.Data.SqlClient
                 ThrowExceptionAndWarning(_physicalStateObj);
             }
 
-            // _inBuff should only be 4k at this point, so we eliminate ways for rogue server to provide large buffer resulting in DOS.
-            byte[] payload = new byte[_physicalStateObj._inBytesRead - _physicalStateObj._inBytesUsed - _physicalStateObj._inputHeaderLen];
+            if (!_physicalStateObj.TryProcessHeader()) { throw SQL.SynchronousCallMayNotPend(); }
+
+            byte[] payload = new byte[_physicalStateObj._inBytesPacket];
 
             Debug.Assert(_physicalStateObj._syncOverAsync, "Should not attempt pends in a synchronous call");
             result = _physicalStateObj.TryReadByteArray(payload, 0, payload.Length);

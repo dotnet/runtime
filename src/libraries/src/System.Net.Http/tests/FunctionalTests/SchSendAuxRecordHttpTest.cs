@@ -4,7 +4,6 @@
 
 using System.Net.Security.Tests;
 using System.Net.Test.Common;
-using System.Net.Tests;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
@@ -27,7 +26,7 @@ namespace System.Net.Http.Functional.Tests
         [PlatformSpecific(PlatformID.Windows)]
         public async Task HttpClient_ClientUsesAuxRecord_Ok()
         {
-            X509Certificate2 serverCert = CertificateConfiguration.GetServerCertificate();
+            X509Certificate2 serverCert = Configuration.Certificates.GetServerCertificate();
 
             var server = new SchSendAuxRecordTestServer(serverCert);
             int port = server.StartServer();

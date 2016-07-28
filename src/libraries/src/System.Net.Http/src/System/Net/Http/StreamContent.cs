@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -12,19 +11,30 @@ namespace System.Net.Http
 {
     public class StreamContent : HttpContent
     {
-        private const int defaultBufferSize = 4096;
+        private const int DefaultBufferSize = 4096;
 
         private Stream _content;
         private int _bufferSize;
+        private CancellationToken _cancellationToken;
         private bool _contentConsumed;
         private long _start;
 
         public StreamContent(Stream content)
-            : this(content, defaultBufferSize)
+            : this(content, DefaultBufferSize)
         {
         }
 
         public StreamContent(Stream content, int bufferSize)
+            : this(content, bufferSize, CancellationToken.None)
+        {
+        }
+
+        internal StreamContent(Stream content, CancellationToken cancellationToken)
+            : this(content, DefaultBufferSize, cancellationToken)
+        {
+        }
+
+        private StreamContent(Stream content, int bufferSize, CancellationToken cancellationToken)
         {
             if (content == null)
             {
@@ -37,6 +47,7 @@ namespace System.Net.Http
 
             _content = content;
             _bufferSize = bufferSize;
+            _cancellationToken = cancellationToken;
             if (content.CanSeek)
             {
                 _start = content.Position;
@@ -50,7 +61,7 @@ namespace System.Net.Http
 
             PrepareContent();
             // If the stream can't be re-read, make sure that it gets disposed once it is consumed.
-            return StreamToStreamCopy.CopyAsync(_content, stream, _bufferSize, !_content.CanSeek);
+            return StreamToStreamCopy.CopyAsync(_content, stream, _bufferSize, !_content.CanSeek, _cancellationToken);
         }
 
         protected internal override bool TryComputeLength(out long length)

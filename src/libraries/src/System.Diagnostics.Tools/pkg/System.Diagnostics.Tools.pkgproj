@@ -1,12 +1,12 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
-    <Version>4.0.1.0</Version>
+    <Version>4.0.2.0</Version>
   </PropertyGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
     <ProjectReference Include="..\ref\System.Diagnostics.Tools.csproj">
-      <SupportedFramework>net45;netcore45;netcoreapp1.0;wp8;wpa81</SupportedFramework>
+      <SupportedFramework>net45;netcore45;netcoreapp1.0;wp8;wpa81;$(AllXamarinFrameworks)</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="any\System.Diagnostics.Tools.pkgproj" />
     <ProjectReference Include="aot\System.Diagnostics.Tools.pkgproj" />

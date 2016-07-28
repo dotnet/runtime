@@ -6,8 +6,10 @@
       <OSGroup>Unix</OSGroup>
     </Project>
     <Project Include="System.IO.Compression.Tests.csproj">
+      <TestTFMs>netcore50;netcoreapp1.0;net46</TestTFMs>
       <OSGroup>Windows_NT</OSGroup>
     </Project>
+    <Project Include="Performance\System.IO.Compression.Performance.Tests.csproj"/>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
 </Project>

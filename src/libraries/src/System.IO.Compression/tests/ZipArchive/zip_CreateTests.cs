@@ -9,7 +9,7 @@ using Xunit.NetCore.Extensions;
 
 namespace System.IO.Compression.Tests
 {
-    public class zip_CreateTests
+    public class zip_CreateTests : ZipFileTestBase
     {
         [Fact]
         public static void CreateModeInvalidOperations()
@@ -66,9 +66,9 @@ namespace System.IO.Compression.Tests
             using (var s = new MemoryStream())
             {
                 var testStream = new WrappedStream(s, false, true, seekable, null);
-                await ZipTest.CreateFromDir(ZipTest.zfolder(folder), testStream, ZipArchiveMode.Create);
+                await CreateFromDir(zfolder(folder), testStream, ZipArchiveMode.Create);
 
-                ZipTest.IsZipSameAsDir(s, ZipTest.zfolder(folder), ZipArchiveMode.Read, false, false);
+                IsZipSameAsDir(s, zfolder(folder), ZipArchiveMode.Read, false, false);
             }
         }
 
@@ -82,9 +82,9 @@ namespace System.IO.Compression.Tests
             using (var s = new MemoryStream())
             {
                 var testStream = new WrappedStream(s, false, true, seekable, null);
-                await ZipTest.CreateFromDir(ZipTest.zfolder(folder), testStream, ZipArchiveMode.Create);
+                await CreateFromDir(zfolder(folder), testStream, ZipArchiveMode.Create);
 
-                ZipTest.IsZipSameAsDir(s, ZipTest.zfolder(folder), ZipArchiveMode.Read, false, false);
+                IsZipSameAsDir(s, zfolder(folder), ZipArchiveMode.Read, false, false);
             }
         }
     }

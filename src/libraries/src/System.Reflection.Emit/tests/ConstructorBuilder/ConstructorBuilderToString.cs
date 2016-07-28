@@ -2,9 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Reflection;
-using System.Reflection.Emit;
 using Xunit;
 
 namespace System.Reflection.Emit.Tests
@@ -12,39 +9,23 @@ namespace System.Reflection.Emit.Tests
     public class ConstructorBuilderToString
     {
         [Fact]
-        public void TestToString()
+        public void ToString_NullRequiredOptionalCustomModifiers()
         {
-            AssemblyName an = new AssemblyName();
-            an.Name = "DynamicRandomAssembly";
-            AssemblyBuilder ab = AssemblyBuilder.DefineDynamicAssembly(an, AssemblyBuilderAccess.Run);
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
+            Type[] parameterTypes = new Type[] { typeof(int), typeof(double) };
 
-            ModuleBuilder mb = TestLibrary.Utilities.GetModuleBuilder(ab, "Module1");
-            TypeBuilder tb = mb.DefineType("DynamicRandomClass", TypeAttributes.Public);
-
-            Type[] parameterTypes = { typeof(int), typeof(double) };
-
-            ConstructorBuilder cb =
-                tb.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard, parameterTypes, null, null);
-
-            Assert.StartsWith("Name: .ctor", cb.ToString());
+            ConstructorBuilder constructor = type.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard, parameterTypes, null, null);
+            Assert.StartsWith("Name: .ctor", constructor.ToString());
         }
 
         [Fact]
-        public void TestToStringWithDifferentOverload()
+        public void ToString_NoRequiredOptionalCustomModifiers()
         {
-            AssemblyName an = new AssemblyName();
-            an.Name = "DynamicRandomAssembly";
-            AssemblyBuilder ab = AssemblyBuilder.DefineDynamicAssembly(an, AssemblyBuilderAccess.Run);
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
+            Type[] parameterTypes = new Type[] { typeof(int), typeof(double) };
 
-            ModuleBuilder mb = TestLibrary.Utilities.GetModuleBuilder(ab, "Module1");
-            TypeBuilder tb = mb.DefineType("DynamicRandomClass", TypeAttributes.Public);
-
-            Type[] parameterTypes = { typeof(int), typeof(double) };
-
-            ConstructorBuilder cb =
-                tb.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard, parameterTypes);
-
-            Assert.StartsWith("Name: .ctor", cb.ToString());
+            ConstructorBuilder constructor = type.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard, parameterTypes);
+            Assert.StartsWith("Name: .ctor", constructor.ToString());
         }
     }
 }

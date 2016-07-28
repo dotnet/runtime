@@ -22,7 +22,23 @@ namespace System.Reflection.Metadata.Tests
             Assert.Equal(0x12345678u, id2.Stamp);
             Assert.False(id2.IsDefault);
 
+            var id3 = new BlobContentId(new byte[] { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10, 0x11, 0x12, 0x13, 0x14 });
+            Assert.Equal(new Guid("04030201-0605-0807-090a-0b0c0d0e0f10"), id3.Guid);
+            Assert.Equal(0x14131211u, id3.Stamp);
+            Assert.False(id3.IsDefault);
+
             Assert.True(default(BlobContentId).IsDefault);
+        }
+
+        [Fact]
+        public void Ctor_Errors()
+        {
+            Assert.Throws<ArgumentNullException>("id", () => new BlobContentId(null));
+            Assert.Throws<ArgumentNullException>("id", () => new BlobContentId(default(ImmutableArray<byte>)));
+            Assert.Throws<ArgumentException>("id", () => new BlobContentId(ImmutableArray.Create<byte>()));
+            Assert.Throws<ArgumentException>("id", () => new BlobContentId(ImmutableArray.Create<byte>(0)));
+            Assert.Throws<ArgumentException>("id", () => new BlobContentId(ImmutableArray.Create<byte>(0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10, 0x11, 0x12, 0x13)));
+            Assert.Throws<ArgumentException>("id", () => new BlobContentId(ImmutableArray.Create<byte>(0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15)));
         }
 
         [Fact]

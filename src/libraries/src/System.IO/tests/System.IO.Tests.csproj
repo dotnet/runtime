@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
@@ -8,6 +8,7 @@
     <RootNamespace>System.IO</RootNamespace>
     <AssemblyName>System.IO.Tests</AssemblyName>
     <ProjectGuid>{492EC54D-D2C4-4B3F-AC1F-646B3F7EBB02}</ProjectGuid>
+    <NugetTargetMoniker>.NETStandard,Version=v1.5</NugetTargetMoniker>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
@@ -29,27 +30,34 @@
     <Compile Include="StreamWriter\StreamWriter.CtorTests.cs" />
     <Compile Include="StreamWriter\StreamWriter.FlushTests.cs" />
     <Compile Include="StreamWriter\StreamWriter.WriteTests.cs" />
-    <Compile Include="Stream\Stream.NullTests.cs" />
     <Compile Include="Stream\Stream.AsyncTests.cs" />
+    <Compile Include="Stream\Stream.CopyToTests.cs" />
     <Compile Include="Stream\Stream.Methods.cs" />
+    <Compile Include="Stream\Stream.NullTests.cs" />
     <Compile Include="Stream\Stream.TestLeaveOpen.cs" />
     <Compile Include="Stream\Stream.TimeoutTests.cs" />
     <Compile Include="StringReader\StringReader.CtorTests.cs" />
     <Compile Include="StringWriter\StringWriterTests.cs" />
+    <Compile Include="$(CommonTestPath)\System\IO\CallTrackingStream.cs">
+      <Link>Common\System\IO\CallTrackingStream.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\IO\DelegateStream.cs">
+      <Link>Common\System\IO\DelegateStream.cs</Link>
+    </Compile>
     <Compile Include="$(CommonTestPath)\System\IO\WrappedMemoryStream.cs">
       <Link>Common\System\IO\WrappedMemoryStream.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>
     <!-- Compile tests against the contract, but copy our local-built implementation for testing -->
-    <ProjectReference Include="..\src\System.IO.csproj">
+    <ProjectReference Include="..\pkg\System.IO.pkgproj">
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
       <OutputItemType>Content</OutputItemType>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Targets>Build;DebugSymbolsProjectOutputGroup</Targets>
       <OSGroup>$(InputOSGroup)</OSGroup>
     </ProjectReference>
-    <ProjectReference Include="..\..\System.Diagnostics.Debug\src\System.Diagnostics.Debug.csproj">
+    <ProjectReference Include="..\..\System.Diagnostics.Debug\pkg\System.Diagnostics.Debug.pkgproj">
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
       <OutputItemType>Content</OutputItemType>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

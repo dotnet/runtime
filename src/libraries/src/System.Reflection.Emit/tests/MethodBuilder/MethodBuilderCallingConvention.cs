@@ -2,144 +2,43 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-
-using System.Reflection;
-using System.Reflection.Emit;
-using System.Threading;
+using System.Collections.Generic;
 using Xunit;
 
 namespace System.Reflection.Emit.Tests
 {
     public class MethodBuilderCallingConvention
     {
-        private const string TestDynamicAssemblyName = "TestDynamicAssembly";
-        private const string TestDynamicModuleName = "TestDynamicModule";
-        private const string TestDynamicTypeName = "TestDynamicType";
-        private const AssemblyBuilderAccess TestAssemblyBuilderAccess = AssemblyBuilderAccess.Run;
-        private const TypeAttributes TestTypeAttributes = TypeAttributes.Abstract;
-        private const int MinStringLength = 1;
-        private const int MaxStringLength = 128;
-        private readonly RandomDataGenerator _generator = new RandomDataGenerator();
-
-        private TypeBuilder GetTestTypeBuilder()
+        public static IEnumerable<object[]> CallingConventions_TestData()
         {
-            AssemblyName assemblyName = new AssemblyName(TestDynamicAssemblyName);
-            AssemblyBuilder assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(
-                assemblyName, TestAssemblyBuilderAccess);
-
-            ModuleBuilder moduleBuilder = TestLibrary.Utilities.GetModuleBuilder(assemblyBuilder, TestDynamicModuleName);
-            return moduleBuilder.DefineType(TestDynamicTypeName, TestTypeAttributes);
-
+            yield return new object[] { CallingConventions.Any };
+            yield return new object[] { CallingConventions.ExplicitThis };
+            yield return new object[] { CallingConventions.HasThis };
+            yield return new object[] { CallingConventions.Standard };
+            yield return new object[] { CallingConventions.VarArgs };
+            yield return new object[] { CallingConventions.Any | CallingConventions.Standard };
+            yield return new object[] { CallingConventions.Any | CallingConventions.VarArgs };
+            yield return new object[] { CallingConventions.HasThis | CallingConventions.Standard };
+            yield return new object[] { CallingConventions.HasThis | CallingConventions.ExplicitThis };
+            yield return new object[] { (CallingConventions)(-1) };
         }
 
-        [Fact]
-        public void TestforStaticMethods()
+        [Theory]
+        [MemberData(nameof(CallingConventions_TestData))]
+        public void CallingConvention_StaticMethods(CallingConventions callingConvention)
         {
-            PosTestStaticHelp(CallingConventions.Any);
-            PosTestStaticHelp(CallingConventions.ExplicitThis);
-            PosTestStaticHelp(CallingConventions.HasThis);
-            PosTestStaticHelp(CallingConventions.Standard);
-            PosTestStaticHelp(CallingConventions.VarArgs);
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Abstract);
+            MethodBuilder method = type.DefineMethod(callingConvention.ToString(), MethodAttributes.Static, callingConvention);
+            Assert.Equal(callingConvention, method.CallingConvention);
         }
-
-        [Fact]
-        public void TestCombinationForStaticMethods()
+        
+        [Theory]
+        [MemberData(nameof(CallingConventions_TestData))]
+        public void CallingConvention_InstanceMethods(CallingConventions callingConvention)
         {
-            PosTestStaticHelp(CallingConventions.Any | CallingConventions.Standard);
-            PosTestStaticHelp(CallingConventions.Any | CallingConventions.VarArgs);
-            PosTestStaticHelp(CallingConventions.HasThis | CallingConventions.Standard);
-            PosTestStaticHelp(CallingConventions.HasThis | CallingConventions.ExplicitThis);
-        }
-
-        [Fact]
-        public void TestInstanceMethods()
-        {
-            PosTestInstanceHelp(CallingConventions.Any);
-            PosTestInstanceHelp(CallingConventions.ExplicitThis);
-            PosTestInstanceHelp(CallingConventions.HasThis);
-            PosTestInstanceHelp(CallingConventions.Standard);
-            PosTestInstanceHelp(CallingConventions.VarArgs);
-        }
-
-        [Fact]
-        public void TestCombinationForInstanceMethods()
-        {
-            PosTestInstanceHelp(CallingConventions.Any | CallingConventions.Standard);
-            PosTestInstanceHelp(CallingConventions.Any | CallingConventions.VarArgs);
-            PosTestInstanceHelp(CallingConventions.HasThis | CallingConventions.Standard);
-            PosTestInstanceHelp(CallingConventions.HasThis | CallingConventions.ExplicitThis);
-        }
-
-        [Fact]
-        public void TestCorrectValueForNegativeOneForInstanceMethods()
-        {
-            string methodName = null;
-            CallingConventions actualCallingConventions = (CallingConventions)0;
-            CallingConventions desiredCallingConventions = (CallingConventions)(-1);
-            methodName = _generator.GetString(false, false, true, MinStringLength, MaxStringLength);
-
-            TypeBuilder typeBuilder = GetTestTypeBuilder();
-            MethodBuilder builder = typeBuilder.DefineMethod(methodName,
-                MethodAttributes.Public,
-                desiredCallingConventions);
-            actualCallingConventions = builder.CallingConvention;
-            // Instance method should have HasThis calling convention
-            desiredCallingConventions |= desiredCallingConventions | CallingConventions.HasThis;
-
-            Assert.Equal(desiredCallingConventions, actualCallingConventions);
-        }
-
-        [Fact]
-        public void TestCorrectValueForNegativeOneForStaticMethods()
-        {
-            string methodName = null;
-            CallingConventions actualCallingConventions = (CallingConventions)0;
-            CallingConventions desiredCallingConventions = (CallingConventions)(-1);
-
-            methodName = _generator.GetString(false, false, true, MinStringLength, MaxStringLength);
-
-            TypeBuilder typeBuilder = GetTestTypeBuilder();
-            MethodBuilder builder = typeBuilder.DefineMethod(methodName,
-                MethodAttributes.Public,
-                desiredCallingConventions);
-            actualCallingConventions = builder.CallingConvention;
-
-            Assert.Equal(desiredCallingConventions, actualCallingConventions);
-        }
-
-        private void PosTestStaticHelp(CallingConventions desiredCallingConventions)
-        {
-            string methodName = null;
-            CallingConventions actualCallingConventions = (CallingConventions)(-1);
-
-            methodName = _generator.GetString(false, false, true, MinStringLength, MaxStringLength);
-
-            TypeBuilder typeBuilder = GetTestTypeBuilder();
-            MethodBuilder builder = typeBuilder.DefineMethod(methodName,
-                MethodAttributes.Static,
-                desiredCallingConventions);
-            actualCallingConventions = builder.CallingConvention;
-
-            Assert.Equal(desiredCallingConventions, actualCallingConventions);
-        }
-
-        private void PosTestInstanceHelp(CallingConventions desiredCallingConventions)
-        {
-            string methodName = null;
-            CallingConventions actualCallingConventions = (CallingConventions)(-1);
-
-            methodName = _generator.GetString(false, false, true, MinStringLength, MaxStringLength);
-
-            TypeBuilder typeBuilder = GetTestTypeBuilder();
-            MethodBuilder builder = typeBuilder.DefineMethod(methodName,
-                MethodAttributes.Public,
-                desiredCallingConventions);
-            actualCallingConventions = builder.CallingConvention;
-            // Instance method should have HasThis calling convention
-            desiredCallingConventions |= desiredCallingConventions | CallingConventions.HasThis;
-
-            Assert.Equal(desiredCallingConventions, actualCallingConventions);
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Abstract);
+            MethodBuilder method = type.DefineMethod(callingConvention.ToString(), MethodAttributes.Public, callingConvention);
+            Assert.Equal(callingConvention | CallingConventions.HasThis, method.CallingConvention);
         }
     }
 }

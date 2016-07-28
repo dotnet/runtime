@@ -8,6 +8,7 @@
     <OutputType>Library</OutputType>
     <AssemblyName>System.Xml.RW.XmlReaderLib</AssemblyName>
     <RootNamespace>XmlReaderTest.Common</RootNamespace>
+    <NuGetTargetMoniker>.NETStandard,Version=v1.3</NuGetTargetMoniker>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -93,25 +94,10 @@
     <None Include="project.json" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="$(CommonTestPath)\System\Xml\ModuleCore\ModuleCore.csproj">
-      <Project>{3cf0cc76-4ce0-460a-ba37-657cfed39ab0}</Project>
-      <Name>ModuleCore</Name>
-    </ProjectReference>
-    <ProjectReference Include="$(CommonTestPath)\System\Xml\XmlCoreTest\XmlCoreTest.csproj">
-      <Project>{89701565-f68b-46d9-bd78-95b0f052c50b}</Project>
-      <Name>XmlCoreTest</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\src\System.Xml.csproj">
-      <Project>{c427ce0d-0740-41f3-9c3a-552bea3ddb0d}</Project>
-      <Name>System.Xml</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\..\System.Xml.ReaderWriter\ref\System.Xml.ReaderWriter.csproj" />
-    <ProjectReference Include="..\..\..\System.Xml.ReaderWriter\src\System.Xml.ReaderWriter.csproj">
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-      <OutputItemType>Content</OutputItemType>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <Targets>Build;DebugSymbolsProjectOutputGroup</Targets>
-    </ProjectReference>
+    <ProjectReference Include="$(CommonTestPath)\System\Xml\ModuleCore\ModuleCore.csproj" />
+    <ProjectReference Include="$(CommonTestPath)\System\Xml\XmlCoreTest\XmlCoreTest.csproj" />
+    <ProjectReference Include="..\..\src\System.Xml.csproj" />
+    <ProjectReference Include="..\..\..\System.Xml.ReaderWriter\src\System.Xml.ReaderWriter.csproj" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

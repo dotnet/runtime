@@ -101,6 +101,7 @@ namespace System.Net.Http
         private const int MaxRequestBufferSize = 16384; // Default used by libcurl
         private const string NoTransferEncoding = HttpKnownHeaderNames.TransferEncoding + ":";
         private const string NoContentType = HttpKnownHeaderNames.ContentType + ":";
+        private const string NoExpect = HttpKnownHeaderNames.Expect + ":";
         private const int CurlAge = 5;
         private const int MinCurlAge = 3;
 
@@ -473,7 +474,7 @@ namespace System.Net.Http
             }
             catch (Exception exc)
             {
-                easy.FailRequestAndCleanup(exc);
+                easy.CleanupAndFailRequest(exc);
             }
 
             s_diagnosticListener.LogHttpResponse(easy.Task, loggingRequestId);
@@ -636,6 +637,9 @@ namespace System.Net.Http
 
                     case CURLcode.CURLE_OUT_OF_MEMORY:
                         throw new OutOfMemoryException(msg);
+
+                    case CURLcode.CURLE_SEND_FAIL_REWIND:
+                        throw new InvalidOperationException(msg);
 
                     default:
                         throw new CurlException((int)error, msg);

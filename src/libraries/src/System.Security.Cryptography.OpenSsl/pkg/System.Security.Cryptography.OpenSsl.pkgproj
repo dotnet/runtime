@@ -4,7 +4,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\ref\System.Security.Cryptography.OpenSsl.csproj">
-      <SupportedFramework>net463;netcoreapp1.0</SupportedFramework>
+      <SupportedFramework>net463;netcoreapp1.0;$(AllXamarinFrameworks)</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\src\System.Security.Cryptography.OpenSsl.builds" />
 

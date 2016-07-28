@@ -9,7 +9,7 @@
     <AssemblyName>System.Console.Tests</AssemblyName>
     <RootNamespace>System.Console.Tests</RootNamespace>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <IncludePerformanceTests>true</IncludePerformanceTests>
+    <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
@@ -48,14 +48,9 @@
       <Link>Common\System\ShouldNotBeInvokedException.cs</Link>
     </Compile>
     <Compile Include="WindowAndCursorProps.cs" />
-    <!-- Performance Tests -->
-    <Compile Include="Performance\Perf.Console.cs" />
-    <Compile Include="$(CommonTestPath)\System\PerfUtils.cs">
-      <Link>Common\System\PerfUtils.cs</Link>
-    </Compile>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\src\System.Console.csproj">
+    <ProjectReference Include="..\pkg\System.Console.pkgproj">
       <Project>{F9DF2357-81B4-4317-908E-512DA9395583}</Project>
       <Name>System.Console</Name>
       <OSGroup>$(InputOSGroup)</OSGroup>

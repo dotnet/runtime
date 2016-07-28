@@ -366,26 +366,28 @@ namespace BasicEventSourceTests
                 log = new EventSource(esName);
                 log2 = new EventSource(esName2);
 
-                el = new EventListenerListener();
-
-                List<EventSource> eventSourceNotificationsReceived = new List<EventSource>();
-                el.EventSourceCreated += (s, a) =>
+                
+                using (var listener = new EventListenerListener())
                 {
-                    if (a.EventSource.Name.Equals(esName))
+                    List<EventSource> eventSourceNotificationsReceived = new List<EventSource>();
+                    listener.EventSourceCreated += (s, a) =>
                     {
-                        esNameHit = true;
-                    }
+                        if (a.EventSource.Name.Equals(esName))
+                        {
+                            esNameHit = true;
+                        }
 
-                    if (a.EventSource.Name.Equals(esName2))
-                    {
-                        esName2Hit = true;
-                    }
-                };
+                        if (a.EventSource.Name.Equals(esName2))
+                        {
+                            esName2Hit = true;
+                        }
+                    };
 
-                Thread.Sleep(1000);
+                    Thread.Sleep(1000);
 
-                Assert.Equal(true, esNameHit);
-                Assert.Equal(true, esName2Hit);
+                    Assert.Equal(true, esNameHit);
+                    Assert.Equal(true, esName2Hit);
+                }
             }
             finally
             {
@@ -419,34 +421,35 @@ namespace BasicEventSourceTests
 
             try
             {
-                el = new EventListenerListener();
-
-                string esName = "EventSourceName_HopefullyUnique";
-                string esName2 = "EventSourceName_HopefullyUnique2";
-                bool esNameHit = false;
-                bool esName2Hit = false;
-
-                List<EventSource> eventSourceNotificationsReceived = new List<EventSource>();
-                el.EventSourceCreated += (s, a) =>
+                using (var listener = new EventListenerListener())
                 {
-                    if(a.EventSource.Name.Equals(esName))
+                    string esName = "EventSourceName_HopefullyUnique";
+                    string esName2 = "EventSourceName_HopefullyUnique2";
+                    bool esNameHit = false;
+                    bool esName2Hit = false;
+
+                    List<EventSource> eventSourceNotificationsReceived = new List<EventSource>();
+                    listener.EventSourceCreated += (s, a) =>
                     {
-                        esNameHit = true;
-                    }
+                        if (a.EventSource.Name.Equals(esName))
+                        {
+                            esNameHit = true;
+                        }
 
-                    if (a.EventSource.Name.Equals(esName2))
-                    {
-                        esName2Hit = true;
-                    }
-                };
+                        if (a.EventSource.Name.Equals(esName2))
+                        {
+                            esName2Hit = true;
+                        }
+                    };
 
-                log = new EventSource(esName);
-                log2 = new EventSource(esName2);
+                    log = new EventSource(esName);
+                    log2 = new EventSource(esName2);
 
-                Thread.Sleep(1000);
+                    Thread.Sleep(1000);
 
-                Assert.Equal(true, esNameHit);
-                Assert.Equal(true, esName2Hit);
+                    Assert.Equal(true, esNameHit);
+                    Assert.Equal(true, esName2Hit);
+                }
             }
             finally
             {

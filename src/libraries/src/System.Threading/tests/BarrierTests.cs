@@ -362,11 +362,10 @@ namespace System.Threading.Tests
         }
 
         [Fact]
-        [OuterLoop]
         public static void RunBarrierTest10b()
         {
             // Regression test for Barrier race condition
-            for (int j = 0; j < 10000; j++)
+            for (int j = 0; j < 10; j++)
             {
                 Barrier b = new Barrier(2);
                 var t1 = Task.Run(() =>
@@ -384,10 +383,9 @@ namespace System.Threading.Tests
         }
 
         [Fact]
-        [OuterLoop]
         public static void RunBarrierTest10c()
         {
-            for (int j = 0; j < 10000; j++)
+            for (int j = 0; j < 10; j++)
             {
                 Task[] tasks = new Task[2];
                 Barrier b = new Barrier(3);

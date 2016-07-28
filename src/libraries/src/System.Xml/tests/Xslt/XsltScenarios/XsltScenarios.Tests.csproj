@@ -8,6 +8,7 @@
     <OutputType>Library</OutputType>
     <AssemblyName>XsltScenarios.Tests</AssemblyName>
     <RootNamespace>System.Xml.Tests</RootNamespace>
+    <NuGetTargetMoniker>.NETStandard,Version=v1.3</NuGetTargetMoniker>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -15,7 +16,7 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="GotDotNet.Exslt.dll" />
+    <!--<Reference Include="GotDotNet.Exslt.dll" />-->
   </ItemGroup>
   <ItemGroup>
     <!--<Compile Include="AspNet.cs" />-->

@@ -22,7 +22,7 @@ namespace System.Reflection.PortableExecutable
         private const string RelocationSectionName = ".reloc";
 
         private readonly PEDirectoriesBuilder _peDirectoriesBuilder;
-        private readonly TypeSystemMetadataSerializer _metadataSerializer;
+        private readonly MetadataRootBuilder _metadataRootBuilder;
         private readonly BlobBuilder _ilStream;
         private readonly BlobBuilder _mappedFieldDataOpt;
         private readonly BlobBuilder _managedResourcesOpt;
@@ -37,7 +37,7 @@ namespace System.Reflection.PortableExecutable
 
         public ManagedPEBuilder(
             PEHeaderBuilder header,
-            TypeSystemMetadataSerializer metadataSerializer,
+            MetadataRootBuilder metadataRootBuilder,
             BlobBuilder ilStream,
             BlobBuilder mappedFieldData = null,
             BlobBuilder managedResources = null,
@@ -54,9 +54,9 @@ namespace System.Reflection.PortableExecutable
                 Throw.ArgumentNull(nameof(header));
             }
 
-            if (metadataSerializer == null)
+            if (metadataRootBuilder == null)
             {
-                Throw.ArgumentNull(nameof(metadataSerializer));
+                Throw.ArgumentNull(nameof(metadataRootBuilder));
             }
 
             if (ilStream == null)
@@ -69,7 +69,7 @@ namespace System.Reflection.PortableExecutable
                 Throw.ArgumentOutOfRange(nameof(strongNameSignatureSize));
             }
 
-            _metadataSerializer = metadataSerializer;
+            _metadataRootBuilder = metadataRootBuilder;
             _ilStream = ilStream;
             _mappedFieldDataOpt = mappedFieldData;
             _managedResourcesOpt = managedResources;
@@ -135,7 +135,7 @@ namespace System.Reflection.PortableExecutable
             var sectionBuilder = new BlobBuilder();
             var metadataBuilder = new BlobBuilder();
 
-            var metadataSizes = _metadataSerializer.MetadataSizes;
+            var metadataSizes = _metadataRootBuilder.Sizes;
 
             var textSection = new ManagedTextSection(
                 imageCharacteristics: Header.ImageCharacteristics,
@@ -149,7 +149,7 @@ namespace System.Reflection.PortableExecutable
 
             int methodBodyStreamRva = location.RelativeVirtualAddress + textSection.OffsetToILStream;
             int mappedFieldDataStreamRva = location.RelativeVirtualAddress + textSection.CalculateOffsetToMappedFieldDataStream();
-            _metadataSerializer.SerializeMetadata(metadataBuilder, methodBodyStreamRva, mappedFieldDataStreamRva);
+            _metadataRootBuilder.Serialize(metadataBuilder, methodBodyStreamRva, mappedFieldDataStreamRva);
 
             DirectoryEntry debugDirectoryEntry;
             BlobBuilder debugTableBuilderOpt;

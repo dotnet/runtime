@@ -498,14 +498,18 @@ namespace Internal.Cryptography.Pal
                 X509Certificate2Collection userIntermediateCerts = userIntermediateStore.Certificates;
 
                 // fill the system trusted collection
-                foreach (X509Certificate2 systemRootCert in systemRootCerts)
-                {
-                    systemTrusted.Add(systemRootCert);
-                }
                 foreach (X509Certificate2 userRootCert in userRootCerts)
                 {
                     systemTrusted.Add(userRootCert);
                 }
+
+                foreach (X509Certificate2 systemRootCert in systemRootCerts)
+                {
+                    systemTrusted.Add(systemRootCert);
+                }
+
+                // ordering in storesToCheck must match how we read into the systemTrusted collection, that is 
+                // first in first checked due to how we eventually use the collection in candidatesByReference 
 
                 X509Certificate2Collection[] storesToCheck =
                 {
@@ -536,6 +540,30 @@ namespace Internal.Cryptography.Pal
                             {
                                 toProcess.Enqueue(result);
                             }
+                        }
+                    }
+                }
+
+                // Avoid sending unused certs into the finalizer queue by doing only a ref check
+
+                var candidatesByReference = new HashSet<X509Certificate2>(
+                    candidates,
+                    ReferenceEqualityComparer<X509Certificate2>.Instance);
+
+                // Dispose any certificates we cloned in, but didn't end up needing.
+                // Since extraStore was provided by users, don't dispose anything it contains.
+                Debug.Assert(storesToCheck.Length > 0, "storesToCheck.Length > 0");
+                Debug.Assert(storesToCheck[0] == extraStore, "storesToCheck[0] == extraStore");
+
+                for (int i = 1; i < storesToCheck.Length; i++)
+                {
+                    X509Certificate2Collection collection = storesToCheck[i];
+
+                    foreach (X509Certificate2 cert in collection)
+                    {
+                        if (!candidatesByReference.Contains(cert))
+                        {
+                            cert.Dispose();
                         }
                     }
                 }

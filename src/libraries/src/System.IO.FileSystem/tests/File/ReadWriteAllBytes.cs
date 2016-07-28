@@ -61,24 +61,11 @@ namespace System.IO.Tests
         public void ReadFileOver2GB()
         {
             string path = GetTestFilePath();
-            int split = 10;
-            string toWrite = new string('a', Int32.MaxValue / split);
-            using (var writer = new StreamWriter(File.Create(path)))
+            using (FileStream fs = File.Create(path))
             {
-                for (int i = 0; i < (split + 1); i++)
-                {
-                    try
-                    {
-                        writer.Write(toWrite);
-                        writer.Flush();
-                    }
-                    catch (OutOfMemoryException)
-                    {
-                        split /= 2;
-                        toWrite = new string('a', Int32.MaxValue / split);
-                    }
-                }
+                fs.SetLength(int.MaxValue + 1L);
             }
+
             // File is too large for ReadAllBytes at once
             Assert.Throws<IOException>(() => File.ReadAllBytes(path));
         }

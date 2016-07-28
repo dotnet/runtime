@@ -232,7 +232,7 @@ namespace System.Runtime.Serialization
 
         internal bool OnHandleIsReference(XmlWriterDelegator xmlWriter, DataContract contract, object obj)
         {
-            if (!contract.IsReference || _isGetOnlyCollection)
+            if (preserveObjectReferences || !contract.IsReference || _isGetOnlyCollection)
             {
                 return false;
             }

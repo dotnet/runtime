@@ -72,7 +72,7 @@ namespace System.Net.Http.Functional.Tests
 
                 await Task.WhenAll(
                     from i in Enumerable.Range(0, 5)
-                    select client.GetAsync(HttpTestServers.RemoteEchoServer));
+                    select client.GetAsync(Configuration.Http.RemoteEchoServer));
             }
         }
     }

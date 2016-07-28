@@ -2,137 +2,168 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-
-using TestLibrary;
-using System.Reflection;
-using System.Reflection.Emit;
+using System.Linq;
 using Xunit;
 
 namespace System.Reflection.Emit.Tests
 {
     public class MethodBuilderDefineParameter
     {
+        private const MethodAttributes TestMethodAttributes = MethodAttributes.Public | MethodAttributes.Abstract | MethodAttributes.Virtual;
+
         [Fact]
-        public void TestDefineParameter()
+        public void DefineParameter_TwoParameters()
         {
-            string name = "Assembly1";
-            AssemblyName asmname = new AssemblyName();
-            asmname.Name = name;
-            AssemblyBuilder asmbuild = AssemblyBuilder.DefineDynamicAssembly(asmname, AssemblyBuilderAccess.Run);
-            ModuleBuilder modbuild = TestLibrary.Utilities.GetModuleBuilder(asmbuild, "Module1");
-            TypeBuilder tpbuild = modbuild.DefineType("C1", TypeAttributes.Public);
-
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
             Type[] paramTypes = new Type[] { typeof(string), typeof(object) };
-            string[] paramNames = new string[] { "Param1", "Param2" };
-            ParameterAttributes[] paramAttrs = new ParameterAttributes[] { ParameterAttributes.In, ParameterAttributes.Out };
             Type returnType = typeof(int);
-            ParameterAttributes returnAttrs = ParameterAttributes.None;
 
-            MethodBuilder methbuild = tpbuild.DefineMethod("meth1", MethodAttributes.Public | MethodAttributes.Static,
-                                                            returnType, paramTypes);
+            MethodBuilder method = type.DefineMethod("TestMethod", MethodAttributes.Public | MethodAttributes.Static, returnType, paramTypes);
 
-            methbuild.DefineParameter(0, returnAttrs, "returnName");
-            methbuild.DefineParameter(1, paramAttrs[0], paramNames[0]);
-            methbuild.DefineParameter(2, paramAttrs[1], paramNames[1]);
+            method.DefineParameter(0, ParameterAttributes.None, "returnName");
+            method.DefineParameter(1, ParameterAttributes.In, "Param1");
+            method.DefineParameter(2, ParameterAttributes.Out, "Param2");
 
-            int expectedRet = 3;
-            ILGenerator ilgen = methbuild.GetILGenerator();
-            ilgen.Emit(OpCodes.Ldc_I4, expectedRet);
-            ilgen.Emit(OpCodes.Ret);
+            int expectedReturn = 3;
+            ILGenerator ilGenerator = method.GetILGenerator();
+            ilGenerator.Emit(OpCodes.Ldc_I4, expectedReturn);
+            ilGenerator.Emit(OpCodes.Ret);
 
-            Type tp = tpbuild.CreateTypeInfo().AsType();
+            Type resultType = type.CreateTypeInfo().AsType();
 
-            ParameterInfo[] paramArray = methbuild.GetParameters();
+            ParameterInfo[] parameters = method.GetParameters();
+            Assert.Equal("System.String Param1", parameters[0].ToString());
+            Assert.Equal("System.Object Param2", parameters[1].ToString());
 
-            Assert.Equal("System.String Param1", paramArray[0].ToString());
-            Assert.Equal("System.Object Param2", paramArray[1].ToString());
-            // invoke method to verify it still works correctly
-            MethodInfo mi = tp.GetMethod("meth1");
-            int ret = (int)mi.Invoke(null, new object[] { "hello", new object() });
-            Assert.Equal(expectedRet, ret);
+            // Invoke the method to verify it works correctly
+            MethodInfo resultMethod = resultType.GetMethod("TestMethod");
+            Assert.Equal(expectedReturn, resultMethod.Invoke(null, new object[] { "hello", new object() }));
         }
 
         [Fact]
-        public void TestThrowsExceptionForTypeCreated()
+        public void DefineParameter_HasDefaultAttribute()
         {
-            string name = "Assembly1";
-            AssemblyName asmname = new AssemblyName();
-            asmname.Name = name;
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Abstract);
+            Type[] paramTypes = new Type[] { typeof(int) };
+            MethodBuilder method = type.DefineMethod("TestMethod", TestMethodAttributes, typeof(void), paramTypes);
 
-            AssemblyBuilder asmbuild = AssemblyBuilder.DefineDynamicAssembly(asmname, AssemblyBuilderAccess.Run);
-            ModuleBuilder modbuild = TestLibrary.Utilities.GetModuleBuilder(asmbuild, "Module1");
-            TypeBuilder tpbuild = modbuild.DefineType("C1", TypeAttributes.Public);
-
-            Type[] paramTypes = new Type[] { typeof(string), typeof(object) };
-            string[] paramNames = new string[] { "Param1", "Param2" };
-            ParameterAttributes[] paramAttrs = new ParameterAttributes[] { ParameterAttributes.In, ParameterAttributes.Out };
-            Type returnType = typeof(int);
-
-            MethodBuilder methbuild = tpbuild.DefineMethod("meth1", MethodAttributes.Public, returnType, paramTypes);
-            ILGenerator ilgen = methbuild.GetILGenerator();
-            ilgen.Emit(OpCodes.Ret);
-
-            Type tp = tpbuild.CreateTypeInfo().AsType();
-
-            Assert.Throws<InvalidOperationException>(() => { methbuild.DefineParameter(1, ParameterAttributes.Retval, "param1"); });
+            ParameterBuilder parameter = method.DefineParameter(1, ParameterAttributes.HasDefault, "TestParam");
+            VerifyParameterBuilder(parameter, "TestParam", ParameterAttributes.HasDefault, 1);
         }
 
         [Fact]
-        public void TestThrowsExceptionForNegativePosition()
+        public void DefineParameter_AllAttributes()
         {
-            string name = "Assembly1";
-            AssemblyName asmname = new AssemblyName();
-            asmname.Name = name;
-            AssemblyBuilder asmbuild = AssemblyBuilder.DefineDynamicAssembly(asmname, AssemblyBuilderAccess.Run);
-            ModuleBuilder modbuild = TestLibrary.Utilities.GetModuleBuilder(asmbuild, "Module1");
+            ParameterAttributes[] attributes = new ParameterAttributes[]
+            {
+                ParameterAttributes.HasDefault,
+                ParameterAttributes.HasFieldMarshal,
+                ParameterAttributes.In,
+                ParameterAttributes.None,
+                ParameterAttributes.Optional,
+                ParameterAttributes.Out,
+                ParameterAttributes.Retval
+            };
 
-            TypeBuilder tpbuild = modbuild.DefineType("C1", TypeAttributes.Public);
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Abstract);
+            Type[] paramTypes = Enumerable.Repeat(typeof(int), attributes.Length).ToArray();
+            MethodBuilder method = type.DefineMethod("TestMethod", TestMethodAttributes, typeof(void), paramTypes);
 
-            Type[] paramTypes = new Type[] { typeof(string), typeof(object) };
-            string[] paramNames = new string[] { "Param1", "Param2" };
-            ParameterAttributes[] paramAttrs = new ParameterAttributes[] { ParameterAttributes.In, ParameterAttributes.Out };
-            Type returnType = typeof(int);
-
-            MethodBuilder methbuild = tpbuild.DefineMethod("meth1", MethodAttributes.Public, returnType, paramTypes);
-
-            Assert.Throws<ArgumentOutOfRangeException>(() => { methbuild.DefineParameter(-1, ParameterAttributes.None, "Param1"); });
+            for (int i = 1; i < attributes.Length; ++i)
+            {
+                ParameterBuilder parameter = method.DefineParameter(i, attributes[i], "TestParam");
+                VerifyParameterBuilder(parameter, "TestParam", attributes[i], i);
+            }
         }
 
         [Fact]
-        public void TestThrowsExceptionForNoParameters()
+        public void DefineParameter_AllAttributesCombined()
         {
-            string name = "Assembly1";
-            AssemblyName asmname = new AssemblyName();
-            asmname.Name = name;
-            AssemblyBuilder asmbuild = AssemblyBuilder.DefineDynamicAssembly(asmname, AssemblyBuilderAccess.Run);
-            ModuleBuilder modbuild = TestLibrary.Utilities.GetModuleBuilder(asmbuild, "Module1");
-            TypeBuilder tpbuild = modbuild.DefineType("C1", TypeAttributes.Public);
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Abstract);
+            Type[] paramTypes = new Type[] { typeof(int) };
+            MethodBuilder method = type.DefineMethod("TestMethod", TestMethodAttributes, typeof(void), paramTypes);
 
-            MethodBuilder methbuild = tpbuild.DefineMethod("meth1", MethodAttributes.Public);
-
-            Assert.Throws<ArgumentOutOfRangeException>(() => { methbuild.DefineParameter(1, ParameterAttributes.None, "Param1"); });
+            ParameterAttributes attribute =
+            ParameterAttributes.HasDefault |
+            ParameterAttributes.HasFieldMarshal |
+            ParameterAttributes.In |
+            ParameterAttributes.None |
+            ParameterAttributes.Optional |
+            ParameterAttributes.Out |
+            ParameterAttributes.Retval;
+            ParameterBuilder parameter = method.DefineParameter(1, attribute, "TestParam");
+            VerifyParameterBuilder(parameter, "TestParam", attribute, 1);
         }
 
         [Fact]
-        public void TestThrowsExceptionForPositionGreaterThanNumberOfParameters()
+        public void DefineParameter_NegativeAttribute()
         {
-            string name = "Assembly1";
-            AssemblyName asmname = new AssemblyName();
-            asmname.Name = name;
-            AssemblyBuilder asmbuild = AssemblyBuilder.DefineDynamicAssembly(asmname, AssemblyBuilderAccess.Run);
-            ModuleBuilder modbuild = TestLibrary.Utilities.GetModuleBuilder(asmbuild, "Module1");
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Abstract);
+            Type[] paramTypes = new Type[] { typeof(int) };
+            MethodBuilder method = type.DefineMethod("TestMethod", TestMethodAttributes, typeof(void), paramTypes);
+            ParameterBuilder parameter = method.DefineParameter(1, (ParameterAttributes)(-1), "TestParam");
+        }
 
-            TypeBuilder tpbuild = modbuild.DefineType("C1", TypeAttributes.Public);
-
-            Type[] paramTypes = new Type[] { typeof(string), typeof(object) };
-            string[] paramNames = new string[] { "Param1", "Param2" };
-            ParameterAttributes[] paramAttrs = new ParameterAttributes[] { ParameterAttributes.In, ParameterAttributes.Out };
+        [Fact]
+        public void DefineParameter_TypeAlreadyCreated_ThrowsInvalidOperationException()
+        {
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
             Type returnType = typeof(int);
+            Type[] paramTypes = new Type[] { typeof(string), typeof(object) };
 
-            MethodBuilder methbuild = tpbuild.DefineMethod("meth1", MethodAttributes.Public, returnType, paramTypes);
+            MethodBuilder method = type.DefineMethod("TestMethod", MethodAttributes.Public, returnType, paramTypes);
+            ILGenerator ilGenerator = method.GetILGenerator();
+            ilGenerator.Emit(OpCodes.Ret);
 
-            Assert.Throws<ArgumentOutOfRangeException>(() => { methbuild.DefineParameter(3, ParameterAttributes.None, "Param1"); });
+            Type resultType = type.CreateTypeInfo().AsType();
+
+            Assert.Throws<InvalidOperationException>(() => method.DefineParameter(1, ParameterAttributes.Retval, "param1"));
+        }
+
+        [Fact]
+        public void DefineParameter_SingleParameter_TypeAlreadyCreated_ThrowsInvalidOperationException()
+        {
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Abstract);
+            MethodBuilder builder = type.DefineMethod("TestMethod", TestMethodAttributes, typeof(void), new Type[] { typeof(int) });
+
+            type.CreateTypeInfo().AsType();
+
+            Assert.Throws<InvalidOperationException>(() => builder.DefineParameter(1, ParameterAttributes.HasDefault, "TestParam"));
+        }
+
+        [Theory]
+        [InlineData(TypeAttributes.Public, MethodAttributes.Public, ParameterAttributes.None, new Type[] { typeof(string), typeof(object) }, typeof(int))]
+        [InlineData(TypeAttributes.Abstract, MethodAttributes.Public | MethodAttributes.Abstract | MethodAttributes.Virtual, ParameterAttributes.HasDefault, new Type[] { typeof(int) }, typeof(void))]
+        public void DefineParameter_InvalidPosition_ThrowsArgumentOutOfRangeException(TypeAttributes typeAttributes, MethodAttributes methodAttributes, ParameterAttributes parameterAttributes, Type[] paramTypes, Type returnType)
+        {
+            TypeBuilder type = Helpers.DynamicType(typeAttributes);
+            MethodBuilder method = type.DefineMethod("TestMethod", methodAttributes, returnType, paramTypes);
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => method.DefineParameter(-1, parameterAttributes, "Param1"));
+            Assert.Throws<ArgumentOutOfRangeException>(() => method.DefineParameter(paramTypes.Length + 1, parameterAttributes, "Param1"));
+        }
+
+        [Theory]
+        [InlineData(TypeAttributes.Public, MethodAttributes.Public, ParameterAttributes.None)]
+        [InlineData(TypeAttributes.Abstract, MethodAttributes.Public | MethodAttributes.Abstract | MethodAttributes.Virtual, ParameterAttributes.HasDefault)]
+        public void DefineParameter_NoParameters_NonZeroPosition_ThrowsArgumentOutOfRangeException(TypeAttributes typeAttributes, MethodAttributes methodAttributes, ParameterAttributes parameterAttributes)
+        {
+            TypeBuilder type = Helpers.DynamicType(typeAttributes);
+            MethodBuilder method = type.DefineMethod("TestMethod", methodAttributes);
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => method.DefineParameter(1, parameterAttributes, "Param1"));
+            Assert.Throws<ArgumentOutOfRangeException>(() => method.DefineParameter(-1, parameterAttributes, "Param1"));
+        }
+
+        private static void VerifyParameterBuilder(ParameterBuilder parameter, string expectedName, ParameterAttributes expectedAttributes, int expectedPosition)
+        {
+            // This constant maps to ParameterAttributes.ReservedMask that is not available in the contract.
+            const int ReservedMaskParameterAttribute = 0xF000;
+            Assert.Equal(expectedName, parameter.Name);
+
+            int removedReservedAttributes = (int)expectedAttributes & ~ReservedMaskParameterAttribute;
+            Assert.Equal(removedReservedAttributes, (parameter.Attributes & removedReservedAttributes));
+            Assert.Equal(expectedPosition, parameter.Position);
         }
     }
 }

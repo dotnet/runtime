@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using Internal.NativeCrypto;
+using static Interop.Crypt32;
 
 namespace System.Security.Cryptography
 {
@@ -18,7 +18,7 @@ namespace System.Security.Cryptography
                 return Interop.BCrypt.ECC_CURVE_ALG_ID_ENUM.BCRYPT_NO_CURVE_GENERATION_ALG_ID;
             }
 
-            CRYPT_OID_INFO oid = OidInfo.FindOidInfo(
+            CRYPT_OID_INFO oid = Interop.Crypt32.FindOidInfo(
                 CryptOidInfoKeyType.CRYPT_OID_INFO_NAME_KEY,
                 name.Value.Name,
                 OidGroup.HashAlgorithm,

@@ -53,7 +53,7 @@ function UpdateValidDependencyVersionsFile
 # Updates all the project.json files with out of date version numbers
 function RunUpdatePackageDependencyVersions
 {
-    cmd /c $PSScriptRoot\build.cmd /t:UpdateInvalidPackageVersions | Out-Host
+    cmd /c $PSScriptRoot\build.cmd managed /t:UpdateInvalidPackageVersions | Out-Host
 
     return $LASTEXITCODE -eq 0
 }

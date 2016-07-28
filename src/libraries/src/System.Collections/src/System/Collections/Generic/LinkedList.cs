@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 
@@ -10,13 +9,13 @@ namespace System.Collections.Generic
 {
     [DebuggerTypeProxy(typeof(ICollectionDebugView<>))]
     [DebuggerDisplay("Count = {Count}")]
-    public class LinkedList<T> : ICollection<T>, System.Collections.ICollection, IReadOnlyCollection<T>
+    public class LinkedList<T> : ICollection<T>, ICollection, IReadOnlyCollection<T>
     {
         // This LinkedList is a doubly-Linked circular list.
         internal LinkedListNode<T> head;
         internal int count;
         internal int version;
-        private Object _syncRoot;
+        private object _syncRoot;
 
         public LinkedList()
         {
@@ -376,7 +375,6 @@ namespace System.Collections.Generic
             }
         }
 
-
         internal void ValidateNode(LinkedListNode<T> node)
         {
             if (node == null)
@@ -390,24 +388,24 @@ namespace System.Collections.Generic
             }
         }
 
-        bool System.Collections.ICollection.IsSynchronized
+        bool ICollection.IsSynchronized
         {
             get { return false; }
         }
 
-        object System.Collections.ICollection.SyncRoot
+        object ICollection.SyncRoot
         {
             get
             {
                 if (_syncRoot == null)
                 {
-                    System.Threading.Interlocked.CompareExchange<Object>(ref _syncRoot, new Object(), null);
+                    Threading.Interlocked.CompareExchange<object>(ref _syncRoot, new object(), null);
                 }
                 return _syncRoot;
             }
         }
 
-        void System.Collections.ICollection.CopyTo(Array array, int index)
+        void ICollection.CopyTo(Array array, int index)
         {
             if (array == null)
             {
@@ -467,13 +465,13 @@ namespace System.Collections.Generic
             }
         }
 
-        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
+        IEnumerator IEnumerable.GetEnumerator()
         {
             return GetEnumerator();
         }
 
         [SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes", Justification = "not an expected scenario")]
-        public struct Enumerator : IEnumerator<T>, System.Collections.IEnumerator
+        public struct Enumerator : IEnumerator<T>, IEnumerator
         {
             private LinkedList<T> _list;
             private LinkedListNode<T> _node;
@@ -495,7 +493,7 @@ namespace System.Collections.Generic
                 get { return _current; }
             }
 
-            object System.Collections.IEnumerator.Current
+            object IEnumerator.Current
             {
                 get
                 {
@@ -531,7 +529,7 @@ namespace System.Collections.Generic
                 return true;
             }
 
-            void System.Collections.IEnumerator.Reset()
+            void IEnumerator.Reset()
             {
                 if (_version != _list.version)
                 {
@@ -559,13 +557,13 @@ namespace System.Collections.Generic
 
         public LinkedListNode(T value)
         {
-            this.item = value;
+            item = value;
         }
 
         internal LinkedListNode(LinkedList<T> list, T value)
         {
             this.list = list;
-            this.item = value;
+            item = value;
         }
 
         public LinkedList<T> List

@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Immutable;
-using System.Runtime.InteropServices;
 
 namespace System.Reflection.Internal
 {
@@ -15,27 +14,27 @@ namespace System.Reflection.Internal
         /// <summary>
         /// Pointer to the underlying data (not valid after disposal).
         /// </summary>
-        public unsafe abstract byte* Pointer
-        {
-            get;
-        }
-
-        public abstract int Size
-        {
-            get;
-        }
+        public unsafe abstract byte* Pointer { get; }
 
         /// <summary>
-        /// Returns the content of the memory block. 
+        /// Size of the block.
+        /// </summary>
+        public abstract int Size { get; }
+
+        /// <summary>
+        /// Returns the content of the entire memory block. 
         /// </summary>
         /// <remarks>
-        /// Only creates a copy of the data if they are not represented by a managed byte array, or the offset is non-zero.
+        /// Does not check bounds.
+        /// 
+        /// Only creates a copy of the data if they are not represented by a managed byte array, 
+        /// or if the specified range doens't span the entire block.
         /// </remarks>
-        public abstract ImmutableArray<byte> GetContent(int offset);
-
-        public ImmutableArray<byte> GetContent()
+        public unsafe virtual ImmutableArray<byte> GetContentUnchecked(int start, int length)
         {
-            return GetContent(0);
+            var result = BlobUtilities.ReadImmutableBytes(Pointer + start, length);
+            GC.KeepAlive(this);
+            return result;
         }
 
         /// <summary>
@@ -55,12 +54,5 @@ namespace System.Reflection.Internal
         }
 
         protected abstract void Dispose(bool disposing);
-
-        protected static unsafe ImmutableArray<byte> CreateImmutableArray(byte* ptr, int length)
-        {
-            byte[] bytes = new byte[length];
-            Marshal.Copy((IntPtr)ptr, bytes, 0, length);
-            return ImmutableByteArrayInterop.DangerousCreateFromUnderlyingArray(ref bytes);
-        }
     }
 }

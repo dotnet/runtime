@@ -459,7 +459,7 @@ namespace System.IO.Tests
         [Fact, OuterLoop]
         public async Task WriteAsyncMiniStress()
         {
-            TimeSpan testRunTime = TimeSpan.FromSeconds(30);
+            TimeSpan testRunTime = TimeSpan.FromSeconds(10);
             const int MaximumWriteSize = 16 * 1024;
             const int NormalWriteSize = 4 * 1024;
 

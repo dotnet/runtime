@@ -1,0 +1,2 @@
+private static System.Collections.Generic.Comparer<T> System.Collections.Generic.Comparer<T>._default
+private static volatile System.Collections.Generic.EqualityComparer<T> System.Collections.Generic.EqualityComparer<T>._default

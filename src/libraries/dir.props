@@ -12,6 +12,10 @@
   </PropertyGroup>
 
   <PropertyGroup>
+    <XunitPerfAnalysisPackageVersion>1.0.0-alpha-build0037</XunitPerfAnalysisPackageVersion>
+  </PropertyGroup>
+
+  <PropertyGroup>
     <InputOSGroup Condition="'$(InputOSGroup)'==''">$(OSEnvironment)</InputOSGroup>
   </PropertyGroup>
 
@@ -49,6 +53,7 @@
     <ToolsDir Condition="'$(UseToolRuntimeForToolsDir)'=='true'">$(ToolRuntimePath)</ToolsDir>
     <ToolsDir Condition="'$(ToolsDir)'==''">$(ProjectDir)Tools/</ToolsDir>
     <DotnetCliPath Condition="'$(DotnetCliPath)'==''">$(ToolRuntimePath)dotnetcli/</DotnetCliPath>
+    <OverrideToolHost>$(DotnetCliPath)dotnet</OverrideToolHost>
     <BuildToolsTaskDir Condition="'$(BuildToolsTargets45)' == 'true'">$(ToolsDir)net45/</BuildToolsTaskDir>
     <BuildToolsTaskDir Condition="'$(BuildToolsTaskDir)'==''">$(ToolsDir)</BuildToolsTaskDir>
     <UseRoslynCompilers Condition="'$(UseRoslynCompilers)'=='' and '$(OSEnvironment)'!='Windows_NT'">false</UseRoslynCompilers>
@@ -83,9 +88,9 @@
     <ValidatePackageVersions>true</ValidatePackageVersions>
     <ProhibitFloatingDependencies>true</ProhibitFloatingDependencies>
 
-    <CoreFxExpectedPrerelease>rc4-24209-03</CoreFxExpectedPrerelease>
-    <CoreClrExpectedPrerelease>rc4-24207-04</CoreClrExpectedPrerelease>
-    <ExternalExpectedPrerelease>rc4-24209-00</ExternalExpectedPrerelease>
+    <CoreFxExpectedPrerelease>beta-24322-03</CoreFxExpectedPrerelease>
+    <CoreClrExpectedPrerelease>beta-24322-03</CoreClrExpectedPrerelease>
+    <ExternalExpectedPrerelease>beta-24322-00</ExternalExpectedPrerelease>
 
     <CoreFxVersionsIdentityRegex>^(?i)((System\..*)|(NETStandard\.Library)|(Microsoft\.CSharp)|(Microsoft\.NETCore\.Targets)|(Microsoft\.NETCore\.Platforms)|(Microsoft\.Win32\..*)|(Microsoft\.VisualBasic))(?&lt;!TestData)$</CoreFxVersionsIdentityRegex>
   </PropertyGroup>
@@ -114,11 +119,23 @@
       <ExpectedVersion>2.1.0</ExpectedVersion>
     </ValidationPattern>
     <ValidationPattern Include="xUnitExtensionsVersions">
-      <IdentityRegex>^(?i)xunit\.netcore\.extensions$</IdentityRegex>
-      <ExpectedVersion>1.0.0-prerelease-00312-04</ExpectedVersion>
+      <IdentityRegex>^(?i)Microsoft\.xunit\.netcore\.extensions$</IdentityRegex>
+      <ExpectedVersion>1.0.0-prerelease-00508-01</ExpectedVersion>
+    </ValidationPattern>
+    <ValidationPattern Include="buildToolsTestSuiteVersions">
+      <IdentityRegex>^(?i)Microsoft\.DotNet\.BuildTools\.TestSuite$</IdentityRegex>
+      <ExpectedVersion>1.0.0-prerelease-00520-02</ExpectedVersion>
+    </ValidationPattern>
+    <ValidationPattern Include="uwpRunnerVersion">
+      <IdentityRegex>^(?i)microsoft\.xunit\.runner\.uwp$</IdentityRegex>
+      <ExpectedVersion>$(AppXRunnerVersion)</ExpectedVersion>
     </ValidationPattern>
   </ItemGroup>
 
+  <!-- Runner versions -->
+  <PropertyGroup>
+    <AppXRunnerVersion>1.0.3-prerelease-00614-01</AppXRunnerVersion>
+  </PropertyGroup>
   <!-- Import packaging props -->
   <Import Project="$(MSBuildThisFileDirectory)Packaging.props"/>
 
@@ -127,6 +144,8 @@
     <!-- PackagesDrops is passed in via the commandline "/p:PackagesDrops=[drop location]" -->
     <DnuSourceList Condition="'$(BuildTestsAgainstPackages)' == 'true'" Include="$(PackagesDrops)" />
     <!-- Need to escape double forward slash (%2F) or MSBuild will normalize to one slash on Unix. -->
+    <!-- Including buildtools to pull in TestSuite packages and repackaged xunit dependencies-->
+    <DnuSourceList Include="https:%2F%2Fdotnet.myget.org/F/dotnet-buildtools/api/v3/index.json" />
     <DnuSourceList Include="https:%2F%2Fdotnet.myget.org/F/dotnet-core/api/v3/index.json" />
     <DnuSourceList Include="https:%2F%2Fwww.nuget.org/api/v2/" />
   </ItemGroup>
@@ -157,6 +176,7 @@
     <DnuRestoreCommand>"$(DnuToolPath)"</DnuRestoreCommand>
     <DnuRestoreCommand>$(DnuRestoreCommand) restore</DnuRestoreCommand>
     <DnuRestoreCommand Condition="'$(ParallelRestore)'=='true'">$(DnuRestoreCommand) --parallel</DnuRestoreCommand>
+    <DnuRestoreCommand Condition="'$(UseNuGetHttpCache)'!='true'">$(DnuRestoreCommand) --no-cache</DnuRestoreCommand>
     <DnuRestoreCommand>$(DnuRestoreCommand) --packages "$(PackagesDir.TrimEnd('/\'.ToCharArray()))" $(DnuRestoreSource)</DnuRestoreCommand>
     <DnuRestoreCommand Condition="'$(LockDependencies)' == 'true'">$(DnuRestoreCommand) --lock</DnuRestoreCommand>
     <DnuRestoreCommand Condition="'$(NuGetConfigPath)'!=''">$(DnuRestoreCommand) --configfile $(NuGetConfigPath)</DnuRestoreCommand>
@@ -263,6 +283,8 @@
     <TargetGroup Condition="'$(TargetGroup)'=='' and $(Configuration.Contains('net46'))">net46</TargetGroup>
     <TargetGroup Condition="'$(TargetGroup)'=='' and $(Configuration.Contains('net45'))">net45</TargetGroup>
     <TargetGroup Condition="'$(TargetGroup)'=='' and $(Configuration.Contains('net451'))">net451</TargetGroup>
+    <TargetGroup Condition="'$(TargetGroup)'=='' and $(Configuration.Contains('win8'))">win8</TargetGroup>
+    <TargetGroup Condition="'$(TargetGroup)'=='' and $(Configuration.Contains('wpa81'))">wpa81</TargetGroup>
   </PropertyGroup>
 
   <!-- Set up Default symbol and optimization for Configuration -->
@@ -475,12 +497,31 @@
         <NuGetTargetMoniker>.NETFramework,Version=v4.5</NuGetTargetMoniker>
       </PropertyGroup>
     </When>
+    <When Condition="'$(TargetGroup)'=='win8'">
+      <PropertyGroup>
+        <PackageTargetFramework>win8</PackageTargetFramework>
+        <NuGetTargetMoniker>Windows,Version=v8.0</NuGetTargetMoniker>
+      </PropertyGroup>
+    </When>
+    <When Condition="'$(TargetGroup)'=='wpa81'">
+      <PropertyGroup>
+        <PackageTargetFramework>wpa81</PackageTargetFramework>
+        <NuGetTargetMoniker>WindowsPhoneApp,Version=v8.1</NuGetTargetMoniker>
+      </PropertyGroup>
+    </When>
     <Otherwise>
       <PropertyGroup>
         <ConfigurationErrorMsg>$(ConfigurationErrorMsg);Unknown TargetGroup [$(TargetGroup)] specificed in your project.</ConfigurationErrorMsg>
       </PropertyGroup>
     </Otherwise>
   </Choose>
+
+  <!-- Default Test platform to deploy the netstandard compiled tests to -->
+  <PropertyGroup>
+    <TestTFM Condition="'$(TestTFM)'==''">netcoreapp1.0</TestTFM>
+    <!-- we default FilterToTestTFM to netcoreapp1.0 if it is not explicity defined -->
+    <FilterToTestTFM Condition="'$(FilterToTestTFM)'==''">netcoreapp1.0</FilterToTestTFM>        
+  </PropertyGroup>
 
   <PropertyGroup>
     <IsRedistAssembly Condition="'$(IsRedistAssembly)'=='' AND ($(MSBuildProjectFullPath.Contains('\redist\')) OR $(MSBuildProjectFullPath.Contains('/redist/')))">true</IsRedistAssembly>

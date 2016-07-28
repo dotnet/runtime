@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
-using System.Linq;
 using Xunit;
 
 namespace System.Collections.Tests
@@ -295,7 +294,7 @@ namespace System.Collections.Tests
             {
                 IEnumerable enumerable = NonGenericIEnumerableFactory(count);
                 IEnumerator enumerator = enumerable.GetEnumerator();
-                while (enumerator.MoveNext());
+                while (enumerator.MoveNext()) ;
                 if (ModifyEnumerable(enumerable))
                     Assert.Throws<InvalidOperationException>(() => enumerator.Reset());
             });

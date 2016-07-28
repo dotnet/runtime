@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
   <PropertyGroup>
     <Configuration Condition="'$(Configuration)'==''">Windows_Debug</Configuration>
@@ -15,7 +15,7 @@
     <PackageTargetFramework Condition="'$(PackageTargetFramework)' == ''">netstandard1.3</PackageTargetFramework>
     <PackageTargetRuntime>win8</PackageTargetRuntime>
     <PackageTargetRuntime Condition="'$(TargetGroup)' == 'netcore50aot'">win8-aot</PackageTargetRuntime>
-    <AssemblyVersion>4.0.11.0</AssemblyVersion>
+    <AssemblyVersion>4.0.12.0</AssemblyVersion>
     <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.3</NuGetTargetMoniker>
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetGroup)'==''">
@@ -26,15 +26,15 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_netcore50aot_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_netcore50aot_Release|AnyCPU'" />
   <ItemGroup Condition="'$(TargetGroup)'=='netcore50aot'">
-    <TargetingPackReference Include="System.Private.Interop.Extensions"/>
-    <TargetingPackReference Include="System.Private.Threading.AsyncCausalitySupport"/>
+    <TargetingPackReference Include="System.Private.Interop.Extensions" />
+    <TargetingPackReference Include="System.Private.Threading.AsyncCausalitySupport" />
     <TargetingPackReference Include="Windows" />
     <ProjectReference Include="$(SourceDir)\mscorlib.WinRT-Facade\mscorlib.WinRT-Facade.csproj" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)'==''">
-    <TargetingPackReference Include="mscorlib"/>
+    <TargetingPackReference Include="mscorlib" />
     <!-- Needed for the compiler to resolve IObservableMap.MapChanged. -->
-    <ProjectReference Include="..\..\System.Diagnostics.Debug\src\System.Diagnostics.Debug.csproj"/>
+    <ProjectReference Include="..\..\System.Diagnostics.Debug\src\System.Diagnostics.Debug.csproj" />
     <ProjectReference Include="..\..\System.Diagnostics.Tools\src\System.Diagnostics.Tools.csproj" />
     <ProjectReference Include="..\..\System.Private.Uri\src\System.Private.Uri.csproj" />
     <ProjectReference Include="..\..\System.Runtime.InteropServices.WindowsRuntime\src\System.Runtime.InteropServices.WindowsRuntime.csproj">
