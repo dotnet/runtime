@@ -28,7 +28,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\System.Xml.Linq.csproj" />
-    <ProjectReference Include="..\..\..\System.Private.Xml\src\System.Xml.csproj" />
+    <ProjectReference Include="..\..\..\System.Private.Xml\src\System.Private.Xml.csproj" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

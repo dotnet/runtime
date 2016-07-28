@@ -37,7 +37,7 @@
     </Content>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\..\src\System.Xml.csproj">
+    <ProjectReference Include="..\..\..\src\System.Private.Xml.csproj">
       <Project>{c559743a-762e-4d9d-b986-e77bdb97652e}</Project>
       <Name>System.Xml</Name>
     </ProjectReference>

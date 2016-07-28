@@ -19,7 +19,7 @@
     <CommonPathXPath>$(CommonPath)\System\Xml\XPath</CommonPathXPath>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\..\src\System.Xml.csproj" />
+    <ProjectReference Include="..\..\..\src\System.Private.Xml.csproj" />
     <ProjectReference Include="..\..\..\..\System.Xml.XPath\src\System.Xml.XPath.csproj" />
     <ProjectReference Include="..\..\..\..\System.Xml.ReaderWriter\src\System.Xml.ReaderWriter.csproj" />
     <ProjectReference Include="..\..\..\..\System.Xml.XmlDocument\src\System.Xml.XmlDocument.csproj" />

@@ -9,7 +9,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Xml.ReaderWriter.Forwards.cs" />
-    <ProjectReference Include="..\..\System.Private.Xml\ref\System.Xml.csproj" />
+    <ProjectReference Include="..\..\System.Private.Xml\ref\System.Private.Xml.csproj" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />
