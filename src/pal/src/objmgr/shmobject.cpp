@@ -508,7 +508,7 @@ CSharedMemoryObject::PromoteSharedData(
             m_pot->GetSharedDataSize()
             );
         
-        InternalFree(m_pvSharedData);
+        free(m_pvSharedData);
         m_pvSharedData = pvSharedData;
     }
 
@@ -869,7 +869,7 @@ CSharedMemoryObject::~CSharedMemoryObject()
 
     if (NULL != m_pvSharedData && ProcessLocalObject == m_ObjectDomain)
     {
-        InternalFree(m_pvSharedData);
+        free(m_pvSharedData);
     }
     else if (SHMNULL != m_shmod && m_fDeleteSharedData)
     {
