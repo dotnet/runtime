@@ -281,7 +281,7 @@ namespace System.Xml.Serialization
             _fieldType = fieldType;
             _fieldTypeDesc = fieldTypeDesc;
             _memberInfo = memberInfo;
-            _checkShouldPersistMethodInfo = memberInfo.DeclaringType.GetMethod("ShouldSerialize" + memberInfo.Name, new Type[0]);
+            _checkShouldPersistMethodInfo = memberInfo.DeclaringType.GetMethod("ShouldSerialize" + memberInfo.Name, Array.Empty<Type>());
             _checkShouldPersist = _checkShouldPersistMethodInfo != null;
 
             FieldInfo specifiedField = memberInfo.DeclaringType.GetField(memberInfo.Name + "Specified");
@@ -409,7 +409,7 @@ namespace System.Xml.Serialization
             {
                 if (_constants == null)
                 {
-                    ArrayList list = new ArrayList();
+                    var list = new List<ConstantModel>();
                     FieldInfo[] fields = Type.GetFields();
                     for (int i = 0; i < fields.Length; i++)
                     {
@@ -417,7 +417,7 @@ namespace System.Xml.Serialization
                         ConstantModel constant = GetConstantModel(field);
                         if (constant != null) list.Add(constant);
                     }
-                    _constants = (ConstantModel[])list.ToArray(typeof(ConstantModel));
+                    _constants = list.ToArray();
                 }
                 return _constants;
             }

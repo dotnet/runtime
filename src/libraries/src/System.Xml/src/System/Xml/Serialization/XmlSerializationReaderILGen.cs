@@ -40,26 +40,6 @@ namespace System.Xml.Serialization
             }
         }
 
-        private class CreateCollectionInfo
-        {
-            private string _name;
-            private TypeDesc _td;
-
-            internal CreateCollectionInfo(string name, TypeDesc td)
-            {
-                _name = name;
-                _td = td;
-            }
-            internal string Name
-            {
-                get { return _name; }
-            }
-
-            internal TypeDesc TypeDesc
-            {
-                get { return _td; }
-            }
-        }
         private class Member
         {
             private string _source;

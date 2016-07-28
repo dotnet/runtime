@@ -29,12 +29,10 @@ namespace System.Xml.Serialization
     {
         internal const string GeneratedAssemblyNamespace = "Microsoft.Xml.Serialization.GeneratedAssembly";
         private Assembly _assembly;
-        private bool _pregeneratedAssmbly = false;
         private XmlSerializerImplementation _contract = null;
         private IDictionary _writerMethods;
         private IDictionary _readerMethods;
         private TempMethodDictionary _methods;
-        private static object[] s_emptyObjectArray = new object[0];
         private Hashtable _assemblies = new Hashtable();
 
         internal class TempMethod
@@ -94,7 +92,7 @@ namespace System.Xml.Serialization
 
 #if DEBUG
             // use exception in the place of Debug.Assert to avoid throwing asserts from a server process such as aspnet_ewp.exe
-            if (assembly == null) throw new InvalidOperationException(SR.Format(SR.XmlInternalErrorDetails, "Failed to generate XmlSerializer assembly, but did not throw"));
+            if (_assembly == null) throw new InvalidOperationException(SR.Format(SR.XmlInternalErrorDetails, "Failed to generate XmlSerializer assembly, but did not throw"));
 #endif
             InitAssemblyMethods(xmlMappings);
         }
@@ -104,7 +102,6 @@ namespace System.Xml.Serialization
             _assembly = assembly;
             InitAssemblyMethods(xmlMappings);
             _contract = contract;
-            _pregeneratedAssmbly = true;
         }
 
         internal static bool UseLegacySerializerGeneration
@@ -118,7 +115,6 @@ namespace System.Xml.Serialization
         internal TempAssembly(XmlSerializerImplementation contract)
         {
             _contract = contract;
-            _pregeneratedAssmbly = true;
         }
 
         internal XmlSerializerImplementation Contract
@@ -177,7 +173,7 @@ namespace System.Xml.Serialization
             if (attrs.Count() == 0)
             {
                 // Guess serializer name: if parent assembly signed use strong name 
-                AssemblyName name = GetName(type.GetTypeInfo().Assembly, true);
+                AssemblyName name = type.GetTypeInfo().Assembly.GetName();
                 serializerName = Compiler.GetTempAssemblyName(name, defaultNamespace);
                 // use strong name 
                 name.Name = serializerName;
@@ -250,11 +246,6 @@ namespace System.Xml.Serialization
                 return serializer;
 
             return null;
-        }
-
-        private static AssemblyName GetName(Assembly assembly, bool copyName)
-        {
-            throw new NotImplementedException();
         }
 
         // SxS: This method does not take any resource name and does not expose any resources to the caller.
@@ -430,7 +421,7 @@ namespace System.Xml.Serialization
                 CodeGenerator.InstanceBindingFlags,
                 Array.Empty<Type>()
                 );
-            assemblyBuilder.SetCustomAttribute(new CustomAttributeBuilder(SecurityTransparentAttribute_ctor, new Object[0]));
+            assemblyBuilder.SetCustomAttribute(new CustomAttributeBuilder(SecurityTransparentAttribute_ctor, Array.Empty<object>()));
             ConstructorInfo AllowPartiallyTrustedCallersAttribute_ctor = typeof(AllowPartiallyTrustedCallersAttribute).GetConstructor(
                 CodeGenerator.EmptyTypeArray
                 );
@@ -506,12 +497,13 @@ namespace System.Xml.Serialization
             return writerType.GetTypeInfo().Assembly;
         }
 
-        private static MethodInfo GetMethodFromType(Type type, string methodName, Assembly assembly)
+        private static MethodInfo GetMethodFromType(Type type, string methodName)
         {
             MethodInfo method = type.GetMethod(methodName);
             if (method != null)
                 return method;
 
+            // Not support pregen.  Workaround SecurityCritical required for assembly.CodeBase api.
             MissingMethodException missingMethod = new MissingMethodException(type.FullName + "::" + methodName);
             throw missingMethod;
         }
@@ -582,9 +574,9 @@ namespace System.Xml.Serialization
                     {
                         throw new InvalidOperationException(SR.Format(SR.XmlNotSerializable, mapping.Accessor.Name));
                     }
-                    _methods[mapping.Key].readMethod = GetMethodFromType(reader.GetType(), methodName, _pregeneratedAssmbly ? _assembly : null);
+                    _methods[mapping.Key].readMethod = GetMethodFromType(reader.GetType(), methodName);
                 }
-                return _methods[mapping.Key].readMethod.Invoke(reader, s_emptyObjectArray);
+                return _methods[mapping.Key].readMethod.Invoke(reader, Array.Empty<object>());
             }
             catch (SecurityException e)
             {
@@ -616,7 +608,7 @@ namespace System.Xml.Serialization
                     {
                         throw new InvalidOperationException(SR.Format(SR.XmlNotSerializable, mapping.Accessor.Name));
                     }
-                    _methods[mapping.Key].writeMethod = GetMethodFromType(writer.GetType(), methodName, _pregeneratedAssmbly ? _assembly : null);
+                    _methods[mapping.Key].writeMethod = GetMethodFromType(writer.GetType(), methodName);
                 }
                 _methods[mapping.Key].writeMethod.Invoke(writer, new object[] { o });
             }
