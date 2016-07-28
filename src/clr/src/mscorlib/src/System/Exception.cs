@@ -891,7 +891,7 @@ namespace System {
         private SafeSerializationManager _safeSerializationManager;
 #endif // FEATURE_SERIALIZATION
 
-    // See clr\src\vm\excep.h's EXCEPTION_COMPLUS definition:
+        // See src\inc\corexcep.h's EXCEPTION_COMPLUS definition:
         private const int _COMPlusExceptionCode = unchecked((int)0xe0434352);   // Win32 exception code for COM+ exceptions
 
         // InternalToString is called by the runtime to get the exception text 
