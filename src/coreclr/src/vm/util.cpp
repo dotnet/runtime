@@ -3399,6 +3399,11 @@ void InitializeClrNotifications()
 #pragma optimize("", off)
 #endif  // _MSC_VER
 
+#if defined(FEATURE_GDBJIT)
+#include "gdbjit.h"
+__declspec(thread) bool tls_isSymReaderInProgress = false;
+#endif // FEATURE_GDBJIT
+
 // called from the runtime
 void DACNotify::DoJITNotification(MethodDesc *MethodDescPtr)
 {
@@ -3410,7 +3415,14 @@ void DACNotify::DoJITNotification(MethodDesc *MethodDescPtr)
         MODE_PREEMPTIVE;
     }
     CONTRACTL_END;
-
+#if defined(FEATURE_GDBJIT) && defined(FEATURE_PAL) && !defined(CROSSGEN_COMPILE)
+    if(!tls_isSymReaderInProgress)
+    {
+        tls_isSymReaderInProgress = true;
+        NotifyGdb::MethodCompiled(MethodDescPtr);
+        tls_isSymReaderInProgress = false;
+    }
+#endif    
     TADDR Args[2] = { JIT_NOTIFICATION, (TADDR) MethodDescPtr };
     DACNotifyExceptionHelper(Args, 2);
 }
@@ -3426,6 +3438,9 @@ void DACNotify::DoJITDiscardNotification(MethodDesc *MethodDescPtr)
     }
     CONTRACTL_END;
 
+#if defined(FEATURE_GDBJIT) && defined(FEATURE_PAL) && !defined(CROSSGEN_COMPILE)
+    NotifyGdb::MethodDropped(MethodDescPtr);
+#endif    
     TADDR Args[2] = { JIT_DISCARD_NOTIFICATION, (TADDR) MethodDescPtr };
     DACNotifyExceptionHelper(Args, 2);
 }    
