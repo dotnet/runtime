@@ -9,12 +9,7 @@ if NOT %argC%==3 GOTO :USAGE
 if %1=="/?" GOTO :USAGE
 
 setlocal
-set basePath=%__sourceDir%
-:: remove quotes
-set "basePath=%basePath:"=%"
-:: remove trailing slash
-if %basePath:~-1%==\ set "basePath=%basePath:~0,-1%"
-
+set __sourceDir=%~dp0
 :: Default to vs2013 unless vs2015 is specified
 set __VSString=12 2013
 if /i "%2" == "vs2015" (set __VSString=14 2015)
