@@ -837,7 +837,7 @@ bool DBG_ShouldCheckStackAlignment()
 
         if (checkAlignmentSettings && shouldFreeCheckAlignmentSettings)
         {
-            InternalFree(checkAlignmentSettings);
+            free(checkAlignmentSettings);
         }
     }
     
@@ -880,7 +880,7 @@ void PAL_DisplayDialog(const char *szTitle, const char *szText)
         if (displayDialog)
         {
             int i = atoi(displayDialog);
-            InternalFree(displayDialog);
+            free(displayDialog);
 
             switch (i)
             {
