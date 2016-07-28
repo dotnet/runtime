@@ -14,9 +14,9 @@
 #include <string.h>
 
 #ifndef MONO_CROSS_COMPILE
-#ifdef HAVE_ASM_SIGCONTEXT_H
+#ifdef PLATFORM_ANDROID
 #include <asm/sigcontext.h>
-#endif  /* def HAVE_ASM_SIGCONTEXT_H */
+#endif  /* def PLATFORM_ANDROID */
 #endif
 
 #ifdef HAVE_UCONTEXT_H
