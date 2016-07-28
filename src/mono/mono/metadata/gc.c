@@ -513,7 +513,7 @@ mono_domain_finalize (MonoDomain *domain, guint32 timeout)
 				mono_coop_mutex_unlock (&req->mutex);
 				return FALSE;
 			}
-		} else if (res == ETIMEDOUT) {
+		} else if (res == -1) {
 			/* We leak the cond/mutex here */
 			mono_coop_mutex_unlock (&req->mutex);
 			return FALSE;
