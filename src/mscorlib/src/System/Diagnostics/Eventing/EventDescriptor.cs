@@ -73,12 +73,12 @@ namespace System.Diagnostics.Tracing
         {
             if (id < 0)
             {
-                throw new ArgumentOutOfRangeException("id", Resources.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(nameof(id), Resources.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             }
 
             if (id > ushort.MaxValue)
             {
-                throw new ArgumentOutOfRangeException("id", Resources.GetResourceString("ArgumentOutOfRange_NeedValidId", 1, ushort.MaxValue));
+                throw new ArgumentOutOfRangeException(nameof(id), Resources.GetResourceString("ArgumentOutOfRange_NeedValidId", 1, ushort.MaxValue));
             }
 
             m_traceloggingId = 0;
@@ -91,12 +91,12 @@ namespace System.Diagnostics.Tracing
 
             if (task < 0)
             {
-                throw new ArgumentOutOfRangeException("task", Resources.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(nameof(task), Resources.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             }
 
             if (task > ushort.MaxValue)
             {
-                throw new ArgumentOutOfRangeException("task", Resources.GetResourceString("ArgumentOutOfRange_NeedValidId", 1, ushort.MaxValue));
+                throw new ArgumentOutOfRangeException(nameof(task), Resources.GetResourceString("ArgumentOutOfRange_NeedValidId", 1, ushort.MaxValue));
             }
 
             m_task = (ushort)task;

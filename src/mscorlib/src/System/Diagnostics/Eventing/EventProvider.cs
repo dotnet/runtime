@@ -89,7 +89,7 @@ namespace System.Diagnostics.Tracing
         private static WriteEventErrorCode s_returnCode; // The last return code 
 
         private const int s_basicTypeAllocationBufferSize = 16;
-        private const int s_etwMaxNumberArguments = 64;
+        private const int s_etwMaxNumberArguments = 128;
         private const int s_etwAPIMaxRefObjCount = 8;
         private const int s_maxEventDataDescriptors = 128;
         private const int s_traceEventMaximumSize = 65482;
@@ -560,7 +560,7 @@ namespace System.Diagnostics.Tracing
             dataStart = 0;
             if (filterData == null)
             {
-#if !ES_BUILD_PCL && !FEATURE_PAL
+#if (!ES_BUILD_PCL && !PROJECTN && !FEATURE_PAL)
                 string regKey = @"\Microsoft\Windows\CurrentVersion\Winevt\Publishers\{" + m_providerId + "}";
                 if (System.Runtime.InteropServices.Marshal.SizeOf(typeof(IntPtr)) == 8)
                     regKey = @"HKEY_LOCAL_MACHINE\Software" + @"\Wow6432Node" + regKey;
