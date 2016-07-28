@@ -73,6 +73,77 @@ static LPVOID ReserveVirtualMemory(
 // of virtual memory that is located near the CoreCLR library.
 static ExecutableMemoryAllocator g_executableMemoryAllocator;
 
+//
+//
+// Virtual Memory Logging
+//
+// We maintain a lightweight in-memory circular buffer recording virtual
+// memory operations so that we can better diagnose failures and crashes
+// caused by one of these operations mishandling memory in some way.
+//
+//
+namespace VirtualMemoryLogging
+{
+    // Specifies the operation being logged
+    enum class VirtualOperation
+    {
+        Allocate = 0x10,
+        Reserve = 0x20,
+        Commit = 0x30,
+        Decommit = 0x40,
+        Release = 0x50,
+    };
+
+    // Indicates that the attempted operation has failed
+    const DWORD FailedOperationMarker = 0x80000000;
+
+    // An entry in the in-memory log
+    struct LogRecord
+    {
+        LONG RecordId;
+        DWORD Operation;
+        LPVOID CurrentThread;
+        LPVOID RequestedAddress;
+        LPVOID ReturnedAddress;
+        SIZE_T Size;
+        DWORD AllocationType;
+        DWORD Protect;
+    };
+
+    // Maximum number of records in the in-memory log
+    const LONG MaxRecords = 128;
+
+    // Buffer used to store the logged data
+    volatile LogRecord logRecords[MaxRecords];
+
+    // Current record number. Use (recordNumber % MaxRecords) to determine
+    // the current position in the circular buffer.
+    volatile LONG recordNumber = 0;
+
+    // Record an entry in the in-memory log
+    void LogVaOperation(
+        IN VirtualOperation operation,
+        IN LPVOID requestedAddress,
+        IN SIZE_T size,
+        IN DWORD flAllocationType,
+        IN DWORD flProtect,
+        IN LPVOID returnedAddress,
+        IN BOOL result)
+    {
+        LONG i = InterlockedIncrement(&recordNumber) - 1;
+        LogRecord* curRec = (LogRecord*)&logRecords[i % MaxRecords];
+
+        curRec->RecordId = i;
+        curRec->CurrentThread = (LPVOID)pthread_self();
+        curRec->RequestedAddress = requestedAddress;
+        curRec->ReturnedAddress = returnedAddress;
+        curRec->Size = size;
+        curRec->AllocationType = flAllocationType;
+        curRec->Protect = flProtect;
+        curRec->Operation = static_cast<DWORD>(operation) | (result ? 0 : FailedOperationMarker);
+    }
+}
+
 /*++
 Function:
     VIRTUALInitialize()
@@ -88,7 +159,7 @@ extern "C"
 BOOL
 VIRTUALInitialize(bool initializeExecutableMemoryAllocator)
 {
-    TRACE( "Initializing the Virtual Critical Sections. \n" );
+    TRACE("Initializing the Virtual Critical Sections. \n");
 
     InternalInitializeCriticalSection(&virtual_critsec);
 
@@ -604,6 +675,30 @@ static void VIRTUALDisplayList( void  )
 }
 #endif
 
+#ifdef DEBUG
+void VerifyRightEntry(PCMI pEntry)
+{
+    volatile PCMI pRight = pEntry->pNext;
+    SIZE_T endAddress;
+    if (pRight != nullptr)
+    {
+        endAddress = ((SIZE_T)pEntry->startBoundary) + pEntry->memSize;
+        _ASSERTE(endAddress <= (SIZE_T)pRight->startBoundary);
+    }
+}
+
+void VerifyLeftEntry(PCMI pEntry)
+{
+    volatile PCMI pLeft = pEntry->pPrevious;
+    SIZE_T endAddress;
+    if (pLeft != NULL)
+    {
+        endAddress = ((SIZE_T)pLeft->startBoundary) + pLeft->memSize;
+        _ASSERTE(endAddress <= (SIZE_T)pEntry->startBoundary);
+    }
+}
+#endif // DEBUG
+
 /****
  *  VIRTUALStoreAllocationInfo()
  *
@@ -701,9 +796,14 @@ static BOOL VIRTUALStoreAllocationInfo(
         {
             pNewEntry->pNext->pPrevious = pNewEntry;
         }
-        
+
         pVirtualMemory = pNewEntry ;
     }
+
+#ifdef DEBUG
+    VerifyRightEntry(pNewEntry);
+    VerifyLeftEntry(pNewEntry);
+#endif // DEBUG
 
     return TRUE;
 }
@@ -771,6 +871,15 @@ static LPVOID VIRTUALReserveMemory(
             pRetVal = NULL;
         }
     }
+
+    LogVaOperation(
+        VirtualMemoryLogging::VirtualOperation::Reserve,
+        lpAddress,
+        dwSize,
+        flAllocationType,
+        flProtect,
+        pRetVal,
+        pRetVal != NULL);
 
     InternalLeaveCriticalSection(pthrCurrent, &virtual_critsec);
     return pRetVal;
@@ -1052,6 +1161,16 @@ error:
     }
 
 done:
+
+    LogVaOperation(
+        VirtualMemoryLogging::VirtualOperation::Commit,
+        lpAddress,
+        dwSize,
+        flAllocationType,
+        flProtect,
+        pRetVal,
+        pRetVal != NULL);
+
     return pRetVal;
 }
 
@@ -1110,6 +1229,15 @@ VirtualAlloc(
     {
         WARN( "Ignoring the allocation flag MEM_TOP_DOWN.\n" );
     }
+
+    LogVaOperation(
+        VirtualMemoryLogging::VirtualOperation::Allocate,
+        lpAddress,
+        dwSize,
+        flAllocationType,
+        flProtect,
+        NULL,
+        TRUE);
 
     if ( flAllocationType & MEM_RESERVE ) 
     {
@@ -1319,6 +1447,17 @@ VirtualFree(
     }
 
 VirtualFreeExit:
+
+    LogVaOperation(
+        (dwFreeType & MEM_DECOMMIT) ? VirtualMemoryLogging::VirtualOperation::Decommit 
+                                    : VirtualMemoryLogging::VirtualOperation::Release,
+        lpAddress,
+        dwSize,
+        dwFreeType,
+        0,
+        NULL,
+        bRetVal);
+
     InternalLeaveCriticalSection(pthrCurrent, &virtual_critsec);
     LOGEXIT( "VirtualFree returning %s.\n", bRetVal == TRUE ? "TRUE" : "FALSE" );
     PERF_EXIT(VirtualFree);
