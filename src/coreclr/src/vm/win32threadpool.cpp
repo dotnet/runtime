@@ -1271,7 +1271,8 @@ void ThreadpoolMgr::MaybeAddWorkingWorker()
 
     _ASSERTE(!CLRThreadpoolHosted());
 
-    ThreadCounter::Counts counts = WorkerCounter.GetCleanCounts();
+    // counts volatile read paired with CompareExchangeCounts loop set
+    ThreadCounter::Counts counts = WorkerCounter.DangerousGetDirtyCounts();
     ThreadCounter::Counts newCounts;
     while (true)
     {
@@ -1325,7 +1326,9 @@ void ThreadpoolMgr::MaybeAddWorkingWorker()
             // Of course, there's no guarantee *that* will work - but hopefully enough time will have passed
             // to allow whoever's using all the memory right now to release some.
             //
-            counts = WorkerCounter.GetCleanCounts();
+
+            // counts volatile read paired with CompareExchangeCounts loop set
+            counts = WorkerCounter.DangerousGetDirtyCounts();
             while (true)
             {
                 //
@@ -2255,7 +2258,8 @@ DWORD __stdcall ThreadpoolMgr::WorkerThreadStart(LPVOID lpArgs)
     ThreadCounter::Counts counts, oldCounts, newCounts;
     bool foundWork = true, wasNotRecalled = true;
 
-    counts = WorkerCounter.GetCleanCounts();
+    // counts only used for Etw event
+    counts = WorkerCounter.DangerousGetDirtyCounts();
     FireEtwThreadPoolWorkerThreadStart(counts.NumActive, counts.NumRetired, GetClrInstanceId());
 
 #ifdef FEATURE_COMINTEROP
@@ -2286,7 +2290,8 @@ Work:
             #ifdef FEATURE_COMINTEROP
             if (pThread->SetApartment(Thread::AS_InMTA, TRUE) != Thread::AS_InMTA)
             {
-                counts = WorkerCounter.GetCleanCounts();
+                // counts volatile read paired with CompareExchangeCounts loop set
+                counts = WorkerCounter.DangerousGetDirtyCounts();
                 while (true)
                 {
                     newCounts = counts;
@@ -2311,7 +2316,8 @@ Work:
 
     // make sure there's really work.  If not, go back to sleep
 
-    counts = WorkerCounter.GetCleanCounts();
+    // counts volatile read paired with CompareExchangeCounts loop set
+    counts = WorkerCounter.DangerousGetDirtyCounts();
     while (true)
     {
         _ASSERTE(counts.NumActive > 0);
@@ -2383,7 +2389,8 @@ Work:
 
 Retire:
 
-    counts = WorkerCounter.GetCleanCounts();
+    // counts only used for Etw event
+    counts = WorkerCounter.DangerousGetDirtyCounts();
     FireEtwThreadPoolWorkerThreadRetirementStart(counts.NumActive, counts.NumRetired, GetClrInstanceId());
 
     // It's possible that some work came in just before we decremented the active thread count, in which 
@@ -2403,7 +2410,9 @@ RetryRetire:
         if (WAIT_OBJECT_0 == result)
         {
             foundWork = true;
-            counts = WorkerCounter.GetCleanCounts();
+
+            // counts only used for Etw event
+            counts = WorkerCounter.DangerousGetDirtyCounts();
             FireEtwThreadPoolWorkerThreadRetirementStop(counts.NumActive, counts.NumRetired, GetClrInstanceId());
             goto Work;
         }
@@ -2435,7 +2444,9 @@ RetryRetire:
             // if we don't hit zero, then there's another retired thread that will pick up this signal.  So it's ok
             // to exit.
             //
-            counts = WorkerCounter.GetCleanCounts();
+
+            // counts volatile read paired with CompareExchangeCounts loop set
+            counts = WorkerCounter.DangerousGetDirtyCounts();
             while (true)
             {
                 if (counts.NumRetired == 0)
@@ -2491,7 +2502,8 @@ RetryWaitForWork:
 
             DangerousNonHostedSpinLockHolder tal(&ThreadAdjustmentLock);
 
-            counts = WorkerCounter.GetCleanCounts();
+            // counts volatile read paired with CompareExchangeCounts loop set
+            counts = WorkerCounter.DangerousGetDirtyCounts();
             while (true)
             {
                 if (counts.NumActive == counts.NumWorking)
@@ -2550,7 +2562,8 @@ Exit:
 
     _ASSERTE(!IsIoPending());
 
-    counts = WorkerCounter.GetCleanCounts();
+    // counts only used for Etw event
+    counts = WorkerCounter.DangerousGetDirtyCounts();
     FireEtwThreadPoolWorkerThreadStop(counts.NumActive, counts.NumRetired, GetClrInstanceId());
 
     return ERROR_SUCCESS;
