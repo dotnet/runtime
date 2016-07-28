@@ -522,16 +522,19 @@ void CONTEXTFromNativeContext(const native_context_t *native, LPCONTEXT lpContex
     if (native->uc_mcontext.__fpregs == nullptr)
 #endif
     {
-        // Reset the CONTEXT_FLOATING_POINT bit(s) so it's clear that the floating point
-        // data in the CONTEXT is not valid. Since CONTEXT_FLOATING_POINT is defined as 
-        // the architecture bit(s) OR'd with one or more other bits, we first get the bits
-        // that are unique to CONTEXT_FLOATING_POINT by resetting the architecture bits.
-        // We determine what those are by inverting the union of CONTEXT_CONTROL and
-        // CONTEXT_INTEGER, both of which should also have the architecture bit(s) set.
+        // Reset the CONTEXT_FLOATING_POINT bit(s) and the CONTEXT_XSTATE bit(s) so it's
+        // clear that the floating point and extended state data in the CONTEXT is not
+        // valid. Since these flags are defined as the architecture bit(s) OR'd with one
+        // or more other bits, we first get the bits that are unique to each by resetting
+        // the architecture bits. We determine what those are by inverting the union of
+        // CONTEXT_CONTROL and CONTEXT_INTEGER, both of which should also have the 
+        // architecture bit(s) set.
         const ULONG floatingPointFlags = CONTEXT_FLOATING_POINT & ~(CONTEXT_CONTROL & CONTEXT_INTEGER);
-        lpContext->ContextFlags &= ~floatingPointFlags;
+        const ULONG xstateFlags = CONTEXT_XSTATE & ~(CONTEXT_CONTROL & CONTEXT_INTEGER);
 
-        // Bail out regardless of whether the caller wanted CONTEXT_FLOATING_POINT 
+        lpContext->ContextFlags &= ~(floatingPointFlags | xstateFlags);
+
+        // Bail out regardless of whether the caller wanted CONTEXT_FLOATING_POINT or CONTEXT_XSTATE
         return;
     }
 #endif
