@@ -23,6 +23,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #if !defined(PLATFORM_UNIX)
 #include <io.h>    // For _dup, _setmode
 #include <fcntl.h> // For _O_TEXT
+#include <errno.h> // For EINVAL
 #endif
 
 /*****************************************************************************/
