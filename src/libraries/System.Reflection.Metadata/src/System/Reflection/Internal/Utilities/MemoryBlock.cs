@@ -6,7 +6,6 @@ using System.Diagnostics;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Text;
 
 namespace System.Reflection.Internal
@@ -510,15 +509,7 @@ namespace System.Reflection.Internal
         internal byte[] PeekBytes(int offset, int byteCount)
         {
             CheckBounds(offset, byteCount);
-
-            if (byteCount == 0)
-            {
-                return EmptyArray<byte>.Instance;
-            }
-
-            byte[] result = new byte[byteCount];
-            Marshal.Copy((IntPtr)(Pointer + offset), result, 0, byteCount);
-            return result;
+            return BlobUtilities.ReadBytes(Pointer + offset, byteCount);
         }
 
         internal int IndexOf(byte b, int start)

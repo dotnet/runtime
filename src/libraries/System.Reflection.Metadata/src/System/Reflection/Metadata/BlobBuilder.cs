@@ -279,7 +279,7 @@ namespace System.Reflection.Metadata
         /// <exception cref="InvalidOperationException">Content is not available, the builder has been linked with another one.</exception>
         public byte[] ToArray(int start, int byteCount)
         {
-            BlobUtilities.ValidateRange(Count, start, byteCount);
+            BlobUtilities.ValidateRange(Count, start, byteCount, nameof(byteCount));
 
             var result = new byte[byteCount];
 
@@ -761,7 +761,7 @@ namespace System.Reflection.Metadata
                 Throw.ArgumentNull(nameof(buffer));
             }
 
-            BlobUtilities.ValidateRange(buffer.Length, start, byteCount);
+            BlobUtilities.ValidateRange(buffer.Length, start, byteCount, nameof(byteCount));
 
             if (!IsHead)
             {
@@ -1044,8 +1044,12 @@ namespace System.Reflection.Metadata
             WriteUTF8(value, 0, value.Length, allowUnpairedSurrogates, prependSize: false);
         }
 
-        private void WriteUTF8(string str, int start, int length, bool allowUnpairedSurrogates, bool prependSize)
+        internal void WriteUTF8(string str, int start, int length, bool allowUnpairedSurrogates, bool prependSize)
         {
+            Debug.Assert(start >= 0);
+            Debug.Assert(length >= 0);
+            Debug.Assert(start + length <= str.Length);
+
             if (!IsHead)
             {
                 Throw.InvalidOperationBuilderAlreadyLinked();
@@ -1061,7 +1065,7 @@ namespace System.Reflection.Metadata
 
                 int bytesToCurrent = BlobUtilities.GetUTF8ByteCount(currentPtr, length, byteLimit, out nextPtr);
                 int charsToCurrent = (int)(nextPtr - currentPtr);
-                int charsToNext = str.Length - charsToCurrent;
+                int charsToNext = length - charsToCurrent;
                 int bytesToNext = BlobUtilities.GetUTF8ByteCount(nextPtr, charsToNext);
 
                 if (prependSize)
@@ -1114,11 +1118,11 @@ namespace System.Reflection.Metadata
         /// 
         /// Otherwise, encode as a 4-byte integer, with bit 31 set, bit 30 set, bit 29 clear (value held in bits 28 through 0).
         /// </remarks>
-        /// <exception cref="ArgumentOutOfRangeException"><paramref name="value"/> can't be represented as a compressed integer.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="value"/> can't be represented as a compressed unsigned integer.</exception>
         /// <exception cref="InvalidOperationException">Builder is not writable, it has been linked with another one.</exception>
         public void WriteCompressedInteger(int value)
         {
-            BlobWriterImpl.WriteCompressedInteger(this, value);
+            BlobWriterImpl.WriteCompressedInteger(this, unchecked((uint)value));
         }
 
         /// <summary>

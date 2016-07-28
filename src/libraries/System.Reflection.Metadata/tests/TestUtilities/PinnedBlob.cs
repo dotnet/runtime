@@ -29,10 +29,10 @@ namespace System.Reflection.Metadata.Tests
             return CreateReader(0, _blob.Length);
         }
 
-        public unsafe BlobReader CreateReader(int start, int count)
+        public unsafe BlobReader CreateReader(int start, int byteCount)
         {
-            BlobUtilities.ValidateRange(_blob.Length, start, count);
-            return new BlobReader((byte*)_bytes.AddrOfPinnedObject() + start, count);
+            BlobUtilities.ValidateRange(_blob.Length, start, byteCount, nameof(byteCount));
+            return new BlobReader((byte*)_bytes.AddrOfPinnedObject() + start, byteCount);
         }
 
         public void Dispose()

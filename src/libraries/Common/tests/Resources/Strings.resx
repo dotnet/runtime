@@ -99,6 +99,39 @@
 		<value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.3500.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
 	</resheader>
   <data name="Argument_InvalidPathChars" xml:space="preserve">
-    <value>Illegal characters in path.</value>
+    <value>Argument_InvalidPathChars</value>
+  </data>
+  <data name="IO_FileNotFound" xml:space="preserve">
+    <value>IO_FileNotFound</value>
+  </data>
+    <data name="IO_FileNotFound_FileName" xml:space="preserve">
+    <value>IO_FileNotFound_FileName {0}</value>
+  </data>
+  <data name="IO_PathNotFound_NoPathName" xml:space="preserve">
+    <value>IO_PathNotFound_NoPathName</value>
+  </data>
+  <data name="IO_PathNotFound_Path" xml:space="preserve">
+    <value>IO_PathNotFound_Path {0}</value>
+  </data>
+  <data name="UnauthorizedAccess_IODenied_NoPathName" xml:space="preserve">
+    <value>UnauthorizedAccess_IODenied_NoPathName</value>
+  </data>
+  <data name="UnauthorizedAccess_IODenied_Path" xml:space="preserve">
+    <value>UnauthorizedAccess_IODenied_Path {0}</value>
+  </data>
+  <data name="IO_AlreadyExists_Name" xml:space="preserve">
+    <value>IO_AlreadyExists_Name {0}</value>
+  </data>
+  <data name="IO_FileExists_Name" xml:space="preserve">
+    <value>IO_FileExists_Name {0}</value>
+  </data>
+  <data name="IO_PathTooLong" xml:space="preserve">
+    <value>IO_PathTooLong</value>
+  </data>
+  <data name="IO_SharingViolation_NoFileName" xml:space="preserve">
+    <value>IO_SharingViolation_NoFileName</value>
+  </data>
+  <data name="IO_SharingViolation_File" xml:space="preserve">
+    <value>IO_SharingViolation_File {0}</value>
   </data>
 </root>

@@ -153,12 +153,10 @@ namespace System.Net
             int ret = 1;
             if (isStrict)
             {
-                CookieComparer comp = CookieComparer.Instance;
-
                 int idx = 0;
                 foreach (Cookie c in _list)
                 {
-                    if (comp.Compare(cookie, c) == 0)
+                    if (CookieComparer.Compare(cookie, c) == 0)
                     {
                         ret = 0; // Will replace or reject
 
@@ -189,12 +187,10 @@ namespace System.Net
 
         internal int IndexOf(Cookie cookie)
         {
-            CookieComparer comp = CookieComparer.Instance;
-
             int idx = 0;
             foreach (Cookie c in _list)
             {
-                if (comp.Compare(cookie, c) == 0)
+                if (CookieComparer.Compare(cookie, c) == 0)
                 {
                     return idx;
                 }

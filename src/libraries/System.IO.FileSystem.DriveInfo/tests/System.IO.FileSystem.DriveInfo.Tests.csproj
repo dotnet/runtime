@@ -11,6 +11,7 @@
     <RootNamespace>System.IO.FileSystem.DriveInfo.Tests</RootNamespace>
     <AssemblyName>System.IO.FileSystem.DriveInfo.Tests</AssemblyName>
     <ProjectGuid>{7D9E5F2F-5677-40FC-AD04-FA7D603E4806}</ProjectGuid>
+    <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -25,7 +26,7 @@
     <None Include="project.json" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\src\System.IO.FileSystem.DriveInfo.csproj">
+    <ProjectReference Include="..\pkg\System.IO.FileSystem.DriveInfo.pkgproj">
       <Project>{29c14ad7-dc03-45dc-897d-8dacc762707e}</Project>
       <Name>System.IO.FileSystem.DriveInfo</Name>
     </ProjectReference>

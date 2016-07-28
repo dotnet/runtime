@@ -16,6 +16,8 @@ using System.Threading;
 using Internal.Cryptography;
 using Microsoft.Win32.SafeHandles;
 
+using static Interop.Crypt32;
+
 using Libraries = Interop.Libraries;
 
 namespace Internal.NativeCrypto
@@ -1239,7 +1241,7 @@ namespace Internal.NativeCrypto
             }
             else
             {
-                return OidInfo.FindOidInfo(CryptOidInfoKeyType.CRYPT_OID_INFO_OID_KEY, oid, OidGroup.HashAlgorithm, fallBackToAllGroups: false).AlgId;
+                return global::Interop.Crypt32.FindOidInfo(CryptOidInfoKeyType.CRYPT_OID_INFO_OID_KEY, oid, OidGroup.HashAlgorithm, fallBackToAllGroups: false).AlgId;
             }
         }
 

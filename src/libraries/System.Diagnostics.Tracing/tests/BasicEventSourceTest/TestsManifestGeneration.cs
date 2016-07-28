@@ -22,7 +22,7 @@ namespace BasicEventSourceTests
     public class TestsManifestGeneration
     {
         /// <summary>
-        /// Visual Studio Online bug #125529, EventSource would fail when an EventSource was named "EventSource".
+        /// EventSource would fail when an EventSource was named "EventSource".
         /// </summary>
         [Fact]
         public void Test_EventSource_NamedEventSource()

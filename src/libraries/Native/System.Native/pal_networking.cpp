@@ -22,6 +22,7 @@
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/ioctl.h>
 #include <sys/socket.h>
 #include <sys/un.h>
@@ -153,16 +154,6 @@ constexpr T Max(T left, T right)
     return left > right ? left : right;
 }
 
-static int IpStringToAddressHelper(const uint8_t* address, const uint8_t* port, bool isIPv6, addrinfo*& info)
-{
-    assert(address != nullptr);
-
-    addrinfo hint = {.ai_family = isIPv6 ? AF_INET6 : AF_INET, .ai_flags = AI_NUMERICHOST | AI_NUMERICSERV};
-
-    info = nullptr;
-    return getaddrinfo(reinterpret_cast<const char*>(address), reinterpret_cast<const char*>(port), &hint, &info);
-}
-
 static void ConvertByteArrayToIn6Addr(in6_addr& addr, const uint8_t* buffer, int32_t bufferLength)
 {
 #if HAVE_IN6_U
@@ -255,10 +246,15 @@ SystemNative_IPv6StringToAddress(const uint8_t* address, const uint8_t* port, ui
     assert(buffer != nullptr);
     assert(bufferLength == NUM_BYTES_IN_IPV6_ADDRESS);
     assert(scope != nullptr);
+    assert(address != nullptr);
 
-    // Call our helper to do the getaddrinfo call for us; once we have the info, copy what we need
-    addrinfo* info;
-    int32_t result = IpStringToAddressHelper(address, port, true, info);
+    addrinfo hint;
+    memset(&hint, 0, sizeof(addrinfo));
+    hint.ai_family = AF_INET6;
+    hint.ai_flags = AI_NUMERICHOST | AI_NUMERICSERV;
+
+    addrinfo* info = nullptr;
+    int32_t result = getaddrinfo(reinterpret_cast<const char*>(address), reinterpret_cast<const char*>(port), &hint, &info);
     if (result == 0)
     {
         sockaddr_in6* addr = reinterpret_cast<sockaddr_in6*>(info->ai_addr);
@@ -276,20 +272,19 @@ extern "C" int32_t SystemNative_IPv4StringToAddress(const uint8_t* address, uint
     assert(buffer != nullptr);
     assert(bufferLength == NUM_BYTES_IN_IPV4_ADDRESS);
     assert(port != nullptr);
+    assert(address != nullptr);
 
-    // Call our helper to do the getaddrinfo call for us; once we have the info, copy what we need
-    addrinfo* info;
-    int32_t result = IpStringToAddressHelper(address, nullptr, false, info);
+    in_addr inaddr;
+    int32_t result = inet_aton(reinterpret_cast<const char*>(address), &inaddr);
     if (result == 0)
     {
-        sockaddr_in* addr = reinterpret_cast<sockaddr_in*>(info->ai_addr);
-        ConvertInAddrToByteArray(buffer, bufferLength, addr->sin_addr);
-        *port = addr->sin_port;
-
-        freeaddrinfo(info);
+        return PAL_EAI_NONAME;
     }
 
-    return ConvertGetAddrInfoAndGetNameInfoErrorsToPal(result);
+    ConvertInAddrToByteArray(buffer, bufferLength, inaddr);
+    *port = 0; // callers expect this to always be zero
+
+    return PAL_EAI_SUCCESS;
 }
 
 static void AppendScopeIfNecessary(uint8_t* string, int32_t stringLength, uint32_t scope)
@@ -368,7 +363,10 @@ extern "C" int32_t SystemNative_GetHostEntryForName(const uint8_t* address, Host
     }
 
     // Get all address families and the canonical name
-    addrinfo hint = {.ai_family = AF_UNSPEC, .ai_flags = AI_CANONNAME};
+    addrinfo hint;
+    memset(&hint, 0, sizeof(addrinfo));
+    hint.ai_family = AF_UNSPEC;
+    hint.ai_flags = AI_CANONNAME;
 
     addrinfo* info = nullptr;
     int result = getaddrinfo(reinterpret_cast<const char*>(address), nullptr, &hint, &info);
@@ -1467,7 +1465,10 @@ extern "C" Error SystemNative_SetIPv6MulticastOption(intptr_t socket, int32_t mu
         return PAL_EINVAL;
     }
 
-    ipv6_mreq opt = {.ipv6mr_interface = static_cast<unsigned int>(option->InterfaceIndex)};
+    ipv6_mreq opt;
+    memset(&opt, 0, sizeof(ipv6_mreq));
+    opt.ipv6mr_interface = static_cast<unsigned int>(option->InterfaceIndex);
+    
     ConvertByteArrayToIn6Addr(opt.ipv6mr_multiaddr, &option->Address.Address[0], NUM_BYTES_IN_IPV6_ADDRESS);
 
     int err = setsockopt(fd, IPPROTO_IP, optionName, &opt, sizeof(opt));

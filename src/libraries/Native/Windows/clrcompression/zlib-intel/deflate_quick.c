@@ -254,7 +254,7 @@ block_state deflate_quick(deflate_state *s, int flush)
     if (flush == Z_FINISH) {
         static_emit_end_block(s, 1);
         if (s->strm->avail_out == 0)
-            return finish_started;
+			return s->strm->avail_in == 0 ? finish_started : need_more;
         else
             return finish_done;
     }

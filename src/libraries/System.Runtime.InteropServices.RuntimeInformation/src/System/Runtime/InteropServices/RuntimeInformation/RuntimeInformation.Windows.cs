@@ -25,8 +25,10 @@ namespace System.Runtime.InteropServices
             {
                 if (null == s_osDescription)
                 {
-#if netcore50
+#if netcore50 || win8
                     s_osDescription = "Microsoft Windows";
+#elif wpa81
+                    s_osDescription = "Microsoft Windows Phone";
 #else
                     s_osDescription = Interop.NtDll.RtlGetVersion();
 #endif
@@ -80,18 +82,29 @@ namespace System.Runtime.InteropServices
                     if (null == s_processArch)
                     {
                         Interop.mincore.SYSTEM_INFO sysInfo;
+#if win8 || wpa81
+                        // GetSystemInfo is not avaialable
+                        Interop.mincore.GetNativeSystemInfo(out sysInfo);
+#else
                         Interop.mincore.GetSystemInfo(out sysInfo);
+#endif
 
                         switch((Interop.mincore.ProcessorArchitecture)sysInfo.wProcessorArchitecture)
                         {
                             case Interop.mincore.ProcessorArchitecture.Processor_Architecture_ARM64:
-                                s_osArch = Architecture.Arm64;
+                                s_processArch = Architecture.Arm64;
                                 break;
                             case Interop.mincore.ProcessorArchitecture.Processor_Architecture_ARM:
                                 s_processArch = Architecture.Arm;
                                 break;
                             case Interop.mincore.ProcessorArchitecture.Processor_Architecture_AMD64:
                                 s_processArch = Architecture.X64;
+#if win8 || wpa81
+                                if (IntPtr.Size == 4)
+                                {
+                                    s_processArch = Architecture.X86;
+                                }
+#endif
                                 break;
                             case Interop.mincore.ProcessorArchitecture.Processor_Architecture_INTEL:
                                 s_processArch = Architecture.X86;

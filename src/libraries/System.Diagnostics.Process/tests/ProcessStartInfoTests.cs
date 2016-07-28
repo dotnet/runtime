@@ -393,7 +393,8 @@ namespace System.Diagnostics.Tests
             }
             finally
             {
-                Assert.Equal((uint)0, Interop.NetUserDel(null, username));
+                IEnumerable<uint> collection = new uint[] { 0 /* NERR_Success */, 2221 /* NERR_UserNotFound */ };
+                Assert.Contains<uint>(Interop.NetUserDel(null, username), collection);
 
                 if (handle != null)
                     handle.Dispose();

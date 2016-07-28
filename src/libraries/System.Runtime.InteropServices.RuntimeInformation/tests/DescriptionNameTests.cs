@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Runtime.InteropServices;
 using System.Reflection;
 using Xunit;
 
@@ -13,7 +12,8 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
         [Fact]
         public void VerifyRuntimeDebugName()
         {
-            string expected = string.Format(".NET Core {0}", typeof(object).GetTypeInfo().Assembly.GetName().Version);
+            AssemblyFileVersionAttribute attr = (AssemblyFileVersionAttribute)(typeof(object).GetTypeInfo().Assembly.GetCustomAttribute(typeof(AssemblyFileVersionAttribute)));
+            string expected = string.Format(".NET Core {0}", attr.Version);
             Assert.Equal(expected, RuntimeInformation.FrameworkDescription);
             Assert.Same(RuntimeInformation.FrameworkDescription, RuntimeInformation.FrameworkDescription);
         }

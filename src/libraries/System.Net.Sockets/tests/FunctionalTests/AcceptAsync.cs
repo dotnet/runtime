@@ -150,7 +150,7 @@ namespace System.Net.Sockets.Tests
                 }
 
                 Assert.True(
-                    accepted.WaitOne(Configuration.PassingTestTimeout), "Test completed in alotted time");
+                    accepted.WaitOne(TestSettings.PassingTestTimeout), "Test completed in alotted time");
 
                 Assert.Equal(
                     SocketError.Success, acceptArgs.SocketError);

@@ -10,6 +10,14 @@
     </Project>
     <Project Include="System.Runtime.InteropServices.RuntimeInformation.csproj">
       <OSGroup>Windows_NT</OSGroup>
+      <TargetGroup>win8</TargetGroup>
+    </Project>
+    <Project Include="System.Runtime.InteropServices.RuntimeInformation.csproj">
+      <OSGroup>Windows_NT</OSGroup>
+      <TargetGroup>wpa81</TargetGroup>
+    </Project>
+    <Project Include="System.Runtime.InteropServices.RuntimeInformation.csproj">
+      <OSGroup>Windows_NT</OSGroup>
       <TargetGroup>net45</TargetGroup>
     </Project>
     <Project Include="System.Runtime.InteropServices.RuntimeInformation.csproj">

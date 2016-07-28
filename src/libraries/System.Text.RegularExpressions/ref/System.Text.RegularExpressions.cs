@@ -30,6 +30,7 @@ namespace System.Text.RegularExpressions
     {
         internal Group() { }
         public System.Text.RegularExpressions.CaptureCollection Captures { get { return default(System.Text.RegularExpressions.CaptureCollection); } }
+        public string Name { get { return default(string); } }
         public bool Success { get { return default(bool); } }
     }
     public partial class GroupCollection : System.Collections.ICollection, System.Collections.IEnumerable

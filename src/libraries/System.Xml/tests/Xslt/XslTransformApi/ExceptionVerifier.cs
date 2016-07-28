@@ -211,8 +211,8 @@ namespace System.Xml.Tests
         {
             // Use reflection to obtain "res" property value
             var exceptionType = _ex.GetType();
-            var fInfo = exceptionType.GetTypeInfo().GetField("res", BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.IgnoreCase) ??
-                        exceptionType.GetTypeInfo().BaseType.GetTypeInfo().GetField("res", BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.IgnoreCase);
+            var fInfo = exceptionType.GetField("res", BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.IgnoreCase) ??
+                        exceptionType.GetTypeInfo().BaseType.GetField("res", BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.IgnoreCase);
 
             if (fInfo == null)
                 throw new VerifyException("Cannot obtain Resource ID from Exception.");

@@ -17,9 +17,9 @@ namespace System.Reflection.Metadata.Tests
 
             mdBuilder.AddModule(0, default(StringHandle), default(GuidHandle), default(GuidHandle), default(GuidHandle));
 
-            var mdSerializer = new TypeSystemMetadataSerializer(mdBuilder, "v4.0.30319", isMinimalDelta: false);
+            var rootBuilder = new MetadataRootBuilder(mdBuilder);
             var mdBlob = new BlobBuilder();
-            mdSerializer.SerializeMetadata(mdBlob, 0, 0);
+            rootBuilder.Serialize(mdBlob, 0, 0);
 
             // validate sizes table rows that reference guids:
             using (var mdProvider = MetadataReaderProvider.FromMetadataImage(mdBlob.ToImmutableArray()))
@@ -85,9 +85,9 @@ namespace System.Reflection.Metadata.Tests
 
             mdBuilder.AddModule(0, default(StringHandle), default(GuidHandle), default(GuidHandle), default(GuidHandle));
 
-            var mdSerializer = new TypeSystemMetadataSerializer(mdBuilder, "v4.0.30319", isMinimalDelta: false);
+            var rootBuilder = new MetadataRootBuilder(mdBuilder);
             var mdBlob = new BlobBuilder();
-            mdSerializer.SerializeMetadata(mdBlob, 0, 0);
+            rootBuilder.Serialize(mdBlob, 0, 0);
 
             // validate sizes table rows that reference guids:
             using (var mdProvider = MetadataReaderProvider.FromMetadataImage(mdBlob.ToImmutableArray()))
@@ -153,9 +153,9 @@ namespace System.Reflection.Metadata.Tests
 
             mdBuilder.AddModule(0, default(StringHandle), default(GuidHandle), default(GuidHandle), default(GuidHandle));
 
-            var mdSerializer = new TypeSystemMetadataSerializer(mdBuilder, "v4.0.30319", isMinimalDelta: false);
+            var rootBuilder = new MetadataRootBuilder(mdBuilder);
             var mdBlob = new BlobBuilder();
-            mdSerializer.SerializeMetadata(mdBlob, 0, 0);
+            rootBuilder.Serialize(mdBlob, 0, 0);
 
             // validate sizes table rows that reference guids:
             using (var mdProvider = MetadataReaderProvider.FromMetadataImage(mdBlob.ToImmutableArray()))
@@ -221,9 +221,9 @@ namespace System.Reflection.Metadata.Tests
 
             mdBuilder.AddModule(0, default(StringHandle), default(GuidHandle), default(GuidHandle), default(GuidHandle));
 
-            var mdSerializer = new TypeSystemMetadataSerializer(mdBuilder, "v4.0.30319", isMinimalDelta: false);
+            var rootBuilder = new MetadataRootBuilder(mdBuilder);
             var mdBlob = new BlobBuilder();
-            mdSerializer.SerializeMetadata(mdBlob, 0, 0);
+            rootBuilder.Serialize(mdBlob, 0, 0);
 
             // validate sizes table rows that reference guids:
             using (var mdProvider = MetadataReaderProvider.FromMetadataImage(mdBlob.ToImmutableArray()))
@@ -291,9 +291,9 @@ namespace System.Reflection.Metadata.Tests
 
             mdBuilder.AddModule(0, default(StringHandle), default(GuidHandle), default(GuidHandle), default(GuidHandle));
 
-            var mdSerializer = new TypeSystemMetadataSerializer(mdBuilder, "v4.0.30319", isMinimalDelta: false);
+            var rootBuilder = new MetadataRootBuilder(mdBuilder);
             var mdBlob = new BlobBuilder();
-            mdSerializer.SerializeMetadata(mdBlob, 0, 0);
+            rootBuilder.Serialize(mdBlob, 0, 0);
 
             // validate sizes table rows that reference guids:
             using (var mdProvider = MetadataReaderProvider.FromMetadataImage(mdBlob.ToImmutableArray()))
@@ -363,9 +363,9 @@ namespace System.Reflection.Metadata.Tests
 
             mdBuilder.AddModule(0, default(StringHandle), default(GuidHandle), default(GuidHandle), default(GuidHandle));
 
-            var mdSerializer = new TypeSystemMetadataSerializer(mdBuilder, "v4.0.30319", isMinimalDelta: false);
+            var rootBuilder = new MetadataRootBuilder(mdBuilder);
             var mdBlob = new BlobBuilder();
-            mdSerializer.SerializeMetadata(mdBlob, 0, 0);
+            rootBuilder.Serialize(mdBlob, 0, 0);
 
             // validate sizes table rows that reference guids:
             using (var mdProvider = MetadataReaderProvider.FromMetadataImage(mdBlob.ToImmutableArray()))
@@ -435,9 +435,9 @@ namespace System.Reflection.Metadata.Tests
 
             mdBuilder.AddModule(0, default(StringHandle), default(GuidHandle), default(GuidHandle), default(GuidHandle));
 
-            var mdSerializer = new TypeSystemMetadataSerializer(mdBuilder, "v4.0.30319", isMinimalDelta: false);
+            var rootBuilder = new MetadataRootBuilder(mdBuilder);
             var mdBlob = new BlobBuilder();
-            mdSerializer.SerializeMetadata(mdBlob, 0, 0);
+            rootBuilder.Serialize(mdBlob, 0, 0);
 
             // validate sizes table rows that reference guids:
             using (var mdProvider = MetadataReaderProvider.FromMetadataImage(mdBlob.ToImmutableArray()))
@@ -505,9 +505,9 @@ namespace System.Reflection.Metadata.Tests
 
             mdBuilder.AddModule(0, default(StringHandle), default(GuidHandle), default(GuidHandle), default(GuidHandle));
 
-            var mdSerializer = new TypeSystemMetadataSerializer(mdBuilder, "v4.0.30319", isMinimalDelta: false);
+            var rootBuilder = new MetadataRootBuilder(mdBuilder);
             var mdBlob = new BlobBuilder();
-            mdSerializer.SerializeMetadata(mdBlob, 0, 0);
+            rootBuilder.Serialize(mdBlob, 0, 0);
 
             // validate sizes table rows that reference guids:
             using (var mdProvider = MetadataReaderProvider.FromMetadataImage(mdBlob.ToImmutableArray()))
@@ -577,9 +577,9 @@ namespace System.Reflection.Metadata.Tests
 
             mdBuilder.AddModule(0, default(StringHandle), default(GuidHandle), default(GuidHandle), default(GuidHandle));
 
-            var mdSerializer = new TypeSystemMetadataSerializer(mdBuilder, "v4.0.30319", isMinimalDelta: false);
+            var rootBuilder = new MetadataRootBuilder(mdBuilder);
             var mdBlob = new BlobBuilder();
-            mdSerializer.SerializeMetadata(mdBlob, 0, 0);
+            rootBuilder.Serialize(mdBlob, 0, 0);
 
             // validate sizes table rows that reference guids:
             using (var mdProvider = MetadataReaderProvider.FromMetadataImage(mdBlob.ToImmutableArray()))
@@ -649,9 +649,9 @@ namespace System.Reflection.Metadata.Tests
 
             mdBuilder.AddModule(0, default(StringHandle), default(GuidHandle), default(GuidHandle), default(GuidHandle));
 
-            var mdSerializer = new TypeSystemMetadataSerializer(mdBuilder, "v4.0.30319", isMinimalDelta: false);
+            var rootBuilder = new MetadataRootBuilder(mdBuilder);
             var mdBlob = new BlobBuilder();
-            mdSerializer.SerializeMetadata(mdBlob, 0, 0);
+            rootBuilder.Serialize(mdBlob, 0, 0);
 
             // validate sizes table rows that reference guids:
             using (var mdProvider = MetadataReaderProvider.FromMetadataImage(mdBlob.ToImmutableArray()))
@@ -719,9 +719,9 @@ namespace System.Reflection.Metadata.Tests
 
             mdBuilder.AddModule(0, default(StringHandle), default(GuidHandle), default(GuidHandle), default(GuidHandle));
 
-            var mdSerializer = new TypeSystemMetadataSerializer(mdBuilder, "v4.0.30319", isMinimalDelta: false);
+            var rootBuilder = new MetadataRootBuilder(mdBuilder);
             var mdBlob = new BlobBuilder();
-            mdSerializer.SerializeMetadata(mdBlob, 0, 0);
+            rootBuilder.Serialize(mdBlob, 0, 0);
 
             // validate sizes table rows that reference guids:
             using (var mdProvider = MetadataReaderProvider.FromMetadataImage(mdBlob.ToImmutableArray()))
@@ -791,9 +791,9 @@ namespace System.Reflection.Metadata.Tests
 
             mdBuilder.AddModule(0, default(StringHandle), default(GuidHandle), default(GuidHandle), default(GuidHandle));
 
-            var mdSerializer = new TypeSystemMetadataSerializer(mdBuilder, "v4.0.30319", isMinimalDelta: false);
+            var rootBuilder = new MetadataRootBuilder(mdBuilder);
             var mdBlob = new BlobBuilder();
-            mdSerializer.SerializeMetadata(mdBlob, 0, 0);
+            rootBuilder.Serialize(mdBlob, 0, 0);
 
             // validate sizes table rows that reference guids:
             using (var mdProvider = MetadataReaderProvider.FromMetadataImage(mdBlob.ToImmutableArray()))
@@ -861,9 +861,9 @@ namespace System.Reflection.Metadata.Tests
 
             mdBuilder.AddModule(0, default(StringHandle), default(GuidHandle), default(GuidHandle), default(GuidHandle));
 
-            var mdSerializer = new TypeSystemMetadataSerializer(mdBuilder, "v4.0.30319", isMinimalDelta: false);
+            var rootBuilder = new MetadataRootBuilder(mdBuilder);
             var mdBlob = new BlobBuilder();
-            mdSerializer.SerializeMetadata(mdBlob, 0, 0);
+            rootBuilder.Serialize(mdBlob, 0, 0);
 
             // validate sizes table rows that reference guids:
             using (var mdProvider = MetadataReaderProvider.FromMetadataImage(mdBlob.ToImmutableArray()))
@@ -931,9 +931,9 @@ namespace System.Reflection.Metadata.Tests
 
             mdBuilder.AddModule(0, default(StringHandle), default(GuidHandle), default(GuidHandle), default(GuidHandle));
 
-            var mdSerializer = new TypeSystemMetadataSerializer(mdBuilder, "v4.0.30319", isMinimalDelta: false);
+            var rootBuilder = new MetadataRootBuilder(mdBuilder);
             var mdBlob = new BlobBuilder();
-            mdSerializer.SerializeMetadata(mdBlob, 0, 0);
+            rootBuilder.Serialize(mdBlob, 0, 0);
 
             // validate sizes table rows that reference guids:
             using (var mdProvider = MetadataReaderProvider.FromMetadataImage(mdBlob.ToImmutableArray()))
@@ -1001,9 +1001,9 @@ namespace System.Reflection.Metadata.Tests
 
             mdBuilder.AddModule(0, default(StringHandle), default(GuidHandle), default(GuidHandle), default(GuidHandle));
 
-            var mdSerializer = new TypeSystemMetadataSerializer(mdBuilder, "v4.0.30319", isMinimalDelta: false);
+            var rootBuilder = new MetadataRootBuilder(mdBuilder);
             var mdBlob = new BlobBuilder();
-            mdSerializer.SerializeMetadata(mdBlob, 0, 0);
+            rootBuilder.Serialize(mdBlob, 0, 0);
 
             // validate sizes table rows that reference guids:
             using (var mdProvider = MetadataReaderProvider.FromMetadataImage(mdBlob.ToImmutableArray()))
@@ -1071,9 +1071,9 @@ namespace System.Reflection.Metadata.Tests
 
             mdBuilder.AddModule(0, default(StringHandle), default(GuidHandle), default(GuidHandle), default(GuidHandle));
 
-            var mdSerializer = new TypeSystemMetadataSerializer(mdBuilder, "v4.0.30319", isMinimalDelta: false);
+            var rootBuilder = new MetadataRootBuilder(mdBuilder);
             var mdBlob = new BlobBuilder();
-            mdSerializer.SerializeMetadata(mdBlob, 0, 0);
+            rootBuilder.Serialize(mdBlob, 0, 0);
 
             // validate sizes table rows that reference guids:
             using (var mdProvider = MetadataReaderProvider.FromMetadataImage(mdBlob.ToImmutableArray()))
@@ -1141,9 +1141,9 @@ namespace System.Reflection.Metadata.Tests
 
             mdBuilder.AddModule(0, default(StringHandle), default(GuidHandle), default(GuidHandle), default(GuidHandle));
 
-            var mdSerializer = new TypeSystemMetadataSerializer(mdBuilder, "v4.0.30319", isMinimalDelta: false);
+            var rootBuilder = new MetadataRootBuilder(mdBuilder);
             var mdBlob = new BlobBuilder();
-            mdSerializer.SerializeMetadata(mdBlob, 0, 0);
+            rootBuilder.Serialize(mdBlob, 0, 0);
 
             // validate sizes table rows that reference guids:
             using (var mdProvider = MetadataReaderProvider.FromMetadataImage(mdBlob.ToImmutableArray()))
@@ -1211,9 +1211,9 @@ namespace System.Reflection.Metadata.Tests
 
             mdBuilder.AddModule(0, default(StringHandle), default(GuidHandle), default(GuidHandle), default(GuidHandle));
 
-            var mdSerializer = new TypeSystemMetadataSerializer(mdBuilder, "v4.0.30319", isMinimalDelta: false);
+            var rootBuilder = new MetadataRootBuilder(mdBuilder);
             var mdBlob = new BlobBuilder();
-            mdSerializer.SerializeMetadata(mdBlob, 0, 0);
+            rootBuilder.Serialize(mdBlob, 0, 0);
 
             // validate sizes table rows that reference guids:
             using (var mdProvider = MetadataReaderProvider.FromMetadataImage(mdBlob.ToImmutableArray()))
@@ -1281,9 +1281,9 @@ namespace System.Reflection.Metadata.Tests
 
             mdBuilder.AddModule(0, default(StringHandle), default(GuidHandle), default(GuidHandle), default(GuidHandle));
 
-            var mdSerializer = new TypeSystemMetadataSerializer(mdBuilder, "v4.0.30319", isMinimalDelta: false);
+            var rootBuilder = new MetadataRootBuilder(mdBuilder);
             var mdBlob = new BlobBuilder();
-            mdSerializer.SerializeMetadata(mdBlob, 0, 0);
+            rootBuilder.Serialize(mdBlob, 0, 0);
 
             // validate sizes table rows that reference guids:
             using (var mdProvider = MetadataReaderProvider.FromMetadataImage(mdBlob.ToImmutableArray()))
@@ -1353,9 +1353,9 @@ namespace System.Reflection.Metadata.Tests
 
             mdBuilder.AddModule(0, default(StringHandle), default(GuidHandle), default(GuidHandle), default(GuidHandle));
 
-            var mdSerializer = new TypeSystemMetadataSerializer(mdBuilder, "v4.0.30319", isMinimalDelta: false);
+            var rootBuilder = new MetadataRootBuilder(mdBuilder);
             var mdBlob = new BlobBuilder();
-            mdSerializer.SerializeMetadata(mdBlob, 0, 0);
+            rootBuilder.Serialize(mdBlob, 0, 0);
 
             // validate sizes table rows that reference guids:
             using (var mdProvider = MetadataReaderProvider.FromMetadataImage(mdBlob.ToImmutableArray()))
@@ -1425,9 +1425,9 @@ namespace System.Reflection.Metadata.Tests
 
             mdBuilder.AddModule(0, default(StringHandle), default(GuidHandle), default(GuidHandle), default(GuidHandle));
 
-            var mdSerializer = new TypeSystemMetadataSerializer(mdBuilder, "v4.0.30319", isMinimalDelta: false);
+            var rootBuilder = new MetadataRootBuilder(mdBuilder);
             var mdBlob = new BlobBuilder();
-            mdSerializer.SerializeMetadata(mdBlob, 0, 0);
+            rootBuilder.Serialize(mdBlob, 0, 0);
 
             // validate sizes table rows that reference guids:
             using (var mdProvider = MetadataReaderProvider.FromMetadataImage(mdBlob.ToImmutableArray()))
@@ -1497,9 +1497,9 @@ namespace System.Reflection.Metadata.Tests
 
             mdBuilder.AddModule(0, default(StringHandle), default(GuidHandle), default(GuidHandle), default(GuidHandle));
 
-            var mdSerializer = new TypeSystemMetadataSerializer(mdBuilder, "v4.0.30319", isMinimalDelta: false);
+            var rootBuilder = new MetadataRootBuilder(mdBuilder);
             var mdBlob = new BlobBuilder();
-            mdSerializer.SerializeMetadata(mdBlob, 0, 0);
+            rootBuilder.Serialize(mdBlob, 0, 0);
 
             // validate sizes table rows that reference guids:
             using (var mdProvider = MetadataReaderProvider.FromMetadataImage(mdBlob.ToImmutableArray()))
@@ -1567,9 +1567,9 @@ namespace System.Reflection.Metadata.Tests
 
             mdBuilder.AddModule(0, default(StringHandle), default(GuidHandle), default(GuidHandle), default(GuidHandle));
 
-            var mdSerializer = new TypeSystemMetadataSerializer(mdBuilder, "v4.0.30319", isMinimalDelta: false);
+            var rootBuilder = new MetadataRootBuilder(mdBuilder);
             var mdBlob = new BlobBuilder();
-            mdSerializer.SerializeMetadata(mdBlob, 0, 0);
+            rootBuilder.Serialize(mdBlob, 0, 0);
 
             // validate sizes table rows that reference guids:
             using (var mdProvider = MetadataReaderProvider.FromMetadataImage(mdBlob.ToImmutableArray()))
@@ -1637,9 +1637,9 @@ namespace System.Reflection.Metadata.Tests
 
             mdBuilder.AddModule(0, default(StringHandle), default(GuidHandle), default(GuidHandle), default(GuidHandle));
 
-            var mdSerializer = new TypeSystemMetadataSerializer(mdBuilder, "v4.0.30319", isMinimalDelta: false);
+            var rootBuilder = new MetadataRootBuilder(mdBuilder);
             var mdBlob = new BlobBuilder();
-            mdSerializer.SerializeMetadata(mdBlob, 0, 0);
+            rootBuilder.Serialize(mdBlob, 0, 0);
 
             // validate sizes table rows that reference guids:
             using (var mdProvider = MetadataReaderProvider.FromMetadataImage(mdBlob.ToImmutableArray()))
@@ -1707,9 +1707,9 @@ namespace System.Reflection.Metadata.Tests
 
             mdBuilder.AddModule(0, default(StringHandle), default(GuidHandle), default(GuidHandle), default(GuidHandle));
 
-            var mdSerializer = new TypeSystemMetadataSerializer(mdBuilder, "v4.0.30319", isMinimalDelta: false);
+            var rootBuilder = new MetadataRootBuilder(mdBuilder);
             var mdBlob = new BlobBuilder();
-            mdSerializer.SerializeMetadata(mdBlob, 0, 0);
+            rootBuilder.Serialize(mdBlob, 0, 0);
 
             // validate sizes table rows that reference guids:
             using (var mdProvider = MetadataReaderProvider.FromMetadataImage(mdBlob.ToImmutableArray()))
@@ -1777,9 +1777,9 @@ namespace System.Reflection.Metadata.Tests
 
             mdBuilder.AddModule(0, default(StringHandle), default(GuidHandle), default(GuidHandle), default(GuidHandle));
 
-            var mdSerializer = new TypeSystemMetadataSerializer(mdBuilder, "v4.0.30319", isMinimalDelta: false);
+            var rootBuilder = new MetadataRootBuilder(mdBuilder);
             var mdBlob = new BlobBuilder();
-            mdSerializer.SerializeMetadata(mdBlob, 0, 0);
+            rootBuilder.Serialize(mdBlob, 0, 0);
 
             // validate sizes table rows that reference guids:
             using (var mdProvider = MetadataReaderProvider.FromMetadataImage(mdBlob.ToImmutableArray()))
@@ -1847,9 +1847,9 @@ namespace System.Reflection.Metadata.Tests
 
             mdBuilder.AddModule(0, default(StringHandle), default(GuidHandle), default(GuidHandle), default(GuidHandle));
 
-            var mdSerializer = new TypeSystemMetadataSerializer(mdBuilder, "v4.0.30319", isMinimalDelta: false);
+            var rootBuilder = new MetadataRootBuilder(mdBuilder);
             var mdBlob = new BlobBuilder();
-            mdSerializer.SerializeMetadata(mdBlob, 0, 0);
+            rootBuilder.Serialize(mdBlob, 0, 0);
 
             // validate sizes table rows that reference guids:
             using (var mdProvider = MetadataReaderProvider.FromMetadataImage(mdBlob.ToImmutableArray()))
@@ -1917,9 +1917,9 @@ namespace System.Reflection.Metadata.Tests
 
             mdBuilder.AddModule(0, default(StringHandle), default(GuidHandle), default(GuidHandle), default(GuidHandle));
 
-            var mdSerializer = new TypeSystemMetadataSerializer(mdBuilder, "v4.0.30319", isMinimalDelta: false);
+            var rootBuilder = new MetadataRootBuilder(mdBuilder);
             var mdBlob = new BlobBuilder();
-            mdSerializer.SerializeMetadata(mdBlob, 0, 0);
+            rootBuilder.Serialize(mdBlob, 0, 0);
 
             // validate sizes table rows that reference guids:
             using (var mdProvider = MetadataReaderProvider.FromMetadataImage(mdBlob.ToImmutableArray()))
@@ -1987,9 +1987,9 @@ namespace System.Reflection.Metadata.Tests
 
             mdBuilder.AddModule(0, default(StringHandle), default(GuidHandle), default(GuidHandle), default(GuidHandle));
 
-            var mdSerializer = new TypeSystemMetadataSerializer(mdBuilder, "v4.0.30319", isMinimalDelta: false);
+            var rootBuilder = new MetadataRootBuilder(mdBuilder);
             var mdBlob = new BlobBuilder();
-            mdSerializer.SerializeMetadata(mdBlob, 0, 0);
+            rootBuilder.Serialize(mdBlob, 0, 0);
 
             // validate sizes table rows that reference guids:
             using (var mdProvider = MetadataReaderProvider.FromMetadataImage(mdBlob.ToImmutableArray()))
@@ -2057,9 +2057,9 @@ namespace System.Reflection.Metadata.Tests
 
             mdBuilder.AddModule(0, default(StringHandle), default(GuidHandle), default(GuidHandle), default(GuidHandle));
 
-            var mdSerializer = new TypeSystemMetadataSerializer(mdBuilder, "v4.0.30319", isMinimalDelta: false);
+            var rootBuilder = new MetadataRootBuilder(mdBuilder);
             var mdBlob = new BlobBuilder();
-            mdSerializer.SerializeMetadata(mdBlob, 0, 0);
+            rootBuilder.Serialize(mdBlob, 0, 0);
 
             // validate sizes table rows that reference guids:
             using (var mdProvider = MetadataReaderProvider.FromMetadataImage(mdBlob.ToImmutableArray()))
@@ -2127,9 +2127,9 @@ namespace System.Reflection.Metadata.Tests
 
             mdBuilder.AddModule(0, default(StringHandle), default(GuidHandle), default(GuidHandle), default(GuidHandle));
 
-            var mdSerializer = new TypeSystemMetadataSerializer(mdBuilder, "v4.0.30319", isMinimalDelta: false);
+            var rootBuilder = new MetadataRootBuilder(mdBuilder);
             var mdBlob = new BlobBuilder();
-            mdSerializer.SerializeMetadata(mdBlob, 0, 0);
+            rootBuilder.Serialize(mdBlob, 0, 0);
 
             // validate sizes table rows that reference guids:
             using (var mdProvider = MetadataReaderProvider.FromMetadataImage(mdBlob.ToImmutableArray()))
@@ -2214,9 +2214,9 @@ namespace System.Reflection.Metadata.Tests
 
             mdBuilder.AddModule(0, default(StringHandle), default(GuidHandle), default(GuidHandle), default(GuidHandle));
 
-            var mdSerializer = new TypeSystemMetadataSerializer(mdBuilder, "v4.0.30319", isMinimalDelta: false);
+            var rootBuilder = new MetadataRootBuilder(mdBuilder);
             var mdBlob = new BlobBuilder();
-            mdSerializer.SerializeMetadata(mdBlob, 0, 0);
+            rootBuilder.Serialize(mdBlob, 0, 0);
 
             // validate sizes table rows that reference guids:
             using (var mdProvider = MetadataReaderProvider.FromMetadataImage(mdBlob.ToImmutableArray()))

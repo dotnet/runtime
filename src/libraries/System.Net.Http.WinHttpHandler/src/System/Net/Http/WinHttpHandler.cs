@@ -862,13 +862,13 @@ namespace System.Net.Http
 
                 state.CancellationToken.ThrowIfCancellationRequested();
 
-                responseMessage = WinHttpResponseParser.CreateResponseMessage(state, _doManualDecompressionCheck);
-
                 // Since the headers have been read, set the "receive" timeout to be based on each read
                 // call of the response body data. WINHTTP_OPTION_RECEIVE_TIMEOUT sets a timeout on each
                 // lower layer winsock read.
                 uint optionData = (uint)_receiveDataTimeout.TotalMilliseconds;
                 SetWinHttpOption(state.RequestHandle, Interop.WinHttp.WINHTTP_OPTION_RECEIVE_TIMEOUT, ref optionData);
+
+                responseMessage = WinHttpResponseParser.CreateResponseMessage(state, _doManualDecompressionCheck);
             }
             catch (Exception ex)
             {
@@ -1183,6 +1183,7 @@ namespace System.Net.Http
 
         private void SetWinHttpOption(SafeWinHttpHandle handle, uint option, ref uint optionData)
         {
+            Debug.Assert(handle != null);
             if (!Interop.WinHttp.WinHttpSetOption(
                 handle,
                 option,
@@ -1194,6 +1195,7 @@ namespace System.Net.Http
 
         private void SetWinHttpOption(SafeWinHttpHandle handle, uint option, string optionData)
         {
+            Debug.Assert(handle != null);
             if (!Interop.WinHttp.WinHttpSetOption(
                 handle,
                 option,
@@ -1210,6 +1212,7 @@ namespace System.Net.Http
             IntPtr optionData,
             uint optionSize)
         {
+            Debug.Assert(handle != null);
             if (!Interop.WinHttp.WinHttpSetOption(
                 handle,
                 option,

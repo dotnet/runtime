@@ -404,7 +404,7 @@ namespace System.Reflection.Metadata.Tests
         {
             if (itemInspector == null)
             {
-                if (expected is IEnumerable<byte>)
+                if (typeof(T) == typeof(byte))
                 {
                     itemInspector = b => $"0x{b:X2}";
                 }

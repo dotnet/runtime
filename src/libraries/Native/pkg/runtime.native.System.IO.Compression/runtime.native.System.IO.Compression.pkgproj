@@ -1,25 +1,26 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
-  
   <PropertyGroup>
-    <Version>4.1.0</Version>
+    <Version>4.1.1</Version>
     <SkipPackageFileCheck>true</SkipPackageFileCheck>
     <SkipValidatePackage>true</SkipValidatePackage>
   </PropertyGroup>
-
   <ItemGroup>
-  <RuntimeDependency Include="runtime.win10-amd64-aot.runtime.native.System.IO.Compression">
+    <RuntimeDependency Include="runtime.win10-x64-aot.runtime.native.System.IO.Compression">
       <TargetRuntime>win10-amd64-aot</TargetRuntime>
-      <Version>4.0.1-$(ExternalExpectedPrerelease)</Version>
+      <Version>4.1.1-$(ExternalExpectedPrerelease)</Version>
+      <SkipVersionCheck>true</SkipVersionCheck>
     </RuntimeDependency>
     <RuntimeDependency Include="runtime.win10-arm-aot.runtime.native.System.IO.Compression">
       <TargetRuntime>win10-arm-aot</TargetRuntime>
-      <Version>4.0.1-$(ExternalExpectedPrerelease)</Version>
+      <Version>4.1.1-$(ExternalExpectedPrerelease)</Version>
+      <SkipVersionCheck>true</SkipVersionCheck>
     </RuntimeDependency>
     <RuntimeDependency Include="runtime.win10-x86-aot.runtime.native.System.IO.Compression">
       <TargetRuntime>win10-x86-aot</TargetRuntime>
-      <Version>4.0.1-$(ExternalExpectedPrerelease)</Version>
+      <Version>4.1.1-$(ExternalExpectedPrerelease)</Version>
+      <SkipVersionCheck>true</SkipVersionCheck>
     </RuntimeDependency>
     <!-- make this package installable and noop in a packages.config-based project -->
     <File Include="$(PlaceHolderFile)">
@@ -56,6 +57,5 @@
       <Platform>arm</Platform>
     </ProjectReference>
   </ItemGroup>
-
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

@@ -2,238 +2,160 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-
-using System.Reflection;
-using System.Reflection.Emit;
-using System.Threading;
 using Xunit;
 
 namespace System.Reflection.Emit.Tests
 {
     public class MethodBuilderSetReturnType
     {
-        private const string TestDynamicAssemblyName = "TestDynamicAssembly";
-        private const string TestDynamicModuleName = "TestDynamicModule";
-        private const string TestDynamicTypeName = "TestDynamicType";
-        private const AssemblyBuilderAccess TestAssemblyBuilderAccess = AssemblyBuilderAccess.Run;
-        private const TypeAttributes TestTypeAttributes = TypeAttributes.Abstract;
-        private const MethodAttributes TestMethodAttributes = MethodAttributes.Public | MethodAttributes.Abstract | MethodAttributes.Virtual;
-        private const int MinStringLength = 1;
-        private const int MaxStringLength = 128;
-        private readonly RandomDataGenerator _generator = new RandomDataGenerator();
-
-        private TypeBuilder GetTestTypeBuilder()
+        [Fact]
+        public void SetReturnType_SingleGenericParameter()
         {
-            AssemblyName assemblyName = new AssemblyName(TestDynamicAssemblyName);
-            AssemblyBuilder assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(
-                assemblyName, TestAssemblyBuilderAccess);
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Abstract);
+            MethodBuilder method = type.DefineMethod("TestMethod", MethodAttributes.Public | MethodAttributes.Abstract | MethodAttributes.Virtual);
+            
+            GenericTypeParameterBuilder[] typeParameters = method.DefineGenericParameters("T");
+            Type returnType = typeParameters[0].AsType();
+            method.SetReturnType(returnType);
 
-            ModuleBuilder moduleBuilder = TestLibrary.Utilities.GetModuleBuilder(assemblyBuilder, TestDynamicModuleName);
-            return moduleBuilder.DefineType(TestDynamicTypeName, TestTypeAttributes);
+            type.CreateTypeInfo().AsType();
+            VerifyReturnType(method, returnType);
         }
 
         [Fact]
-        public void TestWithSingleGenericParameter()
+        public void SetReturnType_MultipleGenericParameters()
         {
-            string methodName = null;
-            methodName = _generator.GetString(false, false, true, MinStringLength, MaxStringLength);
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Abstract);
+            MethodBuilder method = type.DefineMethod("TestMethod", MethodAttributes.Public | MethodAttributes.Abstract | MethodAttributes.Virtual);
 
-            TypeBuilder typeBuilder = GetTestTypeBuilder();
-            MethodBuilder builder = typeBuilder.DefineMethod(methodName,
-                TestMethodAttributes);
+            string[] typeParamNames = new string[] { "T", "U" };
+            GenericTypeParameterBuilder[] typeParameters = method.DefineGenericParameters(typeParamNames);
 
-            string[] typeParamNames = { "T" };
-            GenericTypeParameterBuilder[] typeParameters =
-                builder.DefineGenericParameters(typeParamNames);
-            Type desiredReturnType = typeParameters[0].AsType();
+            Type returnType = typeParameters[1].AsType();
+            method.SetReturnType(returnType);
 
-            builder.SetReturnType(desiredReturnType);
-
-            typeBuilder.CreateTypeInfo().AsType();
-
-            VerifyReturnType(builder, desiredReturnType);
+            type.CreateTypeInfo().AsType();
+            VerifyReturnType(method, returnType);
         }
 
         [Fact]
-        public void TestWithMultipleGenericParameters()
+        public void SetReturnType_GenericAndNonGenericParameters()
         {
-            var methodName = _generator.GetString(false, false, true, MinStringLength, MaxStringLength);
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Abstract);
+            MethodBuilder method = type.DefineMethod("TestMethod", MethodAttributes.Public | MethodAttributes.Abstract | MethodAttributes.Virtual);
 
-            TypeBuilder typeBuilder = GetTestTypeBuilder();
-            MethodBuilder builder = typeBuilder.DefineMethod(methodName,
-                TestMethodAttributes);
+            string[] typeParamNames = new string[] { "T", "U" };
+            GenericTypeParameterBuilder[] typeParameters = method.DefineGenericParameters(typeParamNames);
 
-            string[] typeParamNames = { "T", "U" };
-            GenericTypeParameterBuilder[] typeParameters =
-                builder.DefineGenericParameters(typeParamNames);
-            Type desiredReturnType = typeParameters[1].AsType();
+            Type returnType = typeof(void);
+            method.SetReturnType(returnType);
 
-            builder.SetReturnType(desiredReturnType);
-
-            typeBuilder.CreateTypeInfo().AsType();
-
-            VerifyReturnType(builder, desiredReturnType);
+            type.CreateTypeInfo().AsType();
+            VerifyReturnType(method, returnType);
         }
 
         [Fact]
-        public void TestWithGenericAndNonGenericParameters()
+        public void SetReturnType_NonGenericMethod()
         {
-            string methodName = null;
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Abstract);
+            MethodBuilder method = type.DefineMethod("TestMethod", MethodAttributes.Public | MethodAttributes.Abstract | MethodAttributes.Virtual, typeof(int), new Type[] { typeof(int) });
 
-            methodName = _generator.GetString(false, false, true, MinStringLength, MaxStringLength);
+            Type returnType = typeof(void);
+            method.SetReturnType(returnType);
 
-            TypeBuilder typeBuilder = GetTestTypeBuilder();
-            MethodBuilder builder = typeBuilder.DefineMethod(methodName,
-                TestMethodAttributes);
-
-            string[] typeParamNames = { "T", "U" };
-            GenericTypeParameterBuilder[] typeParameters =
-                builder.DefineGenericParameters(typeParamNames);
-            Type desiredReturnType = typeof(void);
-
-            builder.SetReturnType(desiredReturnType);
-
-            typeBuilder.CreateTypeInfo().AsType();
-
-            VerifyReturnType(builder, desiredReturnType);
+            type.CreateTypeInfo().AsType();
+            VerifyReturnType(method, returnType);
         }
 
         [Fact]
-        public void TestNotSetReturnTypeOnNonGenericMethod()
+        public void SetReturnType_OverwriteGenericReturnTypeWithNonGenericType()
         {
-            string methodName = null;
-            methodName = _generator.GetString(false, false, true, MinStringLength, MaxStringLength);
-            Type[] parameterTypes = new Type[] { typeof(int) };
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Abstract);
+            MethodBuilder method = type.DefineMethod("TestMethod",
+                MethodAttributes.Public | MethodAttributes.Abstract | MethodAttributes.Virtual);
 
-            TypeBuilder typeBuilder = GetTestTypeBuilder();
-            MethodBuilder builder = typeBuilder.DefineMethod(methodName,
-                TestMethodAttributes,
-                typeof(int),
-                parameterTypes);
+            string[] typeParamNames = new string[] { "T", "U" };
+            GenericTypeParameterBuilder[] typeParameters = method.DefineGenericParameters(typeParamNames);
 
-            Type desiredReturnType = typeof(void);
+            Type returnType = typeof(void);
+            method.SetReturnType(typeParameters[0].AsType());
+            method.SetReturnType(returnType);
 
-            builder.SetReturnType(desiredReturnType);
-
-            typeBuilder.CreateTypeInfo().AsType();
-
-            VerifyReturnType(builder, desiredReturnType);
+            type.CreateTypeInfo().AsType();
+            VerifyReturnType(method, returnType);
         }
 
         [Fact]
-        public void TestOverwriteGenericReturnTypeWithNonGenericType()
+        public void SetReturnType_OverwriteGenericReturnTypeWithGenericType()
         {
-            string methodName = null;
-            methodName = _generator.GetString(false, false, true, MinStringLength, MaxStringLength);
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Abstract);
+            MethodBuilder method = type.DefineMethod("TestMethod", MethodAttributes.Public | MethodAttributes.Abstract | MethodAttributes.Virtual);
 
-            TypeBuilder typeBuilder = GetTestTypeBuilder();
-            MethodBuilder builder = typeBuilder.DefineMethod(methodName,
-                TestMethodAttributes);
+            string[] typeParamNames = new string[] { "T", "U" };
+            GenericTypeParameterBuilder[] typeParameters = method.DefineGenericParameters(typeParamNames);
 
-            string[] typeParamNames = { "T", "U" };
-            GenericTypeParameterBuilder[] typeParameters =
-                builder.DefineGenericParameters(typeParamNames);
-            Type desiredReturnType = typeof(void);
+            Type returnType = typeParameters[1].AsType();
+            method.SetReturnType(typeParameters[0].AsType());
+            method.SetReturnType(returnType);
 
-            builder.SetReturnType(typeParameters[0].AsType());
-            builder.SetReturnType(desiredReturnType);
-
-            typeBuilder.CreateTypeInfo().AsType();
-
-            VerifyReturnType(builder, desiredReturnType);
+            type.CreateTypeInfo().AsType();
+            VerifyReturnType(method, returnType);
         }
 
         [Fact]
-        public void TestOverwriteGenericReturnTypeWithGenericType()
+        public void SetReturnType_OverwriteNonGenericReturnTypeWithGenericType()
         {
-            string methodName = null;
-            methodName = _generator.GetString(false, false, true, MinStringLength, MaxStringLength);
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Abstract);
+            MethodBuilder method = type.DefineMethod("TestMethod", MethodAttributes.Public | MethodAttributes.Abstract | MethodAttributes.Virtual, typeof(int), new Type[] { typeof(int) });
 
-            TypeBuilder typeBuilder = GetTestTypeBuilder();
-            MethodBuilder builder = typeBuilder.DefineMethod(methodName,
-                TestMethodAttributes);
+            string[] typeParamNames = new string[] { "T", "U" };
+            GenericTypeParameterBuilder[] typeParameters = method.DefineGenericParameters(typeParamNames);
 
-            string[] typeParamNames = { "T", "U" };
-            GenericTypeParameterBuilder[] typeParameters =
-                builder.DefineGenericParameters(typeParamNames);
-            Type desiredReturnType = typeParameters[1].AsType();
+            Type returnType = typeParameters[0].AsType();
+            method.SetReturnType(returnType);
 
-            builder.SetReturnType(typeParameters[0].AsType());
-            builder.SetReturnType(desiredReturnType);
-
-            typeBuilder.CreateTypeInfo().AsType();
-
-            VerifyReturnType(builder, desiredReturnType);
+            type.CreateTypeInfo().AsType();
+            VerifyReturnType(method, returnType);
         }
 
         [Fact]
-        public void TestOverwriteNonGenericReturnTypeWithGenericType()
+        public void SetReturnType_TypeCreated_Works()
         {
-            string methodName = null;
-            methodName = _generator.GetString(false, false, true, MinStringLength, MaxStringLength);
-            Type[] parameterTypes = new Type[] { typeof(int) };
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Abstract);
+            MethodBuilder method = type.DefineMethod("TestMethod", MethodAttributes.Public | MethodAttributes.Abstract | MethodAttributes.Virtual, typeof(int), new Type[] { typeof(int) });
 
-            TypeBuilder typeBuilder = GetTestTypeBuilder();
-            MethodBuilder builder = typeBuilder.DefineMethod(methodName,
-                TestMethodAttributes,
-                typeof(int),
-                parameterTypes);
+            string[] typeParamNames = new string[] { "T", "U" };
+            GenericTypeParameterBuilder[] typeParameters = method.DefineGenericParameters(typeParamNames);
 
-            string[] typeParamNames = { "T", "U" };
-            GenericTypeParameterBuilder[] typeParameters =
-                builder.DefineGenericParameters(typeParamNames);
-            Type desiredReturnType = typeParameters[0].AsType();
-
-            builder.SetReturnType(desiredReturnType);
-
-            typeBuilder.CreateTypeInfo().AsType();
-
-            VerifyReturnType(builder, desiredReturnType);
+            Type returnType = typeParameters[0].AsType();
+            type.CreateTypeInfo().AsType();
+            method.SetReturnType(returnType);
         }
 
         [Fact]
-        public void TestAfterTypeCreated()
+        public void SetReturnType_NullReturnType_ReturnsVoid()
         {
-            string methodName = null;
-            methodName = _generator.GetString(false, false, true, MinStringLength, MaxStringLength);
-            Type[] parameterTypes = new Type[] { typeof(int) };
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Abstract);
+            MethodBuilder method = type.DefineMethod("TestMethod", MethodAttributes.Public | MethodAttributes.Abstract | MethodAttributes.Virtual);
 
-            TypeBuilder typeBuilder = GetTestTypeBuilder();
-            MethodBuilder builder = typeBuilder.DefineMethod(methodName,
-                TestMethodAttributes,
-                typeof(int),
-                parameterTypes);
-
-            string[] typeParamNames = { "T", "U" };
-            GenericTypeParameterBuilder[] typeParameters =
-                builder.DefineGenericParameters(typeParamNames);
-            Type desiredReturnType = typeParameters[0].AsType();
-
-            typeBuilder.CreateTypeInfo().AsType();
-
-            builder.SetReturnType(desiredReturnType);
+            method.SetReturnType(null);
+            type.CreateTypeInfo().AsType();
+            VerifyReturnType(method, null);
         }
 
-        [Fact]
-        public void TestNotThrowsOnNull()
+        private void VerifyReturnType(MethodBuilder method, Type expected)
         {
-            string methodName = null;
-            methodName = _generator.GetString(false, false, true, MinStringLength, MaxStringLength);
-            TypeBuilder typeBuilder = GetTestTypeBuilder();
-            MethodBuilder builder = typeBuilder.DefineMethod(methodName,
-                TestMethodAttributes);
-
-            builder.SetReturnType(null);
-        }
-
-        private void VerifyReturnType(MethodBuilder builder, Type desiredReturnType)
-        {
-            MethodInfo methodInfo = builder.GetBaseDefinition();
-            Type actualReturnType = methodInfo.ReturnType;
-
-            Assert.Equal(desiredReturnType.Name, actualReturnType.Name);
-            Assert.True(actualReturnType.Equals(desiredReturnType));
+            MethodInfo methodInfo = method.GetBaseDefinition();
+            Type returnType = methodInfo.ReturnType;
+            if (expected == null)
+            {
+                Assert.Null(returnType);
+            }
+            else
+            {
+                Assert.Equal(expected.Name, returnType.Name);
+                Assert.True(returnType.Equals(expected));
+            }
         }
     }
 }

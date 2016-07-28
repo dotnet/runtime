@@ -9,7 +9,7 @@
 **
 **
 =============================================================================*/
-using System;
+
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 
@@ -27,7 +27,7 @@ namespace System.Collections.Generic
         private T[] _array;     // Storage for stack elements
         private int _size;           // Number of items in the stack.
         private int _version;        // Used to keep enumerator in sync w/ collection.
-        private Object _syncRoot;
+        private object _syncRoot;
 
         private const int DefaultCapacity = 4;
 
@@ -65,19 +65,19 @@ namespace System.Collections.Generic
         }
 
         /// <include file='doc\Stack.uex' path='docs/doc[@for="Stack.IsSynchronized"]/*' />
-        bool System.Collections.ICollection.IsSynchronized
+        bool ICollection.IsSynchronized
         {
             get { return false; }
         }
 
         /// <include file='doc\Stack.uex' path='docs/doc[@for="Stack.SyncRoot"]/*' />
-        Object System.Collections.ICollection.SyncRoot
+        object ICollection.SyncRoot
         {
             get
             {
                 if (_syncRoot == null)
                 {
-                    System.Threading.Interlocked.CompareExchange<Object>(ref _syncRoot, new Object(), null);
+                    Threading.Interlocked.CompareExchange<object>(ref _syncRoot, new object(), null);
                 }
                 return _syncRoot;
             }
@@ -134,7 +134,7 @@ namespace System.Collections.Generic
                 array[--dstIndex] = _array[srcIndex++];
         }
 
-        void System.Collections.ICollection.CopyTo(Array array, int arrayIndex)
+        void ICollection.CopyTo(Array array, int arrayIndex)
         {
             if (array == null)
             {
@@ -186,7 +186,7 @@ namespace System.Collections.Generic
             return new Enumerator(this);
         }
 
-        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
+        IEnumerator IEnumerable.GetEnumerator()
         {
             return new Enumerator(this);
         }
@@ -258,15 +258,15 @@ namespace System.Collections.Generic
         public struct Enumerator : IEnumerator<T>,
             System.Collections.IEnumerator
         {
-            private Stack<T> _stack;
+            private readonly Stack<T> _stack;
+            private readonly int _version;
             private int _index;
-            private int _version;
             private T _currentElement;
 
             internal Enumerator(Stack<T> stack)
             {
                 _stack = stack;
-                _version = _stack._version;
+                _version = stack._version;
                 _index = -2;
                 _currentElement = default(T);
             }
@@ -308,18 +308,24 @@ namespace System.Collections.Generic
             {
                 get
                 {
-                    if (_index == -2) throw new InvalidOperationException(SR.InvalidOperation_EnumNotStarted);
-                    if (_index == -1) throw new InvalidOperationException(SR.InvalidOperation_EnumEnded);
+                    if (_index < 0)
+                        ThrowEnumerationNotStartedOrEnded();
                     return _currentElement;
                 }
             }
-
-            Object System.Collections.IEnumerator.Current
+            
+            private void ThrowEnumerationNotStartedOrEnded()
+            {
+                Debug.Assert(_index == -1 || _index == -2);
+                throw new InvalidOperationException(_index == -2 ? SR.InvalidOperation_EnumNotStarted : SR.InvalidOperation_EnumEnded);
+            }
+            
+            object System.Collections.IEnumerator.Current
             {
                 get { return Current; }
             }
 
-            void System.Collections.IEnumerator.Reset()
+            void IEnumerator.Reset()
             {
                 if (_version != _stack._version) throw new InvalidOperationException(SR.InvalidOperation_EnumFailedVersion);
                 _index = -2;

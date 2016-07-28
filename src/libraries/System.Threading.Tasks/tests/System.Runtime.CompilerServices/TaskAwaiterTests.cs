@@ -151,7 +151,7 @@ namespace System.Threading.Tasks.Tests
                 Task.Run(() => tcs.Task.ConfigureAwait(false).GetAwaiter().GetResult()),
                 Task.Run(() => ((Task)tcs.Task).ConfigureAwait(false).GetAwaiter().GetResult())
             };
-            Assert.False(Task.WaitAll(tasks, 4000), "Tasks should not have completed");
+            Assert.Equal(-1, Task.WaitAny(tasks, 100)); // "Tasks should not have completed"
 
             // Now complete the tasks, after which all the tasks should complete successfully.
             tcs.SetResult(true);

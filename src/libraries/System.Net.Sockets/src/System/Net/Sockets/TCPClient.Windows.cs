@@ -13,6 +13,11 @@ namespace System.Net.Sockets
             Client = CreateSocket();
         }
 
+        private void DisposeCore()
+        {
+            // Nop.  No additional state that needs to be disposed of.
+        }
+
         // Used by the class to provide the underlying network socket.
         private Socket ClientCore
         {
@@ -20,19 +25,38 @@ namespace System.Net.Sockets
             set { _clientSocket = value; }
         }
 
-        private int AvailableCore { get { return _clientSocket.Available; } }
+        private int AvailableCore
+        {
+            get
+            {
+                // If we have a client socket, return its available value.
+                // Otherwise, there isn't data available, so return 0.
+                return _clientSocket?.Available ?? 0;
+            }
+        }
 
-        private bool ConnectedCore { get { return _clientSocket.Connected; } }
+        private bool ConnectedCore
+        {
+            get
+            {
+                // If we have a client socket, return whether it's connected.
+                // Otherwise as we don't have a socket, by definition it's not.
+                return _clientSocket?.Connected ?? false;
+            }
+        }
 
         private bool ExclusiveAddressUseCore
         {
             get
             {
-                return _clientSocket.ExclusiveAddressUse;
+                return _clientSocket?.ExclusiveAddressUse ?? false;
             }
             set
             {
-                _clientSocket.ExclusiveAddressUse = value;
+                if (_clientSocket != null)
+                {
+                    _clientSocket.ExclusiveAddressUse = value;
+                }
             }
         }
 

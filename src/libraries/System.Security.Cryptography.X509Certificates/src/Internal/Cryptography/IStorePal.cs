@@ -9,8 +9,7 @@ namespace Internal.Cryptography.Pal
 {
     internal interface IStorePal : IDisposable
     {
-        byte[] Export(X509ContentType contentType, string password);
-        void CopyTo(X509Certificate2Collection collection);
+        void CloneTo(X509Certificate2Collection collection);
         void Add(ICertificatePal cert);
         void Remove(ICertificatePal cert);
     }

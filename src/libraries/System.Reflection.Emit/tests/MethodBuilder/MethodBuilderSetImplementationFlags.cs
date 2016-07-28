@@ -2,277 +2,43 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-
-using System.Reflection;
-using System.Reflection.Emit;
-using System.Threading;
 using Xunit;
 
 namespace System.Reflection.Emit.Tests
 {
     public class MethodBuilderSetImplementationFlags
     {
-        private const string TestDynamicAssemblyName = "TestDynamicAssembly";
-        private const string TestDynamicModuleName = "TestDynamicModule";
-        private const string TestDynamicTypeName = "TestDynamicType";
-        private const AssemblyBuilderAccess TestAssemblyBuilderAccess = AssemblyBuilderAccess.Run;
-        private const TypeAttributes TestTypeAttributes = TypeAttributes.Abstract;
-        private const MethodAttributes TestMethodAttributes = MethodAttributes.Public | MethodAttributes.Static;
-        private const int MinStringLength = 1;
-        private const int MaxStringLength = 128;
-        private const int ByteArraySize = 128;
-        private readonly RandomDataGenerator _generator = new RandomDataGenerator();
-
-        private TypeBuilder GetTestTypeBuilder()
+        [Theory]
+        [InlineData(MethodImplAttributes.CodeTypeMask)]
+        [InlineData(MethodImplAttributes.ForwardRef)]
+        [InlineData(MethodImplAttributes.IL)]
+        [InlineData(MethodImplAttributes.InternalCall)]
+        [InlineData(MethodImplAttributes.Managed)]
+        [InlineData(MethodImplAttributes.ManagedMask)]
+        [InlineData(MethodImplAttributes.Native)]
+        [InlineData(MethodImplAttributes.NoInlining)]
+        [InlineData(MethodImplAttributes.OPTIL)]
+        [InlineData(MethodImplAttributes.PreserveSig)]
+        [InlineData(MethodImplAttributes.Runtime)]
+        [InlineData(MethodImplAttributes.Synchronized)]
+        [InlineData(MethodImplAttributes.Unmanaged)]
+        public void SetImplementationFlags(MethodImplAttributes implementationFlags)
         {
-            AssemblyName assemblyName = new AssemblyName(TestDynamicAssemblyName);
-            AssemblyBuilder assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(
-                assemblyName, TestAssemblyBuilderAccess);
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Abstract);
+            MethodBuilder method = type.DefineMethod("TestMethod", MethodAttributes.Public);
 
-            ModuleBuilder moduleBuilder = TestLibrary.Utilities.GetModuleBuilder(assemblyBuilder, TestDynamicModuleName);
-            return moduleBuilder.DefineType(TestDynamicTypeName, TestTypeAttributes);
+            method.SetImplementationFlags(implementationFlags);
+            Assert.Equal(implementationFlags, method.MethodImplementationFlags);
         }
 
         [Fact]
-        public void TestWithCodeTypeMask()
+        public void SetImplementationFlags_TypeCreated_ThrowsInvalidOperationException()
         {
-            string methodName = null;
-            methodName = _generator.GetString(false, false, true, MinStringLength, MaxStringLength);
-            MethodImplAttributes desiredFlags = MethodImplAttributes.CodeTypeMask;
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Abstract);
+            MethodBuilder method = type.DefineMethod("TestMethod", MethodAttributes.Public | MethodAttributes.Abstract | MethodAttributes.Virtual);
 
-            TypeBuilder typeBuilder = GetTestTypeBuilder();
-            MethodBuilder builder = typeBuilder.DefineMethod(methodName,
-                MethodAttributes.Public);
-
-            builder.SetImplementationFlags(desiredFlags);
-
-            MethodImplAttributes actualFlags = builder.MethodImplementationFlags;
-            Assert.Equal(desiredFlags, actualFlags);
-        }
-
-        [Fact]
-        public void TestWithForwardRef()
-        {
-            string methodName = null;
-            methodName = _generator.GetString(false, false, true, MinStringLength, MaxStringLength);
-            MethodImplAttributes desiredFlags = MethodImplAttributes.ForwardRef;
-
-            TypeBuilder typeBuilder = GetTestTypeBuilder();
-            MethodBuilder builder = typeBuilder.DefineMethod(methodName,
-                MethodAttributes.Public);
-
-            builder.SetImplementationFlags(desiredFlags);
-
-            MethodImplAttributes actualFlags = builder.MethodImplementationFlags;
-            Assert.Equal(desiredFlags, actualFlags);
-        }
-
-        [Fact]
-        public void TestWithIL()
-        {
-            string methodName = null;
-            methodName = _generator.GetString(false, false, true, MinStringLength, MaxStringLength);
-            MethodImplAttributes desiredFlags = MethodImplAttributes.IL;
-
-            TypeBuilder typeBuilder = GetTestTypeBuilder();
-            MethodBuilder builder = typeBuilder.DefineMethod(methodName,
-                MethodAttributes.Public);
-
-            builder.SetImplementationFlags(desiredFlags);
-
-            MethodImplAttributes actualFlags = builder.MethodImplementationFlags;
-            Assert.Equal(desiredFlags, actualFlags);
-        }
-
-        [Fact]
-        public void TestWithInternalCall()
-        {
-            string methodName = null;
-            methodName = _generator.GetString(false, false, true, MinStringLength, MaxStringLength);
-            MethodImplAttributes desiredFlags = MethodImplAttributes.InternalCall;
-
-            TypeBuilder typeBuilder = GetTestTypeBuilder();
-            MethodBuilder builder = typeBuilder.DefineMethod(methodName,
-                MethodAttributes.Public);
-
-            builder.SetImplementationFlags(desiredFlags);
-
-            MethodImplAttributes actualFlags = builder.MethodImplementationFlags;
-            Assert.Equal(desiredFlags, actualFlags);
-        }
-
-        [Fact]
-        public void TestWithManaged()
-        {
-            string methodName = null;
-            methodName = _generator.GetString(false, false, true, MinStringLength, MaxStringLength);
-            MethodImplAttributes desiredFlags = MethodImplAttributes.Managed;
-
-            TypeBuilder typeBuilder = GetTestTypeBuilder();
-            MethodBuilder builder = typeBuilder.DefineMethod(methodName,
-                MethodAttributes.Public);
-
-            builder.SetImplementationFlags(desiredFlags);
-
-            MethodImplAttributes actualFlags = builder.MethodImplementationFlags;
-            Assert.Equal(desiredFlags, actualFlags);
-        }
-
-        [Fact]
-        public void TestWithManagedMask()
-        {
-            string methodName = null;
-            methodName = _generator.GetString(false, false, true, MinStringLength, MaxStringLength);
-            MethodImplAttributes desiredFlags = MethodImplAttributes.ManagedMask;
-
-            TypeBuilder typeBuilder = GetTestTypeBuilder();
-            MethodBuilder builder = typeBuilder.DefineMethod(methodName,
-                MethodAttributes.Public);
-
-            builder.SetImplementationFlags(desiredFlags);
-
-            MethodImplAttributes actualFlags = builder.MethodImplementationFlags;
-            Assert.Equal(desiredFlags, actualFlags);
-        }
-
-
-        [Fact]
-        public void TestWithNative()
-        {
-            string methodName = null;
-            methodName = _generator.GetString(false, false, true, MinStringLength, MaxStringLength);
-            MethodImplAttributes desiredFlags = MethodImplAttributes.Native;
-
-            TypeBuilder typeBuilder = GetTestTypeBuilder();
-            MethodBuilder builder = typeBuilder.DefineMethod(methodName,
-                MethodAttributes.Public);
-
-            builder.SetImplementationFlags(desiredFlags);
-
-            MethodImplAttributes actualFlags = builder.MethodImplementationFlags;
-            Assert.Equal(desiredFlags, actualFlags);
-        }
-
-        [Fact]
-        public void TestWithNoInlining()
-        {
-            string methodName = null;
-
-            methodName = _generator.GetString(false, false, true, MinStringLength, MaxStringLength);
-            MethodImplAttributes desiredFlags = MethodImplAttributes.NoInlining;
-
-            TypeBuilder typeBuilder = GetTestTypeBuilder();
-            MethodBuilder builder = typeBuilder.DefineMethod(methodName,
-                MethodAttributes.Public);
-
-            builder.SetImplementationFlags(desiredFlags);
-
-            MethodImplAttributes actualFlags = builder.MethodImplementationFlags;
-            Assert.Equal(desiredFlags, actualFlags);
-        }
-
-        [Fact]
-        public void TestWithOPTIL()
-        {
-            string methodName = null;
-            methodName = _generator.GetString(false, false, true, MinStringLength, MaxStringLength);
-            MethodImplAttributes desiredFlags = MethodImplAttributes.OPTIL;
-
-            TypeBuilder typeBuilder = GetTestTypeBuilder();
-            MethodBuilder builder = typeBuilder.DefineMethod(methodName,
-                MethodAttributes.Public);
-
-            builder.SetImplementationFlags(desiredFlags);
-
-            MethodImplAttributes actualFlags = builder.MethodImplementationFlags;
-            Assert.Equal(desiredFlags, actualFlags);
-        }
-
-        [Fact]
-        public void TestWithPreserveSig()
-        {
-            string methodName = null;
-            methodName = _generator.GetString(false, false, true, MinStringLength, MaxStringLength);
-            MethodImplAttributes desiredFlags = MethodImplAttributes.PreserveSig;
-
-            TypeBuilder typeBuilder = GetTestTypeBuilder();
-            MethodBuilder builder = typeBuilder.DefineMethod(methodName,
-                MethodAttributes.Public);
-
-            builder.SetImplementationFlags(desiredFlags);
-
-            MethodImplAttributes actualFlags = builder.MethodImplementationFlags;
-            Assert.Equal(desiredFlags, actualFlags);
-        }
-
-        [Fact]
-        public void TestWithRuntime()
-        {
-            string methodName = null;
-
-            methodName = _generator.GetString(false, false, true, MinStringLength, MaxStringLength);
-            MethodImplAttributes desiredFlags = MethodImplAttributes.Runtime;
-
-            TypeBuilder typeBuilder = GetTestTypeBuilder();
-            MethodBuilder builder = typeBuilder.DefineMethod(methodName,
-                MethodAttributes.Public);
-
-            builder.SetImplementationFlags(desiredFlags);
-
-            MethodImplAttributes actualFlags = builder.MethodImplementationFlags;
-            Assert.Equal(desiredFlags, actualFlags);
-        }
-
-        [Fact]
-        public void TestWithSynchronized()
-        {
-            string methodName = null;
-            methodName = _generator.GetString(false, false, true, MinStringLength, MaxStringLength);
-            MethodImplAttributes desiredFlags = MethodImplAttributes.Synchronized;
-
-            TypeBuilder typeBuilder = GetTestTypeBuilder();
-            MethodBuilder builder = typeBuilder.DefineMethod(methodName,
-                MethodAttributes.Public);
-
-            builder.SetImplementationFlags(desiredFlags);
-
-            MethodImplAttributes actualFlags = builder.MethodImplementationFlags;
-            Assert.Equal(desiredFlags, actualFlags);
-        }
-
-        [Fact]
-        public void TestWithUnmanaged()
-        {
-            string methodName = null;
-
-            methodName = _generator.GetString(false, false, true, MinStringLength, MaxStringLength);
-            MethodImplAttributes desiredFlags = MethodImplAttributes.Unmanaged;
-
-            TypeBuilder typeBuilder = GetTestTypeBuilder();
-            MethodBuilder builder = typeBuilder.DefineMethod(methodName,
-                MethodAttributes.Public);
-
-            builder.SetImplementationFlags(desiredFlags);
-
-            MethodImplAttributes actualFlags = builder.MethodImplementationFlags;
-            Assert.Equal(desiredFlags, actualFlags);
-        }
-
-        [Fact]
-        public void TestThrowsExceptionOnTypeCreated()
-        {
-            string methodName = null;
-            methodName = _generator.GetString(false, false, true, MinStringLength, MaxStringLength);
-            MethodImplAttributes desiredFlags = MethodImplAttributes.Unmanaged;
-
-            TypeBuilder typeBuilder = GetTestTypeBuilder();
-            MethodBuilder builder = typeBuilder.DefineMethod(methodName,
-                MethodAttributes.Public | MethodAttributes.Abstract | MethodAttributes.Virtual);
-
-            Type type = typeBuilder.CreateTypeInfo().AsType();
-
-            Assert.Throws<InvalidOperationException>(() => { builder.SetImplementationFlags(desiredFlags); });
+            type.CreateTypeInfo().AsType();
+            Assert.Throws<InvalidOperationException>(() => method.SetImplementationFlags(MethodImplAttributes.Unmanaged));
         }
     }
 }

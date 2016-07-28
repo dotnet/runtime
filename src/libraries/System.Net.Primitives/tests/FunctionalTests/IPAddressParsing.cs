@@ -44,17 +44,10 @@ namespace System.Net.Primitives.Functional.Tests
         [InlineData("037777777777", "255.255.255.255")]
         [InlineData("023516614433", "157.59.25.27")]
         [InlineData("00000023516614433", "157.59.25.27")]
-        public void ParseIPv4_Octal_Success(string address, string expected)
-        {
-            Assert.Equal(expected, IPAddress.Parse(address).ToString());
-        }
-
-        [Theory]
-        [ActiveIssue(8362, PlatformID.OSX)]
-        [InlineData("000235.000073.0000031.00000033", "157.59.25.27")] // Octal
-        [InlineData("0235.073.031.033", "157.59.25.27")] // Octal
+        [InlineData("000235.000073.0000031.00000033", "157.59.25.27")]
+        [InlineData("0235.073.031.033", "157.59.25.27")]
         [InlineData("157.59.25.033", "157.59.25.27")] // Partial octal
-        public void ParseIPv4_Octal_Success_NonOSX(string address, string expected)
+        public void ParseIPv4_Octal_Success(string address, string expected)
         {
             Assert.Equal(expected, IPAddress.Parse(address).ToString());
         }

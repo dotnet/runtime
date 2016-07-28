@@ -10,7 +10,8 @@ using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using Internal.Cryptography.Pal.Native;
-using Internal.NativeCrypto;
+
+using static Interop.Crypt32;
 
 namespace Internal.Cryptography.Pal
 {
@@ -34,7 +35,7 @@ namespace Internal.Cryptography.Pal
 
         public string NormalizeOid(string maybeOid, OidGroup expectedGroup)
         {
-            string oidValue = OidInfo.FindOidInfo(CryptOidInfoKeyType.CRYPT_OID_INFO_NAME_KEY, maybeOid, expectedGroup, fallBackToAllGroups: true).OID;
+            string oidValue = Interop.Crypt32.FindOidInfo(CryptOidInfoKeyType.CRYPT_OID_INFO_NAME_KEY, maybeOid, expectedGroup, fallBackToAllGroups: true).OID;
 
             if (oidValue == null)
             {
@@ -180,7 +181,7 @@ namespace Internal.Cryptography.Pal
                                     CERT_TEMPLATE_EXT* pTemplateExt = (CERT_TEMPLATE_EXT*)pvDecoded;
                                     string actual = Marshal.PtrToStringAnsi(pTemplateExt->pszObjId);
                                     string expectedOidValue =
-                                        OidInfo.FindOidInfo(CryptOidInfoKeyType.CRYPT_OID_INFO_NAME_KEY, templateName,
+                                        Interop.Crypt32.FindOidInfo(CryptOidInfoKeyType.CRYPT_OID_INFO_NAME_KEY, templateName,
                                             OidGroup.Template, fallBackToAllGroups: true).OID;
                                     if (expectedOidValue == null)
                                         expectedOidValue = templateName;

@@ -2,82 +2,38 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-
-using System.Reflection;
-using System.Reflection.Emit;
-using System.Threading;
+using System.Collections.Generic;
 using Xunit;
 
 namespace System.Reflection.Emit.Tests
 {
     public class MethodBuilderGetHashCode
     {
-        private const string TestDynamicAssemblyName = "TestDynamicAssembly";
-        private const string TestDynamicModuleName = "TestDynamicModule";
-        private const string TestDynamicTypeName = "TestDynamicType";
-        private const AssemblyBuilderAccess TestAssemblyBuilderAccess = AssemblyBuilderAccess.Run;
-        private const TypeAttributes TestTypeAttributes = TypeAttributes.Abstract;
-        private const int MinStringLength = 1;
-        private const int MaxStringLength = 128;
-        private readonly RandomDataGenerator _generator = new RandomDataGenerator();
-
-        private TypeBuilder GetTestTypeBuilder()
+        public static IEnumerable<object[]> GetHashCode_TestData()
         {
-            AssemblyName assemblyName = new AssemblyName(TestDynamicAssemblyName);
-            AssemblyBuilder assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(
-                assemblyName, TestAssemblyBuilderAccess);
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Abstract);
 
-            ModuleBuilder moduleBuilder = TestLibrary.Utilities.GetModuleBuilder(assemblyBuilder, TestDynamicModuleName);
-            return moduleBuilder.DefineType(TestDynamicTypeName, TestTypeAttributes);
+            MethodBuilder method1 = type.DefineMethod("TestMethod1", MethodAttributes.Public);
+            MethodBuilder method2 = type.DefineMethod("TestMethod1", MethodAttributes.Public);
+
+            MethodBuilder method3 = type.DefineMethod("TestMethod1", MethodAttributes.Public);
+            method3.DefineGenericParameters("T", "U");
+
+            MethodBuilder method4 = type.DefineMethod("TestMethod1", MethodAttributes.Public);
+            method4.DefineGenericParameters("T", "U");
+
+            MethodBuilder method5 = type.DefineMethod("TestMethod2", MethodAttributes.Public);
+
+            yield return new object[] { method1, method2, true }; // Non-generic
+            yield return new object[] { method3, method4, true }; // Generic
+            yield return new object[] { method1, method5, false }; // Different names
         }
 
-        [Fact]
-        public void TestForEqualObjects1()
+        [Theory]
+        [MemberData(nameof(GetHashCode_TestData))]
+        public void GetHashCode(MethodBuilder method1, MethodBuilder method2, bool expected)
         {
-            string methodName = null;
-            methodName = _generator.GetString(false, false, true, MinStringLength, MaxStringLength);
-            TypeBuilder typeBuilder = GetTestTypeBuilder();
-            MethodBuilder builder1 = typeBuilder.DefineMethod(methodName,
-                MethodAttributes.Public);
-            MethodBuilder builder2 = typeBuilder.DefineMethod(methodName,
-                MethodAttributes.Public);
-
-            Assert.Equal(builder1.GetHashCode(), builder2.GetHashCode());
-        }
-
-        [Fact]
-        public void TestForEqualObjects2()
-        {
-            string methodName = null;
-            methodName = _generator.GetString(false, false, true, MinStringLength, MaxStringLength);
-            TypeBuilder typeBuilder = GetTestTypeBuilder();
-            MethodBuilder builder1 = typeBuilder.DefineMethod(methodName,
-                MethodAttributes.Public);
-            string[] typeParamNames = { "T", "U" };
-            GenericTypeParameterBuilder[] Parameters = builder1.DefineGenericParameters(typeParamNames);
-            MethodBuilder builder2 = typeBuilder.DefineMethod(methodName,
-                MethodAttributes.Public);
-            Parameters = builder2.DefineGenericParameters(typeParamNames);
-
-            Assert.Equal(builder1.GetHashCode(), builder2.GetHashCode());
-        }
-
-        [Fact]
-        public void TestForNonEqualObjects()
-        {
-            string methodName1 = null;
-            string methodName2 = null;
-            methodName1 = _generator.GetString(false, false, true, MinStringLength, MaxStringLength);
-            methodName2 = _generator.GetString(false, false, true, MinStringLength, MaxStringLength);
-
-            TypeBuilder typeBuilder = GetTestTypeBuilder();
-            MethodBuilder builder1 = typeBuilder.DefineMethod(methodName1,
-                MethodAttributes.Public);
-            MethodBuilder builder2 = typeBuilder.DefineMethod(methodName2,
-                MethodAttributes.Public);
-
-            Assert.NotEqual(builder1.GetHashCode(), builder2.GetHashCode());
+            Assert.Equal(expected, method1.GetHashCode().Equals(method2.GetHashCode()));
         }
     }
 }

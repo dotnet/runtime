@@ -514,7 +514,7 @@ internal static partial class Interop
         internal unsafe static extern SecurityStatus SspiFreeAuthIdentity(
             [In] IntPtr authData);
 
-        [DllImport(Interop.Libraries.Sspi, ExactSpelling = true, SetLastError = true)]
+        [DllImport(Interop.Libraries.Sspi, ExactSpelling = true, CharSet = CharSet.Unicode, SetLastError = true)]
         internal unsafe static extern SecurityStatus SspiEncodeStringsAsAuthIdentity(
             [In] string userName,
             [In] string domainName,

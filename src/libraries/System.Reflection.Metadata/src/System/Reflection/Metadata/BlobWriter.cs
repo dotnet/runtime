@@ -89,7 +89,7 @@ namespace System.Reflection.Metadata
         /// <exception cref="ArgumentOutOfRangeException">Range specified by <paramref name="start"/> and <paramref name="byteCount"/> falls outside of the bounds of the buffer content.</exception>
         public byte[] ToArray(int start, int byteCount)
         {
-            BlobUtilities.ValidateRange(Length, start, byteCount);
+            BlobUtilities.ValidateRange(Length, start, byteCount, nameof(byteCount));
 
             var result = new byte[byteCount];
             Array.Copy(_buffer, _start + start, result, 0, byteCount);
@@ -223,7 +223,7 @@ namespace System.Reflection.Metadata
                 Throw.ArgumentNull(nameof(buffer));
             }
 
-            BlobUtilities.ValidateRange(buffer.Length, start, byteCount);
+            BlobUtilities.ValidateRange(buffer.Length, start, byteCount, nameof(byteCount));
 
             // an empty array has no element pointer:
             if (buffer.Length == 0)
@@ -511,10 +511,10 @@ namespace System.Reflection.Metadata
         /// 
         /// Otherwise, encode as a 4-byte integer, with bit 31 set, bit 30 set, bit 29 clear (value held in bits 28 through 0).
         /// </remarks>
-        /// <exception cref="ArgumentOutOfRangeException"><paramref name="value"/> can't be represented as a compressed signed integer.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="value"/> can't be represented as a compressed unsigned integer.</exception>
         public void WriteCompressedInteger(int value)
         {
-            BlobWriterImpl.WriteCompressedInteger(ref this, value);
+            BlobWriterImpl.WriteCompressedInteger(ref this, unchecked((uint)value));
         }
 
         /// <summary>

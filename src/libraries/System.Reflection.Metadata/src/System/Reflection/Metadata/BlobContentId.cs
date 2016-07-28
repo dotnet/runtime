@@ -10,6 +10,8 @@ namespace System.Reflection.Metadata
 {
     public struct BlobContentId
     {
+        private const int Size = BlobUtilities.SizeOfGuid + sizeof(uint);
+
         public Guid Guid { get; }
         public uint Stamp { get; }
 
@@ -17,6 +19,31 @@ namespace System.Reflection.Metadata
         {
             Guid = guid;
             Stamp = stamp;
+        }
+
+        public BlobContentId(ImmutableArray<byte> id) 
+            : this(ImmutableByteArrayInterop.DangerousGetUnderlyingArray(id))
+        {
+        }
+
+        public unsafe BlobContentId(byte[] id)
+        {
+            if (id == null)
+            {
+                throw new ArgumentNullException(nameof(id));
+            }
+
+            if (id.Length != Size)
+            {
+                throw new ArgumentException(SR.Format(SR.UnexpectedArrayLength, Size), nameof(id));
+            }
+
+            fixed (byte* ptr = id)
+            {
+                var reader = new BlobReader(ptr, id.Length);
+                Guid = reader.ReadGuid();
+                Stamp = reader.ReadUInt32();
+            }
         }
 
         public bool IsDefault => Guid == default(Guid) && Stamp == 0;

@@ -2,156 +2,60 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Reflection;
-using System.Reflection.Emit;
-using System.Threading;
 using Xunit;
 
 namespace System.Reflection.Emit.Tests
 {
     public class PropertyBuilderTest6
     {
-        private const string DynamicAssemblyName = "TestDynamicAssembly";
-        private const string DynamicModuleName = "TestDynamicModule";
-        private const string DynamicTypeName = "TestDynamicType";
-        private const string DynamicNestedTypeName = "TestDynamicNestedType";
-        private const string DynamicDerivedTypeName = "TestDynamicDerivedType";
-        private const string DynamicFieldName = "TestDynamicFieldA";
-        private const string DynamicPropertyName = "TestDynamicProperty";
-        private const string DynamicMethodName = "DynamicMethodA";
-
-        private TypeBuilder GetTypeBuilder(string typeName, TypeAttributes typeAtt)
+        [Fact]
+        public void DeclaringType_RootClass()
         {
-            AssemblyName myAssemblyName = new AssemblyName();
-            myAssemblyName.Name = DynamicAssemblyName;
-            AssemblyBuilder myAssemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(
-                                                                        myAssemblyName,
-                                                                        AssemblyBuilderAccess.Run);
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Class | TypeAttributes.Public);
 
-            ModuleBuilder myModuleBuilder = TestLibrary.Utilities.GetModuleBuilder(
-                                                                        myAssemblyBuilder,
-                                                                        DynamicModuleName);
-
-            return myModuleBuilder.DefineType(typeName, typeAtt);
+            PropertyBuilder property = type.DefineProperty("TestProperty", PropertyAttributes.None, typeof(int), null);
+            Assert.Equal(type.AsType(), property.DeclaringType);
         }
 
         [Fact]
-        public void TestPropertyInRootClass()
+        public void DeclaringType_NestedClass()
         {
-            Type actualType;
-            TypeBuilder myTypeBuilder;
-            PropertyBuilder myPropertyBuilder;
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Class | TypeAttributes.Public);
+            TypeBuilder nestedType = type.DefineNestedType("NestedType", TypeAttributes.Class | TypeAttributes.NestedPublic);
 
-            myTypeBuilder = GetTypeBuilder(
-                                    DynamicTypeName,
-                                    TypeAttributes.Class |
-                                    TypeAttributes.Public);
-
-            myPropertyBuilder = myTypeBuilder.DefineProperty(
-                                    DynamicPropertyName,
-                                    PropertyAttributes.None,
-                                    typeof(int),
-                                    null);
-            actualType = myPropertyBuilder.DeclaringType;
-            Assert.Equal(actualType, myTypeBuilder.AsType());
+            PropertyBuilder property = nestedType.DefineProperty("TestProperty", PropertyAttributes.None, typeof(int), null);
+            Assert.Equal(nestedType.AsType(), property.DeclaringType);
         }
 
         [Fact]
-        public void TestPropertyInNestedClass()
+        public void DeclaringType_RootInterface()
         {
-            Type actualType;
-            TypeBuilder myTypeBuilder, myNestedTypeBuilder;
-            PropertyBuilder myPropertyBuilder;
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Abstract | TypeAttributes.Interface | TypeAttributes.Public);
 
-            myTypeBuilder = GetTypeBuilder(
-                                    DynamicTypeName,
-                                    TypeAttributes.Class |
-                                    TypeAttributes.Public);
-            myNestedTypeBuilder = myTypeBuilder.DefineNestedType(
-                                                    DynamicNestedTypeName,
-                                                    TypeAttributes.Class |
-                                                    TypeAttributes.NestedPublic);
-
-            myPropertyBuilder = myNestedTypeBuilder.DefineProperty(
-                                    DynamicPropertyName,
-                                    PropertyAttributes.None,
-                                    typeof(int),
-                                    null);
-            actualType = myPropertyBuilder.DeclaringType;
-            Assert.Equal(myNestedTypeBuilder.AsType(), actualType);
+            PropertyBuilder property = type.DefineProperty("TestProperty", PropertyAttributes.None, typeof(int), null);
+            Assert.Equal(type.AsType(), property.DeclaringType);
         }
 
         [Fact]
-        public void TestPropertyInRootInterface()
+        public void DeclaringType_DerivedClass()
         {
-            Type actualType;
-            TypeBuilder myTypeBuilder;
-            PropertyBuilder myPropertyBuilder;
+            TypeBuilder baseClass = Helpers.DynamicType(TypeAttributes.Class | TypeAttributes.Public, typeName: "BaseClass");
+            TypeBuilder subClass = Helpers.DynamicType(TypeAttributes.Class | TypeAttributes.Public, typeName: "SubClass");
+            subClass.SetParent(baseClass.AsType());
 
-            myTypeBuilder = GetTypeBuilder(
-                                    DynamicTypeName,
-                                    TypeAttributes.Class |
-                                    TypeAttributes.Public);
-            myPropertyBuilder = myTypeBuilder.DefineProperty(
-                                    DynamicPropertyName,
-                                    PropertyAttributes.None,
-                                    typeof(int),
-                                    null);
-            actualType = myPropertyBuilder.DeclaringType;
-            Assert.Equal(myTypeBuilder.AsType(), actualType);
+            PropertyBuilder property = subClass.DefineProperty("TestProperty", PropertyAttributes.None, typeof(int), null);
+            Assert.Equal(subClass.AsType(), property.DeclaringType);
         }
 
         [Fact]
-        public void TestPropertyInDerivedClass()
+        public void DeclaringType_BaseClass()
         {
-            Type actualType;
-            TypeBuilder myTypeBuilder, myDerivedTypeBuilder;
-            PropertyBuilder myPropertyBuilder;
+            TypeBuilder baseClass = Helpers.DynamicType(TypeAttributes.Abstract | TypeAttributes.Public, typeName: "BaseClass");
+            TypeBuilder subClass = Helpers.DynamicType(TypeAttributes.Abstract | TypeAttributes.Public | TypeAttributes.Interface, typeName: "SubClass");
+            subClass.SetParent(baseClass.AsType());
 
-            myTypeBuilder = GetTypeBuilder(
-                                    DynamicTypeName,
-                                    TypeAttributes.Class |
-                                    TypeAttributes.Public);
-            myDerivedTypeBuilder = GetTypeBuilder(
-                                            DynamicDerivedTypeName,
-                                            TypeAttributes.Class |
-                                            TypeAttributes.Public);
-            myDerivedTypeBuilder.SetParent(myTypeBuilder.AsType());
-
-            myPropertyBuilder = myDerivedTypeBuilder.DefineProperty(
-                                    DynamicPropertyName,
-                                    PropertyAttributes.None,
-                                    typeof(int),
-                                    null);
-            actualType = myPropertyBuilder.DeclaringType;
-            Assert.Equal(myDerivedTypeBuilder.AsType(), actualType);
-        }
-
-        [Fact]
-        public void TestPropertyInBaseClass()
-        {
-            Type actualType;
-            TypeBuilder myTypeBuilder, myDerivedTypeBuilder;
-            PropertyBuilder myPropertyBuilder;
-
-            myTypeBuilder = GetTypeBuilder(
-                                    DynamicTypeName,
-                                    TypeAttributes.Abstract |
-                                    TypeAttributes.Public);
-            myDerivedTypeBuilder = GetTypeBuilder(
-                                    DynamicDerivedTypeName,
-                                    TypeAttributes.Abstract |
-                                    TypeAttributes.Public |
-                                    TypeAttributes.Interface);
-            myDerivedTypeBuilder.SetParent(myTypeBuilder.AsType());
-            myPropertyBuilder = myTypeBuilder.DefineProperty(
-                                    DynamicPropertyName,
-                                    PropertyAttributes.None,
-                                    typeof(int),
-                                    null);
-            actualType = myPropertyBuilder.DeclaringType;
-            Assert.Equal(myTypeBuilder.AsType(), actualType);
+            PropertyBuilder property = baseClass.DefineProperty("TestProperty", PropertyAttributes.None, typeof(int), null);
+            Assert.Equal(baseClass.AsType(), property.DeclaringType);
         }
     }
 }

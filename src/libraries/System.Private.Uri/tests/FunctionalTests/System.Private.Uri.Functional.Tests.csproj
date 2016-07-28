@@ -6,6 +6,7 @@
     <ProjectGuid>{B0FFC4A8-BAC3-4A7F-8FD5-5B680209371C}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AssemblyName>System.Private.Uri.Tests</AssemblyName>
+    <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
@@ -35,6 +36,7 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
+    <!-- System.Private.Uri doesn't have any netstandard compile assets in it's package-->
     <ProjectReference Include="..\..\src\System.Private.Uri.csproj">
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
       <OutputItemType>Content</OutputItemType>

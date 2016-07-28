@@ -8,14 +8,16 @@
     <OutputType>Library</OutputType>
     <AssemblyName>System.Threading.Tasks.Extensions.Tests</AssemblyName>
     <RootNamespace>System.Threading.Tasks.Extensions.Tests</RootNamespace>
+    <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
   <ItemGroup>
+    <Compile Include="AsyncValueTaskMethodBuilderTests.cs" />
     <Compile Include="ValueTaskTests.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\src\System.Threading.Tasks.Extensions.csproj">
+    <ProjectReference Include="..\pkg\System.Threading.Tasks.Extensions.pkgproj">
       <Project>{F24D3391-2928-4E83-AADE-B34423498750}</Project>
       <Name>System.Threading.Tasks.Extensions</Name>
     </ProjectReference>

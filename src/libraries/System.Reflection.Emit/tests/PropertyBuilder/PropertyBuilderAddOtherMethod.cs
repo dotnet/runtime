@@ -2,198 +2,63 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Reflection;
-using System.Reflection.Emit;
-using System.Threading;
 using Xunit;
 
 namespace System.Reflection.Emit.Tests
 {
     public class PropertyBuilderTest2
     {
-        private const string DynamicAssemblyName = "TestDynamicAssembly";
-        private const string DynamicModuleName = "TestDynamicModule";
-        private const string DynamicTypeName = "TestDynamicType";
-        private const string DynamicPropertyName = "TestDynamicProperty";
-        private const string DynamicMethodName = "DynamicMethodA";
-
-        private TypeBuilder GetTypeBuilder(TypeAttributes typeAtt)
+        [Theory]
+        [InlineData(MethodAttributes.Public, CallingConventions.HasThis, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)]
+        [InlineData(MethodAttributes.Private, CallingConventions.HasThis, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)]
+        [InlineData(MethodAttributes.Public | MethodAttributes.Static, CallingConventions.Any, BindingFlags.Public | BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Instance)]
+        public void AddOtherMethod(MethodAttributes attributes, CallingConventions callingConventions, BindingFlags bindingFlags)
         {
-            AssemblyName myAssemblyName = new AssemblyName();
-            myAssemblyName.Name = DynamicAssemblyName;
-            AssemblyBuilder myAssemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(myAssemblyName,
-                                                                            AssemblyBuilderAccess.Run);
+            Type[] paramTypes = new Type[] { typeof(int) };
 
-            ModuleBuilder myModuleBuilder = TestLibrary.Utilities.GetModuleBuilder(myAssemblyBuilder,
-                                                                                DynamicModuleName);
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Class | TypeAttributes.Public);
+            PropertyBuilder property = type.DefineProperty("TestProperty", PropertyAttributes.None, typeof(int), new Type[0]);
+            MethodBuilder method = type.DefineMethod("TestMethod", attributes, callingConventions, typeof(int), paramTypes);
 
-            return myModuleBuilder.DefineType(DynamicTypeName, typeAtt);
-        }
-
-        [Fact]
-        public void TestWithPublicSingleParameterIntReturnTypeMethod()
-        {
-            TypeBuilder myTypeBuilder;
-            PropertyBuilder myPropertyBuilder;
-            MethodBuilder myMethodBuilder;
-            Type[] paramTypes = new Type[]
-            {
-                typeof(int)
-            };
-
-            myTypeBuilder = GetTypeBuilder(TypeAttributes.Class | TypeAttributes.Public);
-            myPropertyBuilder = myTypeBuilder.DefineProperty(DynamicPropertyName,
-                                                             PropertyAttributes.None,
-                                                             typeof(int),
-                                                             new Type[0]);
-            myMethodBuilder = myTypeBuilder.DefineMethod(DynamicMethodName,
-                                                         MethodAttributes.Public,
-                                                         CallingConventions.HasThis,
-                                                         typeof(int),
-                                                         paramTypes);
-            ILGenerator methodILGenerator = myMethodBuilder.GetILGenerator();
-
+            ILGenerator methodILGenerator = method.GetILGenerator();
             methodILGenerator.Emit(OpCodes.Ldarg_0);
             methodILGenerator.Emit(OpCodes.Ldarg_1);
             methodILGenerator.Emit(OpCodes.Ret);
 
-            myPropertyBuilder.AddOtherMethod(myMethodBuilder);
-            Type myType = myTypeBuilder.CreateTypeInfo().AsType();
-            PropertyInfo myProperty = myType.GetProperty(DynamicPropertyName,
-                                                         BindingFlags.Public |
-                                                         BindingFlags.NonPublic |
-                                                         BindingFlags.Instance);
-            VerifyAddMethodsResult(myProperty, myMethodBuilder);
-        }
+            property.AddOtherMethod(method);
+            Type createdType = type.CreateTypeInfo().AsType();
+            PropertyInfo createdProperty = createdType.GetProperty("TestProperty", bindingFlags);
 
-        [Fact]
-        public void TestWithPrivateSingleParameterIntReturnTypeMethod()
-        {
-            TypeBuilder myTypeBuilder;
-            PropertyBuilder myPropertyBuilder;
-            MethodBuilder myMethodBuilder;
-            Type[] paramTypes = new Type[]
-            {
-                typeof(int)
-            };
-
-            myTypeBuilder = GetTypeBuilder(TypeAttributes.Class | TypeAttributes.Public);
-            myPropertyBuilder = myTypeBuilder.DefineProperty(DynamicPropertyName,
-                                                             PropertyAttributes.None,
-                                                             typeof(int),
-                                                             new Type[0]);
-            myMethodBuilder = myTypeBuilder.DefineMethod(DynamicMethodName,
-                                                         MethodAttributes.Private,
-                                                         CallingConventions.HasThis,
-                                                         typeof(int),
-                                                         paramTypes);
-            ILGenerator methodILGenerator = myMethodBuilder.GetILGenerator();
-
-            methodILGenerator.Emit(OpCodes.Ldarg_0);
-            methodILGenerator.Emit(OpCodes.Ldarg_1);
-            methodILGenerator.Emit(OpCodes.Ret);
-
-            myPropertyBuilder.AddOtherMethod(myMethodBuilder);
-            Type myType = myTypeBuilder.CreateTypeInfo().AsType();
-            PropertyInfo myProperty = myType.GetProperty(DynamicPropertyName,
-                                                         BindingFlags.Public |
-                                                         BindingFlags.NonPublic |
-                                                         BindingFlags.Instance);
-            VerifyAddMethodsResult(myProperty, myMethodBuilder);
-        }
-
-        [Fact]
-        public void TestWithPublicStaticSingleParameterIntReturnTypeMethod()
-        {
-            TypeBuilder myTypeBuilder;
-            PropertyBuilder myPropertyBuilder;
-            MethodBuilder myMethodBuilder;
-            Type[] paramTypes = new Type[]
-            {
-                typeof(int)
-            };
-
-            myTypeBuilder = GetTypeBuilder(TypeAttributes.Class | TypeAttributes.Public);
-            myPropertyBuilder = myTypeBuilder.DefineProperty(DynamicPropertyName,
-                                                             PropertyAttributes.None,
-                                                             typeof(int),
-                                                             new Type[0]);
-            myMethodBuilder = myTypeBuilder.DefineMethod(DynamicMethodName,
-                                                         MethodAttributes.Static |
-                                                         MethodAttributes.Public,
-                                                         typeof(int),
-                                                         paramTypes);
-            ILGenerator methodILGenerator = myMethodBuilder.GetILGenerator();
-
-            methodILGenerator.Emit(OpCodes.Ldarg_0);
-            methodILGenerator.Emit(OpCodes.Ret);
-
-            myPropertyBuilder.AddOtherMethod(myMethodBuilder);
-            Type myType = myTypeBuilder.CreateTypeInfo().AsType();
-            PropertyInfo myProperty = myType.GetProperty(DynamicPropertyName,
-                                                         BindingFlags.Public |
-                                                         BindingFlags.NonPublic |
-                                                         BindingFlags.Instance |
-                                                         BindingFlags.Static);
-            VerifyAddMethodsResult(myProperty, myMethodBuilder);
-        }
-
-        private void VerifyAddMethodsResult(PropertyInfo myProperty, MethodBuilder expectedMethod)
-        {
-            MethodInfo[] actualMethods = myProperty.GetAccessors(true);
+            MethodInfo[] actualMethods = createdProperty.GetAccessors(true);
             Assert.Equal(1, actualMethods.Length);
-            Assert.Equal(expectedMethod.Name, actualMethods[0].Name);
+            Assert.Equal(method.Name, actualMethods[0].Name);
         }
 
         [Fact]
-        public void TestThrowsExceptionOnNullMethodBuilder()
+        public void AddOtherMethod_NullMethodBuilder_ThrowsArgumentNullExceptio()
         {
-            TypeBuilder myTypeBuilder;
-            PropertyBuilder myPropertyBuilder;
-            MethodBuilder myMethodBuilder;
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Class | TypeAttributes.Public);
+            PropertyBuilder property = type.DefineProperty("TestProperty", PropertyAttributes.None, typeof(int), new Type[0]);
 
-            myTypeBuilder = GetTypeBuilder(TypeAttributes.Class | TypeAttributes.Public);
-            myPropertyBuilder = myTypeBuilder.DefineProperty(DynamicPropertyName,
-                                                             PropertyAttributes.None,
-                                                             typeof(int),
-                                                             new Type[0]);
-            myMethodBuilder = null;
-            Assert.Throws<ArgumentNullException>(() =>
-            {
-                myPropertyBuilder.AddOtherMethod(myMethodBuilder);
-                Type myType = myTypeBuilder.CreateTypeInfo().AsType();
-            });
+            Assert.Throws<ArgumentNullException>("mdBuilder", () => property.AddOtherMethod(null));
         }
 
         [Fact]
-        public void TestThrowsExceptionOnCreateTypeCalled()
+        public void AddOtherMethod_TypeAlreadyCreated_ThrowsInvalidOperationException()
         {
-            TypeBuilder myTypeBuilder;
-            PropertyBuilder myPropertyBuilder;
-            MethodBuilder myMethodBuilder;
-            Type[] paramTypes = new Type[]
-            {
-                typeof(int)
-            };
+            Type[] paramTypes = new Type[] { typeof(int) };
 
-            myTypeBuilder = GetTypeBuilder(TypeAttributes.Class | TypeAttributes.Public);
-            myPropertyBuilder = myTypeBuilder.DefineProperty(DynamicPropertyName,
-                                                             PropertyAttributes.None,
-                                                             typeof(int),
-                                                             new Type[0]);
-            myMethodBuilder = myTypeBuilder.DefineMethod(DynamicMethodName,
-                                             MethodAttributes.Public,
-                                             CallingConventions.HasThis,
-                                             typeof(int),
-                                             paramTypes);
-            ILGenerator methodILGenerator = myMethodBuilder.GetILGenerator();
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Class | TypeAttributes.Public);
+            PropertyBuilder property = type.DefineProperty("TestProperty", PropertyAttributes.None, typeof(int), new Type[0]);
+            MethodBuilder method = type.DefineMethod("TestMethod", MethodAttributes.Public, CallingConventions.HasThis, typeof(int), paramTypes);
+            ILGenerator methodILGenerator = method.GetILGenerator();
 
             methodILGenerator.Emit(OpCodes.Ldarg_0);
             methodILGenerator.Emit(OpCodes.Ldarg_1);
             methodILGenerator.Emit(OpCodes.Ret);
-            Type myType = myTypeBuilder.CreateTypeInfo().AsType();
-            Assert.Throws<InvalidOperationException>(() => { myPropertyBuilder.AddOtherMethod(myMethodBuilder); });
+
+            type.CreateTypeInfo().AsType();
+            Assert.Throws<InvalidOperationException>(() => property.AddOtherMethod(method));
         }
     }
 }

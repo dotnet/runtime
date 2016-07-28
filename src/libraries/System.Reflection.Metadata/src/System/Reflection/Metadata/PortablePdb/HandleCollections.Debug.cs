@@ -745,7 +745,6 @@ namespace System.Reflection.Metadata
         internal CustomDebugInformationHandleCollection(MetadataReader reader, EntityHandle handle)
         {
             Debug.Assert(reader != null);
-            Debug.Assert(!handle.IsNil);
 
             _reader = reader;
             reader.CustomDebugInformationTable.GetRange(handle, out _firstRowId, out _lastRowId);

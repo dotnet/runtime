@@ -14,7 +14,7 @@ namespace System.Net.Http.Functional.Tests
 {
     public class HttpClientMiniStress
     {
-        private static bool HttpStressEnabled => TestSettings.Http.StressEnabled;
+        private static bool HttpStressEnabled => Configuration.Http.StressEnabled;
 
         [ConditionalTheory(nameof(HttpStressEnabled))]
         [MemberData(nameof(GetStressOptions))]

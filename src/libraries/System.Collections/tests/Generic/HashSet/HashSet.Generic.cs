@@ -27,7 +27,7 @@ namespace System.Collections.Tests
             return rand.Next();
         }
 
-        protected override bool DefaultValueAllowed { get { return true; } }
+        protected override bool DefaultValueAllowed => true;
     }
 
     public class HashSet_Generic_Tests_int_With_Comparer_WrapStructural_Int : HashSet_Generic_Tests<int>

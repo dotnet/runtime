@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -174,5 +175,10 @@ namespace System.Threading.Tasks
                     string.Empty;
             }
         }
+
+        /// <summary>Creates a method builder for use with an async method.</summary>
+        /// <returns>The created builder.</returns>
+        [EditorBrowsable(EditorBrowsableState.Never)] // intended only for compiler consumption
+        public static AsyncValueTaskMethodBuilder<TResult> CreateAsyncMethodBuilder() => AsyncValueTaskMethodBuilder<TResult>.Create();
     }
 }

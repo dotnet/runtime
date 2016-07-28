@@ -12,6 +12,7 @@
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/ioctl.h>
 #include <termios.h>
 #include <unistd.h>
@@ -458,7 +459,10 @@ static bool InitializeSignalHandling()
     }
 
     // Finally, register our signal handlers
-    struct sigaction newAction = { .sa_flags = SA_RESTART | SA_SIGINFO };
+    struct sigaction newAction;
+    memset(&newAction, 0, sizeof(struct sigaction));
+    newAction.sa_flags = SA_RESTART | SA_SIGINFO;
+    
     sigemptyset(&newAction.sa_mask);
     int rv;
 

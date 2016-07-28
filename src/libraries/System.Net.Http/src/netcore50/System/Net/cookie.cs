@@ -67,7 +67,6 @@ namespace System.Net
         internal static readonly char[] PortSplitDelimiters = new char[] { ' ', ',', '\"' };
         internal static readonly char[] Reserved2Name = new char[] { ' ', '\t', '\r', '\n', '=', ';', ',' };
         internal static readonly char[] Reserved2Value = new char[] { ';', ',' };
-        private static Comparer staticComparer = new Comparer();
 
         // fields
 
@@ -796,13 +795,6 @@ namespace System.Net
         }
 
         // methods
-
-
-        internal static IComparer GetComparer()
-        {
-            //the class don't have any members, it's safe reuse the instance
-            return staticComparer;
-        }
 
 
         /// <devdoc>
@@ -1901,39 +1893,6 @@ namespace System.Net
                 return value;
 
             return value.Length == 2 ? string.Empty : value.Substring(1, value.Length - 2);
-        }
-    }
-
-
-    internal class Comparer : IComparer
-    {
-        int IComparer.Compare(object ol, object or)
-        {
-            Cookie left = (Cookie)ol;
-            Cookie right = (Cookie)or;
-
-            int result;
-
-            if ((result = string.Compare(left.Name, right.Name, StringComparison.OrdinalIgnoreCase)) != 0)
-            {
-                return result;
-            }
-
-            if ((result = string.Compare(left.Domain, right.Domain, StringComparison.OrdinalIgnoreCase)) != 0)
-            {
-                return result;
-            }
-
-            //
-            //NB: The only path is case sensitive as per spec.
-            //    However, on Win Platform that may break some lazy applications.
-            //
-            if ((result = string.Compare(left.Path, right.Path, StringComparison.Ordinal)) != 0)
-            {
-                return result;
-            }
-            // They are equal here even if variants are still different.
-            return 0;
         }
     }
 }

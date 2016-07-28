@@ -26,9 +26,7 @@ namespace System.Reflection.Internal.Tests
                 p--;
             }
 
-            byte[] result = new byte[p + 1 - buffer];
-            Marshal.Copy((IntPtr)buffer, result, 0, result.Length);
-            return result;
+            return BlobUtilities.ReadBytes(buffer, (int)(p + 1 - buffer));
         }
 
         [Fact]

@@ -129,59 +129,17 @@
   <data name="net_Websockets_AlreadyOneOutstandingOperation" xml:space="preserve">
     <value>There is already one outstanding '{0}' call for this WebSocket instance. ReceiveAsync and SendAsync can be called simultaneously, but at most one outstanding operation for each of them is allowed at the same time.</value>
   </data>
-  <data name="net_Websockets_WebSocketBaseFaulted" xml:space="preserve">
-    <value>An exception caused the WebSocket to enter the Aborted state. Please see the InnerException, if present, for more details.</value>
-  </data>
-  <data name="net_WebSockets_NativeSendResponseHeaders" xml:space="preserve">
-    <value>An error occurred when sending the WebSocket HTTP upgrade response during the {0} operation. The HRESULT returned is '{1}'</value>
-  </data>
   <data name="net_WebSockets_Generic" xml:space="preserve">
     <value>An internal WebSocket error occurred. Please see the innerException, if present, for more details. </value>
-  </data>
-  <data name="net_WebSockets_NotAWebSocket_Generic" xml:space="preserve">
-    <value>A WebSocket operation was called on a request or response that is not a WebSocket.</value>
-  </data>
-  <data name="net_WebSockets_UnsupportedWebSocketVersion_Generic" xml:space="preserve">
-    <value>Unsupported WebSocket version.</value>
-  </data>
-  <data name="net_WebSockets_HeaderError_Generic" xml:space="preserve">
-    <value>The WebSocket request or response contained unsupported header(s). </value>
-  </data>
-  <data name="net_WebSockets_UnsupportedProtocol_Generic" xml:space="preserve">
-    <value>The WebSocket request or response operation was called with unsupported protocol(s). </value>
   </data>
   <data name="net_WebSockets_UnsupportedPlatform" xml:space="preserve">
     <value>The WebSocket protocol is not supported on this platform.</value>
   </data>
-  <data name="net_WebSockets_AcceptNotAWebSocket" xml:space="preserve">
-    <value>The {0} operation was called on an incoming request that did not specify a '{1}: {2}' header or the {2} header not contain '{3}'. {2} specified by the client was '{4}'.</value>
-  </data>
-  <data name="net_WebSockets_AcceptUnsupportedWebSocketVersion" xml:space="preserve">
-    <value>The {0} operation was called on an incoming request with WebSocket version '{1}', expected '{2}'. </value>
-  </data>
-  <data name="net_WebSockets_AcceptHeaderNotFound" xml:space="preserve">
-    <value>The {0} operation was called on an incoming WebSocket request without required '{1}' header. </value>
-  </data>
   <data name="net_WebSockets_AcceptUnsupportedProtocol" xml:space="preserve">
     <value>The WebSocket client request requested '{0}' protocol(s), but server is only accepting '{1}' protocol(s).</value>
   </data>
-  <data name="net_WebSockets_ClientAcceptingNoProtocols" xml:space="preserve">
-    <value>The WebSocket client did not request any protocols, but server attempted to accept '{0}' protocol(s). </value>
-  </data>
-  <data name="net_WebSockets_ClientSecWebSocketProtocolsBlank" xml:space="preserve">
-    <value>The WebSocket client sent a blank '{0}' header; this is not allowed by the WebSocket protocol specification. The client should omit the header if the client is not negotiating any sub-protocols. </value>
-  </data>
   <data name="net_WebSockets_ArgumentOutOfRange_TooSmall" xml:space="preserve">
     <value>The argument must be a value greater than {0}.</value>
-  </data>
-  <data name="net_WebSockets_ArgumentOutOfRange_InternalBuffer" xml:space="preserve">
-    <value>The byte array must have a length of at least '{0}' bytes.  </value>
-  </data>
-  <data name="net_WebSockets_ArgumentOutOfRange_TooBig" xml:space="preserve">
-    <value>The value of the '{0}' parameter ({1}) must be less than or equal to {2}.</value>
-  </data>
-  <data name="net_WebSockets_InvalidState_Generic" xml:space="preserve">
-    <value>The WebSocket instance cannot be used for communication because it has been transitioned into an invalid state.</value>
   </data>
   <data name="net_WebSockets_InvalidState_ClosedOrAborted" xml:space="preserve">
     <value>The '{0}' instance cannot be used for communication because it has been transitioned into the '{1}' state.</value>
@@ -189,23 +147,11 @@
   <data name="net_WebSockets_InvalidState" xml:space="preserve">
     <value>The WebSocket is in an invalid state ('{0}') for this operation. Valid states are: '{1}'</value>
   </data>
-  <data name="net_WebSockets_ReceiveAsyncDisallowedAfterCloseAsync" xml:space="preserve">
-    <value>The WebSocket is in an invalid state for this operation. The '{0}' method has already been called before on this instance. Use '{1}' instead to keep being able to receive data but close the output channel.</value>
-  </data>
   <data name="net_WebSockets_InvalidMessageType" xml:space="preserve">
     <value>The received message type '{2}' is invalid after calling {0}. {0} should only be used if no more data is expected from the remote endpoint. Use '{1}' instead to keep being able to receive data but close the output channel.</value>
   </data>
-  <data name="net_WebSockets_InvalidBufferType" xml:space="preserve">
-    <value>The buffer type '{0}' is invalid. Valid buffer types are: '{1}', '{2}', '{3}', '{4}', '{5}'.</value>
-  </data>
-  <data name="net_WebSockets_InvalidMessageType_Generic" xml:space="preserve">
-    <value>The received  message type is invalid after calling {0}. {0} should only be used if no more data is expected from the remote endpoint. Use '{1}' instead to keep being able to receive data but close the output channel.</value>
-  </data>
   <data name="net_WebSockets_Argument_InvalidMessageType" xml:space="preserve">
     <value>The message type '{0}' is not allowed for the '{1}' operation. Valid message types are: '{2}, {3}'. To close the WebSocket, use the '{4}' operation instead. </value>
-  </data>
-  <data name="net_WebSockets_ConnectionClosedPrematurely_Generic" xml:space="preserve">
-    <value>The remote party closed the WebSocket connection without completing the close handshake.</value>
   </data>
   <data name="net_WebSockets_InvalidCharInProtocolString" xml:space="preserve">
     <value>The WebSocket protocol '{0}' is invalid because it contains the invalid character '{1}'.</value>
@@ -228,19 +174,16 @@
   <data name="net_WebSockets_AlreadyStarted" xml:space="preserve">
     <value>The WebSocket has already been started.</value>
   </data>
-  <data name="net_WebSockets_Connect101Expected" xml:space="preserve">
-    <value>The server returned status code '{0}' when status code '101' was expected.</value>
-  </data>
   <data name="net_WebSockets_InvalidResponseHeader" xml:space="preserve">
     <value>The '{0}' header value '{1}' is invalid.</value>
   </data>
   <data name="net_WebSockets_NotConnected" xml:space="preserve">
     <value>The WebSocket is not connected.</value>
   </data>
-  <data name="net_WebSockets_InvalidRegistration" xml:space="preserve">
-    <value>The WebSocket schemes must be registered with the HttpWebRequest class.</value>
-  </data>
   <data name="net_WebSockets_NoDuplicateProtocol" xml:space="preserve">
     <value>Duplicate protocols are not allowed: '{0}'.</value>
+  </data>
+  <data name="net_securityprotocolnotsupported" xml:space="preserve">
+    <value>The requested security protocol is not supported.</value>
   </data>
 </root>

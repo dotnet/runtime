@@ -14,6 +14,7 @@
     <AssemblyName>Microsoft.Win32.Primitives.Tests</AssemblyName>
     <DefaultLanguage>en-US</DefaultLanguage>
     <FileAlignment>512</FileAlignment>
+    <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -24,7 +25,7 @@
     <Compile Include="Win32Exception.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\src\Microsoft.Win32.Primitives.csproj">
+    <ProjectReference Include="..\pkg\Microsoft.Win32.Primitives.pkgproj">
       <Project>{8ffe99c0-22f8-4462-b839-970eac1b3472}</Project>
       <Name>Microsoft.Win32.Primitives</Name>
     </ProjectReference>

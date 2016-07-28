@@ -103,7 +103,7 @@ namespace System.Linq.Expressions.Tests
                 typeof(PropertyAndFields).GetProperty(nameof(PropertyAndFields.StringProperty)),
                 Expression.Constant("value")
                 );
-            Assert.Throws<ArgumentException>(null, () => Expression.MemberInit(newExp, bind));
+            Assert.Throws<ArgumentException>("bindings[0]", () => Expression.MemberInit(newExp, bind));
         }
 
         [Theory, ClassData(typeof(CompilationTypes))]

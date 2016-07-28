@@ -8,6 +8,7 @@
     <OutputType>Library</OutputType>
     <AssemblyName>XmlDiff</AssemblyName>
     <RootNamespace>System.Xml.XmlDiff</RootNamespace>
+    <NuGetTargetMoniker>.NETStandard,Version=v1.3</NuGetTargetMoniker>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
   </PropertyGroup>
@@ -25,24 +26,9 @@
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\ModuleCore\ModuleCore.csproj">
-      <Project>{3cf0cc76-4ce0-460a-ba37-657cfed39ab0}</Project>
-      <Name>ModuleCore</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\..\..\..\System.Xml.ReaderWriter\ref\System.Xml.ReaderWriter.csproj" />
-    <ProjectReference Include="..\..\..\..\..\System.Xml\ref\System.Xml.csproj" />
-    <ProjectReference Include="..\..\..\..\..\System.Xml.ReaderWriter\src\System.Xml.ReaderWriter.csproj">
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-      <OutputItemType>Content</OutputItemType>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <Targets>Build;DebugSymbolsProjectOutputGroup</Targets>
-    </ProjectReference>
-    <ProjectReference Include="..\..\..\..\..\System.Xml\src\System.Xml.csproj">
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-      <OutputItemType>Content</OutputItemType>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <Targets>Build;DebugSymbolsProjectOutputGroup</Targets>
-    </ProjectReference>
+    <ProjectReference Include="..\ModuleCore\ModuleCore.csproj" />
+    <ProjectReference Include="..\..\..\..\..\System.Xml.ReaderWriter\src\System.Xml.ReaderWriter.csproj" />
+    <ProjectReference Include="..\..\..\..\..\System.Xml\src\System.Xml.csproj" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />

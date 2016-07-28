@@ -2,123 +2,36 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-/*
-  Note on transaction support:
-  Eventually we will want to add support for NT's transactions to our
-  RegistryKey API's.  When we do this, here's
-  the list of API's we need to make transaction-aware:
-
-  RegCreateKeyEx
-  RegDeleteKey
-  RegDeleteValue
-  RegEnumKeyEx
-  RegEnumValue
-  RegOpenKeyEx
-  RegQueryInfoKey
-  RegQueryValueEx
-  RegSetValueEx
-
-  We can ignore RegConnectRegistry (remote registry access doesn't yet have
-  transaction support) and RegFlushKey.  RegCloseKey doesn't require any
-  additional work.
- */
-
-/*
-  Note on ACL support:
-  The key thing to note about ACL's is you set them on a kernel object like a
-  registry key, then the ACL only gets checked when you construct handles to 
-  them.  So if you set an ACL to deny read access to yourself, you'll still be
-  able to read with that handle, but not with new handles.
-
-  Another peculiarity is a Terminal Server app compatibility hack.  The OS
-  will second guess your attempt to open a handle sometimes.  If a certain
-  combination of Terminal Server app compat registry keys are set, then the
-  OS will try to reopen your handle with lesser permissions if you couldn't
-  open it in the specified mode.  So on some machines, we will see handles that
-  may not be able to read or write to a registry key.  It's very strange.  But
-  the real test of these handles is attempting to read or set a value in an
-  affected registry key.
-  
-  For reference, at least two registry keys must be set to particular values 
-  for this behavior:
-  HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Terminal Server\RegistryExtensionFlags, the least significant bit must be 1.
-  HKLM\SYSTEM\CurrentControlSet\Control\TerminalServer\TSAppCompat must be 1
-  There might possibly be an interaction with yet a third registry key as well.
-
-*/
-
 using Microsoft.Win32.SafeHandles;
 using System;
-using System.Collections;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Diagnostics.Contracts;
 using System.IO;
-using System.Runtime.InteropServices;
-using System.Text;
 using System.Security.AccessControl;
+using System.Text;
 
 namespace Microsoft.Win32
 {
-    /**
-     * Registry hive values.  Useful only for GetRemoteBaseKey
-     */
-    public enum RegistryHive
+    /// <summary>Registry encapsulation. To get an instance of a RegistryKey use the Registry class's static members then call OpenSubKey.</summary>
+    public sealed partial class RegistryKey : IDisposable
     {
-        ClassesRoot = unchecked((int)0x80000000),
-        CurrentUser = unchecked((int)0x80000001),
-        LocalMachine = unchecked((int)0x80000002),
-        Users = unchecked((int)0x80000003),
-        PerformanceData = unchecked((int)0x80000004),
-        CurrentConfig = unchecked((int)0x80000005),
-    }
+        private static readonly IntPtr HKEY_CLASSES_ROOT = new IntPtr(unchecked((int)0x80000000));
+        private static readonly IntPtr HKEY_CURRENT_USER = new IntPtr(unchecked((int)0x80000001));
+        private static readonly IntPtr HKEY_LOCAL_MACHINE = new IntPtr(unchecked((int)0x80000002));
+        private static readonly IntPtr HKEY_USERS = new IntPtr(unchecked((int)0x80000003));
+        private static readonly IntPtr HKEY_PERFORMANCE_DATA = new IntPtr(unchecked((int)0x80000004));
+        private static readonly IntPtr HKEY_CURRENT_CONFIG = new IntPtr(unchecked((int)0x80000005));
 
-    /**
-     * Registry encapsulation. To get an instance of a RegistryKey use the
-     * Registry class's static members then call OpenSubKey.
-     *
-     * @see Registry
-     * @security(checkDllCalls=off)
-     * @security(checkClassLinking=on)
-     */
-    public sealed class RegistryKey : IDisposable
-    {
-        // We could use const here, if C# supported ELEMENT_TYPE_I fully.
-        internal static readonly IntPtr HKEY_CLASSES_ROOT = new IntPtr(unchecked((int)0x80000000));
-        internal static readonly IntPtr HKEY_CURRENT_USER = new IntPtr(unchecked((int)0x80000001));
-        internal static readonly IntPtr HKEY_LOCAL_MACHINE = new IntPtr(unchecked((int)0x80000002));
-        internal static readonly IntPtr HKEY_USERS = new IntPtr(unchecked((int)0x80000003));
-        internal static readonly IntPtr HKEY_PERFORMANCE_DATA = new IntPtr(unchecked((int)0x80000004));
-        internal static readonly IntPtr HKEY_CURRENT_CONFIG = new IntPtr(unchecked((int)0x80000005));
-
-        // Dirty indicates that we have munged data that should be potentially
-        // written to disk.
-        //
-        private const int STATE_DIRTY = 0x0001;
-
-        // SystemKey indicates that this is a "SYSTEMKEY" and shouldn't be "opened"
-        // or "closed".
-        //
-        private const int STATE_SYSTEMKEY = 0x0002;
-
-        // Access
-        //
-        private const int STATE_WRITEACCESS = 0x0004;
-
-        // Indicates if this key is for HKEY_PERFORMANCE_DATA
-        private const int STATE_PERF_DATA = 0x0008;
-
-        // Names of keys.  This array must be in the same order as the HKEY values listed above.
-        //
-        private static readonly String[] hkeyNames = new String[] {
-                "HKEY_CLASSES_ROOT",
-                "HKEY_CURRENT_USER",
-                "HKEY_LOCAL_MACHINE",
-                "HKEY_USERS",
-                "HKEY_PERFORMANCE_DATA",
-                "HKEY_CURRENT_CONFIG"
-                };
+        /// <summary>Names of keys.  This array must be in the same order as the HKEY values listed above.</summary>
+        private static readonly string[] s_hkeyNames = new string[]
+        {
+            "HKEY_CLASSES_ROOT",
+            "HKEY_CURRENT_USER",
+            "HKEY_LOCAL_MACHINE",
+            "HKEY_USERS",
+            "HKEY_PERFORMANCE_DATA",
+            "HKEY_CURRENT_CONFIG"
+        };
 
         // MSDN defines the following limits for registry key names & values:
         // Key Name: 255 characters
@@ -127,94 +40,65 @@ namespace Microsoft.Win32
         private const int MaxKeyLength = 255;
         private const int MaxValueLength = 16383;
 
-        [System.Security.SecurityCritical] 
-        private volatile SafeRegistryHandle hkey = null;
-        private volatile int state = 0;
-        private volatile String keyName;
-        private volatile bool remoteKey = false;
-        private volatile RegistryView regView = RegistryView.Default;
+        private volatile SafeRegistryHandle _hkey;
+        private volatile string _keyName;
+        private volatile bool _remoteKey;
+        private volatile StateFlags _state;
+        private volatile RegistryView _regView = RegistryView.Default;
 
-        /**
-         * RegistryInternalCheck values.  Useful only for CheckPermission
-         */
-        private enum RegistryInternalCheck
-        {
-            CheckSubKeyWritePermission = 0,
-            CheckSubKeyReadPermission = 1,
-            CheckSubKeyCreatePermission = 2,
-            CheckSubTreeReadPermission = 3,
-            CheckSubTreeWritePermission = 4,
-            CheckSubTreeReadWritePermission = 5,
-            CheckValueWritePermission = 6,
-            CheckValueCreatePermission = 7,
-            CheckValueReadPermission = 8,
-            CheckKeyReadPermission = 9,
-            CheckSubTreePermission = 10,
-            CheckOpenSubKeyWithWritablePermission = 11,
-            CheckOpenSubKeyPermission = 12
-        };
-
-
-        /**
-         * Creates a RegistryKey.
-         *
-         * This key is bound to hkey, if writable is <b>false</b> then no write operations
-         * will be allowed.
-         */
-        [System.Security.SecurityCritical]  // auto-generated
-        private RegistryKey(SafeRegistryHandle hkey, bool writable, RegistryView view)
-            : this(hkey, writable, false, false, false, view)
+        /// <summary>
+        /// Creates a RegistryKey. This key is bound to hkey, if writable is <b>false</b> then no write operations will be allowed.
+        /// </summary>
+        private RegistryKey(SafeRegistryHandle hkey, bool writable, RegistryView view) :
+            this(hkey, writable, false, false, false, view)
         {
         }
 
-
-        /**
-         * Creates a RegistryKey.
-         *
-         * This key is bound to hkey, if writable is <b>false</b> then no write operations
-         * will be allowed. If systemkey is set then the hkey won't be released
-         * when the object is GC'ed.
-         * The remoteKey flag when set to true indicates that we are dealing with registry entries
-         * on a remote machine and requires the program making these calls to have full trust.
-         */
-        [System.Security.SecurityCritical]  
+        /// <summary>
+        /// Creates a RegistryKey.
+        /// This key is bound to hkey, if writable is <b>false</b> then no write operations
+        /// will be allowed. If systemkey is set then the hkey won't be released
+        /// when the object is GC'ed.
+        /// The remoteKey flag when set to true indicates that we are dealing with registry entries
+        /// on a remote machine and requires the program making these calls to have full trust.
+        /// </summary>
         private RegistryKey(SafeRegistryHandle hkey, bool writable, bool systemkey, bool remoteKey, bool isPerfData, RegistryView view)
         {
-            this.hkey = hkey;
-            this.keyName = "";
-            this.remoteKey = remoteKey;
-            this.regView = view;
+            ValidateKeyView(view);
+
+            _hkey = hkey;
+            _keyName = "";
+            _remoteKey = remoteKey;
+            _regView = view;
+
             if (systemkey)
             {
-                this.state |= STATE_SYSTEMKEY;
+                _state |= StateFlags.SystemKey;
             }
             if (writable)
             {
-                this.state |= STATE_WRITEACCESS;
+                _state |= StateFlags.WriteAccess;
             }
             if (isPerfData)
-                this.state |= STATE_PERF_DATA;
-            ValidateKeyView(view);
+            {
+                _state |= StateFlags.PerfData;
+            }
         }
 
-        /**
-         * Closes this key, flushes it to disk if the contents have been modified.
-         */
-        internal void Close()
+        public void Flush()
         {
-            Dispose(true);
+            FlushCore();
         }
 
-        [System.Security.SecuritySafeCritical]  
-        private void Dispose(bool disposing)
+        public void Dispose()
         {
-            if (hkey != null)
+            if (_hkey != null)
             {
                 if (!IsSystemKey())
                 {
                     try
                     {
-                        hkey.Dispose();
+                        _hkey.Dispose();
                     }
                     catch (IOException)
                     {
@@ -222,69 +106,36 @@ namespace Microsoft.Win32
                     }
                     finally
                     {
-                        hkey = null;
+                        _hkey = null;
                     }
                 }
-                else if (disposing && IsPerfDataKey())
+                else if (IsPerfDataKey())
                 {
-                    // System keys should never be closed.  However, we want to call RegCloseKey
-                    // on HKEY_PERFORMANCE_DATA when called from PerformanceCounter.CloseSharedResources
-                    // (i.e. when disposing is true) so that we release the PERFLIB cache and cause it
-                    // to be refreshed (by re-reading the registry) when accessed subsequently. 
-                    // This is the only way we can see the just installed perf counter.  
-                    // NOTE: since HKEY_PERFORMANCE_DATA is process wide, there is inherent race in closing
-                    // the key asynchronously. While Vista is smart enough to rebuild the PERFLIB resources
-                    // in this situation the down level OSes are not. We have a small window of race between  
-                    // the dispose below and usage elsewhere (other threads). This is By Design. 
-                    // This is less of an issue when OS > NT5 (i.e Vista & higher), we can close the perfkey  
-                    // (to release & refresh PERFLIB resources) and the OS will rebuild PERFLIB as necessary. 
-                    Interop.mincore.RegCloseKey(RegistryKey.HKEY_PERFORMANCE_DATA);
+                    ClosePerfDataKey();
                 }
             }
         }
 
-        [System.Security.SecuritySafeCritical]  
-        public void Flush()
-        {
-            if (hkey != null)
-            {
-                if (IsDirty())
-                {
-                    Interop.mincore.RegFlushKey(hkey);
-                }
-            }
-        }
-
-        public void Dispose()
-        {
-            Dispose(true);
-        }
-
-        /**
-         * Creates a new subkey, or opens an existing one.
-         *
-         * @param subkey Name or path to subkey to create or open.
-         *
-         * @return the subkey, or <b>null</b> if the operation failed.
-         */
+        /// <summary>Creates a new subkey, or opens an existing one.</summary>
+        /// <param name="subkey">Name or path to subkey to create or open.</param>
+        /// <returns>The subkey, or <b>null</b> if the operation failed.</returns>
         [SuppressMessage("Microsoft.Concurrency", "CA8001", Justification = "Reviewed for thread safety")]
-        public RegistryKey CreateSubKey(String subkey)
+        public RegistryKey CreateSubKey(string subkey)
         {
             return CreateSubKey(subkey, IsWritable());
         }
 
-        public RegistryKey CreateSubKey(String subkey, bool writable)
+        public RegistryKey CreateSubKey(string subkey, bool writable)
         {
             return CreateSubKeyInternal(subkey, writable, RegistryOptions.None);
         }
 
-        public RegistryKey CreateSubKey(String subkey, bool writable, RegistryOptions options)
+        public RegistryKey CreateSubKey(string subkey, bool writable, RegistryOptions options)
         {
             return CreateSubKeyInternal(subkey, writable, options);
         }
 
-        [System.Security.SecuritySafeCritical]  
-        private unsafe RegistryKey CreateSubKeyInternal(String subkey, bool writable, RegistryOptions registryOptions)
+        private RegistryKey CreateSubKeyInternal(string subkey, bool writable, RegistryOptions registryOptions)
         {
             ValidateKeyOptions(registryOptions);
             ValidateKeyName(subkey);
@@ -292,62 +143,31 @@ namespace Microsoft.Win32
             subkey = FixupName(subkey); // Fixup multiple slashes to a single slash
 
             // only keys opened under read mode is not writable
-            if (!remoteKey)
+            if (!_remoteKey)
             {
                 RegistryKey key = InternalOpenSubKey(subkey, writable);
                 if (key != null)
-                { // Key already exits
+                { 
+                    // Key already exits
                     return key;
                 }
             }
 
-            Interop.mincore.SECURITY_ATTRIBUTES secAttrs = default(Interop.mincore.SECURITY_ATTRIBUTES);
-            int disposition = 0;
-
-            // By default, the new key will be writable.
-            SafeRegistryHandle result = null;
-            int ret = Interop.mincore.RegCreateKeyEx(hkey,
-                subkey,
-                0,
-                null,
-                (int)registryOptions /* specifies if the key is volatile */,
-                GetRegistryKeyAccess(writable) | (int)regView,
-                ref secAttrs,
-                out result,
-                out disposition);
-
-            if (ret == 0 && !result.IsInvalid)
-            {
-                RegistryKey key = new RegistryKey(result, writable, false, remoteKey, false, regView);
-
-                if (subkey.Length == 0)
-                    key.keyName = keyName;
-                else
-                    key.keyName = keyName + "\\" + subkey;
-                return key;
-            }
-            else if (ret != 0) // syscall failed, ret is an error code.
-                Win32Error(ret, keyName + "\\" + subkey);  // Access denied?
-
-            Debug.Fail("Unexpected code path in RegistryKey::CreateSubKey");
-            return null;
+            return CreateSubKeyInternalCore(subkey, writable, registryOptions);
         }
 
-        /**
-         * Deletes the specified subkey. Will throw an exception if the subkey has
-         * subkeys. To delete a tree of subkeys use, DeleteSubKeyTree.
-         *
-         * @param subkey SubKey to delete.
-         *
-         * @exception InvalidOperationException thrown if the subkey has child subkeys.
-         */
-        public void DeleteSubKey(String subkey)
+        /// <summary>
+        /// Deletes the specified subkey. Will throw an exception if the subkey has
+        /// subkeys. To delete a tree of subkeys use, DeleteSubKeyTree.
+        /// </summary>
+        /// <param name="subkey">SubKey to delete.</param>
+        /// <exception cref="InvalidOperationException">Thrown if the subkey has child subkeys.</exception>
+        public void DeleteSubKey(string subkey)
         {
             DeleteSubKey(subkey, true);
         }
 
-        [System.Security.SecuritySafeCritical]  
-        public void DeleteSubKey(String subkey, bool throwOnMissingSubKey)
+        public void DeleteSubKey(string subkey, bool throwOnMissingSubKey)
         {
             ValidateKeyName(subkey);
             EnsureWriteable();
@@ -367,38 +187,25 @@ namespace Microsoft.Win32
                     }
                 }
 
-                int ret = Interop.mincore.RegDeleteKeyEx(hkey, subkey, (int)regView, 0);
-
-                if (ret != 0)
+                DeleteSubKeyCore(subkey, throwOnMissingSubKey);
+            }
+            else // there is no key which also means there is no subkey
+            {
+                if (throwOnMissingSubKey)
                 {
-                    if (ret == Interop.mincore.Errors.ERROR_FILE_NOT_FOUND)
-                    {
-                        if (throwOnMissingSubKey)
-                            ThrowHelper.ThrowArgumentException(SR.Arg_RegSubKeyAbsent);
-                    }
-                    else
-                        Win32Error(ret, null);
+                    ThrowHelper.ThrowArgumentException(SR.Arg_RegSubKeyAbsent);
                 }
             }
-            else
-            { // there is no key which also means there is no subkey
-                if (throwOnMissingSubKey)
-                    ThrowHelper.ThrowArgumentException(SR.Arg_RegSubKeyAbsent);
-            }
         }
 
-        /**
-         * Recursively deletes a subkey and any child subkeys.
-         *
-         * @param subkey SubKey to delete.
-         */
-        public void DeleteSubKeyTree(String subkey)
+        /// <summary>Recursively deletes a subkey and any child subkeys.</summary>
+        /// <param name="subkey">SubKey to delete.</param>
+        public void DeleteSubKeyTree(string subkey)
         {
-            DeleteSubKeyTree(subkey, true /*throwOnMissingSubKey*/);
+            DeleteSubKeyTree(subkey, throwOnMissingSubKey: true);
         }
 
-        [System.Security.SecuritySafeCritical]  
-        public void DeleteSubKeyTree(String subkey, Boolean throwOnMissingSubKey)
+        public void DeleteSubKeyTree(string subkey, bool throwOnMissingSubKey)
         {
             ValidateKeyName(subkey);
 
@@ -420,7 +227,7 @@ namespace Microsoft.Win32
                 {
                     if (key.InternalSubKeyCount() > 0)
                     {
-                        String[] keys = key.InternalGetSubKeyNames();
+                        string[] keys = key.InternalGetSubKeyNames();
 
                         for (int i = 0; i < keys.Length; i++)
                         {
@@ -429,9 +236,7 @@ namespace Microsoft.Win32
                     }
                 }
 
-                int ret = Interop.mincore.RegDeleteKeyEx(hkey, subkey, (int)regView, 0);
-
-                if (ret != 0) Win32Error(ret, null);
+                DeleteSubKeyTreeCore(subkey);
             }
             else if (throwOnMissingSubKey)
             {
@@ -439,9 +244,10 @@ namespace Microsoft.Win32
             }
         }
 
-        // An internal version which does no security checks or argument checking.  Skipping the 
-        // security checks should give us a slight perf gain on large trees. 
-        [System.Security.SecurityCritical]  
+        /// <summary>
+        /// An internal version which does no security checks or argument checking.  Skipping the 
+        /// security checks should give us a slight perf gain on large trees. 
+        /// </summary>
         private void DeleteSubKeyTreeInternal(string subkey)
         {
             RegistryKey key = InternalOpenSubKey(subkey, true);
@@ -451,8 +257,7 @@ namespace Microsoft.Win32
                 {
                     if (key.InternalSubKeyCount() > 0)
                     {
-                        String[] keys = key.InternalGetSubKeyNames();
-
+                        string[] keys = key.InternalGetSubKeyNames();
                         for (int i = 0; i < keys.Length; i++)
                         {
                             key.DeleteSubKeyTreeInternal(keys[i]);
@@ -460,9 +265,7 @@ namespace Microsoft.Win32
                     }
                 }
 
-                int ret = Interop.mincore.RegDeleteKeyEx(hkey, subkey, (int)regView, 0);
-
-                if (ret != 0) Win32Error(ret, null);
+                DeleteSubKeyTreeCore(subkey);
             }
             else
             {
@@ -470,860 +273,251 @@ namespace Microsoft.Win32
             }
         }
 
-        /**
-         * Deletes the specified value from this key.
-         *
-         * @param name Name of value to delete.
-         */
-        public void DeleteValue(String name)
+        /// <summary>Deletes the specified value from this key.</summary>
+        /// <param name="name">Name of value to delete.</param>
+        public void DeleteValue(string name)
         {
             DeleteValue(name, true);
         }
 
-        [System.Security.SecuritySafeCritical]  
-        public void DeleteValue(String name, bool throwOnMissingValue)
+        public void DeleteValue(string name, bool throwOnMissingValue)
         {
             EnsureWriteable();
-            int errorCode = Interop.mincore.RegDeleteValue(hkey, name);
-
-            //
-            // From windows 2003 server, if the name is too long we will get error code ERROR_FILENAME_EXCED_RANGE  
-            // This still means the name doesn't exist. We need to be consistent with previous OS.
-            //
-            if (errorCode == Interop.mincore.Errors.ERROR_FILE_NOT_FOUND || errorCode == Interop.mincore.Errors.ERROR_FILENAME_EXCED_RANGE)
-            {
-                if (throwOnMissingValue)
-                {
-                    ThrowHelper.ThrowArgumentException(SR.Arg_RegSubKeyValueAbsent);
-                }
-                else
-                {
-                    // Otherwise, reset and just return giving no indication to the user.
-                    // (For compatibility)
-                    errorCode = 0;
-                }
-            }
-            // We really should throw an exception here if errorCode was bad,
-            // but we can't for compatibility reasons.
-            Debug.Assert(errorCode == 0, "RegDeleteValue failed.  Here's your error code: " + errorCode);
+            DeleteValueCore(name, throwOnMissingValue);
         }
 
-        /**
-         * Retrieves a new RegistryKey that represents the requested key. Valid
-         * values are:
-         *
-         * HKEY_CLASSES_ROOT,
-         * HKEY_CURRENT_USER,
-         * HKEY_LOCAL_MACHINE,
-         * HKEY_USERS,
-         * HKEY_PERFORMANCE_DATA,
-         * HKEY_CURRENT_CONFIG.
-         *
-         * @param hKey HKEY_* to open.
-         *
-         * @return the RegistryKey requested.
-         */
-        [System.Security.SecurityCritical]  
-        internal static RegistryKey GetBaseKey(IntPtr hKey)
-        {
-            return GetBaseKey(hKey, RegistryView.Default);
-        }
-
-        [System.Security.SecurityCritical]  
-        internal static RegistryKey GetBaseKey(IntPtr hKey, RegistryView view)
-        {
-            int index = ((int)hKey) & 0x0FFFFFFF;
-            Debug.Assert(index >= 0 && index < hkeyNames.Length, "index is out of range!");
-            Debug.Assert((((int)hKey) & 0xFFFFFFF0) == 0x80000000, "Invalid hkey value!");
-
-            bool isPerf = hKey == HKEY_PERFORMANCE_DATA;
-            // only mark the SafeHandle as ownsHandle if the key is HKEY_PERFORMANCE_DATA.
-            SafeRegistryHandle srh = new SafeRegistryHandle(hKey, isPerf);
-
-            RegistryKey key = new RegistryKey(srh, true, true, false, isPerf, view);
-            key.keyName = hkeyNames[index];
-            return key;
-        }
-
-
-        [System.Security.SecuritySafeCritical]  
         public static RegistryKey OpenBaseKey(RegistryHive hKey, RegistryView view)
         {
             ValidateKeyView(view);
-            return GetBaseKey((IntPtr)((int)hKey), view);
+            return OpenBaseKeyCore(hKey, view);
         }
 
-        /**
-         * Retrieves a new RegistryKey that represents the requested key on a foreign
-         * machine.  Valid values for hKey are members of the RegistryHive enum, or
-         * Win32 integers such as:
-         *
-         * HKEY_CLASSES_ROOT,
-         * HKEY_CURRENT_USER,
-         * HKEY_LOCAL_MACHINE,
-         * HKEY_USERS,
-         * HKEY_PERFORMANCE_DATA,
-         * HKEY_CURRENT_CONFIG.
-         *
-         * @param hKey HKEY_* to open.
-         * @param machineName the machine to connect to
-         *
-         * @return the RegistryKey requested.
-         */
-        public static RegistryKey OpenRemoteBaseKey(RegistryHive hKey, String machineName)
+        /// <summary>Retrieves a new RegistryKey that represents the requested key on a foreign machine.</summary>
+        /// <param name="hKey">hKey HKEY_* to open.</param>
+        /// <param name="machineName">Name the machine to connect to.</param>
+        /// <returns>The RegistryKey requested.</returns>
+        public static RegistryKey OpenRemoteBaseKey(RegistryHive hKey, string machineName)
         {
             return OpenRemoteBaseKey(hKey, machineName, RegistryView.Default);
         }
 
-        [System.Security.SecuritySafeCritical]  
-        public static RegistryKey OpenRemoteBaseKey(RegistryHive hKey, String machineName, RegistryView view)
+        public static RegistryKey OpenRemoteBaseKey(RegistryHive hKey, string machineName, RegistryView view)
         {
             if (machineName == null)
-                throw new ArgumentNullException(nameof(machineName));
-            int index = (int)hKey & 0x0FFFFFFF;
-            if (index < 0 || index >= hkeyNames.Length || ((int)hKey & 0xFFFFFFF0) != 0x80000000)
             {
-                throw new ArgumentException(SR.Arg_RegKeyOutOfRange);
+                throw new ArgumentNullException(nameof(machineName));
             }
             ValidateKeyView(view);
 
-            // connect to the specified remote registry
-            SafeRegistryHandle foreignHKey = null;
-            int ret = Interop.mincore.RegConnectRegistry(machineName, new SafeRegistryHandle(new IntPtr((int)hKey), false), out foreignHKey);
-
-            if (ret == Interop.mincore.Errors.ERROR_DLL_INIT_FAILED)
-                // return value indicates an error occurred
-                throw new ArgumentException(SR.Arg_DllInitFailure);
-
-            if (ret != 0)
-                Win32ErrorStatic(ret, null);
-
-            if (foreignHKey.IsInvalid)
-                // return value indicates an error occurred
-                throw new ArgumentException(SR.Format(SR.Arg_RegKeyNoRemoteConnect, machineName));
-
-            RegistryKey key = new RegistryKey(foreignHKey, true, false, true, ((IntPtr)hKey) == HKEY_PERFORMANCE_DATA, view);
-            key.keyName = hkeyNames[index];
-            return key;
+            return OpenRemoteBaseKeyCore(hKey, machineName, view);
         }
 
-        /**
-         * Retrieves a subkey. If readonly is <b>true</b>, then the subkey is opened with
-         * read-only access.
-         *
-         * @param name Name or path of subkey to open.
-         * @param readonly Set to <b>true</b> if you only need readonly access.
-         *
-         * @return the Subkey requested, or <b>null</b> if the operation failed.
-         */
-        [System.Security.SecuritySafeCritical]
+        /// <summary>
+        /// Retrieves a subkey. If readonly is <b>true</b>, then the subkey is opened with
+        /// read-only access.
+        /// </summary>
+        /// <returns>the Subkey requested, or <b>null</b> if the operation failed.</returns>
         public RegistryKey OpenSubKey(string name, bool writable)
         {
-            return InternalOpenSubKey(name, GetRegistryKeyAccess(writable));
+            return InternalOpenSubKey(name, writable);
         }
 
-        public RegistryKey OpenSubKey(String name, RegistryRights rights)
-        {
-            return InternalOpenSubKey(name, (int)rights);
-        }
-
-        [System.Security.SecurityCritical]  
-        private RegistryKey InternalOpenSubKey(String name, int rights)
+        public RegistryKey OpenSubKey(string name, RegistryRights rights)
         {
             ValidateKeyName(name);
-
             EnsureNotDisposed();
             name = FixupName(name); // Fixup multiple slashes to a single slash
-
-            SafeRegistryHandle result = null;
-            int ret = Interop.mincore.RegOpenKeyEx(hkey, name, 0, (rights | (int)regView), out result);
-            if (ret == 0 && !result.IsInvalid)
-            {
-                RegistryKey key = new RegistryKey(result, IsWritable(rights), false, remoteKey, false, regView);
-                key.keyName = keyName + "\\" + name;
-                return key;
-            }
-
-            // Return null if we didn't find the key.
-            if (ret == Interop.mincore.Errors.ERROR_ACCESS_DENIED || ret == Interop.mincore.Errors.ERROR_BAD_IMPERSONATION_LEVEL)
-            {
-                // We need to throw SecurityException here for compatibility reason,
-                // although UnauthorizedAccessException will make more sense.
-                ThrowHelper.ThrowSecurityException(SR.Security_RegistryPermission);
-            }
-
-            return null;
+            return InternalOpenSubKeyCore(name, rights, throwOnPermissionFailure: true);
         }
 
-        // This required no security checks. This is to get around the Deleting SubKeys which only require
-        // write permission. They call OpenSubKey which required read. Now instead call this function w/o security checks
-        [System.Security.SecurityCritical]  
-        internal RegistryKey InternalOpenSubKey(String name, bool writable)
+        /// <summary>
+        /// This required no security checks. This is to get around the Deleting SubKeys which only require
+        /// write permission. They call OpenSubKey which required read. Now instead call this function w/o security checks
+        /// </summary>
+        private RegistryKey InternalOpenSubKey(string name, bool writable)
         {
             ValidateKeyName(name);
             EnsureNotDisposed();
-
-            SafeRegistryHandle result = null;
-            int ret = Interop.mincore.RegOpenKeyEx(hkey,
-                name,
-                0,
-                GetRegistryKeyAccess(writable) | (int)regView,
-                out result);
-
-            if (ret == 0 && !result.IsInvalid)
-            {
-                RegistryKey key = new RegistryKey(result, writable, false, remoteKey, false, regView);
-                key.keyName = keyName + "\\" + name;
-                return key;
-            }
-            return null;
+            return InternalOpenSubKeyCore(name, GetRegistryKeyRights(writable), throwOnPermissionFailure: false);
         }
 
-        /**
-         * Returns a subkey with read only permissions.
-         *
-         * @param name Name or path of subkey to open.
-         *
-         * @return the Subkey requested, or <b>null</b> if the operation failed.
-         */
-        [System.Security.SecurityCritical]
-        public RegistryKey OpenSubKey(String name)
+        /// <summary>Returns a subkey with read only permissions.</summary>
+        /// <param name="name">Name or path of subkey to open.</param>
+        /// <returns>The Subkey requested, or <b>null</b> if the operation failed.</returns>
+        public RegistryKey OpenSubKey(string name)
         {
             return OpenSubKey(name, false);
         }
 
-        /**
-         * Retrieves the count of subkeys.
-         *
-         * @return a count of subkeys.
-         */
+        /// <summary>Retrieves the count of subkeys.</summary>
+        /// <returns>A count of subkeys.</returns>
         public int SubKeyCount
         {
-            [System.Security.SecuritySafeCritical]  
-            get
-            {
-                return InternalSubKeyCount();
-            }
+            get { return InternalSubKeyCount(); }
         }
 
         public RegistryView View
         {
-            [System.Security.SecuritySafeCritical]
             get
             {
                 EnsureNotDisposed();
-                return regView;
+                return _regView;
             }
         }
 
         public SafeRegistryHandle Handle
         {
-            [System.Security.SecurityCritical]
             get
             {
                 EnsureNotDisposed();
-                int ret = Interop.mincore.Errors.ERROR_INVALID_HANDLE;
-                if (IsSystemKey())
-                {
-                    IntPtr baseKey = (IntPtr)0;
-                    switch (keyName)
-                    {
-                        case "HKEY_CLASSES_ROOT":
-                            baseKey = HKEY_CLASSES_ROOT;
-                            break;
-                        case "HKEY_CURRENT_USER":
-                            baseKey = HKEY_CURRENT_USER;
-                            break;
-                        case "HKEY_LOCAL_MACHINE":
-                            baseKey = HKEY_LOCAL_MACHINE;
-                            break;
-                        case "HKEY_USERS":
-                            baseKey = HKEY_USERS;
-                            break;
-                        case "HKEY_PERFORMANCE_DATA":
-                            baseKey = HKEY_PERFORMANCE_DATA;
-                            break;
-                        case "HKEY_CURRENT_CONFIG":
-                            baseKey = HKEY_CURRENT_CONFIG;
-                            break;
-                        default:
-                            Win32Error(ret, null);
-                            break;
-                    }
-                    // open the base key so that RegistryKey.Handle will return a valid handle
-                    SafeRegistryHandle result;
-                    ret = Interop.mincore.RegOpenKeyEx(baseKey,
-                        null,
-                        0,
-                        GetRegistryKeyAccess(IsWritable()) | (int)regView,
-                        out result);
-
-                    if (ret == 0 && !result.IsInvalid)
-                    {
-                        return result;
-                    }
-                    else
-                    {
-                        Win32Error(ret, null);
-                    }
-                }
-                else
-                {
-                    return hkey;
-                }
-                throw new IOException(Interop.mincore.GetMessage(ret), ret);
+                return IsSystemKey() ? SystemKeyHandle : _hkey;
             }
         }
 
-        [System.Security.SecurityCritical]
         public static RegistryKey FromHandle(SafeRegistryHandle handle)
         {
             return FromHandle(handle, RegistryView.Default);
         }
 
-        [System.Security.SecurityCritical]
         public static RegistryKey FromHandle(SafeRegistryHandle handle, RegistryView view)
         {
             if (handle == null) throw new ArgumentNullException(nameof(handle));
             ValidateKeyView(view);
 
-            return new RegistryKey(handle, true /* isWritable */, view);
+            return new RegistryKey(handle, writable: true, view: view);
         }
 
-        [System.Security.SecurityCritical]  
-        internal int InternalSubKeyCount()
+        private int InternalSubKeyCount()
         {
             EnsureNotDisposed();
-
-            int subkeys = 0;
-            int junk = 0;
-            int ret = Interop.mincore.RegQueryInfoKey(hkey,
-                                      null,
-                                      null,
-                                      IntPtr.Zero,
-                                      ref subkeys,  // subkeys
-                                      null,
-                                      null,
-                                      ref junk,     // values
-                                      null,
-                                      null,
-                                      null,
-                                      null);
-
-            if (ret != 0)
-                Win32Error(ret, null);
-            return subkeys;
+            return InternalSubKeyCountCore();
         }
 
-        /**
-         * Retrieves an array of strings containing all the subkey names.
-         *
-         * @return all subkey names.
-         */
-        [System.Security.SecurityCritical] 
-        public String[] GetSubKeyNames()
+        /// <summary>Retrieves an array of strings containing all the subkey names.</summary>
+        /// <returns>All subkey names.</returns>
+        public string[] GetSubKeyNames()
         {
             return InternalGetSubKeyNames();
         }
 
-        [System.Security.SecurityCritical]  
-        internal unsafe String[] InternalGetSubKeyNames()
+        private string[] InternalGetSubKeyNames()
         {
-            EnsureNotDisposed();
             int subkeys = InternalSubKeyCount();
-
-            if (subkeys > 0)
-            {
-                String[] names = new String[subkeys];
-                char[] name = new char[MaxKeyLength + 1];
-
-                int namelen;
-
-                fixed (char* namePtr = &name[0])
-                {
-                    for (int i = 0; i < subkeys; i++)
-                    {
-                        namelen = name.Length; // Don't remove this. The API's doesn't work if this is not properly initialized.
-                        int ret = Interop.mincore.RegEnumKeyEx(hkey,
-                            i,
-                            namePtr,
-                            ref namelen,
-                            null,
-                            null,
-                            null,
-                            null);
-                        if (ret != 0)
-                            Win32Error(ret, null);
-                        names[i] = new String(namePtr);
-                    }
-                }
-
-                return names;
-            }
-
-            return Array.Empty<String>();
+            return subkeys > 0 ?
+                InternalGetSubKeyNamesCore(subkeys) :
+                Array.Empty<string>();
         }
 
-        /**
-         * Retrieves the count of values.
-         *
-         * @return a count of values.
-         */
+        /// <summary>Retrieves the count of values.</summary>
+        /// <returns>A count of values.</returns>
         public int ValueCount
         {
-            [System.Security.SecuritySafeCritical]  
             get
             {
-                return InternalValueCount();
+                EnsureNotDisposed();
+                return InternalValueCountCore();
             }
         }
 
-        [System.Security.SecurityCritical]  
-        internal int InternalValueCount()
+        /// <summary>Retrieves an array of strings containing all the value names.</summary>
+        /// <returns>All value names.</returns>
+        public string[] GetValueNames()
         {
-            EnsureNotDisposed();
-            int values = 0;
-            int junk = 0;
-            int ret = Interop.mincore.RegQueryInfoKey(hkey,
-                                      null,
-                                      null,
-                                      IntPtr.Zero,
-                                      ref junk,     // subkeys
-                                      null,
-                                      null,
-                                      ref values,   // values
-                                      null,
-                                      null,
-                                      null,
-                                      null);
-            if (ret != 0)
-                Win32Error(ret, null);
-            return values;
+            int values = ValueCount;
+            return values > 0 ?
+                GetValueNamesCore(values) :
+                Array.Empty<string>();
         }
 
-        /**
-         * Retrieves an array of strings containing all the value names.
-         *
-         * @return all value names.
-         */
-        [System.Security.SecuritySafeCritical]  
-        public unsafe String[] GetValueNames()
-        {
-            EnsureNotDisposed();
-
-            int values = InternalValueCount();
-
-            if (values > 0)
-            {
-                String[] names = new String[values];
-                char[] name = new char[MaxValueLength + 1];
-                int namelen;
-
-                fixed (char* namePtr = &name[0])
-                {
-                    for (int i = 0; i < values; i++)
-                    {
-                        namelen = name.Length;
-
-                        int ret = Interop.mincore.RegEnumValue(hkey,
-                            i,
-                            namePtr,
-                            ref namelen,
-                            IntPtr.Zero,
-                            null,
-                            null,
-                            null);
-
-                        if (ret != 0)
-                        {
-                            // ignore ERROR_MORE_DATA if we're querying HKEY_PERFORMANCE_DATA
-                            if (!(IsPerfDataKey() && ret == Interop.mincore.Errors.ERROR_MORE_DATA))
-                                Win32Error(ret, null);
-                        }
-
-                        names[i] = new String(namePtr);
-                    }
-                }
-
-                return names;
-            }
-
-            return Array.Empty<String>();
-        }
-
-        /**
-         * Retrieves the specified value. <b>null</b> is returned if the value
-         * doesn't exist.
-         *
-         * Note that <var>name</var> can be null or "", at which point the
-         * unnamed or default value of this Registry key is returned, if any.
-         *
-         * @param name Name of value to retrieve.
-         *
-         * @return the data associated with the value.
-         */
-        [System.Security.SecuritySafeCritical]  
-        public Object GetValue(String name)
+        /// <summary>Retrieves the specified value. <b>null</b> is returned if the value doesn't exist</summary>
+        /// <remarks>
+        /// Note that <var>name</var> can be null or "", at which point the
+        /// unnamed or default value of this Registry key is returned, if any.
+        /// </remarks>
+        /// <param name="name">Name of value to retrieve.</param>
+        /// <returns>The data associated with the value.</returns>
+        public object GetValue(string name)
         {
             return InternalGetValue(name, null, false, true);
         }
 
-        /**
-         * Retrieves the specified value. <i>defaultValue</i> is returned if the value doesn't exist.
-         *
-         * Note that <var>name</var> can be null or "", at which point the
-         * unnamed or default value of this Registry key is returned, if any.
-         * The default values for RegistryKeys are OS-dependent.  NT doesn't
-         * have them by default, but they can exist and be of any type.  On
-         * Win95, the default value is always an empty key of type REG_SZ.
-         * Win98 supports default values of any type, but defaults to REG_SZ.
-         *
-         * @param name Name of value to retrieve.
-         * @param defaultValue Value to return if <i>name</i> doesn't exist.
-         *
-         * @return the data associated with the value.
-         */
-        [System.Security.SecuritySafeCritical]
-        public Object GetValue(String name, Object defaultValue)
+        /// <summary>Retrieves the specified value. <i>defaultValue</i> is returned if the value doesn't exist.</summary>
+        /// <remarks>
+        /// Note that <var>name</var> can be null or "", at which point the
+        /// unnamed or default value of this Registry key is returned, if any.
+        /// The default values for RegistryKeys are OS-dependent.  NT doesn't
+        /// have them by default, but they can exist and be of any type.  On
+        /// Win95, the default value is always an empty key of type REG_SZ.
+        /// Win98 supports default values of any type, but defaults to REG_SZ.
+        /// </remarks>
+        /// <param name="name">Name of value to retrieve.</param>
+        /// <param name="defaultValue">Value to return if <i>name</i> doesn't exist.</param>
+        /// <returns>The data associated with the value.</returns>
+        public object GetValue(string name, object defaultValue)
         {
             return InternalGetValue(name, defaultValue, false, true);
         }
 
-        [System.Security.SecuritySafeCritical]
-        public Object GetValue(String name, Object defaultValue, RegistryValueOptions options)
+        public object GetValue(string name, object defaultValue, RegistryValueOptions options)
         {
             if (options < RegistryValueOptions.None || options > RegistryValueOptions.DoNotExpandEnvironmentNames)
             {
                 throw new ArgumentException(SR.Format(SR.Arg_EnumIllegalVal, (int)options), nameof(options));
             }
             bool doNotExpand = (options == RegistryValueOptions.DoNotExpandEnvironmentNames);
-            return InternalGetValue(name, defaultValue, doNotExpand, true);
+            return InternalGetValue(name, defaultValue, doNotExpand, checkSecurity: true);
         }
 
-        [System.Security.SecurityCritical]  
-        internal Object InternalGetValue(String name, Object defaultValue, bool doNotExpand, bool checkSecurity)
+        private object InternalGetValue(string name, object defaultValue, bool doNotExpand, bool checkSecurity)
         {
             if (checkSecurity)
             {
-                // Name can be null!  It's the most common use of RegQueryValueEx
                 EnsureNotDisposed();
             }
-
-            Object data = defaultValue;
-            int type = 0;
-            int datasize = 0;
-
-            int ret = Interop.mincore.RegQueryValueEx(hkey, name, null, ref type, (byte[])null, ref datasize);
-
-            if (ret != 0)
-            {
-                if (IsPerfDataKey())
-                {
-                    int size = 65000;
-                    int sizeInput = size;
-
-                    int r;
-                    byte[] blob = new byte[size];
-                    while (Interop.mincore.Errors.ERROR_MORE_DATA == (r = Interop.mincore.RegQueryValueEx(hkey, name, null, ref type, blob, ref sizeInput)))
-                    {
-                        if (size == Int32.MaxValue)
-                        {
-                            // ERROR_MORE_DATA was returned however we cannot increase the buffer size beyond Int32.MaxValue
-                            Win32Error(r, name);
-                        }
-                        else if (size > (Int32.MaxValue / 2))
-                        {
-                            // at this point in the loop "size * 2" would cause an overflow
-                            size = Int32.MaxValue;
-                        }
-                        else
-                        {
-                            size *= 2;
-                        }
-                        sizeInput = size;
-                        blob = new byte[size];
-                    }
-                    if (r != 0)
-                        Win32Error(r, name);
-                    return blob;
-                }
-                else
-                {
-                    // For stuff like ERROR_FILE_NOT_FOUND, we want to return null (data).
-                    // Some OS's returned ERROR_MORE_DATA even in success cases, so we 
-                    // want to continue on through the function. 
-                    if (ret != Interop.mincore.Errors.ERROR_MORE_DATA)
-                        return data;
-                }
-            }
-
-            if (datasize < 0)
-            {
-                // unexpected code path
-                Debug.Fail("[InternalGetValue] RegQueryValue returned ERROR_SUCCESS but gave a negative datasize");
-                datasize = 0;
-            }
-
-
-            switch (type)
-            {
-                case Interop.mincore.RegistryValues.REG_NONE:
-                case Interop.mincore.RegistryValues.REG_DWORD_BIG_ENDIAN:
-                case Interop.mincore.RegistryValues.REG_BINARY:
-                    {
-                        byte[] blob = new byte[datasize];
-                        ret = Interop.mincore.RegQueryValueEx(hkey, name, null, ref type, blob, ref datasize);
-                        data = blob;
-                    }
-                    break;
-                case Interop.mincore.RegistryValues.REG_QWORD:
-                    {    // also REG_QWORD_LITTLE_ENDIAN
-                        if (datasize > 8)
-                        {
-                            // prevent an AV in the edge case that datasize is larger than sizeof(long)
-                            goto case Interop.mincore.RegistryValues.REG_BINARY;
-                        }
-                        long blob = 0;
-                        Debug.Assert(datasize == 8, "datasize==8");
-                        // Here, datasize must be 8 when calling this
-                        ret = Interop.mincore.RegQueryValueEx(hkey, name, null, ref type, ref blob, ref datasize);
-
-                        data = blob;
-                    }
-                    break;
-                case Interop.mincore.RegistryValues.REG_DWORD:
-                    {    // also REG_DWORD_LITTLE_ENDIAN
-                        if (datasize > 4)
-                        {
-                            // prevent an AV in the edge case that datasize is larger than sizeof(int)
-                            goto case Interop.mincore.RegistryValues.REG_QWORD;
-                        }
-                        int blob = 0;
-                        Debug.Assert(datasize == 4, "datasize==4");
-                        // Here, datasize must be four when calling this
-                        ret = Interop.mincore.RegQueryValueEx(hkey, name, null, ref type, ref blob, ref datasize);
-
-                        data = blob;
-                    }
-                    break;
-
-                case Interop.mincore.RegistryValues.REG_SZ:
-                    {
-                        if (datasize % 2 == 1)
-                        {
-                            // handle the case where the registry contains an odd-byte length (corrupt data?)
-                            try
-                            {
-                                datasize = checked(datasize + 1);
-                            }
-                            catch (OverflowException e)
-                            {
-                                throw new IOException(SR.Arg_RegGetOverflowBug, e);
-                            }
-                        }
-                        char[] blob = new char[datasize / 2];
-
-                        ret = Interop.mincore.RegQueryValueEx(hkey, name, null, ref type, blob, ref datasize);
-                        if (blob.Length > 0 && blob[blob.Length - 1] == (char)0)
-                        {
-                            data = new String(blob, 0, blob.Length - 1);
-                        }
-                        else
-                        {
-                            // in the very unlikely case the data is missing null termination, 
-                            // pass in the whole char[] to prevent truncating a character
-                            data = new String(blob);
-                        }
-                    }
-                    break;
-
-                case Interop.mincore.RegistryValues.REG_EXPAND_SZ:
-                    {
-                        if (datasize % 2 == 1)
-                        {
-                            // handle the case where the registry contains an odd-byte length (corrupt data?)
-                            try
-                            {
-                                datasize = checked(datasize + 1);
-                            }
-                            catch (OverflowException e)
-                            {
-                                throw new IOException(SR.Arg_RegGetOverflowBug, e);
-                            }
-                        }
-                        char[] blob = new char[datasize / 2];
-
-                        ret = Interop.mincore.RegQueryValueEx(hkey, name, null, ref type, blob, ref datasize);
-
-                        if (blob.Length > 0 && blob[blob.Length - 1] == (char)0)
-                        {
-                            data = new String(blob, 0, blob.Length - 1);
-                        }
-                        else
-                        {
-                            // in the very unlikely case the data is missing null termination, 
-                            // pass in the whole char[] to prevent truncating a character
-                            data = new String(blob);
-                        }
-
-                        if (!doNotExpand)
-                            data = Environment.ExpandEnvironmentVariables((String)data);
-                    }
-                    break;
-                case Interop.mincore.RegistryValues.REG_MULTI_SZ:
-                    {
-                        if (datasize % 2 == 1)
-                        {
-                            // handle the case where the registry contains an odd-byte length (corrupt data?)
-                            try
-                            {
-                                datasize = checked(datasize + 1);
-                            }
-                            catch (OverflowException e)
-                            {
-                                throw new IOException(SR.Arg_RegGetOverflowBug, e);
-                            }
-                        }
-                        char[] blob = new char[datasize / 2];
-
-                        ret = Interop.mincore.RegQueryValueEx(hkey, name, null, ref type, blob, ref datasize);
-
-                        // make sure the string is null terminated before processing the data
-                        if (blob.Length > 0 && blob[blob.Length - 1] != (char)0)
-                        {
-                            Array.Resize(ref blob, blob.Length + 1);
-                        }
-
-                        var strings = new List<String>();
-                        int cur = 0;
-                        int len = blob.Length;
-
-                        while (ret == 0 && cur < len)
-                        {
-                            int nextNull = cur;
-                            while (nextNull < len && blob[nextNull] != (char)0)
-                            {
-                                nextNull++;
-                            }
-
-                            if (nextNull < len)
-                            {
-                                Debug.Assert(blob[nextNull] == (char)0, "blob[nextNull] should be 0");
-                                if (nextNull - cur > 0)
-                                {
-                                    strings.Add(new String(blob, cur, nextNull - cur));
-                                }
-                                else
-                                {
-                                    // we found an empty string.  But if we're at the end of the data, 
-                                    // it's just the extra null terminator. 
-                                    if (nextNull != len - 1)
-                                        strings.Add(String.Empty);
-                                }
-                            }
-                            else
-                            {
-                                strings.Add(new String(blob, cur, len - cur));
-                            }
-                            cur = nextNull + 1;
-                        }
-
-                        data = strings.ToArray();
-                    }
-                    break;
-                case Interop.mincore.RegistryValues.REG_LINK:
-                default:
-                    break;
-            }
-
-            return data;
+            
+            // Name can be null!  It's the most common use of RegQueryValueEx
+            return InternalGetValueCore(name, defaultValue, doNotExpand);
         }
 
-        [System.Security.SecuritySafeCritical]  
         public RegistryValueKind GetValueKind(string name)
         {
             EnsureNotDisposed();
-
-            int type = 0;
-            int datasize = 0;
-            int ret = Interop.mincore.RegQueryValueEx(hkey, name, null, ref type, (byte[])null, ref datasize);
-            if (ret != 0)
-                Win32Error(ret, null);
-            if (type == Interop.mincore.RegistryValues.REG_NONE)
-                return RegistryValueKind.None;
-            else if (!Enum.IsDefined(typeof(RegistryValueKind), type))
-                return RegistryValueKind.Unknown;
-            else
-                return (RegistryValueKind)type;
+            return GetValueKindCore(name);
         }
 
-        /**
-         * Retrieves the current state of the dirty property.
-         *
-         * A key is marked as dirty if any operation has occurred that modifies the
-         * contents of the key.
-         *
-         * @return <b>true</b> if the key has been modified.
-         */
-        private bool IsDirty()
+        public string Name
         {
-            return (this.state & STATE_DIRTY) != 0;
-        }
-
-        private bool IsSystemKey()
-        {
-            return (this.state & STATE_SYSTEMKEY) != 0;
-        }
-
-        private bool IsWritable()
-        {
-            return (this.state & STATE_WRITEACCESS) != 0;
-        }
-
-        private bool IsPerfDataKey()
-        {
-            return (this.state & STATE_PERF_DATA) != 0;
-        }
-
-        public String Name
-        {
-            [System.Security.SecuritySafeCritical]  
             get
             {
                 EnsureNotDisposed();
-                return keyName;
+                return _keyName;
             }
         }
 
-        private void SetDirty()
-        {
-            this.state |= STATE_DIRTY;
-        }
-
-        /**
-         * Sets the specified value.
-         *
-         * @param name Name of value to store data in.
-         * @param value Data to store.
-         */
-        public void SetValue(String name, Object value)
+        /// <summary>Sets the specified value.</summary>
+        /// <param name="name">Name of value to store data in.</param>
+        /// <param name="value">Data to store.</param>
+        public void SetValue(string name, object value)
         {
             SetValue(name, value, RegistryValueKind.Unknown);
         }
 
-        [System.Security.SecuritySafeCritical] 
-        public unsafe void SetValue(String name, Object value, RegistryValueKind valueKind)
+        public void SetValue(string name, object value, RegistryValueKind valueKind)
         {
             if (value == null)
-                ThrowHelper.ThrowArgumentNullException("value");
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(value));
+            }
 
             if (name != null && name.Length > MaxValueLength)
             {
-                throw new ArgumentException(SR.Arg_RegValStrLenBug);
+                throw new ArgumentException(SR.Arg_RegValStrLenBug, nameof(name));
             }
 
             if (!Enum.IsDefined(typeof(RegistryValueKind), valueKind))
+            {
                 throw new ArgumentException(SR.Arg_RegBadKeyKind, nameof(valueKind));
+            }
 
             EnsureWriteable();
 
@@ -1334,245 +528,70 @@ namespace Microsoft.Win32
                 valueKind = CalculateValueKind(value);
             }
 
-            int ret = 0;
-            try
-            {
-                switch (valueKind)
-                {
-                    case RegistryValueKind.ExpandString:
-                    case RegistryValueKind.String:
-                        {
-                            String data = value.ToString();
-                            ret = Interop.mincore.RegSetValueEx(hkey,
-                                name,
-                                0,
-                                valueKind,
-                                data,
-                                checked(data.Length * 2 + 2));
-                            break;
-                        }
-
-                    case RegistryValueKind.MultiString:
-                        {
-                            // Other thread might modify the input array after we calculate the buffer length.                            
-                            // Make a copy of the input array to be safe.
-                            string[] dataStrings = (string[])(((string[])value).Clone());
-
-                            // First determine the size of the array
-                            //
-                            // Format is null terminator between strings and final null terminator at the end.
-                            //    e.g. str1\0str2\0str3\0\0 
-                            //
-                            int sizeInChars = 1; // no matter what, we have the final null terminator.
-                            for (int i = 0; i < dataStrings.Length; i++)
-                            {
-                                if (dataStrings[i] == null)
-                                {
-                                    ThrowHelper.ThrowArgumentException(SR.Arg_RegSetStrArrNull);
-                                }
-                                sizeInChars = checked(sizeInChars + (dataStrings[i].Length + 1));
-                            }
-                            int sizeInBytes = checked(sizeInChars * sizeof(char));
-
-                            // Write out the strings...
-                            //
-                            char[] dataChars = new char[sizeInChars];
-                            int destinationIndex = 0;
-                            for (int i = 0; i < dataStrings.Length; i++)
-                            {
-                                int length = dataStrings[i].Length;
-                                dataStrings[i].CopyTo(0, dataChars, destinationIndex, length);
-                                destinationIndex += (length + 1); // +1 for null terminator, which is already zero-initialized in new array.
-                            }
-
-                            ret = Interop.mincore.RegSetValueEx(hkey,
-                                name,
-                                0,
-                                RegistryValueKind.MultiString,
-                                dataChars,
-                                sizeInBytes);
-
-                            break;
-                        }
-
-                    case RegistryValueKind.None:
-                    case RegistryValueKind.Binary:
-                        byte[] dataBytes = (byte[])value;
-                        ret = Interop.mincore.RegSetValueEx(hkey,
-                            name,
-                            0,
-                            (valueKind == RegistryValueKind.None ? Interop.mincore.RegistryValues.REG_NONE : RegistryValueKind.Binary),
-                            dataBytes,
-                            dataBytes.Length);
-                        break;
-
-                    case RegistryValueKind.DWord:
-                        {
-                            // We need to use Convert here because we could have a boxed type cannot be
-                            // unboxed and cast at the same time.  I.e. ((int)(object)(short) 5) will fail.
-                            int data = Convert.ToInt32(value, System.Globalization.CultureInfo.InvariantCulture);
-
-                            ret = Interop.mincore.RegSetValueEx(hkey,
-                                name,
-                                0,
-                                RegistryValueKind.DWord,
-                                ref data,
-                                4);
-                            break;
-                        }
-
-                    case RegistryValueKind.QWord:
-                        {
-                            long data = Convert.ToInt64(value, System.Globalization.CultureInfo.InvariantCulture);
-
-                            ret = Interop.mincore.RegSetValueEx(hkey,
-                                name,
-                                0,
-                                RegistryValueKind.QWord,
-                                ref data,
-                                8);
-                            break;
-                        }
-                }
-            }
-            catch (OverflowException)
-            {
-                ThrowHelper.ThrowArgumentException(SR.Arg_RegSetMismatchedKind);
-            }
-            catch (InvalidOperationException)
-            {
-                ThrowHelper.ThrowArgumentException(SR.Arg_RegSetMismatchedKind);
-            }
-            catch (FormatException)
-            {
-                ThrowHelper.ThrowArgumentException(SR.Arg_RegSetMismatchedKind);
-            }
-            catch (InvalidCastException)
-            {
-                ThrowHelper.ThrowArgumentException(SR.Arg_RegSetMismatchedKind);
-            }
-
-            if (ret == 0)
-            {
-                SetDirty();
-            }
-            else
-                Win32Error(ret, null);
+            SetValueCore(name, value, valueKind);
         }
 
-        private RegistryValueKind CalculateValueKind(Object value)
+        private RegistryValueKind CalculateValueKind(object value)
         {
             // This logic matches what used to be in SetValue(string name, object value) in the v1.0 and v1.1 days.
             // Even though we could add detection for an int64 in here, we want to maintain compatibility with the
             // old behavior.
-            if (value is Int32)
+            if (value is int)
+            {
                 return RegistryValueKind.DWord;
+            }
             else if (value is Array)
             {
                 if (value is byte[])
+                {
                     return RegistryValueKind.Binary;
-                else if (value is String[])
+                }
+                else if (value is string[])
+                {
                     return RegistryValueKind.MultiString;
+                }
                 else
+                {
                     throw new ArgumentException(SR.Format(SR.Arg_RegSetBadArrType, value.GetType().Name));
+                }
             }
             else
+            {
                 return RegistryValueKind.String;
+            }
         }
 
-        /**
-         * Retrieves a string representation of this key.
-         *
-         * @return a string representing the key.
-         */
-        [System.Security.SecuritySafeCritical]  
-        public override String ToString()
+        /// <summary>Retrieves a string representation of this key.</summary>
+        /// <returns>A string representing the key.</returns>
+        public override string ToString()
         {
             EnsureNotDisposed();
-            return keyName;
+            return _keyName;
         }
 
-        /**
-         * After calling GetLastWin32Error(), it clears the last error field,
-         * so you must save the HResult and pass it to this method.  This method
-         * will determine the appropriate exception to throw dependent on your
-         * error, and depending on the error, insert a string into the message
-         * gotten from the ResourceManager.
-         */
-        [System.Security.SecuritySafeCritical]  
-        internal void Win32Error(int errorCode, String str)
-        {
-            switch (errorCode)
-            {
-                case Interop.mincore.Errors.ERROR_ACCESS_DENIED:
-                    if (str != null)
-                        throw new UnauthorizedAccessException(SR.Format(SR.UnauthorizedAccess_RegistryKeyGeneric_Key, str));
-                    else
-                        throw new UnauthorizedAccessException();
-
-                case Interop.mincore.Errors.ERROR_INVALID_HANDLE:
-                    /**
-                     * For normal RegistryKey instances we dispose the SafeRegHandle and throw IOException.
-                     * However, for HKEY_PERFORMANCE_DATA (on a local or remote machine) we avoid disposing the
-                     * SafeRegHandle and only throw the IOException.  This is to workaround reentrancy issues
-                     * in PerformanceCounter.NextValue() where the API could throw {NullReference, ObjectDisposed, ArgumentNull}Exception
-                     * on reentrant calls because of this error code path in RegistryKey
-                     *
-                     * Normally we'd make our caller synchronize access to a shared RegistryKey instead of doing something like this,
-                     * however we shipped PerformanceCounter.NextValue() un-synchronized in v2.0RTM and customers have taken a dependency on 
-                     * this behavior (being able to simultaneously query multiple remote-machine counters on multiple threads, instead of 
-                     * having serialized access).
-                     *
-                     */
-                    if (!IsPerfDataKey())
-                    {
-                        this.hkey.SetHandleAsInvalid();
-                        this.hkey = null;
-                    }
-                    goto default;
-
-                case Interop.mincore.Errors.ERROR_FILE_NOT_FOUND:
-                    throw new IOException(SR.Arg_RegKeyNotFound, errorCode);
-
-                default:
-                    throw new IOException(Interop.mincore.GetMessage(errorCode), errorCode);
-            }
-        }
-
-        [System.Security.SecuritySafeCritical]
-        internal static void Win32ErrorStatic(int errorCode, String str)
-        {
-            switch (errorCode)
-            {
-                case Interop.mincore.Errors.ERROR_ACCESS_DENIED:
-                    if (str != null)
-                        throw new UnauthorizedAccessException(SR.Format(SR.UnauthorizedAccess_RegistryKeyGeneric_Key, str));
-                    else
-                        throw new UnauthorizedAccessException();
-
-                default:
-                    throw new IOException(Interop.mincore.GetMessage(errorCode), errorCode);
-            }
-        }
-
-        internal static String FixupName(String name)
+        private static string FixupName(string name)
         {
             Debug.Assert(name != null, "[FixupName]name!=null");
             if (name.IndexOf('\\') == -1)
+            {
                 return name;
+            }
 
             StringBuilder sb = new StringBuilder(name);
             FixupPath(sb);
             int temp = sb.Length - 1;
             if (temp >= 0 && sb[temp] == '\\') // Remove trailing slash
+            {
                 sb.Length = temp;
+            }
+
             return sb.ToString();
         }
 
-
         private static void FixupPath(StringBuilder path)
         {
-            Contract.Requires(path != null);
+            Debug.Assert(path != null);
+
             int length = path.Length;
             bool fixup = false;
             char markerChar = (char)0xFFFF;
@@ -1583,16 +602,11 @@ namespace Microsoft.Win32
                 if (path[i] == '\\')
                 {
                     i++;
-                    while (i < length)
+                    while (i < length && path[i] == '\\')
                     {
-                        if (path[i] == '\\')
-                        {
-                            path[i] = markerChar;
-                            i++;
-                            fixup = true;
-                        }
-                        else
-                            break;
+                        path[i] = markerChar;
+                        i++;
+                        fixup = true;
                     }
                 }
                 i++;
@@ -1617,25 +631,14 @@ namespace Microsoft.Win32
             }
         }
 
-        [System.Security.SecurityCritical]  
-        private bool ContainsRegistryValue(string name)
-        {
-            int type = 0;
-            int datasize = 0;
-            int retval = Interop.mincore.RegQueryValueEx(hkey, name, null, ref type, (byte[])null, ref datasize);
-            return retval == 0;
-        }
-
-        [System.Security.SecurityCritical]  
         private void EnsureNotDisposed()
         {
-            if (hkey == null)
+            if (_hkey == null)
             {
-                ThrowHelper.ThrowObjectDisposedException(keyName, SR.ObjectDisposed_RegKeyClosed);
+                ThrowHelper.ThrowObjectDisposedException(_keyName, SR.ObjectDisposed_RegKeyClosed);
             }
         }
 
-        [System.Security.SecurityCritical]  
         private void EnsureWriteable()
         {
             EnsureNotDisposed();
@@ -1645,36 +648,11 @@ namespace Microsoft.Win32
             }
         }
 
-        static int GetRegistryKeyAccess(bool isWritable)
+        private static void ValidateKeyName(string name)
         {
-            int winAccess;
-            if (!isWritable)
-            {
-                winAccess = Interop.mincore.RegistryOperations.KEY_READ;
-            }
-            else
-            {
-                winAccess = Interop.mincore.RegistryOperations.KEY_READ | Interop.mincore.RegistryOperations.KEY_WRITE;
-            }
-
-            return winAccess;
-        }
-
-        static bool IsWritable(int rights)
-        {
-            return (rights & (Interop.mincore.RegistryOperations.KEY_SET_VALUE |
-                              Interop.mincore.RegistryOperations.KEY_CREATE_SUB_KEY |
-                              (int)RegistryRights.Delete |
-                              (int)RegistryRights.TakeOwnership |
-                              (int)RegistryRights.ChangePermissions)) != 0;
-        }
-
-        static private void ValidateKeyName(string name)
-        {
-            Contract.Ensures(name != null);
             if (name == null)
             {
-                ThrowHelper.ThrowArgumentNullException("name");
+                ThrowHelper.ThrowArgumentNullException(nameof(name));
             }
 
             int nextSlash = name.IndexOf("\\", StringComparison.OrdinalIgnoreCase);
@@ -1682,21 +660,24 @@ namespace Microsoft.Win32
             while (nextSlash != -1)
             {
                 if ((nextSlash - current) > MaxKeyLength)
-                    ThrowHelper.ThrowArgumentException(SR.Arg_RegKeyStrLenBug);
-
+                {
+                    ThrowHelper.ThrowArgumentException(SR.Arg_RegKeyStrLenBug, nameof(name));
+                }
                 current = nextSlash + 1;
                 nextSlash = name.IndexOf("\\", current, StringComparison.OrdinalIgnoreCase);
             }
 
             if ((name.Length - current) > MaxKeyLength)
-                ThrowHelper.ThrowArgumentException(SR.Arg_RegKeyStrLenBug);
+            {
+                ThrowHelper.ThrowArgumentException(SR.Arg_RegKeyStrLenBug, nameof(name));
+            }
         }
 
         static private void ValidateKeyOptions(RegistryOptions options)
         {
             if (options < RegistryOptions.None || options > RegistryOptions.Volatile)
             {
-                ThrowHelper.ThrowArgumentException(SR.Argument_InvalidRegistryOptionsCheck, "options");
+                ThrowHelper.ThrowArgumentException(SR.Argument_InvalidRegistryOptionsCheck, nameof(options));
             }
         }
 
@@ -1704,15 +685,41 @@ namespace Microsoft.Win32
         {
             if (view != RegistryView.Default && view != RegistryView.Registry32 && view != RegistryView.Registry64)
             {
-                ThrowHelper.ThrowArgumentException(SR.Argument_InvalidRegistryViewCheck, "view");
+                ThrowHelper.ThrowArgumentException(SR.Argument_InvalidRegistryViewCheck, nameof(view));
             }
         }
-    }
 
-    [Flags]
-    public enum RegistryValueOptions
-    {
-        None = 0,
-        DoNotExpandEnvironmentNames = 1
+        private static RegistryRights GetRegistryKeyRights(bool isWritable)
+        {
+            return isWritable ?
+                RegistryRights.ReadKey | RegistryRights.WriteKey :
+                RegistryRights.ReadKey;
+        }
+
+        /// <summary>Retrieves the current state of the dirty property.</summary>
+        /// <remarks>A key is marked as dirty if any operation has occurred that modifies the contents of the key.</remarks>
+        /// <returns><b>true</b> if the key has been modified.</returns>
+        private bool IsDirty() => (_state & StateFlags.Dirty) != 0;
+
+        private bool IsSystemKey() => (_state & StateFlags.SystemKey) != 0;
+
+        private bool IsWritable() => (_state & StateFlags.WriteAccess) != 0;
+
+        private bool IsPerfDataKey() => (_state & StateFlags.PerfData) != 0;
+
+        private void SetDirty() => _state |= StateFlags.Dirty;
+
+        [Flags]
+        private enum StateFlags
+        {
+            /// <summary>Dirty indicates that we have munged data that should be potentially written to disk.</summary>
+            Dirty = 0x0001,
+            /// <summary>SystemKey indicates that this is a "SYSTEMKEY" and shouldn't be "opened" or "closed".</summary>
+            SystemKey = 0x0002,
+            /// <summary>Access</summary>
+            WriteAccess = 0x0004,
+            /// <summary>Indicates if this key is for HKEY_PERFORMANCE_DATA</summary>
+            PerfData = 0x0008
+        }
     }
 }

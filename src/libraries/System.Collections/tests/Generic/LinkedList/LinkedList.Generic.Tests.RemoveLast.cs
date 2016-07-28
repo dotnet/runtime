@@ -115,6 +115,5 @@ namespace System.Collections.Tests
             Assert.Throws<InvalidOperationException>(() => linkedList.RemoveLast()); //"Expected invalidoperation exception removing from empty list."
             InitialItems_Tests(linkedList, new T[0]);
         }
-
     }
 }

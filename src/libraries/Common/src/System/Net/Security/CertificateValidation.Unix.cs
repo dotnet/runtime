@@ -28,7 +28,7 @@ namespace System.Net.Security
             }
 
             int hostNameMatch;
-            using (SafeX509Handle certHandle = Interop.Crypto.X509Duplicate(remoteCertificate.Handle))
+            using (SafeX509Handle certHandle = Interop.Crypto.X509UpRef(remoteCertificate.Handle))
             {
                 IPAddress hostnameAsIp;
                 if (IPAddress.TryParse(hostName, out hostnameAsIp))

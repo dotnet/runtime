@@ -1,17 +1,20 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
-    <Version>4.0.1.0</Version>
+    <Version>4.0.2.0</Version>
   </PropertyGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
     <ProjectReference Include="..\ref\System.Reflection.Emit.ILGeneration.csproj">
-      <SupportedFramework>net45;netcoreapp1.0;wp8</SupportedFramework>
+      <SupportedFramework>net45;netcoreapp1.0;wp8;$(AllXamarinFrameworks)</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\src\System.Reflection.Emit.ILGeneration.builds" />
     <InboxOnTargetFramework Include="net45" />
     <InboxOnTargetFramework Include="wp80" />
     <InboxOnTargetFramework Include="portable-net45+wp8" />
+    <!-- MonoTouch, Xamarin.iOS, Xamarin.TVOS, and Xamarain.WatchOS don't actually support this, 
+         but do support a PCL profile that contained it so we must treat as inbox -->
+    <InboxOnTargetFramework Include="$(AllXamarinFrameworks)" />
     <!-- ensure that no lib is in scope for AOT since this isn't supported -->
     <File Include="$(PlaceholderFile)">
       <TargetPath>runtimes/aot/lib/netcore50</TargetPath>

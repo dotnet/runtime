@@ -27,13 +27,7 @@ namespace System.Collections.Tests
             return rand.Next();
         }
 
-        protected override bool DefaultValueAllowed
-        {
-            get
-            {
-                return true;
-            }
-        }
+        protected override bool DefaultValueAllowed => true;
     }
 
     [OuterLoop]

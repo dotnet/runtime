@@ -62,6 +62,11 @@ namespace System.Collections.Immutable
 
     internal static class AllocFreeConcurrentStack
     {
+        // WARNING: We allow diagnostic tools to directly inspect this member (t_stacks). 
+        // See https://github.com/dotnet/corert/blob/master/Documentation/design-docs/diagnostics/diagnostics-tools-contract.md for more details. 
+        // Please do not change the type, the name, or the semantic usage of this member without understanding the implication for tools. 
+        // Get in touch with the diagnostics team if you have questions.
+
         // Workaround for https://github.com/dotnet/coreclr/issues/2191.
         // When that's fixed, a [ThreadStatic] Stack should be added back to AllocFreeConcurrentStack<T>.
 

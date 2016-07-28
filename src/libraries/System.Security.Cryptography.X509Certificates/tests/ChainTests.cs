@@ -4,14 +4,31 @@
 
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using Microsoft.Win32.SafeHandles;
+using System.Text;
 using Xunit;
 
 namespace System.Security.Cryptography.X509Certificates.Tests
 {
     public static class ChainTests
     {
+        private static bool TrustsMicrosoftDotComRoot
+        {
+            get
+            {
+                // Verifies that the microsoft.com certs build with only the certificates in the root store
+
+                using (var microsoftDotCom = new X509Certificate2(TestData.MicrosoftDotComSslCertBytes))
+                using (var chainHolder = new ChainHolder())
+                {
+                    X509Chain chain = chainHolder.Chain;
+                    chain.ChainPolicy.VerificationTime = new DateTime(2015, 10, 15, 12, 01, 01, DateTimeKind.Local);
+                    chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
+
+                    return chain.Build(microsoftDotCom);
+                }
+            }
+        }
+
         [Fact]
         public static void BuildChain()
         {
@@ -19,8 +36,9 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             using (var microsoftDotComIssuer = new X509Certificate2(TestData.MicrosoftDotComIssuerBytes))
             using (var microsoftDotComRoot = new X509Certificate2(TestData.MicrosoftDotComRootBytes))
             using (var unrelated = new X509Certificate2(TestData.DssCer))
+            using (var chainHolder = new ChainHolder())
             {
-                X509Chain chain = new X509Chain();
+                X509Chain chain = chainHolder.Chain;
 
                 chain.ChainPolicy.ExtraStore.Add(unrelated);
                 chain.ChainPolicy.ExtraStore.Add(microsoftDotComRoot);
@@ -54,21 +72,20 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         public static void BuildChainExtraStoreUntrustedRoot()
         {
             using (var testCert = new X509Certificate2(Path.Combine("TestData", "test.pfx"), TestData.ChainPfxPassword))
+            using (ImportedCollection ic = Cert.Import(Path.Combine("TestData", "test.pfx"), TestData.ChainPfxPassword, X509KeyStorageFlags.DefaultKeySet))
+            using (var chainHolder = new ChainHolder())
             {
-                using (ImportedCollection ic = Cert.Import(Path.Combine("TestData", "test.pfx"), TestData.ChainPfxPassword, X509KeyStorageFlags.DefaultKeySet))
-                {
-                    X509Certificate2Collection collection = ic.Collection;
+                X509Certificate2Collection collection = ic.Collection;
 
-                    X509Chain chain = new X509Chain();
-                    chain.ChainPolicy.ExtraStore.AddRange(collection);
-                    chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
-                    chain.ChainPolicy.VerificationTime = new DateTime(2015, 9, 22, 12, 25, 0);
+                X509Chain chain = chainHolder.Chain;
+                chain.ChainPolicy.ExtraStore.AddRange(collection);
+                chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
+                chain.ChainPolicy.VerificationTime = new DateTime(2015, 9, 22, 12, 25, 0);
 
-                    bool valid = chain.Build(testCert);
+                bool valid = chain.Build(testCert);
 
-                    Assert.False(valid);
-                    Assert.Contains(chain.ChainStatus, s => s.Status == X509ChainStatusFlags.UntrustedRoot);
-                }
+                Assert.False(valid);
+                Assert.Contains(chain.ChainStatus, s => s.Status == X509ChainStatusFlags.UntrustedRoot);
             }
         }
 
@@ -136,8 +153,9 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             using (var microsoftDotCom = new X509Certificate2(TestData.MicrosoftDotComSslCertBytes))
             using (var microsoftDotComIssuer = new X509Certificate2(TestData.MicrosoftDotComIssuerBytes))
             using (var microsoftDotComRoot = new X509Certificate2(TestData.MicrosoftDotComRootBytes))
+            using (var chainHolder = new ChainHolder())
             {
-                X509Chain chain = new X509Chain();
+                X509Chain chain = chainHolder.Chain;
 
                 chain.ChainPolicy.ExtraStore.Add(microsoftDotComIssuer);
                 chain.ChainPolicy.ExtraStore.Add(microsoftDotComRoot);
@@ -163,8 +181,10 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         public static void BuildChain_WithApplicationPolicy_Match()
         {
             using (var msCer = new X509Certificate2(TestData.MsCertificate))
-            using (X509Chain chain = new X509Chain())
+            using (var chainHolder = new ChainHolder())
             {
+                X509Chain chain = chainHolder.Chain;
+
                 // Code Signing
                 chain.ChainPolicy.ApplicationPolicy.Add(new Oid("1.3.6.1.5.5.7.3.3"));
                 chain.ChainPolicy.VerificationTime = msCer.NotBefore.AddHours(2);
@@ -182,8 +202,10 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         public static void BuildChain_WithApplicationPolicy_NoMatch()
         {
             using (var cert = new X509Certificate2(TestData.MsCertificate))
-            using (X509Chain chain = new X509Chain())
+            using (var chainHolder = new ChainHolder())
             {
+                X509Chain chain = chainHolder.Chain;
+
                 // Gibberish.  (Code Signing + ".1")
                 chain.ChainPolicy.ApplicationPolicy.Add(new Oid("1.3.6.1.5.5.7.3.3.1"));
                 chain.ChainPolicy.VerificationFlags =
@@ -210,8 +232,10 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         public static void BuildChain_WithCertificatePolicy_Match()
         {
             using (var cert = new X509Certificate2(TestData.CertWithPolicies))
-            using (X509Chain chain = new X509Chain())
+            using (var chainHolder = new ChainHolder())
             {
+                X509Chain chain = chainHolder.Chain;
+
                 // Code Signing
                 chain.ChainPolicy.CertificatePolicy.Add(new Oid("2.18.19"));
                 chain.ChainPolicy.VerificationFlags =
@@ -229,8 +253,10 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         public static void BuildChain_WithCertificatePolicy_NoMatch()
         {
             using (var cert = new X509Certificate2(TestData.CertWithPolicies))
-            using (X509Chain chain = new X509Chain())
+            using (var chainHolder = new ChainHolder())
             {
+                X509Chain chain = chainHolder.Chain;
+
                 chain.ChainPolicy.CertificatePolicy.Add(new Oid("2.999"));
                 chain.ChainPolicy.VerificationFlags =
                     X509VerificationFlags.AllowUnknownCertificateAuthority;
@@ -252,14 +278,117 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
+        [ConditionalFact(nameof(TrustsMicrosoftDotComRoot))]
+        [OuterLoop(/* Modifies user certificate store */)]
+        public static void BuildChain_MicrosoftDotCom_WithRootCertInUserAndSystemRootCertStores()
+        {
+            // Verifies that when the same root cert is placed in both a user and machine root certificate store, 
+            // any certs chain building to that root cert will build correctly
+            // 
+            // We use a copy of the microsoft.com SSL certs and root certs to validate that the chain can build 
+            // successfully
+
+            bool shouldInstallCertToUserStore = true;
+            bool installedCertToUserStore = false;
+
+            using (var microsoftDotCom = new X509Certificate2(TestData.MicrosoftDotComSslCertBytes))
+            using (var microsoftDotComRoot = new X509Certificate2(TestData.MicrosoftDotComRootBytes))
+            {
+                // Check that microsoft.com's root certificate IS installed in the machine root store as a sanity step
+                using (var machineRootStore = new X509Store(StoreName.Root, StoreLocation.LocalMachine))
+                {
+                    machineRootStore.Open(OpenFlags.ReadOnly);
+                    bool foundCert = false;
+
+                    foreach (var machineCert in machineRootStore.Certificates)
+                    {
+                        if (machineCert.Equals(microsoftDotComRoot))
+                        {
+                            foundCert = true;
+                        }
+
+                        machineCert.Dispose();
+                    }
+
+                    Assert.True(foundCert, string.Format("Did not find expected certificate with thumbprint '{0}' in the machine root store", microsoftDotComRoot.Thumbprint));
+                }
+
+                // Concievably at this point there could still be something wrong and we still don't chain build correctly - if that's 
+                // the case, then there's likely something wrong with the machine. Validating that happy path is out of scope 
+                // of this particular test. 
+
+                // Check that microsoft.com's root certificate is NOT installed on in the user cert store as a sanity step
+                // We won't try to install the microsoft.com root cert into the user root store if it's already there
+                using (var userRootStore = new X509Store(StoreName.Root, StoreLocation.CurrentUser))
+                {
+                    userRootStore.Open(OpenFlags.ReadOnly);
+
+                    foreach (var userCert in userRootStore.Certificates)
+                    {
+                        bool foundCert = false;
+                        if (userCert.Equals(microsoftDotComRoot))
+                        {
+                            foundCert = true;
+                        }
+
+                        userCert.Dispose();
+
+                        if (foundCert)
+                        {
+                            shouldInstallCertToUserStore = false;
+                        }
+                    }
+                }
+
+                using (var userRootStore = new X509Store(StoreName.Root, StoreLocation.CurrentUser))
+                using (var chainHolder = new ChainHolder())
+                {
+                    try
+                    {
+                        if (shouldInstallCertToUserStore)
+                        {
+                            userRootStore.Open(OpenFlags.ReadWrite);
+                            userRootStore.Add(microsoftDotComRoot); // throws CryptographicException
+                            installedCertToUserStore = true;
+                        }
+
+                        X509Chain chainValidator = chainHolder.Chain;
+                        chainValidator.ChainPolicy.VerificationTime = new DateTime(2015, 10, 15, 12, 01, 01, DateTimeKind.Local);
+                        chainValidator.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
+
+                        bool chainBuildResult = chainValidator.Build(microsoftDotCom);
+
+                        StringBuilder builder = new StringBuilder();
+                        foreach (var status in chainValidator.ChainStatus)
+                        {
+                            builder.AppendFormat("{0} {1}{2}", status.Status, status.StatusInformation, Environment.NewLine);
+                        }
+
+                        Assert.True(chainBuildResult,
+                            string.Format("Certificate chain build failed. ChainStatus is:{0}{1}", Environment.NewLine, builder.ToString()));
+                    }
+                    finally
+                    {
+                        if (installedCertToUserStore)
+                        {
+                            userRootStore.Remove(microsoftDotComRoot);
+                        }
+                    }
+                }
+            }
+        }
+
         [Fact]
         [OuterLoop( /* May require using the network, to download CRLs and intermediates */)]
         public static void VerifyWithRevocation()
         {
             using (var cert = new X509Certificate2(Path.Combine("TestData", "MS.cer")))
-            using (var onlineChain = new X509Chain())
-            using (var offlineChain = new X509Chain())
+            using (var onlineChainHolder = new ChainHolder())
+            using (var offlineChainHolder = new ChainHolder())
             {
+                X509Chain onlineChain = onlineChainHolder.Chain;
+                X509Chain offlineChain = offlineChainHolder.Chain;
+
                 onlineChain.ChainPolicy.VerificationFlags =
                     X509VerificationFlags.AllowUnknownCertificateAuthority;
 

@@ -338,7 +338,7 @@ namespace Internal.Cryptography.Pal
 
         internal OpenSslX509CertificateReader DuplicateHandles()
         {
-            SafeX509Handle certHandle = Interop.Crypto.X509Duplicate(_cert);
+            SafeX509Handle certHandle = Interop.Crypto.X509UpRef(_cert);
             OpenSslX509CertificateReader duplicate = new OpenSslX509CertificateReader(certHandle);
 
             if (_privateKey != null)

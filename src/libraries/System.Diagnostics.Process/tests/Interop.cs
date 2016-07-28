@@ -26,7 +26,7 @@ namespace System.Diagnostics.Tests
             public uint PeakPagefileUsage;
         }
 
-        [StructLayout(LayoutKind.Sequential)]
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
         internal struct USER_INFO_1
         {
             public string usri1_name;

@@ -8,7 +8,7 @@ using Xunit;
 
 namespace System.IO.Compression.Tests
 {
-    public class zip_InvalidParametersAndStrangeFiles
+    public class zip_InvalidParametersAndStrangeFiles : ZipFileTestBase
     {
         private static void ConstructorThrows<TException>(Func<ZipArchive> constructor, String Message) where TException : Exception
         {
@@ -29,7 +29,7 @@ namespace System.IO.Compression.Tests
         [Fact]
         public static async Task InvalidInstanceMethods()
         {
-            Stream zipFile = await StreamHelpers.CreateTempCopyStream(ZipTest.zfile("normal.zip"));
+            Stream zipFile = await StreamHelpers.CreateTempCopyStream(zfile("normal.zip"));
             using (ZipArchive archive = new ZipArchive(zipFile, ZipArchiveMode.Update))
             {
                 //non-existent entry
@@ -98,7 +98,7 @@ namespace System.IO.Compression.Tests
         [InlineData("invalidDeflate.zip")]
         public static async Task ZipArchiveEntry_InvalidUpdate(String zipname)
         {
-            string filename = ZipTest.bad(zipname);
+            string filename = bad(zipname);
             Stream updatedCopy = await StreamHelpers.CreateTempCopyStream(filename);
             String name;
             Int64 length, compressedLength;
@@ -130,7 +130,7 @@ namespace System.IO.Compression.Tests
         [InlineData("EOCDmissing.zip")]
         public static async Task ZipArchive_InvalidStream(String zipname)
         {
-            string filename = ZipTest.bad(zipname);
+            string filename = bad(zipname);
             using (var stream = await StreamHelpers.CreateTempCopyStream(filename))
                 Assert.Throws<InvalidDataException>(() => new ZipArchive(stream, ZipArchiveMode.Read));
         }
@@ -140,7 +140,7 @@ namespace System.IO.Compression.Tests
         [InlineData("numberOfEntriesDifferent.zip")]
         public static async Task ZipArchive_InvalidEntryTable(String zipname)
         {
-            string filename = ZipTest.bad(zipname);
+            string filename = bad(zipname);
             using (ZipArchive archive = new ZipArchive(await StreamHelpers.CreateTempCopyStream(filename), ZipArchiveMode.Read))
                 Assert.Throws<InvalidDataException>(() => archive.Entries[0]);
         }
@@ -153,7 +153,7 @@ namespace System.IO.Compression.Tests
         [InlineData("invalidDeflate.zip", false)]
         public static async Task ZipArchive_InvalidEntry(String zipname, Boolean throwsOnOpen)
         {
-            string filename = ZipTest.bad(zipname);
+            string filename = bad(zipname);
             using (ZipArchive archive = new ZipArchive(await StreamHelpers.CreateTempCopyStream(filename), ZipArchiveMode.Read))
             {
                 ZipArchiveEntry e = archive.Entries[0];
@@ -175,7 +175,7 @@ namespace System.IO.Compression.Tests
         public static async Task ZipArchiveEntry_InvalidLastWriteTime_Read()
         {
             using (ZipArchive archive = new ZipArchive(await StreamHelpers.CreateTempCopyStream(
-                 ZipTest.bad("invaliddate.zip")), ZipArchiveMode.Read))
+                 bad("invaliddate.zip")), ZipArchiveMode.Read))
             {
                 Assert.Equal(new DateTime(1980, 1, 1, 0, 0, 0), archive.Entries[0].LastWriteTime.DateTime); //"Date isn't correct on invalid date"
             }
@@ -208,7 +208,7 @@ namespace System.IO.Compression.Tests
         [InlineData("filenameTimeAndSizesDifferentInLH.zip", "verysmall", true)]
         public static async Task StrangeFiles(string zipFile, string zipFolder, bool dontRequireExplicit)
         {
-            ZipTest.IsZipSameAsDir(await StreamHelpers.CreateTempCopyStream(ZipTest.strange(zipFile)), ZipTest.zfolder(zipFolder), ZipArchiveMode.Update, dontRequireExplicit, dontCheckTimes: false);
+            IsZipSameAsDir(await StreamHelpers.CreateTempCopyStream(strange(zipFile)), zfolder(zipFolder), ZipArchiveMode.Update, dontRequireExplicit, dontCheckTimes: false);
         }
     }
 }

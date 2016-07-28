@@ -3,6 +3,7 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
     <Project Include="System.Security.Cryptography.Cng.Tests.csproj">
+        <TestTFMs>netcoreapp1.0;net463</TestTFMs>
         <OSGroup>Windows_NT</OSGroup>
     </Project>
   </ItemGroup>
