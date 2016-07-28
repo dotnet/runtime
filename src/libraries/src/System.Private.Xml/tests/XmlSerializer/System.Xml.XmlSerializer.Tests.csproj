@@ -25,7 +25,7 @@
   </ItemGroup>
   <ItemGroup Condition="'$(UseContractReferences)' == ''" >
     <ProjectReference Include="..\..\src\System.Private.Xml.csproj" />
-    <ProjectReference Include="..\..\..\System.Xml.Linq\src\System.Xml.Linq.csproj" />
+    <ProjectReference Include="..\..\..\System.Private.Xml.Linq\src\System.Private.Xml.Linq.csproj" />
     <ProjectReference Include="..\..\..\System.Private.DataContractSerialization\src\System.Private.DataContractSerialization.csproj" />
     <ProjectReference Include="..\..\..\System.Runtime.Serialization.Primitives\src\System.Runtime.Serialization.Primitives.csproj" />
     <ProjectReference Include="..\..\..\System.Xml.XmlSerializer\src\System.Xml.XmlSerializer.csproj" />

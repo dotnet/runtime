@@ -8,7 +8,7 @@
     <NuGetTargetMoniker>.NETStandard,Version=v1.3</NuGetTargetMoniker>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\System.Xml.Linq\ref\System.Xml.Linq.csproj" />
+    <ProjectReference Include="..\..\System.Private.Xml.Linq\ref\System.Private.Xml.Linq.csproj" />
     <ProjectReference Include="..\..\System.Private.Xml\ref\System.Private.Xml.csproj" />
     <ProjectReference Include="..\..\System.Xml.ReaderWriter\ref\System.Xml.ReaderWriter.csproj" />
     <Compile Include="System.Xml.XDocument.Forwards.cs" />
