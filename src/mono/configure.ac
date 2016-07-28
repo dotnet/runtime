@@ -852,6 +852,8 @@ fi
 if test "x$AOT_BUILD_FLAGS" != "x"; then :
    AC_SUBST(AOT_BUILD_FLAGS)
    AC_SUBST(AOT_RUN_FLAGS)
+   # For llvmonlycheck + fullaotcheck
+   AC_SUBST(INVARIANT_AOT_OPTIONS)
 fi
 
 AC_SUBST(TEST_PROFILE)
