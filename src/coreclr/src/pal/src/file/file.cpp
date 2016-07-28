@@ -203,7 +203,7 @@ void FILEGetProperNotFoundError( LPCSTR lpPath, LPDWORD lpErrorCode )
         *lpErrorCode = ERROR_FILE_NOT_FOUND;
     }
     
-    InternalFree(lpDupedPath);
+    free(lpDupedPath);
     lpDupedPath = NULL;
     TRACE( "FILEGetProperNotFoundError returning TRUE\n" );
     return;
@@ -3598,7 +3598,7 @@ GetTempFileNameW(
         path_size = MultiByteToWideChar( CP_ACP, 0, tempfile_name, -1, 
                                            lpTempFileName, MAX_LONGPATH );
 
-        InternalFree(tempfile_name);
+        free(tempfile_name);
         tempfile_name = NULL;
         if (!path_size)
         {
@@ -3814,7 +3814,7 @@ CopyFileA(
         goto done;
     }
 
-    InternalFree(lpUnixPath);
+    free(lpUnixPath);
     lpUnixPath = strdup(lpNewFileName);
     if ( lpUnixPath == NULL )
     {
@@ -3877,7 +3877,7 @@ done:
     }
     if (lpUnixPath) 
     {
-        InternalFree(lpUnixPath);
+        free(lpUnixPath);
     }
 
     LOGEXIT("CopyFileA returns BOOL %d\n", bGood);
@@ -4004,7 +4004,7 @@ done:
         pThread->SetLastError(dwLastError);
     }
     
-    InternalFree(unixFileName);
+    free(unixFileName);
 
     LOGEXIT("SetFileAttributesA returns BOOL %d\n", bRet);
     PERF_EXIT(SetFileAttributesA);

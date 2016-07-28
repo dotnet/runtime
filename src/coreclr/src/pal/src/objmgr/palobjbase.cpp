@@ -341,12 +341,12 @@ CPalObjectBase::~CPalObjectBase()
 
     if (NULL != m_pvImmutableData)
     {
-        InternalFree(m_pvImmutableData);
+        free(m_pvImmutableData);
     }
 
     if (NULL != m_pvLocalData)
     {
-        InternalFree(m_pvLocalData);
+        free(m_pvLocalData);
     }
 
     if (NULL != m_oa.sObjectName.GetString())
