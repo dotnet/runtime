@@ -8,145 +8,15 @@
 using System;
 using System.Collections;
 
-namespace System
-{
-    [AttributeUsage(AttributeTargets.Field, Inherited = false)]
-    public sealed class NonSerializedAttribute : Attribute
-    {
-        public NonSerializedAttribute()
-        {
-        }
-    }
+[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.NonSerializedAttribute))]
+[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.SerializableAttribute))]
+[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Runtime.Serialization.IDeserializationCallback))]
+[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Runtime.Serialization.IFormatterConverter))]
+[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Runtime.Serialization.ISerializable))]
+[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Runtime.Serialization.SerializationEntry))]
+[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Runtime.Serialization.SerializationInfo))]
+[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Runtime.Serialization.SerializationInfoEnumerator))]
 
-    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Enum | AttributeTargets.Delegate, Inherited = false)]
-    public sealed class SerializableAttribute : Attribute
-    {
-        public SerializableAttribute()
-        {
-        }
-    }
-}
-
-namespace System.Runtime.Serialization
-{
-    public interface IObjectReference
-    {
-        object GetRealObject(StreamingContext context);
-    }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Field, Inherited = false)]
-    public sealed partial class OptionalFieldAttribute : System.Attribute
-    {
-        public OptionalFieldAttribute() { }
-        public int VersionAdded { get { return default(int); } set { } }
-    }
-    [CLSCompliant(false)]
-    public interface IFormatterConverter
-    {
-        object Convert(object value, Type type);
-        object Convert(object value, TypeCode typeCode);
-        bool ToBoolean(object value);
-        char ToChar(object value);
-        [CLSCompliant(false)]
-        sbyte ToSByte(object value);
-        byte ToByte(object value);
-        short ToInt16(object value);
-        [CLSCompliant(false)]
-        ushort ToUInt16(object value);
-        int ToInt32(object value);
-        [CLSCompliant(false)]
-        uint ToUInt32(object value);
-        long ToInt64(object value);
-        [CLSCompliant(false)]
-        ulong ToUInt64(object value);
-        float ToSingle(object value);
-        double ToDouble(object value);
-        Decimal ToDecimal(object value);
-        DateTime ToDateTime(object value);
-        String ToString(object value);
-    }
-
-    public interface ISerializable
-    {
-        void GetObjectData(SerializationInfo info, StreamingContext context);
-    }
-
-    public interface IDeserializationCallback
-    {
-        void OnDeserialization(object sender);
-    }
-
-    [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public struct SerializationEntry
-    {
-        public string Name { get { throw null; } }
-        public Type ObjectType { get { throw null; } }
-        public object Value { get { throw null; } }
-    }
-
-    public sealed class SerializationInfo
-    {
-        [CLSCompliant(false)]
-        public SerializationInfo(Type type, IFormatterConverter converter) { }
-        public string AssemblyName { get { throw null; } set { } }
-        public string FullTypeName { get { throw null; } set { } }
-        public int MemberCount { get { throw null; } }
-        public Type ObjectType { get { throw null; } }
-        public void AddValue(string name, bool value) { }
-        public void AddValue(string name, byte value) { }
-        public void AddValue(string name, char value) { }
-        public void AddValue(string name, DateTime value) { }
-        public void AddValue(string name, decimal value) { }
-        public void AddValue(string name, double value) { }
-        public void AddValue(string name, short value) { }
-        public void AddValue(string name, int value) { }
-        public void AddValue(string name, long value) { }
-        public void AddValue(string name, object value) { }
-        public void AddValue(string name, object value, Type type) { }
-        [CLSCompliant(false)]
-        public void AddValue(string name, sbyte value) { }
-        public void AddValue(string name, float value) { }
-        [CLSCompliant(false)]
-        public void AddValue(string name, ushort value) { }
-        [CLSCompliant(false)]
-        public void AddValue(string name, uint value) { }
-        [CLSCompliant(false)]
-        public void AddValue(string name, ulong value) { }
-        public bool GetBoolean(string name) { throw null; }
-        public byte GetByte(string name) { throw null; }
-        public char GetChar(string name) { throw null; }
-        public DateTime GetDateTime(string name) { throw null; }
-        public decimal GetDecimal(string name) { throw null; }
-        public double GetDouble(string name) { throw null; }
-        public SerializationInfoEnumerator GetEnumerator() { throw null; }
-        public short GetInt16(string name) { throw null; }
-        public int GetInt32(string name) { throw null; }
-        public long GetInt64(string name) { throw null; }
-        [CLSCompliant(false)]
-        public sbyte GetSByte(string name) { throw null; }
-        public float GetSingle(string name) { throw null; }
-        public string GetString(string name) { throw null; }
-        [CLSCompliant(false)]
-        public ushort GetUInt16(string name) { throw null; }
-        [CLSCompliant(false)]
-        public uint GetUInt32(string name) { throw null; }
-        [CLSCompliant(false)]
-        public ulong GetUInt64(string name) { throw null; }
-        public object GetValue(string name, Type type) { throw null; }
-        public void SetType(Type type) { }
-    }
-
-    public sealed class SerializationInfoEnumerator : IEnumerator
-    {
-        private SerializationInfoEnumerator() { }
-        public SerializationEntry Current { get { throw null; } }
-        public string Name { get { throw null; } }
-        public Type ObjectType { get { throw null; } }
-        object System.Collections.IEnumerator.Current { get { throw null; } }
-        public object Value { get { throw null; } }
-        public bool MoveNext() { throw null; }
-        public void Reset() { throw null; }
-    }
-}
 namespace System.Runtime.Serialization
 {
     [System.CLSCompliantAttribute(false)]
@@ -247,22 +117,6 @@ namespace System.Runtime.Serialization
         public ObjectIDGenerator() { }
         public virtual long GetId(object obj, out bool firstTime) { firstTime = default(bool); return default(long); }
         public virtual long HasId(object obj, out bool firstTime) { firstTime = default(bool); return default(long); }
-    }
-    public partial class ObjectManager
-    {
-        public ObjectManager(System.Runtime.Serialization.ISurrogateSelector selector, System.Runtime.Serialization.StreamingContext context) { }
-        public virtual void DoFixups() { }
-        public virtual object GetObject(long objectID) { return default(object); }
-        public virtual void RaiseDeserializationEvent() { }
-        public void RaiseOnDeserializingEvent(object obj) { }
-        public virtual void RecordArrayElementFixup(long arrayToBeFixed, int index, long objectRequired) { }
-        public virtual void RecordArrayElementFixup(long arrayToBeFixed, int[] indices, long objectRequired) { }
-        public virtual void RecordDelayedFixup(long objectToBeFixed, string memberName, long objectRequired) { }
-        public virtual void RecordFixup(long objectToBeFixed, System.Reflection.MemberInfo member, long objectRequired) { }
-        public virtual void RegisterObject(object obj, long objectID) { }
-        public void RegisterObject(object obj, long objectID, System.Runtime.Serialization.SerializationInfo info) { }
-        public void RegisterObject(object obj, long objectID, System.Runtime.Serialization.SerializationInfo info, long idOfContainingObj, System.Reflection.MemberInfo member) { }
-        public void RegisterObject(object obj, long objectID, System.Runtime.Serialization.SerializationInfo info, long idOfContainingObj, System.Reflection.MemberInfo member, int[] arrayIndex) { }
     }
     public abstract partial class SerializationBinder
     {

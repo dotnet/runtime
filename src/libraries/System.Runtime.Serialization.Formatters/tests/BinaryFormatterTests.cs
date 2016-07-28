@@ -58,7 +58,6 @@ namespace System.Runtime.Serialization.Formatters.Tests
             yield return (StructWithIntField?)new StructWithIntField() { X = 42 };
 
             // Other core serializable types
-            yield return DateTime.Now;
             yield return TimeSpan.FromDays(7);
             yield return new Version(1, 2, 3, 4);
             yield return Tuple.Create(1, "2", Tuple.Create(3.4));
@@ -192,7 +191,6 @@ namespace System.Runtime.Serialization.Formatters.Tests
             yield return new object[] { 1, 2, 3, new NonSerializableClass() };
 
             // TODO: Move these to the serializable category when enabled in the runtime
-            yield return DateTimeOffset.Now;
             var e = new OperationCanceledException();
             yield return e;
             try { throw e; } catch { } yield return e;

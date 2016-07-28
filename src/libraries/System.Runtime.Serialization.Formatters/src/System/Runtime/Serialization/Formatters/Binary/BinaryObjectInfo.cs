@@ -105,7 +105,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                 {
                     throw new SerializationException(SR.Format(SR.Serialization_NonSerType, _objectType.FullName, _objectType.GetTypeInfo().Assembly.FullName));
                 }
-                _si = new SerializationInfo(_objectType, converter, !FormatterServices.UnsafeTypeForwardersIsEnabled());
+                _si = new SerializationInfo(_objectType, converter);
                 ((ISerializable)obj).GetObjectData(_si, context);
                 InitSiWrite();
                 CheckTypeForwardedFrom(_cache, _objectType, _binderAssemblyString);
@@ -154,7 +154,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
             }
             else if (!ReferenceEquals(objectType, Converter.s_typeofObject) && Converter.s_typeofISerializable.IsAssignableFrom(objectType))
             {
-                _si = new SerializationInfo(objectType, converter, !FormatterServices.UnsafeTypeForwardersIsEnabled());
+                _si = new SerializationInfo(objectType, converter);
                 _cache = new SerObjectInfoCache(objectType);
                 CheckTypeForwardedFrom(_cache, objectType, _binderAssemblyString);
                 _isSi = true;
