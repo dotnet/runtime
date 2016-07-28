@@ -15,6 +15,9 @@
 #include <utilcode.h>
 #include <corhost.h>
 #include <configuration.h>
+#ifdef FEATURE_GDBJIT
+#include "../../vm/gdbjithelpers.h"
+#endif // FEATURE_GDBJIT
 
 typedef int (STDMETHODCALLTYPE *HostMain)(
     const int argc,
@@ -137,6 +140,11 @@ static void ConvertConfigPropertiesToUnicode(
 extern "C" LPCWSTR g_CLRJITPath;
 #endif // !defined(FEATURE_MERGE_JIT_AND_ENGINE)
 
+#ifdef FEATURE_GDBJIT
+GetInfoForMethodDelegate getInfoForMethodDelegate = NULL;
+extern "C" int coreclr_create_delegate(void*, unsigned int, const char*, const char*, const char*, void**);
+#endif //FEATURE_GDBJIT
+
 //
 // Initialize the CoreCLR. Creates and starts CoreCLR host and creates an app domain
 //
@@ -238,8 +246,24 @@ int coreclr_initialize(
     {
         host.SuppressRelease();
         *hostHandle = host;
-    }
+#ifdef FEATURE_GDBJIT
 
+        hr = coreclr_create_delegate(*hostHandle,
+                                     *domainId,
+                                     "System.Diagnostics.Debug.SymbolReader",
+                                     "System.Diagnostics.Debug.SymbolReader.SymbolReader",
+                                     "GetInfoForMethod",
+                                     (void**)&getInfoForMethodDelegate);
+
+        if (!SUCCEEDED(hr))
+        {
+            fprintf(stderr,
+                    "Can't create delegate for 'System.Diagnostics.Debug.SymbolReader.SymbolReader.GetInfoForMethod' "
+                    "method - status: 0x%08x\n", hr);
+        }
+        hr = S_OK; // We don't need to fail if we can't create delegate
+#endif
+    }
     return hr;
 }
 
