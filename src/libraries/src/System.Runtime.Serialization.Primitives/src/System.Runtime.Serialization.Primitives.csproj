@@ -23,6 +23,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcore50aot_Release|AnyCPU'" />
   <ItemGroup Condition="'$(TargetGroup)'!='net46'">
     <Compile Include=".\**\*.cs" />
+    <ProjectReference Include="..\..\System.Runtime\ref\System.Runtime.csproj" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)'=='net46'">
     <TargetingPackReference Include="mscorlib" />

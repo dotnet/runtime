@@ -15,31 +15,26 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' " />
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' " />
   <ItemGroup Condition="'$(TargetGroup)' == ''">
-    <Compile Include="System\NonSerializedAttribute.cs" />
-    <Compile Include="System\SerializableAttribute.cs" />
+    <Compile Include="System.Runtime.Serialization.Formatters.TypeForwards.cs" />
+    <Compile Include="System\TemporaryStubs.cs" />
     <Compile Include="System\Runtime\Serialization\DeserializationEventHandler.cs" />
     <Compile Include="System\Runtime\Serialization\Formatter.cs" />
     <Compile Include="System\Runtime\Serialization\FormatterConverter.cs" />
     <Compile Include="System\Runtime\Serialization\FormatterServices.cs" />
-    <Compile Include="System\Runtime\Serialization\IDeserializationCallback.cs" />
     <Compile Include="System\Runtime\Serialization\IFormatter.cs" />
-    <Compile Include="System\Runtime\Serialization\IFormatterConverter.cs" />
-    <Compile Include="System\Runtime\Serialization\IObjectReference.cs" />
-    <Compile Include="System\Runtime\Serialization\ISerializable.cs" />
     <Compile Include="System\Runtime\Serialization\ISerializationSurrogate.cs" />
     <Compile Include="System\Runtime\Serialization\ISurrogateSelector.cs" />
     <Compile Include="System\Runtime\Serialization\MemberHolder.cs" />
     <Compile Include="System\Runtime\Serialization\ObjectIDGenerator.cs" />
     <Compile Include="System\Runtime\Serialization\ObjectManager.cs" />
     <Compile Include="System\Runtime\Serialization\SafeSerializationEventArgs.cs" />
-    <Compile Include="System\Runtime\Serialization\OptionalFieldAttribute.cs" />
     <Compile Include="System\Runtime\Serialization\SerializationBinder.cs" />
     <Compile Include="System\Runtime\Serialization\SerializationEventsCache.cs" />
-    <Compile Include="System\Runtime\Serialization\SerializationInfo.cs" />
-    <Compile Include="System\Runtime\Serialization\SerializationInfoEnumerator.cs" />
     <Compile Include="System\Runtime\Serialization\SerializationObjectManager.cs" />
     <Compile Include="System\Runtime\Serialization\SurrogateSelector.cs" />
     <Compile Include="System\Runtime\Serialization\ValueTypeFixupInfo.cs" />
+    <Compile Include="System\Runtime\Serialization\Formatters\CommonEnums.cs" />
+    <Compile Include="System\Runtime\Serialization\Formatters\IFieldInfo.cs" />
     <Compile Include="System\Runtime\Serialization\Formatters\Binary\BinaryArray.cs" />
     <Compile Include="System\Runtime\Serialization\Formatters\Binary\BinaryAssembly.cs" />
     <Compile Include="System\Runtime\Serialization\Formatters\Binary\BinaryAssemblyInfo.cs" />
@@ -69,9 +64,8 @@
     <Compile Include="System\Runtime\Serialization\Formatters\Binary\BinaryObjectWriter.cs" />
     <Compile Include="System\Runtime\Serialization\Formatters\Binary\BinaryParser.cs" />
     <Compile Include="System\Runtime\Serialization\Formatters\Binary\BinaryUtilClasses.cs" />
-    <Compile Include="System\Runtime\Serialization\Formatters\CommonEnums.cs" />
-    <Compile Include="System\Runtime\Serialization\Formatters\IFieldInfo.cs" />
-    <Compile Include="System\TemporaryStubs.cs" />
+    <ProjectReference Include="..\..\System.Runtime\ref\System.Runtime.csproj" />
+    <ProjectReference Include="..\..\System.Runtime.Serialization.Primitives\ref\System.Runtime.Serialization.Primitives.csproj" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />

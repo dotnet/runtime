@@ -10,6 +10,7 @@
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <PackageTargetFramework Condition="'$(PackageTargetFramework)'==''">netstandard1.7</PackageTargetFramework>
     <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NuGetTargetMoniker>
+    <NoWarn>0436</NoWarn>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
@@ -35,6 +36,23 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)'!='netcore50aot' And ('$(TargetGroup)'!='net462' AND '$(TargetGroup)'!='net463')">
     <Compile Include="System\ComponentModel\DefaultValueAttribute.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)'==''">
+    <Compile Include="System\NonSerializedAttribute.cs" />
+    <Compile Include="System\SerializableAttribute.cs" />
+    <Compile Include="System\Runtime\Serialization\IDeserializationCallback.cs" />
+    <Compile Include="System\Runtime\Serialization\IFormatterConverter.cs" />
+    <Compile Include="System\Runtime\Serialization\IObjectReference.cs" />
+    <Compile Include="System\Runtime\Serialization\ISerializable.cs" />
+    <Compile Include="System\Runtime\Serialization\OnDeserializedAttribute.cs" />
+    <Compile Include="System\Runtime\Serialization\OnDeserializingAttribute.cs" />
+    <Compile Include="System\Runtime\Serialization\OnSerializedAttribute.cs" />
+    <Compile Include="System\Runtime\Serialization\OnSerializingAttribute.cs" />
+    <Compile Include="System\Runtime\Serialization\OptionalFieldAttribute.cs" />
+    <Compile Include="System\Runtime\Serialization\SerializationException.cs" />
+    <Compile Include="System\Runtime\Serialization\SerializationInfo.cs" />
+    <Compile Include="System\Runtime\Serialization\SerializationInfoEnumerator.cs" />
+    <Compile Include="System\Runtime\Serialization\StreamingContext.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' != 'net462' And '$(TargetGroup)' != 'net463'">
     <ProjectReference Include="..\..\System.Private.Uri\src\System.Private.Uri.csproj">

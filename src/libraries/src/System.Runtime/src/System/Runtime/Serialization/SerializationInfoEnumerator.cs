@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections;
-using System.Diagnostics;
 
 namespace System.Runtime.Serialization
 {
@@ -36,13 +35,14 @@ namespace System.Runtime.Serialization
 
         internal SerializationInfoEnumerator(string[] members, object[] info, Type[] types, int numItems)
         {
-            Debug.Assert(members != null, "[SerializationInfoEnumerator.ctor]members!=null");
-            Debug.Assert(info != null, "[SerializationInfoEnumerator.ctor]info!=null");
-            Debug.Assert(types != null, "[SerializationInfoEnumerator.ctor]types!=null");
-            Debug.Assert(numItems >= 0, "[SerializationInfoEnumerator.ctor]numItems>=0");
-            Debug.Assert(members.Length >= numItems, "[SerializationInfoEnumerator.ctor]members.Length>=numItems");
-            Debug.Assert(info.Length >= numItems, "[SerializationInfoEnumerator.ctor]info.Length>=numItems");
-            Debug.Assert(types.Length >= numItems, "[SerializationInfoEnumerator.ctor]types.Length>=numItems");
+            // TODO: Put back asserts once Debug.Assert is available
+            //Debug.Assert(members != null, "[SerializationInfoEnumerator.ctor]members!=null");
+            //Debug.Assert(info != null, "[SerializationInfoEnumerator.ctor]info!=null");
+            //Debug.Assert(types != null, "[SerializationInfoEnumerator.ctor]types!=null");
+            //Debug.Assert(numItems >= 0, "[SerializationInfoEnumerator.ctor]numItems>=0");
+            //Debug.Assert(members.Length >= numItems, "[SerializationInfoEnumerator.ctor]members.Length>=numItems");
+            //Debug.Assert(info.Length >= numItems, "[SerializationInfoEnumerator.ctor]info.Length>=numItems");
+            //Debug.Assert(types.Length >= numItems, "[SerializationInfoEnumerator.ctor]types.Length>=numItems");
 
             _members = members;
             _data = info;
@@ -78,7 +78,7 @@ namespace System.Runtime.Serialization
             {
                 if (_current == false)
                 {
-                    throw new InvalidOperationException(SR.InvalidOperation_EnumOpCantHappen);
+                    throw new InvalidOperationException("Enumeration has either not started or has already finished."); // TODO: SR.InvalidOperation_EnumOpCantHappen);
                 }
                 return new SerializationEntry(_members[_currItem], _data[_currItem], _types[_currItem]);
             }
@@ -96,7 +96,7 @@ namespace System.Runtime.Serialization
             {
                 if (_current == false)
                 {
-                    throw new InvalidOperationException(SR.InvalidOperation_EnumOpCantHappen);
+                    throw new InvalidOperationException("Enumeration has either not started or has already finished."); // TODO: SR.InvalidOperation_EnumOpCantHappen);
                 }
                 return _members[_currItem];
             }
@@ -107,7 +107,7 @@ namespace System.Runtime.Serialization
             {
                 if (_current == false)
                 {
-                    throw new InvalidOperationException(SR.InvalidOperation_EnumOpCantHappen);
+                    throw new InvalidOperationException("Enumeration has either not started or has already finished."); // TODO: SR.InvalidOperation_EnumOpCantHappen);
                 }
                 return _data[_currItem];
             }
@@ -118,7 +118,7 @@ namespace System.Runtime.Serialization
             {
                 if (_current == false)
                 {
-                    throw new InvalidOperationException(SR.InvalidOperation_EnumOpCantHappen);
+                    throw new InvalidOperationException("Enumeration has either not started or has already finished."); // TODO: SR.InvalidOperation_EnumOpCantHappen);
                 }
                 return _types[_currItem];
             }

@@ -86,8 +86,6 @@ namespace System.Runtime.Serialization
 
         public static object GetSafeUninitializedObject(Type type) => GetUninitializedObject(type);
 
-        internal static bool UnsafeTypeForwardersIsEnabled() => true;
-
         internal static void SerializationSetValue(MemberInfo fi, object target, object value)
         {
             Debug.Assert(fi != null);

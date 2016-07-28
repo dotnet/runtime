@@ -10,7 +10,7 @@
     <RootNamespace>System.Runtime.Serialization.Json.Tests</RootNamespace>
     <AssemblyName>System.Runtime.Serialization.Json.Tests</AssemblyName>
     <ProjectGuid>{701CB3BC-00DC-435D-BDE4-C5FC29A708A7}</ProjectGuid>
-    <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
+    <NugetTargetMoniker>.NETStandard,Version=v1.5</NugetTargetMoniker>
   </PropertyGroup>
   <PropertyGroup Condition="'$(UseContractReferences)' == 'true'" >
     <ProjectJson>Performance/project.json</ProjectJson>
@@ -30,6 +30,11 @@
       <Name>System.Private.DataContractSerialization</Name>
       <KeepProjectReference>true</KeepProjectReference>
     </ProjectReference>
+    <ProjectReference Include="..\..\System.Xml.XmlSerializer\pkg\System.Xml.XmlSerializer.pkgproj">
+      <Project>{D62A6082-5229-4845-8BE9-75753E08C65A}</Project>
+      <Name>System.Xml.XmlSerializer</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\System.Runtime\pkg\System.Runtime.pkgproj" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />

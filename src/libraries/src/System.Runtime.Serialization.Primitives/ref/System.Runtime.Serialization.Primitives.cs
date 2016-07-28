@@ -5,6 +5,13 @@
 // Changes to this file must follow the http://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
+[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Runtime.Serialization.OnDeserializedAttribute))]
+[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Runtime.Serialization.OnDeserializingAttribute))]
+[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Runtime.Serialization.OnSerializedAttribute))]
+[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Runtime.Serialization.OnSerializingAttribute))]
+[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Runtime.Serialization.SerializationException))]
+[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Runtime.Serialization.StreamingContext))]
+[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Runtime.Serialization.StreamingContextStates))]
 
 namespace System.Runtime.Serialization
 {
@@ -84,54 +91,5 @@ namespace System.Runtime.Serialization
         public KnownTypeAttribute(System.Type type) { }
         public string MethodName { get { return default(string); } }
         public System.Type Type { get { return default(System.Type); } }
-    }
-    [System.AttributeUsageAttribute((System.AttributeTargets)(64), Inherited = false)]
-    public sealed partial class OnDeserializedAttribute : System.Attribute
-    {
-        public OnDeserializedAttribute() { }
-    }
-    [System.AttributeUsageAttribute((System.AttributeTargets)(64), Inherited = false)]
-    public sealed partial class OnDeserializingAttribute : System.Attribute
-    {
-        public OnDeserializingAttribute() { }
-    }
-    [System.AttributeUsageAttribute((System.AttributeTargets)(64), Inherited = false)]
-    public sealed partial class OnSerializedAttribute : System.Attribute
-    {
-        public OnSerializedAttribute() { }
-    }
-    [System.AttributeUsageAttribute((System.AttributeTargets)(64), Inherited = false)]
-    public sealed partial class OnSerializingAttribute : System.Attribute
-    {
-        public OnSerializingAttribute() { }
-    }
-    public partial class SerializationException : System.Exception
-    {
-        public SerializationException() { }
-        public SerializationException(string message) { }
-        public SerializationException(string message, System.Exception innerException) { }
-    }
-    [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct StreamingContext
-    {
-        public StreamingContext(System.Runtime.Serialization.StreamingContextStates state) { }
-        public StreamingContext(System.Runtime.Serialization.StreamingContextStates state, object additional) { }
-        public override bool Equals(object obj) { return default(bool); }
-        public override int GetHashCode() { return default(int); }
-        public System.Runtime.Serialization.StreamingContextStates State { get { return default(System.Runtime.Serialization.StreamingContextStates); } }
-        public object Context { get { return default(object); } }
-    }
-    [Flags]
-    public enum StreamingContextStates
-    {
-        CrossProcess = 0x01,
-        CrossMachine = 0x02,
-        File = 0x04,
-        Persistence = 0x08,
-        Remoting = 0x10,
-        Other = 0x20,
-        Clone = 0x40,
-        CrossAppDomain = 0x80,
-        All = 0xFF,
     }
 }
