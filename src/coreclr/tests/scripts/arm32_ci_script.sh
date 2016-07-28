@@ -198,7 +198,6 @@ function cross_build_coreclr {
         git am < "$__ARMRootfsMountPath"/dotnet/setenv/coreclr_release.patch
     fi
 
-    ./clean.sh -b -t
     #Cross building for emulator rootfs
     ROOTFS_DIR="$__ARMRootfsMountPath" CPLUS_INCLUDE_PATH=$LINUX_ARM_INCPATH CXXFLAGS=$LINUX_ARM_CXXFLAGS ./build.sh $__buildArch cross $__verboseFlag $__skipMscorlib clang3.5 $__buildConfig
 
