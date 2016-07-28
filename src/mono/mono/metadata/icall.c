@@ -3868,7 +3868,7 @@ handle_parent:
 	return ptr_array;
 
 fail:
-	g_ptr_array_free (ptr_array, FALSE);
+	g_ptr_array_free (ptr_array, TRUE);
 	mono_error_set_pending_exception (&error);
 	return NULL;
 }
@@ -4249,7 +4249,7 @@ loader_error:
 		g_hash_table_destroy (properties);
 	if (name)
 		g_free (propname);
-	g_ptr_array_free (res_array, FALSE);
+	g_ptr_array_free (res_array, TRUE);
 
 	mono_error_set_pending_exception (&error);
 
@@ -4381,7 +4381,7 @@ failure:
 	if (utf8_name != NULL)
 		g_free (utf8_name);
 
-	g_ptr_array_free (res_array, FALSE);
+	g_ptr_array_free (res_array, TRUE);
 
 	mono_error_set_pending_exception (&error);
 	return NULL;
