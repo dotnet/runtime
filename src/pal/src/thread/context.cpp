@@ -563,10 +563,20 @@ void CONTEXTFromNativeContext(const native_context_t *native, LPCONTEXT lpContex
 
     // TODO: Enable for all Unix systems
 #if defined(_AMD64_) && defined(__linux__)
-    if ((contextFlags & CONTEXT_XSTATE) != 0 && FPREG_HasExtendedState(native))
+    if ((contextFlags & CONTEXT_XSTATE) != 0)
     {
-        memcpy_s(lpContext->VectorRegister, sizeof(M128A) * 16, FPREG_Xstate_Ymmh(native), sizeof(M128A) * 16);
-    }
+        if (FPREG_HasExtendedState(native))
+        {
+            memcpy_s(lpContext->VectorRegister, sizeof(M128A) * 16, FPREG_Xstate_Ymmh(native), sizeof(M128A) * 16);
+        }
+        else
+        {
+            // Reset the CONTEXT_XSTATE bit(s) so it's clear that the extended state data in
+            // the CONTEXT is not valid.
+            const ULONG xstateFlags = CONTEXT_XSTATE & ~(CONTEXT_CONTROL & CONTEXT_INTEGER);
+            lpContext->ContextFlags &= ~xstateFlags;
+        }
+    } 
 #endif // _AMD64_
 }
 
