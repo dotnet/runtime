@@ -7,7 +7,7 @@ if [ $# -lt 4 -o $# -gt 6 ]
 then
   echo "Usage..."
   echo "gen-buildsys-clang.sh <path to top level CMakeLists.txt> <ClangMajorVersion> <ClangMinorVersion> <Architecture> [build flavor] [cmakeargs]"
-  echo "Specify the path to the top level CMake file - <corefx>/src/Native"
+  echo "Specify the path to the top level CMake file - <corefx>/src/Native/Unix"
   echo "Specify the clang version to use, split into major and minor version"
   echo "Specify the target architecture." 
   echo "Optionally specify the build configuration (flavor.) Defaults to DEBUG." 
@@ -16,7 +16,7 @@ then
 fi
 
 #Set the root directory of the project
-project_root="$1"/../..
+project_root="$1"/../../..
 
 # Set up the environment to be used for building with clang.
 if which "clang-$2.$3" > /dev/null 2>&1

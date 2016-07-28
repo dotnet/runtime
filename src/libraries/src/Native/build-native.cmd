@@ -3,8 +3,9 @@ setlocal
 
 :SetupArgs
 :: Initialize the args that will be passed to cmake
-set __sourceDir=%~dp0
-set __binDir=%~dp0..\..\..\bin
+set __nativeWindowsDir=%~dp0\Windows
+set __binDir=%~dp0..\..\bin
+set __rootDir=%~dp0..\..
 set __CMakeBinDir=""
 set __IntermediatesDir=""
 set __BuildArch=x64
@@ -13,30 +14,22 @@ set CMAKE_BUILD_TYPE=Debug
 set "__LinkArgs= "
 set "__LinkLibraries= "
 
+call %__rootDir%/run.cmd build-managed -GenerateVersion
+
 :Arg_Loop
 :: Since the native build requires some configuration information before msbuild is called, we have to do some manual args parsing
-:: For consistency with building the managed components, some args are taken in the msbuild style i.e. /p:
 if [%1] == [] goto :ToolsVersion
-if /i [%1] == [/p:ConfigurationGroup]    (
-    if /i [%2] == [Release]     ( set CMAKE_BUILD_TYPE=Release&&shift&&shift&goto Arg_Loop)
-    if /i [%2] == [Debug]       ( set CMAKE_BUILD_TYPE=Debug&&shift&&shift&goto Arg_Loop)
-    echo Error: Invalid configuration args "%1 and %2"
-    exit /b 1
-)
-if /i [%1] == [/p:Platform]     (
-    if /i [%2] == [AnyCPU]      ( set __BuildArch=x64&&set __VCBuildArch=x86_amd64&&shift&&shift&goto Arg_Loop)
-    if /i [%2] == [x86]         ( set __BuildArch=x86&&set __VCBuildArch=x86&&shift&&shift&goto Arg_Loop)
-    if /i [%2] == [arm]         ( set __BuildArch=arm&&set __VCBuildArch=x86_arm&&shift&&shift&goto Arg_Loop)
-    if /i [%2] == [arm64]       ( set __BuildArch=arm64&&set __VCBuildArch=arm64&&shift&&shift&goto Arg_Loop)
-    if /i [%2] == [x64]         ( set __BuildArch=x64&&set __VCBuildArch=x86_amd64&&shift&&shift&goto Arg_Loop)
-    if /i [%2] == [amd64]       ( set __BuildArch=x64&&set __VCBuildArch=x86_amd64&&shift&&shift&goto Arg_Loop)
-    echo Error: Invalid platform args "%1 and %2"
-    exit /b 1
-)
-if /i [%1] == [-LinkArgument]   ( set "__LinkArgs=%__LinkArgs% %2"&&shift&&shift&goto Arg_Loop)
-if /i [%1] == [-LinkLibraries]  ( set "__LinkLibraries=%__LinkLibraries% %2"&&shift&&shift&goto Arg_Loop)
-if /i [%1] == [toolset_dir]     ( set "__ToolsetDir=%2"&&shift&&shift&goto Arg_Loop)
-if /i [%1] == [/p:toolset_dir]  ( set "__ToolsetDir=%2"&&shift&&shift&goto Arg_Loop)
+if /i [%1] == [Release]     ( set CMAKE_BUILD_TYPE=Release&&shift&goto Arg_Loop)
+if /i [%1] == [Debug]       ( set CMAKE_BUILD_TYPE=Debug&&shift&goto Arg_Loop)
+
+if /i [%1] == [AnyCPU]      ( set __BuildArch=x64&&set __VCBuildArch=x86_amd64&&shift&goto Arg_Loop)
+if /i [%1] == [x86]         ( set __BuildArch=x86&&set __VCBuildArch=x86&&shift&goto Arg_Loop)
+if /i [%1] == [arm]         ( set __BuildArch=arm&&set __VCBuildArch=x86_arm&&shift&goto Arg_Loop)
+if /i [%1] == [x64]         ( set __BuildArch=x64&&set __VCBuildArch=x86_amd64&&shift&goto Arg_Loop)
+if /i [%1] == [amd64]       ( set __BuildArch=x64&&set __VCBuildArch=x86_amd64&&shift&goto Arg_Loop)
+if /i [%1] == [arm64]       ( set __BuildArch=arm64&&set __VCBuildArch=arm64&&shift&goto Arg_Loop)
+
+if /i [%1] == [toolsetDir] ( set "__ToolsetDir=%2"&&shift&&shift&goto Arg_Loop)
 
 shift
 goto :Arg_Loop
@@ -47,33 +40,17 @@ if not defined VisualStudioVersion (
     if defined VS140COMNTOOLS (
         goto :VS2015
     ) 
-    if defined VS120COMNTOOLS (
-        goto :VS2013
-    )
     goto :MissingVersion
 ) 
 if "%VisualStudioVersion%"=="14.0" (
     goto :VS2015
 ) 
-if "%VisualStudioVersion%"=="12.0" (
-    goto :VS2013
-)   
 
 :MissingVersion
 :: Can't find VS 2013+
-echo Error: build.cmd requires Visual Studio 2013 or 2015.  
+echo Error: Visual Studio 2015 required  
 echo        Please see https://github.com/dotnet/corefx/blob/master/Documentation/project-docs/developer-guide.md for build instructions.
 exit /b 1
-
-:VS2013
-:: Setup vars for VS2013
-set __VSVersion=vs2013
-set __PlatformToolset="v120"
-if NOT "%__BuildArch%" == "arm64" ( 
-    :: Set the environment for the native build
-    call "%VS120COMNTOOLS%\..\..\VC\vcvarsall.bat" %__VCBuildArch%
-)
-goto :SetupDirs
 
 :VS2015
 :: Setup vars for VS2015
@@ -89,16 +66,6 @@ goto :SetupDirs
 :: Setup to cmake the native components
 echo Commencing build of native components
 echo.
-
-REM Generate _version.h
-set __versionLog=%__sourceDir%..\..\..\version.log
-if not exist "%__binDir%\obj\_version.h" (
-    msbuild "%__sourceDir%..\..\..\build.proj" /nologo /t:GenerateVersionHeader /p:GenerateNativeVersionInfo=true > "%__versionLog%"
-)
-
-IF ERRORLEVEL 1 (
-    goto :Failure
-)
 
 if %__CMakeBinDir% == "" (
     set "__CMakeBinDir=%__binDir%\Windows_NT.%__BuildArch%.%CMAKE_BUILD_TYPE%\Native"
@@ -134,7 +101,7 @@ if /i "%__BuildArch%" == "arm64" (
 )
 
 pushd "%__IntermediatesDir%"
-call "%__sourceDir%\gen-buildsys-win.bat" %__sourceDir% %__VSVersion% %__BuildArch%
+call "%__nativeWindowsDir%\gen-buildsys-win.bat" %__nativeWindowsDir% %__VSVersion% %__BuildArch%
 popd
 
 :CheckForProj
