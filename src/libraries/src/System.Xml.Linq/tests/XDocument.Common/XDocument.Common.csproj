@@ -44,7 +44,7 @@
       <Project>{979510ce-9042-4f8d-9c74-ee03b89194cc}</Project>
       <Name>XDocument.Test.ModuleCore</Name>
     </ProjectReference>
-    <ProjectReference Include="..\..\..\System.Private.Xml\src\System.Xml.csproj">
+    <ProjectReference Include="..\..\..\System.Private.Xml\src\System.Private.Xml.csproj">
       <Project>{C427CE0D-0740-41F3-9C3A-552BEA3DDB0D}</Project>
       <Name>System.Xml</Name>
     </ProjectReference>

@@ -24,7 +24,7 @@
     <Compile Include="Performance\XsPerformanceTest.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(UseContractReferences)' == ''" >
-    <ProjectReference Include="..\..\src\System.Xml.csproj" />
+    <ProjectReference Include="..\..\src\System.Private.Xml.csproj" />
     <ProjectReference Include="..\..\..\System.Xml.Linq\src\System.Xml.Linq.csproj" />
     <ProjectReference Include="..\..\..\System.Private.DataContractSerialization\src\System.Private.DataContractSerialization.csproj" />
     <ProjectReference Include="..\..\..\System.Runtime.Serialization.Primitives\src\System.Runtime.Serialization.Primitives.csproj" />

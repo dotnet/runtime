@@ -39,7 +39,7 @@
       <Project>{89701565-f68b-46d9-bd78-95b0f052c50b}</Project>
       <Name>XmlCoreTest</Name>
     </ProjectReference>
-    <ProjectReference Include="..\..\..\src\System.Xml.csproj" />
+    <ProjectReference Include="..\..\..\src\System.Private.Xml.csproj" />
     <ProjectReference Include="..\..\..\..\System.Xml.Linq\src\System.Xml.Linq.csproj" />
     <ProjectReference Include="..\..\..\..\System.Xml.ReaderWriter\src\System.Xml.ReaderWriter.csproj" />
   </ItemGroup>

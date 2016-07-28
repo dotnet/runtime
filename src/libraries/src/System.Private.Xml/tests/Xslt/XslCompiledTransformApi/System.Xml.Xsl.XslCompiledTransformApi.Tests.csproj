@@ -36,7 +36,7 @@
     <ProjectReference Include="$(CommonTestPath)\System\Xml\XmlCoreTest\XmlCoreTest.csproj" />
     <ProjectReference Include="$(CommonTestPath)\System\Xml\xmlDiff\XmlDiff.csproj" />
     <ProjectReference Include="..\xslTransformApi\System.Xml.Xsl.XslTransformApi.Tests.csproj" />
-    <ProjectReference Include="..\..\..\src\System.Xml.csproj" />
+    <ProjectReference Include="..\..\..\src\System.Private.Xml.csproj" />
     <ProjectReference Include="..\..\..\..\System.Xml.ReaderWriter\src\System.Xml.ReaderWriter.csproj" />
   </ItemGroup>
   <ItemGroup>

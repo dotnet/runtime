@@ -21,7 +21,7 @@
     <ProjectReference Include="..\..\System.Xml.XDocument\src\System.Xml.XDocument.csproj" />
     <ProjectReference Include="..\..\System.Xml.XmlDocument\src\System.Xml.XmlDocument.csproj" />
     <ProjectReference Include="..\..\System.Xml.XmlSerializer\src\System.Xml.XmlSerializer.csproj" />
-    <ProjectReference Include="..\..\System.Private.Xml\src\System.Xml.csproj" />
+    <ProjectReference Include="..\..\System.Private.Xml\src\System.Private.Xml.csproj" />
     <ProjectReference Include="..\..\System.Xml.Linq\src\System.Xml.Linq.csproj" />
     <Compile Include="..\..\System.Runtime.Serialization.Xml\tests\Utils.cs" />
     <Compile Include="..\..\System.Runtime.Serialization.Xml\tests\SerializationTypes.cs" />

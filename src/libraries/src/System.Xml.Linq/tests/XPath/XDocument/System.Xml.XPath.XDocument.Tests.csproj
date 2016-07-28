@@ -208,7 +208,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\src\System.Xml.Linq.csproj" />
-    <ProjectReference Include="..\..\..\..\System.Private.Xml\src\System.Xml.csproj" />
+    <ProjectReference Include="..\..\..\..\System.Private.Xml\src\System.Private.Xml.csproj" />
     <ProjectReference Include="..\..\..\..\System.Xml.ReaderWriter\src\System.Xml.ReaderWriter.csproj" />
     <ProjectReference Include="..\..\..\..\System.Xml.XPath\src\System.Xml.XPath.csproj" />
     <ProjectReference Include="..\..\..\..\System.Xml.XPath.XmlDocument\src\System.Xml.XPath.XmlDocument.csproj" />
