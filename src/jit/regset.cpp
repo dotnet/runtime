@@ -1231,11 +1231,11 @@ void                RegSet::rsMultRegFree(regMaskTP regMask)
 #ifdef _TARGET_ARM_
                 if (genIsValidFloatReg(regNum) && (type == TYP_DOUBLE))
                 {
-                    // Skip the second register for a TYP_DOUBLE
+                    // On ARM32, We skip the second register for a TYP_DOUBLE
                     regNum = REG_NEXT(regNum);
                     regBit <<= 1;
                 }
-#endif
+#endif // _TARGET_ARM_
             }
         }
     }
@@ -3467,62 +3467,53 @@ bool                genIsProperRegPair(regPairNo regPair)
 
 regNumber           genRegArgNext(regNumber argReg)
 {
-    assert(isValidIntArgReg(argReg));
-
     regNumber result = REG_NA;
+
+    if (isValidFloatArgReg(argReg))
+    {
+        // We can iterate the floating point argument registers by using +1
+        result = REG_NEXT(argReg);
+    }
+    else
+    {
+        assert(isValidIntArgReg(argReg));
 
 #ifdef _TARGET_AMD64_
 #ifdef UNIX_AMD64_ABI
-    // Windows X64 ABI:
-    //     REG_EDI, REG_ESI, REG_ECX, REG_EDX, REG_R8, REG_R9
-    //
-    if (argReg == REG_ARG_1)       // REG_ESI
-    {
-        result = REG_ARG_2;        // REG_ECX
-    }
-    else if (argReg == REG_ARG_3)  // REG_EDX
-    {
-        result = REG_ARG_4;        // REG_R8
-    }
+        // Windows X64 ABI:
+        //     REG_EDI, REG_ESI, REG_ECX, REG_EDX, REG_R8, REG_R9
+        //
+        if (argReg == REG_ARG_1)       // REG_ESI
+        {
+            result = REG_ARG_2;        // REG_ECX
+        }
+        else if (argReg == REG_ARG_3)  // REG_EDX
+        {
+            result = REG_ARG_4;        // REG_R8
+        }
 #else // Windows ABI
-    // Windows X64 ABI:
-    //     REG_ECX, REG_EDX, REG_R8, REG_R9
-    //
-    if (argReg == REG_ARG_1)       // REG_EDX
-    {
-        result = REG_ARG_2;        // REG_R8
-    }
+        // Windows X64 ABI:
+        //     REG_ECX, REG_EDX, REG_R8, REG_R9
+        //
+        if (argReg == REG_ARG_1)       // REG_EDX
+        {
+            result = REG_ARG_2;        // REG_R8
+        }
 #endif // UNIX or Windows ABI
 #endif // _TARGET_AMD64_
-
-    // If we didn't set 'result' to valid register above 
-    // then we will just iterate 'argReg' using REG_NEXT 
-    //
-    if (result == REG_NA)
-    {
-        // Otherwise we just iterate the argument registers by using REG_NEXT
-        result = REG_NEXT(argReg);
+        
+        // If we didn't set 'result' to valid register above 
+        // then we will just iterate 'argReg' using REG_NEXT 
+        //
+        if (result == REG_NA)
+        {
+            // Otherwise we just iterate the argument registers by using REG_NEXT
+            result = REG_NEXT(argReg);
+        }
     }
 
     return result;
 }
-
-#if !defined(_TARGET_X86_)
-
-/*****************************************************************************
- *
- *  Returns true if the register is a valid argument register 
- */
-
-regNumber           genRegArgNextFloat(regNumber argReg)
-{
-    assert(isValidFloatArgReg(argReg));
-
-    // We can iterate the floating point argument registers by using +1
-    return REG_NEXT(argReg);
-}
-
-#endif // !defined(_TARGET_X86_)
 
 /*****************************************************************************
  *
