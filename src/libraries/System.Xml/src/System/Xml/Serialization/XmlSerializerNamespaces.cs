@@ -79,8 +79,8 @@ namespace System.Xml.Serialization
         public XmlQualifiedName[] ToArray()
         {
             if (NamespaceList == null)
-                return new XmlQualifiedName[0];
-            return (XmlQualifiedName[])NamespaceList.ToArray(typeof(XmlQualifiedName));
+                return Array.Empty<XmlQualifiedName>();
+            return (XmlQualifiedName[])NamespaceList.ToArray();
         }
 
         /// <include file='doc\XmlSerializerNamespaces.uex' path='docs/doc[@for="XmlSerializerNamespaces.Count"]/*' />

@@ -14,7 +14,8 @@ namespace System.Xml.Serialization
     using System.Threading;
     using System.Diagnostics;
     using System.Linq;
-    using Collections.Generic;
+    using System.Collections.Generic;
+    using System.Xml.Extensions;
 
     /// <include file='doc\XmlReflectionImporter.uex' path='docs/doc[@for="XmlReflectionImporter"]/*' />
     ///<internalonly/>
@@ -294,7 +295,7 @@ namespace System.Xml.Serialization
             else if (mapping is TypeMapping)
                 return ((TypeMapping)mapping).TypeDesc.FullName;
             else
-                throw new ArgumentException(SR.XmlInternalError, "mapping");
+                throw new ArgumentException(SR.XmlInternalError, nameof(mapping));
         }
 
         private ElementAccessor ReconcileLocalAccessor(ElementAccessor accessor, string ns)
@@ -377,7 +378,7 @@ namespace System.Xml.Serialization
 
         private Exception CreateMemberReflectionException(FieldModel model, Exception e)
         {
-            return new InvalidOperationException(string.Format(model.IsProperty ? SR.XmlPropertyReflectionError : SR.XmlFieldReflectionError, model.Name), e);
+            return new InvalidOperationException(SR.Format(model.IsProperty ? SR.XmlPropertyReflectionError : SR.XmlFieldReflectionError, model.Name), e);
         }
 
         private TypeMapping ImportTypeMapping(TypeModel model, string ns, ImportContext context, string dataType, XmlAttributes a, RecursionLimiter limiter)
@@ -488,7 +489,7 @@ namespace System.Xml.Serialization
             if (!CodeGenerator.IsValidLanguageIndependentIdentifier(provider.MethodName))
                 throw new ArgumentException(SR.Format(SR.XmlGetSchemaMethodName, provider.MethodName), nameof(provider.MethodName));
 
-            MethodInfo getMethod = getMethod = type.GetMethod(provider.MethodName, new Type[] { typeof(XmlSchemaSet) });
+            MethodInfo getMethod = getMethod = type.GetMethod(provider.MethodName, /* BindingFlags.DeclaredOnly | */ BindingFlags.Static | BindingFlags.Public, new Type[] { typeof(XmlSchemaSet) });
             if (getMethod == null)
                 throw new InvalidOperationException(SR.Format(SR.XmlGetSchemaMethodMissing, provider.MethodName, typeof(XmlSchemaSet).Name, type.FullName));
 
@@ -510,7 +511,6 @@ namespace System.Xml.Serialization
             }
             if (typeDesc.Kind == TypeKind.Serializable)
             {
-                // CONSIDER move the interface validation code to the TypeDesc ctor or SerializableMapping
                 SerializableMapping serializableMapping = null;
 
                 // get the schema method info
@@ -619,7 +619,7 @@ namespace System.Xml.Serialization
                 case ImportContext.Attribute: return "attribute";
                 case ImportContext.Text: return "text";
                 default:
-                    throw new ArgumentException(SR.XmlInternalError, "context");
+                    throw new ArgumentException(SR.XmlInternalError, nameof(context));
             }
         }
 
@@ -640,7 +640,7 @@ namespace System.Xml.Serialization
             mapping.TypeDesc = typeDesc;
             mapping.TypeName = Soap.UrType;
             mapping.Namespace = XmlSchema.Namespace;
-            mapping.Members = new MemberMapping[0];
+            mapping.Members = Array.Empty<MemberMapping>();
             mapping.IncludeInSchema = false;
             return mapping;
         }
@@ -847,7 +847,7 @@ namespace System.Xml.Serialization
 
             foreach (MemberInfo memberInfo in model.GetMemberInfos())
             {
-                if (!(memberInfo is FieldInfo) && !(memberInfo is PropertyInfo))
+                if (!(memberInfo is FieldInfo || memberInfo is PropertyInfo))
                     continue;
                 XmlAttributes memberAttrs = GetAttributes(memberInfo);
                 if (memberAttrs.XmlIgnore) continue;
@@ -984,7 +984,6 @@ namespace System.Xml.Serialization
                     }
                 }
             }
-            // CONSIDER: throw if not all parameters were filled
             return typeName;
         }
 
@@ -1149,7 +1148,7 @@ namespace System.Xml.Serialization
                         return;
                     break;
                 default:
-                    throw new ArgumentException(SR.XmlInternalError, "context");
+                    throw new ArgumentException(SR.XmlInternalError, nameof(context));
             }
             throw UnsupportedException(typeDesc, context);
         }
