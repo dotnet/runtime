@@ -268,7 +268,7 @@ if (ins->inst_target_bb->native_offset) { 					\
 #include <mono/utils/mono-error-internals.h>
 #include <mono/utils/mono-math.h>
 #include <mono/utils/mono-mmap.h>
-#include <mono/utils/mono-hwcap-s390x.h>
+#include <mono/utils/mono-hwcap.h>
 #include <mono/utils/mono-threads.h>
 
 #include "mini-s390x.h"
@@ -398,8 +398,6 @@ static gint appdomain_tls_offset = -1,
 pthread_key_t lmf_addr_key;
 
 gboolean lmf_addr_key_inited = FALSE; 
-
-facilityList_t facs;
 
 /*
  * The code generated for sequence points reads from this location, 
@@ -4370,7 +4368,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 			break;
 		case OP_ICONV_TO_R_UN: {
-			if (facs.fpe) {
+			if (mono_hwcap_s390x_has_fpe) {
 				s390_cdlfbr (code, ins->dreg, 5, ins->sreg1, 0);
 			} else {
 				s390_llgfr (code, s390_r0, ins->sreg1);
@@ -4379,7 +4377,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 			break;
 		case OP_LCONV_TO_R_UN: {
-			if (facs.fpe) {
+			if (mono_hwcap_s390x_has_fpe) {
 				s390_cdlgbr (code, ins->dreg, 5, ins->sreg1, 0);
 			} else {
 				short int *jump;
@@ -4416,7 +4414,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			s390_ngr   (code, ins->dreg, s390_r0);
 			break;
 		case OP_FCONV_TO_U1:
-			if (facs.fpe) {
+			if (mono_hwcap_s390x_has_fpe) {
 				s390_clgdbr (code, ins->dreg, 5, ins->sreg1, 0);
 				s390_lghi  (code, s390_r0, 0xff);
 				s390_ngr   (code, ins->dreg, s390_r0);
@@ -4433,7 +4431,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			s390_ngr   (code, ins->dreg, s390_r0);
 			break;
 		case OP_FCONV_TO_U2:
-			if (facs.fpe) {
+			if (mono_hwcap_s390x_has_fpe) {
 				s390_clgdbr (code, ins->dreg, 5, ins->sreg1, 0);
 				s390_llill  (code, s390_r0, 0xffff);
 				s390_ngr    (code, ins->dreg, s390_r0);
@@ -4447,7 +4445,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_FCONV_TO_U4:
 		case OP_FCONV_TO_U:
-			if (facs.fpe) {
+			if (mono_hwcap_s390x_has_fpe) {
 				s390_clfdbr (code, ins->dreg, 5, ins->sreg1, 0);
 			} else {
 				code = emit_float_to_int (cfg, code, ins->dreg, ins->sreg1, 4, FALSE);
@@ -4457,7 +4455,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			s390_cgdbr (code, ins->dreg, 5, ins->sreg1);
 			break;
 		case OP_FCONV_TO_U8:
-			if (facs.fpe) {
+			if (mono_hwcap_s390x_has_fpe) {
 				s390_clgdbr (code, ins->dreg, 5, ins->sreg1, 0);
 			} else {
 				code = emit_float_to_int (cfg, code, ins->dreg, ins->sreg1, 8, FALSE);
@@ -7077,7 +7075,7 @@ mono_arch_cpu_enumerate_simd_versions (void)
 {
 	guint32 sseOpts = 0;
 
-	if (facs.vec != 0) 
+	if (mono_hwcap_s390x_has_vec)
 		sseOpts = (SIMD_VERSION_SSE1  | SIMD_VERSION_SSE2 |
 		           SIMD_VERSION_SSE3  | SIMD_VERSION_SSSE3 |
 		           SIMD_VERSION_SSE41 | SIMD_VERSION_SSE42 |

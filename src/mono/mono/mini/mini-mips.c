@@ -19,7 +19,7 @@
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/debug-helpers.h>
 #include <mono/utils/mono-mmap.h>
-#include <mono/utils/mono-hwcap-mips.h>
+#include <mono/utils/mono-hwcap.h>
 
 #include <mono/arch/mips/mips-codegen.h>
 

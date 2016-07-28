@@ -19,26 +19,14 @@
  * Licensed under the MIT license. See LICENSE file in the project root for full license information.
  */
 
-#include "mono/utils/mono-hwcap-x86.h"
+#include "mono/utils/mono-hwcap.h"
 
 #if defined(HAVE_UNISTD_H)
 #include <unistd.h>
 #endif
-
 #if defined(_MSC_VER)
 #include <intrin.h>
 #endif
-
-gboolean mono_hwcap_x86_is_xen = FALSE;
-gboolean mono_hwcap_x86_has_cmov = FALSE;
-gboolean mono_hwcap_x86_has_fcmov = FALSE;
-gboolean mono_hwcap_x86_has_sse1 = FALSE;
-gboolean mono_hwcap_x86_has_sse2 = FALSE;
-gboolean mono_hwcap_x86_has_sse3 = FALSE;
-gboolean mono_hwcap_x86_has_ssse3 = FALSE;
-gboolean mono_hwcap_x86_has_sse41 = FALSE;
-gboolean mono_hwcap_x86_has_sse42 = FALSE;
-gboolean mono_hwcap_x86_has_sse4a = FALSE;
 
 static gboolean
 cpuid (int id, int *p_eax, int *p_ebx, int *p_ecx, int *p_edx)
@@ -161,19 +149,4 @@ mono_hwcap_arch_init (void)
 #if defined(HAVE_UNISTD_H)
 	mono_hwcap_x86_is_xen = !access ("/proc/xen", F_OK);
 #endif
-}
-
-void
-mono_hwcap_print (FILE *f)
-{
-	g_fprintf (f, "mono_hwcap_x86_is_xen = %i\n", mono_hwcap_x86_is_xen);
-	g_fprintf (f, "mono_hwcap_x86_has_cmov = %i\n", mono_hwcap_x86_has_cmov);
-	g_fprintf (f, "mono_hwcap_x86_has_fcmov = %i\n", mono_hwcap_x86_has_fcmov);
-	g_fprintf (f, "mono_hwcap_x86_has_sse1 = %i\n", mono_hwcap_x86_has_sse1);
-	g_fprintf (f, "mono_hwcap_x86_has_sse2 = %i\n", mono_hwcap_x86_has_sse2);
-	g_fprintf (f, "mono_hwcap_x86_has_sse3 = %i\n", mono_hwcap_x86_has_sse3);
-	g_fprintf (f, "mono_hwcap_x86_has_ssse3 = %i\n", mono_hwcap_x86_has_ssse3);
-	g_fprintf (f, "mono_hwcap_x86_has_sse41 = %i\n", mono_hwcap_x86_has_sse41);
-	g_fprintf (f, "mono_hwcap_x86_has_sse42 = %i\n", mono_hwcap_x86_has_sse42);
-	g_fprintf (f, "mono_hwcap_x86_has_sse4a = %i\n", mono_hwcap_x86_has_sse4a);
 }

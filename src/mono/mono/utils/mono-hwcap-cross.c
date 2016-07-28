@@ -1,7 +1,10 @@
 /*
- * mono-hwcap-arm64.c: ARM64 hardware feature detection
+ * mono-hwcap-cross.c: No-op hardware feature detection
  *
- * Copyright 2013 Xamarin Inc
+ * Author:
+ *  Alex Rønne Petersen (alexrp@xamarin.com)
+ *
+ * Copyright 2015 Xamarin, Inc (http://www.xamarin.com)
  * Licensed under the MIT license. See LICENSE file in the project root for full license information.
  */
 

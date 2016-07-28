@@ -19,7 +19,7 @@
  * Licensed under the MIT license. See LICENSE file in the project root for full license information.
  */
 
-#include "mono/utils/mono-hwcap-arm.h"
+#include "mono/utils/mono-hwcap.h"
 
 #if defined(HAVE_SYS_AUXV_H) && !defined(PLATFORM_ANDROID)
 #include <sys/auxv.h>
@@ -33,15 +33,6 @@
 #endif
 #include <stdio.h>
 #endif
-
-gboolean mono_hwcap_arm_is_v5 = FALSE;
-gboolean mono_hwcap_arm_is_v6 = FALSE;
-gboolean mono_hwcap_arm_is_v7 = FALSE;
-gboolean mono_hwcap_arm_has_vfp = FALSE;
-gboolean mono_hwcap_arm_has_vfp3 = FALSE;
-gboolean mono_hwcap_arm_has_vfp3_d16 = FALSE;
-gboolean mono_hwcap_arm_has_thumb = FALSE;
-gboolean mono_hwcap_arm_has_thumb2 = FALSE;
 
 void
 mono_hwcap_arch_init (void)
@@ -201,17 +192,4 @@ mono_hwcap_arch_init (void)
 		fclose (file);
 	}
 #endif
-}
-
-void
-mono_hwcap_print(FILE *f)
-{
-	g_fprintf (f, "mono_hwcap_arm_is_v5 = %i\n", mono_hwcap_arm_is_v5);
-	g_fprintf (f, "mono_hwcap_arm_is_v6 = %i\n", mono_hwcap_arm_is_v6);
-	g_fprintf (f, "mono_hwcap_arm_is_v7 = %i\n", mono_hwcap_arm_is_v7);
-	g_fprintf (f, "mono_hwcap_arm_has_vfp = %i\n", mono_hwcap_arm_has_vfp);
-	g_fprintf (f, "mono_hwcap_arm_has_vfp3 = %i\n", mono_hwcap_arm_has_vfp3);
-	g_fprintf (f, "mono_hwcap_arm_has_vfp3_d16 = %i\n", mono_hwcap_arm_has_vfp3_d16);
-	g_fprintf (f, "mono_hwcap_arm_has_thumb = %i\n", mono_hwcap_arm_has_thumb);
-	g_fprintf (f, "mono_hwcap_arm_has_thumb2 = %i\n", mono_hwcap_arm_has_thumb2);
 }
