@@ -34,7 +34,7 @@ In the case of packages, there is one small difference compared to the assembly 
 How does the Official Build workflow works
 ------------------------------------------
 
-Our Official Builds are a little different than the regular dev flow, and that is because Official Builds need the ability to not only force a specific BuildNumberMinor, but also a BuildNumberMajor. The way they do it, is by passing in the parameter `OfficialBuildId` which specifies the SeedDate that should be used and the revision of the build. For example, the following invocation: `build.cmd /p:OfficialBuildId=20160523.99` will use May 23 2016 as the SeedDate to generate the version, and it will set '99' as the BuildNumberMinor. With this funcionality, our OfficialBuilds are able to have an orchestrator that triggers different builds and force all of them to have the same version.
+Our Official Builds are a little different than the regular dev flow, and that is because Official Builds need the ability to not only force a specific BuildNumberMinor, but also a BuildNumberMajor. The way they do it, is by passing in the parameter `OfficialBuildId` which specifies the SeedDate that should be used and the revision of the build. For example, the following invocation: `build.cmd -OfficialBuildId=20160523.99` will use May 23 2016 as the SeedDate to generate the version, and it will set '99' as the BuildNumberMinor. With this funcionality, our OfficialBuilds are able to have an orchestrator that triggers different builds and force all of them to have the same version.
 
 Getting the version of a native binary in non-Windows platforms
 ========================================================
@@ -47,8 +47,8 @@ How to force a dev build to produce a specific version
 ======================================================
 
 If you need to manually specify the version you want to produce your build output with, you can accomplish this by running the following from the root of the repo: 
-- `build.cmd /p:BuildNumberMajor=00001 /p:BuildNumberMinor=01` in Windows
-- `build.sh /p:BuildNumberMajor=00001 /p:BuildNumberMinor=01` in non-Windows
+- `build-managed.cmd -BuildNumberMajor=00001 -BuildNumberMinor=01` in Windows
+- `build-managed.sh  -BuildNumberMajor=00001 -BuildNumberMinor=01` in non-Windows
 
 Where is the version being consumed
 ===================================
