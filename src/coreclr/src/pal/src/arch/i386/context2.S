@@ -126,6 +126,28 @@ LOCAL_LABEL(Done_Restore_CONTEXT_DEBUG_REGISTERS):
     fxrstor [rdi + CONTEXT_FltSave]
 LOCAL_LABEL(Done_Restore_CONTEXT_FLOATING_POINT):
 
+    test    BYTE PTR [rdi + CONTEXT_ContextFlags], CONTEXT_XSTATE
+    je      LOCAL_LABEL(Done_Restore_CONTEXT_XSTATE)
+
+    // Restore the extended state (for now, this is just the upper halves of YMM registers)
+    vinsertf128 ymm0, ymm0, xmmword ptr [rdi + (CONTEXT_VectorRegister + 0 * 16)], 1
+    vinsertf128 ymm1, ymm1, xmmword ptr [rdi + (CONTEXT_VectorRegister + 1 * 16)], 1
+    vinsertf128 ymm2, ymm2, xmmword ptr [rdi + (CONTEXT_VectorRegister + 2 * 16)], 1
+    vinsertf128 ymm3, ymm3, xmmword ptr [rdi + (CONTEXT_VectorRegister + 3 * 16)], 1
+    vinsertf128 ymm4, ymm4, xmmword ptr [rdi + (CONTEXT_VectorRegister + 4 * 16)], 1
+    vinsertf128 ymm5, ymm5, xmmword ptr [rdi + (CONTEXT_VectorRegister + 5 * 16)], 1
+    vinsertf128 ymm6, ymm6, xmmword ptr [rdi + (CONTEXT_VectorRegister + 6 * 16)], 1
+    vinsertf128 ymm7, ymm7, xmmword ptr [rdi + (CONTEXT_VectorRegister + 7 * 16)], 1
+    vinsertf128 ymm8, ymm8, xmmword ptr [rdi + (CONTEXT_VectorRegister + 8 * 16)], 1
+    vinsertf128 ymm9, ymm9, xmmword ptr [rdi + (CONTEXT_VectorRegister + 9 * 16)], 1
+    vinsertf128 ymm10, ymm10, xmmword ptr [rdi + (CONTEXT_VectorRegister + 10 * 16)], 1
+    vinsertf128 ymm11, ymm11, xmmword ptr [rdi + (CONTEXT_VectorRegister + 11 * 16)], 1
+    vinsertf128 ymm12, ymm12, xmmword ptr [rdi + (CONTEXT_VectorRegister + 12 * 16)], 1
+    vinsertf128 ymm13, ymm13, xmmword ptr [rdi + (CONTEXT_VectorRegister + 13 * 16)], 1
+    vinsertf128 ymm14, ymm14, xmmword ptr [rdi + (CONTEXT_VectorRegister + 14 * 16)], 1
+    vinsertf128 ymm15, ymm15, xmmword ptr [rdi + (CONTEXT_VectorRegister + 15 * 16)], 1
+LOCAL_LABEL(Done_Restore_CONTEXT_XSTATE):
+
     test    BYTE PTR [rdi + CONTEXT_ContextFlags], CONTEXT_CONTROL
     je      LOCAL_LABEL(Done_Restore_CONTEXT_CONTROL)
 
