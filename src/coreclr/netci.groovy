@@ -1593,7 +1593,7 @@ combinedScenarios.each { scenario ->
                                                 buildCommands += getStressModeEnvSetCmd(os, scenario);
                                                 
                                                 // Run corefx build and testing
-                                                buildCommands += "cd fx && call \"C:\\Program Files (x86)\\Microsoft Visual Studio 14.0\\VC\\vcvarsall.bat\" x86 && Build.cmd /p:ConfigurationGroup=Release  /p:BUILDTOOLS_OVERRIDE_RUNTIME=%WORKSPACE%\\clr\\bin\\Product\\Windows_NT.x64.Checked "                                                                                              
+                                                buildCommands += "cd fx && call \"C:\\Program Files (x86)\\Microsoft Visual Studio 14.0\\VC\\vcvarsall.bat\" x86 && Build.cmd -Release -- /p:BUILDTOOLS_OVERRIDE_RUNTIME=%WORKSPACE%\\clr\\bin\\Product\\Windows_NT.x64.Checked "                                                                                              
                                             }
                                             else {
                                                 def stepScriptLocation = "%WORKSPACE%\\bin\\tests\\SetStressModes.bat"
@@ -1737,7 +1737,7 @@ combinedScenarios.each { scenario ->
                                         // Build and text corefx
                                         buildCommands += "rm -rf \$WORKSPACE/fx_home; mkdir \$WORKSPACE/fx_home"
                                         buildCommands += setEnvVar
-                                        buildCommands += "cd fx; export HOME=\$WORKSPACE/fx_home; ./build.sh /p:ConfigurationGroup=Release /p:BUILDTOOLS_OVERRIDE_RUNTIME=\$WORKSPACE/clr/bin/Product/Linux.x64.Checked /p:Outerloop=true /p:TestWithLocalLibraries=true"  
+                                        buildCommands += "cd fx; export HOME=\$WORKSPACE/fx_home; ./build.sh -Release -Outerloop -TestWithLocalLibraries -- /p:BUILDTOOLS_OVERRIDE_RUNTIME=\$WORKSPACE/clr/bin/Product/Linux.x64.Checked"  
 
                                         // Archive and process test result
                                         Utilities.addArchival(newJob, "fx/bin/tests/**/testResults.xml")
@@ -2144,7 +2144,8 @@ combinedScenarios.each { scenario ->
                                 shell("git clone https://github.com/dotnet/corefx fx")
 
                                 // Build Linux corefx
-                                shell("./fx/build.sh x64 release Linux skiptests")
+                                shell("./fx/build-native.sh -release -buildArch=x64 -os=Linux")
+                                shell("./fx/build-managed.sh -release -buildArch=x64 -osgroup=Linux -skiptests")
 
                                 def testEnvOpt = ""
                                 def scriptFileName = "\$WORKSPACE/set_stress_test_env.sh"
