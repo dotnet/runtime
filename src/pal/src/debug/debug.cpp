@@ -25,12 +25,14 @@ Revision History:
 #undef _FILE_OFFSET_BITS
 #endif
 
+#include "pal/dbgmsg.h"
+SET_DEFAULT_DEBUG_CHANNEL(DEBUG); // some headers have code with asserts, so do this first
+
 #include "pal/thread.hpp"
 #include "pal/procobj.hpp"
 #include "pal/file.hpp"
 
 #include "pal/palinternal.h"
-#include "pal/dbgmsg.h"
 #include "pal/process.h"
 #include "pal/context.h"
 #include "pal/debug.h"
@@ -65,8 +67,6 @@ Revision History:
 #endif // HAVE_MACH_EXCEPTIONS
 
 using namespace CorUnix;
-
-SET_DEFAULT_DEBUG_CHANNEL(DEBUG);
 
 extern "C" void DBG_DebugBreak_End();
 

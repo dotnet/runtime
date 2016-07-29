@@ -19,8 +19,10 @@ Abstract:
 
 --*/
 
-#include "pal/palinternal.h"
 #include "pal/dbgmsg.h"
+SET_DEFAULT_DEBUG_CHANNEL(THREAD); // some headers have code with asserts, so do this first
+
+#include "pal/palinternal.h"
 #include "pal/context.h"
 #include "pal/debug.h"
 #include "pal/thread.hpp"
@@ -28,8 +30,6 @@ Abstract:
 #include <sys/ptrace.h> 
 #include <errno.h>
 #include <unistd.h>
-
-SET_DEFAULT_DEBUG_CHANNEL(THREAD);
 
 extern PGET_GCMARKER_EXCEPTION_CODE g_getGcMarkerExceptionCode;
 
@@ -465,6 +465,15 @@ void CONTEXTToNativeContext(CONST CONTEXT *lpContext, native_context_t *native)
         }
 #endif
     }
+
+    // TODO: Enable for all Unix systems
+#if defined(_AMD64_) && defined(__linux__)
+    if ((lpContext->ContextFlags & CONTEXT_XSTATE) != 0)
+    {
+        _ASSERTE(FPREG_HasExtendedState(native));
+        memcpy_s(FPREG_Xstate_Ymmh(native), sizeof(M128A) * 16, lpContext->VectorRegister, sizeof(M128A) * 16);
+    }
+#endif // _AMD64_
 }
 
 /*++
@@ -513,16 +522,19 @@ void CONTEXTFromNativeContext(const native_context_t *native, LPCONTEXT lpContex
     if (native->uc_mcontext.__fpregs == nullptr)
 #endif
     {
-        // Reset the CONTEXT_FLOATING_POINT bit(s) so it's clear that the floating point
-        // data in the CONTEXT is not valid. Since CONTEXT_FLOATING_POINT is defined as 
-        // the architecture bit(s) OR'd with one or more other bits, we first get the bits
-        // that are unique to CONTEXT_FLOATING_POINT by resetting the architecture bits.
-        // We determine what those are by inverting the union of CONTEXT_CONTROL and
-        // CONTEXT_INTEGER, both of which should also have the architecture bit(s) set.
+        // Reset the CONTEXT_FLOATING_POINT bit(s) and the CONTEXT_XSTATE bit(s) so it's
+        // clear that the floating point and extended state data in the CONTEXT is not
+        // valid. Since these flags are defined as the architecture bit(s) OR'd with one
+        // or more other bits, we first get the bits that are unique to each by resetting
+        // the architecture bits. We determine what those are by inverting the union of
+        // CONTEXT_CONTROL and CONTEXT_INTEGER, both of which should also have the 
+        // architecture bit(s) set.
         const ULONG floatingPointFlags = CONTEXT_FLOATING_POINT & ~(CONTEXT_CONTROL & CONTEXT_INTEGER);
-        lpContext->ContextFlags &= ~floatingPointFlags;
+        const ULONG xstateFlags = CONTEXT_XSTATE & ~(CONTEXT_CONTROL & CONTEXT_INTEGER);
 
-        // Bail out regardless of whether the caller wanted CONTEXT_FLOATING_POINT 
+        lpContext->ContextFlags &= ~(floatingPointFlags | xstateFlags);
+
+        // Bail out regardless of whether the caller wanted CONTEXT_FLOATING_POINT or CONTEXT_XSTATE
         return;
     }
 #endif
@@ -551,6 +563,24 @@ void CONTEXTFromNativeContext(const native_context_t *native, LPCONTEXT lpContex
         }
 #endif
     }
+
+    // TODO: Enable for all Unix systems
+#if defined(_AMD64_) && defined(__linux__)
+    if ((contextFlags & CONTEXT_XSTATE) != 0)
+    {
+        if (FPREG_HasExtendedState(native))
+        {
+            memcpy_s(lpContext->VectorRegister, sizeof(M128A) * 16, FPREG_Xstate_Ymmh(native), sizeof(M128A) * 16);
+        }
+        else
+        {
+            // Reset the CONTEXT_XSTATE bit(s) so it's clear that the extended state data in
+            // the CONTEXT is not valid.
+            const ULONG xstateFlags = CONTEXT_XSTATE & ~(CONTEXT_CONTROL & CONTEXT_INTEGER);
+            lpContext->ContextFlags &= ~xstateFlags;
+        }
+    } 
+#endif // _AMD64_
 }
 
 /*++
