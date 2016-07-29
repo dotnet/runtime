@@ -1,24 +1,28 @@
 {
   "dependencies": {
-    "Microsoft.NETCore.Platforms": "1.0.1-rc3-24117-00",
-    "System.Collections": "4.0.10",
-    "System.Console": "4.0.0-rc3-24117-00",
-    "System.Diagnostics.Debug": "4.0.11-rc3-24117-00",
-    "System.Runtime.InteropServices.RuntimeInformation": "4.0.0-rc3-24117-00",
-    "System.Diagnostics.Process": "4.1.0-rc3-24117-00",
-    "System.Globalization": "4.0.11-rc3-24117-00",
-    "System.IO": "4.0.11-rc3-24117-00",
-    "System.IO.FileSystem": "4.0.1-rc3-24117-00",
-    "System.Reflection": "4.1.0-rc3-24117-00",
-    "System.Reflection.Extensions": "4.0.1-rc3-24117-00",
-    "System.Reflection.TypeExtensions": "4.1.0-rc3-24117-00",
-    "System.Runtime": "4.1.0-rc3-24117-00",
-    "System.Runtime.Extensions": "4.0.10",
-    "System.Runtime.CompilerServices.Unsafe": "4.0.0-rc3-24117-00",
-    "System.Runtime.InteropServices": "4.1.0-rc3-24117-00"
+    "Microsoft.NETCore.Platforms": "1.0.2-beta-24328-05",
+    "System.Collections": "4.0.12-beta-24328-05",
+    "System.Console": "4.0.1-beta-24328-05",
+    "System.Diagnostics.Debug": "4.0.12-beta-24328-05",
+    "System.Runtime.InteropServices.RuntimeInformation": "4.0.1-beta-24328-05",
+    "System.Diagnostics.Process": "4.1.1-beta-24328-05",
+    "System.Globalization": "4.0.12-beta-24328-05",
+    "System.IO": "4.1.1-beta-24328-05",
+    "System.IO.FileSystem": "4.0.2-beta-24328-05",
+    "System.Reflection": "4.1.1-beta-24328-05",
+    "System.Reflection.Extensions": "4.0.2-beta-24328-05",
+    "System.Reflection.TypeExtensions": "4.1.1-beta-24328-05",
+    "System.Runtime": "4.1.1-beta-24328-05",
+    "System.Runtime.Extensions": "4.1.1-beta-24328-05",
+    "System.Runtime.CompilerServices.Unsafe": "4.0.1-beta-24328-05",
+    "System.Runtime.InteropServices": "4.2.0-beta-24328-05",
+    "test_runtime": {
+      "target": "project",
+      "exclude": "compile"
+    }
   },
   "frameworks": {
-    "dnxcore50": {}
+    "netcoreapp1.0": {}
   },
   "runtimes": {
     "win7-x86": {},
