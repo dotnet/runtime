@@ -48,6 +48,7 @@
 #endif
 
 typedef struct DomainFinalizationReq {
+	gint32 ref;
 	MonoDomain *domain;
 	MonoCoopSem done;
 } DomainFinalizationReq;
@@ -383,6 +384,8 @@ mono_domain_finalize (MonoDomain *domain, guint32 timeout)
 {
 	DomainFinalizationReq *req;
 	MonoInternalThread *thread = mono_thread_internal_current ();
+	gint res;
+	gboolean ret;
 
 #if defined(__native_client__)
 	return FALSE;
@@ -407,6 +410,7 @@ mono_domain_finalize (MonoDomain *domain, guint32 timeout)
 	mono_gc_collect (mono_gc_max_generation ());
 
 	req = g_new0 (DomainFinalizationReq, 1);
+	req->ref = 2;
 	req->domain = domain;
 	mono_coop_sem_init (&req->done, 0);
 
@@ -425,23 +429,51 @@ mono_domain_finalize (MonoDomain *domain, guint32 timeout)
 	if (timeout == -1)
 		timeout = INFINITE;
 
+	ret = TRUE;
+
 	for (;;) {
 		res = mono_coop_sem_timedwait (&req->done, timeout, MONO_SEM_FLAGS_ALERTABLE);
 		if (res == MONO_SEM_TIMEDWAIT_RET_SUCCESS) {
 			break;
 		} else if (res == MONO_SEM_TIMEDWAIT_RET_ALERTED) {
-			if ((thread->state & (ThreadState_StopRequested | ThreadState_SuspendRequested)) != 0)
-				return FALSE;
+			if ((thread->state & (ThreadState_StopRequested | ThreadState_SuspendRequested)) != 0) {
+				ret = FALSE;
+				break;
+			}
 		} else if (res == MONO_SEM_TIMEDWAIT_RET_TIMEDOUT) {
-			return FALSE;
+			ret = FALSE;
+			break;
 		} else {
 			g_error ("%s: unknown result %d", __func__, res);
 		}
 	}
 
-	/* When we reach here, the other thread has already exited the critical section, so this is safe to free */
-	mono_coop_sem_destroy (&req->done);
-	g_free (req);
+	if (!ret) {
+		/* Try removing the req from domains_to_finalize:
+		 *  - if it's not found: the domain is being finalized,
+		 *     so we the ref count is already decremented
+		 *  - if it's found: the domain is not yet being finalized,
+		 *     so we can safely decrement the ref */
+
+		gboolean found;
+
+		mono_finalizer_lock ();
+
+		found = g_slist_index (domains_to_finalize, req) != -1;
+		if (found)
+			domains_to_finalize = g_slist_remove (domains_to_finalize, req);
+
+		mono_finalizer_unlock ();
+
+		if (found) {
+			/* We have to decrement it wherever we
+			 * remove it from domains_to_finalize */
+			if (InterlockedDecrement (&req->ref) != 1)
+				g_error ("%s: req->ref should be 1, as we are the first one to decrement it", __func__);
+		}
+
+		goto done;
+	}
 
 	if (domain == mono_get_root_domain ()) {
 		mono_threadpool_ms_cleanup ();
@@ -450,7 +482,13 @@ mono_domain_finalize (MonoDomain *domain, guint32 timeout)
 
 	mono_profiler_appdomain_event (domain, MONO_PROFILE_END_UNLOAD);
 
-	return TRUE;
+done:
+	if (InterlockedDecrement (&req->ref) == 0) {
+		mono_coop_sem_destroy (&req->done);
+		g_free (req);
+	}
+
+	return ret;
 }
 
 void
@@ -683,9 +721,24 @@ collect_objects (gpointer key, gpointer value, gpointer user_data)
  *  Run the finalizers of all finalizable objects in req->domain.
  */
 static void
-finalize_domain_objects (DomainFinalizationReq *req)
+finalize_domain_objects (void)
 {
-	MonoDomain *domain = req->domain;
+	DomainFinalizationReq *req = NULL;
+	MonoDomain *domain;
+
+	if (domains_to_finalize) {
+		mono_finalizer_lock ();
+		if (domains_to_finalize) {
+			req = (DomainFinalizationReq *)domains_to_finalize->data;
+			domains_to_finalize = g_slist_remove (domains_to_finalize, req);
+		}
+		mono_finalizer_unlock ();
+	}
+
+	if (!req)
+		return;
+
+	domain = req->domain;
 
 	/* Process finalizers which are already in the queue */
 	mono_gc_invoke_finalizers ();
@@ -721,6 +774,13 @@ finalize_domain_objects (DomainFinalizationReq *req)
 	
 	/* printf ("DONE.\n"); */
 	mono_coop_sem_post (&req->done);
+
+	if (InterlockedDecrement (&req->ref) == 0) {
+		/* mono_domain_finalize already returned, and
+		 * doesn't hold a reference to req anymore. */
+		mono_coop_sem_destroy (&req->done);
+		g_free (req);
+	}
 }
 
 static guint32
@@ -757,18 +817,7 @@ finalizer_thread (gpointer unused)
 
 		mono_attach_maybe_start ();
 
-		if (domains_to_finalize) {
-			mono_finalizer_lock ();
-			if (domains_to_finalize) {
-				DomainFinalizationReq *req = (DomainFinalizationReq *)domains_to_finalize->data;
-				domains_to_finalize = g_slist_remove (domains_to_finalize, req);
-				mono_finalizer_unlock ();
-
-				finalize_domain_objects (req);
-			} else {
-				mono_finalizer_unlock ();
-			}
-		}				
+		finalize_domain_objects ();
 
 		/* If finished == TRUE, mono_gc_cleanup has been called (from mono_runtime_cleanup),
 		 * before the domain is unloaded.
