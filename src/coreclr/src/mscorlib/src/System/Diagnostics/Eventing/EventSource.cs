@@ -4271,7 +4271,6 @@ namespace System.Diagnostics.Tracing
         {
             lock (EventListenersLock)
             {
-                Contract.Assert(s_Listeners != null);
                 if (s_Listeners != null)
                 {
                     if (this == s_Listeners)
