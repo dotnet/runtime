@@ -5,6 +5,10 @@
 // Changes to this file must follow the http://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
+namespace System
+{
+    public delegate TOutput Converter<in TInput, out TOutput>(TInput input);     
+}
 
 namespace System.Collections
 {
@@ -278,6 +282,7 @@ namespace System.Collections.Generic
         public int BinarySearch(int index, int count, T item, System.Collections.Generic.IComparer<T> comparer) { return default(int); }
         public void Clear() { }
         public bool Contains(T item) { return default(bool); }
+        public List<TOutput> ConvertAll<TOutput>(System.Converter<T,TOutput> converter) { throw null; }
         public void CopyTo(T[] array) { }
         public void CopyTo(T[] array, int arrayIndex) { }
         public void CopyTo(int index, T[] array, int arrayIndex, int count) { }
