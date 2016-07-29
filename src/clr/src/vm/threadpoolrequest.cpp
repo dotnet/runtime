@@ -362,7 +362,7 @@ void UnManagedPerAppDomainTPCount::SetAppDomainRequestsActive()
 {
     WRAPPER_NO_CONTRACT;
 #ifndef DACCESS_COMPILE
-    LONG count = m_outstandingThreadRequestCount;
+    LONG count = VolatileLoad(&m_outstandingThreadRequestCount);
     while (count < (LONG)ThreadpoolMgr::NumberOfProcessors)
     {
         LONG prevCount = FastInterlockCompareExchange(&m_outstandingThreadRequestCount, count+1, count);
@@ -383,7 +383,7 @@ void UnManagedPerAppDomainTPCount::SetAppDomainRequestsActive()
 bool FORCEINLINE UnManagedPerAppDomainTPCount::TakeActiveRequest()
 {
     LIMITED_METHOD_CONTRACT;
-    LONG count = m_outstandingThreadRequestCount;
+    LONG count = VolatileLoad(&m_outstandingThreadRequestCount);
 
     while (count > 0)
     {
@@ -602,7 +602,7 @@ void ManagedPerAppDomainTPCount::SetAppDomainRequestsActive()
     _ASSERTE(m_id.m_dwId != 0);
 
 #ifndef DACCESS_COMPILE
-        LONG count = m_numRequestsPending;
+        LONG count = VolatileLoad(&m_numRequestsPending);
         while (count != ADUnloading)
         {
             LONG prev = FastInterlockCompareExchange(&m_numRequestsPending, count+1, count);
@@ -631,12 +631,15 @@ void ManagedPerAppDomainTPCount::ClearAppDomainRequestsActive(BOOL bADU)
 
     if (bADU)
     {
-        m_numRequestsPending = ADUnloading;
+        VolatileStore(&m_numRequestsPending, ADUnloading);
     }
     else
     {
-        LONG count = m_numRequestsPending;
-        while (count != ADUnloading && count > 0)
+        LONG count = VolatileLoad(&m_numRequestsPending);
+        // Test is: count > 0 && count != ADUnloading
+        // Since:   const ADUnloading == -1
+        // Both are tested: (count > 0) means following also true  (count != ADUnloading)
+        while (count > 0)
         {
             LONG prev = FastInterlockCompareExchange(&m_numRequestsPending, 0, count);
             if (prev == count)
@@ -649,8 +652,11 @@ void ManagedPerAppDomainTPCount::ClearAppDomainRequestsActive(BOOL bADU)
 bool ManagedPerAppDomainTPCount::TakeActiveRequest()
 {
     LIMITED_METHOD_CONTRACT;
-    LONG count = m_numRequestsPending;
-    while (count != ADUnloading && count > 0)
+    LONG count = VolatileLoad(&m_numRequestsPending);
+    // Test is: count > 0 && count != ADUnloading
+    // Since:   const ADUnloading == -1
+    // Both are tested: (count > 0) means following also true (count != ADUnloading)
+    while (count > 0)
     {
         LONG prev = FastInterlockCompareExchange(&m_numRequestsPending, count-1, count);
         if (prev == count)
@@ -681,7 +687,7 @@ void ManagedPerAppDomainTPCount::ClearAppDomainUnloading()
     // it should be, but if it's smaller then we will be permanently out of sync with the
     // AD.
     //
-    m_numRequestsPending = ThreadpoolMgr::NumberOfProcessors;
+    VolatileStore(&m_numRequestsPending, (LONG)ThreadpoolMgr::NumberOfProcessors);
     if (!CLRThreadpoolHosted() && ThreadpoolMgr::IsInitialized())
     {
         ThreadpoolMgr::MaybeAddWorkingWorker();
