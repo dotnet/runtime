@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -85,15 +84,6 @@ namespace System.Tests
             Assert.False(iList.Contains(null));
             Assert.False(iList.Contains("1")); // Value not an int
         }
-        
-        [Fact]
-        public static void AsReadOnly()
-        {
-            var array = new string[] { "a", "b" };
-            System.Collections.ObjectModel.ReadOnlyCollection<string> ro = Array.AsReadOnly(array);
-            Assert.Equal(array, ro);
-            Assert.Equal(new System.Collections.ObjectModel.ReadOnlyCollection<string>(array), ro);
-        }
 
         [Fact]
         public static void CastAs_IListOfT()
@@ -108,23 +98,6 @@ namespace System.Tests
             Assert.Equal("50", sa[0]);
             Assert.Equal(sa[1], ils[1]);
             Assert.Equal("There", sa[1]);
-        }
-
-        [Fact]
-        public static void Construction()
-        {
-            // Check a number of the simple APIs on Array for dimensions up to 4.
-            Array array = new int[] { 1, 2, 3 };
-            VerifyArray(array, 1, new int[] { 3 }, new int[] { 0 }, new int[] { 2 }, true);
-
-            array = new int[,] { { 1, 2, 3 }, { 4, 5, 6 } };
-            VerifyArray(array, 2, new int[] { 2, 3 }, new int[] { 0, 0 }, new int[] { 1, 2 }, true);
-
-            array = new int[2, 3, 4];
-            VerifyArray(array, 3, new int[] { 2, 3, 4 }, new int[] { 0, 0, 0 }, new int[] { 1, 2, 3 }, true);
-
-            array = new int[2, 3, 4, 5];
-            VerifyArray(array, 4, new int[] { 2, 3, 4, 5 }, new int[] { 0, 0, 0, 0 }, new int[] { 1, 2, 3, 4 }, true);
         }
 
         [Fact]
@@ -551,27 +524,6 @@ namespace System.Tests
         }
 
         [Theory]
-        public static void ForEach()
-        {
-            Array.ForEach<int>(new int[] { }, new Action<int>(i => { throw new InvalidOperationException(); }));
-            // Did not throw; no items
-
-            int counter = 0;
-            int exp = 0;
-            Array.ForEach<int>(new int[] { 1, 2, 3 }, new Action<int>(i => { counter += i; exp = (i==1)?1:(i==2)?3:6; Assert.Equal(exp, counter); }));
-        }
-
-        [Fact]
-        public static void ForEach_Invalid()
-        {
-            Assert.Throws<ArgumentNullException>("array", () => { Array.ForEach<short>(null, new Action<short>(i => i++)); });  // Array is null
-            Assert.Throws<ArgumentNullException>("action", () => { Array.ForEach<string>(new string[] { }, null); }); // Action is null
-            Assert.Throws<InvalidOperationException>(() => {
-                Array.ForEach<string>(new string[] { "a" }, i => { throw new InvalidOperationException(); }); // Action throws
-            });
-        }
-
-        [Theory]
         [MemberData(nameof(Copy_TestData))]
         public static void Copy(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length, Array expected)
         {
@@ -584,22 +536,6 @@ namespace System.Tests
             }
             // Use Copy(Array, int, Array, int, int)
             Array.Copy(sourceArray, sourceIndex, destinationArray, destinationIndex, length);
-            Assert.Equal(expected, destinationArray);
-        }
-
-        [Theory]
-        [MemberData(nameof(Copy_TestData))]
-        public static void Copy_Long(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length, Array expected)
-        {
-            if (sourceIndex == 0 && destinationIndex == 0)
-            {
-                // Use Copy(Array, Array, long)
-                Array testArray = (Array)sourceArray.Clone();
-                Array.Copy(sourceArray, destinationArray, (long)length);
-                Assert.Equal(expected, destinationArray);
-            }
-            // Use Copy(Array, long, Array, long, long)
-            Array.Copy(sourceArray, (long)sourceIndex, destinationArray, (long)destinationIndex, (long)length);
             Assert.Equal(expected, destinationArray);
         }
 
@@ -753,14 +689,6 @@ namespace System.Tests
             Assert.Equal(expected, destination);
         }
 
-        [Theory]
-        [MemberData(nameof(CopyTo_TestData))]
-        public static void CopyTo_Long(Array source, Array destination, long index, Array expected)
-        {
-            source.CopyTo(destination, index);
-            Assert.Equal(expected, destination);
-        }
-
         [Fact]
         public static void CopyTo_Invalid()
         {
@@ -796,98 +724,6 @@ namespace System.Tests
         }
 
         [Fact]
-        public static void CreateInstance_Type_Int_Invalid()
-        {
-            Assert.Throws<ArgumentNullException>("elementType", () => Array.CreateInstance(null, 0)); // Element type is null
-
-            Assert.Throws<NotSupportedException>(() => Array.CreateInstance(typeof(void), 0)); // Element type is not supported (void)
-            Assert.Throws<NotSupportedException>(() => Array.CreateInstance(typeof(List<>), 0)); // Element type is not supported (generic)
-            Assert.Throws<NotSupportedException>(() => Array.CreateInstance(typeof(int).MakeByRefType(), 0)); // Element type is not supported (ref)
-
-            Assert.Throws<ArgumentOutOfRangeException>("length", () => Array.CreateInstance(typeof(int), -1)); // Length < 0
-
-            // Type is not a valid RuntimeType
-            Assert.Throws<ArgumentException>("elementType", () => Array.CreateInstance(Helpers.NonRuntimeType(), 0));
-        }
-
-        [Fact]
-        public static void CreateInstance_Type_Int_Int()
-        {
-            int[,] intArray2 = (int[,])Array.CreateInstance(typeof(int), 1, 2);
-            VerifyArray(intArray2, 2, new int[] { 1, 2 }, new int[] { 0, 0 }, new int[] { 0, 1 }, false);
-            intArray2[0, 1] = 42;
-            Assert.Equal(42, intArray2[0, 1]);
-        }
-
-        [Fact]
-        public static void CreateInstance_Type_Int_Int_Invalid()
-        {
-            Assert.Throws<ArgumentNullException>("elementType", () => Array.CreateInstance(null, 0, 1)); // Element type is null
-
-            Assert.Throws<NotSupportedException>(() => Array.CreateInstance(typeof(void), 0, 1)); // Element type is not supported (void)
-            Assert.Throws<NotSupportedException>(() => Array.CreateInstance(typeof(List<>), 0, 1)); // Element type is not supported (generic)
-            Assert.Throws<NotSupportedException>(() => Array.CreateInstance(typeof(int).MakeByRefType(), 0, 1)); // Element type is not supported (ref)
-
-            Assert.Throws<ArgumentOutOfRangeException>("length2", () => Array.CreateInstance(typeof(int), 0, -1)); // Length < 0
-
-            // Type is not a valid RuntimeType
-            Assert.Throws<ArgumentException>("elementType", () => Array.CreateInstance(Helpers.NonRuntimeType(), 0, 1));
-        }
-
-        [Fact]
-        public static void CreateInstance_Type_Int_Int_Int()
-        {
-            int[,,] intArray3 = (int[,,])Array.CreateInstance(typeof(int), 1, 2, 3);
-            VerifyArray(intArray3, 3, new int[] { 1, 2, 3 }, new int[] { 0, 0, 0 }, new int[] { 0, 1, 2 }, false);
-            intArray3[0, 1, 2] = 42;
-            Assert.Equal(42, intArray3[0, 1, 2]);
-        }
-
-        [Fact]
-        public static void CreateInstance_Type_Int_Int_Int_Invalid()
-        {
-            Assert.Throws<ArgumentNullException>("elementType", () => Array.CreateInstance(null, 0, 1, 2)); // Element type is null
-
-            Assert.Throws<NotSupportedException>(() => Array.CreateInstance(typeof(void), 0, 1, 2)); // Element type is not supported (void)
-            Assert.Throws<NotSupportedException>(() => Array.CreateInstance(typeof(List<>), 0, 1, 2)); // Element type is not supported (generic)
-            Assert.Throws<NotSupportedException>(() => Array.CreateInstance(typeof(int).MakeByRefType(), 0, 1, 2)); // Element type is not supported (ref)
-
-            Assert.Throws<ArgumentOutOfRangeException>("length3", () => Array.CreateInstance(typeof(int), 0, 1, -1)); // Length < 0
-
-            // Type is not a valid RuntimeType
-            Assert.Throws<ArgumentException>("elementType", () => Array.CreateInstance(Helpers.NonRuntimeType(), 0, 1, 2));
-        }
-
-        [Fact]
-        public static void CreateInstance_Type_IntArray()
-        {
-            string[] stringArray = (string[])Array.CreateInstance(typeof(string), new int[] { 10 });
-            Assert.Equal(stringArray, new string[10]);
-
-            stringArray = (string[])Array.CreateInstance(typeof(string), new int[] { 0 });
-            Assert.Equal(stringArray, new string[0]);
-
-            int[] intArray1 = (int[])Array.CreateInstance(typeof(int), new int[] { 1 });
-            VerifyArray(intArray1, 1, new int[] { 1 }, new int[] { 0 }, new int[] { 0 }, false);
-            Assert.Equal(intArray1, new int[1]);
-
-            int[,] intArray2 = (int[,])Array.CreateInstance(typeof(int), new int[] { 1, 2 });
-            VerifyArray(intArray2, 2, new int[] { 1, 2 }, new int[] { 0, 0 }, new int[] { 0, 1 }, false);
-            intArray2[0, 1] = 42;
-            Assert.Equal(42, intArray2[0, 1]);
-
-            int[,,] intArray3 = (int[,,])Array.CreateInstance(typeof(int), new int[] { 1, 2, 3 });
-            VerifyArray(intArray3, 3, new int[] { 1, 2, 3 }, new int[] { 0, 0, 0 }, new int[] { 0, 1, 2 }, false);
-            intArray3[0, 1, 2] = 42;
-            Assert.Equal(42, intArray3[0, 1, 2]);
-
-            int[,,,] intArray4 = (int[,,,])Array.CreateInstance(typeof(int), new int[] { 1, 2, 3, 4 });
-            VerifyArray(intArray4, 4, new int[] { 1, 2, 3, 4 }, new int[] { 0, 0, 0, 0 }, new int[] { 0, 1, 2 }, false);
-            intArray4[0, 1, 2, 3] = 42;
-            Assert.Equal(42, intArray4[0, 1, 2, 3]);
-        }
-
-        [Fact]
         public static void CreateInstance_Type_IntArray_Invalid()
         {
             Assert.Throws<ArgumentNullException>("elementType", () => Array.CreateInstance(null, new int[] { 10 })); // Element type is null
@@ -902,18 +738,6 @@ namespace System.Tests
 
             // Type is not a valid RuntimeType
             Assert.Throws<ArgumentException>("elementType", () => Array.CreateInstance(Helpers.NonRuntimeType(), new int[] { 1 }));
-        }
-
-        [Fact]
-        public static void CreateInstance_Type_IntArray_IntArray()
-        {
-            int[] intArray1 = (int[])Array.CreateInstance(typeof(int), new int[] { 5 }, new int[] { 0 });
-            Assert.Equal(intArray1, new int[5]);
-            VerifyArray(intArray1, 1, new int[] { 5 }, new int[] { 0 }, new int[] { 4 }, false);
-
-            int[,,] intArray2 = (int[,,])Array.CreateInstance(typeof(int), new int[] { 7, 8, 9 }, new int[] { 1, 2, 3 });
-            Assert.Equal(intArray2, new int[7, 8, 9]);
-            VerifyArray(intArray2, 3, new int[] { 7, 8, 9 }, new int[] { 1, 2, 3 }, new int[] { 7, 9, 11 }, false);
         }
 
         [Fact]
@@ -1087,33 +911,6 @@ namespace System.Tests
             Assert.Throws<ArgumentOutOfRangeException>("startIndex", () => Array.FindLastIndex(new int[3], 3, 1, i => i == 43));
         }
 
-        [Theory]
-        public static void ConvertAll()
-        {
-            var result = Array.ConvertAll<int, int>(new int[] { }, new Converter<int, int>(i => { throw new InvalidOperationException(); }));
-            // Does not throw - no entries
-            Assert.Equal(new int[] { }, result);
-
-            var result2 = Array.ConvertAll<int, string>(new int[] { 1 }, new Converter<int, string>(i => i++.ToString()));
-            Assert.Equal(new string[] { "2" }, result2);
-
-            result2 = Array.ConvertAll<int, string>(new int[] { 1, 2 }, new Converter<int, string>(i => i++.ToString()));
-            Assert.Equal(new string[] { "2", "3" }, result2);
-
-            result2 = Array.ConvertAll<int, string>(new int[] { 1 }, new Converter<int, string>(i => null));
-            Assert.Equal(new string[] { null }, result2);
-        }
-
-        [Fact]
-        public static void ConvertAll_Invalid()
-        {
-            Assert.Throws<ArgumentNullException>("array", () => { Array.ConvertAll<short, short>(null, i => i); });  // Array is null
-            Assert.Throws<ArgumentNullException>("converter", () => { Array.ConvertAll<string, string>(new string[] { }, null); }); // Converter is null
-            Assert.Throws<InvalidOperationException>(() => {
-                Array.ConvertAll<string, string>(new string[] { "x" }, i => { throw new InvalidOperationException(); }); // Converter throws
-            });
-        }
-
         public static IEnumerable<object[]> GetEnumerator_TestData()
         {
             yield return new object[] { new int[0] };
@@ -1272,24 +1069,6 @@ namespace System.Tests
             Assert.Throws<ArgumentOutOfRangeException>("count", () => Array.IndexOf(stringArray, "", stringArray.Length, 1));
         }
 
-        [Fact]
-        public static void IsFixedSize()
-        {
-            Assert.Equal(true, new string[] { }.IsFixedSize);
-        }
-
-        [Fact]
-        public static void IsReadOnly()
-        {
-            Assert.Equal(false, new int[] { }.IsReadOnly);
-        }
-
-        [Fact]
-        public static void IsSynchronized()
-        {
-            Assert.Equal(false, new int[] { }.IsSynchronized);
-        }
-
         public static IEnumerable<object[]> LastIndexOf_NonGeneric_TestData()
         {
             var stringArray = new string[] { null, null, "Hello", "Hello", "Goodbye", "Goodbye", null, null };
@@ -1407,20 +1186,6 @@ namespace System.Tests
             // Count > startIndex + 1
             Assert.Throws<ArgumentOutOfRangeException>("endIndex", () => Array.LastIndexOf(intArray, "", 2, 4));
             Assert.Throws<ArgumentOutOfRangeException>("count", () => Array.LastIndexOf(intArray, 0, 2, 4));
-        }
-
-        [Theory]
-        [MemberData(nameof(Length_TestData))]
-        public static void Length(Array array, int expected)
-        {
-            Assert.Equal(expected, array.Length);
-            Assert.Equal(expected, array.LongLength);
-        }
-
-        public static IEnumerable<object[]> Length_TestData()
-        {
-            yield return new object[] { new object[] { }, 0 };
-            yield return new object[] { new object[] { 1, 2 }, 2 };
         }
 
         public static IEnumerable<object[]> IStructuralComparable_TestData()
@@ -2128,13 +1893,6 @@ namespace System.Tests
             Assert.Throws<IndexOutOfRangeException>(() => new int[10, 8].SetValue(1, new int[] { 1, -1 })); // Indices[1] < 0
             Assert.Throws<IndexOutOfRangeException>(() => new int[10, 8].SetValue(1, new int[] { 1, 9 })); // Indices[1] > array.GetLength(1)
         }
-
-        [Fact]
-        public static void SyncRoot_Equals_This()
-        {
-            var array = new string[] { };
-            Assert.Same(array, array.SyncRoot);
-        }
             
         public static IEnumerable<object[]> TrueForAll_TestData()
         {
@@ -2184,85 +1942,6 @@ namespace System.Tests
 
             Assert.Throws<ArgumentOutOfRangeException>("dstIndex", () => iList.CopyTo(new int[7], -1)); // Index < 0
             Assert.Throws<ArgumentException>("", () => iList.CopyTo(new int[7], 8)); // Index > destinationArray.Length
-        }
-
-        private static void VerifyArray(Array array, int rank, int[] lengths, int[] lowerBounds, int[] upperBounds, bool checkIList)
-        {
-            Assert.Equal(rank, array.Rank);
-
-            for (int i = 0; i < lengths.Length; i++)
-            {
-                Assert.Equal(lengths[i], array.GetLength(i));
-                Assert.Equal(lengths[i], array.GetLongLength(i));
-            }
-
-            for (int i = 0; i < lowerBounds.Length; i++)
-                Assert.Equal(lowerBounds[i], array.GetLowerBound(i));
-
-            for (int i = 0; i < upperBounds.Length; i++)
-                Assert.Equal(upperBounds[i], array.GetUpperBound(i));
-
-
-            Assert.Throws<IndexOutOfRangeException>(() => array.GetLength(-1)); // Dimension < 0
-            Assert.Throws<IndexOutOfRangeException>(() => array.GetLength(array.Rank)); // Dimension >= array.Rank
-
-            Assert.Throws<IndexOutOfRangeException>(() => array.GetLowerBound(-1)); // Dimension < 0
-            Assert.Throws<IndexOutOfRangeException>(() => array.GetLowerBound(array.Rank)); // Dimension >= array.Rank
-
-            Assert.Throws<IndexOutOfRangeException>(() => array.GetUpperBound(-1)); // Dimension < 0
-            Assert.Throws<IndexOutOfRangeException>(() => array.GetUpperBound(array.Rank)); // Dimension >= array.Rank
-
-            if (checkIList)
-            {
-                VerifyArrayAsIList(array);
-            }
-
-            Assert.Equal(array, array.SyncRoot);
-
-            Assert.False(array.IsSynchronized);
-            Assert.True(array.IsFixedSize);
-            Assert.False(array.IsReadOnly);
-        }
-
-        private static void VerifyArrayAsIList(Array array)
-        {
-            IList ils = array;
-            Assert.Equal(array.Length, ils.Count);
-
-            Assert.Equal(array, ils.SyncRoot);
-
-            Assert.False(ils.IsSynchronized);
-            Assert.True(ils.IsFixedSize);
-            Assert.False(ils.IsReadOnly);
-
-            Assert.Throws<NotSupportedException>(() => ils.Add(2));
-            Assert.Throws<NotSupportedException>(() => ils.Insert(0, 2));
-            Assert.Throws<NotSupportedException>(() => ils.Remove(0));
-            Assert.Throws<NotSupportedException>(() => ils.RemoveAt(0));
-
-            if (array.Rank == 1)
-            {
-                for (int i = 0; i < array.Length; i++)
-                {
-                    object obj = ils[i];
-                    Assert.Equal(array.GetValue(i), obj);
-                    Assert.True(ils.Contains(obj));
-                    Assert.Equal(i, ils.IndexOf(obj));
-                }
-
-                Assert.False(ils.Contains(null));
-                Assert.False(ils.Contains(999));
-                Assert.Equal(-1, ils.IndexOf(null));
-                Assert.Equal(-1, ils.IndexOf(999));
-
-                ils[1] = 10;
-                Assert.Equal(10, ils[1]);
-            }
-            else
-            {
-                Assert.Throws<RankException>(() => ils.Contains(null));
-                Assert.Throws<RankException>(() => ils.IndexOf(null));
-            }
         }
 
         public enum TestEnum
