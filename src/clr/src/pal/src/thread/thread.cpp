@@ -1781,7 +1781,7 @@ CorUnix::InitializeGlobalThreadData(
             CPalThread::s_dwDefaultThreadStackSize = dw;
         }
 
-        InternalFree(pszStackSize);
+        free(pszStackSize);
     }
 
     return palError;

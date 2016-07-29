@@ -38,7 +38,7 @@ AutoFreeBuffer::~AutoFreeBuffer()
 {
     if (!m_cancel && m_buffer != nullptr)
     {
-        InternalFree(m_buffer);
+        free(m_buffer);
     }
 }
 
