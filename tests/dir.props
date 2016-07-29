@@ -1,4 +1,4 @@
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+﻿<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 
   <!--
     $(OS) is set to Unix/Windows_NT. This comes from an environment variable on Windows and MSBuild on Unix.
@@ -43,7 +43,7 @@
     <ValidatePackageVersions>true</ValidatePackageVersions>
     <ProhibitFloatingDependencies>true</ProhibitFloatingDependencies>
 
-    <CoreFxExpectedPrerelease>rc3-24117-00</CoreFxExpectedPrerelease>
+    <CoreFxExpectedPrerelease>beta-24328-05</CoreFxExpectedPrerelease>
     <CoreClrPackageVersion>1.0.4-beta-24325-02</CoreClrPackageVersion>
 
     <CoreFxVersionsIdentityRegex>^(?i)((System\..*)|(Microsoft\.CSharp)|(Microsoft\.NETCore.*)|(Microsoft\.Win32\..*)|(Microsoft\.VisualBasic))(?&lt;!TestData)$</CoreFxVersionsIdentityRegex>
