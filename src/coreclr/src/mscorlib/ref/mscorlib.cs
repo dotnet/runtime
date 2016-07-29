@@ -171,13 +171,14 @@ namespace System
         public ArithmeticException(string message, System.Exception innerException) { }
     }
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
-    public abstract partial class Array : System.Collections.ICollection, System.Collections.IEnumerable, System.Collections.IList, System.Collections.IStructuralComparable, System.Collections.IStructuralEquatable
+    public abstract partial class Array : System.Collections.ICollection, System.Collections.IEnumerable, System.Collections.IList, System.Collections.IStructuralComparable, System.Collections.IStructuralEquatable, System.ICloneable
     {
         internal Array() { }
         public bool IsFixedSize { get { return default(bool); } }
         public bool IsReadOnly { get { return default(bool); } }
         public bool IsSynchronized { get { return default(bool); } }
         public int Length { [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)]get { return default(int); } }
+        public long LongLength { [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)]get { return default(long); } }
         public int Rank { [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)]get { return default(int); } }
         public object SyncRoot { get { return default(object); } }
         int System.Collections.ICollection.Count { get { return default(int); } }
@@ -207,20 +208,28 @@ namespace System
         
         [System.Security.SecuritySafeCriticalAttribute]
         public static void ConstrainedCopy(System.Array sourceArray, int sourceIndex, System.Array destinationArray, int destinationIndex, int length) { }
-        
+        public static TOutput[] ConvertAll<TInput, TOutput>(TInput[] array, System.Converter<TInput, TOutput> converter) { return default(TOutput[]); }
+
         [System.Security.SecuritySafeCriticalAttribute]
         public static void Copy(System.Array sourceArray, System.Array destinationArray, int length) { }
-        
+        public static void Copy(System.Array sourceArray, System.Array destinationArray, long length) { }
         [System.Security.SecuritySafeCriticalAttribute]
         public static void Copy(System.Array sourceArray, int sourceIndex, System.Array destinationArray, int destinationIndex, int length) { }
+        public static void Copy(System.Array sourceArray, long sourceIndex, System.Array destinationArray, long destinationIndex, long length) { }
         public void CopyTo(System.Array array, int index) { }
+        public void CopyTo(System.Array array, long index) { }
         [System.Security.SecuritySafeCriticalAttribute]
         public static System.Array CreateInstance(System.Type elementType, int length) { return default(System.Array); }
+        [System.Security.SecuritySafeCriticalAttribute]
+        public static System.Array CreateInstance(System.Type elementType, int length1, int length2) { return default(System.Array); }
+        [System.Security.SecuritySafeCriticalAttribute]
+        public static System.Array CreateInstance(System.Type elementType, int length1, int length2, int length3) { return default(System.Array); }
         [System.Security.SecuritySafeCriticalAttribute]
         public static System.Array CreateInstance(System.Type elementType, params int[] lengths) { return default(System.Array); }
         [System.Security.SecuritySafeCriticalAttribute]
         public static System.Array CreateInstance(System.Type elementType, int[] lengths, int[] lowerBounds) { return default(System.Array); }
-        
+        public static System.Array CreateInstance(System.Type elementType, params long[] lengths) { return default(System.Array); }
+
         public static T[] Empty<T>() { return default(T[]); }
         public static bool Exists<T>(T[] array, System.Predicate<T> match) { return default(bool); }
         public static T Find<T>(T[] array, System.Predicate<T> match) { return default(T); }
@@ -236,6 +245,7 @@ namespace System
         public System.Collections.IEnumerator GetEnumerator() { return default(System.Collections.IEnumerator); }
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)][System.Security.SecuritySafeCriticalAttribute]
         public int GetLength(int dimension) { return default(int); }
+        public long GetLongLength(int dimension) { return default(long); }
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)]
         [System.Security.SecuritySafeCriticalAttribute]
         public int GetLowerBound(int dimension) { return default(int); }
@@ -245,8 +255,16 @@ namespace System
         [System.Security.SecuritySafeCriticalAttribute]
         public object GetValue(int index) { return default(object); }
         [System.Security.SecuritySafeCriticalAttribute]
+        public object GetValue(int index1, int index2) { return default(object); }
+        [System.Security.SecuritySafeCriticalAttribute]
+        public object GetValue(int index1, int index2, int index3) { return default(object); }
+        [System.Security.SecuritySafeCriticalAttribute]
         public object GetValue(params int[] indices) { return default(object); }
-        
+        public object GetValue(long index) { return default(object); }
+        public object GetValue(long index1, long index2) { return default(object); }
+        public object GetValue(long index1, long index2, long index3) { return default(object); }
+        public object GetValue(params long[] indices) { return default(object); }
+
         public static int IndexOf(System.Array array, object value) { return default(int); }
         
         public static int IndexOf(System.Array array, object value, int startIndex) { return default(int); }
@@ -278,8 +296,16 @@ namespace System
         [System.Security.SecuritySafeCriticalAttribute]
         public void SetValue(object value, int index) { }
         [System.Security.SecuritySafeCriticalAttribute]
+        public void SetValue(object value, int index1, int index2) { }
+        [System.Security.SecuritySafeCriticalAttribute]
+        public void SetValue(object value, int index1, int index2, int index3) { }
+        [System.Security.SecuritySafeCriticalAttribute]
         public void SetValue(object value, params int[] indices) { }
-        
+        public void SetValue(object value, long index) { }
+        public void SetValue(object value, long index1, long index2) { }
+        public void SetValue(object value, long index1, long index2, long index3) { }
+        public void SetValue(object value, params long[] indices) { }
+
         public static void Sort(System.Array array) { }
         
         public static void Sort(System.Array keys, System.Array items) { }
