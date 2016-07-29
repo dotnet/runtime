@@ -36,7 +36,7 @@ To update a package that is validated, follow these steps:
 1. Edit `ValidationPattern` item(s) in `dir.props` in the CoreFX root.
 2. Run the dependency update target in the repository root using this command:
 
-        build.cmd /t:UpdateInvalidPackageVersions
+        build.cmd -UpdateInvalidPackageVersions
 
 3. Commit the automated updates in an independent commit, isolating them from other changes. This makes pull requests easier to review.
 

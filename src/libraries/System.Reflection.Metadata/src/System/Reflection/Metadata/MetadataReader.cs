@@ -1191,7 +1191,6 @@ namespace System.Reflection.Metadata
 
         public CustomAttributeHandleCollection GetCustomAttributes(EntityHandle handle)
         {
-            Debug.Assert(!handle.IsNil);
             return new CustomAttributeHandleCollection(this, handle);
         }
 
@@ -1418,7 +1417,6 @@ namespace System.Reflection.Metadata
 
         public CustomDebugInformationHandleCollection GetCustomDebugInformation(EntityHandle handle)
         {
-            Debug.Assert(!handle.IsNil);
             return new CustomDebugInformationHandleCollection(this, handle);
         }
 

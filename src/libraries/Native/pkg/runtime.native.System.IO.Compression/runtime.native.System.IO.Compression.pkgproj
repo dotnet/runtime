@@ -56,6 +56,9 @@
     <ProjectReference Include="win\runtime.native.System.IO.Compression.pkgproj">
       <Platform>arm</Platform>
     </ProjectReference>
+    <ProjectReference Include="win\runtime.native.System.IO.Compression.pkgproj">
+      <Platform>arm64</Platform>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

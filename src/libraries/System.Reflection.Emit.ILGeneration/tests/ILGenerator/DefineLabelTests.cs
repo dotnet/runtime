@@ -2,37 +2,23 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using TestLibrary;
-using System.Reflection;
-using System.Reflection.Emit;
 using Xunit;
 
-namespace System.Reflection.Emit.ILGeneration.Tests
+namespace System.Reflection.Emit.Tests
 {
     public class ILGeneratorDefineLabel
     {
-        private ModuleBuilder modHelper(AssemblyBuilder asmbuild)
-        {
-            return (ModuleBuilder)asmbuild.ManifestModule;
-        }
-
         [Fact]
-        public void PosTest1()
+        public void DefineLabel_DoesNotThrow()
         {
-            string name = "Assembly1";
-            AssemblyName asmname = new AssemblyName(name);
-            AssemblyBuilder asmbuild = AssemblyBuilder.DefineDynamicAssembly(asmname, AssemblyBuilderAccess.Run);
-            ModuleBuilder modbuild = TestLibrary.Utilities.GetModuleBuilder(asmbuild, "Module1");
-            TypeBuilder tb = modbuild.DefineType("C1", TypeAttributes.Public);
-            MethodBuilder mbuild = tb.DefineMethod("meth1", MethodAttributes.Public | MethodAttributes.Static, typeof(bool), new Type[] { });
-            ILGenerator ilgen = mbuild.GetILGenerator();
-
-            // if no exceptions are thrown the test passes
-            // we use labels in other tests in the code so no need to verify that they were placed correctly here.
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
+            MethodBuilder method = type.DefineMethod("meth1", MethodAttributes.Public | MethodAttributes.Static, typeof(bool), new Type[0]);
+            ILGenerator ilGenerator = method.GetILGenerator();
+            
+            // We use labels in other tests in the code so no need to verify that they were placed correctly here.
             for (int i = 0; i < 17; ++i)
             {
-                ilgen.DefineLabel();
+                ilGenerator.DefineLabel();
             }
         }
     }

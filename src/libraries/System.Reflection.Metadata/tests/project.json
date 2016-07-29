@@ -22,6 +22,7 @@
     "System.Threading.Tasks": "4.0.12-beta-devapi-24326-01",
     "System.Threading.Tasks.Parallel": "4.0.2-beta-devapi-24326-01",
     "System.Security.Cryptography.Algorithms": "4.2.1-beta-devapi-24326-01",
+    "System.ValueTuple": "4.0.1-beta-devapi-24326-01",
     "test-runtime": {
       "target": "project",
       "exclude": "compile"

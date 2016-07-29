@@ -2,64 +2,137 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using TestLibrary;
-using System.Reflection;
-using System.Reflection.Emit;
 using Xunit;
 
-namespace System.Reflection.Emit.ILGeneration.Tests
+namespace System.Reflection.Emit.Tests
 {
     public class ILGeneratorDeclareLocal
     {
-        private ModuleBuilder modHelper(AssemblyBuilder asmbuild)
+        public static Type[] TestData => new Type[]
         {
-            return (ModuleBuilder)asmbuild.ManifestModule;
+            typeof(int),
+            typeof(object),
+            typeof(TestClassLocal1),
+            typeof(TestStructLocal1),
+            typeof(TestDelegateLocal1),
+            typeof(TestEnumLocal1),
+            typeof(TestExceptionLocal1),
+            typeof(void)
+        };
+
+        [Fact]
+        public void Basic()
+        {
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.NotPublic);
+            MethodBuilder method = type.DefineMethod("TestMethod", MethodAttributes.Public | MethodAttributes.Static);
+            ILGenerator generator = method.GetILGenerator();
+            VerifyDeclareLocal(generator);
         }
 
         [Fact]
-        public void NegTest1()
+        public void BeginScope()
         {
-            string name = "Assembly1";
-            AssemblyName asmname = new AssemblyName();
-            asmname.Name = name;
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.NotPublic);
+            MethodBuilder method = type.DefineMethod("TestMethod", MethodAttributes.Public | MethodAttributes.Static);
+            ILGenerator generator = method.GetILGenerator();
 
-            AssemblyBuilder asmbuild = AssemblyBuilder.DefineDynamicAssembly(asmname, AssemblyBuilderAccess.Run);
-            ModuleBuilder modbuild = TestLibrary.Utilities.GetModuleBuilder(asmbuild, "Module1");
-            MethodBuilder methbuild = modbuild.DefineGlobalMethod("method1", MethodAttributes.Public | MethodAttributes.Static, typeof(Type), new Type[] { });
-            ILGenerator ilgen = methbuild.GetILGenerator();
-            Assert.Throws<ArgumentNullException>(() => { ilgen.DeclareLocal(null); });
+            generator.BeginScope();
+            VerifyDeclareLocal(generator);
         }
 
         [Fact]
-        public void NegTest2()
+        public void BeginExceptionBlock()
         {
-            string name = "Assembly1";
-            AssemblyName asmname = new AssemblyName();
-            asmname.Name = name;
-            AssemblyBuilder asmbuild = AssemblyBuilder.DefineDynamicAssembly(asmname, AssemblyBuilderAccess.Run);
-            ModuleBuilder modbuild = Utilities.GetModuleBuilder(asmbuild, "Module1");
-            TypeBuilder tpbuild = modbuild.DefineType("C1");
-            MethodBuilder methbuild = tpbuild.DefineMethod("method1", MethodAttributes.Public | MethodAttributes.Static, typeof(Type), new Type[] { });
-            ILGenerator ilgen = methbuild.GetILGenerator();
-            ilgen.Emit(OpCodes.Ret);
-            tpbuild.CreateTypeInfo();
-            Assert.Throws<InvalidOperationException>(() => { ilgen.DeclareLocal(typeof(int)); });
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.NotPublic);
+            MethodBuilder method = type.DefineMethod("TestMethod", MethodAttributes.Public | MethodAttributes.Static);
+            ILGenerator generator = method.GetILGenerator();
+
+            generator.BeginExceptionBlock();
+            VerifyDeclareLocal(generator);
         }
 
         [Fact]
-        public void NegTest3()
+        public void BeginCatchBlock()
         {
-            string name = "Assembly1";
-            AssemblyName asmname = new AssemblyName();
-            asmname.Name = name;
-            AssemblyBuilder asmbuild = AssemblyBuilder.DefineDynamicAssembly(asmname, AssemblyBuilderAccess.Run);
-            ModuleBuilder modbuild = TestLibrary.Utilities.GetModuleBuilder(asmbuild, "Module1");
-            MethodBuilder methbuild = modbuild.DefineGlobalMethod("method1", MethodAttributes.Public | MethodAttributes.Static, typeof(Type), new Type[] { });
-            ILGenerator ilgen = methbuild.GetILGenerator();
-            ilgen.Emit(OpCodes.Ret);
-            modbuild.CreateGlobalFunctions();
-            Assert.Throws<InvalidOperationException>(() => { ilgen.DeclareLocal(typeof(int)); });
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.NotPublic);
+            MethodBuilder method = type.DefineMethod("PosTest4_Method", MethodAttributes.Public | MethodAttributes.Static);
+            ILGenerator generator = method.GetILGenerator();
+
+            generator.BeginExceptionBlock();
+            generator.BeginCatchBlock(typeof(TestExceptionLocal1));
+            VerifyDeclareLocal(generator);
         }
+
+        [Fact]
+        public void BeginFinallyBlock()
+        {
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.NotPublic);
+            MethodBuilder method = type.DefineMethod("PosTest5_Method", MethodAttributes.Public | MethodAttributes.Static);
+            ILGenerator generator = method.GetILGenerator();
+
+            generator.BeginExceptionBlock();
+            generator.BeginFinallyBlock();
+            VerifyDeclareLocal(generator);
+        }
+
+        [Fact]
+        public void AbstractPublicMethod()
+        {
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Abstract | TypeAttributes.Public);
+            MethodBuilder method = type.DefineMethod("PosTest6_Method", MethodAttributes.Abstract | MethodAttributes.Public);
+            ILGenerator generator = method.GetILGenerator();
+            VerifyDeclareLocal(generator);
+        }
+
+        [Fact]
+        public void DeclareLocal_NullLocalType_ThrowsArgumentNullException()
+        {
+            ModuleBuilder module = Helpers.DynamicModule();
+            MethodBuilder method = module.DefineGlobalMethod("Method", MethodAttributes.Public | MethodAttributes.Static, typeof(Type), new Type[0]);
+            ILGenerator ilGenerator = method.GetILGenerator();
+            Assert.Throws<ArgumentNullException>("localType", () => ilGenerator.DeclareLocal(null));
+            Assert.Throws<ArgumentNullException>("localType", () => ilGenerator.DeclareLocal(null, false));
+        }
+
+        [Fact]
+        public void DeclareLocal_TypeCreated_ThrowsInvalidOperationException()
+        {
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.NotPublic);
+            MethodBuilder method = type.DefineMethod("Method", MethodAttributes.Public | MethodAttributes.Static, typeof(Type), new Type[0]);
+            ILGenerator ilGenerator = method.GetILGenerator();
+            ilGenerator.Emit(OpCodes.Ret);
+
+            type.CreateTypeInfo();
+            Assert.Throws<InvalidOperationException>(() => ilGenerator.DeclareLocal(typeof(int)));
+        }
+
+        [Fact]
+        public void DeclareLocal_GlobalFunctionsCreated_ThrowsInvalidOperationException()
+        {
+            ModuleBuilder module = Helpers.DynamicModule();
+            MethodBuilder method = module.DefineGlobalMethod("method1", MethodAttributes.Public | MethodAttributes.Static, typeof(Type), new Type[0]);
+            ILGenerator ilGenerator = method.GetILGenerator();
+            ilGenerator.Emit(OpCodes.Ret);
+
+            module.CreateGlobalFunctions();
+            Assert.Throws<InvalidOperationException>(() => ilGenerator.DeclareLocal(typeof(int)));
+        }
+
+        private void VerifyDeclareLocal(ILGenerator generator)
+        {
+            for (int i = 0; i < TestData.Length; i++)
+            {
+                LocalBuilder local = generator.DeclareLocal(TestData[i]);
+                Assert.Equal(TestData[i], local.LocalType);
+                Assert.Equal(i, local.LocalIndex);
+                Assert.False(local.IsPinned);
+            }
+        }
+
+        public class TestClassLocal1 { }
+        public struct TestStructLocal1 { }
+        public delegate void TestDelegateLocal1(TestStructLocal1 ts);
+        public enum TestEnumLocal1 { DEFAULT }
+        public class TestExceptionLocal1 : Exception { }
     }
 }

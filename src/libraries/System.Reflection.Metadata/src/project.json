@@ -14,7 +14,9 @@
     "System.Runtime.InteropServices": "4.0.0",
     "System.Text.Encoding": "4.0.0",
     "System.Text.Encoding.Extensions": "4.0.0",
-    "System.Threading": "4.0.0"
+    "System.Threading": "4.0.0",
+    "System.IO.Compression": "4.0.0",
+    "System.ValueTuple": "4.0.1-beta-devapi-24326-01"
   },
   "frameworks": {
     "netstandard1.0": {

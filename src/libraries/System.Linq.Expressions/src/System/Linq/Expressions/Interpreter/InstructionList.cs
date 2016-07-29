@@ -209,6 +209,21 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
+        // "Un-emit" the previous instruction.
+        // Useful if the instruction was emitted in the calling method, and covers the more usual case.
+        // In particular, calling this after an EmitPush() or EmitDup() costs about the same as adding
+        // an EmitPop() to undo it at compile time, and leaves a slightly leaner instruction list.
+        public void UnEmit()
+        {
+            Instruction instruction = _instructions[_instructions.Count - 1];
+            _instructions.RemoveAt(_instructions.Count - 1);
+
+            _currentContinuationsDepth -= instruction.ProducedContinuations;
+            _currentContinuationsDepth += instruction.ConsumedContinuations;
+            _currentStackDepth -= instruction.ProducedStack;
+            _currentStackDepth += instruction.ConsumedStack;
+        }
+
         /// <summary>
         /// Attaches a cookie to the last emitted instruction.
         /// </summary>

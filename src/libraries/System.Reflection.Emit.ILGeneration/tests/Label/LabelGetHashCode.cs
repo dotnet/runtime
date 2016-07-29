@@ -2,55 +2,32 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Reflection.Emit;
-using System.Reflection;
-using System.Threading;
 using Xunit;
 
-namespace System.Reflection.Emit.ILGeneration.Tests
+namespace System.Reflection.Emit.Tests
 {
     public class LabelGetHashCode
     {
-        private const string TestDynamicAssemblyName = "TestDynamicAssembly";
-        private const string TestModuleName = "TestModuleName";
-        private const string TestTypeName = "TestTypeName";
-        private const string TestMethodName = "TestMethodName";
-
-        private AssemblyBuilder CreateDynamicAssembly(string name, AssemblyBuilderAccess access)
-        {
-            AssemblyName myAsmName = new AssemblyName();
-            myAsmName.Name = name;
-            AssemblyBuilder myAsmBuilder = AssemblyBuilder.DefineDynamicAssembly(myAsmName, access);
-            return myAsmBuilder;
-        }
-
         [Fact]
-        public void PosTest1()
+        public void GetHashCode_NewInstance_ReturnsZero()
         {
             Label label1 = new Label();
             Label label2 = new Label();
-            int la1hash = label1.GetHashCode();
-            int la2hash = label2.GetHashCode();
-            Assert.Equal(la1hash, 0);
 
-            Assert.Equal(la1hash, la2hash);
+            Assert.Equal(0, label1.GetHashCode());
+            Assert.Equal(label2.GetHashCode(), label1.GetHashCode());
         }
 
         [Fact]
-        public void PosTest2()
+        public void GetHashCode_CreatedByILGenerator_ReturnsIndex()
         {
-            AssemblyBuilder assemblyBuilder = this.CreateDynamicAssembly(TestDynamicAssemblyName, AssemblyBuilderAccess.Run);
-            ModuleBuilder moduleBuilder = TestLibrary.Utilities.GetModuleBuilder(assemblyBuilder, TestModuleName);
-            TypeBuilder typeBuilder = moduleBuilder.DefineType(TestTypeName);
-            MethodBuilder methodBuilder = typeBuilder.DefineMethod(TestMethodName, MethodAttributes.Public);
-            ILGenerator iLGenerator = methodBuilder.GetILGenerator();
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.NotPublic);
+            MethodBuilder method = type.DefineMethod("Method", MethodAttributes.Public);
+            ILGenerator ilGenerator = method.GetILGenerator();
             for (int i = 0; i < 1000; i++)
             {
-                Label label = iLGenerator.DefineLabel();
-                int hash = label.GetHashCode();
-
-                Assert.Equal(hash, i);
+                Label label = ilGenerator.DefineLabel();
+                Assert.Equal(i, label.GetHashCode());
             }
         }
     }
