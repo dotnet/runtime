@@ -2,7 +2,7 @@
   "frameworks": {
     "netstandard1.3": {
       "dependencies": {
-        "Microsoft.TargetingPack.Private.CoreCLR": "1.0.2-beta-24328-01",
+        "Microsoft.TargetingPack.Private.CoreCLR": "1.0.2-beta-24329-03",
         "System.IO.FileSystem": "4.0.2-beta-24327-03",
         "System.Reflection.Metadata": "1.4.1-beta-24327-03",
         "System.Collections.Immutable": "1.2.1-beta-24327-03"
