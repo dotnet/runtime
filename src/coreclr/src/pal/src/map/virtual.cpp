@@ -8,7 +8,7 @@
 
 Module Name:
 
-    virtual.c
+    virtual.cpp
 
 Abstract:
 
@@ -70,8 +70,79 @@ static LPVOID ReserveVirtualMemory(
 
 
 // A memory allocator that allocates memory from a pre-reserved region
-// of virtual memory that is located near the coreclr library.
+// of virtual memory that is located near the CoreCLR library.
 static ExecutableMemoryAllocator g_executableMemoryAllocator;
+
+//
+//
+// Virtual Memory Logging
+//
+// We maintain a lightweight in-memory circular buffer recording virtual
+// memory operations so that we can better diagnose failures and crashes
+// caused by one of these operations mishandling memory in some way.
+//
+//
+namespace VirtualMemoryLogging
+{
+    // Specifies the operation being logged
+    enum class VirtualOperation
+    {
+        Allocate = 0x10,
+        Reserve = 0x20,
+        Commit = 0x30,
+        Decommit = 0x40,
+        Release = 0x50,
+    };
+
+    // Indicates that the attempted operation has failed
+    const DWORD FailedOperationMarker = 0x80000000;
+
+    // An entry in the in-memory log
+    struct LogRecord
+    {
+        LONG RecordId;
+        DWORD Operation;
+        LPVOID CurrentThread;
+        LPVOID RequestedAddress;
+        LPVOID ReturnedAddress;
+        SIZE_T Size;
+        DWORD AllocationType;
+        DWORD Protect;
+    };
+
+    // Maximum number of records in the in-memory log
+    const LONG MaxRecords = 128;
+
+    // Buffer used to store the logged data
+    volatile LogRecord logRecords[MaxRecords];
+
+    // Current record number. Use (recordNumber % MaxRecords) to determine
+    // the current position in the circular buffer.
+    volatile LONG recordNumber = 0;
+
+    // Record an entry in the in-memory log
+    void LogVaOperation(
+        IN VirtualOperation operation,
+        IN LPVOID requestedAddress,
+        IN SIZE_T size,
+        IN DWORD flAllocationType,
+        IN DWORD flProtect,
+        IN LPVOID returnedAddress,
+        IN BOOL result)
+    {
+        LONG i = InterlockedIncrement(&recordNumber) - 1;
+        LogRecord* curRec = (LogRecord*)&logRecords[i % MaxRecords];
+
+        curRec->RecordId = i;
+        curRec->CurrentThread = (LPVOID)pthread_self();
+        curRec->RequestedAddress = requestedAddress;
+        curRec->ReturnedAddress = returnedAddress;
+        curRec->Size = size;
+        curRec->AllocationType = flAllocationType;
+        curRec->Protect = flProtect;
+        curRec->Operation = static_cast<DWORD>(operation) | (result ? 0 : FailedOperationMarker);
+    }
+}
 
 /*++
 Function:
@@ -88,7 +159,7 @@ extern "C"
 BOOL
 VIRTUALInitialize(bool initializeExecutableMemoryAllocator)
 {
-    TRACE( "Initializing the Virtual Critical Sections. \n" );
+    TRACE("Initializing the Virtual Critical Sections. \n");
 
     InternalInitializeCriticalSection(&virtual_critsec);
 
@@ -226,7 +297,7 @@ static INT VIRTUALGetAllocationType( SIZE_T Index, CONST PCMI pInformation )
  *  IN BYTE* pBitArray - A pointer the array to be manipulated.
  *
  *  Returns TRUE on success, FALSE otherwise.
- *  Turn on/off memory staus bits.
+ *  Turn on/off memory status bits.
  *         
  */
 static BOOL VIRTUALSetPageBits ( UINT nStatus, SIZE_T nStartingBit, 
@@ -445,20 +516,20 @@ static BOOL VIRTUALReleaseMemory( PCMI pMemoryToBeReleased )
         pVirtualMemory = pMemoryToBeReleased->pNext;
         if ( pMemoryToBeReleased->pNext )
         {
-            pMemoryToBeReleased->pNext->pLast = NULL;
+            pMemoryToBeReleased->pNext->pPrevious = NULL;
         }
     }
     else /* Could be anywhere in the list. */
     {
         /* Delete the entry from the linked list. */
-        if ( pMemoryToBeReleased->pLast )
+        if ( pMemoryToBeReleased->pPrevious )
         {
-            pMemoryToBeReleased->pLast->pNext = pMemoryToBeReleased->pNext;
+            pMemoryToBeReleased->pPrevious->pNext = pMemoryToBeReleased->pNext;
         }
         
         if ( pMemoryToBeReleased->pNext )
         {
-            pMemoryToBeReleased->pNext->pLast = pMemoryToBeReleased->pLast;
+            pMemoryToBeReleased->pNext->pPrevious = pMemoryToBeReleased->pPrevious;
         }
     }
 
@@ -594,7 +665,7 @@ static void VIRTUALDisplayList( void  )
         DBGOUT( "\t accessProtection %d \n", p->accessProtection );
         DBGOUT( "\t allocationType %d \n", p->allocationType );
         DBGOUT( "\t pNext %p \n", p->pNext );
-        DBGOUT( "\t pLast %p \n", p->pLast );
+        DBGOUT( "\t pLast %p \n", p->pPrevious );
 
         count++;
         p = p->pNext;
@@ -604,6 +675,30 @@ static void VIRTUALDisplayList( void  )
 }
 #endif
 
+#ifdef DEBUG
+void VerifyRightEntry(PCMI pEntry)
+{
+    volatile PCMI pRight = pEntry->pNext;
+    SIZE_T endAddress;
+    if (pRight != nullptr)
+    {
+        endAddress = ((SIZE_T)pEntry->startBoundary) + pEntry->memSize;
+        _ASSERTE(endAddress <= (SIZE_T)pRight->startBoundary);
+    }
+}
+
+void VerifyLeftEntry(PCMI pEntry)
+{
+    volatile PCMI pLeft = pEntry->pPrevious;
+    SIZE_T endAddress;
+    if (pLeft != NULL)
+    {
+        endAddress = ((SIZE_T)pLeft->startBoundary) + pLeft->memSize;
+        _ASSERTE(endAddress <= (SIZE_T)pEntry->startBoundary);
+    }
+}
+#endif // DEBUG
+
 /****
  *  VIRTUALStoreAllocationInfo()
  *
@@ -611,107 +706,106 @@ static void VIRTUALDisplayList( void  )
  *      NOTE: The caller must own the critical section.
  */
 static BOOL VIRTUALStoreAllocationInfo( 
-            IN UINT_PTR startBoundary,      /* Start of the region. */
-            IN SIZE_T memSize,            /* Size of the region. */
+            IN UINT_PTR startBoundary,  /* Start of the region. */
+            IN SIZE_T memSize,          /* Size of the region. */
             IN DWORD flAllocationType,  /* Allocation Types. */
             IN DWORD flProtection )     /* Protections flags on the memory. */
 {
-    PCMI pNewEntry       = NULL;
-    PCMI pMemInfo        = NULL;
-    BOOL bRetVal         = TRUE;
+    PCMI pNewEntry       = nullptr;
+    PCMI pMemInfo        = nullptr;
     SIZE_T nBufferSize   = 0;
 
-    if ( ( memSize & VIRTUAL_PAGE_MASK ) != 0 )
+    if ((memSize & VIRTUAL_PAGE_MASK) != 0)
     {
-        ERROR( "The memory size was not in multiples of the page size. \n" );
-        bRetVal =  FALSE;
-        goto done;
+        ERROR("The memory size was not a multiple of the page size. \n");
+        return FALSE;
     }
-    
-    if ( !(pNewEntry = ( PCMI )InternalMalloc( sizeof( *pNewEntry )) ) )
+
+    if (!(pNewEntry = (PCMI)InternalMalloc(sizeof(*pNewEntry))))
     {
         ERROR( "Unable to allocate memory for the structure.\n");
-        bRetVal =  FALSE;
-        goto done;
+        return FALSE;
     }
-    
+
     pNewEntry->startBoundary    = startBoundary;
     pNewEntry->memSize          = memSize;
     pNewEntry->allocationType   = flAllocationType;
     pNewEntry->accessProtection = flProtection;
-    
+
     nBufferSize = memSize / VIRTUAL_PAGE_SIZE / CHAR_BIT;
-    if ( ( memSize / VIRTUAL_PAGE_SIZE ) % CHAR_BIT != 0 )
+    if ((memSize / VIRTUAL_PAGE_SIZE) % CHAR_BIT != 0)
     {
         nBufferSize++;
     }
-    
-    pNewEntry->pAllocState      = (BYTE*)InternalMalloc( nBufferSize  );
-    pNewEntry->pProtectionState = (BYTE*)InternalMalloc( (memSize / VIRTUAL_PAGE_SIZE)  );
+
+    pNewEntry->pAllocState      = (BYTE*)InternalMalloc(nBufferSize);
+    pNewEntry->pProtectionState = (BYTE*)InternalMalloc((memSize / VIRTUAL_PAGE_SIZE));
 
     if (pNewEntry->pAllocState && pNewEntry->pProtectionState)
     {
         /* Set the intial allocation state, and initial allocation protection. */
-        VIRTUALSetAllocState( MEM_RESERVE, 0, nBufferSize * CHAR_BIT, pNewEntry );
-        memset( pNewEntry->pProtectionState,
-            VIRTUALConvertWinFlags( flProtection ),
-            memSize / VIRTUAL_PAGE_SIZE );
+        VIRTUALSetAllocState(MEM_RESERVE, 0, nBufferSize * CHAR_BIT, pNewEntry);
+        memset(pNewEntry->pProtectionState,
+               VIRTUALConvertWinFlags(flProtection),
+               memSize / VIRTUAL_PAGE_SIZE);
     }
     else
     {
         ERROR( "Unable to allocate memory for the structure.\n");
-        bRetVal =  FALSE;
 
-        if (pNewEntry->pProtectionState) InternalFree( pNewEntry->pProtectionState );
-        pNewEntry->pProtectionState = NULL;
+        if (pNewEntry->pProtectionState) InternalFree(pNewEntry->pProtectionState);
+        pNewEntry->pProtectionState = nullptr;
 
-        if (pNewEntry->pAllocState) InternalFree( pNewEntry->pAllocState );
-        pNewEntry->pAllocState = NULL;
+        if (pNewEntry->pAllocState) InternalFree(pNewEntry->pAllocState);
+        pNewEntry->pAllocState = nullptr;
 
-        InternalFree( pNewEntry );
-        pNewEntry = NULL;
-        
-        goto done;
+        InternalFree(pNewEntry);
+        pNewEntry = nullptr;
+
+        return FALSE;
     }
     
     pMemInfo = pVirtualMemory;
 
-    if ( pMemInfo && pMemInfo->startBoundary < startBoundary )
+    if (pMemInfo && pMemInfo->startBoundary < startBoundary)
     {
         /* Look for the correct insert point */
-        TRACE( "Looking for the correct insert location.\n");
-        while ( pMemInfo->pNext && ( pMemInfo->pNext->startBoundary < startBoundary ) ) 
+        TRACE("Looking for the correct insert location.\n");
+        while (pMemInfo->pNext && (pMemInfo->pNext->startBoundary < startBoundary))
         {
             pMemInfo = pMemInfo->pNext;
         }
-        
+
         pNewEntry->pNext = pMemInfo->pNext;
-        pNewEntry->pLast = pMemInfo;
-        
-        if ( pNewEntry->pNext ) 
+        pNewEntry->pPrevious = pMemInfo;
+
+        if (pNewEntry->pNext)
         {
-            pNewEntry->pNext->pLast = pNewEntry;
+            pNewEntry->pNext->pPrevious = pNewEntry;
         }
-        
+
         pMemInfo->pNext = pNewEntry;
     }
     else
     {
-        TRACE( "Inserting a new element into the linked list\n" );
         /* This is the first entry in the list. */
         pNewEntry->pNext = pMemInfo;
-        pNewEntry->pLast = NULL;
-        
-        if ( pNewEntry->pNext ) 
+        pNewEntry->pPrevious = nullptr;
+
+        if (pNewEntry->pNext)
         {
-            pNewEntry->pNext->pLast = pNewEntry;
+            pNewEntry->pNext->pPrevious = pNewEntry;
         }
-        
+
         pVirtualMemory = pNewEntry ;
     }
-done:
-    TRACE( "Exiting StoreAllocationInformation. \n" );
-    return bRetVal;
+
+#ifdef DEBUG
+    VerifyRightEntry(pNewEntry);
+    VerifyLeftEntry(pNewEntry);
+#endif // DEBUG
+
+    return TRUE;
 }
 
 /******
@@ -777,6 +871,15 @@ static LPVOID VIRTUALReserveMemory(
             pRetVal = NULL;
         }
     }
+
+    LogVaOperation(
+        VirtualMemoryLogging::VirtualOperation::Reserve,
+        lpAddress,
+        dwSize,
+        flAllocationType,
+        flProtect,
+        pRetVal,
+        pRetVal != NULL);
 
     InternalLeaveCriticalSection(pthrCurrent, &virtual_critsec);
     return pRetVal;
@@ -1058,6 +1161,16 @@ error:
     }
 
 done:
+
+    LogVaOperation(
+        VirtualMemoryLogging::VirtualOperation::Commit,
+        lpAddress,
+        dwSize,
+        flAllocationType,
+        flProtect,
+        pRetVal,
+        pRetVal != NULL);
+
     return pRetVal;
 }
 
@@ -1116,6 +1229,15 @@ VirtualAlloc(
     {
         WARN( "Ignoring the allocation flag MEM_TOP_DOWN.\n" );
     }
+
+    LogVaOperation(
+        VirtualMemoryLogging::VirtualOperation::Allocate,
+        lpAddress,
+        dwSize,
+        flAllocationType,
+        flProtect,
+        NULL,
+        TRUE);
 
     if ( flAllocationType & MEM_RESERVE ) 
     {
@@ -1325,6 +1447,17 @@ VirtualFree(
     }
 
 VirtualFreeExit:
+
+    LogVaOperation(
+        (dwFreeType & MEM_DECOMMIT) ? VirtualMemoryLogging::VirtualOperation::Decommit 
+                                    : VirtualMemoryLogging::VirtualOperation::Release,
+        lpAddress,
+        dwSize,
+        dwFreeType,
+        0,
+        NULL,
+        bRetVal);
+
     InternalLeaveCriticalSection(pthrCurrent, &virtual_critsec);
     LOGEXIT( "VirtualFree returning %s.\n", bRetVal == TRUE ? "TRUE" : "FALSE" );
     PERF_EXIT(VirtualFree);
