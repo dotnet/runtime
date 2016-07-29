@@ -401,19 +401,26 @@ namespace System.Runtime.Loader
             }
             
             AssemblyLoadContext loadContextForAssembly = null;
-            IntPtr ptrAssemblyLoadContext = GetLoadContextForAssembly((RuntimeAssembly)assembly);
-            if (ptrAssemblyLoadContext == IntPtr.Zero)
-            {
-                // If the load context is returned null, then the assembly was bound using the TPA binder
-                // and we shall return reference to the active "Default" binder - which could be the TPA binder
-                // or an overridden CLRPrivBinderAssemblyLoadContext instance.
-                loadContextForAssembly = AssemblyLoadContext.Default;
-            }
-            else
-            {
-                loadContextForAssembly = (AssemblyLoadContext)(GCHandle.FromIntPtr(ptrAssemblyLoadContext).Target);
-            }
+
+            RuntimeAssembly rtAsm = assembly as RuntimeAssembly;
             
+            // We only support looking up load context for runtime assemblies.
+            if (rtAsm != null)
+            {
+                IntPtr ptrAssemblyLoadContext = GetLoadContextForAssembly(rtAsm);
+                if (ptrAssemblyLoadContext == IntPtr.Zero)
+                {
+                    // If the load context is returned null, then the assembly was bound using the TPA binder
+                    // and we shall return reference to the active "Default" binder - which could be the TPA binder
+                    // or an overridden CLRPrivBinderAssemblyLoadContext instance.
+                    loadContextForAssembly = AssemblyLoadContext.Default;
+                }
+                else
+                {
+                    loadContextForAssembly = (AssemblyLoadContext)(GCHandle.FromIntPtr(ptrAssemblyLoadContext).Target);
+                }
+            }
+
             return loadContextForAssembly;
         }
         

@@ -179,6 +179,7 @@ FCIMPL9(Object*, AssemblyNative::Load, AssemblyNameBaseObject* assemblyNameUNSAF
     CheckPointHolder cph(pThread->m_MarshalAlloc.GetCheckpoint()); //hold checkpoint for autorelease
 
     DomainAssembly * pParentAssembly = NULL;
+    Assembly * pRefAssembly = NULL;
 
     if(gc.assemblyName->GetSimpleName() == NULL)
     {
@@ -194,7 +195,6 @@ FCIMPL9(Object*, AssemblyNative::Load, AssemblyNameBaseObject* assemblyNameUNSAF
             gc.codeBase = NULL;
 
         // Compute parent assembly
-        Assembly * pRefAssembly;
         if (gc.requestingAssembly == NULL)
         {
             pRefAssembly = SystemDomain::GetCallersAssembly(stackMark);
@@ -241,7 +241,17 @@ FCIMPL9(Object*, AssemblyNative::Load, AssemblyNameBaseObject* assemblyNameUNSAF
 
     if (pParentAssembly != NULL)
         spec.SetParentAssembly(pParentAssembly);
-    
+
+#if defined(FEATURE_HOST_ASSEMBLY_RESOLVER)    
+    // If the requesting assembly has Fallback LoadContext binder available,
+    // then set it up in the AssemblySpec.
+    if (pRefAssembly != NULL)
+    {
+        PEFile *pRefAssemblyManifestFile = pRefAssembly->GetManifestFile();
+        spec.SetFallbackLoadContextBinderForRequestingAssembly(pRefAssemblyManifestFile->GetFallbackLoadContextBinder());
+    }
+#endif // defined(FEATURE_HOST_ASSEMBLY_RESOLVER)
+
     AssemblyLoadSecurity loadSecurity;
     loadSecurity.m_pAdditionalEvidence = &gc.security;
     loadSecurity.m_fCheckLoadFromRemoteSource = !!(gc.codeBase != NULL);
@@ -2552,20 +2562,26 @@ INT_PTR QCALLTYPE AssemblyNative::GetLoadContextForAssembly(QCall::AssemblyHandl
     {
         // Get the binding context for the assembly.
         //
+        ICLRPrivBinder *pOpaqueBinder = nullptr;
+        AppDomain *pCurDomain = AppDomain::GetCurrentDomain();
+        CLRPrivBinderCoreCLR *pTPABinder = pCurDomain->GetTPABinderContext();
+
+        
         // GetBindingContext returns a ICLRPrivAssembly which can be used to get access to the
         // actual ICLRPrivBinder instance in which the assembly was loaded.
         PTR_ICLRPrivBinder pBindingContext = pPEAssembly->GetBindingContext();
         UINT_PTR assemblyBinderID = 0;
         IfFailThrow(pBindingContext->GetBinderID(&assemblyBinderID));
 
-        AppDomain *pCurDomain = AppDomain::GetCurrentDomain();
-        CLRPrivBinderCoreCLR *pTPABinder = pCurDomain->GetTPABinderContext();
-        
         // If the assembly was bound using the TPA binder,
         // then we will return the reference to "Default" binder from the managed implementation when this QCall returns.
         //
         // See earlier comment about "Default" binder for additional context.
-        ICLRPrivBinder *pOpaqueBinder = reinterpret_cast<ICLRPrivBinder *>(assemblyBinderID);
+        pOpaqueBinder = reinterpret_cast<ICLRPrivBinder *>(assemblyBinderID);
+        
+        // We should have a load context binder at this point.
+        _ASSERTE(pOpaqueBinder != nullptr);
+
         if (!AreSameBinderInstance(pTPABinder, pOpaqueBinder))
         {
             // Only CLRPrivBinderAssemblyLoadContext instance contains the reference to its
