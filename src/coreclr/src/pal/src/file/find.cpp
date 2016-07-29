@@ -201,7 +201,7 @@ FindFirstFileA(
                     }
                 }
             }
-            InternalFree(lpTemp);
+            free(lpTemp);
             lpTemp = NULL;
             goto done;
         }
@@ -226,7 +226,7 @@ done:
             {
                 globfree( &(find_data->gGlob) );
             }
-            InternalFree(find_data);
+            free(find_data);
         }
         if (dwLastError)
         {
@@ -571,7 +571,7 @@ FindClose(
     {
         globfree( &(find_data->gGlob) );
     }
-    InternalFree(find_data);
+    free(find_data);
 
 done:
     if (dwLastError)

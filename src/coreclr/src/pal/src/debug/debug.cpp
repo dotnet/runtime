@@ -236,12 +236,12 @@ OutputDebugStringW(
     {
         ASSERT("failed to convert wide chars to multibytes\n");
         SetLastError(ERROR_INTERNAL_ERROR);
-        InternalFree(lpOutputStringA);
+        free(lpOutputStringA);
         goto EXIT;
     }
     
     OutputDebugStringA(lpOutputStringA);
-    InternalFree(lpOutputStringA);
+    free(lpOutputStringA);
 
 EXIT:
     LOGEXIT("OutputDebugStringW returns\n");
@@ -388,7 +388,7 @@ DebugBreakCommand()
             goto FAILED;
         }
 
-        InternalFree(command_string);
+        free(command_string);
         return 1;
     }
 
@@ -397,7 +397,7 @@ DebugBreakCommand()
 FAILED:
     if (command_string)
     {
-        InternalFree(command_string);
+        free(command_string);
     }
 
     fprintf (stderr, "Failed to execute command: '%s'\n", command_string);
@@ -1519,7 +1519,7 @@ PROCFSCLEANUP:
 CLEANUP2:
     if (lpTmpBuffer) 
     {
-        InternalFree(lpTmpBuffer);
+        free(lpTmpBuffer);
     }
 #endif  // !HAVE_TTRACE
 
@@ -1816,7 +1816,7 @@ PROCFSCLEANUP:
 CLEANUP2:
     if (lpTmpBuffer) 
     {
-        InternalFree(lpTmpBuffer);
+        free(lpTmpBuffer);
     }
 #endif  // !HAVE_TTRACE
 

@@ -57,7 +57,7 @@ CorUnix::InternalRealloc(
         // If pvMemblock is NULL, there's no reason to call free.
         if (pvMemblock != NULL)
         {
-            InternalFree(pvMemblock);
+            free(pvMemblock);
         }
         pvMem = NULL;
     }
@@ -74,14 +74,6 @@ CorUnix::InternalRealloc(
 void
 __cdecl
 PAL_free(
-    void *pvMem
-    )
-{
-    InternalFree(pvMem);
-}
-
-void
-CorUnix::InternalFree(
     void *pvMem
     )
 {

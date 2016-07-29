@@ -285,7 +285,6 @@ HeapFree(
 
     bRetVal = TRUE;
 #ifdef __APPLE__
-    // This is patterned off of InternalFree in malloc.cpp.
     {
         malloc_zone_free((malloc_zone_t *)hHeap, lpMem);
     }
