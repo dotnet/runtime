@@ -126,7 +126,7 @@
     </ValidationPattern>
     <ValidationPattern Include="buildToolsTestSuiteVersions">
       <IdentityRegex>^(?i)Microsoft\.DotNet\.BuildTools\.TestSuite$</IdentityRegex>
-      <ExpectedVersion>1.0.0-prerelease-00520-02</ExpectedVersion>
+      <ExpectedVersion>1.0.0-prerelease-00629-04</ExpectedVersion>
     </ValidationPattern>
     <ValidationPattern Include="uwpRunnerVersion">
       <IdentityRegex>^(?i)microsoft\.xunit\.runner\.uwp$</IdentityRegex>
@@ -278,6 +278,7 @@
     <TargetGroup Condition="'$(TargetGroup)'=='' and $(Configuration.Contains('netstandard15aot'))">netstandard15aot</TargetGroup>
     <TargetGroup Condition="'$(TargetGroup)'=='' and $(Configuration.Contains('netcore50'))">netcore50</TargetGroup>
     <TargetGroup Condition="'$(TargetGroup)'=='' and $(Configuration.Contains('netcoreapp1.0'))">netcoreapp1.0</TargetGroup>
+    <TargetGroup Condition="'$(TargetGroup)'=='' and $(Configuration.Contains('netcoreapp1.1'))">netcoreapp1.1</TargetGroup>
     <TargetGroup Condition="'$(TargetGroup)'=='' and $(Configuration.Contains('dnxcore50'))">dnxcore50</TargetGroup>
     <TargetGroup Condition="'$(TargetGroup)'=='' and $(Configuration.Contains('net463'))">net463</TargetGroup>
     <TargetGroup Condition="'$(TargetGroup)'=='' and $(Configuration.Contains('net462'))">net462</TargetGroup>
@@ -452,6 +453,12 @@
         <NuGetTargetMoniker>.NETCoreApp,Version=v1.0</NuGetTargetMoniker>
       </PropertyGroup>
     </When>
+    <When Condition="'$(TargetGroup)'=='netcoreapp1.1'">
+      <PropertyGroup>
+        <PackageTargetFramework>netcoreapp1.1</PackageTargetFramework>
+        <NuGetTargetMoniker>.NETCoreApp,Version=v1.1</NuGetTargetMoniker>
+      </PropertyGroup>
+    </When>
     <When Condition="'$(TargetGroup)'=='dnxcore50'">
       <PropertyGroup>
         <ConfigurationErrorMsg>$(ConfigurationErrorMsg);DNXCore50 has been deprecated.  Please use NETStandard1.X or NETCoreApp1.0 instead.</ConfigurationErrorMsg>
@@ -520,9 +527,10 @@
 
   <!-- Default Test platform to deploy the netstandard compiled tests to -->
   <PropertyGroup>
-    <TestTFM Condition="'$(TestTFM)'==''">netcoreapp1.0</TestTFM>
-    <!-- we default FilterToTestTFM to netcoreapp1.0 if it is not explicity defined -->
-    <FilterToTestTFM Condition="'$(FilterToTestTFM)'==''">netcoreapp1.0</FilterToTestTFM>        
+    <!-- we default TestTFM and FilterToTestTFM to netcoreapp1.0 if they are not explicity defined -->
+    <DefaultTestTFM Condition="'$(DefaultTestTFM)'==''">netcoreapp1.0</DefaultTestTFM>
+    <TestTFM Condition="'$(TestTFM)'==''">$(DefaultTestTFM)</TestTFM>
+    <FilterToTestTFM Condition="'$(FilterToTestTFM)'==''">$(DefaultTestTFM)</FilterToTestTFM>        
   </PropertyGroup>
 
   <PropertyGroup>
