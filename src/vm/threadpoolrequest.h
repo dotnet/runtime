@@ -172,9 +172,14 @@ public:
     void DispatchWorkItem(bool* foundWork, bool* wasNotRecalled);
 
 private:
-    Volatile<LONG> m_numRequestsPending;
-    ADID m_id;
-    TPIndex m_index;
+    struct {
+        BYTE padding1[64]; // padding to ensure own cache line
+        Volatile<LONG> m_numRequestsPending;
+        BYTE padding2[64]; // padding to ensure own cache line
+        ADID m_id;
+        BYTE padding3[64]; // padding to ensure own cache line
+        TPIndex m_index;
+    };
 };
 
 //--------------------------------------------------------------------------
@@ -272,9 +277,14 @@ public:
     }
 
 private:
-    ULONG m_NumRequests;
-    Volatile<LONG> m_outstandingThreadRequestCount;
-    SpinLock m_lock;
+    struct {
+        BYTE padding1[64]; // padding to ensure own cache line
+        ULONG m_NumRequests;
+        BYTE padding2[64]; // padding to ensure own cache line
+        Volatile<LONG> m_outstandingThreadRequestCount;
+        BYTE padding3[64]; // padding to ensure own cache line
+        SpinLock m_lock;
+    };
 };
 
 //--------------------------------------------------------------------------
@@ -330,11 +340,14 @@ public:
 private:
     static DWORD FindFirstFreeTpEntry();
 
+    static BYTE padding1[64]; // padding to ensure own cache line
     static UnManagedPerAppDomainTPCount s_unmanagedTPCount;
 
-    //The list of all per-appdomain work-request counts.
-    static ArrayListStatic s_appDomainIndexList;    
+    static BYTE padding2[64]; // padding to ensure own cache line
+        //The list of all per-appdomain work-request counts.
+    static ArrayListStatic s_appDomainIndexList;
 
+    static BYTE padding3[64]; // padding to ensure own cache line
     static LONG s_ADHint;
 };
 
