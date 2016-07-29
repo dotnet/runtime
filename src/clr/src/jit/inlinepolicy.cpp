@@ -298,7 +298,6 @@ void LegacyPolicy::NoteBool(InlineObservation obs, bool value)
 
         case InlineObservation::CALLEE_HAS_SWITCH:
         case InlineObservation::CALLEE_UNSUPPORTED_OPCODE:
-        case InlineObservation::CALLEE_STORES_TO_ARGUMENT:
             // LegacyPolicy ignores these for prejit roots.
             if (!m_IsPrejitRoot)
             {
@@ -927,7 +926,6 @@ void RandomPolicy::NoteBool(InlineObservation obs, bool value)
 
         case InlineObservation::CALLEE_HAS_SWITCH:
         case InlineObservation::CALLEE_UNSUPPORTED_OPCODE:
-        case InlineObservation::CALLEE_STORES_TO_ARGUMENT:
             // Pass these on, they should cause inlining to fail.
             propagate = true;
             break;

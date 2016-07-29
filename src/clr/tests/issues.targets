@@ -368,6 +368,9 @@
         <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\hfa\main\testG\hfa_sf2G_r\hfa_sf2G_r.cmd">
             <Issue>6180</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V1-M11-Beta1\b44410\b44410\b44410.cmd">
+             <Issue>6588</Issue>
+        </ExcludeList>
     </ItemGroup>
     
     <!-- Tests that need to be triaged for vararg usage as that is not supported -->

@@ -521,6 +521,7 @@ struct InlArgInfo
     unsigned    argHasTmp     :1;   // the argument will be evaluated to a temp
     unsigned    argIsByRefToStructLocal:1;  // Is this arg an address of a struct local or a normed struct local or a field in them?
     unsigned    argHasLdargaOp:1;   // Is there LDARGA(s) operation on this argument?
+    unsigned    argHasStargOp :1;   // Is there STARG(s) operation on this argument?
 
     unsigned    argTmpNum;          // the argument tmp number
     GenTreePtr  argNode;
