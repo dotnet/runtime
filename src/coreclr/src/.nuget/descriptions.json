@@ -21,12 +21,22 @@
     },
     {
         "Name": "Microsoft.NETCore.ILAsm",
-        "Description": "Contains IL Assembly tool",
+        "Description": "The .NET IL Assembler.",
         "CommonTypes": [ ]
     },
     {
         "Name": "Microsoft.NETCore.ILDAsm",
-        "Description": "Contains IL Disassembly tool",
+        "Description": "The .NET IL Disassembler.",
+        "CommonTypes": [ ]
+    },
+    {
+        "Name": "Microsoft.NETCore.Jit",
+        "Description": "The .NET JIT compiler.",
+        "CommonTypes": [ ]
+    },
+    {
+        "Name": "Microsoft.NETCore.TestHost",
+        "Description": "CoreCLR application host for test applications",
         "CommonTypes": [ ]
     }
 ]
