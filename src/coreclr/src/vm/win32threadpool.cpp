@@ -2258,8 +2258,7 @@ DWORD __stdcall ThreadpoolMgr::WorkerThreadStart(LPVOID lpArgs)
     ThreadCounter::Counts counts, oldCounts, newCounts;
     bool foundWork = true, wasNotRecalled = true;
 
-    // counts only used for Etw event
-    counts = WorkerCounter.DangerousGetDirtyCounts();
+    counts = WorkerCounter.GetCleanCounts();
     FireEtwThreadPoolWorkerThreadStart(counts.NumActive, counts.NumRetired, GetClrInstanceId());
 
 #ifdef FEATURE_COMINTEROP
@@ -2389,8 +2388,7 @@ Work:
 
 Retire:
 
-    // counts only used for Etw event
-    counts = WorkerCounter.DangerousGetDirtyCounts();
+    counts = WorkerCounter.GetCleanCounts();
     FireEtwThreadPoolWorkerThreadRetirementStart(counts.NumActive, counts.NumRetired, GetClrInstanceId());
 
     // It's possible that some work came in just before we decremented the active thread count, in which 
@@ -2411,8 +2409,7 @@ RetryRetire:
         {
             foundWork = true;
 
-            // counts only used for Etw event
-            counts = WorkerCounter.DangerousGetDirtyCounts();
+            counts = WorkerCounter.GetCleanCounts();
             FireEtwThreadPoolWorkerThreadRetirementStop(counts.NumActive, counts.NumRetired, GetClrInstanceId());
             goto Work;
         }
@@ -2562,8 +2559,7 @@ Exit:
 
     _ASSERTE(!IsIoPending());
 
-    // counts only used for Etw event
-    counts = WorkerCounter.DangerousGetDirtyCounts();
+    counts = WorkerCounter.GetCleanCounts();
     FireEtwThreadPoolWorkerThreadStop(counts.NumActive, counts.NumRetired, GetClrInstanceId());
 
     return ERROR_SUCCESS;
@@ -3846,7 +3842,9 @@ Top:
             // and the state of the rest of the IOCP threads, we need to figure out whether to de-activate (exit) this thread, retire this thread,
             // or transition to "working."
             //
-            oldCounts = CPThreadCounter.GetCleanCounts();
+
+            // counts volatile read paired with CompareExchangeCounts loop set
+            oldCounts = CPThreadCounter.DangerousGetDirtyCounts();
             newCounts = oldCounts;
             enterRetirement = false;
 
@@ -3929,7 +3927,8 @@ Top:
                             // We can now exit; decrement the retired count.
                             while (true)
                             {
-                                oldCounts = CPThreadCounter.GetCleanCounts();
+                                // counts volatile read paired with CompareExchangeCounts loop set
+                                oldCounts = CPThreadCounter.DangerousGetDirtyCounts();
                                 newCounts = oldCounts;
                                 newCounts.NumRetired--;
                                 if (oldCounts == CPThreadCounter.CompareExchangeCounts(newCounts, oldCounts))
@@ -3943,7 +3942,8 @@ Top:
                         // put back into rotation -- we need a thread
                         while (true)
                         {
-                            oldCounts = CPThreadCounter.GetCleanCounts();
+                            // counts volatile read paired with CompareExchangeCounts loop set
+                            oldCounts = CPThreadCounter.DangerousGetDirtyCounts();
                             newCounts = oldCounts;
                             newCounts.NumRetired--;
                             newCounts.NumActive++;
@@ -3984,7 +3984,8 @@ Top:
                     //GC event, and some have not.
                     while (true)
                     {
-                        oldCounts = CPThreadCounter.GetCleanCounts();
+                        // counts volatile read paired with CompareExchangeCounts loop set
+                        oldCounts = CPThreadCounter.DangerousGetDirtyCounts();
                         newCounts = oldCounts;
                         newCounts.NumWorking--;
                         if (oldCounts == CPThreadCounter.CompareExchangeCounts(newCounts, oldCounts))
@@ -3997,7 +3998,8 @@ Top:
 
                     while (true)
                     {
-                        oldCounts = CPThreadCounter.GetCleanCounts();
+                        // counts volatile read paired with CompareExchangeCounts loop set
+                        oldCounts = CPThreadCounter.DangerousGetDirtyCounts();
                         newCounts = oldCounts;
                         newCounts.NumWorking++;
                         if (oldCounts == CPThreadCounter.CompareExchangeCounts(newCounts, oldCounts))
@@ -4272,7 +4274,8 @@ void ThreadpoolMgr::GrowCompletionPortThreadpoolIfNeeded()
                         // if thread creation failed, we have to adjust the counts back down.
                         while (true)
                         {
-                            oldCounts = CPThreadCounter.GetCleanCounts();
+                            // counts volatile read paired with CompareExchangeCounts loop set
+                            oldCounts = CPThreadCounter.DangerousGetDirtyCounts();
                             newCounts = oldCounts;
                             newCounts.NumActive--;
                             newCounts.NumWorking--;
@@ -4702,7 +4705,8 @@ DWORD __stdcall ThreadpoolMgr::GateThreadStart(LPVOID lpArgs)
                     // IOCP threads are created as "active" and "working"
                     while (true)
                     {
-                        oldCounts = CPThreadCounter.GetCleanCounts();
+                        // counts volatile read paired with CompareExchangeCounts loop set
+                        oldCounts = CPThreadCounter.DangerousGetDirtyCounts();
                         newCounts = oldCounts;
                         newCounts.NumActive++;
                         newCounts.NumWorking++;

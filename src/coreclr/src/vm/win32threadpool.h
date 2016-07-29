@@ -375,6 +375,11 @@ public:
 
         Counts GetCleanCounts()
         {
+#ifdef _WIN64
+            // VolatileLoad x64 bit read is atomic
+            return DangerousGetDirtyCounts();
+#else // !_WIN64
+            // VolatileLoad may result in torn read
             LIMITED_METHOD_CONTRACT;
             Counts result;
 #ifndef DACCESS_COMPILE
@@ -384,6 +389,7 @@ public:
             result.AsLongLong = 0; //prevents prefast warning for DAC builds
 #endif
             return result;
+#endif // !_WIN64
         }
 
         //
