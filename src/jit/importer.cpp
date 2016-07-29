@@ -9405,6 +9405,15 @@ PUSH_I4CON:
                 Verify(lclNum < info.compILargsCount, "bad arg num");
             }
 
+            if (compIsForInlining())
+            {
+                op1 = impInlineFetchArg(lclNum, impInlineInfo->inlArgInfo, impInlineInfo->lclVarInfo);
+                noway_assert(op1->gtOper == GT_LCL_VAR);
+                lclNum = op1->AsLclVar()->gtLclNum;
+
+                goto VAR_ST_VALID;
+            }
+
             lclNum = compMapILargNum(lclNum);     // account for possible hidden param
             assertImp(lclNum < numArgs);
 
@@ -9470,6 +9479,8 @@ PUSH_I4CON:
                 assert(!tiVerificationNeeded); // We should have thrown the VerificationException before.
                 BADCODE("Bad IL");
             }
+
+		VAR_ST_VALID:
 
             /* if it is a struct assignment, make certain we don't overflow the buffer */ 
             assert(lclTyp != TYP_STRUCT || lvaLclSize(lclNum) >= info.compCompHnd->getClassSize(clsHnd));
@@ -16341,6 +16352,8 @@ void Compiler::impInlineRecordArgInfo(InlineInfo *  pInlineInfo,
             printf(" has side effects"); 
         if  (inlCurArgInfo->argHasLdargaOp)
             printf(" has ldarga effect");
+        if (inlCurArgInfo->argHasStargOp)
+            printf(" has starg effect");
         if  (inlCurArgInfo->argIsByRefToStructLocal)
             printf(" is byref to a struct local");
 
@@ -16748,7 +16761,7 @@ GenTreePtr  Compiler::impInlineFetchArg(unsigned lclNum, InlArgInfo *inlArgInfo,
     GenTreePtr op1 = NULL;
 
             // constant or address of local
-    if (inlArgInfo[lclNum].argIsInvariant && !inlArgInfo[lclNum].argHasLdargaOp)
+    if (inlArgInfo[lclNum].argIsInvariant && !inlArgInfo[lclNum].argHasLdargaOp && !inlArgInfo[lclNum].argHasStargOp)
     {
         /* Clone the constant. Note that we cannot directly use argNode
         in the trees even if inlArgInfo[lclNum].argIsUsed==false as this
@@ -16760,7 +16773,7 @@ GenTreePtr  Compiler::impInlineFetchArg(unsigned lclNum, InlArgInfo *inlArgInfo,
         PREFIX_ASSUME(op1 != NULL);
         inlArgInfo[lclNum].argTmpNum = (unsigned)-1;      // illegal temp
     }
-    else if (inlArgInfo[lclNum].argIsLclVar && !inlArgInfo[lclNum].argHasLdargaOp)
+    else if (inlArgInfo[lclNum].argIsLclVar && !inlArgInfo[lclNum].argHasLdargaOp && !inlArgInfo[lclNum].argHasStargOp)
     {
         /* Argument is a local variable (of the caller)
          * Can we re-use the passed argument node? */
@@ -16780,7 +16793,7 @@ GenTreePtr  Compiler::impInlineFetchArg(unsigned lclNum, InlArgInfo *inlArgInfo,
             op1 = gtNewLclvNode(op1->gtLclVarCommon.gtLclNum, lclTyp, op1->gtLclVar.gtLclILoffs);
         }
     }
-    else if (inlArgInfo[lclNum].argIsByRefToStructLocal)
+    else if (inlArgInfo[lclNum].argIsByRefToStructLocal && !inlArgInfo[lclNum].argHasStargOp)
     {
         /* Argument is a by-ref address to a struct, a normed struct, or its field. 
            In these cases, don't spill the byref to a local, simply clone the tree and use it.
