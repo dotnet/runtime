@@ -44,7 +44,6 @@ usage()
     echo "verbose - optional argument to enable verbose build output."
     echo "-skiprestore: skip restoring packages ^(default: packages are restored during build^)."
 	echo "-disableoss: Disable Open Source Signing for System.Private.CoreLib."
-	echo "-priority=^<N^> : specify a set of test that will be built and run, with priority N."
 	echo "-sequential: force a non-parallel build ^(default is to build in parallel"
 	echo "   using all processors^)."
 	echo "-officialbuildid=^<ID^>: specify the official build ID to be used by this build."
@@ -174,10 +173,12 @@ build_coreclr()
         # Regenerate the CMake solution
         echo "Invoking \"$__ProjectRoot/src/pal/tools/gen-buildsys-clang.sh\" \"$__ProjectRoot\" $__ClangMajorVersion $__ClangMinorVersion $__BuildArch $__BuildType $__CodeCoverage $__IncludeTests $generator $__cmakeargs"
         "$__ProjectRoot/src/pal/tools/gen-buildsys-clang.sh" "$__ProjectRoot" $__ClangMajorVersion $__ClangMinorVersion $__BuildArch $__BuildType $__CodeCoverage $__IncludeTests $generator "$__cmakeargs"
+        popd
     fi
 
     # Check that the makefiles were created.
-
+    pushd "$__IntermediatesDir"
+    
     if [ ! -f "$__IntermediatesDir/$buildFile" ]; then
         echo "Failed to generate native component build project!"
         exit 1
