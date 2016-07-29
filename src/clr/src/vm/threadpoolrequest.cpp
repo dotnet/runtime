@@ -30,11 +30,14 @@
 #endif
 #include "appdomain.inl"
 
+BYTE PerAppDomainTPCountList::padding1[64];
 UnManagedPerAppDomainTPCount PerAppDomainTPCountList::s_unmanagedTPCount;
 
+BYTE PerAppDomainTPCountList::padding2[64];
 //The list of all per-appdomain work-request counts.
 ArrayListStatic PerAppDomainTPCountList::s_appDomainIndexList;    
 
+BYTE PerAppDomainTPCountList::padding3[64];
 //Make this point to unmanaged TP in case, no appdomains have initialized yet.
 LONG PerAppDomainTPCountList::s_ADHint=-1;
 
