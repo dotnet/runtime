@@ -748,8 +748,11 @@ static guint32 WINAPI start_wrapper_internal(void *data)
 
 		if (!mono_error_ok (&error)) {
 			MonoException *ex = mono_error_convert_to_exception (&error);
-			if (ex)
+			if (ex) {
 				mono_unhandled_exception (&ex->object);
+				mono_invoke_unhandled_exception_hook (&ex->object);
+				g_assert_not_reached ();
+			}
 		} else {
 			mono_error_cleanup (&error);
 		}
@@ -5068,6 +5071,7 @@ mono_thread_internal_unhandled_exception (MonoObject* exc)
 			mono_thread_internal_reset_abort (mono_thread_internal_current ());
 		} else if (!is_appdomainunloaded_exception (klass)) {
 			mono_unhandled_exception (exc);
+			// AK: Should we call mono_invoke_unhandled_exception_hook here?
 			if (mono_environment_exitcode_get () == 1)
 				exit (255);
 		}

@@ -1,6 +1,7 @@
 #ifndef _MONO_METADATA_EXCEPTION_H_
 #define _MONO_METADATA_EXCEPTION_H_
 
+#include <glib.h>
 #include <mono/metadata/object.h>
 #include <mono/metadata/image.h>
 
@@ -146,6 +147,14 @@ mono_get_exception_reflection_type_load (MonoArray *types, MonoArray *exceptions
 MONO_RT_EXTERNAL_ONLY
 MONO_API MonoException *
 mono_get_exception_runtime_wrapped (MonoObject *wrapped_exception);
+
+/* Installs a function which is called when the runtime encounters an unhandled exception.
+ * This hook isn't expected to return.
+ * If no hook has been installed, the runtime will print a message before aborting.
+ */
+typedef void  (*MonoUnhandledExceptionFunc)         (MonoObject *exc, gpointer user_data);
+MONO_API void mono_install_unhandled_exception_hook (MonoUnhandledExceptionFunc func, gpointer user_data);
+void          mono_invoke_unhandled_exception_hook  (MonoObject *exc);
 
 MONO_END_DECLS
 

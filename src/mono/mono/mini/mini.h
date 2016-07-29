@@ -2866,14 +2866,6 @@ MonoBoolean ves_icall_get_frame_info            (gint32 skip, MonoBoolean need_f
 						 MonoString **file, gint32 *line, gint32 *column);
 void mono_set_cast_details                      (MonoClass *from, MonoClass *to);
 
-/* Installs a function which is called when the runtime encounters an unhandled exception.
- * This hook isn't expected to return.
- * If no hook has been installed, the runtime will print a message before aborting.
- */
-typedef void  (*MonoUnhandledExceptionFunc)         (MonoObject *exc, gpointer user_data);
-MONO_API void mono_install_unhandled_exception_hook (MonoUnhandledExceptionFunc func, gpointer user_data);
-void          mono_invoke_unhandled_exception_hook  (MonoObject *exc);
-
 void mono_decompose_typechecks (MonoCompile *cfg);
 /* Dominator/SSA methods */
 void        mono_compile_dominator_info         (MonoCompile *cfg, int dom_flags);
