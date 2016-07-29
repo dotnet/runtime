@@ -15,6 +15,8 @@ namespace System.Net.NameResolution.Tests
     {
         public const string LocalHost = "localhost";
 
+        public const string LocalIPString = "127.0.0.1";
+
         public static Task<IPAddress> GetLocalIPAddress()
         {
             return ResolveHost(TestSettings.LocalHost, TestSettings.AddressFamily);

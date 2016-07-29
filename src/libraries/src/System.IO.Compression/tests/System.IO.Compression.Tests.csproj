@@ -10,7 +10,6 @@
     <ProjectGuid>{BC2E1649-291D-412E-9529-EDDA94FA7AD6}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AssemblyName>System.IO.Compression.Tests</AssemblyName>
-    <IncludePerformanceTests>true</IncludePerformanceTests>
     <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
@@ -56,12 +55,6 @@
     </Compile>
     <Compile Include="$(CommonTestPath)\System\IO\Compression\ZipTestHelper.cs">
       <Link>Common\System\IO\Compression\ZipTestHelper.cs</Link>
-    </Compile>
-    <!-- Performance Tests -->
-    <Compile Include="Performance\Perf.DeflateStream.cs" />
-    <Compile Include="Performance\Perf.GZipStream.cs" />
-    <Compile Include="$(CommonTestPath)\System\PerfUtils.cs">
-      <Link>Common\System\PerfUtils.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>

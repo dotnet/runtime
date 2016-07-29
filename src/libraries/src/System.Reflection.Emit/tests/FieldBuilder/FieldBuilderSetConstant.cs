@@ -21,8 +21,6 @@ namespace System.Reflection.Emit.Tests
 
     public class FieldBuilderSetConstant
     {
-        private readonly RandomDataGenerator _generator = new RandomDataGenerator();
-
         private static TypeBuilder s_type = Helpers.DynamicType(TypeAttributes.Abstract);
 
         [Fact]

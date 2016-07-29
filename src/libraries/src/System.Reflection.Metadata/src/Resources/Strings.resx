@@ -184,7 +184,7 @@
     <value>Unknown PE Magic value.</value>
   </data>
   <data name="MetadataTableNotSorted" xml:space="preserve">
-    <value>Metadata table 0x{0:x2} not sorted.</value>
+    <value>Metadata table {0} not sorted.</value>
   </data>
   <data name="AssemblyTableInvalidNumberOfRows" xml:space="preserve">
     <value>Invalid number of rows of Assembly table: {0}.</value>
@@ -348,6 +348,9 @@
   <data name="UnexpectedCodeViewDataSignature" xml:space="preserve">
     <value>Unexpected CodeView data signature value.</value>
   </data>
+  <data name="UnexpectedEmbeddedPortablePdbDataSignature" xml:space="preserve">
+    <value>Unexpected Embedded Portable PDB data signature value.</value>
+  </data>
   <data name="InvalidPathPadding" xml:space="preserve">
     <value>The path must be padded with NUL characters.</value>
   </data>
@@ -426,6 +429,9 @@
   <data name="HashTooShort" xml:space="preserve">
     <value>Hash must be at least {0}B long.</value>
   </data>
+  <data name="UnexpectedArrayLength" xml:space="preserve">
+    <value>Expected array of length {0}.</value>
+  </data>
   <data name="ValueMustBeMultiple" xml:space="preserve">
     <value>Value must be multiple of {0}.</value>
   </data>
@@ -440,5 +446,14 @@
   </data>
   <data name="RowCountOutOfRange" xml:space="preserve">
     <value>Row count specified for table index {0} is out of allowed range.</value>
+  </data>
+  <data name="SizeMismatch" xml:space="preserve">
+    <value>Declared size doesn't correspond to the actual size.</value>
+  </data>
+  <data name="DataTooBig" xml:space="preserve">
+    <value>Data too big to fit in memory.</value>
+  </data>
+  <data name="UnsupportedFormatVersion" xml:space="preserve">
+    <value>Unsupported format version: {0}</value>
   </data>
 </root>

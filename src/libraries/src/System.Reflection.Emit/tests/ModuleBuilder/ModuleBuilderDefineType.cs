@@ -77,5 +77,12 @@ namespace System.Reflection.Emit.Tests
             Assert.Throws<ArgumentException>(null, () => module.DefineType("TestType", TypeAttributes.NotPublic));
             Assert.Throws<ArgumentException>(null, () => module.DefineType("TestType", TypeAttributes.NotPublic, typeof(ModuleBuilderDefineType)));
         }
+
+        [Fact]
+        public void DefineType_NonAbstractInterface_ThrowsInvalidOperationException()
+        {
+            ModuleBuilder module = Helpers.DynamicModule();
+            Assert.Throws<InvalidOperationException>(() => module.DefineType("A", TypeAttributes.Interface));
+        }
     }
 }

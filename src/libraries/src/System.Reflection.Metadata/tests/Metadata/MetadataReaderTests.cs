@@ -91,17 +91,6 @@ namespace System.Reflection.Metadata.Tests
             return pinned;
         }
 
-        private List<CustomAttributeHandle> GetCustomAttributes(MetadataReader reader, int token)
-        {
-            var attributes = new List<CustomAttributeHandle>();
-            foreach (var caHandle in reader.GetCustomAttributes(new EntityHandle((uint)token)))
-            {
-                attributes.Add(caHandle);
-            }
-
-            return attributes;
-        }
-
         #endregion
 
         [Fact]
@@ -2047,6 +2036,20 @@ namespace System.Reflection.Metadata.Tests
             }
         }
 
+        [Fact]
+        public void GetCustomAttributes()
+        {
+            var reader = GetMetadataReader(Interop.Interop_Mock01);
+
+            var attributes1 = reader.GetCustomAttributes(MetadataTokens.EntityHandle(0x02000006));
+            AssertEx.Equal(new[] { 0x16, 0x17, 0x18, 0x19 }, attributes1.Select(a => a.RowId));
+            Assert.Equal(4, attributes1.Count);
+
+            var attributes2 = reader.GetCustomAttributes(MetadataTokens.EntityHandle(0x02000000));
+            AssertEx.Equal(new int[0], attributes2.Select(a => a.RowId));
+            Assert.Equal(0, attributes2.Count);
+        }
+
         /// <summary>
         /// MethodSemantics Table
         ///     Semantic (2-byte unsigned)
@@ -2317,6 +2320,22 @@ namespace System.Reflection.Metadata.Tests
 
             Assert.Equal("Class1", name);
             Assert.Equal(0, genericParams.Count);
+        }
+
+        [Fact]
+        public void GetCustomDebugInformation()
+        {
+            using (var provider = MetadataReaderProvider.FromPortablePdbStream(new MemoryStream(PortablePdbs.DocumentsPdb)))
+            {
+                var reader = provider.GetMetadataReader();
+                var cdi1 = reader.GetCustomAttributes(MetadataTokens.EntityHandle(0x30000001));
+                AssertEx.Equal(new int[0], cdi1.Select(a => a.RowId));
+                Assert.Equal(0, cdi1.Count);
+
+                var cdi2 = reader.GetCustomAttributes(MetadataTokens.EntityHandle(0x03000000));
+                AssertEx.Equal(new int[0], cdi2.Select(a => a.RowId));
+                Assert.Equal(0, cdi2.Count);
+            }
         }
 
         [Fact]

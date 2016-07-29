@@ -8,8 +8,10 @@ using System.Reflection.Internal;
 
 namespace System.Reflection.Metadata
 {
-    public struct BlobContentId
+    public struct BlobContentId : IEquatable<BlobContentId>
     {
+        private const int Size = BlobUtilities.SizeOfGuid + sizeof(uint);
+
         public Guid Guid { get; }
         public uint Stamp { get; }
 
@@ -17,6 +19,31 @@ namespace System.Reflection.Metadata
         {
             Guid = guid;
             Stamp = stamp;
+        }
+
+        public BlobContentId(ImmutableArray<byte> id) 
+            : this(ImmutableByteArrayInterop.DangerousGetUnderlyingArray(id))
+        {
+        }
+
+        public unsafe BlobContentId(byte[] id)
+        {
+            if (id == null)
+            {
+                throw new ArgumentNullException(nameof(id));
+            }
+
+            if (id.Length != Size)
+            {
+                throw new ArgumentException(SR.Format(SR.UnexpectedArrayLength, Size), nameof(id));
+            }
+
+            fixed (byte* ptr = id)
+            {
+                var reader = new BlobReader(ptr, id.Length);
+                Guid = reader.ReadGuid();
+                Stamp = reader.ReadUInt32();
+            }
         }
 
         public bool IsDefault => Guid == default(Guid) && Stamp == 0;
@@ -65,5 +92,11 @@ namespace System.Reflection.Metadata
             uint timestamp = (uint)(DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds;
             return content => new BlobContentId(Guid.NewGuid(), timestamp);
         }
+
+        public bool Equals(BlobContentId other) => Guid == other.Guid && Stamp == other.Stamp;
+        public override bool Equals(object obj) => obj is BlobContentId && Equals((BlobContentId)obj);
+        public override int GetHashCode() => Hash.Combine(Stamp, Guid.GetHashCode());
+        public static bool operator ==(BlobContentId left, BlobContentId right) => left.Equals(right);
+        public static bool operator !=(BlobContentId left, BlobContentId right) => !left.Equals(right);
     }
 }
