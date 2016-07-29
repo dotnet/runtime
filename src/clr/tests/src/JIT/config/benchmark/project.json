@@ -3,31 +3,38 @@
     "Microsoft.DotNet.xunit.performance": "1.0.0-alpha-build0035",
     "Microsoft.DotNet.xunit.performance.analysis": "1.0.0-alpha-build0035",
     "Microsoft.DotNet.xunit.performance.runner.Windows": "1.0.0-alpha-build0035",
-    "Microsoft.NETCore.Platforms": "1.0.1-rc3-24117-00",
-    "System.Collections.NonGeneric": "4.0.1-rc3-24117-00",
-    "System.Console": "4.0.0-rc3-24117-00",
-    "System.IO.FileSystem": "4.0.1-rc3-24117-00",
-    "System.Linq": "4.1.0-rc3-24117-00",
-    "System.Linq.Expressions": "4.1.0-rc3-24117-00",
-    "System.Numerics.Vectors": "4.1.1-rc3-24117-00",
-    "System.Runtime": "4.1.0-rc3-24117-00",
-    "System.Runtime.Extensions": "4.0.10",
-    "System.Runtime.Numerics": "4.0.1-rc3-24117-00",
-    "System.Text.RegularExpressions": "4.1.0-rc3-24117-00",
-    "System.Threading": "4.0.10",
-    "System.Threading.Tasks": "4.0.10",
-    "System.Threading.Tasks.Parallel": "4.0.0",
-    "System.Diagnostics.Process": "4.1.0-rc3-24117-00",
-    "System.Xml.XmlDocument": "4.0.0",
-    "System.Xml.XPath": "4.0.0",
-    "System.Xml.XPath.XmlDocument": "4.0.0",
+    "Microsoft.NETCore.Platforms": "1.0.2-beta-24328-05",
+    "System.Collections.NonGeneric": "4.0.2-beta-24328-05",
+    "System.Console": "4.0.1-beta-24328-05",
+    "System.IO.FileSystem": "4.0.2-beta-24328-05",
+    "System.Linq": "4.1.1-beta-24328-05",
+    "System.Linq.Expressions": "4.1.1-beta-24328-05",
+    "System.Numerics.Vectors": "4.1.2-beta-24328-05",
+    "System.Runtime": "4.1.1-beta-24328-05",
+    "System.Runtime.Extensions": "4.1.1-beta-24328-05",
+    "System.Runtime.Numerics": "4.0.2-beta-24328-05",
+    "System.Text.RegularExpressions": "4.2.0-beta-24328-05",
+    "System.Threading": "4.0.12-beta-24328-05",
+    "System.Threading.Tasks": "4.0.12-beta-24328-05",
+    "System.Threading.Tasks.Parallel": "4.0.2-beta-24328-05",
+    "System.Diagnostics.Process": "4.1.1-beta-24328-05",
+    "System.Xml.XmlDocument": "4.0.2-beta-24328-05",
+    "System.Xml.XPath": "4.0.2-beta-24328-05",
+    "System.Xml.XPath.XmlDocument": "4.0.2-beta-24328-05",
     "xunit": "2.1.0",
     "xunit.console.netcore": "1.0.2-prerelease-00101",
-    "xunit.runner.utility": "2.1.0"
+    "xunit.runner.utility": "2.1.0",
+    "test_runtime": {
+      "target": "project",
+      "exclude": "compile"
+    }
   },
   "frameworks": {
-    "dnxcore50": {
-      "imports": "portable-net45+win8"
+    "netcoreapp1.0": {
+      "imports": [
+        "dnxcore50",
+        "portable-net45+win8"
+      ]
     }
   },
   "runtimes": {
