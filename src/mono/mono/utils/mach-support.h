@@ -29,15 +29,17 @@ void *mono_mach_arch_get_sp (thread_state_t state);
 void mono_mach_init (pthread_key_t key);
 
 int mono_mach_arch_get_mcontext_size (void);
-void mono_mach_arch_thread_state_to_mcontext (thread_state_t state, void *context);
-void mono_mach_arch_mcontext_to_thread_state (void *context, thread_state_t state);
-void mono_mach_arch_thread_state_to_mono_context (thread_state_t state, MonoContext *context);
+void mono_mach_arch_thread_states_to_mcontext (thread_state_t state, thread_state_t fpstate, void *context);
+void mono_mach_arch_mcontext_to_thread_states (void *context, thread_state_t state, thread_state_t fpstate);
+void mono_mach_arch_thread_states_to_mono_context (thread_state_t state, thread_state_t fpstate, MonoContext *context);
 
+/* FIXME: Should return size_t, not int. */
 int mono_mach_arch_get_thread_state_size (void);
+int mono_mach_arch_get_thread_fpstate_size (void);
 kern_return_t mono_mach_get_threads (thread_act_array_t *threads, guint32 *count);
 kern_return_t mono_mach_free_threads (thread_act_array_t threads, guint32 count);
-kern_return_t mono_mach_arch_get_thread_state (thread_port_t thread, thread_state_t state, mach_msg_type_number_t *count);
-kern_return_t mono_mach_arch_set_thread_state (thread_port_t thread, thread_state_t state, mach_msg_type_number_t count);
+kern_return_t mono_mach_arch_get_thread_states (thread_port_t thread, thread_state_t state, mach_msg_type_number_t *count, thread_state_t fpstate, mach_msg_type_number_t *fpcount);
+kern_return_t mono_mach_arch_set_thread_states (thread_port_t thread, thread_state_t state, mach_msg_type_number_t count, thread_state_t fpstate, mach_msg_type_number_t fpcount);
 void *mono_mach_arch_get_tls_value_from_thread (pthread_t thread, guint32 key);
 void *mono_mach_get_tls_address_from_thread (pthread_t thread, pthread_key_t key);
 

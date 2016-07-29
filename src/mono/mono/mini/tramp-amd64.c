@@ -881,7 +881,7 @@ mono_arch_get_plt_info_offset (guint8 *plt_entry, mgreg_t *regs, guint8 *code)
 guint8*
 mono_arch_create_sdb_trampoline (gboolean single_step, MonoTrampInfo **info, gboolean aot)
 {
-	int tramp_size = 256;
+	int tramp_size = 512;
 	int i, framesize, ctx_offset, cfa_offset, gregs_offset;
 	guint8 *code, *buf;
 	GSList *unwind_ops = NULL;
