@@ -14,6 +14,7 @@ using Contract = Microsoft.Diagnostics.Contracts.Internal.Contract;
 #if ES_BUILD_STANDALONE
 namespace Microsoft.Diagnostics.Tracing
 #else
+using System.Threading.Tasks;
 namespace System.Diagnostics.Tracing
 #endif
 {
@@ -273,9 +274,9 @@ namespace System.Diagnostics.Tracing
         /// </summary>
         private string NormalizeActivityName(string providerName, string activityName, int task)
         {
-            if (activityName.EndsWith(EventSource.s_ActivityStartSuffix))
+            if (activityName.EndsWith(EventSource.s_ActivityStartSuffix, StringComparison.Ordinal))
                 activityName = activityName.Substring(0, activityName.Length - EventSource.s_ActivityStartSuffix.Length);
-            else if (activityName.EndsWith(EventSource.s_ActivityStopSuffix))
+            else if (activityName.EndsWith(EventSource.s_ActivityStopSuffix, StringComparison.Ordinal))
                 activityName = activityName.Substring(0, activityName.Length - EventSource.s_ActivityStopSuffix.Length);
             else if (task != 0)
                 activityName = "task" + task.ToString();
@@ -322,15 +323,12 @@ namespace System.Diagnostics.Tracing
             {
                 if (activityInfo == null)
                     return ("");
-                return Path(activityInfo.m_creator) + "/" + activityInfo.m_uniqueId;
+                return Path(activityInfo.m_creator) + "/" + activityInfo.m_uniqueId.ToString();
             }
 
             public override string ToString()
             {
-                string dead = "";
-                if (m_stopped != 0)
-                    dead = ",DEAD";
-                return m_name + "(" + Path(this) + dead + ")";
+                return m_name + "(" + Path(this) + (m_stopped != 0 ? ",DEAD)" : ")");
             }
 
             public static string LiveActivities(ActivityInfo list)

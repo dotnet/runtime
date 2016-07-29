@@ -6,11 +6,8 @@ using Xunit;
 
 namespace System.Reflection.Emit.Tests
 {
-    public class ConstructorBuilderGetILGenerator1
+    public class ConstructorBuilderGetILGenerator
     {
-        private static readonly RandomDataGenerator s_randomDataGenerator = new RandomDataGenerator();
-        private static int s_randomInt = s_randomDataGenerator.GetInt16();
-
         [Theory]
         [InlineData(MethodAttributes.Assembly)]
         [InlineData(MethodAttributes.CheckAccessOnOverride)]
@@ -38,7 +35,7 @@ namespace System.Reflection.Emit.Tests
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.NotPublic);
             ConstructorBuilder constructor = type.DefineConstructor(attributes, CallingConventions.Standard, new Type[0]);
             Assert.NotNull(constructor.GetILGenerator());
-            Assert.NotNull(constructor.GetILGenerator(s_randomInt));
+            Assert.NotNull(constructor.GetILGenerator(10));
         }
 
         [Fact]
@@ -47,7 +44,7 @@ namespace System.Reflection.Emit.Tests
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.NotPublic);
             ConstructorBuilder constructor = type.DefineConstructor(MethodAttributes.PinvokeImpl, CallingConventions.Standard, new Type[0]);
             Assert.Throws<InvalidOperationException>(() => constructor.GetILGenerator());
-            Assert.Throws<InvalidOperationException>(() => constructor.GetILGenerator(s_randomInt));
+            Assert.Throws<InvalidOperationException>(() => constructor.GetILGenerator(10));
         }
 
         [Fact]
@@ -56,7 +53,7 @@ namespace System.Reflection.Emit.Tests
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.NotPublic);
             ConstructorBuilder constructor = type.DefineDefaultConstructor(MethodAttributes.Public);
             Assert.Throws<InvalidOperationException>(() => constructor.GetILGenerator());
-            Assert.Throws<InvalidOperationException>(() => constructor.GetILGenerator(s_randomInt));
+            Assert.Throws<InvalidOperationException>(() => constructor.GetILGenerator(10));
         }
     }
 }

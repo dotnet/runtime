@@ -14,8 +14,8 @@ namespace System.Reflection.Metadata.Ecma335
     /// </summary>
     public sealed class PortablePdbBuilder
     {
-        public string MetadataVersion => "PDB v1.0";
-        public ushort FormatVersion => 0x0100;
+        public string MetadataVersion => PortablePdbVersions.DefaultMetadataVersion;
+        public ushort FormatVersion => PortablePdbVersions.DefaultFormatVersion;
 
         private Blob _pdbIdBlob;
         private readonly MethodDefinitionHandle _entryPoint;

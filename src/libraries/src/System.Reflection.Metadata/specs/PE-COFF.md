@@ -29,10 +29,33 @@ The associated .pdb file may not exist at the path indicated by Path field. If i
 
 If the containing PE/COFF file is deterministic the Guid field above and DateTimeStamp field of the directory entry are  calculated deterministically based solely on the content of the associated .pdb file. Otherwise the value of Guid is random and the value of DateTimeStamp indicates the time and date that the debug data was created.
 
-*Version Major=0x0100, Minor=0x504d* of the data format has the same structure as above. The Age shall be 1. The format of the associated .pdb file is Portable PDB. Together 16B of the Guid concatenated with 4B of the TimeDateStamp field of the entry form a PDB ID that should be used to match the PE/COFF image with the associated PDB (instead of Guid and Age). Matching PDB ID is stored in the #Pdb stream of the .pdb file.
+*Version Major=any, Minor=0x504d* of the data format has the same structure as above. The Age shall be 1. The format of the associated .pdb file is Portable PDB. The Major version specified in the entry indicates the version of the Portable PDB format. Together 16B of the Guid concatenated with 4B of the TimeDateStamp field of the entry form a PDB ID that should be used to match the PE/COFF image with the associated PDB (instead of Guid and Age). Matching PDB ID is stored in the #Pdb stream of the .pdb file.
 
 ### Deterministic Debug Directory Entry (type 16)
 
 The entry doesn't have any data associated with it. All fields of the entry, but Type shall be zero.
 
 Presence of this entry indicates that the containing PE/COFF file is deterministic. 
+
+### Embedded Portable PDB Debug Directory Entry (type 17)
+
+Declares that debugging information is embedded in the PE file at location specified by PointerToRawData. 
+
+*Version Major=any, Minor=0x0100* of the data format:
+
+| Offset | Size           | Field            | Description                                           |
+|:-------|:---------------|:-----------------|-------------------------------------------------------|
+| 0      | 4              | Signature        | 0x4D 0x50 0x44 0x42                                   |
+| 4      | 4              | UncompressedSize | The size of decompressed Portable PDB image           |
+| 8      | SizeOfData - 8 | PortablePdbImage | Portable PDB image compressed using Deflate algorithm | 
+
+
+If both CodeView and Embedded Portable PDB entries are present then they shall represent the same data.
+
+> Note: The reader may prefer to read from the file if it exists. This may be more efficient as it avoids in-memory decompression.
+
+> Note: Including both entries enables a tool that does not recognize Embedded Portable PDB entry to locate debug information as long as it is also available in a file specified in CodeView entry. Such file can be created by extracting the embedded Portable PDB image to a separate file.
+
+The Major version specified in the entry indicates the version of the Portable PDB format. The Minor version indicates the version of the Embedded Portable PDB data format.
+
+The value of Stamp field in the entry shall be 0.

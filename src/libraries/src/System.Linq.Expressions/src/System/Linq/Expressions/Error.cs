@@ -1073,5 +1073,10 @@ namespace System.Linq.Expressions
         {
             return new InvalidOperationException(Strings.NonAbstractConstructorRequired);
         }
+
+        internal static Exception InvalidProgram()
+        {
+            return new InvalidProgramException();
+        }
     }
 }

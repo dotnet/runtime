@@ -408,24 +408,6 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        public void BeginConnectV4IPEndPointToV6Host_Fails()
-        {
-            Assert.ThrowsAny<SocketException>(() =>
-            {
-                DualModeBeginConnect_IPEndPointToHost_Helper(IPAddress.Loopback, IPAddress.IPv6Loopback, false);
-            });
-        }
-
-        [Fact]
-        public void BeginConnectV6IPEndPointToV4Host_Fails()
-        {
-            Assert.ThrowsAny<SocketException>(() =>
-            {
-                DualModeBeginConnect_IPEndPointToHost_Helper(IPAddress.IPv6Loopback, IPAddress.Loopback, false);
-            });
-        }
-
-        [Fact]
         public void BeginConnectV4IPEndPointToDualHost_Success()
         {
             DualModeBeginConnect_IPEndPointToHost_Helper(IPAddress.Loopback, IPAddress.IPv6Any, true);
@@ -736,7 +718,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [ActiveIssue(5832, PlatformID.AnyUnix)]
+        [PlatformSpecific(PlatformID.Windows)] // https://github.com/dotnet/corefx/issues/5832
         public void AcceptV6BoundToSpecificV4_CantConnect()
         {
             Assert.Throws<SocketException>(() =>
@@ -746,7 +728,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [ActiveIssue(5832, PlatformID.AnyUnix)]
+        [PlatformSpecific(PlatformID.Windows)] // https://github.com/dotnet/corefx/issues/5832
         public void AcceptV4BoundToSpecificV6_CantConnect()
         {
             Assert.Throws<SocketException>(() =>
@@ -756,7 +738,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [ActiveIssue(5832, PlatformID.AnyUnix)]
+        [PlatformSpecific(PlatformID.Windows)] // https://github.com/dotnet/corefx/issues/5832
         public void AcceptV6BoundToAnyV4_CantConnect()
         {
             Assert.Throws<SocketException>(() =>

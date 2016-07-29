@@ -3,9 +3,11 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <Version>4.0.2</Version>
+    <WinVersion Condition="'$(PackagePlatform)'=='arm64'">win10</WinVersion>
+    <WinVersion Condition="'$(PackagePlatform)'=='x86' OR '$(PackagePlatform)'=='x64'">win7</WinVersion>
     <!-- use the same naming convention as a runtime package, but don't treat as a runtime dependency -->
-    <IdPrefix>runtime.win7-$(PackagePlatform).</IdPrefix>
-    <PackagePlatforms>x64;x86;</PackagePlatforms>
+    <IdPrefix>runtime.$(WinVersion)-$(PackagePlatform).</IdPrefix>
+    <PackagePlatforms>x64;x86;arm64;</PackagePlatforms>
     <SkipValidatePackage>true</SkipValidatePackage>
     <!-- don't package this as runtime specific -->
     <PackageTargetRuntime>
@@ -14,7 +16,7 @@
   <!-- These paths are not built in CoreFx, enable when fixing https://github.com/dotnet/corefx/issues/826 -->
   <ItemGroup>
     <NativeFile Include="$(WinNativePath)sni.dll">
-      <TargetPath>runtimes/win7-$(PackagePlatform)/native</TargetPath>
+      <TargetPath>runtimes/$(WinVersion)-$(PackagePlatform)/native</TargetPath>
     </NativeFile>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
