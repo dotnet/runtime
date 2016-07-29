@@ -85,14 +85,16 @@ public:
     inline void ResetState()
     {
         LIMITED_METHOD_CONTRACT;
-        m_numRequestsPending = 0;
+        VolatileStore(&m_numRequestsPending, (LONG)0);
         m_id.m_dwId = 0;
     }
     
     inline BOOL IsRequestPending()
     {
         LIMITED_METHOD_CONTRACT;
-        return m_numRequestsPending != ADUnloading && m_numRequestsPending > 0;
+
+        LONG count = VolatileLoad(&m_numRequestsPending);
+        return count != ADUnloading && count > 0;
     }
 
     void SetAppDomainRequestsActive();
@@ -106,7 +108,7 @@ public:
         //has started running yet. That implies, no requests should be pending
         //or dispatched to this structure yet.
 
-        _ASSERTE(m_numRequestsPending != ADUnloading);
+        _ASSERTE(VolatileLoad(&m_numRequestsPending) != ADUnloading);
         _ASSERTE(m_id.m_dwId == 0);
 
         m_id = id;
@@ -119,7 +121,7 @@ public:
         //has started running yet. That implies, no requests should be pending
         //or dispatched to this structure yet.
 
-        _ASSERTE(m_numRequestsPending != ADUnloading);
+        _ASSERTE(VolatileLoad(&m_numRequestsPending) != ADUnloading);
         _ASSERTE(m_id.m_dwId == 0);
         _ASSERTE(m_index.m_dwIndex == UNUSED_THREADPOOL_INDEX);
 
@@ -135,7 +137,7 @@ public:
             //added removed at this time. So, make sure that the per-appdomain structures that 
             //have been cleared(reclaimed) don't have any pending requests to them.
 
-            _ASSERTE(m_numRequestsPending != ADUnloading);
+            _ASSERTE(VolatileLoad(&m_numRequestsPending) != ADUnloading);
             _ASSERTE(m_id.m_dwId == 0);
 
             return TRUE;
@@ -159,14 +161,14 @@ public:
     inline void SetAppDomainUnloading()
     {
         LIMITED_METHOD_CONTRACT;
-        m_numRequestsPending = ADUnloading;
+        VolatileStore(&m_numRequestsPending, ADUnloading);
     }
 
     inline void ClearAppDomainUnloading();
 
     inline BOOL IsAppDomainUnloading()
     {
-        return m_numRequestsPending.Load() == ADUnloading;
+        return VolatileLoad(&m_numRequestsPending) == ADUnloading;
     }
 
     void DispatchWorkItem(bool* foundWork, bool* wasNotRecalled);
@@ -174,7 +176,8 @@ public:
 private:
     struct {
         BYTE padding1[64]; // padding to ensure own cache line
-        Volatile<LONG> m_numRequestsPending;
+        // Only use with VolatileLoad+VolatileStore+FastInterlockCompareExchange
+        LONG m_numRequestsPending;
         BYTE padding2[64]; // padding to ensure own cache line
         ADID m_id;
         BYTE padding3[64]; // padding to ensure own cache line
@@ -217,13 +220,13 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         m_NumRequests = 0;
-        m_outstandingThreadRequestCount = 0;
+        VolatileStore(&m_outstandingThreadRequestCount, (LONG)0);
     }
 
     inline BOOL IsRequestPending()
     {
         LIMITED_METHOD_CONTRACT;
-        return m_outstandingThreadRequestCount != 0 ? TRUE : FALSE;
+        return VolatileLoad(&m_outstandingThreadRequestCount) != (LONG)0 ? TRUE : FALSE;
     }
 
     void SetAppDomainRequestsActive();
@@ -231,7 +234,7 @@ public:
     inline void ClearAppDomainRequestsActive(BOOL bADU)
     {
         LIMITED_METHOD_CONTRACT;
-        m_outstandingThreadRequestCount = 0;
+        VolatileStore(&m_outstandingThreadRequestCount, (LONG)0);
     }
 
     bool TakeActiveRequest();
@@ -281,7 +284,8 @@ private:
         BYTE padding1[64]; // padding to ensure own cache line
         ULONG m_NumRequests;
         BYTE padding2[64]; // padding to ensure own cache line
-        Volatile<LONG> m_outstandingThreadRequestCount;
+        // Only use with VolatileLoad+VolatileStore+FastInterlockCompareExchange
+        LONG m_outstandingThreadRequestCount;
         BYTE padding3[64]; // padding to ensure own cache line
         SpinLock m_lock;
     };
