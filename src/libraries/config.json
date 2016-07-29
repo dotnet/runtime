@@ -462,15 +462,15 @@
     "build-native":{
       "alias":{
         "debug":{
-          "description": "Passes DEBUG to respective build-native script.",
+          "description": "Passes Debug to respective build-native script.",
           "settings":{
-            "CmakeBuildType": "DEBUG"
+            "CmakeBuildType": "Debug"
           }
         },
         "release":{
-          "description": "Passes RELEASE to respective build-native script.",
+          "description": "Passes Release to respective build-native script.",
           "settings":{
-            "CmakeBuildType": "RELEASE"
+            "CmakeBuildType": "Release"
           }
         },
         "buildArch":{
