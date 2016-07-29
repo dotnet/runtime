@@ -95,9 +95,12 @@ LONG    ThreadpoolMgr::cpuUtilizationAverage = 0;
 
 HillClimbing ThreadpoolMgr::HillClimbingInstance;
 
-Volatile<LONG> ThreadpoolMgr::PriorCompletedWorkRequests = 0;
-Volatile<DWORD> ThreadpoolMgr::PriorCompletedWorkRequestsTime;
-Volatile<DWORD> ThreadpoolMgr::NextCompletedWorkRequestsTime;
+BYTE ThreadpoolMgr::padding1[64];
+LONG ThreadpoolMgr::PriorCompletedWorkRequests = 0;
+DWORD ThreadpoolMgr::PriorCompletedWorkRequestsTime;
+DWORD ThreadpoolMgr::NextCompletedWorkRequestsTime;
+BYTE ThreadpoolMgr::padding2[64];
+
 LARGE_INTEGER ThreadpoolMgr::CurrentSampleStartTime;
 
 int ThreadpoolMgr::ThreadAdjustmentInterval;
@@ -1189,7 +1192,7 @@ void ThreadpoolMgr::AdjustMaxWorkersActive()
 
     DWORD currentTicks = GetTickCount();
     LONG totalNumCompletions = Thread::GetTotalThreadPoolCompletionCount();
-    LONG numCompletions = totalNumCompletions - PriorCompletedWorkRequests;
+    LONG numCompletions = totalNumCompletions - VolatileLoad(&PriorCompletedWorkRequests);
 
     LARGE_INTEGER startTime = CurrentSampleStartTime;
     LARGE_INTEGER endTime;
@@ -1251,9 +1254,10 @@ void ThreadpoolMgr::AdjustMaxWorkersActive()
             }
         }
 
-        PriorCompletedWorkRequests = totalNumCompletions;
+        // Memory fences below writes
+        VolatileStore(&PriorCompletedWorkRequests, totalNumCompletions);
         PriorCompletedWorkRequestsTime = currentTicks;
-        NextCompletedWorkRequestsTime = PriorCompletedWorkRequestsTime + ThreadAdjustmentInterval;
+        NextCompletedWorkRequestsTime = currentTicks + ThreadAdjustmentInterval;
         CurrentSampleStartTime = endTime;
     }
 }

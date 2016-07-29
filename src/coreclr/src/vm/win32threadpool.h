@@ -1139,8 +1139,9 @@ public:
         if (CLRThreadpoolHosted())
             return false;
 
-        DWORD requiredInterval = NextCompletedWorkRequestsTime - PriorCompletedWorkRequestsTime;
-        DWORD elapsedInterval = GetTickCount() - PriorCompletedWorkRequestsTime;
+        DWORD priorTime = PriorCompletedWorkRequestsTime; 
+        DWORD requiredInterval = VolatileLoad(&NextCompletedWorkRequestsTime) - priorTime; // fences above read
+        DWORD elapsedInterval = GetTickCount() - priorTime;
         if (elapsedInterval >= requiredInterval)
         {
             ThreadCounter::Counts counts = WorkerCounter.GetCleanCounts();
@@ -1304,9 +1305,13 @@ private:
     
     static HillClimbing HillClimbingInstance;
 
-    static Volatile<LONG> PriorCompletedWorkRequests;
-    static Volatile<DWORD> PriorCompletedWorkRequestsTime;
-    static Volatile<DWORD> NextCompletedWorkRequestsTime;
+    static BYTE padding1[64]; // padding to ensure own cache line
+
+    static LONG PriorCompletedWorkRequests;
+    static DWORD PriorCompletedWorkRequestsTime;
+    static DWORD NextCompletedWorkRequestsTime;
+
+    static BYTE padding2[64]; // padding to ensure own cache line
 
     static LARGE_INTEGER CurrentSampleStartTime;
 
