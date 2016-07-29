@@ -194,11 +194,11 @@ void VIRTUALCleanup()
     {
         WARN( "The memory at %d was not freed through a call to VirtualFree.\n",
               pEntry->startBoundary );
-        InternalFree(pEntry->pAllocState);
-        InternalFree(pEntry->pProtectionState );
+        free(pEntry->pAllocState);
+        free(pEntry->pProtectionState );
         pTempEntry = pEntry;
         pEntry = pEntry->pNext;
-        InternalFree(pTempEntry );
+        free(pTempEntry );
     }
     pVirtualMemory = NULL;
 
@@ -533,13 +533,13 @@ static BOOL VIRTUALReleaseMemory( PCMI pMemoryToBeReleased )
         }
     }
 
-    InternalFree( pMemoryToBeReleased->pAllocState );
+    free( pMemoryToBeReleased->pAllocState );
     pMemoryToBeReleased->pAllocState = NULL;
 
-    InternalFree( pMemoryToBeReleased->pProtectionState );
+    free( pMemoryToBeReleased->pProtectionState );
     pMemoryToBeReleased->pProtectionState = NULL;
 
-    InternalFree( pMemoryToBeReleased );
+    free( pMemoryToBeReleased );
     pMemoryToBeReleased = NULL;
 
     return bRetVal;
@@ -753,13 +753,13 @@ static BOOL VIRTUALStoreAllocationInfo(
     {
         ERROR( "Unable to allocate memory for the structure.\n");
 
-        if (pNewEntry->pProtectionState) InternalFree(pNewEntry->pProtectionState);
+        if (pNewEntry->pProtectionState) free(pNewEntry->pProtectionState);
         pNewEntry->pProtectionState = nullptr;
 
-        if (pNewEntry->pAllocState) InternalFree(pNewEntry->pAllocState);
+        if (pNewEntry->pAllocState) free(pNewEntry->pAllocState);
         pNewEntry->pAllocState = nullptr;
 
-        InternalFree(pNewEntry);
+        free(pNewEntry);
         pNewEntry = nullptr;
 
         return FALSE;

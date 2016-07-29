@@ -70,11 +70,6 @@ namespace CorUnix{
         size_t szSize
         );
 
-    void
-    InternalFree(
-        void *pvMem
-        );
-
     // Define common code for "new" style allocators below.
 #define INTERNAL_NEW_COMMON()                    \
         T *pMem = (T*)InternalMalloc(sizeof(T)); \
@@ -137,7 +132,7 @@ namespace CorUnix{
         if (p)
         {
             p->~T();
-            InternalFree(p);
+            free(p);
         }
     }
 
@@ -149,7 +144,7 @@ namespace CorUnix{
             size_t cElements = *pRealMem;
             for (size_t i = 0; i < cElements; i++)
                 p[i].~T();
-            InternalFree(pRealMem);
+            free(pRealMem);
         }
     }
 }

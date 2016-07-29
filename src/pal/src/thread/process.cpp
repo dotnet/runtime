@@ -394,9 +394,9 @@ CreateProcessA(
         lpProcessInformation
         );
 done:
-    InternalFree(ApplicationNameW);
-    InternalFree(CommandLineW);
-    InternalFree(CurrentDirectoryW);
+    free(ApplicationNameW);
+    free(CommandLineW);
+    free(CurrentDirectoryW);
 
     if (NO_ERROR != palError)
     {
@@ -1091,7 +1091,7 @@ InternalCreateProcessExit:
 
     if (EnvironmentArray)
     {
-        InternalFree(EnvironmentArray);
+        free(EnvironmentArray);
     }
 
     /* if we still have the file structures at this point, it means we 
@@ -1131,8 +1131,8 @@ InternalCreateProcessExit:
     /* free allocated memory */
     if (lppArgv)
     {
-        InternalFree(*lppArgv);
-        InternalFree(lppArgv);
+        free(*lppArgv);
+        free(lppArgv);
     }
 
     return palError;
@@ -2832,7 +2832,7 @@ DestroyProcessModules(IN ProcessModules *listHead)
     for (ProcessModules *entry = listHead; entry != NULL; )
     {
         ProcessModules *next = entry->Next;
-        InternalFree(entry);
+        free(entry);
         entry = next;
     }
 }
@@ -3086,18 +3086,18 @@ CorUnix::InitializeProcessCommandLine(
         if (wcscpy_s(initial_dir, iLen, lpwstrFullPath) != SAFECRT_SUCCESS)
         {
             ERROR("wcscpy_s failed!\n");
-            InternalFree(initial_dir);
+            free(initial_dir);
             palError = ERROR_INTERNAL_ERROR;
             goto exit;
         }
 
         lpwstr[0] = '/';
 
-        InternalFree(g_lpwstrAppDir);
+        free(g_lpwstrAppDir);
         g_lpwstrAppDir = initial_dir;
     }
 
-    InternalFree(g_lpwstrCmdLine);
+    free(g_lpwstrCmdLine);
     g_lpwstrCmdLine = lpwstrCmdLine;
 
 exit:
@@ -3243,12 +3243,12 @@ PROCCleanupInitialProcess(VOID)
     CPalThread *pThread = InternalGetCurrentThread();
 
     InternalEnterCriticalSection(pThread, &g_csProcess);
-    
+
     /* Free the application directory */
-    InternalFree(g_lpwstrAppDir);
-    
+    free(g_lpwstrAppDir);
+
     /* Free the stored command line */
-    InternalFree(g_lpwstrCmdLine);
+    free(g_lpwstrCmdLine);
 
     InternalLeaveCriticalSection(pThread, &g_csProcess);
 
@@ -4290,7 +4290,7 @@ buildArgv(
                                  pChar, iWlen+1, NULL, NULL))
         {
             ASSERT("Unable to convert to a multibyte string\n");
-            InternalFree(lpAsciiCmdLine);
+            free(lpAsciiCmdLine);
             return NULL;
         }
     }
@@ -4378,7 +4378,7 @@ buildArgv(
 
     if (lppArgv == NULL)
     {
-        InternalFree(lpAsciiCmdLine);
+        free(lpAsciiCmdLine);
         return NULL;
     }
 
@@ -4569,7 +4569,7 @@ getPath(
 
         if (!lpPathFileName.Reserve(nextLen + lpFileNameString.GetCount() + 1))
         {
-            InternalFree(lpPath);
+            free(lpPath);
             ERROR("StackString ran out of memory for full path\n");
             return FALSE;
         }
@@ -4587,14 +4587,14 @@ getPath(
         if ( access (lpPathFileName, F_OK) == 0)
         {
             TRACE("Found %s in $PATH element %s\n", lpFileName, lpNext);
-            InternalFree(lpPath);
+            free(lpPath);
             return TRUE;
         }
 
         lpNext = lpCurrent;  /* search in the next directory */
     }
 
-    InternalFree(lpPath);
+    free(lpPath);
     TRACE("File %s not found in $PATH\n", lpFileName);
     return FALSE;
 }

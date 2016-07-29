@@ -105,7 +105,7 @@ namespace CorUnix
 
             if (NULL != m_rghteHandleTable)
             {
-                InternalFree(m_rghteHandleTable);
+                free(m_rghteHandleTable);
             }
         }
 

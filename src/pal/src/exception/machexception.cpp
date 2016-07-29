@@ -177,7 +177,7 @@ GetExceptionMask()
         if (exceptionSettings)
         {
             exMode = (MachExceptionMode)atoi(exceptionSettings);
-            InternalFree(exceptionSettings);
+            free(exceptionSettings);
         }
         else
         {

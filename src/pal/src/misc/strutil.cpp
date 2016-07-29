@@ -92,5 +92,5 @@ void
 CPalString::FreeBuffer()
 {
     _ASSERTE(NULL != m_pwsz);
-    InternalFree(const_cast<WCHAR*>(m_pwsz));
+    free(const_cast<WCHAR*>(m_pwsz));
 }
