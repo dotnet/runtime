@@ -2,6 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
+using System.Runtime.Serialization;
+
 #if ES_BUILD_STANDALONE
 using Environment = Microsoft.Diagnostics.Tracing.Internal.Environment;
 #endif
@@ -16,7 +19,9 @@ namespace System.Diagnostics.Tracing
     /// Exception that is thrown when an error occurs during EventSource operation.
     /// </summary>
 #if (!ES_BUILD_PCL && !PROJECTN)
+#if FEATURE_SERIALIZATION
     [Serializable]
+#endif
 #endif
     public class EventSourceException : Exception
     {

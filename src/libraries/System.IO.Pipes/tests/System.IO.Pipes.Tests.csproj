@@ -14,7 +14,6 @@
     <ProjectGuid>{142469EC-D665-4FE2-845A-FDA69F9CC557}</ProjectGuid>
     <NuGetPackageImportStamp>d2615b94</NuGetPackageImportStamp>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <IncludePerformanceTests>true</IncludePerformanceTests>
     <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
@@ -45,12 +44,6 @@
     <Compile Include="PipeTest.Read.cs" />
     <Compile Include="PipeTest.Write.cs" />
     <Compile Include="XunitAssemblyAttributes.cs" />
-    <Compile Include="Performance\Perf.AnonymousPipeStream.cs" />
-    <Compile Include="Performance\Perf.NamedPipeStream.cs" />
-    <Compile Include="Performance\Perf.PipeTest.cs" />
-    <Compile Include="$(CommonTestPath)\System\PerfUtils.cs">
-      <Link>Common\System\PerfUtils.cs</Link>
-    </Compile>
     <Compile Include="$(CommonTestPath)\System\Diagnostics\AssertWithCallerAttributes.cs">
       <Link>Common\tests\System\Diagnostics\AssertWithCallerAttributes.cs</Link>
     </Compile>

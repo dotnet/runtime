@@ -5,6 +5,7 @@
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.IO;
+using System.IO.Compression;
 using System.Reflection.Internal;
 using System.Reflection.Metadata;
 using System.Threading;
@@ -94,9 +95,8 @@ namespace System.Reflection.PortableExecutable
         /// </param>
         /// <exception cref="ArgumentNullException"><paramref name="peStream"/> is null.</exception>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="options"/> has an invalid value.</exception>
-        /// <exception cref="BadImageFormatException">
-        /// <see cref="PEStreamOptions.PrefetchMetadata"/> is specified and the PE headers of the image are invalid.
-        /// </exception>
+        /// <exception cref="IOException">Error reading from the stream (only when prefetching data).</exception>
+        /// <exception cref="BadImageFormatException"><see cref="PEStreamOptions.PrefetchMetadata"/> is specified and the PE headers of the image are invalid.</exception>
         public PEReader(Stream peStream, PEStreamOptions options)
             : this(peStream, options, 0)
         {
@@ -124,6 +124,7 @@ namespace System.Reflection.PortableExecutable
         /// </param>
         /// <exception cref="ArgumentOutOfRangeException">Size is negative or extends past the end of the stream.</exception>
         /// <exception cref="IOException">Error reading from the stream (only when prefetching data).</exception>
+        /// <exception cref="BadImageFormatException"><see cref="PEStreamOptions.PrefetchMetadata"/> is specified and the PE headers of the image are invalid.</exception>
         public unsafe PEReader(Stream peStream, PEStreamOptions options, int size)
         {
             if (peStream == null)
@@ -533,6 +534,109 @@ namespace System.Reflection.PortableExecutable
 
                 return new CodeViewDebugDirectoryData(guid, age, path);
             }
+        }
+
+        /// <summary>
+        /// Reads the data pointed to by the specified Debug Directory entry and interprets them as Embedded Portable PDB blob.
+        /// </summary>
+        /// <returns>
+        /// Provider of a metadata reader reading Portable PDB image.
+        /// </returns>
+        /// <exception cref="ArgumentException"><paramref name="entry"/> is not a <see cref="DebugDirectoryEntryType.EmbeddedPortablePdb"/> entry.</exception>
+        /// <exception cref="BadImageFormatException">Bad format of the data.</exception>
+        public unsafe MetadataReaderProvider ReadEmbeddedPortablePdbDebugDirectoryData(DebugDirectoryEntry entry)
+        {
+            if (entry.Type != DebugDirectoryEntryType.EmbeddedPortablePdb)
+            {
+                throw new ArgumentException(SR.NotCodeViewEntry, nameof(entry));
+            }
+
+            ValidateEmbeddedPortablePdbVersion(entry);
+
+            using (AbstractMemoryBlock block = _peImage.GetMemoryBlock(entry.DataPointer, entry.DataSize))
+            {
+                var pdbImage = DecodeEmbeddedPortablePdbDebugDirectoryData(block);
+                return MetadataReaderProvider.FromPortablePdbImage(pdbImage);
+            }
+        }
+
+        // internal for testing
+        internal static void ValidateEmbeddedPortablePdbVersion(DebugDirectoryEntry entry)
+        {
+            // Major version encodes the version of Portable PDB format itself.
+            // Minor version encodes the version of Embedded Portable PDB blob.
+            // Accept any version of Portable PDB >= 1.0, 
+            // but only accept version 1.* of the Embedded Portable PDB blob.
+            // Any breaking change in the format should rev major version of the embedded blob.
+            ushort formatVersion = entry.MajorVersion;
+            if (formatVersion < PortablePdbVersions.MinFormatVersion)
+            {
+                throw new BadImageFormatException(SR.Format(SR.UnsupportedFormatVersion, PortablePdbVersions.Format(formatVersion)));
+            }
+
+            ushort embeddedBlobVersion = entry.MinorVersion;
+            if (embeddedBlobVersion != PortablePdbVersions.DefaultEmbeddedVersion)
+            {
+                throw new BadImageFormatException(SR.Format(SR.UnsupportedFormatVersion, PortablePdbVersions.Format(embeddedBlobVersion)));
+            }
+        }
+
+        // internal for testing
+        internal static unsafe ImmutableArray<byte> DecodeEmbeddedPortablePdbDebugDirectoryData(AbstractMemoryBlock block)
+        {
+            byte[] decompressed;
+            
+            const int headerSize = 2 * sizeof(int);
+
+            var headerReader = new BlobReader(block.Pointer, headerSize);
+
+            if (headerReader.ReadUInt32() != PortablePdbVersions.DebugDirectoryEmbeddedSignature)
+            {
+                throw new BadImageFormatException(SR.UnexpectedEmbeddedPortablePdbDataSignature);
+            }
+
+            int decompressedSize = headerReader.ReadInt32();
+
+            try
+            {
+                decompressed = new byte[decompressedSize];
+            }
+            catch
+            {
+                throw new BadImageFormatException(SR.DataTooBig);
+            }
+
+            var compressed = new ReadOnlyUnmanagedMemoryStream(block.Pointer + headerSize, block.Size - headerSize);
+            var deflate = new DeflateStream(compressed, CompressionMode.Decompress, leaveOpen: true);
+
+            if (decompressedSize > 0)
+            {
+                int actualLength;
+
+                try
+                {
+                    actualLength = deflate.TryReadAll(decompressed, 0, decompressed.Length);
+                }
+                catch (InvalidDataException e)
+                {
+                    throw new BadImageFormatException(e.Message, e.InnerException);
+                }
+
+                if (actualLength != decompressed.Length)
+                {
+                    throw new BadImageFormatException(SR.SizeMismatch);
+                }
+            }
+
+            // Check that there is no more compressed data left, 
+            // in case the decompressed size specified in the header is smaller 
+            // than the actual decompressed size of the data.
+            if (deflate.ReadByte() != -1)
+            {
+                throw new BadImageFormatException(SR.SizeMismatch);
+            }
+
+            return ImmutableByteArrayInterop.DangerousCreateFromUnderlyingArray(ref decompressed);
         }
     }
 }

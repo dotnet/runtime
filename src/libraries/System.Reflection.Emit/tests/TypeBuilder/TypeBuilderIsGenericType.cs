@@ -2,44 +2,25 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Reflection;
-using System.Reflection.Emit;
-using System.Threading;
 using Xunit;
 
 namespace System.Reflection.Emit.Tests
 {
     public class TypeBuilderIsGenericType
     {
-        public const string ModuleName = "ModuleName";
-        public const string TypeName = "TypeName";
-
-        private TypeBuilder GetTypeBuilder(string typename)
+        [Fact]
+        public void IsGenericType_GenericType_ReturnsTrye()
         {
-            AssemblyName assemblyname = new AssemblyName("assemblyname");
-
-            AssemblyBuilder assemblybuilder = AssemblyBuilder.DefineDynamicAssembly(assemblyname, AssemblyBuilderAccess.Run);
-            ModuleBuilder modulebuilder = TestLibrary.Utilities.GetModuleBuilder(assemblybuilder, "Module1");
-            return modulebuilder.DefineType(typename);
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.NotPublic);
+            type.DefineGenericParameters("T1", "T2", "T3");
+            Assert.True(type.IsGenericType);
         }
 
         [Fact]
-        public void TestOnGenericType()
+        public void IsGenericType_NonGenericType_ReturnsTrye()
         {
-            TypeBuilder typebuilder = GetTypeBuilder(TypeName);
-            string[] argu = { "argu0", "argu1", "argu2" };
-            GenericTypeParameterBuilder[] gtpb = typebuilder.DefineGenericParameters(argu);
-            bool boolvalue = typebuilder.IsGenericType;
-            Assert.True(boolvalue);
-        }
-
-        [Fact]
-        public void TestOnNonGenericType()
-        {
-            TypeBuilder typebuilder = GetTypeBuilder(TypeName);
-            bool boolvalue = typebuilder.IsGenericType;
-            Assert.False(boolvalue);
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.NotPublic);
+            Assert.False(type.IsGenericType);
         }
     }
 }

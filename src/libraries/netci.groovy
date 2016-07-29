@@ -12,7 +12,7 @@ def projectFolder = Utilities.getFolderName(project) + '/' + Utilities.getFolder
 
 // Globals
 
-// Map of os -> osGroup.
+// Map of osName -> osGroup.
 def osGroupMap = ['Ubuntu14.04':'Linux',
                   'Ubuntu16.04':'Linux',
                   'Debian8.4':'Linux',
@@ -24,7 +24,7 @@ def osGroupMap = ['Ubuntu14.04':'Linux',
                   'RHEL7.2': 'Linux',
                   'LinuxARMEmulator': 'Linux']
 
-// Map of os -> nuget runtime
+// Map of osName -> nuget runtime
 def targetNugetRuntimeMap = ['OSX' : 'osx.10.10-x64',
                              'Ubuntu14.04' : 'ubuntu.14.04-x64',
                              'Ubuntu16.04' : 'ubuntu.16.04-x64',
@@ -56,7 +56,7 @@ def osShortName = ['Windows 10': 'win10',
         def isLocal = (localType == 'local')
 
         def newJobName = 'code_coverage_windows'
-        def batchCommand = 'call "C:\\Program Files (x86)\\Microsoft Visual Studio 14.0\\Common7\\Tools\\VsDevCmd.bat" && build.cmd /p:Coverage=true /p:Outerloop=true /p:WithoutCategories=IgnoreForCI'
+        def batchCommand = 'call build.cmd -coverage -outerloop -- /p:WithoutCategories=IgnoreForCI'
         if (isLocal) {
             newJobName = "${newJobName}_local"
             batchCommand = "${batchCommand} /p:TestWithLocalLibraries=true"
@@ -98,7 +98,7 @@ def osShortName = ['Windows 10': 'win10',
 [true, false].each { isPR ->
     def newJob = job(Utilities.getFullJobName(project, 'native_code_format_check', isPR)) {
         steps {
-            shell('python src/Native/format-code.py checkonly')
+            shell('python src/Native/Unix/format-code.py checkonly')
         }
     }
     
@@ -120,16 +120,16 @@ def osShortName = ['Windows 10': 'win10',
 // Define outerloop windows Nano testing.  Run locally on each machine.
 // **************************
 [true, false].each { isPR ->
-    ['Windows Nano 2016'].each { os ->
+    ['Windows Nano 2016'].each { osName ->
         ['Debug', 'Release'].each { configurationGroup ->
 
-            def newJobName = "outerloop_${osShortName[os]}_${configurationGroup.toLowerCase()}"
+            def newJobName = "outerloop_${osShortName[osName]}_${configurationGroup.toLowerCase()}"
             
-            def newBuildJobName = "outerloop_${osShortName[os]}_${configurationGroup.toLowerCase()}_bld"
+            def newBuildJobName = "outerloop_${osShortName[osName]}_${configurationGroup.toLowerCase()}_bld"
 
             def newBuildJob = job(Utilities.getFullJobName(project, newBuildJobName, isPR)) {
                 steps {
-                    batchFile("call \"C:\\Program Files (x86)\\Microsoft Visual Studio 14.0\\VC\\vcvarsall.bat\" x86 && build.cmd /p:OSGroup=Windows_NT /p:ConfigurationGroup=${configurationGroup} /p:SkipTests=true /p:Outerloop=true /p:WithoutCategories=IgnoreForCI")
+                    batchFile("call \"C:\\Program Files (x86)\\Microsoft Visual Studio 14.0\\VC\\vcvarsall.bat\" x86 && build.cmd -os=Windows_NT -${configurationGroup} -skipTests -outerloop -- /p:WithoutCategories=IgnoreForCI")
                     // Package up the results.
                     batchFile("C:\\Packer\\Packer.exe .\\bin\\build.pack . bin packages")
                 }
@@ -143,7 +143,7 @@ def osShortName = ['Windows 10': 'win10',
             Utilities.addArchival(newBuildJob, "bin/build.pack,run-test.cmd,msbuild.log")
             
             def fullCoreFXBuildJobName = projectFolder + '/' + newBuildJob.name
-            def newTestJobName =  "outerloop_${osShortName[os]}_${configurationGroup.toLowerCase()}_tst"
+            def newTestJobName =  "outerloop_${osShortName[osName]}_${configurationGroup.toLowerCase()}_tst"
             def newTestJob = job(Utilities.getFullJobName(project, newTestJobName, isPR)) {
                 steps {
                     // The tests/corefx components
@@ -169,7 +169,7 @@ def osShortName = ['Windows 10': 'win10',
             }
 
             // Set the affinity.  All of these run on Windows Nano currently.
-            Utilities.setMachineAffinity(newTestJob, os)
+            Utilities.setMachineAffinity(newTestJob, osName)
             // Set up standard options.
             Utilities.addStandardOptions(newTestJob, isPR)
             // Add the unit test results
@@ -193,7 +193,7 @@ def osShortName = ['Windows 10': 'win10',
             if (isPR) {
                 // Set PR trigger.
                 // TODO: More elaborate regex trigger?
-                Utilities.addGithubPRTriggerForBranch(newJob, branch, "OuterLoop ${os} ${configurationGroup}", "(?i).*test\\W+outerloop\\W+${os}\\W+${configurationGroup}.*")
+                Utilities.addGithubPRTriggerForBranch(newJob, branch, "OuterLoop ${osName} ${configurationGroup}", "(?i).*test\\W+outerloop\\W+${osName}\\W+${configurationGroup}.*")
             }
             else {
                 // Set a periodic trigger
@@ -207,33 +207,33 @@ def osShortName = ['Windows 10': 'win10',
 // Define outerloop testing for OSes that can build and run.  Run locally on each machine.
 // **************************
 [true, false].each { isPR ->
-    ['Windows 10', 'Windows 7', 'Windows_NT', 'Ubuntu14.04', 'Ubuntu16.04', 'CentOS7.1', 'OpenSUSE13.2', 'RHEL7.2', 'Fedora23', 'Debian8.4', 'OSX'].each { os ->
+    ['Windows 7', 'Windows_NT', 'Ubuntu14.04', 'Ubuntu16.04', 'CentOS7.1', 'OpenSUSE13.2', 'RHEL7.2', 'Fedora23', 'Debian8.4', 'OSX'].each { osName ->
         ['Debug', 'Release'].each { configurationGroup ->
 
-            def newJobName = "outerloop_${osShortName[os]}_${configurationGroup.toLowerCase()}"
+            def newJobName = "outerloop_${osShortName[osName]}_${configurationGroup.toLowerCase()}"
 
             def newJob = job(Utilities.getFullJobName(project, newJobName, isPR)) {
                 steps {
-                    if (os == 'Windows 10' || os == 'Windows 7' || os == 'Windows_NT') {
-                        batchFile("call \"C:\\Program Files (x86)\\Microsoft Visual Studio 14.0\\VC\\vcvarsall.bat\" x86 && build.cmd /p:ConfigurationGroup=${configurationGroup} /p:Outerloop=true /p:WithoutCategories=IgnoreForCI")
+                    if (osName == 'Windows 10' || osName == 'Windows 7' || osName == 'Windows_NT') {
+                        batchFile("call \"C:\\Program Files (x86)\\Microsoft Visual Studio 14.0\\VC\\vcvarsall.bat\" x86 && build.cmd -${configurationGroup} -outerloop -- /p:WithoutCategories=IgnoreForCI")
                     }
-                    else if (os == 'OSX') {
-                        shell("HOME=\$WORKSPACE/tempHome ./build.sh ${configurationGroup.toLowerCase()} /p:ConfigurationGroup=${configurationGroup} /p:Outerloop=true /p:TestWithLocalLibraries=true /p:WithoutCategories=IgnoreForCI")
+                    else if (osName == 'OSX') {
+                        shell("HOME=\$WORKSPACE/tempHome ./build.sh -${configurationGroup.toLowerCase()} -outerloop -testWithLocalLibraries -- /p:WithoutCategories=IgnoreForCI")
                     }
                     else {
-                        shell("sudo HOME=\$WORKSPACE/tempHome ./build.sh ${configurationGroup.toLowerCase()} /p:TestNugetRuntimeId=${targetNugetRuntimeMap[os]} /p:ConfigurationGroup=${configurationGroup} /p:Outerloop=true /p:TestWithLocalLibraries=true /p:WithoutCategories=IgnoreForCI")
+                        shell("sudo HOME=\$WORKSPACE/tempHome ./build.sh -${configurationGroup.toLowerCase()} -outerloop -testWithLocalLibraries -- /p:TestNugetRuntimeId=${targetNugetRuntimeMap[osName]} /p:WithoutCategories=IgnoreForCI")
                     }
                 }
             }
 
             // Set the affinity.  OS name matches the machine affinity.
-            if (os == 'Windows_NT' || os == 'OSX') {
-                Utilities.setMachineAffinity(newJob, os, "latest-or-auto-elevated")
+            if (osName == 'Windows_NT' || osName == 'OSX') {
+                Utilities.setMachineAffinity(newJob, osName, "latest-or-auto-elevated")
             }
-            else if (osGroupMap[os] == 'Linux') {
-                Utilities.setMachineAffinity(newJob, os, 'outer-latest-or-auto')
+            else if (osGroupMap[osName] == 'Linux') {
+                Utilities.setMachineAffinity(newJob, osName, 'outer-latest-or-auto')
             } else {
-                Utilities.setMachineAffinity(newJob, os, 'latest-or-auto');
+                Utilities.setMachineAffinity(newJob, osName, 'latest-or-auto');
             }
 
             // Set up standard options.
@@ -245,7 +245,7 @@ def osShortName = ['Windows 10': 'win10',
             if (isPR) {
                 // Set PR trigger.
                 // TODO: More elaborate regex trigger?
-                Utilities.addGithubPRTriggerForBranch(newJob, branch, "OuterLoop ${os} ${configurationGroup}", "(?i).*test\\W+outerloop\\W+${os}\\W+${configurationGroup}.*")
+                Utilities.addGithubPRTriggerForBranch(newJob, branch, "OuterLoop ${osName} ${configurationGroup}", "(?i).*test\\W+outerloop\\W+${osName}\\W+${configurationGroup}.*")
             }
             else {
                 // Set a periodic trigger
@@ -261,14 +261,14 @@ def osShortName = ['Windows 10': 'win10',
 
 // builds with secrets should never be available for pull requests.
 // right now perf tests are only run on Win10 (but can be built on any Windows)
-['Windows 10'].each { os ->
+['Windows 10'].each { osName ->
     ['Debug', 'Release'].each { configurationGroup ->
 
-        def newJobName = "perf_${osShortName[os]}_${configurationGroup.toLowerCase()}"
+        def newJobName = "perf_${osShortName[osName]}_${configurationGroup.toLowerCase()}"
 
         def newJob = job(Utilities.getFullJobName(project, newJobName, /* isPR */ false)) {
             steps {
-                helix("Build.cmd /p:Creator=dotnet-bot /p:ArchiveTests=true /p:ConfigurationGroup=${configurationGroup} /p:Configuration=Windows_${configurationGroup} /p:TestDisabled=true /p:EnableCloudTest=true /p:BuildMoniker={uniqueId} /p:TargetQueue=Windows.10.Amd64 /p:TestProduct=CoreFx /p:Branch=master /p:OSGroup=Windows_NT /p:CloudDropAccountName=dotnetbuilddrops /p:CloudResultsAccountName=dotnetjobresults /p:CloudDropAccessToken={CloudDropAccessToken} /p:CloudResultsAccessToken={CloudResultsAccessToken} /p:BuildCompleteConnection={BuildCompleteConnection} /p:BuildIsOfficialConnection={BuildIsOfficialConnection} /p:DocumentDbKey={DocumentDbKey} /p:DocumentDbUri=https://hms.documents.azure.com:443/ /p:FuncTestsDisabled=true /p:Performance=true")
+                helix("Build.cmd -- /p:Creator=dotnet-bot /p:ArchiveTests=true /p:ConfigurationGroup=${configurationGroup} /p:Configuration=Windows_${configurationGroup} /p:TestDisabled=true /p:EnableCloudTest=true /p:BuildMoniker={uniqueId} /p:TargetQueue=Windows.10.Amd64 /p:TestProduct=CoreFx /p:Branch=master /p:OSGroup=Windows_NT /p:CloudDropAccountName=dotnetbuilddrops /p:CloudResultsAccountName=dotnetjobresults /p:CloudDropAccessToken={CloudDropAccessToken} /p:CloudResultsAccessToken={CloudResultsAccessToken} /p:BuildCompleteConnection={BuildCompleteConnection} /p:BuildIsOfficialConnection={BuildIsOfficialConnection} /p:DocumentDbKey={DocumentDbKey} /p:DocumentDbUri=https://hms.documents.azure.com:443/ /p:FuncTestsDisabled=true /p:Performance=true")
             }
             // perf tests can be built on any Windows
             label("windows10 || windows7 || windows")
@@ -290,23 +290,23 @@ def osShortName = ['Windows 10': 'win10',
 // **************************
 [true, false].each { isPR ->
     ['Debug', 'Release'].each { configurationGroup ->
-        ['Windows_NT', 'Ubuntu14.04', 'Ubuntu16.04', 'Debian8.4', 'CentOS7.1', 'OpenSUSE13.2', 'Fedora23', 'RHEL7.2', 'OSX'].each { os ->
-            def osGroup = osGroupMap[os]
-            def newJobName = "${os.toLowerCase()}_${configurationGroup.toLowerCase()}"
+        ['Windows_NT', 'Ubuntu14.04', 'Ubuntu16.04', 'Debian8.4', 'CentOS7.1', 'OpenSUSE13.2', 'Fedora23', 'RHEL7.2', 'OSX'].each { osName ->
+            def osGroup = osGroupMap[osName]
+            def newJobName = "${osName.toLowerCase()}_${configurationGroup.toLowerCase()}"
 
             def newJob = job(Utilities.getFullJobName(project, newJobName, isPR)) {
                 // On Windows we use the packer to put together everything. On *nix we use tar
                 steps {
-                    if (os == 'Windows 10' || os == 'Windows 7' || os == 'Windows_NT') {
-                        batchFile("call \"C:\\Program Files (x86)\\Microsoft Visual Studio 14.0\\VC\\vcvarsall.bat\" x86 && build.cmd /p:ConfigurationGroup=${configurationGroup} /p:OSGroup=${osGroup} /p:WithoutCategories=IgnoreForCI")
+                    if (osName == 'Windows 10' || osName == 'Windows 7' || osName == 'Windows_NT') {
+                        batchFile("call \"C:\\Program Files (x86)\\Microsoft Visual Studio 14.0\\VC\\vcvarsall.bat\" x86 && build.cmd -${configurationGroup} -os=${osGroup} -- /p:WithoutCategories=IgnoreForCI")
                         batchFile("C:\\Packer\\Packer.exe .\\bin\\build.pack .\\bin")
                     }
                     else {
                         // Use Server GC for Ubuntu/OSX Debug PR build & test
                         def useServerGC = (configurationGroup == 'Release' && isPR) ? 'useServerGC' : ''
-                        shell("HOME=\$WORKSPACE/tempHome ./build.sh ${useServerGC} ${configurationGroup.toLowerCase()} /p:TestNugetRuntimeId=${targetNugetRuntimeMap[os]} /p:ConfigurationGroup=${configurationGroup} /p:TestWithLocalLibraries=true /p:WithoutCategories=IgnoreForCI")
+                        shell("HOME=\$WORKSPACE/tempHome ./build.sh -${configurationGroup.toLowerCase()} -testWithLocalLibraries -- ${useServerGC} /p:TestNugetRuntimeId=${targetNugetRuntimeMap[osName]} /p:WithoutCategories=IgnoreForCI")
                         // Tar up the appropriate bits.  On OSX the tarring is a different syntax for exclusion.
-                        if (os == 'OSX') {
+                        if (osName == 'OSX') {
                             shell("tar -czf bin/build.tar.gz --exclude *.Tests bin/*.${configurationGroup} bin/ref bin/packages")
                         }
                         else {
@@ -317,13 +317,13 @@ def osShortName = ['Windows 10': 'win10',
             }
 
             // Set the affinity.
-            Utilities.setMachineAffinity(newJob, os, 'latest-or-auto')
+            Utilities.setMachineAffinity(newJob, osName, 'latest-or-auto')
             // Set up standard options.
             Utilities.standardJobSetup(newJob, project, isPR, "*/${branch}")
             // Add the unit test results
             Utilities.addXUnitDotNETResults(newJob, 'bin/tests/**/testResults.xml')
             def archiveContents = "msbuild.log"
-            if (os.contains('Windows')) {
+            if (osName.contains('Windows')) {
                 // Packer.exe is a .NET Framework application. When we can use it from the tool-runtime, we can archive the ".pack" file here.
                 archiveContents += ",bin/build.pack"
             }
@@ -335,11 +335,11 @@ def osShortName = ['Windows 10': 'win10',
             // Set up triggers
             if (isPR) {
                 // Set PR trigger, we run Windows_NT, Ubuntu 14.04, CentOS 7.1 and OSX on every PR.
-                if ( os == 'Windows_NT' || os == 'Ubuntu14.04' || os == 'CentOS7.1' || os == 'OSX' ) {
-                    Utilities.addGithubPRTriggerForBranch(newJob, branch, "Innerloop ${os} ${configurationGroup} Build and Test")
+                if ( osName == 'Windows_NT' || osName == 'Ubuntu14.04' || osName == 'CentOS7.1' || osName == 'OSX' ) {
+                    Utilities.addGithubPRTriggerForBranch(newJob, branch, "Innerloop ${osName} ${configurationGroup} Build and Test")
                 }
                 else {
-                    Utilities.addGithubPRTriggerForBranch(newJob, branch, "Innerloop ${os} ${configurationGroup} Build and Test", "(?i).*test\\W+innerloop\\W+${os}\\W+${configurationGroup}.*")
+                    Utilities.addGithubPRTriggerForBranch(newJob, branch, "Innerloop ${osName} ${configurationGroup} Build and Test", "(?i).*test\\W+innerloop\\W+${osName}\\W+${configurationGroup}.*")
                 }
             }
             else {
@@ -360,14 +360,14 @@ def osShortName = ['Windows 10': 'win10',
 // **************************
 [true, false].each { isPR ->
     ['Debug', 'Release'].each { configurationGroup ->
-        ['LinuxARMEmulator'].each { os ->
-            def osGroup = osGroupMap[os]
-            def newJobName = "${os.toLowerCase()}_cross_${configurationGroup.toLowerCase()}"
+        ['LinuxARMEmulator'].each { osName ->
+            def osGroup = osGroupMap[osName]
+            def newJobName = "${osName.toLowerCase()}_cross_${configurationGroup.toLowerCase()}"
             def arch = "arm-softfp"
 
-	    // Setup variables to hold emulator folder path and the rootfs mount path
-	    def armemul_path = '/opt/linux-arm-emulator'
-	    def armrootfs_mountpath = '/opt/linux-arm-emulator-root'
+        // Setup variables to hold emulator folder path and the rootfs mount path
+        def armemul_path = '/opt/linux-arm-emulator'
+        def armrootfs_mountpath = '/opt/linux-arm-emulator-root'
 
             def newJob = job(Utilities.getFullJobName(project, newJobName, isPR)) {
                 steps {
@@ -392,8 +392,8 @@ def osShortName = ['Windows 10': 'win10',
 
             // Set up triggers
             if (isPR) {
-                if (os == 'LinuxARMEmulator') {
-                    Utilities.addGithubPRTriggerForBranch(newJob, branch, "Innerloop Linux ARM Emulator ${configurationGroup} Cross Build")
+                if (osName == 'LinuxARMEmulator') {
+                    Utilities.addGithubPRTriggerForBranch(newJob, branch, "Innerloop Linux ARM Emulator ${configurationGroup} Cross Build", "(?i).*test\\W+Innerloop\\W+Linux\\W+ARM\\W+Emulator\\W+${configurationGroup}\\W+Cross\\W+Build.*")
                 }
             }
             else {

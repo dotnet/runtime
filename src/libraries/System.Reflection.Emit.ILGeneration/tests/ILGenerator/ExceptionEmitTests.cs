@@ -3,68 +3,53 @@
 // See the LICENSE file in the project root for more information.
 
 using Xunit;
-using System;
 
-namespace System.Reflection.Emit.ILGeneration.Tests
+namespace System.Reflection.Emit.Tests
 {
     public class ExceptionEmitTests
     {
         [Fact]
         public void TestExceptionEmitCalls()
         {
-            AssemblyName myAsmName = new AssemblyName("AdderExceptionAsm");
-            AssemblyBuilder myAsmBldr = AssemblyBuilder.DefineDynamicAssembly(myAsmName, AssemblyBuilderAccess.Run);
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.NotPublic);
 
-            ModuleBuilder myModBldr = TestLibrary.Utilities.GetModuleBuilder(myAsmBldr, "Module1");
-            TypeBuilder myTypeBldr = myModBldr.DefineType("Adder");
+            MethodBuilder methodBuilder = type.DefineMethod("DoThrow", MethodAttributes.Public | MethodAttributes.Static, typeof(int), new Type[] { typeof(bool) });
 
-            MethodBuilder methodBuilder = myTypeBldr.DefineMethod("DoThrow",
-                               MethodAttributes.Public |
-                               MethodAttributes.Static,
-                               typeof(int), new Type[] { typeof(bool) });
-
-            ILGenerator ilgen = methodBuilder.GetILGenerator();
+            ILGenerator ilGenerator = methodBuilder.GetILGenerator();
             Type overflow = typeof(OverflowException);
 
-            LocalBuilder tmp1 = ilgen.DeclareLocal(typeof(int));
-            Label dontThrow = ilgen.DefineLabel();
+            LocalBuilder tmp1 = ilGenerator.DeclareLocal(typeof(int));
+            Label dontThrow = ilGenerator.DefineLabel();
 
             // Begin the try block.
-            Label exBlock = ilgen.BeginExceptionBlock();
+            Label exBlock = ilGenerator.BeginExceptionBlock();
 
-            ilgen.Emit(OpCodes.Ldarg_0);
-            ilgen.Emit(OpCodes.Brfalse_S, dontThrow);
+            ilGenerator.Emit(OpCodes.Ldarg_0);
+            ilGenerator.Emit(OpCodes.Brfalse_S, dontThrow);
             // Throw the exception now on the stack.
-            ilgen.ThrowException(overflow);
-            ilgen.MarkLabel(dontThrow);
+            ilGenerator.ThrowException(overflow);
+            ilGenerator.MarkLabel(dontThrow);
             
             // Start the catch block for OverflowException. 
-            ilgen.BeginCatchBlock(overflow);
+            ilGenerator.BeginCatchBlock(overflow);
 
             // Since our function has to return an integer value, we'll load -1 onto 
-            // the stack to indicate an error, and store it in local variable tmp1. 
-            //
-            ilgen.Emit(OpCodes.Ldc_I4_M1);
-            ilgen.Emit(OpCodes.Stloc_S, tmp1);
+            // the stack to indicate an error, and store it in local variable tmp1.
+            ilGenerator.Emit(OpCodes.Ldc_I4_M1);
+            ilGenerator.Emit(OpCodes.Stloc_S, tmp1);
 
             // End the exception handling block.
-
-            ilgen.EndExceptionBlock();
+            ilGenerator.EndExceptionBlock();
 
             // Return
-            ilgen.Emit(OpCodes.Ldloc_S, tmp1);
-            ilgen.Emit(OpCodes.Ret);
+            ilGenerator.Emit(OpCodes.Ldloc_S, tmp1);
+            ilGenerator.Emit(OpCodes.Ret);
 
-            Type createdType = myTypeBldr.CreateTypeInfo().AsType();
-            MethodInfo md = createdType.GetMethod("DoThrow");
+            Type createdType = type.CreateTypeInfo().AsType();
+            MethodInfo createdMethod = createdType.GetMethod("DoThrow");
             
-            // Throw
-            int ret = (int)md.Invoke(null, new object[] { true });
-            Assert.Equal(-1, ret);
-
-            // Don't Throw
-            ret = (int)md.Invoke(null, new object[] { false });
-            Assert.Equal(0, ret);
+            Assert.Equal(-1, createdMethod.Invoke(null, new object[] { true })); // Throws
+            Assert.Equal(0, createdMethod.Invoke(null, new object[] { false })); // Doesn't throw
         }
     }
 }

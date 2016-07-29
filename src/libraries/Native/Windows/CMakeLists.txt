@@ -93,7 +93,7 @@ set(__LinkArgs "${__LinkArgs} /PDBCOMPRESS")            #shrink pdb size
 set(__LinkArgs "${__LinkArgs} /DEBUG")
 set(__LinkArgs "${__LinkArgs} /IGNORE:4197,4013,4254,4070,4221")
 
-if (NOT $ENV{__BuildArch} STREQUAL "arm")
+if ($ENV{__BuildArch} STREQUAL "x86" OR $ENV{__BuildArch} STREQUAL "x86_64" )
     set(__LinkArgs "${__LinkArgs} /SUBSYSTEM:WINDOWS,6.00") #windows subsystem
 endif()
 

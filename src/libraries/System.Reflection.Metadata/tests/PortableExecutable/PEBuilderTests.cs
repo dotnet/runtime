@@ -335,10 +335,13 @@ namespace System.Reflection.PortableExecutable.Tests
 
         private static MethodDefinitionHandle ComplexEmit(MetadataBuilder metadata, BlobBuilder ilBuilder, out Blob mvidFixup)
         {
+            var mvid = metadata.ReserveGuid();
+            mvidFixup = mvid.Content;
+
             metadata.AddModule(
                 0,
                 metadata.GetOrAddString("ConsoleApplication.exe"),
-                metadata.ReserveGuid(out mvidFixup),
+                mvid.Handle,
                 default(GuidHandle),
                 default(GuidHandle));
 

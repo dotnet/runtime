@@ -11,7 +11,7 @@ namespace System.Reflection.Emit.Tests
         [Theory]
         [InlineData("ABC")]
         [InlineData("A!?123C")]
-        public void TestNameProperty(string fieldName)
+        public void Name(string fieldName)
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Abstract);
             FieldBuilder field = type.DefineField(fieldName, typeof(object), FieldAttributes.Public);

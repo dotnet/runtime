@@ -12,19 +12,14 @@
     <ProjectGuid>{4050F1D1-1DD2-4B48-A17B-E3F90DD18C4B}</ProjectGuid>
     <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(UseContractReferences)' == 'true'" >
-    <ProjectJson>Performance/project.json</ProjectJson>
-    <ProjectLockJson>Performance/project.lock.json</ProjectLockJson>
-  </PropertyGroup>
   <ItemGroup>
     <Compile Include="..\..\System.Runtime.Serialization.Xml\tests\Utils.cs" />
     <Compile Include="..\..\System.Runtime.Serialization.Xml\tests\SerializationTypes.cs" />
     <Compile Include="..\..\System.Runtime.Serialization.Xml\tests\Performance\PerformanceTestsCommon.cs" />
     <Compile Include="XmlSerializerTests.Internal.cs" Condition="'$(UseContractReferences)' == ''" />
     <Compile Include="XmlSerializerTests.cs" />
-    <Compile Include="Performance\XsPerformanceTest.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(UseContractReferences)' == ''" >
+  <ItemGroup>
     <ProjectReference Include="..\..\System.Private.DataContractSerialization\src\System.Private.DataContractSerialization.csproj">
       <Project>{6B4C1660-D158-4820-BE1C-D7A29CEBEC9B}</Project>
       <Name>System.Private.DataContractSerialization</Name>
