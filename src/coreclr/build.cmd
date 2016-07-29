@@ -312,8 +312,8 @@ if %__BuildCoreLib% EQU 1 (
     call                                 "%__VSToolsRoot%\VsDevCmd.bat"
 
     set __MsbuildLog=/flp:Verbosity=normal;LogFile="%__LogsDir%\System.Private.CoreLib_%__BuildOS%__%__BuildArch%__%__BuildType%.log"
-	set __MsbuildWrn=/flp1:WarningsOnly;LogFile="%__LogsDir%\System.Private.CoreLib_%__BuildOS%__%__BuildArch%__%__BuildType%.wrn"
-	set __MsbuildErr=/flp2:ErrorsOnly;LogFile="%__LogsDir%\System.Private.CoreLib_%__BuildOS%__%__BuildArch%__%__BuildType%.err"
+    set __MsbuildWrn=/flp1:WarningsOnly;LogFile="%__LogsDir%\System.Private.CoreLib_%__BuildOS%__%__BuildArch%__%__BuildType%.wrn"
+    set __MsbuildErr=/flp2:ErrorsOnly;LogFile="%__LogsDir%\System.Private.CoreLib_%__BuildOS%__%__BuildArch%__%__BuildType%.err"
 
     if /i "%__BuildArch%" == "arm64" (
 		set __nugetBuildArgs=-buildNugetPackage=false
