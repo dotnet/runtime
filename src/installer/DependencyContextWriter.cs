@@ -124,8 +124,8 @@ namespace Microsoft.Extensions.DependencyModel
 
         private JObject WritePortableTarget(IReadOnlyList<RuntimeLibrary> runtimeLibraries, IReadOnlyList<CompilationLibrary> compilationLibraries)
         {
-            var runtimeLookup = runtimeLibraries.ToDictionary(l => l.Name);
-            var compileLookup = compilationLibraries.ToDictionary(l => l.Name);
+            var runtimeLookup = runtimeLibraries.ToDictionary(l => l.Name, StringComparer.OrdinalIgnoreCase);
+            var compileLookup = compilationLibraries.ToDictionary(l => l.Name, StringComparer.OrdinalIgnoreCase);
 
             var targetObject = new JObject();
 
