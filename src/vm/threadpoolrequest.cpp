@@ -30,16 +30,15 @@
 #endif
 #include "appdomain.inl"
 
-BYTE PerAppDomainTPCountList::padding1[64];
-UnManagedPerAppDomainTPCount PerAppDomainTPCountList::s_unmanagedTPCount;
+BYTE PerAppDomainTPCountList::s_padding[64 - sizeof(LONG)];
+// Make this point to unmanaged TP in case, no appdomains have initialized yet.
+// Cacheline aligned, hot variable
+DECLSPEC_ALIGN(64) LONG PerAppDomainTPCountList::s_ADHint = -1;
 
-BYTE PerAppDomainTPCountList::padding2[64];
+// Move out of from preceeding variables' cache line
+DECLSPEC_ALIGN(64) UnManagedPerAppDomainTPCount PerAppDomainTPCountList::s_unmanagedTPCount;
 //The list of all per-appdomain work-request counts.
-ArrayListStatic PerAppDomainTPCountList::s_appDomainIndexList;    
-
-BYTE PerAppDomainTPCountList::padding3[64];
-//Make this point to unmanaged TP in case, no appdomains have initialized yet.
-LONG PerAppDomainTPCountList::s_ADHint=-1;
+ArrayListStatic PerAppDomainTPCountList::s_appDomainIndexList;
 
 void PerAppDomainTPCountList::InitAppDomainIndexList()
 {
@@ -77,7 +76,14 @@ TPIndex PerAppDomainTPCountList::AddNewTPIndex()
         return index;
     }
 
+#ifdef _MSC_VER
+    // Disable this warning - we intentionally want __declspec(align()) to insert trailing padding for us
+#pragma warning(disable:4316)  // Object allocated on the heap may not be aligned for this type.
+#endif
     ManagedPerAppDomainTPCount * pAdCount = new ManagedPerAppDomainTPCount(index);
+#ifdef _MSC_VER
+#pragma warning(default:4316)  // Object allocated on the heap may not be aligned for this type.
+#endif
     pAdCount->ResetState();
 
     IfFailThrow(s_appDomainIndexList.Append(pAdCount));
@@ -277,34 +283,33 @@ LONG PerAppDomainTPCountList::GetAppDomainIndexForThreadpoolDispatch()
     }
     CONTRACTL_END;
 
+    LONG hint = s_ADHint;
+    DWORD count = s_appDomainIndexList.GetCount();
     IPerAppDomainTPCount * pAdCount;
-    DWORD DwnumADs = s_appDomainIndexList.GetCount();
     DWORD Dwi;
 
-    LONG hint = s_ADHint;
-    LONG temphint = hint;
      
-    if (hint == -1) 
+    if (hint != -1) 
     {
-        pAdCount = &s_unmanagedTPCount;
+        pAdCount = dac_cast<PTR_IPerAppDomainTPCount>(s_appDomainIndexList.Get(hint));
     } 
     else 
     {
-        pAdCount = dac_cast<PTR_IPerAppDomainTPCount>(s_appDomainIndexList.Get(hint));
+        pAdCount = &s_unmanagedTPCount;
     }
+
+    //temphint ensures that the check for appdomains proceeds in a pure round robin fashion.
+    LONG temphint = hint;
 
     _ASSERTE( pAdCount);
 
     if (pAdCount->TakeActiveRequest())
         goto HintDone;
 
-    //temphint ensures that the check for appdomains proceeds in a pure round robin fashion.
-    temphint = hint;    
-
     //If there is no work in any appdomains, check the unmanaged queue,
     hint = -1;
 
-    for (Dwi=0;Dwi<DwnumADs;Dwi++) 
+    for (Dwi=0;Dwi<count;Dwi++)
     {
         if (temphint == -1) 
         {
@@ -320,9 +325,9 @@ LONG PerAppDomainTPCountList::GetAppDomainIndexForThreadpoolDispatch()
 
         temphint++;
 
-        _ASSERTE( temphint <= (LONG) DwnumADs);
+        _ASSERTE( temphint <= (LONG)count);
 
-        if(temphint == (LONG) DwnumADs)
+        if(temphint == (LONG)count)
         {
             temphint = 0; 
         }
@@ -334,11 +339,9 @@ LONG PerAppDomainTPCountList::GetAppDomainIndexForThreadpoolDispatch()
         return 0;
     }
 
-    HintDone:
+HintDone:
 
-    LONG count = (LONG) s_appDomainIndexList.GetCount();
-
-    if((hint+1) < count) 
+    if((hint+1) < (LONG)count)
     {
          s_ADHint = hint+1;
     } 
@@ -724,73 +727,74 @@ void ManagedPerAppDomainTPCount::DispatchWorkItem(bool* foundWork, bool* wasNotR
     //We are in a state where AppDomain Unload has begun, but not all threads have been
     //forced out of the unloading domain. This check below will prevent us from getting
     //unmanaged AD unloaded exceptions while trying to enter an unloaded appdomain. 
+    if (!IsAppDomainUnloading())
+    {
+        CONTRACTL
+        {
+            MODE_PREEMPTIVE;
+            THROWS;
+            GC_TRIGGERS;
+        }
+        CONTRACTL_END;
 
-    if(IsAppDomainUnloading())
+        GCX_COOP();
+        BEGIN_SO_INTOLERANT_CODE(pThread);
+
+        //
+        // NOTE: there is a potential race between the time we retrieve the app 
+        // domain pointer, and the time which this thread enters the domain.
+        //
+        // To solve the race, we rely on the fact that there is a thread sync (via 
+        // GC) between releasing an app domain's handle, and destroying the 
+        // app domain.  Thus it is important that we not go into preemptive gc mode
+        // in that window.
+        //
+
+        {
+            ADID appDomainId(m_id);
+
+            // This TPIndex may have been recycled since we chose it for workitem dispatch.
+            // Thus it's possible for the ADID we just read to refer to an AppDomain that's still
+            // being created.  If so, the new AppDomain will necessarily have zero requests
+            // pending (because the destruction of the previous AD that used this TPIndex
+            // will have reset this object).  We don't want to call into such an AppDomain.
+    // TODO: fix this another way!
+    //        if (IsRequestPending())
+            {
+                //This holder resets our thread's security state when exiting this scope
+                ThreadSecurityStateHolder  secState(pThread);
+
+                ManagedThreadBase::ThreadPool(appDomainId, QueueUserWorkItemManagedCallback, wasNotRecalled);
+            }
+
+            if (pThread->IsAbortRequested())
+            {
+                // thread was aborted, and may not have had a chance to tell us it has work.
+                ENTER_DOMAIN_ID(m_id)
+                {
+                    ThreadpoolMgr::SetAppDomainRequestsActive();
+                    ThreadpoolMgr::QueueUserWorkItem(NULL,
+                        NULL,
+                        0,
+                        FALSE);
+
+                }
+                END_DOMAIN_TRANSITION;
+            }
+        }
+
+        // We should have released all locks.
+        _ASSERTE(g_fEEShutDown || pThread->m_dwLockCount == 0 || pThread->m_fRudeAborted);
+
+        END_SO_INTOLERANT_CODE;
+
+        *foundWork = true;
+    }
+    else 
     {
         __SwitchToThread(0, CALLER_LIMITS_SPINNING);
         return;
     }
-
-    CONTRACTL
-    {
-        MODE_PREEMPTIVE;
-        THROWS; 
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END;
-
-    GCX_COOP();
-    BEGIN_SO_INTOLERANT_CODE(pThread);
-
-    //
-    // NOTE: there is a potential race between the time we retrieve the app 
-    // domain pointer, and the time which this thread enters the domain.
-    //
-    // To solve the race, we rely on the fact that there is a thread sync (via 
-    // GC) between releasing an app domain's handle, and destroying the 
-    // app domain.  Thus it is important that we not go into preemptive gc mode
-    // in that window.
-    //
-
-    {
-        ADID appDomainId(m_id);
-
-        // This TPIndex may have been recycled since we chose it for workitem dispatch.
-        // Thus it's possible for the ADID we just read to refer to an AppDomain that's still
-        // being created.  If so, the new AppDomain will necessarily have zero requests
-        // pending (because the destruction of the previous AD that used this TPIndex
-        // will have reset this object).  We don't want to call into such an AppDomain.
-// TODO: fix this another way!
-//        if (IsRequestPending())
-        {
-            //This holder resets our thread's security state when exiting this scope
-            ThreadSecurityStateHolder  secState(pThread);
-                
-            ManagedThreadBase::ThreadPool(appDomainId, QueueUserWorkItemManagedCallback, wasNotRecalled);
-        }
-
-        if (pThread->IsAbortRequested())
-        {
-            // thread was aborted, and may not have had a chance to tell us it has work.
-            ENTER_DOMAIN_ID(m_id)
-            {
-                ThreadpoolMgr::SetAppDomainRequestsActive();
-                ThreadpoolMgr::QueueUserWorkItem(NULL,
-                                                 NULL,
-                                                 0,
-                                                 FALSE);
-
-            }
-            END_DOMAIN_TRANSITION;
-        }
-    }
-
-    // We should have released all locks.
-    _ASSERTE(g_fEEShutDown || pThread->m_dwLockCount == 0 || pThread->m_fRudeAborted);
-    
-    END_SO_INTOLERANT_CODE;
-
-    *foundWork = true;
 }
 
 #endif // !DACCESS_COMPILE

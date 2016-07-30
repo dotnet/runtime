@@ -175,13 +175,16 @@ public:
 
 private:
     struct {
-        BYTE padding1[64]; // padding to ensure own cache line
-        // Only use with VolatileLoad+VolatileStore+FastInterlockCompareExchange
-        LONG m_numRequestsPending;
-        BYTE padding2[64]; // padding to ensure own cache line
         ADID m_id;
-        BYTE padding3[64]; // padding to ensure own cache line
         TPIndex m_index;
+    };
+    struct {
+        DECLSPEC_ALIGN(64) struct {
+            BYTE padding1[64 - sizeof(LONG)];
+            // Only use with VolatileLoad+VolatileStore+FastInterlockCompareExchange
+            LONG m_numRequestsPending;
+            BYTE padding2[64];
+        };
     };
 };
 
@@ -281,13 +284,16 @@ public:
 
 private:
     struct {
-        BYTE padding1[64]; // padding to ensure own cache line
-        ULONG m_NumRequests;
-        BYTE padding2[64]; // padding to ensure own cache line
-        // Only use with VolatileLoad+VolatileStore+FastInterlockCompareExchange
-        LONG m_outstandingThreadRequestCount;
-        BYTE padding3[64]; // padding to ensure own cache line
         SpinLock m_lock;
+        ULONG m_NumRequests;
+    };
+    struct {
+        DECLSPEC_ALIGN(64) struct {
+            BYTE padding1[64 - sizeof(LONG)];
+            // Only use with VolatileLoad+VolatileStore+FastInterlockCompareExchange
+            LONG m_outstandingThreadRequestCount;
+            BYTE padding2[64];
+        };
     };
 };
 
@@ -344,32 +350,12 @@ public:
 private:
     static DWORD FindFirstFreeTpEntry();
 
-    static BYTE padding1[64]; // padding to ensure own cache line
+    static BYTE s_padding[64 - sizeof(LONG)];
+    static LONG s_ADHint;
     static UnManagedPerAppDomainTPCount s_unmanagedTPCount;
 
-    static BYTE padding2[64]; // padding to ensure own cache line
-        //The list of all per-appdomain work-request counts.
+    //The list of all per-appdomain work-request counts.
     static ArrayListStatic s_appDomainIndexList;
-
-    static BYTE padding3[64]; // padding to ensure own cache line
-    static LONG s_ADHint;
 };
 
 #endif //_THREADPOOL_REQUEST_H
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

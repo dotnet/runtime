@@ -85,7 +85,8 @@ SVAL_IMPL(LONG,ThreadpoolMgr,MaxFreeCPThreads);                   // = MaxFreeCP
 
 Volatile<LONG> ThreadpoolMgr::NumCPInfrastructureThreads = 0;      // number of threads currently busy handling draining cycle
 
-SVAL_IMPL(ThreadpoolMgr::ThreadCounter, ThreadpoolMgr, WorkerCounter);
+// Cacheline aligned, hot variable
+DECLSPEC_ALIGN(64) SVAL_IMPL(ThreadpoolMgr::ThreadCounter, ThreadpoolMgr, WorkerCounter);
 
 SVAL_IMPL(LONG,ThreadpoolMgr,MinLimitTotalWorkerThreads);          // = MaxLimitCPThreadsPerCPU * number of CPUS
 SVAL_IMPL(LONG,ThreadpoolMgr,MaxLimitTotalWorkerThreads);        // = MaxLimitCPThreadsPerCPU * number of CPUS
@@ -95,11 +96,10 @@ LONG    ThreadpoolMgr::cpuUtilizationAverage = 0;
 
 HillClimbing ThreadpoolMgr::HillClimbingInstance;
 
-BYTE ThreadpoolMgr::padding1[64];
-LONG ThreadpoolMgr::PriorCompletedWorkRequests = 0;
+// Cacheline aligned, 3 hot variables updated in a group
+DECLSPEC_ALIGN(64) LONG ThreadpoolMgr::PriorCompletedWorkRequests = 0;
 DWORD ThreadpoolMgr::PriorCompletedWorkRequestsTime;
 DWORD ThreadpoolMgr::NextCompletedWorkRequestsTime;
-BYTE ThreadpoolMgr::padding2[64];
 
 LARGE_INTEGER ThreadpoolMgr::CurrentSampleStartTime;
 
@@ -114,8 +114,12 @@ int ThreadpoolMgr::ThreadAdjustmentInterval;
 #define SUSPEND_TIME GATE_THREAD_DELAY+100      // milliseconds to suspend during SuspendProcessing
 
 LONG ThreadpoolMgr::Initialization=0;           // indicator of whether the threadpool is initialized.
-Volatile<unsigned int> ThreadpoolMgr::LastDequeueTime; // used to determine if work items are getting thread starved
-int ThreadpoolMgr::offset_counter = 0;
+
+// Cacheline aligned, hot variable
+DECLSPEC_ALIGN(64) unsigned int ThreadpoolMgr::LastDequeueTime; // used to determine if work items are getting thread starved
+
+// Move out of from preceeding variables' cache line
+DECLSPEC_ALIGN(64) int ThreadpoolMgr::offset_counter = 0;
 
 SPTR_IMPL(WorkRequest,ThreadpoolMgr,WorkRequestHead);        // Head of work request queue
 SPTR_IMPL(WorkRequest,ThreadpoolMgr,WorkRequestTail);        // Head of work request queue
@@ -138,15 +142,19 @@ CLRSemaphore* ThreadpoolMgr::RetiredWorkerSemaphore;
 CrstStatic ThreadpoolMgr::TimerQueueCriticalSection;
 HANDLE ThreadpoolMgr::TimerThread=NULL;
 Thread *ThreadpoolMgr::pTimerThread=NULL;
-DWORD ThreadpoolMgr::LastTickCount;
+
+// Cacheline aligned, hot variable
+DECLSPEC_ALIGN(64) DWORD ThreadpoolMgr::LastTickCount;
 
 #ifdef _DEBUG
 DWORD ThreadpoolMgr::TickCountAdjustment=0;
 #endif
 
-LONG  ThreadpoolMgr::GateThreadStatus=GATE_THREAD_STATUS_NOT_RUNNING;
+// Cacheline aligned, hot variable
+DECLSPEC_ALIGN(64) LONG  ThreadpoolMgr::GateThreadStatus=GATE_THREAD_STATUS_NOT_RUNNING;
 
-ThreadpoolMgr::RecycledListsWrapper ThreadpoolMgr::RecycledLists;
+// Move out of from preceeding variables' cache line
+DECLSPEC_ALIGN(64) ThreadpoolMgr::RecycledListsWrapper ThreadpoolMgr::RecycledLists;
 
 ThreadpoolMgr::TimerInfo *ThreadpoolMgr::TimerInfosToBeRecycled = NULL;
 
@@ -4818,7 +4826,7 @@ BOOL ThreadpoolMgr::SufficientDelaySinceLastDequeue()
 
     #define DEQUEUE_DELAY_THRESHOLD (GATE_THREAD_DELAY * 2)
 
-    unsigned delay = GetTickCount() - LastDequeueTime;
+    unsigned delay = GetTickCount() - VolatileLoad(&LastDequeueTime);
     unsigned tooLong;
 
     if(cpuUtilization < CpuUtilizationLow)
@@ -4979,8 +4987,10 @@ DWORD __stdcall ThreadpoolMgr::TimerThreadStart(LPVOID p)
     if (pThread == NULL)
         return 0;
 
-    pTimerThread = pThread;
-    // Timer threads never die
+    if (pTimerThread != pThread) {
+        pTimerThread = pThread;
+        // Timer threads never die
+    }
 
     LastTickCount = GetTickCount();
 
