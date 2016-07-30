@@ -94,6 +94,16 @@ Even though the application hosted in the container isn't privileged, this new s
 
 If you want to try tracing in a container, we've written a [demo Dockerfile](https://raw.githubusercontent.com/dotnet/corefx-tools/master/src/performance/perfcollect/docker-demo/Dockerfile) that installs all of the performance tracing pre-requisites, sets the environment up for tracing, and starts a sample CPU-bound app.
 
+#Filtering#
+Filtering is implemented on Windows through the latest mechanisms provided with the [EventSource](https://msdn.microsoft.com/en-us/library/system.diagnostics.tracing.eventsource(v=vs.110).aspx) class. 
+
+On Linux those mechanisms are not available yet. Instead, there are two environment variables that exist just on linux to do some basic filtering. 
+
+* COMPLUS_EventSourceFilter – filter event sources by name
+* COMPLUS_EventNameFilter – filter events by name
+
+Setting one or both of these variables will only enable collecting events that contain the name you specify as a substring. Strings are treated as case insensitive. 
+
 #Viewing a Trace#
 Traces are best viewed using PerfView on Windows.  Note that we're currently looking into porting the analysis pieces of PerfView to Linux so that the entire investigation can occur on Linux.
 
