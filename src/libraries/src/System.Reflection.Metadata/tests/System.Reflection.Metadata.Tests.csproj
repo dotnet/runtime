@@ -37,6 +37,9 @@
     <Compile Include="Metadata\BlobTests.cs" />
     <Compile Include="Metadata\BlobUtilitiesTests.cs" />
     <Compile Include="Metadata\Ecma335\CodedIndexTests.cs" />
+    <Compile Include="Metadata\Ecma335\Encoding\ExceptionRegionEncoderTests.cs" />
+    <Compile Include="Metadata\Ecma335\Encoding\ControlFlowBuilderTests.cs" />
+    <Compile Include="Metadata\Ecma335\Encoding\InstructionEncoderTests.cs" />
     <Compile Include="Metadata\Ecma335\MetadataRootBuilderTests.cs" />
     <Compile Include="Metadata\Ecma335\PortablePdbBuilderTests.cs" />
     <Compile Include="Metadata\LargeTablesAndHeapsTests.cs" />
@@ -55,7 +58,7 @@
     <Compile Include="Metadata\Ecma335\MetadataBuilderTests.cs" />
     <Compile Include="Metadata\MetadataReaderTestHelpers.cs" />
     <Compile Include="Metadata\MetadataReaderTests.cs" />
-    <Compile Include="Metadata\Ecma335\Encoding\MethodBodyEncoderTests.cs" />
+    <Compile Include="Metadata\Ecma335\Encoding\MethodBodyStreamEncoderTests.cs" />
     <Compile Include="Metadata\TypeSystem\MethodImportRow.cs" />
     <Compile Include="Metadata\PortablePdb\StandalonePortablePdbStreamTests.cs" />
     <Compile Include="Metadata\TagToTokenTests.cs" />

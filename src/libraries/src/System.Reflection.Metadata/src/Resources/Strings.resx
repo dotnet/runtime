@@ -333,6 +333,9 @@
   <data name="TooManySubnamespaces" xml:space="preserve">
     <value>There are too many subnamespaces.</value>
   </data>
+  <data name="TooManyExceptionRegions" xml:space="preserve">
+    <value>There are too many exception regions.</value>
+  </data>
   <data name="SequencePointValueOutOfRange" xml:space="preserve">
     <value>Sequence point value is out of range.</value>
   </data>
@@ -393,8 +396,8 @@
   <data name="LabelDoesntBelongToBuilder" xml:space="preserve">
     <value>Specified label doesn't belong to the current builder.</value>
   </data>
-  <data name="BranchBuilderNotAvailable" xml:space="preserve">
-    <value>Can't emit a branch, the current encoder not created with a branch builder.</value>
+  <data name="ControlFlowBuilderNotAvailable" xml:space="preserve">
+    <value>Can't emit a branch or exception region, the current encoder not created with a control flow builder.</value>
   </data>
   <data name="BaseReaderMustBeFullMetadataReader" xml:space="preserve">
     <value>Base reader must be a full metadata reader.</value>
@@ -455,5 +458,17 @@
   </data>
   <data name="UnsupportedFormatVersion" xml:space="preserve">
     <value>Unsupported format version: {0}</value>
+  </data>
+  <data name="DistanceBetweenInstructionAndLabelTooBig" xml:space="preserve">
+    <value>The distance between the instruction {0} (offset {1}) and the target label doesn't fit the operand size: {2}</value>
+  </data>
+  <data name="LabelNotMarked" xml:space="preserve">
+    <value>Label {0} has not been marked.</value>
+  </data>
+  <data name="MethodHasNoExceptionRegions" xml:space="preserve">
+    <value>Method body was created with no exception regions.</value>
+  </data>
+  <data name="InvalidExceptionRegionBounds" xml:space="preserve">
+    <value>Invalid exception region bounds: start offset ({0}) is greater than end offset ({1}).</value>
   </data>
 </root>
