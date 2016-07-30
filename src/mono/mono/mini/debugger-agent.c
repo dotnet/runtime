@@ -4328,6 +4328,7 @@ set_bp_in_method (MonoDomain *domain, MonoMethod *method, MonoSeqPointInfo *seq_
 		MonoError oerror;
 
 		/* Might be AOTed code */
+		mono_class_init (method->klass);
 		code = mono_aot_get_method_checked (domain, method, &oerror);
 		g_assert (code);
 		mono_error_assert_ok (&oerror);
