@@ -9,6 +9,5 @@ namespace System.Reflection.Metadata.Ecma335
     {
         None = 0,
         InitLocals = 1,
-        LargeExceptionRegions = 2,
     }
 }
