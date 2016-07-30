@@ -347,7 +347,7 @@ namespace System.Reflection.Metadata.Ecma335
             Builder.WriteSerializedString(typeName);
             Builder.WriteCompressedInteger(encodedArguments.Length);
             Builder.WriteBytes(encodedArguments);
-            return new PermissionSetEncoder(Builder);
+            return this;
         }
 
         public PermissionSetEncoder AddPermission(string typeName, BlobBuilder encodedArguments)
@@ -370,7 +370,7 @@ namespace System.Reflection.Metadata.Ecma335
             Builder.WriteSerializedString(typeName);
             Builder.WriteCompressedInteger(encodedArguments.Count);
             encodedArguments.WriteContentTo(Builder);
-            return new PermissionSetEncoder(Builder);
+            return this;
         }
     }
 
