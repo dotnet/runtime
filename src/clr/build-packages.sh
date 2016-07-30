@@ -62,11 +62,9 @@ then
     exit 1
 fi
 
-    # Build the TestHost package
-    $__ProjectRoot/Tools/dotnetcli/dotnet "$__MSBuildPath" /nologo "$__ProjectRoot/src/.nuget/Microsoft.NETCore.TestHost/Microsoft.NETCore.TestHost.builds" /verbosity:minimal "/fileloggerparameters:Verbosity=normal;LogFile=$binclashlog" /t:Build /p:__BuildOS=$__BuildOS /p:__BuildArch=$__BuildArch /p:__BuildType=$__BuildType /p:__IntermediatesDir=$__IntermediatesDir /p:BuildNugetPackage=false /p:UseSharedCompilation=false
-
+# Build the TestHost package
+$__ProjectRoot/run.sh build-packages -Project=$__ProjectRoot/src/.nuget/Microsoft.NETCore.TestHost/Microsoft.NETCore.TestHost.builds -DistroRid=\${OSRid}-$__Arch -UseSharedCompilation=false -BuildNugetPackage=false $unprocessedBuildArgs
 if [ $? -ne 0 ]; then
-    echo -e "\nAn error occurred. Aborting build-packages.sh ." >> $build_packages_log
     echo "ERROR: An error occurred while building packages, see $build_packages_log for more details."
     exit 1
 fi
