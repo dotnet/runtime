@@ -386,6 +386,7 @@ mono_domain_finalize (MonoDomain *domain, guint32 timeout)
 	MonoInternalThread *thread = mono_thread_internal_current ();
 	gint res;
 	gboolean ret;
+	gint64 start;
 
 #if defined(__native_client__)
 	return FALSE;
@@ -428,11 +429,24 @@ mono_domain_finalize (MonoDomain *domain, guint32 timeout)
 
 	if (timeout == -1)
 		timeout = INFINITE;
+	if (timeout != INFINITE)
+		start = mono_msec_ticks ();
 
 	ret = TRUE;
 
 	for (;;) {
-		res = mono_coop_sem_timedwait (&req->done, timeout, MONO_SEM_FLAGS_ALERTABLE);
+		if (timeout == INFINITE) {
+			res = mono_coop_sem_wait (&req->done, MONO_SEM_FLAGS_ALERTABLE);
+		} else {
+			gint64 elapsed = mono_msec_ticks () - start;
+			if (elapsed >= timeout) {
+				ret = FALSE;
+				break;
+			}
+
+			res = mono_coop_sem_timedwait (&req->done, timeout - elapsed, MONO_SEM_FLAGS_ALERTABLE);
+		}
+
 		if (res == MONO_SEM_TIMEDWAIT_RET_SUCCESS) {
 			break;
 		} else if (res == MONO_SEM_TIMEDWAIT_RET_ALERTED) {
