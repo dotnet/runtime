@@ -373,6 +373,9 @@ public:
 
         } counts;
 
+        // padding to ensure we get our own cache line
+        BYTE padding[64];
+
         Counts GetCleanCounts()
         {
 #ifdef _WIN64
@@ -529,7 +532,7 @@ public:
     static inline void UpdateLastDequeueTime()
     {
         LIMITED_METHOD_CONTRACT;
-        LastDequeueTime = GetTickCount();
+        VolatileStore(&LastDequeueTime, (unsigned int)GetTickCount());
     }
 
     static BOOL CreateTimerQueueTimer(PHANDLE phNewTimer,
@@ -1301,17 +1304,13 @@ private:
     SVAL_DECL(LONG,MinLimitTotalWorkerThreads);         // same as MinLimitTotalCPThreads
     SVAL_DECL(LONG,MaxLimitTotalWorkerThreads);         // same as MaxLimitTotalCPThreads
         
-    static Volatile<unsigned int> LastDequeueTime;      // used to determine if work items are getting thread starved 
+    static unsigned int LastDequeueTime;      // used to determine if work items are getting thread starved 
     
     static HillClimbing HillClimbingInstance;
-
-    static BYTE padding1[64]; // padding to ensure own cache line
 
     static LONG PriorCompletedWorkRequests;
     static DWORD PriorCompletedWorkRequestsTime;
     static DWORD NextCompletedWorkRequestsTime;
-
-    static BYTE padding2[64]; // padding to ensure own cache line
 
     static LARGE_INTEGER CurrentSampleStartTime;
 
