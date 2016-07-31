@@ -186,9 +186,8 @@ namespace System.Linq.Expressions.Compiler
                 // if the invoke target is a lambda expression tree, first compile it into a delegate
                 expr = Expression.Call(expr, expr.Type.GetMethod("Compile", Array.Empty<Type>()));
             }
-            expr = Expression.Call(expr, expr.Type.GetMethod("Invoke"), node.Arguments);
 
-            EmitExpression(expr);
+            EmitMethodCall(expr, expr.Type.GetMethod("Invoke"), node, CompilationFlags.EmitAsNoTail | CompilationFlags.EmitExpressionStart);
         }
 
         private void EmitInlinedInvoke(InvocationExpression invoke, CompilationFlags flags)
@@ -235,8 +234,9 @@ namespace System.Linq.Expressions.Compiler
 
             // Emit indexes. We don't allow byref args, so no need to worry
             // about write-backs or EmitAddress
-            foreach (var arg in node.Arguments)
+            for (int i = 0, n = node.ArgumentCount; i < n; i++)
             {
+                var arg = node.GetArgument(i);
                 EmitExpression(arg);
             }
 
@@ -258,8 +258,9 @@ namespace System.Linq.Expressions.Compiler
 
             // Emit indexes. We don't allow byref args, so no need to worry
             // about write-backs or EmitAddress
-            foreach (var arg in index.Arguments)
+            for (int i = 0, n = index.ArgumentCount; i < n; i++)
             {
+                var arg = index.GetArgument(i);
                 EmitExpression(arg);
             }
 
@@ -607,7 +608,7 @@ namespace System.Linq.Expressions.Compiler
             }
             else
             {
-                Debug.Assert(node.Arguments.Count == 0, "Node with arguments must have a constructor.");
+                Debug.Assert(node.ArgumentCount == 0, "Node with arguments must have a constructor.");
                 Debug.Assert(node.Type.GetTypeInfo().IsValueType, "Only value type may have constructor not set.");
                 LocalBuilder temp = GetLocal(node.Type);
                 _ilg.Emit(OpCodes.Ldloca, temp);
