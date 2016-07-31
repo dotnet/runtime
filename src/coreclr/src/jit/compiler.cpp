@@ -4442,13 +4442,6 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, CORJIT_F
 #endif
 
 #ifndef LEGACY_BACKEND
-    // TODO-CQ: Remove "if-block" when lowering doesn't rely on front end liveness.
-    // Remove "if-block" to repro assert('!"We should never hit any assignment operator in lowering"')
-    // using self_host_tests_amd64\JIT\Methodical\eh\finallyexec\tryCatchFinallyThrow_nonlocalexit1_d.exe
-    if (!fgLocalVarLivenessDone)
-    {
-        fgLocalVarLiveness();
-    }
     // rationalize trees
     Rationalizer rat(this); // PHASE_RATIONALIZE
     rat.Run();
