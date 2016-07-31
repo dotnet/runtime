@@ -11,6 +11,10 @@
 #pragma hdrstop
 #endif
 
+#if !defined(_TARGET_64BIT_)
+#include "decomposelongs.h"
+#endif
+
 /*****************************************************************************
  *
  *  Helper for Compiler::fgPerBlockLocalVarLiveness().
@@ -1083,6 +1087,8 @@ void Compiler::fgExtendDbgLifetimes()
         VarSetOps::DiffD(this, initVars, block->bbLiveIn);
 
         /* Add statements initializing the vars, if there are any to initialize */
+        unsigned blockWeight = block->getBBWeight(this);
+
         VARSET_ITER_INIT(this, iter, initVars, varIndex);
         while (iter.NextElem(this, &varIndex))
         {
@@ -1098,34 +1104,42 @@ void Compiler::fgExtendDbgLifetimes()
                 continue;
             }
 
-            // TODO-LIR: the code below does not work for blocks that contain LIR. As a result,
-            //           we must run liveness at least once before any LIR is created in order
-            //           to ensure that this code doesn't attempt to insert HIR into LIR blocks.
-
             // If we haven't already done this ...
             if (!fgLocalVarLivenessDone)
             {
-                assert(!block->IsLIR());
-
                 // Create a "zero" node
-
-                GenTreePtr zero = gtNewZeroConNode(genActualType(type));
+                GenTree* zero = gtNewZeroConNode(genActualType(type));
 
                 // Create initialization node
+                if (!block->IsLIR())
+                {
+                    GenTree* varNode = gtNewLclvNode(varNum, type);
+                    GenTree* initNode = gtNewAssignNode(varNode, zero);
 
-                GenTreePtr varNode  = gtNewLclvNode(varNum, type);
-                GenTreePtr initNode = gtNewAssignNode(varNode, zero);
-                GenTreePtr initStmt = gtNewStmt(initNode);
+                    // Create a statement for the initializer, sequence it, and append it to the current BB.
+                    GenTree* initStmt = gtNewStmt(initNode);
+                    gtSetStmtInfo(initStmt);
+                    fgSetStmtSeq(initStmt);
+                    fgInsertStmtNearEnd(block, initStmt);
+                }
+                else
+                {
+                    GenTree* store = new (this, GT_STORE_LCL_VAR) GenTreeLclVar(GT_STORE_LCL_VAR, type, varNum, BAD_IL_OFFSET);
+                    store->gtOp.gtOp1 = zero;
+                    store->gtFlags |= (GTF_VAR_DEF | GTF_ASG);
 
-                gtSetStmtInfo(initStmt);
+                    LIR::Range initRange = LIR::EmptyRange();
+                    initRange.InsertBefore(nullptr, zero, store);
 
-                /* Assign numbers and next/prev links for this tree */
+#if !defined(_TARGET_64BIT_) && !defined(LEGACY_BACKEND)
+                    DecomposeLongs::DecomposeRange(this, blockWeight, initRange);
+#endif
 
-                fgSetStmtSeq(initStmt);
-
-                /* Finally append the statement to the current BB */
-
-                fgInsertStmtNearEnd(block, initStmt);
+                    // Naively inserting the initializer at the end of the block may add code after the block's
+                    // terminator, in which case the inserted code will never be executed (and the IR for the
+                    // block will be invalid). Use `LIR::InsertBeforeTerminator` to avoid this problem.
+                    LIR::InsertBeforeTerminator(block, std::move(initRange));
+                }
 
 #ifdef DEBUG
                 if (verbose)
@@ -1135,6 +1149,8 @@ void Compiler::fgExtendDbgLifetimes()
 #endif // DEBUG
 
                 varDsc->incRefCnts(block->getBBWeight(this), this);
+
+                block->bbFlags |= BBF_CHANGED; // indicates that the contents of the block have changed.
             }
 
             /* Update liveness information so that redoing fgLiveVarAnalysis()
@@ -1142,7 +1158,6 @@ void Compiler::fgExtendDbgLifetimes()
 
             VarSetOps::AddElemD(this, block->bbVarDef, varIndex);
             VarSetOps::AddElemD(this, block->bbLiveOut, varIndex);
-            block->bbFlags |= BBF_CHANGED; // indicates that the liveness info has changed
         }
     }
 

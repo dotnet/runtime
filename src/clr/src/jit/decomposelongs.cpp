@@ -32,10 +32,9 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX*/
 #include "decomposelongs.h"
 
 //------------------------------------------------------------------------
-
-//------------------------------------------------------------------------
-// PrepareForDecomposition: Do one-time preparation required for LONG decomposition.
-// Namely, promote long variables to multi-register structs.
+// DecomposeLongs::PrepareForDecomposition:
+//    Do one-time preparation required for LONG decomposition. Namely,
+//    promote long variables to multi-register structs.
 //
 // Arguments:
 //    None
@@ -49,13 +48,10 @@ void DecomposeLongs::PrepareForDecomposition()
 }
 
 //------------------------------------------------------------------------
-// DecomposeBlock: Do LONG decomposition to all the statements in the given block.
-// This must be done before lowering the block, as decomposition can insert
-// additional statements.
-//
-// Decomposition is done as a post-order tree walk. Lower levels of the tree can
-// create new nodes that need to be further decomposed at higher levels. That is,
-// the decomposition "bubbles up" the tree.
+// DecomposeLongs::DecomposeBlock:
+//    Do LONG decomposition on all the nodes in the given block. This must
+//    be done before lowering the block, as decomposition can insert
+//    additional nodes.
 //
 // Arguments:
 //    block - the block to process
@@ -68,21 +64,63 @@ void DecomposeLongs::DecomposeBlock(BasicBlock* block)
     assert(block == m_compiler->compCurBB); // compCurBB must already be set.
     assert(block->isEmpty() || block->IsLIR());
 
-    m_block = block;
+    m_blockWeight = block->getBBWeight(m_compiler);
+    m_range = &LIR::AsRange(block);
+    DecomposeRangeHelper();
+}
 
-    GenTree* node = BlockRange().FirstNonPhiNode();
+//------------------------------------------------------------------------
+// DecomposeLongs::DecomposeRange:
+//    Do LONG decomposition on all the nodes in the given range. This must
+//    be done before inserting a range of un-decomposed IR into a block
+//    that has already been decomposed.
+//
+// Arguments:
+//    compiler    - The compiler context.
+//    blockWeight - The weight of the block into which the range will be
+//                  inserted.
+//    range       - The range to decompose.
+//
+// Return Value:
+//    None.
+//
+void DecomposeLongs::DecomposeRange(Compiler* compiler, unsigned blockWeight, LIR::Range& range)
+{
+    assert(compiler != nullptr);
+
+    DecomposeLongs decomposer(compiler);
+    decomposer.m_blockWeight = blockWeight;
+    decomposer.m_range = &range;
+
+    decomposer.DecomposeRangeHelper();
+}
+
+//------------------------------------------------------------------------
+// DecomposeLongs::DecomposeRangeHelper:
+//    Decompiose each node in the current range.
+//
+//    Decomposition is done as an execution-order walk. Decomposition of
+//    a particular node can create new nodes that need to be further
+//    decomposed at higher levels. That is, decomposition "bubbles up"
+//    through dataflow.
+//
+void DecomposeLongs::DecomposeRangeHelper()
+{
+    assert(m_range != nullptr);
+
+    GenTree* node = Range().FirstNonPhiNode();
     while (node != nullptr)
     {
         LIR::Use use;
-        if (!BlockRange().TryGetUse(node, &use))
+        if (!Range().TryGetUse(node, &use))
         {
-            use = LIR::Use::GetDummyUse(BlockRange(), node);
+            use = LIR::Use::GetDummyUse(Range(), node);
         }
 
         node = DecomposeNode(use);
     }
 
-    assert(BlockRange().CheckLIR(m_compiler));
+    assert(Range().CheckLIR(m_compiler));
 }
 
 //------------------------------------------------------------------------
@@ -109,7 +147,7 @@ GenTree* DecomposeLongs::DecomposeNode(LIR::Use& use)
             {
                 printf("Changing implicit reference to lo half of long lclVar to an explicit reference of its promoted "
                        "half:\n");
-                m_compiler->gtDispTreeRange(BlockRange(), tree);
+                m_compiler->gtDispTreeRange(Range(), tree);
             }
 #endif // DEBUG
             m_compiler->lvaDecRefCnts(tree);
@@ -129,7 +167,7 @@ GenTree* DecomposeLongs::DecomposeNode(LIR::Use& use)
     if (m_compiler->verbose)
     {
         printf("Decomposing TYP_LONG tree.  BEFORE:\n");
-        m_compiler->gtDispTreeRange(BlockRange(), tree);
+        m_compiler->gtDispTreeRange(Range(), tree);
     }
 #endif // DEBUG
 
@@ -255,7 +293,7 @@ GenTree* DecomposeLongs::DecomposeNode(LIR::Use& use)
     {
         // NOTE: st_lcl_var doesn't dump properly afterwards.
         printf("Decomposing TYP_LONG tree.  AFTER:\n");
-        m_compiler->gtDispTreeRange(BlockRange(), use.Def());
+        m_compiler->gtDispTreeRange(Range(), use.Def());
     }
 #endif
 
@@ -281,12 +319,12 @@ GenTree* DecomposeLongs::FinalizeDecomposition(LIR::Use& use, GenTree* loResult,
     assert(use.IsInitialized());
     assert(loResult != nullptr);
     assert(hiResult != nullptr);
-    assert(BlockRange().Contains(loResult));
-    assert(BlockRange().Contains(hiResult));
+    assert(Range().Contains(loResult));
+    assert(Range().Contains(hiResult));
     assert(loResult->Precedes(hiResult));
 
     GenTree* gtLong = new (m_compiler, GT_LONG) GenTreeOp(GT_LONG, TYP_LONG, loResult, hiResult);
-    BlockRange().InsertAfter(hiResult, gtLong);
+    Range().InsertAfter(hiResult, gtLong);
 
     use.ReplaceWith(m_compiler, gtLong);
 
@@ -316,7 +354,7 @@ GenTree* DecomposeLongs::DecomposeLclVar(LIR::Use& use)
     loResult->gtType  = TYP_INT;
 
     GenTree* hiResult = m_compiler->gtNewLclLNode(varNum, TYP_INT);
-    BlockRange().InsertAfter(loResult, hiResult);
+    Range().InsertAfter(loResult, hiResult);
 
     if (varDsc->lvPromoted)
     {
@@ -364,7 +402,7 @@ GenTree* DecomposeLongs::DecomposeLclFld(LIR::Use& use)
     loResult->gtType        = TYP_INT;
 
     GenTree* hiResult = m_compiler->gtNewLclFldNode(loResult->gtLclNum, TYP_INT, loResult->gtLclOffs + 4);
-    BlockRange().InsertAfter(loResult, hiResult);
+    Range().InsertAfter(loResult, hiResult);
 
     return FinalizeDecomposition(use, loResult, hiResult);
 }
@@ -426,7 +464,7 @@ GenTree* DecomposeLongs::DecomposeStoreLclVar(LIR::Use& use)
 
     // 'tree' is going to steal the loRhs node for itself, so we need to remove the
     // GT_LONG node from the threading.
-    BlockRange().Remove(rhs);
+    Range().Remove(rhs);
 
     tree->gtOp.gtOp1 = loRhs;
     tree->gtType     = TYP_INT;
@@ -437,7 +475,7 @@ GenTree* DecomposeLongs::DecomposeStoreLclVar(LIR::Use& use)
     m_compiler->lvaIncRefCnts(tree);
     m_compiler->lvaIncRefCnts(hiStore);
 
-    BlockRange().InsertAfter(tree, hiStore);
+    Range().InsertAfter(tree, hiStore);
 
     return hiStore->gtNext;
 }
@@ -468,10 +506,10 @@ GenTree* DecomposeLongs::DecomposeCast(LIR::Use& use)
             if (tree->gtFlags & GTF_UNSIGNED)
             {
                 loResult = tree->gtGetOp1();
-                BlockRange().Remove(tree);
+                Range().Remove(tree);
 
                 hiResult = new (m_compiler, GT_CNS_INT) GenTreeIntCon(TYP_INT, 0);
-                BlockRange().InsertAfter(loResult, hiResult);
+                Range().InsertAfter(loResult, hiResult);
             }
             else
             {
@@ -509,7 +547,7 @@ GenTree* DecomposeLongs::DecomposeCnsLng(LIR::Use& use)
     loResult->gtType = TYP_INT;
 
     GenTree* hiResult = new (m_compiler, GT_CNS_INT) GenTreeIntCon(TYP_INT, hiVal);
-    BlockRange().InsertAfter(loResult, hiResult);
+    Range().InsertAfter(loResult, hiResult);
 
     return FinalizeDecomposition(use, loResult, hiResult);
 }
@@ -553,7 +591,7 @@ GenTree* DecomposeLongs::DecomposeCall(LIR::Use& use)
     GenTree* originalNode = use.Def();
 
     // Otherwise, we need to force var = call()
-    unsigned varNum                              = use.ReplaceWithLclVar(m_compiler, m_block->getBBWeight(m_compiler));
+    unsigned varNum                              = use.ReplaceWithLclVar(m_compiler, m_blockWeight);
     m_compiler->lvaTable[varNum].lvIsMultiRegRet = true;
 
     // Decompose the new LclVar use
@@ -590,28 +628,27 @@ GenTree* DecomposeLongs::DecomposeStoreInd(LIR::Use& use)
     //      *  storeIndir long
 
     GenTree* gtLong      = tree->gtOp.gtOp2;
-    unsigned blockWeight = m_block->getBBWeight(m_compiler);
 
     // Save address to a temp. It is used in storeIndLow and storeIndHigh trees.
-    LIR::Use address(BlockRange(), &tree->gtOp.gtOp1, tree);
-    address.ReplaceWithLclVar(m_compiler, blockWeight);
+    LIR::Use address(Range(), &tree->gtOp.gtOp1, tree);
+    address.ReplaceWithLclVar(m_compiler, m_blockWeight);
     JITDUMP("[DecomposeStoreInd]: Saving address tree to a temp var:\n");
-    DISPTREERANGE(BlockRange(), address.Def());
+    DISPTREERANGE(Range(), address.Def());
 
     if (!gtLong->gtOp.gtOp1->OperIsLeaf())
     {
-        LIR::Use op1(BlockRange(), &gtLong->gtOp.gtOp1, gtLong);
-        op1.ReplaceWithLclVar(m_compiler, blockWeight);
+        LIR::Use op1(Range(), &gtLong->gtOp.gtOp1, gtLong);
+        op1.ReplaceWithLclVar(m_compiler, m_blockWeight);
         JITDUMP("[DecomposeStoreInd]: Saving low data tree to a temp var:\n");
-        DISPTREERANGE(BlockRange(), op1.Def());
+        DISPTREERANGE(Range(), op1.Def());
     }
 
     if (!gtLong->gtOp.gtOp2->OperIsLeaf())
     {
-        LIR::Use op2(BlockRange(), &gtLong->gtOp.gtOp2, gtLong);
-        op2.ReplaceWithLclVar(m_compiler, blockWeight);
+        LIR::Use op2(Range(), &gtLong->gtOp.gtOp2, gtLong);
+        op2.ReplaceWithLclVar(m_compiler, m_blockWeight);
         JITDUMP("[DecomposeStoreInd]: Saving high data tree to a temp var:\n");
-        DISPTREERANGE(BlockRange(), op2.Def());
+        DISPTREERANGE(Range(), op2.Def());
     }
 
     GenTree* addrBase    = tree->gtOp.gtOp1;
@@ -619,8 +656,8 @@ GenTree* DecomposeLongs::DecomposeStoreInd(LIR::Use& use)
     GenTree* dataLow     = gtLong->gtOp.gtOp1;
     GenTree* storeIndLow = tree;
 
-    BlockRange().Remove(gtLong);
-    BlockRange().Remove(dataHigh);
+    Range().Remove(gtLong);
+    Range().Remove(dataHigh);
     storeIndLow->gtOp.gtOp2 = dataLow;
     storeIndLow->gtType     = TYP_INT;
 
@@ -634,7 +671,7 @@ GenTree* DecomposeLongs::DecomposeStoreInd(LIR::Use& use)
 
     m_compiler->lvaIncRefCnts(addrBaseHigh);
 
-    BlockRange().InsertAfter(storeIndLow, dataHigh, addrBaseHigh, addrHigh, storeIndHigh);
+    Range().InsertAfter(storeIndLow, dataHigh, addrBaseHigh, addrHigh, storeIndHigh);
 
     return storeIndHigh;
 
@@ -669,10 +706,10 @@ GenTree* DecomposeLongs::DecomposeInd(LIR::Use& use)
 {
     GenTree* indLow = use.Def();
 
-    LIR::Use address(BlockRange(), &indLow->gtOp.gtOp1, indLow);
-    address.ReplaceWithLclVar(m_compiler, m_block->getBBWeight(m_compiler));
+    LIR::Use address(Range(), &indLow->gtOp.gtOp1, indLow);
+    address.ReplaceWithLclVar(m_compiler, m_blockWeight);
     JITDUMP("[DecomposeInd]: Saving addr tree to a temp var:\n");
-    DISPTREERANGE(BlockRange(), address.Def());
+    DISPTREERANGE(Range(), address.Def());
 
     // Change the type of lower ind.
     indLow->gtType = TYP_INT;
@@ -687,7 +724,7 @@ GenTree* DecomposeLongs::DecomposeInd(LIR::Use& use)
 
     m_compiler->lvaIncRefCnts(addrBaseHigh);
 
-    BlockRange().InsertAfter(indLow, addrBaseHigh, addrHigh, indHigh);
+    Range().InsertAfter(indLow, addrBaseHigh, addrHigh, indHigh);
 
     return FinalizeDecomposition(use, indLow, indHigh);
 }
@@ -712,14 +749,14 @@ GenTree* DecomposeLongs::DecomposeNot(LIR::Use& use)
     GenTree* loOp1 = gtLong->gtGetOp1();
     GenTree* hiOp1 = gtLong->gtGetOp2();
 
-    BlockRange().Remove(gtLong);
+    Range().Remove(gtLong);
 
     GenTree* loResult    = tree;
     loResult->gtType     = TYP_INT;
     loResult->gtOp.gtOp1 = loOp1;
 
     GenTree* hiResult = new (m_compiler, GT_NOT) GenTreeOp(GT_NOT, TYP_INT, hiOp1, nullptr);
-    BlockRange().InsertAfter(loResult, hiResult);
+    Range().InsertAfter(loResult, hiResult);
 
     return FinalizeDecomposition(use, loResult, hiResult);
 }
@@ -742,20 +779,18 @@ GenTree* DecomposeLongs::DecomposeNeg(LIR::Use& use)
     GenTree* gtLong = tree->gtGetOp1();
     noway_assert(gtLong->OperGet() == GT_LONG);
 
-    unsigned blockWeight = m_block->getBBWeight(m_compiler);
+    LIR::Use op1(Range(), &gtLong->gtOp.gtOp1, gtLong);
+    op1.ReplaceWithLclVar(m_compiler, m_blockWeight);
 
-    LIR::Use op1(BlockRange(), &gtLong->gtOp.gtOp1, gtLong);
-    op1.ReplaceWithLclVar(m_compiler, blockWeight);
-
-    LIR::Use op2(BlockRange(), &gtLong->gtOp.gtOp2, gtLong);
-    op2.ReplaceWithLclVar(m_compiler, blockWeight);
+    LIR::Use op2(Range(), &gtLong->gtOp.gtOp2, gtLong);
+    op2.ReplaceWithLclVar(m_compiler, m_blockWeight);
 
     // Neither GT_NEG nor the introduced temporaries have side effects.
     tree->gtFlags &= ~GTF_ALL_EFFECT;
     GenTree* loOp1 = gtLong->gtGetOp1();
     GenTree* hiOp1 = gtLong->gtGetOp2();
 
-    BlockRange().Remove(gtLong);
+    Range().Remove(gtLong);
 
     GenTree* loResult    = tree;
     loResult->gtType     = TYP_INT;
@@ -766,7 +801,7 @@ GenTree* DecomposeLongs::DecomposeNeg(LIR::Use& use)
     GenTree* hiResult = m_compiler->gtNewOperNode(GT_NEG, TYP_INT, hiAdjust);
     hiResult->gtFlags = tree->gtFlags;
 
-    BlockRange().InsertAfter(loResult, zero, hiAdjust, hiResult);
+    Range().InsertAfter(loResult, zero, hiAdjust, hiResult);
 
     return FinalizeDecomposition(use, loResult, hiResult);
 }
@@ -819,8 +854,8 @@ GenTree* DecomposeLongs::DecomposeArith(LIR::Use& use)
            "Can't decompose expression tree TYP_LONG node");
 
     // Now, remove op1 and op2 from the node list.
-    BlockRange().Remove(op1);
-    BlockRange().Remove(op2);
+    Range().Remove(op1);
+    Range().Remove(op2);
 
     // We will reuse "tree" for the loResult, which will now be of TYP_INT, and its operands
     // will be the lo halves of op1 from above.
@@ -831,7 +866,7 @@ GenTree* DecomposeLongs::DecomposeArith(LIR::Use& use)
     loResult->gtOp.gtOp2 = loOp2;
 
     GenTree* hiResult = new (m_compiler, oper) GenTreeOp(GetHiOper(oper), TYP_INT, hiOp1, hiOp2);
-    BlockRange().InsertAfter(loResult, hiResult);
+    Range().InsertAfter(loResult, hiResult);
 
     if ((oper == GT_ADD) || (oper == GT_SUB))
     {
@@ -871,27 +906,25 @@ GenTree* DecomposeLongs::DecomposeShift(LIR::Use& use)
 
     assert((oper == GT_LSH) || (oper == GT_RSH) || (oper == GT_RSZ));
 
-    unsigned blockWeight = m_block->getBBWeight(m_compiler);
+    LIR::Use loOp1Use(Range(), &gtLong->gtOp.gtOp1, gtLong);
+    loOp1Use.ReplaceWithLclVar(m_compiler, m_blockWeight);
 
-    LIR::Use loOp1Use(BlockRange(), &gtLong->gtOp.gtOp1, gtLong);
-    loOp1Use.ReplaceWithLclVar(m_compiler, blockWeight);
+    LIR::Use hiOp1Use(Range(), &gtLong->gtOp.gtOp2, gtLong);
+    hiOp1Use.ReplaceWithLclVar(m_compiler, m_blockWeight);
 
-    LIR::Use hiOp1Use(BlockRange(), &gtLong->gtOp.gtOp2, gtLong);
-    hiOp1Use.ReplaceWithLclVar(m_compiler, blockWeight);
-
-    LIR::Use shiftWidthUse(BlockRange(), &tree->gtOp.gtOp2, tree);
-    shiftWidthUse.ReplaceWithLclVar(m_compiler, blockWeight);
+    LIR::Use shiftWidthUse(Range(), &tree->gtOp.gtOp2, tree);
+    shiftWidthUse.ReplaceWithLclVar(m_compiler, m_blockWeight);
 
     GenTree* loOp1 = gtLong->gtGetOp1();
     GenTree* hiOp1 = gtLong->gtGetOp2();
 
     GenTree* shiftWidthOp = tree->gtGetOp2();
 
-    BlockRange().Remove(gtLong);
-    BlockRange().Remove(loOp1);
-    BlockRange().Remove(hiOp1);
+    Range().Remove(gtLong);
+    Range().Remove(loOp1);
+    Range().Remove(hiOp1);
 
-    BlockRange().Remove(shiftWidthOp);
+    Range().Remove(shiftWidthOp);
 
     // TODO-X86-CQ: If the shift operand is a GT_CNS_INT, we should pipe the instructions through to codegen
     // and generate the shift instructions ourselves there, rather than replacing it with a helper call.
@@ -922,9 +955,9 @@ GenTree* DecomposeLongs::DecomposeShift(LIR::Use& use)
     retTypeDesc->InitializeLongReturnType(m_compiler);
 
     call = m_compiler->fgMorphArgs(callNode);
-    BlockRange().InsertAfter(tree, LIR::SeqTree(m_compiler, call));
+    Range().InsertAfter(tree, LIR::SeqTree(m_compiler, call));
     
-    BlockRange().Remove(tree);
+    Range().Remove(tree);
     use.ReplaceWith(m_compiler, call);
     return call;
 }
