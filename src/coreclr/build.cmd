@@ -103,6 +103,8 @@ if /i "%1" == "skiptests"           (set __BuildTests=0&set processedArgs=!proce
 if /i "%1" == "skipbuildpackages"   (set __BuildPackages=0&set processedArgs=!processedArgs! %1&goto Arg_Next)
 if /i "%1" == "buildjit32"          (set __BuildJit32="-DBUILD_JIT32=1"&set processedArgs=!processedArgs! %1&goto Arg_Next)
 if /i "%1" == "toolset_dir"         (set __ToolsetDir=%2&set __PassThroughArgs=%__PassThroughArgs% %2&set processedArgs=!processedArgs! %1 %2&shift&goto Arg_Next)
+if /i "%1" == "-priority"           (set __UnprocessedBuildArgs=!__UnprocessedBuildArgs! %1=%2&shift&goto Arg_Next)
+if /i "%1" == "-officialbuildid"    (set __UnprocessedBuildArgs=!__UnprocessedBuildArgs! %1=%2&shift&goto Arg_Next)
 
 set __UnprocessedBuildArgs=!__UnprocessedBuildArgs! %1
 
