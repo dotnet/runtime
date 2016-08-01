@@ -659,7 +659,7 @@ namespace System.Runtime.InteropServices
         [System.Security.SecurityCriticalAttribute]
         public static void ZeroFreeGlobalAllocUnicode(System.IntPtr s) { }
         [System.Security.SecurityCriticalAttribute]
-        public static void ZeroFreeMemoryUTF8(System.IntPtr s) { }
+        public static void ZeroFreeCoTaskMemUTF8(System.IntPtr s) { }
     }
     [System.AttributeUsageAttribute((System.AttributeTargets)(10496), Inherited = false)]
     public sealed partial class MarshalAsAttribute : System.Attribute
