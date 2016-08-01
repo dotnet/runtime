@@ -50,6 +50,7 @@ namespace System.IO
         public static System.DateTime GetLastAccessTimeUtc(string path) { return default(System.DateTime); }
         public static System.DateTime GetLastWriteTime(string path) { return default(System.DateTime); }
         public static System.DateTime GetLastWriteTimeUtc(string path) { return default(System.DateTime); }
+        public static string[] GetLogicalDrives() { return default(string[]); }
         public static System.IO.DirectoryInfo GetParent(string path) { return default(System.IO.DirectoryInfo); }
         public static void Move(string sourceDirName, string destDirName) { }
         public static void SetCreationTime(string path, System.DateTime creationTime) { }

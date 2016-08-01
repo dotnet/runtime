@@ -1,0 +1,13 @@
+Compat issues with assembly System.Xml.Serialization:
+TypesMustExist : Type 'System.ServiceModel.XmlSerializerFormatAttribute' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Xml.Serialization.XmlAnyElementAttributes' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Xml.Serialization.XmlArrayItemAttributes' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Xml.Serialization.XmlAttributeOverrides' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Xml.Serialization.XmlAttributes' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Xml.Serialization.XmlElementAttributes' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Xml.Serialization.XmlMapping' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Xml.Serialization.XmlMappingAccess' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Xml.Serialization.XmlSerializer' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Xml.Serialization.XmlSerializerNamespaces' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Xml.Serialization.XmlTypeMapping' does not exist in the implementation but it does exist in the contract.
+Total Issues: 11

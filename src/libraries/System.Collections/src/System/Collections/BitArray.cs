@@ -381,8 +381,7 @@ namespace System.Collections
             }
         }
 
-        // ICollection implementation
-        void ICollection.CopyTo(Array array, int index)
+        public void CopyTo(Array array, int index)
         {
             if (array == null)
                 throw new ArgumentNullException(nameof(array));
@@ -422,7 +421,7 @@ namespace System.Collections
                 throw new ArgumentException(SR.Arg_BitArrayTypeUnsupported, nameof(array));
         }
 
-        int ICollection.Count
+        public int Count
         {
             get
             {
@@ -432,7 +431,7 @@ namespace System.Collections
             }
         }
 
-        object ICollection.SyncRoot
+        public Object SyncRoot
         {
             get
             {
@@ -444,12 +443,25 @@ namespace System.Collections
             }
         }
 
-        bool ICollection.IsSynchronized
+        public bool IsSynchronized
         {
             get
             {
                 return false;
             }
+        }
+
+        public bool IsReadOnly
+        {
+            get
+            {
+                return false;
+            }
+        }
+
+        public object Clone()
+        {
+            return new BitArray(this);
         }
 
         public IEnumerator GetEnumerator()

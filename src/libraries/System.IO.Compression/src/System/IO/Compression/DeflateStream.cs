@@ -346,6 +346,12 @@ namespace System.IO.Compression
             throw new InvalidOperationException(SR.CannotWriteToDeflateStream);
         }
 
+        public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback asyncCallback, object asyncState) =>
+            TaskToApm.Begin(ReadAsync(buffer, offset, count, CancellationToken.None), asyncCallback, asyncState);
+
+        public override int EndRead(IAsyncResult asyncResult) =>
+            TaskToApm.End<int>(asyncResult);
+
         public override Task<int> ReadAsync(Byte[] array, int offset, int count, CancellationToken cancellationToken)
         {
             EnsureDecompressionMode();
@@ -587,6 +593,12 @@ namespace System.IO.Compression
                 }
             }
         }
+
+        public override IAsyncResult BeginWrite(byte[] array, int offset, int count, AsyncCallback asyncCallback, object asyncState) =>
+            TaskToApm.Begin(WriteAsync(array, offset, count, CancellationToken.None), asyncCallback, asyncState);
+
+        public override void EndWrite(IAsyncResult asyncResult) =>
+            TaskToApm.End(asyncResult);
 
         public override Task WriteAsync(Byte[] array, int offset, int count, CancellationToken cancellationToken)
         {

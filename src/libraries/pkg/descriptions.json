@@ -767,6 +767,16 @@
         ]
     },
     {
+        "Name": "System.Json",
+        "Description": "Provides standards-based support for the serialization of JavaScript Object Notation (JSON).",
+        "CommonTypes": [
+            "System.Json.JsonArray",
+            "System.Json.JsonObject",
+            "System.Json.JsonPrimitive",
+            "System.Json.JsonValue"
+        ]
+    },
+    {
         "Name": "System.Linq",
         "Description": "Provides classes and interfaces that supports queries that use Language-Integrated Query (LINQ).",
         "CommonTypes": [
@@ -1731,6 +1741,14 @@
         "CommonTypes": [
             "System.Threading.Timer",
             "System.Threading.TimerCallback"
+        ]
+    },
+	{
+        "Name": "System.Transactions",
+        "Description": "Provides classes that allow you to write your own transactional application and resource manager.",
+        "CommonTypes": [
+            "System.Transactions.Transaction",
+            "System.Transactions.TransactionScope"
         ]
     },
     {

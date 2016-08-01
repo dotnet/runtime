@@ -1,18 +1,18 @@
 {
   "frameworks": {
-    "netstandard1.5": {
+    "netstandard1.6": {
       "dependencies": {
         "Microsoft.NETCore.Platforms": "1.0.1",
-        "Microsoft.TargetingPack.Private.CoreCLR": "1.0.2-beta-24328-01"
+        "Microsoft.TargetingPack.Private.CoreCLR": "1.0.2-beta-24329-03"
       },
       "imports": [
-        "dotnet5.6"
+        "dotnet5.7"
       ]
     },
     "netcore50": {
       "dependencies": {
         "Microsoft.NETCore.Platforms": "1.0.1",
-        "Microsoft.TargetingPack.Private.NETNative": "1.0.1-beta-24329-00",
+        "Microsoft.TargetingPack.Private.NETNative": "1.0.1-beta-24401-00",
         "System.Diagnostics.Contracts": "4.0.0",
         "System.Diagnostics.Debug": "4.0.10",
         "System.Diagnostics.Tools": "4.0.0",
@@ -28,13 +28,18 @@
         "Microsoft.TargetingPack.NETFramework.v4.6": "1.0.1"
       }
     },
+    "net463": {
+      "dependencies": {
+        "Microsoft.TargetingPack.NETFramework.v4.6": "1.0.1"
+      }
+    },
     "netstandard1.3": {
       "imports": [
         "netcore50"
       ],
       "dependencies": {
         "Microsoft.NETCore.Platforms": "1.0.1",
-        "Microsoft.TargetingPack.Private.NETNative": "1.0.1-beta-24329-00",
+        "Microsoft.TargetingPack.Private.NETNative": "1.0.1-beta-24401-00",
         "System.Diagnostics.Contracts": "4.0.0",
         "System.Diagnostics.Debug": "4.0.10",
         "System.Diagnostics.Tools": "4.0.0",

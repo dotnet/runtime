@@ -1054,6 +1054,7 @@ namespace System.Tests
             Assert.Equal(expected, s.IndexOf(target.ToString(), startIndex, count));
 
             Assert.Equal(expected, s.IndexOf(target.ToString(), startIndex, count, StringComparison.CurrentCulture));
+
             Assert.Equal(expected, s.IndexOf(target.ToString(), startIndex, count, StringComparison.Ordinal));
             Assert.Equal(expected, s.IndexOf(target.ToString(), startIndex, count, StringComparison.OrdinalIgnoreCase));
         }
@@ -1923,6 +1924,7 @@ namespace System.Tests
             // Value is null
             Assert.Throws<ArgumentNullException>("value", () => s.StartsWith(null));
             Assert.Throws<ArgumentNullException>("value", () => s.StartsWith(null, StringComparison.CurrentCultureIgnoreCase));
+
             Assert.Throws<ArgumentNullException>("value", () => s.StartsWith(null, StringComparison.Ordinal));
             Assert.Throws<ArgumentNullException>("value", () => s.StartsWith(null, StringComparison.OrdinalIgnoreCase));
 

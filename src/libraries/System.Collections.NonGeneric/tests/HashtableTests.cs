@@ -8,6 +8,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
+#pragma warning disable 618 // obsolete types
+
 namespace System.Collections.Tests
 {
     public static class HashtableTests
@@ -17,6 +19,28 @@ namespace System.Collections.Tests
         {
             var hash = new ComparableHashtable();
             VerifyHashtable(hash, null, null);
+        }
+
+        [Fact]
+        public static void Ctor_HashCodeProvider_Comparer()
+        {
+            var hash = new ComparableHashtable(CaseInsensitiveHashCodeProvider.DefaultInvariant, StringComparer.OrdinalIgnoreCase);
+            VerifyHashtable(hash, null, hash.EqualityComparer);
+            Assert.Same(CaseInsensitiveHashCodeProvider.DefaultInvariant, hash.HashCodeProvider);
+            Assert.Same(StringComparer.OrdinalIgnoreCase, hash.Comparer);
+        }
+
+        [Theory]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        public static void Ctor_HashCodeProvider_Comparer_NullInputs(bool nullProvider, bool nullComparer)
+        {
+            var hash = new ComparableHashtable(
+                nullProvider ? null : CaseInsensitiveHashCodeProvider.DefaultInvariant,
+                nullComparer ? null : StringComparer.OrdinalIgnoreCase);
+            VerifyHashtable(hash, null, hash.EqualityComparer);
         }
 
         [Fact]
@@ -39,6 +63,28 @@ namespace System.Collections.Tests
         public static void Ctor_IDictionary_NullDictionary_ThrowsArgumentNullException()
         {
             Assert.Throws<ArgumentNullException>("d", () => new Hashtable((IDictionary)null)); // Dictionary is null
+        }
+
+        [Fact]
+        public static void Ctor_IDictionary_HashCodeProvider_Comparer()
+        {
+            // No exception
+            var hash1 = new ComparableHashtable(new Hashtable(), CaseInsensitiveHashCodeProvider.DefaultInvariant, StringComparer.OrdinalIgnoreCase);
+            Assert.Equal(0, hash1.Count);
+
+            hash1 = new ComparableHashtable(new Hashtable(new Hashtable(new Hashtable(new Hashtable(new Hashtable())))), CaseInsensitiveHashCodeProvider.DefaultInvariant, StringComparer.OrdinalIgnoreCase);
+            Assert.Equal(0, hash1.Count);
+
+            Hashtable hash2 = Helpers.CreateIntHashtable(100);
+            hash1 = new ComparableHashtable(hash2, CaseInsensitiveHashCodeProvider.DefaultInvariant, StringComparer.OrdinalIgnoreCase);
+
+            VerifyHashtable(hash1, hash2, hash1.EqualityComparer);
+        }
+
+        [Fact]
+        public static void Ctor_IDictionary_HashCodeProvider_Comparer_NullDictionary_ThrowsArgumentNullException()
+        {
+            Assert.Throws<ArgumentNullException>("d", () => new Hashtable(null, CaseInsensitiveHashCodeProvider.Default, StringComparer.OrdinalIgnoreCase)); // Dictionary is null
         }
 
         [Fact]
@@ -67,6 +113,16 @@ namespace System.Collections.Tests
             VerifyHashtable(hash, null, null);
         }
 
+        [Theory]
+        [InlineData(0)]
+        [InlineData(10)]
+        [InlineData(100)]
+        public static void Ctor_Int_HashCodeProvider_Comparer(int capacity)
+        {
+            var hash = new ComparableHashtable(capacity, CaseInsensitiveHashCodeProvider.DefaultInvariant, StringComparer.OrdinalIgnoreCase);
+            VerifyHashtable(hash, null, hash.EqualityComparer);
+        }
+
         [Fact]
         public static void Ctor_Int_Invalid()
         {
@@ -78,16 +134,17 @@ namespace System.Collections.Tests
         public static void Ctor_IDictionary_Int()
         {
             // No exception
-            var hash1 = new ComparableHashtable(new Hashtable(), 1f);
+            var hash1 = new ComparableHashtable(new Hashtable(), 1f, CaseInsensitiveHashCodeProvider.DefaultInvariant, StringComparer.OrdinalIgnoreCase);
             Assert.Equal(0, hash1.Count);
 
-            hash1 = new ComparableHashtable(new Hashtable(new Hashtable(new Hashtable(new Hashtable(new Hashtable(), 1f), 1f), 1f), 1f), 1f);
+            hash1 = new ComparableHashtable(new Hashtable(new Hashtable(new Hashtable(new Hashtable(new Hashtable(), 1f), 1f), 1f), 1f), 1f,
+                CaseInsensitiveHashCodeProvider.DefaultInvariant, StringComparer.OrdinalIgnoreCase);
             Assert.Equal(0, hash1.Count);
 
             Hashtable hash2 = Helpers.CreateIntHashtable(100);
-            hash1 = new ComparableHashtable(hash2, 1f);
+            hash1 = new ComparableHashtable(hash2, 1f, CaseInsensitiveHashCodeProvider.DefaultInvariant, StringComparer.OrdinalIgnoreCase);
 
-            VerifyHashtable(hash1, hash2, null);
+            VerifyHashtable(hash1, hash2, hash1.EqualityComparer);
         }
 
         [Fact]
@@ -101,6 +158,22 @@ namespace System.Collections.Tests
             Assert.Throws<ArgumentOutOfRangeException>("loadFactor", () => new Hashtable(new Hashtable(), float.NaN)); // Load factor is NaN
             Assert.Throws<ArgumentOutOfRangeException>("loadFactor", () => new Hashtable(new Hashtable(), float.PositiveInfinity)); // Load factor is infinity
             Assert.Throws<ArgumentOutOfRangeException>("loadFactor", () => new Hashtable(new Hashtable(), float.NegativeInfinity)); // Load factor is infinity
+        }
+
+        [Fact]
+        public static void Ctor_IDictionary_Int_HashCodeProvider_Comparer()
+        {
+            // No exception
+            var hash1 = new ComparableHashtable(new Hashtable(), 1f);
+            Assert.Equal(0, hash1.Count);
+
+            hash1 = new ComparableHashtable(new Hashtable(new Hashtable(new Hashtable(new Hashtable(new Hashtable(), 1f), 1f), 1f), 1f), 1f);
+            Assert.Equal(0, hash1.Count);
+
+            Hashtable hash2 = Helpers.CreateIntHashtable(100);
+            hash1 = new ComparableHashtable(hash2, 1f);
+
+            VerifyHashtable(hash1, hash2, null);
         }
 
         [Fact]
@@ -131,7 +204,7 @@ namespace System.Collections.Tests
         [Fact]
         public static void Ctor_IDictionary_IEqualityComparer_NullDictionary_ThrowsArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>("d", () => new Hashtable(null, null)); // Dictionary is null
+            Assert.Throws<ArgumentNullException>("d", () => new Hashtable((IDictionary)null, null)); // Dictionary is null
         }
 
         [Theory]
@@ -143,6 +216,17 @@ namespace System.Collections.Tests
         {
             var hash = new ComparableHashtable(capacity, loadFactor);
             VerifyHashtable(hash, null, null);
+        }
+
+        [Theory]
+        [InlineData(0, 0.1)]
+        [InlineData(10, 0.2)]
+        [InlineData(100, 0.3)]
+        [InlineData(1000, 1)]
+        public static void Ctor_Int_Int_HashCodeProvider_Comparer(int capacity, float loadFactor)
+        {
+            var hash = new ComparableHashtable(capacity, loadFactor, CaseInsensitiveHashCodeProvider.DefaultInvariant, StringComparer.OrdinalIgnoreCase);
+            VerifyHashtable(hash, null, hash.EqualityComparer);
         }
 
         [Fact]
@@ -710,6 +794,88 @@ namespace System.Collections.Tests
             }
         }
 
+        [Fact]
+        public static void HashCodeProvider_Set_ImpactsSearch()
+        {
+            var hash = new ComparableHashtable(CaseInsensitiveHashCodeProvider.DefaultInvariant, StringComparer.OrdinalIgnoreCase);
+            hash.Add("test", "test");
+
+            // Should be able to find with the same and different casing
+            Assert.True(hash.ContainsKey("test"));
+            Assert.True(hash.ContainsKey("TEST"));
+
+            // Changing the hash code provider, we shouldn't be able to find either
+            hash.HashCodeProvider = new FixedHashCodeProvider
+            {
+                FixedHashCode = CaseInsensitiveHashCodeProvider.DefaultInvariant.GetHashCode("test") + 1
+            };
+            Assert.False(hash.ContainsKey("test"));
+            Assert.False(hash.ContainsKey("TEST"));
+
+            // Changing it back, should be able to find both again
+            hash.HashCodeProvider = CaseInsensitiveHashCodeProvider.DefaultInvariant;
+            Assert.True(hash.ContainsKey("test"));
+            Assert.True(hash.ContainsKey("TEST"));
+        }
+
+        [Fact]
+        public static void HashCodeProvider_Comparer_CompatibleGetSet_Success()
+        {
+            var hash = new ComparableHashtable();
+            Assert.Null(hash.HashCodeProvider);
+            Assert.Null(hash.Comparer);
+
+            hash = new ComparableHashtable();
+            hash.HashCodeProvider = null;
+            hash.Comparer = null;
+
+            hash = new ComparableHashtable();
+            hash.Comparer = null;
+            hash.HashCodeProvider = null;
+
+            hash.HashCodeProvider = CaseInsensitiveHashCodeProvider.DefaultInvariant;
+            hash.Comparer = StringComparer.OrdinalIgnoreCase;
+        }
+
+        [Fact]
+        public static void HashCodeProvider_Comparer_IncompatibleGetSet_Throws()
+        {
+            var hash = new ComparableHashtable(StringComparer.CurrentCulture);
+
+            Assert.Throws<ArgumentException>(() => hash.HashCodeProvider);
+            Assert.Throws<ArgumentException>(() => hash.Comparer);
+
+            Assert.Throws<ArgumentException>(() => hash.HashCodeProvider = CaseInsensitiveHashCodeProvider.DefaultInvariant);
+            Assert.Throws<ArgumentException>(() => hash.Comparer = StringComparer.OrdinalIgnoreCase);
+        }
+
+        [Fact]
+        public static void Comparer_Set_ImpactsSearch()
+        {
+            var hash = new ComparableHashtable(CaseInsensitiveHashCodeProvider.DefaultInvariant, StringComparer.OrdinalIgnoreCase);
+            hash.Add("test", "test");
+
+            // Should be able to find with the same and different casing
+            Assert.True(hash.ContainsKey("test"));
+            Assert.True(hash.ContainsKey("TEST"));
+
+            // Changing the comparer, should only be able to find the matching case
+            hash.Comparer = StringComparer.Ordinal;
+            Assert.True(hash.ContainsKey("test"));
+            Assert.False(hash.ContainsKey("TEST"));
+
+            // Changing it back, should be able to find both again
+            hash.Comparer = StringComparer.OrdinalIgnoreCase;
+            Assert.True(hash.ContainsKey("test"));
+            Assert.True(hash.ContainsKey("TEST"));
+        }
+
+        private class FixedHashCodeProvider : IHashCodeProvider
+        {
+            public int FixedHashCode;
+            public int GetHashCode(object obj) => FixedHashCode;
+        }
+
         private static void VerifyHashtable(ComparableHashtable hash1, Hashtable hash2, IEqualityComparer ikc)
         {
             if (hash2 == null)
@@ -759,7 +925,11 @@ namespace System.Collections.Tests
 
             public ComparableHashtable(int capacity, float loadFactor) : base(capacity, loadFactor) { }
 
+            public ComparableHashtable(int capacity, IHashCodeProvider hcp, IComparer comparer) : base(capacity, hcp, comparer) { }
+
             public ComparableHashtable(int capacity, IEqualityComparer ikc) : base(capacity, ikc) { }
+
+            public ComparableHashtable(IHashCodeProvider hcp, IComparer comparer) : base(hcp, comparer) { }
 
             public ComparableHashtable(IEqualityComparer ikc) : base(ikc) { }
 
@@ -767,13 +937,21 @@ namespace System.Collections.Tests
 
             public ComparableHashtable(IDictionary d, float loadFactor) : base(d, loadFactor) { }
 
+            public ComparableHashtable(IDictionary d, IHashCodeProvider hcp, IComparer comparer) : base(d, hcp, comparer) { }
+
             public ComparableHashtable(IDictionary d, IEqualityComparer ikc) : base(d, ikc) { }
 
+            public ComparableHashtable(IDictionary d, float loadFactor, IHashCodeProvider hcp, IComparer comparer) : base(d, loadFactor, hcp, comparer) { }
+
             public ComparableHashtable(IDictionary d, float loadFactor, IEqualityComparer ikc) : base(d, loadFactor, ikc) { }
+
+            public ComparableHashtable(int capacity, float loadFactor, IHashCodeProvider hcp, IComparer comparer) : base(capacity, loadFactor, hcp, comparer) { }
 
             public ComparableHashtable(int capacity, float loadFactor, IEqualityComparer ikc) : base(capacity, loadFactor, ikc) { }
 
             public new IEqualityComparer EqualityComparer => base.EqualityComparer;
+            public IHashCodeProvider HashCodeProvider { get { return hcp; } set { hcp = value; } }
+            public IComparer Comparer { get { return comparer; } set { comparer = value; } }
         }
 
         private class BadHashCode
