@@ -1518,16 +1518,398 @@ VARSET_VALRET_TP    Compiler::fgUpdateLiveSet(VARSET_VALARG_TP  liveSet,
     return newLiveSet;
 }
 
+//------------------------------------------------------------------------
+// Compiler::fgComputeLifeCall: compute the changes to local var liveness
+//                              due to a GT_CALL node.
+//
+// Arguments:
+//    life - The live set that is being computed.
+//    call - The call node in question.
+//
+void Compiler::fgComputeLifeCall(VARSET_TP& life, GenTreeCall* call)
+{
+    assert(call != nullptr);
+
+    // If this is a tail-call and we have any unmanaged p/invoke calls in
+    // the method then we're going to run the p/invoke epilog
+    // So we mark the FrameRoot as used by this instruction.
+    // This ensure that this variable is kept alive at the tail-call
+    if (call->IsTailCall() && info.compCallUnmanaged)
+    {
+        assert((!opts.ShouldUsePInvokeHelpers()) || (info.compLvFrameListRoot == BAD_VAR_NUM));
+        if (!opts.ShouldUsePInvokeHelpers())
+        {
+            /* Get the TCB local and make it live */
+
+            noway_assert(info.compLvFrameListRoot < lvaCount);
+
+            LclVarDsc* frameVarDsc = &lvaTable[info.compLvFrameListRoot];
+
+            if (frameVarDsc->lvTracked)
+            {
+                VARSET_TP VARSET_INIT_NOCOPY(varBit, VarSetOps::MakeSingleton(this, frameVarDsc->lvVarIndex));
+
+                VarSetOps::AddElemD(this, life, frameVarDsc->lvVarIndex);
+
+                /* Record interference with other live variables */
+
+                fgMarkIntf(life, varBit);
+            }
+        }
+    }
+
+    /* GC refs cannot be enregistered accross an unmanaged call */
+
+    // TODO: we should generate the code for saving to/restoring
+    //       from the inlined N/Direct frame instead.
+
+    /* Is this call to unmanaged code? */
+    if (call->IsUnmanaged())
+    {
+        /* Get the TCB local and make it live */
+        assert((!opts.ShouldUsePInvokeHelpers()) || (info.compLvFrameListRoot == BAD_VAR_NUM));
+        if (!opts.ShouldUsePInvokeHelpers())
+        {
+            noway_assert(info.compLvFrameListRoot < lvaCount);
+
+            LclVarDsc* frameVarDsc = &lvaTable[info.compLvFrameListRoot];
+
+            if (frameVarDsc->lvTracked)
+            {
+                unsigned varIndex  = frameVarDsc->lvVarIndex;
+                noway_assert(varIndex < lvaTrackedCount);
+
+                // Is the variable already known to be alive?
+                //
+                if  (VarSetOps::IsMember(this, life, varIndex))
+                {
+                    // Since we may call this multiple times, clear the GTF_CALL_M_FRAME_VAR_DEATH if set.
+                    //
+                    call->gtCallMoreFlags &= ~GTF_CALL_M_FRAME_VAR_DEATH; 
+                }
+                else
+                {
+                    // The variable is just coming to life
+                    // Since this is a backwards walk of the trees 
+                    // that makes this change in liveness a 'last-use'
+                    //
+                    VarSetOps::AddElemD(this, life, varIndex);
+                    call->gtCallMoreFlags |= GTF_CALL_M_FRAME_VAR_DEATH;
+                }
+
+                // Record an interference with the other live variables
+                //
+                VARSET_TP VARSET_INIT_NOCOPY(varBit, VarSetOps::MakeSingleton(this, varIndex));
+                fgMarkIntf(life, varBit);
+            }
+        }
+
+        /* Do we have any live variables? */
+
+        if (!VarSetOps::IsEmpty(this, life))
+        {
+            // For each live variable if it is a GC-ref type, we
+            // mark it volatile to prevent if from being enregistered
+            // across the unmanaged call.
+
+            unsigned lclNum;
+            LclVarDsc* varDsc;
+            for (lclNum = 0, varDsc = lvaTable;
+                 lclNum < lvaCount;
+                 lclNum++  , varDsc++)
+            {
+                /* Ignore the variable if it's not tracked */
+
+                if  (!varDsc->lvTracked)
+                    continue;
+
+                unsigned  varNum = varDsc->lvVarIndex;
+
+                /* Ignore the variable if it's not live here */
+
+                if  (!VarSetOps::IsMember(this, life, varDsc->lvVarIndex))
+                    continue;
+
+                // If it is a GC-ref type then mark it DoNotEnregister.
+                if (varTypeIsGC(varDsc->TypeGet()))
+                {
+                    lvaSetVarDoNotEnregister(lclNum DEBUGARG(DNER_LiveAcrossUnmanagedCall));
+                }
+            }
+        }
+    }
+}
+
+//------------------------------------------------------------------------
+// Compiler::fgComputeLifeLocal: compute the changes to local var liveness
+//                               due to a use or a def of a local var and
+//                               indicates wither the use/def is a dead
+//                               store.
+//
+// Arguments:
+//    life          - The live set that is being computed.
+//    keepAliveVars - The currents set of variables to keep alive
+//                    regardless of their actual lifetime.
+//    lclVarNode    - The node that corresponds to the local var def or
+//                    use. Only differs from `node` when targeting the
+//                    legacy backend.
+//    node          - The actual tree node being processed.
+//
+// Returns:
+//    `true` if the local var node corresponds to a dead store; `false`
+//    otherwise.
+//
+bool Compiler::fgComputeLifeLocal(VARSET_TP& life, VARSET_TP& keepAliveVars, GenTree* lclVarNode, GenTree* node)
+{
+    unsigned lclNum = lclVarNode->gtLclVarCommon.gtLclNum;
+
+    noway_assert(lclNum < lvaCount);
+    LclVarDsc* varDsc = &lvaTable[lclNum];
+
+    unsigned        varIndex;
+    VARSET_TP       varBit;
+
+    // Is this a tracked variable?
+    if  (varDsc->lvTracked)
+    {
+        varIndex = varDsc->lvVarIndex;
+        noway_assert(varIndex < lvaTrackedCount);
+
+        /* Is this a definition or use? */
+
+        if  (lclVarNode->gtFlags & GTF_VAR_DEF)
+        {
+            /*
+                The variable is being defined here. The variable
+                should be marked dead from here until its closest
+                previous use.
+
+                IMPORTANT OBSERVATION:
+
+                    For GTF_VAR_USEASG (i.e. x <op>= a) we cannot
+                    consider it a "pure" definition because it would
+                    kill x (which would be wrong because x is
+                    "used" in such a construct) -> see below the case when x is live
+             */
+
+            if  (VarSetOps::IsMember(this, life, varIndex))
+            {
+                /* The variable is live */
+
+                if ((lclVarNode->gtFlags & GTF_VAR_USEASG) == 0)
+                {
+                    /* Mark variable as dead from here to its closest use */
+
+                    if (!VarSetOps::IsMember(this, keepAliveVars, varIndex))
+                    {
+                        VarSetOps::RemoveElemD(this, life, varIndex);
+                    }
+#ifdef DEBUG
+                    if (verbose&&0)
+                    {
+                        printf("Def V%02u,T%02u at ", lclNum, varIndex);
+                        printTreeID(lclVarNode);
+                        printf(" life %s -> %s\n",
+                               VarSetOps::ToString(this, VarSetOps::Union(this, life, VarSetOps::MakeSingleton(this, varIndex))),
+                               VarSetOps::ToString(this, life));
+                    }
+#endif // DEBUG
+                }
+            }
+            else
+            {
+                /* Dead assignment to the variable */
+                lclVarNode->gtFlags |= GTF_VAR_DEATH;
+
+                if (!opts.MinOpts())
+                {
+                    // keepAliveVars always stay alive
+                    noway_assert(!VarSetOps::IsMember(this, keepAliveVars, varIndex));
+
+                    /* This is a dead store unless the variable is marked
+                       GTF_VAR_USEASG and we are in an interior statement
+                       that will be used (e.g. while (i++) or a GT_COMMA) */
+
+                    return true;
+                }
+            }
+
+            return false;
+        }
+        else // it is a use
+        {
+            // Is the variable already known to be alive?
+            if (VarSetOps::IsMember(this, life, varIndex))
+            {
+                // Since we may do liveness analysis multiple times, clear the GTF_VAR_DEATH if set.
+                lclVarNode->gtFlags &= ~GTF_VAR_DEATH;
+                return false;
+            }
+
+#ifdef DEBUG
+            if (verbose && 0)
+            {
+                printf("Ref V%02u,T%02u] at ", lclNum, varIndex);
+                printTreeID(node);
+                printf(" life %s -> %s\n",
+                       VarSetOps::ToString(this, life),
+                       VarSetOps::ToString(this, VarSetOps::Union(this, life, varBit)));
+            }
+#endif // DEBUG
+
+
+            // The variable is being used, and it is not currently live.
+            // So the variable is just coming to life
+            lclVarNode->gtFlags |= GTF_VAR_DEATH;
+            VarSetOps::AddElemD(this, life, varIndex);
+
+            // Record interference with other live variables
+            fgMarkIntf(life, VarSetOps::MakeSingleton(this, varIndex));
+        }
+    }
+    // Note that promoted implies not tracked (i.e. only the fields are tracked).
+    else if (varTypeIsStruct(varDsc->lvType))
+    {
+        noway_assert(!varDsc->lvTracked);
+
+        lvaPromotionType promotionType = lvaGetPromotionType(varDsc);
+
+        if (promotionType != PROMOTION_TYPE_NONE)
+        {
+            VarSetOps::AssignNoCopy(this, varBit, VarSetOps::MakeEmpty(this));
+
+            for (unsigned i = varDsc->lvFieldLclStart;
+                 i < varDsc->lvFieldLclStart + varDsc->lvFieldCnt;
+                 ++i)
+            {
+#if !defined(_TARGET_64BIT_) && !defined(LEGACY_BACKEND)
+                if (!varTypeIsLong(lvaTable[i].lvType) || !lvaTable[i].lvPromoted)
+#endif // !defined(_TARGET_64BIT_) && !defined(LEGACY_BACKEND)
+                {
+                    noway_assert(lvaTable[i].lvIsStructField);
+                }
+                if  (lvaTable[i].lvTracked)
+                {
+                    varIndex = lvaTable[i].lvVarIndex;
+                    noway_assert(varIndex < lvaTrackedCount);
+                    VarSetOps::AddElemD(this, varBit, varIndex);
+                }
+            }
+            if  (node->gtFlags & GTF_VAR_DEF)
+            {
+                VarSetOps::DiffD(this, varBit, keepAliveVars);
+                VarSetOps::DiffD(this, life, varBit);
+                return false;
+            }
+            // This is a use.
+
+            // Are the variables already known to be alive?
+            if (VarSetOps::IsSubset(this, varBit, life))
+            {
+                node->gtFlags &= ~GTF_VAR_DEATH;  // Since we may now call this multiple times, reset if live.
+                return false;
+            }
+
+            // Some variables are being used, and they are not currently live.
+            // So they are just coming to life, in the backwards traversal; in a forwards
+            // traversal, one or more are dying.  Mark this.
+
+            node->gtFlags |= GTF_VAR_DEATH;
+
+            // Are all the variables becoming alive (in the backwards traversal), or just a subset?
+            if (!VarSetOps::IsEmptyIntersection(this, varBit, life))
+            {
+                // Only a subset of the variables are become live; we must record that subset.
+                // (Lack of an entry for "lclVarNode" will be considered to imply all become dead in the
+                // forward traversal.)
+                VARSET_TP* deadVarSet = new (this, CMK_bitset) VARSET_TP;
+                VarSetOps::AssignNoCopy(this, *deadVarSet, VarSetOps::Diff(this, varBit, life));
+                GetPromotedStructDeathVars()->Set(lclVarNode, deadVarSet);
+            }
+
+            // In any case, all the field vars are now live (in the backwards traversal).
+            VarSetOps::UnionD(this, life, varBit);
+
+            // Record interference with other live variables
+            fgMarkIntf(life, varBit);
+        }
+    }
+
+    return false;
+}
+
 /*****************************************************************************
  *
  * Compute the set of live variables at each node in a given statement
  * or subtree of a statement moving backward from startNode to endNode
  */
 
+#ifndef LEGACY_BACKEND
+VARSET_VALRET_TP    Compiler::fgComputeLife(VARSET_VALARG_TP lifeArg,
+                                            GenTreePtr       startNode,
+                                            GenTreePtr       endNode,
+                                            VARSET_VALARG_TP volatileVars,
+                                            bool*            pStmtInfoDirty
+                                   DEBUGARG(bool*            treeModf))
+{
+    GenTreePtr      tree;
+    unsigned        lclNum;
+
+    VARSET_TP VARSET_INIT(this, life, lifeArg); // lifeArg is const ref; copy to allow modification.
+
+    VARSET_TP       VARSET_INIT(this, keepAliveVars, volatileVars);
+#ifdef DEBUGGING_SUPPORT
+    VarSetOps::UnionD(this, keepAliveVars, compCurBB->bbScope); // Don't kill vars in scope
+#endif
+
+    noway_assert(VarSetOps::Equal(this, VarSetOps::Intersection(this, keepAliveVars, life), keepAliveVars));
+    noway_assert(compCurStmt->gtOper == GT_STMT);
+    noway_assert(endNode || (startNode == compCurStmt->gtStmt.gtStmtExpr));
+
+    // NOTE: Live variable analysis will not work if you try
+    // to use the result of an assignment node directly!
+    for (tree = startNode; tree != endNode; tree = tree->gtPrev)
+    {
+AGAIN:
+        assert(tree->OperGet() != GT_QMARK);
+
+        if (tree->gtOper == GT_CALL)
+        {
+            fgComputeLifeCall(life, tree->AsCall());
+        }
+        else if (tree->OperIsNonPhiLocal() || tree->OperIsLocalAddr())
+        {
+            bool isDeadStore = fgComputeLifeLocal(life, keepAliveVars, tree, tree);
+            if (isDeadStore)
+            {
+                LclVarDsc* varDsc = &lvaTable[tree->gtLclVarCommon.gtLclNum];
+
+                bool doAgain = false;
+                if (fgRemoveDeadStore(&tree, varDsc, life, &doAgain, pStmtInfoDirty DEBUGARG(treeModf)))
+                {
+                    assert(!doAgain);
+                    break;
+                }
+
+                if (doAgain)
+                {
+                    goto AGAIN;
+                }
+            }
+        }
+    }
+
+    // Return the set of live variables out of this statement
+    return life;
+}
+
+#else // LEGACY_BACKEND
+
 #ifdef _PREFAST_
 #pragma warning(push)
 #pragma warning(disable:21000) // Suppress PREFast warning about overly large function
 #endif
+
 VARSET_VALRET_TP    Compiler::fgComputeLife(VARSET_VALARG_TP lifeArg,
                                             GenTreePtr       startNode,
                                             GenTreePtr       endNode,
@@ -1730,122 +2112,11 @@ SKIP_QMARK:
 
         if (tree->gtOper == GT_CALL)
         {
-            // if this is a tail-call and we have any unmanaged p/invoke calls in
-            // the method then we're going to run the p/invoke epilog
-            // So we mark the FrameRoot as used by this instruction.
-            // This ensure that this variable is kept alive at the tail-call
-
-            if (tree->gtCall.IsTailCall() && info.compCallUnmanaged)
-            {
-                assert((!opts.ShouldUsePInvokeHelpers()) || (info.compLvFrameListRoot == BAD_VAR_NUM));
-                if (!opts.ShouldUsePInvokeHelpers())
-                {
-                    /* Get the TCB local and make it live */
-
-                    noway_assert(info.compLvFrameListRoot < lvaCount);
-
-                    LclVarDsc* frameVarDsc = &lvaTable[info.compLvFrameListRoot];
-
-                    if (frameVarDsc->lvTracked)
-                    {
-                        VARSET_TP VARSET_INIT_NOCOPY(varBit, VarSetOps::MakeSingleton(this, frameVarDsc->lvVarIndex));
-
-                        VarSetOps::AddElemD(this, life, frameVarDsc->lvVarIndex);
-
-                        /* Record interference with other live variables */
-
-                        fgMarkIntf(life, varBit);
-                    }
-                }
-            }
-
-            /* GC refs cannot be enregistered accross an unmanaged call */
-
-            // TODO: we should generate the code for saving to/restoring
-            //       from the inlined N/Direct frame instead.
-
-            /* Is this call to unmanaged code? */
-
-            if (tree->gtCall.IsUnmanaged())
-            {
-                /* Get the TCB local and make it live */
-                assert((!opts.ShouldUsePInvokeHelpers()) || (info.compLvFrameListRoot == BAD_VAR_NUM));
-                if (!opts.ShouldUsePInvokeHelpers())
-                {
-                    noway_assert(info.compLvFrameListRoot < lvaCount);
-
-                    LclVarDsc* frameVarDsc = &lvaTable[info.compLvFrameListRoot];
-
-                    if (frameVarDsc->lvTracked)
-                    {
-                        unsigned varIndex  = frameVarDsc->lvVarIndex;
-                        noway_assert(varIndex < lvaTrackedCount);
-
-                        // Is the variable already known to be alive?
-                        //
-                        if  (VarSetOps::IsMember(this, life, varIndex))
-                        {
-                            // Since we may call this multiple times, clear the GTF_CALL_M_FRAME_VAR_DEATH if set.
-                            //
-                            tree->gtCall.gtCallMoreFlags &= ~GTF_CALL_M_FRAME_VAR_DEATH; 
-                        }
-                        else
-                        {
-                            // The variable is just coming to life
-                            // Since this is a backwards walk of the trees 
-                            // that makes this change in liveness a 'last-use'
-                            //
-                            VarSetOps::AddElemD(this, life, varIndex);
-                            tree->gtCall.gtCallMoreFlags |= GTF_CALL_M_FRAME_VAR_DEATH;
-                        }
-
-                        // Record an interference with the other live variables
-                        //
-                        VARSET_TP VARSET_INIT_NOCOPY(varBit, VarSetOps::MakeSingleton(this, varIndex));
-                        fgMarkIntf(life, varBit);
-                    }
-                }
-
-                /* Do we have any live variables? */
-
-                if (!VarSetOps::IsEmpty(this, life))
-                {
-                    // For each live variable if it is a GC-ref type, we
-                    // mark it volatile to prevent if from being enregistered
-                    // across the unmanaged call.
-
-                    LclVarDsc* varDsc;
-
-                    for (lclNum = 0, varDsc = lvaTable;
-                         lclNum < lvaCount;
-                         lclNum++  , varDsc++)
-                    {
-                        /* Ignore the variable if it's not tracked */
-
-                        if  (!varDsc->lvTracked)
-                            continue;
-
-                        unsigned  varNum = varDsc->lvVarIndex;
-
-                        /* Ignore the variable if it's not live here */
-
-                        if  (!VarSetOps::IsMember(this, life, varDsc->lvVarIndex))
-                            continue;
-
-                        // If it is a GC-ref type then mark it DoNotEnregister.
-                        if (varTypeIsGC(varDsc->TypeGet()))
-                        {
-                            lvaSetVarDoNotEnregister(lclNum DEBUGARG(DNER_LiveAcrossUnmanagedCall));
-                        }
-                    }
-                }
-            }
+            fgComputeLifeCall(life, tree->AsCall());
+            continue;
         }
 
         // Is this a use/def of a local variable?
-        CLANG_FORMAT_COMMENT_ANCHOR;
-
-#ifdef LEGACY_BACKEND
         // Generally, the last use information is associated with the lclVar node.
         // However, for LEGACY_BACKEND, the information must be associated
         // with the OBJ itself for promoted structs.
@@ -1870,188 +2141,24 @@ SKIP_QMARK:
         {
             lclVarTree = tree;
         }
-#else // !LEGACY_BACKEND
-        GenTreePtr lclVarTree = tree;
-#endif // !LEGACY_BACKEND
+
         if (lclVarTree->OperIsNonPhiLocal() || lclVarTree->OperIsLocalAddr())
         {
-            lclNum = lclVarTree->gtLclVarCommon.gtLclNum;
-
-            noway_assert(lclNum < lvaCount);
-            LclVarDsc * varDsc = lvaTable + lclNum;
-
-            unsigned        varIndex;
-            VARSET_TP       varBit;
-
-            // Is this a tracked variable?
-            if  (varDsc->lvTracked)
+            bool isDeadStore = fgComputeLifeLocal(life, keepAliveVars, lclVarTree, tree);
+            if (isDeadStore)
             {
-                varIndex = varDsc->lvVarIndex;
-                noway_assert(varIndex < lvaTrackedCount);
+                LclVarDsc* varDsc = &lvaTable[lclVarTree->gtLclVarCommon.gtLclNum];
 
-                /* Is this a definition or use? */
-
-                if  (lclVarTree->gtFlags & GTF_VAR_DEF)
+                bool doAgain = false;
+                if (fgRemoveDeadStore(&tree, varDsc, life, &doAgain, pStmtInfoDirty DEBUGARG(treeModf)))
                 {
-                    /*
-                        The variable is being defined here. The variable
-                        should be marked dead from here until its closest
-                        previous use.
-
-                        IMPORTANT OBSERVATION:
-
-                            For GTF_VAR_USEASG (i.e. x <op>= a) we cannot
-                            consider it a "pure" definition because it would
-                            kill x (which would be wrong because x is
-                            "used" in such a construct) -> see below the case when x is live
-                     */
-
-                    if  (VarSetOps::IsMember(this, life, varIndex))
-                    {
-                        /* The variable is live */
-
-                        if ((lclVarTree->gtFlags & GTF_VAR_USEASG) == 0)
-                        {
-                            /* Mark variable as dead from here to its closest use */
-
-                            if (!VarSetOps::IsMember(this, keepAliveVars, varIndex))
-                            {
-                                VarSetOps::RemoveElemD(this, life, varIndex);
-                            }
-#ifdef DEBUG
-                            if (verbose&&0)
-                            {
-                                printf("Def V%02u,T%02u at ", lclNum, varIndex);
-                                printTreeID(lclVarTree);
-                                printf(" life %s -> %s\n",
-                                       VarSetOps::ToString(this, VarSetOps::Union(this, life, VarSetOps::MakeSingleton(this, varIndex))),
-                                       VarSetOps::ToString(this, life));
-                            }
-#endif // DEBUG
-                        }
-                    }
-                    else
-                    {
-                        /* Dead assignment to the variable */
-                        lclVarTree->gtFlags |= GTF_VAR_DEATH;
-
-                        if (opts.MinOpts())
-                            continue;
-
-                        // keepAliveVars always stay alive
-                        noway_assert(!VarSetOps::IsMember(this, keepAliveVars, varIndex));
-
-                        /* This is a dead store unless the variable is marked
-                           GTF_VAR_USEASG and we are in an interior statement
-                           that will be used (e.g. while (i++) or a GT_COMMA) */
-
-                        bool doAgain = false;
-                        if (fgRemoveDeadStore(&tree, varDsc, life, &doAgain, pStmtInfoDirty DEBUGARG(treeModf)))
-                            break;
-
-                        if (doAgain)
-                            goto AGAIN;
-                    }
-
-                    continue;
-                }
-                else // it is a use
-                {
-                    // Is the variable already known to be alive?
-                    if (VarSetOps::IsMember(this, life, varIndex))
-                    {
-                        // Since we may do liveness analysis multiple times, clear the GTF_VAR_DEATH if set.
-                        lclVarTree->gtFlags &= ~GTF_VAR_DEATH;
-                        continue;
-                    }
-
-#ifdef DEBUG
-                    if (verbose && 0)
-                    {
-                        printf("Ref V%02u,T%02u] at ", lclNum, varIndex);
-                        printTreeID(tree);
-                        printf(" life %s -> %s\n",
-                               VarSetOps::ToString(this, life),
-                               VarSetOps::ToString(this, VarSetOps::Union(this, life, varBit)));
-                    }
-#endif // DEBUG
-
-
-                    // The variable is being used, and it is not currently live.
-                    // So the variable is just coming to life
-                    lclVarTree->gtFlags |= GTF_VAR_DEATH;
-                    VarSetOps::AddElemD(this, life, varIndex);
-
-                    // Record interference with other live variables
-                    fgMarkIntf(life, VarSetOps::MakeSingleton(this, varIndex));
+                    assert(!doAgain);
+                    break;
                 }
 
-            }
-            // Note that promoted implies not tracked (i.e. only the fields are tracked).
-            else if (varTypeIsStruct(varDsc->lvType))
-            {
-                noway_assert(!varDsc->lvTracked);
-
-                lvaPromotionType promotionType = lvaGetPromotionType(varDsc);
-
-                if (promotionType != PROMOTION_TYPE_NONE)
+                if (doAgain)
                 {
-                    VarSetOps::AssignNoCopy(this, varBit, VarSetOps::MakeEmpty(this));
-
-                    for (unsigned i = varDsc->lvFieldLclStart;
-                         i < varDsc->lvFieldLclStart + varDsc->lvFieldCnt;
-                         ++i)
-                    {
-#if !defined(_TARGET_64BIT_) && !defined(LEGACY_BACKEND)
-                        if (!varTypeIsLong(lvaTable[i].lvType) || !lvaTable[i].lvPromoted)
-#endif // !defined(_TARGET_64BIT_) && !defined(LEGACY_BACKEND)
-                        {
-                            noway_assert(lvaTable[i].lvIsStructField);
-                        }
-                        if  (lvaTable[i].lvTracked)
-                        {
-                            varIndex = lvaTable[i].lvVarIndex;
-                            noway_assert(varIndex < lvaTrackedCount);
-                            VarSetOps::AddElemD(this, varBit, varIndex);
-                        }
-                    }
-                    if  (tree->gtFlags & GTF_VAR_DEF)
-                    {
-                        VarSetOps::DiffD(this, varBit, keepAliveVars);
-                        VarSetOps::DiffD(this, life, varBit);
-                        continue;
-                    }
-                    // This is a use.
-
-                    // Are the variables already known to be alive?
-                    if (VarSetOps::IsSubset(this, varBit, life))
-                    {
-                        tree->gtFlags &= ~GTF_VAR_DEATH;  // Since we may now call this multiple times, reset if live.
-                        continue;
-                    }
-
-                    // Some variables are being used, and they are not currently live.
-                    // So they are just coming to life, in the backwards traversal; in a forwards
-                    // traversal, one or more are dying.  Mark this.
-
-                    tree->gtFlags |= GTF_VAR_DEATH;
-
-                    // Are all the variables becoming alive (in the backwards traversal), or just a subset?
-                    if (!VarSetOps::IsEmptyIntersection(this, varBit, life))
-                    {
-                        // Only a subset of the variables are become live; we must record that subset.
-                        // (Lack of an entry for "lclVarTree" will be considered to imply all become dead in the
-                        // forward traversal.)
-                        VARSET_TP* deadVarSet = new (this, CMK_bitset) VARSET_TP;
-                        VarSetOps::AssignNoCopy(this, *deadVarSet, VarSetOps::Diff(this, varBit, life));
-                        GetPromotedStructDeathVars()->Set(lclVarTree, deadVarSet);
-                    }
-
-                    // In any case, all the field vars are now live (in the backwards traversal).
-                    VarSetOps::UnionD(this, life, varBit);
-
-                    // Record interference with other live variables
-                    fgMarkIntf(life, varBit);
+                    goto AGAIN;
                 }
             }
         }
@@ -2144,6 +2251,8 @@ SKIP_QMARK:
 #ifdef _PREFAST_
 #pragma warning(pop)
 #endif
+
+#endif // !LEGACY_BACKEND
 
 // fgRemoveDeadStore - remove a store to a local which has no exposed uses.
 //
