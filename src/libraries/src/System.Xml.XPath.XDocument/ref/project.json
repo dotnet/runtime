@@ -1,8 +1,9 @@
 {
   "dependencies": {
-    "System.Runtime": "4.1.1-beta-24322-03",
-    "System.Collections.NonGeneric": "4.0.2-beta-24322-03",
-    "System.Collections.Specialized": "4.0.2-beta-24322-03"
+    "System.Runtime": "4.0.0",
+    "System.Xml.XDocument": "4.0.0",
+    "System.Xml.XPath": "4.0.0",
+    "System.Xml.ReaderWriter": "4.0.0"
   },
   "frameworks": {
     "netstandard1.3": {
