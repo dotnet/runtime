@@ -103,6 +103,51 @@ guarded_wait (HANDLE handle, guint32 timeout, gboolean alertable)
 	return result;
 }
 
+typedef struct {
+	MonoCoopCond *cond;
+	MonoCoopMutex *mutex;
+} BreakCoopAlertableWaitUD;
+
+static inline void
+break_coop_alertable_wait (gpointer user_data)
+{
+	BreakCoopAlertableWaitUD *ud = (BreakCoopAlertableWaitUD*)user_data;
+
+	mono_coop_mutex_lock (ud->mutex);
+	mono_coop_cond_signal (ud->cond);
+	mono_coop_mutex_unlock (ud->mutex);
+}
+
+/*
+ * coop_cond_timedwait_alertable:
+ *
+ *   Wait on COND/MUTEX. If ALERTABLE is non-null, the wait can be interrupted.
+ * In that case, *ALERTABLE will be set to TRUE, and 0 is returned.
+ */
+static inline gint
+coop_cond_timedwait_alertable (MonoCoopCond *cond, MonoCoopMutex *mutex, guint32 timeout_ms, gboolean *alertable)
+{
+	int res;
+
+	if (alertable) {
+		BreakCoopAlertableWaitUD ud;
+
+		*alertable = FALSE;
+		ud.cond = cond;
+		ud.mutex = mutex;
+		mono_thread_info_install_interrupt (break_coop_alertable_wait, &ud, alertable);
+		if (*alertable)
+			return 0;
+	}
+	res = mono_coop_cond_timedwait (cond, mutex, timeout_ms);
+	if (alertable) {
+		mono_thread_info_uninstall_interrupt (alertable);
+		if (*alertable)
+			return 0;
+	}
+	return res;
+}
+
 static gboolean
 add_thread_to_finalize (MonoInternalThread *thread, MonoError *error)
 {
