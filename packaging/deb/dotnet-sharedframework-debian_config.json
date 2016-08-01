@@ -32,5 +32,9 @@
         "%HOSTFXR_DEBIAN_PACKAGE_NAME%" : {},
         "libssl1.0.0" : {},
         "libcurl3" : {}
-    }
+    },
+
+    "debian_ignored_dependencies" : [
+        "liblldb-3.6"
+    ]
 }

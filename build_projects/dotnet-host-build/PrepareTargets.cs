@@ -68,11 +68,11 @@ namespace Microsoft.DotNet.Host.Build
         }
 
         [Target]
-        [BuildPlatforms(BuildPlatform.Ubuntu)]
+        [BuildPlatforms(BuildPlatform.Ubuntu, BuildPlatform.Debian)]
         public static BuildTargetResult PackDotnetDebTool(BuildTargetContext c)
         {
             var dotnet = DotNetCli.Stage0;
-            var versionSuffix = c.BuildContext.Get<BuildVersion>("BuildVersion").CommitCountString;
+            var versionSuffix = c.BuildContext.Get<BuildVersion>("BuildVersion").VersionSuffix;
 
             dotnet.Pack(
                     Path.Combine(Dirs.RepoRoot, "tools", "dotnet-deb-tool", "project.json"),
@@ -202,6 +202,7 @@ namespace Microsoft.DotNet.Host.Build
                     installer = productName + ".pkg";
                     break;
                 case BuildPlatform.Ubuntu:
+                case BuildPlatform.Debian:
                     installer = productName + ".deb";
                     break;
                 default:
