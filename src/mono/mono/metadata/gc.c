@@ -48,14 +48,9 @@
 #endif
 
 typedef struct DomainFinalizationReq {
+	gint32 ref;
 	MonoDomain *domain;
-#ifdef TARGET_WIN32
-	HANDLE done_event;
-#else
-	gboolean done;
-	MonoCoopCond cond;
-	MonoCoopMutex mutex;
-#endif
+	MonoCoopSem done;
 } DomainFinalizationReq;
 
 static gboolean gc_disabled = FALSE;
@@ -98,51 +93,6 @@ guarded_wait (HANDLE handle, guint32 timeout, gboolean alertable)
 	MONO_EXIT_GC_SAFE;
 
 	return result;
-}
-
-typedef struct {
-	MonoCoopCond *cond;
-	MonoCoopMutex *mutex;
-} BreakCoopAlertableWaitUD;
-
-static inline void
-break_coop_alertable_wait (gpointer user_data)
-{
-	BreakCoopAlertableWaitUD *ud = (BreakCoopAlertableWaitUD*)user_data;
-
-	mono_coop_mutex_lock (ud->mutex);
-	mono_coop_cond_signal (ud->cond);
-	mono_coop_mutex_unlock (ud->mutex);
-}
-
-/*
- * coop_cond_timedwait_alertable:
- *
- *   Wait on COND/MUTEX. If ALERTABLE is non-null, the wait can be interrupted.
- * In that case, *ALERTABLE will be set to TRUE, and 0 is returned.
- */
-static inline gint
-coop_cond_timedwait_alertable (MonoCoopCond *cond, MonoCoopMutex *mutex, guint32 timeout_ms, gboolean *alertable)
-{
-	int res;
-
-	if (alertable) {
-		BreakCoopAlertableWaitUD ud;
-
-		*alertable = FALSE;
-		ud.cond = cond;
-		ud.mutex = mutex;
-		mono_thread_info_install_interrupt (break_coop_alertable_wait, &ud, alertable);
-		if (*alertable)
-			return 0;
-	}
-	res = mono_coop_cond_timedwait (cond, mutex, timeout_ms);
-	if (alertable) {
-		mono_thread_info_uninstall_interrupt (alertable);
-		if (*alertable)
-			return 0;
-	}
-	return res;
 }
 
 static gboolean
@@ -434,6 +384,9 @@ mono_domain_finalize (MonoDomain *domain, guint32 timeout)
 {
 	DomainFinalizationReq *req;
 	MonoInternalThread *thread = mono_thread_internal_current ();
+	gint res;
+	gboolean ret;
+	gint64 start;
 
 #if defined(__native_client__)
 	return FALSE;
@@ -458,18 +411,9 @@ mono_domain_finalize (MonoDomain *domain, guint32 timeout)
 	mono_gc_collect (mono_gc_max_generation ());
 
 	req = g_new0 (DomainFinalizationReq, 1);
+	req->ref = 2;
 	req->domain = domain;
-
-#ifdef TARGET_WIN32
-	req->done_event = CreateEvent (NULL, TRUE, FALSE, NULL);
-	if (req->done_event == NULL) {
-		g_free (req);
-		return FALSE;
-	}
-#else
-	mono_coop_cond_init (&req->cond);
-	mono_coop_mutex_init (&req->mutex);
-#endif
+	mono_coop_sem_init (&req->done, 0);
 
 	if (domain == mono_get_root_domain ())
 		finalizing_root_domain = TRUE;
@@ -485,49 +429,65 @@ mono_domain_finalize (MonoDomain *domain, guint32 timeout)
 
 	if (timeout == -1)
 		timeout = INFINITE;
+	if (timeout != INFINITE)
+		start = mono_msec_ticks ();
 
-#if TARGET_WIN32
-	while (TRUE) {
-		guint32 res = guarded_wait (req->done_event, timeout, TRUE);
-		/* printf ("WAIT RES: %d.\n", res); */
+	ret = TRUE;
 
-		if (res == WAIT_IO_COMPLETION) {
-			if ((thread->state & (ThreadState_StopRequested | ThreadState_SuspendRequested)) != 0)
-				return FALSE;
-		} else if (res == WAIT_TIMEOUT) {
-			/* We leak the handle here */
-			return FALSE;
+	for (;;) {
+		if (timeout == INFINITE) {
+			res = mono_coop_sem_wait (&req->done, MONO_SEM_FLAGS_ALERTABLE);
 		} else {
-			break;
-		}
-	}
-
-	CloseHandle (req->done_event);
-#else
-	mono_coop_mutex_lock (&req->mutex);
-	while (!req->done) {
-		gboolean alerted;
-		int res = coop_cond_timedwait_alertable (&req->cond, &req->mutex, timeout, &alerted);
-		if (alerted) {
-			if ((thread->state & (ThreadState_StopRequested | ThreadState_SuspendRequested)) != 0) {
-				mono_coop_mutex_unlock (&req->mutex);
-				return FALSE;
+			gint64 elapsed = mono_msec_ticks () - start;
+			if (elapsed >= timeout) {
+				ret = FALSE;
+				break;
 			}
-		} else if (res == -1) {
-			/* We leak the cond/mutex here */
-			mono_coop_mutex_unlock (&req->mutex);
-			return FALSE;
-		} else {
+
+			res = mono_coop_sem_timedwait (&req->done, timeout - elapsed, MONO_SEM_FLAGS_ALERTABLE);
+		}
+
+		if (res == MONO_SEM_TIMEDWAIT_RET_SUCCESS) {
 			break;
+		} else if (res == MONO_SEM_TIMEDWAIT_RET_ALERTED) {
+			if ((thread->state & (ThreadState_StopRequested | ThreadState_SuspendRequested)) != 0) {
+				ret = FALSE;
+				break;
+			}
+		} else if (res == MONO_SEM_TIMEDWAIT_RET_TIMEDOUT) {
+			ret = FALSE;
+			break;
+		} else {
+			g_error ("%s: unknown result %d", __func__, res);
 		}
 	}
-	mono_coop_mutex_unlock (&req->mutex);
 
-	/* When we reach here, the other thread has already exited the critical section, so this is safe to free */
-	mono_coop_cond_destroy (&req->cond);
-	mono_coop_mutex_destroy (&req->mutex);
-	g_free (req);
-#endif
+	if (!ret) {
+		/* Try removing the req from domains_to_finalize:
+		 *  - if it's not found: the domain is being finalized,
+		 *     so we the ref count is already decremented
+		 *  - if it's found: the domain is not yet being finalized,
+		 *     so we can safely decrement the ref */
+
+		gboolean found;
+
+		mono_finalizer_lock ();
+
+		found = g_slist_index (domains_to_finalize, req) != -1;
+		if (found)
+			domains_to_finalize = g_slist_remove (domains_to_finalize, req);
+
+		mono_finalizer_unlock ();
+
+		if (found) {
+			/* We have to decrement it wherever we
+			 * remove it from domains_to_finalize */
+			if (InterlockedDecrement (&req->ref) != 1)
+				g_error ("%s: req->ref should be 1, as we are the first one to decrement it", __func__);
+		}
+
+		goto done;
+	}
 
 	if (domain == mono_get_root_domain ()) {
 		mono_threadpool_ms_cleanup ();
@@ -536,7 +496,13 @@ mono_domain_finalize (MonoDomain *domain, guint32 timeout)
 
 	mono_profiler_appdomain_event (domain, MONO_PROFILE_END_UNLOAD);
 
-	return TRUE;
+done:
+	if (InterlockedDecrement (&req->ref) == 0) {
+		mono_coop_sem_destroy (&req->done);
+		g_free (req);
+	}
+
+	return ret;
 }
 
 void
@@ -769,9 +735,24 @@ collect_objects (gpointer key, gpointer value, gpointer user_data)
  *  Run the finalizers of all finalizable objects in req->domain.
  */
 static void
-finalize_domain_objects (DomainFinalizationReq *req)
+finalize_domain_objects (void)
 {
-	MonoDomain *domain = req->domain;
+	DomainFinalizationReq *req = NULL;
+	MonoDomain *domain;
+
+	if (domains_to_finalize) {
+		mono_finalizer_lock ();
+		if (domains_to_finalize) {
+			req = (DomainFinalizationReq *)domains_to_finalize->data;
+			domains_to_finalize = g_slist_remove (domains_to_finalize, req);
+		}
+		mono_finalizer_unlock ();
+	}
+
+	if (!req)
+		return;
+
+	domain = req->domain;
 
 	/* Process finalizers which are already in the queue */
 	mono_gc_invoke_finalizers ();
@@ -806,17 +787,14 @@ finalize_domain_objects (DomainFinalizationReq *req)
 	reference_queue_clear_for_domain (domain);
 	
 	/* printf ("DONE.\n"); */
-#if TARGET_WIN32
-	SetEvent (req->done_event);
+	mono_coop_sem_post (&req->done);
 
-	/* The event is closed in mono_domain_finalize if we get here */
-	g_free (req);
-#else
-	mono_coop_mutex_lock (&req->mutex);
-	req->done = TRUE;
-	mono_coop_cond_signal (&req->cond);
-	mono_coop_mutex_unlock (&req->mutex);
-#endif
+	if (InterlockedDecrement (&req->ref) == 0) {
+		/* mono_domain_finalize already returned, and
+		 * doesn't hold a reference to req anymore. */
+		mono_coop_sem_destroy (&req->done);
+		g_free (req);
+	}
 }
 
 static guint32
@@ -853,18 +831,7 @@ finalizer_thread (gpointer unused)
 
 		mono_attach_maybe_start ();
 
-		if (domains_to_finalize) {
-			mono_finalizer_lock ();
-			if (domains_to_finalize) {
-				DomainFinalizationReq *req = (DomainFinalizationReq *)domains_to_finalize->data;
-				domains_to_finalize = g_slist_remove (domains_to_finalize, req);
-				mono_finalizer_unlock ();
-
-				finalize_domain_objects (req);
-			} else {
-				mono_finalizer_unlock ();
-			}
-		}				
+		finalize_domain_objects ();
 
 		/* If finished == TRUE, mono_gc_cleanup has been called (from mono_runtime_cleanup),
 		 * before the domain is unloaded.
