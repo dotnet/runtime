@@ -126,7 +126,7 @@ src\System.Diagnostics.DiagnosticSource\tests and typing `msbuild System.Diagnos
 There is also a pkg directory for each project, and if you go into it and type `msbuild`, it will build the DLL (if needed)
 and then also build the NuGet package for it. The NuGet package ends up in the bin\packages directory.
 
-**Note:** If building in other OS different than Windows call `./Tools/msbuild.sh` instead of just `msbuild`.
+**Note:** If building in a non-Windows, call `./Tools/msbuild.sh` instead of just `msbuild`.
 
 ### Building other OSes
 
@@ -165,7 +165,7 @@ It is possible to pass parameters to the underlying xunit runner via the `XunitO
 ```cmd
 msbuild /t:Test "/p:XunitOptions=-class Test.ClassUnderTests"
 ```
-**Note:** If building in other OS different than Windows call `./Tools/msbuild.sh` instead of just `msbuild`.
+**Note:** If building in a non-Windows, call `./Tools/msbuild.sh` instead of just `msbuild`.
 
 There may be multiple projects in some directories so you may need to specify the path to a specific test project to get it to build and run the tests.
 
