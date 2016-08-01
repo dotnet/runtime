@@ -53,22 +53,22 @@ typedef struct DomainFinalizationReq {
 	MonoCoopSem done;
 } DomainFinalizationReq;
 
-static gboolean gc_disabled = FALSE;
+static gboolean gc_disabled;
 
-static gboolean finalizing_root_domain = FALSE;
+static gboolean finalizing_root_domain;
 
-gboolean log_finalizers = FALSE;
-gboolean mono_do_not_finalize = FALSE;
-volatile gboolean suspend_finalizers = FALSE;
-gchar **mono_do_not_finalize_class_names = NULL;
+gboolean log_finalizers;
+gboolean mono_do_not_finalize;
+volatile gboolean suspend_finalizers;
+gchar **mono_do_not_finalize_class_names ;
 
 #define mono_finalizer_lock() mono_coop_mutex_lock (&finalizer_mutex)
 #define mono_finalizer_unlock() mono_coop_mutex_unlock (&finalizer_mutex)
 static MonoCoopMutex finalizer_mutex;
 static MonoCoopMutex reference_queue_mutex;
 
-static GSList *domains_to_finalize= NULL;
-static MonoMList *threads_to_finalize = NULL;
+static GSList *domains_to_finalize;
+static MonoMList *threads_to_finalize;
 
 static gboolean finalizer_thread_exited;
 /* Uses finalizer_mutex */
@@ -76,12 +76,20 @@ static MonoCoopCond exited_cond;
 
 static MonoInternalThread *gc_thread;
 
+#ifdef TARGET_WIN32
+static HANDLE pending_done_event;
+#else
+static gboolean pending_done;
+static MonoCoopCond pending_done_cond;
+static MonoCoopMutex pending_done_mutex;
+#endif
+
 static void object_register_finalizer (MonoObject *obj, void (*callback)(void *, void*));
 
 static void reference_queue_proccess_all (void);
 static void mono_reference_queue_cleanup (void);
 static void reference_queue_clear_for_domain (MonoDomain *domain);
-static HANDLE pending_done_event;
+
 
 static guint32
 guarded_wait (HANDLE handle, guint32 timeout, gboolean alertable)
@@ -574,11 +582,24 @@ ves_icall_System_GC_WaitForPendingFinalizers (void)
 	if (gc_thread == NULL)
 		return;
 
+#ifdef TARGET_WIN32
 	ResetEvent (pending_done_event);
 	mono_gc_finalize_notify ();
 	/* g_print ("Waiting for pending finalizers....\n"); */
 	guarded_wait (pending_done_event, INFINITE, TRUE);
 	/* g_print ("Done pending....\n"); */
+#else
+	gboolean alerted = FALSE;
+	mono_coop_mutex_lock (&pending_done_mutex);
+	pending_done = FALSE;
+	mono_gc_finalize_notify ();
+	while (!pending_done) {
+		coop_cond_timedwait_alertable (&pending_done_cond, &pending_done_mutex, INFINITE, &alerted);
+		if (alerted)
+			break;
+	}
+	mono_coop_mutex_unlock (&pending_done_mutex);
+#endif
 }
 
 void
@@ -668,8 +689,14 @@ mono_gc_GCHandle_CheckCurrentDomain (guint32 gchandle)
 }
 
 static MonoCoopSem finalizer_sem;
-static volatile gboolean finished=FALSE;
+static volatile gboolean finished;
 
+/*
+ * mono_gc_finalize_notify:
+ *
+ *   Notify the finalizer thread that finalizers etc.
+ * are available to be processed.
+ */
 void
 mono_gc_finalize_notify (void)
 {
@@ -801,10 +828,10 @@ static guint32
 finalizer_thread (gpointer unused)
 {
 	MonoError error;
+	gboolean wait = TRUE;
+
 	mono_thread_set_name_internal (mono_thread_internal_current (), mono_string_new (mono_get_root_domain (), "Finalizer"), FALSE, &error);
 	mono_error_assert_ok (&error);
-
-	gboolean wait = TRUE;
 
 	/* Register a hazard free queue pump callback */
 	mono_hazard_pointer_install_free_queue_size_callback (hazard_free_queue_is_too_big);
@@ -849,7 +876,14 @@ finalizer_thread (gpointer unused)
 			/* Don't wait again at the start of the loop */
 			wait = FALSE;
 		} else {
+#ifdef TARGET_WIN32
 			SetEvent (pending_done_event);
+#else
+			mono_coop_mutex_lock (&pending_done_mutex);
+			pending_done = TRUE;
+			mono_coop_cond_signal (&pending_done_cond);
+			mono_coop_mutex_unlock (&pending_done_mutex);
+#endif
 		}
 	}
 
@@ -891,8 +925,14 @@ mono_gc_init (void)
 		return;
 	}
 
+#ifdef TARGET_WIN32
 	pending_done_event = CreateEvent (NULL, TRUE, FALSE, NULL);
 	g_assert (pending_done_event);
+#else
+	mono_coop_cond_init (&pending_done_cond);
+	mono_coop_mutex_init (&pending_done_mutex);
+#endif
+
 	mono_coop_cond_init (&exited_cond);
 	mono_coop_sem_init (&finalizer_sem, 0);
 
