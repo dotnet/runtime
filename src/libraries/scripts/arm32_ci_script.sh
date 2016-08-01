@@ -98,9 +98,6 @@ function unmount_emulator {
 
 #Clean the changes made to the environment by the script
 function clean_env {
-    #Unmount the emulator
-    unmount_emulator
-
     #Check for revert of git changes
     check_git_head
 }
@@ -111,11 +108,34 @@ function handle_ctrl_c {
 
     echo 'ERROR: Ctrl-C handled. Script aborted before complete execution.'
 
-    clean_env
-
     exit 1
 }
 trap handle_ctrl_c INT
+
+#Trap Exit and handle it
+ function handle_exit {
+    set +x
+
+    echo 'The script is exited. Cleaning environment..'
+
+    clean_env
+ }
+trap handle_exit EXIT
+
+#Mount with checking to be already existed
+function mount_with_checking {
+    set +x
+    local options="$1"
+    local from="$2"
+    local rootfsFolder="$3"
+
+    if mountpoint -q -- "$rootfsFolder"; then
+        (set +x; echo "$rootfsFolder is already mounted.")
+    else {
+        (set -x; sudo mount $options "$from" "$rootfsFolder")
+    }
+    fi
+}
 
 #Mount emulator to the target mount path
 function mount_emulator {
@@ -124,15 +144,13 @@ function mount_emulator {
         sudo mkdir "$__ARMRootfsMountPath"
     fi
 
-    #Unmount the emulator if already mounted at the mount path and mount again
-    unmount_emulator
-
-    sudo mount "$__ARMEmulPath"/platform/rootfs-t30.ext4 "$__ARMRootfsMountPath"
-    sudo mount -t proc /proc    "$__ARMRootfsMountPath"/proc
-    sudo mount -o bind /dev/    "$__ARMRootfsMountPath"/dev
-    sudo mount -o bind /dev/pts "$__ARMRootfsMountPath"/dev/pts
-    sudo mount -t tmpfs shm     "$__ARMRootfsMountPath"/run/shm
-    sudo mount -o bind /sys     "$__ARMRootfsMountPath"/sys
+    set +x
+    mount_with_checking "" "$__ARMEmulPath/platform/rootfs-t30.ext4" "$__ARMRootfsMountPath"
+    mount_with_checking "-t proc" "/proc"    "$__ARMRootfsMountPath/proc"
+    mount_with_checking "-o bind" "/dev/"    "$__ARMRootfsMountPath/dev"
+    mount_with_checking "-o bind" "/dev/pts" "$__ARMRootfsMountPath/dev/pts"
+    mount_with_checking "-t tmpfs" "shm"     "$__ARMRootfsMountPath/run/shm"
+    mount_with_checking "-o bind" "/sys"     "$__ARMRootfsMountPath/sys"
 }
 
 #Cross builds corefx
