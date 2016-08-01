@@ -17,7 +17,7 @@ using System.Threading;
 
 namespace System.IO
 {
-    public static class Directory
+    public static partial class Directory
     {
         public static DirectoryInfo GetParent(String path)
         {
@@ -578,6 +578,11 @@ namespace System.IO
         {
             String fullPath = Path.GetFullPath(path);
             FileSystem.Current.RemoveDirectory(fullPath, recursive);
+        }
+
+        public static string[] GetLogicalDrives()
+        {
+            return FileSystem.Current.GetLogicalDrives();
         }
     }
 }

@@ -141,6 +141,79 @@ namespace System.Collections
         private IEqualityComparer _keycomparer;
         private Object _syncRoot;
 
+        [Obsolete("Please use EqualityComparer property.")]
+        protected IHashCodeProvider hcp
+        {
+            get
+            {
+                if (_keycomparer is CompatibleComparer)
+                {
+                    return ((CompatibleComparer)_keycomparer).HashCodeProvider;
+                }
+                else if (_keycomparer == null)
+                {
+                    return null;
+                }
+                else
+                {
+                    throw new ArgumentException(SR.Arg_CannotMixComparisonInfrastructure);
+                }
+            }
+            set
+            {
+                if (_keycomparer is CompatibleComparer)
+                {
+                    CompatibleComparer keyComparer = (CompatibleComparer)_keycomparer;
+                    _keycomparer = new CompatibleComparer(value, keyComparer.Comparer);
+                }
+                else if (_keycomparer == null)
+                {
+                    _keycomparer = new CompatibleComparer(value, (IComparer)null);
+                }
+                else
+                {
+                    throw new ArgumentException(SR.Arg_CannotMixComparisonInfrastructure);
+                }
+            }
+        }
+
+        [Obsolete("Please use KeyComparer properties.")]
+        protected IComparer comparer
+        {
+            get
+            {
+                if (_keycomparer is CompatibleComparer)
+                {
+                    return ((CompatibleComparer)_keycomparer).Comparer;
+                }
+                else if (_keycomparer == null)
+                {
+                    return null;
+                }
+                else
+                {
+                    throw new ArgumentException(SR.Arg_CannotMixComparisonInfrastructure);
+                }
+            }
+            set
+            {
+                if (_keycomparer is CompatibleComparer)
+                {
+                    CompatibleComparer keyComparer = (CompatibleComparer)_keycomparer;
+                    _keycomparer = new CompatibleComparer(keyComparer.HashCodeProvider, value);
+                }
+                else if (_keycomparer == null)
+                {
+                    _keycomparer = new CompatibleComparer((IHashCodeProvider)null, value);
+                }
+                else
+                {
+                    throw new ArgumentException(SR.Arg_CannotMixComparisonInfrastructure);
+                }
+            }
+        }
+
+
         protected IEqualityComparer EqualityComparer
         {
             get
@@ -213,7 +286,19 @@ namespace System.Collections
             _keycomparer = equalityComparer;
         }
 
+        [Obsolete("Please use Hashtable(IEqualityComparer) instead.")]
+        public Hashtable(IHashCodeProvider hcp, IComparer comparer)
+            : this(0, 1.0f, hcp, comparer)
+        {
+        }
+
         public Hashtable(IEqualityComparer equalityComparer) : this(0, 1.0f, equalityComparer)
+        {
+        }
+
+        [Obsolete("Please use Hashtable(int, IEqualityComparer) instead.")]
+        public Hashtable(int capacity, IHashCodeProvider hcp, IComparer comparer)
+            : this(capacity, 1.0f, hcp, comparer)
         {
         }
 
@@ -237,9 +322,37 @@ namespace System.Collections
         {
         }
 
+        [Obsolete("Please use Hashtable(IDictionary, IEqualityComparer) instead.")]
+        public Hashtable(IDictionary d, IHashCodeProvider hcp, IComparer comparer)
+            : this(d, 1.0f, hcp, comparer)
+        {
+        }
+
         public Hashtable(IDictionary d, IEqualityComparer equalityComparer)
             : this(d, 1.0f, equalityComparer)
         {
+        }
+
+        [Obsolete("Please use Hashtable(int, float, IEqualityComparer) instead.")]
+        public Hashtable(int capacity, float loadFactor, IHashCodeProvider hcp, IComparer comparer)
+            : this(capacity, loadFactor)
+        {
+            if (hcp != null || comparer != null)
+            {
+                _keycomparer = new CompatibleComparer(hcp, comparer);
+            }
+        }
+
+        [Obsolete("Please use Hashtable(IDictionary, float, IEqualityComparer) instead.")]
+        public Hashtable(IDictionary d, float loadFactor, IHashCodeProvider hcp, IComparer comparer)
+            : this((d != null ? d.Count : 0), loadFactor, hcp, comparer)
+        {
+            if (d == null)
+                throw new ArgumentNullException(nameof(d), SR.ArgumentNull_Dictionary);
+            Contract.EndContractBlock();
+
+            IDictionaryEnumerator e = d.GetEnumerator();
+            while (e.MoveNext()) Add(e.Key, e.Value);
         }
 
         public Hashtable(IDictionary d, float loadFactor, IEqualityComparer equalityComparer)

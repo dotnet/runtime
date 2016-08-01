@@ -1,0 +1,36 @@
+{
+  "frameworks": {
+    "netstandard1.4": {
+      "dependencies": {
+        "Microsoft.NETCore.Platforms": "1.0.1",
+        "Microsoft.Win32.Primitives": "4.0.0",
+        "System.Collections": "4.0.10",
+        "System.Collections.Specialized": "4.0.0",
+        "System.Collections.NonGeneric": "4.0.0",
+        "System.Diagnostics.Debug": "4.0.10",
+        "System.Diagnostics.Process": "4.1.0",
+        "System.Diagnostics.TraceSource": "4.0.0",
+        "System.IO": "4.0.10",
+        "System.Resources.ResourceManager": "4.0.0",
+        "System.Runtime": "4.0.20",
+        "System.Runtime.Extensions": "4.0.10",
+        "System.Runtime.Serialization.Formatters": "4.0.1-beta-devapi-24326-01",
+        "System.Runtime.InteropServices": "4.0.20",
+        "System.Threading": "4.0.10",
+        "System.Threading.Tasks": "4.0.10",
+        "System.Threading.Thread": "4.0.0",
+        "System.Threading.ThreadPool": "4.0.10",
+        "System.Threading.Timer": "4.0.0",
+        "System.Xml.XPath": "4.0.0"
+      },
+      "imports": [
+        "dotnet5.4"
+      ]
+    },
+    "net46": {
+      "dependencies": {
+        "Microsoft.TargetingPack.NETFramework.v4.6": "1.0.1"
+      }
+    }
+  }
+}

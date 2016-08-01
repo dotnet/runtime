@@ -89,9 +89,6 @@
     <Compile Include="$(CommonPath)\System\NotImplemented.cs">
       <Link>Common\System\NotImplemented.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Runtime\CompilerServices\ReadOnlyCollectionBuilder.cs">
-      <Link>Common\System\Runtime\CompilerServices\ReadOnlyCollectionBuilder.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\System\Runtime\CompilerServices\TrueReadOnlyCollection.cs">
       <Link>Common\System\Runtime\CompilerServices\TrueReadOnlyCollection.cs</Link>
     </Compile>
@@ -143,6 +140,7 @@
     <Compile Include="System\Linq\Expressions\Utils.cs" />
     <Compile Include="System\Linq\IQueryable.cs" />
     <Compile Include="System\Runtime\CompilerServices\IRuntimeVariables.cs" />
+    <Compile Include="System\Runtime\CompilerServices\ReadOnlyCollectionBuilder.cs" />
     <None Include="project.json" />
   </ItemGroup>
   <ItemGroup Condition=" '$(IsInterpreting)' != 'true' And '$(TargetGroup)' != 'net463'">

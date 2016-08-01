@@ -137,7 +137,7 @@
       <Version>4.0.0</Version>
     </BaseLinePackage>
     <BaseLinePackage Include="System.IO">
-      <Version>4.1.0</Version>
+      <Version>4.2.0</Version>
     </BaseLinePackage>
     <BaseLinePackage Include="System.IO.Packaging">
       <Version>4.0.0</Version>

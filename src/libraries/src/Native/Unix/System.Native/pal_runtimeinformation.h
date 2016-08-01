@@ -8,6 +8,8 @@
 
 extern "C" const char* SystemNative_GetUnixName();
 
+extern "C" char* SystemNative_GetUnixRelease();
+
 extern "C" int32_t SystemNative_GetUnixVersion(char* version, int* capacity);
 
 extern "C" int32_t SystemNative_GetOSArchitecture();

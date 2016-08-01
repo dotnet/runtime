@@ -90,11 +90,11 @@
     <ValidatePackageVersions>true</ValidatePackageVersions>
     <ProhibitFloatingDependencies>true</ProhibitFloatingDependencies>
 
-    <CoreFxExpectedPrerelease>beta-24327-03</CoreFxExpectedPrerelease>
-    <CoreClrExpectedPrerelease>beta-24328-01</CoreClrExpectedPrerelease>
-    <ExternalExpectedPrerelease>beta-24329-00</ExternalExpectedPrerelease>
+    <CoreFxExpectedPrerelease>beta-devapi-24326-01</CoreFxExpectedPrerelease>
+    <CoreClrExpectedPrerelease>beta-24329-03</CoreClrExpectedPrerelease>
+    <ExternalExpectedPrerelease>beta-24401-00</ExternalExpectedPrerelease>
 
-    <CoreFxVersionsIdentityRegex>^(?i)((System\..*)|(NETStandard\.Library)|(Microsoft\.CSharp)|(Microsoft\.NETCore\.Targets)|(Microsoft\.NETCore\.Platforms)|(Microsoft\.Win32\..*)|(Microsoft\.VisualBasic))(?&lt;!TestData)$</CoreFxVersionsIdentityRegex>
+    <CoreFxVersionsIdentityRegex>^(?i)(((System\..*)(?&lt;!System\.ServiceModel\..*))|(NETStandard\.Library)|(Microsoft\.CSharp)|(Microsoft\.NETCore\.Targets)|(Microsoft\.NETCore\.Platforms)|(Microsoft\.Win32\..*)|(Microsoft\.VisualBasic))(?&lt;!TestData)$</CoreFxVersionsIdentityRegex>
   </PropertyGroup>
 
   <Import Project="$(MSBuildThisFileDirectory)pkg/ExternalPackages/versions.props" Condition="Exists('$(MSBuildThisFileDirectory)pkg/ExternalPackages/versions.props')" />
@@ -148,6 +148,7 @@
     <!-- Need to escape double forward slash (%2F) or MSBuild will normalize to one slash on Unix. -->
     <!-- Including buildtools to pull in TestSuite packages and repackaged xunit dependencies-->
     <DnuSourceList Include="https:%2F%2Fdotnet.myget.org/F/dotnet-buildtools/api/v3/index.json" />
+    <DnuSourceList Include="https:%2F%2Fdotnet.myget.org/F/dotnet-core-dev-api/api/v3/index.json" />
     <DnuSourceList Include="https:%2F%2Fdotnet.myget.org/F/dotnet-core/api/v3/index.json" />
     <DnuSourceList Include="https:%2F%2Fwww.nuget.org/api/v2/" />
   </ItemGroup>
@@ -520,10 +521,18 @@
 
   <!-- Default Test platform to deploy the netstandard compiled tests to -->
   <PropertyGroup>
+    <TestTFM Condition="'$(TestTFM)'=='' AND '$(TargetGroup)'=='netstandard1.7'">netcoreapp1.1</TestTFM>
     <TestTFM Condition="'$(TestTFM)'==''">netcoreapp1.0</TestTFM>
+    <FilterToTestTFM Condition="'$(FilterToTestTFM)'=='' AND '$(TestTFM)'=='netcoreapp1.1'">netcoreapp1.1</FilterToTestTFM>
     <!-- we default FilterToTestTFM to netcoreapp1.0 if it is not explicity defined -->
     <FilterToTestTFM Condition="'$(FilterToTestTFM)'==''">netcoreapp1.0</FilterToTestTFM>        
   </PropertyGroup>
+
+  <ItemGroup>
+    <TestNugetTargetMoniker Include=".NETCoreApp,Version=v1.1" Condition="'$(TestTFM)' == 'netcoreapp1.1'">
+      <Folder>netcoreapp1.1</Folder>
+    </TestNugetTargetMoniker>
+  </ItemGroup>
 
   <PropertyGroup>
     <IsRedistAssembly Condition="'$(IsRedistAssembly)'=='' AND ($(MSBuildProjectFullPath.Contains('\redist\')) OR $(MSBuildProjectFullPath.Contains('/redist/')))">true</IsRedistAssembly>
@@ -569,7 +578,8 @@
     <TargetOutputRelPath Condition="'$(TargetGroup)'!=''">$(TargetGroup)/</TargetOutputRelPath>
 
     <BaseOutputPath Condition="'$(BaseOutputPath)'==''">$(BinDir)</BaseOutputPath>
-    <OutputPath Condition="'$(OutputPath)'==''">$(BaseOutputPath)$(OSPlatformConfig)/$(MSBuildProjectName)/$(TargetOutputRelPath)</OutputPath>
+    <OutputPathSubfolder Condition="'$(IsCompatAssembly)'=='true'">/Compat</OutputPathSubfolder>
+    <OutputPath Condition="'$(OutputPath)'==''">$(BaseOutputPath)$(OSPlatformConfig)/$(MSBuildProjectName)/$(TargetOutputRelPath)$(OutputPathSubfolder)</OutputPath>
 
     <IntermediateOutputRootPath Condition="'$(IntermediateOutputRootPath)' == ''">$(BaseIntermediateOutputPath)$(OSPlatformConfig)/</IntermediateOutputRootPath>
     <IntermediateOutputPath Condition="'$(IntermediateOutputPath)' == ''">$(IntermediateOutputRootPath)$(MSBuildProjectName)/$(TargetOutputRelPath)</IntermediateOutputPath>

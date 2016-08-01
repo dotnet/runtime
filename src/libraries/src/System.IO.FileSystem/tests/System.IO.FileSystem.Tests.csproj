@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
   <PropertyGroup>
     <Configuration Condition="'$(Configuration)'==''">Windows_Debug</Configuration>
@@ -43,6 +43,7 @@
     <Compile Include="DirectoryInfo\Root.cs" />
     <Compile Include="Directory\EnumerableAPIs.cs" />
     <Compile Include="Directory\GetFileSystemEntries_str_str_so.cs" />
+    <Compile Include="Directory\GetLogicalDrives.cs" />
     <Compile Include="Directory\GetParent.cs" />
     <Compile Include="FileInfo\GetSetAttributes.cs" />
     <Compile Include="FileInfo\Length.cs" />

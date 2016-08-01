@@ -2,26 +2,61 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
+
 namespace System.Reflection.Metadata.Ecma335
 {
+    /// <summary>
+    /// Encodes instructions.
+    /// </summary>
     public struct InstructionEncoder
     {
-        public BlobBuilder Builder { get; }
-        private readonly BranchBuilder _branchBuilderOpt;
+        /// <summary>
+        /// Underlying builder where encoded instructions are written to.
+        /// </summary>
+        public BlobBuilder CodeBuilder { get; }
 
-        public InstructionEncoder(BlobBuilder builder, BranchBuilder branchBuilder = null)
+        /// <summary>
+        /// Builder tracking labels, branches and exception handlers.
+        /// </summary>
+        /// <remarks>
+        /// If null the encoder doesn't support constuction of control flow.
+        /// </remarks>
+        public ControlFlowBuilder ControlFlowBuilder { get; }
+
+        /// <summary>
+        /// Creates an encoder backed by code and control-flow builders.
+        /// </summary>
+        /// <param name="codeBuilder">Builder to write encoded instructions to.</param>
+        /// <param name="controlFlowBuilder">
+        /// Builder tracking labels, branches and exception handlers.
+        /// Must be specified to be able to use some of the control-flow factory methods of <see cref="InstructionEncoder"/>,
+        /// such as <see cref="Branch(ILOpCode, LabelHandle)"/>, <see cref="DefineLabel"/>, <see cref="MarkLabel(LabelHandle)"/> etc.
+        /// </param>
+        public InstructionEncoder(BlobBuilder codeBuilder, ControlFlowBuilder controlFlowBuilder = null)
         {
-            Builder = builder;
-            _branchBuilderOpt = branchBuilder;
+            if (codeBuilder == null)
+            {
+                Throw.BuilderArgumentNull();
+            }
+
+            CodeBuilder = codeBuilder;
+            ControlFlowBuilder = controlFlowBuilder;
         }
 
-        public int Offset => Builder.Count;
+        /// <summary>
+        /// Offset of the next encoded instruction.
+        /// </summary>
+        public int Offset => CodeBuilder.Count;
 
+        /// <summary>
+        /// Encodes specified op-code.
+        /// </summary>
         public void OpCode(ILOpCode code)
         {
             if (unchecked((byte)code) == (ushort)code)
             {
-                Builder.WriteByte((byte)code);
+                CodeBuilder.WriteByte((byte)code);
             }
             else
             {
@@ -29,48 +64,90 @@ namespace System.Reflection.Metadata.Ecma335
                 // the byte stream with the high-order byte first,
                 // in contrast to the little-endian format of the
                 // numeric arguments and tokens.
-                Builder.WriteUInt16BE((ushort)code);
+                CodeBuilder.WriteUInt16BE((ushort)code);
             }
         }
 
+        /// <summary>
+        /// Encodes a token.
+        /// </summary>
         public void Token(EntityHandle handle)
         {
             Token(MetadataTokens.GetToken(handle));
         }
 
+        /// <summary>
+        /// Encodes a token.
+        /// </summary>
         public void Token(int token)
         {
-            Builder.WriteInt32(token);
+            CodeBuilder.WriteInt32(token);
         }
 
-        public void LongBranchTarget(int ilOffset)
-        {
-            Builder.WriteInt32(ilOffset);
-        }
-
-        public void ShortBranchTarget(byte ilOffset)
-        {
-            Builder.WriteByte(ilOffset);
-        }
-
+        /// <summary>
+        /// Encodes <code>ldstr</code> instruction and its operand.
+        /// </summary>
         public void LoadString(UserStringHandle handle)
         {
             OpCode(ILOpCode.Ldstr);
             Token(MetadataTokens.GetToken(handle));
         }
 
+        /// <summary>
+        /// Encodes <code>call</code> instruction and its operand.
+        /// </summary>
         public void Call(EntityHandle methodHandle)
+        {
+            if (methodHandle.Kind != HandleKind.MethodDefinition &&
+                methodHandle.Kind != HandleKind.MethodSpecification &&
+                methodHandle.Kind != HandleKind.MemberReference)
+            {
+                Throw.InvalidArgument_Handle(nameof(methodHandle));
+            }
+
+            OpCode(ILOpCode.Call);
+            Token(methodHandle);
+        }
+
+        /// <summary>
+        /// Encodes <code>call</code> instruction and its operand.
+        /// </summary>
+        public void Call(MethodDefinitionHandle methodHandle)
         {
             OpCode(ILOpCode.Call);
             Token(methodHandle);
         }
 
+        /// <summary>
+        /// Encodes <code>call</code> instruction and its operand.
+        /// </summary>
+        public void Call(MethodSpecificationHandle methodHandle)
+        {
+            OpCode(ILOpCode.Call);
+            Token(methodHandle);
+        }
+
+        /// <summary>
+        /// Encodes <code>call</code> instruction and its operand.
+        /// </summary>
+        public void Call(MemberReferenceHandle methodHandle)
+        {
+            OpCode(ILOpCode.Call);
+            Token(methodHandle);
+        }
+
+        /// <summary>
+        /// Encodes <code>calli</code> instruction and its operand.
+        /// </summary>
         public void CallIndirect(StandaloneSignatureHandle signature)
         {
             OpCode(ILOpCode.Calli);
             Token(signature);
         }
 
+        /// <summary>
+        /// Encodes <see cref="int"/> constant load instruction.
+        /// </summary>
         public void LoadConstantI4(int value)
         {
             ILOpCode code;
@@ -91,12 +168,12 @@ namespace System.Reflection.Metadata.Ecma335
                     if (unchecked((sbyte)value == value))
                     {
                         OpCode(ILOpCode.Ldc_i4_s);
-                        Builder.WriteSByte(unchecked((sbyte)value));
+                        CodeBuilder.WriteSByte((sbyte)value);
                     }
                     else
                     {
                         OpCode(ILOpCode.Ldc_i4);
-                        Builder.WriteInt32(value);
+                        CodeBuilder.WriteInt32(value);
                     }
 
                     return;
@@ -105,24 +182,38 @@ namespace System.Reflection.Metadata.Ecma335
             OpCode(code);
         }
 
+        /// <summary>
+        /// Encodes <see cref="long"/> constant load instruction.
+        /// </summary>
         public void LoadConstantI8(long value)
         {
             OpCode(ILOpCode.Ldc_i8);
-            Builder.WriteInt64(value);
+            CodeBuilder.WriteInt64(value);
         }
 
+        /// <summary>
+        /// Encodes <see cref="float"/> constant load instruction.
+        /// </summary>
         public void LoadConstantR4(float value)
         {
             OpCode(ILOpCode.Ldc_r4);
-            Builder.WriteSingle(value);
+            CodeBuilder.WriteSingle(value);
         }
 
+        /// <summary>
+        /// Encodes <see cref="double"/> constant load instruction.
+        /// </summary>
         public void LoadConstantR8(double value)
         {
             OpCode(ILOpCode.Ldc_r8);
-            Builder.WriteDouble(value);
+            CodeBuilder.WriteDouble(value);
         }
 
+        /// <summary>
+        /// Encodes local variable load instruction.
+        /// </summary>
+        /// <param name="slotIndex">Index of the local variable slot.</param>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="slotIndex"/> is negative.</exception>
         public void LoadLocal(int slotIndex)
         {
             switch (slotIndex)
@@ -131,21 +222,32 @@ namespace System.Reflection.Metadata.Ecma335
                 case 1: OpCode(ILOpCode.Ldloc_1); break;
                 case 2: OpCode(ILOpCode.Ldloc_2); break;
                 case 3: OpCode(ILOpCode.Ldloc_3); break;
+
                 default:
-                    if (slotIndex < 0xFF)
+                    if (unchecked((uint)slotIndex) <= byte.MaxValue)
                     {
                         OpCode(ILOpCode.Ldloc_s);
-                        Builder.WriteByte(unchecked((byte)slotIndex));
+                        CodeBuilder.WriteByte((byte)slotIndex);
+                    }
+                    else if (slotIndex > 0)
+                    {
+                        OpCode(ILOpCode.Ldloc);
+                        CodeBuilder.WriteInt32(slotIndex);
                     }
                     else
                     {
-                        OpCode(ILOpCode.Ldloc);
-                        Builder.WriteInt32(slotIndex);
+                        Throw.ArgumentOutOfRange(nameof(slotIndex));
                     }
+
                     break;
             }
         }
 
+        /// <summary>
+        /// Encodes local variable store instruction.
+        /// </summary>
+        /// <param name="slotIndex">Index of the local variable slot.</param>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="slotIndex"/> is negative.</exception>
         public void StoreLocal(int slotIndex)
         {
             switch (slotIndex)
@@ -154,35 +256,55 @@ namespace System.Reflection.Metadata.Ecma335
                 case 1: OpCode(ILOpCode.Stloc_1); break;
                 case 2: OpCode(ILOpCode.Stloc_2); break;
                 case 3: OpCode(ILOpCode.Stloc_3); break;
+
                 default:
-                    if (slotIndex < 0xFF)
+                    if (unchecked((uint)slotIndex) <= byte.MaxValue)
                     {
                         OpCode(ILOpCode.Stloc_s);
-                        Builder.WriteByte(unchecked((byte)slotIndex));
+                        CodeBuilder.WriteByte((byte)slotIndex);
+                    }
+                    else if (slotIndex > 0)
+                    {
+                        OpCode(ILOpCode.Stloc);
+                        CodeBuilder.WriteInt32(slotIndex);
                     }
                     else
                     {
-                        OpCode(ILOpCode.Stloc);
-                        Builder.WriteInt32(slotIndex);
+                        Throw.ArgumentOutOfRange(nameof(slotIndex));
                     }
+
                     break;
             }
         }
 
+        /// <summary>
+        /// Encodes local variable address load instruction.
+        /// </summary>
+        /// <param name="slotIndex">Index of the local variable slot.</param>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="slotIndex"/> is negative.</exception>
         public void LoadLocalAddress(int slotIndex)
         {
-            if (slotIndex < 0xFF)
+            if (unchecked((uint)slotIndex) <= byte.MaxValue)
             {
                 OpCode(ILOpCode.Ldloca_s);
-                Builder.WriteByte(unchecked((byte)slotIndex));
+                CodeBuilder.WriteByte((byte)slotIndex);
+            }
+            else if (slotIndex > 0)
+            {
+                OpCode(ILOpCode.Ldloca);
+                CodeBuilder.WriteInt32(slotIndex);
             }
             else
             {
-                OpCode(ILOpCode.Ldloca);
-                Builder.WriteInt32(slotIndex);
+                Throw.ArgumentOutOfRange(nameof(slotIndex));
             }
         }
 
+        /// <summary>
+        /// Encodes argument load instruction.
+        /// </summary>
+        /// <param name="argumentIndex">Index of the argument.</param>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="argumentIndex"/> is negative.</exception>
         public void LoadArgument(int argumentIndex)
         {
             switch (argumentIndex)
@@ -191,81 +313,137 @@ namespace System.Reflection.Metadata.Ecma335
                 case 1: OpCode(ILOpCode.Ldarg_1); break;
                 case 2: OpCode(ILOpCode.Ldarg_2); break;
                 case 3: OpCode(ILOpCode.Ldarg_3); break;
+
                 default:
-                    if (argumentIndex < 0xFF)
+                    if (unchecked((uint)argumentIndex) <= byte.MaxValue)
                     {
                         OpCode(ILOpCode.Ldarg_s);
-                        Builder.WriteByte(unchecked((byte)argumentIndex));
+                        CodeBuilder.WriteByte((byte)argumentIndex);
+                    }
+                    else if (argumentIndex > 0)
+                    {
+                        OpCode(ILOpCode.Ldarg);
+                        CodeBuilder.WriteInt32(argumentIndex);
                     }
                     else
                     {
-                        OpCode(ILOpCode.Ldarg);
-                        Builder.WriteInt32(argumentIndex);
+                        Throw.ArgumentOutOfRange(nameof(argumentIndex));
                     }
+
                     break;
             }
         }
 
+        /// <summary>
+        /// Encodes argument address load instruction.
+        /// </summary>
+        /// <param name="argumentIndex">Index of the argument.</param>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="argumentIndex"/> is negative.</exception>
         public void LoadArgumentAddress(int argumentIndex)
         {
-            if (argumentIndex < 0xFF)
+            if (unchecked((uint)argumentIndex) <= byte.MaxValue)
             {
                 OpCode(ILOpCode.Ldarga_s);
-                Builder.WriteByte(unchecked((byte)argumentIndex));
+                CodeBuilder.WriteByte((byte)argumentIndex);
             }
-            else
+            else if (argumentIndex > 0)
             {
                 OpCode(ILOpCode.Ldarga);
-                Builder.WriteInt32(argumentIndex);
-            }
-        }
-
-        public void StoreArgument(int argumentIndex)
-        {
-            if (argumentIndex < 0xFF)
-            {
-                OpCode(ILOpCode.Starg_s);
-                Builder.WriteByte(unchecked((byte)argumentIndex));
+                CodeBuilder.WriteInt32(argumentIndex);
             }
             else
             {
-                OpCode(ILOpCode.Starg);
-                Builder.WriteInt32(argumentIndex);
+                Throw.ArgumentOutOfRange(nameof(argumentIndex));
             }
         }
 
+        /// <summary>
+        /// Encodes argument store instruction.
+        /// </summary>
+        /// <param name="argumentIndex">Index of the argument.</param>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="argumentIndex"/> is negative.</exception>
+        public void StoreArgument(int argumentIndex)
+        {
+            if (unchecked((uint)argumentIndex) <= byte.MaxValue)
+            {
+                OpCode(ILOpCode.Starg_s);
+                CodeBuilder.WriteByte((byte)argumentIndex);
+            }
+            else if (argumentIndex > 0)
+            {
+                OpCode(ILOpCode.Starg);
+                CodeBuilder.WriteInt32(argumentIndex);
+            }
+            else
+            {
+                Throw.ArgumentOutOfRange(nameof(argumentIndex));
+            }
+        }
+
+        /// <summary>
+        /// Defines a label that can later be used to mark and refer to a location in the instruction stream.
+        /// </summary>
+        /// <returns>Label handle.</returns>
+        /// <exception cref="InvalidOperationException"><see cref="ControlFlowBuilder"/> is null.</exception>
         public LabelHandle DefineLabel()
         {
             return GetBranchBuilder().AddLabel();
         }
 
+        /// <summary>
+        /// Encodes a branch instruction.
+        /// </summary>
+        /// <param name="code">Branch instruction to encode.</param>
+        /// <param name="label">Label of the target location in instruction stream.</param>
+        /// <exception cref="ArgumentException"><paramref name="code"/> is not a branch instruction.</exception>
+        /// <exception cref="ArgumentException"><paramref name="label"/> was not defined by this encoder.</exception>
+        /// <exception cref="InvalidOperationException"><see cref="ControlFlowBuilder"/> is null.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="label"/> has default value.</exception>
         public void Branch(ILOpCode code, LabelHandle label)
         {
             // throws if code is not a branch:
-            ILOpCode shortCode = code.GetShortBranch();
+            int size = code.GetBranchOperandSize();
 
-            GetBranchBuilder().AddBranch(Offset, label, (byte)shortCode);
-            OpCode(shortCode);
+            GetBranchBuilder().AddBranch(Offset, label, code);
+            OpCode(code);
 
             // -1 points in the middle of the branch instruction and is thus invalid.
             // We want to produce invalid IL so that if the caller doesn't patch the branches 
             // the branch instructions will be invalid in an obvious way.
-            Builder.WriteSByte(-1);
+            if (size == 1)
+            {
+                CodeBuilder.WriteSByte(-1);
+            }
+            else
+            {
+                Debug.Assert(size == 4);
+                CodeBuilder.WriteInt32(-1);
+            }
         }
 
+        /// <summary>
+        /// Associates specified label with the current IL offset.
+        /// </summary>
+        /// <param name="label">Label to mark.</param>
+        /// <remarks>
+        /// A single label may be marked multiple times, the last offset wins.
+        /// </remarks>
+        /// <exception cref="InvalidOperationException"><see cref="ControlFlowBuilder"/> is null.</exception>
+        /// <exception cref="ArgumentException"><paramref name="label"/> was not defined by this encoder.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="label"/> has default value.</exception>
         public void MarkLabel(LabelHandle label)
         {
             GetBranchBuilder().MarkLabel(Offset, label);
         }
 
-        private BranchBuilder GetBranchBuilder()
+        private ControlFlowBuilder GetBranchBuilder()
         {
-            if (_branchBuilderOpt == null)
+            if (ControlFlowBuilder == null)
             {
-                Throw.BranchBuilderNotAvailable();
+                Throw.ControlFlowBuilderNotAvailable();
             }
 
-            return _branchBuilderOpt;
+            return ControlFlowBuilder;
         }
     }
 }
