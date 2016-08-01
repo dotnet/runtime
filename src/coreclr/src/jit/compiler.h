@@ -3572,6 +3572,11 @@ public :
 
     void                fgUpdateRefCntForExtract(GenTreePtr  wholeTree,
                                                  GenTreePtr  keptTree);
+
+    void                fgComputeLifeCall(VARSET_TP& life, GenTreeCall* call);
+
+    bool                fgComputeLifeLocal(VARSET_TP& life, VARSET_TP& keepAliveVars, GenTree* lclVarNode, GenTree* node);
+
     VARSET_VALRET_TP    fgComputeLife     (VARSET_VALARG_TP life,
                                            GenTreePtr   startNode,
                                            GenTreePtr   endNode,
