@@ -14,7 +14,7 @@
     <RoslynPackageName>Microsoft.Net.ToolsetCompilers</RoslynPackageName>
   </PropertyGroup>
 
-    <!--
+  <!--
      Switching to the .NET Core version of the BuildTools tasks seems to break numerous scenarios, such as VS intellisense and resource designer
      as well as runnning the build on mono. Until we can get these sorted out we will continue using the .NET 4.5 version of the tasks.
      -->
@@ -25,7 +25,6 @@
   <!-- Common properties -->
   <PropertyGroup>
     <!-- Set basic properties and normalize -->
-
     <BuildArch>$(__BuildArch)</BuildArch>
     <BuildArch Condition="'$(__BuildArch)'==''">x64</BuildArch>
     <BuildArch Condition="'$(__BuildArch)' == 'amd64'">x64</BuildArch>
@@ -52,7 +51,8 @@
 
     <BinDir>$(__BinDir)\</BinDir>
     <BinDir Condition="'$(__BinDir)'==''">$(RootBinDir)Product\$(BuildOS).$(BuildArch).$(BuildType)\</BinDir>
-
+    
+    <__IntermediatesDir Condition="'$(__IntermediatesDir)' == ''">$(RootBinDir)obj\$(BuildOS).$(BuildArch).$(BuildType)</__IntermediatesDir>
     <IntermediateOutputRootPath Condition="'$(IntermediateOutputRootPath)' == ''">$(__IntermediatesDir)\</IntermediateOutputRootPath>
 
     <!-- We don't append back slash because this path is used by nuget.exe as output directory and it
@@ -63,7 +63,7 @@
 
     <ToolsDir Condition="'$(ToolsDir)'==''">$(ProjectDir)Tools/</ToolsDir>
     <DotnetCliPath Condition="'$(DotnetCliPath)'==''">$(ToolsDir)dotnetcli/</DotnetCliPath>
-    <OverrideToolHost>$(DotnetCliPath)dotnet</OverrideToolHost> 
+    <OverrideToolHost>$(DotnetCliPath)dotnet</OverrideToolHost>
     <BuildToolsSemaphore Condition="'$(BuildToolsSemaphore)' == ''">$(ToolsDir)Microsoft.DotNet.Build.Tasks.dll</BuildToolsSemaphore>
 
     <TestWorkingDir>$(__TestWorkingDir)\</TestWorkingDir>
@@ -166,7 +166,7 @@
     <MinOSForArch>win7</MinOSForArch>
     <MinOSForArch Condition="'$(PackagePlatform)' == 'arm'">win8</MinOSForArch>
     <MinOSForArch Condition="'$(PackagePlatform)' == 'arm64'">win10</MinOSForArch>
-    
+
     <!-- Arm64 cross target components are x64 hosted -->
     <HasCrossTargetComponents Condition="'$(PackagePlatform)' =='arm64'">true</HasCrossTargetComponents>
     <CrossTargetComponentFolder Condition="'$(PackagePlatform)' == 'arm64'">x64</CrossTargetComponentFolder>
@@ -179,11 +179,11 @@
   <ItemGroup Condition="'$(MSBuildProjectExtension)' == '.pkgproj'">
     <File Condition="Exists('$(PackageLicenseFile)')"
           Include="$(PackageLicenseFile)" >
-        <SkipPackageFileCheck>true</SkipPackageFileCheck>
+      <SkipPackageFileCheck>true</SkipPackageFileCheck>
     </File>
     <File Condition="Exists('$(PackageThirdPartyNoticesFile)')"
           Include="$(PackageThirdPartyNoticesFile)" >
-        <SkipPackageFileCheck>true</SkipPackageFileCheck>
+      <SkipPackageFileCheck>true</SkipPackageFileCheck>
     </File>
   </ItemGroup>
 
