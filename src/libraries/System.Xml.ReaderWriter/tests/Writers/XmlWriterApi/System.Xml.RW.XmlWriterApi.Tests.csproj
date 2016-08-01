@@ -73,6 +73,10 @@
       <Project>{c559743a-762e-4d9d-b986-e77bdb97652e}</Project>
       <Name>System.Xml.ReaderWriter</Name>
     </ProjectReference>
+    <!-- ToDo: Remove this reference to the live package of System.Globalization once prerelease gets updated again -->
+    <ProjectReference Include="..\..\..\..\System.Globalization\pkg\System.Globalization.pkgproj">
+      <Name>System.Globalization</Name>
+    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />

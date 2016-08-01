@@ -141,6 +141,10 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Targets>Build;DebugSymbolsProjectOutputGroup</Targets>
     </ProjectReference>
+    <!-- ToDo: Remove this reference to the live package of System.Globalization once prerelease gets updated again -->
+    <ProjectReference Include="..\..\System.Globalization\pkg\System.Globalization.pkgproj">
+      <Name>System.Globalization</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
