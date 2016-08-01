@@ -532,6 +532,9 @@ if test x"$GCC" = xyes; then
 		# We rely on signed overflow to behave
 		CFLAGS="$CFLAGS -fwrapv"
 
+		# We rely on zero length arrays in structs
+		CFLAGS="$CFLAGS -Wno-zero-length-array"
+
 		CFLAGS="$CFLAGS -DMONO_DLL_EXPORT"
 		if test x"$disable_visibility_hidden" = xno; then
 		   # Don't export any symbols by default
