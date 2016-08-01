@@ -5071,9 +5071,11 @@ mono_thread_internal_unhandled_exception (MonoObject* exc)
 			mono_thread_internal_reset_abort (mono_thread_internal_current ());
 		} else if (!is_appdomainunloaded_exception (klass)) {
 			mono_unhandled_exception (exc);
-			// AK: Should we call mono_invoke_unhandled_exception_hook here?
-			if (mono_environment_exitcode_get () == 1)
-				exit (255);
+			if (mono_environment_exitcode_get () == 1) {
+				mono_environment_exitcode_set (255);
+				mono_invoke_unhandled_exception_hook (exc);
+				g_assert_not_reached ();
+			}
 		}
 	}
 }
