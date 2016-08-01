@@ -355,6 +355,20 @@ namespace System.Collections.Generic
             }
             return false;
         }
+ 
+        public List<TOutput> ConvertAll<TOutput>(Converter<T,TOutput> converter) {
+            if( converter == null) {
+                throw new ArgumentNullException(nameof(converter));
+            }
+            Contract.EndContractBlock();
+ 
+            List<TOutput> list = new List<TOutput>(_size);
+            for( int i = 0; i< _size; i++) {
+                list._items[i] = converter(_items[i]);
+            }
+            list._size = _size;
+            return list;
+        }
 
         // Copies this List into array, which must be of a 
         // compatible array type.  
