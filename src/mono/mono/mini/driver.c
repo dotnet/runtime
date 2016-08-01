@@ -1033,15 +1033,18 @@ mono_jit_exec (MonoDomain *domain, MonoAssembly *assembly, int argc, char *argv[
 		if (exc) {
 			mono_unhandled_exception (exc);
 			mono_invoke_unhandled_exception_hook (exc);
-			return 1;
+			g_assert_not_reached ();
 		}
 		return res;
 	} else {
 		int res = mono_runtime_run_main_checked (method, argc, argv, &error);
 		if (!is_ok (&error)) {
 			MonoException *ex = mono_error_convert_to_exception (&error);
-			if (ex)
-				mono_unhandled_exception ((MonoObject*)ex);
+			if (ex) {
+				mono_unhandled_exception (&ex->object);
+				mono_invoke_unhandled_exception_hook (&ex->object);
+				g_assert_not_reached ();
+			}
 		}
 		return res;
 	}
