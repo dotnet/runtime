@@ -27,11 +27,9 @@ fi
 
 usage()
 {
-    echo "Usage: $0 [BuildArch] [BuildType] [clean] [verbose] [coverage] [cross] [clangx.y] [ninja] [configureonly] [skipconfigure] [skipnative] [skipmscorlib] [skiptests] [cmakeargs] [bindir]"
+    echo "Usage: $0 [BuildArch] [BuildType] [verbose] [coverage] [cross] [clangx.y] [ninja] [configureonly] [skipconfigure] [skipnative] [skipmscorlib] [skiptests] [cmakeargs] [bindir]"
     echo "BuildArch can be: x64, x86, arm, arm-softfp, arm64"
     echo "BuildType can be: debug, checked, release"
-    echo "clean - optional argument to force a clean build."
-    echo "verbose - optional argument to enable verbose build output."
     echo "coverage - optional argument to enable code coverage build (currently supported only for Linux and OSX)."
     echo "ninja - target ninja instead of GNU make"
     echo "clangx.y - optional argument to build using clang version x.y."
@@ -42,9 +40,14 @@ usage()
     echo "skipnative - do not build native components."
     echo "skipmscorlib - do not build mscorlib.dll."
     echo "skiptests - skip the tests in the 'tests' subdirectory."
-    echo "skiprestore - skip restoring nuget packages."
     echo "skipnuget - skip building nuget packages."
-    echo "disableoss - Disable Open Source Signing for mscorlib."
+    echo "verbose - optional argument to enable verbose build output."
+    echo "-skiprestore: skip restoring packages ^(default: packages are restored during build^)."
+	echo "-disableoss: Disable Open Source Signing for System.Private.CoreLib."
+	echo "-sequential: force a non-parallel build ^(default is to build in parallel"
+	echo "   using all processors^)."
+	echo "-officialbuildid=^<ID^>: specify the official build ID to be used by this build."
+	echo "-Rebuild: force a clean build ^(default is to perform an incremental build^)."
     echo "skipgenerateversion - disable version generation even if MSBuild is supported."
     echo "cmakeargs - user-settable additional arguments passed to CMake."
     echo "bindir - output directory (defaults to $__ProjectRoot/bin)"
@@ -73,21 +76,6 @@ setup_dirs()
     mkdir -p "$__BinDir"
     mkdir -p "$__LogsDir"
     mkdir -p "$__IntermediatesDir"
-}
-
-# Performs "clean build" type actions (deleting and remaking directories)
-
-clean()
-{
-    echo Cleaning previous output for the selected configuration
-    rm -rf "$__BinDir"
-    rm -rf "$__IntermediatesDir"
-
-    rm -rf "$__TestWorkingDir"
-    rm -rf "$__TestIntermediatesDir"
-
-    rm -rf "$__LogsDir/*_$__BuildOS__$__BuildArch__$__BuildType.*"
-    rm -rf "$__ProjectRoot/Tools"
 }
 
 # Check the system to ensure the right prereqs are in place
@@ -159,8 +147,6 @@ build_coreclr()
 
     echo "Commencing build of native components for $__BuildOS.$__BuildArch.$__BuildType in $__IntermediatesDir"
 
-    cd "$__IntermediatesDir"
-
     generator=""
     buildFile="Makefile"
     buildTool="make"
@@ -176,20 +162,23 @@ build_coreclr()
         # Drop version.c file
         __versionSourceFile=$__IntermediatesDir/version.cpp
         if [ $__SkipGenerateVersion == 0 ]; then
-            "$__ProjectRoot/init-tools.sh" > "$__ProjectRoot/init-tools.log"
-            echo "Running: \"$__ProjectRoot/Tools/dotnetcli/dotnet\" \"$__ProjectRoot/Tools/MSBuild.exe\" \"$__ProjectRoot/build.proj\" /v:minimal /t:GenerateVersionSourceFile /p:NativeVersionSourceFile=$__versionSourceFile /p:GenerateVersionSourceFile=true /v:minimal $__OfficialBuildIdArg"
-            "$__ProjectRoot/Tools/dotnetcli/dotnet" "$__ProjectRoot/Tools/MSBuild.exe" "$__ProjectRoot/build.proj" /v:minimal /t:GenerateVersionSourceFile /p:NativeVersionSourceFile=$__versionSourceFile /p:GenerateVersionSourceFile=true /v:minimal $__OfficialBuildIdArg
+            echo "Running: \"$__ProjectRoot/run.sh\" build -generateHeaderUnix -NativeVersionSourceFile=$__versionSourceFile $__RunArgs $__UnprocessedBuildArgs"
+            "$__ProjectRoot/run.sh" build -generateHeaderUnix -NativeVersionSourceFile=$__versionSourceFile $__RunArgs $__UnprocessedBuildArgs
         else
             __versionSourceLine="static char sccsid[] __attribute__((used)) = \"@(#)No version information produced\";"
             echo $__versionSourceLine > $__versionSourceFile
         fi
+
+		pushd "$__IntermediatesDir"
         # Regenerate the CMake solution
         echo "Invoking \"$__ProjectRoot/src/pal/tools/gen-buildsys-clang.sh\" \"$__ProjectRoot\" $__ClangMajorVersion $__ClangMinorVersion $__BuildArch $__BuildType $__CodeCoverage $__IncludeTests $generator $__cmakeargs"
         "$__ProjectRoot/src/pal/tools/gen-buildsys-clang.sh" "$__ProjectRoot" $__ClangMajorVersion $__ClangMinorVersion $__BuildArch $__BuildType $__CodeCoverage $__IncludeTests $generator "$__cmakeargs"
+        popd
     fi
 
     # Check that the makefiles were created.
-
+    pushd "$__IntermediatesDir"
+    
     if [ ! -f "$__IntermediatesDir/$buildFile" ]; then
         echo "Failed to generate native component build project!"
         exit 1
@@ -215,16 +204,7 @@ build_coreclr()
         echo "Failed to build coreclr components."
         exit 1
     fi
-}
-
-restoreBuildTools()
-{
-    echo "Restoring BuildTools..."
-    $__ProjectRoot/init-tools.sh
-    if [ $? -ne 0 ]; then
-        echo "Failed to restore BuildTools."
-        exit 1
-    fi
+	popd
 }
 
 isMSBuildOnNETCoreSupported()
@@ -305,14 +285,10 @@ build_CoreLib()
        return
     fi
 
-    # Restore buildTools
-
-    restoreBuildTools
-
     echo "Commencing build of managed components for $__BuildOS.$__BuildArch.$__BuildType"
 
     # Invoke MSBuild
-    $__ProjectRoot/Tools/dotnetcli/dotnet "$__MSBuildPath" /nologo "$__ProjectRoot/build.proj" /verbosity:minimal "/fileloggerparameters:Verbosity=normal;LogFile=$__LogsDir/System.Private.CoreLib_$__BuildOS__$__BuildArch__$__BuildType.log" /t:Build /p:__BuildOS=$__BuildOS /p:__BuildArch=$__BuildArch /p:__BuildType=$__BuildType /p:__IntermediatesDir=$__IntermediatesDir /p:__RootBinDir=$__RootBinDir /p:BuildNugetPackage=false /p:UseSharedCompilation=false ${__SignTypeReal}
+    $__ProjectRoot/run.sh build -buildCoreLib -MsBuildLog="/flp:Verbosity=normal;LogFile=$__LogsDir/System.Private.CoreLib_$__BuildOS__$__BuildArch__$__BuildType.log" -BuildTarget -__IntermediatesDir=$__IntermediatesDir -__RootBinDir=$__RootBinDir -BuildNugetPackage=false -UseSharedCompilation=false $__RunArgs $__UnprocessedBuildArgs
 
     if [ $? -ne 0 ]; then
         echo "Failed to build managed components."
@@ -348,17 +324,10 @@ generate_NugetPackages()
         return
     fi
 
-    if [ $__SkipMSCorLib == 1 ]; then
-        # Restore buildTools, since we skipped doing so with the mscorlib build.
-        restoreBuildTools
-
-       echo "Unable to generate Microsoft.NETCore.Runtime.CoreCLR nuget package since mscorlib was not built."
-    fi
-
     echo "Generating nuget packages for "$__BuildOS
 
     # Build the packages
-    $__ProjectRoot/Tools/dotnetcli/dotnet "$__MSBuildPath" /nologo "$__ProjectRoot/src/.nuget/packages.builds" /verbosity:minimal "/fileloggerparameters:Verbosity=normal;LogFile=$__LogsDir/Nuget_$__BuildOS__$__BuildArch__$__BuildType.log" /t:Build /p:__BuildOS=$__BuildOS /p:__BuildArch=$__BuildArch /p:__BuildType=$__BuildType /p:__IntermediatesDir=$__IntermediatesDir /p:__RootBinDir=$__RootBinDir /p:BuildNugetPackage=false /p:UseSharedCompilation=false
+    $__ProjectRoot/run.sh build -buildPackages -MsBuildLog="/flp:Verbosity=normal;LogFile=$__LogsDir/Nuget_$__BuildOS__$__BuildArch__$__BuildType.log" -BuildTarget -__IntermediatesDir=$__IntermediatesDir -__RootBinDir=$__RootBinDir -BuildNugetPackage=false -UseSharedCompilation=false $__RunArgs $__UnprocessedBuildArgs
 
     if [ $? -ne 0 ]; then
         echo "Failed to generate Nuget packages."
@@ -466,25 +435,22 @@ __SourceDir="$__ProjectDir/src"
 __PackagesDir="$__ProjectDir/packages"
 __RootBinDir="$__ProjectDir/bin"
 __UnprocessedBuildArgs=
+__RunArgs=
 __MSBCleanBuildArgs=
 __UseNinja=0
+__VerboseBuild=0
 __ConfigureOnly=0
 __SkipConfigure=0
 __SkipRestore=""
 __SkipNuget=0
 __SkipCoreCLR=0
 __SkipMSCorLib=0
-__CleanBuild=0
-__VerboseBuild=0
-__SignTypeReal=""
 __CrossBuild=0
 __ClangMajorVersion=0
 __ClangMinorVersion=0
-__MSBuildPath=$__ProjectRoot/Tools/MSBuild.exe
 __NuGetPath="$__PackagesDir/NuGet.exe"
 __DistroRid=""
 __cmakeargs=""
-__OfficialBuildIdArg=
 __SkipGenerateVersion=0
 
 while :; do
@@ -535,17 +501,13 @@ while :; do
             __CodeCoverage=Coverage
             ;;
 
-        clean)
-            __CleanBuild=1
-            ;;
-
-        verbose)
-            __VerboseBuild=1
-            ;;
-
         cross)
             __CrossBuild=1
             ;;
+
+		verbose)
+        __VerboseBuild=1
+        ;;
 
         clang3.5)
             __ClangMajorVersion=3
@@ -607,16 +569,8 @@ while :; do
             __IncludeTests=
             ;;
 
-        skiprestore)
-            __SkipRestore="/p:RestoreDuringBuild=true"
-            ;;
-
         skipnuget)
             __SkipNuget=1
-            ;;
-
-        disableoss)
-            __SignTypeReal="/p:SignType=real"
             ;;
 
         cmakeargs)
@@ -646,16 +600,20 @@ while :; do
             ;;
 
         *)
-            if [[ $1 == "/p:OfficialBuildId="* ]]; then
-                __OfficialBuildIdArg=$1
-            else
-                __UnprocessedBuildArgs="$__UnprocessedBuildArgs $1"
-            fi
+            __UnprocessedBuildArgs="$__UnprocessedBuildArgs $1"
             ;;
     esac
 
     shift
 done
+
+__RunArgs="-BuildArch=$__BuildArch -BuildType=$__BuildType -BuildOS=$__BuildOS"
+
+# Configure environment if we are doing a verbose build
+if [ $__VerboseBuild == 1 ]; then
+    export VERBOSE=1
+	__RunArgs="$__RunArgs -verbose"
+fi
 
 # Set default clang version
 if [[ $__ClangMajorVersion == 0 && $__ClangMinorVersion == 0 ]]; then
@@ -670,11 +628,6 @@ fi
 
 # Set dependent variables
 __LogsDir="$__RootBinDir/Logs"
-
-if [[ $__ConfigureOnly == 1 && $__SkipConfigure == 1 ]]; then
-    echo "configureonly and skipconfigure are mutually exclusive!"
-    exit 1
-fi
 
 # init the distro name
 initDistroRid
@@ -704,16 +657,6 @@ fi
 # Specify path to be set for CMAKE_INSTALL_PREFIX.
 # This is where all built CoreClr libraries will copied to.
 export __CMakeBinDir="$__BinDir"
-
-# Configure environment if we are doing a clean build.
-if [ $__CleanBuild == 1 ]; then
-    clean
-fi
-
-# Configure environment if we are doing a verbose build
-if [ $__VerboseBuild == 1 ]; then
-    export VERBOSE=1
-fi
 
 # Configure environment if we are doing a cross compile.
 if [ $__CrossBuild == 1 ]; then
