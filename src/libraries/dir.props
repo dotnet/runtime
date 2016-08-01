@@ -95,9 +95,41 @@
     <ExternalExpectedPrerelease>beta-24404-00</ExternalExpectedPrerelease>
 
     <CoreFxVersionsIdentityRegex>^(?i)((System\..*)|(NETStandard\.Library)|(Microsoft\.CSharp)|(Microsoft\.NETCore\.Targets)|(Microsoft\.NETCore\.Platforms)|(Microsoft\.Win32\..*)|(Microsoft\.VisualBasic))(?&lt;!TestData)$</CoreFxVersionsIdentityRegex>
+
+    <BaseDotNetBuildInfoUrl>https://raw.githubusercontent.com/dotnet/versions/master/build-info/dotnet/</BaseDotNetBuildInfoUrl>
+    <DependencyBranch>master</DependencyBranch>
   </PropertyGroup>
 
   <Import Project="$(MSBuildThisFileDirectory)pkg/ExternalPackages/versions.props" Condition="Exists('$(MSBuildThisFileDirectory)pkg/ExternalPackages/versions.props')" />
+
+  <!-- Dependency auto-upgrade configuration -->
+  <ItemGroup>
+    <DependencyBuildInfo Include="CoreFx">
+      <RawUrl>$(BaseDotNetBuildInfoUrl)corefx/$(DependencyBranch)</RawUrl>
+    </DependencyBuildInfo>
+    <DependencyBuildInfo Include="CoreClr">
+      <RawUrl>$(BaseDotNetBuildInfoUrl)coreclr/$(DependencyBranch)</RawUrl>
+    </DependencyBuildInfo>
+    <DependencyBuildInfo Include="External">
+      <RawUrl>$(BaseDotNetBuildInfoUrl)projectk-tfs/$(DependencyBranch)</RawUrl>
+    </DependencyBuildInfo>
+
+    <XmlUpdateStep Include="CoreFx">
+      <Path>$(MSBuildThisFileFullPath)</Path>
+      <ElementName>CoreFxExpectedPrerelease</ElementName>
+      <BuildInfoName>CoreFx</BuildInfoName>
+    </XmlUpdateStep>
+    <XmlUpdateStep Include="CoreClr">
+      <Path>$(MSBuildThisFileFullPath)</Path>
+      <ElementName>CoreClrExpectedPrerelease</ElementName>
+      <BuildInfoName>CoreClr</BuildInfoName>
+    </XmlUpdateStep>
+    <XmlUpdateStep Include="External">
+      <Path>$(MSBuildThisFileFullPath)</Path>
+      <ElementName>ExternalExpectedPrerelease</ElementName>
+      <BuildInfoName>External</BuildInfoName>
+    </XmlUpdateStep>
+  </ItemGroup>
 
   <ItemGroup>
     <ValidationPattern Include="CoreFxVersions">
