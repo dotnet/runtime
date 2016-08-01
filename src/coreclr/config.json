@@ -1,0 +1,541 @@
+{
+  "settings": {
+    "CloudDropAccessToken": {
+      "description": "Azure access token",
+      "valueType": "property",
+      "values": [],
+      "defaultValue": ""
+    },
+    "CloudDropAccountName": {
+      "description": "Azure account name.",
+      "valueType": "property",
+      "values": [],
+      "defaultValue": ""
+    },
+    "BuildNumberMajor": {
+      "description": "Product build major number.",
+      "valueType": "property",
+      "values": [],
+      "defaultValue": ""
+    },
+    "BuildNumberMinor": {
+      "description": "Product build minor number.",
+      "valueType": "property",
+      "values": [],
+      "defaultValue": ""
+    },
+    "MsBuildParameters": {
+      "description": "MsBuild building options.",
+      "valueType": "passThrough",
+      "values": [],
+      "defaultValue": "/nologo /verbosity:minimal /clp:Summary"
+    },
+    "MsBuildFileLogging": {
+      "description": "MsBuild logging options.",
+      "valueType": "passThrough",
+      "values": [],
+      "defaultValue": "/flp:v=normal"
+    },
+    "MsBuildEventLogging": {
+      "description": "MsBuild logging options.",
+      "valueType": "passThrough",
+      "values": [],
+      "defaultValue": "/l:BinClashLogger,Tools/net45/Microsoft.DotNet.Build.Tasks.dll;LogFile=binclash.log"
+    },
+    "FilterToOSGroup": {
+      "description": "Specifies the OSGroup.",
+      "valueType": "property",
+      "values": [ "Windows_NT", "Linux", "Unix", "OSX" ],
+      "defaultValue": "${OSName}"
+    },
+    "RestoreNETCorePlatforms": {
+      "description": "MsBuild target that restores the NETCore packages.",
+      "valueType": "target",
+      "values": [],
+      "defaultValue": ""
+    },
+    "RestoreDuringBuild": {
+      "description": "Enables/disables package restore.",
+      "valueType": "property",
+      "values": [ true, false ],
+      "defaultValue": true
+    },
+    "Project": {
+      "description": "Project where the commands are going to be applied.",
+      "valueType": "passThrough",
+      "values": [],
+      "defaultValue": ""
+    },
+    "__BuildType": {
+      "description": "Specifies the configuration to publish packages",
+      "valueType": "property",
+      "values": [ "release", "debug", "checked" ],
+      "defaultValue": "debug"
+    },
+    "__BuildArch": {
+      "description": "Specifies the architecture to publish packages",
+      "valueType": "property",
+      "values": [ "x64", "x86", "arm", "arm64" ],
+      "defaultValue": "${CPUArch}"
+    },
+    "__BuildOS": {
+      "description": "Specifies the OS to publish packages.",
+      "valueType": "property",
+      "values": [ "Linux", "OSX", "FreeBSD", "OpenBSD", "NetBSD", "SunOS", "Windows_NT" ],
+      "defaultValue": "${OSName}"
+    },
+    "__DistroRid": {
+      "description": "Specifies the distro rid for Unix OS.",
+      "valueType": "property",
+      "values": [],
+      "defaultValue": "${OSRid}"
+    },
+    "__VSVersion": {
+      "description": "Sets the Visual Studio version to use.",
+      "valueType": "property",
+      "values": [],
+      "defaultValue": "vs2015"
+    },
+    "__ProjectDir": {
+      "description": "Directory of the dir.props file.",
+      "valueType": "property",
+      "values": [],
+      "defaultValue": ""
+    },
+    "__SourceDir": {
+      "description": "Source directory.",
+      "valueType": "property",
+      "values": [],
+      "defaultValue": ""
+    },
+    "__PackagesDir": {
+      "description": "Packages directory.",
+      "valueType": "property",
+      "values": [],
+      "defaultValue": ""
+    },
+    "__RootBinDir": {
+      "description": "Root bin directory.",
+      "valueType": "property",
+      "values": [],
+      "defaultValue": ""
+    },
+    "__BinDir": {
+      "description": "Bin directory of specific OS, Arch and Type being built.",
+      "valueType": "property",
+      "values": [],
+      "defaultValue": ""
+    },
+    "__IntermediatesDir": {
+      "description": "Intermediates bin directory.",
+      "valueType": "property",
+      "values": [],
+      "defaultValue": ""
+    },
+    "__PackagesBinDir": {
+      "description": "Packages bin directory.",
+      "valueType": "property",
+      "values": [],
+      "defaultValue": ""
+    },
+    "__TestWorkingDir": {
+      "description": "Test working directory.",
+      "valueType": "property",
+      "values": [],
+      "defaultValue": ""
+    },
+    "GenerateVersionHeader": {
+      "description": "Generates _version.h",
+      "valueType": "passThrough",
+      "values": [],
+      "defaultValue": "/t:GenerateVersionHeader /p:GenerateVersionHeader=true"
+    },
+    "GenerateVersionSourceFile": {
+      "description": "Generate version.cpp",
+      "valueType": "passThrough",
+      "values": [],
+      "defaultValue": "/t:GenerateVersionSourceFile /p:GenerateVersionSourceFile=true"
+    },
+    "NativeVersionSourceFile": {
+      "description": "Provides location for version.cpp",
+      "valueType": "property",
+      "values": [],
+      "defaultValue": ""
+    },
+    "NativeVersionHeaderFile": {
+      "description": "Provides location for _version.h",
+      "valueType": "property",
+      "values": [],
+      "defaultValue": ""
+    },
+    "OfficialBuildId": {
+      "description": "Official Build Id.",
+      "valueType": "property",
+      "values": [],
+      "defaultValue": ""
+    },
+    "Configuration": {
+      "description": "Specifies the build type for native build.",
+      "valueType": "property",
+      "values": [ "debug", "release", "checked" ],
+      "defaultValue": "debug"
+    },
+    "UseEnv": {
+      "description": "Set when building for arm64.",
+      "valueType": "property",
+      "values": [ true, false ],
+      "defaultValue": true
+    },
+    "Platform": {
+      "description": "Sets the build arch for native build.",
+      "valueType": "property",
+      "values": [ "x86", "x64", "arm", "arm64" ],
+      "defaultValue": "${CPUArch}"
+    },
+    "Rebuild": {
+      "description": "Specifies rebuild target.",
+      "valueType": "target",
+      "values": [],
+      "defaultValue": ""
+    },
+    "MsBuildLog": {
+      "description": "Specifies build logs for build alias.",
+      "valueType": "passThrough",
+      "values": [],
+      "defaultValue": ""
+    },
+    "MsBuildWrn": {
+      "description": "Specifies build logs for build alias.",
+      "valueType": "passThrough",
+      "values": [],
+      "defaultValue": ""
+    },
+    "MsBuildErr": {
+      "description": "Specifies build logs for build alias.",
+      "valueType": "passThrough",
+      "values": [],
+      "defaultValue": ""
+    },
+    "BuildNugetPackage": {
+      "description": "Specifies to build nuget packages.",
+      "valueType": "property",
+      "values": [ true, false ],
+      "defaultValue": true
+    },
+    "SignType": {
+      "description": "Sets the SignType.",
+      "valueType": "property",
+      "values": [ "real" ],
+      "defaultValue": ""
+    },
+    "maxcpucount": {
+      "description": "Msbuild internal command.",
+      "valueType": "internal",
+      "values": [],
+      "defaultValue": ""
+    },
+    "CLRTestPriorityToBuild": {
+      "description": "Sets priority to build test.",
+      "valueType": "property",
+      "values": [],
+      "defaultValue": ""
+    },
+    "IlasmRoundTrip": {
+      "description": "Sets ilasm round trip property.",
+      "valueType": "property",
+      "values": [ true, false ],
+      "defaultValue": true
+    },
+    "CreateTestOverlay": {
+      "description": "Runs CreateTestOverlay target.",
+      "valueType": "target",
+      "values": [],
+      "defaultValue": ""
+    },
+    "Verbosity": {
+      "description": "Sets build verbosity.",
+      "valueType": "passThrough",
+      "values": [],
+      "defaultValue": "/v:normal"
+    },
+    "Build": {
+      "description": "Runs the build target.",
+      "valueType": "target",
+      "values": [],
+      "defaultValue": ""
+    },
+    "UseSharedCompilation": {
+      "description": "Sets the use shared compilation property.",
+      "valueType": "property",
+      "values": [ true, false ],
+      "defaultValue": true
+    },
+    "UpdateInvalidPackageVersions": {
+      "description": "Runs the target to update package versions.",
+      "valueType": "target",
+      "values": [],
+      "defaultValue": ""
+    }
+  },
+  "commands": {
+    "build": {
+      "alias": {
+        "generateHeaderWindows": {
+          "description": "Generates _version.h",
+          "settings": {
+            "GenerateVersionHeader": "default",
+            "NativeVersionHeaderFile": "default",
+            "Project": "./build.proj"
+          }
+        },
+        "generateHeaderUnix": {
+          "description": "Generates version.cpp",
+          "settings": {
+            "GenerateVersionSourceFile": "default",
+            "NativeVersionSourceFile": "default",
+            "Project": "./build.proj"
+          }
+        },
+        "buildCoreLib": {
+          "description": "Builds System.Private.CoreLib.",
+          "settings": {
+            "Project": "./build.proj"
+          }
+        },
+        "buildPackages": {
+          "description": "Builds nuget packages.",
+          "settings": {
+            "Project": "./src/.nuget/packages.builds"
+          }
+        },
+        "verbose": {
+          "description": "Sets the verbosity",
+          "settings": {
+            "Verbosity": "/v:detailed"
+          }
+        },
+        "disableoss": {
+          "description": "Sets the sign type.",
+          "settings": {
+            "SignType": "real"
+          }
+        },
+        "buildType": {
+          "description": "Sets buildtype.",
+          "settings": {
+            "__BuildType": "default"
+          }
+        },
+        "buildArch": {
+          "description": "Sets buildarch.",
+          "settings": {
+            "__BuildArch": "default"
+          }
+        },
+        "buildOS": {
+          "description": "Sets the OS to build.",
+          "settings": {
+            "__BuildOS": "default"
+          }
+        },
+        "testOverlay": {
+          "description": "Runs test overlay target.",
+          "settings": {
+            "Project": "./tests/runtest.proj",
+            "CreateTestOverlay": "default"
+          }
+        },
+        "buildManagedTests": {
+          "description": "Builds managed tests.",
+          "settings": {
+            "Project": "./tests/build.proj"
+          }
+        },
+        "priority": {
+          "description": "Sets CLRTestPriorityToBuild property.",
+          "settings": {
+            "CLRTestPriorityToBuild": "default"
+          }
+        },
+        "sequential": {
+          "description": "Sets sequential build",
+          "settings": {
+            "maxcpucount": "default"
+          }
+        },
+        "skipRestore": {
+          "description": "Skips restoring packages during build.",
+          "settings": {
+            "RestoreDuringBuild": false
+          }
+        },
+        "BuildTarget": {
+          "description": "Runs the build target.",
+          "settings": {
+            "Build": "default"
+          }
+        }
+      },
+      "defaultValues": {
+        "toolName": "msbuild",
+        "settings": {
+          "MsBuildParameters": "default",
+          "MsBuildLog": "default",
+          "MsBuildWrn": "default",
+          "MsBuildErr": "default"
+        }
+      }
+    },
+    "sync": {
+      "alias": {
+        "p": {
+          "description": "Restores all NuGet packages for repository.",
+          "settings": {
+            "Project": "./build.proj",
+            "RestoreDuringBuild": true,
+            "RestoreNETCorePlatforms": "default"
+          }
+        },
+        "ab": {
+          "description": "Downloads the latests product packages from Azure. The values for '-AzureAccount' and '-AzureToken' are required",
+          "settings": {
+            "Project": "./src/syncAzure.proj"
+          }
+        },
+        "azureToken": {
+          "description": "Account token to connect to Azure Blob storage.",
+          "settings": {
+            "CloudDropAccessToken": "default"
+          }
+        },
+        "azureAccount": {
+          "description": "Account name to connect to Azure Blob storage.",
+          "settings": {
+            "CloudDropAccountName": "default"
+          }
+        },
+        "verbose": {
+          "description": "Passes /flp:v=diag to the msbuild command or the value passed by the user.",
+          "settings": {
+            "MsBuildFileLogging": "/flp:v=diag;LogFile=sync.log"
+          }
+        },
+        "buildMajor": {
+          "description": "To download a specific group of product packages, specify build number. The value for -BuildMinor required.",
+          "settings": {
+            "BuildNumberMajor": "default"
+          }
+        },
+        "buildMinor": {
+          "description": "To download a specific group of product packages, specify build number. The value for -BuildMajor required.",
+          "settings": {
+            "BuildNumberMinor": "default"
+          }
+        }
+      },
+      "defaultValues": {
+        "toolName": "msbuild",
+        "settings": {
+          "MsBuildParameters": "default",
+          "maxcpucount": "default",
+          "MsBuildFileLogging": "/flp:v=detailed;LogFile=sync.log"
+        }
+      }
+    },
+    "publish-packages": {
+      "alias": {
+        "azureToken": {
+          "description": "Account token to connect to Azure Blob storage.",
+          "settings": {
+            "CloudDropAccessToken": "default"
+          }
+        },
+        "azureAccount": {
+          "description": "Account name to connect to Azure Blob storage.",
+          "settings": {
+            "CloudDropAccountName": "default"
+          }
+        },
+        "buildArch": {
+          "description": "Specifies architecture to publish, can be x64, x86, arm or arm64",
+          "settings": {
+            "__BuildArch": "default"
+          }
+        },
+        "buildType": {
+          "description": "Specifies configuration to publish, can be Release, Debug or Checked.",
+          "settings": {
+            "__BuildType": "default"
+          }
+        },
+        "buildOS": {
+          "description": "Specifies the OS to publish packages.",
+          "settings": {
+            "__BuildOS": "default"
+          }
+        }
+      },
+      "defaultValues": {
+        "toolName": "msbuild",
+        "settings": {
+          "Project": "./src/publish.proj",
+          "MsBuildParameters": "default",
+          "maxcpucount": "default",
+          "MsBuildFileLogging": "/flp:v=detailed;LogFile=publish-packages.log"
+        }
+      }
+    },
+    "build-packages": {
+      "alias": {
+        "buildArch": {
+          "description": "Specifies architecture to publish, can be x64, x86, arm or arm64",
+          "settings": {
+            "__BuildArch": "default"
+          }
+        },
+        "buildType": {
+          "description": "Specifies configuration to publish, can be Release, Debug or Checked.",
+          "settings": {
+            "__BuildType": "default"
+          }
+        },
+        "distroRid": {
+          "description": "Specifies distro rid for Unix OS.",
+          "settings": {
+            "__DistroRid": "default"
+          }
+        }
+      },
+      "defaultValues": {
+        "toolName": "msbuild",
+        "settings": {
+          "MsBuildParameters": "default",
+          "__BuildOS": "default",
+          "maxcpucount": "default",
+          "MsBuildFileLogging": "/flp:v=detailed;Append;LogFile=build-packages.log",
+          "MsBuildEventLogging": "default"
+        }
+      }
+    }
+  },
+  "tools": {
+    "msbuild": {
+      "run": {
+        "windows": "Tools\\msbuild.cmd",
+        "unix": "Tools/msbuild.sh"
+      },
+      "valueTypes": {
+        "property": "/p:{name}={value}",
+        "target": "/t:{name}",
+        "internal": "/{name}"
+      }
+    },
+    "terminal": {
+      "run": {
+        "windows": "cmd",
+        "unix": "sh"
+      },
+      "valueTypes": {}
+    }
+  }
+}
