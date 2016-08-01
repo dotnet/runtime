@@ -1857,7 +1857,7 @@ AGAIN:
             {
                 LclVarDsc* varDsc = &lvaTable[tree->gtLclVarCommon.gtLclNum];
 
-                bool doAgain;
+                bool doAgain = false;
                 if (fgRemoveDeadStore(&tree, varDsc, life, &doAgain, pStmtInfoDirty DEBUGARG(treeModf)))
                 {
                     assert(!doAgain);
@@ -2122,7 +2122,7 @@ SKIP_QMARK:
             {
                 LclVarDsc* varDsc = &lvaTable[lclVarTree->gtLclVarCommon.gtLclNum];
 
-                bool doAgain;
+                bool doAgain = false;
                 if (fgRemoveDeadStore(&tree, varDsc, life, &doAgain, pStmtInfoDirty DEBUGARG(treeModf)))
                 {
                     assert(!doAgain);
