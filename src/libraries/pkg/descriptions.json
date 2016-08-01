@@ -1749,7 +1749,7 @@
         ]
     },
     {
-        "Name": "System.Xml",
+        "Name": "System.Private.Xml",
         "Description": "Provides provides a fast, non-cached, forward-only way to read and write Extensible Markup Language (XML) data.",
         "CommonTypes": [
             "System.Xml.XmlNodeType",
@@ -1795,7 +1795,7 @@
         ]
     },
     {
-        "Name": "System.Xml.Linq",
+        "Name": "System.Private.Xml.Linq",
         "Description": "Provides the classes for Language-Integrated Query (LINQ) to Extensible Markup Language (XML). LINQ to XML is an in-memory XML programming interface that enables you to modify XML documents efficiently and easily.",
         "CommonTypes": [
             "System.Xml.Linq.XElement",
