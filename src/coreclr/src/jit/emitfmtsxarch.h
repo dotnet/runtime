@@ -7,6 +7,7 @@
 //  This file was previously known as emitfmts.h
 //
 
+// clang-format off
 #if !defined(_TARGET_XARCH_)
   #error Unexpected target type
 #endif
@@ -236,3 +237,4 @@ IF_DEF(AWR_TRD,     IS_FP_STK|IS_AM_WR,         AMD )     // write [adr], read S
 #endif // DEFINE_IS_OPS
 #endif // DEFINE_ID_OPS
 //////////////////////////////////////////////////////////////////////////////
+// clang-format on

@@ -781,7 +781,7 @@ insGroup* emitter::emitSavIG(bool emitAdd)
     emitSizeMethod    += sz;
 #endif
 
-//  printf("Group [%08X]%3u has %2u instructions (%4u bytes at %08X)\n", ig, ig->igNum, emitCurIGinsCnt, sz, id);
+    // printf("Group [%08X]%3u has %2u instructions (%4u bytes at %08X)\n", ig, ig->igNum, emitCurIGinsCnt, sz, id);
 
     /* Record the live GC register set - if and only if it is not an emitter added block */
 
@@ -844,8 +844,8 @@ insGroup* emitter::emitSavIG(bool emitAdd)
             size_t of = (BYTE*)oj - emitCurIGfreeBase;
             instrDescJmp* nj = (instrDescJmp*)(ig->igData + of);
 
-//          printf("Jump moved from %08X to %08X\n", oj, nj);
-//          printf("jmp [%08X] at %08X + %03u\n", nj, ig, nj->idjOffs);
+            // printf("Jump moved from %08X to %08X\n", oj, nj);
+            // printf("jmp [%08X] at %08X + %03u\n", nj, ig, nj->idjOffs);
 
             assert(nj->idjIG   == ig);
             assert(nj->idIns() == oj->idIns());
@@ -1089,9 +1089,9 @@ void                emitter::emitBegFN(bool     hasFramePtr
 
     memset(&emitConsDsc, 0, sizeof(emitConsDsc));
 
-    // for random NOP insertion
-    
 #ifdef PSEUDORANDOM_NOP_INSERTION
+    // for random NOP insertion
+
     emitEnableRandomNops();
     emitComp->info.compRNG.Init(emitComp->info.compChecksum);
     emitNextNop = emitNextRandomNop();
@@ -1281,11 +1281,11 @@ void        *       emitter::emitAllocInstr(size_t sz, emitAttr opsz)
     }
 #endif
 
+#ifdef PSEUDORANDOM_NOP_INSERTION
     // TODO-ARM-Bug?: PSEUDORANDOM_NOP_INSERTION is not defined for _TARGET_ARM_
     //     ARM - This is currently broken on _TARGET_ARM_
     //     When nopSize is odd we misalign emitCurIGsize
     //
-#ifdef PSEUDORANDOM_NOP_INSERTION
     if (!(emitComp->opts.eeFlags & CORJIT_FLG_PREJIT)
         && !emitInInstrumentation
         && !emitIGisInProlog(emitCurIG) // don't do this in prolog or epilog
@@ -1365,9 +1365,8 @@ void        *       emitter::emitAllocInstr(size_t sz, emitAttr opsz)
 
     emitInsCount++;
 
-    /* In debug mode we clear/set some additional fields */
-
 #if defined(DEBUG) || defined(LATE_DISASM)
+    /* In debug mode we clear/set some additional fields */
 
     instrDescDebugInfo *  info = (instrDescDebugInfo *) emitGetMem(sizeof(*info));
 
@@ -1571,9 +1570,9 @@ void                emitter::emitEndProlog()
     if  (emitCurIGnonEmpty() || emitCurIG == emitPrologIG)
         emitSavIG();
 
+#if EMIT_TRACK_STACK_DEPTH
     /* Reset the stack depth values */
 
-#if EMIT_TRACK_STACK_DEPTH
     emitCurStackLvl   = 0;
     emitCntStackDepth = sizeof(int);
 #endif
@@ -1699,10 +1698,10 @@ void                emitter::emitCreatePlaceholderIG(insGroupPlaceholderType igT
 
 #ifdef DEBUGGING_SUPPORT
 
+#if FEATURE_EH_FUNCLETS
     // Add the appropriate IP mapping debugging record for this placeholder
     // group.
 
-#if FEATURE_EH_FUNCLETS
     // genExitCode() adds the mapping for main function epilogs
     if (emitComp->opts.compDbgInfo)
     {
@@ -1967,9 +1966,9 @@ void                emitter::emitEndPrologEpilog()
 
     assert(emitCurIGsize <= MAX_PLACEHOLDER_IG_SIZE);
 
+#if EMIT_TRACK_STACK_DEPTH
     /* Reset the stack depth values */
 
-#if EMIT_TRACK_STACK_DEPTH
     emitCurStackLvl   = 0;
     emitCntStackDepth = sizeof(int);
 #endif
@@ -2576,10 +2575,9 @@ void               emitter::emitSplit(emitLocation* startLoc, emitLocation* endL
                 reportCandidate = false;
             }
 
+            // Report it!
             if (reportCandidate)
             {
-                // Report it!
-
 #ifdef DEBUG
                 if (EMITVERBOSE && (candidateSize >= maxSplitSize))
                     printf("emitSplit: split at IG%02u is size %d, larger than requested maximum size of %d\n", igLastCandidate->igNum, candidateSize, maxSplitSize);
@@ -3102,7 +3100,7 @@ emitter::instrDesc *emitter::emitNewInstrCallDir(int                            
     {
         instrDescCGCA* id = emitAllocInstrCGCA(retSize);
 
-//      printf("Direct call with GC vars / big arg cnt / explicit scope\n");
+        // printf("Direct call with GC vars / big arg cnt / explicit scope\n");
 
         id->idSetIsLargeCall();
 
@@ -3122,7 +3120,7 @@ emitter::instrDesc *emitter::emitNewInstrCallDir(int                            
     {
         instrDesc     * id = emitNewInstrCns(retSize, argCnt);
 
-//      printf("Direct call w/o  GC vars / big arg cnt / explicit scope\n");
+        // printf("Direct call w/o  GC vars / big arg cnt / explicit scope\n");
 
         /* Make sure we didn't waste space unexpectedly */
         assert(!id->idIsLargeCns());
@@ -3442,11 +3440,11 @@ size_t              emitter::emitIssue1Instr(insGroup  *ig,
 
     /* Issue the next instruction */
 
-//  printf("[S=%02u] " , emitCurStackLvl);
+    // printf("[S=%02u] " , emitCurStackLvl);
 
     is = emitOutputInstr(ig, id, dp);
 
-//  printf("[S=%02u]\n", emitCurStackLvl);
+    // printf("[S=%02u]\n", emitCurStackLvl);
 
 #if EMIT_TRACK_STACK_DEPTH
 
@@ -3547,7 +3545,8 @@ void                emitter::emitRecomputeIGoffsets()
  *  ARM has a small, medium, and large encoding. The large encoding is a pseudo-op
  *      to handle greater range than the conditional branch instructions can handle.
  *  ARM64 has a small and large encoding for both conditional branch and loading label addresses.
- *      The large encodings are pseudo-ops that represent a multiple instruction sequence, similar to ARM. (Currently NYI).
+ *      The large encodings are pseudo-ops that represent a multiple instruction sequence, similar to ARM. (Currently
+ *      NYI).
  */
 
 void                emitter::emitJumpDistBind()
@@ -3782,7 +3781,8 @@ AGAIN:
                 do
                 {
                     lstIG = lstIG->igNext; assert(lstIG);
-//                  printf("Adjusted offset of block %02u from %04X to %04X\n", lstIG->igNum, lstIG->igOffs, lstIG->igOffs - adjIG);
+                    // printf("Adjusted offset of block %02u from %04X to %04X\n", lstIG->igNum, lstIG->igOffs,
+                    // lstIG->igOffs - adjIG);
                     lstIG->igOffs -= adjIG;
                     assert(IsCodeAligned(lstIG->igOffs));
                 }
@@ -3800,6 +3800,7 @@ AGAIN:
         jmp->idjOffs -= adjLJ;
 
         // If this is a jump via register, the instruction size does not change, so we are done.
+        CLANG_FORMAT_COMMENT_ANCHOR;
 
 #if defined(_TARGET_ARM64_)
         // JIT code and data will be allocated together for arm64 so the relative offset to JIT data is known.
@@ -3857,6 +3858,7 @@ AGAIN:
         else
         {
             /* First time we've seen this label, convert its target */
+            CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef  DEBUG
             if  (EMITVERBOSE)
@@ -3894,9 +3896,9 @@ AGAIN:
         // We should not be jumping/branching across funclets/functions
         emitCheckFuncletBranch(jmp, jmpIG);
 
+#ifdef _TARGET_XARCH_
         /* Done if this is not a variable-sized jump */
 
-#ifdef _TARGET_XARCH_
         if ( (jmp->idIns() == INS_push)      ||
              (jmp->idIns() == INS_mov)       ||
              (jmp->idIns() == INS_call)      || 
@@ -4225,7 +4227,8 @@ AGAIN:
             lstIG = lstIG->igNext;
             if  (!lstIG)
                 break;
-//          printf("Adjusted offset of block %02u from %04X to %04X\n", lstIG->igNum, lstIG->igOffs, lstIG->igOffs - adjIG);
+            // printf("Adjusted offset of block %02u from %04X to %04X\n", lstIG->igNum, lstIG->igOffs,
+            // lstIG->igOffs - adjIG);
             lstIG->igOffs -= adjIG;
             assert(IsCodeAligned(lstIG->igOffs));
         }
@@ -4235,7 +4238,7 @@ AGAIN:
 #endif
 
         /* Is there a chance of other jumps becoming short? */
-
+        CLANG_FORMAT_COMMENT_ANCHOR;
 #ifdef  DEBUG
 #if defined(_TARGET_ARM_)
         if  (EMITVERBOSE) printf("Total shrinkage = %3u, min extra short jump size = %3u, min extra medium jump size = %u\n", adjIG, minShortExtra, minMediumExtra);
@@ -4580,7 +4583,8 @@ unsigned            emitter::emitEndCodeGen(Compiler *comp,
 #endif
 
 
-//  if  (emitConsDsc.dsdOffs) printf("Cons=%08X\n", consBlock);
+    // if (emitConsDsc.dsdOffs)
+    //     printf("Cons=%08X\n", consBlock);
 
     /* Give the block addresses to the caller and other functions here */
 
@@ -4589,6 +4593,7 @@ unsigned            emitter::emitEndCodeGen(Compiler *comp,
     *consAddr     = emitConsBlock     = consBlock;
 
     /* Nothing has been pushed on the stack */
+    CLANG_FORMAT_COMMENT_ANCHOR;
 
 #if EMIT_TRACK_STACK_DEPTH
     emitCurStackLvl   = 0;
@@ -5022,6 +5027,7 @@ unsigned            emitter::emitEndCodeGen(Compiler *comp,
                 if  (jmp->idjShort)
                 {
                     // Patch Forward Short Jump
+                    CLANG_FORMAT_COMMENT_ANCHOR;
 #if defined(_TARGET_XARCH_)
                     *(BYTE *)adr -= (BYTE)adj;
 #elif defined(_TARGET_ARM_)
@@ -5038,6 +5044,7 @@ unsigned            emitter::emitEndCodeGen(Compiler *comp,
                 else
                 {
                     // Patch Forward non-Short Jump
+                    CLANG_FORMAT_COMMENT_ANCHOR;
 #if defined(_TARGET_XARCH_)
                     *(int  *)adr -= adj;
 #elif defined(_TARGET_ARMARCH_)
@@ -5098,11 +5105,11 @@ unsigned            emitter::emitEndCodeGen(Compiler *comp,
 // See specification comment at the declaration.
 void emitter::emitGenGCInfoIfFuncletRetTarget(insGroup* ig, BYTE* cp)
 {
+#if FEATURE_EH_FUNCLETS && defined(_TARGET_ARM_)
     // We only emit this GC information on targets where finally's are implemented via funclets,
     // and the finally is invoked, during non-exceptional execution, via a branch with a predefined
     // link register, rather than a "true call" for which we would already generate GC info.  Currently,
     // this means precisely ARM.
-#if FEATURE_EH_FUNCLETS && defined(_TARGET_ARM_)
     if (ig->igFlags & IGF_FINALLY_TARGET)
     {
         // We don't actually have a call instruction in this case, so we don't have
@@ -5161,9 +5168,8 @@ UNATIVE_OFFSET    emitter::emitFindOffset(insGroup *ig, unsigned insNum)
     instrDesc *     id = (instrDesc *)ig->igData;
     UNATIVE_OFFSET  of = 0;
 
-    /* Make sure we were passed reasonable arguments */
-
 #ifdef DEBUG
+    /* Make sure we were passed reasonable arguments */
     assert(ig && ig->igSelf == ig);
     assert(ig->igInsCnt >= insNum);
 #endif
@@ -5687,7 +5693,7 @@ void                emitter::emitUpdateLiveGCvars(VARSET_VALARG_TP vars, BYTE *a
 
                 int     offs = val & ~OFFSET_MASK;
 
-//              printf("var #%2u at %3d is now %s\n", num, offs, (vars & 1) ? "live" : "dead");
+                // printf("var #%2u at %3d is now %s\n", num, offs, (vars & 1) ? "live" : "dead");
 
                 if  (VarSetOps::IsMember(emitComp, vars, num))
                 {
@@ -5948,7 +5954,7 @@ void                emitter::emitGCregLiveSet(GCtype    gcType,
     regPtrDsc  *    regPtrNext;
 
     assert(!isThis || emitComp->lvaKeepAliveAndReportThis());
-//  assert(emitFullyInt || isThis);
+    // assert(emitFullyInt || isThis);
     assert(emitFullGCinfo);
 
     assert(((emitThisGCrefRegs|emitThisByrefRegs) & regMask) == 0);
@@ -5980,7 +5986,7 @@ void                emitter::emitGCregDeadSet(GCtype    gcType,
 
     regPtrDsc  *    regPtrNext;
 
-//  assert(emitFullyInt);
+    // assert(emitFullyInt);
     assert(emitFullGCinfo);
 
     assert(((emitThisGCrefRegs|emitThisByrefRegs) & regMask) != 0);
@@ -6126,7 +6132,7 @@ UNATIVE_OFFSET      emitter::emitCodeOffset(void *blockPtr, unsigned codePos)
 
         of = emitGetInsOfsFromCodePos(codePos);
 
-//      printf("[IG=%02u;ID=%03u;OF=%04X] <= %08X\n", ig->igNum, emitGetInsNumFromCodePos(codePos), of, codePos);
+        // printf("[IG=%02u;ID=%03u;OF=%04X] <= %08X\n", ig->igNum, emitGetInsNumFromCodePos(codePos), of, codePos);
 
         /* Make sure the offset estimate is accurate */
 
@@ -6731,7 +6737,7 @@ void                emitter::emitStackPushLargeStk (BYTE *    addr,
     {
         /* Push an entry for this argument on the tracking stack */
 
-//      printf("Pushed [%d] at lvl %2u [max=%u]\n", isGCref, emitArgTrackTop - emitArgTrackTab, emitMaxStackDepth);
+        // printf("Pushed [%d] at lvl %2u [max=%u]\n", isGCref, emitArgTrackTop - emitArgTrackTab, emitMaxStackDepth);
 
         assert(level.IsOverflow() || u2.emitArgTrackTop == u2.emitArgTrackTab + level.Value());
               *u2.emitArgTrackTop++ = (BYTE)gcType;
@@ -6808,7 +6814,7 @@ void                emitter::emitStackPopLargeStk(BYTE *    addr,
 
         assert(IsValidGCtype(gcType));
 
-//      printf("Popped [%d] at lvl %u\n", GCtypeStr(gcType), emitArgTrackTop - emitArgTrackTab);
+        // printf("Popped [%d] at lvl %u\n", GCtypeStr(gcType), emitArgTrackTop - emitArgTrackTab);
 
         // This is an "interesting" argument
 
@@ -6845,7 +6851,7 @@ void                emitter::emitStackPopLargeStk(BYTE *    addr,
     }
 
 #ifdef JIT32_GCENCODER
-    // For the general encoder, we always have to record calls, so we don't take this early return.    /* Are there any args to pop at this call site? */
+    // For the general encoder, we always have to record calls, so we don't take this early return.    /* Are there any args to pop at this call site?
 
     if  (argRecCnt.Value() == 0)
     {
@@ -6853,6 +6859,7 @@ void                emitter::emitStackPopLargeStk(BYTE *    addr,
             Or do we have a partially interruptible EBP-less frame, and any
             of EDI,ESI,EBX,EBP are live, or is there an outer/pending call?
          */
+        CLANG_FORMAT_COMMENT_ANCHOR;
 
 #if !FPO_INTERRUPTIBLE
         if  (emitFullyInt ||
@@ -6939,7 +6946,7 @@ void            emitter::emitStackKillArgs(BYTE *addr, unsigned count, unsigned 
 
             if (needsGC(gcType))
             {
-//              printf("Killed %s at lvl %u\n", GCtypeStr(gcType), argTrackTop - emitArgTrackTab);
+                // printf("Killed %s at lvl %u\n", GCtypeStr(gcType), argTrackTop - emitArgTrackTab);
 
                 *argTrackTop = GCT_NONE;
                 gcCnt += 1;

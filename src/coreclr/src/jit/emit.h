@@ -306,7 +306,7 @@ struct          insGroup
 #endif // FEATURE_EH_FUNCLETS
 
     // Try to do better packing based on how large regMaskSmall is (8, 16, or 64 bits).
-
+    CLANG_FORMAT_COMMENT_ANCHOR;
 #if REGMASK_BITS <= 32
 
     union
@@ -658,10 +658,10 @@ protected:
         // On Amd64, this is where the second DWORD begins
         // On System V a call could return a struct in 2 registers. The instrDescCGCA struct below has  member that 
         // stores the GC-ness of the second register.
-        // It is added to the instrDescCGCA and not here (the base struct) since it is not needed by all the instructions.
-        // This struct (instrDesc) is very carefully kept to be no more than 128 bytes. There is no more space to add members
-        // for keeping GC-ness of the second return registers. It will also bloat the base struct unnecessarily
-        // since the GC-ness of the second register is only needed for call instructions.
+        // It is added to the instrDescCGCA and not here (the base struct) since it is not needed by all the
+        // instructions. This struct (instrDesc) is very carefully kept to be no more than 128 bytes. There is no more
+        // space to add members for keeping GC-ness of the second return registers. It will also bloat the base struct
+        // unnecessarily since the GC-ness of the second register is only needed for call instructions.
         // The instrDescCGCA struct's member keeping the GC-ness of the first return register is _idcSecondRetRegGCType.
         GCtype          _idGCref     :2;  // GCref operand? (value is a "GCtype")
 
@@ -679,6 +679,7 @@ protected:
         // amd64: 38 bits
         // arm:   32 bits
         // arm64: 30 bits
+        CLANG_FORMAT_COMMENT_ANCHOR;
 
 #if HAS_TINY_DESC
         //
@@ -748,6 +749,7 @@ protected:
         // amd64: 46 bits
         // arm:   48 bits
         // arm64: 48 bits
+        CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef RELOC_SUPPORT
 
@@ -768,6 +770,7 @@ protected:
         // amd64: 48 bits
         // arm:   50 bits
         // arm64: 50 bits
+        CLANG_FORMAT_COMMENT_ANCHOR;
 
         #define ID_EXTRA_BITS        (ID_EXTRA_RELOC_BITS + ID_EXTRA_BITFIELD_BITS)
 
@@ -789,6 +792,7 @@ protected:
         ////////////////////////////////////////////////////////////////////////
         // Space taken up to here (with RELOC_SUPPORT): 64 bits, all architectures, by design.
         ////////////////////////////////////////////////////////////////////////
+        CLANG_FORMAT_COMMENT_ANCHOR;
 
 #endif // !HAS_TINY_DESC
 
@@ -819,6 +823,7 @@ protected:
         // There should no padding or alignment issues on any platform or
         //   configuration (including DEBUG which has 1 extra pointer).
         //
+        CLANG_FORMAT_COMMENT_ANCHOR;
 
 #if HAS_TINY_DESC
 
@@ -1893,9 +1898,10 @@ public:
 
     unsigned        emitCurStackLvl;           // amount of bytes pushed on stack
 
-    /* Functions for stack tracking */
 
 #if EMIT_TRACK_STACK_DEPTH
+    /* Functions for stack tracking */
+
     void            emitStackPush       (BYTE *     addr,
                                          GCtype     gcType);
 
@@ -2193,7 +2199,7 @@ unsigned            emitter::emitCurOffset()
     assert(emitGetInsOfsFromCodePos(codePos) == emitCurIGsize);
     assert(emitGetInsNumFromCodePos(codePos) == emitCurIGinsCnt);
 
-//  printf("[IG=%02u;ID=%03u;OF=%04X] => %08X\n", emitCurIG->igNum, emitCurIGinsCnt, emitCurIGsize, codePos);
+    // printf("[IG=%02u;ID=%03u;OF=%04X] => %08X\n", emitCurIG->igNum, emitCurIGinsCnt, emitCurIGsize, codePos);
 
     return codePos;
 }

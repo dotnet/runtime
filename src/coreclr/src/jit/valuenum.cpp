@@ -1227,8 +1227,8 @@ ValueNum ValueNumStore::VNForMapSelectWork(ValueNumKind vnk,
                                            unsigned* pBudget,
                                            bool* pUsedRecursiveVN)
 {
-    // This label allows us to directly implement a tail call by setting up the arguments, and doing a goto to here.
 TailCall:
+    // This label allows us to directly implement a tail call by setting up the arguments, and doing a goto to here.
     assert(arg0VN != NoVN && arg1VN != NoVN);
     assert(arg0VN == VNNormVal(arg0VN));  // Arguments carry no exceptions.
     assert(arg1VN == VNNormVal(arg1VN));  // Arguments carry no exceptions.
@@ -2115,6 +2115,8 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN, V
     assert(VNFuncArity(func) == 3);
 
     // Function arguments carry no exceptions.
+    CLANG_FORMAT_COMMENT_ANCHOR;
+
 #ifdef DEBUG
     if (func != VNF_PhiDef)
     {
@@ -4662,8 +4664,8 @@ void Compiler::fgValueNumberBlockAssignment(GenTreePtr tree, bool evalAsgLhsInd)
 
             unsigned lclNum = lclVarTree->GetLclNum();
 
-            // Ignore vars that we excluded from SSA (for example, because they're address-exposed). They don't have SSA names
-            // in which to store VN's on defs.  We'll yield unique VN's when we read from them.
+            // Ignore vars that we excluded from SSA (for example, because they're address-exposed). They don't have
+            // SSA names in which to store VN's on defs.  We'll yield unique VN's when we read from them.
             if (!fgExcludeFromSsa(lclNum))
             {
                 unsigned lclDefSsaNum = GetSsaNumForLocalVarDef(lclVarTree);
@@ -4695,8 +4697,8 @@ void Compiler::fgValueNumberBlockAssignment(GenTreePtr tree, bool evalAsgLhsInd)
                 }
 #endif // DEBUG
             }
-            // Initblock's are of type void.  Give them the void "value" -- they may occur in argument lists, which we want to be
-            // able to give VN's to.
+            // Initblock's are of type void.  Give them the void "value" -- they may occur in argument lists, which we
+            // want to be able to give VN's to.
             tree->gtVNPair.SetBoth(ValueNumStore::VNForVoid());
         }
         else
@@ -4859,8 +4861,8 @@ void Compiler::fgValueNumberBlockAssignment(GenTreePtr tree, bool evalAsgLhsInd)
             // TODO-CQ: Why not be complete, and get this case right?
             fgMutateHeap(tree DEBUGARG("COPYBLK - non local"));
         }
-        // Copyblock's are of type void.  Give them the void "value" -- they may occur in argument lists, which we want to be
-        // able to give VN's to.
+        // Copyblock's are of type void.  Give them the void "value" -- they may occur in argument lists, which we want
+        // to be able to give VN's to.
         tree->gtVNPair.SetBoth(ValueNumStore::VNForVoid());
     }
 }
@@ -4952,9 +4954,9 @@ void Compiler::fgValueNumberTree(GenTreePtr tree, bool evalAsgLhsInd)
                         // We don't want to fabricate arbitrary value numbers to things we can't reason about.
                         // So far, we know about two of these cases:
                         // Case 1) We have a local var who has never been defined but it's seen as a use.
-                        //         This is the case of storeIndir(addr(lclvar)) = expr.  In this case since we only take the 
-                        //         address of the variable, this doesn't mean it's a use nor we have to initialize it, so in this
-                        //         very rare case, we fabricate a value number.
+                        //         This is the case of storeIndir(addr(lclvar)) = expr.  In this case since we only
+                        //         take the address of the variable, this doesn't mean it's a use nor we have to
+                        //         initialize it, so in this very rare case, we fabricate a value number.
                         // Case 2) Local variables that represent structs which are assigned using CpBlk.
                         GenTree* nextNode = lcl->gtNext;
                         assert((nextNode->gtOper == GT_ADDR && nextNode->gtOp.gtOp1 == lcl) ||
@@ -4964,10 +4966,11 @@ void Compiler::fgValueNumberTree(GenTreePtr tree, bool evalAsgLhsInd)
                     assert(lcl->gtVNPair.BothDefined());
                 }
 
-                // TODO-Review: For the short term, we have a workaround for copyblk/initblk.  Those that use addrSpillTemp will have a statement like
-                // "addrSpillTemp = addr(local)."  If we previously decided that this block operation defines the local, we will have
-                // labeled the "local" node as a DEF (or USEDEF).  This flag propogates to the "local" on the RHS.  So we'll assume that
-                // this is correct, and treat it as a def (to a new, unique VN).
+                // TODO-Review: For the short term, we have a workaround for copyblk/initblk.  Those that use
+                // addrSpillTemp will have a statement like "addrSpillTemp = addr(local)."  If we previously decided
+                // that this block operation defines the local, we will have labeled the "local" node as a DEF
+                // (or USEDEF).  This flag propogates to the "local" on the RHS.  So we'll assume that this is correct,
+                // and treat it as a def (to a new, unique VN).
                 else if ((lcl->gtFlags & GTF_VAR_DEF) != 0)
                 {
                     LclVarDsc* varDsc = &lvaTable[lcl->gtLclNum];
@@ -5056,8 +5059,8 @@ void Compiler::fgValueNumberTree(GenTreePtr tree, bool evalAsgLhsInd)
                 //   2: volatile read s;
                 //   3: read s;
                 //
-                // We should never assume that the values read by 1 and 2 are the same (because the heap was mutated in between them)... 
-                // but we *should* be able to prove that the values read in 2 and 3 are the same.  
+                // We should never assume that the values read by 1 and 2 are the same (because the heap was mutated
+                // in between them)... but we *should* be able to prove that the values read in 2 and 3 are the same.
                 //
 
                 ValueNumPair clsVarVNPair;
@@ -5372,10 +5375,11 @@ void Compiler::fgValueNumberTree(GenTreePtr tree, bool evalAsgLhsInd)
                             {
                                 FieldSeqNode* fieldSeq = vnStore->FieldSeqVNToFieldSeq(funcApp.m_args[1]);
 
-                                // Either "arg" is the address of (part of) a local itself, or the assignment is an "indirect assignment",
-                                // where an outer comma expression assigned the address of a local to a temp, and that temp is our lhs, and
-                                // we recorded this in a table when we made the indirect assignment...or else we have a "rogue" PtrToLoc, one
-                                // that should have made the local in question address-exposed.  Assert on that.
+                                // Either "arg" is the address of (part of) a local itself, or the assignment is an
+                                // "indirect assignment", where an outer comma expression assigned the address of a
+                                // local to a temp, and that temp is our lhs, and we recorded this in a table when we
+                                // made the indirect assignment...or else we have a "rogue" PtrToLoc, one that should
+                                // have made the local in question address-exposed.  Assert on that.
                                 GenTreeLclVarCommon* lclVarTree = NULL;
                                 bool                 isEntire   = false;
                                 unsigned             lclDefSsaNum = SsaConfig::RESERVED_SSA_NUM;
@@ -5924,6 +5928,8 @@ void Compiler::fgValueNumberTree(GenTreePtr tree, bool evalAsgLhsInd)
                     else if (fldSeq2 != nullptr)
                     {
                         // Get the first (instance or static) field from field seq.  Heap[field] will yield the "field map".
+                        CLANG_FORMAT_COMMENT_ANCHOR;
+
 #ifdef DEBUG
                         CORINFO_CLASS_HANDLE fldCls = info.compCompHnd->getFieldClass(fldSeq2->m_fieldHnd);
                         if (obj != nullptr)

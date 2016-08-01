@@ -447,7 +447,8 @@ void SsaBuilder::ComputeDominators(BasicBlock** postOrder, int count, BlkToBlkSe
 
 #ifdef SSA_FEATURE_DOMARR
     // Allocate space for constant time computation of (a DOM b?) query.
-    unsigned bbArrSize = m_pCompiler->fgBBNumMax + 1; // We will use 1-based bbNums as indices into these arrays, so add 1.
+    unsigned bbArrSize = m_pCompiler->fgBBNumMax + 1; // We will use 1-based bbNums as indices into these arrays, so
+                                                      // add 1.
     m_pDomPreOrder = jitstd::utility::allocate<int>(m_allocator, bbArrSize);
     m_pDomPostOrder = jitstd::utility::allocate<int>(m_allocator, bbArrSize);
 
@@ -748,17 +749,17 @@ void SsaBuilder::InsertPhiFunctions(BasicBlock** postOrder, int count)
                 // Check if we've already inserted a phi node.
                 if (GetPhiNode(bbInDomFront, lclNum) == NULL)
                 {
-                    // We have a variable i that is defined in block j and live at l, and l belongs to dom frontier of j.
-                    // So insert a phi node at l.
+                    // We have a variable i that is defined in block j and live at l, and l belongs to dom frontier of
+                    // j. So insert a phi node at l.
                     JITDUMP("Inserting phi definition for V%02u at start of BB%02u.\n", lclNum, bbInDomFront->bbNum);
 
                     GenTreePtr phiLhs  = m_pCompiler->gtNewLclvNode(lclNum, m_pCompiler->lvaTable[lclNum].TypeGet());
 
-                    // Create 'phiRhs' as a GT_PHI node for 'lclNum', it will eventually hold a GT_LIST of GT_PHI_ARG nodes.
-                    // However we have to construct this list so for now the gtOp1 of 'phiRhs' is a nullptr.
-                    // It will get replaced with a GT_LIST of GT_PHI_ARG nodes in SsaBuilder::AssignPhiNodeRhsVariables()
-                    // and in SsaBuilder::AddDefToHandlerPhis()
-                    //
+                    // Create 'phiRhs' as a GT_PHI node for 'lclNum', it will eventually hold a GT_LIST of GT_PHI_ARG
+                    // nodes. However we have to construct this list so for now the gtOp1 of 'phiRhs' is a nullptr.
+                    // It will get replaced with a GT_LIST of GT_PHI_ARG nodes in
+                    // SsaBuilder::AssignPhiNodeRhsVariables() and in SsaBuilder::AddDefToHandlerPhis()
+
                     GenTreePtr phiRhs = m_pCompiler->gtNewOperNode(GT_PHI, m_pCompiler->lvaTable[lclNum].TypeGet(), nullptr);
 
                     GenTreePtr phiAsg = m_pCompiler->gtNewAssignNode(phiLhs, phiRhs);
@@ -786,8 +787,8 @@ void SsaBuilder::InsertPhiFunctions(BasicBlock** postOrder, int count)
                 // Check if we've already inserted a phi node.
                 if (bbInDomFront->bbHeapSsaPhiFunc == NULL)
                 {
-                    // We have a variable i that is defined in block j and live at l, and l belongs to dom frontier of j.
-                    // So insert a phi node at l.
+                    // We have a variable i that is defined in block j and live at l, and l belongs to dom frontier of
+                    // j. So insert a phi node at l.
                     JITDUMP("Inserting phi definition for Heap at start of BB%02u.\n", bbInDomFront->bbNum);
                     bbInDomFront->bbHeapSsaPhiFunc = BasicBlock::EmptyHeapPhiDef;
                 }
@@ -1528,8 +1529,8 @@ void SsaBuilder::RenameVariables(BlkToBlkSetMap* domTree, SsaRenameState* pRenam
 
         if (!blockWrk.m_processed)
         {
-            // Push the block back on the stack with "m_processed" true, to record the fact that when its children have been
-            // (recursively) processed, we still need to call BlockPopStacks on it.
+            // Push the block back on the stack with "m_processed" true, to record the fact that when its children have
+            // been (recursively) processed, we still need to call BlockPopStacks on it.
             blocksToDo->push_back(BlockWork(block, true));
 
             // Walk the block give counts to DEFs and give top of stack count for USEs.

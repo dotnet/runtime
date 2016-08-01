@@ -13,6 +13,7 @@
 //
 // States in the state machine
 //
+// clang-format off
 const SMState g_SMStates[] = 
 {
  // {term, len, lng, prev, SMOpcode and SMOpcodeName           , offsets  }           //  state ID and name
@@ -267,6 +268,7 @@ const SMState g_SMStates[] =
     {   1,   5, 195,  247, (SM_OPCODE) 74 /* add             */,       0  },          //  state 248 [ldarga.s -> ldfld -> ldarga.s -> ldfld -> add]
     {   1,   5, 195,  247, (SM_OPCODE) 75 /* sub             */,       0  },          //  state 249 [ldarga.s -> ldfld -> ldarga.s -> ldfld -> sub]
 };
+// clang-format on
 
 static_assert_no_msg(NUM_SM_STATES == sizeof(g_SMStates)/sizeof(g_SMStates[0]));
 
@@ -275,6 +277,7 @@ const SMState * gp_SMStates = g_SMStates;
 //
 // JumpTableCells in the state machine
 //
+// clang-format off
 const JumpTableCell g_SMJumpTableCells[] = 
 {
  // {src, dest  }
@@ -697,6 +700,7 @@ const JumpTableCell g_SMJumpTableCells[] =
     {  0,    0  },   // cell# 416
     {  0,    0  },   // cell# 417
 };
+// clang-format on
 
 const JumpTableCell * gp_SMJumpTableCells = g_SMJumpTableCells;
 

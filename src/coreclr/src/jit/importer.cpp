@@ -80,8 +80,8 @@ void                Compiler::impPushOnStack(GenTreePtr tree, typeInfo ti)
         BADCODE("stack overflow");
     }
 
-        // If we are pushing a struct, make certain we know the precise type!
 #ifdef DEBUG
+    // If we are pushing a struct, make certain we know the precise type!
     if (tree->TypeGet() == TYP_STRUCT)
     {
         assert(ti.IsType(TI_STRUCT));
@@ -3699,14 +3699,17 @@ void    Compiler::verHandleVerificationFailure(BasicBlock* block DEBUGARG(bool l
     // The rationale behind this workaround is to avoid modifying the VM and maintain compatibility between JIT64 and
     // RyuJIT for the time being until we completely replace JIT64.
     // TODO-ARM64-Cleanup:  We probably want to actually modify the VM in the future to avoid the unnecesary two passes.
-#ifdef _TARGET_64BIT_
 
-#ifdef DEBUG
     // In AMD64 we must make sure we're behaving the same way as JIT64, meaning we should only raise the verification 
     // exception if we are only importing and verifying.  The method verNeedsVerification() can also modify the
     // tiVerificationNeeded flag in the case it determines it can 'skip verification' during importation and defer it
     // to a runtime check. That's why we must assert one or the other (since the flag tiVerificationNeeded can 
     // be turned off during importation).
+    CLANG_FORMAT_COMMENT_ANCHOR;
+
+#ifdef _TARGET_64BIT_
+
+#ifdef DEBUG
     bool canSkipVerificationResult = info.compCompHnd->canSkipMethodVerification(info.compMethodHnd) != CORINFO_VERIFICATION_CANNOT_SKIP;
     assert(tiVerificationNeeded || canSkipVerificationResult);
 #endif // DEBUG
@@ -4349,8 +4352,8 @@ DONE_ARGS:
             else
             {
                 // We allow direct calls to value type constructors
-                // NB: we have to check that the contents of tiThis is a value type, otherwise we could use a constrained
-                // callvirt to illegally re-enter a .ctor on a value of reference type.
+                // NB: we have to check that the contents of tiThis is a value type, otherwise we could use a
+                // constrained callvirt to illegally re-enter a .ctor on a value of reference type.
                 VerifyOrReturn(tiThis.IsByRef() && DereferenceByRef(tiThis).IsValueClass(), "Bad call to a constructor");
             }
         }
@@ -4907,6 +4910,7 @@ void Compiler::impImportNewObjArray(CORINFO_RESOLVED_TOKEN* pResolvedToken,
     // The non-varargs helper is enabled for CoreRT only for now. Enabling this 
     // unconditionally would require ReadyToRun version bump.
     //
+    CLANG_FORMAT_COMMENT_ANCHOR;
 
 #if COR_JIT_EE_VERSION > 460
     if (!opts.IsReadyToRun() || (eeGetEEInfo()->targetAbi == CORINFO_CORERT_ABI))
@@ -5783,8 +5787,8 @@ bool                Compiler::impIsTailCallILPattern(bool tailPrefixed,
     if (isRecursive)
 #endif
     {
-        // we can actually handle if the ret is in a fallthrough block, as long as that is the only part of the sequence.
-        // Make sure we don't go past the end of the IL however.
+        // we can actually handle if the ret is in a fallthrough block, as long as that is the only part of the
+        // sequence. Make sure we don't go past the end of the IL however.
         codeEnd = min(codeEnd + 1, info.compCode + info.compILCodeSize);
     }
 
@@ -6486,8 +6490,8 @@ var_types  Compiler::impImportCall(OPCODE                  opcode,
         call->gtType = callRetTyp;
     }
 
-    /* Check for varargs */
 #if !FEATURE_VARARG
+    /* Check for varargs */
     if ((sig->callConv & CORINFO_CALLCONV_MASK) == CORINFO_CALLCONV_VARARG ||
         (sig->callConv & CORINFO_CALLCONV_MASK) == CORINFO_CALLCONV_NATIVEVARARG)
     {
@@ -6510,6 +6514,7 @@ var_types  Compiler::impImportCall(OPCODE                  opcode,
            tailcall to a function with a different number of arguments, we
            are hosed. There are ways around this (caller remembers esp value,
            varargs is not caller-pop, etc), but not worth it. */
+        CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef _TARGET_X86_
         if (canTailCall)
@@ -6809,8 +6814,8 @@ var_types  Compiler::impImportCall(OPCODE                  opcode,
         extraArg = gtNewArgList(instParam);
     }
 
-    // Inlining may need the exact type context (exactContextHnd) if we're inlining shared generic code, in particular to inline
-    // 'polytypic' operations such as static field accesses, type tests and method calls which
+    // Inlining may need the exact type context (exactContextHnd) if we're inlining shared generic code, in particular
+    // to inline 'polytypic' operations such as static field accesses, type tests and method calls which
     // rely on the exact context. The exactContextHnd is passed back to the JitInterface at appropriate points.
     // exactContextHnd is not currently required when inlining shared generic code into shared 
     // generic code, since the inliner aborts whenever shared code polytypic operations are encountered
@@ -6989,9 +6994,9 @@ DONE:
             BADCODE("Stack should be empty after tailcall");
 #endif //!_TARGET_64BIT_
         }
-        
-//      assert(compCurBB is not a catch, finally or filter block);
-//      assert(compCurBB is not a try block protected by a finally block);
+
+        // assert(compCurBB is not a catch, finally or filter block);
+        // assert(compCurBB is not a try block protected by a finally block);
 
         // Check for permission to tailcall
         bool  explicitTailCall = (tailCall & PREFIX_TAILCALL_EXPLICIT) != 0;
@@ -7825,7 +7830,8 @@ void                Compiler::impImportLeave(BasicBlock * block)
                                                       0,
                                                       step);
                 assert(step->bbJumpKind == BBJ_ALWAYS);
-                step->bbJumpDest    = callBlock; // the previous call to a finally returns to this call (to the next finally in the chain)
+                step->bbJumpDest    = callBlock; // the previous call to a finally returns to this call (to the next
+                                                 // finally in the chain)
                 step->bbJumpDest->bbRefs++;
 
                 /* The new block will inherit this block's weight */
@@ -8152,19 +8158,21 @@ void                Compiler::impImportLeave(BasicBlock * block)
             }
             else
             {
-                // Calling the finally block. We already have a step block that is either the call-to-finally from a more nested
-                // try/finally (thus we are jumping out of multiple nested 'try' blocks, each protected by a 'finally'), or the step
-                // block is the return from a catch.
+                // Calling the finally block. We already have a step block that is either the call-to-finally from a
+                // more nested try/finally (thus we are jumping out of multiple nested 'try' blocks, each protected by
+                // a 'finally'), or the step block is the return from a catch.
                 // 
-                // Due to ThreadAbortException, we can't have the catch return target the call-to-finally block directly. Note that if a
-                // 'catch' ends without resetting the ThreadAbortException, the VM will automatically re-raise the exception, using the
-                // return address of the catch (that is, the target block of the BBJ_EHCATCHRET) as the re-raise address. If this address
-                // is in a finally, the VM will refuse to do the re-raise, and the ThreadAbortException will get eaten (and lost). On
-                // AMD64/ARM64, we put the call-to-finally thunk in a special "cloned finally" EH region that does look like a finally clause
-                // to the VM. Thus, on these platforms, we can't have BBJ_EHCATCHRET target a BBJ_CALLFINALLY directly. (Note that on ARM32,
-                // we don't mark the thunk specially -- it lives directly within the 'try' region protected by the finally, since we generate
-                // code in such a way that execution never returns to the call-to-finally call, and the finally-protected 'try' region doesn't
-                // appear on stack walks.)
+                // Due to ThreadAbortException, we can't have the catch return target the call-to-finally block
+                // directly. Note that if a 'catch' ends without resetting the ThreadAbortException, the VM will
+                // automatically re-raise the exception, using the return address of the catch (that is, the target
+                // block of the BBJ_EHCATCHRET) as the re-raise address. If this address is in a finally, the VM will
+                // refuse to do the re-raise, and the ThreadAbortException will get eaten (and lost). On AMD64/ARM64,
+                // we put the call-to-finally thunk in a special "cloned finally" EH region that does look like a
+                // finally clause to the VM. Thus, on these platforms, we can't have BBJ_EHCATCHRET target a
+                // BBJ_CALLFINALLY directly. (Note that on ARM32, we don't mark the thunk specially -- it lives directly
+                // within the 'try' region protected by the finally, since we generate code in such a way that execution
+                // never returns to the call-to-finally call, and the finally-protected 'try' region doesn't appear on
+                // stack walks.)
 
                 assert(step->bbJumpKind == BBJ_ALWAYS || step->bbJumpKind == BBJ_EHCATCHRET);
 
@@ -8201,7 +8209,8 @@ void                Compiler::impImportLeave(BasicBlock * block)
 #endif // !FEATURE_EH_CALLFINALLY_THUNKS
 
                 callBlock = fgNewBBinRegion(BBJ_CALLFINALLY, callFinallyTryIndex, callFinallyHndIndex, step);
-                step->bbJumpDest    = callBlock; // the previous call to a finally returns to this call (to the next finally in the chain)
+                step->bbJumpDest    = callBlock; // the previous call to a finally returns to this call (to the next
+                                                 // finally in the chain)
                 step->bbJumpDest->bbRefs++;
 
 #if defined(_TARGET_ARM_)
@@ -8252,17 +8261,18 @@ void                Compiler::impImportLeave(BasicBlock * block)
             // We are jumping out of a catch-protected try.
             //
             // If we are returning from a call to a finally, then we must have a step block within a try
-            // that is protected by a catch. This is so when unwinding from that finally (e.g., if code within the finally
-            // raises an exception), the VM will find this step block, notice that it is in a protected region, and invoke
-            // the appropriate catch.
+            // that is protected by a catch. This is so when unwinding from that finally (e.g., if code within the
+            // finally raises an exception), the VM will find this step block, notice that it is in a protected region,
+            // and invoke the appropriate catch.
             //
             // We also need to handle a special case with the handling of ThreadAbortException. If a try/catch
             // catches a ThreadAbortException (which might be because it catches a parent, e.g. System.Exception),
             // and the catch doesn't call System.Threading.Thread::ResetAbort(), then when the catch returns to the VM,
-            // the VM will automatically re-raise the ThreadAbortException. When it does this, it uses the target address
-            // of the catch return as the new exception address. That is, the re-raised exception appears to occur at
-            // the catch return address. If this exception return address skips an enclosing try/catch that catches
-            // ThreadAbortException, then the enclosing try/catch will not catch the exception, as it should. For example:
+            // the VM will automatically re-raise the ThreadAbortException. When it does this, it uses the target
+            // address of the catch return as the new exception address. That is, the re-raised exception appears to
+            // occur at the catch return address. If this exception return address skips an enclosing try/catch that
+            // catches ThreadAbortException, then the enclosing try/catch will not catch the exception, as it should.
+            // For example:
             //
             // try {
             //    try {
@@ -8424,12 +8434,12 @@ void                Compiler::impResetLeaveBlock(BasicBlock* block, unsigned jmp
     //  } finally { }
     //  OUTSIDE: 
     //
-    // In the above nested try-finally example, we create a step block (call it Bstep) which in branches to a block where
-    // a finally would branch to (and such block is marked as finally target).  Block B1 branches to step block.  Because
-    // of re-import of B0, Bstep is also orphaned.   Since Bstep is a finally target it cannot be removed.  To work around
-    // this we will duplicate B0 (call it B0Dup) before reseting.  B0Dup is marked as BBJ_CALLFINALLY and only serves to pair
-    // up with B1 (BBJ_ALWAYS) that got orphaned.  Now during orphan block deletion B0Dup and B1 will be treated as pair
-    // and handled correctly.
+    // In the above nested try-finally example, we create a step block (call it Bstep) which in branches to a block
+    // where a finally would branch to (and such block is marked as finally target).  Block B1 branches to step block.
+    // Because of re-import of B0, Bstep is also orphaned. Since Bstep is a finally target it cannot be removed.  To
+    // work around this we will duplicate B0 (call it B0Dup) before reseting. B0Dup is marked as BBJ_CALLFINALLY and
+    // only serves to pair up with B1 (BBJ_ALWAYS) that got orphaned. Now during orphan block deletion B0Dup and B1
+    // will be treated as pair and handled correctly.
     if (block->bbJumpKind == BBJ_CALLFINALLY)
     {
         BasicBlock *dupBlock = bbNewBasicBlock(block->bbJumpKind);
@@ -8599,6 +8609,7 @@ var_types Compiler::impGetByRefResultType(genTreeOps oper, bool fUnsigned, GenTr
             // <BUGNUM> VSW 318822 </BUGNUM>
             //                  
             // So here we decide to make the resulting type to be a native int.
+            CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef _TARGET_64BIT_
             if (genActualType(op1->TypeGet()) != TYP_I_IMPL)
@@ -9260,8 +9271,8 @@ APPEND:
 
 DONE_APPEND:
 
-            // Remember at which BC offset the tree was finished
 #ifdef DEBUG
+            // Remember at which BC offset the tree was finished
             impNoteLastILoffs();
 #endif
             break;
@@ -9527,7 +9538,8 @@ _PopValue:
                 {
                     // This is a sequence of (ldloc, dup, stloc).  Can simplify
                     // to (ldloc, stloc).  Goto LDVAR to reconstruct the ldloc node.
-                    
+                    CLANG_FORMAT_COMMENT_ANCHOR;
+
 #ifdef DEBUG
                     if (tiVerificationNeeded)
                     {
@@ -9603,8 +9615,8 @@ _PopValue:
                 // From SPILL_APPEND
                 impAppendTree(op1, (unsigned)CHECK_SPILL_ALL, impCurStmtOffs);
                 
-                // From DONE_APPEND
 #ifdef DEBUG
+                // From DONE_APPEND
                 impNoteLastILoffs();
 #endif
                 op1 = NULL;
@@ -10895,8 +10907,8 @@ CMP_2_OPs:
             op1 = impPopStack().val;
             assertImp(genActualTypeIsIntOrI(op1->TypeGet()));
 
-            // Widen 'op1' on 64-bit targets
 #ifdef _TARGET_64BIT_
+            // Widen 'op1' on 64-bit targets
             if (op1->TypeGet() != TYP_I_IMPL)
             {
                 if (op1->OperGet() == GT_CNS_INT)
@@ -12607,16 +12619,21 @@ FIELD_DONE:
                     op1->gtFlags |= GTF_IND_UNALIGNED;
                 }
 
-                /* V4.0 allows assignment of i4 constant values to i8 type vars when IL verifier is bypassed (full trust apps).  The reason this works is
-                   that JIT stores an i4 constant in Gentree union during importation and reads from the union as if it were a long during code generation.
-                   Though this can potentially read garbage, one can get lucky to have this working correctly.  
+                /* V4.0 allows assignment of i4 constant values to i8 type vars when IL verifier is bypassed (full trust
+                   apps).  The reason this works is that JIT stores an i4 constant in Gentree union during importation
+                   and reads from the union as if it were a long during code generation. Though this can potentially
+                   read garbage, one can get lucky to have this working correctly.
                    
-                   This code pattern is generated by Dev10 MC++ compiler while storing to fields when compiled with /O2 switch (default when compiling 
-                   retail configs in Dev10) and a customer app has taken a dependency on it.  To be backward compatible, we will explicitly add an upward
-                   cast here so that it works correctly always.
+                   This code pattern is generated by Dev10 MC++ compiler while storing to fields when compiled with /O2
+                   switch (default when compiling retail configs in Dev10) and a customer app has taken a dependency on
+                   it.  To be backward compatible, we will explicitly add an upward cast here so that it works correctly
+                   always.
 
-                   Note that this is limited to x86 alone as thereis no back compat to be addressed for Arm JIT for V4.0.
+                   Note that this is limited to x86 alone as thereis no back compat to be addressed for Arm JIT for
+                   V4.0.
                 */
+                CLANG_FORMAT_COMMENT_ANCHOR;
+
 #ifdef _TARGET_X86_
                 if (op1->TypeGet() != op2->TypeGet() &&
                     op2->OperIsConst() &&
@@ -13275,9 +13292,9 @@ FIELD_DONE:
                 //Observation: the following code introduces a boxed value class on the stack, but,
                 //according to the ECMA spec, one would simply expect: tiRetVal = typeInfo(TI_REF,impGetObjectClass());
 
-                /* Push the result back on the stack, */
-                /* even if clsHnd is a value class we want the TI_REF */
-                /*  we call back to the EE to get find out what hte type we should push (for nullable<T> we push T) */
+                // Push the result back on the stack,
+                // even if clsHnd is a value class we want the TI_REF
+                // we call back to the EE to get find out what hte type we should push (for nullable<T> we push T)
                 tiRetVal = typeInfo(TI_REF, info.compCompHnd->getTypeForBox(resolvedToken.hClass));
             }
 
@@ -14268,11 +14285,11 @@ bool Compiler::impReturnInstruction(BasicBlock *block, int prefixFlags, OPCODE &
                                      (unsigned)CHECK_SPILL_ALL);
                 }
 
+#if defined(_TARGET_ARM_) || defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+#if defined(_TARGET_ARM_)
                 // TODO-ARM64-NYI: HFA
                 // TODO-AMD64-Unix and TODO-ARM once the ARM64 functionality is implemented the
                 // next ifdefs could be refactored in a single method with the ifdef inside.
-#if defined(_TARGET_ARM_) || defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
-#if defined(_TARGET_ARM_)
                 if (IsHfa(retClsHnd))
                 {
                     // Same as !IsHfa but just don't bother with impAssignStructPtr.
@@ -14287,6 +14304,7 @@ bool Compiler::impReturnInstruction(BasicBlock *block, int prefixFlags, OPCODE &
                     // This code will be called only if the struct return has not been normalized (i.e. 2 eightbytes - max allowed.)
                     assert(retRegCount == MAX_RET_REG_COUNT);
                     // Same as !structDesc.passedInRegisters but just don't bother with impAssignStructPtr.
+                    CLANG_FORMAT_COMMENT_ANCHOR;
 #endif // defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
 
                     if (lvaInlineeReturnSpillTemp != BAD_VAR_NUM)
@@ -14375,7 +14393,10 @@ bool Compiler::impReturnInstruction(BasicBlock *block, int prefixFlags, OPCODE &
         impAppendTree(op2, (unsigned)CHECK_SPILL_NONE, impCurStmtOffs);
 
         // There are cases where the address of the implicit RetBuf should be returned explicitly (in RAX).  
+        CLANG_FORMAT_COMMENT_ANCHOR;
+
 #if defined(_TARGET_AMD64_)
+
         // x64 (System V and Win64) calling convention requires to 
         // return the implicit return buffer explicitly (in RAX).
         // Change the return type to be BYREF.  
@@ -14432,8 +14453,8 @@ bool Compiler::impReturnInstruction(BasicBlock *block, int prefixFlags, OPCODE &
     }
 
     impAppendTree(op1, (unsigned)CHECK_SPILL_NONE, impCurStmtOffs);
-    // Remember at which BC offset the tree was finished
 #ifdef DEBUG
+    // Remember at which BC offset the tree was finished
     impNoteLastILoffs();
 #endif
     return true;
@@ -14948,11 +14969,11 @@ SPILLSTACK:
             }
 #endif // _TARGET_64BIT_
 
+#if FEATURE_X87_DOUBLES
             // X87 stack doesn't differentiate between float/double
             // so promoting is no big deal.
             // For everybody else keep it as float until we have a collision and then promote
             // Just like for x64's TYP_INT<->TYP_I_IMPL
-#if FEATURE_X87_DOUBLES
 
             if (multRef > 1 && tree->gtType == TYP_FLOAT)
             {

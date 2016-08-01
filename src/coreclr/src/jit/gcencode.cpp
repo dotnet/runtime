@@ -1086,6 +1086,7 @@ size_t              GCInfo::gcInfoBlockHdrSave(BYTE*      dest,
 #endif
 
     /* Write the method size first (using between 1 and 5 bytes) */
+    CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef  DEBUG
     if (compiler->verbose)
@@ -3735,6 +3736,8 @@ void                GCInfo::gcMakeRegPtrTable(GcInfoEncoder* gcInfoEncoder,
                 // pointers" section of the GC info even if lvTracked==true
 
                 // Has this argument been fully enregistered?
+                CLANG_FORMAT_COMMENT_ANCHOR;
+
 #ifndef LEGACY_BACKEND
                 if (!varDsc->lvOnFrame)
 #else // LEGACY_BACKEND
@@ -3771,7 +3774,8 @@ void                GCInfo::gcMakeRegPtrTable(GcInfoEncoder* gcInfoEncoder,
             }
 
             // If we haven't continued to the next variable, we should report this as an untracked local.
-            
+            CLANG_FORMAT_COMMENT_ANCHOR;
+
 #if DOUBLE_ALIGN
             // For genDoubleAlign(), locals are addressed relative to ESP and
             // arguments are addressed relative to EBP.
@@ -4390,6 +4394,7 @@ void                GCInfo::gcMarkFilterVarsPinned()
                         //     (2) a regular one for after the filter
                         // and then adjust the original lifetime to end before
                         // the filter.
+                        CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef DEBUG
                         if (compiler->verbose)
@@ -4431,6 +4436,7 @@ void                GCInfo::gcMarkFilterVarsPinned()
                         // somewhere inside it, so we only create 1 new lifetime,
                         // and then adjust the original lifetime to end before
                         // the filter.
+                        CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef DEBUG
                         if (compiler->verbose)
@@ -4469,7 +4475,7 @@ void                GCInfo::gcMarkFilterVarsPinned()
                         // lifetime for the part inside the filter and adjust
                         // the start of the original lifetime to be the end
                         // of the filter
-
+                        CLANG_FORMAT_COMMENT_ANCHOR;
 #ifdef DEBUG
                         if (compiler->verbose)
                         {
@@ -4501,6 +4507,7 @@ void                GCInfo::gcMarkFilterVarsPinned()
                     {
                         // The variable lifetime is completely within the filter,
                         // so just add the pinned flag.
+                        CLANG_FORMAT_COMMENT_ANCHOR;
 #ifdef DEBUG
                         if (compiler->verbose)
                         {
@@ -4508,6 +4515,7 @@ void                GCInfo::gcMarkFilterVarsPinned()
                             gcDumpVarPtrDsc(varTmp);
                         }
 #endif // DEBUG
+
                         varTmp->vpdVarNum |= pinned_OFFSET_FLAG;
 #ifdef DEBUG
                         if (compiler->verbose)

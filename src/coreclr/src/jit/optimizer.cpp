@@ -1237,10 +1237,10 @@ void                Compiler::optRecordLoop(BasicBlock *    head,
         // Record iterator.
         optLoopTable[loopInd].lpIterTree = incr;
 
+#if COUNT_LOOPS
         // Save the initial value of the iterator - can be lclVar or constant
         // Flag the loop accordingly.
 
-#if COUNT_LOOPS
         iterLoopCount++;
 #endif
 
@@ -1408,7 +1408,8 @@ void                Compiler::optFindNaturalLoops()
     /* We will use the following terminology:
      * HEAD    - the basic block that flows into the loop ENTRY block (Currently MUST be lexically before entry).
                  Not part of the looping of the loop.
-     * FIRST   - the lexically first basic block (in bbNext order) within this loop.  (May be part of a nested loop, but not the outer loop. ???)
+     * FIRST   - the lexically first basic block (in bbNext order) within this loop.  (May be part of a nested loop,
+     *           but not the outer loop. ???)
      * TOP     - the target of the backward edge from BOTTOM. In most cases FIRST and TOP are the same.
      * BOTTOM  - the lexically last block in the loop (i.e. the block from which we jump to the top)
      * EXIT    - the loop exit or the block right after the bottom
@@ -1678,8 +1679,8 @@ void                Compiler::optFindNaturalLoops()
                  * The example above is not a loop since we bail after the first iteration
                  *
                  * The condition we have to check for is
-                 *  1. ENTRY must have at least one predecessor inside the loop. Since we know that that block is reachable,
-                 *     it can only be reached through ENTRY, therefore we have a way back to ENTRY
+                 *  1. ENTRY must have at least one predecessor inside the loop. Since we know that that block is
+                 *     reachable, it can only be reached through ENTRY, therefore we have a way back to ENTRY
                  *
                  *  2. If we have a GOTO (BBJ_ALWAYS) outside of the loop and that block dominates the
                  *     loop bottom then we cannot iterate
@@ -2142,9 +2143,9 @@ bool Compiler::optCanonicalizeLoop(unsigned char loopInd)
         BasicBlock* topPredBlock = topPred->flBlock;
 
         // Skip if topPredBlock is in the loop.
-        // Note that this uses block number to detect membership in the loop. We are adding blocks during canonicalization,
-        // and those block numbers will be new, and larger than previous blocks. However, we work outside-in, so we
-        // shouldn't encounter the new blocks at the loop boundaries, or in the predecessor lists.
+        // Note that this uses block number to detect membership in the loop. We are adding blocks during
+        // canonicalization, and those block numbers will be new, and larger than previous blocks. However, we work
+        // outside-in, so we shouldn't encounter the new blocks at the loop boundaries, or in the predecessor lists.
         if (t->bbNum <= topPredBlock->bbNum && topPredBlock->bbNum <= b->bbNum)
         {
             JITDUMP("in optCanonicalizeLoop: 'top' predecessor BB%02u is in the range of L%02u (BB%02u..BB%02u); not redirecting its bottom edge\n",
@@ -2926,6 +2927,7 @@ void                Compiler::optUnrollLoops()
             }
 
             /* Looks like a good idea to unroll this loop, let's do it! */
+            CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef  DEBUG
             if (verbose)
@@ -4190,8 +4192,8 @@ bool                Compiler::optIsLoopClonable(unsigned loopInd)
 
     // We've previously made a decision whether to have separate return epilogs, or branch to one.
     // There's a GCInfo limitation in the x86 case, so that there can be no more than 4 separate epilogs.
-    // (I thought this was x86-specific, but it's not if-d.  On other architectures, the decision should be made as a heuristic tradeoff; 
-    // perhaps we're just choosing to live with 4 as the limit.)
+    // (I thought this was x86-specific, but it's not if-d.  On other architectures, the decision should be made as a
+    // heuristic tradeoff; perhaps we're just choosing to live with 4 as the limit.)
     if (fgReturnCount + loopRetCount > 4)
     {
         JITDUMP("Loop cloning: rejecting loop because it has %d returns; if added to previously-existing %d returns, would exceed the limit of 4.\n", loopRetCount, fgReturnCount);
@@ -4445,9 +4447,9 @@ void                Compiler::optCloneLoop(unsigned loopInd, LoopCloneContext* c
                                           /*extendRegion*/true);
 
         BasicBlock::CloneBlockState(this, newBlk, blk);
-        // TODO-Cleanup: The above clones the bbNatLoopNum, which is incorrect.  Eventually, we should probably insert the
-        // cloned loop in the loop table.  For now, however, we'll just make these blocks be part of the surrounding loop, if one 
-        // exists -- the parent of the loop we're cloning.
+        // TODO-Cleanup: The above clones the bbNatLoopNum, which is incorrect.  Eventually, we should probably insert
+        // the cloned loop in the loop table.  For now, however, we'll just make these blocks be part of the surrounding
+        // loop, if one exists -- the parent of the loop we're cloning.
         newBlk->bbNatLoopNum = optLoopTable[loopInd].lpParent;
 
         if (newFirst == nullptr) newFirst = newBlk;
@@ -4725,6 +4727,7 @@ bool                Compiler::optNarrowTree(GenTreePtr     tree,
         switch (oper)
         {
         /* Constants can usually be narrowed by changing their value */
+        CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifndef _TARGET_64BIT_
             __int64  lval;  
@@ -5468,8 +5471,8 @@ void                    Compiler::optHoistLoopCode()
     }
 #endif
 
-    // Test Data stuff..
 #ifdef DEBUG
+    // Test Data stuff..
     // If we have no test data, early out.
     if (m_nodeTestData == NULL) return;
     NodeToTestDataMap* testData = GetNodeTestData();
@@ -5496,6 +5499,7 @@ void                    Compiler::optHoistLoopCode()
 void                    Compiler::optHoistLoopNest(unsigned lnum, LoopHoistContext* hoistCtxt)
 {
     // Do this loop, then recursively do all nested loops.
+    CLANG_FORMAT_COMMENT_ANCHOR;
 
 #if LOOP_HOIST_STATS
     // Record stats
@@ -7140,9 +7144,9 @@ bool                Compiler::optIsNoMore(GenTreePtr op1, GenTreePtr op2,
 
         /* NOTE: Caller ensures that this variable has only one def */
 
-//      printf("limit [%d]:\n", add1); gtDispTree(op1);
-//      printf("size  [%d]:\n", add2); gtDispTree(op2);
-//      printf("\n");
+        // printf("limit [%d]:\n", add1); gtDispTree(op1);
+        // printf("size  [%d]:\n", add2); gtDispTree(op2);
+        // printf("\n");
 
     }
 
@@ -7666,6 +7670,7 @@ bool Compiler::optIsRangeCheckRemovable(GenTreePtr tree)
             {
                 // If the array address has been taken, don't do the optimization
                 // (this restriction can be lowered a bit, but i don't think it's worth it)
+                CLANG_FORMAT_COMMENT_ANCHOR;
 #ifdef DEBUG
                 if (verbose)
                 {
@@ -7673,7 +7678,6 @@ bool Compiler::optIsRangeCheckRemovable(GenTreePtr tree)
                     gtDispTree(pArray);
                 }
 #endif
-
                 return false;
             }
         }

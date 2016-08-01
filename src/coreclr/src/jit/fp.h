@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-
 #ifndef _JIT_FP
 
 #define _JIT_FP
@@ -12,12 +11,11 @@
 
 enum dummyFPenum
 {
-    #define REGDEF(name, rnum, mask, sname)  dummmy_##name = rnum,
-    #include "registerfp.h"
+#define REGDEF(name, rnum, mask, sname)  dummmy_##name = rnum,
+#include "registerfp.h"
 
     FP_VIRTUALREGISTERS,
 };
-
 
 // FlatFPStateX87 holds the state of the virtual register file. For each
 // virtual register we keep track to which physical register we're 
@@ -42,10 +40,10 @@ public:
     unsigned                Pop                     ();
     void                    Push                    (unsigned uEntry);
     bool                    IsEmpty                 ();
-            
+
     // Debug/test methods
     static bool             AreEqual                (FlatFPStateX87* pSrc, FlatFPStateX87* pDst);
-    #ifdef DEBUG    
+#ifdef DEBUG
     bool                    IsValidEntry            (unsigned uEntry);
     bool                    IsConsistent            ();
     void                    UpdateMappingFromStack  ();
@@ -60,16 +58,16 @@ public:
     {
         m_bIgnoreConsistencyChecks = bIgnore;
     }
-    #else
+#else
     inline void IgnoreConsistencyChecks(bool bIgnore) 
-    {       
-    }    
-    #endif
+    {
+    }
+#endif
 
     unsigned                m_uVirtualMap[FP_VIRTUALREGISTERS];
     unsigned                m_uStack[FP_PHYSICREGISTERS];
     unsigned                m_uStackSize;
-};    
-    
+};
+
 #endif // FEATURE_STACK_FP_X87
 #endif

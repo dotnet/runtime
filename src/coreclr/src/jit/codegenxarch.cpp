@@ -364,9 +364,9 @@ void                CodeGen::genCodeForBBlist()
 
     regSet.rsSpillBeg();
 
+#ifdef DEBUGGING_SUPPORT
     /* Initialize the line# tracking logic */
 
-#ifdef DEBUGGING_SUPPORT
     if (compiler->opts.compScopeInfo)
     {
         siInit();
@@ -455,9 +455,9 @@ void                CodeGen::genCodeForBBlist()
         genUpdateLife(block->bbLiveIn);
 
         // Even if liveness didn't change, we need to update the registers containing GC references.
-        // genUpdateLife will update the registers live due to liveness changes. But what about registers that didn't change?
-        // We cleared them out above. Maybe we should just not clear them out, but update the ones that change here.
-        // That would require handling the changes in recordVarLocationsAtStartOfBB().
+        // genUpdateLife will update the registers live due to liveness changes. But what about registers that didn't
+        // change? We cleared them out above. Maybe we should just not clear them out, but update the ones that change
+        // here. That would require handling the changes in recordVarLocationsAtStartOfBB().
 
         regMaskTP newLiveRegSet = RBM_NONE;
         regMaskTP newRegGCrefSet = RBM_NONE;
@@ -617,6 +617,7 @@ void                CodeGen::genCodeForBBlist()
          *  Generate code for each statement-tree in the block
          *
          */
+        CLANG_FORMAT_COMMENT_ANCHOR;
 
 #if FEATURE_EH_FUNCLETS
         if (block->bbFlags & BBF_FUNCLET_BEG)
@@ -3221,7 +3222,8 @@ CodeGen::genLclHeap(GenTreePtr tree)
     //      Nothing to pop off from the stack.
     if  (compiler->lvaOutgoingArgSpaceSize > 0)
     {
-        assert((compiler->lvaOutgoingArgSpaceSize % STACK_ALIGN) == 0); // This must be true for the stack to remain aligned
+        assert((compiler->lvaOutgoingArgSpaceSize % STACK_ALIGN) == 0); // This must be true for the stack to remain
+                                                                        // aligned
         inst_RV_IV(INS_add, REG_SPBASE, compiler->lvaOutgoingArgSpaceSize, EA_PTRSIZE);
         stackAdjustment += compiler->lvaOutgoingArgSpaceSize;
     }
@@ -3273,10 +3275,11 @@ CodeGen::genLclHeap(GenTreePtr tree)
         }
 
         if (doNoInitLessThanOnePageAlloc)
-        {               
+        {
             // Since the size is less than a page, simply adjust ESP.
             // ESP might already be in the guard page, so we must touch it BEFORE
             // the alloc, not after.
+            CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef _TARGET_X86_
             // For x86, we don't want to use "sub ESP" because we don't want the emitter to track the adjustment
@@ -5304,7 +5307,8 @@ void CodeGen::genConsumePutStructArgStk(GenTreePutArgStk* putArgNode, regNumber 
     // Otherwise load the op1 (GT_ADDR) into the dstReg to copy the struct on the stack by value.
     if (op1->gtRegNum != dstReg)
     {
-        // Generate LEA instruction to load the stack of the outgoing var + SlotNum offset (or the incoming arg area for tail calls) in RDI.
+        // Generate LEA instruction to load the stack of the outgoing var + SlotNum offset (or the incoming arg area
+        // for tail calls) in RDI.
         // Destination is always local (on the stack) - use EA_PTRSIZE.
         getEmitter()->emitIns_R_S(INS_lea, EA_PTRSIZE, dstReg, baseVarNum, putArgNode->getArgOffset());
     }
@@ -6519,10 +6523,11 @@ void CodeGen::genJmpMethod(GenTreePtr jmp)
             // Move the values into the right registers.
             // 
 
-            // Update varDsc->lvArgReg and lvOtherArgReg life and GC Info to indicate varDsc stack slot is dead and argReg is going live.
-            // Note that we cannot modify varDsc->lvRegNum and lvOtherArgReg here because another basic block may not be expecting it.
-            // Therefore manually update life of argReg.  Note that GT_JMP marks the end of the basic block
-            // and after which reg life and gc info will be recomputed for the new block in genCodeForBBList().
+            // Update varDsc->lvArgReg and lvOtherArgReg life and GC Info to indicate varDsc stack slot is dead and
+            // argReg is going live. Note that we cannot modify varDsc->lvRegNum and lvOtherArgReg here because another
+            // basic block may not be expecting it. Therefore manually update life of argReg.  Note that GT_JMP marks
+            // the end of the basic block and after which reg life and gc info will be recomputed for the new block in
+            // genCodeForBBList().
             if (type0 != TYP_UNKNOWN)
             {
                 getEmitter()->emitIns_R_S(ins_Load(type0), emitTypeSize(type0), varDsc->lvArgReg, varNum, offset0);
@@ -6583,9 +6588,10 @@ void CodeGen::genJmpMethod(GenTreePtr jmp)
         }
 
 #if FEATURE_VARARG && defined(_TARGET_AMD64_)
-        // In case of a jmp call to a vararg method also pass the float/double arg in the corresponding int arg register.        
-        // This is due to the AMD64 ABI which requires floating point values passed to varargs functions to be passed in
-        // both integer and floating point registers. It doesn't apply to x86, which passes floating point values on the stack.
+        // In case of a jmp call to a vararg method also pass the float/double arg in the corresponding int arg
+        // register. This is due to the AMD64 ABI which requires floating point values passed to varargs functions to
+        // be passed in both integer and floating point registers. It doesn't apply to x86, which passes floating point
+        // values on the stack.
         if (compiler->info.compIsVarArgs)
         {
             regNumber intArgReg;
@@ -7221,8 +7227,8 @@ void        CodeGen::genJTrueLong(GenTreePtr treeNode)
 //
 //    Opcode          Amd64 equivalent         Comment
 //    ------          -----------------        --------
-//    BLT.UN(a,b)      ucomis[s|d] a, b        Jb branches if CF=1, which means either a<b or unordered from the above table.
-//                     jb
+//    BLT.UN(a,b)      ucomis[s|d] a, b        Jb branches if CF=1, which means either a<b or unordered from the above
+//                     jb                      table
 //
 //    BLT(a,b)         ucomis[s|d] b, a        Ja branches if CF=0 and ZF=0, which means b>a that in turn implies a<b
 //                     ja
@@ -7494,10 +7500,9 @@ void CodeGen::genSetRegToCond(regNumber dstReg, GenTreePtr tree)
     }
     else
     {       
+#ifdef DEBUG
         // jmpKind[1] != EJ_NONE implies BEQ and BEN.UN of floating point values.
         // These are represented by two conditions.
-
-#ifdef DEBUG
         if (tree->gtOper == GT_EQ)
         {
             // This must be an ordered comparison.
@@ -8836,8 +8841,9 @@ CodeGen::genPutStructArgStk(GenTreePtr treeNode, unsigned baseVarNum)
                 {
                     // We have a GC (byref or ref) pointer
                     // TODO-Amd64-Unix: Here a better solution (for code size and CQ) would be to use movsq instruction,
-                    // but the logic for emitting a GC info record is not available (it is internal for the emitter only.)
-                    // See emitGCVarLiveUpd function. If we could call it separately, we could do instGen(INS_movsq); and emission of gc info.
+                    // but the logic for emitting a GC info record is not available (it is internal for the emitter
+                    // only.) See emitGCVarLiveUpd function. If we could call it separately, we could do
+                    // instGen(INS_movsq); and emission of gc info.
 
                     var_types memType;
                     if (gcPtrs[i] == TYPE_GC_REF)
@@ -9275,6 +9281,7 @@ void                CodeGen::genAmd64EmitterUnitTests()
     //
     // Loads
     //
+    CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef ALL_XARCH_EMITTER_UNIT_TESTS
 #ifdef FEATURE_AVX_SUPPORT

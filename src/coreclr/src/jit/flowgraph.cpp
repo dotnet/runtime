@@ -3463,8 +3463,8 @@ void Compiler::SwitchUniqueSuccSet::UpdateTarget(IAllocator* alloc, BasicBlock* 
     }
     else if (!fromStillPresent && !toAlreadyPresent)
     {
-        // write "to" where "from" was
 #ifdef DEBUG
+        // write "to" where "from" was
         bool foundFrom = false;
 #endif // DEBUG
         for (unsigned i = 0; i < numDistinctSuccs; i++)
@@ -3483,8 +3483,8 @@ void Compiler::SwitchUniqueSuccSet::UpdateTarget(IAllocator* alloc, BasicBlock* 
     else
     {
         assert(!fromStillPresent && toAlreadyPresent);
-        // remove "from".
 #ifdef DEBUG
+        // remove "from".
         bool foundFrom = false;
 #endif // DEBUG
         for (unsigned i = 0; i < numDistinctSuccs; i++)
@@ -3824,6 +3824,7 @@ void                Compiler::fgCreateGCPolls()
         // the test.  This depends on the value of opts.compGCPollType.
 
         // If we're doing GCPOLL_CALL, just insert a GT_CALL node before the last node in the block.
+        CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef DEBUG
         switch (block->bbJumpKind)
@@ -3912,10 +3913,10 @@ bool                Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* bl
 
     addrTrap = info.compCompHnd->getAddrOfCaptureThreadGlobal(&pAddrOfCaptureThreadGlobal);
 
+#ifdef ENABLE_FAST_GCPOLL_HELPER
     // I never want to split blocks if we've got two indirections here.
     // This is a size trade-off assuming the VM has ENABLE_FAST_GCPOLL_HELPER.
     // So don't do it when that is off
-#ifdef ENABLE_FAST_GCPOLL_HELPER
     if (pAddrOfCaptureThreadGlobal != NULL)
     {
         pollType = GCPOLL_CALL;
@@ -4025,12 +4026,15 @@ bool                Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* bl
             }
             fgRemoveStmt(top, stmt);
             fgInsertStmtAtEnd(bottom, stmt);
+            
         }
+
         // for BBJ_ALWAYS blocks, bottom is an empty block.
 
         //  4) Create a GT_EQ node that checks against g_TrapReturningThreads.  True jumps to Bottom,
         //  false falls through to poll.  Add this to the end of Top.  Top is now BBJ_COND.  Bottom is
         //  now a jump target
+        CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef ENABLE_FAST_GCPOLL_HELPER
         // Prefer the fast gc poll helepr over the double indirection
@@ -4749,15 +4753,16 @@ DECODE_OPCODE:
 
             __fallthrough;
 
-        // CEE_CALLI should not be inlined because the JIT cannot generate an inlined call frame. If the call target
-        // is a no-marshal CALLI P/Invoke we end up calling the IL stub. We don't NGEN these stubs, so we'll have to
-        // JIT an IL stub for a trivial func. It's almost certainly a better choice to leave out the inline candidate
-        // so we can generate an inlined call frame. It might be nice to call getCallInfo to figure out what kind of
-        // call we have here.
         case CEE_CALLI:
         case CEE_LOCALLOC:
         case CEE_MKREFANY:
         case CEE_RETHROW:
+            // CEE_CALLI should not be inlined because the JIT cannot generate an inlined call frame. If the call target
+            // is a no-marshal CALLI P/Invoke we end up calling the IL stub. We don't NGEN these stubs, so we'll have to
+            // JIT an IL stub for a trivial func. It's almost certainly a better choice to leave out the inline
+            // candidate so we can generate an inlined call frame. It might be nice to call getCallInfo to figure out
+            // what kind of call we have here.
+
             //Consider making this only for not force inline.
             if (makeInlineObservations)
             {
@@ -5334,14 +5339,15 @@ DECODE_OPCODE:
 #ifndef LEGACY_BACKEND
                 if (opts.compProcedureSplitting)
                 {
-                    // TODO-CQ: We might need to create a switch table; we won't know for sure until much later. However, switch tables
-                    // don't work with hot/cold splitting, currently. The switch table data needs a relocation such that if the base
-                    // (the first block after the prolog) and target of the switch branch are put in different sections, the difference
-                    // stored in the table is updated. However, our relocation implementation doesn't support three different pointers
-                    // (relocation address, base, and target). So, we need to change our switch table implementation to be more like
-                    // JIT64: put the table in the code section, in the same hot/cold section as the switch jump itself (maybe
-                    // immediately after the switch jump), and make the "base" address be also in that section, probably the
-                    // address after the switch jump.
+                    // TODO-CQ: We might need to create a switch table; we won't know for sure until much later.
+                    // However, switch tables don't work with hot/cold splitting, currently. The switch table data needs
+                    // a relocation such that if the base (the first block after the prolog) and target of the switch
+                    // branch are put in different sections, the difference stored in the table is updated. However, our
+                    // relocation implementation doesn't support three different pointers (relocation address, base, and
+                    // target). So, we need to change our switch table implementation to be more like
+                    // JIT64: put the table in the code section, in the same hot/cold section as the switch jump itself
+                    // (maybe immediately after the switch jump), and make the "base" address be also in that section,
+                    // probably the address after the switch jump.
                     opts.compProcedureSplitting = false;
                     JITDUMP("Turning off procedure splitting for this method, as it might need switch tables; implementation limitation.\n");
                 }
@@ -5406,8 +5412,9 @@ DECODE_OPCODE:
                     bool isCallPopAndRet = false;
 
                     // impIsTailCallILPattern uses isRecursive flag to determine whether ret in a fallthrough block is
-                    // allowed. We don't know at this point whether the call is recursive so we conservatively pass false.
-                    // This will only affect explicit tail calls when IL verification is not needed for the method.
+                    // allowed. We don't know at this point whether the call is recursive so we conservatively pass
+                    // false. This will only affect explicit tail calls when IL verification is not needed for the
+                    // method.
                     bool isRecursive = false;
                     if (!impIsTailCallILPattern(tailCall, opcode, codeAddr+sz, codeEndp, isRecursive, &isCallPopAndRet))
                     {
@@ -6144,9 +6151,9 @@ void          Compiler::fgFindBasicBlocks()
         verCheckNestingLevel(initRoot);
     }
 
+#ifndef DEBUG
     // fgNormalizeEH assumes that this test has been passed.  And Ssa assumes that fgNormalizeEHTable
     // has been run.  So do this unless we're in minOpts mode (and always in debug).
-#ifndef DEBUG
     if (tiVerificationNeeded || !opts.MinOpts())
 #endif
     {
@@ -9268,7 +9275,7 @@ void Compiler::fgRemoveLinearOrderDependencies(GenTreePtr tree)
             // So don't fix their prev next links.
             if (stmt->gtStmtIsEmbedded() && stack.Height() == 2)
             {
-                //
+                // clang-format off
                 // Two cases:
                 // Case 1 (Initial case -- we are discovering the first embedded stmt):
                 // Before:
@@ -9283,7 +9290,7 @@ void Compiler::fgRemoveLinearOrderDependencies(GenTreePtr tree)
                 // Currently, "node" is emb3List and "lastNestEmbedNode" is emb2Expr.
                 // After:
                 // ... -> emb2List -> emb2Expr ->                      -> emb3List -> emb3Expr -> stmtNode -> ... -> stmtExpr
-                //
+                // clang-format on
 
                 // Drop stmtNodes that occur between emb2Expr and emb3List. 
                 if (lastNestEmbedNode)
@@ -10442,9 +10449,9 @@ void                Compiler::fgRemoveBlock(BasicBlock*   block,
         }
 #endif // DEBUG
 
+#ifdef DEBUG
         /* Some extra checks for the empty case */
 
-#ifdef DEBUG
         switch (block->bbJumpKind)
         {
         case BBJ_NONE:
@@ -11327,6 +11334,7 @@ bool                Compiler::fgEhAllowsMoveBlock(BasicBlock* bBefore,
 void Compiler::fgMoveBlocksAfter(BasicBlock* bStart, BasicBlock* bEnd, BasicBlock* insertAfterBlk)
 {
     /* We have decided to insert the block(s) after 'insertAfterBlk' */
+    CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef DEBUG
     if  (verbose)
@@ -11371,14 +11379,14 @@ BasicBlock*   Compiler::fgRelocateEHRange(unsigned regionIndex, FG_RELOCATE_TYPE
 {
     INDEBUG(const char* reason = "None";)
 
+    // Figure out the range of blocks we're going to move
+
     unsigned     XTnum;
     EHblkDsc*    HBtab;
     BasicBlock*  bStart  = NULL;
     BasicBlock*  bMiddle = NULL;
     BasicBlock*  bLast   = NULL;
     BasicBlock*  bPrev = NULL;
-
-    // Figure out the range of blocks we're going to move
 
 #if FEATURE_EH_FUNCLETS
     // We don't support moving try regions... yet?
@@ -11434,6 +11442,7 @@ BasicBlock*   Compiler::fgRelocateEHRange(unsigned regionIndex, FG_RELOCATE_TYPE
     // 1. Verify that all the blocks in the range are either all rarely run or not rarely run.
     // When creating funclets, we ignore the run rarely flag, as we need to be able to move any blocks
     // in the range.
+    CLANG_FORMAT_COMMENT_ANCHOR;
 
 #if !FEATURE_EH_FUNCLETS
     bool isRare;
@@ -12205,6 +12214,8 @@ bool                Compiler::fgRelocateEHRegions()
 
                 // Currently it is not good to move the rarely run handler regions to the end of the method
                 // because fgDetermineFirstColdBlock() must put the start of any handler region in the hot section.
+                CLANG_FORMAT_COMMENT_ANCHOR;
+
 #if 0
                 // Now try to move the entire handler region if it can be moved.
                 // Don't try to move a finally handler unless we already moved the try region.
@@ -13540,6 +13551,8 @@ bool Compiler::fgOptimizeSwitchBranches(BasicBlock* block)
         // replace it with a COMMA node.  In such a case we will end up with GT_JTRUE node pointing to
         // a COMMA node which results in noway asserts in fgMorphSmpOp(), optAssertionGen() and rpPredictTreeRegUse().
         // For the same reason fgMorphSmpOp() marks GT_JTRUE nodes with RELOP children as GTF_DONT_CSE.
+        CLANG_FORMAT_COMMENT_ANCHOR;
+
 #ifdef DEBUG
         if  (verbose)
         {
@@ -13555,9 +13568,11 @@ bool Compiler::fgOptimizeSwitchBranches(BasicBlock* block)
                                                zeroConstNode);
         switchTree->gtOp.gtOp1  = condNode;
         switchTree->gtOp.gtOp1->gtFlags |= (GTF_RELOP_JMP_USED | GTF_DONT_CSE);
+
         // Re-link the nodes for this statement.
         // We know that this is safe for the Lowered form, because we will have eliminated any embedded trees
         // when we cloned the switch condition (it is also asserted above).
+
         fgSetStmtSeq(switchStmt);
         block->bbJumpDest = block->bbJumpSwt->bbsDstTab[0];
         block->bbJumpKind = BBJ_COND;
@@ -16749,8 +16764,8 @@ BasicBlock*  Compiler::fgFindInsertPoint(unsigned              regionIndex,
     for (blk = startBlk; blk != endBlk; blk = blk->bbNext)
     {
         // The only way (blk == nullptr) could be true is if the caller passed an endBlk that preceded startBlk in the
-        // block list, or if endBlk isn't in the block list at all. In DEBUG, we'll instead hit the similar well-formedness
-        // assert earlier in this function.
+        // block list, or if endBlk isn't in the block list at all. In DEBUG, we'll instead hit the similar
+        // well-formedness assert earlier in this function.
         noway_assert(blk != nullptr);
 
         if (blk == nearBlk)
@@ -16923,12 +16938,12 @@ DONE:;
 // If 'putInFilter' it true, then the block is inserted in the filter region given by 'hndIndex'. In this case, tryIndex
 // must be a less nested EH region (that is, tryIndex > hndIndex).
 //
-// Otherwise, the block is inserted in either the try region or the handler region, depending on which one is the inner region.
-// In other words, if the try region indicated by tryIndex is nested in the handler region indicated by hndIndex,
+// Otherwise, the block is inserted in either the try region or the handler region, depending on which one is the inner
+// region. In other words, if the try region indicated by tryIndex is nested in the handler region indicated by hndIndex,
 // then the new BB will be created in the try region. Vice versa.
 //
-// Note that tryIndex and hndIndex are numbered the same as BasicBlock::bbTryIndex and BasicBlock::bbHndIndex, that is, "0" is
-// "main method" and otherwise is +1 from normal, so we can call, e.g., ehGetDsc(tryIndex - 1).
+// Note that tryIndex and hndIndex are numbered the same as BasicBlock::bbTryIndex and BasicBlock::bbHndIndex, that is,
+// "0" is "main method" and otherwise is +1 from normal, so we can call, e.g., ehGetDsc(tryIndex - 1).
 //
 // To be more specific, this function will create a new BB in one of the following 5 regions (if putInFilter is false):
 // 1. When tryIndex = 0 and hndIndex = 0:
@@ -16957,13 +16972,16 @@ DONE:;
 //
 // Arguments:
 //    jumpKind - the jump kind of the new block to create.
-//    tryIndex - the try region to insert the new block in, described above. This must be a number in the range [0..compHndBBtabCount].
-//    hndIndex - the handler region to insert the new block in, described above. This must be a number in the range [0..compHndBBtabCount].
-//    nearBlk  - insert the new block closely after this block, if possible. If nullptr, put the new block anywhere in the requested region.
+//    tryIndex - the try region to insert the new block in, described above. This must be a number in the range
+//               [0..compHndBBtabCount].
+//    hndIndex - the handler region to insert the new block in, described above. This must be a number in the range
+//               [0..compHndBBtabCount].
+//    nearBlk  - insert the new block closely after this block, if possible. If nullptr, put the new block anywhere
+//               in the requested region.
 //    putInFilter - put the new block in the filter region given by hndIndex, as described above.
 //    runRarely - 'true' if the new block is run rarely.
-//    insertAtEnd - 'true' if the block should be inserted at the end of the region. Note: this is currently only implemented when
-//                  inserting into the main function (not into any EH region).
+//    insertAtEnd - 'true' if the block should be inserted at the end of the region. Note: this is currently only
+//                  implemented when inserting into the main function (not into any EH region).
 //
 // Return Value:
 //    The new block.
@@ -17495,8 +17513,8 @@ BasicBlock*         Compiler::fgAddCodeRef(BasicBlock*      srcBlk,
                             break;
 #endif // COR_JIT_EE_VERSION
 
-//  case SCK_PAUSE_EXEC:
-//      noway_assert(!"add code to pause exec");
+    // case SCK_PAUSE_EXEC:
+    //     noway_assert(!"add code to pause exec");
 
     default:
         noway_assert(!"unexpected code addition kind");
@@ -17930,11 +17948,11 @@ void                Compiler::fgSetBlockOrder()
     }
 #endif // DEBUG
 
-    /* Walk the basic blocks to assign sequence numbers */
-
 #ifdef DEBUG
     BasicBlock::s_nMaxTrees = 0;
 #endif
+
+    /* Walk the basic blocks to assign sequence numbers */
 
     /* If we don't compute the doms, then we never mark blocks as loops. */
     if (fgDomsComputed)
@@ -18129,9 +18147,9 @@ BAD_LIST:;
     noway_assert(list.gtNext->gtPrev == &list);
     list.gtNext->gtPrev = NULL;
 
+#ifdef DEBUG
     /* Keep track of the highest # of tree nodes */
 
-#ifdef DEBUG
     if  (BasicBlock::s_nMaxTrees < fgTreeSeqNum)
     {
          BasicBlock::s_nMaxTrees = fgTreeSeqNum;
@@ -18693,6 +18711,7 @@ struct escapeMapping_t
     const char* sub;
 };
 
+// clang-format off
 static escapeMapping_t s_EscapeFileMapping[] =
 {
     {':', "="},
@@ -18714,6 +18733,7 @@ static escapeMapping_t s_EscapeMapping[] =
     {'"', "&quot;"},
     {0, 0}
 };
+// clang-formt on
 
 const char*   Compiler::fgProcessEscapes(const char* nameIn, escapeMapping_t* map)
 {
@@ -19096,18 +19116,21 @@ ONE_FILE_PER_METHOD:;
 //      - The command "C:\Program Files (x86)\Graphviz2.38\bin\dot.exe" -Tsvg -oFoo.svg -Kdot Foo.dot
 //        will produce a Foo.svg file that can be opened with any svg-capable browser (e.g. IE).
 //    - http://rise4fun.com/Agl/
-//      - Cut and paste the graph from your .dot file, replacing the digraph on the page, and then click the play button.
+//      - Cut and paste the graph from your .dot file, replacing the digraph on the page, and then click the play
+//        button.
 //      - It will show a rotating '/' and then render the graph in the browser.
 //    MSAGL has also been open-sourced to https://github.com/Microsoft/automatic-graph-layout.git.
 //
 //    Here are the config values that control it:
-//      COMPlus_JitDumpFg       A string (ala the COMPlus_JitDump string) indicating what methods to dump flowgraphs for.
+//      COMPlus_JitDumpFg       A string (ala the COMPlus_JitDump string) indicating what methods to dump flowgraphs
+//                              for.
 //      COMPlus_JitDumpFgDir    A path to a directory into which the flowgraphs will be dumped.
 //      COMPlus_JitDumpFgFile   The filename to use. The default is "default.[xml|dot]".
 //                              Note that the new graphs will be appended to this file if it already exists.
 //      COMPlus_JitDumpFgPhase  Phase(s) after which to dump the flowgraph.
 //                              Set to the short name of a phase to see the flowgraph after that phase.
-//                              Leave unset to dump after COLD-BLK (determine first cold block) or set to * for all phases.
+//                              Leave unset to dump after COLD-BLK (determine first cold block) or set to * for all
+//                              phases.
 //      COMPlus_JitDumpFgDot    Set to non-zero to emit Dot instead of Xml Flowgraph dump. (Default is xml format.)
 
 bool               Compiler::fgDumpFlowGraph(Phases phase)
@@ -19769,8 +19792,9 @@ void                Compiler::fgDispBasicBlocks(BasicBlock*  firstBlock,
     padWidth = 8;
 #endif // _TARGET_AMD64_
 
-    // If any block has IBC data, we add an "IBC weight" column just before the 'IL range' column. This column is as wide as necessary to accommodate
-    // all the various IBC weights. It's at least 4 characters wide, to accommodate the "IBC" title and leading space.
+    // If any block has IBC data, we add an "IBC weight" column just before the 'IL range' column. This column is as
+    // wide as necessary to accommodate all the various IBC weights. It's at least 4 characters wide, to accommodate
+    // the "IBC" title and leading space.
     int ibcColWidth = 0;
     for (block = firstBlock; block != nullptr; block = block->bbNext)
     {

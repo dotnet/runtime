@@ -2291,8 +2291,8 @@ int                 Compiler::lvaFrameAddress(int varNum, bool * pFPbased)
         if (lvaDoneFrameLayout > REGALLOC_FRAME_LAYOUT && !varDsc->lvOnFrame)
         {
 #ifdef _TARGET_AMD64_
-            // On amd64, every param has a stack location, except on Unix-like systems.
 #ifndef FEATURE_UNIX_AMD64_STRUCT_PASSING
+            // On amd64, every param has a stack location, except on Unix-like systems.
             assert(varDsc->lvIsParam);
 #endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
 #elif defined(_TARGET_X86_) && !defined(LEGACY_BACKEND)
@@ -2377,6 +2377,7 @@ int                 Compiler::lvaFrameAddress(int varNum, bool * pFPbased)
             if (!FPbased)
             {
                 // Worst case stack based offset.
+                CLANG_FORMAT_COMMENT_ANCHOR;
 #if FEATURE_FIXED_OUT_ARGS
                 int outGoingArgSpaceSize = lvaOutgoingArgSpaceSize;
 #else
@@ -2387,6 +2388,8 @@ int                 Compiler::lvaFrameAddress(int varNum, bool * pFPbased)
             else
             {
                 // Worst case FP based offset.
+                CLANG_FORMAT_COMMENT_ANCHOR;
+
 #ifdef _TARGET_ARM_
                 offset = codeGen->genCallerSPtoInitialSPdelta() - codeGen->genCallerSPtoFPdelta();
 #else
@@ -2486,11 +2489,13 @@ BOOL                Compiler::lvaIsOriginalThisArg(unsigned varNum)
     {   
         LclVarDsc   *   varDsc = lvaTable + varNum;
         // Should never write to or take the address of the original 'this' arg
+        CLANG_FORMAT_COMMENT_ANCHOR;
+
 #ifndef JIT32_GCENCODER
         // With the general encoder/decoder, when the original 'this' arg is needed as a generics context param, we
         // copy to a new local, and mark the original as DoNotEnregister, to
-        // ensure that it is stack-allocated.  It should not be the case that the original one can be modified -- it should
-        // not be written to, or address-exposed.
+        // ensure that it is stack-allocated.  It should not be the case that the original one can be modified -- it
+        // should not be written to, or address-exposed.
         assert(!varDsc->lvArgWrite && (!varDsc->lvAddrExposed || ((info.compMethodInfo->options & CORINFO_GENERICS_CTXT_FROM_THIS) != 0)));
 #else
         assert(!varDsc->lvArgWrite && !varDsc->lvAddrExposed);
@@ -4199,9 +4204,9 @@ bool Compiler::compIsProfilerHookNeeded()
 #ifdef PROFILING_SUPPORTED
     return compProfilerHookNeeded 
 
+#if defined(_TARGET_ARM_) || defined(_TARGET_AMD64_)
     // IL stubs are excluded by VM and we need to do the same even running 
     // under a complus env hook to generate profiler hooks
-#if defined(_TARGET_ARM_) || defined(_TARGET_AMD64_)
         || (opts.compJitELTHookEnabled && !(opts.eeFlags & CORJIT_FLG_IL_STUB))
 #endif
         ;
@@ -4378,9 +4383,11 @@ Compiler::lvaPromotionType   Compiler::lvaGetPromotionType (const LclVarDsc *   
         return PROMOTION_TYPE_DEPENDENT;
     }
 
-    // we have a parameter that could be enregistered
+    // We have a parameter that could be enregistered
+    CLANG_FORMAT_COMMENT_ANCHOR;
 
 #if defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_)
+
     // The struct parameter is a register candidate
     return PROMOTION_TYPE_INDEPENDENT;
 #else
@@ -4561,7 +4568,8 @@ bool Compiler::fgExcludeFromSsa(unsigned lclNum)
         (lvaGetParentPromotionType(lclNum) != PROMOTION_TYPE_INDEPENDENT))
     {
         // SSA must exclude struct fields that are not independent
-        // - because we don't model the struct assignment properly when multiple fields can be assigned by one struct assignment.
+        // - because we don't model the struct assignment properly when multiple fields can be assigned by one struct
+        //   assignment.
         // - SSA doesn't allow a single node to contain multiple SSA definitions.
         // - and PROMOTION_TYPE_DEPENDEDNT fields  are never candidates for a register.
         //
