@@ -827,6 +827,10 @@ mono_arch_init (void)
 {
 	const char *cpu_arch;
 
+#ifdef TARGET_WATCHOS
+	mini_get_debug_options ()->soft_breakpoints = TRUE;
+#endif
+
 	mono_os_mutex_init_recursive (&mini_arch_mutex);
 	if (mini_get_debug_options ()->soft_breakpoints) {
 		breakpoint_tramp = mini_get_breakpoint_trampoline ();
