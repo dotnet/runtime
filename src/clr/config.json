@@ -275,6 +275,12 @@
       "valueType": "target",
       "values": [],
       "defaultValue": ""
+    },
+    "ExtraParameters": {
+      "description": "Extra parameters will be passed to the selected command.",
+      "valueType": "passThrough",
+      "values": [],
+      "defaultValue": ""
     }
   },
   "commands": {
