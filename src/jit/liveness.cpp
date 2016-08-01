@@ -1518,6 +1518,14 @@ VARSET_VALRET_TP    Compiler::fgUpdateLiveSet(VARSET_VALARG_TP  liveSet,
     return newLiveSet;
 }
 
+//------------------------------------------------------------------------
+// Compiler::fgComputeLifeCall: compute the changes to local var liveness
+//                              due to a GT_CALL node.
+//
+// Arguments:
+//    life - The live set that is being computed.
+//    call - The call node in question.
+//
 void Compiler::fgComputeLifeCall(VARSET_TP& life, GenTreeCall* call)
 {
     assert(call != nullptr);
@@ -1632,6 +1640,25 @@ void Compiler::fgComputeLifeCall(VARSET_TP& life, GenTreeCall* call)
     }
 }
 
+//------------------------------------------------------------------------
+// Compiler::fgComputeLifeLocal: compute the changes to local var liveness
+//                               due to a use or a def of a local var and
+//                               indicates wither the use/def is a dead
+//                               store.
+//
+// Arguments:
+//    life          - The live set that is being computed.
+//    keepAliveVars - The currents set of variables to keep alive
+//                    regardless of their actual lifetime.
+//    lclVarNode    - The node that corresponds to the local var def or
+//                    use. Only differs from `node` when targeting the
+//                    legacy backend.
+//    node          - The actual tree node being processed.
+//
+// Returns:
+//    `true` if the local var node corresponds to a dead store; `false`
+//    otherwise.
+//
 bool Compiler::fgComputeLifeLocal(VARSET_TP& life, VARSET_TP& keepAliveVars, GenTree* lclVarNode, GenTree* node)
 {
     unsigned lclNum = lclVarNode->gtLclVarCommon.gtLclNum;
