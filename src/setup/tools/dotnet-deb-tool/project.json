@@ -1,5 +1,5 @@
 {
-  "version": "1.0.0-tool-*",
+  "version": "1.0.1-t-*",
   "buildOptions": {
     "emitEntryPoint": true,
     "compile": {

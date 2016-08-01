@@ -16,14 +16,14 @@ namespace Microsoft.DotNet.Host.Build
         [Target(nameof(GenerateSharedHostDeb),
                 nameof(GenerateHostFxrDeb),
                 nameof(GenerateSharedFrameworkDeb))]
-        [BuildPlatforms(BuildPlatform.Ubuntu)]
+        [BuildPlatforms(BuildPlatform.Ubuntu, BuildPlatform.Debian)]
         public static BuildTargetResult GenerateDebs(BuildTargetContext c)
         {
             return c.Success();
         }
 
         [Target]
-        [BuildPlatforms(BuildPlatform.Ubuntu)]
+        [BuildPlatforms(BuildPlatform.Ubuntu, BuildPlatform.Debian)]
         public static BuildTargetResult GenerateSharedHostDeb(BuildTargetContext c)
         {
             // Ubuntu 16.04 Jenkins Machines don't have docker or debian package build tools
@@ -65,7 +65,7 @@ namespace Microsoft.DotNet.Host.Build
         }
 
         [Target]
-        [BuildPlatforms(BuildPlatform.Ubuntu)]
+        [BuildPlatforms(BuildPlatform.Ubuntu, BuildPlatform.Debian)]
         public static BuildTargetResult GenerateHostFxrDeb(BuildTargetContext c)
         {
             // Ubuntu 16.04 Jenkins Machines don't have docker or debian package build tools
@@ -109,7 +109,7 @@ namespace Microsoft.DotNet.Host.Build
         }
 
         [Target(nameof(InstallSharedHost))]
-        [BuildPlatforms(BuildPlatform.Ubuntu)]
+        [BuildPlatforms(BuildPlatform.Ubuntu, BuildPlatform.Debian)]
         public static BuildTargetResult GenerateSharedFrameworkDeb(BuildTargetContext c)
         {
             // Ubuntu 16.04 Jenkins Machines don't have docker or debian package build tools
@@ -160,7 +160,7 @@ namespace Microsoft.DotNet.Host.Build
 
         [Target(nameof(InstallSharedFramework),
                 nameof(RemovePackages))]
-        [BuildPlatforms(BuildPlatform.Ubuntu)]
+        [BuildPlatforms(BuildPlatform.Ubuntu, BuildPlatform.Debian)]
         public static BuildTargetResult TestDebInstaller(BuildTargetContext c)
         {
             return c.Success();
