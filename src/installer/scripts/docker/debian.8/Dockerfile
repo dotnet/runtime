@@ -10,6 +10,7 @@ FROM debian:jessie
 RUN apt-get update && \
     apt-get -qqy install \
         curl \
+        wget \
         unzip \
         gettext \
         sudo && \
