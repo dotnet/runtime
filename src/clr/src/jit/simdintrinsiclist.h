@@ -8,6 +8,7 @@
 #endif
 /*****************************************************************************/
 
+// clang-format off
 #ifdef FEATURE_SIMD
 
     /*
@@ -141,3 +142,4 @@ SIMD_INTRINSIC(nullptr,                     false,       Invalid,               
 #endif //!_TARGET_AMD64_
 
 #endif //FEATURE_SIMD
+// clang-format on

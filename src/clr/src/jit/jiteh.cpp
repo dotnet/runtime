@@ -774,7 +774,8 @@ unsigned        Compiler::ehGetMostNestedRegionIndex(BasicBlock* block, bool* in
         }
         else
         {
-            assert(block->bbTryIndex != block->bbHndIndex); // A block can't be both in the 'try' and 'handler' region of the same EH region
+            assert(block->bbTryIndex != block->bbHndIndex); // A block can't be both in the 'try' and 'handler' region
+                                                            // of the same EH region
             mostNestedRegion = block->bbHndIndex;
             *inTryRegion = false;
         }
@@ -1099,7 +1100,8 @@ void*               Compiler::ehEmitCookie(BasicBlock* block)
     {
         // Use the offset of the beginning of the NOP padding, not the main block.
         // This might include loop head padding, too, if this is a loop head.
-        assert(block->bbUnwindNopEmitCookie); // probably not null-initialized, though, so this might not tell us anything
+        assert(block->bbUnwindNopEmitCookie); // probably not null-initialized, though, so this might not tell us
+                                              // anything
         cookie = block->bbUnwindNopEmitCookie;
     }
     else
@@ -1384,6 +1386,8 @@ void                Compiler::fgAllocEHTable()
     // twice the number of EH clauses in the IL, which should be good in practice.
     // In extreme cases, we might need to abandon this and reallocate. See
     // fgAddEHTableEntry() for more details.
+    CLANG_FORMAT_COMMENT_ANCHOR;
+
 #ifdef DEBUG
     compHndBBtabAllocCount = info.compXcptnsCount; // force the resizing code to hit more frequently in DEBUG
 #else // DEBUG
@@ -1905,7 +1909,8 @@ void          Compiler::fgSortEHTable()
     // In Dev11 (Visual Studio 2012), x86 did not sort the EH table (it never had before)
     // but ARM did. It turns out not sorting the table can cause the EH table to incorrectly
     // set the bbHndIndex value in some nested cases, and that can lead to a security exploit
-    // that allows the execution of arbitrary code. 
+    // that allows the execution of arbitrary code.
+    CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef DEBUG
     if (verbose)
@@ -1913,6 +1918,7 @@ void          Compiler::fgSortEHTable()
         printf("fgSortEHTable: Sorting EH table\n");
     }
 #endif // DEBUG
+
 
     EHblkDsc *      xtab1;
     EHblkDsc *      xtab2;
@@ -1980,7 +1986,6 @@ void          Compiler::fgSortEHTable()
         }
     }
 }
-
 
 // fgNormalizeEH: Enforce the following invariants:
 //
@@ -2101,19 +2106,21 @@ void          Compiler::fgSortEHTable()
 //
 //      The benefit of this is, once again, to remove the need to consider every EH region when adding new blocks.
 //
-// Overall, a block can appear in the EH table exactly once: as the begin or last block of a single try, filter, or handler.
-// There is one exception: for a single-block EH region, the block can appear as both the "begin" and "last" block of the try,
-// or the "begin" and "last" block of the handler (note that filters don't have a "last" block stored, so this case doesn't apply.)
-// (Note: we could remove this special case if we wanted, and if it helps anything, but it doesn't appear that it will help.)
+// Overall, a block can appear in the EH table exactly once: as the begin or last block of a single try, filter, or
+// handler. There is one exception: for a single-block EH region, the block can appear as both the "begin" and "last"
+// block of the try, or the "begin" and "last" block of the handler (note that filters don't have a "last" block stored,
+// so this case doesn't apply.)
+// (Note: we could remove this special case if we wanted, and if it helps anything, but it doesn't appear that it will
+// help.)
 //
-// These invariants simplify a number of things. When inserting a new block into a region, it is not necessary to traverse
-// the entire EH table looking to see if any EH region needs to be updated. You only ever need to update a single region (except
-// for mutually-protect "try" regions).
+// These invariants simplify a number of things. When inserting a new block into a region, it is not necessary to
+// traverse the entire EH table looking to see if any EH region needs to be updated. You only ever need to update a
+// single region (except for mutually-protect "try" regions).
 //
-// Also, for example, when we're trying to determine the successors of a block B1 that leads into a try T1, if a block B2
-// violates invariant #3 by being the first block of both the handler of T1, and an enclosed try T2, inserting a block to
-// enforce this invariant prevents us from having to consider the first block of T2's handler as a possible successor of B1.
-// This is somewhat akin to breaking of "critical edges" in a flowgraph.
+// Also, for example, when we're trying to determine the successors of a block B1 that leads into a try T1, if a block
+// B2 violates invariant #3 by being the first block of both the handler of T1, and an enclosed try T2, inserting a
+// block to enforce this invariant prevents us from having to consider the first block of T2's handler as a possible
+// successor of B1. This is somewhat akin to breaking of "critical edges" in a flowgraph.
 
 void Compiler::fgNormalizeEH()
 {
@@ -2148,8 +2155,9 @@ void Compiler::fgNormalizeEH()
     }
 
 #if 0
-    // Case 3 normalization is disabled. The JIT really doesn't like having extra empty blocks around, especially blocks that are unreachable.
-    // There are lots of asserts when such things occur. We will re-evaluate whether we can do this normalization.
+    // Case 3 normalization is disabled. The JIT really doesn't like having extra empty blocks around, especially
+    // blocks that are unreachable. There are lots of asserts when such things occur. We will re-evaluate whether we
+    // can do this normalization.
     // Note: there are cases in fgVerifyHandlerTab() that are also disabled to match this.
 
     // Case #3: Prevent any two EH regions from ending with the same block.
@@ -2190,16 +2198,17 @@ bool Compiler::fgNormalizeEHCase1()
     //
     // Case #1: Is the first block of a handler also the first block of any try?
     //
-    // Do this as a separate loop from case #2 to simplify the logic for cases where we have both multiple identical 'try' begin
-    // blocks as well as this case, e.g.:
+    // Do this as a separate loop from case #2 to simplify the logic for cases where we have both multiple identical
+    // 'try' begin blocks as well as this case, e.g.:
     //     try {
     //     } finally { try { try {
     //         } catch {}
     //         } catch {}
     //     }
     // where the finally/try/try are all the same block.
-    // We also do this before case #2, so when we get to case #2, we only need to worry about updating 'try' begin blocks (and
-    // only those within the 'try' region's parents), not handler begin blocks, when we are inserting new header blocks.
+    // We also do this before case #2, so when we get to case #2, we only need to worry about updating 'try' begin
+    // blocks (and only those within the 'try' region's parents), not handler begin blocks, when we are inserting new
+    // header blocks.
     //
 
     for (unsigned XTnum = 0; XTnum < compHndBBtabCount; XTnum++)
@@ -2281,9 +2290,9 @@ bool Compiler::fgNormalizeEHCase2()
             BasicBlock* tryStart = eh->ebdTryBeg;
             BasicBlock* insertBeforeBlk = tryStart; // If we need to insert new blocks, we insert before this block.
 
-            // We need to keep track of the last "mutually protect" region so we can properly not add additional header blocks
-            // to the second and subsequent mutually protect try blocks. We can't just keep track of the EH region
-            // pointer, because we're updating the 'try' begin blocks as we go. So, we need to keep track of the
+            // We need to keep track of the last "mutually protect" region so we can properly not add additional header
+            // blocks to the second and subsequent mutually protect try blocks. We can't just keep track of the EH
+            // region pointer, because we're updating the 'try' begin blocks as we go. So, we need to keep track of the
             // pre-update 'try' begin/last blocks themselves.
             BasicBlock* mutualTryBeg  = eh->ebdTryBeg;
             BasicBlock* mutualTryLast = eh->ebdTryLast;
@@ -2301,6 +2310,7 @@ bool Compiler::fgNormalizeEHCase2()
 
                     if (ehOuter->ebdIsSameTry(mutualTryBeg, mutualTryLast))
                     {
+                        // clang-format off
                         // Don't touch mutually-protect regions: their 'try' regions must remain identical!
                         // We want to continue the looping outwards, in case we have something like this:
                         //
@@ -2349,6 +2359,7 @@ bool Compiler::fgNormalizeEHCase2()
                         //
                         // In this case, all the 'try' start at the same block! Note that there are two sets of mutually-protect regions,
                         // separated by some nesting.
+                        // clang-format on
 
 #ifdef DEBUG
                         if (verbose)
@@ -2420,7 +2431,8 @@ bool Compiler::fgNormalizeEHCase2()
                         //               |      |-----------  BB04
                         //               |------------------  BB05
                         //
-                        // We'll loop twice, to create two header blocks, one for try2, and the second time for try3 (in that order).
+                        // We'll loop twice, to create two header blocks, one for try2, and the second time for try3
+                        // (in that order).
                         // After the first loop, we have:
                         //
                         //               try3   try2   try1
@@ -2431,8 +2443,8 @@ bool Compiler::fgNormalizeEHCase2()
                         //               |      |-----------  BB04
                         //               |------------------  BB05
                         //
-                        // And all the external edges have been changed to point at try2. On the next loop, we'll create a unique
-                        // header block for try3, and split the edges between try2 and try3, leaving us with:
+                        // And all the external edges have been changed to point at try2. On the next loop, we'll create
+                        // a unique header block for try3, and split the edges between try2 and try3, leaving us with:
                         //
                         //               try3   try2   try1
                         //               |----                BB07
@@ -2443,7 +2455,8 @@ bool Compiler::fgNormalizeEHCase2()
                         //               |      |-----------  BB04
                         //               |------------------  BB05
 
-                        BasicBlockList* nextPred; // we're going to update the pred list as we go, so we need to keep track of the next pred in case it gets deleted.
+                        BasicBlockList* nextPred; // we're going to update the pred list as we go, so we need to keep
+                                                  // track of the next pred in case it gets deleted.
                         for (BasicBlockList* pred = insertBeforeBlk->bbCheapPreds; pred != nullptr; pred = nextPred)
                         {
                             nextPred = pred->next;
@@ -2457,8 +2470,9 @@ bool Compiler::fgNormalizeEHCase2()
                                 fgAddCheapPred(newTryStart, predBlock);
                                 fgRemoveCheapPred(insertBeforeBlk, predBlock);
 
-                                // Now change the branch. If it was a BBJ_NONE fall-through to the top block, this will do nothing.
-                                // Since cheap preds contains dups (for switch duplicates), we will call this once per dup.
+                                // Now change the branch. If it was a BBJ_NONE fall-through to the top block, this will
+                                // do nothing. Since cheap preds contains dups (for switch duplicates), we will call
+                                // this once per dup.
                                 fgReplaceJumpTarget(predBlock, newTryStart, insertBeforeBlk);
 
 #ifdef DEBUG
@@ -2510,8 +2524,8 @@ bool Compiler::fgNormalizeEHCase2()
                     //        |-------------------------- BB08
                     //
                     // (Thus, try1 & try2 start at BB03, and are nested inside try3 & try4, which both start at BB01.)
-                    // In this case, we'll process try1 and try2, then break out. Later, we'll get to try3 and process it
-                    // and try4.
+                    // In this case, we'll process try1 and try2, then break out. Later, we'll get to try3 and process
+                    // it and try4.
 
                     break;
                 }
@@ -2528,9 +2542,9 @@ bool Compiler::fgNormalizeEHCase3()
     bool modified = false;
 
     //
-    // Case #3: Make sure no two 'try' or handler regions have the same 'last' block (except for mutually protect 'try' regions).
-    // As above, there has to be EH region nesting for this to occur. However, since we need to consider handlers, there are more
-    // cases.
+    // Case #3: Make sure no two 'try' or handler regions have the same 'last' block (except for mutually protect 'try'
+    // regions). As above, there has to be EH region nesting for this to occur. However, since we need to consider
+    // handlers, there are more cases.
     //
     // There are four cases to consider:
     //      (1) try     nested in try
@@ -2542,9 +2556,9 @@ bool Compiler::fgNormalizeEHCase3()
     // of an EH region (either 'try' or handler region), since that implies that its corresponding handler precedes it.
     // That will never happen in C#, but is legal in IL.
     //
-    // Only one of these cases can happen. For example, if we have case (2), where a try/catch is nested in a 'try' and the
-    // nested handler has the same 'last' block as the outer handler, then, due to nesting rules, the nested 'try' must also
-    // be within the outer handler, and obviously cannot share the same 'last' block.
+    // Only one of these cases can happen. For example, if we have case (2), where a try/catch is nested in a 'try' and
+    // the nested handler has the same 'last' block as the outer handler, then, due to nesting rules, the nested 'try'
+    // must also be within the outer handler, and obviously cannot share the same 'last' block.
     //
 
     for (unsigned XTnum = 0; XTnum < compHndBBtabCount; XTnum++)
@@ -2567,8 +2581,9 @@ bool Compiler::fgNormalizeEHCase3()
             INDEBUG(const char* outerType = ""; const char* innerType = "";)
 
             // 'insertAfterBlk' is the place we will insert new "normalization" blocks. We don't know yet if we will
-            // insert them after the innermost 'try' or handler's "last" block, so we set it to nullptr. Once we determine
-            // the innermost region that is equivalent, we set this, and then update it incrementally as we loop outwards.
+            // insert them after the innermost 'try' or handler's "last" block, so we set it to nullptr. Once we
+            // determine the innermost region that is equivalent, we set this, and then update it incrementally as we
+            // loop outwards.
             BasicBlock* insertAfterBlk = nullptr;
 
             bool foundMatchingLastBlock = false;
@@ -2576,9 +2591,9 @@ bool Compiler::fgNormalizeEHCase3()
             // This is set to 'false' for mutual protect regions for which we will not insert a normalization block.
             bool insertNormalizationBlock = true;
 
-            // Keep track of what the 'try' index and handler index should be for any new normalization block that we insert.
-            // If we have a sequence of alternating nested 'try' and handlers with the same 'last' block, we'll need to update
-            // these as we go. For example:
+            // Keep track of what the 'try' index and handler index should be for any new normalization block that we
+            // insert. If we have a sequence of alternating nested 'try' and handlers with the same 'last' block, we'll
+            // need to update these as we go. For example:
             //      try { // EH#5
             //          ...
             //          catch { // EH#4
@@ -2613,14 +2628,16 @@ bool Compiler::fgNormalizeEHCase3()
             //          BB05 // try=5, hnd=0 (no enclosing hnd)
             //      }
             //
-            unsigned nextTryIndex = EHblkDsc::NO_ENCLOSING_INDEX; // Initialization only needed to quell compiler warnings.
+            unsigned nextTryIndex = EHblkDsc::NO_ENCLOSING_INDEX; // Initialization only needed to quell compiler
+                                                                  // warnings.
             unsigned nextHndIndex = EHblkDsc::NO_ENCLOSING_INDEX;
 
-            // We compare the outer region against the inner region's 'try' or handler, determined by the 'outerIsTryRegion'
-            // variable. Once we decide that, we know exactly the 'last' pointer that we will use to compare against
-            // all enclosing EH regions.
+            // We compare the outer region against the inner region's 'try' or handler, determined by the
+            // 'outerIsTryRegion' variable. Once we decide that, we know exactly the 'last' pointer that we will use to
+            // compare against all enclosing EH regions.
             //
-            // For example, if we have these nested EH regions (omitting some corresponding try/catch clauses for each nesting level):
+            // For example, if we have these nested EH regions (omitting some corresponding try/catch clauses for each
+            // nesting level):
             //
             //      try {
             //          ...
@@ -2659,6 +2676,7 @@ bool Compiler::fgNormalizeEHCase3()
                     if (EHblkDsc::ebdIsSameTry(ehOuter, ehInner))
                     {
                         // We can't touch this 'try', since it's mutual protect.
+                        CLANG_FORMAT_COMMENT_ANCHOR;
 #ifdef DEBUG
                         if (verbose)
                         {
@@ -2701,7 +2719,8 @@ bool Compiler::fgNormalizeEHCase3()
             {
                 nextHndIndex = EHblkDsc::NO_ENCLOSING_INDEX; // unused, since the outer block is a handler region.
 
-                // The outer (enclosing) region is a handler (note that it can't be a filter; there is no nesting within a filter).
+                // The outer (enclosing) region is a handler (note that it can't be a filter; there is no nesting 
+                // within a filter).
                 if (ehOuter->ebdHndLast == ehInner->ebdTryLast)
                 {
                     // Case (3) try nested in handler.
@@ -2843,6 +2862,8 @@ bool Compiler::fgNormalizeEHCase3()
                             if (innerIsTryRegion && ehOuter->ebdIsSameTry(mutualTryBeg, mutualTryLast))
                             {
                                 // We can't touch this 'try', since it's mutual protect.
+                                CLANG_FORMAT_COMMENT_ANCHOR;
+
 #ifdef DEBUG
                                 if (verbose)
                                 {
@@ -2853,8 +2874,8 @@ bool Compiler::fgNormalizeEHCase3()
 
                                 insertNormalizationBlock = false;
 
-                                // We still need to update the 'last' pointer, in case someone inserted a normalization block before
-                                // the start of the mutual protect 'try' region.
+                                // We still need to update the 'last' pointer, in case someone inserted a normalization
+                                // block before the start of the mutual protect 'try' region.
                                 ehOuter->ebdTryLast = insertAfterBlk;
                             }
                             else
@@ -2903,8 +2924,8 @@ bool Compiler::fgNormalizeEHCase3()
                     }
                 }
 
-                // If we get to here and foundMatchingLastBlock is false, then the inner and outer region don't share any
-                // 'last' blocks, so we're done. Note that we could have a situation like this:
+                // If we get to here and foundMatchingLastBlock is false, then the inner and outer region don't share
+                // any 'last' blocks, so we're done. Note that we could have a situation like this:
                 //
                 //        try4   try3   try2   try1
                 //        |----  |      |      |      BB01
@@ -3307,22 +3328,25 @@ void                Compiler::fgVerifyHandlerTab()
 
             if (!EHblkDsc::ebdIsSameTry(HBtab, HBtabOuter))
             {
-                // If it's not a mutually protect region, then the outer 'try' must completely lexically contain all the blocks
-                // in the nested EH region. However, if funclets have been created, this is no longer true, since this 'try' might
-                // be in a handler that is pulled out to the funclet region, while the outer 'try' remains in the main function
-                // region.
+                // If it's not a mutually protect region, then the outer 'try' must completely lexically contain all the
+                // blocks in the nested EH region. However, if funclets have been created, this is no longer true, since
+                // this 'try' might be in a handler that is pulled out to the funclet region, while the outer 'try'
+                // remains in the main function region.
+                CLANG_FORMAT_COMMENT_ANCHOR;
 
 #if FEATURE_EH_FUNCLETS
                 if (fgFuncletsCreated)
                 {
-                    // If both the 'try' region and the outer 'try' region are in the main function area, then we can do the normal
-                    // nesting check. Otherwise, it's harder to find a useful assert to make about their relationship.
+                    // If both the 'try' region and the outer 'try' region are in the main function area, then we can
+                    // do the normal nesting check. Otherwise, it's harder to find a useful assert to make about their
+                    // relationship.
                     if ((bbNumTryLast < bbNumFirstFunclet) &&
                         (bbNumOuterTryLast < bbNumFirstFunclet))
                     {
                         if (multipleBegBlockNormalizationDone)
                         {
-                            assert(bbNumOuterTryBeg < bbNumTryBeg);     // Two 'try' regions can't start at the same block (by EH normalization).
+                            assert(bbNumOuterTryBeg < bbNumTryBeg);     // Two 'try' regions can't start at the same
+                                                                        // block (by EH normalization).
                         }
                         else
                         {
@@ -3330,7 +3354,8 @@ void                Compiler::fgVerifyHandlerTab()
                         }
                         if (multipleLastBlockNormalizationDone)
                         {
-                            assert(bbNumTryLast < bbNumOuterTryLast);   // Two 'try' regions can't end at the same block (by EH normalization).
+                            assert(bbNumTryLast < bbNumOuterTryLast);   // Two 'try' regions can't end at the same block
+                                                                        //(by EH normalization).
                         }
                         else
                         {
@@ -3338,7 +3363,8 @@ void                Compiler::fgVerifyHandlerTab()
                         }
                     }
 
-                    // With funclets, all we can say about the handler blocks is that they are disjoint from the enclosing try.
+                    // With funclets, all we can say about the handler blocks is that they are disjoint from the
+                    // enclosing try.
                     assert((bbNumHndLast < bbNumOuterTryBeg) || (bbNumOuterTryLast < bbNumHndBeg));
                 }
                 else
@@ -3346,13 +3372,15 @@ void                Compiler::fgVerifyHandlerTab()
                 {
                     if (multipleBegBlockNormalizationDone)
                     {
-                        assert(bbNumOuterTryBeg < bbNumTryBeg);     // Two 'try' regions can't start at the same block (by EH normalization).
+                        assert(bbNumOuterTryBeg < bbNumTryBeg);     // Two 'try' regions can't start at the same block
+                                                                    // (by EH normalization).
                     }
                     else
                     {
                         assert(bbNumOuterTryBeg <= bbNumTryBeg);
                     }
-                    assert(bbNumOuterTryBeg < bbNumHndBeg);         // An inner handler can never start at the same block as an outer 'try' (by IL rules).
+                    assert(bbNumOuterTryBeg < bbNumHndBeg);         // An inner handler can never start at the same
+                                                                    // block as an outer 'try' (by IL rules).
                     if (multipleLastBlockNormalizationDone)
                     {
                         // An inner EH region can't share a 'last' block with the outer 'try' (by EH normalization).
@@ -3369,7 +3397,8 @@ void                Compiler::fgVerifyHandlerTab()
         }
 
         // Check the handler region nesting, using ebdEnclosingHndIndex.
-        // Only check one level of nesting, since we'll check the outer EH region (and its nesting) when we get to it later.
+        // Only check one level of nesting, since we'll check the outer EH region (and its nesting) when we get to it
+        // later.
 
         if (HBtab->ebdEnclosingHndIndex != EHblkDsc::NO_ENCLOSING_INDEX)
         {
@@ -3383,15 +3412,17 @@ void                Compiler::fgVerifyHandlerTab()
             assert(bbNumOuterHndLast != 0);
             assert(bbNumOuterHndBeg <= bbNumOuterHndLast);
 
-            // The outer handler must completely contain all the blocks in the EH region nested within it. However, if funclets have been created,
-            // it's harder to make any relationship asserts about the order of nested handlers, which also have been made into funclets.
+            // The outer handler must completely contain all the blocks in the EH region nested within it. However, if
+            // funclets have been created, it's harder to make any relationship asserts about the order of nested
+            // handlers, which also have been made into funclets.
 
 #if FEATURE_EH_FUNCLETS
             if (fgFuncletsCreated)
             {
                 if (handlerBegIsTryBegNormalizationDone)
                 {
-                    assert(bbNumOuterHndBeg < bbNumTryBeg);     // An inner 'try' can't start at the same block as an outer handler (by EH normalization).
+                    assert(bbNumOuterHndBeg < bbNumTryBeg);     // An inner 'try' can't start at the same block as an
+                                                                // outer handler (by EH normalization).
                 }
                 else
                 {
@@ -3399,14 +3430,16 @@ void                Compiler::fgVerifyHandlerTab()
                 }
                 if (multipleLastBlockNormalizationDone)
                 {
-                    assert(bbNumTryLast < bbNumOuterHndLast);   // An inner 'try' can't end at the same block as an outer handler (by EH normalization).
+                    assert(bbNumTryLast < bbNumOuterHndLast);   // An inner 'try' can't end at the same block as an
+                                                                // outer handler (by EH normalization).
                 }
                 else
                 {
                     assert(bbNumTryLast <= bbNumOuterHndLast);
                 }
 
-                // With funclets, all we can say about the handler blocks is that they are disjoint from the enclosing handler.
+                // With funclets, all we can say about the handler blocks is that they are disjoint from the enclosing
+                // handler.
                 assert((bbNumHndLast < bbNumOuterHndBeg) || (bbNumOuterHndLast < bbNumHndBeg));
             }
             else
@@ -3414,13 +3447,15 @@ void                Compiler::fgVerifyHandlerTab()
             {
                 if (handlerBegIsTryBegNormalizationDone)
                 {
-                    assert(bbNumOuterHndBeg < bbNumTryBeg);     // An inner 'try' can't start at the same block as an outer handler (by EH normalization).
+                    assert(bbNumOuterHndBeg < bbNumTryBeg);     // An inner 'try' can't start at the same block as an
+                                                                // outer handler (by EH normalization).
                 }
                 else
                 {
                     assert(bbNumOuterHndBeg <= bbNumTryBeg);
                 }
-                assert(bbNumOuterHndBeg < bbNumHndBeg);         // An inner handler can never start at the same block as an outer handler (by IL rules).
+                assert(bbNumOuterHndBeg < bbNumHndBeg);         // An inner handler can never start at the same block
+                                                                // as an outer handler (by IL rules).
                 if (multipleLastBlockNormalizationDone)
                 {
                     // An inner EH region can't share a 'last' block with the outer handler (by EH normalization).
@@ -3438,7 +3473,8 @@ void                Compiler::fgVerifyHandlerTab()
         // Set up blockTryBegSet and blockHndBegSet.
         // We might want to have this assert:
         //    if (fgNormalizeEHDone) assert(!blockTryBegSet[HBtab->ebdTryBeg->bbNum]);
-        // But we can't, because if we have mutually-protect 'try' regions, we'll see exactly the same tryBeg twice (or more).
+        // But we can't, because if we have mutually-protect 'try' regions, we'll see exactly the same tryBeg twice
+        // (or more).
         blockTryBegSet[HBtab->ebdTryBeg->bbNum] = true;
         assert(!blockHndBegSet[HBtab->ebdHndBeg->bbNum]);
         blockHndBegSet[HBtab->ebdHndBeg->bbNum] = true;
@@ -3526,11 +3562,13 @@ void                Compiler::fgVerifyHandlerTab()
              XTnum < compHndBBtabCount;
              XTnum++,   HBtab++)
         {
-            unsigned enclosingTryIndex = ehTrueEnclosingTryIndexIL(XTnum); // find the true enclosing try index, ignoring 'mutual protect' trys
+            unsigned enclosingTryIndex = ehTrueEnclosingTryIndexIL(XTnum); // find the true enclosing try index,
+                                                                           // ignoring 'mutual protect' trys
             if (enclosingTryIndex != EHblkDsc::NO_ENCLOSING_INDEX)
             {
-                // The handler funclet for 'XTnum' has a try index of 'enclosingTryIndex' (at least, the parts of the funclet that don't already
-                // have a more nested 'try' index because a 'try' is nested within the handler).
+                // The handler funclet for 'XTnum' has a try index of 'enclosingTryIndex' (at least, the parts of the
+                // funclet that don't already have a more nested 'try' index because a 'try' is nested within the
+                // handler).
 
                 BasicBlock* blockEnd;
                 for (block = (HBtab->HasFilter() ? HBtab->ebdFilter : HBtab->ebdHndBeg), blockEnd = HBtab->ebdHndLast->bbNext; block != blockEnd; block = block->bbNext)

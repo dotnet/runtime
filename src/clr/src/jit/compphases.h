@@ -18,6 +18,7 @@
 //         (We should never do EndPhase on a phase that has children, only on 'leaf phases.')
 //     "parent" is -1 for leaf phases, otherwise it is the "enumName" of the parent phase.
 
+// clang-format off
 CompPhaseNameMacro(PHASE_PRE_IMPORT,             "Pre-import",                     "PRE-IMP",  false, -1)
 CompPhaseNameMacro(PHASE_IMPORTATION,            "Importation",                    "IMPORT",   false, -1)
 CompPhaseNameMacro(PHASE_POST_IMPORT,            "Post-import",                    "POST-IMP", false, -1)
@@ -84,5 +85,6 @@ CompPhaseNameMacro(PHASE_LINEAR_SCAN_RESOLVE,    "LSRA resolve",                
 CompPhaseNameMacro(PHASE_GENERATE_CODE,          "Generate code",                  "CODEGEN",  false, -1)
 CompPhaseNameMacro(PHASE_EMIT_CODE,              "Emit code",                      "EMIT",     false, -1)
 CompPhaseNameMacro(PHASE_EMIT_GCEH,              "Emit GC+EH tables",              "EMT-GCEH", false, -1)
+// clang-format on
 
 #undef CompPhaseNameMacro

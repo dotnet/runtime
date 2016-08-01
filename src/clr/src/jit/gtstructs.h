@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+// clang-format off
 
 /*****************************************************************************/
 
@@ -108,3 +109,5 @@ GTSTRUCT_1(SIMD        , GT_SIMD)
 #undef  GTSTRUCT_4
 #undef  GTSTRUCT_N
 /*****************************************************************************/
+
+// clang-format on

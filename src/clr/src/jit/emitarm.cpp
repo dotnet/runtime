@@ -527,8 +527,8 @@ bool           emitter::emitInsMayWriteToGCReg(instrDesc *id)
     case IF_T2_E0: case IF_T2_E1: case IF_T2_E2:
     case IF_T2_G0: case IF_T2_G1: case IF_T2_H0: case IF_T2_H1:
     case IF_T2_K1: case IF_T2_K4:
-        // Some formats with "destination" or "target" registers are actually used for store instructions, for the "source" value
-        // written to memory.
+        // Some formats with "destination" or "target" registers are actually used for store instructions, for the
+        // "source" value written to memory.
         // Similarly, PUSH has a target register, indicating the start of the set of registers to push.  POP
         // *does* write to at least one register, so we do not make that a special case.
         // Various compare/test instructions do not write (except to the flags). Technically "teq" does not need to be
@@ -638,6 +638,7 @@ const char *emitter::emitFloatRegName(regNumber reg, emitAttr attr, bool varName
 
 emitter::insFormat  emitter::emitInsFormat(instruction ins)
 {
+    // clang-format off
     const static insFormat insFormats[] =
     {
         #define INST1(id, nm, fp, ldst, fmt, e1                                ) fmt,
@@ -650,6 +651,7 @@ emitter::insFormat  emitter::emitInsFormat(instruction ins)
         #define INST9(id, nm, fp, ldst, fmt, e1, e2, e3, e4, e5, e6, e7, e8, e9) fmt,
         #include "instrs.h"
     };
+    // clang-format on
 
     assert(ins < ArrLen(insFormats));
     assert((insFormats[ins] != IF_NONE));
@@ -662,6 +664,7 @@ emitter::insFormat  emitter::emitInsFormat(instruction ins)
 #define   ST  4
 #define   CMP 8
 
+// clang-format off
 /*static*/ const BYTE CodeGenInterface::instInfo[] =
 {
     #define INST1(id, nm, fp, ldst, fmt, e1                                ) ldst | INST_FP*fp,
@@ -674,6 +677,7 @@ emitter::insFormat  emitter::emitInsFormat(instruction ins)
     #define INST9(id, nm, fp, ldst, fmt, e1, e2, e3, e4, e5, e6, e7, e8, e9) ldst | INST_FP*fp,
     #include "instrs.h"
 };
+// clang-format on
 
 /*****************************************************************************
  *
@@ -743,6 +747,7 @@ bool  emitter::emitInsIsLoadOrStore(instruction ins)
 
 size_t emitter::emitInsCode(instruction ins, insFormat fmt)
 {
+    // clang-format off
     const static size_t insCodes1[] =
     {
         #define INST1(id, nm, fp, ldst, fmt, e1                                ) e1,
@@ -872,6 +877,7 @@ size_t emitter::emitInsCode(instruction ins, insFormat fmt)
     const static insFormat formatEncode2E[2] = { IF_T1_E,  IF_T2_C6 };
     const static insFormat formatEncode2F[2] = { IF_T1_E,  IF_T2_C5 };
     const static insFormat formatEncode2G[2] = { IF_T1_J3, IF_T2_M1 };
+    // clang-format on
 
     size_t    code   = BAD_CODE;
     insFormat insFmt = emitInsFormat(ins);
@@ -2591,10 +2597,11 @@ void                emitter::emitIns_R_R_I(instruction ins,
         assert(insOptsNone(opt));
 
         // On ARM, the immediate shift count of LSL and ROR must be between 1 and 31. For LSR and ASR, it is between
-        // 1 and 32, though we don't ever use 32. Although x86 allows an immediate shift count of 8-bits in instruction
-        // encoding, the CPU looks at only the lower 5 bits. As per ECMA, specifying a shift count to the IL SHR, SHL, or SHL.UN
-        // instruction that is greater than or equal to the width of the type will yield an undefined value. We choose that
-        // undefined value in this case to match x86 behavior, by only using the lower 5 bits of the constant shift count.
+        // 1 and 32, though we don't ever use 32. Although x86 allows an immediate shift count of 8-bits in
+        // instruction encoding, the CPU looks at only the lower 5 bits. As per ECMA, specifying a shift count to
+        // the IL SHR, SHL, or SHL.UN instruction that is greater than or equal to the width of the type will yield
+        // an undefined value. We choose that undefined value in this case to match x86 behavior, by only using the
+        // lower 5 bits of the constant shift count.
         imm &= 0x1f;
 
         if (imm == 0)
@@ -6573,8 +6580,8 @@ DONE_CALL:
         }
     }
 
-    // Now we determine if the instruction has written to a (local variable) stack location, and either written a GC ref or
-    // overwritten one.
+    // Now we determine if the instruction has written to a (local variable) stack location, and either written a GC
+    // ref or overwritten one.
     if (emitInsWritesToLclVarStackLoc(id))
     {
         int varNum = id->idAddr()->iiaLclVar.lvaVarNum();
@@ -7047,7 +7054,8 @@ void                emitter::emitDispInsHelp(instrDesc *  id,
 {
     if (EMITVERBOSE)
     {
-        unsigned  idNum = id->idDebugOnlyInfo()->idNum;    // Do not remove this!  It is needed for VisualStudio conditional breakpoints
+        unsigned  idNum = id->idDebugOnlyInfo()->idNum;    // Do not remove this!  It is needed for VisualStudio
+                                                           // conditional breakpoints
 
         printf("IN%04x: ", idNum);
     }

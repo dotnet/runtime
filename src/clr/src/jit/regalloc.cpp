@@ -894,11 +894,13 @@ static rpPredictReg rpGetPredictForMask(regMaskTP regmask)
             BitScanForward(&reg, (DWORD)regmask);
             return rpGetPredictForReg((regNumber)reg);
         }
-        /* It has multiple bits set */
+
 #if defined(_TARGET_ARM_)
+        /* It has multiple bits set */
         else if (regmask == (RBM_R0 | RBM_R1))   { result = PREDICT_PAIR_R0R1; }
         else if (regmask == (RBM_R2 | RBM_R3))   { result = PREDICT_PAIR_R2R3; }
 #elif defined(_TARGET_X86_)
+        /* It has multiple bits set */
         else if (regmask == (RBM_EAX | RBM_EDX)) { result = PREDICT_PAIR_EAXEDX; }
         else if (regmask == (RBM_ECX | RBM_EBX)) { result = PREDICT_PAIR_ECXEBX; }
 #endif
@@ -2845,14 +2847,15 @@ ASG_COMMON:
 #if defined(DEBUG) || !NOGC_WRITE_BARRIERS
                 {
 #ifdef _TARGET_ARM_
-                //
-                // For the ARM target we have an optimized JIT Helper 
-                // that only trashes a subset of the callee saved registers
-                //
 #ifdef DEBUG
                 if (verbose)
                     printf("Adding interference with RBM_CALLEE_TRASH_NOGC for NoGC WriteBarrierAsg\n");
 #endif
+                //
+                // For the ARM target we have an optimized JIT Helper 
+                // that only trashes a subset of the callee saved registers
+                //
+
                 // NOTE: Adding it to the gtUsedRegs will cause the interference to
                 // be added appropriately
 
@@ -2865,13 +2868,14 @@ ASG_COMMON:
                 op1->gtUsedRegs  |= RBM_R0; 
                 op2->gtUsedRegs  |= RBM_R1;
 #else // _TARGET_ARM_
-                // We have to call a normal JIT helper to perform the Write Barrier Assignment
-                // It will trash the callee saved registers
 
 #ifdef DEBUG
                 if (verbose)
                     printf("Adding interference with RBM_CALLEE_TRASH for NoGC WriteBarrierAsg\n");
 #endif
+                // We have to call a normal JIT helper to perform the Write Barrier Assignment
+                // It will trash the callee saved registers
+
                 tree->gtUsedRegs |= RBM_CALLEE_TRASH;
 #endif // _TARGET_ARM_
                 }
@@ -2963,11 +2967,9 @@ ASG_COMMON:
                 {
                     predictReg = PREDICT_SCRATCH_REG;
                 }
-                //
+#ifdef _TARGET_ARM_
                 // If we are widening an int into a long using a targeted register pair we
                 // should retarget so that the low part get loaded into the appropriate register
-                //
-#ifdef _TARGET_ARM_
                 else if (predictReg == PREDICT_PAIR_R0R1)
                 {
                     predictReg   = PREDICT_REG_R0;
@@ -2980,6 +2982,8 @@ ASG_COMMON:
                 }
 #endif
 #ifdef _TARGET_X86_
+                // If we are widening an int into a long using a targeted register pair we
+                // should retarget so that the low part get loaded into the appropriate register
                 else if (predictReg == PREDICT_PAIR_EAXEDX)
                 {
                     predictReg   = PREDICT_REG_EAX;
@@ -3171,6 +3175,7 @@ GENERIC_UNARY:
         case GT_NOP:
             // these unary operators do not write new values
             // and thus won't need a scratch register
+            CLANG_FORMAT_COMMENT_ANCHOR;
 
 #if OPT_BOOL_OPS
             if  (!op1)
@@ -3255,6 +3260,8 @@ GENERIC_UNARY:
                     // We will compute a new regMask that holds the register(s)
                     // that we will load the indirection into.
                     //
+                    CLANG_FORMAT_COMMENT_ANCHOR;
+
 #ifndef _TARGET_64BIT_
                     if (type == TYP_LONG)
                     {
@@ -4133,9 +4140,12 @@ HANDLE_SHIFT_COUNT:
             /* Evaluate the <else> subtree */
             // First record the post-then liveness, and reset the current liveness to the else
             // branch liveness.
+            CLANG_FORMAT_COMMENT_ANCHOR;
+
 #ifdef DEBUG
             VARSET_TP VARSET_INIT(this, postThenLive, compCurLife);
 #endif
+
             VarSetOps::Assign(this, compCurLife, tree->gtQmark.gtElseLiveSet);
 
             rpPredictTreeRegUse(elseTree, predictReg, lockedRegs, rsvdRegs | RBM_LASTUSE);
@@ -4685,11 +4695,12 @@ HANDLE_SHIFT_COUNT:
 
                 if (promotedStructLocal != NULL)
                 {
-                    // All or a portion of this struct will be placed in the argument registers indicated by "curArgMask".
-                    // We build in knowledge of the order in which the code is generated here, so that the second arg to be evaluated
-                    // interferes with the reg for the first, the third with the regs for the first and second, etc.
-                    // But since we always place the stack slots before placing the register slots we do not add inteferences
-                    // for any part of the struct that gets passed on the stack.
+                    // All or a portion of this struct will be placed in the argument registers indicated by
+                    // "curArgMask". We build in knowledge of the order in which the code is generated here, so
+                    // that the second arg to be evaluated interferes with the reg for the first, the third with
+                    // the regs for the first and second, etc. But since we always place the stack slots before
+                    // placing the register slots we do not add inteferences for any part of the struct that gets
+                    // passed on the stack.
 
                     argPredictReg = PREDICT_NONE;  // We will target the indivual fields into registers but not the whole struct
                     regMaskTP prevArgMask = RBM_NONE;
@@ -4935,9 +4946,8 @@ HANDLE_SHIFT_COUNT:
         }
         }
 
-        
-        // Mark required registers for emitting tailcall profiler callback as used
 #if defined(_TARGET_ARM_) && defined(PROFILING_SUPPORTED)
+        // Mark required registers for emitting tailcall profiler callback as used
         if (compIsProfilerHookNeeded() &&
             tree->gtCall.IsTailCall() &&
             (tree->gtCall.gtCallType == CT_USER_FUNC))
@@ -5858,8 +5868,6 @@ ENREG_VAR:;
     noway_assert(refCntEBP == 0);
 #endif
 
-    /* Determine how the EBP register should be used */
-
 #ifdef DEBUG
     if (verbose)
     {
@@ -5878,7 +5886,11 @@ ENREG_VAR:;
     }
 #endif
 
+    /* Determine how the EBP register should be used */
+    CLANG_FORMAT_COMMENT_ANCHOR;
+
 #if DOUBLE_ALIGN
+
     if (!codeGen->isFramePointerRequired())
     {
         noway_assert(getCanDoubleAlign() < COUNT_DOUBLE_ALIGN);
@@ -5947,6 +5959,8 @@ ENREG_VAR:;
             if (bytesUsed > ((refCntWtdStkDbl * misaligned_weight) / BB_UNITY_WEIGHT))
             {
                 /* It's probably better to use EBP as a frame pointer */
+                CLANG_FORMAT_COMMENT_ANCHOR;
+
 #ifdef DEBUG
                 if (verbose)
                     printf("; Predicting not to double-align ESP to save %d bytes of code.\n", bytesUsed);
@@ -5978,6 +5992,8 @@ ENREG_VAR:;
             if (refCntWtdEBP > refCntWtdStkDbl * 2)
             {
                 /* It's probably better to use EBP to enregister integer variables */
+                CLANG_FORMAT_COMMENT_ANCHOR;
+
 #ifdef DEBUG
                 if (verbose)
                     printf("; Predicting not to double-align ESP to allow EBP to be used to enregister variables\n");
@@ -5985,14 +6001,15 @@ ENREG_VAR:;
                 goto NO_DOUBLE_ALIGN;
             }
 
-            /*
-               OK we passed all of the benefit tests
-               so we'll predict a double aligned frame
-            */
 #ifdef DEBUG
             if  (verbose)
                 printf("; Predicting to create a double-aligned frame\n");
 #endif
+            /*
+               OK we passed all of the benefit tests
+               so we'll predict a double aligned frame
+            */
+
             rpFrameType = FT_DOUBLE_ALIGN_FRAME;
             goto REVERSE_EBP_ENREG;
         }
@@ -6004,6 +6021,7 @@ NO_DOUBLE_ALIGN:
     if  (!codeGen->isFramePointerRequired() && !codeGen->isFrameRequired())
     {
 #ifdef _TARGET_XARCH_
+        // clang-format off
         /*  If we are using EBP to enregister variables then
             will we actually save bytes by setting up an EBP frame?
 
@@ -6026,6 +6044,7 @@ NO_DOUBLE_ALIGN:
         // We also pay 5 extra bytes for the MOV EBP,ESP and LEA ESP,[EBP-0x10]
         // to set up an EBP frame in the prolog and epilog
         #define EBP_FRAME_SETUP_SIZE  5
+        // clang-format on
 
         if (refCntStk > (refCntEBP + EBP_FRAME_SETUP_SIZE))
         {
@@ -6040,6 +6059,7 @@ NO_DOUBLE_ALIGN:
             if (bytesSaved > ((refCntWtdEBP * mem_access_weight) / BB_UNITY_WEIGHT))
             {
                 /* It's not be a good idea to use EBP in our predictions */
+                CLANG_FORMAT_COMMENT_ANCHOR;
 #ifdef  DEBUG
                 if (verbose && (refCntEBP > 0))
                     printf("; Predicting that it's not worth using EBP to enregister variables\n");
@@ -6692,6 +6712,8 @@ void                Compiler::raMarkStkVars()
          lclNum++  , varDsc++)
     {
         // For RyuJIT, lvOnFrame is set by LSRA, except in the case of zero-ref, which is set below.
+        CLANG_FORMAT_COMMENT_ANCHOR;
+
 #ifdef LEGACY_BACKEND
         varDsc->lvOnFrame = false;
 #endif // LEGACY_BACKEND
@@ -6743,12 +6765,12 @@ void                Compiler::raMarkStkVars()
 
 #ifdef DEBUGGING_SUPPORT
 
+#ifdef DEBUG
             /* For debugging, note that we have to reserve space even for
                unused variables if they are ever in scope. However, this is not
                an issue as fgExtendDbgLifetimes() adds an initialization and
                variables in scope will not have a zero ref-cnt.
              */
-#ifdef DEBUG
             if (opts.compDbgCode && !varDsc->lvIsParam && varDsc->lvTracked)
             {
                 for (unsigned scopeNum = 0; scopeNum < info.compVarScopesCount; scopeNum++)
@@ -6810,7 +6832,8 @@ void                Compiler::raMarkStkVars()
         noway_assert(lvaLclSize(lclNum) != 0);
 #endif // FEATURE_FIXED_OUT_ARGS
 
-        varDsc->lvOnFrame = true;  // Our prediction is that the final home for this local variable will be in the stack frame
+        varDsc->lvOnFrame = true; // Our prediction is that the final home for this local variable will be in the
+                                  // stack frame
 
     NOT_STK:;
         varDsc->lvFramePointerBased = codeGen->isFramePointerUsed();

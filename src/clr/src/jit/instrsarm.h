@@ -64,6 +64,7 @@
 //   * If the instruction writes to more than one destination register, update the function
 //     emitInsMayWriteMultipleRegs in emitArm.cpp.
 
+// clang-format off
 INST9(invalid, "INVALID", 0, 0, IF_NONE,   BAD_CODE,  BAD_CODE,    BAD_CODE,     BAD_CODE,   BAD_CODE,     BAD_CODE,      BAD_CODE, BAD_CODE,   BAD_CODE)
 
 //    enum     name      FP LD/ST         Rdn,Rm     Rd,Rn,Rm     Rdn,i8        Rd,Rn,i3    Rd,Rn,+i8<<i4 Rd,Rn,Rm{,sh}  SP,i9     Rd,SP,i10   Rd,PC,i10
@@ -541,6 +542,7 @@ INST1(vmov_i2d,  "vmov.i2d",   1, 0,   IF_T2_VMOVD, 0xEC400B10) // A8.6.332 VMOV
 INST1(vmov_d2i,  "vmov.d2i",   1, 0,   IF_T2_VMOVD, 0xEC500B10) // A8.6.332 VMOV from a double to 2 int regs
 INST1(vmov_i2f,  "vmov.i2f",   1, 0,   IF_T2_VMOVS, 0xEE000A10) // A8.6.330 VMOV (between ARM core register and single-precision register)
 INST1(vmov_f2i,  "vmov.f2i",   1, 0,   IF_T2_VMOVS, 0xEE100A10) // A8.6.330 VMOV (between ARM core register and single-precision register)
+// clang-format on
 
 /*****************************************************************************/
 #undef  INST1

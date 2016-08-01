@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+// clang-format off
 //  memberName - enum member name
 //  memberValue - enum member value
 //  shortName - short name string
@@ -19,3 +20,4 @@
     DEF_REFTYPE(RefTypeUpperVectorSaveDef, (0x40 | RefTypeDef), "UVSv"    )
     DEF_REFTYPE(RefTypeUpperVectorSaveUse, (0x40 | RefTypeUse), "UVRs"    )
     DEF_REFTYPE(RefTypeKillGCRefs        , 0x80               , "KlGC"    )
+// clang-format on
