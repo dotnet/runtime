@@ -330,6 +330,7 @@ typedef unsigned short          regPairNoSmall; // arm: need 12 bits
 
 /*****************************************************************************/
 
+// clang-format off
 #if defined(_TARGET_X86_)
 
   #define CPU_LOAD_STORE_ARCH      0
@@ -365,7 +366,6 @@ typedef unsigned short          regPairNoSmall; // arm: need 12 bits
   #define CPOBJ_NONGC_SLOTS_LIMIT  4       // For CpObj code generation, this is the the threshold of the number 
                                            // of contiguous non-gc slots that trigger generating rep movsq instead of 
                                            // sequences of movsq instructions
-
                                            // The way we're currently disabling rep movs/stos is by setting a limit less than
                                            // its unrolling counterparts.  When lower takes the decision on which one to make it
                                            // always asks for the unrolling limit first so you can say the JIT 'favors' unrolling.
@@ -380,7 +380,8 @@ typedef unsigned short          regPairNoSmall; // arm: need 12 bits
   #define FEATURE_MULTIREG_STRUCT_PROMOTE  0  // True when we want to promote fields of a multireg struct into registers
   #define FEATURE_FASTTAILCALL     0       // Tail calls made as epilog+jmp
   #define FEATURE_TAILCALL_OPT     0       // opportunistic Tail calls (without ".tail" prefix) made as fast tail calls.
-  #define FEATURE_SET_FLAGS        0       // Set to true to force the JIT to mark the trees with GTF_SET_FLAGS when the flags need to be set
+  #define FEATURE_SET_FLAGS        0       // Set to true to force the JIT to mark the trees with GTF_SET_FLAGS when
+                                           // the flags need to be set
 #ifdef LEGACY_BACKEND
   #define FEATURE_MULTIREG_ARGS_OR_RET  0  // Support for passing and/or returning single values in more than one register
   #define FEATURE_MULTIREG_ARGS         0  // Support for passing a single argument in more than one register  
@@ -399,23 +400,30 @@ typedef unsigned short          regPairNoSmall; // arm: need 12 bits
   #define MAX_RET_REG_COUNT             2  // Maximum registers used to return a value.
 
 #ifdef FEATURE_USE_ASM_GC_WRITE_BARRIERS
-  #define NOGC_WRITE_BARRIERS      1       // We have specialized WriteBarrier JIT Helpers that DO-NOT trash the RBM_CALLEE_TRASH registers
+  #define NOGC_WRITE_BARRIERS      1       // We have specialized WriteBarrier JIT Helpers that DO-NOT trash the
+                                           // RBM_CALLEE_TRASH registers
 #else
-  #define NOGC_WRITE_BARRIERS      0       // Do not modify this -- modify the definition above.  (If we're not using ASM barriers we definitely don't have NOGC barriers).
+  #define NOGC_WRITE_BARRIERS      0       // Do not modify this -- modify the definition above.  (If we're not using
+                                           // ASM barriers we definitely don't have NOGC barriers).
 #endif
   #define USER_ARGS_COME_LAST      0
   #define EMIT_TRACK_STACK_DEPTH   1
-  #define TARGET_POINTER_SIZE      4       // equal to sizeof(void*) and the managed pointer size in bytes for this target
-  #define FEATURE_EH               1       // To aid platform bring-up, eliminate exceptional EH clauses (catch, filter, filter-handler, fault) and directly execute 'finally' clauses.
+  #define TARGET_POINTER_SIZE      4       // equal to sizeof(void*) and the managed pointer size in bytes for this
+                                           // target
+  #define FEATURE_EH               1       // To aid platform bring-up, eliminate exceptional EH clauses (catch, filter,
+                                           // filter-handler, fault) and directly execute 'finally' clauses.
   #define FEATURE_EH_FUNCLETS      0
-  #define FEATURE_EH_CALLFINALLY_THUNKS 0  // Generate call-to-finally code in "thunks" in the enclosing EH region, protected by "cloned finally" clauses.
+  #define FEATURE_EH_CALLFINALLY_THUNKS 0  // Generate call-to-finally code in "thunks" in the enclosing EH region,
+                                           // protected by "cloned finally" clauses.
 #ifndef LEGACY_BACKEND
   #define FEATURE_STACK_FP_X87     0
 #else // LEGACY_BACKEND
   #define FEATURE_STACK_FP_X87     1       // Use flat register file model    
 #endif // LEGACY_BACKEND
-  #define FEATURE_X87_DOUBLES      0       // FP tree temps always use x87 doubles (when 1) or can be double or float (when 0).
-  #define ETW_EBP_FRAMED           1       // if 1 we cannot use EBP as a scratch register and must create EBP based frames for most methods
+  #define FEATURE_X87_DOUBLES      0       // FP tree temps always use x87 doubles (when 1) or can be double or float
+                                           // (when 0).
+  #define ETW_EBP_FRAMED           1       // if 1 we cannot use EBP as a scratch register and must create EBP based
+                                           // frames for most methods
   #define CSE_CONSTS               1       // Enable if we want to CSE constants
 
 #ifndef LEGACY_BACKEND
@@ -590,7 +598,8 @@ typedef unsigned short          regPairNoSmall; // arm: need 12 bits
   // Registers used by PInvoke frame setup
   #define REG_PINVOKE_FRAME        REG_EDI      // EDI is p/invoke "Frame" pointer argument to CORINFO_HELP_INIT_PINVOKE_FRAME helper
   #define RBM_PINVOKE_FRAME        RBM_EDI
-  #define REG_PINVOKE_TCB          REG_ESI      // ESI is set to Thread Control Block (TCB) on return from CORINFO_HELP_INIT_PINVOKE_FRAME helper
+  #define REG_PINVOKE_TCB          REG_ESI      // ESI is set to Thread Control Block (TCB) on return from
+                                                // CORINFO_HELP_INIT_PINVOKE_FRAME helper
   #define RBM_PINVOKE_TCB          RBM_ESI
   #define REG_PINVOKE_SCRATCH      REG_EAX      // EAX is trashed by CORINFO_HELP_INIT_PINVOKE_FRAME helper
   #define RBM_PINVOKE_SCRATCH      RBM_EAX
@@ -1827,6 +1836,7 @@ C_ASSERT((FEATURE_TAILCALL_OPT == 0) || (FEATURE_FASTTAILCALL == 1));
   #define RBM_NON_BYTE_REGS        RBM_NONE
   #define RBM_BYTE_REG_FLAG        RBM_NONE
 #endif
+// clang-format on
 
 /*****************************************************************************/
 class Target

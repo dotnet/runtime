@@ -63,12 +63,12 @@ private:
             ;
     }
 
+#ifndef DEBUG
     // In debug we also want the default copy constructor to be private, to make inadvertent
     // default initializations illegal.  Debug builds therefore arrange to use the
     // non-default constructor defined below that takes an extra argument where one would
     // otherwise use a copy constructor.  In non-debug builds, we don't pass the extra dummy
     // int argument, and just make copy constructor defined here visible.
-#ifndef DEBUG
 public:
 #endif
     BitSetUint64(const BitSetUint64& bs) : m_bits(bs.m_bits)

@@ -94,7 +94,8 @@ void DecomposeLongs::DecomposeBlock(BasicBlock* block)
 void DecomposeLongs::DecomposeStmt(GenTreeStmt* stmt)
 {
     GenTree* savedStmt = m_compiler->compCurStmt; // We'll need to restore this later, in case this call was recursive.
-    m_compiler->compCurStmt = stmt;   // Publish the current statement globally. One reason: fgInsertEmbeddedFormTemp requires it.
+    m_compiler->compCurStmt = stmt;               // Publish the current statement globally. One reason:
+                                                  // fgInsertEmbeddedFormTemp requires it.
     m_compiler->fgWalkTreePost(&stmt->gtStmt.gtStmtExpr, &DecomposeLongs::DecompNodeHelper, this, true);
     m_compiler->compCurStmt = savedStmt;
 }
@@ -805,7 +806,7 @@ void DecomposeLongs::DecomposeStoreInd(GenTree** ppTree, Compiler::fgWalkData* d
     SimpleLinkNodeAfter(addrHigh, storeIndHigh);
     
     // External links of storeIndHigh tree
-    //dataHigh->gtPrev = nullptr;
+    // dataHigh->gtPrev = nullptr;
     if (isEmbeddedStmt)
     {
         // If storeIndTree is an embedded statement, connect storeIndLow

@@ -30,6 +30,7 @@
 DEF_TP(tn      ,nm        , jitType,     verType, sz,sze,asze, st,al, tf,            howUsed     )
 */
 
+// clang-format off
 DEF_TP(UNDEF   ,"<UNDEF>" , TYP_UNDEF,   TI_ERROR, 0,  0,  0,   0, 0, VTF_ANY,        0           )
 DEF_TP(VOID    ,"void"    , TYP_VOID,    TI_ERROR, 0,  0,  0,   0, 0, VTF_ANY,        0           )
 
@@ -70,6 +71,7 @@ DEF_TP(SIMD32   ,"simd32" , TYP_SIMD32,  TI_STRUCT,32,32, 32,   8,16, VTF_S,    
 #endif // FEATURE_SIMD
 
 DEF_TP(UNKNOWN ,"unknown" ,TYP_UNKNOWN,  TI_ERROR, 0,  0,  0,   0, 0, VTF_ANY,        0           )
+// clang-format on
 
 #undef  GCS
 #undef  BRS

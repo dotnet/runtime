@@ -554,7 +554,7 @@ var_types    Compiler::getPrimitiveTypeForStruct( unsigned  structSize,
         }
         break;
 
-#ifndef _TARGET_XARCH_   
+#ifndef _TARGET_XARCH_
     case 5:
     case 6:
     case 7:
@@ -823,6 +823,7 @@ var_types  Compiler::getArgTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
         {
             // We have a (large) struct that can't be replaced with a "primitive" type
             // and can't be passed in multiple registers
+            CLANG_FORMAT_COMMENT_ANCHOR;
 
 #if defined(_TARGET_X86_) || defined(_TARGET_ARM_)
 
@@ -1518,9 +1519,9 @@ void                Compiler::compDisplayStaticSizes(FILE* fout)
 #if FEATURE_STACK_FP_X87
     fprintf(fout, "Offset / size of gtFPlvl        = %2u / %2u\n", offsetof(GenTree, gtFPlvl       ), sizeof(gtDummy->gtFPlvl       ));
 #endif // FEATURE_STACK_FP_X87
-// TODO: The section that report GenTree sizes should be made into a public static member function of the GenTree class (see https://github.com/dotnet/coreclr/pull/493)
-//    fprintf(fout, "Offset / size of gtCostEx       = %2u / %2u\n", offsetof(GenTree, _gtCostEx     ), sizeof(gtDummy->_gtCostEx     ));
-//    fprintf(fout, "Offset / size of gtCostSz       = %2u / %2u\n", offsetof(GenTree, _gtCostSz     ), sizeof(gtDummy->_gtCostSz     ));
+    // TODO: The section that report GenTree sizes should be made into a public static member function of the GenTree class (see https://github.com/dotnet/coreclr/pull/493)
+    // fprintf(fout, "Offset / size of gtCostEx       = %2u / %2u\n", offsetof(GenTree, _gtCostEx     ), sizeof(gtDummy->_gtCostEx     ));
+    // fprintf(fout, "Offset / size of gtCostSz       = %2u / %2u\n", offsetof(GenTree, _gtCostSz     ), sizeof(gtDummy->_gtCostSz     ));
     fprintf(fout, "Offset / size of gtFlags        = %2u / %2u\n", offsetof(GenTree, gtFlags       ), sizeof(gtDummy->gtFlags       ));
     fprintf(fout, "Offset / size of gtVNPair       = %2u / %2u\n", offsetof(GenTree, gtVNPair      ), sizeof(gtDummy->gtVNPair      ));
     fprintf(fout, "Offset / size of gtRsvdRegs     = %2u / %2u\n", offsetof(GenTree, gtRsvdRegs    ), sizeof(gtDummy->gtRsvdRegs    ));
@@ -2132,6 +2133,7 @@ const   char *      Compiler::compRegNameForSize(regNumber reg, size_t size)
     if (size == 0 || size >= 4)
         return compRegVarName(reg, true);
 
+    // clang-format off
     static
     const char  *   sizeNames[][2] =
     {
@@ -2154,6 +2156,7 @@ const   char *      Compiler::compRegNameForSize(regNumber reg, size_t size)
         { "r15b", "r15w" },
 #endif // _TARGET_AMD64_
     };
+    // clang-format on
 
     assert(isByteReg (reg));
     assert(genRegMask(reg) & RBM_BYTE_REGS);
@@ -2245,6 +2248,8 @@ void Compiler::compSetProcessor()
     //
     // Processor specific optimizations
     //
+    CLANG_FORMAT_COMMENT_ANCHOR;
+
 #ifdef _TARGET_AMD64_
     opts.compUseFCOMI   = false;
     opts.compUseCMOV    = true;
@@ -2419,8 +2424,8 @@ void                Compiler::compInitOptions(CORJIT_FLAGS* jitFlags)
     opts.compDbgCode = (opts.eeFlags & CORJIT_FLG_DEBUG_CODE) != 0;
     opts.compDbgInfo = (opts.eeFlags & CORJIT_FLG_DEBUG_INFO) != 0;
     opts.compDbgEnC  = (opts.eeFlags & CORJIT_FLG_DEBUG_EnC)  != 0;
-    // We never want to have debugging enabled when regenerating GC encoding patterns
 #if REGEN_SHORTCUTS || REGEN_CALLPAT
+    // We never want to have debugging enabled when regenerating GC encoding patterns
     opts.compDbgCode = false;
     opts.compDbgInfo = false;
     opts.compDbgEnC  = false;
@@ -3136,8 +3141,9 @@ void                Compiler::compInitOptions(CORJIT_FLAGS* jitFlags)
         compProfilerMethHndIndirected = false;
     }
 
-    // Right now this ELT hook option is enabled only for arm and amd64
 #if defined(_TARGET_ARM_) || defined(_TARGET_AMD64_)
+    // Right now this ELT hook option is enabled only for arm and amd64
+
     // Honour complus_JitELTHookEnabled only if VM has not asked us to generate profiler 
     // hooks in the first place. That is, Override VM only if it hasn't asked for a 
     // profiler callback for this method.
@@ -4196,6 +4202,7 @@ void                 Compiler::compCompile(void * * methodCodePtr,
 
     // IMPORTANT, after this point, every place where tree topology changes must redo evaluation
     // order (gtSetStmtInfo) and relink nodes (fgSetStmtSeq) if required.
+    CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef DEBUG
     // Now  we have determined the order of evaluation and the gtCosts for every node.
@@ -4370,6 +4377,7 @@ void                 Compiler::compCompile(void * * methodCodePtr,
 #endif // _TARGET_ARMARCH_
 
     /* Assign registers to variables, etc. */
+    CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifndef LEGACY_BACKEND
     ///////////////////////////////////////////////////////////////////////////////
@@ -4640,7 +4648,7 @@ int           Compiler::compCompile(CORINFO_METHOD_HANDLE methodHnd,
     }
 #endif // FUNC_INFO_LOGGING
 
-//  if (s_compMethodsCount==0) setvbuf(jitstdout, NULL, _IONBF, 0);
+    // if (s_compMethodsCount==0) setvbuf(jitstdout, NULL, _IONBF, 0);
 
     info.compCompHnd     = compHnd;
     info.compMethodHnd   = methodHnd;
@@ -4650,9 +4658,9 @@ int           Compiler::compCompile(CORINFO_METHOD_HANDLE methodHnd,
     // with an ARM-targeting "altjit").
     info.compMatchedVM = IMAGE_FILE_MACHINE_TARGET == info.compCompHnd->getExpectedTargetArchitecture();
 
+#if defined(ALT_JIT) && defined(UNIX_AMD64_ABI)
     // ToDo: This code is to allow us to run UNIX codegen on Windows for now. Remove when appropriate.
     // Make sure that the generated UNIX altjit code is skipped on Windows. The static jit codegen is used to run.
-#if defined(ALT_JIT) && defined(UNIX_AMD64_ABI)
     info.compMatchedVM = false;
 #endif // UNIX_AMD64_ABI
 
@@ -4948,11 +4956,13 @@ void Compiler::compCompileFinish()
         static bool headerPrinted = false;
         if (!headerPrinted)
         {
+            // clang-format off
             headerPrinted = true;
             printf("         |  Profiled  | Exec-    |   Method has    |   calls   | Num |LclV |AProp| CSE |   Reg   |bytes | %3s code size | \n", Target::g_tgtCPUName);
             printf(" mdToken |     |  RGN |    Count | EH | FRM | LOOP | NRM | IND | BBs | Cnt | Cnt | Cnt |  Alloc  |  IL  |   HOT |  COLD | method name \n");
             printf("---------+-----+------+----------+----+-----+------+-----+-----+-----+-----+-----+-----+---------+------+-------+-------+-----------\n");
-            //      06001234 | PRF |  HOT |      219 | EH | ebp | LOOP |  15 |   6 |  12 |  17 |  12 |   8 |   28 p2 |  145 |   211 |   123 | System.Example(int)  
+            //      06001234 | PRF |  HOT |      219 | EH | ebp | LOOP |  15 |   6 |  12 |  17 |  12 |   8 |   28 p2 |  145 |   211 |   123 | System.Example(int)
+            // clang-format on
         }
 
         printf("%08X | ", currentMethodToken);
@@ -6018,7 +6028,7 @@ START:
             pParam->pComp->prevCompiler = JitTls::GetCompiler();
             JitTls::SetCompiler(pParam->pComp);
 
-///PREFIX_ASSUME gets turned into ASSERT_CHECK and we cannot have it here
+// PREFIX_ASSUME gets turned into ASSERT_CHECK and we cannot have it here
 #if defined(_PREFAST_) || defined(_PREFIX_)             
             PREFIX_ASSUME(pParam->pComp != NULL);
 #else
@@ -7134,7 +7144,6 @@ void JitTimer::PrintCsvMethodStats(Compiler* comp)
 // Completes the timing of the current method, and adds it to "sum".
 void JitTimer::Terminate(Compiler* comp, CompTimeSummaryInfo& sum)
 {
-    // Otherwise...
 #ifdef DEBUG
     unsigned __int64 totCycles2 = 0;
     for (int i = 0; i < PHASE_NUMBER_OF; i++)
@@ -7417,8 +7426,9 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
  *      cReach,      dReach         : Display all block reachability (call fgDispReach()).
  *      cDoms,       dDoms          : Display all block dominators (call fgDispDoms()).
  *      cLiveness,   dLiveness      : Display per-block variable liveness (call fgDispBBLiveness()).
- *      cCVarSet,    dCVarSet       : Display a "converted" VARSET_TP: the varset is assumed to be tracked variable indices.
- *                                    These are converted to variable numbers and sorted. (Calls dumpConvertedVarSet()).
+ *      cCVarSet,    dCVarSet       : Display a "converted" VARSET_TP: the varset is assumed to be tracked variable
+ *                                    indices. These are converted to variable numbers and sorted. (Calls
+ *                                    dumpConvertedVarSet()).
  *
  *      cFuncIR,     dFuncIR        : Display all the basic blocks of a function in linear IR form.
  *      cLoopIR,     dLoopIR        : Display a loop in linear IR form.
@@ -8171,6 +8181,7 @@ int cTreeFlagsIR(Compiler *comp, GenTree *tree)
         chars += printf("flags=");
 
         // Node flags
+        CLANG_FORMAT_COMMENT_ANCHOR;
 
 #if defined(DEBUG)
 #if SMALL_TREE_NODES

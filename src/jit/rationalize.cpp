@@ -1168,9 +1168,10 @@ void Rationalizer::RewriteObj(GenTreePtr* ppTree, Compiler::fgWalkData* data)
     Compiler* comp = data->compiler;
     GenTreeObj* obj = (*ppTree)->AsObj();
 
+#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
     // For UNIX struct passing, we can have Obj nodes for arguments.
     // For other cases, we should never see a non-SIMD type here.
-#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+
     if (!varTypeIsSIMD(obj))
     {
         return;
@@ -1461,7 +1462,7 @@ Compiler::fgWalkResult Rationalizer::SimpleTransformHelper(GenTree **ppTree, Com
         {
             // We are changing the child from GT_LCL_VAR TO GT_LCL_VAR_ADDR.
             // Therefore gtType of the child needs to be changed to a TYP_BYREF
-
+            CLANG_FORMAT_COMMENT_ANCHOR;
 #ifdef DEBUG
             if (child->gtOper == GT_LCL_VAR)
             {

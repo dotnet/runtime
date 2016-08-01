@@ -18,6 +18,10 @@
 #endif
 #endif
 
+// Clang-format messes with the indentation of comments if they directly precede an
+// ifdef. This macro allows us to anchor the comments to the regular flow of code.
+#define CLANG_FORMAT_COMMENT_ANCHOR ;
+
 #ifdef _MSC_VER
 // These don't seem useful, so turning them off is no big deal
 #pragma warning(disable:4510)   // can't generate default constructor
@@ -37,7 +41,8 @@
 #endif
 
 #ifdef _MSC_VER
-#define CHECK_STRUCT_PADDING    0   // Set this to '1' to enable warning C4820 "'bytes' bytes padding added after construct 'member_name'" on interesting structs/classes
+#define CHECK_STRUCT_PADDING    0   // Set this to '1' to enable warning C4820 "'bytes' bytes padding added after
+                                    // construct 'member_name'" on interesting structs/classes
 #else
 #define CHECK_STRUCT_PADDING    0   // Never enable it for non-MSFT compilers
 #endif
@@ -434,15 +439,18 @@ typedef ptrdiff_t   ssize_t;
 #define VERIFY_GC_TABLES    0
 #define REARRANGE_ADDS      1
 
-#define FUNC_INFO_LOGGING   1   // Support dumping function info to a file. In retail, only NYIs, with no function name, are dumped.
+#define FUNC_INFO_LOGGING   1   // Support dumping function info to a file. In retail, only NYIs, with no function name,
+                                // are dumped.
 
 /*****************************************************************************/
 /*****************************************************************************/
 /* Set these to 1 to collect and output various statistics about the JIT */
 
 #define CALL_ARG_STATS      0   // Collect stats about calls and call arguments.
-#define COUNT_BASIC_BLOCKS  0   // Create a histogram of basic block sizes, and a histogram of IL sizes in the simple case of single block methods.
-#define COUNT_LOOPS         0   // Collect stats about loops, such as the total number of natural loops, a histogram of the number of loop exits, etc.
+#define COUNT_BASIC_BLOCKS  0   // Create a histogram of basic block sizes, and a histogram of IL sizes in the simple
+                                // case of single block methods.
+#define COUNT_LOOPS         0   // Collect stats about loops, such as the total number of natural loops, a histogram of
+                                // the number of loop exits, etc.
 #define COUNT_RANGECHECKS   0   // Count range checks removed (in lexical CSE?).
 #define DATAFLOW_ITER       0   // Count iterations in lexical CSE and constant folding dataflow.
 #define DISPLAY_SIZES       0   // Display generated code, data, and GC information sizes.

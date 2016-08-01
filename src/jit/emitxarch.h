@@ -193,7 +193,7 @@ private:
                                                       insFormat FPld,
                                                       insFormat FPst);
 
-   bool            emitVerifyEncodable(instruction  ins, 
+    bool            emitVerifyEncodable(instruction  ins, 
                                        emitAttr     size,
                                        regNumber    reg1,
                                        regNumber    reg2 = REG_NA);

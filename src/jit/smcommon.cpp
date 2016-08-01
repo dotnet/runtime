@@ -21,9 +21,9 @@ const char * const  smOpcodeNames[] =
 
 const SM_OPCODE s_CodeSeqs[][MAX_CODE_SEQUENCE_LENGTH] =
 { 
-    // ==== Single opcode states ==== 
 
 #define SMOPDEF(smname,string) {smname, CODE_SEQUENCE_END},
+// ==== Single opcode states ==== 
 #include "smopcode.def"
 #undef SMOPDEF    
     
@@ -68,8 +68,9 @@ const SM_OPCODE s_CodeSeqs[][MAX_CODE_SEQUENCE_LENGTH] =
     {SM_CONV_R4,       SM_MUL,        CODE_SEQUENCE_END},    
     {SM_CONV_R4,       SM_DIV,        CODE_SEQUENCE_END},    
 
-    // {SM_CONV_R8,       SM_ADD,        CODE_SEQUENCE_END},  // Removed since it collides with ldelem.r8 in Math.InternalRound
-    // {SM_CONV_R8,       SM_SUB,        CODE_SEQUENCE_END},  // Just remove the SM_SUB as well.  
+    // {SM_CONV_R8,       SM_ADD,        CODE_SEQUENCE_END},  // Removed since it collides with ldelem.r8 in
+                                                              // Math.InternalRound
+    // {SM_CONV_R8,       SM_SUB,        CODE_SEQUENCE_END},  // Just remove the SM_SUB as well.
     {SM_CONV_R8,       SM_MUL,        CODE_SEQUENCE_END},    
     {SM_CONV_R8,       SM_DIV,        CODE_SEQUENCE_END}, 
 

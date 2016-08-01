@@ -2953,11 +2953,11 @@ BasicBlock* CodeGen::genTransitionBlockStackFP(FlatFPStateX87* pState, BasicBloc
     assert(compiler->compMayHaveTransitionBlocks);
     assert(compiler->compHndBBtabCount == 0);
     
-    // Create a temp block
     #ifdef DEBUG
     compiler->fgSafeBasicBlockCreation = true;
     #endif 
     
+    // Create a temp block
     BasicBlock* pBlock = compiler->bbNewBasicBlock(BBJ_ALWAYS);
 
     #ifdef DEBUG

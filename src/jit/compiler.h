@@ -422,10 +422,12 @@ public:
 
 private:
 
-    regNumberSmall      _lvRegNum;      // Used to store the register this variable is in (or, the low register of a register pair).
-                                        //   For LEGACY_BACKEND, this is only set if lvRegister is non-zero. For non-LEGACY_BACKEND, it is set during codegen
-                                        //   any time the variable is enregistered (in non-LEGACY_BACKEND, lvRegister is only set to non-zero if the
-                                        //   variable gets the same register assignment for its entire lifetime).
+    regNumberSmall      _lvRegNum;      // Used to store the register this variable is in (or, the low register of a
+                                        // register pair). For LEGACY_BACKEND, this is only set if lvRegister is
+                                        // non-zero. For non-LEGACY_BACKEND, it is set during codegen any time the
+                                        // variable is enregistered (in non-LEGACY_BACKEND, lvRegister is only set 
+                                        // to non-zero if the variable gets the same register assignment for its entire
+                                        // lifetime).
 #if !defined(_TARGET_64BIT_)
     regNumberSmall      _lvOtherReg;    // Used for "upper half" of long var.
 #endif // !defined(_TARGET_64BIT_)
@@ -1608,9 +1610,10 @@ public:
     // For a finally handler, find the region index that the BBJ_CALLFINALLY lives in that calls the handler,
     // or NO_ENCLOSING_INDEX if the BBJ_CALLFINALLY lives in the main function body. Normally, the index
     // is the same index as the handler (and the BBJ_CALLFINALLY lives in the 'try' region), but for AMD64 the
-    // BBJ_CALLFINALLY lives in the enclosing try or handler region, whichever is more nested, or the main function body.
-    // If the returned index is not NO_ENCLOSING_INDEX, then '*inTryRegion' is set to 'true' if the BBJ_CALLFINALLY
-    // lives in the returned index's 'try' region, or 'false' if lives in the handler region. (It never lives in a filter.)
+    // BBJ_CALLFINALLY lives in the enclosing try or handler region, whichever is more nested, or the main function
+    // body. If the returned index is not NO_ENCLOSING_INDEX, then '*inTryRegion' is set to 'true' if the
+    // BBJ_CALLFINALLY lives in the returned index's 'try' region, or 'false' if lives in the handler region. (It never
+    // lives in a filter.)
     unsigned            ehGetCallFinallyRegionIndex(unsigned finallyIndex, bool* inTryRegion);
 
     // Find the range of basic blocks in which all BBJ_CALLFINALLY will be found that target the 'finallyIndex' region's
@@ -2017,9 +2020,9 @@ public:
     GenTreePtr              gtGetThisArg(GenTreePtr call);
 
     // Static fields of struct types (and sometimes the types that those are reduced to) are represented by having the 
-    // static field contain an object pointer to the boxed struct.  This simplifies the GC implementation...but complicates
-    // the JIT somewhat.  This predicate returns "true" iff a node with type "fieldNodeType", representing the given "fldHnd",
-    // is such an object pointer.
+    // static field contain an object pointer to the boxed struct.  This simplifies the GC implementation...but
+    // complicates the JIT somewhat.  This predicate returns "true" iff a node with type "fieldNodeType", representing
+    // the given "fldHnd", is such an object pointer.
     bool                    gtIsStaticFieldPtrToBoxedStruct(var_types fieldNodeType, CORINFO_FIELD_HANDLE fldHnd);
 
     // Return true if call is a recursive call; return false otherwise.
@@ -2030,12 +2033,13 @@ public:
     GenTreePtr              gtFoldExpr       (GenTreePtr    tree);
     GenTreePtr              
 #ifdef __clang__
-        // TODO-Amd64-Unix: Remove this when the clang optimizer is fixed and/or the method implementation is refactored in a simpler code.
-        // This is a workaround for a bug in the clang-3.5 optimizer. The issue is that in release build the optimizer is mistyping 
-        // (or just wrongly decides to use 32 bit operation for a corner case of MIN_LONG) the args of the (ltemp / lval2)
-        // to int (it does a 32 bit div operation instead of 64 bit) - see the implementation of the method in gentree.cpp. 
-        // For the case of lval1 and lval2 equal to MIN_LONG (0x8000000000000000) this results in raising a SIGFPE. 
-        // The method implementation is rather complex. Disable optimizations for now.
+        // TODO-Amd64-Unix: Remove this when the clang optimizer is fixed and/or the method implementation is
+        // refactored in a simpler code. This is a workaround for a bug in the clang-3.5 optimizer. The issue is that in
+        // release build the optimizer is mistyping (or just wrongly decides to use 32 bit operation for a corner case
+        // of MIN_LONG) the args of the (ltemp / lval2) to int (it does a 32 bit div operation instead of 64 bit) - see
+        // the implementation of the method in gentree.cpp. For the case of lval1 and lval2 equal to MIN_LONG
+        // (0x8000000000000000) this results in raising a SIGFPE. The method implementation is rather complex. Disable
+        // optimizations for now.
     __attribute__((optnone))
 #endif // __clang__
                             gtFoldExprConst(GenTreePtr      tree);
@@ -2295,8 +2299,8 @@ public :
     // On architectures whose ABIs allow structs to be passed in registers, struct promotion will sometimes
     // require us to "rematerialize" a struct from it's separate constituent field variables.  Packing several sub-word
     // field variables into an argument register is a hard problem.  It's easier to reserve a word of memory into which
-    // such field can be copied, after which the assembled memory word can be read into the register.  We will allocate this
-    // variable to be this scratch word whenever struct promotion occurs.
+    // such field can be copied, after which the assembled memory word can be read into the register.  We will allocate
+    // this variable to be this scratch word whenever struct promotion occurs.
     unsigned            lvaPromotedStructAssemblyScratchVar;
 #endif // _TARGET_ARM_
 
@@ -3254,11 +3258,12 @@ public :
     unsigned            fgDomBBcount;       // # of BBs for which we have dominator and reachability information
     BasicBlock**        fgBBInvPostOrder;   // The flow graph stored in an array sorted in topological order, needed to compute dominance. Indexed by block number. Size: fgBBNumMax + 1.
 
-    // After the dominance tree is computed, we cache a DFS preorder number and DFS postorder number to compute dominance queries in O(1).
-    // fgDomTreePreOrder and fgDomTreePostOrder are arrays giving the block's preorder and postorder number, respectively.
-    // The arrays are indexed by basic block number. (Note that blocks are numbered starting from one. Thus, we always waste
-    // element zero. This makes debugging easier and makes the code less likely to suffer from bugs stemming from forgetting
-    // to add or subtract one from the block number to form an array index). The arrays are of size fgBBNumMax + 1.
+    // After the dominance tree is computed, we cache a DFS preorder number and DFS postorder number to compute
+    // dominance queries in O(1). fgDomTreePreOrder and fgDomTreePostOrder are arrays giving the block's preorder and
+    // postorder number, respectively. The arrays are indexed by basic block number. (Note that blocks are numbered
+    // starting from one. Thus, we always waste element zero. This makes debugging easier and makes the code less likely
+    // to suffer from bugs stemming from forgetting to add or subtract one from the block number to form an array
+    // index). The arrays are of size fgBBNumMax + 1.
     unsigned *          fgDomTreePreOrder;
     unsigned *          fgDomTreePostOrder;
 
@@ -3603,9 +3608,9 @@ public :
     void                fgInterBlockLocalVarLiveness();
 
     // The presence of "x op= y" operations presents some difficulties for SSA: this is both a use of some SSA name of
-    // "x", and a def of a new SSA name for "x".  The tree only has one local variable for "x", so it has to choose whether
-    // to treat that as the use or def.  It chooses the "use", and thus the old SSA name.  This map allows us to record/recover
-    // the "def" SSA number, given the lcl var node for "x" in such a tree.
+    // "x", and a def of a new SSA name for "x".  The tree only has one local variable for "x", so it has to choose
+    // whether to treat that as the use or def.  It chooses the "use", and thus the old SSA name.  This map allows us
+    // to record/recover the "def" SSA number, given the lcl var node for "x" in such a tree.
     typedef SimplerHashTable<GenTreePtr, PtrKeyFuncs<GenTree>, unsigned, JitSimplerHashBehavior> NodeToUnsignedMap;
     NodeToUnsignedMap*  m_opAsgnVarDefSsaNums;
     NodeToUnsignedMap*  GetOpAsgnVarDefSsaNums()
@@ -3933,8 +3938,9 @@ protected:
                                                                                    // (performed by fgComputeDoms), this procedure builds the dominance tree represented
                                                                                    // adjacency lists.
 
-    // In order to speed up the queries of the form 'Does A dominates B', we can perform a DFS preorder and postorder traversal of the dominance tree and the
-    // dominance query will become A dominates B iif preOrder(A) <= preOrder(B) && postOrder(A) >= postOrder(B) making the computation O(1).
+    // In order to speed up the queries of the form 'Does A dominates B', we can perform a DFS preorder and postorder
+    // traversal of the dominance tree and the dominance query will become A dominates B iif preOrder(A) <= preOrder(B)
+    // && postOrder(A) >= postOrder(B) making the computation O(1).
     void                fgTraverseDomTree       (unsigned         bbNum,
                                                  BasicBlockList** domTree,
                                                  unsigned*        preNum,
@@ -4562,8 +4568,8 @@ private:
     // all offsets between the top-level indirection and the bottom are constant, and that their sum is sufficiently
     // small; hence the other fields of MorphAddrContext.  Finally, the odd structure of GT_COPYBLK, in which the second
     // argument is a GT_LIST, requires us to "tell" that List node that its parent is a GT_COPYBLK, so it "knows" that
-    // each of its arguments should be evaluated in MACK_Ind contexts.  (This would not be true for GT_LIST nodes representing
-    // method call argument lists.)
+    // each of its arguments should be evaluated in MACK_Ind contexts.  (This would not be true for GT_LIST nodes
+    // representing method call argument lists.)
     enum MorphAddrContextKind {
         MACK_Ind,
         MACK_Addr,
@@ -4882,8 +4888,8 @@ protected:
     // outside of that loop.  Exempt expressions whose value number is in "hoistedInParents"; add VN's of hoisted
     // expressions to "hoistInLoop". 
     // Returns "true" iff "tree" is loop-invariant (wrt "lnum").
-    // Assumes that the value of "*firstBlockAndBeforeSideEffect" indicates that we're in the first block, and before any
-    // possible globally visible side effects.  Assume is called in evaluation order, and updates this.
+    // Assumes that the value of "*firstBlockAndBeforeSideEffect" indicates that we're in the first block, and before
+    // any possible globally visible side effects.  Assume is called in evaluation order, and updates this.
     bool                optHoistLoopExprsForTree(GenTreePtr tree,
                                                  unsigned lnum, 
                                                  LoopHoistContext* hoistCtxt,
@@ -4914,8 +4920,8 @@ protected:
 
 private:
     // Requires "lnum" to be the index of an outermost loop in the loop table.  Traverses the body of that loop,
-    // including all nested loops, and records the set of "side effects" of the loop: fields (object instance and static)
-    // written to, and SZ-array element type equivalence classes updated.
+    // including all nested loops, and records the set of "side effects" of the loop: fields (object instance and
+    // static) written to, and SZ-array element type equivalence classes updated.
     void                optComputeLoopNestSideEffects(unsigned lnum);
 
     // Add the side effects of "blk" (which is required to be within a loop) to all loops of which it is a part.
@@ -4969,13 +4975,14 @@ protected :
 
 public:
 
-    // A "LoopDsc" describes a ("natural") loop.  We (currently) require the body of a loop to be a contiguous (in bbNext order)
-    // sequence of basic blocks.  (At times, we may require the blocks in a loop to be "properly numbered" in bbNext order;
-    // we use comparisons on the bbNum to decide order.)
+    // A "LoopDsc" describes a ("natural") loop.  We (currently) require the body of a loop to be a contiguous (in
+    // bbNext order) sequence of basic blocks.  (At times, we may require the blocks in a loop to be "properly numbered"
+    // in bbNext order; we use comparisons on the bbNum to decide order.)
     // The blocks that define the body are
     //   first <= top <= entry <= bottom   .
-    // The "head" of the loop is a block outside the loop that has "entry" as a successor. We only support loops with a single 'head' block.
-    // The meanings of these blocks are given in the definitions below. Also see the picture at Compiler::optFindNaturalLoops().
+    // The "head" of the loop is a block outside the loop that has "entry" as a successor. We only support loops with a
+    // single 'head' block. The meanings of these blocks are given in the definitions below. Also see the picture at
+    // Compiler::optFindNaturalLoops().
     struct  LoopDsc
     {
         BasicBlock *        lpHead;     // HEAD of the loop (not part of the looping of the loop) -- has ENTRY as a successor.
@@ -5021,7 +5028,8 @@ public:
 #define LPFLG_DONT_UNROLL   0x2000      // do not unroll this loop
 
 #define LPFLG_ASGVARS_YES   0x4000      // "lpAsgVars" has been  computed
-#define LPFLG_ASGVARS_INC   0x8000      // "lpAsgVars" is incomplete -- vars beyond those representable in an AllVarSet tyep are assigned to.
+#define LPFLG_ASGVARS_INC   0x8000      // "lpAsgVars" is incomplete -- vars beyond those representable in an AllVarSet
+                                        // type are assigned to.
 
 
         bool                lpLoopHasHeapHavoc;         // The loop contains an operation that we assume has arbitrary heap side effects.
@@ -5224,8 +5232,8 @@ protected :
     // loop nested in "loopInd" that shares the same head as "loopInd".
     void                optUpdateLoopHead(unsigned loopInd, BasicBlock* from, BasicBlock* to);
 
-    // Updates the successors of "blk": if "blk2" is a successor of "blk", and there is a mapping for "blk2->blk3" in "redirectMap",
-    // change "blk" so that "blk3" is this successor. Note that the predecessor lists are not updated.
+    // Updates the successors of "blk": if "blk2" is a successor of "blk", and there is a mapping for "blk2->blk3" in
+    // "redirectMap", change "blk" so that "blk3" is this successor. Note that the predecessor lists are not updated.
     void                optRedirectBlock(BasicBlock* blk, BlockToBlockMap* redirectMap);
 
     // Marks the containsCall information to "lnum" and any parent loops.
@@ -6570,6 +6578,8 @@ public :
 
     // ICorStaticInfo wrapper functions
 
+    bool eeTryResolveToken(CORINFO_RESOLVED_TOKEN* resolvedToken);
+
 #if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
 #ifdef DEBUG
     static void                 dumpSystemVClassificationType(SystemVClassificationType ct);
@@ -6579,7 +6589,6 @@ public :
                                                                                 /*OUT*/ SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR* structPassInRegDescPtr);
 #endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
 
-    bool eeTryResolveToken(CORINFO_RESOLVED_TOKEN* resolvedToken);
 
     template<typename ParamType>
     bool eeRunWithErrorTrap(void (*function)(ParamType*), ParamType* param)
@@ -6591,12 +6600,13 @@ public :
 
     // Utility functions
 
+    const char *                eeGetFieldName      (CORINFO_FIELD_HANDLE   fieldHnd,
+                                                     const char **  classNamePtr = NULL);
+
 #if defined(DEBUG)
     const wchar_t *             eeGetCPString       (size_t stringHandle);
 #endif
 
-    const char *                eeGetFieldName      (CORINFO_FIELD_HANDLE   fieldHnd,
-                                                     const char **  classNamePtr = NULL);
     const char*                 eeGetClassName      (CORINFO_CLASS_HANDLE clsHnd);
 
     static CORINFO_METHOD_HANDLE eeFindHelper       (unsigned       helper);
@@ -6796,11 +6806,11 @@ public :
     regMaskTP           compNoGCHelperCallKillSet (CorInfoHelpFunc helper);
 
 #ifdef _TARGET_ARM_
-    // Requires that "varDsc" be a promoted struct local variable being passed as an argument, beginning at "firstArgRegNum",
-    // which is assumed to have already been aligned to the register alignment restriction of the struct type.
-    // Adds bits to "*pArgSkippedRegMask" for any argument registers *not* used in passing "varDsc" -- i.e., internal
-    // "holes" caused by internal alignment constraints.  For example, if the struct contained an int and a double, and we
-    // at R0 (on ARM), then R1 would be skipped, and the bit for R1 would be added to the mask.
+    // Requires that "varDsc" be a promoted struct local variable being passed as an argument, beginning at
+    // "firstArgRegNum", which is assumed to have already been aligned to the register alignment restriction of the
+    // struct type. Adds bits to "*pArgSkippedRegMask" for any argument registers *not* used in passing "varDsc" -- 
+    // i.e., internal "holes" caused by internal alignment constraints.  For example, if the struct contained an int and
+    // a double, and we at R0 (on ARM), then R1 would be skipped, and the bit for R1 would be added to the mask.
     void                fgAddSkippedRegsInPromotedStructArg(LclVarDsc* varDsc, 
                                                             unsigned   firstArgRegNum, 
                                                             regMaskTP* pArgSkippedRegMask);
@@ -7296,8 +7306,8 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
         return emitTypeSize(TYP_SIMD8);
     }
 
-    // (maxPossibleSIMDStructBytes is for use in a context that requires a compile-time constant.) 
 #ifdef FEATURE_AVX_SUPPORT
+    // (maxPossibleSIMDStructBytes is for use in a context that requires a compile-time constant.) 
     static const unsigned   maxPossibleSIMDStructBytes = 32;
 #else // !FEATURE_AVX_SUPPORT
     static const unsigned   maxPossibleSIMDStructBytes = 16;
@@ -7464,10 +7474,10 @@ public :
     bool                compBlkOpUsed;      // Does the method do a COPYBLK or INITBLK
 #endif
 
+#ifdef DEBUG
     // State information - which phases have completed?
     // These are kept together for easy discoverability
 
-#ifdef DEBUG
     bool                bRangeAllowStress;
     bool                compCodeGenDone;
     int64_t             compNumStatementLinksTraversed;  // # of links traversed while doing debug checks
@@ -7495,8 +7505,9 @@ public :
     bool                getNeedsGSSecurityCookie() const { return compNeedsGSSecurityCookie; }
     void                setNeedsGSSecurityCookie() { compNeedsGSSecurityCookie = true; }
     
-    FrameLayoutState    lvaDoneFrameLayout;             // The highest frame layout state that we've completed. During frame layout calculations,
-                                                        // this is the level we are currently computing.
+    FrameLayoutState    lvaDoneFrameLayout;             // The highest frame layout state that we've completed. During
+                                                        // frame layout calculations, this is the level we are currently
+                                                        // computing.
 
     //---------------------------- JITing options -----------------------------
 
@@ -7642,7 +7653,6 @@ public :
 
         bool                compNeedSecurityCheck; // This flag really means where or not a security object needs 
                                                    // to be allocated on the stack.
-                                                   
                                                    // It will be set to true in the following cases:
                                                    //   1. When the method being compiled has a declarative security 
                                                    //        (i.e. when CORINFO_FLG_NOSECURITYWRAP is reset for the current method).
@@ -7672,9 +7682,9 @@ public :
         // This flag  is indicating if there is a need to align the frame.
         // On AMD64-Windows, if there are calls, 4 slots for the outgoing ars are allocated, except for
         // FastTailCall. This slots makes the frame size non-zero, so alignment logic will be called.
-        // On AMD64-Unix, there are no such slots. There is a possibility to have calls in the method with frame size of 0.
-        // The frame alignment logic won't kick in. This flags takes care of the AMD64-Unix case by remembering that there
-        // are calls and making sure the frame alignment logic is executed.
+        // On AMD64-Unix, there are no such slots. There is a possibility to have calls in the method with frame size of
+        // 0. The frame alignment logic won't kick in. This flags takes care of the AMD64-Unix case by remembering that
+        // there are calls and making sure the frame alignment logic is executed.
         bool                compNeedToAlignFrame;
 #endif // UNIX_AMD64_ABI
 
@@ -7784,7 +7794,7 @@ public :
 #endif // DEBUG
 
 
-
+// clang-format off
 #define STRESS_MODES                                                                            \
                                                                                                 \
         STRESS_MODE(NONE)                                                                       \
@@ -7824,6 +7834,7 @@ public :
         STRESS_MODES
 #undef STRESS_MODE
     };
+// clang-format on
 
 #ifdef DEBUG
     static 
@@ -7956,8 +7967,9 @@ public :
                                                     // current number of EH clauses (after additions like synchronized
                                                     // methods and funclets, and removals like unreachable code deletion).
 
-        bool            compMatchedVM;              // true if the VM is "matched": either the JIT is a cross-compiler and the VM expects that,
-                                                    // or the JIT is a "self-host" compiler (e.g., x86 hosted targeting x86) and the VM expects that.
+        bool            compMatchedVM;              // true if the VM is "matched": either the JIT is a cross-compiler
+                                                    // and the VM expects that, or the JIT is a "self-host" compiler
+                                                    // (e.g., x86 hosted targeting x86) and the VM expects that.
 
 #if defined(DEBUGGING_SUPPORT) || defined(DEBUG)
 
@@ -8018,6 +8030,8 @@ public :
         //
         // 3. Windows 64-bit native calling convention also requires the address of RetBuff
         //    to be returned in RAX.
+        CLANG_FORMAT_COMMENT_ANCHOR;
+
 #ifdef _TARGET_AMD64_
         return (info.compRetBuffArg != BAD_VAR_NUM);
 #else // !_TARGET_AMD64_  
@@ -8413,6 +8427,8 @@ protected:
                                       CORJIT_FLAGS * compileFlags);
 
     // Data required for generating profiler Enter/Leave/TailCall hooks
+    CLANG_FORMAT_COMMENT_ANCHOR;
+
 #ifdef PROFILING_SUPPORTED
     bool                compProfilerHookNeeded;            // Whether profiler Enter/Leave/TailCall hook needs to be generated for the method
     void                *compProfilerMethHnd;              // Profiler handle of the method being compiled. Passed as param to ELT callbacks
@@ -8658,8 +8674,8 @@ public:
     //            having multiple try native code regions for a single try il region. This is doable and shouldnt be
     //            a big change in the exception.
     //
-    //      Given the low frequency of the cases where we have transition blocks, I've decided to dumb down optimizations
-    //      For these 2 cases:
+    //      Given the low frequency of the cases where we have transition blocks, I've decided to dumb down
+    //      optimizations. For these 2 cases:
     //
     //          - When there is a chance that we will have FP transition blocks, we won't do procedure splitting.
     //          - When a method has a handler, it won't enregister any FP variables that go thru a conditional long or
@@ -8885,9 +8901,9 @@ public:
 
     typedef SimplerHashTable<GenTreePtr, PtrKeyFuncs<GenTree>, FieldSeqNode*, JitSimplerHashBehavior> NodeToFieldSeqMap;
 
-    // Some nodes of "TYP_BYREF" or "TYP_I_IMPL" actually represent the address of a field within a struct, but since the offset of
-    // the field is zero, there's no "GT_ADD" node.  We normally attach a field sequence to the constant that is
-    // added, but what do we do when that constant is zero, and is thus not present?  We use this mechanism to
+    // Some nodes of "TYP_BYREF" or "TYP_I_IMPL" actually represent the address of a field within a struct, but since
+    // the offset of the field is zero, there's no "GT_ADD" node.  We normally attach a field sequence to the constant
+    // that is added, but what do we do when that constant is zero, and is thus not present?  We use this mechanism to
     // attach the field sequence directly to the address node.
     NodeToFieldSeqMap* m_zeroOffsetFieldMap;
 
@@ -8911,8 +8927,8 @@ public:
     // record the the field sequence using the ZeroOffsetFieldMap described above.
     //
     // One exception above is that "op1" is a node of type "TYP_REF" where "op1" is a GT_LCL_VAR.
-    // This happens when System.Object vtable pointer is a regular field at offset 0 in System.Private.CoreLib in CoreRT.
-    // Such case is handled same as the default case.
+    // This happens when System.Object vtable pointer is a regular field at offset 0 in System.Private.CoreLib in
+    // CoreRT. Such case is handled same as the default case.
     void fgAddFieldSeqForZeroOffset(GenTreePtr op1, FieldSeqNode* fieldSeq);
 
 
@@ -8933,9 +8949,9 @@ public:
 
     NodeToUnsignedMap* m_heapSsaMap;
 
-    // In some cases, we want to assign intermediate SSA #'s to heap states, and know what nodes create those heap states.
-    // (We do this for try blocks, where, if the try block doesn't do a call that loses track of the heap state, all the possible
-    // heap states are possible initial states of the corresponding catch block(s).)
+    // In some cases, we want to assign intermediate SSA #'s to heap states, and know what nodes create those heap
+    // states. (We do this for try blocks, where, if the try block doesn't do a call that loses track of the heap state,
+    // all the possible heap states are possible initial states of the corresponding catch block(s).)
     NodeToUnsignedMap* GetHeapSsaMap()
     {
         Compiler* compRoot = impInlineRoot();
@@ -9140,9 +9156,10 @@ struct NodeSizeStats
 
     size_t genTreeNodeCnt;
     size_t genTreeNodeSize;         // The size we allocate
-    size_t genTreeNodeActualSize;   // The actual size of the node. Note that the actual size will likely be smaller than the
-                                    //   allocated size, but we sometimes use SetOper()/ChangeOper() to change a smaller node
-                                    //   to a larger one. TODO-Cleanup: add stats on SetOper()/ChangeOper() usage to quanitfy this.
+    size_t genTreeNodeActualSize;   // The actual size of the node. Note that the actual size will likely be smaller
+                                    //   than the allocated size, but we sometimes use SetOper()/ChangeOper() to change
+                                    //   a smaller node to a larger one. TODO-Cleanup: add stats on
+                                    //   SetOper()/ChangeOper() usage to quanitfy this.
 };
 extern NodeSizeStats genNodeSizeStats;          // Total node size stats
 extern NodeSizeStats genNodeSizeStatsPerFunc;   // Per-function node size stats
