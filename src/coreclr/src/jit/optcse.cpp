@@ -1528,7 +1528,8 @@ public:
 #endif
                     cse_def_cost = 2;
                     cse_use_cost = 2;
-                    extra_yes_cost = BB_UNITY_WEIGHT * 2;   // Extra cost in case we have to spill/restore a caller saved register  
+                    extra_yes_cost = BB_UNITY_WEIGHT * 2; // Extra cost in case we have to spill/restore a caller
+                                                          // saved register
                 }
             }
             else // Conservative CSE promotion
@@ -1554,7 +1555,8 @@ public:
 #endif
                     cse_def_cost = 3;
                     cse_use_cost = 3;
-                    extra_yes_cost = BB_UNITY_WEIGHT * 4;   // Extra cost in case we have to spill/restore a caller saved register  
+                    extra_yes_cost = BB_UNITY_WEIGHT * 4;   // Extra cost in case we have to spill/restore a caller
+                                                            // saved register
                 }
 
                 // If we have maxed out lvaTrackedCount then this CSE may end up as an untracked variable
@@ -1580,7 +1582,8 @@ public:
         // estimate the cost from lost codesize reduction if we do not perform the CSE
         if (candidate->Size() > cse_use_cost)
         {
-            Compiler::CSEdsc* dsc = candidate->CseDsc();    // We need to retrieve the actual use count, not the weighted count
+            Compiler::CSEdsc* dsc = candidate->CseDsc(); // We need to retrieve the actual use count, not the
+                                                         // weighted count
             extra_no_cost = candidate->Size() - cse_use_cost;
             extra_no_cost = extra_no_cost * dsc->csdUseCount * 2;
         }

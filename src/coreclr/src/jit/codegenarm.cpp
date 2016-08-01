@@ -211,9 +211,9 @@ void                CodeGen::genCodeForBBlist()
 
     regSet.rsSpillBeg();
 
+#ifdef DEBUGGING_SUPPORT
     /* Initialize the line# tracking logic */
 
-#ifdef DEBUGGING_SUPPORT
     if (compiler->opts.compScopeInfo)
     {
         siInit();
@@ -307,9 +307,9 @@ void                CodeGen::genCodeForBBlist()
         genUpdateLife(block->bbLiveIn);
 
         // Even if liveness didn't change, we need to update the registers containing GC references.
-        // genUpdateLife will update the registers live due to liveness changes. But what about registers that didn't change?
-        // We cleared them out above. Maybe we should just not clear them out, but update the ones that change here.
-        // That would require handling the changes in recordVarLocationsAtStartOfBB().
+        // genUpdateLife will update the registers live due to liveness changes. But what about registers that didn't
+        // change? We cleared them out above. Maybe we should just not clear them out, but update the ones that change
+        // here. That would require handling the changes in recordVarLocationsAtStartOfBB().
 
         regMaskTP newLiveRegSet = RBM_NONE;
         regMaskTP newRegGCrefSet = RBM_NONE;
@@ -363,6 +363,7 @@ void                CodeGen::genCodeForBBlist()
         }
 
         /* Start a new code output block */
+        CLANG_FORMAT_COMMENT_ANCHOR;
 
 #if FEATURE_EH_FUNCLETS
 #if defined(_TARGET_ARM_)
@@ -373,18 +374,17 @@ void                CodeGen::genCodeForBBlist()
         {
             assert(block->bbFlags & BBF_JMP_TARGET);
 
-            // Create a label that we'll use for computing the start of an EH region, if this block is
-            // at the beginning of such a region. If we used the existing bbEmitCookie as is for
-            // determining the EH regions, then this NOP would end up outside of the region, if this
-            // block starts an EH region. If we pointed the existing bbEmitCookie here, then the NOP
-            // would be executed, which we would prefer not to do.
-
 #ifdef  DEBUG
             if (compiler->verbose)
             {
                 printf("\nEmitting finally target NOP predecessor for BB%02u\n", block->bbNum);
             }
 #endif
+            // Create a label that we'll use for computing the start of an EH region, if this block is
+            // at the beginning of such a region. If we used the existing bbEmitCookie as is for
+            // determining the EH regions, then this NOP would end up outside of the region, if this
+            // block starts an EH region. If we pointed the existing bbEmitCookie here, then the NOP
+            // would be executed, which we would prefer not to do.
 
             block->bbUnwindNopEmitCookie = getEmitter()->emitAddLabel(gcInfo.gcVarPtrSetCur,
                                                                       gcInfo.gcRegGCrefSetCur,
@@ -479,6 +479,7 @@ void                CodeGen::genCodeForBBlist()
          *  Generate code for each statement-tree in the block
          *
          */
+        CLANG_FORMAT_COMMENT_ANCHOR;
 
 #if FEATURE_EH_FUNCLETS
         if (block->bbFlags & BBF_FUNCLET_BEG)
@@ -696,7 +697,8 @@ void                CodeGen::genCodeForBBlist()
         // The document "X64 and ARM ABIs.docx" has more details. The situations:
         // 1. If the call instruction is in a different EH region as the instruction that follows it.
         // 2. If the call immediately precedes an OS epilog. (Note that what the JIT or VM consider an epilog might
-        //    be slightly different from what the OS considers an epilog, and it is the OS-reported epilog that matters here.)
+        //    be slightly different from what the OS considers an epilog, and it is the OS-reported epilog that matters
+        //    here.)
         // We handle case #1 here, and case #2 in the emitter.
         if (getEmitter()->emitIsLastInsCall())
         {

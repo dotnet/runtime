@@ -24,7 +24,8 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
     "Internal registers" are registers used during the code sequence generated for the node.
     The register lifetimes must obey the following lifetime model:
     - First, any internal registers are defined.
-    - Next, any source registers are used (and are then freed if they are last use and are not identified as "delayRegFree").
+    - Next, any source registers are used (and are then freed if they are last use and are not identified as
+      "delayRegFree").
     - Next, the internal registers are used (and are then freed).
     - Next, any registers in the kill set for the instruction are killed.
     - Next, the destination register(s) are defined (multiple destination registers are only supported on ARM)
@@ -61,22 +62,25 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
         - If a lclVar node currently lives in some register, it may not be desirable to move it
           (i.e. its current location may be desirable for future uses, e.g. if it's a callee save register,
           but needs to be in a specific arg register for a call).
-        - In other cases there may be conflicts on the restrictions placed by the defining node and the node which consumes it
+        - In other cases there may be conflicts on the restrictions placed by the defining node and the node which
+          consumes it
       - If such a node is constrained to a single fixed register (e.g. an arg register, or a return from a call),
-        then LSRA is free to annotate the node with a different register.  The code generator must issue the appropriate move.
-      - However, if such a node is constrained to a set of registers, and its current location does not satisfy that requirement,
-        LSRA must insert a GT_COPY node between the node and its parent.  The gtRegNum on the GT_COPY node must satisfy the
-        register requirement of the parent.
+        then LSRA is free to annotate the node with a different register.  The code generator must issue the appropriate
+        move.
+      - However, if such a node is constrained to a set of registers, and its current location does not satisfy that
+        requirement, LSRA must insert a GT_COPY node between the node and its parent.  The gtRegNum on the GT_COPY node
+        must satisfy the register requirement of the parent.
     - GenTree::gtRsvdRegs has a set of registers used for internal temps.
-    - A tree node is marked GTF_SPILL if the tree node must be spilled by the code generator after it has been evaluated.
+    - A tree node is marked GTF_SPILL if the tree node must be spilled by the code generator after it has been
+      evaluated.
       - LSRA currently does not set GTF_SPILLED on such nodes, because it caused problems in the old code generator.
         In the new backend perhaps this should change (see also the note below under CodeGen).
     - A tree node is marked GTF_SPILLED if it is a lclVar that must be reloaded prior to use.
       - The register (gtRegNum) on the node indicates the register to which it must be reloaded.
       - For lclVar nodes, since the uses and defs are distinct tree nodes, it is always possible to annotate the node
         with the register to which the variable must be reloaded.
-      - For other nodes, since they represent both the def and use, if the value must be reloaded to a different register,
-        LSRA must insert a GT_RELOAD node in order to specify the register to which it should be reloaded.
+      - For other nodes, since they represent both the def and use, if the value must be reloaded to a different
+        register, LSRA must insert a GT_RELOAD node in order to specify the register to which it should be reloaded.
 
     Local variable table (LclVarDsc):
     - LclVarDsc::lvRegister is set to true if a local variable has the
@@ -821,9 +825,9 @@ LinearScan::newRefPosition(Interval* theInterval,
     // Spill info
     newRP->isFixedRegRef = isFixedRegister;
 
+#ifndef _TARGET_AMD64_
     // We don't need this for AMD because the PInvoke method epilog code is explicit
     // at register allocation time.
-#ifndef _TARGET_AMD64_
     if (theInterval != nullptr &&
         theInterval->isLocalVar &&
         compiler->info.compCallUnmanaged &&
@@ -2044,6 +2048,8 @@ void LinearScan::identifyCandidates()
         // We maintain two sets of FP vars - those that meet the first threshold of weighted ref Count,
         // and those that meet the second (see the definitions of thresholdFPRefCntWtd and maybeFPRefCntWtd
         // above).
+        CLANG_FORMAT_COMMENT_ANCHOR;
+
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
         // Additionally, when we are generating AVX on non-UNIX amd64, we keep a separate set of the LargeVectorType vars.
         if (varDsc->lvType == LargeVectorType)
@@ -2083,6 +2089,7 @@ void LinearScan::identifyCandidates()
     // registers current include the number of fp vars, whether there are loops, and whether there are
     // multiple exits.  These have been selected somewhat empirically, but there is probably room for
     // more tuning.
+    CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef DEBUG
     if (VERBOSE)
@@ -2099,6 +2106,7 @@ void LinearScan::identifyCandidates()
         }
     }
 #endif
+
     JITDUMP("floatVarCount = %d; hasLoops = %d, singleExit = %d\n",
             floatVarCount,
             compiler->fgHasLoops,
@@ -2145,7 +2153,8 @@ void LinearScan::identifyCandidates()
 void
 LinearScan::initVarRegMaps()
 {
-    assert(compiler->lvaTrackedFixed);   // We should have already set this to prevent us from adding any new tracked variables.
+    assert(compiler->lvaTrackedFixed);   // We should have already set this to prevent us from adding any new tracked
+                                         // variables.
 
     // The compiler memory allocator requires that the allocation be an
     // even multiple of int-sized objects
@@ -2779,8 +2788,8 @@ LinearScan::buildInternalRegisterDefsForNode(GenTree *tree,
     int internalIntCount = tree->gtLsraInfo.internalIntCount;
     regMaskTP internalCands = tree->gtLsraInfo.getInternalCandidates(this);
 
-    // If the number of internal integer registers required is the same as the number of candidate integer registers in the candidate set, 
-    // then they must be handled as fixed registers.
+    // If the number of internal integer registers required is the same as the number of candidate integer registers in
+    // the candidate set, then they must be handled as fixed registers.
     // (E.g. for the integer registers that floating point arguments must be copied into for a varargs call.)
     bool fixedRegs = false;
     regMaskTP internalIntCandidates = (internalCands & allRegs(TYP_INT));
@@ -2893,9 +2902,9 @@ LinearScan::buildUpperVectorSaveRefPositions(GenTree *tree,
                 tempInterval->isInternal = true;
                 RefPosition *pos = newRefPosition(tempInterval, currentLoc, RefTypeUpperVectorSaveDef, tree, RBM_FLT_CALLEE_SAVED);
                 // We are going to save the existing relatedInterval of varInterval on tempInterval, so that we can set
-                // the tempInterval as the relatedInterval of varInterval, so that we can build the corresponding RefTypeUpperVectorSaveUse
-                // RefPosition.  We will then restore the relatedInterval onto varInterval, and set varInterval as the relatedInterval
-                // of tempInterval.
+                // the tempInterval as the relatedInterval of varInterval, so that we can build the corresponding
+                // RefTypeUpperVectorSaveUse RefPosition.  We will then restore the relatedInterval onto varInterval,
+                // and set varInterval as the relatedInterval of tempInterval.
                 tempInterval->relatedInterval = varInterval->relatedInterval;
                 varInterval->relatedInterval = tempInterval;
             }
@@ -3582,13 +3591,15 @@ LinearScan::updateRegStateForArg(LclVarDsc* argDsc)
 //    returned is in fact a predecessor.
 //
 // Notes:
-//    This will select a predecessor based on the heuristics obtained by getLsraBlockBoundaryLocations(), which can be one of:
+//    This will select a predecessor based on the heuristics obtained by getLsraBlockBoundaryLocations(), which can be
+//    one of:
 //      LSRA_BLOCK_BOUNDARY_PRED    - Use the register locations of a predecessor block (default)
 //      LSRA_BLOCK_BOUNDARY_LAYOUT  - Use the register locations of the previous block in layout order.
 //                                    This is the only case where this actually returns a different block.
 //      LSRA_BLOCK_BOUNDARY_ROTATE  - Rotate the register locations from a predecessor.
 //                                    For this case, the block returned is the same as for LSRA_BLOCK_BOUNDARY_PRED, but
-//                                    the register locations will be "rotated" to stress the resolution and allocation code.
+//                                    the register locations will be "rotated" to stress the resolution and allocation
+//                                    code.
 
 BasicBlock*
 LinearScan::findPredBlockForLiveIn(BasicBlock* block, BasicBlock* prevBlock DEBUGARG(bool* pPredBlockIsAllocated))
@@ -4836,9 +4847,9 @@ LinearScan::tryAllocateFreeReg(Interval *currentInterval, RefPosition *refPositi
                     foundBetterCandidate = true;
                 }
             } 
-            // If both cover the range, prefer a register that is killed sooner (leaving the longer range register available).
-            // If both cover the range and also getting killed at the same location, prefer the one which is same as previous
-            // assignment.
+            // If both cover the range, prefer a register that is killed sooner (leaving the longer range register
+            // available). If both cover the range and also getting killed at the same location, prefer the one which
+            // is same as previous assignment.
             else if (nextPhysRefLocation > lastLocation)
             {
                 if (nextPhysRefLocation < bestLocation)
@@ -5130,8 +5141,8 @@ LinearScan::allocateBusyReg(Interval* current,
             isBetterLocation = (nextLocation <= farthestLocation);
         }
         else
-        // the below if-stmt is associated with this else
 #endif
+        // This if-stmt is associated with the above else
         if (recentAssignedRefWeight < farthestRefPosWeight)
         {
             isBetterLocation = true;
@@ -5775,8 +5786,8 @@ LinearScan::processBlockStartLocations(BasicBlock* currentBlock, bool allocation
             //    In this case, we will normally change it to REG_STK.  We will update its "spilled" status when we
             //    encounter it in resolveLocalRef().
             // 2a. If the next RefPosition is marked as a copyReg, we need to retain the allocated register.  This is
-            //     because the copyReg RefPosition will not have recorded the "home" register, yet downstream RefPositions
-            //     rely on the correct "home" register.
+            //     because the copyReg RefPosition will not have recorded the "home" register, yet downstream
+            //     RefPositions rely on the correct "home" register.
             // 3. This variable was spilled before we reached the end of predBB.  In this case, both targetReg and
             //    predVarToRegMap[varIndex] will be REG_STK, and the next RefPosition will have been marked
             //    as reload during allocation time if necessary (note that by the time we actually reach the next
@@ -6584,8 +6595,8 @@ LinearScan::allocateRegisters()
                         currentInterval->hasConflictingDefUse));
 
                 // It's already in a register, but not one we need.
-                // If it is a fixed use that is not marked "delayRegFree", there is already a FixedReg to ensure that the
-                // needed reg is not otherwise in use, so we can simply ignore it and codegen will do the copy.
+                // If it is a fixed use that is not marked "delayRegFree", there is already a FixedReg to ensure that
+                // the needed reg is not otherwise in use, so we can simply ignore it and codegen will do the copy.
                 // The reason we need special handling for the "delayRegFree" case is that we need to mark the
                 // fixed-reg as in-use and delayed (the FixedReg RefPosition doesn't handle the delay requirement).
                 // Otherwise, if this is a pure use localVar or tree temp, we assign a copyReg, but must free both regs
@@ -6795,6 +6806,8 @@ LinearScan::allocateRegisters()
     }
 
     // Free registers to clear associated intervals for resolution phase
+    CLANG_FORMAT_COMMENT_ANCHOR;
+
 #ifdef DEBUG
     if (getLsraExtendLifeTimes())
     {
@@ -8854,12 +8867,12 @@ LinearScan::resolveEdge(BasicBlock*      fromBlock,
         break;
     }
 
+#ifndef _TARGET_XARCH_
     // We record tempregs for beginning and end of each block.
     // For amd64/x86 we only need a tempReg for float - we'll use xchg for int.
     // TODO-Throughput: It would be better to determine the tempRegs on demand, but the code below
     // modifies the varToRegMaps so we don't have all the correct registers at the time
     // we need to get the tempReg.
-#ifndef _TARGET_XARCH_
     regNumber tempRegInt = (resolveType == ResolveSharedCritical) ? REG_NA : getTempRegForResolution(fromBlock, toBlock, TYP_INT);
 #endif // !_TARGET_XARCH_
     regNumber tempRegFlt = REG_NA;

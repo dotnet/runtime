@@ -732,8 +732,8 @@ void RangeCheck::MergeEdgeAssertions(GenTreePtr tree, const ASSERT_VALARG_TP ass
     }
 }
 
-// Merge assertions from the pred edges of the block, i.e., check for any assertions about "op's" value numbers for phi arguments.
-// If not a phi argument, check if we assertions about local variables.
+// Merge assertions from the pred edges of the block, i.e., check for any assertions about "op's" value numbers for phi
+// arguments. If not a phi argument, check if we assertions about local variables.
 void RangeCheck::MergeAssertion(BasicBlock* block, GenTreePtr stmt, GenTreePtr op, SearchPath* path, Range* pRange DEBUGARG(int indent))
 {
     JITDUMP("Merging assertions from pred edges of BB%02d for op(%p) $%03x\n", block->bbNum, dspPtr(op), op->gtVNPair.GetConservative());

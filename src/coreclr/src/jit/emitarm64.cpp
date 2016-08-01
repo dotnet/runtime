@@ -1063,6 +1063,7 @@ emitAttr  emitter::emitInsLoadStoreSize(instrDesc *id)
 /*****************************************************************************/
 #ifdef  DEBUG
 
+// clang-format off
 static const char * const  xRegNames[] =
 {
     #define REGDEF(name, rnum, mask, xname, wname) xname,
@@ -1117,6 +1118,7 @@ static const char * const  bRegNames[] =
     "b25", "b26", "b27", "b28", "b29",
     "b30", "b31"
 };
+// clang-format on
 
 /*****************************************************************************
  *
@@ -1182,6 +1184,7 @@ const   char *      emitter::emitVectorRegName(regNumber reg)
 
 emitter::insFormat  emitter::emitInsFormat(instruction ins)
 {
+    // clang-format off
     const static insFormat insFormats[] =
     {
         #define INST1(id, nm, fp, ldst, fmt, e1                                ) fmt,
@@ -1193,6 +1196,7 @@ emitter::insFormat  emitter::emitInsFormat(instruction ins)
         #define INST9(id, nm, fp, ldst, fmt, e1, e2, e3, e4, e5, e6, e7, e8, e9) fmt,
         #include "instrs.h"
     };
+    // clang-format on
 
     assert(ins < ArrLen(insFormats));
     assert((insFormats[ins] != IF_NONE));
@@ -1205,6 +1209,7 @@ emitter::insFormat  emitter::emitInsFormat(instruction ins)
 #define   ST  4
 #define   CMP 8
 
+// clang-format off
 /*static*/ const BYTE CodeGenInterface::instInfo[] =
 {
     #define INST1(id, nm, fp, ldst, fmt, e1                                ) ldst | INST_FP*fp,
@@ -1216,7 +1221,7 @@ emitter::insFormat  emitter::emitInsFormat(instruction ins)
     #define INST9(id, nm, fp, ldst, fmt, e1, e2, e3, e4, e5, e6, e7, e8, e9) ldst | INST_FP*fp,
     #include "instrs.h"
 };
-
+// clang-format on
 
 /*****************************************************************************
  *
@@ -1285,6 +1290,7 @@ bool  emitter::emitInsIsLoadOrStore(instruction ins)
 
 emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
 {
+    // clang-format off
     const static code_t insCodes1[] =
     {
         #define INST1(id, nm, fp, ldst, fmt, e1                                ) e1,
@@ -1384,6 +1390,8 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
         #define INST9(id, nm, fp, ldst, fmt, e1, e2, e3, e4, e5, e6, e7, e8, e9) e9,
         #include "instrs.h"
     };
+    // clang-format on
+
     const static insFormat formatEncode9[9]  = { IF_DR_2E,  IF_DR_2G,  IF_DI_1B,  IF_DI_1D,  IF_DV_3C,  
                                                  IF_DV_2B,  IF_DV_2C,  IF_DV_2E,  IF_DV_2F };
     const static insFormat formatEncode6A[6] = { IF_DR_3A,  IF_DR_3B,  IF_DR_3C,  IF_DI_2A,  IF_DV_3A, 
@@ -2132,7 +2140,8 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
         // Check that 'value' fits in 'width' bits. Don't consider "sign" bits above width.
         UINT64 maxVal = 1ULL << width;
         UINT64 lowBitsMask = maxVal - 1;
-        UINT64 signBitsMask = ~lowBitsMask | (1ULL << (width - 1)); // The high bits must be set, and the top bit (sign bit) must be set.
+        UINT64 signBitsMask = ~lowBitsMask | (1ULL << (width - 1)); // The high bits must be set, and the top bit
+                                                                    // (sign bit) must be set.
         assert((value < maxVal) ||
                ((value & signBitsMask) == signBitsMask));
 
@@ -2309,7 +2318,8 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
         INT32 maxVal       = 1 << immWidth;
         INT32 lowBitsMask  = maxVal - 1;
         INT32 hiBitsMask   = ~lowBitsMask;
-        INT32 signBitsMask = hiBitsMask | (1 << (immWidth - 1)); // The high bits must be set, and the top bit (sign bit) must be set.
+        INT32 signBitsMask = hiBitsMask | (1 << (immWidth - 1)); // The high bits must be set, and the top bit
+                                                                 // (sign bit) must be set.
         assert((imm < maxVal) ||
                ((imm & signBitsMask) == signBitsMask));
 
@@ -7249,7 +7259,8 @@ void                emitter::emitIns_Call(EmitCallType  callType,
 
 /*****************************************************************************
  *
- *  Returns an encoding for the condition code with the lowest bit inverted (marked by invert(<cond>) in the architecture manual).
+ *  Returns an encoding for the condition code with the lowest bit inverted (marked by invert(<cond>) in the
+ *  architecture manual).
  */
 
 /*static*/ emitter::code_t  emitter::insEncodeInvertedCond(insCond cond)
@@ -8086,9 +8097,9 @@ BYTE*               emitter::emitOutputLJ(insGroup  *ig, BYTE *dst, instrDesc *i
 
     if  (dstOffs <= srcOffs)
     {
+#if     DEBUG_EMIT
         /* This is a backward jump - distance is known at this point */
 
-#if     DEBUG_EMIT
         if  (id->idDebugOnlyInfo()->idNum == (unsigned)INTERESTING_JUMP_NUM || INTERESTING_JUMP_NUM == 0)
         {
             size_t      blkOffs = id->idjIG->igOffs;
@@ -9526,8 +9537,8 @@ size_t              emitter::emitOutputInstr(insGroup  *ig,
         }
     }
 
-    // Now we determine if the instruction has written to a (local variable) stack location, and either written a GC ref or
-    // overwritten one.
+    // Now we determine if the instruction has written to a (local variable) stack location, and either written a GC
+    // ref or overwritten one.
     if (emitInsWritesToLclVarStackLoc(id))
     {
         int varNum = id->idAddr()->iiaLclVar.lvaVarNum();

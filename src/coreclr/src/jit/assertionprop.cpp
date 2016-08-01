@@ -369,7 +369,8 @@ void                Compiler::optAddCopies()
 
                 // This block will be the new candidate for the insert point
                 // for the new assignment
-                //
+                CLANG_FORMAT_COMMENT_ANCHOR;
+
 #ifdef DEBUG
                 if  (verbose)
                     printf("new bestBlock\n");
@@ -379,9 +380,10 @@ void                Compiler::optAddCopies()
                 bestWeight = block->getBBWeight(this);
             }
 
-            /* If there is a use of the variable in this block */
-            /* then we insert the assignment at the beginning  */
-            /* otherwise we insert the statement at the end    */
+            // If there is a use of the variable in this block
+            // then we insert the assignment at the beginning
+            // otherwise we insert the statement at the end
+            CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef DEBUG
             if  (verbose)
@@ -2283,9 +2285,9 @@ GenTreePtr Compiler::optVNConstantPropOnTree(BasicBlock* block, GenTreePtr stmt,
 #ifdef _TARGET_64BIT_
             if (vnStore->IsVNHandle(vnCns))
             {
+#ifdef RELOC_SUPPORT
                 // Don't perform constant folding that involves a handle that needs
                 // to be recorded as a relocation with the VM.
-#ifdef RELOC_SUPPORT
                 if (!opts.compReloc)
 #endif
                 {
@@ -2354,9 +2356,9 @@ GenTreePtr Compiler::optVNConstantPropOnTree(BasicBlock* block, GenTreePtr stmt,
 #ifndef _TARGET_64BIT_
             if (vnStore->IsVNHandle(vnCns))
             {
+#ifdef RELOC_SUPPORT
                 // Don't perform constant folding that involves a handle that needs
                 // to be recorded as a relocation with the VM.
-#ifdef RELOC_SUPPORT
                 if (!opts.compReloc)
 #endif
                 {
@@ -2507,8 +2509,10 @@ GenTreePtr Compiler::optConstantAssertionProp(AssertionDsc* curAssertion, GenTre
     if (!optLocalAssertionProp)
     {
         assert(newTree->OperIsConst());                       // We should have a simple Constant node for newTree
-        assert(vnStore->IsVNConstant(curAssertion->op2.vn));  // The value number stored for op2 should be a valid VN representing the constant
-        newTree->gtVNPair.SetBoth(curAssertion->op2.vn);      // Set the ValueNumPair to the constant VN from op2 of the assertion
+        assert(vnStore->IsVNConstant(curAssertion->op2.vn));  // The value number stored for op2 should be a valid
+                                                              // VN representing the constant
+        newTree->gtVNPair.SetBoth(curAssertion->op2.vn);      // Set the ValueNumPair to the constant VN from op2
+                                                              // of the assertion
     }
 
 #ifdef  DEBUG
@@ -2740,8 +2744,8 @@ GenTreePtr Compiler::optAssertionProp_LclVar(ASSERT_VALARG_TP assertions, const 
  *  op1Kind and lclNum, op2Kind and the constant value and is either equal or
  *  not equal assertion.
  */
-Compiler::AssertionIndex Compiler::optLocalAssertionIsEqualOrNotEqual(optOp1Kind op1Kind, unsigned lclNum, optOp2Kind  op2Kind,
-                                                      ssize_t cnsVal, ASSERT_VALARG_TP assertions)
+Compiler::AssertionIndex Compiler::optLocalAssertionIsEqualOrNotEqual(optOp1Kind op1Kind, unsigned lclNum,
+        optOp2Kind  op2Kind, ssize_t cnsVal, ASSERT_VALARG_TP assertions)
 {
     noway_assert((op1Kind == O1K_LCLVAR) || (op1Kind == O1K_EXACT_TYPE) || (op1Kind == O1K_SUBTYPE));
     noway_assert((op2Kind == O2K_CONST_INT) || (op2Kind == O2K_IND_CNS_INT));

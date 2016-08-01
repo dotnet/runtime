@@ -22,6 +22,7 @@
  *
 ******************************************************************************/
 
+// clang-format off
 #if !defined(_TARGET_XARCH_)
   #error Unexpected target type
 #endif
@@ -535,3 +536,5 @@ INST0(align  , "align"        , 0, IUM_RD, 0, 0, BAD_CODE)
 #undef  INST4
 #undef  INST5
 /*****************************************************************************/
+
+// clang-format on

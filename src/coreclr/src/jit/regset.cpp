@@ -943,7 +943,7 @@ void                RegSet::rsMarkRegPairUsed(GenTreePtr tree)
 
     /* Can't mark a register pair more than once as used */
 
-//    assert((regMask & rsMaskUsed) == 0);
+    // assert((regMask & rsMaskUsed) == 0);
 
     /* Mark the registers as 'used' */
 
@@ -1019,7 +1019,8 @@ RegSet::SpillDsc *        RegSet::rsGetSpillInfo(GenTreePtr tree,
     /* Normally, trees are unspilled in the order of being spilled due to
        the post-order walking of trees during code-gen. However, this will
        not be true for something like a GT_ARR_ELEM node */
- 
+    CLANG_FORMAT_COMMENT_ANCHOR;
+
 #ifdef LEGACY_BACKEND
     SpillDsc* multi = rsSpillDesc[reg];
 #endif // LEGACY_BACKEND
@@ -1320,14 +1321,14 @@ void                RegTracker::rsTrackRegLclVar(regNumber reg, unsigned var)
 
 #endif
 
-    /* Record the new value for the register. ptr var needed for
-     * lifetime extension
-     */
-
 #ifdef  DEBUG
     if  (compiler->verbose) 
         printf("\t\t\t\t\t\t\tThe register %s now holds V%02u\n", compiler->compRegVarName(reg), var);
 #endif
+
+    /* Record the new value for the register. ptr var needed for
+     * lifetime extension
+     */
 
     rsRegValues[reg].rvdKind      = RV_LCL_VAR;
 
@@ -3146,8 +3147,8 @@ TempDsc * Compiler::tmpGetTemp(var_types type)
         }
     }
 
-    /* Do we need to allocate a new temp */
 #ifdef DEBUG
+    /* Do we need to allocate a new temp */
     bool isNewTemp = false;    
 #endif // DEBUG
 

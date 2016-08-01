@@ -919,8 +919,9 @@ void                Compiler::lvaInitUserArgs(InitVarDscInfo *      varDscInfo)
         }
 
 #ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
-        // The arg size is returning the number of bytes of the argument. For a struct it could return a size not a multiple of 
-        // TARGET_POINTER_SIZE. The stack allocated space should always be multiple of TARGET_POINTER_SIZE, so round it up.
+        // The arg size is returning the number of bytes of the argument. For a struct it could return a size not a
+        // multiple of TARGET_POINTER_SIZE. The stack allocated space should always be multiple of TARGET_POINTER_SIZE,
+        // so round it up.
         compArgSize += (unsigned)roundUp(argSize, TARGET_POINTER_SIZE);
 #else // !FEATURE_UNIX_AMD64_STRUCT_PASSING
         compArgSize += argSize;
@@ -1783,8 +1784,9 @@ void   Compiler::lvaPromoteLongVars()
         bool isParam = varDsc->lvIsParam;
            
         for (unsigned index=0; index < 2; ++index)
-        {         
+        {
             // Grab the temp for the field local.
+            CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef DEBUG
             char    buf[200];
@@ -2114,8 +2116,8 @@ unsigned            Compiler::lvaLclSize(unsigned varNum)
     default:    // This must be a primitive var. Fall out of switch statement
         break;
     }
-    // We only need this Quirk for _TARGET_64BIT_
 #ifdef _TARGET_64BIT_
+    // We only need this Quirk for _TARGET_64BIT_
     if (lvaTable[varNum].lvQuirkToLong)
     {
         noway_assert(lvaTable[varNum].lvAddrExposed);
@@ -3329,6 +3331,7 @@ void                Compiler::lvaMarkLocalVars()
 
 #if defined(DEBUGGING_SUPPORT) || defined(DEBUG)
 
+#ifndef DEBUG
     // Assign slot numbers to all variables.
     // If compiler generated local variables, slot numbers will be
     // invalid (out of range of info.compVarScopes).
@@ -3338,7 +3341,6 @@ void                Compiler::lvaMarkLocalVars()
 
     // We don't need to do this for IL, but this keeps lvSlotNum consistent.
 
-#ifndef DEBUG
     if (opts.compScopeInfo && (info.compVarScopesCount > 0))
 #endif
     {
@@ -3534,6 +3536,7 @@ unsigned Compiler::lvaGetMaxSpillTempSize()
     return result;
 }
 
+// clang-format off
 /*****************************************************************************
  *
  *  Compute stack frame offsets for arguments, locals and optionally temps.
@@ -3877,6 +3880,7 @@ unsigned Compiler::lvaGetMaxSpillTempSize()
  *      relative or stack pointer relative.
  *
  */
+// clang-format on
 
 void                Compiler::lvaAssignFrameOffsets(FrameLayoutState curState)
 {
@@ -4404,15 +4408,17 @@ int Compiler::lvaAssignVirtualFrameOffsetToArg(unsigned lclNum, unsigned argSize
     }
     else
     {
-        // For Windows AMD64 there are 4 slots for the register passed arguments on the top of the caller's stack. This is where they are always homed.
-        // So, they can be accessed with positive offset.
-        // On System V platforms, if the RA decides to home a register passed arg on the stack,
-        // it creates a stack location on the callee stack (like any other local var.) In such a case, the register passed, stack homed arguments
-        // are accessed using negative offsets and the stack passed arguments are accessed using positive offset (from the caller's stack.)
-        // For  System V platforms if there is no frame pointer the caller stack parameter offset should include the callee allocated space.
-        // If frame register is used, the callee allocated space should not be included for accessing the caller stack parameters.
-        // The last two requirements are met in lvaFixVirtualFrameOffsets method, which fixes the offsets, based on frame pointer existence, 
-        // existence of alloca instructions, ret address pushed, ets.
+        // For Windows AMD64 there are 4 slots for the register passed arguments on the top of the caller's stack.
+        // This is where they are always homed. So, they can be accessed with positive offset.
+        // On System V platforms, if the RA decides to home a register passed arg on the stack, it creates a stack
+        // location on the callee stack (like any other local var.) In such a case, the register passed, stack homed
+        // arguments are accessed using negative offsets and the stack passed arguments are accessed using positive
+        // offset (from the caller's stack.)
+        // For  System V platforms if there is no frame pointer the caller stack parameter offset should include the
+        // callee allocated space. If frame register is used, the callee allocated space should not be included for
+        // accessing the caller stack parameters. The last two requirements are met in lvaFixVirtualFrameOffsets
+        // method, which fixes the offsets, based on frame pointer existence, existence of alloca instructions, ret
+        // address pushed, ets.
 
         varDsc->lvStkOffs = *callerArgOffset;
         // Structs passed on stack could be of size less than TARGET_POINTER_SIZE.
@@ -4499,13 +4505,14 @@ int Compiler::lvaAssignVirtualFrameOffsetToArg(unsigned lclNum, unsigned argSize
     if (varDsc->lvIsRegArg)
     {
         /* Argument is passed in a register, don't count it
-        * when updating the current offset on the stack */
+         * when updating the current offset on the stack */
+        CLANG_FORMAT_COMMENT_ANCHOR;
 
 #if !defined(_TARGET_ARMARCH_)
+#if DEBUG
         // TODO: Remove this noway_assert and replace occurrences of sizeof(void *) with argSize
         // Also investigate why we are incrementing argOffs for X86 as this seems incorrect
         // 
-#if DEBUG
         noway_assert(argSize == sizeof(void *));
 #endif // DEBUG
 #endif
@@ -4569,10 +4576,11 @@ int Compiler::lvaAssignVirtualFrameOffsetToArg(unsigned lclNum, unsigned argSize
                 // r1 VACookie -- argOffs = 0
                 // -------------------------
                 //
-                // Consider argOffs as if it accounts for number of prespilled registers before the current register.
-                // In the above example, for r2, it is r1 that is prespilled, but since r1 is accounted for by argOffs
-                // being 4, there should have been no skipping. Instead, if we didn't assign r1 to any variable, then
-                // argOffs would still be 0 which implies it is not accounting for r1, equivalently r1 is skipped.
+                // Consider argOffs as if it accounts for number of prespilled registers before the current
+                // register. In the above example, for r2, it is r1 that is prespilled, but since r1 is
+                // accounted for by argOffs being 4, there should have been no skipping. Instead, if we didn't
+                // assign r1 to any variable, then argOffs would still be 0 which implies it is not accounting
+                // for r1, equivalently r1 is skipped.
                 //
                 // If prevRegsSize is unaccounted for by a corresponding argOffs, we must have skipped a register.
                 int prevRegsSize = genCountBits(codeGen->regSet.rsMaskPreSpillRegArg & (regMask - 1)) * TARGET_POINTER_SIZE;
@@ -4659,12 +4667,13 @@ int Compiler::lvaAssignVirtualFrameOffsetToArg(unsigned lclNum, unsigned argSize
             // r3    int             a2 --> pushed (not pre-spilled) for alignment of a0 by lvaInitUserArgs.
             // r2    struct { int }  a1
             // r0-r1 struct { long } a0
+            CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef PROFILING_SUPPORTED
             // On Arm under profiler, r0-r3 are always prespilled on stack.
-            // It is possible to have methods that accept only HFAs as parameters e.g. Signature(struct hfa1, struct hfa2)
-            // In which case hfa1 and hfa2 will be en-registered in co-processor registers and will have an argument offset
-            // less than size of preSpill.
+            // It is possible to have methods that accept only HFAs as parameters e.g. Signature(struct hfa1, struct
+            // hfa2), in which case hfa1 and hfa2 will be en-registered in co-processor registers and will have an
+            // argument offset less than size of preSpill.
             //
             // For this reason the following conditions are asserted when not under profiler.
             if (!compIsProfilerHookNeeded())
@@ -4714,6 +4723,8 @@ int Compiler::lvaAssignVirtualFrameOffsetToArg(unsigned lclNum, unsigned argSize
     // For struct promoted parameters we need to set the offsets for both LclVars.
     // 
     // For a dependent promoted struct we also assign the struct fields stack offset 
+    CLANG_FORMAT_COMMENT_ANCHOR;
+
 #if !defined(_TARGET_64BIT_)
     if ((varDsc->TypeGet() == TYP_LONG) && varDsc->lvPromoted)
     {
@@ -4918,8 +4929,8 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
 
     if  (opts.compNeedSecurityCheck)
     {
-        /* This can't work without an explicit frame, so make sure */
 #ifdef JIT32_GCENCODER
+        /* This can't work without an explicit frame, so make sure */
         noway_assert(codeGen->isFramePointerUsed());
 #endif
         stkOffs = lvaAllocLocalAndSetVirtualOffset(lvaSecurityObject, TARGET_POINTER_SIZE, stkOffs);
@@ -5571,6 +5582,8 @@ void Compiler::lvaAlignFrame()
 
     // If this isn't the final frame layout, assume we have to push an extra QWORD
     // Just so the offsets are true upper limits.
+    CLANG_FORMAT_COMMENT_ANCHOR;
+
 #ifdef UNIX_AMD64_ABI
     // The compNeedToAlignFrame flag  is indicating if there is a need to align the frame.
     // On AMD64-Windows, if there are calls, 4 slots for the outgoing ars are allocated, except for
@@ -5750,13 +5763,15 @@ AGAIN2:
             /* Figure out and record the stack offset of the temp */
 
             /* Need to align the offset? */
+            CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef  _TARGET_64BIT_
             if (varTypeIsGC(tempType) && ((stkOffs % TARGET_POINTER_SIZE) != 0))
             {
                 // Calculate 'pad' as the number of bytes to align up 'stkOffs' to be a multiple of TARGET_POINTER_SIZE
-                // In practice this is really just a fancy way of writing 4. (as all stack locations are at least 4-byte aligned)
-                // Note stkOffs is always negative, so (stkOffs % TARGET_POINTER_SIZE) yields a negative value.
+                // In practice this is really just a fancy way of writing 4. (as all stack locations are at least 4-byte
+                // aligned). Note stkOffs is always negative, so (stkOffs % TARGET_POINTER_SIZE) yields a negative
+                // value.
                 //
                 int alignPad = (int)AlignmentPad((unsigned)-stkOffs, TARGET_POINTER_SIZE);
 
@@ -5979,8 +5994,8 @@ void   Compiler::lvaDumpEntry(unsigned lclNum, FrameLayoutState curState, size_t
         }
         else
         {
-            // For RyuJIT backend, it might be in a register part of the time, but it will definitely have a stack home location.
-            // Otherwise, it's always on the stack.
+            // For RyuJIT backend, it might be in a register part of the time, but it will definitely have a stack home
+            // location. Otherwise, it's always on the stack.
             if (lvaDoneFrameLayout != NO_FRAME_LAYOUT)
                 lvaDumpFrameLocation(lclNum);
         }
