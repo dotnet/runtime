@@ -23,6 +23,7 @@ The ECMA-335-II standard is amended by an addition of the following tables to th
     * [EditAndContinueLocalSlotMap](#EditAndContinueLocalSlotMap)
     * [EditAndContinueLambdaAndClosureMap](#EditAndContinueLambdaAndClosureMap)
     * [EmbeddedSource](#EmbeddedSource)
+    * [SourceLink](#SourceLink)
 
 Debugging metadata tables may be embedded into type system metadata (and part of a PE file), or they may be stored separately in a metadata blob contained in a .pdb file. In the latter case additional information is included that connects the debugging metadata to the type system metadata.
 
@@ -515,3 +516,10 @@ The blob has the following structure:
 |:----------|:-----------------|:-------------|
 | _format_  | uint16           | Indicates how the content is serialized. 0 = raw bytes, uncompressed. 1 = compressed in GZIP format. Other values reserved for future formats. |
 | _content_ | format-specific  | The text of the document in the specified format. The length is implied by the length of the blob minus two bytes for the format. |
+
+##### <a name="SourceLink"></a>Source Link (C# and VB compilers)
+Parent: Module
+
+Kind: {CC110556-A091-4D38-9FEC-25AB9A351A6A}
+
+The blob stores UTF8 encoded text file in JSON format that includes information on how to locate the content of documents listed in Document table on a source server.
