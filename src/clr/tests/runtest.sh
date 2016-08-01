@@ -116,6 +116,14 @@ case $OSName in
         ;;
 esac
 
+# clean up any existing dumpling remnants from previous runs.
+dumplingsListPath="$PWD/dumplings.txt"
+if [ -f "$dumplingsListPath" ]; then
+    rm "$dumplingsListPath"
+fi  
+
+touch $dumplingsListPath
+find . -type f -name "local_dumplings.txt" -exec rm {} \;
 
 function xunit_output_begin {
     xunitOutputPath=$testRootDir/coreclrtests.xml
@@ -587,7 +595,11 @@ function download_dumpling_script {
 function upload_core_file_to_dumpling {
     local core_file_name=$1
     local dumpling_script="dumpling.py"
-
+    local dumpling_file="local_dumplings.txt"
+    
+    # dumpling requires that the file exist before appending. 
+    touch ./$dumpling_file
+    
     if [ ! -x $dumpling_script ]; then
         download_dumpling_script
     fi
@@ -606,7 +618,7 @@ function upload_core_file_to_dumpling {
     fi
 
     # The output from this will include a unique ID for this dump.
-    ./$dumpling_script "--corefile" "$core_file_name" "upload" "--addpaths" $paths_to_add
+    ./$dumpling_script "--corefile" "$core_file_name" "upload" "--addpaths" $paths_to_add "--squelch" >> $dumpling_file
 }
 
 function preserve_core_file {
@@ -1133,6 +1145,11 @@ fi
 finish_remaining_tests
 
 print_results
+
+echo "constructing $dumplingsListPath"
+find . -type f -name "local_dumplings.txt" -exec cat {} \; > $dumplingsListPath
+
+cat $dumplingsListPath
 
 time_end=$(date +"%s")
 time_diff=$(($time_end-$time_start))
