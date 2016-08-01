@@ -197,9 +197,9 @@ build_coreclr()
 
     # Build CoreCLR
 
-    echo "Executing $buildTool install -j $NumProc $__UnprocessedBuildArgs"
+    echo "Executing $buildTool install -j $NumProc"
 
-    $buildTool install -j $NumProc $__UnprocessedBuildArgs
+    $buildTool install -j $NumProc
     if [ $? != 0 ]; then
         echo "Failed to build coreclr components."
         exit 1
