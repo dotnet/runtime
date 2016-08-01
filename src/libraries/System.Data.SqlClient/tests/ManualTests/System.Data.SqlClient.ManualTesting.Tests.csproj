@@ -18,6 +18,10 @@
       <Name>System.Data.SqlClient</Name>
       <OSGroup>$(InputOSGroup)</OSGroup>
     </ProjectReference>
+    <!-- ToDo: Remove this reference to the live package of System.Globalization once prerelease gets updated again -->
+    <ProjectReference Include="..\..\..\System.Globalization\pkg\System.Globalization.pkgproj">
+      <Name>System.Globalization</Name>
+    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="DataCommon\CheckConnStrSetupFactAttribute.cs" />

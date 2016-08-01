@@ -3,10 +3,6 @@
     "System.Runtime": "4.2.0-beta-devapi-24401-01"
   },
   "frameworks": {
-    "netstandard1.5": {
-      "imports": [
-        "dotnet5.6"
-      ]
-    }
+    "netstandard1.7": { }
   }
 }
