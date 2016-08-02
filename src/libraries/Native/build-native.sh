@@ -193,11 +193,13 @@ case $CPUName in
     i686)
         if [ $__BuildArch != x86 ]; then
             __CrossBuild=1
+            echo "Set CrossBuild for $__BuildArch build"
         fi
         ;;
     x86_64)
         if [ $__BuildArch != x64 ]; then
             __CrossBuild=1
+            echo "Set CrossBuild for $__BuildArch build"
         fi
         ;;
 esac
