@@ -5,23 +5,23 @@ Building and running tests on Windows
 
 To build the tests simply navigate to the tests directory above the repo and run,
 
-    C:\git\coreclr>tests\buildtest.cmd
+    C:\git\coreclr>build-test.cmd
 
 *Cleaning Tests*
 
 **Note:** Cleaning should be done before all tests to be sure that the test assets are initialized correctly. To do a clean build of the tests, in a clean command prompt, issue the following command: 
 
-    C:\git\coreclr>tests\buildtest.cmd clean
+    C:\git\coreclr>build-test.cmd -rebuild
 
 *Building tests that will be precompiled*
 
-    C:\git\coreclr>tests\buildtest.cmd crossgen
+    C:\git\coreclr>build-test.cmd crossgen
 
 This will use crossgen.exe to precompile the test executables before they are executed.
 
 *Building Other Priority Tests*
 
-    C:\git\coreclr>tests\buildtest.cmd priority 2
+    C:\git\coreclr>build-test.cmd -priority=2
 
 The number '2' is just an example. The default value (if no priority is specified) is 0. To clarify, if '2' is specified, all tests with CLRTestPriorty 0, 1 AND 2 will be built and consequently run.
 
@@ -29,7 +29,7 @@ The number '2' is just an example. The default value (if no priority is specifie
 
 To run a clean, priority 1, crossgen test pass:
 
-    C:\git\coreclr>tests\buildtest.cmd clean crossgen priority 1
+    C:\git\coreclr>build-test.cmd -rebuild crossgen -priority=1
 
 **buildtest /?** will list additional supported parameters.
 
