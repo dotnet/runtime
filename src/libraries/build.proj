@@ -118,10 +118,10 @@
                                        ValidationPatterns="@(ValidationPattern)"
                                        UpdateInvalidDependencies="true" />
   </Target>
-
+  
   <!-- Task from buildtools that uses lockfiles to validate that packages restored are exactly what were specified. -->
   <UsingTask TaskName="ValidateExactRestore" AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.Tasks.dll" />
-
+  
   <Target Name="ValidateExactRestore"
           Condition="'$(AllowInexactRestore)'!='true'">
     <ValidateExactRestore ProjectLockJsons="@(ProjectJsonFiles->'%(RootDir)%(Directory)%(Filename).lock.json')" />
@@ -137,6 +137,28 @@
                                     NewVersion="$(NewVersion)" />
   </Target>
 
+  <!-- Packages.zip creation -->
+  <UsingTask TaskName="ZipFileCreateFromDependencyLists" Condition="'$(ArchiveTests)' == 'true'" AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.Tasks.dll"/>
+  <Target Name="ArchiveTestBuild" Condition="'$(ArchiveTests)' == 'true'" AfterTargets="Build" >
+    <ItemGroup>
+      <ExcludeFromArchive Include="nupkg$" />
+      <ExcludeFromArchive Include="Microsoft.DotNet.BuildTools" />
+      <ExcludeFromArchive Include="TestData" />
+      <TestDependencyListFile Include="$(BinDir)/TestDependencies/*.dependencylist.txt" />
+    </ItemGroup>
+    
+    <PropertyGroup>
+      <TestArchiveDir>$(TestWorkingDir)$(OSPlatformConfig)/archive/tests/</TestArchiveDir>
+      <TestArchiveDir Condition="'$(TestTFM)' != ''">$(TestArchiveDir)$(TestTFM)/</TestArchiveDir>
+    </PropertyGroup>
+
+    <ZipFileCreateFromDependencyLists
+      DependencyListFiles="@(TestDependencyListFile)"
+      DestinationArchive="$(TestArchiveDir)\Packages.zip"
+      RelativePathBaseDirectory="$(PackagesDir)"
+      OverwriteDestination="true" />
+  </Target>
+  
   <!-- Override RestorePackages from dir.traversal.targets and do a batch restore -->
   <Target Name="RestorePackages" DependsOnTargets="BatchRestorePackages" />
 
