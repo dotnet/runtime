@@ -28,6 +28,7 @@ namespace Microsoft.Extensions.DependencyModel
 
         public IReadOnlyList<string> Assemblies { get; }
 
+#if !NETSTANDARD1_3
         internal static ICompilationAssemblyResolver DefaultResolver { get; } = new CompositeCompilationAssemblyResolver(new ICompilationAssemblyResolver[]
         {
             new PackageCacheCompilationAssemblyResolver(),
@@ -45,5 +46,7 @@ namespace Microsoft.Extensions.DependencyModel
             }
             return assemblies;
         }
+#endif
+
     }
 }
