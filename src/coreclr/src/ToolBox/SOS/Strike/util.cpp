@@ -6325,7 +6325,7 @@ HRESULT SymbolReader::LoadCoreCLR()
     {
         return E_OUTOFMEMORY;
     }
-    if (SUCCEEDED(getLineByILOffsetDelegate(szModuleName, MethodToken, IlOffset, pLinenum, &wszFileName)))
+    if (getLineByILOffsetDelegate(szModuleName, MethodToken, IlOffset, pLinenum, &wszFileName) == TRUE)
     {
         WideCharToMultiByte(CP_ACP, 0, wszFileName, (int) (_wcslen(wszFileName) + 1),
                             lpszFileName, cbFileName, NULL, NULL);
@@ -6334,7 +6334,10 @@ HRESULT SymbolReader::LoadCoreCLR()
             *pLinenum = -1;
             Status = E_FAIL;
         }
-
+    }
+    else
+    {
+        Status = E_FAIL;
     }
     SysFreeString(wszFileName);
 
@@ -6422,7 +6425,9 @@ HRESULT SymbolReader::LoadSymbols(IMetaDataImport * pMD, ULONG64 baseAddress, __
 
     WideCharToMultiByte(CP_ACP, 0, pModuleName, (int) (_wcslen(pModuleName) + 1),
             m_szModuleName, mdNameLen, NULL, NULL);
-    return !loadSymbolsForModuleDelegate(m_szModuleName);
+    if (loadSymbolsForModuleDelegate(m_szModuleName) == FALSE)
+        return E_FAIL;
+    return Status;
 #endif // FEATURE_PAL
 }
 
@@ -6443,26 +6448,24 @@ HRESULT SymbolReader::GetNamedLocalVariable(ISymUnmanagedScope * pScope, ICorDeb
     {
         return E_OUTOFMEMORY;
     }
-    int ret = getLocalVariableNameDelegate(m_szModuleName, methodToken,
-                                       localIndex, &wszParamName);
-    if (ret)
+    if (getLocalVariableNameDelegate(m_szModuleName, methodToken, localIndex, &wszParamName) == FALSE)
     {
-        wcscpy_s(paramName, _wcslen(wszParamName) + 1, wszParamName);
-        paramNameLen = _wcslen(paramName);
         SysFreeString(wszParamName);
-
-        if (SUCCEEDED(pILFrame->GetLocalVariable(localIndex, ppValue)) && (*ppValue != NULL))
-        {
-            return S_OK;
-        }
-        else
-        {
-            *ppValue = NULL;
-            return E_FAIL;
-        }
+        return E_FAIL;
     }
+    wcscpy_s(paramName, _wcslen(wszParamName) + 1, wszParamName);
+    paramNameLen = _wcslen(paramName);
     SysFreeString(wszParamName);
-    return E_FAIL;
+
+    if (SUCCEEDED(pILFrame->GetLocalVariable(localIndex, ppValue)) && (*ppValue != NULL))
+    {
+        return S_OK;
+    }
+    else
+    {
+        *ppValue = NULL;
+        return E_FAIL;
+    }
 
 #else
     if(pScope == NULL)
@@ -6636,9 +6639,9 @@ HRESULT SymbolReader::ResolveSequencePoint(__in_z WCHAR* pFilename, ULONG32 line
     FileNameForModule(mod, FileNameW);
 
     WideCharToMultiByte(CP_ACP, 0, FileNameW, (int) (_wcslen(FileNameW) + 1), FileName, MAX_LONGPATH, NULL, NULL);
-    Status = resolveSequencePointDelegate(FileName, szName, lineNumber, pToken, pIlOffset);
-
-    return Status;
+    if (resolveSequencePointDelegate(FileName, szName, lineNumber, pToken, pIlOffset) == FALSE)
+        return E_FAIL;
+    return S_OK;
 #endif // FEATURE_PAL
 }
 
