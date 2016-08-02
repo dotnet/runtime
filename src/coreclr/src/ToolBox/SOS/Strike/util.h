@@ -2356,10 +2356,10 @@ private:
 #endif // !FEATURE_PAL
 
 #ifdef FEATURE_PAL
-typedef  int (*ResolveSequencePointDelegate)(const char*, const char*, unsigned int, unsigned int*, unsigned int*);
-typedef  int (*LoadSymbolsForModuleDelegate)(const char*);
-typedef  int (*GetLocalVariableName)(const char*, int, int, BSTR*);
-typedef  int (*GetLineByILOffsetDelegate)(const char*, mdMethodDef, ULONG64, ULONG *, BSTR*);
+typedef  BOOL (*ResolveSequencePointDelegate)(const char*, const char*, unsigned int, unsigned int*, unsigned int*);
+typedef  BOOL (*LoadSymbolsForModuleDelegate)(const char*);
+typedef  BOOL (*GetLocalVariableName)(const char*, int, int, BSTR*);
+typedef  BOOL (*GetLineByILOffsetDelegate)(const char*, mdMethodDef, ULONG64, ULONG *, BSTR*);
 static const char *SymbolReaderDllName = "System.Diagnostics.Debug.SymbolReader";
 static const char *SymbolReaderClassName = "System.Diagnostics.Debug.SymbolReader.SymbolReader";
 #endif //FEATURE_PAL
