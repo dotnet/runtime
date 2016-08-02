@@ -2632,6 +2632,17 @@ namespace SerializationTypes
     }
 
     [XmlType(TypeName = "MyXmlType")]
+    public class TypeWithArrayLikeXmlAttributeWithFields
+    {
+        public string StringField;
+
+        [XmlAttribute(Form = XmlSchemaForm.Qualified)]
+        public string[] XmlAttributeForms;
+
+        public int IntField;
+    }
+
+    [XmlType(TypeName = "MyXmlType")]
     public class TypeWithQNameArrayAsXmlAttribute
     {
         [XmlAttribute(Form = XmlSchemaForm.Qualified)]
@@ -2759,6 +2770,19 @@ namespace SerializationTypes
         public object[] Things;
     }
 
+    [XmlType(TypeName = "MyXmlType")]
+    [XmlRoot]
+    public class TypeWithMultiNamedXmlAnyElementAndOtherFields
+    {
+        [XmlAnyElement(Name = "name1", Namespace = "ns1")]
+        [XmlAnyElement(Name = "name2", Namespace = "ns2")]
+        public object[] Things;
+
+        public string StringField;
+
+        public int IntField;
+    }
+
     public class TypeWithArrayPropertyHavingChoice
     {
         // The ManyChoices field can contain an array
@@ -2779,6 +2803,18 @@ namespace SerializationTypes
         None,
         Item,
         Amount
+    }
+
+    public class TypeWithFieldsOrdered
+    {
+        [XmlElement(Order = 0)]
+        public int IntField1;
+        [XmlElement(Order = 1)]
+        public int IntField2;
+        [XmlElement(Order = 3)]
+        public string StringField1;
+        [XmlElement(Order = 2)]
+        public string StringField2;
     }
 }
 
