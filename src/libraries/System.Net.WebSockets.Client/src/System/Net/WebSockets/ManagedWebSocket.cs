@@ -465,7 +465,7 @@ namespace System.Net.WebSockets
                 // We need to know where the mask starts so that we can use the mask to manipulate the payload data,
                 // and we need to know the total length for sending it on the wire.
                 maskOffset = WriteHeader(opcode, _sendBuffer, payloadBuffer, endOfMessage, useMask: true);
-                headerLength = maskOffset.Value + MaskLength;
+                headerLength = maskOffset.GetValueOrDefault() + MaskLength;
             }
 
             // Write the payload
