@@ -13,7 +13,7 @@
     <TargetFrameworkMonikers Include="netstandard1.5" />
     <TargetFrameworkMonikers Include="netstandard1.6" />
     <TargetFrameworkMonikers Include="netstandard1.7" />
-    <TargetFrameworkMonikers Include="netcoreapp1.0">
+    <TargetFrameworkMonikers Include="netcoreapp1.1">
       <RID>win7-x64</RID>
       <AdditionalBinaryPath>
         $(PackagesDir)/runtime.win7-x64.Microsoft.NETCore.Runtime.CoreCLR/1.0.4-$(CoreClrExpectedPrerelease)/runtimes/win7-x64/lib/netstandard1.0;
@@ -49,7 +49,11 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <PackageReports Include="$(PackageOutputPath)reports/*.json" />
+      <!-- IsolatedStorage is not be supported on netstandard -->
+      <ReportsToExclude Condition="$(TargetFrameworkMoniker.StartsWith('netstandard'))" Include="$(PackageOutputPath)reports/System.IO.IsolatedStorage.json" />
+      <ReportsToExclude Include="$(PackageOutputPath)reports/System.Diagnostics.Debug.SymbolReader.json" />
+
+      <PackageReports Include="$(PackageOutputPath)reports/*.json" Exclude="@(ReportsToExclude)" />
       <AdditionalBinaryPaths Include="$(AdditionalBinaryPath)" />
     </ItemGroup>
 
