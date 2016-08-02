@@ -3931,30 +3931,8 @@ void Lowering::DoPhase()
 #ifdef DEBUG
                 node->gtSeqNum = currentLoc;
 #endif
-                TreeNodeInfo* info = &node->gtLsraInfo;
-                info->internalIntCount = 0;
-                info->internalFloatCount = 0;
-                info->isLocalDefUse = false;
-                info->isHelperCallWithKills = false;
-                info->isLsraAdded = false;
 
-                // if there is a reg indicated on the tree node, use that for dstCandidates
-                // the exception is the NOP, which sometimes show up around late args.
-                // TODO-Cleanup: get rid of those NOPs.
-                if (node->gtRegNum == REG_NA
-                    || node->gtOper == GT_NOP)
-                {
-                    info->setDstCandidates(m_lsra, m_lsra->allRegs(node->TypeGet()));
-                }
-                else
-                {
-                    info->setDstCandidates(m_lsra, genRegMask(node->gtRegNum));
-                }
-
-                info->setSrcCandidates(m_lsra, info->getDstCandidates(m_lsra));
-                info->setInternalCandidates(m_lsra, m_lsra->allRegs(TYP_INT));
-                info->isInitialized = true;
-                info->loc = currentLoc;
+                node->gtLsraInfo.Initialize(m_lsra, node, currentLoc);
                 node->gtClearReg(comp);
                 currentLoc += 2;
             }

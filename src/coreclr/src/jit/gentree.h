@@ -229,7 +229,7 @@ public:
     }
 };
 
-
+class GenTreeOperandIterator;
 
 /*****************************************************************************/
 
@@ -1672,6 +1672,16 @@ public:
     // Requires "childNum < NumChildren()".  Returns the "n"th child of "this."
     GenTreePtr GetChild(unsigned childNum);
 
+    // Returns an iterator that will produce each operand of this node. Differs from the sequence
+    // of nodes produced by a loop over `GetChild` in its handling of call, phi, and block op
+    // nodes. If `expandMultiRegArgs` is true, an multi-reg args passed to a call will appear
+    // be expanded from their GT_LIST node into that node's contents.
+    GenTreeOperandIterator OperandsBegin(bool expandMultiRegArgs = false);
+    GenTreeOperandIterator OperandsEnd();
+
+    // Returns a range that will produce the operands of this node in use order.
+    IteratorPair<GenTreeOperandIterator> Operands(bool expandMultiRegArgs = false);
+
     // The maximum possible # of children of any node.
     static const int MAX_CHILDREN = 6;
 
@@ -1721,6 +1731,72 @@ public:
 
     inline GenTree(genTreeOps oper, var_types type
                    DEBUGARG(bool largeNode = false));
+};
+
+//------------------------------------------------------------------------
+// GenTreeOperandIterator: an iterator that will produce each operand of a
+//                         GenTree node in the order in which they are
+//                         used. Note that the operands of a node may not
+//                         correspond exactly to the nodes on the other
+//                         ends of its use edges: in particular, GT_LIST
+//                         nodes are expanded into their component parts
+//                         (with the optional exception of multi-reg
+//                         arguments). This differs from the behavior of
+//                         GenTree::GetChild(), which does not expand
+//                         lists.
+//
+// Note: valid values of this type may be obtained by calling
+// `GenTree::OperandsBegin` and `GenTree::OperandsEnd`.
+class GenTreeOperandIterator
+{
+    friend GenTreeOperandIterator GenTree::OperandsBegin(bool expandMultiRegArgs);
+    friend GenTreeOperandIterator GenTree::OperandsEnd();
+
+    GenTree* m_node;
+    GenTree* m_operand;
+    GenTree* m_argList;
+    GenTree* m_multiRegArg;
+    bool m_expandMultiRegArgs;
+    int m_state;
+
+    GenTreeOperandIterator(GenTree* node, bool expandMultiRegArgs);
+
+    GenTree* GetNextOperand() const;
+    void MoveToNextCallOperand();
+    void MoveToNextPhiOperand();
+#ifdef FEATURE_SIMD
+    void MoveToNextSIMDOperand();
+#endif
+
+public:
+    GenTreeOperandIterator();
+
+    inline GenTree*& operator*()
+    {
+        return m_operand;
+    }
+
+    inline GenTree** operator->()
+    {
+        return &m_operand;
+    }
+
+    inline bool operator==(const GenTreeOperandIterator& other) const
+    {
+        if (m_state == -1 || other.m_state == -1)
+        {
+            return m_state == other.m_state;
+        }
+
+        return (m_node == other.m_node) && (m_operand == other.m_operand) && (m_argList == other.m_argList) && (m_state == other.m_state);
+    }
+
+    inline bool operator!=(const GenTreeOperandIterator& other) const
+    {
+        return !(operator==(other));
+    }
+
+    GenTreeOperandIterator& operator++();
 };
 
 
