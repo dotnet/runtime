@@ -30,6 +30,7 @@
     "Microsoft.DotNet.xunit.performance": "1.0.0-alpha-build0039"
   },
   "frameworks": {
+    "netstandard1.7": {},
     "netstandard1.3": {}
   },
   "supports": {
