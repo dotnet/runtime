@@ -35,27 +35,28 @@ if /i "%1" == "-?"    goto Usage
 if /i "%1" == "-h"    goto Usage
 if /i "%1" == "-help" goto Usage
 
-if /i "%1" == "x64"                   (set __BuildArch=x64&set processedArgs=!processedArgs! %1&goto Arg_Next)
-if /i "%1" == "x86"                   (set __BuildArch=x86&set processedArgs=!processedArgs! %1&goto Arg_Next)
-if /i "%1" == "arm"                   (set __BuildArch=arm&set processedArgs=!processedArgs! %1&goto Arg_Next)
-if /i "%1" == "arm64"                 (set __BuildArch=arm64&set processedArgs=!processedArgs! %1&goto Arg_Next)
+if /i "%1" == "x64"                   (set __BuildArch=x64&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "x86"                   (set __BuildArch=x86&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "arm"                   (set __BuildArch=arm&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "arm64"                 (set __BuildArch=arm64&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 
-if /i "%1" == "debug"                 (set __BuildType=Debug&set processedArgs=!processedArgs! %1&goto Arg_Next)
-if /i "%1" == "release"               (set __BuildType=Release&set processedArgs=!processedArgs! %1&goto Arg_Next)
-if /i "%1" == "checked"               (set __BuildType=Checked&set processedArgs=!processedArgs! %1&goto Arg_Next)
+if /i "%1" == "debug"                 (set __BuildType=Debug&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "release"               (set __BuildType=Release&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "checked"               (set __BuildType=Checked&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 
 if /i "%1" == "crossgen"              (set __crossgen=true&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%1" == "skipmanaged"           (set __SkipManaged=1&set processedArgs=!processedArgs! %1&goto Arg_Next)
+if /i "%1" == "skipmanaged"           (set __SkipManaged=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "updateinvalidpackages" (set __UpdateInvalidPackagesArg=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%1" == "toolset_dir"           (set __ToolsetDir=%2&set __PassThroughArgs=%__PassThroughArgs% %2&set processedArgs=!processedArgs! %1 %2&shift&goto Arg_Next)
+if /i "%1" == "toolset_dir"           (set __ToolsetDir=%2&set __PassThroughArgs=%__PassThroughArgs% %2&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
 
-set __unprocessedBuildArgs=!__unprocessedBuildArgs! %1
-
-:Arg_Next
-shift /1
-goto :Arg_Loop
+if [!processedArgs!]==[] (
+  call set __UnprocessedBuildArgs=!__args!
+) else (
+  call set __UnprocessedBuildArgs=%%__args:*!processedArgs!=%%
+)
 
 :ArgsDone
+
 set __RunArgs=-BuildOS=%__BuildOS% -BuildType=%__BuildType% -BuildArch=%__BuildArch%
 
 rem arm64 builds currently use private toolset which has not been released yet
