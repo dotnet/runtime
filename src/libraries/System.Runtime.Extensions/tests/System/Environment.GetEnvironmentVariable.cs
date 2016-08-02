@@ -25,7 +25,7 @@ namespace System.Tests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)] // GetEnvironmentVariable by design doesn't respect changes via setenv
+        [PlatformSpecific(Xunit.PlatformID.Windows)] // GetEnvironmentVariable by design doesn't respect changes via setenv
         public void RandomLongVariableNameCanRoundTrip()
         {
             // NOTE: The limit of 32766 characters enforced by desktop

@@ -24,6 +24,12 @@ namespace System.IO
 
         protected TextReader() { }
 
+        public virtual void Close()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
         public void Dispose()
         {
             Dispose(true);

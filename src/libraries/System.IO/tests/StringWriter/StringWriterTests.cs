@@ -236,10 +236,26 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        public static void Disposed()
+        public static void Closed_DisposedExceptions()
+        {
+            StringWriter sw = new StringWriter();
+            sw.Close();
+            ValidateDisposedExceptions(sw);
+        }
+
+        [Fact]
+        public static void Disposed_DisposedExceptions()
         {
             StringWriter sw = new StringWriter();
             sw.Dispose();
+            ValidateDisposedExceptions(sw);
+        }
+
+        private static void ValidateDisposedExceptions(StringWriter sw)
+        {
+            Assert.Throws<ObjectDisposedException>(() => { sw.Write('a'); });
+            Assert.Throws<ObjectDisposedException>(() => { sw.Write(new char[10], 0, 1); });
+            Assert.Throws<ObjectDisposedException>(() => { sw.Write("abc"); });
         }
 
         [Fact]

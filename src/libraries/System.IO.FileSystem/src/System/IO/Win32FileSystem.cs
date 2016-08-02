@@ -729,5 +729,10 @@ namespace System.IO
                 }
             }
         }
+
+        public override string[] GetLogicalDrives()
+        {
+            return DriveInfoInternal.GetLogicalDrives();
+        }
     }
 }

@@ -146,7 +146,8 @@ function cross_build_corefx {
     git am < "$__ARMRootfsMountPath"/dotnet/setenv/corefx_cross.patch
 
     #Cross building for emulator rootfs
-    ROOTFS_DIR="$__ARMRootfsMountPath" CPLUS_INCLUDE_PATH=$LINUX_ARM_INCPATH CXXFLAGS=$LINUX_ARM_CXXFLAGS ./build.sh $__buildArch clean cross $__verboseFlag $__buildConfig skiptests
+    ROOTFS_DIR="$__ARMRootfsMountPath" CPLUS_INCLUDE_PATH=$LINUX_ARM_INCPATH CXXFLAGS=$LINUX_ARM_CXXFLAGS ./build-native.sh -buildArch=$__buildArch -$__buildConfig -- cross $__verboseFlag
+    ROOTFS_DIR="$__ARMRootfsMountPath" CPLUS_INCLUDE_PATH=$LINUX_ARM_INCPATH CXXFLAGS=$LINUX_ARM_CXXFLAGS ./build-managed.sh -$__buildConfig -skipTests
 
     #Reset the code to the upstream version
     (set +x; echo 'Rewinding HEAD to master code')

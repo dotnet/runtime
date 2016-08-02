@@ -4,7 +4,8 @@
   <PropertyGroup>
     <Version>4.1.1</Version>
     <WinVersion Condition="'$(PackagePlatform)'=='arm'">win8</WinVersion>
-    <WinVersion Condition="'$(PackagePlatform)'!='arm'">win7</WinVersion>
+    <WinVersion Condition="'$(PackagePlatform)'=='arm64'">win10</WinVersion>
+    <WinVersion Condition="'$(PackagePlatform)'=='x86' OR '$(PackagePlatform)'=='x64'">win7</WinVersion>
     <PackageTargetRuntime>$(WinVersion)-$(PackagePlatform)</PackageTargetRuntime>
   </PropertyGroup>
   <ItemGroup>

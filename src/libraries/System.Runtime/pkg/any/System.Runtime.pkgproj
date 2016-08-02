@@ -8,6 +8,9 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\System.Runtime.csproj" />
+    <ProjectReference Include="..\..\src\System.Runtime.csproj">
+      <TargetGroup>netstandard1.5</TargetGroup>      
+    </ProjectReference>
     <ProjectReference Include="..\..\src\redist\System.Runtime.depproj">
       <TargetGroup>netcore50</TargetGroup>
     </ProjectReference>

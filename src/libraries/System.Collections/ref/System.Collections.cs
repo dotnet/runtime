@@ -5,6 +5,10 @@
 // Changes to this file must follow the http://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
+namespace System
+{
+    public delegate TOutput Converter<in TInput, out TOutput>(TInput input);     
+}
 
 namespace System.Collections
 {
@@ -18,9 +22,11 @@ namespace System.Collections
         public BitArray(int[] values) { }
         public bool this[int index] { get { return default(bool); } set { } }
         public int Length { get { return default(int); } set { } }
-        int System.Collections.ICollection.Count { get { return default(int); } }
-        bool System.Collections.ICollection.IsSynchronized { get { return default(bool); } }
-        object System.Collections.ICollection.SyncRoot { get { return default(object); } }
+        public int Count { get { return default(int); } }
+        public bool IsReadOnly { get { return default(bool); } }
+        public bool IsSynchronized { get { return default(bool); } }
+        public object Clone() { return default(System.Collections.BitArray); }
+        public object SyncRoot { get { return default(object); } }
         public System.Collections.BitArray And(System.Collections.BitArray value) { return default(System.Collections.BitArray); }
         public bool Get(int index) { return default(bool); }
         public System.Collections.IEnumerator GetEnumerator() { return default(System.Collections.IEnumerator); }
@@ -28,7 +34,7 @@ namespace System.Collections
         public System.Collections.BitArray Or(System.Collections.BitArray value) { return default(System.Collections.BitArray); }
         public void Set(int index, bool value) { }
         public void SetAll(bool value) { }
-        void System.Collections.ICollection.CopyTo(System.Array array, int index) { }
+        public void CopyTo(System.Array array, int index) { }
         public System.Collections.BitArray Xor(System.Collections.BitArray value) { return default(System.Collections.BitArray); }
     }
     public static partial class StructuralComparisons
@@ -278,6 +284,7 @@ namespace System.Collections.Generic
         public int BinarySearch(int index, int count, T item, System.Collections.Generic.IComparer<T> comparer) { return default(int); }
         public void Clear() { }
         public bool Contains(T item) { return default(bool); }
+        public List<TOutput> ConvertAll<TOutput>(System.Converter<T,TOutput> converter) { throw null; }
         public void CopyTo(T[] array) { }
         public void CopyTo(T[] array, int arrayIndex) { }
         public void CopyTo(int index, T[] array, int arrayIndex, int count) { }

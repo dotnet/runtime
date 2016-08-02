@@ -197,6 +197,11 @@ namespace System.IO
             _closable = true;
         }
 
+        public override void Close()
+        {
+            Dispose(true);
+        }
+
         protected override void Dispose(bool disposing)
         {
             // Dispose of our resources if this StreamReader is closable.
@@ -207,7 +212,7 @@ namespace System.IO
                 // ensure cleaning up internal resources, inside the finally block.  
                 if (!LeaveOpen && disposing && (_stream != null))
                 {
-                    _stream.Dispose();
+                    _stream.Close();
                 }
             }
             finally

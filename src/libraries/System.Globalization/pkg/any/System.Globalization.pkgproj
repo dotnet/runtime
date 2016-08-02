@@ -9,6 +9,9 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\System.Globalization.csproj" />
     <ProjectReference Include="..\..\src\System.Globalization.csproj">
+      <TargetGroup>netstandard1.3</TargetGroup>
+    </ProjectReference>
+    <ProjectReference Include="..\..\src\System.Globalization.csproj">
       <TargetGroup>netcore50</TargetGroup>
     </ProjectReference>
 

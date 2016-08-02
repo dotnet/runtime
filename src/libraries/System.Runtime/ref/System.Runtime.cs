@@ -65,17 +65,19 @@ namespace System
         public ArithmeticException(string message) { }
         public ArithmeticException(string message, System.Exception innerException) { }
     }
-    public abstract partial class Array : System.Collections.ICollection, System.Collections.IEnumerable, System.Collections.IList, System.Collections.IStructuralComparable, System.Collections.IStructuralEquatable
+    public abstract partial class Array : System.Collections.ICollection, System.Collections.IEnumerable, System.Collections.IList, System.Collections.IStructuralComparable, System.Collections.IStructuralEquatable, System.ICloneable
     {
         internal Array() { }
+        public bool IsFixedSize { get { return default(bool); } }
+        public bool IsReadOnly { get { return default(bool); } }
+        public bool IsSynchronized { get { return default(bool); } }
         public int Length { get { return default(int); } }
+        public long LongLength { get { return default(long); } }
         public int Rank { get { return default(int); } }
+        public object SyncRoot { get { return default(object); } }
         int System.Collections.ICollection.Count { get { return default(int); } }
-        bool System.Collections.ICollection.IsSynchronized { get { return default(bool); } }
-        object System.Collections.ICollection.SyncRoot { get { return default(object); } }
-        bool System.Collections.IList.IsFixedSize { get { return default(bool); } }
-        bool System.Collections.IList.IsReadOnly { get { return default(bool); } }
         object System.Collections.IList.this[int index] { get { return default(object); } set { } }
+        public static System.Collections.ObjectModel.ReadOnlyCollection<T> AsReadOnly<T>(T[] array) { return default(System.Collections.ObjectModel.ReadOnlyCollection<T>); }
         public static int BinarySearch(System.Array array, int index, int length, object value) { return default(int); }
         public static int BinarySearch(System.Array array, int index, int length, object value, System.Collections.IComparer comparer) { return default(int); }
         public static int BinarySearch(System.Array array, object value) { return default(int); }
@@ -87,12 +89,19 @@ namespace System
         public static void Clear(System.Array array, int index, int length) { }
         public object Clone() { return default(object); }
         public static void ConstrainedCopy(System.Array sourceArray, int sourceIndex, System.Array destinationArray, int destinationIndex, int length) { }
+        public static TOutput[] ConvertAll<TInput, TOutput>(TInput[] array, System.Converter<TInput, TOutput> converter) { return default(TOutput[]); }
         public static void Copy(System.Array sourceArray, System.Array destinationArray, int length) { }
+        public static void Copy(System.Array sourceArray, System.Array destinationArray, long length) { }
         public static void Copy(System.Array sourceArray, int sourceIndex, System.Array destinationArray, int destinationIndex, int length) { }
+        public static void Copy(System.Array sourceArray, long sourceIndex, System.Array destinationArray, long destinationIndex, long length) { }
         public void CopyTo(System.Array array, int index) { }
+        public void CopyTo(System.Array array, long index) { }
         public static System.Array CreateInstance(System.Type elementType, int length) { return default(System.Array); }
+        public static System.Array CreateInstance(System.Type elementType, int length1, int length2) { return default(System.Array); }
+        public static System.Array CreateInstance(System.Type elementType, int length1, int length2, int length3) { return default(System.Array); }
         public static System.Array CreateInstance(System.Type elementType, params int[] lengths) { return default(System.Array); }
         public static System.Array CreateInstance(System.Type elementType, int[] lengths, int[] lowerBounds) { return default(System.Array); }
+        public static System.Array CreateInstance(System.Type elementType, params long[] lengths) { return default(System.Array); }
         public static T[] Empty<T>() { return default(T[]); }
         public static bool Exists<T>(T[] array, System.Predicate<T> match) { return default(bool); }
         public static T Find<T>(T[] array, System.Predicate<T> match) { return default(T); }
@@ -104,12 +113,20 @@ namespace System
         public static int FindLastIndex<T>(T[] array, int startIndex, int count, System.Predicate<T> match) { return default(int); }
         public static int FindLastIndex<T>(T[] array, int startIndex, System.Predicate<T> match) { return default(int); }
         public static int FindLastIndex<T>(T[] array, System.Predicate<T> match) { return default(int); }
+        public static void ForEach<T>(T[] array, System.Action<T> action) { }
         public System.Collections.IEnumerator GetEnumerator() { return default(System.Collections.IEnumerator); }
         public int GetLength(int dimension) { return default(int); }
+        public long GetLongLength(int dimension) { return default(long); }
         public int GetLowerBound(int dimension) { return default(int); }
         public int GetUpperBound(int dimension) { return default(int); }
         public object GetValue(int index) { return default(object); }
+        public object GetValue(int index1, int index2) { return default(object); }
+        public object GetValue(int index1, int index2, int index3) { return default(object); }
         public object GetValue(params int[] indices) { return default(object); }
+        public object GetValue(long index) { return default(object); }
+        public object GetValue(long index1, long index2) { return default(object); }
+        public object GetValue(long index1, long index2, long index3) { return default(object); }
+        public object GetValue(params long[] indices) { return default(object); }
         public static int IndexOf(System.Array array, object value) { return default(int); }
         public static int IndexOf(System.Array array, object value, int startIndex) { return default(int); }
         public static int IndexOf(System.Array array, object value, int startIndex, int count) { return default(int); }
@@ -127,7 +144,13 @@ namespace System
         public static void Reverse(System.Array array) { }
         public static void Reverse(System.Array array, int index, int length) { }
         public void SetValue(object value, int index) { }
+        public void SetValue(object value, int index1, int index2) { }
+        public void SetValue(object value, int index1, int index2, int index3) { }
         public void SetValue(object value, params int[] indices) { }
+        public void SetValue(object value, long index) { }
+        public void SetValue(object value, long index1, long index2) { }
+        public void SetValue(object value, long index1, long index2, long index3) { }
+        public void SetValue(object value, params long[] indices) { }
         public static void Sort(System.Array array) { }
         public static void Sort(System.Array keys, System.Array items) { }
         public static void Sort(System.Array keys, System.Array items, System.Collections.IComparer comparer) { }
@@ -396,15 +419,20 @@ namespace System
         public bool IsCompliant { get { return default(bool); } }
     }
     public delegate int Comparison<in T>(T x, T y);
+    public delegate TOutput Converter<in TInput, out TOutput>(TInput input);
     public partial struct DateTime : System.IComparable, System.IComparable<System.DateTime>, System.IConvertible, System.IEquatable<System.DateTime>, System.IFormattable
     {
         public static readonly System.DateTime MaxValue;
         public static readonly System.DateTime MinValue;
         public DateTime(int year, int month, int day) { throw new System.NotImplementedException(); }
+        public DateTime(int year, int month, int day, System.Globalization.Calendar calendar) { throw null;}
         public DateTime(int year, int month, int day, int hour, int minute, int second) { throw new System.NotImplementedException(); }
         public DateTime(int year, int month, int day, int hour, int minute, int second, System.DateTimeKind kind) { throw new System.NotImplementedException(); }
+        public DateTime(int year, int month, int day, int hour, int minute, int second, System.Globalization.Calendar calendar) { throw null;}
         public DateTime(int year, int month, int day, int hour, int minute, int second, int millisecond) { throw new System.NotImplementedException(); }
         public DateTime(int year, int month, int day, int hour, int minute, int second, int millisecond, System.DateTimeKind kind) { throw new System.NotImplementedException(); }
+        public DateTime(int year, int month, int day, int hour, int minute, int second, int millisecond, System.Globalization.Calendar calendar) { throw null;}
+        public DateTime(int year, int month, int day, int hour, int minute, int second, int millisecond, System.Globalization.Calendar calendar, System.DateTimeKind kind) { throw null;}
         public DateTime(long ticks) { throw new System.NotImplementedException(); }
         public DateTime(long ticks, System.DateTimeKind kind) { throw new System.NotImplementedException(); }
         public System.DateTime Date { get { return default(System.DateTime); } }
@@ -434,6 +462,7 @@ namespace System
         public System.DateTime AddYears(int value) { return default(System.DateTime); }
         public static int Compare(System.DateTime t1, System.DateTime t2) { return default(int); }
         public int CompareTo(System.DateTime value) { return default(int); }
+        public int CompareTo(object value) { throw null; }
         public static int DaysInMonth(int year, int month) { return default(int); }
         public bool Equals(System.DateTime value) { return default(bool); }
         public static bool Equals(System.DateTime t1, System.DateTime t2) { return default(bool); }
@@ -441,11 +470,13 @@ namespace System
         public static System.DateTime FromBinary(long dateData) { return default(System.DateTime); }
         public static System.DateTime FromFileTime(long fileTime) { return default(System.DateTime); }
         public static System.DateTime FromFileTimeUtc(long fileTime) { return default(System.DateTime); }
+        public static System.DateTime FromOADate(double d) { throw null; }
         public string[] GetDateTimeFormats() { return default(string[]); }
         public string[] GetDateTimeFormats(char format) { return default(string[]); }
         public string[] GetDateTimeFormats(char format, System.IFormatProvider provider) { return default(string[]); }
         public string[] GetDateTimeFormats(System.IFormatProvider provider) { return default(string[]); }
         public override int GetHashCode() { return default(int); }
+        public System.TypeCode GetTypeCode() { throw null; }
         public bool IsDaylightSavingTime() { return default(bool); }
         public static bool IsLeapYear(int year) { return default(bool); }
         public static System.DateTime operator +(System.DateTime d, System.TimeSpan t) { return default(System.DateTime); }
@@ -483,10 +514,17 @@ namespace System
         ushort System.IConvertible.ToUInt16(System.IFormatProvider provider) { return default(ushort); }
         uint System.IConvertible.ToUInt32(System.IFormatProvider provider) { return default(uint); }
         ulong System.IConvertible.ToUInt64(System.IFormatProvider provider) { return default(ulong); }
+        // Uncomment when this method is available in System.Private.CoreLib.dll
+        //void System.Runtime.Serialization.ISerializable.GetObjectData(SerializationInfo info, StreamingContext context) { }
         public long ToBinary() { return default(long); }
         public long ToFileTime() { return default(long); }
         public long ToFileTimeUtc() { return default(long); }
         public System.DateTime ToLocalTime() { return default(System.DateTime); }
+        public string ToLongDateString() { throw null; }
+        public string ToLongTimeString() { throw null; }
+        public double ToOADate() { throw null; }
+        public string ToShortDateString() { throw null; }
+        public string ToShortTimeString() { throw null; }
         public override string ToString() { return default(string); }
         public string ToString(System.IFormatProvider provider) { return default(string); }
         public string ToString(string format) { return default(string); }
@@ -953,6 +991,10 @@ namespace System
         System.Threading.WaitHandle AsyncWaitHandle { get; }
         bool CompletedSynchronously { get; }
         bool IsCompleted { get; }
+    }
+    public partial interface ICloneable
+    {
+        object Clone();
     }
     public partial interface IComparable
     {
@@ -1627,6 +1669,8 @@ namespace System
     {
         CurrentCulture = 0,
         CurrentCultureIgnoreCase = 1,
+        InvariantCulture = 2,
+        InvariantCultureIgnoreCase = 3,
         Ordinal = 4,
         OrdinalIgnoreCase = 5,
     }
@@ -2131,9 +2175,24 @@ namespace System
     }
     public partial class Uri
     {
+        public static readonly string SchemeDelimiter;
+        public static readonly string UriSchemeFile;
+        public static readonly string UriSchemeFtp;
+        public static readonly string UriSchemeGopher;
+        public static readonly string UriSchemeHttp;
+        public static readonly string UriSchemeHttps;
+        public static readonly string UriSchemeMailto;
+        public static readonly string UriSchemeNetPipe;
+        public static readonly string UriSchemeNetTcp;
+        public static readonly string UriSchemeNews;
+        public static readonly string UriSchemeNntp;
         public Uri(string uriString) { }
         public Uri(string uriString, System.UriKind uriKind) { }
+        [System.ObsoleteAttribute]
+        public Uri(string uriString, bool dontEscape) { }
         public Uri(System.Uri baseUri, string relativeUri) { }
+        [System.ObsoleteAttribute("dontEscape is always false")]
+        public Uri(System.Uri baseUri, string relativeUri, bool dontEscape) { }
         public Uri(System.Uri baseUri, System.Uri relativeUri) { }
         public string AbsolutePath { get { return default(string); } }
         public string AbsoluteUri { get { return default(string); } }
@@ -2161,20 +2220,42 @@ namespace System
         public static bool CheckSchemeName(string schemeName) { return default(bool); }
         public static int Compare(System.Uri uri1, System.Uri uri2, System.UriComponents partsToCompare, System.UriFormat compareFormat, System.StringComparison comparisonType) { return default(int); }
         public override bool Equals(object comparand) { return default(bool); }
+        [System.ObsoleteAttribute]
+        protected virtual void Escape() { }
         public static string EscapeDataString(string stringToEscape) { return default(string); }
+        [System.ObsoleteAttribute]
+        protected static string EscapeString(string str) { return default(string); }
         public static string EscapeUriString(string stringToEscape) { return default(string); }
+        public static int FromHex(char digit) { return default(int); }
         public string GetComponents(System.UriComponents components, System.UriFormat format) { return default(string); }
         public override int GetHashCode() { return default(int); }
         public bool IsBaseOf(System.Uri uri) { return default(bool); }
+        public string GetLeftPart(System.UriPartial part) { return default(string); }
+        public static string HexEscape(char character) { return default(string); }
+        public static char HexUnescape(string pattern, ref int index) { return default(char); }
+        [System.ObsoleteAttribute]
+        protected virtual bool IsBadFileSystemCharacter(char character) { return default(bool); }
+        [System.ObsoleteAttribute]
+        protected static bool IsExcludedCharacter(char character) { return default(bool); }
+        public static bool IsHexDigit(char character) { return default(bool); }
+        public static bool IsHexEncoding(string pattern, int index) { return default(bool); }
+        [System.ObsoleteAttribute]
+        protected virtual bool IsReservedCharacter(char character) { return default(bool); }
         public bool IsWellFormedOriginalString() { return default(bool); }
         public static bool IsWellFormedUriString(string uriString, System.UriKind uriKind) { return default(bool); }
+        [System.ObsoleteAttribute("Use MakeRelativeUri(Uri uri) instead.")]
+        public string MakeRelative(System.Uri toUri) { return default(string); }
         public System.Uri MakeRelativeUri(System.Uri uri) { return default(System.Uri); }
         public static bool operator ==(System.Uri uri1, System.Uri uri2) { return default(bool); }
         public static bool operator !=(System.Uri uri1, System.Uri uri2) { return default(bool); }
+        [System.ObsoleteAttribute("The method has been deprecated. It is not used by the system.")]
+        protected virtual void Parse() { }
         public override string ToString() { return default(string); }
         public static bool TryCreate(string uriString, System.UriKind uriKind, out System.Uri result) { result = default(System.Uri); return default(bool); }
         public static bool TryCreate(System.Uri baseUri, string relativeUri, out System.Uri result) { result = default(System.Uri); return default(bool); }
         public static bool TryCreate(System.Uri baseUri, System.Uri relativeUri, out System.Uri result) { result = default(System.Uri); return default(bool); }
+        [System.ObsoleteAttribute]
+        protected virtual string Unescape(string path) { return default(string); }
         public static string UnescapeDataString(string stringToUnescape) { return default(string); }
     }
     [System.FlagsAttribute]
@@ -2223,6 +2304,13 @@ namespace System
         Absolute = 1,
         Relative = 2,
         RelativeOrAbsolute = 0,
+    }
+    public enum UriPartial
+    {
+        Authority = 1,
+        Path = 2,
+        Query = 3,
+        Scheme = 0,
     }
     public abstract partial class ValueType
     {
@@ -2578,6 +2666,57 @@ namespace System.Diagnostics
 }
 namespace System.Globalization
 {
+    public abstract partial class Calendar
+    {
+        public const int CurrentEra = 0;
+        protected Calendar() { }
+        public abstract int[] Eras { get; }
+        public bool IsReadOnly { get { return default(bool); } }
+        public virtual System.DateTime MaxSupportedDateTime { get { return default(System.DateTime); } }
+        public virtual System.DateTime MinSupportedDateTime { get { return default(System.DateTime); } }
+        public virtual int TwoDigitYearMax { get { return default(int); } set { } }
+        public virtual System.DateTime AddDays(System.DateTime time, int days) { return default(System.DateTime); }
+        public virtual System.DateTime AddHours(System.DateTime time, int hours) { return default(System.DateTime); }
+        public virtual System.DateTime AddMilliseconds(System.DateTime time, double milliseconds) { return default(System.DateTime); }
+        public virtual System.DateTime AddMinutes(System.DateTime time, int minutes) { return default(System.DateTime); }
+        public abstract System.DateTime AddMonths(System.DateTime time, int months);
+        public virtual System.DateTime AddSeconds(System.DateTime time, int seconds) { return default(System.DateTime); }
+        public virtual System.DateTime AddWeeks(System.DateTime time, int weeks) { return default(System.DateTime); }
+        public abstract System.DateTime AddYears(System.DateTime time, int years);
+        public abstract int GetDayOfMonth(System.DateTime time);
+        public abstract System.DayOfWeek GetDayOfWeek(System.DateTime time);
+        public abstract int GetDayOfYear(System.DateTime time);
+        public virtual int GetDaysInMonth(int year, int month) { return default(int); }
+        public abstract int GetDaysInMonth(int year, int month, int era);
+        public virtual int GetDaysInYear(int year) { return default(int); }
+        public abstract int GetDaysInYear(int year, int era);
+        public abstract int GetEra(System.DateTime time);
+        public virtual int GetHour(System.DateTime time) { return default(int); }
+        public virtual int GetLeapMonth(int year, int era) { return default(int); }
+        public virtual double GetMilliseconds(System.DateTime time) { return default(double); }
+        public virtual int GetMinute(System.DateTime time) { return default(int); }
+        public abstract int GetMonth(System.DateTime time);
+        public virtual int GetMonthsInYear(int year) { return default(int); }
+        public abstract int GetMonthsInYear(int year, int era);
+        public virtual int GetSecond(System.DateTime time) { return default(int); }
+        public virtual int GetWeekOfYear(System.DateTime time, System.Globalization.CalendarWeekRule rule, System.DayOfWeek firstDayOfWeek) { return default(int); }
+        public abstract int GetYear(System.DateTime time);
+        public virtual bool IsLeapDay(int year, int month, int day) { return default(bool); }
+        public abstract bool IsLeapDay(int year, int month, int day, int era);
+        public virtual bool IsLeapMonth(int year, int month) { return default(bool); }
+        public abstract bool IsLeapMonth(int year, int month, int era);
+        public virtual bool IsLeapYear(int year) { return default(bool); }
+        public abstract bool IsLeapYear(int year, int era);
+        public virtual System.DateTime ToDateTime(int year, int month, int day, int hour, int minute, int second, int millisecond) { return default(System.DateTime); }
+        public abstract System.DateTime ToDateTime(int year, int month, int day, int hour, int minute, int second, int millisecond, int era);
+        public virtual int ToFourDigitYear(int year) { return default(int); }
+    }
+    public enum CalendarWeekRule
+    {
+        FirstDay = 0,
+        FirstFourDayWeek = 2,
+        FirstFullWeek = 1,
+    }
     [System.FlagsAttribute]
     public enum DateTimeStyles
     {

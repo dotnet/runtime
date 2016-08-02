@@ -2,161 +2,80 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Reflection;
-using System.Reflection.Emit;
+using System.Collections.Generic;
 using Xunit;
 
-namespace System.Reflection.Emit.ILGeneration.Tests
+namespace System.Reflection.Emit.Tests
 {
     public class SignatureHelperAddArguments
     {
-        [Fact]
-        public void PosTest1()
+        public static IEnumerable<object[]> AddArguments_TestData()
         {
-            AssemblyBuilder myAssembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Assembly_SignatureHelperAddArgument"), AssemblyBuilderAccess.Run);
-            ModuleBuilder myModule = TestLibrary.Utilities.GetModuleBuilder(myAssembly, "Module_SignatureHelperAddArgument");
-            SignatureHelper sHelper = SignatureHelper.GetFieldSigHelper(myModule);
+            yield return new object[] { null, null, 3 };
+            yield return new object[] { null, new Type[][] { new Type[] { typeof(string), typeof(int) }, new Type[] { typeof(char), typeof(Module) } }, 11 };
+            yield return new object[] { new Type[][] { new Type[] { typeof(string), typeof(int) }, new Type[] { typeof(char), typeof(Module) } }, null, 11 };
+            yield return new object[] { new Type[][] { new Type[] { typeof(string), typeof(int) }, new Type[] { typeof(char), typeof(Module) } }, new Type[][] { new Type[] { typeof(string), typeof(int) }, new Type[] { typeof(char), typeof(Module) } }, 19 };
+        }
 
-            int expectedValue = 3;
-            int actualValue;
-
-            sHelper.AddArguments(new Type[] { typeof(string), typeof(int) }, null, null);
-            actualValue = sHelper.GetSignature().Length;
-            Assert.Equal(expectedValue, actualValue);
+        [Theory]
+        [MemberData(nameof(AddArguments_TestData))]
+        public void AddArguments(Type[][] requiredCustomModifiers, Type[][] optionalCustomModifiers, int expectedLength)
+        {
+            ModuleBuilder module = Helpers.DynamicModule();
+            SignatureHelper helper = SignatureHelper.GetFieldSigHelper(module);
+            
+            helper.AddArguments(new Type[] { typeof(string), typeof(int) }, requiredCustomModifiers, optionalCustomModifiers);
+            Assert.Equal(expectedLength, helper.GetSignature().Length);
         }
 
         [Fact]
-        public void PosTest2()
+        public void AddArguments_NullObjectInTypeArguments_ThrowsArgumentNullException()
         {
-            AssemblyBuilder myAssembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Assembly_SignatureHelperAddArgument"), AssemblyBuilderAccess.Run);
-            ModuleBuilder myModule = TestLibrary.Utilities.GetModuleBuilder(myAssembly, "Module_SignatureHelperAddArgument");
-            SignatureHelper sHelper = SignatureHelper.GetFieldSigHelper(myModule);
+            ModuleBuilder module = Helpers.DynamicModule();
+            SignatureHelper helper = SignatureHelper.GetFieldSigHelper(module);
 
-            int expectedValue = 11;
-            int actualValue;
-
-            sHelper.AddArguments(new Type[] { typeof(string), typeof(int) }, null, new Type[][] { new Type[] { typeof(string), typeof(int) }, new Type[] { typeof(char), typeof(Module) } });
-            actualValue = sHelper.GetSignature().Length;
-            Assert.Equal(expectedValue, actualValue);
+            Assert.Throws<ArgumentNullException>(() => { helper.AddArguments(new Type[] { typeof(char), null }, null, null); });
         }
 
         [Fact]
-        public void PosTest3()
+        public void AddArguments_SignatureFinished_ThrowsArgumentException()
         {
-            AssemblyBuilder myAssembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Assembly_SignatureHelperAddArgument"), AssemblyBuilderAccess.Run);
-            ModuleBuilder myModule = TestLibrary.Utilities.GetModuleBuilder(myAssembly, "Module_SignatureHelperAddArgument");
-            SignatureHelper sHelper = SignatureHelper.GetFieldSigHelper(myModule);
+            ModuleBuilder module = Helpers.DynamicModule();
+            SignatureHelper helper = SignatureHelper.GetFieldSigHelper(module);
+            helper.GetSignature();
 
-            int expectedValue = 11;
-            int actualValue;
-
-            sHelper.AddArguments(new Type[] { typeof(string), typeof(int) }, new Type[][] { new Type[] { typeof(string), typeof(int) }, new Type[] { typeof(char), typeof(Module) } }, null);
-            actualValue = sHelper.GetSignature().Length;
-            Assert.Equal(expectedValue, actualValue);
+            Assert.Throws<ArgumentException>(null, () => helper.AddArguments(new Type[] { typeof(string) }, null, null));
         }
 
         [Fact]
-        public void PosTest4()
+        public void AddArgument_NullObjectInRequiredCustomModifiers_ThrowsArgumentNullException()
         {
-            AssemblyBuilder myAssembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Assembly_SignatureHelperAddArgument"), AssemblyBuilderAccess.Run);
-            ModuleBuilder myModule = TestLibrary.Utilities.GetModuleBuilder(myAssembly, "Module_SignatureHelperAddArgument");
-            SignatureHelper sHelper = SignatureHelper.GetFieldSigHelper(myModule);
+            ModuleBuilder module = Helpers.DynamicModule();
+            SignatureHelper helper = SignatureHelper.GetFieldSigHelper(module);
 
-            int expectedValue = 19;
-            int actualValue;
-
-            sHelper.AddArguments(new Type[] { typeof(string), typeof(int) }, new Type[][] { new Type[] { typeof(string), typeof(int) }, new Type[] { typeof(char), typeof(Module) } }, new Type[][] { new Type[] { typeof(string), typeof(int) }, new Type[] { typeof(char), typeof(Module) } });
-            actualValue = sHelper.GetSignature().Length;
-            Assert.Equal(expectedValue, actualValue);
+            Assert.Throws<ArgumentNullException>("requiredCustomModifiers", () => { helper.AddArguments(new Type[] { typeof(string) }, new Type[][] { new Type[] { typeof(int), null } }, null); });
         }
 
         [Fact]
-        public void NegTest1()
+        public void AddArgument_DifferentCountsForCustomModifiers_ThrowsArgumentException()
         {
-            AssemblyBuilder myAssembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Assembly_SignatureHelperAddArgument"), AssemblyBuilderAccess.Run);
-            ModuleBuilder myModule = TestLibrary.Utilities.GetModuleBuilder(myAssembly, "Module_SignatureHelperAddArgument");
-            SignatureHelper sHelper = SignatureHelper.GetFieldSigHelper(myModule);
+            ModuleBuilder module = Helpers.DynamicModule();
+            SignatureHelper helper = SignatureHelper.GetFieldSigHelper(module);
 
-            Assert.Throws<ArgumentNullException>(() => { sHelper.AddArguments(new Type[] { typeof(char), null }, null, null); });
+            Assert.Throws<ArgumentException>("requiredCustomModifiers", () => helper.AddArguments(new Type[] { typeof(string) }, new Type[][] { new Type[] { typeof(int), typeof(int[]) } }, null));
+            Assert.Throws<ArgumentException>(null, () => helper.AddArguments(new Type[] { typeof(string) }, new Type[][] { new Type[] { typeof(int) }, new Type[] { typeof(char) } }, null));
+
+            Assert.Throws<ArgumentException>("optionalCustomModifiers", () => helper.AddArguments(new Type[] { typeof(string) }, null, new Type[][] { new Type[] { typeof(int), typeof(int[]) } }));
+            Assert.Throws<ArgumentException>(null, () => helper.AddArguments(new Type[] { typeof(string) }, null, new Type[][] { new Type[] { typeof(int) }, new Type[] { typeof(char) } }));
         }
 
         [Fact]
-        public void NegTest2()
+        public void AddArgument_NullObjectInOptionalCustomModifiers_ThrowsArgumentNullException()
         {
-            AssemblyBuilder myAssembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Assembly_SignatureHelperAddArgument"), AssemblyBuilderAccess.Run);
-            ModuleBuilder myModule = TestLibrary.Utilities.GetModuleBuilder(myAssembly, "Module_SignatureHelperAddArgument");
-            SignatureHelper sHelper = SignatureHelper.GetFieldSigHelper(myModule);
-            byte[] signature = sHelper.GetSignature();
-            //this action will lead the Signature be finished.
+            ModuleBuilder module = Helpers.DynamicModule();
+            SignatureHelper helper = SignatureHelper.GetFieldSigHelper(module);
 
-            Assert.Throws<ArgumentException>(() => { sHelper.AddArguments(new Type[] { typeof(string) }, null, null); });
-        }
-
-        [Fact]
-        public void NegTest3()
-        {
-            AssemblyBuilder myAssembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Assembly_SignatureHelperAddArgument"), AssemblyBuilderAccess.Run);
-            ModuleBuilder myModule = TestLibrary.Utilities.GetModuleBuilder(myAssembly, "Module_SignatureHelperAddArgument");
-            SignatureHelper sHelper = SignatureHelper.GetFieldSigHelper(myModule);
-
-            Assert.Throws<ArgumentNullException>(() => { sHelper.AddArguments(new Type[] { typeof(string) }, new Type[][] { new Type[] { typeof(int), null } }, null); });
-        }
-
-        [Fact]
-        public void NegTest4()
-        {
-            int[] nums = new int[] { 1, 1 };
-
-            AssemblyBuilder myAssembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Assembly_SignatureHelperAddArgument"), AssemblyBuilderAccess.Run);
-            ModuleBuilder myModule = TestLibrary.Utilities.GetModuleBuilder(myAssembly, "Module_SignatureHelperAddArgument");
-            SignatureHelper sHelper = SignatureHelper.GetFieldSigHelper(myModule);
-
-            Assert.Throws<ArgumentException>(() => { sHelper.AddArguments(new Type[] { typeof(string) }, new Type[][] { new Type[] { typeof(int), nums.GetType() } }, null); });
-        }
-
-        [Fact]
-        public void NegTest5()
-        {
-            AssemblyBuilder myAssembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Assembly_SignatureHelperAddArgument"), AssemblyBuilderAccess.Run);
-            ModuleBuilder myModule = TestLibrary.Utilities.GetModuleBuilder(myAssembly, "Module_SignatureHelperAddArgument");
-            SignatureHelper sHelper = SignatureHelper.GetFieldSigHelper(myModule);
-
-            Assert.Throws<ArgumentException>(() => { sHelper.AddArguments(new Type[] { typeof(string) }, new Type[][] { new Type[] { typeof(int) }, new Type[] { typeof(char) } }, null); });
-        }
-
-        [Fact]
-        public void NegTest6()
-        {
-            AssemblyBuilder myAssembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Assembly_SignatureHelperAddArgument"), AssemblyBuilderAccess.Run);
-            ModuleBuilder myModule = TestLibrary.Utilities.GetModuleBuilder(myAssembly, "Module_SignatureHelperAddArgument");
-            SignatureHelper sHelper = SignatureHelper.GetFieldSigHelper(myModule);
-
-            Assert.Throws<ArgumentNullException>(() => { sHelper.AddArguments(new Type[] { typeof(string) }, null, new Type[][] { new Type[] { typeof(int), null } }); });
-        }
-
-        [Fact]
-        public void NegTest7()
-        {
-            int[] nums = new int[] { 1, 1 };
-
-            AssemblyBuilder myAssembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Assembly_SignatureHelperAddArgument"), AssemblyBuilderAccess.Run);
-            ModuleBuilder myModule = TestLibrary.Utilities.GetModuleBuilder(myAssembly, "Module_SignatureHelperAddArgument");
-            SignatureHelper sHelper = SignatureHelper.GetFieldSigHelper(myModule);
-
-            Assert.Throws<ArgumentException>(() => { sHelper.AddArguments(new Type[] { typeof(string) }, null, new Type[][] { new Type[] { typeof(int), nums.GetType() } }); });
-        }
-
-        [Fact]
-        public void NegTest8()
-        {
-            AssemblyBuilder myAssembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Assembly_SignatureHelperAddArgument"), AssemblyBuilderAccess.Run);
-            ModuleBuilder myModule = TestLibrary.Utilities.GetModuleBuilder(myAssembly, "Module_SignatureHelperAddArgument");
-            SignatureHelper sHelper = SignatureHelper.GetFieldSigHelper(myModule);
-
-            Assert.Throws<ArgumentException>(() => { sHelper.AddArguments(new Type[] { typeof(string) }, null, new Type[][] { new Type[] { typeof(int) }, new Type[] { typeof(char) } }); });
+            Assert.Throws<ArgumentNullException>("optionalCustomModifiers", () => helper.AddArguments(new Type[] { typeof(string) }, null, new Type[][] { new Type[] { typeof(int), null } }));
         }
     }
-
-    public class Example { }
 }

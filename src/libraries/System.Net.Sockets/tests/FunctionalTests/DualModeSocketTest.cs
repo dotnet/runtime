@@ -718,7 +718,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [ActiveIssue(5832, PlatformID.AnyUnix)]
+        [PlatformSpecific(PlatformID.Windows)] // https://github.com/dotnet/corefx/issues/5832
         public void AcceptV6BoundToSpecificV4_CantConnect()
         {
             Assert.Throws<SocketException>(() =>
@@ -728,7 +728,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [ActiveIssue(5832, PlatformID.AnyUnix)]
+        [PlatformSpecific(PlatformID.Windows)] // https://github.com/dotnet/corefx/issues/5832
         public void AcceptV4BoundToSpecificV6_CantConnect()
         {
             Assert.Throws<SocketException>(() =>
@@ -738,7 +738,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [ActiveIssue(5832, PlatformID.AnyUnix)]
+        [PlatformSpecific(PlatformID.Windows)] // https://github.com/dotnet/corefx/issues/5832
         public void AcceptV6BoundToAnyV4_CantConnect()
         {
             Assert.Throws<SocketException>(() =>

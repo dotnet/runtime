@@ -138,6 +138,7 @@ namespace System.Tests
             try
             {
                 Environment.SetEnvironmentVariable(varName, value);
+                Assert.Equal(value, Environment.GetEnvironmentVariable(varName));
                 Assert.Equal(value, Environment.GetEnvironmentVariable(varNamePrefix));
             }
             finally
