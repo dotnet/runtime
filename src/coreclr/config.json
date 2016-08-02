@@ -385,6 +385,7 @@
       "defaultValues": {
         "toolName": "msbuild",
         "settings": {
+          "maxcpucount": "default",
           "MsBuildParameters": "default",
           "MsBuildLog": "default",
           "MsBuildWrn": "default",
