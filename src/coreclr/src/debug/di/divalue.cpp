@@ -1324,8 +1324,11 @@ HRESULT CordbReferenceValue::BuildFromGCHandle(
         NULL, // EnregisteredValueHome * pRemoteRegAddr,        
         &pRefValue);
 
-    pRefValue->QueryInterface(__uuidof(ICorDebugReferenceValue), (void**)pOutRef);
-
+    if (SUCCEEDED(hr))
+    {
+        pRefValue->QueryInterface(__uuidof(ICorDebugReferenceValue), (void**)pOutRef);
+    }
+    
     return hr;
 }
 
