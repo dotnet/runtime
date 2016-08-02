@@ -11748,12 +11748,14 @@ DO_LDFTN:
             // At present this can only be String
             else if (clsFlags & CORINFO_FLG_VAROBJSIZE)
             {
+#if COR_JIT_EE_VERSION > 460
                 if (eeGetEEInfo()->targetAbi == CORINFO_CORERT_ABI)
                 {
                     // The dummy argument does not exist in CoreRT
                     newObjThisPtr = nullptr;
                 }
                 else
+#endif
                 {
                     // This is the case for variable-sized objects that are not
                     // arrays.  In this case, call the constructor with a null 'this'
