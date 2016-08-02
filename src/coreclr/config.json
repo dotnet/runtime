@@ -290,28 +290,14 @@
           "description": "Generates _version.h",
           "settings": {
             "GenerateVersionHeader": "default",
-            "NativeVersionHeaderFile": "default",
-            "Project": "./build.proj"
+            "NativeVersionHeaderFile": "default"
           }
         },
         "generateHeaderUnix": {
           "description": "Generates version.cpp",
           "settings": {
             "GenerateVersionSourceFile": "default",
-            "NativeVersionSourceFile": "default",
-            "Project": "./build.proj"
-          }
-        },
-        "buildCoreLib": {
-          "description": "Builds System.Private.CoreLib.",
-          "settings": {
-            "Project": "./build.proj"
-          }
-        },
-        "buildPackages": {
-          "description": "Builds nuget packages.",
-          "settings": {
-            "Project": "./src/.nuget/packages.builds"
+            "NativeVersionSourceFile": "default"
           }
         },
         "verbose": {
