@@ -7,6 +7,8 @@ using System.Reflection;
 using System.Threading.Tasks;
 using Microsoft.Extensions.EnvironmentAbstractions;
 
+#if !NETSTANDARD1_3
+
 namespace Microsoft.Extensions.DependencyModel
 {
     public class DependencyContextLoader
@@ -131,3 +133,5 @@ namespace Microsoft.Extensions.DependencyModel
         }
     }
 }
+
+#endif

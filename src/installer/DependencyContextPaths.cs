@@ -1,5 +1,7 @@
 using System;
 
+#if !NETSTANDARD1_3
+
 namespace Microsoft.Extensions.DependencyModel
 {
     internal class DependencyContextPaths
@@ -31,7 +33,7 @@ namespace Microsoft.Extensions.DependencyModel
                 files != null && files.Length > 0 ? files[0] : null,
                 files != null && files.Length > 1 ? files[1] : null
                 );
-
         }
     }
 }
+#endif

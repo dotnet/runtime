@@ -7,6 +7,8 @@ using System.IO;
 using Microsoft.DotNet.InternalAbstractions;
 using Microsoft.Extensions.EnvironmentAbstractions;
 
+#if !NETSTANDARD1_3
+
 namespace Microsoft.Extensions.DependencyModel.Resolution
 {
     public class AppBaseCompilationAssemblyResolver : ICompilationAssemblyResolver
@@ -115,3 +117,5 @@ namespace Microsoft.Extensions.DependencyModel.Resolution
         }
     }
 }
+
+#endif
