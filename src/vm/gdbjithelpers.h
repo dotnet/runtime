@@ -25,7 +25,7 @@ struct MethodDebugInfo
     int size;
 };
 
-typedef int (*GetInfoForMethodDelegate)(const char*, unsigned int, MethodDebugInfo& methodDebugInfo);
+typedef BOOL (*GetInfoForMethodDelegate)(const char*, unsigned int, MethodDebugInfo& methodDebugInfo);
 extern GetInfoForMethodDelegate getInfoForMethodDelegate;
 
 #endif // !__GDBJITHELPERS_H__
