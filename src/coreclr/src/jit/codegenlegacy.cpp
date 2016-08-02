@@ -18328,7 +18328,8 @@ void CodeGen::SetupLateArgs(GenTreePtr call)
             {
                 // First pass the stack portion of the struct (if any)
                 //
-                for (unsigned i = firstStackSlot; i < slots; i++)
+				int argOffsetOfFirstStackSlot = argOffset;
+				for (unsigned i = firstStackSlot; i < slots; i++)
                 {
                     emitAttr fieldSize;
                     if      (gcLayout[i] == TYPE_GC_NONE)
@@ -18356,7 +18357,7 @@ void CodeGen::SetupLateArgs(GenTreePtr call)
                                                           /*pCurRegNum*/&maxRegArg,
                                                           argOffset, 
                                                           /*fieldOffsetOfFirstStackSlot*/ firstStackSlot * TARGET_POINTER_SIZE,
-                                                          /*argOffsetOfFirstStackSlot*/ 0, // is always zero in this "spanning" case.
+                                                          argOffsetOfFirstStackSlot,
                                                           &deadFieldVarRegs,
                                                           &regTmp);
                         if (filledExtraSlot) 
