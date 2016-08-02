@@ -42,6 +42,22 @@ namespace System.Reflection.Metadata.Tests
         }
 
         [Fact]
+        public void Equality()
+        {
+            var guid1 = new Guid("D6D61CDE-5BAF-4E77-ADDD-3B80F4020BF2");
+            var guid2 = new Guid("D6D61CDE-5BAF-4E77-ADDD-3B80F4020BF3");
+
+            Assert.True(new BlobContentId() == new BlobContentId());
+            Assert.True(new BlobContentId(guid1, 0) == new BlobContentId(guid1, 0));
+            Assert.True(new BlobContentId(guid1, 0) != new BlobContentId(guid1, 1));
+            Assert.True(new BlobContentId(guid1, 0) != new BlobContentId(guid2, 0));
+
+            Assert.True(new BlobContentId(guid1, 0).Equals(new BlobContentId(guid1, 0)));
+            Assert.True(!new BlobContentId(guid1, 0).Equals(new BlobContentId(guid1, 1)));
+            Assert.True(!new BlobContentId(guid1, 0).Equals(new BlobContentId(guid2, 0)));
+        }
+
+        [Fact]
         public void FromHash()
         {
             var id1 = BlobContentId.FromHash(ImmutableArray.Create<byte>(

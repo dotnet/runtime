@@ -15,9 +15,11 @@ namespace System.Linq.Expressions.Tests
             public string StringProperty { get; set; }
             public string StringField;
             public readonly string ReadonlyStringField;
-            public string ReadonlyStringProperty { get { return ""; } }
+            public string ReadonlyStringProperty => "";
             public static string StaticStringProperty { get; set; }
             public static string StaticStringField;
+            public static string StaticReadonlyStringProperty => "";
+            public readonly static string StaticReadonlyStringField = "";
             public const string ConstantString = "Constant";
 #pragma warning restore 649
         }
@@ -109,7 +111,7 @@ namespace System.Linq.Expressions.Tests
         [Theory, ClassData(typeof(CompilationTypes))]
         public void MemberAssignmentFromMember(bool useInterpreter)
         {
-            PropertyAndFields result  = Expression.Lambda<Func<PropertyAndFields>>(
+            PropertyAndFields result = Expression.Lambda<Func<PropertyAndFields>>(
                 Expression.MemberInit(
                     Expression.New(typeof(PropertyAndFields)),
                     Expression.Bind(
@@ -143,47 +145,94 @@ namespace System.Linq.Expressions.Tests
             Assert.Equal("Hello Property", result.StringProperty);
         }
 
-        [Fact]
-        [ActiveIssue(5963)]
-        public void ConstantField()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public void ConstantField(bool useInterpreter)
         {
-            MemberInfo member = typeof(PropertyAndFields).GetMember("Constant")[0];
-            Assert.Throws<ArgumentException>("member", () => Expression.Bind(member, Expression.Constant("")));
+            MemberInfo member = typeof(PropertyAndFields).GetMember(nameof(PropertyAndFields.ConstantString))[0];
+            var attemptAssignToConstant = Expression.Lambda<Func<PropertyAndFields>>(
+                Expression.MemberInit(
+                    Expression.New(typeof(PropertyAndFields)),
+                    Expression.Bind(member, Expression.Constant(""))
+                    )
+                );
+
+            Assert.Throws<NotSupportedException>(() => attemptAssignToConstant.Compile(useInterpreter));
         }
 
-        [Fact]
-        [ActiveIssue(5963)]
-        public void ReadonlyField()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public void ReadonlyField(bool useInterpreter)
         {
-            MemberInfo member = typeof(PropertyAndFields).GetMember("ReadonlyStringField")[0];
-            Assert.Throws<ArgumentException>("member", () => Expression.Bind(member, Expression.Constant("")));
+            MemberInfo member = typeof(PropertyAndFields).GetMember(nameof(PropertyAndFields.ReadonlyStringField))[0];
+            var assignToReadonly = Expression.Lambda<Func<PropertyAndFields>>(
+                Expression.MemberInit(
+                    Expression.New(typeof(PropertyAndFields)),
+                    Expression.Bind(member, Expression.Constant("ABC"))
+                    )
+                );
+            var func = assignToReadonly.Compile(useInterpreter);
+            Assert.Equal("ABC", func().ReadonlyStringField);
         }
 
         [Fact]
         public void ReadonlyProperty()
         {
-            MemberInfo member = typeof(PropertyAndFields).GetMember("ReadonlyStringProperty")[0];
-            PropertyInfo property = typeof(PropertyAndFields).GetProperty("ReadonlyStringProperty");
+            MemberInfo member = typeof(PropertyAndFields).GetMember(nameof(PropertyAndFields.ReadonlyStringProperty))[0];
+            PropertyInfo property = typeof(PropertyAndFields).GetProperty(nameof(PropertyAndFields.ReadonlyStringProperty));
             Assert.Throws<ArgumentException>("member", () => Expression.Bind(member, Expression.Constant("")));
             Assert.Throws<ArgumentException>("member", () => Expression.Bind(property, Expression.Constant("")));
         }
 
         [Fact]
-        [ActiveIssue(5963)]
-        public void StaticField()
+        public void StaticReadonlyProperty()
         {
-            MemberInfo member = typeof(PropertyAndFields).GetMember("StaticStringField")[0];
-            Assert.Throws<ArgumentException>("member", () => Expression.Bind(member, Expression.Constant("")));
-        }
-
-        [Fact]
-        [ActiveIssue(5963)]
-        public void StaticProperty()
-        {
-            MemberInfo member = typeof(PropertyAndFields).GetMember("StaticStringProperty")[0];
-            PropertyInfo property = typeof(PropertyAndFields).GetProperty("StaticStringProperty");
+            MemberInfo member = typeof(PropertyAndFields).GetMember(nameof(PropertyAndFields.StaticReadonlyStringProperty))[0];
+            PropertyInfo property = typeof(PropertyAndFields).GetProperty(nameof(PropertyAndFields.StaticReadonlyStringProperty));
             Assert.Throws<ArgumentException>("member", () => Expression.Bind(member, Expression.Constant("")));
             Assert.Throws<ArgumentException>("member", () => Expression.Bind(property, Expression.Constant("")));
+        }
+
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public void StaticField(bool useInterpreter)
+        {
+            MemberInfo member = typeof(PropertyAndFields).GetMember(nameof(PropertyAndFields.StaticStringField))[0];
+            var assignToReadonly = Expression.Lambda<Func<PropertyAndFields>>(
+                Expression.MemberInit(
+                    Expression.New(typeof(PropertyAndFields)),
+                    Expression.Bind(member, Expression.Constant("ABC"))
+                    )
+                );
+            var func = assignToReadonly.Compile(useInterpreter);
+            PropertyAndFields.StaticStringField = "123";
+            func();
+            Assert.Equal("ABC", PropertyAndFields.StaticStringField);
+        }
+
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public void StaticReadonlyField(bool useInterpreter)
+        {
+            MemberInfo member = typeof(PropertyAndFields).GetMember(nameof(PropertyAndFields.StaticReadonlyStringField))[0];
+            var assignToReadonly = Expression.Lambda<Func<PropertyAndFields>>(
+                Expression.MemberInit(
+                    Expression.New(typeof(PropertyAndFields)),
+                    Expression.Bind(member, Expression.Constant("ABC" + useInterpreter))
+                    )
+                );
+            var func = assignToReadonly.Compile(useInterpreter);
+            func();
+            Assert.Equal("ABC" + useInterpreter, PropertyAndFields.StaticReadonlyStringField);
+        }
+
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public void StaticProperty(bool useInterpreter)
+        {
+            MemberInfo member = typeof(PropertyAndFields).GetMember(nameof(PropertyAndFields.StaticStringProperty))[0];
+            var assignToStaticProperty = Expression.Lambda<Func<PropertyAndFields>>(
+                Expression.MemberInit(
+                    Expression.New(typeof(PropertyAndFields)),
+                    Expression.Bind(member, Expression.Constant("ABC"))
+                    )
+                );
+            Assert.Throws<InvalidProgramException>(() => assignToStaticProperty.Compile(useInterpreter));
         }
 
         [Fact]

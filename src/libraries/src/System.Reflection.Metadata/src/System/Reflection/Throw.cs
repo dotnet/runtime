@@ -55,9 +55,9 @@ namespace System.Reflection
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        internal static void BranchBuilderNotAvailable()
+        internal static void ControlFlowBuilderNotAvailable()
         {
-            throw new InvalidOperationException(SR.BranchBuilderNotAvailable);
+            throw new InvalidOperationException(SR.ControlFlowBuilderNotAvailable);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -70,6 +70,12 @@ namespace System.Reflection
         internal static void InvalidOperation(string message)
         {
             throw new InvalidOperationException(message);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        internal static void InvalidOperation_LabelNotMarked(int id)
+        {
+            throw new InvalidOperationException(SR.Format(SR.LabelNotMarked, id));
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -124,6 +130,12 @@ namespace System.Reflection
         internal static void ArgumentOutOfRange(string parameterName)
         {
             throw new ArgumentOutOfRangeException(parameterName);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        internal static void ArgumentOutOfRange(string parameterName, string message)
+        {
+            throw new ArgumentOutOfRangeException(parameterName, message);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -207,7 +219,13 @@ namespace System.Reflection
         [MethodImpl(MethodImplOptions.NoInlining)]
         internal static void TableNotSorted(TableIndex tableIndex)
         {
-            throw new BadImageFormatException(SR.Format(SR.MetadataTableNotSorted, (int)tableIndex));
+            throw new BadImageFormatException(SR.Format(SR.MetadataTableNotSorted, tableIndex));
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        internal static void InvalidOperation_TableNotSorted(TableIndex tableIndex)
+        {
+            throw new InvalidOperationException(SR.Format(SR.MetadataTableNotSorted, tableIndex));
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]

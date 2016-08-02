@@ -924,9 +924,12 @@ namespace System.Reflection.Metadata.Tests
 
             mdBuilder.SetCapacity(TableIndex.InterfaceImpl, 0x10000);
 
-            for (int i = 0; i < 0x10000; i++)
+            for (int i = 0; i < 0x100; i++)
             {
-                mdBuilder.AddInterfaceImplementation(default(TypeDefinitionHandle), default(TypeDefinitionHandle));
+                for (int j = 0; j < 0x100; j++)
+                {
+                    mdBuilder.AddInterfaceImplementation(MetadataTokens.TypeDefinitionHandle(i + 1), MetadataTokens.TypeDefinitionHandle(j + 1));
+                }
             }
 
             mdBuilder.AddModule(0, default(StringHandle), default(GuidHandle), default(GuidHandle), default(GuidHandle));
@@ -2216,7 +2219,7 @@ namespace System.Reflection.Metadata.Tests
 
             var rootBuilder = new MetadataRootBuilder(mdBuilder);
             var mdBlob = new BlobBuilder();
-            rootBuilder.Serialize(mdBlob, 0, 0);
+            rootBuilder.Serialize(mdBlob, 0, 0, suppressValidation: true); // NestedClass not sorted
 
             // validate sizes table rows that reference guids:
             using (var mdProvider = MetadataReaderProvider.FromMetadataImage(mdBlob.ToImmutableArray()))

@@ -2,77 +2,39 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Reflection;
-using System.Reflection.Emit;
+using System.Collections.Generic;
 using Xunit;
 
-namespace System.Reflection.Emit.ILGeneration.Tests
+namespace System.Reflection.Emit.Tests
 {
     public class SignatureHelperEquals
     {
-        [Fact]
-        public void PosTest1()
+        public static IEnumerable<object[]> Equals_TestData()
         {
-            AssemblyBuilder myAssembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Assembly_SignatureHelperAddArgument"), AssemblyBuilderAccess.Run);
-            ModuleBuilder myModule = TestLibrary.Utilities.GetModuleBuilder(myAssembly, "Module_SignatureHelperAddArgument");
-            SignatureHelper sHelper1 = SignatureHelper.GetFieldSigHelper(myModule);
-            SignatureHelper sHelper2 = SignatureHelper.GetFieldSigHelper(myModule);
+            ModuleBuilder module = Helpers.DynamicModule();
+            SignatureHelper helper1 = SignatureHelper.GetFieldSigHelper(module);
+            SignatureHelper helper2 = SignatureHelper.GetFieldSigHelper(module);
 
-            bool expectedValue = true;
-            bool actualValue;
+            SignatureHelper helper3 = SignatureHelper.GetFieldSigHelper(module);
+            helper3.AddArgument(typeof(string));
+            SignatureHelper helper4 = SignatureHelper.GetFieldSigHelper(module);
+            helper4.AddArgument(typeof(string));
 
-            actualValue = sHelper1.Equals(sHelper2);
-            Assert.Equal(expectedValue, actualValue);
+            yield return new object[] { helper1, helper2, true };
+            yield return new object[] { helper3, helper1, false };
+            yield return new object[] { helper3, helper4, true };
+            yield return new object[] { helper1, null, false };
         }
 
-        [Fact]
-        public void PosTest2()
+        [Theory]
+        [MemberData(nameof(Equals_TestData))]
+        public void Equals(SignatureHelper helper, object obj, bool expected)
         {
-            AssemblyBuilder myAssembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Assembly_SignatureHelperAddArgument"), AssemblyBuilderAccess.Run);
-            ModuleBuilder myModule = TestLibrary.Utilities.GetModuleBuilder(myAssembly, "Module_SignatureHelperAddArgument");
-            SignatureHelper sHelper1 = SignatureHelper.GetFieldSigHelper(myModule);
-            SignatureHelper sHelper2 = SignatureHelper.GetFieldSigHelper(myModule);
-
-            sHelper1.AddArgument(typeof(string));
-
-            bool expectedValue = false;
-            bool actualValue;
-
-            actualValue = sHelper1.Equals(sHelper2);
-            Assert.Equal(expectedValue, actualValue);
-        }
-
-        [Fact]
-        public void PosTest3()
-        {
-            AssemblyBuilder myAssembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Assembly_SignatureHelperAddArgument"), AssemblyBuilderAccess.Run);
-            ModuleBuilder myModule = TestLibrary.Utilities.GetModuleBuilder(myAssembly, "Module_SignatureHelperAddArgument");
-            SignatureHelper sHelper1 = SignatureHelper.GetFieldSigHelper(myModule);
-            SignatureHelper sHelper2 = SignatureHelper.GetFieldSigHelper(myModule);
-
-            sHelper1.AddArgument(typeof(string));
-            sHelper2.AddArgument(typeof(string));
-
-            bool expectedValue = true;
-            bool actualValue;
-
-            actualValue = sHelper1.Equals(sHelper2);
-            Assert.Equal(expectedValue, actualValue);
-        }
-
-        [Fact]
-        public void PosTest4()
-        {
-            AssemblyBuilder myAssembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Assembly_SignatureHelperAddArgument"), AssemblyBuilderAccess.Run);
-            ModuleBuilder myModule = TestLibrary.Utilities.GetModuleBuilder(myAssembly, "Module_SignatureHelperAddArgument");
-            SignatureHelper sHelper1 = SignatureHelper.GetFieldSigHelper(myModule);
-
-            bool expectedValue = false;
-            bool actualValue;
-
-            actualValue = sHelper1.Equals(null);
-            Assert.Equal(expectedValue, actualValue);
+            Assert.Equal(expected, helper.Equals(obj));
+            if (obj is SignatureHelper && expected == true)
+            {
+                Assert.Equal(helper.GetHashCode(), obj.GetHashCode());
+            }
         }
     }
 }

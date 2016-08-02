@@ -31,9 +31,7 @@ namespace System.Collections.Tests
                 Assert.False(bitArray[i]);
                 Assert.False(bitArray.Get(i));
             }
-            ICollection collection = bitArray;
-            Assert.Equal(length, collection.Count);
-            Assert.False(collection.IsSynchronized);
+            Assert.Equal(length, bitArray.Count);
         }
 
         [Theory]
@@ -62,9 +60,7 @@ namespace System.Collections.Tests
                 Assert.Equal(defaultValue, bitArray[i]);
                 Assert.Equal(defaultValue, bitArray.Get(i));
             }
-            ICollection collection = bitArray;
-            Assert.Equal(length, collection.Count);
-            Assert.False(collection.IsSynchronized);
+            Assert.Equal(length, bitArray.Count);
         }
 
         [Fact]
@@ -96,9 +92,7 @@ namespace System.Collections.Tests
                 Assert.Equal(values[i], bitArray[i]);
                 Assert.Equal(values[i], bitArray.Get(i));
             }
-            ICollection collection = bitArray;
-            Assert.Equal(values.Length, collection.Count);
-            Assert.False(collection.IsSynchronized);
+            Assert.Equal(values.Length, bitArray.Count);
         }
 
         public static IEnumerable<object[]> Ctor_BitArray_TestData()
@@ -141,9 +135,7 @@ namespace System.Collections.Tests
                 Assert.Equal(bits[i], bitArray[i]);
                 Assert.Equal(bits[i], bitArray.Get(i));
             }
-            ICollection collection = bitArray;
-            Assert.Equal(bits.Length, collection.Count);
-            Assert.False(collection.IsSynchronized);
+            Assert.Equal(bits.Length, bitArray.Count);
         }
 
         public static IEnumerable<object[]> Ctor_IntArray_TestData()
@@ -168,9 +160,7 @@ namespace System.Collections.Tests
                 Assert.Equal(expected[i], bitArray[i]);
                 Assert.Equal(expected[i], bitArray.Get(i));
             }
-            ICollection collection = bitArray;
-            Assert.Equal(expected.Length, collection.Count);
-            Assert.False(collection.IsSynchronized);
+            Assert.Equal(expected.Length, bitArray.Count);
         }
 
         [Fact]
@@ -213,15 +203,25 @@ namespace System.Collections.Tests
                 Assert.Equal(expected[i], bitArray[i]);
                 Assert.Equal(expected[i], bitArray.Get(i));
             }
-            ICollection collection = bitArray;
-            Assert.Equal(expected.Length, collection.Count);
-            Assert.False(collection.IsSynchronized);
+            Assert.Equal(expected.Length, bitArray.Count);
         }
 
         [Fact]
         public static void Ctor_ByteArray_Null_ThrowsArgumentNullException()
         {
             Assert.Throws<ArgumentNullException>("bytes", () => new BitArray((byte[])null));
+        }
+
+        [Fact]
+        public static void Ctor_Simple_Method_Tests()
+        {
+            int length = 0;
+            BitArray bitArray = new BitArray(length);
+
+            Assert.NotNull(bitArray.SyncRoot);
+            Assert.False(bitArray.IsSynchronized);
+            Assert.False(bitArray.IsReadOnly);
+            Assert.Equal(bitArray, bitArray.Clone());
         }
     }
 }

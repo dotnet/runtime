@@ -39,6 +39,10 @@
       <Project>{be28323e-327a-4e0f-b7f9-16ab7eab59dd}</Project>
       <Name>System.Text.RegularExpressions</Name>
     </ProjectReference>
+    <!-- ToDo: Remove this reference to the live package of System.Globalization once prerelease gets updated again -->
+    <ProjectReference Include="..\..\System.Globalization\pkg\System.Globalization.pkgproj">
+      <Name>System.Globalization</Name>
+    </ProjectReference>
   </ItemGroup>
   <!-- Automatically added by VS -->
   <ItemGroup>

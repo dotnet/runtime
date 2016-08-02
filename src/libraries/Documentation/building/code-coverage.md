@@ -36,9 +36,9 @@ You can perform code coverage runs locally on your own machine.  Normally to bui
 
     build
 
-To include code coverage in this run, augment it with the ```/p:Coverage=true``` argument:
+To include code coverage in this run, augment it with the `coverage` argument:
 
-    build /p:Coverage=true
+    build -coverage
 
 This will do the build and testing as with the normal ```build```, but it will run the tests using the OpenCover tool.  A resulting index.htm file providing the results of the run will be available at:
 

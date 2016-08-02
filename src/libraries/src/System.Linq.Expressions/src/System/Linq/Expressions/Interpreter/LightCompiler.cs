@@ -661,15 +661,20 @@ namespace System.Linq.Expressions.Interpreter
                 EmitThisForMethodCall(expr);
             }
 
-            CompileMemberAssignment(asVoid, member.Member, node.Right);
+            CompileMemberAssignment(asVoid, member.Member, node.Right, false);
         }
 
-        private void CompileMemberAssignment(bool asVoid, MemberInfo refMember, Expression value)
+        private void CompileMemberAssignment(bool asVoid, MemberInfo refMember, Expression value, bool forBinding)
         {
             PropertyInfo pi = refMember as PropertyInfo;
             if (pi != null)
             {
                 var method = pi.GetSetMethod(true);
+                if (forBinding && method.IsStatic)
+                {
+                    throw Error.InvalidProgram();
+                }
+
                 EmitThisForMethodCall(value);
 
                 int start = _instructions.Count;
@@ -685,29 +690,36 @@ namespace System.Linq.Expressions.Interpreter
                 {
                     _instructions.EmitCall(method);
                 }
-                return;
             }
             else
             {
                 // other types inherited from MemberInfo (EventInfo\MethodBase\Type) cannot be used in MemberAssignment
                 FieldInfo fi = (FieldInfo)refMember;
-                if (fi != null)
+                Debug.Assert(fi != null);
+                if (fi.IsLiteral)
                 {
-                    EmitThisForMethodCall(value);
+                    throw Error.NotSupported();
+                }
 
-                    int start = _instructions.Count;
-                    if (!asVoid)
-                    {
-                        LocalDefinition local = _locals.DefineLocal(Expression.Parameter(value.Type), start);
-                        _instructions.EmitAssignLocal(local.Index);
-                        _instructions.EmitStoreField(fi);
-                        _instructions.EmitLoadLocal(local.Index);
-                        _locals.UndefineLocal(local, _instructions.Count);
-                    }
-                    else
-                    {
-                        _instructions.EmitStoreField(fi);
-                    }
+                if (forBinding && fi.IsStatic)
+                {
+                    _instructions.UnEmit(); // Undo having pushed the instance to the stack.
+                }
+
+                EmitThisForMethodCall(value);
+
+                int start = _instructions.Count;
+                if (!asVoid)
+                {
+                    LocalDefinition local = _locals.DefineLocal(Expression.Parameter(value.Type), start);
+                    _instructions.EmitAssignLocal(local.Index);
+                    _instructions.EmitStoreField(fi);
+                    _instructions.EmitLoadLocal(local.Index);
+                    _locals.UndefineLocal(local, _instructions.Count);
+                }
+                else
+                {
+                    _instructions.EmitStoreField(fi);
                 }
             }
         }
@@ -2406,20 +2418,26 @@ namespace System.Linq.Expressions.Interpreter
         {
             var node = (MemberExpression)expr;
 
-            CompileMember(node.Expression, node.Member);
+            CompileMember(node.Expression, node.Member, false);
         }
 
-        private void CompileMember(Expression from, MemberInfo member)
+        private void CompileMember(Expression from, MemberInfo member, bool forBinding)
         {
             FieldInfo fi = member as FieldInfo;
             if (fi != null)
             {
                 if (fi.IsLiteral)
                 {
+                    Debug.Assert(!forBinding);
                     _instructions.EmitLoad(fi.GetValue(null), fi.FieldType);
                 }
                 else if (fi.IsStatic)
                 {
+                    if (forBinding)
+                    {
+                        throw Error.InvalidProgram();
+                    }
+
                     if (fi.IsInitOnly)
                     {
                         _instructions.EmitLoad(fi.GetValue(null), fi.FieldType);
@@ -2435,6 +2453,7 @@ namespace System.Linq.Expressions.Interpreter
                     {
                         EmitThisForMethodCall(from);
                     }
+
                     _instructions.EmitLoadField(fi);
                 }
             }
@@ -2445,6 +2464,11 @@ namespace System.Linq.Expressions.Interpreter
                 if (pi != null)
                 {
                     var method = pi.GetGetMethod(true);
+                    if (forBinding && method.IsStatic)
+                    {
+                        throw Error.InvalidProgram();
+                    }
+
                     if (from != null)
                     {
                         EmitThisForMethodCall(from);
@@ -2648,13 +2672,14 @@ namespace System.Linq.Expressions.Interpreter
                         CompileMemberAssignment(
                             true,
                             ((MemberAssignment)binding).Member,
-                            ((MemberAssignment)binding).Expression
+                            ((MemberAssignment)binding).Expression,
+                            true
                         );
                         break;
                     case MemberBindingType.ListBinding:
                         var memberList = (MemberListBinding)binding;
                         _instructions.EmitDup();
-                        CompileMember(null, memberList.Member);
+                        CompileMember(null, memberList.Member, true);
                         CompileListInit(memberList.Initializers);
                         _instructions.EmitPop();
                         break;
@@ -2667,7 +2692,7 @@ namespace System.Linq.Expressions.Interpreter
                             throw Error.CannotAutoInitializeValueTypeMemberThroughProperty(memberMember.Bindings);
                         }
 
-                        CompileMember(null, memberMember.Member);
+                        CompileMember(null, memberMember.Member, true);
                         CompileMemberInit(memberMember.Bindings);
                         _instructions.EmitPop();
                         break;

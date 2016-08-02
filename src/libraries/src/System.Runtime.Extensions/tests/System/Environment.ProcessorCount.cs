@@ -9,7 +9,7 @@ namespace System.Tests
 {
     public class EnvironmentProcessorCount
     {
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(Xunit.PlatformID.Windows)]
         [Fact]
         public void Windows_ProcessorCountTest()
         {
@@ -26,7 +26,7 @@ namespace System.Tests
             Assert.Equal(expected, actual);
         }
 
-        [PlatformSpecific(PlatformID.AnyUnix)]
+        [PlatformSpecific(Xunit.PlatformID.AnyUnix)]
         [Fact]
         public void Unix_ProcessorCountTest()
         {

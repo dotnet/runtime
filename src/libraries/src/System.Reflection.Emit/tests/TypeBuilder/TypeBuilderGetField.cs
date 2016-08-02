@@ -2,11 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-
-using System.Reflection;
-using System.Reflection.Emit;
-using TestLibrary;
 using Xunit;
 
 namespace System.Reflection.Emit.Tests
@@ -14,125 +9,59 @@ namespace System.Reflection.Emit.Tests
     public class TypeBuilderGetField
     {
         [Fact]
-        public void TestThrowsExceptionForDeclaringTypeOfFieldNotGeneric()
+        public void GetField_DeclaringTypeOfFieldNotGeneric_ThrowsArgumentException()
         {
-            AssemblyName myAsmName =
-                new AssemblyName("TypeBuilderGetFieldTest");
-            AssemblyBuilder myAssembly = AssemblyBuilder.DefineDynamicAssembly(
-                 myAsmName, AssemblyBuilderAccess.Run);
-            ModuleBuilder myModule = TestLibrary.Utilities.GetModuleBuilder(myAssembly, "Module1");
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Class | TypeAttributes.Public);
+            GenericTypeParameterBuilder[] typeParams = type.DefineGenericParameters("T");
 
-            TypeBuilder myType = myModule.DefineType("Sample",
-                TypeAttributes.Class | TypeAttributes.Public);
+            FieldBuilder field = type.DefineField("Field", typeParams[0].AsType(), FieldAttributes.Public);
+            Assert.Throws<ArgumentException>("type", () => TypeBuilder.GetField(type.AsType(), field));
+        }
 
-            string[] typeParamNames = { "T" };
+        [Fact]
+        public void GetField()
+        {
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Class | TypeAttributes.Public);
             GenericTypeParameterBuilder[] typeParams =
-                myType.DefineGenericParameters(typeParamNames);
+                type.DefineGenericParameters("T");
 
-            FieldBuilder myField = myType.DefineField("Field",
-                typeParams[0].AsType(),
-                FieldAttributes.Public);
+            FieldBuilder field = type.DefineField("Field", typeParams[0].AsType(), FieldAttributes.Public);
 
-            Assert.Throws<ArgumentException>(() =>
-            {
-                FieldInfo fi = TypeBuilder.GetField(myType.AsType(), myField);
-            });
+            Type genericIntType = type.MakeGenericType(typeof(int));
+            FieldInfo resultField = TypeBuilder.GetField(genericIntType, field);
+            Assert.Equal("Field", resultField.Name);
         }
 
         [Fact]
-        public void TestGetField()
+        public void GetField_TypeNotTypeBuilder_ThrowsArgumentException()
         {
-            AssemblyName myAsmName =
-                new AssemblyName("TypeBuilderGetFieldTest");
-            AssemblyBuilder myAssembly = AssemblyBuilder.DefineDynamicAssembly(
-                 myAsmName, AssemblyBuilderAccess.Run);
-            ModuleBuilder myModule = TestLibrary.Utilities.GetModuleBuilder(myAssembly, "Module1");
-
-            TypeBuilder myType = myModule.DefineType("Sample",
-                TypeAttributes.Class | TypeAttributes.Public);
-
-            string[] typeParamNames = { "T" };
-            GenericTypeParameterBuilder[] typeParams =
-                myType.DefineGenericParameters(typeParamNames);
-
-            FieldBuilder myField = myType.DefineField("Field",
-                typeParams[0].AsType(),
-                FieldAttributes.Public);
-
-            Type SampleOfInt =
-                myType.MakeGenericType(typeof(int));
-            FieldInfo fi = TypeBuilder.GetField(SampleOfInt,
-                myField);
-
-            Assert.Equal("Field", fi.Name);
+            Assert.Throws<ArgumentException>(null, () => TypeBuilder.GetField(typeof(int), typeof(int).GetField("MaxValue")));
         }
 
         [Fact]
-        public void TestThrowsExceptionForTypeIsNotTypeBuilder()
+        public void GetField_DeclaringTypeOfFieldNotGenericTypeDefinitionOfType_ThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>(() => { TypeBuilder.GetField(typeof(int), typeof(int).GetField("MaxValue")); });
+            ModuleBuilder module = Helpers.DynamicModule();
+            TypeBuilder type1 = module.DefineType("Sample", TypeAttributes.Class | TypeAttributes.Public);
+            GenericTypeParameterBuilder[] typeParams = type1.DefineGenericParameters("T");
+
+            TypeBuilder type2 = module.DefineType("Sample2", TypeAttributes.Class | TypeAttributes.Public);
+            GenericTypeParameterBuilder[] typeParams2 = type2.DefineGenericParameters("T");
+
+            FieldBuilder field1 = type1.DefineField("Field", typeParams[0].AsType(), FieldAttributes.Public);
+            FieldBuilder field2 = type2.DefineField("Field", typeParams[0].AsType(), FieldAttributes.Public);
+
+            Type genericInt = type1.MakeGenericType(typeof(int));
+            Assert.Throws<ArgumentException>("type", () => TypeBuilder.GetField(genericInt, field2));
         }
 
         [Fact]
-        public void TestThrowsExceptionForDeclaringTypeOfFieldNotGenericTypeDefinitionOfType()
+        public void GetField_TypeNotGeneric_ThrowsArgumentException()
         {
-            AssemblyName myAsmName =
-                new AssemblyName("TypeBuilderGetFieldTest");
-            AssemblyBuilder myAssembly = AssemblyBuilder.DefineDynamicAssembly(
-                 myAsmName, AssemblyBuilderAccess.Run);
-            ModuleBuilder myModule = TestLibrary.Utilities.GetModuleBuilder(myAssembly, "Module1");
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Class | TypeAttributes.Public);
+            FieldBuilder field = type.DefineField("Field", typeof(int), FieldAttributes.Public);
 
-            TypeBuilder myType = myModule.DefineType("Sample",
-                TypeAttributes.Class | TypeAttributes.Public);
-            string[] typeParamNames = { "T" };
-            GenericTypeParameterBuilder[] typeParams =
-                myType.DefineGenericParameters(typeParamNames);
-
-            TypeBuilder myType2 = myModule.DefineType("Sample2",
-                TypeAttributes.Class | TypeAttributes.Public);
-            GenericTypeParameterBuilder[] typeParams2 =
-                myType2.DefineGenericParameters(typeParamNames);
-
-            FieldBuilder myField = myType.DefineField("Field",
-                typeParams[0].AsType(),
-                FieldAttributes.Public);
-
-            FieldBuilder myField2 = myType2.DefineField("Field",
-                typeParams[0].AsType(),
-                FieldAttributes.Public);
-
-
-            Type SampleOfInt =
-                myType.MakeGenericType(typeof(int));
-
-            Assert.Throws<ArgumentException>(() =>
-            {
-                FieldInfo fi = TypeBuilder.GetField(SampleOfInt, myField2);
-            });
-        }
-
-        [Fact]
-        public void TestThrowsExceptionForTypeNotGeneric()
-        {
-            AssemblyName myAsmName =
-                new AssemblyName("TypeBuilderGetFieldTest");
-            AssemblyBuilder myAssembly = AssemblyBuilder.DefineDynamicAssembly(
-                 myAsmName, AssemblyBuilderAccess.Run);
-            ModuleBuilder myModule = TestLibrary.Utilities.GetModuleBuilder(myAssembly, "Module1");
-
-
-
-            TypeBuilder myType = myModule.DefineType("Sample",
-                TypeAttributes.Class | TypeAttributes.Public);
-
-            FieldBuilder myField = myType.DefineField("Field",
-                typeof(int),
-                FieldAttributes.Public);
-
-            Assert.Throws<ArgumentException>(() =>
-            {
-                FieldInfo fi = TypeBuilder.GetField(myType.AsType(), myField);
-            });
+            Assert.Throws<ArgumentException>("field", () => TypeBuilder.GetField(type.AsType(), field));
         }
     }
 }

@@ -71,6 +71,15 @@ namespace System.Collections
         public static System.Collections.CaseInsensitiveComparer DefaultInvariant { get { return default(System.Collections.CaseInsensitiveComparer); } }
         public int Compare(object a, object b) { return default(int); }
     }
+    [System.ObsoleteAttribute("Please use StringComparer instead.")] 
+    public partial class CaseInsensitiveHashCodeProvider : System.Collections.IHashCodeProvider 
+    { 
+        public CaseInsensitiveHashCodeProvider() { } 
+        public CaseInsensitiveHashCodeProvider(System.Globalization.CultureInfo culture) { } 
+        public static System.Collections.CaseInsensitiveHashCodeProvider Default { get { return default(System.Collections.CaseInsensitiveHashCodeProvider); } } 
+        public static System.Collections.CaseInsensitiveHashCodeProvider DefaultInvariant { get { return default(System.Collections.CaseInsensitiveHashCodeProvider); } } 
+        public int GetHashCode(object obj) { return default(int); } 
+    }
     public abstract partial class CollectionBase : System.Collections.ICollection, System.Collections.IEnumerable, System.Collections.IList
     {
         protected CollectionBase() { }
@@ -146,15 +155,29 @@ namespace System.Collections
         public Hashtable() { }
         public Hashtable(System.Collections.IDictionary d) { }
         public Hashtable(System.Collections.IDictionary d, System.Collections.IEqualityComparer equalityComparer) { }
+        [System.ObsoleteAttribute("Please use Hashtable(IDictionary, IEqualityComparer) instead.")]
+        public Hashtable(System.Collections.IDictionary d, System.Collections.IHashCodeProvider hcp, System.Collections.IComparer comparer) { }
         public Hashtable(System.Collections.IDictionary d, float loadFactor) { }
         public Hashtable(System.Collections.IDictionary d, float loadFactor, System.Collections.IEqualityComparer equalityComparer) { }
+        [System.ObsoleteAttribute("Please use Hashtable(IDictionary, float, IEqualityComparer) instead.")]
+        public Hashtable(System.Collections.IDictionary d, float loadFactor, System.Collections.IHashCodeProvider hcp, System.Collections.IComparer comparer) { }
         public Hashtable(System.Collections.IEqualityComparer equalityComparer) { }
+        [System.ObsoleteAttribute("Please use Hashtable(IEqualityComparer) instead.")]
+        public Hashtable(System.Collections.IHashCodeProvider hcp, System.Collections.IComparer comparer) { }
         public Hashtable(int capacity) { }
         public Hashtable(int capacity, System.Collections.IEqualityComparer equalityComparer) { }
+        [System.ObsoleteAttribute("Please use Hashtable(int, IEqualityComparer) instead.")]
+        public Hashtable(int capacity, System.Collections.IHashCodeProvider hcp, System.Collections.IComparer comparer) { }
         public Hashtable(int capacity, float loadFactor) { }
         public Hashtable(int capacity, float loadFactor, System.Collections.IEqualityComparer equalityComparer) { }
+        [System.ObsoleteAttribute("Please use Hashtable(int, float, IEqualityComparer) instead.")]
+        public Hashtable(int capacity, float loadFactor, System.Collections.IHashCodeProvider hcp, System.Collections.IComparer comparer) { }
+        [System.ObsoleteAttribute("Please use KeyComparer properties.")]
+        protected System.Collections.IComparer comparer { get { return default(System.Collections.IComparer); } set { } }
         public virtual int Count { get { return default(int); } }
         protected System.Collections.IEqualityComparer EqualityComparer { get { return default(System.Collections.IEqualityComparer); } }
+        [System.ObsoleteAttribute("Please use EqualityComparer property.")]
+        protected System.Collections.IHashCodeProvider hcp { get { return default(System.Collections.IHashCodeProvider); } set { } }
         public virtual bool IsFixedSize { get { return default(bool); } }
         public virtual bool IsReadOnly { get { return default(bool); } }
         public virtual bool IsSynchronized { get { return default(bool); } }
@@ -176,6 +199,11 @@ namespace System.Collections
         public static System.Collections.Hashtable Synchronized(System.Collections.Hashtable table) { return default(System.Collections.Hashtable); }
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { return default(System.Collections.IEnumerator); }
     }
+    [System.ObsoleteAttribute("Please use IEqualityComparer instead.")] 
+    public partial interface IHashCodeProvider 
+    { 
+        int GetHashCode(object obj); 
+    } 
     public partial class Queue : System.Collections.ICollection, System.Collections.IEnumerable
     {
         public Queue() { }

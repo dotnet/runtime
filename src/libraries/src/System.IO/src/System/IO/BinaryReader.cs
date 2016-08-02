@@ -102,6 +102,14 @@ namespace System.IO
             Dispose(true);
         }
 
+        /// <remarks>
+        /// Override Dispose(bool) instead of Close(). This API exists for compatibility purposes.
+        /// </remarks>
+        public virtual void Close()
+        {
+            Dispose(true);
+        }
+
         public virtual int PeekChar()
         {
             if (_stream == null)

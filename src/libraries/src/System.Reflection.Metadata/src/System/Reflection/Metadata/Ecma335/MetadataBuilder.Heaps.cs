@@ -396,16 +396,15 @@ namespace System.Reflection.Metadata.Ecma335
         /// <summary>
         /// Reserves space on the Guid heap for a GUID.
         /// </summary>
-        /// <param name="content">
-        /// <see cref="Blob"/> representing the GUID blob as stored on the heap.
-        /// </param>
-        /// <returns>Handle to the reserved Guid.</returns>
+        /// <returns>
+        /// Handle to the reserved Guid and a <see cref="Blob"/> representing the GUID blob as stored on the heap.
+        /// </returns>
         /// <exception cref="ImageFormatLimitationException">The remaining space on the heap is too small to fit the string.</exception>
-        public GuidHandle ReserveGuid(out Blob content)
+        public ReservedBlob<GuidHandle> ReserveGuid()
         {
-            var handle = GetNewGuidHandle();
-            content = _guidBuilder.ReserveBytes(BlobUtilities.SizeOfGuid);
-            return handle;
+            return new ReservedBlob<GuidHandle>(
+                GetNewGuidHandle(), 
+                _guidBuilder.ReserveBytes(BlobUtilities.SizeOfGuid));
         }
 
         private GuidHandle GetNewGuidHandle()
@@ -452,17 +451,15 @@ namespace System.Reflection.Metadata.Ecma335
         /// Reserves space on the User String heap for a string of specified length.
         /// </summary>
         /// <param name="length">The number of characters to reserve.</param>
-        /// <param name="reservedUserString">
-        /// <see cref="Blob"/> representing the entire User String blob (including its length and terminal character).
-        /// Use <see cref="BlobWriter.WriteUserString(string)"/> to fill in the content.
-        /// </param>
         /// <returns>
-        /// Handle to the reserved User String.
-        /// May be used in <see cref="InstructionEncoder.LoadString(UserStringHandle)"/>.
+        /// Handle to the reserved User String and a <see cref="Blob"/> representing the entire User String blob (including its length and terminal character).
+        /// 
+        /// Handle may be used in <see cref="InstructionEncoder.LoadString(UserStringHandle)"/>.
+        /// Use <see cref="BlobWriter.WriteUserString(string)"/> to fill in the blob content.
         /// </returns>
         /// <exception cref="ImageFormatLimitationException">The remaining space on the heap is too small to fit the string.</exception>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="length"/> is negative.</exception>
-        public UserStringHandle ReserveUserString(int length, out Blob reservedUserString)
+        public ReservedBlob<UserStringHandle> ReserveUserString(int length)
         {
             if (length < 0)
             {
@@ -471,8 +468,8 @@ namespace System.Reflection.Metadata.Ecma335
 
             var handle = GetNewUserStringHandle();
             int encodedLength = BlobUtilities.GetUserStringByteLength(length);
-            reservedUserString = _userStringBuilder.ReserveBytes(BlobWriterImpl.GetCompressedIntegerSize(encodedLength) + encodedLength);
-            return handle;
+            var reservedUserString = _userStringBuilder.ReserveBytes(BlobWriterImpl.GetCompressedIntegerSize(encodedLength) + encodedLength);
+            return new ReservedBlob<UserStringHandle>(handle, reservedUserString);
         }
 
         /// <summary>

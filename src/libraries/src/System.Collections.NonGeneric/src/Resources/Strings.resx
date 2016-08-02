@@ -216,4 +216,7 @@
   <data name="NotSupported_SortedListNestedWrite" xml:space="preserve">
     <value>This operation is not supported on SortedList nested types because they require modifying the original SortedList.</value>
   </data>
+  <data name="Arg_CannotMixComparisonInfrastructure" xml:space="preserve">
+    <value>The usage of IKeyComparer and IHashCodeProvider/IComparer interfaces cannot be mixed; use one or the other.</value>
+  </data>
 </root>

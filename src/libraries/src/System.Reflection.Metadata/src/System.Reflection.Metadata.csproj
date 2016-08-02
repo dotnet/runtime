@@ -39,7 +39,7 @@
   <ItemGroup>
     <Compile Include="System\Reflection\Internal\Utilities\ExceptionUtilities.cs" />
     <Compile Include="System\Reflection\Metadata\Ecma335\Encoding\FunctionPointerAttributes.cs" />
-    <Compile Include="System\Reflection\Metadata\Ecma335\Encoding\MethodBodiesEncoder.cs" />
+    <Compile Include="System\Reflection\Metadata\Ecma335\Encoding\MethodBodyStreamEncoder.cs" />
     <Compile Include="System\Reflection\Metadata\Ecma335\Encoding\MethodBodyAttributes.cs" />
     <Compile Include="System\Reflection\Metadata\Ecma335\MetadataBuilder.cs" />
     <Compile Include="System\Reflection\Metadata\Ecma335\MetadataRootBuilder.cs" />
@@ -56,11 +56,12 @@
     <Compile Include="System\Reflection\Internal\Utilities\EnumerableExtensions.cs" />
     <Compile Include="System\Reflection\Metadata\Ecma335\CustomAttributeDecoder.cs" />
     <Compile Include="System\Reflection\Metadata\PortablePdb\PortablePdbVersions.cs" />
+    <Compile Include="System\Reflection\Metadata\ReservedBlob.cs" />
     <Compile Include="System\Reflection\Metadata\Signatures\CustomAttributeNamedArgument.cs" />
     <Compile Include="System\Reflection\Metadata\Signatures\CustomAttributeTypedArgument.cs" />
     <Compile Include="System\Reflection\Metadata\Signatures\CustomAttributeValue.cs" />
     <Compile Include="System\Reflection\Metadata\Decoding\ICustomAttributeTypeProvider.cs" />
-    <Compile Include="System\Reflection\Metadata\Ecma335\Encoding\BranchBuilder.cs" />
+    <Compile Include="System\Reflection\Metadata\Ecma335\Encoding\ControlFlowBuilder.cs" />
     <Compile Include="System\Reflection\Metadata\Ecma335\Encoding\ExceptionRegionEncoder.cs" />
     <Compile Include="System\Reflection\Metadata\Ecma335\Encoding\InstructionEncoder.cs" />
     <Compile Include="System\Reflection\Metadata\Ecma335\Encoding\LabelHandle.cs" />
@@ -69,7 +70,6 @@
     <Compile Include="System\Reflection\Metadata\Ecma335\PortablePdbBuilder.cs" />
     <Compile Include="System\Reflection\Metadata\Ecma335\MetadataBuilder.Tables.cs" />
     <Compile Include="System\Reflection\Metadata\Ecma335\Encoding\BlobEncoders.cs" />
-    <Compile Include="System\Reflection\Metadata\Ecma335\Encoding\MethodBodyEncoder.cs" />
     <Compile Include="System\Reflection\Metadata\Ecma335\MetadataSizes.cs" />
     <Compile Include="System\Reflection\Metadata\Ecma335\MetadataBuilder.Heaps.cs" />
     <Compile Include="System\Reflection\Metadata\IL\ILOpCodeExtensions.cs" />
