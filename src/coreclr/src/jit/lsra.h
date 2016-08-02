@@ -7,6 +7,7 @@
 #define _LSRA_H_
 
 #include "arraylist.h"
+#include "smallhash.h"
 #include "nodeinfo.h"
 
 // Minor and forward-reference types
@@ -300,11 +301,15 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 // to the next RefPosition in code order
 // THIS IS THE OPTION CURRENTLY BEING PURSUED
 
+class LocationInfoList;
+class LocationInfoListNodePool;
+
 class LinearScan : public LinearScanInterface
 {
     friend class RefPosition;
     friend class Interval;
     friend class Lowering;
+    friend class TreeNodeInfo;
 
 public:
 
@@ -610,7 +615,8 @@ private:
     void            resolveConflictingDefAndUse(Interval* interval, RefPosition* defRefPosition);
 
     void            buildRefPositionsForNode(GenTree *tree, BasicBlock *block,
-                                             ArrayStack<LocationInfo> *stack,
+                                             LocationInfoListNodePool& listNodePool,
+                                             HashTableBase<GenTree*, LocationInfoList>& operandToLocationInfoMap,
                                              LsraLocation loc);
 
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE

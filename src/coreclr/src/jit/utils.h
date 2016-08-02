@@ -39,6 +39,48 @@ inline bool isPow2(T i)
     return (i > 0 && ((i-1)&i) == 0);
 }
 
+// Adapter for iterators to a type that is compatible with C++11
+// range-based for loops.
+template<typename TIterator>
+class IteratorPair
+{
+    TIterator m_begin;
+    TIterator m_end;
+
+public:
+    IteratorPair(TIterator begin, TIterator end)
+        : m_begin(begin)
+        , m_end(end)
+    {
+    }
+
+    inline TIterator begin()
+    {
+        return m_begin;
+    }
+
+    inline TIterator end()
+    {
+        return m_end;
+    }
+};
+
+template<typename TIterator>
+inline IteratorPair<TIterator> MakeIteratorPair(TIterator begin, TIterator end)
+{
+    return IteratorPair<TIterator>(begin, end);
+}
+
+// Recursive template definition to calculate the base-2 logarithm
+// of a constant value.
+template <unsigned val, unsigned acc = 0>
+struct ConstLog2 { enum { value = ConstLog2<val / 2, acc + 1>::value }; };
+
+template <unsigned acc>
+struct ConstLog2<0, acc> { enum { value = acc }; };
+
+template <unsigned acc>
+struct ConstLog2<1, acc> { enum { value = acc }; };
 
 inline const char* dspBool(bool b)
 {

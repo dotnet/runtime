@@ -7826,6 +7826,504 @@ GenTreePtr GenTree::GetChild(unsigned childNum)
     }
 }
 
+GenTreeOperandIterator::GenTreeOperandIterator()
+    : m_node(nullptr)
+    , m_operand(nullptr)
+    , m_argList(nullptr)
+    , m_multiRegArg(nullptr)
+    , m_expandMultiRegArgs(false)
+    , m_state(-1)
+{
+}
+
+GenTreeOperandIterator::GenTreeOperandIterator(GenTree* node, bool expandMultiRegArgs)
+    : m_node(node)
+    , m_operand(nullptr)
+    , m_argList(nullptr)
+    , m_multiRegArg(nullptr)
+    , m_expandMultiRegArgs(expandMultiRegArgs)
+    , m_state(0)
+{
+    assert(m_node != nullptr);
+
+    // Advance to the first operand.
+    ++(*this);
+}
+
+//------------------------------------------------------------------------
+// GenTreeOperandIterator::GetNextOperand:
+//    Gets the next operand of a node with a fixed number of operands.
+//    This covers all nodes besides GT_CALL, GT_PHI, and GT_SIMD. For the
+//    node types handled by this method, the `m_state` field indicates the
+//    index of the next operand to produce.
+//
+// Returns:
+//    The node's next operand or nullptr if all operands have been
+//    produced.
+GenTree* GenTreeOperandIterator::GetNextOperand() const
+{
+    switch (m_node->OperGet())
+    {
+    case GT_CMPXCHG:
+        switch (m_state)
+        {
+        case 0:
+            return m_node->AsCmpXchg()->gtOpLocation;
+        case 1:
+            return m_node->AsCmpXchg()->gtOpValue;
+        case 2:
+            return m_node->AsCmpXchg()->gtOpComparand;
+        default:
+            return nullptr;
+        }
+    case GT_ARR_BOUNDS_CHECK:
+#ifdef FEATURE_SIMD
+    case GT_SIMD_CHK:
+#endif // FEATURE_SIMD
+        switch (m_state)
+        {
+        case 0:
+            return m_node->AsBoundsChk()->gtArrLen;
+        case 1:
+            return m_node->AsBoundsChk()->gtIndex;
+        default:
+            return nullptr;
+        }
+
+    case GT_FIELD:
+        if (m_state == 0)
+        {
+            return m_node->AsField()->gtFldObj;
+        }
+        return nullptr;
+
+    case GT_STMT:
+        if (m_state == 0)
+        {
+            return m_node->AsStmt()->gtStmtExpr;
+        }
+        return nullptr;
+
+    case GT_ARR_ELEM:
+        if (m_state == 0)
+        {
+            return m_node->AsArrElem()->gtArrObj;
+        }
+        else if (m_state <= m_node->AsArrElem()->gtArrRank)
+        {
+            return m_node->AsArrElem()->gtArrInds[m_state-1];
+        }
+        return nullptr;
+
+    case GT_ARR_OFFSET:
+        switch (m_state)
+        {
+        case 0:
+            return m_node->AsArrOffs()->gtOffset;
+        case 1:
+            return m_node->AsArrOffs()->gtIndex;
+        case 2:
+            return m_node->AsArrOffs()->gtArrObj;
+        default:
+            return nullptr;
+        }
+
+    // Call, phi, and SIMD nodes are handled by MoveNext{Call,Phi,SIMD}Operand, repsectively.
+    case GT_CALL:
+    case GT_PHI:
+#ifdef FEATURE_SIMD
+    case GT_SIMD:
+#endif
+        break;
+
+    case GT_INITBLK:
+    case GT_COPYBLK:
+    case GT_COPYOBJ:
+        {
+            GenTreeBlkOp* blkOp = m_node->AsBlkOp();
+
+            bool blkOpReversed = (blkOp->gtFlags & GTF_REVERSE_OPS) != 0;
+            bool srcDstReversed = (blkOp->gtOp1->gtFlags & GTF_REVERSE_OPS) != 0;
+
+            if (!blkOpReversed)
+            {
+                switch (m_state)
+                {
+                case 0:
+                    return !srcDstReversed ? blkOp->gtOp1->AsArgList()->gtOp1 : blkOp->gtOp1->AsArgList()->gtOp2;
+                case 1:
+                    return !srcDstReversed ? blkOp->gtOp1->AsArgList()->gtOp2 : blkOp->gtOp1->AsArgList()->gtOp1;
+                case 2:
+                    return blkOp->gtOp2;
+                default:
+                    return nullptr;
+                }
+            }
+            else
+            {
+                switch (m_state)
+                {
+                case 0:
+                    return blkOp->gtOp2;
+                case 1:
+                    return !srcDstReversed ? blkOp->gtOp1->AsArgList()->gtOp1 : blkOp->gtOp1->AsArgList()->gtOp2;
+                case 2:
+                    return !srcDstReversed ? blkOp->gtOp1->AsArgList()->gtOp2 : blkOp->gtOp1->AsArgList()->gtOp1;
+                default:
+                    return nullptr;
+                }
+            }
+        }
+        break;
+
+    case GT_LEA:
+        {
+            GenTreeAddrMode* lea = m_node->AsAddrMode();
+
+            bool hasOp1 = lea->gtOp1 != nullptr;
+            if (!hasOp1)
+            {
+                return m_state == 0 ? lea->gtOp2 : nullptr;
+            }
+
+            bool operandsReversed = (lea->gtFlags & GTF_REVERSE_OPS) != 0;
+            switch (m_state)
+            {
+                case 0:
+                    return !operandsReversed ? lea->gtOp1 : lea->gtOp2;
+                case 1:
+                    return !operandsReversed ? lea->gtOp2 : lea->gtOp1;
+                default:
+                    return nullptr;
+            }
+        }
+        break;
+
+    default:
+        if (m_node->OperIsConst() || m_node->OperIsLeaf())
+        {
+            return nullptr;
+        }
+        else if (m_node->OperIsUnary())
+        {
+            return m_state == 0 ? m_node->AsUnOp()->gtOp1 : nullptr;
+        }
+        else if (m_node->OperIsBinary())
+        {
+            bool operandsReversed = (m_node->gtFlags & GTF_REVERSE_OPS) != 0;
+            switch (m_state)
+            {
+                case 0:
+                    return !operandsReversed ? m_node->AsOp()->gtOp1 : m_node->AsOp()->gtOp2;
+                case 1:
+                    return !operandsReversed ? m_node->AsOp()->gtOp2 : m_node->AsOp()->gtOp1;
+                default:
+                    return nullptr;
+            }
+        }
+    }
+
+    unreached();
+}
+
+//------------------------------------------------------------------------
+// GenTreeOperandIterator::MoveToNextCallOperand:
+//    Moves to the next operand of a call node. Unlike the simple nodes
+//    handled by `GetNextOperand`, call nodes have a variable number of
+//    operands stored in cons lists. This method expands the cons lists
+//    into the operands stored within.
+//
+void GenTreeOperandIterator::MoveToNextCallOperand()
+{
+    GenTreeCall* call = m_node->AsCall();
+
+    for (;;)
+    {
+        switch (m_state)
+        {
+            case 0:
+                m_state = 1;
+                m_argList = call->gtCallArgs;
+
+                if (call->gtCallObjp != nullptr)
+                {
+                    m_operand = call->gtCallObjp;
+                    return;
+                }
+                break;
+
+            case 1:
+            case 3:
+                if (m_argList == nullptr)
+                {
+                    m_state += 2;
+
+                    if (m_state == 3)
+                    {
+                        m_argList = call->gtCallLateArgs;
+                    }
+                }
+                else
+                {
+                    GenTreeArgList* argNode = m_argList->AsArgList();
+                    if (m_expandMultiRegArgs && argNode->gtOp1->OperGet() == GT_LIST)
+                    {
+                        m_state += 1;
+                        m_multiRegArg = argNode->gtOp1;
+                    }
+                    else
+                    {
+                        m_operand = argNode->gtOp1;
+                        m_argList = argNode->Rest();
+                        return;
+                    }
+                }
+                break;
+
+            case 2:
+            case 4:
+                if (m_multiRegArg == nullptr)
+                {
+                    m_state -= 1;
+                    m_argList = m_argList->AsArgList()->Rest();
+                }
+                else
+                {
+                    GenTreeArgList* regNode = m_multiRegArg->AsArgList();
+                    m_operand = regNode->gtOp1;
+                    m_multiRegArg = regNode->Rest();
+                    return;
+                }
+                break;
+
+
+            case 5:
+                m_state = call->gtCallType == CT_INDIRECT ? 6 : 8;
+
+                if (call->gtControlExpr != nullptr)
+                {
+                    m_operand = call->gtControlExpr;
+                    return;
+                }
+                break;
+
+            case 6:
+                assert(call->gtCallType == CT_INDIRECT);
+
+                m_state = 7;
+
+                if (call->gtCallCookie != nullptr)
+                {
+                    m_operand = call->gtCallCookie;
+                    return;
+                }
+                break;
+
+            case 7:
+                assert(call->gtCallType == CT_INDIRECT);
+
+                m_state = 8;
+                if (call->gtCallAddr != nullptr)
+                {
+                    m_operand = call->gtCallAddr;
+                    return;
+                }
+                break;
+
+            default:
+                m_node = nullptr;
+                m_operand = nullptr;
+                m_argList = nullptr;
+                m_state = -1;
+                return;
+        }
+    }
+}
+
+//------------------------------------------------------------------------
+// GenTreeOperandIterator::MoveToNextPhiOperand:
+//    Moves to the next operand of a phi node. Unlike the simple nodes
+//    handled by `GetNextOperand`, phi nodes have a variable number of
+//    operands stored in a cons list. This method expands the cons list
+//    into the operands stored within.
+//
+void GenTreeOperandIterator::MoveToNextPhiOperand()
+{
+    GenTreeUnOp* phi = m_node->AsUnOp();
+
+    for (;;)
+    {
+        switch (m_state)
+        {
+            case 0:
+                m_state = 1;
+                m_argList = phi->gtOp1;
+                break;
+
+            case 1:
+                if (m_argList == nullptr)
+                {
+                    m_state = 2;
+                }
+                else
+                {
+                    GenTreeArgList* argNode = m_argList->AsArgList();
+                    m_operand = argNode->gtOp1;
+                    m_argList = argNode->Rest();
+                    return;
+                }
+                break;
+
+            default:
+                m_node = nullptr;
+                m_operand = nullptr;
+                m_argList = nullptr;
+                m_state = -1;
+                return;
+        }
+    }
+}
+
+#ifdef FEATURE_SIMD
+//------------------------------------------------------------------------
+// GenTreeOperandIterator::MoveToNextSIMDOperand:
+//    Moves to the next operand of a SIMD node. Most SIMD nodes have a
+//    fixed number of operands and are handled accordingly.
+//    `SIMDIntrinsicInitN` nodes, however, have a variable number of
+//    operands stored in a cons list. This method expands the cons list
+//    into the operands stored within.
+//
+void GenTreeOperandIterator::MoveToNextSIMDOperand()
+{
+    GenTreeSIMD* simd = m_node->AsSIMD();
+
+    if (simd->gtSIMDIntrinsicID != SIMDIntrinsicInitN)
+    {
+        bool operandsReversed = (simd->gtFlags & GTF_REVERSE_OPS) != 0;
+        switch (m_state)
+        {
+            case 0:
+                m_operand = !operandsReversed ? simd->gtOp1 : simd->gtOp2;
+                break;
+            case 1:
+                m_operand = !operandsReversed ? simd->gtOp2 : simd->gtOp1;
+                break;
+            default:
+                m_operand = nullptr;
+                break;
+        }
+
+        if (m_operand != nullptr)
+        {
+            m_state++;
+        }
+        else
+        {
+            m_node = nullptr;
+            m_state = -1;
+        }
+
+        return;
+    }
+
+    for (;;)
+    {
+        switch (m_state)
+        {
+            case 0:
+                m_state = 1;
+                m_argList = simd->gtOp1;
+                break;
+
+            case 1:
+                if (m_argList == nullptr)
+                {
+                    m_state = 2;
+                }
+                else
+                {
+                    GenTreeArgList* argNode = m_argList->AsArgList();
+                    m_operand = argNode->gtOp1;
+                    m_argList = argNode->Rest();
+                    return;
+                }
+                break;
+
+            default:
+                m_node = nullptr;
+                m_operand = nullptr;
+                m_argList = nullptr;
+                m_state = -1;
+                return;
+        }
+    }
+}
+#endif
+
+//------------------------------------------------------------------------
+// GenTreeOperandIterator::operator++:
+//    Advances the iterator to the next operand.
+//
+GenTreeOperandIterator& GenTreeOperandIterator::operator++()
+{
+    if (m_state == -1)
+    {
+        // If we've reached the terminal state, do nothing.
+        assert(m_node == nullptr);
+        assert(m_operand == nullptr);
+        assert(m_argList == nullptr);
+    }
+    else
+    {
+        // Otherwise, move to the next operand in the node.
+        genTreeOps op = m_node->OperGet();
+        if (op == GT_CALL)
+        {
+            MoveToNextCallOperand();
+        }
+        else if (op == GT_PHI)
+        {
+            MoveToNextPhiOperand();
+        }
+#ifdef FEATURE_SIMD
+        else if (op == GT_SIMD)
+        {
+            MoveToNextSIMDOperand();
+        }
+#endif
+        else
+        {
+            m_operand = GetNextOperand();
+            if (m_operand != nullptr)
+            {
+                m_state++;
+            }
+            else
+            {
+                m_node = nullptr;
+                m_state = -1;
+            }
+        }
+    }
+
+    return *this;
+}
+
+GenTreeOperandIterator GenTree::OperandsBegin(bool expandMultiRegArgs)
+{
+    return GenTreeOperandIterator(this, expandMultiRegArgs);
+}
+
+GenTreeOperandIterator GenTree::OperandsEnd()
+{
+    return GenTreeOperandIterator();
+}
+
+IteratorPair<GenTreeOperandIterator> GenTree::Operands(bool expandMultiRegArgs)
+{
+    return MakeIteratorPair(OperandsBegin(expandMultiRegArgs), OperandsEnd());
+}
+
 #ifdef DEBUG
 
 /* static */ int GenTree::gtDispFlags(unsigned flags, unsigned debugFlags)
