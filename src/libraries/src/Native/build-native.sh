@@ -192,16 +192,22 @@ fi
 
 case $CPUName in
     i686)
-        if [ $__BuildArch != "x64" ]; then
+        if [ $__BuildArch != x86 ]; then
+            echo "Cross!"
             __CrossBuild=1
         fi
         ;;
-    i86_64)
-        if [ $__BuildArch != "x86" ] ;then
+    x86_64)
+        if [ $__BuildArch != x64 ]; then
+            echo "Cross!"
             __CrossBuild=1
         fi
+        echo "this"
         ;;
 esac
+
+#__CrossBuild=1
+#__BuildArch="arm"
 
 # Set the remaining variables based upon the determined build configuration
 __IntermediatesDir="$__rootbinpath/obj/$__BuildOS.$__BuildArch.$__BuildType/Native"
