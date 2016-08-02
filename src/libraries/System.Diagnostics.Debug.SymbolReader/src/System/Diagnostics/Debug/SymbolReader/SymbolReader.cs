@@ -53,7 +53,8 @@ namespace System.Diagnostics.Debug.SymbolReader
         /// <param name="lineNumber">source line number</param>
         /// <param name="methToken">method token return</param>
         /// <param name="ilOffset">IL offset return</param>
-        public static void ResolveSequencePoint(string assemblyFileName, string fileName, int lineNumber, out int methToken, out int ilOffset)
+        /// <returns> true if information is available</returns>
+        public static bool ResolveSequencePoint(string assemblyFileName, string fileName, int lineNumber, out int methToken, out int ilOffset)
         {
             MetadataReader peReader, pdbReader;
             methToken = 0;
@@ -61,7 +62,7 @@ namespace System.Diagnostics.Debug.SymbolReader
             
             try {
                 if (!GetReaders(assemblyFileName, out peReader, out pdbReader))
-                    return;
+                    return false;
                 
                 foreach (MethodDefinitionHandle methodDefHandle in peReader.MethodDefinitions)
                 {
@@ -74,7 +75,7 @@ namespace System.Diagnostics.Debug.SymbolReader
                         {
                             methToken = MetadataTokens.GetToken(peReader, methodDefHandle);
                             ilOffset = point.Offset;
-                            return;
+                            return true;
                         }
                     }
                 }
@@ -84,6 +85,7 @@ namespace System.Diagnostics.Debug.SymbolReader
                 peReader = null;
                 pdbReader = null;
             }
+            return false;
         }
 
 
