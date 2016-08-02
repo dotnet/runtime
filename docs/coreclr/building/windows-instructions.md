@@ -70,9 +70,9 @@ c:\git>mkdir \coreclr-demo\ref
 Build the Runtime
 =================
 
-To build CoreCLR, run `build.cmd` from the root of the coreclr repository. This will do a clean x64/Debug build of CoreCLR, its native components, mscorlib.dll, and the tests.
+To build CoreCLR, run `build.cmd` from the root of the coreclr repository. This will do a x64/Debug build of CoreCLR, its native components, mscorlib.dll, and the tests.
 
-	C:\git\coreclr>build clean
+	C:\git\coreclr>build -rebuild
 
 	[Lots of build spew]
 
@@ -83,7 +83,7 @@ To build CoreCLR, run `build.cmd` from the root of the coreclr repository. This 
 
 **Note:** To avoid building the tests, pass the 'skiptestbuild' option to build.
 
-**build /?** will list supported parameters.
+**build -?** will list supported parameters.
 
 Check the build output.
 
@@ -121,7 +121,7 @@ Build the framework out of the corefx directory.
 	Time Elapsed 00:03:14.53
 	Build Exit Code = 0
 
-It's also possible to add /t:rebuild to build.cmd to force it to delete the previously built assemblies.
+It's also possible to add -rebuild to build.cmd to force it to delete the previously built assemblies.
 
 For the purposes of this demo, you need to copy a few required assemblies to the demo folder.
 
