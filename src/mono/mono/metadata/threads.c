@@ -386,6 +386,18 @@ unlock_thread (MonoInternalThread *thread)
 	mono_coop_mutex_unlock (thread->synch_cs);
 }
 
+static inline gboolean
+is_appdomainunloaded_exception (MonoClass *klass)
+{
+	return klass == mono_class_get_appdomain_unloaded_exception_class ();
+}
+
+static inline gboolean
+is_threadabort_exception (MonoClass *klass)
+{
+	return klass == mono_defaults.threadabortexception_class;
+}
+
 /*
  * NOTE: this function can be called also for threads different from the current one:
  * make sure no code called from it will ever assume it is run on the thread that is
@@ -748,7 +760,11 @@ static guint32 WINAPI start_wrapper_internal(void *data)
 
 		if (!mono_error_ok (&error)) {
 			MonoException *ex = mono_error_convert_to_exception (&error);
-			if (ex) {
+
+			g_assert (ex != NULL);
+			MonoClass *klass = mono_object_get_class (&ex->object);
+			if ((mono_runtime_unhandled_exception_policy_get () != MONO_UNHANDLED_POLICY_LEGACY) &&
+			    !is_threadabort_exception (klass)) {
 				mono_unhandled_exception (&ex->object);
 				mono_invoke_unhandled_exception_hook (&ex->object);
 				g_assert_not_reached ();
@@ -1112,7 +1128,7 @@ mono_thread_detach_if_exiting (void)
 }
 
 void
-mono_thread_exit ()
+mono_thread_exit (void)
 {
 	MonoInternalThread *thread = mono_thread_internal_current ();
 
@@ -5048,18 +5064,6 @@ mono_thread_internal_check_for_interruption_critical (MonoInternalThread *thread
 {
 	if ((thread->state & (ThreadState_StopRequested | ThreadState_SuspendRequested)) != 0)
 		mono_thread_interruption_checkpoint ();
-}
-
-static inline gboolean
-is_appdomainunloaded_exception (MonoClass *klass)
-{
-	return klass == mono_class_get_appdomain_unloaded_exception_class ();
-}
-
-static inline gboolean
-is_threadabort_exception (MonoClass *klass)
-{
-	return klass == mono_defaults.threadabortexception_class;
 }
 
 void
