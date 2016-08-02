@@ -7532,9 +7532,17 @@ ves_icall_System_Runtime_Remoting_Messaging_AsyncResult_Invoke (MonoAsyncResult 
 		gpointer wait_event = NULL;
 
 		ac->msg->exc = NULL;
-		res = mono_message_invoke (ares->async_delegate, ac->msg, &ac->msg->exc, &ac->out_args, &error);
-		if (mono_error_set_pending_exception (&error))
-			return NULL;
+
+		MonoError invoke_error;
+		res = mono_message_invoke (ares->async_delegate, ac->msg, &ac->msg->exc, &ac->out_args, &invoke_error);
+
+		if (!ac->msg->exc) {
+			MonoException *ex = mono_error_convert_to_exception (&invoke_error);
+			ac->msg->exc = (MonoObject *)ex;
+		} else {
+			mono_error_cleanup (&invoke_error);
+		}
+
 		MONO_OBJECT_SETREF (ac, res, res);
 
 		mono_monitor_enter ((MonoObject*) ares);
