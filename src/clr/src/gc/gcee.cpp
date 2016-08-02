@@ -665,14 +665,21 @@ void gc_heap::fire_etw_allocation_event (size_t allocation_amount, int gen_numbe
 #ifdef FEATURE_REDHAWK
     typeId = RedhawkGCInterface::GetLastAllocEEType();
 #else
-    TypeHandle th = GetThread()->GetTHAllocContextObj();
-    if (th != 0)
+    InlineSString<MAX_CLASSNAME_LENGTH> strTypeName;
+
+    EX_TRY
     {
-        InlineSString<MAX_CLASSNAME_LENGTH> strTypeName;
-        th.GetName(strTypeName);
-        typeId = th.GetMethodTable();
-        name = strTypeName.GetUnicode();
+        TypeHandle th = GetThread()->GetTHAllocContextObj();
+
+        if (th != 0)
+        {
+            th.GetName(strTypeName);
+            name = strTypeName.GetUnicode();
+            typeId = th.GetMethodTable();
+        }
     }
+    EX_CATCH {}
+    EX_END_CATCH(SwallowAllExceptions)
 #endif
 
     if (typeId != nullptr)
