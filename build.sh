@@ -162,8 +162,7 @@ build_coreclr()
         # Drop version.c file
         __versionSourceFile=$__IntermediatesDir/version.cpp
         if [ $__SkipGenerateVersion == 0 ]; then
-            echo "Running: \"$__ProjectRoot/run.sh\" build -generateHeaderUnix -NativeVersionSourceFile=$__versionSourceFile $__RunArgs $__UnprocessedBuildArgs"
-            "$__ProjectRoot/run.sh" build -generateHeaderUnix -NativeVersionSourceFile=$__versionSourceFile $__RunArgs $__UnprocessedBuildArgs
+            "$__ProjectRoot/run.sh" build -Project=$__ProjectDir/build.proj -generateHeaderUnix -NativeVersionSourceFile=$__versionSourceFile $__RunArgs $__UnprocessedBuildArgs
         else
             __versionSourceLine="static char sccsid[] __attribute__((used)) = \"@(#)No version information produced\";"
             echo $__versionSourceLine > $__versionSourceFile
@@ -288,7 +287,7 @@ build_CoreLib()
     echo "Commencing build of managed components for $__BuildOS.$__BuildArch.$__BuildType"
 
     # Invoke MSBuild
-    $__ProjectRoot/run.sh build -buildCoreLib -MsBuildLog="/flp:Verbosity=normal;LogFile=$__LogsDir/System.Private.CoreLib_$__BuildOS__$__BuildArch__$__BuildType.log" -BuildTarget -__IntermediatesDir=$__IntermediatesDir -__RootBinDir=$__RootBinDir -BuildNugetPackage=false -UseSharedCompilation=false $__RunArgs $__UnprocessedBuildArgs
+    $__ProjectRoot/run.sh build -Project=$__ProjectDir/build.proj -MsBuildLog="/flp:Verbosity=normal;LogFile=$__LogsDir/System.Private.CoreLib_$__BuildOS__$__BuildArch__$__BuildType.log" -BuildTarget -__IntermediatesDir=$__IntermediatesDir -__RootBinDir=$__RootBinDir -BuildNugetPackage=false -UseSharedCompilation=false $__RunArgs $__UnprocessedBuildArgs
 
     if [ $? -ne 0 ]; then
         echo "Failed to build managed components."
@@ -327,7 +326,7 @@ generate_NugetPackages()
     echo "Generating nuget packages for "$__BuildOS
 
     # Build the packages
-    $__ProjectRoot/run.sh build -buildPackages -MsBuildLog="/flp:Verbosity=normal;LogFile=$__LogsDir/Nuget_$__BuildOS__$__BuildArch__$__BuildType.log" -BuildTarget -__IntermediatesDir=$__IntermediatesDir -__RootBinDir=$__RootBinDir -BuildNugetPackage=false -UseSharedCompilation=false $__RunArgs $__UnprocessedBuildArgs
+    $__ProjectRoot/run.sh build -Project=$__SourceDir/.nuget/packages.builds -MsBuildLog="/flp:Verbosity=normal;LogFile=$__LogsDir/Nuget_$__BuildOS__$__BuildArch__$__BuildType.log" -BuildTarget -__IntermediatesDir=$__IntermediatesDir -__RootBinDir=$__RootBinDir -BuildNugetPackage=false -UseSharedCompilation=false $__RunArgs $__UnprocessedBuildArgs
 
     if [ $? -ne 0 ]; then
         echo "Failed to generate Nuget packages."
