@@ -183,6 +183,26 @@ while :; do
     shift
 done
 
+# Set cross build
+CPUName=$(uname -p)
+# Some Linux platforms report unknown for platform, but the arch for machine.
+if [ $CPUName == "unknown" ]; then
+    CPUName=$(uname -m)
+fi
+
+case $CPUName in
+    i686)
+        if [ $__BuildArch != "x64" ]; then
+            __CrossBuild=1
+        fi
+        ;;
+    i86_64)
+        if [ $__BuildArch != "x86" ] ;then
+            __CrossBuild=1
+        fi
+        ;;
+esac
+
 # Set the remaining variables based upon the determined build configuration
 __IntermediatesDir="$__rootbinpath/obj/$__BuildOS.$__BuildArch.$__BuildType/Native"
 __BinDir="$__rootbinpath/$__BuildOS.$__BuildArch.$__BuildType/Native"
