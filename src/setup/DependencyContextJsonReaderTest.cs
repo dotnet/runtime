@@ -26,7 +26,8 @@ namespace Microsoft.Extensions.DependencyModel.Tests
             var context = Read(
 @"{
     ""runtimeTarget"": {
-        ""name"":"".NETCoreApp,Version=v1.0/osx.10.10-x64""
+        ""name"":"".NETCoreApp,Version=v1.0/osx.10.10-x64"",
+        ""signature"":""target-signature""
     },
     ""targets"": {
         "".NETCoreApp,Version=v1.0/osx.10.10-x64"": {},
@@ -35,6 +36,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
             context.Target.IsPortable.Should().BeFalse();
             context.Target.Framework.Should().Be(".NETCoreApp,Version=v1.0");
             context.Target.Runtime.Should().Be("osx.10.10-x64");
+            context.Target.RuntimeSignature.Should().Be("target-signature");
         }
 
         [Fact]
@@ -299,7 +301,9 @@ namespace Microsoft.Extensions.DependencyModel.Tests
         {
             var context = Read(
 @"{
-    ""runtimeTarget"": "".NETCoreApp,Version=v1.0"",
+    ""runtimeTarget"": {
+        ""name"": "".NETCoreApp,Version=v1.0""
+    },
     ""targets"": {
         "".NETCoreApp,Version=v1.0"": {
             ""System.Banana/1.0.0"": {
