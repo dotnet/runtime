@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 
 namespace Microsoft.Extensions.DependencyModel
 {
@@ -20,16 +19,15 @@ namespace Microsoft.Extensions.DependencyModel
             {
                 throw new ArgumentNullException(nameof(stream));
             }
+
             using (var streamReader = new StreamReader(stream))
             {
                 using (var reader = new JsonTextReader(streamReader))
                 {
-                    var root = JObject.Load(reader);
-                    return Read(root);
+                    return Read(reader);
                 }
             }
         }
-
         protected virtual void Dispose(bool disposing)
         {
             if (disposing)
@@ -43,57 +41,51 @@ namespace Microsoft.Extensions.DependencyModel
             Dispose(true);
         }
 
-        private bool IsRuntimeTarget(string name) => name.Contains(DependencyContextStrings.VersionSeperator);
-
-        private DependencyContext Read(JObject root)
+        private DependencyContext Read(JsonTextReader reader)
         {
             var runtime = string.Empty;
-            var target = string.Empty;
+            var framework = string.Empty;
             var isPortable = true;
             string runtimeTargetName = null;
             string runtimeSignature = null;
 
-            var runtimeTargetInfo = root[DependencyContextStrings.RuntimeTargetPropertyName];
+            reader.ReadStartObject();
 
-            // This fallback is temporary
-            if (runtimeTargetInfo is JValue)
+            CompilationOptions compilationOptions = null;
+            List<Target> targets = null;
+            Dictionary<string, LibraryStub> libraryStubs = null;
+            List<RuntimeFallbacks> runtimeFallbacks = null;
+
+            while (reader.Read() && reader.TokenType == JsonToken.PropertyName)
             {
-                runtimeTargetName = runtimeTargetInfo.Value<string>();
-            }
-            else
-            {
-                var runtimeTargetObject = (JObject) runtimeTargetInfo;
-                runtimeTargetName = runtimeTargetObject?[DependencyContextStrings.RuntimeTargetNamePropertyName]?.Value<string>();
-                runtimeSignature = runtimeTargetObject?[DependencyContextStrings.RuntimeTargetSignaturePropertyName]?.Value<string>();
-            }
-
-            var libraryStubs = ReadLibraryStubs((JObject)root[DependencyContextStrings.LibrariesPropertyName]);
-            var targetsObject = (JObject)root[DependencyContextStrings.TargetsPropertyName];
-
-            JObject runtimeTarget = null;
-            JObject compileTarget = null;
-
-            if (targetsObject == null)
-            {
-                throw new FormatException("Dependency file does not have 'targets' section");
-            }
-
-            if (!string.IsNullOrEmpty(runtimeTargetName))
-            {
-                runtimeTarget = (JObject)targetsObject[runtimeTargetName];
-                if (runtimeTarget == null)
+                switch ((string)reader.Value)
                 {
-                    throw new FormatException($"Target with name {runtimeTargetName} not found");
+                    case DependencyContextStrings.RuntimeTargetPropertyName:
+                        ReadRuntimeTarget(reader, out runtimeTargetName, out runtimeSignature);
+                        break;
+                    case DependencyContextStrings.CompilationOptionsPropertName:
+                        compilationOptions = ReadCompilationOptions(reader);
+                        break;
+                    case DependencyContextStrings.TargetsPropertyName:
+                        targets = ReadTargets(reader);
+                        break;
+                    case DependencyContextStrings.LibrariesPropertyName:
+                        libraryStubs = ReadLibraries(reader);
+                        break;
+                    case DependencyContextStrings.RuntimesPropertyName:
+                        runtimeFallbacks = ReadRuntimes(reader);
+                        break;
+
                 }
             }
-            else
-            {
-                var runtimeTargetProperty = targetsObject.Properties()
-                    .FirstOrDefault(p => IsRuntimeTarget(p.Name));
 
-                runtimeTarget = (JObject)runtimeTargetProperty?.Value;
-                runtimeTargetName = runtimeTargetProperty?.Name;
+            if (compilationOptions == null)
+            {
+                compilationOptions = CompilationOptions.Default;
             }
+
+            Target runtimeTarget = SelectRuntimeTarget(targets, runtimeTargetName);
+            runtimeTargetName = runtimeTarget?.Name;
 
             if (runtimeTargetName != null)
             {
@@ -101,23 +93,25 @@ namespace Microsoft.Extensions.DependencyModel
                 if (seperatorIndex > -1 && seperatorIndex < runtimeTargetName.Length)
                 {
                     runtime = runtimeTargetName.Substring(seperatorIndex + 1);
-                    target = runtimeTargetName.Substring(0, seperatorIndex);
+                    framework = runtimeTargetName.Substring(0, seperatorIndex);
                     isPortable = false;
                 }
                 else
                 {
-                    target = runtimeTargetName;
+                    framework = runtimeTargetName;
                 }
             }
 
-            var ridlessTargetProperty = targetsObject.Properties().FirstOrDefault(p => !IsRuntimeTarget(p.Name));
-            if (ridlessTargetProperty != null)
+            Target compileTarget = null;
+
+            var ridlessTarget = targets.FirstOrDefault(t => !IsRuntimeTarget(t.Name));
+            if (ridlessTarget != null)
             {
-                compileTarget = (JObject)ridlessTargetProperty.Value;
+                compileTarget = ridlessTarget;
                 if (runtimeTarget == null)
                 {
                     runtimeTarget = compileTarget;
-                    target = ridlessTargetProperty.Name;
+                    framework = ridlessTarget.Name;
                 }
             }
 
@@ -127,65 +121,445 @@ namespace Microsoft.Extensions.DependencyModel
             }
 
             return new DependencyContext(
-                new TargetInfo(target, runtime, runtimeSignature, isPortable),
-                ReadCompilationOptions((JObject)root[DependencyContextStrings.CompilationOptionsPropertName]),
-                ReadLibraries(compileTarget, false, libraryStubs).Cast<CompilationLibrary>().ToArray(),
-                ReadLibraries(runtimeTarget, true, libraryStubs).Cast<RuntimeLibrary>().ToArray(),
-                ReadRuntimeGraph((JObject)root[DependencyContextStrings.RuntimesPropertyName]).ToArray()
-                );
+                new TargetInfo(framework, runtime, runtimeSignature, isPortable),
+                compilationOptions,
+                CreateLibraries(compileTarget?.Libraries, false, libraryStubs).Cast<CompilationLibrary>().ToArray(),
+                CreateLibraries(runtimeTarget.Libraries, true, libraryStubs).Cast<RuntimeLibrary>().ToArray(),
+                runtimeFallbacks ?? Enumerable.Empty<RuntimeFallbacks>());
         }
 
-        private IEnumerable<RuntimeFallbacks> ReadRuntimeGraph(JObject runtimes)
+        private Target SelectRuntimeTarget(List<Target> targets, string runtimeTargetName)
         {
-            if (runtimes == null)
+            Target target;
+
+            if (targets == null || targets.Count == 0)
             {
-                yield break;
+                throw new FormatException("Dependency file does not have 'targets' section");
             }
 
-            foreach (var pair in runtimes)
+            if (!string.IsNullOrEmpty(runtimeTargetName))
             {
-                yield return new RuntimeFallbacks(pair.Key, pair.Value.Values<string>().ToArray());
+                target = targets.FirstOrDefault(t => t.Name == runtimeTargetName);
+                if (target == null)
+                {
+                    throw new FormatException($"Target with name {runtimeTargetName} not found");
+                }
             }
+            else
+            {
+                target = targets.FirstOrDefault(t => IsRuntimeTarget(t.Name));
+            }
+
+            return target;
         }
 
-        private CompilationOptions ReadCompilationOptions(JObject compilationOptionsObject)
+        private bool IsRuntimeTarget(string name)
         {
-            if (compilationOptionsObject == null)
+            return name.Contains(DependencyContextStrings.VersionSeperator);
+        }
+
+        private void ReadRuntimeTarget(JsonTextReader reader, out string runtimeTargetName, out string runtimeSignature)
+        {
+            runtimeTargetName = null;
+            runtimeSignature = null;
+
+            reader.ReadStartObject();
+
+            string propertyName;
+            string propertyValue;
+            while (reader.TryReadStringProperty(out propertyName, out propertyValue))
             {
-                return CompilationOptions.Default;
+                switch (propertyName)
+                {
+                    case DependencyContextStrings.RuntimeTargetNamePropertyName:
+                        runtimeTargetName = propertyValue;
+                        break;
+                    case DependencyContextStrings.RuntimeTargetSignaturePropertyName:
+                        runtimeSignature = propertyValue;
+                        break;
+                    default:
+                        throw new FormatException($"Unknown property name '{propertyName}'");
+                }
             }
+
+            reader.CheckEndObject();
+        }
+
+        private CompilationOptions ReadCompilationOptions(JsonTextReader reader)
+        {
+            IEnumerable<string> defines = null;
+            string languageVersion = null;
+            string platform = null;
+            bool? allowUnsafe = null;
+            bool? warningsAsErrors = null;
+            bool? optimize = null;
+            string keyFile = null;
+            bool? delaySign = null;
+            bool? publicSign = null;
+            string debugType = null;
+            bool? emitEntryPoint = null;
+            bool? generateXmlDocumentation = null;
+
+            reader.ReadStartObject();
+
+            while (reader.Read() && reader.TokenType == JsonToken.PropertyName)
+            {
+                switch ((string)reader.Value)
+                {
+                    case DependencyContextStrings.DefinesPropertyName:
+                        defines = reader.ReadStringArray();
+                        break;
+                    case DependencyContextStrings.LanguageVersionPropertyName:
+                        languageVersion = reader.ReadAsString();
+                        break;
+                    case DependencyContextStrings.PlatformPropertyName:
+                        platform = reader.ReadAsString();
+                        break;
+                    case DependencyContextStrings.AllowUnsafePropertyName:
+                        allowUnsafe = reader.ReadAsBoolean();
+                        break;
+                    case DependencyContextStrings.WarningsAsErrorsPropertyName:
+                        warningsAsErrors = reader.ReadAsBoolean();
+                        break;
+                    case DependencyContextStrings.OptimizePropertyName:
+                        optimize = reader.ReadAsBoolean();
+                        break;
+                    case DependencyContextStrings.KeyFilePropertyName:
+                        keyFile = reader.ReadAsString();
+                        break;
+                    case DependencyContextStrings.DelaySignPropertyName:
+                        delaySign = reader.ReadAsBoolean();
+                        break;
+                    case DependencyContextStrings.PublicSignPropertyName:
+                        publicSign = reader.ReadAsBoolean();
+                        break;
+                    case DependencyContextStrings.DebugTypePropertyName:
+                        debugType = reader.ReadAsString();
+                        break;
+                    case DependencyContextStrings.EmitEntryPointPropertyName:
+                        emitEntryPoint = reader.ReadAsBoolean();
+                        break;
+                    case DependencyContextStrings.GenerateXmlDocumentationPropertyName:
+                        generateXmlDocumentation = reader.ReadAsBoolean();
+                        break;
+                    default:
+                        throw new FormatException($"Unknown property name '{reader.Value}'");
+                }
+            }
+
+            reader.CheckEndObject();
 
             return new CompilationOptions(
-                compilationOptionsObject[DependencyContextStrings.DefinesPropertyName]?.Values<string>().ToArray() ?? Enumerable.Empty<string>(),
-                // ToArray is here to prevent IEnumerable<string> holding to json object graph
-                compilationOptionsObject[DependencyContextStrings.LanguageVersionPropertyName]?.Value<string>(),
-                compilationOptionsObject[DependencyContextStrings.PlatformPropertyName]?.Value<string>(),
-                compilationOptionsObject[DependencyContextStrings.AllowUnsafePropertyName]?.Value<bool>(),
-                compilationOptionsObject[DependencyContextStrings.WarningsAsErrorsPropertyName]?.Value<bool>(),
-                compilationOptionsObject[DependencyContextStrings.OptimizePropertyName]?.Value<bool>(),
-                compilationOptionsObject[DependencyContextStrings.KeyFilePropertyName]?.Value<string>(),
-                compilationOptionsObject[DependencyContextStrings.DelaySignPropertyName]?.Value<bool>(),
-                compilationOptionsObject[DependencyContextStrings.PublicSignPropertyName]?.Value<bool>(),
-                compilationOptionsObject[DependencyContextStrings.DebugTypePropertyName]?.Value<string>(),
-                compilationOptionsObject[DependencyContextStrings.EmitEntryPointPropertyName]?.Value<bool>(),
-                compilationOptionsObject[DependencyContextStrings.GenerateXmlDocumentationPropertyName]?.Value<bool>()
-                );
+                defines ?? Enumerable.Empty<string>(),
+                languageVersion,
+                platform,
+                allowUnsafe,
+                warningsAsErrors,
+                optimize,
+                keyFile,
+                delaySign,
+                publicSign,
+                debugType,
+                emitEntryPoint,
+                generateXmlDocumentation);
         }
 
-        private IEnumerable<Library> ReadLibraries(JObject librariesObject, bool runtime, Dictionary<string, LibraryStub> libraryStubs)
+        private List<Target> ReadTargets(JsonTextReader reader)
         {
-            if (librariesObject == null)
+            reader.ReadStartObject();
+
+            var targets = new List<Target>();
+
+            while (reader.Read() && reader.TokenType == JsonToken.PropertyName)
+            {
+                targets.Add(ReadTarget(reader, (string)reader.Value));
+            }
+
+            reader.CheckEndObject();
+
+            return targets;
+        }
+
+        private Target ReadTarget(JsonTextReader reader, string targetName)
+        {
+            reader.ReadStartObject();
+
+            var libraries = new List<TargetLibrary>();
+
+            while (reader.Read() && reader.TokenType == JsonToken.PropertyName)
+            {
+                libraries.Add(ReadTargetLibrary(reader, (string)reader.Value));
+            }
+
+            reader.CheckEndObject();
+
+            return new Target()
+            {
+                Name = targetName,
+                Libraries = libraries
+            };
+        }
+
+        private TargetLibrary ReadTargetLibrary(JsonTextReader reader, string targetLibraryName)
+        {
+            IEnumerable<Dependency> dependencies = null;
+            List<string> runtimes = null;
+            List<string> natives = null;
+            List<string> compilations = null;
+            List<RuntimeTargetEntryStub> runtimeTargets = null;
+            List<ResourceAssembly> resources = null;
+            bool? compileOnly = null;
+
+            reader.ReadStartObject();
+
+            while (reader.Read() && reader.TokenType == JsonToken.PropertyName)
+            {
+                switch ((string)reader.Value)
+                {
+                    case DependencyContextStrings.DependenciesPropertyName:
+                        dependencies = ReadTargetLibraryDependencies(reader);
+                        break;
+                    case DependencyContextStrings.RuntimeAssembliesKey:
+                        runtimes = ReadPropertyNames(reader);
+                        break;
+                    case DependencyContextStrings.NativeLibrariesKey:
+                        natives = ReadPropertyNames(reader);
+                        break;
+                    case DependencyContextStrings.CompileTimeAssembliesKey:
+                        compilations = ReadPropertyNames(reader);
+                        break;
+                    case DependencyContextStrings.RuntimeTargetsPropertyName:
+                        runtimeTargets = ReadTargetLibraryRuntimeTargets(reader);
+                        break;
+                    case DependencyContextStrings.ResourceAssembliesPropertyName:
+                        resources = ReadTargetLibraryResources(reader);
+                        break;
+                    case DependencyContextStrings.CompilationOnlyPropertyName:
+                        compileOnly = reader.ReadAsBoolean();
+                        break;
+                    default:
+                        throw new FormatException($"Unknown property name '{reader.Value}'");
+                }
+            }
+
+            reader.CheckEndObject();
+
+            return new TargetLibrary()
+            {
+                Name = targetLibraryName,
+                Dependencies = dependencies ?? Enumerable.Empty<Dependency>(),
+                Runtimes = runtimes,
+                Natives = natives,
+                Compilations = compilations,
+                RuntimeTargets = runtimeTargets,
+                Resources = resources,
+                CompileOnly = compileOnly
+            };
+        }
+
+
+
+        public IEnumerable<Dependency> ReadTargetLibraryDependencies(JsonTextReader reader)
+        {
+            var dependencies = new List<Dependency>();
+            string name;
+            string version;
+
+            reader.ReadStartObject();
+
+            while (reader.TryReadStringProperty(out name, out version))
+            {
+                dependencies.Add(new Dependency(Pool(name), Pool(version)));
+            }
+
+            reader.CheckEndObject();
+
+            return dependencies;
+        }
+
+        private List<string> ReadPropertyNames(JsonTextReader reader)
+        {
+            var runtimes = new List<string>();
+
+            reader.ReadStartObject();
+
+            while (reader.Read() && reader.TokenType == JsonToken.PropertyName)
+            {
+                var libraryName = (string)reader.Value;
+                reader.Skip();
+
+                runtimes.Add(libraryName);
+            }
+
+            reader.CheckEndObject();
+
+            return runtimes;
+        }
+
+        private List<RuntimeTargetEntryStub> ReadTargetLibraryRuntimeTargets(JsonTextReader reader)
+        {
+            var runtimeTargets = new List<RuntimeTargetEntryStub>();
+
+            reader.ReadStartObject();
+
+            while (reader.Read() && reader.TokenType == JsonToken.PropertyName)
+            {
+                var runtimeTarget = new RuntimeTargetEntryStub();
+                runtimeTarget.Path = (string)reader.Value;
+
+                reader.ReadStartObject();
+
+                string propertyName;
+                string propertyValue;
+                while (reader.TryReadStringProperty(out propertyName, out propertyValue))
+                {
+                    switch (propertyName)
+                    {
+                        case DependencyContextStrings.RidPropertyName:
+                            runtimeTarget.Rid = Pool(propertyValue);
+                            break;
+                        case DependencyContextStrings.AssetTypePropertyName:
+                            runtimeTarget.Type = Pool(propertyValue);
+                            break;
+                        default:
+                            throw new FormatException($"Unknown property name '{propertyName}'");
+                    }
+                }
+
+                reader.CheckEndObject();
+
+                runtimeTargets.Add(runtimeTarget);
+            }
+
+            reader.CheckEndObject();
+
+            return runtimeTargets;
+        }
+
+        private List<ResourceAssembly> ReadTargetLibraryResources(JsonTextReader reader)
+        {
+            var resources = new List<ResourceAssembly>();
+
+            reader.ReadStartObject();
+
+            while (reader.Read() && reader.TokenType == JsonToken.PropertyName)
+            {
+                var path = (string)reader.Value;
+                string locale = null;
+
+                reader.ReadStartObject();
+
+                string propertyName;
+                string propertyValue;
+
+                while (reader.TryReadStringProperty(out propertyName, out propertyValue))
+                {
+                    if (propertyName == DependencyContextStrings.LocalePropertyName)
+                    {
+                        locale = propertyValue;
+                    }
+                }
+
+                reader.CheckEndObject();
+
+                if (locale != null)
+                {
+                    resources.Add(new ResourceAssembly(path, Pool(locale)));
+                }
+            }
+
+            reader.CheckEndObject();
+
+            return resources;
+        }
+
+        private Dictionary<string, LibraryStub> ReadLibraries(JsonTextReader reader)
+        {
+            var libraries = new Dictionary<string, LibraryStub>();
+
+            reader.ReadStartObject();
+
+            while (reader.Read() && reader.TokenType == JsonToken.PropertyName)
+            {
+                var libraryName = (string)reader.Value;
+
+                libraries.Add(Pool(libraryName), ReadOneLibrary(reader));
+            }
+
+            reader.CheckEndObject();
+
+            return libraries;
+        }
+
+        private LibraryStub ReadOneLibrary(JsonTextReader reader)
+        {
+            string hash = null;
+            string type = null;
+            bool serviceable = false;
+
+            reader.ReadStartObject();
+
+            while (reader.Read() && reader.TokenType == JsonToken.PropertyName)
+            {
+                switch ((string)reader.Value)
+                {
+                    case DependencyContextStrings.Sha512PropertyName:
+                        hash = reader.ReadAsString();
+                        break;
+                    case DependencyContextStrings.TypePropertyName:
+                        type = reader.ReadAsString();
+                        break;
+                    case DependencyContextStrings.ServiceablePropertyName:
+                        serviceable = reader.ReadAsBoolean().GetValueOrDefault(false);
+                        break;
+                    default:
+                        throw new FormatException($"Unknown property name '{reader.Value}'");
+                }
+            }
+
+            reader.CheckEndObject();
+
+            return new LibraryStub()
+            {
+                Hash = hash,
+                Type = Pool(type),
+                Serviceable = serviceable
+            };
+        }
+
+        private List<RuntimeFallbacks> ReadRuntimes(JsonTextReader reader)
+        {
+            var runtimeFallbacks = new List<RuntimeFallbacks>();
+
+            reader.ReadStartObject();
+
+            while (reader.Read() && reader.TokenType == JsonToken.PropertyName)
+            {
+                var runtime = (string)reader.Value;
+                var fallbacks = reader.ReadStringArray();
+
+                runtimeFallbacks.Add(new RuntimeFallbacks(runtime, fallbacks));
+            }
+
+            reader.CheckEndObject();
+
+            return runtimeFallbacks;
+        }
+
+        private IEnumerable<Library> CreateLibraries(IEnumerable<TargetLibrary> libraries, bool runtime, Dictionary<string, LibraryStub> libraryStubs)
+        {
+            if (libraries == null)
             {
                 return Enumerable.Empty<Library>();
             }
-            return librariesObject.Properties()
-                .Select(property => ReadLibrary(property, runtime, libraryStubs))
+            return libraries
+                .Select(property => CreateLibrary(property, runtime, libraryStubs))
                 .Where(library => library != null);
         }
 
-        private Library ReadLibrary(JProperty property, bool runtime, Dictionary<string, LibraryStub> libraryStubs)
+        private Library CreateLibrary(TargetLibrary targetLibrary, bool runtime, Dictionary<string, LibraryStub> libraryStubs)
         {
-            var nameWithVersion = property.Name;
+            var nameWithVersion = targetLibrary.Name;
             LibraryStub stub;
 
             if (!libraryStubs.TryGetValue(nameWithVersion, out stub))
@@ -198,67 +572,56 @@ namespace Microsoft.Extensions.DependencyModel
             var name = Pool(nameWithVersion.Substring(0, seperatorPosition));
             var version = Pool(nameWithVersion.Substring(seperatorPosition + 1));
 
-            var libraryObject = (JObject)property.Value;
-
-            var dependencies = ReadDependencies(libraryObject);
-
             if (runtime)
             {
                 // Runtime section of this library was trimmed by type:platform
-                var isCompilationOnly = libraryObject.Value<bool?>(DependencyContextStrings.CompilationOnlyPropertyName);
+                var isCompilationOnly = targetLibrary.CompileOnly;
                 if (isCompilationOnly == true)
                 {
                     return null;
                 }
 
-                var runtimeTargetsObject = (JObject)libraryObject[DependencyContextStrings.RuntimeTargetsPropertyName];
-
-                var entries = ReadRuntimeTargetEntries(runtimeTargetsObject).ToArray();
-
                 var runtimeAssemblyGroups = new List<RuntimeAssetGroup>();
                 var nativeLibraryGroups = new List<RuntimeAssetGroup>();
-                foreach (var ridGroup in entries.GroupBy(e => e.Rid))
+                if (targetLibrary.RuntimeTargets != null)
                 {
-                    var groupRuntimeAssemblies = ridGroup
-                        .Where(e => e.Type == DependencyContextStrings.RuntimeAssetType)
-                        .Select(e => e.Path)
-                        .ToArray();
-
-                    if (groupRuntimeAssemblies.Any())
+                    foreach (var ridGroup in targetLibrary.RuntimeTargets.GroupBy(e => e.Rid))
                     {
-                        runtimeAssemblyGroups.Add(new RuntimeAssetGroup(
-                            ridGroup.Key,
-                            groupRuntimeAssemblies.Where(a => Path.GetFileName(a) != "_._")));
+                        var groupRuntimeAssemblies = ridGroup
+                            .Where(e => e.Type == DependencyContextStrings.RuntimeAssetType)
+                            .Select(e => e.Path)
+                            .ToArray();
+
+                        if (groupRuntimeAssemblies.Any())
+                        {
+                            runtimeAssemblyGroups.Add(new RuntimeAssetGroup(
+                                ridGroup.Key,
+                                groupRuntimeAssemblies.Where(a => Path.GetFileName(a) != "_._")));
+                        }
+
+                        var groupNativeLibraries = ridGroup
+                            .Where(e => e.Type == DependencyContextStrings.NativeAssetType)
+                            .Select(e => e.Path)
+                            .ToArray();
+
+                        if (groupNativeLibraries.Any())
+                        {
+                            nativeLibraryGroups.Add(new RuntimeAssetGroup(
+                                ridGroup.Key,
+                                groupNativeLibraries.Where(a => Path.GetFileName(a) != "_._")));
+                        }
                     }
-
-                    var groupNativeLibraries = ridGroup
-                        .Where(e => e.Type == DependencyContextStrings.NativeAssetType)
-                        .Select(e => e.Path)
-                        .ToArray();
-
-                    if (groupNativeLibraries.Any())
-                    {
-                        nativeLibraryGroups.Add(new RuntimeAssetGroup(
-                            ridGroup.Key,
-                            groupNativeLibraries.Where(a => Path.GetFileName(a) != "_._")));
-                    }
                 }
 
-                var runtimeAssemblies = ReadAssetList(libraryObject, DependencyContextStrings.RuntimeAssembliesKey)
-                    .ToArray();
-                if (runtimeAssemblies.Any())
+                if (targetLibrary.Runtimes != null && targetLibrary.Runtimes.Count > 0)
                 {
-                    runtimeAssemblyGroups.Add(new RuntimeAssetGroup(string.Empty, runtimeAssemblies));
+                    runtimeAssemblyGroups.Add(new RuntimeAssetGroup(string.Empty, targetLibrary.Runtimes));
                 }
 
-                var nativeLibraries = ReadAssetList(libraryObject, DependencyContextStrings.NativeLibrariesKey)
-                    .ToArray();
-                if(nativeLibraries.Any())
+                if (targetLibrary.Natives != null && targetLibrary.Natives.Count > 0)
                 {
-                    nativeLibraryGroups.Add(new RuntimeAssetGroup(string.Empty, nativeLibraries));
+                    nativeLibraryGroups.Add(new RuntimeAssetGroup(string.Empty, targetLibrary.Natives));
                 }
-
-                var resourceAssemblies = ReadResourceAssemblies((JObject)libraryObject[DependencyContextStrings.ResourceAssembliesPropertyName]);
 
                 return new RuntimeLibrary(
                     type: stub.Type,
@@ -267,94 +630,15 @@ namespace Microsoft.Extensions.DependencyModel
                     hash: stub.Hash,
                     runtimeAssemblyGroups: runtimeAssemblyGroups,
                     nativeLibraryGroups: nativeLibraryGroups,
-                    resourceAssemblies: resourceAssemblies,
-                    dependencies: dependencies,
+                    resourceAssemblies: targetLibrary.Resources ?? Enumerable.Empty<ResourceAssembly>(),
+                    dependencies: targetLibrary.Dependencies,
                     serviceable: stub.Serviceable);
             }
             else
             {
-                var assemblies = ReadAssetList(libraryObject, DependencyContextStrings.CompileTimeAssembliesKey);
-                return new CompilationLibrary(stub.Type, name, version, stub.Hash, assemblies, dependencies, stub.Serviceable);
+                var assemblies = (targetLibrary.Compilations != null) ? targetLibrary.Compilations : Enumerable.Empty<string>();
+                return new CompilationLibrary(stub.Type, name, version, stub.Hash, assemblies, targetLibrary.Dependencies, stub.Serviceable);
             }
-        }
-
-        private IEnumerable<ResourceAssembly> ReadResourceAssemblies(JObject resourcesObject)
-        {
-            if (resourcesObject == null)
-            {
-                yield break;
-            }
-            foreach (var resourceProperty in resourcesObject)
-            {
-                yield return new ResourceAssembly(
-                    locale: Pool(resourceProperty.Value[DependencyContextStrings.LocalePropertyName]?.Value<string>()),
-                    path: resourceProperty.Key
-                    );
-            }
-        }
-
-        private IEnumerable<RuntimeTargetEntryStub> ReadRuntimeTargetEntries(JObject runtimeTargetObject)
-        {
-            if (runtimeTargetObject == null)
-            {
-                yield break;
-            }
-            foreach (var libraryProperty in runtimeTargetObject)
-            {
-                var libraryObject = (JObject)libraryProperty.Value;
-                yield return new RuntimeTargetEntryStub()
-                {
-                    Path = libraryProperty.Key,
-                    Rid = Pool(libraryObject[DependencyContextStrings.RidPropertyName].Value<string>()),
-                    Type = Pool(libraryObject[DependencyContextStrings.AssetTypePropertyName].Value<string>())
-                };
-            }
-        }
-
-        private static string[] ReadAssetList(JObject libraryObject, string name)
-        {
-            var assembliesObject = (JObject)libraryObject[name];
-
-            if (assembliesObject == null)
-            {
-                return new string[] { };
-            }
-
-            return assembliesObject.Properties().Select(property => property.Name).ToArray();
-        }
-
-        private Dependency[] ReadDependencies(JObject libraryObject)
-        {
-            var dependenciesObject = (JObject)libraryObject[DependencyContextStrings.DependenciesPropertyName];
-
-            if (dependenciesObject == null)
-            {
-                return new Dependency[] { };
-            }
-
-            return dependenciesObject.Properties()
-                .Select(property => new Dependency(Pool(property.Name), Pool((string)property.Value))).ToArray();
-        }
-
-        private Dictionary<string, LibraryStub> ReadLibraryStubs(JObject librariesObject)
-        {
-            var libraries = new Dictionary<string, LibraryStub>();
-            if (librariesObject != null)
-            {
-                foreach (var libraryProperty in librariesObject)
-                {
-                    var value = (JObject)libraryProperty.Value;
-                    var stub = new LibraryStub
-                    {
-                        Name = Pool(libraryProperty.Key),
-                        Hash = value[DependencyContextStrings.Sha512PropertyName]?.Value<string>(),
-                        Type = Pool(value[DependencyContextStrings.TypePropertyName].Value<string>()),
-                        Serviceable = value[DependencyContextStrings.ServiceablePropertyName]?.Value<bool>() == true
-                    };
-                    libraries.Add(stub.Name, stub);
-                }
-            }
-            return libraries;
         }
 
         private string Pool(string s)
@@ -373,17 +657,43 @@ namespace Microsoft.Extensions.DependencyModel
             return result;
         }
 
+        private class Target
+        {
+            public string Name;
+
+            public IEnumerable<TargetLibrary> Libraries;
+        }
+
+        private struct TargetLibrary
+        {
+            public string Name;
+
+            public IEnumerable<Dependency> Dependencies;
+
+            public List<string> Runtimes;
+
+            public List<string> Natives;
+
+            public List<string> Compilations;
+
+            public List<RuntimeTargetEntryStub> RuntimeTargets;
+
+            public List<ResourceAssembly> Resources;
+
+            public bool? CompileOnly;
+        }
+
         private struct RuntimeTargetEntryStub
         {
             public string Type;
+
             public string Path;
+
             public string Rid;
         }
 
         private struct LibraryStub
         {
-            public string Name;
-
             public string Hash;
 
             public string Type;
