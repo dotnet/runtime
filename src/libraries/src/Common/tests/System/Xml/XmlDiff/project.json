@@ -1,10 +1,10 @@
 {
   "dependencies": {
-    "Microsoft.NETCore.Platforms": "1.0.2-beta-24322-03",
-    "System.Collections": "4.0.12-beta-24322-03",
-    "System.Diagnostics.Debug": "4.0.12-beta-24322-03",
-    "System.IO": "4.1.1-beta-24322-03",
-    "System.Runtime": "4.1.1-beta-24322-03"
+    "Microsoft.NETCore.Platforms": "1.0.2-beta-devapi-24401-01",
+    "System.Collections": "4.0.12-beta-devapi-24401-01",
+    "System.Diagnostics.Debug": "4.0.12-beta-devapi-24401-01",
+    "System.IO": "4.1.1-beta-devapi-24401-01",
+    "System.Runtime": "4.1.1-beta-devapi-24401-01"
   },
   "frameworks": {
     "netstandard1.3": {}
@@ -18,4 +18,3 @@
     "coreFx.Test.net463": {}
   }
 }
-
