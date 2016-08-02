@@ -110,7 +110,7 @@ GetDebugInfoFromPDB(MethodDesc* MethodDescPtr, SymbolsInfo** symInfo, unsigned i
         return E_OUTOFMEMORY;
     methodDebugInfo->size = numMap;
 
-    if (!getInfoForMethodDelegate(szModName, MethodDescPtr->GetMemberDef(), *methodDebugInfo))
+    if (getInfoForMethodDelegate(szModName, MethodDescPtr->GetMemberDef(), *methodDebugInfo) == FALSE)
         return E_FAIL;
 
     symInfoLen = methodDebugInfo->size;
