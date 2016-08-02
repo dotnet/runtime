@@ -10,7 +10,7 @@ Build CoreCLR and CoreFX. Refer to building instructions in the respective repos
 
 To build only the tests, on the Windows machine:
 
-> `C:\coreclr>tests\buildtest.cmd clean`
+> `C:\coreclr>build-test.cmd -rebuild`
 
 **Running tests**
 
