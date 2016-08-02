@@ -490,7 +490,6 @@ namespace System.Xml.Serialization
                 if (xmlnsMember >= 0)
                 {
                     MemberMapping member = members[xmlnsMember];
-                    CodeIdentifier.CheckValidIdentifier(member.Name);
                     xmlnsSource = (XmlSerializerNamespaces)GetMemberValue(o, member.Name);
                 }
 
@@ -532,8 +531,6 @@ namespace System.Xml.Serialization
 
                     if (m.Attribute != null)
                     {
-                        CodeIdentifier.CheckValidIdentifier(m.Name);
-
                         if (isSpecified && shouldPersist)
                         {
                             WriteMember(memberValue, m.Attribute, m.TypeDesc, o);
@@ -564,7 +561,7 @@ namespace System.Xml.Serialization
 
                     if (m.Xmlns != null)
                         continue;
-                    CodeIdentifier.CheckValidIdentifier(m.Name);
+                    
                     bool checkShouldPersist = m.CheckShouldPersist && (m.Elements.Length > 0 || m.Text != null);
 
                     if (!checkShouldPersist)
@@ -575,7 +572,6 @@ namespace System.Xml.Serialization
                     object choiceSource = null;
                     if (m.ChoiceIdentifier != null)
                     {
-                        CodeIdentifier.CheckValidIdentifier(m.ChoiceIdentifier.MemberName);
                         choiceSource = GetMemberValue(o, m.ChoiceIdentifier.MemberName);
                     }
 

@@ -98,6 +98,7 @@
     <None Include="project.json" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="System\Xml\Serialization\ReflectionXmlSerializationReader.cs" />
     <Compile Include="System\Xml\Serialization\ReflectionXmlSerializationWriter.cs" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />

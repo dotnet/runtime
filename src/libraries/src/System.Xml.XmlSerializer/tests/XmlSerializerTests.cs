@@ -16,6 +16,7 @@ using Xunit;
 
 public static partial class XmlSerializerTests
 {
+#if !asdkflj
     [Fact]
     public static void Xml_BoolAsRoot()
     {
@@ -2159,6 +2160,38 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
         Assert.Throws<InvalidOperationException>(() => actual = SerializeAndDeserialize(value, string.Empty, skipStringCompare: true));
     }
 
+
+    [Fact]
+    public static void Xml_TypeWithMultiNamedXmlAnyElementAndOtherFields()
+    {
+        XmlDocument xDoc = new XmlDocument();
+        xDoc.LoadXml(@"<html></html>");
+        XmlElement element1 = xDoc.CreateElement("name1", "ns1");
+        element1.InnerText = "Element innertext1";
+        XmlElement element2 = xDoc.CreateElement("name2", "ns2");
+        element2.InnerText = "Element innertext2";
+
+        var value = new TypeWithMultiNamedXmlAnyElementAndOtherFields()
+        {
+            Things = new object[] { element1, element2 },
+            StringField = "foo",
+            IntField = 123
+        };
+
+        var actual = SerializeAndDeserialize(value,
+           "<?xml version=\"1.0\" encoding=\"utf-8\"?>\r\n<MyXmlType xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">\r\n  <name1 xmlns=\"ns1\">Element innertext1</name1>\r\n  <name2 xmlns=\"ns2\">Element innertext2</name2>\r\n  <StringField>foo</StringField>\r\n  <IntField>123</IntField>\r\n</MyXmlType>");
+
+        Assert.NotNull(actual);
+        Assert.NotNull(actual.Things);
+        Assert.Equal(value.Things.Length, actual.Things.Length);
+
+        var expectedElem = (XmlElement)value.Things[1];
+        var actualElem = (XmlElement)actual.Things[1];
+        Assert.Equal(expectedElem.Name, actualElem.Name);
+        Assert.Equal(expectedElem.NamespaceURI, actualElem.NamespaceURI);
+        Assert.Equal(expectedElem.InnerText, actualElem.InnerText);
+    }
+
     [Fact]
     public static void Xml_TypeWithArrayPropertyHavingChoice()
     {
@@ -2200,6 +2233,20 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
             "<?xml version=\"1.0\" encoding=\"utf-8\"?>\r\n<MyXmlType xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" XmlAttributeForms=\"SomeValue1 SomeValue2\" />");
 
         Assert.NotNull(actual);
+        Assert.True(Enumerable.SequenceEqual(value.XmlAttributeForms, actual.XmlAttributeForms));
+    }
+
+    [Fact]
+    public static void XML_TypeWithArrayLikeXmlAttributeWithFields()
+    {
+        var value = new TypeWithArrayLikeXmlAttributeWithFields() { XmlAttributeForms = new string[] { "SomeValue1", "SomeValue2" }, StringField = "foo", IntField = 123 };
+
+        var actual = SerializeAndDeserialize(value,
+            "<?xml version=\"1.0\" encoding=\"utf-8\"?>\r\n<MyXmlType xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" XmlAttributeForms=\"SomeValue1 SomeValue2\">\r\n  <StringField>foo</StringField>\r\n  <IntField>123</IntField>\r\n</MyXmlType>");
+
+        Assert.NotNull(actual);
+        Assert.Equal(value.StringField, actual.StringField);
+        Assert.Equal(value.IntField, actual.IntField);
         Assert.True(Enumerable.SequenceEqual(value.XmlAttributeForms, actual.XmlAttributeForms));
     }
 
@@ -2252,6 +2299,26 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
         Assert.True(Enumerable.SequenceEqual(value.XmlAttributeForms, actual.XmlAttributeForms));
     }
 
+    [Fact]
+    public static void XML_TypeWithFieldsOrdered()
+    {
+        var value = new TypeWithFieldsOrdered()
+        {
+            IntField1 = 1,
+            IntField2 = 2,
+            StringField1 = "foo1",
+            StringField2 = "foo2"
+        };
+
+        var actual = SerializeAndDeserialize(value, "<?xml version=\"1.0\" encoding=\"utf-8\"?>\r\n<TypeWithFieldsOrdered xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">\r\n  <IntField1>1</IntField1>\r\n  <IntField2>2</IntField2>\r\n  <StringField2>foo2</StringField2>\r\n  <StringField1>foo1</StringField1>\r\n</TypeWithFieldsOrdered>");
+
+        Assert.NotNull(actual);
+        Assert.Equal(value.IntField1, actual.IntField1);
+        Assert.Equal(value.IntField2, actual.IntField2);
+        Assert.Equal(value.StringField1, actual.StringField1);
+        Assert.Equal(value.StringField2, actual.StringField2);
+    }
+#endif
     private static T SerializeAndDeserialize<T>(T value, string baseline, Func<XmlSerializer> serializerFactory = null,
         bool skipStringCompare = false, XmlSerializerNamespaces xns = null)
     {

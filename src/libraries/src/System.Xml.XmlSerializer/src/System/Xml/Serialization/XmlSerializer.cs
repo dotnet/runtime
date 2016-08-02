@@ -42,7 +42,7 @@ namespace System.Xml.Serialization
     /// </devdoc>
     public class XmlSerializer
     {
-        public bool SerializationViaReflection { get; private set; } = false;
+        public bool SerializationViaReflection { get; private set; } = true;
 
         private TempAssembly _tempAssembly;
         private bool _typedSerializer;
@@ -423,6 +423,22 @@ namespace System.Xml.Serialization
                     return DeserializePrimitive(xmlReader, events);
                 }
 #if !NET_NATIVE
+                else if (SerializationViaReflection)
+                {
+                    XmlMapping mapping;
+                    if (_mapping.GenerateSerializer)
+                    {
+                        mapping = _mapping;
+                    }
+                    else
+                    {
+                        XmlReflectionImporter importer = new XmlReflectionImporter(DefaultNamespace);
+                        mapping = importer.ImportTypeMapping(rootType, null, DefaultNamespace);
+                    }
+
+                    var reader = new ReflectionXmlSerializationReader(mapping, xmlReader, events, encodingStyle);
+                    return reader.ReadObject();
+                }
                 else if (_tempAssembly == null || _typedSerializer)
                 {
                     XmlSerializationReader reader = CreateReader();
