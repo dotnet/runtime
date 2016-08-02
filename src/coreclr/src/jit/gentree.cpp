@@ -13582,15 +13582,29 @@ bool GenTree::DefinesLocalAddr(Compiler* comp, unsigned width, GenTreeLclVarComm
             *pLclVarTree = addrArgLcl;
             if (pIsEntire != NULL)
             {
-                unsigned lclNum = addrArgLcl->GetLclNum();
-                unsigned varWidth = comp->lvaLclExactSize(lclNum);
-                if (comp->lvaTable[lclNum].lvNormalizeOnStore())
+                unsigned lclOffset = 0;
+                if (addrArg->OperIsLocalField())
                 {
-                    // It's normalize on store, so use the full storage width -- writing to low bytes won't
-                    // necessarily yield a normalized value.
-                    varWidth = genTypeStSz(var_types(comp->lvaTable[lclNum].lvType)) * sizeof(int);
+                    lclOffset = addrArg->gtLclFld.gtLclOffs;
                 }
-                *pIsEntire = (varWidth == width);
+
+                if (lclOffset != 0)
+                {
+                    // We aren't updating the bytes at [0..lclOffset-1] so *pIsEntire should be set to false
+                    *pIsEntire = false;
+                }
+                else
+                {
+                    unsigned lclNum = addrArgLcl->GetLclNum();
+                    unsigned varWidth = comp->lvaLclExactSize(lclNum);
+                    if (comp->lvaTable[lclNum].lvNormalizeOnStore())
+                    {
+                        // It's normalize on store, so use the full storage width -- writing to low bytes won't
+                        // necessarily yield a normalized value.
+                        varWidth = genTypeStSz(var_types(comp->lvaTable[lclNum].lvType)) * sizeof(int);
+                    }
+                    *pIsEntire = (varWidth == width);
+                }
             }
             return true;
         }

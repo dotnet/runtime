@@ -4748,19 +4748,15 @@ void Compiler::fgValueNumberBlockAssignment(GenTreePtr tree, bool evalAsgLhsInd)
                 GenTreeLclVarCommon* rhsLclVarTree = nullptr;
                 FieldSeqNode* rhsFldSeq = nullptr;
                 ValueNumPair rhsVNPair;
-#ifdef DEBUG
                 bool isNewUniq = false;
-#endif
+
                 if (srcAddr->IsLocalAddrExpr(this, &rhsLclVarTree, &rhsFldSeq))
                 {
                     unsigned    rhsLclNum = rhsLclVarTree->GetLclNum();
                     LclVarDsc*  rhsVarDsc = &lvaTable[rhsLclNum];
                     if (fgExcludeFromSsa(rhsLclNum) || rhsFldSeq == FieldSeqStore::NotAField())
                     {
-                        rhsVNPair.SetBoth(vnStore->VNForExpr(lclVarTree->TypeGet()));
-#ifdef DEBUG
                         isNewUniq = true;
-#endif
                     }
                     else
                     {
@@ -4798,7 +4794,7 @@ void Compiler::fgValueNumberBlockAssignment(GenTreePtr tree, bool evalAsgLhsInd)
                         }
                         else
                         {
-                            JITDUMP("    *** Missing field sequence info for COPYBLK\n");
+                            JITDUMP("    *** Missing field sequence info for Src/RHS of COPYBLK\n");
                             rhsVNPair.SetBoth(vnStore->VNForExpr(indType)); //  a new unique value number
                         }
                     }
@@ -4810,51 +4806,58 @@ void Compiler::fgValueNumberBlockAssignment(GenTreePtr tree, bool evalAsgLhsInd)
                     }
                     else
                     {
-                        rhsVNPair.SetBoth(vnStore->VNForExpr(lclVarTree->TypeGet()));
-#ifdef DEBUG
                         isNewUniq = true;
-#endif
                     }
                 }
                 else
                 {
-                    rhsVNPair.SetBoth(vnStore->VNForExpr(lclVarTree->TypeGet()));
-#ifdef DEBUG
-                    isNewUniq = true;
-#endif
+                   isNewUniq = true;
                 }
 
-                ValueNumPair newRhsVNPair;
-                if (lhsFldSeq != nullptr && isEntire)
+                if (lhsFldSeq == FieldSeqStore::NotAField())
+                {
+                    // We don't have proper field sequence information for the lhs
+                    //
+                    JITDUMP("    *** Missing field sequence info for Dst/LHS of COPYBLK\n");
+                    isNewUniq = true;
+                }
+                else if (lhsFldSeq != nullptr && isEntire)
                 {
                     // This can occur in for structs with one field, itself of a struct type.
                     // We won't promote these.
                     // TODO-Cleanup: decide what exactly to do about this.
                     // Always treat them as maps, making them use/def, or reconstitute the
                     // map view here?
-                    newRhsVNPair.SetBoth(vnStore->VNForExpr(TYP_STRUCT));
+                    isNewUniq = true;
                 }
-                else
+                else if (!isNewUniq)
                 {
                     ValueNumPair oldLhsVNPair = lvaTable[lhsLclNum].GetPerSsaData(lclVarTree->GetSsaNum())->m_vnPair;
-                    newRhsVNPair = vnStore->VNPairApplySelectorsAssign(oldLhsVNPair, lhsFldSeq, rhsVNPair, lclVarTree->TypeGet());
+                    rhsVNPair = vnStore->VNPairApplySelectorsAssign(oldLhsVNPair, lhsFldSeq, rhsVNPair, lclVarTree->TypeGet());
                 }
-                lvaTable[lhsLclNum].GetPerSsaData(lclDefSsaNum)->m_vnPair = vnStore->VNPNormVal(newRhsVNPair);
+
+                if (isNewUniq)
+                {
+                    rhsVNPair.SetBoth(vnStore->VNForExpr(lclVarTree->TypeGet()));
+                }
+                
+                lvaTable[lhsLclNum].GetPerSsaData(lclDefSsaNum)->m_vnPair = vnStore->VNPNormVal(rhsVNPair);
+
 #ifdef DEBUG
                 if (verbose)
                 {
                     printf("Tree ");
                     Compiler::printTreeID(tree);
-                    printf(" assigned VN to local var V%02u/%d: ", 
-                            lhsLclNum, lclDefSsaNum);
+                    printf(" assigned VN to local var V%02u/%d: ", lhsLclNum, lclDefSsaNum);
                     if (isNewUniq)
                         printf("new uniq ");
-                    vnpPrint(newRhsVNPair, 1);
+                    vnpPrint(rhsVNPair, 1);
                     printf("\n");
                 }
 #endif // DEBUG
-            }
-        }
+
+            } 
+       }
         else
         {
             // For now, arbitrary side effect on Heap.
