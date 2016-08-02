@@ -12,8 +12,8 @@
     <ContractProject Condition="'$(AssemblyVersion)'=='4.0.2.0'">../ref/4.0.1/System.IO.FileSystem.depproj</ContractProject>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <EnableWinRT Condition="'$(PackageTargetFramework)' == 'netcore50'">true</EnableWinRT>
-    <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'net46' Or '$(TargetGroup)' == 'net463'">true</IsPartialFacadeAssembly>
-    <ResourcesSourceOutputDirectory Condition="'$(TargetGroup)' == 'net46' Or '$(TargetGroup)' == 'net463'">None</ResourcesSourceOutputDirectory>
+    <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'net46' or '$(TargetGroup)' == 'net463'">true</IsPartialFacadeAssembly>
+    <ResourcesSourceOutputDirectory Condition="'$(TargetGroup)' == 'net46' or '$(TargetGroup)' == 'net463'">None</ResourcesSourceOutputDirectory>
     <PackageTargetFramework Condition="'$(PackageTargetFramework)' == ''">netstandard1.7</PackageTargetFramework>
     <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NuGetTargetMoniker>
   </PropertyGroup>
@@ -46,7 +46,7 @@
     <TargetingPackReference Include="Windows" />
     <ProjectReference Include="$(SourceDir)/mscorlib.WinRT-Facade/mscorlib.WinRT-Facade.csproj" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' != 'net46' And '$(TargetGroup)' != 'net463'">
+  <ItemGroup Condition="'$(TargetGroup)' != 'net46' and '$(TargetGroup)' != 'net463'">
     <Compile Include="System\IO\Error.cs" />
     <Compile Include="System\IO\Directory.cs" />
     <Compile Include="System\IO\DirectoryInfo.cs" />
@@ -76,9 +76,16 @@
     <Compile Include="$(CommonPath)\System\IO\PathInternal.CaseSensitivity.cs">
       <Link>Common\System\IO\PathInternal.CaseSensitivity.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\Threading\Tasks\TaskToApm.cs">
+      <Link>Common\System\Threading\Tasks\TaskToApm.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <!-- .NET Standard 1.7 -->
+  <ItemGroup Condition="'$(PackageTargetFramework)' == 'netstandard1.7' and '$(TargetGroup)' != 'net46' and '$(TargetGroup)' != 'net463'" >
+    <Compile Include="System\IO\FileStreamBase.NetStandard17.cs" />
   </ItemGroup>
   <!-- Windows -->
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true' And '$(TargetGroup)' != 'net46' And '$(TargetGroup)' != 'net463'">
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true' and '$(TargetGroup)' != 'net46' and '$(TargetGroup)' != 'net463'">
     <Compile Include="Microsoft\Win32\SafeHandles\SafeFileHandle.Windows.cs" />
     <Compile Include="Microsoft\Win32\SafeHandles\SafeFindHandle.Windows.cs" />
     <Compile Include="System\IO\DirectoryInfo.Windows.cs" />
@@ -209,7 +216,7 @@
     </Compile>
   </ItemGroup>
   <!-- Windows : Win32 only -->
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true' AND '$(EnableWinRT)' != 'true' And '$(TargetGroup)' != 'net46' And '$(TargetGroup)' != 'net463'">
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true' and '$(EnableWinRT)' != 'true' and '$(TargetGroup)' != 'net46' and '$(TargetGroup)' != 'net463'">
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.UnsafeCreateFile.cs">
       <Link>Common\Interop\Windows\Interop.UnsafeCreateFile.cs</Link>
     </Compile>
