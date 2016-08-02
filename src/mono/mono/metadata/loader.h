@@ -1,7 +1,6 @@
 #ifndef _MONO_METADATA_LOADER_H_
 #define _MONO_METADATA_LOADER_H_ 1
 
-#include <glib.h>
 #include <mono/metadata/metadata.h>
 #include <mono/metadata/image.h>
 #include <mono/utils/mono-error.h>
@@ -62,7 +61,7 @@ MONO_API void*
 mono_lookup_internal_call (MonoMethod *method);
 
 void*
-mono_lookup_internal_call_full (MonoMethod *method, gboolean *uses_handles);
+mono_lookup_internal_call_full (MonoMethod *method, mono_bool *uses_handles);
 
 
 MONO_API const char*

@@ -8630,7 +8630,7 @@ no_icall_table (void)
  * If the method is not found, warns and returns NULL.
  */
 gpointer
-mono_lookup_internal_call_full (MonoMethod *method, gboolean *uses_handles)
+mono_lookup_internal_call_full (MonoMethod *method, mono_bool *uses_handles)
 {
 	char *sigstart;
 	char *tmpsig;

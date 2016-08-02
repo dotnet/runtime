@@ -7602,23 +7602,6 @@ mono_marshal_emit_native_wrapper (MonoImage *image, MonoMethodBuilder *mb, MonoM
 }
 #endif /* DISABLE_JIT */
 
-/*
- * icall_uses_handles:
- *
- *   Return whenever the icall METHOD uses the object handles infrastructure in handle.h.
- */
-static gboolean
-icall_uses_handles (MonoMethod *method)
-{
-	if (!strcmp (method->klass->name, "RuntimeType")) {
-		if (!strcmp (method->name, "getFullName"))
-			return TRUE;
-		return FALSE;
-	} else {
-		return FALSE;
-	}
-}
-
 /**
  * mono_marshal_get_native_wrapper:
  * @method: The MonoMethod to wrap.
@@ -7784,7 +7767,8 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 		MonoClass *error_class;
 		int thread_info_var = -1, stack_mark_var = -1, error_var = -1;
 		MonoMethodSignature *call_sig = csig;
-		gboolean uses_handles = icall_uses_handles (method);
+		gboolean uses_handles;
+		(void) mono_lookup_internal_call_full (method, &uses_handles);
 
 		if (uses_handles) {
 			MonoMethodSignature *ret;
