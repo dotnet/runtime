@@ -25,13 +25,16 @@ public:
         dstCandsIndex         = 0;
         internalCandsIndex    = 0;
         isLocalDefUse         = false;
-        isInitialized         = false;
         isHelperCallWithKills = false;
         isLsraAdded           = false;
         isDelayFree           = false;
         hasDelayFreeSrc       = false;
         isTgtPref             = false;
         regOptional           = false;
+        definesAnyRegisters    = false;
+#ifdef DEBUG
+        isInitialized         = false;
+#endif
     }
 
     // dst
@@ -104,8 +107,6 @@ public:
     // Examples include stack arguments to a call (they are immediately stored), lhs of comma
     // nodes, or top-level nodes that are non-void.
     unsigned char isLocalDefUse:1;
-    // isInitialized is set when the tree node is handled.
-    unsigned char isInitialized:1;
     // isHelperCallWithKills is set when this is a helper call that kills more than just its in/out regs.
     unsigned char isHelperCallWithKills:1;
     // Is this node added by LSRA, e.g. as a resolution or copy/reload move.
@@ -122,12 +123,22 @@ public:
     unsigned char isTgtPref:1;
     // Whether a spilled second src can be treated as a contained operand
     unsigned char regOptional:1;
+    // Whether or not a node defines any registers, whether directly (for nodes where dstCout is non-zero)
+    // or indirectly (for contained nodes, which propagate the transitive closure of the registers
+    // defined by their inputs). Used during buildRefPositionsForNode in order to avoid unnecessary work.
+    unsigned char definesAnyRegisters:1;
+
+#ifdef DEBUG
+    // isInitialized is set when the tree node is handled.
+    unsigned char isInitialized:1;
+#endif
 
 public:
+    // Initializes the TreeNodeInfo value with the given values.
+    void Initialize(LinearScan* lsra, GenTree* node, LsraLocation location);
 
 #ifdef DEBUG
     void dump(LinearScan *lsra);
-#endif // DEBUG
 
     // This method checks to see whether the information has been initialized,
     // and is in a consistent state
@@ -136,6 +147,7 @@ public:
         return (isInitialized &&
                 ((getSrcCandidates(lsra)|getInternalCandidates(lsra)|getDstCandidates(lsra)) & ~(RBM_ALLFLOAT|RBM_ALLINT)) == 0);
     }
+#endif // DEBUG
 };
 
 #endif // _NODEINFO_H_
