@@ -10333,7 +10333,7 @@ namespace System.Runtime.InteropServices
         public static void ZeroFreeGlobalAllocAnsi(System.IntPtr s) { }
         [System.Security.SecurityCriticalAttribute]
         public static void ZeroFreeGlobalAllocUnicode(System.IntPtr s) { }
-        public static void ZeroFreeMemoryUTF8(System.IntPtr s) { }
+        public static void ZeroFreeCoTaskMemUTF8(System.IntPtr s) { }
     }
     [System.AttributeUsageAttribute((System.AttributeTargets)(10496), Inherited=false)]
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
