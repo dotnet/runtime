@@ -2873,6 +2873,7 @@ struct GenTreeCall final : public GenTree
                                                        // know when these flags are set.
 
 #define     GTF_CALL_M_R2R_REL_INDIRECT        0x2000  // GT_CALL -- ready to run call is indirected through a relative address
+#define     GTF_CALL_M_DOES_NOT_RETURN         0x4000  // GT_CALL -- call does not return
 
     bool IsUnmanaged()       const { return (gtFlags & GTF_CALL_UNMANAGED) != 0; }
     bool NeedsNullCheck()    const { return (gtFlags & GTF_CALL_NULLCHECK) != 0; }
@@ -2992,6 +2993,8 @@ struct GenTreeCall final : public GenTree
 #endif // FEATURE_READYTORUN_COMPILER
 
     bool IsVarargs() const                  { return (gtCallMoreFlags & GTF_CALL_M_VARARGS) != 0; }
+
+    bool IsNoReturn() const                 { return (gtCallMoreFlags & GTF_CALL_M_DOES_NOT_RETURN) != 0; }
 
     unsigned short  gtCallMoreFlags;        // in addition to gtFlags
     
