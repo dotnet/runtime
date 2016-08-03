@@ -7819,8 +7819,12 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 				mono_mb_emit_byte (mb, CEE_LDARG_0);
 				mono_mb_emit_icall (mb, mono_handle_new);
 			}
-			for (i = 0; i < sig->param_count; i++)
+			for (i = 0; i < sig->param_count; i++) {
 				mono_mb_emit_ldarg (mb, i + sig->hasthis);
+				if (MONO_TYPE_IS_REFERENCE (sig->params [i])) {
+					mono_mb_emit_icall (mb, mono_handle_new);
+				}
+			}
 			mono_mb_emit_ldloc_addr (mb, error_var);
 		} else {
 			if (sig->hasthis)
