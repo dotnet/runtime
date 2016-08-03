@@ -21,6 +21,10 @@
 #endif  // !__i386__
 #endif // !defined(_MSC_VER)
 
+#ifndef _countof
+#define _countof(_array) (sizeof(_array)/sizeof(_array[0]))
+#endif
+
 typedef struct _Vector3 
 {
     float x;
@@ -228,14 +232,12 @@ EXPORT(DT) __stdcall nativeCall_PInvoke_Vector3InStruct(DT data)
 
 EXPORT(void) __stdcall nativeCall_PInvoke_Vector3InComplexStruct(ComplexDT* arg) 
 {
-    static const char* ret_str = "ret_string";
     printf("nativeCall_PInvoke_Vector3InComplexStruct\n");
     printf("    Arg ival: %d\n", arg->iv);
     printf("    Arg Vector3 v1: (%f %f %f)\n", arg->vecs.a.x, arg->vecs.a.y, arg->vecs.a.z);
     printf("    Arg Vector3 v2: (%f %f %f)\n", arg->vecs.b.x, arg->vecs.b.y, arg->vecs.b.z);
     printf("    Arg Vector3 v3: (%f %f %f)\n", arg->v3.x, arg->v3.y, arg->v3.z);
     printf("    Arg string arg: %s\n", arg->str);        
-   
 
     arg->vecs.a.x = arg->vecs.a.x + 1;
     arg->vecs.a.y = arg->vecs.a.y + 1;
@@ -247,7 +249,7 @@ EXPORT(void) __stdcall nativeCall_PInvoke_Vector3InComplexStruct(ComplexDT* arg)
     arg->v3.y = arg->v3.y + 1;
     arg->v3.z = arg->v3.z + 1;    
     arg->iv = arg->iv + 1;
-    strncpy(arg->str, ret_str, strnlen("ret_str", 32));
+    snprintf(arg->str, _countof(arg->str), "%s", "ret_string");
     
     printf("    Return ival: %d\n", arg->iv);
     printf("    Return Vector3 v1: (%f %f %f)\n", arg->vecs.a.x, arg->vecs.a.y, arg->vecs.a.z);
@@ -383,8 +385,12 @@ EXPORT(void) __stdcall nativeCall_RPInvoke_Vector3Array(
   CallBack_RPInvoke_Vector3Array notify, 
   int a)
 {
-    arr[0].x = a + 1; arr[0].y = a + 2; arr[0].z = a + 3;
-    arr[1].x = a + 10; arr[1].y = a + 20; arr[1].z = a + 30;
+    arr[0].x = a + 1.0f;
+    arr[0].y = a + 2.0f;
+    arr[0].z = a + 3.0f;
+    arr[1].x = a + 10.0f;
+    arr[1].y = a + 20.0f;
+    arr[1].z = a + 30.0f;
     notify(arr, 2);
 } 
 
@@ -400,8 +406,12 @@ EXPORT(void) __stdcall nativeCall_RPInvoke_Vector3InStruct(
   CallBack_RPInvoke_Vector3InStruct notify, 
   int a)
 {
-    v.a.x = a + 1; v.a.y = a + 2; v.a.z = a + 3;
-    v.b.x = a + 10; v.b.y = a + 20; v.b.z = a + 30;
+    v.a.x = a + 1.0f;
+    v.a.y = a + 2.0f;
+    v.a.z = a + 3.0f;
+    v.b.x = a + 10.0f;
+    v.b.y = a + 20.0f;
+    v.b.z = a + 30.0f;
     notify(v);
 }
 
@@ -416,7 +426,7 @@ EXPORT(bool) __stdcall nativeCall_RPInvoke_Vector3InComplexStruct(
 {
     static ComplexDT cdt;
     cdt.iv = 99;
-    strncpy(cdt.str, "arg_string", strnlen("arg_string", 32));
+    snprintf(cdt.str, _countof("arg_string"), "%s", "arg_string");
     cdt.vecs.a.x = 1; cdt.vecs.a.y = 2; cdt.vecs.a.z = 3;
     cdt.vecs.b.x = 5; cdt.vecs.b.y = 6; cdt.vecs.b.z = 7;
     cdt.v3.x = 10; cdt.v3.y = 20; cdt.v3.z = 30;    
