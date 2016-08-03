@@ -57,6 +57,9 @@ if [!processedArgs!]==[] (
 
 :ArgsDone
 
+echo %__MsgPrefix%Using environment: "%__VSToolsRoot%\VsDevCmd.bat"
+call                                 "%__VSToolsRoot%\VsDevCmd.bat"
+
 set __RunArgs=-BuildOS=%__BuildOS% -BuildType=%__BuildType% -BuildArch=%__BuildArch%
 
 rem arm64 builds currently use private toolset which has not been released yet
@@ -155,7 +158,7 @@ if defined __ToolsetDir (
 )
 
 set __BuildLogRootName=Tests_Native
-call %~dp0\run.cmd build -Project="%__NativeTestIntermediatesDir%\install.vcxproj" %__msbuildNativeArgs% %__RunArgs% %__unprocessedBuildArgs%
+call %__ProjectDir%\run.cmd build -Project="%__NativeTestIntermediatesDir%\install.vcxproj" %__msbuildNativeArgs% %__RunArgs% %__unprocessedBuildArgs%
 if errorlevel 1 exit /b 1
 
 :skipnative
@@ -169,10 +172,6 @@ REM ===
 REM =========================================================================================
 
 echo %__MsgPrefix%Starting the Managed Tests Build
-
-:: Set the environment for the managed build
-echo %__MsgPrefix%Using environment: "%__VSToolsRoot%\VsDevCmd.bat"
-call                                 "%__VSToolsRoot%\VsDevCmd.bat"
 
 if not defined VSINSTALLDIR (
     echo %__MsgPrefix%Error: buildtest.cmd should be run from a Visual Studio Command Prompt.  Please see https://github.com/dotnet/coreclr/blob/master/Documentation/project-docs/developer-guide.md for build instructions.
@@ -191,7 +190,7 @@ if defined __UpdateInvalidPackagesArg (
   set __up=-updateinvalidpackageversions
 )
 
-call %~dp0run.cmd build -buildManagedTests -MsBuildLog=!__msbuildLog! -MsBuildWrn=!__msbuildWrn! -MsBuildErr=!__msbuildErr! %__up% %__RunArgs% %__unprocessedBuildArgs%
+call %__ProjectDir%\run.cmd build -Project=%__ProjectDir%\tests\build.proj -MsBuildLog=!__msbuildLog! -MsBuildWrn=!__msbuildWrn! -MsBuildErr=!__msbuildErr! %__up% %__RunArgs% %__unprocessedBuildArgs%
 if errorlevel 1 (
     echo %__MsgPrefix%Error: build failed. Refer to the build log files for details:
     echo     %__BuildLog%
@@ -212,7 +211,7 @@ set __msbuildLog=/flp:Verbosity=normal;LogFile="%__BuildLog%"
 set __msbuildWrn=/flp1:WarningsOnly;LogFile="%__BuildWrn%"
 set __msbuildErr=/flp2:ErrorsOnly;LogFile="%__BuildErr%"
 
-call %~dp0run.cmd build -testOverlay -MsBuildLog=!__msbuildLog! -MsBuildWrn=!__msbuildWrn! -MsBuildErr=!__msbuildErr! %__RunArgs% %__unprocessedBuildArgs%
+call %__ProjectDir%\run.cmd build -Project=%__ProjectDir%\tests\runtest.proj -testOverlay -MsBuildLog=!__msbuildLog! -MsBuildWrn=!__msbuildWrn! -MsBuildErr=!__msbuildErr! %__RunArgs% %__unprocessedBuildArgs%
 if errorlevel 1 (
     echo %__MsgPrefix%Error: build failed. Refer to the build log files for details:
     echo     %__BuildLog%
