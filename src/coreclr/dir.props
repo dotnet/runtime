@@ -8,6 +8,12 @@
     <OsEnvironment Condition="'$(OsEnvironment)'==''">$(OS)</OsEnvironment>
   </PropertyGroup>
 
+  <!-- Version numbers for both managed & native binaries -->
+  <PropertyGroup>
+    <MajorVersion>4</MajorVersion>
+    <MinorVersion>6</MinorVersion>
+  </PropertyGroup>
+
   <!-- Build Tools Versions -->
   <PropertyGroup>
     <RoslynVersion>1.0.0-rc3-20150510-01</RoslynVersion>
