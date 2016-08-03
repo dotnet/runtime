@@ -58,7 +58,7 @@
 .class public abstract auto ansi sealed beforefieldinit System.Runtime.CompilerServices.Unsafe
        extends [System.Runtime]System.Object
 {
-  .method public hidebysig static !!T  Read<T>(void* source) cil managed aggressiveinlining
+  .method public hidebysig static !!T Read<T>(void* source) cil managed aggressiveinlining
   {
         .custom instance void System.Runtime.Versioning.NonVersionableAttribute::.ctor() = ( 01 00 00 00 )
         .maxstack 1
@@ -156,6 +156,50 @@
         ldarg.0
         ret
   } // end of method Unsafe::AsRef
+
+  .method public hidebysig static !!TTo& As<TFrom, TTo>(!!TFrom& source) cil managed aggressiveinlining
+  {
+        .custom instance void System.Runtime.Versioning.NonVersionableAttribute::.ctor() = ( 01 00 00 00 )
+        .maxstack 1
+        ldarg.0
+        ret
+  } // end of method Unsafe::As
+
+  .method public hidebysig static !!T& Add<T>(!!T& source, int32 elementOffset) cil managed aggressiveinlining
+  {
+        .custom instance void System.Runtime.Versioning.NonVersionableAttribute::.ctor() = ( 01 00 00 00 )
+        .maxstack 3
+        ldarg.0
+        ldarg.1
+        sizeof !!T
+        conv.i
+        mul
+        add
+        ret
+  } // end of method Unsafe::Add
+
+  .method public hidebysig static !!T& Subtract<T>(!!T& source, int32 elementOffset) cil managed aggressiveinlining
+  {
+        .custom instance void System.Runtime.Versioning.NonVersionableAttribute::.ctor() = ( 01 00 00 00 )
+        .maxstack 3
+        ldarg.0
+        ldarg.1
+        sizeof !!T
+        conv.i
+        mul
+        sub
+        ret
+  } // end of method Unsafe::Subtract
+
+  .method public hidebysig static bool AreSame<T>(!!T& left, !!T& right) cil managed aggressiveinlining
+  {
+        .custom instance void System.Runtime.Versioning.NonVersionableAttribute::.ctor() = ( 01 00 00 00 )
+        .maxstack 2
+        ldarg.0
+        ldarg.1
+        ceq
+        ret 
+  } // end of method Unsafe::AreSame
 
 } // end of class System.Runtime.CompilerServices.Unsafe
 
