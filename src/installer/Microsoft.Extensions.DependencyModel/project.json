@@ -6,7 +6,7 @@
     "keyFile": "../../tools/Key.snk"
   },
   "dependencies": {
-    "Microsoft.DotNet.InternalAbstractions": {
+    "Microsoft.DotNet.PlatformAbstractions": {
       "target": "project"
     },
     "Newtonsoft.Json": "9.0.1"
