@@ -77,21 +77,24 @@ InlinePolicy* InlinePolicy::GetPolicy(Compiler* compiler, bool isPrejitRoot)
 
 #endif // defined(DEBUG) || defined(INLINE_DATA)
 
-    InlinePolicy* policy = nullptr;
+    // Optionally install the ModelPolicy.
     bool useModelPolicy = JitConfig.JitInlinePolicyModel() != 0;
 
     if (useModelPolicy)
     {
-        // Optionally install the ModelPolicy.
-        policy = new (compiler, CMK_Inlining) ModelPolicy(compiler, isPrejitRoot);
-    }
-    else
-    {
-        // Use the legacy policy
-        policy = new (compiler, CMK_Inlining) LegacyPolicy(compiler, isPrejitRoot);
+        return new (compiler, CMK_Inlining) ModelPolicy(compiler, isPrejitRoot);
     }
 
-    return policy;
+    // Optionally fallback to the original legacy policy
+    bool useLegacyPolicy = JitConfig.JitInlinePolicyLegacy() != 0;
+
+    if (useLegacyPolicy)
+    {
+        return new (compiler, CMK_Inlining) LegacyPolicy(compiler, isPrejitRoot);
+    }
+
+    // Use the enhanced legacy policy by default
+    return new (compiler, CMK_Inlining) EnhancedLegacyPolicy(compiler, isPrejitRoot);
 }
 
 //------------------------------------------------------------------------
@@ -848,6 +851,96 @@ int LegacyPolicy::CodeSizeEstimate()
     {
         return 0;
     }
+}
+
+//------------------------------------------------------------------------
+// NoteBool: handle a boolean observation with non-fatal impact
+//
+// Arguments:
+//    obs      - the current obsevation
+//    value    - the value of the observation
+
+void EnhancedLegacyPolicy::NoteBool(InlineObservation obs, bool value)
+{
+    switch (obs)
+    {
+    case InlineObservation::CALLEE_DOES_NOT_RETURN:
+        m_IsNoReturn = value;
+        m_IsNoReturnKnown = true;
+        break;
+
+    default:
+        // Pass all other information to the legacy policy
+        LegacyPolicy::NoteBool(obs, value);
+        break;
+    }
+}
+
+//------------------------------------------------------------------------
+// NoteInt: handle an observed integer value
+//
+// Arguments:
+//    obs      - the current obsevation
+//    value    - the value being observed
+
+void EnhancedLegacyPolicy::NoteInt(InlineObservation obs, int value)
+{
+    switch (obs)
+    {
+    case InlineObservation::CALLEE_NUMBER_OF_BASIC_BLOCKS:
+        {
+            assert(value != 0);
+            assert(m_IsNoReturnKnown);
+
+            //
+            // Let's be conservative for now and reject inlining of "no return" methods only 
+            // if the callee contains a single basic block. This covers most of the use cases 
+            // (typical throw helpers simply do "throw new X();" and so they have a single block) 
+            // without affecting more exotic cases (loops that do actual work for example) where 
+            // failure to inline could negatively impact code quality.
+            //
+
+            unsigned basicBlockCount = static_cast<unsigned>(value);
+
+            if (m_IsNoReturn && (basicBlockCount == 1))
+            {
+                SetNever(InlineObservation::CALLEE_DOES_NOT_RETURN);
+            }
+            else
+            {
+                LegacyPolicy::NoteInt(obs, value);
+            }
+
+            break;
+        }
+
+    default:
+        // Pass all other information to the legacy policy
+        LegacyPolicy::NoteInt(obs, value);
+        break;
+    }
+}
+
+//------------------------------------------------------------------------
+// PropagateNeverToRuntime: determine if a never result should cause the
+// method to be marked as un-inlinable.
+
+bool EnhancedLegacyPolicy::PropagateNeverToRuntime() const
+{
+    //
+    // Do not propagate the "no return" observation. If we do this then future inlining 
+    // attempts will fail immediately without marking the call node as "no return". 
+    // This can have an adverse impact on caller's code quality as it may have to preserve
+    // registers across the call.
+    // TODO-Throughput: We should persist the "no return" information in the runtime 
+    // so we don't need to re-analyze the inlinee all the time.
+    // 
+
+    bool propagate = (m_Observation != InlineObservation::CALLEE_DOES_NOT_RETURN);
+
+    propagate &= LegacyPolicy::PropagateNeverToRuntime();
+
+    return propagate;
 }
 
 #ifdef DEBUG

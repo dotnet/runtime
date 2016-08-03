@@ -5768,14 +5768,48 @@ void          Compiler::fgFindBasicBlocks()
 
     if (compIsForInlining())
     {
+        bool hasReturnBlocks = false;
+        bool hasMoreThanOneReturnBlock = false;
+
+        for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
+        {
+            if (block->bbJumpKind == BBJ_RETURN)
+            {
+                if (hasReturnBlocks)
+                {
+                    hasMoreThanOneReturnBlock = true;
+                    break;
+                }
+
+                hasReturnBlocks = true;
+            }
+        }
+
+        if (!hasReturnBlocks && !compInlineResult->UsesLegacyPolicy())
+        {
+            //
+            // Mark the call node as "no return". The inliner might ignore CALLEE_DOES_NOT_RETURN and
+            // fail inline for a different reasons. In that case we still want to make the "no return"
+            // information available to the caller as it can impact caller's code quality.
+            //
+
+            impInlineInfo->iciCall->gtCallMoreFlags |= GTF_CALL_M_DOES_NOT_RETURN;
+        }
+
+        compInlineResult->NoteBool(InlineObservation::CALLEE_DOES_NOT_RETURN, !hasReturnBlocks);
+
+        if (compInlineResult->IsFailure())
+        {
+            return;
+        }
+
         noway_assert(info.compXcptnsCount == 0);
         compHndBBtab           = impInlineInfo->InlinerCompiler->compHndBBtab;
         compHndBBtabAllocCount = impInlineInfo->InlinerCompiler->compHndBBtabAllocCount; // we probably only use the table, not add to it.
         compHndBBtabCount      = impInlineInfo->InlinerCompiler->compHndBBtabCount;
         info.compXcptnsCount   = impInlineInfo->InlinerCompiler->info.compXcptnsCount;
 
-        if (info.compRetNativeType != TYP_VOID       &&
-            fgMoreThanOneReturnBlock())
+        if (info.compRetNativeType != TYP_VOID && hasMoreThanOneReturnBlock)
         {
             // The lifetime of this var might expand multiple BBs. So it is a long lifetime compiler temp.
             lvaInlineeReturnSpillTemp = lvaGrabTemp(false DEBUGARG("Inline candidate multiple BBJ_RETURN spill temp"));

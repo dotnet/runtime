@@ -8035,6 +8035,31 @@ NO_TAIL_CALL:
         return result;
     }
 
+    if (call->IsNoReturn())
+    {
+        //
+        // If we know that the call does not return then we can set fgRemoveRestOfBlock
+        // to remove all subsequent statements and change the call's basic block to BBJ_THROW.
+        // As a result the compiler won't need to preserve live registers across the call.
+        //
+        // This isn't need for tail calls as there shouldn't be any code after the call anyway.
+        // Besides, the tail call code is part of the epilog and converting the block to 
+        // BBJ_THROW would result in the tail call being dropped as the epilog is generated
+        // only for BBJ_RETURN blocks.
+        //
+        // Currently this doesn't work for non-void callees. Some of the code that handles 
+        // fgRemoveRestOfBlock expects the tree to have GTF_EXCEPT flag set but call nodes
+        // do not have this flag by default. We could add the flag here but the proper solution
+        // would be to replace the return expression with a local var node during inlining
+        // so the rest of the call tree stays in a separate statement. That statement can then
+        // be removed by fgRemoveRestOfBlock without needing to add GTF_EXCEPT anywhere.
+        //
+
+        if (!call->IsTailCall() && call->TypeGet() == TYP_VOID)
+        {
+            fgRemoveRestOfBlock = true;
+        }
+    }
 
     return call;
 }
