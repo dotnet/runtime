@@ -333,14 +333,7 @@
         "testOverlay": {
           "description": "Runs test overlay target.",
           "settings": {
-            "Project": "./tests/runtest.proj",
             "CreateTestOverlay": "default"
-          }
-        },
-        "buildManagedTests": {
-          "description": "Builds managed tests.",
-          "settings": {
-            "Project": "./tests/build.proj"
           }
         },
         "priority": {
