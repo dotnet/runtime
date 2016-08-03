@@ -2,11 +2,13 @@
 
 usage()
 {
-    echo "Our parameters changed! The parameters: buildArch, buildType and HostOS"
-    echo "are passes by the Run Command Tool."
+    echo "Our parameters changed! The parameters: buildArch, buildType, buildOS, numProc"
+    echo "are passed by the Run Command Tool."
+    echo "If you plan to only run this script, be sure to pass those parameters in the stated order."
     echo "For more information type build-native.sh -? at the root of the repo."
     echo
-    echo "Usage: $0 [verbose] [clangx.y] [cross] [staticLibLink] [cmakeargs] [makeargs]"
+    echo "Usage: $0 [runParameters][verbose] [clangx.y] [cross] [staticLibLink] [cmakeargs] [makeargs]"
+    echo "runParameters: buildArch, buildType, buildOS, numProc"
     echo "verbose - optional argument to enable verbose build output."
     echo "clangx.y - optional argument to build using clang version x.y."
     echo "cross - optional argument to signify cross compilation,"
@@ -95,20 +97,15 @@ __nativeroot=$__scriptpath/Unix
 __rootRepo="$__scriptpath/../.."
 __rootbinpath="$__scriptpath/../../bin"
 
-#This parameters are handled and passed by the Run Command Tool
-#For more information: 'link to documentation'
-__BuildArch=$1
-__BuildType=$2
-__HostOS=$3
-__NumProc=$4
-
-__BuildOS=$__HostOS
-__CMakeArgs=$__BuildType
+# Set the various build properties here so that CMake and MSBuild can pick them up
 __CMakeExtraArgs=""
 __MakeExtraArgs=""
 __generateversionsource=false
-
-# Set the various build properties here so that CMake and MSBuild can pick them up
+__BuildArch=x64
+__BuildType=Debug
+__CMakeArgs=DEBUG
+__BuildOS=Linux
+__NumProc=$4
 __UnprocessedBuildArgs=
 __CrossBuild=0
 __ServerGC=0
@@ -127,6 +124,40 @@ while :; do
             usage
             exit 1
             ;;
+        x86)
+            __BuildArch=x86
+            ;;
+        x64)
+            __BuildArch=x64
+            ;;
+        arm)
+            __BuildArch=arm
+            ;;
+        arm-softfp)
+            __BuildArch=arm-softfp
+            ;;
+        arm64)
+            __BuildArch=arm64
+            ;;
+        debug)
+            __BuildType=Debug
+            ;;
+        release)
+            __BuildType=Release
+            __CMakeArgs=RELEASE 
+	    ;;
+        freebsd)
+            __BuildOS=FreeBSD
+            ;;
+        linux)
+            __BuildOS=Linux
+            ;;
+        netbsd)
+            __BuildOS=NetBSD
+            ;;
+        osx)
+            __BuildOS=OSX
+            ;;       
         verbose)
             __VerboseBuild=1
             ;;
