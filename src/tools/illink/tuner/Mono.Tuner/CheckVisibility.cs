@@ -86,8 +86,8 @@ namespace Mono.Tuner {
 
 		void CheckInterfaces (TypeDefinition type)
 		{
-			foreach (TypeReference iface in type.Interfaces) {
-				if (!IsVisibleFrom (type, iface)) {
+			foreach (var iface in type.Interfaces) {
+				if (!IsVisibleFrom (type, iface.InterfaceType)) {
 					ReportError ("Interface `{0}` implemented by `{1}` is not visible",
 						iface, type);
 				}
