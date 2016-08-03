@@ -5842,7 +5842,9 @@
       <Member MemberType="Field" Name="ThisCall" />
     </Type>
     <Type Name="System.Runtime.InteropServices.CharSet">
+      <Member MemberType="Field" Name="Ansi" />
       <Member MemberType="Field" Name="Auto" />
+      <Member MemberType="Field" Name="None" />
       <Member MemberType="Field" Name="Unicode" />
       <Member MemberType="Field" Name="value__" />
     </Type>
@@ -5944,6 +5946,7 @@
     </Type>
     <Type Name="System.Runtime.InteropServices.ExternalException">
       <Member Name="#ctor" />
+      <Member Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
       <Member Name="#ctor(System.String)" />
       <Member Name="#ctor(System.String,System.Exception)" />
       <Member Name="#ctor(System.String,System.Int32)" />
@@ -6243,10 +6246,11 @@
     </Type>
     <Type Name="System.Runtime.InteropServices.StructLayoutAttribute">
       <Member MemberType="Field" Name="CharSet" />
+      <Member MemberType="Field" Name="Pack" />
       <Member MemberType="Field" Name="Size" />
+      <Member Name="#ctor(System.Int16)" />
       <Member Name="#ctor(System.Runtime.InteropServices.LayoutKind)" />
-      <Member MemberType="Field" Name="Pack" /> <!-- forced by desktop implementation -->
-      <Member Status="ImplRoot" Name="#ctor(System.Int16)" />
+      <Member Name="get_Value" />
       <Member MemberType="Property" Name="Value" />
     </Type>
     <Type Name="System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute">
