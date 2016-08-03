@@ -16,8 +16,8 @@ namespace System.Runtime.Serialization.Json
 {
     internal sealed class ReflectionJsonClassReader
     {
-        private ClassDataContract _classContract;
-        private ReflectionReader _reflectionReader;
+        private readonly ClassDataContract _classContract;
+        private readonly ReflectionReader _reflectionReader;
 
         public ReflectionJsonClassReader(ClassDataContract classDataContract)
         {
@@ -35,7 +35,7 @@ namespace System.Runtime.Serialization.Json
 
     internal sealed class ReflectionJsonCollectionReader
     {
-        private ReflectionReader _reflectionReader = new ReflectionJsonReader();
+        private readonly ReflectionReader _reflectionReader = new ReflectionJsonReader();
 
         public object ReflectionReadCollection(XmlReaderDelegator xmlReader, XmlObjectSerializerReadContextComplexJson context, XmlDictionaryString emptyDictionaryString, XmlDictionaryString itemName, CollectionDataContract collectionContract)
         {
