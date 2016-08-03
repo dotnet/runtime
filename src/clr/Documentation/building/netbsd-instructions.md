@@ -112,7 +112,8 @@ Build CoreCLR Debug x64 on Linux and copy mscorlib.dll from ./bin/Product/Linux.
 Build CoreFX Debug x64 on Linux and copy bin/ to NetBSD machine under /public/bin:
 
 ```
-./build.sh /p:OSGroup=NetBSD /p:SkipTests=true
+./build-native.sh -os=NetBSD
+./build-managed.sh NetBSD -SkipTests
 ```
 
 Run ./run-test.sh:

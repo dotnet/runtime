@@ -93,7 +93,7 @@ Build the Framework Native Components
 ======================================
 
 ```sh
-janhenke@freebsd-frankfurt:~/git/corefx$ ./build.sh native
+janhenke@freebsd-frankfurt:~/git/corefx$ ./build-native.sh
 janhenke@freebsd-frankfurt:~/git/corefx$ cp bin/FreeBSD.x64.Debug/Native/*.so ~/coreclr-demo/runtime
 ```
 
@@ -113,7 +113,7 @@ The output is placed in `bin\Product\FreeBSD.x64.Debug\mscorlib.dll`.  You'll wa
 For the rest of the framework, you need to pass some special parameters to build.cmd when building out of the CoreFX repository.
 
 ```
-D:\git\corefx> build.cmd /p:OSGroup=Linux /p:SkipTests=true
+D:\git\corefx> build-managed.cmd -os=Linux -target-os=Linux -SkipTests
 ```
 
 Note: We are using the Linux build currently, as CoreFX does not yet know about FreeBSD.
