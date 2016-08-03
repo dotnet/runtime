@@ -179,9 +179,9 @@ arm_get_disp (void *p, void *target)
 }
 
 // 0b00101 == 0x5
-#define arm_b(p, target) arm_emit (p, (0x0 << 31) | (0x5 << 26) | ((arm_get_disp ((p), (target)) << 0)))
+#define arm_b(p, target) do { if ((target)) g_assert (arm_is_bl_disp ((p), (target))); arm_emit (p, (0x0 << 31) | (0x5 << 26) | ((arm_get_disp ((p), (target)) << 0))); } while (0)
 
-#define arm_bl(p, target) arm_emit (p, (0x1 << 31) | (0x5 << 26) | ((arm_get_disp ((p), (target)) << 0)))
+#define arm_bl(p, target) do { if ((target)) g_assert (arm_is_bl_disp ((p), (target))); arm_emit (p, (0x1 << 31) | (0x5 << 26) | ((arm_get_disp ((p), (target)) << 0))); } while (0)
 
 /* Conditional branch */
 
