@@ -10,12 +10,13 @@
       "version": "1.0.0"
     },
     "System.Diagnostics.TraceSource": "4.0.0",
-    "Microsoft.DotNet.Tools.Tests.Utilities": {
+    "Microsoft.Extensions.DependencyModel": {
       "target": "project"
     },
-    "Microsoft.DotNet.Cli.Utils": {
+    "Microsoft.DotNet.PlatformAbstractions": {
       "target": "project"
     },
+    "Microsoft.DotNet.InternalAbstractions": "1.0.0",
     "FluentAssertions": "4.0.0",
     "moq.netcore": "4.4.0-beta8",
     "xunit": "2.1.0",
