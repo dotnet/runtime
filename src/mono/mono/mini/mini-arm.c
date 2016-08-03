@@ -833,7 +833,8 @@ mono_arch_init (void)
 
 	mono_os_mutex_init_recursive (&mini_arch_mutex);
 	if (mini_get_debug_options ()->soft_breakpoints) {
-		breakpoint_tramp = mini_get_breakpoint_trampoline ();
+		if (!mono_aot_only)
+			breakpoint_tramp = mini_get_breakpoint_trampoline ();
 	} else {
 		ss_trigger_page = mono_valloc (NULL, mono_pagesize (), MONO_MMAP_READ|MONO_MMAP_32BIT);
 		bp_trigger_page = mono_valloc (NULL, mono_pagesize (), MONO_MMAP_READ|MONO_MMAP_32BIT);
@@ -7203,6 +7204,9 @@ mono_arch_set_breakpoint (MonoJitInfo *ji, guint8 *ip)
 	if (ji->from_aot) {
 		SeqPointInfo *info = mono_arch_get_seq_point_info (mono_domain_get (), ji->code_start);
 
+		if (!breakpoint_tramp)
+			breakpoint_tramp = mini_get_breakpoint_trampoline ();
+
 		g_assert (native_offset % 4 == 0);
 		g_assert (info->bp_addrs [native_offset / 4] == 0);
 		info->bp_addrs [native_offset / 4] = opt->soft_breakpoints ? breakpoint_tramp : bp_trigger_page;
@@ -7248,6 +7252,9 @@ mono_arch_clear_breakpoint (MonoJitInfo *ji, guint8 *ip)
 	if (ji->from_aot) {
 		guint32 native_offset = ip - (guint8*)ji->code_start;
 		SeqPointInfo *info = mono_arch_get_seq_point_info (mono_domain_get (), ji->code_start);
+
+		if (!breakpoint_tramp)
+			breakpoint_tramp = mini_get_breakpoint_trampoline ();
 
 		g_assert (native_offset % 4 == 0);
 		g_assert (info->bp_addrs [native_offset / 4] == (opt->soft_breakpoints ? breakpoint_tramp : bp_trigger_page));
