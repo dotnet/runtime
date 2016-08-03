@@ -156,6 +156,35 @@ protected:
     bool                    m_MethodIsMostlyLoadStore :1;
 };
 
+// EnhancedLegacyPolicy extends the legacy policy by rejecting
+// inlining of methods that never return because they throw.
+
+class EnhancedLegacyPolicy : public LegacyPolicy
+{
+public:
+    EnhancedLegacyPolicy(Compiler* compiler, bool isPrejitRoot)
+        : LegacyPolicy(compiler, isPrejitRoot)
+        , m_IsNoReturn(false)
+        , m_IsNoReturnKnown(false)
+    {
+        // empty
+    }
+
+    // Policy observations
+    void NoteBool(InlineObservation obs, bool value) override;
+    void NoteInt(InlineObservation obs, int value) override;
+
+    // Policy policies
+    bool PropagateNeverToRuntime() const override;
+    bool IsLegacyPolicy() const override { return false; }
+
+protected:
+
+    // Data members
+    bool m_IsNoReturn :1;
+    bool m_IsNoReturnKnown :1;
+};
+
 #ifdef DEBUG
 
 // RandomPolicy implements a policy that inlines at random.

@@ -563,7 +563,7 @@ struct InlineInfo
     bool              hasSIMDTypeArgLocalOrReturn;
 #endif // FEATURE_SIMD
 
-    GenTree         * iciCall;       // The GT_CALL node to be inlined.
+    GenTreeCall     * iciCall;       // The GT_CALL node to be inlined.
     GenTree         * iciStmt;       // The statement iciCall is in.
     BasicBlock      * iciBlock;      // The basic block iciStmt is in.
 };
