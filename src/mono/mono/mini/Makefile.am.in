@@ -737,8 +737,7 @@ fullaot_regtests = $(regtests) aot-tests.exe $(if $(GSHAREDVT),gshared.exe)
 # on mobile profiles
 FULLAOT_LIBS_MOBILE_STATIC_BLACKLIST = \
 	Mono.Posix.dll \
-	System.Configuration.dll \
-	Mono.Simd.dll
+	System.Configuration.dll
 
 FULLAOT_LIBS_UNIVERSAL = \
 	mscorlib.dll \
@@ -746,6 +745,7 @@ FULLAOT_LIBS_UNIVERSAL = \
 	System.dll \
 	System.Xml.dll \
 	System.Security.dll \
+	Mono.Simd.dll \
 	Mono.Security.dll
 
 if INSTALL_MOBILE_STATIC
