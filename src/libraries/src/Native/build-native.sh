@@ -4,11 +4,11 @@ usage()
 {
     echo "Our parameters changed! The parameters: buildArch, buildType, buildOS, numProc"
     echo "are passed by the Run Command Tool."
-    echo "If you plan to only run this script, be sure to pass those parameters in the stated order."
+    echo "If you plan to only run this script, be sure to pass those parameters."
     echo "For more information type build-native.sh -? at the root of the repo."
     echo
     echo "Usage: $0 [runParameters][verbose] [clangx.y] [cross] [staticLibLink] [cmakeargs] [makeargs]"
-    echo "runParameters: buildArch, buildType, buildOS, numProc"
+    echo "runParameters: buildArch, buildType, buildOS, --numProc <numproc value>"
     echo "verbose - optional argument to enable verbose build output."
     echo "clangx.y - optional argument to build using clang version x.y."
     echo "cross - optional argument to signify cross compilation,"
@@ -105,7 +105,7 @@ __BuildArch=x64
 __BuildType=Debug
 __CMakeArgs=DEBUG
 __BuildOS=Linux
-__NumProc=$4
+__NumProc=1
 __UnprocessedBuildArgs=
 __CrossBuild=0
 __ServerGC=0
@@ -157,7 +157,11 @@ while :; do
             ;;
         osx)
             __BuildOS=OSX
-            ;;       
+            ;;
+        --numproc)
+            shift
+            __NumProc=$1
+            ;;         
         verbose)
             __VerboseBuild=1
             ;;
