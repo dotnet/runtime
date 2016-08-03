@@ -4,7 +4,7 @@
 using System;
 using System.IO;
 
-namespace Microsoft.Extensions.EnvironmentAbstractions
+namespace Microsoft.Extensions.DependencyModel
 {
     internal class FileWrapper: IFile
     {

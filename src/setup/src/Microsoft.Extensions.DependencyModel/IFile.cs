@@ -3,7 +3,7 @@
 
 using System.IO;
 
-namespace Microsoft.Extensions.EnvironmentAbstractions
+namespace Microsoft.Extensions.DependencyModel
 {
     internal interface IFile
     {

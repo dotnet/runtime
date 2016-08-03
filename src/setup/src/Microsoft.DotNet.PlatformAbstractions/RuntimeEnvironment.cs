@@ -2,9 +2,9 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using Microsoft.DotNet.InternalAbstractions.Native;
+using Microsoft.DotNet.PlatformAbstractions.Native;
 
-namespace Microsoft.DotNet.InternalAbstractions
+namespace Microsoft.DotNet.PlatformAbstractions
 {
     public static class RuntimeEnvironment
     {

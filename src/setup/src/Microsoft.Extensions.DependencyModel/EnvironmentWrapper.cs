@@ -3,7 +3,7 @@
 
 using System;
 
-namespace Microsoft.Extensions.EnvironmentAbstractions
+namespace Microsoft.Extensions.DependencyModel
 {
     internal class EnvironmentWrapper : IEnvironment
     {
