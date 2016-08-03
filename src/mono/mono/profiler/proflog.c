@@ -1160,7 +1160,7 @@ process_requests (MonoProfiler *profiler)
 }
 
 static void counters_init (MonoProfiler *profiler);
-static void counters_sample (MonoProfiler *profiler, uint64_t timestamp, gboolean threadless);
+static void counters_sample (MonoProfiler *profiler, uint64_t timestamp);
 
 static void
 safe_send (MonoProfiler *profiler)
@@ -1201,6 +1201,13 @@ safe_send_threadless (MonoProfiler *prof)
 		iter->thread_id = 0;
 
 	safe_send (prof);
+}
+
+static void
+send_if_needed_threadless (MonoProfiler *prof)
+{
+	if (PROF_TLS_GET ()->buffer->next)
+		safe_send_threadless (prof);
 }
 
 static int
@@ -3235,7 +3242,7 @@ counters_init (MonoProfiler *profiler)
 }
 
 static void
-counters_emit (MonoProfiler *profiler, gboolean threadless)
+counters_emit (MonoProfiler *profiler)
 {
 	MonoCounterAgent *agent;
 	int len = 0;
@@ -3296,16 +3303,11 @@ counters_emit (MonoProfiler *profiler, gboolean threadless)
 
 	EXIT_LOG;
 
-	if (threadless)
-		safe_send_threadless (profiler);
-	else
-		safe_send (profiler);
-
 	mono_os_mutex_unlock (&counters_mutex);
 }
 
 static void
-counters_sample (MonoProfiler *profiler, uint64_t timestamp, gboolean threadless)
+counters_sample (MonoProfiler *profiler, uint64_t timestamp)
 {
 	MonoCounterAgent *agent;
 	MonoCounter *counter;
@@ -3317,7 +3319,7 @@ counters_sample (MonoProfiler *profiler, uint64_t timestamp, gboolean threadless
 	if (!counters_initialized)
 		return;
 
-	counters_emit (profiler, threadless);
+	counters_emit (profiler);
 
 	buffer_size = 8;
 	buffer = calloc (1, buffer_size);
@@ -3432,11 +3434,6 @@ counters_sample (MonoProfiler *profiler, uint64_t timestamp, gboolean threadless
 
 	EXIT_LOG;
 
-	if (threadless)
-		safe_send_threadless (profiler);
-	else
-		safe_send (profiler);
-
 	mono_os_mutex_unlock (&counters_mutex);
 }
 
@@ -3456,7 +3453,7 @@ struct _PerfCounterAgent {
 static PerfCounterAgent *perfcounters = NULL;
 
 static void
-perfcounters_emit (MonoProfiler *profiler, gboolean threadless)
+perfcounters_emit (MonoProfiler *profiler)
 {
 	PerfCounterAgent *pcagent;
 	int len = 0;
@@ -3508,11 +3505,6 @@ perfcounters_emit (MonoProfiler *profiler, gboolean threadless)
 	}
 
 	EXIT_LOG;
-
-	if (threadless)
-		safe_send_threadless (profiler);
-	else
-		safe_send (profiler);
 }
 
 static gboolean
@@ -3549,7 +3541,7 @@ perfcounters_foreach (char *category_name, char *name, unsigned char type, gint6
 }
 
 static void
-perfcounters_sample (MonoProfiler *profiler, uint64_t timestamp, gboolean threadless)
+perfcounters_sample (MonoProfiler *profiler, uint64_t timestamp)
 {
 	PerfCounterAgent *pcagent;
 	int size;
@@ -3565,7 +3557,7 @@ perfcounters_sample (MonoProfiler *profiler, uint64_t timestamp, gboolean thread
 
 	mono_perfcounter_foreach (perfcounters_foreach, perfcounters);
 
-	perfcounters_emit (profiler, threadless);
+	perfcounters_emit (profiler);
 
 	size =
 		EVENT_SIZE /* event */ +
@@ -3608,16 +3600,11 @@ perfcounters_sample (MonoProfiler *profiler, uint64_t timestamp, gboolean thread
 
 	EXIT_LOG;
 
-	if (threadless)
-		safe_send_threadless (profiler);
-	else
-		safe_send (profiler);
-
 	mono_os_mutex_unlock (&counters_mutex);
 }
 
 static void
-counters_and_perfcounters_sample (MonoProfiler *prof, gboolean threadless)
+counters_and_perfcounters_sample (MonoProfiler *prof)
 {
 	static uint64_t start = -1;
 	uint64_t now;
@@ -3626,8 +3613,8 @@ counters_and_perfcounters_sample (MonoProfiler *prof, gboolean threadless)
 		start = current_time ();
 
 	now = current_time ();
-	counters_sample (prof, (now - start) / 1000/ 1000, threadless);
-	perfcounters_sample (prof, (now - start) / 1000/ 1000, threadless);
+	counters_sample (prof, (now - start) / 1000/ 1000);
+	perfcounters_sample (prof, (now - start) / 1000/ 1000);
 }
 
 #define COVERAGE_DEBUG(x) if (debug_coverage) {x}
@@ -3792,7 +3779,7 @@ build_method_buffer (gpointer key, gpointer value, gpointer userdata)
 
 	EXIT_LOG;
 
-	safe_send (prof);
+	send_if_needed (prof);
 
 	for (i = 0; i < coverage_data->len; i++) {
 		CoverageEntry *entry = (CoverageEntry *)coverage_data->pdata[i];
@@ -3817,7 +3804,7 @@ build_method_buffer (gpointer key, gpointer value, gpointer userdata)
 
 		EXIT_LOG;
 
-		safe_send (prof);
+		send_if_needed (prof);
 	}
 
 	method_id++;
@@ -3886,7 +3873,7 @@ build_class_buffer (gpointer key, gpointer value, gpointer userdata)
 
 	EXIT_LOG;
 
-	safe_send (prof);
+	send_if_needed (prof);
 
 	g_free (class_name);
 }
@@ -3948,7 +3935,7 @@ build_assembly_buffer (gpointer key, gpointer value, gpointer userdata)
 
 	EXIT_LOG;
 
-	safe_send (prof);
+	send_if_needed (prof);
 }
 
 static void
@@ -4295,7 +4282,7 @@ log_shutdown (MonoProfiler *prof)
 
 	in_shutdown = 1;
 #ifndef DISABLE_HELPER_THREAD
-	counters_and_perfcounters_sample (prof, FALSE);
+	counters_and_perfcounters_sample (prof);
 
 	dump_coverage (prof);
 
@@ -4480,7 +4467,9 @@ helper_thread (void* arg)
 		}
 #endif
 
-		counters_and_perfcounters_sample (prof, TRUE);
+		counters_and_perfcounters_sample (prof);
+
+		send_if_needed_threadless (prof);
 
 		buffer_lock_excl ();
 
@@ -4533,7 +4522,7 @@ helper_thread (void* arg)
 					continue;
 				if (FD_ISSET (perf_data [i].perf_fd, &rfds)) {
 					read_perf_mmap (prof, i);
-					safe_send_threadless (prof);
+					send_if_needed_threadless (prof);
 				}
 			}
 		}
@@ -4825,8 +4814,7 @@ handle_dumper_queue_entry (MonoProfiler *prof)
 
 		dump_unmanaged_coderefs (prof);
 
-		if (logbuffer->next)
-			safe_send_threadless (prof);
+		send_if_needed_threadless (prof);
 	}
 
 	return FALSE;
@@ -4882,7 +4870,7 @@ runtime_initialized (MonoProfiler *profiler)
 	InterlockedWrite (&runtime_inited, 1);
 #ifndef DISABLE_HELPER_THREAD
 	counters_init (profiler);
-	counters_sample (profiler, 0, FALSE);
+	counters_sample (profiler, 0);
 #endif
 	/* ensure the main thread data and startup are available soon */
 	safe_send (profiler);
