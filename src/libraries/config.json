@@ -208,7 +208,7 @@
       "description": "Sets the value of the build configuration.",
       "valueType": "passThrough",
       "values": [],
-      "defaultValue": "DEBUG"
+      "defaultValue": "Debug"
     },
     "HostOs": {
       "description": "OS for result binaries.",
