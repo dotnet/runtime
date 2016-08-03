@@ -113,7 +113,7 @@ namespace System.Diagnostics.Debug.SymbolReader
             foreach (var info in points)
             {
                 Marshal.StructureToPtr(info, ptr, false);
-                ptr = (IntPtr)((int)ptr + structSize);
+                ptr = (IntPtr)(ptr.ToInt64() + structSize);
             }
 
             return true;
