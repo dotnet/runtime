@@ -149,8 +149,8 @@ namespace Mono.Tuner {
 			TypeDefinition baseType = finalType;
 			while (baseType != null) {
 				if (baseType.HasInterfaces)
-					foreach (TypeReference @interface in baseType.Interfaces)
-						foreach (MethodDefinition method in @interface.Resolve ().Methods)
+					foreach (var @interface in baseType.Interfaces)
+						foreach (MethodDefinition method in @interface.InterfaceType.Resolve ().Methods)
 							if (method.Name == final.Name && HasSameSignature (method, final))
 								return method;
 

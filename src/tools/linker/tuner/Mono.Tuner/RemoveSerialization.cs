@@ -68,7 +68,7 @@ namespace Mono.Tuner {
 		static void RemoveInterface (TypeDefinition type, string name)
 		{
 			for (int i = 0; i < type.Interfaces.Count; i++) {
-				TypeReference iface = type.Interfaces [i];
+				TypeReference iface = type.Interfaces [i].InterfaceType;
 				if (iface.FullName == name) {
 					type.Interfaces.RemoveAt (i);
 					return;
