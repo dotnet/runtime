@@ -520,8 +520,8 @@ namespace Mono.Linker.Steps {
 				MarkFields (type, type.IsEnum);
 
 			if (type.HasInterfaces) {
-				foreach (TypeReference iface in type.Interfaces)
-					MarkType (iface);
+				foreach (var iface in type.Interfaces)
+					MarkType (iface.InterfaceType);
 			}
 
 			if (type.HasMethods) {
