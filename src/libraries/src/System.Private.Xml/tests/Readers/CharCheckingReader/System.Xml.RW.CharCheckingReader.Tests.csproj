@@ -7,6 +7,7 @@
     <ProjectGuid>{6DC15D23-8213-4700-9815-AD8DEED1CE5F}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AssemblyName>System.Xml.RW.CharCheckingReader.Tests</AssemblyName>
+    <NuGetTargetMoniker>.NETStandard,Version=v1.3</NuGetTargetMoniker>
     <RootNamespace>XmlReaderTest</RootNamespace>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->

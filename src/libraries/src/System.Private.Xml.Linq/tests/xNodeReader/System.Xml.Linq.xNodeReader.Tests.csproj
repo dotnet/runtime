@@ -7,6 +7,7 @@
     <ProjectGuid>{6E1C5358-7F04-4791-8B5F-6A5A4E42ABF1}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AssemblyName>System.Xml.Linq.xNodeReader.Tests</AssemblyName>
+    <NuGetTargetMoniker>.NETStandard,Version=v1.3</NuGetTargetMoniker>
     <RootNamespace>CoreXml.Test.XLinq</RootNamespace>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->

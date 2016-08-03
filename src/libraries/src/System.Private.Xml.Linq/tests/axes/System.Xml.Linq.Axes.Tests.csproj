@@ -7,6 +7,7 @@
     <ProjectGuid>{6D9B0285-5E8A-4C20-9C53-9E2084EF64C4}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AssemblyName>System.Xml.Linq.Axes.Tests</AssemblyName>
+    <NuGetTargetMoniker>.NETStandard,Version=v1.3</NuGetTargetMoniker>
     <RootNamespace>System.Xml.Linq.Tests</RootNamespace>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->

@@ -7,6 +7,7 @@
     <ProjectGuid>{E6DAD59F-7CB7-4E70-B4C5-FCCBC3376EDE}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AssemblyName>System.Xml.RW.XmlWriterApi.Tests</AssemblyName>
+    <NuGetTargetMoniker>.NETStandard,Version=v1.3</NuGetTargetMoniker>
     <RootNamespace>XmlWriterAPI.Test</RootNamespace>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->

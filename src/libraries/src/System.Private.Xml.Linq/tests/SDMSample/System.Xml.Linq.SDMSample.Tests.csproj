@@ -7,6 +7,7 @@
     <ProjectGuid>{F6C73170-9333-4B52-B3FA-A536C5EA6A48}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AssemblyName>System.Xml.Linq.SDMSample.Tests</AssemblyName>
+    <NuGetTargetMoniker>.NETStandard,Version=v1.3</NuGetTargetMoniker>
     <RootNamespace>XDocumentTests.SDMSample</RootNamespace>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->

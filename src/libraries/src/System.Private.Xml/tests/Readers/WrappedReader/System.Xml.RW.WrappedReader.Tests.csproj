@@ -7,6 +7,7 @@
     <ProjectGuid>{1C8F67D6-1953-49D3-B716-F298883A79C6}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AssemblyName>System.Xml.RW.WrappedReader.Tests</AssemblyName>
+    <NuGetTargetMoniker>.NETStandard,Version=v1.3</NuGetTargetMoniker>
     <RootNamespace>XmlReaderTest</RootNamespace>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->

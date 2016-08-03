@@ -3,8 +3,8 @@
     "Microsoft.NETCore.Platforms": "1.0.2-beta-devapi-24401-01",
     "System.Collections": "4.0.12-beta-devapi-24401-01",
     "System.Diagnostics.Debug": "4.0.12-beta-devapi-24401-01",
-    "System.IO": "4.2.0-beta-devapi-24320-01",
-    "System.Runtime": "4.2.0-beta-devapi-24401-02"
+    "System.IO": "4.2.0-beta-devapi-24401-01",
+    "System.Runtime": "4.2.0-beta-devapi-24401-01"
   },
   "frameworks": {
     "netstandard1.3": {}

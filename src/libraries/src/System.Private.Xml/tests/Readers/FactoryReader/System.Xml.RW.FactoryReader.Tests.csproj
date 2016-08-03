@@ -7,6 +7,7 @@
     <ProjectGuid>{04C5492C-FA54-4F93-8698-44B8BB7C72E0}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AssemblyName>System.Xml.RW.FactoryReader.Tests</AssemblyName>
+    <NuGetTargetMoniker>.NETStandard,Version=v1.3</NuGetTargetMoniker>
     <RootNamespace>XmlReaderTest</RootNamespace>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->

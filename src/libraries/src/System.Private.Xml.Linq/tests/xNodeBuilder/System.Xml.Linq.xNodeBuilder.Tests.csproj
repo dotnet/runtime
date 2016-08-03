@@ -7,12 +7,8 @@
     <ProjectGuid>{5D4FB9ED-C3AC-4EFA-9FEE-619ED4B4B92D}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AssemblyName>System.Xml.Linq.xNodeBuilder.Tests</AssemblyName>
+    <NuGetTargetMoniker>.NETStandard,Version=v1.3</NuGetTargetMoniker>
     <RootNamespace>CoreXml.Test.XLinq</RootNamespace>
-    <!--
-      Disable running tests for this project as most of them are failing because of the infrastructure issue
-      https://github.com/dotnet/corefx/issues/641
-    -->
-    <RunTestsForProject>False</RunTestsForProject>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">

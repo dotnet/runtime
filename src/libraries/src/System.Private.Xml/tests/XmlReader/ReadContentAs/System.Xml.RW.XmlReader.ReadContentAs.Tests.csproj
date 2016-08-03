@@ -7,6 +7,7 @@
     <ProjectGuid>{DA6A9B7F-F311-49A4-8BBE-42EF3152C37B}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AssemblyName>System.Xml.RW.XmlReader.ReadContentAs.Tests</AssemblyName>
+    <NuGetTargetMoniker>.NETStandard,Version=v1.3</NuGetTargetMoniker>
     <RootNamespace>XMLTests.ReaderWriter.ReadContentTests</RootNamespace>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
