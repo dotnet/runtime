@@ -400,7 +400,7 @@ public:
     // Determine if this inline is profitable
     void DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
     {
-        return m_Policy->DetermineProfitability(methodInfo);
+        m_Policy->DetermineProfitability(methodInfo);
     }
 
     // Ensure details of this inlining process are appropriately
@@ -751,8 +751,40 @@ public:
         return m_InitialSizeEstimate;
     }
 
+    // Inform strategy that there's another call
+    void NoteCall()
+    {
+        m_CallCount++;
+    }
+
     // Inform strategy that there's a new inline candidate.
-    void NoteCandidate();
+    void NoteCandidate()
+    {
+        m_CandidateCount++;
+    }
+
+    // Inform strategy that a candidate was assessed and determined to
+    // be unprofitable.
+    void NoteUnprofitable()
+    {
+        m_UnprofitableCandidateCount++;
+    }
+
+    // Inform strategy that a candidate has passed screening
+    // and that the jit will attempt to inline.
+    void NoteAttempt(InlineResult* result);
+
+    // Inform strategy that jit is about to import the inlinee IL.
+    void NoteImport()
+    {
+        m_ImportCount++;
+    }
+
+    // Dump csv header for inline stats to indicated file.
+    static void DumpCsvHeader(FILE* f);
+
+    // Dump csv data for inline stats to indicated file.
+    void DumpCsvData(FILE* f);
 
     // See if an inline of this size would fit within the current jit
     // time budget.
@@ -834,8 +866,13 @@ private:
     InlineContext* m_RootContext;
     InlinePolicy*  m_LastSuccessfulPolicy;
     InlineContext* m_LastContext;
+    unsigned       m_CallCount;
     unsigned       m_CandidateCount;
-    unsigned       m_InlineAttemptCount;
+    unsigned       m_AlwaysCandidateCount;
+    unsigned       m_ForceCandidateCount;
+    unsigned       m_DiscretionaryCandidateCount;
+    unsigned       m_UnprofitableCandidateCount;
+    unsigned       m_ImportCount;
     unsigned       m_InlineCount;
     unsigned       m_MaxInlineSize;
     unsigned       m_MaxInlineDepth;
