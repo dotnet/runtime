@@ -59,8 +59,8 @@ namespace Mono.Linker.Steps {
 			if (!type.HasInterfaces)
 				return;
 
-			foreach (TypeReference @interface in type.Interfaces) {
-				var iface = @interface.Resolve ();
+			foreach (var @interface in type.Interfaces) {
+				var iface = @interface.InterfaceType.Resolve ();
 				if (iface == null || !iface.HasMethods)
 					continue;
 
@@ -160,8 +160,8 @@ namespace Mono.Linker.Steps {
 			if (!type.HasInterfaces)
 				yield break;
 
-			foreach (TypeReference interface_ref in type.Interfaces) {
-				TypeDefinition @interface = interface_ref.Resolve ();
+			foreach (var interface_ref in type.Interfaces) {
+				TypeDefinition @interface = interface_ref.InterfaceType.Resolve ();
 				if (@interface == null)
 					continue;
 
