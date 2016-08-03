@@ -3188,3 +3188,17 @@ public class TypeWithEmitDefaultValueFalse
     [DataMember(EmitDefaultValue = false)]
     public int ID = 0;
 }
+
+[DataContract(Namespace = "ItemTypeNamespace")]
+public class TypeWithNonDefaultNamcespace
+{
+    [DataMember]
+    public string Name;
+}
+
+[CollectionDataContract(Namespace = "CollectionNamespace")]
+public class CollectionOfTypeWithNonDefaultNamcespace : List<TypeWithNonDefaultNamcespace>
+{
+
+}
+

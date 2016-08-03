@@ -13,7 +13,7 @@ namespace System.Runtime.Serialization
 {
     internal class ReflectionXmlFormatWriter
     {
-        private ReflectionXmlClassWriter _reflectionClassWriter = new ReflectionXmlClassWriter();
+        private readonly ReflectionXmlClassWriter _reflectionClassWriter = new ReflectionXmlClassWriter();
 
         public void ReflectionWriteClass(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContext context, ClassDataContract classContract)
         {
@@ -27,9 +27,7 @@ namespace System.Runtime.Serialization
 
             if (collectionDataContract.ChildElementNamespace != null)
             {
-                // TODO: should add tests for this.
-                // xmlWriter.WriteNamespaceDecl(collectionContract.ChildElementNamespace);
-                throw new NotImplementedException("collectionContract.ChildElementNamespace != null");
+                xmlWriter.WriteNamespaceDecl(collectionDataContract.ChildElementNamespace);
             }
 
             if (collectionDataContract.Kind == CollectionKind.Array)
@@ -125,8 +123,7 @@ namespace System.Runtime.Serialization
         }
     }
 
-
-    internal sealed class ReflectionXmlClassWriter :ReflectionClassWriter
+    internal sealed class ReflectionXmlClassWriter : ReflectionClassWriter
     {
         protected override int ReflectionWriteMembers(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContext context, ClassDataContract classContract, ClassDataContract derivedMostClassContract, int childElementIndex, XmlDictionaryString[] emptyStringArray)
         {

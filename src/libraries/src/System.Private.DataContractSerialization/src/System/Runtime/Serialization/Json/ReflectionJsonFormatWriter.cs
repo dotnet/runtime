@@ -15,7 +15,7 @@ namespace System.Runtime.Serialization.Json
 {
     internal class ReflectionJsonFormatWriter
     {
-        private ReflectionJsonClassWriter _reflectionClassWriter = new ReflectionJsonClassWriter();
+        private readonly ReflectionJsonClassWriter _reflectionClassWriter = new ReflectionJsonClassWriter();
 
         public void ReflectionWriteClass(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContextComplexJson context, ClassDataContract classContract, XmlDictionaryString[] memberNames)
         {
@@ -120,10 +120,10 @@ namespace System.Runtime.Serialization.Json
         private void ReflectionWriteObjectAttribute(XmlWriterDelegator xmlWriter)
         {
             xmlWriter.WriteAttributeString(
-                null /* prefix */,
-                JsonGlobals.typeString /* local name */,
-                null /* namespace */,
-                JsonGlobals.objectString /* value */);
+                prefix: null,
+                localName: JsonGlobals.typeString,
+                ns: null,
+                value: JsonGlobals.objectString);
         }
 
         private bool ReflectionTryWritePrimitiveArray(JsonWriterDelegator jsonWriter, object obj, Type underlyingType, Type itemType, XmlDictionaryString collectionItemName)
@@ -173,10 +173,10 @@ namespace System.Runtime.Serialization.Json
         private void ReflectionWriteArrayAttribute(XmlWriterDelegator xmlWriter)
         {
             xmlWriter.WriteAttributeString(
-                null /* prefix */,
-                JsonGlobals.typeString /* local name */,
-                string.Empty /* namespace */,
-                JsonGlobals.arrayString /* value */);
+                prefix: null,
+                localName: JsonGlobals.typeString,
+                ns: string.Empty,
+                value: JsonGlobals.arrayString);
         }
     }
 

@@ -904,7 +904,7 @@ public static partial class DataContractSerializerTests
     }
 
     [Fact]
-    public static void DCJS_DataMemberNames()
+    public static void DCS_DataMemberNames()
     {
         var obj = new AppEnvironment()
         {
@@ -2466,6 +2466,18 @@ public static partial class DataContractSerializerTests
         var deserialized = SerializeAndDeserialize(value, @"<ArrayOfTypeWithPrimitiveProperties xmlns=""http://schemas.datacontract.org/2004/07/SerializationTypes"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><TypeWithPrimitiveProperties><P1>abc</P1><P2>123</P2></TypeWithPrimitiveProperties><TypeWithPrimitiveProperties><P1>def</P1><P2>456</P2></TypeWithPrimitiveProperties></ArrayOfTypeWithPrimitiveProperties>");
         Assert.StrictEqual(value.Count, deserialized.Count);
         Assert.StrictEqual(true, Enumerable.SequenceEqual(value, deserialized));
+    }
+
+    [Fact]
+    public static void DCS_CollectionOfTypeWithNonDefaultNamcespace()
+    {
+        var value = new CollectionOfTypeWithNonDefaultNamcespace();
+        value.Add(new TypeWithNonDefaultNamcespace() { Name = "foo" });
+
+        var actual = SerializeAndDeserialize(value, "<CollectionOfTypeWithNonDefaultNamcespace xmlns=\"CollectionNamespace\" xmlns:i=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:a=\"ItemTypeNamespace\"><TypeWithNonDefaultNamcespace><a:Name>foo</a:Name></TypeWithNonDefaultNamcespace></CollectionOfTypeWithNonDefaultNamcespace>");
+        Assert.NotNull(actual);
+        Assert.NotNull(actual[0]);
+        Assert.Equal(value[0].Name, actual[0].Name);
     }
 
     #endregion
