@@ -1914,22 +1914,23 @@ method_enter (MonoProfiler *prof, MonoMethod *method)
 	process_method_enter_coverage (prof, method);
 #endif /* DISABLE_HELPER_THREAD */
 
-	if (PROF_TLS_GET ()->call_depth++ > max_call_depth)
-		return;
+	if (PROF_TLS_GET ()->call_depth++ <= max_call_depth) {
+		ENTER_LOG;
 
-	ENTER_LOG;
+		LogBuffer *logbuffer = ensure_logbuf (
+			EVENT_SIZE /* event */ +
+			LEB128_SIZE /* time */ +
+			LEB128_SIZE /* method */
+		);
 
-	LogBuffer *logbuffer = ensure_logbuf (
-		EVENT_SIZE /* event */ +
-		LEB128_SIZE /* time */ +
-		LEB128_SIZE /* method */
-	);
+		emit_byte (logbuffer, TYPE_ENTER | TYPE_METHOD);
+		emit_time (logbuffer, now);
+		emit_method (prof, logbuffer, method);
 
-	emit_byte (logbuffer, TYPE_ENTER | TYPE_METHOD);
-	emit_time (logbuffer, now);
-	emit_method (prof, logbuffer, method);
+		EXIT_LOG;
+	}
 
-	EXIT_LOG;
+	send_if_needed (prof);
 
 	process_requests (prof);
 }
@@ -1937,24 +1938,23 @@ method_enter (MonoProfiler *prof, MonoMethod *method)
 static void
 method_leave (MonoProfiler *prof, MonoMethod *method)
 {
-	if (--PROF_TLS_GET ()->call_depth > max_call_depth)
-		return;
+	if (--PROF_TLS_GET ()->call_depth <= max_call_depth) {
+		ENTER_LOG;
 
-	ENTER_LOG;
+		LogBuffer *logbuffer = ensure_logbuf (
+			EVENT_SIZE /* event */ +
+			LEB128_SIZE /* time */ +
+			LEB128_SIZE /* method */
+		);
 
-	LogBuffer *logbuffer = ensure_logbuf (
-		EVENT_SIZE /* event */ +
-		LEB128_SIZE /* time */ +
-		LEB128_SIZE /* method */
-	);
+		uint64_t now = current_time ();
 
-	uint64_t now = current_time ();
+		emit_byte (logbuffer, TYPE_LEAVE | TYPE_METHOD);
+		emit_time (logbuffer, now);
+		emit_method (prof, logbuffer, method);
 
-	emit_byte (logbuffer, TYPE_LEAVE | TYPE_METHOD);
-	emit_time (logbuffer, now);
-	emit_method (prof, logbuffer, method);
-
-	EXIT_LOG;
+		EXIT_LOG;
+	}
 
 	send_if_needed (prof);
 
@@ -1964,23 +1964,25 @@ method_leave (MonoProfiler *prof, MonoMethod *method)
 static void
 method_exc_leave (MonoProfiler *prof, MonoMethod *method)
 {
-	if (nocalls || --PROF_TLS_GET ()->call_depth > max_call_depth)
-		return;
+	if (!nocalls && --PROF_TLS_GET ()->call_depth <= max_call_depth) {
+		ENTER_LOG;
 
-	ENTER_LOG;
+		LogBuffer *logbuffer = ensure_logbuf (
+			EVENT_SIZE /* event */ +
+			LEB128_SIZE /* time */ +
+			LEB128_SIZE /* method */
+		);
 
-	LogBuffer *logbuffer = ensure_logbuf (
-		EVENT_SIZE /* event */ +
-		LEB128_SIZE /* time */ +
-		LEB128_SIZE /* method */
-	);
-	uint64_t now = current_time ();
+		uint64_t now = current_time ();
 
-	emit_byte (logbuffer, TYPE_EXC_LEAVE | TYPE_METHOD);
-	emit_time (logbuffer, now);
-	emit_method (prof, logbuffer, method);
+		emit_byte (logbuffer, TYPE_EXC_LEAVE | TYPE_METHOD);
+		emit_time (logbuffer, now);
+		emit_method (prof, logbuffer, method);
 
-	EXIT_LOG;
+		EXIT_LOG;
+	}
+
+	send_if_needed (prof);
 
 	process_requests (prof);
 }
