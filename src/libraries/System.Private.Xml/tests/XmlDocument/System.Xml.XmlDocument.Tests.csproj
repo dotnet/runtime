@@ -8,6 +8,7 @@
     <ProjectGuid>{7EAFC2D8-48D2-4A56-A9C6-6BADF2053499}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AssemblyName>System.Xml.XmlDocument.Tests</AssemblyName>
+    <NuGetTargetMoniker>.NETStandard,Version=v1.3</NuGetTargetMoniker>
     <RootNamespace>System.Xml.XmlDocument.UnitTests</RootNamespace>
     <IncludePerformanceTests>true</IncludePerformanceTests>
   </PropertyGroup>

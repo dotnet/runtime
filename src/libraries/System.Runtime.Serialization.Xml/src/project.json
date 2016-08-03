@@ -3,7 +3,7 @@
     "netstandard1.3": {
       "dependencies": {
         "Microsoft.NETCore.Platforms": "1.0.2-beta-devapi-24401-01",
-        "System.Runtime": "4.2.0-beta-devapi-24401-02",
+        "System.Runtime": "4.2.0-beta-devapi-24401-01",
         "System.Runtime.Serialization.Primitives": "4.2.0-beta-devapi-24401-01",
         "System.Collections.NonGeneric": "4.0.2-beta-devapi-24401-01",
         "System.Collections.Specialized": "4.0.2-beta-devapi-24401-01",

@@ -9,6 +9,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>System.Xml.XmlSerializer.Tests</RootNamespace>
     <AssemblyName>System.Xml.XmlSerializer.Tests</AssemblyName>
+    <NuGetTargetMoniker>.NETStandard,Version=v1.3</NuGetTargetMoniker>
     <ProjectGuid>{4050F1D1-1DD2-4B48-A17B-E3F90DD18C4B}</ProjectGuid>
   </PropertyGroup>
   <PropertyGroup Condition="'$(UseContractReferences)' == 'true'" >

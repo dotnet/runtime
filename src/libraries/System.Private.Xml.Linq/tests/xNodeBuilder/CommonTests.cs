@@ -4964,7 +4964,6 @@ namespace CoreXml.Test.XLinq
                 //[Variation(Id = 2, Desc = "WriteValue(DateTime)", Priority = 1)]
                 public void writeValue_2()
                 {
-                    Calendar myCal = CultureInfo.InvariantCulture.Calendar;
                     DateTime myDT = new DateTime(2002, 4, 3, 0, 0, 0, DateTimeKind.Utc);
                     XDocument doc = new XDocument();
                     XmlWriter w = CreateWriter(doc);
