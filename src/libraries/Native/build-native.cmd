@@ -14,7 +14,7 @@ set CMAKE_BUILD_TYPE=Debug
 set "__LinkArgs= "
 set "__LinkLibraries= "
 
-call %__rootDir%/run.cmd build-managed -GenerateVersion
+call %__rootDir%/run.cmd build-managed -GenerateVersion -project=%__rootDir%/build.proj
 
 :Arg_Loop
 :: Since the native build requires some configuration information before msbuild is called, we have to do some manual args parsing
@@ -55,7 +55,7 @@ exit /b 1
 :VS2015
 :: Setup vars for VS2015
 set __VSVersion=vs2015
-set __PlatformToolset="v140"
+set __PlatformToolset=v140
 if NOT "%__BuildArch%" == "arm64" ( 
     :: Set the environment for the native build
     call "%VS140COMNTOOLS%\..\..\VC\vcvarsall.bat" %__VCBuildArch%
@@ -111,16 +111,13 @@ goto :Failure
 
 :BuildNativeProj
 :: Build the project created by Cmake
-set __msbuildArgs="%__IntermediatesDir%\install.vcxproj" /t:rebuild /nologo /p:Configuration=%CMAKE_BUILD_TYPE% 
 if "%__BuildArch%" == "arm64" (
-    set __msbuildArgs=%__msbuildArgs% /p:UseEnv=true
+    set __msbuildArgs=/p:UseEnv=true
 ) else (
-    set __msbuildArgs=%__msbuildArgs% /p:Platform=%__BuildArch% /p:PlatformToolset="%__PlatformToolset%"
+    set __msbuildArgs=/p:Platform=%__BuildArch% /p:PlatformToolset="%__PlatformToolset%"
 )
-set __msbuildArgs=%__msbuildArgs% /maxcpucount /nodeReuse:false  /fileloggerparameters:Verbosity=normal
 
-msbuild %__msbuildArgs%
-
+call %__rootDir%/run.cmd build-managed -project="%__IntermediatesDir%\install.vcxproj" -- /t:rebuild /p:Configuration=%CMAKE_BUILD_TYPE% %__msbuildArgs%
 IF ERRORLEVEL 1 (
     goto :Failure
 )
