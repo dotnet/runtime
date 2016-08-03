@@ -12,7 +12,8 @@
     "System.Runtime.InteropServices.RuntimeInformation": "4.0.0",
     "TestUtils": {
       "target": "project"
-    }
+    },
+    "Newtonsoft.Json": "9.0.1"
   },
   "frameworks": {
     "netcoreapp1.0": {
