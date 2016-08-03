@@ -179,7 +179,7 @@ REM ============================================================================
 echo %__MsgPrefix%Using environment: "%__VSToolsRoot%\VsDevCmd.bat"
 call                                 "%__VSToolsRoot%\VsDevCmd.bat"
 
-@call %~dp0run.cmd build -generateHeaderWindows -NativeVersionHeaderFile="%__RootBinDir%\obj\_version.h" %__RunArgs% %__UnprocessedBuildArgs% 
+@call %__ProjectDir%\run.cmd build -Project=%__ProjectDir%\build.proj -generateHeaderWindows -NativeVersionHeaderFile="%__RootBinDir%\obj\_version.h" %__RunArgs% %__UnprocessedBuildArgs% 
 
 REM =========================================================================================
 REM ===
@@ -233,7 +233,7 @@ if %__BuildNative% EQU 1 (
         exit /b 1
     )
 
-    @call %~dp0run.cmd build -Project=%__IntermediatesDir%\install.vcxproj -MsBuildLog=!__MsbuildLog! -MsBuildWrn=!__MsbuildWrn! -MsBuildErr=!__MsbuildErr! -configuration=%__BuildType% %nativePlatfromArgs% %__RunArgs% %__UnprocessedBuildArgs%
+    @call %__ProjectDir%\run.cmd build -Project=%__IntermediatesDir%\install.vcxproj -MsBuildLog=!__MsbuildLog! -MsBuildWrn=!__MsbuildWrn! -MsBuildErr=!__MsbuildErr! -configuration=%__BuildType% %nativePlatfromArgs% %__RunArgs% %__UnprocessedBuildArgs%
 
     if not !errorlevel! == 0 (
         echo %__MsgPrefix%Error: native component build failed. Refer to the build log files for details:
@@ -286,7 +286,7 @@ if /i "%__BuildArch%"=="arm64" (
     set __MsbuildLog=/flp:Verbosity=normal;LogFile="%__LogsDir%\Cross_%__BuildOS%__%__BuildArch%__%__BuildType%.log"
     set __MsbuildWrn=/flp1:WarningsOnly;LogFile="%__LogsDir%\Cross_%__BuildOS%__%__BuildArch%__%__BuildType%.wrn"
     set __MsbuildErr=/flp2:ErrorsOnly;LogFile="%__LogsDir%\Cross_%__BuildOS%__%__BuildArch%__%__BuildType%.err"
-    @call %~dp0run.cmd build -Project=%__CrossCompIntermediatesDir%\install.vcxproj -configuration=%__BuildType% -platform=%__CrossArch% -MsBuildLog=!__MsbuildLog! -MsBuildWrn=!__MsbuildWrn! -MsBuildErr=!__MsbuildErr! %__RunArgs% %__UnprocessedBuildArgs%
+    @call %__ProjectDir%\run.cmd build -Project=%__CrossCompIntermediatesDir%\install.vcxproj -configuration=%__BuildType% -platform=%__CrossArch% -MsBuildLog=!__MsbuildLog! -MsBuildWrn=!__MsbuildWrn! -MsBuildErr=!__MsbuildErr! %__RunArgs% %__UnprocessedBuildArgs%
     if not !errorlevel! == 0 (
         echo %__MsgPrefix%Error: cross-arch components build failed. Refer to the build log files for details:
         echo     "%__LogsDir%\Cross_%__BuildOS%__%__BuildArch%__%__BuildType%.log"
@@ -321,7 +321,7 @@ if %__BuildCoreLib% EQU 1 (
 		set __nugetBuildArgs=-buildNugetPackage=true
 	)
 
-    @call %~dp0run.cmd build -buildCoreLib -MsBuildLog=!__MsbuildLog! -MsBuildWrn=!__MsbuildWrn! -MsBuildErr=!__MsbuildErr! %__RunArgs% %__UnprocessedBuildArgs% !__nugetBuildArgs!
+    @call %__ProjectDir%\run.cmd build -Project=%__ProjectDir%\build.proj -MsBuildLog=!__MsbuildLog! -MsBuildWrn=!__MsbuildWrn! -MsBuildErr=!__MsbuildErr! !__nugetBuildArgs! %__RunArgs% %__UnprocessedBuildArgs% 
     if not !errorlevel! == 0 (
         echo %__MsgPrefix%Error: System.Private.CoreLib build failed. Refer to the build log files for details:
         echo     "%__LogsDir%\System.Private.CoreLib_%__BuildOS%__%__BuildArch%__%__BuildType%.log"
@@ -361,7 +361,7 @@ if %__BuildPackages% EQU 1 (
 	set __MsbuildErr=/flp2:ErrorsOnly;LogFile="%__LogsDir%\Nuget_%__BuildOS%__%__BuildArch%__%__BuildType%.err"
 
     REM The conditions as to what to build are captured in the builds file.
-    @call %~dp0run.cmd build -buildPackages -platform=%__BuildArch% -MsBuildLog=!__MsbuildLog! -MsBuildWrn=!__MsbuildWrn! -MsBuildErr=!__MsbuildErr! %__RunArgs% %__UnprocessedBuildArgs%
+    @call %__ProjectDir%\run.cmd build -Project=%__SourceDir%\.nuget\packages.builds -platform=%__BuildArch% -MsBuildLog=!__MsbuildLog! -MsBuildWrn=!__MsbuildWrn! -MsBuildErr=!__MsbuildErr! %__RunArgs% %__UnprocessedBuildArgs%
 
     if not !errorlevel! == 0 (
         echo %__MsgPrefix%Error: Nuget package generation failed build failed. Refer to the build log files for details:
