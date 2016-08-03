@@ -47,7 +47,7 @@ usage()
 	echo "-sequential: force a non-parallel build ^(default is to build in parallel"
 	echo "   using all processors^)."
 	echo "-officialbuildid=^<ID^>: specify the official build ID to be used by this build."
-	echo "-Rebuild: force a clean build ^(default is to perform an incremental build^)."
+	echo "-Rebuild: passes /t:rebuild to the build projects."
     echo "skipgenerateversion - disable version generation even if MSBuild is supported."
     echo "cmakeargs - user-settable additional arguments passed to CMake."
     echo "bindir - output directory (defaults to $__ProjectRoot/bin)"
