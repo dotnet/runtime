@@ -1,0 +1,16 @@
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <ProjectGuid>{AF78BA88-6428-47EA-8682-442DAF8E9656}</ProjectGuid>
+    <RootNamespace>Monitoring</RootNamespace>
+    <AssemblyName>Monitoring</AssemblyName>
+    <OutputType>Library</OutputType>
+    <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="IMonitorLoader.cs" />
+    <Compile Include="MonitorMetrics.cs" />
+  </ItemGroup>
+  <!--Import the targets-->
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>
