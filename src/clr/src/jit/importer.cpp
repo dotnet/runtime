@@ -16970,7 +16970,10 @@ void          Compiler::impMarkInlineCandidate(GenTreePtr callNode,
                                                CORINFO_CONTEXT_HANDLE exactContextHnd, 
                                                CORINFO_CALL_INFO* callInfo)
 {
-    if  (!opts.OptEnabled(CLFLG_INLINING))
+    // Let the strategy know there's another call
+    impInlineRoot()->m_inlineStrategy->NoteCall();
+
+    if (!opts.OptEnabled(CLFLG_INLINING))
     {                 
         /* XXX Mon 8/18/2008
          * This assert is misleading.  The caller does not ensure that we have CLFLG_INLINING set before

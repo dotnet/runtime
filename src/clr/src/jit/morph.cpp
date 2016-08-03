@@ -6516,6 +6516,8 @@ void Compiler::fgMorphCallInlineHelper(GenTreeCall* call, InlineResult* result)
     }
 #endif
 
+    impInlineRoot()->m_inlineStrategy->NoteAttempt(result);
+
     //
     // Invoke the compiler to inline the call.
     //

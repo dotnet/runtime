@@ -4872,6 +4872,7 @@ TOO_FAR:
                 
                 if (compInlineResult->IsFailure())
                 {
+                    impInlineRoot()->m_inlineStrategy->NoteUnprofitable();
                     JITDUMP("\n\nInline expansion aborted, inline not profitable\n");
                     return;
                 }
