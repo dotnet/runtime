@@ -15,6 +15,8 @@
     <_SkipTestDir Include="@(DisabledTestDir)" />
   </ItemGroup>
 
+  <Target Name="Rebuild" />
+
   <Target Name="FindCmdDirectories" DependsOnTargets="GetListOfTestCmds">
 
     <Error Condition="!Exists('$(XunitTestBinBase)')" 
