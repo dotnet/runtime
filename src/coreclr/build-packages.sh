@@ -34,38 +34,10 @@ while :; do
     shift
 done
 
-$__ProjectRoot/run.sh build-packages -Project=$__ProjectRoot/src/.nuget/Microsoft.NETCore.Runtime.CoreCLR/Microsoft.NETCore.Runtime.CoreCLR.builds -DistroRid=\${OSRid}-$__Arch -UseSharedCompilation=false -BuildNugetPackage=false $unprocessedBuildArgs
+$__ProjectRoot/run.sh build-packages -Project=$__ProjectRoot/src/.nuget/packages.builds -DistroRid=\${OSRid}-$__Arch -UseSharedCompilation=false -BuildNugetPackage=false $unprocessedBuildArgs
 if [ $? -ne 0 ]
 then
     echo "ERROR: An error occurred while building packages; See build-packages.log for more details."
-    exit 1
-fi
-
-$__ProjectRoot/run.sh build-packages -Project=$__ProjectRoot/src/.nuget/Microsoft.NETCore.Jit/Microsoft.NETCore.Jit.builds -DistroRid=\${OSRid}-$__Arch -UseSharedCompilation=false -BuildNugetPackage=false $unprocessedBuildArgs
-if [ $? -ne 0 ]
-then
-    echo "ERROR: An error occurred while building packages; See build-packages.log for more details."
-    exit 1
-fi
-
-$__ProjectRoot/run.sh build-packages -Project=$__ProjectRoot/src/.nuget/Microsoft.NETCore.ILAsm/Microsoft.NETCore.ILAsm.builds -DistroRid=\${OSRid}-$__Arch -UseSharedCompilation=false -BuildNugetPackage=false $unprocessedBuildArgs
-if [ $? -ne 0 ]
-then
-    echo "ERROR: An error occurred while building packages; See build-packages.log for more details."
-    exit 1
-fi
-
-$__ProjectRoot/run.sh build-packages -Project=$__ProjectRoot/src/.nuget/Microsoft.NETCore.ILDAsm/Microsoft.NETCore.ILDAsm.builds -DistroRid=\${OSRid}-$__Arch -UseSharedCompilation=false -BuildNugetPackage=false $unprocessedBuildArgs
-if [ $? -ne 0 ]
-then
-    echo "ERROR: An error occurred while building packages; See build-packages.log for more details."
-    exit 1
-fi
-
-# Build the TestHost package
-$__ProjectRoot/run.sh build-packages -Project=$__ProjectRoot/src/.nuget/Microsoft.NETCore.TestHost/Microsoft.NETCore.TestHost.builds -DistroRid=\${OSRid}-$__Arch -UseSharedCompilation=false -BuildNugetPackage=false $unprocessedBuildArgs
-if [ $? -ne 0 ]; then
-    echo "ERROR: An error occurred while building packages, see $build_packages_log for more details."
     exit 1
 fi
 
