@@ -137,12 +137,10 @@ namespace System.Xml.Serialization
             TypeDesc arrayElementTypeDesc = arrayTypeDesc.ArrayElementTypeDesc;
 
 
-            var a = (IEnumerable)o;
-            if (a == null)
-            {
-                // Reviewed
-                throw new NotImplementedException("The array like item is not an IEnumerable instance.");
-            }
+            var a = o as IEnumerable;
+
+            //  #10593: This assert may not be true. We need more tests for this method.
+            Debug.Assert(a != null);
 
             var e = a.GetEnumerator();
 
@@ -265,10 +263,8 @@ namespace System.Xml.Serialization
                 {
                     if (!WritePrimitiveValue(mapping.TypeDesc, o, false, out stringValue))
                     {
-                        if (!(o is byte[]))
-                        {
-                            throw new NotImplementedException("!WritePrimitiveValue(mapping.TypeDesc, o, false, out stringValue)");
-                        }
+                        // #10593: Add More Tests for Serialization Code
+                        Debug.Assert(o is byte[]);
                     }
                 }
 
@@ -715,13 +711,10 @@ namespace System.Xml.Serialization
                     }
                 }
 
-                var a = (IEnumerable)memberValue;
+                var a = memberValue as IEnumerable;
 
-                if (a == null)
-                {
-                    // Reviewed
-                    throw new NotImplementedException("The array like item is not an IEnumerable instance.");
-                }
+                // #10593: Add More Tests for Serialization Code
+                Debug.Assert(a != null);
 
                 var e = a.GetEnumerator();
                 bool shouldAppendWhitespace = false;
@@ -742,10 +735,8 @@ namespace System.Xml.Serialization
                             {
                                 if (!WritePrimitiveValue(arrayElementTypeDesc, ai, true, out stringValue))
                                 {
-                                    if (!(ai is byte[]))
-                                    {
-                                        throw new NotImplementedException("!WritePrimitiveValue(mapping.TypeDesc, o, false, out stringValue)");
-                                    }
+                                    // #10593: Add More Tests for Serialization Code
+                                    Debug.Assert(ai is byte[]);
                                 }
                             }
 
@@ -940,7 +931,8 @@ namespace System.Xml.Serialization
                 }
                 else
                 {
-                    throw new NotImplementedException("method!!!");
+                    // #10593: Add More Tests for Serialization Code
+                    Debug.Assert(false);
                 }
             }
             else if (o is byte[])
@@ -957,15 +949,17 @@ namespace System.Xml.Serialization
                 else if (method == "WriteAttribute")
                 {
                     WriteAttribute(name, ns, a);
-                }                
+                }
                 else
                 {
-                    throw new NotImplementedException("o is byte[]");
+                    // #10593: Add More Tests for Serialization Code
+                    Debug.Assert(false);
                 }
             }
             else
             {
-                throw new NotImplementedException("!hasValidStringValue");
+                // #10593: Add More Tests for Serialization Code
+                Debug.Assert(false);
             }
 
         }
@@ -1099,7 +1093,7 @@ namespace System.Xml.Serialization
 
         private void WriteMembersElement(object o, XmlMembersMapping mapping)
         {
-            throw new NotImplementedException("WriteMembersElement");
+            throw new PlatformNotSupportedException();
         }
 
         protected override void InitCallbacks()

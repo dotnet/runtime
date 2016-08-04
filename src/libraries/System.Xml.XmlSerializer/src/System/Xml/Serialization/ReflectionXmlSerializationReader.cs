@@ -16,8 +16,8 @@ namespace System.Xml.Serialization
 {
     internal class ReflectionXmlSerializationReader : XmlSerializationReader
     {
-        internal static TypeDesc StringTypeDesc { get; private set; } = (new TypeScope()).GetTypeDesc(typeof(string));
-        internal static TypeDesc QnameTypeDesc { get; private set; } = (new TypeScope()).GetTypeDesc(typeof(XmlQualifiedName));
+        private static TypeDesc StringTypeDesc { get; set; } = (new TypeScope()).GetTypeDesc(typeof(string));
+        private static TypeDesc QnameTypeDesc { get; set; } = (new TypeScope()).GetTypeDesc(typeof(XmlQualifiedName));
 
         private XmlMapping _mapping;
 
@@ -71,18 +71,18 @@ namespace System.Xml.Serialization
             UnknownNodeAction elseAction = UnknownNodeAction.ReadUnknownNode;
 
             object o = null;
-            Member temp = null;
+            Member tempMember = null;
             var currentMember = new Member(member);
-            WriteMemberElements(ref o, null/*tempCollection*/, out temp, new Member[] { currentMember }, elementElseAction, elseAction, element.Any ? currentMember : null, null, xmlTypeMapping);
+            WriteMemberElements(ref o, null/*collectionMember*/, out tempMember, new Member[] { currentMember }, elementElseAction, elseAction, element.Any ? currentMember : null, null, xmlTypeMapping);
 
             return o;
         }
 
-        private void WriteMemberElements(ref object o, TempCollection tempCollection, out Member member, Member[] expectedMembers, UnknownNodeAction elementElseAction, UnknownNodeAction elseAction, Member anyElement, Member anyText, object masterObject = null)
+        private void WriteMemberElements(ref object o, CollectionMember collectionMember, out Member member, Member[] expectedMembers, UnknownNodeAction elementElseAction, UnknownNodeAction elseAction, Member anyElement, Member anyText, object masterObject = null)
         {
             if (Reader.NodeType == XmlNodeType.Element)
             {
-                WriteMemberElementsIf(ref o, tempCollection, out member, expectedMembers, anyElement, elementElseAction, masterObject);
+                WriteMemberElementsIf(ref o, collectionMember, out member, expectedMembers, anyElement, elementElseAction, masterObject);
             }
             else if (anyText != null && anyText.Mapping != null && WriteMemberText(out o, anyText))
             {
@@ -159,31 +159,31 @@ namespace System.Xml.Serialization
                     MemberInfo[] memberInfos = o.GetType().GetMember(member.Mapping.Name);
                     var memberInfo = memberInfos[0];
                     object collection = null;
-                    SetCollectionObjectWithTempCollection(ref collection, member.Collection, member.Mapping.TypeDesc.Type);
+                    SetCollectionObjectWithCollectionMember(ref collection, member.Collection, member.Mapping.TypeDesc.Type);
                     SetMemberValue(o, collection, memberInfo);
                 }
             }
         }
 
-        private void SetCollectionObjectWithTempCollection(ref object collection, TempCollection tempCollection, Type collectionType)
+        private void SetCollectionObjectWithCollectionMember(ref object collection, CollectionMember collectionMember, Type collectionType)
         {
             if (collectionType.IsArray)
             {
                 Array a;
                 Type elementType = collectionType.GetElementType();
                 var currentArray = collection as Array;
-                if (currentArray != null && currentArray.Length == tempCollection.Count)
+                if (currentArray != null && currentArray.Length == collectionMember.Count)
                 {
                     a = currentArray;
                 }
                 else
                 {
-                    a = Array.CreateInstance(elementType, tempCollection.Count);
+                    a = Array.CreateInstance(elementType, collectionMember.Count);
                 }
 
-                for (int i = 0; i < tempCollection.Count; i++)
+                for (int i = 0; i < collectionMember.Count; i++)
                 {
-                    a.SetValue(tempCollection[i], i);
+                    a.SetValue(collectionMember[i], i);
                 }
 
                 collection = a;
@@ -197,14 +197,14 @@ namespace System.Xml.Serialization
 
                 if (typeof(IList).IsAssignableFrom(collectionType))
                 {
-                    foreach (var item in tempCollection)
+                    foreach (var item in collectionMember)
                     {
                         ((IList)collection).Add(item);
                     }
                 }
                 else
                 {
-                    foreach (var item in tempCollection)
+                    foreach (var item in collectionMember)
                     {
                         MethodInfo addMethod = collectionType.GetMethod("Add");
                         if (addMethod == null)
@@ -272,18 +272,8 @@ namespace System.Xml.Serialization
 
                 if (text.Mapping is SpecialMapping)
                 {
+                    // #10592: To Support text.Mapping being SpecialMapping
                     throw new NotImplementedException("text.Mapping is SpecialMapping");
-                    //SpecialMapping special = (SpecialMapping)text.Mapping;
-                    //WriteSourceBeginTyped(member.ArraySource, special.TypeDesc);
-                    //switch (special.TypeDesc.Kind)
-                    //{
-                    //    case TypeKind.Node:
-                    //        Writer.Write("Document.CreateTextNode(this.ReadString())");
-                    //        break;
-                    //    default:
-                    //        throw new InvalidOperationException(Res.GetString(Res.XmlInternalError));
-                    //}
-                    //WriteSourceEnd(member.ArraySource);
                 }
                 else
                 {
@@ -320,6 +310,9 @@ namespace System.Xml.Serialization
 
         bool IsSequence(Member[] members)
         {
+            // #10586: Currently the reflection based method treat this kind of type as normal types. 
+            // But potentially we can do some optimization for types that have ordered properties. 
+
             //for (int i = 0; i < members.Length; i++)
             //{
             //    if (members[i].Mapping.IsParticle && members[i].Mapping.IsSequence)
@@ -328,12 +321,13 @@ namespace System.Xml.Serialization
             return false;
         }
 
-        private void WriteMemberElementsIf(ref object o, TempCollection tempCollection, out Member member, Member[] expectedMembers, Member anyElementMember, UnknownNodeAction elementElseAction, object masterObject = null)
+        private void WriteMemberElementsIf(ref object o, CollectionMember collectionMember, out Member member, Member[] expectedMembers, Member anyElementMember, UnknownNodeAction elementElseAction, object masterObject = null)
         {
             bool isSequence = IsSequence(expectedMembers);
             if (isSequence)
             {
-                throw new NotImplementedException("isSequence");
+                // #10586: Currently the reflection based method treat this kind of type as normal types. 
+                // But potentially we can do some optimization for types that have ordered properties.
             }
 
             ElementAccessor e = null;
@@ -368,7 +362,7 @@ namespace System.Xml.Serialization
                 ChoiceIdentifierAccessor choice = member.Mapping.ChoiceIdentifier;
                 string ns = e.Form == XmlSchemaForm.Qualified ? e.Namespace : "";
                 bool isList = member.Mapping.TypeDesc.IsArrayLike && !member.Mapping.TypeDesc.IsArray;
-                WriteElement(ref o, tempCollection, e, choice, member.Mapping.CheckSpecified == SpecifiedAccessor.ReadWrite, isList && member.Mapping.TypeDesc.IsNullable, member.Mapping.ReadOnly, ns, masterObject);
+                WriteElement(ref o, collectionMember, e, choice, member.Mapping.CheckSpecified == SpecifiedAccessor.ReadWrite, isList && member.Mapping.TypeDesc.IsNullable, member.Mapping.ReadOnly, ns, masterObject);
             }
             else
             {
@@ -385,7 +379,7 @@ namespace System.Xml.Serialization
                         if (element.Any && element.Name.Length == 0)
                         {
                             string ns = element.Form == XmlSchemaForm.Qualified ? element.Namespace : "";
-                            WriteElement(ref o, tempCollection, element, choice, anyElement.CheckSpecified == SpecifiedAccessor.ReadWrite, false, false, ns, masterObject : masterObject);
+                            WriteElement(ref o, collectionMember, element, choice, anyElement.CheckSpecified == SpecifiedAccessor.ReadWrite, false, false, ns, masterObject : masterObject);
                             break;
                         }
                     }
@@ -398,7 +392,7 @@ namespace System.Xml.Serialization
             }
         }
 
-        private void WriteElement(ref object o, TempCollection tempCollection, ElementAccessor element, ChoiceIdentifierAccessor choice, bool checkSpecified, bool checkForNull, bool readOnly, string defaultNamespace, object masterObject = null)
+        private void WriteElement(ref object o, CollectionMember collectionMember, ElementAccessor element, ChoiceIdentifierAccessor choice, bool checkSpecified, bool checkForNull, bool readOnly, string defaultNamespace, object masterObject = null)
         {
             object value = null;
             if (element.Mapping is ArrayMapping)
@@ -517,6 +511,7 @@ namespace System.Xml.Serialization
 
                         if (sm.DerivedMappings != null)
                         {
+                            // #10587: To Support SpecialMapping Types Having DerivedMappings  
                             throw new NotImplementedException("sm.DerivedMappings != null");
                             //WriteDerivedSerializable(sm, sm, source, isWrappedAny);
                             //WriteUnknownNode("UnknownNode", "null", null, true);
@@ -545,9 +540,9 @@ namespace System.Xml.Serialization
                 }
             }
 
-            if (tempCollection != null)
+            if (collectionMember != null)
             {
-                tempCollection.Add(value);
+                collectionMember.Add(value);
             }
             else
             {
@@ -606,10 +601,11 @@ namespace System.Xml.Serialization
 
                     if (memberMapping.ChoiceIdentifier != null)
                     {
+                        // #10588: To Support ArrayMapping Types Having ChoiceIdentifier
                         throw new NotImplementedException("memberMapping.ChoiceIdentifier != null");
                     }
 
-                    var tempCollection = new TempCollection();
+                    var collectionMember = new CollectionMember();
                     if ((readOnly && o == null) || Reader.IsEmptyElement)
                     {
                         Reader.Skip();
@@ -622,13 +618,13 @@ namespace System.Xml.Serialization
                         while (Reader.NodeType != XmlNodeType.EndElement && Reader.NodeType != XmlNodeType.None)
                         {
                             Member temp;
-                            WriteMemberElements(ref o, tempCollection, out temp, new Member[] { new Member(memberMapping) }, unknownNode, unknownNode, null, null);
+                            WriteMemberElements(ref o, collectionMember, out temp, new Member[] { new Member(memberMapping) }, unknownNode, unknownNode, null, null);
                             Reader.MoveToContent();
                         }
                         ReadEndElement();
                     }
 
-                    SetCollectionObjectWithTempCollection(ref o, tempCollection, collectionType);
+                    SetCollectionObjectWithCollectionMember(ref o, collectionMember, collectionType);
 
                 }
             }
@@ -850,7 +846,8 @@ namespace System.Xml.Serialization
             {
                 if (structMapping.TypeDesc.Type != null && typeof(XmlSchemaObject).IsAssignableFrom(structMapping.TypeDesc.Type))
                 {
-                    throw new NotImplementedException("structMapping.TypeDesc.Type != null && typeof(XmlSchemaObject).IsAssignableFrom(structMapping.TypeDesc.Type)");
+                    // #10589: To Support Serializing XmlSchemaObject
+                    throw new NotImplementedException("typeof(XmlSchemaObject)");
                     //Writer.WriteLine("DecodeName = false;");
                 }
 
@@ -867,7 +864,8 @@ namespace System.Xml.Serialization
 
                 if (isSequence)
                 {
-                   //throw new NotImplementedException("isSequence");
+                   // #10586: Currently the reflection based method treat this kind of type as normal types. 
+                   // But potentially we can do some optimization for types that have ordered properties.
                 }
 
                 var allMembersList = new List<Member>(mappings.Length);
@@ -905,7 +903,7 @@ namespace System.Xml.Serialization
                     {
                         if (mapping.TypeDesc.IsArrayLike && !(mapping.Elements.Length == 1 && mapping.Elements[0].Mapping is ArrayMapping))
                         {
-                            member.Collection = new TempCollection();
+                            member.Collection = new CollectionMember();
                         }
                         else if (!mapping.TypeDesc.IsArray)
                         {
@@ -944,7 +942,8 @@ namespace System.Xml.Serialization
                 bool IsSequenceAllMembers = IsSequence(allMembers);
                 if (IsSequenceAllMembers)
                 {
-                    throw new NotImplementedException("IsSequenceAllMembers");
+                    // #10586: Currently the reflection based method treat this kind of type as normal types. 
+                    // But potentially we can do some optimization for types that have ordered properties.
                 }
 
                 UnknownNodeAction unknownNode = UnknownNodeAction.ReadUnknownNode;
@@ -1118,6 +1117,7 @@ namespace System.Xml.Serialization
                 }
                 else if (special.TypeDesc.CanBeAttributeValue)
                 {
+                    // #10590: To Support special.TypeDesc.CanBeAttributeValue == true
                     throw new NotImplementedException("special.TypeDesc.CanBeAttributeValue");
                 }
                 else
@@ -1148,13 +1148,13 @@ namespace System.Xml.Serialization
 
             if (member.CheckSpecified == SpecifiedAccessor.ReadWrite)
             {
-                throw new NotImplementedException("member.CheckSpecified == SpecifiedAccessor.ReadWrite");
-                //string specifiedMemberName = member.Name + "Specified";
-                //MethodInfo specifiedMethodInfo = o.GetType().GetMethod("set_" + specifiedMemberName);
-                //if (specifiedMethodInfo != null)
-                //{
-                //    specifiedMethodInfo.Invoke(o, new object[] { true });
-                //}
+                // #10591: we need to add tests for this block.
+                string specifiedMemberName = member.Name + "Specified";
+                MethodInfo specifiedMethodInfo = o.GetType().GetMethod("set_" + specifiedMemberName);
+                if (specifiedMethodInfo != null)
+                {
+                    specifiedMethodInfo.Invoke(o, new object[] { true });
+                }
             }
         }
 
@@ -1213,23 +1213,23 @@ namespace System.Xml.Serialization
             return xsiType.Name == name && string.Equals(xsiType.Namespace, defaultNamespace);
         }
 
-        internal class TempCollection : List<object>
+        internal class CollectionMember : List<object>
         {
         }
 
         internal class Member
         {
             public MemberMapping Mapping;
-            public TempCollection Collection;
+            public CollectionMember Collection;
 
             public Member(MemberMapping mapping)
             {
                 Mapping = mapping;
             }
 
-            public Member(MemberMapping mapping, TempCollection tempCollection) : this(mapping)
+            public Member(MemberMapping mapping, CollectionMember collectionMember) : this(mapping)
             {
-                Collection = tempCollection;
+                Collection = collectionMember;
             }
         }
 
