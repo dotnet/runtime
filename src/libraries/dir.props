@@ -91,7 +91,7 @@
     <ProhibitFloatingDependencies>true</ProhibitFloatingDependencies>
 
     <CoreFxExpectedPrerelease>beta-24403-05</CoreFxExpectedPrerelease>
-    <CoreClrExpectedPrerelease>beta-24329-03</CoreClrExpectedPrerelease>
+    <CoreClrExpectedPrerelease>beta-24403-05</CoreClrExpectedPrerelease>
     <ExternalExpectedPrerelease>beta-24329-00</ExternalExpectedPrerelease>
 
     <CoreFxVersionsIdentityRegex>^(?i)((System\..*)|(NETStandard\.Library)|(Microsoft\.CSharp)|(Microsoft\.NETCore\.Targets)|(Microsoft\.NETCore\.Platforms)|(Microsoft\.Win32\..*)|(Microsoft\.VisualBasic))(?&lt;!TestData)$</CoreFxVersionsIdentityRegex>
