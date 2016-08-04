@@ -4,7 +4,7 @@
 using System;
 using System.IO;
 
-namespace Microsoft.DotNet.PlatformAbstractions
+namespace Microsoft.Extensions.PlatformAbstractions
 {
     public static class ApplicationEnvironment
     {

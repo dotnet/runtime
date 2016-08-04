@@ -267,10 +267,8 @@ namespace Microsoft.DotNet.Host.Build
                 {
                     // Just build them, we'll pack later
                     var packBuildResult = DotNetCli.Stage0.Build(
-                        "--build-base-path",
-                        packagingOutputDir,
-                        "--configuration",
-                        configuration,
+                        "--build-base-path", packagingOutputDir,
+                        "--configuration", configuration,
                         Path.Combine(c.BuildContext.BuildDirectory, "src", project))
                         .Execute();
 
