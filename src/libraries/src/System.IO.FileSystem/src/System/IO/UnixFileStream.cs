@@ -505,7 +505,21 @@ namespace System.IO
         /// <summary>Flushes the OS buffer.  This does not flush the internal read/write buffer.</summary>
         private void FlushOSBuffer()
         {
-            CheckFileCall(Interop.Sys.FSync(_fileHandle));
+            if (Interop.Sys.FSync(_fileHandle) < 0)
+            {
+                Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
+                switch (errorInfo.Error)
+                {
+                    case Interop.Error.EROFS:
+                    case Interop.Error.EINVAL:
+                    case Interop.Error.ENOTSUP:
+                        // Ignore failures due to the FileStream being bound to a special file that
+                        // doesn't support synchronization.  In such cases there's nothing to flush.
+                        break;
+                    default:
+                        throw Interop.GetExceptionForIoErrno(errorInfo, _path, isDirectory: false);
+                }
+            }
         }
 
         /// <summary>

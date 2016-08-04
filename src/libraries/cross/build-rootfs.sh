@@ -66,12 +66,12 @@ for i in "$@" ; do
             __UbuntuCodeName=jessie
             ;;
         vivid)
-            if [ __UbuntuCodeName != "jessie" ]; then
+            if [ "$__UbuntuCodeName" != "jessie" ]; then
                 __UbuntuCodeName=vivid
             fi
             ;;
         wily)
-            if [ __UbuntuCodeName != "jessie" ]; then
+            if [ "$__UbuntuCodeName" != "jessie" ]; then
                 __UbuntuCodeName=wily
             fi
             ;;

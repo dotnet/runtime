@@ -9,6 +9,7 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{A55A2B9A-830F-4330-A0E7-02A9FB30ABD2}</ProjectGuid>
     <OutputType>Library</OutputType>
+    <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(TargetsUnix)' == 'true' ">
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -58,9 +59,6 @@
     <Compile Include="$(CommonTestPath)\System\PlatformDetection.cs">
       <Link>Common\System\PlatformDetection.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\System\Net\CertificateConfiguration.cs">
-      <Link>Common\System\Net\CertificateConfiguration.cs</Link>
-    </Compile>
     <Compile Include="$(CommonTestPath)\System\Net\Capability.Security.cs">
       <Link>Common\System\Net\Capability.Security.cs</Link>
     </Compile>
@@ -70,6 +68,9 @@
     <Compile Include="$(CommonTestPath)\System\Net\Configuration.Security.cs">
       <Link>Common\System\Net\Configuration.Security.cs</Link>
     </Compile>
+    <Compile Include="$(CommonTestPath)\System\Net\Configuration.Certificates.cs">
+      <Link>Common\System\Net\Configuration.Certificates.cs</Link>
+    </Compile>
     <Compile Include="$(CommonTestPath)\System\Net\SchSendAuxRecordTestServer.cs">
       <Link>Common\System\Net\SchSendAuxRecordTestServer.cs</Link>
     </Compile>
@@ -78,9 +79,6 @@
     </Compile>
     <Compile Include="$(CommonTestPath)\System\Net\TestLogging.cs">
       <Link>Common\System\Net\TestLogging.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonTestPath)\System\Net\TestSettings.cs">
-      <Link>Common\System\Net\TestSettings.cs</Link>
     </Compile>
     <Compile Include="$(CommonTestPath)\System\Net\VerboseTestLogging.cs">
       <Link>Common\System\Net\VerboseTestLogging.cs</Link>
@@ -108,19 +106,19 @@
     <Compile Include="IdentityValidator.Unix.cs" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsLinux)' == 'true' ">
-    <None Include="..\Scripts\setup-kdc.sh">
+    <None Include="..\Scripts\Unix\setup-kdc.sh">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Include="..\Scripts\krb5.conf">
+    <None Include="..\Scripts\Unix\krb5.conf">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Include="..\Scripts\kdc.conf.ubuntu">
+    <None Include="..\Scripts\Unix\kdc.conf.ubuntu">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Include="..\Scripts\kdc.conf.centos">
+    <None Include="..\Scripts\Unix\kdc.conf.centos">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Include="..\Scripts\kdc.conf.opensuse">
+    <None Include="..\Scripts\Unix\kdc.conf.opensuse">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <Compile Include="NegotiateStreamTestForUnix.cs" />
@@ -146,7 +144,7 @@
     <SupplementalTestData Include="$(PackagesDir)System.Net.TestData\1.0.0-prerelease\content\**\*.*" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\src\System.Net.Security.csproj">
+    <ProjectReference Include="..\..\pkg\System.Net.Security.pkgproj">
       <Project>{89f37791-6254-4d60-ab96-acd3cca0e771}</Project>
       <Name>System.Net.Security</Name>
     </ProjectReference>

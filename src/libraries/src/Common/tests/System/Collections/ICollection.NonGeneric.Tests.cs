@@ -84,6 +84,18 @@ namespace System.Collections.Tests
         /// </summary>
         protected virtual Type ICollection_NonGeneric_SyncRootType => typeof(object);
 
+        /// <summary>
+        /// Used for the ICollection_NonGeneric_CopyTo_IndexLargerThanArrayCount_ThrowsArgumentException tests. Some
+        /// implementations throw a different exception type (e.g. ArgumentOutOfRangeException).
+        /// </summary>
+        protected virtual Type ICollection_NonGeneric_CopyTo_IndexLargerThanArrayCount_ThrowType => typeof(ArgumentException);
+
+        /// <summary>
+        /// Used for the ICollection_NonGeneric_CopyTo_TwoDimensionArray_ThrowsException test. Some implementations
+        /// throw a different exception type (e.g. RankException by ImmutableArray)
+        /// </summary>
+        protected virtual Type ICollection_NonGeneric_CopyTo_TwoDimensionArray_ThrowType => typeof(ArgumentException);
+
         #endregion
 
         #region IEnumerable Helper Methods
@@ -163,7 +175,7 @@ namespace System.Collections.Tests
             if (ICollection_NonGeneric_SupportsSyncRoot)
             {
                 ICollection collection = NonGenericICollectionFactory(count);
-                
+
                 Assert.IsType(ICollection_NonGeneric_SyncRootType, collection.SyncRoot);
 
                 if (ICollection_NonGeneric_SyncRootType == collection.GetType())
@@ -204,14 +216,14 @@ namespace System.Collections.Tests
 
         [Theory]
         [MemberData(nameof(ValidCollectionSizes))]
-        public void ICollection_NonGeneric_CopyTo_TwoDimensionArray_ThrowsArgumentException(int count)
+        public void ICollection_NonGeneric_CopyTo_TwoDimensionArray_ThrowsException(int count)
         {
             if (count > 0)
             {
                 ICollection collection = NonGenericICollectionFactory(count);
-                Array arr = new object[count,count];
+                Array arr = new object[count, count];
                 Assert.Equal(2, arr.Rank);
-                Assert.Throws<ArgumentException>(() => collection.CopyTo(arr, 0));
+                Assert.Throws(ICollection_NonGeneric_CopyTo_TwoDimensionArray_ThrowType, () => collection.CopyTo(arr, 0));
             }
         }
 
@@ -291,7 +303,7 @@ namespace System.Collections.Tests
         {
             ICollection collection = NonGenericICollectionFactory(count);
             object[] array = new object[count];
-            Assert.ThrowsAny<ArgumentException>(() => collection.CopyTo(array, count + 1)); // some implementations throw ArgumentOutOfRangeException for this scenario
+            Assert.Throws(ICollection_NonGeneric_CopyTo_IndexLargerThanArrayCount_ThrowType, () => collection.CopyTo(array, count + 1));
         }
 
         [Theory]

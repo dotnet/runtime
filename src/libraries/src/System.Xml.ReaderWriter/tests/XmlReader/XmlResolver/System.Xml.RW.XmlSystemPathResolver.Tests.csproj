@@ -8,6 +8,7 @@
     <OutputType>Library</OutputType>
     <AssemblyName>System.Xml.RW.XmlSystemPathResolver.Tests</AssemblyName>
     <RootNamespace>XMLTests.ReaderWriter.XmlResolverTests</RootNamespace>
+    <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -21,7 +22,7 @@
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\..\src\System.Xml.ReaderWriter.csproj">
+    <ProjectReference Include="..\..\..\pkg\System.Xml.ReaderWriter.pkgproj">
       <Project>{c559743a-762e-4d9d-b986-e77bdb97652e}</Project>
       <Name>System.Xml.ReaderWriter</Name>
     </ProjectReference>

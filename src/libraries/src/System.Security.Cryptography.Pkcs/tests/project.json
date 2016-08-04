@@ -1,19 +1,19 @@
 {
   "dependencies": {
-    "Microsoft.NETCore.Platforms": "1.0.1-rc4-24215-01",
-    "System.Collections": "4.0.11-rc4-24215-01",
-    "System.Diagnostics.Debug": "4.0.11-rc4-24215-01",
-    "System.Linq": "4.1.0-rc4-24215-01",
-    "System.Runtime": "4.1.0-rc4-24215-01",
-    "System.Security.Cryptography.Encoding": "4.0.0-rc4-24215-01",
-    "System.Security.Cryptography.Primitives": "4.0.0-rc4-24215-01",
-    "System.Security.Cryptography.X509Certificates": "4.1.0-rc4-24215-01",
+    "Microsoft.NETCore.Platforms": "1.0.2-beta-24403-05",
+    "System.Collections": "4.0.12-beta-24403-05",
+    "System.Diagnostics.Debug": "4.0.12-beta-24403-05",
+    "System.Linq": "4.1.1-beta-24403-05",
+    "System.Runtime": "4.1.1-beta-24403-05",
+    "System.Security.Cryptography.Encoding": "4.0.1-beta-24403-05",
+    "System.Security.Cryptography.Primitives": "4.0.1-beta-24403-05",
+    "System.Security.Cryptography.X509Certificates": "4.1.1-beta-24403-05",
     "test-runtime": {
       "target": "project",
       "exclude": "compile"
     },
     "Microsoft.xunit.netcore.extensions": "1.0.0-prerelease-00508-01",
-    "Microsoft.DotNet.BuildTools.TestSuite": "1.0.0-prerelease-00508-01"
+    "Microsoft.DotNet.BuildTools.TestSuite": "1.0.0-prerelease-00629-04"
   },
   "frameworks": {
     "netstandard1.3": {}

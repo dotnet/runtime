@@ -1,0 +1,586 @@
+﻿{
+  "settings": {
+    "SkipTests":{
+      "description": "Enables/Disables running tests.",
+      "valueType": "property",
+      "values": ["True", "False"],
+      "defaultValue": false
+    },
+    "OSGroup": {
+      "description": "OS Group for result binaries.",
+      "valueType": "property",
+      "values": ["AnyOS", "Windows_NT", "Linux", "OSX", "FreeBSD", "NetBSD"],
+      "defaultValue": "${OSName}"
+    },
+    "TargetOS": {
+      "description": "Target OS for result binaries.",
+      "valueType": "property",
+      "values": ["AnyOS", "Windows_NT", "Linux", "OSX", "FreeBSD", "NetBSD"],
+      "defaultValue": "${OSName}"
+    },
+    "FilterToOSGroup": {
+      "description": "FilterToOSGroup for result binaries.",
+      "valueType": "property",
+      "values": ["Windows_NT", "Linux", "OSX", "FreeBSD", "NetBSD"],
+      "defaultValue": "${OSRid}"
+    },
+    "TestNugetRuntimeId": {
+      "description": "Target OS for result binaries.",
+      "valueType": "property",
+      "values": ["win7-x64", "osx.10.10-x64", "ubuntu.14.04-x64", "ubuntu.16.04-x64", "etc-other-rids"],
+      "defaultValue": "${OSRid}-x64"
+    },
+    "TestWithLocalLibraries": {
+      "description": "Enables/Disables run test with local libraries.",
+      "valueType": "property",
+      "values": ["True", "False"],
+      "defaultValue": true
+    },
+    "RestoreDuringBuild": {
+      "description": "Enables/Disables the restoration of packages.",
+      "valueType": "property",
+      "values": ["True", "False"],
+      "defaultValue": true
+    },
+    "Platform": {
+      "description": "Sets the value of the platform.",
+      "valueType": "property",
+      "values": ["AnyCPU", "x86", "arm", "x64", "arm64"],
+      "defaultValue": "x64"
+    },
+    "ConfigurationGroup": {
+      "description": "Sets the configuration group as Release or Debug",
+      "valueType": "property",
+      "values": ["Release", "Debug"],
+      "defaultValue": "Debug"
+    },
+    "BuildPackages": {
+      "description": "Enables/Disables building packages.",
+      "valueType": "property",
+      "values": ["True", "False"],
+      "defaultValue": true
+    },
+    "BuildPackageLibraryReferences": {
+      "description": "Enables/Disables building libraries referenced by packages.",
+      "valueType": "property",
+      "values": ["True", "False"],
+      "defaultValue": true
+    },
+    "SkipManagedPackageBuild": {
+      "description": "Enables/Disables building packages for manage builds.",
+      "valueType": "property",
+      "values": ["True", "False"],
+      "defaultValue": false
+    },
+    "BuildTests": {
+      "description": "Enables/Disables building tests.",
+      "valueType": "property",
+      "values": ["True", "False"],
+      "defaultValue": true
+    },
+    "BuildTestsAgainstPackages": {
+      "description": "Allows to build tests against product packages.",
+      "valueType": "property",
+      "values": ["True", "False"],
+      "defaultValue": false
+    },
+    "Coverage":{
+      "description": "Enables code coverage runs.",
+      "valueType": "property",
+      "values": ["True", "False"],
+      "defaultValue": true
+    },
+    "Outerloop":{
+      "description": "Enables outerloops tests scenarios.",
+      "valueType": "property",
+      "values": ["True", "False"],
+      "defaultValue": true
+    },
+    "BuildAllOSGroups":{
+      "description": "Enables building the libraries for all OSes.",
+      "valueType": "property",
+      "values": ["True", "False"],
+      "defaultValue": true
+    },
+    "OfficialBuildId":{
+      "description": "Specifies the SeedDate and the revision of the build to generate the version of the libraries.",
+      "valueType": "property",
+      "values": [],
+      "defaultValue": ""
+    },
+    "CloudDropAccountName": {
+      "description": "Azure account name.",
+      "valueType": "property",
+      "values": [],
+      "defaultValue": ""
+    },
+    "CloudDropAccessToken": {
+      "description": "Azure access token",
+      "valueType": "property",
+      "values": [],
+      "defaultValue": ""
+    },
+    "ContainerName": {
+      "description": "Azure container name",
+      "valueType": "property",
+      "values": [],
+      "defaultValue": ""
+    },
+    "BuildNumberMajor": {
+      "description": "Product build major number.",
+      "valueType": "property",
+      "values": [],
+      "defaultValue": ""
+    },
+    "BuildNumberMinor": {
+      "description": "Product build minor number.",
+      "valueType": "property",
+      "values": [],
+      "defaultValue": ""
+    },
+    "GenerateNativeVersionInfo": {
+      "description": "Allows to generate the native version header.",
+      "valueType": "property",
+      "values": ["True", "False"],
+      "defaultValue": true
+    },
+    "SkipManagedPackageBuild": {
+      "description": "Allows to skip building packages from managed binaries.",
+      "valueType": "property",
+      "values": ["True", "False"],
+      "defaultValue": false
+    },
+    "BuildPackageLibraryReferences": {
+      "description": "Allows to build libraries referenced by packages",
+      "valueType": "property",
+      "values": ["True", "False"],
+      "defaultValue": true
+    },
+    "MsBuildNodoReuse": {
+      "description": "Disables node reuse.",
+      "valueType": "passThrough",
+      "values": [],
+      "defaultValue": "/nodeReuse:false"
+    },
+    "MsBuildLogging": {
+      "description": "MsBuild logging options.",
+      "valueType": "passThrough",
+      "values": [],
+      "defaultValue": "/flp:v=normal"
+    },
+    "MsBuildWarning": {
+      "description": "MsBuild warning logging.",
+      "valueType": "passThrough",
+      "values": [],
+      "defaultValue": "/flp2:warningsonly;logfile=msbuild.wrn"
+    },
+    "MsBuildError": {
+      "description": "MsBuild error logging.",
+      "valueType": "passThrough",
+      "values": [],
+      "defaultValue": "/flp3:errorsonly;logfile=msbuild.err"
+    },
+    "MsBuildParameters": {
+      "description": "MsBuild building options.",
+      "valueType": "passThrough",
+      "values": [],
+      "defaultValue": "/nologo /maxcpucount /verbosity:minimal /clp:Summary"
+    },
+    "MsBuildBinClashLogger-Windows": {
+      "description": "MsBuild Bin clash logger options for Windows.",
+      "valueType": "passThrough",
+      "values": [],
+      "defaultValue": "/l:BinClashLogger,Tools\\net45\\Microsoft.DotNet.Build.Tasks.dll;LogFile=binclash.log"
+    },
+    "MsBuildBinClashLogger-Unix": {
+      "description": "MsBuild Bin clash logger options for Unix.",
+      "valueType": "passThrough",
+      "values": [],
+      "defaultValue": "/l:BinClashLogger,Tools/Microsoft.DotNet.Build.Tasks.dll;LogFile=binclash.log"
+    },
+    "BuildArchitecture": {
+      "description": "Sets the value of the build architecture.",
+      "valueType": "passThrough",
+      "values": ["x86", "arm", "arm-softfp", "x64", "arm64"],
+      "defaultValue": "${CPUArch}"
+    },
+    "CmakeBuildType": {
+      "description": "Sets the value of the build configuration.",
+      "valueType": "passThrough",
+      "values": [],
+      "defaultValue": "Debug"
+    },
+    "HostOs": {
+      "description": "OS for result binaries.",
+      "valueType": "passThrough",
+      "values": ["AnyOS", "Windows_NT", "Linux", "OSX", "FreeBSD", "NetBSD"],
+      "defaultValue": "${OSName}"
+    },
+    "ProcessorCount": {
+      "description": "Sets the value of the number of processors available.",
+      "valueType": "passThrough",
+      "values": ["NUmeric values"],
+      "defaultValue": "--numproc ${ProcessorCount}"
+    },
+    "Project": {
+      "description": "Project where the commands are going to be applied.",
+      "valueType": "passThrough",
+      "values": [],
+      "defaultValue": ""
+    },
+    "ExtraParameters": {
+      "description": "Extra parameters will be passed to the selected command.",
+      "valueType": "passThrough",
+      "values": [],
+      "defaultValue": ""
+    },
+    "BatchGenerateTestProjectJsons": {
+      "description": "MsBuild target that generates the project Jsons files to build tests against packages.",
+      "valueType": "target",
+      "values": [],
+      "defaultValue": ""
+    },
+    "BatchRestorePackages": {
+      "description": "MsBuild target that restores the packages.",
+      "valueType": "target",
+      "values": [],
+      "defaultValue": ""
+    },
+    "GenerateVersionHeader": {
+      "description": "MsBuild target that generates the version header.",
+      "valueType": "target",
+      "values": [],
+      "defaultValue": ""
+    },
+    "UpdateInvalidPackageVersions": {
+      "description": "MsBuild target that looks through all dependencies and using the validation rules, it updates any invalid versions.",
+      "valueType": "target",
+      "values": [],
+      "defaultValue": ""
+    },
+    "CleanAllProjects": {
+      "description": "MsBuild target that deletes the binary output directory.",
+      "valueType": "target",
+      "values": [],
+      "defaultValue": ""
+    },
+    "CleanPackages": {
+      "description": "MsBuild target that deletes the repo-local nuget package directory.",
+      "valueType": "target",
+      "values": [],
+      "defaultValue": ""
+    },
+    "CleanPackagesCache": {
+      "description": "MsBuild target that deletes the user-local nuget package cache.",
+      "valueType": "target",
+      "values": [],
+      "defaultValue": ""
+    }
+  },
+  "commands": {
+    "sync":{
+      "alias":{
+        "p":{
+          "description": "Restores all NuGet packages for repository.",
+          "settings":{
+            "RestoreDuringBuild":  true,
+            "BatchRestorePackages": "default"
+          }
+        },
+        "ab":{
+          "description": "Downloads the latests product packages from Azure. The values for '-AzureAccount' and '-AzureToken' are required",
+          "settings":{
+            "Project": "src/syncAzure.proj",
+          }
+        },
+        "t":{
+          "description": "Generates project.jsons for test projects, restores packages, builds product and then builds tests against the generated project.json files.",
+          "settings":{
+            "RestoreDuringBuild":  true,
+            "BuildTestsAgainstPackages": true,
+            "BatchGenerateTestProjectJsons":  "default",
+            "BatchRestorePackages": "default"
+          }
+        },
+        "AzureAccount":{
+          "description": "Account name to connect to Azure Blob storage. Required for -ab to work.",
+          "settings":{
+            "CloudDropAccountName": "default"
+          }
+        },
+        "AzureToken":{
+          "description": "Account token to connect to Azure Blob storage. Required for -ab to work.",
+          "settings":{
+            "CloudDropAccessToken": "default"
+          }
+        },
+        "Container":{
+          "description": "Container name of the Azure Blob where the packages are going to be stored.",
+          "settings":{
+            "ContainerName": "default"
+          }
+        },
+        "BuildMajor": {
+          "description": "To download a specific group of product packages, specify build number. The value for -BuildMinor required.",
+          "settings": {
+            "BuildNumberMajor": "default"
+          }
+        },
+        "BuildMinor": {
+          "description": "To download a specific group of product packages, specify build number. The value for -BuildMajor required.",
+          "settings": {
+            "BuildNumberMinor": "default"
+          }
+        },
+        "verbose":{
+          "description": "Passes /flp:v=diag to the msbuild command or the value passed by the user.",
+          "settings":{
+            "MsBuildLogging": "/flp:v=diag;LogFile=sync.log"
+          }
+        }
+      },
+      "defaultValues":{
+        "toolName": "msbuild",
+        "settings": {
+          "MsBuildParameters":"default",
+          "MsBuildLogging":"/flp:v=normal;LogFile=sync.log"
+        }
+      }
+    },
+    "build-managed":{
+      "alias":{
+        "binaries":{
+          "description": "Only builds binaries. It doesn't restore packages.",
+          "settings":{
+            "RestoreDuringBuild": false,
+            "BuildTests": false,
+            "BuildPackages": false
+          }
+        },
+        "packages":{
+          "description": "Builds the NuGet packages.",
+          "settings":{
+            "Project": "src/packages.builds",
+            "FilterToOSGroup":"default",
+            "MsBuildLogging":"/flp:v=normal;LogFile=build-packages.log"
+          }
+        },
+        "tests":{
+          "description": "Builds the tests that are in the repository.",
+          "settings":{
+            "Project": "src/tests.builds",
+            "MsBuildLogging":"/flp:v=normal;LogFile=build-tests.log"
+          }
+        },
+        "debug":{
+          "description": "Sets ConfigurationGroup=Debug or the value passed by the user.",
+          "settings":{
+            "ConfigurationGroup": "Debug"
+          }
+        },
+        "release":{
+          "description": "Sets ConfigurationGroup=Release or the value passed by the user.",
+          "settings":{
+            "ConfigurationGroup": "Release"
+          }
+        },
+        "os":{
+          "description": "Sets OSGroup to the OS name where the build is going to run or it is set to the value passed by the user.",
+          "settings":{
+            "OSGroup": "default"
+          }
+        },
+        "target-os":{
+          "description": "Sets TargetOS to the OS name where the build is going to run or it is set to the value passed by the user.",
+          "settings":{
+            "TargetOS": "default"
+          }
+        },
+        "distroRid":{
+          "description": "Sets the OS version to the TestNugetRuntimeId property.",
+          "settings":{
+            "TestNugetRuntimeId": "default"
+          }
+        },
+        "GenerateVersion":{
+          "description": "Generates the version header for native binaries.",
+          "settings":{
+            "GenerateNativeVersionInfo": true,
+            "GenerateVersionHeader": "default"
+          }
+        },
+        "DisableManagedPackage":{
+          "description": "Generates the version header for native binaries.",
+          "settings":{
+            "SkipManagedPackageBuild": true
+          }
+        },
+        "buildArch":{
+          "description": "Passes the value of the build architecture to the respective build-native script.",
+          "settings":{
+            "Platform": "default"
+          }
+        },
+        "verbose":{
+          "description": "Passes /flp:v=diag to the msbuild command or the value passed by the user.",
+          "settings":{
+            "MsBuildLogging": "/flp:v=diag;LogFile=build-managed.log"
+          }
+        },
+        "nodoReuse":{
+          "description": "Disables node reuse because it causes file locking issues. Only available in the Desktop MsBuild.",
+          "settings":{
+            "MsBuildNodoReuse": "default"
+          }
+        },
+        "binclashWindows":{
+          "description": "Bin clash logger for Windows.",
+          "settings":{
+            "MsBuildBinClashLogger-Windows":"default"
+          }
+        },
+        "binclashUnix":{
+          "description": "Bin clash logger for Unix.",
+          "settings":{
+            "MsBuildBinClashLogger-Unix":"default"
+          }
+        }
+      },
+      "defaultValues":{
+        "toolName": "msbuild",
+        "settings": {
+          "OSGroup": "default",
+          "TargetOS": "default",
+          "ConfigurationGroup": "default",
+          "MsBuildParameters":"default",
+          "MsBuildLogging":"default",
+          "MsBuildWarning":"default",
+          "MsBuildError":"default"
+        }
+      }
+    },
+    "build-native":{
+      "alias":{
+        "debug":{
+          "description": "Passes Debug to respective build-native script.",
+          "settings":{
+            "CmakeBuildType": "Debug"
+          }
+        },
+        "release":{
+          "description": "Passes Release to respective build-native script.",
+          "settings":{
+            "CmakeBuildType": "Release"
+          }
+        },
+        "buildArch":{
+          "description": "Passes the value of the build architecture to the respective build-native script.",
+          "settings":{
+            "BuildArchitecture": "default"
+          }
+        },
+        "os":{
+          "description": "Passes the value of the OS to the respective build-native script.",
+          "settings":{
+            "HostOs": "default"
+          }
+        }
+      },
+      "defaultValues":{
+        "toolName": "terminal",
+        "Project": "src/Native/build-native",
+        "settings": {
+           "BuildArchitecture": "default", 
+           "CmakeBuildType": "default",           
+           "HostOs": "default",
+           "ProcessorCount": "default"
+         }
+      }
+    },
+    "publish-packages":{
+      "alias":{
+        "AzureAccount":{
+          "description": "Account name to connect to Azure Blob storage. Required for the command to work.",
+          "settings":{
+            "CloudDropAccountName": "default"
+          }
+        },
+        "AzureToken":{
+          "description": "Account token to connect to Azure Blob storage. Required for the command to work.",
+          "settings":{
+            "CloudDropAccessToken": "default"
+          }
+        },
+        "Container":{
+          "description": "Container name of the Azure Blob where the packages are going to be stored. Required for the command to work.",
+          "settings":{
+            "ContainerName": "default"
+          }
+        },
+        "verbose":{
+          "description": "Passes /flp:v=diag to the msbuild command or the value passed by the user.",
+          "settings":{
+            "MsBuildLogging": "/flp:v=diag;LogFile=publish-packages.log"
+          }
+        }
+      },
+      "defaultValues":{
+        "toolName": "msbuild",
+        "settings": {
+          "Project": "src/publish.proj",
+          "MsBuildParameters":"default",
+          "MsBuildLogging":"/flp:v=normal;LogFile=publish-packages.log"
+        }
+      }
+    },
+    "clean":{
+      "alias":{
+        "b":{
+          "description": "Deletes the binary output directory.",
+          "settings":{
+            "CleanAllProjects": "default"
+          }
+        },
+        "p":{
+          "description": "Deletes the repo-local nuget package directory.",
+          "settings":{
+            "CleanPackages": "default"
+            }
+        },
+        "c":{
+          "description": "Deletes the user-local nuget package cache.",
+          "settings":{
+            "CleanPackagesCache": "default"
+          }
+        }
+      },
+      "defaultValues":{
+        "toolName": "msbuild",
+        "settings": {
+          "MsBuildParameters":"default",
+          "MsBuildLogging":"/flp:v=normal;LogFile=clean.log"
+        }
+      }
+    }
+  },
+  "tools": {
+    "msbuild": {
+      "run": {
+        "windows": "Tools/msbuild.cmd",
+        "unix": "Tools/msbuild.sh"
+      },
+      "valueTypes": {
+        "property": "/p:{name}={value}",
+        "target": "/t:{name}",
+        "internal": "/{name}"
+      }
+    },
+    "terminal": {
+      "run": {
+        "windows": "cmd",
+        "unix": "sh"
+      },
+      "valueTypes": {}
+    }
+  }
+}

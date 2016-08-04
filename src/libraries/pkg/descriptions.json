@@ -331,6 +331,60 @@
         ]
     },
     {
+        "Name": "System.Composition",
+        "Description": "This packages provides a version of the Managed Extensibility Framework (MEF) that is lightweight and specifically optimized for high throughput scenarios, such as the web.",
+        "CommonTypes": [
+            "System.Composition.ExportAttribute",
+            "System.Composition.ImportAttribute",
+            "System.Composition.Convention.ConventionBuilder",
+            "System.Composition.Hosting.CompositionHost",
+            "System.Composition.CompositionContext",
+            "System.Composition.CompositionContextExtensions",
+        ]
+    },
+    {
+        "Name": "System.Composition.AttributedModel",
+        "Description": "Provides common attributes used by System.Composition types.",
+        "CommonTypes": [
+            "System.Composition.ExportAttribute",
+            "System.Composition.ImportAttribute",
+            "System.Composition.Convention.AttributedModelProvider"
+        ]
+    },
+    {
+        "Name": "System.Composition.Convention",
+        "Description": "Provides types that support using Managed Extensibility Framework with a convention-based configuration model.",
+        "CommonTypes": [
+            "System.Composition.Convention.ConventionBuilder",
+            "System.Composition.Convention.ExportConventionBuilder",
+            "System.Composition.Convention.ImportConventionBuilder",
+            "System.Composition.Convention.PartConventionBuilder",
+            "System.Composition.Convention.ParameterImportConventionBuilder"
+        ]
+    },
+    {
+        "Name": "System.Composition.Hosting",
+        "Description": "Provides Managed Extensibility Framework types that are useful to developers of extensible applications, or hosts.",
+        "CommonTypes": [
+            "System.Composition.Hosting.CompositionHost"
+        ]
+    },
+    {
+        "Name": "System.Composition.Runtime",
+        "Description": "Contains runtime components of the Managed Extensibility Framework.",
+        "CommonTypes": [
+            "System.Composition.CompositionContext"
+        ]
+    },
+    {
+        "Name": "System.Composition.TypedParts",
+        "Description": "Provides some extension methods for the Managed Extensibility Framework.",
+        "CommonTypes": [
+            "System.Composition.CompositionContextExtensions",
+            "System.Composition.Hosting.ContainerConfiguration"
+        ]
+    },
+    {
         "Name": "System.Console",
         "Description": "Provides the System.Console class, which represents the standard input, output and error streams for console applications.",
         "CommonTypes": [

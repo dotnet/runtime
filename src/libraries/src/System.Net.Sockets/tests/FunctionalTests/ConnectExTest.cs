@@ -52,7 +52,7 @@ namespace System.Net.Sockets.Tests
                 args.UserToken = complete;
 
                 Assert.True(sock.ConnectAsync(args));
-                Assert.True(complete.WaitOne(Configuration.PassingTestTimeout), "IPv4: Timed out while waiting for connection");
+                Assert.True(complete.WaitOne(TestSettings.PassingTestTimeout), "IPv4: Timed out while waiting for connection");
                 Assert.True(args.SocketError == SocketError.Success);
 
                 sock.Dispose();
@@ -62,7 +62,7 @@ namespace System.Net.Sockets.Tests
                 complete.Reset();
 
                 Assert.True(sock.ConnectAsync(args));
-                Assert.True(complete.WaitOne(Configuration.PassingTestTimeout), "IPv6: Timed out while waiting for connection");
+                Assert.True(complete.WaitOne(TestSettings.PassingTestTimeout), "IPv6: Timed out while waiting for connection");
                 Assert.True(args.SocketError == SocketError.Success);
             }
             finally

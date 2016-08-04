@@ -2,341 +2,266 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Reflection;
-using System.Reflection.Emit;
+using System.Collections.Generic;
 using Xunit;
 
 namespace System.Reflection.Emit.Tests
 {
-    public enum FBTestEnum
+    public enum CustomEnum
     {
-        VALUE_0,
-        VALUE_1
+        Value0,
+        Value1
     }
 
     public struct FBTestStruct
     {
         public int m_Int;
-        public FBTestEnum m_FBTestEnum;
+        public CustomEnum m_FBTestEnum;
     }
 
     public class FieldBuilderSetConstant
     {
-        private readonly RandomDataGenerator _generator = new RandomDataGenerator();
-
-        private TypeBuilder TypeBuilder
-        {
-            get
-            {
-                if (null == _typeBuilder)
-                {
-                    AssemblyBuilder assembly = AssemblyBuilder.DefineDynamicAssembly(
-                        new AssemblyName("FieldBuilderSetConstant_Assembly"), AssemblyBuilderAccess.Run);
-                    ModuleBuilder module = TestLibrary.Utilities.GetModuleBuilder(assembly, "FieldBuilderSetConstant_Module");
-                    _typeBuilder = module.DefineType("FieldBuilderSetConstant_Type", TypeAttributes.Abstract);
-                }
-
-                return _typeBuilder;
-            }
-        }
-
-        private TypeBuilder _typeBuilder;
+        private static TypeBuilder s_type = Helpers.DynamicType(TypeAttributes.Abstract);
 
         [Fact]
-        public void TestForBool()
+        public void SetConstant_Bool()
         {
-            FieldBuilder field = TypeBuilder.DefineField("Field_PosTest1", typeof(Boolean), FieldAttributes.Public);
-
-            // set default value
+            FieldBuilder field = s_type.DefineField("BoolField", typeof(bool), FieldAttributes.Public);
+            
             field.SetConstant(false);
-
-            // change default value
             field.SetConstant(true);
         }
 
         [Fact]
-        public void TestForSByte()
+        public void SetConstant_SByte()
         {
-            FieldBuilder field = TypeBuilder.DefineField("Field_PosTest2", typeof(sbyte), FieldAttributes.Public);
-
-            // set default value
-            field.SetConstant(SByte.MinValue);
-
-            // change default value
-            field.SetConstant(SByte.MaxValue);
+            FieldBuilder field = s_type.DefineField("SByteField", typeof(sbyte), FieldAttributes.Public);
+            
+            field.SetConstant(sbyte.MinValue);
+            field.SetConstant(sbyte.MaxValue);
         }
 
         [Fact]
-        public void TestForShort()
+        public void SetConstant_Short()
         {
-            FieldBuilder field = TypeBuilder.DefineField("Field_PosTest3", typeof(short), FieldAttributes.Public);
-
-            // set default value
-            field.SetConstant(Int16.MaxValue);
-
-            // change default value
-            field.SetConstant(Int16.MinValue);
+            FieldBuilder field = s_type.DefineField("ShortField", typeof(short), FieldAttributes.Public);
+            
+            field.SetConstant(short.MaxValue);
+            field.SetConstant(short.MinValue);
         }
 
         [Fact]
-        public void TestForInt()
+        public void SetConstant_Int()
         {
-            FieldBuilder field = TypeBuilder.DefineField("Field_PosTest4", typeof(int), FieldAttributes.Public);
-
-            // set default value
+            FieldBuilder field = s_type.DefineField("IntField", typeof(int), FieldAttributes.Public);
+            
             field.SetConstant(int.MinValue);
-
-            // change default value
             field.SetConstant(int.MaxValue);
         }
 
         [Fact]
-        public void TestForLong()
+        public void SetConstant_Long()
         {
-            FieldBuilder field = TypeBuilder.DefineField("Field_PosTest5", typeof(long), FieldAttributes.Public);
-
-            // set default value
+            FieldBuilder field = s_type.DefineField("LongField", typeof(long), FieldAttributes.Public);
+            
             field.SetConstant(long.MaxValue);
-
-            // change default value
             field.SetConstant(long.MinValue);
         }
 
         [Fact]
-        public void TestForByte()
+        public void SetConstant_Byte()
         {
-            FieldBuilder field = TypeBuilder.DefineField("Field_PosTest6", typeof(byte), FieldAttributes.Public);
-
-            // set default value
+            FieldBuilder field = s_type.DefineField("ByteField", typeof(byte), FieldAttributes.Public);
+            
             field.SetConstant(byte.MinValue);
-
-            // change default value
             field.SetConstant(byte.MaxValue);
         }
 
         [Fact]
-        public void TestForUShort()
+        public void SetConstant_UShort()
         {
-            FieldBuilder field = TypeBuilder.DefineField("Field_PosTest7", typeof(ushort), FieldAttributes.Public);
-
-            // set default value
+            FieldBuilder field = s_type.DefineField("UShortField", typeof(ushort), FieldAttributes.Public);
+            
             field.SetConstant(ushort.MaxValue);
-
-            // change default value
             field.SetConstant(ushort.MinValue);
         }
 
         [Fact]
-        public void TestForUInt()
+        public void SetConstant_UInt()
         {
-            FieldBuilder field = TypeBuilder.DefineField("Field_PosTest8", typeof(uint), FieldAttributes.Public);
-
-            // set default value
+            FieldBuilder field = s_type.DefineField("UIntField", typeof(uint), FieldAttributes.Public);
+            
             field.SetConstant(uint.MaxValue);
-
-            // change default value
             field.SetConstant(uint.MinValue);
         }
 
         [Fact]
-        public void TestForULong()
+        public void SetConstant_ULong()
         {
-            FieldBuilder field = TypeBuilder.DefineField("Field_PosTest9", typeof(ulong), FieldAttributes.Public);
-
-            // set default value
+            FieldBuilder field = s_type.DefineField("ULongField", typeof(ulong), FieldAttributes.Public);
+            
             field.SetConstant(ulong.MaxValue);
-
-            // change default value
             field.SetConstant(ulong.MinValue);
         }
 
         [Fact]
-        public void TestForFloat()
+        public void SetConstant_Float()
         {
-            FieldBuilder field = TypeBuilder.DefineField("Field_PosTest10", typeof(float), FieldAttributes.Public);
-
-            // set default value
+            FieldBuilder field = s_type.DefineField("FloatField", typeof(float), FieldAttributes.Public);
+            
             field.SetConstant(float.MaxValue);
-
-            // change default value
             field.SetConstant(float.NaN);
         }
 
         [Fact]
-        public void TestForDouble()
+        public void SetConstant_Double()
         {
-            FieldBuilder field = TypeBuilder.DefineField("Field_PosTest11", typeof(double), FieldAttributes.Public);
-
-            // set default value
+            FieldBuilder field = s_type.DefineField("DoubleField", typeof(double), FieldAttributes.Public);
+            
             field.SetConstant(double.PositiveInfinity);
-
-            // change default value
             field.SetConstant(double.NegativeInfinity);
         }
 
         [Fact]
-        public void TestForDateTime()
+        public void SetConstant_DateTime()
         {
-            FieldBuilder field = TypeBuilder.DefineField("Field_PosTest12", typeof(DateTime), FieldAttributes.Public);
-
-            // set default value
+            FieldBuilder field = s_type.DefineField("DateTimeField", typeof(DateTime), FieldAttributes.Public);
+            
             field.SetConstant(DateTime.MinValue);
-
-            // change default value
             field.SetConstant(DateTime.MaxValue);
         }
 
         [Fact]
-        public void TestForChar()
+        public void SetConstant_Char()
         {
-            FieldBuilder field = TypeBuilder.DefineField("Field_PosTest13", typeof(Char), FieldAttributes.Public);
+            FieldBuilder field = s_type.DefineField("CharField", typeof(char), FieldAttributes.Public);
 
-            // set default value
-            field.SetConstant(Char.MaxValue);
-
-            // change default value
-            field.SetConstant(Char.MinValue);
+            field.SetConstant(char.MaxValue);
+            field.SetConstant(char.MinValue);
         }
 
         [Fact]
-        public void TestForString()
+        public void SetConstant_String()
         {
-            FieldBuilder field = TypeBuilder.DefineField("Field_PosTest14", typeof(string), FieldAttributes.Public);
-
-            // set default value
+            FieldBuilder field = s_type.DefineField("StringField", typeof(string), FieldAttributes.Public);
+            
             field.SetConstant(null);
-
-            // change default value
-            field.SetConstant(_generator.GetString(false, 1, 30));
+            field.SetConstant("TestString");
         }
 
         [Fact]
-        public void TestForCustomType()
+        public void SetConstant_Enum()
         {
-            FieldBuilder field = TypeBuilder.DefineField("Field_PosTest15", typeof(FBTestEnum), FieldAttributes.Public);
-
-            // set default value
-            field.SetConstant(FBTestEnum.VALUE_0);
-
-            // change default value
-            field.SetConstant(FBTestEnum.VALUE_1);
+            FieldBuilder field = s_type.DefineField("EnumField", typeof(CustomEnum), FieldAttributes.Public);
+            
+            field.SetConstant(CustomEnum.Value0);
+            field.SetConstant(CustomEnum.Value1);
         }
 
         [Fact]
-        public void TestForObject()
+        public void SetConstant_Object()
         {
-            FieldBuilder field = TypeBuilder.DefineField("Field_PosTest17", typeof(object), FieldAttributes.Public);
-
-            // set default value
+            FieldBuilder field = s_type.DefineField("ObjectField", typeof(object), FieldAttributes.Public);
+            
             field.SetConstant(null);
         }
 
         [Fact]
-        public void TestForNullOnCustomType()
+        public void SetConstant_CustomObject()
         {
-            FieldBuilder field = TypeBuilder.DefineField("Field_PosTest18", typeof(FieldBuilderSetConstant), FieldAttributes.Public);
-
-            // set default value
+            FieldBuilder field = s_type.DefineField("CustomObjectField", typeof(FieldBuilderSetConstant), FieldAttributes.Public);
+            
             field.SetConstant(null);
         }
 
         [Fact]
-        public void TestThrowsExceptionOnCreateTypeCalled()
+        public void SetConstant_TypeCreated_ThrowsInvalidOperationException()
         {
-            FieldBuilder field = TypeBuilder.DefineField("Field_NegTest1", typeof(int), FieldAttributes.Public);
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Abstract);
+            FieldBuilder field = type.DefineField("Field_NegTest1", typeof(int), FieldAttributes.Public);
 
-            TypeBuilder.CreateTypeInfo().AsType();
+            type.CreateTypeInfo().AsType();
 
-            Assert.Throws<InvalidOperationException>(() => { field.SetConstant(0); });
+            Assert.Throws<InvalidOperationException>(() => field.SetConstant(0));
         }
 
-        [Fact]
-        public void TestThrowsExceptionForInvalidValueOnFieldType()
+        public static IEnumerable<object[]> SetConstant_Invalid_TestData()
         {
-            FieldBuilder field = TypeBuilder.DefineField("Field_NegTest2_Boolean", typeof(Boolean), FieldAttributes.Public);
-            VerificationHelper(field, null, typeof(ArgumentException));
-            VerificationHelper(field, new object(), typeof(ArgumentException));
+            FieldBuilder boolField = s_type.DefineField("BoolField2", typeof(bool), FieldAttributes.Public);
+            yield return new object[] { boolField, null };
+            yield return new object[] { boolField, new object() };
 
-            field = TypeBuilder.DefineField("Field_NegTest2_int", typeof(int), FieldAttributes.Public);
-            VerificationHelper(field, null, typeof(ArgumentException));
-            VerificationHelper(field, new object(), typeof(ArgumentException));
+            FieldBuilder intField = s_type.DefineField("IntField2", typeof(int), FieldAttributes.Public);
+            yield return new object[] { intField, null };
+            yield return new object[] { intField, new object() };
 
-            field = TypeBuilder.DefineField("Field_NegTest2_SByte", typeof(SByte), FieldAttributes.Public);
-            VerificationHelper(field, null, typeof(ArgumentException));
-            VerificationHelper(field, new object(), typeof(ArgumentException));
+            FieldBuilder sbyteField = s_type.DefineField("SByteField2", typeof(sbyte), FieldAttributes.Public);
+            yield return new object[] { sbyteField, null };
+            yield return new object[] { sbyteField, new object() };
 
-            field = TypeBuilder.DefineField("Field_NegTest2_Int16", typeof(Int16), FieldAttributes.Public);
-            VerificationHelper(field, null, typeof(ArgumentException));
-            VerificationHelper(field, new object(), typeof(ArgumentException));
+            FieldBuilder shortField = s_type.DefineField("ShortField2", typeof(short), FieldAttributes.Public);
+            yield return new object[] { shortField, null };
+            yield return new object[] { shortField, new object() };
 
-            field = TypeBuilder.DefineField("Field_NegTest2_Int64", typeof(long), FieldAttributes.Public);
-            VerificationHelper(field, null, typeof(ArgumentException));
-            VerificationHelper(field, new object(), typeof(ArgumentException));
+            FieldBuilder longField = s_type.DefineField("LongField2", typeof(long), FieldAttributes.Public);
+            yield return new object[] { longField, null };
+            yield return new object[] { longField, new object() };
 
-            field = TypeBuilder.DefineField("Field_NegTest2_Byte", typeof(byte), FieldAttributes.Public);
-            VerificationHelper(field, null, typeof(ArgumentException));
-            VerificationHelper(field, new object(), typeof(ArgumentException));
+            FieldBuilder byteField = s_type.DefineField("ByteField2", typeof(byte), FieldAttributes.Public);
+            yield return new object[] { byteField, null };
+            yield return new object[] { byteField, new object() };
 
-            field = TypeBuilder.DefineField("Field_NegTest2_UInt16", typeof(ushort), FieldAttributes.Public);
-            VerificationHelper(field, null, typeof(ArgumentException));
-            VerificationHelper(field, new object(), typeof(ArgumentException));
+            FieldBuilder ushortField = s_type.DefineField("UShortField2", typeof(ushort), FieldAttributes.Public);
+            yield return new object[] { ushortField, null };
+            yield return new object[] { ushortField, new object() };
 
-            field = TypeBuilder.DefineField("Field_NegTest2_UInt32", typeof(uint), FieldAttributes.Public);
-            VerificationHelper(field, null, typeof(ArgumentException));
-            VerificationHelper(field, new object(), typeof(ArgumentException));
+            FieldBuilder uintField = s_type.DefineField("UIntField2", typeof(uint), FieldAttributes.Public);
+            yield return new object[] { uintField, null };
+            yield return new object[] { uintField, new object() };
 
-            field = TypeBuilder.DefineField("Field_NegTest2_UInt64", typeof(ulong), FieldAttributes.Public);
-            VerificationHelper(field, null, typeof(ArgumentException));
-            VerificationHelper(field, new object(), typeof(ArgumentException));
+            FieldBuilder ulongField = s_type.DefineField("ULongField2", typeof(ulong), FieldAttributes.Public);
+            yield return new object[] { ulongField, null };
+            yield return new object[] { ulongField, new object() };
 
-            field = TypeBuilder.DefineField("Field_NegTest2_Single", typeof(float), FieldAttributes.Public);
-            VerificationHelper(field, null, typeof(ArgumentException));
-            VerificationHelper(field, new object(), typeof(ArgumentException));
+            FieldBuilder floatField = s_type.DefineField("FloatField2", typeof(float), FieldAttributes.Public);
+            yield return new object[] { floatField, null };
+            yield return new object[] { floatField, new object() };
 
-            field = TypeBuilder.DefineField("Field_NegTest2_Double", typeof(double), FieldAttributes.Public);
-            VerificationHelper(field, null, typeof(ArgumentException));
-            VerificationHelper(field, new object(), typeof(ArgumentException));
+            FieldBuilder doubleField = s_type.DefineField("DoubleField2", typeof(double), FieldAttributes.Public);
+            yield return new object[] { doubleField, null };
+            yield return new object[] { doubleField, new object() };
 
-            field = TypeBuilder.DefineField("Field_NegTest2_DateTime", typeof(DateTime), FieldAttributes.Public);
-            VerificationHelper(field, null, typeof(ArgumentException));
-            VerificationHelper(field, new object(), typeof(ArgumentException));
+            FieldBuilder dateTimeField = s_type.DefineField("DateTimeField2", typeof(DateTime), FieldAttributes.Public);
+            yield return new object[] { dateTimeField, null };
+            yield return new object[] { dateTimeField, new object() };
 
-            field = TypeBuilder.DefineField("Field_NegTest2_Char", typeof(Char), FieldAttributes.Public);
-            VerificationHelper(field, null, typeof(ArgumentException));
-            VerificationHelper(field, new object(), typeof(ArgumentException));
+            FieldBuilder charField = s_type.DefineField("CharField2", typeof(char), FieldAttributes.Public);
+            yield return new object[] { charField, null };
+            yield return new object[] { charField, new object() };
 
-            field = TypeBuilder.DefineField("Field_NegTest2_String", typeof(string), FieldAttributes.Public);
-            VerificationHelper(field, new object(), typeof(ArgumentException));
+            FieldBuilder stringField = s_type.DefineField("StringField2", typeof(string), FieldAttributes.Public);
+            yield return new object[] { stringField, new object() };
 
-            field = TypeBuilder.DefineField("Field_NegTest2_FBTestEnum", typeof(FBTestEnum), FieldAttributes.Public);
-            VerificationHelper(field, null, typeof(ArgumentException));
-            VerificationHelper(field, new object(), typeof(ArgumentException));
+            FieldBuilder enumField = s_type.DefineField("EnumField2", typeof(CustomEnum), FieldAttributes.Public);
+            yield return new object[] { enumField, null };
+            yield return new object[] { enumField, new object() };
 
-            field = TypeBuilder.DefineField("Field_NegTest2_Decimal", typeof(Decimal), FieldAttributes.Public);
-            VerificationHelper(field, new object(), typeof(ArgumentException));
+            FieldBuilder decimalField = s_type.DefineField("DecimalField2", typeof(decimal), FieldAttributes.Public);
+            yield return new object[] { decimalField, new object() };
+            yield return new object[] { decimalField, decimal.One };
 
-            field = TypeBuilder.DefineField("Field_NegTest2_Object", typeof(object), FieldAttributes.Public);
-            VerificationHelper(field, new object(), typeof(ArgumentException));
+            FieldBuilder objectField = s_type.DefineField("ObjectField2", typeof(object), FieldAttributes.Public);
+            yield return new object[] { objectField, new object() };
+
+            FieldBuilder structField = s_type.DefineField("LongField2", typeof(FBTestStruct), FieldAttributes.Public);
+            yield return new object[] { structField, null };
         }
 
-        [Fact]
-        public void TestThrowsExceptionForStruct()
+        [Theory]
+        [MemberData(nameof(SetConstant_Invalid_TestData))]
+        public void SetConstant_InvalidType_ThrowsArgumentException(FieldBuilder field, object defaultValue)
         {
-            FieldBuilder field = TypeBuilder.DefineField("Field_NegTest3", typeof(FBTestStruct), FieldAttributes.Public);
-            VerificationHelper(field, null, typeof(ArgumentException));
-        }
-
-        [Fact]
-        public void TestThrowsExceptionForDecimal()
-        {
-            FieldBuilder field = TypeBuilder.DefineField("Field_PosTest16", typeof(Decimal), FieldAttributes.Public);
-            VerificationHelper(field, decimal.One, typeof(ArgumentException));
-        }
-
-        private void VerificationHelper(FieldBuilder field, object value, Type expected)
-        {
-            Assert.Throws(expected, () => { field.SetConstant(value); });
+            Assert.Throws<ArgumentException>(null, () => field.SetConstant(defaultValue));
         }
     }
 }

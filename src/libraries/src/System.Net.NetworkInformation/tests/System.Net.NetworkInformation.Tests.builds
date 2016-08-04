@@ -9,6 +9,7 @@
       <OSGroup>OSX</OSGroup>
     </Project>
     <Project Include="FunctionalTests\System.Net.NetworkInformation.Functional.Tests.csproj">
+      <TestTFMs>netcore50;netcoreapp1.0;net46</TestTFMs>
       <OSGroup>Windows_NT</OSGroup>
     </Project>
     <Project Include="UnitTests\System.Net.NetworkInformation.WinRT.Unit.Tests.csproj">
@@ -18,6 +19,7 @@
       <OSGroup>OSX</OSGroup>
     </Project>
     <Project Include="UnitTests\System.Net.NetworkInformation.WinRT.Unit.Tests.csproj">
+      <TestTFMs>netcore50;netcoreapp1.0;net46</TestTFMs>
       <OSGroup>Windows_NT</OSGroup>
     </Project>
   </ItemGroup>

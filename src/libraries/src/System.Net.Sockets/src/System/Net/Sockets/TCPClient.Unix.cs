@@ -43,12 +43,32 @@ namespace System.Net.Sockets
         // We use a separate bool field to store whether the value has been set.
         // We don't use nullables, due to one of the properties being a reference type.
 
+        
+        private static readonly CancellationTokenSource s_canceledSource = CreateCanceledSource();
+        private CancellationTokenSource _disposing;
         private ShadowOptions _shadowOptions; // shadow state used in public properties before the socket is created
         private int _connectRunning; // tracks whether a connect operation that could set _clientSocket is currently running
 
         private void InitializeClientSocket()
         {
             // Nop.  We want to lazily-allocate the socket.
+        }
+
+        private void DisposeCore()
+        {
+            // In case there's a concurrent ConnectAsync operation, we need to signal to that
+            // operation that we're being disposed of, so that it can dispose of the current
+            // temporary socket that hasn't yet been published as the official one.  If there's
+            // already a cancellation source, just cancel it.  If there isn't, try to swap in
+            // an already-canceled source so that we don't have to artificially create a new one
+            // (since not all async connect operations require temporary sockets), but we may
+            // lose that race condition, in which case we still need to dispose of whatever is
+            // published.  It's fine to Cancel an already canceled cancellation source.
+            if (Volatile.Read(ref _disposing) == null)
+            {
+                Interlocked.CompareExchange(ref _disposing, s_canceledSource, null);
+            }
+            _disposing.Cancel();
         }
 
         private Socket ClientCore
@@ -59,8 +79,9 @@ namespace System.Net.Sockets
                 try
                 {
                     // The Client socket is being explicitly accessed, so we're forced
-                    // to create it if it doesn't exist.
-                    if (_clientSocket == null)
+                    // to create it if it doesn't exist.  Only do so if we haven't been disposed of,
+                    // which nulls out the field.
+                    if (_clientSocket == null && (_disposing == null || !_disposing.IsCancellationRequested))
                     {
                         // Create the socket, and transfer to it any of our shadow properties.
                         _clientSocket = CreateSocket();
@@ -157,7 +178,7 @@ namespace System.Net.Sockets
             {
                 // If we have a client socket, return its available value.
                 // Otherwise, there isn't data available, so return 0.
-                return _clientSocket != null ? _clientSocket.Available : 0;
+                return _clientSocket?.Available ?? 0;
             }
         }
 
@@ -167,7 +188,7 @@ namespace System.Net.Sockets
             {
                 // If we have a client socket, return whether it's connected.
                 // Otherwise as we don't have a socket, by definition it's not.
-                return _clientSocket != null && _clientSocket.Connected;
+                return _clientSocket?.Connected ?? false;
             }
         }
 
@@ -241,6 +262,14 @@ namespace System.Net.Sockets
         {
             try
             {
+                // Make sure we've created a disposing cancellation source so that we get alerted
+                // to a potentially concurrent disposal happening.
+                if (Volatile.Read(ref _disposing) != null && _disposing.IsCancellationRequested)
+                {
+                    throw new ObjectDisposedException(GetType().Name);
+                }
+                Interlocked.CompareExchange(ref _disposing, new CancellationTokenSource(), null);
+
                 // For each address, create a new socket (configured appropriately) and try to connect
                 // to the endpoint.  If we're successful, set the newly connected socket as the client
                 // socket, and we're done.  If we're unsuccessful, try the next address.
@@ -250,15 +279,30 @@ namespace System.Net.Sockets
                     Socket s = CreateSocket();
                     try
                     {
+                        // Configure the socket
                         ApplyInitializedOptionsToSocket(s);
-                        await s.ConnectAsync(address, port).ConfigureAwait(false);
 
+                        // Register to dispose of the socket when the TcpClient is Dispose'd of.
+                        // Some consumers use Dispose as a way to cancel a connect operation, as
+                        // TcpClient.Dispose calls Socket.Dispose on the stored socket... but we've
+                        // not stored the socket into the field yet, as doing so will publish it
+                        // to be seen via the Client property.  Instead, we register to be notified
+                        // when Dispose is called or has happened, and Dispose of the socket
+                        using (_disposing.Token.Register(o => ((Socket)o).Dispose(), s))
+                        {
+                            await s.ConnectAsync(address, port).ConfigureAwait(false);
+                        }
                         _clientSocket = s;
                         _active = true;
 
+                        if (_disposing.IsCancellationRequested)
+                        {
+                            s.Dispose();
+                            _clientSocket = null;
+                        }
                         return;
                     }
-                    catch (Exception exc)
+                    catch (Exception exc) when (!(exc is ObjectDisposedException))
                     {
                         s.Dispose();
                         lastException = ExceptionDispatchInfo.Capture(exc);
@@ -378,7 +422,15 @@ namespace System.Net.Sockets
                 ShadowOptions so = EnsureShadowValuesInitialized();
                 so._exclusiveAddressUse = value ? 1 : 0;
                 so._exclusiveAddressUseInitialized = true;
-                if (_clientSocket != null)
+
+                if (_clientSocket == null)
+                {
+                    using (Socket s = CreateSocket())
+                    {
+                        s.ExclusiveAddressUse = value;
+                    }
+                }
+                else
                 {
                     _clientSocket.ExclusiveAddressUse = value; // Use setter explicitly as it does additional validation beyond that done by SetOption
                 }
@@ -463,6 +515,13 @@ namespace System.Net.Sockets
         private void ExitClientLock()
         {
             Volatile.Write(ref _connectRunning, 0);
+        }
+
+        private static CancellationTokenSource CreateCanceledSource()
+        {
+            var cts = new CancellationTokenSource();
+            cts.Cancel();
+            return cts;
         }
 
         private sealed class ShadowOptions

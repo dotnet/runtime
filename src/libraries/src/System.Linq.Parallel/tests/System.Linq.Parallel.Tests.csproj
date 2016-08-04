@@ -11,6 +11,7 @@
     <RootNamespace>System.Linq.Parallel.Tests</RootNamespace>
     <AssemblyName>System.Linq.Parallel.Tests</AssemblyName>
     <NuGetPackageImportStamp>8be98411</NuGetPackageImportStamp>
+    <NugetTargetMoniker>.NETStandard,Version=v1.6</NugetTargetMoniker>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -97,7 +98,6 @@
     <ProjectReference Include="..\pkg\System.Linq.Parallel.pkgproj">
       <Project>{be28323e-327a-4e0f-b7f9-16ab7eab59dd}</Project>
       <Name>System.Linq.Parallel</Name>
-      <Private>true</Private>
     </ProjectReference>
   </ItemGroup>
   <!-- Automatically added by VS -->

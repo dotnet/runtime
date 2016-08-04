@@ -9,7 +9,9 @@ pushd %1
 FOR /D %%F IN (*.Tests) DO (
 	IF EXIST %%F\netcoreapp1.0 (
 		pushd %%F\netcoreapp1.0
-		CALL RunTests.cmd %2
+		IF EXIST RunTests.cmd (
+			CALL RunTests.cmd %2
+		)
 		popd
 	)
 )

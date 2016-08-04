@@ -2,112 +2,83 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-
-using System.Reflection;
-using System.Reflection.Emit;
-using System.Threading;
 using Xunit;
 
 namespace System.Reflection.Emit.Tests
 {
-    public class MethodBuilderToString1
+    public class MethodBuilderToString
     {
-        private const string TestDynamicAssemblyName = "TestDynamicAssembly";
-        private const string TestDynamicModuleName = "TestDynamicModule";
-        private const string TestDynamicTypeName = "TestDynamicType";
-        private const AssemblyBuilderAccess TestAssemblyBuilderAccess = AssemblyBuilderAccess.Run;
-        private const TypeAttributes TestTypeAttributes = TypeAttributes.Abstract;
-        private const MethodAttributes TestMethodAttributes = MethodAttributes.Public | MethodAttributes.Abstract | MethodAttributes.Virtual;
-        private const int MinStringLength = 1;
-        private const int MaxStringLength = 128;
-        private readonly RandomDataGenerator _generator = new RandomDataGenerator();
-        private readonly byte[] _defaultILArray = new byte[]  {
-            0x00,
-            0x72,
-            0x01,
-            0x00,
-            0x00,
-            0x70,
-            0x28,
-            0x04,
-            0x00,
-            0x00,
-            0x0a,
-            0x00,
-            0x2a
-        };
-
-        private TypeBuilder GetTestTypeBuilder()
+        [Fact]
+        public void ToString_AllFieldsSet()
         {
-            AssemblyName assemblyName = new AssemblyName(TestDynamicAssemblyName);
-            AssemblyBuilder assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(
-                            assemblyName, TestAssemblyBuilderAccess);
-            ModuleBuilder moduleBuilder = TestLibrary.Utilities.GetModuleBuilder(assemblyBuilder, "Module1");
-            return moduleBuilder.DefineType(TestDynamicTypeName, TestTypeAttributes);
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Abstract);
+            MethodBuilder method = type.DefineMethod("TestMethod", MethodAttributes.Public);
+
+            ILGenerator ilGenerator = method.GetILGenerator();
+            ilGenerator.Emit(OpCodes.Ret);
+
+            GenericTypeParameterBuilder[] typeParameters = method.DefineGenericParameters("T");
+            GenericTypeParameterBuilder returnType = typeParameters[0];
+
+            method.SetSignature(returnType.AsType(), null, null, null, null, null);
+            Assert.Contains(ExpectedToStrin(method), method.ToString());
         }
 
         [Fact]
-        public void TestWithAllFieldsSet()
+        public void ToString_NameAndAttributeSet()
         {
-            string methodName = null;
-            methodName = _generator.GetString(false, false, true, MinStringLength, MaxStringLength);
-            TypeBuilder typeBuilder = GetTestTypeBuilder();
-            MethodBuilder builder = typeBuilder.DefineMethod(methodName,
-                MethodAttributes.Public);
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Abstract);
+            MethodBuilder method = type.DefineMethod("TestMethod", MethodAttributes.Public);
 
-            ILGenerator ilgen = builder.GetILGenerator();
-            ilgen.Emit(OpCodes.Ret);
-            string[] typeParamNames = { "T" };
-            GenericTypeParameterBuilder[] typeParameters =
-                builder.DefineGenericParameters(typeParamNames);
-            GenericTypeParameterBuilder desiredReturnType = typeParameters[0];
-
-            builder.SetSignature(desiredReturnType.AsType(), null, null, null, null, null);
-            string actualString = builder.ToString();
-            string desiredString = GetDesiredMethodToString(builder);
-
-            Assert.NotNull(actualString);
-            Assert.Contains(desiredString, actualString);
+            Assert.Contains(ExpectedToStrin(method), method.ToString());
         }
 
         [Fact]
-        public void TestWithNameAndAttributeSet()
+        public void ToString_NameAttributeAndSignatureSetSet()
         {
-            string methodName = null;
-            methodName = _generator.GetString(false, false, true, MinStringLength, MaxStringLength);
-            TypeBuilder typeBuilder = GetTestTypeBuilder();
-            MethodBuilder builder = typeBuilder.DefineMethod(methodName, MethodAttributes.Public);
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Abstract);
+            MethodBuilder method = type.DefineMethod("TestMethod", MethodAttributes.Public);
 
-            string actualString = builder.ToString();
-            string desiredString = GetDesiredMethodToString(builder);
-
-            Assert.NotNull(actualString);
-            Assert.Contains(desiredString, actualString);
+            method.SetSignature(typeof(void), null, null, null, null, null);
+            Assert.Contains(ExpectedToStrin(method), method.ToString());
         }
 
         [Fact]
-        public void TestWithNameAttributeAndSignatureSet()
+        public void ToString_NonGenericMethod()
         {
-            string methodName = null;
-            methodName = _generator.GetString(false, false, true, MinStringLength, MaxStringLength);
-            TypeBuilder typeBuilder = GetTestTypeBuilder();
-            MethodBuilder builder = typeBuilder.DefineMethod(methodName,
-                MethodAttributes.Public);
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
+            MethodBuilder method = type.DefineMethod("method1", MethodAttributes.Public | MethodAttributes.Static, typeof(int), new Type[0]);
 
-            builder.SetSignature(typeof(void), null, null, null, null, null);
-            string actualString = builder.ToString();
-            string desiredString = GetDesiredMethodToString(builder);
-
-            Assert.NotNull(actualString);
-            Assert.Contains(desiredString, actualString);
+            string toString = method.ToString();
+            Assert.True(toString.LastIndexOf("Name: method1") != -1 &&
+                toString.LastIndexOf("Attributes: 22") != -1 &&
+                toString.LastIndexOf("Method Signature: Length: 3") != -1 &&
+                toString.LastIndexOf("Arguments: 0") != -1 &&
+                toString.LastIndexOf("Signature:") != -1 &&
+                toString.LastIndexOf("0  0  8  0") != -1);
         }
 
-        private string GetDesiredMethodToString(MethodBuilder builder)
+        [Fact]
+        public void ToString_GenericMethod()
         {
-            // Avoid use string.Format or StringBuilder
-            return "Name: " + builder.Name + " " + Environment.NewLine +
-                "Attributes: " + ((int)builder.Attributes).ToString() + Environment.NewLine +
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
+            MethodBuilder method = type.DefineMethod("method1", MethodAttributes.Public, typeof(int), new Type[0]);
+            method.DefineGenericParameters("T", "U", "V");
+            method.MakeGenericMethod(typeof(string), typeof(int), typeof(object));
+
+            string toString = method.ToString();
+            Assert.True(toString.LastIndexOf("Name: method1") != -1 &&
+                toString.LastIndexOf("Attributes: 6") != -1 &&
+                toString.LastIndexOf("Method Signature: Length: 4") != -1 &&
+                toString.LastIndexOf("Arguments: 0") != -1 &&
+                toString.LastIndexOf("Signature:") != -1 &&
+                toString.LastIndexOf("48  3  0  8  0") != -1);
+        }
+
+        private static string ExpectedToStrin(MethodBuilder method)
+        {
+            return "Name: " + method.Name + " " + Environment.NewLine +
+                "Attributes: " + ((int)method.Attributes).ToString() + Environment.NewLine +
                 "Method Signature: ";
         }
     }

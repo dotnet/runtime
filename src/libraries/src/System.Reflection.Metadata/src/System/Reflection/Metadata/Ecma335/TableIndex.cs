@@ -62,9 +62,4 @@ namespace System.Reflection.Metadata.Ecma335
         StateMachineMethod = 0x36,
         CustomDebugInformation = 0x37,
     }
-
-    internal static class TableIndexExtensions
-    {
-        internal const int Count = (int)TableIndex.CustomDebugInformation + 1;
-    }
 }

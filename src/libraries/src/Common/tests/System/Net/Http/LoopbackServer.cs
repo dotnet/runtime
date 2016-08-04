@@ -8,7 +8,6 @@ using System.Net.Http;
 using System.Net.NetworkInformation;
 using System.Net.Security;
 using System.Net.Sockets;
-using System.Net.Tests;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
@@ -95,7 +94,7 @@ namespace System.Net.Test.Common
                 if (options.UseSsl)
                 {
                     var sslStream = new SslStream(stream, false, delegate { return true; });
-                    using (var cert = CertificateConfiguration.GetServerCertificate())
+                    using (var cert = Configuration.Certificates.GetServerCertificate())
                     {
                         await sslStream.AuthenticateAsServerAsync(
                             cert, 

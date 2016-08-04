@@ -24,7 +24,7 @@
       <Platform>amd64</Platform>
     </Project>
     <Project Include="osx\runtime.native.System.IO.Compression.pkgproj">
-      <OSGroup>osx.10.10</OSGroup>
+      <OSGroup>osx.10</OSGroup>
       <Platform>amd64</Platform>
     </Project>
     <Project Include="opensuse\13.2\runtime.native.System.IO.Compression.pkgproj">
@@ -42,6 +42,10 @@
     <Project Include="win\runtime.native.System.IO.Compression.pkgproj">
       <OSGroup>Windows_NT</OSGroup>
       <Platform>arm</Platform>
+    </Project>
+    <Project Include="win\runtime.native.System.IO.Compression.pkgproj">
+      <OSGroup>Windows_NT</OSGroup>
+      <Platform>arm64</Platform>
     </Project>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />

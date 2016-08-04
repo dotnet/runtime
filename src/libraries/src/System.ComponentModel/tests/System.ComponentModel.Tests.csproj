@@ -8,6 +8,7 @@
     <OutputType>Library</OutputType>
     <AssemblyName>System.ComponentModel.Tests</AssemblyName>
     <RootNamespace>System.ComponentModel.Tests</RootNamespace>
+    <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">

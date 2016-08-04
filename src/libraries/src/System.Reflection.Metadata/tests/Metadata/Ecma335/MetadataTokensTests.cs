@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Linq;
+using System.Reflection.Metadata.Tests;
 using Xunit;
 
 namespace System.Reflection.Metadata.Ecma335.Tests
@@ -76,6 +78,102 @@ namespace System.Reflection.Metadata.Ecma335.Tests
             Assert.Throws<ArgumentException>(() => MetadataTokens.GetToken(s_winrtPrefixedStringHandle));
             Assert.Throws<ArgumentException>(() => MetadataTokens.GetToken(s_blobHandle));
             Assert.Throws<ArgumentException>(() => MetadataTokens.GetToken(s_guidHandle));
+        }
+
+        [Fact]
+        public void TryGetTableIndex()
+        {
+            var kinds = 
+                from i in Enumerable.Range(0, 255)
+                let index = new Func<HandleKind, TableIndex?>(k => 
+                {
+                    TableIndex ti;
+                    if (MetadataTokens.TryGetTableIndex(k, out ti))
+                    {
+                        Assert.Equal((int)k, (int)ti);
+                        return ti;
+                    }
+
+                    return null;
+                })((HandleKind)i)
+                where index != null
+                select index.Value;
+
+            AssertEx.Equal(new TableIndex[] 
+            {
+                TableIndex.Module,
+                TableIndex.TypeRef,
+                TableIndex.TypeDef,
+                TableIndex.FieldPtr,
+                TableIndex.Field,
+                TableIndex.MethodPtr,
+                TableIndex.MethodDef,
+                TableIndex.ParamPtr,
+                TableIndex.Param,
+                TableIndex.InterfaceImpl,
+                TableIndex.MemberRef,
+                TableIndex.Constant,
+                TableIndex.CustomAttribute,
+                TableIndex.FieldMarshal,
+                TableIndex.DeclSecurity,
+                TableIndex.ClassLayout,
+                TableIndex.FieldLayout,
+                TableIndex.StandAloneSig,
+                TableIndex.EventMap,
+                TableIndex.EventPtr,
+                TableIndex.Event,
+                TableIndex.PropertyMap,
+                TableIndex.PropertyPtr,
+                TableIndex.Property,
+                TableIndex.MethodSemantics,
+                TableIndex.MethodImpl,
+                TableIndex.ModuleRef,
+                TableIndex.TypeSpec,
+                TableIndex.ImplMap,
+                TableIndex.FieldRva,
+                TableIndex.EncLog,
+                TableIndex.EncMap,
+                TableIndex.Assembly,
+                TableIndex.AssemblyRef,
+                TableIndex.File,
+                TableIndex.ExportedType,
+                TableIndex.ManifestResource,
+                TableIndex.NestedClass,
+                TableIndex.GenericParam,
+                TableIndex.MethodSpec,
+                TableIndex.GenericParamConstraint,
+                TableIndex.Document,
+                TableIndex.MethodDebugInformation,
+                TableIndex.LocalScope,
+                TableIndex.LocalVariable,
+                TableIndex.LocalConstant,
+                TableIndex.ImportScope,
+                TableIndex.StateMachineMethod,
+                TableIndex.CustomDebugInformation
+            }, kinds);
+        }
+
+        [Fact]
+        public void TryGetHeapIndex()
+        {
+            HeapIndex index;
+            Assert.True(MetadataTokens.TryGetHeapIndex(HandleKind.Blob, out index));
+            Assert.Equal(HeapIndex.Blob, index);
+
+            Assert.True(MetadataTokens.TryGetHeapIndex(HandleKind.String, out index));
+            Assert.Equal(HeapIndex.String, index);
+
+            Assert.True(MetadataTokens.TryGetHeapIndex(HandleKind.UserString, out index));
+            Assert.Equal(HeapIndex.UserString, index);
+
+            Assert.True(MetadataTokens.TryGetHeapIndex(HandleKind.NamespaceDefinition, out index));
+            Assert.Equal(HeapIndex.String, index);
+
+            Assert.True(MetadataTokens.TryGetHeapIndex(HandleKind.Guid, out index));
+            Assert.Equal(HeapIndex.Guid, index);
+
+            Assert.False(MetadataTokens.TryGetHeapIndex(HandleKind.Constant, out index));
+            Assert.False(MetadataTokens.TryGetHeapIndex((HandleKind)255, out index));
         }
 
         [Fact]

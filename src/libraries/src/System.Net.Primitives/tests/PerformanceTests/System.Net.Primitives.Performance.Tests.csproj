@@ -9,6 +9,9 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{86256B36-4C78-4A71-A80A-CCA35C4AE758}</ProjectGuid>
     <OutputType>Library</OutputType>
+    <IncludePerformanceTests>true</IncludePerformanceTests>
+    <AssemblyName>System.Collections.NonGeneric.Performance.Tests</AssemblyName>
+    <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
   </PropertyGroup>
   <!-- Help VS understand available configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Debug|AnyCPU'" />
@@ -19,7 +22,7 @@
     <Compile Include="CredentialCacheTests.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\src\System.Net.Primitives.csproj">
+    <ProjectReference Include="..\..\pkg\System.Net.Primitives.pkgproj">
       <Project>{8772BC91-7B55-49B9-94FA-4B1BE5BEAB55}</Project>
       <Name>System.Net.Primitives</Name>
     </ProjectReference>

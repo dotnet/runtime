@@ -109,7 +109,8 @@ namespace System.Linq.Expressions.Compiler
 
                 for (int i = 0; i < types.Length; i++)
                 {
-                    if (types[i].IsByRef)
+                    Type type = types[i];
+                    if (type.IsByRef || type.IsPointer)
                     {
                         needCustom = true;
                         break;
@@ -135,6 +136,7 @@ namespace System.Linq.Expressions.Compiler
             {
                 result = GetFuncType(types);
             }
+
             Debug.Assert(result != null);
             return result;
         }

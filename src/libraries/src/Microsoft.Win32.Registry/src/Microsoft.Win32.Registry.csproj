@@ -11,7 +11,6 @@
     <AssemblyVersion>4.0.1.0</AssemblyVersion>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <PackageTargetFramework Condition="'$(PackageTargetFramework)' == ''">netstandard1.3</PackageTargetFramework>
-    <GeneratePlatformNotSupportedAssembly Condition="'$(TargetsUnix)' == 'true'">true</GeneratePlatformNotSupportedAssembly>
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'net46'">true</IsPartialFacadeAssembly>
     <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.3</NuGetTargetMoniker>
   </PropertyGroup>
@@ -22,6 +21,21 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Release|AnyCPU'" />
+  <ItemGroup Condition="'$(TargetGroup)' != 'net46'">
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.RegistryOptions.cs">
+      <Link>Common\Interop\Windows\Interop.RegistryOptions.cs</Link>
+    </Compile>
+    <Compile Include="Microsoft\Win32\Registry.cs" />
+    <Compile Include="Microsoft\Win32\RegistryKey.cs" />
+    <Compile Include="Microsoft\Win32\RegistryHive.cs" />
+    <Compile Include="Microsoft\Win32\RegistryOptions.cs" />
+    <Compile Include="Microsoft\Win32\RegistryValueKind.cs" />
+    <Compile Include="Microsoft\Win32\RegistryValueOptions.cs" />
+    <Compile Include="Microsoft\Win32\RegistryView.cs" />
+    <Compile Include="Microsoft\Win32\ThrowHelper.cs" />
+    <Compile Include="Microsoft\Win32\SafeHandles\SafeRegistryHandle.cs" />
+    <Compile Include="System\Security\AccessControl\RegistryRights.cs" />
+  </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' != 'net46' AND '$(TargetsWindows)' == 'true'">
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
       <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
@@ -56,9 +70,6 @@
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.RegFlushKey.cs">
       <Link>Common\Interop\Windows\Interop.RegFlushKey.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.RegistryOptions.cs">
-      <Link>Common\Interop\Windows\Interop.RegistryOptions.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.RegOpenKeyEx.cs">
       <Link>Common\Interop\Windows\Interop.RegOpenKeyEx.cs</Link>
     </Compile>
@@ -77,14 +88,12 @@
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.SECURITY_ATTRIBUTES.cs">
       <Link>Common\Interop\Windows\Interop.SECURITY_ATTRIBUTES.cs</Link>
     </Compile>
-    <Compile Include="Microsoft\Win32\Registry.cs" />
-    <Compile Include="Microsoft\Win32\RegistryKey.cs" />
-    <Compile Include="Microsoft\Win32\RegistryOptions.cs" />
-    <Compile Include="Microsoft\Win32\RegistryValueKind.cs" />
-    <Compile Include="Microsoft\Win32\RegistryView.cs" />
-    <Compile Include="Microsoft\Win32\SafeHandles\SafeRegistryHandle.cs" />
-    <Compile Include="Microsoft\Win32\ThrowHelper.cs" />
-    <Compile Include="System\Security\AccessControl\RegistryRights.cs" />
+    <Compile Include="Microsoft\Win32\RegistryKey.Windows.cs" />
+    <Compile Include="Microsoft\Win32\SafeHandles\SafeRegistryHandle.Windows.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
+    <Compile Include="Microsoft\Win32\RegistryKey.FileSystem.cs" />
+    <Compile Include="Microsoft\Win32\SafeHandles\SafeRegistryHandle.FileSystem.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'net46'">
     <TargetingPackReference Include="mscorlib" />

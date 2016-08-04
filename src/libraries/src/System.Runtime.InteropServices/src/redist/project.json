@@ -1,12 +1,13 @@
 {
   "dependencies": {
-    "Microsoft.NETCore.Targets": "1.0.0",
-    "System.Runtime.InteropServices": "4.0.20"
+    "System.Runtime.InteropServices": "4.1.0"
   },
   "frameworks": {
-    "netcore50": {}
+    "netcore50": {},
+    "net462": {}
   },
   "runtimes": {
+    "win": {},
     "win8": {},
     "win8-aot": {}
   }

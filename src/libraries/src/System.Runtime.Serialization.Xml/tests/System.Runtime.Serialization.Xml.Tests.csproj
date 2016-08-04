@@ -10,16 +10,9 @@
     <RootNamespace>System.Runtime.Serialization.Xml.Tests</RootNamespace>
     <AssemblyName>System.Runtime.Serialization.Xml.Tests</AssemblyName>
     <ProjectGuid>{30CAB353-089E-4294-B23B-F2DD1D945654}</ProjectGuid>
-    <IncludePerformanceTests>true</IncludePerformanceTests>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(UseContractReferences)' == 'true'" >
-    <ProjectJson>Performance/project.json</ProjectJson>
-    <ProjectLockJson>Performance/project.lock.json</ProjectLockJson>
+    <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="Performance\XmlUTF8TextReaderTests.cs" />
-    <Compile Include="Performance\PerformanceTestsCommon.cs" />
-    <Compile Include="Performance\DcsPerformanceTest.cs" />
     <Compile Include="Utils.cs" />
     <Compile Include="SerializationTypes.cs" />
     <Compile Include="SerializationTypes.CoreCLR.cs" />
@@ -30,22 +23,18 @@
     <Compile Include="MyResolver.cs" />
     <Compile Include="XmlDictionaryReaderTests.cs" />
     <Compile Include="XmlDictionaryWriterTest.cs" />
-    <!-- Performance Tests -->
-    <Compile Include="$(CommonTestPath)\System\PerfUtils.cs">
-      <Link>Common\System\PerfUtils.cs</Link>
-    </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(UseContractReferences)' == ''">
+  <ItemGroup>
     <ProjectReference Include="..\..\System.Private.DataContractSerialization\src\System.Private.DataContractSerialization.csproj">
       <Project>{6B4C1660-D158-4820-BE1C-D7A29CEBEC9B}</Project>
       <Name>System.Private.DataContractSerialization</Name>
       <KeepProjectReference>true</KeepProjectReference>
     </ProjectReference>
-    <ProjectReference Include="..\..\System.Runtime.Serialization.Primitives\src\System.Runtime.Serialization.Primitives.csproj">
+    <ProjectReference Include="..\..\System.Runtime.Serialization.Primitives\pkg\System.Runtime.Serialization.Primitives.pkgproj">
       <Project>{CDF0ACB5-1361-4E48-8ECB-22E8022F5F01}</Project>
       <Name>System.Runtime.Serialization.Primitives</Name>
     </ProjectReference>
-    <ProjectReference Include="..\..\System.Xml.XmlSerializer\src\System.Xml.XmlSerializer.csproj">
+    <ProjectReference Include="..\..\System.Xml.XmlSerializer\pkg\System.Xml.XmlSerializer.pkgproj">
       <Project>{D62A6082-5229-4845-8BE9-75753E08C65A}</Project>
       <Name>System.Xml.XmlSerializer</Name>
     </ProjectReference>

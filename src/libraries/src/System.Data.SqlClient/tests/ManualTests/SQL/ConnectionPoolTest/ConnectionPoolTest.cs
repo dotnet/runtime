@@ -14,13 +14,13 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         private static readonly string _tcpConnStr = (new SqlConnectionStringBuilder(DataTestUtility.TcpConnStr) { MultipleActiveResultSets = false }).ConnectionString;
         private static readonly string _tcpMarsConnStr = (new SqlConnectionStringBuilder(DataTestUtility.TcpConnStr) { MultipleActiveResultSets = true }).ConnectionString;
 
-        [Fact]
+        [CheckConnStrSetupFact]
         public static void ConnectionPool_NonMars()
         {
             RunDataTestForSingleConnString(_tcpConnStr);
         }
 
-        [Fact]
+        [CheckConnStrSetupFact]
         public static void ConnectionPool_Mars()
         {
             RunDataTestForSingleConnString(_tcpMarsConnStr);
@@ -133,7 +133,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         /// <param name="connectionString"></param>
         private static void ReclaimEmancipatedOnOpenTest(string connectionString)
         {
-            string newConnectionString = connectionString + ";Max Pool Size=1";
+            string newConnectionString = (new SqlConnectionStringBuilder(connectionString) { MaxPoolSize = 1 }).ConnectionString;
             SqlConnection.ClearAllPools();
 
             InternalConnectionWrapper internalConnection = CreateEmancipatedConnection(newConnectionString);

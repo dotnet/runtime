@@ -359,19 +359,31 @@ namespace System.IO.Tests
         }
 
         /// <summary>
-        /// Creates a test symlink to determine if symlinks can be successfully created
+        /// In some cases (such as when running without elevated privileges),
+        /// the symbolic link may fail to create. Only run this test if it creates
+        /// links successfully.
         /// </summary>
         protected static bool CanCreateSymbolicLinks
         {
             get
             {
-                var path = Path.GetTempFileName();
-                var linkPath = path + ".link";
-                var ret = CreateSymLink(path, linkPath, isDirectory: false);
-                ret = ret && File.Exists(linkPath);
+                bool success = true;
+
+                // Verify file symlink creation
+                string path = Path.GetTempFileName();
+                string linkPath = path + ".link";
+                success = CreateSymLink(path, linkPath, isDirectory: false);
                 try { File.Delete(path); } catch { }
                 try { File.Delete(linkPath); } catch { }
-                return ret;
+
+                // Verify directory symlink creation
+                path = Path.GetTempFileName();
+                linkPath = path + ".link";
+                success = success && CreateSymLink(path, linkPath, isDirectory: true);
+                try { Directory.Delete(path); } catch { }
+                try { Directory.Delete(linkPath); } catch { }
+
+                return success;
             }
         }
 

@@ -193,7 +193,7 @@ namespace System.Reflection.Metadata.Ecma335
         // internal for testing
         internal static RowCounts[][] GetBaseRowCounts(IReadOnlyList<int> baseRowCounts, int generations)
         {
-            var rowCounts = new RowCounts[TableIndexExtensions.Count][];
+            var rowCounts = new RowCounts[MetadataTokens.TableCount][];
 
             for (int t = 0; t < rowCounts.Length; t++)
             {

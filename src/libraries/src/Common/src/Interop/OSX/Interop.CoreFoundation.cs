@@ -89,6 +89,16 @@ internal static partial class Interop
         }
 
         /// <summary>
+        /// You should retain a Core Foundation object when you receive it from elsewhere
+        /// (that is, you did not create or copy it) and you want it to persist. If you 
+        /// retain a Core Foundation object you are responsible for releasing it
+        /// </summary>
+        /// <param name="ptr">The CFType object to retain. This value must not be NULL</param>
+        /// <returns>The input value</param>
+        [DllImport(Interop.Libraries.CoreFoundationLibrary)]
+        internal extern static IntPtr CFRetain(IntPtr ptr);
+
+        /// <summary>
         /// Decrements the reference count on the specified object and, if the ref count hits 0, cleans up the object.
         /// </summary>
         /// <param name="ptr">The pointer on which to decrement the reference count.</param>

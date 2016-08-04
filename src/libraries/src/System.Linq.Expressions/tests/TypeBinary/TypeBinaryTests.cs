@@ -92,5 +92,7 @@ namespace System.Linq.Expressions.Tests
                 return Types.SelectMany(t => Constants, (t, c) => new object[] { c, t });
             }
         }
+
+        public static IEnumerable<object[]> TypeArguments => Types.Select(t => new object[] {t});
     }
 }

@@ -61,7 +61,6 @@ namespace System.Collections.Tests
             InitialItems_Tests(linkedList, new T[] { headItems[0] });
             VerifyRemovedNode(tempNode1, headItems[1]);
 
-
             //[] Call Remove all the items collection size=2
             linkedList = new LinkedList<T>();
             linkedList.AddFirst(headItems[0]);

@@ -2,9 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Reflection;
-using System.Reflection.Emit;
 using Xunit;
 
 namespace System.Reflection.Emit.Tests
@@ -12,75 +9,51 @@ namespace System.Reflection.Emit.Tests
     public class GenericTypeParameterBuilderSetInterfaceConstraints
     {
         [Fact]
-        public void TestInterfaceConstraintsOnCustomInterface()
+        public void SetInterfaceConstraints_OneCustomInterface()
         {
-            AssemblyName myAsmName = new AssemblyName("GenericEmitExample1");
-            AssemblyBuilder myAssembly = AssemblyBuilder.DefineDynamicAssembly(myAsmName, AssemblyBuilderAccess.Run);
-            ModuleBuilder myModule = TestLibrary.Utilities.GetModuleBuilder(myAssembly, myAsmName.Name);
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
+            string[] typeParamNames = new string[] { "TFirst" };
+            GenericTypeParameterBuilder[] typeParams = type.DefineGenericParameters(typeParamNames);
+            
+            typeParams[0].SetInterfaceConstraints(typeof(EmptyInterface1));
+            Type resultType = type.CreateTypeInfo().AsType();
+            Type[] genericTypeParams = resultType.GetGenericArguments();
 
-            Type baseType = typeof(ExampleBase);
-
-            TypeBuilder myType = myModule.DefineType("Sample", TypeAttributes.Public);
-
-            string[] typeParamNames = { "TFirst" };
-            GenericTypeParameterBuilder[] typeParams = myType.DefineGenericParameters(typeParamNames);
-
-            GenericTypeParameterBuilder TFirst = typeParams[0];
-
-            TFirst.SetInterfaceConstraints(typeof(IExample));
-            Type type = myType.CreateTypeInfo().AsType();
-            Type[] genericTypeParams = type.GetGenericArguments();
             Assert.Equal(1, genericTypeParams.Length);
-            Assert.Equal(new Type[] { typeof(IExample) }, genericTypeParams[0].GetTypeInfo().GetGenericParameterConstraints());
+            Assert.Equal(new Type[] { typeof(EmptyInterface1) }, genericTypeParams[0].GetTypeInfo().GetGenericParameterConstraints());
         }
 
         [Fact]
-        public void TestInterfaceConstraintsOnNull()
+        public void SetInterfaceConstraints_Null()
         {
-            AssemblyName myAsmName = new AssemblyName("GenericEmitExample1");
-            AssemblyBuilder myAssembly = AssemblyBuilder.DefineDynamicAssembly(myAsmName, AssemblyBuilderAccess.Run);
-            ModuleBuilder myModule = TestLibrary.Utilities.GetModuleBuilder(myAssembly, myAsmName.Name);
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
+            string[] typeParamNames = new string[] { "TFirst" };
+            GenericTypeParameterBuilder[] typeParams = type.DefineGenericParameters(typeParamNames);
+            
+            typeParams[0].SetInterfaceConstraints(null);
+            Type resultType = type.CreateTypeInfo().AsType();
+            Type[] genericTypeParams = resultType.GetGenericArguments();
 
-            Type baseType = typeof(ExampleBase);
-
-            TypeBuilder myType = myModule.DefineType("Sample", TypeAttributes.Public);
-
-            string[] typeParamNames = { "TFirst" };
-            GenericTypeParameterBuilder[] typeParams = myType.DefineGenericParameters(typeParamNames);
-
-            GenericTypeParameterBuilder TFirst = typeParams[0];
-            TFirst.SetInterfaceConstraints(null);
-            Type type = myType.CreateTypeInfo().AsType();
-            Type[] genericTypeParams = type.GetGenericArguments();
             Assert.Equal(1, genericTypeParams.Length);
-            Assert.Equal(new Type[] { }, genericTypeParams[0].GetTypeInfo().GetGenericParameterConstraints());
+            Assert.Equal(new Type[0], genericTypeParams[0].GetTypeInfo().GetGenericParameterConstraints());
         }
 
-
         [Fact]
-        public void TestMultipleInterfaceConstraints()
+        public void SetInterfaceConstraints_MultipleCustomInterfaces()
         {
-            AssemblyName myAsmName = new AssemblyName("GenericEmitExample1");
-            AssemblyBuilder myAssembly = AssemblyBuilder.DefineDynamicAssembly(myAsmName, AssemblyBuilderAccess.Run);
-            ModuleBuilder myModule = TestLibrary.Utilities.GetModuleBuilder(myAssembly, myAsmName.Name);
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
+            string[] typeParamNames = new string[] { "TFirst" };
+            GenericTypeParameterBuilder[] typeParams = type.DefineGenericParameters(typeParamNames);
+            
+            typeParams[0].SetInterfaceConstraints(new Type[] { typeof(EmptyInterface1), typeof(EmptyInterface2) });
+            Type resultType = type.CreateTypeInfo().AsType();
+            Type[] genericTypeParams = resultType.GetGenericArguments();
 
-            Type baseType = typeof(ExampleBase);
-
-            TypeBuilder myType = myModule.DefineType("Sample", TypeAttributes.Public);
-
-            string[] typeParamNames = { "TFirst" };
-            GenericTypeParameterBuilder[] typeParams = myType.DefineGenericParameters(typeParamNames);
-
-            GenericTypeParameterBuilder TFirst = typeParams[0];
-            TFirst.SetInterfaceConstraints(new Type[] { typeof(IExample), typeof(IExampleA) });
-            Type type = myType.CreateTypeInfo().AsType();
-            Type[] genericTypeParams = type.GetGenericArguments();
             Assert.Equal(1, genericTypeParams.Length);
-            Assert.Equal(new Type[] { typeof(IExample), typeof(IExampleA) }, genericTypeParams[0].GetTypeInfo().GetGenericParameterConstraints());
+            Assert.Equal(new Type[] { typeof(EmptyInterface1), typeof(EmptyInterface2) }, genericTypeParams[0].GetTypeInfo().GetGenericParameterConstraints());
         }
     }
 
-    public interface IExample { }
-
-    public interface IExampleA { }
+    public interface EmptyInterface1 { }
+    public interface EmptyInterface2 { }
 }

@@ -11,6 +11,7 @@
     <AssemblyName>System.Security.Cryptography.Pkcs.Tests</AssemblyName>
     <RootNamespace>System.Security.Cryptography.Pkcs.Tests</RootNamespace>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
   </PropertyGroup>
 
   <!-- Don't delete these clauses even if they look useless. They tell the VS IDE that "Windows_Debug", etc., are

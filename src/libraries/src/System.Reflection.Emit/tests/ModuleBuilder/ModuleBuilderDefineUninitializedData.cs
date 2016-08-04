@@ -2,267 +2,87 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-
-using System.Reflection;
-using System.Reflection.Emit;
+using System.Collections.Generic;
 using Xunit;
 
 namespace System.Reflection.Emit.Tests
 {
     public class ModuleBuilderDefineUninitializedData
     {
-        private const string DefaultAssemblyName = "ModuleBuilderDefineUninitializedData";
-        private const AssemblyBuilderAccess DefaultAssemblyBuilderAccess = AssemblyBuilderAccess.Run;
-        private const string DefaultModuleName = "DynamicModule";
-        private const int MinStringLength = 8;
-        private const int MaxStringLength = 256;
         private const int ReservedMaskFieldAttribute = 0x9500; // This constant maps to FieldAttributes.ReservedMask that is not available in the contract.
-        private readonly RandomDataGenerator _generator = new RandomDataGenerator();
 
-        private ModuleBuilder GetModuleBuilder()
+        public static IEnumerable<object[]> Attributes_TestData()
         {
-            AssemblyName name = new AssemblyName(DefaultAssemblyName);
-            AssemblyBuilder asmBuilder = AssemblyBuilder.DefineDynamicAssembly(name, DefaultAssemblyBuilderAccess);
-            return TestLibrary.Utilities.GetModuleBuilder(asmBuilder, DefaultModuleName);
+            yield return new object[] { FieldAttributes.Assembly };
+            yield return new object[] { FieldAttributes.FamANDAssem };
+            yield return new object[] { FieldAttributes.Family };
+            yield return new object[] { FieldAttributes.FamORAssem };
+            yield return new object[] { FieldAttributes.FieldAccessMask };
+            yield return new object[] { FieldAttributes.HasDefault };
+            yield return new object[] { FieldAttributes.HasFieldMarshal };
+            yield return new object[] { FieldAttributes.HasFieldRVA };
+            yield return new object[] { FieldAttributes.InitOnly };
+            yield return new object[] { FieldAttributes.Literal };
+            yield return new object[] { FieldAttributes.NotSerialized };
+            yield return new object[] { FieldAttributes.PinvokeImpl };
+            yield return new object[] { FieldAttributes.Private };
+            yield return new object[] { FieldAttributes.PrivateScope };
+            yield return new object[] { FieldAttributes.Public };
+            yield return new object[] { FieldAttributes.RTSpecialName };
+            yield return new object[] { FieldAttributes.SpecialName };
+            yield return new object[] { FieldAttributes.Static };
         }
 
-        [Fact]
-        public void TestWithValidData()
+        [Theory]
+        [MemberData(nameof(Attributes_TestData))]
+        public void DefineUnitializedData(FieldAttributes attributes)
         {
-            ModuleBuilder builder = GetModuleBuilder();
-            string fieldName = "PosTest1_";
-            int size = _generator.GetByte();
-            if (size == 0)
-                size++;
-
-            FieldAttributes[] attributes = new FieldAttributes[] {
-                FieldAttributes.Assembly,
-                FieldAttributes.FamANDAssem,
-                FieldAttributes.Family,
-                FieldAttributes.FamORAssem,
-                FieldAttributes.FieldAccessMask,
-                FieldAttributes.HasDefault,
-                FieldAttributes.HasFieldMarshal,
-                FieldAttributes.HasFieldRVA,
-                FieldAttributes.InitOnly,
-                FieldAttributes.Literal,
-                FieldAttributes.NotSerialized,
-                FieldAttributes.PinvokeImpl,
-                FieldAttributes.Private,
-                FieldAttributes.PrivateScope,
-                FieldAttributes.Public,
-                FieldAttributes.RTSpecialName,
-                FieldAttributes.SpecialName,
-                FieldAttributes.Static
-            };
-
-            for (int i = 0; i < attributes.Length; ++i)
+            ModuleBuilder module = Helpers.DynamicModule();
+            foreach (int size in new int[] { 1, 2, 0x003f0000 - 1 })
             {
-                FieldAttributes attribute = attributes[i];
-                string desiredFieldName = fieldName + i.ToString();
-                FieldBuilder fb = builder.DefineUninitializedData(desiredFieldName, size, attribute);
-                int desiredAttribute = ((int)attribute | (int)FieldAttributes.Static) & ~ReservedMaskFieldAttribute;
-                VerificationHelper(fb, desiredFieldName, (FieldAttributes)desiredAttribute);
+                FieldBuilder field = module.DefineUninitializedData(size.ToString(), size, attributes);
+
+                int expectedAttributes = ((int)attributes | (int)FieldAttributes.Static) & ~ReservedMaskFieldAttribute;
+                Assert.Equal(size.ToString(), field.Name);
+                Assert.Equal((FieldAttributes)expectedAttributes, field.Attributes);
             }
         }
 
-        [Fact]
-        public void TestWithBoundaryData()
+        [Theory]
+        [MemberData(nameof(Attributes_TestData))]
+        public void DefineUnitializedData_EmptyName_ThrowsArgumentException(FieldAttributes attributes)
         {
-            ModuleBuilder builder = GetModuleBuilder();
-            string fieldName = "PosTest2_";
-            int[] sizeValues = new int[] {
-                1,
-                0x003f0000 - 1
-            };
-            FieldAttributes[] attributes = new FieldAttributes[] {
-                FieldAttributes.Assembly,
-                FieldAttributes.FamANDAssem,
-                FieldAttributes.Family,
-                FieldAttributes.FamORAssem,
-                FieldAttributes.FieldAccessMask,
-                FieldAttributes.HasDefault,
-                FieldAttributes.HasFieldMarshal,
-                FieldAttributes.HasFieldRVA,
-                FieldAttributes.InitOnly,
-                FieldAttributes.Literal,
-                FieldAttributes.NotSerialized,
-                FieldAttributes.PinvokeImpl,
-                FieldAttributes.Private,
-                FieldAttributes.PrivateScope,
-                FieldAttributes.Public,
-                FieldAttributes.RTSpecialName,
-                FieldAttributes.SpecialName,
-                FieldAttributes.Static
-            };
+            ModuleBuilder module = Helpers.DynamicModule();
+            Assert.Throws<ArgumentException>("name", () => module.DefineUninitializedData("", 1, attributes));
+        }
 
-            for (int i = 0; i < sizeValues.Length; ++i)
+        [Theory]
+        [MemberData(nameof(Attributes_TestData))]
+        public void DefineUnitializedData_InvalidSize_ThrowsArgumentException(FieldAttributes attributes)
+        {
+            ModuleBuilder module = Helpers.DynamicModule();
+            foreach (int size in new int[] { -1, 0, 0x003f0000, 0x003f0000 + 1 })
             {
-                for (int j = 0; j < attributes.Length; ++j)
-                {
-                    FieldAttributes attribute = attributes[j];
-                    string desiredFieldName = fieldName + i.ToString() + "_" + j.ToString();
-                    FieldBuilder fb = builder.DefineUninitializedData(desiredFieldName, sizeValues[i], attribute);
-
-                    int desiredAttribute = ((int)attribute | (int)FieldAttributes.Static) & (~ReservedMaskFieldAttribute);
-                    VerificationHelper(fb, desiredFieldName, (FieldAttributes)desiredAttribute);
-                }
+                Assert.Throws<ArgumentException>(null, () => module.DefineUninitializedData("TestField", size, attributes));
             }
         }
 
-        [Fact]
-        public void TestThrowsExceptionWithZeroLengthName()
+        [Theory]
+        [MemberData(nameof(Attributes_TestData))]
+        public void DefineUnitializedData_NullName_ThrowsArgumentNullException(FieldAttributes attributes)
         {
-            ModuleBuilder builder = GetModuleBuilder();
-            FieldAttributes[] attributes = new FieldAttributes[] {
-                FieldAttributes.Assembly,
-                FieldAttributes.FamANDAssem,
-                FieldAttributes.Family,
-                FieldAttributes.FamORAssem,
-                FieldAttributes.FieldAccessMask,
-                FieldAttributes.HasDefault,
-                FieldAttributes.HasFieldMarshal,
-                FieldAttributes.HasFieldRVA,
-                FieldAttributes.InitOnly,
-                FieldAttributes.Literal,
-                FieldAttributes.NotSerialized,
-                FieldAttributes.PinvokeImpl,
-                FieldAttributes.Private,
-                FieldAttributes.PrivateScope,
-                FieldAttributes.Public,
-                FieldAttributes.RTSpecialName,
-                FieldAttributes.SpecialName,
-                FieldAttributes.Static
-            };
-            int size = _generator.GetByte();
-
-            for (int i = 0; i < attributes.Length; ++i)
-            {
-                VerificationHelper(builder, "", size, attributes[i], typeof(ArgumentException));
-            }
+            ModuleBuilder module = Helpers.DynamicModule();
+            Assert.Throws<ArgumentNullException>("name", () => module.DefineUninitializedData(null, 1, attributes));
         }
 
-        [Fact]
-        public void TestThrowsExceptionWithInvalidSizeData()
+        [Theory]
+        [MemberData(nameof(Attributes_TestData))]
+        public void DefineUninitalizedData_CreateGlobalFunctionsAlreadyCalled_ThrowsInvalidOperationException(FieldAttributes attributes)
         {
-            int[] sizeValues = new int[] {
-            0,
-            -1,
-            0x003f0000,
-            0x003f0000 + 1
-            };
+            ModuleBuilder module = Helpers.DynamicModule();
+            module.CreateGlobalFunctions();
 
-            ModuleBuilder builder = GetModuleBuilder();
-
-            FieldAttributes[] attributes = new FieldAttributes[] {
-                FieldAttributes.Assembly,
-                FieldAttributes.FamANDAssem,
-                FieldAttributes.Family,
-                FieldAttributes.FamORAssem,
-                FieldAttributes.FieldAccessMask,
-                FieldAttributes.HasDefault,
-                FieldAttributes.HasFieldMarshal,
-                FieldAttributes.HasFieldRVA,
-                FieldAttributes.InitOnly,
-                FieldAttributes.Literal,
-                FieldAttributes.NotSerialized,
-                FieldAttributes.PinvokeImpl,
-                FieldAttributes.Private,
-                FieldAttributes.PrivateScope,
-                FieldAttributes.Public,
-                FieldAttributes.RTSpecialName,
-                FieldAttributes.SpecialName,
-                FieldAttributes.Static
-            };
-
-            for (int i = 0; i < sizeValues.Length; ++i)
-            {
-                for (int j = 0; j < attributes.Length; ++j)
-                {
-                    FieldAttributes attribute = attributes[j];
-                    VerificationHelper(builder, "", sizeValues[i], attribute, typeof(ArgumentException));
-                }
-            }
-        }
-
-        [Fact]
-        public void TestThrowsExceptionWithNullName()
-        {
-            ModuleBuilder builder = GetModuleBuilder();
-            FieldAttributes[] attributes = new FieldAttributes[] {
-                FieldAttributes.Assembly,
-                FieldAttributes.FamANDAssem,
-                FieldAttributes.Family,
-                FieldAttributes.FamORAssem,
-                FieldAttributes.FieldAccessMask,
-                FieldAttributes.HasDefault,
-                FieldAttributes.HasFieldMarshal,
-                FieldAttributes.HasFieldRVA,
-                FieldAttributes.InitOnly,
-                FieldAttributes.Literal,
-                FieldAttributes.NotSerialized,
-                FieldAttributes.PinvokeImpl,
-                FieldAttributes.Private,
-                FieldAttributes.PrivateScope,
-                FieldAttributes.Public,
-                FieldAttributes.RTSpecialName,
-                FieldAttributes.SpecialName,
-                FieldAttributes.Static
-            };
-            int size = _generator.GetByte();
-
-            for (int i = 0; i < attributes.Length; ++i)
-            {
-                VerificationHelper(builder, null, size, attributes[i], typeof(ArgumentNullException));
-            }
-        }
-
-        [Fact]
-        public void TestThrowsExceptionOnCreateGlobalFunctionCalledPreviously()
-        {
-            FieldAttributes[] attributes = new FieldAttributes[] {
-                FieldAttributes.Assembly,
-                FieldAttributes.FamANDAssem,
-                FieldAttributes.Family,
-                FieldAttributes.FamORAssem,
-                FieldAttributes.FieldAccessMask,
-                FieldAttributes.HasDefault,
-                FieldAttributes.HasFieldMarshal,
-                FieldAttributes.HasFieldRVA,
-                FieldAttributes.InitOnly,
-                FieldAttributes.Literal,
-                FieldAttributes.NotSerialized,
-                FieldAttributes.PinvokeImpl,
-                FieldAttributes.Private,
-                FieldAttributes.PrivateScope,
-                FieldAttributes.Public,
-                FieldAttributes.RTSpecialName,
-                FieldAttributes.SpecialName,
-                FieldAttributes.Static
-            };
-            int size = _generator.GetByte();
-            ModuleBuilder testModuleBuilder = GetModuleBuilder();
-
-            testModuleBuilder.CreateGlobalFunctions();
-            string fieldName = "NegTest4_";
-
-            for (int i = 0; i < attributes.Length; ++i)
-            {
-                VerificationHelper(testModuleBuilder, fieldName + i.ToString(), size, attributes[i], typeof(InvalidOperationException));
-            }
-        }
-
-
-        private void VerificationHelper(FieldBuilder fb, string desiredName, FieldAttributes desiredAttribute)
-        {
-            Assert.Equal(desiredName, fb.Name);
-            Assert.Equal(desiredAttribute, fb.Attributes);
-        }
-
-        private void VerificationHelper(ModuleBuilder builder, string name, int size, FieldAttributes attribute, Type desiredException)
-        {
-            Assert.Throws(desiredException, () => { FieldBuilder fieldBuilder = builder.DefineUninitializedData(name, size, attribute); });
+            Assert.Throws<InvalidOperationException>(() => module.DefineUninitializedData("TestField", 1, attributes));
         }
     }
 }

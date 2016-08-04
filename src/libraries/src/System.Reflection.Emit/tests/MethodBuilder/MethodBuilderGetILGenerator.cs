@@ -2,86 +2,78 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-
-using TestLibrary;
-using System.Reflection;
-using System.Reflection.Emit;
 using Xunit;
 
 namespace System.Reflection.Emit.Tests
 {
     public class MethodBuilderGetILGenerator
     {
-        [Fact]
-        public void TestWithSizeGreaterThanDefaultSize()
+        [Theory]
+        [InlineData(20)]
+        [InlineData(-10)]
+        public void GetILGenerator_Int(int size)
         {
-            string name = "Assembly1";
-            AssemblyName asmname = new AssemblyName();
-            asmname.Name = name;
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
+            MethodBuilder method = type.DefineMethod("TestMethod", MethodAttributes.Public | MethodAttributes.Static, typeof(int), new Type[0]);
 
+            ILGenerator ilGenerator = method.GetILGenerator(size);
+            int expectedReturn = 5;
+            ilGenerator.Emit(OpCodes.Ldc_I4, expectedReturn);
+            ilGenerator.Emit(OpCodes.Ret);
 
-            AssemblyBuilder asmbuild = AssemblyBuilder.DefineDynamicAssembly(asmname, AssemblyBuilderAccess.Run);
-            ModuleBuilder modbuild = TestLibrary.Utilities.GetModuleBuilder(asmbuild, "Module1");
-
-            TypeBuilder tpbuild = modbuild.DefineType("C1", TypeAttributes.Public);
-            MethodBuilder methbuild = tpbuild.DefineMethod("method1", MethodAttributes.Public | MethodAttributes.Static,
-                                                            typeof(int), new Type[] { });
-
-            ILGenerator ilgen = methbuild.GetILGenerator(20);
-            int expectedRet = 5;
-            ilgen.Emit(OpCodes.Ldc_I4, expectedRet);
-            ilgen.Emit(OpCodes.Ret);
-
-            Type tp = tpbuild.CreateTypeInfo().AsType();
-            MethodInfo mi = tp.GetMethod("method1");
-            int ret = (int)mi.Invoke(null, null);
-
-            Assert.Equal(expectedRet, ret);
+            Type createdType = type.CreateTypeInfo().AsType();
+            MethodInfo createedMethod = createdType.GetMethod("TestMethod");
+            Assert.Equal(expectedReturn, createedMethod.Invoke(null, null));
         }
 
-        [Fact]
-        public void TestWithSizeLessThanDefaultSize()
+        [Theory]
+        [InlineData(TypeAttributes.Public, MethodAttributes.Public | MethodAttributes.PinvokeImpl)]
+        [InlineData(TypeAttributes.Abstract, MethodAttributes.PinvokeImpl)]
+        [InlineData(TypeAttributes.Abstract, MethodAttributes.Abstract | MethodAttributes.PinvokeImpl)]
+        public void GetILGenerator_NoMethodBody_ThrowsInvalidOperationException(TypeAttributes typeAttributes, MethodAttributes methodAttributes)
         {
-            string name = "Assembly1";
-            AssemblyName asmname = new AssemblyName();
-            asmname.Name = name;
+            TypeBuilder type = Helpers.DynamicType(typeAttributes);
+            MethodBuilder method = type.DefineMethod("TestMethod", methodAttributes);
 
-
-            AssemblyBuilder asmbuild = AssemblyBuilder.DefineDynamicAssembly(asmname, AssemblyBuilderAccess.Run);
-            ModuleBuilder modbuild = TestLibrary.Utilities.GetModuleBuilder(asmbuild, "Module1");
-
-            TypeBuilder tpbuild = modbuild.DefineType("C1", TypeAttributes.Public);
-            MethodBuilder methbuild = tpbuild.DefineMethod("method1", MethodAttributes.Public | MethodAttributes.Static,
-                                                            typeof(int), new Type[] { });
-
-            // runtime will use default size and ignore this value
-            ILGenerator ilgen = methbuild.GetILGenerator(-10);
-            int expectedRet = 5;
-            ilgen.Emit(OpCodes.Ldc_I4, expectedRet);
-            ilgen.Emit(OpCodes.Ret);
-
-            Type tp = tpbuild.CreateTypeInfo().AsType();
-            MethodInfo mi = tp.GetMethod("method1");
-            int ret = (int)mi.Invoke(null, null);
-
-            Assert.Equal(expectedRet, ret);
+            Assert.Throws<InvalidOperationException>(() => method.GetILGenerator());
+            Assert.Throws<InvalidOperationException>(() => method.GetILGenerator(10));
         }
 
-        [Fact]
-        public void TestThrowsExceptionForMethodWithNoBody()
+        [Theory]
+        [InlineData(MethodAttributes.Abstract)]
+        [InlineData(MethodAttributes.Assembly)]
+        [InlineData(MethodAttributes.CheckAccessOnOverride)]
+        [InlineData(MethodAttributes.FamANDAssem)]
+        [InlineData(MethodAttributes.Family)]
+        [InlineData(MethodAttributes.FamORAssem)]
+        [InlineData(MethodAttributes.Final)]
+        [InlineData(MethodAttributes.HasSecurity)]
+        [InlineData(MethodAttributes.HideBySig)]
+        [InlineData(MethodAttributes.MemberAccessMask)]
+        [InlineData(MethodAttributes.NewSlot)]
+        [InlineData(MethodAttributes.Private)]
+        [InlineData(MethodAttributes.PrivateScope)]
+        [InlineData(MethodAttributes.Public)]
+        [InlineData(MethodAttributes.RequireSecObject)]
+        [InlineData(MethodAttributes.ReuseSlot)]
+        [InlineData(MethodAttributes.RTSpecialName)]
+        [InlineData(MethodAttributes.SpecialName)]
+        [InlineData(MethodAttributes.Static)]
+        [InlineData(MethodAttributes.UnmanagedExport)]
+        [InlineData(MethodAttributes.Virtual)]
+        [InlineData(MethodAttributes.VtableLayoutMask)]
+        [InlineData(MethodAttributes.Assembly | MethodAttributes.CheckAccessOnOverride |
+                MethodAttributes.FamORAssem | MethodAttributes.Final |
+                MethodAttributes.HasSecurity | MethodAttributes.HideBySig | MethodAttributes.MemberAccessMask |
+                MethodAttributes.NewSlot | MethodAttributes.Private |
+                MethodAttributes.PrivateScope | MethodAttributes.RequireSecObject |
+                MethodAttributes.RTSpecialName | MethodAttributes.SpecialName |
+                MethodAttributes.Static | MethodAttributes.UnmanagedExport)]
+        public void GetILGenerator_DifferentAttributes(MethodAttributes attributes)
         {
-            string name = "Assembly1";
-            AssemblyName asmname = new AssemblyName();
-            asmname.Name = name;
-
-            AssemblyBuilder asmbuild = AssemblyBuilder.DefineDynamicAssembly(asmname, AssemblyBuilderAccess.Run);
-            ModuleBuilder modbuild = TestLibrary.Utilities.GetModuleBuilder(asmbuild, "Module1");
-
-            TypeBuilder tpbuild = modbuild.DefineType("C1", TypeAttributes.Public);
-            MethodBuilder methbuild = tpbuild.DefineMethod("method1", MethodAttributes.Public | MethodAttributes.PinvokeImpl);
-
-            Assert.Throws<InvalidOperationException>(() => { ILGenerator ilgen = methbuild.GetILGenerator(10); });
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Abstract);
+            MethodBuilder method = type.DefineMethod(attributes.ToString(), attributes);
+            Assert.NotNull(method.GetILGenerator());
         }
     }
 }

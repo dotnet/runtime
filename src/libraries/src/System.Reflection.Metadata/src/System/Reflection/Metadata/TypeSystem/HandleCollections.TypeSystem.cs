@@ -243,7 +243,6 @@ namespace System.Reflection.Metadata
         internal CustomAttributeHandleCollection(MetadataReader reader, EntityHandle handle)
         {
             Debug.Assert(reader != null);
-            Debug.Assert(!handle.IsNil);
 
             _reader = reader;
             reader.CustomAttributeTable.GetAttributeRange(handle, out _firstRowId, out _lastRowId);

@@ -2,83 +2,132 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-
-using TestLibrary;
-using System.Reflection;
-using System.Reflection.Emit;
-using System.Runtime.CompilerServices;
-using Xunit;
 using System.Linq;
+using Xunit;
 
 namespace System.Reflection.Emit.Tests
 {
-    public class MBMyAttribute3 : Attribute
+    public class MethodBuilderCustomIntAttribute : Attribute
     {
-        public MBMyAttribute3(int mc)
+        public MethodBuilderCustomIntAttribute(int intField)
         {
-            m_ctorType2 = mc;
+            _intField = intField;
         }
 
         public string Field12345;
-        public int m_ctorType2;
+        public int _intField;
+    }
+
+    public class MethodBuilderCustomAttribute : Attribute
+    {
+        public string TestString
+        {
+            get { return TestStringField; }
+            set { TestStringField = value; }
+        }
+
+        public int TestInt32
+        {
+            get { return TestInt; }
+            set { TestInt = value; }
+        }
+
+        public string GetOnlyString
+        {
+            get { return GetString; }
+        }
+
+        public int GetOnlyInt32
+        {
+            get { return GetInt; }
+        }
+
+        public string TestStringField;
+        public int TestInt;
+        public string GetString;
+        public int GetInt;
+
+        public MethodBuilderCustomAttribute() { }
+
+        public MethodBuilderCustomAttribute(string getOnlyString, int getOnlyInt32)
+        {
+            GetString = getOnlyString;
+            GetInt = getOnlyInt32;
+        }
+
+        public MethodBuilderCustomAttribute(string testString, int testInt32, string getOnlyString, int getOnlyInt32)
+        {
+            TestStringField = testString;
+            TestInt = testInt32;
+            GetString = getOnlyString;
+            GetInt = getOnlyInt32;
+        }
     }
 
     public class MethodBuilderSetCustomAttribute
     {
         [Fact]
-        public void TestSetCustomAttribute()
+        public void SetCustomAttribute_CustomAttributeBuilder()
         {
-            string name = "Assembly1";
-            AssemblyName asmname = new AssemblyName();
-            asmname.Name = name;
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.NotPublic);
+            MethodBuilder method = type.DefineMethod("TestMethod", MethodAttributes.Public | MethodAttributes.Static);
 
-            AssemblyBuilder asmbuild = AssemblyBuilder.DefineDynamicAssembly(asmname, AssemblyBuilderAccess.Run);
-            ModuleBuilder modbuild = TestLibrary.Utilities.GetModuleBuilder(asmbuild, "Module1");
-
-            TypeBuilder tpbuild = modbuild.DefineType("C1");
-            MethodBuilder methbuild = tpbuild.DefineMethod("method1", MethodAttributes.Public | MethodAttributes.Static);
-
-            ILGenerator ilgen = methbuild.GetILGenerator();
+            ILGenerator ilgen = method.GetILGenerator();
             ilgen.Emit(OpCodes.Ldc_I4, 100);
             ilgen.Emit(OpCodes.Ret);
 
-            Type attrType = typeof(MBMyAttribute3);
-            ConstructorInfo ci = attrType.GetConstructors()[0];
-            FieldInfo fi = attrType.GetField("Field12345");
+            Type attributeType = typeof(MethodBuilderCustomIntAttribute);
+            ConstructorInfo constructor = attributeType.GetConstructors()[0];
+            FieldInfo field = attributeType.GetField("Field12345");
 
+            CustomAttributeBuilder attribute = new CustomAttributeBuilder(constructor, new object[] { 4 }, new FieldInfo[] { field }, new object[] { "hello" });
+            method.SetCustomAttribute(attribute);
+            Type createdType = type.CreateTypeInfo().AsType();
+            
+            object[] attributes = createdType.GetMethod("TestMethod").GetCustomAttributes(false).ToArray();
+            Assert.Equal(1, attributes.Length);
 
-            CustomAttributeBuilder cab = new CustomAttributeBuilder(ci,
-                                                                    new object[] { 4 },
-                                                                    new FieldInfo[] { fi },
-                                                                    new object[] { "hello" });
-            methbuild.SetCustomAttribute(cab);
-            Type tp = tpbuild.CreateTypeInfo().AsType();
-            MethodInfo md = tp.GetMethod("method1");
-
-            // VERIFY
-            object[] attribs = md.GetCustomAttributes(false).Select(a => (object)a).ToArray();
-
-            Assert.Equal(1, attribs.Length);
-            MBMyAttribute3 obj = (MBMyAttribute3)attribs[0];
-
+            MethodBuilderCustomIntAttribute obj = (MethodBuilderCustomIntAttribute)attributes[0];
             Assert.Equal("hello", obj.Field12345);
-            Assert.Equal(4, obj.m_ctorType2);
+            Assert.Equal(4, obj._intField);
         }
 
         [Fact]
-        public void TestThrowsExceptionOnNull()
+        public void SetCustomAttribute_CustomAttributeBuilder_NullBuilder_ThrowsArgumentNullException()
         {
-            string name = "Assembly1";
-            AssemblyName asmname = new AssemblyName();
-            asmname.Name = name;
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
+            MethodBuilder method = type.DefineMethod("method1", MethodAttributes.Public | MethodAttributes.Static);
 
-            AssemblyBuilder asmbuild = AssemblyBuilder.DefineDynamicAssembly(asmname, AssemblyBuilderAccess.Run);
-            ModuleBuilder modbuild = TestLibrary.Utilities.GetModuleBuilder(asmbuild, "Module1");
-            TypeBuilder tpbuild = modbuild.DefineType("C1", TypeAttributes.Public);
-            MethodBuilder methbuild = tpbuild.DefineMethod("method1", MethodAttributes.Public | MethodAttributes.Static);
+            Assert.Throws<ArgumentNullException>("customBuilder", () => method.SetCustomAttribute(null));
+        }
 
-            Assert.Throws<ArgumentNullException>(() => { methbuild.SetCustomAttribute(null); });
+        [Fact]
+        public void SetCustomAttribute_ConstructorInfo_ByteArray()
+        {
+            byte[] binaryAttribute = Enumerable.Range(0, 128).Select(i => (byte)i).ToArray();
+
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Abstract);
+            MethodBuilder method = type.DefineMethod("TestMethod", MethodAttributes.Public);
+
+            method.SetCustomAttribute(typeof(MethodBuilderCustomAttribute).GetConstructor(new Type[0]), binaryAttribute);
+        }
+
+        [Fact]
+        public void SetCustomAttribute_ConstructorInfo_ByteArray_NullConstructor_ThrowsArgumentNullException()
+        {
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Abstract);
+            MethodBuilder method = type.DefineMethod("TestMethod", MethodAttributes.Public);
+
+            Assert.Throws<ArgumentNullException>("con", () => method.SetCustomAttribute(null, new byte[0]));
+        }
+
+        [Fact]
+        public void SetCustomAttribute_ConstructorInfo_ByteArray_NullBinaryAttribute_ThrowsArgumentNullException()
+        {
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Abstract);
+            MethodBuilder builder = type.DefineMethod("TestMethod", MethodAttributes.Public);
+
+            Assert.Throws<ArgumentNullException>("binaryAttribute", () => builder.SetCustomAttribute(typeof(MethodBuilderCustomAttribute).GetConstructor(new Type[0]), null));
         }
     }
 }

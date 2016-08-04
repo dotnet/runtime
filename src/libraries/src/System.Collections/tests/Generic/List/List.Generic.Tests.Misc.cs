@@ -3,8 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
 using Xunit;
 
 namespace System.Collections.Tests
@@ -691,7 +689,7 @@ namespace System.Collections.Tests
 
                 for (int i = 0; i < items.Length; i++)
                 {
-                    Assert.Equal(((Object)arr[i]), items[i]); //"Should be equal."
+                    Assert.Equal(((object)arr[i]), items[i]); //"Should be equal."
                 }
             }
 
@@ -700,10 +698,10 @@ namespace System.Collections.Tests
                 List<T> list = new List<T>(items);
                 T[] arr = list.ToArray();
                 list[0] = item;
-                if (((Object)arr[0]) == null)
+                if (((object)arr[0]) == null)
                     Assert.NotNull(list[0]); //"Should NOT be null"
                 else
-                    Assert.NotEqual(((Object)arr[0]), list[0]); //"Should NOT be equal."
+                    Assert.NotEqual(((object)arr[0]), list[0]); //"Should NOT be equal."
             }
 
             #endregion

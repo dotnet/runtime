@@ -13,8 +13,6 @@ namespace System.Security.Cryptography
 #endif
         public sealed partial class ECDsaCng : ECDsa
         {
-            private bool _skipKeySizeCheck;
-
 #if !NETNATIVE
             /// <summary>
             /// Create an ECDsaCng algorithm with a named curve.
@@ -83,32 +81,13 @@ namespace System.Security.Cryptography
                 // it could be outside of the bounds that we currently represent as "legal key sizes".
                 // Since that is our view into the underlying component it can be detached from the
                 // component's understanding.  If it said it has opened a key, and this is the size, trust it.
-                _skipKeySizeCheck = true;
-
-                try
-                {
-                    // Set base.KeySize directly, since we don't want to free the key
-                    // (which we would do if the keysize changed on import)
-                    base.KeySize = newKeySize;
-                }
-                finally
-                {
-                    _skipKeySizeCheck = false;
-                }
+                KeySizeValue = newKeySize;
             }
 
             public override KeySizes[] LegalKeySizes
             {
                 get
                 {
-                    if (_skipKeySizeCheck)
-                    {
-                        // When size limitations are in bypass, accept any positive integer.
-                        // Many of them may not make sense (like 1), but we're just assigning
-                        // the field to whatever value was provided by the native component.
-                        return new[] { new KeySizes(minSize: 1, maxSize: int.MaxValue, skipSize: 1) };
-                    }
-
                     // Return the three sizes that can be explicitly set (for backwards compatibility)
                     return new[] {
                         new KeySizes(minSize: 256, maxSize: 384, skipSize: 128),

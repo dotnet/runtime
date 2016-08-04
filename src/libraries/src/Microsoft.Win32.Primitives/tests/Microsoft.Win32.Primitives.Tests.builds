@@ -6,6 +6,7 @@
       <OSGroup>Unix</OSGroup>
     </Project>
     <Project Include="Microsoft.Win32.Primitives.Tests.csproj">
+      <TestTFMs>netcore50;netcoreapp1.0;net46</TestTFMs>
       <OSGroup>Windows_NT</OSGroup>
     </Project>
   </ItemGroup>

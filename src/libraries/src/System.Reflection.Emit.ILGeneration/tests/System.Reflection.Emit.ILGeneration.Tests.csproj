@@ -8,6 +8,7 @@
     <AssemblyName>System.Reflection.Emit.ILGeneration.Tests</AssemblyName>
     <RootNamespace>System.Reflection.Emit.ILGeneration.Tests</RootNamespace>
     <ProjectGuid>{FB037640-0591-4DF4-A331-0BEFE50A200B}</ProjectGuid>
+    <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -22,7 +23,6 @@
     <Compile Include="CustomAttributeBuilder\CustomAttributeBuilderCtor2.cs" />
     <Compile Include="CustomAttributeBuilder\CustomAttributeBuilderCtor3.cs" />
     <Compile Include="CustomAttributeBuilder\CustomAttributeBuilderCtor4.cs" />
-    <Compile Include="ILGenerator\DeclareLocal.Overload.Tests.cs" />
     <Compile Include="ILGenerator\DeclareLocalTests.cs" />
     <Compile Include="ILGenerator\DefineLabelTests.cs" />
     <Compile Include="ILGenerator\Emit1Tests.cs" />
@@ -31,7 +31,7 @@
     <Compile Include="ILGenerator\EmitWriteLineTests.cs" />
     <Compile Include="ILGenerator\ExceptionEmitTests.cs" />
     <Compile Include="ILGenerator\ILOffsetTests.cs" />
-    <Compile Include="Label\LabelEquals1.cs" />
+    <Compile Include="Label\LabelEquals.cs" />
     <Compile Include="Label\LabelGetHashCode.cs" />
     <Compile Include="LocalBuilder\LocalBuilderIsPinned.cs" />
     <Compile Include="LocalBuilder\LocalBuilderLocalIndex.cs" />
@@ -39,24 +39,16 @@
     <Compile Include="ParameterBuilder\PropertyTests.cs" />
     <Compile Include="ParameterBuilder\SetConstant.cs" />
     <Compile Include="ParameterBuilder\SetCustomAttributeTests.cs" />
-    <Compile Include="SignatureHelper\SignatureHelperAddArgument1.cs" />
-    <Compile Include="SignatureHelper\SignatureHelperAddArgument2.cs" />
-    <Compile Include="SignatureHelper\SignatureHelperAddArgument3.cs" />
+    <Compile Include="SignatureHelper\SignatureHelperAddArgument.cs" />
     <Compile Include="SignatureHelper\SignatureHelperAddArguments.cs" />
     <Compile Include="SignatureHelper\SignatureHelperEquals.cs" />
     <Compile Include="SignatureHelper\SignatureHelperGetFieldSigHelper.cs" />
-    <Compile Include="SignatureHelper\SignatureHelperGetHashCode.cs" />
-    <Compile Include="SignatureHelper\SignatureHelperGetLocalVarSigHelper1.cs" />
-    <Compile Include="SignatureHelper\SignatureHelperGetLocalVarSigHelper2.cs" />
-    <Compile Include="SignatureHelper\SignatureHelperGetMethodSigHelper1.cs" />
-    <Compile Include="SignatureHelper\SignatureHelperGetMethodSigHelper2.cs" />
-    <Compile Include="SignatureHelper\SignatureHelperGetMethodSigHelper4.cs" />
-    <Compile Include="SignatureHelper\SignatureHelperGetPropertySigHelper1.cs" />
-    <Compile Include="SignatureHelper\SignatureHelperGetPropertySigHelper2.cs" />
+    <Compile Include="SignatureHelper\SignatureHelperGetLocalVarSigHelper.cs" />
+    <Compile Include="SignatureHelper\SignatureHelperGetMethodSigHelper.cs" />
+    <Compile Include="SignatureHelper\SignatureHelperGetPropertySigHelper.cs" />
     <Compile Include="SignatureHelper\SignatureHelperGetSignature.cs" />
     <Compile Include="SignatureHelper\SignatureHelperToString.cs" />
     <Compile Include="Utilities.cs" />
-    <Compile Include="$(CommonTestPath)\System\RandomDataGenerator.cs" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

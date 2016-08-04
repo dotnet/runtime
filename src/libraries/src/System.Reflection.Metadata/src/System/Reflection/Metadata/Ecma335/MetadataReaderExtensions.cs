@@ -25,7 +25,7 @@ namespace System.Reflection.Metadata.Ecma335
                 Throw.ArgumentNull(nameof(reader));
             }
 
-            if ((int)tableIndex >= TableIndexExtensions.Count)
+            if ((int)tableIndex >= MetadataTokens.TableCount)
             {
                 Throw.TableIndexOutOfRange();
             }

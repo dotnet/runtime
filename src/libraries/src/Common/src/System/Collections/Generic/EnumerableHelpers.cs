@@ -55,7 +55,7 @@ namespace System.Collections.Generic
                         T[] arr = new T[DefaultCapacity];
                         arr[0] = en.Current;
                         int count = 1;
-                        
+
                         while (en.MoveNext())
                         {
                             if (count == arr.Length)
@@ -65,7 +65,7 @@ namespace System.Collections.Generic
                                 // the size of the element is greater than one byte; a separate, slightly larger constant,
                                 // is used when the size of the element is one.
                                 const int MaxArrayLength = 0x7FEFFFFF;
-        
+
                                 // This is the same growth logic as in List<T>:
                                 // If the array is currently empty, we make it a default size.  Otherwise, we attempt to 
                                 // double the size of the array.  Doubling will overflow once the size of the array reaches
@@ -82,13 +82,13 @@ namespace System.Collections.Generic
                                 {
                                     newLength = MaxArrayLength <= count ? count + 1 : MaxArrayLength;
                                 }
-        
+
                                 Array.Resize(ref arr, newLength);
                             }
-                            
+
                             arr[count++] = en.Current;
                         }
-                        
+
                         length = count;
                         return arr;
                     }
