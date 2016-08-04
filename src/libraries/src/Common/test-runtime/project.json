@@ -15,7 +15,7 @@
     "Microsoft.DotNet.xunit.performance.analysis.cli": "1.0.0-alpha-build0039",
     "Microsoft.DotNet.xunit.performance.runner.cli": "1.0.0-alpha-build0039",
     "Microsoft.DotNet.xunit.performance.runner.Windows": "1.0.0-alpha-build0039",
-    "Microsoft.DotNet.BuildTools.TestSuite": "1.0.0-prerelease-00629-04",
+    "Microsoft.DotNet.BuildTools.TestSuite": "1.0.0-prerelease-00704-03",
     "xunit.console.netcore": "1.0.3-prerelease-00607-01"
   },
   "frameworks": {
