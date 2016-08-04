@@ -971,6 +971,19 @@ public:
     }
 
     static
+    bool            OperIsLocalField(genTreeOps gtOper)
+    {
+        return (gtOper == GT_LCL_FLD       ||
+                gtOper == GT_LCL_FLD_ADDR  ||
+                gtOper == GT_STORE_LCL_FLD   );
+    }
+
+    inline bool     OperIsLocalField() const
+    {
+        return OperIsLocalField(gtOper);
+    }
+
+    static
     bool           OperIsScalarLocal(genTreeOps gtOper)
     {
         return (gtOper == GT_LCL_VAR ||

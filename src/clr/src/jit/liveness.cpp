@@ -42,7 +42,7 @@ void                 Compiler::fgMarkUseDef(GenTreeLclVarCommon *tree, GenTree *
     }
     else
     {
-        noway_assert(tree->gtOper == GT_LCL_FLD || tree->gtOper == GT_LCL_FLD_ADDR || tree->gtOper == GT_STORE_LCL_FLD);
+        noway_assert(tree->OperIsLocalField());
         lclNum = tree->gtLclFld.gtLclNum;
     }
 
