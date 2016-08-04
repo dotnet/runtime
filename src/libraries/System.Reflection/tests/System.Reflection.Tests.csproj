@@ -24,12 +24,7 @@
     <Compile Include="Common\ReflectionTestData.cs" />
     <Compile Include="ConstructorInfoTests.cs" />
     <Compile Include="EventInfoTests.cs" />
-    <Compile Include="FieldInfo\FieldInfo_ConstantTests.cs" />
-    <Compile Include="FieldInfo\FieldInfo_CustomAttributeTests.cs" />
-    <Compile Include="FieldInfo\FieldInfo_MethodTests.cs" />
-    <Compile Include="FieldInfo\FieldInfo_PropertyTests.cs" />
-    <Compile Include="FieldInfo\FieldInfo_RTArrayTests.cs" />
-    <Compile Include="FieldInfo\FieldInfo_RTGenericTests.cs" />
+    <Compile Include="FieldInfoTests.cs" />
     <Compile Include="GetType\GetTypeTests.cs" />
     <Compile Include="ManifestResourceInfo\ManifestResourceInfo.cs" />
     <Compile Include="MemberInfoTests.cs" />
