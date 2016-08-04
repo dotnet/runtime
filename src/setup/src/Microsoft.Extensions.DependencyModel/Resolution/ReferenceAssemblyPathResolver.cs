@@ -4,7 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using Microsoft.DotNet.PlatformAbstractions;
+using Microsoft.Extensions.PlatformAbstractions;
 
 namespace Microsoft.Extensions.DependencyModel.Resolution
 {
