@@ -13,7 +13,7 @@
     "Microsoft.Extensions.DependencyModel": {
       "target": "project"
     },
-    "Microsoft.DotNet.PlatformAbstractions": {
+    "Microsoft.Extensions.PlatformAbstractions": {
       "target": "project"
     },
     "Microsoft.DotNet.InternalAbstractions": "1.0.0",

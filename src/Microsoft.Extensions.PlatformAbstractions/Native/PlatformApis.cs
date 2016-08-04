@@ -5,7 +5,7 @@ using System;
 using System.IO;
 using System.Runtime.InteropServices;
 
-namespace Microsoft.DotNet.PlatformAbstractions.Native
+namespace Microsoft.Extensions.PlatformAbstractions.Native
 {
     internal static class PlatformApis
     {
