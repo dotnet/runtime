@@ -1368,8 +1368,16 @@ BOOL ZapSig::EncodeMethod(
 #ifdef FEATURE_READYTORUN_COMPILER
     if ((methodFlags & ENCODE_METHOD_SIG_Constrained) != 0)
     {
-        if (!zapSig.GetSignatureForTypeHandle(TypeHandle(pConstrainedResolvedToken->hClass), pSigBuilder))
-            return FALSE;
+        if (fEncodeUsingResolvedTokenSpecStreams && pConstrainedResolvedToken->pTypeSpec != NULL)
+        {
+            _ASSERTE(pConstrainedResolvedToken->cbTypeSpec > 0);
+            pSigBuilder->AppendBlob((PVOID)pConstrainedResolvedToken->pTypeSpec, pConstrainedResolvedToken->cbTypeSpec);
+        }
+        else
+        {
+            if (!zapSig.GetSignatureForTypeHandle(TypeHandle(pConstrainedResolvedToken->hClass), pSigBuilder))
+                return FALSE;
+        }
     }
 #endif
 

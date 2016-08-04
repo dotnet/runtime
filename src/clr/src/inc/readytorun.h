@@ -166,6 +166,7 @@ enum ReadyToRunFixupKind
     READYTORUN_FIXUP_Check_FieldOffset          = 0x2B,
 
     READYTORUN_FIXUP_DelegateCtor               = 0x2C, /* optimized delegate ctor */
+    READYTORUN_FIXUP_DeclaringTypeHandle        = 0x2D,
 };
 
 //
