@@ -6,7 +6,7 @@
 using System;
 using System.Runtime.InteropServices;
 
-namespace Microsoft.Extensions.PlatformAbstractions.Native
+namespace Microsoft.DotNet.PlatformAbstractions.Native
 {
     internal static partial class NativeMethods
     {

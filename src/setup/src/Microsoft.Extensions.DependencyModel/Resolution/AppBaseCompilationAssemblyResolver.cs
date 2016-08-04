@@ -4,7 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using Microsoft.Extensions.PlatformAbstractions;
+using Microsoft.DotNet.PlatformAbstractions;
 
 #if !NETSTANDARD1_3
 
