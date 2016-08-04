@@ -4,7 +4,7 @@
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 
-namespace Microsoft.Extensions.PlatformAbstractions
+namespace Microsoft.DotNet.PlatformAbstractions
 {
     public struct HashCodeCombiner
     {
