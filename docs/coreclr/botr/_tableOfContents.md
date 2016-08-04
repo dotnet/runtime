@@ -24,7 +24,6 @@ Below is a table of contents.
 
 
 It may be possible that this table is not complete.  You can get a complete list 
-by looking at the directory where all the chapters are stored on 
-github.  
+by looking at the directory where all the chapters are stored:
 
-* [All book of the runtime (BOTR) chapters on GitHub](https://github.com/vancem/coreclr/tree/master/Documentation/botr)
+* [All Book of the Runtime (BOTR) chapters on GitHub](../botr)
