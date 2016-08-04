@@ -3137,10 +3137,8 @@ void CEEInfo::ComputeRuntimeLookupForSharedGenericToken(DictionaryEntryKind entr
         switch (entryKind)
         {
         case TypeHandleSlot:
-        {
             pResultLookup->lookupKind.runtimeLookupFlags = READYTORUN_FIXUP_TypeHandle;
             break;
-        }
 
         case MethodDescSlot:
         case MethodEntrySlot:
@@ -3161,8 +3159,11 @@ void CEEInfo::ComputeRuntimeLookupForSharedGenericToken(DictionaryEntryKind entr
             break;
         }
 
-        case DeclaringTypeHandleSlot:
         case FieldDescSlot:
+            pResultLookup->lookupKind.runtimeLookupFlags = READYTORUN_FIXUP_FieldHandle;
+            break;
+
+        case DeclaringTypeHandleSlot:
         case ConstrainedMethodEntrySlot:
             ThrowHR(E_NOTIMPL);
 

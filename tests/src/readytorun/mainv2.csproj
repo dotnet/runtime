@@ -27,6 +27,7 @@
     </CodeAnalysisDependentAssemblyPaths>
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="fieldgetter.ilproj" />
     <ProjectReference Include="testv1\test.csproj" />
   </ItemGroup>
   <ItemGroup>
@@ -45,6 +46,7 @@ $(CLRTestBatchPreCommands)
 DEL test.dll
 COPY /Y ..\testv1\test\test.dll test.dll
 %Core_Root%\crossgen /readytorun /platform_assemblies_paths %Core_Root%%3B%25CD% /out mainv2.ni.exe mainv2.exe
+%Core_Root%\crossgen /readytorun /platform_assemblies_paths %Core_Root%%3B%25CD% /out fieldgetter.ni.dll fieldgetter.dll 
 DEL test.dll
 COPY /Y ..\testv2\test\test.dll test.dll
 %Core_Root%\crossgen /readytorun /platform_assemblies_paths %Core_Root%%3B%25CD% /out test.ni.dll test.dll 
@@ -54,6 +56,7 @@ $(BashCLRTestPreCommands)
 rm -f test.dll
 cp ../testv1/test/test.dll test.dll
 $CORE_ROOT/crossgen -readytorun -platform_assemblies_paths $CORE_ROOT:`pwd` -out mainv2.ni.exe mainv2.exe
+$CORE_ROOT/crossgen -readytorun -platform_assemblies_paths $CORE_ROOT:`pwd` -out fieldgetter.ni.dll fieldgetter.dll
 rm -f test.dll
 cp ../testv2/test/test.dll test.dll
 $CORE_ROOT/crossgen -readytorun -platform_assemblies_paths $CORE_ROOT:`pwd` -out test.ni.dll test.dll
