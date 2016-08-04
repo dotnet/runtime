@@ -56,12 +56,12 @@ Testing and Debugging CoreCLR
 Book of the Runtime
 ===================
 
-The book of the runtime is a set of chapters that go in depth into various 
-interesting aspects of the design of hte .NET Framework.  
+The Book of the Runtime is a set of chapters that go in depth into various 
+interesting aspects of the design of the .NET Framework.  
 
 - [Book of the Runtime](botr/_tableOfContents.md)
 
-For you convenience, here are a a few quick links to popular chapters.  
+For your convenience, here are a a few quick links to popular chapters.  
 
 - [Introduction to the Common Language Runtime](botr/intro-to-clr.md)
 - [Garbage Collection Design](botr/garbage-collection.md)
