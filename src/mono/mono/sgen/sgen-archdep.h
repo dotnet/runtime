@@ -26,7 +26,13 @@
 
 #elif defined(TARGET_AMD64)
 
+#ifdef HOST_WIN32
+/* The Windows x64 ABI defines no "red zone". The ABI states:
+   "All memory beyond the current address of RSP is considered volatile" */
+#define REDZONE_SIZE	0
+#else
 #define REDZONE_SIZE	128
+#endif
 
 #elif defined(TARGET_POWERPC)
 
