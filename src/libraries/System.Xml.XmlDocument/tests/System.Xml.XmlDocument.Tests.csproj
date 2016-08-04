@@ -9,7 +9,7 @@
     <OutputType>Library</OutputType>
     <AssemblyName>System.Xml.XmlDocument.Tests</AssemblyName>
     <RootNamespace>System.Xml.XmlDocument.UnitTests</RootNamespace>
-    <IncludePerformanceTests>true</IncludePerformanceTests>
+    <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -104,13 +104,6 @@
     <Compile Include="XmlProcessingInstructionTests\DataTests.cs" />
     <Compile Include="XmlProcessingInstructionTests\TargetTests.cs" />
     <Compile Include="XmlTextTests\SplitTextTests.cs" />
-    <!-- Performance Tests -->
-    <Compile Include="Performance\Perf.XmlDocument.cs" />
-    <Compile Include="Performance\Perf.XmlNode.cs" />
-    <Compile Include="Performance\Perf.XmlNodeList.cs" />
-    <Compile Include="$(CommonTestPath)\System\PerfUtils.cs">
-      <Link>Common\System\PerfUtils.cs</Link>
-    </Compile>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\pkg\System.Xml.XmlDocument.pkgproj">

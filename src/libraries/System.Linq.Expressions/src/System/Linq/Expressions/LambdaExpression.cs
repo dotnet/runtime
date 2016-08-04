@@ -351,7 +351,7 @@ namespace System.Linq.Expressions
         public static Expression<TDelegate> Lambda<TDelegate>(Expression body, String name, bool tailCall, IEnumerable<ParameterExpression> parameters)
         {
             var parameterList = parameters.ToReadOnly();
-            ValidateLambdaArgs(typeof(TDelegate), ref body, parameterList);
+            ValidateLambdaArgs(typeof(TDelegate), ref body, parameterList, nameof(TDelegate));
             return new Expression<TDelegate>(body, name, tailCall, parameterList);
         }
 
@@ -512,7 +512,7 @@ namespace System.Linq.Expressions
         public static LambdaExpression Lambda(Type delegateType, Expression body, string name, IEnumerable<ParameterExpression> parameters)
         {
             var paramList = parameters.ToReadOnly();
-            ValidateLambdaArgs(delegateType, ref body, paramList);
+            ValidateLambdaArgs(delegateType, ref body, paramList, nameof(delegateType));
 
             return CreateLambda(delegateType, body, name, false, paramList);
         }
@@ -529,19 +529,19 @@ namespace System.Linq.Expressions
         public static LambdaExpression Lambda(Type delegateType, Expression body, string name, bool tailCall, IEnumerable<ParameterExpression> parameters)
         {
             var paramList = parameters.ToReadOnly();
-            ValidateLambdaArgs(delegateType, ref body, paramList);
+            ValidateLambdaArgs(delegateType, ref body, paramList, nameof(delegateType));
 
             return CreateLambda(delegateType, body, name, tailCall, paramList);
         }
 
-        private static void ValidateLambdaArgs(Type delegateType, ref Expression body, ReadOnlyCollection<ParameterExpression> parameters)
+        private static void ValidateLambdaArgs(Type delegateType, ref Expression body, ReadOnlyCollection<ParameterExpression> parameters, string paramName)
         {
             ContractUtils.RequiresNotNull(delegateType, nameof(delegateType));
             RequiresCanRead(body, nameof(body));
 
             if (!typeof(MulticastDelegate).IsAssignableFrom(delegateType) || delegateType == typeof(MulticastDelegate))
             {
-                throw Error.LambdaTypeMustBeDerivedFromSystemDelegate();
+                throw Error.LambdaTypeMustBeDerivedFromSystemDelegate(paramName);
             }
 
             MethodInfo mi;
@@ -585,7 +585,7 @@ namespace System.Linq.Expressions
                     }
                     if (!set.Add(pex))
                     {
-                        throw Error.DuplicateVariable(pex, $"parameters[{i}]");
+                        throw Error.DuplicateVariable(pex, $"{nameof(parameters)}[{i}]");
                     }
                 }
             }
@@ -602,25 +602,41 @@ namespace System.Linq.Expressions
             }
         }
 
-        private static bool ValidateTryGetFuncActionArgs(Type[] typeArgs)
+        private enum TryGetFuncActionArgsResult
+        {
+            Valid,
+            ArgumentNull,
+            ByRef,
+            PointerOrVoid
+        }
+
+        private static TryGetFuncActionArgsResult ValidateTryGetFuncActionArgs(Type[] typeArgs)
         {
             if (typeArgs == null)
             {
-                throw new ArgumentNullException(nameof(typeArgs));
+                return TryGetFuncActionArgsResult.ArgumentNull;
             }
-            for (int i = 0, n = typeArgs.Length; i < n; i++)
+
+            for (int i = 0; i < typeArgs.Length; i++)
             {
                 var a = typeArgs[i];
                 if (a == null)
                 {
-                    throw new ArgumentNullException(nameof(typeArgs));
+                    return TryGetFuncActionArgsResult.ArgumentNull;
                 }
+
                 if (a.IsByRef)
                 {
-                    return false;
+                    return TryGetFuncActionArgsResult.ByRef;
+                }
+
+                if (a == typeof(void) || a.IsPointer)
+                {
+                    return TryGetFuncActionArgsResult.PointerOrVoid;
                 }
             }
-            return true;
+
+            return TryGetFuncActionArgsResult.Valid;
         }
 
         /// <summary>
@@ -631,14 +647,24 @@ namespace System.Linq.Expressions
         /// <returns>The type of a System.Func delegate that has the specified type arguments.</returns>
         public static Type GetFuncType(params Type[] typeArgs)
         {
-            if (!ValidateTryGetFuncActionArgs(typeArgs)) throw Error.TypeMustNotBeByRef(nameof(typeArgs));
-
-            Type result = Compiler.DelegateHelpers.GetFuncType(typeArgs);
-            if (result == null)
+            switch (ValidateTryGetFuncActionArgs(typeArgs))
             {
-                throw Error.IncorrectNumberOfTypeArgsForFunc(nameof(typeArgs));
+                case TryGetFuncActionArgsResult.ArgumentNull:
+                    throw new ArgumentNullException(nameof(typeArgs));
+                case TryGetFuncActionArgsResult.ByRef:
+                    throw Error.TypeMustNotBeByRef(nameof(typeArgs));
+                default:
+
+                    // This includes pointers or void. We allow the exception that comes
+                    // from trying to use them as generic arguments to pass through.
+                    Type result = Compiler.DelegateHelpers.GetFuncType(typeArgs);
+                    if (result == null)
+                    {
+                        throw Error.IncorrectNumberOfTypeArgsForFunc(nameof(typeArgs));
+                    }
+
+                    return result;
             }
-            return result;
         }
 
         /// <summary>
@@ -650,10 +676,11 @@ namespace System.Linq.Expressions
         /// <returns>true if generic System.Func delegate type was created for specific <paramref name="typeArgs"/>; false otherwise.</returns>
         public static bool TryGetFuncType(Type[] typeArgs, out Type funcType)
         {
-            if (ValidateTryGetFuncActionArgs(typeArgs))
+            if (ValidateTryGetFuncActionArgs(typeArgs) == TryGetFuncActionArgsResult.Valid)
             {
                 return (funcType = Compiler.DelegateHelpers.GetFuncType(typeArgs)) != null;
             }
+
             funcType = null;
             return false;
         }
@@ -665,14 +692,24 @@ namespace System.Linq.Expressions
         /// <returns>The type of a System.Action delegate that has the specified type arguments.</returns>
         public static Type GetActionType(params Type[] typeArgs)
         {
-            if (!ValidateTryGetFuncActionArgs(typeArgs)) throw Error.TypeMustNotBeByRef(nameof(typeArgs));
-
-            Type result = Compiler.DelegateHelpers.GetActionType(typeArgs);
-            if (result == null)
+            switch (ValidateTryGetFuncActionArgs(typeArgs))
             {
-                throw Error.IncorrectNumberOfTypeArgsForAction(nameof(typeArgs));
+                case TryGetFuncActionArgsResult.ArgumentNull:
+                    throw new ArgumentNullException(nameof(typeArgs));
+                case TryGetFuncActionArgsResult.ByRef:
+                    throw Error.TypeMustNotBeByRef(nameof(typeArgs));
+                default:
+
+                    // This includes pointers or void. We allow the exception that comes
+                    // from trying to use them as generic arguments to pass through.
+                    Type result = Compiler.DelegateHelpers.GetActionType(typeArgs);
+                    if (result == null)
+                    {
+                        throw Error.IncorrectNumberOfTypeArgsForAction(nameof(typeArgs));
+                    }
+
+                    return result;
             }
-            return result;
         }
 
         /// <summary>
@@ -683,10 +720,11 @@ namespace System.Linq.Expressions
         /// <returns>true if generic System.Action delegate type was created for specific <paramref name="typeArgs"/>; false otherwise.</returns>
         public static bool TryGetActionType(Type[] typeArgs, out Type actionType)
         {
-            if (ValidateTryGetFuncActionArgs(typeArgs))
+            if (ValidateTryGetFuncActionArgs(typeArgs) == TryGetFuncActionArgsResult.Valid)
             {
                 return (actionType = Compiler.DelegateHelpers.GetActionType(typeArgs)) != null;
             }
+
             actionType = null;
             return false;
         }

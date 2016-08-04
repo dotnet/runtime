@@ -11,12 +11,11 @@ namespace System.Data.SqlClient.ManualTesting.Tests
     {
         private const int TaskTimeout = 5000;
 
-        [Fact]
+        [CheckConnStrSetupFact]
         public static void ExecuteTest()
         {
-            string connStr = DataTestUtility.TcpConnStr;
             SqlCommand com = new SqlCommand("select * from Orders");
-            SqlConnection con = new SqlConnection(connStr);
+            SqlConnection con = new SqlConnection(DataTestUtility.TcpConnStr);
 
             com.Connection = con;
 
@@ -37,15 +36,14 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             con.Close();
         }
 
-        [Fact]
+        [CheckConnStrSetupFact]
         public static void FailureTest()
         {
-            string connStr = DataTestUtility.TcpConnStr;
             bool failure = false;
             bool taskCompleted = false;
 
             SqlCommand com = new SqlCommand("select * from Orders");
-            SqlConnection con = new SqlConnection(connStr + ";pooling=false");
+            SqlConnection con = new SqlConnection((new SqlConnectionStringBuilder(DataTestUtility.TcpConnStr) { Pooling = false }).ConnectionString);
             com.Connection = con;
             con.Open();
 

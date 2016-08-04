@@ -426,13 +426,9 @@ namespace System.Collections.Immutable.Tests
             Assert.Throws<InvalidOperationException>(() => ((IReadOnlyCollection<int>)s_emptyDefault).Count);
 
             Assert.Equal(0, s_empty.Length);
-            Assert.Equal(0, ((ICollection)s_empty).Count);
-            Assert.Equal(0, ((ICollection<int>)s_empty).Count);
             Assert.Equal(0, ((IReadOnlyCollection<int>)s_empty).Count);
 
             Assert.Equal(1, s_oneElement.Length);
-            Assert.Equal(1, ((ICollection)s_oneElement).Count);
-            Assert.Equal(1, ((ICollection<int>)s_oneElement).Count);
             Assert.Equal(1, ((IReadOnlyCollection<int>)s_oneElement).Count);
         }
 
@@ -1122,8 +1118,6 @@ namespace System.Collections.Immutable.Tests
         public void IndexGetter()
         {
             Assert.Equal(1, s_oneElement[0]);
-            Assert.Equal(1, ((IList)s_oneElement)[0]);
-            Assert.Equal(1, ((IList<int>)s_oneElement)[0]);
             Assert.Equal(1, ((IReadOnlyList<int>)s_oneElement)[0]);
 
             Assert.Throws<IndexOutOfRangeException>(() => s_oneElement[1]);
@@ -1134,26 +1128,7 @@ namespace System.Collections.Immutable.Tests
             Assert.Throws<InvalidOperationException>(() => ((IList<int>)s_emptyDefault)[0]);
             Assert.Throws<InvalidOperationException>(() => ((IReadOnlyList<int>)s_emptyDefault)[0]);
         }
-
-        [Fact]
-        public void ExplicitMethods()
-        {
-            IList<int> c = s_oneElement;
-            Assert.Throws<NotSupportedException>(() => c.Add(3));
-            Assert.Throws<NotSupportedException>(() => c.Clear());
-            Assert.Throws<NotSupportedException>(() => c.Remove(3));
-            Assert.True(c.IsReadOnly);
-            Assert.Throws<NotSupportedException>(() => c.Insert(0, 2));
-            Assert.Throws<NotSupportedException>(() => c.RemoveAt(0));
-            Assert.Equal(s_oneElement[0], c[0]);
-            Assert.Throws<NotSupportedException>(() => c[0] = 8);
-
-            var enumerator = c.GetEnumerator();
-            Assert.True(enumerator.MoveNext());
-            Assert.Equal(s_oneElement[0], enumerator.Current);
-            Assert.False(enumerator.MoveNext());
-        }
-
+        
         [Fact]
         public void Sort()
         {
@@ -1162,13 +1137,17 @@ namespace System.Collections.Immutable.Tests
             Assert.Equal(new[] { 2, 4, 1, 3 }, array); // original array unaffected.
         }
 
-        [Fact]
-        public void Sort_Comparison()
+        [Theory]
+        [InlineData(new int[] { 2, 4, 1, 3 }, new int[] { 4, 3, 2, 1 })]
+        [InlineData(new int[] { 1 }, new int[] { 1 })]
+        [InlineData(new int[0], new int[0])]
+        public void Sort_Comparison(int[] items, int[] expected)
         {
-            var array = ImmutableArray.Create(2, 4, 1, 3);
-            Assert.Equal(new[] { 4, 3, 2, 1 }, array.Sort((x, y) => y.CompareTo(x)));
-            Assert.Equal(new[] { 2, 4, 1, 3 }, array); // original array unaffected.
+            var array = ImmutableArray.Create(items);
+            Assert.Equal(expected, array.Sort((x, y) => y.CompareTo(x)));
+            Assert.Equal(items, array); // original array unaffected.
         }
+
 
         [Fact]
         public void Sort_NullComparison_Throws()
@@ -1416,13 +1395,6 @@ namespace System.Collections.Immutable.Tests
         {
             DebuggerAttributes.ValidateDebuggerDisplayReferences(ImmutableArray.Create<string>()); // verify empty
             DebuggerAttributes.ValidateDebuggerDisplayReferences(ImmutableArray.Create(1, 2, 3));  // verify non-empty
-        }
-
-        [Fact]
-        public void ICollectionSyncRoot_NotSupported()
-        {
-            ICollection c = ImmutableArray.Create(1, 2, 3);
-            Assert.Throws<NotSupportedException>(() => c.SyncRoot);
         }
 
         protected override IEnumerable<T> GetEnumerableOf<T>(params T[] contents)

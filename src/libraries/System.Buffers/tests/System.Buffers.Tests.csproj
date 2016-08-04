@@ -7,6 +7,7 @@
     <ProjectGuid>{62E2AD5F-C8D0-45FB-B6A5-AED2C77F198C}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AssemblyName>System.Buffers.Tests</AssemblyName>
+    <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="ArrayPool\UnitTests.cs" />

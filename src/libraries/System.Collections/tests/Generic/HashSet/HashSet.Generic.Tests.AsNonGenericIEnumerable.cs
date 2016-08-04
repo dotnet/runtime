@@ -17,7 +17,7 @@ namespace System.Collections.Tests
             return set;
         }
 
-        protected override bool Enumerator_Current_UndefinedOperation_Throws { get { return true; } }
+        protected override bool Enumerator_Current_UndefinedOperation_Throws => true;
 
         /// <summary>
         /// Returns a set of ModifyEnumerable delegates that modify the enumerable passed to them.
@@ -26,7 +26,8 @@ namespace System.Collections.Tests
         {
             get
             {
-                yield return (IEnumerable enumerable) => {
+                yield return (IEnumerable enumerable) =>
+                {
                     HashSet<string> casted = ((HashSet<string>)enumerable);
                     if (casted.Count > 0)
                     {
@@ -52,6 +53,5 @@ namespace System.Collections.Tests
             }
             return ret;
         }
-
     }
 }

@@ -2,30 +2,20 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Reflection;
-using System.Reflection.Emit;
 using Xunit;
 
 namespace System.Reflection.Emit.Tests
 {
     public class FieldBuilderName
     {
-        private readonly RandomDataGenerator _generator = new RandomDataGenerator();
-
-        [Fact]
-        public void TestNameProperty()
+        [Theory]
+        [InlineData("ABC")]
+        [InlineData("A!?123C")]
+        public void Name(string fieldName)
         {
-            AssemblyBuilder assembly = AssemblyBuilder.DefineDynamicAssembly(
-                new AssemblyName("FieldBuilderName_Assembly"), AssemblyBuilderAccess.Run);
-            ModuleBuilder module = TestLibrary.Utilities.GetModuleBuilder(assembly, "FieldBuilderName_Module");
-            TypeBuilder type = module.DefineType("FieldBuilderName_Type", TypeAttributes.Abstract);
-
-            string expected = _generator.GetString(false, 1, 30);
-            FieldBuilder field = type.DefineField(expected, typeof(object), FieldAttributes.Public);
-            string actual = field.Name;
-
-            Assert.Equal(expected, actual);
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Abstract);
+            FieldBuilder field = type.DefineField(fieldName, typeof(object), FieldAttributes.Public);
+            Assert.Equal(fieldName, field.Name);
         }
     }
 }

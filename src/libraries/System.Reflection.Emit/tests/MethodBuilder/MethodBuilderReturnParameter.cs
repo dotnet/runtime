@@ -2,172 +2,59 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-
-using System.Reflection;
-using System.Reflection.Emit;
-using System.Threading;
 using Xunit;
 
 namespace System.Reflection.Emit.Tests
 {
     public class MethodBuilderReturnParameter
     {
-        private const string TestDynamicAssemblyName = "TestDynamicAssembly";
-        private const string TestDynamicModuleName = "TestDynamicModule";
-        private const string TestDynamicTypeName = "TestDynamicType";
-        private const string TestDynamicMethodName = "TestDynamicMethod";
-        private const AssemblyBuilderAccess TestAssemblyBuilderAccess = AssemblyBuilderAccess.Run;
-        private const TypeAttributes TestTypeAttributes = TypeAttributes.Abstract;
-        private const int MinStringLength = 1;
-        private const int MaxStringLength = 128;
-        private readonly RandomDataGenerator _generator = new RandomDataGenerator();
-        private readonly byte[] _defaultILArray = new byte[]  {
-            0x00,
-            0x72,
-            0x01,
-            0x00,
-            0x00,
-            0x70,
-            0x28,
-            0x04,
-            0x00,
-            0x00,
-            0x0a,
-            0x00,
-            0x2a
-        };
-
-        private TypeBuilder GetTestTypeBuilder()
+        [Fact]
+        public void ReturnParameter_NoSetReturnParameter_ReturnsVoid()
         {
-            AssemblyName assemblyName = new AssemblyName(TestDynamicAssemblyName);
-            AssemblyBuilder assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(
-                assemblyName, TestAssemblyBuilderAccess);
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Abstract);
+            MethodBuilder method = type.DefineMethod("TestMethod", MethodAttributes.Public);
 
-            ModuleBuilder moduleBuilder = TestLibrary.Utilities.GetModuleBuilder(assemblyBuilder, TestDynamicModuleName);
-            return moduleBuilder.DefineType(TestDynamicTypeName, TestTypeAttributes);
+            ILGenerator ilGenerator = method.GetILGenerator();
+            ilGenerator.Emit(OpCodes.Ret);
+
+            type.CreateTypeInfo().AsType();
+            Assert.Equal(typeof(void), method.ReturnParameter.ParameterType);
+        }
+
+        [Theory]
+        [InlineData(typeof(void))]
+        [InlineData(typeof(int))]
+        [InlineData(typeof(string))]
+        public void ReturnParameter(Type returnType)
+        {
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Abstract);
+            MethodBuilder method = type.DefineMethod( "TestMethod", MethodAttributes.Public, returnType, new Type[] { typeof(int) });
+            ParameterBuilder paramBuilder = method.DefineParameter(1, ParameterAttributes.HasDefault, "TestParam");
+
+            ILGenerator ilGenerator = method.GetILGenerator();
+            ilGenerator.Emit(OpCodes.Ret);
+
+            type.CreateTypeInfo().AsType();
+            Assert.Equal(returnType, method.ReturnParameter.ParameterType);
         }
 
         [Fact]
-        public void TestWithNotSetReturnType()
+        public void ReturnParameter_TypeNotCreated_ThrowsInvalidOperationException()
         {
-            TypeBuilder typeBuilder = GetTestTypeBuilder();
-            MethodBuilder builder = typeBuilder.DefineMethod(
-                TestDynamicMethodName,
-                MethodAttributes.Public);
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Abstract);
+            MethodBuilder method = type.DefineMethod("TestMethod", MethodAttributes.Public);
 
-            ILGenerator ilgen = builder.GetILGenerator();
-            ilgen.Emit(OpCodes.Ret);
-            Type ret = typeBuilder.CreateTypeInfo().AsType();
-            ParameterInfo actualReturnParameter = builder.ReturnParameter;
-
-            Assert.True(actualReturnParameter.ParameterType.Equals(typeof(void)));
+            Assert.Throws<InvalidOperationException>(() => method.ReturnParameter);
         }
 
         [Fact]
-        public void TestWithVoidReturnType()
+        public void ReturnParameter_NoBody_ThrowsInvalidOperationException()
         {
-            string strParamName = null;
-            strParamName = _generator.GetString(false, false, true, MinStringLength, MaxStringLength);
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Abstract);
+            MethodBuilder method = type.DefineMethod("TestMethod", MethodAttributes.Public | MethodAttributes.Abstract | MethodAttributes.Virtual);
 
-            Type[] paramTypes = new Type[] { typeof(int) };
-            Type expectedReturnType = typeof(void);
-            TypeBuilder typeBuilder = GetTestTypeBuilder();
-            MethodBuilder builder = typeBuilder.DefineMethod(
-                TestDynamicMethodName,
-                MethodAttributes.Public,
-                expectedReturnType,
-                paramTypes);
-            ParameterBuilder paramBuilder = builder.DefineParameter(
-                1,
-                ParameterAttributes.HasDefault,
-                strParamName);
-
-            ILGenerator ilgen = builder.GetILGenerator();
-            ilgen.Emit(OpCodes.Ret);
-            Type ret = typeBuilder.CreateTypeInfo().AsType();
-            ParameterInfo actualReturnParameter = builder.ReturnParameter;
-
-            Assert.True(actualReturnParameter.ParameterType.Equals(expectedReturnType));
-        }
-
-        [Fact]
-        public void TestWithValueTypeReturnType()
-        {
-            string strParamName = null;
-            strParamName = _generator.GetString(false, false, true, MinStringLength, MaxStringLength);
-
-            Type[] paramTypes = new Type[] { typeof(int) };
-            Type expectedReturnType = typeof(int);
-
-            TypeBuilder typeBuilder = GetTestTypeBuilder();
-            MethodBuilder builder = typeBuilder.DefineMethod(
-                TestDynamicMethodName,
-                MethodAttributes.Public,
-                expectedReturnType,
-                paramTypes);
-            ParameterBuilder paramBuilder = builder.DefineParameter(
-                1,
-                ParameterAttributes.HasDefault,
-                strParamName);
-
-            ILGenerator ilgen = builder.GetILGenerator();
-            ilgen.Emit(OpCodes.Ret);
-            Type ret = typeBuilder.CreateTypeInfo().AsType();
-            ParameterInfo actualReturnParameter = builder.ReturnParameter;
-
-            Assert.True(actualReturnParameter.ParameterType.Equals(expectedReturnType));
-        }
-
-        [Fact]
-        public void TestWithReferenceTypeReturnType()
-        {
-            string strParamName = null;
-            strParamName = _generator.GetString(false, false, true, MinStringLength, MaxStringLength);
-
-            Type[] paramTypes = new Type[] { typeof(int) };
-            Type expectedReturnType = typeof(string);
-
-            TypeBuilder typeBuilder = GetTestTypeBuilder();
-            MethodBuilder builder = typeBuilder.DefineMethod(
-                TestDynamicMethodName,
-                MethodAttributes.Public,
-                expectedReturnType,
-                paramTypes);
-            ParameterBuilder paramBuilder = builder.DefineParameter(
-                1,
-                ParameterAttributes.HasDefault,
-                strParamName);
-
-            ILGenerator ilgen = builder.GetILGenerator();
-            ilgen.Emit(OpCodes.Ret);
-            Type ret = typeBuilder.CreateTypeInfo().AsType();
-            ParameterInfo actualReturnParameter = builder.ReturnParameter;
-
-            Assert.True(actualReturnParameter.ParameterType.Equals(expectedReturnType));
-        }
-
-        [Fact]
-        public void TestThrowsExceptionForDeclaringTypeNotCreated()
-        {
-            TypeBuilder typeBuilder = GetTestTypeBuilder();
-            MethodBuilder builder = typeBuilder.DefineMethod(
-                TestDynamicMethodName,
-                MethodAttributes.Public);
-
-            Assert.Throws<InvalidOperationException>(() => { ParameterInfo actualReturnParameter = builder.ReturnParameter; });
-        }
-
-        [Fact]
-        public void TestThrowsExceptionWithNoMethodBodyDefined()
-        {
-            TypeBuilder typeBuilder = GetTestTypeBuilder();
-            MethodBuilder builder = typeBuilder.DefineMethod(
-                TestDynamicMethodName,
-                MethodAttributes.Public | MethodAttributes.Abstract | MethodAttributes.Virtual);
-
-            Type ret = typeBuilder.CreateTypeInfo().AsType();
-            Assert.Throws<InvalidOperationException>(() => { ParameterInfo actualReturnParameter = builder.ReturnParameter; });
+            type.CreateTypeInfo().AsType();
+            Assert.Throws<InvalidOperationException>(() => method.ReturnParameter);
         }
     }
 }

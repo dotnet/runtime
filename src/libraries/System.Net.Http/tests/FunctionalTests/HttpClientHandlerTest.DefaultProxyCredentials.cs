@@ -51,7 +51,7 @@ namespace System.Net.Http.Functional.Tests
                 handler.Proxy = new UseSpecifiedUriWebProxy(proxyUrl, rightCreds);
                 handler.DefaultProxyCredentials = wrongCreds;
 
-                Task<HttpResponseMessage> responseTask = client.GetAsync(HttpTestServers.RemoteEchoServer);
+                Task<HttpResponseMessage> responseTask = client.GetAsync(Configuration.Http.RemoteEchoServer);
                 Task<string> responseStringTask = responseTask.ContinueWith(t => t.Result.Content.ReadAsStringAsync(), TaskScheduler.Default).Unwrap();
                 Task.WaitAll(proxyTask, responseTask, responseStringTask);
 
@@ -86,7 +86,7 @@ namespace System.Net.Http.Functional.Tests
                     var creds = new NetworkCredential(ExpectedUsername, ExpectedPassword);
                     handler.DefaultProxyCredentials = creds;
 
-                    Task<HttpResponseMessage> responseTask = client.GetAsync(HttpTestServers.RemoteEchoServer);
+                    Task<HttpResponseMessage> responseTask = client.GetAsync(Configuration.Http.RemoteEchoServer);
                     Task<string> responseStringTask = responseTask.ContinueWith(t => t.Result.Content.ReadAsStringAsync(), TaskScheduler.Default).Unwrap();
                     Task.WaitAll(responseTask, responseStringTask);
 

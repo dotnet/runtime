@@ -9,6 +9,7 @@
     <OutputType>Library</OutputType>
     <AssemblyName>System.Xml.XPath.XDocument.Tests</AssemblyName>
     <RootNamespace>System.Xml.XPath.XDocument.Tests</RootNamespace>
+    <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
   </PropertyGroup>
@@ -207,11 +208,11 @@
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\System.Xml.XPath.XmlDocument\src\System.Xml.XPath.XmlDocument.csproj">
+    <ProjectReference Include="..\..\System.Xml.XPath.XmlDocument\pkg\System.Xml.XPath.XmlDocument.pkgproj">
       <Project>{17cb2e3c-2904-4241-94db-3894d24f35da}</Project>
       <Name>System.Xml.XPath.XmlDocument</Name>
     </ProjectReference>
-    <ProjectReference Include="..\..\System.Xml.XPath\src\System.Xml.XPath.csproj">
+    <ProjectReference Include="..\..\System.Xml.XPath\pkg\System.Xml.XPath.pkgproj">
       <Project>{be28323e-327a-4e0f-b7f9-16ab7eab59dd}</Project>
       <Name>System.Xml.XPath</Name>
     </ProjectReference>

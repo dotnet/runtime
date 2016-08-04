@@ -36,9 +36,9 @@ You can perform code coverage runs locally on your own machine.  Normally to bui
 
     build
 
-To include code coverage in this run, augment it with the ```/p:Coverage=true``` argument:
+To include code coverage in this run, augment it with the `coverage` argument:
 
-    build /p:Coverage=true
+    build -coverage
 
 This will do the build and testing as with the normal ```build```, but it will run the tests using the OpenCover tool.  A resulting index.htm file providing the results of the run will be available at:
 
@@ -60,3 +60,23 @@ The results for this one library will then also show up in the aforementioned in
 And then once the run completes:
     
     ..\..\..\bin\tests\coverage\index.htm
+
+## Code coverage with mscorlib code
+
+Some of the libraries for which contracts and tests live in the corefx repo are actually implemented in the core runtime library in another repo, e.g. the implementation that backs the System.Runtime contract is in System.Private.Corlib.dll in either the coreclr or corert repo. To run coverage reports for these projects, you need to build mscorlib locally from the coreclr repo.
+
+The following steps can be used manually to produce a coverage report, but a customizable batch file can be found [here](facade-code-coverage.bat). Changing the parameters in the first couple of lines lets you run a coverage report easily for any facade project.
+
+1. Build the local test project (`msbuild /T:Build`)
+3. Build coreclr locally in Debug or Release (`build.cmd all Debug skiptests`)
+2. Navigate to the built test directory in the corefx bin (e.g. `bin/tests/AnyOS.AnyCPU.Debug/System.Runtime/netcoreapp1.0` for `System.Runtime`
+4. Delete `coreclr.dll`, `mscorlib.dll`, `mscorlib.ni.dll`, `System.Private.CoreLib.dll` and `System.Private.CoreLib.ni.dll` from that directory
+5. Copy all files in the coreclr `bin` directory to the test directory
+6. Copy all files in the coreclr `bin/PDB` directory to the test directory
+7. Run an OpenCover command with `xunit.console.netcore.exe`. For example:
+
+	<corefx-root>/packages/OpenCover/<opencover-version>/tools/OpenCover.Console.exe -oldStyle -filter:"+[*]* -[*.Tests]* -[xunit.*]*" -excludebyfile:"*\Common\src\System\SR.*" -nodefaultfilters -excludebyattribute:*.ExcludeFromCodeCoverage* -skipautoprops -hideskipped:All -threshold:1 -returntargetcode -register:user -targetdir:<path-to corefx-bin> -target:CoreRun.exe -output:coverage.xml -targetargs:"xunit.console.netcore.exe System.Runtime.Tests -xml testResults.xml -notrait Benchmark=true -notrait category=OuterLoop -notrait category=failing -notrait category=nonwindowstests"
+
+8. Run a ReportGenerator command with the generated `coverage.xml` file. For example:
+
+	<corefx-root>/packages/ReportGenerator/<opencover-version>/tools/ReportGenerator.exe -reporttypes:Html;Badges -reports:coverage.xml

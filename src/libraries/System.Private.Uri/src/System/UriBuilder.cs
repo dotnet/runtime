@@ -241,7 +241,7 @@ namespace System
                 {
                     value = "/";
                 }
-                _path = Uri.InternalEscapeString(ConvertSlashes(value));
+                _path = Uri.InternalEscapeString(value.Replace('\\', '/'));
                 _changed = true;
             }
         }
@@ -349,23 +349,6 @@ namespace System
 
         // methods
 
-        private string ConvertSlashes(string path)
-        {
-            StringBuilder sb = new StringBuilder(path.Length);
-            char ch;
-
-            for (int i = 0; i < path.Length; ++i)
-            {
-                ch = path[i];
-                if (ch == '\\')
-                {
-                    ch = '/';
-                }
-                sb.Append(ch);
-            }
-            return sb.ToString();
-        }
-
         public override bool Equals(object rparam)
         {
             if (rparam == null)
@@ -433,7 +416,7 @@ namespace System
                     + ((_password.Length > 0) ? (":" + _password) : string.Empty)
                     + ((_username.Length > 0) ? "@" : string.Empty)
                     + _host
-                    + (((_port != -1) && (_host.Length > 0)) ? (":" + _port) : string.Empty)
+                    + (((_port != -1) && (_host.Length > 0)) ? (":" + _port.ToString()) : string.Empty)
                     + (((_host.Length > 0) && (_path.Length != 0) && (_path[0] != '/')) ? "/" : string.Empty) + _path
                     + _query
                     + _fragment;

@@ -4,29 +4,21 @@
 
 using System;
 using System.IO;
-using System.Text;
-using System.Diagnostics;
-using System.Globalization;
-using System.Collections.Generic;
 using System.Runtime.InteropServices;
-
-using Internal.Cryptography;
-using Internal.Cryptography.Pal.Native;
-
-
-using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
+
+using Internal.Cryptography.Pal.Native;
 
 namespace Internal.Cryptography.Pal
 {
-    internal sealed partial class StorePal : IDisposable, IStorePal
+    internal sealed partial class StorePal : IDisposable, IStorePal, IExportPal, ILoaderPal
     {
-        public static IStorePal FromBlob(byte[] rawData, string password, X509KeyStorageFlags keyStorageFlags)
+        public static ILoaderPal FromBlob(byte[] rawData, string password, X509KeyStorageFlags keyStorageFlags)
         {
             return FromBlobOrFile(rawData, null, password, keyStorageFlags);
         }
 
-        public static IStorePal FromFile(string fileName, string password, X509KeyStorageFlags keyStorageFlags)
+        public static ILoaderPal FromFile(string fileName, string password, X509KeyStorageFlags keyStorageFlags)
         {
             return FromBlobOrFile(null, fileName, password, keyStorageFlags);
         }
@@ -105,7 +97,7 @@ namespace Internal.Cryptography.Pal
             }
         }
 
-        public static IStorePal FromCertificate(ICertificatePal cert)
+        public static IExportPal FromCertificate(ICertificatePal cert)
         {
             CertificatePal certificatePal = (CertificatePal)cert;
 
@@ -126,7 +118,7 @@ namespace Internal.Cryptography.Pal
         /// Note: this factory method creates the store using links to the original certificates rather than copies. This means that any changes to certificate properties
         /// in the store changes the original.
         /// </summary>
-        public static IStorePal LinkFromCertificateCollection(X509Certificate2Collection certificates)
+        public static IExportPal LinkFromCertificateCollection(X509Certificate2Collection certificates)
         {
             // we always want to use CERT_STORE_ENUM_ARCHIVED_FLAG since we want to preserve the collection in this operation.
             // By default, Archived certificates will not be included.

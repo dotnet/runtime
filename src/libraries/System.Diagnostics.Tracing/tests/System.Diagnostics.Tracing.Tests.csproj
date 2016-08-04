@@ -10,6 +10,7 @@
     <RootNamespace>System.Diagnostics.Tracing.Tests</RootNamespace>
     <AssemblyName>System.Diagnostics.Tracing.Tests</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <NugetTargetMoniker>.NETStandard,Version=v1.5</NugetTargetMoniker>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
   </PropertyGroup>

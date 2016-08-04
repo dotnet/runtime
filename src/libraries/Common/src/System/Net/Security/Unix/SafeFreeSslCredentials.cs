@@ -79,7 +79,7 @@ namespace System.Net.Security
                     throw new NotSupportedException(SR.net_ssl_io_no_server_cert);
                 }
 
-                _certHandle = Interop.Crypto.X509Duplicate(cert.Handle);
+                _certHandle = Interop.Crypto.X509UpRef(cert.Handle);
                 Interop.Crypto.CheckValidOpenSslHandle(_certHandle);
             }
 

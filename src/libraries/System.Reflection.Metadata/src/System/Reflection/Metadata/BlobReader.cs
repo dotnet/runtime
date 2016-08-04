@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Reflection.Internal;
 using System.Reflection.Metadata.Ecma335;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace System.Reflection.Metadata
 {
@@ -65,36 +66,52 @@ namespace System.Reflection.Metadata
 
         #region Offset, Skipping, Marking, Alignment, Bounds Checking
 
-        public int Length
-        {
-            get
-            {
-                return _block.Length;
-            }
-        }
+        /// <summary>
+        /// Pointer to the byte at the start of the underlying memory block.
+        /// </summary>
+        public byte* StartPointer => _block.Pointer;
 
-        public int Offset
-        {
-            get
-            {
-                return (int)(_currentPointer - _block.Pointer);
-            }
-        }
+        /// <summary>
+        /// Pointer to the byte at the current position of the reader.
+        /// </summary>
+        public byte* CurrentPointer => _currentPointer;
 
-        public int RemainingBytes
-        {
-            get
-            {
-                return (int)(_endPointer - _currentPointer);
-            }
-        }
+        /// <summary>
+        /// The total length of the underlying memory block.
+        /// </summary>
+        public int Length => _block.Length;
 
+        /// <summary>
+        /// Offset from start of underlying memory block to current position.
+        /// </summary>
+        public int Offset => (int)(_currentPointer - _block.Pointer);
+
+        /// <summary>
+        /// Bytes remaining from current position to end of underlying memory block.
+        /// </summary>
+        public int RemainingBytes => (int)(_endPointer - _currentPointer);
+       
+        /// <summary>
+        /// Repositions the reader to the start of the underluing memory block.
+        /// </summary>
         public void Reset()
         {
             _currentPointer = _block.Pointer;
         }
 
-        internal bool SeekOffset(int offset)
+        /// <summary>
+        /// Repositions the reader to the given offset from the start of the underlying memory block.
+        /// </summary>
+        /// <exception cref="BadImageFormatException">Offset is outside the bounds of underlying reader.</exception>
+        public void SeekOffset(int offset)
+        {
+            if (!TrySeekOffset(offset))
+            {
+                Throw.OutOfBounds();
+            }
+        }
+
+        internal bool TrySeekOffset(int offset)
         {
             if (unchecked((uint)offset) >= (uint)_block.Length)
             {
@@ -105,12 +122,18 @@ namespace System.Reflection.Metadata
             return true;
         }
 
-        internal void SkipBytes(int count)
+        /// <summary>
+        /// Repositions the reader forward by the given number of bytes.
+        /// </summary>
+        public void SkipBytes(int count)
         {
             GetCurrentPointerAndAdvance(count);
         }
 
-        internal void Align(byte alignment)
+        /// <summary>
+        /// Repositions the reader forward by the number of bytes required to satisfy the given alignment.
+        /// </summary>
+        public void Align(byte alignment)
         {
             if (!TryAlign(alignment))
             {
@@ -349,6 +372,18 @@ namespace System.Reflection.Metadata
             byte[] bytes = _block.PeekBytes(this.Offset, byteCount);
             _currentPointer += byteCount;
             return bytes;
+        }
+
+        /// <summary>
+        /// Reads bytes starting at the current position in to the given buffer at the given offset;
+        /// </summary>
+        /// <param name="byteCount">The number of bytes to read.</param>
+        /// <param name="buffer">The destination buffer the bytes read will be written.</param>
+        /// <param name="bufferOffset">The offset in the destination buffer where the bytes read will be written.</param>
+        /// <exception cref="BadImageFormatException"><paramref name="byteCount"/> bytes not available.</exception>
+        public void ReadBytes(int byteCount, byte[] buffer, int bufferOffset)
+        {
+            Marshal.Copy((IntPtr)GetCurrentPointerAndAdvance(byteCount), buffer, bufferOffset, byteCount);
         }
 
         internal string ReadUtf8NullTerminated()

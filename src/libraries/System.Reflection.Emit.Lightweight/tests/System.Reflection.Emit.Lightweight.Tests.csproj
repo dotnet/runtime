@@ -8,6 +8,7 @@
     <AssemblyName>System.Reflection.Emit.Lightweight.Tests</AssemblyName>
     <RootNamespace>System.Reflection.Emit.Lightweight.Tests</RootNamespace>
     <ProjectGuid>{C338DCF7-FB75-407B-A2ED-117FBF3AAA18}</ProjectGuid>
+    <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -18,26 +19,11 @@
     <None Include="project.json" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="DynamicMethodAttributes.cs" />
-    <Compile Include="DynamicMethodCallingConvention.cs" />
-    <Compile Include="DynamicMethodCreateDelegate1.cs" />
-    <Compile Include="DynamicMethodCreateDelegate2.cs" />
-    <Compile Include="DynamicMethodctor1.cs" />
-    <Compile Include="DynamicMethodctor2.cs" />
-    <Compile Include="DynamicMethodctor3.cs" />
-    <Compile Include="DynamicMethodctor4.cs" />
-    <Compile Include="DynamicMethodctor5.cs" />
-    <Compile Include="DynamicMethodctor6.cs" />
-    <Compile Include="DynamicMethodDeclaringType.cs" />
+    <Compile Include="DynamicMethodCreateDelegate.cs" />
+    <Compile Include="DynamicMethodCtor.cs" />
     <Compile Include="DynamicMethodGetBaseDefinition.cs" />
-    <Compile Include="DynamicMethodGetILGenerator1.cs" />
-    <Compile Include="DynamicMethodGetILGenerator2.cs" />
-    <Compile Include="DynamicMethodGetParameters.cs" />
+    <Compile Include="DynamicMethodGetILGenerator.cs" />
     <Compile Include="DynamicMethodInitLocals.cs" />
-    <Compile Include="DynamicMethodModule.cs" />
-    <Compile Include="DynamicMethodName.cs" />
-    <Compile Include="DynamicMethodReturnParameter.cs" />
-    <Compile Include="DynamicMethodReturnType.cs" />
     <Compile Include="DynamicMethodToString.cs" />
     <Compile Include="Utilities.cs" />
   </ItemGroup>

@@ -3,8 +3,8 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
-using Xunit;
 using Microsoft.Xunit.Performance;
+using Xunit;
 
 namespace System.Collections.Tests
 {
@@ -579,7 +579,7 @@ namespace System.Collections.Tests
         {
             int sampleLength = 1000;
 
-            String[] sampleSet = new String[sampleLength];
+            string[] sampleSet = new string[sampleLength];
             for (int i = 0; i < sampleLength; i++)
             {
                 sampleSet[i] = i.ToString();
@@ -847,7 +847,7 @@ namespace System.Collections.Tests
         {
             int sampleLength = 100000;
 
-            String[] sampleSet = new String[sampleLength];
+            string[] sampleSet = new string[sampleLength];
             for (int i = 0; i < sampleLength; i++)
             {
                 sampleSet[i] = i.ToString();

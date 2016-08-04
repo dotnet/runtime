@@ -24,7 +24,7 @@
       <Platform>amd64</Platform>
     </Project>
     <Project Include="osx\runtime.native.System.Security.Cryptography.pkgproj">
-      <OSGroup>osx.10.10</OSGroup>
+      <OSGroup>osx.10</OSGroup>
       <Platform>amd64</Platform>
     </Project>
     <Project Include="opensuse\13.2\runtime.native.System.Security.Cryptography.pkgproj">

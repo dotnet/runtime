@@ -2,40 +2,25 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Reflection;
-using System.Reflection.Emit;
-using System.Threading;
 using Xunit;
 
 namespace System.Reflection.Emit.Tests
 {
     public class TypeBuilderGUID
     {
-        public const string ModuleName = "ModuleName";
-        public const string TypeName = "TypeName";
-        private TypeBuilder GetTypeBuilder(string typename)
+        [Fact]
+        public void Guid_TypeCreated_NotEmpty()
         {
-            AssemblyName assemblyname = new AssemblyName("assemblyname");
-
-            AssemblyBuilder assemblybuilder = AssemblyBuilder.DefineDynamicAssembly(assemblyname, AssemblyBuilderAccess.Run);
-            ModuleBuilder modulebuilder = TestLibrary.Utilities.GetModuleBuilder(assemblybuilder, ModuleName);
-            return modulebuilder.DefineType(typename);
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.NotPublic);
+            type.CreateTypeInfo().AsType();
+            Assert.NotEqual(Guid.Empty, type.GUID);
         }
 
         [Fact]
-        public void TestGuid()
+        public void Guid_TypeNotCreated_ThrowsInvalidOperationException()
         {
-            TypeBuilder typebuilder = GetTypeBuilder(TypeName);
-            typebuilder.CreateTypeInfo().AsType();
-            Guid guid = typebuilder.GUID;
-        }
-
-        [Fact]
-        public void TestThrowsExceptionForCreateTypeNotCalled()
-        {
-            TypeBuilder typebuilder = GetTypeBuilder(TypeName);
-            Assert.Throws<NotSupportedException>(() => { Guid guid = typebuilder.GUID; });
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.NotPublic);
+            Assert.Throws<NotSupportedException>(() => type.GUID);
         }
     }
 }

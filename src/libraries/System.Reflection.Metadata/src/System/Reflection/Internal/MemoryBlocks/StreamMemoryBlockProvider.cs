@@ -74,6 +74,7 @@ namespace System.Reflection.Internal
             }
         }
 
+        /// <exception cref="IOException">Error reading from the stream.</exception>
         internal static unsafe NativeHeapMemoryBlock ReadMemoryBlockNoLock(Stream stream, bool isFileStream, long start, int size)
         {
             var block = new NativeHeapMemoryBlock(size);

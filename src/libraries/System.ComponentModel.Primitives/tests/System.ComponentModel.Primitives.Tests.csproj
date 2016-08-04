@@ -8,6 +8,7 @@
     <ProjectGuid>{C9534425-93FB-494F-8DD8-1E4E3E626FDE}</ProjectGuid>
     <AssemblyName>System.ComponentModel.Primitives.Tests</AssemblyName>
     <RootNamespace>System.ComponentModel.Primitives.Tests</RootNamespace>
+    <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">

@@ -3,24 +3,24 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.IO;
-using System.Text;
-using System.Diagnostics;
-using System.Globalization;
-using System.Collections.Generic;
 using System.Runtime.InteropServices;
-
-using Internal.Cryptography;
-using Internal.Cryptography.Pal.Native;
-
-
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 
+using Internal.Cryptography.Pal.Native;
+
 namespace Internal.Cryptography.Pal
 {
-    internal sealed partial class StorePal : IDisposable, IStorePal
+    internal sealed partial class StorePal : IDisposable, IStorePal, IExportPal, ILoaderPal
     {
+        public void MoveTo(X509Certificate2Collection collection)
+        {
+            CopyTo(collection);
+
+            // ILoaderPal expects to only be called once.
+            Dispose();
+        }
+
         public byte[] Export(X509ContentType contentType, string password)
         {
             switch (contentType)

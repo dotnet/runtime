@@ -56,6 +56,18 @@ public interface TestType_IPropertyService
     string ReadWrite { get; set; }
 }
 
+// Demonstrates proxies can be made for events.
+public interface TestType_IEventService
+{
+    event EventHandler AddRemove;
+}
+
+// Demonstrates proxies can be made for indexed properties.
+public interface TestType_IIndexerService
+{
+    string this[string key] { get; set; }
+}
+
 // Demonstrates proxies can be made for internal types
 internal interface TestType_InternalInterfaceService
 {

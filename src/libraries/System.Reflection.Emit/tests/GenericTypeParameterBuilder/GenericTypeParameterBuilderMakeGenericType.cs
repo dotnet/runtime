@@ -2,9 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Reflection;
-using System.Reflection.Emit;
 using Xunit;
 
 namespace System.Reflection.Emit.Tests
@@ -12,59 +9,33 @@ namespace System.Reflection.Emit.Tests
     public class GenericTypeParameterBuilderMakeGenericType
     {
         [Fact]
-        public void TestThrowsExceptionForNullTypeArguments()
+        public void MakeGenericType_NullTypeArguments_ThrowsInvalidOperationException()
         {
-            AssemblyName myAsmName = new AssemblyName("GenericEmitExample1");
-            AssemblyBuilder myAssembly = AssemblyBuilder.DefineDynamicAssembly(myAsmName, AssemblyBuilderAccess.Run);
-            ModuleBuilder myModule = TestLibrary.Utilities.GetModuleBuilder(myAssembly, myAsmName.Name);
-
-            Type baseType = typeof(ExampleBase);
-
-            TypeBuilder myType = myModule.DefineType("Sample", TypeAttributes.Public);
-
-            string[] typeParamNames = { "TFirst" };
-            GenericTypeParameterBuilder[] typeParams = myType.DefineGenericParameters(typeParamNames);
-
-            GenericTypeParameterBuilder TFirst = typeParams[0];
-            Assert.Throws<InvalidOperationException>(() => { Type type = TFirst.MakeGenericType(null); });
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
+            string[] typeParamNames = new string[] { "TFirst" };
+            GenericTypeParameterBuilder[] typeParams = type.DefineGenericParameters(typeParamNames);
+            
+            Assert.Throws<InvalidOperationException>(() => typeParams[0].MakeGenericType(null));
         }
 
         [Fact]
-        public void TestThrowsExceptionForOneMemberArray()
+        public void MakeGenericType_SingleTypeArgument_ThrowsInvalidOperationException()
         {
-            AssemblyName myAsmName = new AssemblyName("GenericEmitExample1");
-            AssemblyBuilder myAssembly = AssemblyBuilder.DefineDynamicAssembly(myAsmName, AssemblyBuilderAccess.Run);
-            ModuleBuilder myModule = TestLibrary.Utilities.GetModuleBuilder(myAssembly, myAsmName.Name);
-
-            Type baseType = typeof(ExampleBase);
-
-            TypeBuilder myType = myModule.DefineType("Sample", TypeAttributes.Public);
-
-            string[] typeParamNames = { "TFirst" };
-            GenericTypeParameterBuilder[] typeParams = myType.DefineGenericParameters(typeParamNames);
-
-            GenericTypeParameterBuilder TFirst = typeParams[0];
-
-            Assert.Throws<InvalidOperationException>(() => { Type type = TFirst.MakeGenericType(new Type[] { typeof(Type) }); });
-            //this method only throw exceptions
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
+            string[] typeParamNames = new string[] { "TFirst" };
+            GenericTypeParameterBuilder[] typeParams = type.DefineGenericParameters(typeParamNames);
+            
+            Assert.Throws<InvalidOperationException>(() => typeParams[0].MakeGenericType(new Type[] { typeof(Type) }));
         }
 
         [Fact]
-        public void TestThrowsExceptionForIncorrectNumberOfTypeParams()
+        public void MakeGenericType_TwoTypeArguments_ThrowsInvalidOperationException()
         {
-            AssemblyName myAsmName = new AssemblyName("GenericEmitExample1");
-            AssemblyBuilder myAssembly = AssemblyBuilder.DefineDynamicAssembly(myAsmName, AssemblyBuilderAccess.Run);
-            ModuleBuilder myModule = TestLibrary.Utilities.GetModuleBuilder(myAssembly, myAsmName.Name);
-
-            Type baseType = typeof(ExampleBase);
-
-            TypeBuilder myType = myModule.DefineType("Sample", TypeAttributes.Public);
-
-            string[] typeParamNames = { "TFirst" };
-            GenericTypeParameterBuilder[] typeParams = myType.DefineGenericParameters(typeParamNames);
-
-            GenericTypeParameterBuilder TFirst = typeParams[0];
-            Assert.Throws<InvalidOperationException>(() => { Type type = TFirst.MakeGenericType(new Type[] { typeof(int), typeof(string) }); });
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
+            string[] typeParamNames = new string[] { "TFirst" };
+            GenericTypeParameterBuilder[] typeParams = type.DefineGenericParameters(typeParamNames);
+            
+            Assert.Throws<InvalidOperationException>(() => typeParams[0].MakeGenericType(new Type[] { typeof(int), typeof(string) }));
         }
     }
 }

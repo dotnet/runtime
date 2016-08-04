@@ -19,6 +19,8 @@ namespace System.Collections.Tests
             return GenericLinkedListFactory();
         }
 
+        protected override Type ICollection_Generic_CopyTo_IndexLargerThanArrayCount_ThrowType => typeof(ArgumentOutOfRangeException);
+
         #endregion
 
         #region LinkedList<T> Helper Methods

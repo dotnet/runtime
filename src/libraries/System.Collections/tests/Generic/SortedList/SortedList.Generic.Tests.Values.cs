@@ -10,10 +10,10 @@ namespace System.Collections.Tests
 {
     public class SortedList_Generic_Tests_Values : IList_Generic_Tests<string>
     {
-        protected override bool DefaultValueAllowed { get { return true; } }
-        protected override bool DuplicateValuesAllowed { get { return true; } }
-        protected override bool IsReadOnly { get { return true; } }
-        protected override IEnumerable<ModifyEnumerable> ModifyEnumerables { get { return new List<ModifyEnumerable>(); } }
+        protected override bool DefaultValueAllowed => true;
+        protected override bool DuplicateValuesAllowed => true;
+        protected override bool IsReadOnly => true;
+        protected override IEnumerable<ModifyEnumerable> ModifyEnumerables => new List<ModifyEnumerable>();
 
         protected override IList<string> GenericIListFactory()
         {
@@ -90,6 +90,6 @@ namespace System.Collections.Tests
             Debug.Assert(false);
         }
 
-        protected override IEnumerable<ModifyEnumerable> ModifyEnumerables { get { return new List<ModifyEnumerable>(); } }
+        protected override IEnumerable<ModifyEnumerable> ModifyEnumerables => new List<ModifyEnumerable>();
     }
 }

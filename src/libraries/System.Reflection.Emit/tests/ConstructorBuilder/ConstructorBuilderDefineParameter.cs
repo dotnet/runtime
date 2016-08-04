@@ -2,211 +2,167 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Reflection;
-using System.Reflection.Emit;
 using Xunit;
 
 namespace System.Reflection.Emit.Tests
 {
     public class ConstructorBuilderDefineParameter
     {
-        private const string AssemblyName = "ConstructorBuilderDefineParameter";
-        private const string DefaultModuleName = "DynamicModule";
-        private const string DefaultTypeName = "DynamicType";
-        private const AssemblyBuilderAccess DefaultAssemblyBuilderAccess = AssemblyBuilderAccess.Run;
-        private const MethodAttributes DefaultMethodAttribute = MethodAttributes.Public;
-        private const CallingConventions DefaultCallingConvention = CallingConventions.Standard;
-
-        private TypeBuilder _typeBuilder;
-
-        private ParameterAttributes[] _supportedAttributes = new ParameterAttributes[] {
-                ParameterAttributes.None,
-                ParameterAttributes.HasDefault,
-                ParameterAttributes.HasFieldMarshal,
-                ParameterAttributes.In,
-                ParameterAttributes.None,
-                ParameterAttributes.Optional,
-                ParameterAttributes.Out,
-                ParameterAttributes.Retval };
-        private ModuleBuilder _testModuleBuilder;
-
-        private ModuleBuilder TestModuleBuilder
+        private static readonly ParameterAttributes[] s_supportedAttributes = new ParameterAttributes[]
         {
-            get
-            {
-                AssemblyName name = new AssemblyName(AssemblyName);
-                AssemblyBuilder assembly = AssemblyBuilder.DefineDynamicAssembly(name, DefaultAssemblyBuilderAccess);
-                _testModuleBuilder = TestLibrary.Utilities.GetModuleBuilder(assembly, "Module1");
-
-                return _testModuleBuilder;
-            }
-        }
+            ParameterAttributes.None,
+            ParameterAttributes.HasDefault,
+            ParameterAttributes.HasFieldMarshal,
+            ParameterAttributes.In,
+            ParameterAttributes.None,
+            ParameterAttributes.Optional,
+            ParameterAttributes.Out,
+            ParameterAttributes.Retval
+        };
 
         [Fact]
-        public void TestValidDataWithMultipleParameters()
+        public void DefineParameter_MultipleParameters()
         {
-            int i = 0;
-            Type[] parameterTypes = new Type[]
+            Type[] parameterTypes = new Type[] { typeof(int), typeof(string) };
+
+            for (int i = 1; i < s_supportedAttributes.Length; i++)
             {
-                typeof(int),
-                typeof(string)
-            };
+                TypeBuilder type = Helpers.DynamicType(TypeAttributes.NotPublic);
+                ConstructorBuilder constructor = type.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard, parameterTypes);
 
-            for (i = 1; i < _supportedAttributes.Length; ++i)
-            {
-                ConstructorBuilder constructor = CreateConstructorBuilder("PosTest1_Type" + i,
-                    parameterTypes);
+                constructor.DefineParameter(1, s_supportedAttributes[i - 1], "parameter1" + i);
+                constructor.DefineParameter(2, s_supportedAttributes[i], "parameter2" + i);
 
-                constructor.DefineParameter(1, _supportedAttributes[i - 1], "parameter1" + i);
-                constructor.DefineParameter(2, _supportedAttributes[i], "parameter2" + i);
+                ILGenerator ilGenerator = constructor.GetILGenerator();
+                ilGenerator.Emit(OpCodes.Ldarg_0);
+                ilGenerator.Emit(OpCodes.Call, typeof(object).GetConstructor(new Type[0]));
+                ilGenerator.Emit(OpCodes.Ret);
 
-                ILGenerator ilg = constructor.GetILGenerator();
-                ilg.Emit(OpCodes.Ldarg_0);
-                ilg.Emit(OpCodes.Call, typeof(object).GetConstructor(new Type[] { }));
-                ilg.Emit(OpCodes.Ret);
+                type.CreateTypeInfo().AsType();
 
-                _typeBuilder.CreateTypeInfo().AsType();
-                ParameterInfo[] definedParams = constructor.GetParameters();
-
-                Assert.Equal(2, definedParams.Length);
-            }
-        }
-
-        [Fact]
-        public void TestValidDataWithSingleParameter()
-        {
-            int i = 0;
-
-            Type[] parameterTypes = new Type[]
-            {
-                typeof(ConstructorBuilderDefineParameter)
-            };
-
-            for (; i < _supportedAttributes.Length; ++i)
-            {
-                ConstructorBuilder constructor = CreateConstructorBuilder("PosTest2_Type" + i,
-                    parameterTypes);
-
-                constructor.DefineParameter(1, _supportedAttributes[i], "parameter1" + i);
-                ILGenerator ilg = constructor.GetILGenerator();
-                ilg.Emit(OpCodes.Ldarg_0);
-                ilg.Emit(OpCodes.Call, typeof(object).GetConstructor(new Type[] { }));
-                ilg.Emit(OpCodes.Ret);
-
-                _typeBuilder.CreateTypeInfo().AsType();
-                ParameterInfo[] definedParams = constructor.GetParameters();
-
-                Assert.Equal(1, definedParams.Length);
-            }
-        }
-
-        [Fact]
-        public void TestValidDataWithNullName()
-        {
-            int i = 0;
-
-            Type[] parameterTypes = new Type[]
-            {
-                typeof(ConstructorBuilderDefineParameter)
-            };
-
-            for (; i < _supportedAttributes.Length; ++i)
-            {
-                ConstructorBuilder constructor = CreateConstructorBuilder("PosTest3_Type" + i,
-                    parameterTypes);
-
-                constructor.DefineParameter(1, _supportedAttributes[i], null);
-                ILGenerator ilg = constructor.GetILGenerator();
-                ilg.Emit(OpCodes.Ldarg_0);
-                ilg.Emit(OpCodes.Call, typeof(object).GetConstructor(new Type[] { }));
-                ilg.Emit(OpCodes.Ret);
-
-                _typeBuilder.CreateTypeInfo().AsType();
-                ParameterInfo[] definedParams = constructor.GetParameters();
-                Assert.Equal(1, definedParams.Length);
-            }
-        }
-
-        [Fact]
-        public void TestValidDataWithMultipleParametersAndNullName()
-        {
-            int i = 0;
-
-            Type[] parameterTypes = new Type[]
-            {
-                typeof(int),
-                typeof(string)
-            };
-
-            for (i = 1; i < _supportedAttributes.Length; ++i)
-            {
-                ConstructorBuilder constructor = CreateConstructorBuilder("PosTest4_Type" + i,
-                    parameterTypes);
-
-                constructor.DefineParameter(1, _supportedAttributes[i - 1], null);
-                constructor.DefineParameter(2, _supportedAttributes[i], null);
-                ILGenerator ilg = constructor.GetILGenerator();
-                ilg.Emit(OpCodes.Ldarg_0);
-                ilg.Emit(OpCodes.Call, typeof(object).GetConstructor(new Type[] { }));
-                ilg.Emit(OpCodes.Ret);
-
-                _typeBuilder.CreateTypeInfo().AsType();
                 ParameterInfo[] definedParams = constructor.GetParameters();
                 Assert.Equal(2, definedParams.Length);
             }
         }
 
         [Fact]
-        public void TestParameterWithZeroSequence()
+        public void DefineParameter_SingleParameter()
         {
-            CreateConstructorBuilder("PosTest5_Type1", new Type[] { }).DefineParameter(0, ParameterAttributes.None, "p");
-            CreateConstructorBuilder("PosTest5_Type5", new Type[] { typeof(int) }).DefineParameter(0, ParameterAttributes.None, "p");
+            Type[] parameterTypes = new Type[] { typeof(ConstructorBuilderDefineParameter) };
+
+            for (int i = 0; i < s_supportedAttributes.Length; i++)
+            {
+                TypeBuilder type = Helpers.DynamicType(TypeAttributes.NotPublic);
+                ConstructorBuilder constructor = type.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard, parameterTypes);
+
+                constructor.DefineParameter(1, s_supportedAttributes[i], "parameter1" + i);
+
+                ILGenerator ilGenerator = constructor.GetILGenerator();
+                ilGenerator.Emit(OpCodes.Ldarg_0);
+                ilGenerator.Emit(OpCodes.Call, typeof(object).GetConstructor(new Type[0]));
+                ilGenerator.Emit(OpCodes.Ret);
+
+                type.CreateTypeInfo().AsType();
+
+                ParameterInfo[] definedParams = constructor.GetParameters();
+                Assert.Equal(1, definedParams.Length);
+            }
         }
 
         [Fact]
-        public void TestThrowsExceptionOnIncorrectPosition()
+        public void DefineParameter_SingleParameter_NullParameterName()
         {
-            // ArgumentOutOfRangeException should be thrown when position is less than or equal to zero, or it is greater than the number of parameters of the constructor.
-            NegTestCaseVerificationHelper(CreateConstructorBuilder("NegTest1_Type2", new Type[] { }),
-                -1, ParameterAttributes.None, "p", typeof(ArgumentOutOfRangeException));
-            NegTestCaseVerificationHelper(CreateConstructorBuilder("NegTest1_Type3", new Type[] { }),
-                1, ParameterAttributes.None, "p", typeof(ArgumentOutOfRangeException));
-            NegTestCaseVerificationHelper(CreateConstructorBuilder("NegTest1_Type4", new Type[] { typeof(int) }),
-                2, ParameterAttributes.None, "p", typeof(ArgumentOutOfRangeException));
+            Type[] parameterTypes = new Type[] { typeof(ConstructorBuilderDefineParameter) };
+
+            for (int i = 0; i < s_supportedAttributes.Length; i++)
+            {
+                TypeBuilder type = Helpers.DynamicType(TypeAttributes.NotPublic);
+                ConstructorBuilder constructor = type.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard, parameterTypes);
+
+                constructor.DefineParameter(1, s_supportedAttributes[i], null);
+
+                ILGenerator ilGenerator = constructor.GetILGenerator();
+                ilGenerator.Emit(OpCodes.Ldarg_0);
+                ilGenerator.Emit(OpCodes.Call, typeof(object).GetConstructor(new Type[0]));
+                ilGenerator.Emit(OpCodes.Ret);
+
+                type.CreateTypeInfo().AsType();
+
+                ParameterInfo[] definedParams = constructor.GetParameters();
+                Assert.Equal(1, definedParams.Length);
+            }
         }
 
         [Fact]
-        public void TestThrowsExceptionOnCreateTypeCalled()
+        public void DefineParameter_MultipleParameters_NullParameterNames()
         {
-            ConstructorBuilder constructor = CreateConstructorBuilder("NegTest2_Type1", new Type[] { typeof(int) });
+            Type[] parameterTypes = new Type[] { typeof(int), typeof(string) };
+
+            for (int i = 1; i < s_supportedAttributes.Length; ++i)
+            {
+                TypeBuilder type = Helpers.DynamicType(TypeAttributes.NotPublic);
+                ConstructorBuilder constructor = type.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard, parameterTypes);
+
+                constructor.DefineParameter(1, s_supportedAttributes[i - 1], null);
+                constructor.DefineParameter(2, s_supportedAttributes[i], null);
+
+                ILGenerator ilGenerator = constructor.GetILGenerator();
+                ilGenerator.Emit(OpCodes.Ldarg_0);
+                ilGenerator.Emit(OpCodes.Call, typeof(object).GetConstructor(new Type[0]));
+                ilGenerator.Emit(OpCodes.Ret);
+
+                type.CreateTypeInfo().AsType();
+
+                ParameterInfo[] definedParams = constructor.GetParameters();
+                Assert.Equal(2, definedParams.Length);
+            }
+        }
+
+        [Fact]
+        public void DefineParameter_ZeroSequence_NoParameters()
+        {
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.NotPublic);
+            ConstructorBuilder constructor = type.DefineConstructor(MethodAttributes.Public, CallingConventions.Any, new Type[0]);
+            Assert.NotNull(constructor.DefineParameter(0, ParameterAttributes.None, "p"));
+        }
+
+        [Fact]
+        public void DefineParameter_ZeroSequence_SingleParameter()
+        {
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.NotPublic);
+            ConstructorBuilder constructor = type.DefineConstructor(MethodAttributes.Public, CallingConventions.Any, new Type[0]);
+            Assert.NotNull(constructor.DefineParameter(0, ParameterAttributes.None, "p"));
+        }
+
+        [Fact]
+        public void DefineParameter_NoParameters_InvalidSequence_ThrowsArgumentOutOfRangeException()
+        {
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.NotPublic);
+            ConstructorBuilder constructor = type.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard, new Type[0]);
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => constructor.DefineParameter(-1, ParameterAttributes.None, "p"));
+            Assert.Throws<ArgumentOutOfRangeException>(() => constructor.DefineParameter(1, ParameterAttributes.None, "p"));
+        }
+
+        [Fact]
+        public void DefineParameter_SingleParameter_InvalidSequence_ThrowsArgumentOutOfRangeException()
+        {
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.NotPublic);
+            ConstructorBuilder constructor = type.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard, new Type[] { typeof(int) });
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => constructor.DefineParameter(2, ParameterAttributes.None, "p"));
+        }
+
+        [Fact]
+        public void DefineParameter_TypeAlreadyCreated_ThrowsInvalidOperationException()
+        {
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.NotPublic);
+            ConstructorBuilder constructor = type.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard, new Type[] { typeof(int) });
+
             constructor.GetILGenerator().Emit(OpCodes.Ret);
-
-            TypeBuilder type = _typeBuilder;
             type.CreateTypeInfo().AsType();
 
-            NegTestCaseVerificationHelper(constructor,
-                1, ParameterAttributes.None, "p", typeof(InvalidOperationException));
-        }
-
-        private ConstructorBuilder CreateConstructorBuilder(string typeName, Type[] parameterTypes)
-        {
-            _typeBuilder = TestModuleBuilder.DefineType(typeName);
-
-            return _typeBuilder.DefineConstructor(
-                DefaultMethodAttribute,
-                DefaultCallingConvention,
-                parameterTypes);
-        }
-
-        private void NegTestCaseVerificationHelper(
-            ConstructorBuilder constructor,
-            int sequence,
-            ParameterAttributes attribute,
-            string paramName,
-            Type desiredException)
-        {
-            Assert.Throws(desiredException, () => { constructor.DefineParameter(sequence, attribute, paramName); });
+            Assert.Throws<InvalidOperationException>(() => constructor.DefineParameter(1, ParameterAttributes.None, "p"));
         }
     }
 }

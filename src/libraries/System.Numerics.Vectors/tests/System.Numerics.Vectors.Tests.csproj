@@ -12,7 +12,7 @@
     <AssemblyName>System.Numerics.Vectors.Tests</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NuGetPackageImportStamp>11f13d9c</NuGetPackageImportStamp>
-    <IncludePerformanceTests>true</IncludePerformanceTests>
+    <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -39,13 +39,6 @@
     <Compile Include="Matrix4x4Tests.cs" />
     <Compile Include="PlaneTests.cs" />
     <Compile Include="QuaternionTests.cs" />
-    <!-- Performance Tests -->
-    <Compile Include="Performance\Perf.Vector2.cs" />
-    <Compile Include="Performance\Perf.Vector3.cs" />
-    <Compile Include="Performance\Perf.Vector4.cs" />
-    <Compile Include="$(CommonTestPath)\System\PerfUtils.cs">
-      <Link>Common\System\PerfUtils.cs</Link>
-    </Compile>
   </ItemGroup>
   <ItemGroup>
     <Service Include="{508349B6-6B84-4DF5-91F0-309BEEBAD82D}" />

@@ -30,7 +30,7 @@ namespace System.Net.Http.Functional.Tests
             var client = new HttpClient();
             client.DefaultRequestHeaders.Add("X-ResponseStreamTest", customHeaderValue);
 
-            Stream stream = await client.GetStreamAsync(HttpTestServers.RemoteEchoServer);
+            Stream stream = await client.GetStreamAsync(Configuration.Http.RemoteEchoServer);
             using (var reader = new StreamReader(stream))
             {
                 string responseBody = reader.ReadToEnd();
@@ -49,7 +49,7 @@ namespace System.Net.Http.Functional.Tests
             var client = new HttpClient();
 
             HttpResponseMessage response =
-                await client.GetAsync(HttpTestServers.RemoteEchoServer, HttpCompletionOption.ResponseHeadersRead);
+                await client.GetAsync(Configuration.Http.RemoteEchoServer, HttpCompletionOption.ResponseHeadersRead);
             await response.Content.LoadIntoBufferAsync();
 
             string responseBody = await response.Content.ReadAsStringAsync();
@@ -67,7 +67,7 @@ namespace System.Net.Http.Functional.Tests
             var client = new HttpClient();
 
             HttpResponseMessage response =
-                await client.GetAsync(HttpTestServers.RemoteEchoServer, HttpCompletionOption.ResponseHeadersRead);
+                await client.GetAsync(Configuration.Http.RemoteEchoServer, HttpCompletionOption.ResponseHeadersRead);
 
             var memoryStream = new MemoryStream();
             await response.Content.CopyToAsync(memoryStream);
@@ -92,7 +92,7 @@ namespace System.Net.Http.Functional.Tests
 
             using (var client = new HttpClient())
             using (HttpResponseMessage response =
-                    await client.GetAsync(HttpTestServers.RemoteEchoServer, HttpCompletionOption.ResponseHeadersRead))
+                    await client.GetAsync(Configuration.Http.RemoteEchoServer, HttpCompletionOption.ResponseHeadersRead))
             using (Stream stream = await response.Content.ReadAsStreamAsync())
             {
                 var buffer = new byte[2048];

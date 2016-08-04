@@ -9,7 +9,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
 {
     public static class SqlNamedPipesTest
     {
-        [Fact]
+        [CheckConnStrSetupFact]
         public static void ValidConnStringTest()
         {
             SqlConnectionStringBuilder builder = new SqlConnectionStringBuilder(DataTestUtility.NpConnStr);
@@ -32,7 +32,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         }
 
 #if MANAGED_SNI
-        [Fact]
+        [CheckConnStrSetupFact]
         public static void InvalidConnStringTest()
         {
             const string invalidConnStringError = "A network-related or instance-specific error occurred while establishing a connection to SQL Server. The server was not found or was not accessible. Verify that the instance name is correct and that SQL Server is configured to allow remote connections. (provider: Named Pipes Provider, error: 25 - Connection string is not valid)";

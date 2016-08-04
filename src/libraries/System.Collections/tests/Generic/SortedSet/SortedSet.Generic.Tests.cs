@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Linq;
 using System.Collections.Generic;
+using System.Linq;
 using Xunit;
 
 namespace System.Collections.Tests
@@ -158,7 +158,7 @@ namespace System.Collections.Tests
         public void SortedSet_Generic_GetViewBetween_SubsequentOutOfRangeCall_ThrowsArgumentOutOfRangeException(int setLength)
         {
             if (setLength >= 3)
-            { 
+            {
                 SortedSet<T> set = (SortedSet<T>)GenericISetFactory(setLength);
                 IComparer<T> comparer = GetIComparer();
                 if (comparer == null)

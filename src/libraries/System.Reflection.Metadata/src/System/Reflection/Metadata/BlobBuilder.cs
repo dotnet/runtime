@@ -1044,8 +1044,12 @@ namespace System.Reflection.Metadata
             WriteUTF8(value, 0, value.Length, allowUnpairedSurrogates, prependSize: false);
         }
 
-        private void WriteUTF8(string str, int start, int length, bool allowUnpairedSurrogates, bool prependSize)
+        internal void WriteUTF8(string str, int start, int length, bool allowUnpairedSurrogates, bool prependSize)
         {
+            Debug.Assert(start >= 0);
+            Debug.Assert(length >= 0);
+            Debug.Assert(start + length <= str.Length);
+
             if (!IsHead)
             {
                 Throw.InvalidOperationBuilderAlreadyLinked();
@@ -1061,7 +1065,7 @@ namespace System.Reflection.Metadata
 
                 int bytesToCurrent = BlobUtilities.GetUTF8ByteCount(currentPtr, length, byteLimit, out nextPtr);
                 int charsToCurrent = (int)(nextPtr - currentPtr);
-                int charsToNext = str.Length - charsToCurrent;
+                int charsToNext = length - charsToCurrent;
                 int bytesToNext = BlobUtilities.GetUTF8ByteCount(nextPtr, charsToNext);
 
                 if (prependSize)

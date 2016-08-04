@@ -9,6 +9,7 @@
     <AssemblyName>System.Security.Cryptography.ProtectedData.Tests</AssemblyName>
     <RootNamespace>System.Security.Cryptography.ProtectedData.Tests</RootNamespace>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\pkg\System.Security.Cryptography.ProtectedData.pkgproj">

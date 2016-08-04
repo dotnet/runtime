@@ -16,10 +16,11 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\System.Data.SqlClient.csproj">
       <Name>System.Data.SqlClient</Name>
-      <OSGroup>$(OSGroup)</OSGroup>
+      <OSGroup>$(InputOSGroup)</OSGroup>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="DataCommon\CheckConnStrSetupFactAttribute.cs" />
     <Compile Include="SQL\Common\AsyncDebugScope.cs" />
     <Compile Include="SQL\Common\ConnectionPoolWrapper.cs" />
     <Compile Include="SQL\Common\InternalConnectionWrapper.cs" />
@@ -51,6 +52,7 @@
     <Compile Include="SQL\DataStreamTest\DataStreamTest.cs" />
     <Compile Include="SQL\ExceptionTest\ExceptionTest.cs" />
     <Compile Include="SQL\DateTimeTest\DateTimeTest.cs" />
+    <Compile Include="SQL\InstanceNameTest\InstanceNameTest.cs" />
     <Compile Include="SQL\MARSSessionPoolingTest\MARSSessionPoolingTest.cs" />
     <Compile Include="SQL\MARSTest\MARSTest.cs" />
     <Compile Include="SQL\ParallelTransactionsTest\ParallelTransactionsTest.cs" />
@@ -66,6 +68,7 @@
     <Compile Include="SQL\RandomStressTest\SqlRandomTypesForSqlServer.cs" />
     <Compile Include="SQL\RandomStressTest\RandomStressTest.cs" />
     <Compile Include="SQL\SqlTypeTest\SqlTypeTest.cs" />
+    <Compile Include="SQL\SplitPacketTest\SplitPacketTest.cs" />
     <Compile Include="SQL\TransactionTest\TransactionTest.cs" />
     <Compile Include="SQL\WeakRefTest\WeakRefTest.cs" />
     <Compile Include="SQL\WeakRefTestYukonSpecific\WeakRefTestYukonSpecific.cs" />

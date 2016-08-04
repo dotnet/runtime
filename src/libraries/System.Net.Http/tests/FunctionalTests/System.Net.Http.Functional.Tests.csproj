@@ -10,6 +10,7 @@
     <ProjectGuid>{C85CF035-7804-41FF-9557-48B7C948B58D}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AssemblyName>System.Net.Http.Functional.Tests</AssemblyName>
+    <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(TargetsWindows)' == 'true' and '$(ProjectJson)' == '' ">
@@ -41,20 +42,23 @@
     <Compile Include="$(CommonTestPath)\System\IO\FileCleanupTestBase.cs">
       <Link>Common\System\IO\FileCleanupTestBase.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\System\Net\CertificateConfiguration.cs">
-      <Link>Common\System\Net\CertificateConfiguration.cs</Link>
+    <Compile Include="$(CommonTestPath)\System\Net\Configuration.Certificates.cs">
+      <Link>Common\System\Net\Configuration.Certificates.cs</Link>
     </Compile>
     <Compile Include="$(CommonTestPath)\System\Net\EventSourceTestLogging.cs">
       <Link>Common\System\Net\EventSourceTestLogging.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\System\Net\HttpTestServers.cs">
-      <Link>Common\System\Net\HttpTestServers.cs</Link>
-    </Compile>
     <Compile Include="$(CommonTestPath)\System\Net\SchSendAuxRecordTestServer.cs">
       <Link>Common\System\Net\SchSendAuxRecordTestServer.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\System\Net\TestSettings.cs">
-      <Link>Common\System\Net\TestSettings.cs</Link>
+    <Compile Include="$(CommonTestPath)\System\Net\Configuration.cs">
+      <Link>Common\System\Net\Configuration.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Net\Configuration.Http.cs">
+      <Link>Common\System\Net\Configuration.Http.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Net\Configuration.Security.cs">
+      <Link>Common\System\Net\Configuration.Security.cs</Link>
     </Compile>
     <Compile Include="$(CommonTestPath)\System\Net\TestWebProxies.cs">
       <Link>Common\System\Net\TestWebProxies.cs</Link>
@@ -82,6 +86,7 @@
     <Compile Include="HttpClientHandlerTest.MaxResponseHeadersLength.cs" />
     <Compile Include="HttpClientHandlerTest.ServerCertificates.cs" />
     <Compile Include="HttpClientHandlerTest.SslProtocols.cs" />
+    <Compile Include="DiagnosticsTests.cs" />
     <Compile Include="HttpClientTest.cs" />
     <Compile Include="HttpClientMiniStressTest.cs" />
     <Compile Include="HttpContentTest.cs" />
@@ -101,13 +106,12 @@
     <Compile Include="StringContentTest.cs" />
     <Compile Include="SyncBlockingContent.cs" />
     <Compile Include="TestHelper.cs" />
-    <Compile Include="XunitTestAssemblyAttributes.cs" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true' ">
     <Compile Include="DefaultCredentialsTest.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\src\System.Net.Http.csproj">
+    <ProjectReference Include="..\..\pkg\System.Net.Http.pkgproj">
       <Project>{1D422B1D-D7C4-41B9-862D-EB3D98DF37DE}</Project>
       <Name>System.Net.Http</Name>
     </ProjectReference>

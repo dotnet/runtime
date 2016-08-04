@@ -61,7 +61,7 @@ namespace System.Reflection.PortableExecutable.Tests
         {
             var peBuilder = new ManagedPEBuilder(
                 entryPointHandle.IsNil ? PEHeaderBuilder.CreateLibraryHeader() : PEHeaderBuilder.CreateExecutableHeader(),
-                new TypeSystemMetadataSerializer(metadataBuilder, "v4.0.30319", isMinimalDelta: false),
+                new MetadataRootBuilder(metadataBuilder),
                 ilBuilder,
                 entryPoint: entryPointHandle,
                 flags: CorFlags.ILOnly | (privateKeyOpt != null ? CorFlags.StrongNameSigned : 0),
@@ -91,7 +91,7 @@ namespace System.Reflection.PortableExecutable.Tests
         public void ManagedPEBuilder_Errors()
         {
             var hdr = new PEHeaderBuilder();
-            var ms = new TypeSystemMetadataSerializer(new MetadataBuilder(), "v4.0.30319", false);
+            var ms = new MetadataRootBuilder(new MetadataBuilder());
             var il = new BlobBuilder();
 
             Assert.Throws<ArgumentNullException>(() => new ManagedPEBuilder(null, ms, il));
@@ -205,16 +205,14 @@ namespace System.Reflection.PortableExecutable.Tests
                 MethodSignature().
                 Parameters(0, returnType => returnType.Void(), parameters => { });
 
-            var methodBodies = new MethodBodiesEncoder(ilBuilder);
+            var methodBodyStream = new MethodBodyStreamEncoder(ilBuilder);
 
             var codeBuilder = new BlobBuilder();
-            var branchBuilder = new BranchBuilder();
             InstructionEncoder il;
 
             //
             // Program::.ctor
             //
-            int ctorBodyOffset;
             il = new InstructionEncoder(codeBuilder);
 
             // ldarg.0
@@ -226,18 +224,23 @@ namespace System.Reflection.PortableExecutable.Tests
             // ret
             il.OpCode(ILOpCode.Ret);
 
-            methodBodies.AddMethodBody().WriteInstructions(codeBuilder, out ctorBodyOffset);
+            int ctorBodyOffset = methodBodyStream.AddMethodBody(il);
             codeBuilder.Clear();
 
             //
             // Program::Main
             //
-            int mainBodyOffset;
-            il = new InstructionEncoder(codeBuilder, branchBuilder);
-            var endLabel = il.DefineLabel();
+            var flowBuilder = new ControlFlowBuilder();
+            il = new InstructionEncoder(codeBuilder, flowBuilder);
+
+            var tryStart = il.DefineLabel();
+            var tryEnd = il.DefineLabel();
+            var finallyStart = il.DefineLabel();
+            var finallyEnd = il.DefineLabel();
+            flowBuilder.AddFinallyRegion(tryStart, tryEnd, finallyStart, finallyEnd);
 
             // .try
-            int tryOffset = il.Offset;
+            il.MarkLabel(tryStart);
 
             //   ldstr "hello"
             il.LoadString(metadata.GetOrAddUserString("hello"));
@@ -246,10 +249,11 @@ namespace System.Reflection.PortableExecutable.Tests
             il.Call(consoleWriteLineMemberRef);
 
             //   leave.s END
-            il.Branch(ILOpCode.Leave, endLabel);
-            
+            il.Branch(ILOpCode.Leave_s, finallyEnd);
+            il.MarkLabel(tryEnd);
+
             // .finally
-            int handlerOffset = il.Offset;
+            il.MarkLabel(finallyStart);
 
             //   ldstr "world"
             il.LoadString(metadata.GetOrAddUserString("world"));
@@ -259,22 +263,14 @@ namespace System.Reflection.PortableExecutable.Tests
 
             // .endfinally
             il.OpCode(ILOpCode.Endfinally);
-            int handlerEnd = il.Offset;
-
-            // END: 
-            il.MarkLabel(endLabel);
+            il.MarkLabel(finallyEnd);
 
             // ret
             il.OpCode(ILOpCode.Ret);
 
-            var body = methodBodies.AddMethodBody(exceptionRegionCount: 1);
-            var eh = body.WriteInstructions(codeBuilder, branchBuilder, out mainBodyOffset);
-            eh.StartRegions();
-            eh.AddFinally(tryOffset, handlerOffset - tryOffset, handlerOffset, handlerEnd - handlerOffset);
-            eh.EndRegions();
-
+            int mainBodyOffset = methodBodyStream.AddMethodBody(il);
             codeBuilder.Clear();
-            branchBuilder.Clear();
+            flowBuilder.Clear();
 
             var mainMethodDef = metadata.AddMethodDefinition(
                 MethodAttributes.Public | MethodAttributes.Static | MethodAttributes.HideBySig,
@@ -282,7 +278,7 @@ namespace System.Reflection.PortableExecutable.Tests
                 metadata.GetOrAddString("Main"),
                 metadata.GetOrAddBlob(mainSignature),
                 mainBodyOffset,
-                paramList: default(ParameterHandle));
+                parameterList: default(ParameterHandle));
 
             var ctorDef = metadata.AddMethodDefinition(
                 MethodAttributes.Public | MethodAttributes.HideBySig | MethodAttributes.SpecialName | MethodAttributes.RTSpecialName,
@@ -290,7 +286,7 @@ namespace System.Reflection.PortableExecutable.Tests
                 metadata.GetOrAddString(".ctor"),
                 parameterlessCtorBlobIndex,
                 ctorBodyOffset,
-                paramList: default(ParameterHandle));
+                parameterList: default(ParameterHandle));
 
             metadata.AddTypeDefinition(
                 default(TypeAttributes),
@@ -335,10 +331,13 @@ namespace System.Reflection.PortableExecutable.Tests
 
         private static MethodDefinitionHandle ComplexEmit(MetadataBuilder metadata, BlobBuilder ilBuilder, out Blob mvidFixup)
         {
+            var mvid = metadata.ReserveGuid();
+            mvidFixup = mvid.Content;
+
             metadata.AddModule(
                 0,
                 metadata.GetOrAddString("ConsoleApplication.exe"),
-                metadata.ReserveGuid(out mvidFixup),
+                mvid.Handle,
                 default(GuidHandle),
                 default(GuidHandle));
 
@@ -431,24 +430,20 @@ namespace System.Reflection.PortableExecutable.Tests
               metadata.GetOrAddString("_bc"),
               metadata.GetOrAddBlob(BuildSignature(e => e.FieldSignature().Type(type: baseClassTypeDef, isValueType: false))));
 
-            var methodBodies = new MethodBodiesEncoder(ilBuilder);
+            var methodBodyStream = new MethodBodyStreamEncoder(ilBuilder);
 
             var buffer = new BlobBuilder();
-            InstructionEncoder il;
+            var il = new InstructionEncoder(buffer);
 
             //
             // Foo
             //
-            int fooBodyOffset;
-            il = new InstructionEncoder(buffer);
-
             il.LoadString(metadata.GetOrAddUserString("asdsad"));
             il.OpCode(ILOpCode.Newobj);
             il.Token(invalidOperationExceptionTypeRef);
             il.OpCode(ILOpCode.Throw);
 
-            methodBodies.AddMethodBody().WriteInstructions(buffer, out fooBodyOffset);
-            buffer.Clear();
+            int fooBodyOffset = methodBodyStream.AddMethodBody(il);
 
             // Method1
             var derivedClassFooMethodDef = metadata.AddMethodDefinition(
@@ -486,7 +481,7 @@ namespace System.Reflection.PortableExecutable.Tests
             
             var peBuilder = new ManagedPEBuilder(
                 PEHeaderBuilder.CreateLibraryHeader(),
-                new TypeSystemMetadataSerializer(metadataBuilder, "v4.0.30319", false),
+                new MetadataRootBuilder(metadataBuilder),
                 ilBuilder,
                 nativeResources: new TestResourceSectionBuilder(),
                 deterministicIdProvider: content => s_contentId);
@@ -531,7 +526,7 @@ namespace System.Reflection.PortableExecutable.Tests
 
             var peBuilder = new ManagedPEBuilder(
                 PEHeaderBuilder.CreateLibraryHeader(),
-                new TypeSystemMetadataSerializer(metadataBuilder, "v4.0.30319", false),
+                new MetadataRootBuilder(metadataBuilder),
                 ilBuilder,
                 nativeResources: new BadResourceSectionBuilder(),
                 deterministicIdProvider: content => s_contentId);

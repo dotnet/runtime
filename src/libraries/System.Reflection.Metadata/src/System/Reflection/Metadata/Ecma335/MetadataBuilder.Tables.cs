@@ -30,7 +30,7 @@ namespace System.Reflection.Metadata.Ecma335
         private struct ExportedTypeRow { public uint Flags; public int TypeDefId; public StringHandle TypeName; public StringHandle TypeNamespace; public int Implementation; }
         private struct FieldLayoutRow { public int Offset; public int Field; }
         private struct FieldMarshalRow { public int Parent; public BlobHandle NativeType; }
-        private struct FieldRvaRow { public uint Offset; public int Field; }
+        private struct FieldRvaRow { public int Offset; public int Field; }
         private struct FieldDefRow { public ushort Flags; public StringHandle Name; public BlobHandle Signature; }
         private struct FileTableRow { public uint Flags; public StringHandle FileName; public BlobHandle HashValue; }
         private struct GenericParamConstraintRow { public int Owner; public int Constraint; }
@@ -64,8 +64,8 @@ namespace System.Reflection.Metadata.Ecma335
         private struct CustomDebugInformationRow { public int Parent; public GuidHandle Kind; public BlobHandle Value; }
 
         // type system tables:
-        private readonly List<ModuleRow> _moduleTable = new List<ModuleRow>(1);
-        private readonly List<AssemblyRow> _assemblyTable = new List<AssemblyRow>(1);
+        private ModuleRow? _moduleRow;
+        private AssemblyRow? _assemblyRow;
         private readonly List<ClassLayoutRow> _classLayoutTable = new List<ClassLayoutRow>();
 
         private readonly List<ConstantRow> _constantTable = new List<ConstantRow>();
@@ -146,7 +146,7 @@ namespace System.Reflection.Metadata.Ecma335
 
             switch (table)
             {
-                case TableIndex.Module:                 SetTableCapacity(_moduleTable, rowCount); break;
+                case TableIndex.Module:                 break; // no-op, max row count is 1
                 case TableIndex.TypeRef:                SetTableCapacity(_typeRefTable, rowCount); break;
                 case TableIndex.TypeDef:                SetTableCapacity(_typeDefTable, rowCount); break;
                 case TableIndex.Field:                  SetTableCapacity(_fieldTable, rowCount); break;
@@ -173,7 +173,7 @@ namespace System.Reflection.Metadata.Ecma335
                 case TableIndex.FieldRva:               SetTableCapacity(_fieldRvaTable, rowCount); break;
                 case TableIndex.EncLog:                 SetTableCapacity(_encLogTable, rowCount); break;
                 case TableIndex.EncMap:                 SetTableCapacity(_encMapTable, rowCount); break;
-                case TableIndex.Assembly:               SetTableCapacity(_assemblyTable, rowCount); break;
+                case TableIndex.Assembly:               break; // no-op, max row count is 1
                 case TableIndex.AssemblyRef:            SetTableCapacity(_assemblyRefTable, rowCount); break;
                 case TableIndex.File:                   SetTableCapacity(_fileTable, rowCount); break;
                 case TableIndex.ExportedType:           SetTableCapacity(_exportedTypeTable, rowCount); break;
@@ -216,23 +216,172 @@ namespace System.Reflection.Metadata.Ecma335
             }
         }
 
+        /// <summary>
+        /// Returns the current number of entires in the specified table.
+        /// </summary>
+        /// <param name="table">Table index.</param>
+        /// <returns>The number of entires in the table.</returns>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="table"/> is not a valid table index.</exception>
+        public int GetRowCount(TableIndex table)
+        {
+            switch (table)
+            {
+                case TableIndex.Assembly                : return _assemblyRow.HasValue ? 1 : 0;
+                case TableIndex.AssemblyRef             : return _assemblyRefTable.Count;
+                case TableIndex.ClassLayout             : return _classLayoutTable.Count;
+                case TableIndex.Constant                : return _constantTable.Count;
+                case TableIndex.CustomAttribute         : return _customAttributeTable.Count;
+                case TableIndex.DeclSecurity            : return _declSecurityTable.Count;
+                case TableIndex.EncLog                  : return _encLogTable.Count;
+                case TableIndex.EncMap                  : return _encMapTable.Count;
+                case TableIndex.EventMap                : return _eventMapTable.Count;
+                case TableIndex.Event                   : return _eventTable.Count;
+                case TableIndex.ExportedType            : return _exportedTypeTable.Count;
+                case TableIndex.FieldLayout             : return _fieldLayoutTable.Count;
+                case TableIndex.FieldMarshal            : return _fieldMarshalTable.Count;
+                case TableIndex.FieldRva                : return _fieldRvaTable.Count;
+                case TableIndex.Field                   : return _fieldTable.Count;
+                case TableIndex.File                    : return _fileTable.Count;
+                case TableIndex.GenericParamConstraint  : return _genericParamConstraintTable.Count;
+                case TableIndex.GenericParam            : return _genericParamTable.Count;
+                case TableIndex.ImplMap                 : return _implMapTable.Count;
+                case TableIndex.InterfaceImpl           : return _interfaceImplTable.Count;
+                case TableIndex.ManifestResource        : return _manifestResourceTable.Count;
+                case TableIndex.MemberRef               : return _memberRefTable.Count;
+                case TableIndex.MethodImpl              : return _methodImplTable.Count;
+                case TableIndex.MethodSemantics         : return _methodSemanticsTable.Count;
+                case TableIndex.MethodSpec              : return _methodSpecTable.Count;
+                case TableIndex.MethodDef               : return _methodDefTable.Count;
+                case TableIndex.ModuleRef               : return _moduleRefTable.Count;
+                case TableIndex.Module                  : return _moduleRow.HasValue ? 1 : 0;
+                case TableIndex.NestedClass             : return _nestedClassTable.Count;
+                case TableIndex.Param                   : return _paramTable.Count;
+                case TableIndex.PropertyMap             : return _propertyMapTable.Count;
+                case TableIndex.Property                : return _propertyTable.Count;
+                case TableIndex.StandAloneSig           : return _standAloneSigTable.Count;
+                case TableIndex.TypeDef                 : return _typeDefTable.Count;
+                case TableIndex.TypeRef                 : return _typeRefTable.Count;
+                case TableIndex.TypeSpec                : return _typeSpecTable.Count;
+                case TableIndex.Document                : return _documentTable.Count;
+                case TableIndex.MethodDebugInformation  : return _methodDebugInformationTable.Count;
+                case TableIndex.LocalScope              : return _localScopeTable.Count;
+                case TableIndex.LocalVariable           : return _localVariableTable.Count;
+                case TableIndex.LocalConstant           : return _localConstantTable.Count;
+                case TableIndex.StateMachineMethod      : return _stateMachineMethodTable.Count;
+                case TableIndex.ImportScope             : return _importScopeTable.Count;
+                case TableIndex.CustomDebugInformation  : return _customDebugInformationTable.Count;
+
+                case TableIndex.AssemblyOS:
+                case TableIndex.AssemblyProcessor:
+                case TableIndex.AssemblyRefOS:
+                case TableIndex.AssemblyRefProcessor:
+                case TableIndex.EventPtr:
+                case TableIndex.FieldPtr:
+                case TableIndex.MethodPtr:
+                case TableIndex.ParamPtr:
+                case TableIndex.PropertyPtr:
+                    return 0;
+
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(table));
+            }
+        }
+
+        /// <summary>
+        /// Returns the current number of entires in each table.
+        /// </summary>
+        /// <returns>
+        /// An array of size <see cref="MetadataTokens.TableCount"/> with each item filled with the current row count of the corresponding table.
+        /// </returns>
+        public ImmutableArray<int> GetRowCounts()
+        {
+            var rowCounts = ImmutableArray.CreateBuilder<int>(MetadataTokens.TableCount);
+            rowCounts.Count = MetadataTokens.TableCount;
+
+            rowCounts[(int)TableIndex.Assembly] = _assemblyRow.HasValue ? 1 : 0;
+            rowCounts[(int)TableIndex.AssemblyRef] = _assemblyRefTable.Count;
+            rowCounts[(int)TableIndex.ClassLayout] = _classLayoutTable.Count;
+            rowCounts[(int)TableIndex.Constant] = _constantTable.Count;
+            rowCounts[(int)TableIndex.CustomAttribute] = _customAttributeTable.Count;
+            rowCounts[(int)TableIndex.DeclSecurity] = _declSecurityTable.Count;
+            rowCounts[(int)TableIndex.EncLog] = _encLogTable.Count;
+            rowCounts[(int)TableIndex.EncMap] = _encMapTable.Count;
+            rowCounts[(int)TableIndex.EventMap] = _eventMapTable.Count;
+            rowCounts[(int)TableIndex.Event] = _eventTable.Count;
+            rowCounts[(int)TableIndex.ExportedType] = _exportedTypeTable.Count;
+            rowCounts[(int)TableIndex.FieldLayout] = _fieldLayoutTable.Count;
+            rowCounts[(int)TableIndex.FieldMarshal] = _fieldMarshalTable.Count;
+            rowCounts[(int)TableIndex.FieldRva] = _fieldRvaTable.Count;
+            rowCounts[(int)TableIndex.Field] = _fieldTable.Count;
+            rowCounts[(int)TableIndex.File] = _fileTable.Count;
+            rowCounts[(int)TableIndex.GenericParamConstraint] = _genericParamConstraintTable.Count;
+            rowCounts[(int)TableIndex.GenericParam] = _genericParamTable.Count;
+            rowCounts[(int)TableIndex.ImplMap] = _implMapTable.Count;
+            rowCounts[(int)TableIndex.InterfaceImpl] = _interfaceImplTable.Count;
+            rowCounts[(int)TableIndex.ManifestResource] = _manifestResourceTable.Count;
+            rowCounts[(int)TableIndex.MemberRef] = _memberRefTable.Count;
+            rowCounts[(int)TableIndex.MethodImpl] = _methodImplTable.Count;
+            rowCounts[(int)TableIndex.MethodSemantics] = _methodSemanticsTable.Count;
+            rowCounts[(int)TableIndex.MethodSpec] = _methodSpecTable.Count;
+            rowCounts[(int)TableIndex.MethodDef] = _methodDefTable.Count;
+            rowCounts[(int)TableIndex.ModuleRef] = _moduleRefTable.Count;
+            rowCounts[(int)TableIndex.Module] = _moduleRow.HasValue ? 1 : 0;
+            rowCounts[(int)TableIndex.NestedClass] = _nestedClassTable.Count;
+            rowCounts[(int)TableIndex.Param] = _paramTable.Count;
+            rowCounts[(int)TableIndex.PropertyMap] = _propertyMapTable.Count;
+            rowCounts[(int)TableIndex.Property] = _propertyTable.Count;
+            rowCounts[(int)TableIndex.StandAloneSig] = _standAloneSigTable.Count;
+            rowCounts[(int)TableIndex.TypeDef] = _typeDefTable.Count;
+            rowCounts[(int)TableIndex.TypeRef] = _typeRefTable.Count;
+            rowCounts[(int)TableIndex.TypeSpec] = _typeSpecTable.Count;
+
+            rowCounts[(int)TableIndex.Document] = _documentTable.Count;
+            rowCounts[(int)TableIndex.MethodDebugInformation] = _methodDebugInformationTable.Count;
+            rowCounts[(int)TableIndex.LocalScope] = _localScopeTable.Count;
+            rowCounts[(int)TableIndex.LocalVariable] = _localVariableTable.Count;
+            rowCounts[(int)TableIndex.LocalConstant] = _localConstantTable.Count;
+            rowCounts[(int)TableIndex.StateMachineMethod] = _stateMachineMethodTable.Count;
+            rowCounts[(int)TableIndex.ImportScope] = _importScopeTable.Count;
+            rowCounts[(int)TableIndex.CustomDebugInformation] = _customDebugInformationTable.Count;
+
+            return rowCounts.MoveToImmutable();
+        }
+
         #region Building
 
+        // Note on argument value checking:
+        // 
+        // To avoid perf overhead we do minimal argument checking. 
+        // We only check integer parameter bounds if we perform a narrowing conversion, 
+        // so that we don't mangle values that match the Add method signature but are too big to represent in the metadata.
+        // We do not validate ranges of enum values, we just ignore high bits when converting to smaller integral type.
+        // Adding such checks would unlikely catch bugs in reasonably written code.
+
         public ModuleDefinitionHandle AddModule(
-                int generation,
-                StringHandle moduleName,
-                GuidHandle mvid,
-                GuidHandle encId,
-                GuidHandle encBaseId)
+            int generation,
+            StringHandle moduleName,
+            GuidHandle mvid,
+            GuidHandle encId,
+            GuidHandle encBaseId)
         {
-            _moduleTable.Add(new ModuleRow
+            if (unchecked((uint)generation) > ushort.MaxValue)
+            {
+                Throw.ArgumentOutOfRange(nameof(generation));
+            }
+
+            if (_moduleRow.HasValue)
+            {
+                Throw.InvalidOperation(SR.ModuleAlreadyAdded);
+            }
+
+            _moduleRow = new ModuleRow
             {
                 Generation = (ushort)generation,
                 Name = moduleName,
                 ModuleVersionId = mvid,
                 EncId = encId,
                 EncBaseId = encBaseId,
-            });
+            };
 
             return EntityHandle.ModuleDefinition;
         }
@@ -245,15 +394,25 @@ namespace System.Reflection.Metadata.Ecma335
             AssemblyFlags flags,
             AssemblyHashAlgorithm hashAlgorithm)
         {
-            _assemblyTable.Add(new AssemblyRow
+            if (version == null)
             {
-                Flags = (ushort)flags,
-                HashAlgorithm = (uint)hashAlgorithm,
+                Throw.ArgumentNull(nameof(version));
+            }
+
+            if (_assemblyRow.HasValue)
+            {
+                Throw.InvalidOperation(SR.AssemblyAlreadyAdded);
+            }
+
+            _assemblyRow = new AssemblyRow
+            {
+                Flags = unchecked((ushort)flags),
+                HashAlgorithm = unchecked((uint)hashAlgorithm),
                 Version = version,
                 AssemblyKey = publicKey,
                 AssemblyName = name,
                 AssemblyCulture = culture
-            });
+            };
 
             return EntityHandle.AssemblyDefinition;
         }
@@ -277,7 +436,7 @@ namespace System.Reflection.Metadata.Ecma335
                 Version = version,
                 Culture = culture,
                 PublicKeyToken = publicKeyOrToken,
-                Flags = (uint)flags,
+                Flags = unchecked((uint)flags),
                 HashValue = hashValue
             });
 
@@ -293,11 +452,11 @@ namespace System.Reflection.Metadata.Ecma335
         /// <param name="baseType"><see cref="TypeDefinitionHandle"/>, <see cref="TypeReferenceHandle"/>, <see cref="TypeSpecificationHandle"/> or nil.</param>
         /// <param name="fieldList">
         /// If the type declares fields the handle of the first one, otherwise the handle of the first field declared by the next type definition.
-        /// If no type defines any fields in the module the <see cref="MetadataTokens.FieldDefinitionHandle(int)"/>(1).
+        /// If no type defines any fields in the module, <see cref="MetadataTokens.FieldDefinitionHandle(int)"/>(1).
         /// </param>
         /// <param name="methodList">
         /// If the type declares methods the handle of the first one, otherwise the handle of the first method declared by the next type definition.
-        /// If no type defines any methods in the module the <see cref="MetadataTokens.MethodDefinitionHandle(int)"/>(1).
+        /// If no type defines any methods in the module, <see cref="MetadataTokens.MethodDefinitionHandle(int)"/>(1).
         /// </param>
         /// <exception cref="ArgumentException"><paramref name="baseType"/> doesn't have the expected handle kind.</exception>
         public TypeDefinitionHandle AddTypeDefinition(
@@ -308,12 +467,9 @@ namespace System.Reflection.Metadata.Ecma335
             FieldDefinitionHandle fieldList,
             MethodDefinitionHandle methodList)
         {
-            Debug.Assert(@namespace != null);
-            Debug.Assert(name != null);
-
             _typeDefTable.Add(new TypeDefRow
             {
-                Flags = (uint)attributes,
+                Flags = unchecked((uint)attributes),
                 Name = name,
                 Namespace = @namespace,
                 Extends = baseType.IsNil ? 0 : CodedIndex.TypeDefOrRefOrSpec(baseType),
@@ -324,6 +480,23 @@ namespace System.Reflection.Metadata.Ecma335
             return TypeDefinitionHandle.FromRowId(_typeDefTable.Count);
         }
 
+        /// <summary>
+        /// Defines a type layout of a type definition.
+        /// </summary>
+        /// <param name="type">Type definition.</param>
+        /// <param name="packingSize">
+        /// Specifies that fields should be placed within the type instance at byte addresses which are a multiple of the value, 
+        /// or at natural alignment for that field type, whichever is smaller. Shall be one of the following: 0, 1, 2, 4, 8, 16, 32, 64, or 128. 
+        /// A value of zero indicates that the packing size used should match the default for the current platform.
+        /// </param>
+        /// <param name="size">
+        /// Indicates a minimum size of the type instance, and is intended to allow for padding. 
+        /// The amount of memory allocated is the maximum of the size calculated from the layout and <paramref name="size"/>. 
+        /// Note that if this directive applies to a value type, then the size shall be less than 1 MB.
+        /// </param>
+        /// <remarks>
+        /// Entires must be added in the same order as the corresponding type definitions.
+        /// </remarks>
         public void AddTypeLayout(
             TypeDefinitionHandle type,
             ushort packingSize,
@@ -345,6 +518,10 @@ namespace System.Reflection.Metadata.Ecma335
         /// The interface being implemented: 
         /// <see cref="TypeDefinitionHandle"/>, <see cref="TypeReferenceHandle"/> or <see cref="TypeSpecificationHandle"/>.
         /// </param>
+        /// <remarks>
+        /// Interface implementations must be added in the same order as the corresponding type definitions implementing the interface.
+        /// If a type implements multiple interfaces the corresponding entries must be added in the order determined by their coded indices (<see cref="CodedIndex.TypeDefOrRefOrSpec"/>).
+        /// </remarks>
         /// <exception cref="ArgumentException"><paramref name="implementedInterface"/> doesn't have the expected handle kind.</exception>
         public InterfaceImplementationHandle AddInterfaceImplementation(
             TypeDefinitionHandle type,
@@ -359,6 +536,14 @@ namespace System.Reflection.Metadata.Ecma335
             return InterfaceImplementationHandle.FromRowId(_interfaceImplTable.Count);
         }
 
+        /// <summary>
+        /// Defines a nesting relationship to specified type definitions.
+        /// </summary>
+        /// <param name="type">The nested type definition handle.</param>
+        /// <param name="enclosingType">The enclosing type definition handle.</param>
+        /// <remarks>
+        /// Entries must be added in the same order as the corresponding nested type definitions.
+        /// </remarks>
         public void AddNestedType(
             TypeDefinitionHandle type,
             TypeDefinitionHandle enclosingType)
@@ -385,9 +570,6 @@ namespace System.Reflection.Metadata.Ecma335
             StringHandle @namespace, 
             StringHandle name)
         {
-            Debug.Assert(@namespace != null);
-            Debug.Assert(name != null);
-
             _typeRefTable.Add(new TypeRefRow
             {
                 ResolutionScope = resolutionScope.IsNil ? 0 : CodedIndex.ResolutionScope(resolutionScope),
@@ -428,7 +610,7 @@ namespace System.Reflection.Metadata.Ecma335
         {
             _propertyTable.Add(new PropertyRow
             {
-                PropFlags = (ushort)attributes,
+                PropFlags = unchecked((ushort)attributes),
                 Name = name,
                 Type = signature
             });
@@ -456,7 +638,7 @@ namespace System.Reflection.Metadata.Ecma335
         {
             _eventTable.Add(new EventRow
             {
-                EventFlags = (ushort)attributes,
+                EventFlags = unchecked((ushort)attributes),
                 Name = name,
                 EventType = CodedIndex.TypeDefOrRefOrSpec(type)
             });
@@ -478,6 +660,9 @@ namespace System.Reflection.Metadata.Ecma335
         /// </summary>
         /// <param name="parent"><see cref="ParameterHandle"/>, <see cref="FieldDefinitionHandle"/>, or <see cref="PropertyDefinitionHandle"/></param>
         /// <param name="value">The constant value.</param>
+        /// <remarks>
+        /// Entries may be added in any order. The table is automatically sorted when serialized.
+        /// </remarks>
         /// <exception cref="ArgumentException"><paramref name="parent"/> doesn't have the expected handle kind.</exception>
         public ConstantHandle AddConstant(EntityHandle parent, object value)
         {
@@ -504,6 +689,9 @@ namespace System.Reflection.Metadata.Ecma335
         /// <param name="semantics">Semantics.</param>
         /// <param name="methodDefinition">Method definition.</param>
         /// <exception cref="ArgumentException"><paramref name="association"/> doesn't have the expected handle kind.</exception>
+        /// <remarks>
+        /// Entries may be added in any order. The table is automatically sorted when serialized.
+        /// </remarks>
         public void AddMethodSemantics(EntityHandle association, MethodSemanticsAttributes semantics, MethodDefinitionHandle methodDefinition)
         {
             int associationCodedIndex = CodedIndex.HasSemantics(association);
@@ -516,7 +704,7 @@ namespace System.Reflection.Metadata.Ecma335
             {
                 Association = associationCodedIndex,
                 Method = methodDefinition.RowId,
-                Semantic = (ushort)semantics
+                Semantic = unchecked((ushort)semantics)
             });
         }
 
@@ -554,6 +742,9 @@ namespace System.Reflection.Metadata.Ecma335
         /// <param name="value">
         /// Custom attribute value blob.
         /// </param>
+        /// <remarks>
+        /// Entries may be added in any order. The table is automatically sorted when serialized.
+        /// </remarks>
         /// <exception cref="ArgumentException"><paramref name="parent"/> doesn't have the expected handle kind.</exception>
         public CustomAttributeHandle AddCustomAttribute(EntityHandle parent, EntityHandle constructor, BlobHandle value)
         {
@@ -600,11 +791,23 @@ namespace System.Reflection.Metadata.Ecma335
             return ModuleReferenceHandle.FromRowId(_moduleRefTable.Count);
         }
 
+        /// <summary>
+        /// Adds a parameter definition.
+        /// </summary>
+        /// <param name="attributes"><see cref="ParameterAttributes"/></param>
+        /// <param name="name">Parameter name (optional).</param>
+        /// <param name="sequenceNumber">Sequence number of the parameter. Value of 0 refers to the owner method's return type; its parameters are then numbered from 1 onwards.</param>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="sequenceNumber"/> is greater than <see cref="ushort.MaxValue"/>.</exception>
         public ParameterHandle AddParameter(ParameterAttributes attributes, StringHandle name, int sequenceNumber)
         {
+            if (unchecked((uint)sequenceNumber) > ushort.MaxValue)
+            {
+                Throw.ArgumentOutOfRange(nameof(sequenceNumber));
+            }
+
             _paramTable.Add(new ParamRow
             {
-                Flags = (ushort)attributes,
+                Flags = unchecked((ushort)attributes),
                 Name = name,
                 Sequence = (ushort)sequenceNumber
             });
@@ -615,20 +818,30 @@ namespace System.Reflection.Metadata.Ecma335
         /// <summary>
         /// Adds a generic parameter definition.
         /// </summary>
-        /// <param name="parent"><see cref="TypeDefinitionHandle"/> or <see cref="MethodDefinitionHandle"/></param>
+        /// <param name="parent">Parent entity handle: <see cref="TypeDefinitionHandle"/> or <see cref="MethodDefinitionHandle"/></param>
         /// <param name="attributes">Attributes.</param>
         /// <param name="name">Parameter name.</param>
         /// <param name="index">Zero-based parameter index.</param>
+        /// <remarks>
+        /// Generic parameters must be added in an order determined by the coded index of their parent entity (<see cref="CodedIndex.TypeOrMethodDef"/>).
+        /// Generic parameters with the same parent must be ordered by their <paramref name="index"/>.
+        /// </remarks>
         /// <exception cref="ArgumentException"><paramref name="parent"/> doesn't have the expected handle kind.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="index"/> is greater than <see cref="ushort.MaxValue"/>.</exception>
         public GenericParameterHandle AddGenericParameter(
             EntityHandle parent,
             GenericParameterAttributes attributes,
             StringHandle name,
             int index)
         {
+            if (unchecked((uint)index) > ushort.MaxValue)
+            {
+                Throw.ArgumentOutOfRange(nameof(index));
+            }
+
             _genericParamTable.Add(new GenericParamRow
             {
-                Flags = (ushort)attributes,
+                Flags = unchecked((ushort)attributes),
                 Name = name,
                 Number = (ushort)index,
                 Owner = CodedIndex.TypeOrMethodDef(parent)
@@ -643,6 +856,9 @@ namespace System.Reflection.Metadata.Ecma335
         /// <param name="genericParameter">Generic parameter to constrain.</param>
         /// <param name="constraint">Type constraint: <see cref="TypeDefinitionHandle"/>, <see cref="TypeReferenceHandle"/> or <see cref="TypeSpecificationHandle"/></param>
         /// <exception cref="ArgumentException"><paramref name="genericParameter"/> doesn't have the expected handle kind.</exception>
+        /// <remarks>
+        /// Constraints must be added in the same order as the corresponding generic parameters.
+        /// </remarks>
         public GenericParameterConstraintHandle AddGenericParameterConstraint(
             GenericParameterHandle genericParameter,
             EntityHandle constraint)
@@ -656,6 +872,12 @@ namespace System.Reflection.Metadata.Ecma335
             return GenericParameterConstraintHandle.FromRowId(_genericParamConstraintTable.Count);
         }
 
+        /// <summary>
+        /// Adds a field definition.
+        /// </summary>
+        /// <param name="attributes">Field attributes.</param>
+        /// <param name="name">Field name.</param>
+        /// <param name="signature">Field signature. Use <see cref="BlobEncoder.FieldSignature"/> to construct the blob.</param>
         public FieldDefinitionHandle AddFieldDefinition(
             FieldAttributes attributes,
             StringHandle name,
@@ -663,7 +885,7 @@ namespace System.Reflection.Metadata.Ecma335
         {
             _fieldTable.Add(new FieldDefRow
             {
-                Flags = (ushort)attributes,
+                Flags = unchecked((ushort)attributes),
                 Name = name,
                 Signature = signature
             });
@@ -671,6 +893,14 @@ namespace System.Reflection.Metadata.Ecma335
             return FieldDefinitionHandle.FromRowId(_fieldTable.Count);
         }
 
+        /// <summary>
+        /// Defines a field layout of a field definition.
+        /// </summary>
+        /// <param name="field">Field definition.</param>
+        /// <param name="offset">The byte offset of the field within the declaring type instance.</param>
+        /// <remarks>
+        /// Entires must be added in the same order as the corresponding field definitions.
+        /// </remarks>
         public void AddFieldLayout(
             FieldDefinitionHandle field,
             int offset)
@@ -686,8 +916,11 @@ namespace System.Reflection.Metadata.Ecma335
         /// Add marshalling information to a field or a parameter.
         /// </summary>
         /// <param name="parent"><see cref="ParameterHandle"/> or <see cref="FieldDefinitionHandle"/>.</param>
-        /// <param name="descriptor">Descriptor.</param>
+        /// <param name="descriptor">Descriptor blob.</param>
         /// <exception cref="ArgumentException"><paramref name="parent"/> doesn't have the expected handle kind.</exception>
+        /// <remarks>
+        /// Entries may be added in any order. The table is automatically sorted when serialized.
+        /// </remarks>
         public void AddMarshallingDescriptor(
             EntityHandle parent,
             BlobHandle descriptor)
@@ -705,33 +938,73 @@ namespace System.Reflection.Metadata.Ecma335
             });
         }
 
-        public void AddFieldRelativeVirtualAddress(
-            FieldDefinitionHandle field,
-            int relativeVirtualAddress)
+        /// <summary>
+        /// Adds a mapping from a field to its initial value stored in the PE image.
+        /// </summary>
+        /// <param name="field">Field definition handle.</param>
+        /// <param name="offset">
+        /// Offset within the block in the PE image that stores initial values of mapped fields (usually in .text section).
+        /// The final relative virtual address stored in the metadata is calculated when the metadata is serialized
+        /// by adding the offset to the virtual address of the block start.
+        /// </param>
+        /// <remarks>
+        /// Entires must be added in the same order as the corresponding field definitions.
+        /// </remarks>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="offset"/> is negative.</exception>
+        public void AddFieldRelativeVirtualAddress(FieldDefinitionHandle field, int offset)
         {
+            if (offset < 0)
+            {
+                Throw.ArgumentOutOfRange(nameof(offset));
+            }
+
             _fieldRvaTable.Add(new FieldRvaRow
             {
                 Field = field.RowId,
-                Offset = (uint)relativeVirtualAddress
+                Offset = offset
             });
         }
 
+        /// <summary>
+        /// Adds a method definition.
+        /// </summary>
+        /// <param name="attributes"><see cref="MethodAttributes"/></param>
+        /// <param name="implAttributes"><see cref="MethodImplAttributes"/></param>
+        /// <param name="name">Method name/</param>
+        /// <param name="signature">Method signature.</param>
+        /// <param name="bodyOffset">
+        /// Offset within the block in the PE image that stores method bodies (IL stream), 
+        /// or -1 if the method doesn't have a body.
+        /// 
+        /// The final relative virtual address stored in the metadata is calculated when the metadata is serialized
+        /// by adding the offset to the virtual address of the beginning of the block.
+        /// </param>
+        /// <param name="parameterList">
+        /// If the method declares parameters in Params table the handle of the first one, otherwise the handle of the first parameter declared by the next method definition.
+        /// If no parameters are declared in the module, <see cref="MetadataTokens.ParameterHandle(int)"/>(1).
+        /// </param>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="bodyOffset"/> is less than -1.</exception>
         public MethodDefinitionHandle AddMethodDefinition(
             MethodAttributes attributes, 
             MethodImplAttributes implAttributes,
             StringHandle name,
             BlobHandle signature,
             int bodyOffset,
-            ParameterHandle paramList)
+            ParameterHandle parameterList)
         {
+            if (bodyOffset < -1)
+            {
+                Throw.ArgumentOutOfRange(nameof(bodyOffset));
+            }
+
             _methodDefTable.Add(new MethodRow
             {
-                Flags = (ushort)attributes,
-                ImplFlags = (ushort)implAttributes,
+                Flags = unchecked((ushort)attributes),
+                ImplFlags = unchecked((ushort)implAttributes),
                 Name = name,
                 Signature = signature,
                 BodyOffset = bodyOffset,
-                ParamList = paramList.RowId
+                ParamList = parameterList.RowId
             });
 
             return MethodDefinitionHandle.FromRowId(_methodDefTable.Count);
@@ -740,10 +1013,13 @@ namespace System.Reflection.Metadata.Ecma335
         /// <summary>
         /// Adds import information to a method definition (P/Invoke).
         /// </summary>
-        /// <param name="method">Method definition.</param>
-        /// <param name="attributes">Attributes</param>
+        /// <param name="method">Method definition handle.</param>
+        /// <param name="attributes">Attributes.</param>
         /// <param name="name">Unmanaged method name.</param>
         /// <param name="module">Module containing the unmanaged method.</param>
+        /// <remarks>
+        /// Method imports must be added in the same order as the corresponding method definitions.
+        /// </remarks>
         public void AddMethodImport(
             MethodDefinitionHandle method,
             MethodImportAttributes attributes, 
@@ -755,7 +1031,7 @@ namespace System.Reflection.Metadata.Ecma335
                 MemberForwarded = CodedIndex.MemberForwarded(method),
                 ImportName = name,
                 ImportScope = module.RowId,
-                MappingFlags = (ushort)attributes,
+                MappingFlags = unchecked((ushort)attributes),
             });
         }
 
@@ -765,6 +1041,9 @@ namespace System.Reflection.Metadata.Ecma335
         /// <param name="type">Type</param>
         /// <param name="methodBody"><see cref="MethodDefinitionHandle"/> or <see cref="MemberReferenceHandle"/> which provides the implementation.</param>
         /// <param name="methodDeclaration"><see cref="MethodDefinitionHandle"/> or <see cref="MemberReferenceHandle"/> the method being implemented.</param>
+        /// <remarks>
+        /// Method implementations must be added in the same order as the corresponding type definitions.
+        /// </remarks>
         /// <exception cref="ArgumentException"><paramref name="methodBody"/> or <paramref name="methodDeclaration"/> doesn't have the expected handle kind.</exception>
         public MethodImplementationHandle AddMethodImplementation(
             TypeDefinitionHandle type,
@@ -825,7 +1104,7 @@ namespace System.Reflection.Metadata.Ecma335
         {
             _manifestResourceTable.Add(new ManifestResourceRow
             {
-                Flags = (uint)attributes,
+                Flags = unchecked((uint)attributes),
                 Name = name,
                 Implementation = implementation.IsNil ? 0 : CodedIndex.Implementation(implementation),
                 Offset = offset
@@ -867,7 +1146,7 @@ namespace System.Reflection.Metadata.Ecma335
         {
             _exportedTypeTable.Add(new ExportedTypeRow
             {
-                Flags = (uint)attributes,
+                Flags = unchecked((uint)attributes),
                 Implementation = CodedIndex.Implementation(implementation),
                 TypeNamespace = @namespace,
                 TypeName = name,
@@ -877,12 +1156,6 @@ namespace System.Reflection.Metadata.Ecma335
             return ExportedTypeHandle.FromRowId(_exportedTypeTable.Count);
         }
 
-        // TODO: remove
-        public uint GetExportedTypeFlags(int rowId)
-        {
-            return _exportedTypeTable[rowId].Flags;
-        }
-
         /// <summary>
         /// Adds declarative security attribute to a type, method or an assembly.
         /// </summary>
@@ -890,6 +1163,9 @@ namespace System.Reflection.Metadata.Ecma335
         /// <param name="action">Security action</param>
         /// <param name="permissionSet">Permission set blob.</param>
         /// <exception cref="ArgumentException"><paramref name="parent"/> doesn't have the expected handle kind.</exception>
+        /// <remarks>
+        /// Entries may be added in any order. The table is automatically sorted when serialized.
+        /// </remarks>
         public DeclarativeSecurityAttributeHandle AddDeclarativeSecurityAttribute(
             EntityHandle parent,
             DeclarativeSecurityAction action,
@@ -904,7 +1180,7 @@ namespace System.Reflection.Metadata.Ecma335
             _declSecurityTable.Add(new DeclSecurityRow
             {
                 Parent = parentCodedIndex,
-                Action = (ushort)action,
+                Action = unchecked((ushort)action),
                 PermissionSet = permissionSet
             });
 
@@ -916,7 +1192,7 @@ namespace System.Reflection.Metadata.Ecma335
             _encLogTable.Add(new EncLogRow
             {
                 Token = entity.Token,
-                FuncCode = (byte)code
+                FuncCode = unchecked((byte)code)
             });
         }
 
@@ -928,6 +1204,24 @@ namespace System.Reflection.Metadata.Ecma335
             });
         }
 
+        /// <summary>
+        /// Add document debug information.
+        /// </summary>
+        /// <param name="name">
+        /// Document Name blob.
+        /// See https://github.com/dotnet/corefx/blob/master/src/System.Reflection.Metadata/specs/PortablePdb-Metadata.md#document-name-blob
+        /// </param>
+        /// <param name="hashAlgorithm">
+        /// GUID of the hash algorithm used to calculate the value of <paramref name="hash"/>.
+        /// See https://github.com/dotnet/corefx/blob/master/src/System.Reflection.Metadata/specs/PortablePdb-Metadata.md#document-table-0x30 for common values.
+        /// </param>
+        /// <param name="hash">
+        /// The hash of the document content.
+        /// </param>
+        /// <param name="language">
+        /// GUID of the language.
+        /// See https://github.com/dotnet/corefx/blob/master/src/System.Reflection.Metadata/specs/PortablePdb-Metadata.md#document-table-0x30 for common values.
+        /// </param>
         public DocumentHandle AddDocument(BlobHandle name, GuidHandle hashAlgorithm, BlobHandle hash, GuidHandle language)
         {
             _documentTable.Add(new DocumentRow
@@ -941,6 +1235,16 @@ namespace System.Reflection.Metadata.Ecma335
             return DocumentHandle.FromRowId(_documentTable.Count);
         }
 
+        /// <summary>
+        /// Add method debug information.
+        /// </summary>
+        /// <param name="document">
+        /// The handle of a single document containing all sequence points of the method, or nil if the method doesn't have sequence points or spans multiple documents.
+        /// </param>
+        /// <param name="sequencePoints">
+        /// Sequence Points blob, or nil if the method doesn't have sequence points.
+        /// See https://github.com/dotnet/corefx/blob/master/src/System.Reflection.Metadata/specs/PortablePdb-Metadata.md#sequence-points-blob.
+        /// </param>
         public MethodDebugInformationHandle AddMethodDebugInformation(DocumentHandle document, BlobHandle sequencePoints)
         {
             _methodDebugInformationTable.Add(new MethodDebugInformationRow
@@ -952,6 +1256,25 @@ namespace System.Reflection.Metadata.Ecma335
             return MethodDebugInformationHandle.FromRowId(_methodDebugInformationTable.Count);
         }
 
+        /// <summary>
+        /// Add local scope debug information.
+        /// </summary>
+        /// <param name="method">The containing method.</param>
+        /// <param name="importScope">Handle of the associated import scope.</param>
+        /// <param name="variableList">
+        /// If the scope declares variables the handle of the first one, otherwise the handle of the first variable declared by the next scope definition.
+        /// If no scope defines any variables, <see cref="MetadataTokens.LocalVariableHandle(int)"/>(1).
+        /// </param>
+        /// <param name="constantList">
+        /// If the scope declares constants the handle of the first one, otherwise the handle of the first constant declared by the next scope definition.
+        /// If no scope defines any constants, <see cref="MetadataTokens.LocalConstantHandle(int)"/>(1).
+        /// </param>
+        /// <param name="startOffset">Offset of the first instruction covered by the scope.</param>
+        /// <param name="length">The length (in bytes) of the scope.</param>
+        /// <remarks>
+        /// Local scopes should be added in the same order as the corresponding method definition. 
+        /// Within a method they should be ordered by ascending <paramref name="startOffset"/> and then by descending <paramref name="length"/>.
+        /// </remarks>
         public LocalScopeHandle AddLocalScope(MethodDefinitionHandle method, ImportScopeHandle importScope, LocalVariableHandle variableList, LocalConstantHandle constantList, int startOffset, int length)
         {
             _localScopeTable.Add(new LocalScopeRow
@@ -967,18 +1290,37 @@ namespace System.Reflection.Metadata.Ecma335
             return LocalScopeHandle.FromRowId(_localScopeTable.Count);
         }
 
+        /// <summary>
+        /// Add local variable debug information.
+        /// </summary>
+        /// <param name="attributes"><see cref="LocalVariableAttributes"/></param>
+        /// <param name="index">Local variable index in the local signature (zero-based).</param>
+        /// <param name="name">Name of the variable.</param>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="index"/> is greater than <see cref="ushort.MaxValue"/>.</exception>
         public LocalVariableHandle AddLocalVariable(LocalVariableAttributes attributes, int index, StringHandle name)
         {
+            if (unchecked((uint)index) > ushort.MaxValue)
+            {
+                Throw.ArgumentOutOfRange(nameof(index));
+            }
+
             _localVariableTable.Add(new LocalVariableRow
             {
-                Attributes = (ushort)attributes,
+                Attributes = unchecked((ushort)attributes),
                 Index = (ushort)index,
                 Name = name
             });
 
             return LocalVariableHandle.FromRowId(_localVariableTable.Count);
         }
-        
+
+        /// <summary>
+        /// Add local constant debug information.
+        /// </summary>
+        /// <param name="name">Name of the variable.</param>
+        /// <param name="signature">
+        /// LocalConstantSig blob, see https://github.com/dotnet/corefx/blob/master/src/System.Reflection.Metadata/specs/PortablePdb-Metadata.md#localconstantsig-blob. 
+        /// </param>
         public LocalConstantHandle AddLocalConstant(StringHandle name, BlobHandle signature)
         {
             _localConstantTable.Add(new LocalConstantRow
@@ -990,6 +1332,13 @@ namespace System.Reflection.Metadata.Ecma335
             return LocalConstantHandle.FromRowId(_localConstantTable.Count);
         }
 
+        /// <summary>
+        /// Add local scope debug information.
+        /// </summary>
+        /// <param name="parentScope">Parent scope handle.</param>
+        /// <param name="imports">
+        /// Imports blob, see https://github.com/dotnet/corefx/blob/master/src/System.Reflection.Metadata/specs/PortablePdb-Metadata.md#imports-blob. 
+        /// </param>
         public ImportScopeHandle AddImportScope(ImportScopeHandle parentScope, BlobHandle imports)
         {
             _importScopeTable.Add(new ImportScopeRow
@@ -1001,6 +1350,14 @@ namespace System.Reflection.Metadata.Ecma335
             return ImportScopeHandle.FromRowId(_importScopeTable.Count);
         }
 
+        /// <summary>
+        /// Add state machine method debug information.
+        /// </summary>
+        /// <param name="moveNextMethod">Handle of the MoveNext method of the state machine (the compiler-generated method).</param>
+        /// <param name="kickoffMethod">Handle of the kickoff method (the user defined iterator/async method)</param>
+        /// <remarks>
+        /// Entries should be added in the same order as the corresponding MoveNext method definitions.
+        /// </remarks>
         public void AddStateMachineMethod(MethodDefinitionHandle moveNextMethod, MethodDefinitionHandle kickoffMethod)
         {
             _stateMachineMethodTable.Add(new StateMachineMethodRow
@@ -1011,7 +1368,7 @@ namespace System.Reflection.Metadata.Ecma335
         }
 
         /// <summary>
-        /// Add a custom debug information.
+        /// Add custom debug information.
         /// </summary>
         /// <param name="parent">
         /// An entity to attach the debug information to: 
@@ -1046,6 +1403,9 @@ namespace System.Reflection.Metadata.Ecma335
         /// <param name="kind">Information kind. Determines the structure of the <paramref name="value"/> blob.</param>
         /// <param name="value">Custom debug information blob.</param>
         /// <exception cref="ArgumentException"><paramref name="parent"/> doesn't have the expected handle kind.</exception>
+        /// <remarks>
+        /// Entries may be added in any order. The table is automatically sorted when serialized.
+        /// </remarks>
         public CustomDebugInformationHandle AddCustomDebugInformation(EntityHandle parent, GuidHandle kind, BlobHandle value)
         {
             _customDebugInformationTable.Add(new CustomDebugInformationRow
@@ -1060,290 +1420,468 @@ namespace System.Reflection.Metadata.Ecma335
 
         #endregion
 
-        public ImmutableArray<int> GetRowCounts()
+        #region Validation
+
+        internal void ValidateOrder()
         {
-            var rowCounts = new int[MetadataTokens.TableCount];
+            // Certain tables are required to be sorted by a primary key, as follows:
+            //
+            // Table                    Keys                                Auto-ordered
+            // --------------------------------------------------------------------------
+            // ClassLayout              Parent                              No*
+            // Constant                 Parent                              Yes  
+            // CustomAttribute          Parent                              Yes
+            // DeclSecurity             Parent                              Yes
+            // FieldLayout              Field                               No*
+            // FieldMarshal             Parent                              Yes
+            // FieldRVA                 Field                               No*
+            // GenericParam             Owner, Number                       No**
+            // GenericParamConstraint   Owner                               No**
+            // ImplMap                  MemberForwarded                     No*
+            // InterfaceImpl            Class, Interface                    No**
+            // MethodImpl               Class                               No*
+            // MethodSemantics          Association                         Yes
+            // NestedClass              NestedClass                         No*
+            // LocalScope               Method, StartOffset, Length (desc)  No**
+            // StateMachineMethod       MoveNextMethod                      No*
+            // CustomDebugInformation   Parent                              Yes
+            //
+            // Tables of entities that can't be referenced from other tables or blobs 
+            // are automatically ordered during serialization and thus don't require validation.
+            //
+            // * We could potentially auto-order these. These tables are adding extra (optional) 
+            // information to a primary entity (TypeDef, FiledDef, etc.) and are thus easily emitted 
+            // in the same order as the parent entity. Hence they would usually be ordered already and 
+            // it would be extra overhead to order them. Let's just required them ordered.
+            //
+            // ** We can't easily automatically order these since they represent entities that can be referenced 
+            // by other tables/blobs (e.g. CustomAttribute and CustomDebugInformation). Ordering these tables 
+            // would require updating all references.
 
-            rowCounts[(int)TableIndex.Assembly] = _assemblyTable.Count;
-            rowCounts[(int)TableIndex.AssemblyRef] = _assemblyRefTable.Count;
-            rowCounts[(int)TableIndex.ClassLayout] = _classLayoutTable.Count;
-            rowCounts[(int)TableIndex.Constant] = _constantTable.Count;
-            rowCounts[(int)TableIndex.CustomAttribute] = _customAttributeTable.Count;
-            rowCounts[(int)TableIndex.DeclSecurity] = _declSecurityTable.Count;
-            rowCounts[(int)TableIndex.EncLog] = _encLogTable.Count;
-            rowCounts[(int)TableIndex.EncMap] = _encMapTable.Count;
-            rowCounts[(int)TableIndex.EventMap] = _eventMapTable.Count;
-            rowCounts[(int)TableIndex.Event] = _eventTable.Count;
-            rowCounts[(int)TableIndex.ExportedType] = _exportedTypeTable.Count;
-            rowCounts[(int)TableIndex.FieldLayout] = _fieldLayoutTable.Count;
-            rowCounts[(int)TableIndex.FieldMarshal] = _fieldMarshalTable.Count;
-            rowCounts[(int)TableIndex.FieldRva] = _fieldRvaTable.Count;
-            rowCounts[(int)TableIndex.Field] = _fieldTable.Count;
-            rowCounts[(int)TableIndex.File] = _fileTable.Count;
-            rowCounts[(int)TableIndex.GenericParamConstraint] = _genericParamConstraintTable.Count;
-            rowCounts[(int)TableIndex.GenericParam] = _genericParamTable.Count;
-            rowCounts[(int)TableIndex.ImplMap] = _implMapTable.Count;
-            rowCounts[(int)TableIndex.InterfaceImpl] = _interfaceImplTable.Count;
-            rowCounts[(int)TableIndex.ManifestResource] = _manifestResourceTable.Count;
-            rowCounts[(int)TableIndex.MemberRef] = _memberRefTable.Count;
-            rowCounts[(int)TableIndex.MethodImpl] = _methodImplTable.Count;
-            rowCounts[(int)TableIndex.MethodSemantics] = _methodSemanticsTable.Count;
-            rowCounts[(int)TableIndex.MethodSpec] = _methodSpecTable.Count;
-            rowCounts[(int)TableIndex.MethodDef] = _methodDefTable.Count;
-            rowCounts[(int)TableIndex.ModuleRef] = _moduleRefTable.Count;
-            rowCounts[(int)TableIndex.Module] = _moduleTable.Count;
-            rowCounts[(int)TableIndex.NestedClass] = _nestedClassTable.Count;
-            rowCounts[(int)TableIndex.Param] = _paramTable.Count;
-            rowCounts[(int)TableIndex.PropertyMap] = _propertyMapTable.Count;
-            rowCounts[(int)TableIndex.Property] = _propertyTable.Count;
-            rowCounts[(int)TableIndex.StandAloneSig] = _standAloneSigTable.Count;
-            rowCounts[(int)TableIndex.TypeDef] = _typeDefTable.Count;
-            rowCounts[(int)TableIndex.TypeRef] = _typeRefTable.Count;
-            rowCounts[(int)TableIndex.TypeSpec] = _typeSpecTable.Count;
-
-            rowCounts[(int)TableIndex.Document] = _documentTable.Count;
-            rowCounts[(int)TableIndex.MethodDebugInformation] = _methodDebugInformationTable.Count;
-            rowCounts[(int)TableIndex.LocalScope] = _localScopeTable.Count;
-            rowCounts[(int)TableIndex.LocalVariable] = _localVariableTable.Count;
-            rowCounts[(int)TableIndex.LocalConstant] = _localConstantTable.Count;
-            rowCounts[(int)TableIndex.StateMachineMethod] = _stateMachineMethodTable.Count;
-            rowCounts[(int)TableIndex.ImportScope] = _importScopeTable.Count;
-            rowCounts[(int)TableIndex.CustomDebugInformation] = _customDebugInformationTable.Count;
-
-            return ImmutableArray.CreateRange(rowCounts);
+            ValidateClassLayoutTable();
+            ValidateFieldLayoutTable();
+            ValidateFieldRvaTable();
+            ValidateGenericParamTable();
+            ValidateGenericParamConstaintTable();
+            ValidateImplMapTable();
+            ValidateInterfaceImplTable();
+            ValidateMethodImplTable();
+            ValidateNestedClassTable();
+            ValidateLocalScopeTable();
+            ValidateStateMachineMethodTable();
         }
+
+        private void ValidateClassLayoutTable()
+        {
+            for (int i = 1; i < _classLayoutTable.Count; i++)
+            {
+                if (_classLayoutTable[i - 1].Parent >= _classLayoutTable[i].Parent)
+                {
+                    Throw.InvalidOperation_TableNotSorted(TableIndex.ClassLayout);
+                }
+            }
+        }
+
+        private void ValidateFieldLayoutTable()
+        {
+            for (int i = 1; i < _fieldLayoutTable.Count; i++)
+            {
+                if (_fieldLayoutTable[i - 1].Field >= _fieldLayoutTable[i].Field)
+                {
+                    Throw.InvalidOperation_TableNotSorted(TableIndex.FieldLayout);
+                }
+            }
+        }
+
+        private void ValidateFieldRvaTable()
+        {
+            for (int i = 1; i < _fieldRvaTable.Count; i++)
+            {
+                // Spec: each row in the FieldRVA table is an extension to exactly one row in the Field table
+                if (_fieldRvaTable[i - 1].Field >= _fieldRvaTable[i].Field)
+                {
+                    Throw.InvalidOperation_TableNotSorted(TableIndex.FieldRva);
+                }
+            }
+        }
+
+        private void ValidateGenericParamTable()
+        {
+            if (_genericParamTable.Count == 0)
+            {
+                return;
+            }
+
+            GenericParamRow current, previous = _genericParamTable[0];
+            for (int i = 1; i < _genericParamTable.Count; i++, previous = current)
+            {
+                current = _genericParamTable[i];
+
+                if (current.Owner > previous.Owner)
+                {
+                    continue;
+                }
+
+                if (previous.Owner == current.Owner && current.Number > previous.Number)
+                {
+                    continue;
+                }
+
+                Throw.InvalidOperation_TableNotSorted(TableIndex.GenericParam);
+            }
+        }
+
+        private void ValidateGenericParamConstaintTable()
+        {
+            for (int i = 1; i < _genericParamConstraintTable.Count; i++)
+            {
+                if (_genericParamConstraintTable[i - 1].Owner > _genericParamConstraintTable[i].Owner)
+                {
+                    Throw.InvalidOperation_TableNotSorted(TableIndex.GenericParamConstraint);
+                }
+            }
+        }
+
+        private void ValidateImplMapTable()
+        {
+            for (int i = 1; i < _implMapTable.Count; i++)
+            {
+                if (_implMapTable[i - 1].MemberForwarded >= _implMapTable[i].MemberForwarded)
+                {
+                    Throw.InvalidOperation_TableNotSorted(TableIndex.ImplMap);
+                }
+            }
+        }
+
+        private void ValidateInterfaceImplTable()
+        {
+            if (_interfaceImplTable.Count == 0)
+            {
+                return;
+            }
+
+            InterfaceImplRow current, previous = _interfaceImplTable[0];
+            for (int i = 1; i < _interfaceImplTable.Count; i++, previous = current)
+            {
+                current = _interfaceImplTable[i];
+
+                if (current.Class > previous.Class)
+                {
+                    continue;
+                }
+
+                if (previous.Class == current.Class && current.Interface > previous.Interface)
+                {
+                    continue;
+                }
+
+                Throw.InvalidOperation_TableNotSorted(TableIndex.InterfaceImpl);
+            }
+        }
+
+        private void ValidateMethodImplTable()
+        {
+            for (int i = 1; i < _methodImplTable.Count; i++)
+            {
+                if (_methodImplTable[i - 1].Class > _methodImplTable[i].Class)
+                {
+                    Throw.InvalidOperation_TableNotSorted(TableIndex.MethodImpl);
+                }
+            }
+        }
+
+        private void ValidateNestedClassTable()
+        {
+            for (int i = 1; i < _nestedClassTable.Count; i++)
+            {
+                if (_nestedClassTable[i - 1].NestedClass >= _nestedClassTable[i].NestedClass)
+                {
+                    Throw.InvalidOperation_TableNotSorted(TableIndex.NestedClass);
+                }
+            }
+        }
+
+        private void ValidateLocalScopeTable()
+        {
+            if (_localScopeTable.Count == 0)
+            {
+                return;
+            }
+
+            // Spec: The table is required to be sorted first by Method in ascending order,
+            // then by StartOffset in ascending order, then by Length in descending order.
+            LocalScopeRow current, previous = _localScopeTable[0];
+            for (int i = 1; i < _localScopeTable.Count; i++, previous = current)
+            {
+                current = _localScopeTable[i];
+
+                if (current.Method > previous.Method)
+                {
+                    continue;
+                }
+
+                if (current.Method == previous.Method)
+                {
+                    if (current.StartOffset > previous.StartOffset)
+                    {
+                        continue;
+                    }
+
+                    if (current.StartOffset == previous.StartOffset && previous.Length >= current.Length)
+                    {
+                        continue;
+                    }
+                }
+
+                Throw.InvalidOperation_TableNotSorted(TableIndex.LocalScope);
+            }
+        }
+
+        private void ValidateStateMachineMethodTable()
+        {
+            for (int i = 1; i < _stateMachineMethodTable.Count; i++)
+            {
+                if (_stateMachineMethodTable[i - 1].MoveNextMethod >= _stateMachineMethodTable[i].MoveNextMethod)
+                {
+                    Throw.InvalidOperation_TableNotSorted(TableIndex.StateMachineMethod);
+                }
+            }
+        }
+
+        #endregion
 
         #region Serialization
 
         internal void SerializeMetadataTables(
             BlobBuilder writer,
             MetadataSizes metadataSizes,
+            ImmutableArray<int> stringMap,
             int methodBodyStreamRva,
             int mappedFieldDataStreamRva)
         {
             int startPosition = writer.Count;
 
-            this.SerializeTablesHeader(writer, metadataSizes);
+            SerializeTablesHeader(writer, metadataSizes);
 
             if (metadataSizes.IsPresent(TableIndex.Module))
             {
-                SerializeModuleTable(writer, metadataSizes);
+                SerializeModuleTable(writer, stringMap, metadataSizes);
             }
 
             if (metadataSizes.IsPresent(TableIndex.TypeRef))
             {
-                this.SerializeTypeRefTable(writer, metadataSizes);
+                SerializeTypeRefTable(writer, stringMap, metadataSizes);
             }
 
             if (metadataSizes.IsPresent(TableIndex.TypeDef))
             {
-                this.SerializeTypeDefTable(writer, metadataSizes);
+                SerializeTypeDefTable(writer, stringMap, metadataSizes);
             }
 
             if (metadataSizes.IsPresent(TableIndex.Field))
             {
-                this.SerializeFieldTable(writer, metadataSizes);
+                SerializeFieldTable(writer, stringMap, metadataSizes);
             }
 
             if (metadataSizes.IsPresent(TableIndex.MethodDef))
             {
-                this.SerializeMethodDefTable(writer, metadataSizes, methodBodyStreamRva);
+                SerializeMethodDefTable(writer, stringMap, metadataSizes, methodBodyStreamRva);
             }
 
             if (metadataSizes.IsPresent(TableIndex.Param))
             {
-                this.SerializeParamTable(writer, metadataSizes);
+                SerializeParamTable(writer, stringMap, metadataSizes);
             }
 
             if (metadataSizes.IsPresent(TableIndex.InterfaceImpl))
             {
-                this.SerializeInterfaceImplTable(writer, metadataSizes);
+                SerializeInterfaceImplTable(writer, metadataSizes);
             }
 
             if (metadataSizes.IsPresent(TableIndex.MemberRef))
             {
-                this.SerializeMemberRefTable(writer, metadataSizes);
+                SerializeMemberRefTable(writer, stringMap, metadataSizes);
             }
 
             if (metadataSizes.IsPresent(TableIndex.Constant))
             {
-                this.SerializeConstantTable(writer, metadataSizes);
+                SerializeConstantTable(writer, metadataSizes);
             }
 
             if (metadataSizes.IsPresent(TableIndex.CustomAttribute))
             {
-                this.SerializeCustomAttributeTable(writer, metadataSizes);
+                SerializeCustomAttributeTable(writer, metadataSizes);
             }
 
             if (metadataSizes.IsPresent(TableIndex.FieldMarshal))
             {
-                this.SerializeFieldMarshalTable(writer, metadataSizes);
+                SerializeFieldMarshalTable(writer, metadataSizes);
             }
 
             if (metadataSizes.IsPresent(TableIndex.DeclSecurity))
             {
-                this.SerializeDeclSecurityTable(writer, metadataSizes);
+                SerializeDeclSecurityTable(writer, metadataSizes);
             }
 
             if (metadataSizes.IsPresent(TableIndex.ClassLayout))
             {
-                this.SerializeClassLayoutTable(writer, metadataSizes);
+                SerializeClassLayoutTable(writer, metadataSizes);
             }
 
             if (metadataSizes.IsPresent(TableIndex.FieldLayout))
             {
-                this.SerializeFieldLayoutTable(writer, metadataSizes);
+                SerializeFieldLayoutTable(writer, metadataSizes);
             }
 
             if (metadataSizes.IsPresent(TableIndex.StandAloneSig))
             {
-                this.SerializeStandAloneSigTable(writer, metadataSizes);
+                SerializeStandAloneSigTable(writer, metadataSizes);
             }
 
             if (metadataSizes.IsPresent(TableIndex.EventMap))
             {
-                this.SerializeEventMapTable(writer, metadataSizes);
+                SerializeEventMapTable(writer, metadataSizes);
             }
 
             if (metadataSizes.IsPresent(TableIndex.Event))
             {
-                this.SerializeEventTable(writer, metadataSizes);
+                SerializeEventTable(writer, stringMap, metadataSizes);
             }
 
             if (metadataSizes.IsPresent(TableIndex.PropertyMap))
             {
-                this.SerializePropertyMapTable(writer, metadataSizes);
+                SerializePropertyMapTable(writer, metadataSizes);
             }
 
             if (metadataSizes.IsPresent(TableIndex.Property))
             {
-                this.SerializePropertyTable(writer, metadataSizes);
+                SerializePropertyTable(writer, stringMap, metadataSizes);
             }
 
             if (metadataSizes.IsPresent(TableIndex.MethodSemantics))
             {
-                this.SerializeMethodSemanticsTable(writer, metadataSizes);
+                SerializeMethodSemanticsTable(writer, metadataSizes);
             }
 
             if (metadataSizes.IsPresent(TableIndex.MethodImpl))
             {
-                this.SerializeMethodImplTable(writer, metadataSizes);
+                SerializeMethodImplTable(writer, metadataSizes);
             }
 
             if (metadataSizes.IsPresent(TableIndex.ModuleRef))
             {
-                this.SerializeModuleRefTable(writer, metadataSizes);
+                SerializeModuleRefTable(writer, stringMap, metadataSizes);
             }
 
             if (metadataSizes.IsPresent(TableIndex.TypeSpec))
             {
-                this.SerializeTypeSpecTable(writer, metadataSizes);
+                SerializeTypeSpecTable(writer, metadataSizes);
             }
 
             if (metadataSizes.IsPresent(TableIndex.ImplMap))
             {
-                this.SerializeImplMapTable(writer, metadataSizes);
+                SerializeImplMapTable(writer, stringMap, metadataSizes);
             }
 
             if (metadataSizes.IsPresent(TableIndex.FieldRva))
             {
-                this.SerializeFieldRvaTable(writer, metadataSizes, mappedFieldDataStreamRva);
+                SerializeFieldRvaTable(writer, metadataSizes, mappedFieldDataStreamRva);
             }
 
             if (metadataSizes.IsPresent(TableIndex.EncLog))
             {
-                this.SerializeEncLogTable(writer);
+                SerializeEncLogTable(writer);
             }
 
             if (metadataSizes.IsPresent(TableIndex.EncMap))
             {
-                this.SerializeEncMapTable(writer);
+                SerializeEncMapTable(writer);
             }
 
             if (metadataSizes.IsPresent(TableIndex.Assembly))
             {
-                this.SerializeAssemblyTable(writer, metadataSizes);
+                SerializeAssemblyTable(writer, stringMap, metadataSizes);
             }
 
             if (metadataSizes.IsPresent(TableIndex.AssemblyRef))
             {
-                this.SerializeAssemblyRefTable(writer, metadataSizes);
+                SerializeAssemblyRefTable(writer, stringMap, metadataSizes);
             }
 
             if (metadataSizes.IsPresent(TableIndex.File))
             {
-                this.SerializeFileTable(writer, metadataSizes);
+                SerializeFileTable(writer, stringMap, metadataSizes);
             }
 
             if (metadataSizes.IsPresent(TableIndex.ExportedType))
             {
-                this.SerializeExportedTypeTable(writer, metadataSizes);
+                SerializeExportedTypeTable(writer, stringMap, metadataSizes);
             }
 
             if (metadataSizes.IsPresent(TableIndex.ManifestResource))
             {
-                this.SerializeManifestResourceTable(writer, metadataSizes);
+                SerializeManifestResourceTable(writer, stringMap, metadataSizes);
             }
 
             if (metadataSizes.IsPresent(TableIndex.NestedClass))
             {
-                this.SerializeNestedClassTable(writer, metadataSizes);
+                SerializeNestedClassTable(writer, metadataSizes);
             }
 
             if (metadataSizes.IsPresent(TableIndex.GenericParam))
             {
-                this.SerializeGenericParamTable(writer, metadataSizes);
+                SerializeGenericParamTable(writer, stringMap, metadataSizes);
             }
 
             if (metadataSizes.IsPresent(TableIndex.MethodSpec))
             {
-                this.SerializeMethodSpecTable(writer, metadataSizes);
+                SerializeMethodSpecTable(writer, metadataSizes);
             }
 
             if (metadataSizes.IsPresent(TableIndex.GenericParamConstraint))
             {
-                this.SerializeGenericParamConstraintTable(writer, metadataSizes);
+                SerializeGenericParamConstraintTable(writer, metadataSizes);
             }
 
             // debug tables
             if (metadataSizes.IsPresent(TableIndex.Document))
             {
-                this.SerializeDocumentTable(writer, metadataSizes);
+                SerializeDocumentTable(writer, metadataSizes);
             }
 
             if (metadataSizes.IsPresent(TableIndex.MethodDebugInformation))
             {
-                this.SerializeMethodDebugInformationTable(writer, metadataSizes);
+                SerializeMethodDebugInformationTable(writer, metadataSizes);
             }
 
             if (metadataSizes.IsPresent(TableIndex.LocalScope))
             {
-                this.SerializeLocalScopeTable(writer, metadataSizes);
+                SerializeLocalScopeTable(writer, metadataSizes);
             }
 
             if (metadataSizes.IsPresent(TableIndex.LocalVariable))
             {
-                this.SerializeLocalVariableTable(writer, metadataSizes);
+                SerializeLocalVariableTable(writer, stringMap, metadataSizes);
             }
 
             if (metadataSizes.IsPresent(TableIndex.LocalConstant))
             {
-                this.SerializeLocalConstantTable(writer, metadataSizes);
+                SerializeLocalConstantTable(writer, stringMap, metadataSizes);
             }
 
             if (metadataSizes.IsPresent(TableIndex.ImportScope))
             {
-                this.SerializeImportScopeTable(writer, metadataSizes);
+                SerializeImportScopeTable(writer, metadataSizes);
             }
 
             if (metadataSizes.IsPresent(TableIndex.StateMachineMethod))
             {
-                this.SerializeStateMachineMethodTable(writer, metadataSizes);
+                SerializeStateMachineMethodTable(writer, metadataSizes);
             }
 
             if (metadataSizes.IsPresent(TableIndex.CustomDebugInformation))
             {
-                this.SerializeCustomDebugInformationTable(writer, metadataSizes);
+                SerializeCustomDebugInformationTable(writer, metadataSizes);
             }
 
             writer.WriteByte(0);
@@ -1373,9 +1911,9 @@ namespace System.Reflection.Metadata.Ecma335
                 heapSizes |= HeapSizeFlag.BlobHeapLarge;
             }
 
-            if (metadataSizes.IsMinimalDelta)
+            if (metadataSizes.IsEncDelta)
             {
-                heapSizes |= (HeapSizeFlag.EnCDeltas | HeapSizeFlag.DeletedMarks);
+                heapSizes |= (HeapSizeFlag.EncDeltas | HeapSizeFlag.DeletedMarks);
             }
 
             ulong sortedDebugTables = metadataSizes.PresentTablesMask & MetadataSizes.SortedDebugTables;
@@ -1397,15 +1935,15 @@ namespace System.Reflection.Metadata.Ecma335
         }
 
         // internal for testing
-        internal void SerializeModuleTable(BlobBuilder writer, MetadataSizes metadataSizes)
+        internal void SerializeModuleTable(BlobBuilder writer, ImmutableArray<int> stringMap, MetadataSizes metadataSizes)
         {
-            foreach (var moduleRow in _moduleTable)
+            if (_moduleRow.HasValue)
             {
-                writer.WriteUInt16(moduleRow.Generation);
-                writer.WriteReference(SerializeHandle(moduleRow.Name), metadataSizes.StringReferenceIsSmall);
-                writer.WriteReference(SerializeHandle(moduleRow.ModuleVersionId), metadataSizes.GuidReferenceIsSmall);
-                writer.WriteReference(SerializeHandle(moduleRow.EncId), metadataSizes.GuidReferenceIsSmall);
-                writer.WriteReference(SerializeHandle(moduleRow.EncBaseId), metadataSizes.GuidReferenceIsSmall);
+                writer.WriteUInt16(_moduleRow.Value.Generation);
+                writer.WriteReference(SerializeHandle(stringMap, _moduleRow.Value.Name), metadataSizes.StringReferenceIsSmall);
+                writer.WriteReference(SerializeHandle(_moduleRow.Value.ModuleVersionId), metadataSizes.GuidReferenceIsSmall);
+                writer.WriteReference(SerializeHandle(_moduleRow.Value.EncId), metadataSizes.GuidReferenceIsSmall);
+                writer.WriteReference(SerializeHandle(_moduleRow.Value.EncBaseId), metadataSizes.GuidReferenceIsSmall);
             }
         }
 
@@ -1426,40 +1964,40 @@ namespace System.Reflection.Metadata.Ecma335
             }
         }
 
-        private void SerializeTypeRefTable(BlobBuilder writer, MetadataSizes metadataSizes)
+        private void SerializeTypeRefTable(BlobBuilder writer, ImmutableArray<int> stringMap, MetadataSizes metadataSizes)
         {
             foreach (TypeRefRow typeRef in _typeRefTable)
             {
                 writer.WriteReference(typeRef.ResolutionScope, metadataSizes.ResolutionScopeCodedIndexIsSmall);
-                writer.WriteReference(SerializeHandle(typeRef.Name), metadataSizes.StringReferenceIsSmall);
-                writer.WriteReference(SerializeHandle(typeRef.Namespace), metadataSizes.StringReferenceIsSmall);
+                writer.WriteReference(SerializeHandle(stringMap, typeRef.Name), metadataSizes.StringReferenceIsSmall);
+                writer.WriteReference(SerializeHandle(stringMap, typeRef.Namespace), metadataSizes.StringReferenceIsSmall);
             }
         }
 
-        private void SerializeTypeDefTable(BlobBuilder writer, MetadataSizes metadataSizes)
+        private void SerializeTypeDefTable(BlobBuilder writer, ImmutableArray<int> stringMap, MetadataSizes metadataSizes)
         {
             foreach (TypeDefRow typeDef in _typeDefTable)
             {
                 writer.WriteUInt32(typeDef.Flags);
-                writer.WriteReference(SerializeHandle(typeDef.Name), metadataSizes.StringReferenceIsSmall);
-                writer.WriteReference(SerializeHandle(typeDef.Namespace), metadataSizes.StringReferenceIsSmall);
+                writer.WriteReference(SerializeHandle(stringMap, typeDef.Name), metadataSizes.StringReferenceIsSmall);
+                writer.WriteReference(SerializeHandle(stringMap, typeDef.Namespace), metadataSizes.StringReferenceIsSmall);
                 writer.WriteReference(typeDef.Extends, metadataSizes.TypeDefOrRefCodedIndexIsSmall);
                 writer.WriteReference(typeDef.FieldList, metadataSizes.FieldDefReferenceIsSmall);
                 writer.WriteReference(typeDef.MethodList, metadataSizes.MethodDefReferenceIsSmall);
             }
         }
 
-        private void SerializeFieldTable(BlobBuilder writer, MetadataSizes metadataSizes)
+        private void SerializeFieldTable(BlobBuilder writer, ImmutableArray<int> stringMap, MetadataSizes metadataSizes)
         {
             foreach (FieldDefRow fieldDef in _fieldTable)
             {
                 writer.WriteUInt16(fieldDef.Flags);
-                writer.WriteReference(SerializeHandle(fieldDef.Name), metadataSizes.StringReferenceIsSmall);
+                writer.WriteReference(SerializeHandle(stringMap, fieldDef.Name), metadataSizes.StringReferenceIsSmall);
                 writer.WriteReference(SerializeHandle(fieldDef.Signature), metadataSizes.BlobReferenceIsSmall);
             }
         }
 
-        private void SerializeMethodDefTable(BlobBuilder writer, MetadataSizes metadataSizes, int methodBodyStreamRva)
+        private void SerializeMethodDefTable(BlobBuilder writer, ImmutableArray<int> stringMap, MetadataSizes metadataSizes, int methodBodyStreamRva)
         {
             foreach (MethodRow method in _methodDefTable)
             {
@@ -1474,19 +2012,19 @@ namespace System.Reflection.Metadata.Ecma335
 
                 writer.WriteUInt16(method.ImplFlags);
                 writer.WriteUInt16(method.Flags);
-                writer.WriteReference(SerializeHandle(method.Name), metadataSizes.StringReferenceIsSmall);
+                writer.WriteReference(SerializeHandle(stringMap, method.Name), metadataSizes.StringReferenceIsSmall);
                 writer.WriteReference(SerializeHandle(method.Signature), metadataSizes.BlobReferenceIsSmall);
                 writer.WriteReference(method.ParamList, metadataSizes.ParameterReferenceIsSmall);
             }
         }
 
-        private void SerializeParamTable(BlobBuilder writer, MetadataSizes metadataSizes)
+        private void SerializeParamTable(BlobBuilder writer, ImmutableArray<int> stringMap, MetadataSizes metadataSizes)
         {
             foreach (ParamRow param in _paramTable)
             {
                 writer.WriteUInt16(param.Flags);
                 writer.WriteUInt16(param.Sequence);
-                writer.WriteReference(SerializeHandle(param.Name), metadataSizes.StringReferenceIsSmall);
+                writer.WriteReference(SerializeHandle(stringMap, param.Name), metadataSizes.StringReferenceIsSmall);
             }
         }
 
@@ -1501,12 +2039,12 @@ namespace System.Reflection.Metadata.Ecma335
             }
         }
 
-        private void SerializeMemberRefTable(BlobBuilder writer, MetadataSizes metadataSizes)
+        private void SerializeMemberRefTable(BlobBuilder writer, ImmutableArray<int> stringMap, MetadataSizes metadataSizes)
         {
             foreach (MemberRefRow memberRef in _memberRefTable)
             {
                 writer.WriteReference(memberRef.Class, metadataSizes.MemberRefParentCodedIndexIsSmall);
-                writer.WriteReference(SerializeHandle(memberRef.Name), metadataSizes.StringReferenceIsSmall);
+                writer.WriteReference(SerializeHandle(stringMap, memberRef.Name), metadataSizes.StringReferenceIsSmall);
                 writer.WriteReference(SerializeHandle(memberRef.Signature), metadataSizes.BlobReferenceIsSmall);
             }
         }
@@ -1514,7 +2052,7 @@ namespace System.Reflection.Metadata.Ecma335
         private void SerializeConstantTable(BlobBuilder writer, MetadataSizes metadataSizes)
         {
             // Note: we can sort the table at this point since no other table can reference its rows via RowId or CodedIndex (which would need updating otherwise).
-            var ordered = _constantTableNeedsSorting ? (IEnumerable<ConstantRow>)_constantTable.OrderBy((x, y) => (int)x.Parent - (int)y.Parent) : _constantTable;
+            var ordered = _constantTableNeedsSorting ? (IEnumerable<ConstantRow>)_constantTable.OrderBy((x, y) => x.Parent - y.Parent) : _constantTable;
 
             foreach (ConstantRow constant in ordered)
             {
@@ -1529,7 +2067,7 @@ namespace System.Reflection.Metadata.Ecma335
         {
             // Note: we can sort the table at this point since no other table can reference its rows via RowId or CodedIndex (which would need updating otherwise).
             // OrderBy performs a stable sort, so multiple attributes with the same parent will be sorted in the order they were added to the table.
-            var ordered = _customAttributeTableNeedsSorting ? (IEnumerable<CustomAttributeRow>)_customAttributeTable.OrderBy((x, y) => (int)x.Parent - (int)y.Parent) : _customAttributeTable;
+            var ordered = _customAttributeTableNeedsSorting ? (IEnumerable<CustomAttributeRow>)_customAttributeTable.OrderBy((x, y) => x.Parent - y.Parent) : _customAttributeTable;
 
             foreach (CustomAttributeRow customAttribute in ordered)
             {
@@ -1542,7 +2080,7 @@ namespace System.Reflection.Metadata.Ecma335
         private void SerializeFieldMarshalTable(BlobBuilder writer, MetadataSizes metadataSizes)
         {
             // Note: we can sort the table at this point since no other table can reference its rows via RowId or CodedIndex (which would need updating otherwise).
-            var ordered = _fieldMarshalTableNeedsSorting ? (IEnumerable<FieldMarshalRow>)_fieldMarshalTable.OrderBy((x, y) => (int)x.Parent - (int)y.Parent) : _fieldMarshalTable;
+            var ordered = _fieldMarshalTableNeedsSorting ? (IEnumerable<FieldMarshalRow>)_fieldMarshalTable.OrderBy((x, y) => x.Parent - y.Parent) : _fieldMarshalTable;
             
             foreach (FieldMarshalRow fieldMarshal in ordered)
             {
@@ -1555,7 +2093,7 @@ namespace System.Reflection.Metadata.Ecma335
         {
             // Note: we can sort the table at this point since no other table can reference its rows via RowId or CodedIndex (which would need updating otherwise).
             // OrderBy performs a stable sort, so multiple attributes with the same parent will be sorted in the order they were added to the table.
-            var ordered = _declSecurityTableNeedsSorting ? (IEnumerable<DeclSecurityRow>)_declSecurityTable.OrderBy((x, y) => (int)x.Parent - (int)y.Parent) : _declSecurityTable;
+            var ordered = _declSecurityTableNeedsSorting ? (IEnumerable<DeclSecurityRow>)_declSecurityTable.OrderBy((x, y) => x.Parent - y.Parent) : _declSecurityTable;
             
             foreach (DeclSecurityRow declSecurity in ordered)
             {
@@ -1567,12 +2105,6 @@ namespace System.Reflection.Metadata.Ecma335
 
         private void SerializeClassLayoutTable(BlobBuilder writer, MetadataSizes metadataSizes)
         {
-#if DEBUG
-            for (int i = 1; i < _classLayoutTable.Count; i++)
-            {
-                Debug.Assert(_classLayoutTable[i - 1].Parent < _classLayoutTable[i].Parent);
-            }
-#endif
             foreach (ClassLayoutRow classLayout in _classLayoutTable)
             {
                 writer.WriteUInt16(classLayout.PackingSize);
@@ -1583,12 +2115,6 @@ namespace System.Reflection.Metadata.Ecma335
 
         private void SerializeFieldLayoutTable(BlobBuilder writer, MetadataSizes metadataSizes)
         {
-#if DEBUG
-            for (int i = 1; i < _fieldLayoutTable.Count; i++)
-            {
-                Debug.Assert(_fieldLayoutTable[i - 1].Field < _fieldLayoutTable[i].Field);
-            }
-#endif
             foreach (FieldLayoutRow fieldLayout in _fieldLayoutTable)
             {
                 writer.WriteInt32(fieldLayout.Offset);
@@ -1613,12 +2139,12 @@ namespace System.Reflection.Metadata.Ecma335
             }
         }
 
-        private void SerializeEventTable(BlobBuilder writer, MetadataSizes metadataSizes)
+        private void SerializeEventTable(BlobBuilder writer, ImmutableArray<int> stringMap, MetadataSizes metadataSizes)
         {
             foreach (EventRow eventRow in _eventTable)
             {
                 writer.WriteUInt16(eventRow.EventFlags);
-                writer.WriteReference(SerializeHandle(eventRow.Name), metadataSizes.StringReferenceIsSmall);
+                writer.WriteReference(SerializeHandle(stringMap, eventRow.Name), metadataSizes.StringReferenceIsSmall);
                 writer.WriteReference(eventRow.EventType, metadataSizes.TypeDefOrRefCodedIndexIsSmall);
             }
         }
@@ -1632,12 +2158,12 @@ namespace System.Reflection.Metadata.Ecma335
             }
         }
 
-        private void SerializePropertyTable(BlobBuilder writer, MetadataSizes metadataSizes)
+        private void SerializePropertyTable(BlobBuilder writer, ImmutableArray<int> stringMap, MetadataSizes metadataSizes)
         {
             foreach (PropertyRow property in _propertyTable)
             {
                 writer.WriteUInt16(property.PropFlags);
-                writer.WriteReference(SerializeHandle(property.Name), metadataSizes.StringReferenceIsSmall);
+                writer.WriteReference(SerializeHandle(stringMap, property.Name), metadataSizes.StringReferenceIsSmall);
                 writer.WriteReference(SerializeHandle(property.Type), metadataSizes.BlobReferenceIsSmall);
             }
         }
@@ -1658,12 +2184,6 @@ namespace System.Reflection.Metadata.Ecma335
 
         private void SerializeMethodImplTable(BlobBuilder writer, MetadataSizes metadataSizes)
         {
-#if DEBUG
-            for (int i = 1; i < _methodImplTable.Count; i++)
-            {
-                Debug.Assert(_methodImplTable[i - 1].Class <= _methodImplTable[i].Class);
-            }
-#endif
             foreach (MethodImplRow methodImpl in _methodImplTable)
             {
                 writer.WriteReference(methodImpl.Class, metadataSizes.TypeDefReferenceIsSmall);
@@ -1672,11 +2192,11 @@ namespace System.Reflection.Metadata.Ecma335
             }
         }
 
-        private void SerializeModuleRefTable(BlobBuilder writer, MetadataSizes metadataSizes)
+        private void SerializeModuleRefTable(BlobBuilder writer, ImmutableArray<int> stringMap, MetadataSizes metadataSizes)
         {
             foreach (ModuleRefRow moduleRef in _moduleRefTable)
             {
-                writer.WriteReference(SerializeHandle(moduleRef.Name), metadataSizes.StringReferenceIsSmall);
+                writer.WriteReference(SerializeHandle(stringMap, moduleRef.Name), metadataSizes.StringReferenceIsSmall);
             }
         }
 
@@ -1688,55 +2208,44 @@ namespace System.Reflection.Metadata.Ecma335
             }
         }
 
-        private void SerializeImplMapTable(BlobBuilder writer, MetadataSizes metadataSizes)
+        private void SerializeImplMapTable(BlobBuilder writer, ImmutableArray<int> stringMap, MetadataSizes metadataSizes)
         {
-#if DEBUG
-            for (int i = 1; i < _implMapTable.Count; i++)
-            {
-                Debug.Assert(_implMapTable[i - 1].MemberForwarded < _implMapTable[i].MemberForwarded);
-            }
-#endif
             foreach (ImplMapRow implMap in _implMapTable)
             {
                 writer.WriteUInt16(implMap.MappingFlags);
                 writer.WriteReference(implMap.MemberForwarded, metadataSizes.MemberForwardedCodedIndexIsSmall);
-                writer.WriteReference(SerializeHandle(implMap.ImportName), metadataSizes.StringReferenceIsSmall);
+                writer.WriteReference(SerializeHandle(stringMap, implMap.ImportName), metadataSizes.StringReferenceIsSmall);
                 writer.WriteReference(implMap.ImportScope, metadataSizes.ModuleRefReferenceIsSmall);
             }
         }
 
         private void SerializeFieldRvaTable(BlobBuilder writer, MetadataSizes metadataSizes, int mappedFieldDataStreamRva)
         {
-#if DEBUG
-            for (int i = 1; i < _fieldRvaTable.Count; i++)
-            {
-                Debug.Assert(_fieldRvaTable[i - 1].Field < _fieldRvaTable[i].Field);
-            }
-#endif
             foreach (FieldRvaRow fieldRva in _fieldRvaTable)
             {
-                writer.WriteUInt32((uint)mappedFieldDataStreamRva + fieldRva.Offset);
+                writer.WriteInt32(mappedFieldDataStreamRva + fieldRva.Offset);
                 writer.WriteReference(fieldRva.Field, metadataSizes.FieldDefReferenceIsSmall);
             }
         }
 
-        private void SerializeAssemblyTable(BlobBuilder writer, MetadataSizes metadataSizes)
+        private void SerializeAssemblyTable(BlobBuilder writer, ImmutableArray<int> stringMap, MetadataSizes metadataSizes)
         {
-            foreach (AssemblyRow row in _assemblyTable)
+            if (_assemblyRow.HasValue)
             {
-                writer.WriteUInt32(row.HashAlgorithm);
-                writer.WriteUInt16((ushort)row.Version.Major);
-                writer.WriteUInt16((ushort)row.Version.Minor);
-                writer.WriteUInt16((ushort)row.Version.Build);
-                writer.WriteUInt16((ushort)row.Version.Revision);
-                writer.WriteUInt32(row.Flags);
-                writer.WriteReference(SerializeHandle(row.AssemblyKey), metadataSizes.BlobReferenceIsSmall);
-                writer.WriteReference(SerializeHandle(row.AssemblyName), metadataSizes.StringReferenceIsSmall);
-                writer.WriteReference(SerializeHandle(row.AssemblyCulture), metadataSizes.StringReferenceIsSmall);
+                var version = _assemblyRow.Value.Version;
+                writer.WriteUInt32(_assemblyRow.Value.HashAlgorithm);
+                writer.WriteUInt16((ushort)version.Major);
+                writer.WriteUInt16((ushort)version.Minor);
+                writer.WriteUInt16((ushort)version.Build);
+                writer.WriteUInt16((ushort)version.Revision);
+                writer.WriteUInt32(_assemblyRow.Value.Flags);
+                writer.WriteReference(SerializeHandle(_assemblyRow.Value.AssemblyKey), metadataSizes.BlobReferenceIsSmall);
+                writer.WriteReference(SerializeHandle(stringMap, _assemblyRow.Value.AssemblyName), metadataSizes.StringReferenceIsSmall);
+                writer.WriteReference(SerializeHandle(stringMap, _assemblyRow.Value.AssemblyCulture), metadataSizes.StringReferenceIsSmall);
             }
         }
 
-        private void SerializeAssemblyRefTable(BlobBuilder writer, MetadataSizes metadataSizes)
+        private void SerializeAssemblyRefTable(BlobBuilder writer, ImmutableArray<int> stringMap, MetadataSizes metadataSizes)
         {
             foreach (AssemblyRefTableRow row in _assemblyRefTable)
             {
@@ -1746,53 +2255,47 @@ namespace System.Reflection.Metadata.Ecma335
                 writer.WriteUInt16((ushort)row.Version.Revision);
                 writer.WriteUInt32(row.Flags);
                 writer.WriteReference(SerializeHandle(row.PublicKeyToken), metadataSizes.BlobReferenceIsSmall);
-                writer.WriteReference(SerializeHandle(row.Name), metadataSizes.StringReferenceIsSmall);
-                writer.WriteReference(SerializeHandle(row.Culture), metadataSizes.StringReferenceIsSmall);
+                writer.WriteReference(SerializeHandle(stringMap, row.Name), metadataSizes.StringReferenceIsSmall);
+                writer.WriteReference(SerializeHandle(stringMap, row.Culture), metadataSizes.StringReferenceIsSmall);
                 writer.WriteReference(SerializeHandle(row.HashValue), metadataSizes.BlobReferenceIsSmall);
             }
         }
 
-        private void SerializeFileTable(BlobBuilder writer, MetadataSizes metadataSizes)
+        private void SerializeFileTable(BlobBuilder writer, ImmutableArray<int> stringMap, MetadataSizes metadataSizes)
         {
             foreach (FileTableRow fileReference in _fileTable)
             {
                 writer.WriteUInt32(fileReference.Flags);
-                writer.WriteReference(SerializeHandle(fileReference.FileName), metadataSizes.StringReferenceIsSmall);
+                writer.WriteReference(SerializeHandle(stringMap, fileReference.FileName), metadataSizes.StringReferenceIsSmall);
                 writer.WriteReference(SerializeHandle(fileReference.HashValue), metadataSizes.BlobReferenceIsSmall);
             }
         }
 
-        private void SerializeExportedTypeTable(BlobBuilder writer, MetadataSizes metadataSizes)
+        private void SerializeExportedTypeTable(BlobBuilder writer, ImmutableArray<int> stringMap, MetadataSizes metadataSizes)
         {
             foreach (ExportedTypeRow exportedType in _exportedTypeTable)
             {
                 writer.WriteUInt32(exportedType.Flags);
                 writer.WriteInt32(exportedType.TypeDefId);
-                writer.WriteReference(SerializeHandle(exportedType.TypeName), metadataSizes.StringReferenceIsSmall);
-                writer.WriteReference(SerializeHandle(exportedType.TypeNamespace), metadataSizes.StringReferenceIsSmall);
+                writer.WriteReference(SerializeHandle(stringMap, exportedType.TypeName), metadataSizes.StringReferenceIsSmall);
+                writer.WriteReference(SerializeHandle(stringMap, exportedType.TypeNamespace), metadataSizes.StringReferenceIsSmall);
                 writer.WriteReference(exportedType.Implementation, metadataSizes.ImplementationCodedIndexIsSmall);
             }
         }
 
-        private void SerializeManifestResourceTable(BlobBuilder writer, MetadataSizes metadataSizes)
+        private void SerializeManifestResourceTable(BlobBuilder writer, ImmutableArray<int> stringMap, MetadataSizes metadataSizes)
         {
             foreach (ManifestResourceRow manifestResource in _manifestResourceTable)
             {
                 writer.WriteUInt32(manifestResource.Offset);
                 writer.WriteUInt32(manifestResource.Flags);
-                writer.WriteReference(SerializeHandle(manifestResource.Name), metadataSizes.StringReferenceIsSmall);
+                writer.WriteReference(SerializeHandle(stringMap, manifestResource.Name), metadataSizes.StringReferenceIsSmall);
                 writer.WriteReference(manifestResource.Implementation, metadataSizes.ImplementationCodedIndexIsSmall);
             }
         }
 
         private void SerializeNestedClassTable(BlobBuilder writer, MetadataSizes metadataSizes)
         {
-#if DEBUG
-            for (int i = 1; i < _nestedClassTable.Count; i++)
-            {
-                Debug.Assert(_nestedClassTable[i - 1].NestedClass <= _nestedClassTable[i].NestedClass);
-            }
-#endif
             foreach (NestedClassRow nestedClass in _nestedClassTable)
             {
                 writer.WriteReference(nestedClass.NestedClass, metadataSizes.TypeDefReferenceIsSmall);
@@ -1800,33 +2303,19 @@ namespace System.Reflection.Metadata.Ecma335
             }
         }
 
-        private void SerializeGenericParamTable(BlobBuilder writer, MetadataSizes metadataSizes)
-        {
-#if DEBUG
-            for (int i = 1; i < _genericParamTable.Count; i++)
-            {
-                Debug.Assert(
-                    _genericParamTable[i - 1].Owner < _genericParamTable[i].Owner ||
-                    _genericParamTable[i - 1].Owner == _genericParamTable[i].Owner && _genericParamTable[i - 1].Number < _genericParamTable[i].Number);
-            }
-#endif            
+        private void SerializeGenericParamTable(BlobBuilder writer, ImmutableArray<int> stringMap, MetadataSizes metadataSizes)
+        {         
             foreach (GenericParamRow genericParam in _genericParamTable)
             {
                 writer.WriteUInt16(genericParam.Number);
                 writer.WriteUInt16(genericParam.Flags);
                 writer.WriteReference(genericParam.Owner, metadataSizes.TypeOrMethodDefCodedIndexIsSmall);
-                writer.WriteReference(SerializeHandle(genericParam.Name), metadataSizes.StringReferenceIsSmall);
+                writer.WriteReference(SerializeHandle(stringMap, genericParam.Name), metadataSizes.StringReferenceIsSmall);
             }
         }
 
         private void SerializeGenericParamConstraintTable(BlobBuilder writer, MetadataSizes metadataSizes)
         {
-#if DEBUG
-            for (int i = 1; i < _genericParamConstraintTable.Count; i++)
-            {
-                Debug.Assert(_genericParamConstraintTable[i - 1].Owner <= _genericParamConstraintTable[i].Owner);
-            }
-#endif
             foreach (GenericParamConstraintRow genericParamConstraint in _genericParamConstraintTable)
             {
                 writer.WriteReference(genericParamConstraint.Owner, metadataSizes.GenericParamReferenceIsSmall);
@@ -1865,21 +2354,6 @@ namespace System.Reflection.Metadata.Ecma335
 
         private void SerializeLocalScopeTable(BlobBuilder writer, MetadataSizes metadataSizes)
         {
-#if DEBUG
-            // Spec: The table is required to be sorted first by Method in ascending order, then by StartOffset in ascending order, then by Length in descending order.
-            for (int i = 1; i < _localScopeTable.Count; i++)
-            {
-                Debug.Assert(_localScopeTable[i - 1].Method <= _localScopeTable[i].Method);
-                if (_localScopeTable[i - 1].Method == _localScopeTable[i].Method)
-                {
-                    Debug.Assert(_localScopeTable[i - 1].StartOffset <= _localScopeTable[i].StartOffset);
-                    if (_localScopeTable[i - 1].StartOffset == _localScopeTable[i].StartOffset)
-                    {
-                        Debug.Assert(_localScopeTable[i - 1].Length >= _localScopeTable[i].Length);
-                    }
-                }
-            }
-#endif
             foreach (var row in _localScopeTable)
             {
                 writer.WriteReference(row.Method, metadataSizes.MethodDefReferenceIsSmall);
@@ -1891,21 +2365,21 @@ namespace System.Reflection.Metadata.Ecma335
             }
         }
 
-        private void SerializeLocalVariableTable(BlobBuilder writer, MetadataSizes metadataSizes)
+        private void SerializeLocalVariableTable(BlobBuilder writer, ImmutableArray<int> stringMap, MetadataSizes metadataSizes)
         {
             foreach (var row in _localVariableTable)
             {
                 writer.WriteUInt16(row.Attributes);
                 writer.WriteUInt16(row.Index);
-                writer.WriteReference(SerializeHandle(row.Name), metadataSizes.StringReferenceIsSmall);
+                writer.WriteReference(SerializeHandle(stringMap, row.Name), metadataSizes.StringReferenceIsSmall);
             }
         }
 
-        private void SerializeLocalConstantTable(BlobBuilder writer, MetadataSizes metadataSizes)
+        private void SerializeLocalConstantTable(BlobBuilder writer, ImmutableArray<int> stringMap, MetadataSizes metadataSizes)
         {
             foreach (var row in _localConstantTable)
             {
-                writer.WriteReference(SerializeHandle(row.Name), metadataSizes.StringReferenceIsSmall);
+                writer.WriteReference(SerializeHandle(stringMap, row.Name), metadataSizes.StringReferenceIsSmall);
                 writer.WriteReference(SerializeHandle(row.Signature), metadataSizes.BlobReferenceIsSmall);
             }
         }
@@ -1921,12 +2395,6 @@ namespace System.Reflection.Metadata.Ecma335
 
         private void SerializeStateMachineMethodTable(BlobBuilder writer, MetadataSizes metadataSizes)
         {
-#if DEBUG
-            for (int i = 1; i < _stateMachineMethodTable.Count; i++)
-            {
-                Debug.Assert(_stateMachineMethodTable[i - 1].MoveNextMethod < _stateMachineMethodTable[i].MoveNextMethod);
-            }
-#endif
             foreach (var row in _stateMachineMethodTable)
             {
                 writer.WriteReference(row.MoveNextMethod, metadataSizes.MethodDefReferenceIsSmall);

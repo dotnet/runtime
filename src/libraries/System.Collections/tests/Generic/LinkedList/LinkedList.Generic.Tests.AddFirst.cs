@@ -12,7 +12,6 @@ namespace System.Collections.Tests
     /// </summary>
     public abstract partial class LinkedList_Generic_Tests<T> : ICollection_Generic_Tests<T>
     {
-
         [Fact]
         public void AddFirst_T_Tests()
         {
@@ -239,6 +238,5 @@ namespace System.Collections.Tests
             Assert.Throws<InvalidOperationException>(() => linkedList.AddFirst(tempLinkedList.Last)); //"Err_98809ahied Node that already exists in another collection throws InvalidOperationException\n"
             InitialItems_Tests(linkedList, items);
         }
-
     }
 }

@@ -9,7 +9,7 @@ namespace System.Reflection.Metadata.Ecma335
         /// <summary>
         /// Maximum number of tables that can be present in Ecma335 metadata.
         /// </summary>
-        public static readonly int TableCount = TableIndexExtensions.Count;
+        public static readonly int TableCount = 64; // headers use 64bit table masks
 
         /// <summary>
         /// Maximum number of tables that can be present in Ecma335 metadata.
@@ -232,10 +232,12 @@ namespace System.Reflection.Metadata.Ecma335
         /// </summary>
         /// <param name="type">Handle type.</param>
         /// <param name="index">Table index.</param>
-        /// <returns>True if the handle type corresponds to an Ecma335 table, false otherwise.</returns>
+        /// <returns>True if the handle type corresponds to an Ecma335 or Portable PDB table, false otherwise.</returns>
         public static bool TryGetTableIndex(HandleKind type, out TableIndex index)
         {
-            if ((int)type < TableIndexExtensions.Count)
+            // We don't have a HandleKind for PropertyMap, EventMap, MethodSemantics, *Ptr, AssemblyOS, etc. tables, 
+            // but one can get ahold of one by creating a handle from a token and getting its Kind.
+            if ((int)type < TableCount && ((1UL << (int)type) & (ulong)TableMask.AllTables) != 0)
             {
                 index = (TableIndex)type;
                 return true;

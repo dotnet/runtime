@@ -1,6 +1,6 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 2013
-VisualStudioVersion = 12.0.30723.0
+# Visual Studio 14
+VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Collections.Immutable", "src\System.Collections.Immutable.csproj", "{1DD0FF15-6234-4BD6-850A-317F05479554}"
 EndProject
@@ -10,6 +10,10 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".nuget", ".nuget", "{1CA59C
 	ProjectSection(SolutionItems) = preProject
 		..\.nuget\packages.Windows_NT.config = ..\.nuget\packages.Windows_NT.config
 	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{D7979177-679D-4E56-919B-479871FA1BDF}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{E181070D-D93C-4B03-B1EB-133CEA43503E}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -46,5 +50,9 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{1DD0FF15-6234-4BD6-850A-317F05479554} = {D7979177-679D-4E56-919B-479871FA1BDF}
+		{95DFC527-4DC1-495E-97D7-E94EE1F7140D} = {E181070D-D93C-4B03-B1EB-133CEA43503E}
 	EndGlobalSection
 EndGlobal

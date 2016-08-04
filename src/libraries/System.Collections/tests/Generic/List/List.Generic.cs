@@ -2,11 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using Xunit;
 
 namespace System.Collections.Tests
 {
@@ -42,13 +38,7 @@ namespace System.Collections.Tests
             return Convert.ToBase64String(bytes);
         }
 
-        protected override bool IsReadOnly
-        {
-            get
-            {
-                return true;
-            }
-        }
+        protected override bool IsReadOnly => true;
 
         protected override IList<string> GenericIListFactory(int setLength)
         {
@@ -60,7 +50,7 @@ namespace System.Collections.Tests
             return GenericListFactory().AsReadOnly();
         }
 
-        protected override IEnumerable<ModifyEnumerable> ModifyEnumerables { get { return new List<ModifyEnumerable>(); } }
+        protected override IEnumerable<ModifyEnumerable> ModifyEnumerables => new List<ModifyEnumerable>();
     }
 
     public class List_Generic_Tests_int_ReadOnly : List_Generic_Tests<int>
@@ -71,13 +61,7 @@ namespace System.Collections.Tests
             return rand.Next();
         }
 
-        protected override bool IsReadOnly
-        {
-            get
-            {
-                return true;
-            }
-        }
+        protected override bool IsReadOnly => true;
 
         protected override IList<int> GenericIListFactory(int setLength)
         {
@@ -88,6 +72,6 @@ namespace System.Collections.Tests
         {
             return GenericListFactory().AsReadOnly();
         }
-        protected override IEnumerable<ModifyEnumerable> ModifyEnumerables { get { return new List<ModifyEnumerable>(); } }
+        protected override IEnumerable<ModifyEnumerable> ModifyEnumerables => new List<ModifyEnumerable>();
     }
 }

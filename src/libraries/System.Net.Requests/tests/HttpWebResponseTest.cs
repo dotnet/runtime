@@ -12,13 +12,30 @@ namespace System.Net.Tests
 {
     public class HttpWebResponseTest
     {
-        [Fact]
-        public async Task ContentType_ServerResponseHasContentTypeHeader_ContentTypeIsNonEmptyString()
+        [Theory]
+        [InlineData("text/html")]
+        [InlineData("text/html; charset=utf-8")]
+        [InlineData("TypeAndNoSubType")]
+        public async Task ContentType_ServerResponseHasContentTypeHeader_ContentTypeReceivedCorrectly(string expectedContentType)
         {
-            HttpWebRequest request = WebRequest.CreateHttp(HttpTestServers.RemoteEchoServer);
-            request.Method = HttpMethod.Get.Method;
-            WebResponse response = await request.GetResponseAsync();
-            Assert.True(!string.IsNullOrEmpty(response.ContentType));
+            await LoopbackServer.CreateServerAsync(async (server, url) =>
+            {
+                HttpWebRequest request = WebRequest.CreateHttp(url);
+                request.Method = HttpMethod.Get.Method;
+                Task<WebResponse> getResponse = request.GetResponseAsync();
+                await LoopbackServer.ReadRequestAndSendResponseAsync(server,
+                        $"HTTP/1.1 200 OK\r\n" +
+                        $"Date: {DateTimeOffset.UtcNow:R}\r\n" +
+                        $"Content-Type: {expectedContentType}\r\n" +
+                        "Content-Length: 5\r\n" +
+                        "\r\n" +
+                        "12345");
+
+                using (WebResponse response = await getResponse)
+                {
+                    Assert.Equal(expectedContentType, response.ContentType);
+                }
+            });
         }
 
         [Fact]

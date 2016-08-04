@@ -14,30 +14,33 @@ namespace System.Net.Http.Functional.Tests
     // TODO: #2383 - Consolidate the use of the environment variable settings to Common/tests.
     public class DefaultCredentialsTest
     {
-        private static string DomainJoinedTestServer => TestSettings.Http.DomainJoinedHttpHost;
+        private static string DomainJoinedTestServer => Configuration.Http.DomainJoinedHttpHost;
         private static bool DomainJoinedTestsEnabled => !string.IsNullOrEmpty(DomainJoinedTestServer);
-        private static string SpecificUserName = "test";
-        private static string SpecificPassword = "Password1";
-        private static string SpecificDomain = DomainJoinedTestServer;
-        private static Uri AuthenticatedServer =
+        private static bool DomainProxyTestsEnabled => (!string.IsNullOrEmpty(Configuration.Http.DomainJoinedProxyHost)) && DomainJoinedTestsEnabled;
+
+        private static string s_specificUserName = Configuration.Security.ActiveDirectoryUserName;
+        private static string s_specificPassword = Configuration.Security.ActiveDirectoryUserPassword;
+        private static string s_specificDomain = Configuration.Security.ActiveDirectoryName;
+        private static Uri s_authenticatedServer =
             new Uri($"http://{DomainJoinedTestServer}/test/auth/negotiate/showidentity.ashx");
             
         // This test endpoint offers multiple schemes, Basic and NTLM, in that specific order. This endpoint
         // helps test that the client will use the stronger of the server proposed auth schemes and
         // not the first auth scheme.
-        private static Uri MultipleSchemesAuthenticatedServer =
+        private static Uri s_multipleSchemesAuthenticatedServer =
             new Uri($"http://{DomainJoinedTestServer}/test/auth/multipleschemes/showidentity.ashx");
 
         private readonly ITestOutputHelper _output;
         private readonly NetworkCredential _specificCredential =
-            new NetworkCredential(SpecificUserName, SpecificPassword, SpecificDomain);
+            new NetworkCredential(s_specificUserName, s_specificPassword, s_specificDomain);
 
         public DefaultCredentialsTest(ITestOutputHelper output)
         {
             _output = output;
-            _output.WriteLine(AuthenticatedServer.ToString());
+            _output.WriteLine(s_authenticatedServer.ToString());
         }
 
+        [ActiveIssue(10041)]
         [ConditionalTheory(nameof(DomainJoinedTestsEnabled))]
         [InlineData(false)]
         [InlineData(true)]
@@ -47,12 +50,13 @@ namespace System.Net.Http.Functional.Tests
             handler.UseProxy = useProxy;
 
             using (var client = new HttpClient(handler))
-            using (HttpResponseMessage response = await client.GetAsync(AuthenticatedServer))
+            using (HttpResponseMessage response = await client.GetAsync(s_authenticatedServer))
             {
                 Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
             }
         }
 
+        [ActiveIssue(10041)]
         [ConditionalTheory(nameof(DomainJoinedTestsEnabled))]
         [InlineData(false)]
         [InlineData(true)]
@@ -61,12 +65,13 @@ namespace System.Net.Http.Functional.Tests
             var handler = new HttpClientHandler { UseProxy = useProxy, UseDefaultCredentials = false };
 
             using (var client = new HttpClient(handler))
-            using (HttpResponseMessage response = await client.GetAsync(AuthenticatedServer))
+            using (HttpResponseMessage response = await client.GetAsync(s_authenticatedServer))
             {
                 Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
             }
         }
 
+        [ActiveIssue(10041)]
         [ConditionalTheory(nameof(DomainJoinedTestsEnabled))]
         [InlineData(false)]
         [InlineData(true)]
@@ -75,7 +80,7 @@ namespace System.Net.Http.Functional.Tests
             var handler = new HttpClientHandler { UseProxy = useProxy, UseDefaultCredentials = true };
 
             using (var client = new HttpClient(handler))
-            using (HttpResponseMessage response = await client.GetAsync(AuthenticatedServer))
+            using (HttpResponseMessage response = await client.GetAsync(s_authenticatedServer))
             {
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
@@ -86,6 +91,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        [ActiveIssue(10041)]
         [ConditionalTheory(nameof(DomainJoinedTestsEnabled))]
         [InlineData(false)]
         [InlineData(true)]
@@ -94,7 +100,7 @@ namespace System.Net.Http.Functional.Tests
             var handler = new HttpClientHandler { UseProxy = useProxy, UseDefaultCredentials = true };
 
             using (var client = new HttpClient(handler))
-            using (HttpResponseMessage response = await client.GetAsync(MultipleSchemesAuthenticatedServer))
+            using (HttpResponseMessage response = await client.GetAsync(s_multipleSchemesAuthenticatedServer))
             {
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
@@ -105,6 +111,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        [ActiveIssue(10041)]
         [ConditionalTheory(nameof(DomainJoinedTestsEnabled))]
         [InlineData(false)]
         [InlineData(true)]
@@ -116,15 +123,16 @@ namespace System.Net.Http.Functional.Tests
                 Credentials = _specificCredential };
 
             using (var client = new HttpClient(handler))
-            using (HttpResponseMessage response = await client.GetAsync(AuthenticatedServer))
+            using (HttpResponseMessage response = await client.GetAsync(s_authenticatedServer))
             {
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
                 
                 string responseBody = await response.Content.ReadAsStringAsync();
-                VerifyAuthentication(responseBody, true, SpecificDomain + "\\" + SpecificUserName);
+                VerifyAuthentication(responseBody, true, s_specificDomain + "\\" + s_specificUserName);
             }
         }
 
+        [ActiveIssue(10041)]
         [ConditionalTheory(nameof(DomainJoinedTestsEnabled))]
         [InlineData(false)]
         [InlineData(true)]
@@ -138,7 +146,7 @@ namespace System.Net.Http.Functional.Tests
             };
 
             using (var client = new HttpClient(handler))
-            using (HttpResponseMessage response = await client.GetAsync(AuthenticatedServer))
+            using (HttpResponseMessage response = await client.GetAsync(s_authenticatedServer))
             {
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
@@ -149,33 +157,35 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [ConditionalFact(nameof(DomainJoinedTestsEnabled))]
+        [ActiveIssue(10041)]
+        [ConditionalFact(nameof(DomainProxyTestsEnabled))]
         public async Task Proxy_UseAuthenticatedProxyWithNoCredentials_ProxyAuthenticationRequired()
         {
             var handler = new HttpClientHandler();
             handler.Proxy = new AuthenticatedProxy(null);
 
             using (var client = new HttpClient(handler))
-            using (HttpResponseMessage response = await client.GetAsync(HttpTestServers.RemoteEchoServer))
+            using (HttpResponseMessage response = await client.GetAsync(Configuration.Http.RemoteEchoServer))
             {
                 Assert.Equal(HttpStatusCode.ProxyAuthenticationRequired, response.StatusCode);
             }
         }
 
-        [ConditionalFact(nameof(DomainJoinedTestsEnabled))]
+        [ActiveIssue(10041)]
+        [ConditionalFact(nameof(DomainProxyTestsEnabled))]
         public async Task Proxy_UseAuthenticatedProxyWithDefaultCredentials_OK()
         {
             var handler = new HttpClientHandler();
             handler.Proxy = new AuthenticatedProxy(CredentialCache.DefaultCredentials);
 
             using (var client = new HttpClient(handler))
-            using (HttpResponseMessage response = await client.GetAsync(HttpTestServers.RemoteEchoServer))
+            using (HttpResponseMessage response = await client.GetAsync(Configuration.Http.RemoteEchoServer))
             {
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
             }
         }
-
-        [ConditionalFact(nameof(DomainJoinedTestsEnabled))]
+        
+        [ConditionalFact(nameof(DomainProxyTestsEnabled))]
         public async Task Proxy_UseAuthenticatedProxyWithWrappedDefaultCredentials_OK()
         {
             ICredentials wrappedCreds = new CredentialWrapper
@@ -187,7 +197,7 @@ namespace System.Net.Http.Functional.Tests
             handler.Proxy = new AuthenticatedProxy(wrappedCreds);
 
             using (var client = new HttpClient(handler))
-            using (HttpResponseMessage response = await client.GetAsync(HttpTestServers.RemoteEchoServer))
+            using (HttpResponseMessage response = await client.GetAsync(Configuration.Http.RemoteEchoServer))
             {
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
             }
@@ -234,14 +244,14 @@ namespace System.Net.Http.Functional.Tests
             {
                 _credentials = credentials;
 
-                string host = TestSettings.Http.DomainJoinedProxyHost;
-                Assert.False(string.IsNullOrEmpty(host), "TestSettings.Http.DomainJoinedProxyHost must specify proxy hostname");
+                string host = Configuration.Http.DomainJoinedProxyHost;
+                Assert.False(string.IsNullOrEmpty(host), "DomainJoinedProxyHost must specify proxy hostname");
 
-                string portString = TestSettings.Http.DomainJoinedProxyPort;
-                Assert.False(string.IsNullOrEmpty(portString), "TestSettings.Http.DomainJoinedProxyPort must specify proxy port number");
+                string portString = Configuration.Http.DomainJoinedProxyPort;
+                Assert.False(string.IsNullOrEmpty(portString), "DomainJoinedProxyPort must specify proxy port number");
 
                 int port;
-                Assert.True(int.TryParse(portString, out port), "TestSettings.Http.DomainJoinedProxyPort must be a valid port number");
+                Assert.True(int.TryParse(portString, out port), "DomainJoinedProxyPort must be a valid port number");
 
                 _proxyUri = new Uri(string.Format("http://{0}:{1}", host, port));
             }

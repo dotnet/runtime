@@ -865,8 +865,10 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             using (var microsoftDotCom = new X509Certificate2(TestData.MicrosoftDotComSslCertBytes))
             using (var microsoftDotComIssuer = new X509Certificate2(TestData.MicrosoftDotComIssuerBytes))
             using (var microsoftDotComRoot = new X509Certificate2(TestData.MicrosoftDotComRootBytes))
-            using (X509Chain chain = new X509Chain())
+            using (var chainHolder = new ChainHolder())
             {
+                X509Chain chain = chainHolder.Chain;
+
                 chain.ChainPolicy.ExtraStore.Add(microsoftDotComRoot);
                 chain.ChainPolicy.ExtraStore.Add(microsoftDotComIssuer);
                 chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
@@ -1272,8 +1274,10 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             using (var microsoftDotCom = new X509Certificate2(TestData.MicrosoftDotComSslCertBytes))
             using (var microsoftDotComIssuer = new X509Certificate2(TestData.MicrosoftDotComIssuerBytes))
             using (var microsoftDotComRoot = new X509Certificate2(TestData.MicrosoftDotComRootBytes))
-            using (X509Chain chain = new X509Chain())
+            using (var chainHolder = new ChainHolder())
             {
+                X509Chain chain = chainHolder.Chain;
+
                 chain.ChainPolicy.ExtraStore.Add(microsoftDotComRoot);
                 chain.ChainPolicy.ExtraStore.Add(microsoftDotComIssuer);
                 chain.ChainPolicy.VerificationFlags = X509VerificationFlags.AllowUnknownCertificateAuthority;

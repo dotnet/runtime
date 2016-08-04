@@ -14,7 +14,7 @@ namespace Internal.Cryptography.Pal
     /// <summary>
     /// Provides an implementation of an X509Store which is backed by files in a directory.
     /// </summary>
-    internal class DirectoryBasedStoreProvider : IStorePal
+    internal sealed class DirectoryBasedStoreProvider : IStorePal
     {
         // {thumbprint}.1.pfx to {thumbprint}.9.pfx
         private const int MaxSaveAttempts = 9;
@@ -82,17 +82,7 @@ namespace Internal.Cryptography.Pal
         {
         }
 
-        public byte[] Export(X509ContentType contentType, string password)
-        {
-            // Export is for X509Certificate2Collections in their IStorePal guise,
-            // if someone wanted to export whole stores they'd need to do
-            // store.Certificates.Export(...), which would end up in the
-            // CollectionBackedStoreProvider.
-            Debug.Fail("Export was unexpected on a DirectoryBasedStore");
-            throw new InvalidOperationException();
-        }
-
-        public void CopyTo(X509Certificate2Collection collection)
+        public void CloneTo(X509Certificate2Collection collection)
         {
             Debug.Assert(collection != null);
 

@@ -184,7 +184,7 @@
     <value>Unknown PE Magic value.</value>
   </data>
   <data name="MetadataTableNotSorted" xml:space="preserve">
-    <value>Metadata table 0x{0:x2} not sorted.</value>
+    <value>Metadata table {0} not sorted.</value>
   </data>
   <data name="AssemblyTableInvalidNumberOfRows" xml:space="preserve">
     <value>Invalid number of rows of Assembly table: {0}.</value>
@@ -333,6 +333,9 @@
   <data name="TooManySubnamespaces" xml:space="preserve">
     <value>There are too many subnamespaces.</value>
   </data>
+  <data name="TooManyExceptionRegions" xml:space="preserve">
+    <value>There are too many exception regions.</value>
+  </data>
   <data name="SequencePointValueOutOfRange" xml:space="preserve">
     <value>Sequence point value is out of range.</value>
   </data>
@@ -347,6 +350,9 @@
   </data>
   <data name="UnexpectedCodeViewDataSignature" xml:space="preserve">
     <value>Unexpected CodeView data signature value.</value>
+  </data>
+  <data name="UnexpectedEmbeddedPortablePdbDataSignature" xml:space="preserve">
+    <value>Unexpected Embedded Portable PDB data signature value.</value>
   </data>
   <data name="InvalidPathPadding" xml:space="preserve">
     <value>The path must be padded with NUL characters.</value>
@@ -390,14 +396,23 @@
   <data name="LabelDoesntBelongToBuilder" xml:space="preserve">
     <value>Specified label doesn't belong to the current builder.</value>
   </data>
-  <data name="BranchBuilderNotAvailable" xml:space="preserve">
-    <value>Can't emit a branch, the current encoder not created with a branch builder.</value>
+  <data name="ControlFlowBuilderNotAvailable" xml:space="preserve">
+    <value>Can't emit a branch or exception region, the current encoder not created with a control flow builder.</value>
   </data>
   <data name="BaseReaderMustBeFullMetadataReader" xml:space="preserve">
     <value>Base reader must be a full metadata reader.</value>
   </data>
+  <data name="ModuleAlreadyAdded" xml:space="preserve">
+    <value>Module already added.</value>
+  </data>
+  <data name="AssemblyAlreadyAdded" xml:space="preserve">
+    <value>Assembly already added.</value>
+  </data>
   <data name="ExpectedListOfSize" xml:space="preserve">
     <value>Expected list of size {0}.</value>
+  </data>
+  <data name="ExpectedArrayOfSize" xml:space="preserve">
+    <value>Expected array of size {0}.</value>
   </data>
   <data name="ExpectedNonEmptyList" xml:space="preserve">
     <value>Expected non-empty list.</value>
@@ -417,10 +432,43 @@
   <data name="HashTooShort" xml:space="preserve">
     <value>Hash must be at least {0}B long.</value>
   </data>
+  <data name="UnexpectedArrayLength" xml:space="preserve">
+    <value>Expected array of length {0}.</value>
+  </data>
   <data name="ValueMustBeMultiple" xml:space="preserve">
     <value>Value must be multiple of {0}.</value>
   </data>
   <data name="MustNotReturnNull" xml:space="preserve">
     <value>{0} must not return null.</value>
+  </data>
+  <data name="MetadataVersionTooLong" xml:space="preserve">
+    <value>Metadata version too long.</value>
+  </data>
+  <data name="RowCountMustBeZero" xml:space="preserve">
+    <value>Row count must be zero for table #{0}.</value>
+  </data>
+  <data name="RowCountOutOfRange" xml:space="preserve">
+    <value>Row count specified for table index {0} is out of allowed range.</value>
+  </data>
+  <data name="SizeMismatch" xml:space="preserve">
+    <value>Declared size doesn't correspond to the actual size.</value>
+  </data>
+  <data name="DataTooBig" xml:space="preserve">
+    <value>Data too big to fit in memory.</value>
+  </data>
+  <data name="UnsupportedFormatVersion" xml:space="preserve">
+    <value>Unsupported format version: {0}</value>
+  </data>
+  <data name="DistanceBetweenInstructionAndLabelTooBig" xml:space="preserve">
+    <value>The distance between the instruction {0} (offset {1}) and the target label doesn't fit the operand size: {2}</value>
+  </data>
+  <data name="LabelNotMarked" xml:space="preserve">
+    <value>Label {0} has not been marked.</value>
+  </data>
+  <data name="MethodHasNoExceptionRegions" xml:space="preserve">
+    <value>Method body was created with no exception regions.</value>
+  </data>
+  <data name="InvalidExceptionRegionBounds" xml:space="preserve">
+    <value>Invalid exception region bounds: start offset ({0}) is greater than end offset ({1}).</value>
   </data>
 </root>

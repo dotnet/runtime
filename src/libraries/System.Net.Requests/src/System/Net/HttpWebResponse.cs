@@ -55,8 +55,34 @@ namespace System.Net
             get
             {
                 CheckDisposed();
-                MediaTypeHeaderValue contentType = _httpResponseMessage.Content.Headers.ContentType;
-                return contentType != null ? contentType.ToString() : string.Empty;
+
+                // We use TryGetValues() instead of the strongly type Headers.ContentType property so that
+                // we return a string regardless of it being fully RFC conformant. This matches current
+                // .NET Framework behavior.
+                IEnumerable<string> values;
+                if (_httpResponseMessage.Content.Headers.TryGetValues("Content-Type", out values))
+                {
+                    // In most cases, there is only one media type value as per RFC. But for completeness, we
+                    // return all values in cases of overly malformed strings.
+                    var builder = new StringBuilder();
+                    int ndx = 0;
+                    foreach (string value in values)
+                    {
+                        if (ndx > 0)
+                        {
+                            builder.Append(',');
+                        }
+                        
+                        builder.Append(value);
+                        ndx++;
+                    }
+
+                    return builder.ToString();
+                }
+                else
+                {
+                    return string.Empty;
+                }
             }
         }
 

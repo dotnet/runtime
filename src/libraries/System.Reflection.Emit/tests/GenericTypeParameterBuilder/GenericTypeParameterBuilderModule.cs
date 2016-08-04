@@ -2,9 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Reflection;
-using System.Reflection.Emit;
 using Xunit;
 
 namespace System.Reflection.Emit.Tests
@@ -12,28 +9,14 @@ namespace System.Reflection.Emit.Tests
     public class GenericTypeParameterBuilderModule
     {
         [Fact]
-        public void TestModuleProperty()
+        public void Module()
         {
-            AssemblyName myAsmName = new AssemblyName("GenericEmitExample1");
-            AssemblyBuilder myAssembly = AssemblyBuilder.DefineDynamicAssembly(myAsmName, AssemblyBuilderAccess.Run);
-            ModuleBuilder myModule = TestLibrary.Utilities.GetModuleBuilder(myAssembly, myAsmName.Name);
+            ModuleBuilder module = Helpers.DynamicModule();
+            TypeBuilder type = module.DefineType("TestType", TypeAttributes.Public);
+            string[] typeParamNames = new string[] { "TFirst" };
+            GenericTypeParameterBuilder[] typeParams = type.DefineGenericParameters(typeParamNames);
 
-            Type baseType = typeof(ExampleBase);
-
-            TypeBuilder myType = myModule.DefineType("Sample", TypeAttributes.Public);
-
-            string[] typeParamNames = { "TFirst" };
-            GenericTypeParameterBuilder[] typeParams = myType.DefineGenericParameters(typeParamNames);
-
-            GenericTypeParameterBuilder TFirst = typeParams[0];
-
-
-            Module expectedValue = myModule;
-            Module actualValue;
-
-            actualValue = TFirst.Module;
-
-            Assert.Equal(expectedValue, actualValue);
+            Assert.Equal(module, typeParams[0].Module);
         }
     }
 }

@@ -22,7 +22,12 @@ namespace System.Diagnostics
 
         internal static void ValidateDebuggerTypeProxyProperties(Type type, object obj)
         {
-            Type proxyType = GetProxyType(type);
+            ValidateDebuggerTypeProxyProperties(type, type.GenericTypeArguments, obj);
+        }
+
+        internal static void ValidateDebuggerTypeProxyProperties(Type type, Type[] genericTypeArguments, object obj)
+        {
+            Type proxyType = GetProxyType(type, genericTypeArguments);
 
             // Create an instance of the proxy type, and make sure we can access all of the instance properties 
             // on the type without exception
@@ -33,12 +38,11 @@ namespace System.Diagnostics
             }
         }
 
-        internal static Type GetProxyType(object obj)
-        {
-            return GetProxyType(obj.GetType());
-        }
+        public static Type GetProxyType(object obj) => GetProxyType(obj.GetType());
 
-        private static Type GetProxyType(Type type)
+        public static Type GetProxyType(Type type) => GetProxyType(type, type.GenericTypeArguments);
+
+        private static Type GetProxyType(Type type, Type[] genericTypeArguments)
         {
             // Get the DebuggerTypeProxyAttibute for obj
             var attrs =
@@ -52,17 +56,12 @@ namespace System.Diagnostics
             }
             CustomAttributeData cad = attrs[0];
 
-            // Get the proxy type.  As written, this only works if the proxy and the target type
-            // have the same generic parameters, e.g. Dictionary<TKey,TValue> and Proxy<TKey,TValue>.
-            // It will not work with, for example, Dictionary<TKey,TValue>.Keys and Proxy<TKey>,
-            // as the former has two generic parameters and the latter only one.
             Type proxyType = cad.ConstructorArguments[0].ArgumentType == typeof(Type) ?
                 (Type)cad.ConstructorArguments[0].Value :
                 Type.GetType((string)cad.ConstructorArguments[0].Value);
-            var genericArguments = type.GenericTypeArguments;
-            if (genericArguments.Length > 0)
+            if (genericTypeArguments.Length > 0)
             {
-                proxyType = proxyType.MakeGenericType(genericArguments);
+                proxyType = proxyType.MakeGenericType(genericTypeArguments);
             }
 
             return proxyType;
@@ -154,6 +153,5 @@ namespace System.Diagnostics
             }
             return null;
         }
-
     }
 }

@@ -9,6 +9,7 @@
     <ProjectReference Include="..\src\System.Runtime.Loader.builds"/>
     
     <NotSupportedOnTargetFramework Include="net462" />
+    <NotSupportedOnTargetFramework Include="$(AllXamarinFrameworks)" />
   </ItemGroup>
   
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />

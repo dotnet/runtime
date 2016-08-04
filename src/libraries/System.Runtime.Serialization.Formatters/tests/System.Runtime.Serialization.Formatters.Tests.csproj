@@ -8,13 +8,13 @@
     <OutputType>Library</OutputType>
     <AssemblyName>System.Runtime.Serialization.Formatters.Tests</AssemblyName>
     <RootNamespace>System.Runtime.Serialization.Formatters.Tests</RootNamespace>
-    <IncludePerformanceTests>true</IncludePerformanceTests>
+    <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
   <ItemGroup>
-    <Compile Include="BasicTests.cs" /> 
+    <Compile Include="BasicTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />
