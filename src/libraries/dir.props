@@ -122,11 +122,11 @@
     </ValidationPattern>
     <ValidationPattern Include="xUnitExtensionsVersions">
       <IdentityRegex>^(?i)Microsoft\.xunit\.netcore\.extensions$</IdentityRegex>
-      <ExpectedVersion>1.0.0-prerelease-00508-01</ExpectedVersion>
+      <ExpectedVersion>1.0.0-prerelease-00704-03</ExpectedVersion>
     </ValidationPattern>
     <ValidationPattern Include="buildToolsTestSuiteVersions">
       <IdentityRegex>^(?i)Microsoft\.DotNet\.BuildTools\.TestSuite$</IdentityRegex>
-      <ExpectedVersion>1.0.0-prerelease-00629-04</ExpectedVersion>
+      <ExpectedVersion>1.0.0-prerelease-00704-03</ExpectedVersion>
     </ValidationPattern>
     <ValidationPattern Include="uwpRunnerVersion">
       <IdentityRegex>^(?i)microsoft\.xunit\.runner\.uwp$</IdentityRegex>
