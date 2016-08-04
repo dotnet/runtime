@@ -42,7 +42,7 @@ namespace System.Xml.Serialization
     /// </devdoc>
     public class XmlSerializer
     {
-        public bool SerializationViaReflection { get; private set; } = true;
+        public bool SerializationViaReflection { get; private set; } = false;
 
         private TempAssembly _tempAssembly;
         private bool _typedSerializer;
