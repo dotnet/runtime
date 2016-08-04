@@ -15,7 +15,7 @@ namespace Microsoft.DotNet.Host.Build
     {
         public static readonly string[] ProjectsToPack  = new string[]
         {
-            "Microsoft.Extensions.PlatformAbstractions",            
+            "Microsoft.DotNet.PlatformAbstractions",            
             "Microsoft.Extensions.DependencyModel",
         };
 
