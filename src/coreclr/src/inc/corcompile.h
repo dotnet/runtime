@@ -1784,7 +1784,8 @@ class ICorCompileInfo
             SigBuilder * pSigBuilder,
             LPVOID encodeContext,
             ENCODEMODULE_CALLBACK pfnEncodeModule,
-            CORINFO_RESOLVED_TOKEN * pResolvedToken = NULL) = 0;
+            CORINFO_RESOLVED_TOKEN * pResolvedToken = NULL,
+            BOOL fEncodeUsingResolvedTokenSpecStreams = FALSE) = 0;
 
 
     // Encode generic dictionary signature

@@ -225,6 +225,32 @@ public struct MyStruct : IDisposable
 
 public class MyGeneric<T,U>
 {
+#if V2
+    public object m_unused1;
+    public string m_Field1;
+    
+    public object m_unused2;
+    public T m_Field2;
+    
+    public object m_unused3;
+    public List<T> m_Field3;
+    
+    static public object m_unused4;
+    static public KeyValuePair<T, int> m_Field4;
+    
+    static public object m_unused5;
+    static public int m_Field5;
+    
+    public object m_unused6;
+    static public object m_unused7;
+#else
+    public string m_Field1;
+    public T m_Field2;
+    public List<T> m_Field3;
+    static public KeyValuePair<T, int> m_Field4;
+    static public int m_Field5;
+#endif
+
     [ThreadStatic] public static Object ThreadStatic;
 
     public MyGeneric()
