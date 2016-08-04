@@ -7849,12 +7849,11 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 		if (uses_handles) {
 			if (MONO_TYPE_IS_REFERENCE (sig->ret)) {
 				// if (ret != NULL_HANDLE) {
-				//   ret = *ret
+				//   ret = MONO_HANDLE_RAW(ret)
 				// }
-				// FIXME: Do this properly
 				mono_mb_emit_byte (mb, CEE_DUP);
 				int pos = mono_mb_emit_branch (mb, CEE_BRFALSE);
-				mono_mb_emit_byte (mb, CEE_CONV_I);
+				mono_mb_emit_ldflda (mb, MONO_HANDLE_PAYLOAD_OFFSET (MonoObject));
 				mono_mb_emit_byte (mb, CEE_LDIND_REF);
 				mono_mb_patch_branch (mb, pos);
 			}

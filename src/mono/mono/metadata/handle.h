@@ -196,6 +196,7 @@ void mono_handle_verify (MonoRawHandle handle);
  * typedef MonoObjectHandlePayload* MonoObjectHandle;
  */
 #define TYPED_HANDLE_DECL(TYPE) typedef struct { TYPE *__obj; } TYPED_HANDLE_PAYLOAD_NAME (TYPE) ; typedef TYPED_HANDLE_PAYLOAD_NAME (TYPE) * TYPED_HANDLE_NAME (TYPE)
+#define MONO_HANDLE_PAYLOAD_OFFSET(TYPE) MONO_STRUCT_OFFSET(TYPED_HANDLE_PAYLOAD_NAME (TYPE), __obj)
 
 #define MONO_HANDLE_INIT ((void*) mono_null_value_handle)
 #define NULL_HANDLE mono_null_value_handle
