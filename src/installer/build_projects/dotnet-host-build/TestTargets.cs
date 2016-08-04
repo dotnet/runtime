@@ -16,7 +16,8 @@ namespace Microsoft.DotNet.Host.Build
     {
         public static readonly string[] TestProjects = new[]
         {
-            "HostActivationTests"
+            "HostActivationTests",
+            "Microsoft.Extensions.DependencyModel.Tests"
         };
 
         [Target(

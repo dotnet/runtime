@@ -13,6 +13,12 @@ namespace Microsoft.DotNet.Host.Build
 {
     public static class PackageTargets
     {
+        public static readonly string[] ProjectsToPack  = new string[]
+        {
+            "Microsoft.DotNet.PlatformAbstractions",            
+            "Microsoft.Extensions.DependencyModel",
+        };
+
         [Target(
             nameof(PackageTargets.CopySharedHostLayout),
             nameof(PackageTargets.CopyHostFxrLayout),
@@ -29,6 +35,7 @@ namespace Microsoft.DotNet.Host.Build
             nameof(PackageTargets.GenerateVersionBadge),
             nameof(PackageTargets.GenerateCompressedFile),
             nameof(InstallerTargets.GenerateInstaller),
+            nameof(PackageTargets.GenerateNugetPackages),
             nameof(InstallerTargets.TestInstaller))]
         [Environment("DOTNET_BUILD_SKIP_PACKAGING", null, "0", "false")]
         public static BuildTargetResult Package(BuildTargetContext c)
@@ -181,6 +188,37 @@ namespace Microsoft.DotNet.Host.Build
             CreateTarBallFromDirectory(
                 c.BuildContext.Get<string>("SharedFrameworkPublishRoot"), 
                 c.BuildContext.Get<string>("SharedFrameworkCompressedFile"));
+            return c.Success();
+        }
+
+        [Target]
+        public static BuildTargetResult GenerateNugetPackages(BuildTargetContext c)
+        {
+            var versionSuffix = c.BuildContext.Get<BuildVersion>("BuildVersion").CommitCountString;
+            var configuration = c.BuildContext.Get<string>("Configuration");
+
+            var dotnet = DotNetCli.Stage0;
+
+            var packagingBuildBasePath = Path.Combine(Dirs.Intermediate, "forPackaging");
+
+            FS.Mkdirp(Dirs.Packages);
+
+            foreach (var projectName in ProjectsToPack)
+            {
+                var projectFile = Path.Combine(Dirs.RepoRoot, "src", projectName, "project.json");
+
+                dotnet.Pack(
+                    projectFile,
+                    "--no-build",
+                    "--serviceable",
+                    "--build-base-path", packagingBuildBasePath,
+                    "--output", Dirs.Packages,
+                    "--configuration", configuration,
+                    "--version-suffix", versionSuffix)
+                    .Execute()
+                    .EnsureSuccessful();
+            }
+
             return c.Success();
         }
 

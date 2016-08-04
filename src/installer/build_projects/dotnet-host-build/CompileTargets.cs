@@ -44,6 +44,7 @@ namespace Microsoft.DotNet.Host.Build
         [Target(nameof(PrepareTargets.Init),
             nameof(CompileCoreHost),
             nameof(PackagePkgProjects),
+            nameof(BuildProjectsForNuGetPackages),
             nameof(PublishSharedFrameworkAndSharedHost))]
         public static BuildTargetResult Compile(BuildTargetContext c)
         {
@@ -249,6 +250,34 @@ namespace Microsoft.DotNet.Host.Build
                 File.Copy(Path.Combine(cmakeOut, "cli", "dll", HostArtifactNames.HostPolicyBaseName), Path.Combine(Dirs.CorehostLatest, HostArtifactNames.HostPolicyBaseName), overwrite: true);
                 File.Copy(Path.Combine(cmakeOut, "cli", "fxr", HostArtifactNames.DotnetHostFxrBaseName), Path.Combine(Dirs.CorehostLatest, HostArtifactNames.DotnetHostFxrBaseName), overwrite: true);
             }
+            return c.Success();
+        }
+
+        [Target]
+        public static BuildTargetResult BuildProjectsForNuGetPackages(BuildTargetContext c)
+        {
+            if (CurrentPlatform.IsWindows)
+            {
+                var configuration = c.BuildContext.Get<string>("Configuration");
+
+                // build projects for nuget packages
+                var packagingOutputDir = Path.Combine(Dirs.Intermediate, "forPackaging");
+                Mkdirp(packagingOutputDir);
+                foreach (var project in PackageTargets.ProjectsToPack)
+                {
+                    // Just build them, we'll pack later
+                    var packBuildResult = DotNetCli.Stage0.Build(
+                        "--build-base-path",
+                        packagingOutputDir,
+                        "--configuration",
+                        configuration,
+                        Path.Combine(c.BuildContext.BuildDirectory, "src", project))
+                        .Execute();
+
+                    packBuildResult.EnsureSuccessful();
+                }
+            }
+
             return c.Success();
         }
 
