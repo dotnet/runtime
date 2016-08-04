@@ -7770,6 +7770,10 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 		gboolean uses_handles;
 		(void) mono_lookup_internal_call_full (method, &uses_handles);
 
+
+		/* If it uses handles and MonoError, it had better check exceptions */
+		g_assert (!uses_handles || check_exceptions);
+
 		if (uses_handles) {
 			MonoMethodSignature *ret;
 
