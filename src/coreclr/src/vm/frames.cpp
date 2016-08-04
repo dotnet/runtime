@@ -2068,6 +2068,7 @@ VOID InlinedCallFrame::Init()
     m_pCallerReturnAddress = NULL;
 }
 
+#ifdef FEATURE_INCLUDE_ALL_INTERFACES 
 #if defined(_WIN64) && !defined(FEATURE_PAL)
 
 EXTERN_C void PInvokeStubForHostInner(DWORD dwStackSize, LPVOID pStackFrame, LPVOID pTarget);
@@ -2148,7 +2149,7 @@ void __stdcall PInvokeStubForHostWorker(DWORD dwStackSize, LPVOID pStackFrame, L
     }
 }
 #endif // _WIN64 && !FEATURE_PAL
-
+#endif // FEATURE_INCLUDE_ALL_INTERFACES 
 
 
 void UnmanagedToManagedFrame::ExceptionUnwind()

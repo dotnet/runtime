@@ -72,7 +72,6 @@ LNoFloatingPoint
         ldp     x6, x7, [x9, #48]
         ldr     x8, [x9, #64]
 
-        ;; ARM64TODO: => see if anything special needs to be done for remoting
         ;; call pTarget
         ldr     x9, [x19,#CallDescrData__pTarget]
         blr     x9
