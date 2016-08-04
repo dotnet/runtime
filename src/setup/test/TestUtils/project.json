@@ -27,7 +27,8 @@
     "xunit": "2.1.0",
     "xunit.netcore.extensions": "1.0.0-prerelease-00206",
     "dotnet-test-xunit": "1.0.0-rc2-192208-24",
-    "System.Runtime.InteropServices.RuntimeInformation": "4.0.0"
+    "System.Runtime.InteropServices.RuntimeInformation": "4.0.0",
+    "Microsoft.DotNet.InternalAbstractions": "1.0.0-rc2-002702"
   },
   "frameworks": {
     "netcoreapp1.0": {
