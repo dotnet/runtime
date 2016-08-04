@@ -1,14 +1,14 @@
 {
   "dependencies": {
-    "Microsoft.NETCore.Platforms": "1.0.2-beta-devapi-24401-01",
-    "System.Collections": "4.0.12-beta-devapi-24401-01",
-    "System.IO": "4.2.0-beta-devapi-24401-01",
-    "System.Runtime": "4.2.0-beta-devapi-24401-01",
-    "System.Runtime.Extensions": "4.1.1-beta-devapi-24401-01",
-    "System.Text.Encoding": "4.0.12-beta-devapi-24401-01",
-    "System.Threading": "4.0.12-beta-devapi-24401-01",
-    "System.Threading.Tasks": "4.0.12-beta-devapi-24401-01",
-    "System.Xml.ReaderWriter": "4.1.0-beta-devapi-24401-01"
+    "Microsoft.NETCore.Platforms": "1.0.2-beta-devapi-24404-02",
+    "System.Collections": "4.1.0-beta-devapi-24404-02",
+    "System.IO": "4.2.0-beta-devapi-24404-02",
+    "System.Runtime": "4.2.0-beta-devapi-24404-02",
+    "System.Runtime.Extensions": "4.2.0-beta-devapi-24404-02",
+    "System.Text.Encoding": "4.0.12-beta-devapi-24404-02",
+    "System.Threading": "4.0.12-beta-devapi-24404-02",
+    "System.Threading.Tasks": "4.0.12-beta-devapi-24404-02",
+    "System.Xml.ReaderWriter": "4.1.0-beta-devapi-24404-02"
   },
   "frameworks": {
     "netstandard1.3": {}
