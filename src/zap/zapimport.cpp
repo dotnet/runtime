@@ -1808,6 +1808,7 @@ ZapImport * ZapImportTable::GetDictionaryLookupCell(CORCOMPILE_FIXUP_BLOB_KIND k
     switch (pLookup->runtimeLookupFlags)
     {
     case READYTORUN_FIXUP_TypeHandle:
+    case READYTORUN_FIXUP_DeclaringTypeHandle:
         {
             if (pResolvedToken->pTypeSpec == NULL)
             {
@@ -1815,7 +1816,17 @@ ZapImport * ZapImportTable::GetDictionaryLookupCell(CORCOMPILE_FIXUP_BLOB_KIND k
                 ThrowHR(E_NOTIMPL);
             }
 
-            sigBuilder.AppendData(ENCODE_TYPE_HANDLE);
+            if (pLookup->runtimeLookupFlags == READYTORUN_FIXUP_DeclaringTypeHandle)
+            {
+                _ASSERTE(pLookup->runtimeLookupArgs != NULL);
+                sigBuilder.AppendData(ENCODE_DECLARINGTYPE_HANDLE);
+                GetCompileInfo()->EncodeClass(m_pImage->GetModuleHandle(), (CORINFO_CLASS_HANDLE)pLookup->runtimeLookupArgs, &sigBuilder, NULL, NULL);
+            }
+            else
+            {
+                sigBuilder.AppendData(ENCODE_TYPE_HANDLE);
+            }
+
             if (pResolvedToken->tokenType == CORINFO_TOKENKIND_Newarr)
                 sigBuilder.AppendElementType(ELEMENT_TYPE_SZARRAY);
             sigBuilder.AppendBlob((PVOID)pResolvedToken->pTypeSpec, pResolvedToken->cbTypeSpec);
@@ -1827,7 +1838,7 @@ ZapImport * ZapImportTable::GetDictionaryLookupCell(CORCOMPILE_FIXUP_BLOB_KIND k
         break;
 
     case READYTORUN_FIXUP_MethodEntry:
-        EncodeMethod(ENCODE_METHOD_ENTRY, pResolvedToken->hMethod, &sigBuilder, pResolvedToken, NULL, TRUE);
+        EncodeMethod(ENCODE_METHOD_ENTRY, pResolvedToken->hMethod, &sigBuilder, pResolvedToken, (CORINFO_RESOLVED_TOKEN*)pLookup->runtimeLookupArgs, TRUE);
         break;
 
     case READYTORUN_FIXUP_VirtualEntry:
@@ -1837,8 +1848,6 @@ ZapImport * ZapImportTable::GetDictionaryLookupCell(CORCOMPILE_FIXUP_BLOB_KIND k
     case READYTORUN_FIXUP_FieldHandle:
         EncodeField(ENCODE_FIELD_HANDLE, pResolvedToken->hField, &sigBuilder, pResolvedToken, TRUE);
         break;
-
-        // TODO: support for the rest of the dictionary signature kinds
 
     default:
         _ASSERTE(!"Invalid R2R fixup kind!");
