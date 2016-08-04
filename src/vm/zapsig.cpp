@@ -1015,7 +1015,13 @@ FieldDesc * ZapSig::DecodeField(Module *pReferencingModule,
                                 PCCOR_SIGNATURE pBuffer,
                                 TypeHandle *ppTH /*=NULL*/)
 {
-    STANDARD_VM_CONTRACT;
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
 
     SigTypeContext typeContext;    // empty context is OK: encoding should not contain type variables.
 
