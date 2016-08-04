@@ -3773,7 +3773,7 @@ ClrDataAccess::GetJumpThunkTarget(T_CONTEXT *ctx, CLRDATA_ADDRESS *targetIP, CLR
     if (ctx == NULL || targetIP == NULL || targetMD == NULL)
         return E_INVALIDARG;
     
-#ifdef _WIN64
+#ifdef _TARGET_AMD64_
     SOSDacEnter();
     
     if (!GetAnyThunkTarget(ctx, targetIP, targetMD))
