@@ -689,11 +689,12 @@ Dictionary::PopulateEntry(
         CORCOMPILE_FIXUP_BLOB_KIND signatureKind = (CORCOMPILE_FIXUP_BLOB_KIND)CorSigUncompressData(pBlob);
         switch (signatureKind)
         {
-            case ENCODE_TYPE_HANDLE:    kind = TypeHandleSlot; break;
-            case ENCODE_FIELD_HANDLE:   kind = FieldDescSlot; break;
-            case ENCODE_METHOD_HANDLE:  kind = MethodDescSlot; break;
-            case ENCODE_METHOD_ENTRY:   kind = MethodEntrySlot; break;
-            case ENCODE_VIRTUAL_ENTRY:  kind = DispatchStubAddrSlot; break;
+            case ENCODE_DECLARINGTYPE_HANDLE:   kind = DeclaringTypeHandleSlot; break;
+            case ENCODE_TYPE_HANDLE:            kind = TypeHandleSlot; break;
+            case ENCODE_FIELD_HANDLE:           kind = FieldDescSlot; break;
+            case ENCODE_METHOD_HANDLE:          kind = MethodDescSlot; break;
+            case ENCODE_METHOD_ENTRY:           kind = MethodEntrySlot; break;
+            case ENCODE_VIRTUAL_ENTRY:          kind = DispatchStubAddrSlot; break;
 
             default:
                 _ASSERTE(!"Unexpected CORCOMPILE_FIXUP_BLOB_KIND");
@@ -856,6 +857,9 @@ Dictionary::PopulateEntry(
             {
                 IfFailThrow(ptr.GetData(&methodFlags));
 
+                if (methodFlags & ENCODE_METHOD_SIG_Constrained)
+                    kind = ConstrainedMethodEntrySlot;
+
                 isInstantiatingStub = ((methodFlags & ENCODE_METHOD_SIG_InstantiatingStub) != 0) || (kind == MethodEntrySlot);
                 isUnboxingStub = ((methodFlags & ENCODE_METHOD_SIG_UnboxingStub) != 0);
                 fMethodNeedsInstantiation = ((methodFlags & ENCODE_METHOD_SIG_MethodInstantiation) != 0);
@@ -915,12 +919,6 @@ Dictionary::PopulateEntry(
 
                 _ASSERT(!ownerType.IsNull() && !nonExpansive);
                 pOwnerMT = ownerType.GetMethodTable();
-
-                if (methodFlags & ENCODE_METHOD_SIG_Constrained)
-                {
-                    _ASSERTE(!"ReadyToRun: Constrained methods dictionary entries not yet supported.");
-                    ThrowHR(COR_E_BADIMAGEFORMAT);
-                }
 
                 if (kind == DispatchStubAddrSlot && pMethod->IsVtableMethod())
                 {
@@ -1087,9 +1085,19 @@ Dictionary::PopulateEntry(
 
             if (kind == ConstrainedMethodEntrySlot)
             {
-                // TODO: READYTORUN: Support for constrained method entry slots
-                _ASSERT(!isReadyToRunModule);
+                if (isReadyToRunModule)
+                {
+                    _ASSERTE((methodFlags & ENCODE_METHOD_SIG_Constrained) == ENCODE_METHOD_SIG_Constrained);
 
+                    constraintType = ptr.GetTypeHandleThrowing(
+                        pZapSigContext->pInfoModule,
+                        &typeContext,
+                        ClassLoader::LoadTypes,
+                        CLASS_LOADED,
+                        FALSE,
+                        NULL,
+                        pZapSigContext);
+                }
                 _ASSERTE(!constraintType.IsNull());
 
                 MethodDesc *pResolvedMD = constraintType.GetMethodTable()->TryResolveConstraintMethodApprox(ownerType, pMethod);

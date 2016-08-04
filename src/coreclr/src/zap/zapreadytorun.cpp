@@ -515,6 +515,8 @@ static_assert_no_msg((int)READYTORUN_FIXUP_Check_FieldOffset         == (int)ENC
 
 static_assert_no_msg((int)READYTORUN_FIXUP_DelegateCtor              == (int)ENCODE_DELEGATE_CTOR);
 
+static_assert_no_msg((int)READYTORUN_FIXUP_DeclaringTypeHandle       == (int)ENCODE_DECLARINGTYPE_HANDLE);
+
 //
 // READYTORUN_EXCEPTION
 //
