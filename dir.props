@@ -159,7 +159,7 @@
     <ProjectUrl>https://dot.net</ProjectUrl>
 
     <!-- PreReleaseSuffix for packages published from closed build (e.g. CoreCLR for Arm32, APISet, etc) -->
-    <ExternalExpectedPrerelease>beta-24329-00</ExternalExpectedPrerelease>
+    <ExternalExpectedPrerelease>beta-24404-00</ExternalExpectedPrerelease>
 
     <!-- On Windows, MSbuild still runs against Desktop FX while it runs on .NET Core on non-Windows. this requires
          pulling in different packaging dependencies.
