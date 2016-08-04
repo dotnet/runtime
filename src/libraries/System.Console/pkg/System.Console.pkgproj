@@ -2,11 +2,17 @@
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
+    <ProjectReference Include="..\ref\4.0.0\System.Console.depproj">
+      <SupportedFramework>net46;netcore50;netcoreapp1.0</SupportedFramework>
+    </ProjectReference>
     <ProjectReference Include="..\ref\System.Console.csproj">
-      <SupportedFramework>net46;netcore50;netcoreapp1.0;$(AllXamarinFrameworks)</SupportedFramework>
+      <SupportedFramework>net463;netcoreapp1.1;$(AllXamarinFrameworks)</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\src\System.Console.csproj">
       <AdditionalProperties>TargetGroup=net46</AdditionalProperties>
+    </ProjectReference>
+    <ProjectReference Include="..\src\System.Console.csproj">
+      <AdditionalProperties>TargetGroup=net463</AdditionalProperties>
     </ProjectReference>
     <ProjectReference Include="win\System.Console.pkgproj" />
     <ProjectReference Include="unix\System.Console.pkgproj" />

@@ -23,7 +23,7 @@ public class Directory_Delete_MountVolume
 
     [Fact]
     [ActiveIssue(1221)]
-    [PlatformSpecific(PlatformID.Windows)] // testing volumes / mounts / drive letters
+    [PlatformSpecific(Xunit.PlatformID.Windows)] // testing volumes / mounts / drive letters
     public static void RunTest()
     {
         try

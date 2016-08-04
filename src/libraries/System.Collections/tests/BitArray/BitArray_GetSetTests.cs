@@ -252,7 +252,8 @@ namespace System.Collections.Tests
         public static void CopyTo<T>(BitArray bitArray, int length, int index, T[] expected, T def)
         {
             T[] array = (T[])Array.CreateInstance(typeof(T), length);
-            bitArray.CopyTo(array, index);
+            ICollection collection = bitArray;
+            collection.CopyTo(array, index);
             for (int i = 0; i < index; i++)
             {
                 Assert.Equal(def, array[i]);
@@ -270,7 +271,7 @@ namespace System.Collections.Tests
         [Fact]
         public static void CopyTo_Type_Invalid()
         {
-            BitArray bitArray = new BitArray(10);
+            ICollection bitArray = new BitArray(10);
             Assert.Throws<ArgumentNullException>("array", () => bitArray.CopyTo(null, 0));
             Assert.Throws<ArgumentException>("array", () => bitArray.CopyTo(new long[10], 0));
             Assert.Throws<ArgumentException>("array", () => bitArray.CopyTo(new int[10, 10], 0));
@@ -293,7 +294,7 @@ namespace System.Collections.Tests
         [InlineData(default(int), BitsPerInt32 * 4, 4, 1)]
         public static void CopyTo_Size_Invalid<T>(T def, int bits, int arraySize, int index)
         {
-            BitArray bitArray = new BitArray(bits);
+            ICollection bitArray = new BitArray(bits);
             T[] array = (T[])Array.CreateInstance(typeof(T), arraySize);
             Assert.Throws<ArgumentOutOfRangeException>("index", () => bitArray.CopyTo(array, -1));
             Assert.Throws<ArgumentException>(def is int ? string.Empty : null, () => bitArray.CopyTo(array, index));
@@ -302,9 +303,9 @@ namespace System.Collections.Tests
         [Fact]
         public static void SyncRoot()
         {
-            BitArray bitArray = new BitArray(10);
+            ICollection bitArray = new BitArray(10);
             Assert.Same(bitArray.SyncRoot, bitArray.SyncRoot);
-            Assert.NotSame(bitArray.SyncRoot, (new BitArray(10)).SyncRoot);
+            Assert.NotSame(bitArray.SyncRoot, ((ICollection)new BitArray(10)).SyncRoot);
         }
     }
 }

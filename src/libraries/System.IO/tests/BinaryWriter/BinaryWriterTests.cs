@@ -316,6 +316,7 @@ namespace System.IO.Tests
             }
         }
 
+#if netstandard17
         [Fact]
         public void BinaryWriter_CloseTests()
         {
@@ -328,6 +329,7 @@ namespace System.IO.Tests
                 binaryWriter.Close();
             }
         }
+#endif //netstandard17
 
         [Fact]
         public void BinaryWriter_DisposeTests_Negative()
@@ -340,6 +342,7 @@ namespace System.IO.Tests
             }
         }
 
+#if netstandard17
         [Fact]
         public void BinaryWriter_CloseTests_Negative()
         {
@@ -350,6 +353,7 @@ namespace System.IO.Tests
                 ValidateDisposedExceptions(binaryWriter);
             }
         }
+#endif //netstandard17
 
         private void ValidateDisposedExceptions(BinaryWriter binaryWriter)
         {

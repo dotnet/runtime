@@ -78,7 +78,6 @@ namespace System.Tests
         public static int CheckCommandLineArgs(string[] args)
         {
             string[] cmdLineArgs = Environment.GetCommandLineArgs();
-            string cmdLine = Environment.CommandLine;
 
             Assert.InRange(cmdLineArgs.Length, 4, int.MaxValue); /*AppName, AssemblyName, TypeName, MethodName*/
             Assert.True(cmdLineArgs[0].Contains(TestConsoleApp)); /*The host returns the fullName*/

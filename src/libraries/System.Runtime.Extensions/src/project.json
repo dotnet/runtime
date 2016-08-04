@@ -13,6 +13,11 @@
         "Microsoft.TargetingPack.NETFramework.v4.6": "1.0.1"
       }
     },
+    "net463": {
+      "dependencies": {
+        "Microsoft.TargetingPack.NETFramework.v4.6": "1.0.1"
+      }
+    },
     "netcore50": {
       "dependencies": {
         "Microsoft.TargetingPack.Private.NETNative": "1.0.1-beta-24404-00",

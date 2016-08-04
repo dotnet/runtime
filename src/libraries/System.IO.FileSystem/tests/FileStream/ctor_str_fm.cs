@@ -199,7 +199,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(Xunit.PlatformID.Windows)]
         public void RawLongPathAccess_ThrowsArgumentException()
         {
             Assert.Throws<ArgumentException>(() => CreateFileStream("\\\\.\\disk\\access\\", FileMode.Open));

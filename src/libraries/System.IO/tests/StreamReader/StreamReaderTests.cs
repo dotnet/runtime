@@ -280,6 +280,7 @@ namespace System.IO.Tests
             Assert.Throws<ObjectDisposedException>(() => sr.ReadLine());
         }
 
+#if netstandard17
         [Fact]
         public void ObjectClosedReadLine()
         {
@@ -289,6 +290,7 @@ namespace System.IO.Tests
             sr.Close();
             Assert.Throws<ObjectDisposedException>(() => sr.ReadLine());
         }
+#endif //netstandard17
 
         [Fact]
         public void ObjectDisposedReadLineBaseStream()
@@ -300,6 +302,7 @@ namespace System.IO.Tests
             Assert.Throws<ObjectDisposedException>(() => sr.ReadLine());
         }
 
+#if netstandard17
         [Fact]
         public void ObjectClosedReadLineBaseStream()
         {
@@ -309,6 +312,7 @@ namespace System.IO.Tests
             ms.Close();
             Assert.Throws<ObjectDisposedException>(() => sr.ReadLine());
         }
+#endif //netstandard17
 
         [Fact]
         public void VanillaReadLines()

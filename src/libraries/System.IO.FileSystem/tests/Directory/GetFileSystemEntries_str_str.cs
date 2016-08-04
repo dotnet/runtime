@@ -4,6 +4,7 @@
 
 using System.Runtime.InteropServices;
 using Xunit;
+using XunitPlatformID = Xunit.PlatformID;
 
 namespace System.IO.Tests
 {
@@ -209,7 +210,7 @@ namespace System.IO.Tests
         #region PlatformSpecific
 
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(XunitPlatformID.Windows)]
         public void WindowsSearchPatternLongSegment()
         {
             // Create a path segment longer than the normal max of 255
@@ -242,7 +243,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(XunitPlatformID.Windows)]
         public void WindowsSearchPatternWithDoubleDots()
         {
             Assert.Throws<ArgumentException>(() => GetEntries(TestDirectory, Path.Combine("..ab ab.. .. abc..d", "abc..")));
@@ -251,7 +252,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(XunitPlatformID.Windows)]
         public void WindowsSearchPatternInvalid()
         {
             Assert.Throws<ArgumentException>(() => GetEntries(TestDirectory, "\0"));
@@ -294,7 +295,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.AnyUnix)]
+        [PlatformSpecific(XunitPlatformID.AnyUnix)]
         public void UnixSearchPatternInvalid()
         {
             Assert.Throws<ArgumentException>(() => GetEntries(TestDirectory, "\0"));
@@ -302,7 +303,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(XunitPlatformID.Windows)]
         public virtual void WindowsSearchPatternQuestionMarks()
         {
             string testDir1Str = GetTestFileName();
@@ -321,7 +322,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(XunitPlatformID.Windows)]
         public void WindowsSearchPatternWhitespace()
         {
             Assert.Empty(GetEntries(TestDirectory, "           "));
@@ -375,7 +376,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.AnyUnix)]
+        [PlatformSpecific(XunitPlatformID.AnyUnix)]
         public void UnixSearchPatternFileValidChar()
         {
             if (TestFiles)
@@ -390,7 +391,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.AnyUnix)]
+        [PlatformSpecific(XunitPlatformID.AnyUnix)]
         public void UnixSearchPatternDirectoryValidChar()
         {
             if (TestDirectories)
@@ -405,7 +406,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.AnyUnix)]
+        [PlatformSpecific(XunitPlatformID.AnyUnix)]
         public void UnixSearchPatternWithDoubleDots()
         {
             // search pattern is valid but directory doesn't exist

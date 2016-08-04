@@ -8,7 +8,8 @@
     <RootNamespace>System.Collections.NonGeneric.Tests</RootNamespace>
     <AssemblyName>System.Collections.NonGeneric.Tests</AssemblyName>
     <ProjectGuid>{EE95AE39-845A-42D3-86D0-8065DBE56612}</ProjectGuid>
-    <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
+    <DefineConstants Condition="'$(TargetGroup)'=='netstandard1.7'">$(DefineConstants);netstandard17</DefineConstants>
+    <NugetTargetMoniker Condition="'$(NugetTargetMoniker)'==''">.NETStandard,Version=v1.3</NugetTargetMoniker>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -37,7 +38,7 @@
     </Compile>
     <Compile Include="ArrayListTests.cs" />
     <Compile Include="ArrayList\ArrayList.IList.Tests.cs" />
-    <Compile Include="CaseInsensitiveHashCodeProviderTests.cs" />
+    <Compile Include="CaseInsensitiveHashCodeProviderTests.cs" Condition="'$(TargetGroup)'=='netstandard1.7'" />
     <Compile Include="Hashtable\Hashtable.Values.Tests.cs" />
     <Compile Include="Hashtable\Hashtable.Keys.Tests.cs" />
     <Compile Include="Hashtable\Hashtable.IDictionary.Tests.cs" />

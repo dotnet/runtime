@@ -13,6 +13,10 @@
     </ProjectReference>
     <ProjectReference Include="..\..\src\System.IO.FileSystem.csproj">
       <OSGroup>Windows_NT</OSGroup>
+      <TargetGroup>netstandard1.3</TargetGroup>
+    </ProjectReference>
+    <ProjectReference Include="..\..\src\System.IO.FileSystem.csproj">
+      <OSGroup>Windows_NT</OSGroup>
       <TargetGroup>netcore50</TargetGroup>
     </ProjectReference>
 

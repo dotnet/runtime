@@ -4,7 +4,16 @@
   <ItemGroup>
     <Project Include="System.IO.Tests.csproj"/>
     <Project Include="System.IO.Tests.csproj">
-      <TestTFMs>net462;net463</TestTFMs>
+      <TestTFMs>net462</TestTFMs>
+      <OSGroup>Windows_NT</OSGroup>
+    </Project>
+    <Project Include="System.IO.Tests.csproj">
+      <TargetGroup>netstandard1.7</TargetGroup>
+      <TestTFMs>netcoreapp1.1</TestTFMs>
+    </Project>
+    <Project Include="System.IO.Tests.csproj">
+      <TargetGroup>netstandard1.7</TargetGroup>
+      <TestTFMs>net463</TestTFMs>
       <OSGroup>Windows_NT</OSGroup>
     </Project>
   </ItemGroup>

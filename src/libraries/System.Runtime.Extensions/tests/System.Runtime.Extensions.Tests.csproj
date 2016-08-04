@@ -12,7 +12,8 @@
     <RootNamespace>System.Runtime.Extensions.Tests</RootNamespace>
     <AssemblyName>System.Runtime.Extensions.Tests</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <NugetTargetMoniker>.NETStandard,Version=v1.5</NugetTargetMoniker>
+    <DefineConstants Condition="'$(TargetGroup)'=='netstandard1.7'">$(DefineConstants);netstandard17</DefineConstants>
+    <NugetTargetMoniker Condition="'$(NugetTargetMoniker)'==''">.NETStandard,Version=v1.5</NugetTargetMoniker>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -21,7 +22,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Diagnostics\Stopwatch.cs" />
-    <Compile Include="System\EnvironmentTests.cs" />
+    <Compile Include="System\EnvironmentTests.cs" Condition="'$(TargetGroup)'=='netstandard1.7'" />
     <Compile Include="System\Environment.MachineName.cs" />
     <Compile Include="System\IO\Path.Combine.cs" />
     <Compile Include="System\Runtime\Versioning\FrameworkName.cs" />
