@@ -6412,18 +6412,12 @@ UINT32 ReadyToRunJitManager::JitTokenToGCInfoVersion(const METHODTOKEN& MethodTo
 {
     CONTRACTL{
         NOTHROW;
-    GC_NOTRIGGER;
-    HOST_NOCALLS;
-    SUPPORTS_DAC;
+        GC_NOTRIGGER;
+        HOST_NOCALLS;
+        SUPPORTS_DAC;
     } CONTRACTL_END;
 
-    READYTORUN_HEADER * header = JitTokenToReadyToRunInfo(MethodToken)->GetImage()->GetReadyToRunHeader();
-    UINT32 gcInfoVersion = header->MajorVersion;
-
-    // Currently there's only one version of GCInfo.
-    _ASSERTE(gcInfoVersion == GCINFO_VERSION);
-
-    return gcInfoVersion;
+    return GCINFO_VERSION;
 }
 
 PTR_RUNTIME_FUNCTION ReadyToRunJitManager::JitTokenToRuntimeFunction(const METHODTOKEN& MethodToken)

@@ -2368,7 +2368,8 @@ void CEECompileInfo::EncodeField(
                          SigBuilder *          pSigBuilder,
                          LPVOID                encodeContext,
                          ENCODEMODULE_CALLBACK pfnEncodeModule,
-                         CORINFO_RESOLVED_TOKEN * pResolvedToken)
+                         CORINFO_RESOLVED_TOKEN * pResolvedToken, 
+                         BOOL fEncodeUsingResolvedTokenSpecStreams)
 {
     STANDARD_VM_CONTRACT;
 
@@ -2379,7 +2380,8 @@ void CEECompileInfo::EncodeField(
                         pSigBuilder,
                         encodeContext, 
                         pfnEncodeModule,
-                        pResolvedToken);
+                        pResolvedToken,
+                        fEncodeUsingResolvedTokenSpecStreams);
 
     COOPERATIVE_TRANSITION_END();
 }
