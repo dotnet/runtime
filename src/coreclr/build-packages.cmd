@@ -7,39 +7,9 @@ set allargs=%*
 if /I [%1] == [/?] goto Usage
 if /I [%1] == [/help] goto Usage
 
-call %__ProjectDir%/run.cmd build-packages -Project=%__ProjectDir%/src/.nuget/Microsoft.NETCore.Runtime.CoreClr/Microsoft.NETCore.Runtime.CoreCLR.builds -FilterToOSGroup=Windows_NT %allargs%
+call %__ProjectDir%/run.cmd build-packages -Project=%__ProjectDir%\src\.nuget\packages.builds -FilterToOSGroup=Windows_NT %allargs%
 if NOT [!ERRORLEVEL!]==[0] (
-  echo ERROR: An error occurred while building CoreCLR Runtime package, see build-packages.log for more details.
-  exit /b 1
-)
-
-call %__ProjectDir%/run.cmd build-packages -Project=%__ProjectDir%/src/.nuget/Microsoft.NETCore.Jit/Microsoft.NETCore.Jit.builds -FilterToOSGroup=Windows_NT %allargs%
-if NOT [!ERRORLEVEL!]==[0] (
-  echo ERROR: An error occurred while building Jit package, see build-packages.log for more details.
-  exit /b 1
-)
-
-call %__ProjectDir%/run.cmd build-packages -Project=%__ProjectDir%/src/.nuget/Microsoft.NETCore.ILAsm/Microsoft.NETCore.ILAsm.builds -FilterToOSGroup=Windows_NT %allargs%
-if NOT [!ERRORLEVEL!]==[0] (
-  echo ERROR: An error occurred while building ILAsm package, see build-packages.log for more details.
-  exit /b 1
-)
-
-call %__ProjectDir%/run.cmd build-packages -Project=%__ProjectDir%/src/.nuget/Microsoft.NETCore.ILDAsm/Microsoft.NETCore.ILDAsm.builds -FilterToOSGroup=Windows_NT %allargs%
-if NOT [!ERRORLEVEL!]==[0] (
-  echo ERROR: An error occurred while building ILDAsm package, see build-packages.log for more details.
-  exit /b 1
-)
-
-call %__ProjectDir%/run.cmd build-packages -Project=%__ProjectDir%/src/.nuget/Microsoft.TargetingPack.Private.CoreCLR/Microsoft.TargetingPack.Private.CoreCLR.pkgproj -FilterToOSGroup=Windows_NT %allargs%
-if NOT [!ERRORLEVEL!]==[0] (
-  echo ERROR: An error occurred while building CoreCLR TargetingPack package, see build-packages.log for more details.
-  exit /b 1
-)
-
-call %__ProjectDir%/run.cmd build-packages -Project=%__ProjectDir%\src\.nuget\Microsoft.NETCore.TestHost\Microsoft.NETCore.TestHost.builds -FilterToOSGroup=Windows_NT %allargs%
-if NOT [!ERRORLEVEL!]==[0] (
-  echo ERROR: An error occurred while building packages, see %packagesLog% for more details.
+  echo ERROR: An error occurred while building packages, see build-packages.log for more details.
   exit /b 1
 )
 
