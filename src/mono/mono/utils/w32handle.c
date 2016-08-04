@@ -1026,7 +1026,7 @@ mono_w32handle_timedwait_signal_naked (mono_cond_t *cond, mono_mutex_t *mutex, g
 				/* Mask the fake timeout, this will cause
 				 * another poll if the cond was not really signaled
 				 */
-				if (res == ETIMEDOUT)
+				if (res == -1)
 					res = 0;
 			}
 		}
