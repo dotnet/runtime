@@ -280,6 +280,11 @@ namespace Microsoft.DotNet.Host.Build
                 .WorkingDirectory(Path.Combine(c.BuildContext.BuildDirectory, "tools"))
                 .Execute()
                 .EnsureSuccessful();
+
+            dotnet.Restore("--verbosity", "verbose", "--disable-parallel")
+                .WorkingDirectory(Path.Combine(c.BuildContext.BuildDirectory, "src"))
+                .Execute()
+                .EnsureSuccessful();
                 
             return c.Success();
         }
