@@ -433,6 +433,18 @@
         <NuGetTargetMoniker>.NETStandard,Version=v1.5</NuGetTargetMoniker>
       </PropertyGroup>
     </When>
+    <When Condition="'$(TargetGroup)'=='netstandard1.6'">
+      <PropertyGroup>
+        <PackageTargetFramework>netstandard1.6</PackageTargetFramework>
+        <NuGetTargetMoniker>.NETStandard,Version=v1.6</NuGetTargetMoniker>
+      </PropertyGroup>
+    </When>
+    <When Condition="'$(TargetGroup)'=='netstandard1.7'">
+      <PropertyGroup>
+        <PackageTargetFramework>netstandard1.7</PackageTargetFramework>
+        <NuGetTargetMoniker>.NETStandard,Version=v1.7</NuGetTargetMoniker>
+      </PropertyGroup>
+    </When>
     <When Condition="'$(TargetGroup)'=='netstandard13aot'">
       <PropertyGroup>
         <PackageTargetFramework>netstandard1.3</PackageTargetFramework>

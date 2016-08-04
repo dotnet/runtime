@@ -9,10 +9,6 @@
     <Project Include="System.Globalization.csproj">
       <TargetGroup>net463</TargetGroup>
     </Project>
-    <!-- Net46 facade is currently inbox for 4.0
-    <Project Include="System.Globalization.csproj">
-      <TargetGroup>net46</TargetGroup>
-    </Project> -->
     <Project Include="System.Globalization.csproj">
       <TargetGroup>netcore50</TargetGroup>
     </Project>

@@ -5,17 +5,23 @@
     <ProjectGuid>{585E3764-534B-4A12-8BD5-8578CB826A45}</ProjectGuid>
     <RootNamespace>System.Collections.NonGeneric</RootNamespace>
     <AssemblyName>System.Collections.NonGeneric</AssemblyName>
-    <AssemblyVersion>4.0.2.0</AssemblyVersion>
-    <PackageTargetFramework Condition="'$(TargetGroup)' == ''">netstandard1.3</PackageTargetFramework>
-    <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'net46'">true</IsPartialFacadeAssembly>
-    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.3</NuGetTargetMoniker>
+    <AssemblyVersion>4.1.0.0</AssemblyVersion>
+    <AssemblyVersion Condition="'$(TargetGroup)'=='netstandard1.3' OR '$(TargetGroup)'=='net46'">4.0.2.0</AssemblyVersion>
+    <ContractProject Condition="'$(TargetGroup)'=='netstandard1.3' OR '$(TargetGroup)'=='net46'">../ref/4.0.1/System.Collections.NonGeneric.depproj</ContractProject>
+    <PackageTargetFramework Condition="'$(TargetGroup)' == ''">netstandard1.7</PackageTargetFramework>
+    <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'net46' OR '$(TargetGroup)' == 'net463'">true</IsPartialFacadeAssembly>
+    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NuGetTargetMoniker>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard1.3_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard1.3_Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Release|AnyCPU'" />
-  <ItemGroup Condition="'$(TargetGroup)' != 'net46'">
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Release|AnyCPU'" />
+  <ItemGroup Condition="'$(TargetGroup)' != 'net46' AND '$(TargetGroup)' != 'net463'">
     <Compile Include="System\Collections\ArrayList.cs" />
     <Compile Include="System\Collections\CaseInsensitiveComparer.cs" />
     <Compile Include="System\Collections\CaseInsensitiveHashCodeProvider.cs" />
@@ -32,7 +38,7 @@
     <Compile Include="System\Collections\Stack.cs" />
     <Compile Include="System\Collections\Specialized\CollectionsUtil.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'net46'">
+  <ItemGroup Condition="'$(TargetGroup)' == 'net46' OR '$(TargetGroup)' == 'net463'">
     <TargetingPackReference Include="System" />
     <TargetingPackReference Include="mscorlib" />
   </ItemGroup>

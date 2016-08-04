@@ -28,7 +28,7 @@ namespace System.IO.Tests
         #endregion
 
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(Xunit.PlatformID.Windows)]
         public override void WindowsSearchPatternQuestionMarks()
         {
             string testDir1Str = GetTestFileName();

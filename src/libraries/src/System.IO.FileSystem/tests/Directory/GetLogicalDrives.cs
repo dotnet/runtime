@@ -5,13 +5,14 @@
 using System.Linq;
 using System.Runtime.InteropServices;
 using Xunit;
+using XunitPlatformID = Xunit.PlatformID;
 
 namespace System.IO.Tests
 {
     public class Directory_GetLogicalDrives
     {
         [Fact]
-        [PlatformSpecific(PlatformID.AnyUnix)]
+        [PlatformSpecific(XunitPlatformID.AnyUnix)]
         public void GetsValidDriveStrings_Unix()
         {
             string[] drives = Directory.GetLogicalDrives();
@@ -21,7 +22,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(XunitPlatformID.Windows)]
         public void GetsValidDriveStrings_Windows()
         {
             string[] drives = Directory.GetLogicalDrives();

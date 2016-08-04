@@ -39,7 +39,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(Xunit.PlatformID.Windows)]
         public void UNCShares()
         {
             Assert.Null(GetParent(new string(Path.DirectorySeparatorChar, 2) + Path.Combine("Machine", "Test")));

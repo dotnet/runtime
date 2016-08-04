@@ -9,6 +9,16 @@
       <TestTFMs>netcoreapp1.0;net462</TestTFMs>
       <OSGroup>Windows_NT</OSGroup>
     </Project>
+    <Project Include="System.Runtime.Extensions.Tests.csproj">
+      <TargetGroup>netstandard1.7</TargetGroup>
+      <TestTFMs>netcoreapp1.1</TestTFMs>
+      <OSGroup>Unix</OSGroup>
+    </Project>
+    <Project Include="System.Runtime.Extensions.Tests.csproj">
+      <TargetGroup>netstandard1.7</TargetGroup>
+      <TestTFMs>netcoreapp1.1</TestTFMs>
+      <OSGroup>Windows_NT</OSGroup>
+    </Project>
     <Project Include="Performance\System.Runtime.Extensions.Performance.Tests.csproj"/>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />

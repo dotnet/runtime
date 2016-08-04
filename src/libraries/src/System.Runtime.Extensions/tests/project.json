@@ -1,6 +1,7 @@
 {
   "dependencies": {
     "Microsoft.NETCore.Platforms": "1.0.2-beta-devapi-24401-01",
+    "System.Console": "4.0.1-beta-devapi-24401-01",
     "System.Diagnostics.Process": "4.1.1-beta-devapi-24401-01",
     "System.Globalization": "4.0.12-beta-devapi-24401-01",
     "System.IO.FileSystem": "4.0.2-beta-devapi-24401-01",
@@ -23,7 +24,8 @@
     "Microsoft.DotNet.xunit.performance": "1.0.0-alpha-build0037"
   },
   "frameworks": {
-    "netstandard1.5": {}
+    "netstandard1.5": {},
+    "netstandard1.7": {}
   },
   "supports": {
     "coreFx.Test.netcoreapp1.0": {},
