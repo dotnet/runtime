@@ -690,6 +690,7 @@ Dictionary::PopulateEntry(
         switch (signatureKind)
         {
             case ENCODE_TYPE_HANDLE:    kind = TypeHandleSlot; break;
+            case ENCODE_FIELD_HANDLE:   kind = FieldDescSlot; break;
             case ENCODE_METHOD_HANDLE:  kind = MethodDescSlot; break;
             case ENCODE_METHOD_ENTRY:   kind = MethodEntrySlot; break;
             case ENCODE_VIRTUAL_ENTRY:  kind = DispatchStubAddrSlot; break;
@@ -1124,30 +1125,43 @@ Dictionary::PopulateEntry(
 
         case FieldDescSlot:
         {
-            TypeHandle th = ptr.GetTypeHandleThrowing(
-                pLookupModule,
-                &typeContext, 
-                (nonExpansive ? ClassLoader::DontLoadTypes : ClassLoader::LoadTypes), 
-                CLASS_LOADED, 
-                FALSE, 
-                NULL, 
-                pZapSigContext);
-            if (th.IsNull())
+            TypeHandle ownerType;
+
+            if (isReadyToRunModule)
             {
-                _ASSERTE(nonExpansive);
-                return NULL;
+                FieldDesc* pField = ZapSig::DecodeField((Module*)pZapSigContext->pModuleContext, pZapSigContext->pInfoModule, ptr.GetPtr(), &typeContext, &ownerType);
+                _ASSERTE(!ownerType.IsNull());
+                
+                if (!IsCompilationProcess())
+                    ownerType.AsMethodTable()->EnsureInstanceActive();
+
+                result = (CORINFO_GENERIC_HANDLE)pField;
             }
-            IfFailThrow(ptr.SkipExactlyOne());
-
-            DWORD fieldIndex;
-            IfFailThrow(ptr.GetData(&fieldIndex));
-
-            if (!IsCompilationProcess())
+            else
             {
-                th.AsMethodTable()->EnsureInstanceActive();
-            }
+                ownerType = ptr.GetTypeHandleThrowing(
+                    pLookupModule,
+                    &typeContext,
+                    (nonExpansive ? ClassLoader::DontLoadTypes : ClassLoader::LoadTypes),
+                    CLASS_LOADED,
+                    FALSE,
+                    NULL,
+                    pZapSigContext);
+                if (ownerType.IsNull())
+                {
+                    _ASSERTE(nonExpansive);
+                    return NULL;
+                }
+                IfFailThrow(ptr.SkipExactlyOne());
 
-            result = (CORINFO_GENERIC_HANDLE)th.AsMethodTable()->GetFieldDescByIndex(fieldIndex);
+                DWORD fieldIndex;
+                IfFailThrow(ptr.GetData(&fieldIndex));
+
+                if (!IsCompilationProcess())
+                    ownerType.AsMethodTable()->EnsureInstanceActive();
+
+                result = (CORINFO_GENERIC_HANDLE)ownerType.AsMethodTable()->GetFieldDescByIndex(fieldIndex);
+            }
             break;
         }
 

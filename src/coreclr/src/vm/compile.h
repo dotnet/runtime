@@ -281,8 +281,8 @@ class CEECompileInfo : public ICorCompileInfo
                        SigBuilder              *pSigBuilder,
                        LPVOID                  encodeContext,
                        ENCODEMODULE_CALLBACK   pfnEncodeModule,
-                       CORINFO_RESOLVED_TOKEN * pResolvedToken,
-                       CORINFO_RESOLVED_TOKEN * pConstrainedResolvedToken,
+                       CORINFO_RESOLVED_TOKEN  *pResolvedToken,
+                       CORINFO_RESOLVED_TOKEN  *pConstrainedResolvedToken,
                        BOOL                    fEncodeUsingResolvedTokenSpecStreams);
 
     virtual mdToken TryEncodeMethodAsToken(CORINFO_METHOD_HANDLE handle, 
@@ -296,7 +296,8 @@ class CEECompileInfo : public ICorCompileInfo
                        SigBuilder              *pSigBuilder,
                        LPVOID                  encodeContext,
                        ENCODEMODULE_CALLBACK   pfnEncodeModule,
-                       CORINFO_RESOLVED_TOKEN * pResolvedToken);
+                       CORINFO_RESOLVED_TOKEN  *pResolvedToken,
+                       BOOL                    fEncodeUsingResolvedTokenSpecStreams);
 
     // Encode generic dictionary signature
     virtual void EncodeGenericSignature(

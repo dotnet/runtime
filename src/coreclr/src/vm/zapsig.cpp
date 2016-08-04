@@ -836,7 +836,7 @@ MethodDesc *ZapSig::DecodeMethod(Module *pReferencingModule,
                                  Module *pInfoModule,
                                  PCCOR_SIGNATURE pBuffer,
                                  SigTypeContext *pContext,
-                                 TypeHandle * ppTH, /*=NULL*/
+                                 TypeHandle *ppTH, /*=NULL*/
                                  PCCOR_SIGNATURE *ppOwnerTypeSpecWithVars, /*=NULL*/
                                  PCCOR_SIGNATURE *ppMethodSpecWithVars /*=NULL*/)
 {
@@ -1013,7 +1013,20 @@ MethodDesc *ZapSig::DecodeMethod(Module *pReferencingModule,
 FieldDesc * ZapSig::DecodeField(Module *pReferencingModule,
                                 Module *pInfoModule,
                                 PCCOR_SIGNATURE pBuffer,
-                                TypeHandle * ppTH /*=NULL*/)
+                                TypeHandle *ppTH /*=NULL*/)
+{
+    STANDARD_VM_CONTRACT;
+
+    SigTypeContext typeContext;    // empty context is OK: encoding should not contain type variables.
+
+    return DecodeField(pReferencingModule, pInfoModule, pBuffer, &typeContext, ppTH);
+}
+
+FieldDesc * ZapSig::DecodeField(Module *pReferencingModule,
+                                Module *pInfoModule,
+                                PCCOR_SIGNATURE pBuffer,
+                                SigTypeContext *pContext,
+                                TypeHandle *ppTH /*=NULL*/)
 {
     CONTRACTL
     {
@@ -1037,10 +1050,8 @@ FieldDesc * ZapSig::DecodeField(Module *pReferencingModule,
         ZapSig::Context    zapSigContext(pInfoModule, pReferencingModule);
         ZapSig::Context *  pZapSigContext = &zapSigContext;
 
-        SigTypeContext typeContext;    // empty context is OK: encoding should not contain type variables.
-
         pOwnerMT = sig.GetTypeHandleThrowing(pInfoModule,
-                                        &typeContext,
+                                        pContext,
                                         ClassLoader::LoadTypes,
                                         CLASS_LOADED,
                                         FALSE,
@@ -1371,7 +1382,8 @@ void ZapSig::EncodeField(
         SigBuilder             *pSigBuilder,
         LPVOID                 pEncodeModuleContext,
         ENCODEMODULE_CALLBACK  pfnEncodeModule,
-        CORINFO_RESOLVED_TOKEN * pResolvedToken)
+        CORINFO_RESOLVED_TOKEN *pResolvedToken,
+        BOOL                   fEncodeUsingResolvedTokenSpecStreams)
 {
     CONTRACTL
     {
@@ -1452,15 +1464,23 @@ void ZapSig::EncodeField(
 
     if (fieldFlags & ENCODE_FIELD_SIG_OwnerType)
     {
-        ZapSig zapSig(pInfoModule, pEncodeModuleContext, ZapSig::NormalTokens,
-                        (EncodeModuleCallback) pfnEncodeModule, NULL);
+        if (fEncodeUsingResolvedTokenSpecStreams && pResolvedToken != NULL && pResolvedToken->pTypeSpec != NULL)
+        {
+            _ASSERTE(pResolvedToken->cbTypeSpec > 0);
+            pSigBuilder->AppendBlob((PVOID)pResolvedToken->pTypeSpec, pResolvedToken->cbTypeSpec);
+        }
+        else
+        {
+            ZapSig zapSig(pInfoModule, pEncodeModuleContext, ZapSig::NormalTokens,
+                (EncodeModuleCallback)pfnEncodeModule, NULL);
 
-        //
-        // Write class
-        //
-        BOOL fSuccess;
-        fSuccess = zapSig.GetSignatureForTypeHandle(pMT, pSigBuilder);
-        _ASSERTE(fSuccess);
+            //
+            // Write class
+            //
+            BOOL fSuccess;
+            fSuccess = zapSig.GetSignatureForTypeHandle(pMT, pSigBuilder);
+            _ASSERTE(fSuccess);
+        }
     }
 
     if ((fieldFlags & ENCODE_FIELD_SIG_IndexInsteadOfToken) == 0)
