@@ -9956,11 +9956,12 @@ namespace System.Runtime.InteropServices
         public int ErrorCode { get { return default(int); } }
     }
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
-    public partial class ExternalException : System.SystemException
-    {
+    public partial class ExternalException : System.SystemException {
         public ExternalException() { }
+        protected ExternalException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public ExternalException(string message) { }
         public ExternalException(string message, System.Exception inner) { }
+        public ExternalException(string message, int errorCode) { }
         public virtual int ErrorCode { get { return default(int); } }
     }
     [System.AttributeUsageAttribute((System.AttributeTargets)(256), Inherited=false)]
@@ -10481,11 +10482,11 @@ namespace System.Runtime.InteropServices
     }
     [System.AttributeUsageAttribute((System.AttributeTargets)(12), Inherited=false)]
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
-    public sealed partial class StructLayoutAttribute : System.Attribute
-    {
+    public sealed partial class StructLayoutAttribute : System.Attribute {
         public System.Runtime.InteropServices.CharSet CharSet;
         public int Pack;
         public int Size;
+        public StructLayoutAttribute(short layoutKind) { }
         public StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind layoutKind) { }
         public System.Runtime.InteropServices.LayoutKind Value { get { return default(System.Runtime.InteropServices.LayoutKind); } }
     }
