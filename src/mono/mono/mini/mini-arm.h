@@ -226,6 +226,7 @@ typedef struct {
 typedef struct {
 	gpointer ss_trigger_page;
 	gpointer bp_trigger_page;
+	gpointer ss_tramp_addr;
 	guint8* bp_addrs [MONO_ZERO_LEN_ARRAY];
 } SeqPointInfo;
 

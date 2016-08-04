@@ -4629,6 +4629,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				g_assert (((guint64)(gsize)ss_trigger_page >> 32) == 0);
 			}
 
+			/* Single step check */
 			if (ins->flags & MONO_INST_SINGLE_STEP_LOC) {
 				if (cfg->soft_breakpoints) {
 					/* Load the address of the sequence point method variable. */
@@ -4663,6 +4664,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
 			mono_add_seq_point (cfg, bb, ins, code - cfg->native_code);
 
+			/* Breakpoint check */
 			if (cfg->compile_aot) {
 				guint32 offset = code - cfg->native_code;
 				guint32 val;
@@ -6543,22 +6545,36 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	if (cfg->arch.seq_point_ss_method_var) {
 		MonoInst *ss_method_ins = cfg->arch.seq_point_ss_method_var;
 		MonoInst *bp_method_ins = cfg->arch.seq_point_bp_method_var;
+
 		g_assert (ss_method_ins->opcode == OP_REGOFFSET);
 		g_assert (arm_is_imm12 (ss_method_ins->inst_offset));
-		g_assert (bp_method_ins->opcode == OP_REGOFFSET);
-		g_assert (arm_is_imm12 (bp_method_ins->inst_offset));
 
-		ARM_MOV_REG_REG (code, ARMREG_LR, ARMREG_PC);
-		ARM_B (code, 1);
-		*(gpointer*)code = &single_step_tramp;
-		code += 4;
-		*(gpointer*)code = breakpoint_tramp;
-		code += 4;
+		if (cfg->compile_aot) {
+			MonoInst *info_var = cfg->arch.seq_point_info_var;
+			int dreg = ARMREG_LR;
 
-		ARM_LDR_IMM (code, ARMREG_IP, ARMREG_LR, 0);
-		ARM_STR_IMM (code, ARMREG_IP, ss_method_ins->inst_basereg, ss_method_ins->inst_offset);
-		ARM_LDR_IMM (code, ARMREG_IP, ARMREG_LR, 4);
-		ARM_STR_IMM (code, ARMREG_IP, bp_method_ins->inst_basereg, bp_method_ins->inst_offset);
+			g_assert (info_var->opcode == OP_REGOFFSET);
+			g_assert (arm_is_imm12 (info_var->inst_offset));
+
+			ARM_LDR_IMM (code, dreg, info_var->inst_basereg, info_var->inst_offset);
+			ARM_LDR_IMM (code, dreg, dreg, MONO_STRUCT_OFFSET (SeqPointInfo, ss_tramp_addr));
+			ARM_STR_IMM (code, dreg, ss_method_ins->inst_basereg, ss_method_ins->inst_offset);
+		} else {
+			g_assert (bp_method_ins->opcode == OP_REGOFFSET);
+			g_assert (arm_is_imm12 (bp_method_ins->inst_offset));
+
+			ARM_MOV_REG_REG (code, ARMREG_LR, ARMREG_PC);
+			ARM_B (code, 1);
+			*(gpointer*)code = &single_step_tramp;
+			code += 4;
+			*(gpointer*)code = breakpoint_tramp;
+			code += 4;
+
+			ARM_LDR_IMM (code, ARMREG_IP, ARMREG_LR, 0);
+			ARM_STR_IMM (code, ARMREG_IP, ss_method_ins->inst_basereg, ss_method_ins->inst_offset);
+			ARM_LDR_IMM (code, ARMREG_IP, ARMREG_LR, 4);
+			ARM_STR_IMM (code, ARMREG_IP, bp_method_ins->inst_basereg, bp_method_ins->inst_offset);
+		}
 	}
 
 	cfg->code_len = code - cfg->native_code;
@@ -7400,6 +7416,7 @@ mono_arch_get_seq_point_info (MonoDomain *domain, guint8 *code)
 
 		info->ss_trigger_page = ss_trigger_page;
 		info->bp_trigger_page = bp_trigger_page;
+		info->ss_tramp_addr = &single_step_tramp;
 
 		mono_domain_lock (domain);
 		g_hash_table_insert (domain_jit_info (domain)->arch_seq_points,
