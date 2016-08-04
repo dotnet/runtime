@@ -514,8 +514,8 @@ The blob has the following structure:
 
 | terminal  | encoding         | description  |
 |:----------|:-----------------|:-------------|
-| _format_  | uint16           | Indicates how the content is serialized. 0 = raw bytes, uncompressed. 1 = compressed in GZIP format. Other values reserved for future formats. |
-| _content_ | format-specific  | The text of the document in the specified format. The length is implied by the length of the blob minus two bytes for the format. |
+| _format_  | int32            | Indicates how the content is serialized. 0 = raw bytes, uncompressed. Positive value = compressed by deflate algorithm and value indicates uncompressed size. Negative values reserved for future formats. |
+| _content_ | format-specific  | The text of the document in the specified format. The length is implied by the length of the blob minus four bytes for the format. |
 
 ##### <a name="SourceLink"></a>Source Link (C# and VB compilers)
 Parent: Module
