@@ -61,7 +61,7 @@ interesting aspects of the design of the .NET Framework.
 
 - [Book of the Runtime](botr/_tableOfContents.md)
 
-For your convenience, here are a a few quick links to popular chapters.  
+For your convenience, here are a few quick links to popular chapters:
 
 - [Introduction to the Common Language Runtime](botr/intro-to-clr.md)
 - [Garbage Collection Design](botr/garbage-collection.md)
