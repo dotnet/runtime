@@ -56,23 +56,16 @@ Testing and Debugging CoreCLR
 Book of the Runtime
 ===================
 
-- [Book of the Runtime FAQ](botr/botr-faq.md)
+The book of the runtime is a set of chapters that go in depth into various 
+interesting aspects of the design of hte .NET Framework.  
+
+- [Book of the Runtime](botr/_tableOfContents.md)
+
+For you convenience, here are a a few quick links to popular chapters.  
+
 - [Introduction to the Common Language Runtime](botr/intro-to-clr.md)
 - [Garbage Collection Design](botr/garbage-collection.md)
-- [Threading](botr/threading.md)
-- [RyuJIT Overview](botr/ryujit-overview.md)
 - [Type System](botr/type-system.md)
-- [Type Loader](botr/type-loader.md)
-- [Method Descriptor](botr/method-descriptor.md)
-- [Virtual Stub Dispatch](botr/virtual-stub-dispatch.md)
-- [Stack Walking](botr/stackwalking.md)
-- [Mscorlib and Calling Into the Runtime](botr/mscorlib.md)
-- [Data Access Component (DAC) Notes](botr/dac-notes.md)
-- [Profiling](botr/profiling.md)
-- [Implementing Profilability](botr/profilability.md)
-- [What Every Dev needs to Know About Exceptions in the Runtime](botr/exceptions.md)
-- [ReadyToRun Overview](botr/readytorun-overview.md)
-- [CLR ABI](botr/clr-abi.md)
 
 Decoder Rings
 =============
