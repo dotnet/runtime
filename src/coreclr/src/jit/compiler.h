@@ -6822,7 +6822,7 @@ public :
 #endif // _TARGET_ARM_
 
     // If "tree" is a indirection (GT_IND, or GT_OBJ) whose arg is an ADDR, whose arg is a LCL_VAR, return that LCL_VAR node, else NULL.
-    GenTreePtr          fgIsIndirOfAddrOfLocal(GenTreePtr tree);
+    static GenTreePtr   fgIsIndirOfAddrOfLocal(GenTreePtr tree);
 
     // This is indexed by GT_OBJ nodes that are address of promoted struct variables, which
     // have been annotated with the GTF_VAR_DEATH flag.  If such a node is *not* mapped in this

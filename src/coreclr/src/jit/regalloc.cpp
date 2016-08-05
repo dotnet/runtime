@@ -4693,7 +4693,7 @@ HANDLE_SHIFT_COUNT:
                     }
                 }
 
-                if (promotedStructLocal != NULL)
+                if ((promotedStructLocal != NULL) && (curArgMask != RBM_NONE))
                 {
                     // All or a portion of this struct will be placed in the argument registers indicated by
                     // "curArgMask". We build in knowledge of the order in which the code is generated here, so
