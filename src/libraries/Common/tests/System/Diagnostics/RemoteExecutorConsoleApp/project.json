@@ -2,11 +2,15 @@
   "dependencies": {
     "System.Runtime": "4.1.1-beta-24403-05",
     "Microsoft.NETCore.Platforms": "1.0.2-beta-24403-05",
-    "System.Console": "4.0.1-beta-24403-05",
+    "System.Console": "4.0.0",
     "System.Diagnostics.Process": "4.1.1-beta-24403-05",
     "System.IO": "4.1.1-beta-24403-05",
     "System.Reflection": "4.1.1-beta-24403-05",
-    "System.Threading.Tasks": "4.0.12-beta-24403-05"
+    "System.Threading.Tasks": "4.0.12-beta-24403-05",
+    "test-runtime": {
+      "target": "project",
+      "exclude": "compile"
+    }
   },
   "frameworks": {
     "netstandard1.3": {}
