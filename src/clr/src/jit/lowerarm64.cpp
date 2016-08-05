@@ -1032,7 +1032,7 @@ Lowering::TreeNodeInfoInitCall(GenTreeCall* call)
                     iterationNum++;
 
                     // Update targetReg and targetMask for the next putarg_reg (if any)
-                    targetReg  = REG_NEXT(targetReg);
+                    targetReg  = genRegArgNext(targetReg);
                     targetMask = genRegMask(targetReg);
                 }
             }
@@ -1057,7 +1057,7 @@ Lowering::TreeNodeInfoInitCall(GenTreeCall* call)
                 if (curReg == lastReg)
                     break;
 
-                curReg = REG_NEXT(curReg);
+                curReg = genRegArgNext(curReg);
             }
 
             // Struct typed arguments must be fully passed in registers (Reg/Stk split not allowed)
