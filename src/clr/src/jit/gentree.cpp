@@ -14706,6 +14706,10 @@ void GenTree::LabelIndex(Compiler* comp, bool isConst)
         gtOp.gtOp1->LabelIndex(comp, isConst);
         break;
 
+    case GT_ARR_LENGTH:
+        gtFlags |= GTF_ARRLEN_ARR_IDX;
+        return;
+
     default:
         // For all other operators, peel off one constant; and then label the other if it's also a constant.
         if (OperIsArithmetic() || OperIsCompare())

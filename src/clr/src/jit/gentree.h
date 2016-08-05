@@ -844,6 +844,8 @@ public:
 
     #define GTF_ARR_BOUND_INBND 0x80000000  // GT_ARR_BOUNDS_CHECK -- have proved this check is always in-bounds
 
+    #define GTF_ARRLEN_ARR_IDX  0x80000000  // GT_ARR_LENGTH -- Length which feeds into an array index expression
+
     //----------------------------------------------------------------
 
     #define GTF_STMT_CMPADD     0x80000000  // GT_STMT    -- added by compiler
