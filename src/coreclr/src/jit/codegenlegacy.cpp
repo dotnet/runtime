@@ -18078,14 +18078,7 @@ void CodeGen::SetupLateArgs(GenTreePtr call)
                     assert(genRegMask(regNum2) & RBM_CALLEE_TRASH);
                     regSet.rsSpillReg(regNum2);
                 }
-                if (isValidIntArgReg(regNum2))
-                {
-                    regNum2 = genRegArgNext(regNum2);
-                }
-                else
-                {
-                    regNum2 = genRegArgNextFloat(regNum2);
-                }
+                regNum2 = genRegArgNext(regNum2);
                 assert(i + 1 == curArgTabEntry->numRegs || regNum2 != MAX_REG_ARG);
             }
 

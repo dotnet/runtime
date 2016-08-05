@@ -2604,12 +2604,10 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
     unsigned        intArgRegNum  = 0;
     unsigned        fltArgRegNum  = 0;
 
+#ifdef _TARGET_ARM_
     regMaskTP       argSkippedRegMask    = RBM_NONE;
-
-#if defined(_TARGET_ARM_) || defined(_TARGET_AMD64_)
-    // Note this in ONLY used by _TARGET_ARM_
     regMaskTP       fltArgSkippedRegMask = RBM_NONE;
-#endif
+#endif //  _TARGET_ARM_
 
 #if defined(_TARGET_X86_)
     unsigned        maxRegArgs    = MAX_REG_ARG;  // X86: non-const, must be calculated
@@ -2953,23 +2951,19 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
         // this can't be a struct.
         assert(argx->gtType != TYP_STRUCT);
 
-        // FIXME: Issue #4025 Why do we need floating type for 'this' argument
         /* Increment the argument register count and argument index */
         if (!varTypeIsFloating(argx->gtType) || opts.compUseSoftFP)
         {
             intArgRegNum++;
-#if defined(_TARGET_AMD64_) && !defined(UNIX_AMD64_ABI)
-            fltArgSkippedRegMask |= genMapArgNumToRegMask(fltArgRegNum, TYP_FLOAT);
+#ifdef WINDOWS_AMD64_ABI
+            // Whenever we pass an integer register argument
+            // we skip the corresponding floating point register argument  
             fltArgRegNum++;
-#endif
+#endif // WINDOWS_AMD64_ABI
         }
         else
         {
-            fltArgRegNum++;
-#if defined(_TARGET_AMD64_) && !defined(UNIX_AMD64_ABI)
-            argSkippedRegMask |= genMapArgNumToRegMask(intArgRegNum, TYP_I_IMPL);
-            intArgRegNum++;
-#endif
+            noway_assert(!"the 'this' pointer can not be a floating point type");
         }
         argIndex++;
         argSlots++;
@@ -3203,7 +3197,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
         {
             passUsingFloatRegs = varTypeIsFloating(argx);
         }
-#else // !UNIX_AMD64_ABI
+#else // WINDOWS_AMD64_ABI
         passUsingFloatRegs = varTypeIsFloating(argx);
 #endif // !UNIX_AMD64_ABI
 #elif defined(_TARGET_X86_)
@@ -3980,10 +3974,11 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
                     {
                         fltArgRegNum += size;
 
-#if defined(_TARGET_AMD64_) && !defined(UNIX_AMD64_ABI)
-                        argSkippedRegMask |= genMapArgNumToRegMask(intArgRegNum, TYP_I_IMPL);
+#ifdef WINDOWS_AMD64_ABI
+                        // Whenever we pass an integer register argument
+                        // we skip the corresponding floating point register argument  
                         intArgRegNum = min(intArgRegNum + size, MAX_REG_ARG);
-#endif // _TARGET_AMD64_
+#endif // WINDOWS_AMD64_ABI
 #ifdef _TARGET_ARM_
                         if (fltArgRegNum > MAX_FLOAT_REG_ARG)
                         {
@@ -4011,7 +4006,6 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
                         }
 
 #if defined(_TARGET_AMD64_) && !defined(UNIX_AMD64_ABI)
-                        fltArgSkippedRegMask |= genMapArgNumToRegMask(fltArgRegNum, TYP_DOUBLE);
                         fltArgRegNum = min(fltArgRegNum + size, MAX_FLOAT_REG_ARG);
 #endif // _TARGET_AMD64_
 #ifdef _TARGET_ARM_
@@ -4118,7 +4112,10 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
     {
         call->fgArgInfo->ArgsComplete();
 #ifdef LEGACY_BACKEND
-        call->gtCallRegUsedMask = genIntAllRegArgMask(intArgRegNum) & ~argSkippedRegMask;
+        call->gtCallRegUsedMask = genIntAllRegArgMask(intArgRegNum);
+#if defined(_TARGET_ARM_)
+        call->gtCallRegUsedMask &= ~argSkippedRegMask;
+#endif
         if (fltArgRegNum > 0)
         {
 #if defined(_TARGET_ARM_)
@@ -4492,7 +4489,7 @@ void Compiler::fgMorphMultiregStructArgs(GenTreeCall* call)
 #ifdef _TARGET_AMD64_
 #if defined(UNIX_AMD64_ABI)
     NYI_AMD64("fgMorphMultiregStructArgs (UNIX ABI)");
-#else // !UNIX_AMD64_ABI
+#else // WINDOWS_AMD64_ABI
     assert(!"Logic error: no MultiregStructArgs for Windows X64 ABI");
 #endif // !UNIX_AMD64_ABI
 #endif

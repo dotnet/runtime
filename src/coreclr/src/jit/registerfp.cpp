@@ -25,7 +25,7 @@ regNumber alignFloatArgReg(regNumber argReg, int alignment)
 
     int regsize_alignment = alignment /= REGSIZE_BYTES;
     if (genMapFloatRegNumToRegArgNum(argReg) % regsize_alignment)
-        argReg = genRegArgNextFloat(argReg);
+        argReg = genRegArgNext(argReg);
     
     // technically the above should be a 'while' so make sure 
     // we never should have incremented more than once
