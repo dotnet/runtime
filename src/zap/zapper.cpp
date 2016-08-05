@@ -240,7 +240,7 @@ STDAPI NGenWorker(LPCWSTR pwzFilename, DWORD dwFlags, LPCWSTR pwzPlatformAssembl
     return hr;
 }
 
-STDAPI CreatePDBWorker(LPCWSTR pwzAssemblyPath, LPCWSTR pwzPlatformAssembliesPaths, LPCWSTR pwzTrustedPlatformAssemblies, LPCWSTR pwzPlatformResourceRoots, LPCWSTR pwzAppPaths, LPCWSTR pwzAppNiPaths, LPCWSTR pwzPdbPath, BOOL fGeneratePDBLinesInfo, LPCWSTR pwzManagedPdbSearchPath, LPCWSTR pwzPlatformWinmdPaths)
+STDAPI CreatePDBWorker(LPCWSTR pwzAssemblyPath, LPCWSTR pwzPlatformAssembliesPaths, LPCWSTR pwzTrustedPlatformAssemblies, LPCWSTR pwzPlatformResourceRoots, LPCWSTR pwzAppPaths, LPCWSTR pwzAppNiPaths, LPCWSTR pwzPdbPath, BOOL fGeneratePDBLinesInfo, LPCWSTR pwzManagedPdbSearchPath, LPCWSTR pwzPlatformWinmdPaths, LPCWSTR pwzDiasymreaderPath)
 {    
     HRESULT hr = S_OK;
 
@@ -254,6 +254,10 @@ STDAPI CreatePDBWorker(LPCWSTR pwzAssemblyPath, LPCWSTR pwzPlatformAssembliesPat
         ngo.dwSize = sizeof(NGenOptions);
 
         zap = Zapper::NewZapper(&ngo);
+
+#if defined(FEATURE_CORECLR) && !defined(FEATURE_MERGE_JIT_AND_ENGINE)
+        zap->SetDontLoadJit();
+#endif // defined(FEATURE_CORECLR) && !defined(FEATURE_MERGE_JIT_AND_ENGINE)
 
         if (pwzPlatformAssembliesPaths != nullptr)
             zap->SetPlatformAssembliesPaths(pwzPlatformAssembliesPaths);
@@ -272,6 +276,11 @@ STDAPI CreatePDBWorker(LPCWSTR pwzAssemblyPath, LPCWSTR pwzPlatformAssembliesPat
 
         if (pwzPlatformWinmdPaths != nullptr)
             zap->SetPlatformWinmdPaths(pwzPlatformWinmdPaths);
+
+#if defined(FEATURE_CORECLR) && !defined(NO_NGENPDB)
+        if (pwzDiasymreaderPath != nullptr)
+            zap->SetDiasymreaderPath(pwzDiasymreaderPath);
+#endif // defined(FEATURE_CORECLR) && !defined(NO_NGENPDB)
 
         // Avoid unnecessary security failures, since permissions are irrelevant when
         // generating NGEN PDBs
@@ -676,6 +685,10 @@ void Zapper::Init(ZapperOptions *pOptions, bool fFreeZapperOptions)
     _ASSERTE(SUCCEEDED(hr));
 #endif
 
+#if defined(FEATURE_CORECLR) && !defined(FEATURE_MERGE_JIT_AND_ENGINE)
+    m_fDontLoadJit = false;
+#endif // defined(FEATURE_CORECLR) && !defined(FEATURE_MERGE_JIT_AND_ENGINE)
+
     m_fForceFullTrust = false;
 }
 
@@ -707,6 +720,11 @@ void Zapper::LoadAndInitializeJITForNgen(LPCWSTR pwzJitName, OUT HINSTANCE* phJi
     extern HINSTANCE g_hThisInst;
 
 #if defined(FEATURE_CORECLR) && !defined(FEATURE_MERGE_JIT_AND_ENGINE)
+    if (m_fDontLoadJit)
+    {
+        return;
+    }
+
     if (m_CLRJITPath.GetCount() > 0)
     {
         // If we have been asked to load a specific JIT binary, load it.
@@ -2215,7 +2233,15 @@ void Zapper::CreatePdbInCurrentDomain(BSTR pAssemblyPathOrName, BSTR pNativeImag
                 tkFile, &hModule));
         }
 
-        IfFailThrow(::CreatePdb(hAssembly, pNativeImagePath, pPdbPath, pdbLines, pManagedPdbSearchPath));
+        LPCWSTR pDiasymreaderPath = nullptr;
+#if defined(FEATURE_CORECLR) && !defined(NO_NGENPDB)
+        if (m_DiasymreaderPath.GetCount() > 0)
+        {
+            pDiasymreaderPath = m_DiasymreaderPath.GetUnicode();
+        }
+#endif // defined(FEATURE_CORECLR) && !defined(NO_NGENPDB)
+
+        IfFailThrow(::CreatePdb(hAssembly, pNativeImagePath, pPdbPath, pdbLines, pManagedPdbSearchPath, pDiasymreaderPath));
     }
     EX_CATCH
     {
@@ -4037,7 +4063,19 @@ void Zapper::SetCLRJITPath(LPCWSTR pwszCLRJITPath)
 {
     m_CLRJITPath.Set(pwszCLRJITPath);
 }
+
+void Zapper::SetDontLoadJit()
+{
+    m_fDontLoadJit = true;
+}
 #endif // defined(FEATURE_CORECLR) && !defined(FEATURE_MERGE_JIT_AND_ENGINE)
+
+#if defined(FEATURE_CORECLR) && !defined(NO_NGENPDB)
+void Zapper::SetDiasymreaderPath(LPCWSTR pwzDiasymreaderPath)
+{
+    m_DiasymreaderPath.Set(pwzDiasymreaderPath);
+}
+#endif // defined(FEATURE_CORECLR) && !defined(NO_NGENPDB)
 
 #if defined(FEATURE_CORECLR) || defined(CROSSGEN_COMPILE)
 
