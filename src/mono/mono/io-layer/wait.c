@@ -625,17 +625,11 @@ guint32 WaitForMultipleObjectsEx(guint32 numobjects, gpointer *handles,
 			retval = WAIT_OBJECT_0+lowest;
 			break;
 		} else if (ret != 0) {
-			/* Didn't get all handles, and there was a
-			 * timeout or other error
-			 */
+			/* Didn't get all handles, and there was a timeout */
 			MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: wait returned error: %s", __func__,
 				   strerror (ret));
 
-			if(ret==ETIMEDOUT) {
-				retval = WAIT_TIMEOUT;
-			} else {
-				retval = WAIT_FAILED;
-			}
+			retval = WAIT_TIMEOUT;
 			break;
 		}
 	}
