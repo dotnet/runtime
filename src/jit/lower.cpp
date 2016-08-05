@@ -2180,14 +2180,23 @@ GenTree* Lowering::LowerDelegateInvoke(GenTreeCall* call)
     assert(thisArgNode->gtOper == GT_PUTARG_REG);
     GenTree* originalThisExpr = thisArgNode->gtOp.gtOp1;
 
-    // If what we are passing as the thisptr is not already a local, make a new local to place it in
-    // because we will be creating expressions based on it.
+    // We're going to use the 'this' expression multiple times, so make a local to copy it.
+
     unsigned lclNum;
-    if (originalThisExpr->IsLocal())
+
+#ifdef _TARGET_X86_
+    if (call->IsTailCallViaHelper() && originalThisExpr->IsLocal())
     {
+        // For ordering purposes for the special tailcall arguments on x86, we forced the
+        // 'this' pointer in this case to a local in Compiler::fgMorphTailCall().
+        // We could possibly use this case to remove copies for all architectures and non-tailcall
+        // calls by creating a new lcl var or lcl field reference, as is done in the
+        // LowerVirtualVtableCall() code.
+        assert(originalThisExpr->OperGet() == GT_LCL_VAR);
         lclNum = originalThisExpr->AsLclVarCommon()->GetLclNum();
     }
     else
+#endif // _TARGET_X86_
     {
         unsigned delegateInvokeTmp = comp->lvaGrabTemp(true DEBUGARG("delegate invoke call"));
         GenTreeStmt* newStmt = comp->fgInsertEmbeddedFormTemp(&thisArgNode->gtOp.gtOp1, delegateInvokeTmp);
