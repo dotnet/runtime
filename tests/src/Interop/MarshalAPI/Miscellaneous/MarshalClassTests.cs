@@ -56,9 +56,7 @@ class MarshalClassTests
         int retVal = 100;
 
         IntPtr ip;
-        Object o;
         SomeTestStruct someTs = new SomeTestStruct();
-        StructWithFxdLPSTRSAFld someTs_FxdLPSTR = new StructWithFxdLPSTRSAFld();
 
 #if BUG_876976
         Console.WriteLine("Testing SizeOf...");
@@ -308,7 +306,7 @@ class MarshalClassTests
         Console.WriteLine("\n\tPassing structure that has no layout and CANNOT be marshaled");
         try
         {
-            Marshal.SizeOf(someTs_FxdLPSTR.GetType());
+            Marshal.SizeOf(typeof(StructWithFxdLPSTRSAFld));
             retVal = 0;
             Console.WriteLine("\t\tNO EXCEPTION THROWN! FAILED!");
         }
@@ -371,7 +369,7 @@ class MarshalClassTests
         Console.WriteLine("\n\tPassing structure that has no layout and CANNOT be marshaled");
         try
         {
-            Marshal.OffsetOf(someTs_FxdLPSTR.GetType(), "Arr");
+            Marshal.OffsetOf(typeof(StructWithFxdLPSTRSAFld), "Arr");
             retVal = 0;
             Console.WriteLine("\t\tNO EXCEPTION THROWN! FAILED!");
         }
@@ -493,6 +491,7 @@ class MarshalClassTests
 
         Console.WriteLine("DONE testing Copy.");
         
+#if ISSUE_6605
         //////////////////////////////////////////////////////////////
         //IsComObject
         /////////////////////////////////////////////////////////////
@@ -513,9 +512,9 @@ class MarshalClassTests
             retVal = 0;
             Console.WriteLine("\t\tUNEXPECTED EXCEPTION:\n\t\t\t" + e.ToString());
         }
-
+#endif
         Console.WriteLine("DONE testing IsComObject.");
 
-        return 100;
+        return retVal;
     }
 }
