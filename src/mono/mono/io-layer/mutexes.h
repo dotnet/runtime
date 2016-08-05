@@ -12,6 +12,8 @@
 
 #include <glib.h>
 
+#include <pthread.h>
+
 G_BEGIN_DECLS
 
 extern gpointer CreateMutex (WapiSecurityAttributes *security, gboolean owned,
@@ -19,6 +21,9 @@ extern gpointer CreateMutex (WapiSecurityAttributes *security, gboolean owned,
 extern gboolean ReleaseMutex (gpointer handle);
 extern gpointer OpenMutex (guint32 access, gboolean inherit,
 			   const gunichar2 *name);
+
+void
+wapi_mutex_abandon (gpointer data, pid_t pid, pthread_t tid);
 
 G_END_DECLS
 

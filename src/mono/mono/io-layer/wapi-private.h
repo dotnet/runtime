@@ -20,6 +20,9 @@
 
 #include <mono/utils/mono-os-mutex.h>
 
+/* There doesn't seem to be a defined symbol for this */
+#define _WAPI_THREAD_CURRENT (gpointer)0xFFFFFFFE
+
 extern gboolean _wapi_has_shut_down;
 
 typedef struct 
@@ -32,7 +35,6 @@ typedef struct
 #include <mono/io-layer/mutex-private.h>
 #include <mono/io-layer/semaphore-private.h>
 #include <mono/io-layer/socket-private.h>
-#include <mono/io-layer/thread-private.h>
 #include <mono/io-layer/process-private.h>
 #include <mono/utils/w32handle.h>
 
@@ -66,9 +68,6 @@ struct _WapiFileShare
 };
 
 typedef struct _WapiFileShare _WapiFileShare;
-
-pid_t
-_wapi_getpid (void);
 
 gpointer
 _wapi_search_handle_namespace (MonoW32HandleType type, gchar *utf8_name);

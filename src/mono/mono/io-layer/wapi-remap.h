@@ -99,7 +99,5 @@
 #define WaitForMultipleObjects wapi_WaitForMultipleObjects
 #define WaitForMultipleObjectsEx wapi_WaitForMultipleObjectsEx
 #define WaitForInputIdle wapi_WaitForInputIdle
-#define GetThreadPriority wapi_GetThreadPriority
-#define SetThreadPriority wapi_SetThreadPriority
 
 #endif /* __WAPI_REMAP_H__ */

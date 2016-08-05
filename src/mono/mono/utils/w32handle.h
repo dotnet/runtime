@@ -52,7 +52,7 @@ typedef struct
 	 * instead of using the normal handle signal mechanism.
 	 * Returns the WaitForSingleObject return code.
 	 */
-	guint32 (*special_wait)(gpointer handle, guint32 timeout, gboolean alertable);
+	guint32 (*special_wait)(gpointer handle, guint32 timeout, gboolean *alerted);
 
 	/* Called by WaitForSingleObject and WaitForMultipleObjects,
 	 * if the handle in question needs some preprocessing before the
@@ -134,7 +134,7 @@ gboolean
 mono_w32handle_ops_isowned (gpointer handle);
 
 guint32
-mono_w32handle_ops_specialwait (gpointer handle, guint32 timeout, gboolean alertable);
+mono_w32handle_ops_specialwait (gpointer handle, guint32 timeout, gboolean *alerted);
 
 void
 mono_w32handle_ops_prewait (gpointer handle);

@@ -2484,9 +2484,6 @@ mono_print_thread_dump_internal (void *sigctx, MonoContext *start_ctx)
 #endif
 	GString* text;
 	char *name;
-#ifndef HOST_WIN32
-	char *wapi_desc;
-#endif
 	GError *error = NULL;
 
 	if (!thread)
@@ -2504,11 +2501,9 @@ mono_print_thread_dump_internal (void *sigctx, MonoContext *start_ctx)
 	else
 		g_string_append (text, "\n\"<unnamed thread>\"");
 
-#ifndef HOST_WIN32
-	wapi_desc = wapi_current_thread_desc ();
-	g_string_append_printf (text, " tid=0x%p this=0x%p %s\n", (gpointer)(gsize)thread->tid, thread,  wapi_desc);
-	free (wapi_desc);
-#endif
+	g_string_append_printf (text, " tid=0x%p this=0x%p ", (gpointer)(gsize)thread->tid, thread);
+	mono_thread_info_describe ((MonoThreadInfo*) thread->thread_info, text);
+	g_string_append (text, "\n");
 
 #ifdef MONO_ARCH_HAVE_SIGCTX_TO_MONOCTX
 	if (start_ctx) {

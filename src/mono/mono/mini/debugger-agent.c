@@ -727,7 +727,7 @@ static void transport_connect (const char *address);
 static gboolean transport_handshake (void);
 static void register_transport (DebuggerTransport *trans);
 
-static guint32 WINAPI debugger_thread (void *arg);
+static gsize WINAPI debugger_thread (void *arg);
 
 static void runtime_initialized (MonoProfiler *prof);
 
@@ -1629,7 +1629,7 @@ start_debugger_thread (void)
 {
 	MonoThreadParm tp;
 
-	tp.priority = 0;
+	tp.priority = MONO_THREAD_PRIORITY_NORMAL;
 	tp.stack_size = 0;
 	tp.creation_flags = 0;
 	debugger_thread_handle = mono_threads_create_thread (debugger_thread, NULL, &tp, NULL);
@@ -9809,7 +9809,7 @@ wait_for_attach (void)
  *   This thread handles communication with the debugger client using a JDWP
  * like protocol.
  */
-static guint32 WINAPI
+static gsize WINAPI
 debugger_thread (void *arg)
 {
 	MonoError error;

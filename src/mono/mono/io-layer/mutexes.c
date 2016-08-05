@@ -96,7 +96,7 @@ mutex_handle_own (gpointer handle, MonoW32HandleType type)
 	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: owning %s handle %p, tid %p, recursion %u",
 		__func__, mutex_handle_type_to_string (type), handle, (gpointer) mutex_handle->tid, mutex_handle->recursion);
 
-	_wapi_thread_own_mutex (handle);
+	mono_thread_info_own_mutex (mono_thread_info_current (), handle);
 
 	mutex_handle->tid = pthread_self ();
 	mutex_handle->recursion++;
@@ -239,7 +239,7 @@ static gsize namedmutex_typesize (void)
 }
 
 /* When a thread exits, any mutexes it still holds need to be signalled. */
-void _wapi_mutex_abandon (gpointer handle, pid_t pid, pthread_t tid)
+void wapi_mutex_abandon (gpointer handle, pid_t pid, pthread_t tid)
 {
 	MonoW32HandleType type;
 	struct _WapiHandle_mutex *mutex_handle;
@@ -450,7 +450,7 @@ gboolean ReleaseMutex(gpointer handle)
 		mutex_handle->recursion--;
 
 		if (mutex_handle->recursion == 0) {
-			_wapi_thread_disown_mutex (handle);
+			mono_thread_info_disown_mutex (mono_thread_info_current (), handle);
 
 			MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: unlocking %s handle %p",
 				__func__, mutex_handle_type_to_string (type), handle);

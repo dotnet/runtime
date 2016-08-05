@@ -32,6 +32,8 @@ typedef DWORD mono_native_thread_return_t;
 #define MONO_NATIVE_THREAD_ID_TO_UINT(tid) (tid)
 #define MONO_UINT_TO_NATIVE_THREAD_ID(tid) ((MonoNativeThreadId)(tid))
 
+typedef LPTHREAD_START_ROUTINE MonoThreadStart;
+
 #else
 
 #include <pthread.h>
@@ -55,6 +57,8 @@ typedef void* mono_native_thread_return_t;
 
 #define MONO_NATIVE_THREAD_ID_TO_UINT(tid) (gsize)(tid)
 #define MONO_UINT_TO_NATIVE_THREAD_ID(tid) (MonoNativeThreadId)(gsize)(tid)
+
+typedef gsize (*MonoThreadStart)(gpointer);
 
 #endif /* #ifdef HOST_WIN32 */
 
@@ -289,6 +293,14 @@ typedef struct {
 	guint32 stack_size;		
 } MonoThreadParm;
 
+typedef enum {
+	MONO_THREAD_PRIORITY_LOWEST       = 0,
+	MONO_THREAD_PRIORITY_BELOW_NORMAL = 1,
+	MONO_THREAD_PRIORITY_NORMAL       = 2,
+	MONO_THREAD_PRIORITY_ABOVE_NORMAL = 3,
+	MONO_THREAD_PRIORITY_HIGHEST      = 4,
+} MonoThreadPriority;
+
 static inline gboolean
 mono_threads_filter_tools_threads (THREAD_INFO_TYPE *info)
 {
@@ -426,6 +438,9 @@ HANDLE
 mono_thread_info_open_handle (void);
 
 void
+mono_thread_info_set_exited (THREAD_INFO_TYPE *info);
+
+void
 mono_thread_info_install_interrupt (void (*callback) (gpointer data), gpointer data, gboolean *interrupted);
 
 void
@@ -453,7 +468,7 @@ gboolean
 mono_thread_info_is_live (THREAD_INFO_TYPE *info);
 
 HANDLE
-mono_threads_create_thread (LPTHREAD_START_ROUTINE start, gpointer arg, MonoThreadParm *tp, MonoNativeThreadId *out_tid);
+mono_threads_create_thread (MonoThreadStart start, gpointer arg, MonoThreadParm *tp, MonoNativeThreadId *out_tid);
 
 int
 mono_threads_get_max_stack_size (void);
@@ -480,11 +495,13 @@ mono_threads_pthread_kill (THREAD_INFO_TYPE *info, int signum);
 This is called very early in the runtime, it cannot access any runtime facilities.
 
 */
-void mono_threads_init_platform (void); //ok
+void mono_threads_suspend_init (void); //ok
 
-void mono_threads_init_coop (void);
+void mono_threads_platform_init (void);
 
-void mono_threads_init_abort_syscall (void);
+void mono_threads_coop_init (void);
+
+void mono_threads_abort_syscall_init (void);
 
 /*
 This begins async suspend. This function must do the following:
@@ -495,7 +512,7 @@ This begins async suspend. This function must do the following:
 
 If begin suspend fails the thread must be left uninterrupted and resumed.
 */
-gboolean mono_threads_core_begin_async_suspend (THREAD_INFO_TYPE *info, gboolean interrupt_kernel);
+gboolean mono_threads_suspend_begin_async_suspend (THREAD_INFO_TYPE *info, gboolean interrupt_kernel);
 
 /*
 This verifies the outcome of an async suspend operation.
@@ -503,7 +520,7 @@ This verifies the outcome of an async suspend operation.
 Some targets, such as posix, verify suspend results assynchronously. Suspend results must be
 available (in a non blocking way) after mono_threads_wait_pending_operations completes.
 */
-gboolean mono_threads_core_check_suspend_result (THREAD_INFO_TYPE *info);
+gboolean mono_threads_suspend_check_suspend_result (THREAD_INFO_TYPE *info);
 
 /*
 This begins async resume. This function must do the following:
@@ -512,20 +529,27 @@ This begins async resume. This function must do the following:
 - Notify the target to resume.
 - Register the thread for pending ack with mono_threads_add_to_pending_operation_set if needed.
 */
-gboolean mono_threads_core_begin_async_resume (THREAD_INFO_TYPE *info);
+gboolean mono_threads_suspend_begin_async_resume (THREAD_INFO_TYPE *info);
 
-void mono_threads_platform_register (THREAD_INFO_TYPE *info); //ok
-void mono_threads_platform_free (THREAD_INFO_TYPE *info);
-void mono_threads_core_abort_syscall (THREAD_INFO_TYPE *info);
-gboolean mono_threads_core_needs_abort_syscall (void);
-HANDLE mono_threads_core_create_thread (LPTHREAD_START_ROUTINE start, gpointer arg, MonoThreadParm *, MonoNativeThreadId *out_tid);
-void mono_threads_core_resume_created (THREAD_INFO_TYPE *info, MonoNativeThreadId tid);
-void mono_threads_core_get_stack_bounds (guint8 **staddr, size_t *stsize);
-gboolean mono_threads_core_yield (void);
-void mono_threads_core_exit (int exit_code);
-void mono_threads_core_unregister (THREAD_INFO_TYPE *info);
-HANDLE mono_threads_core_open_handle (void);
-HANDLE mono_threads_core_open_thread_handle (HANDLE handle, MonoNativeThreadId tid);
+void mono_threads_suspend_register (THREAD_INFO_TYPE *info); //ok
+void mono_threads_suspend_free (THREAD_INFO_TYPE *info);
+void mono_threads_suspend_abort_syscall (THREAD_INFO_TYPE *info);
+gboolean mono_threads_suspend_needs_abort_syscall (void);
+
+HANDLE mono_threads_platform_create_thread (MonoThreadStart start, gpointer arg, MonoThreadParm *, MonoNativeThreadId *out_tid);
+void mono_threads_platform_resume_created (THREAD_INFO_TYPE *info, MonoNativeThreadId tid);
+void mono_threads_platform_get_stack_bounds (guint8 **staddr, size_t *stsize);
+gboolean mono_threads_platform_yield (void);
+void mono_threads_platform_exit (int exit_code);
+void mono_threads_platform_unregister (THREAD_INFO_TYPE *info);
+HANDLE mono_threads_platform_open_handle (void);
+HANDLE mono_threads_platform_open_thread_handle (HANDLE handle, MonoNativeThreadId tid);
+void mono_threads_platform_set_exited (THREAD_INFO_TYPE *info);
+void mono_threads_platform_describe (THREAD_INFO_TYPE *info, GString *text);
+void mono_threads_platform_own_mutex (THREAD_INFO_TYPE *info, gpointer mutex_handle);
+void mono_threads_platform_disown_mutex (THREAD_INFO_TYPE *info, gpointer mutex_handle);
+MonoThreadPriority mono_threads_platform_get_priority (THREAD_INFO_TYPE *info);
+gboolean mono_threads_platform_set_priority (THREAD_INFO_TYPE *info, MonoThreadPriority priority);
 
 void mono_threads_coop_begin_global_suspend (void);
 void mono_threads_coop_end_global_suspend (void);
@@ -639,5 +663,23 @@ void mono_threads_end_global_suspend (void);
 
 gboolean
 mono_thread_info_is_current (THREAD_INFO_TYPE *info);
+
+gpointer
+mono_thread_info_get_handle (THREAD_INFO_TYPE *info);
+
+void
+mono_thread_info_describe (THREAD_INFO_TYPE *info, GString *text);
+
+void
+mono_thread_info_own_mutex (THREAD_INFO_TYPE *info, gpointer mutex_handle);
+
+void
+mono_thread_info_disown_mutex (THREAD_INFO_TYPE *info, gpointer mutex_handle);
+
+MonoThreadPriority
+mono_thread_info_get_priority (THREAD_INFO_TYPE *info);
+
+gboolean
+mono_thread_info_set_priority (THREAD_INFO_TYPE *info, MonoThreadPriority priority);
 
 #endif /* __MONO_THREADS_H__ */

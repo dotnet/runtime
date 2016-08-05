@@ -25,7 +25,6 @@
 #include <mono/io-layer/semaphores.h>
 #include <mono/io-layer/sockets.h>
 #include <mono/io-layer/status.h>
-#include <mono/io-layer/threads.h>
 #include <mono/io-layer/timefuncs.h>
 #include <mono/io-layer/versioninfo.h>
 #include <mono/io-layer/wait.h>
@@ -42,5 +41,8 @@ CloseHandle (gpointer handle);
 gboolean
 DuplicateHandle (gpointer srcprocess, gpointer src, gpointer targetprocess, gpointer *target,
 	guint32 access G_GNUC_UNUSED, gboolean inherit G_GNUC_UNUSED, guint32 options G_GNUC_UNUSED);
+
+pid_t
+wapi_getpid (void);
 
 #endif /* _WAPI_WAPI_H_ */

@@ -85,6 +85,7 @@ static void socket_close (gpointer handle, gpointer data)
 {
 	int ret;
 	struct _WapiHandle_socket *socket_handle = (struct _WapiHandle_socket *)data;
+	MonoThreadInfo *info = mono_thread_info_current ();
 
 	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: closing socket handle %p", __func__, handle);
 
@@ -96,7 +97,7 @@ static void socket_close (gpointer handle, gpointer data)
 	do {
 		ret = close (GPOINTER_TO_UINT(handle));
 	} while (ret == -1 && errno == EINTR &&
-		 !_wapi_thread_cur_apc_pending ());
+		 !mono_thread_info_is_interrupt_state (info));
 	
 	if (ret == -1) {
 		gint errnum = errno;
@@ -174,6 +175,7 @@ guint32 _wapi_accept(guint32 fd, struct sockaddr *addr, socklen_t *addrlen)
 	struct _WapiHandle_socket new_socket_handle = {0};
 	gboolean ok;
 	int new_fd;
+	MonoThreadInfo *info = mono_thread_info_current ();
 
 	if (addr != NULL && *addrlen < sizeof(struct sockaddr)) {
 		WSASetLastError (WSAEFAULT);
@@ -197,7 +199,7 @@ guint32 _wapi_accept(guint32 fd, struct sockaddr *addr, socklen_t *addrlen)
 	do {
 		new_fd = accept (fd, addr, addrlen);
 	} while (new_fd == -1 && errno == EINTR &&
-		 !_wapi_thread_cur_apc_pending());
+		 !mono_thread_info_is_interrupt_state (info));
 
 	if (new_fd == -1) {
 		gint errnum = errno;
@@ -267,7 +269,8 @@ int _wapi_connect(guint32 fd, const struct sockaddr *serv_addr,
 	struct _WapiHandle_socket *socket_handle;
 	gboolean ok;
 	gint errnum;
-	
+	MonoThreadInfo *info = mono_thread_info_current ();
+
 	if (mono_w32handle_get_type (handle) != MONO_W32HANDLE_SOCKET) {
 		WSASetLastError (WSAENOTSOCK);
 		return(SOCKET_ERROR);
@@ -315,7 +318,7 @@ int _wapi_connect(guint32 fd, const struct sockaddr *serv_addr,
 		fds.fd = fd;
 		fds.events = MONO_POLLOUT;
 		while (mono_poll (&fds, 1, -1) == -1 &&
-		       !_wapi_thread_cur_apc_pending ()) {
+		       !mono_thread_info_is_interrupt_state (info)) {
 			if (errno != EINTR) {
 				errnum = errno_to_WSA (errno, __func__);
 
@@ -512,6 +515,7 @@ int _wapi_recvfrom(guint32 fd, void *buf, size_t len, int recv_flags,
 	struct _WapiHandle_socket *socket_handle;
 	gboolean ok;
 	int ret;
+	MonoThreadInfo *info = mono_thread_info_current ();
 	
 	if (mono_w32handle_get_type (handle) != MONO_W32HANDLE_SOCKET) {
 		WSASetLastError (WSAENOTSOCK);
@@ -521,7 +525,7 @@ int _wapi_recvfrom(guint32 fd, void *buf, size_t len, int recv_flags,
 	do {
 		ret = recvfrom (fd, buf, len, recv_flags, from, fromlen);
 	} while (ret == -1 && errno == EINTR &&
-		 !_wapi_thread_cur_apc_pending ());
+		 !mono_thread_info_is_interrupt_state (info));
 
 	if (ret == 0 && len > 0) {
 		/* According to the Linux man page, recvfrom only
@@ -569,6 +573,7 @@ _wapi_recvmsg(guint32 fd, struct msghdr *msg, int recv_flags)
 	struct _WapiHandle_socket *socket_handle;
 	gboolean ok;
 	int ret;
+	MonoThreadInfo *info = mono_thread_info_current ();
 	
 	if (mono_w32handle_get_type (handle) != MONO_W32HANDLE_SOCKET) {
 		WSASetLastError (WSAENOTSOCK);
@@ -578,7 +583,7 @@ _wapi_recvmsg(guint32 fd, struct msghdr *msg, int recv_flags)
 	do {
 		ret = recvmsg (fd, msg, recv_flags);
 	} while (ret == -1 && errno == EINTR &&
-		 !_wapi_thread_cur_apc_pending ());
+		 !mono_thread_info_is_interrupt_state (info));
 
 	if (ret == 0) {
 		/* see _wapi_recvfrom */
@@ -606,6 +611,7 @@ int _wapi_send(guint32 fd, const void *msg, size_t len, int send_flags)
 {
 	gpointer handle = GUINT_TO_POINTER (fd);
 	int ret;
+	MonoThreadInfo *info = mono_thread_info_current ();
 	
 	if (mono_w32handle_get_type (handle) != MONO_W32HANDLE_SOCKET) {
 		WSASetLastError (WSAENOTSOCK);
@@ -615,7 +621,7 @@ int _wapi_send(guint32 fd, const void *msg, size_t len, int send_flags)
 	do {
 		ret = send (fd, msg, len, send_flags);
 	} while (ret == -1 && errno == EINTR &&
-		 !_wapi_thread_cur_apc_pending ());
+		 !mono_thread_info_is_interrupt_state (info));
 
 	if (ret == -1) {
 		gint errnum = errno;
@@ -643,6 +649,7 @@ int _wapi_sendto(guint32 fd, const void *msg, size_t len, int send_flags,
 {
 	gpointer handle = GUINT_TO_POINTER (fd);
 	int ret;
+	MonoThreadInfo *info = mono_thread_info_current ();
 	
 	if (mono_w32handle_get_type (handle) != MONO_W32HANDLE_SOCKET) {
 		WSASetLastError (WSAENOTSOCK);
@@ -652,7 +659,7 @@ int _wapi_sendto(guint32 fd, const void *msg, size_t len, int send_flags,
 	do {
 		ret = sendto (fd, msg, len, send_flags, to, tolen);
 	} while (ret == -1 && errno == EINTR &&
-		 !_wapi_thread_cur_apc_pending ());
+		 !mono_thread_info_is_interrupt_state (info));
 
 	if (ret == -1) {
 		gint errnum = errno;
@@ -671,6 +678,7 @@ _wapi_sendmsg(guint32 fd,  const struct msghdr *msg, int send_flags)
 {
 	gpointer handle = GUINT_TO_POINTER (fd);
 	int ret;
+	MonoThreadInfo *info = mono_thread_info_current ();
 	
 	if (mono_w32handle_get_type (handle) != MONO_W32HANDLE_SOCKET) {
 		WSASetLastError (WSAENOTSOCK);
@@ -680,7 +688,7 @@ _wapi_sendmsg(guint32 fd,  const struct msghdr *msg, int send_flags)
 	do {
 		ret = sendmsg (fd, msg, send_flags);
 	} while (ret == -1 && errno == EINTR &&
-		 !_wapi_thread_cur_apc_pending ());
+		 !mono_thread_info_is_interrupt_state (info));
 
 	if (ret == -1) {
 		gint errnum = errno;
@@ -967,6 +975,7 @@ static gboolean wapi_disconnectex (guint32 fd, WapiOverlapped *overlapped,
 static gint
 wapi_sendfile (guint32 socket, gpointer fd, guint32 bytes_to_write, guint32 bytes_per_send, guint32 flags)
 {
+	MonoThreadInfo *info = mono_thread_info_current ();
 #if defined(HAVE_SENDFILE) && (defined(__linux__) || defined(DARWIN))
 	gint file = GPOINTER_TO_INT (fd);
 	gint n;
@@ -989,7 +998,7 @@ wapi_sendfile (guint32 socket, gpointer fd, guint32 bytes_to_write, guint32 byte
 		/* TODO: Might not send the entire file for non-blocking sockets */
 		res = sendfile (file, socket, 0, &statbuf.st_size, NULL, 0);
 #endif
-	} while (res != -1 && errno == EINTR && !_wapi_thread_cur_apc_pending ());
+	} while (res != -1 && errno == EINTR && !mono_thread_info_is_interrupt_state (info));
 	if (res == -1) {
 		errnum = errno;
 		errnum = errno_to_WSA (errnum, __func__);
@@ -1006,7 +1015,7 @@ wapi_sendfile (guint32 socket, gpointer fd, guint32 bytes_to_write, guint32 byte
 	do {
 		do {
 			n = read (file, buffer, SF_BUFFER_SIZE);
-		} while (n == -1 && errno == EINTR && !_wapi_thread_cur_apc_pending ());
+		} while (n == -1 && errno == EINTR && !mono_thread_info_is_interrupt_state (info));
 		if (n == -1)
 			break;
 		if (n == 0) {
@@ -1015,8 +1024,8 @@ wapi_sendfile (guint32 socket, gpointer fd, guint32 bytes_to_write, guint32 byte
 		}
 		do {
 			n = send (socket, buffer, n, 0); /* short sends? enclose this in a loop? */
-		} while (n == -1 && errno == EINTR && !_wapi_thread_cur_apc_pending ());
-	} while (n != -1 && errno == EINTR && !_wapi_thread_cur_apc_pending ());
+		} while (n == -1 && errno == EINTR && !mono_thread_info_is_interrupt_state (info));
+	} while (n != -1 && errno == EINTR && !mono_thread_info_is_interrupt_state (info));
 
 	if (n == -1) {
 		gint errnum = errno;
@@ -1295,6 +1304,7 @@ int _wapi_select(int nfds G_GNUC_UNUSED, fd_set *readfds, fd_set *writefds,
 		 fd_set *exceptfds, struct timeval *timeout)
 {
 	int ret, maxfd;
+	MonoThreadInfo *info = mono_thread_info_current ();
 	
 	for (maxfd = FD_SETSIZE-1; maxfd >= 0; maxfd--) {
 		if ((readfds && FD_ISSET (maxfd, readfds)) ||
@@ -1313,7 +1323,7 @@ int _wapi_select(int nfds G_GNUC_UNUSED, fd_set *readfds, fd_set *writefds,
 		ret = select(maxfd + 1, readfds, writefds, exceptfds,
 			     timeout);
 	} while (ret == -1 && errno == EINTR &&
-		 !_wapi_thread_cur_apc_pending ());
+		 !mono_thread_info_is_interrupt_state (info));
 
 	if (ret == -1) {
 		gint errnum = errno;

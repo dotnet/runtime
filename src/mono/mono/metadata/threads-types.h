@@ -42,21 +42,12 @@ typedef enum {
 	ThreadApartmentState_Unknown = 0x00000002
 } MonoThreadApartmentState;
 
-typedef enum {
-	ThreadPriority_Lowest = 0,
-	ThreadPriority_BelowNormal = 1,
-	ThreadPriority_Normal = 2,
-	ThreadPriority_AboveNormal = 3,
-	ThreadPriority_Highest = 4
-} MonoThreadPriority;
-
 #define SPECIAL_STATIC_NONE 0
 #define SPECIAL_STATIC_THREAD 1
 #define SPECIAL_STATIC_CONTEXT 2
 
 #ifdef HOST_WIN32
 typedef SECURITY_ATTRIBUTES WapiSecurityAttributes;
-typedef LPTHREAD_START_ROUTINE WapiThreadStart;
 #endif
 
 typedef struct _MonoInternalThread MonoInternalThread;

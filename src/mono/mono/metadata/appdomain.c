@@ -2355,7 +2355,7 @@ deregister_reflection_info_roots (MonoDomain *domain)
 	mono_domain_assemblies_unlock (domain);
 }
 
-static guint32 WINAPI
+static gsize WINAPI
 unload_thread_main (void *arg)
 {
 	MonoError error;
@@ -2562,10 +2562,10 @@ mono_domain_try_unload (MonoDomain *domain, MonoObject **exc)
 	 * First we create a separate thread for unloading, since
 	 * we might have to abort some threads, including the current one.
 	 */
-	tp.priority = 0;
+	tp.priority = MONO_THREAD_PRIORITY_NORMAL;
 	tp.stack_size = 0;
 	tp.creation_flags = CREATE_SUSPENDED;
-	thread_handle = mono_threads_create_thread ((LPTHREAD_START_ROUTINE)unload_thread_main, thread_data, &tp, &tid);
+	thread_handle = mono_threads_create_thread (unload_thread_main, thread_data, &tp, &tid);
 	if (thread_handle == NULL)
 		return;
 	mono_thread_info_resume (tid);

@@ -6,7 +6,7 @@
 #include <pthread_np.h>
 
 void
-mono_threads_core_get_stack_bounds (guint8 **staddr, size_t *stsize)
+mono_threads_platform_get_stack_bounds (guint8 **staddr, size_t *stsize)
 {
 	/* TODO :   Determine if this code is actually still needed. It may already be covered by the case above. */
 	pthread_attr_t attr;

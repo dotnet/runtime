@@ -40,7 +40,6 @@
 #include <mono/io-layer/wapi-private.h>
 #include <mono/io-layer/io-private.h>
 #include <mono/io-layer/timefuncs-private.h>
-#include <mono/io-layer/thread-private.h>
 #include <mono/io-layer/io-portability.h>
 #include <mono/io-layer/io-trace.h>
 #include <mono/utils/strenc.h>
@@ -139,7 +138,7 @@ _wapi_handle_get_or_set_share (guint64 device, guint64 inode, guint32 new_sharem
 
 		file_share->device = device;
 		file_share->inode = inode;
-		file_share->opened_by_pid = _wapi_getpid ();
+		file_share->opened_by_pid = wapi_getpid ();
 		file_share->sharemode = new_sharemode;
 		file_share->access = new_access;
 		file_share->handle_refs = 1;
@@ -513,6 +512,7 @@ static gboolean file_read(gpointer handle, gpointer buffer,
 	struct _WapiHandle_file *file_handle;
 	gboolean ok;
 	int fd, ret;
+	MonoThreadInfo *info = mono_thread_info_current ();
 	
 	ok=mono_w32handle_lookup (handle, MONO_W32HANDLE_FILE,
 				(gpointer *)&file_handle);
@@ -540,7 +540,7 @@ static gboolean file_read(gpointer handle, gpointer buffer,
 	do {
 		ret = read (fd, buffer, numbytes);
 	} while (ret == -1 && errno == EINTR &&
-		 !_wapi_thread_cur_apc_pending());
+		 !mono_thread_info_is_interrupt_state (info));
 			
 	if(ret==-1) {
 		gint err = errno;
@@ -566,6 +566,7 @@ static gboolean file_write(gpointer handle, gconstpointer buffer,
 	gboolean ok;
 	int ret, fd;
 	off_t current_pos = 0;
+	MonoThreadInfo *info = mono_thread_info_current ();
 	
 	ok=mono_w32handle_lookup (handle, MONO_W32HANDLE_FILE,
 				(gpointer *)&file_handle);
@@ -613,7 +614,7 @@ static gboolean file_write(gpointer handle, gconstpointer buffer,
 	do {
 		ret = write (fd, buffer, numbytes);
 	} while (ret == -1 && errno == EINTR &&
-		 !_wapi_thread_cur_apc_pending());
+		 !mono_thread_info_is_interrupt_state (info));
 	
 	if (lock_while_writing) {
 		_wapi_unlock_file_region (fd, current_pos, numbytes);
@@ -779,6 +780,7 @@ static gboolean file_setendoffile(gpointer handle)
 	struct stat statbuf;
 	off_t pos;
 	int ret, fd;
+	MonoThreadInfo *info = mono_thread_info_current ();
 	
 	ok=mono_w32handle_lookup (handle, MONO_W32HANDLE_FILE,
 				(gpointer *)&file_handle);
@@ -839,7 +841,7 @@ static gboolean file_setendoffile(gpointer handle)
 		do {
 			ret = write (fd, "", 1);
 		} while (ret == -1 && errno == EINTR &&
-			 !_wapi_thread_cur_apc_pending());
+			 !mono_thread_info_is_interrupt_state (info));
 
 		if(ret==-1) {
 			MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: handle %p extend write failed: %s", __func__, handle, strerror(errno));
@@ -868,7 +870,7 @@ static gboolean file_setendoffile(gpointer handle)
 	do {
 		ret=ftruncate(fd, pos);
 	}
-	while (ret==-1 && errno==EINTR && !_wapi_thread_cur_apc_pending()); 
+	while (ret==-1 && errno==EINTR && !mono_thread_info_is_interrupt_state (info)); 
 	if(ret==-1) {
 		MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: handle %p ftruncate failed: %s", __func__,
 			  handle, strerror(errno));
@@ -1202,6 +1204,7 @@ static gboolean console_read(gpointer handle, gpointer buffer,
 	struct _WapiHandle_file *console_handle;
 	gboolean ok;
 	int ret, fd;
+	MonoThreadInfo *info = mono_thread_info_current ();
 
 	ok=mono_w32handle_lookup (handle, MONO_W32HANDLE_CONSOLE,
 				(gpointer *)&console_handle);
@@ -1228,7 +1231,7 @@ static gboolean console_read(gpointer handle, gpointer buffer,
 	
 	do {
 		ret=read(fd, buffer, numbytes);
-	} while (ret==-1 && errno==EINTR && !_wapi_thread_cur_apc_pending());
+	} while (ret==-1 && errno==EINTR && !mono_thread_info_is_interrupt_state (info));
 
 	if(ret==-1) {
 		MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: read of handle %p error: %s", __func__, handle,
@@ -1252,6 +1255,7 @@ static gboolean console_write(gpointer handle, gconstpointer buffer,
 	struct _WapiHandle_file *console_handle;
 	gboolean ok;
 	int ret, fd;
+	MonoThreadInfo *info = mono_thread_info_current ();
 	
 	ok=mono_w32handle_lookup (handle, MONO_W32HANDLE_CONSOLE,
 				(gpointer *)&console_handle);
@@ -1278,7 +1282,7 @@ static gboolean console_write(gpointer handle, gconstpointer buffer,
 	do {
 		ret = write(fd, buffer, numbytes);
 	} while (ret == -1 && errno == EINTR &&
-		 !_wapi_thread_cur_apc_pending());
+		 !mono_thread_info_is_interrupt_state (info));
 
 	if (ret == -1) {
 		if (errno == EINTR) {
@@ -1351,6 +1355,7 @@ static gboolean pipe_read (gpointer handle, gpointer buffer,
 	struct _WapiHandle_file *pipe_handle;
 	gboolean ok;
 	int ret, fd;
+	MonoThreadInfo *info = mono_thread_info_current ();
 
 	ok=mono_w32handle_lookup (handle, MONO_W32HANDLE_PIPE,
 				(gpointer *)&pipe_handle);
@@ -1380,7 +1385,7 @@ static gboolean pipe_read (gpointer handle, gpointer buffer,
 
 	do {
 		ret=read(fd, buffer, numbytes);
-	} while (ret==-1 && errno==EINTR && !_wapi_thread_cur_apc_pending());
+	} while (ret==-1 && errno==EINTR && !mono_thread_info_is_interrupt_state (info));
 		
 	if (ret == -1) {
 		if (errno == EINTR) {
@@ -1411,6 +1416,7 @@ static gboolean pipe_write(gpointer handle, gconstpointer buffer,
 	struct _WapiHandle_file *pipe_handle;
 	gboolean ok;
 	int ret, fd;
+	MonoThreadInfo *info = mono_thread_info_current ();
 	
 	ok=mono_w32handle_lookup (handle, MONO_W32HANDLE_PIPE,
 				(gpointer *)&pipe_handle);
@@ -1440,7 +1446,7 @@ static gboolean pipe_write(gpointer handle, gconstpointer buffer,
 	do {
 		ret = write (fd, buffer, numbytes);
 	} while (ret == -1 && errno == EINTR &&
-		 !_wapi_thread_cur_apc_pending());
+		 !mono_thread_info_is_interrupt_state (info));
 
 	if (ret == -1) {
 		if (errno == EINTR) {
@@ -2024,6 +2030,7 @@ write_file (int src_fd, int dest_fd, struct stat *st_src, gboolean report_errors
 	int remain, n;
 	char *buf, *wbuf;
 	int buf_size = st_src->st_blksize;
+	MonoThreadInfo *info = mono_thread_info_current ();
 
 	buf_size = buf_size < 8192 ? 8192 : (buf_size > 65536 ? 65536 : buf_size);
 	buf = (char *) malloc (buf_size);
@@ -2031,7 +2038,7 @@ write_file (int src_fd, int dest_fd, struct stat *st_src, gboolean report_errors
 	for (;;) {
 		remain = read (src_fd, buf, buf_size);
 		if (remain < 0) {
-			if (errno == EINTR && !_wapi_thread_cur_apc_pending ())
+			if (errno == EINTR && !mono_thread_info_is_interrupt_state (info))
 				continue;
 
 			if (report_errors)
@@ -2047,7 +2054,7 @@ write_file (int src_fd, int dest_fd, struct stat *st_src, gboolean report_errors
 		wbuf = buf;
 		while (remain > 0) {
 			if ((n = write (dest_fd, wbuf, remain)) < 0) {
-				if (errno == EINTR && !_wapi_thread_cur_apc_pending ())
+				if (errno == EINTR && !mono_thread_info_is_interrupt_state (info))
 					continue;
 
 				if (report_errors)

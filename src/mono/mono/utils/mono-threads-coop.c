@@ -417,7 +417,7 @@ mono_threads_is_coop_enabled (void)
 
 
 void
-mono_threads_init_coop (void)
+mono_threads_coop_init (void)
 {
 	if (!mono_threads_is_coop_enabled ())
 		return;

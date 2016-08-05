@@ -7770,12 +7770,12 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 	InterlockedIncrement (&acfg->stats.ccount);
 }
  
-static void
-compile_thread_main (gpointer *user_data)
+static gsize WINAPI
+compile_thread_main (gpointer user_data)
 {
-	MonoDomain *domain = (MonoDomain *)user_data [0];
-	MonoAotCompile *acfg = (MonoAotCompile *)user_data [1];
-	GPtrArray *methods = (GPtrArray *)user_data [2];
+	MonoDomain *domain = ((MonoDomain **)user_data) [0];
+	MonoAotCompile *acfg = ((MonoAotCompile **)user_data) [1];
+	GPtrArray *methods = ((GPtrArray **)user_data) [2];
 	int i;
 
 	MonoError error;
@@ -7785,6 +7785,8 @@ compile_thread_main (gpointer *user_data)
 
 	for (i = 0; i < methods->len; ++i)
 		compile_method (acfg, (MonoMethod *)g_ptr_array_index (methods, i));
+
+	return 0;
 }
 
 static void
@@ -9804,10 +9806,10 @@ compile_methods (MonoAotCompile *acfg)
 			user_data [1] = acfg;
 			user_data [2] = frag;
 			
-			tp.priority = 0;
+			tp.priority = MONO_THREAD_PRIORITY_NORMAL;
 			tp.stack_size = 0;
 			tp.creation_flags = 0;
-			handle = mono_threads_create_thread ((LPTHREAD_START_ROUTINE)compile_thread_main, user_data, &tp, NULL);
+			handle = mono_threads_create_thread (compile_thread_main, (gpointer) user_data, &tp, NULL);
 			g_ptr_array_add (threads, handle);
 		}
 		g_free (methods);

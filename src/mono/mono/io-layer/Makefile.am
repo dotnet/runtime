@@ -27,7 +27,6 @@ OTHER_H = \
 	semaphores.h	\
 	sockets.h	\
 	status.h	\
-	threads.h	\
 	timefuncs.h	\
 	types.h		\
 	uglify.h	\
@@ -74,8 +73,6 @@ OTHER_SRC = \
 	socket-private.h	\
 	socket-wrappers.h	\
 	status.h		\
-	threads.h		\
-	thread-private.h	\
 	timefuncs.c		\
 	timefuncs.h		\
 	timefuncs-private.h	\
@@ -89,8 +86,7 @@ OTHER_SRC = \
 	wapi_glob.c		\
 	wapi.h			\
 	wapi-private.h		\
-	wapi.c		\
-	wthreads.c
+	wapi.c
 
 
 WINDOWS_H = \
