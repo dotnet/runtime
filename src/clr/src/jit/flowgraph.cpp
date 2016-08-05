@@ -4580,49 +4580,31 @@ DECODE_OPCODE:
         case CEE_STARG:
         case CEE_STARG_S:
             {
-                if (makeInlineObservations)
-                {
-                    // The inliner keeps the args as trees and clones
-                    // them.  Storing the arguments breaks that
-                    // simplification.  To allow this, flag the argument
-                    // as written to and spill it before inlining.  That
-                    // way the STARG in the inlinee is trivial.
-                    //
-                    // Arguably this should be NoteFatal, but the legacy behavior is
-                    // to ignore this for the prejit root.
-                    compInlineResult->Note(InlineObservation::CALLEE_STORES_TO_ARGUMENT);
+                noway_assert(sz == sizeof(BYTE) || sz == sizeof(WORD));
 
-                    // Fail fast, if inlining
-                    if (isInlining)
-                    {
-                        assert(compInlineResult->IsFailure());
-                        JITDUMP("INLINER: Inline expansion aborted; opcode at offset [%02u]"
-                                " writes to an argument\n", codeAddr-codeBegp-1);
-                        return;
-                    }
+                if (codeAddr > codeEndp - sz)
+                {
+                    goto TOO_FAR;
                 }
 
-                // In non-inline cases, note written-to locals.
-                if (!isInlining)
-                {
-                    noway_assert(sz == sizeof(BYTE) || sz == sizeof(WORD));
+                varNum = (sz == sizeof(BYTE)) ? getU1LittleEndian(codeAddr)
+                                                : getU2LittleEndian(codeAddr);
+                varNum = compMapILargNum(varNum); // account for possible hidden param
 
-                    if (codeAddr > codeEndp - sz)
-                    {
-                        goto TOO_FAR;
-                    }
-
-                    varNum = (sz == sizeof(BYTE)) ? getU1LittleEndian(codeAddr)
-                                                  : getU2LittleEndian(codeAddr);
-                    varNum = compMapILargNum(varNum); // account for possible hidden param
-
-                    // This check is only intended to prevent an AV.  Bad varNum values will later
-                    // be handled properly by the verifier.
-                    if (varNum < lvaTableCnt)
-                    {
-                        lvaTable[varNum].lvArgWrite = 1;
-                    }
-                }
+				// This check is only intended to prevent an AV.  Bad varNum values will later
+				// be handled properly by the verifier.
+				if (varNum < lvaTableCnt)
+				{
+					if (isInlining)
+					{
+						impInlineInfo->inlArgInfo[varNum].argHasStargOp = true;
+					}
+					else
+					{
+						// In non-inline cases, note written-to locals.
+						lvaTable[varNum].lvArgWrite = 1;
+					}
+				}
             }
             break;
 
@@ -22401,7 +22383,8 @@ GenTreePtr      Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
 
                 if (argSingleUseNode &&
                     !(argSingleUseNode->gtFlags & GTF_VAR_CLONED) &&
-                    !inlArgInfo[argNum].argHasLdargaOp)
+                    !inlArgInfo[argNum].argHasLdargaOp &&
+                    !inlArgInfo[argNum].argHasStargOp)
                 {
                     // Change the temp in-place to the actual argument.
                     // We currently do not support this for struct arguments, so it must not be a GT_OBJ.

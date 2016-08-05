@@ -93,7 +93,6 @@ INLINE_OBSERVATION(NUMBER_OF_ARGUMENTS,       int,    "number of arguments",    
 INLINE_OBSERVATION(NUMBER_OF_BASIC_BLOCKS,    int,    "number of basic blocks",        INFORMATION, CALLEE)
 INLINE_OBSERVATION(NUMBER_OF_LOCALS,          int,    "number of locals",              INFORMATION, CALLEE)
 INLINE_OBSERVATION(RANDOM_ACCEPT,             bool,   "random accept",                 INFORMATION, CALLEE)
-INLINE_OBSERVATION(STORES_TO_ARGUMENT,        bool,   "stores to argument",            INFORMATION, CALLEE)
 INLINE_OBSERVATION(UNSUPPORTED_OPCODE,        bool,   "unsupported opcode",            INFORMATION, CALLEE)
 
 // ------ Caller Corectness ------- 
