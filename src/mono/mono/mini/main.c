@@ -100,7 +100,6 @@ probe_embedded (const char *program, int *ref_argc, char **ref_argv [])
 			if (entry_point == NULL)
 				entry_point = aname;
 		} else if (strncmp (kind, "config:", strlen ("config:")) == 0){
-			printf ("c-Found: %s %llx\n", kind, (long long)offset);
 			char *config = kind + strlen ("config:");
 			char *aname = g_strdup (config);
 			aname [strlen(aname)-strlen(".config")] = 0;
