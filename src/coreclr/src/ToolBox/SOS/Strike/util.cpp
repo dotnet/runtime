@@ -54,6 +54,7 @@ ResolveSequencePointDelegate SymbolReader::resolveSequencePointDelegate;
 LoadSymbolsForModuleDelegate SymbolReader::loadSymbolsForModuleDelegate;
 GetLocalVariableName SymbolReader::getLocalVariableNameDelegate;
 GetLineByILOffsetDelegate SymbolReader::getLineByILOffsetDelegate;
+
 #endif // !FEATURE_PAL
 
 const char * const CorElementTypeName[ELEMENT_TYPE_MAX]=
@@ -6225,9 +6226,17 @@ bool SymbolReader::SymbolReaderDllExists()
     }
     return true;
 }
-HRESULT SymbolReader::LoadCoreCLR()
+
+HRESULT SymbolReader::PrepareSymbolReader()
 {
-    HRESULT Status = S_OK;
+    static bool attemptedSymbolReaderPreparation = false;
+    if (attemptedSymbolReaderPreparation)
+    {
+        // If we already tried to set up the symbol reader, we won't try again.
+        return E_FAIL;
+    }
+
+    attemptedSymbolReaderPreparation = true;
 
     std::string absolutePath;
     std::string coreClrPath = g_ExtServices->GetCoreClrDirectory();
@@ -6236,6 +6245,7 @@ HRESULT SymbolReader::LoadCoreCLR()
         ExtErr("Error: fail to convert CLR files path to absolute path \n");
         return E_FAIL;
     }
+
     coreClrPath.append("/");
     coreClrPath.append(coreClrDll);
 
@@ -6245,12 +6255,13 @@ HRESULT SymbolReader::LoadCoreCLR()
         ExtErr("Error: Fail to load %s\n", coreClrPath.c_str());
         return E_FAIL;
     }
+
     void *hostHandle;
     unsigned int domainId;
     coreclr_initialize_ptr initializeCoreCLR =
         (coreclr_initialize_ptr)dlsym(coreclrLib, "coreclr_initialize");
 
-    // FiXME: We should shutdown coreclr when it is not needed
+    // FixME: We should shutdown coreclr when it is not needed
     coreclr_shutdown_ptr shutdownCoreCLR =
         (coreclr_shutdown_ptr)dlsym(coreclrLib, "coreclr_shutdown");
     std::string tpaList;
@@ -6278,7 +6289,7 @@ HRESULT SymbolReader::LoadCoreCLR()
         return E_FAIL;
     }
 
-    Status =
+    HRESULT Status =
         initializeCoreCLR(entryPointExecutablePath.c_str(), "soscorerun",
                           sizeof(propertyKeys) / sizeof(propertyKeys[0]),
                           propertyKeys, propertyValues, &hostHandle, &domainId);
@@ -6289,8 +6300,8 @@ HRESULT SymbolReader::LoadCoreCLR()
     }
 
     coreclr_create_delegate_ptr CreateDelegate =
-        (coreclr_create_delegate_ptr)dlsym(coreclrLib,
-                                           "coreclr_create_delegate");
+        (coreclr_create_delegate_ptr)dlsym(coreclrLib, "coreclr_create_delegate");
+
     IfFailRet(CreateDelegate(hostHandle, domainId, SymbolReaderDllName,
                         SymbolReaderClassName, "ResolveSequencePoint",
                         (void **)&resolveSequencePointDelegate));
@@ -6305,7 +6316,8 @@ HRESULT SymbolReader::LoadCoreCLR()
                              (void **)&getLineByILOffsetDelegate));
     return Status;
 }
- HRESULT SymbolReader::GetLineByILOffset(__in_z const char* szModuleName, mdMethodDef MethodToken,
+
+HRESULT SymbolReader::GetLineByILOffset(__in_z const char* szModuleName, mdMethodDef MethodToken,
                                          ULONG64 IlOffset, ___out ULONG *pLinenum,
                                          __out_ecount(cbFileName) LPSTR lpszFileName,
                                          ___in ULONG cbFileName)
@@ -6314,7 +6326,7 @@ HRESULT SymbolReader::LoadCoreCLR()
 
     if (getLineByILOffsetDelegate == nullptr)
     {
-        Status = SymbolReader::LoadCoreCLR();
+        Status = SymbolReader::PrepareSymbolReader();
     }
     if (Status != S_OK)
     {
@@ -6416,7 +6428,7 @@ HRESULT SymbolReader::LoadSymbols(IMetaDataImport * pMD, ULONG64 baseAddress, __
 #else
     if (loadSymbolsForModuleDelegate == nullptr)
     {
-        Status = LoadCoreCLR();
+        Status = PrepareSymbolReader();
     }
     if (Status != S_OK)
     {
@@ -6437,7 +6449,7 @@ HRESULT SymbolReader::GetNamedLocalVariable(ISymUnmanagedScope * pScope, ICorDeb
 #ifdef FEATURE_PAL
     if (getLocalVariableNameDelegate == nullptr)
     {
-        Status = LoadCoreCLR();
+        Status = PrepareSymbolReader();
     }
     if (Status != S_OK)
     {
@@ -6623,7 +6635,7 @@ HRESULT SymbolReader::ResolveSequencePoint(__in_z WCHAR* pFilename, ULONG32 line
 #else
     if (loadSymbolsForModuleDelegate == nullptr)
     {
-        Status = LoadCoreCLR();
+        Status = PrepareSymbolReader();
     }
     if (Status != S_OK)
     {
