@@ -1825,6 +1825,30 @@ public static partial class DataContractJsonSerializerTests
         });
     }
 
+    [Fact]
+    public static void DCJS_TypeWithInternalDefaultConstructor()
+    {
+        var value = TypeWithInternalDefaultConstructor.CreateInstance();
+
+        value.Name = "foo";
+        var actual = SerializeAndDeserialize(value, "{\"Name\":\"foo\"}");
+
+        Assert.NotNull(actual);
+        Assert.Equal(value.Name, actual.Name);
+    }
+
+    [Fact]
+    public static void DCJS_TypeWithInternalDefaultConstructorWithoutDataContractAttribute()
+    {
+        var value = TypeWithInternalDefaultConstructorWithoutDataContractAttribute.CreateInstance();
+
+        value.Name = "foo";
+        var actual = SerializeAndDeserialize(value, "{\"Name\":\"foo\"}");
+
+        Assert.NotNull(actual);
+        Assert.Equal(value.Name, actual.Name);
+    }
+
     private static T SerializeAndDeserialize<T>(T value, string baseline, DataContractJsonSerializerSettings settings = null, Func<DataContractJsonSerializer> serializerFactory = null, bool skipStringCompare = false)
     {
         DataContractJsonSerializer dcjs;

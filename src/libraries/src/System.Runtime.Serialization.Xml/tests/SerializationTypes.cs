@@ -2920,3 +2920,34 @@ public class TypeOfReferenceChild
     [DataMember]
     public string Name { get; set; }
 }
+
+[DataContract]
+public sealed class TypeWithInternalDefaultConstructor
+{
+    internal TypeWithInternalDefaultConstructor()
+    {
+    }
+
+    internal static TypeWithInternalDefaultConstructor CreateInstance()
+    {
+        return new TypeWithInternalDefaultConstructor();
+    }
+
+    [DataMember]
+    public string Name { get; set; }
+}
+
+public sealed class TypeWithInternalDefaultConstructorWithoutDataContractAttribute
+{
+    internal TypeWithInternalDefaultConstructorWithoutDataContractAttribute()
+    {
+    }
+
+    internal static TypeWithInternalDefaultConstructorWithoutDataContractAttribute CreateInstance()
+    {
+        return new TypeWithInternalDefaultConstructorWithoutDataContractAttribute();
+    }
+
+    [DataMember]
+    public string Name { get; set; }
+}
