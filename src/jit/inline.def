@@ -80,6 +80,7 @@ INLINE_OBSERVATION(END_OPCODE_SCAN,           bool,   "done looking at opcodes",
 INLINE_OBSERVATION(HAS_SIMD,                  bool,   "has SIMD arg, local, or ret",   INFORMATION, CALLEE)
 INLINE_OBSERVATION(HAS_SWITCH,                bool,   "has switch",                    INFORMATION, CALLEE)
 INLINE_OBSERVATION(IL_CODE_SIZE,              int,    "number of bytes of IL",         INFORMATION, CALLEE)
+INLINE_OBSERVATION(IS_CLASS_CTOR,             bool,   "class constructor",             INFORMATION, CALLEE)
 INLINE_OBSERVATION(IS_DISCRETIONARY_INLINE,   bool,   "can inline, check heuristics",  INFORMATION, CALLEE)
 INLINE_OBSERVATION(IS_FORCE_INLINE,           bool,   "aggressive inline attribute",   INFORMATION, CALLEE)
 INLINE_OBSERVATION(IS_INSTANCE_CTOR,          bool,   "instance constructor",          INFORMATION, CALLEE)
@@ -96,11 +97,16 @@ INLINE_OBSERVATION(NUMBER_OF_LOCALS,          int,    "number of locals",       
 INLINE_OBSERVATION(RANDOM_ACCEPT,             bool,   "random accept",                 INFORMATION, CALLEE)
 INLINE_OBSERVATION(UNSUPPORTED_OPCODE,        bool,   "unsupported opcode",            INFORMATION, CALLEE)
 
-// ------ Caller Corectness ------- 
+// ------ Caller Correctness -------
 
 INLINE_OBSERVATION(DEBUG_CODEGEN,             bool,   "debug codegen",                 FATAL,       CALLER)
 INLINE_OBSERVATION(IS_JIT_NOINLINE,           bool,   "noinline per JitNoInlineRange", FATAL,       CALLER)
 INLINE_OBSERVATION(NEEDS_SECURITY_CHECK,      bool,   "needs security check",          FATAL,       CALLER)
+
+// ------ Caller Information -------
+
+INLINE_OBSERVATION(HAS_NEWARRAY,              bool,   "has newarray",                  INFORMATION, CALLER)
+INLINE_OBSERVATION(HAS_NEWOBJ,                bool,   "has newobj",                    INFORMATION, CALLER)
 
 // ------ Call Site Correctness ------- 
 
@@ -157,6 +163,7 @@ INLINE_OBSERVATION(CONSTANT_ARG_FEEDS_TEST,   bool,   "constant argument feeds t
 INLINE_OBSERVATION(DEPTH,                     int,    "depth",                         INFORMATION, CALLSITE)
 INLINE_OBSERVATION(FREQUENCY,                 int,    "rough call site frequency",     INFORMATION, CALLSITE)
 INLINE_OBSERVATION(IS_PROFITABLE_INLINE,      bool,   "profitable inline",             INFORMATION, CALLSITE)
+INLINE_OBSERVATION(IS_SAME_THIS,              bool,   "same this as root caller",      INFORMATION, CALLSITE)
 INLINE_OBSERVATION(IS_SIZE_DECREASING_INLINE, bool,   "size decreasing inline",        INFORMATION, CALLSITE)
 INLINE_OBSERVATION(LOG_REPLAY_ACCEPT,         bool,   "accepted by log replay",        INFORMATION, CALLSITE)
 INLINE_OBSERVATION(RANDOM_ACCEPT,             bool,   "random accept",                 INFORMATION, CALLSITE)
