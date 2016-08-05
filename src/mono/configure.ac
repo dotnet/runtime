@@ -857,6 +857,28 @@ elif test x$with_runtime_preset = xbitcode_mobile_static; then
 
    AOT_BUILD_FLAGS="--aot=llvmonly,$INVARIANT_AOT_OPTIONS"
    AOT_RUN_FLAGS="--llvmonly"
+elif test x$with_runtime_preset = xhybrid; then
+   DISABLE_MCS_DOCS_default=yes
+   with_cooperative_gc_default=no
+   with_profile4_x_default=no
+   with_monodroid_default=no
+   with_monotouch_default=no
+   with_monotouch_watch_default=no
+   with_monotouch_tv_default=no
+   with_xammac_default=no
+   with_mobile_default=yes
+   with_mobile_static_default=no
+   with_bitcode_default=no
+   with_cooperative_gc_default=no
+   TEST_PROFILE=mobile 
+   enable_llvm_default=yes
+
+   mono_feature_disable_com='yes'
+   mono_feature_disable_remoting='yes'
+   mono_feature_disable_appdomains='yes'
+
+   AOT_BUILD_FLAGS="--aot=hybrid,$INVARIANT_AOT_OPTIONS"
+   AOT_RUN_FLAGS="--hybrid-aot"
 else
    with_profile4_x_default=yes
    with_monodroid_default=no
