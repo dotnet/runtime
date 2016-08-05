@@ -4041,7 +4041,7 @@ find_aot_method_in_amodule (MonoAotModule *amodule, MonoMethod *method, guint32 
 			WrapperInfo *info1 = mono_marshal_get_wrapper_info (method);
 			WrapperInfo *info2 = mono_marshal_get_wrapper_info (m);
 
-			if (info1 && info2 && info1->subtype == info2->subtype && method->klass == m->klass) {
+			if (info1 && info2 && info1->subtype == info2->subtype && info1->d.delegate_invoke.method == info2->d.delegate_invoke.method) {
 				index = value;
 				break;
 			}

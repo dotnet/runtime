@@ -3405,7 +3405,6 @@ mono_marshal_get_delegate_invoke_internal (MonoMethod *method, gboolean callvirt
 	mono_mb_emit_byte (mb, CEE_LDIND_REF);
 	mono_mb_emit_stloc (mb, local_delegates);
 
-
 	/* if (delegates == null) */
 	mono_mb_emit_ldloc (mb, local_delegates);
 	pos2 = mono_mb_emit_branch (mb, CEE_BRTRUE);
@@ -3539,6 +3538,7 @@ mono_marshal_get_delegate_invoke_internal (MonoMethod *method, gboolean callvirt
 #endif /* DISABLE_JIT */
 
 	info = mono_wrapper_info_create (mb, subtype);
+	info->d.delegate_invoke.method = method;
 
 	if (ctx) {
 		MonoMethod *def;

@@ -191,6 +191,10 @@ typedef struct {
 	MonoMethodSignature *sig;
 } GsharedvtWrapperInfo;
 
+typedef struct {
+	MonoMethod *method;
+} DelegateInvokeWrapperInfo;
+
 /*
  * This structure contains additional information to uniquely identify a given wrapper
  * method. It can be retrieved by mono_marshal_get_wrapper_info () for certain types
@@ -231,6 +235,8 @@ typedef struct {
 		RemotingWrapperInfo remoting;
 		/* GSHAREDVT_IN_SIG/GSHAREDVT_OUT_SIG */
 		GsharedvtWrapperInfo gsharedvt;
+		/* DELEGATE_INVOKE */
+		DelegateInvokeWrapperInfo delegate_invoke;
 	} d;
 } WrapperInfo;
 
