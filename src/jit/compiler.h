@@ -5238,6 +5238,11 @@ protected:
 
     static const int MIN_CSE_COST = 2;
 
+    // Keeps tracked cse indices
+    BitVecTraits* cseTraits;
+    EXPSET_TP     cseFull;
+    EXPSET_TP     cseEmpty;
+
     /* Generic list of nodes - used by the CSE logic */
 
     struct treeLst
