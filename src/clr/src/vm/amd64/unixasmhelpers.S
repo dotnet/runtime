@@ -176,7 +176,7 @@ NESTED_END JIT_RareDisableHelper, _TEXT
 //------------------------------------------------
 // OnHijackScalarTripThread
 //
-NESTED_ENTRY OnHijackScalarTripThread, _TEXT, NoHandler
+NESTED_ENTRY OnHijackTripThread, _TEXT, NoHandler
 
     // Make room for the real return address (rip)
     push_register rax
@@ -198,7 +198,7 @@ NESTED_ENTRY OnHijackScalarTripThread, _TEXT, NoHandler
 
     END_PROLOGUE
 
-    call                C_FUNC(OnHijackScalarWorker)
+    call                C_FUNC(OnHijackWorker)
 
     movdqa              xmm0, [rsp]
     movdqa              xmm1, [rsp+0x10]
@@ -209,111 +209,7 @@ NESTED_ENTRY OnHijackScalarTripThread, _TEXT, NoHandler
     POP_CALLEE_SAVED_REGISTERS
     ret
 
-NESTED_END OnHijackScalarTripThread, _TEXT
-
-#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
-//------------------------------------------------
-// OnHijackStructInRegsTripThread
-//
-NESTED_ENTRY OnHijackStructInRegsTripThread, _TEXT, NoHandler
-
-    // Make room for the real return address (rip)
-    push_register rax
-
-    PUSH_CALLEE_SAVED_REGISTERS
-
-    push_register rdx
-    // Push rax again - this is where part of the struct gets returned
-    push_register rax
-
-    mov                 rdi, rsp
-
-    alloc_stack         0x28
-
-    // First float return register
-    movdqa              [rsp], xmm0
-    // Second float return register
-    movdqa              [rsp+0x10], xmm1
-
-    END_PROLOGUE
-
-    call                C_FUNC(OnHijackStructInRegsWorker)
-
-    movdqa              xmm0, [rsp]
-    movdqa              xmm1, [rsp+0x10]
-    free_stack          0x28
-    pop_register        rax
-    pop_register        rdx
-
-    POP_CALLEE_SAVED_REGISTERS
-    ret
-
-NESTED_END OnHijackStructInRegsTripThread, _TEXT
-#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
-
-//------------------------------------------------
-// OnHijackObjectTripThread
-//
-NESTED_ENTRY OnHijackObjectTripThread, _TEXT, NoHandler 
-
-    // Make room for the real return address (rip)
-    push_register rax
-
-    PUSH_CALLEE_SAVED_REGISTERS
-
-    push_register rdx
-    // Push rax again - this is where integer/pointer return values are returned
-    push_register rax
-
-    mov                 rdi, rsp
-
-    // align stack
-    alloc_stack         0x8
-
-    END_PROLOGUE
-
-    call                C_FUNC(OnHijackObjectWorker)
-
-    free_stack          0x8
-    pop_register        rax
-    pop_register        rdx
-
-    POP_CALLEE_SAVED_REGISTERS
-    ret
-
-NESTED_END OnHijackObjectTripThread, _TEXT
-
-//------------------------------------------------
-// OnHijackInteriorPointerTripThread
-//
-NESTED_ENTRY OnHijackInteriorPointerTripThread, _TEXT, NoHandler 
-
-    // Make room for the real return address (rip)
-    push_register rax
-
-    PUSH_CALLEE_SAVED_REGISTERS
-
-    push_register rdx
-    // Push rax again - this is where integer/pointer return values are returned
-    push_register rax
-
-    mov                 rdi, rsp
-
-    // align stack
-    alloc_stack         0x8
-
-    END_PROLOGUE
-
-    call                C_FUNC(OnHijackInteriorPointerWorker)
-
-    free_stack          0x8
-    pop_register        rax
-    pop_register        rdx
-
-    POP_CALLEE_SAVED_REGISTERS
-    ret
-
-NESTED_END OnHijackInteriorPointerTripThread, _TEXT
+NESTED_END OnHijackTripThread, _TEXT
 
 #endif // FEATURE_HIJACK
 

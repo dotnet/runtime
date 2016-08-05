@@ -81,7 +81,6 @@ bool GcInfoDecoder::SetIsInterruptibleCB (UINT32 startOffset, UINT32 stopOffset,
     return fStop;
 }
 
-
 GcInfoDecoder::GcInfoDecoder(
             GCInfoToken gcInfoToken,
             GcInfoDecoderFlags flags,
@@ -90,11 +89,12 @@ GcInfoDecoder::GcInfoDecoder(
             : m_Reader(dac_cast<PTR_CBYTE>(gcInfoToken.Info))
             , m_InstructionOffset(breakOffset)
             , m_IsInterruptible(false)
+            , m_ReturnKind(RT_Illegal)
 #ifdef _DEBUG
             , m_Flags( flags )
             , m_GcInfoAddress(dac_cast<PTR_CBYTE>(gcInfoToken.Info))
-            , m_Version(gcInfoToken.Version)
 #endif
+           , m_Version(gcInfoToken.Version)
 {
     _ASSERTE( (flags & (DECODE_INTERRUPTIBILITY | DECODE_GC_LIFETIMES)) || (0 == breakOffset) );
 
@@ -116,7 +116,8 @@ GcInfoDecoder::GcInfoDecoder(
     }
     else
     {
-        headerFlags = (GcInfoHeaderFlags) m_Reader.Read(GC_INFO_FLAGS_BIT_SIZE);
+        int numFlagBits = (m_Version == 1) ? GC_INFO_FLAGS_BIT_SIZE_VERSION_1 : GC_INFO_FLAGS_BIT_SIZE;
+        headerFlags = (GcInfoHeaderFlags) m_Reader.Read(numFlagBits);
     }
 
     m_IsVarArg                 = headerFlags & GC_INFO_IS_VARARG;
@@ -129,12 +130,35 @@ GcInfoDecoder::GcInfoDecoder(
     int hasStackBaseRegister   = headerFlags & GC_INFO_HAS_STACK_BASE_REGISTER;
     m_WantsReportOnlyLeaf      = ((headerFlags & GC_INFO_WANTS_REPORT_ONLY_LEAF) != 0);
     int hasSizeOfEditAndContinuePreservedArea = headerFlags & GC_INFO_HAS_EDIT_AND_CONTINUE_PRESERVED_SLOTS;
+    
+    int hasReversePInvokeFrame = false;
+    if (gcInfoToken.IsReversePInvokeFrameAvailable())
+    {
+        hasReversePInvokeFrame = headerFlags & GC_INFO_REVERSE_PINVOKE_FRAME;
+    }
+
+    if (gcInfoToken.IsReturnKindAvailable())
+    {
+        int returnKindBits = (slimHeader) ? SIZE_OF_RETURN_KIND_IN_SLIM_HEADER : SIZE_OF_RETURN_KIND_IN_FAT_HEADER;
+        m_ReturnKind =
+            (ReturnKind)((UINT32)m_Reader.Read(returnKindBits));
+    }
+    else
+    {
+#ifndef _TARGET_X86_
+        m_ReturnKind = RT_Unset;
+#endif // ! _TARGET_X86_
+    }
+
+    if (flags == DECODE_RETURN_KIND) {
+        // Bail, if we've decoded enough,
+        return;
+    }
 
     m_CodeLength = (UINT32) DENORMALIZE_CODE_LENGTH((UINT32) m_Reader.DecodeVarLengthUnsigned(CODE_LENGTH_ENCBASE));
 
-    if (flags == DECODE_CODE_LENGTH)
-    {
-        // If we are only interested in the code length, then bail out now.
+    if (flags == DECODE_CODE_LENGTH) {
+        // Bail, if we've decoded enough,
         return;
     }
 
@@ -165,12 +189,11 @@ GcInfoDecoder::GcInfoDecoder(
         m_ValidRangeStart = m_ValidRangeEnd = 0;
     }
 
-    if (flags == DECODE_PROLOG_LENGTH)
-    {
-        // if we are only interested in the prolog size, then bail out now
+    if (flags == DECODE_PROLOG_LENGTH) {
+        // Bail, if we've decoded enough,
         return;
     }
-    
+
     // Decode the offset to the security object.
     if(hasSecurityObject)
     {
@@ -180,9 +203,9 @@ GcInfoDecoder::GcInfoDecoder(
     {
         m_SecurityObjectStackSlot = NO_SECURITY_OBJECT;
     }
-    if (flags == DECODE_SECURITY_OBJECT)
-    {
-        // If we are only interested in the security object, then bail out now.
+
+    if (flags == DECODE_SECURITY_OBJECT) {
+        // Bail, if we've decoded enough,
         return;
     }
 
@@ -195,9 +218,9 @@ GcInfoDecoder::GcInfoDecoder(
     {
         m_GSCookieStackSlot        = NO_GS_COOKIE;
     }
-    if (flags == DECODE_GS_COOKIE)
-    {
-        // If we are only interested in the GS cookie, then bail out now.
+
+    if (flags == DECODE_GS_COOKIE) {
+        // Bail, if we've decoded enough,
         return;
     }
 
@@ -211,9 +234,9 @@ GcInfoDecoder::GcInfoDecoder(
     {
         m_PSPSymStackSlot              = NO_PSP_SYM;
     }
-    if (flags == DECODE_PSP_SYM)
-    {
-        // If we are only interested in the PSPSym, then bail out now.
+
+    if (flags == DECODE_PSP_SYM) {
+        // Bail, if we've decoded enough,
         return;
     }
 
@@ -226,9 +249,9 @@ GcInfoDecoder::GcInfoDecoder(
     {
         m_GenericsInstContextStackSlot = NO_GENERICS_INST_CONTEXT;
     }
-    if (flags == DECODE_GENERICS_INST_CONTEXT)
-    {
-        // If we are only interested in the generics token, then bail out now.
+
+    if (flags == DECODE_GENERICS_INST_CONTEXT) {
+        // Bail, if we've decoded enough,
         return;
     }
 
@@ -256,6 +279,16 @@ GcInfoDecoder::GcInfoDecoder(
     {
         m_SizeOfEditAndContinuePreservedArea = NO_SIZE_OF_EDIT_AND_CONTINUE_PRESERVED_AREA;
     }
+
+    if (hasReversePInvokeFrame)
+    {
+        m_ReversePInvokeFrameSlot = (INT32)m_Reader.DecodeVarLengthSigned(REVERSE_PINVOKE_FRAME_ENCBASE);
+    }
+    else
+    {
+        m_ReversePInvokeFrameSlot = NO_REVERSE_PINVOKE_FRAME;
+    }
+
 
 #ifdef FIXED_STACK_PARAMETER_SCRATCH_AREA
     if (slimHeader)
@@ -334,7 +367,7 @@ bool GcInfoDecoder::HasMethodTableGenericsInstContext()
 //  a call-return offset with partially-interruptible GC info?
 bool GcInfoDecoder::IsSafePoint(UINT32 codeOffset)
 {
-    _ASSERTE(m_Flags == 0 && m_InstructionOffset == 0);
+    _ASSERTE(m_Flags == DECODE_EVERYTHING && m_InstructionOffset == 0);
     if(m_NumSafePoints == 0)
         return false;
 
@@ -455,6 +488,12 @@ INT32 GcInfoDecoder::GetGSCookieStackSlot()
     return m_GSCookieStackSlot;
 }
 
+INT32 GcInfoDecoder::GetReversePInvokeStackSlot()
+{
+    _ASSERTE(m_Flags & DECODE_REVERSE_PINVOKE_VAR);
+    return m_ReversePInvokeStackSlot;
+}
+
 UINT32 GcInfoDecoder::GetGSCookieValidRangeStart()
 {
     _ASSERTE( m_Flags & DECODE_GS_COOKIE );
@@ -501,6 +540,13 @@ UINT32 GcInfoDecoder::GetCodeLength()
 //    SUPPORTS_DAC;
     _ASSERTE( m_Flags & DECODE_CODE_LENGTH );
     return m_CodeLength;
+}
+
+ReturnKind GcInfoDecoder::GetReturnKind()
+{
+    //    SUPPORTS_DAC;
+    _ASSERTE( m_Flags & DECODE_RETURN_KIND );
+    return m_ReturnKind;
 }
 
 UINT32  GcInfoDecoder::GetStackBaseRegister()

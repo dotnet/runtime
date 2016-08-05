@@ -1507,8 +1507,8 @@ unsigned EECodeManager::FindEndOfLastInterruptibleRegion(unsigned curOffset,
 #ifndef DACCESS_COMPILE
     GcInfoDecoder gcInfoDecoder(
             gcInfoToken,
-            DECODE_FOR_RANGES_CALLBACK,
-            0);
+            DECODE_FOR_RANGES_CALLBACK
+            );
 
     FindEndOfLastInterruptibleRegionState state;
     state.curOffset = curOffset;
@@ -4838,9 +4838,8 @@ bool EECodeManager::EnumGcRefs( PREGDISPLAY     pRD,
 #ifdef _DEBUG
         GcInfoDecoder _gcInfoDecoder(
                             gcInfoToken,
-                            DECODE_CODE_LENGTH,
-                            0
-                            );
+                            DECODE_CODE_LENGTH
+                      );
 
         // We only use override offset for wantsReportOnlyLeaf
         _ASSERTE(_gcInfoDecoder.WantsReportOnlyLeaf());
@@ -5051,8 +5050,7 @@ OBJECTREF* EECodeManager::GetAddrOfSecurityObject(CrawlFrame *pCF)
 
     GcInfoDecoder gcInfoDecoder(
             gcInfoToken,
-            DECODE_SECURITY_OBJECT,
-            0
+            DECODE_SECURITY_OBJECT
             );
 
     INT32 spOffset = gcInfoDecoder.GetSecurityObjectStackSlot();
@@ -5270,8 +5268,7 @@ GenericParamContextType EECodeManager::GetParamContextType(PREGDISPLAY     pCont
 
     GcInfoDecoder gcInfoDecoder(
             gcInfoToken,
-            GcInfoDecoderFlags (DECODE_GENERICS_INST_CONTEXT),
-            0
+            GcInfoDecoderFlags (DECODE_GENERICS_INST_CONTEXT)
             );
 
     INT32 spOffsetGenericsContext = gcInfoDecoder.GetGenericsInstContextStackSlot();
@@ -5362,8 +5359,7 @@ PTR_VOID EECodeManager::GetExactGenericsToken(SIZE_T          baseStackSlot,
 
     GcInfoDecoder gcInfoDecoder(
             gcInfoToken,
-            GcInfoDecoderFlags (DECODE_PSP_SYM | DECODE_GENERICS_INST_CONTEXT),
-            0
+            GcInfoDecoderFlags (DECODE_PSP_SYM | DECODE_GENERICS_INST_CONTEXT)
             );
 
     INT32 spOffsetGenericsContext = gcInfoDecoder.GetGenericsInstContextStackSlot();
@@ -5467,8 +5463,7 @@ void * EECodeManager::GetGSCookieAddr(PREGDISPLAY     pContext,
 
     GcInfoDecoder gcInfoDecoder(
             gcInfoToken,
-            DECODE_GS_COOKIE,
-            0
+            DECODE_GS_COOKIE
             );
 
     INT32 spOffsetGSCookie = gcInfoDecoder.GetGSCookieStackSlot();
@@ -5578,8 +5573,7 @@ size_t EECodeManager::GetFunctionSize(GCInfoToken gcInfoToken)
 
     GcInfoDecoder gcInfoDecoder(
             gcInfoToken,
-            DECODE_CODE_LENGTH,
-            0
+            DECODE_CODE_LENGTH
             );
 
     UINT32 codeLength = gcInfoDecoder.GetCodeLength();

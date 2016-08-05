@@ -479,13 +479,13 @@ struct DECLSPEC_ALIGN(8) UMEntryThunkCode
 
 struct HijackArgs
 {
-#ifndef PLATFORM_UNIX
+#ifndef FEATURE_MULTIREG_RETURN
     union
     {
         ULONG64 Rax;
-        ULONG64 ReturnValue;
+        ULONG64 ReturnValue[1];
     };
-#else // PLATFORM_UNIX
+#else // FEATURE_MULTIREG_RETURN
     union
     {
         struct
