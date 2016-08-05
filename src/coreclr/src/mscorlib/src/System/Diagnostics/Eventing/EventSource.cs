@@ -3535,7 +3535,7 @@ namespace System.Diagnostics.Tracing
                             {
                                 unchecked
                                 {
-                                    eventAttribute.Keywords |= (EventKeywords)manifest.GetChannelKeyword(eventAttribute.Channel);
+                                    eventAttribute.Keywords |= (EventKeywords)manifest.GetChannelKeyword(eventAttribute.Channel, (ulong) eventAttribute.Keywords);
                                 }
                             }
 #endif
@@ -6306,8 +6306,15 @@ namespace System.Diagnostics.Tracing
         // channel support is enabled), or based on the order the predefined channels appear in the EventAttribute properties (for simple 
         // support). The manifest generated *MUST* have the channels specified in the same order (that's how our computed keywords are mapped
         // to channels by the OS infrastructure).
-        public ulong GetChannelKeyword(EventChannel channel)
+        // If channelKeyworkds is present, and has keywords bits in the ValidPredefinedChannelKeywords then it is 
+        // assumed that that the keyword for that channel should be that bit.   
+        // otherwise we allocate a channel bit for the channel.  
+        // explicit channel bits are only used by WCF to mimic an existing manifest, 
+        // so we don't dont do error checking.  
+        public ulong GetChannelKeyword(EventChannel channel, ulong channelKeyword=0)
         {
+            // strip off any non-channel keywords, since we are only interested in channels here.  
+            channelKeyword &= ValidPredefinedChannelKeywords;
             if (channelTab == null)
             {
                 channelTab = new Dictionary<int, ChannelInfo>(4);
@@ -6316,12 +6323,15 @@ namespace System.Diagnostics.Tracing
             if (channelTab.Count == MaxCountChannels)
                 ManifestError(Resources.GetResourceString("EventSource_MaxChannelExceeded"));
 
-            ulong channelKeyword;
             ChannelInfo info;
             if (!channelTab.TryGetValue((int)channel, out info))
             {
-                channelKeyword = nextChannelKeywordBit;
-                nextChannelKeywordBit >>= 1;
+                // If we were not given an explicit channel, allocate one.  
+                if (channelKeyword != 0)
+                {
+                    channelKeyword = nextChannelKeywordBit;
+                    nextChannelKeywordBit >>= 1;
+                }
             }
             else
             {
@@ -6731,6 +6741,10 @@ namespace System.Diagnostics.Tracing
         
         private string GetKeywords(ulong keywords, string eventName)
         {
+            // ignore keywords associate with channels
+            // See ValidPredefinedChannelKeywords def for more. 
+            keywords &= ~ValidPredefinedChannelKeywords;  
+
             string ret = "";
             for (ulong bit = 1; bit != 0; bit <<= 1)
             {
@@ -6895,7 +6909,13 @@ namespace System.Diagnostics.Tracing
         Dictionary<string, string> stringTab;       // Maps unlocalized strings to localized ones  
 
 #if FEATURE_MANAGED_ETW_CHANNELS
-        ulong nextChannelKeywordBit = 0x8000000000000000;   // available Keyword bit to be used for next channel definition
+        // WCF used EventSource to mimic a existing ETW manifest.   To support this
+        // in just their case, we allowed them to specify the keywords associated 
+        // with their channels explicitly.   ValidPredefinedChannelKeywords is 
+        // this set of channel keywords that we allow to be explicitly set.  You
+        // can ignore these bits otherwise.  
+        internal const ulong ValidPredefinedChannelKeywords = 0xF000000000000000;
+        ulong nextChannelKeywordBit = 0x8000000000000000;   // available Keyword bit to be used for next channel definition, grows down
         const int MaxCountChannels = 8; // a manifest can defined at most 8 ETW channels
 #endif
 
