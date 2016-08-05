@@ -25,10 +25,10 @@
     <Compile Include="EventInfoTests.cs" />
     <Compile Include="FieldInfoTests.cs" />
     <Compile Include="GetTypeTests.cs" />
-    <Compile Include="ManifestResourceInfo\ManifestResourceInfo.cs" />
+    <Compile Include="ManifestResourceInfoTests.cs" />
     <Compile Include="MemberInfoTests.cs" />
     <Compile Include="MethodInfoTests.cs" />
-    <Compile Include="Module\ModuleTests.cs" />
+    <Compile Include="ModuleTests.cs" />
     <Compile Include="Common.cs" />
     <Compile Include="ParameterInfoTests.cs" />
     <Compile Include="PropertyInfo\PropertyInfo_GetConstantValueTests.cs" />
@@ -37,7 +37,7 @@
     <Compile Include="PropertyInfo\PropertyInfo_Members.cs" />
     <Compile Include="PropertyInfo\PropertyInfo_MethodTests.cs" />
     <Compile Include="PropertyInfo\PropertyInfo_propertyTests.cs" />
-    <Compile Include="ReflectionContext\ReflectionContext.cs" />
+    <Compile Include="ReflectionContextTests.cs" />
     <Compile Include="TypeInfo\TypeInfo_DeclaredCtorTests.cs" />
     <Compile Include="TypeInfo\TypeInfo_DeclaredEventTests.cs" />
     <Compile Include="TypeInfo\TypeInfo_DeclaredFieldTests.cs" />
