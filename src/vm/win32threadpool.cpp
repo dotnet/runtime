@@ -359,7 +359,8 @@ BOOL ThreadpoolMgr::Initialize()
         RetiredCPWakeupEvent->CreateAutoEvent(FALSE);
         _ASSERTE(RetiredCPWakeupEvent->IsValid());
 
-        WorkerSemaphore = new UnfairSemaphore(ThreadCounter::MaxPossibleCount);
+        int spinLimitPerProcessor = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_ThreadPool_UnfairSemaphoreSpinLimit);
+        WorkerSemaphore = new UnfairSemaphore(ThreadCounter::MaxPossibleCount, spinLimitPerProcessor);
 
         RetiredWorkerSemaphore = new CLRSemaphore();
         RetiredWorkerSemaphore->Create(0, ThreadCounter::MaxPossibleCount);
