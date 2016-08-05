@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection.Tests;
@@ -21,7 +22,7 @@ namespace System.Reflection.Tests
         [InlineData(typeof(int))]
         [InlineData(typeof(List<>))]
         [InlineData(typeof(ModuleTest))]
-        public static void AssemblyTest(TypeInfo typeInfo)
+        public void Assembly(TypeInfo typeInfo)
         {
             Module module = typeInfo.Module;
             Assert.Equal(typeInfo.Assembly, module.Assembly);
@@ -31,7 +32,7 @@ namespace System.Reflection.Tests
         [InlineData(typeof(int))]
         [InlineData(typeof(List<>))]
         [InlineData(typeof(ModuleTest))]
-        public static void FullyQualifiedNameTest(TypeInfo typeInfo)
+        public void FullyQualifiedName(TypeInfo typeInfo)
         {
             Module module = typeInfo.Module;
             Assert.Contains(typeInfo.Assembly.GetName().Name, module.FullyQualifiedName, StringComparison.CurrentCultureIgnoreCase);
@@ -41,24 +42,20 @@ namespace System.Reflection.Tests
         [Theory]
         [InlineData(typeof(Attr), 77, "AttrSimple")]
         [InlineData(typeof(Int32Attr), 77, "Int32AttrSimple")]
-        [InlineData(typeof(Int64Attr), (Int64)77, "Int64AttrSimple")]
+        [InlineData(typeof(Int64Attr), (long)77, "Int64AttrSimple")]
         [InlineData(typeof(StringAttr), "hello", "StringAttrSimple")]
         [InlineData(typeof(EnumAttr), PublicEnum.Case1, "EnumAttrSimple")]        
-        public static void CustomAttributesTest<CtorArg, NamedArg>(Type attrType, CtorArg expectedCtorValue, NamedArg expectedNamedValue)
+        public void CustomAttributes<CtorArg, NamedArg>(Type attrType, CtorArg expectedCtorValue, NamedArg expectedNamedValue)
         {
             Module module = typeof(ModuleTest).GetTypeInfo().Module;
-            var customAttrs = module.CustomAttributes.GetEnumerator();
 
             CustomAttributeData attribute = module.CustomAttributes.SingleOrDefault(a => a.AttributeType.Equals(attrType));
-
-            Assert.NotNull(attribute);
-
             Assert.Equal(1, attribute.ConstructorArguments.Count);
             Assert.Equal(1, attribute.NamedArguments.Count);
                         
             Assert.Equal(typeof(CtorArg), attribute.ConstructorArguments[0].ArgumentType);
 
-            var actualCtorValue = attribute.ConstructorArguments[0].Value;
+            object actualCtorValue = attribute.ConstructorArguments[0].Value;
             if (typeof(CtorArg).GetTypeInfo().IsEnum)
             {
                 actualCtorValue = Enum.ToObject(typeof(CtorArg), attribute.ConstructorArguments[0].Value);
@@ -82,33 +79,25 @@ namespace System.Reflection.Tests
         [InlineData("Outside[]", typeof(Outside[]))]
         [InlineData("Outside[,,]", typeof(Outside[,,]))]
         [InlineData("Outside[][]", typeof(Outside[][]))]        
-        public static void GetTypeTest(string className, Type expectedType)
+        public void GetType(string className, Type expectedType)
         {
             Module module = expectedType.GetTypeInfo().Module;
 
-            Type actualType = module.GetType(className, true, false);
-            Assert.Equal(expectedType, actualType);
-
-            actualType = module.GetType(className.ToLower(), false, true);
-            Assert.Equal(expectedType, actualType);
-
-            actualType = module.GetType(className.ToLower(), false, false);
-            Assert.Null(actualType);
-
+            Assert.Equal(expectedType, module.GetType(className, true, false));
+            Assert.Equal(expectedType, module.GetType(className.ToLower(), false, true));
+            
+            Assert.Null(module.GetType(className.ToLower(), false, false));
             Assert.Throws<TypeLoadException>(() => module.GetType(className.ToLower(), true, false));
         }
     }
 }
 
-
 public class Outside
 {
-    public class Inside
-    { }
+    public class Inside { }
 }
 
 public class Outside<T>
 {
-    public class Inside<U>
-    { }
+    public class Inside<U> { }
 }

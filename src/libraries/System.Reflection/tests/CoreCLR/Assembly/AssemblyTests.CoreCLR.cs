@@ -12,13 +12,10 @@ namespace System.Reflection.Tests
     public class AssemblyTests
     {
         [Fact]
-        public void CurrentAssemblyHasLocation()
+        public void CurrentLocation_HasLocaton()
         {
-            string location = ThisAssembly().Location;
-
-            Assert.NotNull(location);
-            Assert.NotEmpty(location);
-
+            string location = GetExecutingAssembly().Location;
+            Assert.False(string.IsNullOrEmpty(location));
             string expectedDir = AppContext.BaseDirectory;
             string actualDir = Path.GetDirectoryName(location);
 
@@ -26,7 +23,7 @@ namespace System.Reflection.Tests
             Assert.True(Path.IsPathRooted(expectedDir));
             Assert.True(Path.IsPathRooted(actualDir));
 
-            // normalize paths before comparison
+            // Normalize paths before comparison
             expectedDir = Path.GetFullPath(expectedDir).TrimEnd(Path.DirectorySeparatorChar);
             actualDir = Path.GetFullPath(actualDir).TrimEnd(Path.DirectorySeparatorChar);
 
@@ -35,40 +32,34 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
-        public void LoadFromStreamHasEmptyLocation()
+        public void LoadFromStream_Location_IsEmpty()
         {
             Assembly assembly = new TestStreamLoadContext().LoadFromAssemblyName(new AssemblyName("TinyAssembly"));
-            string location = assembly.Location;
-
-            Assert.NotNull(location);
-            Assert.Empty(location);
+            Assert.Empty(assembly.Location);
         }
 
         [Fact]
-        public void DynamicAssemblyThrowsNotSupportedException()
+        public void DynamicAssembly_Location_ThrowsNotSupportedException()
         {
             AssemblyBuilder builder = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("dynamic"), AssemblyBuilderAccess.Run);
-            Assert.Throws<NotSupportedException>(() => builder.Location); // wish this were Assert.Empty, but it's long been this way...
+            Assert.Throws<NotSupportedException>(() => builder.Location);
         }
 
         [Fact]
-        public void TestExeEntryPoint()
+        public void EntryPoint()
         {
             MethodInfo entryPoint = typeof(TestExe).GetTypeInfo().Assembly.EntryPoint;
             Assert.NotNull(entryPoint);
             Assert.Equal(42, entryPoint.Invoke(null, null));
         }
 
-        private static Assembly ThisAssembly()
-        {
-            return typeof(AssemblyTests).GetTypeInfo().Assembly;
-        }
+        private static Assembly GetExecutingAssembly() => typeof(AssemblyTests).GetTypeInfo().Assembly;
 
         private sealed class TestStreamLoadContext : AssemblyLoadContext
         {
             protected override Assembly Load(AssemblyName assemblyName)
             {
-                return LoadFromStream(ThisAssembly().GetManifestResourceStream(assemblyName.Name + ".dll"));
+                return LoadFromStream(GetExecutingAssembly().GetManifestResourceStream(assemblyName.Name + ".dll"));
             }
         }
     }
