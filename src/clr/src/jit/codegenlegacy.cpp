@@ -3463,7 +3463,7 @@ regMaskTP           CodeGen::WriteBarrier(GenTreePtr tgt,
 
     return resultRegMask; 
     }
-#endif // _TARGET_ARM_
+#endif // defined(DEBUG) || !(defined(_TARGET_X86_) && NOGC_WRITE_BARRIERS)
 
 #else  // !FEATURE_WRITE_BARRIER
 
