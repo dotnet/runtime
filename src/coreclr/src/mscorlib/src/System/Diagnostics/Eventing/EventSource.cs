@@ -6306,13 +6306,14 @@ namespace System.Diagnostics.Tracing
         // channel support is enabled), or based on the order the predefined channels appear in the EventAttribute properties (for simple 
         // support). The manifest generated *MUST* have the channels specified in the same order (that's how our computed keywords are mapped
         // to channels by the OS infrastructure).
-        // If channelKeyworkds is prsent, and has keywords bits in the ValidPredefinedChannelKeywords then it is 
+        // If channelKeyworkds is present, and has keywords bits in the ValidPredefinedChannelKeywords then it is 
         // assumed that that the keyword for that channel should be that bit.   
         // otherwise we allocate a channel bit for the channel.  
         // explicit channel bits are only used by WCF to mimic an existing manifest, 
         // so we don't dont do error checking.  
         public ulong GetChannelKeyword(EventChannel channel, ulong channelKeyword=0)
         {
+            // strip off any non-channel keywords, since we are only interested in channels here.  
             channelKeyword &= ValidPredefinedChannelKeywords;
             if (channelTab == null)
             {
