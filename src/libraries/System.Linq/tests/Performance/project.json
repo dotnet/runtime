@@ -19,7 +19,7 @@
     "Microsoft.DotNet.xunit.performance": "1.0.0-alpha-build0039"
   },
   "frameworks": {
-    "netstandard1.5": {}
+    "netstandard1.6": {}
   },
   "supports": {
     "coreFx.Test.netcoreapp1.0": {},
