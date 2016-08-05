@@ -284,7 +284,8 @@ size_t      GCDump::DumpGCTable(PTR_CBYTE      gcInfoBlock,
                                                   | DECODE_VARARG
                                                   | DECODE_GENERICS_INST_CONTEXT
                                                   | DECODE_GC_LIFETIMES
-                                                  | DECODE_PROLOG_LENGTH),
+                                                  | DECODE_PROLOG_LENGTH
+                                                  | DECODE_RETURN_KIND),
                              0);
 
     if (NO_SECURITY_OBJECT != hdrdecoder.GetSecurityObjectStackSlot() ||
@@ -437,6 +438,9 @@ size_t      GCDump::DumpGCTable(PTR_CBYTE      gcInfoBlock,
 #ifdef FIXED_STACK_PARAMETER_SCRATCH_AREA
     gcPrintf("Size of parameter area: %x\n", hdrdecoder.GetSizeOfStackParameterArea());
 #endif
+
+    ReturnKind returnKind = hdrdecoder.GetReturnKind();
+    gcPrintf("Return Kind: %s\n", ReturnKindToString(returnKind));
 
     UINT32 cbEncodedMethodSize = hdrdecoder.GetCodeLength();
     gcPrintf("Code size: %x\n", cbEncodedMethodSize);

@@ -513,7 +513,7 @@ struct HijackArgs
     union
     {
         DWORD Eax;
-        size_t ReturnValue;
+        size_t ReturnValue[1];
     };
     DWORD Ebp;
     union

@@ -32,8 +32,15 @@ const unsigned   this_OFFSET_FLAG  = 0x2;  // the offset is "this"
 // The current GCInfo Version
 //-----------------------------------------------------------------------------
 
+#ifdef _TARGET_X86_
+// X86 GcInfo encoding is yet to be changed.
 #define GCINFO_VERSION 1
+#else
+#define GCINFO_VERSION 2
+#endif // _TARGET_X86_
 
+#define MIN_GCINFO_VERSION_WITH_RETURN_KIND 2
+#define MIN_GCINFO_VERSION_WITH_REV_PINVOKE_FRAME 2
 //-----------------------------------------------------------------------------
 // GCInfoToken: A wrapper that contains the GcInfo data and version number.
 //
@@ -45,14 +52,29 @@ const unsigned   this_OFFSET_FLAG  = 0x2;  // the offset is "this"
 // 1) The current GCINFO_VERSION for JITted and Ngened images
 // 2) A function of the Ready - to - run major version stored in READYTORUN_HEADER
 //   for ready - to - run images.ReadyToRunJitManager::JitTokenToGCInfoVersion()
-//   provides the GcInfo version for any Method.Currently, there's only one
-//   version of GCInfo.
+//   provides the GcInfo version for any Method. 
 //-----------------------------------------------------------------------------
 
 struct GCInfoToken
 {
     PTR_VOID Info;
     UINT32 Version;
+
+    BOOL IsReturnKindAvailable() 
+    {
+        return (Version >= MIN_GCINFO_VERSION_WITH_RETURN_KIND);
+    }
+    BOOL IsReversePInvokeFrameAvailable() 
+    {
+        return (Version >= MIN_GCINFO_VERSION_WITH_REV_PINVOKE_FRAME);
+    }
+
+    static UINT32 ReadyToRunVersionToGcInfoVersion(UINT32 readyToRunMajorVersion)
+    {
+        // GcInfo version is 1 up to ReadyTorun version 1.x
+        // GcInfo version is current from  ReadyToRun version 2.0
+        return (readyToRunMajorVersion == 1) ? 1 : GCINFO_VERSION;
+    }
 };
 
 /*****************************************************************************/
