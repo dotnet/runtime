@@ -27,8 +27,8 @@
 
   <!-- Build Tools Versions -->
   <PropertyGroup>
-    <RoslynVersion>1.0.0-rc3-20150510-01</RoslynVersion>
-    <RoslynPackageName>Microsoft.Net.ToolsetCompilers</RoslynPackageName>
+    <RoslynVersion>2.0.0-beta3</RoslynVersion>
+    <RoslynPackageName>Microsoft.Net.Compilers</RoslynPackageName>
   </PropertyGroup>
 
   <!-- Informs build tools to apply .NET Framework metadata if not a test project -->
@@ -70,12 +70,6 @@
   <PropertyGroup>
     <GenFacadesArgs>-ignoreBuildAndRevisionMismatch</GenFacadesArgs>
   </PropertyGroup>
-
-  <!-- Use Roslyn Compilers to build -->
-  <PropertyGroup Condition="'$(UseRoslynCompilers)'!='false'">
-    <UseSharedCompilation>true</UseSharedCompilation>
-  </PropertyGroup>
-  <Import Project="$(ToolRuntimePath)/net45/roslyn/build/Microsoft.Net.Compilers.props" Condition="'$(UseRoslynCompilers)'!='false' AND Exists('$(ToolRuntimePath)/net45/roslyn/build/Microsoft.Net.Compilers.props')" />
 
   <!-- Import Build tools common props file where repo-independent properties are found -->
   <Import Project="$(ToolsDir)Build.Common.props" Condition="Exists('$(ToolsDir)Build.Common.props')" />
@@ -195,12 +189,15 @@
     <RestorePackages>false</RestorePackages>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <RoslynPropsFile>$(ToolRuntimePath)/net45/roslyn/build/Microsoft.Net.Compilers.props</RoslynPropsFile>
+  </PropertyGroup>
   <!--
     On Unix we always use a version of Roslyn we restore from NuGet and we have to work around some known issues.
   -->
   <PropertyGroup Condition="'$(OsEnvironment)'=='Unix'">
     <RoslynPackageDir>$(PackagesDir)/$(RoslynPackageName).$(RoslynVersion)/</RoslynPackageDir>
-    <RoslynPropsFile>$(RoslynPackageDir)build/Microsoft.Net.ToolsetCompilers.props</RoslynPropsFile>
+    <RoslynPropsFile>$(RoslynPackageDir)build/$(RoslynPackageName).props</RoslynPropsFile>
 
     <!--
       Portable PDBs are now supported in Linux and OSX with .Net Core MSBuild.
@@ -586,6 +583,7 @@
     <SkipTests Condition="'$(SkipTests)'=='' and ('$(OsEnvironment)'=='Windows_NT' and '$(TargetsWindows)'!='true' and '$(OSGroup)'!='AnyOS')">true</SkipTests>
   </PropertyGroup>
 
+  <!-- Use Roslyn Compilers to build -->
+  <Import Project="$(RoslynPropsFile)" Condition="'$(OsEnvironment)'!='Unix' and Exists('$(RoslynPropsFile)') and '$(UseRoslynCompilers)'!='false'" />
   <Import Project="$(RoslynPropsFile)" Condition="'$(OsEnvironment)'=='Unix' and Exists('$(RoslynPropsFile)')" />
-
 </Project>
