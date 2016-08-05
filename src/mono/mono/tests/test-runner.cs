@@ -432,7 +432,9 @@ public class TestRunner
 		XmlWriterSettings xmlWriterSettings = new XmlWriterSettings ();
 		xmlWriterSettings.NewLineOnAttributes = true;
 		xmlWriterSettings.Indent = true;
-		using (XmlWriter writer = XmlWriter.Create (String.Format ("TestResult-{0}.xml", testsuiteName), xmlWriterSettings)) {
+
+		string xmlPath = String.Format ("TestResult-{0}.xml", testsuiteName);
+		using (XmlWriter writer = XmlWriter.Create (xmlPath, xmlWriterSettings)) {
 			// <?xml version="1.0" encoding="utf-8" standalone="no"?>
 			writer.WriteStartDocument ();
 			// <!--This file represents the results of running a test suite-->
@@ -549,6 +551,16 @@ public class TestRunner
 			// </test-results>
 			writer.WriteEndElement ();
 			writer.WriteEndDocument ();
+
+			string babysitterXmlList = Environment.GetEnvironmentVariable("MONO_BABYSITTER_NUNIT_XML_LIST_FILE");
+			if (!String.IsNullOrEmpty(babysitterXmlList)) {
+				try {
+					string fullXmlPath = Path.GetFullPath(xmlPath);
+					File.AppendAllText(babysitterXmlList, fullXmlPath + Environment.NewLine);
+				} catch (Exception e) {
+					Console.WriteLine("Attempted to record XML path to file {0} but failed.", babysitterXmlList);
+				}
+			}
 		}
 
 		if (verbose) {
