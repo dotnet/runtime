@@ -8774,14 +8774,6 @@ int cTreeFlagsIR(Compiler *comp, GenTree *tree)
             chars += printf("[SPILLED_OP2]");
         }
 #endif
-        if (tree->gtFlags & GTF_REDINDEX_CHECK)
-        {
-            chars += printf("[REDINDEX_CHECK]");
-        }
-        if (tree->gtFlags & GTF_REDINDEX_CHECK)
-        {
-            chars += printf("[REDINDEX_CHECK]");
-        }
         if (tree->gtFlags & GTF_ZSF_SET)
         {
             chars += printf("[ZSF_SET]");
