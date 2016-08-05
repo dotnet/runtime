@@ -7783,8 +7783,11 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 
 			ret->param_count = csig->param_count + 1;
 			ret->ret = csig->ret;
-			for (int i = 0; i < csig->param_count; ++i)
+			for (int i = 0; i < csig->param_count; ++i) {
+				// FIXME: TODO implement handle wrapping for out and inout params.
+				g_assert (!mono_signature_param_is_out (csig, i));
 				ret->params [i] = csig->params [i];
+			}
 			ret->params [csig->param_count] = &mono_get_intptr_class ()->byval_arg;
 			call_sig = ret;
 		}
