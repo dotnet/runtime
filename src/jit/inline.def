@@ -75,6 +75,7 @@ INLINE_OBSERVATION(ARG_FEEDS_RANGE_CHECK,     bool,   "argument feeds range chec
 INLINE_OBSERVATION(BEGIN_OPCODE_SCAN,         bool,   "prepare to look at opcodes",    INFORMATION, CALLEE)
 INLINE_OBSERVATION(BELOW_ALWAYS_INLINE_SIZE,  bool,   "below ALWAYS_INLINE size",      INFORMATION, CALLEE)
 INLINE_OBSERVATION(CLASS_PROMOTABLE,          bool,   "promotable value class",        INFORMATION, CALLEE)
+INLINE_OBSERVATION(DOES_NOT_RETURN,           bool,   "does not return",               INFORMATION, CALLEE)
 INLINE_OBSERVATION(END_OPCODE_SCAN,           bool,   "done looking at opcodes",       INFORMATION, CALLEE)
 INLINE_OBSERVATION(HAS_SIMD,                  bool,   "has SIMD arg, local, or ret",   INFORMATION, CALLEE)
 INLINE_OBSERVATION(HAS_SWITCH,                bool,   "has switch",                    INFORMATION, CALLEE)
