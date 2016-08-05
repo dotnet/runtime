@@ -12,6 +12,15 @@
  ENCODING LAYOUT
 
  1. Header
+ 
+ Slim Header for simple and common cases:
+    - EncodingType[Slim]
+    - ReturnKind (Fat: 2 bits)
+    - CodeLength
+    - NumCallSites (#ifdef PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED)
+
+ Fat Header for other cases:
+    - EncodingType[Fat]
     - Flag:     isVarArg, 
                 hasSecurityObject, 
                 hasGSCookie,
@@ -20,6 +29,8 @@
                 hasStackBaseregister,
                 wantsReportOnlyLeaf,
                 hasSizeOfEditAndContinuePreservedArea
+                hasReversePInvokeFrame,
+    - ReturnKind (Fat: 4 bits)
     - CodeLength
     - Prolog (if hasSecurityObject || hasGenericsInstContextStackSlot || hasGSCookie)
     - Epilog (if hasGSCookie)
@@ -29,9 +40,11 @@
     - GenericsInstContextStackSlot (if any)
     - StackBaseRegister (if any)
     - SizeOfEditAndContinuePreservedArea (if any)
+    - ReversePInvokeFrameSlot (if any)
     - SizeOfStackOutgoingAndScratchArea (#ifdef FIXED_STACK_PARAMETER_SCRATCH_AREA)
     - NumCallSites (#ifdef PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED)
     - NumInterruptibleRanges
+
  2. Call sites offsets (#ifdef PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED)
  3. Fully-interruptible ranges
  4. Slot table
@@ -102,14 +115,15 @@ struct GcInfoSize
     size_t SizeOfCode;
 
     size_t FlagsSize;
+    size_t RetKindSize;
     size_t CodeLengthSize;
     size_t ProEpilogSize;
     size_t SecObjSize;
     size_t GsCookieSize;
-    size_t GenericsCtxSize;
     size_t PspSymSize;
+    size_t GenericsCtxSize;
     size_t StackBaseSize;
-    size_t FrameMarkerSize;
+    size_t ReversePInvokeFrameSize;
     size_t FixedAreaSize;
     size_t NumCallSitesSize;
     size_t NumRangesSize;
@@ -129,7 +143,7 @@ struct GcInfoSize
     size_t ChunkTransitionSize;
 
     GcInfoSize();
-    GcInfoSize& operator+=(GcInfoSize& other);
+    GcInfoSize& operator+=(const GcInfoSize& other);
     void Log(DWORD level, const char * header);
 };
 #endif
@@ -390,6 +404,11 @@ public:
                                     );
 
 
+    //------------------------------------------------------------------------
+    // ReturnKind
+    //------------------------------------------------------------------------
+
+    void SetReturnKind(ReturnKind returnKind);
 
     //------------------------------------------------------------------------
     // Miscellaneous method information
@@ -400,6 +419,7 @@ public:
     void SetGSCookieStackSlot( INT32 spOffsetGSCookie, UINT32 validRangeStart, UINT32 validRangeEnd );
     void SetPSPSymStackSlot( INT32 spOffsetPSPSym );
     void SetGenericsInstContextStackSlot( INT32 spOffsetGenericsContext, GENERIC_CONTEXTPARAM_TYPE type);
+    void SetReversePInvokeFrameSlot(INT32 spOffset);
     void SetIsVarArg();
     void SetCodeLength( UINT32 length );
 
@@ -472,9 +492,11 @@ private:
     INT32  m_PSPSymStackSlot;
     INT32  m_GenericsInstContextStackSlot;
     GENERIC_CONTEXTPARAM_TYPE m_contextParamType;
+    ReturnKind m_ReturnKind;
     UINT32 m_CodeLength;
     UINT32 m_StackBaseRegister;
     UINT32 m_SizeOfEditAndContinuePreservedArea;
+    INT32  m_ReversePInvokeFrameSlot;
     InterruptibleRange* m_pLastInterruptibleRange;
     
 #ifdef FIXED_STACK_PARAMETER_SCRATCH_AREA
