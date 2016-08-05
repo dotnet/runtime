@@ -9,17 +9,20 @@
 //
 // -- CLASSES --
 //
-// LegalPolicy         - partial class providing common legality checks
-// LegacyPolicy        - policy that provides legacy inline behavior
-// DiscretionaryPolicy - legacy variant with uniform size policy
-// ModelPolicy         - policy based on statistical modelling
+// LegalPolicy          - partial class providing common legality checks
+// LegacyPolicy         - policy that provides legacy inline behavior
+// EnhancedLegacyPolicy - legacy variant with some enhancements
+// DiscretionaryPolicy  - legacy variant with uniform size policy
+// ModelPolicy          - policy based on statistical modelling
 //
 // These experimental policies are available only in
 // DEBUG or release+INLINE_DATA builds of the jit.
 //
-// RandomPolicy        - randomized inlining
-// FullPolicy          - inlines everything up to size and depth limits
-// SizePolicy          - tries not to increase method sizes
+// RandomPolicy         - randomized inlining
+// FullPolicy           - inlines everything up to size and depth limits
+// SizePolicy           - tries not to increase method sizes
+//
+// The default policy in use is the EnhancedLegacyPolicy.
 
 #ifndef _INLINE_POLICY_H_
 #define _INLINE_POLICY_H_
@@ -313,10 +316,15 @@ protected:
     unsigned    m_StaticFieldStoreCount;
     unsigned    m_LoadAddressCount;
     unsigned    m_ThrowCount;
+    unsigned    m_ReturnCount;
     unsigned    m_CallCount;
     unsigned    m_CallSiteWeight;
     int         m_ModelCodeSizeEstimate;
     int         m_PerCallInstructionEstimate;
+    bool        m_IsClassCtor;
+    bool        m_IsSameThis;
+    bool        m_CallerHasNewArray;
+    bool        m_CallerHasNewObj;
 };
 
 // ModelPolicy is an experimental policy that uses the results
