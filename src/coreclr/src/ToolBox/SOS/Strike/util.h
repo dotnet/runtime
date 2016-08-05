@@ -2394,7 +2394,7 @@ public:
     }
 
 #ifdef FEATURE_PAL
-    static HRESULT LoadCoreCLR();
+    static HRESULT PrepareSymbolReader();
     static bool SymbolReaderDllExists();
     static HRESULT GetLineByILOffset(__in_z const char* szModuleName, mdMethodDef MethodToken, ULONG64 IlOffset, ___out ULONG *pLinenum,
                                      __out_ecount(cbFileName) LPSTR lpszFileName, ___in ULONG cbFileName);
