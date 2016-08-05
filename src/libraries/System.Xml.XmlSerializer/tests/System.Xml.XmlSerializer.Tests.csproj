@@ -15,7 +15,6 @@
   <ItemGroup>
     <Compile Include="..\..\System.Runtime.Serialization.Xml\tests\Utils.cs" />
     <Compile Include="..\..\System.Runtime.Serialization.Xml\tests\SerializationTypes.cs" />
-    <Compile Include="..\..\System.Runtime.Serialization.Xml\tests\Performance\PerformanceTestsCommon.cs" />
     <Compile Include="XmlSerializerTests.Internal.cs" Condition="'$(UseContractReferences)' == ''" />
     <Compile Include="XmlSerializerTests.cs" />
   </ItemGroup>

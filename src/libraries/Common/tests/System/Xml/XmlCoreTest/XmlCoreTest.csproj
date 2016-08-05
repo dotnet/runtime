@@ -8,6 +8,7 @@
     <OutputType>Library</OutputType>
     <AssemblyName>XmlCoreTest</AssemblyName>
     <RootNamespace>XmlCoreTest.Common</RootNamespace>
+    <NuGetTargetMoniker>.NETStandard,Version=v1.3</NuGetTargetMoniker>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
   </PropertyGroup>
