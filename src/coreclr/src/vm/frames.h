@@ -2171,10 +2171,11 @@ public:
     }
 
     virtual void UpdateRegDisplay(const PREGDISPLAY);
+    virtual void GcScanRoots(promote_func *fn, ScanContext* sc);
 
-    // HijackFrames are created by trip functions. See OnHijackObjectTripThread()
-    // and OnHijackScalarTripThread().  They are real C++ objects on the stack.  So
-    // it's a public function -- but that doesn't mean you should make some.
+    // HijackFrames are created by trip functions. See OnHijackTripThread()
+    // They are real C++ objects on the stack. 
+    // So, it's a public function -- but that doesn't mean you should make some.
     HijackFrame(LPVOID returnAddress, Thread *thread, HijackArgs *args);
 
 protected:
