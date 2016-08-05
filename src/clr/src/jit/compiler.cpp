@@ -946,6 +946,7 @@ var_types  Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
 
 #endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
     
+#ifdef _TARGET_64BIT_
     // Note this handles an odd case when FEATURE_MULTIREG_RET is disabled and HFAs are enabled
     //
     // getPrimitiveTypeForStruct will return TYP_UNKNOWN for a struct that is an HFA of two floats
@@ -962,6 +963,7 @@ var_types  Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
     {
         useType = TYP_I_IMPL;
     }
+#endif
 
     // Did we change this struct type into a simple "primitive" type?
     //
