@@ -139,7 +139,7 @@ namespace System.Reflection.Metadata
 
             public void Reset()
             {
-                _reader.SeekOffset(0);
+                _reader.Reset();
                 _current = default(ImportDefinition);
             }
 

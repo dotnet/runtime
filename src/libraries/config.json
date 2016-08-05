@@ -208,7 +208,7 @@
       "description": "Sets the value of the build configuration.",
       "valueType": "passThrough",
       "values": [],
-      "defaultValue": "DEBUG"
+      "defaultValue": "Debug"
     },
     "HostOs": {
       "description": "OS for result binaries.",
@@ -220,7 +220,7 @@
       "description": "Sets the value of the number of processors available.",
       "valueType": "passThrough",
       "values": ["NUmeric values"],
-      "defaultValue": "${ProcessorCount}"
+      "defaultValue": "--numproc ${ProcessorCount}"
     },
     "Project": {
       "description": "Project where the commands are going to be applied.",
