@@ -778,15 +778,27 @@ mono_arch_create_sdb_trampoline (gboolean single_step, MonoTrampInfo **info, gbo
 	ARM_MOV_REG_REG (code, ARMREG_R0, ARMREG_FP);
 
 	/* call */
-	// FIXME: AOT
-	ARM_LDR_IMM (code, ARMREG_IP, ARMREG_PC, 0);
-	ARM_B (code, 0);
-	if (single_step)
-		*(gpointer*)code = debugger_agent_single_step_from_context;
-	else
-		*(gpointer*)code = debugger_agent_breakpoint_from_context;
-	code += 4;
-	ARM_BLX_REG (code, ARMREG_IP);
+	if (aot) {
+		if (single_step)
+			ji = mono_patch_info_list_prepend (ji, code - buf, MONO_PATCH_INFO_JIT_ICALL_ADDR, "debugger_agent_single_step_from_context");
+		else
+			ji = mono_patch_info_list_prepend (ji, code - buf, MONO_PATCH_INFO_JIT_ICALL_ADDR, "debugger_agent_breakpoint_from_context");
+		ARM_LDR_IMM (code, ARMREG_IP, ARMREG_PC, 0);
+		ARM_B (code, 0);
+		*(gpointer*)code = NULL;
+		code += 4;
+		ARM_LDR_REG_REG (code, ARMREG_IP, ARMREG_PC, ARMREG_IP);
+		ARM_BLX_REG (code, ARMREG_IP);
+	} else {
+		ARM_LDR_IMM (code, ARMREG_IP, ARMREG_PC, 0);
+		ARM_B (code, 0);
+		if (single_step)
+			*(gpointer*)code = debugger_agent_single_step_from_context;
+		else
+			*(gpointer*)code = debugger_agent_breakpoint_from_context;
+		code += 4;
+		ARM_BLX_REG (code, ARMREG_IP);
+	}
 
 	/* we're back; save ctx.eip and ctx.esp into the corresponding regs slots. */
 	ARM_LDR_IMM (code, ARMREG_R0, ARMREG_FP, MONO_STRUCT_OFFSET (MonoContext, pc));
