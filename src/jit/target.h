@@ -476,6 +476,9 @@ typedef unsigned short          regPairNoSmall; // arm: need 12 bits
   #define RBM_ALLFLOAT            (RBM_FPV0 | RBM_FPV1 | RBM_FPV2 | RBM_FPV3 | RBM_FPV4 | RBM_FPV5 | RBM_FPV6)
   #define REG_FP_FIRST             REG_FPV0
   #define REG_FP_LAST              REG_FPV7
+  #define FIRST_FP_ARGREG          REG_NA
+  #define LAST_FP_ARGREG           REG_NA
+
 
   #define REGNUM_BITS              3       // number of bits in a REG_*
   #define TINY_REGNUM_BITS         3       
@@ -739,6 +742,7 @@ typedef unsigned short          regPairNoSmall; // arm: need 12 bits
   #define MAX_ARG_REG_COUNT             2  // Maximum registers used to pass a single argument in multiple registers.
   #define MAX_RET_REG_COUNT             2  // Maximum registers used to return a value.
 #else // !UNIX_AMD64_ABI
+  #define WINDOWS_AMD64_ABI                // Uses the Windows ABI for AMD64
   #define FEATURE_MULTIREG_ARGS_OR_RET  0  // Support for passing and/or returning single values in more than one register
   #define FEATURE_MULTIREG_ARGS         0  // Support for passing a single argument in more than one register  
   #define FEATURE_MULTIREG_RET          0  // Support for returning a single value in more than one register
@@ -2009,12 +2013,10 @@ inline bool         isValidIntArgReg(regNumber reg)
 
 //-------------------------------------------------------------------------------------------
 // genRegArgNext:
-//     Given a register that is an integer argument register 
-//     returns the next integer argument register 
+//     Given a register that is an integer or floating point argument register 
+//     returns the next argument register 
 //
 regNumber           genRegArgNext(regNumber argReg);
-
-#if !defined(_TARGET_X86_)
 
 //-------------------------------------------------------------------------------------------
 // isValidFloatArgReg:
@@ -2022,18 +2024,15 @@ regNumber           genRegArgNext(regNumber argReg);
 //
 inline bool         isValidFloatArgReg(regNumber reg)
 {
-    return (reg >= FIRST_FP_ARGREG) && (reg <= LAST_FP_ARGREG);
+    if (reg == REG_NA)
+    {
+        return false;
+    }
+    else
+    {
+        return (reg >= FIRST_FP_ARGREG) && (reg <= LAST_FP_ARGREG);
+    }
 }
-
-//-------------------------------------------------------------------------------------------
-// genRegArgNextFloat:
-//     Given a register that is a floating-point argument register 
-//     returns the next floating-point argument register 
-//
-regNumber           genRegArgNextFloat(regNumber argReg);
-
-#endif // !defined(_TARGET_X86_)
-
 
 /*****************************************************************************
  *
@@ -2305,6 +2304,13 @@ bool                isFloatRegType(int /* s/b "var_types" */ type)
     return  false;
 #endif
 }
+
+// If the WINDOWS_AMD64_ABI is defined make sure that _TARGET_AMD64_ is also defined.
+#if defined(WINDOWS_AMD64_ABI)
+#if !defined(_TARGET_AMD64_)
+#error When WINDOWS_AMD64_ABI is defined you must define _TARGET_AMD64_ defined as well.
+#endif
+#endif
 
 /*****************************************************************************/
 // Some sanity checks on some of the register masks
