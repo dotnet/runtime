@@ -677,8 +677,6 @@ public:
     #define GTF_NOREG_AT_USE    0x00000100  // tree node is in memory at the point of use
 #endif // LEGACY_BACKEND
 
-    #define GTF_REDINDEX_CHECK  0x00000100  // Used for redundant range checks. Disjoint from GTF_SPILLED_OPER
-
     #define GTF_ZSF_SET         0x00000400  // the zero(ZF) and sign(SF) flags set to the operand
 #if FEATURE_SET_FLAGS
     #define GTF_SET_FLAGS       0x00000800  // Requires that codegen for this node set the flags
