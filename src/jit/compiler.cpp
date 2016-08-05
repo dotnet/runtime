@@ -3986,6 +3986,12 @@ void                 Compiler::compCompile(void * * methodCodePtr,
                                            ULONG  * methodCodeSize,
                                            CORJIT_FLAGS * compileFlags)
 {
+    if (compIsForInlining())
+    {
+        // Notify root instance that an inline attempt is about to import IL
+        impInlineRoot()->m_inlineStrategy->NoteImport();
+    }
+
     hashBv::Init(this);
 
     VarSetOps::AssignAllowUninitRhs(this, compCurLife, VarSetOps::UninitVal());
@@ -7094,6 +7100,9 @@ void JitTimer::PrintCsvHeader()
         {
             fprintf(fp, "\"%s\",", PhaseNames[i]);
         }
+
+        InlineStrategy::DumpCsvHeader(fp);
+
         fprintf(fp, "\"Total Cycles\",");
         fprintf(fp, "\"CPS\"\n");
         fclose(fp);
@@ -7138,6 +7147,9 @@ void JitTimer::PrintCsvMethodStats(Compiler* comp)
             totCycles += m_info.m_cyclesByPhase[i];
         fprintf(fp, "%I64u,", m_info.m_cyclesByPhase[i]);
     }
+
+    comp->m_inlineStrategy->DumpCsvData(fp);
+
     fprintf(fp, "%I64u,", m_info.m_totalCycles);
     fprintf(fp, "%f\n", CycleTimer::CyclesPerSecond());
     fclose(fp);

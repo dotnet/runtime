@@ -734,8 +734,13 @@ InlineStrategy::InlineStrategy(Compiler* compiler)
     : m_Compiler(compiler)
     , m_RootContext(nullptr)
     , m_LastSuccessfulPolicy(nullptr)
+    , m_CallCount(0)
     , m_CandidateCount(0)
-    , m_InlineAttemptCount(0)
+    , m_AlwaysCandidateCount(0)
+    , m_ForceCandidateCount(0)
+    , m_DiscretionaryCandidateCount(0)
+    , m_UnprofitableCandidateCount(0)
+    , m_ImportCount(0)
     , m_InlineCount(0)
     , m_MaxInlineSize(DEFAULT_MAX_INLINE_SIZE)
     , m_MaxInlineDepth(DEFAULT_MAX_INLINE_DEPTH)
@@ -837,11 +842,86 @@ InlineContext* InlineStrategy::GetRootContext()
 }
 
 //------------------------------------------------------------------------
-// NoteCandidate: do bookkeeping for an inline candidate
+// NoteAttempt: do bookkeeping for an inline attempt
+//
+// Arguments:
+//    result -- InlineResult for successful inline candidate
 
-void InlineStrategy::NoteCandidate()
+void InlineStrategy::NoteAttempt(InlineResult* result)
 {
-    m_CandidateCount++;
+    assert(result->IsCandidate());
+    InlineObservation obs = result->GetObservation();
+
+    if (obs == InlineObservation::CALLEE_BELOW_ALWAYS_INLINE_SIZE)
+    {
+        m_AlwaysCandidateCount++;
+    }
+    else if (obs == InlineObservation::CALLEE_IS_FORCE_INLINE)
+    {
+        m_ForceCandidateCount++;
+    }
+    else
+    {
+        m_DiscretionaryCandidateCount++;
+    }
+}
+
+//------------------------------------------------------------------------
+// DumpCsvHeader: dump header for csv inline stats
+//
+// Argument:
+//     fp -- file for dump output
+
+void InlineStrategy::DumpCsvHeader(FILE* fp)
+{
+    fprintf(fp, "\"InlineCalls\",");
+    fprintf(fp, "\"InlineCandidates\",");
+    fprintf(fp, "\"InlineAlways\",");
+    fprintf(fp, "\"InlineForce\",");
+    fprintf(fp, "\"InlineDiscretionary\",");
+    fprintf(fp, "\"InlineUnprofitable\",");
+    fprintf(fp, "\"InlineEarlyFail\",");
+    fprintf(fp, "\"InlineImport\",");
+    fprintf(fp, "\"InlineLateFail\",");
+    fprintf(fp, "\"InlineSuccess\",");
+}
+
+//------------------------------------------------------------------------
+// DumpCsvData: dump data for csv inline stats
+//
+// Argument:
+//     fp -- file for dump output
+
+void InlineStrategy::DumpCsvData(FILE* fp)
+{
+    fprintf(fp, "%u,", m_CallCount);
+    fprintf(fp, "%u,", m_CandidateCount);
+    fprintf(fp, "%u,", m_AlwaysCandidateCount);
+    fprintf(fp, "%u,", m_ForceCandidateCount);
+    fprintf(fp, "%u,", m_DiscretionaryCandidateCount);
+    fprintf(fp, "%u,", m_UnprofitableCandidateCount);
+
+    // Early failures are cases where candates are rejected between
+    // the time the jit invokes the inlinee compiler and the time it
+    // starts to import the inlinee IL.
+    //
+    // So they are "cheaper" that late failures.
+
+    unsigned profitableCandidateCount =
+        m_DiscretionaryCandidateCount - m_UnprofitableCandidateCount;
+
+    unsigned earlyFailCount = m_CandidateCount
+        - m_AlwaysCandidateCount
+        - m_ForceCandidateCount
+        - profitableCandidateCount;
+
+    fprintf(fp, "%u,", earlyFailCount);
+
+    unsigned lateFailCount = m_ImportCount - m_InlineCount;
+
+    fprintf(fp, "%u,", m_ImportCount);
+    fprintf(fp, "%u,", lateFailCount);
+    fprintf(fp, "%u,", m_InlineCount);
 }
 
 //------------------------------------------------------------------------
@@ -851,7 +931,7 @@ void InlineStrategy::NoteCandidate()
 //     context - context describing this inline
 //
 // Return Value:
-//    Nominal estimate of  jit time.
+//    Nominal estimate of jit time.
 
 int InlineStrategy::EstimateTime(InlineContext* context)
 {
@@ -945,10 +1025,9 @@ int InlineStrategy::EstimateSize(InlineContext* context)
 
 void InlineStrategy::NoteOutcome(InlineContext* context)
 {
-    // Might want to differentiate candidates from non-candidates here...
-    // We don't really attempt to inline non-candidates.
-    m_InlineAttemptCount++;
-
+    // Note we can't generally count up failures here -- we only
+    // create contexts for failures in debug modes, and even then
+    // we may not get them all.
     if (context->IsSuccess())
     {
         m_InlineCount++;
