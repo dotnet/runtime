@@ -6129,6 +6129,9 @@ GenTreePtr          Compiler::fgMorphField(GenTreePtr tree, MorphAddrContext* ma
             // An indirection will cause a GPF if the address is null.
             nullchk->gtFlags |= GTF_EXCEPT;
 
+            compCurBB->bbFlags |= BBF_HAS_NULLCHECK;
+            optMethodFlags |= OMF_HAS_NULLCHECK;
+
             if (asg)
             {
                 // Create the "comma" node.
@@ -12115,6 +12118,9 @@ CM_ADD_OP:
             // Originally, I gave all the comma nodes type "byref".  But the ADDR(IND(x)) == x transform
             // might give op1 a type different from byref (like, say, native int).  So now go back and give
             // all the comma nodes the type of op1.
+            // TODO: the comma flag update below is conservative and can be improved.
+            // For example, if we made the ADDR(IND(x)) == x transformation, we may be able to
+            // get rid of some of the the IND flags on the COMMA nodes (e.g., GTF_GLOB_REF).
             commaNode = tree;
             while (commaNode->gtOper == GT_COMMA)
             {
@@ -12974,7 +12980,6 @@ ASG_OP:
     }
     return tree;
 }
-
 
 // code to generate a magic number and shift amount for the magic number division 
 // optimization.  This code is previously from UTC where it notes it was taken from
