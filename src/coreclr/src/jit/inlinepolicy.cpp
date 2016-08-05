@@ -1232,10 +1232,15 @@ DiscretionaryPolicy::DiscretionaryPolicy(Compiler* compiler, bool isPrejitRoot)
     , m_StaticFieldStoreCount(0)
     , m_LoadAddressCount(0)
     , m_ThrowCount(0)
+    , m_ReturnCount(0)
     , m_CallCount(0)
     , m_CallSiteWeight(0)
     , m_ModelCodeSizeEstimate(0)
     , m_PerCallInstructionEstimate(0)
+    , m_IsClassCtor(false)
+    , m_IsSameThis(false)
+    , m_CallerHasNewArray(false)
+    , m_CallerHasNewObj(false)
 {
     // Empty
 }
@@ -1269,6 +1274,22 @@ void DiscretionaryPolicy::NoteBool(InlineObservation obs, bool value)
     case InlineObservation::CALLSITE_CONSTANT_ARG_FEEDS_TEST:
         assert(value);
         m_ConstantArgFeedsConstantTest++;
+        break;
+
+    case InlineObservation::CALLEE_IS_CLASS_CTOR:
+        m_IsClassCtor = value;
+        break;
+
+    case InlineObservation::CALLSITE_IS_SAME_THIS:
+        m_IsSameThis = value;
+        break;
+
+    case InlineObservation::CALLER_HAS_NEWARRAY:
+        m_CallerHasNewArray = value;
+        break;
+
+    case InlineObservation::CALLER_HAS_NEWOBJ:
+        m_CallerHasNewObj = value;
         break;
 
     default:
@@ -1596,6 +1617,9 @@ void DiscretionaryPolicy::ComputeOpcodeBin(OPCODE opcode)
             m_ThrowCount++;
             break;
 
+        case CEE_RET:
+            m_ReturnCount++;
+
         default:
             break;
     }
@@ -1910,6 +1934,7 @@ void DiscretionaryPolicy::DumpSchema(FILE* file) const
     fprintf(file, ",StaticFieldStoreCount");
     fprintf(file, ",LoadAddressCount");
     fprintf(file, ",ThrowCount");
+    fprintf(file, ",ReturnCount");
     fprintf(file, ",CallCount");
     fprintf(file, ",CallSiteWeight");
     fprintf(file, ",IsForceInline");
@@ -1925,6 +1950,10 @@ void DiscretionaryPolicy::DumpSchema(FILE* file) const
     fprintf(file, ",CallsiteNativeSizeEstimate");
     fprintf(file, ",ModelCodeSizeEstimate");
     fprintf(file, ",ModelPerCallInstructionEstimate");
+    fprintf(file, ",IsClassCtor");
+    fprintf(file, ",IsSameThis");
+    fprintf(file, ",CallerHasNewArray");
+    fprintf(file, ",CallerHasNewObj");
 }
 
 //------------------------------------------------------------------------
@@ -1984,6 +2013,7 @@ void DiscretionaryPolicy::DumpData(FILE* file) const
     fprintf(file, ",%u", m_StaticFieldLoadCount);
     fprintf(file, ",%u", m_StaticFieldStoreCount);
     fprintf(file, ",%u", m_LoadAddressCount);
+    fprintf(file, ",%u", m_ReturnCount);
     fprintf(file, ",%u", m_ThrowCount);
     fprintf(file, ",%u", m_CallCount);
     fprintf(file, ",%u", m_CallSiteWeight);
@@ -2000,6 +2030,10 @@ void DiscretionaryPolicy::DumpData(FILE* file) const
     fprintf(file, ",%d", m_CallsiteNativeSizeEstimate);
     fprintf(file, ",%d", m_ModelCodeSizeEstimate);
     fprintf(file, ",%d", m_PerCallInstructionEstimate);
+    fprintf(file, ",%u", m_IsClassCtor ? 1 : 0);
+    fprintf(file, ",%u", m_IsSameThis ? 1 : 0);
+    fprintf(file, ",%u", m_CallerHasNewArray ? 1 : 0);
+    fprintf(file, ",%u", m_CallerHasNewObj ? 1 : 0);
 }
 
 #endif // defined(DEBUG) || defined(INLINE_DATA)
