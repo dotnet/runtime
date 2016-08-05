@@ -381,7 +381,8 @@ bool                Compiler::optCSE_canSwap(GenTreePtr tree)
 
 /*****************************************************************************
  *
- *  Compare function passed to qsort() by optLexicalOptimizeCSEs().
+ *  Compare function passed to qsort() by CSE_Heuristic::SortCandidates
+ *  when (CodeOptKind() != Compiler::SMALL_CODE)
  */
 
 /* static */
@@ -412,13 +413,14 @@ int __cdecl         Compiler::optCSEcostCmpEx(const void *op1, const void *op2)
     if (diff != 0)
         return diff;
 
-    // In order to ensure that we have a stable sort the lower csdIndex towards to the top
+    // In order to ensure that we have a stable sort, we break ties using the csdIndex
     return (int) (dsc1->csdIndex - dsc2->csdIndex);
 }
 
 /*****************************************************************************
  *
- *  Compare function passed to qsort() by optLexicalOptimizeCSEs().
+ *  Compare function passed to qsort() by CSE_Heuristic::SortCandidates
+ *  when (CodeOptKind() == Compiler::SMALL_CODE)
  */
 
 /* static */
@@ -449,7 +451,7 @@ int __cdecl         Compiler::optCSEcostCmpSz(const void *op1, const void *op2)
     if (diff != 0)
         return diff;
 
-    // In order to ensure that we have a stable sort the lower csdIndex towards to the top
+    // In order to ensure that we have a stable sort, we break ties using the csdIndex
     return (int)(dsc1->csdIndex - dsc2->csdIndex);
 }
 
