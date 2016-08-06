@@ -17,11 +17,8 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="AssemblyExtensionTests.cs" />
-    <Compile Include="ConstructorInfo\InvokeArrayCtors.cs" />
-    <Compile Include="ConstructorInfo\ConstructorInfoInvoke1.cs" />
-    <Compile Include="ConstructorInfo\ConstructorInfoInvoke2.cs" />
-    <Compile Include="ConstructorInfo\ConstructorInfoMemberType.cs" />
-    <Compile Include="ConstructorInfo\ConstructorInfoTypeConstructorName.cs" />
+    <Compile Include="ConstructorInfo\ConstructorInfoInvokeArrayTests.cs" />
+    <Compile Include="ConstructorInfo\ConstructorInfoTests.cs" />
     <Compile Include="Helpers.cs" />
     <Compile Include="EventInfoTests.cs" />
     <Compile Include="FieldInfo\FieldInfoAttributes.cs" />
@@ -37,7 +34,6 @@
     <Compile Include="FieldInfo\FieldInfoIsPublic.cs" />
     <Compile Include="FieldInfo\FieldInfoIsStatic.cs" />
     <Compile Include="FieldInfo\FieldInfoMemberType.cs" />
-    <Compile Include="ConstructorInfo\ConstructorInfoConstructorName.cs" />
     <Compile Include="MemberInfo\MemberInfoMemberType.cs" />
     <Compile Include="MemberInfo\MemberInfoModule.cs" />
     <Compile Include="MemberInfo\MemberInfoName.cs" />
