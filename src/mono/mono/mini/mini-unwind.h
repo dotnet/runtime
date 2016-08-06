@@ -182,7 +182,7 @@ typedef struct {
 } MonoLLVMFDEInfo;
 
 void
-mono_unwind_decode_llvm_mono_fde (guint8 *fde, int fde_len, guint8 *cie, guint8 *code, MonoLLVMFDEInfo *res);
+mono_unwind_decode_llvm_mono_fde (guint8 *fde, int fde_len, guint8 *cie, guint8 *code, MonoLLVMFDEInfo *res) MONO_LLVM_INTERNAL;
 
 GSList* mono_unwind_get_cie_program (void);
 
