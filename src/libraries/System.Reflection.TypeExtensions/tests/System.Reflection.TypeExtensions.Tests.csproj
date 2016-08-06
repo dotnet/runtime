@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
@@ -16,24 +16,14 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="Assembly\AssemblyExtensionTests.cs" />
+    <Compile Include="AssemblyExtensionTests.cs" />
     <Compile Include="ConstructorInfo\InvokeArrayCtors.cs" />
     <Compile Include="ConstructorInfo\ConstructorInfoInvoke1.cs" />
     <Compile Include="ConstructorInfo\ConstructorInfoInvoke2.cs" />
     <Compile Include="ConstructorInfo\ConstructorInfoMemberType.cs" />
     <Compile Include="ConstructorInfo\ConstructorInfoTypeConstructorName.cs" />
-    <Compile Include="EventInfo\EventInfoAddEventHandler.cs" />
-    <Compile Include="EventInfo\EventInfoAttributesProperty.cs" />
-    <Compile Include="EventInfo\EventInfoEventHandlerType.cs" />
-    <Compile Include="EventInfo\EventInfoGetAddMethod1.cs" />
-    <Compile Include="EventInfo\EventInfoGetAddMethod2.cs" />
-    <Compile Include="EventInfo\EventInfoGetRaiseMethod1.cs" />
-    <Compile Include="EventInfo\EventInfoGetRaiseMethod2.cs" />
-    <Compile Include="EventInfo\EventInfoGetRemoveMethod1.cs" />
-    <Compile Include="EventInfo\EventInfoGetRemoveMethod2.cs" />
-    <Compile Include="EventInfo\EventInfoIsSpecialName.cs" />
-    <Compile Include="EventInfo\EventInfoMemberType.cs" />
-    <Compile Include="EventInfo\EventInfoRemoveEventHandler.cs" />
+    <Compile Include="Helpers.cs" />
+    <Compile Include="EventInfoTests.cs" />
     <Compile Include="FieldInfo\FieldInfoAttributes.cs" />
     <Compile Include="FieldInfo\FieldInfoFieldType.cs" />
     <Compile Include="FieldInfo\FieldInfoGetValue1.cs" />
