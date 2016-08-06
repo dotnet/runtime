@@ -299,6 +299,7 @@ struct BasicBlock
 
 #define BBF_TRY_BEG         0x00000100  // BB starts a 'try' block
 #define BBF_FUNCLET_BEG     0x00000200  // BB is the beginning of a funclet
+#define BBF_HAS_NULLCHECK   0x00000400  // BB contains a null check
 #define BBF_NEEDS_GCPOLL    0x00000800  // This BB is the source of a back edge and needs a GC Poll
 
 #define BBF_RUN_RARELY      0x00001000  // BB is rarely run (catch clauses, blocks with throws etc)
