@@ -15931,14 +15931,48 @@ void Compiler::impMakeDiscretionaryInlineObservations(InlineInfo*   pInlineInfo,
     // shouldn't be relying on the result of this method.
     assert(inlineResult->GetObservation() == InlineObservation::CALLEE_IS_DISCRETIONARY_INLINE);
 
-    // Note if this method is an instance constructor
-    if ((info.compFlags & CORINFO_FLG_CONSTRUCTOR) != 0 &&
-        (info.compFlags & CORINFO_FLG_STATIC)      == 0)
+    // Note if the caller contains NEWOBJ or NEWARR.
+    Compiler* rootCompiler = impInlineRoot();
+
+    if ((rootCompiler->optMethodFlags & OMF_HAS_NEWARRAY) != 0)
     {
-        inlineResult->Note(InlineObservation::CALLEE_IS_INSTANCE_CTOR);
+        inlineResult->Note(InlineObservation::CALLER_HAS_NEWARRAY);
     }
 
-    // Note if this method's class is a promotable struct
+    if ((rootCompiler->optMethodFlags & OMF_HAS_NEWOBJ) != 0)
+    {
+        inlineResult->Note(InlineObservation::CALLER_HAS_NEWOBJ);
+    }
+
+    bool calleeIsStatic = (info.compFlags & CORINFO_FLG_STATIC) != 0;
+    bool isSpecialMethod = (info.compFlags & CORINFO_FLG_CONSTRUCTOR) != 0;
+
+    if (isSpecialMethod)
+    {
+        if (calleeIsStatic)
+        {
+            inlineResult->Note(InlineObservation::CALLEE_IS_CLASS_CTOR);
+        }
+        else
+        {
+            inlineResult->Note(InlineObservation::CALLEE_IS_INSTANCE_CTOR);
+        }
+    }
+    else if (!calleeIsStatic)
+    {
+        // Callee is an instance method.
+        //
+        // Check if the callee has the same 'this' as the root.
+        if (pInlineInfo != nullptr)
+        {
+            GenTreePtr thisArg = pInlineInfo->iciCall->gtCall.gtCallObjp;
+            assert(thisArg);
+            bool isSameThis = impIsThis(thisArg);
+            inlineResult->NoteBool(InlineObservation::CALLSITE_IS_SAME_THIS, isSameThis);
+        }
+    }
+
+    // Note if the callee's class is a promotable struct
     if ((info.compClassAttr & CORINFO_FLG_VALUECLASS) != 0)        
     {        
         lvaStructPromotionInfo structPromotionInfo;
