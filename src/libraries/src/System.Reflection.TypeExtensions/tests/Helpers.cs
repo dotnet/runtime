@@ -10,5 +10,7 @@ namespace System.Reflection.Tests
 
         public static EventInfo GetEvent(Type type, string name) => type.GetEvent(name, AllFlags);
         public static FieldInfo GetField(Type type, string name) => type.GetField(name, AllFlags);
+        public static PropertyInfo GetProperty(Type type, string name) => type.GetProperty(name, AllFlags);
+        public static MethodInfo GetMethod(Type type, string name) => type.GetMethod(name, AllFlags);
     }
 }
