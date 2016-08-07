@@ -999,9 +999,9 @@ namespace System.Linq.Expressions.Tests
 
             BinaryExpression exp = Expression.Coalesce(left, right, conversion);
 
-            Assert.Equal(exp.Conversion, conversion);
-            Assert.Equal(exp.Type, exp.Right.Type);
-            Assert.Equal(exp.NodeType, ExpressionType.Coalesce);
+            Assert.Equal(conversion, exp.Conversion);
+            Assert.Equal(exp.Right.Type, exp.Type);
+            Assert.Equal(ExpressionType.Coalesce, exp.NodeType);
         }
 
         [Fact]
