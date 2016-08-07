@@ -116,6 +116,8 @@ break_coop_alertable_wait (gpointer user_data)
 	mono_coop_mutex_lock (ud->mutex);
 	mono_coop_cond_signal (ud->cond);
 	mono_coop_mutex_unlock (ud->mutex);
+
+	g_free (ud);
 }
 
 /*
@@ -127,23 +129,30 @@ break_coop_alertable_wait (gpointer user_data)
 static inline gint
 coop_cond_timedwait_alertable (MonoCoopCond *cond, MonoCoopMutex *mutex, guint32 timeout_ms, gboolean *alertable)
 {
+	BreakCoopAlertableWaitUD *ud;
 	int res;
 
 	if (alertable) {
-		BreakCoopAlertableWaitUD ud;
+		ud = g_new0 (BreakCoopAlertableWaitUD, 1);
+		ud->cond = cond;
+		ud->mutex = mutex;
 
-		*alertable = FALSE;
-		ud.cond = cond;
-		ud.mutex = mutex;
-		mono_thread_info_install_interrupt (break_coop_alertable_wait, &ud, alertable);
-		if (*alertable)
+		mono_thread_info_install_interrupt (break_coop_alertable_wait, ud, alertable);
+		if (*alertable) {
+			g_free (ud);
 			return 0;
+		}
 	}
 	res = mono_coop_cond_timedwait (cond, mutex, timeout_ms);
 	if (alertable) {
 		mono_thread_info_uninstall_interrupt (alertable);
 		if (*alertable)
 			return 0;
+		else {
+			/* the interrupt token has not been taken by another
+			 * thread, so it's our responsability to free it up. */
+			g_free (ud);
+		}
 	}
 	return res;
 }
