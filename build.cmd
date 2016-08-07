@@ -28,7 +28,7 @@ set __VSVersion=vs2015
 
 :: Define a prefix for most output progress messages that come from this script. That makes
 :: it easier to see where these are coming from. Note that there is a trailing space here.
-set __MsgPrefix=BUILD:
+set "__MsgPrefix=BUILD: "
 
 :: Set the various build properties here so that CMake and MSBuild can pick them up
 set "__ProjectDir=%~dp0"
@@ -346,10 +346,10 @@ if %__BuildNativeCoreLib% EQU 1 (
 
     set "__CrossGenCoreLibLog=%__LogsDir%\CrossgenMSCoreLib_%__BuildOS%__%__BuildArch%__%__BuildType%.log"
     set "__CrossgenExe=%__CrossComponentBinDir%\crossgen.exe"
-    "%__CrossgenExe%" /Platform_Assemblies_Paths "%__BinDir%" /out "%__BinDir%\mscorlib.ni.dll" "%__BinDir%\mscorlib.dll" > "%__CrossGenCoreLibLog%" 2>&1
+    "!__CrossgenExe!" /Platform_Assemblies_Paths "%__BinDir%" /out "%__BinDir%\mscorlib.ni.dll" "%__BinDir%\mscorlib.dll" > "!__CrossGenCoreLibLog!" 2>&1
     if NOT !errorlevel! == 0 (
         echo %__MsgPrefix%Error: CrossGen mscorlib facade build failed. Refer to the build log file for details:
-        echo     %__CrossGenCoreLibLog%
+        echo     !__CrossGenCoreLibLog!
         exit /b 1
     )
 )
