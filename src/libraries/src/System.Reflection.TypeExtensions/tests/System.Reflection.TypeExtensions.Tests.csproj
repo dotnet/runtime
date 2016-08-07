@@ -26,7 +26,7 @@
     <Compile Include="EventInfoTests.cs" />
     <Compile Include="FieldInfoTests.cs" />
     <Compile Include="MemberInfoTests.cs" />
-    <Compile Include="MethodBase\MethodBaseContainsGenericParameters.cs" />
+    <Compile Include="MethodBaseTests.cs" />
     <Compile Include="MethodInfo\GetBaseDefinition.cs" />
     <Compile Include="MethodInfo\MethodInfoGetGenericArguments.cs" />
     <Compile Include="Module\ModuleVersionId.cs" />
