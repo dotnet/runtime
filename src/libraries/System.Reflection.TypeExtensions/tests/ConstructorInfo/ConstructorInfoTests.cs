@@ -8,7 +8,7 @@ using Xunit;
 namespace System.Reflection.Tests
 {
     public class ConstructorInfoTests
-    {        
+    {
         public class ConstructorInfoInvoke
         {
             public ConstructorInfoInvoke() { }
@@ -72,16 +72,24 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
-        public void IsConstructor_ReturnsTrue()
-        {
-            ConstructorInfo ci = typeof(ConstructorInfoInvoke).GetConstructor(new Type[0]);
-            Assert.True(ci.IsConstructor);
-        }
-
-        [Fact]
         public void TypeConstructorName_ReturnsExpected()
         {
             Assert.Equal(".cctor", ConstructorInfo.TypeConstructorName);
+        }
+
+        [Theory]
+        [InlineData(typeof(ConstructorInfoInvoke), new Type[] { typeof(int) })]
+        [InlineData(typeof(string), new Type[] { typeof(char), typeof(int) })]
+        public void Properties(Type type, Type[] typeParameters)
+        {
+            ConstructorInfo constructor = type.GetConstructor(typeParameters);
+
+            Assert.Equal(type, constructor.DeclaringType);
+            Assert.Equal(type.GetTypeInfo().Module, constructor.Module);
+            Assert.Equal(ConstructorInfo.ConstructorName, constructor.Name);
+
+            Assert.True(constructor.IsConstructor);
+            Assert.Equal(MemberTypes.Constructor, constructor.MemberType);
         }
     }
 }

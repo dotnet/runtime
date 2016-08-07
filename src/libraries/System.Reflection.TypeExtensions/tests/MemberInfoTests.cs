@@ -6,12 +6,12 @@ using Xunit;
 
 namespace System.Reflection.TypeExtensions.Tests.MemberInfo
 {
-    public class MetadataTokenTests
+    public class MethodInfoTests
     {
         // This applies on all platforms. See S.R.TE.CoreCLR.Tests for more test cases that rely on
         // that rely platform-specific capabilities.
         [Fact]
-        public void ArraysAndTheirMembersDoNotHaveMetadataTokens()
+        public void GetMetadataToken_ArraysAndTheirMembers_DoNotHaveMetadataTokens()
         {
             Assert.False(typeof(byte[]).GetTypeInfo().HasMetadataToken());
             Assert.Throws<InvalidOperationException>(() => typeof(byte[]).GetTypeInfo().GetMetadataToken());
