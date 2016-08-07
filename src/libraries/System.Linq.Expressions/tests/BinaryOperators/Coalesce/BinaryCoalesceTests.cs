@@ -989,6 +989,22 @@ namespace System.Linq.Expressions.Tests
         #endregion
 
         [Fact]
+        public static void BasicCoalesceExpressionTest()
+        {
+            int? i = 0;
+            double? d = 0;
+            var left = Expression.Constant(d, typeof(double?));
+            var right = Expression.Constant(i, typeof(int?));
+            Expression<Func<double?, int?>> conversion = x => (int?)x;
+
+            BinaryExpression exp = Expression.Coalesce(left, right, conversion);
+
+            Assert.Equal(exp.Conversion, conversion);
+            Assert.Equal(exp.Type, exp.Right.Type);
+            Assert.Equal(exp.NodeType, ExpressionType.Coalesce);
+        }
+
+        [Fact]
         public static void CannotReduce()
         {
             Expression exp = Expression.Coalesce(Expression.Constant(0, typeof(int?)), Expression.Constant(0));
