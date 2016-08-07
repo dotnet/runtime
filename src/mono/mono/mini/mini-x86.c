@@ -63,9 +63,9 @@ static mono_mutex_t mini_arch_mutex;
 
 #ifdef TARGET_WIN32
 /* Under windows, the default pinvoke calling convention is stdcall */
-#define CALLCONV_IS_STDCALL(sig) ((((sig)->call_convention) == MONO_CALL_STDCALL) || ((sig)->pinvoke && ((sig)->call_convention) == MONO_CALL_DEFAULT) || ((sig)->pinvoke && ((sig)->call_convention) == MONO_CALL_THISCALL))
+#define CALLCONV_IS_STDCALL(sig) ((sig)->pinvoke && ((sig)->call_convention == MONO_CALL_STDCALL || (sig)->call_convention == MONO_CALL_DEFAULT || (sig)->call_convention == MONO_CALL_THISCALL))
 #else
-#define CALLCONV_IS_STDCALL(sig) (((sig)->call_convention) == MONO_CALL_STDCALL || ((sig)->pinvoke && ((sig)->call_convention) == MONO_CALL_THISCALL))
+#define CALLCONV_IS_STDCALL(sig) ((sig)->pinvoke && ((sig)->call_convention == MONO_CALL_STDCALL || (sig)->call_convention == MONO_CALL_THISCALL))
 #endif
 
 #define X86_IS_CALLEE_SAVED_REG(reg) (((reg) == X86_EBX) || ((reg) == X86_EDI) || ((reg) == X86_ESI))
@@ -543,7 +543,7 @@ get_call_info_internal (CallInfo *cinfo, MonoMethodSignature *sig)
 	if (cinfo->vtype_retaddr) {
 		/* if the function returns a struct on stack, the called method already does a ret $0x4 */
 		cinfo->callee_stack_pop = 4;
-	} else if (CALLCONV_IS_STDCALL (sig) && sig->pinvoke) {
+	} else if (CALLCONV_IS_STDCALL (sig)) {
 		/* Have to compensate for the stack space popped by the native callee */
 		cinfo->callee_stack_pop = stack_size;
 	}
