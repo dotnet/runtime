@@ -47,18 +47,6 @@ namespace System.Net.Mime
         internal static readonly char EndSquareBracket = ']';
         internal static readonly char Comma = ',';
         internal static readonly char Dot = '.';
-        internal static readonly IList<char> Whitespace = CreateAllowedWhitespace();
-
-        private static List<char> CreateAllowedWhitespace()
-        {
-            // all allowed whitespace characters
-            var whitespace = new List<char>(4);
-            whitespace.Add(Tab);
-            whitespace.Add(Space);
-            whitespace.Add(CR);
-            whitespace.Add(LF);
-            return whitespace;
-        }
 
         // NOTE: See RFC 2822 for more detail.  By default, every value in the array is false and only
         // those values which are allowed in that particular set are then set to true.  The numbers
@@ -395,6 +383,12 @@ namespace System.Net.Mime
                 throw new FormatException(SR.Format(SR.MailHeaderFieldInvalidCharacter, ch));
             }
             return true;
+        }
+
+        internal static bool IsAllowedWhiteSpace(char c)
+        {
+            // all allowed whitespace characters
+            return c == Tab || c == Space || c == CR || c == LF;
         }
 
         internal static bool HasCROrLF(string data)
