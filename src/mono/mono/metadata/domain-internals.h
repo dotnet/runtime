@@ -445,8 +445,8 @@ typedef struct  {
 
 typedef MonoDomain* (*MonoLoadFunc) (const char *filename, const char *runtime_version);
 
-void mono_domain_lock (MonoDomain *domain);
-void mono_domain_unlock (MonoDomain *domain);
+void mono_domain_lock (MonoDomain *domain) MONO_LLVM_INTERNAL;
+void mono_domain_unlock (MonoDomain *domain) MONO_LLVM_INTERNAL;
 
 void
 mono_install_runtime_load  (MonoLoadFunc func);
