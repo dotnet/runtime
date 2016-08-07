@@ -223,7 +223,7 @@ namespace System.Net.Mail
                 // before the next address.
                 if (index >= 0 &&
                         !(
-                            MailBnfHelper.Whitespace.Contains(data[index]) // < local@domain >
+                            MailBnfHelper.IsAllowedWhiteSpace(data[index]) // < local@domain >
                             || data[index] == MailBnfHelper.EndComment // <(comment)local@domain>
                             || (expectAngleBracket && data[index] == MailBnfHelper.StartAngleBracket) // <local@domain>
                             || (expectMultipleAddresses && data[index] == MailBnfHelper.Comma) // local@dom,local@dom
