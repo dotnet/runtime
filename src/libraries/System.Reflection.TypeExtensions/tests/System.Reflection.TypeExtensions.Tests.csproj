@@ -30,9 +30,6 @@
     <Compile Include="Module\ModuleVersionId.cs" />
     <Compile Include="Nullable\NullableMisc.cs" />
     <Compile Include="PropertyCompat\PropertyCompat.cs" />
-    <Compile Include="PropertyInfo\GetAccessors.cs" />
-    <Compile Include="PropertyInfo\PropertyGetAccessors2.cs" />
-    <Compile Include="PropertyInfo\PropertyInfoGetAccessors1.cs" />
     <Compile Include="Type\GetDefaultMembers.cs" />
     <Compile Include="Type\GetEvents.cs" />
     <Compile Include="Type\GetFields.cs" />
