@@ -45,9 +45,10 @@ extern "C" FPCW_API int RaiseFPException(void)
     __try
     {
         float d = 2.0 - (0.0+2.0);
-        float f = 2.0/d;
-        printf("Shouldnt execute!\n");
-	return 99;
+        float f = 2.0f/d;
+        printf("Shouldn't execute!\n");
+        (void)f; // nop to disable warning C4189
+        return 99;
     }
     __except((GetExceptionCode()==0xc000008e)?EXCEPTION_EXECUTE_HANDLER:EXCEPTION_CONTINUE_SEARCH)
     {
@@ -101,12 +102,12 @@ extern "C" FPCW_API int RaiseFPException(void)
    {
     __try
     {
-         double a = 1e-40, b;
-	 float  x, y;
-	y = a;
+        double a = 1e-40, b;
+        float  y;
+        y = (float)a;
         b = 2.0;
-        printf("Shouldnt execute!\n");
-	return 98;
+        printf("Shouldn't execute!\n");
+        return 98;
     }
     __except((GetExceptionCode()==0xc0000093)?EXCEPTION_EXECUTE_HANDLER:EXCEPTION_CONTINUE_SEARCH)
     {
@@ -157,12 +158,12 @@ extern "C" FPCW_API int RaiseFPException(void)
    {
     __try
     {
-         double a = 1e+40, b;
-	 float  x, y;
-	y = a;
+        double a = 1e+40, b;
+        float  y;
+        y = (float)a;
         b = 2.0;
-        printf("Shouldnt execute!\n");
-	return 97;
+        printf("Shouldn't execute!\n");
+        return 97;
     }
     __except((GetExceptionCode()==0xc0000091)?EXCEPTION_EXECUTE_HANDLER:EXCEPTION_CONTINUE_SEARCH)
     {
