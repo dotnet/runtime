@@ -129,6 +129,11 @@ void LazyMachState::unwindLazyState(LazyMachState* baseState,
     ENUM_CALLEE_SAVED_REGISTERS();
 #undef CALLEE_SAVED_REGISTER
 
+    // Since we don't have context pointers in this case, just assing them to NULL.
+#define CALLEE_SAVED_REGISTER(regname) unwoundState->m_Ptrs.p##regname = NULL;
+    ENUM_CALLEE_SAVED_REGISTERS();
+#undef CALLEE_SAVED_REGISTER
+
 #else  // !DACCESS_COMPILE
 
 #define CALLEE_SAVED_REGISTER(regname) unwoundState->m_Ptrs.p##regname = PTR_ULONG64(nonVolRegPtrs.regname);
