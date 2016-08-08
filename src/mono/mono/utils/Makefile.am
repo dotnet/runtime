@@ -112,6 +112,7 @@ monoutils_sources = \
 	mono-threads-windows.c	\
 	mono-threads-linux.c	\
 	mono-threads-freebsd.c	\
+	mono-threads-netbsd.c	\
 	mono-threads-openbsd.c	\
 	mono-threads-android.c	\
 	mono-threads.h	\
