@@ -89,9 +89,9 @@ g_win32_getlocale(void)
 {
 	LCID lcid = GetThreadLocale();
 	gchar buf[19];
-	gint ccBuf = GetLocaleInfo(lcid, LOCALE_SISO639LANGNAME, buf, 9);
+	gint ccBuf = GetLocaleInfoA(lcid, LOCALE_SISO639LANGNAME, buf, 9);
 	buf[ccBuf - 1] = '-';
-	ccBuf += GetLocaleInfo(lcid, LOCALE_SISO3166CTRYNAME, buf + ccBuf, 9);
+	ccBuf += GetLocaleInfoA(lcid, LOCALE_SISO3166CTRYNAME, buf + ccBuf, 9);
 	return g_strdup (buf);
 }
 
