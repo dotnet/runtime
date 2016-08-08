@@ -107,8 +107,7 @@ namespace System.Reflection.Metadata.Tests
             var peBuilder = new TestPEBuilder();
 
             BlobBuilder peImageBuilder = new BlobBuilder();
-            BlobContentId contentId;
-            peBuilder.Serialize(peImageBuilder, out contentId);
+            var contentId = peBuilder.Serialize(peImageBuilder);
             var peImage = peImageBuilder.ToImmutableArray();
 
             AssertEx.Equal(new byte[]
