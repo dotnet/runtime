@@ -366,7 +366,7 @@ legacy_opener(const char *path, void *user_data)
  * Cleanup routine for older style loggers
  */
 static void
-legacy_closer()
+legacy_closer(void)
 {
 	if (logCallback.user_data != NULL) {
 		g_free (logCallback.user_data); /* This is a LegacyLoggerUserData struct */
