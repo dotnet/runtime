@@ -1691,21 +1691,8 @@ Done
 #ifdef FEATURE_HIJACK
 
 ; ------------------------------------------------------------------
-; Hijack function for functions which return a reference type
-        NESTED_ENTRY OnHijackGCTripThread
-        PROLOG_PUSH {r0,r4-r11,lr}
-
-        CHECK_STACK_ALIGNMENT
-
-        mov r0, sp
-        bl OnHijackWorker
-
-        EPILOG_POP {r0,r4-r11,pc}
-        NESTED_END
-
-; ------------------------------------------------------------------
 ; Hijack function for functions which return a value type
-        NESTED_ENTRY OnHijackScalarTripThread
+        NESTED_ENTRY OnHijackTripThread
         PROLOG_PUSH {r0,r4-r11,lr}
 
         PROLOG_VPUSH {d0-d3}    ; saving as d0-d3 can have the floating point return value
