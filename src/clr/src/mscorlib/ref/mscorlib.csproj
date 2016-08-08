@@ -14,13 +14,13 @@
 
     <OutputType>Library</OutputType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    
+
     <!-- This prevents the default MsBuild targets from referencing System.Core.dll -->
     <AddAdditionalExplicitAssemblyReferences>false</AddAdditionalExplicitAssemblyReferences>
     <!-- These prevent the default MsBuild targets from referencing System.dll and mscorlib.dll -->
     <NoStdLib>true</NoStdLib>
     <NoCompilerStandardLib>true</NoCompilerStandardLib>
-    
+
     <ErrorReport>prompt</ErrorReport>
     <Optimize Condition="'$(Optimize)' == ''">true</Optimize>
     <CLSCompliant>true</CLSCompliant>
@@ -38,7 +38,7 @@
   <PropertyGroup Condition="'$(TargetsUnix)'!='true'">
     <DefineConstants>$(DefineConstants);FEATURE_COREFX_GLOBALIZATION;FEATURE_COMINTEROP</DefineConstants>
   </PropertyGroup>
- 
+
   <!-- Roslyn does not support writing PDBs on Unix -->
   <PropertyGroup Condition="'$(OsEnvironment)' == 'Unix'">
     <DebugSymbols>false</DebugSymbols>
@@ -61,8 +61,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="$(MSBuildThisFileDirectory)\mscorlib.cs">
-    </Compile>
+    <Compile Include="$(MSBuildThisFileDirectory)\mscorlib.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)\mscorlib.manual.cs" />
   </ItemGroup>
 
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.Targets" />
