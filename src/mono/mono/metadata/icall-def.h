@@ -35,6 +35,32 @@
  * you need to insert a method in the middle, don't bother renaming all the symbols.
  * Remember to change also the first_icall_id argument in the ICALL_TYPE 
  * declaration if you add a new icall at the beginning of a type's icall list.
+ *
+ *
+ * *** (Experimental) Cooperative GC support via Handles and MonoError ***
+ * An icall can use the coop GC handles infrastructure from handles.h to avoid some
+ * boilerplate when manipulating managed objects from runtime code and to use MonoError for
+ * threading exceptions out to managed callerrs:
+ *
+ * HANDLES(ICALL(icallid, methodname, cfuncptr))
+ *
+ * An icall with a HANDLES() declaration wrapped around it will have a generated wrapper
+ * that:
+ *   (1) Updates the coop handle stack on entry and exit
+ *   (2) Call the cfuncptr with a new signature:
+ *     (a) All managed object reference in arguments will be wrapped in a handle
+ *         (ie, MonoString* becomes MonoStringHandle)
+ *     (b) the same for the return value (MonoObject* return becomes MonoObjectHandle)
+ *     (c) An additional final argument is added of type MonoError*
+ *     example:    class object {
+ *                     [MethodImplOptions(InternalCall)]
+ *                     String some_icall (object[] x);
+ *                 }
+ *     should be implemented as:
+ *        MonoStringHandle some_icall (MonoObjectHandle this_handle, MonoArrayHandle x_handle, MonoError *error);
+ *   (3) The wrapper will automatically call mono_error_set_pending_exception (error) and raise the resulting exception.
+ * Note:  valuetypes use the same calling convention as normal.
+ * Limitations: "out" and "ref" arguments are not supported yet. 
  */
 
 #ifndef DISABLE_PROCESS_HANDLING
@@ -767,7 +793,7 @@ ICALL(RT_28, "IsTypeExportedToWindowsRuntime", ves_icall_System_RuntimeType_IsTy
 ICALL(RT_29, "IsWindowsRuntimeObjectType", ves_icall_System_RuntimeType_IsWindowsRuntimeObjectType)
 ICALL(RT_17, "MakeGenericType", ves_icall_RuntimeType_MakeGenericType)
 ICALL(RT_18, "MakePointerType", ves_icall_RuntimeType_MakePointerType)
-ICALL(RT_19, "getFullName", ves_icall_System_MonoType_getFullName)
+HANDLES(ICALL(RT_19, "getFullName", ves_icall_System_RuntimeType_getFullName))
 ICALL(RT_21, "get_DeclaringMethod", ves_icall_RuntimeType_get_DeclaringMethod)
 ICALL(RT_22, "get_DeclaringType", ves_icall_RuntimeType_get_DeclaringType)
 ICALL(RT_23, "get_Name", ves_icall_RuntimeType_get_Name)

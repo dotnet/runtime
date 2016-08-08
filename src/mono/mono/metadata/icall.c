@@ -82,6 +82,7 @@
 #include <mono/metadata/runtime.h>
 #include <mono/metadata/file-mmap.h>
 #include <mono/metadata/seq-points-data.h>
+#include <mono/metadata/handle.h>
 #include <mono/io-layer/io-layer.h>
 #include <mono/utils/monobitset.h>
 #include <mono/utils/mono-time.h>
@@ -109,6 +110,8 @@
 extern MonoString* ves_icall_System_Environment_GetOSVersionString (void);
 
 ICALL_EXPORT MonoReflectionAssembly* ves_icall_System_Reflection_Assembly_GetCallingAssembly (void);
+
+TYPED_HANDLE_DECL (MonoReflectionType);
 
 /* Lazy class loading functions */
 static GENERATE_GET_CLASS_WITH_CACHE (system_version, System, Version)
@@ -5297,13 +5300,14 @@ ves_icall_System_Reflection_Assembly_GetCallingAssembly (void)
 	return result;
 }
 
-ICALL_EXPORT MonoString *
-ves_icall_System_MonoType_getFullName (MonoReflectionType *object, gboolean full_name,
-				       gboolean assembly_qualified)
+ICALL_EXPORT MonoStringHandle
+ves_icall_System_RuntimeType_getFullName (MonoReflectionTypeHandle object, gboolean full_name,
+										  gboolean assembly_qualified, MonoError *error)
 {
-	MonoDomain *domain = mono_object_domain (object); 
+	MonoDomain *domain = mono_object_domain (MONO_HANDLE_RAW (object));
+	MonoType *type = MONO_HANDLE_RAW (object)->type;
 	MonoTypeNameFormat format;
-	MonoString *res;
+	MonoStringHandle res;
 	gchar *name;
 
 	if (full_name)
@@ -5313,16 +5317,16 @@ ves_icall_System_MonoType_getFullName (MonoReflectionType *object, gboolean full
 	else
 		format = MONO_TYPE_NAME_FORMAT_REFLECTION;
  
-	name = mono_type_get_name_full (object->type, format);
+	name = mono_type_get_name_full (type, format);
 	if (!name)
-		return NULL;
+		return NULL_HANDLE_STRING;
 
-	if (full_name && (object->type->type == MONO_TYPE_VAR || object->type->type == MONO_TYPE_MVAR)) {
+	if (full_name && (type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR)) {
 		g_free (name);
-		return NULL;
+		return NULL_HANDLE_STRING;
 	}
 
-	res = mono_string_new (domain, name);
+	res = mono_string_new_handle (domain, name);
 	g_free (name);
 
 	return res;
@@ -8218,6 +8222,7 @@ ves_icall_Microsoft_Win32_NativeMethods_SetPriorityClass (gpointer handle, gint3
 
 #define ICALL_TYPE(id,name,first)
 #define ICALL(id,name,func) Icall_ ## id,
+#define HANDLES(inner) inner
 
 enum {
 #include "metadata/icall-def.h"
@@ -8228,6 +8233,8 @@ enum {
 #undef ICALL
 #define ICALL_TYPE(id,name,first) Icall_type_ ## id,
 #define ICALL(id,name,func)
+#undef HANDLES
+#define HANDLES(inner) inner
 enum {
 #include "metadata/icall-def.h"
 	Icall_type_num
@@ -8237,6 +8244,8 @@ enum {
 #undef ICALL
 #define ICALL_TYPE(id,name,firstic) {(Icall_ ## firstic)},
 #define ICALL(id,name,func)
+#undef HANDLES
+#define HANDLES(inner) inner
 typedef struct {
 	guint16 first_icall;
 } IcallTypeDesc;
@@ -8249,6 +8258,8 @@ icall_type_descs [] = {
 
 #define icall_desc_num_icalls(desc) ((desc) [1].first_icall - (desc) [0].first_icall)
 
+#undef HANDLES
+#define HANDLES(inner) inner
 #undef ICALL_TYPE
 #define ICALL_TYPE(id,name,first)
 #undef ICALL
@@ -8320,6 +8331,8 @@ icall_names [] = {
 
 #endif /* !HAVE_ARRAY_ELEM_INIT */
 
+#undef HANDLES
+#define HANDLES(inner) inner
 #undef ICALL_TYPE
 #undef ICALL
 #define ICALL_TYPE(id,name,first)
@@ -8331,6 +8344,8 @@ icall_functions [] = {
 };
 
 #ifdef ENABLE_ICALL_SYMBOL_MAP
+#undef HANDLES
+#define HANDLES(inner) inner
 #undef ICALL_TYPE
 #undef ICALL
 #define ICALL_TYPE(id,name,first)
@@ -8341,6 +8356,19 @@ icall_symbols [] = {
 	NULL
 };
 #endif
+
+#undef ICALL_TYPE
+#undef ICALL
+#define ICALL_TYPE(id,name,first)
+#define ICALL(id,name,func) 0,
+#undef HANDLES
+#define HANDLES(inner) 1,
+static const guchar
+icall_uses_handles [] = {
+#include "metadata/icall-def.h"
+#undef ICALL
+#undef HANDLES
+};
 
 #endif /* DISABLE_ICALL_TABLES */
 
@@ -8462,13 +8490,31 @@ compare_method_imap (const void *key, const void *elem)
 	return strcmp (key, method_name);
 }
 
-static gpointer
-find_method_icall (const IcallTypeDesc *imap, const char *name)
+static gsize
+find_slot_icall (const IcallTypeDesc *imap, const char *name)
 {
 	const guint16 *nameslot = (const guint16 *)mono_binary_search (name, icall_names_idx + imap->first_icall, icall_desc_num_icalls (imap), sizeof (icall_names_idx [0]), compare_method_imap);
 	if (!nameslot)
+		return -1;
+	return (nameslot - &icall_names_idx [0]);
+}
+
+static gboolean
+find_uses_handles_icall (const IcallTypeDesc *imap, const char *name)
+{
+	gsize slotnum = find_slot_icall (imap, name);
+	if (slotnum == -1)
+		return FALSE;
+	return (gboolean)icall_uses_handles [slotnum];
+}
+
+static gpointer
+find_method_icall (const IcallTypeDesc *imap, const char *name)
+{
+	gsize slotnum = find_slot_icall (imap, name);
+	if (slotnum == -1)
 		return NULL;
-	return (gpointer)icall_functions [(nameslot - &icall_names_idx [0])];
+	return (gpointer)icall_functions [slotnum];
 }
 
 static int
@@ -8496,13 +8542,31 @@ compare_method_imap (const void *key, const void *elem)
 	return strcmp (key, *method_name);
 }
 
-static gpointer
-find_method_icall (const IcallTypeDesc *imap, const char *name)
+static gsize
+find_slot_icall (const IcallTypeDesc *imap, const char *name)
 {
 	const char **nameslot = mono_binary_search (name, icall_names + imap->first_icall, icall_desc_num_icalls (imap), sizeof (icall_names [0]), compare_method_imap);
 	if (!nameslot)
+		return -1;
+	return nameslot - icall_names;
+}
+
+static gpointer
+find_method_icall (const IcallTypeDesc *imap, const char *name)
+{
+	gsize slotnum = find_slot_icall (imap, name);
+	if (slotnum == -1)
 		return NULL;
-	return (gpointer)icall_functions [(nameslot - icall_names)];
+	return (gpointer)icall_functions [slotnum];
+}
+
+static gboolean
+find_uses_handles_icall (const IcallTypeDesc *imap, const char *name)
+{
+	gsize slotnum = find_slot_icall (imap, name);
+	if (slotnum == -1)
+		return FALSE;
+	return (gboolean)icall_uses_handles [slotnum];
 }
 
 static int
@@ -8554,8 +8618,19 @@ no_icall_table (void)
 }
 #endif
 
+/**
+ * mono_lookup_internal_call_full:
+ * @method: the method to look up
+ * @uses_handles: out argument if method needs handles around managed objects.
+ *
+ * Returns a pointer to the icall code for the given method.  If
+ * uses_handles is not NULL, it will be set to TRUE if the method
+ * needs managed objects wrapped using the infrastructure in handle.h
+ *
+ * If the method is not found, warns and returns NULL.
+ */
 gpointer
-mono_lookup_internal_call (MonoMethod *method)
+mono_lookup_internal_call_full (MonoMethod *method, mono_bool *uses_handles)
 {
 	char *sigstart;
 	char *tmpsig;
@@ -8616,6 +8691,8 @@ mono_lookup_internal_call (MonoMethod *method)
 
 	res = g_hash_table_lookup (icall_hash, mname);
 	if (res) {
+		if (uses_handles)
+			*uses_handles = FALSE;
 		mono_icall_unlock ();;
 		return res;
 	}
@@ -8623,6 +8700,8 @@ mono_lookup_internal_call (MonoMethod *method)
 	*sigstart = 0;
 	res = g_hash_table_lookup (icall_hash, mname);
 	if (res) {
+		if (uses_handles)
+			*uses_handles = FALSE;
 		mono_icall_unlock ();
 		return res;
 	}
@@ -8643,6 +8722,8 @@ mono_lookup_internal_call (MonoMethod *method)
 	}
 	res = find_method_icall (imap, sigstart - mlen);
 	if (res) {
+		if (uses_handles)
+			*uses_handles = find_uses_handles_icall (imap, sigstart - mlen);
 		mono_icall_unlock ();
 		return res;
 	}
@@ -8650,6 +8731,8 @@ mono_lookup_internal_call (MonoMethod *method)
 	*sigstart = '(';
 	res = find_method_icall (imap, sigstart - mlen);
 	if (res) {
+		if (uses_handles)
+			*uses_handles = find_uses_handles_icall (imap, sigstart - mlen);
 		mono_icall_unlock ();
 		return res;
 	}
@@ -8666,6 +8749,12 @@ mono_lookup_internal_call (MonoMethod *method)
 
 	return NULL;
 #endif
+}
+
+gpointer
+mono_lookup_internal_call (MonoMethod *method)
+{
+	return mono_lookup_internal_call_full (method, NULL);
 }
 
 #ifdef ENABLE_ICALL_SYMBOL_MAP
