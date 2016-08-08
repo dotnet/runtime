@@ -2920,13 +2920,13 @@ public:
         LIMITED_METHOD_CONTRACT;
     }
             
-    HRESULT Load()
+    HRESULT Load(LPCWSTR wszDiasymreaderPath = nullptr)
     {
         STANDARD_VM_CONTRACT;
 
         HRESULT hr = S_OK;
 
-        m_hModule = WszLoadLibrary(W("diasymreader.dll"));
+        m_hModule = WszLoadLibrary(wszDiasymreaderPath != nullptr ? wszDiasymreaderPath : W("diasymreader.dll"));
         if (m_hModule == NULL)
         {
             GetSvcLogger()->Printf(
@@ -4794,7 +4794,7 @@ BOOL NGenMethodLinesPdbWriter::FinalizeLinesFileBlock(
 }
 #endif // NO_NGENPDB
 #if defined(FEATURE_PERFMAP) || !defined(NO_NGENPDB)
-HRESULT __stdcall CreatePdb(CORINFO_ASSEMBLY_HANDLE hAssembly, BSTR pNativeImagePath, BSTR pPdbPath, BOOL pdbLines, BSTR pManagedPdbSearchPath)
+HRESULT __stdcall CreatePdb(CORINFO_ASSEMBLY_HANDLE hAssembly, BSTR pNativeImagePath, BSTR pPdbPath, BOOL pdbLines, BSTR pManagedPdbSearchPath, LPCWSTR pDiasymreaderPath)
 {
     STANDARD_VM_CONTRACT;
 
@@ -4809,7 +4809,7 @@ HRESULT __stdcall CreatePdb(CORINFO_ASSEMBLY_HANDLE hAssembly, BSTR pNativeImage
         pPdbPath, 
         pdbLines ? kPDBLines : 0,
         pManagedPdbSearchPath);
-    IfFailThrow(pdbWriter.Load());
+    IfFailThrow(pdbWriter.Load(pDiasymreaderPath));
 #elif defined(FEATURE_PERFMAP)
     NativeImagePerfMap perfMap(pAssembly, pPdbPath);
 #endif
@@ -4853,7 +4853,7 @@ HRESULT __stdcall CreatePdb(CORINFO_ASSEMBLY_HANDLE hAssembly, BSTR pNativeImage
     return S_OK;
 }
 #else
-HRESULT __stdcall CreatePdb(CORINFO_ASSEMBLY_HANDLE hAssembly, BSTR pNativeImagePath, BSTR pPdbPath, BOOL pdbLines, BSTR pManagedPdbSearchPath)
+HRESULT __stdcall CreatePdb(CORINFO_ASSEMBLY_HANDLE hAssembly, BSTR pNativeImagePath, BSTR pPdbPath, BOOL pdbLines, BSTR pManagedPdbSearchPath, LPCWSTR pDiasymreaderPath)
 {
     return E_NOTIMPL;
 }
