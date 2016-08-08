@@ -69,8 +69,7 @@ namespace System.Reflection.PortableExecutable.Tests
 
             var peBlob = new BlobBuilder();
 
-            BlobContentId contentId;
-            peBuilder.Serialize(peBlob, out contentId);
+            var contentId = peBuilder.Serialize(peBlob);
 
             if (!mvidFixup.IsDefault)
             {
@@ -488,8 +487,7 @@ namespace System.Reflection.PortableExecutable.Tests
             
             var peBlob = new BlobBuilder();
             
-            BlobContentId contentId;
-            peBuilder.Serialize(peBlob, out contentId);
+            var contentId = peBuilder.Serialize(peBlob);
             
             peBlob.WriteContentTo(peStream);
 
@@ -533,9 +531,7 @@ namespace System.Reflection.PortableExecutable.Tests
 
             var peBlob = new BlobBuilder();
 
-            BlobContentId contentId;
-
-            Assert.Throws<NotImplementedException>(() => peBuilder.Serialize(peBlob, out contentId));
+            Assert.Throws<NotImplementedException>(() => peBuilder.Serialize(peBlob));
         }
     }
 }
