@@ -284,12 +284,14 @@ namespace System.Reflection.Metadata
 
         public float ReadSingle()
         {
-            return *(float*)GetCurrentPointerAndAdvance(sizeof(float));
+            int val = ReadInt32();
+            return *(float*)&val;
         }
 
         public double ReadDouble()
         {
-            return *(double*)GetCurrentPointerAndAdvance(sizeof(double));
+            long val = ReadInt64();
+            return *(double*)&val;
         }
 
         public Guid ReadGuid()
