@@ -140,7 +140,7 @@ AC_CHECK_FUNCS(fork execv execve)
 
 AC_ARG_WITH([overridable-allocators], [  --with-overridable-allocators	allow g_*alloc/g_free to call custom allocators set via g_mem_set_vtable])
 
-if test x$with_overridable_allocators == xyes; then
+if test x$with_overridable_allocators = xyes; then
 	AC_DEFINE(ENABLE_OVERRIDABLE_ALLOCATORS,1,[Overridable allocator support enabled])
   AC_MSG_NOTICE([Overridable allocator support enabled])
 else
@@ -160,7 +160,7 @@ elif test x$target_ios = xno; then
 AC_CHECK_FUNCS(strndup getpwuid_r)
 fi
 
-AM_CONDITIONAL(NEED_VASPRINTF, test x$ac_cv_func_vasprintf = xno || test x$with_overridable_allocators == xyes)
+AM_CONDITIONAL(NEED_VASPRINTF, test x$ac_cv_func_vasprintf = xno || test x$with_overridable_allocators = xyes)
 AM_ICONV()
 AC_SEARCH_LIBS(sqrtf, m)
 
