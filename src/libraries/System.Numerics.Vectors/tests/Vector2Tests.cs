@@ -43,22 +43,21 @@ namespace System.Numerics.Tests
         public void Vector2GetHashCodeTest()
         {
             Vector2 v1 = new Vector2(2.0f, 3.0f);
-
-            Vector2 v3 = new Vector2(2.0f, 3.0f);
-            Vector2 v5 = new Vector2(3.0f, 2.0f);
-            Assert.True(v1.GetHashCode() == v1.GetHashCode());
-            Assert.False(v1.GetHashCode() == v5.GetHashCode());
-            Assert.True(v1.GetHashCode() == v3.GetHashCode());
+            Vector2 v2 = new Vector2(2.0f, 3.0f);
+            Vector2 v3 = new Vector2(3.0f, 2.0f);
+            Assert.Equal(v1.GetHashCode(), v1.GetHashCode());
+            Assert.Equal(v1.GetHashCode(), v2.GetHashCode());
+            Assert.NotEqual(v1.GetHashCode(), v3.GetHashCode());
             Vector2 v4 = new Vector2(0.0f, 0.0f);
             Vector2 v6 = new Vector2(1.0f, 0.0f);
             Vector2 v7 = new Vector2(0.0f, 1.0f);
             Vector2 v8 = new Vector2(1.0f, 1.0f);
-            Assert.False(v4.GetHashCode() == v6.GetHashCode());
-            Assert.False(v4.GetHashCode() == v7.GetHashCode());
-            Assert.False(v4.GetHashCode() == v8.GetHashCode());
-            Assert.False(v7.GetHashCode() == v6.GetHashCode());
-            Assert.False(v8.GetHashCode() == v6.GetHashCode());
-            Assert.False(v8.GetHashCode() == v7.GetHashCode());
+            Assert.NotEqual(v4.GetHashCode(), v6.GetHashCode());
+            Assert.NotEqual(v4.GetHashCode(), v7.GetHashCode());
+            Assert.NotEqual(v4.GetHashCode(), v8.GetHashCode());
+            Assert.NotEqual(v7.GetHashCode(), v6.GetHashCode());
+            Assert.NotEqual(v8.GetHashCode(), v6.GetHashCode());
+            Assert.NotEqual(v8.GetHashCode(), v7.GetHashCode());
         }
 
         [Fact]
