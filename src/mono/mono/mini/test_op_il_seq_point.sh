@@ -18,7 +18,7 @@ RUNTIME=$BASEDIR/../../runtime/mono-wrapper
 trap "rm -rf ${TMP_FILE_PREFIX}*" EXIT
 
 tmp_file () {
-	mktemp ./${TMP_FILE_PREFIX}XXXX
+	mktemp ./${TMP_FILE_PREFIX}XXXXXX
 }
 
 clean_aot () {
