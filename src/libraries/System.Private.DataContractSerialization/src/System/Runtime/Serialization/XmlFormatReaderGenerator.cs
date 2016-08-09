@@ -872,7 +872,7 @@ namespace System.Runtime.Serialization
                   return Activator.CreateInstance(type);
             }
 
-            const BindingFlags Flags = BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance;
+            const BindingFlags Flags = BindingFlags.Public | BindingFlags.Instance;
             bool hasDefaultConstructor = s_typeHasDefaultConstructorMap.GetOrAdd(type, t => t.GetConstructor(Flags, Array.Empty<Type>()) != null);
             return hasDefaultConstructor ? Activator.CreateInstance(type) : TryGetUninitializedObjectWithFormatterServices(type) ?? Activator.CreateInstance(type);
 #else
