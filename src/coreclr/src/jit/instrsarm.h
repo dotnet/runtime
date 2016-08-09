@@ -23,36 +23,36 @@
 ******************************************************************************/
 
 #if !defined(_TARGET_ARM_)
-  #error Unexpected target type
+#error Unexpected target type
 #endif
 
 #ifndef INST1
-#error  INST1 must be defined before including this file.
+#error INST1 must be defined before including this file.
 #endif
 #ifndef INST2
-#error  INST2 must be defined before including this file.
+#error INST2 must be defined before including this file.
 #endif
 #ifndef INST3
-#error  INST3 must be defined before including this file.
+#error INST3 must be defined before including this file.
 #endif
 #ifndef INST4
-#error  INST4 must be defined before including this file.
+#error INST4 must be defined before including this file.
 #endif
 #ifndef INST5
-#error  INST5 must be defined before including this file.
+#error INST5 must be defined before including this file.
 #endif
 #ifndef INST6
-#error  INST6 must be defined before including this file.
+#error INST6 must be defined before including this file.
 #endif
 // No INST7
 // #ifndef INST7
 // #error  INST7 must be defined before including this file.
 // #endif
 #ifndef INST8
-#error  INST8 must be defined before including this file.
+#error INST8 must be defined before including this file.
 #endif
 #ifndef INST9
-#error  INST9 must be defined before including this file.
+#error INST9 must be defined before including this file.
 #endif
 
 /*****************************************************************************/
@@ -545,13 +545,13 @@ INST1(vmov_f2i,  "vmov.f2i",   1, 0,   IF_T2_VMOVS, 0xEE100A10) // A8.6.330 VMOV
 // clang-format on
 
 /*****************************************************************************/
-#undef  INST1
-#undef  INST2
-#undef  INST3
-#undef  INST4
-#undef  INST5
-#undef  INST6
-#undef  INST7
-#undef  INST8
-#undef  INST9
+#undef INST1
+#undef INST2
+#undef INST3
+#undef INST4
+#undef INST5
+#undef INST6
+#undef INST7
+#undef INST8
+#undef INST9
 /*****************************************************************************/
