@@ -251,7 +251,6 @@ FCIMPL0(FC_BOOL_RET, ThreadPoolNative::NotifyRequestComplete)
         pThread->HasCriticalRegion() ||
         pThread->HasThreadAffinity();
 
-    // Read fenced call
     bool shouldAdjustWorkers = ThreadpoolMgr::ShouldAdjustMaxWorkersActive();
 
     // 
@@ -267,14 +266,14 @@ FCIMPL0(FC_BOOL_RET, ThreadPoolNative::NotifyRequestComplete)
     {
         HELPER_METHOD_FRAME_BEGIN_RET_0();
 
-        if (needReset)
-            pThread->InternalReset(FALSE, TRUE, TRUE, FALSE);
-
         if (shouldAdjustWorkers)
         {
             ThreadpoolMgr::AdjustMaxWorkersActive();
             tal.Release();
         }
+
+        if (needReset)
+            pThread->InternalReset(FALSE, TRUE, TRUE, FALSE);
 
         HELPER_METHOD_FRAME_END();    
     }

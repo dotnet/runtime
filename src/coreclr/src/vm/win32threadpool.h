@@ -1142,8 +1142,9 @@ public:
         if (CLRThreadpoolHosted())
             return false;
 
+        MemoryBarrier();
         DWORD priorTime = PriorCompletedWorkRequestsTime; 
-        DWORD requiredInterval = VolatileLoad(&NextCompletedWorkRequestsTime) - priorTime; // fences above read
+        DWORD requiredInterval = NextCompletedWorkRequestsTime - priorTime; // fences above read
         DWORD elapsedInterval = GetTickCount() - priorTime;
         if (elapsedInterval >= requiredInterval)
         {
