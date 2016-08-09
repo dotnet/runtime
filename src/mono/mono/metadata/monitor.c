@@ -357,7 +357,8 @@ mon_finalize (MonoThreadsSync *mon)
 	LOCK_DEBUG (g_message ("%s: Finalizing sync %p", __func__, mon));
 
 	if (mon->entry_sem != NULL) {
-		CloseHandle (mon->entry_sem);
+		mono_coop_sem_destroy (mon->entry_sem);
+		g_free (mon->entry_sem);
 		mon->entry_sem = NULL;
 	}
 	/* If this isn't empty then something is seriously broken - it
@@ -679,7 +680,7 @@ mono_monitor_exit_inflated (MonoObject *obj)
 			tmp_status = InterlockedCompareExchange ((gint32*)&mon->status, new_status, old_status);
 			if (tmp_status == old_status) {
 				if (have_waiters)
-					ReleaseSemaphore (mon->entry_sem, 1, NULL);
+					mono_coop_sem_post (mon->entry_sem);
 				break;
 			}
 			old_status = tmp_status;
@@ -745,8 +746,8 @@ mono_monitor_try_enter_inflated (MonoObject *obj, guint32 ms, gboolean allow_int
 	HANDLE sem;
 	gint64 then = 0, now, delta;
 	guint32 waitms;
-	guint32 ret;
 	guint32 new_status, old_status, tmp_status;
+	MonoSemTimedwaitRet wait_ret;
 	MonoInternalThread *thread;
 	gboolean interrupted = FALSE;
 
@@ -838,11 +839,12 @@ retry_contended:
 	 */
 	if (mon->entry_sem == NULL) {
 		/* Create the semaphore */
-		sem = CreateSemaphore (NULL, 0, 0x7fffffff, NULL);
-		g_assert (sem != NULL);
+		sem = g_new0 (MonoCoopSem, 1);
+		mono_coop_sem_init (sem, 0);
 		if (InterlockedCompareExchangePointer ((gpointer*)&mon->entry_sem, sem, NULL) != NULL) {
 			/* Someone else just put a handle here */
-			CloseHandle (sem);
+			mono_coop_sem_destroy (sem);
+			g_free (sem);
 		}
 	}
 
@@ -878,12 +880,10 @@ retry_contended:
 	mono_thread_set_state (thread, ThreadState_WaitSleepJoin);
 
 	/*
-	 * We pass TRUE instead of allow_interruption since we have to check for the
+	 * We pass ALERTABLE instead of allow_interruption since we have to check for the
 	 * StopRequested case below.
 	 */
-	MONO_ENTER_GC_SAFE;
-	ret = WaitForSingleObjectEx (mon->entry_sem, waitms, TRUE);
-	MONO_EXIT_GC_SAFE;
+	wait_ret = mono_coop_sem_timedwait (mon->entry_sem, waitms, MONO_SEM_FLAGS_ALERTABLE);
 
 	mono_thread_clr_state (thread, ThreadState_WaitSleepJoin);
 	
@@ -891,7 +891,7 @@ retry_contended:
 	mono_perfcounters->thread_queue_len--;
 #endif
 
-	if (ret == WAIT_IO_COMPLETION && !allow_interruption) {
+	if (wait_ret == MONO_SEM_TIMEDWAIT_RET_ALERTED && !allow_interruption) {
 		interrupted = TRUE;
 		/* 
 		 * We have to obey a stop/suspend request even if 
@@ -914,11 +914,11 @@ retry_contended:
 			/* retry from the top */
 			goto retry_contended;
 		}
-	} else if (ret == WAIT_OBJECT_0) {
+	} else if (wait_ret == MONO_SEM_TIMEDWAIT_RET_SUCCESS) {
 		interrupted = FALSE;
 		/* retry from the top */
 		goto retry_contended;
-	} else if (ret == WAIT_TIMEOUT) {
+	} else if (wait_ret == MONO_SEM_TIMEDWAIT_RET_TIMEDOUT) {
 		/* we're done */
 	}
 
@@ -927,10 +927,10 @@ retry_contended:
 
 	mono_profiler_monitor_event (obj, MONO_PROFILER_MONITOR_FAIL);
 
-	if (ret == WAIT_IO_COMPLETION) {
+	if (wait_ret == MONO_SEM_TIMEDWAIT_RET_ALERTED) {
 		LOCK_DEBUG (g_message ("%s: (%d) interrupted waiting, returning -1", __func__, id));
 		return -1;
-	} else if (ret == WAIT_TIMEOUT) {
+	} else if (wait_ret == MONO_SEM_TIMEDWAIT_RET_ALERTED) {
 		LOCK_DEBUG (g_message ("%s: (%d) timed out waiting, returning FALSE", __func__, id));
 		return 0;
 	} else {

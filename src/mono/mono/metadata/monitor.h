@@ -13,7 +13,8 @@
 #include <glib.h>
 #include <mono/metadata/object.h>
 #include <mono/io-layer/io-layer.h>
-#include "mono/utils/mono-compiler.h"
+#include <mono/utils/mono-compiler.h>
+#include <mono/utils/mono-coop-semaphore.h>
 
 G_BEGIN_DECLS
 
@@ -39,9 +40,9 @@ struct _MonoThreadsSync
 #ifdef HAVE_MOVING_COLLECTOR
 	gint32 hash_code;
 #endif
-	HANDLE entry_sem;
 	GSList *wait_list;
 	void *data;
+	MonoCoopSem *entry_sem;
 };
 
 /*
