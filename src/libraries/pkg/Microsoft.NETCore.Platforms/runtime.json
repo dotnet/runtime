@@ -227,7 +227,7 @@
         },
 
         "ol.7.0": {
-            "#import": [ "ol.7", "rhel.7.0-x64" ]
+            "#import": [ "ol.7", "rhel.7.0" ]
         },
         "ol.7.0-x64": {
             "#import": [ "ol.7", "ol.7-x64", "rhel.7.0-x64" ]
