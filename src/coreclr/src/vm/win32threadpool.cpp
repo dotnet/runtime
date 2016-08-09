@@ -1262,11 +1262,11 @@ void ThreadpoolMgr::AdjustMaxWorkersActive()
             }
         }
 
-        // Memory fences below writes
-        VolatileStore(&PriorCompletedWorkRequests, totalNumCompletions);
+        PriorCompletedWorkRequests = totalNumCompletions;
         PriorCompletedWorkRequestsTime = currentTicks;
         NextCompletedWorkRequestsTime = currentTicks + ThreadAdjustmentInterval;
         CurrentSampleStartTime = endTime;
+        MemoryBarrier();
     }
 }
 
