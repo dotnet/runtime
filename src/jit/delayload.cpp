@@ -8,4 +8,3 @@
 #include "shimload.h"
 
 ExternC PfnDliHook __pfnDliNotifyHook = ShimDelayLoadHook;
-

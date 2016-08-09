@@ -48,7 +48,6 @@ void DecomposeLongs::PrepareForDecomposition()
     m_compiler->lvaPromoteLongVars();
 }
 
-
 //------------------------------------------------------------------------
 // DecomposeBlock: Do LONG decomposition to all the statements in the given block.
 // This must be done before lowering the block, as decomposition can insert
@@ -81,7 +80,6 @@ void DecomposeLongs::DecomposeBlock(BasicBlock* block)
     }
 }
 
-
 //------------------------------------------------------------------------
 // DecomposeStmt: Do LONG decomposition to a statement tree.
 //
@@ -100,7 +98,6 @@ void DecomposeLongs::DecomposeStmt(GenTreeStmt* stmt)
     m_compiler->compCurStmt = savedStmt;
 }
 
-
 //------------------------------------------------------------------------
 // DecompNodeHelper: fgWalkTreePost callback helper for LONG decomposition
 //
@@ -118,7 +115,6 @@ Compiler::fgWalkResult DecomposeLongs::DecompNodeHelper(GenTree** ppTree, Compil
     decomp->DecomposeNode(ppTree, data);
     return Compiler::WALK_CONTINUE;
 }
-
 
 //------------------------------------------------------------------------
 // DecomposeNode: Decompose long-type trees into lower and upper halves.
@@ -143,7 +139,8 @@ void DecomposeLongs::DecomposeNode(GenTree** ppTree, Compiler::fgWalkData* data)
 #ifdef DEBUG
             if (m_compiler->verbose)
             {
-                printf("Changing implicit reference to lo half of long lclVar to an explicit reference of its promoted half:\n");
+                printf("Changing implicit reference to lo half of long lclVar to an explicit reference of its promoted "
+                       "half:\n");
                 m_compiler->gtDispTree(tree);
             }
 #endif // DEBUG
@@ -170,112 +167,112 @@ void DecomposeLongs::DecomposeNode(GenTree** ppTree, Compiler::fgWalkData* data)
 
     switch (tree->OperGet())
     {
-    case GT_PHI:
-    case GT_PHI_ARG:
-        break;
+        case GT_PHI:
+        case GT_PHI_ARG:
+            break;
 
-    case GT_LCL_VAR:
-        DecomposeLclVar(ppTree, data);
-        break;
+        case GT_LCL_VAR:
+            DecomposeLclVar(ppTree, data);
+            break;
 
-    case GT_LCL_FLD:
-        DecomposeLclFld(ppTree, data);
-        break;
+        case GT_LCL_FLD:
+            DecomposeLclFld(ppTree, data);
+            break;
 
-    case GT_STORE_LCL_VAR:
-        DecomposeStoreLclVar(ppTree, data);
-        break;
+        case GT_STORE_LCL_VAR:
+            DecomposeStoreLclVar(ppTree, data);
+            break;
 
-    case GT_CAST:
-        DecomposeCast(ppTree, data);
-        break;
+        case GT_CAST:
+            DecomposeCast(ppTree, data);
+            break;
 
-    case GT_CNS_LNG:
-        DecomposeCnsLng(ppTree, data);
-        break;
+        case GT_CNS_LNG:
+            DecomposeCnsLng(ppTree, data);
+            break;
 
-    case GT_CALL:
-        DecomposeCall(ppTree, data);
-        break;
+        case GT_CALL:
+            DecomposeCall(ppTree, data);
+            break;
 
-    case GT_RETURN:
-        assert(tree->gtOp.gtOp1->OperGet() == GT_LONG);
-        break;
+        case GT_RETURN:
+            assert(tree->gtOp.gtOp1->OperGet() == GT_LONG);
+            break;
 
-    case GT_STOREIND:
-        DecomposeStoreInd(ppTree, data);
-        break;
+        case GT_STOREIND:
+            DecomposeStoreInd(ppTree, data);
+            break;
 
-    case GT_STORE_LCL_FLD:
-        assert(tree->gtOp.gtOp1->OperGet() == GT_LONG);
-        NYI("st.lclFld of of TYP_LONG");
-        break;
+        case GT_STORE_LCL_FLD:
+            assert(tree->gtOp.gtOp1->OperGet() == GT_LONG);
+            NYI("st.lclFld of of TYP_LONG");
+            break;
 
-    case GT_IND:
-        DecomposeInd(ppTree, data);
-        break;
+        case GT_IND:
+            DecomposeInd(ppTree, data);
+            break;
 
-    case GT_NOT:
-        DecomposeNot(ppTree, data);
-        break;
+        case GT_NOT:
+            DecomposeNot(ppTree, data);
+            break;
 
-    case GT_NEG:
-        DecomposeNeg(ppTree, data);
-        break;
+        case GT_NEG:
+            DecomposeNeg(ppTree, data);
+            break;
 
-    // Binary operators. Those that require different computation for upper and lower half are
-    // handled by the use of GetHiOper().
-    case GT_ADD:
-    case GT_SUB:
-    case GT_OR:
-    case GT_XOR:
-    case GT_AND:
-        DecomposeArith(ppTree, data);
-        break;
+        // Binary operators. Those that require different computation for upper and lower half are
+        // handled by the use of GetHiOper().
+        case GT_ADD:
+        case GT_SUB:
+        case GT_OR:
+        case GT_XOR:
+        case GT_AND:
+            DecomposeArith(ppTree, data);
+            break;
 
-    case GT_MUL:
-        NYI("Arithmetic binary operators on TYP_LONG - GT_MUL");
-        break;
+        case GT_MUL:
+            NYI("Arithmetic binary operators on TYP_LONG - GT_MUL");
+            break;
 
-    case GT_DIV:
-        NYI("Arithmetic binary operators on TYP_LONG - GT_DIV");
-        break;
+        case GT_DIV:
+            NYI("Arithmetic binary operators on TYP_LONG - GT_DIV");
+            break;
 
-    case GT_MOD:
-        NYI("Arithmetic binary operators on TYP_LONG - GT_MOD");
-        break;
+        case GT_MOD:
+            NYI("Arithmetic binary operators on TYP_LONG - GT_MOD");
+            break;
 
-    case GT_UDIV:
-        NYI("Arithmetic binary operators on TYP_LONG - GT_UDIV");
-        break;
+        case GT_UDIV:
+            NYI("Arithmetic binary operators on TYP_LONG - GT_UDIV");
+            break;
 
-    case GT_UMOD:
-        NYI("Arithmetic binary operators on TYP_LONG - GT_UMOD");
-        break;
+        case GT_UMOD:
+            NYI("Arithmetic binary operators on TYP_LONG - GT_UMOD");
+            break;
 
-    case GT_LSH:
-    case GT_RSH:
-    case GT_RSZ:
-        NYI("Arithmetic binary operators on TYP_LONG - SHIFT");
-        break;
+        case GT_LSH:
+        case GT_RSH:
+        case GT_RSZ:
+            NYI("Arithmetic binary operators on TYP_LONG - SHIFT");
+            break;
 
-    case GT_ROL:
-    case GT_ROR:
-        NYI("Arithmetic binary operators on TYP_LONG - ROTATE");
-        break;
+        case GT_ROL:
+        case GT_ROR:
+            NYI("Arithmetic binary operators on TYP_LONG - ROTATE");
+            break;
 
-    case GT_MULHI:
-        NYI("Arithmetic binary operators on TYP_LONG - MULHI");
-        break;
+        case GT_MULHI:
+            NYI("Arithmetic binary operators on TYP_LONG - MULHI");
+            break;
 
-    case GT_LOCKADD:
-    case GT_XADD:
-    case GT_XCHG:
-    case GT_CMPXCHG:
-        NYI("Interlocked operations on TYP_LONG");
-        break;
+        case GT_LOCKADD:
+        case GT_XADD:
+        case GT_XCHG:
+        case GT_CMPXCHG:
+            NYI("Interlocked operations on TYP_LONG");
+            break;
 
-    default:
+        default:
         {
             JITDUMP("Illegal TYP_LONG node %s in Decomposition.", GenTree::NodeName(tree->OperGet()));
             noway_assert(!"Illegal TYP_LONG node in Decomposition.");
@@ -291,7 +288,6 @@ void DecomposeLongs::DecomposeNode(GenTree** ppTree, Compiler::fgWalkData* data)
     }
 #endif
 }
- 
 
 //------------------------------------------------------------------------
 // FinalizeDecomposition: A helper function to finalize LONG decomposition by
@@ -307,7 +303,10 @@ void DecomposeLongs::DecomposeNode(GenTree** ppTree, Compiler::fgWalkData* data)
 // Return Value:
 //    None.
 //
-void DecomposeLongs::FinalizeDecomposition(GenTree** ppTree, Compiler::fgWalkData* data, GenTree* loResult, GenTree* hiResult)
+void DecomposeLongs::FinalizeDecomposition(GenTree**             ppTree,
+                                           Compiler::fgWalkData* data,
+                                           GenTree*              loResult,
+                                           GenTree*              hiResult)
 {
     assert(ppTree != nullptr);
     assert(*ppTree != nullptr);
@@ -328,7 +327,6 @@ void DecomposeLongs::FinalizeDecomposition(GenTree** ppTree, Compiler::fgWalkDat
     *ppTree = newTree;
 }
 
-
 //------------------------------------------------------------------------
 // DecomposeLclVar: Decompose GT_LCL_VAR.
 //
@@ -346,13 +344,13 @@ void DecomposeLongs::DecomposeLclVar(GenTree** ppTree, Compiler::fgWalkData* dat
     assert(data != nullptr);
     assert((*ppTree)->OperGet() == GT_LCL_VAR);
 
-    GenTree* tree = *ppTree;
-    unsigned varNum = tree->AsLclVarCommon()->gtLclNum;
+    GenTree*   tree   = *ppTree;
+    unsigned   varNum = tree->AsLclVarCommon()->gtLclNum;
     LclVarDsc* varDsc = m_compiler->lvaTable + varNum;
     m_compiler->lvaDecRefCnts(tree);
 
     GenTree* loResult = tree;
-    loResult->gtType = TYP_INT;
+    loResult->gtType  = TYP_INT;
     GenTree* hiResult = m_compiler->gtNewLclLNode(varNum, TYP_INT);
 
     if (varDsc->lvPromoted)
@@ -368,11 +366,11 @@ void DecomposeLongs::DecomposeLclVar(GenTree** ppTree, Compiler::fgWalkData* dat
         noway_assert(varDsc->lvLRACandidate == false);
 
         loResult->SetOper(GT_LCL_FLD);
-        loResult->AsLclFld()->gtLclOffs = 0;
+        loResult->AsLclFld()->gtLclOffs  = 0;
         loResult->AsLclFld()->gtFieldSeq = FieldSeqStore::NotAField();
 
         hiResult->SetOper(GT_LCL_FLD);
-        hiResult->AsLclFld()->gtLclOffs = 4;
+        hiResult->AsLclFld()->gtLclOffs  = 4;
         hiResult->AsLclFld()->gtFieldSeq = FieldSeqStore::NotAField();
     }
 
@@ -381,7 +379,6 @@ void DecomposeLongs::DecomposeLclVar(GenTree** ppTree, Compiler::fgWalkData* dat
 
     FinalizeDecomposition(ppTree, data, loResult, hiResult);
 }
-
 
 //------------------------------------------------------------------------
 // DecomposeLclFld: Decompose GT_LCL_FLD.
@@ -400,17 +397,14 @@ void DecomposeLongs::DecomposeLclFld(GenTree** ppTree, Compiler::fgWalkData* dat
     assert(data != nullptr);
     assert((*ppTree)->OperGet() == GT_LCL_FLD);
 
-    GenTree* tree = *ppTree;
+    GenTree*       tree     = *ppTree;
     GenTreeLclFld* loResult = tree->AsLclFld();
-    loResult->gtType = TYP_INT;
+    loResult->gtType        = TYP_INT;
 
-    GenTree* hiResult = m_compiler->gtNewLclFldNode(loResult->gtLclNum,
-                                              TYP_INT,
-                                              loResult->gtLclOffs + 4);
+    GenTree* hiResult = m_compiler->gtNewLclFldNode(loResult->gtLclNum, TYP_INT, loResult->gtLclOffs + 4);
 
     FinalizeDecomposition(ppTree, data, loResult, hiResult);
 }
-
 
 //------------------------------------------------------------------------
 // DecomposeStoreLclVar: Decompose GT_STORE_LCL_VAR.
@@ -432,9 +426,9 @@ void DecomposeLongs::DecomposeStoreLclVar(GenTree** ppTree, Compiler::fgWalkData
 
     GenTreeStmt* curStmt = m_compiler->compCurStmt->AsStmt();
 
-    GenTree* tree = *ppTree;
+    GenTree* tree     = *ppTree;
     GenTree* nextTree = tree->gtNext;
-    GenTree* rhs = tree->gtGetOp1();
+    GenTree* rhs      = tree->gtGetOp1();
     if ((rhs->OperGet() == GT_PHI) || (rhs->OperGet() == GT_CALL))
     {
         // GT_CALLs are not decomposed, so will not be converted to GT_LONG
@@ -443,12 +437,12 @@ void DecomposeLongs::DecomposeStoreLclVar(GenTree** ppTree, Compiler::fgWalkData
     }
 
     noway_assert(rhs->OperGet() == GT_LONG);
-    unsigned varNum = tree->AsLclVarCommon()->gtLclNum;
+    unsigned   varNum = tree->AsLclVarCommon()->gtLclNum;
     LclVarDsc* varDsc = m_compiler->lvaTable + varNum;
     m_compiler->lvaDecRefCnts(tree);
 
-    GenTree* loRhs = rhs->gtGetOp1();
-    GenTree* hiRhs = rhs->gtGetOp2();
+    GenTree* loRhs   = rhs->gtGetOp1();
+    GenTree* hiRhs   = rhs->gtGetOp2();
     GenTree* hiStore = m_compiler->gtNewLclLNode(varNum, TYP_INT);
 
     if (varDsc->lvPromoted)
@@ -466,19 +460,19 @@ void DecomposeLongs::DecomposeStoreLclVar(GenTree** ppTree, Compiler::fgWalkData
         noway_assert(varDsc->lvLRACandidate == false);
 
         tree->SetOper(GT_STORE_LCL_FLD);
-        tree->AsLclFld()->gtLclOffs = 0;
+        tree->AsLclFld()->gtLclOffs  = 0;
         tree->AsLclFld()->gtFieldSeq = FieldSeqStore::NotAField();
 
         hiStore->SetOper(GT_STORE_LCL_FLD);
-        hiStore->AsLclFld()->gtLclOffs = 4;
+        hiStore->AsLclFld()->gtLclOffs  = 4;
         hiStore->AsLclFld()->gtFieldSeq = FieldSeqStore::NotAField();
     }
 
     tree->gtOp.gtOp1 = loRhs;
-    tree->gtType = TYP_INT;
+    tree->gtType     = TYP_INT;
 
     loRhs->gtNext = tree;
-    tree->gtPrev = loRhs;
+    tree->gtPrev  = loRhs;
 
     hiStore->gtOp.gtOp1 = hiRhs;
     hiStore->CopyCosts(tree);
@@ -487,9 +481,9 @@ void DecomposeLongs::DecomposeStoreLclVar(GenTree** ppTree, Compiler::fgWalkData
     m_compiler->lvaIncRefCnts(tree);
     m_compiler->lvaIncRefCnts(hiStore);
 
-    tree->gtNext = hiRhs;
-    hiRhs->gtPrev = tree;
-    hiRhs->gtNext = hiStore;
+    tree->gtNext    = hiRhs;
+    hiRhs->gtPrev   = tree;
+    hiRhs->gtNext   = hiStore;
     hiStore->gtPrev = hiRhs;
     hiStore->gtNext = nextTree;
     if (nextTree != nullptr)
@@ -501,13 +495,12 @@ void DecomposeLongs::DecomposeStoreLclVar(GenTree** ppTree, Compiler::fgWalkData
     bool isEmbeddedStmt = !curStmt->gtStmtIsTopLevel();
     if (!isEmbeddedStmt)
     {
-        tree->gtNext = nullptr;
+        tree->gtNext  = nullptr;
         hiRhs->gtPrev = nullptr;
     }
 
     InsertNodeAsStmt(hiStore);
 }
-
 
 //------------------------------------------------------------------------
 // DecomposeCast: Decompose GT_CAST.
@@ -527,36 +520,35 @@ void DecomposeLongs::DecomposeCast(GenTree** ppTree, Compiler::fgWalkData* data)
     assert((*ppTree)->OperGet() == GT_CAST);
     assert(m_compiler->compCurStmt != nullptr);
 
-    GenTree* tree = *ppTree;
-    GenTree* loResult = nullptr;
-    GenTree* hiResult = nullptr;
-    GenTreeStmt* curStmt = m_compiler->compCurStmt->AsStmt();
+    GenTree*     tree     = *ppTree;
+    GenTree*     loResult = nullptr;
+    GenTree*     hiResult = nullptr;
+    GenTreeStmt* curStmt  = m_compiler->compCurStmt->AsStmt();
 
     assert(tree->gtPrev == tree->gtGetOp1());
     NYI_IF(tree->gtOverflow(), "TYP_LONG cast with overflow");
     switch (tree->AsCast()->CastFromType())
     {
-    case TYP_INT:
-        if (tree->gtFlags & GTF_UNSIGNED)
-        {
-            loResult = tree->gtGetOp1();
-            hiResult = new (m_compiler, GT_CNS_INT) GenTreeIntCon(TYP_INT, 0);
-            m_compiler->fgSnipNode(curStmt, tree);
-        }
-        else
-        {
-            NYI("Lowering of signed cast TYP_INT->TYP_LONG");
-        }
-        break;
+        case TYP_INT:
+            if (tree->gtFlags & GTF_UNSIGNED)
+            {
+                loResult = tree->gtGetOp1();
+                hiResult = new (m_compiler, GT_CNS_INT) GenTreeIntCon(TYP_INT, 0);
+                m_compiler->fgSnipNode(curStmt, tree);
+            }
+            else
+            {
+                NYI("Lowering of signed cast TYP_INT->TYP_LONG");
+            }
+            break;
 
-    default:
-        NYI("Unimplemented type for Lowering of cast to TYP_LONG");
-        break;
+        default:
+            NYI("Unimplemented type for Lowering of cast to TYP_LONG");
+            break;
     }
 
     FinalizeDecomposition(ppTree, data, loResult, hiResult);
 }
-
 
 //------------------------------------------------------------------------
 // DecomposeCnsLng: Decompose GT_CNS_LNG.
@@ -575,8 +567,8 @@ void DecomposeLongs::DecomposeCnsLng(GenTree** ppTree, Compiler::fgWalkData* dat
     assert(data != nullptr);
     assert((*ppTree)->OperGet() == GT_CNS_LNG);
 
-    GenTree* tree = *ppTree;
-    INT32 hiVal = tree->AsLngCon()->HiVal();
+    GenTree* tree  = *ppTree;
+    INT32    hiVal = tree->AsLngCon()->HiVal();
 
     GenTree* loResult = tree;
     loResult->ChangeOperConst(GT_CNS_INT);
@@ -586,7 +578,6 @@ void DecomposeLongs::DecomposeCnsLng(GenTree** ppTree, Compiler::fgWalkData* dat
 
     FinalizeDecomposition(ppTree, data, loResult, hiResult);
 }
-
 
 //------------------------------------------------------------------------
 // DecomposeCall: Decompose GT_CALL.
@@ -629,24 +620,23 @@ void DecomposeLongs::DecomposeCall(GenTree** ppTree, Compiler::fgWalkData* data)
     }
 
     // Otherwise, we need to force var = call()
-    GenTree* tree = *ppTree;
+    GenTree*  tree    = *ppTree;
     GenTree** treePtr = nullptr;
-    parent = tree->gtGetParent(&treePtr);
+    parent            = tree->gtGetParent(&treePtr);
 
     assert(treePtr != nullptr);
 
-    GenTreeStmt* asgStmt = m_compiler->fgInsertEmbeddedFormTemp(treePtr);
-    GenTree* stLclVar = asgStmt->gtStmtExpr;
+    GenTreeStmt* asgStmt  = m_compiler->fgInsertEmbeddedFormTemp(treePtr);
+    GenTree*     stLclVar = asgStmt->gtStmtExpr;
     assert(stLclVar->OperIsLocalStore());
 
-    unsigned varNum = stLclVar->AsLclVarCommon()->gtLclNum;
+    unsigned varNum                              = stLclVar->AsLclVarCommon()->gtLclNum;
     m_compiler->lvaTable[varNum].lvIsMultiRegRet = true;
     m_compiler->fgFixupIfCallArg(data->parentStack, tree, *treePtr);
 
     // Decompose new node
     DecomposeNode(treePtr, data);
 }
-
 
 //------------------------------------------------------------------------
 // DecomposeStoreInd: Decompose GT_STOREIND.
@@ -669,8 +659,8 @@ void DecomposeLongs::DecomposeStoreInd(GenTree** ppTree, Compiler::fgWalkData* d
 
     assert(tree->gtOp.gtOp2->OperGet() == GT_LONG);
 
-    GenTreeStmt* curStmt = m_compiler->compCurStmt->AsStmt();
-    bool isEmbeddedStmt = !curStmt->gtStmtIsTopLevel();
+    GenTreeStmt* curStmt        = m_compiler->compCurStmt->AsStmt();
+    bool         isEmbeddedStmt = !curStmt->gtStmtIsTopLevel();
 
     // Example input trees (a nested embedded statement case)
     //
@@ -685,8 +675,8 @@ void DecomposeLongs::DecomposeStoreInd(GenTree** ppTree, Compiler::fgWalkData* d
     //   |  |  {  |  |     {  *  stmtExpr  void  (embedded) (IL   ???...  ???)
     //   |  |  {  |  |     {  |  /--*  lclFld    long   V01 arg1         u:2[+8] Fseq[i] $380
     //   |  |  {  |  |     {  \--*  st.lclVar long  (P) V21 cse8
-    //   |  |  {  |  |     {  \--*    int    V21.hi (offs=0x00) -> V22 rat0    
-    //   |  |  {  |  |     {  \--*    int    V21.hi (offs=0x04) -> V23 rat1    
+    //   |  |  {  |  |     {  \--*    int    V21.hi (offs=0x00) -> V22 rat0
+    //   |  |  {  |  |     {  \--*    int    V21.hi (offs=0x04) -> V23 rat1
     //   |  |  {  |  |  /--*  lclVar    int    V22 rat0          $380
     //   |  |  {  |  |  +--*  lclVar    int    V23 rat1
     //   |  |  {  |  +--*  gt_long   long
@@ -700,8 +690,8 @@ void DecomposeLongs::DecomposeStoreInd(GenTree** ppTree, Compiler::fgWalkData* d
     // (editor brace matching compensation: }}}}}}}}}}}}}}}}}})
 
     GenTree* linkBegin = m_compiler->fgGetFirstNode(tree)->gtPrev;
-    GenTree* linkEnd = tree->gtNext;
-    GenTree* gtLong = tree->gtOp.gtOp2;
+    GenTree* linkEnd   = tree->gtNext;
+    GenTree* gtLong    = tree->gtOp.gtOp2;
 
     // Save address to a temp. It is used in storeIndLow and storeIndHigh trees.
     GenTreeStmt* addrStmt = CreateTemporary(&tree->gtOp.gtOp1);
@@ -723,7 +713,7 @@ void DecomposeLongs::DecomposeStoreInd(GenTree** ppTree, Compiler::fgWalkData* d
     }
 
     // Example trees after embedded statements for address and data are added.
-    // This example saves all address and data trees into temp variables 
+    // This example saves all address and data trees into temp variables
     // to show how those embedded statements are created.
     //
     //  *  stmtExpr  void  (top level) (IL   ???...  ???)
@@ -758,13 +748,13 @@ void DecomposeLongs::DecomposeStoreInd(GenTree** ppTree, Compiler::fgWalkData* d
     //
     // (editor brace matching compensation: }}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}})
 
-    GenTree* addrBase = tree->gtOp.gtOp1;
-    GenTree* dataHigh = gtLong->gtOp.gtOp2;
-    GenTree* dataLow = gtLong->gtOp.gtOp1;
+    GenTree* addrBase    = tree->gtOp.gtOp1;
+    GenTree* dataHigh    = gtLong->gtOp.gtOp2;
+    GenTree* dataLow     = gtLong->gtOp.gtOp1;
     GenTree* storeIndLow = tree;
 
     // Rewrite storeIndLow tree to save only lower 32-bit data.
-    // 
+    //
     //  |  |  {  |  /--*  lclVar    byref  V24 rat2   (address)
     //  ...
     //  |  |  {  |  +--*  lclVar    int    V25 rat3   (lower 32-bit data)
@@ -778,7 +768,7 @@ void DecomposeLongs::DecomposeStoreInd(GenTree** ppTree, Compiler::fgWalkData* d
     m_compiler->fgSnipNode(curStmt, gtLong);
     m_compiler->fgSnipNode(curStmt, dataHigh);
     storeIndLow->gtOp.gtOp2 = dataLow;
-    storeIndLow->gtType = TYP_INT;
+    storeIndLow->gtType     = TYP_INT;
 
     // Construct storeIndHigh tree
     //
@@ -790,10 +780,11 @@ void DecomposeLongs::DecomposeStoreInd(GenTree** ppTree, Compiler::fgWalkData* d
     //
     // (editor brace matching compensation: }}}}})
 
-    GenTree* addrBaseHigh = new(m_compiler, GT_LCL_VAR) GenTreeLclVar(GT_LCL_VAR, 
-        addrBase->TypeGet(), addrBase->AsLclVarCommon()->GetLclNum(), BAD_IL_OFFSET);
-    GenTree* addrHigh = new(m_compiler, GT_LEA) GenTreeAddrMode(TYP_REF, addrBaseHigh, nullptr, 0, genTypeSize(TYP_INT));
-    GenTree* storeIndHigh = new(m_compiler, GT_STOREIND) GenTreeStoreInd(TYP_INT, addrHigh, dataHigh);
+    GenTree* addrBaseHigh = new (m_compiler, GT_LCL_VAR)
+        GenTreeLclVar(GT_LCL_VAR, addrBase->TypeGet(), addrBase->AsLclVarCommon()->GetLclNum(), BAD_IL_OFFSET);
+    GenTree* addrHigh =
+        new (m_compiler, GT_LEA) GenTreeAddrMode(TYP_REF, addrBaseHigh, nullptr, 0, genTypeSize(TYP_INT));
+    GenTree* storeIndHigh = new (m_compiler, GT_STOREIND) GenTreeStoreInd(TYP_INT, addrHigh, dataHigh);
     storeIndHigh->gtFlags = (storeIndLow->gtFlags & (GTF_ALL_EFFECT | GTF_LIVENESS_MASK));
     storeIndHigh->gtFlags |= GTF_REVERSE_OPS;
     storeIndHigh->CopyCosts(storeIndLow);
@@ -804,7 +795,7 @@ void DecomposeLongs::DecomposeStoreInd(GenTree** ppTree, Compiler::fgWalkData* d
     SimpleLinkNodeAfter(dataHigh, addrBaseHigh);
     SimpleLinkNodeAfter(addrBaseHigh, addrHigh);
     SimpleLinkNodeAfter(addrHigh, storeIndHigh);
-    
+
     // External links of storeIndHigh tree
     // dataHigh->gtPrev = nullptr;
     if (isEmbeddedStmt)
@@ -812,7 +803,7 @@ void DecomposeLongs::DecomposeStoreInd(GenTree** ppTree, Compiler::fgWalkData* d
         // If storeIndTree is an embedded statement, connect storeIndLow
         // and dataHigh
         storeIndLow->gtNext = dataHigh;
-        dataHigh->gtPrev = storeIndLow;
+        dataHigh->gtPrev    = storeIndLow;
     }
     storeIndHigh->gtNext = linkEnd;
     if (linkEnd != nullptr)
@@ -822,7 +813,7 @@ void DecomposeLongs::DecomposeStoreInd(GenTree** ppTree, Compiler::fgWalkData* d
 
     InsertNodeAsStmt(storeIndHigh);
 
-    // Example final output 
+    // Example final output
     //
     //  *  stmtExpr  void  (top level) (IL   ???...  ???)
     //  |  /--*  argPlace  ref    $280
@@ -839,8 +830,8 @@ void DecomposeLongs::DecomposeStoreInd(GenTree** ppTree, Compiler::fgWalkData* d
     //  |  |     {  |  |  {  |     +--*  lclFld    int    V01 arg1         [+12]
     //  |  |     {  |  |  {  |  /--*  gt_long   long
     //  |  |     {  |  |  {  \--*  st.lclVar long  (P) V21 cse8
-    //  |  |     {  |  |  {  \--*    int    V21.hi (offs=0x00) -> V22 rat0    
-    //  |  |     {  |  |  {  \--*    int    V21.hi (offs=0x04) -> V23 rat1    
+    //  |  |     {  |  |  {  \--*    int    V21.hi (offs=0x00) -> V22 rat0
+    //  |  |     {  |  |  {  \--*    int    V21.hi (offs=0x04) -> V23 rat1
     //  |  |     {  |  |  {  *  stmtExpr  void  (embedded) (IL   ???...  ???)
     //  |  |     {  |  |  {  |  /--*  lclVar    int    V22 rat0          $380
     //  |  |     {  |  |  {  \--*  st.lclVar int    V25 rat3
@@ -865,7 +856,6 @@ void DecomposeLongs::DecomposeStoreInd(GenTree** ppTree, Compiler::fgWalkData* d
     // (editor brace matching compensation: }}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}})
 }
 
-
 //------------------------------------------------------------------------
 // DecomposeInd: Decompose GT_IND.
 //
@@ -877,7 +867,7 @@ void DecomposeLongs::DecomposeStoreInd(GenTree** ppTree, Compiler::fgWalkData* d
 //
 void DecomposeLongs::DecomposeInd(GenTree** ppTree, Compiler::fgWalkData* data)
 {
-    GenTreePtr indLow = *ppTree;
+    GenTreePtr   indLow   = *ppTree;
     GenTreeStmt* addrStmt = CreateTemporary(&indLow->gtOp.gtOp1);
     JITDUMP("[DecomposeInd]: Saving addr tree to a temp var:\n");
     DISPTREE(addrStmt);
@@ -886,12 +876,13 @@ void DecomposeLongs::DecomposeInd(GenTree** ppTree, Compiler::fgWalkData* data)
     indLow->gtType = TYP_INT;
 
     // Create tree of ind(addr+4)
-    GenTreePtr addrBase = indLow->gtGetOp1();
-    GenTreePtr addrBaseHigh = new(m_compiler, GT_LCL_VAR) GenTreeLclVar(GT_LCL_VAR,
-        addrBase->TypeGet(), addrBase->AsLclVarCommon()->GetLclNum(), BAD_IL_OFFSET);
-    GenTreePtr addrHigh = new(m_compiler, GT_LEA) GenTreeAddrMode(TYP_REF, addrBaseHigh, nullptr, 0, genTypeSize(TYP_INT));
+    GenTreePtr addrBase     = indLow->gtGetOp1();
+    GenTreePtr addrBaseHigh = new (m_compiler, GT_LCL_VAR)
+        GenTreeLclVar(GT_LCL_VAR, addrBase->TypeGet(), addrBase->AsLclVarCommon()->GetLclNum(), BAD_IL_OFFSET);
+    GenTreePtr addrHigh =
+        new (m_compiler, GT_LEA) GenTreeAddrMode(TYP_REF, addrBaseHigh, nullptr, 0, genTypeSize(TYP_INT));
     GenTreePtr indHigh = new (m_compiler, GT_IND) GenTreeIndir(GT_IND, TYP_INT, addrHigh, nullptr);
-    
+
     // Connect linear links
     SimpleLinkNodeAfter(addrBaseHigh, addrHigh);
     SimpleLinkNodeAfter(addrHigh, indHigh);
@@ -920,21 +911,21 @@ void DecomposeLongs::DecomposeNot(GenTree** ppTree, Compiler::fgWalkData* data)
     GenTreeStmt* curStmt = m_compiler->compCurStmt->AsStmt();
 
     GenTree* tree = *ppTree;
-    GenTree* op1 = tree->gtGetOp1();
+    GenTree* op1  = tree->gtGetOp1();
     noway_assert(op1->OperGet() == GT_LONG);
     GenTree* loOp1 = op1->gtGetOp1();
     GenTree* hiOp1 = op1->gtGetOp2();
     m_compiler->fgSnipNode(curStmt, op1);
 
-    GenTree* loResult = tree;
-    loResult->gtType = TYP_INT;
+    GenTree* loResult    = tree;
+    loResult->gtType     = TYP_INT;
     loResult->gtOp.gtOp1 = loOp1;
-    loOp1->gtNext = loResult;
-    loResult->gtPrev = loOp1;
+    loOp1->gtNext        = loResult;
+    loResult->gtPrev     = loOp1;
 
     GenTree* hiResult = new (m_compiler, GT_NOT) GenTreeOp(GT_NOT, TYP_INT, hiOp1, nullptr);
-    hiOp1->gtNext = hiResult;
-    hiResult->gtPrev = hiOp1;
+    hiOp1->gtNext     = hiResult;
+    hiResult->gtPrev  = hiOp1;
 
     FinalizeDecomposition(ppTree, data, loResult, hiResult);
 }
@@ -958,8 +949,8 @@ void DecomposeLongs::DecomposeNeg(GenTree** ppTree, Compiler::fgWalkData* data)
     assert(m_compiler->compCurStmt != nullptr);
 
     GenTreeStmt* curStmt = m_compiler->compCurStmt->AsStmt();
-    GenTree* tree = *ppTree;
-    GenTree* op1 = tree->gtGetOp1();
+    GenTree*     tree    = *ppTree;
+    GenTree*     op1     = tree->gtGetOp1();
     noway_assert(op1->OperGet() == GT_LONG);
 
     CreateTemporary(&(op1->gtOp.gtOp1));
@@ -970,11 +961,11 @@ void DecomposeLongs::DecomposeNeg(GenTree** ppTree, Compiler::fgWalkData* data)
     GenTree* hiOp1 = op1->gtGetOp2();
     Compiler::fgSnipNode(curStmt, op1);
 
-    GenTree* loResult = tree;
-    loResult->gtType = TYP_INT;
+    GenTree* loResult    = tree;
+    loResult->gtType     = TYP_INT;
     loResult->gtOp.gtOp1 = loOp1;
 
-    GenTree* zero = m_compiler->gtNewZeroConNode(TYP_INT);
+    GenTree* zero     = m_compiler->gtNewZeroConNode(TYP_INT);
     GenTree* hiAdjust = m_compiler->gtNewOperNode(GT_ADD_HI, TYP_INT, hiOp1, zero);
     GenTree* hiResult = m_compiler->gtNewOperNode(GT_NEG, TYP_INT, hiAdjust);
     hiResult->gtFlags = tree->gtFlags;
@@ -1008,14 +999,10 @@ void DecomposeLongs::DecomposeArith(GenTree** ppTree, Compiler::fgWalkData* data
     assert(m_compiler->compCurStmt != nullptr);
 
     GenTreeStmt* curStmt = m_compiler->compCurStmt->AsStmt();
-    GenTree* tree = *ppTree;
-    genTreeOps oper = tree->OperGet();
+    GenTree*     tree    = *ppTree;
+    genTreeOps   oper    = tree->OperGet();
 
-    assert((oper == GT_ADD) ||
-           (oper == GT_SUB) ||
-           (oper == GT_OR)  ||
-           (oper == GT_XOR) ||
-           (oper == GT_AND));
+    assert((oper == GT_ADD) || (oper == GT_SUB) || (oper == GT_OR) || (oper == GT_XOR) || (oper == GT_AND));
 
     NYI_IF((tree->gtFlags & GTF_REVERSE_OPS) != 0, "Binary operator with GTF_REVERSE_OPS");
 
@@ -1042,15 +1029,11 @@ void DecomposeLongs::DecomposeArith(GenTree** ppTree, Compiler::fgWalkData* data
     // requires a unique high operator, and the child nodes are not simple locals (e.g.,
     // they are decomposed nodes), then we also can't decompose the node, as we aren't
     // guaranteed the high and low parts will be executed immediately after each other.
-    
-    NYI_IF(hiOp1->OperIsHigh() ||
-           hiOp2->OperIsHigh() ||
-           (GenTree::OperIsHigh(GetHiOper(oper)) &&
-            (!loOp1->OperIsLeaf() ||
-             !hiOp1->OperIsLeaf() ||
-             !loOp1->OperIsLeaf() ||
-             !hiOp2->OperIsLeaf())),
-            "Can't decompose expression tree TYP_LONG node");
+
+    NYI_IF(hiOp1->OperIsHigh() || hiOp2->OperIsHigh() ||
+               (GenTree::OperIsHigh(GetHiOper(oper)) &&
+                (!loOp1->OperIsLeaf() || !hiOp1->OperIsLeaf() || !loOp1->OperIsLeaf() || !hiOp2->OperIsLeaf())),
+           "Can't decompose expression tree TYP_LONG node");
 
     // Now, remove op1 and op2 from the node list.
     m_compiler->fgSnipNode(curStmt, op1);
@@ -1060,7 +1043,7 @@ void DecomposeLongs::DecomposeArith(GenTree** ppTree, Compiler::fgWalkData* data
     // will be the lo halves of op1 from above.
     GenTree* loResult = tree;
     loResult->SetOper(GetLoOper(loResult->OperGet()));
-    loResult->gtType = TYP_INT;
+    loResult->gtType     = TYP_INT;
     loResult->gtOp.gtOp1 = loOp1;
     loResult->gtOp.gtOp2 = loOp2;
 
@@ -1088,7 +1071,7 @@ void DecomposeLongs::DecomposeArith(GenTree** ppTree, Compiler::fgWalkData* data
     loResult->gtPrev   = loOp2;
 
     // Next, reorder the hiOps and the hiResult.
-    GenTree* hiResult = new (m_compiler, oper) GenTreeOp(GetHiOper(oper), TYP_INT, hiOp1, hiOp2);
+    GenTree* hiResult  = new (m_compiler, oper) GenTreeOp(GetHiOper(oper), TYP_INT, hiOp1, hiOp2);
     hiOp1->gtNext      = hiOp2First;
     hiOp2First->gtPrev = hiOp1;
     hiOp2->gtNext      = hiResult;
@@ -1110,7 +1093,6 @@ void DecomposeLongs::DecomposeArith(GenTree** ppTree, Compiler::fgWalkData* data
     FinalizeDecomposition(ppTree, data, loResult, hiResult);
 }
 
-
 //------------------------------------------------------------------------
 // CreateTemporary: call fgInsertEmbeddedFormTemp to replace *ppTree with
 // a new temp that is assigned to the value previously at *ppTree by inserting
@@ -1129,9 +1111,8 @@ GenTreeStmt* DecomposeLongs::CreateTemporary(GenTree** ppTree)
     GenTreeStmt* newStmt = m_compiler->fgInsertEmbeddedFormTemp(ppTree);
     if (newStmt->gtStmtIsTopLevel())
     {
-        for (GenTreeStmt* nextEmbeddedStmt = newStmt->gtStmtNextIfEmbedded();
-             nextEmbeddedStmt != nullptr;
-             nextEmbeddedStmt = nextEmbeddedStmt->gtStmt.gtStmtNextIfEmbedded())
+        for (GenTreeStmt* nextEmbeddedStmt = newStmt->gtStmtNextIfEmbedded(); nextEmbeddedStmt != nullptr;
+             nextEmbeddedStmt              = nextEmbeddedStmt->gtStmt.gtStmtNextIfEmbedded())
         {
             DecomposeStmt(nextEmbeddedStmt);
         }
@@ -1139,7 +1120,6 @@ GenTreeStmt* DecomposeLongs::CreateTemporary(GenTree** ppTree)
 
     return newStmt;
 }
-
 
 //------------------------------------------------------------------------
 // InsertNodeAsStmt: Insert a node as the root node of a new statement.
@@ -1198,7 +1178,6 @@ void DecomposeLongs::InsertNodeAsStmt(GenTree* node)
 #endif // DEBUG
 }
 
-
 //------------------------------------------------------------------------
 // GetHiOper: Convert arithmetic operator to "high half" operator of decomposed node.
 //
@@ -1213,20 +1192,35 @@ genTreeOps DecomposeLongs::GetHiOper(genTreeOps oper)
 {
     switch (oper)
     {
-    case GT_ADD: return GT_ADD_HI;  break;
-    case GT_SUB: return GT_SUB_HI;  break;
-    case GT_MUL: return GT_MUL_HI;  break;
-    case GT_DIV: return GT_DIV_HI;  break;
-    case GT_MOD: return GT_MOD_HI;  break;
-    case GT_OR:  return GT_OR;      break;
-    case GT_AND: return GT_AND;     break;
-    case GT_XOR: return GT_XOR;     break;
-    default:
-        assert(!"GetHiOper called for invalid oper");
-        return GT_NONE;
+        case GT_ADD:
+            return GT_ADD_HI;
+            break;
+        case GT_SUB:
+            return GT_SUB_HI;
+            break;
+        case GT_MUL:
+            return GT_MUL_HI;
+            break;
+        case GT_DIV:
+            return GT_DIV_HI;
+            break;
+        case GT_MOD:
+            return GT_MOD_HI;
+            break;
+        case GT_OR:
+            return GT_OR;
+            break;
+        case GT_AND:
+            return GT_AND;
+            break;
+        case GT_XOR:
+            return GT_XOR;
+            break;
+        default:
+            assert(!"GetHiOper called for invalid oper");
+            return GT_NONE;
     }
 }
-
 
 //------------------------------------------------------------------------
 // GetLoOper: Convert arithmetic operator to "low half" operator of decomposed node.
@@ -1242,17 +1236,26 @@ genTreeOps DecomposeLongs::GetLoOper(genTreeOps oper)
 {
     switch (oper)
     {
-    case GT_ADD: return GT_ADD_LO;  break;
-    case GT_SUB: return GT_SUB_LO;  break;
-    case GT_OR:  return GT_OR;      break;
-    case GT_AND: return GT_AND;     break;
-    case GT_XOR: return GT_XOR;     break;
-    default:
-        assert(!"GetLoOper called for invalid oper");
-        return GT_NONE;
+        case GT_ADD:
+            return GT_ADD_LO;
+            break;
+        case GT_SUB:
+            return GT_SUB_LO;
+            break;
+        case GT_OR:
+            return GT_OR;
+            break;
+        case GT_AND:
+            return GT_AND;
+            break;
+        case GT_XOR:
+            return GT_XOR;
+            break;
+        default:
+            assert(!"GetLoOper called for invalid oper");
+            return GT_NONE;
     }
 }
-
 
 //------------------------------------------------------------------------
 // SimpleLinkNodeAfter: insert a node after a given node in the execution order.
@@ -1275,16 +1278,15 @@ void DecomposeLongs::SimpleLinkNodeAfter(GenTree* insertionPoint, GenTree* node)
     assert(insertionPoint != nullptr);
     assert(node != nullptr);
 
-    GenTree* nextTree = insertionPoint->gtNext;
-    node->gtPrev = insertionPoint;
-    node->gtNext = nextTree;
+    GenTree* nextTree      = insertionPoint->gtNext;
+    node->gtPrev           = insertionPoint;
+    node->gtNext           = nextTree;
     insertionPoint->gtNext = node;
     if (nextTree != nullptr)
     {
         nextTree->gtPrev = node;
     }
 }
-
 
 #endif // !_TARGET_64BIT_
 #endif // !LEGACY_BACKEND

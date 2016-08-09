@@ -20,7 +20,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 */
 
 #pragma once
-#pragma warning(disable:4503) // 'identifier' : decorated name length exceeded, name was truncated
+#pragma warning(disable : 4503) // 'identifier' : decorated name length exceeded, name was truncated
 
 #undef SSA_FEATURE_USEDEF
 #undef SSA_FEATURE_DOMARR
@@ -53,7 +53,7 @@ private:
 
     // Used to maintain a map of a given SSA numbering to its use or def.
     typedef jitstd::unordered_map<SsaVarName, jitstd::vector<GenTree*>, SsaVarNameHasher> VarToUses;
-    typedef jitstd::unordered_map<SsaVarName, GenTree*, SsaVarNameHasher> VarToDef;
+    typedef jitstd::unordered_map<SsaVarName, GenTree*, SsaVarNameHasher>                 VarToDef;
 
     inline void EndPhase(Phases phase)
     {
@@ -61,7 +61,6 @@ private:
     }
 
 public:
-
     // Constructor
     SsaBuilder(Compiler* pCompiler, IAllocator* pIAllocator);
 
@@ -80,11 +79,9 @@ public:
     // Using IDom of each basic block, compute the whole domTree. If a block "b" has IDom "i",
     // then, block "b" is dominated by "i". The mapping then is i -> { ..., b, ... }, in
     // other words, "domTree" is a tree represented by nodes mapped to their children.
-    static
-    void ComputeDominators(Compiler* pCompiler, BlkToBlkSetMap* domTree);
+    static void ComputeDominators(Compiler* pCompiler, BlkToBlkSetMap* domTree);
 
 private:
-
     // Ensures that the basic block graph has a root for the dominator graph, by ensuring
     // that there is a first block that is not in a try region (adding an empty block for that purpose
     // if necessary).  Eventually should move to Compiler.
@@ -113,9 +110,8 @@ private:
 
     // Requires all blocks to have computed "bbIDom." Requires "domTree" to be a preallocated BlkToBlkSetMap.
     // Helper to compute "domTree" from the pre-computed bbIDom of the basic blocks.
-    static
-    void ConstructDomTreeForBlock(Compiler* pCompiler, BasicBlock* block, BlkToBlkSetMap* domTree);
-      
+    static void ConstructDomTreeForBlock(Compiler* pCompiler, BasicBlock* block, BlkToBlkSetMap* domTree);
+
     // Requires "postOrder" to hold the blocks of the flowgraph in topologically sorted order. Requires
     // count to be the valid entries in the "postOrder" array. Computes "domTree" as a adjacency list
     // like object, i.e., a set of blocks with a set of blocks as children defining the DOM relation.
@@ -123,8 +119,7 @@ private:
 
 #ifdef DEBUG
     // Display the dominator tree.
-    static
-    void DisplayDominators(BlkToBlkSetMap* domTree);
+    static void DisplayDominators(BlkToBlkSetMap* domTree);
 #endif // DEBUG
 
     // Requires "postOrder" to hold the blocks of the flowgraph in topologically sorted order. Requires
@@ -142,7 +137,7 @@ private:
     // GT_ASG(GT_LCL_VAR, GT_PHI(GT_PHI_ARG(GT_LCL_VAR, Block*), GT_LIST(GT_PHI_ARG(GT_LCL_VAR, Block*), NULL));
     void InsertPhiFunctions(BasicBlock** postOrder, int count);
 
-    // Requires "domTree" to be the dominator tree relation defined by a DOM b. 
+    // Requires "domTree" to be the dominator tree relation defined by a DOM b.
     // Requires "pRenameState" to have counts and stacks at their initial state.
     // Assigns gtSsaNames to all variables.
     void RenameVariables(BlkToBlkSetMap* domTree, SsaRenameState* pRenameState);
@@ -195,13 +190,12 @@ private:
 #endif
 
 private:
-
 #ifdef SSA_FEATURE_USEDEF
     // Use Def information after SSA. To query the uses and def of a given ssa var,
     // probe these data structures.
     // Do not move these outside of this class, use accessors/interface methods.
     VarToUses m_uses;
-    VarToDef m_defs;
+    VarToDef  m_defs;
 #endif
 
 #ifdef SSA_FEATURE_DOMARR
