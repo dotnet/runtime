@@ -4,7 +4,6 @@
 
 using Microsoft.Xunit.Performance;
 using Xunit;
-using System.Numerics;
 using System.Collections.Generic;
 
 namespace System.Numerics.Tests

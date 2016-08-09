@@ -9,6 +9,7 @@
 
 using System.Diagnostics.Contracts;
 using System.Globalization;
+using System.Numerics.Hashing;
 using System.Runtime.CompilerServices;
 using System.Text;
 
@@ -479,7 +480,7 @@ namespace System.Numerics
                 {
                     for (int g = 0; g < Count; g++)
                     {
-                        hash = HashCodeHelper.CombineHashCodes(hash, ((<#=type.Name#>)(object)this[g]).GetHashCode());
+                        hash = HashHelpers.Combine(hash, ((<#=type.Name#>)(object)this[g]).GetHashCode());
                     }
                     return hash;
                 }
@@ -502,7 +503,7 @@ namespace System.Numerics
             for (int g = 0; g < GetNumFields(type, totalSize); g++)
             {
 #>
-                    hash = HashCodeHelper.CombineHashCodes(hash, this.<#=GetRegisterFieldName(type, g)#>.GetHashCode());
+                    hash = HashHelpers.Combine(hash, this.<#=GetRegisterFieldName(type, g)#>.GetHashCode());
 <#
             }
 #>

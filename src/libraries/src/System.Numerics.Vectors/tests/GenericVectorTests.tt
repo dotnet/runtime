@@ -334,7 +334,8 @@ namespace System.Numerics.Tests
             int expected = 0;
             for (int g = 0; g < Vector<T>.Count; g++)
             {
-                expected = (((expected << 5) + expected) ^ v1[g].GetHashCode());
+                uint shift5 = ((uint)expected << 5) | ((uint)expected >> 27);
+                expected = ((int)shift5 + expected) ^ v1[g].GetHashCode();
             }
 
             Assert.Equal(expected, hash);
