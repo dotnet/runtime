@@ -1,0 +1,44 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<xs:schema targetNamespace="http://EmployeeTest.org"
+                  elementFormDefault="qualified"
+                  xmlns="http://EmployeeTest.org"
+                  xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+    <xs:include schemaLocation="EmployeeTypes.xsd"/>
+    <xs:element name="Employees" type="EmployeesType"/>
+
+    <xs:complexType name="EmployeesType">
+        <xs:sequence maxOccurs="unbounded">
+            <xs:element name="Employee" type="EmployeeType"/>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="NameTypeExt">
+        <xs:complexContent>
+            <xs:extension base="NameType">
+                <xs:attribute ref="MI"/>
+            </xs:extension>
+        </xs:complexContent>
+    </xs:complexType>
+
+    <xs:complexType name="AddressType">
+        <xs:group ref="Address"/>
+    </xs:complexType>
+
+    <xs:complexType name="PersonalInformation">
+        <xs:attribute name="age" type="xs:integer"/>
+        <xs:attributeGroup ref="PersonalDescription"/>
+    </xs:complexType>
+
+    <xs:complexType name="EmployeeType">
+        <xs:sequence>
+            <xs:element name="Name" type="NameTypeExt"/>
+            <xs:element name="Position" type="PositionType"/>
+            <xs:element ref="Department"/>
+            <xs:element name="Address" type="AddressType"/>
+            <xs:element name="PersonalInformation" type="PersonalInformation"/>
+        </xs:sequence>
+    </xs:complexType>
+
+
+</xs:schema>

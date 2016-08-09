@@ -1,0 +1,2 @@
+﻿In pattern count(ex:*) = 2 and count(ex:Name) = 1 and count(ex:Gender) = 1:
+   The element Person should have the child elements Name and Gender.

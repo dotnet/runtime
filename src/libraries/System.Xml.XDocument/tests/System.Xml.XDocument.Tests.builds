@@ -2,61 +2,6 @@
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
-    <Project Include="axes\System.Xml.XDocument.Axes.Tests.csproj"/>
-    <Project Include="axes\System.Xml.XDocument.Axes.Tests.csproj">
-      <TestTFMs>netcore50;net46</TestTFMs>
-      <OSGroup>Windows_NT</OSGroup>
-    </Project>
-    <Project Include="events\System.Xml.XDocument.Events.Tests.csproj"/>
-    <Project Include="events\System.Xml.XDocument.Events.Tests.csproj">
-      <TestTFMs>netcore50;net46</TestTFMs>
-      <OSGroup>Windows_NT</OSGroup>
-    </Project>
-    <Project Include="misc\System.Xml.XDocument.Misc.Tests.csproj"/>
-    <Project Include="misc\System.Xml.XDocument.Misc.Tests.csproj">
-      <TestTFMs>netcore50;net46</TestTFMs>
-      <OSGroup>Windows_NT</OSGroup>
-    </Project>
-    <Project Include="Properties\System.Xml.XDocument.Properties.Tests.csproj"/>
-    <Project Include="Properties\System.Xml.XDocument.Properties.Tests.csproj">
-      <TestTFMs>netcore50;net46</TestTFMs>
-      <OSGroup>Windows_NT</OSGroup>
-    </Project>
-    <Project Include="SDMSample\System.Xml.XDocument.SDMSample.Tests.csproj"/>
-    <Project Include="SDMSample\System.Xml.XDocument.SDMSample.Tests.csproj">
-      <TestTFMs>netcore50;net46</TestTFMs>
-      <OSGroup>Windows_NT</OSGroup>
-    </Project>
-    <Project Include="Streaming\System.Xml.XDocument.Streaming.Tests.csproj"/>
-    <Project Include="Streaming\System.Xml.XDocument.Streaming.Tests.csproj">
-      <TestTFMs>netcore50;net46</TestTFMs>
-      <OSGroup>Windows_NT</OSGroup>
-    </Project>
-    <Project Include="TreeManipulation\System.Xml.XDocument.TreeManipulation.Tests.csproj"/>
-    <Project Include="TreeManipulation\System.Xml.XDocument.TreeManipulation.Tests.csproj">
-      <TestTFMs>netcore50;net46</TestTFMs>
-      <OSGroup>Windows_NT</OSGroup>
-    </Project>
-    <Project Include="XDocument.Common\XDocument.Common.csproj"/>
-    <Project Include="XDocument.Common\XDocument.Common.csproj">
-      <TestTFMs>netcore50;net46</TestTFMs>
-      <OSGroup>Windows_NT</OSGroup>
-    </Project>
-    <Project Include="XDocument.Test.ModuleCore\XDocument.Test.ModuleCore.csproj"/>
-    <Project Include="XDocument.Test.ModuleCore\XDocument.Test.ModuleCore.csproj">
-      <TestTFMs>netcore50;net46</TestTFMs>
-      <OSGroup>Windows_NT</OSGroup>
-    </Project>
-    <Project Include="xNodeBuilder\System.Xml.XDocument.xNodeBuilder.Tests.csproj"/>
-    <Project Include="xNodeBuilder\System.Xml.XDocument.xNodeBuilder.Tests.csproj">
-      <TestTFMs>netcore50;net46</TestTFMs>
-      <OSGroup>Windows_NT</OSGroup>
-    </Project>
-    <Project Include="xNodeReader\System.Xml.XDocument.xNodeReader.Tests.csproj"/>
-    <Project Include="xNodeReader\System.Xml.XDocument.xNodeReader.Tests.csproj">
-      <TestTFMs>netcore50;net46</TestTFMs>
-      <OSGroup>Windows_NT</OSGroup>
-    </Project>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
 </Project>
