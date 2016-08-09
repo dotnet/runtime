@@ -378,12 +378,12 @@ public:
 
         Counts GetCleanCounts()
         {
+            LIMITED_METHOD_CONTRACT;
 #ifdef _WIN64
             // VolatileLoad x64 bit read is atomic
             return DangerousGetDirtyCounts();
 #else // !_WIN64
             // VolatileLoad may result in torn read
-            LIMITED_METHOD_CONTRACT;
             Counts result;
 #ifndef DACCESS_COMPILE
             result.AsLongLong = FastInterlockCompareExchangeLong(&counts.AsLongLong, 0, 0);
