@@ -174,17 +174,13 @@ public:
     void DispatchWorkItem(bool* foundWork, bool* wasNotRecalled);
 
 private:
-    struct {
-        ADID m_id;
-        TPIndex m_index;
-    };
-    struct {
-        DECLSPEC_ALIGN(64) struct {
-            BYTE padding1[64 - sizeof(LONG)];
-            // Only use with VolatileLoad+VolatileStore+FastInterlockCompareExchange
-            LONG m_numRequestsPending;
-            BYTE padding2[64];
-        };
+    ADID m_id;
+    TPIndex m_index;
+    DECLSPEC_ALIGN(64) struct {
+        BYTE m_padding1[64 - sizeof(LONG)];
+        // Only use with VolatileLoad+VolatileStore+FastInterlockCompareExchange
+        LONG m_numRequestsPending;
+        BYTE m_padding2[64];
     };
 };
 
@@ -283,17 +279,13 @@ public:
     }
 
 private:
-    struct {
-        SpinLock m_lock;
-        ULONG m_NumRequests;
-    };
-    struct {
-        DECLSPEC_ALIGN(64) struct {
-            BYTE padding1[64 - sizeof(LONG)];
-            // Only use with VolatileLoad+VolatileStore+FastInterlockCompareExchange
-            LONG m_outstandingThreadRequestCount;
-            BYTE padding2[64];
-        };
+    SpinLock m_lock;
+    ULONG m_NumRequests;
+    DECLSPEC_ALIGN(64) struct {
+        BYTE m_padding1[64 - sizeof(LONG)];
+        // Only use with VolatileLoad+VolatileStore+FastInterlockCompareExchange
+        LONG m_outstandingThreadRequestCount;
+        BYTE m_padding2[64];
     };
 };
 

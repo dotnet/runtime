@@ -4987,10 +4987,8 @@ DWORD __stdcall ThreadpoolMgr::TimerThreadStart(LPVOID p)
     if (pThread == NULL)
         return 0;
 
-    if (pTimerThread != pThread) {
-        pTimerThread = pThread;
-        // Timer threads never die
-    }
+    pTimerThread = pThread;
+    // Timer threads never die
 
     LastTickCount = GetTickCount();
 
