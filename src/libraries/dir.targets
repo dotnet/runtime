@@ -45,4 +45,16 @@
     <!-- We set this property to avoid MSBuild errors regarding not setting TargetFrameworkProfile (see above line) -->
     <PortableNuGetMode>true</PortableNuGetMode>
   </PropertyGroup>
+
+  <!-- Temporary Target that will copy newly created System.Private.Xml assets to test directory. Issue #10687 -->
+  <Target Name="CopySystemPrivaleXmlLibrariesToTestDirectory" BeforeTargets="CopyTestToTestDirectory" Condition="'$(TestWithLocalLibraries)'=='true' And '$(DisableCopyTestToTestDirectory)'!='true'">
+    <PropertyGroup>
+      <BaseLocalLibrariesPath Condition="'$(BaseLocalLibrariesPath)'==''">$(BaseOutputPath)</BaseLocalLibrariesPath>
+      <AnyOSLocalLibrariesPath>$(BaseLocalLibrariesPath)/AnyOS.$(Platform).$(ConfigurationGroup)</AnyOSLocalLibrariesPath>
+    </PropertyGroup>
+    <ItemGroup>
+      <TestCopyLocal Include="$(AnyOSLocalLibrariesPath)/System.Private.Xml.Linq/System.Private.Xml.Linq.dll" />
+      <TestCopyLocal Include="$(AnyOSLocalLibrariesPath)/System.Private.Xml/System.Private.Xml.dll" />
+    </ItemGroup>
+  </Target>
 </Project>

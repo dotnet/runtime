@@ -26,6 +26,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\System.Xml.ReaderWriter\src\System.Xml.ReaderWriter.csproj" />
+    <ProjectReference Include="..\..\Microsoft.Win32.Registry\pkg\Microsoft.Win32.Registry.pkgproj" />
     <ProjectReference Include="..\..\System.Xml.XDocument\src\System.Xml.XDocument.csproj" />
     <ProjectReference Include="..\..\System.Xml.XmlDocument\src\System.Xml.XmlDocument.csproj" />
     <ProjectReference Include="..\..\System.Xml.XmlSerializer\src\System.Xml.XmlSerializer.csproj" />

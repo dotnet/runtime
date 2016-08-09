@@ -23,6 +23,7 @@
     <ProjectReference Include="..\..\System.Xml.XmlSerializer\src\System.Xml.XmlSerializer.csproj" />
     <ProjectReference Include="..\..\System.Private.Xml\src\System.Private.Xml.csproj" />
     <ProjectReference Include="..\..\System.Private.Xml.Linq\src\System.Private.Xml.Linq.csproj" />
+    <ProjectReference Include="..\..\Microsoft.Win32.Registry\pkg\Microsoft.Win32.Registry.pkgproj" />
     <Compile Include="..\..\System.Runtime.Serialization.Xml\tests\Utils.cs" />
     <Compile Include="..\..\System.Runtime.Serialization.Xml\tests\SerializationTypes.cs" />
     <Compile Include="..\..\System.Runtime.Serialization.Xml\tests\SerializationTypes.CoreCLR.cs" />
