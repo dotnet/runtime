@@ -22,6 +22,10 @@
 // ifdef. This macro allows us to anchor the comments to the regular flow of code.
 #define CLANG_FORMAT_COMMENT_ANCHOR ;
 
+// Clang-tidy replaces 0 with nullptr in some templated functions, causing a build
+// break. Replacing those instances with ZERO avoids this change
+#define ZERO 0
+
 #ifdef _MSC_VER
 // These don't seem useful, so turning them off is no big deal
 #pragma warning(disable:4510)   // can't generate default constructor
@@ -861,13 +865,13 @@ public:
 template<typename T>
 T dspPtr(T p)
 {
-    return (p == 0) ? 0 : (JitTls::GetCompiler()->opts.dspDiffable ? T(0xD1FFAB1E) : p);
+    return (p == ZERO) ? ZERO : (JitTls::GetCompiler()->opts.dspDiffable ? T(0xD1FFAB1E) : p);
 }
 
 template<typename T>
 T dspOffset(T o)
 {
-    return (o == 0) ? 0 : (JitTls::GetCompiler()->opts.dspDiffable ? T(0xD1FFAB1E) : o);
+    return (o == ZERO) ? ZERO : (JitTls::GetCompiler()->opts.dspDiffable ? T(0xD1FFAB1E) : o);
 }
 
 #else // !defined(DEBUG)

@@ -7782,13 +7782,13 @@ public :
     template<typename T>
     T dspPtr(T p)
     {
-        return (p == 0) ? 0 : (opts.dspDiffable ? T(0xD1FFAB1E) : p);
+        return (p == ZERO) ? ZERO : (opts.dspDiffable ? T(0xD1FFAB1E) : p);
     }
 
     template<typename T>
     T dspOffset(T o)
     {
-        return (o == 0) ? 0 : (opts.dspDiffable ? T(0xD1FFAB1E) : o);
+        return (o == ZERO) ? ZERO : (opts.dspDiffable ? T(0xD1FFAB1E) : o);
     }
 
     static int dspTreeID(GenTree* tree)

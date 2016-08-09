@@ -186,7 +186,7 @@ extern "C" {
 
 #define DECLSPEC_NORETURN   PAL_NORETURN
 
-#ifndef _MSC_VER
+#if !defined(_MSC_VER) || defined(SOURCE_FORMATTING)
 #define __assume(x) (void)0
 #define __annotation(x)
 #endif //!MSC_VER
