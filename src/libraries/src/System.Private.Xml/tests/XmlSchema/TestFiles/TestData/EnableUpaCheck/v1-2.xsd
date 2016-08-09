@@ -1,0 +1,14 @@
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+	<xs:element name="doc">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:choice maxOccurs="2">
+					<xs:element name="e" type="xs:string" default="abc"/>
+					<xs:element name="e" type="xs:string" />
+				</xs:choice>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+
+</xs:schema>

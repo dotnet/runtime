@@ -20,9 +20,7 @@
         "System.Runtime.Extensions": "4.0.10",
         "System.Text.RegularExpressions": "4.0.10",
         "System.Threading": "4.0.10",
-        "System.Threading.Tasks": "4.0.10",
-        "System.Xml.ReaderWriter": "4.0.10",
-        "System.Xml.XmlDocument": "4.0.0"
+        "System.Threading.Tasks": "4.0.10"
       }
     }
   },
