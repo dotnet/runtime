@@ -33,7 +33,7 @@ protected:
     enum
     {
         DEFAULT_PAGE_SIZE = 16 * OS_page_size,
-        MIN_PAGE_SIZE = sizeof(PageDescriptor)
+        MIN_PAGE_SIZE     = sizeof(PageDescriptor)
     };
 
     static size_t s_defaultPageSize;
@@ -44,7 +44,7 @@ protected:
     PageDescriptor* m_lastPage;
 
     // These two pointers (when non-null) will always point into 'm_lastPage'.
-    BYTE* m_nextFreeByte; 
+    BYTE* m_nextFreeByte;
     BYTE* m_lastFreeByte;
 
     bool isInitialized();
@@ -69,7 +69,7 @@ public:
 
 #if defined(DEBUG)
     void* allocateMemory(size_t sz);
-#else // defined(DEBUG)
+#else  // defined(DEBUG)
     inline void* allocateMemory(size_t size)
     {
         void* block = m_nextFreeByte;
@@ -87,7 +87,7 @@ public:
     size_t getTotalBytesAllocated();
     size_t getTotalBytesUsed();
 
-    static bool bypassHostAllocator();
+    static bool   bypassHostAllocator();
     static size_t getDefaultPageSize();
 
     static void startup();
