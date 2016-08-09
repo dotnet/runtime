@@ -3410,3 +3410,24 @@ public class CollectionOfTypeWithNonDefaultNamcespace : List<TypeWithNonDefaultN
 
 }
 
+#region Type for Xml_ConstructorWithXmlAttributeOverrides
+
+namespace Music
+{
+    public class Orchestra
+    {
+        public Instrument[] Instruments;
+    }
+
+    public class Instrument
+    {
+        public string Name;
+    }
+
+    public class Brass : Instrument
+    {
+        public bool IsValved;
+    }
+}
+
+#endregion

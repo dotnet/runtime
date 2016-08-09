@@ -66,8 +66,7 @@ namespace System.Xml.Serialization
                 {
                     if (mapping.IsSoap)
                     {
-                        //WriteEncodedNullTag(element.Name, (element.Form == XmlSchemaForm.Qualified ? element.Namespace : ""));
-                        throw new NotSupportedException();
+                        throw new PlatformNotSupportedException();
                     }
                     else
                     {
@@ -91,8 +90,7 @@ namespace System.Xml.Serialization
 
             if (mapping.IsSoap)
             {
-                //Writer.WriteLine("WriteReferencedElements();");
-                throw new NotSupportedException();
+                throw new PlatformNotSupportedException();
             }
         }
 
@@ -135,7 +133,6 @@ namespace System.Xml.Serialization
         private void WriteArrayItems(ElementAccessor[] elements, TextAccessor text, ChoiceIdentifierAccessor choice, TypeDesc arrayTypeDesc, object o)
         {
             TypeDesc arrayElementTypeDesc = arrayTypeDesc.ArrayElementTypeDesc;
-
 
             var a = o as IEnumerable;
 
@@ -314,7 +311,7 @@ namespace System.Xml.Serialization
                 var mapping = (ArrayMapping)element.Mapping;
                 if (mapping.IsSoap)
                 {
-                    throw new NotSupportedException();
+                    throw new PlatformNotSupportedException();
                 }
 
                 if (element.IsNullable && o == null)
@@ -350,11 +347,11 @@ namespace System.Xml.Serialization
             {
                 if (element.Mapping.IsSoap)
                 {
-                    throw new NotSupportedException();
+                    throw new PlatformNotSupportedException();
                 }
                 else
                 {
-                    WritePrimitive("WriteElementString", name, ns, element.Default, o, element.Mapping, false, true, element.IsNullable);
+                    WritePrimitive(WritePrimitiveMethodRequirement.WriteElementString, name, ns, element.Default, o, element.Mapping, false, true, element.IsNullable);
                 }
             }
             else if (element.Mapping is PrimitiveMapping)
@@ -368,13 +365,14 @@ namespace System.Xml.Serialization
                 {
                     if (mapping.IsSoap)
                     {
-                        throw new NotSupportedException();
+                        throw new PlatformNotSupportedException();
                     }
 
-                    string suffixNullable = "Literal";
-                    string suffixRaw = mapping.TypeDesc.XmlEncodingNotRequired ? "Raw" : "";
-                    WritePrimitive(element.IsNullable ? ("WriteNullableString" + suffixNullable + suffixRaw) : ("WriteElementString" + suffixRaw),
-                                   name, ns, element.Default, o, mapping, mapping.IsSoap, true, element.IsNullable);
+                    WritePrimitiveMethodRequirement suffixRaw = mapping.TypeDesc.XmlEncodingNotRequired ? WritePrimitiveMethodRequirement.Raw : WritePrimitiveMethodRequirement.None;
+                    WritePrimitive(element.IsNullable
+                        ? WritePrimitiveMethodRequirement.WriteNullableStringLiteral | suffixRaw
+                        : WritePrimitiveMethodRequirement.WriteElementString | suffixRaw,
+                        name, ns, element.Default, o, mapping, mapping.IsSoap, true, element.IsNullable);
                 }
             }
             else if (element.Mapping is StructMapping)
@@ -382,7 +380,7 @@ namespace System.Xml.Serialization
                 var mapping = (StructMapping)element.Mapping;
                 if (mapping.IsSoap)
                 {
-                    throw new NotSupportedException();
+                    throw new PlatformNotSupportedException();
                 }
 
                 WriteStructMethod(mapping, name, ns, o, mapping.TypeDesc.IsNullable, needType: false, parentMapping: parentMapping);
@@ -421,7 +419,7 @@ namespace System.Xml.Serialization
 
             if (isSoap)
             {
-                throw new NotSupportedException();
+                throw new PlatformNotSupportedException();
             }
 
             if (nullable)
@@ -440,7 +438,7 @@ namespace System.Xml.Serialization
 
             if (mapping.IsSoap)
             {
-                throw new NotSupportedException();
+                throw new PlatformNotSupportedException();
             }
 
             if (o == null)
@@ -452,8 +450,6 @@ namespace System.Xml.Serialization
             if (!needType
              && o.GetType() != mapping.TypeDesc.Type)
             {
-                // Not sure how to handle WriteDerivedTypes yet.
-
                 if (WriteDerivedTypes(mapping, n, ns, o, isNullable))
                 {
                     return;
@@ -491,7 +487,7 @@ namespace System.Xml.Serialization
 
                 if (mapping.IsSoap)
                 {
-                    throw new NotSupportedException();
+                    throw new PlatformNotSupportedException();
                 }
 
                 WriteStartElement(n, ns, o, false, xmlnsSource);
@@ -655,7 +651,7 @@ namespace System.Xml.Serialization
         {
             if (mapping != null && mapping.IsSoap)
             {
-                throw new NotSupportedException();
+                throw new PlatformNotSupportedException();
             }
 
             if (mapping != null && mapping.IsFlags)
@@ -822,7 +818,7 @@ namespace System.Xml.Serialization
             else
             {
                 string ns = attribute.Form == XmlSchemaForm.Qualified ? attribute.Namespace : "";
-                WritePrimitive("WriteAttribute", attribute.Name, ns, attribute.Default, memberValue, attribute.Mapping, false, false, false);
+                WritePrimitive(WritePrimitiveMethodRequirement.WriteAttribute, attribute.Name, ns, attribute.Default, memberValue, attribute.Mapping, false, false, false);
             }
         }
 
@@ -857,7 +853,7 @@ namespace System.Xml.Serialization
             return false;
         }
 
-        private void WritePrimitive(string method, string name, string ns, object defaultValue, object o, TypeMapping mapping, bool writeXsiType, bool isElement, bool isNullable)
+        private void WritePrimitive(WritePrimitiveMethodRequirement method, string name, string ns, object defaultValue, object o, TypeMapping mapping, bool writeXsiType, bool isElement, bool isNullable)
         {
             TypeDesc typeDesc = mapping.TypeDesc;
             bool hasDefault = defaultValue != null && !Globals.IsDBNullValue(defaultValue) && mapping.TypeDesc.HasDefaultSupport;
@@ -903,29 +899,35 @@ namespace System.Xml.Serialization
             }
             else
             {
-                // WritePrimitiveValue(typeDesc, source, isElement);
                 hasValidStringValue = WritePrimitiveValue(typeDesc, o, isElement, out stringValue);
             }
 
             if (hasValidStringValue)
             {
-                if (method == "WriteElementString")
+                if (method.HasFlag(WritePrimitiveMethodRequirement.WriteElementString))
                 {
-                    WriteElementString(name, ns, stringValue, xmlQualifiedName);
+                    if (method.HasFlag(WritePrimitiveMethodRequirement.Raw))
+                    {
+                        WriteElementString(name, ns, stringValue, xmlQualifiedName);
+                    }
+                    else
+                    {
+                        WriteElementStringRaw(name, ns, stringValue, xmlQualifiedName);
+                    }
                 }
-                else if (method == "WriteElementStringRaw")
+
+                else if (method.HasFlag(WritePrimitiveMethodRequirement.WriteNullableStringLiteral))
                 {
-                    WriteElementStringRaw(name, ns, stringValue, xmlQualifiedName);
+                    if (method.HasFlag(WritePrimitiveMethodRequirement.Raw))
+                    {
+                        WriteNullableStringLiteral(name, ns, stringValue);
+                    }
+                    else
+                    {
+                        WriteNullableStringLiteralRaw(name, ns, stringValue);
+                    }
                 }
-                else if (method == "WriteNullableStringLiteral")
-                {
-                    WriteNullableStringLiteral(name, ns, stringValue);
-                }
-                else if (method == "WriteNullableStringLiteralRaw")
-                {
-                    WriteNullableStringLiteralRaw(name, ns, stringValue);
-                }
-                else if (method == "WriteAttribute")
+                else if (method.HasFlag(WritePrimitiveMethodRequirement.WriteAttribute))
                 {
                     WriteAttribute(name, ns, stringValue);
                 }
@@ -938,15 +940,15 @@ namespace System.Xml.Serialization
             else if (o is byte[])
             {
                 byte[] a = (byte[])o;
-                if (method == "WriteElementStringRaw")
+                if (method.HasFlag(WritePrimitiveMethodRequirement.WriteElementString) && method.HasFlag(WritePrimitiveMethodRequirement.Raw))
                 {
                     WriteElementStringRaw(name, ns, FromByteArrayBase64(a));
                 }
-                else if (method == "WriteNullableStringLiteralRaw")
+                else if (method.HasFlag(WritePrimitiveMethodRequirement.WriteNullableStringLiteral) && method.HasFlag(WritePrimitiveMethodRequirement.Raw))
                 {
                     WriteNullableStringLiteralRaw(name, ns, FromByteArrayBase64(a));
                 }
-                else if (method == "WriteAttribute")
+                else if (method.HasFlag(WritePrimitiveMethodRequirement.WriteAttribute))
                 {
                     WriteAttribute(name, ns, a);
                 }
@@ -996,20 +998,27 @@ namespace System.Xml.Serialization
                     stringValue = FromByteArrayHex((byte[])o);
                     return true;
                 }
-                else if (o is DateTime && typeDesc.FormatterName == "DateTime")
+                else if (o is DateTime)
                 {
-                    stringValue = FromDateTime((DateTime)o);
-                    return true;
-                }
-                else if (o is DateTime && typeDesc.FormatterName == "Date")
-                {
-                    stringValue = FromDate((DateTime)o);
-                    return true;
-                }
-                else if (o is DateTime && typeDesc.FormatterName == "Time")
-                {
-                    stringValue = FromTime((DateTime)o);
-                    return true;
+                    if (typeDesc.FormatterName == "DateTime")
+                    {
+                        stringValue = FromDateTime((DateTime)o);
+                        return true;
+                    }
+                    else if (typeDesc.FormatterName == "Date")
+                    {
+                        stringValue = FromDate((DateTime)o);
+                        return true;
+                    }
+                    else if (typeDesc.FormatterName == "Time")
+                    {
+                        stringValue = FromTime((DateTime)o);
+                        return true;
+                    }
+                    else
+                    {
+                        Debug.Assert(false, $"The FormatterName for DateTime is unknown: {typeDesc.FormatterName}");
+                    }
                 }
                 else if (typeDesc == QnameTypeDesc)
                 {
@@ -1018,18 +1027,23 @@ namespace System.Xml.Serialization
                 }
                 else if (o is string)
                 {
-                    if (typeDesc.FormatterName == "XmlName")
-                        stringValue = FromXmlName((string)o);
-                    else if (typeDesc.FormatterName == "XmlNCName")
-                        stringValue = FromXmlNCName((string)o);
-                    else if (typeDesc.FormatterName == "XmlNmToken")
-                        stringValue = FromXmlNmToken((string)o);
-                    else if (typeDesc.FormatterName == "XmlNmTokens")
-                        stringValue = FromXmlNmTokens((string)o);
-                    else
+                    switch (typeDesc.FormatterName)
                     {
-                        stringValue = null;
-                        return false;
+                        case "XmlName":
+                            stringValue = FromXmlName((string)o);
+                            break;
+                        case "XmlNCName":
+                            stringValue = FromXmlNCName((string)o);
+                            break;
+                        case "XmlNmToken":
+                            stringValue = FromXmlNmToken((string)o);
+                            break;
+                        case "XmlNmTokens":
+                            stringValue = FromXmlNmTokens((string)o);
+                            break;
+                        default:
+                            stringValue = null;
+                            return false;
                     }
 
                     return true;
@@ -1055,58 +1069,83 @@ namespace System.Xml.Serialization
 
         private string CovertPrimitiveToString(object o, TypeDesc typeDesc)
         {
-            if (typeDesc.FormatterName == "Boolean")
-                return XmlConvert.ToString((bool)o);
-            if (typeDesc.FormatterName == "Int32")
-                return XmlConvert.ToString((int)o);
-            if (typeDesc.FormatterName == "Int16")
-                return XmlConvert.ToString((short)o);
-            if (typeDesc.FormatterName == "Int64")
-                return XmlConvert.ToString((long)o);
-            if (typeDesc.FormatterName == "Single")
-                return XmlConvert.ToString((float)o);
-            if (typeDesc.FormatterName == "Double")
-                return XmlConvert.ToString((double)o);
-            if (typeDesc.FormatterName == "Decimal")
-                return XmlConvert.ToString((decimal)o);
-            if (typeDesc.FormatterName == "Byte")
-                return XmlConvert.ToString((byte)o);
-            if (typeDesc.FormatterName == "SByte")
-                return XmlConvert.ToString((sbyte)o);
-            if (typeDesc.FormatterName == "UInt16")
-                return XmlConvert.ToString((ushort)o);
-            if (typeDesc.FormatterName == "UInt32")
-                return XmlConvert.ToString((uint)o);
-            if (typeDesc.FormatterName == "UInt64")
-                return XmlConvert.ToString((ulong)o);
+            string stringValue;
+            switch (typeDesc.FormatterName)
+            {
+                case "Boolean":
+                    stringValue = XmlConvert.ToString((bool)o);
+                    break;
+                case "Int32":
+                    stringValue = XmlConvert.ToString((int)o);
+                    break;
+                case "Int16":
+                    stringValue = XmlConvert.ToString((short)o);
+                    break;
+                case "Int64":
+                    stringValue = XmlConvert.ToString((long)o);
+                    break;
+                case "Single":
+                    stringValue = XmlConvert.ToString((float)o);
+                    break;
+                case "Double":
+                    stringValue = XmlConvert.ToString((double)o);
+                    break;
+                case "Decimal":
+                    stringValue = XmlConvert.ToString((decimal)o);
+                    break;
+                case "Byte":
+                    stringValue = XmlConvert.ToString((byte)o);
+                    break;
+                case "SByte":
+                    stringValue = XmlConvert.ToString((sbyte)o);
+                    break;
+                case "UInt16":
+                    stringValue = XmlConvert.ToString((ushort)o);
+                    break;
+                case "UInt32":
+                    stringValue = XmlConvert.ToString((uint)o);
+                    break;
+                case "UInt64":
+                    stringValue = XmlConvert.ToString((ulong)o);
+                    break;
+                // Types without direct mapping (ambiguous)
+                case "Guid":
+                    stringValue = XmlConvert.ToString((Guid)o);
+                    break;
+                case "Char":
+                    stringValue = XmlConvert.ToString((char)o);
+                    break;
+                case "TimeSpan":
+                    stringValue = XmlConvert.ToString((TimeSpan)o);
+                    break;
+                default:
+                    stringValue = o.ToString();
+                    break;
+            }
 
-            // Types without direct mapping (ambiguous)
-            if (typeDesc.FormatterName == "Guid")
-                return XmlConvert.ToString((Guid)o);
-            if (typeDesc.FormatterName == "Char")
-                return XmlConvert.ToString((char)o);
-            if (typeDesc.FormatterName == "TimeSpan")
-                return XmlConvert.ToString((TimeSpan)o);
-
-            return o.ToString();
+            return stringValue;
         }
 
         private void WriteMembersElement(object o, XmlMembersMapping mapping)
         {
-            throw new PlatformNotSupportedException();
+            // #10675: we should implement this method. WCF is the major customer of the method
+            // as WCF uses XmlReflectionImporter.ImportMembersMapping and generates special
+            // serializers for OperationContracts.
+            throw new NotImplementedException();
         }
 
         protected override void InitCallbacks()
         {
         }
 
-        enum WritePrimitiveMethod
+        [Flags]
+        enum WritePrimitiveMethodRequirement
         {
-            WriteAttribute,
-            WriteElementString,
-            WriteElementStringRaw,
-            WriteNullableStringLiteral,
-            WriteNullableStringLiteralRaw,
+            None = 0,
+            Raw = 1,
+            WriteAttribute = 2,
+            WriteElementString = 4,
+            WriteNullableStringLiteral = 8,
         }
     }
 }

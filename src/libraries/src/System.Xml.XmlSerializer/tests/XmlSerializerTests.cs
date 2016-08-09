@@ -15,8 +15,7 @@ using System.Xml.Serialization;
 using Xunit;
 
 public static partial class XmlSerializerTests
-{
-#if !asdkflj
+{ 
     [Fact]
     public static void Xml_BoolAsRoot()
     {
@@ -2318,7 +2317,7 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
         Assert.Equal(value.StringField1, actual.StringField1);
         Assert.Equal(value.StringField2, actual.StringField2);
     }
-#endif
+
     private static T SerializeAndDeserialize<T>(T value, string baseline, Func<XmlSerializer> serializerFactory = null,
         bool skipStringCompare = false, XmlSerializerNamespaces xns = null)
     {
@@ -2357,25 +2356,3 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
         }
     }
 }
-
-#region Type for Xml_ConstructorWithXmlAttributeOverrides
-
-namespace Music
-{
-    public class Orchestra
-    {
-        public Instrument[] Instruments;
-    }
-
-    public class Instrument
-    {
-        public string Name;
-    }
-
-    public class Brass : Instrument
-    {
-        public bool IsValved;
-    }
-}
-
-#endregion
