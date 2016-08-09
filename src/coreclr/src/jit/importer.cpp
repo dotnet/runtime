@@ -11852,18 +11852,22 @@ DO_LDFTN:
                         //      3) Allocate and return the new object
                         // Reason: performance (today, we'll always use the slow helper for the R2R generics case)
 
-                        op1 = gtNewHelperCallNode(  info.compCompHnd->getNewHelper(&resolvedToken, info.compMethodHnd),
-                                                    TYP_REF, 0,
-                                                    gtNewArgList(op1));
+                        op1 = gtNewAllocObjNode(  info.compCompHnd->getNewHelper(&resolvedToken, info.compMethodHnd),
+                                                  resolvedToken.hClass, TYP_REF, op1 );
                     }
 
-                    /* Remember that this basic block contains 'new' of an object */
+                    // Remember that this basic block contains 'new' of an object
                     block->bbFlags |= BBF_HAS_NEWOBJ;
                     optMethodFlags |= OMF_HAS_NEWOBJ;
             
-                    /* Append the assignment to the temp/local. Dont need to spill
-                       at all as we are just calling an EE-Jit helper which can only
-                       cause an (async) OutOfMemoryException */
+                    // Append the assignment to the temp/local. Dont need to spill
+                    // at all as we are just calling an EE-Jit helper which can only
+                    // cause an (async) OutOfMemoryException.
+
+                    // We assign the newly allocated object (by a GT_ALLOCOBJ node)
+                    // to a temp. Note that the pattern "temp = allocObj" is required
+                    // by ObjectAllocator phase to be able to determine GT_ALLOCOBJ nodes
+                    // without exhaustive walk over all expressions.
 
                     impAssignTempGen(lclNum, op1, (unsigned)CHECK_SPILL_NONE);
 

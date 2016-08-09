@@ -4151,7 +4151,15 @@ void                 Compiler::compCompile(void * * methodCodePtr,
 
         // Compute reachability sets and dominators.
         fgComputeReachability();
+    }
 
+    // Transform each GT_ALLOCOBJ node into either an allocation helper call or
+    // local variable allocation on the stack.
+    ObjectAllocator objectAllocator(this);
+    objectAllocator.Run();
+
+    if (!opts.MinOpts() && !opts.compDbgCode)
+    {
         /*  Perform loop inversion (i.e. transform "while" loops into
             "repeat" loops) and discover and classify natural loops
             (e.g. mark iterative loops as such). Also marks loop blocks

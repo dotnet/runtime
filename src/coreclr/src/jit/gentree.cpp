@@ -272,6 +272,7 @@ void                GenTree::InitNodeSize()
     GenTree::s_gtNodeSizes[GT_LEA             ] = TREE_NODE_SZ_LARGE;
     GenTree::s_gtNodeSizes[GT_COPYOBJ         ] = TREE_NODE_SZ_LARGE;
     GenTree::s_gtNodeSizes[GT_INTRINSIC       ] = TREE_NODE_SZ_LARGE;
+    GenTree::s_gtNodeSizes[GT_ALLOCOBJ        ] = TREE_NODE_SZ_LARGE;
 #if USE_HELPERS_FOR_INT_DIV
     GenTree::s_gtNodeSizes[GT_DIV             ] = TREE_NODE_SZ_LARGE;
     GenTree::s_gtNodeSizes[GT_UDIV            ] = TREE_NODE_SZ_LARGE;
@@ -341,6 +342,7 @@ void                GenTree::InitNodeSize()
     static_assert_no_msg(sizeof(GenTreeArgPlace)      <= TREE_NODE_SZ_SMALL);
     static_assert_no_msg(sizeof(GenTreeLabel)         <= TREE_NODE_SZ_SMALL);
     static_assert_no_msg(sizeof(GenTreePhiArg)        <= TREE_NODE_SZ_SMALL);
+    static_assert_no_msg(sizeof(GenTreeAllocObj)      <= TREE_NODE_SZ_LARGE); // *** large node
 #ifndef FEATURE_UNIX_AMD64_STRUCT_PASSING
     static_assert_no_msg(sizeof(GenTreePutArgStk)     <= TREE_NODE_SZ_SMALL);
 #else // FEATURE_UNIX_AMD64_STRUCT_PASSING
@@ -2145,7 +2147,10 @@ AGAIN:
             case GT_INDEX:
                 hash += tree->gtIndex.gtIndElemSize;
                 break;
-
+            case GT_ALLOCOBJ:
+                hash = genTreeHashAdd(hash, static_cast<unsigned>(reinterpret_cast<uintptr_t>(tree->gtAllocObj.gtAllocObjClsHnd)));
+                hash = genTreeHashAdd(hash, tree->gtAllocObj.gtNewHelper);
+                break;
         
                 // For the ones below no extra argument matters for comparison.
             case GT_BOX:
@@ -6754,6 +6759,13 @@ GenTreePtr          Compiler::gtCloneExpr(GenTree * tree,
             }
             break;
 
+        case GT_ALLOCOBJ:
+            {
+                GenTreeAllocObj* asAllocObj = tree->AsAllocObj();
+                copy = new (this, GT_ALLOCOBJ) GenTreeAllocObj(tree->TypeGet(), asAllocObj->gtNewHelper, asAllocObj->gtAllocObjClsHnd, asAllocObj->gtOp1);
+            }
+            break;
+
         case GT_ARR_LENGTH:
             copy = new (this, GT_ARR_LENGTH) GenTreeArrLen(tree->TypeGet(), tree->gtOp.gtOp1, tree->gtArrLen.ArrLenOffset());
             break;
@@ -11061,6 +11073,11 @@ GenTreePtr                  Compiler::gtFoldExprConst(GenTreePtr tree)
         return tree;
     }
 #endif // FEATURE_SIMD
+
+    if (tree->gtOper == GT_ALLOCOBJ)
+    {
+        return tree;
+    }
 
     if      (kind & GTK_UNOP)
     {
