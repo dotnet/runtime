@@ -54,12 +54,12 @@
 //           in different binaries. Do not share the same provider handle across DLLs.
 //           As long as you do not pass an hProvider from one DLL to another, TraceLogging
 //           will properly keep track of the events."
-//     
+//
 //        2) CoreCLR is linked into the CLR. CLR already creates an instance, so where do we create the JIT's instance?
 //            Answer:
 //            "Ideally you would have one provider per DLL, but if you're folding distinct sets
 //            of functionality into one DLL (like shell32.dll or similar sort of catch-all things)
-//            you can have perhaps a few more providers per binary."   
+//            you can have perhaps a few more providers per binary."
 //
 //    B. Determining where to register and unregister the provider instance?
 //         1) For CLRJIT.dll we can register the provider instance during jitDllOnProcessAttach.
@@ -67,7 +67,7 @@
 //            referencing environment variables during the DLL load and unload path.
 //            Referencing environment variables through ConfigDWORD uses UtilCode.
 //            This roughly translates to InitUtilcode() being called before jitDllOnProcessAttach.
-//            
+//
 //            For CLRJIT.dll, compStartup is called on jitOnDllProcessAttach().
 //            This can be called twice through sxsJitStartup -- so prevent double initialization.
 //            UtilCode is init-ed by this time. The same is true for CoreCLR.
@@ -75,10 +75,10 @@
 //         2) For CLRJIT.dll and CoreCLR, compShutdown will be called during jitOnDllProcessDetach().
 //
 //    C. Determining the data to collect:
-//         
+//
 //         IMPORTANT: Since telemetry data can be collected at any time after DLL load,
 //         make sure you initialize the compiler state variables you access in telemetry
-//         data collection. For example, if you are transmitting method names, then 
+//         data collection. For example, if you are transmitting method names, then
 //         make sure info.compMethodHnd is initialized at that point.
 //
 //         1) Tracking noway assert count:
@@ -112,19 +112,22 @@
 #define BUILD_MACHINE BUILD_STR2(__BUILDMACHINE__)
 
 // A DLL local instance of the DotNet provider
-TRACELOGGING_DEFINE_PROVIDER(g_hClrJitProvider, CLRJIT_PROVIDER_NAME, CLRJIT_PROVIDER_ID, TraceLoggingOptionMicrosoftTelemetry());
+TRACELOGGING_DEFINE_PROVIDER(g_hClrJitProvider,
+                             CLRJIT_PROVIDER_NAME,
+                             CLRJIT_PROVIDER_ID,
+                             TraceLoggingOptionMicrosoftTelemetry());
 
 // Threshold to detect if we are hitting too many bad (noway) methods
 // over good methods per process to prevent logging too much data.
-static const double NOWAY_NOISE_RATIO                       = 0.6; // Threshold of (bad / total) beyond which we'd stop
-                                                                   // logging. We'd restart if the pass rate improves.
-static const unsigned NOWAY_SUFFICIENCY_THRESHOLD           = 25;  // Count of methods beyond which we'd apply percent
-                                                                   // threshold
+static const double NOWAY_NOISE_RATIO = 0.6;            // Threshold of (bad / total) beyond which we'd stop
+                                                        // logging. We'd restart if the pass rate improves.
+static const unsigned NOWAY_SUFFICIENCY_THRESHOLD = 25; // Count of methods beyond which we'd apply percent
+                                                        // threshold
 
 // Initialize Telemetry State
-volatile bool     JitTelemetry::s_fProviderRegistered     = false;
-volatile UINT32 JitTelemetry::s_uMethodsCompiled          = 0;
-volatile UINT32 JitTelemetry::s_uMethodsHitNowayAssert    = 0;
+volatile bool   JitTelemetry::s_fProviderRegistered    = false;
+volatile UINT32 JitTelemetry::s_uMethodsCompiled       = 0;
+volatile UINT32 JitTelemetry::s_uMethodsHitNowayAssert = 0;
 
 // Constructor for telemetry state per compiler instance
 JitTelemetry::JitTelemetry()
@@ -142,11 +145,11 @@ JitTelemetry::JitTelemetry()
 //
 void JitTelemetry::Initialize(Compiler* c)
 {
-    comp = c;
-    m_pszAssemblyName = "";
-    m_pszScopeName = "";
-    m_pszMethodName = "";
-    m_uMethodHash = 0;
+    comp                = c;
+    m_pszAssemblyName   = "";
+    m_pszScopeName      = "";
+    m_pszMethodName     = "";
+    m_uMethodHash       = 0;
     m_fMethodInfoCached = false;
 }
 
@@ -254,9 +257,9 @@ void JitTelemetry::NotifyNowayAssert(const char* filename, unsigned line)
 
     // Check if our assumption that noways are rare is invalid for this
     // process. If so, return early than logging too much data.
-    unsigned noways = s_uMethodsHitNowayAssert;
+    unsigned noways   = s_uMethodsHitNowayAssert;
     unsigned attempts = max(1, s_uMethodsCompiled + noways);
-    double ratio = (noways / ((double) attempts));
+    double   ratio    = (noways / ((double)attempts));
     if (noways > NOWAY_SUFFICIENCY_THRESHOLD && ratio > NOWAY_NOISE_RATIO)
     {
         return;
@@ -264,41 +267,37 @@ void JitTelemetry::NotifyNowayAssert(const char* filename, unsigned line)
 
     assert(comp);
 
-    UINT32 nowayIndex = s_uMethodsHitNowayAssert;
-    UINT32 codeSize = 0;
-    INT32 minOpts = -1;
-    const char* lastPhase = "";
+    UINT32      nowayIndex = s_uMethodsHitNowayAssert;
+    UINT32      codeSize   = 0;
+    INT32       minOpts    = -1;
+    const char* lastPhase  = "";
     if (comp != nullptr)
     {
-        codeSize = comp->info.compILCodeSize;
-        minOpts = comp->opts.IsMinOptsSet() ? comp->opts.MinOpts() : -1;
+        codeSize  = comp->info.compILCodeSize;
+        minOpts   = comp->opts.IsMinOptsSet() ? comp->opts.MinOpts() : -1;
         lastPhase = PhaseNames[comp->previousCompletedPhase];
     }
-    
+
     CacheCurrentMethodInfo();
 
-    TraceLoggingWrite(g_hClrJitProvider,
-        "CLRJIT.NowayAssert",
-        
-        TraceLoggingUInt32(codeSize, "IL_CODE_SIZE"),
-        TraceLoggingInt32(minOpts, "MINOPTS_MODE"),
-        TraceLoggingString(lastPhase, "PREVIOUS_COMPLETED_PHASE"),
+    TraceLoggingWrite(g_hClrJitProvider, "CLRJIT.NowayAssert",
 
-        TraceLoggingString(m_pszAssemblyName, "ASSEMBLY_NAME"),
-        TraceLoggingString(m_pszMethodName, "METHOD_NAME"),
-        TraceLoggingString(m_pszScopeName, "METHOD_SCOPE"),
-        TraceLoggingUInt32(m_uMethodHash, "METHOD_HASH"),
-        
-        TraceLoggingString(filename, "FILENAME"),
-        TraceLoggingUInt32(line, "LINE"),
-        TraceLoggingUInt32(nowayIndex, "NOWAY_INDEX"),
-        
-        TraceLoggingString(TARGET_READABLE_NAME, "ARCH"),
-        TraceLoggingString(VER_FILEVERSION_STR, "VERSION"),
-        TraceLoggingString(BUILD_MACHINE, "BUILD"),
-        TraceLoggingString(VER_COMMENTS_STR, "FLAVOR"),
+                      TraceLoggingUInt32(codeSize, "IL_CODE_SIZE"), TraceLoggingInt32(minOpts, "MINOPTS_MODE"),
+                      TraceLoggingString(lastPhase, "PREVIOUS_COMPLETED_PHASE"),
 
-        TraceLoggingKeyword(MICROSOFT_KEYWORD_TELEMETRY));
+                      TraceLoggingString(m_pszAssemblyName, "ASSEMBLY_NAME"),
+                      TraceLoggingString(m_pszMethodName, "METHOD_NAME"),
+                      TraceLoggingString(m_pszScopeName, "METHOD_SCOPE"),
+                      TraceLoggingUInt32(m_uMethodHash, "METHOD_HASH"),
+
+                      TraceLoggingString(filename, "FILENAME"), TraceLoggingUInt32(line, "LINE"),
+                      TraceLoggingUInt32(nowayIndex, "NOWAY_INDEX"),
+
+                      TraceLoggingString(TARGET_READABLE_NAME, "ARCH"),
+                      TraceLoggingString(VER_FILEVERSION_STR, "VERSION"), TraceLoggingString(BUILD_MACHINE, "BUILD"),
+                      TraceLoggingString(VER_COMMENTS_STR, "FLAVOR"),
+
+                      TraceLoggingKeyword(MICROSOFT_KEYWORD_TELEMETRY));
 }
 
 //------------------------------------------------------------------------
@@ -339,7 +338,7 @@ void JitTelemetry::CacheCurrentMethodInfo()
 //      scopeName    - Pointer to hold scope name upon return
 //      methodName   - Pointer to hold method name upon return
 //      methodHash   - Pointer to hold method hash upon return
-//      
+//
 //  Description:
 //      Obtains from the JIT EE interface the information for the
 //      current method under compilation.
@@ -349,7 +348,10 @@ void JitTelemetry::CacheCurrentMethodInfo()
 //      methods, so call this method only when there is less impact
 //      to throughput.
 //
-void Compiler::compGetTelemetryDefaults(const char** assemblyName, const char** scopeName, const char** methodName, unsigned* methodHash)
+void Compiler::compGetTelemetryDefaults(const char** assemblyName,
+                                        const char** scopeName,
+                                        const char** methodName,
+                                        unsigned*    methodHash)
 {
     if (info.compMethodHnd != nullptr)
     {
@@ -362,8 +364,7 @@ void Compiler::compGetTelemetryDefaults(const char** assemblyName, const char** 
 
             // SuperPMI needs to implement record/replay of these method calls.
             *assemblyName = info.compCompHnd->getAssemblyName(
-                    info.compCompHnd->getModuleAssembly(
-                        info.compCompHnd->getClassModule(info.compClassHnd)));
+                info.compCompHnd->getModuleAssembly(info.compCompHnd->getClassModule(info.compClassHnd)));
         }
         __except (EXCEPTION_EXECUTE_HANDLER)
         {

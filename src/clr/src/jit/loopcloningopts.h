@@ -6,7 +6,7 @@
 /*****************************************************************************/
 
 #ifndef LC_OPT
-#error  Define LC_OPT before including this file.
+#error Define LC_OPT before including this file.
 #endif
 
 // Types of Loop Cloning based optimizations.

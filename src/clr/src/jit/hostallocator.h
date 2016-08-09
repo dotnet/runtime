@@ -7,7 +7,9 @@ class HostAllocator : public IAllocator
 private:
     static HostAllocator s_hostAllocator;
 
-    HostAllocator() {}
+    HostAllocator()
+    {
+    }
 
 public:
     void* Alloc(size_t size) override;
