@@ -917,7 +917,7 @@ endif
 # Remove empty .stdout and .stderr files for wrench
 rm-empty-logs:
 	@echo "Removing empty logs..."
-	@find . '(' -name "*.stdout" -o -name "*.stderr" ')' -empty -exec rm {} \;
+	find . '(' -name "*.stdout" -o -name "*.stderr" ')' -size 0 -exec rm {} \;
 
 assemblyresolve/test/asm.dll:
 	$(MAKE) -C assemblyresolve prereq
