@@ -6,12 +6,13 @@ using Microsoft.Win32.SafeHandles;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Net.Security;
+using System.Runtime.InteropServices;
 using System.Security.Authentication;
 using System.Security.Authentication.ExtendedProtection;
 using System.Security.Cryptography.X509Certificates;
 using System.Security.Principal;
 
-namespace System.Net
+namespace System.Net.Security
 {
     internal static class SslStreamPal
     {
@@ -48,7 +49,7 @@ namespace System.Net
                 ref credentialsHandle,
                 ref context,
                 ServerRequiredFlags | (remoteCertRequired ? Interop.SspiCli.ContextFlags.MutualAuth : Interop.SspiCli.ContextFlags.Zero),
-                Interop.SspiCli.Endianness.Native,
+                Interop.SspiCli.Endianness.SECURITY_NATIVE_DREP,
                 inputBuffer,
                 outputBuffer,
                 ref unusedAttributes);
@@ -66,7 +67,7 @@ namespace System.Net
                 ref context,
                 targetName,
                 RequiredFlags | Interop.SspiCli.ContextFlags.InitManualCredValidation,
-                Interop.SspiCli.Endianness.Native,
+                Interop.SspiCli.Endianness.SECURITY_NATIVE_DREP,
                 inputBuffer,
                 outputBuffer,
                 ref unusedAttributes);
@@ -84,7 +85,7 @@ namespace System.Net
                             ref context,
                             targetName,
                             RequiredFlags | Interop.SspiCli.ContextFlags.InitManualCredValidation,
-                            Interop.SspiCli.Endianness.Native,
+                            Interop.SspiCli.Endianness.SECURITY_NATIVE_DREP,
                             inputBuffers,
                             outputBuffer,
                             ref unusedAttributes);
@@ -95,32 +96,32 @@ namespace System.Net
         public static SafeFreeCredentials AcquireCredentialsHandle(X509Certificate certificate, SslProtocols protocols, EncryptionPolicy policy, bool isServer)
         {
             int protocolFlags = GetProtocolFlagsFromSslProtocols(protocols, isServer);
-            Interop.SspiCli.SecureCredential.Flags flags;
+            Interop.SspiCli.SCHANNEL_CRED.Flags flags;
             Interop.SspiCli.CredentialUse direction;
 
             if (!isServer)
             {
-                direction = Interop.SspiCli.CredentialUse.Outbound;
+                direction = Interop.SspiCli.CredentialUse.SECPKG_CRED_OUTBOUND;
                 flags = 
-                    Interop.SspiCli.SecureCredential.Flags.ValidateManual | 
-                    Interop.SspiCli.SecureCredential.Flags.NoDefaultCred | 
-                    Interop.SspiCli.SecureCredential.Flags.SendAuxRecord;
+                    Interop.SspiCli.SCHANNEL_CRED.Flags.SCH_CRED_MANUAL_CRED_VALIDATION | 
+                    Interop.SspiCli.SCHANNEL_CRED.Flags.SCH_CRED_NO_DEFAULT_CREDS | 
+                    Interop.SspiCli.SCHANNEL_CRED.Flags.SCH_SEND_AUX_RECORD;
 
                 // CoreFX: always opt-in SCH_USE_STRONG_CRYPTO except for SSL3.
                 if (((protocolFlags & (Interop.SChannel.SP_PROT_TLS1_0 | Interop.SChannel.SP_PROT_TLS1_1 | Interop.SChannel.SP_PROT_TLS1_2)) != 0)
                      && (policy != EncryptionPolicy.AllowNoEncryption) && (policy != EncryptionPolicy.NoEncryption))
                 {
-                    flags |= Interop.SspiCli.SecureCredential.Flags.UseStrongCrypto;
+                    flags |= Interop.SspiCli.SCHANNEL_CRED.Flags.SCH_USE_STRONG_CRYPTO;
                 }
             }
             else
             {
-                direction = Interop.SspiCli.CredentialUse.Inbound;
-                flags = Interop.SspiCli.SecureCredential.Flags.SendAuxRecord;
+                direction = Interop.SspiCli.CredentialUse.SECPKG_CRED_INBOUND;
+                flags = Interop.SspiCli.SCHANNEL_CRED.Flags.SCH_SEND_AUX_RECORD;
             }
 
-            Interop.SspiCli.SecureCredential secureCredential = CreateSecureCredential(
-                Interop.SspiCli.SecureCredential.CurrentVersion,
+            Interop.SspiCli.SCHANNEL_CRED secureCredential = CreateSecureCredential(
+                Interop.SspiCli.SCHANNEL_CRED.CurrentVersion,
                 certificate,
                 flags,
                 protocolFlags,
@@ -164,10 +165,10 @@ namespace System.Net
             // Encryption using SCHANNEL requires 4 buffers: header, payload, trailer, empty.
             SecurityBuffer[] securityBuffer = new SecurityBuffer[4];
 
-            securityBuffer[0] = new SecurityBuffer(writeBuffer, 0, headerSize, SecurityBufferType.Header);
-            securityBuffer[1] = new SecurityBuffer(writeBuffer, headerSize, size, SecurityBufferType.Data);
-            securityBuffer[2] = new SecurityBuffer(writeBuffer, headerSize + size, trailerSize, SecurityBufferType.Trailer);
-            securityBuffer[3] = new SecurityBuffer(null, SecurityBufferType.Empty);
+            securityBuffer[0] = new SecurityBuffer(writeBuffer, 0, headerSize, SecurityBufferType.SECBUFFER_STREAM_HEADER);
+            securityBuffer[1] = new SecurityBuffer(writeBuffer, headerSize, size, SecurityBufferType.SECBUFFER_DATA);
+            securityBuffer[2] = new SecurityBuffer(writeBuffer, headerSize + size, trailerSize, SecurityBufferType.SECBUFFER_STREAM_TRAILER);
+            securityBuffer[3] = new SecurityBuffer(null, SecurityBufferType.SECBUFFER_EMPTY);
 
             int errorCode = SSPIWrapper.EncryptMessage(GlobalSSPI.SSPISecureChannel, securityContext, securityBuffer, 0);
 
@@ -192,12 +193,12 @@ namespace System.Net
         {
             // Decryption using SCHANNEL requires four buffers.
             SecurityBuffer[] decspc = new SecurityBuffer[4];
-            decspc[0] = new SecurityBuffer(buffer, offset, count, SecurityBufferType.Data);
-            decspc[1] = new SecurityBuffer(null, SecurityBufferType.Empty);
-            decspc[2] = new SecurityBuffer(null, SecurityBufferType.Empty);
-            decspc[3] = new SecurityBuffer(null, SecurityBufferType.Empty);
+            decspc[0] = new SecurityBuffer(buffer, offset, count, SecurityBufferType.SECBUFFER_DATA);
+            decspc[1] = new SecurityBuffer(null, SecurityBufferType.SECBUFFER_EMPTY);
+            decspc[2] = new SecurityBuffer(null, SecurityBufferType.SECBUFFER_EMPTY);
+            decspc[3] = new SecurityBuffer(null, SecurityBufferType.SECBUFFER_EMPTY);
 
-            Interop.SecurityStatus errorCode = (Interop.SecurityStatus)SSPIWrapper.DecryptMessage(
+            Interop.SECURITY_STATUS errorCode = (Interop.SECURITY_STATUS)SSPIWrapper.DecryptMessage(
                 GlobalSSPI.SSPISecureChannel,
                 securityContext,
                 decspc,
@@ -207,9 +208,9 @@ namespace System.Net
             for (int i = 0; i < decspc.Length; i++)
             {
                 // Successfully decoded data and placed it at the following position in the buffer,
-                if ((errorCode == Interop.SecurityStatus.OK && decspc[i].type == SecurityBufferType.Data)
+                if ((errorCode == Interop.SECURITY_STATUS.OK && decspc[i].type == SecurityBufferType.SECBUFFER_DATA)
                     // or we failed to decode the data, here is the encoded data.
-                    || (errorCode != Interop.SecurityStatus.OK && decspc[i].type == SecurityBufferType.Extra))
+                    || (errorCode != Interop.SECURITY_STATUS.OK && decspc[i].type == SecurityBufferType.SECBUFFER_EXTRA))
                 {
                     offset = decspc[i].offset;
                     count = decspc[i].size;
@@ -220,6 +221,54 @@ namespace System.Net
             return SecurityStatusAdapterPal.GetSecurityStatusPalFromInterop(errorCode);
         }
 
+        public static SecurityStatusPal ApplyAlertToken(ref SafeFreeCredentials credentialsHandle, SafeDeleteContext securityContext, TlsAlertType alertType, TlsAlertMessage alertMessage)
+        {
+            Interop.SChannel.SCHANNEL_ALERT_TOKEN alertToken;
+            alertToken.dwTokenType = Interop.SChannel.SCHANNEL_ALERT;
+            alertToken.dwAlertType = (uint)alertType;
+            alertToken.dwAlertNumber = (uint)alertMessage;
+
+            var bufferDesc = new SecurityBuffer[1];
+
+            int alertTokenByteSize = Marshal.SizeOf<Interop.SChannel.SCHANNEL_ALERT_TOKEN>();
+            IntPtr p = Marshal.AllocHGlobal(alertTokenByteSize);
+
+            try
+            {
+                var buffer = new byte[alertTokenByteSize];
+                Marshal.StructureToPtr<Interop.SChannel.SCHANNEL_ALERT_TOKEN>(alertToken, p, false);
+                Marshal.Copy(p, buffer, 0, alertTokenByteSize);
+
+                bufferDesc[0] = new SecurityBuffer(buffer, SecurityBufferType.SECBUFFER_TOKEN);
+                var errorCode = (Interop.SECURITY_STATUS)SSPIWrapper.ApplyControlToken(
+                    GlobalSSPI.SSPISecureChannel,
+                    ref securityContext,
+                    bufferDesc);
+
+                return SecurityStatusAdapterPal.GetSecurityStatusPalFromInterop(errorCode, attachException:true);
+            }
+            finally
+            {
+                Marshal.FreeHGlobal(p);
+            }
+        }
+
+        public static SecurityStatusPal ApplyShutdownToken(ref SafeFreeCredentials credentialsHandle, SafeDeleteContext securityContext)
+        {
+            int shutdownToken = Interop.SChannel.SCHANNEL_SHUTDOWN;
+
+            var bufferDesc = new SecurityBuffer[1];
+            var buffer = BitConverter.GetBytes(shutdownToken);
+
+            bufferDesc[0] = new SecurityBuffer(buffer, SecurityBufferType.SECBUFFER_TOKEN);
+            var errorCode = (Interop.SECURITY_STATUS)SSPIWrapper.ApplyControlToken(
+                GlobalSSPI.SSPISecureChannel,
+                ref securityContext,
+                bufferDesc);
+
+            return SecurityStatusAdapterPal.GetSecurityStatusPalFromInterop(errorCode, attachException:true);
+        }
+
         public unsafe static SafeFreeContextBufferChannelBinding QueryContextChannelBinding(SafeDeleteContext securityContext, ChannelBindingKind attribute)
         {
             return SSPIWrapper.QueryContextChannelBinding(GlobalSSPI.SSPISecureChannel, securityContext, (Interop.SspiCli.ContextAttribute)attribute);
@@ -227,18 +276,22 @@ namespace System.Net
 
         public static void QueryContextStreamSizes(SafeDeleteContext securityContext, out StreamSizes streamSizes)
         {
-            streamSizes = SSPIWrapper.QueryContextAttributes(
+            var interopStreamSizes = SSPIWrapper.QueryContextAttributes(
                 GlobalSSPI.SSPISecureChannel,
                 securityContext,
-                Interop.SspiCli.ContextAttribute.StreamSizes) as StreamSizes;
+                Interop.SspiCli.ContextAttribute.SECPKG_ATTR_STREAM_SIZES) as SecPkgContext_StreamSizes;
+
+            streamSizes = new StreamSizes(interopStreamSizes);
         }
 
         public static void QueryContextConnectionInfo(SafeDeleteContext securityContext, out SslConnectionInfo connectionInfo)
         {
-            connectionInfo = SSPIWrapper.QueryContextAttributes(
+            var interopConnectionInfo = SSPIWrapper.QueryContextAttributes(
                 GlobalSSPI.SSPISecureChannel,
                 securityContext,
-                Interop.SspiCli.ContextAttribute.ConnectionInfo) as SslConnectionInfo;
+                Interop.SspiCli.ContextAttribute.SECPKG_ATTR_CONNECTION_INFO) as SecPkgContext_ConnectionInfo;
+
+            connectionInfo = new SslConnectionInfo(interopConnectionInfo);
         }
 
         private static int GetProtocolFlagsFromSslProtocols(SslProtocols protocols, bool isServer)
@@ -257,18 +310,18 @@ namespace System.Net
             return protocolFlags;
         }
 
-        private static Interop.SspiCli.SecureCredential CreateSecureCredential(
+        private static Interop.SspiCli.SCHANNEL_CRED CreateSecureCredential(
             int version,
             X509Certificate certificate,
-            Interop.SspiCli.SecureCredential.Flags flags,
+            Interop.SspiCli.SCHANNEL_CRED.Flags flags,
             int protocols, EncryptionPolicy policy)
         {
-            var credential = new Interop.SspiCli.SecureCredential()
+            var credential = new Interop.SspiCli.SCHANNEL_CRED()
             {
-                rootStore = IntPtr.Zero,
-                phMappers = IntPtr.Zero,
+                hRootStore = IntPtr.Zero,
+                aphMappers = IntPtr.Zero,
                 palgSupportedAlgs = IntPtr.Zero,
-                certContextArray = IntPtr.Zero,
+                paCred = IntPtr.Zero,
                 cCreds = 0,
                 cMappers = 0,
                 cSupportedAlgs = 0,
@@ -299,12 +352,12 @@ namespace System.Net
                 throw new ArgumentException(SR.Format(SR.net_invalid_enum, "EncryptionPolicy"), nameof(policy));
             }
 
-            credential.version = version;
+            credential.dwVersion = version;
             credential.dwFlags = flags;
             credential.grbitEnabledProtocols = protocols;
             if (certificate != null)
             {
-                credential.certContextArray = certificate.Handle;
+                credential.paCred = certificate.Handle;
                 credential.cCreds = 1;
             }
 
@@ -314,7 +367,7 @@ namespace System.Net
         //
         // Security: we temporarily reset thread token to open the handle under process account.
         //
-        private static SafeFreeCredentials AcquireCredentialsHandle(Interop.SspiCli.CredentialUse credUsage, Interop.SspiCli.SecureCredential secureCredential)
+        private static SafeFreeCredentials AcquireCredentialsHandle(Interop.SspiCli.CredentialUse credUsage, Interop.SspiCli.SCHANNEL_CRED secureCredential)
         {
             // First try without impersonation, if it fails, then try the process account.
             // I.E. We don't know which account the certificate context was created under.

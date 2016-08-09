@@ -145,6 +145,8 @@ namespace System.Net.Security
             }
         }
 
+        public bool IsShutdown { get; internal set; }
+
         internal void CheckThrow(bool authSucessCheck)
         {
         }
@@ -170,6 +172,16 @@ namespace System.Net.Security
 
         internal void EndProcessAuthentication(IAsyncResult result)
         {
+        }
+
+        internal IAsyncResult BeginShutdown(AsyncCallback asyncCallback, object asyncState)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal void EndShutdown(IAsyncResult asyncResult)
+        {
+            throw new NotImplementedException();
         }
     }
 

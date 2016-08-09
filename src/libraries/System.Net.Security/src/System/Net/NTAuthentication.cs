@@ -319,7 +319,7 @@ namespace System.Net
 
             if (incomingBlob != null)
             {
-                list.Add(new SecurityBuffer(incomingBlob, SecurityBufferType.Token));
+                list.Add(new SecurityBuffer(incomingBlob, SecurityBufferType.SECBUFFER_TOKEN));
             }
             
             if (_channelBinding != null)
@@ -333,7 +333,7 @@ namespace System.Net
                 inSecurityBufferArray = list.ToArray();
             }
 
-            var outSecurityBuffer = new SecurityBuffer(_tokenSize, SecurityBufferType.Token);
+            var outSecurityBuffer = new SecurityBuffer(_tokenSize, SecurityBufferType.SECBUFFER_TOKEN);
 
             bool firstTime = _securityContext == null;
             try

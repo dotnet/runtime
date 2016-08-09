@@ -7,11 +7,10 @@ using System.Runtime.InteropServices;
 
 namespace System.Net
 {
-    // TODO (Issue #3114): Move to Interop. 
-    // Investigate if this can be safely converted to a struct.
+    // TODO (Issue #3114): Investigate if this can be safely converted to a struct.
     // From Schannel.h
     [StructLayout(LayoutKind.Sequential)]
-    internal class SslConnectionInfo
+    internal class SecPkgContext_ConnectionInfo
     {
         public readonly int Protocol;
         public readonly int DataCipherAlg;
@@ -21,7 +20,7 @@ namespace System.Net
         public readonly int KeyExchangeAlg;
         public readonly int KeyExchKeySize;
 
-        internal unsafe SslConnectionInfo(byte[] nativeBuffer)
+        internal unsafe SecPkgContext_ConnectionInfo(byte[] nativeBuffer)
         {
             fixed (void* voidPtr = nativeBuffer)
             {

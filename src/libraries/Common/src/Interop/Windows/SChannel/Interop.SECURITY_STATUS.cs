@@ -4,7 +4,7 @@
 
 internal static partial class Interop
 {
-    internal enum SecurityStatus
+    internal enum SECURITY_STATUS
     {
         // Success / Informational
         OK = 0x00000000,

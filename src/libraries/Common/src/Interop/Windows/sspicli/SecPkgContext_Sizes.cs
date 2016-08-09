@@ -7,16 +7,16 @@ using System.Runtime.InteropServices;
 
 namespace System.Net
 {
-    // _SecPkgContext_Sizes in sspi.h.
+    // sspi.h
     [StructLayout(LayoutKind.Sequential)]
-    internal class SecSizes
+    internal class SecPkgContext_Sizes
     {
-        public readonly int MaxToken;
-        public readonly int MaxSignature;
-        public readonly int BlockSize;
-        public readonly int SecurityTrailer;
+        public readonly int cbMaxToken;
+        public readonly int cbMaxSignature;
+        public readonly int cbBlockSize;
+        public readonly int cbSecurityTrailer;
 
-        internal unsafe SecSizes(byte[] memory)
+        internal unsafe SecPkgContext_Sizes(byte[] memory)
         {
             fixed (void* voidPtr = memory)
             {
@@ -24,10 +24,10 @@ namespace System.Net
                 try
                 {
                     // TODO (Issue #3114): replace with Marshal.PtrToStructure.
-                    MaxToken = (int)checked((uint)Marshal.ReadInt32(unmanagedAddress));
-                    MaxSignature = (int)checked((uint)Marshal.ReadInt32(unmanagedAddress, 4));
-                    BlockSize = (int)checked((uint)Marshal.ReadInt32(unmanagedAddress, 8));
-                    SecurityTrailer = (int)checked((uint)Marshal.ReadInt32(unmanagedAddress, 12));
+                    cbMaxToken = (int)checked((uint)Marshal.ReadInt32(unmanagedAddress));
+                    cbMaxSignature = (int)checked((uint)Marshal.ReadInt32(unmanagedAddress, 4));
+                    cbBlockSize = (int)checked((uint)Marshal.ReadInt32(unmanagedAddress, 8));
+                    cbSecurityTrailer = (int)checked((uint)Marshal.ReadInt32(unmanagedAddress, 12));
                 }
                 catch (OverflowException)
                 {
@@ -41,6 +41,7 @@ namespace System.Net
                 }
             }
         }
-        public static readonly int SizeOf = Marshal.SizeOf<SecSizes>();
+
+        public static readonly int SizeOf = Marshal.SizeOf<SecPkgContext_Sizes>();
     }
 }

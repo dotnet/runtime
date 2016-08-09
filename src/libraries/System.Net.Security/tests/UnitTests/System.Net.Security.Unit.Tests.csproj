@@ -17,6 +17,8 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="SslStreamAllowedProtocolsTest.cs" />
+    <Compile Include="TlsAlertsMatchWindowsInterop.cs" />
+
     <!-- Fakes -->
     <Compile Include="Fakes\FakeSslState.cs" />
     <Compile Include="Fakes\FakeAuthenticatedStream.cs" />
@@ -32,14 +34,23 @@
   </ItemGroup>
   <ItemGroup>
     <!-- Production code references -->
-    <Compile Include="..\..\src\System\Net\SecureProtocols\SslStream.cs">
-      <Link>ProductionCode\System\Net\SecureProtocols\SslStream.cs</Link>
+    <Compile Include="..\..\src\System\Net\Security\SslStream.cs">
+      <Link>ProductionCode\System\Net\Security\SslStream.cs</Link>
     </Compile>
-    <Compile Include="..\..\src\System\Net\SecureProtocols\SslStreamContext.cs">
-      <Link>ProductionCode\System\Net\SecureProtocols\SslStreamContext.cs</Link>
+    <Compile Include="..\..\src\System\Net\SslStreamContext.cs">
+      <Link>ProductionCode\System\Net\SslStreamContext.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Net\SecurityProtocol.cs">
       <Link>ProductionCode\Common\System\Net\SecurityProtocol.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\Security\TlsAlertType.cs">
+      <Link>ProductionCode\Common\System\Net\TlsAlertType.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\Security\TlsAlertMessage.cs">
+      <Link>ProductionCode\Common\System\Net\TlsAlertMessage.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\SChannel\Interop.Alerts.cs">
+      <Link>Common\Interop\Windows\SChannel\Interop.Alerts.cs</Link>
     </Compile>
     
     <!-- Logging -->
