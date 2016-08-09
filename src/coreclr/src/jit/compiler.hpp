@@ -1116,6 +1116,28 @@ GenTreeCall*        Compiler::gtNewHelperCallNode(unsigned        helper,
     return result;
 }
 
+//------------------------------------------------------------------------
+// gtNewAllocObjNode: A little helper to create an object allocation node.
+//
+// Arguments:
+//    helper           - Value returned by ICorJitInfo::getNewHelper
+//    clsHnd           - Corresponding class handle
+//    type             - Tree return type (e.g. TYP_REF)
+//    op1              - Node containing an address of VtablePtr
+//
+// Return Value:
+//    Returns GT_ALLOCOBJ node that will be later morphed into an
+//    allocation helper call or local variable allocation on the stack.
+inline
+GenTreePtr          Compiler::gtNewAllocObjNode(unsigned int         helper,
+                                                CORINFO_CLASS_HANDLE clsHnd,
+                                                var_types            type,
+                                                GenTreePtr           op1)
+{
+    GenTreePtr      node = new(this, GT_ALLOCOBJ) GenTreeAllocObj(type, helper, clsHnd, op1);
+    return node;
+}
+
 /*****************************************************************************/
 
 inline
