@@ -10,6 +10,7 @@
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <PackageTargetFramework Condition="'$(PackageTargetFramework)'==''">netstandard1.7</PackageTargetFramework>
     <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NuGetTargetMoniker>
+    <!-- 436 is thrown because some types conflict with existing types in mscorlib -->
     <NoWarn>0436</NoWarn>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
@@ -38,21 +39,51 @@
     <Compile Include="System\ComponentModel\DefaultValueAttribute.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)'==''">
-    <Compile Include="System\NonSerializedAttribute.cs" />
-    <Compile Include="System\SerializableAttribute.cs" />
-    <Compile Include="System\Runtime\Serialization\IDeserializationCallback.cs" />
-    <Compile Include="System\Runtime\Serialization\IFormatterConverter.cs" />
-    <Compile Include="System\Runtime\Serialization\IObjectReference.cs" />
-    <Compile Include="System\Runtime\Serialization\ISerializable.cs" />
-    <Compile Include="System\Runtime\Serialization\OnDeserializedAttribute.cs" />
-    <Compile Include="System\Runtime\Serialization\OnDeserializingAttribute.cs" />
-    <Compile Include="System\Runtime\Serialization\OnSerializedAttribute.cs" />
-    <Compile Include="System\Runtime\Serialization\OnSerializingAttribute.cs" />
-    <Compile Include="System\Runtime\Serialization\OptionalFieldAttribute.cs" />
-    <Compile Include="System\Runtime\Serialization\SerializationException.cs" />
-    <Compile Include="System\Runtime\Serialization\SerializationInfo.cs" />
-    <Compile Include="System\Runtime\Serialization\SerializationInfoEnumerator.cs" />
-    <Compile Include="System\Runtime\Serialization\StreamingContext.cs" />
+    <Compile Include="$(CommonPath)\System\NonSerializedAttribute.cs">
+      <Link>System\NonSerializedAttribute.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\SerializableAttribute.cs">
+      <Link>System\SerializableAttribute.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Runtime\Serialization\IDeserializationCallback.cs">
+      <Link>System\Runtime\Serialization\IDeserializationCallback.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Runtime\Serialization\IFormatterConverter.cs">
+      <Link>System\Runtime\Serialization\IFormatterConverter.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Runtime\Serialization\IObjectReference.cs">
+      <Link>System\Runtime\Serialization\IObjectReference.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Runtime\Serialization\ISerializable.cs">
+      <Link>System\Runtime\Serialization\ISerializable.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Runtime\Serialization\OnDeserializedAttribute.cs">
+      <Link>System\Runtime\Serialization\OnDeserializedAttribute.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Runtime\Serialization\OnDeserializingAttribute.cs">
+      <Link>System\Runtime\Serialization\OnDeserializingAttribute.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Runtime\Serialization\OnSerializedAttribute.cs">
+      <Link>System\Runtime\Serialization\OnSerializedAttribute.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Runtime\Serialization\OnSerializingAttribute.cs">
+      <Link>System\Runtime\Serialization\OnSerializingAttribute.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Runtime\Serialization\OptionalFieldAttribute.cs">
+      <Link>System\Runtime\Serialization\OptionalFieldAttribute.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Runtime\Serialization\SerializationException.cs">
+      <Link>System\Runtime\Serialization\SerializationException.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Runtime\Serialization\SerializationInfo.cs">
+      <Link>System\Runtime\Serialization\SerializationInfo.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Runtime\Serialization\SerializationInfoEnumerator.cs">
+      <Link>System\Runtime\Serialization\SerializationInfoEnumerator.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Runtime\Serialization\StreamingContext.cs">
+      <Link>System\Runtime\Serialization\StreamingContext.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' != 'net462' And '$(TargetGroup)' != 'net463'">
     <ProjectReference Include="..\..\System.Private.Uri\src\System.Private.Uri.csproj">

@@ -4,14 +4,15 @@
   <PropertyGroup>
     <AssemblyVersion>4.0.1.0</AssemblyVersion>
     <OutputType>Library</OutputType>
-    <PackageTargetFramework>netstandard1.5</PackageTargetFramework>
-    <NuGetTargetMoniker>.NETStandard,Version=v1.3</NuGetTargetMoniker>
+    <PackageTargetFramework>netstandard1.7</PackageTargetFramework>
+    <NuGetTargetMoniker>.NETStandard,Version=v1.7</NuGetTargetMoniker>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Runtime.Serialization.Formatters.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />
+    <!-- ToDo: Remove this project references as they should go in project.json instead once the packages are pushed. -->
     <ProjectReference Include="..\..\System.Runtime\ref\System.Runtime.csproj" />
     <ProjectReference Include="..\..\System.Runtime.Serialization.Primitives\ref\System.Runtime.Serialization.Primitives.csproj" />
   </ItemGroup>

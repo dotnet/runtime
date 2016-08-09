@@ -7,9 +7,9 @@
     <!-- rev'ed to 4.0.1.0 even though 4.0.0.0 never shipped so that we can drop pre-release down to beta -->
     <AssemblyVersion>4.0.1.0</AssemblyVersion>
     <RootNamespace>System.Runtime.Serialization.Formatters</RootNamespace>
-    <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'net46'">true</IsPartialFacadeAssembly>
-    <PackageTargetFramework Condition="'$(PackageTargetFramework)' == ''">netstandard1.4</PackageTargetFramework>
-    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.4</NuGetTargetMoniker>
+    <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'net463'">true</IsPartialFacadeAssembly>
+    <PackageTargetFramework Condition="'$(PackageTargetFramework)' == ''">netstandard1.7</PackageTargetFramework>
+    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NuGetTargetMoniker>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' " />
@@ -64,8 +64,13 @@
     <Compile Include="System\Runtime\Serialization\Formatters\Binary\BinaryObjectWriter.cs" />
     <Compile Include="System\Runtime\Serialization\Formatters\Binary\BinaryParser.cs" />
     <Compile Include="System\Runtime\Serialization\Formatters\Binary\BinaryUtilClasses.cs" />
-    <ProjectReference Include="..\..\System.Runtime\ref\System.Runtime.csproj" />
-    <ProjectReference Include="..\..\System.Runtime.Serialization.Primitives\ref\System.Runtime.Serialization.Primitives.csproj" />
+    <!-- ToDo: remove these P2P references once they are pushed -->
+    <ProjectReference Include="../../System.Runtime/pkg/System.Runtime.pkgproj">
+        <Name>System.Runtime</Name>
+    </ProjectReference>
+    <ProjectReference Include="../../System.Runtime.Serialization.Primitives/pkg/System.Runtime.Serialization.Primitives.pkgproj">
+        <Name>System.Runtime.Serialization.Primitives</Name>
+    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />
