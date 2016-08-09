@@ -35,7 +35,7 @@ namespace System.Xml.Serialization
         {
         }
 
-        internal object ReadObject()
+        public object ReadObject()
         {
             var xmlMapping = _mapping;
             if (!xmlMapping.IsReadable)
@@ -53,7 +53,10 @@ namespace System.Xml.Serialization
 
         private object GenerateMembersElement(XmlMembersMapping xmlMapping)
         {
-            throw new PlatformNotSupportedException();
+            // #10675: we should implement this method. WCF is the major customer of the method
+            // as WCF uses XmlReflectionImporter.ImportMembersMapping and generates special
+            // serializers for OperationContracts.
+            throw new NotImplementedException();
         }
 
         private object GenerateTypeElement(XmlTypeMapping xmlTypeMapping)
@@ -636,7 +639,9 @@ namespace System.Xml.Serialization
             {
                 if (mapping.IsSoap)
                 {
-                    throw new PlatformNotSupportedException("mapping.IsSoap");
+                    // #10676: As all SOAP relates APIs are not in CoreCLR yet, the reflection based method
+                    // currently throws PlatformNotSupportedException when types require SOAP serialization.
+                    throw new PlatformNotSupportedException();
                 }
 
                 return WriteEnumMethod((EnumMapping)mapping, readFunc);
@@ -692,10 +697,6 @@ namespace System.Xml.Serialization
 
                 WriteElement(ref o, null, element, null, false, false, false, defaultNamespace);
             }
-            else
-            {
-                
-            }
 
             return o;
         }
@@ -704,7 +705,9 @@ namespace System.Xml.Serialization
         {
             if (mapping.IsSoap)
             {
-                throw new NotSupportedException("mapping.IsSoap");
+                // #10676: As all SOAP relates APIs are not in CoreCLR yet, the reflection based method
+                // currently throws PlatformNotSupportedException when types require SOAP serialization.
+                throw new PlatformNotSupportedException();
             }
 
             string source = readFunc();
@@ -848,7 +851,6 @@ namespace System.Xml.Serialization
                 {
                     // #10589: To Support Serializing XmlSchemaObject
                     throw new NotImplementedException("typeof(XmlSchemaObject)");
-                    //Writer.WriteLine("DecodeName = false;");
                 }
 
                 object o = ReflectionCreateObject(structMapping.TypeDesc.Type);
@@ -926,7 +928,6 @@ namespace System.Xml.Serialization
 
                 var allMembers = allMembersList.ToArray();
                 var allMemberMappings = allMemberMappingList.ToArray();
-
 
                 Action<object> unknownNodeAction = (n) => UnknownNode(n);
                 WriteAttributes(allMemberMappings, anyAttribute, unknownNodeAction, ref o);
