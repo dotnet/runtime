@@ -4,7 +4,7 @@
 
 namespace System.Net
 {
-    internal class StreamSizes
+    internal partial class StreamSizes
     {
         // Windows SChannel requires that you pass it a buffer big enough to hold
         // the header, the trailer, and the payload.  You're also required to do your
@@ -19,8 +19,12 @@ namespace System.Net
         // We could really set maximumMessage to int.MaxValue and have everything still work,
         // but using a bound of 32k means that if we were to switch from pointers to temporary
         // arrays, we'd be maintaining a reasonable upper bound.
-        public readonly int header = 0;
-        public readonly int trailer = 0;
-        public readonly int maximumMessage = 32 * 1024;
+
+        public StreamSizes()
+        {
+            Header = 0;
+            Trailer = 0;
+            MaximumMessage = 32 * 1024;
+        }
     }
 }

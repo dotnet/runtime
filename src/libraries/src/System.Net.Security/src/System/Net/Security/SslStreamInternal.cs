@@ -324,6 +324,7 @@ namespace System.Net.Security
         //
         private void ProcessWrite(byte[] buffer, int offset, int count, AsyncProtocolRequest asyncRequest)
         {
+            _sslState.CheckThrow(authSuccessCheck:true, shutdownCheck:true);
             ValidateParameters(buffer, offset, count);
 
             if (Interlocked.Exchange(ref _nestedWrite, 1) == 1)
@@ -704,9 +705,6 @@ namespace System.Net.Security
             return readBytes;
         }
 
-        //
-        // Only processing SEC_I_RENEGOTIATE.
-        //
         private int ProcessReadErrorCode(SecurityStatusPal status, byte[] buffer, int offset, int count, AsyncProtocolRequest asyncRequest, byte[] extraBuffer)
         {
             ProtocolToken message = new ProtocolToken(null, status);

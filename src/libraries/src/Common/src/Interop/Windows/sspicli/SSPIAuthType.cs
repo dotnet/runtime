@@ -35,7 +35,7 @@ namespace System.Net
             return SafeFreeContextBuffer.EnumeratePackages(out pkgnum, out pkgArray);
         }
 
-        public int AcquireCredentialsHandle(string moduleName, Interop.SspiCli.CredentialUse usage, ref Interop.SspiCli.AuthIdentity authdata, out SafeFreeCredentials outCredential)
+        public int AcquireCredentialsHandle(string moduleName, Interop.SspiCli.CredentialUse usage, ref Interop.SspiCli.SEC_WINNT_AUTH_IDENTITY_W authdata, out SafeFreeCredentials outCredential)
         {
             return SafeFreeCredentials.AcquireCredentialsHandle(moduleName, usage, ref authdata, out outCredential);
         }
@@ -50,7 +50,7 @@ namespace System.Net
             return SafeFreeCredentials.AcquireDefaultCredential(moduleName, usage, out outCredential);
         }
 
-        public int AcquireCredentialsHandle(string moduleName, Interop.SspiCli.CredentialUse usage, ref Interop.SspiCli.SecureCredential authdata, out SafeFreeCredentials outCredential)
+        public int AcquireCredentialsHandle(string moduleName, Interop.SspiCli.CredentialUse usage, ref Interop.SspiCli.SCHANNEL_CRED authdata, out SafeFreeCredentials outCredential)
         {
             return SafeFreeCredentials.AcquireCredentialsHandle(moduleName, usage, ref authdata, out outCredential);
         }
@@ -75,7 +75,7 @@ namespace System.Net
             return SafeDeleteContext.InitializeSecurityContext(ref credential, ref context, targetName, inFlags, endianness, null, inputBuffers, outputBuffer, ref outFlags);
         }
 
-        public int EncryptMessage(SafeDeleteContext context, Interop.SspiCli.SecurityBufferDescriptor inputOutput, uint sequenceNumber)
+        public int EncryptMessage(SafeDeleteContext context, Interop.SspiCli.SecBufferDesc inputOutput, uint sequenceNumber)
         {
             try
             {
@@ -90,9 +90,9 @@ namespace System.Net
             }
         }
 
-        public unsafe int DecryptMessage(SafeDeleteContext context, Interop.SspiCli.SecurityBufferDescriptor inputOutput, uint sequenceNumber)
+        public unsafe int DecryptMessage(SafeDeleteContext context, Interop.SspiCli.SecBufferDesc inputOutput, uint sequenceNumber)
         {
-            int status = (int)Interop.SecurityStatus.InvalidHandle;
+            int status = (int)Interop.SECURITY_STATUS.InvalidHandle;
             uint qop = 0;
 
             try
@@ -121,7 +121,7 @@ namespace System.Net
             return status;
         }
 
-        public int MakeSignature(SafeDeleteContext context, Interop.SspiCli.SecurityBufferDescriptor inputOutput, uint sequenceNumber)
+        public int MakeSignature(SafeDeleteContext context, Interop.SspiCli.SecBufferDesc inputOutput, uint sequenceNumber)
         {
             try
             {
@@ -137,7 +137,7 @@ namespace System.Net
             }
         }
 
-        public unsafe int VerifySignature(SafeDeleteContext context, Interop.SspiCli.SecurityBufferDescriptor inputOutput, uint sequenceNumber)
+        public unsafe int VerifySignature(SafeDeleteContext context, Interop.SspiCli.SecBufferDesc inputOutput, uint sequenceNumber)
         {
             try
             {
@@ -214,6 +214,11 @@ namespace System.Net
             {
                 phContext.DangerousRelease();
             }
+        }
+
+        public int ApplyControlToken(ref SafeDeleteContext refContext, SecurityBuffer[] inputBuffers)
+        {
+            throw new NotSupportedException();
         }
     }
 }
