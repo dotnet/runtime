@@ -475,7 +475,7 @@ bool Compiler::isSingleFloat32Struct(CORINFO_CLASS_HANDLE clsHnd)
     for (;;)
     {
         // all of class chain must be of value type and must have only one field
-        if (!info.compCompHnd->isValueClass(clsHnd) && info.compCompHnd->getClassNumInstanceFields(clsHnd) != 1)
+        if (!info.compCompHnd->isValueClass(clsHnd) || info.compCompHnd->getClassNumInstanceFields(clsHnd) != 1)
         {
             return false;
         }
