@@ -282,7 +282,7 @@ MonoSelfSupendResult
 mono_threads_transition_state_poll (MonoThreadInfo *info)
 {
 	int raw_state, cur_state, suspend_count;
-	g_assert (info == mono_thread_info_current ());
+	g_assert (mono_thread_info_is_current (info));
 
 retry_state_change:
 	UNWRAP_THREAD_STATE (raw_state, cur_state, suspend_count, info);
