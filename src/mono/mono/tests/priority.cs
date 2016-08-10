@@ -5,8 +5,11 @@ using System.Text;
 
 public class Tests
 {
+	private static int mainThreadId;
+
 	public static int Main ()
 	{
+		mainThreadId = Thread.CurrentThread.ManagedThreadId;
 		return TestDriver.RunTests (typeof (Tests));
 	}
 
@@ -21,6 +24,46 @@ public class Tests
 			Thread.CurrentThread.Priority.ToString());
 	}
 	
+	public static int test_0_main_thread_priority ()
+	{
+		Console.WriteLine("Testing main thread's priority");
+		if (Thread.CurrentThread.ManagedThreadId != mainThreadId)
+		{
+			Console.WriteLine("test_0_main_thread_priority() must be run on the main thread");
+			return 1;
+		}
+
+		var before = Thread.CurrentThread.Priority;
+		Console.WriteLine("Priority: {0}", before);
+		if (before != ThreadPriority.Normal)
+			return 2;
+
+		Console.WriteLine("Setting main thread's priority to AboveNormal");
+		Thread.CurrentThread.Priority = ThreadPriority.AboveNormal;
+		var after = Thread.CurrentThread.Priority;
+		Console.WriteLine("Priority: {0} {1}", before, after);
+		if (after != ThreadPriority.AboveNormal)
+			return 3;
+
+		before = after;
+		Console.WriteLine("Setting main thread's priority to BelowNormal");
+		Thread.CurrentThread.Priority = ThreadPriority.BelowNormal;
+		after = Thread.CurrentThread.Priority;
+		Console.WriteLine("Priority: {0} {1}", before, after);
+		if (after != ThreadPriority.BelowNormal)
+			return 4;
+
+		before = after;
+		Console.WriteLine("Setting main thread's priority to Normal");
+		Thread.CurrentThread.Priority = ThreadPriority.Normal;
+		after = Thread.CurrentThread.Priority;
+		Console.WriteLine("Priority: {0} {1}", before, after);
+		if (after != ThreadPriority.Normal)
+			return 5;
+
+		return 0;
+	}
+
 	public static int test_0_thread_priority () 
 	{
 		int res = 0;

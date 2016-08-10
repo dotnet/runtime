@@ -121,6 +121,8 @@ mono_threads_suspend_begin_async_resume (MonoThreadInfo *info)
 void
 mono_threads_suspend_register (MonoThreadInfo *info)
 {
+	g_assert (!info->handle);
+	info->handle = mono_threads_platform_open_handle();
 }
 
 void
@@ -135,6 +137,7 @@ mono_threads_suspend_free (MonoThreadInfo *info)
 typedef struct {
 	LPTHREAD_START_ROUTINE start_routine;
 	void *arg;
+	gint32 priority;
 	MonoCoopSem registered;
 	gboolean suspend;
 	HANDLE suspend_event;
@@ -155,6 +158,8 @@ inner_start_thread (LPVOID arg)
 	info = mono_thread_info_attach (&result);
 	info->runtime_thread = TRUE;
 	info->create_suspended = suspend;
+
+	mono_threads_platform_set_priority(info, start_info->priority);
 
 	mono_coop_sem_post (&(start_info->registered));
 
@@ -184,6 +189,7 @@ mono_threads_platform_create_thread (MonoThreadStart start_routine, gpointer arg
 		return NULL;
 	mono_coop_sem_init (&(start_info->registered), 0);
 	start_info->arg = arg;
+	start_info->priority = tp->priority;
 	start_info->start_routine = start_routine;
 	start_info->suspend = creation_flags & CREATE_SUSPENDED;
 	creation_flags &= ~CREATE_SUSPENDED;
@@ -388,12 +394,14 @@ mono_threads_platform_disown_mutex (MonoThreadInfo *info, gpointer mutex_handle)
 MonoThreadPriority
 mono_threads_platform_get_priority (MonoThreadInfo *info)
 {
+	g_assert (info->handle);
 	return GetThreadPriority (info->handle) + 2;
 }
 
 gboolean
 mono_threads_platform_set_priority (MonoThreadInfo *info, MonoThreadPriority priority)
 {
+	g_assert (info->handle);
 	return SetThreadPriority (info->handle, priority - 2);
 }
 
