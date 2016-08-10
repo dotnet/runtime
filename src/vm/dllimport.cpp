@@ -2559,12 +2559,14 @@ void NDirectStubLinker::DoNDirect(ILCodeStream *pcsEmit, DWORD dwStubFlags, Meth
 
 #else // _TARGET_X86_
 
+#ifdef FEATURE_INCLUDE_ALL_INTERFACES 
                 if (NDirect::IsHostHookEnabled())
                 {
                     // the stub for host will get the original target from the secret arg
                     pcsEmit->EmitLDC((DWORD_PTR)GetEEFuncEntryPoint(PInvokeStubForHost));
                 }
                 else
+#endif // FEATURE_INCLUDE_ALL_INTERFACES 
                 {
                     // the secret arg has been shifted to left and ORed with 1 (see code:GenericPInvokeCalliHelper)
                     EmitLoadStubContext(pcsEmit, dwStubFlags);
@@ -6250,7 +6252,9 @@ VOID NDirectMethodDesc::SetNDirectTarget(LPVOID pTarget)
         }
 #else
         _ASSERTE(pInterceptStub == NULL); // we don't intercept for anything else than host on !_TARGET_X86_
+#ifdef FEATURE_INCLUDE_ALL_INTERFACES 
         pWriteableData->m_pNDirectTarget = (LPVOID)GetEEFuncEntryPoint(PInvokeStubForHost);
+#endif // FEATURE_INCLUDE_ALL_INTERFACES 
 #endif
     }
     else
