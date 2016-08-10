@@ -16,6 +16,7 @@ namespace System.Net.WebSockets.Client.Tests
     {
         public SendReceiveTest(ITestOutputHelper output) : base(output) { }
 
+        [ActiveIssue(10702)]
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
         public async Task SendReceive_PartialMessage_Success(Uri server)
         {
