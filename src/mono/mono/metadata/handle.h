@@ -189,6 +189,11 @@ void mono_handle_verify (MonoRawHandle handle);
 #define TYPED_HANDLE_NAME(TYPE) TYPE ## Handle
 
 /*
+ * TYPED_HANDLE_DECL(SomeType):
+ *   Expands to a decl for handles to SomeType and to an internal payload struct.
+ *
+ * For example, TYPED_HANDLE_DECL(MonoObject) (see below) expands to:
+ *
  * typedef struct {
  *   MonoObject *__obj;
  * } MonoObjectHandlePayload;
@@ -196,7 +201,9 @@ void mono_handle_verify (MonoRawHandle handle);
  * typedef MonoObjectHandlePayload* MonoObjectHandle;
  */
 #define TYPED_HANDLE_DECL(TYPE) typedef struct { TYPE *__obj; } TYPED_HANDLE_PAYLOAD_NAME (TYPE) ; typedef TYPED_HANDLE_PAYLOAD_NAME (TYPE) * TYPED_HANDLE_NAME (TYPE)
-#define MONO_HANDLE_PAYLOAD_OFFSET(TYPE) MONO_STRUCT_OFFSET(TYPED_HANDLE_PAYLOAD_NAME (TYPE), __obj)
+/* Have to double expand because MONO_STRUCT_OFFSET is doing token pasting on cross-compilers. */
+#define MONO_HANDLE_PAYLOAD_OFFSET_(PayloadType) MONO_STRUCT_OFFSET(PayloadType, __obj)
+#define MONO_HANDLE_PAYLOAD_OFFSET(TYPE) MONO_HANDLE_PAYLOAD_OFFSET_(TYPED_HANDLE_PAYLOAD_NAME (TYPE))
 
 #define MONO_HANDLE_INIT ((void*) mono_null_value_handle)
 #define NULL_HANDLE mono_null_value_handle

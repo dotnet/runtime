@@ -6,6 +6,7 @@
 #include <mono/metadata/class-internals.h>
 #include <mono/metadata/object-internals.h>
 #include <mono/metadata/monitor.h>
+#include <mono/metadata/handle.h>
 #ifdef HAVE_SGEN_GC
 #include <mono/sgen/sgen-gc.h>
 #endif
