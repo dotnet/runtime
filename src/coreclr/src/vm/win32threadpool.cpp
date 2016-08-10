@@ -1263,10 +1263,10 @@ void ThreadpoolMgr::AdjustMaxWorkersActive()
         }
 
         PriorCompletedWorkRequests = totalNumCompletions;
-        PriorCompletedWorkRequestsTime = currentTicks;
         NextCompletedWorkRequestsTime = currentTicks + ThreadAdjustmentInterval;
-        CurrentSampleStartTime = endTime;
-        MemoryBarrier();
+        MemoryBarrier(); // flush previous writes (especially NextCompletedWorkRequestsTime)
+        PriorCompletedWorkRequestsTime = currentTicks;
+        CurrentSampleStartTime = endTime;;
     }
 }
 
