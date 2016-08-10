@@ -1,0 +1,2 @@
+<!--this is a just a test XML file to test Extension Object usage in every xsl: element which takes an expression-->
+<Title attr="Test">this is a test</Title>

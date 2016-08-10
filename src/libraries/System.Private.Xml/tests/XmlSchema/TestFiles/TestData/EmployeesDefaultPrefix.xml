@@ -1,0 +1,21 @@
+﻿<?xml version="1.0" encoding="utf-8" ?> 
+<Employees xmlns="http://EmployeeTestRedefineCT.org" xmlns:e="http://EmployeeTestRedefineCT.org" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://EmployeeTestRedefineCT.org RedefineEmployee.xsd" >
+    <!--@@Insert-->
+	<Employee Test="0">
+		<Name>
+			<e:Last>Jackson</e:Last>
+			<e:First>Joe</e:First>
+            <e:MI></e:MI>
+		</Name>
+		<Position Status="Current" Temp="0" Test="0" e:Role="Lead">Engineer</Position>
+		<Department>Operations</Department>
+		<Address>
+			<Street></Street>
+			<City></City>
+			<State></State>
+			<ZipCode></ZipCode>
+		</Address>
+		<PersonalInformation age="1" e:sex="M" height="5.11" weight="160" shirtsize="L"/>
+	</Employee>
+    <!--@@EndInsert-->
+</Employees>

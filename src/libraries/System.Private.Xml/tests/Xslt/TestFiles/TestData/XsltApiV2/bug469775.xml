@@ -1,0 +1,6 @@
+<!DOCTYPE root [
+  <!ENTITY number "123">
+]>
+<root>
+  &number;
+</root>

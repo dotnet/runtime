@@ -1,0 +1,133 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
+using System;
+using System.Xml.Schema;
+using Xunit;
+using Xunit.Abstractions;
+
+namespace System.Xml.Tests
+{
+    // ===================== ValidateWhitespace =====================
+
+    public class TCValidateWhitespace_String : CXmlSchemaValidatorTestCase
+    {
+        private ITestOutputHelper _output;
+        public TCValidateWhitespace_String(ITestOutputHelper output): base(output)
+        {
+            _output = output;
+        }
+
+        [Fact]
+        public void PassNull()
+        {
+            XmlSchemaValidator val = CreateValidator(new XmlSchemaSet());
+
+            val.Initialize();
+            try
+            {
+                val.ValidateWhitespace((string)null);
+            }
+            catch (ArgumentNullException)
+            {
+                return;
+            }
+
+            Assert.True(false);
+        }
+
+        [Fact]
+        public void TopLevelWhitespace()
+        {
+            XmlSchemaValidator val = CreateValidator(XSDFILE_VALIDATE_TEXT);
+            CValidationEventHolder holder = new CValidationEventHolder();
+
+            val.ValidationEventHandler += new ValidationEventHandler(holder.CallbackA);
+
+            val.Initialize();
+            val.ValidateWhitespace(" \t\r\n");
+            val.EndValidation();
+
+            Assert.True(!holder.IsCalledA);
+
+            return;
+        }
+
+        [Fact]
+        public void WhitespaceInsideElement()
+        {
+            XmlSchemaValidator val = CreateValidator(XSDFILE_VALIDATE_TEXT);
+            CValidationEventHolder holder = new CValidationEventHolder();
+            XmlSchemaInfo info = new XmlSchemaInfo();
+
+            val.ValidationEventHandler += new ValidationEventHandler(holder.CallbackA);
+
+            val.Initialize();
+            val.ValidateElement("ElementOnlyElement", "", info);
+            val.ValidateEndOfAttributes(null);
+
+            val.ValidateWhitespace(" \t\r\n");
+
+            val.ValidateElement("child", "", info);
+            val.ValidateEndOfAttributes(null);
+            val.ValidateEndElement(info);
+
+            val.ValidateWhitespace(" \t\r\n");
+
+            val.ValidateEndElement(info);
+            val.EndValidation();
+
+            Assert.True(!holder.IsCalledA);
+            Assert.Equal(info.Validity, XmlSchemaValidity.Valid);
+            Assert.Equal(info.ContentType, XmlSchemaContentType.ElementOnly);
+
+            return;
+        }
+
+        [Fact]
+        public void WhitespaceInEmptyContent__Invalid()
+        {
+            XmlSchemaValidator val = CreateValidator(XSDFILE_VALIDATE_TEXT);
+            XmlSchemaInfo info = new XmlSchemaInfo();
+
+            val.Initialize();
+            val.ValidateElement("EmptyElement", "", info);
+            val.ValidateEndOfAttributes(null);
+
+            try
+            {
+                val.ValidateWhitespace(" \r\n\t");
+            }
+            catch (XmlSchemaValidationException)
+            {
+                //XmlExceptionVerifier.IsExceptionOk(e, "Sch_InvalidWhitespaceInEmpty");
+                return;
+            }
+
+            Assert.True(false);
+        }
+
+        [Fact]
+        public void PassNonWhitespaceContent__ShouldNotWork()
+        {
+            XmlSchemaValidator val = CreateValidator(XSDFILE_VALIDATE_TEXT);
+
+            val.Initialize();
+            val.ValidateElement("ElementOnlyElement", "", null);
+            val.ValidateEndOfAttributes(null);
+
+            try
+            {
+                val.ValidateWhitespace("this is not whitespace");
+            }
+            catch (Exception) // Replace with concrete exception type
+            {
+                // Verify exception
+                Assert.True(false);
+            }
+
+            return;
+        }
+    }
+}

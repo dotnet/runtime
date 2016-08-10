@@ -1,0 +1,21 @@
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+	targetNamespace="ns-a"
+	xmlns="ns-a"
+>
+
+	<xsd:group name="g-b">
+		<xsd:sequence>
+			<xsd:element name="b1" type="xsd:boolean"/>
+			<xsd:element name="b2" type="xsd:int"/>
+		</xsd:sequence>
+	</xsd:group>
+
+	<xsd:complexType name="ct-B">
+		<xsd:sequence minOccurs="1">
+			<xsd:group ref="g-b"/>
+		</xsd:sequence>
+	</xsd:complexType>
+
+	<xsd:element name="e2" type="ct-B" />
+	
+</xsd:schema>
