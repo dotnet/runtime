@@ -10,7 +10,6 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Extensions;
 using System.Xml.Schema;
-using static System.Xml.Serialization.XmlSerializationReaderILGen;
 
 namespace System.Xml.Serialization
 {
