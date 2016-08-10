@@ -1431,6 +1431,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        [ActiveIssue(10702)]
         [Theory, MemberData(nameof(HttpMethodsThatDontAllowContent))]
         public async Task SendAsync_SendRequestUsingNoBodyMethodToEchoServerWithContent_NoBodySent(
             string method,
