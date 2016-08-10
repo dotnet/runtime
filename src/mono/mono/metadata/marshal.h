@@ -275,7 +275,10 @@ gpointer
 mono_string_to_ansibstr (MonoString *string_obj);
 
 gpointer
-mono_string_to_bstr (MonoString *string_obj);
+mono_ptr_to_bstr (gpointer ptr, int slen);
+
+gpointer
+mono_string_to_bstr(MonoString* str);
 
 void mono_delegate_free_ftnptr (MonoDelegate *delegate);
 
@@ -471,6 +474,9 @@ ves_icall_System_Runtime_InteropServices_Marshal_OffsetOf (MonoReflectionType *t
 
 gpointer
 ves_icall_System_Runtime_InteropServices_Marshal_StringToBSTR (MonoString *string);
+
+gpointer
+ves_icall_System_Runtime_InteropServices_Marshal_BufferToBSTR (MonoArray *ptr, int len);
 
 gpointer
 ves_icall_System_Runtime_InteropServices_Marshal_StringToHGlobalAnsi (MonoString *string);

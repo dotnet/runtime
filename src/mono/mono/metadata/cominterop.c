@@ -51,6 +51,15 @@ register_icall (gpointer func, const char *name, const char *sigstr, gboolean sa
 	mono_register_jit_icall (func, name, sig, save);
 }
 
+gpointer
+mono_string_to_bstr(MonoString* ptr)
+{
+	if (!ptr)
+		return NULL;
+
+	return mono_ptr_to_bstr(mono_string_chars(ptr), mono_string_length(ptr));
+}
+
 #ifndef DISABLE_COM
 
 #define OPDEF(a,b,c,d,e,f,g,h,i,j) \
@@ -2742,37 +2751,37 @@ init_com_provider_ms (void)
 }
 
 gpointer
-mono_string_to_bstr (MonoString *string_obj)
+mono_ptr_to_bstr(gpointer ptr, int slen)
 {
-	if (!string_obj)
+	if (!ptr)
 		return NULL;
 #ifdef HOST_WIN32
-	return SysAllocStringLen (mono_string_chars (string_obj), mono_string_length (string_obj));
+	return SysAllocStringLen (ptr, slen);
 #else
 	if (com_provider == MONO_COM_DEFAULT) {
-		int slen = mono_string_length (string_obj);
 		/* allocate len + 1 utf16 characters plus 4 byte integer for length*/
-		char *ret = (char *)g_malloc ((slen + 1) * sizeof(gunichar2) + sizeof(guint32));
+		char *ret = (char *)g_malloc((slen + 1) * sizeof(gunichar2) + sizeof(guint32));
 		if (ret == NULL)
 			return NULL;
-		memcpy (ret + sizeof(guint32), mono_string_chars (string_obj), slen * sizeof(gunichar2));
-		* ((guint32 *) ret) = slen * sizeof(gunichar2);
-		ret [4 + slen * sizeof(gunichar2)] = 0;
-		ret [5 + slen * sizeof(gunichar2)] = 0;
+		memcpy(ret + sizeof(guint32), ptr, slen * sizeof(gunichar2));
+		*((guint32 *)ret) = slen * sizeof(gunichar2);
+		ret[4 + slen * sizeof(gunichar2)] = 0;
+		ret[5 + slen * sizeof(gunichar2)] = 0;
 
 		return ret + 4;
-	} else if (com_provider == MONO_COM_MS && init_com_provider_ms ()) {
+	}
+	else if (com_provider == MONO_COM_MS && init_com_provider_ms()) {
 		gpointer ret = NULL;
 		gunichar* str = NULL;
-		guint32 len;
-		len = mono_string_length (string_obj);
-		str = g_utf16_to_ucs4 (mono_string_chars (string_obj), len,
+		guint32 len = slen;
+		str = g_utf16_to_ucs4(ptr, len,
 			NULL, NULL, NULL);
-		ret = sys_alloc_string_len_ms (str, len);
+		ret = sys_alloc_string_len_ms(str, len);
 		g_free(str);
 		return ret;
-	} else {
-		g_assert_not_reached ();
+	}
+	else {
+		g_assert_not_reached();
 	}
 #endif
 }
@@ -3411,20 +3420,19 @@ cominterop_release_all_rcws (void)
 }
 
 gpointer
-mono_string_to_bstr (MonoString *string_obj)
+mono_ptr_to_bstr (gpointer ptr, int slen)
 {
-	if (!string_obj)
+	if (!ptr)
 		return NULL;
 #ifdef HOST_WIN32
-	return SysAllocStringLen (mono_string_chars (string_obj), mono_string_length (string_obj));
+	return SysAllocStringLen (ptr, slen);
 #else
 	{
-		int slen = mono_string_length (string_obj);
 		/* allocate len + 1 utf16 characters plus 4 byte integer for length*/
 		char *ret = g_malloc ((slen + 1) * sizeof(gunichar2) + sizeof(guint32));
 		if (ret == NULL)
 			return NULL;
-		memcpy (ret + sizeof(guint32), mono_string_chars (string_obj), slen * sizeof(gunichar2));
+		memcpy (ret + sizeof(guint32), ptr, slen * sizeof(gunichar2));
 		* ((guint32 *) ret) = slen * sizeof(gunichar2);
 		ret [4 + slen * sizeof(gunichar2)] = 0;
 		ret [5 + slen * sizeof(gunichar2)] = 0;
@@ -3522,6 +3530,12 @@ gpointer
 ves_icall_System_Runtime_InteropServices_Marshal_StringToBSTR (MonoString* ptr)
 {
 	return mono_string_to_bstr(ptr);
+}
+
+gpointer
+ves_icall_System_Runtime_InteropServices_Marshal_BufferToBSTR (MonoArray* ptr, int len)
+{
+	return mono_ptr_to_bstr (ptr->vector, len);
 }
 
 void
