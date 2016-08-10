@@ -272,15 +272,13 @@ ThePreStubPatchLabel
 ;   x15  : trashed
 ;
     WRITE_BARRIER_ENTRY JIT_CheckedWriteBarrier
-;; ARM64TODO: Temporary indirect access till support for :lo12:symbol is added
-        ldr      x12,  =g_lowest_address
-        ldr      x12,  [x12]
+        adrp     x12,  g_lowest_address
+        ldr      x12,  [x12, g_lowest_address]
         cmp      x14,  x12
         blt      NotInHeap
 
-;; ARM64TODO: Temporary indirect access till support for :lo12:symbol is added
-        ldr      x12, =g_highest_address 
-        ldr      x12, [x12] 
+        adrp      x12, g_highest_address 
+        ldr      x12, [x12, g_highest_address] 
         cmp      x14, x12
         blt      JIT_WriteBarrier
 
@@ -305,22 +303,19 @@ NotInHeap
 
         ; Branch to Exit if the reference is not in the Gen0 heap
         ;
-;; ARM64TODO: Temporary indirect access till support for :lo12:symbol is added
-        ldr      x12,  =g_ephemeral_low
-        ldr      x12,  [x12]
+        adrp     x12,  g_ephemeral_low
+        ldr      x12,  [x12, g_ephemeral_low]
         cmp      x15,  x12
         blt      Exit
 
-;; ARM64TODO: Temporary indirect access till support for :lo12:symbol is added
-        ldr      x12, =g_ephemeral_high 
-        ldr      x12, [x12]
+        adrp     x12, g_ephemeral_high 
+        ldr      x12, [x12, g_ephemeral_high]
         cmp      x15,  x12
         bgt      Exit
 
         ; Check if we need to update the card table        
-;; ARM64TODO: Temporary indirect access till support for :lo12:symbol is added
-        ldr      x12, =g_card_table
-        ldr      x12, [x12]
+        adrp     x12, g_card_table
+        ldr      x12, [x12, g_card_table]
         add      x15,  x12, x14 lsr #11
         ldrb     w12, [x15]
         cmp      x12, 0xFF
@@ -1208,10 +1203,43 @@ Fail
         mov x9, x0
 
         EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
-
+        PATCH_LABEL StubDispatchFixupPatchLabel
         EPILOG_BRANCH_REG  x9
 
         NESTED_END
+#endif
+
+#ifdef FEATURE_COMINTEROP
+; ------------------------------------------------------------------
+; Function used by COM interop to get floating point return value (since it's not in the same
+; register(s) as non-floating point values).
+;
+; On entry;
+;   x0          : size of the FP result (4 or 8 bytes)
+;   x1          : pointer to 64-bit buffer to receive result
+;
+; On exit:
+;   buffer pointed to by x1 on entry contains the float or double argument as appropriate
+;
+    LEAF_ENTRY getFPReturn
+    str d0, [x1]
+    LEAF_END
+
+; ------------------------------------------------------------------
+; Function used by COM interop to set floating point return value (since it's not in the same
+; register(s) as non-floating point values).
+;
+; On entry:
+;   x0          : size of the FP result (4 or 8 bytes)
+;   x1          : 32-bit or 64-bit FP result
+;
+; On exit:
+;   s0          : float result if x0 == 4
+;   d0          : double result if x0 == 8
+;
+    LEAF_ENTRY setFPReturn
+    fmov d0, x1
+    LEAF_END
 #endif
 
 ; Must be at very end of file
