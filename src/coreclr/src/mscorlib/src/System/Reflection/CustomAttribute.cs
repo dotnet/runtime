@@ -324,6 +324,11 @@ namespace System.Reflection
             MetadataEnumResult tkCustomAttributeTokens;
             scope.EnumCustomAttributes(targetToken, out tkCustomAttributeTokens);
 
+            if (tkCustomAttributeTokens.Length == 0)
+            {
+                return Array.Empty<CustomAttributeRecord>();
+            }
+
             CustomAttributeRecord[] records = new CustomAttributeRecord[tkCustomAttributeTokens.Length];
 
             for (int i = 0; i < records.Length; i++)
