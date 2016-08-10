@@ -90,6 +90,7 @@
       <Link>Common\System\RandomDataGenerator.cs</Link>
     </Compile>
     <Compile Condition="'$(TargetGroup)'=='netstandard1.7'" Include="Array.1.7.Tests.cs" />
+    <Compile Condition="'$(TargetGroup)'=='netstandard1.7'" Include="Enum.1.7.Tests.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />
