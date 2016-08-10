@@ -1,0 +1,7 @@
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns="schema2.xsd"
+    targetNamespace="schema2.xsd"
+    version="1.0"
+    >
+    <xsd:element name="foo2" type="xsd:string"/>
+    <xsd:annotation/>
+</xsd:schema>

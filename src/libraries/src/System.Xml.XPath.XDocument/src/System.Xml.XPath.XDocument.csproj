@@ -7,7 +7,7 @@
     <AssemblyVersion>4.0.2.0</AssemblyVersion>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <PackageTargetFramework Condition="'$(PackageTargetFramework)'==''">netstandard1.3</PackageTargetFramework>
-    <IsPartialFacadeAssembly Condition="'$(TargetGroup)'=='net46'">true</IsPartialFacadeAssembly>
+    <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.3</NuGetTargetMoniker>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
@@ -19,15 +19,9 @@
     <Compile Include="System\Xml\XPath\XDocumentExtensions.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)'==''">
-    <Compile Include="System\Xml\XPath\XAttributeExtensions.cs" />
-    <Compile Include="System\Xml\XPath\XObjectExtensions.cs" />
-    <Compile Include="System\Xml\XPath\XNodeNavigator.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)'==''">
-    <ProjectReference Include="..\..\System.Xml.XPath\src\System.Xml.XPath.csproj">
-      <Project>{be28323e-327a-4e0f-b7f9-16ab7eab59dd}</Project>
-      <Name>System.Xml.XPath</Name>
-    </ProjectReference>
+    <ProjectReference Include="..\..\System.Private.Xml\src\System.Private.Xml.csproj" />
+    <ProjectReference Include="..\..\System.Private.Xml.Linq\src\System.Private.Xml.Linq.csproj" />
+    <ProjectReference Include="..\..\System.Xml.XPath\src\System.Xml.XPath.csproj" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)'=='net46'">
     <TargetingPackReference Include="mscorlib" />

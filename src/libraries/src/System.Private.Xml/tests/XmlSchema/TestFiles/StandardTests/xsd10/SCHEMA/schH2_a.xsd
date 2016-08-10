@@ -1,0 +1,37 @@
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+targetNamespace="ns-a"
+xmlns="ns-a"
+>
+
+	<xsd:redefine schemaLocation="schH2_b.xsd">
+    <xsd:annotation id="a2">
+            <xsd:appinfo/>
+            <xsd:documentation source="foo"/>
+    </xsd:annotation>
+	<xsd:group name="g-b">
+		<xsd:sequence>
+			<xsd:element name="b1" type="xsd:boolean"/>
+			<xsd:element name="b2" type="xsd:short"/>
+		</xsd:sequence>
+	</xsd:group>
+	</xsd:redefine>
+
+	<xsd:complexType name="ct-A">
+		<xsd:sequence minOccurs="1">
+			<xsd:group ref="g-b"/>
+		</xsd:sequence>
+	</xsd:complexType>
+
+	<xsd:element name="e1" type="ct-A" />
+	
+	<xsd:element name="root">
+		<xsd:complexType>
+			<xsd:choice maxOccurs="unbounded">
+				<xsd:any namespace="##any" processContents="strict"/>
+			</xsd:choice>
+		</xsd:complexType>
+	</xsd:element>
+
+</xsd:schema>
+
+

@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<xs:schema targetNamespace="urn:custom-namespace" elementFormDefault="qualified" xmlns="urn:custom-namespace" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+	<xsd:import xmlns:xsd="http://www.w3.org/2001/XMLSchema" namespace="uri:temp-uri"/><xs:element name="comment" type="xs:string"/>
+</xs:schema>

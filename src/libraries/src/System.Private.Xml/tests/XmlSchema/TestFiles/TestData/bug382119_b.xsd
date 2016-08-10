@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8" ?>                                                                                                     
+<xs:schema targetNamespace="http://newschema_part4"                                                                                         
+           elementFormDefault="qualified"                                                                                                   
+           xmlns:tns="http://newschema_part4"                                                                                          
+           xmlns:xs="http://www.w3.org/2001/XMLSchema" >                                                                                    
+                                                                                                                                           
+                                                                                                                                            
+    <xs:import schemaLocation="bug382119_imp.xsd"></xs:import>                                                              
+                                                                                                                                            
+    <xs:element name="RootElement" >                                                                                                        
+        <xs:complexType >                                                                                                                   
+            <xs:sequence>                                                                                                                   
+                <xs:element name="e1">                                                                                                      
+                    <xs:complexType >                                                                                                       
+                        <xs:sequence minOccurs="2" maxOccurs="4">                                                                           
+                            <xs:element name="includedType" type="importCmplxType" minOccurs="2" maxOccurs="unbounded" />                  
+                        </xs:sequence>                                                                                                      
+                    </xs:complexType>                                                                                                       
+                </xs:element>                                                                                                               
+            </xs:sequence>                                                                                                                  
+        </xs:complexType>                                                                                                                   
+        
+    </xs:element>                                                                                                                           
+                                                                                                                                            
+</xs:schema>                                                                                                                                
+
+
