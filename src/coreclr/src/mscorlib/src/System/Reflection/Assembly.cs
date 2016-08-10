@@ -338,6 +338,30 @@ namespace System.Reflection
             return RuntimeAssembly.InternalLoadAssemblyName(assemblyRef, null, null, ref stackMark, true /*thrownOnFileNotFound*/, false /*forIntrospection*/, false /*suppressSecurityChecks*/);
         }
 
+        // Locate an assembly by its name. The name can be strong or
+        // weak. The assembly is loaded into the domain of the caller.
+#if FEATURE_CORECLR
+        [System.Security.SecurityCritical] // auto-generated
+#else
+        [System.Security.SecuritySafeCritical]
+#endif
+        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
+        internal static Assembly Load(AssemblyName assemblyRef, IntPtr ptrLoadContextBinder)
+        {
+            Contract.Ensures(Contract.Result<Assembly>() != null);
+            Contract.Ensures(!Contract.Result<Assembly>().ReflectionOnly);
+
+#if FEATURE_WINDOWSPHONE
+            if (assemblyRef != null && assemblyRef.CodeBase != null)
+            {
+                throw new NotSupportedException(Environment.GetResourceString("NotSupported_AssemblyLoadCodeBase"));
+            }
+#endif
+
+            StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
+            return RuntimeAssembly.InternalLoadAssemblyName(assemblyRef, null, null, ref stackMark, true /*thrownOnFileNotFound*/, false /*forIntrospection*/, false /*suppressSecurityChecks*/, ptrLoadContextBinder);
+        }
+
         [System.Security.SecuritySafeCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
         [Obsolete("This method is obsolete and will be removed in a future release of the .NET Framework. Please use an overload of Load which does not take an Evidence parameter. See http://go.microsoft.com/fwlink/?LinkID=155570 for more information.")]
@@ -1663,9 +1687,10 @@ namespace System.Reflection
             ref StackCrawlMark stackMark,
             bool throwOnFileNotFound,
             bool forIntrospection,
-            bool suppressSecurityChecks)
+            bool suppressSecurityChecks,
+            IntPtr ptrLoadContextBinder = default(IntPtr))
         {
-            return InternalLoadAssemblyName(assemblyRef, assemblySecurity, reqAssembly, ref stackMark, IntPtr.Zero, true /*throwOnError*/, forIntrospection, suppressSecurityChecks);
+            return InternalLoadAssemblyName(assemblyRef, assemblySecurity, reqAssembly, ref stackMark, IntPtr.Zero, true /*throwOnError*/, forIntrospection, suppressSecurityChecks, ptrLoadContextBinder);
         }
 
         [System.Security.SecurityCritical]  // auto-generated
@@ -1677,7 +1702,8 @@ namespace System.Reflection
             IntPtr pPrivHostBinder,
             bool throwOnFileNotFound, 
             bool forIntrospection,
-            bool suppressSecurityChecks)
+            bool suppressSecurityChecks,
+            IntPtr ptrLoadContextBinder = default(IntPtr))
         {
        
             if (assemblyRef == null)
@@ -1735,7 +1761,7 @@ namespace System.Reflection
 
             return nLoad(assemblyRef, codeBase, assemblySecurity, reqAssembly, ref stackMark,
                 pPrivHostBinder,
-                throwOnFileNotFound, forIntrospection, suppressSecurityChecks);
+                throwOnFileNotFound, forIntrospection, suppressSecurityChecks, ptrLoadContextBinder);
         }
 
         // These are the framework assemblies that does reflection invocation
@@ -1785,7 +1811,8 @@ namespace System.Reflection
                                                      IntPtr pPrivHostBinder,
                                                      bool throwOnFileNotFound,        
                                                      bool forIntrospection,
-                                                     bool suppressSecurityChecks);
+                                                     bool suppressSecurityChecks,
+                                                     IntPtr ptrLoadContextBinder);
 
 #if !FEATURE_CORECLR
         // The NGEN task uses this method, so please do not modify its signature
@@ -1807,11 +1834,11 @@ namespace System.Reflection
                                              IntPtr pPrivHostBinder,
                                              bool throwOnFileNotFound,
                                              bool forIntrospection,
-                                             bool suppressSecurityChecks)
+                                             bool suppressSecurityChecks, IntPtr ptrLoadContextBinder = default(IntPtr))
         {
             return _nLoad(fileName, codeBase, assemblySecurity, locationHint, ref stackMark,
                 pPrivHostBinder,
-                throwOnFileNotFound, forIntrospection, suppressSecurityChecks);
+                throwOnFileNotFound, forIntrospection, suppressSecurityChecks, ptrLoadContextBinder);
         }
 
 #if FEATURE_FUSION
