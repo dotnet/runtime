@@ -327,7 +327,15 @@ namespace System.Reflection
             Contract.Ensures(Contract.Result<Assembly>() != null);
             Contract.Ensures(!Contract.Result<Assembly>().ReflectionOnly);
 
-            return Load(assemblyRef, IntPtr.Zero);
+#if FEATURE_WINDOWSPHONE
+            if (assemblyRef != null && assemblyRef.CodeBase != null)
+            {
+                throw new NotSupportedException(Environment.GetResourceString("NotSupported_AssemblyLoadCodeBase"));
+            }
+#endif
+
+            StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
+            return RuntimeAssembly.InternalLoadAssemblyName(assemblyRef, null, null, ref stackMark, true /*thrownOnFileNotFound*/, false /*forIntrospection*/, false /*suppressSecurityChecks*/);
         }
 
         // Locate an assembly by its name. The name can be strong or
