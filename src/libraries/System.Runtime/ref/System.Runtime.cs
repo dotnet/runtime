@@ -833,6 +833,7 @@ namespace System
         public override int GetHashCode() { return default(int); }
         public static string GetName(System.Type enumType, object value) { return default(string); }
         public static string[] GetNames(System.Type enumType) { return default(string[]); }
+        public TypeCode GetTypeCode() { return default(TypeCode); }
         public static System.Type GetUnderlyingType(System.Type enumType) { return default(System.Type); }
         public static System.Array GetValues(System.Type enumType) { return default(System.Array); }
         public bool HasFlag(System.Enum flag) { return default(bool); }
@@ -860,6 +861,18 @@ namespace System
         [System.ObsoleteAttribute("The provider argument is not used. Please use ToString(String).")]
         string System.IFormattable.ToString(string format, System.IFormatProvider provider) { return default(string); }
         public static object ToObject(System.Type enumType, object value) { return default(object); }
+        public static object ToObject(System.Type enumType, int value) { return default(object); }
+        public static object ToObject(System.Type enumType, long value) { return default(object); }
+        public static object ToObject(System.Type enumType, byte value) { return default(object); }
+        public static object ToObject(System.Type enumType, short value) { return default(object); }
+        [CLSCompliant(false)]
+        public static object ToObject(System.Type enumType, uint value) { return default(object); }
+        [CLSCompliant(false)]
+        public static object ToObject(System.Type enumType, ulong value) { return default(object); }
+        [CLSCompliant(false)]
+        public static object ToObject(System.Type enumType, sbyte value) { return default(object); }
+        [CLSCompliant(false)]
+        public static object ToObject(System.Type enumType, ushort value) { return default(object); }
         public override string ToString() { return default(string); }
         public string ToString(string format) { return default(string); }
         public static bool TryParse<TEnum>(string value, out TEnum result) where TEnum : struct { result = default(TEnum); return default(bool); }
