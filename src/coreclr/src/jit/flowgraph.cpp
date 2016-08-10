@@ -13789,7 +13789,6 @@ bool Compiler::fgOptimizeBranchToNext(BasicBlock* block, BasicBlock* bNext, Basi
                     /* the unconditional jump is to the next BB  */
                     block->bbJumpKind = BBJ_NONE;
                     block->bbFlags &= ~BBF_NEEDS_GCPOLL;
-                    return true;
 #ifdef DEBUG
                     if  (verbose)
                     {
@@ -13797,6 +13796,7 @@ bool Compiler::fgOptimizeBranchToNext(BasicBlock* block, BasicBlock* bNext, Basi
                                block->bbNum, bNext->bbNum, block->bbNum);
                     }
 #endif // DEBUG
+                    return true;
                 }
             }
         }
