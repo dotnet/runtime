@@ -3919,17 +3919,9 @@ namespace System
             if (!(valueType.IsEnum || IsIntegerType(valueType)))
                 throw new ArgumentException(Environment.GetResourceString("Arg_MustBeEnumBaseTypeOrEnum"), "value");
 
-            ulong[] ulValues = Enum.InternalGetValues(this);
             ulong ulValue = Enum.ToUInt64(value);
-            int index = Array.BinarySearch(ulValues, ulValue);
 
-            if (index >= 0)
-            {
-                string[] names = Enum.InternalGetNames(this);
-                return names[index];
-            }
-
-            return null;
+            return Enum.GetEnumName(this, ulValue);
         }
         #endregion
 
