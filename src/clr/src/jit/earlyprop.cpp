@@ -312,6 +312,12 @@ bool Compiler::optEarlyPropRewriteTree(GenTreePtr tree)
         // Rewrite the tree using a copy of "actualVal"
         GenTreePtr actualValCopy;
         var_types  origType = tree->gtType;
+        // Propagating a constant into an array index expression requires calling
+        // LabelIndex to update the FieldSeq annotations.  EarlyProp may replace
+        // array length expressions with constants, so check if this is an array
+        // length operator that is part of an array index expression.
+        bool       isIndexExpr = (tree->OperGet() == GT_ARR_LENGTH &&
+                                 ((tree->gtFlags & GTF_ARRLEN_ARR_IDX) != 0));
 
         if (actualVal->GetNodeSize() <= tree->GetNodeSize())
         {
@@ -326,6 +332,9 @@ bool Compiler::optEarlyPropRewriteTree(GenTreePtr tree)
 
         actualValCopy->CopyFrom(actualVal, this);
         actualValCopy->gtType = origType;
+        if (isIndexExpr) {
+            actualValCopy->LabelIndex(this);
+        }
 
         fgWalkTreePre(&actualValCopy, Compiler::lvaIncRefCntsCB, (void*)this, true);
 
