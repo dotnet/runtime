@@ -13,10 +13,10 @@
         "System.Data.Common": "4.1.0",
         "System.Console": "4.0.0",
         "System.ComponentModel.TypeConverter": "4.0.0",
-        "Microsoft.Win32.Registry": "4.0.1-beta-devapi-24407-01",
+        "Microsoft.Win32.Registry": "4.0.1-beta-devapi-24410-02",
         "System.Reflection": "4.0.10",
         "System.Reflection.TypeExtensions": "4.0.0",
-        "System.Threading.Tasks.Extensions": "4.1.0-beta-devapi-24407-01"
+        "System.Threading.Tasks.Extensions": "4.1.0-beta-devapi-24410-02"
       },
       "imports": [
         "dotnet5.4"
