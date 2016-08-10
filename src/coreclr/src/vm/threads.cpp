@@ -2375,10 +2375,7 @@ BOOL Thread::InitThread(BOOL fInternal)
 
     // Set floating point mode to round to nearest
 #ifndef FEATURE_PAL
-#ifndef _TARGET_ARM64_
-    //ARM64TODO: remove the ifdef
     (void) _controlfp_s( NULL, _RC_NEAR, _RC_CHOP|_RC_UP|_RC_DOWN|_RC_NEAR );
-#endif
 
     m_pTEB = (struct _NT_TIB*)NtCurrentTeb();
 

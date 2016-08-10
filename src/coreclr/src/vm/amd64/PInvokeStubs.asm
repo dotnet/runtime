@@ -11,11 +11,12 @@
 include AsmMacros.inc
 include AsmConstants.inc
 
-PInvokeStubForHostWorker        equ ?PInvokeStubForHostWorker@@YAXKPEAX0@Z
-extern PInvokeStubForHostWorker:proc
-
 extern GenericPInvokeCalliStubWorker:proc
 extern VarargPInvokeStubWorker:proc
+
+ifdef FEATURE_INCLUDE_ALL_INTERFACES
+PInvokeStubForHostWorker        equ ?PInvokeStubForHostWorker@@YAXKPEAX0@Z
+extern PInvokeStubForHostWorker:proc
 
 PInvokeStubForHost_CALLEE_SCRATCH_SIZE = 20h
 
@@ -155,7 +156,7 @@ HandleStackArgs:
         mov             rdi, r8             ; restore rdi
         jmp             DoneStackArgs
 NESTED_END PInvokeStubForHostInner, _TEXT
-
+endif ; FEATURE_INCLUDE_ALL_INTERFACES
 
 ;
 ; in:
