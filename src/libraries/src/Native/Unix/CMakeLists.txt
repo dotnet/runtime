@@ -232,6 +232,6 @@ add_subdirectory(System.Net.Http.Native)
 add_subdirectory(System.Net.Security.Native)
 add_subdirectory(System.Security.Cryptography.Native)
 
-if(OSX)
+if(APPLE)
     add_subdirectory(System.Security.Cryptography.Native.Apple)
 endif()
