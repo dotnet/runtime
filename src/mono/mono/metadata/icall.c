@@ -8717,6 +8717,8 @@ mono_lookup_internal_call_full (MonoMethod *method, mono_bool *uses_handles)
 #else
 	/* it wasn't found in the static call tables */
 	if (!imap) {
+		if (uses_handles)
+			*uses_handles = FALSE;
 		mono_icall_unlock ();
 		return NULL;
 	}

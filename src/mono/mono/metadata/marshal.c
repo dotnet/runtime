@@ -7767,7 +7767,7 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 		MonoClass *error_class;
 		int thread_info_var = -1, stack_mark_var = -1, error_var = -1;
 		MonoMethodSignature *call_sig = csig;
-		gboolean uses_handles;
+		gboolean uses_handles = FALSE;
 		(void) mono_lookup_internal_call_full (method, &uses_handles);
 
 
