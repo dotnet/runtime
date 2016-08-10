@@ -50,7 +50,7 @@ public:
                                                                 Object* securityUNSAFE);
     static FCDECL6(Object*,         LoadImage,                  U1Array* PEByteArrayUNSAFE, U1Array* SymByteArrayUNSAFE, Object* securityUNSAFE, StackCrawlMark* stackMark, CLR_BOOL fForIntrospection, SecurityContextSource securityContextSource);
 
-    static FCDECL9(Object*,         Load,                       AssemblyNameBaseObject* assemblyNameUNSAFE, 
+    static FCDECL10(Object*,         Load,                       AssemblyNameBaseObject* assemblyNameUNSAFE, 
                                                                 StringObject* codeBaseUNSAFE, 
                                                                 Object* securityUNSAFE, 
                                                                 AssemblyBaseObject* requestingAssemblyUNSAFE,
@@ -58,7 +58,8 @@ public:
                                                                 ICLRPrivBinder * pPrivHostBinder,
                                                                 CLR_BOOL fThrowOnFileNotFound,
                                                                 CLR_BOOL fForIntrospection,
-                                                                CLR_BOOL fSuppressSecurityChecks);
+                                                                CLR_BOOL fSuppressSecurityChecks,
+                                                                INT_PTR ptrLoadContextBinder);
 
     static FCDECL1(FC_BOOL_RET, IsFrameworkAssembly, AssemblyNameBaseObject* refAssemblyNameUNSAFE);
     static FCDECL1(FC_BOOL_RET, IsNewPortableAssembly, AssemblyNameBaseObject* refAssemblyNameUNSAFE);
