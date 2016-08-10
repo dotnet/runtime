@@ -45,6 +45,7 @@ win32_priority_to_posix_priority (MonoThreadPriority priority, int policy)
 {
 	g_assert (priority >= MONO_THREAD_PRIORITY_LOWEST);
 	g_assert (priority <= MONO_THREAD_PRIORITY_HIGHEST);
+	g_assert (MONO_THREAD_PRIORITY_LOWEST < MONO_THREAD_PRIORITY_HIGHEST);
 
 /* Necessary to get valid priority range */
 #ifdef _POSIX_PRIORITY_SCHEDULING
@@ -53,9 +54,14 @@ win32_priority_to_posix_priority (MonoThreadPriority priority, int policy)
 	min = sched_get_priority_min (policy);
 	max = sched_get_priority_max (policy);
 
-	/* Partition priority range linearly (cross-multiply) */
-	if (max > 0 && min >= 0 && max > min)
-		return (int)((double) priority * (max - min) / (MONO_THREAD_PRIORITY_HIGHEST - MONO_THREAD_PRIORITY_LOWEST));
+	if (max > 0 && min >= 0 && max > min) {
+		double srange, drange, sposition, dposition;
+		srange = MONO_THREAD_PRIORITY_HIGHEST - MONO_THREAD_PRIORITY_LOWEST;
+		drange = max - min;
+		sposition = priority - MONO_THREAD_PRIORITY_LOWEST;
+		dposition = (sposition / srange) * drange;
+		return (int)(dposition + min);
+	}
 #endif
 
 	switch (policy) {
