@@ -285,6 +285,20 @@ int ExecuteManagedAssembly(
     // Indicates failure
     int exitCode = -1;
 
+#ifdef _TARGET_ARM_
+    // libunwind library is used to unwind stack frame, but libunwind for ARM
+    // does not support ARM vfpv3/NEON registers in DWARF format correctly.
+    // Therefore let's disable stack unwinding using DWARF information
+    // See https://github.com/dotnet/coreclr/issues/6698
+    //
+    // libunwind use following methods to unwind stack frame.
+    // UNW_ARM_METHOD_ALL          0xFF
+    // UNW_ARM_METHOD_DWARF        0x01
+    // UNW_ARM_METHOD_FRAME        0x02
+    // UNW_ARM_METHOD_EXIDX        0x04
+    putenv(const_cast<char *>("UNW_ARM_UNWIND_METHOD=6"));
+#endif // _TARGET_ARM_
+
     std::string coreClrDllPath(clrFilesAbsolutePath);
     coreClrDllPath.append("/");
     coreClrDllPath.append(coreClrDll);
