@@ -496,6 +496,7 @@ namespace Microsoft.Extensions.DependencyModel
             string hash = null;
             string type = null;
             bool serviceable = false;
+            string path = null;
 
             reader.ReadStartObject();
 
@@ -512,6 +513,9 @@ namespace Microsoft.Extensions.DependencyModel
                     case DependencyContextStrings.ServiceablePropertyName:
                         serviceable = reader.ReadAsBoolean().GetValueOrDefault(false);
                         break;
+                    case DependencyContextStrings.PathPropertyName:
+                        path = reader.ReadAsString();
+                        break;
                     default:
                         throw new FormatException($"Unknown property name '{reader.Value}'");
                 }
@@ -523,7 +527,8 @@ namespace Microsoft.Extensions.DependencyModel
             {
                 Hash = hash,
                 Type = Pool(type),
-                Serviceable = serviceable
+                Serviceable = serviceable,
+                Path = path
             };
         }
 
@@ -632,12 +637,21 @@ namespace Microsoft.Extensions.DependencyModel
                     nativeLibraryGroups: nativeLibraryGroups,
                     resourceAssemblies: targetLibrary.Resources ?? Enumerable.Empty<ResourceAssembly>(),
                     dependencies: targetLibrary.Dependencies,
-                    serviceable: stub.Serviceable);
+                    serviceable: stub.Serviceable,
+                    path: stub.Path);
             }
             else
             {
                 var assemblies = (targetLibrary.Compilations != null) ? targetLibrary.Compilations : Enumerable.Empty<string>();
-                return new CompilationLibrary(stub.Type, name, version, stub.Hash, assemblies, targetLibrary.Dependencies, stub.Serviceable);
+                return new CompilationLibrary(
+                    stub.Type,
+                    name,
+                    version,
+                    stub.Hash,
+                    assemblies,
+                    targetLibrary.Dependencies,
+                    stub.Serviceable,
+                    stub.Path);
             }
         }
 
@@ -699,6 +713,8 @@ namespace Microsoft.Extensions.DependencyModel
             public string Type;
 
             public bool Serviceable;
+
+            public string Path;
         }
     }
 }

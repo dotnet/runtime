@@ -17,7 +17,19 @@ namespace Microsoft.Extensions.DependencyModel
             IEnumerable<string> assemblies,
             IEnumerable<Dependency> dependencies,
             bool serviceable)
-            : base(type, name, version, hash,  dependencies, serviceable)
+            : this(type, name, version, hash, assemblies, dependencies, serviceable, path: null)
+        {
+        }
+
+        public CompilationLibrary(string type,
+            string name,
+            string version,
+            string hash,
+            IEnumerable<string> assemblies,
+            IEnumerable<Dependency> dependencies,
+            bool serviceable,
+            string path)
+            : base(type, name, version, hash, dependencies, serviceable, path)
         {
             if (assemblies == null)
             {
