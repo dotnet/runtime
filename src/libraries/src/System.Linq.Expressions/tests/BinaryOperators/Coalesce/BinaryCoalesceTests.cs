@@ -995,13 +995,18 @@ namespace System.Linq.Expressions.Tests
             double? d = 0;
             var left = Expression.Constant(d, typeof(double?));
             var right = Expression.Constant(i, typeof(int?));
-            Expression<Func<double?, int?>> conversion = x => (int?)x;
+            Expression<Func<double?, int?>> conversion = x => 1 + (int?)x;
 
-            BinaryExpression exp = Expression.Coalesce(left, right, conversion);
+            BinaryExpression actual = Expression.Coalesce(left, right, conversion);
 
-            Assert.Equal(conversion, exp.Conversion);
-            Assert.Equal(exp.Right.Type, exp.Type);
-            Assert.Equal(ExpressionType.Coalesce, exp.NodeType);
+            Assert.Equal(conversion, actual.Conversion);
+            Assert.Equal(actual.Right.Type, actual.Type);
+            Assert.Equal(ExpressionType.Coalesce, actual.NodeType);
+
+            // Compile and evaluate with interpretation flag and without
+            // in case there are bugs in the compiler/interpreter. 
+            Assert.Equal(2, conversion.Compile(false).Invoke(1.1));
+            Assert.Equal(2, conversion.Compile(true).Invoke(1.1));
         }
 
         [Fact]
