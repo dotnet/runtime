@@ -1,11 +1,11 @@
 {
   "dependencies": {
-    "System.Runtime": "4.2.0-beta-devapi-24410-02",
-    "System.IO": "4.2.0-beta-devapi-24410-02",
-    "System.Collections.NonGeneric": "4.1.0-beta-devapi-24410-02",
-    "System.Collections.Specialized": "4.0.2-beta-devapi-24410-02",
-    "System.Runtime.Serialization.Primitives": "4.2.0-beta-devapi-24410-02",
-    "System.Text.Encoding": "4.0.12-beta-devapi-24410-02"
+    "System.Runtime": "4.2.0-beta-devapi-24411-01",
+    "System.IO": "4.2.0-beta-devapi-24411-01",
+    "System.Collections.NonGeneric": "4.1.0-beta-devapi-24411-01",
+    "System.Collections.Specialized": "4.0.2-beta-devapi-24411-01",
+    "System.Runtime.Serialization.Primitives": "4.2.0-beta-devapi-24411-01",
+    "System.Text.Encoding": "4.0.12-beta-devapi-24411-01"
   },
   "frameworks": {
     "netstandard1.3": {
