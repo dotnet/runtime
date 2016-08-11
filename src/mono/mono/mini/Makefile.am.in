@@ -697,8 +697,16 @@ checktests: $(regtests)
 	for i in $(regtests); do $(MINI_RUNTIME) $$i; done
 
 rcheck-nunit: mono $(regtests)
-	-($(MINI_RUNTIME) --regression $(regtests); echo $$? > regressionexitcode.out) | $(srcdir)/emitnunit.pl
-	exit $$(cat regressionexitcode.out)
+	$(MINI_RUNTIME) --regression $(regtests) > regressiontests.out 2>&1; cat regressiontests.out; \
+	if grep -q "100% pass" regressiontests.out; then successbool=True; failurescount=0; else successbool=False; failurescount=1; fi; \
+	echo "<?xml version='1.0' encoding='utf-8'?>\
+		<test-results failures='$$failurescount' total='1' not-run='0' name='regression-tests.dummy' date='$$(date +%F)' time='$$(date +%T)'>\
+			<test-suite name='regression-tests.dummy' success='$$successbool' time='0'>\
+				<results><test-case name='MonoTests.regressions.100percentsuccess' executed='True' success='$$successbool' time='0'>" > TestResult-regression.xml; \
+					if [ "$$successbool" = "False" ]; then echo "<failure><message>$$(cat regressiontests.out)</message><stack-trace></stack-trace></failure>" >> TestResult-regression.xml; fi; \
+				echo "</test-case></results>\
+			</test-suite>\
+		</test-results>" >> TestResult-regression.xml; exit $$failurescount
 
 rcheck: mono $(regtests)
 	$(MINI_RUNTIME) --regression $(regtests)
