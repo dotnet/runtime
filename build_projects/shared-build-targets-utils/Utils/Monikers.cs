@@ -17,7 +17,7 @@ namespace Microsoft.DotNet.Cli.Build
 
         public static string GetProductMoniker(BuildTargetContext c, string artifactPrefix, string version)
         {
-            string rid = RuntimeEnvironment.GetRuntimeIdentifier();
+            string rid = Environment.GetEnvironmentVariable("TARGETRID") ?? RuntimeEnvironment.GetRuntimeIdentifier();
 
             if (rid == "ubuntu.16.04-x64" || rid == "fedora.23-x64" || rid == "opensuse.13.2-x64")
             {
@@ -26,7 +26,7 @@ namespace Microsoft.DotNet.Cli.Build
             else
             {
                 string osname = GetOSShortName();
-                var arch = CurrentArchitecture.Current.ToString();
+                string arch = Environment.GetEnvironmentVariable("TARGETPLATFORM") ?? CurrentArchitecture.Current.ToString();
                 return $"{artifactPrefix}-{osname}-{arch}.{version}";
             }
         }
