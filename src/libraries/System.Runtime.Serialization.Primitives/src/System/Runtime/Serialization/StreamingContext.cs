@@ -21,18 +21,18 @@ namespace System.Runtime.Serialization
         internal Object m_additionalContext;
         internal StreamingContextStates m_state;
 
-        public StreamingContext(StreamingContextStates state)
+        internal StreamingContext(StreamingContextStates state)
             : this(state, null)
         {
         }
 
-        public StreamingContext(StreamingContextStates state, Object additional)
+        internal StreamingContext(StreamingContextStates state, Object additional)
         {
             m_state = state;
             m_additionalContext = additional;
         }
 
-        public Object Context
+        internal Object Context
         {
             get { return m_additionalContext; }
         }
@@ -52,7 +52,7 @@ namespace System.Runtime.Serialization
             return (int)m_state;
         }
 
-        public StreamingContextStates State
+        internal StreamingContextStates State
         {
             get { return m_state; }
         }
@@ -62,7 +62,7 @@ namespace System.Runtime.Serialization
     // Keep these in sync with the version in vm\runtimehandles.h
     // **********************************************************
     [Flags]
-    public enum StreamingContextStates
+    internal enum StreamingContextStates
     {
         CrossProcess = 0x01,
         CrossMachine = 0x02,
