@@ -1063,6 +1063,7 @@ FaultingExceptionFrame_FrameOffset        SETA  SIZEOF__GSCookie
 ;   x12       contains our contract the DispatchToken
 ; Must be preserved:
 ;   x0        contains the instance object ref that we are making an interface call on
+;   x9        Must point to a ResolveCacheElem [For Sanity]
 ;  [x1-x7]    contains any additional register arguments for the interface method
 ;
 ; Loaded from x0 
@@ -1088,7 +1089,7 @@ PROMOTE_CHAIN_FLAG  SETA  2
         
         ldr     x13, [x0]         ; retrieve the MethodTable from the object ref in x0
 MainLoop 
-        ldr     x9, [x9, #24]     ; x9 <= the next entry in the chain
+        ldr     x9, [x9, #ResolveCacheElem__pNext]     ; x9 <= the next entry in the chain
         cmp     x9, #0
         beq     Fail
 
@@ -1101,18 +1102,18 @@ MainLoop
         
 Success         
         ldr     x13, =g_dispatch_cache_chain_success_counter
-        ldr     x9, [x13]
-        subs    x9, x9, #1
-        str     x9, [x13]
+        ldr     x16, [x13]
+        subs    x16, x16, #1
+        str     x16, [x13]
         blt     Promote
 
-        ldr     x16, [x9, #16]    ; get the ImplTarget
+        ldr     x16, [x9, #ResolveCacheElem__target]    ; get the ImplTarget
         br      x16               ; branch to interface implemenation target
         
 Promote
                                   ; Move this entry to head postion of the chain
-        mov     x9, #256
-        str     x9, [x13]         ; be quick to reset the counter so we don't get a bunch of contending threads
+        mov     x16, #256
+        str     x16, [x13]         ; be quick to reset the counter so we don't get a bunch of contending threads
         orr     x11, x11, #PROMOTE_CHAIN_FLAG   ; set PROMOTE_CHAIN_FLAG 
 
 Fail           
