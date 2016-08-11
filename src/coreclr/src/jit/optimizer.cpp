@@ -3455,6 +3455,13 @@ void                Compiler::fgOptWhileLoop(BasicBlock * block)
         copyOfCondStmt->gtStmt.gtStmtILoffsx = condStmt->gtStmt.gtStmtILoffsx;
 #endif
 
+    // Flag the block that received the copy as potentially having an array/vtable
+    // reference if the block copied from did; this is a conservative guess.
+    if (auto copyFlags = bTest->bbFlags & (BBF_HAS_VTABREF | BBF_HAS_IDX_LEN))
+    {
+        block->bbFlags |= copyFlags;
+    }
+
     // If we have profile data for all blocks and we know that we are cloning the 
     //  bTest block into block and thus changing the control flow from block so
     //  that it no longer goes directly to bTest anymore, we have to adjust the 

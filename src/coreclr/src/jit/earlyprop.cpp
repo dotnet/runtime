@@ -27,7 +27,7 @@ bool Compiler::optDoEarlyPropForFunc()
 
 bool Compiler::optDoEarlyPropForBlock(BasicBlock* block)
 {
-    bool bbHasArrayRef = (block->bbFlags & BBF_HAS_INDX) != 0;
+    bool bbHasArrayRef = (block->bbFlags & BBF_HAS_IDX_LEN) != 0;
     bool bbHasVtableRef = (block->bbFlags & BBF_HAS_VTABREF) != 0;
     bool bbHasNullCheck = (block->bbFlags & BBF_HAS_NULLCHECK) != 0;
     return bbHasArrayRef || bbHasVtableRef || bbHasNullCheck;
