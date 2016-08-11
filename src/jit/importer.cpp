@@ -10108,7 +10108,7 @@ ARR_LD_POST_VERIFY:
                     op2->gtOper == GT_CNS_INT ||
                     op2->gtOper == GT_ADD)
                 {
-                    block->bbFlags |= BBF_HAS_INDX;
+                    block->bbFlags |= BBF_HAS_IDX_LEN;
                     optMethodFlags |= OMF_HAS_ARRAYREF;
                 }
             }
@@ -10337,7 +10337,7 @@ ARR_LD_POST_VERIFY:
                     op1->gtOper == GT_CNS_INT ||
                     op1->gtOper == GT_ADD)
                 {
-                    block->bbFlags |= BBF_HAS_INDX;
+                    block->bbFlags |= BBF_HAS_IDX_LEN;
                     optMethodFlags |= OMF_HAS_ARRAYREF;
                 }
             }
@@ -13845,6 +13845,14 @@ OBJ:
                 /* Use GT_ARR_LENGTH operator so rng check opts see this */
                 GenTreeArrLen* arrLen = new (this, GT_ARR_LENGTH) GenTreeArrLen(TYP_INT, op1, offsetof(CORINFO_Array, length)
                                                                                );
+
+                /* Mark the block as containing a length expression */
+
+                if (op1->gtOper == GT_LCL_VAR)
+                {
+                  block->bbFlags |= BBF_HAS_IDX_LEN;
+                }
+
                 op1 = arrLen;
             }
             else

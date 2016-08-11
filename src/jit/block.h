@@ -316,7 +316,7 @@ struct BasicBlock
                                         // we've determined that all paths in the loop body leading to BB
                                         // include a call.
 #define BBF_HAS_VTABREF     0x00100000  // BB contains reference of vtable
-#define BBF_HAS_INDX        0x00200000  // BB contains simple index expressions on a array local var.
+#define BBF_HAS_IDX_LEN     0x00200000  // BB contains simple index or length expressions on an array local var.
 #define BBF_HAS_NEWARRAY    0x00400000  // BB contains 'new' of an array
 #define BBF_HAS_NEWOBJ      0x00800000  // BB contains 'new' of an object type. 
 
@@ -349,7 +349,7 @@ struct BasicBlock
 #define BBF_COMPACT_UPD (BBF_CHANGED     |                                    \
                          BBF_GC_SAFE_POINT | BBF_HAS_JMP |                    \
                          BBF_NEEDS_GCPOLL |                                   \
-                         BBF_HAS_INDX      | BBF_BACKWARD_JUMP |              \
+                         BBF_HAS_IDX_LEN  | BBF_BACKWARD_JUMP |              \
                          BBF_HAS_NEWARRAY  | BBF_HAS_NEWOBJ)
 
 // Flags a block should not have had before it is split.
@@ -379,7 +379,7 @@ struct BasicBlock
 
 #define BBF_SPLIT_GAINED   (BBF_DONT_REMOVE | BBF_HAS_LABEL     |                \
                             BBF_HAS_JMP     | BBF_BACKWARD_JUMP |                \
-                            BBF_HAS_INDX    | BBF_HAS_NEWARRAY  |                \
+                            BBF_HAS_IDX_LEN | BBF_HAS_NEWARRAY  |                \
                             BBF_PROF_WEIGHT | BBF_HAS_NEWOBJ    |                \
                             BBF_KEEP_BBJ_ALWAYS)
 
