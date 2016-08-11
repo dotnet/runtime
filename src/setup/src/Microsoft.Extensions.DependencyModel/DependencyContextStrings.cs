@@ -23,6 +23,8 @@ namespace Microsoft.Extensions.DependencyModel
 
         internal const string Sha512PropertyName = "sha512";
 
+        internal const string PathPropertyName = "path";
+
         internal const string TypePropertyName = "type";
 
         internal const string ServiceablePropertyName = "serviceable";

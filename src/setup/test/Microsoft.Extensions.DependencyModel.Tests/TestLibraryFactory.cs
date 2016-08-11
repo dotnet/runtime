@@ -12,6 +12,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
         public static readonly string DefaultVersion = "1.2.3.7";
         public static readonly Dependency[] DefaultDependencies = { };
         public static readonly bool DefaultServiceable = true;
+        public static readonly string DefaultPath = "MyPackagePath";
 
         public static readonly string DefaultAssembly = "My.Package.dll";
         public static readonly string SecondAssembly = "My.PackageEx.dll";
@@ -37,7 +38,8 @@ namespace Microsoft.Extensions.DependencyModel.Tests
             string hash = null,
             string[] assemblies = null,
             Dependency[] dependencies = null,
-            bool? serviceable = null)
+            bool? serviceable = null,
+            string path = null)
         {
             return new CompilationLibrary(
                 libraryType ?? DefaultType,
@@ -46,8 +48,8 @@ namespace Microsoft.Extensions.DependencyModel.Tests
                 hash ?? DefaultHash,
                 assemblies ?? DefaultAssemblies,
                 dependencies ?? DefaultDependencies,
-                serviceable ?? DefaultServiceable
-                );
+                serviceable ?? DefaultServiceable,
+                path ?? DefaultPath);
         }
     }
 
