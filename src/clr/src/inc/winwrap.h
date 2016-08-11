@@ -49,7 +49,7 @@
 #include "registrywrapper.h"
 #include "longfilepathwrappers.h"
 
-#ifdef _PREFAST_
+#if defined(_PREFAST_) || defined(SOURCE_FORMATTING)
 //
 // For PREFAST we don't want the C_ASSERT to be expanded since it always
 // involves the comparison of two constants which causes PREfast warning 326

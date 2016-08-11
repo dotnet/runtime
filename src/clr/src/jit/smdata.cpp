@@ -4,8 +4,8 @@
 
 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 //
-//   Automatically generated code. DO NOT MODIFY! 
-//   To generate this file. Do "smgen.exe > SMData.cpp" 
+//   Automatically generated code. DO NOT MODIFY!
+//   To generate this file. Do "smgen.exe > SMData.cpp"
 //
 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -270,9 +270,9 @@ const SMState g_SMStates[] =
 };
 // clang-format on
 
-static_assert_no_msg(NUM_SM_STATES == sizeof(g_SMStates)/sizeof(g_SMStates[0]));
+static_assert_no_msg(NUM_SM_STATES == sizeof(g_SMStates) / sizeof(g_SMStates[0]));
 
-const SMState * gp_SMStates = g_SMStates;
+const SMState* gp_SMStates = g_SMStates;
 
 //
 // JumpTableCells in the state machine
@@ -702,5 +702,4 @@ const JumpTableCell g_SMJumpTableCells[] =
 };
 // clang-format on
 
-const JumpTableCell * gp_SMJumpTableCells = g_SMJumpTableCells;
-
+const JumpTableCell* gp_SMJumpTableCells = g_SMJumpTableCells;

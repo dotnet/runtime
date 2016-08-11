@@ -12,7 +12,7 @@
 #ifndef CLRTYPES_H_
 #define CLRTYPES_H_
 
-#if defined(_MSC_VER) && (!defined(FEATURE_CORECLR) || defined(FEATURE_CORESYSTEM))
+#if defined(_MSC_VER) && !defined(SOURCE_FORMATTING) && (!defined(FEATURE_CORECLR) || defined(FEATURE_CORESYSTEM))
     // Prefer intsafe.h when available, which defines many of the MAX/MIN
     // values below (which is why they are in #ifndef blocks).
     #include <intsafe.h>

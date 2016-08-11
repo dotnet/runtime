@@ -33,11 +33,12 @@ GenTreePtr LC_Array::ToGenTree(Compiler* comp)
     if (type == Jagged)
     {
         // Create a a[i][j][k].length type node.
-        GenTreePtr arr = comp->gtNewLclvNode(arrIndex->arrLcl, comp->lvaTable[arrIndex->arrLcl].lvType);
-        int rank = GetDimRank();
+        GenTreePtr arr  = comp->gtNewLclvNode(arrIndex->arrLcl, comp->lvaTable[arrIndex->arrLcl].lvType);
+        int        rank = GetDimRank();
         for (int i = 0; i < rank; ++i)
         {
-            arr = comp->gtNewIndexRef(TYP_REF, arr, comp->gtNewLclvNode(arrIndex->indLcls[i], comp->lvaTable[arrIndex->indLcls[i]].lvType));
+            arr = comp->gtNewIndexRef(TYP_REF, arr, comp->gtNewLclvNode(arrIndex->indLcls[i],
+                                                                        comp->lvaTable[arrIndex->indLcls[i]].lvType));
         }
         // If asked for arrlen invoke arr length operator.
         if (oper == ArrLen)
@@ -74,22 +75,22 @@ GenTreePtr LC_Ident::ToGenTree(Compiler* comp)
     // Convert to GenTree nodes.
     switch (type)
     {
-    case Const:
+        case Const:
 #ifdef _TARGET_64BIT_
-        return comp->gtNewLconNode(constant);
+            return comp->gtNewLconNode(constant);
 #else
-        return comp->gtNewIconNode((ssize_t) constant);
+            return comp->gtNewIconNode((ssize_t)constant);
 #endif
-    case Var:
-        return comp->gtNewLclvNode((unsigned) constant, comp->lvaTable[constant].lvType);
-    case ArrLen:
-        return arrLen.ToGenTree(comp);
-    case Null:
-        return comp->gtNewIconNode(0, TYP_REF);
-    default:
-        assert(!"Could not convert LC_Ident to GenTree");
-        unreached();
-        break;
+        case Var:
+            return comp->gtNewLclvNode((unsigned)constant, comp->lvaTable[constant].lvType);
+        case ArrLen:
+            return arrLen.ToGenTree(comp);
+        case Null:
+            return comp->gtNewIconNode(0, TYP_REF);
+        default:
+            assert(!"Could not convert LC_Ident to GenTree");
+            unreached();
+            break;
     }
 }
 
@@ -108,21 +109,20 @@ GenTreePtr LC_Expr::ToGenTree(Compiler* comp)
     // Convert to GenTree nodes.
     switch (type)
     {
-    case Ident:
-        return ident.ToGenTree(comp);
-    case IdentPlusConst:
+        case Ident:
+            return ident.ToGenTree(comp);
+        case IdentPlusConst:
 #ifdef _TARGET_64BIT_
-        return comp->gtNewOperNode(GT_ADD, TYP_LONG, ident.ToGenTree(comp), comp->gtNewLconNode(constant));
+            return comp->gtNewOperNode(GT_ADD, TYP_LONG, ident.ToGenTree(comp), comp->gtNewLconNode(constant));
 #else
-        return comp->gtNewOperNode(GT_ADD, TYP_INT, ident.ToGenTree(comp), comp->gtNewIconNode((ssize_t) constant));
+            return comp->gtNewOperNode(GT_ADD, TYP_INT, ident.ToGenTree(comp), comp->gtNewIconNode((ssize_t)constant));
 #endif
-    default:
-        assert(!"Could not convert LC_Expr to GenTree");
-        unreached();
-        break;
+        default:
+            assert(!"Could not convert LC_Expr to GenTree");
+            unreached();
+            break;
     }
 }
-
 
 //--------------------------------------------------------------------------------------------------
 // ToGenTree - Convert a "condition" into a gentree node.
@@ -138,7 +138,6 @@ GenTreePtr LC_Condition::ToGenTree(Compiler* comp)
     return comp->gtNewOperNode(oper, TYP_INT, op1.ToGenTree(comp), op2.ToGenTree(comp));
 }
 
-
 //--------------------------------------------------------------------------------------------------
 // Evaluates - Evaluate a given loop cloning condition if it can be statically evaluated.
 //
@@ -153,31 +152,31 @@ bool LC_Condition::Evaluates(bool* pResult)
 {
     switch (oper)
     {
-    case GT_EQ:
-    case GT_GE:
-    case GT_LE:
-        // If op1 == op2 then equality should result in true.
-        if (op1 == op2)
-        {
-            *pResult = true;
-            return true;
-        }
-        break;
+        case GT_EQ:
+        case GT_GE:
+        case GT_LE:
+            // If op1 == op2 then equality should result in true.
+            if (op1 == op2)
+            {
+                *pResult = true;
+                return true;
+            }
+            break;
 
-    case GT_GT:
-    case GT_LT:
-    case GT_NE:
-        // If op1 == op2 then inequality should result in false.
-        if (op1 == op2)
-        {
-            *pResult = false;
-            return true;
-        }
-        break;
+        case GT_GT:
+        case GT_LT:
+        case GT_NE:
+            // If op1 == op2 then inequality should result in false.
+            if (op1 == op2)
+            {
+                *pResult = false;
+                return true;
+            }
+            break;
 
-    default:
-        // for all other 'oper' kinds, we will return false
-        break;
+        default:
+            // for all other 'oper' kinds, we will return false
+            break;
     }
     return false;
 }
@@ -211,7 +210,7 @@ bool LC_Condition::Combines(const LC_Condition& cond, LC_Condition* newCond)
         return true;
     }
     else if ((oper == GT_LT || oper == GT_LE || oper == GT_GT || oper == GT_GE) &&
-            GenTree::ReverseRelop(oper) == cond.oper && op1 == cond.op2 && op2 == cond.op1)
+             GenTree::ReverseRelop(oper) == cond.oper && op1 == cond.op2 && op2 == cond.op1)
     {
         *newCond = *this;
         return true;
@@ -290,7 +289,6 @@ ExpandArrayStack<LC_Condition>* LoopCloneContext::EnsureConditions(unsigned loop
     }
     return conditions[loopNum];
 }
-
 
 //--------------------------------------------------------------------------------------------------
 // GetConditions - Get the cloning conditions array for the loop, no allocation.
@@ -378,7 +376,8 @@ ExpandArrayStack<ExpandArrayStack<LC_Condition>*>* LoopCloneContext::GetBlockCon
 // Return Values:
 //      Return block conditions.
 //
-ExpandArrayStack<ExpandArrayStack<LC_Condition>*>* LoopCloneContext::EnsureBlockConditions(unsigned loopNum, unsigned condBlocks)
+ExpandArrayStack<ExpandArrayStack<LC_Condition>*>* LoopCloneContext::EnsureBlockConditions(unsigned loopNum,
+                                                                                           unsigned condBlocks)
 {
     if (blockConditions[loopNum] == nullptr)
     {
@@ -407,7 +406,10 @@ void LoopCloneContext::PrintBlockConditions(unsigned loopNum)
         JITDUMP("%d = {", i);
         for (unsigned j = 0; j < ((*levelCond)[i])->Size(); ++j)
         {
-            if (j != 0) { JITDUMP(" & "); }
+            if (j != 0)
+            {
+                JITDUMP(" & ");
+            }
             (*((*levelCond)[i]))[j].Print();
         }
         JITDUMP("}\n");
@@ -440,7 +442,7 @@ void LoopCloneContext::PrintBlockConditions(unsigned loopNum)
 //      "pAnyFalse" could be false if no other condition statically evaluates to "false".
 void LoopCloneContext::EvaluateConditions(unsigned loopNum, bool* pAllTrue, bool* pAnyFalse DEBUGARG(bool verbose))
 {
-    bool allTrue = true;
+    bool allTrue  = true;
     bool anyFalse = false;
 
     ExpandArrayStack<LC_Condition>& conds = *conditions[loopNum];
@@ -477,10 +479,9 @@ void LoopCloneContext::EvaluateConditions(unsigned loopNum, bool* pAllTrue, bool
     }
 
     JITDUMP("Evaluation result allTrue = %d, anyFalse = %d\n", allTrue, anyFalse);
-    *pAllTrue = allTrue;
+    *pAllTrue  = allTrue;
     *pAnyFalse = anyFalse;
 }
-
 
 //--------------------------------------------------------------------------------------------------
 // OptimizeConditions - Evaluate the loop cloning conditions statically, if they can be evaluated
@@ -534,7 +535,7 @@ void LoopCloneContext::OptimizeConditions(ExpandArrayStack<LC_Condition>& conds)
             {
                 conds.Remove(j);
                 conds[i] = newCond;
-                i = -1;
+                i        = -1;
                 break;
             }
         }
@@ -647,7 +648,10 @@ void LoopCloneContext::PrintConditions(unsigned loopNum)
     }
     for (unsigned i = 0; i < conditions[loopNum]->Size(); ++i)
     {
-        if (i != 0) { JITDUMP(" & "); }
+        if (i != 0)
+        {
+            JITDUMP(" & ");
+        }
         (*conditions[loopNum])[i].Print();
     }
 }
@@ -669,7 +673,10 @@ void LoopCloneContext::PrintConditions(unsigned loopNum)
 // Return Values:
 //      None.
 //
-void LoopCloneContext::CondToStmtInBlock(Compiler* comp, ExpandArrayStack<LC_Condition>& conds, BasicBlock* block, bool reverse)
+void LoopCloneContext::CondToStmtInBlock(Compiler*                       comp,
+                                         ExpandArrayStack<LC_Condition>& conds,
+                                         BasicBlock*                     block,
+                                         bool                            reverse)
 {
     noway_assert(conds.Size() > 0);
 
@@ -686,7 +693,7 @@ void LoopCloneContext::CondToStmtInBlock(Compiler* comp, ExpandArrayStack<LC_Con
 
     // Add jmpTrue "cond == 0" to slow path.
     GenTreePtr stmt = comp->fgNewStmtFromTree(comp->gtNewOperNode(GT_JTRUE, TYP_VOID, cond));
-    
+
     // Add stmt to the block.
     comp->fgInsertStmtAtEnd(block, stmt);
 
@@ -699,7 +706,7 @@ void LoopCloneContext::CondToStmtInBlock(Compiler* comp, ExpandArrayStack<LC_Con
 //
 // Arguments:
 //      None.
-// 
+//
 // Operation:
 //      If level is 0, then just return the array base. Else return the index variable on dim 'level'
 //
@@ -709,7 +716,10 @@ void LoopCloneContext::CondToStmtInBlock(Compiler* comp, ExpandArrayStack<LC_Con
 unsigned LC_Deref::Lcl()
 {
     unsigned lvl = level;
-    if (lvl == 0) return array.arrIndex->arrLcl;
+    if (lvl == 0)
+    {
+        return array.arrIndex->arrLcl;
+    }
     lvl--;
     return array.arrIndex->indLcls[lvl];
 }
@@ -719,7 +729,7 @@ unsigned LC_Deref::Lcl()
 //
 // Arguments:
 //      None.
-// 
+//
 // Return Values:
 //      Return true if children are present.
 //
@@ -734,7 +744,7 @@ bool LC_Deref::HasChildren()
 // Arguments:
 //      conds       An array of conditions for each level i.e., (level x conditions). This array will
 //                  contain the conditions for the tree at the end of the method.
-// 
+//
 // Operation:
 //      level0 yields only (a != null) condition. All other levels yield two conditions:
 //      (level < a[...].length && a[...][level] != null)
@@ -747,23 +757,22 @@ void LC_Deref::DeriveLevelConditions(ExpandArrayStack<ExpandArrayStack<LC_Condit
     if (level == 0)
     {
         // For level 0, just push (a != null).
-        (*conds)[level]->Push(LC_Condition(GT_NE,
-                    LC_Expr(LC_Ident(Lcl(), LC_Ident::Var)), LC_Expr(LC_Ident(LC_Ident::Null))));
+        (*conds)[level]->Push(
+            LC_Condition(GT_NE, LC_Expr(LC_Ident(Lcl(), LC_Ident::Var)), LC_Expr(LC_Ident(LC_Ident::Null))));
     }
     else
     {
         // Adjust for level0 having just 1 condition and push condition (i < a.len).
         LC_Array arrLen = array;
-        arrLen.oper = LC_Array::ArrLen;
-        arrLen.dim = level - 1;
-        (*conds)[level * 2 - 1]->Push(LC_Condition(GT_LT,
-                LC_Expr(LC_Ident(Lcl(), LC_Ident::Var)), LC_Expr(LC_Ident(arrLen))));
-        
+        arrLen.oper     = LC_Array::ArrLen;
+        arrLen.dim      = level - 1;
+        (*conds)[level * 2 - 1]->Push(
+            LC_Condition(GT_LT, LC_Expr(LC_Ident(Lcl(), LC_Ident::Var)), LC_Expr(LC_Ident(arrLen))));
+
         // Push condition (a[i] != null)
         LC_Array arrTmp = array;
-        arrTmp.dim = level;
-        (*conds)[level * 2]->Push(LC_Condition(GT_NE,
-                LC_Expr(LC_Ident(arrTmp)), LC_Expr(LC_Ident(LC_Ident::Null))));
+        arrTmp.dim      = level;
+        (*conds)[level * 2]->Push(LC_Condition(GT_NE, LC_Expr(LC_Ident(arrTmp)), LC_Expr(LC_Ident(LC_Ident::Null))));
     }
 
     // Invoke on the children recursively.
@@ -781,7 +790,7 @@ void LC_Deref::DeriveLevelConditions(ExpandArrayStack<ExpandArrayStack<LC_Condit
 //
 // Arguments:
 //      alloc   IAllocator instance
-// 
+//
 // Return Values:
 //      None
 //
@@ -798,7 +807,7 @@ void LC_Deref::EnsureChildren(IAllocator* alloc)
 //
 // Arguments:
 //      lcl     the local to find in the children array
-// 
+//
 // Return Values:
 //      The child node if found or nullptr.
 //
@@ -813,7 +822,7 @@ LC_Deref* LC_Deref::Find(unsigned lcl)
 // Arguments:
 //      lcl          the local to find.
 //      children     the list of nodes to find the node representing the lcl.
-// 
+//
 // Return Values:
 //      The node if found or nullptr.
 //
@@ -834,4 +843,3 @@ LC_Deref* LC_Deref::Find(ExpandArrayStack<LC_Deref*>* children, unsigned lcl)
     }
     return nullptr;
 }
-

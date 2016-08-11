@@ -17,7 +17,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #define _BLOCK_H_
 /*****************************************************************************/
 
-#include "vartype.h"    // For "var_types.h"
+#include "vartype.h" // For "var_types.h"
 #include "_typeinfo.h"
 /*****************************************************************************/
 
@@ -32,19 +32,18 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 /*****************************************************************************/
 
 #if LARGE_EXPSET
-typedef   unsigned  __int64   EXPSET_TP;
-#define                       EXPSET_SZ   64
+typedef unsigned __int64 EXPSET_TP;
+#define EXPSET_SZ 64
 #else
-typedef   unsigned  int       EXPSET_TP;
-#define                       EXPSET_SZ   32
+typedef unsigned int EXPSET_TP;
+#define EXPSET_SZ 32
 #endif
 
-#define   EXPSET_ALL          ((EXPSET_TP)0-1)
+#define EXPSET_ALL ((EXPSET_TP)0 - 1)
 
-typedef   BitVec              ASSERT_TP;
-typedef   BitVec_ValArg_T     ASSERT_VALARG_TP;
-typedef   BitVec_ValRet_T     ASSERT_VALRET_TP;
-
+typedef BitVec          ASSERT_TP;
+typedef BitVec_ValArg_T ASSERT_VALARG_TP;
+typedef BitVec_ValRet_T ASSERT_VALRET_TP;
 
 /*****************************************************************************
  *
@@ -52,38 +51,38 @@ typedef   BitVec_ValRet_T     ASSERT_VALRET_TP;
  *  of the following enumeration.
  */
 
-DECLARE_TYPED_ENUM(BBjumpKinds,BYTE)
+DECLARE_TYPED_ENUM(BBjumpKinds, BYTE)
 {
-    BBJ_EHFINALLYRET,   // block ends with 'endfinally' (for finally or fault)
-    BBJ_EHFILTERRET,    // block ends with 'endfilter'
-    BBJ_EHCATCHRET,     // block ends with a leave out of a catch (only #if FEATURE_EH_FUNCLETS)
-    BBJ_THROW,          // block ends with 'throw'
-    BBJ_RETURN,         // block ends with 'ret'
+    BBJ_EHFINALLYRET,    // block ends with 'endfinally' (for finally or fault)
+        BBJ_EHFILTERRET, // block ends with 'endfilter'
+        BBJ_EHCATCHRET,  // block ends with a leave out of a catch (only #if FEATURE_EH_FUNCLETS)
+        BBJ_THROW,       // block ends with 'throw'
+        BBJ_RETURN,      // block ends with 'ret'
 
-    BBJ_NONE,           // block flows into the next one (no jump)
+        BBJ_NONE, // block flows into the next one (no jump)
 
-    BBJ_ALWAYS,         // block always jumps to the target
-    BBJ_LEAVE,          // block always jumps to the target, maybe out of guarded
-                        // region. Used temporarily until importing
-    BBJ_CALLFINALLY,    // block always calls the target finally
-    BBJ_COND,           // block conditionally jumps to the target
-    BBJ_SWITCH,         // block ends with a switch statement
+        BBJ_ALWAYS,      // block always jumps to the target
+        BBJ_LEAVE,       // block always jumps to the target, maybe out of guarded
+                         // region. Used temporarily until importing
+        BBJ_CALLFINALLY, // block always calls the target finally
+        BBJ_COND,        // block conditionally jumps to the target
+        BBJ_SWITCH,      // block ends with a switch statement
 
-    BBJ_COUNT
+        BBJ_COUNT
 }
-END_DECLARE_TYPED_ENUM(BBjumpKinds,BYTE)
+END_DECLARE_TYPED_ENUM(BBjumpKinds, BYTE)
 
-struct  GenTree;
-struct  GenTreeStmt;
-struct  BasicBlock;
-class   Compiler;
-class   typeInfo;
-struct  BasicBlockList;
-struct  flowList;
-struct  EHblkDsc;
+struct GenTree;
+struct GenTreeStmt;
+struct BasicBlock;
+class Compiler;
+class typeInfo;
+struct BasicBlockList;
+struct flowList;
+struct EHblkDsc;
 
 #if FEATURE_STACK_FP_X87
-struct  FlatFPStateX87;
+struct FlatFPStateX87;
 #endif
 
 /*****************************************************************************
@@ -98,16 +97,17 @@ struct  FlatFPStateX87;
  *     switches with just a default case to a BBJ_ALWAYS branch, and a switch with just two cases to a BBJ_COND.
  *     However, in debuggable code, we might not do that, so bbsCount might be 1.
  */
-struct  BBswtDesc
+struct BBswtDesc
 {
-    unsigned            bbsCount;       // count of cases (includes 'default' if bbsHasDefault)
-    BasicBlock**        bbsDstTab;      // case label table address
-    bool                bbsHasDefault;
+    unsigned     bbsCount;  // count of cases (includes 'default' if bbsHasDefault)
+    BasicBlock** bbsDstTab; // case label table address
+    bool         bbsHasDefault;
 
-    BBswtDesc()
-    : bbsHasDefault(true) {}
+    BBswtDesc() : bbsHasDefault(true)
+    {
+    }
 
-    void                removeDefault()
+    void removeDefault()
     {
         assert(bbsHasDefault);
         assert(bbsCount > 0);
@@ -115,7 +115,7 @@ struct  BBswtDesc
         bbsCount--;
     }
 
-    BasicBlock*         getDefault()
+    BasicBlock* getDefault()
     {
         assert(bbsHasDefault);
         assert(bbsCount > 0);
@@ -125,27 +125,27 @@ struct  BBswtDesc
 
 struct StackEntry
 {
-    GenTree*        val;
-    typeInfo        seTypeInfo;
+    GenTree* val;
+    typeInfo seTypeInfo;
 };
 /*****************************************************************************/
 
 enum ThisInitState
 {
-    TIS_Bottom,  // We don't know anything about the 'this' pointer.
-    TIS_Uninit,  // The 'this' pointer for this constructor is known to be uninitialized.
-    TIS_Init,    // The 'this' pointer for this constructor is known to be initialized.
-    TIS_Top,     // This results from merging the state of two blocks one with TIS_Unint and the other with TIS_Init.
-                 // We use this in fault blocks to prevent us from accessing the 'this' pointer, but otherwise
-                 // allowing the fault block to generate code.
+    TIS_Bottom, // We don't know anything about the 'this' pointer.
+    TIS_Uninit, // The 'this' pointer for this constructor is known to be uninitialized.
+    TIS_Init,   // The 'this' pointer for this constructor is known to be initialized.
+    TIS_Top,    // This results from merging the state of two blocks one with TIS_Unint and the other with TIS_Init.
+                // We use this in fault blocks to prevent us from accessing the 'this' pointer, but otherwise
+                // allowing the fault block to generate code.
 };
 
 struct EntryState
 {
-    ThisInitState   thisInitialized : 8;        // used to track whether the this ptr is initialized (we could use
-                                                // fewer bits here)
-    unsigned        esStackDepth    : 24;       // size of esStack
-    StackEntry*     esStack;                    // ptr to  stack
+    ThisInitState thisInitialized : 8; // used to track whether the this ptr is initialized (we could use
+                                       // fewer bits here)
+    unsigned    esStackDepth : 24;     // size of esStack
+    StackEntry* esStack;               // ptr to  stack
 };
 
 // This encapsulates the "exception handling" successors of a block.  That is,
@@ -191,8 +191,10 @@ class EHSuccessorIter
 
 public:
     // Returns the standard "end" iterator.
-    EHSuccessorIter() :
-        m_comp(NULL), m_block(NULL), m_curRegSucc(NULL), m_curTry(NULL), m_remainingRegSuccs(0) {}
+    EHSuccessorIter()
+        : m_comp(nullptr), m_block(nullptr), m_curRegSucc(nullptr), m_curTry(nullptr), m_remainingRegSuccs(0)
+    {
+    }
 
     // Initializes the iterator to represent the EH successors of "block".
     EHSuccessorIter(Compiler* comp, BasicBlock* block);
@@ -209,8 +211,7 @@ public:
     bool operator==(const EHSuccessorIter& ehsi)
     {
         // Ignore the compiler; we'll assume that's the same.
-        return m_curTry == ehsi.m_curTry
-            && m_remainingRegSuccs == ehsi.m_remainingRegSuccs;
+        return m_curTry == ehsi.m_curTry && m_remainingRegSuccs == ehsi.m_remainingRegSuccs;
     }
 
     bool operator!=(const EHSuccessorIter& ehsi)
@@ -234,16 +235,20 @@ class AllSuccessorIter
     inline bool CurTryIsBlkCallFinallyTarget();
 
 public:
-    inline AllSuccessorIter() { }
+    inline AllSuccessorIter()
+    {
+    }
 
     // Initializes "this" to iterate over all successors of "block."
     inline AllSuccessorIter(Compiler* comp, BasicBlock* block);
 
     // Used for constructing an appropriate "end" iter.  Should be called with
     // the number of normal successors of the block being iterated.
-    AllSuccessorIter(unsigned numSuccs) : m_normSucc(numSuccs), m_numNormSuccs(numSuccs), m_ehIter() {}
+    AllSuccessorIter(unsigned numSuccs) : m_normSucc(numSuccs), m_numNormSuccs(numSuccs), m_ehIter()
+    {
+    }
 
-   // Go on to the next successor.
+    // Go on to the next successor.
     inline void operator++(void);
 
     // Requires that "this" is not equal to the standard "end" iterator.  Returns the
@@ -254,8 +259,7 @@ public:
     // and "m_block" fields.
     bool operator==(const AllSuccessorIter& asi)
     {
-        return m_normSucc == asi.m_normSucc
-            && m_ehIter == asi.m_ehIter;
+        return m_normSucc == asi.m_normSucc && m_ehIter == asi.m_ehIter;
     }
 
     bool operator!=(const AllSuccessorIter& asi)
@@ -271,104 +275,106 @@ public:
 
 struct BasicBlock
 {
-    BasicBlock*         bbNext;     // next BB in ascending PC offset order
-    BasicBlock*         bbPrev;
+    BasicBlock* bbNext; // next BB in ascending PC offset order
+    BasicBlock* bbPrev;
 
-    void setNext(BasicBlock* next) 
-    { 
-        bbNext = next; 
-        if (next) 
-            next->bbPrev = this; 
+    void setNext(BasicBlock* next)
+    {
+        bbNext = next;
+        if (next)
+        {
+            next->bbPrev = this;
+        }
     }
 
-    unsigned            bbNum;      // the block's number
-    unsigned            bbPostOrderNum; // the block's post order number in the graph.
-    unsigned            bbRefs;     // number of blocks that can reach here, either by fall-through or a branch. If this falls to zero, the block is unreachable.
+    unsigned bbNum;          // the block's number
+    unsigned bbPostOrderNum; // the block's post order number in the graph.
+    unsigned bbRefs; // number of blocks that can reach here, either by fall-through or a branch. If this falls to zero,
+                     // the block is unreachable.
 
-    unsigned            bbFlags;    // see BBF_xxxx below
+    unsigned bbFlags; // see BBF_xxxx below
 
-#define BBF_VISITED         0x00000001  // BB visited during optimizations
-#define BBF_MARKED          0x00000002  // BB marked  during optimizations
-#define BBF_CHANGED         0x00000004  // input/output of this block has changed
-#define BBF_REMOVED         0x00000008  // BB has been removed from bb-list
+#define BBF_VISITED 0x00000001 // BB visited during optimizations
+#define BBF_MARKED 0x00000002  // BB marked  during optimizations
+#define BBF_CHANGED 0x00000004 // input/output of this block has changed
+#define BBF_REMOVED 0x00000008 // BB has been removed from bb-list
 
-#define BBF_DONT_REMOVE     0x00000010  // BB should not be removed during flow graph optimizations
-#define BBF_IMPORTED        0x00000020  // BB byte-code has been imported
-#define BBF_INTERNAL        0x00000040  // BB has been added by the compiler
-#define BBF_FAILED_VERIFICATION  0x00000080  // BB has verification exception
+#define BBF_DONT_REMOVE 0x00000010         // BB should not be removed during flow graph optimizations
+#define BBF_IMPORTED 0x00000020            // BB byte-code has been imported
+#define BBF_INTERNAL 0x00000040            // BB has been added by the compiler
+#define BBF_FAILED_VERIFICATION 0x00000080 // BB has verification exception
 
-#define BBF_TRY_BEG         0x00000100  // BB starts a 'try' block
-#define BBF_FUNCLET_BEG     0x00000200  // BB is the beginning of a funclet
-#define BBF_HAS_NULLCHECK   0x00000400  // BB contains a null check
-#define BBF_NEEDS_GCPOLL    0x00000800  // This BB is the source of a back edge and needs a GC Poll
+#define BBF_TRY_BEG 0x00000100       // BB starts a 'try' block
+#define BBF_FUNCLET_BEG 0x00000200   // BB is the beginning of a funclet
+#define BBF_HAS_NULLCHECK 0x00000400 // BB contains a null check
+#define BBF_NEEDS_GCPOLL 0x00000800  // This BB is the source of a back edge and needs a GC Poll
 
-#define BBF_RUN_RARELY      0x00001000  // BB is rarely run (catch clauses, blocks with throws etc)
-#define BBF_LOOP_HEAD       0x00002000  // BB is the head of a loop
-#define BBF_LOOP_CALL0      0x00004000  // BB starts a loop that sometimes won't call
-#define BBF_LOOP_CALL1      0x00008000  // BB starts a loop that will always     call
+#define BBF_RUN_RARELY 0x00001000 // BB is rarely run (catch clauses, blocks with throws etc)
+#define BBF_LOOP_HEAD 0x00002000  // BB is the head of a loop
+#define BBF_LOOP_CALL0 0x00004000 // BB starts a loop that sometimes won't call
+#define BBF_LOOP_CALL1 0x00008000 // BB starts a loop that will always     call
 
-#define BBF_HAS_LABEL       0x00010000  // BB needs a label
-#define BBF_JMP_TARGET      0x00020000  // BB is a target of an implicit/explicit jump
-#define BBF_HAS_JMP         0x00040000  // BB executes a JMP instruction (instead of return)
-#define BBF_GC_SAFE_POINT   0x00080000  // BB has a GC safe point (a call).  More abstractly, BB does not
-                                        // require a (further) poll -- this may be because this BB has a
-                                        // call, or, in some cases, because the BB occurs in a loop, and
-                                        // we've determined that all paths in the loop body leading to BB
-                                        // include a call.
-#define BBF_HAS_VTABREF     0x00100000  // BB contains reference of vtable
-#define BBF_HAS_IDX_LEN     0x00200000  // BB contains simple index or length expressions on an array local var.
-#define BBF_HAS_NEWARRAY    0x00400000  // BB contains 'new' of an array
-#define BBF_HAS_NEWOBJ      0x00800000  // BB contains 'new' of an object type. 
+#define BBF_HAS_LABEL 0x00010000     // BB needs a label
+#define BBF_JMP_TARGET 0x00020000    // BB is a target of an implicit/explicit jump
+#define BBF_HAS_JMP 0x00040000       // BB executes a JMP instruction (instead of return)
+#define BBF_GC_SAFE_POINT 0x00080000 // BB has a GC safe point (a call).  More abstractly, BB does not
+                                     // require a (further) poll -- this may be because this BB has a
+                                     // call, or, in some cases, because the BB occurs in a loop, and
+                                     // we've determined that all paths in the loop body leading to BB
+                                     // include a call.
+#define BBF_HAS_VTABREF 0x00100000   // BB contains reference of vtable
+#define BBF_HAS_IDX_LEN 0x00200000   // BB contains simple index or length expressions on an array local var.
+#define BBF_HAS_NEWARRAY 0x00400000  // BB contains 'new' of an array
+#define BBF_HAS_NEWOBJ 0x00800000    // BB contains 'new' of an object type.
 
 #if FEATURE_EH_FUNCLETS && defined(_TARGET_ARM_)
-#define BBF_FINALLY_TARGET  0x01000000  // BB is the target of a finally return: where a finally will return during
-                                        // non-exceptional flow. Because the ARM calling sequence for calling a
-                                        // finally explicitly sets the return address to the finally target and jumps
-                                        // to the finally, instead of using a call instruction, ARM needs this to
-                                        // generate correct code at the finally target, to allow for proper stack
-                                        // unwind from within a non-exceptional call to a finally.
-#endif // FEATURE_EH_FUNCLETS && defined(_TARGET_ARM_)
-#define BBF_BACKWARD_JUMP   0x02000000  // BB is surrounded by a backward jump/switch arc
-#define BBF_RETLESS_CALL    0x04000000  // BBJ_CALLFINALLY that will never return (and therefore, won't need a paired
-                                        // BBJ_ALWAYS); see isBBCallAlwaysPair().
-#define BBF_LOOP_PREHEADER  0x08000000  // BB is a loop preheader block
+#define BBF_FINALLY_TARGET 0x01000000 // BB is the target of a finally return: where a finally will return during
+                                      // non-exceptional flow. Because the ARM calling sequence for calling a
+                                      // finally explicitly sets the return address to the finally target and jumps
+                                      // to the finally, instead of using a call instruction, ARM needs this to
+                                      // generate correct code at the finally target, to allow for proper stack
+                                      // unwind from within a non-exceptional call to a finally.
+#endif                                // FEATURE_EH_FUNCLETS && defined(_TARGET_ARM_)
+#define BBF_BACKWARD_JUMP 0x02000000  // BB is surrounded by a backward jump/switch arc
+#define BBF_RETLESS_CALL 0x04000000   // BBJ_CALLFINALLY that will never return (and therefore, won't need a paired
+                                      // BBJ_ALWAYS); see isBBCallAlwaysPair().
+#define BBF_LOOP_PREHEADER 0x08000000 // BB is a loop preheader block
 
-#define BBF_COLD            0x10000000  // BB is cold
-#define BBF_PROF_WEIGHT     0x20000000  // BB weight is computed from profile data
-#define BBF_FORWARD_SWITCH  0x40000000  // Aux flag used in FP codegen to know if a jmptable entry has been forwarded
-#define BBF_KEEP_BBJ_ALWAYS 0x80000000  // A special BBJ_ALWAYS block, used by EH code generation. Keep the jump kind
-                                        // as BBJ_ALWAYS. Used for the paired BBJ_ALWAYS block following the
-                                        // BBJ_CALLFINALLY block, as well as, on x86, the final step block out of a
-                                        // finally.
+#define BBF_COLD 0x10000000            // BB is cold
+#define BBF_PROF_WEIGHT 0x20000000     // BB weight is computed from profile data
+#define BBF_FORWARD_SWITCH 0x40000000  // Aux flag used in FP codegen to know if a jmptable entry has been forwarded
+#define BBF_KEEP_BBJ_ALWAYS 0x80000000 // A special BBJ_ALWAYS block, used by EH code generation. Keep the jump kind
+                                       // as BBJ_ALWAYS. Used for the paired BBJ_ALWAYS block following the
+                                       // BBJ_CALLFINALLY block, as well as, on x86, the final step block out of a
+                                       // finally.
 
-    bool      isRunRarely()             { return ((bbFlags & BBF_RUN_RARELY) != 0); }
-    bool      isLoopHead()              { return ((bbFlags & BBF_LOOP_HEAD)  != 0); }
+    bool isRunRarely()
+    {
+        return ((bbFlags & BBF_RUN_RARELY) != 0);
+    }
+    bool isLoopHead()
+    {
+        return ((bbFlags & BBF_LOOP_HEAD) != 0);
+    }
 
 // Flags to update when two blocks are compacted
 
-#define BBF_COMPACT_UPD (BBF_CHANGED     |                                    \
-                         BBF_GC_SAFE_POINT | BBF_HAS_JMP |                    \
-                         BBF_NEEDS_GCPOLL |                                   \
-                         BBF_HAS_IDX_LEN  | BBF_BACKWARD_JUMP |              \
-                         BBF_HAS_NEWARRAY  | BBF_HAS_NEWOBJ)
+#define BBF_COMPACT_UPD                                                                                                \
+    (BBF_CHANGED | BBF_GC_SAFE_POINT | BBF_HAS_JMP | BBF_NEEDS_GCPOLL | BBF_HAS_IDX_LEN | BBF_BACKWARD_JUMP |          \
+     BBF_HAS_NEWARRAY | BBF_HAS_NEWOBJ)
 
 // Flags a block should not have had before it is split.
 
-#define BBF_SPLIT_NONEXIST   (BBF_CHANGED      |                                    \
-                              BBF_LOOP_HEAD    | BBF_LOOP_CALL0 | BBF_LOOP_CALL1 |  \
-                              BBF_RETLESS_CALL |                                    \
-                              BBF_LOOP_PREHEADER |                                  \
-                              BBF_COLD           |                                  \
-                              BBF_FORWARD_SWITCH)
+#define BBF_SPLIT_NONEXIST                                                                                             \
+    (BBF_CHANGED | BBF_LOOP_HEAD | BBF_LOOP_CALL0 | BBF_LOOP_CALL1 | BBF_RETLESS_CALL | BBF_LOOP_PREHEADER |           \
+     BBF_COLD | BBF_FORWARD_SWITCH)
 
 // Flags lost by the top block when a block is split.
 // Note, this is a conservative guess.
 // For example, the top block might or might not have BBF_GC_SAFE_POINT,
 // but we assume it does not have BBF_GC_SAFE_POINT any more.
 
-#define BBF_SPLIT_LOST   (BBF_GC_SAFE_POINT |                                  \
-                          BBF_HAS_JMP       |                                  \
-                          BBF_KEEP_BBJ_ALWAYS)
+#define BBF_SPLIT_LOST (BBF_GC_SAFE_POINT | BBF_HAS_JMP | BBF_KEEP_BBJ_ALWAYS)
 
 // Flags gained by the bottom block when a block is split.
 // Note, this is a conservative guess.
@@ -377,41 +383,44 @@ struct BasicBlock
 
 // TODO: Should BBF_RUN_RARELY be added to BBF_SPLIT_GAINED ?
 
-#define BBF_SPLIT_GAINED   (BBF_DONT_REMOVE | BBF_HAS_LABEL     |                \
-                            BBF_HAS_JMP     | BBF_BACKWARD_JUMP |                \
-                            BBF_HAS_IDX_LEN | BBF_HAS_NEWARRAY  |                \
-                            BBF_PROF_WEIGHT | BBF_HAS_NEWOBJ    |                \
-                            BBF_KEEP_BBJ_ALWAYS)
+#define BBF_SPLIT_GAINED                                                                                               \
+    (BBF_DONT_REMOVE | BBF_HAS_LABEL | BBF_HAS_JMP | BBF_BACKWARD_JUMP | BBF_HAS_IDX_LEN | BBF_HAS_NEWARRAY |          \
+     BBF_PROF_WEIGHT | BBF_HAS_NEWOBJ | BBF_KEEP_BBJ_ALWAYS)
 
 #ifndef __GNUC__ // GCC doesn't like C_ASSERT at global scope
-static_assert_no_msg((BBF_SPLIT_NONEXIST & BBF_SPLIT_LOST) == 0);
-static_assert_no_msg((BBF_SPLIT_NONEXIST & BBF_SPLIT_GAINED) == 0);
+    static_assert_no_msg((BBF_SPLIT_NONEXIST & BBF_SPLIT_LOST) == 0);
+    static_assert_no_msg((BBF_SPLIT_NONEXIST & BBF_SPLIT_GAINED) == 0);
 #endif
 
 #ifdef DEBUG
-    void                dspFlags();                             // Print the flags
-    unsigned            dspCheapPreds();                        // Print the predecessors (bbCheapPreds)
-    unsigned            dspPreds();                             // Print the predecessors (bbPreds)
-    unsigned            dspSuccs(Compiler* compiler);           // Print the successors. The 'compiler' argument determines whether EH regions are printed: see NumSucc() for details.
-    void                dspJumpKind();                          // Print the block jump kind (e.g., BBJ_NONE, BBJ_COND, etc.).
-    void                dspBlockHeader(Compiler* compiler, bool showKind = true, bool showFlags = false, bool showPreds = true); // Print a simple basic block header for various output, including a list of predecessors and successors.
-#endif // DEBUG
+    void     dspFlags();                   // Print the flags
+    unsigned dspCheapPreds();              // Print the predecessors (bbCheapPreds)
+    unsigned dspPreds();                   // Print the predecessors (bbPreds)
+    unsigned dspSuccs(Compiler* compiler); // Print the successors. The 'compiler' argument determines whether EH
+                                           // regions are printed: see NumSucc() for details.
+    void dspJumpKind();                    // Print the block jump kind (e.g., BBJ_NONE, BBJ_COND, etc.).
+    void dspBlockHeader(Compiler* compiler,
+                        bool      showKind  = true,
+                        bool      showFlags = false,
+                        bool showPreds = true); // Print a simple basic block header for various output, including a
+                                                // list of predecessors and successors.
+#endif                                          // DEBUG
 
-typedef unsigned weight_t;             // Type used to hold block and edge weights
-                                       // Note that for CLR v2.0 and earlier our
-                                       // block weights were stored using unsigned shorts
+    typedef unsigned weight_t; // Type used to hold block and edge weights
+                               // Note that for CLR v2.0 and earlier our
+                               // block weights were stored using unsigned shorts
 
-#define BB_UNITY_WEIGHT    100         // how much a normal execute once block weights
-#define BB_LOOP_WEIGHT     8           // how much more loops are weighted
-#define BB_ZERO_WEIGHT     0
-#define BB_MAX_WEIGHT      ULONG_MAX   // we're using an 'unsigned' for the weight
-#define BB_VERY_HOT_WEIGHT 256         // how many average hits a BB has (per BBT scenario run) for this block
-                                       // to be considered as very hot
+#define BB_UNITY_WEIGHT 100 // how much a normal execute once block weights
+#define BB_LOOP_WEIGHT 8    // how much more loops are weighted
+#define BB_ZERO_WEIGHT 0
+#define BB_MAX_WEIGHT ULONG_MAX // we're using an 'unsigned' for the weight
+#define BB_VERY_HOT_WEIGHT 256  // how many average hits a BB has (per BBT scenario run) for this block
+                                // to be considered as very hot
 
-    weight_t            bbWeight;      // The dynamic execution weight of this block
+    weight_t bbWeight; // The dynamic execution weight of this block
 
     // getBBWeight -- get the normalized weight of this block
-    unsigned  getBBWeight(Compiler* comp);
+    unsigned getBBWeight(Compiler* comp);
 
     // setBBWeight -- if the block weight is not derived from a profile, then set the weight to the input
     // weight, but make sure to not overflow BB_MAX_WEIGHT
@@ -438,9 +447,7 @@ typedef unsigned weight_t;             // Type used to hold block and edge weigh
     {
         this->bbFlags |= BBF_PROF_WEIGHT;
         // Check if the multiplication by BB_UNITY_WEIGHT will overflow.
-        this->bbWeight = (weight <= BB_MAX_WEIGHT / BB_UNITY_WEIGHT)
-                         ? weight * BB_UNITY_WEIGHT
-                         : BB_MAX_WEIGHT;
+        this->bbWeight = (weight <= BB_MAX_WEIGHT / BB_UNITY_WEIGHT) ? weight * BB_UNITY_WEIGHT : BB_MAX_WEIGHT;
     }
 
     // this block will inherit the same weight and relevant bbFlags as bSrc
@@ -472,8 +479,7 @@ typedef unsigned weight_t;             // Type used to hold block and edge weigh
     // going to inherit. Since the number isn't exact, clear the BBF_PROF_WEIGHT flag.
     void inheritWeightPercentage(BasicBlock* bSrc, unsigned percentage)
     {
-        assert(0 <= percentage &&
-                    percentage < 100);
+        assert(0 <= percentage && percentage < 100);
 
         // Check for overflow
         if (bSrc->bbWeight * 100 <= bSrc->bbWeight)
@@ -513,8 +519,8 @@ typedef unsigned weight_t;             // Type used to hold block and edge weigh
     {
         if (this->bbWeight == BB_ZERO_WEIGHT)
         {
-            this->bbFlags &= ~BBF_RUN_RARELY;    // Clear any RarelyRun flag
-            this->bbFlags &= ~BBF_PROF_WEIGHT;   // Clear any profile-derived flag
+            this->bbFlags &= ~BBF_RUN_RARELY;  // Clear any RarelyRun flag
+            this->bbFlags &= ~BBF_PROF_WEIGHT; // Clear any profile-derived flag
             this->bbWeight = 1;
         }
     }
@@ -570,14 +576,13 @@ typedef unsigned weight_t;             // Type used to hold block and edge weigh
         }
     }
 
-    BBjumpKinds         bbJumpKind; // jump (if any) at the end of this block
+    BBjumpKinds bbJumpKind; // jump (if any) at the end of this block
 
     /* The following union describes the jump target(s) of this block */
-    union
-    {
-        unsigned        bbJumpOffs;         // PC offset (temporary only)
-        BasicBlock*     bbJumpDest;         // basic block
-        BBswtDesc*      bbJumpSwt;          // switch descriptor
+    union {
+        unsigned    bbJumpOffs; // PC offset (temporary only)
+        BasicBlock* bbJumpDest; // basic block
+        BBswtDesc*  bbJumpSwt;  // switch descriptor
     };
 
     // NumSucc() gives the number of successors, and GetSucc() allows one to iterate over them.
@@ -603,10 +608,10 @@ typedef unsigned weight_t;             // Type used to hold block and edge weigh
     // instead of 2.
     //
     // Returns the number of successors of "this".
-    unsigned NumSucc(Compiler* comp = NULL);
+    unsigned NumSucc(Compiler* comp = nullptr);
 
     // Returns the "i"th successor.  Requires (0 <= i < NumSucc()).
-    BasicBlock* GetSucc(unsigned i, Compiler* comp = NULL);
+    BasicBlock* GetSucc(unsigned i, Compiler* comp = nullptr);
 
     BasicBlock* GetUniquePred(Compiler* comp);
 
@@ -617,12 +622,12 @@ typedef unsigned weight_t;             // Type used to hold block and edge weigh
         return bbRefs;
     }
 
-    GenTree*            bbTreeList; // the body of the block
-    EntryState*         bbEntryState; // verifier tracked state of all entries in stack.
+    GenTree*    bbTreeList;   // the body of the block
+    EntryState* bbEntryState; // verifier tracked state of all entries in stack.
 
-#define NO_BASE_TMP     UINT_MAX    // base# to use when we have none
-    unsigned            bbStkTempsIn;  // base# for input stack temps
-    unsigned            bbStkTempsOut; // base# for output stack temps
+#define NO_BASE_TMP UINT_MAX // base# to use when we have none
+    unsigned bbStkTempsIn;   // base# for input stack temps
+    unsigned bbStkTempsOut;  // base# for output stack temps
 
 #define MAX_XCPTN_INDEX (USHRT_MAX - 1)
 
@@ -631,11 +636,11 @@ typedef unsigned weight_t;             // Type used to hold block and edge weigh
 
     // index, into the compHndBBtab table, of innermost 'try' clause containing the BB (used for raising exceptions).
     // Stored as index + 1; 0 means "no try index".
-    unsigned short      bbTryIndex;
+    unsigned short bbTryIndex;
 
     // index, into the compHndBBtab table, of innermost handler (filter, catch, fault/finally) containing the BB.
     // Stored as index + 1; 0 means "no handler index".
-    unsigned short      bbHndIndex;
+    unsigned short bbHndIndex;
 
     // Given two EH indices that are either bbTryIndex or bbHndIndex (or related), determine if index1 might be more
     // deeply nested than index2. Both index1 and index2 are in the range [0..compHndBBtabCount], where 0 means
@@ -667,42 +672,76 @@ typedef unsigned weight_t;             // Type used to hold block and edge weigh
     }
 
     // catch type: class token of handler, or one of BBCT_*. Only set on first block of catch handler.
-    unsigned            bbCatchTyp;
+    unsigned bbCatchTyp;
 
-    bool      hasTryIndex() const       { return bbTryIndex != 0; }
-    bool      hasHndIndex() const       { return bbHndIndex != 0; }
-    unsigned  getTryIndex() const       { assert(bbTryIndex != 0);  return bbTryIndex - 1; }
-    unsigned  getHndIndex() const       { assert(bbHndIndex != 0);  return bbHndIndex - 1; }
-    void      setTryIndex(unsigned val) { bbTryIndex = (unsigned short)(val + 1); assert(bbTryIndex != 0); }
-    void      setHndIndex(unsigned val) { bbHndIndex = (unsigned short)(val + 1); assert(bbHndIndex != 0); }
-    void      clearTryIndex()           { bbTryIndex = 0; }
-    void      clearHndIndex()           { bbHndIndex = 0; }
+    bool hasTryIndex() const
+    {
+        return bbTryIndex != 0;
+    }
+    bool hasHndIndex() const
+    {
+        return bbHndIndex != 0;
+    }
+    unsigned getTryIndex() const
+    {
+        assert(bbTryIndex != 0);
+        return bbTryIndex - 1;
+    }
+    unsigned getHndIndex() const
+    {
+        assert(bbHndIndex != 0);
+        return bbHndIndex - 1;
+    }
+    void setTryIndex(unsigned val)
+    {
+        bbTryIndex = (unsigned short)(val + 1);
+        assert(bbTryIndex != 0);
+    }
+    void setHndIndex(unsigned val)
+    {
+        bbHndIndex = (unsigned short)(val + 1);
+        assert(bbHndIndex != 0);
+    }
+    void clearTryIndex()
+    {
+        bbTryIndex = 0;
+    }
+    void clearHndIndex()
+    {
+        bbHndIndex = 0;
+    }
 
-    void      copyEHRegion(const BasicBlock* from)
+    void copyEHRegion(const BasicBlock* from)
     {
         bbTryIndex = from->bbTryIndex;
         bbHndIndex = from->bbHndIndex;
     }
 
-    static bool sameTryRegion(const BasicBlock* blk1, const BasicBlock* blk2)   { return blk1->bbTryIndex == blk2->bbTryIndex; }
-    static bool sameHndRegion(const BasicBlock* blk1, const BasicBlock* blk2)   { return blk1->bbHndIndex == blk2->bbHndIndex; }
-    static bool sameEHRegion (const BasicBlock* blk1, const BasicBlock* blk2)   { return sameTryRegion(blk1,blk2) && sameHndRegion(blk1,blk2); }
+    static bool sameTryRegion(const BasicBlock* blk1, const BasicBlock* blk2)
+    {
+        return blk1->bbTryIndex == blk2->bbTryIndex;
+    }
+    static bool sameHndRegion(const BasicBlock* blk1, const BasicBlock* blk2)
+    {
+        return blk1->bbHndIndex == blk2->bbHndIndex;
+    }
+    static bool sameEHRegion(const BasicBlock* blk1, const BasicBlock* blk2)
+    {
+        return sameTryRegion(blk1, blk2) && sameHndRegion(blk1, blk2);
+    }
 
 // Some non-zero value that will not collide with real tokens for bbCatchTyp
-#define BBCT_NONE               0x00000000
-#define BBCT_FAULT              0xFFFFFFFC
-#define BBCT_FINALLY            0xFFFFFFFD
-#define BBCT_FILTER             0xFFFFFFFE
-#define BBCT_FILTER_HANDLER     0xFFFFFFFF
-#define handlerGetsXcptnObj(hndTyp)   ((hndTyp) != BBCT_NONE    &&   \
-                                       (hndTyp) != BBCT_FAULT   &&   \
-                                       (hndTyp) != BBCT_FINALLY    )
+#define BBCT_NONE 0x00000000
+#define BBCT_FAULT 0xFFFFFFFC
+#define BBCT_FINALLY 0xFFFFFFFD
+#define BBCT_FILTER 0xFFFFFFFE
+#define BBCT_FILTER_HANDLER 0xFFFFFFFF
+#define handlerGetsXcptnObj(hndTyp) ((hndTyp) != BBCT_NONE && (hndTyp) != BBCT_FAULT && (hndTyp) != BBCT_FINALLY)
 
     // TODO-Cleanup: Get rid of bbStkDepth and use bbStackDepthOnEntry() instead
-    union
-    {
-        unsigned short  bbStkDepth; // stack depth on entry
-        unsigned short  bbFPinVars; // number of inner enregistered FP vars
+    union {
+        unsigned short bbStkDepth; // stack depth on entry
+        unsigned short bbFPinVars; // number of inner enregistered FP vars
     };
 
     // Basic block predecessor lists. Early in compilation, some phases might need to compute "cheap" predecessor
@@ -711,63 +750,62 @@ typedef unsigned weight_t;             // Type used to hold block and edge weigh
     // in 'bbPreds', and then maintained throughout compilation. 'fgComputePredsDone' will be 'true' after the
     // full predecessor lists are created. See the comment at fgComputeCheapPreds() to see how those differ from
     // the "full" variant.
-    union
-    {
-        BasicBlockList* bbCheapPreds;   // ptr to list of cheap predecessors (used before normal preds are computed)
-        flowList*       bbPreds;        // ptr to list of predecessors
+    union {
+        BasicBlockList* bbCheapPreds; // ptr to list of cheap predecessors (used before normal preds are computed)
+        flowList*       bbPreds;      // ptr to list of predecessors
     };
 
-    BlockSet            bbReach;    // Set of all blocks that can reach this one
-    BasicBlock*         bbIDom;     // Represent the closest dominator to this block (called the Immediate
-                                    // Dominator) used to compute the dominance tree.
-    unsigned            bbDfsNum;   // The index of this block in DFS reverse post order
-                                    // relative to the flow graph.
+    BlockSet    bbReach; // Set of all blocks that can reach this one
+    BasicBlock* bbIDom;  // Represent the closest dominator to this block (called the Immediate
+                         // Dominator) used to compute the dominance tree.
+    unsigned bbDfsNum;   // The index of this block in DFS reverse post order
+                         // relative to the flow graph.
 
 #if ASSERTION_PROP
     // A set of blocks which dominate this one *except* the normal entry block. This is lazily initialized
     // and used only by Assertion Prop, intersected with fgEnterBlks!
-    BlockSet            bbDoms;
+    BlockSet bbDoms;
 #endif
 
-    IL_OFFSET           bbCodeOffs;    // IL offset of the beginning of the block
-    IL_OFFSET           bbCodeOffsEnd; // IL offset past the end of the block. Thus, the [bbCodeOffs..bbCodeOffsEnd)
-                                       // range is not inclusive of the end offset. The count of IL bytes in the block
-                                       // is bbCodeOffsEnd - bbCodeOffs, assuming neither are BAD_IL_OFFSET.
+    IL_OFFSET bbCodeOffs;    // IL offset of the beginning of the block
+    IL_OFFSET bbCodeOffsEnd; // IL offset past the end of the block. Thus, the [bbCodeOffs..bbCodeOffsEnd)
+                             // range is not inclusive of the end offset. The count of IL bytes in the block
+                             // is bbCodeOffsEnd - bbCodeOffs, assuming neither are BAD_IL_OFFSET.
 
 #ifdef DEBUG
-    void                dspBlockILRange();  // Display the block's IL range as [XXX...YYY), where XXX and YYY might be "???" for BAD_IL_OFFSET.
-#endif // DEBUG
+    void dspBlockILRange(); // Display the block's IL range as [XXX...YYY), where XXX and YYY might be "???" for
+                            // BAD_IL_OFFSET.
+#endif                      // DEBUG
 
-    VARSET_TP           bbVarUse;   // variables used     by block (before an assignment)
-    VARSET_TP           bbVarDef;   // variables assigned by block (before a use)
-    VARSET_TP           bbVarTmp;   // TEMP: only used by FP enregistering code!
+    VARSET_TP bbVarUse; // variables used     by block (before an assignment)
+    VARSET_TP bbVarDef; // variables assigned by block (before a use)
+    VARSET_TP bbVarTmp; // TEMP: only used by FP enregistering code!
 
-    VARSET_TP           bbLiveIn;   // variables live on entry
-    VARSET_TP           bbLiveOut;  // variables live on exit
+    VARSET_TP bbLiveIn;  // variables live on entry
+    VARSET_TP bbLiveOut; // variables live on exit
 
     // Use, def, live in/out information for the implicit "Heap" variable.
-    unsigned            bbHeapUse: 1;
-    unsigned            bbHeapDef: 1;
-    unsigned            bbHeapLiveIn: 1;
-    unsigned            bbHeapLiveOut: 1;
-    unsigned            bbHeapHavoc: 1;    // If true, at some point the block does an operation that leaves the heap
-                                           // in an unknown state. (E.g., unanalyzed call, store through unknown
-                                           // pointer...)
+    unsigned bbHeapUse : 1;
+    unsigned bbHeapDef : 1;
+    unsigned bbHeapLiveIn : 1;
+    unsigned bbHeapLiveOut : 1;
+    unsigned bbHeapHavoc : 1; // If true, at some point the block does an operation that leaves the heap
+                              // in an unknown state. (E.g., unanalyzed call, store through unknown
+                              // pointer...)
 
     // We want to make phi functions for the special implicit var "Heap".  But since this is not a real
     // lclVar, and thus has no local #, we can't use a GenTreePhiArg.  Instead, we use this struct.
     struct HeapPhiArg
     {
-        bool        m_isSsaNum;  // If true, the phi arg is an SSA # for an internal try block heap state, being
-                                 // added to the phi of a catch block.  If false, it's a pred block.
-        union
-        {
-            BasicBlock* m_predBB;  // Predecessor block from which the SSA # flows.
-            unsigned    m_ssaNum;  // SSA# for internal block heap state.
+        bool m_isSsaNum; // If true, the phi arg is an SSA # for an internal try block heap state, being
+                         // added to the phi of a catch block.  If false, it's a pred block.
+        union {
+            BasicBlock* m_predBB; // Predecessor block from which the SSA # flows.
+            unsigned    m_ssaNum; // SSA# for internal block heap state.
         };
         HeapPhiArg* m_nextArg; // Next arg in the list, else NULL.
 
-        unsigned    GetSsaNum()
+        unsigned GetSsaNum()
         {
             if (m_isSsaNum)
             {
@@ -780,22 +818,28 @@ typedef unsigned weight_t;             // Type used to hold block and edge weigh
             }
         }
 
-        HeapPhiArg(BasicBlock* predBB, HeapPhiArg* nextArg = NULL) : m_isSsaNum(false), m_predBB(predBB), m_nextArg(nextArg) {}
-        HeapPhiArg(unsigned ssaNum, HeapPhiArg* nextArg = NULL) : m_isSsaNum(true), m_ssaNum(ssaNum), m_nextArg(nextArg) {}
+        HeapPhiArg(BasicBlock* predBB, HeapPhiArg* nextArg = nullptr)
+            : m_isSsaNum(false), m_predBB(predBB), m_nextArg(nextArg)
+        {
+        }
+        HeapPhiArg(unsigned ssaNum, HeapPhiArg* nextArg = nullptr)
+            : m_isSsaNum(true), m_ssaNum(ssaNum), m_nextArg(nextArg)
+        {
+        }
 
         void* operator new(size_t sz, class Compiler* comp);
     };
-    static HeapPhiArg*  EmptyHeapPhiDef;   // Special value (0x1, FWIW) to represent a to-be-filled in Phi arg list
-                                           // for Heap.
-    HeapPhiArg*         bbHeapSsaPhiFunc;  // If the "in" Heap SSA var is not a phi definition, this value is NULL.
-                                           // Otherwise, it is either the special value EmptyHeapPhiDefn, to indicate
-                                           // that Heap needs a phi definition on entry, or else it is the linked list
-                                           // of the phi arguments.
-    unsigned            bbHeapSsaNumIn;    // The SSA # of "Heap" on entry to the block.
-    unsigned            bbHeapSsaNumOut;   // The SSA # of "Heap" on exit from the block.
+    static HeapPhiArg* EmptyHeapPhiDef; // Special value (0x1, FWIW) to represent a to-be-filled in Phi arg list
+                                        // for Heap.
+    HeapPhiArg* bbHeapSsaPhiFunc;       // If the "in" Heap SSA var is not a phi definition, this value is NULL.
+                                        // Otherwise, it is either the special value EmptyHeapPhiDefn, to indicate
+                                        // that Heap needs a phi definition on entry, or else it is the linked list
+                                        // of the phi arguments.
+    unsigned bbHeapSsaNumIn;            // The SSA # of "Heap" on entry to the block.
+    unsigned bbHeapSsaNumOut;           // The SSA # of "Heap" on exit from the block.
 
 #ifdef DEBUGGING_SUPPORT
-    VARSET_TP           bbScope;    // variables in scope over the block
+    VARSET_TP bbScope; // variables in scope over the block
 #endif
 
     void InitVarSets(class Compiler* comp);
@@ -806,55 +850,50 @@ typedef unsigned weight_t;             // Type used to hold block and edge weigh
      *  thus we can union them since the two operations are completely disjunct.
      */
 
-    union
-    {
-        EXPSET_TP      bbCseGen;        // CSEs computed by block
+    union {
+        EXPSET_TP bbCseGen; // CSEs computed by block
 #if ASSERTION_PROP
-        ASSERT_TP      bbAssertionGen;  // value assignments computed by block
+        ASSERT_TP bbAssertionGen; // value assignments computed by block
 #endif
     };
 
-    union
-    {
+    union {
 #if ASSERTION_PROP
-        ASSERT_TP      bbAssertionKill; // value assignments killed   by block
+        ASSERT_TP bbAssertionKill; // value assignments killed   by block
 #endif
     };
 
-    union
-    {
-        EXPSET_TP       bbCseIn;         // CSEs available on entry
+    union {
+        EXPSET_TP bbCseIn; // CSEs available on entry
 #if ASSERTION_PROP
-        ASSERT_TP       bbAssertionIn;   // value assignments available on entry
+        ASSERT_TP bbAssertionIn; // value assignments available on entry
 #endif
     };
 
-    union
-    {
-        EXPSET_TP       bbCseOut;        // CSEs available on exit
+    union {
+        EXPSET_TP bbCseOut; // CSEs available on exit
 #if ASSERTION_PROP
-        ASSERT_TP       bbAssertionOut;  // value assignments available on exit
+        ASSERT_TP bbAssertionOut; // value assignments available on exit
 #endif
     };
 
-
-    void*               bbEmitCookie;
+    void* bbEmitCookie;
 
 #if FEATURE_EH_FUNCLETS && defined(_TARGET_ARM_)
-    void*               bbUnwindNopEmitCookie;
+    void* bbUnwindNopEmitCookie;
 #endif // FEATURE_EH_FUNCLETS && defined(_TARGET_ARM_)
 
 #ifdef VERIFIER
-    stackDesc           bbStackIn;  // stack descriptor for  input
-    stackDesc           bbStackOut; // stack descriptor for output
+    stackDesc bbStackIn;  // stack descriptor for  input
+    stackDesc bbStackOut; // stack descriptor for output
 
-    verTypeVal*         bbTypesIn;  // list of variable types on  input
-    verTypeVal*         bbTypesOut; // list of variable types on output
-#endif // VERIFIER
+    verTypeVal* bbTypesIn;  // list of variable types on  input
+    verTypeVal* bbTypesOut; // list of variable types on output
+#endif                      // VERIFIER
 
 #if FEATURE_STACK_FP_X87
-    FlatFPStateX87*     bbFPStateX87;    // State of FP stack on entry to the basic block
-#endif // FEATURE_STACK_FP_X87
+    FlatFPStateX87* bbFPStateX87; // State of FP stack on entry to the basic block
+#endif                            // FEATURE_STACK_FP_X87
 
     /* The following fields used for loop detection */
 
@@ -864,55 +903,54 @@ typedef unsigned weight_t;             // Type used to hold block and edge weigh
     // This is the label a loop gets as part of the second, reachability-based
     // loop discovery mechanism.  This is apparently only used for debugging.
     // We hope we'll eventually just have one loop-discovery mechanism, and this will go away.
-    unsigned char       bbLoopNum;   // set to 'n' for a loop #n header
-#endif // DEBUG
+    unsigned char bbLoopNum; // set to 'n' for a loop #n header
+#endif                       // DEBUG
 
-    unsigned char       bbNatLoopNum;  // Index, in optLoopTable, of most-nested loop that contains this block,
-                                       // or else NOT_IN_LOOP if this block is not in a loop.
+    unsigned char bbNatLoopNum; // Index, in optLoopTable, of most-nested loop that contains this block,
+                                // or else NOT_IN_LOOP if this block is not in a loop.
 
-#define MAX_LOOP_NUM    16           // we're using a 'short' for the mask
-#define LOOP_MASK_TP    unsigned     // must be big enough for a mask
+#define MAX_LOOP_NUM 16       // we're using a 'short' for the mask
+#define LOOP_MASK_TP unsigned // must be big enough for a mask
 
+//-------------------------------------------------------------------------
 
-    //-------------------------------------------------------------------------
-
-#if     MEASURE_BLOCK_SIZE
-    static size_t       s_Size;
-    static size_t       s_Count;
+#if MEASURE_BLOCK_SIZE
+    static size_t s_Size;
+    static size_t s_Count;
 #endif // MEASURE_BLOCK_SIZE
 
-    bool                bbFallsThrough();
+    bool bbFallsThrough();
 
     // Our slop fraction is 1/128 of the block weight rounded off
-    static weight_t     GetSlopFraction(weight_t weightBlk)
+    static weight_t GetSlopFraction(weight_t weightBlk)
     {
-        return ((weightBlk + 64) /128);
+        return ((weightBlk + 64) / 128);
     }
 
     // Given an the edge b1 -> b2, calculate the slop fraction by
     // using the higher of the two block weights
-    static weight_t     GetSlopFraction(BasicBlock* b1, BasicBlock* b2)
+    static weight_t GetSlopFraction(BasicBlock* b1, BasicBlock* b2)
     {
         return GetSlopFraction(max(b1->bbWeight, b2->bbWeight));
     }
 
 #ifdef DEBUG
-    unsigned            bbTgtStkDepth;  // Native stack depth on entry (for throw-blocks)
-    static unsigned     s_nMaxTrees;    // The max # of tree nodes in any BB
+    unsigned        bbTgtStkDepth; // Native stack depth on entry (for throw-blocks)
+    static unsigned s_nMaxTrees;   // The max # of tree nodes in any BB
 
-    unsigned            bbStmtNum;      // The statement number of the first stmt in this block
+    unsigned bbStmtNum; // The statement number of the first stmt in this block
 
     // This is used in integrity checks.  We semi-randomly pick a traversal stamp, label all blocks
     // in the BB list with that stamp (in this field); then we can tell if (e.g.) predecessors are
     // still in the BB list by whether they have the same stamp (with high probability).
-    unsigned            bbTraversalStamp;
+    unsigned bbTraversalStamp;
 #endif // DEBUG
 
-    ThisInitState       bbThisOnEntry();
-    unsigned            bbStackDepthOnEntry();
-    void                bbSetStack(void* stackBuffer);
-    StackEntry*         bbStackOnEntry();
-    void                bbSetRunRarely();
+    ThisInitState bbThisOnEntry();
+    unsigned      bbStackDepthOnEntry();
+    void bbSetStack(void* stackBuffer);
+    StackEntry* bbStackOnEntry();
+    void        bbSetRunRarely();
 
     // "bbNum" is one-based (for unknown reasons); it is sometimes useful to have the corresponding
     // zero-based number for use as an array index.
@@ -921,44 +959,60 @@ typedef unsigned weight_t;             // Type used to hold block and edge weigh
         assert(bbNum > 0);
         return bbNum - 1;
     }
-    
+
     GenTreeStmt* firstStmt();
     GenTreeStmt* lastStmt();
     GenTreeStmt* lastTopLevelStmt();
 
     bool containsStatement(GenTree* statement);
 
-    bool endsWithJmpMethod(Compiler *comp);
+    bool endsWithJmpMethod(Compiler* comp);
 
-    bool endsWithTailCall(Compiler* comp, bool fastTailCallsOnly, bool tailCallsConvertibleToLoopOnly, GenTree** tailCall);
+    bool endsWithTailCall(Compiler* comp,
+                          bool      fastTailCallsOnly,
+                          bool      tailCallsConvertibleToLoopOnly,
+                          GenTree** tailCall);
 
-    bool endsWithTailCallOrJmp(Compiler *comp, 
-                               bool fastTailCallsOnly = false);
+    bool endsWithTailCallOrJmp(Compiler* comp, bool fastTailCallsOnly = false);
 
-    bool endsWithTailCallConvertibleToLoop(Compiler *comp, GenTree** tailCall);
+    bool endsWithTailCallConvertibleToLoop(Compiler* comp, GenTree** tailCall);
 
     // Returns the first statement in the statement list of "this" that is
     // not an SSA definition (a lcl = phi(...) assignment).
     GenTreeStmt* FirstNonPhiDef();
-    GenTree* FirstNonPhiDefOrCatchArgAsg();
+    GenTree*     FirstNonPhiDefOrCatchArgAsg();
 
-    BasicBlock() :
+    BasicBlock()
+        :
 #if ASSERTION_PROP
-        BLOCKSET_INIT_NOCOPY(bbDoms, BlockSetOps::UninitVal()),
+        BLOCKSET_INIT_NOCOPY(bbDoms, BlockSetOps::UninitVal())
+        ,
 #endif // ASSERTION_PROP
-        VARSET_INIT_NOCOPY(bbLiveIn, VarSetOps::UninitVal()),
-        VARSET_INIT_NOCOPY(bbLiveOut, VarSetOps::UninitVal())
+        VARSET_INIT_NOCOPY(bbLiveIn, VarSetOps::UninitVal())
+        , VARSET_INIT_NOCOPY(bbLiveOut, VarSetOps::UninitVal())
     {
     }
 
 private:
-    EHSuccessorIter StartEHSuccs(Compiler* comp) { return EHSuccessorIter(comp, this); }
-    EHSuccessorIter EndEHSuccs()                 { return EHSuccessorIter(); }
+    EHSuccessorIter StartEHSuccs(Compiler* comp)
+    {
+        return EHSuccessorIter(comp, this);
+    }
+    EHSuccessorIter EndEHSuccs()
+    {
+        return EHSuccessorIter();
+    }
 
     friend struct EHSuccs;
 
-    AllSuccessorIter StartAllSuccs(Compiler* comp) { return AllSuccessorIter(comp, this); }
-    AllSuccessorIter EndAllSuccs(Compiler* comp)   { return AllSuccessorIter(NumSucc(comp)); }
+    AllSuccessorIter StartAllSuccs(Compiler* comp)
+    {
+        return AllSuccessorIter(comp, this);
+    }
+    AllSuccessorIter EndAllSuccs(Compiler* comp)
+    {
+        return AllSuccessorIter(NumSucc(comp));
+    }
 
     friend struct AllSuccs;
 
@@ -968,11 +1022,20 @@ public:
     {
         Compiler*   m_comp;
         BasicBlock* m_block;
-    public:
-        EHSuccs(Compiler* comp, BasicBlock* block) : m_comp(comp), m_block(block) {}
 
-        EHSuccessorIter begin() { return m_block->StartEHSuccs(m_comp); }
-        EHSuccessorIter end()   { return EHSuccessorIter(); }
+    public:
+        EHSuccs(Compiler* comp, BasicBlock* block) : m_comp(comp), m_block(block)
+        {
+        }
+
+        EHSuccessorIter begin()
+        {
+            return m_block->StartEHSuccs(m_comp);
+        }
+        EHSuccessorIter end()
+        {
+            return EHSuccessorIter();
+        }
     };
 
     EHSuccs GetEHSuccs(Compiler* comp)
@@ -984,11 +1047,20 @@ public:
     {
         Compiler*   m_comp;
         BasicBlock* m_block;
-    public:
-        AllSuccs(Compiler* comp, BasicBlock* block) : m_comp(comp), m_block(block) {}
 
-        AllSuccessorIter begin() { return m_block->StartAllSuccs(m_comp); }
-        AllSuccessorIter end()   { return AllSuccessorIter(m_block->NumSucc(m_comp)); }
+    public:
+        AllSuccs(Compiler* comp, BasicBlock* block) : m_comp(comp), m_block(block)
+        {
+        }
+
+        AllSuccessorIter begin()
+        {
+            return m_block->StartAllSuccs(m_comp);
+        }
+        AllSuccessorIter end()
+        {
+            return AllSuccessorIter(m_block->NumSucc(m_comp));
+        }
     };
 
     AllSuccs GetAllSuccs(Compiler* comp)
@@ -1062,29 +1134,27 @@ typedef SimplerHashTable<BasicBlock*, PtrKeyFuncs<BasicBlock>, BasicBlock*, JitS
 
 struct BasicBlockList
 {
-    BasicBlockList*        next;            // The next BasicBlock in the list, nullptr for end of list.
-    BasicBlock*            block;           // The BasicBlock of interest.
+    BasicBlockList* next;  // The next BasicBlock in the list, nullptr for end of list.
+    BasicBlock*     block; // The BasicBlock of interest.
 
-    BasicBlockList()
-        : next(NULL)
-        , block(NULL)
-    {}
+    BasicBlockList() : next(nullptr), block(nullptr)
+    {
+    }
 
-    BasicBlockList(BasicBlock* blk, BasicBlockList* rest)
-        : next(rest)
-        , block(blk)
-    {}
+    BasicBlockList(BasicBlock* blk, BasicBlockList* rest) : next(rest), block(blk)
+    {
+    }
 };
 
 struct flowList
 {
-    flowList*              flNext;          // The next BasicBlock in the list, nullptr for end of list.
-    BasicBlock*            flBlock;         // The BasicBlock of interest.
+    flowList*   flNext;  // The next BasicBlock in the list, nullptr for end of list.
+    BasicBlock* flBlock; // The BasicBlock of interest.
 
-    BasicBlock::weight_t   flEdgeWeightMin;
-    BasicBlock::weight_t   flEdgeWeightMax;
+    BasicBlock::weight_t flEdgeWeightMin;
+    BasicBlock::weight_t flEdgeWeightMax;
 
-    unsigned               flDupCount;      // The count of duplicate "edges" (use only for switch stmts)
+    unsigned flDupCount; // The count of duplicate "edges" (use only for switch stmts)
 
     // These two methods are used to set new values for flEdgeWeightMin and flEdgeWeightMax
     // they are used only during the computation of the edge weights
@@ -1094,30 +1164,23 @@ struct flowList
     bool setEdgeWeightMinChecked(BasicBlock::weight_t newWeight, BasicBlock::weight_t slop, bool* wbUsedSlop);
     bool setEdgeWeightMaxChecked(BasicBlock::weight_t newWeight, BasicBlock::weight_t slop, bool* wbUsedSlop);
 
-    flowList()
-        : flNext(NULL)
-        , flBlock(NULL)
-        , flEdgeWeightMin(0)
-        , flEdgeWeightMax(0)
-        , flDupCount(0)
-    {}
+    flowList() : flNext(nullptr), flBlock(nullptr), flEdgeWeightMin(0), flEdgeWeightMax(0), flDupCount(0)
+    {
+    }
 
     flowList(BasicBlock* blk, flowList* rest)
-        : flNext(rest)
-        , flBlock(blk)
-        , flEdgeWeightMin(0)
-        , flEdgeWeightMax(0)
-        , flDupCount(0)
-    {}
+        : flNext(rest), flBlock(blk), flEdgeWeightMin(0), flEdgeWeightMax(0), flDupCount(0)
+    {
+    }
 };
 
 // This enum represents a pre/post-visit action state to emulate a depth-first
 // spanning tree traversal of a tree or graph.
 enum DfsStackState
 {
-    DSS_Invalid,      // The initialized, invalid error state
-    DSS_Pre,          // The DFS pre-order (first visit) traversal state
-    DSS_Post          // The DFS post-order (last visit) traversal state
+    DSS_Invalid, // The initialized, invalid error state
+    DSS_Pre,     // The DFS pre-order (first visit) traversal state
+    DSS_Post     // The DFS post-order (last visit) traversal state
 };
 
 // These structs represents an entry in a stack used to emulate a non-recursive
@@ -1125,42 +1188,38 @@ enum DfsStackState
 // block pointer or a block number depending on which is more useful.
 struct DfsBlockEntry
 {
-    DfsStackState       dfsStackState;  // The pre/post traversal action for this entry
-    BasicBlock*         dfsBlock;       // The corresponding block for the action
+    DfsStackState dfsStackState; // The pre/post traversal action for this entry
+    BasicBlock*   dfsBlock;      // The corresponding block for the action
 
-    DfsBlockEntry()
-        : dfsStackState(DSS_Invalid)
-        , dfsBlock(nullptr)
-    {}
+    DfsBlockEntry() : dfsStackState(DSS_Invalid), dfsBlock(nullptr)
+    {
+    }
 
-    DfsBlockEntry(DfsStackState state, BasicBlock* basicBlock)
-        : dfsStackState(state)
-        , dfsBlock(basicBlock)
-    {}
+    DfsBlockEntry(DfsStackState state, BasicBlock* basicBlock) : dfsStackState(state), dfsBlock(basicBlock)
+    {
+    }
 };
 
 struct DfsNumEntry
 {
-    DfsStackState       dfsStackState;  // The pre/post traversal action for this entry
-    unsigned            dfsNum;         // The corresponding block number for the action
+    DfsStackState dfsStackState; // The pre/post traversal action for this entry
+    unsigned      dfsNum;        // The corresponding block number for the action
 
-    DfsNumEntry()
-        : dfsStackState(DSS_Invalid)
-        , dfsNum(0)
-    {}
+    DfsNumEntry() : dfsStackState(DSS_Invalid), dfsNum(0)
+    {
+    }
 
-    DfsNumEntry(DfsStackState state, unsigned bbNum)
-        : dfsStackState(state)
-        , dfsNum(bbNum)
-    {}
+    DfsNumEntry(DfsStackState state, unsigned bbNum) : dfsStackState(state), dfsNum(bbNum)
+    {
+    }
 };
 
 /*****************************************************************************/
 
-extern  BasicBlock*     __cdecl verAllocBasicBlock();
+extern BasicBlock* __cdecl verAllocBasicBlock();
 
-#ifdef  DEBUG
-extern  void            __cdecl verDispBasicBlocks();
+#ifdef DEBUG
+extern void __cdecl verDispBasicBlocks();
 #endif
 
 /*****************************************************************************
@@ -1169,14 +1228,10 @@ extern  void            __cdecl verDispBasicBlocks();
  *  emitter to convert a basic block to its corresponding emitter cookie.
  */
 
-void*                   emitCodeGetCookie(BasicBlock* block);
+void* emitCodeGetCookie(BasicBlock* block);
 
 AllSuccessorIter::AllSuccessorIter(Compiler* comp, BasicBlock* block)
-  : m_comp(comp),
-    m_blk(block),
-    m_normSucc(0),
-    m_numNormSuccs(block->NumSucc(comp)),
-    m_ehIter(comp, block)
+    : m_comp(comp), m_blk(block), m_normSucc(0), m_numNormSuccs(block->NumSucc(comp)), m_ehIter(comp, block)
 {
     if (CurTryIsBlkCallFinallyTarget())
     {
@@ -1186,8 +1241,7 @@ AllSuccessorIter::AllSuccessorIter(Compiler* comp, BasicBlock* block)
 
 bool AllSuccessorIter::CurTryIsBlkCallFinallyTarget()
 {
-    return (m_blk->bbJumpKind == BBJ_CALLFINALLY) &&
-           (m_ehIter != EHSuccessorIter()) &&
+    return (m_blk->bbJumpKind == BBJ_CALLFINALLY) && (m_ehIter != EHSuccessorIter()) &&
            (m_blk->bbJumpDest == (*m_ehIter));
 }
 
