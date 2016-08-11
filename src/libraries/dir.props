@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Condition="Exists('..\dir.props')" Project="..\dir.props" />
 
@@ -90,9 +90,9 @@
     <ValidatePackageVersions>true</ValidatePackageVersions>
     <ProhibitFloatingDependencies>true</ProhibitFloatingDependencies>
 
-    <CoreFxExpectedPrerelease>beta-24403-05</CoreFxExpectedPrerelease>
-    <CoreClrExpectedPrerelease>beta-24405-03</CoreClrExpectedPrerelease>
-    <ExternalExpectedPrerelease>beta-24404-00</ExternalExpectedPrerelease>
+    <CoreFxExpectedPrerelease>beta-24411-01</CoreFxExpectedPrerelease>
+    <CoreClrExpectedPrerelease>beta-24410-03</CoreClrExpectedPrerelease>
+    <ExternalExpectedPrerelease>beta-24411-00</ExternalExpectedPrerelease>
 
     <CoreFxVersionsIdentityRegex>^(?i)((System\..*)|(NETStandard\.Library)|(Microsoft\.CSharp)|(Microsoft\.NETCore\.Targets)|(Microsoft\.NETCore\.Platforms)|(Microsoft\.Win32\..*)|(Microsoft\.VisualBasic))(?&lt;!TestData)$</CoreFxVersionsIdentityRegex>
 
