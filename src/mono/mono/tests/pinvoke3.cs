@@ -1105,6 +1105,49 @@ public class Tests {
 		return res;
 	}
 
+	class Worker {
+		volatile bool stop = false;
+		public void Stop () {
+			stop = true;
+		}
+
+		public void Work () {
+			while (!stop) {
+				for (int i = 0; i < 100; i++) {
+					var a = new double[80000];
+					Thread.Sleep (0);
+				}
+				GC.Collect ();
+			}
+		}
+	}
+
+	public static int test_43_thread_attach_detach_contested () {
+		// Test plan: we want to create a race between the GC
+		// and native threads detaching.  When a native thread
+		// calls a managed delegate, it's attached to the
+		// runtime by the wrapper.  It is detached when the
+		// thread is destroyed and the TLS key destructor for
+		// MonoThreadInfo runs.  That destructor wants to take
+		// the GC lock.  So we create a lot of native threads
+		// while at the same time running a worker that
+		// allocates garbage and invokes the collector.
+		var w = new Worker ();
+		Thread t = new Thread(new ThreadStart (w.Work));
+		t.Start ();
+
+		for (int count = 0; count < 500; count++) {
+			int res = mono_test_marshal_thread_attach (delegate (int i) {
+					Thread.Sleep (0);
+					return i + 1;
+				});
+		}
+		Thread.Sleep (1000);
+		w.Stop ();
+		t.Join ();
+		return 43; 
+
+	}
 	/*
 	 * Appdomain save/restore
 	 */
