@@ -143,6 +143,7 @@ namespace Microsoft.Extensions.DependencyModel
                     Debug.Assert(compilationLibrary.Version == runtimeLibrary.Version);
                     Debug.Assert(compilationLibrary.Hash == runtimeLibrary.Hash);
                     Debug.Assert(compilationLibrary.Type == runtimeLibrary.Type);
+                    Debug.Assert(compilationLibrary.Path == runtimeLibrary.Path);
                 }
 
                 var library = (Library)compilationLibrary ?? (Library)runtimeLibrary;
@@ -329,8 +330,8 @@ namespace Microsoft.Extensions.DependencyModel
             return new JObject(
                 new JProperty(DependencyContextStrings.TypePropertyName, library.Type),
                 new JProperty(DependencyContextStrings.ServiceablePropertyName, library.Serviceable),
-                new JProperty(DependencyContextStrings.Sha512PropertyName, library.Hash)
-                );
+                new JProperty(DependencyContextStrings.Sha512PropertyName, library.Hash),
+                new JProperty(DependencyContextStrings.PathPropertyName, library.Path));
         }
 
         private string NormalizePath(string path)

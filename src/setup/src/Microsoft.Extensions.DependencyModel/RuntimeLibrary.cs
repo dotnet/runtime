@@ -9,8 +9,7 @@ namespace Microsoft.Extensions.DependencyModel
 {
     public class RuntimeLibrary : Library
     {
-        public RuntimeLibrary(
-            string type,
+        public RuntimeLibrary(string type,
             string name,
             string version,
             string hash,
@@ -19,7 +18,30 @@ namespace Microsoft.Extensions.DependencyModel
             IEnumerable<ResourceAssembly> resourceAssemblies,
             IEnumerable<Dependency> dependencies,
             bool serviceable)
-            : base(type, name, version, hash, dependencies, serviceable)
+            : this(type,
+                  name,
+                  version,
+                  hash,
+                  runtimeAssemblyGroups,
+                  nativeLibraryGroups,
+                  resourceAssemblies,
+                  dependencies,
+                  serviceable,
+                  path: null)
+        {
+        }
+
+        public RuntimeLibrary(string type,
+            string name,
+            string version,
+            string hash,
+            IReadOnlyList<RuntimeAssetGroup> runtimeAssemblyGroups,
+            IReadOnlyList<RuntimeAssetGroup> nativeLibraryGroups,
+            IEnumerable<ResourceAssembly> resourceAssemblies,
+            IEnumerable<Dependency> dependencies,
+            bool serviceable,
+            string path)
+            : base(type, name, version, hash, dependencies, serviceable, path)
         {
             if (runtimeAssemblyGroups == null)
             {
