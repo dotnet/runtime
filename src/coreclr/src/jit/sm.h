@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-
 //
 // State machine header used ONLY in the JIT.
 //
@@ -12,47 +11,46 @@
 
 #include "smcommon.h"
 
-extern const SMState *       gp_SMStates;
-extern const JumpTableCell * gp_SMJumpTableCells;
-extern const short *         gp_StateWeights;
+extern const SMState*       gp_SMStates;
+extern const JumpTableCell* gp_SMJumpTableCells;
+extern const short*         gp_StateWeights;
 
-class   CodeSeqSM     // Represent a particualr run of the state machine
-                      // For example, it maintains the array of counts for the terminated states.
-                      // These counts should be stored in per method based for them to be correct
-                      // under multithreadeded environment.
+class CodeSeqSM // Represent a particualr run of the state machine
+                // For example, it maintains the array of counts for the terminated states.
+                // These counts should be stored in per method based for them to be correct
+                // under multithreadeded environment.
 {
-public :
+public:
+    Compiler* pComp;
 
-    Compiler            * pComp;
+    const SMState*       States;
+    const JumpTableCell* JumpTableCells;
+    const short*         StateWeights; // Weight for each state. Including non-terminate states.
 
-    const SMState       * States;
-    const JumpTableCell * JumpTableCells; 
-    const short         * StateWeights;     // Weight for each state. Including non-terminate states.
+    SM_STATE_ID curState;
 
-    SM_STATE_ID         curState;
+    int NativeSize; // This is a signed integer!
 
-    int                 NativeSize;         // This is a signed integer!
-       
-    void                Start(Compiler  * comp);
-    void                Reset();
-    void                End();
-    void                Run(SM_OPCODE opcode DEBUGARG(int level));       
+    void Start(Compiler* comp);
+    void Reset();
+    void End();
+    void Run(SM_OPCODE opcode DEBUGARG(int level));
 
-    SM_STATE_ID         GetDestState(SM_STATE_ID srcState, SM_OPCODE opcode);
+    SM_STATE_ID GetDestState(SM_STATE_ID srcState, SM_OPCODE opcode);
 
     // Matched a termination state
-    inline void         TermStateMatch(SM_STATE_ID stateID DEBUGARG(bool verbose))
+    inline void TermStateMatch(SM_STATE_ID stateID DEBUGARG(bool verbose))
     {
-        assert(States[stateID].term);    
+        assert(States[stateID].term);
         assert(StateMatchedCounts[stateID] < _UI16_MAX);
-#ifdef DEBUG    
-        ++StateMatchedCounts[stateID]; 
-#ifndef SMGEN_COMPILE 
+#ifdef DEBUG
+        ++StateMatchedCounts[stateID];
+#ifndef SMGEN_COMPILE
         if (verbose)
         {
-            printf("weight=%3d : state %3d [ %s ]\n", StateWeights[stateID], stateID, StateDesc(stateID));            
+            printf("weight=%3d : state %3d [ %s ]\n", StateWeights[stateID], stateID, StateDesc(stateID));
         }
-#endif // SMGEN_COMPILE        
+#endif // SMGEN_COMPILE
 #endif // DEBUG
 
         NativeSize += StateWeights[stateID];
@@ -60,9 +58,9 @@ public :
 
     // Given an SM opcode retrieve the weight for this single opcode state.
     // For example, ID for single opcode state SM_NOSHOW is 2.
-    inline short        GetWeightForOpcode(SM_OPCODE opcode)
+    inline short GetWeightForOpcode(SM_OPCODE opcode)
     {
-        SM_STATE_ID stateID = ((SM_STATE_ID)opcode) + SM_STATE_ID_START + 1;        
+        SM_STATE_ID stateID = ((SM_STATE_ID)opcode) + SM_STATE_ID_START + 1;
         return StateWeights[stateID];
     }
 
@@ -71,9 +69,7 @@ public :
     const char* StateDesc(SM_STATE_ID stateID);
 #endif
 
-    static SM_OPCODE    MapToSMOpcode(OPCODE opcode);
+    static SM_OPCODE MapToSMOpcode(OPCODE opcode);
 };
 
 #endif /* __sm_h__ */
-
-

@@ -10,5 +10,5 @@
 #elif defined(_TARGET_ARM64_)
 #include "emitfmtsarm64.h"
 #else
-  #error Unsupported or unset target architecture
+#error Unsupported or unset target architecture
 #endif // target type

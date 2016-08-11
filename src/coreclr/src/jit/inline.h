@@ -78,21 +78,17 @@
 // Implementation limits
 
 #ifndef LEGACY_BACKEND
-const unsigned int   MAX_INL_ARGS =      32;     // does not include obj pointer
-const unsigned int   MAX_INL_LCLS =      32;
-#else // LEGACY_BACKEND
-const unsigned int   MAX_INL_ARGS =      10;     // does not include obj pointer
-const unsigned int   MAX_INL_LCLS =      8;
+const unsigned int MAX_INL_ARGS = 32; // does not include obj pointer
+const unsigned int MAX_INL_LCLS = 32;
+#else  // LEGACY_BACKEND
+const unsigned int MAX_INL_ARGS = 10; // does not include obj pointer
+const unsigned int MAX_INL_LCLS = 8;
 #endif // LEGACY_BACKEND
 
 // Flags lost during inlining.
 
-#define CORJIT_FLG_LOST_WHEN_INLINING   (CORJIT_FLG_BBOPT |                         \
-                                         CORJIT_FLG_BBINSTR |                       \
-                                         CORJIT_FLG_PROF_ENTERLEAVE |               \
-                                         CORJIT_FLG_DEBUG_EnC |                     \
-                                         CORJIT_FLG_DEBUG_INFO                      \
-                                        )
+#define CORJIT_FLG_LOST_WHEN_INLINING                                                                                  \
+    (CORJIT_FLG_BBOPT | CORJIT_FLG_BBINSTR | CORJIT_FLG_PROF_ENTERLEAVE | CORJIT_FLG_DEBUG_EnC | CORJIT_FLG_DEBUG_INFO)
 
 // Forward declarations
 
@@ -103,12 +99,12 @@ class InlineStrategy;
 
 enum class InlineCallsiteFrequency
 {
-    UNUSED,    // n/a
-    RARE,      // once in a blue moon
-    BORING,    // normal call site
-    WARM,      // seen during profiling
-    LOOP,      // in a loop
-    HOT        // very frequent
+    UNUSED, // n/a
+    RARE,   // once in a blue moon
+    BORING, // normal call site
+    WARM,   // seen during profiling
+    LOOP,   // in a loop
+    HOT     // very frequent
 };
 
 // InlineDecision describes the various states the jit goes through when
@@ -157,27 +153,27 @@ bool InlDecisionIsDecided(InlineDecision d);
 
 enum class InlineTarget
 {
-    CALLEE,         // observation applies to all calls to this callee
-    CALLER,         // observation applies to all calls made by this caller
-    CALLSITE        // observation applies to a specific call site
+    CALLEE,  // observation applies to all calls to this callee
+    CALLER,  // observation applies to all calls made by this caller
+    CALLSITE // observation applies to a specific call site
 };
 
 // InlineImpact describe the possible impact of an inline observation.
 
 enum class InlineImpact
 {
-    FATAL,          // inlining impossible, unsafe to evaluate further
-    FUNDAMENTAL,    // inlining impossible for fundamental reasons, deeper exploration safe
-    LIMITATION,     // inlining impossible because of jit limitations, deeper exploration safe
-    PERFORMANCE,    // inlining inadvisable because of performance concerns
-    INFORMATION     // policy-free observation to provide data for later decision making
+    FATAL,       // inlining impossible, unsafe to evaluate further
+    FUNDAMENTAL, // inlining impossible for fundamental reasons, deeper exploration safe
+    LIMITATION,  // inlining impossible because of jit limitations, deeper exploration safe
+    PERFORMANCE, // inlining inadvisable because of performance concerns
+    INFORMATION  // policy-free observation to provide data for later decision making
 };
 
 // InlineObservation describes the set of possible inline observations.
 
 enum class InlineObservation
 {
-#define INLINE_OBSERVATION(name, type, description, impact, scope) scope ## _ ## name,
+#define INLINE_OBSERVATION(name, type, description, impact, scope) scope##_##name,
 #include "inline.def"
 #undef INLINE_OBSERVATION
 };
@@ -216,18 +212,25 @@ InlineImpact InlGetImpact(InlineObservation obs);
 class InlinePolicy
 {
 public:
-
     // Factory method for getting policies
     static InlinePolicy* GetPolicy(Compiler* compiler, bool isPrejitRoot);
 
     // Obligatory virtual dtor
-    virtual ~InlinePolicy() {}
+    virtual ~InlinePolicy()
+    {
+    }
 
     // Get the current decision
-    InlineDecision GetDecision() const { return m_Decision; }
+    InlineDecision GetDecision() const
+    {
+        return m_Decision;
+    }
 
     // Get the observation responsible for the result
-    InlineObservation GetObservation() const { return m_Observation; }
+    InlineObservation GetObservation() const
+    {
+        return m_Observation;
+    }
 
     // Policy observations
     virtual void NoteSuccess() = 0;
@@ -236,15 +239,21 @@ public:
     virtual void NoteInt(InlineObservation obs, int value) = 0;
 
     // Optional observations. Most policies ignore these.
-    virtual void NoteContext(InlineContext* context) { (void) context; }
-    virtual void NoteOffset(IL_OFFSETX offset) { (void) offset; }
+    virtual void NoteContext(InlineContext* context)
+    {
+        (void)context;
+    }
+    virtual void NoteOffset(IL_OFFSETX offset)
+    {
+        (void)offset;
+    }
 
     // Policy determinations
     virtual void DetermineProfitability(CORINFO_METHOD_INFO* methodInfo) = 0;
 
     // Policy policies
     virtual bool PropagateNeverToRuntime() const = 0;
-    virtual bool IsLegacyPolicy() const = 0;
+    virtual bool IsLegacyPolicy() const          = 0;
 
     // Policy estimates
     virtual int CodeSizeEstimate() = 0;
@@ -254,22 +263,28 @@ public:
     // Name of the policy
     virtual const char* GetName() const = 0;
     // Detailed data value dump
-    virtual void DumpData(FILE* file) const { }
+    virtual void DumpData(FILE* file) const
+    {
+    }
     // Detailed data name dump
-    virtual void DumpSchema(FILE* file) const { }
+    virtual void DumpSchema(FILE* file) const
+    {
+    }
     // True if this is the inline targeted by data collection
-    bool IsDataCollectionTarget() { return m_IsDataCollectionTarget; }
+    bool IsDataCollectionTarget()
+    {
+        return m_IsDataCollectionTarget;
+    }
 
 #endif // defined(DEBUG) || defined(INLINE_DATA)
 
 protected:
-
     InlinePolicy(bool isPrejitRoot)
-        : m_Decision(InlineDecision::UNDECIDED)
-        , m_Observation(InlineObservation::CALLEE_UNUSED_INITIAL)
-        , m_IsPrejitRoot(isPrejitRoot)
+        : m_Decision(InlineDecision::UNDECIDED), m_Observation(InlineObservation::CALLEE_UNUSED_INITIAL),
+          m_IsPrejitRoot(isPrejitRoot)
 #if defined(DEBUG) || defined(INLINE_DATA)
-        , m_IsDataCollectionTarget(false)
+          ,
+          m_IsDataCollectionTarget(false)
 #endif // defined(DEBUG) || defined(INLINE_DATA)
 
     {
@@ -277,20 +292,18 @@ protected:
     }
 
 private:
-
     // No copying or assignment supported
     InlinePolicy(const InlinePolicy&) = delete;
     InlinePolicy& operator=(const InlinePolicy&) = delete;
 
 protected:
-
     InlineDecision    m_Decision;
     InlineObservation m_Observation;
     bool              m_IsPrejitRoot;
 
 #if defined(DEBUG) || defined(INLINE_DATA)
 
-    bool              m_IsDataCollectionTarget;
+    bool m_IsDataCollectionTarget;
 
 #endif // defined(DEBUG) || defined(INLINE_DATA)
 };
@@ -301,19 +314,13 @@ protected:
 class InlineResult
 {
 public:
-
     // Construct a new InlineResult to help evaluate a
     // particular call for inlining.
-    InlineResult(Compiler*              compiler,
-                 GenTreeCall*           call,
-                 GenTreeStmt*           stmt,
-                 const char*            description);
+    InlineResult(Compiler* compiler, GenTreeCall* call, GenTreeStmt* stmt, const char* description);
 
     // Construct a new InlineResult to evaluate a particular
     // method to see if it is inlineable.
-    InlineResult(Compiler*              compiler,
-                 CORINFO_METHOD_HANDLE  method,
-                 const char*            description);
+    InlineResult(Compiler* compiler, CORINFO_METHOD_HANDLE method, const char* description);
 
     // Has the policy determined this inline should fail?
     bool IsFailure() const
@@ -345,7 +352,7 @@ public:
     bool IsDiscretionaryCandidate() const
     {
         bool result = InlDecisionIsCandidate(m_Policy->GetDecision()) &&
-            (m_Policy->GetObservation() == InlineObservation::CALLEE_IS_DISCRETIONARY_INLINE);
+                      (m_Policy->GetObservation() == InlineObservation::CALLEE_IS_DISCRETIONARY_INLINE);
 
         return result;
     }
@@ -474,7 +481,6 @@ public:
     }
 
 private:
-
     // No copying or assignment allowed.
     InlineResult(const InlineResult&) = delete;
     InlineResult& operator=(const InlineResult&) = delete;
@@ -482,14 +488,14 @@ private:
     // Report/log/dump decision as appropriate
     void Report();
 
-    Compiler*               m_RootCompiler;
-    InlinePolicy*           m_Policy;
-    GenTreeCall*            m_Call;
-    InlineContext*          m_InlineContext;
-    CORINFO_METHOD_HANDLE   m_Caller;     // immediate caller's handle
-    CORINFO_METHOD_HANDLE   m_Callee;
-    const char*             m_Description;
-    bool                    m_Reported;
+    Compiler*             m_RootCompiler;
+    InlinePolicy*         m_Policy;
+    GenTreeCall*          m_Call;
+    InlineContext*        m_InlineContext;
+    CORINFO_METHOD_HANDLE m_Caller; // immediate caller's handle
+    CORINFO_METHOD_HANDLE m_Callee;
+    const char*           m_Description;
+    bool                  m_Reported;
 };
 
 // InlineCandidateInfo provides basic information about a particular
@@ -497,13 +503,13 @@ private:
 
 struct InlineCandidateInfo
 {
-    DWORD                 dwRestrictions;
-    CORINFO_METHOD_INFO   methInfo;
-    unsigned              methAttr;
-    CORINFO_CLASS_HANDLE  clsHandle;
-    unsigned              clsAttr;
-    var_types             fncRetType;
-    CORINFO_METHOD_HANDLE ilCallerHandle; //the logical IL caller of this inlinee.
+    DWORD                  dwRestrictions;
+    CORINFO_METHOD_INFO    methInfo;
+    unsigned               methAttr;
+    CORINFO_CLASS_HANDLE   clsHandle;
+    unsigned               clsAttr;
+    var_types              fncRetType;
+    CORINFO_METHOD_HANDLE  ilCallerHandle; // the logical IL caller of this inlinee.
     CORINFO_CONTEXT_HANDLE exactContextHnd;
     CorInfoInitClassResult initClassResult;
 };
@@ -512,61 +518,63 @@ struct InlineCandidateInfo
 
 struct InlArgInfo
 {
-    unsigned    argIsUsed     :1;   // is this arg used at all?
-    unsigned    argIsInvariant:1;   // the argument is a constant or a local variable address
-    unsigned    argIsLclVar   :1;   // the argument is a local variable
-    unsigned    argIsThis     :1;   // the argument is the 'this' pointer
-    unsigned    argHasSideEff :1;   // the argument has side effects
-    unsigned    argHasGlobRef :1;   // the argument has a global ref
-    unsigned    argHasTmp     :1;   // the argument will be evaluated to a temp
-    unsigned    argIsByRefToStructLocal:1;  // Is this arg an address of a struct local or a normed struct local or a field in them?
-    unsigned    argHasLdargaOp:1;   // Is there LDARGA(s) operation on this argument?
-    unsigned    argHasStargOp :1;   // Is there STARG(s) operation on this argument?
+    unsigned argIsUsed : 1;               // is this arg used at all?
+    unsigned argIsInvariant : 1;          // the argument is a constant or a local variable address
+    unsigned argIsLclVar : 1;             // the argument is a local variable
+    unsigned argIsThis : 1;               // the argument is the 'this' pointer
+    unsigned argHasSideEff : 1;           // the argument has side effects
+    unsigned argHasGlobRef : 1;           // the argument has a global ref
+    unsigned argHasTmp : 1;               // the argument will be evaluated to a temp
+    unsigned argIsByRefToStructLocal : 1; // Is this arg an address of a struct local or a normed struct local or a
+                                          // field in them?
+    unsigned argHasLdargaOp : 1;          // Is there LDARGA(s) operation on this argument?
+    unsigned argHasStargOp : 1;           // Is there STARG(s) operation on this argument?
 
-    unsigned    argTmpNum;          // the argument tmp number
-    GenTreePtr  argNode;
-    GenTreePtr  argBashTmpNode;     // tmp node created, if it may be replaced with actual arg
+    unsigned   argTmpNum; // the argument tmp number
+    GenTreePtr argNode;
+    GenTreePtr argBashTmpNode; // tmp node created, if it may be replaced with actual arg
 };
 
 // InlArgInfo describes inline candidate local variable properties.
 
 struct InlLclVarInfo
 {
-    var_types       lclTypeInfo;
-    typeInfo        lclVerTypeInfo;
-    bool            lclHasLdlocaOp; // Is there LDLOCA(s) operation on this argument?
+    var_types lclTypeInfo;
+    typeInfo  lclVerTypeInfo;
+    bool      lclHasLdlocaOp; // Is there LDLOCA(s) operation on this argument?
 };
 
 // InlineInfo provides detailed information about a particular inline candidate.
 
 struct InlineInfo
 {
-    Compiler        * InlinerCompiler;  // The Compiler instance for the caller (i.e. the inliner)
-    Compiler        * InlineRoot;       // The Compiler instance that is the root of the inlining tree of which the owner of "this" is a member.
+    Compiler* InlinerCompiler; // The Compiler instance for the caller (i.e. the inliner)
+    Compiler* InlineRoot; // The Compiler instance that is the root of the inlining tree of which the owner of "this" is
+                          // a member.
 
     CORINFO_METHOD_HANDLE fncHandle;
-    InlineCandidateInfo * inlineCandidateInfo;
+    InlineCandidateInfo*  inlineCandidateInfo;
 
-    InlineResult*  inlineResult;
+    InlineResult* inlineResult;
 
-    GenTreePtr retExpr;      // The return expression of the inlined candidate.
+    GenTreePtr retExpr; // The return expression of the inlined candidate.
 
     CORINFO_CONTEXT_HANDLE tokenLookupContextHandle; // The context handle that will be passed to
                                                      // impTokenLookupContextHandle in Inlinee's Compiler.
 
-    unsigned          argCnt;
-    InlArgInfo        inlArgInfo[MAX_INL_ARGS + 1];
-    int               lclTmpNum[MAX_INL_LCLS];    // map local# -> temp# (-1 if unused)
-    InlLclVarInfo     lclVarInfo[MAX_INL_LCLS + MAX_INL_ARGS + 1];  // type information from local sig
+    unsigned      argCnt;
+    InlArgInfo    inlArgInfo[MAX_INL_ARGS + 1];
+    int           lclTmpNum[MAX_INL_LCLS];                     // map local# -> temp# (-1 if unused)
+    InlLclVarInfo lclVarInfo[MAX_INL_LCLS + MAX_INL_ARGS + 1]; // type information from local sig
 
-    bool              thisDereferencedFirst;
+    bool thisDereferencedFirst;
 #ifdef FEATURE_SIMD
-    bool              hasSIMDTypeArgLocalOrReturn;
+    bool hasSIMDTypeArgLocalOrReturn;
 #endif // FEATURE_SIMD
 
-    GenTreeCall     * iciCall;       // The GT_CALL node to be inlined.
-    GenTree         * iciStmt;       // The statement iciCall is in.
-    BasicBlock      * iciBlock;      // The basic block iciStmt is in.
+    GenTreeCall* iciCall;  // The GT_CALL node to be inlined.
+    GenTree*     iciStmt;  // The statement iciCall is in.
+    BasicBlock*  iciBlock; // The basic block iciStmt is in.
 };
 
 // InlineContext tracks the inline history in a method.
@@ -591,7 +599,6 @@ class InlineContext
     friend class InlineStrategy;
 
 public:
-
 #if defined(DEBUG) || defined(INLINE_DATA)
 
     // Dump the full subtree, including failures
@@ -660,31 +667,28 @@ public:
     }
 
 private:
-
     InlineContext(InlineStrategy* strategy);
 
 private:
-
-    InlineStrategy*       m_InlineStrategy;   // overall strategy
-    InlineContext*        m_Parent;           // logical caller (parent)
-    InlineContext*        m_Child;            // first child
-    InlineContext*        m_Sibling;          // next child of the parent
-    BYTE*                 m_Code;             // address of IL buffer for the method
-    unsigned              m_ILSize;           // size of IL buffer for the method
-    IL_OFFSETX            m_Offset;           // call site location within parent
-    InlineObservation     m_Observation;      // what lead to this inline
-    int                   m_CodeSizeEstimate; // in bytes * 10
-    bool                  m_Success;          // true if this was a successful inline
+    InlineStrategy*   m_InlineStrategy;   // overall strategy
+    InlineContext*    m_Parent;           // logical caller (parent)
+    InlineContext*    m_Child;            // first child
+    InlineContext*    m_Sibling;          // next child of the parent
+    BYTE*             m_Code;             // address of IL buffer for the method
+    unsigned          m_ILSize;           // size of IL buffer for the method
+    IL_OFFSETX        m_Offset;           // call site location within parent
+    InlineObservation m_Observation;      // what lead to this inline
+    int               m_CodeSizeEstimate; // in bytes * 10
+    bool              m_Success;          // true if this was a successful inline
 
 #if defined(DEBUG) || defined(INLINE_DATA)
 
-    InlinePolicy*         m_Policy;           // policy that evaluated this inline
-    CORINFO_METHOD_HANDLE m_Callee;           // handle to the method
-    unsigned              m_TreeID;           // ID of the GenTreeCall
-    unsigned              m_Ordinal;          // Ordinal number of this inline
+    InlinePolicy*         m_Policy;  // policy that evaluated this inline
+    CORINFO_METHOD_HANDLE m_Callee;  // handle to the method
+    unsigned              m_TreeID;  // ID of the GenTreeCall
+    unsigned              m_Ordinal; // Ordinal number of this inline
 
 #endif // defined(DEBUG) || defined(INLINE_DATA)
-
 };
 
 // The InlineStrategy holds the per-method persistent inline state.
@@ -695,16 +699,14 @@ class InlineStrategy
 {
 
 public:
-
     // Construct a new inline strategy.
     InlineStrategy(Compiler* compiler);
 
     // Create context for a successful inline.
-    InlineContext* NewSuccess(InlineInfo*     inlineInfo);
+    InlineContext* NewSuccess(InlineInfo* inlineInfo);
 
     // Create context for a failing inline.
-    InlineContext* NewFailure(GenTree*        stmt,
-                              InlineResult*   inlineResult);
+    InlineContext* NewFailure(GenTree* stmt, InlineResult* inlineResult);
 
     // Compiler associated with this strategy
     Compiler* GetCompiler() const
@@ -826,13 +828,12 @@ public:
     // Some inline limit values
     enum
     {
-        ALWAYS_INLINE_SIZE = 16,
-        IMPLEMENTATION_MAX_INLINE_SIZE = _UI16_MAX,
+        ALWAYS_INLINE_SIZE              = 16,
+        IMPLEMENTATION_MAX_INLINE_SIZE  = _UI16_MAX,
         IMPLEMENTATION_MAX_INLINE_DEPTH = 1000
     };
 
 private:
-
     // Create a context for the root method.
     InlineContext* NewRoot();
 
@@ -886,9 +887,8 @@ private:
     bool           m_HasForceViaDiscretionary;
 
 #if defined(DEBUG) || defined(INLINE_DATA)
-    long           m_MethodXmlFilePosition;
+    long m_MethodXmlFilePosition;
 #endif // defined(DEBUG) || defined(INLINE_DATA)
-
 };
 
 #endif // _INLINE_H_

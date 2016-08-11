@@ -116,7 +116,7 @@ public:
 
     pointer address(reference val);
     const_pointer address(const_reference val) const;
-    pointer allocate(size_type count, allocator<void>::const_pointer hint = 0);
+    pointer allocate(size_type count, allocator<void>::const_pointer hint = nullptr);
     void construct(pointer ptr, const_reference val);
     void deallocate(pointer ptr, size_type size);
     void destroy(pointer ptr);
