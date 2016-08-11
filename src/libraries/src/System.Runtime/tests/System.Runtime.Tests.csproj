@@ -99,10 +99,6 @@
       <Project>{1e689c1b-690c-4799-bde9-6e7990585894}</Project>
       <Name>System.Runtime</Name>
     </ProjectReference>
-    <!-- ToDo: Remove this reference to the live package of System.Globalization once prerelease gets updated again -->
-    <ProjectReference Include="..\..\System.Globalization\pkg\System.Globalization.pkgproj">
-      <Name>System.Globalization</Name>
-    </ProjectReference>
     <ProjectReference Include="..\..\System.Private.Uri\pkg\System.Private.Uri.pkgproj">
     </ProjectReference>
   </ItemGroup>
