@@ -42,6 +42,17 @@ namespace Microsoft.DotNet.Host.Build
         public static BuildTargetResult Init(BuildTargetContext c)
         {
             var configEnv = Environment.GetEnvironmentVariable("CONFIGURATION");
+            string platformEnv = Environment.GetEnvironmentVariable("TARGETPLATFORM") ?? RuntimeEnvironment.RuntimeArchitecture.ToString();
+            string targetRID = Environment.GetEnvironmentVariable("TARGETRID");
+            if (targetRID == null)
+            {
+                targetRID = RuntimeEnvironment.GetRuntimeIdentifier();
+                if (targetRID.StartsWith("win") && (targetRID.EndsWith("x86") || targetRID.EndsWith("x64")))
+                {
+                    targetRID = $"win7-{RuntimeEnvironment.RuntimeArchitecture}";
+                }
+            }
+            string targetFramework = Environment.GetEnvironmentVariable("TARGETFRAMEWORK") ?? "netcoreapp1.0";
 
             if (string.IsNullOrEmpty(configEnv))
             {
@@ -50,11 +61,14 @@ namespace Microsoft.DotNet.Host.Build
             
             c.BuildContext["Configuration"] = configEnv;
             c.BuildContext["Channel"] = Environment.GetEnvironmentVariable("CHANNEL");
+            c.BuildContext["Platform"] = platformEnv;
+            c.BuildContext["TargetRID"] = targetRID;
+            c.BuildContext["TargetFramework"] = targetFramework;
 
             c.Info($"Building {c.BuildContext["Configuration"]} to: {Dirs.Output}");
             c.Info("Build Environment:");
             c.Info($" Operating System: {RuntimeEnvironment.OperatingSystem} {RuntimeEnvironment.OperatingSystemVersion}");
-            c.Info($" Platform: {RuntimeEnvironment.OperatingSystemPlatform}");
+            c.Info($" Platform: " + platformEnv);
 
             return c.Success();
         }
@@ -213,7 +227,6 @@ namespace Microsoft.DotNet.Host.Build
             {
                 c.BuildContext[contextPrefix + "InstallerFile"] = Path.Combine(Dirs.Packages, installer);
             }
-
         }
 
         [Target]

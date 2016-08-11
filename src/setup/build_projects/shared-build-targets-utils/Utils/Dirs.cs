@@ -13,7 +13,7 @@ namespace Microsoft.DotNet.Cli.Build
         public static readonly string Output = Path.Combine(
             RepoRoot,
             "artifacts",
-            RuntimeEnvironment.GetRuntimeIdentifier());
+             Environment.GetEnvironmentVariable("TARGETRID") ?? RuntimeEnvironment.GetRuntimeIdentifier());
 
         public static readonly string Intermediate = Path.Combine(Output, "intermediate");
         public static readonly string PackagesIntermediate = Path.Combine(Output, "packages/intermediate");
