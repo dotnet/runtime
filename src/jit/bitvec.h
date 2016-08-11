@@ -14,7 +14,7 @@
 //
 //   BitVecTraits traits(size, pCompiler);
 //   BitVec bitvec = BitVecOps::MakeEmpty(&traits);
-// 
+//
 // and call functions like so:
 //
 //   BitVecOps::AddElemD(&traits, bitvec, 10);
@@ -25,17 +25,17 @@
 #include "compilerbitsettraits.h"
 #include "bitsetasshortlong.h"
 
-typedef BitSetOps</*BitSetType*/BitSetShortLongRep, 
-                  /*Brand*/BSShortLong,
-                  /*Env*/BitVecTraits*,
-                  /*BitSetTraits*/BitVecTraits>
-        BitVecOps;
+typedef BitSetOps</*BitSetType*/ BitSetShortLongRep,
+                  /*Brand*/ BSShortLong,
+                  /*Env*/ BitVecTraits*,
+                  /*BitSetTraits*/ BitVecTraits>
+    BitVecOps;
 
-typedef  BitSetShortLongRep BitVec;
+typedef BitSetShortLongRep BitVec;
 
 // These types should be used as the types for BitVec arguments and return values, respectively.
-typedef   BitVecOps::ValArgType BitVec_ValArg_T;
-typedef   BitVecOps::RetValType BitVec_ValRet_T;
+typedef BitVecOps::ValArgType BitVec_ValArg_T;
+typedef BitVecOps::RetValType BitVec_ValRet_T;
 
 // Initialize "_varName" to "_initVal."  Copies contents, not references; if "_varName" is uninitialized, allocates a
 // set for it (using "_traits" for any necessary allocation), and copies the contents of "_initVal" into it.
@@ -49,8 +49,8 @@ typedef   BitVecOps::RetValType BitVec_ValRet_T;
 
 // Use this to initialize an iterator "_iterName" to iterate over a BitVec "_bitVec".
 // "_bitNum" will be an unsigned variable to which we assign the elements of "_bitVec".
-#define BITVEC_ITER_INIT(_traits, _iterName, _bitVec, _bitNum) \
-    unsigned _bitNum = 0; \
+#define BITVEC_ITER_INIT(_traits, _iterName, _bitVec, _bitNum)                                                         \
+    unsigned        _bitNum = 0;                                                                                       \
     BitVecOps::Iter _iterName(_traits, _bitVec)
 
 #endif // _BITVEC_INCLUDED_

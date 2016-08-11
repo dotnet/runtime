@@ -32,10 +32,11 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "lsra.h"
 
 /* Lowering of GT_CAST nodes */
-void Lowering::LowerCast(GenTreePtr *ppTree) { }
+void Lowering::LowerCast(GenTreePtr* ppTree)
+{
+}
 
-
-void Lowering::LowerCntBlockOp(GenTreePtr *ppTree)
+void Lowering::LowerCntBlockOp(GenTreePtr* ppTree)
 {
     NYI_ARM("ARM Lowering for BlockOp");
 }
@@ -57,7 +58,7 @@ void Lowering::TreeNodeInfoInit(GenTree* stmt)
     comp->fgWalkTreePost(&stmt->gtStmt.gtStmtExpr, &Lowering::TreeInfoInitHelper, this);
 }
 
-void Lowering::TreeNodeInfoInit(GenTreePtr *pTree, GenTree* parent)
+void Lowering::TreeNodeInfoInit(GenTreePtr* pTree, GenTree* parent)
 {
     NYI("ARM TreeNodInfoInit");
 }
@@ -68,13 +69,13 @@ bool Lowering::isRMWRegOper(GenTreePtr tree)
     return false;
 }
 
-bool Lowering::IsCallTargetInRange(void *addr)
+bool Lowering::IsCallTargetInRange(void* addr)
 {
-    return comp->codeGen->validImmForBL ((ssize_t)addr);
+    return comp->codeGen->validImmForBL((ssize_t)addr);
 }
 
 // return true if the immediate can be folded into an instruction, for example small enough and non-relocatable
-bool Lowering:: IsContainableImmed(GenTree* parentNode, GenTree* childNode)
+bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode)
 {
     NYI_ARM("ARM IsContainableImmed");
     return false;

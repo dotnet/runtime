@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-
 #include "jitpch.h"
 #ifdef _MSC_VER
 #pragma hdrstop
@@ -20,32 +19,26 @@ unsigned BitSetSupport::BitCountTable[16] = { 0, 1, 1, 2,
 // clang-format on
 
 #ifdef DEBUG
-template<typename BitSetType, 
-         unsigned Uniq,
-         typename Env, 
-         typename BitSetTraits>
+template <typename BitSetType, unsigned Uniq, typename Env, typename BitSetTraits>
 void BitSetSupport::RunTests(Env env)
 {
 
-    typedef BitSetOps<BitSetType, 
-                      Uniq,
-                      Env, 
-                      BitSetTraits> LclBitSetOps;
+    typedef BitSetOps<BitSetType, Uniq, Env, BitSetTraits> LclBitSetOps;
 
     // The tests require that the Size is at least 52...
     assert(BitSetTraits::GetSize(env) > 51);
 
     BitSetType bs1;
     LclBitSetOps::AssignNoCopy(env, bs1, LclBitSetOps::MakeEmpty(env));
-    unsigned bs1bits[] = { 0, 10, 44, 45 };
+    unsigned bs1bits[] = {0, 10, 44, 45};
     LclBitSetOps::AddElemD(env, bs1, bs1bits[0]);
     LclBitSetOps::AddElemD(env, bs1, bs1bits[1]);
     LclBitSetOps::AddElemD(env, bs1, bs1bits[2]);
     LclBitSetOps::AddElemD(env, bs1, bs1bits[3]);
 
     typename LclBitSetOps::Iter bsi(env, bs1);
-    unsigned bitNum = 0;
-    unsigned k = 0;
+    unsigned                    bitNum = 0;
+    unsigned                    k      = 0;
     while (bsi.NextElem(env, &bitNum))
     {
         assert(bitNum == bs1bits[k]);
@@ -59,17 +52,17 @@ void BitSetSupport::RunTests(Env env)
 
     BitSetType bs2;
     LclBitSetOps::AssignNoCopy(env, bs2, LclBitSetOps::MakeEmpty(env));
-    unsigned bs2bits[] = { 0, 10, 50, 51 };
+    unsigned bs2bits[] = {0, 10, 50, 51};
     LclBitSetOps::AddElemD(env, bs2, bs2bits[0]);
     LclBitSetOps::AddElemD(env, bs2, bs2bits[1]);
     LclBitSetOps::AddElemD(env, bs2, bs2bits[2]);
     LclBitSetOps::AddElemD(env, bs2, bs2bits[3]);
 
-    unsigned unionBits[] = { 0, 10, 44, 45, 50, 51 };
+    unsigned   unionBits[] = {0, 10, 44, 45, 50, 51};
     BitSetType bsU12;
     LclBitSetOps::AssignNoCopy(env, bsU12, LclBitSetOps::Union(env, bs1, bs2));
-    k = 0;
-    bsi = typename LclBitSetOps::Iter(env, bsU12);
+    k      = 0;
+    bsi    = typename LclBitSetOps::Iter(env, bsU12);
     bitNum = 0;
     while (bsi.NextElem(env, &bitNum))
     {
@@ -78,9 +71,9 @@ void BitSetSupport::RunTests(Env env)
     }
     assert(k == 6);
 
-    k = 0;
+    k                                = 0;
     typename LclBitSetOps::Iter bsiL = typename LclBitSetOps::Iter(env, bsU12);
-    bitNum = 0;
+    bitNum                           = 0;
     while (bsiL.NextElem(env, &bitNum))
     {
         assert(bitNum == unionBits[k]);
@@ -88,11 +81,11 @@ void BitSetSupport::RunTests(Env env)
     }
     assert(k == 6);
 
-    unsigned intersectionBits[] = { 0, 10 };
+    unsigned   intersectionBits[] = {0, 10};
     BitSetType bsI12;
     LclBitSetOps::AssignNoCopy(env, bsI12, LclBitSetOps::Intersection(env, bs1, bs2));
-    k = 0;
-    bsi = typename LclBitSetOps::Iter(env, bsI12);
+    k      = 0;
+    bsi    = typename LclBitSetOps::Iter(env, bsI12);
     bitNum = 0;
     while (bsi.NextElem(env, &bitNum))
     {
@@ -105,65 +98,81 @@ void BitSetSupport::RunTests(Env env)
 class TestBitSetTraits
 {
 public:
-    static IAllocator* GetAllocator(IAllocator* alloc) { return alloc; }
-    static unsigned GetSize(IAllocator* alloc) { return 64; }
+    static IAllocator* GetAllocator(IAllocator* alloc)
+    {
+        return alloc;
+    }
+    static unsigned GetSize(IAllocator* alloc)
+    {
+        return 64;
+    }
     static unsigned GetArrSize(IAllocator* alloc, unsigned elemSize)
     {
         assert(elemSize == sizeof(size_t));
-        return (64/8)/sizeof(size_t);
+        return (64 / 8) / sizeof(size_t);
     }
-    static unsigned GetEpoch(IAllocator* alloc) { return 0; }
+    static unsigned GetEpoch(IAllocator* alloc)
+    {
+        return 0;
+    }
 };
 
 void BitSetSupport::TestSuite(IAllocator* env)
 {
     BitSetSupport::RunTests<UINT64, BSUInt64, IAllocator*, TestBitSetTraits>(env);
     BitSetSupport::RunTests<BitSetShortLongRep, BSShortLong, IAllocator*, TestBitSetTraits>(env);
-    BitSetSupport::RunTests<BitSetUint64<IAllocator*, TestBitSetTraits>, BSUInt64Class, IAllocator*, TestBitSetTraits>(env);
+    BitSetSupport::RunTests<BitSetUint64<IAllocator*, TestBitSetTraits>, BSUInt64Class, IAllocator*, TestBitSetTraits>(
+        env);
 }
 #endif
 
-const char* BitSetSupport::OpNames[BitSetSupport::BSOP_NUMOPS] =
-    {
+const char* BitSetSupport::OpNames[BitSetSupport::BSOP_NUMOPS] = {
 #define BSOPNAME(x) #x,
 #include "bitsetops.h"
 #undef BSOPNAME
-    };
+};
 
 void BitSetSupport::BitSetOpCounter::RecordOp(BitSetSupport::Operation op)
 {
-    OpCounts[op]++; TotalOps++;
+    OpCounts[op]++;
+    TotalOps++;
 
     if ((TotalOps % 1000000) == 0)
     {
-        if (OpOutputFile == NULL)
+        if (OpOutputFile == nullptr)
         {
             OpOutputFile = fopen(m_fileName, "a");
         }
         fprintf(OpOutputFile, "@ %d total ops.\n", TotalOps);
 
         unsigned OpOrder[BSOP_NUMOPS];
-        bool OpOrdered[BSOP_NUMOPS];
+        bool     OpOrdered[BSOP_NUMOPS];
 
         // First sort by total operations (into an index permutation array, using a simple n^2 sort).
-        for (unsigned k = 0; k < BitSetSupport::BSOP_NUMOPS; k++) OpOrdered[k] = false;
         for (unsigned k = 0; k < BitSetSupport::BSOP_NUMOPS; k++)
         {
-            bool candSet = false;
-            unsigned cand = 0;
+            OpOrdered[k] = false;
+        }
+        for (unsigned k = 0; k < BitSetSupport::BSOP_NUMOPS; k++)
+        {
+            bool     candSet = false;
+            unsigned cand    = 0;
             unsigned candInd = 0;
             for (unsigned j = 0; j < BitSetSupport::BSOP_NUMOPS; j++)
             {
-                if (OpOrdered[j]) continue;
+                if (OpOrdered[j])
+                {
+                    continue;
+                }
                 if (!candSet || OpCounts[j] > cand)
                 {
                     candInd = j;
-                    cand = OpCounts[j];
+                    cand    = OpCounts[j];
                     candSet = true;
                 }
             }
             assert(candSet);
-            OpOrder[k] = candInd;
+            OpOrder[k]         = candInd;
             OpOrdered[candInd] = true;
         }
 

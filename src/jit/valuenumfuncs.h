@@ -2,9 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-
 // Defines the functions understood by the value-numbering system.
-// ValueNumFuncDef(<name of function>, <arity (1-4)>, <is-commutative (for arity = 2)>, <non-null (for gc functions)>, <is-shared-static>)
+// ValueNumFuncDef(<name of function>, <arity (1-4)>, <is-commutative (for arity = 2)>, <non-null (for gc functions)>,
+// <is-shared-static>)
 
 // clang-format off
 ValueNumFuncDef(MapStore, 3, false, false, false)
@@ -137,6 +137,5 @@ ValueNumFuncDef(StrCns, 2, false, true, false)
 
 ValueNumFuncDef(Unbox, 2, false, true, false)
 // clang-format on
-
 
 #undef ValueNumFuncDef
