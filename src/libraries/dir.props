@@ -92,7 +92,7 @@
 
     <CoreFxExpectedPrerelease>beta-devapi-24410-02</CoreFxExpectedPrerelease>
     <CoreClrExpectedPrerelease>beta-24410-02</CoreClrExpectedPrerelease>
-    <ExternalExpectedPrerelease>beta-24404-00</ExternalExpectedPrerelease>
+    <ExternalExpectedPrerelease>beta-24411-00</ExternalExpectedPrerelease>
 
     <CoreFxVersionsIdentityRegex>^(?i)(((System\..*)(?&lt;!System\.ServiceModel\..*))|(NETStandard\.Library)|(Microsoft\.CSharp)|(Microsoft\.NETCore\.Targets)|(Microsoft\.NETCore\.Platforms)|(Microsoft\.Win32\..*)|(Microsoft\.VisualBasic))(?&lt;!TestData)$</CoreFxVersionsIdentityRegex>
   </PropertyGroup>
