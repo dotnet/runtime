@@ -796,6 +796,7 @@ namespace System.Runtime.InteropServices
         LPStruct = 43,
         LPTStr = 22,
         LPWStr = 21,
+        LPUTF8Str = 48,
         R4 = 11,
         R8 = 12,
         [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
