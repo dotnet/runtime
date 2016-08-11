@@ -47,7 +47,7 @@
   </PropertyGroup>
 
   <!-- Temporary Target that will copy newly created System.Private.Xml assets to test directory. Issue #10687 -->
-  <Target Name="CopySystemPrivaleXmlLibrariesToTestDirectory" BeforeTargets="CopyTestToTestDirectory" Condition="'$(TestWithLocalLibraries)'=='true' And '$(DisableCopyTestToTestDirectory)'!='true'">
+  <Target Name="CopySystemPrivaleXmlLibrariesToTestDirectory" BeforeTargets="CopyTestToTestDirectory" Condition="'$(DisableCopyTestToTestDirectory)'!='true'">
     <PropertyGroup>
       <BaseLocalLibrariesPath Condition="'$(BaseLocalLibrariesPath)'==''">$(BaseOutputPath)</BaseLocalLibrariesPath>
       <AnyOSLocalLibrariesPath>$(BaseLocalLibrariesPath)/AnyOS.$(Platform).$(ConfigurationGroup)</AnyOSLocalLibrariesPath>
