@@ -28,7 +28,7 @@ See runtest.sh usage information:
 
 > `~/coreclr$ tests/runtest.sh --help`
 
-Run tests:
+Run tests (`Debug` may be replaced with `Release` or `Checked`, depending on which Configuration you've built):
 
 > ```bash
 > ~/coreclr$ tests/runtest.sh
