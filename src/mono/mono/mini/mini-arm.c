@@ -4442,14 +4442,12 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				ARM_DMB (code, ARM_DMB_SY);
 			break;
 		}
-		/*case OP_BIGMUL:
-			ppc_mullw (code, ppc_r4, ins->sreg1, ins->sreg2);
-			ppc_mulhw (code, ppc_r3, ins->sreg1, ins->sreg2);
+		case OP_BIGMUL:
+			ARM_SMULL_REG_REG (code, ins->backend.reg3, ins->dreg, ins->sreg1, ins->sreg2);
 			break;
 		case OP_BIGMUL_UN:
-			ppc_mullw (code, ppc_r4, ins->sreg1, ins->sreg2);
-			ppc_mulhwu (code, ppc_r3, ins->sreg1, ins->sreg2);
-			break;*/
+			ARM_UMULL_REG_REG (code, ins->backend.reg3, ins->dreg, ins->sreg1, ins->sreg2);
+			break;
 		case OP_STOREI1_MEMBASE_IMM:
 			code = mono_arm_emit_load_imm (code, ARMREG_LR, ins->inst_imm & 0xFF);
 			g_assert (arm_is_imm12 (ins->inst_offset));
