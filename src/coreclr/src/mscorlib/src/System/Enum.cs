@@ -47,6 +47,7 @@ namespace System
             return entry;
         }
 
+        [System.Security.SecuritySafeCritical]
         private unsafe String InternalFormattedHexString()
         {
             fixed (void* pValue = &JitHelpers.GetPinningHelper(this).m_data)
