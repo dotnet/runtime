@@ -20,15 +20,17 @@ private:
     enum
     {
         POOLED_ALLOCATOR_NOTINITIALIZED = 0,
-        POOLED_ALLOCATOR_IN_USE = 1,
-        POOLED_ALLOCATOR_AVAILABLE = 2,
-        POOLED_ALLOCATOR_SHUTDOWN = 3,
+        POOLED_ALLOCATOR_IN_USE         = 1,
+        POOLED_ALLOCATOR_AVAILABLE      = 2,
+        POOLED_ALLOCATOR_SHUTDOWN       = 3,
     };
 
     static PooledAllocator s_pooledAllocator;
-    static LONG s_pooledAllocatorState;
+    static LONG            s_pooledAllocatorState;
 
-    PooledAllocator() : ArenaAllocator() {}
+    PooledAllocator() : ArenaAllocator()
+    {
+    }
     PooledAllocator(IEEMemoryManager* memoryManager);
 
     PooledAllocator(const PooledAllocator& other) = delete;
@@ -61,7 +63,7 @@ bool ArenaAllocator::bypassHostAllocator()
     // knobs for ensuring that we do not have buffer overruns in the JIT.
 
     return JitConfig.JitDirectAlloc() != 0;
-#else // defined(DEBUG)
+#else  // defined(DEBUG)
     return false;
 #endif // !defined(DEBUG)
 }
@@ -115,16 +117,16 @@ ArenaAllocator& ArenaAllocator::operator=(ArenaAllocator&& other)
     assert(!isInitialized());
 
     m_memoryManager = other.m_memoryManager;
-    m_firstPage = other.m_firstPage;
-    m_lastPage = other.m_lastPage;
-    m_nextFreeByte = other.m_nextFreeByte;
-    m_lastFreeByte = other.m_lastFreeByte;
+    m_firstPage     = other.m_firstPage;
+    m_lastPage      = other.m_lastPage;
+    m_nextFreeByte  = other.m_nextFreeByte;
+    m_lastFreeByte  = other.m_lastFreeByte;
 
     other.m_memoryManager = nullptr;
-    other.m_firstPage = nullptr;
-    other.m_lastPage = nullptr;
-    other.m_nextFreeByte = nullptr;
-    other.m_lastFreeByte = nullptr;
+    other.m_firstPage     = nullptr;
+    other.m_lastPage      = nullptr;
+    other.m_nextFreeByte  = nullptr;
+    other.m_lastFreeByte  = nullptr;
 
     return *this;
 }
@@ -196,12 +198,12 @@ void* ArenaAllocator::allocateNewPage(size_t size, bool canThrow)
     }
 
     // Append the new page to the end of the list
-    newPage->m_next = nullptr;
+    newPage->m_next      = nullptr;
     newPage->m_pageBytes = pageSize;
-    newPage->m_previous = m_lastPage;
-    newPage->m_usedBytes = 0;  // m_usedBytes is meaningless until a new page is allocated.
-                               // Instead of letting it contain garbage (so to confuse us),
-                               // set it to zero.
+    newPage->m_previous  = m_lastPage;
+    newPage->m_usedBytes = 0; // m_usedBytes is meaningless until a new page is allocated.
+                              // Instead of letting it contain garbage (so to confuse us),
+                              // set it to zero.
 
     if (m_lastPage != nullptr)
     {
@@ -230,7 +232,7 @@ void ArenaAllocator::destroy()
     assert(isInitialized());
 
     // Free all of the allocated pages
-    for (PageDescriptor* page = m_firstPage, *next; page != nullptr; page = next)
+    for (PageDescriptor *page = m_firstPage, *next; page != nullptr; page = next)
     {
         next = page->m_next;
         freeHostMemory(page);
@@ -238,10 +240,10 @@ void ArenaAllocator::destroy()
 
     // Clear out the allocator's fields
     m_memoryManager = nullptr;
-    m_firstPage = nullptr;
-    m_lastPage = nullptr;
-    m_nextFreeByte = nullptr;
-    m_lastFreeByte = nullptr;
+    m_firstPage     = nullptr;
+    m_lastPage      = nullptr;
+    m_nextFreeByte  = nullptr;
+    m_lastFreeByte  = nullptr;
 }
 
 // The debug version of the allocator may allocate directly from the
@@ -277,7 +279,7 @@ void* ArenaAllocator::allocateHostMemory(size_t size)
     {
         return ClrAllocInProcessHeap(0, S_SIZE_T(size));
     }
-#else // defined(DEBUG)
+#else  // defined(DEBUG)
     return m_memoryManager->ClrVirtualAlloc(nullptr, size, MEM_COMMIT, PAGE_READWRITE);
 #endif // !defined(DEBUG)
 }
@@ -301,7 +303,7 @@ void ArenaAllocator::freeHostMemory(void* block)
     {
         ClrFreeInProcessHeap(0, block);
     }
-#else // defined(DEBUG)
+#else  // defined(DEBUG)
     m_memoryManager->ClrVirtualFree(block, 0, MEM_RELEASE);
 #endif // !defined(DEBUG)
 }
@@ -334,16 +336,16 @@ void* ArenaAllocator::allocateMemory(size_t size)
 
     if (JitConfig.ShouldInjectFault() != 0)
     {
-        // Force the underlying memory allocator (either the OS or the CLR hoster) 
+        // Force the underlying memory allocator (either the OS or the CLR hoster)
         // to allocate the memory. Any fault injection will kick in.
         void* p = ClrAllocInProcessHeap(0, S_SIZE_T(1));
         if (p != nullptr)
         {
             ClrFreeInProcessHeap(0, p);
         }
-        else 
+        else
         {
-            NOMEM();  // Throw!
+            NOMEM(); // Throw!
         }
     }
 
@@ -419,9 +421,7 @@ size_t ArenaAllocator::getTotalBytesUsed()
 //    subsystem.
 void ArenaAllocator::startup()
 {
-    s_defaultPageSize = bypassHostAllocator()
-        ? (size_t)MIN_PAGE_SIZE
-        : (size_t)DEFAULT_PAGE_SIZE;
+    s_defaultPageSize = bypassHostAllocator() ? (size_t)MIN_PAGE_SIZE : (size_t)DEFAULT_PAGE_SIZE;
 }
 
 //------------------------------------------------------------------------
@@ -433,13 +433,12 @@ void ArenaAllocator::shutdown()
 }
 
 PooledAllocator PooledAllocator::s_pooledAllocator;
-LONG PooledAllocator::s_pooledAllocatorState = POOLED_ALLOCATOR_NOTINITIALIZED;
+LONG            PooledAllocator::s_pooledAllocatorState = POOLED_ALLOCATOR_NOTINITIALIZED;
 
 //------------------------------------------------------------------------
 // PooledAllocator::PooledAllocator:
 //    Constructs a `PooledAllocator`.
-PooledAllocator::PooledAllocator(IEEMemoryManager* memoryManager)
-    : ArenaAllocator(memoryManager)
+PooledAllocator::PooledAllocator(IEEMemoryManager* memoryManager) : ArenaAllocator(memoryManager)
 {
 }
 
@@ -448,7 +447,7 @@ PooledAllocator::PooledAllocator(IEEMemoryManager* memoryManager)
 //    Move-assigns a `PooledAllocator`.
 PooledAllocator& PooledAllocator::operator=(PooledAllocator&& other)
 {
-    *((ArenaAllocator*)this) = std::move((ArenaAllocator&&)other);
+    *((ArenaAllocator*)this) = std::move((ArenaAllocator &&)other);
     return *this;
 }
 
@@ -514,17 +513,17 @@ ArenaAllocator* PooledAllocator::getPooledAllocator(IEEMemoryManager* memoryMana
             return &s_pooledAllocator;
 
         case POOLED_ALLOCATOR_NOTINITIALIZED:
+        {
+            PooledAllocator allocator(memoryManager);
+            if (allocator.allocateNewPage(0, false) == nullptr)
             {
-                PooledAllocator allocator(memoryManager);
-                if (allocator.allocateNewPage(0, false) == nullptr)
-                {
-                    // Failed to grab the initial memory page.
-                    InterlockedExchange(&s_pooledAllocatorState, POOLED_ALLOCATOR_NOTINITIALIZED);
-                    return nullptr;
-                }
-
-                s_pooledAllocator = std::move(allocator);
+                // Failed to grab the initial memory page.
+                InterlockedExchange(&s_pooledAllocatorState, POOLED_ALLOCATOR_NOTINITIALIZED);
+                return nullptr;
             }
+
+            s_pooledAllocator = std::move(allocator);
+        }
 
             return &s_pooledAllocator;
 
@@ -546,7 +545,7 @@ void PooledAllocator::destroy()
     assert(m_firstPage != nullptr);
 
     // Free all but the first allocated page
-    for (PageDescriptor* page = m_firstPage->m_next, *next; page != nullptr; page = next)
+    for (PageDescriptor *page = m_firstPage->m_next, *next; page != nullptr; page = next)
     {
         next = page->m_next;
         freeHostMemory(page);
@@ -554,9 +553,9 @@ void PooledAllocator::destroy()
 
     // Reset the relevant state to point back to the first byte of the first page
     m_firstPage->m_next = nullptr;
-    m_lastPage = m_firstPage;
-    m_nextFreeByte = m_firstPage->m_contents;
-    m_lastFreeByte = (BYTE*)m_firstPage + m_firstPage->m_pageBytes;
+    m_lastPage          = m_firstPage;
+    m_nextFreeByte      = m_firstPage->m_contents;
+    m_lastFreeByte      = (BYTE*)m_firstPage + m_firstPage->m_pageBytes;
 
     assert(getTotalBytesAllocated() == s_defaultPageSize);
 

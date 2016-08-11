@@ -24,40 +24,104 @@ int Compiler::mapRegNumToDwarfReg(regNumber reg)
 
     switch (reg)
     {
-    case REG_RAX:  dwarfReg = 0; break;
-    case REG_RCX:  dwarfReg = 2; break;
-    case REG_RDX:  dwarfReg = 1; break;
-    case REG_RBX:  dwarfReg = 3; break;
-    case REG_RSP:  dwarfReg = 7; break;
-    case REG_RBP:  dwarfReg = 6; break;
-    case REG_RSI:  dwarfReg = 4; break;
-    case REG_RDI:  dwarfReg = 5; break;
-    case REG_R8:   dwarfReg = 8; break;
-    case REG_R9:   dwarfReg = 9; break;
-    case REG_R10:  dwarfReg = 10; break;
-    case REG_R11:  dwarfReg = 11; break;
-    case REG_R12:  dwarfReg = 12; break;
-    case REG_R13:  dwarfReg = 13; break;
-    case REG_R14:  dwarfReg = 14; break;
-    case REG_R15:  dwarfReg = 15; break;
-    case REG_XMM0: dwarfReg = 17; break;
-    case REG_XMM1: dwarfReg = 18; break;
-    case REG_XMM2: dwarfReg = 19; break;
-    case REG_XMM3: dwarfReg = 20; break;
-    case REG_XMM4: dwarfReg = 21; break;
-    case REG_XMM5: dwarfReg = 22; break;
-    case REG_XMM6: dwarfReg = 23; break;
-    case REG_XMM7: dwarfReg = 24; break;
-    case REG_XMM8: dwarfReg = 25; break;
-    case REG_XMM9: dwarfReg = 26; break;
-    case REG_XMM10:dwarfReg = 27; break;
-    case REG_XMM11:dwarfReg = 28; break;
-    case REG_XMM12:dwarfReg = 29; break;
-    case REG_XMM13:dwarfReg = 30; break;
-    case REG_XMM14:dwarfReg = 31; break;
-    case REG_XMM15:dwarfReg = 32; break;
-    default:
-        noway_assert(!"unexpected REG_NUM");
+        case REG_RAX:
+            dwarfReg = 0;
+            break;
+        case REG_RCX:
+            dwarfReg = 2;
+            break;
+        case REG_RDX:
+            dwarfReg = 1;
+            break;
+        case REG_RBX:
+            dwarfReg = 3;
+            break;
+        case REG_RSP:
+            dwarfReg = 7;
+            break;
+        case REG_RBP:
+            dwarfReg = 6;
+            break;
+        case REG_RSI:
+            dwarfReg = 4;
+            break;
+        case REG_RDI:
+            dwarfReg = 5;
+            break;
+        case REG_R8:
+            dwarfReg = 8;
+            break;
+        case REG_R9:
+            dwarfReg = 9;
+            break;
+        case REG_R10:
+            dwarfReg = 10;
+            break;
+        case REG_R11:
+            dwarfReg = 11;
+            break;
+        case REG_R12:
+            dwarfReg = 12;
+            break;
+        case REG_R13:
+            dwarfReg = 13;
+            break;
+        case REG_R14:
+            dwarfReg = 14;
+            break;
+        case REG_R15:
+            dwarfReg = 15;
+            break;
+        case REG_XMM0:
+            dwarfReg = 17;
+            break;
+        case REG_XMM1:
+            dwarfReg = 18;
+            break;
+        case REG_XMM2:
+            dwarfReg = 19;
+            break;
+        case REG_XMM3:
+            dwarfReg = 20;
+            break;
+        case REG_XMM4:
+            dwarfReg = 21;
+            break;
+        case REG_XMM5:
+            dwarfReg = 22;
+            break;
+        case REG_XMM6:
+            dwarfReg = 23;
+            break;
+        case REG_XMM7:
+            dwarfReg = 24;
+            break;
+        case REG_XMM8:
+            dwarfReg = 25;
+            break;
+        case REG_XMM9:
+            dwarfReg = 26;
+            break;
+        case REG_XMM10:
+            dwarfReg = 27;
+            break;
+        case REG_XMM11:
+            dwarfReg = 28;
+            break;
+        case REG_XMM12:
+            dwarfReg = 29;
+            break;
+        case REG_XMM13:
+            dwarfReg = 30;
+            break;
+        case REG_XMM14:
+            dwarfReg = 31;
+            break;
+        case REG_XMM15:
+            dwarfReg = 32;
+            break;
+        default:
+            noway_assert(!"unexpected REG_NUM");
     }
 
     return dwarfReg;
@@ -131,18 +195,17 @@ void Compiler::unwindBegPrologWindows()
         unwindGetFuncLocations(func, false, &func->coldStartLoc, &func->coldEndLoc);
     }
 
-    func->unwindCodeSlot = sizeof(func->unwindCodes);
-    func->unwindHeader.Version = 1;
-    func->unwindHeader.Flags = 0;
+    func->unwindCodeSlot                  = sizeof(func->unwindCodes);
+    func->unwindHeader.Version            = 1;
+    func->unwindHeader.Flags              = 0;
     func->unwindHeader.CountOfUnwindCodes = 0;
-    func->unwindHeader.FrameRegister = 0;
-    func->unwindHeader.FrameOffset = 0;
+    func->unwindHeader.FrameRegister      = 0;
+    func->unwindHeader.FrameOffset        = 0;
 }
 
 #ifdef UNIX_AMD64_ABI
 template <typename T>
-inline
-static T* allocate_any(jitstd::allocator<void>& alloc, size_t count = 5)
+inline static T* allocate_any(jitstd::allocator<void>& alloc, size_t count = 5)
 {
     return jitstd::allocator<T>(alloc).allocate(count);
 }
@@ -174,7 +237,7 @@ void Compiler::unwindBegPrologCFI()
 // Compiler::unwindEndProlog: Called at the end of main function or funclet
 // prolog generation to indicate there is no more unwind information for this prolog.
 //
-void Compiler::unwindEndProlog() 
+void Compiler::unwindEndProlog()
 {
     assert(compGeneratingProlog);
 }
@@ -223,10 +286,10 @@ void Compiler::unwindPushWindows(regNumber reg)
 
     FuncInfoDsc* func = funCurrentFunc();
 
-    assert(func->unwindHeader.Version == 1); // Can't call this before unwindBegProlog
+    assert(func->unwindHeader.Version == 1);            // Can't call this before unwindBegProlog
     assert(func->unwindHeader.CountOfUnwindCodes == 0); // Can't call this after unwindReserve
     assert(func->unwindCodeSlot > sizeof(UNWIND_CODE));
-    UNWIND_CODE * code = (UNWIND_CODE*)&func->unwindCodes[func->unwindCodeSlot -= sizeof(UNWIND_CODE)];
+    UNWIND_CODE* code     = (UNWIND_CODE*)&func->unwindCodes[func->unwindCodeSlot -= sizeof(UNWIND_CODE)];
     unsigned int cbProlog = unwindGetCurrentOffset(func);
     noway_assert((BYTE)cbProlog == cbProlog);
     code->CodeOffset = (BYTE)cbProlog;
@@ -239,16 +302,16 @@ void Compiler::unwindPushWindows(regNumber reg)
         // since it is pushed as a frame register.
         || (reg == REG_FPBASE)
 #endif // ETW_EBP_FRAMED
-        )
+            )
     {
         code->UnwindOp = UWOP_PUSH_NONVOL;
-        code->OpInfo = (BYTE)reg;
+        code->OpInfo   = (BYTE)reg;
     }
     else
     {
         // Push of a volatile register is just a small stack allocation
         code->UnwindOp = UWOP_ALLOC_SMALL;
-        code->OpInfo = 0;
+        code->OpInfo   = 0;
     }
 }
 
@@ -271,7 +334,7 @@ void Compiler::unwindPushCFI(regNumber reg)
         // since it is pushed as a frame register.
         || (reg == REG_FPBASE)
 #endif // ETW_EBP_FRAMED
-        )
+            )
     {
         createCfiCode(func, cbProlog, CFI_REL_OFFSET, mapRegNumToDwarfReg(reg));
     }
@@ -304,34 +367,34 @@ void Compiler::unwindAllocStackWindows(unsigned size)
 
     FuncInfoDsc* func = funCurrentFunc();
 
-    assert(func->unwindHeader.Version == 1); // Can't call this before unwindBegProlog
+    assert(func->unwindHeader.Version == 1);            // Can't call this before unwindBegProlog
     assert(func->unwindHeader.CountOfUnwindCodes == 0); // Can't call this after unwindReserve
-    assert(size % 8 == 0); // Stack size is *always* 8 byte aligned
-    UNWIND_CODE * code;
+    assert(size % 8 == 0);                              // Stack size is *always* 8 byte aligned
+    UNWIND_CODE* code;
     if (size <= 128)
     {
         assert(func->unwindCodeSlot > sizeof(UNWIND_CODE));
-        code = (UNWIND_CODE*)&func->unwindCodes[func->unwindCodeSlot -= sizeof(UNWIND_CODE)];
+        code           = (UNWIND_CODE*)&func->unwindCodes[func->unwindCodeSlot -= sizeof(UNWIND_CODE)];
         code->UnwindOp = UWOP_ALLOC_SMALL;
-        code->OpInfo = (size - 8) / 8;
+        code->OpInfo   = (size - 8) / 8;
     }
     else if (size <= 0x7FFF8)
     {
         assert(func->unwindCodeSlot > (sizeof(UNWIND_CODE) + sizeof(USHORT)));
-        USHORT * codedSize = (USHORT*)&func->unwindCodes[func->unwindCodeSlot -= sizeof(USHORT)];
-        *codedSize = (USHORT)(size / 8);
-        code = (UNWIND_CODE*)&func->unwindCodes[func->unwindCodeSlot -= sizeof(UNWIND_CODE)];
-        code->UnwindOp = UWOP_ALLOC_LARGE;
-        code->OpInfo = 0;
+        USHORT* codedSize = (USHORT*)&func->unwindCodes[func->unwindCodeSlot -= sizeof(USHORT)];
+        *codedSize        = (USHORT)(size / 8);
+        code              = (UNWIND_CODE*)&func->unwindCodes[func->unwindCodeSlot -= sizeof(UNWIND_CODE)];
+        code->UnwindOp    = UWOP_ALLOC_LARGE;
+        code->OpInfo      = 0;
     }
     else
     {
         assert(func->unwindCodeSlot > (sizeof(UNWIND_CODE) + sizeof(ULONG)));
-        ULONG * codedSize = (ULONG*)&func->unwindCodes[func->unwindCodeSlot -= sizeof(ULONG)];
-        *codedSize = size;
-        code = (UNWIND_CODE*)&func->unwindCodes[func->unwindCodeSlot -= sizeof(UNWIND_CODE)];
-        code->UnwindOp = UWOP_ALLOC_LARGE;
-        code->OpInfo = 1;
+        ULONG* codedSize = (ULONG*)&func->unwindCodes[func->unwindCodeSlot -= sizeof(ULONG)];
+        *codedSize       = size;
+        code             = (UNWIND_CODE*)&func->unwindCodes[func->unwindCodeSlot -= sizeof(UNWIND_CODE)];
+        code->UnwindOp   = UWOP_ALLOC_LARGE;
+        code->OpInfo     = 1;
     }
     unsigned int cbProlog = unwindGetCurrentOffset(func);
     noway_assert((BYTE)cbProlog == cbProlog);
@@ -378,7 +441,7 @@ void Compiler::unwindSetFrameRegWindows(regNumber reg, unsigned offset)
 
     FuncInfoDsc* func = funCurrentFunc();
 
-    assert(func->unwindHeader.Version == 1); // Can't call this before unwindBegProlog
+    assert(func->unwindHeader.Version == 1);            // Can't call this before unwindBegProlog
     assert(func->unwindHeader.CountOfUnwindCodes == 0); // Can't call this after unwindReserve
     unsigned int cbProlog = unwindGetCurrentOffset(func);
     noway_assert((BYTE)cbProlog == cbProlog);
@@ -397,10 +460,10 @@ void Compiler::unwindSetFrameRegWindows(regNumber reg, unsigned offset)
         assert(offset % 16 == 0);
         *codedSize = offset / 16;
 
-        UNWIND_CODE* code = (UNWIND_CODE*)&func->unwindCodes[func->unwindCodeSlot -= sizeof(UNWIND_CODE)];
-        code->CodeOffset = (BYTE)cbProlog;
-        code->OpInfo = 0;
-        code->UnwindOp = UWOP_SET_FPREG_LARGE;
+        UNWIND_CODE* code              = (UNWIND_CODE*)&func->unwindCodes[func->unwindCodeSlot -= sizeof(UNWIND_CODE)];
+        code->CodeOffset               = (BYTE)cbProlog;
+        code->OpInfo                   = 0;
+        code->UnwindOp                 = UWOP_SET_FPREG_LARGE;
         func->unwindHeader.FrameOffset = 15;
     }
     else
@@ -408,9 +471,9 @@ void Compiler::unwindSetFrameRegWindows(regNumber reg, unsigned offset)
     {
         assert(func->unwindCodeSlot > sizeof(UNWIND_CODE));
         UNWIND_CODE* code = (UNWIND_CODE*)&func->unwindCodes[func->unwindCodeSlot -= sizeof(UNWIND_CODE)];
-        code->CodeOffset = (BYTE)cbProlog;
-        code->OpInfo = 0;
-        code->UnwindOp = UWOP_SET_FPREG;
+        code->CodeOffset  = (BYTE)cbProlog;
+        code->OpInfo      = 0;
+        code->UnwindOp    = UWOP_SET_FPREG;
         assert(offset <= 240);
         assert(offset % 16 == 0);
         func->unwindHeader.FrameOffset = offset / 16;
@@ -461,38 +524,38 @@ void Compiler::unwindSaveRegWindows(regNumber reg, unsigned offset)
 
     FuncInfoDsc* func = funCurrentFunc();
 
-    assert(func->unwindHeader.Version == 1); // Can't call this before unwindBegProlog
+    assert(func->unwindHeader.Version == 1);            // Can't call this before unwindBegProlog
     assert(func->unwindHeader.CountOfUnwindCodes == 0); // Can't call this after unwindReserve
     if (RBM_CALLEE_SAVED & genRegMask(reg))
     {
-        UNWIND_CODE * code;
+        UNWIND_CODE* code;
         if (offset < 0x80000)
         {
             assert(func->unwindCodeSlot > (sizeof(UNWIND_CODE) + sizeof(USHORT)));
-            USHORT * codedSize = (USHORT*)&func->unwindCodes[func->unwindCodeSlot -= sizeof(USHORT)];                        
-            code = (UNWIND_CODE*)&func->unwindCodes[func->unwindCodeSlot -= sizeof(UNWIND_CODE)];
+            USHORT* codedSize = (USHORT*)&func->unwindCodes[func->unwindCodeSlot -= sizeof(USHORT)];
+            code              = (UNWIND_CODE*)&func->unwindCodes[func->unwindCodeSlot -= sizeof(UNWIND_CODE)];
 
             // As per AMD64 ABI, if saving entire xmm reg, then offset need to be scaled by 16.
             if (genIsValidFloatReg(reg))
             {
-                *codedSize = (USHORT) (offset/16);
+                *codedSize     = (USHORT)(offset / 16);
                 code->UnwindOp = UWOP_SAVE_XMM128;
             }
             else
             {
-                *codedSize = (USHORT) (offset/8);
+                *codedSize     = (USHORT)(offset / 8);
                 code->UnwindOp = UWOP_SAVE_NONVOL;
             }
         }
         else
         {
             assert(func->unwindCodeSlot > (sizeof(UNWIND_CODE) + sizeof(ULONG)));
-            ULONG * codedSize = (ULONG*)&func->unwindCodes[func->unwindCodeSlot -= sizeof(ULONG)];
-            *codedSize = offset;
-            code = (UNWIND_CODE*)&func->unwindCodes[func->unwindCodeSlot -= sizeof(UNWIND_CODE)];
-            code->UnwindOp = (genIsValidFloatReg(reg)) ? UWOP_SAVE_XMM128_FAR : UWOP_SAVE_NONVOL_FAR;
+            ULONG* codedSize = (ULONG*)&func->unwindCodes[func->unwindCodeSlot -= sizeof(ULONG)];
+            *codedSize       = offset;
+            code             = (UNWIND_CODE*)&func->unwindCodes[func->unwindCodeSlot -= sizeof(UNWIND_CODE)];
+            code->UnwindOp   = (genIsValidFloatReg(reg)) ? UWOP_SAVE_XMM128_FAR : UWOP_SAVE_NONVOL_FAR;
         }
-        code->OpInfo = (BYTE)reg;
+        code->OpInfo          = (BYTE)reg;
         unsigned int cbProlog = unwindGetCurrentOffset(func);
         noway_assert((BYTE)cbProlog == cbProlog);
         code->CodeOffset = (BYTE)cbProlog;
@@ -526,7 +589,10 @@ void Compiler::unwindSaveRegCFI(regNumber reg, unsigned offset)
 //    endOffset   - byte offset of the code end   that this unwind data represents.
 //    pHeader     - pointer to the unwind data blob.
 //
-void DumpUnwindInfo(bool isHotCode, UNATIVE_OFFSET startOffset, UNATIVE_OFFSET endOffset, const UNWIND_INFO * const pHeader)
+void DumpUnwindInfo(bool                     isHotCode,
+                    UNATIVE_OFFSET           startOffset,
+                    UNATIVE_OFFSET           endOffset,
+                    const UNWIND_INFO* const pHeader)
 {
     printf("Unwind Info%s:\n", isHotCode ? "" : " COLD");
     printf("  >> Start offset   : 0x%06x (not in unwind data)\n", dspOffset(startOffset));
@@ -546,135 +612,133 @@ void DumpUnwindInfo(bool isHotCode, UNATIVE_OFFSET startOffset, UNATIVE_OFFSET e
         const UCHAR flags = pHeader->Flags;
         printf(" (");
         if (flags & UNW_FLAG_EHANDLER)
+        {
             printf(" UNW_FLAG_EHANDLER");
+        }
         if (flags & UNW_FLAG_UHANDLER)
+        {
             printf(" UNW_FLAG_UHANDLER");
+        }
         if (flags & UNW_FLAG_CHAININFO)
+        {
             printf(" UNW_FLAG_CHAININFO");
+        }
         printf(")");
     }
     printf("\n");
     printf("  SizeOfProlog      : 0x%02X\n", pHeader->SizeOfProlog);
     printf("  CountOfUnwindCodes: %u\n", pHeader->CountOfUnwindCodes);
-    printf("  FrameRegister     : %s (%u)\n", (pHeader->FrameRegister == 0) ? "none" : getRegName(pHeader->FrameRegister), pHeader->FrameRegister); // RAX (0) is not allowed as a frame register
+    printf("  FrameRegister     : %s (%u)\n",
+           (pHeader->FrameRegister == 0) ? "none" : getRegName(pHeader->FrameRegister),
+           pHeader->FrameRegister); // RAX (0) is not allowed as a frame register
     if (pHeader->FrameRegister == 0)
     {
-    printf("  FrameOffset       : N/A (no FrameRegister) (Value=%u)\n", pHeader->FrameOffset);
+        printf("  FrameOffset       : N/A (no FrameRegister) (Value=%u)\n", pHeader->FrameOffset);
     }
     else
     {
-    printf("  FrameOffset       : %u * 16 = 0x%02X\n", pHeader->FrameOffset, pHeader->FrameOffset * 16);
+        printf("  FrameOffset       : %u * 16 = 0x%02X\n", pHeader->FrameOffset, pHeader->FrameOffset * 16);
     }
     printf("  UnwindCodes       :\n");
 
     for (unsigned i = 0; i < pHeader->CountOfUnwindCodes; i++)
     {
-        unsigned offset;
-        const UNWIND_CODE * const pCode = &(pHeader->UnwindCode[i]);
-        switch (pCode->UnwindOp) 
+        unsigned                 offset;
+        const UNWIND_CODE* const pCode = &(pHeader->UnwindCode[i]);
+        switch (pCode->UnwindOp)
         {
-        case UWOP_PUSH_NONVOL:
-            printf("    CodeOffset: 0x%02X UnwindOp: UWOP_PUSH_NONVOL (%u)     OpInfo: %s (%u)\n",
-                pCode->CodeOffset, pCode->UnwindOp, getRegName(pCode->OpInfo), pCode->OpInfo);
-            break;
+            case UWOP_PUSH_NONVOL:
+                printf("    CodeOffset: 0x%02X UnwindOp: UWOP_PUSH_NONVOL (%u)     OpInfo: %s (%u)\n",
+                       pCode->CodeOffset, pCode->UnwindOp, getRegName(pCode->OpInfo), pCode->OpInfo);
+                break;
 
-        case UWOP_ALLOC_LARGE:
-            printf("    CodeOffset: 0x%02X UnwindOp: UWOP_ALLOC_LARGE (%u)     OpInfo: %u - ",
-                pCode->CodeOffset, pCode->UnwindOp, pCode->OpInfo);
-            if (pCode->OpInfo == 0)
-            {
-                i++;
-                printf("Scaled small  \n      Size: %u * 8 = %u = 0x%05X\n",
-                    pHeader->UnwindCode[i].FrameOffset,
-                    pHeader->UnwindCode[i].FrameOffset * 8,
-                    pHeader->UnwindCode[i].FrameOffset * 8);
-            }
-            else if (pCode->OpInfo == 1)
-            {
-                i++;
-                printf("Unscaled large\n      Size: %u = 0x%08X\n\n",
-                    *(ULONG*)&(pHeader->UnwindCode[i]),
-                    *(ULONG*)&(pHeader->UnwindCode[i]));
-                i++;
-            }
-            else
-            {
-                printf("Unknown\n");
-            }
-            break;
+            case UWOP_ALLOC_LARGE:
+                printf("    CodeOffset: 0x%02X UnwindOp: UWOP_ALLOC_LARGE (%u)     OpInfo: %u - ", pCode->CodeOffset,
+                       pCode->UnwindOp, pCode->OpInfo);
+                if (pCode->OpInfo == 0)
+                {
+                    i++;
+                    printf("Scaled small  \n      Size: %u * 8 = %u = 0x%05X\n", pHeader->UnwindCode[i].FrameOffset,
+                           pHeader->UnwindCode[i].FrameOffset * 8, pHeader->UnwindCode[i].FrameOffset * 8);
+                }
+                else if (pCode->OpInfo == 1)
+                {
+                    i++;
+                    printf("Unscaled large\n      Size: %u = 0x%08X\n\n", *(ULONG*)&(pHeader->UnwindCode[i]),
+                           *(ULONG*)&(pHeader->UnwindCode[i]));
+                    i++;
+                }
+                else
+                {
+                    printf("Unknown\n");
+                }
+                break;
 
-        case UWOP_ALLOC_SMALL:
-            printf("    CodeOffset: 0x%02X UnwindOp: UWOP_ALLOC_SMALL (%u)     OpInfo: %u * 8 + 8 = %u = 0x%02X\n",
-                pCode->CodeOffset, pCode->UnwindOp, pCode->OpInfo, pCode->OpInfo * 8 + 8, pCode->OpInfo * 8 + 8);
-            break;
+            case UWOP_ALLOC_SMALL:
+                printf("    CodeOffset: 0x%02X UnwindOp: UWOP_ALLOC_SMALL (%u)     OpInfo: %u * 8 + 8 = %u = 0x%02X\n",
+                       pCode->CodeOffset, pCode->UnwindOp, pCode->OpInfo, pCode->OpInfo * 8 + 8, pCode->OpInfo * 8 + 8);
+                break;
 
-        case UWOP_SET_FPREG:
-            printf("    CodeOffset: 0x%02X UnwindOp: UWOP_SET_FPREG (%u)       OpInfo: Unused (%u)\n",
-                pCode->CodeOffset, pCode->UnwindOp, pCode->OpInfo); // This should be zero
-            break;
+            case UWOP_SET_FPREG:
+                printf("    CodeOffset: 0x%02X UnwindOp: UWOP_SET_FPREG (%u)       OpInfo: Unused (%u)\n",
+                       pCode->CodeOffset, pCode->UnwindOp, pCode->OpInfo); // This should be zero
+                break;
 
 #ifdef PLATFORM_UNIX
 
-        case UWOP_SET_FPREG_LARGE:
-            printf("    CodeOffset: 0x%02X UnwindOp: UWOP_SET_FPREG_LARGE (%u) OpInfo: Unused (%u)\n",
-                pCode->CodeOffset, pCode->UnwindOp, pCode->OpInfo); // This should be zero
-            i++;
-            offset = *(ULONG*)&(pHeader->UnwindCode[i]);
-            i++;
-            printf("      Scaled Offset: %u * 16 = %u = 0x%08X\n",
-                    offset,
-                    offset * 16,
-                    offset * 16);
-            if ((offset & 0xF0000000) != 0)
-            {
-                printf("      Illegal unscaled offset: too large\n");
-            }
-            break;
+            case UWOP_SET_FPREG_LARGE:
+                printf("    CodeOffset: 0x%02X UnwindOp: UWOP_SET_FPREG_LARGE (%u) OpInfo: Unused (%u)\n",
+                       pCode->CodeOffset, pCode->UnwindOp, pCode->OpInfo); // This should be zero
+                i++;
+                offset = *(ULONG*)&(pHeader->UnwindCode[i]);
+                i++;
+                printf("      Scaled Offset: %u * 16 = %u = 0x%08X\n", offset, offset * 16, offset * 16);
+                if ((offset & 0xF0000000) != 0)
+                {
+                    printf("      Illegal unscaled offset: too large\n");
+                }
+                break;
 
 #endif // PLATFORM_UNIX
 
-        case UWOP_SAVE_NONVOL:
-            printf("    CodeOffset: 0x%02X UnwindOp: UWOP_SAVE_NONVOL (%u)     OpInfo: %s (%u)\n",
-                pCode->CodeOffset, pCode->UnwindOp, getRegName(pCode->OpInfo), pCode->OpInfo);
-            i++;
-            printf("      Scaled Small Offset: %u * 8 = %u = 0x%05X\n",
-                pHeader->UnwindCode[i].FrameOffset,
-                pHeader->UnwindCode[i].FrameOffset * 8,
-                pHeader->UnwindCode[i].FrameOffset * 8);
-            break;
+            case UWOP_SAVE_NONVOL:
+                printf("    CodeOffset: 0x%02X UnwindOp: UWOP_SAVE_NONVOL (%u)     OpInfo: %s (%u)\n",
+                       pCode->CodeOffset, pCode->UnwindOp, getRegName(pCode->OpInfo), pCode->OpInfo);
+                i++;
+                printf("      Scaled Small Offset: %u * 8 = %u = 0x%05X\n", pHeader->UnwindCode[i].FrameOffset,
+                       pHeader->UnwindCode[i].FrameOffset * 8, pHeader->UnwindCode[i].FrameOffset * 8);
+                break;
 
-        case UWOP_SAVE_NONVOL_FAR:
-            printf("    CodeOffset: 0x%02X UnwindOp: UWOP_SAVE_NONVOL_FAR (%u) OpInfo: %s (%u)\n",
-                pCode->CodeOffset, pCode->UnwindOp, getRegName(pCode->OpInfo), pCode->OpInfo);
-            i++;
-            printf("      Unscaled Large Offset: 0x%08X\n\n", *(ULONG*)&(pHeader->UnwindCode[i]));
-            i++;
-            break;
+            case UWOP_SAVE_NONVOL_FAR:
+                printf("    CodeOffset: 0x%02X UnwindOp: UWOP_SAVE_NONVOL_FAR (%u) OpInfo: %s (%u)\n",
+                       pCode->CodeOffset, pCode->UnwindOp, getRegName(pCode->OpInfo), pCode->OpInfo);
+                i++;
+                printf("      Unscaled Large Offset: 0x%08X\n\n", *(ULONG*)&(pHeader->UnwindCode[i]));
+                i++;
+                break;
 
-        case UWOP_SAVE_XMM128:
-            printf("    CodeOffset: 0x%02X UnwindOp: UWOP_SAVE_XMM128 (%u)     OpInfo: XMM%u (%u)\n",
-                pCode->CodeOffset, pCode->UnwindOp, pCode->OpInfo, pCode->OpInfo);
-            i++;
-            printf("      Scaled Small Offset: %u * 16 = %u = 0x%05X\n",
-                pHeader->UnwindCode[i].FrameOffset,
-                pHeader->UnwindCode[i].FrameOffset * 16,
-                pHeader->UnwindCode[i].FrameOffset * 16);
-            break;
+            case UWOP_SAVE_XMM128:
+                printf("    CodeOffset: 0x%02X UnwindOp: UWOP_SAVE_XMM128 (%u)     OpInfo: XMM%u (%u)\n",
+                       pCode->CodeOffset, pCode->UnwindOp, pCode->OpInfo, pCode->OpInfo);
+                i++;
+                printf("      Scaled Small Offset: %u * 16 = %u = 0x%05X\n", pHeader->UnwindCode[i].FrameOffset,
+                       pHeader->UnwindCode[i].FrameOffset * 16, pHeader->UnwindCode[i].FrameOffset * 16);
+                break;
 
-        case UWOP_SAVE_XMM128_FAR:
-            printf("    CodeOffset: 0x%02X UnwindOp: UWOP_SAVE_XMM128_FAR (%u) OpInfo: XMM%u (%u)\n",
-                pCode->CodeOffset, pCode->UnwindOp, pCode->OpInfo, pCode->OpInfo);
-            i++;
-            printf("      Unscaled Large Offset: 0x%08X\n\n", *(ULONG*)&(pHeader->UnwindCode[i]));
-            i++;
-            break;
+            case UWOP_SAVE_XMM128_FAR:
+                printf("    CodeOffset: 0x%02X UnwindOp: UWOP_SAVE_XMM128_FAR (%u) OpInfo: XMM%u (%u)\n",
+                       pCode->CodeOffset, pCode->UnwindOp, pCode->OpInfo, pCode->OpInfo);
+                i++;
+                printf("      Unscaled Large Offset: 0x%08X\n\n", *(ULONG*)&(pHeader->UnwindCode[i]));
+                i++;
+                break;
 
-        case UWOP_EPILOG:
-        case UWOP_SPARE_CODE:
-        case UWOP_PUSH_MACHFRAME:
-        default:
-            printf("    Unrecognized UNWIND_CODE: 0x%04X\n", *(USHORT*)pCode);
-            break;
+            case UWOP_EPILOG:
+            case UWOP_SPARE_CODE:
+            case UWOP_PUSH_MACHFRAME:
+            default:
+                printf("    Unrecognized UNWIND_CODE: 0x%04X\n", *(USHORT*)pCode);
+                break;
         }
     }
 }
@@ -689,7 +753,11 @@ void DumpUnwindInfo(bool isHotCode, UNATIVE_OFFSET startOffset, UNATIVE_OFFSET e
 //    endOffset   - byte offset of the code end   that this cfi data represents.
 //    pcFiCode    - pointer to the cfi data blob.
 //
-void DumpCfiInfo(bool isHotCode, UNATIVE_OFFSET startOffset, UNATIVE_OFFSET endOffset, DWORD cfiCodeBytes, const CFI_CODE * const pCfiCode)
+void DumpCfiInfo(bool                  isHotCode,
+                 UNATIVE_OFFSET        startOffset,
+                 UNATIVE_OFFSET        endOffset,
+                 DWORD                 cfiCodeBytes,
+                 const CFI_CODE* const pCfiCode)
 {
     printf("Cfi Info%s:\n", isHotCode ? "" : " COLD");
     printf("  >> Start offset   : 0x%06x \n", dspOffset(startOffset));
@@ -697,16 +765,17 @@ void DumpCfiInfo(bool isHotCode, UNATIVE_OFFSET startOffset, UNATIVE_OFFSET endO
 
     for (int i = 0; i < cfiCodeBytes / sizeof(CFI_CODE); i++)
     {
-        const CFI_CODE * const pCode = &(pCfiCode[i]);
+        const CFI_CODE* const pCode = &(pCfiCode[i]);
 
         UCHAR codeOffset = pCode->CodeOffset;
-        SHORT dwarfReg = pCode->DwarfReg;
-        INT offset = pCode->Offset;
+        SHORT dwarfReg   = pCode->DwarfReg;
+        INT   offset     = pCode->Offset;
 
         switch (pCode->CfiOpCode)
         {
             case CFI_REL_OFFSET:
-                printf("    CodeOffset: 0x%02X Op: RelOffset DwarfReg:0x%x Offset:0x%X\n", codeOffset, dwarfReg, offset);
+                printf("    CodeOffset: 0x%02X Op: RelOffset DwarfReg:0x%x Offset:0x%X\n", codeOffset, dwarfReg,
+                       offset);
                 break;
             case CFI_DEF_CFA_REGISTER:
                 assert(offset == 0);
@@ -724,7 +793,6 @@ void DumpCfiInfo(bool isHotCode, UNATIVE_OFFSET startOffset, UNATIVE_OFFSET endO
 }
 #endif // UNIX_AMD64_ABI
 #endif // DEBUG
-
 
 //------------------------------------------------------------------------
 // Compiler::unwindReserve: Ask the VM to reserve space for the unwind information
@@ -782,38 +850,38 @@ void Compiler::unwindReserveFuncHelper(FuncInfoDsc* func, bool isHotCode)
         else
 #endif // UNIX_AMD64_ABI
         {
-            assert(func->unwindHeader.Version == 1); // Can't call this before unwindBegProlog
+            assert(func->unwindHeader.Version == 1);            // Can't call this before unwindBegProlog
             assert(func->unwindHeader.CountOfUnwindCodes == 0); // Only call this once per prolog
 
             // Set the size of the prolog to be the last encoded action
             if (func->unwindCodeSlot < sizeof(func->unwindCodes))
             {
-                UNWIND_CODE * code = (UNWIND_CODE*)&func->unwindCodes[func->unwindCodeSlot];
+                UNWIND_CODE* code               = (UNWIND_CODE*)&func->unwindCodes[func->unwindCodeSlot];
                 func->unwindHeader.SizeOfProlog = code->CodeOffset;
             }
             else
             {
                 func->unwindHeader.SizeOfProlog = 0;
             }
-            func->unwindHeader.CountOfUnwindCodes = (BYTE)((sizeof(func->unwindCodes) - func->unwindCodeSlot) / sizeof(UNWIND_CODE));
+            func->unwindHeader.CountOfUnwindCodes =
+                (BYTE)((sizeof(func->unwindCodes) - func->unwindCodeSlot) / sizeof(UNWIND_CODE));
 
             // Prepend the unwindHeader onto the unwind codes
             assert(func->unwindCodeSlot >= offsetof(UNWIND_INFO, UnwindCode));
 
             func->unwindCodeSlot -= offsetof(UNWIND_INFO, UnwindCode);
-            UNWIND_INFO * pHeader = (UNWIND_INFO*)&func->unwindCodes[func->unwindCodeSlot];
+            UNWIND_INFO* pHeader = (UNWIND_INFO*)&func->unwindCodes[func->unwindCodeSlot];
             memcpy(pHeader, &func->unwindHeader, offsetof(UNWIND_INFO, UnwindCode));
 
             unwindCodeBytes = sizeof(func->unwindCodes) - func->unwindCodeSlot;
         }
     }
 
-    BOOL isFunclet = (func->funKind != FUNC_ROOT);
+    BOOL isFunclet  = (func->funKind != FUNC_ROOT);
     BOOL isColdCode = isHotCode ? FALSE : TRUE;
 
     eeReserveUnwindInfo(isFunclet, isColdCode, unwindCodeBytes);
 }
-
 
 //------------------------------------------------------------------------
 // Compiler::unwindEmit: Report all the unwind information to the VM.
@@ -849,8 +917,8 @@ void Compiler::unwindEmitFuncHelper(FuncInfoDsc* func, void* pHotCode, void* pCo
 {
     UNATIVE_OFFSET startOffset;
     UNATIVE_OFFSET endOffset;
-    DWORD unwindCodeBytes = 0;
-    BYTE* pUnwindBlock = nullptr;
+    DWORD          unwindCodeBytes = 0;
+    BYTE*          pUnwindBlock    = nullptr;
 
     if (isHotCode)
     {
@@ -879,7 +947,7 @@ void Compiler::unwindEmitFuncHelper(FuncInfoDsc* func, void* pHotCode, void* pCo
             if (size > 0)
             {
                 unwindCodeBytes = size * sizeof(CFI_CODE);
-                pUnwindBlock = (BYTE*)&(*func->cfiCodes)[0];
+                pUnwindBlock    = (BYTE*)&(*func->cfiCodes)[0];
             }
         }
         else
@@ -888,8 +956,11 @@ void Compiler::unwindEmitFuncHelper(FuncInfoDsc* func, void* pHotCode, void* pCo
             unwindCodeBytes = sizeof(func->unwindCodes) - func->unwindCodeSlot;
 
 #ifdef DEBUG
-            UNWIND_INFO * pUnwindInfo = (UNWIND_INFO *)(&func->unwindCodes[func->unwindCodeSlot]);
-            DWORD unwindCodeBytesSpecified = offsetof(UNWIND_INFO, UnwindCode) + pUnwindInfo->CountOfUnwindCodes * sizeof(UNWIND_CODE); // This is what the unwind codes themselves say; it better match what we tell the VM.
+            UNWIND_INFO* pUnwindInfo = (UNWIND_INFO*)(&func->unwindCodes[func->unwindCodeSlot]);
+            DWORD        unwindCodeBytesSpecified =
+                offsetof(UNWIND_INFO, UnwindCode) +
+                pUnwindInfo->CountOfUnwindCodes * sizeof(UNWIND_CODE); // This is what the unwind codes themselves say;
+                                                                       // it better match what we tell the VM.
             assert(unwindCodeBytes == unwindCodeBytesSpecified);
 #endif // DEBUG
 
@@ -926,12 +997,12 @@ void Compiler::unwindEmitFuncHelper(FuncInfoDsc* func, void* pHotCode, void* pCo
 #ifdef UNIX_AMD64_ABI
         if (generateCFIUnwindCodes())
         {
-            DumpCfiInfo(isHotCode, startOffset, endOffset, unwindCodeBytes, (const CFI_CODE * const)pUnwindBlock);
+            DumpCfiInfo(isHotCode, startOffset, endOffset, unwindCodeBytes, (const CFI_CODE* const)pUnwindBlock);
         }
         else
 #endif // UNIX_AMD64_ABI
         {
-            DumpUnwindInfo(isHotCode, startOffset, endOffset, (const UNWIND_INFO * const)pUnwindBlock);
+            DumpUnwindInfo(isHotCode, startOffset, endOffset, (const UNWIND_INFO* const)pUnwindBlock);
         }
     }
 #endif // DEBUG
@@ -950,15 +1021,10 @@ void Compiler::unwindEmitFuncHelper(FuncInfoDsc* func, void* pHotCode, void* pCo
     {
         assert(startOffset >= info.compTotalHotCodeSize);
         startOffset -= info.compTotalHotCodeSize;
-        endOffset   -= info.compTotalHotCodeSize;
+        endOffset -= info.compTotalHotCodeSize;
     }
 
-    eeAllocUnwindInfo((BYTE*)pHotCode,
-                      (BYTE*)pColdCode,
-                      startOffset,
-                      endOffset,
-                      unwindCodeBytes,
-                      pUnwindBlock,
+    eeAllocUnwindInfo((BYTE*)pHotCode, (BYTE*)pColdCode, startOffset, endOffset, unwindCodeBytes, pUnwindBlock,
                       (CorJitFuncKind)func->funKind);
 }
 
@@ -975,9 +1041,9 @@ void Compiler::unwindEmitFuncHelper(FuncInfoDsc* func, void* pHotCode, void* pCo
 void Compiler::unwindEmitFunc(FuncInfoDsc* func, void* pHotCode, void* pColdCode)
 {
     // Verify that the JIT enum is in sync with the JIT-EE interface enum
-    static_assert_no_msg(FUNC_ROOT    == (FuncKind)CORJIT_FUNC_ROOT);
-    static_assert_no_msg(FUNC_HANDLER == (FuncKind)CORJIT_FUNC_HANDLER); 
-    static_assert_no_msg(FUNC_FILTER  == (FuncKind)CORJIT_FUNC_FILTER);
+    static_assert_no_msg(FUNC_ROOT == (FuncKind)CORJIT_FUNC_ROOT);
+    static_assert_no_msg(FUNC_HANDLER == (FuncKind)CORJIT_FUNC_HANDLER);
+    static_assert_no_msg(FUNC_FILTER == (FuncKind)CORJIT_FUNC_FILTER);
 
     unwindEmitFuncHelper(func, pHotCode, pColdCode, true);
 

@@ -9,7 +9,7 @@
 // HashTableInfo: a concept that provides equality and hashing methods for
 //                a particular key type. Used by HashTableBase and its
 //                subclasses.
-template<typename TKey>
+template <typename TKey>
 struct HashTableInfo
 {
     // static bool Equals(const TKey& x, const TKey& y);
@@ -19,7 +19,7 @@ struct HashTableInfo
 //------------------------------------------------------------------------
 // HashTableInfo<TKey*>: specialized version of HashTableInfo for pointer-
 //                       typed keys.
-template<typename TKey>
+template <typename TKey>
 struct HashTableInfo<TKey*>
 {
     static bool Equals(const TKey* x, const TKey* y)
@@ -65,7 +65,7 @@ struct HashTableInfo<TKey*>
 //    TKey     - The type of the table's keys.
 //    TValue   - The type of the table's values.
 //    TKeyInfo - A type that conforms to the HashTableInfo<TKey> concept.
-template<typename TKey, typename TValue, typename TKeyInfo = HashTableInfo<TKey>>
+template <typename TKey, typename TValue, typename TKeyInfo = HashTableInfo<TKey>>
 class HashTableBase
 {
     friend class KeyValuePair;
@@ -96,21 +96,21 @@ protected:
     // bucket in a chain must be occupied (i.e. `m_isFull` will be true).
     struct Bucket
     {
-        bool m_isFull;          // True if the bucket is occupied; false otherwise.
+        bool m_isFull; // True if the bucket is occupied; false otherwise.
 
         unsigned m_firstOffset; // The offset to the first node in the chain for this bucket index.
         unsigned m_nextOffset;  // The offset to the next node in the chain for this bucket index.
 
-        unsigned m_hash;        // The hash code for the element stored in this bucket.
-        TKey m_key;             // The key for the element stored in this bucket.
-        TValue m_value;         // The value for the element stored in this bucket.
+        unsigned m_hash;  // The hash code for the element stored in this bucket.
+        TKey     m_key;   // The key for the element stored in this bucket.
+        TValue   m_value; // The value for the element stored in this bucket.
     };
 
 private:
-    Compiler* m_compiler;      // The compiler context to use for allocations.
-    Bucket* m_buckets;         // The bucket array.
-    unsigned m_numBuckets;     // The number of buckets in the bucket array.
-    unsigned m_numFullBuckets; // The number of occupied buckets.
+    Compiler* m_compiler;       // The compiler context to use for allocations.
+    Bucket*   m_buckets;        // The bucket array.
+    unsigned  m_numBuckets;     // The number of buckets in the bucket array.
+    unsigned  m_numFullBuckets; // The number of occupied buckets.
 
     //------------------------------------------------------------------------
     // HashTableBase::Insert: inserts a key-value pair into a bucket array.
@@ -127,8 +127,8 @@ private:
     //    otherwise.
     static bool Insert(Bucket* buckets, unsigned numBuckets, unsigned hash, const TKey& key, const TValue& value)
     {
-        const unsigned mask = numBuckets - 1;
-        unsigned homeIndex = hash & mask;
+        const unsigned mask      = numBuckets - 1;
+        unsigned       homeIndex = hash & mask;
 
         Bucket* home = &buckets[homeIndex];
         if (!home->m_isFull)
@@ -137,26 +137,26 @@ private:
             //
             // Note that the next offset does not need to be updated: whether or not it is non-zero,
             // it is already correct, since we're inserting at the head of the list.
-            home->m_isFull = true;
+            home->m_isFull      = true;
             home->m_firstOffset = 0;
-            home->m_hash = hash;
-            home->m_key = key;
-            home->m_value = value;
+            home->m_hash        = hash;
+            home->m_key         = key;
+            home->m_value       = value;
             return true;
         }
 
         // If the home bucket is full, probe to find the next empty bucket.
         unsigned precedingIndexInChain = homeIndex;
-        unsigned nextIndexInChain = (homeIndex + home->m_firstOffset) & mask;
+        unsigned nextIndexInChain      = (homeIndex + home->m_firstOffset) & mask;
         for (unsigned j = 1; j < numBuckets; j++)
         {
             unsigned bucketIndex = (homeIndex + j) & mask;
-            Bucket* bucket = &buckets[bucketIndex];
+            Bucket*  bucket      = &buckets[bucketIndex];
             if (bucketIndex == nextIndexInChain)
             {
                 assert(bucket->m_isFull);
                 precedingIndexInChain = bucketIndex;
-                nextIndexInChain = (bucketIndex + bucket->m_nextOffset) & mask;
+                nextIndexInChain      = (bucketIndex + bucket->m_nextOffset) & mask;
             }
             else if (!bucket->m_isFull)
             {
@@ -181,8 +181,8 @@ private:
                     buckets[precedingIndexInChain].m_nextOffset = offset;
                 }
 
-                bucket->m_hash = hash;
-                bucket->m_key = key;
+                bucket->m_hash  = hash;
+                bucket->m_key   = key;
                 bucket->m_value = value;
                 return true;
             }
@@ -215,14 +215,14 @@ private:
             return false;
         }
 
-        const unsigned mask = m_numBuckets - 1;
-        unsigned index = hash & mask;
+        const unsigned mask  = m_numBuckets - 1;
+        unsigned       index = hash & mask;
 
         Bucket* bucket = &m_buckets[index];
         if (bucket->m_isFull && bucket->m_hash == hash && TKeyInfo::Equals(bucket->m_key, key))
         {
             *precedingIndex = index;
-            *bucketIndex = index;
+            *bucketIndex    = index;
             return true;
         }
 
@@ -230,14 +230,14 @@ private:
         {
             unsigned precedingIndexInChain = index;
 
-            index = (index + offset) & mask;
+            index  = (index + offset) & mask;
             bucket = &m_buckets[index];
 
             assert(bucket->m_isFull);
             if (bucket->m_hash == hash && TKeyInfo::Equals(bucket->m_key, key))
             {
                 *precedingIndex = precedingIndexInChain;
-                *bucketIndex = index;
+                *bucketIndex    = index;
                 return true;
             }
         }
@@ -254,7 +254,7 @@ private:
         Bucket* currentBuckets = m_buckets;
 
         unsigned newNumBuckets = m_numBuckets == 0 ? InitialNumBuckets : m_numBuckets * 2;
-        size_t allocSize = sizeof(Bucket) * newNumBuckets;
+        size_t   allocSize     = sizeof(Bucket) * newNumBuckets;
         assert((sizeof(Bucket) * m_numBuckets) < allocSize);
 
         auto* newBuckets = reinterpret_cast<Bucket*>(m_compiler->compGetMem(allocSize));
@@ -268,20 +268,18 @@ private:
                 continue;
             }
 
-            bool inserted = Insert(newBuckets, newNumBuckets, currentBucket->m_hash, currentBucket->m_key, currentBucket->m_value);
+            bool inserted =
+                Insert(newBuckets, newNumBuckets, currentBucket->m_hash, currentBucket->m_key, currentBucket->m_value);
             (assert(inserted), (void)inserted);
         }
 
         m_numBuckets = newNumBuckets;
-        m_buckets = newBuckets;
+        m_buckets    = newBuckets;
     }
 
 protected:
     HashTableBase(Compiler* compiler, Bucket* buckets, unsigned numBuckets)
-        : m_compiler(compiler)
-        , m_buckets(buckets)
-        , m_numBuckets(numBuckets)
-        , m_numFullBuckets(0)
+        : m_compiler(compiler), m_buckets(buckets), m_numBuckets(numBuckets), m_numFullBuckets(0)
     {
         assert(compiler != nullptr);
 
@@ -304,15 +302,13 @@ public:
 
         Bucket* m_bucket;
 
-        KeyValuePair(Bucket* bucket)
-            : m_bucket(bucket)
+        KeyValuePair(Bucket* bucket) : m_bucket(bucket)
         {
             assert(m_bucket != nullptr);
         }
 
     public:
-        KeyValuePair()
-            : m_bucket(nullptr)
+        KeyValuePair() : m_bucket(nullptr)
         {
         }
 
@@ -334,14 +330,12 @@ public:
     {
         friend class HashTableBase<TKey, TValue, TKeyInfo>;
 
-        Bucket* m_buckets;
+        Bucket*  m_buckets;
         unsigned m_numBuckets;
         unsigned m_index;
 
         Iterator(Bucket* buckets, unsigned numBuckets, unsigned index)
-            : m_buckets(buckets)
-            , m_numBuckets(numBuckets)
-            , m_index(index)
+            : m_buckets(buckets), m_numBuckets(numBuckets), m_index(index)
         {
             assert((buckets != nullptr) || (numBuckets == 0));
             assert(index <= numBuckets);
@@ -354,10 +348,7 @@ public:
         }
 
     public:
-        Iterator()
-            : m_buckets(nullptr)
-            , m_numBuckets(0)
-            , m_index(0)
+        Iterator() : m_buckets(nullptr), m_numBuckets(0), m_index(0)
         {
         }
 
@@ -429,7 +420,7 @@ public:
     //                             the key does not already exist in the
     //                             table, or updates the value if the key
     //                             already exists.
-    //                             
+    //
     // Arguments:
     //    key   - The key for which to add or update a value.
     //    value - The value.
@@ -482,13 +473,13 @@ public:
             return false;
         }
 
-        Bucket* bucket = &m_buckets[bucketIndex];
+        Bucket* bucket   = &m_buckets[bucketIndex];
         bucket->m_isFull = false;
 
         if (precedingIndexInChain != bucketIndex)
         {
-            const unsigned mask = m_numBuckets - 1;
-            unsigned homeIndex = hash & mask;
+            const unsigned mask      = m_numBuckets - 1;
+            unsigned       homeIndex = hash & mask;
 
             unsigned nextOffset;
             if (bucket->m_nextOffset == 0)
@@ -498,7 +489,7 @@ public:
             else
             {
                 unsigned nextIndexInChain = (bucketIndex + bucket->m_nextOffset) & mask;
-                nextOffset = (nextIndexInChain - precedingIndexInChain) & mask;
+                nextOffset                = (nextIndexInChain - precedingIndexInChain) & mask;
             }
 
             if (precedingIndexInChain == homeIndex)
@@ -543,7 +534,7 @@ public:
 //------------------------------------------------------------------------
 // HashTable: a simple subclass of `HashTableBase` that always uses heap
 //            storage for its bucket array.
-template<typename TKey, typename TValue, typename TKeyInfo = HashTableInfo<TKey>>
+template <typename TKey, typename TValue, typename TKeyInfo = HashTableInfo<TKey>>
 class HashTable final : public HashTableBase<TKey, TValue, TKeyInfo>
 {
     typedef HashTableBase<TKey, TValue, TKeyInfo> TBase;
@@ -554,15 +545,15 @@ class HashTable final : public HashTableBase<TKey, TValue, TKeyInfo>
     }
 
 public:
-    HashTable(Compiler* compiler)
-        : TBase(compiler, nullptr, 0)
+    HashTable(Compiler* compiler) : TBase(compiler, nullptr, 0)
     {
     }
 
     HashTable(Compiler* compiler, unsigned initialSize)
         : TBase(compiler,
-            reinterpret_cast<typename TBase::Bucket*>(compiler->compGetMem(RoundUp(initialSize) * sizeof(typename TBase::Bucket))),
-            RoundUp(initialSize))
+                reinterpret_cast<typename TBase::Bucket*>(
+                    compiler->compGetMem(RoundUp(initialSize) * sizeof(typename TBase::Bucket))),
+                RoundUp(initialSize))
     {
     }
 };
@@ -574,7 +565,7 @@ public:
 //                 the map at any given time falls below a certain
 //                 threshold. Switches to heap storage once the initial
 //                 inline storage is exhausted.
-template<typename TKey, typename TValue, unsigned NumInlineBuckets = 8, typename TKeyInfo = HashTableInfo<TKey>>
+template <typename TKey, typename TValue, unsigned NumInlineBuckets = 8, typename TKeyInfo = HashTableInfo<TKey>>
 class SmallHashTable final : public HashTableBase<TKey, TValue, TKeyInfo>
 {
     typedef HashTableBase<TKey, TValue, TKeyInfo> TBase;
@@ -587,8 +578,7 @@ class SmallHashTable final : public HashTableBase<TKey, TValue, TKeyInfo>
     typename TBase::Bucket m_inlineBuckets[RoundedNumInlineBuckets];
 
 public:
-    SmallHashTable(Compiler* compiler)
-        : TBase(compiler, m_inlineBuckets, RoundedNumInlineBuckets)
+    SmallHashTable(Compiler* compiler) : TBase(compiler, m_inlineBuckets, RoundedNumInlineBuckets)
     {
     }
 };

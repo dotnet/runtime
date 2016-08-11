@@ -19,13 +19,11 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 #include "_typeinfo.h"
 
-BOOL         Compiler::tiCompatibleWith(const typeInfo& child,
-                                        const typeInfo& parent,
-                                        bool normalisedForStack) const
+BOOL Compiler::tiCompatibleWith(const typeInfo& child, const typeInfo& parent, bool normalisedForStack) const
 {
 #ifdef DEBUG
 #if VERBOSE_VERIFY
-    if(VERBOSE && tiVerificationNeeded)
+    if (VERBOSE && tiVerificationNeeded)
     {
         printf("\n");
         printf(TI_DUMP_PADDING);
@@ -37,14 +35,11 @@ BOOL         Compiler::tiCompatibleWith(const typeInfo& child,
 #endif // VERBOSE_VERIFY
 #endif // DEBUG
 
-    BOOL compatible = typeInfo::tiCompatibleWith(info.compCompHnd,
-                                                 child,
-                                                 parent,
-                                                 normalisedForStack);
+    BOOL compatible = typeInfo::tiCompatibleWith(info.compCompHnd, child, parent, normalisedForStack);
 
 #ifdef DEBUG
 #if VERBOSE_VERIFY
-    if(VERBOSE && tiVerificationNeeded)
+    if (VERBOSE && tiVerificationNeeded)
     {
         printf(compatible ? " [YES]" : " [NO]");
     }
@@ -54,23 +49,19 @@ BOOL         Compiler::tiCompatibleWith(const typeInfo& child,
     return compatible;
 }
 
-
-BOOL Compiler::tiMergeCompatibleWith(const typeInfo& child,
-                                     const typeInfo& parent,
-                                     bool normalisedForStack) const
+BOOL Compiler::tiMergeCompatibleWith(const typeInfo& child, const typeInfo& parent, bool normalisedForStack) const
 {
     return typeInfo::tiMergeCompatibleWith(info.compCompHnd, child, parent, normalisedForStack);
 }
 
-BOOL         Compiler::tiMergeToCommonParent(typeInfo *pDest, 
-                                             const typeInfo *pSrc,
-                                             bool* changed) const
+BOOL Compiler::tiMergeToCommonParent(typeInfo* pDest, const typeInfo* pSrc, bool* changed) const
 {
 #ifdef DEBUG
 #if VERBOSE_VERIFY
-    if(VERBOSE && tiVerificationNeeded)
+    if (VERBOSE && tiVerificationNeeded)
     {
-        printf("\n"); printf(TI_DUMP_PADDING); 
+        printf("\n");
+        printf(TI_DUMP_PADDING);
         printf("Attempting to merge types: ");
         pDest->Dump();
         printf(" and ");
@@ -84,11 +75,11 @@ BOOL         Compiler::tiMergeToCommonParent(typeInfo *pDest,
 
 #ifdef DEBUG
 #if VERBOSE_VERIFY
-    if(VERBOSE && tiVerificationNeeded)
+    if (VERBOSE && tiVerificationNeeded)
     {
         printf(TI_DUMP_PADDING);
         printf((mergeable == TRUE) ? "Merge successful" : "Couldn't merge types");
-        if(*changed)
+        if (*changed)
         {
             assert(mergeable);
             printf(", destination type changed to: ");
@@ -102,23 +93,28 @@ BOOL         Compiler::tiMergeToCommonParent(typeInfo *pDest,
     return mergeable;
 }
 
-
 static BOOL tiCompatibleWithByRef(COMP_HANDLE CompHnd, const typeInfo& child, const typeInfo& parent)
 {
     assert(parent.IsByRef());
 
     if (!child.IsByRef())
+    {
         return FALSE;
+    }
 
     if (child.IsReadonlyByRef() && !parent.IsReadonlyByRef())
+    {
         return FALSE;
+    }
 
     // Byrefs are compatible if the underlying types are equivalent
-    typeInfo childTarget = ::DereferenceByRef(child);
+    typeInfo childTarget  = ::DereferenceByRef(child);
     typeInfo parentTarget = ::DereferenceByRef(parent);
 
     if (typeInfo::AreEquivalent(childTarget, parentTarget))
+    {
         return TRUE;
+    }
 
     // Make sure that both types have a valid m_cls
     if ((childTarget.IsType(TI_REF) || childTarget.IsType(TI_STRUCT)) &&
@@ -130,19 +126,18 @@ static BOOL tiCompatibleWithByRef(COMP_HANDLE CompHnd, const typeInfo& child, co
     return FALSE;
 }
 
-
 /*****************************************************************************
- * Verify child is compatible with the template parent.  Basically, that 
- * child is a "subclass" of parent -it can be substituted for parent 
+ * Verify child is compatible with the template parent.  Basically, that
+ * child is a "subclass" of parent -it can be substituted for parent
  * anywhere.  Note that if parent contains fancy flags, such as "uninitialized"
- * , "is this ptr", or  "has byref local/field" info, then child must also 
+ * , "is this ptr", or  "has byref local/field" info, then child must also
  * contain those flags, otherwise FALSE will be returned !
  *
  * Rules for determining compatibility:
  *
- * If parent is a primitive type or value class, then child must be the 
- * same primitive type or value class.  The exception is that the built in 
- * value classes System/Boolean etc. are treated as synonyms for 
+ * If parent is a primitive type or value class, then child must be the
+ * same primitive type or value class.  The exception is that the built in
+ * value classes System/Boolean etc. are treated as synonyms for
  * TI_BYTE etc.
  *
  * If parent is a byref of a primitive type or value class, then child
@@ -150,29 +145,27 @@ static BOOL tiCompatibleWithByRef(COMP_HANDLE CompHnd, const typeInfo& child, co
  *
  * Byrefs are compatible only with byrefs.
  *
- * If parent is an object, child must be a subclass of it, implement it 
+ * If parent is an object, child must be a subclass of it, implement it
  * (if it is an interface), or be null.
  *
  * If parent is an array, child must be the same or subclassed array.
  *
  * If parent is a null objref, only null is compatible with it.
  *
- * If the "uninitialized", "by ref local/field", "this pointer" or other flags 
+ * If the "uninitialized", "by ref local/field", "this pointer" or other flags
  * are different, the items are incompatible.
  *
  * parent CANNOT be an undefined (dead) item.
  *
  */
 
-BOOL         typeInfo::tiCompatibleWith          (COMP_HANDLE CompHnd,
-                                                  const typeInfo& child,
-                                                  const typeInfo& parent,
-                                                  bool normalisedForStack) 
+BOOL typeInfo::tiCompatibleWith(COMP_HANDLE     CompHnd,
+                                const typeInfo& child,
+                                const typeInfo& parent,
+                                bool            normalisedForStack)
 {
-    assert(child.IsDead() || !normalisedForStack || 
-                typeInfo::AreEquivalent(::NormaliseForStack(child), child));
-    assert(parent.IsDead() || !normalisedForStack || 
-                typeInfo::AreEquivalent(::NormaliseForStack(parent), parent));
+    assert(child.IsDead() || !normalisedForStack || typeInfo::AreEquivalent(::NormaliseForStack(child), child));
+    assert(parent.IsDead() || !normalisedForStack || typeInfo::AreEquivalent(::NormaliseForStack(parent), parent));
 
     if (typeInfo::AreEquivalent(child, parent))
     {
@@ -181,33 +174,43 @@ BOOL         typeInfo::tiCompatibleWith          (COMP_HANDLE CompHnd,
 
     if (parent.IsUnboxedGenericTypeVar() || child.IsUnboxedGenericTypeVar())
     {
-        return (FALSE);  // need to have had child == parent
+        return (FALSE); // need to have had child == parent
     }
     else if (parent.IsType(TI_REF))
     {
         // An uninitialized objRef is not compatible to initialized.
         if (child.IsUninitialisedObjRef() && !parent.IsUninitialisedObjRef())
+        {
             return FALSE;
+        }
 
-        if (child.IsNullObjRef())                   // NULL can be any reference type
+        if (child.IsNullObjRef())
+        { // NULL can be any reference type
             return TRUE;
+        }
         if (!child.IsType(TI_REF))
+        {
             return FALSE;
+        }
 
         return CompHnd->canCast(child.m_cls, parent.m_cls);
     }
     else if (parent.IsType(TI_METHOD))
     {
         if (!child.IsType(TI_METHOD))
+        {
             return FALSE;
+        }
 
-            // Right now we don't bother merging method handles
+        // Right now we don't bother merging method handles
         return FALSE;
     }
     else if (parent.IsType(TI_STRUCT))
     {
         if (!child.IsType(TI_STRUCT))
+        {
             return FALSE;
+        }
 
         // Structures are compatible if they are equivalent
         return CompHnd->areTypesEquivalent(child.m_cls, parent.m_cls);
@@ -218,7 +221,7 @@ BOOL         typeInfo::tiCompatibleWith          (COMP_HANDLE CompHnd,
     }
 #ifdef _TARGET_64BIT_
     // On 64-bit targets we have precise representation for native int, so these rules
-    // represent the fact that the ECMA spec permits the implicit conversion 
+    // represent the fact that the ECMA spec permits the implicit conversion
     // between an int32 and a native int.
     else if (parent.IsType(TI_INT) && typeInfo::AreEquivalent(nativeInt(), child))
     {
@@ -232,10 +235,10 @@ BOOL         typeInfo::tiCompatibleWith          (COMP_HANDLE CompHnd,
     return FALSE;
 }
 
-BOOL typeInfo::tiMergeCompatibleWith     (COMP_HANDLE CompHnd, 
-                                          const typeInfo& child,
-                                          const typeInfo& parent,
-                                          bool normalisedForStack) 
+BOOL typeInfo::tiMergeCompatibleWith(COMP_HANDLE     CompHnd,
+                                     const typeInfo& child,
+                                     const typeInfo& parent,
+                                     bool            normalisedForStack)
 {
     if (!child.IsPermanentHomeByRef() && parent.IsPermanentHomeByRef())
     {
@@ -244,7 +247,6 @@ BOOL typeInfo::tiMergeCompatibleWith     (COMP_HANDLE CompHnd,
 
     return typeInfo::tiCompatibleWith(CompHnd, child, parent, normalisedForStack);
 }
-
 
 /*****************************************************************************
  * Merge pDest and pSrc to find some commonality (e.g. a common parent).
@@ -274,14 +276,12 @@ BOOL typeInfo::tiMergeCompatibleWith     (COMP_HANDLE CompHnd,
  *
  * Also, System/Int32 and I4 merge -> I4, etc.
  *
- * Returns FALSE if the merge was completely incompatible (i.e. the item became 
+ * Returns FALSE if the merge was completely incompatible (i.e. the item became
  * dead).
  *
  */
 
-BOOL         typeInfo::tiMergeToCommonParent     (COMP_HANDLE CompHnd, typeInfo *pDest, 
-                                                  const typeInfo *pSrc,
-                                                  bool* changed) 
+BOOL typeInfo::tiMergeToCommonParent(COMP_HANDLE CompHnd, typeInfo* pDest, const typeInfo* pSrc, bool* changed)
 {
     assert(pSrc->IsDead() || typeInfo::AreEquivalent(::NormaliseForStack(*pSrc), *pSrc));
     assert(pDest->IsDead() || typeInfo::AreEquivalent(::NormaliseForStack(*pDest), *pDest));
@@ -289,7 +289,7 @@ BOOL         typeInfo::tiMergeToCommonParent     (COMP_HANDLE CompHnd, typeInfo 
     // Merge the auxiliary information like "this" pointer tracking, etc...
 
     // Remember the pre-state, so we can tell if it changed.
-    *changed = false;
+    *changed              = false;
     DWORD destFlagsBefore = pDest->m_flags;
 
     // This bit is only set if both pDest and pSrc have it set
@@ -304,11 +304,16 @@ BOOL         typeInfo::tiMergeToCommonParent     (COMP_HANDLE CompHnd, typeInfo 
     // If the byref wasn't permanent home in both sides, then merge won't have the bit set
     pDest->m_flags &= (pSrc->m_flags | ~TI_FLAG_BYREF_PERMANENT_HOME);
 
-    if (pDest->m_flags != destFlagsBefore) *changed = true;
+    if (pDest->m_flags != destFlagsBefore)
+    {
+        *changed = true;
+    }
 
     // OK the main event.  Merge the main types
     if (typeInfo::AreEquivalent(*pDest, *pSrc))
-        return(TRUE);
+    {
+        return (TRUE);
+    }
 
     if (pDest->IsUnboxedGenericTypeVar() || pSrc->IsUnboxedGenericTypeVar())
     {
@@ -317,22 +322,30 @@ BOOL         typeInfo::tiMergeToCommonParent     (COMP_HANDLE CompHnd, typeInfo 
     }
     if (pDest->IsType(TI_REF))
     {
-        if (pSrc->IsType(TI_NULL))                  // NULL can be any reference type
+        if (pSrc->IsType(TI_NULL))
+        { // NULL can be any reference type
             return TRUE;
+        }
         if (!pSrc->IsType(TI_REF))
+        {
             goto FAIL;
+        }
 
         // Ask the EE to find the common parent,  This always succeeds since System.Object always works
         CORINFO_CLASS_HANDLE pDestClsBefore = pDest->m_cls;
-        pDest->m_cls = CompHnd->mergeClasses(pDest->GetClassHandle(), pSrc->GetClassHandle());
-        if (pDestClsBefore != pDest->m_cls) *changed = true;
+        pDest->m_cls                        = CompHnd->mergeClasses(pDest->GetClassHandle(), pSrc->GetClassHandle());
+        if (pDestClsBefore != pDest->m_cls)
+        {
+            *changed = true;
+        }
         return TRUE;
     }
     else if (pDest->IsType(TI_NULL))
     {
-        if (pSrc->IsType(TI_REF))                   // NULL can be any reference type
+        if (pSrc->IsType(TI_REF)) // NULL can be any reference type
         {
-            *pDest = *pSrc; *changed = true;
+            *pDest   = *pSrc;
+            *changed = true;
             return TRUE;
         }
         goto FAIL;
@@ -340,7 +353,9 @@ BOOL         typeInfo::tiMergeToCommonParent     (COMP_HANDLE CompHnd, typeInfo 
     else if (pDest->IsType(TI_STRUCT))
     {
         if (pSrc->IsType(TI_STRUCT) && CompHnd->areTypesEquivalent(pDest->GetClassHandle(), pSrc->GetClassHandle()))
+        {
             return TRUE;
+        }
         goto FAIL;
     }
     else if (pDest->IsByRef())
@@ -349,7 +364,7 @@ BOOL         typeInfo::tiMergeToCommonParent     (COMP_HANDLE CompHnd, typeInfo 
     }
 #ifdef _TARGET_64BIT_
     // On 64-bit targets we have precise representation for native int, so these rules
-    // represent the fact that the ECMA spec permits the implicit conversion 
+    // represent the fact that the ECMA spec permits the implicit conversion
     // between an int32 and a native int.
     else if (typeInfo::AreEquivalent(*pDest, typeInfo::nativeInt()) && pSrc->IsType(TI_INT))
     {
@@ -357,7 +372,7 @@ BOOL         typeInfo::tiMergeToCommonParent     (COMP_HANDLE CompHnd, typeInfo 
     }
     else if (typeInfo::AreEquivalent(*pSrc, typeInfo::nativeInt()) && pDest->IsType(TI_INT))
     {
-        *pDest = *pSrc;
+        *pDest   = *pSrc;
         *changed = true;
         return TRUE;
     }
@@ -375,13 +390,13 @@ void typeInfo::Dump() const
 {
     char flagsStr[8];
 
-    flagsStr[0] = ((m_flags & TI_FLAG_UNINIT_OBJREF) != 0)        ? 'U' : '-';
-    flagsStr[1] = ((m_flags & TI_FLAG_BYREF) != 0)                ? 'B' : '-';
-    flagsStr[2] = ((m_flags & TI_FLAG_BYREF_READONLY) != 0)       ? 'R' : '-';
-    flagsStr[3] = ((m_flags & TI_FLAG_NATIVE_INT) != 0)           ? 'N' : '-';
-    flagsStr[4] = ((m_flags & TI_FLAG_THIS_PTR) != 0)             ? 'T' : '-';
+    flagsStr[0] = ((m_flags & TI_FLAG_UNINIT_OBJREF) != 0) ? 'U' : '-';
+    flagsStr[1] = ((m_flags & TI_FLAG_BYREF) != 0) ? 'B' : '-';
+    flagsStr[2] = ((m_flags & TI_FLAG_BYREF_READONLY) != 0) ? 'R' : '-';
+    flagsStr[3] = ((m_flags & TI_FLAG_NATIVE_INT) != 0) ? 'N' : '-';
+    flagsStr[4] = ((m_flags & TI_FLAG_THIS_PTR) != 0) ? 'T' : '-';
     flagsStr[5] = ((m_flags & TI_FLAG_BYREF_PERMANENT_HOME) != 0) ? 'P' : '-';
-    flagsStr[6] = ((m_flags & TI_FLAG_GENERIC_TYPE_VAR) != 0)     ? 'G' : '-';
+    flagsStr[6] = ((m_flags & TI_FLAG_GENERIC_TYPE_VAR) != 0) ? 'G' : '-';
     flagsStr[7] = '\0';
 
     printf("[%s(%X) {%s}]", tiType2Str(m_bits.type), m_cls, flagsStr);
