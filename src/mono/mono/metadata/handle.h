@@ -252,6 +252,8 @@ This is why we evaluate index and value before any call to MONO_HANDLE_RAW or ot
 	} while (0)
 
 
+#define MONO_HANDLE_DOMAIN(HANDLE) (mono_object_domain (MONO_HANDLE_RAW (MONO_HANDLE_CAST (MonoObject, HANDLE))))
+
 /* Baked typed handles we all want */
 TYPED_HANDLE_DECL (MonoString);
 TYPED_HANDLE_DECL (MonoArray);
@@ -267,7 +269,7 @@ extern const MonoObjectHandle mono_null_value_handle;
 
 
 //FIXME this should go somewhere else
-MonoStringHandle mono_string_new_handle (MonoDomain *domain, const char *data);
+MonoStringHandle mono_string_new_handle (MonoDomain *domain, const char *data, MonoError *error);
 MonoArrayHandle mono_array_new_handle (MonoDomain *domain, MonoClass *eclass, uintptr_t n, MonoError *error);
 
 G_END_DECLS

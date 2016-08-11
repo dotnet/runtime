@@ -6,6 +6,7 @@
 #ifndef __MONO_METADATA_REFLECTION_INTERNALS_H__
 #define __MONO_METADATA_REFLECTION_INTERNALS_H__
 
+#include <mono/metadata/object-internals.h>
 #include <mono/metadata/reflection.h>
 #include <mono/metadata/class-internals.h>
 #include <mono/utils/mono-compiler.h>
@@ -89,6 +90,9 @@ mono_module_file_get_object_checked (MonoDomain *domain, MonoImage *image, int t
 
 MonoReflectionMethodBody*
 mono_method_body_get_object_checked (MonoDomain *domain, MonoMethod *method, MonoError *error);
+
+MonoClass *
+mono_class_from_mono_type_handle (MonoReflectionTypeHandle h);
 
 
 #endif /* __MONO_METADATA_REFLECTION_INTERNALS_H__ */

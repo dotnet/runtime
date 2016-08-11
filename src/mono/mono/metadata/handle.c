@@ -157,9 +157,9 @@ mono_stack_mark_pop_value (MonoThreadInfo *info, HandleStackMark *stackmark, Mon
 /* Temporary place for some of the handle enabled wrapper functions*/
 
 MonoStringHandle
-mono_string_new_handle (MonoDomain *domain, const char *data)
+mono_string_new_handle (MonoDomain *domain, const char *data, MonoError *error)
 {
-	return MONO_HANDLE_NEW (MonoString, mono_string_new (domain, data));
+	return MONO_HANDLE_NEW (MonoString, mono_string_new_checked (domain, data, error));
 }
 
 MonoArrayHandle
