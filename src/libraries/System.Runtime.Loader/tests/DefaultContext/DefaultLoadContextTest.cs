@@ -116,6 +116,7 @@ namespace System.Runtime.Loader.Tests
             File.Copy(targetRenamedPath, targetPath); 
         }
 
+        [ActiveIssue(10722)]
         [Fact]
         public static void LoadInDefaultContext()
         {
