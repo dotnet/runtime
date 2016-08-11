@@ -28,7 +28,8 @@ namespace Microsoft.Extensions.DependencyModel.Tests
                         new RuntimeAssetGroup[] { },
                         new ResourceAssembly[] { },
                         new Dependency[] { },
-                        serviceable: false)
+                        serviceable: false,
+                        path: "PackagePath")
                 },
                 runtimeGraph: new RuntimeFallbacks[] { });
 
@@ -99,7 +100,8 @@ namespace Microsoft.Extensions.DependencyModel.Tests
                     new CompilationLibrary("package", "System.Banana", "1.0.0", "hash",
                         new [] { Path.Combine("ref", "netstandard1.3", "System.Banana.dll") },
                         new Dependency[] { },
-                        serviceable: false)
+                        serviceable: false,
+                        path: "PackagePath")
                 },
                 runtimeLibraries: new[] {
                     new RuntimeLibrary("package", "System.Banana", "1.0.0", "hash",
@@ -119,7 +121,8 @@ namespace Microsoft.Extensions.DependencyModel.Tests
                         },
                         new ResourceAssembly[] { },
                         new Dependency[] { },
-                        serviceable: false)
+                        serviceable: false,
+                        path: "PackagePath")
                 },
                 runtimeGraph: new[] {
                     new RuntimeFallbacks("win10-x64", "win10", "win81-x64", "win81", "win8-x64", "win8", "win7-x64", "win7", "win-x64", "win", "any", "base"),
