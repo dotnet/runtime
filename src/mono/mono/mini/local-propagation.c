@@ -219,8 +219,14 @@ mono_strength_reduction_division (MonoCompile *cfg, MonoInst *ins)
 			struct magic_signed mag;
 			int power2 = mono_is_power_of_two (ins->inst_imm);
 			/* The decomposition doesn't handle exception throwing */
-			if (ins->inst_imm == 0 || ins->inst_imm == -1)
+			/* Optimization with MUL does not apply for -1, 0 and 1 divisors */
+			if (ins->inst_imm == 0 || ins->inst_imm == -1) {
 				break;
+			} else if (ins->inst_imm == 1) {
+				ins->opcode = OP_MOVE;
+				ins->inst_imm = 0;
+				break;
+			}
 			allocated_vregs = TRUE;
 			if (power2 == 1) {
 				guint32 r1 = alloc_ireg (cfg);
