@@ -1,14 +1,14 @@
 {
   "dependencies": {
-    "Microsoft.NETCore.Platforms": "1.0.2-beta-devapi-24411-01",
-    "Microsoft.NETCore.Targets": "1.0.3-beta-devapi-24411-01",
+    "Microsoft.NETCore.Platforms": "1.0.2-beta-devapi-24412-01",
+    "Microsoft.NETCore.Targets": "1.0.3-beta-devapi-24412-01",
     "Microsoft.NETCore.TestHost": "1.0.0-rc4-24131-00",
     "Microsoft.NETCore.Runtime.CoreCLR": "1.0.4-beta-24411-02",
-    "System.Diagnostics.Contracts": "4.0.2-beta-devapi-24411-01",
-    "System.IO.Compression": "4.2.0-beta-devapi-24411-01",
-    "System.Runtime.InteropServices.RuntimeInformation": "4.0.1-beta-devapi-24411-01",
-    "System.Linq.Parallel": "4.0.2-beta-devapi-24411-01",
-    "System.Xml.XDocument": "4.0.12-beta-devapi-24411-01",
+    "System.Diagnostics.Contracts": "4.0.2-beta-devapi-24412-01",
+    "System.IO.Compression": "4.2.0-beta-devapi-24412-01",
+    "System.Runtime.InteropServices.RuntimeInformation": "4.0.1-beta-devapi-24412-01",
+    "System.Linq.Parallel": "4.0.2-beta-devapi-24412-01",
+    "System.Xml.XDocument": "4.0.12-beta-devapi-24412-01",
     "coveralls.io": "1.4",
     "OpenCover": "4.6.519",
     "ReportGenerator": "2.4.3",
@@ -24,7 +24,7 @@
     "uap10.0": {
       "dependencies": {
         "Microsoft.NETCore.UniversalWindowsPlatform": "5.2.1-beta-000547-00",
-        "System.Console": "4.1.0-beta-devapi-24411-01",
+        "System.Console": "4.1.0-beta-devapi-24412-01",
         "microsoft.xunit.runner.uwp": "1.0.3-prerelease-00614-01",
         "Microsoft.DotNet.TestILC": {
           "version": "1.4.24208-prerelease",
