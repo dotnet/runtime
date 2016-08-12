@@ -10,7 +10,6 @@
   <ItemGroup>
     <Compile Include="System.Runtime.Serialization.Xml.cs" />
     <Compile Include="System.Runtime.Serialization.Xml.Manual.cs" />
-    <ProjectReference Include="..\..\System.Xml.ReaderWriter\ref\System.Xml.ReaderWriter.csproj" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />

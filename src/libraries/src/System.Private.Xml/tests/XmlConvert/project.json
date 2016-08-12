@@ -7,6 +7,7 @@
     "System.Runtime": "4.2.0-beta-devapi-24412-01",
     "System.Runtime.Extensions": "4.2.0-beta-devapi-24412-01",
     "System.Text.RegularExpressions": "4.2.0-beta-devapi-24412-01",
+    "System.Xml.ReaderWriter": "4.1.0-beta-devapi-24412-01",
     "test-runtime": {
       "target": "project",
       "exclude": "compile"
