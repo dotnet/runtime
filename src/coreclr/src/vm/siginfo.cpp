@@ -3823,12 +3823,6 @@ MetaSig::CompareElementType(
                     return FALSE;
                 }
             }
-
-#ifdef _DEBUG
-            // Shouldn't get here.
-            _ASSERTE(FALSE);
-            return FALSE;
-#endif
         }
         else
         {
