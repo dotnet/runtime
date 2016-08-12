@@ -1769,6 +1769,10 @@ DWORD ReJitManager::GetCurrentReJitFlags(PTR_MethodDesc pMD)
 //      E_OUTOFMEMORY
 //
 
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable:4702) // Disable bogus unreachable code warning
+#endif // _MSC_VER
 HRESULT ReJitManager::RequestRevertByToken(PTR_Module pModule, mdMethodDef methodDef)
 {
     CONTRACTL
@@ -1825,7 +1829,9 @@ HRESULT ReJitManager::RequestRevertByToken(PTR_Module pModule, mdMethodDef metho
     }
     return S_OK;
 }
-
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif // _MSC_VER
 
 
 

@@ -2557,9 +2557,6 @@ Exit:
 }
 
 
-#ifdef _MSC_VER
-#pragma warning(default:4702)
-#endif
 BOOL ThreadpoolMgr::SuspendProcessing()
 {
     CONTRACTL
