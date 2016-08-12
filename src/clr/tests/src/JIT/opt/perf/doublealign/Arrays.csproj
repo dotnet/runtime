@@ -33,6 +33,7 @@
     <Noconfig>True</Noconfig>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
     <DefineConstants>$(DefineConstants);CORECLR</DefineConstants>
+    <GCStressIncompatible>true</GCStressIncompatible>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="arrays.cs" />
