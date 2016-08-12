@@ -10891,7 +10891,8 @@ REG_OK:
 
             switch (dstType)
             {
-            case TYP_INT:   // conv.ovf.i8.i4
+            case TYP_INT:
+                // conv.ovf.i8.i4
                 /*  Generate the following sequence
 
                         test loDWord, loDWord   // set flags
@@ -21297,9 +21298,7 @@ void        CodeGen::genSetScopeInfo  (unsigned                 which,
     compiler->eeSetLVinfo(which, startOffs, length, ilVarNum, LVnum, name, avail, varLoc);
 }
 
-/*****************************************************************************/
 #endif  // DEBUGGING_SUPPORT
-/*****************************************************************************/
 
 /*****************************************************************************
  *

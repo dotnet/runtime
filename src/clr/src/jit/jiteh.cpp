@@ -802,11 +802,18 @@ unsigned        Compiler::ehTrueEnclosingTryIndexIL(unsigned regionIndex)
     {
         regionIndex = HBtab->ebdEnclosingTryIndex;
         if (regionIndex == EHblkDsc::NO_ENCLOSING_INDEX)
-            break;  // No enclosing 'try'; we're done
+        {
+            // No enclosing 'try'; we're done
+            break;
+        }
 
         HBtab = ehGetDsc(regionIndex);
         if (!EHblkDsc::ebdIsSameILTry(ehDscRoot, HBtab))
-            break;  // Found an enclosing 'try' that has a different 'try' region (is not mutually-protect with the original region). Return it.
+        {
+            // Found an enclosing 'try' that has a different 'try' region (is not mutually-protect with the
+            // original region). Return it.
+            break;
+        }
     }
 
     return regionIndex;
