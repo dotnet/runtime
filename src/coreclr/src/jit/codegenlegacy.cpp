@@ -18418,7 +18418,6 @@ regMaskTP CodeGen::genLoadIndirectCallTarget(GenTreePtr call)
  *  register mask that describes where the result will be found is returned;
  *  otherwise, RBM_NONE is returned.
  */
-
 #ifdef _PREFAST_
 #pragma warning(push)
 #pragma warning(disable : 21000) // Suppress PREFast warning about overly large function
@@ -18836,6 +18835,14 @@ regMaskTP CodeGen::genCodeForCall(GenTreePtr call, bool valUsed)
         pInfo        = compiler->eeGetEEInfo();
         instOffs     = pInfo->offsetOfDelegateInstance;
         firstTgtOffs = pInfo->offsetOfDelegateFirstTarget;
+
+#ifdef _TARGET_ARM_
+        if ((call->gtCall.gtCallMoreFlags & GTF_CALL_M_SECURE_DELEGATE_INV))
+        {
+            getEmitter()->emitIns_R_R_I(INS_add, EA_PTRSIZE, REG_VIRTUAL_STUB_PARAM, regThis, pInfo->offsetOfSecureDelegateIndirectCell);
+            regTracker.rsTrackRegTrash(REG_VIRTUAL_STUB_PARAM);
+        }
+#endif // _TARGET_ARM_
 
         // Grab an available register to use for the CALL indirection
         regNumber indCallReg = regSet.rsGrabReg(RBM_ALLINT);
