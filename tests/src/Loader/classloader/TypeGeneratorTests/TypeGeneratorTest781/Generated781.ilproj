@@ -13,7 +13,7 @@
     <ReferenceLocalMscorlib>false</ReferenceLocalMscorlib>
     <OutputType>Exe</OutputType>
     <CLRTestKind>BuildAndRun</CLRTestKind>
-    <CLRTestPriority>2</CLRTestPriority>
+    <CLRTestPriority>1</CLRTestPriority>
   </PropertyGroup>
 
   <ItemGroup>
