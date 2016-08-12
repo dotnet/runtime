@@ -2929,8 +2929,9 @@ struct GenTreeCall final : public GenTree
                                   // a Pinvoke but not as an unmanaged call. See impCheckForPInvokeCall() to
                                   // know when these flags are set.
 
-#define GTF_CALL_M_R2R_REL_INDIRECT 0x2000 // GT_CALL -- ready to run call is indirected through a relative address
-#define GTF_CALL_M_DOES_NOT_RETURN 0x4000  // GT_CALL -- call does not return
+#define GTF_CALL_M_R2R_REL_INDIRECT 0x2000    // GT_CALL -- ready to run call is indirected through a relative address
+#define GTF_CALL_M_DOES_NOT_RETURN 0x4000     // GT_CALL -- call does not return
+#define GTF_CALL_M_SECURE_DELEGATE_INV 0x8000 // GT_CALL -- call is in secure delegate
 
     bool IsUnmanaged() const
     {

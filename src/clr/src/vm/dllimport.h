@@ -215,6 +215,7 @@ enum ILStubTypes
     ILSTUB_MULTICASTDELEGATE_INVOKE      = 0x80000010,
     ILSTUB_UNBOXINGILSTUB                = 0x80000020,
     ILSTUB_INSTANTIATINGSTUB             = 0x80000040,
+    ILSTUB_SECUREDELEGATE_INVOKE         = 0x80000080,
 #endif
 };
 
@@ -245,6 +246,7 @@ inline bool SF_IsArrayOpStub           (DWORD dwStubFlags) { LIMITED_METHOD_CONT
 #endif
 
 #ifdef FEATURE_STUBS_AS_IL
+inline bool SF_IsSecureDelegateStub  (DWORD dwStubFlags)    { LIMITED_METHOD_CONTRACT; return (dwStubFlags == ILSTUB_SECUREDELEGATE_INVOKE); }
 inline bool SF_IsMulticastDelegateStub  (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags == ILSTUB_MULTICASTDELEGATE_INVOKE); }
 inline bool SF_IsUnboxingILStub         (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags == ILSTUB_UNBOXINGILSTUB); }
 inline bool SF_IsInstantiatingStub      (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags == ILSTUB_INSTANTIATINGSTUB); }

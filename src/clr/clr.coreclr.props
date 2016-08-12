@@ -82,7 +82,7 @@
     <FeaturePal>true</FeaturePal>
     <FeatureXplatEventSource>true</FeatureXplatEventSource>
 
-    <FeatureStubsAsIL Condition="'$(TargetArch)' != 'arm'">true</FeatureStubsAsIL>
+    <FeatureStubsAsIL>true</FeatureStubsAsIL>
 
     <!-- Windows specific features -->
     <FeatureWin32Registry>false</FeatureWin32Registry>
