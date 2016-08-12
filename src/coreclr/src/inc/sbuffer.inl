@@ -13,6 +13,11 @@
 #pragma inline_depth (20)
 #endif
 
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable:4702) // Disable bogus unreachable code warning
+#endif // _MSC_VER
+
 inline SBuffer::SBuffer(PreallocFlag flag, void *buffer, COUNT_T size)
   : m_size(0),
     m_allocation(NULL),
@@ -1699,5 +1704,8 @@ inline void SBuffer::Index::Resync(const SBuffer *buffer, BYTE *value) const
     RETURN;
 }
 
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif // _MSC_VER
 
 #endif  // _SBUFFER_INL_
