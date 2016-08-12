@@ -1,10 +1,10 @@
 {
   "dependencies": {
-    "NETStandard.Library": "1.6.1-beta-devapi-24411-01",
-    "System.Runtime.Serialization.Formatters": "4.0.1-beta-devapi-24411-01",
-    "System.Runtime.Serialization.Json": "4.0.3-beta-devapi-24411-01",
-    "System.Runtime.Serialization.Primitives": "4.2.0-beta-devapi-24411-01",
-    "System.Runtime.Serialization.Xml": "4.1.2-beta-devapi-24411-01"
+    "NETStandard.Library": "1.6.1-beta-devapi-24412-01",
+    "System.Runtime.Serialization.Formatters": "4.0.1-beta-devapi-24412-01",
+    "System.Runtime.Serialization.Json": "4.0.3-beta-devapi-24412-01",
+    "System.Runtime.Serialization.Primitives": "4.2.0-beta-devapi-24412-01",
+    "System.Runtime.Serialization.Xml": "4.1.2-beta-devapi-24412-01"
   },
   "frameworks": {
     "netstandard1.6": {}
