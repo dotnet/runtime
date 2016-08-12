@@ -19,17 +19,14 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 class DecomposeLongs
 {
 public:
-
-    DecomposeLongs(Compiler* compiler)
-        : m_compiler(compiler)
+    DecomposeLongs(Compiler* compiler) : m_compiler(compiler)
     {
     }
 
     void PrepareForDecomposition();
     void DecomposeBlock(BasicBlock* block);
-    
-private:
 
+private:
     // Driver functions
     static Compiler::fgWalkResult DecompNodeHelper(GenTree** ppTree, Compiler::fgWalkData* data);
     void DecomposeStmt(GenTreeStmt* stmt);

@@ -11,10 +11,12 @@
 class Location
 {
 public:
-    GenTree* tree;
+    GenTree*    tree;
     BasicBlock* block;
 
-    Location() : tree(nullptr), block(nullptr) {}
+    Location() : tree(nullptr), block(nullptr)
+    {
+    }
 
     Location(GenTree* t, BasicBlock* b) : tree(t), block(b)
     {
@@ -62,7 +64,7 @@ public:
     void Reset(Compiler* comp)
     {
         block = comp->fgFirstBB;
-        tree = nullptr;
+        tree  = nullptr;
         Initialize();
     }
 
@@ -77,7 +79,7 @@ private:
             if (block == nullptr)
             {
                 block = nullptr;
-                tree = nullptr;
+                tree  = nullptr;
                 break;
             }
             tree = block->bbTreeList;
@@ -92,7 +94,7 @@ class Rationalizer : public Phase
     // Methods
 public:
     Rationalizer(Compiler* comp);
-    Location TreeTransformRationalization (Location loc);
+    Location TreeTransformRationalization(Location loc);
 
 #ifdef DEBUG
 
@@ -100,37 +102,33 @@ public:
     static void ValidateStatement(GenTree* tree, BasicBlock* block);
 
     // general purpose sanity checking of de facto standard GenTree
-    void SanityCheck(); 
+    void SanityCheck();
 
     // sanity checking of rationalized IR
-    void SanityCheckRational(); 
+    void SanityCheckRational();
 
 #endif // DEBUG
 
-    virtual void DoPhase();
-    typedef      ArrayStack<GenTree*> GenTreeStack;
-    static void  MorphAsgIntoStoreLcl (GenTreeStmt* stmt, GenTreePtr pTree);
+    virtual void                 DoPhase();
+    typedef ArrayStack<GenTree*> GenTreeStack;
+    static void MorphAsgIntoStoreLcl(GenTreeStmt* stmt, GenTreePtr pTree);
 
 private:
-    static Compiler::fgWalkResult CommaHelper          (GenTree** ppTree, Compiler::fgWalkData* data);
-    static void                   RewriteOneComma      (GenTree** ppTree, Compiler::fgWalkData* data);
-    static bool                   CommaUselessChild    (GenTree** ppTree, Compiler::fgWalkData* data);
-    static void                   RecursiveRewriteComma(GenTree** ppTree, Compiler::fgWalkData* data, bool discard, bool nested);
-    static bool                   RewriteArrElem       (GenTree** ppTree, Compiler::fgWalkData* data);
+    static Compiler::fgWalkResult CommaHelper(GenTree** ppTree, Compiler::fgWalkData* data);
+    static void RewriteOneComma(GenTree** ppTree, Compiler::fgWalkData* data);
+    static bool CommaUselessChild(GenTree** ppTree, Compiler::fgWalkData* data);
+    static void RecursiveRewriteComma(GenTree** ppTree, Compiler::fgWalkData* data, bool discard, bool nested);
+    static bool RewriteArrElem(GenTree** ppTree, Compiler::fgWalkData* data);
 
     static Compiler::fgWalkResult SimpleTransformHelper(GenTree** ppTree, Compiler::fgWalkData* data);
 
-    static void       DuplicateCommaProcessOneTree (Compiler* comp, Rationalizer* irt, BasicBlock* block, GenTree* tree);
+    static void DuplicateCommaProcessOneTree(Compiler* comp, Rationalizer* irt, BasicBlock* block, GenTree* tree);
 
-    static void       FixupIfCallArg               (GenTreeStack* parentStack,
-                                                    GenTree* oldChild,
-                                                    GenTree* newChild);
+    static void FixupIfCallArg(GenTreeStack* parentStack, GenTree* oldChild, GenTree* newChild);
 
-    static void       FixupIfSIMDLocal             (Compiler* comp, GenTreeLclVarCommon* tree);
+    static void FixupIfSIMDLocal(Compiler* comp, GenTreeLclVarCommon* tree);
 
-    static GenTreePtr CreateTempAssignment         (Compiler* comp,
-                                                    unsigned lclNum,
-                                                    GenTreePtr rhs);
+    static GenTreePtr CreateTempAssignment(Compiler* comp, unsigned lclNum, GenTreePtr rhs);
 
     Location RewriteTopLevelComma(Location loc);
 
@@ -140,17 +138,17 @@ private:
     static void RewriteInitBlk(GenTreePtr* ppTree, Compiler::fgWalkData* data);
 
     // Intrinsic related
-    static void RewriteNodeAsCall(GenTreePtr* ppTree, Compiler::fgWalkData* data,
-        CORINFO_METHOD_HANDLE callHnd,
+    static void RewriteNodeAsCall(GenTreePtr*           ppTree,
+                                  Compiler::fgWalkData* data,
+                                  CORINFO_METHOD_HANDLE callHnd,
 #ifdef FEATURE_READYTORUN_COMPILER
-        CORINFO_CONST_LOOKUP entryPoint,
+                                  CORINFO_CONST_LOOKUP entryPoint,
 #endif
-        GenTreeArgList* args);
+                                  GenTreeArgList* args);
     static void RewriteIntrinsicAsUserCall(GenTreePtr* ppTree, Compiler::fgWalkData* data);
 };
 
-inline Rationalizer::Rationalizer(Compiler* _comp)
-                    : Phase(_comp, "IR Rationalize", PHASE_RATIONALIZE)
+inline Rationalizer::Rationalizer(Compiler* _comp) : Phase(_comp, "IR Rationalize", PHASE_RATIONALIZE)
 {
 #ifdef DEBUG
     comp->compNumStatementLinksTraversed = 0;

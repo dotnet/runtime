@@ -37,8 +37,8 @@ protected:
 
 private:
     bool CanAllocateLclVarOnStack(unsigned int lclNum) const;
-    void DoAnalysis();
-    void MorphAllocObjNodes();
+    void       DoAnalysis();
+    void       MorphAllocObjNodes();
     GenTreePtr MorphAllocObjNodeIntoHelperCall(GenTreeAllocObj* allocObj);
     GenTreePtr MorphAllocObjNodeIntoStackAlloc(GenTreeAllocObj* allocObj, BasicBlock* block, GenTreeStmt* stmt);
 #ifdef DEBUG
@@ -48,22 +48,19 @@ private:
 
 //===============================================================================
 
-inline
-ObjectAllocator::ObjectAllocator(Compiler* comp) :
-    Phase(comp, "Allocate Objects", PHASE_ALLOCATE_OBJECTS),
-    m_IsObjectStackAllocationEnabled(false),
-    m_AnalysisDone(false)
+inline ObjectAllocator::ObjectAllocator(Compiler* comp)
+    : Phase(comp, "Allocate Objects", PHASE_ALLOCATE_OBJECTS)
+    , m_IsObjectStackAllocationEnabled(false)
+    , m_AnalysisDone(false)
 {
 }
 
-inline
-bool ObjectAllocator::IsObjectStackAllocationEnabled() const
+inline bool ObjectAllocator::IsObjectStackAllocationEnabled() const
 {
     return m_IsObjectStackAllocationEnabled;
 }
 
-inline
-void ObjectAllocator::EnableObjectStackAllocation()
+inline void ObjectAllocator::EnableObjectStackAllocation()
 {
     m_IsObjectStackAllocationEnabled = true;
 }
@@ -72,8 +69,7 @@ void ObjectAllocator::EnableObjectStackAllocation()
 // CanAllocateLclVarOnStack: Returns true iff local variable can not
 //                           potentially escape from the method and
 //                           can be allocated on the stack.
-inline
-bool ObjectAllocator::CanAllocateLclVarOnStack(unsigned int lclNum) const
+inline bool ObjectAllocator::CanAllocateLclVarOnStack(unsigned int lclNum) const
 {
     assert(m_AnalysisDone);
     // TODO-ObjectStackAllocation
