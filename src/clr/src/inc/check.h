@@ -101,6 +101,10 @@ public: // !!! NOTE: Called from macros only!!!
 
     static void ResetAssert();
 
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable:4702) // Disable bogus unreachable code warning
+#endif // _MSC_VER
     CHECK() : m_message(NULL)
 #ifdef _DEBUG
               , m_condition (NULL)
@@ -109,6 +113,9 @@ public: // !!! NOTE: Called from macros only!!!
               , m_pCount(NULL)
 #endif
     {}
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif // _MSC_VER
 
     // Fail records the result of a condition check.  Can take either a
     // boolean value or another check result
