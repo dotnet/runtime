@@ -3170,8 +3170,8 @@ const   char *      emitter::emitFncName(CORINFO_METHOD_HANDLE methHnd)
     return emitComp->eeGetMethodFullName(methHnd);
 }
 
-/*****************************************************************************/
 #endif//DEBUG
+
 /*****************************************************************************
  *
  *  Be very careful, some instruction descriptors are allocated as "tiny" and
@@ -3937,7 +3937,9 @@ AGAIN:
          */
 
         srcInstrOffs = jmpIG->igOffs + jmp->idjOffs;
-        dstOffs      = tgtIG->igOffs;                /* Note that the destination is always the beginning of an IG, so no need for an offset inside it */
+
+        /* Note that the destination is always the beginning of an IG, so no need for an offset inside it */
+        dstOffs      = tgtIG->igOffs;                
 
 #if defined(_TARGET_ARM_)
         srcEncodingOffs = srcInstrOffs + 4;     // For relative branches, ARM PC is always considered to be the instruction address + 4
@@ -4146,9 +4148,11 @@ AGAIN:
 #if defined(_TARGET_XARCH_)
         jmp->idCodeSize(jsz);
 #elif defined(_TARGET_ARM_)
+#if 0
         // This is done as part of emitSetShortJump():
-        //    insSize isz = emitInsSize(jmp->idInsFmt());
-        //    jmp->idInsSize(isz);
+        insSize isz = emitInsSize(jmp->idInsFmt());
+        jmp->idInsSize(isz);
+#endif
 #elif defined(_TARGET_ARM64_)
         // The size of IF_LARGEJMP/IF_LARGEADR/IF_LARGELDC are 8 or 12.
         // All other code size is 4.

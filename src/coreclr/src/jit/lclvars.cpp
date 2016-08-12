@@ -6542,8 +6542,8 @@ void                Compiler::lvaStressLclFld()
     fgWalkAllTreesPre(lvaStressLclFldCB, &Args);
 }
 
-/*****************************************************************************/
 #endif // DEBUG
+
 /*****************************************************************************
  *
  *  A little routine that displays a local variable bitset.

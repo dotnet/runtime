@@ -668,8 +668,10 @@ LinearScan::applyCalleeSaveHeuristics(RefPosition* rp)
     }
     else
 #endif // DEBUG
-    // Set preferences so that this register set will be preferred for earlier refs
-    theInterval->updateRegisterPreferences(rp->registerAssignment);
+    {
+        // Set preferences so that this register set will be preferred for earlier refs
+        theInterval->updateRegisterPreferences(rp->registerAssignment);
+    }
 }
 
 void

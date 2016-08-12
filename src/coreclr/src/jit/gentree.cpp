@@ -8419,12 +8419,18 @@ Compiler::gtDispNodeName(GenTree *tree)
             gtfType = " nullcheck";
 
         if (tree->gtFlags & GTF_CALL_VIRT_VTABLE)
+        {
             gtfType = " ind";
+        }
         else if (tree->gtFlags & GTF_CALL_VIRT_STUB)
+        {
             gtfType = " stub";
+        }
 #ifdef FEATURE_READYTORUN_COMPILER
         else if (tree->gtCall.IsR2RRelativeIndir())
+        {
             gtfType = " r2r_ind";
+        }
 #endif // FEATURE_READYTORUN_COMPILER
         else if (tree->gtFlags & GTF_CALL_UNMANAGED)
         {
@@ -8994,26 +9000,40 @@ void                Compiler::gtGetLclVarNameInfo(unsigned lclNum, const char** 
             else if (lclNum == lvaInlinedPInvokeFrameVar)
                 ilName = "PInvokeFrame";
             else if (lclNum == lvaGSSecurityCookie)
+            {
                 ilName = "GsCookie";
+            }
 #if FEATURE_FIXED_OUT_ARGS
             else if (lclNum == lvaPInvokeFrameRegSaveVar)
+            {
                 ilName = "PInvokeFrameRegSave";
+            }
             else if (lclNum == lvaOutgoingArgSpaceVar)
+            {
                 ilName = "OutArgs";
+            }
 #endif // FEATURE_FIXED_OUT_ARGS
 #ifdef _TARGET_ARM_
             else if (lclNum == lvaPromotedStructAssemblyScratchVar)
+            {
                 ilName = "PromotedStructScratch";
+            }
 #endif // _TARGET_ARM_
 #if !FEATURE_EH_FUNCLETS
             else if (lclNum == lvaShadowSPslotsVar)
+            {
                 ilName = "EHSlots";
+            }
 #endif // !FEATURE_EH_FUNCLETS
             else if (lclNum == lvaLocAllocSPvar)
+            {
                 ilName = "LocAllocSP";
+            }
 #if FEATURE_EH_FUNCLETS
             else if (lclNum == lvaPSPSym)
+            {
                 ilName = "PSPSym";
+            }
 #endif // FEATURE_EH_FUNCLETS
             else 
             {
@@ -14737,7 +14757,7 @@ void GenTree::LabelIndex(Compiler* comp, bool isConst)
                 break;
             }
             else if (gtOp.gtOp1->OperGet() == GT_CNS_INT)
-        {
+            {
                 gtOp.gtOp2->LabelIndex(comp, isConst);
                 break;
             }
@@ -14749,8 +14769,10 @@ void GenTree::LabelIndex(Compiler* comp, bool isConst)
     }
 }
 
+// Note that the value of the below field doesn't matter; it exists only to provide a distinguished address.
+//
 // static 
-FieldSeqNode FieldSeqStore::s_notAField(NULL, NULL);  // Value doesn't matter; exists only to provide a distinguished address.
+FieldSeqNode FieldSeqStore::s_notAField(NULL, NULL); 
 
 // FieldSeqStore methods.
 FieldSeqStore::FieldSeqStore(IAllocator* alloc) : m_alloc(alloc), m_canonMap(new (alloc) FieldSeqNodeCanonMap(alloc))
