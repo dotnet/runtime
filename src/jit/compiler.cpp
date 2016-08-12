@@ -5014,13 +5014,19 @@ void Compiler::compCompileFinish()
         if (rpFrameType == FT_EBP_FRAME)
             printf("%3s | ", STR_FPBASE);
         else if (rpFrameType == FT_ESP_FRAME)
+        {
             printf("%3s | ", STR_SPBASE );
+        }
 #if DOUBLE_ALIGN
         else if (rpFrameType == FT_DOUBLE_ALIGN_FRAME)
+        {
             printf("dbl | ");
+        }
 #endif
         else // (rpFrameType == FT_NOT_SET)
+        {
             printf("??? | ");
+        }
         
         if (fgHasLoops)
             printf("LOOP |");
