@@ -109,10 +109,6 @@
       <Project>{446de6f0-47a0-4c2f-a918-768a76ccf461}</Project>
       <Name>System.Reflection</Name>
     </ProjectReference>
-    <!-- ToDo: Remove this reference to the live package of System.Globalization once prerelease gets updated again -->
-    <ProjectReference Include="..\..\System.Globalization\pkg\System.Globalization.pkgproj">
-        <Name>System.Globalization</Name>
-    </ProjectReference>
     <ProjectReference Include="TestExe\System.Reflection.Tests.TestExe.csproj">
       <Project>{8c19b991-41e9-4b38-9602-e19375397f1d}</Project>
       <Name>System.Reflection.Tests.TestExe</Name>

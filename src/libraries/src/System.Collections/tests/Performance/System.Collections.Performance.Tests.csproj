@@ -19,19 +19,6 @@
       <Targets>Build;DebugSymbolsProjectOutputGroup</Targets>
       <OSGroup>$(InputOSGroup)</OSGroup>
     </ProjectReference>
-    <ProjectReference Include="..\..\..\System.Runtime\pkg\System.Runtime.pkgproj">
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-      <OutputItemType>Content</OutputItemType>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <Targets>Build;DebugSymbolsProjectOutputGroup</Targets>
-    </ProjectReference>
-    <ProjectReference Include="..\..\..\System.Diagnostics.Debug\pkg\System.Diagnostics.Debug.pkgproj">
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-      <OutputItemType>Content</OutputItemType>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <Targets>Build;DebugSymbolsProjectOutputGroup</Targets>
-      <OSGroup>$(InputOSGroup)</OSGroup>
-    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Perf.Dictionary.cs" />
