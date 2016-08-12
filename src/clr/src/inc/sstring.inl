@@ -13,6 +13,11 @@
 #pragma inline_depth (20)
 #endif
 
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable:4702) // Disable bogus unreachable code warning
+#endif // _MSC_VER
+
 //#define SSTRING_EXTRA_CHECKS
 #ifdef SSTRING_EXTRA_CHECKS
 #define SS_CONTRACT CONTRACT
@@ -2267,5 +2272,8 @@ inline SString::AbstractScratchBuffer::AbstractScratchBuffer(void *buffer, COUNT
     SS_RETURN;
 }
 
-#endif  // _SSTRING_INL_
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif // _MSC_VER
 
+#endif  // _SSTRING_INL_
