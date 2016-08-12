@@ -50,7 +50,7 @@
 //  involving i_1 and i_2. Merge assertions from the block's edges whenever possible.
 //
 //  **Step 4. Check if the dependency chain is monotonic.
-//  
+//
 //  **Step 5. If monotonic is true, then perform a widening step, where we assume, the
 //  SSA variables that are "dependent" get their values from the definitions in the
 //  dependency loop and their initial values must be the definitions that are not in
@@ -86,7 +86,7 @@ struct Limit
 {
     enum LimitType
     {
-        keUndef,     // The limit is yet to be computed.
+        keUndef, // The limit is yet to be computed.
         keBinOp,
         keBinOpArray,
         keSsaVar,
@@ -94,29 +94,22 @@ struct Limit
         keConstant,
         keDependent, // The limit is dependent on some other value.
         keUnknown,   // The limit could not be determined.
-    }; 
+    };
 
-    Limit()
-        : type(keUndef)
+    Limit() : type(keUndef)
     {
     }
 
-    Limit(LimitType type)
-        : type(type)
+    Limit(LimitType type) : type(type)
     {
     }
 
-    Limit(LimitType type, int cns)
-        : cns(cns),
-          type(type)
+    Limit(LimitType type, int cns) : cns(cns), type(type)
     {
         assert(type == keConstant);
     }
 
-    Limit(LimitType type, ValueNum vn, int cns)
-        : cns(cns)
-        , vn(vn)
-        , type(type)
+    Limit(LimitType type, ValueNum vn, int cns) : cns(cns), vn(vn), type(type)
     {
         assert(type == keBinOpArray || keBinOp);
     }
@@ -161,39 +154,39 @@ struct Limit
     {
         switch (type)
         {
-        case keDependent:
-            return true;
-        case keBinOp:
-        case keBinOpArray:
-            if (IntAddOverflows(cns, i))
-            {
-                return false;
-            }
-            cns += i;
-            return true;
+            case keDependent:
+                return true;
+            case keBinOp:
+            case keBinOpArray:
+                if (IntAddOverflows(cns, i))
+                {
+                    return false;
+                }
+                cns += i;
+                return true;
 
-        case keSsaVar:
-            type = keBinOp;
-            cns = i;
-            return true;
+            case keSsaVar:
+                type = keBinOp;
+                cns  = i;
+                return true;
 
-        case keArray:
-            type = keBinOpArray;
-            cns = i;
-            return true;
+            case keArray:
+                type = keBinOpArray;
+                cns  = i;
+                return true;
 
-        case keConstant:
-            if (IntAddOverflows(cns, i))
-            {
-                return false;
-            }
-            cns += i;
-            return true;
+            case keConstant:
+                if (IntAddOverflows(cns, i))
+                {
+                    return false;
+                }
+                cns += i;
+                return true;
 
-        case keUndef:
-        case keUnknown:
-            // For these values of 'type', conservatively return false
-            break;
+            case keUndef:
+            case keUnknown:
+                // For these values of 'type', conservatively return false
+                break;
         }
 
         return false;
@@ -203,21 +196,21 @@ struct Limit
     {
         switch (type)
         {
-        case keUndef:
-        case keUnknown:
-        case keDependent:
-            return l.type == type;
+            case keUndef:
+            case keUnknown:
+            case keDependent:
+                return l.type == type;
 
-        case keBinOp:
-        case keBinOpArray:
-            return l.type == type && l.vn == vn && l.cns == cns;
+            case keBinOp:
+            case keBinOpArray:
+                return l.type == type && l.vn == vn && l.cns == cns;
 
-        case keSsaVar:
-        case keArray:
-            return l.type == type && l.vn == vn;
+            case keSsaVar:
+            case keArray:
+                return l.type == type && l.vn == vn;
 
-        case keConstant:
-            return l.type == type && l.cns == cns;
+            case keConstant:
+                return l.type == type && l.cns == cns;
         }
         return false;
     }
@@ -225,40 +218,40 @@ struct Limit
     const char* ToString(IAllocator* alloc)
     {
         unsigned size = 64;
-        char* buf = (char*) alloc->Alloc(size);
+        char*    buf  = (char*)alloc->Alloc(size);
         switch (type)
         {
-        case keUndef:
-            return "Undef";
-        
-        case keUnknown:
-            return "Unknown";
+            case keUndef:
+                return "Undef";
 
-        case keDependent:
-            return "Dependent";
+            case keUnknown:
+                return "Unknown";
 
-        case keBinOp:
-        case keBinOpArray:
-            sprintf_s(buf, size, "VN%04X + %d", vn, cns);
-            return buf;
+            case keDependent:
+                return "Dependent";
 
-        case keSsaVar:
-            sprintf_s(buf, size, "VN%04X", vn);
-            return buf;
+            case keBinOp:
+            case keBinOpArray:
+                sprintf_s(buf, size, "VN%04X + %d", vn, cns);
+                return buf;
 
-        case keArray:
-            sprintf_s(buf, size, "VN%04X", vn);
-            return buf;
+            case keSsaVar:
+                sprintf_s(buf, size, "VN%04X", vn);
+                return buf;
 
-        case keConstant:
-            sprintf_s(buf, size, "%d", cns);
-            return buf;
+            case keArray:
+                sprintf_s(buf, size, "VN%04X", vn);
+                return buf;
+
+            case keConstant:
+                sprintf_s(buf, size, "%d", cns);
+                return buf;
         }
         unreached();
     }
 #endif
-    int cns;
-    ValueNum vn;
+    int       cns;
+    ValueNum  vn;
     LimitType type;
 };
 
@@ -268,15 +261,11 @@ struct Range
     Limit uLimit;
     Limit lLimit;
 
-    Range(const Limit& limit)
-        : uLimit(limit),
-          lLimit(limit)
+    Range(const Limit& limit) : uLimit(limit), lLimit(limit)
     {
     }
 
-    Range(const Limit& lLimit, const Limit& uLimit)
-        : uLimit(uLimit),
-          lLimit(lLimit)
+    Range(const Limit& lLimit, const Limit& uLimit) : uLimit(uLimit), lLimit(lLimit)
     {
     }
 
@@ -294,7 +283,7 @@ struct Range
     char* ToString(IAllocator* alloc)
     {
         size_t size = 64;
-        char* buf = (char*) alloc->Alloc(size);
+        char*  buf  = (char*)alloc->Alloc(size);
         sprintf_s(buf, size, "<%s, %s>", lLimit.ToString(alloc), uLimit.ToString(alloc));
         return buf;
     }
@@ -433,13 +422,13 @@ struct RangeOps
         // This is correct if k >= 0 and n >= k, since a.len always >= 0
         // (a.len + n) could overflow, but the result (a.len + n) also
         // preserves the overflow.
-        if (r1hi.IsConstant() && r1hi.GetConstant() >= 0 && 
-                r2hi.IsBinOpArray() && r2hi.GetConstant() >= r1hi.GetConstant())
+        if (r1hi.IsConstant() && r1hi.GetConstant() >= 0 && r2hi.IsBinOpArray() &&
+            r2hi.GetConstant() >= r1hi.GetConstant())
         {
             result.uLimit = r2hi;
         }
-        if (r2hi.IsConstant() && r2hi.GetConstant() >= 0 &&
-                r1hi.IsBinOpArray() && r1hi.GetConstant() >= r2hi.GetConstant())
+        if (r2hi.IsConstant() && r2hi.GetConstant() >= 0 && r1hi.IsBinOpArray() &&
+            r1hi.GetConstant() >= r2hi.GetConstant())
         {
             result.uLimit = r1hi;
         }
@@ -454,7 +443,6 @@ struct RangeOps
         }
         return result;
     }
-    
 };
 
 class RangeCheck
@@ -462,29 +450,29 @@ class RangeCheck
 public:
     // Constructor
     RangeCheck(Compiler* pCompiler);
- 
+
     // Location information is used to map where the defs occur in the method.
     struct Location
     {
         BasicBlock* block;
-        GenTreePtr stmt;
-        GenTreePtr tree;
-        GenTreePtr parent;
+        GenTreePtr  stmt;
+        GenTreePtr  tree;
+        GenTreePtr  parent;
         Location(BasicBlock* block, GenTreePtr stmt, GenTreePtr tree, GenTreePtr parent)
-            : block(block)
-            , stmt(stmt)
-            , tree(tree)
-            , parent(parent)
-        { }
+            : block(block), stmt(stmt), tree(tree), parent(parent)
+        {
+        }
+
     private:
         Location();
-    };   
+    };
 
-    typedef SimplerHashTable<GenTreePtr, PtrKeyFuncs<GenTree>, bool, JitSimplerHashBehavior> OverflowMap;
-    typedef SimplerHashTable<GenTreePtr, PtrKeyFuncs<GenTree>, Range*, JitSimplerHashBehavior> RangeMap;
-    typedef SimplerHashTable<GenTreePtr, PtrKeyFuncs<GenTree>, BasicBlock*, JitSimplerHashBehavior> SearchPath;
+    typedef SimplerHashTable<GenTreePtr, PtrKeyFuncs<GenTree>, bool, JitSimplerHashBehavior>          OverflowMap;
+    typedef SimplerHashTable<GenTreePtr, PtrKeyFuncs<GenTree>, Range*, JitSimplerHashBehavior>        RangeMap;
+    typedef SimplerHashTable<GenTreePtr, PtrKeyFuncs<GenTree>, BasicBlock*, JitSimplerHashBehavior>   SearchPath;
     typedef SimplerHashTable<INT64, LargePrimitiveKeyFuncs<INT64>, Location*, JitSimplerHashBehavior> VarToLocMap;
-    typedef SimplerHashTable<INT64, LargePrimitiveKeyFuncs<INT64>, ExpandArrayStack<Location*>*, JitSimplerHashBehavior> VarToLocArrayMap;
+    typedef SimplerHashTable<INT64, LargePrimitiveKeyFuncs<INT64>, ExpandArrayStack<Location*>*, JitSimplerHashBehavior>
+        VarToLocArrayMap;
 
     // Generate a hashcode unique for this ssa var.
     UINT64 HashCode(unsigned lclNum, unsigned ssaNum);
@@ -526,21 +514,31 @@ public:
     // The "path" is the path taken in the search for the rhs' range and its constituents' range.
     // If "monotonic" is true, the calculations are made more liberally assuming initial values
     // at phi definitions.
-    Range GetRange(BasicBlock* block, GenTreePtr stmt, GenTreePtr expr, SearchPath* path, bool monotonic DEBUGARG(int indent));
+    Range GetRange(
+        BasicBlock* block, GenTreePtr stmt, GenTreePtr expr, SearchPath* path, bool monotonic DEBUGARG(int indent));
 
     // Given the local variable, first find the definition of the local and find the range of the rhs.
     // Helper for GetRange.
-    Range ComputeRangeForLocalDef(BasicBlock* block, GenTreePtr stmt, GenTreePtr expr, SearchPath* path, bool monotonic DEBUGARG(int indent));
+    Range ComputeRangeForLocalDef(
+        BasicBlock* block, GenTreePtr stmt, GenTreePtr expr, SearchPath* path, bool monotonic DEBUGARG(int indent));
 
     // Compute the range, rather than retrieve a cached value. Helper for GetRange.
-    Range ComputeRange(BasicBlock* block, GenTreePtr stmt, GenTreePtr expr, SearchPath* path, bool monotonic DEBUGARG(int indent));
+    Range ComputeRange(
+        BasicBlock* block, GenTreePtr stmt, GenTreePtr expr, SearchPath* path, bool monotonic DEBUGARG(int indent));
 
     // Compute the range for the op1 and op2 for the given binary operator.
-    Range ComputeRangeForBinOp(BasicBlock* block, GenTreePtr stmt, GenTreePtr op1, GenTreePtr op2, genTreeOps oper, SearchPath* path, bool monotonic DEBUGARG(int indent));
+    Range ComputeRangeForBinOp(BasicBlock* block,
+                               GenTreePtr  stmt,
+                               GenTreePtr  op1,
+                               GenTreePtr  op2,
+                               genTreeOps  oper,
+                               SearchPath* path,
+                               bool monotonic DEBUGARG(int indent));
 
     // Merge assertions from AssertionProp's flags, for the corresponding "phiArg."
     // Requires "pRange" to contain range that is computed partially.
-    void MergeAssertion(BasicBlock* block, GenTreePtr stmt, GenTreePtr phiArg, SearchPath* path, Range* pRange DEBUGARG(int indent));
+    void MergeAssertion(
+        BasicBlock* block, GenTreePtr stmt, GenTreePtr phiArg, SearchPath* path, Range* pRange DEBUGARG(int indent));
 
     // Inspect the "assertions" and extract assertions about the given "phiArg" and
     // refine the "pRange" value.
@@ -595,9 +593,9 @@ private:
     RangeMap* GetRangeMap();
     RangeMap* m_pRangeMap;
 
-    bool m_fMappedDefs;
+    bool         m_fMappedDefs;
     VarToLocMap* m_pDefTable;
-    Compiler* m_pCompiler;
+    Compiler*    m_pCompiler;
 
     // The number of nodes for which range is computed throughout the current method.
     // When this limit is zero, we have exhausted all the budget to walk the ud-chain.
