@@ -27,6 +27,7 @@
   "supports": {
     "coreFx.Test.netcore50": {},
     "coreFx.Test.netcoreapp1.0": {},
+    "coreFx.Test.netcoreapp1.1": {},
     "coreFx.Test.net46": {},
     "coreFx.Test.net461": {},
     "coreFx.Test.net462": {},

@@ -969,6 +969,15 @@ namespace System.Collections.Generic
         #region Helper methods
 
         /// <summary>
+        /// Used for deep equality of HashSet testing
+        /// </summary>
+        /// <returns></returns>
+        public static IEqualityComparer<HashSet<T>> CreateSetComparer()
+        {
+            return new HashSetEqualityComparer<T>();
+        }
+
+        /// <summary>
         /// Initializes buckets and slots arrays. Uses suggested capacity by finding next prime
         /// greater than or equal to capacity.
         /// </summary>
@@ -1502,6 +1511,70 @@ namespace System.Collections.Generic
             result.uniqueCount = uniqueFoundCount;
             result.unfoundCount = unfoundCount;
             return result;
+        }
+
+
+        /// <summary>
+        /// Internal method used for HashSetEqualityComparer. Compares set1 and set2 according 
+        /// to specified comparer.
+        /// 
+        /// Because items are hashed according to a specific equality comparer, we have to resort
+        /// to n^2 search if they're using different equality comparers.
+        /// </summary>
+        /// <param name="set1"></param>
+        /// <param name="set2"></param>
+        /// <param name="comparer"></param>
+        /// <returns></returns>
+        internal static bool HashSetEquals(HashSet<T> set1, HashSet<T> set2, IEqualityComparer<T> comparer)
+        {
+            // handle null cases first
+            if (set1 == null)
+            {
+                return (set2 == null);
+            }
+            else if (set2 == null)
+            {
+                // set1 != null
+                return false;
+            }
+
+            // all comparers are the same; this is faster
+            if (AreEqualityComparersEqual(set1, set2))
+            {
+                if (set1.Count != set2.Count)
+                {
+                    return false;
+                }
+                // suffices to check subset
+                foreach (T item in set2)
+                {
+                    if (!set1.Contains(item))
+                    {
+                        return false;
+                    }
+                }
+                return true;
+            }
+            else
+            {  // n^2 search because items are hashed according to their respective ECs
+                foreach (T set2Item in set2)
+                {
+                    bool found = false;
+                    foreach (T set1Item in set1)
+                    {
+                        if (comparer.Equals(set2Item, set1Item))
+                        {
+                            found = true;
+                            break;
+                        }
+                    }
+                    if (!found)
+                    {
+                        return false;
+                    }
+                }
+                return true;
+            }
         }
 
         /// <summary>
