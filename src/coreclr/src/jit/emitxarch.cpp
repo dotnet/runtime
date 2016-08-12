@@ -7030,10 +7030,14 @@ PRINT_CONSTANT:
             printf(", ");
 #ifdef RELOC_SUPPORT
             if (cnsVal.cnsReloc)
+            {
                 emitDispReloc(val);
+            }
             else
 #endif
+            {
                 goto PRINT_CONSTANT;
+            }
         }
         break;
 
@@ -7249,10 +7253,14 @@ PRINT_CONSTANT:
         printf(", ");
 #ifdef RELOC_SUPPORT
         if (id->idIsCnsReloc())
+        {
             emitDispReloc(val);
+        }
         else
 #endif
+        {
             goto PRINT_CONSTANT;
+        }
         break;
 
     case IF_RRD:
@@ -7272,7 +7280,9 @@ PRINT_CONSTANT:
     case IF_RRW_MRD:
 
         if (ins == INS_movsx || ins == INS_movzx)
+        {
             attr = EA_PTRSIZE;
+        }
 #ifdef _TARGET_AMD64_
         else if  (ins == INS_movsxd)
         {
@@ -7376,10 +7386,14 @@ PRINT_CONSTANT:
         val = emitGetInsSC(id);
 #ifdef RELOC_SUPPORT
         if (id->idIsCnsReloc())
+        {
             emitDispReloc(val);
+        }
         else
 #endif
+        {
              goto PRINT_CONSTANT;
+        }
         break;
 
 #if FEATURE_STACK_FP_X87

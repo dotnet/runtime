@@ -597,11 +597,14 @@ protected:
     {
     private:
 #if defined(_TARGET_XARCH_) && !defined(LEGACY_BACKEND)
-        instruction    _idIns        :9;   // The assembly instruction
+        // The assembly instruction
+        instruction    _idIns        :9;
 #else // !defined(_TARGET_XARCH_) || defined(LEGACY_BACKEND)
-        instruction    _idIns        :8;   // The assembly instruction
+        // The assembly instruction
+        instruction    _idIns        :8;
 #endif // !defined(_TARGET_XARCH_) || defined(LEGACY_BACKEND)
-        insFormat      _idInsFmt     :8;   // The format for the instruction
+        // The format for the instruction
+        insFormat      _idInsFmt     :8;
 
     public:
         instruction     idIns() const               { return _idIns;      }
@@ -649,8 +652,7 @@ protected:
         // At this point we have fully consumed first DWORD so that next field
         // doesn't cross a byte boundary.
 #elif defined(_TARGET_ARM64_)
-        // Moved the definition of '_idOpSize' later 
-        //  so that we don't cross a 32-bit boundary when laying out bitfields
+// Moved the definition of '_idOpSize' later so that we don't cross a 32-bit boundary when laying out bitfields
 #else // ARM or x86-LEGACY_BACKEND
         opSize          _idOpSize    :2;  // operand size: 0=1 , 1=2 , 2=4 , 3=8
 #endif // ARM or x86-LEGACY_BACKEND
