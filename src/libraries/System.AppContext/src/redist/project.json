@@ -3,9 +3,9 @@
     "System.AppContext": "4.0.0"
   },
   "frameworks": {
-    "net46": { },
+    "net46": {}
   },
   "runtimes": {
-    "win7-x64": { }
+    "win7-x64": {}
   }
 }

@@ -239,7 +239,7 @@
     },
     "uap10.0": {
       "dependencies": {
-        "System.Numerics.Vectors.WindowsRuntime": "4.0.1",
+        "System.Numerics.Vectors.WindowsRuntime": "4.0.1"
       }
     }
   }
