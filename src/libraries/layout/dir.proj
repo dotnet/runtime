@@ -16,9 +16,11 @@
     <TargetFrameworkMonikers Include="netcoreapp1.1">
       <RID>win7-x64</RID>
       <AdditionalBinaryPath>
-        $(PackagesDir)/runtime.win7-x64.Microsoft.NETCore.Runtime.CoreCLR/1.0.4-$(CoreClrExpectedPrerelease)/runtimes/win7-x64/lib/netstandard1.0;
+        $(PackagesDir)/runtime.win7-x64.Microsoft.NETCore.Runtime.CoreCLR/1.1.0-$(CoreClrExpectedPrerelease)/runtimes/win7-x64/lib/netstandard1.0;
         $(PackagesDir)/runtime.win7.System.Private.Uri\4.0.3-$(CoreFxExpectedPrerelease)\runtimes\win\lib\netstandard1.0;
         $(PackagesDir)/System.Private.DataContractSerialization\4.1.2-$(CoreFxExpectedPrerelease)\lib\netstandard1.3;
+        $(PackagesDir)/System.Private.Xml\4.0.0-$(CoreFxExpectedPrerelease)\lib\netstandard1.3;
+        $(PackagesDir)/System.Private.Xml.Linq\4.0.0-$(CoreFxExpectedPrerelease)\lib\netstandard1.3;
       </AdditionalBinaryPath>
     </TargetFrameworkMonikers>
     <TargetFrameworkMonikers Include="uap10.0">
@@ -44,8 +46,8 @@
       <TargetFrameworkMoniker>%(TargetFrameworkMonikers.Identity)</TargetFrameworkMoniker>
       <TargetRuntime>%(TargetFrameworkMonikers.RID)</TargetRuntime>
       <AdditionalBinaryPath>%(TargetFrameworkMonikers.AdditionalBinaryPath)</AdditionalBinaryPath>
-      <RelOutputPath>ref/$(TargetFrameworkMoniker)</RelOutputPath>
-      <RelOutputPath Condition="'$(TargetRuntime)' != ''">runtime/$(TargetFrameworkMoniker).$(TargetRuntime)</RelOutputPath>
+      <RefRelOutputPath>ref/$(TargetFrameworkMoniker)</RefRelOutputPath>
+      <RuntimeRelOutputPath>runtime/$(TargetFrameworkMoniker).$(TargetRuntime)</RuntimeRelOutputPath>
     </PropertyGroup>
 
     <ItemGroup>
@@ -74,15 +76,14 @@
     <Error Text="Additional Directory %(AdditionalBinaryPaths.Identity) doesn't exist"
       Condition="'%(AdditionalBinaryPaths.Identity)' != '' and !Exists('%(AdditionalBinaryPaths.Identity)')" />
 
-    <ItemGroup>
-      <AssetsToCopy Condition="'$(TargetRuntime)' == ''" Include="@(_CompileAssets)" />
-      <AssetsToCopy Condition="'$(TargetRuntime)' != ''" Include="@(_RuntimeAssets)" />
-      <AssetsToCopy Include="@(AdditionalBinaryAssets)" />
-    </ItemGroup>
+    <Copy
+      Condition="'$(TargetRuntime)' != ''"
+      SourceFiles="@(_RuntimeAssets);@(AdditionalBinaryAssets)"
+      DestinationFolder="$(LayoutBasePath)/$(RuntimeRelOutputPath)" />
 
     <Copy
-      SourceFiles="@(AssetsToCopy)"
-      DestinationFolder="$(LayoutBasePath)/$(RelOutputPath)" />
+      SourceFiles="@(_CompileAssets)"
+      DestinationFolder="$(LayoutBasePath)/$(RefRelOutputPath)" />
 
   </Target>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
