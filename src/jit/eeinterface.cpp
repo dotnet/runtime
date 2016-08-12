@@ -23,7 +23,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #if defined(DEBUG) || defined(FEATURE_JIT_METHOD_PERF) || defined(FEATURE_SIMD)
 
 #pragma warning(push)
-#pragma warning(disable : 4701) // difficult to get rid of C4701 with 'sig' below
+#pragma warning(disable:4701) // difficult to get rid of C4701 with 'sig' below
 
 /*****************************************************************************/
 
@@ -35,31 +35,30 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 struct FilterSuperPMIExceptionsParam_eeinterface
 {
-    Compiler*               pThis;
-    Compiler::Info*         pJitInfo;
-    bool                    hasThis;
-    size_t                  siglength;
-    CORINFO_SIG_INFO        sig;
-    CORINFO_ARG_LIST_HANDLE argLst;
-    CORINFO_METHOD_HANDLE   hnd;
-    const char*             returnType;
-    EXCEPTION_POINTERS      exceptionPointers;
+    Compiler*                   pThis;
+    Compiler::Info*             pJitInfo;
+    bool                        hasThis;
+    size_t                      siglength;
+    CORINFO_SIG_INFO            sig;
+    CORINFO_ARG_LIST_HANDLE     argLst;
+    CORINFO_METHOD_HANDLE       hnd;
+    const char*                 returnType;
+    EXCEPTION_POINTERS          exceptionPointers;
 };
 
 static LONG FilterSuperPMIExceptions_eeinterface(PEXCEPTION_POINTERS pExceptionPointers, LPVOID lpvParam)
 {
-    FilterSuperPMIExceptionsParam_eeinterface* pSPMIEParam = (FilterSuperPMIExceptionsParam_eeinterface*)lpvParam;
-    pSPMIEParam->exceptionPointers                         = *pExceptionPointers;
+    FilterSuperPMIExceptionsParam_eeinterface *pSPMIEParam =
+        (FilterSuperPMIExceptionsParam_eeinterface *)lpvParam;
+    pSPMIEParam->exceptionPointers = *pExceptionPointers;
 
     if (pSPMIEParam->pThis->IsSuperPMIException(pExceptionPointers->ExceptionRecord->ExceptionCode))
-    {
         return EXCEPTION_EXECUTE_HANDLER;
-    }
 
     return EXCEPTION_CONTINUE_SEARCH;
 }
 
-const char* Compiler::eeGetMethodFullName(CORINFO_METHOD_HANDLE hnd)
+const char* Compiler::eeGetMethodFullName (CORINFO_METHOD_HANDLE  hnd)
 {
     const char* className;
     const char* methodName = eeGetMethodName(hnd, &className);
@@ -70,13 +69,13 @@ const char* Compiler::eeGetMethodFullName(CORINFO_METHOD_HANDLE hnd)
 
     FilterSuperPMIExceptionsParam_eeinterface param;
     param.returnType = nullptr;
-    param.pThis      = this;
-    param.hasThis    = false;
-    param.siglength  = 0;
-    param.hnd        = hnd;
-    param.pJitInfo   = &info;
+    param.pThis = this;
+    param.hasThis = false;
+    param.siglength = 0;
+    param.hnd = hnd;
+    param.pJitInfo = &info;
 
-    size_t   length = 0;
+    size_t length = 0;
     unsigned i;
 
     /* Generating the full signature is a two-pass process. First we have to walk
@@ -89,9 +88,7 @@ const char* Compiler::eeGetMethodFullName(CORINFO_METHOD_HANDLE hnd)
     /* initialize length with length of className and '.' */
 
     if (className)
-    {
-        length = strlen(className) + 1;
-    }
+        length = strlen(className)+1;
     else
     {
         assert(strlen("<NULL>.") == 7);
@@ -103,9 +100,9 @@ const char* Compiler::eeGetMethodFullName(CORINFO_METHOD_HANDLE hnd)
 
     /* figure out the signature */
 
-    EXCEPTION_POINTERS exceptionPointers;
+    EXCEPTION_POINTERS          exceptionPointers;
 
-    PAL_TRY(FilterSuperPMIExceptionsParam_eeinterface*, pParam, &param)
+    PAL_TRY(FilterSuperPMIExceptionsParam_eeinterface *, pParam, &param)
     {
         unsigned i;
         pParam->pThis->eeGetMethodSig(pParam->hnd, &pParam->sig);
@@ -122,9 +119,7 @@ const char* Compiler::eeGetMethodFullName(CORINFO_METHOD_HANDLE hnd)
         /* add ',' if there is more than one argument */
 
         if (pParam->sig.numArgs > 1)
-        {
             pParam->siglength += (pParam->sig.numArgs - 1);
-        }
 
         if (JITtype2varType(pParam->sig.retType) != TYP_VOID)
         {
@@ -132,8 +127,7 @@ const char* Compiler::eeGetMethodFullName(CORINFO_METHOD_HANDLE hnd)
             pParam->siglength += strlen(pParam->returnType) + 1; // don't forget the delimiter ':'
         }
 
-        // Does it have a 'this' pointer? Don't count explicit this, which has the this pointer type as the first
-        // element of the arg type list
+        // Does it have a 'this' pointer? Don't count explicit this, which has the this pointer type as the first element of the arg type list
         if (pParam->sig.hasThis() && !pParam->sig.hasExplicitThis())
         {
             assert(strlen(":this") == 5);
@@ -151,7 +145,7 @@ const char* Compiler::eeGetMethodFullName(CORINFO_METHOD_HANDLE hnd)
 
     length += param.siglength + 2;
 
-    char* retName = (char*)compGetMemA(length, CMK_DebugOnly);
+    char *retName = (char*)compGetMemA(length, CMK_DebugOnly);
 
     /* Now generate the full signature string in the allocated buffer */
 
@@ -181,9 +175,7 @@ const char* Compiler::eeGetMethodFullName(CORINFO_METHOD_HANDLE hnd)
 
             param.argLst = info.compCompHnd->getArgNext(param.argLst);
             if (i + 1 < param.sig.numArgs)
-            {
                 strcat_s(retName, length, ",");
-            }
         }
     }
 
@@ -200,9 +192,9 @@ const char* Compiler::eeGetMethodFullName(CORINFO_METHOD_HANDLE hnd)
         strcat_s(retName, length, ":this");
     }
 
-    assert(strlen(retName) == (length - 1));
+    assert(strlen(retName) == (length-1));
 
-    return (retName);
+    return(retName);
 }
 
 #pragma warning(pop)
