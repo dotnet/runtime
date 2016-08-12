@@ -21,8 +21,7 @@
 #include "ssabuilder.h"
 
 template <typename T>
-inline
-static T* allocate_any(jitstd::allocator<void>& alloc, size_t count = 1)
+inline static T* allocate_any(jitstd::allocator<void>& alloc, size_t count = 1)
 {
     return jitstd::allocator<T>(alloc).allocate(count);
 }
@@ -61,7 +60,6 @@ void Compiler::optBlockCopyPropPopStacks(BasicBlock* block, LclNumToGenTreePtrSt
         }
     }
 }
-
 
 /*******************************************************************************************************
  *
@@ -108,10 +106,9 @@ int Compiler::optCopyProp_LclVarScore(LclVarDsc* lclVarDsc, LclVarDsc* copyVarDs
     }
 #endif
 
-    // Otherwise we prefer to use the op2LclNum 
+    // Otherwise we prefer to use the op2LclNum
     return score + ((preferOp2) ? 1 : -1);
 }
-
 
 /**************************************************************************************
  *
@@ -164,7 +161,7 @@ void Compiler::optCopyProp(BasicBlock* block, GenTreePtr stmt, GenTreePtr tree, 
         {
             continue;
         }
-        
+
         // Skip variables with assignments embedded in the statement (i.e., with a comma). Because we
         // are not currently updating their SSA names as live in the copy-prop pass of the stmt.
         if (VarSetOps::IsMember(this, optCopyPropKillSet, lvaTable[newLclNum].lvVarIndex))
@@ -176,7 +173,8 @@ void Compiler::optCopyProp(BasicBlock* block, GenTreePtr stmt, GenTreePtr tree, 
         {
             continue;
         }
-        if (gsShadowVarInfo != NULL && lvaTable[newLclNum].lvIsParam && gsShadowVarInfo[newLclNum].shadowCopy == lclNum)
+        if (gsShadowVarInfo != nullptr && lvaTable[newLclNum].lvIsParam &&
+            gsShadowVarInfo[newLclNum].shadowCopy == lclNum)
         {
             continue;
         }
@@ -205,7 +203,7 @@ void Compiler::optCopyProp(BasicBlock* block, GenTreePtr stmt, GenTreePtr tree, 
         //  else
         //     x1 = 2
         //  print(c) <-- x is not live here. Let's say 'c' shares the value number with "x0."
-        // 
+        //
         // If we simply substituted 'c' with "x0", we would be wrong. Ideally, there would be a phi
         // node x2 = phi(x0, x1) which can then be used to substitute 'c' with. But because of pruning
         // there would be no such phi node. To solve this we'll check if 'x' is live, before replacing
@@ -231,7 +229,7 @@ void Compiler::optCopyProp(BasicBlock* block, GenTreePtr stmt, GenTreePtr tree, 
             }
         }
         unsigned newSsaNum = SsaConfig::RESERVED_SSA_NUM;
-        if (op->gtFlags & (GTF_VAR_DEF|GTF_VAR_USEDEF))
+        if (op->gtFlags & (GTF_VAR_DEF | GTF_VAR_USEDEF))
         {
             newSsaNum = GetSsaNumForLocalVarDef(op);
         }
@@ -253,7 +251,7 @@ void Compiler::optCopyProp(BasicBlock* block, GenTreePtr stmt, GenTreePtr tree, 
             printf(" V%02d @%08X by ", lclNum, tree->GetVN(VNK_Conservative));
             printTreeID(op);
             printf(" V%02d @%08X.\n", newLclNum, op->GetVN(VNK_Conservative));
-            gtDispTree(tree, 0, NULL, true);
+            gtDispTree(tree, nullptr, nullptr, true);
         }
 #endif
 
@@ -265,7 +263,7 @@ void Compiler::optCopyProp(BasicBlock* block, GenTreePtr stmt, GenTreePtr tree, 
         if (verbose)
         {
             printf("copy propagated to:\n");
-            gtDispTree(tree, 0, NULL, true);
+            gtDispTree(tree, nullptr, nullptr, true);
         }
 #endif
         break;
@@ -294,7 +292,7 @@ void Compiler::optBlockCopyProp(BasicBlock* block, LclNumToGenTreePtrStack* curS
     JITDUMP("Copy Assertion for BB%02u\n", block->bbNum);
 
     // There are no definitions at the start of the block. So clear it.
-    compCurLifeTree = NULL;
+    compCurLifeTree = nullptr;
     VarSetOps::Assign(this, compCurLife, block->bbLiveIn);
     for (GenTreePtr stmt = block->bbTreeList; stmt; stmt = stmt->gtNext)
     {
@@ -303,7 +301,7 @@ void Compiler::optBlockCopyProp(BasicBlock* block, LclNumToGenTreePtrStack* curS
         // Walk the tree to find if any local variable can be replaced with current live definitions.
         for (GenTreePtr tree = stmt->gtStmt.gtStmtList; tree; tree = tree->gtNext)
         {
-            compUpdateLife</*ForCodeGen*/false>(tree);
+            compUpdateLife</*ForCodeGen*/ false>(tree);
             optCopyProp(block, stmt, tree, curSsaName);
 
             // TODO-Review: Merge this loop with the following loop to correctly update the
@@ -313,7 +311,7 @@ void Compiler::optBlockCopyProp(BasicBlock* block, LclNumToGenTreePtrStack* curS
             // 2. The subsequent loop maintains a stack for each lclNum with
             //    currently active SSA numbers when definitions are encountered.
             //
-            // If there is an embedded definition using a "comma" in a stmt, then the currently 
+            // If there is an embedded definition using a "comma" in a stmt, then the currently
             // live SSA number will get updated only in the next loop (2). However, this new
             // definition is now supposed to be live (on tos). If we did not update the stacks
             // using (2), copy prop (1) will use a SSA num defined outside the stmt ignoring the
@@ -350,7 +348,7 @@ void Compiler::optBlockCopyProp(BasicBlock* block, LclNumToGenTreePtrStack* curS
             // If we encounter first use of a param or this pointer add it as a live definition.
             // Since they are always live, do it only once.
             else if ((tree->gtOper == GT_LCL_VAR) && !(tree->gtFlags & (GTF_VAR_USEASG | GTF_VAR_USEDEF)) &&
-                (lvaTable[lclNum].lvIsParam || lvaTable[lclNum].lvVerTypeInfo.IsThisPtr()))
+                     (lvaTable[lclNum].lvIsParam || lvaTable[lclNum].lvVerTypeInfo.IsThisPtr()))
             {
                 GenTreePtrStack* stack;
                 if (!curSsaName->Lookup(lclNum, &stack))
@@ -412,12 +410,11 @@ void Compiler::optVnCopyProp()
     struct BlockWork
     {
         BasicBlock* m_blk;
-        bool m_processed;
+        bool        m_processed;
 
-        BlockWork(BasicBlock* blk, bool processed = false)
-            : m_blk(blk)
-            , m_processed(processed)
-        {}
+        BlockWork(BasicBlock* blk, bool processed = false) : m_blk(blk), m_processed(processed)
+        {
+        }
     };
     typedef jitstd::vector<BlockWork> BlockWorkStack;
 
@@ -427,7 +424,8 @@ void Compiler::optVnCopyProp()
     // The map from lclNum to its recently live definitions as a stack.
     LclNumToGenTreePtrStack curSsaName(getAllocator());
 
-    BlockWorkStack* worklist = new (allocate_any<BlockWorkStack>(allocator), jitstd::placement_t()) BlockWorkStack(allocator);
+    BlockWorkStack* worklist =
+        new (allocate_any<BlockWorkStack>(allocator), jitstd::placement_t()) BlockWorkStack(allocator);
 
     worklist->push_back(BlockWork(fgFirstBB));
     while (!worklist->empty())
@@ -463,4 +461,3 @@ void Compiler::optVnCopyProp()
     // Destroy (release) the varset.
     VarSetOps::AssignNoCopy(this, compCurLife, VarSetOps::UninitVal());
 }
-
