@@ -417,7 +417,7 @@ NativeExceptionHolderBase::FindNextHolder(NativeExceptionHolderBase *currentHold
 
     while (holder != nullptr)
     {
-        if (((void *)holder > stackLowAddress) && ((void *)holder < stackHighAddress))
+        if (((void *)holder >= stackLowAddress) && ((void *)holder < stackHighAddress))
         { 
             return holder;
         }
