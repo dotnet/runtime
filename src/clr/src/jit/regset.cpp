@@ -25,24 +25,21 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 /*****************************************************************************/
 
 #ifdef _TARGET_ARM64_
-const regMaskSmall      regMasks[] =
-{
-    #define REGDEF(name, rnum, mask, xname, wname) mask,
-    #include "register.h"
+const regMaskSmall regMasks[] = {
+#define REGDEF(name, rnum, mask, xname, wname) mask,
+#include "register.h"
 };
 #else // !_TARGET_ARM64_
-const regMaskSmall      regMasks[] =
-{
-    #define REGDEF(name, rnum, mask, sname) mask,
-    #include "register.h"
+const regMaskSmall regMasks[] = {
+#define REGDEF(name, rnum, mask, sname) mask,
+#include "register.h"
 };
 #endif
 
 #ifdef _TARGET_X86_
-const regMaskSmall      regFPMasks[] =
-{
-    #define REGDEF(name, rnum, mask, sname) mask,
-    #include "registerfp.h"
+const regMaskSmall regFPMasks[] = {
+#define REGDEF(name, rnum, mask, sname) mask,
+#include "registerfp.h"
 };
 #endif // _TARGET_X86_
 
@@ -55,7 +52,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 */
 
-void                RegSet::rsClearRegsModified()
+void RegSet::rsClearRegsModified()
 {
 #ifndef LEGACY_BACKEND
     assert(m_rsCompiler->lvaDoneFrameLayout < Compiler::FINAL_FRAME_LAYOUT);
@@ -72,7 +69,7 @@ void                RegSet::rsClearRegsModified()
     rsModifiedRegsMask = RBM_NONE;
 }
 
-void                RegSet::rsSetRegsModified(regMaskTP mask DEBUGARG(bool suppressDump))
+void RegSet::rsSetRegsModified(regMaskTP mask DEBUGARG(bool suppressDump))
 {
     assert(mask != RBM_NONE);
     assert(rsModifiedRegsMaskInitialized);
@@ -84,8 +81,7 @@ void                RegSet::rsSetRegsModified(regMaskTP mask DEBUGARG(bool suppr
     // code generation isn't actually adding to set of modified registers.
     // Frame layout is only affected by callee-saved registers, so only ensure that callee-saved
     // registers aren't modified after final frame layout.
-    assert((m_rsCompiler->lvaDoneFrameLayout < Compiler::FINAL_FRAME_LAYOUT) ||
-           m_rsCompiler->compGeneratingProlog ||
+    assert((m_rsCompiler->lvaDoneFrameLayout < Compiler::FINAL_FRAME_LAYOUT) || m_rsCompiler->compGeneratingProlog ||
            m_rsCompiler->compGeneratingEpilog ||
            (((rsModifiedRegsMask | mask) & RBM_CALLEE_SAVED) == (rsModifiedRegsMask & RBM_CALLEE_SAVED)));
 #endif // !LEGACY_BACKEND
@@ -109,15 +105,14 @@ void                RegSet::rsSetRegsModified(regMaskTP mask DEBUGARG(bool suppr
     rsModifiedRegsMask |= mask;
 }
 
-void                RegSet::rsRemoveRegsModified(regMaskTP mask)
+void RegSet::rsRemoveRegsModified(regMaskTP mask)
 {
     assert(mask != RBM_NONE);
     assert(rsModifiedRegsMaskInitialized);
 
 #ifndef LEGACY_BACKEND
     // See comment in rsSetRegsModified().
-    assert((m_rsCompiler->lvaDoneFrameLayout < Compiler::FINAL_FRAME_LAYOUT) ||
-           m_rsCompiler->compGeneratingProlog ||
+    assert((m_rsCompiler->lvaDoneFrameLayout < Compiler::FINAL_FRAME_LAYOUT) || m_rsCompiler->compGeneratingProlog ||
            m_rsCompiler->compGeneratingEpilog ||
            (((rsModifiedRegsMask & ~mask) & RBM_CALLEE_SAVED) == (rsModifiedRegsMask & RBM_CALLEE_SAVED)));
 #endif // !LEGACY_BACKEND
@@ -173,13 +168,14 @@ void RegSet::SetMaskVars(regMaskTP newMaskVars)
 
 #ifdef DEBUG
 
-RegSet::rsStressRegsType    RegSet::rsStressRegs()
+RegSet::rsStressRegsType RegSet::rsStressRegs()
 {
 #ifndef LEGACY_BACKEND
     return RS_STRESS_NONE;
-#else // LEGACY_BACKEND
-    rsStressRegsType val = (rsStressRegsType) JitConfig.JitStressRegs();
-    if (val == RS_STRESS_NONE && m_rsCompiler->compStressCompile(Compiler::STRESS_REGS, 15)) val = RS_PICK_BAD_REG;
+#else  // LEGACY_BACKEND
+    rsStressRegsType val = (rsStressRegsType)JitConfig.JitStressRegs();
+    if (val == RS_STRESS_NONE && m_rsCompiler->compStressCompile(Compiler::STRESS_REGS, 15))
+        val = RS_PICK_BAD_REG;
     return val;
 #endif // LEGACY_BACKEND
 }
@@ -190,7 +186,7 @@ RegSet::rsStressRegsType    RegSet::rsStressRegs()
  *  Includes 'includeHint' if 'regs' is empty
  */
 
-regMaskTP           RegSet::rsUseIfZero(regMaskTP regs, regMaskTP includeHint)
+regMaskTP RegSet::rsUseIfZero(regMaskTP regs, regMaskTP includeHint)
 {
     return regs ? regs : includeHint;
 }
@@ -199,9 +195,9 @@ regMaskTP           RegSet::rsUseIfZero(regMaskTP regs, regMaskTP includeHint)
  *  Excludes 'excludeHint' if it results in a non-empty mask
  */
 
-regMaskTP           RegSet::rsExcludeHint(regMaskTP regs, regMaskTP excludeHint)
+regMaskTP RegSet::rsExcludeHint(regMaskTP regs, regMaskTP excludeHint)
 {
-    regMaskTP   OKmask = regs & ~excludeHint;
+    regMaskTP OKmask = regs & ~excludeHint;
     return OKmask ? OKmask : regs;
 }
 
@@ -209,9 +205,9 @@ regMaskTP           RegSet::rsExcludeHint(regMaskTP regs, regMaskTP excludeHint)
  *  Narrows choice by 'narrowHint' if it results in a non-empty mask
  */
 
-regMaskTP           RegSet::rsNarrowHint(regMaskTP regs, regMaskTP narrowHint)
+regMaskTP RegSet::rsNarrowHint(regMaskTP regs, regMaskTP narrowHint)
 {
-    regMaskTP   narrowed = regs & narrowHint;
+    regMaskTP narrowed = regs & narrowHint;
     return narrowed ? narrowed : regs;
 }
 
@@ -219,10 +215,10 @@ regMaskTP           RegSet::rsNarrowHint(regMaskTP regs, regMaskTP narrowHint)
  *  Excludes 'exclude' from regs if non-zero, or from RBM_ALLINT
  */
 
-regMaskTP           RegSet::rsMustExclude(regMaskTP regs, regMaskTP exclude)
+regMaskTP RegSet::rsMustExclude(regMaskTP regs, regMaskTP exclude)
 {
     // Try to exclude from current set
-    regMaskTP   OKmask = regs & ~exclude;
+    regMaskTP OKmask = regs & ~exclude;
 
     // If current set wont work, exclude from RBM_ALLINT
     if (OKmask == RBM_NONE)
@@ -239,7 +235,7 @@ regMaskTP           RegSet::rsMustExclude(regMaskTP regs, regMaskTP exclude)
  */
 
 // inline
-regMaskTP           RegSet::rsRegMaskFree()
+regMaskTP RegSet::rsRegMaskFree()
 {
     /* Any register that is locked must also be marked as 'used' */
 
@@ -247,7 +243,7 @@ regMaskTP           RegSet::rsRegMaskFree()
 
     /* Any register that isn't used and doesn't hold a variable is free */
 
-    return  RBM_ALLINT & ~(rsMaskUsed|rsMaskVars|rsMaskResvd);
+    return RBM_ALLINT & ~(rsMaskUsed | rsMaskVars | rsMaskResvd);
 }
 
 /*****************************************************************************
@@ -256,7 +252,7 @@ regMaskTP           RegSet::rsRegMaskFree()
  */
 
 // inline
-regMaskTP           RegSet::rsRegMaskCanGrab()
+regMaskTP RegSet::rsRegMaskCanGrab()
 {
     /* Any register that is locked must also be marked as 'used' */
 
@@ -264,17 +260,17 @@ regMaskTP           RegSet::rsRegMaskCanGrab()
 
     /* Any register that isn't locked and doesn't hold a var can be grabbed */
 
-    regMaskTP  result = (RBM_ALLINT & ~(rsMaskLock|rsMaskVars));
+    regMaskTP result = (RBM_ALLINT & ~(rsMaskLock | rsMaskVars));
 
 #ifdef _TARGET_ARM_
 
-    // On the ARM when we pass structs in registers we set the rsUsedTree[] 
+    // On the ARM when we pass structs in registers we set the rsUsedTree[]
     // to be the full TYP_STRUCT tree, which doesn't allow us to spill/unspill
-    // these argument registers.  To fix JitStress issues that can occur 
+    // these argument registers.  To fix JitStress issues that can occur
     // when rsPickReg tries to spill one of these registers we just remove them
     // from the set of registers that we can grab
     //
-    regMaskTP  structArgMask = RBM_NONE;
+    regMaskTP structArgMask = RBM_NONE;
     // Load all the variable arguments in registers back to their registers.
     for (regNumber reg = REG_ARG_FIRST; reg <= REG_ARG_LAST; reg = REG_NEXT(reg))
     {
@@ -282,7 +278,7 @@ regMaskTP           RegSet::rsRegMaskCanGrab()
         if ((regHolds != NULL) && (regHolds->TypeGet() == TYP_STRUCT))
         {
             structArgMask |= genRegMask(reg);
-        }       
+        }
     }
     result &= ~structArgMask;
 #endif
@@ -297,7 +293,7 @@ regMaskTP           RegSet::rsRegMaskCanGrab()
  */
 
 // inline
-regNumber           RegSet::rsPickFreeReg(regMaskTP    regMaskHint)
+regNumber RegSet::rsPickFreeReg(regMaskTP regMaskHint)
 {
     regMaskTP freeRegs = rsRegMaskFree();
     assert(freeRegs != RBM_NONE);
@@ -313,14 +309,14 @@ regNumber           RegSet::rsPickFreeReg(regMaskTP    regMaskHint)
  */
 
 // inline
-void                RegSet::rsLockReg(regMaskTP regMask)
+void RegSet::rsLockReg(regMaskTP regMask)
 {
     /* Must not be already marked as either used or locked */
 
-    assert((rsMaskUsed &  regMask) == 0);
-            rsMaskUsed |= regMask;
-    assert((rsMaskLock &  regMask) == 0);
-            rsMaskLock |= regMask;
+    assert((rsMaskUsed & regMask) == 0);
+    rsMaskUsed |= regMask;
+    assert((rsMaskLock & regMask) == 0);
+    rsMaskLock |= regMask;
 }
 
 /*****************************************************************************
@@ -329,14 +325,14 @@ void                RegSet::rsLockReg(regMaskTP regMask)
  */
 
 // inline
-void                RegSet::rsLockUsedReg(regMaskTP regMask)
+void RegSet::rsLockUsedReg(regMaskTP regMask)
 {
     /* Must not be already marked as locked. Must be already marked as used. */
 
-    assert((rsMaskLock &  regMask) == 0);
-    assert((rsMaskUsed &  regMask) == regMask);
+    assert((rsMaskLock & regMask) == 0);
+    assert((rsMaskUsed & regMask) == regMask);
 
-            rsMaskLock |= regMask;
+    rsMaskLock |= regMask;
 }
 
 /*****************************************************************************
@@ -345,14 +341,14 @@ void                RegSet::rsLockUsedReg(regMaskTP regMask)
  */
 
 // inline
-void                RegSet::rsUnlockReg(regMaskTP regMask)
+void RegSet::rsUnlockReg(regMaskTP regMask)
 {
     /* Must be currently marked as both used and locked */
 
-    assert((rsMaskUsed &  regMask) == regMask);
-            rsMaskUsed -= regMask;
-    assert((rsMaskLock &  regMask) == regMask);
-            rsMaskLock -= regMask;
+    assert((rsMaskUsed & regMask) == regMask);
+    rsMaskUsed -= regMask;
+    assert((rsMaskLock & regMask) == regMask);
+    rsMaskLock -= regMask;
 }
 
 /*****************************************************************************
@@ -361,13 +357,13 @@ void                RegSet::rsUnlockReg(regMaskTP regMask)
  */
 
 // inline
-void                RegSet::rsUnlockUsedReg(regMaskTP regMask)
+void RegSet::rsUnlockUsedReg(regMaskTP regMask)
 {
     /* Must be currently marked as both used and locked */
 
-    assert((rsMaskUsed &  regMask) == regMask);
-    assert((rsMaskLock &  regMask) == regMask);
-            rsMaskLock -= regMask;
+    assert((rsMaskUsed & regMask) == regMask);
+    assert((rsMaskLock & regMask) == regMask);
+    rsMaskLock -= regMask;
 }
 
 /*****************************************************************************
@@ -377,14 +373,14 @@ void                RegSet::rsUnlockUsedReg(regMaskTP regMask)
  */
 
 // inline
-void                RegSet::rsLockReg(regMaskTP regMask, regMaskTP * usedMask)
+void RegSet::rsLockReg(regMaskTP regMask, regMaskTP* usedMask)
 {
     /* Is it already marked as used? */
 
-    regMaskTP   used = (rsMaskUsed & regMask);
+    regMaskTP used   = (rsMaskUsed & regMask);
     regMaskTP unused = (regMask & ~used);
 
-    if (  used)
+    if (used)
         rsLockUsedReg(used);
 
     if (unused)
@@ -399,7 +395,7 @@ void                RegSet::rsLockReg(regMaskTP regMask, regMaskTP * usedMask)
  */
 
 // inline
-void                RegSet::rsUnlockReg(regMaskTP regMask, regMaskTP usedMask)
+void RegSet::rsUnlockReg(regMaskTP regMask, regMaskTP usedMask)
 {
     regMaskTP unused = (regMask & ~usedMask);
 
@@ -418,7 +414,7 @@ void                RegSet::rsUnlockReg(regMaskTP regMask, regMaskTP usedMask)
  */
 
 // inline
-void                RegTracker::rsTrackRegClr()
+void RegTracker::rsTrackRegClr()
 {
     assert(RV_TRASH == 0);
     memset(rsRegValues, 0, sizeof(rsRegValues));
@@ -430,7 +426,7 @@ void                RegTracker::rsTrackRegClr()
  */
 
 // inline
-void                RegTracker::rsTrackRegTrash(regNumber reg)
+void RegTracker::rsTrackRegTrash(regNumber reg)
 {
     /* Keep track of which registers we ever touch */
 
@@ -447,27 +443,28 @@ void                RegTracker::rsTrackRegTrash(regNumber reg)
  */
 
 // inline
-void                RegTracker::rsTrackRegMaskTrash(regMaskTP regMask)
+void RegTracker::rsTrackRegMaskTrash(regMaskTP regMask)
 {
-    regMaskTP   regBit = 1;
+    regMaskTP regBit = 1;
 
     for (regNumber regNum = REG_FIRST; regNum < REG_COUNT; regNum = REG_NEXT(regNum), regBit <<= 1)
     {
-        if  (regBit > regMask)
+        if (regBit > regMask)
+        {
             break;
+        }
 
-        if  (regBit & regMask)
+        if (regBit & regMask)
         {
             rsTrackRegTrash(regNum);
         }
     }
 }
 
-
 /*****************************************************************************/
 
 // inline
-void                RegTracker::rsTrackRegIntCns(regNumber reg, ssize_t val)
+void RegTracker::rsTrackRegIntCns(regNumber reg, ssize_t val)
 {
     assert(genIsValidIntReg(reg));
 
@@ -481,16 +478,17 @@ void                RegTracker::rsTrackRegIntCns(regNumber reg, ssize_t val)
     rsRegValues[reg].rvdIntCnsVal = val;
 }
 
-
 /*****************************************************************************/
 
 // inline
-void                RegTracker::rsTrackRegLclVarLng(regNumber reg, unsigned var, bool low)
+void RegTracker::rsTrackRegLclVarLng(regNumber reg, unsigned var, bool low)
 {
     assert(genIsValidIntReg(reg));
 
     if (compiler->lvaTable[var].lvAddrExposed)
+    {
         return;
+    }
 
     /* Keep track of which registers we ever touch */
 
@@ -505,52 +503,57 @@ void                RegTracker::rsTrackRegLclVarLng(regNumber reg, unsigned var,
 /*****************************************************************************/
 
 // inline
-bool                RegTracker::rsTrackIsLclVarLng(regValKind rvKind)
+bool RegTracker::rsTrackIsLclVarLng(regValKind rvKind)
 {
-    if  (compiler->opts.MinOpts() || compiler->opts.compDbgCode)
-        return  false;
+    if (compiler->opts.MinOpts() || compiler->opts.compDbgCode)
+    {
+        return false;
+    }
 
-    if  (rvKind == RV_LCL_VAR_LNG_LO ||
-         rvKind == RV_LCL_VAR_LNG_HI)
-        return  true;
+    if (rvKind == RV_LCL_VAR_LNG_LO || rvKind == RV_LCL_VAR_LNG_HI)
+    {
+        return true;
+    }
     else
-        return  false;
+    {
+        return false;
+    }
 }
 
 /*****************************************************************************/
 
 // inline
-void                RegTracker::rsTrackRegClsVar(regNumber reg, GenTreePtr clsVar)
+void RegTracker::rsTrackRegClsVar(regNumber reg, GenTreePtr clsVar)
 {
-    rsTrackRegTrash(reg);    
+    rsTrackRegTrash(reg);
 }
 
 /*****************************************************************************/
 
 // inline
-void                RegTracker::rsTrackRegAssign(GenTree *op1, GenTree *op2)
+void RegTracker::rsTrackRegAssign(GenTree* op1, GenTree* op2)
 {
     /* Constant/bitvalue has precedence over local */
     switch (rsRegValues[op2->gtRegNum].rvdKind)
     {
-    case RV_INT_CNS:
-        break;
-
-    default:
-
-        /* Mark RHS register as containing the value */
-
-        switch (op1->gtOper)
-        {
-        case GT_LCL_VAR:
-            rsTrackRegLclVar(op2->gtRegNum, op1->gtLclVarCommon.gtLclNum);
+        case RV_INT_CNS:
             break;
-        case GT_CLS_VAR:
-            rsTrackRegClsVar(op2->gtRegNum, op1);
-            break;
+
         default:
-            break;
-        }
+
+            /* Mark RHS register as containing the value */
+
+            switch (op1->gtOper)
+            {
+                case GT_LCL_VAR:
+                    rsTrackRegLclVar(op2->gtRegNum, op1->gtLclVarCommon.gtLclNum);
+                    break;
+                case GT_CLS_VAR:
+                    rsTrackRegClsVar(op2->gtRegNum, op1);
+                    break;
+                default:
+                    break;
+            }
     }
 }
 
@@ -562,9 +565,9 @@ void                RegTracker::rsTrackRegAssign(GenTree *op1, GenTree *op2)
  *  or return REG_PAIR_NONE if no register pair can be formed
  */
 
-regPairNo    RegSet::rsFindRegPairNo   (regMaskTP  regAllowedMask)
+regPairNo RegSet::rsFindRegPairNo(regMaskTP regAllowedMask)
 {
-    regPairNo       regPair;
+    regPairNo regPair;
 
     // Remove any special purpose registers such as SP, EBP, etc...
     regMaskTP specialUseMask = (rsMaskResvd | RBM_SPBASE);
@@ -578,68 +581,152 @@ regPairNo    RegSet::rsFindRegPairNo   (regMaskTP  regAllowedMask)
     regAllowedMask &= ~specialUseMask;
 
     /* Check if regAllowedMask has zero or one bits set */
-    if ((regAllowedMask & (regAllowedMask-1)) == 0)
+    if ((regAllowedMask & (regAllowedMask - 1)) == 0)
     {
         /* If so we won't be able to find a reg pair */
         return REG_PAIR_NONE;
     }
 
 #ifdef _TARGET_X86_
-    if  (regAllowedMask & RBM_EAX)
+    if (regAllowedMask & RBM_EAX)
     {
         /* EAX is available, see if we can pair it with another reg */
 
-        if  (regAllowedMask & RBM_EDX) { regPair = REG_PAIR_EAXEDX; goto RET; }
-        if  (regAllowedMask & RBM_ECX) { regPair = REG_PAIR_EAXECX; goto RET; }
-        if  (regAllowedMask & RBM_EBX) { regPair = REG_PAIR_EAXEBX; goto RET; }
-        if  (regAllowedMask & RBM_ESI) { regPair = REG_PAIR_EAXESI; goto RET; }
-        if  (regAllowedMask & RBM_EDI) { regPair = REG_PAIR_EAXEDI; goto RET; }
-        if  (regAllowedMask & RBM_EBP) { regPair = REG_PAIR_EAXEBP; goto RET; }
+        if (regAllowedMask & RBM_EDX)
+        {
+            regPair = REG_PAIR_EAXEDX;
+            goto RET;
+        }
+        if (regAllowedMask & RBM_ECX)
+        {
+            regPair = REG_PAIR_EAXECX;
+            goto RET;
+        }
+        if (regAllowedMask & RBM_EBX)
+        {
+            regPair = REG_PAIR_EAXEBX;
+            goto RET;
+        }
+        if (regAllowedMask & RBM_ESI)
+        {
+            regPair = REG_PAIR_EAXESI;
+            goto RET;
+        }
+        if (regAllowedMask & RBM_EDI)
+        {
+            regPair = REG_PAIR_EAXEDI;
+            goto RET;
+        }
+        if (regAllowedMask & RBM_EBP)
+        {
+            regPair = REG_PAIR_EAXEBP;
+            goto RET;
+        }
     }
 
-    if  (regAllowedMask & RBM_ECX)
+    if (regAllowedMask & RBM_ECX)
     {
         /* ECX is available, see if we can pair it with another reg */
 
-        if  (regAllowedMask & RBM_EDX) { regPair = REG_PAIR_ECXEDX; goto RET; }
-        if  (regAllowedMask & RBM_EBX) { regPair = REG_PAIR_ECXEBX; goto RET; }
-        if  (regAllowedMask & RBM_ESI) { regPair = REG_PAIR_ECXESI; goto RET; }
-        if  (regAllowedMask & RBM_EDI) { regPair = REG_PAIR_ECXEDI; goto RET; }
-        if  (regAllowedMask & RBM_EBP) { regPair = REG_PAIR_ECXEBP; goto RET; }
+        if (regAllowedMask & RBM_EDX)
+        {
+            regPair = REG_PAIR_ECXEDX;
+            goto RET;
+        }
+        if (regAllowedMask & RBM_EBX)
+        {
+            regPair = REG_PAIR_ECXEBX;
+            goto RET;
+        }
+        if (regAllowedMask & RBM_ESI)
+        {
+            regPair = REG_PAIR_ECXESI;
+            goto RET;
+        }
+        if (regAllowedMask & RBM_EDI)
+        {
+            regPair = REG_PAIR_ECXEDI;
+            goto RET;
+        }
+        if (regAllowedMask & RBM_EBP)
+        {
+            regPair = REG_PAIR_ECXEBP;
+            goto RET;
+        }
     }
 
-    if  (regAllowedMask & RBM_EDX)
+    if (regAllowedMask & RBM_EDX)
     {
         /* EDX is available, see if we can pair it with another reg */
 
-        if  (regAllowedMask & RBM_EBX) { regPair = REG_PAIR_EDXEBX; goto RET; }
-        if  (regAllowedMask & RBM_ESI) { regPair = REG_PAIR_EDXESI; goto RET; }
-        if  (regAllowedMask & RBM_EDI) { regPair = REG_PAIR_EDXEDI; goto RET; }
-        if  (regAllowedMask & RBM_EBP) { regPair = REG_PAIR_EDXEBP; goto RET; }
+        if (regAllowedMask & RBM_EBX)
+        {
+            regPair = REG_PAIR_EDXEBX;
+            goto RET;
+        }
+        if (regAllowedMask & RBM_ESI)
+        {
+            regPair = REG_PAIR_EDXESI;
+            goto RET;
+        }
+        if (regAllowedMask & RBM_EDI)
+        {
+            regPair = REG_PAIR_EDXEDI;
+            goto RET;
+        }
+        if (regAllowedMask & RBM_EBP)
+        {
+            regPair = REG_PAIR_EDXEBP;
+            goto RET;
+        }
     }
 
-    if  (regAllowedMask & RBM_EBX)
+    if (regAllowedMask & RBM_EBX)
     {
         /* EBX is available, see if we can pair it with another reg */
 
-        if  (regAllowedMask & RBM_ESI) { regPair = REG_PAIR_EBXESI; goto RET; }
-        if  (regAllowedMask & RBM_EDI) { regPair = REG_PAIR_EBXEDI; goto RET; }
-        if  (regAllowedMask & RBM_EBP) { regPair = REG_PAIR_EBXEBP; goto RET; }
+        if (regAllowedMask & RBM_ESI)
+        {
+            regPair = REG_PAIR_EBXESI;
+            goto RET;
+        }
+        if (regAllowedMask & RBM_EDI)
+        {
+            regPair = REG_PAIR_EBXEDI;
+            goto RET;
+        }
+        if (regAllowedMask & RBM_EBP)
+        {
+            regPair = REG_PAIR_EBXEBP;
+            goto RET;
+        }
     }
 
-    if  (regAllowedMask & RBM_ESI)
+    if (regAllowedMask & RBM_ESI)
     {
         /* ESI is available, see if we can pair it with another reg */
 
-        if  (regAllowedMask & RBM_EDI) { regPair = REG_PAIR_ESIEDI; goto RET; }
-        if  (regAllowedMask & RBM_EBP) { regPair = REG_PAIR_EBPESI; goto RET; }
+        if (regAllowedMask & RBM_EDI)
+        {
+            regPair = REG_PAIR_ESIEDI;
+            goto RET;
+        }
+        if (regAllowedMask & RBM_EBP)
+        {
+            regPair = REG_PAIR_EBPESI;
+            goto RET;
+        }
     }
 
-    if  (regAllowedMask & RBM_EDI)
+    if (regAllowedMask & RBM_EDI)
     {
         /* EDI is available, see if we can pair it with another reg */
 
-        if  (regAllowedMask & RBM_EBP) { regPair = REG_PAIR_EBPEDI; goto RET; }
+        if (regAllowedMask & RBM_EBP)
+        {
+            regPair = REG_PAIR_EBPEDI;
+            goto RET;
+        }
     }
 #endif
 
@@ -648,9 +735,7 @@ regPairNo    RegSet::rsFindRegPairNo   (regMaskTP  regAllowedMask)
     //
     // Iterate the registers in the order specified by rpRegTmpOrder/raRegTmpOrder
 
-    for (unsigned index1 = 0;
-            index1 < REG_TMP_ORDER_COUNT;
-            index1++)
+    for (unsigned index1 = 0; index1 < REG_TMP_ORDER_COUNT; index1++)
     {
         regNumber reg1;
         if (m_rsCompiler->rpRegAllocDone)
@@ -663,9 +748,7 @@ regPairNo    RegSet::rsFindRegPairNo   (regMaskTP  regAllowedMask)
         if ((regAllowedMask & reg1Mask) == 0)
             continue;
 
-        for (unsigned index2 = index1+1;
-                index2 < REG_TMP_ORDER_COUNT;
-                index2++)
+        for (unsigned index2 = index1 + 1; index2 < REG_TMP_ORDER_COUNT; index2++)
         {
             regNumber reg2;
             if (m_rsCompiler->rpRegAllocDone)
@@ -680,37 +763,35 @@ regPairNo    RegSet::rsFindRegPairNo   (regMaskTP  regAllowedMask)
 
             regMaskTP pairMask = genRegMask(reg1) | genRegMask(reg2);
 
-            // if reg1 is larger than reg2 then swap the registers 
+            // if reg1 is larger than reg2 then swap the registers
             if (reg1 > reg2)
             {
                 regNumber regT = reg1;
-                reg1 = reg2;
-                reg2 = regT;
+                reg1           = reg2;
+                reg2           = regT;
             }
 
             regPair = gen2regs2pair(reg1, reg2);
-            return  regPair;
+            return regPair;
         }
     }
 #endif
 
     assert(!"Unreachable code");
     regPair = REG_PAIR_NONE;
-    
+
 #ifdef _TARGET_X86_
 RET:
 #endif
 
-    return  regPair;
+    return regPair;
 }
 
 #endif // LEGACY_BACKEND
 
 /*****************************************************************************/
 
-RegSet::RegSet(Compiler* compiler, GCInfo& gcInfo) :
-    m_rsCompiler(compiler),
-    m_rsGCInfo(gcInfo)
+RegSet::RegSet(Compiler* compiler, GCInfo& gcInfo) : m_rsCompiler(compiler), m_rsGCInfo(gcInfo)
 {
     /* Initialize the spill logic */
 
@@ -722,16 +803,16 @@ RegSet::RegSet(Compiler* compiler, GCInfo& gcInfo) :
     // intRegState.rsCurRegArgNum   = 0;
     // loatRegState.rsCurRegArgNum = 0;
 
-    rsMaskResvd       = RBM_NONE;
+    rsMaskResvd = RBM_NONE;
 
 #ifdef LEGACY_BACKEND
-    rsMaskMult        = RBM_NONE;
-    rsMaskUsed        = RBM_NONE;
-    rsMaskLock        = RBM_NONE;
+    rsMaskMult = RBM_NONE;
+    rsMaskUsed = RBM_NONE;
+    rsMaskLock = RBM_NONE;
 #endif // LEGACY_BACKEND
 
 #ifdef _TARGET_ARMARCH_
-    rsMaskCalleeSaved    = RBM_NONE;
+    rsMaskCalleeSaved = RBM_NONE;
 #endif // _TARGET_ARMARCH_
 
 #ifdef _TARGET_ARM_
@@ -752,27 +833,27 @@ RegSet::RegSet(Compiler* compiler, GCInfo& gcInfo) :
  *  be marked if the register is ever spilled.
  */
 
-void                RegSet::rsMarkRegUsed(GenTreePtr tree, GenTreePtr addr)
+void RegSet::rsMarkRegUsed(GenTreePtr tree, GenTreePtr addr)
 {
-    var_types       type;
-    regNumber       regNum;
-    regMaskTP       regMask;
+    var_types type;
+    regNumber regNum;
+    regMaskTP regMask;
 
     /* The value must be sitting in a register */
 
     assert(tree);
     assert(tree->gtFlags & GTF_REG_VAL);
 
-    type    = tree->TypeGet();
-    regNum  = tree->gtRegNum;
+    type   = tree->TypeGet();
+    regNum = tree->gtRegNum;
 
     if (isFloatRegType(type))
         regMask = genRegMaskFloat(regNum, type);
     else
         regMask = genRegMask(regNum);
 
-#ifdef  DEBUG
-    if  (m_rsCompiler->verbose)
+#ifdef DEBUG
+    if (m_rsCompiler->verbose)
     {
         printf("\t\t\t\t\t\t\tThe register %s currently holds ", m_rsCompiler->compRegVarName(regNum));
         Compiler::printTreeID(tree);
@@ -802,7 +883,7 @@ void                RegSet::rsMarkRegUsed(GenTreePtr tree, GenTreePtr addr)
 
     /* Is the register used by two different values simultaneously? */
 
-    if  (regMask & rsMaskUsed)
+    if (regMask & rsMaskUsed)
     {
         /* Save the preceding use information */
 
@@ -815,13 +896,15 @@ void                RegSet::rsMarkRegUsed(GenTreePtr tree, GenTreePtr addr)
 
     /* Remember what values are in what registers, in case we have to spill */
     assert(regNum != REG_SPBASE);
-    assert(rsUsedTree[regNum] == NULL); rsUsedTree[regNum] = tree;
-    assert(rsUsedAddr[regNum] == NULL); rsUsedAddr[regNum] = addr;
+    assert(rsUsedTree[regNum] == NULL);
+    rsUsedTree[regNum] = tree;
+    assert(rsUsedAddr[regNum] == NULL);
+    rsUsedAddr[regNum] = addr;
 }
 
-void                RegSet::rsMarkArgRegUsedByPromotedFieldArg(GenTreePtr promotedStructArg, regNumber regNum, bool isGCRef)
+void RegSet::rsMarkArgRegUsedByPromotedFieldArg(GenTreePtr promotedStructArg, regNumber regNum, bool isGCRef)
 {
-    regMaskTP       regMask;
+    regMaskTP regMask;
 
     /* The value must be sitting in a register */
 
@@ -832,8 +915,8 @@ void                RegSet::rsMarkArgRegUsedByPromotedFieldArg(GenTreePtr promot
     regMask = genRegMask(regNum);
     assert((regMask & RBM_ARG_REGS) != RBM_NONE);
 
-#ifdef  DEBUG
-    if  (m_rsCompiler->verbose)
+#ifdef DEBUG
+    if (m_rsCompiler->verbose)
     {
         printf("\t\t\t\t\t\t\tThe register %s currently holds ", m_rsCompiler->compRegVarName(regNum));
         Compiler::printTreeID(promotedStructArg);
@@ -858,11 +941,11 @@ void                RegSet::rsMarkArgRegUsedByPromotedFieldArg(GenTreePtr promot
 
     /* Is the register used by two different values simultaneously? */
 
-    if  (regMask & rsMaskUsed)
+    if (regMask & rsMaskUsed)
     {
         /* Save the preceding use information */
 
-        assert(isValidIntArgReg(regNum));   // We are expecting only integer argument registers here
+        assert(isValidIntArgReg(regNum)); // We are expecting only integer argument registers here
         rsRecMultiReg(regNum, TYP_I_IMPL);
     }
 
@@ -872,7 +955,8 @@ void                RegSet::rsMarkArgRegUsedByPromotedFieldArg(GenTreePtr promot
 
     /* Remember what values are in what registers, in case we have to spill */
     assert(regNum != REG_SPBASE);
-    assert(rsUsedTree[regNum] == 0); rsUsedTree[regNum] = promotedStructArg;
+    assert(rsUsedTree[regNum] == 0);
+    rsUsedTree[regNum] = promotedStructArg;
 }
 
 /*****************************************************************************
@@ -880,12 +964,12 @@ void                RegSet::rsMarkArgRegUsedByPromotedFieldArg(GenTreePtr promot
  *  Marks the register pair that holds the given operand value as 'used'.
  */
 
-void                RegSet::rsMarkRegPairUsed(GenTreePtr tree)
+void RegSet::rsMarkRegPairUsed(GenTreePtr tree)
 {
-    regNumber       regLo;
-    regNumber       regHi;
-    regPairNo       regPair;
-    regMaskTP       regMask;
+    regNumber regLo;
+    regNumber regHi;
+    regPairNo regPair;
+    regMaskTP regMask;
 
     /* The value must be sitting in a register */
 
@@ -900,18 +984,16 @@ void                RegSet::rsMarkRegPairUsed(GenTreePtr tree)
     regPair = tree->gtRegPair;
     regMask = genRegPairMask(regPair);
 
-    regLo   = genRegPairLo(regPair);
-    regHi   = genRegPairHi(regPair);
+    regLo = genRegPairLo(regPair);
+    regHi = genRegPairHi(regPair);
 
-#ifdef  DEBUG
-    if  (m_rsCompiler->verbose)
+#ifdef DEBUG
+    if (m_rsCompiler->verbose)
     {
-        printf("\t\t\t\t\t\t\tThe register %s currently holds \n",
-               m_rsCompiler->compRegVarName(regLo));
+        printf("\t\t\t\t\t\t\tThe register %s currently holds \n", m_rsCompiler->compRegVarName(regLo));
         Compiler::printTreeID(tree);
         printf("/lo32\n");
-        printf("\t\t\t\t\t\t\tThe register %s currently holds \n",
-               m_rsCompiler->compRegVarName(regHi));
+        printf("\t\t\t\t\t\t\tThe register %s currently holds \n", m_rsCompiler->compRegVarName(regHi));
         Compiler::printTreeID(tree);
         printf("/hi32\n");
     }
@@ -927,14 +1009,14 @@ void                RegSet::rsMarkRegPairUsed(GenTreePtr tree)
 
     /* Are the registers used by two different values simultaneously? */
 
-    if  (rsMaskUsed & genRegMask(regLo))
+    if (rsMaskUsed & genRegMask(regLo))
     {
         /* Save the preceding use information */
 
         rsRecMultiReg(regLo, TYP_INT);
     }
 
-    if  (rsMaskUsed & genRegMask(regHi))
+    if (rsMaskUsed & genRegMask(regHi))
     {
         /* Save the preceding use information */
 
@@ -951,14 +1033,14 @@ void                RegSet::rsMarkRegPairUsed(GenTreePtr tree)
 
     /* Remember what values are in what registers, in case we have to spill */
 
-    if  (regLo != REG_STK)
+    if (regLo != REG_STK)
     {
         assert(rsUsedTree[regLo] == 0);
         assert(regLo != REG_SPBASE);
         rsUsedTree[regLo] = tree;
     }
 
-    if  (regHi != REG_STK)
+    if (regHi != REG_STK)
     {
         assert(rsUsedTree[regHi] == 0);
         assert(regHi != REG_SPBASE);
@@ -973,7 +1055,7 @@ void                RegSet::rsMarkRegPairUsed(GenTreePtr tree)
  *  to search rsMultiDesc[reg].
  */
 
-bool                RegSet::rsIsTreeInReg(regNumber reg, GenTreePtr tree)
+bool RegSet::rsIsTreeInReg(regNumber reg, GenTreePtr tree)
 {
     /* First do the trivial check */
 
@@ -985,7 +1067,7 @@ bool                RegSet::rsIsTreeInReg(regNumber reg, GenTreePtr tree)
 
     if (genRegMask(reg) & rsMaskMult)
     {
-        SpillDsc * multiDesc = rsMultiDesc[reg];
+        SpillDsc* multiDesc = rsMultiDesc[reg];
         assert(multiDesc);
 
         for (/**/; multiDesc; multiDesc = multiDesc->spillNext)
@@ -1008,13 +1090,14 @@ bool                RegSet::rsIsTreeInReg(regNumber reg, GenTreePtr tree)
  *  Finds the SpillDsc corresponding to 'tree' assuming it was spilled from 'reg'.
  */
 
-RegSet::SpillDsc *        RegSet::rsGetSpillInfo(GenTreePtr tree,
-                                                 regNumber  reg,
-                                                 SpillDsc** pPrevDsc
+RegSet::SpillDsc* RegSet::rsGetSpillInfo(GenTreePtr tree,
+                                         regNumber  reg,
+                                         SpillDsc** pPrevDsc
 #ifdef LEGACY_BACKEND
-                                                 , SpillDsc** pMultiDsc
+                                         ,
+                                         SpillDsc** pMultiDsc
 #endif // LEGACY_BACKEND
-                                                 )
+                                         )
 {
     /* Normally, trees are unspilled in the order of being spilled due to
        the post-order walking of trees during code-gen. However, this will
@@ -1027,9 +1110,7 @@ RegSet::SpillDsc *        RegSet::rsGetSpillInfo(GenTreePtr tree,
 
     SpillDsc* prev;
     SpillDsc* dsc;
-    for (prev = nullptr, dsc = rsSpillDesc[reg];
-                         dsc != nullptr;
-         prev = dsc    , dsc = dsc->spillNext)
+    for (prev = nullptr, dsc = rsSpillDesc[reg]; dsc != nullptr; prev = dsc, dsc = dsc->spillNext)
     {
 #ifdef LEGACY_BACKEND
         if (prev && !prev->spillMoreMultis)
@@ -1037,12 +1118,18 @@ RegSet::SpillDsc *        RegSet::rsGetSpillInfo(GenTreePtr tree,
 #endif // LEGACY_BACKEND
 
         if (dsc->spillTree == tree)
+        {
             break;
+        }
     }
 
-    if (pPrevDsc)  *pPrevDsc  = prev;
+    if (pPrevDsc)
+    {
+        *pPrevDsc = prev;
+    }
 #ifdef LEGACY_BACKEND
-    if (pMultiDsc) *pMultiDsc = multi;
+    if (pMultiDsc)
+        *pMultiDsc = multi;
 #endif // LEGACY_BACKEND
 
     return dsc;
@@ -1054,11 +1141,11 @@ RegSet::SpillDsc *        RegSet::rsGetSpillInfo(GenTreePtr tree,
  *  Mark the register set given by the register mask as not used.
  */
 
-void                RegSet::rsMarkRegFree(regMaskTP regMask)
+void RegSet::rsMarkRegFree(regMaskTP regMask)
 {
     /* Are we freeing any multi-use registers? */
 
-    if  (regMask & rsMaskMult)
+    if (regMask & rsMaskMult)
     {
         rsMultRegFree(regMask);
         return;
@@ -1066,20 +1153,19 @@ void                RegSet::rsMarkRegFree(regMaskTP regMask)
 
     m_rsGCInfo.gcMarkRegSetNpt(regMask);
 
-    regMaskTP   regBit = 1;
+    regMaskTP regBit = 1;
 
     for (regNumber regNum = REG_FIRST; regNum < REG_COUNT; regNum = REG_NEXT(regNum), regBit <<= 1)
     {
-        if  (regBit > regMask)
+        if (regBit > regMask)
             break;
 
-        if  (regBit & regMask)
+        if (regBit & regMask)
         {
 #ifdef DEBUG
-            if  (m_rsCompiler->verbose)
+            if (m_rsCompiler->verbose)
             {
-                printf("\t\t\t\t\t\t\tThe register %s no longer holds ",
-                       m_rsCompiler->compRegVarName(regNum));
+                printf("\t\t\t\t\t\t\tThe register %s no longer holds ", m_rsCompiler->compRegVarName(regNum));
                 Compiler::printTreeID(rsUsedTree[regNum]);
                 Compiler::printTreeID(rsUsedAddr[regNum]);
                 printf("\n");
@@ -1102,10 +1188,10 @@ void                RegSet::rsMarkRegFree(regMaskTP regMask)
 #endif
         }
     }
-    
+
     /* Remove the register set from the 'used' set */
 
-    assert((regMask & rsMaskUsed) == regMask); 
+    assert((regMask & rsMaskUsed) == regMask);
     rsMaskUsed -= regMask;
 
     /* No locked register may ever be marked as free */
@@ -1119,7 +1205,7 @@ void                RegSet::rsMarkRegFree(regMaskTP regMask)
  *  it will still be marked as used, else it will be completely free.
  */
 
-void                RegSet::rsMarkRegFree(regNumber reg, GenTreePtr tree)
+void RegSet::rsMarkRegFree(regNumber reg, GenTreePtr tree)
 {
     assert(rsIsTreeInReg(reg, tree));
     regMaskTP regMask = genRegMask(reg);
@@ -1135,7 +1221,7 @@ void                RegSet::rsMarkRegFree(regNumber reg, GenTreePtr tree)
     /* The tree is multi-used. We just have to free it off the given tree but
        leave other trees which use the register as they are. The register may
        not be multi-used after freeing it from the given tree */
-       
+
     /* Is the tree in rsUsedTree[] or in rsMultiDesc[]?
        If it is in rsUsedTree[], update rsUsedTree[] */
 
@@ -1147,9 +1233,8 @@ void                RegSet::rsMarkRegFree(regNumber reg, GenTreePtr tree)
 
     /* The tree is in rsMultiDesc[] instead of in rsUsedTree[]. Find the desc
        corresponding to the tree and just remove it from there */
-    
-    for (SpillDsc * multiDesc = rsMultiDesc[reg], *prevDesc = NULL;
-         multiDesc; 
+
+    for (SpillDsc *multiDesc = rsMultiDesc[reg], *prevDesc = NULL; multiDesc;
          prevDesc = multiDesc, multiDesc = multiDesc->spillNext)
     {
         /* If we find the descriptor with the tree we are looking for,
@@ -1182,8 +1267,8 @@ void                RegSet::rsMarkRegFree(regNumber reg, GenTreePtr tree)
 
         SpillDsc::freeDsc(this, multiDesc);
 
-#ifdef  DEBUG
-        if  (m_rsCompiler->verbose)
+#ifdef DEBUG
+        if (m_rsCompiler->verbose)
         {
             printf("\t\t\t\t\t\t\tRegister %s multi-use dec for ", m_rsCompiler->compRegVarName(reg));
             Compiler::printTreeID(tree);
@@ -1199,32 +1284,29 @@ void                RegSet::rsMarkRegFree(regNumber reg, GenTreePtr tree)
     assert(!"Didn't find the spilled tree in rsMultiDesc[]");
 }
 
-
 /*****************************************************************************
  *
  *  Mark the register set given by the register mask as not used; there may
  *  be some 'multiple-use' registers in the set.
  */
 
-void                RegSet::rsMultRegFree(regMaskTP regMask)
+void RegSet::rsMultRegFree(regMaskTP regMask)
 {
     /* Free any multiple-use registers first */
     regMaskTP nonMultMask = regMask & ~rsMaskMult;
     regMaskTP myMultMask  = regMask & rsMaskMult;
 
-    if  (myMultMask)
+    if (myMultMask)
     {
-        regNumber   regNum;
-        regMaskTP   regBit;
+        regNumber regNum;
+        regMaskTP regBit;
 
-        for (regNum = REG_FIRST       , regBit = 1;
-             regNum < REG_COUNT;
-             regNum = REG_NEXT(regNum), regBit <<= 1)
+        for (regNum = REG_FIRST, regBit = 1; regNum < REG_COUNT; regNum = REG_NEXT(regNum), regBit <<= 1)
         {
             if (regBit > myMultMask)
                 break;
 
-            if (regBit & myMultMask) 
+            if (regBit & myMultMask)
             {
                 /* Free the multi-use register 'regNum' */
                 var_types type = rsRmvMultiReg(regNum);
@@ -1242,7 +1324,7 @@ void                RegSet::rsMultRegFree(regMaskTP regMask)
 
     /* If there are any single-use registers, free them */
 
-    if  (nonMultMask)
+    if (nonMultMask)
         rsMarkRegFree(nonMultMask);
 }
 
@@ -1251,10 +1333,10 @@ void                RegSet::rsMultRegFree(regMaskTP regMask)
  *  Returns the number of registers that are currently free which appear in needReg.
  */
 
-unsigned            RegSet::rsFreeNeededRegCount(regMaskTP needReg)
+unsigned RegSet::rsFreeNeededRegCount(regMaskTP needReg)
 {
-    regMaskTP       regNeededFree = rsRegMaskFree() & needReg;
-    unsigned        cntFree = 0;
+    regMaskTP regNeededFree = rsRegMaskFree() & needReg;
+    unsigned  cntFree       = 0;
 
     /* While some registers are free ... */
 
@@ -1278,9 +1360,9 @@ unsigned            RegSet::rsFreeNeededRegCount(regMaskTP needReg)
  *  variable.
  */
 
-void                RegTracker::rsTrackRegLclVar(regNumber reg, unsigned var)
+void RegTracker::rsTrackRegLclVar(regNumber reg, unsigned var)
 {
-    LclVarDsc *     varDsc = &compiler->lvaTable[var];
+    LclVarDsc* varDsc = &compiler->lvaTable[var];
     assert(reg != REG_STK);
 #if CPU_HAS_FP_SUPPORT
     assert(varTypeIsFloating(varDsc->TypeGet()) == false);
@@ -1290,7 +1372,9 @@ void                RegTracker::rsTrackRegLclVar(regNumber reg, unsigned var)
     rsRegValues[reg].rvdKind = RV_TRASH;
 
     if (compiler->lvaTable[var].lvAddrExposed)
+    {
         return;
+    }
 
     /* Keep track of which registers we ever touch */
 
@@ -1305,7 +1389,9 @@ void                RegTracker::rsTrackRegLclVar(regNumber reg, unsigned var)
         /* Don't track pointer register vars */
 
         if (varDsc->lvRegister)
+        {
             return;
+        }
 
         /* Don't track when fully interruptible */
 
@@ -1321,16 +1407,18 @@ void                RegTracker::rsTrackRegLclVar(regNumber reg, unsigned var)
 
 #endif
 
-#ifdef  DEBUG
-    if  (compiler->verbose) 
+#ifdef DEBUG
+    if (compiler->verbose)
+    {
         printf("\t\t\t\t\t\t\tThe register %s now holds V%02u\n", compiler->compRegVarName(reg), var);
+    }
 #endif
 
     /* Record the new value for the register. ptr var needed for
      * lifetime extension
      */
 
-    rsRegValues[reg].rvdKind      = RV_LCL_VAR;
+    rsRegValues[reg].rvdKind = RV_LCL_VAR;
 
     // If this is a cast of a 64 bit int, then we must have the low 32 bits.
     if (genActualType(varDsc->TypeGet()) == TYP_LONG)
@@ -1343,16 +1431,16 @@ void                RegTracker::rsTrackRegLclVar(regNumber reg, unsigned var)
 
 /*****************************************************************************/
 
-void                RegTracker::rsTrackRegSwap(regNumber reg1, regNumber reg2)
+void RegTracker::rsTrackRegSwap(regNumber reg1, regNumber reg2)
 {
-    RegValDsc       tmp;
+    RegValDsc tmp;
 
-    tmp = rsRegValues[reg1];
-          rsRegValues[reg1] = rsRegValues[reg2];
-                              rsRegValues[reg2] = tmp;
+    tmp               = rsRegValues[reg1];
+    rsRegValues[reg1] = rsRegValues[reg2];
+    rsRegValues[reg2] = tmp;
 }
 
-void                RegTracker::rsTrackRegCopy(regNumber reg1, regNumber reg2)
+void RegTracker::rsTrackRegCopy(regNumber reg1, regNumber reg2)
 {
     /* Keep track of which registers we ever touch */
 
@@ -1364,19 +1452,18 @@ void                RegTracker::rsTrackRegCopy(regNumber reg1, regNumber reg2)
     rsRegValues[reg1] = rsRegValues[reg2];
 }
 
-
 #ifdef LEGACY_BACKEND
 
 /*****************************************************************************
  *  One of the operands of this complex address mode has been spilled
  */
 
-void                rsAddrSpillOper(GenTreePtr addr)
+void rsAddrSpillOper(GenTreePtr addr)
 {
-    if  (addr)
+    if (addr)
     {
-        assert (addr->gtOper == GT_IND || addr->gtOper == GT_ARR_ELEM || addr->gtOper == GT_LEA
-                || addr->gtOper == GT_CMPXCHG);
+        assert(addr->gtOper == GT_IND || addr->gtOper == GT_ARR_ELEM || addr->gtOper == GT_LEA ||
+               addr->gtOper == GT_CMPXCHG);
 
         // GTF_SPILLED_OP2 says "both operands have been spilled"
         assert((addr->gtFlags & GTF_SPILLED_OP2) == 0);
@@ -1388,24 +1475,24 @@ void                rsAddrSpillOper(GenTreePtr addr)
     }
 }
 
-void            rsAddrUnspillOper(GenTreePtr addr)
+void rsAddrUnspillOper(GenTreePtr addr)
 {
     if (addr)
     {
-        assert (addr->gtOper == GT_IND || addr->gtOper == GT_ARR_ELEM || addr->gtOper == GT_LEA
-                || addr->gtOper == GT_CMPXCHG);
+        assert(addr->gtOper == GT_IND || addr->gtOper == GT_ARR_ELEM || addr->gtOper == GT_LEA ||
+               addr->gtOper == GT_CMPXCHG);
 
-        assert((addr->gtFlags &       GTF_SPILLED_OPER) != 0);
+        assert((addr->gtFlags & GTF_SPILLED_OPER) != 0);
 
         // Both operands spilled? */
-        if    ((addr->gtFlags &       GTF_SPILLED_OP2 ) != 0)
-            addr->gtFlags         &= ~GTF_SPILLED_OP2 ;
+        if ((addr->gtFlags & GTF_SPILLED_OP2) != 0)
+            addr->gtFlags &= ~GTF_SPILLED_OP2;
         else
-            addr->gtFlags         &= ~GTF_SPILLED_OPER;
+            addr->gtFlags &= ~GTF_SPILLED_OPER;
     }
 }
 
-void                RegSet::rsSpillRegIfUsed(regNumber reg)
+void RegSet::rsSpillRegIfUsed(regNumber reg)
 {
     if (rsMaskUsed & genRegMask(reg))
     {
@@ -1415,14 +1502,13 @@ void                RegSet::rsSpillRegIfUsed(regNumber reg)
 
 #endif // LEGACY_BACKEND
 
-
 //------------------------------------------------------------
 // rsSpillTree: Spill the tree held in 'reg'.
 //
 // Arguments:
 //   reg     -   Register of tree node that is to be spilled
 //   tree    -   GenTree node that is being spilled
-//   regIdx  -   Register index identifying the specific result 
+//   regIdx  -   Register index identifying the specific result
 //               register of a multi-reg call node. For single-reg
 //               producing tree nodes its value is zero.
 //
@@ -1435,21 +1521,19 @@ void                RegSet::rsSpillRegIfUsed(regNumber reg)
 //    caller of this method is expected to clear GTF_SPILL flag on call
 //    node after all of its registers marked for spilling are spilled.
 //
-void                RegSet::rsSpillTree(regNumber reg, 
-                                        GenTreePtr tree,
-                                        unsigned regIdx /* =0 */)
-{    
+void RegSet::rsSpillTree(regNumber reg, GenTreePtr tree, unsigned regIdx /* =0 */)
+{
     assert(tree != nullptr);
-        
+
     GenTreeCall* call = nullptr;
     var_types    treeType;
 
 #ifndef LEGACY_BACKEND
     if (tree->IsMultiRegCall())
     {
-        call = tree->AsCall();
+        call                        = tree->AsCall();
         ReturnTypeDesc* retTypeDesc = call->GetReturnTypeDesc();
-        treeType = retTypeDesc->GetReturnRegType(regIdx);
+        treeType                    = retTypeDesc->GetReturnRegType(regIdx);
     }
     else
 #endif
@@ -1457,14 +1541,14 @@ void                RegSet::rsSpillTree(regNumber reg,
         treeType = tree->TypeGet();
     }
 
-    var_types       tempType = Compiler::tmpNormalizeType(treeType);
-    regMaskTP       mask;
-    bool            floatSpill = false;
+    var_types tempType = Compiler::tmpNormalizeType(treeType);
+    regMaskTP mask;
+    bool      floatSpill = false;
 
     if (isFloatRegType(treeType))
     {
         floatSpill = true;
-        mask = genRegMaskFloat(reg, treeType);
+        mask       = genRegMaskFloat(reg, treeType);
     }
     else
     {
@@ -1475,7 +1559,7 @@ void                RegSet::rsSpillTree(regNumber reg,
 
 #ifdef LEGACY_BACKEND
     // The register we're spilling must be used but not locked
-    // or an enregistered variable. 
+    // or an enregistered variable.
 
     assert((mask & rsMaskUsed) == mask);
     assert((mask & rsMaskLock) == 0);
@@ -1504,16 +1588,15 @@ void                RegSet::rsSpillTree(regNumber reg,
     {
         assert(!varTypeIsMultiReg(tree));
         tree->gtFlags &= ~GTF_SPILL;
-    }  
+    }
 #endif // !LEGACY_BACKEND
 
 #if CPU_LONG_USES_REGPAIR
-    // Are we spilling a part of a register pair? 
-    if  (treeType == TYP_LONG)
+    // Are we spilling a part of a register pair?
+    if (treeType == TYP_LONG)
     {
         tempType = TYP_I_IMPL;
-        assert(genRegPairLo(tree->gtRegPair) == reg ||
-               genRegPairHi(tree->gtRegPair) == reg);
+        assert(genRegPairLo(tree->gtRegPair) == reg || genRegPairHi(tree->gtRegPair) == reg);
     }
     else
     {
@@ -1529,9 +1612,9 @@ void                RegSet::rsSpillTree(regNumber reg,
     SpillDsc* spill = SpillDsc::alloc(m_rsCompiler, this, tempType);
 
     // Grab a temp to store the spilled value
-    TempDsc* temp = m_rsCompiler->tmpGetTemp(tempType);
+    TempDsc* temp    = m_rsCompiler->tmpGetTemp(tempType);
     spill->spillTemp = temp;
-    tempType = temp->tdTempType();
+    tempType         = temp->tdTempType();
 
     // Remember what it is we have spilled
     spill->spillTree = tree;
@@ -1539,11 +1622,10 @@ void                RegSet::rsSpillTree(regNumber reg,
     spill->spillAddr = rsUsedAddr[reg];
 #endif // LEGACY_BACKEND
 
-#ifdef  DEBUG
-    if  (m_rsCompiler->verbose) 
+#ifdef DEBUG
+    if (m_rsCompiler->verbose)
     {
-        printf("\t\t\t\t\t\t\tThe register %s spilled with    ",
-               m_rsCompiler->compRegVarName(reg));
+        printf("\t\t\t\t\t\t\tThe register %s spilled with    ", m_rsCompiler->compRegVarName(reg));
         Compiler::printTreeID(spill->spillTree);
 #ifdef LEGACY_BACKEND
         printf("/");
@@ -1559,10 +1641,10 @@ void                RegSet::rsSpillTree(regNumber reg,
 
     // 'lastDsc' is 'spill' for simple cases, and will point to the last
     // multi-use descriptor if 'reg' is being multi-used
-    SpillDsc*  lastDsc = spill;
+    SpillDsc* lastDsc = spill;
 
 #ifdef LEGACY_BACKEND
-    if  ((rsMaskMult & mask) == 0)
+    if ((rsMaskMult & mask) == 0)
     {
         spill->spillMoreMultis = false;
     }
@@ -1585,14 +1667,14 @@ void                RegSet::rsSpillTree(regNumber reg,
             // Is this multi-use part of a complex address mode?
             rsAddrSpillOper(nextDsc->spillAddr);
 
-            // Mark the tree node as having been spilled 
+            // Mark the tree node as having been spilled
             rsMarkSpill(nextDsc->spillTree, reg);
 
             // lastDsc points to the last of the multi-spill descrs for 'reg'
             nextDsc->spillTemp = temp;
 
-#ifdef  DEBUG
-            if  (m_rsCompiler->verbose) 
+#ifdef DEBUG
+            if (m_rsCompiler->verbose)
             {
                 printf(", ");
                 Compiler::printTreeID(nextDsc->spillTree);
@@ -1602,30 +1684,32 @@ void                RegSet::rsSpillTree(regNumber reg,
 #endif
 
             lastDsc->spillNext = nextDsc;
-            lastDsc = nextDsc;
+            lastDsc            = nextDsc;
 
             nextDsc = nextDsc->spillNext;
-        }
-        while (lastDsc->spillMoreMultis);
+        } while (lastDsc->spillMoreMultis);
 
         rsMultiDesc[reg] = nextDsc;
 
         // 'reg' is no longer considered to be multi-used. We will set this
-        // mask again when this value gets unspilled 
+        // mask again when this value gets unspilled
         rsMaskMult &= ~mask;
     }
 #endif // LEGACY_BACKEND
 
     // Insert the spill descriptor(s) in the list
     lastDsc->spillNext = rsSpillDesc[reg];
-                         rsSpillDesc[reg] = spill;
+    rsSpillDesc[reg]   = spill;
 
-#ifdef  DEBUG
-    if  (m_rsCompiler->verbose)     printf("\n");
+#ifdef DEBUG
+    if (m_rsCompiler->verbose)
+    {
+        printf("\n");
+    }
 #endif
 
     // Generate the code to spill the register
-    var_types  storeType = floatSpill ? treeType : tempType;
+    var_types storeType = floatSpill ? treeType : tempType;
 
     m_rsCompiler->codeGen->spillReg(storeType, temp, reg);
 
@@ -1643,7 +1727,7 @@ void                RegSet::rsSpillTree(regNumber reg,
         regFlags |= GTF_SPILLED;
         call->SetRegSpillFlagByIdx(regFlags, regIdx);
     }
-#endif //!LEGACY_BACKEND
+#endif //! LEGACY_BACKEND
 }
 
 #if defined(_TARGET_X86_) && !FEATURE_STACK_FP_X87
@@ -1651,11 +1735,11 @@ void                RegSet::rsSpillTree(regNumber reg,
 *
 *  Spill the top of the FP x87 stack.
 */
-void               RegSet::rsSpillFPStack(GenTreePtr tree)
+void RegSet::rsSpillFPStack(GenTreePtr tree)
 {
-    SpillDsc   *    spill;
-    TempDsc    *    temp;
-    var_types       treeType = tree->TypeGet();
+    SpillDsc* spill;
+    TempDsc*  temp;
+    var_types treeType = tree->TypeGet();
 
     assert(tree->OperGet() == GT_CALL);
     spill = SpillDsc::alloc(m_rsCompiler, this, treeType);
@@ -1666,28 +1750,25 @@ void               RegSet::rsSpillFPStack(GenTreePtr tree)
 
     /* Remember what it is we have spilled */
 
-    spill->spillTree = tree;
-    SpillDsc *  lastDsc = spill;
+    spill->spillTree  = tree;
+    SpillDsc* lastDsc = spill;
 
-    regNumber reg = tree->gtRegNum;
+    regNumber reg      = tree->gtRegNum;
     lastDsc->spillNext = rsSpillDesc[reg];
-    rsSpillDesc[reg] = spill;
+    rsSpillDesc[reg]   = spill;
 
-#ifdef  DEBUG
-    if  (m_rsCompiler->verbose)     printf("\n");
+#ifdef DEBUG
+    if (m_rsCompiler->verbose)
+        printf("\n");
 #endif
     // m_rsCompiler->codeGen->inst_FS_ST(INS_fstp, emitActualTypeSize(treeType), temp, 0);
-    m_rsCompiler->codeGen->getEmitter()->emitIns_S(INS_fstp,
-                          emitActualTypeSize(treeType),
-                          temp->tdTempNum(),
-                          0);
+    m_rsCompiler->codeGen->getEmitter()->emitIns_S(INS_fstp, emitActualTypeSize(treeType), temp->tdTempNum(), 0);
 
     /* Mark the tree node as having been spilled */
 
     rsMarkSpill(tree, reg);
 }
 #endif // defined(_TARGET_X86_) && !FEATURE_STACK_FP_X87
-
 
 #ifdef LEGACY_BACKEND
 
@@ -1696,10 +1777,10 @@ void               RegSet::rsSpillFPStack(GenTreePtr tree)
  *  Spill the given register (which we assume to be currently marked as used).
  */
 
-void                RegSet::rsSpillReg(regNumber reg)
+void RegSet::rsSpillReg(regNumber reg)
 {
     /* We must know the value in the register that we are spilling */
-    GenTreePtr      tree = rsUsedTree[reg];
+    GenTreePtr tree = rsUsedTree[reg];
 
 #ifdef _TARGET_ARM_
     if (tree == NULL && genIsValidFloatReg(reg) && !genIsValidDoubleReg(reg))
@@ -1723,7 +1804,7 @@ void                RegSet::rsSpillReg(regNumber reg)
  *  Spill all registers in 'regMask' that are currently marked as used.
  */
 
-void                RegSet::rsSpillRegs(regMaskTP regMask)
+void RegSet::rsSpillRegs(regMaskTP regMask)
 {
     /* The registers we're spilling must not be locked,
        or enregistered variables */
@@ -1733,20 +1814,21 @@ void                RegSet::rsSpillRegs(regMaskTP regMask)
 
     /* Only spill what's currently marked as used */
 
-    regMask &= rsMaskUsed; assert(regMask);
+    regMask &= rsMaskUsed;
+    assert(regMask);
 
-    regNumber   regNum;
-    regMaskTP   regBit;
+    regNumber regNum;
+    regMaskTP regBit;
 
     for (regNum = REG_FIRST, regBit = 1; regNum < REG_COUNT; regNum = REG_NEXT(regNum), regBit <<= 1)
     {
-        if  (regMask & regBit)
+        if (regMask & regBit)
         {
             rsSpillReg(regNum);
 
             regMask &= rsMaskUsed;
 
-            if  (!regMask)
+            if (!regMask)
                 break;
         }
     }
@@ -1758,10 +1840,10 @@ void                RegSet::rsSpillRegs(regMaskTP regMask)
  *  for internal tree temps to live in
  */
 
-extern const regNumber  raRegTmpOrder[]   = { REG_TMP_ORDER };
-extern const regNumber  rpRegTmpOrder[]   = { REG_PREDICT_ORDER };
+extern const regNumber raRegTmpOrder[] = {REG_TMP_ORDER};
+extern const regNumber rpRegTmpOrder[] = {REG_PREDICT_ORDER};
 #if FEATURE_FP_REGALLOC
-extern const regNumber  raRegFltTmpOrder[]   = { REG_FLT_TMP_ORDER };
+extern const regNumber raRegFltTmpOrder[] = {REG_FLT_TMP_ORDER};
 #endif
 
 /*****************************************************************************
@@ -1770,24 +1852,23 @@ extern const regNumber  raRegFltTmpOrder[]   = { REG_FLT_TMP_ORDER };
  *  if no registers are in the set return REG_STK.
  */
 
-regNumber           RegSet::rsPickRegInTmpOrder(regMaskTP regMask)
+regNumber RegSet::rsPickRegInTmpOrder(regMaskTP regMask)
 {
     if (regMask == RBM_NONE)
         return REG_STK;
 
-    bool       firstPass = true;
-    regMaskTP  avoidMask = ~rsGetModifiedRegsMask() & RBM_CALLEE_SAVED;  // We want to avoid using any new callee saved register
+    bool      firstPass = true;
+    regMaskTP avoidMask =
+        ~rsGetModifiedRegsMask() & RBM_CALLEE_SAVED; // We want to avoid using any new callee saved register
 
     while (true)
     {
         /* Iterate the registers in the order specified by raRegTmpOrder */
 
-        for (unsigned index = 0;
-             index < REG_TMP_ORDER_COUNT;
-             index++)
+        for (unsigned index = 0; index < REG_TMP_ORDER_COUNT; index++)
         {
-            regNumber  candidateReg  = raRegTmpOrder[index];
-            regMaskTP  candidateMask = genRegMask(candidateReg);
+            regNumber candidateReg  = raRegTmpOrder[index];
+            regMaskTP candidateMask = genRegMask(candidateReg);
 
             // For a FP base frame, don't use FP register.
             if (m_rsCompiler->codeGen->isFramePointerUsed() && (candidateMask == RBM_FPBASE))
@@ -1802,7 +1883,7 @@ regNumber           RegSet::rsPickRegInTmpOrder(regMaskTP regMask)
         }
 
         if (firstPass == true)
-            firstPass = false;  // OK, now we are willing to select a never used register
+            firstPass = false; // OK, now we are willing to select a never used register
         else
             break;
     }
@@ -1820,11 +1901,11 @@ regNumber           RegSet::rsPickRegInTmpOrder(regMaskTP regMask)
  *  rsModifiedRegsMask is modified to include the returned register.
  */
 
-regNumber           RegSet::rsGrabReg(regMaskTP regMask)
+regNumber RegSet::rsGrabReg(regMaskTP regMask)
 {
-    regMaskTP   OKmask;
-    regNumber   regNum;
-    regMaskTP   regBit;
+    regMaskTP OKmask;
+    regNumber regNum;
+    regMaskTP regBit;
 
     assert(regMask);
     regMask &= ~rsMaskLock;
@@ -1835,7 +1916,8 @@ regNumber           RegSet::rsGrabReg(regMaskTP regMask)
     OKmask = regMask & rsRegMaskFree();
 
     regNum = rsPickRegInTmpOrder(OKmask);
-    if (REG_STK != regNum) { 
+    if (REG_STK != regNum)
+    {
         goto RET;
     }
 
@@ -1844,11 +1926,10 @@ regNumber           RegSet::rsGrabReg(regMaskTP regMask)
     OKmask = regMask & rsRegMaskCanGrab();
     assert(OKmask);
 
-    for (regNum = REG_FIRST, regBit = 1; 
-        (regBit & OKmask) == 0; 
-        regNum = REG_NEXT(regNum), regBit <<= 1)
+    for (regNum = REG_FIRST, regBit = 1; (regBit & OKmask) == 0; regNum = REG_NEXT(regNum), regBit <<= 1)
     {
-        if (regNum >= REG_COUNT) {
+        if (regNum >= REG_COUNT)
+        {
             assert(!"no register to grab!");
             NO_WAY("Could not grab a register, Predictor should have prevented this!");
         }
@@ -1863,9 +1944,8 @@ regNumber           RegSet::rsGrabReg(regMaskTP regMask)
 RET:
     /* Keep track of which registers we ever touch */
     rsSetRegsModified(genRegMask(regNum));
-    return  regNum;
+    return regNum;
 }
-
 
 /*****************************************************************************
  *  Find a register to use and return it, spilling if necessary.
@@ -1889,50 +1969,49 @@ RET:
  *  rsModifiedRegsMask is modified to include the returned register.
  */
 
-regNumber           RegSet::rsPickReg(regMaskTP regMask,
-                                      regMaskTP regBest)
+regNumber RegSet::rsPickReg(regMaskTP regMask, regMaskTP regBest)
 {
-    regNumber   regNum;
-    regMaskTP   spillMask;
-    regMaskTP   canGrabMask;
+    regNumber regNum;
+    regMaskTP spillMask;
+    regMaskTP canGrabMask;
 
 #ifdef DEBUG
-    if (rsStressRegs() >= 1 )
+    if (rsStressRegs() >= 1)
     {
         /* 'regMask' is purely a recommendation, and callers should be
            able to handle the case where it is not satisfied.
            The logic here tries to return ~regMask to check that all callers
            are prepared to handle such a case */
 
-        regMaskTP   badRegs = rsMaskMult & rsRegMaskCanGrab();
+        regMaskTP badRegs = rsMaskMult & rsRegMaskCanGrab();
 
         badRegs = rsUseIfZero(badRegs, rsMaskUsed & rsRegMaskCanGrab());
         badRegs = rsUseIfZero(badRegs, rsRegMaskCanGrab());
         badRegs = rsExcludeHint(badRegs, regMask);
 
         assert(badRegs != RBM_NONE);
-        
+
         return rsGrabReg(badRegs);
     }
-    
+
 #endif
 
-    regMaskTP   freeMask = rsRegMaskFree();
+    regMaskTP freeMask = rsRegMaskFree();
 
 AGAIN:
 
     /* By default we'd prefer to accept all available registers */
 
-    regMaskTP       OKmask = freeMask;
+    regMaskTP OKmask = freeMask;
 
     // OKmask = rsNarrowHint(OKmask, rsUselessRegs());
 
     /* Is there a 'best' register set? */
 
-    if  (regBest)
+    if (regBest)
     {
         OKmask &= regBest;
-        if  (OKmask)
+        if (OKmask)
             goto TRY_REG;
         else
             goto TRY_ALL;
@@ -1940,10 +2019,10 @@ AGAIN:
 
     /* Was a register set recommended by the caller? */
 
-    if  (regMask)
+    if (regMask)
     {
         OKmask &= regMask;
-        if  (!OKmask)
+        if (!OKmask)
             goto TRY_ALL;
     }
 
@@ -1952,7 +2031,8 @@ TRY_REG:
     /* Iterate the registers in the order specified by raRegTmpOrder */
 
     regNum = rsPickRegInTmpOrder(OKmask);
-    if (REG_STK != regNum) { 
+    if (REG_STK != regNum)
+    {
         goto RET;
     }
 
@@ -1960,7 +2040,7 @@ TRY_ALL:
 
     /* Were we considering 'regBest' ? */
 
-    if  (regBest)
+    if (regBest)
     {
         /* 'regBest' is no good -- ignore it and try 'regMask' instead */
 
@@ -1972,7 +2052,7 @@ TRY_ALL:
 
     /* Were we limited in our consideration? */
 
-    if  (!regMask)
+    if (!regMask)
     {
         /* We need to spill one of the free registers */
 
@@ -1982,7 +2062,7 @@ TRY_ALL:
     {
         /* Did we not consider all free registers? */
 
-        if  ((regMask & freeMask) != freeMask)
+        if ((regMask & freeMask) != freeMask)
         {
             /* The recommended regset didn't work, so try all available regs */
 
@@ -1999,19 +2079,19 @@ TRY_ALL:
     /* Make sure we can spill some register. */
 
     canGrabMask = rsRegMaskCanGrab();
-    if  ((spillMask & canGrabMask) == 0)
+    if ((spillMask & canGrabMask) == 0)
         spillMask = canGrabMask;
 
     assert(spillMask);
 
     /* We have no choice but to spill one of the regs */
 
-    return  rsGrabReg(spillMask);
+    return rsGrabReg(spillMask);
 
 RET:
 
     rsSetRegsModified(genRegMask(regNum));
-    return  regNum;
+    return regNum;
 }
 
 #endif // LEGACY_BACKEND
@@ -2022,9 +2102,7 @@ RET:
  *  spill descriptor while we're at it). Returns the temp (i.e. local var)
  */
 
-TempDsc *    RegSet::rsGetSpillTempWord(regNumber   reg,
-                                        SpillDsc*   dsc,
-                                        SpillDsc*   prevDsc)
+TempDsc* RegSet::rsGetSpillTempWord(regNumber reg, SpillDsc* dsc, SpillDsc* prevDsc)
 {
     assert((prevDsc == nullptr) || (prevDsc->spillNext == dsc));
 
@@ -2041,7 +2119,7 @@ TempDsc *    RegSet::rsGetSpillTempWord(regNumber   reg,
 
     /* Remember which temp the value is in */
 
-    TempDsc    *   temp = dsc->spillTemp;
+    TempDsc* temp = dsc->spillTemp;
 
     SpillDsc::freeDsc(this, dsc);
 
@@ -2063,24 +2141,21 @@ TempDsc *    RegSet::rsGetSpillTempWord(regNumber   reg,
  *      again as needed.
  */
 
-regNumber           RegSet::rsUnspillOneReg(GenTreePtr    tree,
-                                            regNumber     oldReg,
-                                            KeepReg       willKeepNewReg,
-                                            regMaskTP     needReg)
+regNumber RegSet::rsUnspillOneReg(GenTreePtr tree, regNumber oldReg, KeepReg willKeepNewReg, regMaskTP needReg)
 {
     /* Was oldReg multi-used when it was spilled? */
 
-    SpillDsc *  prevDsc, * multiDsc;
-    SpillDsc *  spillDsc = rsGetSpillInfo(tree, oldReg, &prevDsc, &multiDsc);
+    SpillDsc *prevDsc, *multiDsc;
+    SpillDsc* spillDsc = rsGetSpillInfo(tree, oldReg, &prevDsc, &multiDsc);
     noway_assert((spillDsc != NULL) && (multiDsc != NULL));
 
-    bool        multiUsed       = multiDsc->spillMoreMultis;
+    bool multiUsed = multiDsc->spillMoreMultis;
 
     /* We will use multiDsc to walk the rest of the spill list (if it's
        multiUsed). As we're going to remove spillDsc from the multiDsc
-       list in the rsGetSpillTempWord() call we have to take care of the 
+       list in the rsGetSpillTempWord() call we have to take care of the
        case where multiDsc==spillDsc. We will set multiDsc as spillDsc->spillNext */
-    if (multiUsed && multiDsc==spillDsc)
+    if (multiUsed && multiDsc == spillDsc)
     {
         assert(spillDsc->spillNext);
         multiDsc = spillDsc->spillNext;
@@ -2088,20 +2163,20 @@ regNumber           RegSet::rsUnspillOneReg(GenTreePtr    tree,
 
     /* Get the temp and free the spill-descriptor */
 
-    TempDsc  *  temp = rsGetSpillTempWord(oldReg, spillDsc, prevDsc);
+    TempDsc* temp = rsGetSpillTempWord(oldReg, spillDsc, prevDsc);
 
     //  Pick a new home for the value:
     //    This must be a register matching the 'needReg' mask, if it is non-zero.
     //    Additionally, if 'oldReg' is in 'needMask' and it is free we will select oldReg.
     //    Also note that the rsGrabReg() call below may cause the chosen register to be spilled.
     //
-    regMaskTP   prefMask;
-    regMaskTP   freeMask;
-    regNumber   newReg;
-    var_types   regType;
-    var_types   loadType;
+    regMaskTP prefMask;
+    regMaskTP freeMask;
+    regNumber newReg;
+    var_types regType;
+    var_types loadType;
 
-    bool        floatUnspill = false;
+    bool floatUnspill = false;
 
 #if FEATURE_FP_REGALLOC
     floatUnspill = genIsValidFloatReg(oldReg);
@@ -2113,9 +2188,9 @@ regNumber           RegSet::rsUnspillOneReg(GenTreePtr    tree,
             regType = TYP_DOUBLE;
         else
             regType = TYP_FLOAT;
-        loadType = regType;
-        prefMask = genRegMaskFloat(oldReg, regType);
-        freeMask = RegFreeFloat();
+        loadType    = regType;
+        prefMask    = genRegMaskFloat(oldReg, regType);
+        freeMask    = RegFreeFloat();
     }
     else
     {
@@ -2125,8 +2200,7 @@ regNumber           RegSet::rsUnspillOneReg(GenTreePtr    tree,
         freeMask = rsRegMaskFree();
     }
 
-    if ( (((prefMask & needReg)  != 0) || (needReg == 0)) &&
-          ((prefMask & freeMask) != 0)                       )
+    if ((((prefMask & needReg) != 0) || (needReg == 0)) && ((prefMask & freeMask) != 0))
     {
         needReg = prefMask;
     }
@@ -2159,7 +2233,7 @@ regNumber           RegSet::rsUnspillOneReg(GenTreePtr    tree,
            since someone up the call chain may have a different idea about
            what registers are used to form the complex address mode (the
            addrReg return value from genMakeAddressable).
-         
+
            Also, it is not safe to unspill all the multi-uses with a TYP_LONG.
 
            Finally, it is not safe to unspill into a different register, because
@@ -2170,11 +2244,9 @@ regNumber           RegSet::rsUnspillOneReg(GenTreePtr    tree,
            in rsMarkRegFree via genDoneAddressable.
          */
 
-        for (SpillDsc * dsc = multiDsc; /**/; dsc = dsc->spillNext)
+        for (SpillDsc* dsc = multiDsc; /**/; dsc = dsc->spillNext)
         {
-            if ((oldReg != newReg) ||
-                (dsc->spillAddr != NULL) ||
-                (dsc->spillTree->gtType == TYP_LONG))
+            if ((oldReg != newReg) || (dsc->spillAddr != NULL) || (dsc->spillTree->gtType == TYP_LONG))
             {
                 return newReg;
             }
@@ -2187,24 +2259,23 @@ regNumber           RegSet::rsUnspillOneReg(GenTreePtr    tree,
             }
         }
 
-        
-        bool bFound=false;
+        bool       bFound = false;
         SpillDsc*  pDsc;
         SpillDsc** ppPrev;
 
-        for (pDsc=rsSpillDesc[oldReg], ppPrev=&rsSpillDesc[oldReg] ; ; pDsc=pDsc->spillNext)
+        for (pDsc = rsSpillDesc[oldReg], ppPrev = &rsSpillDesc[oldReg];; pDsc = pDsc->spillNext)
         {
-            if (pDsc==multiDsc)
+            if (pDsc == multiDsc)
             {
                 // We've found the sequence we were searching for
-                bFound=true;
+                bFound = true;
             }
 
             if (bFound)
-            {   
+            {
                 rsAddrUnspillOper(pDsc->spillAddr);
 
-                // Mark the tree node as having been unspilled into newReg 
+                // Mark the tree node as having been unspilled into newReg
                 rsMarkUnspill(pDsc->spillTree, newReg);
             }
 
@@ -2215,14 +2286,14 @@ regNumber           RegSet::rsUnspillOneReg(GenTreePtr    tree,
                     // End of sequence
 
                     // We link remaining sides of list
-                    *ppPrev=pDsc->spillNext;
+                    *ppPrev = pDsc->spillNext;
 
                     // Exit walk
                     break;
                 }
                 else
                 {
-                    ppPrev=&(pDsc->spillNext);
+                    ppPrev = &(pDsc->spillNext);
                 }
             }
         }
@@ -2230,8 +2301,8 @@ regNumber           RegSet::rsUnspillOneReg(GenTreePtr    tree,
         /* pDsc points to the last multi-used descriptor from the spill-list
            for the current value (pDsc->spillMoreMultis == false) */
 
-        pDsc->spillNext = rsMultiDesc[newReg];
-                          rsMultiDesc[newReg] = multiDsc;
+        pDsc->spillNext     = rsMultiDesc[newReg];
+        rsMultiDesc[newReg] = multiDsc;
 
         if (floatUnspill)
             rsMaskMult |= genRegMaskFloat(newReg, regType);
@@ -2260,19 +2331,17 @@ regNumber           RegSet::rsUnspillOneReg(GenTreePtr    tree,
 //
 //  Assumptions:
 //  1. It is the responsibility of the caller to free the spill temp.
-//  2. RyuJIT backend specific: In case of multi-reg call node 
+//  2. RyuJIT backend specific: In case of multi-reg call node
 //     GTF_SPILLED flag associated with reg is cleared.  It is the
 //     responsibility of caller to clear GTF_SPILLED flag on call node
 //     itself after ensuring there are no outstanding regs in GTF_SPILLED
 //     state.
 //
-TempDsc*     RegSet::rsUnspillInPlace(GenTreePtr tree, 
-                                      regNumber  oldReg,
-                                      unsigned   regIdx /* =0 */)
+TempDsc* RegSet::rsUnspillInPlace(GenTreePtr tree, regNumber oldReg, unsigned regIdx /* =0 */)
 {
     assert(!isRegPairType(tree->gtType));
 
-    // Get the tree's SpillDsc  
+    // Get the tree's SpillDsc
     SpillDsc* prevDsc;
     SpillDsc* spillDsc = rsGetSpillInfo(tree, oldReg, &prevDsc);
     PREFIX_ASSUME(spillDsc != nullptr);
@@ -2283,8 +2352,8 @@ TempDsc*     RegSet::rsUnspillInPlace(GenTreePtr tree,
     // The value is now unspilled
     if (tree->IsMultiRegCall())
     {
-        GenTreeCall* call = tree->AsCall();
-        unsigned flags = call->GetRegSpillFlagByIdx(regIdx);
+        GenTreeCall* call  = tree->AsCall();
+        unsigned     flags = call->GetRegSpillFlagByIdx(regIdx);
         flags &= ~GTF_SPILLED;
         call->SetRegSpillFlagByIdx(flags, regIdx);
     }
@@ -2293,8 +2362,8 @@ TempDsc*     RegSet::rsUnspillInPlace(GenTreePtr tree,
         tree->gtFlags &= ~GTF_SPILLED;
     }
 
-#ifdef  DEBUG
-    if  (m_rsCompiler->verbose) 
+#ifdef DEBUG
+    if (m_rsCompiler->verbose)
     {
         printf("\t\t\t\t\t\t\tTree-Node marked unspilled from  ");
         Compiler::printTreeID(tree);
@@ -2314,27 +2383,25 @@ TempDsc*     RegSet::rsUnspillInPlace(GenTreePtr tree,
  *  is set to KEEP_REG, we'll mark the new register as used.
  */
 
-void                RegSet::rsUnspillReg(GenTreePtr tree, 
-                                         regMaskTP  needReg,
-                                         KeepReg    keepReg)
+void RegSet::rsUnspillReg(GenTreePtr tree, regMaskTP needReg, KeepReg keepReg)
 {
     assert(!isRegPairType(tree->gtType)); // use rsUnspillRegPair()
-    regNumber   oldReg = tree->gtRegNum;
+    regNumber oldReg = tree->gtRegNum;
 
     /* Get the SpillDsc for the tree */
 
-    SpillDsc * spillDsc = rsGetSpillInfo(tree, oldReg);
+    SpillDsc* spillDsc = rsGetSpillInfo(tree, oldReg);
     PREFIX_ASSUME(spillDsc != NULL);
 
     /* Before spillDsc is stomped on by rsUnspillOneReg(), note whether
      * the reg was part of an address mode
      */
 
-    GenTreePtr  unspillAddr = spillDsc->spillAddr;
+    GenTreePtr unspillAddr = spillDsc->spillAddr;
 
     /* Pick a new home for the value */
 
-    regNumber   newReg = rsUnspillOneReg(tree, oldReg, keepReg, needReg);
+    regNumber newReg = rsUnspillOneReg(tree, oldReg, keepReg, needReg);
 
     /* Mark the tree node as having been unspilled into newReg */
 
@@ -2345,8 +2412,8 @@ void                RegSet::rsUnspillReg(GenTreePtr tree,
 
     rsAddrUnspillOper(unspillAddr);
 
-#ifdef  DEBUG
-    if  (m_rsCompiler->verbose)
+#ifdef DEBUG
+    if (m_rsCompiler->verbose)
     {
         printf("\t\t\t\t\t\t\tThe register %s unspilled from  ", m_rsCompiler->compRegVarName(newReg));
         Compiler::printTreeID(tree);
@@ -2356,28 +2423,28 @@ void                RegSet::rsUnspillReg(GenTreePtr tree,
 
     /* Mark the new value as used, if the caller desires so */
 
-    if  (keepReg == KEEP_REG)
+    if (keepReg == KEEP_REG)
         rsMarkRegUsed(tree, unspillAddr);
 }
 #endif // LEGACY_BACKEND
 
-void                RegSet::rsMarkSpill(GenTreePtr tree, regNumber reg)
+void RegSet::rsMarkSpill(GenTreePtr tree, regNumber reg)
 {
-    tree->gtFlags  &= ~GTF_REG_VAL;
-    tree->gtFlags  |=  GTF_SPILLED;
+    tree->gtFlags &= ~GTF_REG_VAL;
+    tree->gtFlags |= GTF_SPILLED;
 }
 
 #ifdef LEGACY_BACKEND
 
-void                RegSet::rsMarkUnspill(GenTreePtr tree, regNumber reg)
+void RegSet::rsMarkUnspill(GenTreePtr tree, regNumber reg)
 {
 #ifndef _TARGET_AMD64_
     assert(tree->gtType != TYP_LONG);
 #endif // _TARGET_AMD64_
 
-    tree->gtFlags  |=  GTF_REG_VAL;
-    tree->gtFlags  &= ~GTF_SPILLED;
-    tree->gtRegNum  = reg;
+    tree->gtFlags |= GTF_REG_VAL;
+    tree->gtFlags &= ~GTF_SPILLED;
+    tree->gtRegNum = reg;
 }
 
 /*****************************************************************************
@@ -2386,12 +2453,12 @@ void                RegSet::rsMarkUnspill(GenTreePtr tree, regNumber reg)
  *  given set will be considered).
  */
 
-regPairNo           RegSet::rsGrabRegPair(regMaskTP regMask)
+regPairNo RegSet::rsGrabRegPair(regMaskTP regMask)
 {
-    regPairNo       regPair;
-    regMaskTP       OKmask;
-    regNumber       reg1;
-    regNumber       reg2;
+    regPairNo regPair;
+    regMaskTP OKmask;
+    regNumber reg1;
+    regNumber reg2;
 
     assert(regMask);
     regMask &= ~rsMaskLock;
@@ -2404,7 +2471,7 @@ regPairNo           RegSet::rsGrabRegPair(regMaskTP regMask)
     /* Any takers in the recommended/free set? */
 
     regPair = rsFindRegPairNo(OKmask);
-    
+
     if (regPair != REG_PAIR_NONE)
     {
         // The normal early exit
@@ -2417,7 +2484,7 @@ regPairNo           RegSet::rsGrabRegPair(regMaskTP regMask)
 
     /* We have no choice but to spill one or two used regs */
 
-    if  (OKmask)
+    if (OKmask)
     {
         /* One (and only one) register is free and acceptable - grab it */
 
@@ -2425,7 +2492,7 @@ regPairNo           RegSet::rsGrabRegPair(regMaskTP regMask)
 
         for (reg1 = REG_INT_FIRST; reg1 <= REG_INT_LAST; reg1 = REG_NEXT(reg1))
         {
-            if  (OKmask & genRegMask(reg1))
+            if (OKmask & genRegMask(reg1))
                 break;
         }
         assert(OKmask & genRegMask(reg1));
@@ -2451,12 +2518,12 @@ regPairNo           RegSet::rsGrabRegPair(regMaskTP regMask)
 
     /* Convert the two register numbers into a pair */
 
-     if  (reg1 < reg2)
+    if (reg1 < reg2)
         regPair = gen2regs2pair(reg1, reg2);
-     else
+    else
         regPair = gen2regs2pair(reg2, reg1);
 
-     return  regPair;
+    return regPair;
 }
 
 /*****************************************************************************
@@ -2465,18 +2532,18 @@ regPairNo           RegSet::rsGrabRegPair(regMaskTP regMask)
  *  currently available registers (if 'regMask' is zero).
  */
 
-regPairNo           RegSet::rsPickRegPair(regMaskTP regMask)
+regPairNo RegSet::rsPickRegPair(regMaskTP regMask)
 {
-    regMaskTP       OKmask;
-    regPairNo       regPair;
+    regMaskTP OKmask;
+    regPairNo regPair;
 
-    int             repeat = 0;
+    int repeat = 0;
 
     /* By default we'd prefer to accept all available registers */
 
     OKmask = rsRegMaskFree();
 
-    if  (regMask)
+    if (regMask)
     {
         /* A register set was recommended by the caller */
 
@@ -2486,10 +2553,10 @@ regPairNo           RegSet::rsPickRegPair(regMaskTP regMask)
 AGAIN:
 
     regPair = rsFindRegPairNo(OKmask);
-    
+
     if (regPair != REG_PAIR_NONE)
     {
-        return regPair;         // Normal early exit
+        return regPair; // Normal early exit
     }
 
     regMaskTP freeMask;
@@ -2501,7 +2568,7 @@ AGAIN:
 
     /* Were we limited in our consideration? */
 
-    if  (!regMask)
+    if (!regMask)
     {
         /* We need to spill two of the free registers */
 
@@ -2511,7 +2578,7 @@ AGAIN:
     {
         /* Did we not consider all free registers? */
 
-        if  ((regMask & freeMask) != freeMask && repeat == 0)
+        if ((regMask & freeMask) != freeMask && repeat == 0)
         {
             /* The recommended regset didn't work, so try all available regs */
 
@@ -2534,9 +2601,8 @@ AGAIN:
 
     /* We have no choice but to spill 1/2 of the regs */
 
-    return  rsGrabRegPair(spillMask);
+    return rsGrabRegPair(spillMask);
 }
-
 
 /*****************************************************************************
  *
@@ -2547,23 +2613,21 @@ AGAIN:
  *  any spillage, of course).
  */
 
-void                RegSet::rsUnspillRegPair(GenTreePtr tree, 
-                                             regMaskTP  needReg,
-                                             KeepReg    keepReg)
+void RegSet::rsUnspillRegPair(GenTreePtr tree, regMaskTP needReg, KeepReg keepReg)
 {
     assert(isRegPairType(tree->gtType));
 
-    regPairNo       regPair = tree->gtRegPair;
-    regNumber       regLo   = genRegPairLo(regPair);
-    regNumber       regHi   = genRegPairHi(regPair);
+    regPairNo regPair = tree->gtRegPair;
+    regNumber regLo   = genRegPairLo(regPair);
+    regNumber regHi   = genRegPairHi(regPair);
 
     /* Has the register holding the lower half been spilled? */
 
-    if  (!rsIsTreeInReg(regLo, tree))
+    if (!rsIsTreeInReg(regLo, tree))
     {
         /* Is the upper half already in the right place? */
 
-        if  (rsIsTreeInReg(regHi, tree))
+        if (rsIsTreeInReg(regHi, tree))
         {
             /* Temporarily lock the high part */
 
@@ -2594,40 +2658,40 @@ void                RegSet::rsUnspillRegPair(GenTreePtr tree,
     if (regHi != REG_STK)
     {
         /* Has the register holding the upper half been spilled? */
-        
-        if  (!rsIsTreeInReg(regHi, tree))
+
+        if (!rsIsTreeInReg(regHi, tree))
         {
-            regMaskTP   regLoUsed;
-            
+            regMaskTP regLoUsed;
+
             /* Temporarily lock the low part so it doesnt get spilled */
-            
+
             rsLockReg(genRegMask(regLo), &regLoUsed);
-            
+
             /* Pick a new home for the upper half */
-            
+
             regHi = rsUnspillOneReg(tree, regHi, keepReg, needReg);
-            
+
             /* We can unlock the low register now */
-            
+
             rsUnlockReg(genRegMask(regLo), regLoUsed);
         }
         else
         {
             /* Free the register holding the upper half */
-            
+
             rsMarkRegFree(genRegMask(regHi));
         }
     }
 
     /* The value is now residing in the new register */
 
-    tree->gtFlags    |=  GTF_REG_VAL;
-    tree->gtFlags    &= ~GTF_SPILLED;
-    tree->gtRegPair   = gen2regs2pair(regLo, regHi);
+    tree->gtFlags |= GTF_REG_VAL;
+    tree->gtFlags &= ~GTF_SPILLED;
+    tree->gtRegPair = gen2regs2pair(regLo, regHi);
 
     /* Mark the new value as used, if the caller desires so */
 
-    if  (keepReg == KEEP_REG)
+    if (keepReg == KEEP_REG)
         rsMarkRegPairUsed(tree);
 }
 
@@ -2642,18 +2706,18 @@ void                RegSet::rsUnspillRegPair(GenTreePtr tree,
  *  appear unused.
  */
 
-void                RegSet::rsRecMultiReg(regNumber reg,  var_types  type)
+void RegSet::rsRecMultiReg(regNumber reg, var_types type)
 {
-    SpillDsc   *   spill;
-    regMaskTP      regMask;
+    SpillDsc* spill;
+    regMaskTP regMask;
 
     if (genIsValidFloatReg(reg) && isFloatRegType(type))
         regMask = genRegMaskFloat(reg, type);
     else
         regMask = genRegMask(reg);
 
-#ifdef  DEBUG
-    if  (m_rsCompiler->verbose)
+#ifdef DEBUG
+    if (m_rsCompiler->verbose)
     {
         printf("\t\t\t\t\t\t\tRegister %s multi-use inc for   ", m_rsCompiler->compRegVarName(reg));
         Compiler::printTreeID(rsUsedTree[reg]);
@@ -2673,17 +2737,19 @@ void                RegSet::rsRecMultiReg(regNumber reg,  var_types  type)
 
     /* Record the current 'use' info in the spill descriptor */
 
-    spill->spillTree = rsUsedTree[reg]; rsUsedTree[reg] = 0;
-    spill->spillAddr = rsUsedAddr[reg]; rsUsedAddr[reg] = 0;
+    spill->spillTree = rsUsedTree[reg];
+    rsUsedTree[reg]  = 0;
+    spill->spillAddr = rsUsedAddr[reg];
+    rsUsedAddr[reg]  = 0;
 
     /* Remember whether the register is already 'multi-use' */
 
     spill->spillMoreMultis = ((rsMaskMult & regMask) != 0);
-    
+
     /* Insert the new multi-use record in the list for the register */
 
     spill->spillNext = rsMultiDesc[reg];
-                       rsMultiDesc[reg] = spill;
+    rsMultiDesc[reg] = spill;
 
     /* This register is now 'multi-use' */
 
@@ -2695,14 +2761,14 @@ void                RegSet::rsRecMultiReg(regNumber reg,  var_types  type)
  *  Free the given register, which is known to have multiple uses.
  */
 
-var_types           RegSet::rsRmvMultiReg(regNumber reg)
+var_types RegSet::rsRmvMultiReg(regNumber reg)
 {
-    SpillDsc   *   dsc;
+    SpillDsc* dsc;
 
     assert(rsMaskMult & genRegMask(reg));
 
-#ifdef  DEBUG
-    if  (m_rsCompiler->verbose)
+#ifdef DEBUG
+    if (m_rsCompiler->verbose)
     {
         printf("\t\t\t\t\t\t\tRegister %s multi-use dec for   ", m_rsCompiler->compRegVarName(reg));
         Compiler::printTreeID(rsUsedTree[reg]);
@@ -2712,8 +2778,9 @@ var_types           RegSet::rsRmvMultiReg(regNumber reg)
 
     /* Get hold of the spill descriptor for the register */
 
-    dsc = rsMultiDesc[reg]; assert(dsc);
-          rsMultiDesc[reg] = dsc->spillNext;
+    dsc = rsMultiDesc[reg];
+    assert(dsc);
+    rsMultiDesc[reg] = dsc->spillNext;
 
     /* Copy the previous 'use' info from the descriptor */
 
@@ -2724,8 +2791,8 @@ var_types           RegSet::rsRmvMultiReg(regNumber reg)
     if (!(dsc->spillTree->gtFlags & GTF_SPILLED))
         m_rsGCInfo.gcMarkRegPtrVal(reg, dsc->spillTree->TypeGet());
 
-    var_types  type = dsc->spillTree->TypeGet();
-    regMaskTP  regMask;
+    var_types type = dsc->spillTree->TypeGet();
+    regMaskTP regMask;
 
     if (genIsValidFloatReg(reg) && isFloatRegType(type))
         regMask = genRegMaskFloat(reg, type);
@@ -2734,13 +2801,13 @@ var_types           RegSet::rsRmvMultiReg(regNumber reg)
 
     /* Is only one use of the register left? */
 
-    if  (!dsc->spillMoreMultis)
+    if (!dsc->spillMoreMultis)
     {
         rsMaskMult -= regMask;
     }
 
-#ifdef  DEBUG
-    if  (m_rsCompiler->verbose)
+#ifdef DEBUG
+    if (m_rsCompiler->verbose)
     {
         printf("\t\t\t\t\t\t\tRegister %s multi-use dec - now ", m_rsCompiler->compRegVarName(reg));
         Compiler::printTreeID(rsUsedTree[reg]);
@@ -2769,23 +2836,26 @@ var_types           RegSet::rsRmvMultiReg(regNumber reg)
  *  contains the close integer constant.
  */
 
-regNumber           RegTracker::rsIconIsInReg(ssize_t   val,
-                                              ssize_t*  closeDelta /* = NULL */)
+regNumber RegTracker::rsIconIsInReg(ssize_t val, ssize_t* closeDelta /* = NULL */)
 {
-    regNumber  closeReg = REG_NA;
+    regNumber closeReg = REG_NA;
 
-    if  (compiler->opts.MinOpts() || compiler->opts.compDbgCode)
+    if (compiler->opts.MinOpts() || compiler->opts.compDbgCode)
+    {
         return REG_NA;
+    }
 
     for (regNumber reg = REG_INT_FIRST; reg <= REG_INT_LAST; reg = REG_NEXT(reg))
-    { 
+    {
         if (rsRegValues[reg].rvdKind == RV_INT_CNS)
         {
             ssize_t regCnsVal = rsRegValues[reg].rvdIntCnsVal;
             if (regCnsVal == val)
             {
                 if (closeDelta)
+                {
                     *closeDelta = 0;
+                }
                 return reg;
             }
             if (closeDelta)
@@ -2795,11 +2865,11 @@ regNumber           RegTracker::rsIconIsInReg(ssize_t   val,
                 // TODO-CQ: find the smallest delta from a low register?
                 //       That is, is it better to return a high register with a
                 //       small constant delta, or a low register with
-                //       a larger offset? It's better to have a low register with an offset within the low register range, or a high register otherwise...
+                //       a larger offset? It's better to have a low register with an offset within the low register
+                //       range, or a high register otherwise...
 
                 ssize_t regCnsDelta = val - regCnsVal;
-                if ((closeReg == REG_NA) ||
-                    (unsigned_abs(regCnsDelta) < unsigned_abs(*closeDelta)))
+                if ((closeReg == REG_NA) || (unsigned_abs(regCnsDelta) < unsigned_abs(*closeDelta)))
                 {
                     closeReg    = reg;
                     *closeDelta = regCnsDelta;
@@ -2822,7 +2892,7 @@ regNumber           RegTracker::rsIconIsInReg(ssize_t   val,
 
     /* There was not an exact match */
 
-    return closeReg;  /* will always be REG_NA when closeDelta is NULL */
+    return closeReg; /* will always be REG_NA when closeDelta is NULL */
 }
 
 /*****************************************************************************
@@ -2833,26 +2903,30 @@ regNumber           RegTracker::rsIconIsInReg(ssize_t   val,
  *  out of date).
  */
 
-void                RegTracker::rsTrackRegClrPtr()
+void RegTracker::rsTrackRegClrPtr()
 {
     for (regNumber reg = REG_FIRST; reg < REG_COUNT; reg = REG_NEXT(reg))
     {
         /* Preserve constant values */
 
-        if  (rsRegValues[reg].rvdKind == RV_INT_CNS)
+        if (rsRegValues[reg].rvdKind == RV_INT_CNS)
         {
             /* Make sure we don't preserve NULL (it's a pointer) */
 
-            if  (rsRegValues[reg].rvdIntCnsVal != NULL)
+            if (rsRegValues[reg].rvdIntCnsVal != NULL)
+            {
                 continue;
+            }
         }
 
         /* Preserve variables known to not be pointers */
 
-        if  (rsRegValues[reg].rvdKind == RV_LCL_VAR)
+        if (rsRegValues[reg].rvdKind == RV_LCL_VAR)
         {
-            if  (!varTypeIsGC(compiler->lvaTable[rsRegValues[reg].rvdLclVarNum].TypeGet()))
+            if (!varTypeIsGC(compiler->lvaTable[rsRegValues[reg].rvdLclVarNum].TypeGet()))
+            {
                 continue;
+            }
         }
 
         rsRegValues[reg].rvdKind = RV_TRASH;
@@ -2869,17 +2943,19 @@ void                RegTracker::rsTrackRegClrPtr()
  *
  */
 
-regMaskTP           RegTracker::rsTrashRegsForGCInterruptability()
+regMaskTP RegTracker::rsTrashRegsForGCInterruptability()
 {
     regMaskTP result = RBM_NONE;
     for (regNumber reg = REG_FIRST; reg < REG_COUNT; reg = REG_NEXT(reg))
     {
-        if  (rsRegValues[reg].rvdKind == RV_LCL_VAR)
+        if (rsRegValues[reg].rvdKind == RV_LCL_VAR)
         {
-            LclVarDsc * varDsc = &compiler->lvaTable[rsRegValues[reg].rvdLclVarNum];
-                
-            if  (!varTypeIsGC(varDsc->TypeGet()))
+            LclVarDsc* varDsc = &compiler->lvaTable[rsRegValues[reg].rvdLclVarNum];
+
+            if (!varTypeIsGC(varDsc->TypeGet()))
+            {
                 continue;
+            }
 
             // Only stack locals got tracked.
             assert(!varDsc->lvRegister);
@@ -2901,22 +2977,25 @@ regMaskTP           RegTracker::rsTrashRegsForGCInterruptability()
  *  can get bungled with respect to pointer tracking.
  */
 
-regNumber           RegTracker::rsLclIsInReg(unsigned var)
+regNumber RegTracker::rsLclIsInReg(unsigned var)
 {
     assert(var < compiler->lvaCount);
 
-    if  (compiler->opts.MinOpts() || compiler->opts.compDbgCode)
+    if (compiler->opts.MinOpts() || compiler->opts.compDbgCode)
+    {
         return REG_NA;
+    }
 
     /* return false if register var so genMarkLclVar can do its job */
 
     if (compiler->lvaTable[var].lvRegister)
+    {
         return REG_NA;
+    }
 
     for (regNumber reg = REG_FIRST; reg < REG_COUNT; reg = REG_NEXT(reg))
     {
-        if (rsRegValues[reg].rvdLclVarNum == var &&
-            rsRegValues[reg].rvdKind == RV_LCL_VAR)
+        if (rsRegValues[reg].rvdLclVarNum == var && rsRegValues[reg].rvdKind == RV_LCL_VAR)
         {
             return reg;
         }
@@ -2927,27 +3006,28 @@ regNumber           RegTracker::rsLclIsInReg(unsigned var)
 
 /*****************************************************************************/
 
-regPairNo           RegTracker::rsLclIsInRegPair(unsigned var)
+regPairNo RegTracker::rsLclIsInRegPair(unsigned var)
 {
     assert(var < compiler->lvaCount);
 
-    if  (compiler->opts.MinOpts() || compiler->opts.compDbgCode)
+    if (compiler->opts.MinOpts() || compiler->opts.compDbgCode)
+    {
         return REG_PAIR_NONE;
+    }
 
-    regValKind  rvKind = RV_TRASH;
-    regNumber   regNo = DUMMY_INIT(REG_NA);
+    regValKind rvKind = RV_TRASH;
+    regNumber  regNo  = DUMMY_INIT(REG_NA);
 
     for (regNumber reg = REG_FIRST; reg < REG_COUNT; reg = REG_NEXT(reg))
     {
-        if  (rvKind != rsRegValues[reg].rvdKind &&
-             rsTrackIsLclVarLng(rsRegValues[reg].rvdKind) &&
-             rsRegValues[reg].rvdLclVarNum == var)
+        if (rvKind != rsRegValues[reg].rvdKind && rsTrackIsLclVarLng(rsRegValues[reg].rvdKind) &&
+            rsRegValues[reg].rvdLclVarNum == var)
         {
             /* first occurrence of this variable ? */
 
-            if  (rvKind == RV_TRASH)
+            if (rvKind == RV_TRASH)
             {
-                regNo = reg;
+                regNo  = reg;
                 rvKind = rsRegValues[reg].rvdKind;
             }
             else if (rvKind == RV_LCL_VAR_LNG_HI)
@@ -2971,19 +3051,20 @@ regPairNo           RegTracker::rsLclIsInRegPair(unsigned var)
 
 /*****************************************************************************/
 
-void                RegTracker::rsTrashLclLong(unsigned var)
+void RegTracker::rsTrashLclLong(unsigned var)
 {
-    if  (compiler->opts.MinOpts() || compiler->opts.compDbgCode)
-        return;
-
-    for  (regNumber reg = REG_FIRST; reg < REG_COUNT; reg = REG_NEXT(reg))
+    if (compiler->opts.MinOpts() || compiler->opts.compDbgCode)
     {
-        if  (rsTrackIsLclVarLng(rsRegValues[reg].rvdKind) &&
-             rsRegValues[reg].rvdLclVarNum == var)
+        return;
+    }
+
+    for (regNumber reg = REG_FIRST; reg < REG_COUNT; reg = REG_NEXT(reg))
+    {
+        if (rsTrackIsLclVarLng(rsRegValues[reg].rvdKind) && rsRegValues[reg].rvdLclVarNum == var)
         {
             rsRegValues[reg].rvdKind = RV_TRASH;
         }
-     }
+    }
 }
 
 /*****************************************************************************
@@ -2991,15 +3072,16 @@ void                RegTracker::rsTrashLclLong(unsigned var)
  *  Local's value has changed, mark all regs which contained it as trash.
  */
 
-void                RegTracker::rsTrashLcl(unsigned var)
+void RegTracker::rsTrashLcl(unsigned var)
 {
-    if  (compiler->opts.MinOpts() || compiler->opts.compDbgCode)
+    if (compiler->opts.MinOpts() || compiler->opts.compDbgCode)
+    {
         return;
+    }
 
     for (regNumber reg = REG_FIRST; reg < REG_COUNT; reg = REG_NEXT(reg))
     {
-        if (rsRegValues[reg].rvdKind == RV_LCL_VAR &&
-            rsRegValues[reg].rvdLclVarNum == var)
+        if (rsRegValues[reg].rvdKind == RV_LCL_VAR && rsRegValues[reg].rvdLclVarNum == var)
         {
             rsRegValues[reg].rvdKind = RV_TRASH;
         }
@@ -3012,14 +3094,16 @@ void                RegTracker::rsTrashLcl(unsigned var)
  *  Usually used after a call has been generated.
  */
 
-void                RegTracker::rsTrashRegSet(regMaskTP regMask)
+void RegTracker::rsTrashRegSet(regMaskTP regMask)
 {
-    if  (compiler->opts.MinOpts() || compiler->opts.compDbgCode)
+    if (compiler->opts.MinOpts() || compiler->opts.compDbgCode)
+    {
         return;
-    regMaskTP    regBit = 1;
+    }
+    regMaskTP regBit = 1;
     for (regNumber regNum = REG_FIRST; regMask != 0; regNum = REG_NEXT(regNum), regBit <<= 1)
     {
-        if  (regBit & regMask)
+        if (regBit & regMask)
         {
             rsTrackRegTrash(regNum);
             regMask -= regBit;
@@ -3032,27 +3116,28 @@ void                RegTracker::rsTrashRegSet(regMaskTP regMask)
  *  Return a mask of registers that hold no useful value.
  */
 
-regMaskTP           RegTracker::rsUselessRegs()
+regMaskTP RegTracker::rsUselessRegs()
 {
-    if  (compiler->opts.MinOpts() || compiler->opts.compDbgCode)
-        return  RBM_ALLINT;
-
-    regMaskTP    mask = RBM_NONE;
-    for (regNumber reg = REG_FIRST; reg < REG_COUNT; reg = REG_NEXT(reg))
+    if (compiler->opts.MinOpts() || compiler->opts.compDbgCode)
     {
-        if  (rsRegValues[reg].rvdKind == RV_TRASH)
-            mask |= genRegMask(reg);
+        return RBM_ALLINT;
     }
 
-    return  mask;
+    regMaskTP mask = RBM_NONE;
+    for (regNumber reg = REG_FIRST; reg < REG_COUNT; reg = REG_NEXT(reg))
+    {
+        if (rsRegValues[reg].rvdKind == RV_TRASH)
+        {
+            mask |= genRegMask(reg);
+        }
+    }
+
+    return mask;
 }
 
 /*****************************************************************************/
-#endif//REDUNDANT_LOAD
+#endif // REDUNDANT_LOAD
 /*****************************************************************************/
-
-
-
 
 /*
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -3066,16 +3151,15 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 */
 
-
-void                Compiler::tmpInit()
+void Compiler::tmpInit()
 {
 #ifdef LEGACY_BACKEND
     tmpDoubleSpillMax = 0;
     tmpIntSpillMax    = 0;
 #endif // LEGACY_BACKEND
 
-    tmpCount    = 0;
-    tmpSize     = 0;
+    tmpCount = 0;
+    tmpSize  = 0;
 #ifdef DEBUG
     tmpGetCount = 0;
 #endif
@@ -3091,19 +3175,19 @@ var_types Compiler::tmpNormalizeType(var_types type)
 
     type = genActualType(type);
 
-#else // LEGACY_BACKEND
+#else  // LEGACY_BACKEND
     if (!varTypeIsGC(type))
     {
         switch (genTypeStSz(type))
         {
-        case 1:
-            type = TYP_INT;     // Maps all 4-byte non-GC types to TYP_INT temps 
-            break;
-        case 2:
-            type = TYP_DOUBLE;  // Maps all 8-byte types to TYP_DOUBLE temps
-            break;
-        default:
-            assert(!"unexpected type");
+            case 1:
+                type = TYP_INT; // Maps all 4-byte non-GC types to TYP_INT temps
+                break;
+            case 2:
+                type = TYP_DOUBLE; // Maps all 8-byte types to TYP_DOUBLE temps
+                break;
+            default:
+                assert(!"unexpected type");
         }
     }
 #endif // LEGACY_BACKEND
@@ -3117,9 +3201,9 @@ var_types Compiler::tmpNormalizeType(var_types type)
  *  the garbage collector).
  */
 
-TempDsc * Compiler::tmpGetTemp(var_types type)
+TempDsc* Compiler::tmpGetTemp(var_types type)
 {
-    type = tmpNormalizeType(type);
+    type          = tmpNormalizeType(type);
     unsigned size = genTypeSize(type);
 
     // If TYP_STRUCT ever gets in here we do bad things (tmpSlot returns -1)
@@ -3127,18 +3211,18 @@ TempDsc * Compiler::tmpGetTemp(var_types type)
 
     /* Find the slot to search for a free temp of the right size */
 
-    unsigned    slot = tmpSlot(size);
+    unsigned slot = tmpSlot(size);
 
     /* Look for a temp with a matching type */
 
-    TempDsc * * last = &tmpFree[slot];
-    TempDsc *   temp;
+    TempDsc** last = &tmpFree[slot];
+    TempDsc*  temp;
 
     for (temp = *last; temp; last = &temp->tdNext, temp = *last)
     {
         /* Does the type match? */
 
-        if  (temp->tdTempType() == type)
+        if (temp->tdTempType() == type)
         {
             /* We have a match -- remove it from the free list */
 
@@ -3149,7 +3233,7 @@ TempDsc * Compiler::tmpGetTemp(var_types type)
 
 #ifdef DEBUG
     /* Do we need to allocate a new temp */
-    bool isNewTemp = false;    
+    bool isNewTemp = false;
 #endif // DEBUG
 
 #ifndef LEGACY_BACKEND
@@ -3158,41 +3242,40 @@ TempDsc * Compiler::tmpGetTemp(var_types type)
 
 #else // LEGACY_BACKEND
 
-    if  (temp == nullptr)
+    if (temp == nullptr)
     {
 #ifdef DEBUG
         isNewTemp = true;
 #endif // DEBUG
         tmpCount++;
-        tmpSize += (unsigned) size;
+        tmpSize += (unsigned)size;
 
 #ifdef _TARGET_ARM_
         if (type == TYP_DOUBLE)
         {
             // Adjust tmpSize in case it needs alignment
-            tmpSize += TARGET_POINTER_SIZE; 
+            tmpSize += TARGET_POINTER_SIZE;
         }
 #endif // _TARGET_ARM_
 
         genEmitter->emitTmpSizeChanged(tmpSize);
 
-        temp = new (this, CMK_Unknown) TempDsc(-((int) tmpCount), size, type);
+        temp = new (this, CMK_Unknown) TempDsc(-((int)tmpCount), size, type);
     }
 
 #endif // LEGACY_BACKEND
 
-#ifdef  DEBUG
-    if  (verbose)
+#ifdef DEBUG
+    if (verbose)
     {
-        printf("%s temp #%u, slot %u, size = %u\n",
-                isNewTemp ? "created" : "reused",
-                -temp->tdTempNum(), slot, temp->tdTempSize());
+        printf("%s temp #%u, slot %u, size = %u\n", isNewTemp ? "created" : "reused", -temp->tdTempNum(), slot,
+               temp->tdTempSize());
     }
     tmpGetCount++;
 #endif // DEBUG
 
-    temp->tdNext = tmpUsed[slot];
-                   tmpUsed[slot] = temp;
+    temp->tdNext  = tmpUsed[slot];
+    tmpUsed[slot] = temp;
 
     return temp;
 }
@@ -3228,19 +3311,18 @@ void Compiler::tmpPreAllocateTemps(var_types type, unsigned count)
         tmpCount++;
         tmpSize += size;
 
-        TempDsc* temp = new (this, CMK_Unknown) TempDsc(-((int) tmpCount), size, type);
+        TempDsc* temp = new (this, CMK_Unknown) TempDsc(-((int)tmpCount), size, type);
 
-#ifdef  DEBUG
-        if  (verbose)
+#ifdef DEBUG
+        if (verbose)
         {
-            printf("pre-allocated temp #%u, slot %u, size = %u\n",
-                   -temp->tdTempNum(), slot, temp->tdTempSize());
+            printf("pre-allocated temp #%u, slot %u, size = %u\n", -temp->tdTempNum(), slot, temp->tdTempSize());
         }
 #endif // DEBUG
 
         // Add it to the front of the appropriate slot list.
-        temp->tdNext = tmpFree[slot];
-                       tmpFree[slot] = temp;
+        temp->tdNext  = tmpFree[slot];
+        tmpFree[slot] = temp;
     }
 }
 
@@ -3251,21 +3333,20 @@ void Compiler::tmpPreAllocateTemps(var_types type, unsigned count)
  *  Release the given temp.
  */
 
-void                Compiler::tmpRlsTemp(TempDsc* temp)
+void Compiler::tmpRlsTemp(TempDsc* temp)
 {
     assert(temp != nullptr);
 
-    unsigned        slot;
+    unsigned slot;
 
     /* Add the temp to the 'free' list */
 
     slot = tmpSlot(temp->tdTempSize());
 
-#ifdef  DEBUG
-    if  (verbose)
+#ifdef DEBUG
+    if (verbose)
     {
-        printf("release temp #%u, slot %u, size = %u\n",
-                -temp->tdTempNum(), slot, temp->tdTempSize());
+        printf("release temp #%u, slot %u, size = %u\n", -temp->tdTempNum(), slot, temp->tdTempSize());
     }
     assert(tmpGetCount);
     tmpGetCount--;
@@ -3289,8 +3370,8 @@ void                Compiler::tmpRlsTemp(TempDsc* temp)
 
     // Add it to the free list.
 
-    temp->tdNext = tmpFree[slot];
-                   tmpFree[slot] = temp;
+    temp->tdNext  = tmpFree[slot];
+    tmpFree[slot] = temp;
 }
 
 /*****************************************************************************
@@ -3302,28 +3383,29 @@ void                Compiler::tmpRlsTemp(TempDsc* temp)
  *
  *  When looking for temps on the "used" list, this can be used any time.
  */
-TempDsc*    Compiler::tmpFindNum(int tnum, TEMP_USAGE_TYPE usageType /* = TEMP_USAGE_FREE */) const
+TempDsc* Compiler::tmpFindNum(int tnum, TEMP_USAGE_TYPE usageType /* = TEMP_USAGE_FREE */) const
 {
     assert(tnum < 0); // temp numbers are negative
 
     for (TempDsc* temp = tmpListBeg(usageType); temp != nullptr; temp = tmpListNxt(temp, usageType))
     {
         if (temp->tdTempNum() == tnum)
+        {
             return temp;
+        }
     }
 
     return nullptr;
 }
-
 
 /*****************************************************************************
  *
  *  A helper function is used to iterate over all the temps.
  */
 
-TempDsc*     Compiler::tmpListBeg(TEMP_USAGE_TYPE usageType /* = TEMP_USAGE_FREE */) const
+TempDsc* Compiler::tmpListBeg(TEMP_USAGE_TYPE usageType /* = TEMP_USAGE_FREE */) const
 {
-    TempDsc* const * tmpLists;
+    TempDsc* const* tmpLists;
     if (usageType == TEMP_USAGE_FREE)
     {
         tmpLists = tmpFree;
@@ -3335,7 +3417,7 @@ TempDsc*     Compiler::tmpListBeg(TEMP_USAGE_TYPE usageType /* = TEMP_USAGE_FREE
 
     // Return the first temp in the slot for the smallest size
     unsigned slot = 0;
-    while (slot < (TEMP_SLOT_COUNT-1) && tmpLists[slot] == nullptr)
+    while (slot < (TEMP_SLOT_COUNT - 1) && tmpLists[slot] == nullptr)
     {
         slot++;
     }
@@ -3348,7 +3430,7 @@ TempDsc*     Compiler::tmpListBeg(TEMP_USAGE_TYPE usageType /* = TEMP_USAGE_FREE
  * Used with tmpListBeg() to iterate over the list of temps.
  */
 
-TempDsc*      Compiler::tmpListNxt(TempDsc* curTemp, TEMP_USAGE_TYPE usageType /* = TEMP_USAGE_FREE */) const
+TempDsc* Compiler::tmpListNxt(TempDsc* curTemp, TEMP_USAGE_TYPE usageType /* = TEMP_USAGE_FREE */) const
 {
     assert(curTemp != nullptr);
 
@@ -3360,7 +3442,7 @@ TempDsc*      Compiler::tmpListNxt(TempDsc* curTemp, TEMP_USAGE_TYPE usageType /
         // If there are no more temps in the list, check if there are more
         // slots (for bigger sized temps) to walk.
 
-        TempDsc* const * tmpLists;
+        TempDsc* const* tmpLists;
         if (usageType == TEMP_USAGE_FREE)
         {
             tmpLists = tmpFree;
@@ -3374,7 +3456,7 @@ TempDsc*      Compiler::tmpListNxt(TempDsc* curTemp, TEMP_USAGE_TYPE usageType /
         {
             size += sizeof(int);
             unsigned slot = tmpSlot(size);
-            temp = tmpLists[slot];
+            temp          = tmpLists[slot];
         }
 
         assert((temp == nullptr) || (temp->tdTempSize() == size));
@@ -3383,12 +3465,11 @@ TempDsc*      Compiler::tmpListNxt(TempDsc* curTemp, TEMP_USAGE_TYPE usageType /
     return temp;
 }
 
-
 #ifdef DEBUG
 /*****************************************************************************
  * Return 'true' if all allocated temps are free (not in use).
  */
-bool            Compiler::tmpAllFree() const
+bool Compiler::tmpAllFree() const
 {
     // The 'tmpGetCount' should equal the number of things in the 'tmpUsed' lists. This is a convenient place
     // to assert that.
@@ -3417,7 +3498,6 @@ bool            Compiler::tmpAllFree() const
 
 #endif // DEBUG
 
-
 /*
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -3435,37 +3515,42 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
  *  In debug it also asserts that reg1 and reg2 are not the same.
  */
 
-bool                genIsProperRegPair(regPairNo regPair)
+bool genIsProperRegPair(regPairNo regPair)
 {
     regNumber rlo = genRegPairLo(regPair);
     regNumber rhi = genRegPairHi(regPair);
 
-    assert(regPair >= REG_PAIR_FIRST &&
-           regPair <= REG_PAIR_LAST);
+    assert(regPair >= REG_PAIR_FIRST && regPair <= REG_PAIR_LAST);
 
-    if  (rlo == rhi)
+    if (rlo == rhi)
+    {
         return false;
+    }
 
-    if  (rlo == REG_L_STK || rhi == REG_L_STK)
+    if (rlo == REG_L_STK || rhi == REG_L_STK)
+    {
         return false;
+    }
 
-    if  (rlo >= REG_COUNT || rhi >= REG_COUNT)
+    if (rlo >= REG_COUNT || rhi >= REG_COUNT)
+    {
         return false;
+    }
 
     return (rlo != REG_STK && rhi != REG_STK);
 }
 
 /*****************************************************************************
  *
- *  Given a register that is an argument register 
- *   returns the next argument register 
+ *  Given a register that is an argument register
+ *   returns the next argument register
  *
- *  Note: that this method will return a non arg register 
+ *  Note: that this method will return a non arg register
  *   when given REG_ARG_LAST
  *
  */
 
-regNumber           genRegArgNext(regNumber argReg)
+regNumber genRegArgNext(regNumber argReg)
 {
     regNumber result = REG_NA;
 
@@ -3483,27 +3568,27 @@ regNumber           genRegArgNext(regNumber argReg)
         // Windows X64 ABI:
         //     REG_EDI, REG_ESI, REG_ECX, REG_EDX, REG_R8, REG_R9
         //
-        if (argReg == REG_ARG_1)       // REG_ESI
+        if (argReg == REG_ARG_1) // REG_ESI
         {
-            result = REG_ARG_2;        // REG_ECX
+            result = REG_ARG_2; // REG_ECX
         }
-        else if (argReg == REG_ARG_3)  // REG_EDX
+        else if (argReg == REG_ARG_3) // REG_EDX
         {
-            result = REG_ARG_4;        // REG_R8
+            result = REG_ARG_4; // REG_R8
         }
-#else // Windows ABI
+#else  // Windows ABI
         // Windows X64 ABI:
         //     REG_ECX, REG_EDX, REG_R8, REG_R9
         //
-        if (argReg == REG_ARG_1)       // REG_EDX
+        if (argReg == REG_ARG_1) // REG_EDX
         {
-            result = REG_ARG_2;        // REG_R8
+            result = REG_ARG_2; // REG_R8
         }
 #endif // UNIX or Windows ABI
 #endif // _TARGET_AMD64_
-        
-        // If we didn't set 'result' to valid register above 
-        // then we will just iterate 'argReg' using REG_NEXT 
+
+        // If we didn't set 'result' to valid register above
+        // then we will just iterate 'argReg' using REG_NEXT
         //
         if (result == REG_NA)
         {
@@ -3523,14 +3608,14 @@ regNumber           genRegArgNext(regNumber argReg)
  *  register numbers and corresponding bitmaps.
  */
 
-const regNumber  raRegCalleeSaveOrder[]   = { REG_CALLEE_SAVED_ORDER };
-const regMaskTP  raRbmCalleeSaveOrder[]   = { RBM_CALLEE_SAVED_ORDER };
+const regNumber raRegCalleeSaveOrder[] = {REG_CALLEE_SAVED_ORDER};
+const regMaskTP raRbmCalleeSaveOrder[] = {RBM_CALLEE_SAVED_ORDER};
 
-
-regMaskSmall        genRegMaskFromCalleeSavedMask(unsigned short calleeSaveMask)
+regMaskSmall genRegMaskFromCalleeSavedMask(unsigned short calleeSaveMask)
 {
     regMaskSmall res = 0;
-    for (int i = 0; i < CNT_CALLEE_SAVED; i++) {
+    for (int i = 0; i < CNT_CALLEE_SAVED; i++)
+    {
         if ((calleeSaveMask & ((regMaskTP)1 << i)) != 0)
         {
             res |= raRbmCalleeSaveOrder[i];
@@ -3545,15 +3630,15 @@ regMaskSmall        genRegMaskFromCalleeSavedMask(unsigned short calleeSaveMask)
  */
 
 // inline
-void                RegSet::rsSpillInit()
+void RegSet::rsSpillInit()
 {
     /* Clear out the spill and multi-use tables */
 
     memset(rsSpillDesc, 0, sizeof(rsSpillDesc));
 
 #ifdef LEGACY_BACKEND
-    memset(rsUsedTree,  0, sizeof(rsUsedTree) );
-    memset(rsUsedAddr,  0, sizeof(rsUsedAddr) );
+    memset(rsUsedTree, 0, sizeof(rsUsedTree));
+    memset(rsUsedAddr, 0, sizeof(rsUsedAddr));
     memset(rsMultiDesc, 0, sizeof(rsMultiDesc));
     rsSpillFloat = nullptr;
 #endif // LEGACY_BACKEND
@@ -3562,7 +3647,7 @@ void                RegSet::rsSpillInit()
 
     /* We don't have any descriptors allocated */
 
-    rsSpillFree  = nullptr;
+    rsSpillFree = nullptr;
 }
 
 /*****************************************************************************
@@ -3571,7 +3656,7 @@ void                RegSet::rsSpillInit()
  */
 
 // inline
-void                RegSet::rsSpillDone()
+void RegSet::rsSpillDone()
 {
     rsSpillChk();
 }
@@ -3583,7 +3668,7 @@ void                RegSet::rsSpillDone()
  */
 
 // inline
-void                RegSet::rsSpillBeg()
+void RegSet::rsSpillBeg()
 {
     rsSpillChk();
 }
@@ -3595,7 +3680,7 @@ void                RegSet::rsSpillBeg()
  */
 
 // inline
-void                RegSet::rsSpillEnd()
+void RegSet::rsSpillEnd()
 {
     rsSpillChk();
 }
@@ -3605,22 +3690,22 @@ void                RegSet::rsSpillEnd()
 //
 
 // inline
-RegSet::SpillDsc *  RegSet::SpillDsc::alloc(Compiler * pComp, RegSet *regSet, var_types type)
+RegSet::SpillDsc* RegSet::SpillDsc::alloc(Compiler* pComp, RegSet* regSet, var_types type)
 {
-    RegSet::SpillDsc   *spill;
-    RegSet::SpillDsc **pSpill;
+    RegSet::SpillDsc*  spill;
+    RegSet::SpillDsc** pSpill;
 
     pSpill = &(regSet->rsSpillFree);
 
     // Allocate spill structure
-    if  (*pSpill)
+    if (*pSpill)
     {
-        spill = *pSpill;
+        spill   = *pSpill;
         *pSpill = spill->spillNext;
     }
     else
     {
-        spill = (RegSet::SpillDsc *)pComp->compGetMem(sizeof(SpillDsc));
+        spill = (RegSet::SpillDsc*)pComp->compGetMem(sizeof(SpillDsc));
     }
     return spill;
 }
@@ -3630,10 +3715,10 @@ RegSet::SpillDsc *  RegSet::SpillDsc::alloc(Compiler * pComp, RegSet *regSet, va
 //
 
 // inline
-void  RegSet::SpillDsc::freeDsc (RegSet *regSet, RegSet::SpillDsc *spillDsc)
+void RegSet::SpillDsc::freeDsc(RegSet* regSet, RegSet::SpillDsc* spillDsc)
 {
     spillDsc->spillNext = regSet->rsSpillFree;
-    regSet->rsSpillFree  = spillDsc;
+    regSet->rsSpillFree = spillDsc;
 }
 
 /*****************************************************************************
@@ -3645,17 +3730,17 @@ void  RegSet::SpillDsc::freeDsc (RegSet *regSet, RegSet::SpillDsc *spillDsc)
 #ifdef DEBUG
 
 // inline
-void                RegSet::rsSpillChk()
+void RegSet::rsSpillChk()
 {
     // All grabbed temps should have been released
     assert(m_rsCompiler->tmpGetCount == 0);
 
     for (regNumber reg = REG_FIRST; reg < REG_COUNT; reg = REG_NEXT(reg))
     {
-        assert(rsSpillDesc[reg] == NULL);
+        assert(rsSpillDesc[reg] == nullptr);
 
 #ifdef LEGACY_BACKEND
-        assert(rsUsedTree [reg] == NULL);
+        assert(rsUsedTree[reg] == NULL);
         assert(rsMultiDesc[reg] == NULL);
 #endif // LEGACY_BACKEND
     }
@@ -3664,25 +3749,26 @@ void                RegSet::rsSpillChk()
 #else
 
 // inline
-void                RegSet::rsSpillChk(){}
+void RegSet::rsSpillChk()
+{
+}
 
 #endif
-
-
 
 /*****************************************************************************/
 #if REDUNDANT_LOAD
 
 // inline
-bool                RegTracker::rsIconIsInReg(ssize_t val, regNumber reg)
+bool RegTracker::rsIconIsInReg(ssize_t val, regNumber reg)
 {
-    if  (compiler->opts.MinOpts() || compiler->opts.compDbgCode)
-        return false;
-
-    if (rsRegValues[reg].rvdKind == RV_INT_CNS &&
-        rsRegValues[reg].rvdIntCnsVal == val)
+    if (compiler->opts.MinOpts() || compiler->opts.compDbgCode)
     {
-        return  true;
+        return false;
+    }
+
+    if (rsRegValues[reg].rvdKind == RV_INT_CNS && rsRegValues[reg].rvdIntCnsVal == val)
+    {
+        return true;
     }
     return false;
 }

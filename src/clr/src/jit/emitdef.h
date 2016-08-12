@@ -14,9 +14,9 @@
 #elif defined(_TARGET_ARM64_)
 #include "emitarm64.h"
 #else
-  #error Unsupported or unset target architecture
+#error Unsupported or unset target architecture
 #endif
 
 /*****************************************************************************/
-#endif//_EMITDEF_H_
+#endif //_EMITDEF_H_
 /*****************************************************************************/

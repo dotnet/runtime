@@ -13,7 +13,6 @@ class Compiler;
 class JitTelemetry
 {
 public:
-
     // Notify DLL load.
     static void NotifyDllProcessAttach();
 
@@ -36,7 +35,6 @@ public:
     static bool IsTelemetryEnabled();
 
 private:
-
     // Obtain current method information from VM and cache for
     // future uses.
     void CacheCurrentMethodInfo();
@@ -50,7 +48,7 @@ private:
 
     // Methods compiled per DLL unload
     static volatile UINT32 s_uMethodsCompiled;
-    
+
     // Methods compiled per DLL unload that hit noway assert (per process)
     static volatile UINT32 s_uMethodsHitNowayAssert;
     //--------------------------------------------------------------------------------
