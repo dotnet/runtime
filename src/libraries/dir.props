@@ -91,7 +91,7 @@
     <ProhibitFloatingDependencies>true</ProhibitFloatingDependencies>
 
     <CoreFxExpectedPrerelease>beta-devapi-24412-01</CoreFxExpectedPrerelease>
-    <CoreClrExpectedPrerelease>beta-24411-02</CoreClrExpectedPrerelease>
+    <CoreClrExpectedPrerelease>beta-24412-03</CoreClrExpectedPrerelease>
     <ExternalExpectedPrerelease>beta-24411-00</ExternalExpectedPrerelease>
 
     <CoreFxVersionsIdentityRegex>^(?i)(((System\..*)(?&lt;!System\.ServiceModel\..*))|(NETStandard\.Library)|(Microsoft\.CSharp)|(Microsoft\.NETCore\.Targets)|(Microsoft\.NETCore\.Platforms)|(Microsoft\.Win32\..*)|(Microsoft\.VisualBasic))(?&lt;!TestData)$</CoreFxVersionsIdentityRegex>
