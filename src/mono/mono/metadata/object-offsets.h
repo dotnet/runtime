@@ -133,10 +133,8 @@ DECL_OFFSET(MonoThreadsSync, nest)
 
 #ifdef HAVE_SGEN_GC
 DECL_OFFSET(SgenClientThreadInfo, in_critical_region)
-#ifndef HAVE_KW_THREAD
-DECL_OFFSET(SgenThreadInfo, tlab_next_addr)
+DECL_OFFSET(SgenThreadInfo, tlab_next)
 DECL_OFFSET(SgenThreadInfo, tlab_temp_end)
-#endif
 #endif
 
 #endif //DISABLE METADATA OFFSETS

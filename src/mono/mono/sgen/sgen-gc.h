@@ -407,17 +407,10 @@ void sgen_scan_area_with_callback (char *start, char *end, IterateObjectCallback
 struct _SgenThreadInfo {
 	SgenClientThreadInfo client_info;
 
-	char **tlab_next_addr;
-	char **tlab_start_addr;
-	char **tlab_temp_end_addr;
-	char **tlab_real_end_addr;
-
-#ifndef HAVE_KW_THREAD
 	char *tlab_start;
 	char *tlab_next;
 	char *tlab_temp_end;
 	char *tlab_real_end;
-#endif
 };
 
 gboolean sgen_is_worker_thread (MonoNativeThreadId thread);
@@ -1004,7 +997,6 @@ typedef enum {
 	ATYPE_NUM
 } SgenAllocatorType;
 
-void sgen_init_tlab_info (SgenThreadInfo* info);
 void sgen_clear_tlabs (void);
 
 GCObject* sgen_alloc_obj (GCVTable vtable, size_t size);
