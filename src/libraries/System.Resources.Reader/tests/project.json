@@ -8,6 +8,7 @@
     "System.ObjectModel": "4.0.13-beta-devapi-24412-01",
     "System.Runtime": "4.2.0-beta-devapi-24412-01",
     "System.Text.RegularExpressions": "4.2.0-beta-devapi-24412-01",
+    "System.Resources.Writer": "4.0.1-beta-devapi-24412-01",
     "System.Threading.Tasks": "4.0.12-beta-devapi-24412-01",
     "test-runtime": {
       "target": "project",
