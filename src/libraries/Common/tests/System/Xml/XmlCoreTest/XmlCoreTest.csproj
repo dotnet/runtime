@@ -35,8 +35,6 @@
   <ItemGroup>
     <ProjectReference Include="..\ModuleCore\ModuleCore.csproj" />
     <ProjectReference Include="..\XmlDiff\XmlDiff.csproj" />
-    <ProjectReference Include="..\..\..\..\..\System.Xml.ReaderWriter\src\System.Xml.ReaderWriter.csproj" />
-    <ProjectReference Include="..\..\..\..\..\System.Private.Xml\src\System.Private.Xml.csproj" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />

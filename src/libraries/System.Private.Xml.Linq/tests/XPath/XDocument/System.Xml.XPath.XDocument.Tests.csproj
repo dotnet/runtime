@@ -208,13 +208,6 @@
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\..\src\System.Private.Xml.Linq.csproj" />
-    <ProjectReference Include="..\..\..\..\System.Private.Xml\src\System.Private.Xml.csproj" />
-    <ProjectReference Include="..\..\..\..\System.Xml.ReaderWriter\src\System.Xml.ReaderWriter.csproj" />
-    <ProjectReference Include="..\..\..\..\System.Xml.XPath\src\System.Xml.XPath.csproj" />
-    <ProjectReference Include="..\..\..\..\System.Xml.XPath.XmlDocument\src\System.Xml.XPath.XmlDocument.csproj" />
-  </ItemGroup>
-  <ItemGroup>
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
   </ItemGroup>
   <ItemGroup>
