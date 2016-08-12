@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+
 #ifndef bitSetAsUint64InClass_DEFINED
 #define bitSetAsUint64InClass_DEFINED 1
 
@@ -9,23 +10,21 @@
 #include "bitsetasuint64.h"
 #include "stdmacros.h"
 
-template <typename Env, typename BitSetTraits>
+template<typename Env, typename BitSetTraits>
 class BitSetUint64ValueRetType;
 
-template <typename Env, typename BitSetTraits>
+template<typename Env, typename BitSetTraits>
 class BitSetUint64Iter;
 
-template <typename Env, typename BitSetTraits>
+template<typename Env, typename BitSetTraits>
 class BitSetUint64
 {
 public:
-    typedef BitSetUint64<Env, BitSetTraits> Rep;
-
+    typedef BitSetUint64<Env,BitSetTraits> Rep;
 private:
-    friend class BitSetOps</*BitSetType*/ BitSetUint64<Env, BitSetTraits>,
-                           /*Brand*/ BSUInt64Class,
-                           /*Env*/ Env,
-                           /*BitSetTraits*/ BitSetTraits>;
+    friend class BitSetOps</*BitSetType*/BitSetUint64<Env,BitSetTraits>, 
+                           /*Brand*/BSUInt64Class,
+                           /*Env*/Env, /*BitSetTraits*/BitSetTraits>;
 
     friend class BitSetUint64ValueRetType<Env, BitSetTraits>;
     friend class BitSetUint64Iter<Env, BitSetTraits>;
@@ -47,11 +46,11 @@ private:
 
 #ifdef DEBUG
     // In debug, make sure we don't have any public assignment, by making this private.
-    BitSetUint64& operator=(const BitSetUint64& bs)
+    BitSetUint64& operator=(const BitSetUint64& bs) 
     {
-        m_bits  = bs.m_bits;
+        m_bits = bs.m_bits;
         m_epoch = bs.m_epoch;
-        return (*this);
+        return (*this); 
     }
 #endif // DEBUG
 
@@ -59,7 +58,7 @@ private:
     {
         return m_bits == bs.m_bits
 #ifdef DEBUG
-               && m_epoch == bs.m_epoch
+            && m_epoch == bs.m_epoch
 #endif
             ;
     }
@@ -72,23 +71,24 @@ private:
     // int argument, and just make copy constructor defined here visible.
 public:
 #endif
-    BitSetUint64(const BitSetUint64& bs)
-        : m_bits(bs.m_bits)
+    BitSetUint64(const BitSetUint64& bs) : m_bits(bs.m_bits)
 #ifdef DEBUG
         , m_epoch(bs.m_epoch)
 #endif
-    {
-    }
+    {}
 
 #ifdef DEBUG
 public:
     // But we add a public constructor that's *almost* the default constructor.
-    BitSetUint64(const BitSetUint64& bs, int xxx) : m_bits(bs.m_bits), m_epoch(bs.m_epoch)
-    {
-    }
+    BitSetUint64(const BitSetUint64& bs, int xxx) : m_bits(bs.m_bits)
+        , m_epoch(bs.m_epoch)
+    {}
 #endif
 
 private:
+
+
+
     // Return the number of bits set in the BitSet.
     inline unsigned Count(Env env) const
     {
@@ -112,6 +112,7 @@ private:
         return res;
     }
 
+
     inline void RemoveElemD(Env env, unsigned i)
     {
         CheckEpoch(env);
@@ -125,6 +126,7 @@ private:
         Uint64BitSetOps::RemoveElemD(env, res.m_bits, i);
         return res;
     }
+
 
     inline void AddElemD(Env env, unsigned i)
     {
@@ -220,105 +222,89 @@ private:
         return Uint64BitSetOps::ToString(env, m_bits);
     }
 
-public:
+  public:
+
     // Uninint
-    BitSetUint64()
-        : m_bits(0)
+    BitSetUint64() :
+        m_bits(0)
 #ifdef DEBUG
         , m_epoch(UINT32_MAX) // Undefined.
 #endif
-    {
-    }
+    {}
 
-    BitSetUint64(Env env, bool full = false)
-        : m_bits(0)
+    BitSetUint64(Env env, bool full = false) :
+        m_bits(0)
 #ifdef DEBUG
         , m_epoch(BitSetTraits::GetEpoch(env))
 #endif
     {
-        if (full)
-        {
-            m_bits = Uint64BitSetOps::MakeFull(env);
-        }
+        if (full) m_bits = Uint64BitSetOps::MakeFull(env);
     }
 
     inline BitSetUint64(const BitSetUint64ValueRetType<Env, BitSetTraits>& rt);
 
-    BitSetUint64(Env env, unsigned bitNum)
-        : m_bits(Uint64BitSetOps::MakeSingleton(env, bitNum))
+    BitSetUint64(Env env, unsigned bitNum) :
+        m_bits(Uint64BitSetOps::MakeSingleton(env, bitNum))
 #ifdef DEBUG
         , m_epoch(BitSetTraits::GetEpoch(env))
 #endif
     {
         assert(bitNum < BitSetTraits::GetSize(env));
     }
+
+
 };
 
-template <typename Env, typename BitSetTraits>
+template<typename Env, typename BitSetTraits>
 class BitSetUint64ValueRetType
 {
     friend class BitSetUint64<Env, BitSetTraits>;
 
     BitSetUint64<Env, BitSetTraits> m_bs;
-
 public:
-    BitSetUint64ValueRetType(const BitSetUint64<Env, BitSetTraits>& bs) : m_bs(bs)
-    {
-    }
+    BitSetUint64ValueRetType(const BitSetUint64<Env, BitSetTraits>& bs) : m_bs(bs) {}
 };
 
-template <typename Env, typename BitSetTraits>
-BitSetUint64<Env, BitSetTraits>::BitSetUint64(const BitSetUint64ValueRetType<Env, BitSetTraits>& rt)
-    : m_bits(rt.m_bs.m_bits)
+template<typename Env, typename BitSetTraits>
+BitSetUint64<Env, BitSetTraits>::BitSetUint64(const BitSetUint64ValueRetType<Env, BitSetTraits>& rt) : m_bits(rt.m_bs.m_bits)
 #ifdef DEBUG
     , m_epoch(rt.m_bs.m_epoch)
 #endif
-{
-}
+{}
 
-// You *can* clear a bit after it's been iterated.  But you shouldn't otherwise mutate the
+
+// You *can* clear a bit after it's been iterated.  But you shouldn't otherwise mutate the 
 // bitset during bit iteration.
-template <typename Env, typename BitSetTraits>
+template<typename Env, typename BitSetTraits>
 class BitSetUint64Iter
 {
-    UINT64   m_bits;
-    unsigned m_bitNum;
-
+    UINT64 m_bits;
+    unsigned  m_bitNum;
 public:
-    BitSetUint64Iter(Env env, const BitSetUint64<Env, BitSetTraits>& bs) : m_bits(bs.m_bits), m_bitNum(0)
-    {
-    }
+    BitSetUint64Iter(Env env, const BitSetUint64<Env, BitSetTraits>& bs): m_bits(bs.m_bits), m_bitNum(0) {}
 
     bool NextElem(Env env, unsigned* pElem)
     {
         static const unsigned UINT64_SIZE = 64;
-
+        
         if ((m_bits & 0x1) != 0)
         {
-            *pElem = m_bitNum;
-            m_bitNum++;
-            m_bits >>= 1;
-            return true;
-        }
-        else
+            *pElem = m_bitNum; m_bitNum++; m_bits >>= 1; return true;
+        } 
+        else 
         {
             // Skip groups of 4 zeros -- an optimization for sparse bitsets.
             while (m_bitNum < UINT64_SIZE && (m_bits & 0xf) == 0)
             {
-                m_bitNum += 4;
-                m_bits >>= 4;
+                m_bitNum += 4; m_bits >>= 4;
             }
             while (m_bitNum < UINT64_SIZE && (m_bits & 0x1) == 0)
             {
-                m_bitNum += 1;
-                m_bits >>= 1;
+                m_bitNum += 1; m_bits >>= 1;
             }
             if (m_bitNum < UINT64_SIZE)
             {
-                *pElem = m_bitNum;
-                m_bitNum++;
-                m_bits >>= 1;
-                return true;
+                *pElem = m_bitNum; m_bitNum++; m_bits >>= 1; return true;
             }
             else
             {
@@ -328,20 +314,19 @@ public:
     }
 };
 
-template <typename Env, typename BitSetTraits>
-class BitSetOps</*BitSetType*/ BitSetUint64<Env, BitSetTraits>,
-                /*Brand*/ BSUInt64Class,
-                /*Env*/ Env,
-                /*BitSetTraits*/ BitSetTraits>
+template<typename Env, typename BitSetTraits>
+class BitSetOps</*BitSetType*/BitSetUint64<Env,BitSetTraits>,
+                /*Brand*/BSUInt64Class,
+                /*Env*/Env, /*BitSetTraits*/BitSetTraits>
 {
-    typedef BitSetUint64<Env, BitSetTraits>             BST;
-    typedef const BitSetUint64<Env, BitSetTraits>&      BSTValArg;
-    typedef BitSetUint64ValueRetType<Env, BitSetTraits> BSTRetVal;
+    typedef BitSetUint64<Env,BitSetTraits> BST;
+    typedef const BitSetUint64<Env,BitSetTraits>& BSTValArg;
+    typedef BitSetUint64ValueRetType<Env,BitSetTraits> BSTRetVal;
 
 public:
     static BSTRetVal UninitVal()
     {
-        return BitSetUint64<Env, BitSetTraits>();
+        return BitSetUint64<Env,BitSetTraits>();
     }
 
     static bool MayBeUninit(BSTValArg bs)
@@ -482,7 +467,7 @@ public:
 
     static BSTRetVal MakeFull(Env env)
     {
-        return BST(env, /*full*/ true);
+        return BST(env, /*full*/true);
     }
 
 #ifdef DEBUG

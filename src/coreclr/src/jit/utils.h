@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+
 /*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XX                                                                           XX
@@ -28,29 +29,28 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #define BitScanForwardPtr BitScanForward
 #endif
 
-template <typename T, int size>
-unsigned ArrLen(T (&)[size])
-{
-    return size;
-}
+template<typename T, int size>
+unsigned ArrLen(T(&)[size]){return size;}
 
 // return true if arg is a power of 2
-template <typename T>
+template<typename T>
 inline bool isPow2(T i)
 {
-    return (i > 0 && ((i - 1) & i) == 0);
+    return (i > 0 && ((i-1)&i) == 0);
 }
 
 // Adapter for iterators to a type that is compatible with C++11
 // range-based for loops.
-template <typename TIterator>
+template<typename TIterator>
 class IteratorPair
 {
     TIterator m_begin;
     TIterator m_end;
 
 public:
-    IteratorPair(TIterator begin, TIterator end) : m_begin(begin), m_end(end)
+    IteratorPair(TIterator begin, TIterator end)
+        : m_begin(begin)
+        , m_end(end)
     {
     }
 
@@ -65,7 +65,7 @@ public:
     }
 };
 
-template <typename TIterator>
+template<typename TIterator>
 inline IteratorPair<TIterator> MakeIteratorPair(TIterator begin, TIterator end)
 {
     return IteratorPair<TIterator>(begin, end);
@@ -74,31 +74,13 @@ inline IteratorPair<TIterator> MakeIteratorPair(TIterator begin, TIterator end)
 // Recursive template definition to calculate the base-2 logarithm
 // of a constant value.
 template <unsigned val, unsigned acc = 0>
-struct ConstLog2
-{
-    enum
-    {
-        value = ConstLog2<val / 2, acc + 1>::value
-    };
-};
+struct ConstLog2 { enum { value = ConstLog2<val / 2, acc + 1>::value }; };
 
 template <unsigned acc>
-struct ConstLog2<0, acc>
-{
-    enum
-    {
-        value = acc
-    };
-};
+struct ConstLog2<0, acc> { enum { value = acc }; };
 
 template <unsigned acc>
-struct ConstLog2<1, acc>
-{
-    enum
-    {
-        value = acc
-    };
-};
+struct ConstLog2<1, acc> { enum { value = acc }; };
 
 inline const char* dspBool(bool b)
 {
@@ -115,30 +97,23 @@ inline int64_t abs(int64_t t)
 #endif
 #endif // FEATURE_CORECLR
 
-template <typename T>
-int signum(T val)
+template <typename T> int signum(T val) 
 {
     if (val < T(0))
-    {
         return -1;
-    }
     else if (val > T(0))
-    {
         return 1;
-    }
-    else
-    {
+    else 
         return 0;
-    }
 }
 
 class JitSimplerHashBehavior
 {
 public:
-    static const unsigned s_growth_factor_numerator   = 3;
+    static const unsigned s_growth_factor_numerator = 3;
     static const unsigned s_growth_factor_denominator = 2;
 
-    static const unsigned s_density_factor_numerator   = 3;
+    static const unsigned s_density_factor_numerator = 3;
     static const unsigned s_density_factor_denominator = 4;
 
     static const unsigned s_minimum_allocation = 7;
@@ -174,6 +149,7 @@ class ConfigMethodRange
 {
 
 public:
+
     // Default capacity
     enum
     {
@@ -197,16 +173,11 @@ public:
     }
 
     // Error checks
-    bool Error() const
-    {
-        return m_badChar != 0;
-    }
-    size_t BadCharIndex() const
-    {
-        return m_badChar - 1;
-    }
+    bool Error()          const { return m_badChar != 0; }
+    size_t BadCharIndex() const { return m_badChar - 1; }
 
 private:
+
     struct Range
     {
         unsigned m_low;
@@ -215,16 +186,17 @@ private:
 
     void InitRanges(const wchar_t* rangeStr, unsigned capacity);
 
-    unsigned m_entries;   // number of entries in the range array
-    unsigned m_lastRange; // count of low-high pairs
-    unsigned m_inited;    // 1 if range string has been parsed
-    size_t   m_badChar;   // index + 1 of any bad character in range string
-    Range*   m_ranges;    // ranges of functions to include
+    unsigned  m_entries;    // number of entries in the range array
+    unsigned  m_lastRange;  // count of low-high pairs
+    unsigned  m_inited;     // 1 if range string has been parsed
+    size_t    m_badChar;    // index + 1 of any bad character in range string
+    Range*    m_ranges;     // ranges of functions to include
 };
 
 #endif // defined(DEBUG) || defined(INLINE_DATA)
 
 class Compiler;
+
 
 /*****************************************************************************
  * Fixed bit vector class
@@ -242,8 +214,9 @@ private:
     static UINT bitNumToBit(UINT bitNum);
 
 public:
+
     // bitVectInit() - Initializes a bit vector of a given size
-    static FixedBitVect* bitVectInit(UINT size, Compiler* comp);
+    static FixedBitVect *bitVectInit(UINT size, Compiler *comp);
 
     // bitVectSet() - Sets the given bit
     void bitVectSet(UINT bitNum);
@@ -252,10 +225,10 @@ public:
     bool bitVectTest(UINT bitNum);
 
     // bitVectOr() - Or in the given bit vector
-    void bitVectOr(FixedBitVect* bv);
+    void bitVectOr(FixedBitVect *bv);
 
     // bitVectAnd() - And with passed in bit vector
-    void bitVectAnd(FixedBitVect& bv);
+    void bitVectAnd(FixedBitVect &bv);
 
     // bitVectGetFirst() - Find the first bit on and return the bit num.
     //                    Return -1 if no bits found.
@@ -286,15 +259,14 @@ public:
  * returns -> number of bytes successfully written, not including the null
  *            terminator.  Calls NO_WAY on error.
  */
-int SimpleSprintf_s(__in_ecount(cbBufSize - (pWriteStart - pBufStart)) char* pWriteStart,
-                    __in_ecount(cbBufSize) char*                             pBufStart,
-                    size_t                                                   cbBufSize,
-                    __in_z const char*                                       fmt,
-                    ...);
+int SimpleSprintf_s(__in_ecount(cbBufSize-(pWriteStart - pBufStart)) char * pWriteStart,
+                    __in_ecount(cbBufSize) char * pBufStart, size_t cbBufSize,
+                    __in_z const char * fmt, ...);
 
 #ifdef DEBUG
 void hexDump(FILE* dmpf, const char* name, BYTE* addr, size_t size);
 #endif // DEBUG
+
 
 /******************************************************************************
  * ScopedSetVariable: A simple class to set and restore a variable within a scope.
@@ -308,9 +280,10 @@ template <typename T>
 class ScopedSetVariable
 {
 public:
-    ScopedSetVariable(T* pVariable, T value) : m_pVariable(pVariable)
+    ScopedSetVariable(T* pVariable, T value)
+        : m_pVariable(pVariable)
     {
-        m_oldValue   = *m_pVariable;
+        m_oldValue = *m_pVariable;
         *m_pVariable = value;
         INDEBUG(m_value = value;)
     }
@@ -321,13 +294,15 @@ public:
         *m_pVariable = m_oldValue;
     }
 
+
 private:
 #ifdef DEBUG
     T m_value;      // The value we set the variable to (used for assert).
-#endif              // DEBUG
-    T  m_oldValue;  // The old value, to restore the variable to.
+#endif // DEBUG
+    T m_oldValue;   // The old value, to restore the variable to.
     T* m_pVariable; // Address of the variable to change
 };
+
 
 /******************************************************************************
  * PhasedVar: A class to represent a variable that has phases, in particular,
@@ -346,7 +321,8 @@ class PhasedVar
 public:
     PhasedVar()
 #ifdef DEBUG
-        : m_initialized(false), m_writePhase(true)
+        : m_initialized(false)
+        , m_writePhase(true)
 #endif // DEBUG
     {
     }
@@ -364,7 +340,7 @@ public:
     {
 #ifdef DEBUG
         m_initialized = false;
-        m_writePhase  = true;
+        m_writePhase = true;
 #endif // DEBUG
     }
 
@@ -434,6 +410,7 @@ public:
     }
 
 private:
+
     // Don't allow a copy constructor. (This could be allowed, but only add it once it is actually needed.)
 
     PhasedVar(const PhasedVar& o)
@@ -441,32 +418,29 @@ private:
         unreached();
     }
 
+
     T m_value;
 #ifdef DEBUG
     bool m_initialized; // true once the variable has been initialized, that is, written once.
-    bool m_writePhase;  // true if we are in the (initial) "write" phase. Once the value is read, this changes to false,
-                        // and can't be changed back.
-#endif                  // DEBUG
+    bool m_writePhase;  // true if we are in the (initial) "write" phase. Once the value is read, this changes to false, and can't be changed back.
+#endif // DEBUG
 };
 
 class HelperCallProperties
 {
 private:
-    bool m_isPure[CORINFO_HELP_COUNT];
-    bool m_noThrow[CORINFO_HELP_COUNT];
+    bool m_isPure       [CORINFO_HELP_COUNT];
+    bool m_noThrow      [CORINFO_HELP_COUNT];
     bool m_nonNullReturn[CORINFO_HELP_COUNT];
-    bool m_isAllocator[CORINFO_HELP_COUNT];
-    bool m_mutatesHeap[CORINFO_HELP_COUNT];
-    bool m_mayRunCctor[CORINFO_HELP_COUNT];
-    bool m_mayFinalize[CORINFO_HELP_COUNT];
+    bool m_isAllocator  [CORINFO_HELP_COUNT];
+    bool m_mutatesHeap  [CORINFO_HELP_COUNT];
+    bool m_mayRunCctor  [CORINFO_HELP_COUNT];
+    bool m_mayFinalize  [CORINFO_HELP_COUNT];
 
-    void init();
+    void init(); 
 
 public:
-    HelperCallProperties()
-    {
-        init();
-    }
+    HelperCallProperties()  { init(); }
 
     bool IsPure(CorInfoHelpFunc helperId)
     {
@@ -518,10 +492,11 @@ public:
     }
 };
 
+
 //*****************************************************************************
 // AssemblyNamesList2: Parses and stores a list of Assembly names, and provides
 // a function for determining whether a given assembly name is part of the list.
-//
+// 
 // This is a clone of the AssemblyNamesList class that exists in the VM's utilcode,
 // modified to use the JIT's memory allocator and throw on out of memory behavior.
 // It is named AssemblyNamesList2 to avoid a name conflict with the VM version.
@@ -535,14 +510,15 @@ class AssemblyNamesList2
 {
     struct AssemblyName
     {
-        char*         m_assemblyName;
-        AssemblyName* m_next;
+        char*           m_assemblyName;
+        AssemblyName*   m_next;
     };
 
-    AssemblyName* m_pNames; // List of names
-    IAllocator*   m_alloc;  // IAllocator to use in this class
+    AssemblyName*       m_pNames;       // List of names
+    IAllocator*         m_alloc;        // IAllocator to use in this class
 
 public:
+
     // Take a Unicode string list of assembly names, parse it, and store it.
     AssemblyNamesList2(const wchar_t* list, __in IAllocator* alloc);
 
@@ -565,9 +541,9 @@ public:
 class CycleCount
 {
 private:
-    double           cps;         // cycles per second
-    unsigned __int64 beginCycles; // cycles at stop watch construction
-public:
+    double           cps;             // cycles per second
+    unsigned __int64 beginCycles;     // cycles at stop watch construction
+public:    
     CycleCount();
 
     // Kick off the counter, and if re-entrant will use the latest cycles as starting point.
@@ -582,13 +558,15 @@ private:
     bool GetCycles(unsigned __int64* time);
 };
 
+
 // Uses win API QueryPerformanceCounter/QueryPerformanceFrequency.
 class PerfCounter
 {
     LARGE_INTEGER beg;
-    double        freq;
+    double freq;
 
 public:
+
     // If the method returns false, any other query yield unpredictable results.
     bool Start();
 
@@ -598,39 +576,41 @@ public:
 
 #endif // FEATURE_JIT_METHOD_PERF
 
+
+
 #ifdef DEBUG
 
 /*****************************************************************************
  * Return the number of digits in a number of the given base (default base 10).
  * Used when outputting strings.
  */
-unsigned CountDigits(unsigned num, unsigned base = 10);
+unsigned            CountDigits(unsigned num, unsigned base = 10);
 
 #endif // DEBUG
 
 // Utility class for lists.
-template <typename T>
-struct ListNode
+template<typename T>
+struct ListNode 
 {
-    T            data;
+    T data;
     ListNode<T>* next;
 
     // Create the class without using constructors.
     static ListNode<T>* Create(T value, IAllocator* alloc)
     {
         ListNode<T>* node = new (alloc) ListNode<T>;
-        node->data        = value;
-        node->next        = nullptr;
+        node->data = value;
+        node->next = nullptr;
         return node;
     }
 };
 
 /*****************************************************************************
-* Floating point utility class
+* Floating point utility class 
 */
-class FloatingPointUtils
-{
+class FloatingPointUtils {
 public:
+
     static double convertUInt64ToDouble(unsigned __int64 u64);
 
     static float convertUInt64ToFloat(unsigned __int64 u64);
@@ -639,6 +619,7 @@ public:
 
     static double round(double x);
 };
+
 
 // The CLR requires that critical section locks be initialized via its ClrCreateCriticalSection API...but
 // that can't be called until the CLR is initialized. If we have static data that we'd like to protect by a
@@ -654,19 +635,20 @@ public:
 class CritSecObject
 {
 public:
+
     CritSecObject()
     {
-        m_pCs = nullptr;
+        m_pCs = NULL;
     }
 
     CRITSEC_COOKIE Val()
     {
-        if (m_pCs == nullptr)
+        if (m_pCs == NULL)
         {
             // CompareExchange-based lazy init.
-            CRITSEC_COOKIE newCs    = ClrCreateCriticalSection(CrstLeafLock, CRST_DEFAULT);
+            CRITSEC_COOKIE newCs = ClrCreateCriticalSection(CrstLeafLock, CRST_DEFAULT);
             CRITSEC_COOKIE observed = InterlockedCompareExchangeT(&m_pCs, newCs, NULL);
-            if (observed != nullptr)
+            if (observed != NULL)
             {
                 ClrDeleteCriticalSection(newCs);
             }
@@ -675,6 +657,7 @@ public:
     }
 
 private:
+
     // CRITSEC_COOKIE is an opaque pointer type.
     CRITSEC_COOKIE m_pCs;
 
@@ -689,7 +672,9 @@ private:
 class CritSecHolder
 {
 public:
-    CritSecHolder(CritSecObject& critSec) : m_CritSec(critSec)
+
+    CritSecHolder(CritSecObject& critSec)
+        : m_CritSec(critSec)
     {
         ClrEnterCriticalSection(m_CritSec.Val());
     }
@@ -700,11 +685,13 @@ public:
     }
 
 private:
+
     CritSecObject& m_CritSec;
 
     // No copying or assignment allowed.
     CritSecHolder(const CritSecHolder&) = delete;
     CritSecHolder& operator=(const CritSecHolder&) = delete;
 };
+
 
 #endif // _UTILS_H_

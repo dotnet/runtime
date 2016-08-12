@@ -4,7 +4,7 @@
 //
 //                                    Early Value Propagation
 //
-// This phase performs an SSA-based value propagation optimization that currently only applies to array
+// This phase performs an SSA-based value propagation optimization that currently only applies to array 
 // lengths, runtime type handles, and explicit null checks. An SSA-based backwards tracking of local variables
 // is performed at each point of interest, e.g., an array length reference site, a method table reference site, or
 // an indirection.
@@ -16,17 +16,18 @@
 #include "jitpch.h"
 #include "ssabuilder.h"
 
+
 bool Compiler::optDoEarlyPropForFunc()
 {
-    bool propArrayLen  = (optMethodFlags & OMF_HAS_NEWARRAY) && (optMethodFlags & OMF_HAS_ARRAYREF);
-    bool propGetType   = (optMethodFlags & OMF_HAS_NEWOBJ) && (optMethodFlags & OMF_HAS_VTABLEREF);
+    bool propArrayLen = (optMethodFlags & OMF_HAS_NEWARRAY) && (optMethodFlags & OMF_HAS_ARRAYREF);
+    bool propGetType = (optMethodFlags & OMF_HAS_NEWOBJ) && (optMethodFlags & OMF_HAS_VTABLEREF);
     bool propNullCheck = (optMethodFlags & OMF_HAS_NULLCHECK) != 0;
     return propArrayLen || propGetType || propNullCheck;
 }
 
 bool Compiler::optDoEarlyPropForBlock(BasicBlock* block)
 {
-    bool bbHasArrayRef  = (block->bbFlags & BBF_HAS_IDX_LEN) != 0;
+    bool bbHasArrayRef = (block->bbFlags & BBF_HAS_IDX_LEN) != 0;
     bool bbHasVtableRef = (block->bbFlags & BBF_HAS_VTABREF) != 0;
     bool bbHasNullCheck = (block->bbFlags & BBF_HAS_NULLCHECK) != 0;
     return bbHasArrayRef || bbHasVtableRef || bbHasNullCheck;
@@ -39,7 +40,7 @@ bool Compiler::optDoEarlyPropForBlock(BasicBlock* block)
 //    tree           - The input tree.
 //
 // Return Value:
-//    Return true if the tree is a method table reference.
+//    Return true if the tree is a method table reference. 
 
 bool Compiler::gtIsVtableRef(GenTreePtr tree)
 {
@@ -51,7 +52,8 @@ bool Compiler::gtIsVtableRef(GenTreePtr tree)
         {
             GenTreeAddrMode* addrMode = addr->AsAddrMode();
 
-            return (!addrMode->HasIndex() && (addrMode->Base()->TypeGet() == TYP_REF));
+            return (!addrMode->HasIndex() &&
+                    (addrMode->Base()->TypeGet() == TYP_REF));
         }
     }
 
@@ -59,14 +61,14 @@ bool Compiler::gtIsVtableRef(GenTreePtr tree)
 }
 
 //------------------------------------------------------------------------------
-// getArrayLengthFromAllocation: Return the array length for an array allocation
+// getArrayLengthFromAllocation: Return the array length for an array allocation 
 //                               helper call.
 //
 // Arguments:
 //    tree           - The array allocation helper call.
 //
 // Return Value:
-//    Return the array length node.
+//    Return the array length node. 
 
 GenTreePtr Compiler::getArrayLengthFromAllocation(GenTreePtr tree)
 {
@@ -93,14 +95,14 @@ GenTreePtr Compiler::getArrayLengthFromAllocation(GenTreePtr tree)
 }
 
 //-----------------------------------------------------------------------------
-// getObjectHandleNodeFromAllocation: Return the type handle for an object allocation
+// getObjectHandleNodeFromAllocation: Return the type handle for an object allocation 
 //                              helper call.
 //
 // Arguments:
 //    tree           - The object allocation helper call.
 //
 // Return Value:
-//    Return the object type handle node.
+//    Return the object type handle node. 
 
 GenTreePtr Compiler::getObjectHandleNodeFromAllocation(GenTreePtr tree)
 {
@@ -139,17 +141,17 @@ GenTreePtr Compiler::getObjectHandleNodeFromAllocation(GenTreePtr tree)
 //      2. Runtime type handle propagation.
 //      3. Null check folding.
 //
-//    For array length propagation, a demand-driven SSA-based backwards tracking of constant
-//    array lengths is performed at each array length reference site which is in form of a
-//    GT_ARR_LENGTH node. When a GT_ARR_LENGTH node is seen, the array ref pointer which is
-//    the only child node of the GT_ARR_LENGTH is tracked. This is only done for array ref
-//    pointers that have valid SSA forms.The tracking is along SSA use-def chain and stops
-//    at the original array allocation site where we can grab the array length. The
-//    GT_ARR_LENGTH node will then be rewritten to a GT_CNS_INT node if the array length is
+//    For array length propagation, a demand-driven SSA-based backwards tracking of constant 
+//    array lengths is performed at each array length reference site which is in form of a 
+//    GT_ARR_LENGTH node. When a GT_ARR_LENGTH node is seen, the array ref pointer which is 
+//    the only child node of the GT_ARR_LENGTH is tracked. This is only done for array ref 
+//    pointers that have valid SSA forms.The tracking is along SSA use-def chain and stops 
+//    at the original array allocation site where we can grab the array length. The 
+//    GT_ARR_LENGTH node will then be rewritten to a GT_CNS_INT node if the array length is 
 //    constant.
 //
-//    Similarly, the same algorithm also applies to rewriting a method table (also known as
-//    vtable) reference site which is in form of GT_INDIR node. The base pointer, which is
+//    Similarly, the same algorithm also applies to rewriting a method table (also known as 
+//    vtable) reference site which is in form of GT_INDIR node. The base pointer, which is 
 //    an object reference pointer, is treated in the same way as an array reference pointer.
 //
 //    Null check folding tries to find GT_INDIR(obj + const) that GT_NULLCHECK(obj) can be folded into
@@ -174,22 +176,20 @@ void Compiler::optEarlyProp()
     for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
     {
         if (!optDoEarlyPropForBlock(block))
-        {
             continue;
-        }
 
         compCurBB = block;
 
-        for (GenTreeStmt* stmt = block->firstStmt(); stmt != nullptr;)
+        for (GenTreeStmt* stmt = block->firstStmt(); stmt != nullptr; )
         {
             // Preserve the next link before the propagation and morph.
             GenTreeStmt* next = stmt->gtNextStmt;
 
             compCurStmt = stmt;
 
-            // Walk the stmt tree in linear order to rewrite any array length reference with a
+            // Walk the stmt tree in linear order to rewrite any array length reference with a 
             // constant array length.
-            bool isRewritten    = false;
+            bool isRewritten = false;
             bool bbHasNullCheck = (block->bbFlags & BBF_HAS_NULLCHECK) != 0;
             for (GenTreePtr tree = stmt->gtStmt.gtStmtList; tree != nullptr; tree = tree->gtNext)
             {
@@ -199,7 +199,7 @@ void Compiler::optEarlyProp()
                 }
             }
 
-            // Morph the stmt and update the evaluation order if the stmt has been rewritten.
+            // Morph the stmt and update the evaluation order if the stmt has been rewritten. 
             if (isRewritten)
             {
                 gtSetStmtInfo(stmt);
@@ -208,13 +208,13 @@ void Compiler::optEarlyProp()
 
             stmt = next;
         }
-    }
+    } 
 
 #ifdef DEBUG
     if (verbose)
     {
         JITDUMP("\nAfter optEarlyProp:\n");
-        fgDispBasicBlocks(/*dumpTrees*/ true);
+        fgDispBasicBlocks(/*dumpTrees*/true);
     }
 #endif
 }
@@ -226,17 +226,17 @@ void Compiler::optEarlyProp()
 //    tree           - The input tree node to be rewritten.
 //
 // Return Value:
-//    Return true iff "tree" is successfully rewritten.
+//    Return true iff "tree" is successfully rewritten. 
 
 bool Compiler::optEarlyPropRewriteTree(GenTreePtr tree)
 {
     GenTreePtr  objectRefPtr = nullptr;
-    optPropKind propKind     = optPropKind::OPK_INVALID;
+    optPropKind propKind = optPropKind::OPK_INVALID;
 
     if (tree->OperGet() == GT_ARR_LENGTH)
     {
         objectRefPtr = tree->gtOp.gtOp1;
-        propKind     = optPropKind::OPK_ARRAYLEN;
+        propKind = optPropKind::OPK_ARRAYLEN;
     }
     else if (tree->OperGet() == GT_IND)
     {
@@ -256,7 +256,7 @@ bool Compiler::optEarlyPropRewriteTree(GenTreePtr tree)
             }
 
             objectRefPtr = tree->gtOp.gtOp1;
-            propKind     = optPropKind::OPK_OBJ_GETTYPE;
+            propKind = optPropKind::OPK_OBJ_GETTYPE;
         }
         else
         {
@@ -268,16 +268,17 @@ bool Compiler::optEarlyPropRewriteTree(GenTreePtr tree)
         return false;
     }
 
-    if (!objectRefPtr->OperIsScalarLocal() || fgExcludeFromSsa(objectRefPtr->AsLclVarCommon()->GetLclNum()))
+    if (!objectRefPtr->OperIsScalarLocal() ||
+        fgExcludeFromSsa(objectRefPtr->AsLclVarCommon()->GetLclNum()))
 
     {
         return false;
     }
 
     bool       isRewritten = false;
-    GenTreePtr root        = compCurStmt;
-    unsigned   lclNum      = objectRefPtr->AsLclVarCommon()->GetLclNum();
-    unsigned   ssaNum      = objectRefPtr->AsLclVarCommon()->GetSsaNum();
+    GenTreePtr root = compCurStmt;
+    unsigned   lclNum = objectRefPtr->AsLclVarCommon()->GetLclNum();
+    unsigned   ssaNum = objectRefPtr->AsLclVarCommon()->GetSsaNum();
 
     GenTreePtr actualVal = optPropGetValue(lclNum, ssaNum, propKind);
 
@@ -290,9 +291,9 @@ bool Compiler::optEarlyPropRewriteTree(GenTreePtr tree)
             if (actualVal->gtIntCon.gtIconVal > INT32_MAX)
             {
                 // Don't propagate array lengths that are beyond the maximum value of a GT_ARR_LENGTH.
-                // node. CORINFO_HELP_NEWARR_1_OBJ helper call allows to take a long integer as the
+                // node. CORINFO_HELP_NEWARR_1_OBJ helper call allows to take a long integer as the 
                 // array length argument, but the type of GT_ARR_LENGTH is always INT32.
-                return false;
+                return  false;
             }
         }
         else if (propKind == optPropKind::OPK_OBJ_GETTYPE)
@@ -315,7 +316,8 @@ bool Compiler::optEarlyPropRewriteTree(GenTreePtr tree)
         // LabelIndex to update the FieldSeq annotations.  EarlyProp may replace
         // array length expressions with constants, so check if this is an array
         // length operator that is part of an array index expression.
-        bool isIndexExpr = (tree->OperGet() == GT_ARR_LENGTH && ((tree->gtFlags & GTF_ARRLEN_ARR_IDX) != 0));
+        bool       isIndexExpr = (tree->OperGet() == GT_ARR_LENGTH &&
+                                 ((tree->gtFlags & GTF_ARRLEN_ARR_IDX) != 0));
 
         if (actualVal->GetNodeSize() <= tree->GetNodeSize())
         {
@@ -330,8 +332,7 @@ bool Compiler::optEarlyPropRewriteTree(GenTreePtr tree)
 
         actualValCopy->CopyFrom(actualVal, this);
         actualValCopy->gtType = origType;
-        if (isIndexExpr)
-        {
+        if (isIndexExpr) {
             actualValCopy->LabelIndex(this);
         }
 
@@ -354,11 +355,11 @@ bool Compiler::optEarlyPropRewriteTree(GenTreePtr tree)
 #endif
     }
 
-    return isRewritten;
+    return  isRewritten;
 }
 
 //-------------------------------------------------------------------------------------------
-// optPropGetValue: Given an SSA object ref pointer, get the value needed based on valueKind.
+// optPropGetValue: Given an SSA object ref pointer, get the value needed based on valueKind. 
 //
 // Arguments:
 //    lclNum         - The local var number of the ref pointer.
@@ -375,7 +376,7 @@ GenTreePtr Compiler::optPropGetValue(unsigned lclNum, unsigned ssaNum, optPropKi
 
 //-----------------------------------------------------------------------------------
 // optPropGetValueRec: Given an SSA object ref pointer, get the value needed based on valueKind
-//                     within a recursion bound.
+//                     within a recursion bound. 
 //
 // Arguments:
 //    lclNum         - The local var number of the array pointer.
@@ -396,14 +397,14 @@ GenTreePtr Compiler::optPropGetValueRec(unsigned lclNum, unsigned ssaNum, optPro
     SSAName    ssaName(lclNum, ssaNum);
     GenTreePtr value = nullptr;
 
-    // Bound the recursion with a hard limit.
+    // Bound the recursion with a hard limit. 
     if (walkDepth > optEarlyPropRecurBound)
     {
         return nullptr;
     }
 
     // Track along the use-def chain to get the array length
-    GenTreePtr treelhs = lvaTable[lclNum].GetPerSsaData(ssaNum)->m_defLoc.m_tree;
+    GenTreePtr  treelhs = lvaTable[lclNum].GetPerSsaData(ssaNum)->m_defLoc.m_tree;
 
     if (treelhs == nullptr)
     {
@@ -413,7 +414,7 @@ GenTreePtr Compiler::optPropGetValueRec(unsigned lclNum, unsigned ssaNum, optPro
     }
     else
     {
-        GenTreePtr* lhsPtr;
+        GenTreePtr *lhsPtr;
         GenTreePtr  treeDefParent = treelhs->gtGetParent(&lhsPtr);
 
         if (treeDefParent->OperGet() == GT_ASG)
@@ -443,7 +444,7 @@ GenTreePtr Compiler::optPropGetValueRec(unsigned lclNum, unsigned ssaNum, optPro
                         }
                     }
                 }
-                else if (valueKind == optPropKind::OPK_OBJ_GETTYPE)
+                else if(valueKind == optPropKind::OPK_OBJ_GETTYPE)
                 {
                     value = getObjectHandleNodeFromAllocation(treeRhs);
                     if (value != nullptr)
@@ -483,8 +484,8 @@ void Compiler::optFoldNullCheck(GenTreePtr tree)
     //                         y    y  const
     //
     //
-    //                    some trees in the same
-    //                    basic block with
+    //                    some trees in the same 
+    //                    basic block with 
     //                    no unsafe side effects
     //
     //                           indir
@@ -514,17 +515,17 @@ void Compiler::optFoldNullCheck(GenTreePtr tree)
 
         // Find the definition of the indirected local (x in the picture)
         GenTreePtr indLocalTree = tree->gtGetOp1();
-        unsigned   lclNum       = indLocalTree->AsLclVarCommon()->GetLclNum();
-        unsigned   ssaNum       = indLocalTree->AsLclVarCommon()->GetSsaNum();
+        unsigned    lclNum = indLocalTree->AsLclVarCommon()->GetLclNum();
+        unsigned    ssaNum = indLocalTree->AsLclVarCommon()->GetSsaNum();
 
         if (ssaNum != SsaConfig::RESERVED_SSA_NUM)
         {
-            DefLoc      defLoc   = lvaTable[lclNum].GetPerSsaData(ssaNum)->m_defLoc;
+            DefLoc defLoc = lvaTable[lclNum].GetPerSsaData(ssaNum)->m_defLoc;
             BasicBlock* defBlock = defLoc.m_blk;
 
             if (compCurBB == defBlock)
             {
-                GenTreePtr defTree   = defLoc.m_tree;
+                GenTreePtr defTree = defLoc.m_tree;
                 GenTreePtr defParent = defTree->gtGetParent(nullptr);
 
                 if ((defParent->OperGet() == GT_ASG) && (defParent->gtNext == nullptr))
@@ -553,15 +554,14 @@ void Compiler::optFoldNullCheck(GenTreePtr tree)
                                             {
                                                 // Walk from the use to the def in reverse execution order to see
                                                 // if any nodes have unsafe side effects.
-                                                GenTreePtr     currentTree        = indLocalTree->gtPrev;
-                                                bool           isInsideTry        = compCurBB->hasTryIndex();
-                                                bool           canRemoveNullCheck = true;
-                                                const unsigned maxNodesWalked     = 25;
-                                                unsigned       nodesWalked        = 0;
+                                                GenTreePtr currentTree = indLocalTree->gtPrev;
+                                                bool isInsideTry = compCurBB->hasTryIndex();
+                                                bool canRemoveNullCheck = true;
+                                                const unsigned maxNodesWalked = 25;
+                                                unsigned nodesWalked = 0;
 
                                                 // First walk the nodes in the statement containing the indirection
-                                                // in reverse execution order starting with the indirection's
-                                                // predecessor.
+                                                // in reverse execution order starting with the indirection's predecessor.
                                                 while (canRemoveNullCheck && (currentTree != nullptr))
                                                 {
                                                     if ((nodesWalked++ > maxNodesWalked) ||
@@ -575,11 +575,11 @@ void Compiler::optFoldNullCheck(GenTreePtr tree)
                                                     }
                                                 }
 
-                                                // Then walk the statement list in reverse execution order
+                                                // Then walk the statement list in reverse execution order 
                                                 // until we get to the statement containing the null check.
                                                 // We only need to check the side effects at the root of each statement.
                                                 GenTreePtr curStmt = compCurStmt->gtPrev;
-                                                currentTree        = curStmt->gtStmt.gtStmtExpr;
+                                                currentTree = curStmt->gtStmt.gtStmtExpr;
                                                 while (canRemoveNullCheck && (currentTree != defParent))
                                                 {
                                                     if ((nodesWalked++ > maxNodesWalked) ||
@@ -604,8 +604,7 @@ void Compiler::optFoldNullCheck(GenTreePtr tree)
                                                     nullCheckTree->gtFlags |= GTF_ORDER_SIDEEFF;
 
                                                     defRHS->gtFlags &= ~(GTF_EXCEPT | GTF_DONT_CSE);
-                                                    defRHS->gtFlags |=
-                                                        additionNode->gtFlags & (GTF_EXCEPT | GTF_DONT_CSE);
+                                                    defRHS->gtFlags |= additionNode->gtFlags & (GTF_EXCEPT | GTF_DONT_CSE);
 
                                                     // Re-morph the statement.
                                                     fgMorphBlockStmt(compCurBB, curStmt DEBUGARG("optFoldNullCheck"));
@@ -636,7 +635,7 @@ void Compiler::optFoldNullCheck(GenTreePtr tree)
 // Arguments:
 //    tree           - The input GT_INDIR tree.
 //    isInsideTry    - True if tree is inside try, false otherwise
-//
+//    
 // Return Value:
 //    True if GT_NULLCHECK can be folded into a node that is after tree is execution order,
 //    false otherwise.

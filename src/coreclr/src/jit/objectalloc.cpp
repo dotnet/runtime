@@ -71,7 +71,9 @@ void ObjectAllocator::MorphAllocObjNodes()
             continue;
         }
 
-        for (GenTreeStmt* stmt = block->firstStmt(); stmt; stmt = stmt->gtNextStmt)
+        for (GenTreeStmt* stmt = block->firstStmt();
+            stmt;
+            stmt = stmt->gtNextStmt)
         {
             GenTreePtr stmtExpr = stmt->gtStmtExpr;
             GenTreePtr op2      = nullptr;
@@ -102,11 +104,11 @@ void ObjectAllocator::MorphAllocObjNodes()
 
                 assert(op1->OperGet() == GT_LCL_VAR);
                 assert(op1->TypeGet() == TYP_REF);
-                assert(op2 != nullptr);
+                assert(op2            != nullptr);
                 assert(op2->OperGet() == GT_ALLOCOBJ);
 
                 GenTreeAllocObj* asAllocObj = op2->AsAllocObj();
-                unsigned int     lclNum     = op1->AsLclVar()->GetLclNum();
+                unsigned int lclNum         = op1->AsLclVar()->GetLclNum();
 
                 if (IsObjectStackAllocationEnabled() && CanAllocateLclVarOnStack(lclNum))
                 {
@@ -119,7 +121,7 @@ void ObjectAllocator::MorphAllocObjNodes()
 
                 // Propagate flags of op2 to its parent.
                 stmtExpr->gtOp.gtOp2 = op2;
-                stmtExpr->gtFlags |= op2->gtFlags & GTF_ALL_EFFECT;
+                stmtExpr->gtFlags   |= op2->gtFlags & GTF_ALL_EFFECT;
             }
 #ifdef DEBUG
             else
@@ -151,7 +153,8 @@ GenTreePtr ObjectAllocator::MorphAllocObjNodeIntoHelperCall(GenTreeAllocObj* all
 
     GenTreePtr op1 = allocObj->gtGetOp1();
 
-    GenTreePtr helperCall = comp->fgMorphIntoHelperCall(allocObj, allocObj->gtNewHelper, comp->gtNewArgList(op1));
+    GenTreePtr helperCall = comp->fgMorphIntoHelperCall(
+        allocObj, allocObj->gtNewHelper, comp->gtNewArgList(op1));
 
     return helperCall;
 }
@@ -170,9 +173,7 @@ GenTreePtr ObjectAllocator::MorphAllocObjNodeIntoHelperCall(GenTreeAllocObj* all
 // Notes:
 //    Must update parents flags after this.
 //    This function can insert additional statements before stmt.
-GenTreePtr ObjectAllocator::MorphAllocObjNodeIntoStackAlloc(GenTreeAllocObj* allocObj,
-                                                            BasicBlock*      block,
-                                                            GenTreeStmt*     stmt)
+GenTreePtr ObjectAllocator::MorphAllocObjNodeIntoStackAlloc(GenTreeAllocObj* allocObj, BasicBlock* block, GenTreeStmt* stmt)
 {
     assert(allocObj != nullptr);
     assert(m_AnalysisDone);
@@ -192,7 +193,7 @@ Compiler::fgWalkResult ObjectAllocator::AssertWhenAllocObjFoundVisitor(GenTreePt
 {
     GenTreePtr tree = *pTree;
 
-    assert(tree != nullptr);
+    assert(tree            != nullptr);
     assert(tree->OperGet() != GT_ALLOCOBJ);
 
     return Compiler::fgWalkResult::WALK_CONTINUE;
