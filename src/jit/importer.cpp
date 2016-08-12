@@ -6586,6 +6586,11 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
         /* Set the delegate flag */
         call->gtCall.gtCallMoreFlags |= GTF_CALL_M_DELEGATE_INV;
 
+        if (callInfo->secureDelegateInvoke)
+        {
+            call->gtCall.gtCallMoreFlags |= GTF_CALL_M_SECURE_DELEGATE_INV;
+        }
+
         if (opcode == CEE_CALLVIRT)
         {
             assert(mflags & CORINFO_FLG_FINAL);
