@@ -1485,10 +1485,10 @@ mono_gc_get_managed_allocator_by_type (int atype, ManagedAllocatorVariant varian
 	MonoMethod *res;
 	MonoMethod **cache;
 
-	if (!use_managed_allocator)
+	if (variant == MANAGED_ALLOCATOR_REGULAR && !use_managed_allocator)
 		return NULL;
 
-	if (!mono_runtime_has_tls_get ())
+	if (variant == MANAGED_ALLOCATOR_REGULAR && !mono_runtime_has_tls_get ())
 		return NULL;
 
 	switch (variant) {

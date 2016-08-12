@@ -930,6 +930,9 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 				MANAGED_ALLOCATOR_SLOW_PATH : MANAGED_ALLOCATOR_REGULAR;
 
 			ref->method = mono_gc_get_managed_allocator_by_type (atype, variant);
+			/* Try to fallback to the slow path version */
+			if (!ref->method && variant == MANAGED_ALLOCATOR_REGULAR)
+				ref->method = mono_gc_get_managed_allocator_by_type (atype, MANAGED_ALLOCATOR_SLOW_PATH);
 			if (!ref->method) {
 				mono_error_set_bad_image_name (error, module->aot_name, "Error: No managed allocator, but we need one for AOT.\nAre you using non-standard GC options?\n");
 				return FALSE;
