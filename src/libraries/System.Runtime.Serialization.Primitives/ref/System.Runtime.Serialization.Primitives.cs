@@ -114,24 +114,7 @@ namespace System.Runtime.Serialization
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
     public partial struct StreamingContext
     {
-        public StreamingContext(System.Runtime.Serialization.StreamingContextStates state) { }
-        public StreamingContext(System.Runtime.Serialization.StreamingContextStates state, object additional) { }
         public override bool Equals(object obj) { return default(bool); }
         public override int GetHashCode() { return default(int); }
-        public System.Runtime.Serialization.StreamingContextStates State { get { return default(System.Runtime.Serialization.StreamingContextStates); } }
-        public object Context { get { return default(object); } }
-    }
-    [Flags]
-    public enum StreamingContextStates
-    {
-        CrossProcess = 0x01,
-        CrossMachine = 0x02,
-        File = 0x04,
-        Persistence = 0x08,
-        Remoting = 0x10,
-        Other = 0x20,
-        Clone = 0x40,
-        CrossAppDomain = 0x80,
-        All = 0xFF,
     }
 }
