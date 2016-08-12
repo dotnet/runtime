@@ -282,5 +282,44 @@ namespace System.Collections.Tests
         }
 
         #endregion
+
+        #region CreateSetComparer
+
+#if netstandard17
+        [Fact]
+        public void SetComparer_SetEqualsTests()
+        {
+            List<T> objects = new List<T>() { CreateT(1), CreateT(2), CreateT(3), CreateT(4), CreateT(5), CreateT(6) };
+
+            var set = new HashSet<SortedSet<T>>()
+            {
+                new SortedSet<T> { objects[0], objects[1], objects[2] },
+                new SortedSet<T> { objects[3], objects[4], objects[5] }
+            };
+
+            var noComparerSet = new HashSet<SortedSet<T>>()
+            {
+                new SortedSet<T> { objects[0], objects[1], objects[2] },
+                new SortedSet<T> { objects[3], objects[4], objects[5] }
+            };
+
+            var comparerSet1 = new HashSet<SortedSet<T>>(SortedSet<T>.CreateSetComparer())
+            {
+                new SortedSet<T> { objects[0], objects[1], objects[2] },
+                new SortedSet<T> { objects[3], objects[4], objects[5] }
+            };
+
+            var comparerSet2 = new HashSet<SortedSet<T>>(SortedSet<T>.CreateSetComparer())
+            {
+                new SortedSet<T> { objects[3], objects[4], objects[5] },
+                new SortedSet<T> { objects[0], objects[1], objects[2] }
+            };
+
+            Assert.False(noComparerSet.SetEquals(set));
+            Assert.True(comparerSet1.SetEquals(set));
+            Assert.True(comparerSet2.SetEquals(set));
+        }
+#endif
+        #endregion
     }
 }

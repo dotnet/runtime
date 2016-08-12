@@ -35,6 +35,7 @@
     <Compile Include="System\Collections\Generic\ICollectionDebugView.cs" />
     <Compile Include="System\Collections\Generic\IDictionaryDebugView.cs" />
     <Compile Include="System\Collections\Generic\HashSet.cs" />
+    <Compile Include="System\Collections\Generic\HashSetEqualityComparer.cs" />
     <Compile Include="System\Collections\Generic\LinkedList.cs" />
     <Compile Include="System\Collections\Generic\Queue.cs" />
     <Compile Include="System\Collections\Generic\QueueDebugView.cs" />

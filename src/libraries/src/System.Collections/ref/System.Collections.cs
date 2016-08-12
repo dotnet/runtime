@@ -5,11 +5,6 @@
 // Changes to this file must follow the http://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
-namespace System
-{
-    public delegate TOutput Converter<in TInput, out TOutput>(TInput input);     
-}
-
 namespace System.Collections
 {
     public sealed partial class BitArray : System.Collections.ICollection, System.Collections.IEnumerable
@@ -185,6 +180,7 @@ namespace System.Collections.Generic
         public void CopyTo(T[] array) { }
         public void CopyTo(T[] array, int arrayIndex) { }
         public void CopyTo(T[] array, int arrayIndex, int count) { }
+        public static IEqualityComparer<HashSet<T>> CreateSetComparer() { return default(IEqualityComparer<HashSet<T>>); }
         public void ExceptWith(System.Collections.Generic.IEnumerable<T> other) { }
         public System.Collections.Generic.HashSet<T>.Enumerator GetEnumerator() { return default(System.Collections.Generic.HashSet<T>.Enumerator); }
         public void IntersectWith(System.Collections.Generic.IEnumerable<T> other) { }
@@ -284,7 +280,7 @@ namespace System.Collections.Generic
         public int BinarySearch(int index, int count, T item, System.Collections.Generic.IComparer<T> comparer) { return default(int); }
         public void Clear() { }
         public bool Contains(T item) { return default(bool); }
-        public List<TOutput> ConvertAll<TOutput>(System.Converter<T,TOutput> converter) { throw null; }
+        public List<TOutput> ConvertAll<TOutput>(System.Converter<T,TOutput> converter) { return default(List<TOutput>); }
         public void CopyTo(T[] array) { }
         public void CopyTo(T[] array, int arrayIndex) { }
         public void CopyTo(int index, T[] array, int arrayIndex, int count) { }
@@ -544,6 +540,8 @@ namespace System.Collections.Generic
         public void CopyTo(T[] array) { }
         public void CopyTo(T[] array, int index) { }
         public void CopyTo(T[] array, int index, int count) { }
+        public static IEqualityComparer<SortedSet<T>> CreateSetComparer() { return default(IEqualityComparer<SortedSet<T>>); }
+        public static IEqualityComparer<SortedSet<T>> CreateSetComparer(IEqualityComparer<T> memberEqualityComparer) { return default(IEqualityComparer<SortedSet<T>>); }
         public void ExceptWith(System.Collections.Generic.IEnumerable<T> other) { }
         public System.Collections.Generic.SortedSet<T>.Enumerator GetEnumerator() { return default(System.Collections.Generic.SortedSet<T>.Enumerator); }
         public virtual System.Collections.Generic.SortedSet<T> GetViewBetween(T lowerValue, T upperValue) { return default(System.Collections.Generic.SortedSet<T>); }
