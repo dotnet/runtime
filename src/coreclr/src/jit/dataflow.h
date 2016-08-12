@@ -18,6 +18,7 @@
 #include "compiler.h"
 #include "jitstd.h"
 
+
 class DataFlow
 {
 private:
@@ -71,7 +72,7 @@ void DataFlow::ForwardAnalysis(TCallback& callback)
         if (callback.EndMerge(block))
         {
             AllSuccessorIter succsBegin = block->GetAllSuccs(m_pCompiler).begin();
-            AllSuccessorIter succsEnd   = block->GetAllSuccs(m_pCompiler).end();
+            AllSuccessorIter succsEnd = block->GetAllSuccs(m_pCompiler).end(); 
             for (AllSuccessorIter succ = succsBegin; succ != succsEnd; ++succ)
             {
                 worklist.insert(worklist.end(), *succ);
@@ -79,3 +80,4 @@ void DataFlow::ForwardAnalysis(TCallback& callback)
         }
     }
 }
+

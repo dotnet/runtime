@@ -29,8 +29,8 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
  * @params alloc The allocator class used to allocate jitstd data.
  */
 SsaRenameState::SsaRenameState(const jitstd::allocator<int>& alloc, unsigned lvaCount)
-    : counts(nullptr)
-    , stacks(nullptr)
+    : counts(NULL)
+    , stacks(NULL)
     , definedLocs(alloc)
     , heapStack(alloc)
     , heapCount(0)
@@ -46,7 +46,7 @@ SsaRenameState::SsaRenameState(const jitstd::allocator<int>& alloc, unsigned lva
  */
 void SsaRenameState::EnsureCounts()
 {
-    if (counts == nullptr)
+    if (counts == NULL)
     {
         counts = jitstd::utility::allocate<unsigned>(m_alloc, lvaCount);
         for (unsigned i = 0; i < lvaCount; ++i)
@@ -63,15 +63,16 @@ void SsaRenameState::EnsureCounts()
  */
 void SsaRenameState::EnsureStacks()
 {
-    if (stacks == nullptr)
+    if (stacks == NULL)
     {
         stacks = jitstd::utility::allocate<Stack*>(m_alloc, lvaCount);
         for (unsigned i = 0; i < lvaCount; ++i)
         {
-            stacks[i] = nullptr;
+            stacks[i] = NULL;
         }
     }
 }
+
 
 /**
  * Returns a SSA count number for a local variable and does a post increment.
@@ -108,9 +109,9 @@ unsigned SsaRenameState::CountForUse(unsigned lclNum)
 {
     EnsureStacks();
     DBG_SSA_JITDUMP("[SsaRenameState::CountForUse] V%02u\n", lclNum);
-
+  
     Stack* stack = stacks[lclNum];
-    if (stack == nullptr || stack->empty())
+    if (stack == NULL || stack->empty())
     {
         return SsaConfig::UNINIT_SSA_NUM;
     }
@@ -132,15 +133,15 @@ void SsaRenameState::Push(BasicBlock* bb, unsigned lclNum, unsigned count)
 
     // We'll use BB00 here to indicate the "block before any real blocks..."
     DBG_SSA_JITDUMP("[SsaRenameState::Push] BB%02u, V%02u, count = %d\n", bb != nullptr ? bb->bbNum : 0, lclNum, count);
-
+   
     Stack* stack = stacks[lclNum];
 
-    if (stack == nullptr)
+    if (stack == NULL)
     {
         DBG_SSA_JITDUMP("\tCreating a new stack\n");
         stack = stacks[lclNum] = new (jitstd::utility::allocate<Stack>(m_alloc), jitstd::placement_t()) Stack(m_alloc);
     }
-
+        
     if (stack->empty() || stack->back().m_bb != bb)
     {
         stack->push_back(SsaRenameStateForBlock(bb, count));
@@ -159,7 +160,7 @@ void SsaRenameState::Push(BasicBlock* bb, unsigned lclNum, unsigned count)
         printf("\tContents of the stack: [");
         for (Stack::iterator iter2 = stack->begin(); iter2 != stack->end(); iter2++)
         {
-            printf("<BB%02u, %d>", ((*iter2).m_bb != nullptr ? (*iter2).m_bb->bbNum : 0), (*iter2).m_count);
+            printf("<BB%02u, %d>", ((*iter2).m_bb != nullptr ? (*iter2).m_bb->bbNum : 0) , (*iter2).m_count);
         }
         printf("]\n");
 
@@ -176,9 +177,9 @@ void SsaRenameState::PopBlockStacks(BasicBlock* block)
     while (!definedLocs.empty() && definedLocs.back().m_bb == block)
     {
         unsigned lclNum = definedLocs.back().m_lclNum;
-        assert(stacks != nullptr); // Cannot be empty because definedLocs is not empty.
+        assert(stacks != NULL); // Cannot be empty because definedLocs is not empty.
         Stack* stack = stacks[lclNum];
-        assert(stack != nullptr);
+        assert(stack != NULL);
         assert(stack->back().m_bb == block);
         stack->pop_back();
         definedLocs.pop_back();
@@ -188,7 +189,7 @@ void SsaRenameState::PopBlockStacks(BasicBlock* block)
     // the loop above popped them all.
     for (unsigned i = 0; i < lvaCount; ++i)
     {
-        if (stacks != nullptr && stacks[i] != nullptr && !stacks[i]->empty())
+        if (stacks != NULL && stacks[i] != NULL && !stacks[i]->empty())
         {
             assert(stacks[i]->back().m_bb != block);
         }
@@ -208,6 +209,7 @@ void SsaRenameState::PopBlockHeapStack(BasicBlock* block)
     }
 }
 
+
 #ifdef DEBUG
 /**
  * Print the stack data for each variable in a loop.
@@ -226,7 +228,7 @@ void SsaRenameState::DumpStacks()
         {
             Stack* stack = stacks[i];
             printf("V%02u:\t", i);
-            if (stack != nullptr)
+            if (stack != NULL)
             {
                 for (Stack::iterator iter2 = stack->begin(); iter2 != stack->end(); ++iter2)
                 {

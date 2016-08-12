@@ -34,7 +34,8 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 /*****************************************************************************/
 /*****************************************************************************/
 
-inline bool getInlinePInvokeEnabled()
+inline
+bool                 getInlinePInvokeEnabled()
 {
 #ifdef DEBUG
     return JitConfig.JitPInvokeEnabled() && !JitConfig.StressCOMCall();
@@ -43,7 +44,8 @@ inline bool getInlinePInvokeEnabled()
 #endif
 }
 
-inline bool getInlinePInvokeCheckEnabled()
+inline
+bool                 getInlinePInvokeCheckEnabled()
 {
 #ifdef DEBUG
     return JitConfig.JitPInvokeCheckEnabled() != 0;
@@ -53,34 +55,37 @@ inline bool getInlinePInvokeCheckEnabled()
 }
 
 // Enforce float narrowing for buggy compilers (notably preWhidbey VC)
-inline float forceCastToFloat(double d)
-{
+inline 
+float                forceCastToFloat(double d)
+{  
     Volatile<float> f = (float)d;
     return f;
 }
 
 // Enforce UInt32 narrowing for buggy compilers (notably Whidbey Beta 2 LKG)
-inline UINT32 forceCastToUInt32(double d)
-{
+inline
+UINT32               forceCastToUInt32(double d)
+{  
     Volatile<UINT32> u = (UINT32)d;
     return u;
 }
 
 enum RoundLevel
 {
-    ROUND_NEVER     = 0, // Never round
-    ROUND_CMP_CONST = 1, // Round values compared against constants
-    ROUND_CMP       = 2, // Round comparands and return values
-    ROUND_ALWAYS    = 3, // Round always
+    ROUND_NEVER     = 0,    // Never round
+    ROUND_CMP_CONST = 1,    // Round values compared against constants
+    ROUND_CMP       = 2,    // Round comparands and return values
+    ROUND_ALWAYS    = 3,    // Round always
 
     COUNT_ROUND_LEVEL,
     DEFAULT_ROUND_LEVEL = ROUND_NEVER
 };
 
-inline RoundLevel getRoundFloatLevel()
+inline
+RoundLevel          getRoundFloatLevel()
 {
 #ifdef DEBUG
-    return (RoundLevel)JitConfig.JitRoundFloat();
+    return (RoundLevel) JitConfig.JitRoundFloat();
 #else
     return DEFAULT_ROUND_LEVEL;
 #endif
@@ -92,8 +97,9 @@ inline RoundLevel getRoundFloatLevel()
  *  Return the lowest bit that is set
  */
 
-template <typename T>
-inline T genFindLowestBit(T value)
+template<typename T>
+inline
+T    genFindLowestBit(T value)
 {
     return (value & (0 - value));
 }
@@ -106,7 +112,8 @@ inline T genFindLowestBit(T value)
  *  compiler intrinsics, but our CRT header file intrin.h doesn't define these for ARM64 yet.
  */
 
-inline unsigned int genFindHighestBit(unsigned int mask)
+inline
+unsigned int genFindHighestBit(unsigned int mask)
 {
     assert(mask != 0);
     unsigned int bit = 1U << ((sizeof(unsigned int) * 8) - 1); // start looking at the top
@@ -117,7 +124,8 @@ inline unsigned int genFindHighestBit(unsigned int mask)
     return bit;
 }
 
-inline unsigned __int64 genFindHighestBit(unsigned __int64 mask)
+inline
+unsigned __int64 genFindHighestBit(unsigned __int64 mask)
 {
     assert(mask != 0);
     unsigned __int64 bit = 1ULL << ((sizeof(unsigned __int64) * 8) - 1); // start looking at the top
@@ -149,15 +157,17 @@ unsigned __int64 genFindHighestBit(unsigned __int64 mask)
 }
 #endif // 0
 
+
 /*****************************************************************************
  *
  *  Return true if the given 64-bit value has exactly zero or one bits set.
  */
 
 template <typename T>
-inline BOOL genMaxOneBit(T value)
+inline
+BOOL                genMaxOneBit(T value)
 {
-    return (value & (value - 1)) == 0;
+    return (value & (value-1))==0;
 }
 
 /*****************************************************************************
@@ -165,9 +175,10 @@ inline BOOL genMaxOneBit(T value)
  *  Return true if the given 32-bit value has exactly zero or one bits set.
  */
 
-inline BOOL genMaxOneBit(unsigned value)
+inline
+BOOL                genMaxOneBit(unsigned value)
 {
-    return (value & (value - 1)) == 0;
+    return (value & (value-1))==0;
 }
 
 /*****************************************************************************
@@ -176,7 +187,8 @@ inline BOOL genMaxOneBit(unsigned value)
  *  bit, in other words return the logarithm in base 2 of the given value.
  */
 
-inline unsigned genLog2(unsigned value)
+inline
+unsigned            genLog2(unsigned value)
 {
     return BitPosition(value);
 }
@@ -187,19 +199,20 @@ inline unsigned genLog2(unsigned value)
  *  bit, in other words return the logarithm in base 2 of the given value.
  */
 
-inline unsigned genLog2(unsigned __int64 value)
+inline
+unsigned            genLog2(unsigned __int64 value)
 {
-    unsigned lo32 = (unsigned)value;
-    unsigned hi32 = (unsigned)(value >> 32);
+    unsigned lo32 = (unsigned)  value;
+    unsigned hi32 = (unsigned) (value >> 32);
 
-    if (lo32 != 0)
+    if  (lo32 != 0)
     {
         assert(hi32 == 0);
-        return genLog2(lo32);
+        return  genLog2(lo32);
     }
     else
     {
-        return genLog2(hi32) + 32;
+        return  genLog2(hi32) + 32;
     }
 }
 
@@ -208,9 +221,10 @@ inline unsigned genLog2(unsigned __int64 value)
  *  Return the lowest bit that is set in the given register mask.
  */
 
-inline regMaskTP genFindLowestReg(regMaskTP value)
+inline
+regMaskTP            genFindLowestReg(regMaskTP value)
 {
-    return (regMaskTP)genFindLowestBit(value);
+    return  (regMaskTP)genFindLowestBit(value);
 }
 
 /*****************************************************************************
@@ -218,10 +232,10 @@ inline regMaskTP genFindLowestReg(regMaskTP value)
  *  A rather simple routine that counts the number of bits in a given number.
  */
 
-template <typename T>
+template<typename T>
 inline unsigned genCountBits(T bits)
 {
-    unsigned cnt = 0;
+    unsigned        cnt = 0;
 
     while (bits)
     {
@@ -229,48 +243,53 @@ inline unsigned genCountBits(T bits)
         bits -= genFindLowestBit(bits);
     }
 
-    return cnt;
+    return  cnt;
 }
 
 /*****************************************************************************
  *
  *  Given 3 masks value, end, start, returns the bits of value between start
  *  and end (exclusive).
- *
+ *  
  *  value[bitNum(end) - 1, bitNum(start) + 1]
  */
 
-inline unsigned __int64 BitsBetween(unsigned __int64 value, unsigned __int64 end, unsigned __int64 start)
+inline
+unsigned __int64    BitsBetween(unsigned __int64 value, unsigned __int64 end, unsigned __int64 start)
 {
     assert(start != 0);
     assert(start < end);
     assert((start & (start - 1)) == 0);
     assert((end & (end - 1)) == 0);
 
-    return value & ~((start - 1) | start) & // Ones to the left of set bit in the start mask.
-           (end - 1);                       // Ones to the right of set bit in the end mask.
+    return value &
+           ~((start - 1) | start) & // Ones to the left of set bit in the start mask.
+           (end - 1);               // Ones to the right of set bit in the end mask.
+
 }
 
 /*****************************************************************************/
 
-inline bool jitIsScaleIndexMul(size_t val)
+inline
+bool                jitIsScaleIndexMul(size_t val)
 {
     switch (val)
     {
-        case 1:
-        case 2:
-        case 4:
-        case 8:
-            return true;
+    case 1:
+    case 2:
+    case 4:
+    case 8:
+        return true;
 
-        default:
-            return false;
+    default:
+        return false;
     }
 }
 
 // Returns "tree" iff "val" is a valid addressing mode scale shift amount on
 // the target architecture.
-inline bool jitIsScaleIndexShift(ssize_t val)
+inline
+bool                jitIsScaleIndexShift(ssize_t val)
 {
     // It happens that this is the right test for all our current targets: x86, x64 and ARM.
     // This test would become target-dependent if we added a new target with a different constraint.
@@ -283,7 +302,8 @@ inline bool jitIsScaleIndexShift(ssize_t val)
  */
 
 /* static */
-inline bool Compiler::jitIsBetween(unsigned value, unsigned start, unsigned end)
+inline
+bool                Compiler::jitIsBetween(unsigned value, unsigned start, unsigned end)
 {
     return start <= value && value < end;
 }
@@ -294,7 +314,8 @@ inline bool Compiler::jitIsBetween(unsigned value, unsigned start, unsigned end)
  */
 
 /* static */
-inline bool Compiler::jitIsBetweenInclusive(unsigned value, unsigned start, unsigned end)
+inline
+bool                Compiler::jitIsBetweenInclusive(unsigned value, unsigned start, unsigned end)
 {
     return start <= value && value <= end;
 }
@@ -302,61 +323,63 @@ inline bool Compiler::jitIsBetweenInclusive(unsigned value, unsigned start, unsi
 /******************************************************************************************
  * Return the EH descriptor for the given region index.
  */
-inline EHblkDsc* Compiler::ehGetDsc(unsigned regionIndex)
+inline EHblkDsc*           Compiler::ehGetDsc(unsigned regionIndex)
 {
     assert(regionIndex < compHndBBtabCount);
     return &compHndBBtab[regionIndex];
 }
 
+
 /******************************************************************************************
  * Return the EH descriptor index of the enclosing try, for the given region index.
  */
-inline unsigned Compiler::ehGetEnclosingTryIndex(unsigned regionIndex)
+inline unsigned             Compiler::ehGetEnclosingTryIndex(unsigned regionIndex)
 {
     return ehGetDsc(regionIndex)->ebdEnclosingTryIndex;
 }
 
+
 /******************************************************************************************
  * Return the EH descriptor index of the enclosing handler, for the given region index.
  */
-inline unsigned Compiler::ehGetEnclosingHndIndex(unsigned regionIndex)
+inline unsigned             Compiler::ehGetEnclosingHndIndex(unsigned regionIndex)
 {
     return ehGetDsc(regionIndex)->ebdEnclosingHndIndex;
 }
 
+
 /******************************************************************************************
  * Return the EH index given a region descriptor.
  */
-inline unsigned Compiler::ehGetIndex(EHblkDsc* ehDsc)
+inline unsigned             Compiler::ehGetIndex(EHblkDsc* ehDsc)
 {
-    assert(compHndBBtab <= ehDsc && ehDsc < compHndBBtab + compHndBBtabCount);
+    assert(compHndBBtab <= ehDsc &&
+                           ehDsc < compHndBBtab + compHndBBtabCount);
     return (unsigned)(ehDsc - compHndBBtab);
 }
+
 
 /******************************************************************************************
  * Return the EH descriptor for the most nested 'try' region this BasicBlock is a member of
  * (or nullptr if this block is not in a 'try' region).
  */
-inline EHblkDsc* Compiler::ehGetBlockTryDsc(BasicBlock* block)
+inline EHblkDsc*           Compiler::ehGetBlockTryDsc(BasicBlock* block)
 {
     if (!block->hasTryIndex())
-    {
         return nullptr;
-    }
 
     return ehGetDsc(block->getTryIndex());
 }
+
 
 /******************************************************************************************
  * Return the EH descriptor for the most nested filter or handler region this BasicBlock is a member of
  * (or nullptr if this block is not in a filter or handler region).
  */
-inline EHblkDsc* Compiler::ehGetBlockHndDsc(BasicBlock* block)
+inline EHblkDsc*           Compiler::ehGetBlockHndDsc(BasicBlock* block)
 {
     if (!block->hasHndIndex())
-    {
         return nullptr;
-    }
 
     return ehGetDsc(block->getHndIndex());
 }
@@ -368,7 +391,7 @@ inline EHblkDsc* Compiler::ehGetBlockHndDsc(BasicBlock* block)
  *  This is only valid during codegen.
  *
  */
-inline FuncInfoDsc* Compiler::funCurrentFunc()
+inline FuncInfoDsc * Compiler::funCurrentFunc()
 {
     return funGetFunc(compCurrFuncIdx);
 }
@@ -378,7 +401,7 @@ inline FuncInfoDsc* Compiler::funCurrentFunc()
  *  This is only valid after funclets are created.
  *
  */
-inline void Compiler::funSetCurrentFunc(unsigned funcIdx)
+inline void          Compiler::funSetCurrentFunc(unsigned funcIdx)
 {
     assert(fgFuncletsCreated);
     assert(FitsIn<unsigned short>(funcIdx));
@@ -391,9 +414,9 @@ inline void Compiler::funSetCurrentFunc(unsigned funcIdx)
  *  This is only valid after funclets are created.
  *
  */
-inline FuncInfoDsc* Compiler::funGetFunc(unsigned funcIdx)
-{
-    assert(fgFuncletsCreated);
+inline FuncInfoDsc * Compiler::funGetFunc(unsigned funcIdx)
+{ 
+    assert(fgFuncletsCreated); 
     assert(funcIdx < compFuncInfoCount);
     return &compFuncInfos[funcIdx];
 }
@@ -406,12 +429,12 @@ inline FuncInfoDsc* Compiler::funGetFunc(unsigned funcIdx)
  *  if this should return the filter funclet or the filter handler funclet.
  *
  */
-inline unsigned Compiler::funGetFuncIdx(BasicBlock* block)
+inline unsigned      Compiler::funGetFuncIdx(BasicBlock * block)
 {
-    assert(fgFuncletsCreated);
+    assert(fgFuncletsCreated); 
     assert(block->bbFlags & BBF_FUNCLET_BEG);
 
-    EHblkDsc*    eh      = ehGetDsc(block->getHndIndex());
+    EHblkDsc * eh = ehGetDsc(block->getHndIndex());
     unsigned int funcIdx = eh->ebdFuncIndex;
     if (eh->ebdHndBeg != block)
     {
@@ -436,7 +459,7 @@ inline unsigned Compiler::funGetFuncIdx(BasicBlock* block)
  *  always the root function.
  *
  */
-inline FuncInfoDsc* Compiler::funCurrentFunc()
+inline FuncInfoDsc * Compiler::funCurrentFunc()
 {
     return &compFuncInfoRoot;
 }
@@ -446,7 +469,7 @@ inline FuncInfoDsc* Compiler::funCurrentFunc()
  *  This is only valid after funclets are created.
  *
  */
-inline void Compiler::funSetCurrentFunc(unsigned funcIdx)
+inline void          Compiler::funSetCurrentFunc(unsigned funcIdx)
 {
     assert(funcIdx == 0);
 }
@@ -456,8 +479,8 @@ inline void Compiler::funSetCurrentFunc(unsigned funcIdx)
  *  This is only valid after funclets are created.
  *
  */
-inline FuncInfoDsc* Compiler::funGetFunc(unsigned funcIdx)
-{
+inline FuncInfoDsc * Compiler::funGetFunc(unsigned funcIdx)
+{ 
     assert(funcIdx == 0);
     return &compFuncInfoRoot;
 }
@@ -466,7 +489,7 @@ inline FuncInfoDsc* Compiler::funGetFunc(unsigned funcIdx)
  *  No funclets, so always 0.
  *
  */
-inline unsigned Compiler::funGetFuncIdx(BasicBlock* block)
+inline unsigned      Compiler::funGetFuncIdx(BasicBlock * block)
 {
     return 0;
 }
@@ -478,9 +501,10 @@ inline unsigned Compiler::funGetFuncIdx(BasicBlock* block)
  *  Map a register mask to a register number
  */
 
-inline regNumber genRegNumFromMask(regMaskTP mask)
+inline
+regNumber           genRegNumFromMask(regMaskTP mask)
 {
-    assert(mask != 0); // Must have one bit set, so can't have a mask of zero
+    assert(mask != 0);  // Must have one bit set, so can't have a mask of zero
 
     /* Convert the mask to a register number */
 
@@ -490,7 +514,7 @@ inline regNumber genRegNumFromMask(regMaskTP mask)
 
     assert(genRegMask(regNum) == mask);
 
-    return regNum;
+    return  regNum;
 }
 
 /*****************************************************************************
@@ -498,12 +522,14 @@ inline regNumber genRegNumFromMask(regMaskTP mask)
  *  Return the size in bytes of the given type.
  */
 
-extern const BYTE genTypeSizes[TYP_COUNT];
+extern const
+BYTE                genTypeSizes[TYP_COUNT];
 
-template <class T>
-inline unsigned genTypeSize(T type)
+template<class T>
+inline unsigned
+genTypeSize(T type)
 {
-    assert((unsigned)TypeGet(type) < sizeof(genTypeSizes) / sizeof(genTypeSizes[0]));
+    assert((unsigned)TypeGet(type) < sizeof(genTypeSizes)/sizeof(genTypeSizes[0]));
 
     return genTypeSizes[TypeGet(type)];
 }
@@ -514,11 +540,13 @@ inline unsigned genTypeSize(T type)
  *      returns 1 for 32-bit types and 2 for 64-bit types.
  */
 
-extern const BYTE genTypeStSzs[TYP_COUNT];
+extern const
+BYTE                genTypeStSzs[TYP_COUNT];
 
-inline unsigned genTypeStSz(var_types type)
+inline
+unsigned            genTypeStSz(var_types type)
 {
-    assert((unsigned)type < sizeof(genTypeStSzs) / sizeof(genTypeStSzs[0]));
+    assert((unsigned)type < sizeof(genTypeStSzs)/sizeof(genTypeStSzs[0]));
 
     return genTypeStSzs[type];
 }
@@ -528,21 +556,24 @@ inline unsigned genTypeStSz(var_types type)
  *  Return the number of registers required to hold a value of the given type.
  */
 
+
 /*****************************************************************************
  *
  *  The following function maps a 'precise' type to an actual type as seen
  *  by the VM (for example, 'byte' maps to 'int').
  */
 
-extern const BYTE genActualTypes[TYP_COUNT];
+extern const
+BYTE                genActualTypes[TYP_COUNT];
 
-inline var_types genActualType(var_types type)
+inline
+var_types           genActualType(var_types type)
 {
     /* Spot check to make certain the table is in synch with the enum */
 
     assert(genActualTypes[TYP_DOUBLE] == TYP_DOUBLE);
-    assert(genActualTypes[TYP_FNC] == TYP_FNC);
-    assert(genActualTypes[TYP_REF] == TYP_REF);
+    assert(genActualTypes[TYP_FNC   ] == TYP_FNC);
+    assert(genActualTypes[TYP_REF   ] == TYP_REF);
 
     assert((unsigned)type < sizeof(genActualTypes));
     return (var_types)genActualTypes[type];
@@ -550,26 +581,18 @@ inline var_types genActualType(var_types type)
 
 /*****************************************************************************/
 
-inline var_types genUnsignedType(var_types type)
+inline
+var_types           genUnsignedType(var_types type)
 {
     /* Force signed types into corresponding unsigned type */
 
     switch (type)
     {
-        case TYP_BYTE:
-            type = TYP_UBYTE;
-            break;
-        case TYP_SHORT:
-            type = TYP_CHAR;
-            break;
-        case TYP_INT:
-            type = TYP_UINT;
-            break;
-        case TYP_LONG:
-            type = TYP_ULONG;
-            break;
-        default:
-            break;
+      case TYP_BYTE:    type = TYP_UBYTE;  break;
+      case TYP_SHORT:   type = TYP_CHAR;   break;
+      case TYP_INT:     type = TYP_UINT;   break;
+      case TYP_LONG:    type = TYP_ULONG;  break;
+      default:          break;
     }
 
     return type;
@@ -577,21 +600,17 @@ inline var_types genUnsignedType(var_types type)
 
 /*****************************************************************************/
 
-inline var_types genSignedType(var_types type)
+inline
+var_types           genSignedType(var_types type)
 {
     /* Force non-small unsigned type into corresponding signed type */
     /* Note that we leave the small types alone */
 
     switch (type)
     {
-        case TYP_UINT:
-            type = TYP_INT;
-            break;
-        case TYP_ULONG:
-            type = TYP_LONG;
-            break;
-        default:
-            break;
+      case TYP_UINT:    type = TYP_INT;    break;
+      case TYP_ULONG:   type = TYP_LONG;   break;
+      default:          break;
     }
 
     return type;
@@ -601,35 +620,39 @@ inline var_types genSignedType(var_types type)
  *  Can this type be passed as a parameter in a register?
  */
 
-inline bool isRegParamType(var_types type)
+inline
+bool                isRegParamType(var_types type)
 {
 #if defined(_TARGET_X86_)
-    return (type <= TYP_INT || type == TYP_REF || type == TYP_BYREF);
-#else  // !_TARGET_X86_
+    return  (type <= TYP_INT ||
+             type == TYP_REF ||
+             type == TYP_BYREF);
+#else // !_TARGET_X86_
     return true;
 #endif // !_TARGET_X86_
 }
 
 #if defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_)
 /*****************************************************************************/
-// Returns true if 'type' is a struct that can be enregistered for call args
-//                         or can be returned by value in multiple registers.
-//              if 'type' is not a struct the return value will be false.
-//
-// Arguments:
-//    type      - the basic jit var_type for the item being queried
-//    typeClass - the handle for the struct when 'type' is TYP_STRUCT
-//    typeSize  - Out param (if non-null) is updated with the size of 'type'.
-//    forReturn - this is true when we asking about a GT_RETURN context;
-//                this is false when we are asking about an argument context
-//
-inline bool Compiler::VarTypeIsMultiByteAndCanEnreg(var_types            type,
-                                                    CORINFO_CLASS_HANDLE typeClass,
-                                                    unsigned*            typeSize,
-                                                    bool                 forReturn)
+ // Returns true if 'type' is a struct that can be enregistered for call args 
+ //                         or can be returned by value in multiple registers.
+ //              if 'type' is not a struct the return value will be false.
+ //
+ // Arguments:
+ //    type      - the basic jit var_type for the item being queried
+ //    typeClass - the handle for the struct when 'type' is TYP_STRUCT
+ //    typeSize  - Out param (if non-null) is updated with the size of 'type'.
+ //    forReturn - this is true when we asking about a GT_RETURN context;
+ //                this is false when we are asking about an argument context
+ //
+inline
+bool   Compiler::VarTypeIsMultiByteAndCanEnreg(var_types type, 
+                                               CORINFO_CLASS_HANDLE typeClass, 
+                                               unsigned *typeSize, 
+                                               bool forReturn)
 {
-    bool     result = false;
-    unsigned size   = 0;
+    bool result = false;
+    unsigned size = 0;
 
     if (varTypeIsStruct(type))
     {
@@ -663,20 +686,19 @@ inline bool Compiler::VarTypeIsMultiByteAndCanEnreg(var_types            type,
 }
 #endif //_TARGET_AMD64_ || _TARGET_ARM64_
 
+
 /*****************************************************************************/
 
 #ifdef DEBUG
 
-inline const char* varTypeGCstring(var_types type)
+inline
+const char *        varTypeGCstring(var_types type)
 {
     switch (type)
     {
-        case TYP_REF:
-            return "gcr";
-        case TYP_BYREF:
-            return "byr";
-        default:
-            return "non";
+    case TYP_REF:   return "gcr";
+    case TYP_BYREF: return "byr";
+    default:        return "non";
     }
 }
 
@@ -684,87 +706,83 @@ inline const char* varTypeGCstring(var_types type)
 
 /*****************************************************************************/
 
-const char* varTypeName(var_types);
+const   char *      varTypeName(var_types);
 
 /*****************************************************************************
  *
  *  Helpers to pull big-endian values out of a byte stream.
  */
 
-inline unsigned genGetU1(const BYTE* addr)
+inline  unsigned    genGetU1(const BYTE *addr)
 {
-    return addr[0];
+    return  addr[0];
 }
 
-inline signed genGetI1(const BYTE* addr)
+inline    signed    genGetI1(const BYTE *addr)
 {
-    return (signed char)addr[0];
+    return  (signed char)addr[0];
 }
 
-inline unsigned genGetU2(const BYTE* addr)
+inline  unsigned    genGetU2(const BYTE *addr)
 {
-    return (addr[0] << 8) | addr[1];
+    return  (addr[0] << 8) | addr[1];
 }
 
-inline signed genGetI2(const BYTE* addr)
+inline    signed    genGetI2(const BYTE *addr)
 {
-    return (signed short)((addr[0] << 8) | addr[1]);
+    return  (signed short)((addr[0] << 8) | addr[1]);
 }
 
-inline unsigned genGetU4(const BYTE* addr)
+inline  unsigned    genGetU4(const BYTE *addr)
 {
-    return (addr[0] << 24) | (addr[1] << 16) | (addr[2] << 8) | addr[3];
+    return  (addr[0] << 24) | (addr[1] << 16) | (addr[2] << 8) | addr[3];
 }
 
 /*****************************************************************************/
 //  Helpers to pull little-endian values out of a byte stream.
 
-inline unsigned __int8 getU1LittleEndian(const BYTE* ptr)
-{
-    return *(UNALIGNED unsigned __int8*)ptr;
-}
+inline
+unsigned __int8     getU1LittleEndian(const BYTE * ptr)
+{ return *(UNALIGNED unsigned __int8 *)ptr; }
 
-inline unsigned __int16 getU2LittleEndian(const BYTE* ptr)
-{
-    return GET_UNALIGNED_VAL16(ptr);
-}
+inline
+unsigned __int16    getU2LittleEndian(const BYTE * ptr)
+{ return GET_UNALIGNED_VAL16(ptr); }
 
-inline unsigned __int32 getU4LittleEndian(const BYTE* ptr)
-{
-    return GET_UNALIGNED_VAL32(ptr);
-}
+inline
+unsigned __int32    getU4LittleEndian(const BYTE * ptr)
+{ return GET_UNALIGNED_VAL32(ptr); }
 
-inline signed __int8 getI1LittleEndian(const BYTE* ptr)
-{
-    return *(UNALIGNED signed __int8*)ptr;
-}
+inline
+  signed __int8     getI1LittleEndian(const BYTE * ptr)
+{ return *(UNALIGNED signed __int8 *)ptr; }
 
-inline signed __int16 getI2LittleEndian(const BYTE* ptr)
-{
-    return GET_UNALIGNED_VAL16(ptr);
-}
+inline
+  signed __int16    getI2LittleEndian(const BYTE * ptr)
+{ return GET_UNALIGNED_VAL16(ptr); }
 
-inline signed __int32 getI4LittleEndian(const BYTE* ptr)
-{
-    return GET_UNALIGNED_VAL32(ptr);
-}
+inline
+  signed __int32    getI4LittleEndian(const BYTE * ptr)
+{ return GET_UNALIGNED_VAL32(ptr); }
 
-inline signed __int64 getI8LittleEndian(const BYTE* ptr)
-{
-    return GET_UNALIGNED_VAL64(ptr);
-}
+inline
+  signed __int64    getI8LittleEndian(const BYTE * ptr)
+{ return GET_UNALIGNED_VAL64(ptr); }
 
-inline float getR4LittleEndian(const BYTE* ptr)
+inline
+float               getR4LittleEndian(const BYTE * ptr)
 {
     __int32 val = getI4LittleEndian(ptr);
-    return *(float*)&val;
+    return *(float *)&val;
 }
 
-inline double getR8LittleEndian(const BYTE* ptr)
+inline
+double              getR8LittleEndian(const BYTE * ptr)
 {
     __int64 val = getI8LittleEndian(ptr);
-    return *(double*)&val;
+    return *(double *)&val;
 }
+
 
 /*****************************************************************************
  *
@@ -777,17 +795,19 @@ inline double getR8LittleEndian(const BYTE* ptr)
  *  This precondition is checked by the assert on the first line of this method.
  */
 
-inline EXPSET_TP genCSEnum2bit(unsigned index)
+inline
+EXPSET_TP           genCSEnum2bit(unsigned index)
 {
     assert((index > 0) && (index <= EXPSET_SZ));
 
-    return ((EXPSET_TP)1 << (index - 1));
+    return  ((EXPSET_TP)1 << (index-1));
 }
 
-#ifdef DEBUG
-const char* genES2str(EXPSET_TP set);
-const char* refCntWtd2str(unsigned refCntWtd);
+#ifdef  DEBUG
+const   char *      genES2str(EXPSET_TP set);
+const   char *      refCntWtd2str(unsigned refCntWtd);
 #endif
+
 
 /*
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -801,19 +821,19 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 void* GenTree::operator new(size_t sz, Compiler* comp, genTreeOps oper)
 {
-#if SMALL_TREE_NODES
-    size_t size = GenTree::s_gtNodeSizes[oper];
+#if     SMALL_TREE_NODES
+    size_t          size = GenTree::s_gtNodeSizes[oper];
 #else
-    size_t     size  = TREE_NODE_SZ_LARGE;
+    size_t          size = TREE_NODE_SZ_LARGE;
 #endif
 
-#if MEASURE_NODE_SIZE
-    genNodeSizeStats.genTreeNodeCnt += 1;
-    genNodeSizeStats.genTreeNodeSize += size;
+#if     MEASURE_NODE_SIZE
+    genNodeSizeStats.genTreeNodeCnt        += 1;
+    genNodeSizeStats.genTreeNodeSize       += size;
     genNodeSizeStats.genTreeNodeActualSize += sz;
 
-    genNodeSizeStatsPerFunc.genTreeNodeCnt += 1;
-    genNodeSizeStatsPerFunc.genTreeNodeSize += size;
+    genNodeSizeStatsPerFunc.genTreeNodeCnt        += 1;
+    genNodeSizeStatsPerFunc.genTreeNodeSize       += size;
     genNodeSizeStatsPerFunc.genTreeNodeActualSize += sz;
 #endif // MEASURE_NODE_SIZE
 
@@ -822,11 +842,12 @@ void* GenTree::operator new(size_t sz, Compiler* comp, genTreeOps oper)
 }
 
 // GenTree constructor
-inline GenTree::GenTree(genTreeOps oper, var_types type DEBUGARG(bool largeNode))
+inline
+GenTree::GenTree(genTreeOps oper, var_types type DEBUGARG(bool largeNode))
 {
-    gtOper  = oper;
-    gtType  = type;
-    gtFlags = 0;
+    gtOper     = oper;
+    gtType     = type;
+    gtFlags    = 0;
 #ifdef DEBUG
     gtDebugFlags = 0;
 #endif // DEBUG
@@ -834,27 +855,27 @@ inline GenTree::GenTree(genTreeOps oper, var_types type DEBUGARG(bool largeNode)
     gtUsedRegs = 0;
 #endif // LEGACY_BACKEND
 #if FEATURE_ANYCSE
-    gtCSEnum = NO_CSE;
+    gtCSEnum   = NO_CSE;
 #endif // FEATURE_ANYCSE
 #if ASSERTION_PROP
     ClearAssertion();
 #endif
 
 #if FEATURE_STACK_FP_X87
-    gtFPlvl = 0;
+    gtFPlvl    = 0;
 #endif
 
-    gtNext   = nullptr;
-    gtPrev   = nullptr;
-    gtRegNum = REG_NA;
+    gtNext     = NULL;
+    gtPrev     = NULL;
+    gtRegNum   = REG_NA;
     INDEBUG(gtRegTag = GT_REGTAG_NONE;)
 
     INDEBUG(gtCostsInitialized = false;)
 
 #ifdef DEBUG
-#if SMALL_TREE_NODES
+#if     SMALL_TREE_NODES
     size_t size = GenTree::s_gtNodeSizes[oper];
-    if (size == TREE_NODE_SZ_SMALL && !largeNode)
+    if      (size == TREE_NODE_SZ_SMALL && !largeNode)
     {
         gtDebugFlags |= GTF_DEBUG_NODE_SMALL;
     }
@@ -870,8 +891,8 @@ inline GenTree::GenTree(genTreeOps oper, var_types type DEBUGARG(bool largeNode)
 #endif
 
 #ifdef DEBUG
-    gtSeqNum = 0;
-    gtTreeID = JitTls::GetCompiler()->compGenTreeID++;
+    gtSeqNum   = 0;
+    gtTreeID   = JitTls::GetCompiler()->compGenTreeID++;
     gtVNPair.SetBoth(ValueNumStore::NoVN);
     gtRegTag   = GT_REGTAG_NONE;
     gtOperSave = GT_NONE;
@@ -880,24 +901,25 @@ inline GenTree::GenTree(genTreeOps oper, var_types type DEBUGARG(bool largeNode)
 
 /*****************************************************************************/
 
-inline GenTreeStmt* Compiler::gtNewStmt(GenTreePtr expr, IL_OFFSETX offset)
+inline
+GenTreeStmt*        Compiler::gtNewStmt(GenTreePtr expr, IL_OFFSETX offset)
 {
     /* NOTE - GT_STMT is now a small node in retail */
 
-    GenTreeStmt* stmt = new (this, GT_STMT) GenTreeStmt(expr, offset);
+    GenTreeStmt*  stmt = new(this, GT_STMT) GenTreeStmt(expr, offset);
 
     return stmt;
 }
 
 /*****************************************************************************/
 
-inline GenTreePtr Compiler::gtNewOperNode(genTreeOps oper, var_types type, GenTreePtr op1, bool doSimplifications)
+inline
+GenTreePtr          Compiler::gtNewOperNode(genTreeOps oper,
+                                            var_types  type,  GenTreePtr op1, bool doSimplifications)
 {
     assert((GenTree::OperKind(oper) & (GTK_UNOP | GTK_BINOP)) != 0);
-    assert((GenTree::OperKind(oper) & GTK_EXOP) ==
-           0); // Can't use this to construct any types that extend unary/binary operator.
-    assert(op1 != nullptr || oper == GT_PHI || oper == GT_RETFILT || oper == GT_NOP ||
-           (oper == GT_RETURN && type == TYP_VOID));
+    assert((GenTree::OperKind(oper) & GTK_EXOP) == 0); // Can't use this to construct any types that extend unary/binary operator.
+    assert(op1 != NULL || oper == GT_PHI || oper == GT_RETFILT || oper == GT_NOP || (oper == GT_RETURN && type == TYP_VOID));
 
     if (doSimplifications)
     {
@@ -927,7 +949,7 @@ inline GenTreePtr Compiler::gtNewOperNode(genTreeOps oper, var_types type, GenTr
         }
     }
 
-    GenTreePtr node = new (this, oper) GenTreeOp(oper, type, op1, nullptr);
+    GenTreePtr      node = new(this, oper) GenTreeOp(oper, type, op1, NULL);
 
     //
     // the GT_ADDR of a Local Variable implies GTF_ADDR_ONSTACK
@@ -940,10 +962,11 @@ inline GenTreePtr Compiler::gtNewOperNode(genTreeOps oper, var_types type, GenTr
     return node;
 }
 
+
 // Returns an opcode that is of the largest node size in use.
 inline genTreeOps LargeOpOpcode()
 {
-#if SMALL_TREE_NODES
+#if     SMALL_TREE_NODES
     // Allocate a large node
     assert(GenTree::s_gtNodeSizes[GT_CALL] == TREE_NODE_SZ_LARGE);
 #endif
@@ -955,19 +978,22 @@ inline genTreeOps LargeOpOpcode()
  * Use to create nodes which may later be morphed to another (big) operator
  */
 
-inline GenTreePtr Compiler::gtNewLargeOperNode(genTreeOps oper, var_types type, GenTreePtr op1, GenTreePtr op2)
+inline
+GenTreePtr          Compiler::gtNewLargeOperNode(genTreeOps     oper,
+                                                 var_types      type,
+                                                 GenTreePtr     op1,
+                                                 GenTreePtr     op2)
 {
     assert((GenTree::OperKind(oper) & (GTK_UNOP | GTK_BINOP)) != 0);
-    assert((GenTree::OperKind(oper) & GTK_EXOP) ==
-           0); // Can't use this to construct any types that extend unary/binary operator.
-#if SMALL_TREE_NODES
+    assert((GenTree::OperKind(oper) & GTK_EXOP) == 0); // Can't use this to construct any types that extend unary/binary operator.
+#if     SMALL_TREE_NODES
     // Allocate a large node
 
-    assert(GenTree::s_gtNodeSizes[oper] == TREE_NODE_SZ_SMALL);
+    assert(GenTree::s_gtNodeSizes[oper   ] == TREE_NODE_SZ_SMALL);
 
-    GenTreePtr node = new (this, LargeOpOpcode()) GenTreeOp(oper, type, op1, op2 DEBUGARG(/*largeNode*/ true));
+    GenTreePtr node = new(this, LargeOpOpcode()) GenTreeOp(oper, type, op1, op2 DEBUGARG(/*largeNode*/true));
 #else
-    GenTreePtr node  = new (this, oper) GenTreeOp(oper, type, op1, op2);
+    GenTreePtr node = new(this, oper) GenTreeOp(oper, type, op1, op2);
 #endif
 
     return node;
@@ -979,29 +1005,31 @@ inline GenTreePtr Compiler::gtNewLargeOperNode(genTreeOps oper, var_types type, 
  *  that may need to be fixed up).
  */
 
-inline GenTreePtr Compiler::gtNewIconHandleNode(
-    size_t value, unsigned flags, FieldSeqNode* fields, unsigned handle1, void* handle2)
+inline
+GenTreePtr          Compiler::gtNewIconHandleNode(size_t        value,
+                                                  unsigned      flags,
+                                                  FieldSeqNode* fields,
+                                                  unsigned      handle1,
+                                                  void *        handle2)
 {
-    GenTreePtr node;
+    GenTreePtr      node;
     assert((flags & (GTF_ICON_HDL_MASK | GTF_ICON_FIELD_OFF)) != 0);
 
     // Interpret "fields == NULL" as "not a field."
-    if (fields == nullptr)
-    {
+    if (fields == NULL) 
         fields = FieldSeqStore::NotAField();
-    }
 
 #if defined(LATE_DISASM)
-    node = new (this, LargeOpOpcode()) GenTreeIntCon(TYP_I_IMPL, value, fields DEBUGARG(/*largeNode*/ true));
+    node = new (this, LargeOpOpcode()) GenTreeIntCon(TYP_I_IMPL, value, fields DEBUGARG(/*largeNode*/true));
 
     node->gtIntCon.gtIconHdl.gtIconHdl1 = handle1;
     node->gtIntCon.gtIconHdl.gtIconHdl2 = handle2;
 #else
-    node             = new (this, GT_CNS_INT) GenTreeIntCon(TYP_I_IMPL, value, fields);
+    node = new(this, GT_CNS_INT) GenTreeIntCon(TYP_I_IMPL, value, fields);
 #endif
     node->gtFlags |= flags;
     return node;
-}
+} 
 
 /*****************************************************************************
  *
@@ -1010,9 +1038,10 @@ inline GenTreePtr Compiler::gtNewIconHandleNode(
  *  These are versions for each specific type of HANDLE
  */
 
-inline GenTreePtr Compiler::gtNewIconEmbScpHndNode(CORINFO_MODULE_HANDLE scpHnd, unsigned hnd1, void* hnd2)
+inline
+GenTreePtr  Compiler::gtNewIconEmbScpHndNode (CORINFO_MODULE_HANDLE    scpHnd, unsigned hnd1, void * hnd2)
 {
-    void *embedScpHnd, *pEmbedScpHnd;
+    void * embedScpHnd, * pEmbedScpHnd;
 
     embedScpHnd = (void*)info.compCompHnd->embedModuleHandle(scpHnd, &pEmbedScpHnd);
 
@@ -1023,9 +1052,10 @@ inline GenTreePtr Compiler::gtNewIconEmbScpHndNode(CORINFO_MODULE_HANDLE scpHnd,
 
 //-----------------------------------------------------------------------------
 
-inline GenTreePtr Compiler::gtNewIconEmbClsHndNode(CORINFO_CLASS_HANDLE clsHnd, unsigned hnd1, void* hnd2)
+inline
+GenTreePtr  Compiler::gtNewIconEmbClsHndNode (CORINFO_CLASS_HANDLE    clsHnd, unsigned hnd1, void * hnd2)
 {
-    void *embedClsHnd, *pEmbedClsHnd;
+    void * embedClsHnd, * pEmbedClsHnd;
 
     embedClsHnd = (void*)info.compCompHnd->embedClassHandle(clsHnd, &pEmbedClsHnd);
 
@@ -1036,9 +1066,10 @@ inline GenTreePtr Compiler::gtNewIconEmbClsHndNode(CORINFO_CLASS_HANDLE clsHnd, 
 
 //-----------------------------------------------------------------------------
 
-inline GenTreePtr Compiler::gtNewIconEmbMethHndNode(CORINFO_METHOD_HANDLE methHnd, unsigned hnd1, void* hnd2)
+inline
+GenTreePtr  Compiler::gtNewIconEmbMethHndNode(CORINFO_METHOD_HANDLE  methHnd, unsigned hnd1, void * hnd2)
 {
-    void *embedMethHnd, *pEmbedMethHnd;
+    void * embedMethHnd, * pEmbedMethHnd;
 
     embedMethHnd = (void*)info.compCompHnd->embedMethodHandle(methHnd, &pEmbedMethHnd);
 
@@ -1049,9 +1080,10 @@ inline GenTreePtr Compiler::gtNewIconEmbMethHndNode(CORINFO_METHOD_HANDLE methHn
 
 //-----------------------------------------------------------------------------
 
-inline GenTreePtr Compiler::gtNewIconEmbFldHndNode(CORINFO_FIELD_HANDLE fldHnd, unsigned hnd1, void* hnd2)
+inline
+GenTreePtr  Compiler::gtNewIconEmbFldHndNode (CORINFO_FIELD_HANDLE    fldHnd, unsigned hnd1, void * hnd2)
 {
-    void *embedFldHnd, *pEmbedFldHnd;
+    void * embedFldHnd, * pEmbedFldHnd;
 
     embedFldHnd = (void*)info.compCompHnd->embedFieldHandle(fldHnd, &pEmbedFldHnd);
 
@@ -1060,11 +1092,19 @@ inline GenTreePtr Compiler::gtNewIconEmbFldHndNode(CORINFO_FIELD_HANDLE fldHnd, 
     return gtNewIconEmbHndNode(embedFldHnd, pEmbedFldHnd, GTF_ICON_FIELD_HDL, hnd1, hnd2, fldHnd);
 }
 
+
 /*****************************************************************************/
 
-inline GenTreeCall* Compiler::gtNewHelperCallNode(unsigned helper, var_types type, unsigned flags, GenTreeArgList* args)
+inline
+GenTreeCall*        Compiler::gtNewHelperCallNode(unsigned        helper,
+                                                  var_types       type,
+                                                  unsigned        flags,
+                                                  GenTreeArgList* args)
 {
-    GenTreeCall* result = gtNewCallNode(CT_HELPER, eeFindHelper(helper), type, args);
+    GenTreeCall* result = gtNewCallNode(CT_HELPER,
+                                        eeFindHelper(helper),
+                                        type,
+                                        args);
     result->gtFlags |= flags;
 
 #if DEBUG
@@ -1088,20 +1128,22 @@ inline GenTreeCall* Compiler::gtNewHelperCallNode(unsigned helper, var_types typ
 // Return Value:
 //    Returns GT_ALLOCOBJ node that will be later morphed into an
 //    allocation helper call or local variable allocation on the stack.
-inline GenTreePtr Compiler::gtNewAllocObjNode(unsigned int         helper,
-                                              CORINFO_CLASS_HANDLE clsHnd,
-                                              var_types            type,
-                                              GenTreePtr           op1)
+inline
+GenTreePtr          Compiler::gtNewAllocObjNode(unsigned int         helper,
+                                                CORINFO_CLASS_HANDLE clsHnd,
+                                                var_types            type,
+                                                GenTreePtr           op1)
 {
-    GenTreePtr node = new (this, GT_ALLOCOBJ) GenTreeAllocObj(type, helper, clsHnd, op1);
+    GenTreePtr      node = new(this, GT_ALLOCOBJ) GenTreeAllocObj(type, helper, clsHnd, op1);
     return node;
 }
 
 /*****************************************************************************/
 
-inline GenTreePtr Compiler::gtNewCodeRef(BasicBlock* block)
+inline
+GenTreePtr          Compiler::gtNewCodeRef(BasicBlock *block)
 {
-    GenTreePtr node = new (this, GT_LABEL) GenTreeLabel(block);
+    GenTreePtr      node = new(this, GT_LABEL) GenTreeLabel(block);
     return node;
 }
 
@@ -1110,40 +1152,44 @@ inline GenTreePtr Compiler::gtNewCodeRef(BasicBlock* block)
  *  A little helper to create a data member reference node.
  */
 
-inline GenTreePtr Compiler::gtNewFieldRef(
-    var_types typ, CORINFO_FIELD_HANDLE fldHnd, GenTreePtr obj, DWORD offset, bool nullcheck)
+inline
+GenTreePtr          Compiler::gtNewFieldRef(var_types     typ,
+                                            CORINFO_FIELD_HANDLE  fldHnd,
+                                            GenTreePtr    obj,
+                                            DWORD         offset,
+                                            bool          nullcheck)
 {
 #if SMALL_TREE_NODES
     /* 'GT_FIELD' nodes may later get transformed into 'GT_IND' */
 
     assert(GenTree::s_gtNodeSizes[GT_IND] <= GenTree::s_gtNodeSizes[GT_FIELD]);
-    GenTreePtr tree = new (this, GT_FIELD) GenTreeField(typ);
+    GenTreePtr tree = new(this, GT_FIELD) GenTreeField(typ);
 #else
-    GenTreePtr  tree = new (this, GT_FIELD) GenTreeField(typ);
+    GenTreePtr tree = new(this, GT_FIELD) GenTreeField(typ);
 #endif
-    tree->gtField.gtFldObj    = obj;
-    tree->gtField.gtFldHnd    = fldHnd;
+    tree->gtField.gtFldObj = obj;
+    tree->gtField.gtFldHnd = fldHnd;
     tree->gtField.gtFldOffset = offset;
-    tree->gtFlags |= GTF_GLOB_REF;
+    tree->gtFlags         |= GTF_GLOB_REF;
 
 #ifdef FEATURE_READYTORUN_COMPILER
     tree->gtField.gtFieldLookup.addr = nullptr;
 #endif
 
     if (nullcheck)
-    {
         tree->gtFlags |= GTF_FLD_NULLCHECK;
-    }
 
     // If "obj" is the address of a local, note that a field of that struct local has been accessed.
-    if (obj != nullptr && obj->OperGet() == GT_ADDR && varTypeIsStruct(obj->gtOp.gtOp1) &&
+    if (obj != NULL &&
+        obj->OperGet() == GT_ADDR &&
+        varTypeIsStruct(obj->gtOp.gtOp1) &&
         obj->gtOp.gtOp1->OperGet() == GT_LCL_VAR)
     {
-        unsigned lclNum                  = obj->gtOp.gtOp1->gtLclVarCommon.gtLclNum;
+        unsigned lclNum = obj->gtOp.gtOp1->gtLclVarCommon.gtLclNum;
         lvaTable[lclNum].lvFieldAccessed = 1;
     }
 
-    return tree;
+    return  tree;
 }
 
 /*****************************************************************************
@@ -1151,12 +1197,18 @@ inline GenTreePtr Compiler::gtNewFieldRef(
  *  A little helper to create an array index node.
  */
 
-inline GenTreePtr Compiler::gtNewIndexRef(var_types typ, GenTreePtr arrayOp, GenTreePtr indexOp)
+inline
+GenTreePtr          Compiler::gtNewIndexRef(var_types     typ,
+                                            GenTreePtr    arrayOp,
+                                            GenTreePtr    indexOp)
 {
-    GenTreeIndex* gtIndx = new (this, GT_INDEX) GenTreeIndex(typ, arrayOp, indexOp, genTypeSize(typ));
+    GenTreeIndex* gtIndx = new(this, GT_INDEX) GenTreeIndex(typ, arrayOp, indexOp, genTypeSize(typ));
 
-    return gtIndx;
+    return  gtIndx;
 }
+
+
+
 
 /*****************************************************************************
  *
@@ -1164,16 +1216,19 @@ inline GenTreePtr Compiler::gtNewIndexRef(var_types typ, GenTreePtr arrayOp, Gen
  *  any code. We currently use a "nop" node of type void for this purpose.
  */
 
-inline GenTreePtr Compiler::gtNewNothingNode()
+inline
+GenTreePtr          Compiler::gtNewNothingNode()
 {
-    return new (this, GT_NOP) GenTreeOp(GT_NOP, TYP_VOID);
+    return  new (this, GT_NOP) GenTreeOp(GT_NOP, TYP_VOID);
 }
 /*****************************************************************************/
 
-inline bool GenTree::IsNothingNode() const
+inline
+bool                GenTree::IsNothingNode() const
 {
     return (gtOper == GT_NOP && gtType == TYP_VOID);
 }
+
 
 /*****************************************************************************
  *
@@ -1181,15 +1236,17 @@ inline bool GenTree::IsNothingNode() const
  *
  *****************************************************************************/
 
-inline void GenTree::gtBashToNOP()
+inline
+void                GenTree::gtBashToNOP()
 {
     ChangeOper(GT_NOP);
 
     gtType     = TYP_VOID;
-    gtOp.gtOp1 = gtOp.gtOp2 = nullptr;
+    gtOp.gtOp1 = gtOp.gtOp2 = 0;
 
     gtFlags &= ~(GTF_ALL_EFFECT | GTF_REVERSE_OPS);
 }
+
 
 // return new arg placeholder node.  Does not do anything but has a type associated
 // with it so we can keep track of register arguments in lists associated w/ call nodes
@@ -1197,13 +1254,14 @@ inline void GenTree::gtBashToNOP()
 inline GenTreePtr Compiler::gtNewArgPlaceHolderNode(var_types type, CORINFO_CLASS_HANDLE clsHnd)
 {
     GenTreePtr node = new (this, GT_ARGPLACE) GenTreeArgPlace(type, clsHnd);
-    return node;
+    return node; 
 }
 
 /*****************************************************************************/
 
-inline GenTreePtr Compiler::gtUnusedValNode(GenTreePtr expr)
-{
+inline
+GenTreePtr          Compiler::gtUnusedValNode(GenTreePtr expr)
+{    
     return gtNewOperNode(GT_COMMA, TYP_VOID, expr, gtNewNothingNode());
 }
 
@@ -1214,10 +1272,11 @@ inline GenTreePtr Compiler::gtUnusedValNode(GenTreePtr expr)
  * operands
  */
 
-inline void Compiler::gtSetStmtInfo(GenTree* stmt)
+inline
+void               Compiler::gtSetStmtInfo(GenTree * stmt)
 {
     assert(stmt->gtOper == GT_STMT);
-    GenTreePtr expr = stmt->gtStmt.gtStmtExpr;
+    GenTreePtr      expr = stmt->gtStmt.gtStmtExpr;
 
 #if FEATURE_STACK_FP_X87
     /* We will try to compute the FP stack level at each node */
@@ -1229,9 +1288,7 @@ inline void Compiler::gtSetStmtInfo(GenTree* stmt)
 
 #ifdef DEBUG
     if (verbose && 0)
-    {
         gtDispTree(stmt);
-    }
 #endif
 
     /* Recursively process the expression */
@@ -1247,7 +1304,7 @@ inline void Compiler::gtSetStmtInfo(GenTree* stmt)
 
     /* Do we need to recompute FP stack levels? */
 
-    if (gtFPstLvlRedo)
+    if  (gtFPstLvlRedo)
     {
         codeGen->genResetFPstkLevel();
         gtComputeFPlvls(expr);
@@ -1256,17 +1313,18 @@ inline void Compiler::gtSetStmtInfo(GenTree* stmt)
 #endif // FEATURE_STACK_FP_X87
 }
 
+
 #if FEATURE_STACK_FP_X87
-inline unsigned Compiler::gtSetEvalOrderAndRestoreFPstkLevel(GenTree* tree)
+inline unsigned    Compiler::gtSetEvalOrderAndRestoreFPstkLevel(GenTree *      tree)
 {
-    unsigned FPlvlSave     = codeGen->genFPstkLevel;
-    unsigned result        = gtSetEvalOrder(tree);
+    unsigned FPlvlSave = codeGen->genFPstkLevel;
+    unsigned result = gtSetEvalOrder(tree);
     codeGen->genFPstkLevel = FPlvlSave;
 
     return result;
 }
-#else  // !FEATURE_STACK_FP_X87
-inline unsigned Compiler::gtSetEvalOrderAndRestoreFPstkLevel(GenTree* tree)
+#else // !FEATURE_STACK_FP_X87
+inline unsigned    Compiler::gtSetEvalOrderAndRestoreFPstkLevel(GenTree *      tree)
 {
     return gtSetEvalOrder(tree);
 }
@@ -1276,17 +1334,20 @@ inline unsigned Compiler::gtSetEvalOrderAndRestoreFPstkLevel(GenTree* tree)
 #if SMALL_TREE_NODES
 /*****************************************************************************/
 
-inline void GenTree::SetOper(genTreeOps oper, ValueNumberUpdate vnUpdate)
+inline
+void                GenTree::SetOper(genTreeOps oper, ValueNumberUpdate vnUpdate)
 {
-    assert(((gtDebugFlags & GTF_DEBUG_NODE_SMALL) != 0) != ((gtDebugFlags & GTF_DEBUG_NODE_LARGE) != 0));
+    assert(((gtDebugFlags & GTF_DEBUG_NODE_SMALL) != 0) !=
+           ((gtDebugFlags & GTF_DEBUG_NODE_LARGE) != 0));
 
     /* Make sure the node isn't too small for the new operator */
 
     assert(GenTree::s_gtNodeSizes[gtOper] == TREE_NODE_SZ_SMALL ||
            GenTree::s_gtNodeSizes[gtOper] == TREE_NODE_SZ_LARGE);
-    assert(GenTree::s_gtNodeSizes[oper] == TREE_NODE_SZ_SMALL || GenTree::s_gtNodeSizes[oper] == TREE_NODE_SZ_LARGE);
+    assert(GenTree::s_gtNodeSizes[  oper] == TREE_NODE_SZ_SMALL ||
+           GenTree::s_gtNodeSizes[  oper] == TREE_NODE_SZ_LARGE);
 
-    assert(GenTree::s_gtNodeSizes[oper] == TREE_NODE_SZ_SMALL || (gtDebugFlags & GTF_DEBUG_NODE_LARGE));
+    assert(GenTree::s_gtNodeSizes[  oper] == TREE_NODE_SZ_SMALL || (gtDebugFlags & GTF_DEBUG_NODE_LARGE));
 
     gtOper = oper;
 
@@ -1297,7 +1358,7 @@ inline void GenTree::SetOper(genTreeOps oper, ValueNumberUpdate vnUpdate)
     // a gtUnOp...)
     if (OperKind(oper) == GTK_UNOP)
     {
-        gtOp.gtOp2 = nullptr;
+        gtOp.gtOp2 = NULL;
     }
 #endif // DEBUG
 
@@ -1309,7 +1370,7 @@ inline void GenTree::SetOper(genTreeOps oper, ValueNumberUpdate vnUpdate)
 
     if (oper == GT_CNS_INT)
     {
-        gtIntCon.gtFieldSeq = nullptr;
+        gtIntCon.gtFieldSeq = NULL;
     }
 
     if (vnUpdate == CLEAR_VN)
@@ -1319,7 +1380,8 @@ inline void GenTree::SetOper(genTreeOps oper, ValueNumberUpdate vnUpdate)
     }
 }
 
-inline void GenTree::CopyFrom(const GenTree* src, Compiler* comp)
+inline
+void                GenTree::CopyFrom(const GenTree* src, Compiler* comp)
 {
     /* The source may be big only if the target is also a big node */
 
@@ -1337,40 +1399,46 @@ inline void GenTree::CopyFrom(const GenTree* src, Compiler* comp)
     if (src->OperGet() == GT_IND && src->gtFlags & GTF_IND_ARR_INDEX)
     {
         ArrayInfo arrInfo;
-        bool      b = comp->GetArrayInfoMap()->Lookup(src, &arrInfo);
+        bool b = comp->GetArrayInfoMap()->Lookup(src, &arrInfo);
         assert(b);
         comp->GetArrayInfoMap()->Set(this, arrInfo);
     }
 }
 
-inline GenTreePtr Compiler::gtNewCastNode(var_types typ, GenTreePtr op1, var_types castType)
+inline
+GenTreePtr          Compiler::gtNewCastNode(var_types typ, GenTreePtr op1,
+                                                           var_types  castType)
 {
     GenTreePtr res = new (this, GT_CAST) GenTreeCast(typ, op1, castType);
     return res;
 }
 
-inline GenTreePtr Compiler::gtNewCastNodeL(var_types typ, GenTreePtr op1, var_types castType)
+inline
+GenTreePtr          Compiler::gtNewCastNodeL(var_types typ, GenTreePtr op1,
+                                                            var_types  castType)
 {
     /* Some casts get transformed into 'GT_CALL' or 'GT_IND' nodes */
 
-    assert(GenTree::s_gtNodeSizes[GT_CALL] >= GenTree::s_gtNodeSizes[GT_CAST]);
-    assert(GenTree::s_gtNodeSizes[GT_CALL] >= GenTree::s_gtNodeSizes[GT_IND]);
+    assert(GenTree::s_gtNodeSizes[GT_CALL] >=  GenTree::s_gtNodeSizes[GT_CAST]);
+    assert(GenTree::s_gtNodeSizes[GT_CALL] >= GenTree::s_gtNodeSizes[GT_IND ]);
 
     /* Make a big node first and then change it to be GT_CAST */
 
-    GenTreePtr res = new (this, LargeOpOpcode()) GenTreeCast(typ, op1, castType DEBUGARG(/*largeNode*/ true));
+    GenTreePtr res = new (this, LargeOpOpcode()) GenTreeCast(typ, op1, castType DEBUGARG(/*largeNode*/true));
     return res;
+
 }
 
 /*****************************************************************************/
 #else // SMALL_TREE_NODES
 /*****************************************************************************/
 
-inline void GenTree::InitNodeSize()
-{
-}
 
-inline void GenTree::SetOper(genTreeOps oper, ValueNumberUpdate vnUpdate)
+inline
+void                GenTree::InitNodeSize(){}
+
+inline
+void                GenTree::SetOper(genTreeOps oper, ValueNumberUpdate vnUpdate)
 {
     gtOper = oper;
 
@@ -1381,21 +1449,26 @@ inline void GenTree::SetOper(genTreeOps oper, ValueNumberUpdate vnUpdate)
     }
 }
 
-inline void GenTree::CopyFrom(GenTreePtr src)
+inline
+void                GenTree::CopyFrom(GenTreePtr src)
 {
-    *this    = *src;
+    *this = *src;
 #ifdef DEBUG
     gtSeqNum = 0;
 #endif
 }
 
-inline GenTreePtr Compiler::gtNewCastNode(var_types typ, GenTreePtr op1, var_types castType)
+inline
+GenTreePtr          Compiler::gtNewCastNode(var_types typ, GenTreePtr op1,
+                                                           var_types  castType)
 {
-    GenTreePtr tree         = gtNewOperNode(GT_CAST, typ, op1);
+    GenTreePtr tree = gtNewOperNode(GT_CAST, typ, op1);
     tree->gtCast.gtCastType = castType;
 }
 
-inline GenTreePtr Compiler::gtNewCastNodeL(var_types typ, GenTreePtr op1, var_types castType)
+inline
+GenTreePtr          Compiler::gtNewCastNodeL(var_types typ, GenTreePtr op1,
+                                                            var_types  castType)
 {
     return gtNewCastNode(typ, op1, castType);
 }
@@ -1404,16 +1477,18 @@ inline GenTreePtr Compiler::gtNewCastNodeL(var_types typ, GenTreePtr op1, var_ty
 #endif // SMALL_TREE_NODES
 /*****************************************************************************/
 
-inline void GenTree::SetOperResetFlags(genTreeOps oper)
+inline
+void                GenTree::SetOperResetFlags(genTreeOps oper)
 {
     SetOper(oper);
     gtFlags &= GTF_NODE_MASK;
 }
 
-inline void GenTree::ChangeOperConst(genTreeOps oper)
+inline
+void                GenTree::ChangeOperConst(genTreeOps oper)
 {
 #ifdef _TARGET_64BIT_
-    assert(oper != GT_CNS_LNG); // We should never see a GT_CNS_LNG for a 64-bit target!
+    assert(oper !=  GT_CNS_LNG);   // We should never see a GT_CNS_LNG for a 64-bit target!
 #endif
     assert(OperIsConst(oper)); // use ChangeOper() instead
     SetOperResetFlags(oper);
@@ -1424,7 +1499,8 @@ inline void GenTree::ChangeOperConst(genTreeOps oper)
     }
 }
 
-inline void GenTree::ChangeOper(genTreeOps oper, ValueNumberUpdate vnUpdate)
+inline
+void                GenTree::ChangeOper(genTreeOps oper, ValueNumberUpdate vnUpdate)
 {
     assert(!OperIsConst(oper)); // use ChangeOperLeaf() instead
 
@@ -1434,26 +1510,29 @@ inline void GenTree::ChangeOper(genTreeOps oper, ValueNumberUpdate vnUpdate)
     // Do "oper"-specific initializations...
     switch (oper)
     {
-        case GT_LCL_FLD:
-            gtLclFld.gtLclOffs  = 0;
-            gtLclFld.gtFieldSeq = FieldSeqStore::NotAField();
-            break;
-        default:
-            break;
+    case GT_LCL_FLD:
+        gtLclFld.gtLclOffs  = 0;
+        gtLclFld.gtFieldSeq = FieldSeqStore::NotAField();
+        break;
+    default:
+        break;
     }
 }
 
-inline void GenTree::ChangeOperUnchecked(genTreeOps oper)
+inline
+void                GenTree::ChangeOperUnchecked(genTreeOps oper)
 {
     gtOper = oper; // Trust the caller and don't use SetOper()
     gtFlags &= GTF_COMMON_MASK;
 }
 
+
 /*****************************************************************************
  * Returns true if the node is &var (created by ldarga and ldloca)
  */
 
-inline bool GenTree::IsVarAddr() const
+inline
+bool                GenTree::IsVarAddr() const
 {
     if (gtOper == GT_ADDR)
     {
@@ -1475,15 +1554,19 @@ inline bool GenTree::IsVarAddr() const
  *   an operator for which GTF_OVERFLOW is invalid.
  */
 
-inline bool GenTree::gtOverflow() const
+inline
+bool                GenTree::gtOverflow() const
 {
 #if !defined(_TARGET_64BIT_) && !defined(LEGACY_BACKEND)
-    assert(gtOper == GT_MUL || gtOper == GT_CAST || gtOper == GT_ADD || gtOper == GT_SUB || gtOper == GT_ASG_ADD ||
-           gtOper == GT_ASG_SUB || gtOper == GT_ADD_LO || gtOper == GT_SUB_LO || gtOper == GT_ADD_HI ||
-           gtOper == GT_SUB_HI);
+    assert(gtOper == GT_MUL      || gtOper == GT_CAST     ||
+           gtOper == GT_ADD      || gtOper == GT_SUB      ||
+           gtOper == GT_ASG_ADD  || gtOper == GT_ASG_SUB  ||
+           gtOper == GT_ADD_LO   || gtOper == GT_SUB_LO   ||
+           gtOper == GT_ADD_HI   || gtOper == GT_SUB_HI);
 #else
-    assert(gtOper == GT_MUL || gtOper == GT_CAST || gtOper == GT_ADD || gtOper == GT_SUB || gtOper == GT_ASG_ADD ||
-           gtOper == GT_ASG_SUB);
+    assert(gtOper == GT_MUL      || gtOper == GT_CAST     ||
+           gtOper == GT_ADD      || gtOper == GT_SUB      ||
+           gtOper == GT_ASG_ADD  || gtOper == GT_ASG_SUB);
 #endif
 
     if (gtFlags & GTF_OVERFLOW)
@@ -1498,13 +1581,15 @@ inline bool GenTree::gtOverflow() const
     }
 }
 
-inline bool GenTree::gtOverflowEx() const
+inline
+bool                GenTree::gtOverflowEx() const
 {
-    if (gtOper == GT_MUL || gtOper == GT_CAST || gtOper == GT_ADD || gtOper == GT_SUB ||
+    if   ( gtOper == GT_MUL      || gtOper == GT_CAST     ||
+           gtOper == GT_ADD      || gtOper == GT_SUB      ||
 #if !defined(_TARGET_64BIT_) && !defined(LEGACY_BACKEND)
-        gtOper == GT_ADD_HI || gtOper == GT_SUB_HI ||
+           gtOper == GT_ADD_HI   || gtOper == GT_SUB_HI   ||
 #endif
-        gtOper == GT_ASG_ADD || gtOper == GT_ASG_SUB)
+           gtOper == GT_ASG_ADD  || gtOper == GT_ASG_SUB)
     {
         return gtOverflow();
     }
@@ -1521,33 +1606,35 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 */
 
-inline bool Compiler::lvaHaveManyLocals() const
+inline bool         Compiler::lvaHaveManyLocals() const
 {
     return (lvaCount >= lclMAX_TRACKED);
 }
+
 
 /*****************************************************************************
  *
  *  Allocate a temporary variable or a set of temp variables.
  */
 
-inline unsigned Compiler::lvaGrabTemp(bool shortLifetime DEBUGARG(const char* reason))
+inline unsigned     Compiler::lvaGrabTemp(bool shortLifetime
+                                          DEBUGARG(const char * reason) )
 {
     if (compIsForInlining())
     {
         // Grab the temp using Inliner's Compiler instance.
-        Compiler* pComp = impInlineInfo->InlinerCompiler; // The Compiler instance for the caller (i.e. the inliner)
+        Compiler * pComp = impInlineInfo->InlinerCompiler;  // The Compiler instance for the caller (i.e. the inliner)
 
         if (pComp->lvaHaveManyLocals())
         {
-            // Don't create more LclVar with inlining
+            // Don't create more LclVar with inlining 
             compInlineResult->NoteFatal(InlineObservation::CALLSITE_TOO_MANY_LOCALS);
         }
 
         unsigned tmpNum = pComp->lvaGrabTemp(shortLifetime DEBUGARG(reason));
-        lvaTable        = pComp->lvaTable;
-        lvaCount        = pComp->lvaCount;
-        lvaTableCnt     = pComp->lvaTableCnt;
+        lvaTable = pComp->lvaTable;        
+        lvaCount = pComp->lvaCount;
+        lvaTableCnt = pComp->lvaTableCnt;
         return tmpNum;
     }
 
@@ -1556,20 +1643,18 @@ inline unsigned Compiler::lvaGrabTemp(bool shortLifetime DEBUGARG(const char* re
 
     /* Check if the lvaTable has to be grown */
     if (lvaCount + 1 > lvaTableCnt)
-    {
+    {        
         unsigned newLvaTableCnt = lvaCount + (lvaCount / 2) + 1;
 
         // Check for overflow
         if (newLvaTableCnt <= lvaCount)
-        {
             IMPL_LIMITATION("too many locals");
-        }
-
-        // Note: compGetMemArray might throw.
-        LclVarDsc* newLvaTable = (LclVarDsc*)compGetMemArray(newLvaTableCnt, sizeof(*lvaTable), CMK_LvaTable);
+        
+        // Note: compGetMemArray might throw. 
+        LclVarDsc * newLvaTable  = (LclVarDsc*)compGetMemArray(newLvaTableCnt, sizeof(*lvaTable), CMK_LvaTable);
 
         memcpy(newLvaTable, lvaTable, lvaCount * sizeof(*lvaTable));
-        memset(newLvaTable + lvaCount, 0, (newLvaTableCnt - lvaCount) * sizeof(*lvaTable));
+        memset(newLvaTable + lvaCount, 0, (newLvaTableCnt  - lvaCount) * sizeof(*lvaTable));
 
         for (unsigned i = lvaCount; i < newLvaTableCnt; i++)
         {
@@ -1583,14 +1668,14 @@ inline unsigned Compiler::lvaGrabTemp(bool shortLifetime DEBUGARG(const char* re
         memset(lvaTable, fDefaultFill2.val_DontUse_(CLRConfig::INTERNAL_JitDefaultFill, 0xFF), lvaCount * sizeof(*lvaTable));
 #endif
 #endif
-
+        
         lvaTableCnt = newLvaTableCnt;
-        lvaTable    = newLvaTable;
+        lvaTable = newLvaTable;
     }
 
-    lvaTable[lvaCount].lvType    = TYP_UNDEF; // Initialize lvType, lvIsTemp and lvOnFrame
+    lvaTable[lvaCount].lvType    = TYP_UNDEF;      // Initialize lvType, lvIsTemp and lvOnFrame
     lvaTable[lvaCount].lvIsTemp  = shortLifetime;
-    lvaTable[lvaCount].lvOnFrame = true;
+    lvaTable[lvaCount].lvOnFrame = true; 
 
     unsigned tempNum = lvaCount;
 
@@ -1601,31 +1686,33 @@ inline unsigned Compiler::lvaGrabTemp(bool shortLifetime DEBUGARG(const char* re
     {
         printf("\nlvaGrabTemp returning %d (", tempNum);
         gtDispLclVar(tempNum, false);
-        printf(")%s called for %s.\n", shortLifetime ? "" : " (a long lifetime temp)", reason);
+        printf(")%s called for %s.\n",
+               shortLifetime ? "" : " (a long lifetime temp)",
+               reason);
     }
 #endif // DEBUG
 
     return tempNum;
 }
 
-inline unsigned Compiler::lvaGrabTemps(unsigned cnt DEBUGARG(const char* reason))
+inline unsigned     Compiler::lvaGrabTemps(unsigned cnt
+                                           DEBUGARG(const char * reason) )
 {
     if (compIsForInlining())
     {
-        // Grab the temps using Inliner's Compiler instance.
+        // Grab the temps using Inliner's Compiler instance.    
         unsigned tmpNum = impInlineInfo->InlinerCompiler->lvaGrabTemps(cnt DEBUGARG(reason));
 
-        lvaTable    = impInlineInfo->InlinerCompiler->lvaTable;
-        lvaCount    = impInlineInfo->InlinerCompiler->lvaCount;
+        lvaTable = impInlineInfo->InlinerCompiler->lvaTable;   
+        lvaCount = impInlineInfo->InlinerCompiler->lvaCount;        
         lvaTableCnt = impInlineInfo->InlinerCompiler->lvaTableCnt;
         return tmpNum;
     }
-
+        
 #ifdef DEBUG
     if (verbose)
     {
-        printf("\nlvaGrabTemps(%d) returning %d..%d (long lifetime temps) called for %s", cnt, lvaCount,
-               lvaCount + cnt - 1, reason);
+        printf("\nlvaGrabTemps(%d) returning %d..%d (long lifetime temps) called for %s", cnt, lvaCount, lvaCount+cnt-1, reason);
     }
 #endif
 
@@ -1639,15 +1726,13 @@ inline unsigned Compiler::lvaGrabTemps(unsigned cnt DEBUGARG(const char* reason)
 
         // Check for overflow
         if (newLvaTableCnt <= lvaCount)
-        {
             IMPL_LIMITATION("too many locals");
-        }
 
-        // Note: compGetMemArray might throw.
-        LclVarDsc* newLvaTable = (LclVarDsc*)compGetMemArray(newLvaTableCnt, sizeof(*lvaTable), CMK_LvaTable);
+        // Note: compGetMemArray might throw. 
+        LclVarDsc * newLvaTable  = (LclVarDsc*)compGetMemArray(newLvaTableCnt, sizeof(*lvaTable), CMK_LvaTable);
 
         memcpy(newLvaTable, lvaTable, lvaCount * sizeof(*lvaTable));
-        memset(newLvaTable + lvaCount, 0, (newLvaTableCnt - lvaCount) * sizeof(*lvaTable));
+        memset(newLvaTable + lvaCount, 0, (newLvaTableCnt  - lvaCount) * sizeof(*lvaTable));
         for (unsigned i = lvaCount; i < newLvaTableCnt; i++)
         {
             new (&newLvaTable[i], jitstd::placement_t()) LclVarDsc(this); // call the constructor.
@@ -1662,16 +1747,16 @@ inline unsigned Compiler::lvaGrabTemps(unsigned cnt DEBUGARG(const char* reason)
 #endif
 
         lvaTableCnt = newLvaTableCnt;
-        lvaTable    = newLvaTable;
+        lvaTable = newLvaTable;
     }
 
-    unsigned tempNum = lvaCount;
+    unsigned  tempNum = lvaCount;
 
     while (cnt--)
     {
-        lvaTable[lvaCount].lvType    = TYP_UNDEF; // Initialize lvType, lvIsTemp and lvOnFrame
+        lvaTable[lvaCount].lvType    = TYP_UNDEF;      // Initialize lvType, lvIsTemp and lvOnFrame
         lvaTable[lvaCount].lvIsTemp  = false;
-        lvaTable[lvaCount].lvOnFrame = true;
+        lvaTable[lvaCount].lvOnFrame = true; 
         lvaCount++;
     }
 
@@ -1685,22 +1770,23 @@ inline unsigned Compiler::lvaGrabTemps(unsigned cnt DEBUGARG(const char* reason)
  *  be forced to be kept alive, and not be optimized away.
  */
 
-inline unsigned Compiler::lvaGrabTempWithImplicitUse(bool shortLifetime DEBUGARG(const char* reason))
+inline unsigned     Compiler::lvaGrabTempWithImplicitUse(bool shortLifetime
+                                                         DEBUGARG(const char * reason))
 {
     if (compIsForInlining())
     {
-        // Grab the temp using Inliner's Compiler instance.
+        // Grab the temp using Inliner's Compiler instance.    
         unsigned tmpNum = impInlineInfo->InlinerCompiler->lvaGrabTempWithImplicitUse(shortLifetime DEBUGARG(reason));
 
-        lvaTable    = impInlineInfo->InlinerCompiler->lvaTable;
-        lvaCount    = impInlineInfo->InlinerCompiler->lvaCount;
+        lvaTable = impInlineInfo->InlinerCompiler->lvaTable;   
+        lvaCount = impInlineInfo->InlinerCompiler->lvaCount;        
         lvaTableCnt = impInlineInfo->InlinerCompiler->lvaTableCnt;
         return tmpNum;
     }
 
     unsigned lclNum = lvaGrabTemp(shortLifetime DEBUGARG(reason));
 
-    LclVarDsc* varDsc = &lvaTable[lclNum];
+    LclVarDsc * varDsc = &lvaTable[lclNum];
 
     // This will prevent it from being optimized away
     // TODO-CQ: We shouldn't have to go as far as to declare these
@@ -1721,7 +1807,8 @@ inline unsigned Compiler::lvaGrabTempWithImplicitUse(bool shortLifetime DEBUGARG
  *   and zero lvRefCntWtd when lvRefCnt is zero
  */
 
-inline void LclVarDsc::lvaResetSortAgainFlag(Compiler* comp)
+inline
+void          LclVarDsc::lvaResetSortAgainFlag(Compiler * comp)
 {
     if (!comp->lvaTrackedFixed)
     {
@@ -1730,9 +1817,7 @@ inline void LclVarDsc::lvaResetSortAgainFlag(Compiler* comp)
     }
     /* Set weighted ref count to zero if  ref count is zero */
     if (lvRefCnt == 0)
-    {
-        lvRefCntWtd = 0;
-    }
+        lvRefCntWtd  = 0;
 }
 
 /*****************************************************************************
@@ -1740,26 +1825,28 @@ inline void LclVarDsc::lvaResetSortAgainFlag(Compiler* comp)
  *  Decrement the ref counts for a local variable
  */
 
-inline void LclVarDsc::decRefCnts(BasicBlock::weight_t weight, Compiler* comp, bool propagate)
-{
+inline
+void          LclVarDsc::decRefCnts(BasicBlock::weight_t weight, Compiler * comp, bool propagate)
+{    
     /* Decrement lvRefCnt and lvRefCntWtd */
     Compiler::lvaPromotionType promotionType = DUMMY_INIT(Compiler::PROMOTION_TYPE_NONE);
     if (varTypeIsStruct(lvType))
-    {
+    {        
         promotionType = comp->lvaGetPromotionType(this);
     }
 
     //
     // Decrement counts on the local itself.
-    //
-    if (lvType != TYP_STRUCT || promotionType != Compiler::PROMOTION_TYPE_INDEPENDENT)
+    //    
+    if (lvType        != TYP_STRUCT                     ||
+        promotionType != Compiler::PROMOTION_TYPE_INDEPENDENT)
     {
-        assert(lvRefCnt); // Can't decrement below zero
+        assert(lvRefCnt);   // Can't decrement below zero
 
         // TODO: Well, the assert above could be bogus.
-        // If lvRefCnt has overflowed before, then might drop to 0.
+        // If lvRefCnt has overflowed before, then might drop to 0. 
         // Therefore we do need the following check to keep lvRefCnt from underflow:
-        if (lvRefCnt > 0)
+        if  (lvRefCnt > 0)
         {
             //
             // Decrement lvRefCnt
@@ -1771,47 +1858,44 @@ inline void LclVarDsc::decRefCnts(BasicBlock::weight_t weight, Compiler* comp, b
             //
             if (weight != 0)
             {
-                if (lvIsTemp && (weight * 2 > weight))
-                {
+                if (lvIsTemp && (weight*2 > weight)) {
                     weight *= 2;
                 }
 
-                if (lvRefCntWtd <= weight)
-                { // Can't go below zero
-                    lvRefCntWtd = 0;
-                }
+                if (lvRefCntWtd <= weight)  // Can't go below zero
+                    lvRefCntWtd  = 0;
                 else
-                {
                     lvRefCntWtd -= weight;
-                }
             }
-        }
+        }    
     }
 
     if (varTypeIsStruct(lvType) && propagate)
-    {
+    {            
         // For promoted struct locals, decrement lvRefCnt on its field locals as well.
         if (promotionType == Compiler::PROMOTION_TYPE_INDEPENDENT ||
-            promotionType == Compiler::PROMOTION_TYPE_DEPENDENT)
+            promotionType == Compiler::PROMOTION_TYPE_DEPENDENT   )            
         {
-            for (unsigned i = lvFieldLclStart; i < lvFieldLclStart + lvFieldCnt; ++i)
-            {
+            for (unsigned i = lvFieldLclStart;
+                 i < lvFieldLclStart + lvFieldCnt;
+                 ++i)
+            {       
                 comp->lvaTable[i].decRefCnts(comp->lvaMarkRefsWeight, comp, false); // Don't propagate
             }
-        }
-    }
-
+        }                
+    }       
+  
     if (lvIsStructField && propagate)
-    {
+    {   
         // Depending on the promotion type, decrement the ref count for the parent struct as well.
-        promotionType           = comp->lvaGetParentPromotionType(this);
-        LclVarDsc* parentvarDsc = &comp->lvaTable[lvParentLcl];
+        promotionType = comp->lvaGetParentPromotionType(this);       
+        LclVarDsc *  parentvarDsc = &comp->lvaTable[lvParentLcl];
         assert(!parentvarDsc->lvRegStruct);
-        if (promotionType == Compiler::PROMOTION_TYPE_DEPENDENT)
+        if (promotionType == Compiler::PROMOTION_TYPE_DEPENDENT)            
         {
-            parentvarDsc->decRefCnts(comp->lvaMarkRefsWeight, comp, false); // Don't propagate
-        }
-    }
+            parentvarDsc->decRefCnts(comp->lvaMarkRefsWeight, comp, false);        // Don't propagate
+        } 
+    }                
 
     lvaResetSortAgainFlag(comp);
 
@@ -1820,7 +1904,8 @@ inline void LclVarDsc::decRefCnts(BasicBlock::weight_t weight, Compiler* comp, b
     {
         unsigned varNum = (unsigned)(this - comp->lvaTable);
         assert(&comp->lvaTable[varNum] == this);
-        printf("New refCnts for V%02u: refCnt = %2u, refCntWtd = %s\n", varNum, lvRefCnt, refCntWtd2str(lvRefCntWtd));
+        printf("New refCnts for V%02u: refCnt = %2u, refCntWtd = %s\n",
+               varNum, lvRefCnt, refCntWtd2str(lvRefCntWtd));
     }
 #endif
 }
@@ -1830,25 +1915,27 @@ inline void LclVarDsc::decRefCnts(BasicBlock::weight_t weight, Compiler* comp, b
  *  Increment the ref counts for a local variable
  */
 
-inline void LclVarDsc::incRefCnts(BasicBlock::weight_t weight, Compiler* comp, bool propagate)
-{
+inline
+void            LclVarDsc::incRefCnts(BasicBlock::weight_t weight, Compiler *comp, bool propagate)
+{    
     Compiler::lvaPromotionType promotionType = DUMMY_INIT(Compiler::PROMOTION_TYPE_NONE);
     if (varTypeIsStruct(lvType))
-    {
+    {        
         promotionType = comp->lvaGetPromotionType(this);
     }
 
     //
     // Increment counts on the local itself.
-    //
-    if (lvType != TYP_STRUCT || promotionType != Compiler::PROMOTION_TYPE_INDEPENDENT)
+    //    
+    if (lvType != TYP_STRUCT ||
+        promotionType != Compiler::PROMOTION_TYPE_INDEPENDENT)
     {
         //
         // Increment lvRefCnt
         //
-        int newRefCnt = lvRefCnt + 1;
-        if (newRefCnt == (unsigned short)newRefCnt) // lvRefCnt is an "unsigned short". Don't overflow it.
-        {
+        int newRefCnt = lvRefCnt+1;
+        if (newRefCnt == (unsigned short)newRefCnt)  // lvRefCnt is an "unsigned short". Don't overflow it.
+        {             
             lvRefCnt = (unsigned short)newRefCnt;
         }
 
@@ -1861,48 +1948,47 @@ inline void LclVarDsc::incRefCnts(BasicBlock::weight_t weight, Compiler* comp, b
         {
             // We double the weight of internal temps
             //
-            if (lvIsTemp && (weight * 2 > weight))
-            {
+            if (lvIsTemp && (weight*2 > weight)) {
                 weight *= 2;
             }
 
-            unsigned newWeight = lvRefCntWtd + weight;
-            if (newWeight >= lvRefCntWtd)
-            { // lvRefCntWtd is an "unsigned".  Don't overflow it
+            unsigned newWeight = lvRefCntWtd + weight;  
+            if (newWeight >= lvRefCntWtd) {                // lvRefCntWtd is an "unsigned".  Don't overflow it
                 lvRefCntWtd = newWeight;
             }
-            else
-            { // On overflow we assign ULONG_MAX
+            else {                                         // On overflow we assign ULONG_MAX
                 lvRefCntWtd = ULONG_MAX;
             }
-        }
-    }
+        }    
+    }        
 
     if (varTypeIsStruct(lvType) && propagate)
-    {
+    {            
         // For promoted struct locals, increment lvRefCnt on its field locals as well.
         if (promotionType == Compiler::PROMOTION_TYPE_INDEPENDENT ||
-            promotionType == Compiler::PROMOTION_TYPE_DEPENDENT)
+            promotionType == Compiler::PROMOTION_TYPE_DEPENDENT   )            
         {
-            for (unsigned i = lvFieldLclStart; i < lvFieldLclStart + lvFieldCnt; ++i)
-            {
+            for (unsigned i = lvFieldLclStart;
+                 i < lvFieldLclStart + lvFieldCnt;
+                 ++i)
+            {       
                 comp->lvaTable[i].incRefCnts(comp->lvaMarkRefsWeight, comp, false); // Don't propagate
             }
-        }
-    }
+        }                
+    }       
 
     if (lvIsStructField && propagate)
-    {
+    {   
         // Depending on the promotion type, increment the ref count for the parent struct as well.
-        promotionType           = comp->lvaGetParentPromotionType(this);
-        LclVarDsc* parentvarDsc = &comp->lvaTable[lvParentLcl];
+        promotionType = comp->lvaGetParentPromotionType(this);       
+        LclVarDsc *  parentvarDsc = &comp->lvaTable[lvParentLcl];       
         assert(!parentvarDsc->lvRegStruct);
         if (promotionType == Compiler::PROMOTION_TYPE_DEPENDENT)
         {
-            parentvarDsc->incRefCnts(comp->lvaMarkRefsWeight, comp, false); // Don't propagate
-        }
-    }
-
+            parentvarDsc->incRefCnts(comp->lvaMarkRefsWeight, comp, false);        // Don't propagate
+        } 
+    } 
+       
     lvaResetSortAgainFlag(comp);
 
 #ifdef DEBUG
@@ -1910,7 +1996,8 @@ inline void LclVarDsc::incRefCnts(BasicBlock::weight_t weight, Compiler* comp, b
     {
         unsigned varNum = (unsigned)(this - comp->lvaTable);
         assert(&comp->lvaTable[varNum] == this);
-        printf("New refCnts for V%02u: refCnt = %2u, refCntWtd = %s\n", varNum, lvRefCnt, refCntWtd2str(lvRefCntWtd));
+        printf("New refCnts for V%02u: refCnt = %2u, refCntWtd = %s\n",
+               varNum, lvRefCnt, refCntWtd2str(lvRefCntWtd));
     }
 #endif
 }
@@ -1920,17 +2007,16 @@ inline void LclVarDsc::incRefCnts(BasicBlock::weight_t weight, Compiler* comp, b
  *  Set the lvPrefReg field to reg
  */
 
-inline void LclVarDsc::setPrefReg(regNumber regNum, Compiler* comp)
+inline
+void            LclVarDsc::setPrefReg(regNumber regNum, Compiler * comp)
 {
     regMaskTP regMask;
     if (isFloatRegType(TypeGet()))
     {
         // Check for FP struct-promoted field being passed in integer register
-        //
+        // 
         if (!genIsValidFloatReg(regNum))
-        {
             return;
-        }
         regMask = genRegMaskFloat(regNum, TypeGet());
     }
     else
@@ -1946,21 +2032,21 @@ inline void LclVarDsc::setPrefReg(regNumber regNum, Compiler* comp)
 
     /* Only interested if we have a new register bit set */
     if (lvPrefReg & regMask)
-    {
         return;
-    }
 
 #ifdef DEBUG
     if (comp->verbose)
     {
         if (lvPrefReg)
         {
-            printf("Change preferred register for V%02u from ", this - comp->lvaTable);
+            printf("Change preferred register for V%02u from ",
+                   this - comp->lvaTable);
             dspRegMask(lvPrefReg);
         }
         else
         {
-            printf("Set preferred register for V%02u", this - comp->lvaTable);
+            printf("Set preferred register for V%02u",
+                   this - comp->lvaTable);
         }
         printf(" to ");
         dspRegMask(regMask);
@@ -1989,7 +2075,8 @@ inline void LclVarDsc::setPrefReg(regNumber regNum, Compiler* comp)
  *  Add regMask to the lvPrefReg field
  */
 
-inline void LclVarDsc::addPrefReg(regMaskTP regMask, Compiler* comp)
+inline
+void         LclVarDsc::addPrefReg(regMaskTP regMask, Compiler * comp)
 {
     assert(regMask != RBM_NONE);
 
@@ -2001,21 +2088,21 @@ inline void LclVarDsc::addPrefReg(regMaskTP regMask, Compiler* comp)
 
     /* Only interested if we have a new register bit set */
     if (lvPrefReg & regMask)
-    {
         return;
-    }
 
 #ifdef DEBUG
     if (comp->verbose)
     {
         if (lvPrefReg)
         {
-            printf("Additional preferred register for V%02u from ", this - comp->lvaTable);
+            printf("Additional preferred register for V%02u from ",
+                   this-comp->lvaTable);
             dspRegMask(lvPrefReg);
         }
         else
         {
-            printf("Set preferred register for V%02u", this - comp->lvaTable);
+            printf("Set preferred register for V%02u",
+                   this-comp->lvaTable);
         }
         printf(" to ");
         dspRegMask(lvPrefReg | regMask);
@@ -2045,31 +2132,28 @@ inline void LclVarDsc::addPrefReg(regMaskTP regMask, Compiler* comp)
  *  referenced in a statement.
  */
 
-inline VARSET_VALRET_TP Compiler::lvaStmtLclMask(GenTreePtr stmt)
+inline
+VARSET_VALRET_TP           Compiler::lvaStmtLclMask(GenTreePtr stmt)
 {
-    GenTreePtr tree;
-    unsigned   varNum;
-    LclVarDsc* varDsc;
-    VARSET_TP  VARSET_INIT_NOCOPY(lclMask, VarSetOps::MakeEmpty(this));
+    GenTreePtr      tree;
+    unsigned        varNum;
+    LclVarDsc   *   varDsc;
+    VARSET_TP       VARSET_INIT_NOCOPY(lclMask, VarSetOps::MakeEmpty(this));
 
     assert(stmt->gtOper == GT_STMT);
     assert(fgStmtListThreaded);
 
     for (tree = stmt->gtStmt.gtStmtList; tree; tree = tree->gtNext)
     {
-        if (tree->gtOper != GT_LCL_VAR)
-        {
+        if  (tree->gtOper != GT_LCL_VAR)
             continue;
-        }
 
         varNum = tree->gtLclVarCommon.gtLclNum;
         assert(varNum < lvaCount);
         varDsc = lvaTable + varNum;
 
-        if (!varDsc->lvTracked)
-        {
+        if  (!varDsc->lvTracked)
             continue;
-        }
 
         VarSetOps::UnionD(this, lclMask, VarSetOps::MakeSingleton(this, varDsc->lvVarIndex));
     }
@@ -2083,14 +2167,15 @@ inline VARSET_VALRET_TP Compiler::lvaStmtLclMask(GenTreePtr stmt)
  * of the struct and returns true iff it contains a GC ref.
  */
 
-inline bool Compiler::lvaTypeIsGC(unsigned varNum)
+inline
+bool               Compiler::lvaTypeIsGC(unsigned varNum)
 {
     if (lvaTable[varNum].TypeGet() == TYP_STRUCT)
     {
-        assert(lvaTable[varNum].lvGcLayout != nullptr); // bits are intialized
+        assert(lvaTable[varNum].lvGcLayout  != 0);  // bits are intialized
         return (lvaTable[varNum].lvStructGcCount != 0);
     }
-    return (varTypeIsGC(lvaTable[varNum].TypeGet()));
+    return(varTypeIsGC(lvaTable[varNum].TypeGet()));
 }
 
 /*****************************************************************************
@@ -2108,12 +2193,11 @@ inline bool Compiler::lvaTypeIsGC(unsigned varNum)
  should catch the exception or not.
  */
 
-inline bool Compiler::lvaKeepAliveAndReportThis()
+inline
+bool                Compiler::lvaKeepAliveAndReportThis()
 {
     if (info.compIsStatic || lvaTable[0].TypeGet() != TYP_REF)
-    {
         return false;
-    }
 
 #ifdef JIT32_GCENCODER
     if (info.compFlags & CORINFO_FLG_SYNCH)
@@ -2151,7 +2235,8 @@ inline bool Compiler::lvaKeepAliveAndReportThis()
   Similar to lvaKeepAliveAndReportThis
  */
 
-inline bool Compiler::lvaReportParamTypeArg()
+inline
+bool                Compiler::lvaReportParamTypeArg()
 {
     if (info.compMethodInfo->options & (CORINFO_GENERICS_CTXT_FROM_METHODDESC | CORINFO_GENERICS_CTXT_FROM_METHODTABLE))
     {
@@ -2160,16 +2245,12 @@ inline bool Compiler::lvaReportParamTypeArg()
         // If the VM requires us to keep the generics context alive and report it (for example, if any catch
         // clause catches a type that uses a generic parameter of this method) this flag will be set.
         if (info.compMethodInfo->options & CORINFO_GENERICS_CTXT_KEEP_ALIVE)
-        {
             return true;
-        }
 
         // Otherwise, if an exact type parameter is needed in the body, report the generics context.
         // We do this because collectible types needs the generics context when gc-ing.
         if (lvaGenericsContextUsed)
-        {
             return true;
-        }
     }
 
     // Otherwise, we don't need to report it -- the generics context parameter is unused.
@@ -2178,12 +2259,14 @@ inline bool Compiler::lvaReportParamTypeArg()
 
 //*****************************************************************************
 
-inline unsigned Compiler::lvaCachedGenericContextArgOffset()
+inline
+unsigned            Compiler::lvaCachedGenericContextArgOffset()
 {
     assert(lvaDoneFrameLayout == FINAL_FRAME_LAYOUT);
-
+    
     return lvaCachedGenericContextArgOffs;
 }
+
 
 /*****************************************************************************
  *
@@ -2194,7 +2277,7 @@ inline unsigned Compiler::lvaCachedGenericContextArgOffset()
  *  mustBeFPBased - strong about whether the base reg is FP. But it is also
  *  strong about not being FPBased after FINAL_FRAME_LAYOUT. i.e.,
  *  it enforces SP based.
- *
+ *  
  *  addrModeOffset - is the addressing mode offset, for example: v02 + 0x10
  *  So, V02 itself is at offset sp + 0x10 and then addrModeOffset is what gets
  *  added beyond that.
@@ -2202,30 +2285,27 @@ inline unsigned Compiler::lvaCachedGenericContextArgOffset()
 
 inline
 #ifdef _TARGET_ARM_
-    int
-    Compiler::lvaFrameAddress(int varNum, bool mustBeFPBased, regNumber* pBaseReg, int addrModeOffset)
+int                 Compiler::lvaFrameAddress(int varNum, bool mustBeFPBased, regNumber * pBaseReg, int addrModeOffset)
 #else
-    int
-    Compiler::lvaFrameAddress(int varNum, bool* pFPbased)
+int                 Compiler::lvaFrameAddress(int varNum, bool * pFPbased)
 #endif
 {
     assert(lvaDoneFrameLayout != NO_FRAME_LAYOUT);
 
-    int       offset;
-    bool      FPbased;
-    bool      fConservative = false;
-    var_types type          = TYP_UNDEF;
-    if (varNum >= 0)
+    int offset;
+    bool FPbased;
+    bool fConservative = false;
+    var_types type = TYP_UNDEF;
+    if  (varNum >= 0)
     {
-        LclVarDsc* varDsc;
+        LclVarDsc   *   varDsc;
 
         assert((unsigned)varNum < lvaCount);
-        varDsc               = lvaTable + varNum;
-        type                 = varDsc->TypeGet();
+        varDsc = lvaTable + varNum;
+        type = varDsc->TypeGet();
         bool isPrespilledArg = false;
 #if defined(_TARGET_ARM_) && defined(PROFILING_SUPPORTED)
-        isPrespilledArg = varDsc->lvIsParam && compIsProfilerHookNeeded() &&
-                          lvaIsPreSpilled(varNum, codeGen->regSet.rsMaskPreSpillRegs(false));
+        isPrespilledArg = varDsc->lvIsParam && compIsProfilerHookNeeded() && lvaIsPreSpilled(varNum, codeGen->regSet.rsMaskPreSpillRegs(false));
 #endif
 
         // If we have finished with register allocation, and this isn't a stack-based local,
@@ -2238,13 +2318,14 @@ inline
             assert(varDsc->lvIsParam);
 #endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
 #elif defined(_TARGET_X86_) && !defined(LEGACY_BACKEND)
-            // For !LEGACY_BACKEND on x86, a stack parameter that is enregistered will have a stack location.
+            // For !LEGACY_BACKEND on x86, a stack parameter that is enregistered will have a stack location. 
             assert(varDsc->lvIsParam && !varDsc->lvIsRegArg);
-#else  // !(_TARGET_AMD64 || !(defined(_TARGET_X86_) && !defined(LEGACY_BACKEND)))
+#else // !(_TARGET_AMD64 || !(defined(_TARGET_X86_) && !defined(LEGACY_BACKEND)))
             // Otherwise, we only have a valid stack location for:
             // A parameter that was passed on the stack, being homed into its register home,
             // or a prespilled argument on arm under profiler.
-            assert((varDsc->lvIsParam && !varDsc->lvIsRegArg && varDsc->lvRegister) || isPrespilledArg);
+            assert((varDsc->lvIsParam && !varDsc->lvIsRegArg && varDsc->lvRegister) ||
+                   isPrespilledArg);
 #endif // !(_TARGET_AMD64 || !(defined(_TARGET_X86_) && !defined(LEGACY_BACKEND)))
         }
 
@@ -2253,25 +2334,25 @@ inline
 #ifdef DEBUG
 #if FEATURE_FIXED_OUT_ARGS
         if ((unsigned)varNum == lvaOutgoingArgSpaceVar)
-        {
             assert(FPbased == false);
-        }
         else
 #endif
         {
-#if DOUBLE_ALIGN
-            assert(FPbased == (isFramePointerUsed() || (genDoubleAlign() && varDsc->lvIsParam && !varDsc->lvIsRegArg)));
+#if     DOUBLE_ALIGN
+            assert(FPbased == (isFramePointerUsed() || (genDoubleAlign()  &&
+                                              varDsc->lvIsParam &&
+                                              !varDsc->lvIsRegArg)));
 #else
 #ifdef _TARGET_X86_
-            assert(FPbased == isFramePointerUsed());
+            assert(FPbased ==  isFramePointerUsed());
 #endif
 #endif
         }
-#endif // DEBUG
+#endif  // DEBUG
 
         offset = varDsc->lvStkOffs;
     }
-    else // Its a spill-temp
+    else  // Its a spill-temp
     {
         FPbased = isFramePointerUsed();
         if (lvaDoneFrameLayout == Compiler::FINAL_FRAME_LAYOUT)
@@ -2284,9 +2365,9 @@ inline
                 tmpDsc = tmpFindNum(varNum, Compiler::TEMP_USAGE_USED);
             }
 #endif // !LEGACY_BACKEND
-            assert(tmpDsc != nullptr);
+            assert(tmpDsc != NULL);
             offset = tmpDsc->tdTempOffs();
-            type   = tmpDsc->tdTempType();
+            type = tmpDsc->tdTempType();
         }
         else
         {
@@ -2296,11 +2377,11 @@ inline
             //   :                         :
             //   +-------------------------+ base --+
             //   | LR, ++N for ARM         |        |   frameBaseOffset (= N)
-            //   +-------------------------+        |
+            //   +-------------------------+        |    
             //   | R11, ++N for ARM        | <---FP |
             //   +-------------------------+      --+
             //   | compCalleeRegsPushed - N|        |   lclFrameOffset
-            //   +-------------------------+      --+
+            //   +-------------------------+      --+ 
             //   | lclVars                 |        |
             //   +-------------------------+        |
             //   | tmp[MAX_SPILL_TEMP]     |        |
@@ -2313,7 +2394,7 @@ inline
             //   :                         :
             // ---------------------------------------------------
 
-            type          = compFloatingPointUsed ? TYP_FLOAT : TYP_INT;
+            type = compFloatingPointUsed ? TYP_FLOAT : TYP_INT;
             fConservative = true;
             if (!FPbased)
             {
@@ -2324,7 +2405,7 @@ inline
 #else
                 int outGoingArgSpaceSize = 0;
 #endif
-                offset = outGoingArgSpaceSize + max(-varNum * TARGET_POINTER_SIZE, (int)lvaGetMaxSpillTempSize());
+                offset = outGoingArgSpaceSize +  max(-varNum * TARGET_POINTER_SIZE, (int) lvaGetMaxSpillTempSize());
             }
             else
             {
@@ -2334,7 +2415,7 @@ inline
 #ifdef _TARGET_ARM_
                 offset = codeGen->genCallerSPtoInitialSPdelta() - codeGen->genCallerSPtoFPdelta();
 #else
-                offset                   = -(codeGen->genTotalFrameSize());
+                offset = -(codeGen->genTotalFrameSize());
 #endif
             }
         }
@@ -2356,13 +2437,13 @@ inline
             // we have already selected the instruction. Min-opts will have R10 enabled, so just
             // use that.
 
-            int spOffset       = fConservative ? compLclFrameSize : offset + codeGen->genSPtoFPdelta();
-            int actualOffset   = (spOffset + addrModeOffset);
+            int spOffset = fConservative ? compLclFrameSize : offset + codeGen->genSPtoFPdelta();
+            int actualOffset = (spOffset + addrModeOffset);
             int ldrEncodeLimit = (varTypeIsFloating(type) ? 0x3FC : 0xFFC);
             // Use ldr sp imm encoding.
             if (lvaDoneFrameLayout == FINAL_FRAME_LAYOUT || opts.MinOpts() || (actualOffset <= ldrEncodeLimit))
             {
-                offset    = spOffset;
+                offset = spOffset;
                 *pBaseReg = compLocallocUsed ? REG_SAVED_LOCALLOC_SP : REG_SPBASE;
             }
             // Use ldr +/-imm8 encoding.
@@ -2371,9 +2452,9 @@ inline
                 *pBaseReg = REG_FPBASE;
             }
             // Use a single movw. prefer locals.
-            else if (actualOffset <= 0xFFFC) // Fix 383910 ARM ILGEN
+            else if (actualOffset <= 0xFFFC)   // Fix 383910 ARM ILGEN
             {
-                offset    = spOffset;
+                offset = spOffset;
                 *pBaseReg = compLocallocUsed ? REG_SAVED_LOCALLOC_SP : REG_SPBASE;
             }
             // Use movw, movt.
@@ -2388,42 +2469,47 @@ inline
         *pBaseReg = REG_SPBASE;
     }
 #else
-    *pFPbased                            = FPbased;
+    *pFPbased = FPbased;
 #endif
 
     return offset;
 }
 
-inline bool Compiler::lvaIsParameter(unsigned varNum)
+inline
+bool                Compiler::lvaIsParameter(unsigned varNum)
 {
-    LclVarDsc* varDsc;
+    LclVarDsc   *   varDsc;
 
     assert(varNum < lvaCount);
     varDsc = lvaTable + varNum;
 
-    return varDsc->lvIsParam;
+    return  varDsc->lvIsParam;
 }
 
-inline bool Compiler::lvaIsRegArgument(unsigned varNum)
+inline
+bool                Compiler::lvaIsRegArgument(unsigned varNum)
 {
-    LclVarDsc* varDsc;
+    LclVarDsc   *   varDsc;
 
     assert(varNum < lvaCount);
     varDsc = lvaTable + varNum;
 
-    return varDsc->lvIsRegArg;
+    return  varDsc->lvIsRegArg;
 }
 
-inline BOOL Compiler::lvaIsOriginalThisArg(unsigned varNum)
+inline
+BOOL                Compiler::lvaIsOriginalThisArg(unsigned varNum)
 {
     assert(varNum < lvaCount);
 
-    BOOL isOriginalThisArg = (varNum == info.compThisArg) && (info.compIsStatic == false);
+    BOOL isOriginalThisArg =
+        (varNum == info.compThisArg) &&
+        (info.compIsStatic == false);
 
 #ifdef DEBUG
     if (isOriginalThisArg)
-    {
-        LclVarDsc* varDsc = lvaTable + varNum;
+    {   
+        LclVarDsc   *   varDsc = lvaTable + varNum;
         // Should never write to or take the address of the original 'this' arg
         CLANG_FORMAT_COMMENT_ANCHOR;
 
@@ -2432,21 +2518,22 @@ inline BOOL Compiler::lvaIsOriginalThisArg(unsigned varNum)
         // copy to a new local, and mark the original as DoNotEnregister, to
         // ensure that it is stack-allocated.  It should not be the case that the original one can be modified -- it
         // should not be written to, or address-exposed.
-        assert(!varDsc->lvArgWrite &&
-               (!varDsc->lvAddrExposed || ((info.compMethodInfo->options & CORINFO_GENERICS_CTXT_FROM_THIS) != 0)));
+        assert(!varDsc->lvArgWrite && (!varDsc->lvAddrExposed || ((info.compMethodInfo->options & CORINFO_GENERICS_CTXT_FROM_THIS) != 0)));
 #else
         assert(!varDsc->lvArgWrite && !varDsc->lvAddrExposed);
 #endif
     }
-#endif
+#endif    
 
     return isOriginalThisArg;
 }
 
-inline BOOL Compiler::lvaIsOriginalThisReadOnly()
+inline
+BOOL                Compiler::lvaIsOriginalThisReadOnly()
 {
-    return lvaArg0Var == info.compThisArg;
+    return  lvaArg0Var == info.compThisArg;
 }
+
 
 /*****************************************************************************
  *
@@ -2455,12 +2542,15 @@ inline BOOL Compiler::lvaIsOriginalThisReadOnly()
  *  integer/address and a float value.
  */
 
-/* static */ inline unsigned Compiler::lvaTypeRefMask(var_types type)
+/* static */ inline
+unsigned            Compiler::lvaTypeRefMask(var_types type)
 {
-    const static BYTE lvaTypeRefMasks[] = {
-#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, tf, howUsed) howUsed,
-#include "typelist.h"
-#undef DEF_TP
+    const static
+    BYTE                lvaTypeRefMasks[] =
+    {
+        #define DEF_TP(tn,nm,jitType,verType,sz,sze,asze,st,al,tf,howUsed) howUsed,
+        #include "typelist.h"
+        #undef  DEF_TP
     };
 
     assert((unsigned)type < sizeof(lvaTypeRefMasks));
@@ -2476,12 +2566,14 @@ inline BOOL Compiler::lvaIsOriginalThisReadOnly()
  *  integer/address and a float value.
  */
 
-inline var_types Compiler::lvaGetActualType(unsigned lclNum)
+inline
+var_types          Compiler::lvaGetActualType(unsigned lclNum)
 {
     return genActualType(lvaGetRealType(lclNum));
 }
 
-inline var_types Compiler::lvaGetRealType(unsigned lclNum)
+inline
+var_types          Compiler::lvaGetRealType(unsigned lclNum)
 {
     return lvaTable[lclNum].TypeGet();
 }
@@ -2496,7 +2588,8 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 */
 
-inline unsigned Compiler::compMapILargNum(unsigned ILargNum)
+inline
+unsigned Compiler::compMapILargNum(unsigned ILargNum)
 {
     assert(ILargNum < info.compILargsCount || tiVerificationNeeded);
 
@@ -2505,39 +2598,39 @@ inline unsigned Compiler::compMapILargNum(unsigned ILargNum)
     if (ILargNum >= info.compRetBuffArg)
     {
         ILargNum++;
-        assert(ILargNum < info.compLocalsCount || tiVerificationNeeded); // compLocals count already adjusted.
+        assert(ILargNum < info.compLocalsCount || tiVerificationNeeded);   // compLocals count already adjusted.
     }
 
-    if (ILargNum >= (unsigned)info.compTypeCtxtArg)
+    if (ILargNum >= (unsigned) info.compTypeCtxtArg)
     {
         ILargNum++;
-        assert(ILargNum < info.compLocalsCount || tiVerificationNeeded); // compLocals count already adjusted.
+        assert(ILargNum < info.compLocalsCount || tiVerificationNeeded);   // compLocals count already adjusted.
     }
 
-    if (ILargNum >= (unsigned)lvaVarargsHandleArg)
+    if (ILargNum >= (unsigned) lvaVarargsHandleArg)
     {
         ILargNum++;
-        assert(ILargNum < info.compLocalsCount || tiVerificationNeeded); // compLocals count already adjusted.
+        assert(ILargNum < info.compLocalsCount || tiVerificationNeeded);   // compLocals count already adjusted.
     }
 
     assert(ILargNum < info.compArgsCount || tiVerificationNeeded);
-    return (ILargNum);
+    return(ILargNum);
 }
 
 // For ARM varargs, all arguments go in integer registers, so swizzle the type
-inline var_types Compiler::mangleVarArgsType(var_types type)
+inline
+var_types Compiler::mangleVarArgsType(var_types type)
 {
 #ifdef _TARGET_ARMARCH_
     if (info.compIsVarArgs || opts.compUseSoftFP)
     {
-        switch (type)
-        {
-            case TYP_FLOAT:
-                return TYP_INT;
-            case TYP_DOUBLE:
-                return TYP_LONG;
-            default:
-                break;
+        switch (type) {
+        case TYP_FLOAT:
+            return TYP_INT;
+        case TYP_DOUBLE:
+            return TYP_LONG;
+        default:
+            break;
         }
     }
 #endif // _TARGET_ARMARCH_
@@ -2551,16 +2644,16 @@ inline regNumber Compiler::getCallArgIntRegister(regNumber floatReg)
 #ifdef _TARGET_AMD64_
     switch (floatReg)
     {
-        case REG_XMM0:
-            return REG_RCX;
-        case REG_XMM1:
-            return REG_RDX;
-        case REG_XMM2:
-            return REG_R8;
-        case REG_XMM3:
-            return REG_R9;
-        default:
-            unreached();
+    case REG_XMM0:
+        return REG_RCX;
+    case REG_XMM1:
+        return REG_RDX;
+    case REG_XMM2:
+        return REG_R8;
+    case REG_XMM3:
+        return REG_R9;
+    default:
+        unreached();
     }
 #else  // !_TARGET_AMD64_
     // How will float args be passed for RyuJIT/x86?
@@ -2574,16 +2667,16 @@ inline regNumber Compiler::getCallArgFloatRegister(regNumber intReg)
 #ifdef _TARGET_AMD64_
     switch (intReg)
     {
-        case REG_RCX:
-            return REG_XMM0;
-        case REG_RDX:
-            return REG_XMM1;
-        case REG_R8:
-            return REG_XMM2;
-        case REG_R9:
-            return REG_XMM3;
-        default:
-            unreached();
+    case REG_RCX:
+        return REG_XMM0;
+    case REG_RDX:
+        return REG_XMM1;
+    case REG_R8:
+        return REG_XMM2;
+    case REG_R9:
+        return REG_XMM3;
+    default:
+        unreached();
     }
 #else  // !_TARGET_AMD64_
     // How will float args be passed for RyuJIT/x86?
@@ -2605,24 +2698,23 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 /*****************************************************************************/
 
-inline bool rpCanAsgOperWithoutReg(GenTreePtr op, bool lclvar)
+inline
+bool        rpCanAsgOperWithoutReg(GenTreePtr op, bool lclvar)
 {
     var_types type;
 
     switch (op->OperGet())
     {
-        case GT_CNS_LNG:
-        case GT_CNS_INT:
+    case GT_CNS_LNG:
+    case GT_CNS_INT:
+        return true;
+    case GT_LCL_VAR:
+        type = genActualType(op->TypeGet());
+        if (lclvar && ((type == TYP_INT) || (type == TYP_REF) || (type == TYP_BYREF)))
             return true;
-        case GT_LCL_VAR:
-            type = genActualType(op->TypeGet());
-            if (lclvar && ((type == TYP_INT) || (type == TYP_REF) || (type == TYP_BYREF)))
-            {
-                return true;
-            }
-            break;
-        default:
-            break;
+        break;
+    default:
+        break;
     }
 
     return false;
@@ -2639,19 +2731,21 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 */
 
-inline bool Compiler::compCanEncodePtrArgCntMax()
+inline
+bool                    Compiler::compCanEncodePtrArgCntMax()
 {
 #ifdef JIT32_GCENCODER
     // DDB 204533:
     // The GC encoding for fully interruptible methods does not
     // support more than 1023 pushed arguments, so we have to
     // use a partially interruptible GC info/encoding.
-    //
+    // 
     return (fgPtrArgCntMax < MAX_PTRARG_OFS);
 #else // JIT32_GCENCODER
     return true;
 #endif
 }
+
 
 /*****************************************************************************
  *
@@ -2665,19 +2759,23 @@ inline bool Compiler::compCanEncodePtrArgCntMax()
  *  computeStack - true if we want to make stack visible to callback function
  */
 
-inline Compiler::fgWalkResult Compiler::fgWalkTreePre(
-    GenTreePtr* pTree, fgWalkPreFn* visitor, void* callBackData, bool lclVarsOnly, bool computeStack)
+inline
+Compiler::fgWalkResult  Compiler::fgWalkTreePre(GenTreePtr  * pTree,
+                                                fgWalkPreFn * visitor,
+                                                void *        callBackData,
+                                                bool          lclVarsOnly,
+                                                bool          computeStack)
 
 {
     fgWalkData walkData;
 
-    walkData.compiler      = this;
-    walkData.wtprVisitorFn = visitor;
-    walkData.pCallbackData = callBackData;
-    walkData.parent        = nullptr;
-    walkData.wtprLclsOnly  = lclVarsOnly;
+    walkData.compiler          = this;
+    walkData.wtprVisitorFn     = visitor;
+    walkData.pCallbackData     = callBackData;
+    walkData.parent            = NULL;
+    walkData.wtprLclsOnly      = lclVarsOnly;
 #ifdef DEBUG
-    walkData.printModified = false;
+    walkData.printModified     = false;
 #endif
 
     fgWalkResult result;
@@ -2685,12 +2783,12 @@ inline Compiler::fgWalkResult Compiler::fgWalkTreePre(
     {
         GenTreeStack parentStack(this);
         walkData.parentStack = &parentStack;
-        result               = fgWalkTreePreRec<true>(pTree, &walkData);
+        result = fgWalkTreePreRec<true>(pTree, &walkData);
     }
     else
     {
-        walkData.parentStack = nullptr;
-        result               = fgWalkTreePreRec<false>(pTree, &walkData);
+        walkData.parentStack = NULL;
+        result = fgWalkTreePreRec<false>(pTree, &walkData);
     }
 
 #ifdef DEBUG
@@ -2710,33 +2808,34 @@ inline Compiler::fgWalkResult Compiler::fgWalkTreePre(
  *
  *  WALK_ABORT          stop walking and return immediately
  *  WALK_CONTINUE       continue walking
- *
+ *  
  *  computeStack - true if we want to make stack visible to callback function
  */
 
-inline Compiler::fgWalkResult Compiler::fgWalkTreePost(GenTreePtr*   pTree,
-                                                       fgWalkPostFn* visitor,
-                                                       void*         callBackData,
-                                                       bool          computeStack)
+inline 
+Compiler::fgWalkResult  Compiler::fgWalkTreePost(GenTreePtr    *pTree,
+                                                 fgWalkPostFn  *visitor,
+                                                 void *         callBackData,
+                                                 bool           computeStack) 
 {
     fgWalkData walkData;
 
     walkData.compiler      = this;
     walkData.wtpoVisitorFn = visitor;
     walkData.pCallbackData = callBackData;
-    walkData.parent        = nullptr;
+    walkData.parent        = NULL;
 
     fgWalkResult result;
     if (computeStack)
     {
         GenTreeStack parentStack(this);
         walkData.parentStack = &parentStack;
-        result               = fgWalkTreePostRec<true>(pTree, &walkData);
+        result = fgWalkTreePostRec<true>(pTree, &walkData);
     }
     else
     {
-        walkData.parentStack = nullptr;
-        result               = fgWalkTreePostRec<false>(pTree, &walkData);
+        walkData.parentStack = NULL;
+        result = fgWalkTreePostRec<false>(pTree, &walkData);
     }
 
     assert(result == WALK_CONTINUE || result == WALK_ABORT);
@@ -2756,47 +2855,43 @@ inline Compiler::fgWalkResult Compiler::fgWalkTreePost(GenTreePtr*   pTree,
  *    overflow exception
  */
 
-inline bool Compiler::fgIsThrowHlpBlk(BasicBlock* block)
+inline
+bool                Compiler::fgIsThrowHlpBlk(BasicBlock * block)
 {
     if (!fgIsCodeAdded())
-    {
         return false;
-    }
 
     if (!(block->bbFlags & BBF_INTERNAL) || block->bbJumpKind != BBJ_THROW)
-    {
         return false;
-    }
 
-    GenTreePtr call = block->bbTreeList->gtStmt.gtStmtExpr;
+    GenTreePtr  call = block->bbTreeList->gtStmt.gtStmtExpr;
 
     if (!call || (call->gtOper != GT_CALL))
-    {
         return false;
-    }
 
-    if (!((call->gtCall.gtCallMethHnd == eeFindHelper(CORINFO_HELP_RNGCHKFAIL)) ||
+    if (!((call->gtCall.gtCallMethHnd == eeFindHelper(CORINFO_HELP_RNGCHKFAIL))   ||
           (call->gtCall.gtCallMethHnd == eeFindHelper(CORINFO_HELP_THROWDIVZERO)) ||
 #if COR_JIT_EE_VERSION > 460
           (call->gtCall.gtCallMethHnd == eeFindHelper(CORINFO_HELP_THROWNULLREF)) ||
 #endif // COR_JIT_EE_VERSION
           (call->gtCall.gtCallMethHnd == eeFindHelper(CORINFO_HELP_OVERFLOW))))
-    {
         return false;
-    }
 
     // We can get to this point for blocks that we didn't create as throw helper blocks
     // under stress, with crazy flow graph optimizations. So, walk the fgAddCodeList
     // for the final determination.
 
-    for (AddCodeDsc* add = fgAddCodeList; add; add = add->acdNext)
+    for  (AddCodeDsc* add = fgAddCodeList; add; add = add->acdNext)
     {
-        if (block == add->acdDstBlk)
+        if  (block == add->acdDstBlk)
         {
-            return add->acdKind == SCK_RNGCHK_FAIL || add->acdKind == SCK_DIV_BY_ZERO || add->acdKind == SCK_OVERFLOW
+            return add->acdKind == SCK_RNGCHK_FAIL ||
+                   add->acdKind == SCK_DIV_BY_ZERO ||
+                   add->acdKind == SCK_OVERFLOW
 #if COR_JIT_EE_VERSION > 460
-                   || add->acdKind == SCK_ARG_EXCPN || add->acdKind == SCK_ARG_RNG_EXCPN
-#endif // COR_JIT_EE_VERSION
+                   || add->acdKind == SCK_ARG_EXCPN
+                   || add->acdKind == SCK_ARG_RNG_EXCPN
+#endif //COR_JIT_EE_VERSION
                 ;
         }
     }
@@ -2811,21 +2906,24 @@ inline bool Compiler::fgIsThrowHlpBlk(BasicBlock* block)
  *  (by calling the EE helper).
  */
 
-inline unsigned Compiler::fgThrowHlpBlkStkLevel(BasicBlock* block)
+inline
+unsigned            Compiler::fgThrowHlpBlkStkLevel(BasicBlock *block)
 {
-    for (AddCodeDsc* add = fgAddCodeList; add; add = add->acdNext)
+    for  (AddCodeDsc  *   add = fgAddCodeList; add; add = add->acdNext)
     {
-        if (block == add->acdDstBlk)
+        if  (block == add->acdDstBlk)
         {
             // Compute assert cond separately as assert macro cannot have conditional compilation directives.
-            bool cond =
-                (add->acdKind == SCK_RNGCHK_FAIL || add->acdKind == SCK_DIV_BY_ZERO || add->acdKind == SCK_OVERFLOW
+            bool cond = (add->acdKind == SCK_RNGCHK_FAIL ||
+                         add->acdKind == SCK_DIV_BY_ZERO ||
+                         add->acdKind == SCK_OVERFLOW
 #if COR_JIT_EE_VERSION > 460
-                 || add->acdKind == SCK_ARG_EXCPN || add->acdKind == SCK_ARG_RNG_EXCPN
-#endif // COR_JIT_EE_VERSION
-                 );
+                         || add->acdKind == SCK_ARG_EXCPN
+                         || add->acdKind == SCK_ARG_RNG_EXCPN
+#endif //COR_JIT_EE_VERSION
+                         );
             assert(cond);
-
+                  
             // TODO: bbTgtStkDepth is DEBUG-only.
             // Should we use it regularly and avoid this search.
             assert(block->bbTgtStkDepth == add->acdStkLvl);
@@ -2833,8 +2931,7 @@ inline unsigned Compiler::fgThrowHlpBlkStkLevel(BasicBlock* block)
         }
     }
 
-    noway_assert(!"fgThrowHlpBlkStkLevel should only be called if fgIsThrowHlpBlk() is true, but we can't find the "
-                  "block in the fgAddCodeList list");
+    noway_assert(!"fgThrowHlpBlkStkLevel should only be called if fgIsThrowHlpBlk() is true, but we can't find the block in the fgAddCodeList list");
 
     /* We couldn't find the basic block: it must not have been a throw helper block */
 
@@ -2845,10 +2942,10 @@ inline unsigned Compiler::fgThrowHlpBlkStkLevel(BasicBlock* block)
     Small inline function to change a given block to a throw block.
 
 */
-inline void Compiler::fgConvertBBToThrowBB(BasicBlock* block)
+inline void Compiler::fgConvertBBToThrowBB(BasicBlock * block)
 {
     block->bbJumpKind = BBJ_THROW;
-    block->bbSetRunRarely(); // any block with a throw is rare
+    block->bbSetRunRarely();     // any block with a throw is rare
 }
 
 /*****************************************************************************
@@ -2856,26 +2953,28 @@ inline void Compiler::fgConvertBBToThrowBB(BasicBlock* block)
  *  Return true if we've added any new basic blocks.
  */
 
-inline bool Compiler::fgIsCodeAdded()
+inline
+bool                Compiler::fgIsCodeAdded()
 {
-    return fgAddCodeModf;
+    return  fgAddCodeModf;
 }
 
 /*****************************************************************************
-  Is the offset too big?
+  Is the offset too big? 
 */
-inline bool Compiler::fgIsBigOffset(size_t offset)
-{
+inline 
+bool               Compiler::fgIsBigOffset(size_t offset) {
     return (offset > compMaxUncheckedOffsetForNullObject);
 }
 
 /***********************************************************************************
 *
-*  Returns true if back-end will do other than integer division which currently occurs only
+*  Returns true if back-end will do other than integer division which currently occurs only 
 *  if "divisor" is a positive integer constant and a power of 2 other than 1 and INT_MIN
 */
 
-inline bool Compiler::fgIsSignedDivOptimizable(GenTreePtr divisor)
+inline
+bool               Compiler::fgIsSignedDivOptimizable(GenTreePtr divisor)
 {
     if (!opts.MinOpts() && divisor->IsCnsIntOrI())
     {
@@ -2886,11 +2985,12 @@ inline bool Compiler::fgIsSignedDivOptimizable(GenTreePtr divisor)
            and during codegen we need to encode ival-1 within 32 bits.  If ival were INT_MIN
            then ival-1 would cause underflow.
 
-           Note that we could put #ifdef around the third check so that it is applied only on
+           Note that we could put #ifdef around the third check so that it is applied only on 
            64-bit platforms but the below is a more generic way to express it as it is a no-op
            on 32-bit platforms.
          */
         return (ival > 0 && genMaxOneBit(ival) && ((ssize_t)(int)ival == ival));
+
     }
 
     return false;
@@ -2898,11 +2998,12 @@ inline bool Compiler::fgIsSignedDivOptimizable(GenTreePtr divisor)
 
 /************************************************************************************
 *
-*  Returns true if back-end will do other than integer division which currently occurs
+*  Returns true if back-end will do other than integer division which currently occurs 
 * if "divisor" is an unsigned integer constant and a power of 2 other than 1 and zero.
 */
 
-inline bool Compiler::fgIsUnsignedDivOptimizable(GenTreePtr divisor)
+inline
+bool               Compiler::fgIsUnsignedDivOptimizable(GenTreePtr divisor)
 {
     if (!opts.MinOpts() && divisor->IsCnsIntOrI())
     {
@@ -2915,13 +3016,15 @@ inline bool Compiler::fgIsUnsignedDivOptimizable(GenTreePtr divisor)
     return false;
 }
 
+
 /*****************************************************************************
 *
-*  Returns true if back-end will do other than integer division which currently occurs
+*  Returns true if back-end will do other than integer division which currently occurs 
 *  if "divisor" is a positive integer constant and a power of 2 other than zero
 */
 
-inline bool Compiler::fgIsSignedModOptimizable(GenTreePtr divisor)
+inline
+bool               Compiler::fgIsSignedModOptimizable(GenTreePtr divisor)
 {
     if (!opts.MinOpts() && divisor->IsCnsIntOrI())
     {
@@ -2934,13 +3037,15 @@ inline bool Compiler::fgIsSignedModOptimizable(GenTreePtr divisor)
     return false;
 }
 
+
 /*****************************************************************************
 *
-*  Returns true if back-end will do other than integer division which currently occurs
+*  Returns true if back-end will do other than integer division which currently occurs 
 *  if "divisor" is a positive integer constant and a power of 2 other than zero
 */
 
-inline bool Compiler::fgIsUnsignedModOptimizable(GenTreePtr divisor)
+inline
+bool               Compiler::fgIsUnsignedModOptimizable(GenTreePtr divisor)
 {
     if (!opts.MinOpts() && divisor->IsCnsIntOrI())
     {
@@ -2953,6 +3058,7 @@ inline bool Compiler::fgIsUnsignedModOptimizable(GenTreePtr divisor)
     return false;
 }
 
+
 /*
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -2963,9 +3069,11 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 */
 
+
 /*****************************************************************************/
 
-/* static */ inline unsigned Compiler::tmpSlot(unsigned size)
+/* static */ inline
+unsigned            Compiler::tmpSlot(unsigned size)
 {
     noway_assert(size >= sizeof(int));
     noway_assert(size <= TEMP_MAX_SIZE);
@@ -2981,7 +3089,8 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
  *  over a function body.
  */
 
-inline void Compiler::tmpEnd()
+inline
+void                Compiler::tmpEnd()
 {
 #ifdef DEBUG
     if (verbose && (tmpCount > 0))
@@ -2997,14 +3106,17 @@ inline void Compiler::tmpEnd()
  *  compiled.
  */
 
-inline void Compiler::tmpDone()
+inline
+void                Compiler::tmpDone()
 {
 #ifdef DEBUG
     unsigned count;
     TempDsc* temp;
 
     assert(tmpAllFree());
-    for (temp = tmpListBeg(), count = temp ? 1 : 0; temp; temp = tmpListNxt(temp), count += temp ? 1 : 0)
+    for (temp = tmpListBeg(    ), count  = temp ? 1 : 0;
+         temp;
+         temp = tmpListNxt(temp), count += temp ? 1 : 0)
     {
         assert(temp->tdLegalOffset());
     }
@@ -3016,12 +3128,14 @@ inline void Compiler::tmpDone()
 }
 
 #ifdef DEBUG
-inline bool Compiler::shouldUseVerboseTrees()
+inline
+bool                Compiler::shouldUseVerboseTrees()
 {
     return (JitConfig.JitDumpVerboseTrees() == 1);
 }
 
-inline bool Compiler::shouldUseVerboseSsa()
+inline
+bool                Compiler::shouldUseVerboseSsa()
 {
     return (JitConfig.JitDumpVerboseSsa() == 1);
 }
@@ -3032,7 +3146,8 @@ inline bool Compiler::shouldUseVerboseSsa()
 // Notes:
 //    This is set to default to 1 in clrConfigValues.h
 
-inline bool Compiler::shouldDumpASCIITrees()
+inline
+bool                Compiler::shouldDumpASCIITrees()
 {
     return (JitConfig.JitDumpASCII() == 1);
 }
@@ -3044,7 +3159,8 @@ inline bool Compiler::shouldDumpASCIITrees()
  *   2:   Check-all stress. Performance will be REALLY horrible
  */
 
-inline DWORD getJitStressLevel()
+inline
+DWORD               getJitStressLevel()
 {
     return JitConfig.JitStress();
 }
@@ -3053,12 +3169,14 @@ inline DWORD getJitStressLevel()
  *  Should we do the strict check for non-virtual call to the virtual method?
  */
 
-inline DWORD StrictCheckForNonVirtualCallToVirtualMethod()
+inline
+DWORD               StrictCheckForNonVirtualCallToVirtualMethod()
 {
     return JitConfig.JitStrictCheckForNonVirtualCallToVirtualMethod() == 1;
 }
 
 #endif // DEBUG
+
 
 /*****************************************************************************/
 /* Map a register argument number ("RegArgNum") to a register number ("RegNum").
@@ -3071,22 +3189,25 @@ inline DWORD StrictCheckForNonVirtualCallToVirtualMethod()
  * we return the fixed return buffer register
  */
 
-inline regNumber genMapIntRegArgNumToRegNum(unsigned argNum)
+inline
+regNumber           genMapIntRegArgNumToRegNum(unsigned argNum)
 {
     if (hasFixedRetBuffReg() && (argNum == theFixedRetBuffArgNum()))
     {
         return theFixedRetBuffReg();
     }
 
-    assert(argNum < ArrLen(intArgRegs));
-
+    assert (argNum < ArrLen(intArgRegs));
+    
     return intArgRegs[argNum];
 }
 
-inline regNumber genMapFloatRegArgNumToRegNum(unsigned argNum)
+
+inline
+regNumber           genMapFloatRegArgNumToRegNum(unsigned argNum)
 {
 #ifndef _TARGET_X86_
-    assert(argNum < ArrLen(fltArgRegs));
+    assert (argNum < ArrLen(fltArgRegs));
 
     return fltArgRegs[argNum];
 #else
@@ -3098,13 +3219,9 @@ inline regNumber genMapFloatRegArgNumToRegNum(unsigned argNum)
 __forceinline regNumber genMapRegArgNumToRegNum(unsigned argNum, var_types type)
 {
     if (varTypeIsFloating(type))
-    {
         return genMapFloatRegArgNumToRegNum(argNum);
-    }
     else
-    {
         return genMapIntRegArgNumToRegNum(argNum);
-    }
 }
 
 /*****************************************************************************/
@@ -3113,17 +3230,20 @@ __forceinline regNumber genMapRegArgNumToRegNum(unsigned argNum, var_types type)
  * (for a double on ARM) is returned.
  */
 
-inline regMaskTP genMapIntRegArgNumToRegMask(unsigned argNum)
+inline
+regMaskTP           genMapIntRegArgNumToRegMask(unsigned argNum)
 {
-    assert(argNum < ArrLen(intArgMasks));
-
+    assert (argNum < ArrLen(intArgMasks));
+    
     return intArgMasks[argNum];
 }
 
-inline regMaskTP genMapFloatRegArgNumToRegMask(unsigned argNum)
+
+inline
+regMaskTP           genMapFloatRegArgNumToRegMask(unsigned argNum)
 {
 #ifndef _TARGET_X86_
-    assert(argNum < ArrLen(fltArgMasks));
+    assert (argNum < ArrLen(fltArgMasks));
 
     return fltArgMasks[argNum];
 #else
@@ -3134,7 +3254,7 @@ inline regMaskTP genMapFloatRegArgNumToRegMask(unsigned argNum)
 
 __forceinline regMaskTP genMapArgNumToRegMask(unsigned argNum, var_types type)
 {
-    regMaskTP result;
+    regMaskTP result; 
     if (varTypeIsFloating(type))
     {
         result = genMapFloatRegArgNumToRegMask(argNum);
@@ -3158,35 +3278,28 @@ __forceinline regMaskTP genMapArgNumToRegMask(unsigned argNum, var_types type)
  * If we have a fixed return buffer register we return theFixedRetBuffArgNum
  */
 
-inline unsigned genMapIntRegNumToRegArgNum(regNumber regNum)
+inline
+unsigned           genMapIntRegNumToRegArgNum(regNumber regNum)
 {
     assert(genRegMask(regNum) & fullIntArgRegMask());
 
     switch (regNum)
     {
-        case REG_ARG_0:
-            return 0;
+    case REG_ARG_0: return 0;
 #if MAX_REG_ARG >= 2
-        case REG_ARG_1:
-            return 1;
+    case REG_ARG_1: return 1;
 #if MAX_REG_ARG >= 3
-        case REG_ARG_2:
-            return 2;
+    case REG_ARG_2: return 2;
 #if MAX_REG_ARG >= 4
-        case REG_ARG_3:
-            return 3;
+    case REG_ARG_3: return 3;
 #if MAX_REG_ARG >= 5
-        case REG_ARG_4:
-            return 4;
+    case REG_ARG_4: return 4;
 #if MAX_REG_ARG >= 6
-        case REG_ARG_5:
-            return 5;
+    case REG_ARG_5: return 5; 
 #if MAX_REG_ARG >= 7
-        case REG_ARG_6:
-            return 6;
+    case REG_ARG_6: return 6;
 #if MAX_REG_ARG >= 8
-        case REG_ARG_7:
-            return 7;
+    case REG_ARG_7: return 7;
 #endif
 #endif
 #endif
@@ -3194,23 +3307,24 @@ inline unsigned genMapIntRegNumToRegArgNum(regNumber regNum)
 #endif
 #endif
 #endif
-        default:
-            // Check for the Arm64 fixed return buffer argument register
-            if (hasFixedRetBuffReg() && (regNum == theFixedRetBuffReg()))
-            {
-                return theFixedRetBuffArgNum();
-            }
-            else
-            {
-                assert(!"invalid register arg register");
-                return BAD_VAR_NUM;
-            }
+    default: 
+        // Check for the Arm64 fixed return buffer argument register
+        if (hasFixedRetBuffReg() && (regNum == theFixedRetBuffReg()))
+        {
+            return theFixedRetBuffArgNum();
+        }
+        else
+        {
+            assert(!"invalid register arg register");
+            return BAD_VAR_NUM;
+        }
     }
 }
 
-inline unsigned genMapFloatRegNumToRegArgNum(regNumber regNum)
+inline
+unsigned           genMapFloatRegNumToRegArgNum(regNumber regNum)
 {
-    assert(genRegMask(regNum) & RBM_FLTARG_REGS);
+    assert (genRegMask(regNum) & RBM_FLTARG_REGS);
 
 #ifdef _TARGET_ARM_
     return regNum - REG_F0;
@@ -3223,71 +3337,67 @@ inline unsigned genMapFloatRegNumToRegArgNum(regNumber regNum)
 #if MAX_FLOAT_REG_ARG >= 1
     switch (regNum)
     {
-        case REG_FLTARG_0:
-            return 0;
+    case REG_FLTARG_0: return 0;
 #if MAX_REG_ARG >= 2
-        case REG_FLTARG_1:
-            return 1;
+    case REG_FLTARG_1: return 1;
 #if MAX_REG_ARG >= 3
-        case REG_FLTARG_2:
-            return 2;
+    case REG_FLTARG_2: return 2;
 #if MAX_REG_ARG >= 4
-        case REG_FLTARG_3:
-            return 3;
+    case REG_FLTARG_3: return 3;
 #if MAX_REG_ARG >= 5
-        case REG_FLTARG_4:
-            return 4;
+    case REG_FLTARG_4: return 4;
 #endif
 #endif
 #endif
 #endif
-        default:
-            assert(!"invalid register arg register");
-            return BAD_VAR_NUM;
+    default: 
+        assert(!"invalid register arg register"); 
+        return BAD_VAR_NUM;
     }
 #else
-    assert(!"flt reg args not allowed");
+    assert(!"flt reg args not allowed"); 
     return BAD_VAR_NUM;
-#endif
+#endif 
 #endif // !arm
 }
 
-inline unsigned genMapRegNumToRegArgNum(regNumber regNum, var_types type)
+inline
+unsigned           genMapRegNumToRegArgNum(regNumber regNum, var_types type)
 {
     if (varTypeIsFloating(type))
-    {
         return genMapFloatRegNumToRegArgNum(regNum);
-    }
     else
-    {
         return genMapIntRegNumToRegArgNum(regNum);
-    }
 }
+
 
 /*****************************************************************************/
 /* Return a register mask with the first 'numRegs' argument registers set.
  */
 
-inline regMaskTP genIntAllRegArgMask(unsigned numRegs)
+inline
+regMaskTP           genIntAllRegArgMask(unsigned numRegs)
 {
-    assert(numRegs <= MAX_REG_ARG);
+    assert (numRegs <= MAX_REG_ARG);
 
     regMaskTP result = RBM_NONE;
-    for (unsigned i = 0; i < numRegs; i++)
+    for (unsigned i=0; i<numRegs; i++)
     {
         result |= intArgMasks[i];
     }
     return result;
 }
 
+
 #if !FEATURE_STACK_FP_X87
 
-inline regMaskTP genFltAllRegArgMask(unsigned numRegs)
+inline
+regMaskTP           genFltAllRegArgMask(unsigned numRegs)
 {
-    assert(numRegs <= MAX_FLOAT_REG_ARG);
+    assert (numRegs <= MAX_FLOAT_REG_ARG);
 
     regMaskTP result = RBM_NONE;
-    for (unsigned i = 0; i < numRegs; i++)
+    for (unsigned i=0; i<numRegs; i++)
     {
         result |= fltArgMasks[i];
     }
@@ -3295,6 +3405,8 @@ inline regMaskTP genFltAllRegArgMask(unsigned numRegs)
 }
 
 #endif // !FEATURE_STACK_FP_X87
+
+
 
 /*
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -3312,16 +3424,15 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
  *  in the given expression tree node.
  */
 
-template <bool ForCodeGen>
-inline void Compiler::compUpdateLife(GenTreePtr tree)
+template<bool ForCodeGen>
+inline
+void                Compiler::compUpdateLife(GenTreePtr tree)
 {
     // TODO-Cleanup: We shouldn't really be calling this more than once
-    if (tree == compCurLifeTree)
-    {
-        return;
-    }
+    if (tree == compCurLifeTree) return;
 
-    if (!tree->OperIsNonPhiLocal() && fgIsIndirOfAddrOfLocal(tree) == nullptr)
+    if (!tree->OperIsNonPhiLocal() &&
+        fgIsIndirOfAddrOfLocal(tree) == NULL) 
     {
         return;
     }
@@ -3329,12 +3440,13 @@ inline void Compiler::compUpdateLife(GenTreePtr tree)
     compUpdateLifeVar<ForCodeGen>(tree);
 }
 
-template <bool ForCodeGen>
-inline void Compiler::compUpdateLife(VARSET_VALARG_TP newLife)
+template<bool ForCodeGen>
+inline
+void                Compiler::compUpdateLife(VARSET_VALARG_TP newLife)
 {
     if (!VarSetOps::Equal(this, compCurLife, newLife))
     {
-        compChangeLife<ForCodeGen>(newLife DEBUGARG(nullptr));
+        compChangeLife<ForCodeGen>(newLife DEBUGARG(NULL));
     }
 #ifdef DEBUG
     else
@@ -3349,13 +3461,15 @@ inline void Compiler::compUpdateLife(VARSET_VALARG_TP newLife)
 #endif // DEBUG
 }
 
+
 /*****************************************************************************
  *
  *  We stash cookies in basic blocks for the code emitter; this call retrieves
  *  the cookie associated with the given basic block.
  */
 
-inline void* emitCodeGetCookie(BasicBlock* block)
+inline
+void *              emitCodeGetCookie(BasicBlock *block)
 {
     assert(block);
     return block->bbEmitCookie;
@@ -3371,6 +3485,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 */
 
+
 #if LOCAL_ASSERTION_PROP
 
 /*****************************************************************************
@@ -3379,14 +3494,15 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
  *  used only during local assertion prop
  */
 
-inline void Compiler::optAssertionReset(AssertionIndex limit)
+inline
+void                Compiler::optAssertionReset(AssertionIndex limit)
 {
     PREFAST_ASSUME(optAssertionCount <= optMaxAssertionCount);
 
     while (optAssertionCount > limit)
     {
-        AssertionIndex index        = optAssertionCount;
-        AssertionDsc*  curAssertion = optGetAssertion(index);
+        AssertionIndex index  = optAssertionCount;
+        AssertionDsc* curAssertion = optGetAssertion(index);
         optAssertionCount--;
         unsigned lclNum = curAssertion->op1.lcl.lclNum;
         assert(lclNum < lvaTableCnt);
@@ -3394,33 +3510,35 @@ inline void Compiler::optAssertionReset(AssertionIndex limit)
 
         //
         // Find the Copy assertions
-        //
-        if ((curAssertion->assertionKind == OAK_EQUAL) && (curAssertion->op1.kind == O1K_LCLVAR) &&
-            (curAssertion->op2.kind == O2K_LCLVAR_COPY))
+        // 
+        if ((curAssertion->assertionKind == OAK_EQUAL)   &&
+            (curAssertion->op1.kind      == O1K_LCLVAR)  &&
+            (curAssertion->op2.kind      == O2K_LCLVAR_COPY))
         {
             //
             //  op2.lcl.lclNum no longer depends upon this assertion
-            //
+            //  
             lclNum = curAssertion->op2.lcl.lclNum;
             BitVecOps::RemoveElemD(apTraits, GetAssertionDep(lclNum), index - 1);
         }
     }
     while (optAssertionCount < limit)
     {
-        AssertionIndex index        = ++optAssertionCount;
-        AssertionDsc*  curAssertion = optGetAssertion(index);
-        unsigned       lclNum       = curAssertion->op1.lcl.lclNum;
+        AssertionIndex index  = ++optAssertionCount;
+        AssertionDsc* curAssertion = optGetAssertion(index);
+        unsigned lclNum = curAssertion->op1.lcl.lclNum;
         BitVecOps::AddElemD(apTraits, GetAssertionDep(lclNum), index - 1);
 
         //
         // Check for Copy assertions
-        //
-        if ((curAssertion->assertionKind == OAK_EQUAL) && (curAssertion->op1.kind == O1K_LCLVAR) &&
-            (curAssertion->op2.kind == O2K_LCLVAR_COPY))
+        // 
+        if ((curAssertion->assertionKind == OAK_EQUAL)   &&
+            (curAssertion->op1.kind      == O1K_LCLVAR)  &&
+            (curAssertion->op2.kind      == O2K_LCLVAR_COPY))
         {
             //
             //  op2.lcl.lclNum now depends upon this assertion
-            //
+            //  
             lclNum = curAssertion->op2.lcl.lclNum;
             BitVecOps::AddElemD(apTraits, GetAssertionDep(lclNum), index - 1);
         }
@@ -3433,7 +3551,8 @@ inline void Compiler::optAssertionReset(AssertionIndex limit)
  *  used only during local assertion prop
  */
 
-inline void Compiler::optAssertionRemove(AssertionIndex index)
+inline
+void                Compiler::optAssertionRemove(AssertionIndex index)
 {
     assert(index > 0);
     assert(index <= optAssertionCount);
@@ -3448,7 +3567,7 @@ inline void Compiler::optAssertionRemove(AssertionIndex index)
     //  index-th entry in the table with the data found at the end of the table
     //  Since we are reordering the rable the optAssertionDep bits need to be recreated
     //  using optAssertionReset(0) and optAssertionReset(newAssertionCount) will
-    //  correctly update the optAssertionDep bits
+    //  correctly update the optAssertionDep bits 
     //
     if (index == optAssertionCount)
     {
@@ -3457,13 +3576,14 @@ inline void Compiler::optAssertionRemove(AssertionIndex index)
 
         //
         // Check for Copy assertions
-        //
-        if ((curAssertion->assertionKind == OAK_EQUAL) && (curAssertion->op1.kind == O1K_LCLVAR) &&
-            (curAssertion->op2.kind == O2K_LCLVAR_COPY))
+        // 
+        if ((curAssertion->assertionKind == OAK_EQUAL)   &&
+            (curAssertion->op1.kind      == O1K_LCLVAR)  &&
+            (curAssertion->op2.kind      == O2K_LCLVAR_COPY))
         {
             //
             //  op2.lcl.lclNum no longer depends upon this assertion
-            //
+            //  
             lclNum = curAssertion->op2.lcl.lclNum;
             BitVecOps::RemoveElemD(apTraits, GetAssertionDep(lclNum), index - 1);
         }
@@ -3472,13 +3592,13 @@ inline void Compiler::optAssertionRemove(AssertionIndex index)
     }
     else
     {
-        AssertionDsc*  lastAssertion     = optGetAssertion(optAssertionCount);
-        AssertionIndex newAssertionCount = optAssertionCount - 1;
+        AssertionDsc*  lastAssertion = optGetAssertion(optAssertionCount);
+        AssertionIndex newAssertionCount = optAssertionCount-1;
 
-        optAssertionReset(0); // This make optAssertionCount equal 0
+        optAssertionReset(0);            // This make optAssertionCount equal 0
 
-        memcpy(curAssertion,  // the entry to be removed
-               lastAssertion, // last entry in the table
+        memcpy(curAssertion,             // the entry to be removed
+               lastAssertion,            // last entry in the table
                sizeof(AssertionDsc));
 
         optAssertionReset(newAssertionCount);
@@ -3486,32 +3606,33 @@ inline void Compiler::optAssertionRemove(AssertionIndex index)
 }
 #endif // LOCAL_ASSERTION_PROP
 
-inline void Compiler::LoopDsc::AddModifiedField(Compiler* comp, CORINFO_FIELD_HANDLE fldHnd)
+inline
+void                Compiler::LoopDsc::AddModifiedField(Compiler* comp, CORINFO_FIELD_HANDLE fldHnd)
 {
     if (lpFieldsModified == nullptr)
     {
-        lpFieldsModified =
-            new (comp->getAllocatorLoopHoist()) Compiler::LoopDsc::FieldHandleSet(comp->getAllocatorLoopHoist());
+        lpFieldsModified = new (comp->getAllocatorLoopHoist()) Compiler::LoopDsc::FieldHandleSet(comp->getAllocatorLoopHoist());
     }
     lpFieldsModified->Set(fldHnd, true);
 }
 
-inline void Compiler::LoopDsc::AddModifiedElemType(Compiler* comp, CORINFO_CLASS_HANDLE structHnd)
+inline
+void                Compiler::LoopDsc::AddModifiedElemType(Compiler* comp, CORINFO_CLASS_HANDLE structHnd)
 {
     if (lpArrayElemTypesModified == nullptr)
     {
-        lpArrayElemTypesModified =
-            new (comp->getAllocatorLoopHoist()) Compiler::LoopDsc::ClassHandleSet(comp->getAllocatorLoopHoist());
+        lpArrayElemTypesModified = new (comp->getAllocatorLoopHoist()) Compiler::LoopDsc::ClassHandleSet(comp->getAllocatorLoopHoist());
     }
     lpArrayElemTypesModified->Set(structHnd, true);
 }
 
-inline void Compiler::LoopDsc::VERIFY_lpIterTree()
+inline
+void                Compiler::LoopDsc::VERIFY_lpIterTree()
 {
 #ifdef DEBUG
     assert(lpFlags & LPFLG_ITER);
 
-    // iterTree should be "lcl <op>= const"
+    //iterTree should be "lcl <op>= const"
 
     assert(lpIterTree);
 
@@ -3525,14 +3646,14 @@ inline void Compiler::LoopDsc::VERIFY_lpIterTree()
 
         switch (rhs->gtOper)
         {
-            case GT_ADD:
-            case GT_SUB:
-            case GT_MUL:
-            case GT_RSH:
-            case GT_LSH:
-                break;
-            default:
-                assert(!"Unknown operator for loop increment");
+        case GT_ADD:
+        case GT_SUB:
+        case GT_MUL:
+        case GT_RSH:
+        case GT_LSH:
+            break;
+        default:
+            assert(!"Unknown operator for loop increment");
         }
         assert(rhs->gtOp.gtOp1->OperGet() == GT_LCL_VAR);
         assert(rhs->gtOp.gtOp1->AsLclVarCommon()->GetLclNum() == lhs->AsLclVarCommon()->GetLclNum());
@@ -3548,7 +3669,8 @@ inline void Compiler::LoopDsc::VERIFY_lpIterTree()
 
 //-----------------------------------------------------------------------------
 
-inline unsigned Compiler::LoopDsc::lpIterVar()
+inline
+unsigned            Compiler::LoopDsc::lpIterVar()
 {
     VERIFY_lpIterTree();
     return lpIterTree->gtOp.gtOp1->gtLclVarCommon.gtLclNum;
@@ -3556,23 +3678,25 @@ inline unsigned Compiler::LoopDsc::lpIterVar()
 
 //-----------------------------------------------------------------------------
 
-inline int Compiler::LoopDsc::lpIterConst()
+inline
+int                Compiler::LoopDsc::lpIterConst()
 {
     VERIFY_lpIterTree();
     if (lpIterTree->OperGet() == GT_ASG)
     {
         GenTreePtr rhs = lpIterTree->gtOp.gtOp2;
-        return (int)rhs->gtOp.gtOp2->gtIntCon.gtIconVal;
+        return (int) rhs->gtOp.gtOp2->gtIntCon.gtIconVal;
     }
     else
     {
-        return (int)lpIterTree->gtOp.gtOp2->gtIntCon.gtIconVal;
+        return (int) lpIterTree->gtOp.gtOp2->gtIntCon.gtIconVal;
     }
 }
 
 //-----------------------------------------------------------------------------
 
-inline genTreeOps Compiler::LoopDsc::lpIterOper()
+inline
+genTreeOps          Compiler::LoopDsc::lpIterOper()
 {
     VERIFY_lpIterTree();
     if (lpIterTree->OperGet() == GT_ASG)
@@ -3586,7 +3710,9 @@ inline genTreeOps Compiler::LoopDsc::lpIterOper()
     }
 }
 
-inline var_types Compiler::LoopDsc::lpIterOperType()
+
+inline
+var_types           Compiler::LoopDsc::lpIterOperType()
 {
     VERIFY_lpIterTree();
 
@@ -3594,34 +3720,36 @@ inline var_types Compiler::LoopDsc::lpIterOperType()
     assert(genActualType(type) == TYP_INT);
 
     if ((lpIterTree->gtFlags & GTF_UNSIGNED) && type == TYP_INT)
-    {
         type = TYP_UINT;
-    }
 
     return type;
 }
 
-inline void Compiler::LoopDsc::VERIFY_lpTestTree()
+
+inline
+void                Compiler::LoopDsc::VERIFY_lpTestTree()
 {
 #ifdef DEBUG
     assert(lpFlags & LPFLG_ITER);
     assert(lpTestTree);
 
-    genTreeOps oper = lpTestTree->OperGet();
+    genTreeOps  oper = lpTestTree->OperGet();
     assert(GenTree::OperIsCompare(oper));
 
-    GenTreePtr iterator = nullptr;
-    GenTreePtr limit    = nullptr;
-    if ((lpTestTree->gtOp.gtOp2->gtOper == GT_LCL_VAR) && (lpTestTree->gtOp.gtOp2->gtFlags & GTF_VAR_ITERATOR) != 0)
+    GenTreePtr iterator = NULL;
+    GenTreePtr limit = NULL;
+    if ((lpTestTree->gtOp.gtOp2->gtOper == GT_LCL_VAR)
+        && (lpTestTree->gtOp.gtOp2->gtFlags & GTF_VAR_ITERATOR) != 0)
     {
-        iterator = lpTestTree->gtOp.gtOp2;
-        limit    = lpTestTree->gtOp.gtOp1;
+        iterator    = lpTestTree->gtOp.gtOp2;
+        limit       = lpTestTree->gtOp.gtOp1;
     }
-    else if ((lpTestTree->gtOp.gtOp1->gtOper == GT_LCL_VAR) &&
-             (lpTestTree->gtOp.gtOp1->gtFlags & GTF_VAR_ITERATOR) != 0)
+    else
+    if ((lpTestTree->gtOp.gtOp1->gtOper == GT_LCL_VAR)
+        && (lpTestTree->gtOp.gtOp1->gtFlags & GTF_VAR_ITERATOR) != 0)
     {
-        iterator = lpTestTree->gtOp.gtOp1;
-        limit    = lpTestTree->gtOp.gtOp2;
+        iterator    = lpTestTree->gtOp.gtOp1;
+        limit       = lpTestTree->gtOp.gtOp2;
     }
     else
     {
@@ -3630,59 +3758,61 @@ inline void Compiler::LoopDsc::VERIFY_lpTestTree()
     }
 
     if (lpFlags & LPFLG_CONST_LIMIT)
-    {
         assert(limit->OperIsConst());
-    }
     if (lpFlags & LPFLG_VAR_LIMIT)
-    {
         assert(limit->OperGet() == GT_LCL_VAR);
-    }
     if (lpFlags & LPFLG_ARRLEN_LIMIT)
-    {
         assert(limit->OperGet() == GT_ARR_LENGTH);
-    }
 #endif
 }
 
 //-----------------------------------------------------------------------------
 
-inline bool Compiler::LoopDsc::lpIsReversed()
+inline
+bool                Compiler::LoopDsc::lpIsReversed()
 {
     VERIFY_lpTestTree();
-    return ((lpTestTree->gtOp.gtOp2->gtOper == GT_LCL_VAR) &&
-            (lpTestTree->gtOp.gtOp2->gtFlags & GTF_VAR_ITERATOR) != 0);
+    return ((lpTestTree->gtOp.gtOp2->gtOper == GT_LCL_VAR)
+        && (lpTestTree->gtOp.gtOp2->gtFlags & GTF_VAR_ITERATOR) != 0);
 }
 
 //-----------------------------------------------------------------------------
 
-inline genTreeOps Compiler::LoopDsc::lpTestOper()
+inline
+genTreeOps          Compiler::LoopDsc::lpTestOper()
 {
     VERIFY_lpTestTree();
     genTreeOps op = lpTestTree->OperGet();
-    return lpIsReversed() ? GenTree::SwapRelop(op) : op;
+    return lpIsReversed() ?
+        GenTree::SwapRelop(op) : op;
 }
 
 //-----------------------------------------------------------------------------
 
-inline GenTreePtr Compiler::LoopDsc::lpIterator()
+inline
+GenTreePtr          Compiler::LoopDsc::lpIterator()
 {
     VERIFY_lpTestTree();
 
-    return lpIsReversed() ? lpTestTree->gtOp.gtOp2 : lpTestTree->gtOp.gtOp1;
+    return lpIsReversed() ?
+        lpTestTree->gtOp.gtOp2 : lpTestTree->gtOp.gtOp1;
 }
 
 //-----------------------------------------------------------------------------
 
-inline GenTreePtr Compiler::LoopDsc::lpLimit()
+inline
+GenTreePtr          Compiler::LoopDsc::lpLimit()
 {
     VERIFY_lpTestTree();
 
-    return lpIsReversed() ? lpTestTree->gtOp.gtOp1 : lpTestTree->gtOp.gtOp2;
+    return lpIsReversed() ?
+        lpTestTree->gtOp.gtOp1 : lpTestTree->gtOp.gtOp2;
 }
 
 //-----------------------------------------------------------------------------
 
-inline int Compiler::LoopDsc::lpConstLimit()
+inline
+int                Compiler::LoopDsc::lpConstLimit()
 {
     VERIFY_lpTestTree();
     assert(lpFlags & LPFLG_CONST_LIMIT);
@@ -3694,7 +3824,8 @@ inline int Compiler::LoopDsc::lpConstLimit()
 
 //-----------------------------------------------------------------------------
 
-inline unsigned Compiler::LoopDsc::lpVarLimit()
+inline
+unsigned            Compiler::LoopDsc::lpVarLimit()
 {
     VERIFY_lpTestTree();
     assert(lpFlags & LPFLG_VAR_LIMIT);
@@ -3706,7 +3837,8 @@ inline unsigned Compiler::LoopDsc::lpVarLimit()
 
 //-----------------------------------------------------------------------------
 
-inline bool Compiler::LoopDsc::lpArrLenLimit(Compiler* comp, ArrIndex* index)
+inline
+bool            Compiler::LoopDsc::lpArrLenLimit(Compiler* comp, ArrIndex* index)
 {
     VERIFY_lpTestTree();
     assert(lpFlags & LPFLG_ARRLEN_LIMIT);
@@ -3718,7 +3850,7 @@ inline bool Compiler::LoopDsc::lpArrLenLimit(Compiler* comp, ArrIndex* index)
     if (limit->gtArrLen.ArrRef()->gtOper == GT_LCL_VAR)
     {
         index->arrLcl = limit->gtArrLen.ArrRef()->gtLclVarCommon.gtLclNum;
-        index->rank   = 0;
+        index->rank = 0;
         return true;
     }
     // We have a[i].length, extract a[i] pattern.
@@ -3733,33 +3865,34 @@ inline bool Compiler::LoopDsc::lpArrLenLimit(Compiler* comp, ArrIndex* index)
  *  Is "var" assigned in the loop "lnum" ?
  */
 
-inline bool Compiler::optIsVarAssgLoop(unsigned lnum, unsigned var)
+inline
+bool                Compiler::optIsVarAssgLoop(unsigned lnum, unsigned var)
 {
     assert(lnum < optLoopCount);
-    if (var < lclMAX_ALLSET_TRACKED)
+    if  (var < lclMAX_ALLSET_TRACKED)
     {
         ALLVARSET_TP ALLVARSET_INIT_NOCOPY(vs, AllVarSetOps::MakeSingleton(this, var));
-        return optIsSetAssgLoop(lnum, vs) != 0;
+        return  optIsSetAssgLoop(lnum, vs) != 0;
     }
     else
-    {
-        return optIsVarAssigned(optLoopTable[lnum].lpHead->bbNext, optLoopTable[lnum].lpBottom, nullptr, var);
-    }
+        return  optIsVarAssigned(optLoopTable[lnum].lpHead->bbNext,
+                                 optLoopTable[lnum].lpBottom,
+                                 0,
+                                 var);
 }
 
 /*****************************************************************************
  * If the tree is a tracked local variable, return its LclVarDsc ptr.
  */
 
-inline LclVarDsc* Compiler::optIsTrackedLocal(GenTreePtr tree)
+inline
+LclVarDsc *   Compiler::optIsTrackedLocal(GenTreePtr tree)
 {
-    LclVarDsc* varDsc;
-    unsigned   lclNum;
+    LclVarDsc   *   varDsc;
+    unsigned        lclNum;
 
     if (tree->gtOper != GT_LCL_VAR)
-    {
-        return nullptr;
-    }
+        return NULL;
 
     lclNum = tree->gtLclVarCommon.gtLclNum;
 
@@ -3767,10 +3900,8 @@ inline LclVarDsc* Compiler::optIsTrackedLocal(GenTreePtr tree)
     varDsc = lvaTable + lclNum;
 
     /* if variable not tracked, return NULL */
-    if (!varDsc->lvTracked)
-    {
-        return nullptr;
-    }
+    if  (!varDsc->lvTracked)
+        return NULL;
 
     return varDsc;
 }
@@ -3788,29 +3919,34 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 // are we compiling for fast code, or are we compiling for blended code and
 // inside a loop?
 // We return true for BLENDED_CODE if the Block executes more than BB_LOOP_WEIGHT/2
-inline bool Compiler::optFastCodeOrBlendedLoop(BasicBlock::weight_t bbWeight)
+inline
+bool                    Compiler::optFastCodeOrBlendedLoop(BasicBlock::weight_t bbWeight)
 {
     return (compCodeOpt() == FAST_CODE) ||
-           ((compCodeOpt() == BLENDED_CODE) && (bbWeight > (BB_LOOP_WEIGHT / 2 * BB_UNITY_WEIGHT)));
+            ((compCodeOpt() == BLENDED_CODE) && (bbWeight > (BB_LOOP_WEIGHT/2*BB_UNITY_WEIGHT)));
 }
 
 // are we running on a Intel Pentium 4?
-inline bool Compiler::optPentium4(void)
+inline
+bool                    Compiler::optPentium4(void)
 {
     return (info.genCPU == CPU_X86_PENTIUM_4);
 }
 
 // should we use add/sub instead of inc/dec? (faster on P4, but increases size)
-inline bool Compiler::optAvoidIncDec(BasicBlock::weight_t bbWeight)
+inline
+bool                    Compiler::optAvoidIncDec(BasicBlock::weight_t bbWeight)
 {
     return optPentium4() && optFastCodeOrBlendedLoop(bbWeight);
 }
 
 // should we try to replace integer multiplication with lea/add/shift sequences?
-inline bool Compiler::optAvoidIntMult(void)
+inline
+bool                    Compiler::optAvoidIntMult(void)
 {
     return (compCodeOpt() != SMALL_CODE);
 }
+
 
 /*
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -3822,35 +3958,37 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 */
 
-extern var_types JITtype2varType(CorInfoType type);
+extern  var_types   JITtype2varType(CorInfoType type);
 
 #include "ee_il_dll.hpp"
 
-inline CORINFO_METHOD_HANDLE Compiler::eeFindHelper(unsigned helper)
+inline
+CORINFO_METHOD_HANDLE       Compiler::eeFindHelper        (unsigned helper)
 {
     assert(helper < CORINFO_HELP_COUNT);
 
     /* Helpers are marked by the fact that they are odd numbers
      * force this to be an odd number (will shift it back to extract) */
 
-    return ((CORINFO_METHOD_HANDLE)(size_t)((helper << 2) + 1));
+    return((CORINFO_METHOD_HANDLE)(size_t) ((helper << 2) + 1));
 }
 
-inline CorInfoHelpFunc Compiler::eeGetHelperNum(CORINFO_METHOD_HANDLE method)
+inline
+CorInfoHelpFunc      Compiler::eeGetHelperNum      (CORINFO_METHOD_HANDLE  method)
 {
     // Helpers are marked by the fact that they are odd numbers
-    if (!(((size_t)method) & 1))
-    {
-        return (CORINFO_HELP_UNDEF);
-    }
-    return ((CorInfoHelpFunc)(((size_t)method) >> 2));
+    if (!(((size_t) method) & 1))
+        return(CORINFO_HELP_UNDEF);
+    return((CorInfoHelpFunc) (((size_t) method) >> 2));
 }
 
-inline Compiler::fgWalkResult Compiler::CountSharedStaticHelper(GenTreePtr* pTree, fgWalkData* data)
+inline
+Compiler::fgWalkResult Compiler::CountSharedStaticHelper(GenTreePtr *pTree,
+                                                         fgWalkData *data)
 {
     if (Compiler::IsSharedStaticHelper(*pTree))
     {
-        int* pCount = (int*)data->pCallbackData;
+        int* pCount = (int*) data->pCallbackData;
         (*pCount)++;
     }
 
@@ -3860,41 +3998,45 @@ inline Compiler::fgWalkResult Compiler::CountSharedStaticHelper(GenTreePtr* pTre
 //  TODO-Cleanup: Replace calls to IsSharedStaticHelper with new HelperCallProperties
 //
 
-inline bool Compiler::IsSharedStaticHelper(GenTreePtr tree)
+inline bool Compiler::IsSharedStaticHelper (GenTreePtr tree)
 {
-    if (tree->gtOper != GT_CALL || tree->gtCall.gtCallType != CT_HELPER)
+    if (tree->gtOper != GT_CALL ||
+        tree->gtCall.gtCallType != CT_HELPER)
     {
         return false;
     }
 
     CorInfoHelpFunc helper = eeGetHelperNum(tree->gtCall.gtCallMethHnd);
 
-    bool result1 =
-        // More helpers being added to IsSharedStaticHelper (that have similar behaviors but are not true
-        // ShareStaticHelperts)
-        helper == CORINFO_HELP_STRCNS || helper == CORINFO_HELP_BOX ||
+    bool result1 = 
+           // More helpers being added to IsSharedStaticHelper (that have similar behaviors but are not true ShareStaticHelperts)
+           helper == CORINFO_HELP_STRCNS        ||
+           helper == CORINFO_HELP_BOX           ||
 
-        // helpers being added to IsSharedStaticHelper
-        helper == CORINFO_HELP_GETSTATICFIELDADDR_CONTEXT || helper == CORINFO_HELP_GETSTATICFIELDADDR_TLS ||
-        helper == CORINFO_HELP_GETGENERICS_GCSTATIC_BASE || helper == CORINFO_HELP_GETGENERICS_NONGCSTATIC_BASE ||
-        helper == CORINFO_HELP_GETGENERICS_GCTHREADSTATIC_BASE ||
-        helper == CORINFO_HELP_GETGENERICS_NONGCTHREADSTATIC_BASE ||
+           // helpers being added to IsSharedStaticHelper
+           helper == CORINFO_HELP_GETSTATICFIELDADDR_CONTEXT          ||
+           helper == CORINFO_HELP_GETSTATICFIELDADDR_TLS              ||
+           helper == CORINFO_HELP_GETGENERICS_GCSTATIC_BASE           ||
+           helper == CORINFO_HELP_GETGENERICS_NONGCSTATIC_BASE        ||
+           helper == CORINFO_HELP_GETGENERICS_GCTHREADSTATIC_BASE     ||
+           helper == CORINFO_HELP_GETGENERICS_NONGCTHREADSTATIC_BASE  ||
 
-        helper == CORINFO_HELP_GETSHARED_GCSTATIC_BASE || helper == CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE ||
-        helper == CORINFO_HELP_GETSHARED_GCSTATIC_BASE_NOCTOR ||
-        helper == CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE_NOCTOR ||
-        helper == CORINFO_HELP_GETSHARED_GCSTATIC_BASE_DYNAMICCLASS ||
-        helper == CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE_DYNAMICCLASS ||
-        helper == CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE ||
-        helper == CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE ||
-        helper == CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR ||
-        helper == CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR ||
-        helper == CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_DYNAMICCLASS ||
-        helper == CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_DYNAMICCLASS ||
+           helper == CORINFO_HELP_GETSHARED_GCSTATIC_BASE                  ||
+           helper == CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE               ||
+           helper == CORINFO_HELP_GETSHARED_GCSTATIC_BASE_NOCTOR           ||
+           helper == CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE_NOCTOR        ||
+           helper == CORINFO_HELP_GETSHARED_GCSTATIC_BASE_DYNAMICCLASS     ||
+           helper == CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE_DYNAMICCLASS  ||
+           helper == CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE                  ||
+           helper == CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE               ||
+           helper == CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR           ||
+           helper == CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR        ||
+           helper == CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_DYNAMICCLASS     ||
+           helper == CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_DYNAMICCLASS  ||
 #ifdef FEATURE_READYTORUN_COMPILER
-        helper == CORINFO_HELP_READYTORUN_STATIC_BASE ||
+           helper == CORINFO_HELP_READYTORUN_STATIC_BASE                         ||
 #endif
-        helper == CORINFO_HELP_CLASSINIT_SHARED_DYNAMICCLASS;
+           helper == CORINFO_HELP_CLASSINIT_SHARED_DYNAMICCLASS;
 #if 0
     // See above TODO-Cleanup
     bool result2 = s_helperCallProperties.IsPure(helper) && s_helperCallProperties.NonNullReturn(helper);
@@ -3903,11 +4045,12 @@ inline bool Compiler::IsSharedStaticHelper(GenTreePtr tree)
     return result1;
 }
 
-inline bool Compiler::IsTreeAlwaysHoistable(GenTreePtr tree)
+inline bool Compiler::IsTreeAlwaysHoistable (GenTreePtr tree)
 {
     if (IsSharedStaticHelper(tree))
     {
-        return (GTF_CALL_HOISTABLE & tree->gtFlags) ? true : false;
+        return (GTF_CALL_HOISTABLE & tree->gtFlags)?true:false;
+
     }
     else
     {
@@ -3922,37 +4065,38 @@ inline bool Compiler::IsTreeAlwaysHoistable(GenTreePtr tree)
 // The special values that we use are FLD_GLOBAL_DS and FLD_GLOBAL_FS
 //
 
-inline bool jitStaticFldIsGlobAddr(CORINFO_FIELD_HANDLE fldHnd)
+inline
+bool        jitStaticFldIsGlobAddr(CORINFO_FIELD_HANDLE fldHnd)
 {
     return (fldHnd == FLD_GLOBAL_DS || fldHnd == FLD_GLOBAL_FS);
 }
 
 #if defined(DEBUG) || defined(FEATURE_JIT_METHOD_PERF) || defined(FEATURE_SIMD)
 
-inline bool Compiler::eeIsNativeMethod(CORINFO_METHOD_HANDLE method)
+inline
+bool                Compiler::eeIsNativeMethod      (CORINFO_METHOD_HANDLE method)
 {
     return ((((size_t)method) & 0x2) == 0x2);
 }
 
-inline CORINFO_METHOD_HANDLE Compiler::eeGetMethodHandleForNative(CORINFO_METHOD_HANDLE method)
+inline
+CORINFO_METHOD_HANDLE       Compiler::eeGetMethodHandleForNative (CORINFO_METHOD_HANDLE method)
 {
-    assert((((size_t)method) & 0x3) == 0x2);
-    return (CORINFO_METHOD_HANDLE)(((size_t)method) & ~0x3);
+    assert ((((size_t)method)& 0x3) == 0x2);
+    return (CORINFO_METHOD_HANDLE)(((size_t)method)& ~0x3);
 }
 #endif
 
-inline CORINFO_METHOD_HANDLE Compiler::eeMarkNativeTarget(CORINFO_METHOD_HANDLE method)
+inline
+CORINFO_METHOD_HANDLE       Compiler::eeMarkNativeTarget    (CORINFO_METHOD_HANDLE method)
 {
-    assert((((size_t)method) & 0x3) == 0);
-    if (method == nullptr)
-    {
+    assert ((((size_t)method)& 0x3) == 0);
+    if (method == NULL)
         return method;
-    }
     else
-    {
-        return (CORINFO_METHOD_HANDLE)(((size_t)method) | 0x2);
-    }
+        return (CORINFO_METHOD_HANDLE)(((size_t)method)| 0x2);
 }
+
 
 /*
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -3964,14 +4108,19 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 */
 
+
 #ifndef DEBUG
-inline bool Compiler::compStressCompile(compStressArea stressArea, unsigned weightPercentage)
+inline
+bool            Compiler::compStressCompile(compStressArea    stressArea,
+                                            unsigned          weightPercentage)
 {
     return false;
 }
 #endif
 
-inline ArenaAllocator* Compiler::compGetAllocator()
+
+inline
+ArenaAllocator * Compiler::compGetAllocator()
 {
     return compAllocator;
 }
@@ -3984,7 +4133,8 @@ inline ArenaAllocator* Compiler::compGetAllocator()
 
 #ifndef DEBUG
 
-inline void* Compiler::compGetMem(size_t sz, CompMemKind cmk)
+inline
+void  *                 Compiler::compGetMem(size_t sz, CompMemKind cmk)
 {
     assert(sz);
 
@@ -3992,7 +4142,7 @@ inline void* Compiler::compGetMem(size_t sz, CompMemKind cmk)
     genMemStats.AddAlloc(sz, cmk);
 #endif
 
-    return compAllocator->allocateMemory(sz);
+    return  compAllocator->allocateMemory(sz);
 }
 
 #endif
@@ -4012,9 +4162,10 @@ inline void* Compiler::compGetMem(size_t sz, CompMemKind cmk)
  * is why we __forceinline).
  */
 
-#define MAX_MEMORY_PER_ALLOCATION (512 * 1024 * 1024)
+#define MAX_MEMORY_PER_ALLOCATION (512*1024*1024)
 
-__forceinline void* Compiler::compGetMemArray(size_t numElem, size_t elemSize, CompMemKind cmk)
+__forceinline
+void *                  Compiler::compGetMemArray(size_t numElem, size_t elemSize, CompMemKind cmk)
 {
     if (numElem > (MAX_MEMORY_PER_ALLOCATION / elemSize))
     {
@@ -4024,7 +4175,8 @@ __forceinline void* Compiler::compGetMemArray(size_t numElem, size_t elemSize, C
     return compGetMem(numElem * elemSize, cmk);
 }
 
-__forceinline void* Compiler::compGetMemArrayA(size_t numElem, size_t elemSize, CompMemKind cmk)
+__forceinline
+void *                  Compiler::compGetMemArrayA(size_t numElem, size_t elemSize, CompMemKind cmk)
 {
     if (numElem > (MAX_MEMORY_PER_ALLOCATION / elemSize))
     {
@@ -4041,7 +4193,8 @@ __forceinline void* Compiler::compGetMemArrayA(size_t numElem, size_t elemSize, 
  *  The JIT will always try to keep all the blocks aligned.
  */
 
-inline void* Compiler::compGetMemA(size_t sz, CompMemKind cmk)
+inline
+void  *                 Compiler::compGetMemA(size_t sz, CompMemKind cmk)
 {
     assert(sz);
 
@@ -4051,7 +4204,7 @@ inline void* Compiler::compGetMemA(size_t sz, CompMemKind cmk)
     genMemStats.AddAlloc(allocSz, cmk);
 #endif
 
-    void* ptr = compAllocator->allocateMemory(allocSz);
+    void * ptr = compAllocator->allocateMemory(allocSz);
 
     // Verify that the current block is aligned. Only then will the next
     // block allocated be on an aligned boundary.
@@ -4060,27 +4213,30 @@ inline void* Compiler::compGetMemA(size_t sz, CompMemKind cmk)
     return ptr;
 }
 
-inline void Compiler::compFreeMem(void* ptr)
-{
-}
+inline
+void                    Compiler::compFreeMem(void * ptr)
+{}
 
-#define compFreeMem(ptr) compFreeMem((void*)ptr)
+#define compFreeMem(ptr)   compFreeMem((void *)ptr)
 
-inline bool Compiler::compIsProfilerHookNeeded()
+
+inline
+bool Compiler::compIsProfilerHookNeeded()
 {
 #ifdef PROFILING_SUPPORTED
-    return compProfilerHookNeeded
+    return compProfilerHookNeeded 
 
 #if defined(_TARGET_ARM_) || defined(_TARGET_AMD64_)
-           // IL stubs are excluded by VM and we need to do the same even running
-           // under a complus env hook to generate profiler hooks
-           || (opts.compJitELTHookEnabled && !(opts.eeFlags & CORJIT_FLG_IL_STUB))
+    // IL stubs are excluded by VM and we need to do the same even running 
+    // under a complus env hook to generate profiler hooks
+        || (opts.compJitELTHookEnabled && !(opts.eeFlags & CORJIT_FLG_IL_STUB))
 #endif
         ;
-#else // PROFILING_SUPPORTED
+#else  //PROFILING_SUPPORTED
     return false;
-#endif
+#endif 
 }
+
 
 /*****************************************************************************
  *
@@ -4090,29 +4246,28 @@ inline bool Compiler::compIsProfilerHookNeeded()
  *  We simply grab a temp and assign 0 to it and use it in place of the NULL.
  */
 
-inline GenTreePtr Compiler::impCheckForNullPointer(GenTreePtr obj)
+inline
+GenTreePtr          Compiler::impCheckForNullPointer(GenTreePtr obj)
 {
     /* If it is not a GC type, we will be able to fold it.
        So don't need to do anything */
 
     if (!varTypeIsGC(obj->TypeGet()))
-    {
         return obj;
-    }
 
     if (obj->gtOper == GT_CNS_INT)
     {
         assert(obj->gtType == TYP_REF || obj->gtType == TYP_BYREF);
-        assert(obj->gtIntCon.gtIconVal == 0);
+        assert (obj->gtIntCon.gtIconVal == 0);
 
         unsigned tmp = lvaGrabTemp(true DEBUGARG("CheckForNullPointer"));
 
         // We don't need to spill while appending as we are only assigning
         // NULL to a freshly-grabbed temp.
 
-        impAssignTempGen(tmp, obj, (unsigned)CHECK_SPILL_NONE);
+        impAssignTempGen (tmp, obj, (unsigned)CHECK_SPILL_NONE);
 
-        obj = gtNewLclvNode(tmp, obj->gtType);
+        obj = gtNewLclvNode (tmp, obj->gtType);
     }
 
     return obj;
@@ -4125,15 +4280,18 @@ inline GenTreePtr Compiler::impCheckForNullPointer(GenTreePtr obj)
  *  even if we might have created the copy of 'this' pointer in lvaArg0Var.
  */
 
-inline bool Compiler::impIsThis(GenTreePtr obj)
+inline
+bool                Compiler::impIsThis(GenTreePtr obj)
 {
     if (compIsForInlining())
     {
         return impInlineInfo->InlinerCompiler->impIsThis(obj);
     }
     else
-    {
-        return ((obj != nullptr) && (obj->gtOper == GT_LCL_VAR) && lvaIsOriginalThisArg(obj->gtLclVarCommon.gtLclNum));
+    {    
+        return  ((obj          != NULL)       &&
+                 (obj->gtOper  == GT_LCL_VAR) &&
+                 lvaIsOriginalThisArg(obj->gtLclVarCommon.gtLclNum));
     }
 }
 
@@ -4142,11 +4300,13 @@ inline bool Compiler::impIsThis(GenTreePtr obj)
  *  Check to see if the delegate is created using "LDFTN <TOK>" or not.
  */
 
-inline bool Compiler::impIsLDFTN_TOKEN(const BYTE* delegateCreateStart, const BYTE* newobjCodeAddr)
+inline
+bool                Compiler::impIsLDFTN_TOKEN(const BYTE * delegateCreateStart, const BYTE * newobjCodeAddr)
 {
     assert(newobjCodeAddr[0] == CEE_NEWOBJ);
-    return (newobjCodeAddr - delegateCreateStart == 6 && // LDFTN <TOK> takes 6 bytes
-            delegateCreateStart[0] == CEE_PREFIX1 && delegateCreateStart[1] == (CEE_LDFTN & 0xFF));
+    return (newobjCodeAddr - delegateCreateStart == 6 &&   // LDFTN <TOK> takes 6 bytes   
+            delegateCreateStart[0] == CEE_PREFIX1 && 
+            delegateCreateStart[1] == (CEE_LDFTN & 0xFF));
 }
 
 /*****************************************************************************
@@ -4154,11 +4314,13 @@ inline bool Compiler::impIsLDFTN_TOKEN(const BYTE* delegateCreateStart, const BY
  *  Check to see if the delegate is created using "DUP LDVIRTFTN <TOK>" or not.
  */
 
-inline bool Compiler::impIsDUP_LDVIRTFTN_TOKEN(const BYTE* delegateCreateStart, const BYTE* newobjCodeAddr)
+inline
+bool                Compiler::impIsDUP_LDVIRTFTN_TOKEN(const BYTE * delegateCreateStart, const BYTE * newobjCodeAddr)
 {
     assert(newobjCodeAddr[0] == CEE_NEWOBJ);
-    return (newobjCodeAddr - delegateCreateStart == 7 && // DUP LDVIRTFTN <TOK> takes 6 bytes
-            delegateCreateStart[0] == CEE_DUP && delegateCreateStart[1] == CEE_PREFIX1 &&
+    return (newobjCodeAddr - delegateCreateStart == 7 &&   // DUP LDVIRTFTN <TOK> takes 6 bytes 
+            delegateCreateStart[0] == CEE_DUP  && 
+            delegateCreateStart[1] == CEE_PREFIX1 &&
             delegateCreateStart[2] == (CEE_LDVIRTFTN & 0xFF));
 }
 /*****************************************************************************
@@ -4166,9 +4328,11 @@ inline bool Compiler::impIsDUP_LDVIRTFTN_TOKEN(const BYTE* delegateCreateStart, 
  * Returns true if the compiler instance is created for import only (verification).
  */
 
-inline bool Compiler::compIsForImportOnly()
+inline
+bool                Compiler::compIsForImportOnly()
 {
     return ((opts.eeFlags & CORJIT_FLG_IMPORT_ONLY) != 0);
+  
 }
 
 /*****************************************************************************
@@ -4176,9 +4340,10 @@ inline bool Compiler::compIsForImportOnly()
  *  Returns true if the compiler instance is created for inlining.
  */
 
-inline bool Compiler::compIsForInlining()
+inline
+bool                Compiler::compIsForInlining()
 {
-    return (impInlineInfo != nullptr);
+    return (impInlineInfo != NULL);
 }
 
 /*****************************************************************************
@@ -4186,12 +4351,13 @@ inline bool Compiler::compIsForInlining()
  *  Check the inline result field in the compiler to see if inlining failed or not.
  */
 
-inline bool Compiler::compDonotInline()
+inline
+bool                Compiler::compDonotInline()
 {
     if (compIsForInlining())
     {
-        assert(compInlineResult != nullptr);
-        return compInlineResult->IsFailure();
+       assert(compInlineResult != nullptr);
+       return compInlineResult->IsFailure();
     }
     else
     {
@@ -4199,20 +4365,23 @@ inline bool Compiler::compDonotInline()
     }
 }
 
-inline bool Compiler::impIsPrimitive(CorInfoType jitType)
+inline 
+bool Compiler::impIsPrimitive(CorInfoType jitType)
 {
-    return ((CORINFO_TYPE_BOOL <= jitType && jitType <= CORINFO_TYPE_DOUBLE) || jitType == CORINFO_TYPE_PTR);
+    return  ((CORINFO_TYPE_BOOL <= jitType && jitType <= CORINFO_TYPE_DOUBLE) ||
+              jitType == CORINFO_TYPE_PTR);
 }
 
 /*****************************************************************************
  *
- *  Get the promotion type of a struct local.
+ *  Get the promotion type of a struct local. 
  */
 
-inline Compiler::lvaPromotionType Compiler::lvaGetPromotionType(const LclVarDsc* varDsc)
-{
+inline
+Compiler::lvaPromotionType   Compiler::lvaGetPromotionType (const LclVarDsc *   varDsc)
+{                 
     assert(!varDsc->lvPromoted || varTypeIsPromotable(varDsc) || varDsc->lvUnusedStruct);
-
+    
     if (!varDsc->lvPromoted)
     {
         // no struct promotion for this LclVar
@@ -4229,7 +4398,7 @@ inline Compiler::lvaPromotionType Compiler::lvaGetPromotionType(const LclVarDsc*
         return PROMOTION_TYPE_INDEPENDENT;
     }
 
-    // Has struct promotion for arguments been disabled using COMPlus_JitNoStructPromotion=2
+    // Has struct promotion for arguments been disabled using COMPlus_JitNoStructPromotion=2 
     if (fgNoStructParamPromotion)
     {
         // The struct parameter is not enregistered
@@ -4247,17 +4416,19 @@ inline Compiler::lvaPromotionType Compiler::lvaGetPromotionType(const LclVarDsc*
     // The struct parameter is not enregistered
     return PROMOTION_TYPE_DEPENDENT;
 #endif
+
 }
 
 /*****************************************************************************
  *
- *  Get the promotion type of a struct local.
+ *  Get the promotion type of a struct local. 
  */
 
-inline Compiler::lvaPromotionType Compiler::lvaGetPromotionType(unsigned varNum)
-{
+inline
+Compiler::lvaPromotionType   Compiler::lvaGetPromotionType (unsigned varNum)
+{              
     assert(varNum < lvaCount);
-    return lvaGetPromotionType(&lvaTable[varNum]);
+    return lvaGetPromotionType(&lvaTable[varNum]);                  
 }
 
 /*****************************************************************************
@@ -4265,8 +4436,9 @@ inline Compiler::lvaPromotionType Compiler::lvaGetPromotionType(unsigned varNum)
  *  Given a field local, get the promotion type of its parent struct local.
  */
 
-inline Compiler::lvaPromotionType Compiler::lvaGetParentPromotionType(const LclVarDsc* varDsc)
-{
+inline
+Compiler::lvaPromotionType   Compiler::lvaGetParentPromotionType (const LclVarDsc *   varDsc)
+{        
     assert(varDsc->lvIsStructField);
     assert(varDsc->lvParentLcl < lvaCount);
 
@@ -4280,10 +4452,11 @@ inline Compiler::lvaPromotionType Compiler::lvaGetParentPromotionType(const LclV
  *  Given a field local, get the promotion type of its parent struct local.
  */
 
-inline Compiler::lvaPromotionType Compiler::lvaGetParentPromotionType(unsigned varNum)
-{
+inline
+Compiler::lvaPromotionType   Compiler::lvaGetParentPromotionType (unsigned varNum)
+{        
     assert(varNum < lvaCount);
-    return lvaGetParentPromotionType(&lvaTable[varNum]);
+    return lvaGetParentPromotionType(&lvaTable[varNum]);  
 }
 
 /*****************************************************************************
@@ -4292,22 +4465,20 @@ inline Compiler::lvaPromotionType Compiler::lvaGetParentPromotionType(unsigned v
  *  Return false otherwise.
  */
 
-inline bool Compiler::lvaIsFieldOfDependentlyPromotedStruct(const LclVarDsc* varDsc)
-{
+inline
+bool   Compiler::lvaIsFieldOfDependentlyPromotedStruct (const LclVarDsc *   varDsc)
+{        
     if (!varDsc->lvIsStructField)
-    {
         return false;
-    }
 
     lvaPromotionType promotionType = lvaGetParentPromotionType(varDsc);
     if (promotionType == PROMOTION_TYPE_DEPENDENT)
-    {
         return true;
-    }
 
     assert(promotionType == PROMOTION_TYPE_INDEPENDENT);
     return false;
 }
+
 
 //------------------------------------------------------------------------
 // lvaIsGCTracked: Determine whether this var should be reported
@@ -4331,13 +4502,14 @@ inline bool Compiler::lvaIsFieldOfDependentlyPromotedStruct(const LclVarDsc* var
 //    but there was too much logic that depends on these being untracked, so changing
 //    this would require non-trivial effort.
 
-inline bool Compiler::lvaIsGCTracked(const LclVarDsc* varDsc)
+inline
+bool Compiler::lvaIsGCTracked(const LclVarDsc* varDsc)
 {
-    if (varDsc->lvTracked && (varDsc->lvType == TYP_REF || varDsc->lvType == TYP_BYREF))
+    if(varDsc->lvTracked && (varDsc->lvType == TYP_REF || varDsc->lvType == TYP_BYREF))
     {
 #ifdef _TARGET_AMD64_
         return !lvaIsFieldOfDependentlyPromotedStruct(varDsc);
-#else  // !_TARGET_AMD64_
+#else // !_TARGET_AMD64_
         return true;
 #endif // !_TARGET_AMD64_
     }
@@ -4345,13 +4517,13 @@ inline bool Compiler::lvaIsGCTracked(const LclVarDsc* varDsc)
     {
         return false;
     }
+
 }
 
 inline void Compiler::EndPhase(Phases phase)
 {
 #if defined(FEATURE_JIT_METHOD_PERF)
-    if (pCompJitTimer != NULL)
-        pCompJitTimer->EndPhase(phase);
+    if (pCompJitTimer != NULL) pCompJitTimer->EndPhase(phase);
 #endif
 #if DUMP_FLOWGRAPHS
     fgDumpFlowGraph(phase);
@@ -4360,29 +4532,30 @@ inline void Compiler::EndPhase(Phases phase)
 #ifdef DEBUG
     if (dumpIR)
     {
-        if ((*dumpIRPhase == L'*') || (wcscmp(dumpIRPhase, PhaseShortNames[phase]) == 0))
-        {
-            printf("\n");
-            printf("IR after %s (switch: %ls)\n", PhaseEnums[phase], PhaseShortNames[phase]);
-            printf("\n");
+       if ((*dumpIRPhase == L'*') 
+       || (wcscmp(dumpIRPhase, PhaseShortNames[phase]) == 0))
+       { 
+           printf("\n");
+           printf("IR after %s (switch: %ls)\n", PhaseEnums[phase], PhaseShortNames[phase]);
+           printf("\n");
 
-            if (dumpIRLinear)
-            {
-                dFuncIR();
-            }
-            else if (dumpIRTrees)
-            {
-                dTrees();
-            }
+           if (dumpIRLinear)
+           { 
+               dFuncIR();
+           }
+           else if (dumpIRTrees)
+           {
+               dTrees();
+           }
 
-            // If we are just dumping a single method and we have a request to exit
-            // after dumping, do so now.
+           // If we are just dumping a single method and we have a request to exit
+           // after dumping, do so now.
 
-            if (dumpIRExit && ((*dumpIRPhase != L'*') || (phase == PHASE_EMIT_GCEH)))
-            {
-                exit(0);
-            }
-        }
+           if (dumpIRExit && ((*dumpIRPhase != L'*') || (phase == PHASE_EMIT_GCEH)))
+           {
+               exit(0);
+           }
+       }
     }
 #endif
 }
@@ -4392,28 +4565,29 @@ bool Compiler::fgExcludeFromSsa(unsigned lclNum)
 {
     if (opts.MinOpts())
     {
-        return true; // If we're doing MinOpts, no SSA vars.
+        return true;    // If we're doing MinOpts, no SSA vars.
     }
 
-    LclVarDsc* varDsc = &lvaTable[lclNum];
+    LclVarDsc * varDsc = &lvaTable[lclNum];
 
     if (varDsc->lvAddrExposed)
     {
-        return true; // We exclude address-exposed variables.
+        return true;    // We exclude address-exposed variables.
     }
     if (!varDsc->lvTracked)
     {
-        return true; // SSA is only done for tracked variables
+        return true;    // SSA is only done for tracked variables
     }
     // lvPromoted structs are never tracked...
     assert(!varDsc->lvPromoted);
 
     if (varDsc->lvOverlappingFields)
     {
-        return true; // Don't use SSA on structs that have overlapping fields
+        return true;   // Don't use SSA on structs that have overlapping fields
     }
 
-    if (varDsc->lvIsStructField && (lvaGetParentPromotionType(lclNum) != PROMOTION_TYPE_INDEPENDENT))
+    if (varDsc->lvIsStructField &&
+        (lvaGetParentPromotionType(lclNum) != PROMOTION_TYPE_INDEPENDENT))
     {
         // SSA must exclude struct fields that are not independent
         // - because we don't model the struct assignment properly when multiple fields can be assigned by one struct
@@ -4423,7 +4597,7 @@ bool Compiler::fgExcludeFromSsa(unsigned lclNum)
         //
         // Example mscorlib method: CompatibilitySwitches:IsCompatibilitySwitchSet
         //
-        return true;
+        return true;    
     }
     // otherwise this variable is *not* excluded for SSA
     return false;
@@ -4448,12 +4622,9 @@ ValueNum Compiler::GetUseAsgDefVNOrTreeVN(GenTreePtr op)
 unsigned Compiler::GetSsaNumForLocalVarDef(GenTreePtr lcl)
 {
     // Address-taken variables don't have SSA numbers.
-    if (fgExcludeFromSsa(lcl->AsLclVarCommon()->gtLclNum))
-    {
-        return SsaConfig::RESERVED_SSA_NUM;
-    }
+    if (fgExcludeFromSsa(lcl->AsLclVarCommon()->gtLclNum)) return SsaConfig::RESERVED_SSA_NUM;
 
-    assert(lcl->gtFlags & (GTF_VAR_DEF | GTF_VAR_USEDEF));
+    assert(lcl->gtFlags & (GTF_VAR_DEF|GTF_VAR_USEDEF));
     if (lcl->gtFlags & GTF_VAR_USEASG)
     {
         assert((lcl->gtFlags & GTF_VAR_USEDEF) == 0);
@@ -4481,34 +4652,34 @@ unsigned Compiler::GetSsaNumForLocalVarDef(GenTreePtr lcl)
  *
  *  Note that compGetMem is an arena allocator that returns memory that is
  *  not zero-initialized and can contain data from a prior allocation lifetime.
- *  it also requires that 'sz' be aligned to a multiple of sizeof(int)
+ *  it also requires that 'sz' be aligned to a multiple of sizeof(int) 
  */
 
-inline void* __cdecl operator new(size_t sz, Compiler* context, CompMemKind cmk)
+inline void * __cdecl operator new(size_t sz, Compiler *context, CompMemKind cmk)
 {
     sz = AlignUp(sz, sizeof(int));
     assert(sz != 0 && (sz & (sizeof(int) - 1)) == 0);
-    return context->compGetMem(sz, cmk);
+    return context->compGetMem( sz, cmk);
 }
 
-inline void* __cdecl operator new[](size_t sz, Compiler* context, CompMemKind cmk)
+inline void * __cdecl operator new[](size_t sz, Compiler *context, CompMemKind cmk)
 {
     sz = AlignUp(sz, sizeof(int));
     assert(sz != 0 && (sz & (sizeof(int) - 1)) == 0);
-    return context->compGetMem(sz, cmk);
+    return context->compGetMem( sz, cmk);
 }
 
-inline void* __cdecl operator new(size_t sz, void* p, const jitstd::placement_t& /* syntax_difference */)
+inline void * __cdecl operator new(size_t sz, void* p, const jitstd::placement_t& /* syntax_difference */)
 {
     return p;
 }
 
-inline void* __cdecl operator new(size_t sz, IAllocator* alloc)
+inline void * __cdecl operator new(size_t sz, IAllocator* alloc)
 {
     return alloc->Alloc(sz);
 }
 
-inline void* __cdecl operator new[](size_t sz, IAllocator* alloc)
+inline void * __cdecl operator new[](size_t sz, IAllocator* alloc)
 {
     return alloc->Alloc(sz);
 }
@@ -4522,10 +4693,10 @@ inline void printRegMask(regMaskTP mask)
     printf(REG_MASK_ALL_FMT, mask);
 }
 
-inline char* regMaskToString(regMaskTP mask, Compiler* context)
+inline char *regMaskToString(regMaskTP mask, Compiler *context)
 {
     const size_t cchRegMask = 24;
-    char*        regmask    = new (context, CMK_Unknown) char[cchRegMask];
+    char *regmask = new(context, CMK_Unknown) char[cchRegMask];
 
     sprintf_s(regmask, cchRegMask, REG_MASK_ALL_FMT, mask);
 
@@ -4537,10 +4708,10 @@ inline void printRegMaskInt(regMaskTP mask)
     printf(REG_MASK_INT_FMT, (mask & RBM_ALLINT));
 }
 
-inline char* regMaskIntToString(regMaskTP mask, Compiler* context)
+inline char *regMaskIntToString(regMaskTP mask, Compiler *context)
 {
     const size_t cchRegMask = 24;
-    char*        regmask    = new (context, CMK_Unknown) char[cchRegMask];
+    char *regmask = new(context, CMK_Unknown) char[cchRegMask];
 
     sprintf_s(regmask, cchRegMask, REG_MASK_INT_FMT, (mask & RBM_ALLINT));
 
@@ -4549,23 +4720,23 @@ inline char* regMaskIntToString(regMaskTP mask, Compiler* context)
 
 #endif // DEBUG
 
-inline void BasicBlock::InitVarSets(Compiler* comp)
+inline void         BasicBlock::InitVarSets(Compiler* comp)
 {
-    VarSetOps::AssignNoCopy(comp, bbVarUse, VarSetOps::MakeEmpty(comp));
-    VarSetOps::AssignNoCopy(comp, bbVarDef, VarSetOps::MakeEmpty(comp));
-    VarSetOps::AssignNoCopy(comp, bbVarTmp, VarSetOps::MakeEmpty(comp));
-    VarSetOps::AssignNoCopy(comp, bbLiveIn, VarSetOps::MakeEmpty(comp));
+    VarSetOps::AssignNoCopy(comp, bbVarUse,  VarSetOps::MakeEmpty(comp));
+    VarSetOps::AssignNoCopy(comp, bbVarDef,  VarSetOps::MakeEmpty(comp));
+    VarSetOps::AssignNoCopy(comp, bbVarTmp,  VarSetOps::MakeEmpty(comp));
+    VarSetOps::AssignNoCopy(comp, bbLiveIn,  VarSetOps::MakeEmpty(comp));
     VarSetOps::AssignNoCopy(comp, bbLiveOut, VarSetOps::MakeEmpty(comp));
-    VarSetOps::AssignNoCopy(comp, bbScope, VarSetOps::MakeEmpty(comp));
+    VarSetOps::AssignNoCopy(comp, bbScope,   VarSetOps::MakeEmpty(comp));
 
-    bbHeapUse     = false;
-    bbHeapDef     = false;
-    bbHeapLiveIn  = false;
+    bbHeapUse =     false;
+    bbHeapDef =     false;
+    bbHeapLiveIn =  false;
     bbHeapLiveOut = false;
 }
 
 // Returns true if the basic block ends with GT_JMP
-inline bool BasicBlock::endsWithJmpMethod(Compiler* comp)
+inline bool         BasicBlock::endsWithJmpMethod(Compiler *comp)
 {
     if (comp->compJmpOpUsed && (bbJumpKind == BBJ_RETURN) && (bbFlags & BBF_HAS_JMP))
     {
@@ -4584,12 +4755,12 @@ inline bool BasicBlock::endsWithJmpMethod(Compiler* comp)
 // Params:
 //    comp              - Compiler instance
 //    fastTailCallsOnly - Only consider fast tail calls excluding tail calls via helper.
-inline bool BasicBlock::endsWithTailCallOrJmp(Compiler* comp, bool fastTailCallsOnly /*=false*/)
+inline bool         BasicBlock::endsWithTailCallOrJmp(Compiler* comp,
+                                                      bool fastTailCallsOnly /*=false*/)
 {
-    GenTreePtr tailCall                       = nullptr;
-    bool       tailCallsConvertibleToLoopOnly = false;
-    return endsWithJmpMethod(comp) ||
-           endsWithTailCall(comp, fastTailCallsOnly, tailCallsConvertibleToLoopOnly, &tailCall);
+    GenTreePtr tailCall = nullptr;
+    bool tailCallsConvertibleToLoopOnly = false;
+    return endsWithJmpMethod(comp) || endsWithTailCall(comp, fastTailCallsOnly, tailCallsConvertibleToLoopOnly, &tailCall);
 }
 
 //------------------------------------------------------------------------------
@@ -4608,13 +4779,10 @@ inline bool BasicBlock::endsWithTailCallOrJmp(Compiler* comp, bool fastTailCalls
 // Notes:
 //    At most one of fastTailCallsOnly and tailCallsConvertibleToLoopOnly flags can be true.
 
-inline bool BasicBlock::endsWithTailCall(Compiler* comp,
-                                         bool      fastTailCallsOnly,
-                                         bool      tailCallsConvertibleToLoopOnly,
-                                         GenTree** tailCall)
+inline bool BasicBlock::endsWithTailCall(Compiler* comp, bool fastTailCallsOnly, bool tailCallsConvertibleToLoopOnly, GenTree** tailCall)
 {
     assert(!fastTailCallsOnly || !tailCallsConvertibleToLoopOnly);
-    *tailCall   = nullptr;
+    *tailCall = nullptr;
     bool result = false;
 
     // Is this a tail call?
@@ -4682,14 +4850,14 @@ inline bool BasicBlock::endsWithTailCall(Compiler* comp,
 
 inline bool BasicBlock::endsWithTailCallConvertibleToLoop(Compiler* comp, GenTree** tailCall)
 {
-    bool fastTailCallsOnly              = false;
+    bool fastTailCallsOnly = false;
     bool tailCallsConvertibleToLoopOnly = true;
     return endsWithTailCall(comp, fastTailCallsOnly, tailCallsConvertibleToLoopOnly, tailCall);
 }
 
 // Returns the last top level stmt of a given basic block.
 // Returns nullptr if the block is empty.
-inline GenTreePtr Compiler::fgGetLastTopLevelStmt(BasicBlock* block)
+inline GenTreePtr Compiler::fgGetLastTopLevelStmt(BasicBlock *block)
 {
     // Return if the block is empty
     if (block->bbTreeList == nullptr)
@@ -4702,8 +4870,11 @@ inline GenTreePtr Compiler::fgGetLastTopLevelStmt(BasicBlock* block)
 
 inline GenTreeBlkOp* Compiler::gtCloneCpObjNode(GenTreeCpObj* source)
 {
-    GenTreeCpObj* result = new (this, GT_COPYOBJ) GenTreeCpObj(source->gtGcPtrCount, source->gtSlots, source->gtGcPtrs);
-    gtBlockOpInit(result, GT_COPYOBJ, source->Dest(), source->Source(), source->ClsTok(), source->IsVolatile());
+    GenTreeCpObj* result = new (this, GT_COPYOBJ) GenTreeCpObj(source->gtGcPtrCount,
+                                                               source->gtSlots,
+                                                               source->gtGcPtrs);
+    gtBlockOpInit(result, GT_COPYOBJ, source->Dest(), source->Source(),
+                  source->ClsTok(), source->IsVolatile());
     return result;
 }
 
