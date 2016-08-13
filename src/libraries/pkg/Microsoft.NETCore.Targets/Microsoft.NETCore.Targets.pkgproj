@@ -22,6 +22,7 @@
     <NativePackage Include="runtime.native.System" />
     <NativePackage Include="runtime.native.System.Net.Http" />
     <NativePackage Include="runtime.native.System.Security.Cryptography" />
+    <NativePackage Include="runtime.native.System.Security.Cryptography.Apple" />
     <NativePackage Include="runtime.native.System.Net.Security" />
   </ItemGroup>
 
