@@ -2,13 +2,13 @@
   "frameworks": {
     "netstandard1.3": {
       "dependencies": {
-        "Microsoft.NETCore.Platforms": "1.0.2-beta-24411-04",
-        "Microsoft.TargetingPack.Private.CoreCLR": "1.0.2-beta-24411-03"
+        "Microsoft.NETCore.Platforms": "1.0.2-beta-24412-02",
+        "Microsoft.TargetingPack.Private.CoreCLR": "1.1.0-beta-24412-03"
       }
     },
     "netcore50": {
       "dependencies": {
-        "Microsoft.NETCore.Platforms": "1.0.2-beta-24411-04",
+        "Microsoft.NETCore.Platforms": "1.0.2-beta-24412-02",
         "System.Diagnostics.Debug": "4.0.0",
         "System.Resources.ResourceManager": "4.0.0",
         "System.Runtime": "4.0.20",
