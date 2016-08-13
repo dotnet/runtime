@@ -3,9 +3,9 @@
     "netstandard1.3": {
       "dependencies": {
         "Microsoft.TargetingPack.Private.CoreCLR": "1.1.0-beta-24412-03",
-        "System.IO.FileSystem": "4.1.0-beta-devapi-24412-01",
-        "System.Reflection.Metadata": "1.4.1-beta-devapi-24412-01",
-        "System.Collections.Immutable": "1.2.1-beta-devapi-24412-01"
+        "System.IO.FileSystem": "4.1.0-beta-devapi-24413-01",
+        "System.Reflection.Metadata": "1.4.1-beta-devapi-24413-01",
+        "System.Collections.Immutable": "1.2.1-beta-devapi-24413-01"
       },
       "imports": [
         "dotnet5.4"
