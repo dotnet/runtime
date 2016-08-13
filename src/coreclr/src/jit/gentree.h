@@ -4469,8 +4469,7 @@ struct GenTreeAllocObj final : public GenTreeUnOp
 
     GenTreeAllocObj(var_types type, unsigned int helper, CORINFO_CLASS_HANDLE clsHnd, GenTreePtr op)
         : GenTreeUnOp(GT_ALLOCOBJ, type, op DEBUGARG(/*largeNode*/ TRUE))
-        , // This node in most cases will be changed to
-          // a call node
+        , // This node in most cases will be changed to a call node
         gtNewHelper(helper)
         , gtAllocObjClsHnd(clsHnd)
     {

@@ -3144,8 +3144,8 @@ const char* emitter::emitFncName(CORINFO_METHOD_HANDLE methHnd)
     return emitComp->eeGetMethodFullName(methHnd);
 }
 
-/*****************************************************************************/
 #endif // DEBUG
+
 /*****************************************************************************
  *
  *  Be very careful, some instruction descriptors are allocated as "tiny" and
