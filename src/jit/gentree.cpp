@@ -15518,7 +15518,7 @@ void GenTree::ParseArrayAddress(
     if (!FitsIn<ssize_t>(fieldOffsets + arrayInfo->m_elemOffset) || !FitsIn<ssize_t>(arrayInfo->m_elemSize))
     {
         // This seems unlikely, but no harm in being safe...
-        *pInxVN = comp->GetValueNumStore()->VNForExpr(TYP_INT);
+        *pInxVN = comp->GetValueNumStore()->VNForExpr(nullptr, TYP_INT);
         return;
     }
     // Otherwise...
