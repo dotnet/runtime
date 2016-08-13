@@ -27,12 +27,6 @@
   <ItemGroup Condition="'$(UseContractReferences)' == ''">
     <ProjectReference Include="..\..\..\System.Private.DataContractSerialization\src\System.Private.DataContractSerialization.csproj" />
     <ProjectReference Include="..\..\..\System.Runtime.Serialization.Xml\src\System.Runtime.Serialization.Xml.csproj" />
-    <ProjectReference Include="..\..\..\System.Xml.XmlSerializer\src\System.Xml.XmlSerializer.csproj" />
-    <ProjectReference Include="..\..\..\System.Xml.ReaderWriter\src\System.Xml.ReaderWriter.csproj" />
-    <ProjectReference Include="..\..\..\System.Xml.XDocument\src\System.Xml.XDocument.csproj" />
-    <ProjectReference Include="..\..\..\System.Xml.XmlDocument\src\System.Xml.XmlDocument.csproj" />
-    <ProjectReference Include="..\..\..\System.Private.Xml\src\System.Private.Xml.csproj" />
-    <ProjectReference Include="..\..\..\System.Private.Xml.Linq\src\System.Private.Xml.Linq.csproj" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />

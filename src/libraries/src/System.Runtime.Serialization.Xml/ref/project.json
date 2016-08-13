@@ -5,6 +5,7 @@
     "System.Collections.NonGeneric": "4.1.0-beta-devapi-24412-01",
     "System.Collections.Specialized": "4.0.2-beta-devapi-24412-01",
     "System.Runtime.Serialization.Primitives": "4.2.0-beta-devapi-24412-01",
+    "System.Xml.ReaderWriter": "4.1.0-beta-devapi-24412-01",
     "System.Text.Encoding": "4.0.12-beta-devapi-24412-01"
   },
   "frameworks": {
