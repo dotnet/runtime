@@ -36705,8 +36705,8 @@ void initGCShadow()
     if (len > (size_t)(g_GCShadowEnd - g_GCShadow)) 
     {
         deleteGCShadow();
-        g_GCShadowEnd = g_GCShadow = (uint8_t *)GCToOSInterface::VirtualReserve(0, len, 0,VirtualReserveFlags::None);
-        if(!GCToOSInterface::VirtualCommit(g_GCShadow, len))
+        g_GCShadowEnd = g_GCShadow = (uint8_t *)GCToOSInterface::VirtualReserve(0, len, 0, VirtualReserveFlags::None);
+        if (g_GCShadow == NULL || !GCToOSInterface::VirtualCommit(g_GCShadow, len))
         {
             _ASSERTE(!"Not enough memory to run HeapVerify level 2");
             // If after the assert we decide to allow the program to continue 
