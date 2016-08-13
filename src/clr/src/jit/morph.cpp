@@ -5403,7 +5403,7 @@ void Compiler::fgMoveOpsLeft(GenTreePtr tree)
                 (ad2->gtVNPair.GetLiberal() == ValueNumStore::NoVN) ||
                 (ad2->gtVNPair.GetLiberal() != op1->gtVNPair.GetLiberal()))
             {
-                new_op1->gtVNPair.SetBoth(vnStore->VNForExpr(new_op1->TypeGet()));
+                new_op1->gtVNPair.SetBoth(vnStore->VNForExpr(nullptr, new_op1->TypeGet()));
             }
         }
 
