@@ -1803,6 +1803,7 @@ bool CodeGen::genCreateAddrMode(GenTreePtr  addr,
 #ifndef LEGACY_BACKEND
     assert(nogen == true);
 #endif // !LEGACY_BACKEND
+
     /*
         The following indirections are valid address modes on x86/x64:
 
@@ -10101,8 +10102,9 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
     assert(compiler->lvaOutgoingArgSpaceSize % REGSIZE_BYTES == 0);
 #ifndef UNIX_AMD64_ABI
     // No 4 slots for outgoing params on the stack for System V systems.
-    // On AMD64, we always have 4 outgoing argument slots if there are any calls in the function.
-    assert((compiler->lvaOutgoingArgSpaceSize == 0) || (compiler->lvaOutgoingArgSpaceSize >= (4 * REGSIZE_BYTES)));
+    assert((compiler->lvaOutgoingArgSpaceSize == 0) ||
+           (compiler->lvaOutgoingArgSpaceSize >= (4 * REGSIZE_BYTES))); // On AMD64, we always have 4 outgoing argument
+// slots if there are any calls in the function.
 #endif // UNIX_AMD64_ABI
     unsigned offset = compiler->lvaOutgoingArgSpaceSize;
 
@@ -11768,9 +11770,7 @@ void CodeGen::genIPmappingGen()
     compiler->eeSetLIdone();
 }
 
-/*****************************************************************************/
 #endif // DEBUGGING_SUPPORT
-/*****************************************************************************/
 
 /*============================================================================
  *

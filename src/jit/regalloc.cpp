@@ -5198,6 +5198,7 @@ bool Compiler::rpMustCreateEBPFrame(INDEBUG(const char** wbReason))
 }
 
 #ifdef LEGACY_BACKEND // We don't use any of the old register allocator functions when LSRA is used instead.
+
 /*****************************************************************************
  *
  *  Predict which variables will be assigned to registers
