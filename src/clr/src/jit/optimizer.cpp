@@ -2962,7 +2962,8 @@ void Compiler::optUnrollLoops()
                 continue;
             }
             if (lvaTable[lvar].lvIsStructField)
-            { // If the loop iteration variable is a promoted field from a struct then bail
+            { // If the loop iteration variable is a promoted field from a struct then
+                // bail
                 continue;
             }
 

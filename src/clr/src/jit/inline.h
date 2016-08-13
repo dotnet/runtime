@@ -280,11 +280,11 @@ public:
 
 protected:
     InlinePolicy(bool isPrejitRoot)
-        : m_Decision(InlineDecision::UNDECIDED), m_Observation(InlineObservation::CALLEE_UNUSED_INITIAL),
-          m_IsPrejitRoot(isPrejitRoot)
+        : m_Decision(InlineDecision::UNDECIDED)
+        , m_Observation(InlineObservation::CALLEE_UNUSED_INITIAL)
+        , m_IsPrejitRoot(isPrejitRoot)
 #if defined(DEBUG) || defined(INLINE_DATA)
-          ,
-          m_IsDataCollectionTarget(false)
+        , m_IsDataCollectionTarget(false)
 #endif // defined(DEBUG) || defined(INLINE_DATA)
 
     {
