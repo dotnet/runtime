@@ -15826,28 +15826,26 @@ void GenTree::LabelIndex(Compiler* comp, bool isConst)
             {
                 if (gtOp.gtOp2->OperGet() == GT_CNS_INT)
                 {
-                    if (gtOp.gtOp2->OperGet() == GT_CNS_INT)
-                    {
-                        gtOp.gtOp1->LabelIndex(comp, isConst);
-                        break;
-                    }
-                    else if (gtOp.gtOp1->OperGet() == GT_CNS_INT)
-                    {
-                        gtOp.gtOp2->LabelIndex(comp, isConst);
-                        break;
-                    }
-                    // Otherwise continue downward on both, labeling vars.
-                    gtOp.gtOp1->LabelIndex(comp, false);
-                    gtOp.gtOp2->LabelIndex(comp, false);
+                    gtOp.gtOp1->LabelIndex(comp, isConst);
+                    break;
                 }
-                break;
+                else if (gtOp.gtOp1->OperGet() == GT_CNS_INT)
+                {
+                    gtOp.gtOp2->LabelIndex(comp, isConst);
+                    break;
+                }
+                // Otherwise continue downward on both, labeling vars.
+                gtOp.gtOp1->LabelIndex(comp, false);
+                gtOp.gtOp2->LabelIndex(comp, false);
             }
+            break;
     }
 }
 
+// Note that the value of the below field doesn't matter; it exists only to provide a distinguished address.
+//
 // static
-FieldSeqNode FieldSeqStore::s_notAField(nullptr, nullptr); // Value doesn't matter; exists only to provide a
-                                                           // distinguished address.
+FieldSeqNode FieldSeqStore::s_notAField(nullptr, nullptr);
 
 // FieldSeqStore methods.
 FieldSeqStore::FieldSeqStore(IAllocator* alloc) : m_alloc(alloc), m_canonMap(new (alloc) FieldSeqNodeCanonMap(alloc))

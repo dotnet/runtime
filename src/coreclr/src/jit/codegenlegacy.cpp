@@ -10662,7 +10662,8 @@ void CodeGen::genCodeForNumericCast(GenTreePtr tree, regMaskTP destReg, regMaskT
 
                 switch (dstType)
                 {
-                    case TYP_INT: // conv.ovf.i8.i4
+                    case TYP_INT:
+                        // conv.ovf.i8.i4
                         /*  Generate the following sequence
 
                                 test loDWord, loDWord   // set flags
@@ -18418,6 +18419,7 @@ regMaskTP CodeGen::genLoadIndirectCallTarget(GenTreePtr call)
  *  register mask that describes where the result will be found is returned;
  *  otherwise, RBM_NONE is returned.
  */
+
 #ifdef _PREFAST_
 #pragma warning(push)
 #pragma warning(disable : 21000) // Suppress PREFast warning about overly large function
@@ -18839,7 +18841,8 @@ regMaskTP CodeGen::genCodeForCall(GenTreePtr call, bool valUsed)
 #ifdef _TARGET_ARM_
         if ((call->gtCall.gtCallMoreFlags & GTF_CALL_M_SECURE_DELEGATE_INV))
         {
-            getEmitter()->emitIns_R_R_I(INS_add, EA_PTRSIZE, REG_VIRTUAL_STUB_PARAM, regThis, pInfo->offsetOfSecureDelegateIndirectCell);
+            getEmitter()->emitIns_R_R_I(INS_add, EA_PTRSIZE, REG_VIRTUAL_STUB_PARAM, regThis,
+                                        pInfo->offsetOfSecureDelegateIndirectCell);
             regTracker.rsTrackRegTrash(REG_VIRTUAL_STUB_PARAM);
         }
 #endif // _TARGET_ARM_
@@ -20812,9 +20815,7 @@ void CodeGen::genSetScopeInfo(unsigned            which,
     compiler->eeSetLVinfo(which, startOffs, length, ilVarNum, LVnum, name, avail, varLoc);
 }
 
-/*****************************************************************************/
 #endif // DEBUGGING_SUPPORT
-/*****************************************************************************/
 
 /*****************************************************************************
  *

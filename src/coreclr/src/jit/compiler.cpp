@@ -5137,8 +5137,8 @@ void Compiler::compCompileFinish()
             printf("dbl | ");
         }
 #endif
-        else
-        { // (rpFrameType == FT_NOT_SET)
+        else // (rpFrameType == FT_NOT_SET)
+        {
             printf("??? | ");
         }
 
