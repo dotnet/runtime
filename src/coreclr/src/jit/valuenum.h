@@ -448,8 +448,9 @@ public:
                                       op3VN.GetConservative(), op4VN.GetConservative()));
     }
 
-    // Get a new, unique value number for an expression that we're not equating to some function.
-    ValueNum VNForExpr(var_types typ = TYP_UNKNOWN);
+    // Get a new, unique value number for an expression that we're not equating to some function,
+    // which is the value of a tree in the given block.
+    ValueNum VNForExpr(BasicBlock *block, var_types typ = TYP_UNKNOWN);
 
 // This controls extra tracing of the "evaluation" of "VNF_MapSelect" functions.
 #define FEATURE_VN_TRACE_APPLY_SELECTORS 1
@@ -471,27 +472,28 @@ public:
     ValueNum VNApplySelectorsTypeCheck(ValueNum selectedVN, var_types indType, size_t structSize);
 
     // Assumes that "map" represents a map that is addressable by the fields in "fieldSeq", to get
-    // to a value of the type of "rhs".  Returns an expression for the RHS of an assignment to a location
-    // containing value "map" that will change the field addressed by "fieldSeq" to "rhs", leaving all other
-    // indices in "map" the same.
+    // to a value of the type of "rhs".  Returns an expression for the RHS of an assignment, in the given "block",
+    // to a location containing value "map" that will change the field addressed by "fieldSeq" to "rhs", leaving
+    // all other indices in "map" the same.
     ValueNum VNApplySelectorsAssign(
-        ValueNumKind vnk, ValueNum map, FieldSeqNode* fieldSeq, ValueNum rhs, var_types indType);
+        ValueNumKind vnk, ValueNum map, FieldSeqNode* fieldSeq, ValueNum rhs, var_types indType, BasicBlock* block);
 
     // Used after VNApplySelectorsAssign has determined that "elem" is to be writen into a Map using VNForMapStore
     // It determines whether the 'elem' is of an appropriate type to be writen using using an indirection of 'indType'
     // It may insert a cast to indType or return a unique value number for an incompatible indType.
-    ValueNum VNApplySelectorsAssignTypeCoerce(ValueNum elem, var_types indType);
+    ValueNum VNApplySelectorsAssignTypeCoerce(ValueNum elem, var_types indType, BasicBlock* block);
 
     ValueNumPair VNPairApplySelectors(ValueNumPair map, FieldSeqNode* fieldSeq, var_types indType);
 
     ValueNumPair VNPairApplySelectorsAssign(ValueNumPair  map,
                                             FieldSeqNode* fieldSeq,
                                             ValueNumPair  rhs,
-                                            var_types     indType)
+                                            var_types     indType,
+                                            BasicBlock*   block)
     {
-        return ValueNumPair(VNApplySelectorsAssign(VNK_Liberal, map.GetLiberal(), fieldSeq, rhs.GetLiberal(), indType),
+        return ValueNumPair(VNApplySelectorsAssign(VNK_Liberal, map.GetLiberal(), fieldSeq, rhs.GetLiberal(), indType, block),
                             VNApplySelectorsAssign(VNK_Conservative, map.GetConservative(), fieldSeq,
-                                                   rhs.GetConservative(), indType));
+                                                   rhs.GetConservative(), indType, block));
     }
 
     // Compute the normal ValueNumber for a cast with no exceptions
@@ -536,6 +538,9 @@ public:
 
     // Returns TYP_UNKNOWN if the given value number has not been given a type.
     var_types TypeOfVN(ValueNum vn);
+
+    // Returns MAX_LOOP_NUM if the given value number's loop nest is unknown or ill-defined.
+    BasicBlock::loopNumber LoopOfVN(ValueNum vn);
 
     // Returns true iff the VN represents a (non-handle) constant.
     bool IsVNConstant(ValueNum vn);
@@ -874,12 +879,13 @@ private:
         ValueNum m_baseVN;
 
         // The common attributes of this chunk.
-        var_types         m_typ;
-        ChunkExtraAttribs m_attribs;
+        var_types              m_typ;
+        ChunkExtraAttribs      m_attribs;
+        BasicBlock::loopNumber m_loopNum;
 
-        // Initialize a chunk, starting at "*baseVN", for the given "typ" and "attribs" (using "alloc" for allocations).
+        // Initialize a chunk, starting at "*baseVN", for the given "typ", "attribs", and "loopNum" (using "alloc" for allocations).
         // (Increments "*baseVN" by ChunkSize.)
-        Chunk(IAllocator* alloc, ValueNum* baseVN, var_types typ, ChunkExtraAttribs attribs);
+        Chunk(IAllocator* alloc, ValueNum* baseVN, var_types typ, ChunkExtraAttribs attribs, BasicBlock::loopNumber loopNum);
 
         // Requires that "m_numUsed < ChunkSize."  Returns the offset of the allocated VN within the chunk; the
         // actual VN is this added to the "m_baseVN" of the chunk.
@@ -1024,14 +1030,15 @@ private:
     // This is a map from "chunk number" to the attributes of the chunk.
     ExpandArrayStack<Chunk*> m_chunks;
 
-    // These entries indicate the current allocation chunk, if any, for a <var_types, ChunkExtraAttribs> pair.
+    // These entries indicate the current allocation chunk, if any, for each valid combination of <var_types,
+    // ChunkExtraAttribute, loopNumber>.  Valid combinations require attribs==CEA_None or loopNum==MAX_LOOP_NUM.
     // If the value is NoChunk, it indicates that there is no current allocation chunk for that pair, otherwise
     // it is the index in "m_chunks" of a chunk with the given attributes, in which the next allocation should
     // be attempted.
-    ChunkNum m_curAllocChunk[TYP_COUNT][CEA_Count];
+    ChunkNum m_curAllocChunk[TYP_COUNT][CEA_Count + MAX_LOOP_NUM + 1];
 
     // Returns a (pointer to a) chunk in which a new value number may be allocated.
-    Chunk* GetAllocChunk(var_types typ, ChunkExtraAttribs attribs);
+    Chunk* GetAllocChunk(var_types typ, ChunkExtraAttribs attribs, BasicBlock::loopNumber loopNum = MAX_LOOP_NUM);
 
     // First, we need mechanisms for mapping from constants to value numbers.
     // For small integers, we'll use an array.
