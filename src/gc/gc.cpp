@@ -36705,12 +36705,8 @@ void initGCShadow()
     if (len > (size_t)(g_GCShadowEnd - g_GCShadow)) 
     {
         deleteGCShadow();
-        g_GCShadowEnd = g_GCShadow = (uint8_t*) GCToOSInterface::VirtualCommit(0, len);
-        if (g_GCShadow)
-        {
-            g_GCShadowEnd += len;
-        }
-        else
+        g_GCShadowEnd = g_GCShadow = (uint8_t *)GCToOSInterface::VirtualReserve(0, len, 0,VirtualReserveFlags::None);
+        if(!GCToOSInterface::VirtualCommit(g_GCShadow, len))
         {
             _ASSERTE(!"Not enough memory to run HeapVerify level 2");
             // If after the assert we decide to allow the program to continue 
@@ -36719,7 +36715,9 @@ void initGCShadow()
             // ensure calls to updateGCShadow() checkGCWriteBarrier() don't AV
             return;
         }
-        }
+        
+        g_GCShadowEnd += len;
+    }
 
     // save the value of g_lowest_address at this time.  If this value changes before
     // the next call to checkGCWriteBarrier() it means we extended the heap (with a
