@@ -236,9 +236,23 @@
       <Link>Common\System\Security\Cryptography\RSACng.SignVerify.cs</Link>
     </Compile>
   </ItemGroup>
+  <ItemGroup Condition=" '$(TargetsUnix)' == 'true' AND '$(TargetsOSX)' != 'true' ">
+    <Compile Include="System\Security\Cryptography\RNGCryptoServiceProvider.Unix.cs" />
+  </ItemGroup>
+  <ItemGroup Condition=" '$(TargetsOSX)' == 'true' ">
+    <Compile Include="$(CommonPath)\Interop\OSX\Interop.Libraries.cs">
+      <Link>Common\Interop\OSX\Interop.Libraries.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Err.cs">
+      <Link>Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Err.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Random.cs">
+      <Link>Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Random.cs</Link>
+    </Compile>
+    <Compile Include="System\Security\Cryptography\RNGCryptoServiceProvider.OSX.cs" />
+  </ItemGroup>
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
     <Compile Include="System\Security\Cryptography\ECDsaOpenSsl.cs" />
-    <Compile Include="System\Security\Cryptography\RNGCryptoServiceProvider.Unix.cs" />
     <Compile Include="Internal\Cryptography\AesImplementation.Unix.cs" />
     <Compile Include="Internal\Cryptography\HashProviderDispenser.Unix.cs" />
     <Compile Include="Internal\Cryptography\OpenSslCipher.cs" />
