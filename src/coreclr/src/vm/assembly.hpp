@@ -219,7 +219,7 @@ public:
 
         BOOL Next()
         {
-            WRAPPER_NO_CONTRACT;
+            LIMITED_METHOD_CONTRACT;
             SUPPORTS_DAC;
             while (++m_i <= m_pManifest->GetFileMax())
             {
@@ -231,7 +231,7 @@ public:
 
         Module *GetModule()
         {
-            WRAPPER_NO_CONTRACT;
+            LIMITED_METHOD_CONTRACT;
             SUPPORTS_DAC;
             return m_pManifest->LookupFile(TokenFromRid(m_i, mdtFile));
         }
