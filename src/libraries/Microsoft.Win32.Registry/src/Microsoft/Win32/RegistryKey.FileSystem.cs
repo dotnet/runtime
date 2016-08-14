@@ -8,7 +8,12 @@ using System.Security.AccessControl;
 
 namespace Microsoft.Win32
 {
-    public sealed partial class RegistryKey : IDisposable
+#if REGISTRY_ASSEMBLY
+    public
+#else
+    internal
+#endif
+    sealed partial class RegistryKey : IDisposable
     {
         private void ClosePerfDataKey()
         {
