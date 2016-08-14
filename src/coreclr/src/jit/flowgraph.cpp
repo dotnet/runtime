@@ -4269,6 +4269,7 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, BYTE*
     const bool  isForceInline          = (info.compFlags & CORINFO_FLG_FORCEINLINE) != 0;
     const bool  makeInlineObservations = (compInlineResult != nullptr);
     const bool  isInlining             = compIsForInlining();
+    unsigned    retBlocks              = 0;
 
     if (makeInlineObservations)
     {
@@ -4638,6 +4639,7 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, BYTE*
             break;
 
             case CEE_JMP:
+                retBlocks++;
 
 #if !defined(_TARGET_X86_) && !defined(_TARGET_ARM_)
                 if (!isInlining)
@@ -4730,6 +4732,8 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, BYTE*
                     fgObserveInlineConstants(opcode, pushedStack, isInlining);
                 }
                 break;
+            case CEE_RET:
+                retBlocks++;
 
             default:
                 break;
@@ -4772,6 +4776,19 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, BYTE*
 
             if (isInlining)
             {
+                if (retBlocks == 0)
+                {
+                    // If there are no return blocks we know it does not return, however if there
+                    // return blocks we don't know it returns as it may be counting unreachable code.
+                    // So only make the CALLEE_DOES_NOT_RETURN observations if no returns.
+
+                    if (!compInlineResult->UsesLegacyPolicy())
+                    {
+                        // Mark the call node as "no return" as it can impact caller's code quality.
+                        impInlineInfo->iciCall->gtCallMoreFlags |= GTF_CALL_M_DOES_NOT_RETURN;
+                    }
+                }
+
                 // Assess profitability...
                 CORINFO_METHOD_INFO* methodInfo = &impInlineInfo->inlineCandidateInfo->methInfo;
                 compInlineResult->DetermineProfitability(methodInfo);
