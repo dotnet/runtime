@@ -4355,7 +4355,7 @@ protected:
 
     void fgLinkBasicBlocks();
 
-    void fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, BYTE* jumpTarget);
+    unsigned fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, BYTE* jumpTarget);
 
     void fgCheckBasicBlockControlFlow();
 
