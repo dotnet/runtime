@@ -364,7 +364,7 @@ const size_t END_FIN_POP_STACK = sizeof(TADDR);
 // The offset (in bytes) from EBP for the secutiy object on the stack
 inline size_t GetSecurityObjectOffset(hdrInfo * info)
 {
-    SUPPORTS_DAC;
+    LIMITED_METHOD_DAC_CONTRACT;
 
     _ASSERTE(info->securityCheck && info->ebpFrame);
 
@@ -376,8 +376,7 @@ inline size_t GetSecurityObjectOffset(hdrInfo * info)
 inline
 size_t GetLocallocSPOffset(hdrInfo * info)
 {
-    LIMITED_METHOD_CONTRACT;
-    SUPPORTS_DAC; 
+    LIMITED_METHOD_DAC_CONTRACT;
 
     _ASSERTE(info->localloc && info->ebpFrame);
     
@@ -390,7 +389,7 @@ size_t GetLocallocSPOffset(hdrInfo * info)
 inline
 size_t GetParamTypeArgOffset(hdrInfo * info)
 {
-    SUPPORTS_DAC;
+    LIMITED_METHOD_DAC_CONTRACT;
 
     _ASSERTE((info->genericsContext || info->handlers) && info->ebpFrame);
     
@@ -403,8 +402,7 @@ size_t GetParamTypeArgOffset(hdrInfo * info)
 
 inline size_t GetStartShadowSPSlotsOffset(hdrInfo * info)
 {
-    WRAPPER_NO_CONTRACT;
-    SUPPORTS_DAC; 
+    LIMITED_METHOD_DAC_CONTRACT;
  
     _ASSERTE(info->handlers && info->ebpFrame);
 
@@ -433,7 +431,7 @@ PTR_TADDR GetFirstBaseSPslotPtr(TADDR ebp, hdrInfo * info)
 
 inline size_t GetEndShadowSPSlotsOffset(hdrInfo * info, unsigned maxHandlerNestingLevel)
 {
-    WRAPPER_NO_CONTRACT;
+    LIMITED_METHOD_DAC_CONTRACT;
 
     _ASSERTE(info->handlers && info->ebpFrame);
 
@@ -5234,8 +5232,7 @@ OBJECTREF EECodeManager::GetInstance( PREGDISPLAY    pContext,
 GenericParamContextType EECodeManager::GetParamContextType(PREGDISPLAY     pContext,
                                                            EECodeInfo *    pCodeInfo)
 {
-    WRAPPER_NO_CONTRACT;
-    SUPPORTS_DAC;
+    LIMITED_METHOD_DAC_CONTRACT;
 
 #ifdef _TARGET_X86_
     /* Extract the necessary information from the info block header */
@@ -5300,8 +5297,7 @@ PTR_VOID EECodeManager::GetParamTypeArg(PREGDISPLAY     pContext,
                                         EECodeInfo *    pCodeInfo)
 
 {
-    WRAPPER_NO_CONTRACT;
-    SUPPORTS_DAC;
+    LIMITED_METHOD_DAC_CONTRACT;
 
 #ifdef _TARGET_X86_
     PTR_VOID       methodInfoPtr = pCodeInfo->GetGCInfo();
@@ -5342,8 +5338,7 @@ PTR_VOID EECodeManager::GetParamTypeArg(PREGDISPLAY     pContext,
 PTR_VOID EECodeManager::GetExactGenericsToken(PREGDISPLAY     pContext,
                                               EECodeInfo *    pCodeInfo)
 {
-    WRAPPER_NO_CONTRACT;
-    SUPPORTS_DAC;
+    LIMITED_METHOD_DAC_CONTRACT;
 
     return EECodeManager::GetExactGenericsToken(GetCallerSp(pContext), pCodeInfo);
 }
@@ -5352,8 +5347,7 @@ PTR_VOID EECodeManager::GetExactGenericsToken(PREGDISPLAY     pContext,
 PTR_VOID EECodeManager::GetExactGenericsToken(SIZE_T          baseStackSlot,
                                               EECodeInfo *    pCodeInfo)
 {
-    WRAPPER_NO_CONTRACT;
-    SUPPORTS_DAC;
+    LIMITED_METHOD_DAC_CONTRACT;
 
     GCInfoToken gcInfoToken = pCodeInfo->GetGCInfoToken();
 
