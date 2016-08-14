@@ -10,7 +10,12 @@ namespace System.Security.AccessControl
     // winnt.h and from MSDN, plus some experimental validation with regedit.
     // http://msdn.microsoft.com/library/default.asp?url=/library/en-us/sysinfo/base/registry_key_security_and_access_rights.asp
     [Flags]
-    public enum RegistryRights
+#if REGISTRY_ASSEMBLY
+    public
+#else
+    internal
+#endif
+    enum RegistryRights
     {
         // No None field - An ACE with the value 0 cannot grant nor deny.
         QueryValues = Interop.mincore.RegistryOperations.KEY_QUERY_VALUE,          // 0x0001 query the values of a registry key
