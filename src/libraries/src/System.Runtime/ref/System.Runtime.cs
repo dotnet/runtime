@@ -32,6 +32,60 @@ namespace System
         public static object CreateInstance(System.Type type, params object[] args) { return default(object); }
         public static T CreateInstance<T>() { return default(T); }
     }
+
+    public partial class EntryPointNotFoundException : System.TypeLoadException
+    {
+        public EntryPointNotFoundException() { }
+        public EntryPointNotFoundException(string message) { }
+        public EntryPointNotFoundException(string message, Exception innerException) { }
+    }
+
+    public sealed partial class StackOverflowException : System.SystemException
+    {
+        public StackOverflowException() { }
+        public StackOverflowException(string message) { }
+        public StackOverflowException(string message, Exception innerException) { }
+    }
+
+    public partial class NotFiniteNumberException : System.ArithmeticException
+    {
+        public NotFiniteNumberException() { }
+        public NotFiniteNumberException(double offendingNumber) { }
+        public NotFiniteNumberException(string message) { }
+        public NotFiniteNumberException(string message, double offendingNumber) { }
+        public NotFiniteNumberException(string message, Exception innerException) { }
+        public NotFiniteNumberException(string message, double offendingNumber, Exception innerException) { }
+        public double OffendingNumber { get; }
+    }
+
+    public partial class AccessViolationException : System.SystemException
+    {
+        public AccessViolationException() { }
+        public AccessViolationException(string message) { }
+        public AccessViolationException(string message, Exception innerException) { }
+    }
+
+    public partial class ApplicationException : System.Exception
+    {
+        public ApplicationException() { }
+        public ApplicationException(string message) { }
+        public ApplicationException(string message, Exception innerException) { }
+    }
+
+    public partial class SystemException : System.Exception
+    {
+        public SystemException() { }
+        public SystemException(string message) { }
+        public SystemException(string message, Exception innerException) { }
+    }
+
+    public sealed partial class ExecutionEngineException : System.SystemException
+    {
+        public ExecutionEngineException() { }
+        public ExecutionEngineException(string message) { }
+        public ExecutionEngineException(string message, Exception innerException) { }
+    }
+
     public partial class ArgumentException : System.Exception
     {
         public ArgumentException() { }
@@ -2382,6 +2436,19 @@ namespace System
         public bool TryGetTarget(out T target) { target = default(T); return default(bool); }
     }
 }
+
+namespace System.Runtime.InteropServices
+{
+    public partial class ExternalException : System.SystemException
+    {
+        public ExternalException() { }
+        public ExternalException(string message) { }
+        public ExternalException(string message, Exception inner) { }
+        public ExternalException(string message, int errorCode) { }
+        public virtual int ErrorCode { get; }
+    }
+}
+
 namespace System.Collections
 {
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]

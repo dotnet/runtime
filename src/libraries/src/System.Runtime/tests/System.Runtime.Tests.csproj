@@ -90,9 +90,17 @@
       <Link>Common\System\RandomDataGenerator.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)'=='netstandard1.7'">
+  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard1.7'">
     <Compile Include="ArrayTests.netstandard1.7.cs" />
     <Compile Include="EnumTests.netstandard1.7.cs" />
+    <Compile Include="System\AccessViolationExceptionTests.cs" />
+    <Compile Include="System\ExternalExceptionTests.cs" />
+    <Compile Include="System\ApplicationExceptionTests.cs" />
+    <Compile Include="System\EntryPointNotFoundExceptionTests.cs" />
+    <Compile Include="System\ExecutionEngineExceptionTests.cs" />
+    <Compile Include="System\NotFiniteNumberExceptionTests.cs" />
+    <Compile Include="System\StackOverflowExceptionTests.cs" />
+    <Compile Include="System\SystemExceptionTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />
