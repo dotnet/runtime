@@ -14,24 +14,22 @@ namespace System.Tests
         public void InvalidArguments_ThrowsExceptions()
         {
             Assert.Throws<ArgumentNullException>("variable", () => Environment.GetEnvironmentVariable(null));
-            Assert.Throws<ArgumentNullException>("variable", () => Environment.GetEnvironmentVariable(null, EnvironmentVariableTarget.Process));
-
             Assert.Throws<ArgumentNullException>("variable", () => Environment.SetEnvironmentVariable(null, "test"));
-            Assert.Throws<ArgumentNullException>("variable", () => Environment.SetEnvironmentVariable(null, "test", EnvironmentVariableTarget.User));
-
             Assert.Throws<ArgumentException>("variable", () => Environment.SetEnvironmentVariable("", "test"));
-            Assert.Throws<ArgumentException>("variable", () => Environment.SetEnvironmentVariable("", "test", EnvironmentVariableTarget.Machine));
+            Assert.Throws<ArgumentException>("value", () => Environment.SetEnvironmentVariable("test", new string('s', 65 * 1024)));
 
+#if netstandard17
+            Assert.Throws<ArgumentException>("variable", () => Environment.SetEnvironmentVariable("", "test", EnvironmentVariableTarget.Machine));
+            Assert.Throws<ArgumentNullException>("variable", () => Environment.SetEnvironmentVariable(null, "test", EnvironmentVariableTarget.User));
+            Assert.Throws<ArgumentNullException>("variable", () => Environment.GetEnvironmentVariable(null, EnvironmentVariableTarget.Process));
             Assert.Throws<ArgumentOutOfRangeException>("target", () => Environment.GetEnvironmentVariable("test", (EnvironmentVariableTarget)42));
             Assert.Throws<ArgumentOutOfRangeException>("target", () => Environment.SetEnvironmentVariable("test", "test", (EnvironmentVariableTarget)(-1)));
             Assert.Throws<ArgumentOutOfRangeException>("target", () => Environment.GetEnvironmentVariables((EnvironmentVariableTarget)(3)));
-
-            Assert.Throws<ArgumentException>("value", () => Environment.SetEnvironmentVariable("test", new string('s', 65 * 1024)));
-
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
                 Assert.Throws<ArgumentException>("variable", () => Environment.SetEnvironmentVariable(new string('s', 256), "value", EnvironmentVariableTarget.User));
             }
+#endif
         }
 
         [Fact]
@@ -136,6 +134,7 @@ namespace System.Tests
             }
         }
 
+#if netstandard17
         [OuterLoop] // manipulating environment variables broader in scope than the process
         [Theory]
         [InlineData(EnvironmentVariableTarget.Process)]
@@ -166,6 +165,7 @@ namespace System.Tests
                 }
             }
         }
+#endif
 
         private static void SetEnvironmentVariableWithPInvoke(string name, string value)
         {
