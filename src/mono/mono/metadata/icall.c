@@ -1213,100 +1213,6 @@ ves_icall_System_Object_GetType (MonoObject *obj)
 	return ret;
 }
 
-ICALL_EXPORT gint32
-ves_icall_ModuleBuilder_getToken (MonoReflectionModuleBuilder *mb, MonoObject *obj, gboolean create_open_instance)
-{
-	MONO_CHECK_ARG_NULL (obj, 0);
-	
-	MonoError error;
-	gint32 result = mono_image_create_token (mb->dynamic_image, obj, create_open_instance, TRUE, &error);
-	mono_error_set_pending_exception (&error);
-	return result;
-}
-
-ICALL_EXPORT gint32
-ves_icall_ModuleBuilder_getMethodToken (MonoReflectionModuleBuilder *mb,
-					MonoReflectionMethod *method,
-					MonoArray *opt_param_types)
-{
-	MONO_CHECK_ARG_NULL (method, 0);
-	
-	MonoError error;
-	gint32 result = mono_image_create_method_token (
-		mb->dynamic_image, (MonoObject *) method, opt_param_types, &error);
-	mono_error_set_pending_exception (&error);
-	return result;
-}
-
-ICALL_EXPORT void
-ves_icall_ModuleBuilder_WriteToFile (MonoReflectionModuleBuilder *mb, HANDLE file)
-{
-	MonoError error;
-	mono_image_create_pefile (mb, file, &error);
-	mono_error_set_pending_exception (&error);
-}
-
-ICALL_EXPORT void
-ves_icall_ModuleBuilder_build_metadata (MonoReflectionModuleBuilder *mb)
-{
-	MonoError error;
-	mono_image_build_metadata (mb, &error);
-	mono_error_set_pending_exception (&error);
-}
-
-ICALL_EXPORT void
-ves_icall_ModuleBuilder_RegisterToken (MonoReflectionModuleBuilder *mb, MonoObject *obj, guint32 token)
-{
-	mono_image_register_token (mb->dynamic_image, token, obj);
-}
-
-ICALL_EXPORT MonoObject*
-ves_icall_ModuleBuilder_GetRegisteredToken (MonoReflectionModuleBuilder *mb, guint32 token)
-{
-	MonoObject *obj;
-
-	mono_loader_lock ();
-	obj = (MonoObject *)mono_g_hash_table_lookup (mb->dynamic_image->tokens, GUINT_TO_POINTER (token));
-	mono_loader_unlock ();
-
-	return obj;
-}
-
-ICALL_EXPORT MonoReflectionModule*
-ves_icall_System_Reflection_Emit_AssemblyBuilder_InternalAddModule (MonoReflectionAssemblyBuilder *ab, MonoString *fileName)
-{
-	MonoError error;
-	MonoReflectionModule *result = mono_image_load_module_dynamic (ab, fileName, &error);
-	mono_error_set_pending_exception (&error);
-	return result;
-}
-
-/**
- * ves_icall_System_Reflection_Emit_TypeBuilder_create_generic_class:
- * @tb: a TypeBuilder object
- *
- * (icall)
- * Creates the generic class after all generic parameters have been added.
- */
-ICALL_EXPORT void
-ves_icall_System_Reflection_Emit_TypeBuilder_create_generic_class (MonoReflectionTypeBuilder *tb)
-{
-	MonoError error;
-	(void) mono_reflection_create_generic_class (tb, &error);
-	mono_error_set_pending_exception (&error);
-}
-
-#ifndef DISABLE_REFLECTION_EMIT
-ICALL_EXPORT MonoArray*
-ves_icall_System_Reflection_Emit_CustomAttributeBuilder_GetBlob (MonoReflectionAssembly *assembly, MonoObject *ctor, MonoArray *ctorArgs, MonoArray *properties, MonoArray *propValues, MonoArray *fields, MonoArray* fieldValues)
-{
-	MonoError error;
-	MonoArray *result = mono_reflection_get_custom_attrs_blob_checked (assembly, ctor, ctorArgs, properties, propValues, fields, fieldValues, &error);
-	mono_error_set_pending_exception (&error);
-	return result;
-}
-#endif
-
 static gboolean
 get_executing (MonoMethod *m, gint32 no, gint32 ilo, gboolean managed, gpointer data)
 {
@@ -2957,19 +2863,6 @@ ICALL_EXPORT MonoBoolean
 ves_icall_RuntimeTypeHandle_IsGenericVariable (MonoReflectionType *type)
 {
 	return is_generic_parameter (type->type);
-}
-
-ICALL_EXPORT MonoBoolean
-ves_icall_TypeBuilder_get_IsGenericParameter (MonoReflectionTypeBuilder *tb)
-{
-	return is_generic_parameter (tb->type.type);
-}
-
-ICALL_EXPORT void
-ves_icall_EnumBuilder_setup_enum_type (MonoReflectionType *enumtype,
-									   MonoReflectionType *t)
-{
-	enumtype->type = t->type;
 }
 
 ICALL_EXPORT MonoReflectionMethod*
@@ -6212,77 +6105,6 @@ ves_icall_System_Reflection_Module_ResolveSignature (MonoImage *image, guint32 t
 		return NULL;
 	memcpy (mono_array_addr (res, guint8, 0), ptr, len);
 	return res;
-}
-
-ICALL_EXPORT MonoReflectionType*
-ves_icall_ModuleBuilder_create_modified_type (MonoReflectionTypeBuilder *tb, MonoString *smodifiers)
-{
-	MonoError error;
-	MonoReflectionType *ret;
-	MonoClass *klass;
-	int isbyref = 0, rank;
-	char *p;
-	char *str = mono_string_to_utf8_checked (smodifiers, &error);
-	if (mono_error_set_pending_exception (&error))
-		return NULL;
-
-	klass = mono_class_from_mono_type (tb->type.type);
-	p = str;
-	/* logic taken from mono_reflection_parse_type(): keep in sync */
-	while (*p) {
-		switch (*p) {
-		case '&':
-			if (isbyref) { /* only one level allowed by the spec */
-				g_free (str);
-				return NULL;
-			}
-			isbyref = 1;
-			p++;
-
-			g_free (str);
-
-			ret = mono_type_get_object_checked (mono_object_domain (tb), &klass->this_arg, &error);
-			mono_error_set_pending_exception (&error);
-
-			return ret;
-		case '*':
-			klass = mono_ptr_class_get (&klass->byval_arg);
-			mono_class_init (klass);
-			p++;
-			break;
-		case '[':
-			rank = 1;
-			p++;
-			while (*p) {
-				if (*p == ']')
-					break;
-				if (*p == ',')
-					rank++;
-				else if (*p != '*') { /* '*' means unknown lower bound */
-					g_free (str);
-					return NULL;
-				}
-				++p;
-			}
-			if (*p != ']') {
-				g_free (str);
-				return NULL;
-			}
-			p++;
-			klass = mono_array_class_get (klass, rank);
-			mono_class_init (klass);
-			break;
-		default:
-			break;
-		}
-	}
-
-	g_free (str);
-
-	ret = mono_type_get_object_checked (mono_object_domain (tb), &klass->byval_arg, &error);
-	mono_error_set_pending_exception (&error);
-
-	return ret;
 }
 
 ICALL_EXPORT MonoBoolean
