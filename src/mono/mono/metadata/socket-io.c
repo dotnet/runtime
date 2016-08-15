@@ -2676,8 +2676,16 @@ ves_icall_System_Net_Dns_GetHostByName_internal (MonoString *host, MonoString **
 		}
 	}
 
+#ifdef HOST_WIN32
+	// Win32 APIs already returns local interface addresses for empty hostname ("")
+	// so we never want to add them manually.
+	add_local_ips = FALSE;
+	if (mono_get_address_info(hostname, 0, MONO_HINT_CANONICAL_NAME | hint, &info))
+		add_info_ok = FALSE;
+#else
 	if (*hostname && mono_get_address_info (hostname, 0, MONO_HINT_CANONICAL_NAME | hint, &info))
 		add_info_ok = FALSE;
+#endif
 
 	g_free(hostname);
 
