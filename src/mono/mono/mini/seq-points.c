@@ -14,7 +14,6 @@
 static void
 insert_pred_seq_point (MonoInst *last_seq_ins, MonoInst *ins, GSList **next)
 {
-	MonoBasicBlock *in_bb;
 	GSList *l;
 	int src_index = last_seq_ins->backend.size;
 	int dst_index = ins->backend.size;
@@ -64,7 +63,7 @@ recursively_make_pred_seq_points (MonoCompile *cfg, MonoBasicBlock *bb)
 		for (int i=0; i < in_bb->num_pred_seq_points; i++) {
 			if (!g_hash_table_lookup (seen, in_bb->pred_seq_points [i])) {
 				g_array_append_val (predecessors, in_bb->pred_seq_points [i]);
-				g_hash_table_insert (seen, in_bb->pred_seq_points [i], &MONO_SEQ_SEEN_LOOP);
+				g_hash_table_insert (seen, in_bb->pred_seq_points [i], (gpointer)&MONO_SEQ_SEEN_LOOP);
 			}
 		}
 		// predecessors = g_array_append_vals (predecessors, in_bb->pred_seq_points, in_bb->num_pred_seq_points);
