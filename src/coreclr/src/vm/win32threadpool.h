@@ -373,9 +373,17 @@ public:
 
         } counts;
 
+        // padding to ensure we get our own cache line
+        BYTE padding[64];
+
         Counts GetCleanCounts()
         {
             LIMITED_METHOD_CONTRACT;
+#ifdef _WIN64
+            // VolatileLoad x64 bit read is atomic
+            return DangerousGetDirtyCounts();
+#else // !_WIN64
+            // VolatileLoad may result in torn read
             Counts result;
 #ifndef DACCESS_COMPILE
             result.AsLongLong = FastInterlockCompareExchangeLong(&counts.AsLongLong, 0, 0);
@@ -384,6 +392,7 @@ public:
             result.AsLongLong = 0; //prevents prefast warning for DAC builds
 #endif
             return result;
+#endif // !_WIN64
         }
 
         //
@@ -523,7 +532,7 @@ public:
     static inline void UpdateLastDequeueTime()
     {
         LIMITED_METHOD_CONTRACT;
-        LastDequeueTime = GetTickCount();
+        VolatileStore(&LastDequeueTime, (unsigned int)GetTickCount());
     }
 
     static BOOL CreateTimerQueueTimer(PHANDLE phNewTimer,
@@ -1133,8 +1142,10 @@ public:
         if (CLRThreadpoolHosted())
             return false;
 
-        DWORD requiredInterval = NextCompletedWorkRequestsTime - PriorCompletedWorkRequestsTime;
-        DWORD elapsedInterval = GetTickCount() - PriorCompletedWorkRequestsTime;
+        DWORD priorTime = PriorCompletedWorkRequestsTime;
+        MemoryBarrier(); // read fresh value for NextCompletedWorkRequestsTime below
+        DWORD requiredInterval = NextCompletedWorkRequestsTime - priorTime;
+        DWORD elapsedInterval = GetTickCount() - priorTime;
         if (elapsedInterval >= requiredInterval)
         {
             ThreadCounter::Counts counts = WorkerCounter.GetCleanCounts();
@@ -1294,13 +1305,13 @@ private:
     SVAL_DECL(LONG,MinLimitTotalWorkerThreads);         // same as MinLimitTotalCPThreads
     SVAL_DECL(LONG,MaxLimitTotalWorkerThreads);         // same as MaxLimitTotalCPThreads
         
-    static Volatile<unsigned int> LastDequeueTime;      // used to determine if work items are getting thread starved 
+    static unsigned int LastDequeueTime;      // used to determine if work items are getting thread starved 
     
     static HillClimbing HillClimbingInstance;
 
-    static Volatile<LONG> PriorCompletedWorkRequests;
-    static Volatile<DWORD> PriorCompletedWorkRequestsTime;
-    static Volatile<DWORD> NextCompletedWorkRequestsTime;
+    static LONG PriorCompletedWorkRequests;
+    static DWORD PriorCompletedWorkRequestsTime;
+    static DWORD NextCompletedWorkRequestsTime;
 
     static LARGE_INTEGER CurrentSampleStartTime;
 
