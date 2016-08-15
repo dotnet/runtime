@@ -20,7 +20,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
 
             if (!AreConnStringsSetup())
             {
-                Console.WriteLine("WARNING: Test connection strings not defined! Tests cannot be run.");
+                Console.WriteLine("INFO: Test connection strings not defined! Tests cannot be run. Refer README.md of Manual tests for more information. ");
             }
         }
 
