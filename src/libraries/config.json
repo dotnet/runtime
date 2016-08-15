@@ -156,7 +156,7 @@
       "values": ["True", "False"],
       "defaultValue": true
     },
-    "MsBuildNodoReuse": {
+    "MsBuildNodeReuse": {
       "description": "Disables node reuse.",
       "valueType": "passThrough",
       "values": [],
@@ -427,10 +427,10 @@
             "MsBuildLogging": "/flp:v=diag;LogFile=build-managed.log"
           }
         },
-        "nodoReuse":{
+        "nodeReuse":{
           "description": "Disables node reuse because it causes file locking issues. Only available in the Desktop MsBuild.",
           "settings":{
-            "MsBuildNodoReuse": "default"
+            "MsBuildNodeReuse": "default"
           }
         },
         "binclashWindows":{
