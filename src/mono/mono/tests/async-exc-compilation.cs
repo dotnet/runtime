@@ -27,6 +27,7 @@ class MainClass
 			Thread.Sleep (10000);
 		}
 		catch (ThreadAbortException) {
+			Thread.ResetAbort ();
 			Console.WriteLine ("OK");
 		}
 	}
