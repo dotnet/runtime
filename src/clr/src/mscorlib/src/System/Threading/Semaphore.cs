@@ -95,8 +95,8 @@ namespace System.Threading
 #if PLATFORM_UNIX
                 throw new PlatformNotSupportedException(Environment.GetResourceString("PlatformNotSupported_NamedSynchronizationPrimitives"));
 #else
-                if (name.Length > Path.MAX_PATH)
-                    throw new ArgumentException(Environment.GetResourceString("Argument_WaitHandleNameTooLong", name));
+                if (name.Length > Path.MaxPath)
+                    throw new ArgumentException(Environment.GetResourceString("Argument_WaitHandleNameTooLong", Path.MaxPath), "name");
 #endif
             }
 
@@ -141,9 +141,9 @@ namespace System.Threading
                 throw new ArgumentNullException("name", Environment.GetResourceString("ArgumentNull_WithParamName"));
             if (name.Length == 0)
                 throw new ArgumentException(Environment.GetResourceString("Argument_EmptyName"), "name");
-            if (name.Length > Path.MAX_PATH)
-                throw new ArgumentException(Environment.GetResourceString("Argument_WaitHandleNameTooLong", name));
-                     
+            if (name.Length > Path.MaxPath)
+                throw new ArgumentException(Environment.GetResourceString("Argument_WaitHandleNameTooLong", Path.MaxPath), "name");
+
             const int SYNCHRONIZE = 0x00100000;
             const int SEMAPHORE_MODIFY_STATE = 0x00000002;
 
