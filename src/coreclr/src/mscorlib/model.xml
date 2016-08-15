@@ -7435,17 +7435,28 @@
       <Member Name="Close" />
       <Member Name="Dispose" />
       <Member Name="Dispose(System.Boolean)" />
+      <Member Name="get_Handle" />
+      <Member Name="set_Handle(System.IntPtr)" />
       <Member Name="get_SafeWaitHandle" />
       <Member Name="set_SafeWaitHandle(Microsoft.Win32.SafeHandles.SafeWaitHandle)" />
+      <Member Name="SignalAndWait(System.Threading.WaitHandle,System.Threading.WaitHandle)" />
+      <Member Name="SignalAndWait(System.Threading.WaitHandle,System.Threading.WaitHandle,System.Int32,System.Boolean)" />
+      <Member Name="SignalAndWait(System.Threading.WaitHandle,System.Threading.WaitHandle,System.TimeSpan,System.Boolean)" />
       <Member Name="WaitAny(System.Threading.WaitHandle[])" />
       <Member Name="WaitAny(System.Threading.WaitHandle[],System.Int32)" />
+      <Member Name="WaitAny(System.Threading.WaitHandle[],System.Int32,System.Boolean)" />
       <Member Name="WaitAny(System.Threading.WaitHandle[],System.TimeSpan)" />
+      <Member Name="WaitAny(System.Threading.WaitHandle[],System.TimeSpan,System.Boolean)" />
       <Member Name="WaitAll(System.Threading.WaitHandle[])" />
       <Member Name="WaitAll(System.Threading.WaitHandle[],System.Int32)" />
+      <Member Name="WaitAll(System.Threading.WaitHandle[],System.Int32,System.Boolean)" />
       <Member Name="WaitAll(System.Threading.WaitHandle[],System.TimeSpan)" />
+      <Member Name="WaitAll(System.Threading.WaitHandle[],System.TimeSpan,System.Boolean)" />
       <Member Name="WaitOne" />
       <Member Name="WaitOne(System.Int32)" />
+      <Member Name="WaitOne(System.Int32,System.Boolean)" />
       <Member Name="WaitOne(System.TimeSpan)" />
+      <Member Name="WaitOne(System.TimeSpan,System.Boolean)" />
       <Member MemberType="Property" Name="SafeWaitHandle" />
     </Type>
    <Type Name="System.Threading.WaitHandleExtensions">
