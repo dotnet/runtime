@@ -154,6 +154,7 @@ namespace System.Net.NameResolution.PalTests
             Assert.NotNull(name);
         }
 
+        [ActiveIssue(10764, PlatformID.AnyUnix)]
         [Fact]
         public void TryGetAddrInfo_HostName_TryGetNameInfo()
         {
