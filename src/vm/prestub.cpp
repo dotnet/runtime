@@ -52,7 +52,14 @@
 #include "callcounter.h"
 #endif
 
-#ifndef DACCESS_COMPILE 
+#ifndef DACCESS_COMPILE
+
+#if defined(FEATURE_JIT_PITCHING)
+EXTERN_C void CheckStacksAndPitch();
+EXTERN_C void SavePitchingCandidate(MethodDesc* pMD, ULONG sizeOfCode);
+EXTERN_C void DeleteFromPitchingCandidate(MethodDesc* pMD);
+EXTERN_C void MarkMethodNotPitchingCandidate(MethodDesc* pMD);
+#endif
 
 EXTERN_C void STDCALL ThePreStub();
 
@@ -262,7 +269,6 @@ void DACNotifyCompilationFinished(MethodDesc *methodDesc)
 // This function creates a DeadlockAware list of methods being jitted
 // which prevents us from trying to JIT the same method more that once.
 
-
 PCODE MethodDesc::MakeJitWorker(COR_ILMETHOD_DECODER* ILHeader, CORJIT_FLAGS flags)
 {
     STANDARD_VM_CONTRACT;
@@ -275,6 +281,10 @@ PCODE MethodDesc::MakeJitWorker(COR_ILMETHOD_DECODER* ILHeader, CORJIT_FLAGS fla
          fIsILStub               ? " TRUE" : "FALSE",
          GetMethodTable()->GetDebugClassName(),
          m_pszDebugMethodName));
+
+#if defined(FEATURE_JIT_PITCHING)
+    CheckStacksAndPitch();
+#endif
 
     PCODE pCode = NULL;
     ULONG sizeOfCode = 0;
@@ -548,7 +558,7 @@ PCODE MethodDesc::MakeJitWorker(COR_ILMETHOD_DECODER* ILHeader, CORJIT_FLAGS fla
 #endif // FEATURE_INTERPRETER
 
 #ifdef FEATURE_MULTICOREJIT
-            
+
             // If called from multi-core JIT background thread, store code under lock, delay patching until code is queried from application threads
             if (fBackgroundThread)
             {
@@ -596,6 +606,12 @@ GotNewCode:
                     pCode = GetNativeCode();
                     goto Done;
                 }
+#if defined(FEATURE_JIT_PITCHING)
+                else
+                {
+                    SavePitchingCandidate(this, sizeOfCode);
+                }
+#endif
             }
 
 #ifdef FEATURE_INTERPRETER
@@ -1343,7 +1359,9 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT)
 #endif
         LOG((LF_CLASSLOADER, LL_INFO10000,
                 "    In PreStubWorker, method already jitted, backpatching call point\n"));
-
+#if defined(FEATURE_JIT_PITCHING)
+        MarkMethodNotPitchingCandidate(this);
+#endif
         RETURN DoBackpatch(pMT, pDispatchingMT, TRUE);
     }
 
@@ -2127,6 +2145,10 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBl
                 pCode = PatchNonVirtualExternalMethod(pMD, pCode, pImportSection, pIndirection);
             }
         }
+
+#if defined (FEATURE_JIT_PITCHING)
+        DeleteFromPitchingCandidate(pMD);
+#endif
     }
 
     // Force a GC on every jit if the stress level is high enough

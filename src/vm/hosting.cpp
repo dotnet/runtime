@@ -480,12 +480,15 @@ BOOL EEHeapFree(HANDLE hHeap, DWORD dwFlags, LPVOID lpMem)
 #ifdef _DEBUG
         GlobalAllocStore::RemoveAlloc (lpMem);
 
-        // Check the heap handle to detect heap contamination
-        lpMem = (BYTE*)lpMem - OS_HEAP_ALIGN;
-        HANDLE storedHeapHandle = *((HANDLE*)lpMem);
-        if(storedHeapHandle != hHeap)
-            _ASSERTE(!"Heap contamination detected! HeapFree was called on a heap other than the one that memory was allocated from.\n"
-                      "Possible cause: you used new (executable) to allocate the memory, but didn't use DeleteExecutable() to free it.");
+        if (lpMem != NULL)
+        {
+            // Check the heap handle to detect heap contamination
+            lpMem = (BYTE*)lpMem - OS_HEAP_ALIGN;
+            HANDLE storedHeapHandle = *((HANDLE*)lpMem);
+            if(storedHeapHandle != hHeap)
+                _ASSERTE(!"Heap contamination detected! HeapFree was called on a heap other than the one that memory was allocated from.\n"
+                         "Possible cause: you used new (executable) to allocate the memory, but didn't use DeleteExecutable() to free it.");
+        }
 #endif
         // DON'T REMOVE THIS SEEMINGLY USELESS CAST
         //

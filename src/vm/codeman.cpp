@@ -2186,7 +2186,7 @@ HeapList* EEJitManager::NewCodeHeap(CodeHeapRequestInfo *pInfo, DomainCodeHeapLi
     } CONTRACT_END;
 
     size_t initialRequestSize = pInfo->getRequestSize();
-    size_t minReserveSize = VIRTUAL_ALLOC_RESERVE_GRANULARITY; //     ( 64 KB)           
+    size_t minReserveSize = VIRTUAL_ALLOC_RESERVE_GRANULARITY; //     ( 64 KB)
 
 #ifdef _WIN64
     if (pInfo->m_hiAddr == 0)
@@ -2390,12 +2390,12 @@ void* EEJitManager::allocCodeRaw(CodeHeapRequestInfo *pInfo,
     {
         // Let us create a new heap.
 
-        DomainCodeHeapList *pList = GetCodeHeapList(pInfo->m_pMD, pInfo->m_pAllocator);
+        DomainCodeHeapList *pList = GetCodeHeapList(pInfo, pInfo->m_pAllocator);
         if (pList == NULL)
         {
             // not found so need to create the first one
             pList = CreateCodeHeapList(pInfo);
-            _ASSERTE(pList == GetCodeHeapList(pInfo->m_pMD, pInfo->m_pAllocator));
+            _ASSERTE(pList == GetCodeHeapList(pInfo, pInfo->m_pAllocator));
         }
         _ASSERTE(pList);
 
@@ -2478,22 +2478,28 @@ CodeHeader* EEJitManager::allocCode(MethodDesc* pMD, size_t blockSize, CorJitAll
 
     SIZE_T totalSize = blockSize;
 
+    CodeHeader * pCodeHdr = NULL;
+
+    CodeHeapRequestInfo requestInfo(pMD);
+#if defined(FEATURE_JIT_PITCHING)
+    if (pMD && pMD->IsPitchable() && CLRConfig::GetConfigValue(CLRConfig::INTERNAL_JitPitchMethodSizeThreshold) < blockSize)
+    {
+        requestInfo.SetDynamicDomain();
+    }
+#endif
+
 #if defined(USE_INDIRECT_CODEHEADER)
     SIZE_T realHeaderSize = offsetof(RealCodeHeader, unwindInfos[0]) + (sizeof(T_RUNTIME_FUNCTION) * nUnwindInfos); 
 
     // if this is a LCG method then we will be allocating the RealCodeHeader
     // following the code so that the code block can be removed easily by 
     // the LCG code heap.
-    if (pMD->IsLCGMethod())
+    if (requestInfo.IsDynamicDomain())
     {
         totalSize = ALIGN_UP(totalSize, sizeof(void*)) + realHeaderSize;
         static_assert_no_msg(CODE_SIZE_ALIGN >= sizeof(void*));
     }
 #endif  // USE_INDIRECT_CODEHEADER
-
-    CodeHeader * pCodeHdr = NULL;
-
-    CodeHeapRequestInfo requestInfo(pMD);
 
     // Scope the lock
     {
@@ -2521,7 +2527,7 @@ CodeHeader* EEJitManager::allocCode(MethodDesc* pMD, size_t blockSize, CorJitAll
         pCodeHdr = ((CodeHeader *)pCode) - 1;
 
 #ifdef USE_INDIRECT_CODEHEADER
-        if (pMD->IsLCGMethod())
+        if (requestInfo.IsDynamicDomain())
         {
             pCodeHdr->SetRealCodeHeader((BYTE*)pCode + ALIGN_UP(blockSize, sizeof(void*)));
         }
@@ -2550,7 +2556,7 @@ CodeHeader* EEJitManager::allocCode(MethodDesc* pMD, size_t blockSize, CorJitAll
     RETURN(pCodeHdr);
 }
 
-EEJitManager::DomainCodeHeapList *EEJitManager::GetCodeHeapList(MethodDesc *pMD, LoaderAllocator *pAllocator, BOOL fDynamicOnly)
+EEJitManager::DomainCodeHeapList *EEJitManager::GetCodeHeapList(CodeHeapRequestInfo *pInfo, LoaderAllocator *pAllocator, BOOL fDynamicOnly)
 {
     CONTRACTL {
         NOTHROW;
@@ -2564,7 +2570,7 @@ EEJitManager::DomainCodeHeapList *EEJitManager::GetCodeHeapList(MethodDesc *pMD,
 
     // get the appropriate list of heaps
     // pMD is NULL for NGen modules during Module::LoadTokenTables
-    if (fDynamicOnly || (pMD != NULL && pMD->IsLCGMethod()))
+    if (fDynamicOnly || (pInfo != NULL && pInfo->IsDynamicDomain()))
     {
         ppList = m_DynamicDomainCodeHeaps.Table();
         count = m_DynamicDomainCodeHeaps.Count();
@@ -2605,7 +2611,7 @@ HeapList* EEJitManager::GetCodeHeap(CodeHeapRequestInfo *pInfo)
 
     // loop through the m_DomainCodeHeaps to find the AppDomain
     // if not found, then create it
-    DomainCodeHeapList *pList = GetCodeHeapList(pInfo->m_pMD, pInfo->m_pAllocator);
+    DomainCodeHeapList *pList = GetCodeHeapList(pInfo, pInfo->m_pAllocator);
     if (pList)
     {
         // Set pResult to the largest non-full HeapList
@@ -2726,7 +2732,7 @@ bool EEJitManager::CanUseCodeHeap(CodeHeapRequestInfo *pInfo, HeapList *pCodeHea
        }
    }
 
-   return retVal; 
+   return retVal;
 }
 
 EEJitManager::DomainCodeHeapList * EEJitManager::CreateCodeHeapList(CodeHeapRequestInfo *pInfo)
