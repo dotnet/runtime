@@ -236,6 +236,17 @@ namespace System.Reflection.Tests
             Assert.Equal(1, attributeData.Count(attr => attr.AttributeType.ToString().Equals("System.Reflection.Tests.MyAttribute_Single_Inherited_P", StringComparison.Ordinal)));
             Assert.Equal(1, attributeData.Count(attr => attr.AttributeType.ToString().Equals("System.Reflection.Tests.MyAttribute_AllowMultiple_Inherited_P", StringComparison.Ordinal)));
         }
+
+        [Fact]
+        [ActiveIssue(@"https://github.com/dotnet/coreclr/issues/6600")]
+        public void GetCustom_Attribute_On_Return_Parameter_On_Parent_Method()
+        {
+            Type type = typeof(TestClass_P_Derived);
+            MethodInfo miWithReturnAttribute = type.GetTypeInfo().GetDeclaredMethod("methodWithReturnAttribute");
+            ParameterInfo returnParameter = miWithReturnAttribute.ReturnParameter;
+            MyAttribute_Single_P attribute = CustomAttributeExtensions.GetCustomAttribute<MyAttribute_Single_P>(returnParameter, inherit: true);
+            Assert.NotNull(attribute);
+        }
     }
 
     public class ParameterInfoAttributeBase : Attribute
@@ -282,5 +293,13 @@ namespace System.Reflection.Tests
                                       MyAttribute_Single_Inherited_P("single"),
                                       MyAttribute_AllowMultiple_Inherited_P("multiple")] int param)
         { }
+
+        [return: MyAttribute_Single_P("single")]
+        public virtual byte methodWithReturnAttribute() { return 0; }
+    }
+
+    public class TestClass_P_Derived : TestClass_P
+    {
+        public override byte methodWithReturnAttribute() { return 1; }
     }
 }
