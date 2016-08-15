@@ -1064,7 +1064,7 @@ public:
         MODULE_LOAD_NOTIFICATION=1,
         MODULE_UNLOAD_NOTIFICATION=2,
         JIT_NOTIFICATION=3,
-        JIT_DISCARD_NOTIFICATION=4,
+        JIT_PITCHING_NOTIFICATION=4,
         EXCEPTION_NOTIFICATION=5,
         GC_NOTIFICATION= 6,
         CATCH_ENTER_NOTIFICATION = 7,
@@ -1072,7 +1072,7 @@ public:
     
     // called from the runtime
     static void DoJITNotification(MethodDesc *MethodDescPtr);
-    static void DoJITDiscardNotification(MethodDesc *MethodDescPtr);    
+    static void DoJITPitchingNotification(MethodDesc *MethodDescPtr);
     static void DoModuleLoadNotification(Module *Module);
     static void DoModuleUnloadNotification(Module *Module);
     static void DoExceptionNotification(class Thread* ThreadPtr);
@@ -1082,7 +1082,7 @@ public:
     // called from the DAC
     static int GetType(TADDR Args[]);
     static BOOL ParseJITNotification(TADDR Args[], TADDR& MethodDescPtr);
-    static BOOL ParseJITDiscardNotification(TADDR Args[], TADDR& MethodDescPtr);
+    static BOOL ParseJITPitchingNotification(TADDR Args[], TADDR& MethodDescPtr);
     static BOOL ParseModuleLoadNotification(TADDR Args[], TADDR& ModulePtr);
     static BOOL ParseModuleUnloadNotification(TADDR Args[], TADDR& ModulePtr);
     static BOOL ParseExceptionNotification(TADDR Args[], TADDR& ThreadPtr);
