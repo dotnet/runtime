@@ -2153,7 +2153,7 @@ void NotifyGdb::OnMethodCompiled(MethodDesc* methodDescPtr)
     __jit_debug_register_code();
 }
 
-void NotifyGdb::MethodDropped(MethodDesc* methodDescPtr)
+void NotifyGdb::MethodPitched(MethodDesc* methodDescPtr)
 {
     static const int textSectionIndex = GetSectionIndex(".text");
 

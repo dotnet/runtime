@@ -134,6 +134,17 @@ RETAIL_CONFIG_DWORD_INFO(EXTERNAL_FinalizeOnShutdown, W("FinalizeOnShutdown"), D
 RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_ARMEnabled, W("ARMEnabled"), (DWORD)0, "Set it to 1 to enable ARM")
 
 //
+// Jit Pitching
+//
+RETAIL_CONFIG_DWORD_INFO(INTERNAL_JitPitchEnabled, W("JitPitchEnabled"), (DWORD)0, "Set it to 1 to enable Jit Pitching")
+RETAIL_CONFIG_DWORD_INFO(INTERNAL_JitPitchMemThreshold, W("JitPitchMemThreshold"), (DWORD)0, "Do Jit Pitching when code heap usage is larger than this (in bytes)")
+RETAIL_CONFIG_DWORD_INFO(INTERNAL_JitPitchMethodSizeThreshold, W("JitPitchMethodSizeThreshold"), (DWORD)0, "Do Jit Pitching for methods whose native code size larger than this (in bytes)")
+RETAIL_CONFIG_DWORD_INFO(INTERNAL_JitPitchTimeInterval, W("JitPitchTimeInterval"), (DWORD)0, "Time interval between Jit Pitchings in ms")
+RETAIL_CONFIG_DWORD_INFO(INTERNAL_JitPitchPrintStat, W("JitPitchPrintStat"), (DWORD)0, "Print statistics about Jit Pitching")
+RETAIL_CONFIG_DWORD_INFO(INTERNAL_JitPitchMinVal, W("JitPitchMinVal"), (DWORD)0, "Do Jit Pitching if the value of the inner counter greater than this value (for debugging purpose only)")
+RETAIL_CONFIG_DWORD_INFO(INTERNAL_JitPitchMaxVal, W("JitPitchMaxVal"), (DWORD)0xffffffff, "Do Jit Pitching the value of the inner counter less then this value (for debuggin purpose only)")
+
+//
 // Assembly Loader
 //
 RETAIL_CONFIG_DWORD_INFO_EX(EXTERNAL_DesignerNamespaceResolutionEnabled, W("designerNamespaceResolution"), FALSE, "Set it to 1 to enable DesignerNamespaceResolve event for WinRT types", CLRConfig::IgnoreEnv | CLRConfig::IgnoreHKLM | CLRConfig::IgnoreHKCU | CLRConfig::FavorConfigFile)

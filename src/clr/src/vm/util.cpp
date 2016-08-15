@@ -2871,7 +2871,7 @@ void DACNotify::DoJITNotification(MethodDesc *MethodDescPtr)
     DACNotifyExceptionHelper(Args, 2);
 }
 
-void DACNotify::DoJITDiscardNotification(MethodDesc *MethodDescPtr)
+void DACNotify::DoJITPitchingNotification(MethodDesc *MethodDescPtr)
 {
     CONTRACTL
     {
@@ -2883,9 +2883,9 @@ void DACNotify::DoJITDiscardNotification(MethodDesc *MethodDescPtr)
     CONTRACTL_END;
 
 #if defined(FEATURE_GDBJIT) && defined(FEATURE_PAL) && !defined(CROSSGEN_COMPILE)
-    NotifyGdb::MethodDropped(MethodDescPtr);
+    NotifyGdb::MethodPitched(MethodDescPtr);
 #endif    
-    TADDR Args[2] = { JIT_DISCARD_NOTIFICATION, (TADDR) MethodDescPtr };
+    TADDR Args[2] = { JIT_PITCHING_NOTIFICATION, (TADDR) MethodDescPtr };
     DACNotifyExceptionHelper(Args, 2);
 }    
    
@@ -3007,10 +3007,10 @@ BOOL DACNotify::ParseJITNotification(TADDR Args[], TADDR& MethodDescPtr)
     return TRUE;
 }
 
-BOOL DACNotify::ParseJITDiscardNotification(TADDR Args[], TADDR& MethodDescPtr)
+BOOL DACNotify::ParseJITPitchingNotification(TADDR Args[], TADDR& MethodDescPtr)
 {
-    _ASSERTE(Args[0] == JIT_DISCARD_NOTIFICATION);
-    if (Args[0] != JIT_DISCARD_NOTIFICATION)
+    _ASSERTE(Args[0] == JIT_PITCHING_NOTIFICATION);
+    if (Args[0] != JIT_PITCHING_NOTIFICATION)
     {
         return FALSE;
     }
