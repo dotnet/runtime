@@ -3,8 +3,9 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Reflection;
+
+// TODO: Put back asserts once Debug.Assert is available
 
 namespace System.Runtime.Serialization
 {
@@ -24,8 +25,6 @@ namespace System.Runtime.Serialization
         private string _rootTypeName;
         private string _rootTypeAssemblyName;
         private Type _rootType;
-        internal bool IsFullTypeNameSetExplicit;
-        internal bool IsAssemblyNameSetExplicit;
 
         [CLSCompliant(false)]
         public SerializationInfo(Type type, IFormatterConverter converter)
@@ -48,11 +47,6 @@ namespace System.Runtime.Serialization
             _types = new Type[DefaultSize];
             _nameToIndex = new Dictionary<string, int>();
             _converter = converter;
-        }
-
-        internal SerializationInfo(Type type, IFormatterConverter converter, bool requireSameTokenInPartialTrust) :
-            this(type, converter)
-        {
         }
 
         public string FullTypeName
@@ -85,6 +79,10 @@ namespace System.Runtime.Serialization
             }
         }
 
+        public bool IsFullTypeNameSetExplicit { get; private set; }
+
+        public bool IsAssemblyNameSetExplicit { get; private set; }
+
         public void SetType(Type type)
         {
             if (type == null)
@@ -111,7 +109,7 @@ namespace System.Runtime.Serialization
         private void ExpandArrays()
         {
             int newSize;
-            Debug.Assert(_names.Length == _count);
+            // Debug.Assert(_names.Length == _count);
 
             newSize = (_count * 2);
 
@@ -141,9 +139,9 @@ namespace System.Runtime.Serialization
 
         internal void UpdateValue(string name, object value, Type type)
         {
-            Debug.Assert(null != name, "[SerializationInfo.UpdateValue]name!=null");
-            Debug.Assert(null != value, "[SerializationInfo.UpdateValue]value!=null");
-            Debug.Assert(null != type, "[SerializationInfo.UpdateValue]type!=null");
+            //Debug.Assert(null != name, "[SerializationInfo.UpdateValue]name!=null");
+            //Debug.Assert(null != value, "[SerializationInfo.UpdateValue]value!=null");
+            //Debug.Assert(null != type, "[SerializationInfo.UpdateValue]type!=null");
 
             int index = FindElement(name);
             if (index < 0)
@@ -262,7 +260,7 @@ namespace System.Runtime.Serialization
         {
             if (_nameToIndex.ContainsKey(name))
             {
-                throw new SerializationException(SR.Serialization_SameNameTwice);
+                throw new SerializationException("Cannot add the same member twice to a SerializationInfo object."); // TODO: SR.Serialization_SameNameTwice);
             }
             _nameToIndex.Add(name, _count);
 
@@ -295,14 +293,14 @@ namespace System.Runtime.Serialization
             int index = FindElement(name);
             if (index == -1)
             {
-                throw new SerializationException(SR.Format(SR.Serialization_NotFound, name));
+                throw new SerializationException(string.Format("Member '{0}' was not found.", name)); // TODO: SR.Format(SR.Serialization_NotFound, name));
             }
 
-            Debug.Assert(index < _values.Length);
-            Debug.Assert(index < _types.Length);
+            //Debug.Assert(index < _values.Length);
+            //Debug.Assert(index < _types.Length);
 
             foundType = _types[index];
-            Debug.Assert(foundType != null);
+            //Debug.Assert(foundType != null);
             return _values[index];
         }
 
@@ -315,11 +313,11 @@ namespace System.Runtime.Serialization
                 return null;
             }
 
-            Debug.Assert(index < _values.Length, "[SerializationInfo.GetElement]index<m_data.Length");
-            Debug.Assert(index < _types.Length, "[SerializationInfo.GetElement]index<m_types.Length");
+            //Debug.Assert(index < _values.Length, "[SerializationInfo.GetElement]index<m_data.Length");
+            //Debug.Assert(index < _types.Length, "[SerializationInfo.GetElement]index<m_types.Length");
 
             foundType = _types[index];
-            Debug.Assert(foundType != null, "[SerializationInfo.GetElement]foundType!=null");
+            //Debug.Assert(foundType != null, "[SerializationInfo.GetElement]foundType!=null");
             return _values[index];
         }
 
@@ -339,13 +337,13 @@ namespace System.Runtime.Serialization
                 return value;
             }
 
-            Debug.Assert(_converter != null);
+            //Debug.Assert(_converter != null);
             return _converter.Convert(value, type);
         }
 
         internal object GetValueNoThrow(string name, Type type)
         {
-            Debug.Assert(type != null, "[SerializationInfo.GetValue]type ==null");
+            //Debug.Assert(type != null, "[SerializationInfo.GetValue]type ==null");
 
             Type foundType;
             object value = GetElementNoThrow(name, out foundType);
@@ -357,7 +355,7 @@ namespace System.Runtime.Serialization
                 return value;
             }
 
-            Debug.Assert(_converter != null, "[SerializationInfo.GetValue]m_converter!=null");
+            //Debug.Assert(_converter != null, "[SerializationInfo.GetValue]m_converter!=null");
             return _converter.Convert(value, type);
         }
 

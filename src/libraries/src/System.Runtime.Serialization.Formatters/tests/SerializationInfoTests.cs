@@ -78,42 +78,17 @@ namespace System.Runtime.Serialization.Formatters.Tests
         public void NegativeAddValueTwice()
         {
             var si = new SerializationInfo(typeof(Serializable), new FormatterConverter());
-            Assert.Throws<SerializationException>(() =>
-            {
-                si.AddValue("bool", true);
-                si.AddValue("bool", true);
-            });
-
-            try
-            {
-                si.AddValue("bool", false);
-            }
-            catch (Exception e)
-            {
-                Assert.Equal("Cannot add the same member twice to a SerializationInfo object.", e.Message);
-            }
+            si.AddValue("bool", true);
+            Assert.Throws<SerializationException>(() => si.AddValue("bool", true));
         }
 
+        [ActiveIssue("https://github.com/dotnet/coreclr/pull/6423")]
         [Fact]
         public void NegativeValueNotFound()
         {
             var si = new SerializationInfo(typeof(Serializable), new FormatterConverter());
-            Assert.Throws<SerializationException>(() =>
-            {
-                si.AddValue("a", 1);
-                si.GetInt32("b");
-            });
-
-            si = new SerializationInfo(typeof(Serializable), new FormatterConverter());
-            try
-            {
-                si.AddValue("a", 1);
-                si.GetInt32("b");
-            }
-            catch (Exception e)
-            {
-                Assert.Equal("Member 'b' was not found.", e.Message);
-            }
+            si.AddValue("a", 1);
+            Assert.Throws<SerializationException>(() => si.GetInt32("b"));
         }
     }
 
@@ -125,7 +100,6 @@ namespace System.Runtime.Serialization.Formatters.Tests
             info.AddValue("string", "hello");
             info.AddValue("bool", true);
             info.AddValue("char", 'a');
-
             info.AddValue("byte", byte.MaxValue);
             info.AddValue("decimal", decimal.MaxValue);
             info.AddValue("double", double.MaxValue);

@@ -16,7 +16,7 @@ namespace System.Runtime.Serialization
             {
                 if (value < 1)
                 {
-                    throw new ArgumentException(SR.Serialization_OptionalFieldVersionValue);
+                    throw new ArgumentException("Version value must be positive."); // TODO: SR.Serialization_OptionalFieldVersionValue);
                 }
                 _versionAdded = value;
             }

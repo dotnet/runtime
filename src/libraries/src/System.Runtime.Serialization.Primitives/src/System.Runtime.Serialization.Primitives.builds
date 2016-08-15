@@ -4,7 +4,13 @@
   <ItemGroup>
     <Project Include="System.Runtime.Serialization.Primitives.csproj" />
     <Project Include="System.Runtime.Serialization.Primitives.csproj">
+      <TargetGroup>netstandard1.3</TargetGroup>
+    </Project>
+    <Project Include="System.Runtime.Serialization.Primitives.csproj">
       <TargetGroup>net46</TargetGroup>
+    </Project>
+    <Project Include="System.Runtime.Serialization.Primitives.csproj">
+      <TargetGroup>net463</TargetGroup>
     </Project>
     <!-- System.Runtime.Serialization.Primitives needs to be build for netcore50 because it needs to have the reflection block enabled
     By default, all assemblies that are built for netcore50 or netcore50aot have the reflection block enabled. -->
