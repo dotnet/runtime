@@ -12,7 +12,6 @@ namespace System.Runtime.Serialization.Xml.Tests
 {
     public static class XmlDictionaryReaderTests
     {
-#if FALSE
         [Fact]
         public static void ReadValueChunkReadEncodedDoubleWideChars()
         {
@@ -124,6 +123,5 @@ namespace System.Runtime.Serialization.Xml.Tests
 
             return sb.ToString();
         }
-#endif
     }
 }
