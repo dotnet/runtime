@@ -85,14 +85,16 @@ public:
     inline void ResetState()
     {
         LIMITED_METHOD_CONTRACT;
-        m_numRequestsPending = 0;
+        VolatileStore(&m_numRequestsPending, (LONG)0);
         m_id.m_dwId = 0;
     }
     
     inline BOOL IsRequestPending()
     {
         LIMITED_METHOD_CONTRACT;
-        return m_numRequestsPending != ADUnloading && m_numRequestsPending > 0;
+
+        LONG count = VolatileLoad(&m_numRequestsPending);
+        return count != ADUnloading && count > 0;
     }
 
     void SetAppDomainRequestsActive();
@@ -106,7 +108,7 @@ public:
         //has started running yet. That implies, no requests should be pending
         //or dispatched to this structure yet.
 
-        _ASSERTE(m_numRequestsPending != ADUnloading);
+        _ASSERTE(VolatileLoad(&m_numRequestsPending) != ADUnloading);
         _ASSERTE(m_id.m_dwId == 0);
 
         m_id = id;
@@ -119,7 +121,7 @@ public:
         //has started running yet. That implies, no requests should be pending
         //or dispatched to this structure yet.
 
-        _ASSERTE(m_numRequestsPending != ADUnloading);
+        _ASSERTE(VolatileLoad(&m_numRequestsPending) != ADUnloading);
         _ASSERTE(m_id.m_dwId == 0);
         _ASSERTE(m_index.m_dwIndex == UNUSED_THREADPOOL_INDEX);
 
@@ -135,7 +137,7 @@ public:
             //added removed at this time. So, make sure that the per-appdomain structures that 
             //have been cleared(reclaimed) don't have any pending requests to them.
 
-            _ASSERTE(m_numRequestsPending != ADUnloading);
+            _ASSERTE(VolatileLoad(&m_numRequestsPending) != ADUnloading);
             _ASSERTE(m_id.m_dwId == 0);
 
             return TRUE;
@@ -159,22 +161,27 @@ public:
     inline void SetAppDomainUnloading()
     {
         LIMITED_METHOD_CONTRACT;
-        m_numRequestsPending = ADUnloading;
+        VolatileStore(&m_numRequestsPending, ADUnloading);
     }
 
     inline void ClearAppDomainUnloading();
 
     inline BOOL IsAppDomainUnloading()
     {
-        return m_numRequestsPending.Load() == ADUnloading;
+        return VolatileLoad(&m_numRequestsPending) == ADUnloading;
     }
 
     void DispatchWorkItem(bool* foundWork, bool* wasNotRecalled);
 
 private:
-    Volatile<LONG> m_numRequestsPending;
     ADID m_id;
     TPIndex m_index;
+    DECLSPEC_ALIGN(64) struct {
+        BYTE m_padding1[64 - sizeof(LONG)];
+        // Only use with VolatileLoad+VolatileStore+FastInterlockCompareExchange
+        LONG m_numRequestsPending;
+        BYTE m_padding2[64];
+    };
 };
 
 //--------------------------------------------------------------------------
@@ -212,13 +219,13 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         m_NumRequests = 0;
-        m_outstandingThreadRequestCount = 0;
+        VolatileStore(&m_outstandingThreadRequestCount, (LONG)0);
     }
 
     inline BOOL IsRequestPending()
     {
         LIMITED_METHOD_CONTRACT;
-        return m_outstandingThreadRequestCount != 0 ? TRUE : FALSE;
+        return VolatileLoad(&m_outstandingThreadRequestCount) != (LONG)0 ? TRUE : FALSE;
     }
 
     void SetAppDomainRequestsActive();
@@ -226,7 +233,7 @@ public:
     inline void ClearAppDomainRequestsActive(BOOL bADU)
     {
         LIMITED_METHOD_CONTRACT;
-        m_outstandingThreadRequestCount = 0;
+        VolatileStore(&m_outstandingThreadRequestCount, (LONG)0);
     }
 
     bool TakeActiveRequest();
@@ -272,9 +279,14 @@ public:
     }
 
 private:
-    ULONG m_NumRequests;
-    Volatile<LONG> m_outstandingThreadRequestCount;
     SpinLock m_lock;
+    ULONG m_NumRequests;
+    DECLSPEC_ALIGN(64) struct {
+        BYTE m_padding1[64 - sizeof(LONG)];
+        // Only use with VolatileLoad+VolatileStore+FastInterlockCompareExchange
+        LONG m_outstandingThreadRequestCount;
+        BYTE m_padding2[64];
+    };
 };
 
 //--------------------------------------------------------------------------
@@ -330,29 +342,12 @@ public:
 private:
     static DWORD FindFirstFreeTpEntry();
 
+    static BYTE s_padding[64 - sizeof(LONG)];
+    static LONG s_ADHint;
     static UnManagedPerAppDomainTPCount s_unmanagedTPCount;
 
     //The list of all per-appdomain work-request counts.
-    static ArrayListStatic s_appDomainIndexList;    
-
-    static LONG s_ADHint;
+    static ArrayListStatic s_appDomainIndexList;
 };
 
 #endif //_THREADPOOL_REQUEST_H
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
