@@ -22,7 +22,7 @@ namespace System.Runtime.Serialization
         String,
         ByteArray,
         XmlElement,
-        DateTimeArray
+        DateTimeArray,
         ArrayOfSimpleType,
         ListOfSimpleType,
         DictionaryOfSimpleType,
