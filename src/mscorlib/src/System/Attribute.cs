@@ -220,8 +220,16 @@ namespace System {
                 if (rtMethod != null)
                 {
                     // Find the ParameterInfo on this method
-                    ParameterInfo[] parameters = rtMethod.GetParameters();
-                    return parameters[param.Position]; // Point to the correct ParameterInfo of the method
+                    int position = param.Position;
+                    if (position == -1)
+                    {
+                        return rtMethod.ReturnParameter;
+                    }
+                    else
+                    {
+                        ParameterInfo[] parameters = rtMethod.GetParameters();
+                        return parameters[position]; // Point to the correct ParameterInfo of the method
+                    }
                 }
             }
             return null;
