@@ -6,11 +6,6 @@ using System.Reflection;
 
 namespace System
 {
-    internal interface ICloneable // TODO: Replace with real ICloneable when it's available
-    {
-        object Clone();
-    }
-
     internal class MarshalByRefObject { } // TODO: Replace with real MarshalByRefObject when it's available
 
     internal sealed class TypedReference // TODO: Replace with System.TypedReference when available and functional
@@ -47,6 +42,7 @@ namespace System.Reflection
 {
     internal static class CustomReflectionExtensions
     {
+        // TODO: Replace with FieldInfo.SetValueDirect when available and functional
         internal static void SetValueDirect(this FieldInfo field, TypedReference obj, object value) // TODO: Replace with FieldInfo.SetValueDirect when available
         {
             if (field == null)

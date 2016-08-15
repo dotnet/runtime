@@ -27,12 +27,9 @@
   <ItemGroup Condition="'$(UseContractReferences)' == ''" >
     <ProjectReference Include="..\..\src\System.Private.Xml.csproj" />
     <ProjectReference Include="..\..\..\System.Private.Xml.Linq\src\System.Private.Xml.Linq.csproj" />
-    <ProjectReference Include="..\..\..\System.Private.DataContractSerialization\src\System.Private.DataContractSerialization.csproj" />
-    <ProjectReference Include="..\..\..\System.Runtime.Serialization.Primitives\src\System.Runtime.Serialization.Primitives.csproj" />
-    <ProjectReference Include="..\..\..\System.Xml.XmlSerializer\src\System.Xml.XmlSerializer.csproj" />
-    <ProjectReference Include="..\..\..\System.Xml.ReaderWriter\src\System.Xml.ReaderWriter.csproj" />
-    <ProjectReference Include="..\..\..\System.Xml.XmlDocument\src\System.Xml.XmlDocument.csproj" />
-    <ProjectReference Include="..\..\..\System.Xml.XDocument\src\System.Xml.XDocument.csproj" />
+    <ProjectReference Include="..\..\..\System.Private.DataContractSerialization\pkg\System.Private.DataContractSerialization.pkgproj" />
+    <ProjectReference Include="..\..\..\System.Runtime.Serialization.Primitives\pkg\System.Runtime.Serialization.Primitives.pkgproj" />
+    <ProjectReference Include="..\..\..\Microsoft.Win32.Registry\pkg\Microsoft.Win32.Registry.pkgproj" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />
