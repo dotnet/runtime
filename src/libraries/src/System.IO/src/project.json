@@ -19,7 +19,7 @@
     "netcore50": {
       "dependencies": {
         "Microsoft.NETCore.Platforms": "1.0.1",
-        "Microsoft.TargetingPack.Private.NETNative": "1.0.1-beta-24414-00",
+        "Microsoft.TargetingPack.Private.NETNative": "1.0.1-beta-24415-00",
         "System.Diagnostics.Contracts": "4.0.0",
         "System.Diagnostics.Debug": "4.0.10",
         "System.Diagnostics.Tools": "4.0.0",
@@ -46,7 +46,7 @@
       ],
       "dependencies": {
         "Microsoft.NETCore.Platforms": "1.0.1",
-        "Microsoft.TargetingPack.Private.NETNative": "1.0.1-beta-24414-00",
+        "Microsoft.TargetingPack.Private.NETNative": "1.0.1-beta-24415-00",
         "System.Diagnostics.Contracts": "4.0.0",
         "System.Diagnostics.Debug": "4.0.10",
         "System.Diagnostics.Tools": "4.0.0",
