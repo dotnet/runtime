@@ -1478,12 +1478,12 @@ mono_custom_attrs_from_builders (MonoImage *alloc_img, MonoImage *image, MonoArr
 		if (!custom_attr_visible (image, cattr))
 			not_visible ++;
 	}
-	count -= not_visible;
 
-	ainfo = (MonoCustomAttrInfo *)image_g_malloc0 (alloc_img, MONO_SIZEOF_CUSTOM_ATTR_INFO + sizeof (MonoCustomAttrEntry) * count);
+	int num_attrs = count - not_visible;
+	ainfo = (MonoCustomAttrInfo *)image_g_malloc0 (alloc_img, MONO_SIZEOF_CUSTOM_ATTR_INFO + sizeof (MonoCustomAttrEntry) * num_attrs);
 
 	ainfo->image = image;
-	ainfo->num_attrs = count;
+	ainfo->num_attrs = num_attrs;
 	ainfo->cached = alloc_img != NULL;
 	index = 0;
 	for (i = 0; i < count; ++i) {
@@ -1492,11 +1492,13 @@ mono_custom_attrs_from_builders (MonoImage *alloc_img, MonoImage *image, MonoArr
 			unsigned char *saved = (unsigned char *)mono_image_alloc (image, mono_array_length (cattr->data));
 			memcpy (saved, mono_array_addr (cattr->data, char, 0), mono_array_length (cattr->data));
 			ainfo->attrs [index].ctor = cattr->ctor->method;
+			g_assert (cattr->ctor->method);
 			ainfo->attrs [index].data = saved;
 			ainfo->attrs [index].data_size = mono_array_length (cattr->data);
 			index ++;
 		}
 	}
+	g_assert (index == num_attrs && count == num_attrs + not_visible);
 
 	return ainfo;
 }
@@ -9920,24 +9922,35 @@ mono_custom_attrs_construct_by_type (MonoCustomAttrInfo *cinfo, MonoClass *attr_
 
 	mono_error_init (error);
 
-	n = 0;
 	for (i = 0; i < cinfo->num_attrs; ++i) {
-		if (!attr_klass || mono_class_is_assignable_from (attr_klass, cinfo->attrs [i].ctor->klass))
-			n ++;
+		MonoCustomAttrEntry *centry = &cinfo->attrs[i];
+		if (!centry->ctor) {
+			/* The cattr type is not finished yet */
+			/* We should include the type name but cinfo doesn't contain it */
+			mono_error_set_type_load_name (error, NULL, NULL, "Custom attribute constructor is null because the custom attribute type is not finished yet.");
+			return NULL;
+		}
+	}
+
+	n = 0;
+	if (attr_klass) {
+		for (i = 0; i < cinfo->num_attrs; ++i) {
+			MonoMethod *ctor = cinfo->attrs[i].ctor;
+			g_assert (ctor);
+			if (mono_class_is_assignable_from (attr_klass, ctor->klass))
+				n++;
+		}
+	} else {
+		n = cinfo->num_attrs;
 	}
 
 	result = mono_array_new_cached (mono_domain_get (), mono_defaults.attribute_class, n, error);
 	return_val_if_nok (error, NULL);
 	n = 0;
 	for (i = 0; i < cinfo->num_attrs; ++i) {
-		if (!cinfo->attrs [i].ctor) {
-			/* The cattr type is not finished yet */
-			/* We should include the type name but cinfo doesn't contain it */
-			mono_error_set_type_load_name (error, NULL, NULL, "");
-			return NULL;
-		}
-		if (!attr_klass || mono_class_is_assignable_from (attr_klass, cinfo->attrs [i].ctor->klass)) {
-			attr = create_custom_attr (cinfo->image, cinfo->attrs [i].ctor, cinfo->attrs [i].data, cinfo->attrs [i].data_size, error);
+		MonoCustomAttrEntry *centry = &cinfo->attrs [i];
+		if (!attr_klass || mono_class_is_assignable_from (attr_klass, centry->ctor->klass)) {
+			attr = create_custom_attr (cinfo->image, centry->ctor, centry->data, centry->data_size, error);
 			if (!mono_error_ok (error))
 				return result;
 			mono_array_setref (result, n, attr);
@@ -10345,9 +10358,8 @@ gboolean
 mono_custom_attrs_has_attr (MonoCustomAttrInfo *ainfo, MonoClass *attr_klass)
 {
 	int i;
-	MonoClass *klass;
 	for (i = 0; i < ainfo->num_attrs; ++i) {
-		klass = ainfo->attrs [i].ctor->klass;
+		MonoClass *klass = ainfo->attrs [i].ctor->klass;
 		if (mono_class_has_parent (klass, attr_klass) || (MONO_CLASS_IS_INTERFACE (attr_klass) && mono_class_is_assignable_from (attr_klass, klass)))
 			return TRUE;
 	}
@@ -10367,14 +10379,13 @@ MonoObject*
 mono_custom_attrs_get_attr_checked (MonoCustomAttrInfo *ainfo, MonoClass *attr_klass, MonoError *error)
 {
 	int i, attr_index;
-	MonoClass *klass;
 	MonoArray *attrs;
 
 	mono_error_init (error);
 
 	attr_index = -1;
 	for (i = 0; i < ainfo->num_attrs; ++i) {
-		klass = ainfo->attrs [i].ctor->klass;
+		MonoClass *klass = ainfo->attrs [i].ctor->klass;
 		if (mono_class_has_parent (klass, attr_klass)) {
 			attr_index = i;
 			break;
