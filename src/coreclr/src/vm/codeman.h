@@ -369,6 +369,8 @@ struct CodeHeapRequestInfo
     bool         m_isCollectible;
     
     bool   IsDynamicDomain()                    { return m_isDynamicDomain;    }
+    void   SetDynamicDomain()                   { m_isDynamicDomain = true;    }
+
     bool   IsCollectible()                      { return m_isCollectible;      }
     
     size_t getRequestSize()                     { return m_requestSize;        }
@@ -1095,7 +1097,7 @@ private :
                              size_t header, size_t blockSize, unsigned align,
                              HeapList ** ppCodeHeap /* Writeback, Can be null */ );
 
-    DomainCodeHeapList *GetCodeHeapList(MethodDesc *pMD, LoaderAllocator *pAllocator, BOOL fDynamicOnly = FALSE);
+    DomainCodeHeapList *GetCodeHeapList(CodeHeapRequestInfo *pInfo, LoaderAllocator *pAllocator, BOOL fDynamicOnly = FALSE);
     DomainCodeHeapList *CreateCodeHeapList(CodeHeapRequestInfo *pInfo);
     LoaderHeap* GetJitMetaHeap(MethodDesc *pMD);
 #endif // !CROSSGEN_COMPILE
