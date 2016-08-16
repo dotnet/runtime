@@ -9,6 +9,15 @@
 ;; ==--==
 
 ;-----------------------------------------------------------------------------
+; Macro used to assign an alternate name to a symbol containing characters normally disallowed in a symbol
+; name (e.g. C++ decorated names).
+    MACRO
+      SETALIAS   $name, $symbol
+        GBLS    $name
+$name   SETS    "|$symbol|"
+    MEND
+
+;-----------------------------------------------------------------------------
 ; Basic extension of Assembler Macros- For Consistency
 
     MACRO
