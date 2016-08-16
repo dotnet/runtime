@@ -3319,14 +3319,15 @@ void Lowering::LowerAdd(GenTreePtr* pTree, Compiler::fgWalkData* data)
         return;
     }
 
-    // if this is a child of an indir, let the parent handle it
-    if (data->parentStack->Index(1)->OperIsIndir())
+    // If this is a child of an indir, and it is not a block op, let the parent handle it.
+    GenTree* parent = data->parentStack->Index(1);
+    if (parent->OperIsIndir() && !varTypeIsStruct(parent))
     {
         return;
     }
 
     // if there is a chain of adds, only look at the topmost one
-    if (data->parentStack->Index(1)->gtOper == GT_ADD)
+    if (parent->gtOper == GT_ADD)
     {
         return;
     }

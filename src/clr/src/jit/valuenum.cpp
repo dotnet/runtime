@@ -2766,7 +2766,7 @@ ValueNum Compiler::fgValueNumberArrIndexVal(GenTreePtr           tree,
                                             ValueNum             excVN,
                                             FieldSeqNode*        fldSeq)
 {
-    assert(tree == nullptr || tree->OperGet() == GT_IND);
+    assert(tree == nullptr || tree->OperIsIndir());
 
     // The VN inputs are required to be non-exceptional values.
     assert(arrVN == vnStore->VNNormVal(arrVN));
@@ -4773,12 +4773,15 @@ void Compiler::fgValueNumberTreeConst(GenTreePtr tree)
 
 void Compiler::fgValueNumberBlockAssignment(GenTreePtr tree, bool evalAsgLhsInd)
 {
+    GenTree* lhsAddr = tree->gtGetOp1()->gtGetOp1();
+    GenTree* rhsAddrOrVal = tree->gtGetOp1()->gtGetOp2();
+
 #ifdef DEBUG
     // Sometimes we query the heap ssa map, and need a dummy location for the ignored result.
     unsigned heapSsaNum;
 #endif
 
-    if (tree->OperGet() == GT_INITBLK)
+    if (tree->OperIsInitBlkOp())
     {
         GenTreeLclVarCommon* lclVarTree;
         bool                 isEntire;
@@ -4798,7 +4801,7 @@ void Compiler::fgValueNumberBlockAssignment(GenTreePtr tree, bool evalAsgLhsInd)
                 unsigned lclDefSsaNum = GetSsaNumForLocalVarDef(lclVarTree);
 
                 ValueNum   initBlkVN = ValueNumStore::NoVN;
-                GenTreePtr initConst = tree->gtGetOp1()->gtGetOp2();
+                GenTreePtr initConst = rhsAddrOrVal;
                 if (isEntire && initConst->OperGet() == GT_CNS_INT)
                 {
                     unsigned initVal = 0xFF & (unsigned)initConst->AsIntConCommon()->IconValue();
@@ -4851,16 +4854,15 @@ void Compiler::fgValueNumberBlockAssignment(GenTreePtr tree, bool evalAsgLhsInd)
             // Should not have been recorded as updating the heap.
             assert(!GetHeapSsaMap()->Lookup(tree, &heapSsaNum));
 
-            unsigned   lhsLclNum = lclVarTree->GetLclNum();
-            LclVarDsc* rhsVarDsc = &lvaTable[lhsLclNum];
+            unsigned lhsLclNum = lclVarTree->GetLclNum();
             // If it's excluded from SSA, don't need to do anything.
             if (!fgExcludeFromSsa(lhsLclNum))
             {
                 unsigned lclDefSsaNum = GetSsaNumForLocalVarDef(lclVarTree);
 
                 // For addr-of-local expressions, lib/cons shouldn't matter.
-                assert(tree->gtOp.gtOp1->gtOp.gtOp1->gtVNPair.BothEqual());
-                ValueNum lhsAddrVN = tree->gtOp.gtOp1->gtOp.gtOp1->GetVN(VNK_Liberal);
+                assert(lhsAddr->gtVNPair.BothEqual());
+                ValueNum lhsAddrVN = lhsAddr->GetVN(VNK_Liberal);
 
                 // Unpack the PtrToLoc value number of the address.
                 assert(vnStore->IsVNFunc(lhsAddrVN));
@@ -4872,7 +4874,7 @@ void Compiler::fgValueNumberBlockAssignment(GenTreePtr tree, bool evalAsgLhsInd)
                 FieldSeqNode* lhsFldSeq = vnStore->FieldSeqVNToFieldSeq(lhsAddrFuncApp.m_args[1]);
 
                 // Now we need to get the proper RHS.
-                GenTreePtr           srcAddr = tree->gtOp.gtOp1->gtOp.gtOp2;
+                GenTreePtr           srcAddr = rhsAddrOrVal;
                 VNFuncApp            srcAddrFuncApp;
                 GenTreeLclVarCommon* rhsLclVarTree = nullptr;
                 FieldSeqNode*        rhsFldSeq     = nullptr;
@@ -5022,7 +5024,12 @@ void Compiler::fgValueNumberTree(GenTreePtr tree, bool evalAsgLhsInd)
     var_types typ = tree->TypeGet();
     if (GenTree::OperIsConst(oper))
     {
-        fgValueNumberTreeConst(tree);
+        // If this is a struct assignment, with a constant rhs, it is an initBlk, and it is not
+        // really useful to value number the constant.
+        if (!varTypeIsStruct(tree))
+        {
+            fgValueNumberTreeConst(tree);
+        }
     }
     else if (GenTree::OperIsLeaf(oper))
     {
@@ -5308,8 +5315,8 @@ void Compiler::fgValueNumberTree(GenTreePtr tree, bool evalAsgLhsInd)
                 // But we didn't know that the parent was an op=.  We do now, so go back and evaluate it.
                 // (We actually check if the effective val is the IND.  We will have evaluated any non-last
                 // args of an LHS comma already -- including their heap effects.)
-                GenTreePtr lhsVal = lhs->gtEffectiveVal(/*commaOnly*/ true);
-                if ((lhsVal->OperGet() == GT_IND) || (lhsVal->OperGet() == GT_CLS_VAR))
+                GenTreePtr lhsVal = lhs->gtEffectiveVal(/*commaOnly*/true);
+                if (lhsVal->OperIsIndir() || (lhsVal->OperGet() == GT_CLS_VAR))
                 {
                     fgValueNumberTree(lhsVal, /*evalAsgLhsInd*/ true);
                 }
@@ -5924,11 +5931,12 @@ void Compiler::fgValueNumberTree(GenTreePtr tree, bool evalAsgLhsInd)
                 {
                     // They just cancel, so fetch the ValueNumber from the op1 of the GT_IND node.
                     //
-                    tree->gtVNPair = arg->gtOp.gtOp1->gtVNPair;
+                    GenTree* addr = arg->AsIndir()->Addr();
+                    tree->gtVNPair = addr->gtVNPair;
 
-                    // For the CSE phase mark the GT_IND child as GTF_DONT_CSE
+                    // For the CSE phase mark the address as GTF_DONT_CSE
                     // because it will end up with the same value number as tree (the GT_ADDR).
-                    arg->gtOp.gtOp1->gtFlags |= GTF_DONT_CSE;
+                    addr->gtFlags |= GTF_DONT_CSE;
                 }
             }
             else
@@ -5941,7 +5949,7 @@ void Compiler::fgValueNumberTree(GenTreePtr tree, bool evalAsgLhsInd)
         {
             // So far, we handle cases in which the address is a ptr-to-local, or if it's
             // a pointer to an object field.
-            GenTreePtr           addr         = tree->gtOp.gtOp1;
+            GenTreePtr           addr         = tree->AsIndir()->Addr();
             GenTreeLclVarCommon* lclVarTree   = nullptr;
             FieldSeqNode*        fldSeq1      = nullptr;
             FieldSeqNode*        fldSeq2      = nullptr;
@@ -6294,20 +6302,20 @@ void Compiler::fgValueNumberTree(GenTreePtr tree, bool evalAsgLhsInd)
                     ValueNumPair op2vnp;
                     ValueNumPair op2Xvnp = ValueNumStore::VNPForEmptyExcSet();
 
-                    if ((tree->gtOp.gtOp2->OperGet() == GT_IND) && (tree->gtOp.gtOp2->gtFlags & GTF_IND_ASG_LHS))
+                    GenTree* op2 = tree->gtGetOp2();
+                    if (op2->OperIsIndir() && ((op2->gtFlags & GTF_IND_ASG_LHS) != 0))
                     {
                         // If op2 represents the lhs of an assignment then we give a VNForVoid for the lhs
                         op2vnp = ValueNumPair(ValueNumStore::VNForVoid(), ValueNumStore::VNForVoid());
                     }
-                    else if ((tree->gtOp.gtOp2->OperGet() == GT_CLS_VAR) &&
-                             (tree->gtOp.gtOp2->gtFlags & GTF_CLS_VAR_ASG_LHS))
+                    else if ((op2->OperGet() == GT_CLS_VAR) && (op2->gtFlags & GTF_CLS_VAR_ASG_LHS))
                     {
                         // If op2 represents the lhs of an assignment then we give a VNForVoid for the lhs
                         op2vnp = ValueNumPair(ValueNumStore::VNForVoid(), ValueNumStore::VNForVoid());
                     }
                     else
                     {
-                        vnStore->VNPUnpackExc(tree->gtOp.gtOp2->gtVNPair, &op2vnp, &op2Xvnp);
+                        vnStore->VNPUnpackExc(op2->gtVNPair, &op2vnp, &op2Xvnp);
                     }
 
                     tree->gtVNPair = vnStore->VNPWithExc(op2vnp, vnStore->VNPExcSetUnion(op1Xvnp, op2Xvnp));
