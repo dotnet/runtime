@@ -1305,11 +1305,11 @@ private:
     SVAL_DECL(LONG,MinLimitTotalWorkerThreads);         // same as MinLimitTotalCPThreads
     SVAL_DECL(LONG,MaxLimitTotalWorkerThreads);         // same as MaxLimitTotalCPThreads
         
-    static unsigned int LastDequeueTime;      // used to determine if work items are getting thread starved 
+    DECLSPEC_ALIGN(64) static unsigned int LastDequeueTime;      // used to determine if work items are getting thread starved 
     
     static HillClimbing HillClimbingInstance;
 
-    static LONG PriorCompletedWorkRequests;
+    DECLSPEC_ALIGN(64) static LONG PriorCompletedWorkRequests;
     static DWORD PriorCompletedWorkRequestsTime;
     static DWORD NextCompletedWorkRequestsTime;
 
@@ -1335,7 +1335,7 @@ private:
     static const DWORD WorkerTimeout = 20 * 1000;
     static const DWORD WorkerTimeoutAppX = 5 * 1000;    // shorter timeout to allow threads to exit prior to app suspension
 
-    SVAL_DECL(ThreadCounter,WorkerCounter);
+    DECLSPEC_ALIGN(64) SVAL_DECL(ThreadCounter,WorkerCounter);
 
     // 
     // WorkerSemaphore is an UnfairSemaphore because:
@@ -1364,7 +1364,7 @@ private:
     SVAL_DECL(LIST_ENTRY,TimerQueue);                   // queue of timers
     static HANDLE TimerThread;                          // Currently we only have one timer thread
     static Thread*  pTimerThread;
-    static DWORD LastTickCount;                         // the count just before timer thread goes to sleep
+    DECLSPEC_ALIGN(64) static DWORD LastTickCount;      // the count just before timer thread goes to sleep
 
     static BOOL InitCompletionPortThreadpool;           // flag indicating whether completion port threadpool has been initialized
     static HANDLE GlobalCompletionPort;                 // used for binding io completions on file handles
@@ -1377,20 +1377,20 @@ private:
     SVAL_DECL(LONG,MinLimitTotalCPThreads);             
     SVAL_DECL(LONG,MaxFreeCPThreads);                   // = MaxFreeCPThreadsPerCPU * Number of CPUS
 
-    static LONG   GateThreadStatus;                    // See GateThreadStatus enumeration
+    DECLSPEC_ALIGN(64) static LONG GateThreadStatus;    // See GateThreadStatus enumeration
 
     static Volatile<LONG> NumCPInfrastructureThreads;   // number of threads currently busy handling draining cycle
 
     SVAL_DECL(LONG,cpuUtilization);
     static LONG cpuUtilizationAverage;
 
-    static RecycledListsWrapper RecycledLists;
+    DECLSPEC_ALIGN(64) static RecycledListsWrapper RecycledLists;
 
 #ifdef _DEBUG
     static DWORD   TickCountAdjustment;                 // add this value to value returned by GetTickCount
 #endif
 
-    static int offset_counter;
+    DECLSPEC_ALIGN(64) static int offset_counter;
     static const int offset_multiplier = 128;
 };
 
