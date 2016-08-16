@@ -399,5 +399,8 @@
 
                 <!-- by convention (and see #34671) -->
                 <type fullname="Mono.Runtime" />
+
+		<type fullname="Mono.RuntimeStructs/HandleStackMark" />
+		<type fullname="Mono.RuntimeStructs/MonoError" />
 	</assembly>
 </linker>
