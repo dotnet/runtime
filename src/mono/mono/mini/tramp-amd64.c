@@ -798,7 +798,8 @@ mono_arch_create_handler_block_trampoline (MonoTrampInfo **info, gboolean aot)
 			code = mono_arch_emit_load_aotconst (buf, code, &ji, MONO_PATCH_INFO_JIT_ICALL_ADDR, "mono_amd64_handler_block_trampoline_helper");
 			amd64_call_reg (code, AMD64_R11);
 		} else {
-			amd64_call_code (code, mono_amd64_handler_block_trampoline_helper);
+			amd64_mov_reg_imm (code, AMD64_RAX, mono_amd64_handler_block_trampoline_helper);
+			amd64_call_reg (code, AMD64_RAX);
 		}
 		/* Undo stack alignment */
 		amd64_alu_reg_imm (code, X86_ADD, AMD64_RSP, 8);
