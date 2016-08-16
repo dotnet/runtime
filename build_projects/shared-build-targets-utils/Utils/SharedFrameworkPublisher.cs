@@ -20,12 +20,13 @@ namespace Microsoft.DotNet.Cli.Build
         private string _sharedFrameworkTemplateSourceRoot;
         private string _sharedFrameworkNugetVersion;
         private string _sharedFrameworkRid;
+        private string _sharedFrameworkTarget;
         private string _sharedFrameworkSourceRoot;
         private string _repoRoot;
         private string _corehostLockedDirectory;
         private string _corehostLatestDirectory;
 
-        private Crossgen _crossgenUtil = new Crossgen(DependencyVersions.CoreCLRVersion, DependencyVersions.JitVersion);
+        private Crossgen _crossgenUtil;
         private string _corehostPackageSource;
 
         public SharedFrameworkPublisher(
@@ -33,22 +34,29 @@ namespace Microsoft.DotNet.Cli.Build
             string corehostLockedDirectory,
             string corehostLatestDirectory,
             string corehostPackageSource,
-            string sharedFrameworkNugetVersion)
+            string sharedFrameworkNugetVersion,
+            string sharedFrameworkRid,
+            string sharedFrameworkTarget)
         {
             _repoRoot = repoRoot;
             _corehostLockedDirectory = corehostLockedDirectory;
             _corehostLatestDirectory = corehostLatestDirectory;
             _corehostPackageSource = corehostPackageSource;
+            _crossgenUtil = (sharedFrameworkRid == "win10-arm64") ?
+                new Crossgen(DependencyVersions.CoreCLRVersion_Latest, DependencyVersions.JitVersion_Latest, sharedFrameworkRid) : 
+                new Crossgen(DependencyVersions.CoreCLRVersion, DependencyVersions.JitVersion); 
 
             _sharedFrameworkTemplateSourceRoot = Path.Combine(repoRoot, "src", "sharedframework", "framework");
             _sharedFrameworkNugetVersion = sharedFrameworkNugetVersion;
 
-            _sharedFrameworkRid = ComputeSharedFrameworkRid();
+            _sharedFrameworkRid = sharedFrameworkRid;
+            _sharedFrameworkTarget = sharedFrameworkTarget;
 
             _sharedFrameworkSourceRoot = GenerateSharedFrameworkProject(
                 _sharedFrameworkNugetVersion, 
                 _sharedFrameworkTemplateSourceRoot, 
-                _sharedFrameworkRid);
+                _sharedFrameworkRid,
+                _sharedFrameworkTarget);
         }
 
         public static string GetSharedFrameworkPublishPath(string outputRootDirectory, string sharedFrameworkNugetVersion)
@@ -58,13 +66,6 @@ namespace Microsoft.DotNet.Cli.Build
                 "shared",
                 s_sharedFrameworkName,
                 sharedFrameworkNugetVersion);
-        }
-
-        private string ComputeSharedFrameworkRid()
-        {
-            return RuntimeEnvironment.OperatingSystemPlatform == Platform.Windows 
-                ? $"win7-{RuntimeEnvironment.RuntimeArchitecture}"
-                : RuntimeEnvironment.GetRuntimeIdentifier();
         }
 
         public void CopyMuxer(string sharedFrameworkPublishRoot)
@@ -196,7 +197,8 @@ namespace Microsoft.DotNet.Cli.Build
         private string GenerateSharedFrameworkProject(
             string sharedFrameworkNugetVersion,
             string sharedFrameworkTemplatePath, 
-            string rid)
+            string rid,
+            string targetFramework)
         {
             string sharedFrameworkProjectPath = Path.Combine(Dirs.Intermediate, "sharedFramework", "framework");
             Utils.DeleteDirectory(sharedFrameworkProjectPath);
@@ -207,6 +209,8 @@ namespace Microsoft.DotNet.Cli.Build
             sharedFrameworkProject["dependencies"]["Microsoft.NETCore.App"] = sharedFrameworkNugetVersion;
             ((JObject)sharedFrameworkProject["runtimes"]).RemoveAll();
             sharedFrameworkProject["runtimes"][rid] = new JObject();
+            ((JObject)sharedFrameworkProject["frameworks"]).RemoveAll();
+            sharedFrameworkProject["frameworks"][targetFramework] = new JObject();
 
             string projectJsonPath = Path.Combine(sharedFrameworkProjectPath, "project.json");
             JsonUtils.WriteProject(sharedFrameworkProject, projectJsonPath);

@@ -19,16 +19,12 @@ namespace Microsoft.DotNet.Host.Build
         public static readonly bool IsWinx86 = CurrentPlatform.IsWindows && CurrentArchitecture.Isx86;
         public const string SharedFrameworkName = "Microsoft.NETCore.App";
 
-        public static string HostPackagePlatformRid => HostPackageSupportedRids[
-                             (RuntimeEnvironment.OperatingSystemPlatform == Platform.Windows)
-                             ? $"win7-{RuntimeEnvironment.RuntimeArchitecture}"
-                             : RuntimeEnvironment.GetRuntimeIdentifier()];
-
         public static readonly Dictionary<string, string> HostPackageSupportedRids = new Dictionary<string, string>()
         {
             // Key: Current platform RID. Value: The actual publishable (non-dummy) package name produced by the build system for this RID.
             { "win7-x64", "win7-x64" },
             { "win7-x86", "win7-x86" },
+            { "win10-arm64", "win10-arm64" },
             { "osx.10.10-x64", "osx.10.10-x64" },
             { "osx.10.11-x64", "osx.10.10-x64" },
             { "ubuntu.14.04-x64", "ubuntu.14.04-x64" },
@@ -58,7 +54,7 @@ namespace Microsoft.DotNet.Host.Build
         public static BuildTargetResult GenerateStubHostPackages(BuildTargetContext c)
         {
             var hostVersion = c.BuildContext.Get<HostVersion>("HostVersion");
-            var currentRid = HostPackagePlatformRid;
+            var currentRid = HostPackageSupportedRids[c.BuildContext.Get<string>("TargetRID")];
 
             var stubPackageBuilder = new StubPackageBuilder(DotNetCli.Stage0, Dirs.Intermediate, Dirs.CorehostDummyPackages);
 
@@ -161,6 +157,9 @@ namespace Microsoft.DotNet.Host.Build
         public static BuildTargetResult CompileCoreHost(BuildTargetContext c)
         {
             var hostVersion = c.BuildContext.Get<HostVersion>("HostVersion");
+            var configuration = c.BuildContext.Get<string>("Configuration");
+            string rid = c.BuildContext.Get<string>("TargetRID");
+            string platform = c.BuildContext.Get<string>("Platform");
 
             // Generate build files
             var cmakeOut = Path.Combine(Dirs.CorehostLatest, "cmake");
@@ -168,10 +167,7 @@ namespace Microsoft.DotNet.Host.Build
             Rmdir(cmakeOut);
             Mkdirp(cmakeOut);
 
-            var configuration = c.BuildContext.Get<string>("Configuration");
-
             // Run the build
-            string rid = DotNetCli.Stage0.GetRuntimeId();
             string corehostSrcDir = Path.Combine(c.BuildContext.BuildDirectory, "src", "corehost");
             string commitHash = c.BuildContext.Get<string>("CommitHash");
 
@@ -180,19 +176,49 @@ namespace Microsoft.DotNet.Host.Build
                 // Create .rc files on Windows.
                 var resourceDir = GenerateVersionResource(c);
 
+                if (configuration.Equals("Release"))
+                {
+                    // Cmake calls it "RelWithDebInfo" in the generated MSBuild
+                    configuration = "RelWithDebInfo";
+                }
+
                 // Why does Windows directly call cmake but Linux/Mac calls "build.sh" in the corehost dir?
                 // See the comment in "src/corehost/build.sh" for details. It doesn't work for some reason.
-                var visualStudio = IsWinx86 ? "Visual Studio 14 2015" : "Visual Studio 14 2015 Win64";
-                var archMacro = IsWinx86 ? "-DCLI_CMAKE_PLATFORM_ARCH_I386=1" : "-DCLI_CMAKE_PLATFORM_ARCH_AMD64=1";
-                var ridMacro = $"-DCLI_CMAKE_RUNTIME_ID:STRING={rid}";
-                var arch = IsWinx86 ? "x86" : "x64";
-                var baseSupportedRid = $"win7-{arch}";
-                var cmakeHostVer = $"-DCLI_CMAKE_HOST_VER:STRING={hostVersion.LatestHostVersion.ToString()}";
-                var cmakeHostPolicyVer = $"-DCLI_CMAKE_HOST_POLICY_VER:STRING={hostVersion.LatestHostPolicyVersion.ToString()}";
-                var cmakeHostFxrVer = $"-DCLI_CMAKE_HOST_FXR_VER:STRING={hostVersion.LatestHostFxrVersion.ToString()}";
-                var cmakeBaseRid = $"-DCLI_CMAKE_PKG_RID:STRING={baseSupportedRid}";
-                var cmakeCommitHash = $"-DCLI_CMAKE_COMMIT_HASH:STRING={commitHash}";
-                var cmakeResourceDir = $"-DCLI_CMAKE_RESOURCE_DIR:STRING={resourceDir}";
+                string cmakeBaseRid, visualStudio, archMacro, arch;
+                string ridMacro = $"-DCLI_CMAKE_RUNTIME_ID:STRING={rid}";
+                string cmakeHostVer = $"-DCLI_CMAKE_HOST_VER:STRING={hostVersion.LatestHostVersion.ToString()}";
+                string cmakeHostPolicyVer = $"-DCLI_CMAKE_HOST_POLICY_VER:STRING={hostVersion.LatestHostPolicyVersion.ToString()}";
+                string cmakeHostFxrVer = $"-DCLI_CMAKE_HOST_FXR_VER:STRING={hostVersion.LatestHostFxrVersion.ToString()}";
+                string cmakeCommitHash = $"-DCLI_CMAKE_COMMIT_HASH:STRING={commitHash}";
+                string cmakeResourceDir = $"-DCLI_CMAKE_RESOURCE_DIR:STRING={resourceDir}";
+
+                switch (platform.ToLower())
+                {
+                    case "x86":
+                        cmakeBaseRid = "-DCLI_CMAKE_PKG_RID:STRING=win7-x86";
+                        visualStudio = "Visual Studio 14 2015";
+                        archMacro = "-DCLI_CMAKE_PLATFORM_ARCH_I386=1";
+                        arch = "x86";
+                        break;
+                    case "arm64":
+                        cmakeBaseRid = "-DCLI_CMAKE_PKG_RID:STRING=win10-arm64";
+                        visualStudio = "Visual Studio 14 2015 Win64";
+                        archMacro = "-DCLI_CMAKE_PLATFORM_ARCH_ARM64=1";
+                        arch = "arm64";
+                        if (Environment.GetEnvironmentVariable("__ToolsetDir") == null)
+                        {
+                            throw new Exception("Toolset Dir must be set when the Platform is ARM64");
+                        }
+                        break;
+                    case "x64":
+                        cmakeBaseRid = "-DCLI_CMAKE_PKG_RID:STRING=win7-x64";
+                        visualStudio = "Visual Studio 14 2015 Win64";
+                        archMacro = "-DCLI_CMAKE_PLATFORM_ARCH_AMD64=1";
+                        arch = "x64";
+                        break;
+                    default:
+                        throw new PlatformNotSupportedException("Target Architecture: " + platform + " is not currently supported.");
+                }
 
                 ExecIn(cmakeOut, "cmake",
                     corehostSrcDir,
@@ -211,15 +237,13 @@ namespace Microsoft.DotNet.Host.Build
                     Environment.GetEnvironmentVariable("ProgramFiles(x86)") :
                     Environment.GetEnvironmentVariable("ProgramFiles");
 
-                if (configuration.Equals("Release"))
-                {
-                    // Cmake calls it "RelWithDebInfo" in the generated MSBuild
-                    configuration = "RelWithDebInfo";
-                }
-
-                Exec(Path.Combine(pf32, "MSBuild", "14.0", "Bin", "MSBuild.exe"),
-                    Path.Combine(cmakeOut, "ALL_BUILD.vcxproj"),
-                    $"/p:Configuration={configuration}");
+                string msbuildPath = Path.Combine(pf32, "MSBuild", "14.0", "Bin", "MSBuild.exe");
+                string cmakeOutPath = Path.Combine(cmakeOut, "ALL_BUILD.vcxproj");
+                string configParameter = $"/p:Configuration={configuration}";
+                if (arch == "arm64")
+                    Exec(msbuildPath, cmakeOutPath, configParameter, "/p:useEnv=true");
+                else
+                    Exec(msbuildPath, cmakeOutPath, configParameter);
 
                 // Copy the output out
                 File.Copy(Path.Combine(cmakeOut, "cli", "exe", configuration, "dotnet.exe"), Path.Combine(Dirs.CorehostLatest, "dotnet.exe"), overwrite: true);
@@ -284,14 +308,14 @@ namespace Microsoft.DotNet.Host.Build
         [Target]
         public static BuildTargetResult GenerateMSbuildPropsFile(BuildTargetContext c)
         {
-            var arch = IsWinx86 ? "x86" : "x64";
             var hostVersion = c.BuildContext.Get<HostVersion>("HostVersion");
+            string platform = c.BuildContext.Get<string>("Platform");
 
             var msbuildProps = new StringBuilder();
 
             msbuildProps.AppendLine(@"<Project xmlns=""http://schemas.microsoft.com/developer/msbuild/2003"">");
             msbuildProps.AppendLine("  <PropertyGroup>");
-            msbuildProps.AppendLine($"    <Platform>{arch}</Platform>");
+            msbuildProps.AppendLine($"    <Platform>{platform}</Platform>");
             msbuildProps.AppendLine($"    <DotNetHostBinDir>{Dirs.CorehostLatest}</DotNetHostBinDir>");
             msbuildProps.AppendLine($"    <HostVersion>{hostVersion.LatestHostPolicyVersion.WithoutSuffix}</HostVersion>");
             msbuildProps.AppendLine($"    <HostResolverVersion>{hostVersion.LatestHostFxrVersion.WithoutSuffix}</HostResolverVersion>");
@@ -316,6 +340,7 @@ namespace Microsoft.DotNet.Host.Build
             var content = $@"{c.BuildContext["CommitHash"]}{Environment.NewLine}{hostNugetversion}{Environment.NewLine}";
             var pkgDir = Path.Combine(c.BuildContext.BuildDirectory, "pkg");
             var packCmd = "pack." + (CurrentPlatform.IsWindows ? "cmd" : "sh");
+            string rid = HostPackageSupportedRids[c.BuildContext.Get<string>("TargetRID")];
             File.WriteAllText(Path.Combine(pkgDir, "version.txt"), content);
             Exec(Path.Combine(pkgDir, packCmd));
 
@@ -328,7 +353,7 @@ namespace Microsoft.DotNet.Host.Build
             }
             foreach (var item in hostVersion.LatestHostPackages)
             {
-                var fileFilter = $"runtime.{HostPackagePlatformRid}.{item.Key}.{item.Value.ToString()}.nupkg";
+                var fileFilter = $"runtime.{rid}.{item.Key}.{item.Value.ToString()}.nupkg";
                 if (Directory.GetFiles(Dirs.CorehostLocalPackages, fileFilter).Length == 0)
                 {
                     throw new BuildFailureException($"Nupkg for {fileFilter} was not created.");
@@ -342,15 +367,15 @@ namespace Microsoft.DotNet.Host.Build
         {
             var hostVersion = c.BuildContext.Get<HostVersion>("HostVersion");
             var lockedHostFxrVersion = hostVersion.LockedHostFxrVersion.ToString();
-
-            var currentRid = HostPackagePlatformRid;
+            string currentRid = HostPackageSupportedRids[c.BuildContext.Get<string>("TargetRID")];
+            string framework = c.BuildContext.Get<string>("TargetFramework");
 
             string projectJson = $@"{{
   ""dependencies"": {{
       ""Microsoft.NETCore.DotNetHostResolver"" : ""{lockedHostFxrVersion}""
   }},
   ""frameworks"": {{
-      ""netcoreapp1.0"": {{}}
+      ""{framework}"": {{}}
   }},
   ""runtimes"": {{
       ""{currentRid}"": {{}}
@@ -373,9 +398,7 @@ namespace Microsoft.DotNet.Host.Build
             FS.Rmdir(Dirs.CorehostLocked);
 
             // Use specific RIDS for non-backward compatible platforms.
-            (CurrentPlatform.IsWindows
-                ? DotNetCli.Stage0.Publish("--output", Dirs.CorehostLocked, "--no-build")
-                : DotNetCli.Stage0.Publish("--output", Dirs.CorehostLocked, "--no-build", "-r", currentRid))
+            DotNetCli.Stage0.Publish("--output", Dirs.CorehostLocked, "--no-build", "-r", currentRid)
                 .WorkingDirectory(tempPjDirectory)
                 .Execute()
                 .EnsureSuccessful();
@@ -392,7 +415,9 @@ namespace Microsoft.DotNet.Host.Build
 
             var dotnetCli = DotNetCli.Stage0;
             var hostVersion = c.BuildContext.Get<HostVersion>("HostVersion");
-            var sharedFrameworkNugetVersion = c.BuildContext.Get<string>("SharedFrameworkNugetVersion");
+            string sharedFrameworkNugetVersion = c.BuildContext.Get<string>("SharedFrameworkNugetVersion");
+            string sharedFrameworkRid = c.BuildContext.Get<string>("TargetRID");
+            string sharedFrameworkTarget = c.BuildContext.Get<string>("TargetFramework");
             var hostFxrVersion = hostVersion.LockedHostFxrVersion.ToString();
             var commitHash = c.BuildContext.Get<string>("CommitHash");
 
@@ -401,7 +426,9 @@ namespace Microsoft.DotNet.Host.Build
                 Dirs.CorehostLocked,
                 Dirs.CorehostLatest,
                 Dirs.CorehostLocalPackages,
-                sharedFrameworkNugetVersion);
+                sharedFrameworkNugetVersion,
+                sharedFrameworkRid,
+                sharedFrameworkTarget);
 
             sharedFrameworkPublisher.PublishSharedFramework(outputDir, commitHash, dotnetCli, hostFxrVersion);
 

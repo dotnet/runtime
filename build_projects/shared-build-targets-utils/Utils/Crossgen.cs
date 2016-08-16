@@ -13,6 +13,7 @@ namespace Microsoft.DotNet.Cli.Build
         private string _coreClrVersion;
         private string _jitVersion;
         private string _crossGenPath;
+        private string _targetRID;
         private static readonly string[] s_excludedLibraries =
         {
             "mscorlib.dll",
@@ -26,10 +27,11 @@ namespace Microsoft.DotNet.Cli.Build
         // in CompileTargets and the one in the shared library project.json match and are updated in lock step, but long term
         // we need to be able to look at the project.lock.json file and figure out what version of Microsoft.NETCore.Runtime.CoreCLR
         // was used, and then select that version.
-        public Crossgen(string coreClrVersion, string jitVersion)
+        public Crossgen(string coreClrVersion, string jitVersion, string targetRID = null)
         {
             _coreClrVersion = coreClrVersion;
             _jitVersion = jitVersion;
+            _targetRID = targetRID;
             _crossGenPath = GetCrossgenPathForVersion();
         }
 
@@ -41,34 +43,28 @@ namespace Microsoft.DotNet.Cli.Build
             {
                 return null;
             }
-
-            return Path.Combine(
-                crossgenPackagePath,
-                "tools",
-                $"crossgen{Constants.ExeSuffix}");
+            return (_targetRID == "win10-arm64") ?
+                Path.Combine(crossgenPackagePath, "tools", "x64_arm64", $"crossgen{Constants.ExeSuffix}") :
+                Path.Combine(crossgenPackagePath, "tools", $"crossgen{Constants.ExeSuffix}");
         }
 
         private string GetLibCLRJitPathForVersion()
         {
-            var jitRid = GetCoreCLRRid();
+            var jitRid = _targetRID ?? GetCoreCLRRid();
             var jitPackagePath = GetJitPackagePathForVersion();
 
             if (jitPackagePath == null)
             {
                 return null;
             }
-
-            return Path.Combine(
-                jitPackagePath,
-                "runtimes",
-                jitRid,
-                "native",
-                $"{Constants.DynamicLibPrefix}clrjit{Constants.DynamicLibSuffix}");
+            return (_targetRID == "win10-arm64") ?
+                Path.Combine(jitPackagePath, "runtimes", "x64_arm64", "native", $"{Constants.DynamicLibPrefix}clrjit{Constants.DynamicLibSuffix}") :
+                Path.Combine(jitPackagePath, "runtimes", jitRid, "native", $"{Constants.DynamicLibPrefix}clrjit{Constants.DynamicLibSuffix}");
         }
 
         private string GetJitPackagePathForVersion()
         {
-            string jitRid = GetCoreCLRRid();
+            string jitRid = _targetRID ?? GetCoreCLRRid();
 
             if (jitRid == null)
             {
@@ -85,7 +81,7 @@ namespace Microsoft.DotNet.Cli.Build
 
         private string GetCoreLibsDirForVersion()
         {
-            string coreclrRid = GetCoreCLRRid();
+            string coreclrRid = _targetRID ?? GetCoreCLRRid();
 
             if (coreclrRid == null)
             {
@@ -106,7 +102,7 @@ namespace Microsoft.DotNet.Cli.Build
 
         private string GetCrossGenPackagePathForVersion()
         {
-            string coreclrRid = GetCoreCLRRid();
+            string coreclrRid = _targetRID ?? GetCoreCLRRid();
 
             if (coreclrRid == null)
             {
