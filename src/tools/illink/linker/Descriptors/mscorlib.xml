@@ -55,6 +55,11 @@
 		<type fullname="System.Diagnostics.StackFrame" />
 		<type fullname="System.Diagnostics.StackTrace" />
 		<type fullname="System.DivideByZeroException" />
+		<!-- debugger-agent.c: create_event_list -->
+		<type fullname="System.Diagnostics.DebuggerNonUserCodeAttribute"/>
+		<type fullname="System.Diagnostics.DebuggerHiddenAttribute"/>
+		<type fullname="System.Diagnostics.DebuggerStepThroughAttribute"/>
+		
 		<type fullname="System.DllNotFoundException" />
 		<type fullname="System.Double" preserve="fields" />
 		<type fullname="System.Enum" preserve="fields">
@@ -111,8 +116,18 @@
 		<type fullname="System.String" preserve="fields">
 			<method name="CreateString" />
 			<method name="InternalAllocateStr" />
+			<method name="FastAllocateString" />
 			<method name="memcpy" />
 			<method name="memset" />
+			<method name="bzero" />
+			<method name="bzero_aligned_1" />
+			<method name="bzero_aligned_2" />
+			<method name="bzero_aligned_4" />
+			<method name="bzero_aligned_8" />
+			<method name="memcpy_aligned_1" />
+			<method name="memcpy_aligned_2" />
+			<method name="memcpy_aligned_4" />
+			<method name="memcpy_aligned_8" />
 		</type>
 		<type fullname="System.SystemException" />
 		<type fullname="System.Type" preserve="fields">
@@ -130,7 +145,9 @@
 		<type fullname="System.Variant" preserve="fields" feature="com">
 			<method name="Clear" />
 		</type>
-		<type fullname="System.Version" />
+		<type fullname="System.Version">
+		  <method signature="System.Void .ctor(System.Int32,System.Int32,System.Int32,System.Int32)" />
+		</type>
 		<type fullname="System.Void" />
 		<type fullname="System.__ComObject" feature="com" />
 
@@ -177,7 +194,9 @@
 		</type>
 		<type fullname="System.Reflection.AssemblyName" preserve="fields" />
 		<type fullname="System.Reflection.ConstructorInfo" preserve="fields" />
-		<type fullname="System.Reflection.CustomAttributeData" preserve="fields" />
+		<type fullname="System.Reflection.CustomAttributeData" preserve="fields">
+		  <method signature="System.Void .ctor(System.Reflection.ConstructorInfo,System.Reflection.Assembly,System.IntPtr,System.UInt32)" />
+		</type>
 		<type fullname="System.Reflection.CustomAttributeNamedArgument" preserve="fields" />
 		<type fullname="System.Reflection.CustomAttributeTypedArgument" preserve="fields" />
 		<type fullname="System.Reflection.EventInfo" preserve="fields">
@@ -210,6 +229,9 @@
 			<method name="StaticGetterAdapterFrame" />
 		</type>
 		<type fullname="System.Reflection.ParameterInfo" preserve="fields" />
+		<!-- reflection.c: ves_icall_get_parameter_info -->
+		<type fullname="System.Reflection.MonoParameterInfo" preserve="fields" />
+		
 		<type fullname="System.Reflection.PropertyInfo" preserve="fields" />
 		<type fullname="System.Reflection.ReflectionTypeLoadException" />
 		<type fullname="System.Reflection.TargetException" />
@@ -262,6 +284,9 @@
 		-->
 
 		<type fullname="System.Runtime.CompilerServices.InternalsVisibleToAttribute" />
+		<type fullname="System.Runtime.CompilerServices.RuntimeWrappedException">
+		  <method signature="System.Void .ctor(System.Object)" />
+		</type>
 		<!-- <type fullname="System.Runtime.CompilerServices.RequiredAttributeAttribute" />
 		<type fullname="System.Runtime.CompilerServices.RuntimeHelpers" />
 		<type fullname="System.Runtime.CompilerServices.TypeForwardedToAttribute" /> -->
@@ -322,6 +347,7 @@
 		<type fullname="System.Threading.Monitor">
 			<method name="Enter" />
 			<method name="Exit" />
+			<method name="enter_with_atomic_var" />
 		</type>
 
 		<!--
@@ -343,7 +369,9 @@
 		<type fullname="System.Threading.WaitHandle" preserve="fields">
 			<method name="set_Handle" />
 		</type>
-		<type fullname="System.Threading._ThreadPoolWaitCallback" preserve="fields"/>
+		<type fullname="System.Threading._ThreadPoolWaitCallback">
+		  <method name="PerformWaitCallback"/>
+		</type>
 
 		<type fullname="System.Text.StringBuilder" preserve="fields" />
 
@@ -367,7 +395,9 @@
 
 		<type fullname="Mono.Interop.ComInteropProxy" feature="com" />
 		<type fullname="Mono.Interop.IDispatch" feature="com" />
-		<type fullname="Mono.Interop.IUnknown" feature="com" />
+		<type fullname="Mono.Interop.IUnknown" feature="com"/>
 
+                <!-- by convention (and see #34671) -->
+                <type fullname="Mono.Runtime" />
 	</assembly>
 </linker>
