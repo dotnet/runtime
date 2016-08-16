@@ -1,2 +1,0 @@
-// Suppress exact match reference https://github.com/dotnet/corefx/issues/7114
-PermitHigherCompatibleImplementationVersion
