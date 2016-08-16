@@ -166,6 +166,8 @@ namespace System.Reflection.PortableExecutable
                 throw new ArgumentOutOfRangeException(nameof(options));
             }
 
+            IsLoadedImage = (options & PEStreamOptions.IsLoadedImage) != 0;
+
             long start = peStream.Position;
             int actualSize = StreamExtensions.GetAndValidateSize(peStream, size, nameof(peStream));
 
