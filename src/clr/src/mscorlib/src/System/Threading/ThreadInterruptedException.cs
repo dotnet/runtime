@@ -18,9 +18,7 @@ namespace System.Threading {
     using System.Runtime.Serialization;
 
     [System.Runtime.InteropServices.ComVisible(true)]
-#if FEATURE_SERIALIZATION
     [Serializable]
-#endif
     public class ThreadInterruptedException : SystemException {
         public ThreadInterruptedException() 
             : base(GetMessageFromNativeResources(ExceptionMessageKind.ThreadInterrupted)) {

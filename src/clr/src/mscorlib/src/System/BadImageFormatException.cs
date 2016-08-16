@@ -21,9 +21,7 @@ namespace System {
     using System.Globalization;
 
     [System.Runtime.InteropServices.ComVisible(true)]
-#if FEATURE_SERIALIZATION
     [Serializable]
-#endif
     public class BadImageFormatException : SystemException {
 
         private String _fileName;  // The name of the corrupt PE file.
@@ -116,6 +114,7 @@ namespace System {
             // Base class constructor will check info != null.
 
             _fileName = info.GetString("BadImageFormat_FileName");
+#if FEATURE_FUSION
             try
             {
                 _fusionLog = info.GetString("BadImageFormat_FusionLog");
@@ -124,6 +123,7 @@ namespace System {
             {
                 _fusionLog = null;
             }
+#endif
         }
 
         private BadImageFormatException(String fileName, String fusionLog, int hResult)
@@ -143,7 +143,6 @@ namespace System {
         }
 #endif
 
-#if FEATURE_SERIALIZATION
         [System.Security.SecurityCritical]  // auto-generated_required
         public override void GetObjectData(SerializationInfo info, StreamingContext context) {
             // Serialize data for our base classes.  base will verify info != null.
@@ -151,6 +150,7 @@ namespace System {
 
             // Serialize data for this class
             info.AddValue("BadImageFormat_FileName", _fileName, typeof(String));
+#if FEATURE_FUSION
             try
             {
                 info.AddValue("BadImageFormat_FusionLog", FusionLog, typeof(String));
@@ -158,8 +158,7 @@ namespace System {
             catch (SecurityException)
             {
             }
-
-        }
 #endif
+        }
     }
 }

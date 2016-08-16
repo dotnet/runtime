@@ -14,9 +14,7 @@ namespace System {
     using System.Runtime.Versioning;
     using System.Diagnostics.Contracts;
 
-#if FEATURE_SERIALIZATION
     [Serializable]
-#endif
     [ClassInterface(ClassInterfaceType.AutoDual)]
     [System.Runtime.InteropServices.ComVisible(true)]
     public abstract class Delegate : ICloneable, ISerializable 

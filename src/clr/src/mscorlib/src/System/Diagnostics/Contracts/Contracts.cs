@@ -127,9 +127,7 @@ namespace System.Diagnostics.Contracts {
     }
 
     /*
-#if FEATURE_SERIALIZATION
     [Serializable]
-#endif
     internal enum Mutability
     {
         Immutable,    // read-only after construction, except for lazy initialization & caches

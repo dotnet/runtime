@@ -26,9 +26,7 @@ using SecurityException = System.Security.SecurityException;
 
 namespace System.IO {
 
-#if FEATURE_SERIALIZATION
     [Serializable]
-#endif
     [System.Runtime.InteropServices.ComVisible(true)]
     public class FileLoadException : IOException {
 
@@ -119,6 +117,7 @@ namespace System.IO {
 
             _fileName = info.GetString("FileLoad_FileName");
 
+#if FEATURE_FUSION
             try
             {
                 _fusionLog = info.GetString("FileLoad_FusionLog");
@@ -127,7 +126,7 @@ namespace System.IO {
             {
                 _fusionLog = null;
             }
-                
+#endif 
         }
 
         private FileLoadException(String fileName, String fusionLog,int hResult)
@@ -147,7 +146,6 @@ namespace System.IO {
         }
 #endif // FEATURE_FUSION
 
-#if FEATURE_SERIALIZATION
         [System.Security.SecurityCritical]  // auto-generated_required
         public override void GetObjectData(SerializationInfo info, StreamingContext context) {
             // Serialize data for our base classes.  base will verify info != null.
@@ -156,6 +154,7 @@ namespace System.IO {
             // Serialize data for this class
             info.AddValue("FileLoad_FileName", _fileName, typeof(String));
 
+#if FEATURE_FUSION
             try
             {
                 info.AddValue("FileLoad_FusionLog", FusionLog, typeof(String));
@@ -163,8 +162,8 @@ namespace System.IO {
             catch (SecurityException)
             {
             }
-        }
 #endif
+        }
 
         [System.Security.SecuritySafeCritical]  // auto-generated
         internal static String FormatFileLoadExceptionMessage(String fileName,

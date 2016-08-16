@@ -50,15 +50,10 @@ namespace System {
     };
 
 
-#if FEATURE_SERIALIZATION
     [Serializable]
-#endif
     [System.Security.Permissions.HostProtection(MayLeakOnAbort = true)]
     [TypeForwardedFrom("System.Core, Version=3.5.0.0, Culture=Neutral, PublicKeyToken=b77a5c561934e089")]
-    sealed public class TimeZoneInfo : IEquatable<TimeZoneInfo>
-#if FEATURE_SERIALIZATION
-        , ISerializable, IDeserializationCallback
-#endif
+    sealed public class TimeZoneInfo : IEquatable<TimeZoneInfo>, ISerializable, IDeserializationCallback
     {
         // ---- SECTION:  members supporting exposed properties -------------*
         private String m_id;
@@ -1358,7 +1353,6 @@ namespace System {
 
         // ----- SECTION: private serialization instance methods  ----------------*
 
-#if FEATURE_SERIALIZATION
         void IDeserializationCallback.OnDeserialization(Object sender) {
             try {
                 Boolean adjustmentRulesSupportDst;
@@ -1407,7 +1401,6 @@ namespace System {
             m_adjustmentRules     = (AdjustmentRule[])info.GetValue("AdjustmentRules", typeof(AdjustmentRule[]));
             m_supportsDaylightSavingTime = (Boolean)info.GetValue("SupportsDaylightSavingTime", typeof(Boolean));
         }
-#endif
 
 
 
@@ -4457,15 +4450,10 @@ namespace System {
 **
 **
 ============================================================*/
-#if FEATURE_SERIALIZATION
         [Serializable]
-#endif
         [System.Security.Permissions.HostProtection(MayLeakOnAbort = true)]
         [TypeForwardedFrom("System.Core, Version=3.5.0.0, Culture=Neutral, PublicKeyToken=b77a5c561934e089")]
-        sealed public class AdjustmentRule : IEquatable<AdjustmentRule>
-#if FEATURE_SERIALIZATION
-            , ISerializable, IDeserializationCallback
-#endif
+        sealed public class AdjustmentRule : IEquatable<AdjustmentRule>, ISerializable, IDeserializationCallback
             {
 
             // ---- SECTION:  members supporting exposed properties -------------*
@@ -4704,7 +4692,6 @@ namespace System {
 
             // ----- SECTION: private serialization instance methods  ----------------*
 
-#if FEATURE_SERIALIZATION
             void IDeserializationCallback.OnDeserialization(Object sender) {
                 // OnDeserialization is called after each instance of this class is deserialized.
                 // This callback method performs AdjustmentRule validation after being deserialized.
@@ -4755,7 +4742,6 @@ namespace System {
                     m_noDaylightTransitions = (bool)o;
                 }
             }
-#endif
         }
 
 
@@ -4772,15 +4758,10 @@ namespace System {
 **
 **
 ============================================================*/
-#if FEATURE_SERIALIZATION
         [Serializable]
-#endif
         [System.Security.Permissions.HostProtection(MayLeakOnAbort = true)]
         [TypeForwardedFrom("System.Core, Version=3.5.0.0, Culture=Neutral, PublicKeyToken=b77a5c561934e089")]
-        public struct TransitionTime : IEquatable<TransitionTime>
-#if FEATURE_SERIALIZATION
-            , ISerializable, IDeserializationCallback
-#endif
+        public struct TransitionTime : IEquatable<TransitionTime>, ISerializable, IDeserializationCallback
         {
             // ---- SECTION:  members supporting exposed properties -------------*
             private DateTime m_timeOfDay;
@@ -4973,7 +4954,6 @@ namespace System {
                 }
             }
 
-#if FEATURE_SERIALIZATION
             void IDeserializationCallback.OnDeserialization(Object sender) {
                 // OnDeserialization is called after each instance of this class is deserialized.
                 // This callback method performs TransitionTime validation after being deserialized.
@@ -5014,7 +4994,6 @@ namespace System {
                 m_dayOfWeek       = (DayOfWeek)info.GetValue("DayOfWeek", typeof(DayOfWeek));
                 m_isFixedDateRule = (Boolean)info.GetValue("IsFixedDateRule", typeof(Boolean));
             }
-#endif
         }
 
 

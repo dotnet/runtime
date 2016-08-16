@@ -54,9 +54,7 @@ namespace System.Globalization {
     }
 
 
-#if FEATURE_SERIALIZATION
     [Serializable]
-#endif
     [System.Runtime.InteropServices.ComVisible(true)]
     public sealed class DateTimeFormatInfo : ICloneable, IFormatProvider
     {

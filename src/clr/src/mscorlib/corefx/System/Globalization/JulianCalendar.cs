@@ -18,6 +18,7 @@ namespace System.Globalization
     //*      Gregorian   0001/01/01   9999/12/31
     //*      Julia       0001/01/03   9999/10/19
 
+    [Serializable]
     [System.Runtime.InteropServices.ComVisible(true)]
     public class JulianCalendar : Calendar
     {

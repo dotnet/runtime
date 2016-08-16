@@ -21,6 +21,7 @@ namespace System.Globalization
     **      Taiwan      01/01/01    8088/12/31
     ============================================================================*/
 
+    [Serializable]
     [System.Runtime.InteropServices.ComVisible(true)]
     public class TaiwanCalendar : Calendar
     {

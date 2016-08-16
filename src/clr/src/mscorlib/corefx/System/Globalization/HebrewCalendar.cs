@@ -67,6 +67,7 @@ namespace System.Globalization
     // Gregorian to Hebrew Lunar from 1583 to 2239.
 
 
+    [Serializable]
     [System.Runtime.InteropServices.ComVisible(true)]
     public class HebrewCalendar : Calendar
     {

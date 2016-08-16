@@ -3,12 +3,14 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Threading;
 using System.Diagnostics.Contracts;
+using System.Runtime.Serialization;
+using System.Threading;
 
 namespace System.Globalization
 {
     // Gregorian Calendars use Era Info
+    [Serializable]
     internal class EraInfo
     {
         internal int era;          // The value of the era.
@@ -20,8 +22,11 @@ namespace System.Globalization
                                    // be affected by the DateTime.MinValue;
         internal int maxEraYear;   // Max year value in this era. (== the year length of the era + 1)
 
+        [OptionalField(VersionAdded = 4)]
         internal String eraName;    // The era name
+        [OptionalField(VersionAdded = 4)]
         internal String abbrevEraName;  // Abbreviated Era Name
+        [OptionalField(VersionAdded = 4)]
         internal String englishEraName; // English era name
 
         internal EraInfo(int era, int startYear, int startMonth, int startDay, int yearOffset, int minEraYear, int maxEraYear)
@@ -50,6 +55,7 @@ namespace System.Globalization
     // This calendar recognizes two era values:
     // 0 CurrentEra (AD) 
     // 1 BeforeCurrentEra (BC) 
+    [Serializable]
     internal class GregorianCalendarHelper
     {
         // 1 tick = 100ns = 10E-7 second
@@ -107,11 +113,15 @@ namespace System.Globalization
             0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335, 366
         };
 
+        [OptionalField(VersionAdded = 1)]
         internal int m_maxYear = 9999;
+        [OptionalField(VersionAdded = 1)]
         internal int m_minYear;
         internal Calendar m_Cal;
 
+        [OptionalField(VersionAdded = 1)]
         internal EraInfo[] m_EraInfo;
+        [OptionalField(VersionAdded = 1)]
         internal int[] m_eras = null;
 
 

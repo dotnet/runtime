@@ -21,9 +21,7 @@ namespace System.Globalization {
     using System.Runtime.Serialization;
     using System.Diagnostics.Contracts;
 
-#if FEATURE_SERIALIZATION
     [Serializable] 
-#endif
     [System.Runtime.InteropServices.ComVisible(true)]
     public class RegionInfo
     {
