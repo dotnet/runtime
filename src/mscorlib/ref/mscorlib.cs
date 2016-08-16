@@ -40,6 +40,7 @@ namespace System
         public AccessViolationException() { }
         public AccessViolationException(string message) { }
         public AccessViolationException(string message, System.Exception innerException) { }
+        protected AccessViolationException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
     }
     [System.Runtime.CompilerServices.TypeForwardedFromAttribute("System.Core, Version=2.0.5.0, Culture=Neutral, PublicKeyToken=7cec85d7bea7798e")]
     public delegate void Action();
@@ -74,6 +75,7 @@ namespace System
         public AggregateException(string message, System.Collections.Generic.IEnumerable<System.Exception> innerExceptions) { }
         public AggregateException(string message, System.Exception innerException) { }
         public AggregateException(string message, params System.Exception[] innerExceptions) { }
+        protected AggregateException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
         public System.Collections.ObjectModel.ReadOnlyCollection<System.Exception> InnerExceptions { get { throw null; } }
         public override string Message { get { throw null; } }
         public System.AggregateException Flatten() { throw null; }
@@ -126,6 +128,7 @@ namespace System
         public AppDomainUnloadedException() { }
         public AppDomainUnloadedException(string message) { }
         public AppDomainUnloadedException(string message, System.Exception innerException) { }
+        protected AppDomainUnloadedException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
     }
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public partial class ApplicationException : System.Exception
@@ -133,6 +136,7 @@ namespace System
         public ApplicationException() { }
         public ApplicationException(string message) { }
         public ApplicationException(string message, System.Exception innerException) { }
+        protected ApplicationException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
     public partial struct ArgIterator
@@ -148,6 +152,7 @@ namespace System
         public ArgumentException(string message, System.Exception innerException) { }
         public ArgumentException(string message, string paramName) { }
         public ArgumentException(string message, string paramName, System.Exception innerException) { }
+        protected ArgumentException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
         public override string Message { get { throw null; } }
         public virtual string ParamName { get { throw null; } }
         [System.Security.SecurityCriticalAttribute]
@@ -160,6 +165,7 @@ namespace System
         public ArgumentNullException(string paramName) { }
         public ArgumentNullException(string message, System.Exception innerException) { }
         public ArgumentNullException(string paramName, string message) { }
+        protected ArgumentNullException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
     }
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public partial class ArgumentOutOfRangeException : System.ArgumentException, System.Runtime.Serialization.ISerializable
@@ -169,6 +175,7 @@ namespace System
         public ArgumentOutOfRangeException(string message, System.Exception innerException) { }
         public ArgumentOutOfRangeException(string paramName, object actualValue, string message) { }
         public ArgumentOutOfRangeException(string paramName, string message) { }
+        protected ArgumentOutOfRangeException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
         public virtual object ActualValue { get { throw null; } }
         public override string Message { get { throw null; } }
         [System.Security.SecurityCriticalAttribute]
@@ -180,6 +187,7 @@ namespace System
         public ArithmeticException() { }
         public ArithmeticException(string message) { }
         public ArithmeticException(string message, System.Exception innerException) { }
+        protected ArithmeticException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
     }
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public abstract partial class Array : System.Collections.ICollection, System.Collections.IEnumerable, System.Collections.IList, System.Collections.IStructuralComparable, System.Collections.IStructuralEquatable, System.ICloneable
@@ -369,6 +377,7 @@ namespace System
         public ArrayTypeMismatchException() { }
         public ArrayTypeMismatchException(string message) { }
         public ArrayTypeMismatchException(string message, System.Exception innerException) { }
+        protected ArrayTypeMismatchException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
     }
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public delegate void AsyncCallback(System.IAsyncResult ar);
@@ -454,6 +463,7 @@ namespace System
         public BadImageFormatException(string message, System.Exception inner) { }
         public BadImageFormatException(string message, string fileName) { }
         public BadImageFormatException(string message, string fileName, System.Exception inner) { }
+        protected BadImageFormatException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
         public string FileName { get { throw null; } }
         public override string Message { get { throw null; } }
         public override string ToString() { throw null; }
@@ -609,6 +619,7 @@ namespace System
         public CannotUnloadAppDomainException() { }
         public CannotUnloadAppDomainException(string message) { }
         public CannotUnloadAppDomainException(string message, System.Exception innerException) { }
+        protected CannotUnloadAppDomainException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
     }
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
@@ -719,6 +730,7 @@ namespace System
         public ContextMarshalException() { }
         public ContextMarshalException(string message) { }
         public ContextMarshalException(string message, System.Exception inner) { }
+        protected ContextMarshalException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
     }
     [System.AttributeUsageAttribute((System.AttributeTargets)(256), Inherited=false)]
     [System.ObsoleteAttribute("ContextStaticAttribute is not supported in this release. It has been left in so that legacy tools can be used with this release, but it cannot be used in your code.", true)]
@@ -1647,6 +1659,7 @@ namespace System
         public DivideByZeroException() { }
         public DivideByZeroException(string message) { }
         public DivideByZeroException(string message, System.Exception innerException) { }
+        protected DivideByZeroException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
     }
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public partial class DllNotFoundException : System.TypeLoadException
@@ -1654,6 +1667,7 @@ namespace System
         public DllNotFoundException() { }
         public DllNotFoundException(string message) { }
         public DllNotFoundException(string message, System.Exception inner) { }
+        protected DllNotFoundException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
     }
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
@@ -1721,6 +1735,7 @@ namespace System
         public DuplicateWaitObjectException(string parameterName) { }
         public DuplicateWaitObjectException(string message, System.Exception innerException) { }
         public DuplicateWaitObjectException(string parameterName, string message) { }
+        protected DuplicateWaitObjectException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
     }
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public partial class EntryPointNotFoundException : System.TypeLoadException
@@ -1728,6 +1743,7 @@ namespace System
         public EntryPointNotFoundException() { }
         public EntryPointNotFoundException(string message) { }
         public EntryPointNotFoundException(string message, System.Exception inner) { }
+        protected EntryPointNotFoundException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
     }
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public abstract partial class Enum : System.ValueType, System.IComparable, System.IConvertible, System.IFormattable
@@ -1859,6 +1875,7 @@ namespace System
         public Exception() { }
         public Exception(string message) { }
         public Exception(string message, System.Exception innerException) { }
+        protected Exception(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public virtual System.Collections.IDictionary Data { [System.Security.SecuritySafeCriticalAttribute]get { throw null; } }
         public virtual string HelpLink { get { throw null; } set { } }
         public int HResult { get { throw null; } protected set { } }
@@ -1887,6 +1904,7 @@ namespace System
         public FieldAccessException() { }
         public FieldAccessException(string message) { }
         public FieldAccessException(string message, System.Exception inner) { }
+        protected FieldAccessException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
     }
     [System.AttributeUsageAttribute((System.AttributeTargets)(16), Inherited=false)]
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
@@ -1900,6 +1918,7 @@ namespace System
         public FormatException() { }
         public FormatException(string message) { }
         public FormatException(string message, System.Exception innerException) { }
+        protected FormatException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
     }
     public abstract partial class FormattableString : System.IFormattable
     {
@@ -2257,6 +2276,7 @@ namespace System
         public InvalidCastException(string message) { }
         public InvalidCastException(string message, System.Exception innerException) { }
         public InvalidCastException(string message, int errorCode) { }
+        protected InvalidCastException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
     }
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public partial class InvalidOperationException : System.SystemException
@@ -2264,6 +2284,7 @@ namespace System
         public InvalidOperationException() { }
         public InvalidOperationException(string message) { }
         public InvalidOperationException(string message, System.Exception innerException) { }
+        protected InvalidOperationException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
     }
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public sealed partial class InvalidProgramException : System.SystemException
@@ -2278,6 +2299,7 @@ namespace System
         public InvalidTimeZoneException() { }
         public InvalidTimeZoneException(string message) { }
         public InvalidTimeZoneException(string message, System.Exception innerException) { }
+        protected InvalidTimeZoneException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
     }
     public partial interface IObservable<out T>
     {
@@ -2424,6 +2446,7 @@ namespace System
         public MemberAccessException() { }
         public MemberAccessException(string message) { }
         public MemberAccessException(string message, System.Exception inner) { }
+        protected MemberAccessException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
     }
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public partial class MethodAccessException : System.MemberAccessException
@@ -2431,6 +2454,7 @@ namespace System
         public MethodAccessException() { }
         public MethodAccessException(string message) { }
         public MethodAccessException(string message, System.Exception inner) { }
+        protected MethodAccessException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
     }
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public enum MidpointRounding
@@ -2444,6 +2468,7 @@ namespace System
         public MissingFieldException() { }
         public MissingFieldException(string message) { }
         public MissingFieldException(string message, System.Exception inner) { }
+        protected MissingFieldException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
         public override string Message { [System.Security.SecuritySafeCriticalAttribute]get { throw null; } }
     }
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
@@ -2452,6 +2477,7 @@ namespace System
         public MissingMemberException() { }
         public MissingMemberException(string message) { }
         public MissingMemberException(string message, System.Exception inner) { }
+        protected MissingMemberException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
         public override string Message { [System.Security.SecuritySafeCriticalAttribute]get { throw null; } }
         [System.Security.SecurityCriticalAttribute]
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
@@ -2462,6 +2488,7 @@ namespace System
         public MissingMethodException() { }
         public MissingMethodException(string message) { }
         public MissingMethodException(string message, System.Exception inner) { }
+        protected MissingMethodException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
         public override string Message { [System.Security.SecuritySafeCriticalAttribute]get { throw null; } }
     }
     [System.AttributeUsageAttribute((System.AttributeTargets)(64))]
@@ -2514,6 +2541,7 @@ namespace System
         public NotFiniteNumberException(string message, double offendingNumber) { }
         public NotFiniteNumberException(string message, double offendingNumber, System.Exception innerException) { }
         public NotFiniteNumberException(string message, System.Exception innerException) { }
+        protected NotFiniteNumberException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
         public double OffendingNumber { get { throw null; } }
         [System.Security.SecurityCriticalAttribute]
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
@@ -2524,6 +2552,7 @@ namespace System
         public NotImplementedException() { }
         public NotImplementedException(string message) { }
         public NotImplementedException(string message, System.Exception inner) { }
+        protected NotImplementedException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
     }
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public partial class NotSupportedException : System.SystemException
@@ -2531,6 +2560,7 @@ namespace System
         public NotSupportedException() { }
         public NotSupportedException(string message) { }
         public NotSupportedException(string message, System.Exception innerException) { }
+        protected NotSupportedException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
     }
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public static partial class Nullable
@@ -2561,6 +2591,7 @@ namespace System
         public NullReferenceException() { }
         public NullReferenceException(string message) { }
         public NullReferenceException(string message, System.Exception innerException) { }
+        protected NullReferenceException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
     }
     [System.Runtime.InteropServices.ClassInterfaceAttribute((System.Runtime.InteropServices.ClassInterfaceType)(2))]
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
@@ -2584,6 +2615,7 @@ namespace System
         public ObjectDisposedException(string objectName) { }
         public ObjectDisposedException(string message, System.Exception innerException) { }
         public ObjectDisposedException(string objectName, string message) { }
+        protected ObjectDisposedException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
         public override string Message { get { throw null; } }
         public string ObjectName { get { throw null; } }
         [System.Security.SecurityCriticalAttribute]
@@ -2619,6 +2651,7 @@ namespace System
         public OperationCanceledException(string message, System.Exception innerException, System.Threading.CancellationToken token) { }
         public OperationCanceledException(string message, System.Threading.CancellationToken token) { }
         public OperationCanceledException(System.Threading.CancellationToken token) { }
+        protected OperationCanceledException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
         public System.Threading.CancellationToken CancellationToken { get { throw null; } }
     }
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
@@ -2627,6 +2660,7 @@ namespace System
         public OutOfMemoryException() { }
         public OutOfMemoryException(string message) { }
         public OutOfMemoryException(string message, System.Exception innerException) { }
+        protected OutOfMemoryException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
     }
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public partial class OverflowException : System.ArithmeticException
@@ -2634,6 +2668,7 @@ namespace System
         public OverflowException() { }
         public OverflowException(string message) { }
         public OverflowException(string message, System.Exception innerException) { }
+        protected OverflowException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
     }
     [System.AttributeUsageAttribute((System.AttributeTargets)(2048), Inherited=true, AllowMultiple=false)]
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
@@ -2658,6 +2693,7 @@ namespace System
         public PlatformNotSupportedException() { }
         public PlatformNotSupportedException(string message) { }
         public PlatformNotSupportedException(string message, System.Exception inner) { }
+        protected PlatformNotSupportedException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
     }
     public delegate bool Predicate<in T>(T obj);
     public partial class Progress<T> : System.IProgress<T>
@@ -2686,6 +2722,7 @@ namespace System
         public RankException() { }
         public RankException(string message) { }
         public RankException(string message, System.Exception innerException) { }
+        protected RankException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
     }
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public partial class ResolveEventArgs : System.EventArgs
@@ -3120,6 +3157,7 @@ namespace System
         public SystemException() { }
         public SystemException(string message) { }
         public SystemException(string message, System.Exception innerException) { }
+        protected SystemException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
     }
     [System.AttributeUsageAttribute((System.AttributeTargets)(256), Inherited=false)]
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
@@ -3133,6 +3171,7 @@ namespace System
         public TimeoutException() { }
         public TimeoutException(string message) { }
         public TimeoutException(string message, System.Exception innerException) { }
+        protected TimeoutException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
     }
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
@@ -3583,6 +3622,7 @@ namespace System
         public TypeAccessException() { }
         public TypeAccessException(string message) { }
         public TypeAccessException(string message, System.Exception inner) { }
+        protected TypeAccessException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
     }
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public enum TypeCode
@@ -3628,6 +3668,7 @@ namespace System
         public TypeLoadException() { }
         public TypeLoadException(string message) { }
         public TypeLoadException(string message, System.Exception inner) { }
+        protected TypeLoadException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
         public override string Message { [System.Security.SecuritySafeCriticalAttribute]get { throw null; } }
         public string TypeName { get { throw null; } }
         [System.Security.SecurityCriticalAttribute]
@@ -3834,6 +3875,7 @@ namespace System
         public UnauthorizedAccessException() { }
         public UnauthorizedAccessException(string message) { }
         public UnauthorizedAccessException(string message, System.Exception inner) { }
+        protected UnauthorizedAccessException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
     }
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public partial class UnhandledExceptionEventArgs : System.EventArgs
@@ -3897,6 +3939,7 @@ namespace System
         protected WeakReference() { }
         public WeakReference(object target) { }
         public WeakReference(object target, bool trackResurrection) { }
+        protected WeakReference(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public virtual bool IsAlive { [System.Security.SecuritySafeCriticalAttribute][System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)]get { throw null; } }
         public virtual object Target { [System.Security.SecuritySafeCriticalAttribute][System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)]get { throw null; } [System.Security.SecuritySafeCriticalAttribute][System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)]set { } }
         public virtual bool TrackResurrection { get { throw null; } }
@@ -4072,6 +4115,7 @@ namespace System.Collections.Generic
         public Dictionary(System.Collections.Generic.IEqualityComparer<TKey> comparer) { }
         public Dictionary(int capacity) { }
         public Dictionary(int capacity, System.Collections.Generic.IEqualityComparer<TKey> comparer) { }
+        protected Dictionary(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public System.Collections.Generic.IEqualityComparer<TKey> Comparer { get { throw null; } }
         public int Count { get { throw null; } }
         public TValue this[TKey key] { get { throw null; } set { } }
@@ -4252,6 +4296,7 @@ namespace System.Collections.Generic
         public KeyNotFoundException() { }
         public KeyNotFoundException(string message) { }
         public KeyNotFoundException(string message, System.Exception innerException) { }
+        protected KeyNotFoundException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
     public partial struct KeyValuePair<TKey, TValue>
@@ -5140,6 +5185,7 @@ namespace System.Diagnostics.Tracing
         public EventSourceException() { }
         public EventSourceException(string message) { }
         public EventSourceException(string message, System.Exception innerException) { }
+        protected EventSourceException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
     public partial struct EventSourceOptions
@@ -5392,6 +5438,7 @@ namespace System.Globalization
         public CultureNotFoundException(string paramName, string message) { }
         public CultureNotFoundException(string message, string invalidCultureName, System.Exception innerException) { }
         public CultureNotFoundException(string paramName, string invalidCultureName, string message) { }
+        protected CultureNotFoundException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
         public virtual string InvalidCultureName { get { throw null; } }
         public override string Message { get { throw null; } }
         [System.Security.SecurityCriticalAttribute]
@@ -6124,6 +6171,7 @@ namespace System.IO
         public DirectoryNotFoundException() { }
         public DirectoryNotFoundException(string message) { }
         public DirectoryNotFoundException(string message, System.Exception innerException) { }
+        protected DirectoryNotFoundException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
     }
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public partial class EndOfStreamException : System.IO.IOException
@@ -6131,6 +6179,7 @@ namespace System.IO
         public EndOfStreamException() { }
         public EndOfStreamException(string message) { }
         public EndOfStreamException(string message, System.Exception innerException) { }
+        protected EndOfStreamException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
     }
     [System.FlagsAttribute]
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
@@ -6148,6 +6197,7 @@ namespace System.IO
         public FileLoadException(string message, System.Exception inner) { }
         public FileLoadException(string message, string fileName) { }
         public FileLoadException(string message, string fileName, System.Exception inner) { }
+        protected FileLoadException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
         public string FileName { get { throw null; } }
         public override string Message { get { throw null; } }
         public override string ToString() { throw null; }
@@ -6160,6 +6210,7 @@ namespace System.IO
         public FileNotFoundException(string message, System.Exception innerException) { }
         public FileNotFoundException(string message, string fileName) { }
         public FileNotFoundException(string message, string fileName, System.Exception innerException) { }
+        protected FileNotFoundException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
         public string FileName { get { throw null; } }
         public override string Message { get { throw null; } }
         public override string ToString() { throw null; }
@@ -6171,6 +6222,7 @@ namespace System.IO
         public IOException(string message) { }
         public IOException(string message, System.Exception innerException) { }
         public IOException(string message, int hresult) { }
+        protected IOException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
     }
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public partial class MemoryStream : System.IO.Stream
@@ -6243,6 +6295,7 @@ namespace System.IO
         public PathTooLongException() { }
         public PathTooLongException(string message) { }
         public PathTooLongException(string message, System.Exception innerException) { }
+        protected PathTooLongException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
     }
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public enum SeekOrigin
@@ -7020,6 +7073,7 @@ namespace System.Reflection
         public CustomAttributeFormatException() { }
         public CustomAttributeFormatException(string message) { }
         public CustomAttributeFormatException(string message, System.Exception inner) { }
+        protected CustomAttributeFormatException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
     }
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
@@ -7191,6 +7245,7 @@ namespace System.Reflection
         public InvalidFilterCriteriaException() { }
         public InvalidFilterCriteriaException(string message) { }
         public InvalidFilterCriteriaException(string message, System.Exception inner) { }
+        protected InvalidFilterCriteriaException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
     }
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     [System.Runtime.InteropServices.GuidAttribute("AFBF15E5-C37C-11d2-B88E-00A0C9B471B8")]
@@ -7596,6 +7651,7 @@ namespace System.Reflection
         public TargetException() { }
         public TargetException(string message) { }
         public TargetException(string message, System.Exception inner) { }
+        protected TargetException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
     }
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public sealed partial class TargetInvocationException : System.Exception
@@ -8918,6 +8974,7 @@ namespace System.Resources
         public MissingManifestResourceException() { }
         public MissingManifestResourceException(string message) { }
         public MissingManifestResourceException(string message, System.Exception inner) { }
+        protected MissingManifestResourceException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
     }
     [System.AttributeUsageAttribute((System.AttributeTargets)(1), AllowMultiple=false)]
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
@@ -9577,6 +9634,7 @@ namespace System.Runtime.InteropServices
         public COMException(string message) { }
         public COMException(string message, System.Exception inner) { }
         public COMException(string message, int errorCode) { }
+        protected COMException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
         public override string ToString() { throw null; }
     }
     [System.AttributeUsageAttribute((System.AttributeTargets)(1028), Inherited=false)]
@@ -9809,6 +9867,7 @@ namespace System.Runtime.InteropServices
         public InvalidComObjectException() { }
         public InvalidComObjectException(string message) { }
         public InvalidComObjectException(string message, System.Exception inner) { }
+        protected InvalidComObjectException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
     }
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public partial class InvalidOleVariantTypeException : System.SystemException
@@ -9816,6 +9875,7 @@ namespace System.Runtime.InteropServices
         public InvalidOleVariantTypeException() { }
         public InvalidOleVariantTypeException(string message) { }
         public InvalidOleVariantTypeException(string message, System.Exception inner) { }
+        protected InvalidOleVariantTypeException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
     }
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public enum LayoutKind
@@ -10116,6 +10176,7 @@ namespace System.Runtime.InteropServices
         public MarshalDirectiveException() { }
         public MarshalDirectiveException(string message) { }
         public MarshalDirectiveException(string message, System.Exception inner) { }
+        protected MarshalDirectiveException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
     }
     [System.AttributeUsageAttribute((System.AttributeTargets)(64))]
     public sealed partial class NativeCallableAttribute : System.Attribute
@@ -10154,6 +10215,7 @@ namespace System.Runtime.InteropServices
         public SafeArrayRankMismatchException() { }
         public SafeArrayRankMismatchException(string message) { }
         public SafeArrayRankMismatchException(string message, System.Exception inner) { }
+        protected SafeArrayRankMismatchException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
     }
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public partial class SafeArrayTypeMismatchException : System.SystemException
@@ -10161,6 +10223,7 @@ namespace System.Runtime.InteropServices
         public SafeArrayTypeMismatchException() { }
         public SafeArrayTypeMismatchException(string message) { }
         public SafeArrayTypeMismatchException(string message, System.Exception inner) { }
+        protected SafeArrayTypeMismatchException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
     }
     [System.Security.SecurityCriticalAttribute]
     public abstract partial class SafeBuffer : Microsoft.Win32.SafeHandles.SafeHandleZeroOrMinusOneIsInvalid
@@ -10217,6 +10280,7 @@ namespace System.Runtime.InteropServices
         public SEHException() { }
         public SEHException(string message) { }
         public SEHException(string message, System.Exception inner) { }
+        protected SEHException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
         public virtual bool CanResume() { throw null; }
     }
     [System.AttributeUsageAttribute((System.AttributeTargets)(12), Inherited=false)]
@@ -11037,6 +11101,7 @@ namespace System.Runtime.Serialization
         public SerializationException() { }
         public SerializationException(string message) { }
         public SerializationException(string message, System.Exception innerException) { }
+        protected SerializationException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
     }
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public sealed partial class SerializationInfo
@@ -11910,6 +11975,7 @@ namespace System.Threading
         public AbandonedMutexException(string message, System.Exception inner) { }
         public AbandonedMutexException(string message, System.Exception inner, int location, System.Threading.WaitHandle handle) { }
         public AbandonedMutexException(string message, int location, System.Threading.WaitHandle handle) { }
+        protected AbandonedMutexException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
         public System.Threading.Mutex Mutex { get { throw null; } }
         public int MutexIndex { get { throw null; } }
     }
@@ -12107,6 +12173,7 @@ namespace System.Threading
         public LockRecursionException() { }
         public LockRecursionException(string message) { }
         public LockRecursionException(string message, System.Exception innerException) { }
+        protected LockRecursionException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
     }
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public sealed partial class ManualResetEvent : System.Threading.EventWaitHandle
@@ -12242,6 +12309,7 @@ namespace System.Threading
         public SemaphoreFullException() { }
         public SemaphoreFullException(string message) { }
         public SemaphoreFullException(string message, System.Exception innerException) { }
+        protected SemaphoreFullException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
     }
     [System.Diagnostics.DebuggerDisplayAttribute("Current Count = {m_currentCount}")]
     [System.Runtime.InteropServices.ComVisibleAttribute(false)]
@@ -12314,6 +12382,7 @@ namespace System.Threading
         public SynchronizationLockException() { }
         public SynchronizationLockException(string message) { }
         public SynchronizationLockException(string message, System.Exception innerException) { }
+        protected SynchronizationLockException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
     }
     [System.Runtime.InteropServices.ClassInterfaceAttribute((System.Runtime.InteropServices.ClassInterfaceType)(0))]
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
@@ -12427,6 +12496,7 @@ namespace System.Threading
         public ThreadStateException() { }
         public ThreadStateException(string message) { }
         public ThreadStateException(string message, System.Exception innerException) { }
+        protected ThreadStateException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
     }
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public static partial class Timeout
@@ -12533,6 +12603,7 @@ namespace System.Threading
         public WaitHandleCannotBeOpenedException() { }
         public WaitHandleCannotBeOpenedException(string message) { }
         public WaitHandleCannotBeOpenedException(string message, System.Exception innerException) { }
+        protected WaitHandleCannotBeOpenedException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
     }
     public static partial class WaitHandleExtensions
     {
@@ -12695,6 +12766,7 @@ namespace System.Threading.Tasks
         public TaskCanceledException(string message) { }
         public TaskCanceledException(string message, System.Exception innerException) { }
         public TaskCanceledException(System.Threading.Tasks.Task task) { }
+        protected TaskCanceledException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
         public System.Threading.Tasks.Task Task { get { throw null; } }
     }
     public partial class TaskCompletionSource<TResult>
@@ -12900,6 +12972,7 @@ namespace System.Threading.Tasks
         public TaskSchedulerException(System.Exception innerException) { }
         public TaskSchedulerException(string message) { }
         public TaskSchedulerException(string message, System.Exception innerException) { }
+        protected TaskSchedulerException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
     }
     public enum TaskStatus
     {
