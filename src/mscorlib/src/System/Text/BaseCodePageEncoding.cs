@@ -48,9 +48,7 @@ namespace System.Text
     //       BYTE[]      data;           // data section
     //   }
 
-#if FEATURE_SERIALIZATION
     [Serializable]
-#endif
     internal abstract class BaseCodePageEncoding : EncodingNLS, ISerializable
     {
         // Static & Const stuff
@@ -181,7 +179,6 @@ namespace System.Text
         }
 
         // ISerializable implementation
-#if FEATURE_SERIALIZATION
         [System.Security.SecurityCritical]  // auto-generated_required
         void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
         {
@@ -197,7 +194,6 @@ namespace System.Text
             info.SetType(m_bUseMlangTypeForSerialization ? typeof(MLangCodePageEncoding) :
                                                            typeof(CodePageEncoding));
         }
-#endif
 
         // We need to load tables for our code page
         [System.Security.SecurityCritical]  // auto-generated

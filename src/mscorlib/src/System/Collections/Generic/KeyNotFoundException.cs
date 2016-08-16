@@ -19,9 +19,7 @@ namespace System.Collections.Generic {
     using System.Runtime.Remoting;
     using System.Runtime.Serialization;
 
-#if FEATURE_SERIALIZATION
     [Serializable]
-#endif
     [System.Runtime.InteropServices.ComVisible(true)]
     public class KeyNotFoundException  : SystemException, ISerializable {
     

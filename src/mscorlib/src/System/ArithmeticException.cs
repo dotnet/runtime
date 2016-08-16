@@ -19,9 +19,7 @@ namespace System {
     // occurs.
     // 
     [System.Runtime.InteropServices.ComVisible(true)]
-#if FEATURE_SERIALIZATION
     [Serializable]
-#endif
     public class ArithmeticException : SystemException
     {        
         // Creates a new ArithmeticException with its message string set to

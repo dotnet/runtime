@@ -101,9 +101,7 @@ namespace System.Text
     }
 
     // Exception for decoding unknown byte sequences.
-#if FEATURE_SERIALIZATION
     [Serializable]
-#endif
     public sealed class DecoderFallbackException : ArgumentException
     {
         byte[]    bytesUnknown = null;

@@ -14,18 +14,20 @@
 //
 ////////////////////////////////////////////////////////////////////////////
 
-using System.Security;
 using System;
+using System.Diagnostics.Contracts;
+using System.Runtime;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Serialization;
+using System.Security;
 using System.Text;
 using System.Threading;
-using System.Runtime;
-using System.Diagnostics.Contracts;
-using System.Runtime.InteropServices;
-using System.Runtime.CompilerServices;
 
 namespace System.Globalization
 {
-    public partial class TextInfo : ICloneable
+    [Serializable]
+    public partial class TextInfo : ICloneable, IDeserializationCallback
     {
         ////--------------------------------------------------------------------//
         ////                        Internal Information                        //
@@ -35,7 +37,9 @@ namespace System.Globalization
         ////  Variables.
         ////
 
+        [OptionalField(VersionAdded = 2)]
         private String m_listSeparator;
+        [OptionalField(VersionAdded = 2)]
         private bool m_isReadOnly = false;
 
         ////
@@ -58,9 +62,13 @@ namespace System.Globalization
         ////              know how to resolve custom locle names to sort ids so we have to have alredy resolved this.
         ////      
 
-        private readonly String m_cultureName;      // Name of the culture that created this text info
-        private readonly CultureData m_cultureData;      // Data record for the culture that made us, not for this textinfo
-        private readonly String m_textInfoName;     // Name of the text info we're using (ie: m_cultureData.STEXTINFO)
+        [OptionalField(VersionAdded = 3)]
+        private String m_cultureName;      // Name of the culture that created this text info
+        [NonSerialized]
+        private CultureData m_cultureData;      // Data record for the culture that made us, not for this textinfo
+        [NonSerialized]
+        private String m_textInfoName;     // Name of the text info we're using (ie: m_cultureData.STEXTINFO)
+        [NonSerialized]
         private bool? m_IsAsciiCasingSameAsInvariant;
 
         // Invariant text info
@@ -74,6 +82,40 @@ namespace System.Globalization
             }
         }
         internal volatile static TextInfo s_Invariant;
+
+        [OnSerializing]
+        private void OnSerializing(StreamingContext ctx) { }
+
+        [OnDeserializing]
+        private void OnDeserializing(StreamingContext ctx)
+        {
+            // Clear these so we can check if we've fixed them yet            
+            this.m_cultureData = null;
+            this.m_cultureName = null;
+        }
+
+        [OnDeserialized]
+        private void OnDeserialized(StreamingContext ctx)
+        {
+            OnDeserialized();
+        }
+
+        void IDeserializationCallback.OnDeserialization(Object sender)
+        {
+            OnDeserialized();
+        }
+
+        private void OnDeserialized()
+        {
+            // this method will be called twice because of the support of IDeserializationCallback
+            if (this.m_cultureData == null)
+            {
+                // Get the text info name belonging to that culture
+                this.m_cultureData = CultureInfo.GetCultureInfo(m_cultureName).m_cultureData;
+                this.m_textInfoName = this.m_cultureData.STEXTINFO;
+                FinishInitialization(this.m_textInfoName);
+            }
+        }
 
         //
         // Internal ordinal comparison functions

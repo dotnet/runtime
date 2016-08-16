@@ -19,9 +19,11 @@
 
 using System;
 using System.Diagnostics.Contracts;
+using System.Runtime.Serialization;
 
 namespace System.Globalization
 {
+    [Serializable]
     [System.Runtime.InteropServices.ComVisible(true)]
     public class RegionInfo
     {
@@ -102,6 +104,25 @@ namespace System.Globalization
         {
             // Use the name of the region we found
             this.m_name = this.m_cultureData.SREGIONNAME;
+        }
+
+        [OnSerializing]
+        private void OnSerializing(StreamingContext ctx) { }
+
+        [System.Security.SecurityCritical]  // auto-generated
+        [OnDeserialized]
+        private void OnDeserialized(StreamingContext ctx)
+        {
+            m_cultureData = CultureData.GetCultureData(m_name, true);
+
+            if (m_cultureData == null)
+            {
+                throw new ArgumentException(
+                    String.Format(CultureInfo.CurrentCulture, SR.Argument_InvalidCultureName, m_name),
+                    "m_name");
+            }
+
+            m_name = this.m_cultureData.SREGIONNAME;
         }
 
         ////////////////////////////////////////////////////////////////////////

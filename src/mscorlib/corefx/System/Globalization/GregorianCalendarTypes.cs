@@ -8,6 +8,7 @@ namespace System.Globalization
 {
     // Note: The values of the members of this enum must match the coresponding values
     // in the CalendarId enum (since we cast between GregorianCalendarTypes and CalendarId).
+    [Serializable]
     public enum GregorianCalendarTypes
     {
         Localized = CalendarId.GREGORIAN,

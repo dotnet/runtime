@@ -22,9 +22,7 @@ namespace System.Threading
     using System.Runtime.CompilerServices;
 
     [System.Runtime.InteropServices.ComVisible(true)]
-#if FEATURE_SERIALIZATION
     [Serializable]
-#endif
     public sealed class ThreadAbortException : SystemException 
     {
         private ThreadAbortException() 

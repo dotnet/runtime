@@ -23,9 +23,7 @@ namespace System {
     using System.Diagnostics.Contracts;
     
     [System.Runtime.InteropServices.ComVisible(true)]
-#if FEATURE_SERIALIZATION
     [Serializable]
-#endif
     public class MissingMemberException : MemberAccessException, ISerializable {
         public MissingMemberException() 
             : base(Environment.GetResourceString("Arg_MissingMemberException")) {

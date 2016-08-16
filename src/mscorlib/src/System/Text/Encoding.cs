@@ -83,9 +83,7 @@ namespace System.Text
     //
 
     [System.Runtime.InteropServices.ComVisible(true)]
-#if FEATURE_SERIALIZATION
     [Serializable]
-#endif
     public abstract class Encoding : ICloneable
     {
         private static volatile Encoding defaultEncoding;
@@ -1612,13 +1610,8 @@ namespace System.Text
             decoder.ClearMustFlush();
         }
 
-#if FEATURE_SERIALIZATION
         [Serializable]
-#endif
-        internal class DefaultEncoder : Encoder, IObjectReference
-#if FEATURE_SERIALIZATION
-            , ISerializable
-#endif
+        internal class DefaultEncoder : Encoder, IObjectReference, ISerializable
         {
             private Encoding m_encoding;
             [NonSerialized] private bool m_hasInitializedEncoding;
@@ -1676,7 +1669,6 @@ namespace System.Text
                 return encoder;
             }
 
-#if FEATURE_SERIALIZATION
             // ISerializable implementation, get data for this object
             [System.Security.SecurityCritical]  // auto-generated_required
             void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
@@ -1688,7 +1680,6 @@ namespace System.Text
                 // All we have is our encoding
                 info.AddValue("encoding", this.m_encoding);
             }
-#endif
 
             // Returns the number of bytes the next call to GetBytes will
             // produce if presented with the given range of characters and the given
@@ -1745,13 +1736,8 @@ namespace System.Text
             }
         }
 
-#if FEATURE_SERIALIZATION
         [Serializable]
-#endif
-        internal class DefaultDecoder : Decoder, IObjectReference
-#if FEATURE_SERIALIZATION
-            , ISerializable
-#endif
+        internal class DefaultDecoder : Decoder, IObjectReference, ISerializable
         {
             private Encoding m_encoding;
             [NonSerialized]
@@ -1804,7 +1790,6 @@ namespace System.Text
                 return decoder;
             }
 
-#if FEATURE_SERIALIZATION
             // ISerializable implementation, get data for this object
             [System.Security.SecurityCritical]  // auto-generated_required
             void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
@@ -1816,7 +1801,6 @@ namespace System.Text
                 // All we have is our encoding
                 info.AddValue("encoding", this.m_encoding);
             }
-#endif
 
             // Returns the number of characters the next call to GetChars will
             // produce if presented with the given range of bytes. The returned value
