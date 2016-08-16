@@ -44,6 +44,8 @@
     <TargetFrameworkProfile></TargetFrameworkProfile>
     <!-- We set this property to avoid MSBuild errors regarding not setting TargetFrameworkProfile (see above line) -->
     <PortableNuGetMode>true</PortableNuGetMode>
+    <!-- tests should not set this.  A value of netstandard* triggers validation which is irrelevant for tests.  Remove once ValidatePackageTargetFramework target is removed -->
+    <PackageTargetFramework Condition="'$(IsTestProject)' == 'true'"></PackageTargetFramework>
   </PropertyGroup>
 
   <!--
