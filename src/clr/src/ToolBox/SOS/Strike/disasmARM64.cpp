@@ -173,7 +173,7 @@ void ARM64Machine::Unassembly (
 
     while(PC < PCEnd)
     {
-        ULONG_PTR prevPC = PC;
+        ULONG_PTR currentPC = PC;
         DisasmAndClean (PC, line, _countof(line));
 
         // This is the closing of the previous run. 
@@ -196,7 +196,7 @@ void ARM64Machine::Unassembly (
             }
             ExtOut ("\n");
         }
-        else if (prevPC != PCBegin)
+        else if (currentPC != PCBegin)
         {
             ExtOut ("\n");
         }
@@ -209,7 +209,7 @@ void ARM64Machine::Unassembly (
         //
         // Print out line numbers if needed
         //
-        if (!bSuppressLines && SUCCEEDED(GetLineByOffset(TO_CDADDR(PC), &lineNum, fileName, MAX_PATH_FNAME+1)))
+        if (!bSuppressLines && SUCCEEDED(GetLineByOffset(TO_CDADDR(currentPC), &lineNum, fileName, MAX_PATH_FNAME+1)))
         {
             if (lineNum != curLine)
             {
@@ -223,7 +223,7 @@ void ARM64Machine::Unassembly (
         //
         if (pGCEncodingInfo)
         {
-            SIZE_T curOffset = (PC - PCBegin) + pGCEncodingInfo->hotSizeToAdd;
+            SIZE_T curOffset = (currentPC - PCBegin) + pGCEncodingInfo->hotSizeToAdd;
             while (   !pGCEncodingInfo->fDoneDecoding
                    && pGCEncodingInfo->ofs <= curOffset)
             {
@@ -238,10 +238,10 @@ void ARM64Machine::Unassembly (
         //
         if (pEHInfo)
         {
-            pEHInfo->FormatForDisassembly(PC - PCBegin);
+            pEHInfo->FormatForDisassembly(currentPC - PCBegin);
         }
         
-        if (PC == PCAskedFor)
+        if (currentPC == PCAskedFor)
         {
             ExtOut (">>> ");
         }
@@ -251,7 +251,7 @@ void ARM64Machine::Unassembly (
         //
         if (bDisplayOffsets)
         {
-            ExtOut("%04x ", PC - PCBegin);
+            ExtOut("%04x ", currentPC - PCBegin);
         }
 
         // look at the disassembled bytes
@@ -271,7 +271,7 @@ void ARM64Machine::Unassembly (
                 || !strncmp (ptr, "badc0de2", 8)
                 ))
         {
-            ULONG_PTR InstrAddr = prevPC;
+            ULONG_PTR InstrAddr = currentPC;
 
             //
             // Compute address into saved copy of the code, and
@@ -294,7 +294,7 @@ void ARM64Machine::Unassembly (
             // Print out real code address in place of the copy address
             //
 
-            ExtOut("%08x ", (ULONG)InstrAddr);
+			ExtOut("%08x`%08x ", (ULONG)(InstrAddr >> 32), (ULONG)InstrAddr);
 
             ptr = line;
             NextTerm (ptr);

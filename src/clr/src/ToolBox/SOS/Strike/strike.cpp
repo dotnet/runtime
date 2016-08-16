@@ -8101,7 +8101,7 @@ void DecodeGCTableEntry (const char *fmt, ...)
 VOID CALLBACK DumpGCTableFiberEntry (LPVOID pvGCEncodingInfo)
 {
     GCEncodingInfo *pInfo = (GCEncodingInfo*)pvGCEncodingInfo;
-    GCInfoToken gcInfoToken = { pInfo, GCINFO_VERSION };
+    GCInfoToken gcInfoToken = { pInfo->table, GCINFO_VERSION };
     g_targetMachine->DumpGCInfo(gcInfoToken, pInfo->methodSize, DecodeGCTableEntry, false /*encBytes*/, false /*bPrintHeader*/);
 
     pInfo->fDoneDecoding = true;
