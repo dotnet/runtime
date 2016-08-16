@@ -6,6 +6,9 @@
 param(
     [string]$Configuration="Debug",
     [string]$Architecture="x64",
+    [string]$TargetArch="",
+    [string]$ToolsetDir="",
+    [string]$Framework="netcoreapp1.0",
     [string[]]$Targets=@("Default"),
     [string[]]$EnvVars=@(),
     [switch]$NoPackage,
@@ -17,7 +20,10 @@ if($Help)
     Write-Host ""
     Write-Host "Options:"
     Write-Host "  -Configuration <CONFIGURATION>     Build the specified Configuration (Debug or Release, default: Debug)"
-    Write-Host "  -Architecture  <ARCHITECTURE>      Build the specified architecture (x64 or x86 (supported only on Windows), default: x64)"
+    Write-Host "  -Architecture  <ARCHITECTURE>      Build on the specified architecture (x64 or x86 (supported only on Windows), default: x64)"
+    Write-Host "  -TargetArch  <ARCHITECTURE>        Build for the specified architecture (x64, x86 (supported only on Windows), or arm64, default: x64)"
+    Write-Host "  -ToolsetDir  <TOOLSETDIR>          Temporary variable specifying a path to a toolset to use when building the native host for ARM64. To be removed when the toolset is publicly available. )"
+    Write-Host "  -Framework  <FRAMEWORK>            Build the specified framework (netcoreapp1.0 or netcoreapp1.1, default: netcoreapp1.0)"
     Write-Host "  -Targets <TARGETS...>              Comma separated build targets to run (Init, Compile, Publish, etc.; Default is a full build and publish)"
     Write-Host "  -EnvVars <'V1=val1','V2=val2'...>  Comma separated list of environment variable name-value pairs"
     Write-Host "  -NoPackage                         Skip packaging targets"
@@ -26,8 +32,37 @@ if($Help)
 }
 
 $env:CONFIGURATION = $Configuration;
+if (!$TargetArch)
+{
+    $TargetArch = $Architecture
+}
+$env:TARGETPLATFORM = $TargetArch;
+$env:TARGETFRAMEWORK = $Framework;
 $RepoRoot = "$PSScriptRoot\..\.."
 $env:NUGET_PACKAGES = "$RepoRoot\.nuget\packages"
+
+if($TargetArch -eq "arm64")
+{
+    if ($Framework -eq "netcoreapp1.0")
+    {
+        throw "ARM64 is not available on netcoreapp1.0. Pass in '-Framework netcoreapp1.1' to enable ARM64"
+    }
+    $env:__ToolsetDir = $ToolsetDir;
+    $env:TARGETRID = "win10-arm64";
+    $env:PATH="$ToolsetDir\VC_sdk\bin;$env:PATH";
+    $env:LIB="$ToolsetDir\VC_sdk\lib\arm64;$ToolsetDir\sdpublic\sdk\lib\arm64";
+    $env:INCLUDE="$ToolsetDir\VC_sdk\inc;$ToolsetDir\sdpublic\sdk\inc;$ToolsetDir\sdpublic\shared\inc;$ToolsetDir\sdpublic\shared\inc\minwin;$ToolsetDir\sdpublic\sdk\inc\ucrt;$ToolsetDir\sdpublic\sdk\inc\minwin;$ToolsetDir\sdpublic\sdk\inc\mincore;$ToolsetDir\sdpublic\sdk\inc\abi;$ToolsetDir\sdpublic\sdk\inc\clientcore;$ToolsetDir\diasdk\include";
+}
+
+# No use in specifying a RID if the current and target architecture are equivalent. 
+if($TargetArch -eq "x86" -and $Architecture -ne "x86")
+{
+    $env:TARGETRID = "win7-x86";
+}
+if($TargetArch -eq "x64" -and $Architecture -ne "x64")
+{
+    $env:TARGETRID = "win7-x64";
+}
 
 if($NoPackage)
 {
