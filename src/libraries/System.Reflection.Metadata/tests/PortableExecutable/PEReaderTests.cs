@@ -76,6 +76,8 @@ namespace System.Reflection.PortableExecutable.Tests
             byte b = 1;
             Assert.True(new PEReader(&b, 1, isLoadedImage: true).IsLoadedImage);
             Assert.False(new PEReader(&b, 1, isLoadedImage: false).IsLoadedImage);
+
+            Assert.True(new PEReader(new MemoryStream(), PEStreamOptions.IsLoadedImage).IsLoadedImage);
             Assert.False(new PEReader(new MemoryStream()).IsLoadedImage);
         }
 

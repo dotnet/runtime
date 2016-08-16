@@ -6,12 +6,13 @@ using Microsoft.Win32.SafeHandles;
 using System.IO;
 using System.Reflection.PortableExecutable;
 using Xunit;
+using System.Reflection.Internal;
 
 namespace System.Reflection.Metadata.Tests
 {
     internal unsafe static class LoaderUtilities
     {
-        public static void LoadPEAndValidate(byte[] peImage, Action<PEReader> validator)
+        public static void LoadPEAndValidate(byte[] peImage, Action<PEReader> validator, bool useStream = false)
         {
             string tempFile = Path.GetTempFileName();
             File.WriteAllBytes(tempFile, peImage);
@@ -24,7 +25,9 @@ namespace System.Reflection.Metadata.Tests
                 Assert.Equal('M', (char)peImagePtr[0]);
                 Assert.Equal('Z', (char)peImagePtr[1]);
 
-                using (var peReader = new PEReader(peImagePtr, int.MaxValue, isLoadedImage: true))
+                using (var peReader = useStream ?
+                    new PEReader(new ReadOnlyUnmanagedMemoryStream(peImagePtr, int.MaxValue), PEStreamOptions.IsLoadedImage) : 
+                    new PEReader(peImagePtr, int.MaxValue, isLoadedImage: true))
                 {
                     validator(peReader);
                 }

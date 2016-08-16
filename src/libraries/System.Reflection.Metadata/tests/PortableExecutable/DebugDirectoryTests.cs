@@ -39,6 +39,13 @@ namespace System.Reflection.PortableExecutable.Tests
             LoaderUtilities.LoadPEAndValidate(Misc.Debug, ValidateCodeView);
         }
 
+        [Fact]
+        [PlatformSpecific(PlatformID.Windows)]
+        public void CodeView_Loaded_FromStream()
+        {
+            LoaderUtilities.LoadPEAndValidate(Misc.Debug, ValidateCodeView, useStream: true);
+        }
+
         private void ValidateCodeView(PEReader reader)
         {
             // dumpbin:
