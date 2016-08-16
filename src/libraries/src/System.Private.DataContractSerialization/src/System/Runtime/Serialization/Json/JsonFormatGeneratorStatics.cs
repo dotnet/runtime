@@ -84,9 +84,6 @@ namespace System.Runtime.Serialization
         private static MethodInfo s_writeEndElementMethod;
 
         [SecurityCritical]
-        private static MethodInfo s_writeJsonISerializableMethod;
-
-        [SecurityCritical]
         private static MethodInfo s_writeJsonNameWithMappingMethod;
 
         [SecurityCritical]
@@ -402,19 +399,6 @@ namespace System.Runtime.Serialization
                     Debug.Assert(s_writeEndElementMethod != null);
                 }
                 return s_writeEndElementMethod;
-            }
-        }
-        public static MethodInfo WriteJsonISerializableMethod
-        {
-            [SecuritySafeCritical]
-            get
-            {
-                if (s_writeJsonISerializableMethod == null)
-                {
-                    s_writeJsonISerializableMethod = typeof(XmlObjectSerializerWriteContextComplexJson).GetMethod("WriteJsonISerializable", Globals.ScanAllMembers);
-                    Debug.Assert(s_writeJsonISerializableMethod != null);
-                }
-                return s_writeJsonISerializableMethod;
             }
         }
         public static MethodInfo WriteJsonNameWithMappingMethod

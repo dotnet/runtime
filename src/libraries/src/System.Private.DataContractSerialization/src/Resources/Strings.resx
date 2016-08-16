@@ -1098,4 +1098,7 @@
   <data name="UnknownXmlType" xml:space="preserve">
     <value>Type '{0}' is not a valid XML type.</value>
   </data>
+  <data name="TypeNotSerializableViaReflection" xml:space="preserve">
+    <value>Cannot serialize type {0} via reflection. Required type metadata was missing.</value>
+  </data> 
 </root>
