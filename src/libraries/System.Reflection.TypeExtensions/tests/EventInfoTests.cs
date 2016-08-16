@@ -28,14 +28,16 @@ namespace System.Reflection.Tests
         {
             // Add and make sure we bound the event.
             eventInfo.AddEventHandler(target, handler);
-            (target ?? new EI_Class()).InvokeAllEvents();
-            Assert.Equal(expectedStaticVariable, EI_Class.StaticVariable);
-            EI_Class.StaticVariable = 0; // Reset
+            target?.InvokeAllEvents();
+            EI_Class.InvokeStaticEvent();
+            Assert.Equal(expectedStaticVariable, EI_Class.AddEventHandler_RemoveEventHandler_Test_TrackingVariable);
+            EI_Class.AddEventHandler_RemoveEventHandler_Test_TrackingVariable = 0; // Reset
 
             // Remove and make sure we unbound the event.
             eventInfo.RemoveEventHandler(target, handler);
-            (target ?? new EI_Class()).InvokeAllEvents();
-            Assert.Equal(0, EI_Class.StaticVariable);
+            target?.InvokeAllEvents();
+            EI_Class.InvokeStaticEvent();
+            Assert.Equal(0, EI_Class.AddEventHandler_RemoveEventHandler_Test_TrackingVariable);
         }
 
         public static IEnumerable<object[]> AddEventHandler_Invalid_TestData()
@@ -60,13 +62,11 @@ namespace System.Reflection.Tests
         }
 
         [Theory]
-        [InlineData("PublicEvent")]
-        [InlineData("Public_Event")]
-        [InlineData("Private_Event")]
+        [InlineData(nameof(EI_Class.PublicEvent))]
+        [InlineData(nameof(EI_Class.Public_Event))]
         [InlineData("PrivateEvent")]
         [InlineData("ProtectedEvent")]
-        [InlineData("ProtectedInternalEvent")]
-        [InlineData("ProtectedInternalEvent")]
+        [InlineData(nameof(EI_Class.ProtectedInternalEvent))]
         public void Attributes_IsSpecialName(string name)
         {
             EventInfo eventInfo = Helpers.GetEvent(typeof(EI_Class), name);
@@ -75,10 +75,10 @@ namespace System.Reflection.Tests
         }
 
         [Theory]
-        [InlineData("PublicEvent", typeof(VoidDelegate))]
+        [InlineData(nameof(EI_Class.PublicEvent), typeof(VoidDelegate))]
         [InlineData("PrivateEvent", typeof(VoidDelegate))]
         [InlineData("ProtectedEvent", typeof(VoidDelegate))]
-        [InlineData("ProtectedInternalEvent", typeof(VoidDelegate))]
+        [InlineData(nameof(EI_Class.ProtectedInternalEvent), typeof(VoidDelegate))]
         public void EventHandlerType(string name, Type expected)
         {
             EventInfo eventInfo = Helpers.GetEvent(typeof(EI_Class), name);
@@ -86,31 +86,37 @@ namespace System.Reflection.Tests
         }
 
         [Theory]
-        [InlineData("PublicEvent", "Void add_PublicEvent(System.Reflection.Tests.VoidDelegate)", "Void add_PublicEvent(System.Reflection.Tests.VoidDelegate)")]
-        [InlineData("PrivateEvent", null, "Void add_PrivateEvent(System.Reflection.Tests.VoidDelegate)")]
-        [InlineData("ProtectedEvent", null, "Void add_ProtectedEvent(System.Reflection.Tests.VoidDelegate)")]
-        [InlineData("ProtectedInternalEvent", null, "Void add_ProtectedInternalEvent(System.Reflection.Tests.VoidDelegate)")]
-        public void GetAddMethod(string name, string publicToString, string nonPublicToString)
+        [InlineData(nameof(EI_Class.PublicEvent), "Void add_PublicEvent(System.Reflection.Tests.VoidDelegate)", false)]
+        [InlineData("PrivateEvent", "Void add_PrivateEvent(System.Reflection.Tests.VoidDelegate)", true)]
+        [InlineData("ProtectedEvent", "Void add_ProtectedEvent(System.Reflection.Tests.VoidDelegate)", true)]
+        [InlineData(nameof(EI_Class.ProtectedInternalEvent), "Void add_ProtectedInternalEvent(System.Reflection.Tests.VoidDelegate)", true)]
+        public void GetAddMethod(string name, string expectedToString, bool nonPublic)
         {
             EventInfo eventInfo = Helpers.GetEvent(typeof(EI_Class), name);
             MethodInfo method = eventInfo.GetAddMethod();
-            Assert.Equal(publicToString == null, method == null);
-            Assert.Equal(publicToString, method?.ToString());
+            Assert.Equal(nonPublic, method == null);
+            if (method != null)
+            {
+                Assert.Equal(expectedToString, method.ToString());
+            }
 
             method = eventInfo.GetAddMethod(false);
-            Assert.Equal(publicToString == null, method == null);
-            Assert.Equal(publicToString, method?.ToString());
+            Assert.Equal(nonPublic, method == null);
+            if (method != null)
+            {
+                Assert.Equal(expectedToString, method.ToString());
+            }
 
             method = eventInfo.GetAddMethod(true);
             Assert.NotNull(method);
-            Assert.Equal(nonPublicToString, method.ToString());
+            Assert.Equal(expectedToString, method.ToString());
         }
 
         [Theory]
-        [InlineData("PublicEvent")]
+        [InlineData(nameof(EI_Class.PublicEvent))]
         [InlineData("PrivateEvent")]
         [InlineData("ProtectedEvent")]
-        [InlineData("ProtectedInternalEvent")]
+        [InlineData(nameof(EI_Class.ProtectedInternalEvent))]
         public void GetRaiseMethod(string name)
         {
             EventInfo eventInfo = Helpers.GetEvent(typeof(EI_Class), name);
@@ -120,31 +126,37 @@ namespace System.Reflection.Tests
         }
 
         [Theory]
-        [InlineData("PublicEvent", "Void remove_PublicEvent(System.Reflection.Tests.VoidDelegate)", "Void remove_PublicEvent(System.Reflection.Tests.VoidDelegate)")]
-        [InlineData("PrivateEvent", null, "Void remove_PrivateEvent(System.Reflection.Tests.VoidDelegate)")]
-        [InlineData("ProtectedEvent", null, "Void remove_ProtectedEvent(System.Reflection.Tests.VoidDelegate)")]
-        [InlineData("ProtectedInternalEvent", null, "Void remove_ProtectedInternalEvent(System.Reflection.Tests.VoidDelegate)")]
-        public void GetRemoveMethod(string name, string publicToString, string nonPublicToString)
+        [InlineData(nameof(EI_Class.PublicEvent), "Void remove_PublicEvent(System.Reflection.Tests.VoidDelegate)", false)]
+        [InlineData("PrivateEvent", "Void remove_PrivateEvent(System.Reflection.Tests.VoidDelegate)", true)]
+        [InlineData("ProtectedEvent", "Void remove_ProtectedEvent(System.Reflection.Tests.VoidDelegate)", true)]
+        [InlineData(nameof(EI_Class.ProtectedInternalEvent), "Void remove_ProtectedInternalEvent(System.Reflection.Tests.VoidDelegate)", true)]
+        public void GetRemoveMethod(string name, string expectedToString, bool nonPublic)
         {
             EventInfo eventInfo = Helpers.GetEvent(typeof(EI_Class), name);
             MethodInfo method = eventInfo.GetRemoveMethod();
-            Assert.Equal(publicToString == null, method == null);
-            Assert.Equal(publicToString, method?.ToString());
+            Assert.Equal(nonPublic, method == null);
+            if (method != null)
+            {
+                Assert.Equal(expectedToString, method.ToString());
+            }
 
             method = eventInfo.GetRemoveMethod(false);
-            Assert.Equal(publicToString == null, method == null);
-            Assert.Equal(publicToString, method?.ToString());
+            Assert.Equal(nonPublic, method == null);
+            if (method != null)
+            {
+                Assert.Equal(expectedToString, method.ToString());
+            }
 
             method = eventInfo.GetRemoveMethod(true);
             Assert.NotNull(method);
-            Assert.Equal(nonPublicToString, method.ToString());
+            Assert.Equal(expectedToString, method.ToString());
         }
 
         [Theory]
-        [InlineData("PublicEvent")]
+        [InlineData(nameof(EI_Class.PublicEvent))]
         [InlineData("ProtectedEvent")]
         [InlineData("PrivateEvent")]
-        [InlineData("InternalEvent")]
+        [InlineData(nameof(EI_Class.InternalEvent))]
         public void GetType_FullName(string name)
         {
             EventInfo eventInfo = Helpers.GetEvent(typeof(EI_Class), name);
@@ -154,7 +166,7 @@ namespace System.Reflection.Tests
 
     public class EI_Class
     {
-        public static int StaticVariable = 0;
+        public static int AddEventHandler_RemoveEventHandler_Test_TrackingVariable = 0;
         
         public event VoidDelegate PublicEvent;
         public event VoidDelegate Public_Event;
@@ -168,16 +180,20 @@ namespace System.Reflection.Tests
         public void InvokeAllEvents()
         {
             PublicEvent?.Invoke();
-            PublicStaticEvent?.Invoke();
             PrivateEvent?.Invoke();
             InternalEvent?.Invoke();
             ProtectedEvent?.Invoke();
             ProtectedInternalEvent?.Invoke();
         }
 
-        public void PublicVoidMethod1() => StaticVariable += 1;
-        protected internal void ProtectedInternalVoidMethod() => StaticVariable += 2;
-        public void PublicVoidMethod2() => StaticVariable += 3;
+        public static void InvokeStaticEvent()
+        {
+            PublicStaticEvent?.Invoke();
+        }
+
+        public void PublicVoidMethod1() => AddEventHandler_RemoveEventHandler_Test_TrackingVariable += 1;
+        protected internal void ProtectedInternalVoidMethod() => AddEventHandler_RemoveEventHandler_Test_TrackingVariable += 2;
+        public void PublicVoidMethod2() => AddEventHandler_RemoveEventHandler_Test_TrackingVariable += 3;
     }
 
     public class DummyClass { }
