@@ -1,1 +1,0 @@
-SuppressNETStandardInference=UAP,Version=v10.1;UAP,Version=v10.0
