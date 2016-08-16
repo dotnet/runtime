@@ -1,1 +1,0 @@
-PermitImplementation=.NETCoreApp,Version=v1.1/win10-arm64
