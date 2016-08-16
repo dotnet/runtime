@@ -343,6 +343,7 @@
 		<type fullname="System.Threading.WaitHandle" preserve="fields">
 			<method name="set_Handle" />
 		</type>
+		<type fullname="System.Threading._ThreadPoolWaitCallback" preserve="fields"/>
 
 		<type fullname="System.Text.StringBuilder" preserve="fields" />
 
