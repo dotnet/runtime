@@ -667,9 +667,9 @@ namespace System.Runtime.Serialization
         }
 
 #if USE_REFEMIT
-        public bool TryReadDateTimeArray(XmlObjectSerializerReadContext context,
+        public virtual bool TryReadDateTimeArray(XmlObjectSerializerReadContext context,
 #else
-        internal bool TryReadDateTimeArray(XmlObjectSerializerReadContext context,
+        internal virtual bool TryReadDateTimeArray(XmlObjectSerializerReadContext context,
 #endif
         XmlDictionaryString itemName, XmlDictionaryString itemNamespace,
             int arrayLength, out DateTime[] array)

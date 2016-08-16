@@ -543,7 +543,7 @@ namespace System.Net.Http
                     // Unlike normal credentials, proxy credentials are URL decoded by libcurl, so we URL encode 
                     // them in order to allow, for example, a colon in the username.
                     string credentialText = string.IsNullOrEmpty(credentials.Domain) ?
-                        string.Format("{0}:{1}", WebUtility.UrlEncode(credentials.UserName), WebUtility.UrlEncode(credentials.Password)) :
+                        WebUtility.UrlEncode(credentials.UserName) + ":" + WebUtility.UrlEncode(credentials.Password) :
                         string.Format("{2}\\{0}:{1}", WebUtility.UrlEncode(credentials.UserName), WebUtility.UrlEncode(credentials.Password), WebUtility.UrlEncode(credentials.Domain));
 
                     EventSourceTrace("Proxy credentials set.");
@@ -565,7 +565,7 @@ namespace System.Net.Http
                 CURLAUTH authScheme = credentialSchemePair.Value;
                 string userName = string.IsNullOrEmpty(credentials.Domain) ?
                     credentials.UserName :
-                    string.Format("{0}\\{1}", credentials.Domain, credentials.UserName);
+                    credentials.Domain + "\\" + credentials.UserName;
 
                 SetCurlOption(CURLoption.CURLOPT_USERNAME, userName);
                 SetCurlOption(CURLoption.CURLOPT_HTTPAUTH, (long)authScheme);

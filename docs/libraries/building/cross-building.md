@@ -48,11 +48,11 @@ Once the rootfs has been generated, it will be possible to cross compile CoreFX.
 
 So, without `ROOTFS_DIR`:
 
-    lgs@ubuntu ~/git/corefx/ $ ./build.sh native arm debug verbose clean cross
+    lgs@ubuntu ~/git/corefx/ $ ./build-native.sh -debug -buildArch=arm -- verbose cross
 
 And with:
 
-    lgs@ubuntu ~/git/corefx/ $ ROOTFS_DIR=/home/lgs/corefx-cross/arm ./build.sh native arm debug verbose clean cross
+    lgs@ubuntu ~/git/corefx/ $ ROOTFS_DIR=/home/lgs/corefx-cross/arm ./build-native.sh -debug -buildArch=arm -- verbose cross
 
 As usual the generated binaries will be found in `bin/BuildOS.BuildArch.BuildType/Native` as following:
 
@@ -77,7 +77,7 @@ The managed components of CoreFX are architecture-independent and thus do not re
 
 Many of the managed binaries are also OS-independent, e.g. System.Linq.dll, while some are OS-specific, e.g. System.IO.FileSystem.dll, with different builds for Windows and Linux.
 
-    lgs@ubuntu ~/git/corefx/ $ ./build.sh managed debug clean verbose 
+    lgs@ubuntu ~/git/corefx/ $ ./build-managed.sh -debug -verbose 
 
 The output is at bin/<BuildOS>.AnyCPU.Debug.
 

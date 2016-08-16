@@ -663,7 +663,7 @@ namespace System.Net.Http
             {
                 if (!string.IsNullOrEmpty(creds.Domain))
                 {
-                    rtCreds.UserName = string.Format(CultureInfo.InvariantCulture, "{0}\\{1}", creds.Domain, creds.UserName);
+                    rtCreds.UserName = creds.Domain + "\\" + creds.UserName;
                 }
                 else
                 {

@@ -18,7 +18,7 @@ namespace System.Reflection.PortableExecutable
         internal PEMemoryBlock(AbstractMemoryBlock block, int offset = 0)
         {
             Debug.Assert(block != null);
-            Debug.Assert(offset >= 0 && offset < block.Size);
+            Debug.Assert(offset >= 0 && offset <= block.Size);
 
             _block = block;
             _offset = offset;

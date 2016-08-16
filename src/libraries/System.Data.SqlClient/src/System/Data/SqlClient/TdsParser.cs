@@ -752,6 +752,10 @@ namespace System.Data.SqlClient
 
             if (!_physicalStateObj.TryProcessHeader()) { throw SQL.SynchronousCallMayNotPend(); }
 
+            if(_physicalStateObj._inBytesPacket > TdsEnums.MAX_PACKET_SIZE || _physicalStateObj._inBytesPacket < 0)
+            {
+                throw SQL.InvalidPacketSize();
+            }
             byte[] payload = new byte[_physicalStateObj._inBytesPacket];
 
             Debug.Assert(_physicalStateObj._syncOverAsync, "Should not attempt pends in a synchronous call");

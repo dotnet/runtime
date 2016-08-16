@@ -1,2 +1,2 @@
-@call %~dp0run.cmd build-managed -nodoReuse -binclashWindows %*
+@call %~dp0run.cmd build-managed -nodeReuse -binclashWindows %*
 @exit /b %ERRORLEVEL%

@@ -988,11 +988,7 @@ namespace System.Net.Http
                         {
                             proxyInfo.AccessType = Interop.WinHttp.WINHTTP_ACCESS_TYPE_NAMED_PROXY;
                             Uri proxyUri = state.Proxy.GetProxy(uri);
-                            string proxyString = string.Format(
-                                CultureInfo.InvariantCulture,
-                                "{0}://{1}",
-                                proxyUri.Scheme,
-                                proxyUri.Authority);
+                            string proxyString = proxyUri.Scheme + "://" + proxyUri.Authority;
                             proxyInfo.Proxy = Marshal.StringToHGlobalUni(proxyString);
                         }
                     }

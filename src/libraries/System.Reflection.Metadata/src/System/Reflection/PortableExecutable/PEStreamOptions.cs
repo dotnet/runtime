@@ -34,7 +34,7 @@ namespace System.Reflection.PortableExecutable
         /// <remarks>
         /// <see cref="PEReader"/> closes the stream automatically by the time the constructor returns unless <see cref="LeaveOpen"/> is specified.
         /// </remarks>
-        PrefetchEntireImage = 1 << 2
+        PrefetchEntireImage = 1 << 2,
     }
 
     internal static class PEStreamOptionsExtensions
