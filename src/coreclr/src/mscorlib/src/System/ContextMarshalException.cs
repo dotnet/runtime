@@ -20,9 +20,7 @@ namespace System {
 	using System;
 	using System.Runtime.Serialization;
     [System.Runtime.InteropServices.ComVisible(true)]
-#if FEATURE_SERIALIZATION
     [Serializable]
-#endif
     public class ContextMarshalException : SystemException {
         public ContextMarshalException() 
             : base(Environment.GetResourceString("Arg_ContextMarshalException")) {

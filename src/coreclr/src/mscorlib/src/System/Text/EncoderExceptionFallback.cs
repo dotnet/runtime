@@ -103,9 +103,7 @@ namespace System.Text
         }
     }
 
-#if FEATURE_SERIALIZATION
     [Serializable]
-#endif
     public sealed class EncoderFallbackException : ArgumentException
     {
         char    charUnknown;

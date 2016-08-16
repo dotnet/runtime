@@ -2,9 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Text;
 using System;
 using System.Diagnostics.Contracts;
+using System.Runtime.Serialization;
+using System.Text;
 
 namespace System.Globalization
 {
@@ -40,6 +41,7 @@ namespace System.Globalization
     // CurrencySymbol            "$"      String used as local monetary symbol.
     //
 
+    [Serializable]
     [System.Runtime.InteropServices.ComVisible(true)]
     sealed public class NumberFormatInfo : IFormatProvider, ICloneable
     {
@@ -70,6 +72,7 @@ namespace System.Globalization
         internal String perMilleSymbol = "\u2030";
 
 
+        [OptionalField(VersionAdded = 2)]
         internal String[] nativeDigits = { "0", "1", "2", "3", "4", "5", "6", "7", "8", "9" };
 
         internal int numberDecimalDigits = 2;
@@ -86,12 +89,21 @@ namespace System.Globalization
 
         // Is this NumberFormatInfo for invariant culture?
 
+        [OptionalField(VersionAdded = 2)]
         internal bool m_isInvariant = false;
 
         public NumberFormatInfo() : this(null)
         {
         }
 
+        [OnSerializing]
+        private void OnSerializing(StreamingContext ctx) { }
+
+        [OnDeserializing]
+        private void OnDeserializing(StreamingContext ctx) { }
+
+        [OnDeserialized]
+        private void OnDeserialized(StreamingContext ctx) { }
 
         static private void VerifyDecimalSeparator(String decSep, String propertyName)
         {

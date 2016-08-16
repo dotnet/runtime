@@ -14,9 +14,7 @@ namespace System {
     using System;
     using System.Runtime.Serialization;
     [System.Runtime.InteropServices.ComVisible(true)]
-#if FEATURE_SERIALIZATION
     [Serializable]
-#endif
     public class FieldAccessException : MemberAccessException {
         public FieldAccessException() 
             : base(Environment.GetResourceString("Arg_FieldAccessException")) {

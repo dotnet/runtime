@@ -22,9 +22,7 @@ using System.Globalization;
 
 namespace System.IO {
     // Thrown when trying to access a file that doesn't exist on disk.
-#if FEATURE_SERIALIZATION
     [Serializable]
-#endif
     [System.Runtime.InteropServices.ComVisible(true)]
     public class FileNotFoundException : IOException {
 
@@ -120,6 +118,7 @@ namespace System.IO {
             // Base class constructor will check info != null.
 
             _fileName = info.GetString("FileNotFound_FileName");
+#if FEATURE_FUSION
             try
             {
                 _fusionLog = info.GetString("FileNotFound_FusionLog");
@@ -128,7 +127,7 @@ namespace System.IO {
             {
                 _fusionLog = null;
             }
-            
+#endif
         }
 
         private FileNotFoundException(String fileName, String fusionLog,int hResult)
@@ -148,7 +147,6 @@ namespace System.IO {
         }
 #endif
 
-#if FEATURE_SERIALIZATION
         [System.Security.SecurityCritical]  // auto-generated_required
         public override void GetObjectData(SerializationInfo info, StreamingContext context) {
             // Serialize data for our base classes.  base will verify info != null.
@@ -157,6 +155,7 @@ namespace System.IO {
             // Serialize data for this class
             info.AddValue("FileNotFound_FileName", _fileName, typeof(String));
 
+#if FEATURE_FUSION
             try
             {
                 info.AddValue("FileNotFound_FusionLog", FusionLog, typeof(String));
@@ -164,8 +163,8 @@ namespace System.IO {
             catch (SecurityException)
             {
             }
-        }
 #endif
+        }
     }
 }
 

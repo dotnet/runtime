@@ -22,9 +22,7 @@ namespace System.Diagnostics {
     // Modifying the order or fields of this object may require other changes 
     // to the unmanaged definition of the StackFrameHelper class, in 
     // VM\DebugDebugger.h. The binder will catch some of these layout problems.
-#if FEATURE_SERIALIZATION
     [Serializable]
-#endif
     internal class StackFrameHelper : IDisposable
     {
         [NonSerialized]
@@ -272,9 +270,7 @@ namespace System.Diagnostics {
 #if !FEATURE_CORECLR
     [SecurityPermission(SecurityAction.InheritanceDemand, UnmanagedCode=true)]
 #endif
-#if FEATURE_SERIALIZATION
     [Serializable]
-#endif
     [System.Runtime.InteropServices.ComVisible(true)]
     public class StackTrace
     {

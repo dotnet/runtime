@@ -259,9 +259,7 @@ namespace System.Reflection
         #endregion
     }
 
-#if FEATURE_SERIALIZATION
     [Serializable]
-#endif
     internal unsafe sealed class RuntimeParameterInfo : ParameterInfo, ISerializable
     {
         #region Static Members

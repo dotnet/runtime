@@ -27,14 +27,9 @@ namespace System.Globalization {
     using System.Diagnostics.Contracts;
 
 
-#if FEATURE_SERIALIZATION
     [Serializable]
-#endif
     [System.Runtime.InteropServices.ComVisible(true)]
-    public class TextInfo : ICloneable
-#if FEATURE_SERIALIZATION
-        , IDeserializationCallback
-#endif
+    public class TextInfo : ICloneable, IDeserializationCallback
     {
         //--------------------------------------------------------------------//
         //                        Internal Information                        //
@@ -899,13 +894,11 @@ namespace System.Globalization {
             }
         }
 
-#if FEATURE_SERIALIZATION
         /// <internalonly/>
         void IDeserializationCallback.OnDeserialization(Object sender)
         {
             OnDeserialized();
         }
-#endif
 
         //
         // Get case-insensitive hash code for the specified string.

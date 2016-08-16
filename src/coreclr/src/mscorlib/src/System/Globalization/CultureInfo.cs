@@ -42,9 +42,7 @@ namespace System.Globalization {
     using System.Diagnostics.Contracts;
     using System.Resources;
 
-#if FEATURE_SERIALIZATION
     [Serializable]
-#endif
     [System.Runtime.InteropServices.ComVisible(true)]
     public class CultureInfo : ICloneable, IFormatProvider {
         //--------------------------------------------------------------------//

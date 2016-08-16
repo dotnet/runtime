@@ -19,9 +19,7 @@ namespace System {
     // an object of the wrong type within an array occurs.
     // 
     [System.Runtime.InteropServices.ComVisible(true)]
-#if FEATURE_SERIALIZATION
     [Serializable]
-#endif
     public class ArrayTypeMismatchException : SystemException {
         
         // Creates a new ArrayMismatchException with its message string set to

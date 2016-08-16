@@ -29,9 +29,7 @@ namespace System
     /// <see cref="AggregateException"/> is used to consolidate multiple failures into a single, throwable
     /// exception object.
     /// </remarks>
-#if FEATURE_SERIALIZATION
     [Serializable]
-#endif
     [DebuggerDisplay("Count = {InnerExceptionCount}")]
     public class AggregateException : Exception
     {

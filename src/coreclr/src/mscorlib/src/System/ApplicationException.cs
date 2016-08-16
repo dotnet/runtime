@@ -23,9 +23,7 @@ namespace System {
     // RecoverableException.
     // 
     [System.Runtime.InteropServices.ComVisible(true)]
-#if FEATURE_SERIALIZATION
     [Serializable]
-#endif
     public class ApplicationException : Exception {
         
         // Creates a new ApplicationException with its message string set to
