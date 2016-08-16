@@ -1894,6 +1894,7 @@ public static partial class DataContractJsonSerializerTests
         Assert.StrictEqual(x.P2, y.P2);
     }
 
+    [ActiveIssue(10852, PlatformID.Linux)]
     [Fact]
     public static void DCJS_TypeWithAllPrimitiveProperties()
     {
@@ -1935,6 +1936,7 @@ public static partial class DataContractJsonSerializerTests
         Assert.StrictEqual(true, Enumerable.SequenceEqual(value, deserialized));
     }
 
+    [ActiveIssue(10852, PlatformID.Linux)]
     [Fact]
     public static void DCJS_ArrayOfDateTime()
     {
