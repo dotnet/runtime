@@ -588,8 +588,17 @@ FORCEINLINE INT64 FastDbl2Lng(double val)
     FCALL_CONTRACT;
     return HCCALL1_V(JIT_Dbl2Lng, val);
 #else
+// In x86/x64, conversion result of negative double to unsigned integer is
+// bit-equivalent unsigned value.
+// But other architecture's compiler convert negative doubles to zero when
+// the target is unsigned.
+#ifdef _TARGET_XARCH_
     FCALL_CONTRACT;
     return((__int64) val);
+#else
+    FCALL_CONTRACT;
+    return((unsigned __int64) val);
+#endif
 #endif
 }
 
