@@ -23,9 +23,7 @@ namespace System.Globalization {
     // 1 BeforeCurrentEra (BC)
 
     [System.Runtime.InteropServices.ComVisible(true)]
-#if FEATURE_SERIALIZATION
     [Serializable]
-#endif
     public class GregorianCalendar : Calendar
     {
         /*

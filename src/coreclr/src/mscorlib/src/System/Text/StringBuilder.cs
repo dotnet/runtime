@@ -40,13 +40,8 @@ namespace System.Text {
     // Console.WriteLine(sb2);
     // 
     [System.Runtime.InteropServices.ComVisible(true)]
-#if FEATURE_SERIALIZATION
     [Serializable]
-#endif
-    public sealed class StringBuilder
-#if FEATURE_SERIALIZATION
-        : ISerializable
-#endif
+    public sealed class StringBuilder : ISerializable
     {
         // A StringBuilder is internally represented as a linked list of blocks each of which holds
         // a chunk of the string.  It turns out string as a whole can also be represented as just a chunk, 
@@ -179,7 +174,6 @@ namespace System.Text {
             m_ChunkChars = new char[capacity];
         }
 
-#if FEATURE_SERIALIZATION
         [System.Security.SecurityCritical]  // auto-generated
         private StringBuilder(SerializationInfo info, StreamingContext context) {
             if (info == null)
@@ -258,7 +252,6 @@ namespace System.Text {
             // Note: persist "m_currentThread" to be compatible with old versions
             info.AddValue(ThreadIDField, 0);
         }
-#endif //FEATURE_SERIALIZATION
 
         [System.Diagnostics.Conditional("_DEBUG")]
         private void VerifyClassInvariant() {

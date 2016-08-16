@@ -155,9 +155,7 @@ namespace System.Resources {
     // is one such example.
     //
 
-#if FEATURE_SERIALIZATION
     [Serializable]
-#endif
     [System.Runtime.InteropServices.ComVisible(true)]
     public class ResourceManager
     {

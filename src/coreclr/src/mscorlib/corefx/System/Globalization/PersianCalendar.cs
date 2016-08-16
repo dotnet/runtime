@@ -24,6 +24,7 @@ namespace System.Globalization
      **      Persian     0001/01/01   9378/10/13
      */
 
+    [Serializable]
     public class PersianCalendar : Calendar
     {
         public static readonly int PersianEra = 1;

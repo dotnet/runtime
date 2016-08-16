@@ -22,14 +22,9 @@ namespace System {
     using System.Security;
     using System.Diagnostics.Contracts;
 
-#if FEATURE_SERIALIZATION
     [Serializable]
-#endif
     [System.Runtime.InteropServices.ComVisible(true)]
-    public struct IntPtr
-#if FEATURE_SERIALIZATION
-        : ISerializable
-#endif
+    public struct IntPtr : ISerializable
     {
         [SecurityCritical]
         unsafe private void* m_value; // The compiler treats void* closest to uint hence explicit casts are required to preserve int behavior
@@ -89,7 +84,6 @@ namespace System {
             m_value = (void *)l;
         }
 
-#if FEATURE_SERIALIZATION
         [System.Security.SecurityCritical]
         unsafe void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context) {
             if (info==null) {
@@ -102,7 +96,6 @@ namespace System {
                 info.AddValue("value", (long)((int)m_value));
 #endif
         }
-#endif
 
         [System.Security.SecuritySafeCritical]  // auto-generated
         public unsafe override bool Equals(Object obj) {

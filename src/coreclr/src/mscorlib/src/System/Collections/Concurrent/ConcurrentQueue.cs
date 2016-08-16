@@ -39,9 +39,7 @@ namespace System.Collections.Concurrent
     [DebuggerDisplay("Count = {Count}")]
     [DebuggerTypeProxy(typeof(SystemCollectionsConcurrent_ProducerConsumerCollectionDebugView<>))]
     [HostProtection(Synchronization = true, ExternalThreading = true)]
-#if FEATURE_SERIALIZATION
     [Serializable]
-#endif
     public class ConcurrentQueue<T> : IProducerConsumerCollection<T>, IReadOnlyCollection<T>
     {
         //fields of ConcurrentQueue

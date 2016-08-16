@@ -17,9 +17,7 @@ namespace System.Reflection {
     using System;
     using SystemException = System.SystemException;
     using System.Runtime.Serialization;
-#if FEATURE_SERIALIZATION
     [Serializable]
-#endif
     [System.Runtime.InteropServices.ComVisible(true)]
     public sealed class AmbiguousMatchException : SystemException
     {

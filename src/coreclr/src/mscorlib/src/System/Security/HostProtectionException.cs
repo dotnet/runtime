@@ -23,9 +23,7 @@ namespace System.Security
     using System.Diagnostics.Contracts;
 
     [System.Runtime.InteropServices.ComVisible(true)]
-#if FEATURE_SERIALIZATION
     [Serializable]
-#endif
     public class HostProtectionException : SystemException
     {
         private HostProtectionResource m_protected;
