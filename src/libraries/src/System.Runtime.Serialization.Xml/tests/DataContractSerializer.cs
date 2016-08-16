@@ -2268,6 +2268,7 @@ public static partial class DataContractSerializerTests
         Assert.StrictEqual(true, Enumerable.SequenceEqual(value, deserialized));
     }
 
+    [ActiveIssue(10852, PlatformID.Linux)]
     [Fact]
     public static void DCS_ArrayOfDateTime()
     {
