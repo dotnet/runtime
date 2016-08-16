@@ -260,7 +260,7 @@ PORTABILITY_ASSERT("GcInfoDumper::ReportPointerRecord is not implemented on this
                 break;
             }
 #elif defined (_TARGET_ARM64_)
-
+            iEncodedReg = iEncodedReg + ctx; //We have to compensate for not tracking x18
             if (ctx == 1)
             {
                 if (iReg < 18 )   // skip volatile registers for second context
@@ -673,7 +673,7 @@ PORTABILITY_ASSERT("GcInfoDumper::EnumerateStateChanges is not implemented on th
         if(safePointDecoder.IsSafePoint(safePointOffset))
         {
             _ASSERTE(!fNewInterruptible);
-            if (pfnSafePointFunc(offset, pvData))
+            if (pfnSafePointFunc(safePointOffset, pvData))
                 break;
 
             flags = 0;
