@@ -1568,6 +1568,7 @@ Compiler::fgWalkResult Rationalizer::SimpleTransformHelper(GenTree** ppTree, Com
 
             case GT_LCL_FLD:
             case GT_STORE_LCL_FLD:
+                // TODO-1stClassStructs: Eliminate this.
                 FixupIfSIMDLocal(comp, tree->AsLclVarCommon());
                 break;
 
@@ -1590,7 +1591,9 @@ Compiler::fgWalkResult Rationalizer::SimpleTransformHelper(GenTree** ppTree, Com
                 GenTreeSIMD* simdTree = (*ppTree)->AsSIMD();
                 simdSize              = simdTree->gtSIMDSize;
                 var_types simdType    = comp->getSIMDTypeForSize(simdSize);
-                // TODO-Cleanup: This is no-longer required once we plumb SIMD types thru front-end
+                // TODO-1stClassStructs: This should be handled more generally for enregistered or promoted
+                // structs that are passed or returned in a different register type than their enregistered
+                // type(s).
                 if (simdTree->gtType == TYP_I_IMPL && simdTree->gtSIMDSize == TARGET_POINTER_SIZE)
                 {
                     // This happens when it is consumed by a GT_RET_EXPR.
@@ -1676,8 +1679,9 @@ Compiler::fgWalkResult Rationalizer::SimpleTransformHelper(GenTree** ppTree, Com
 // Return Value:
 //    None.
 //
-// TODO-Cleanup: Once SIMD types are plumbed through the frontend, this will no longer
-// be required.
+// TODO-1stClassStructs: This is now only here to preserve existing behavior. It is actually not
+// desirable to change the lclFld nodes back to TYP_SIMD (it will cause them to be loaded
+// into a vector register, and then moved to an int register).
 
 void Rationalizer::FixupIfSIMDLocal(Compiler* comp, GenTreeLclVarCommon* tree)
 {
