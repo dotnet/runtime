@@ -14327,7 +14327,7 @@ mono_reflection_create_generic_class (MonoReflectionTypeBuilder *tb, MonoError *
 }
 
 void
-mono_reflection_create_internal_class (MonoReflectionTypeBuilder *tb)
+ves_icall_TypeBuilder_create_internal_class (MonoReflectionTypeBuilder *tb)
 {
 	g_assert_not_reached ();
 }
@@ -14407,7 +14407,7 @@ ves_icall_TypeBuilder_create_runtime_class (MonoReflectionTypeBuilder *tb)
 }
 
 void
-mono_reflection_initialize_generic_parameter (MonoReflectionGenericParam *gparam)
+ves_icall_GenericTypeParameterBuilder_initialize_generic_parameter (MonoReflectionGenericParam *gparam)
 {
 	g_assert_not_reached ();
 }
