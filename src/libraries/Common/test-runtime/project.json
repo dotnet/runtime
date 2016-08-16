@@ -3,7 +3,7 @@
     "Microsoft.NETCore.Platforms": "1.0.2-beta-devapi-24415-01",
     "Microsoft.NETCore.Targets": "1.0.3-beta-devapi-24415-01",
     "Microsoft.NETCore.TestHost": "1.0.0-rc4-24131-00",
-    "Microsoft.NETCore.Runtime.CoreCLR": "1.1.0-beta-24414-03",
+    "Microsoft.NETCore.Runtime.CoreCLR": "1.1.0-beta-24416-01",
     "System.Diagnostics.Contracts": "4.0.2-beta-devapi-24415-01",
     "System.IO.Compression": "4.2.0-beta-devapi-24415-01",
     "System.Runtime.InteropServices.RuntimeInformation": "4.0.1-beta-devapi-24415-01",
