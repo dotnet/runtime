@@ -20,5 +20,11 @@
       <TargetPath>runtimes/aot/lib/netcore50</TargetPath>
     </File>
   </ItemGroup>
+  <ItemGroup>
+    <!-- This package is only supported for CoreCLR RIDs for UWP -->
+    <ValidatePackageSuppression Include="PermitImplementation">
+      <Value>.NETCore,Version=v5.0/win10-x86;.NETCore,Version=v5.0/win10-x64;.NETCore,Version=v5.0/win10-arm;UAP,Version=v10.0/win10-x86;UAP,Version=v10.0/win10-x64;UAP,Version=v10.0/win10-arm;UAP,Version=v10.1/win10-x86;UAP,Version=v10.1/win10-x64;UAP,Version=v10.1/win10-arm</Value>
+    </ValidatePackageSuppression>
+  </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

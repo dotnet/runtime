@@ -7,6 +7,11 @@
       <SupportedFramework>uap10.0</SupportedFramework>
     </ProjectReference>
   </ItemGroup>
-
+  <ItemGroup>
+    <!-- This package is only supported on UWP and intentionally does not expose a netstandard reference assembly -->
+    <ValidatePackageSuppression Include="SuppressNETStandardInference">
+      <Value>UAP,Version=v10.1;UAP,Version=v10.0</Value>
+    </ValidatePackageSuppression>
+  </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
