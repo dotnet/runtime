@@ -63,6 +63,7 @@
     <BuildToolsTaskDir Condition="'$(BuildToolsTargets45)' == 'true'">$(ToolsDir)net45/</BuildToolsTaskDir>
     <BuildToolsTaskDir Condition="'$(BuildToolsTaskDir)'==''">$(ToolsDir)</BuildToolsTaskDir>
     <UseRoslynCompilers Condition="'$(UseRoslynCompilers)'=='' and '$(OSEnvironment)'!='Windows_NT'">false</UseRoslynCompilers>
+    <UseSharedCompilation Condition="'$(UseSharedCompilation)' == '' and '$(OSEnvironment)' == 'Windows_NT' and '$(UseRoslynCompilers)' != 'true'">true</UseSharedCompilation>
   </PropertyGroup>
 
   <Import Project="$(ToolRuntimePath)BuildVersion.targets" Condition="Exists('$(ToolRuntimePath)BuildVersion.targets')" />
