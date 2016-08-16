@@ -402,9 +402,9 @@ namespace System.Reflection.Metadata.Ecma335
         /// <exception cref="ImageFormatLimitationException">The remaining space on the heap is too small to fit the string.</exception>
         public ReservedBlob<GuidHandle> ReserveGuid()
         {
-            return new ReservedBlob<GuidHandle>(
-                GetNewGuidHandle(), 
-                _guidBuilder.ReserveBytes(BlobUtilities.SizeOfGuid));
+            var handle = GetNewGuidHandle();
+            var content = _guidBuilder.ReserveBytes(BlobUtilities.SizeOfGuid);
+            return new ReservedBlob<GuidHandle>(handle, content);
         }
 
         private GuidHandle GetNewGuidHandle()

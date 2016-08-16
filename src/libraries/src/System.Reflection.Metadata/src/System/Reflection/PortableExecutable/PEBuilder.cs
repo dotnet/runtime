@@ -88,7 +88,7 @@ namespace System.Reflection.PortableExecutable
 
         internal protected abstract PEDirectoriesBuilder GetDirectories();
 
-        public void Serialize(BlobBuilder builder, out BlobContentId contentId)
+        public BlobContentId Serialize(BlobBuilder builder)
         {
             // Define and serialize sections in two steps.
             // We need to know about all sections before serializing them.
@@ -110,12 +110,14 @@ namespace System.Reflection.PortableExecutable
                 builder.Align(Header.FileAlignment);
             }
 
-            contentId = IdProvider(builder.GetBlobs());
+            var contentId = IdProvider(builder.GetBlobs());
 
             // patch timestamp in COFF header:
             var stampWriter = new BlobWriter(stampFixup);
             stampWriter.WriteUInt32(contentId.Stamp);
             Debug.Assert(stampWriter.RemainingBytes == 0);
+
+            return contentId;
         }
 
         private ImmutableArray<SerializedSection> SerializeSections()

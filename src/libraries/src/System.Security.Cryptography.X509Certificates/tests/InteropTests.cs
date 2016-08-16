@@ -245,6 +245,11 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
             public byte[] ToByteArray()
             {
+                if (cbData == 0)
+                {
+                    return Array.Empty<byte>();
+                }
+
                 byte[] array = new byte[cbData];
                 Marshal.Copy((IntPtr)pbData, array, 0, cbData);
                 return array;
@@ -301,6 +306,11 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
             public byte[] ToByteArray()
             {
+                if (cbData == 0)
+                {
+                    return Array.Empty<byte>();
+                }
+
                 byte[] array = new byte[cbData];
                 Marshal.Copy((IntPtr)pbData, array, 0, cbData);
                 return array;

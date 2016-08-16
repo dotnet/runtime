@@ -18,11 +18,12 @@ namespace System.Runtime.Serialization
 #if USE_REFEMIT || NET_NATIVE
     public delegate void XmlFormatClassWriterDelegate(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContext context, ClassDataContract dataContract);
     public delegate void XmlFormatCollectionWriterDelegate(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContext context, CollectionDataContract dataContract);
+    public sealed class XmlFormatWriterGenerator
 #else
     internal delegate void XmlFormatClassWriterDelegate(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContext context, ClassDataContract dataContract);
     internal delegate void XmlFormatCollectionWriterDelegate(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContext context, CollectionDataContract dataContract);
-
     internal sealed class XmlFormatWriterGenerator
+#endif
     {
         [SecurityCritical]
         /// <SecurityNote>
@@ -64,6 +65,7 @@ namespace System.Runtime.Serialization
         /// </SecurityNote>
         private class CriticalHelper
         {
+#if !USE_REFEMIT && !NET_NATIVE
             private CodeGenerator _ilg;
             private ArgBuilder _xmlWriterArg;
             private ArgBuilder _contextArg;
@@ -76,55 +78,91 @@ namespace System.Runtime.Serialization
             private LocalBuilder _childElementNamespacesLocal;
             private int _typeIndex = 1;
             private int _childElementIndex = 0;
+#endif
 
             internal XmlFormatClassWriterDelegate GenerateClassWriter(ClassDataContract classContract)
             {
-                _ilg = new CodeGenerator();
-                bool memberAccessFlag = classContract.RequiresMemberAccessForWrite(null);
-                try
+                if (DataContractSerializer.Option == SerializationOption.ReflectionOnly)
                 {
-                    _ilg.BeginMethod("Write" + classContract.StableName.Name + "ToXml", Globals.TypeOfXmlFormatClassWriterDelegate, memberAccessFlag);
+                    return new ReflectionXmlFormatWriter().ReflectionWriteClass;
                 }
-                catch (SecurityException securityException)
+#if NET_NATIVE
+                else if (DataContractSerializer.Option == SerializationOption.ReflectionAsBackup)
                 {
-                    if (memberAccessFlag)
-                    {
-                        classContract.RequiresMemberAccessForWrite(securityException);
-                    }
-                    else
-                    {
-                        throw;
-                    }
+                    return new ReflectionXmlFormatWriter().ReflectionWriteClass;
                 }
-                InitArgs(classContract.UnderlyingType);
-                WriteClass(classContract);
-                return (XmlFormatClassWriterDelegate)_ilg.EndMethod();
+#endif
+                else
+                {
+#if USE_REFEMIT || NET_NATIVE
+                    throw new InvalidOperationException("Cannot generate class writer");
+#else
+                    _ilg = new CodeGenerator();
+                    bool memberAccessFlag = classContract.RequiresMemberAccessForWrite(null);
+                    try
+                    {
+                        _ilg.BeginMethod("Write" + classContract.StableName.Name + "ToXml", Globals.TypeOfXmlFormatClassWriterDelegate, memberAccessFlag);
+                    }
+                    catch (SecurityException securityException)
+                    {
+                        if (memberAccessFlag)
+                        {
+                            classContract.RequiresMemberAccessForWrite(securityException);
+                        }
+                        else
+                        {
+                            throw;
+                        }
+                    }
+                    InitArgs(classContract.UnderlyingType);
+                    WriteClass(classContract);
+                    return (XmlFormatClassWriterDelegate)_ilg.EndMethod();
+#endif
+                }
             }
 
             internal XmlFormatCollectionWriterDelegate GenerateCollectionWriter(CollectionDataContract collectionContract)
             {
-                _ilg = new CodeGenerator();
-                bool memberAccessFlag = collectionContract.RequiresMemberAccessForWrite(null);
-                try
+                if (DataContractSerializer.Option == SerializationOption.ReflectionOnly)
                 {
-                    _ilg.BeginMethod("Write" + collectionContract.StableName.Name + "ToXml", Globals.TypeOfXmlFormatCollectionWriterDelegate, memberAccessFlag);
+                    return new ReflectionXmlFormatWriter().ReflectionWriteCollection;
                 }
-                catch (SecurityException securityException)
+#if NET_NATIVE
+                else if (DataContractSerializer.Option == SerializationOption.ReflectionAsBackup)
                 {
-                    if (memberAccessFlag)
-                    {
-                        collectionContract.RequiresMemberAccessForWrite(securityException);
-                    }
-                    else
-                    {
-                        throw;
-                    }
+                    return new ReflectionXmlFormatWriter().ReflectionWriteCollection;
                 }
-                InitArgs(collectionContract.UnderlyingType);
-                WriteCollection(collectionContract);
-                return (XmlFormatCollectionWriterDelegate)_ilg.EndMethod();
+#endif
+                else
+                {
+#if USE_REFEMIT || NET_NATIVE
+                    throw new InvalidOperationException("Cannot generate class writer");
+#else
+                    _ilg = new CodeGenerator();
+                    bool memberAccessFlag = collectionContract.RequiresMemberAccessForWrite(null);
+                    try
+                    {
+                        _ilg.BeginMethod("Write" + collectionContract.StableName.Name + "ToXml", Globals.TypeOfXmlFormatCollectionWriterDelegate, memberAccessFlag);
+                    }
+                    catch (SecurityException securityException)
+                    {
+                        if (memberAccessFlag)
+                        {
+                            collectionContract.RequiresMemberAccessForWrite(securityException);
+                        }
+                        else
+                        {
+                            throw;
+                        }
+                    }
+                    InitArgs(collectionContract.UnderlyingType);
+                    WriteCollection(collectionContract);
+                    return (XmlFormatCollectionWriterDelegate)_ilg.EndMethod();
+#endif
+                }
             }
 
+#if !USE_REFEMIT && !NET_NATIVE
             private void InitArgs(Type objType)
             {
                 _xmlWriterArg = _ilg.GetArg(0);
@@ -726,7 +764,7 @@ namespace System.Runtime.Serialization
                 }
                 return false;
             }
+#endif
         }
     }
-#endif
 }

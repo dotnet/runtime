@@ -2,11 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Immutable;
 using System.IO;
+using System.Reflection;
+using System.Reflection.Internal;
 using System.Reflection.Internal.Tests;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Reflection.Metadata.Tests;
+using System.Runtime.InteropServices;
 using Xunit;
 
 namespace System.Reflection.PortableExecutable.Tests
@@ -64,6 +68,15 @@ namespace System.Reflection.PortableExecutable.Tests
             new PEReader(s, PEStreamOptions.Default, 0);
             Assert.Throws<ArgumentOutOfRangeException>(() => new PEReader(s, PEStreamOptions.Default, -1));
             Assert.Throws<ArgumentOutOfRangeException>(() => new PEReader(s, PEStreamOptions.Default, 1));
+        }
+
+        [Fact]
+        public unsafe void Ctor_Loaded()
+        {
+            byte b = 1;
+            Assert.True(new PEReader(&b, 1, isLoadedImage: true).IsLoadedImage);
+            Assert.False(new PEReader(&b, 1, isLoadedImage: false).IsLoadedImage);
+            Assert.False(new PEReader(new MemoryStream()).IsLoadedImage);
         }
 
         [Fact]
@@ -190,6 +203,99 @@ namespace System.Reflection.PortableExecutable.Tests
             using (var reader = new PEReader(peStream, PEStreamOptions.LeaveOpen | PEStreamOptions.PrefetchMetadata | PEStreamOptions.PrefetchEntireImage))
             {
                 Assert.Equal(4608, reader.GetEntireImage().Length);
+            }
+        }
+
+        [Fact]
+        [PlatformSpecific(PlatformID.Windows)]
+        public void GetMethodBody_Loaded()
+        {
+            LoaderUtilities.LoadPEAndValidate(Misc.Members, reader =>
+            {
+                var md = reader.GetMetadataReader();
+                var il = reader.GetMethodBody(md.GetMethodDefinition(MetadataTokens.MethodDefinitionHandle(1)).RelativeVirtualAddress);
+
+                Assert.Equal(new byte[] { 0, 42 }, il.GetILBytes());
+                Assert.Equal(8, il.MaxStack);
+            });
+        }
+
+        [Fact]
+        public void GetSectionData()
+        {
+            var peStream = new MemoryStream(Misc.Members);
+            using (var reader = new PEReader(peStream))
+            {
+                ValidateSectionData(reader);
+            }
+        }
+
+        [Fact]
+        [PlatformSpecific(PlatformID.Windows)]
+        public void GetSectionData_Loaded()
+        {
+            LoaderUtilities.LoadPEAndValidate(Misc.Members, ValidateSectionData);
+        }
+
+        private unsafe void ValidateSectionData(PEReader reader)
+        {
+            var relocBlob1 = reader.GetSectionData(".reloc").GetContent();
+            var relocBlob2 = reader.GetSectionData(0x6000).GetContent();
+
+            AssertEx.Equal(new byte[] 
+            {
+                0x00, 0x20, 0x00, 0x00,
+                0x0C, 0x00, 0x00, 0x00,
+                0xD0, 0x38, 0x00, 0x00
+            }, relocBlob1);
+
+            AssertEx.Equal(relocBlob1, relocBlob2);
+
+            var data = reader.GetSectionData(0x5fff);
+            Assert.True(data.Pointer == null);
+            Assert.Equal(0, data.Length);
+            AssertEx.Equal(new byte[0], data.GetContent());
+
+            data = reader.GetSectionData(0x600B);
+            Assert.True(data.Pointer != null);
+            Assert.Equal(1, data.Length);
+            AssertEx.Equal(new byte[] { 0x00 }, data.GetContent());
+
+            data = reader.GetSectionData(0x600C);
+            Assert.True(data.Pointer == null);
+            Assert.Equal(0, data.Length);
+            AssertEx.Equal(new byte[0], data.GetContent());
+
+            data = reader.GetSectionData(0x600D);
+            Assert.True(data.Pointer == null);
+            Assert.Equal(0, data.Length);
+            AssertEx.Equal(new byte[0], data.GetContent());
+
+            data = reader.GetSectionData(int.MaxValue);
+            Assert.True(data.Pointer == null);
+            Assert.Equal(0, data.Length);
+            AssertEx.Equal(new byte[0], data.GetContent());
+
+            data = reader.GetSectionData(".nonexisting");
+            Assert.True(data.Pointer == null);
+            Assert.Equal(0, data.Length);
+            AssertEx.Equal(new byte[0], data.GetContent());
+
+            data = reader.GetSectionData("");
+            Assert.True(data.Pointer == null);
+            Assert.Equal(0, data.Length);
+            AssertEx.Equal(new byte[0], data.GetContent());
+        }
+
+        [Fact]
+        public void GetSectionData_Errors()
+        {
+            var peStream = new MemoryStream(Misc.Members);
+            using (var reader = new PEReader(peStream))
+            {
+                Assert.Throws<ArgumentNullException>(() => reader.GetSectionData(null));
+                Assert.Throws<ArgumentOutOfRangeException>(() => reader.GetSectionData(-1));
+                Assert.Throws<ArgumentOutOfRangeException>(() => reader.GetSectionData(int.MinValue));
             }
         }
     }

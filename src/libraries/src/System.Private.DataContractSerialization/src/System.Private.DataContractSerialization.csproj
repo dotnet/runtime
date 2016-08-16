@@ -147,6 +147,14 @@
     <Compile Include="$(JsonSources)\ByteArrayHelperWithString.cs" />
     <Compile Include="$(JsonSources)\JsonEncodingStreamWrapper.cs" />
     <Compile Include="$(JsonSources)\JsonFormatGeneratorStatics.cs" Condition="!$(NetNative)" />
+    <Compile Include="System\Runtime\Serialization\AccessorBuilder.cs" />
+    <Compile Include="System\Runtime\Serialization\Json\ReflectionJsonFormatReader.cs" />
+    <Compile Include="System\Runtime\Serialization\Json\ReflectionJsonFormatWriter.cs" />
+    <Compile Include="System\Runtime\Serialization\ReflectionReader.cs" />
+    <Compile Include="System\Runtime\Serialization\ReflectionClassWriter.cs" />
+    <Compile Include="System\Runtime\Serialization\ReflectionXmlFormatReader.cs" />
+    <Compile Include="System\Runtime\Serialization\ReflectionXmlFormatWriter.cs" />
+    <Compile Include="System\Runtime\Serialization\SerializationOption.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)'=='netcore50aot'">
     <TargetingPackReference Include="System.Private.CoreLib.Augments" />

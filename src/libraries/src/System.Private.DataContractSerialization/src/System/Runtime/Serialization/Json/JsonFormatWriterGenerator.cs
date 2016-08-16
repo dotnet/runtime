@@ -187,15 +187,7 @@ namespace System.Runtime.Serialization.Json
             private void WriteClass(ClassDataContract classContract)
             {
                 InvokeOnSerializing(classContract);
-
-                if (classContract.IsISerializable)
-                {
-                    _ilg.Call(_contextArg, JsonFormatGeneratorStatics.WriteJsonISerializableMethod, _xmlWriterArg, _objectLocal);
-                }
-                else
-                {
-                    WriteMembers(classContract, null, classContract);
-                }
+                WriteMembers(classContract, null, classContract);
                 InvokeOnSerialized(classContract);
             }
 

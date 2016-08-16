@@ -22,7 +22,12 @@ namespace System.Runtime.Serialization
         String,
         ByteArray,
         XmlElement,
-        DateTimeArray
+        DateTimeArray,
+        ArrayOfSimpleType,
+        ListOfSimpleType,
+        DictionaryOfSimpleType,
+        SimpleStructWithProperties,
+        SimpleTypeWithFields
     }
 
     public interface IPerfTestSerializer
@@ -71,15 +76,23 @@ namespace System.Runtime.Serialization
             yield return new PerfTestConfig(10000, TestType.String, 128);
             yield return new PerfTestConfig(10000, TestType.String, 1024);
             yield return new PerfTestConfig(1000, TestType.ListOfInt, 128);
-            yield return new PerfTestConfig(1000, TestType.ListOfInt, 1024);
+            yield return new PerfTestConfig(100, TestType.ListOfInt, 1024);
             yield return new PerfTestConfig(1, TestType.ListOfInt, 1024 * 1024);
             yield return new PerfTestConfig(1000, TestType.Dictionary, 128);
             yield return new PerfTestConfig(100, TestType.Dictionary, 1024);
             yield return new PerfTestConfig(10, TestType.SimpleType, 1);
             yield return new PerfTestConfig(1, TestType.SimpleType, 15);
+            yield return new PerfTestConfig(1, TestType.SimpleTypeWithFields, 15);
+            yield return new PerfTestConfig(10000, TestType.SimpleStructWithProperties, 1);
             yield return new PerfTestConfig(10000, TestType.ISerializable, -1);
             yield return new PerfTestConfig(10000, TestType.XmlElement, -1);
             yield return new PerfTestConfig(100, TestType.DateTimeArray, 1024);
+            yield return new PerfTestConfig(1000, TestType.ArrayOfSimpleType, 128);
+            yield return new PerfTestConfig(100, TestType.ArrayOfSimpleType, 1024);
+            yield return new PerfTestConfig(1000, TestType.ListOfSimpleType, 128);
+            yield return new PerfTestConfig(100, TestType.ListOfSimpleType, 1024);
+            yield return new PerfTestConfig(1000, TestType.DictionaryOfSimpleType, 128);
+            yield return new PerfTestConfig(100, TestType.DictionaryOfSimpleType, 1024);
         }
 
         public static IEnumerable<object[]> PerformanceMemberData()
@@ -119,6 +132,31 @@ namespace System.Runtime.Serialization
             return obj;
         }
 
+        public static SimpleTypeWithMoreFields CreateSimpleTypeWithFields(int height, int parentId, int currentId, int collectionSize, int childListSize)
+        {
+            int index = parentId * childListSize + (currentId + 1);
+            var obj = new SimpleTypeWithMoreFields()
+            {
+                IntField = index,
+                StringField = index + " string value",
+                EnumField = (MyEnum)(index % (Enum.GetNames(typeof(MyEnum)).Length)),
+                CollectionField = new List<string>(collectionSize),
+                SimpleTypeList = new List<SimpleTypeWithMoreFields>(childListSize)
+            };
+            for (int i = 0; i < collectionSize; ++i)
+            {
+                obj.CollectionField.Add(index + "." + i);
+            }
+            if (height > 1)
+            {
+                for (int i = 0; i < childListSize; ++i)
+                {
+                    obj.SimpleTypeList.Add(CreateSimpleTypeWithFields(height - 1, index, i, collectionSize, childListSize));
+                }
+            }
+            return obj;
+        }
+
         public static byte[] CreateByteArray(int size)
         {
             byte[] obj = new byte[size];
@@ -141,6 +179,39 @@ namespace System.Runtime.Serialization
             }
 
             return dictOfIntString;
+        }
+
+        public static Dictionary<int, SimpleType> CreateDictionaryOfIntSimpleType(int count)
+        {
+            var dictOfIntSimpleType = new Dictionary<int, SimpleType>(count);
+            for (int i = 0; i < count; ++i)
+            {
+                dictOfIntSimpleType[i] = new SimpleType() { P1 = i.ToString(), P2 = i };
+            }
+
+            return dictOfIntSimpleType;
+        }
+
+        public static List<SimpleType> CreateListOfSimpleType(int count)
+        {
+            var listOfSimpleType = new List<SimpleType>(count);
+            for(int i = 0; i < count; i++)
+            {
+                listOfSimpleType.Add(new SimpleType() { P1 = i.ToString(), P2 = i });
+            }
+
+            return listOfSimpleType;
+        }
+
+        public static SimpleType[] CreateArrayOfSimpleType(int count)
+        {
+            var arrayOfSimpleType = new SimpleType[count];
+            for(int i = 0; i < count; i++)
+            {
+                arrayOfSimpleType[i] = new SimpleType() { P1 = i.ToString(), P2 = i };
+            }
+
+            return arrayOfSimpleType;
         }
 
         public static List<int> CreateListOfInt(int count)
@@ -184,6 +255,9 @@ namespace System.Runtime.Serialization
                 case TestType.SimpleType:
                     obj = CreateSimpleTypeWihtMoreProperties(testSize, 0, -1, 7, 2);
                     break;
+                case TestType.SimpleTypeWithFields:
+                     obj = CreateSimpleTypeWithFields(testSize, 0, -1, 7, 2);
+                    break;
                 case TestType.String:
                     obj = new string('k', testSize);
                     break;
@@ -196,6 +270,18 @@ namespace System.Runtime.Serialization
                     break;
                 case TestType.DateTimeArray:
                     obj = CreateDateTimeArray(testSize);
+                    break;
+                case TestType.ArrayOfSimpleType:
+                    obj = CreateArrayOfSimpleType(testSize);
+                    break;
+                case TestType.ListOfSimpleType:
+                    obj = CreateListOfSimpleType(testSize);
+                    break;
+                case TestType.DictionaryOfSimpleType:
+                    obj = CreateDictionaryOfIntSimpleType(testSize);
+                    break;
+                case TestType.SimpleStructWithProperties:
+                    obj = new SimpleStructWithProperties() { Num = 1, Text = "Foo" };
                     break;
                 default:
                     throw new ArgumentException();

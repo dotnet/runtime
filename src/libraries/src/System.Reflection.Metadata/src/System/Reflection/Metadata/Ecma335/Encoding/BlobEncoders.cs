@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Immutable;
-using System.Runtime.CompilerServices;
 
 namespace System.Reflection.Metadata.Ecma335
 {
@@ -98,15 +97,16 @@ namespace System.Reflection.Metadata.Ecma335
 
         /// <summary>
         /// Encodes Custom Attribute Signature blob.
-        /// 
-        /// Returns a pair of encoders that must be used in the order they appear in the tuple: 
-        /// first <see cref="FixedArgumentsEncoder"/> to encode fixed arguments, 
-        /// then <see cref="CustomAttributeNamedArgumentsEncoder"/> to encode named arguments.
+        /// Returns a pair of encoders that must be used in the order they appear in the parameter list.
         /// </summary>
-        public ValueTuple<FixedArgumentsEncoder, CustomAttributeNamedArgumentsEncoder> CustomAttributeSignature()
+        /// <param name="fixedArguments">Use first, to encode fixed arguments.</param>
+        /// <param name="namedArguments">Use second, to encode named arguments.</param>
+        public void CustomAttributeSignature(out FixedArgumentsEncoder fixedArguments, out CustomAttributeNamedArgumentsEncoder namedArguments)
         {
             Builder.WriteUInt16(0x0001);
-            return ValueTuple.Create(new FixedArgumentsEncoder(Builder), new CustomAttributeNamedArgumentsEncoder(Builder));
+
+            fixedArguments = new FixedArgumentsEncoder(Builder);
+            namedArguments = new CustomAttributeNamedArgumentsEncoder(Builder);
         }
 
         /// <summary>
@@ -120,9 +120,11 @@ namespace System.Reflection.Metadata.Ecma335
             if (fixedArguments == null) Throw.ArgumentNull(nameof(fixedArguments));
             if (namedArguments == null) Throw.ArgumentNull(nameof(namedArguments));
 
-            var parts = CustomAttributeSignature();
-            fixedArguments(parts.Item1);
-            namedArguments(parts.Item2);
+            FixedArgumentsEncoder fixedArgumentsEncoder;
+            CustomAttributeNamedArgumentsEncoder namedArgumentsEncoder;
+            CustomAttributeSignature(out fixedArgumentsEncoder, out namedArgumentsEncoder);
+            fixedArguments(fixedArgumentsEncoder);
+            namedArguments(namedArgumentsEncoder);
         }
 
         /// <summary>
@@ -202,13 +204,12 @@ namespace System.Reflection.Metadata.Ecma335
 
         /// <summary>
         /// Encodes return type and parameters.
-        /// 
-        /// Returns a pair of encoders that must be used in the order they appear in the tuple:
-        /// first <see cref="ReturnTypeEncoder"/> to encode the return type,
-        /// then <see cref="ParametersEncoder"/> to encode the actual parameters.
+        /// Returns a pair of encoders that must be used in the order they appear in the parameter list.
         /// </summary>
         /// <param name="parameterCount">Number of parameters.</param>
-        public ValueTuple<ReturnTypeEncoder, ParametersEncoder> Parameters(int parameterCount)
+        /// <param name="returnType">Use first, to encode the return types.</param>
+        /// <param name="parameters">Use second, to encode the actual parameters.</param>
+        public void Parameters(int parameterCount, out ReturnTypeEncoder returnType, out ParametersEncoder parameters)
         {
             if (unchecked((uint)parameterCount) > BlobWriterImpl.MaxCompressedIntegerValue)
             {
@@ -217,7 +218,8 @@ namespace System.Reflection.Metadata.Ecma335
 
             Builder.WriteCompressedInteger(parameterCount);
 
-            return ValueTuple.Create(new ReturnTypeEncoder(Builder), new ParametersEncoder(Builder, hasVarArgs: HasVarArgs));
+            returnType = new ReturnTypeEncoder(Builder);
+            parameters = new ParametersEncoder(Builder, hasVarArgs: HasVarArgs);
         }
 
         /// <summary>
@@ -232,9 +234,11 @@ namespace System.Reflection.Metadata.Ecma335
             if (returnType == null) Throw.ArgumentNull(nameof(returnType));
             if (parameters == null) Throw.ArgumentNull(nameof(parameters));
 
-            var parts = Parameters(parameterCount);
-            returnType(parts.Item1);
-            parameters(parts.Item2);
+            ReturnTypeEncoder returnTypeEncoder;
+            ParametersEncoder parametersEncoder;
+            Parameters(parameterCount, out returnTypeEncoder, out parametersEncoder);
+            returnType(returnTypeEncoder);
+            parameters(parametersEncoder);
         }
     }
 
@@ -420,14 +424,14 @@ namespace System.Reflection.Metadata.Ecma335
 
         /// <summary>
         /// Encodes the type and the items of a vector literal.
-        /// 
-        /// Returns a pair of encoders that must be used in the order they appear in the tuple:
-        /// first <see cref="CustomAttributeArrayTypeEncoder"/> to encode the type of the vector,
-        /// then <see cref="VectorEncoder"/> to encode the items of the vector.
-        /// </summary>
-        public ValueTuple<CustomAttributeArrayTypeEncoder, VectorEncoder> TaggedVector()
+        /// Returns a pair of encoders that must be used in the order they appear in the parameter list.
+        /// </summary>        
+        /// <param name="arrayType">Use first, to encode the type of the vector.</param>
+        /// <param name="vector">Use second, to encode the items of the vector.</param>
+        public void TaggedVector(out CustomAttributeArrayTypeEncoder arrayType, out VectorEncoder vector)
         {
-            return ValueTuple.Create(new CustomAttributeArrayTypeEncoder(Builder), new VectorEncoder(Builder));
+            arrayType = new CustomAttributeArrayTypeEncoder(Builder);
+            vector = new VectorEncoder(Builder);
         }
 
         /// <summary>
@@ -441,9 +445,11 @@ namespace System.Reflection.Metadata.Ecma335
             if (arrayType == null) Throw.ArgumentNull(nameof(arrayType));
             if (vector == null) Throw.ArgumentNull(nameof(vector));
 
-            var parts = TaggedVector();
-            arrayType(parts.Item1);
-            vector(parts.Item2);
+            CustomAttributeArrayTypeEncoder arrayTypeEncoder;
+            VectorEncoder vectorEncoder;
+            TaggedVector(out arrayTypeEncoder, out vectorEncoder);
+            arrayType(arrayTypeEncoder);
+            vector(vectorEncoder);
         }
 
         /// <summary>
@@ -457,14 +463,14 @@ namespace System.Reflection.Metadata.Ecma335
 
         /// <summary>
         /// Encodes the type and the value of a literal.
-        /// 
-        /// Returns a pair of encoders that must be used in the order they appear in the tuple:
-        /// first <see cref="CustomAttributeElementTypeEncoder"/> to encode the type of the literal,
-        /// then <see cref="ScalarEncoder"/> to encode the value of the literal.
+        /// Returns a pair of encoders that must be used in the order they appear in the parameter list.
         /// </summary>
-        public ValueTuple<CustomAttributeElementTypeEncoder, ScalarEncoder> TaggedScalar()
+        /// <param name="type">Called first, to encode the type of the literal.</param>
+        /// <param name="scalar">Called second, to encode the value of the literal.</param>
+        public void TaggedScalar(out CustomAttributeElementTypeEncoder type, out ScalarEncoder scalar)
         {
-            return ValueTuple.Create(new CustomAttributeElementTypeEncoder(Builder), new ScalarEncoder(Builder));
+            type = new CustomAttributeElementTypeEncoder(Builder);
+            scalar = new ScalarEncoder(Builder);
         }
 
         /// <summary>
@@ -478,9 +484,11 @@ namespace System.Reflection.Metadata.Ecma335
             if (type == null) Throw.ArgumentNull(nameof(type));
             if (scalar == null) Throw.ArgumentNull(nameof(scalar));
 
-            var parts = TaggedScalar();
-            type(parts.Item1);
-            scalar(parts.Item2);
+            CustomAttributeElementTypeEncoder typeEncoder;
+            ScalarEncoder scalarEncoder;
+            TaggedScalar(out typeEncoder, out scalarEncoder);
+            type(typeEncoder);
+            scalar(scalarEncoder);
         }
     }
 
@@ -642,17 +650,18 @@ namespace System.Reflection.Metadata.Ecma335
 
         /// <summary>
         /// Encodes a named argument (field or property).
-        /// 
-        /// Returns a triplet of encoders that must be used in the order they appear in the tuple:
-        /// first <see cref="NamedArgumentTypeEncoder"/> to encode the type of the argument,
-        /// second <see cref="NameEncoder"/> to encode the name of the field or property,
-        /// third <see cref="LiteralEncoder"/> to encode the literal value of the argument.
+        /// Returns a triplet of encoders that must be used in the order they appear in the parameter list.
         /// </summary>
         /// <param name="isField">True to encode a field, false to encode a property.</param>
-        public ValueTuple<NamedArgumentTypeEncoder, NameEncoder, LiteralEncoder> AddArgument(bool isField)
+        /// <param name="type">Use first, to encode the type of the argument.</param>
+        /// <param name="name">Use second, to encode the name of the field or property.</param>
+        /// <param name="literal">Use third, to encode the literal value of the argument.</param>
+        public void AddArgument(bool isField, out NamedArgumentTypeEncoder type, out NameEncoder name, out LiteralEncoder literal)
         {
             Builder.WriteByte(isField ? (byte)CustomAttributeNamedArgumentKind.Field : (byte)CustomAttributeNamedArgumentKind.Property);
-            return ValueTuple.Create(new NamedArgumentTypeEncoder(Builder), new NameEncoder(Builder), new LiteralEncoder(Builder));
+            type = new NamedArgumentTypeEncoder(Builder);
+            name = new NameEncoder(Builder);
+            literal = new LiteralEncoder(Builder);
         }
 
         /// <summary>
@@ -669,10 +678,13 @@ namespace System.Reflection.Metadata.Ecma335
             if (name == null) Throw.ArgumentNull(nameof(name));
             if (literal == null) Throw.ArgumentNull(nameof(literal));
 
-            var parts = AddArgument(isField);
-            type(parts.Item1);
-            name(parts.Item2);
-            literal(parts.Item3);
+            NamedArgumentTypeEncoder typeEncoder;
+            NameEncoder nameEncoder;
+            LiteralEncoder literalEncoder;
+            AddArgument(isField, out typeEncoder, out nameEncoder, out literalEncoder);
+            type(typeEncoder);
+            name(nameEncoder);
+            literal(literalEncoder);
         }
     }
 
@@ -866,15 +878,15 @@ namespace System.Reflection.Metadata.Ecma335
 
         /// <summary>
         /// Encodes an array type.
-        /// 
-        /// Returns a pair of encoders that must be used in the order they appear in the tuple:
-        /// first <see cref="SignatureTypeEncoder"/> to encode the type of the element,
-        /// second <see cref="ArrayShapeEncoder"/> to encode the shape of the array.
+        /// Returns a pair of encoders that must be used in the order they appear in the parameter list.
         /// </summary>
-        public ValueTuple<SignatureTypeEncoder, ArrayShapeEncoder> Array()
+        /// <param name="elementType">Use first, to encode the type of the element.</param>
+        /// <param name="arrayShape">Use second, to encode the shape of the array.</param>
+        public void Array(out SignatureTypeEncoder elementType, out ArrayShapeEncoder arrayShape)
         {
             Builder.WriteByte((byte)SignatureTypeCode.Array);
-            return ValueTuple.Create(this, new ArrayShapeEncoder(Builder));
+            elementType = this;
+            arrayShape = new ArrayShapeEncoder(Builder);
         }
 
         /// <summary>
@@ -888,9 +900,11 @@ namespace System.Reflection.Metadata.Ecma335
             if (elementType == null) Throw.ArgumentNull(nameof(elementType));
             if (arrayShape == null) Throw.ArgumentNull(nameof(arrayShape));
 
-            var parts = Array();
-            elementType(parts.Item1);
-            arrayShape(parts.Item2);
+            SignatureTypeEncoder elementTypeEncoder;
+            ArrayShapeEncoder arrayShapeEncoder;
+            Array(out elementTypeEncoder, out arrayShapeEncoder);
+            elementType(elementTypeEncoder);
+            arrayShape(arrayShapeEncoder);
         }
 
         /// <summary>

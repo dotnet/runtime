@@ -344,8 +344,7 @@ namespace System.Net.Http.Headers
             else
             {
                 // Must always be quoted.
-                string dateString = string.Format(CultureInfo.InvariantCulture, "\"{0}\"",
-                    HttpRuleParser.DateToString(date.Value));
+                string dateString = "\"" + HttpRuleParser.DateToString(date.Value) + "\"";
                 if (dateParameter != null)
                 {
                     dateParameter.Value = dateString;
@@ -452,7 +451,7 @@ namespace System.Net.Http.Headers
             if (needsQuotes)
             {
                 // Re-add quotes "value".
-                result = string.Format(CultureInfo.InvariantCulture, "\"{0}\"", result);
+                result = "\"" + result + "\"";
             }
             return result;
         }
@@ -486,7 +485,7 @@ namespace System.Net.Http.Headers
         {
             byte[] buffer = Encoding.UTF8.GetBytes(input);
             string encodedName = Convert.ToBase64String(buffer);
-            return string.Format(CultureInfo.InvariantCulture, "=?utf-8?B?{0}?=", encodedName);
+            return "=?utf-8?B?" + encodedName + "?=";
         }
 
         // Attempt to decode MIME encoded strings.
