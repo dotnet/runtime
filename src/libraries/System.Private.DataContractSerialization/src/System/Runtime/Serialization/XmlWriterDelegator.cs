@@ -602,6 +602,14 @@ namespace System.Runtime.Serialization
         {
             writer.WriteRaw(XmlConvert.ToString(value));
         }
+
+        internal void WriteTimeSpan(char value, XmlDictionaryString name, XmlDictionaryString ns)
+        {
+            WriteStartElementPrimitive(name, ns);
+            writer.WriteRaw(XmlConvert.ToString(value));
+            WriteEndElementPrimitive();
+        }
+
 #if USE_REFEMIT
         public void WriteTimeSpan(TimeSpan value, XmlDictionaryString name, XmlDictionaryString ns)
 #else
@@ -631,6 +639,13 @@ namespace System.Runtime.Serialization
         internal void WriteUri(Uri value)
         {
             writer.WriteString(value.GetComponents(UriComponents.SerializationInfoString, UriFormat.UriEscaped));
+        }
+
+        internal void WriteUri(Uri value, XmlDictionaryString name, XmlDictionaryString ns)
+        {
+            WriteStartElementPrimitive(name, ns);
+            WriteUri(value);
+            WriteEndElementPrimitive();
         }
 
         internal virtual void WriteQName(XmlQualifiedName value)

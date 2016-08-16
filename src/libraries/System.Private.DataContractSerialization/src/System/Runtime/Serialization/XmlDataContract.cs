@@ -131,9 +131,14 @@ namespace System.Runtime.Serialization
             { _helper.TopLevelElementNamespace = value; }
         }
 
-#if !NET_NATIVE
+#if NET_NATIVE
+        private CreateXmlSerializableDelegate _createXmlSerializableDelegate;
+        public CreateXmlSerializableDelegate CreateXmlSerializableDelegate        
+#else
         internal CreateXmlSerializableDelegate CreateXmlSerializableDelegate
+#endif
         {
+#if !NET_NATIVE
             /// <SecurityNote>
             /// Critical - fetches the critical CreateXmlSerializableDelegate property
             /// Safe - CreateXmlSerializableDelegate only needs to be protected for write; initialized in getter if null
@@ -141,24 +146,44 @@ namespace System.Runtime.Serialization
             [SecuritySafeCritical]
             get
             {
-                if (_helper.CreateXmlSerializableDelegate == null)
+                // We create XmlSerializableDelegate via CodeGen when CodeGen is enabled;
+                // otherwise, we would create the delegate via reflection.
+                if (DataContractSerializer.Option == SerializationOption.CodeGenOnly || DataContractSerializer.Option == SerializationOption.ReflectionAsBackup)
                 {
-                    lock (this)
+                    if (_helper.CreateXmlSerializableDelegate == null)
                     {
-                        if (_helper.CreateXmlSerializableDelegate == null)
+                        lock (this)
                         {
-                            CreateXmlSerializableDelegate tempCreateXmlSerializable = GenerateCreateXmlSerializableDelegate();
-                            Interlocked.MemoryBarrier();
-                            _helper.CreateXmlSerializableDelegate = tempCreateXmlSerializable;
+                            if (_helper.CreateXmlSerializableDelegate == null)
+                            {
+                                CreateXmlSerializableDelegate tempCreateXmlSerializable = GenerateCreateXmlSerializableDelegate();
+                                Interlocked.MemoryBarrier();
+                                _helper.CreateXmlSerializableDelegate = tempCreateXmlSerializable;
+                            }
                         }
                     }
+                    return _helper.CreateXmlSerializableDelegate;
                 }
-                return _helper.CreateXmlSerializableDelegate;
+
+                return () => ReflectionCreateXmlSerializable(this.UnderlyingType);
             }
+#else              
+            get
+            {
+                if (DataContractSerializer.Option == SerializationOption.CodeGenOnly 
+                 || (DataContractSerializer.Option == SerializationOption.ReflectionAsBackup && _createXmlSerializableDelegate != null))
+                {
+                    return _createXmlSerializableDelegate;
+                }
+
+                return () => ReflectionCreateXmlSerializable(this.UnderlyingType);
+            }
+            set
+            {
+                _createXmlSerializableDelegate = value;
+            }
+#endif            
         }
-#else
-        public CreateXmlSerializableDelegate CreateXmlSerializableDelegate { get; set; }
-#endif
 
         internal override bool CanContainReferences
         {
@@ -411,6 +436,29 @@ namespace System.Runtime.Serialization
             return false;
         }
 #endif
+
+        internal IXmlSerializable ReflectionCreateXmlSerializable(Type type)
+        {
+            if (type.GetTypeInfo().IsValueType)
+            {
+                throw new NotImplementedException("ReflectionCreateXmlSerializable - value type");
+            }
+            else
+            {
+                object o = null;
+                if (type == typeof(System.Xml.Linq.XElement))
+                {
+                    o = new System.Xml.Linq.XElement("default");
+                }
+                else
+                {
+                    ConstructorInfo ctor = GetConstructor();
+                    o = ctor.Invoke(new object[] { });
+                }
+
+                return (IXmlSerializable)o;
+            }
+        }
 
         public override void WriteXmlValue(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContext context)
         {
