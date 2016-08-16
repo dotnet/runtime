@@ -9,9 +9,20 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>System.Xml.XmlSerializer.Tests</RootNamespace>
     <AssemblyName>System.Xml.XmlSerializer.Tests</AssemblyName>
-    <NuGetTargetMoniker>.NETStandard,Version=v1.3</NuGetTargetMoniker>
     <ProjectGuid>{4050F1D1-1DD2-4B48-A17B-E3F90DD18C4B}</ProjectGuid>
-  </PropertyGroup>
+    <!--
+        Until we get first class support for NS1.7 and Netcoreapp1.1
+        we need to hard code $(TestTFM) and $(TestNugetTargetMoniker)
+        in the project file.
+      -->
+      <NugetTargetMoniker>.NETStandard,Version=v1.7</NugetTargetMoniker>
+      <TestTFM>netcoreapp1.1</TestTFM>
+    </PropertyGroup>
+  <ItemGroup>
+    <TestNugetTargetMoniker Include="$(NugetTargetMoniker)">
+      <Folder>netcoreapp1.1</Folder>
+    </TestNugetTargetMoniker>
+  </ItemGroup>
   <PropertyGroup Condition="'$(UseContractReferences)' == 'true'" >
     <ProjectJson>Performance/project.json</ProjectJson>
     <ProjectLockJson>Performance/project.lock.json</ProjectLockJson>
@@ -23,13 +34,11 @@
     <Compile Include="XmlSerializerTests.Internal.cs" Condition="'$(UseContractReferences)' == ''" />
     <Compile Include="XmlSerializerTests.cs" />
     <Compile Include="Performance\XsPerformanceTest.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(UseContractReferences)' == ''" >
     <ProjectReference Include="..\..\src\System.Private.Xml.csproj" />
-    <ProjectReference Include="..\..\..\System.Private.Xml.Linq\src\System.Private.Xml.Linq.csproj" />
-    <ProjectReference Include="..\..\..\System.Private.DataContractSerialization\pkg\System.Private.DataContractSerialization.pkgproj" />
-    <ProjectReference Include="..\..\..\System.Runtime.Serialization.Primitives\pkg\System.Runtime.Serialization.Primitives.pkgproj" />
-    <ProjectReference Include="..\..\..\Microsoft.Win32.Registry\pkg\Microsoft.Win32.Registry.pkgproj" />
+    <!-- ToDo: Remove this P2P references once packages are updated -->
+    <ProjectReference Include="..\..\..\System.Xml.XmlDocument\src\System.Xml.XmlDocument.csproj" />
+    <ProjectReference Include="..\..\..\System.Xml.XmlSerializer\src\System.Xml.XmlSerializer.csproj" />
+    <ProjectReference Include="..\..\..\System.Xml.ReaderWriter\src\System.Xml.ReaderWriter.csproj" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />

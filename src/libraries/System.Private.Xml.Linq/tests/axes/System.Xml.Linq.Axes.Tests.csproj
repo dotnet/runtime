@@ -30,6 +30,8 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\System.Private.Xml.Linq.csproj" />
     <ProjectReference Include="..\..\..\System.Private.Xml\src\System.Private.Xml.csproj" />
+    <ProjectReference Include="..\..\..\System.Xml.XDocument\src\System.Xml.XDocument.csproj" />
+    <ProjectReference Include="..\..\..\System.Xml.ReaderWriter\src\System.Xml.ReaderWriter.csproj" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
