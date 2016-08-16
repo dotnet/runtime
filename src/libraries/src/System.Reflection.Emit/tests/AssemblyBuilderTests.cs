@@ -267,7 +267,7 @@ namespace System.Reflection.Emit.Tests
 
             Assert.Equal(1, assembly.Modules.Count());
             Module module = assembly.Modules.First();
-            Assert.Equal("<In Memory Module>", module.Name);
+            Assert.NotEmpty(module.Name);
             Assert.Equal(assembly.Modules, assembly.GetModules());
 
             Assert.Empty(assembly.DefinedTypes);
