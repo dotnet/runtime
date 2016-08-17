@@ -2631,7 +2631,6 @@ typedef struct {
 #define THUMB_CODE 1
 #endif
 
-//ARM64TODO: Verify the correctness of the following for ARM64
 ///ARM64 Context
 #define ARM64_MAX_BREAKPOINTS     8
 #define ARM64_MAX_WATCHPOINTS     2
