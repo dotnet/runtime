@@ -21,6 +21,10 @@ C_FUNC(\Name):
         LEAF_END \Name, \Section
 .endm
 
+.macro NESTED_END_MARKED Name, Section
+        LEAF_END_MARKED \Name, \Section
+.endm
+
 .macro PATCH_LABEL Name
         .thumb_func
         .global C_FUNC(\Name)
