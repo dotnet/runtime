@@ -79,8 +79,7 @@
 #define RWLOCK_MAX_ACQUIRE_COUNT 0xFFFF
 
 // globals
-Volatile<LONG> CRWLock::s_mostRecentLLockID = 0;
-Volatile<LONG> CRWLock::s_mostRecentULockID = -1;
+Volatile<LONGLONG> CRWLock::s_mostRecentLockID = 0;
 CrstStatic CRWLock::s_RWLockCrst;
 
 // Default values
@@ -170,36 +169,29 @@ CRWLock::CRWLock()
     }
     CONTRACT_END;
 
-    LONG dwKnownLLockID;
-    LONG dwULockID = s_mostRecentULockID;
-    LONG dwLLockID = s_mostRecentLLockID;
-    do
+    LONGLONG qwLockID = s_mostRecentLockID;
+    while (true)
     {
-        dwKnownLLockID = dwLLockID;
-        if(dwKnownLLockID != 0)
+        LONGLONG qwNextLockID = qwLockID + 1;
+        if (static_cast<LONG>(qwNextLockID) == 0)
         {
-            dwLLockID = RWInterlockedCompareExchange(&s_mostRecentLLockID, dwKnownLLockID+1, dwKnownLLockID);
+            // A value of zero for the lower half of the ID is reserved to identify that a thread does not own any RW locks,
+            // regardless of the upper half of the ID
+            ++qwNextLockID;
         }
-        else
-        {
-            CrstHolder ch(&s_RWLockCrst);
-            
-            if(s_mostRecentLLockID == 0)
-            {
-                dwULockID = ++s_mostRecentULockID;
-                dwLLockID = s_mostRecentLLockID++;
-                dwKnownLLockID = dwLLockID;
-            }
-            else
-            {
-                dwULockID = s_mostRecentULockID;
-                dwLLockID = s_mostRecentLLockID;
-            }
-        }
-    } while(dwKnownLLockID != dwLLockID);
 
-    _dwLLockID = ++dwLLockID;
-    _dwULockID = dwULockID;
+        LONGLONG qwLockIDBeforeExchange = RWInterlockedCompareExchange64(&s_mostRecentLockID, qwNextLockID, qwLockID);
+        if (qwLockIDBeforeExchange == qwLockID)
+        {
+            qwLockID = qwNextLockID;
+            break;
+        }
+
+        qwLockID = qwLockIDBeforeExchange;
+    }
+
+    _dwLLockID = static_cast<LONG>(qwLockID);
+    _dwULockID = static_cast<LONG>(qwLockID >> 32);
 
     RETURN;
 }
@@ -811,6 +803,20 @@ inline LONG CRWLock::RWInterlockedCompareExchange(LONG volatile *pvDestination,
     return  FastInterlockCompareExchange(pvDestination, 
                                          dwExchange, 
                                          dwComparand);
+}
+
+inline LONGLONG CRWLock::RWInterlockedCompareExchange64(LONGLONG volatile *pvDestination,
+                                                        LONGLONG qwExchange,
+                                                        LONGLONG qwComparand)
+{
+    CONTRACTL
+    {
+        NOTHROW;         
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END;
+
+    return  FastInterlockCompareExchangeLong(pvDestination, qwExchange, qwComparand);
 }
 
 inline void* CRWLock::RWInterlockedCompareExchangePointer(PVOID volatile *pvDestination,
