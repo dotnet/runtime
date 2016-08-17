@@ -3,16 +3,12 @@
   <ImportGroup Label="PropertySheets" />
   <PropertyGroup Label="UserMacros">
     <MONO_TOOLCHAIN_PREFIX>i686-w64-mingw32-</MONO_TOOLCHAIN_PREFIX>
-    <MONO_TOOLCHAIN_PATH>C:/ProgramData/chocolatey/lib/Cygwin/tools/cygwin/bin</MONO_TOOLCHAIN_PATH>
   </PropertyGroup>
   <PropertyGroup />
   <ItemDefinitionGroup />
   <ItemGroup>
     <BuildMacro Include="MONO_TOOLCHAIN_PREFIX">
       <Value>$(MONO_TOOLCHAIN_PREFIX)</Value>
-    </BuildMacro>
-    <BuildMacro Include="MONO_TOOLCHAIN_PATH">
-      <Value>$(MONO_TOOLCHAIN_PATH)</Value>
     </BuildMacro>
   </ItemGroup>
 </Project>
