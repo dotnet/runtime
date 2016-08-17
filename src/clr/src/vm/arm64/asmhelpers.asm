@@ -43,6 +43,14 @@
     IMPORT  g_card_table
     IMPORT  g_TrapReturningThreads
     IMPORT  g_dispatch_cache_chain_success_counter
+#ifdef WRITE_BARRIER_CHECK
+    SETALIAS g_GCShadow, ?g_GCShadow@@3PEAEEA
+    SETALIAS g_GCShadowEnd, ?g_GCShadowEnd@@3PEAEEA
+
+    IMPORT g_lowest_address
+    IMPORT $g_GCShadow
+    IMPORT $g_GCShadowEnd
+#endif // WRITE_BARRIER_CHECK
 
     TEXTAREA
 
@@ -300,6 +308,49 @@ NotInHeap
     WRITE_BARRIER_ENTRY JIT_WriteBarrier
         dmb      ST
         str      x15, [x14]
+
+#ifdef WRITE_BARRIER_CHECK
+        ; Update GC Shadow Heap  
+
+        ; need temporary registers. Save them before using. 
+        stp      x12, x13, [sp, #-16]!
+
+        ; Compute address of shadow heap location:
+        ;   pShadow = $g_GCShadow + (x14 - g_lowest_address)
+        adrp     x12, g_lowest_address
+        ldr      x12, [x12, g_lowest_address]
+        sub      x12, x14, x12
+        adrp     x13, $g_GCShadow
+        ldr      x13, [x13, $g_GCShadow]
+        add      x12, x13, x12
+
+        ; if (pShadow >= $g_GCShadowEnd) goto end
+        adrp     x13, $g_GCShadowEnd
+        ldr      x13, [x13, $g_GCShadowEnd]
+        cmp      x12, x13
+        bhs      shadowupdateend
+
+        ; *pShadow = x15
+        str      x15, [x12]
+
+        ; Ensure that the write to the shadow heap occurs before the read from the GC heap so that race
+        ; conditions are caught by INVALIDGCVALUE.
+        dmb      sy
+
+        ; if ([x14] == x15) goto end
+        ldr      x13, [x14]
+        cmp      x13, x15
+        beq shadowupdateend
+
+        ; *pShadow = INVALIDGCVALUE (0xcccccccd)        
+        mov      x13, #0
+        movk     x13, #0xcccd
+        movk     x13, #0xcccc, LSL #16
+        str      x13, [x12]
+
+shadowupdateend
+        ldp      x12, x13, [sp],#16        
+#endif
 
         ; Branch to Exit if the reference is not in the Gen0 heap
         ;
