@@ -8,7 +8,7 @@ using Xunit;
 
 namespace System.Tests
 {
-    public static class DecimalTests
+    public static partial class DecimalTests
     {
         [Fact]
         public static void MaxValue()
