@@ -122,6 +122,7 @@ BASE_TEST_MOBILE_STATIC_NOT_SUPPORTED= \
 	bug-462592.cs	# Need SRE \
 	bug-575941.cs	# Need SRE \
 	bug-389886-3.cs	# Need SRE \
+	constant-division.cs	# Need SRE \
 	dynamic-method-resurrection.cs	# Need SRE \
 	bug-80307.cs	# Need System.Web \
 	assembly_append_ordering.cs # Need SRE \
@@ -143,6 +144,7 @@ BASE_TEST_MOBILE_STATIC_NOT_SUPPORTED= \
 
 # Disabled until ?mcs is fixed
 #	bug-331958.cs
+# Note: only add tests that are compatible with mobile_static to this category
 BASE_TEST_CS_SRC_UNIVERSAL=		\
 	generic-unloading-sub.2.cs	\
 	create-instance.cs	\
@@ -254,7 +256,6 @@ BASE_TEST_CS_SRC_UNIVERSAL=		\
 	long.cs			\
 	jit-ulong.cs		\
 	jit-float.cs		\
-	constant-division.cs	\
 	pop.cs			\
 	time.cs			\
 	pointer.cs		\
