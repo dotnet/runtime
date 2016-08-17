@@ -67,6 +67,11 @@ typedef DPTR(IPerAppDomainTPCount) PTR_IPerAppDomainTPCount;
 
 static const LONG ADUnloading = -1;
 
+#ifdef _MSC_VER
+// Disable this warning - we intentionally want __declspec(align()) to insert padding for us
+#pragma warning(disable: 4324) // structure was padded due to __declspec(align())
+#endif
+
 //--------------------------------------------------------------------------
 //ManagedPerAppDomainTPCount maintains per-appdomain thread pool state. 
 //This class maintains the count of per-appdomain work-items queued by
@@ -289,6 +294,10 @@ private:
     };
 };
 
+#ifdef _MSC_VER
+#pragma warning(default: 4324)  // structure was padded due to __declspec(align())
+#endif
+
 //--------------------------------------------------------------------------
 //PerAppDomainTPCountList maintains the collection of per-appdomain thread 
 //pool states. Per appdomain counts are added to the list during appdomain
@@ -343,8 +352,8 @@ private:
     static DWORD FindFirstFreeTpEntry();
 
     static BYTE s_padding[64 - sizeof(LONG)];
-    static LONG s_ADHint;
-    static UnManagedPerAppDomainTPCount s_unmanagedTPCount;
+    DECLSPEC_ALIGN(64) static LONG s_ADHint;
+    DECLSPEC_ALIGN(64) static UnManagedPerAppDomainTPCount s_unmanagedTPCount;
 
     //The list of all per-appdomain work-request counts.
     static ArrayListStatic s_appDomainIndexList;
