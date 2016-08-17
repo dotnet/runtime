@@ -24,12 +24,12 @@ namespace System.Net.WebSockets.Tests
         };
 
         public static object[][] NativeErrorData = {
-            new object[] { 0, WebSocketError.Success },
-            new object[] { -2147467259, WebSocketError.NativeError },
+            new object[] { 0, WebSocketError.Success, unchecked((int)0x80004005) },
+            new object[] { -2147467259, WebSocketError.NativeError, -2147467259},
         };
 
         public static object[][] UnrelatedErrorData =
-            ErrorData.SelectMany(wse => NativeErrorData.Select(ne => new object[] { wse[0], ne[0] })).ToArray();
+            ErrorData.SelectMany(wse => NativeErrorData.Select(ne => new object[] { wse[0], ne[0], ne[2] })).ToArray();
 
         [Theory, MemberData(nameof(ErrorData))]
         public void ConstructorTests_WebSocketError_Success(WebSocketError error)
@@ -72,81 +72,82 @@ namespace System.Net.WebSockets.Tests
         }
 
         [Theory, MemberData(nameof(NativeErrorData))]
-        public void ConstructorTests_NativeError_Success(int nativeError, WebSocketError webSocketError)
+        public void ConstructorTests_NativeError_Success(int nativeError, WebSocketError webSocketError, int expectedHResult)
         {
             var wse = new WebSocketException(nativeError);
-            Assert.Equal(wse.HResult, nativeError);
+            Assert.Equal(expectedHResult, wse.HResult);
             Assert.Equal(wse.WebSocketErrorCode, webSocketError);
             Assert.NotEqual(wse.Message, "");
             Assert.Null(wse.InnerException);
         }
 
         [Theory, MemberData(nameof(NativeErrorData))]
-        public void ConstructorTests_NativeError_Message_Success(int nativeError, WebSocketError webSocketError)
+        public void ConstructorTests_NativeError_Message_Success(int nativeError, WebSocketError webSocketError, int expectedHResult)
         {
             const string Message = "Message";
             var wse = new WebSocketException(nativeError, Message);
-            Assert.Equal(wse.HResult, nativeError);
+            Assert.Equal(expectedHResult, wse.HResult);
             Assert.Equal(wse.WebSocketErrorCode, webSocketError);
             Assert.Equal(wse.Message, Message);
             Assert.Null(wse.InnerException);
         }
 
         [Theory, MemberData(nameof(NativeErrorData))]
-        public void ConstructorTests_NativeError_Exception_Success(int nativeError, WebSocketError webSocketError)
+        public void ConstructorTests_NativeError_Exception_Success(int nativeError, WebSocketError webSocketError, int expectedHResult)
         {
             var inner = new Exception();
             var wse = new WebSocketException(nativeError, inner);
-            Assert.Equal(wse.HResult, nativeError);
+            Assert.Equal(expectedHResult, wse.HResult);
             Assert.Equal(wse.WebSocketErrorCode, webSocketError);
             Assert.NotEqual(wse.Message, "");
             Assert.Equal(wse.InnerException, inner);
         }
 
         [Theory, MemberData(nameof(UnrelatedErrorData))]
-        public void ConstructorTests_WebSocketError_NativeError_Success(int nativeError, WebSocketError error)
+        public void ConstructorTests_WebSocketError_NativeError_Success(int nativeError, WebSocketError error, int expectedHResult)
         {
             var wse = new WebSocketException(error, nativeError);
-            Assert.Equal(wse.HResult, nativeError);
+            Assert.Equal(expectedHResult, wse.HResult);
             Assert.Equal(wse.WebSocketErrorCode, error);
             Assert.NotEqual(wse.Message, "");
             Assert.Null(wse.InnerException);
         }
 
         [Theory, MemberData(nameof(UnrelatedErrorData))]
-        public void ConstructorTests_WebSocketError_NativeError_Message_Success(int nativeError, WebSocketError error)
+        public void ConstructorTests_WebSocketError_NativeError_Message_Success(int nativeError, WebSocketError error, int expectedHResult)
         {
             const string Message = "Message";
             var wse = new WebSocketException(error, nativeError, Message);
-            Assert.Equal(wse.HResult, nativeError);
+            Assert.Equal(expectedHResult, wse.HResult);
             Assert.Equal(wse.WebSocketErrorCode, error);
             Assert.Equal(wse.Message, Message);
             Assert.Null(wse.InnerException);
         }
 
         [Theory, MemberData(nameof(UnrelatedErrorData))]
-        public void ConstructorTests_WebSocketError_NativeError_Exception_Success(int nativeError, WebSocketError error)
+        public void ConstructorTests_WebSocketError_NativeError_Exception_Success(int nativeError, WebSocketError error, int expectedHResult)
         {
             var inner = new Exception();
             var wse = new WebSocketException(error, nativeError, inner);
-            Assert.Equal(wse.HResult, nativeError);
+            Assert.Equal(expectedHResult, wse.HResult);
             Assert.Equal(wse.WebSocketErrorCode, error);
             Assert.NotEqual(wse.Message, "");
             Assert.Equal(wse.InnerException, inner);
         }
 
         [Theory, MemberData(nameof(UnrelatedErrorData))]
-        public void ConstructorTests_WebSocketError_NativeError_Message_Exception_Success(int nativeError, WebSocketError error)
+        public void ConstructorTests_WebSocketError_NativeError_Message_Exception_Success(int nativeError, WebSocketError error, int expectedHResult)
         {
             const string Message = "Message";
             var inner = new Exception();
             var wse = new WebSocketException(error, nativeError, Message, inner);
-            Assert.Equal(wse.HResult, nativeError);
+            Assert.Equal(expectedHResult, wse.HResult);
             Assert.Equal(wse.WebSocketErrorCode, error);
             Assert.Equal(wse.Message, Message);
             Assert.Equal(wse.InnerException, inner);
         }
 
+        [Fact]
         public void ConstructorTests_Message_Success()
         {
             const string Message = "Message";
@@ -156,6 +157,7 @@ namespace System.Net.WebSockets.Tests
             Assert.Null(wse.InnerException);
         }
 
+        [Fact]
         public void ConstructorTests_Message_Exception_Success()
         {
             const string Message = "Message";
