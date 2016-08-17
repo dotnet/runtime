@@ -74,9 +74,9 @@ namespace System.Dynamic.Utils
         /// <summary>
         /// ArgumentException with message like "Incorrect number of arguments supplied for call to method '{0}'"
         /// </summary>
-        internal static Exception IncorrectNumberOfMethodCallArguments(object p0)
+        internal static Exception IncorrectNumberOfMethodCallArguments(object p0, string paramName)
         {
-            return new ArgumentException(Strings.IncorrectNumberOfMethodCallArguments(p0));
+            return new ArgumentException(Strings.IncorrectNumberOfMethodCallArguments(p0), paramName);
         }
 
         /// <summary>

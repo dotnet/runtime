@@ -222,7 +222,7 @@ namespace System.Linq.Expressions
                 var pms = comparison.GetParametersCached();
                 if (pms.Length != 2)
                 {
-                    throw Error.IncorrectNumberOfMethodCallArguments(comparison);
+                    throw Error.IncorrectNumberOfMethodCallArguments(comparison, nameof(comparison));
                 }
                 // Validate that the switch value's type matches the comparison method's 
                 // left hand side parameter type.
