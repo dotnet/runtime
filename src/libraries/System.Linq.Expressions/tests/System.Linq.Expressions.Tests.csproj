@@ -97,6 +97,8 @@
     <Compile Include="Constant\ConstantTests.cs" />
     <Compile Include="Convert\ConvertCheckedTests.cs" />
     <Compile Include="Convert\ConvertTests.cs" />
+    <Compile Include="DebugInfo\DebugInfoExpressionTests.cs" />
+    <Compile Include="DebugInfo\SymbolDocumentInfoTests.cs" />
     <Compile Include="Default\DefaultTests.cs" />
     <Compile Include="DelegateType\ActionTypeTests.cs" />
     <Compile Include="DelegateType\DelegateCreationTests.cs" />
