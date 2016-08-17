@@ -494,10 +494,19 @@
         <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\explicit\basic\_il_relrefarg_i4\_il_relrefarg_i4.cmd">
             <Issue>6714</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\opt\cse\HugeArray\HugeArray.cmd">
+            <Issue>6714</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\opt\virtualstubdispatch\bigvtbl\bigvtbl_cs_do\bigvtbl_cs_do.cmd">
+            <Issue>6714</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\methodoverriding\regressions\549411\exploit\exploit.cmd">
             <Issue>6717</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)\GC\API\GC\GetGenerationWR2\GetGenerationWR2.cmd">
+            <Issue>6717</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\GC\API\GC\GetGeneration\GetGeneration.cmd">
             <Issue>6717</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)\GC\Features\HeapExpansion\pluggaps\pluggaps.cmd">
