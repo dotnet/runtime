@@ -499,7 +499,8 @@
           "__BuildOS": "default",
           "maxcpucount": "default",
           "MsBuildFileLogging": "/flp:v=detailed;Append;LogFile=build-packages.log",
-          "MsBuildEventLogging": "default"
+          "MsBuildEventLogging": "default",
+          "Project": "src/.nuget/packages.builds"
         }
       }
     }
