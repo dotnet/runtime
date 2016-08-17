@@ -371,12 +371,12 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Theory, MemberData(nameof(ComparisonsWithInvalidParmeterCounts))]
-        public void InvalidComparisonMethodParameterCount(MethodInfo comparer)
+        public void InvalidComparisonMethodParameterCount(MethodInfo comparison)
         {
-            Assert.Throws<ArgumentException>(null, () => Expression.Switch(Expression.Constant(0), Expression.Empty(), comparer));
-            Assert.Throws<ArgumentException>(null, () => Expression.Switch(Expression.Constant(0), Expression.Empty(), comparer, Enumerable.Empty<SwitchCase>()));
-            Assert.Throws<ArgumentException>(null, () => Expression.Switch(typeof(int), Expression.Constant(0), Expression.Constant(1), comparer));
-            Assert.Throws<ArgumentException>(null, () => Expression.Switch(typeof(int), Expression.Constant(0), Expression.Constant(1), comparer, Enumerable.Empty<SwitchCase>()));
+            Assert.Throws<ArgumentException>("comparison", () => Expression.Switch(Expression.Constant(0), Expression.Empty(), comparison));
+            Assert.Throws<ArgumentException>("comparison", () => Expression.Switch(Expression.Constant(0), Expression.Empty(), comparison, Enumerable.Empty<SwitchCase>()));
+            Assert.Throws<ArgumentException>("comparison", () => Expression.Switch(typeof(int), Expression.Constant(0), Expression.Constant(1), comparison));
+            Assert.Throws<ArgumentException>("comparison", () => Expression.Switch(typeof(int), Expression.Constant(0), Expression.Constant(1), comparison, Enumerable.Empty<SwitchCase>()));
         }
 
         [Fact]

@@ -114,7 +114,7 @@ namespace System.Linq.Expressions
 
         private static void ValidateElementInitAddMethodInfo(MethodInfo addMethod, string paramName)
         {
-            ValidateMethodInfo(addMethod, nameof(addMethod));
+            ValidateMethodInfo(addMethod, paramName);
             ParameterInfo[] pis = addMethod.GetParametersCached();
             if (pis.Length == 0)
             {

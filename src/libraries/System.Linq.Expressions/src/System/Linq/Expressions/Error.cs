@@ -492,9 +492,9 @@ namespace System.Linq.Expressions
         /// <summary>
         /// ArgumentException with message like "Incorrect number of arguments supplied for call to method '{0}'"
         /// </summary>
-        internal static Exception IncorrectNumberOfMethodCallArguments(object p0)
+        internal static Exception IncorrectNumberOfMethodCallArguments(object p0, string paramName)
         {
-            return Dynamic.Utils.Error.IncorrectNumberOfMethodCallArguments(p0);
+            return Dynamic.Utils.Error.IncorrectNumberOfMethodCallArguments(p0, paramName);
         }
         /// <summary>
         /// ArgumentException with message like "Incorrect number of arguments for constructor"
