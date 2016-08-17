@@ -197,7 +197,7 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public void VisitCollectionReturnSameIfChildrenUnchanged()
         {
-            var collection = new List<Expression> { Expression.Constant(0), Expression.Constant(2) }.AsReadOnly();
+            var collection = new List<Expression> { Expression.Constant(0), Expression.Constant(2), Expression.DebugInfo(Expression.SymbolDocument("fileName"), 1, 1, 1, 1) }.AsReadOnly();
             Assert.Same(collection, new DefaultVisitor().Visit(collection));
         }
 
@@ -338,6 +338,13 @@ namespace System.Linq.Expressions.Tests
             var call = (MethodCallExpression)innerBlock.Expressions.Last();
             var instance = (ConstantExpression)call.Object;
             Assert.Same(list, instance.Value);
+        }
+
+        [Fact]
+        public void Visit_DebugInfoExpression_DoesNothing()
+        {
+            DebugInfoExpression expression = Expression.DebugInfo(Expression.SymbolDocument("fileName"), 1, 1, 1, 1);
+            Assert.Same(expression, new DefaultVisitor().Visit(expression));
         }
     }
 }
