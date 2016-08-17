@@ -124,7 +124,9 @@ You can build the tests for System.Diagnostics.DiagnosticSource.dll by going to
 src\System.Diagnostics.DiagnosticSource\tests and typing `msbuild System.Diagnostics.DiagnosticSource.Tests.builds`.
 
 There is also a pkg directory for each project, and if you go into it and type `msbuild`, it will build the DLL (if needed)
-and then also build the NuGet package for it. The NuGet package ends up in the bin\packages directory.  
+and then also build the NuGet package for it. The NuGet package ends up in the bin\packages directory.
+
+**Note:** If building in a non-Windows, call `./Tools/msbuild.sh` instead of just `msbuild`.
 
 ### Building other OSes
 
@@ -147,8 +149,10 @@ We use the OSS testing framework [xunit](http://xunit.github.io/).
 
 #### Running tests on the command line
 
-By default, the core tests are run as part of the build. Running the tests from
-the command line is as simple as invoking `build.cmd` on windows, and `run-test.sh` on linux and osx.
+By default, the core tests are run as part of `build.cmd` or `build.sh`. If the product binaries are already available, you could do `build-tests` which will build and run the tests.
+If the tests are already built and you only want to run them, invoke `run-tests`.
+
+For more information about cross platform testing, please take a look [here](https://github.com/dotnet/corefx/blob/master/Documentation/building/cross-platform-testing.md).
 
 You can also run the tests for an individual project by building it individually, e.g.:
 
@@ -161,10 +165,11 @@ It is possible to pass parameters to the underlying xunit runner via the `XunitO
 ```cmd
 msbuild /t:Test "/p:XunitOptions=-class Test.ClassUnderTests"
 ```
+**Note:** If building in a non-Windows, call `./Tools/msbuild.sh` instead of just `msbuild`.
 
 There may be multiple projects in some directories so you may need to specify the path to a specific test project to get it to build and run the tests.
 
-Tests participate in the incremental build.  This means that if tests have already been run, and inputs to the incremental build have not changed, rerunning the tests target will not execute the test runner again.  To force re-executing tests in this situation, use `msbuild /t:clean;build;test`.
+Tests participate in the incremental build.  This means that if tests have already been run, and inputs to the incremental build have not changed, rerunning the tests target will not execute the test runner again.  To force re-executing tests in this situation, use `msbuild /t:RebuildAndTest`.
 
 The tests can also be filtered based on xunit trait attributes defined in [`xunit.netcore.extensions`](https://github.com/dotnet/buildtools/tree/master/src/xunit.netcore.extensions). These attributes are to be specified over the test method. The available attributes are:
 

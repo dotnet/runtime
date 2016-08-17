@@ -235,6 +235,75 @@ namespace System.Runtime.CompilerServices
             object o = new Object();
             Assert.IsType(typeof(Object), Unsafe.As<string>(o));
         }
+
+        // Active Issue: https://github.com/dotnet/coreclr/issues/6505
+        // These tests require C# compiler with support for ref returns and locals
+#if false
+        [Fact]
+        public unsafe static void AsRef()
+        {
+            byte[] b = new byte[4] { 0x42, 0x42, 0x42, 0x42 };
+            fixed (byte * p = b)
+            {
+                ref int r = ref Unsafe.AsRef<int>(p);
+                Assert.Equal(0x42424242, r);
+
+                r = 0x0EF00EF0;
+                Assert.Equal(0xFE, b[0] | b[1] | b[2] | b[3]);
+            }
+        }
+
+        [Fact]
+        public static void RefAs()
+        {
+            byte[] b = new byte[4] { 0x42, 0x42, 0x42, 0x42 };
+
+            ref int r = ref Unsafe.As<byte, int>(ref b[0]);
+            Assert.Equal(0x42424242, r);
+
+            r = 0x0EF00EF0;
+            Assert.Equal(0xFE, b[0] | b[1] | b[2] | b[3]);
+        }
+
+        [Fact]
+        public static void RefAdd()
+        {
+            int[] a = new int[] { 0x123, 0x234, 0x345, 0x456 };
+
+            ref int r1 = ref Unsafe.Add(ref a[0], 1);
+            Assert.Equal(0x234, r1);
+
+            ref int r2 = ref Unsafe.Add(ref r1, 2);
+            Assert.Equal(0x456, r2);
+
+            ref int r3 = ref Unsafe.Add(ref r2, -3);
+            Assert.Equal(0x123, r3);
+        }
+
+        [Fact]
+        public static void RefSubtract()
+        {
+            string[] a = new string[] { "abc", "def", "ghi", "jkl" };
+
+            ref string r1 = ref Unsafe.Subtract(ref a[0], -2);
+            Assert.Equal("ghi", r1);
+
+            ref string r2 = ref Unsafe.Subtract(ref r1, -1);
+            Assert.Equal("jkl", r2);
+
+            ref string r3 = ref Unsafe.Subtract(ref r2, 3);
+            Assert.Equal("abc", r3);
+        }
+
+        [Fact]
+        public static void RefAreSame()
+        {
+            long[] a = new long[2];
+
+            Assert.True(Unsafe.AreSame(ref a[0], ref a[0]));
+            Assert.False(Unsafe.AreSame(ref a[0], ref a[1]));
+        }
+#endif
     }
 
     [StructLayout(LayoutKind.Explicit)]

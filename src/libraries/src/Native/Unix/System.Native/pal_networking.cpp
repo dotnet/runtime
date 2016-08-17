@@ -828,16 +828,16 @@ extern "C" void SystemNative_FreeHostEntry(HostEntry* entry)
     }
 }
 
-inline int32_t ConvertGetNameInfoFlagsToPal(int32_t flags)
+inline int32_t ConvertGetNameInfoFlagsToNative(int32_t flags)
 {
     int32_t outFlags = 0;
-    if ((flags & NI_NAMEREQD) == NI_NAMEREQD)
+    if ((flags & PAL_NI_NAMEREQD) == PAL_NI_NAMEREQD)
     {
-        outFlags |= PAL_NI_NAMEREQD;
+        outFlags |= NI_NAMEREQD;
     }
-    if ((flags & NI_NUMERICHOST) == NI_NUMERICHOST)
+    if ((flags & PAL_NI_NUMERICHOST) == PAL_NI_NUMERICHOST)
     {
-        outFlags |= PAL_NI_NUMERICHOST;
+        outFlags |= NI_NUMERICHOST;
     }
 
     return outFlags;
@@ -857,7 +857,7 @@ extern "C" int32_t SystemNative_GetNameInfo(const uint8_t* address,
     assert((host != nullptr) || (service != nullptr));
     assert((hostLength > 0) || (serviceLength > 0));
 
-    int32_t nativeFlags = ConvertGetNameInfoFlagsToPal(flags);
+    int32_t nativeFlags = ConvertGetNameInfoFlagsToNative(flags);
     int32_t result;
 
     if (isIPv6)

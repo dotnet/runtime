@@ -83,12 +83,92 @@ namespace System.Tests
         }
 
         [Theory]
-        [InlineData(99, null)]
-        [InlineData(1, "Red")]
-        [InlineData(SimpleEnum.Red, "Red")]
-        public static void GetName(object value, string expected)
+        [InlineData(typeof(SimpleEnum), 99, null)]
+        [InlineData(typeof(SimpleEnum), 1, "Red")]
+        [InlineData(typeof(SimpleEnum), SimpleEnum.Red, "Red")]
+
+        [InlineData(typeof(ByteEnum), ByteEnum.Min, "Min")]
+        [InlineData(typeof(ByteEnum), ByteEnum.One, "One")]
+        [InlineData(typeof(ByteEnum), ByteEnum.Two, "Two")]
+        [InlineData(typeof(ByteEnum), ByteEnum.Max, "Max")]
+        [InlineData(typeof(ByteEnum), byte.MinValue, "Min")]
+        [InlineData(typeof(ByteEnum), (Byte)1, "One")]
+        [InlineData(typeof(ByteEnum), (Byte)2, "Two")]
+        [InlineData(typeof(ByteEnum), byte.MaxValue, "Max")]
+        [InlineData(typeof(ByteEnum), (Byte)3, null)]
+
+        [InlineData(typeof(SByteEnum), SByteEnum.Min, "Min")]
+        [InlineData(typeof(SByteEnum), SByteEnum.One, "One")]
+        [InlineData(typeof(SByteEnum), SByteEnum.Two, "Two")]
+        [InlineData(typeof(SByteEnum), SByteEnum.Max, "Max")]
+        [InlineData(typeof(SByteEnum), SByte.MinValue, "Min")]
+        [InlineData(typeof(SByteEnum), (SByte)1, "One")]
+        [InlineData(typeof(SByteEnum), (SByte)2, "Two")]
+        [InlineData(typeof(SByteEnum), SByte.MaxValue, "Max")]
+        [InlineData(typeof(SByteEnum), (SByte)3, null)]
+
+        [InlineData(typeof(UInt16Enum), UInt16Enum.Min, "Min")]
+        [InlineData(typeof(UInt16Enum), UInt16Enum.One, "One")]
+        [InlineData(typeof(UInt16Enum), UInt16Enum.Two, "Two")]
+        [InlineData(typeof(UInt16Enum), UInt16Enum.Max, "Max")]
+        [InlineData(typeof(UInt16Enum), UInt16.MinValue, "Min")]
+        [InlineData(typeof(UInt16Enum), (UInt16)1, "One")]
+        [InlineData(typeof(UInt16Enum), (UInt16)2, "Two")]
+        [InlineData(typeof(UInt16Enum), UInt16.MaxValue, "Max")]
+        [InlineData(typeof(UInt16Enum), (UInt16)3, null)]
+
+        [InlineData(typeof(Int16Enum), Int16Enum.Min, "Min")]
+        [InlineData(typeof(Int16Enum), Int16Enum.One, "One")]
+        [InlineData(typeof(Int16Enum), Int16Enum.Two, "Two")]
+        [InlineData(typeof(Int16Enum), Int16Enum.Max, "Max")]
+        [InlineData(typeof(Int16Enum), Int16.MinValue, "Min")]
+        [InlineData(typeof(Int16Enum), (Int16)1, "One")]
+        [InlineData(typeof(Int16Enum), (Int16)2, "Two")]
+        [InlineData(typeof(Int16Enum), Int16.MaxValue, "Max")]
+        [InlineData(typeof(Int16Enum), (Int16)3, null)]
+
+        [InlineData(typeof(UInt32Enum), UInt32Enum.Min, "Min")]
+        [InlineData(typeof(UInt32Enum), UInt32Enum.One, "One")]
+        [InlineData(typeof(UInt32Enum), UInt32Enum.Two, "Two")]
+        [InlineData(typeof(UInt32Enum), UInt32Enum.Max, "Max")]
+        [InlineData(typeof(UInt32Enum), UInt32.MinValue, "Min")]
+        [InlineData(typeof(UInt32Enum), (UInt32)1, "One")]
+        [InlineData(typeof(UInt32Enum), (UInt32)2, "Two")]
+        [InlineData(typeof(UInt32Enum), UInt32.MaxValue, "Max")]
+        [InlineData(typeof(UInt32Enum), (UInt32)3, null)]
+
+        [InlineData(typeof(Int32Enum), Int32Enum.Min, "Min")]
+        [InlineData(typeof(Int32Enum), Int32Enum.One, "One")]
+        [InlineData(typeof(Int32Enum), Int32Enum.Two, "Two")]
+        [InlineData(typeof(Int32Enum), Int32Enum.Max, "Max")]
+        [InlineData(typeof(Int32Enum), Int32.MinValue, "Min")]
+        [InlineData(typeof(Int32Enum), (Int32)1, "One")]
+        [InlineData(typeof(Int32Enum), (Int32)2, "Two")]
+        [InlineData(typeof(Int32Enum), Int32.MaxValue, "Max")]
+        [InlineData(typeof(Int32Enum), (Int32)3, null)]
+
+        [InlineData(typeof(UInt64Enum), UInt64Enum.Min, "Min")]
+        [InlineData(typeof(UInt64Enum), UInt64Enum.One, "One")]
+        [InlineData(typeof(UInt64Enum), UInt64Enum.Two, "Two")]
+        [InlineData(typeof(UInt64Enum), UInt64Enum.Max, "Max")]
+        [InlineData(typeof(UInt64Enum), UInt64.MinValue, "Min")]
+        [InlineData(typeof(UInt64Enum), (UInt64)1UL, "One")]
+        [InlineData(typeof(UInt64Enum), (UInt64)2UL, "Two")]
+        [InlineData(typeof(UInt64Enum), UInt64.MaxValue, "Max")]
+        [InlineData(typeof(UInt64Enum), (UInt64)3UL, null)]
+
+        [InlineData(typeof(Int64Enum), Int64Enum.Min, "Min")]
+        [InlineData(typeof(Int64Enum), Int64Enum.One, "One")]
+        [InlineData(typeof(Int64Enum), Int64Enum.Two, "Two")]
+        [InlineData(typeof(Int64Enum), Int64Enum.Max, "Max")]
+        [InlineData(typeof(Int64Enum), Int64.MinValue, "Min")]
+        [InlineData(typeof(Int64Enum), (Int64)1, "One")]
+        [InlineData(typeof(Int64Enum), (Int64)2, "Two")]
+        [InlineData(typeof(Int64Enum), Int64.MaxValue, "Max")]
+        [InlineData(typeof(Int64Enum), (Int64)3, null)]
+        public static void GetName(Type enumType, object value, string expected)
         {
-            string s = Enum.GetName(typeof(SimpleEnum), value);
+            string s = Enum.GetName(enumType, value);
             Assert.Equal(expected, s);
         }
 
@@ -496,9 +576,57 @@ namespace System.Tests
         [InlineData((SimpleEnum)99, "G", "99")]
         [InlineData((SimpleEnum)0, "G", "0")] // Not found
 
-        [InlineData((ByteEnum)0, "G", "Min")]
-        [InlineData((ByteEnum)3, "G", "3")] // No [Flags] attribute
+        [InlineData((ByteEnum)(byte)0, "G", "Min")]
         [InlineData((ByteEnum)0xff, "F", "Max")] // Larger values take precedence (and remove the bits from consideration.)
+
+        [InlineData(ByteEnum.Min, "G", "Min")]
+        [InlineData(ByteEnum.One, "G", "One")]
+        [InlineData(ByteEnum.Two, "G", "Two")]
+        [InlineData((ByteEnum)(byte)3, "G", "3")] // No [Flags] attribute
+        [InlineData(ByteEnum.Max, "G", "Max")]
+
+        [InlineData(SByteEnum.Min, "G", "Min")]
+        [InlineData(SByteEnum.One, "G", "One")]
+        [InlineData(SByteEnum.Two, "G", "Two")]
+        [InlineData((SByteEnum)(sbyte)3, "G", "3")] // No [Flags] attribute
+        [InlineData(SByteEnum.Max, "G", "Max")]
+
+        [InlineData(UInt16Enum.Min, "G", "Min")]
+        [InlineData(UInt16Enum.One, "G", "One")]
+        [InlineData(UInt16Enum.Two, "G", "Two")]
+        [InlineData((UInt16Enum)(ushort)3, "G", "3")] // No [Flags] attribute
+        [InlineData(UInt16Enum.Max, "G", "Max")]
+
+        [InlineData(Int16Enum.Min, "G", "Min")]
+        [InlineData(Int16Enum.One, "G", "One")]
+        [InlineData(Int16Enum.Two, "G", "Two")]
+        [InlineData((Int16Enum)(short)3, "G", "3")] // No [Flags] attribute
+        [InlineData(Int16Enum.Max, "G", "Max")]
+
+        [InlineData(UInt32Enum.Min, "G", "Min")]
+        [InlineData(UInt32Enum.One, "G", "One")]
+        [InlineData(UInt32Enum.Two, "G", "Two")]
+        [InlineData((UInt32Enum)(UInt32)3, "G", "3")] // No [Flags] attribute
+        [InlineData(UInt32Enum.Max, "G", "Max")]
+
+        [InlineData(Int32Enum.Min, "G", "Min")]
+        [InlineData(Int32Enum.One, "G", "One")]
+        [InlineData(Int32Enum.Two, "G", "Two")]
+        [InlineData((Int32Enum)(Int32)3, "G", "3")] // No [Flags] attribute
+        [InlineData(Int32Enum.Max, "G", "Max")]
+
+        [InlineData(UInt64Enum.Min, "G", "Min")]
+        [InlineData(UInt64Enum.One, "G", "One")]
+        [InlineData(UInt64Enum.Two, "G", "Two")]
+        [InlineData((UInt64Enum)(UInt64)3, "G", "3")] // No [Flags] attribute
+        [InlineData(UInt64Enum.Max, "G", "Max")]
+
+        [InlineData(Int64Enum.Min, "G", "Min")]
+        [InlineData(Int64Enum.One, "G", "One")]
+        [InlineData(Int64Enum.Two, "G", "Two")]
+        [InlineData((Int64Enum)(Int64)3, "G", "3")] // No [Flags] attribute
+        [InlineData(Int64Enum.Max, "G", "Max")]
+
         [InlineData(AttributeTargets.Class | AttributeTargets.Delegate, "F", "Class, Delegate")] // [Flags] attribute
         public static void ToString_Format(Enum e, string format, string expected)
         {
@@ -548,6 +676,78 @@ namespace System.Tests
         // Format: F
         [InlineData(typeof(SimpleEnum), SimpleEnum.Red, "F", "Red")]
         [InlineData(typeof(SimpleEnum), 1, "F", "Red")]
+
+        [InlineData(typeof(ByteEnum), ByteEnum.Min, "G", "Min")]
+        [InlineData(typeof(ByteEnum), ByteEnum.One, "G", "One")]
+        [InlineData(typeof(ByteEnum), ByteEnum.Two, "G", "Two")]
+        [InlineData(typeof(ByteEnum), ByteEnum.Max, "G", "Max")]
+        [InlineData(typeof(ByteEnum), byte.MinValue, "G", "Min")]
+        [InlineData(typeof(ByteEnum), (Byte)1, "G", "One")]
+        [InlineData(typeof(ByteEnum), (Byte)2, "G", "Two")]
+        [InlineData(typeof(ByteEnum), byte.MaxValue, "G", "Max")]
+
+        [InlineData(typeof(SByteEnum), SByteEnum.Min, "G", "Min")]
+        [InlineData(typeof(SByteEnum), SByteEnum.One, "G", "One")]
+        [InlineData(typeof(SByteEnum), SByteEnum.Two, "G", "Two")]
+        [InlineData(typeof(SByteEnum), SByteEnum.Max, "G", "Max")]
+        [InlineData(typeof(SByteEnum), SByte.MinValue, "G", "Min")]
+        [InlineData(typeof(SByteEnum), (SByte)1, "G", "One")]
+        [InlineData(typeof(SByteEnum), (SByte)2, "G", "Two")]
+        [InlineData(typeof(SByteEnum), SByte.MaxValue, "G", "Max")]
+
+        [InlineData(typeof(UInt16Enum), UInt16Enum.Min, "G", "Min")]
+        [InlineData(typeof(UInt16Enum), UInt16Enum.One, "G", "One")]
+        [InlineData(typeof(UInt16Enum), UInt16Enum.Two, "G", "Two")]
+        [InlineData(typeof(UInt16Enum), UInt16Enum.Max, "G", "Max")]
+        [InlineData(typeof(UInt16Enum), UInt16.MinValue, "G", "Min")]
+        [InlineData(typeof(UInt16Enum), (UInt16)1, "G", "One")]
+        [InlineData(typeof(UInt16Enum), (UInt16)2, "G", "Two")]
+        [InlineData(typeof(UInt16Enum), UInt16.MaxValue, "G", "Max")]
+
+        [InlineData(typeof(Int16Enum), Int16Enum.Min, "G", "Min")]
+        [InlineData(typeof(Int16Enum), Int16Enum.One, "G", "One")]
+        [InlineData(typeof(Int16Enum), Int16Enum.Two, "G", "Two")]
+        [InlineData(typeof(Int16Enum), Int16Enum.Max, "G", "Max")]
+        [InlineData(typeof(Int16Enum), Int16.MinValue, "G", "Min")]
+        [InlineData(typeof(Int16Enum), (Int16)1, "G", "One")]
+        [InlineData(typeof(Int16Enum), (Int16)2, "G", "Two")]
+        [InlineData(typeof(Int16Enum), Int16.MaxValue, "G", "Max")]
+
+        [InlineData(typeof(UInt32Enum), UInt32Enum.Min, "G", "Min")]
+        [InlineData(typeof(UInt32Enum), UInt32Enum.One, "G", "One")]
+        [InlineData(typeof(UInt32Enum), UInt32Enum.Two, "G", "Two")]
+        [InlineData(typeof(UInt32Enum), UInt32Enum.Max, "G", "Max")]
+        [InlineData(typeof(UInt32Enum), UInt32.MinValue, "G", "Min")]
+        [InlineData(typeof(UInt32Enum), (UInt32)1, "G", "One")]
+        [InlineData(typeof(UInt32Enum), (UInt32)2, "G", "Two")]
+        [InlineData(typeof(UInt32Enum), UInt32.MaxValue, "G", "Max")]
+
+        [InlineData(typeof(Int32Enum), Int32Enum.Min, "G", "Min")]
+        [InlineData(typeof(Int32Enum), Int32Enum.One, "G", "One")]
+        [InlineData(typeof(Int32Enum), Int32Enum.Two, "G", "Two")]
+        [InlineData(typeof(Int32Enum), Int32Enum.Max, "G", "Max")]
+        [InlineData(typeof(Int32Enum), Int32.MinValue, "G", "Min")]
+        [InlineData(typeof(Int32Enum), (Int32)1, "G", "One")]
+        [InlineData(typeof(Int32Enum), (Int32)2, "G", "Two")]
+        [InlineData(typeof(Int32Enum), Int32.MaxValue, "G", "Max")]
+
+        [InlineData(typeof(UInt64Enum), UInt64Enum.Min, "G", "Min")]
+        [InlineData(typeof(UInt64Enum), UInt64Enum.One, "G", "One")]
+        [InlineData(typeof(UInt64Enum), UInt64Enum.Two, "G", "Two")]
+        [InlineData(typeof(UInt64Enum), UInt64Enum.Max, "G", "Max")]
+        [InlineData(typeof(UInt64Enum), UInt64.MinValue, "G", "Min")]
+        [InlineData(typeof(UInt64Enum), (object)(UInt64)1, "G", "One")]
+        [InlineData(typeof(UInt64Enum), (object)(UInt64)2, "G", "Two")]
+        [InlineData(typeof(UInt64Enum), UInt64.MaxValue, "G", "Max")]
+
+        [InlineData(typeof(Int64Enum), Int64Enum.Min, "G", "Min")]
+        [InlineData(typeof(Int64Enum), Int64Enum.One, "G", "One")]
+        [InlineData(typeof(Int64Enum), Int64Enum.Two, "G", "Two")]
+        [InlineData(typeof(Int64Enum), Int64Enum.Max, "G", "Max")]
+        [InlineData(typeof(Int64Enum), Int64.MinValue, "G", "Min")]
+        [InlineData(typeof(Int64Enum), (object)(Int64)1, "G", "One")]
+        [InlineData(typeof(Int64Enum), (object)(Int64)2, "G", "Two")]
+        [InlineData(typeof(Int64Enum), Int64.MaxValue, "G", "Max")]
         public static void Format(Type enumType, object value, string format, string expected)
         {
             // Format string is case insensitive

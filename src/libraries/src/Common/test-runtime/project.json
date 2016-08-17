@@ -2,7 +2,7 @@
   "dependencies": {
     "Microsoft.NETCore.Platforms": "1.0.2-beta-devapi-24415-01",
     "Microsoft.NETCore.Targets": "1.0.3-beta-devapi-24415-01",
-    "Microsoft.NETCore.TestHost": "1.0.0-rc4-24131-00",
+    "Microsoft.NETCore.TestHost": "1.1.0-beta-24416-04",
     "Microsoft.NETCore.Runtime.CoreCLR": "1.1.0-beta-24416-03",
     "System.Diagnostics.Contracts": "4.0.2-beta-devapi-24415-01",
     "System.IO.Compression": "4.2.0-beta-devapi-24415-01",
@@ -12,11 +12,11 @@
     "coveralls.io": "1.4",
     "OpenCover": "4.6.519",
     "ReportGenerator": "2.4.3",
-    "Microsoft.DotNet.xunit.performance.analysis": "1.0.0-alpha-build0037",
-    "Microsoft.DotNet.xunit.performance.analysis.cli": "1.0.0-alpha-build0037",
-    "Microsoft.DotNet.xunit.performance.runner.cli": "1.0.0-alpha-build0037",
-    "Microsoft.DotNet.xunit.performance.runner.Windows": "1.0.0-alpha-build0037",
-    "Microsoft.DotNet.BuildTools.TestSuite": "1.0.0-prerelease-00520-02",
+    "Microsoft.DotNet.xunit.performance.analysis": "1.0.0-alpha-build0039",
+    "Microsoft.DotNet.xunit.performance.analysis.cli": "1.0.0-alpha-build0039",
+    "Microsoft.DotNet.xunit.performance.runner.cli": "1.0.0-alpha-build0039",
+    "Microsoft.DotNet.xunit.performance.runner.Windows": "1.0.0-alpha-build0039",
+    "Microsoft.DotNet.BuildTools.TestSuite": "1.0.0-prerelease-00704-03",
     "xunit.console.netcore": "1.0.3-prerelease-00607-01"
   },
   "frameworks": {

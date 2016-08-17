@@ -7,6 +7,10 @@
       <SupportedFramework>net46;netcore50;netcoreapp1.0</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\src\System.Security.Cryptography.Pkcs.builds" />
+
+    <_xamarinFrameworks Include="$(AllXamarinFrameworks)" />
+    <HarvestSuppressPaths Include="@(_xamarinFrameworks->'ref/%(Identity)')" />
+    <HarvestSuppressPaths Include="@(_xamarinFrameworks->'lib/%(Identity)')" />
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />

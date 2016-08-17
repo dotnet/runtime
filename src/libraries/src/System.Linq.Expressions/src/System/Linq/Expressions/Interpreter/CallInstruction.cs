@@ -309,10 +309,10 @@ namespace System.Linq.Expressions.Interpreter
         }
     }
 
-    internal partial class MethodInfoCallInstruction : CallInstruction
+    internal class MethodInfoCallInstruction : CallInstruction
     {
-        private readonly MethodInfo _target;
-        private readonly int _argumentCount;
+        protected readonly MethodInfo _target;
+        protected readonly int _argumentCount;
 
         public override int ArgumentCount { get { return _argumentCount; } }
 
@@ -324,108 +324,49 @@ namespace System.Linq.Expressions.Interpreter
 
         public override int ProducedStack { get { return _target.ReturnType == typeof(void) ? 0 : 1; } }
 
-        public override object Invoke(params object[] args)
-        {
-            return InvokeWorker(args);
-        }
-        public override object Invoke()
-        {
-            return InvokeWorker();
-        }
-        public override object Invoke(object arg0)
-        {
-            return InvokeWorker(arg0);
-        }
-        public override object Invoke(object arg0, object arg1)
-        {
-            return InvokeWorker(arg0, arg1);
-        }
-
-        public override object InvokeInstance(object instance, params object[] args)
-        {
-            if (_target.IsStatic)
-            {
-                try
-                {
-                    return _target.Invoke(null, args);
-                }
-                catch (TargetInvocationException e)
-                {
-                    throw ExceptionHelpers.UpdateForRethrow(e.InnerException);
-                }
-            }
-
-            LightLambda targetLambda;
-            if (TryGetLightLambdaTarget(instance, out targetLambda))
-            {
-                // no need to Invoke, just interpret the lambda body
-                return InterpretLambdaInvoke(targetLambda, SkipFirstArg(args));
-            }
-
-            try
-            {
-                NullCheck(instance);
-                return _target.Invoke(instance, args);
-            }
-            catch (TargetInvocationException e)
-            {
-                throw ExceptionHelpers.UpdateForRethrow(e.InnerException);
-            }
-        }
-
-        private object InvokeWorker(params object[] args)
-        {
-            if (_target.IsStatic)
-            {
-                try
-                {
-                    return _target.Invoke(null, args);
-                }
-                catch (TargetInvocationException e)
-                {
-                    throw ExceptionHelpers.UpdateForRethrow(e.InnerException);
-                }
-            }
-
-            LightLambda targetLambda;
-            if (TryGetLightLambdaTarget(args[0], out targetLambda))
-            {
-                // no need to Invoke, just interpret the lambda body
-                return InterpretLambdaInvoke(targetLambda, SkipFirstArg(args));
-            }
-
-            try
-            {
-                var instance = args[0];
-                NullCheck(instance);
-                return _target.Invoke(instance, SkipFirstArg(args));
-            }
-            catch (TargetInvocationException e)
-            {
-                throw ExceptionHelpers.UpdateForRethrow(e.InnerException);
-            }
-        }
-
-        private static object[] SkipFirstArg(object[] args)
-        {
-            object[] newArgs = new object[args.Length - 1];
-            for (int i = 0; i < newArgs.Length; i++)
-            {
-                newArgs[i] = args[i + 1];
-            }
-            return newArgs;
-        }
-
         public override int Run(InterpretedFrame frame)
         {
             int first = frame.StackIndex - _argumentCount;
-            object[] args = new object[_argumentCount];
-            for (int i = 0; i < args.Length; i++)
+
+            object ret;
+            if (_target.IsStatic)
             {
-                args[i] = frame.Data[first + i];
+                var args = GetArgs(frame, first, 0);
+                try
+                {
+                    ret = _target.Invoke(null, args);
+                }
+                catch (TargetInvocationException e)
+                {
+                    throw ExceptionHelpers.UpdateForRethrow(e.InnerException);
+                }
+            }
+            else
+            {
+                var instance = frame.Data[first];
+                NullCheck(instance);
+
+                var args = GetArgs(frame, first, 1);
+
+                LightLambda targetLambda;
+                if (TryGetLightLambdaTarget(instance, out targetLambda))
+                {
+                    // no need to Invoke, just interpret the lambda body
+                    ret = InterpretLambdaInvoke(targetLambda, args);
+                }
+                else
+                {
+                    try
+                    {
+                        ret = _target.Invoke(instance, args);
+                    }
+                    catch (TargetInvocationException e)
+                    {
+                        throw ExceptionHelpers.UpdateForRethrow(e.InnerException);
+                    }
+                }
             }
 
-            object ret = Invoke(args);
             if (_target.ReturnType != typeof(void))
             {
                 frame.Data[first] = ret;
@@ -435,22 +376,39 @@ namespace System.Linq.Expressions.Interpreter
             {
                 frame.StackIndex = first;
             }
+
             return 1;
+        }
+
+        protected object[] GetArgs(InterpretedFrame frame, int first, int skip)
+        {
+            var count = _argumentCount - skip;
+
+            if (count > 0)
+            {
+                var args = new object[count];
+
+                for (int i = 0; i < args.Length; i++)
+                {
+                    args[i] = frame.Data[first + i + skip];
+                }
+
+                return args;
+            }
+            else
+            {
+                return Array.Empty<object>();
+            }
         }
     }
 
-    internal partial class ByRefMethodInfoCallInstruction : CallInstruction
+    internal class ByRefMethodInfoCallInstruction : MethodInfoCallInstruction
     {
         private readonly ByRefUpdater[] _byrefArgs;
-        private readonly MethodInfo _target;
-        private readonly int _argumentCount;
-
-        public override int ArgumentCount { get { return _argumentCount; } }
 
         internal ByRefMethodInfoCallInstruction(MethodInfo target, int argumentCount, ByRefUpdater[] byrefArgs)
+            : base(target, argumentCount)
         {
-            _target = target;
-            _argumentCount = argumentCount;
             _byrefArgs = byrefArgs;
         }
 
@@ -461,16 +419,13 @@ namespace System.Linq.Expressions.Interpreter
             int first = frame.StackIndex - _argumentCount;
             object[] args = null;
             object instance = null;
+
             try
             {
                 object ret;
                 if (_target.IsStatic)
                 {
-                    args = new object[_argumentCount];
-                    for (int i = 0; i < args.Length; i++)
-                    {
-                        args[i] = frame.Data[first + i];
-                    }
+                    args = GetArgs(frame, first, 0);
                     try
                     {
                         ret = _target.Invoke(null, args);
@@ -482,13 +437,10 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    args = new object[_argumentCount - 1];
-                    for (int i = 0; i < args.Length; i++)
-                    {
-                        args[i] = frame.Data[first + i + 1];
-                    }
-
                     instance = frame.Data[first];
+                    NullCheck(instance);
+
+                    args = GetArgs(frame, first, 1);
 
                     LightLambda targetLambda;
                     if (TryGetLightLambdaTarget(instance, out targetLambda))
@@ -500,7 +452,6 @@ namespace System.Linq.Expressions.Interpreter
                     {
                         try
                         {
-                            NullCheck(instance);
                             ret = _target.Invoke(instance, args);
                         }
                         catch (TargetInvocationException e)
