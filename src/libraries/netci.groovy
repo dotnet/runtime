@@ -327,8 +327,7 @@ def osShortName = ['Windows 10': 'win10',
         Utilities.addPrivateGithubPRTriggerForBranch(newJob, branch, "Windows_NT ARM64 ${configurationGroup} Build and Test", "(?i).*test\\W+ARM64\\W+${os}\\W+${configurationGroup}", null, arm64Users)
 
         // Set up a per-push trigger
-        // Temporarily disabled until private triggers are stable
-        // Utilities.addGithubPushTrigger(newJob)
+        Utilities.addGithubPushTrigger(newJob)
 
         // Get results
         Utilities.addXUnitDotNETResults(newJob, 'bin/tests/testresults/**/testResults.xml')
