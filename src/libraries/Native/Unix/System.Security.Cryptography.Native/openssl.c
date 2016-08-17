@@ -235,6 +235,14 @@ extern int32_t CryptoNative_GetX509PublicKeyParameterBytes(X509* x509, uint8_t* 
     }
 
     ASN1_TYPE* parameter = x509->cert_info->key->algor->parameter;
+
+    if (!parameter)
+    {
+        // If pBuf is NULL we're asking for the length, so return 0 (which is negative-zero)
+        // If pBuf is non-NULL we're asking to fill the data, in which case we return 1.
+        return pBuf != NULL;
+    }
+    
     int len = i2d_ASN1_TYPE(parameter, NULL);
 
     if (cBuf < len)

@@ -109,22 +109,24 @@ namespace System.Reflection.Metadata.Ecma335.Tests
             var e = new BlobEncoder(b);
             Assert.Same(b, e.Builder);
 
-            var parts = e.CustomAttributeSignature();
+            FixedArgumentsEncoder fixedArgs;
+            CustomAttributeNamedArgumentsEncoder namedArgs;
+            e.CustomAttributeSignature(out fixedArgs, out namedArgs);
 
             AssertEx.Equal(new byte[] { 0x01, 0x00 }, b.ToArray());
-            Assert.Same(b, parts.Item1.Builder);
-            Assert.Same(b, parts.Item2.Builder);
+            Assert.Same(b, fixedArgs.Builder);
+            Assert.Same(b, namedArgs.Builder);
             b.Clear();
 
             e.CustomAttributeSignature(
-                part => Assert.Same(b, part.Builder),
-                part => Assert.Same(b, part.Builder));
+                f => Assert.Same(b, f.Builder),
+                n => Assert.Same(b, namedArgs.Builder));
 
             AssertEx.Equal(new byte[] { 0x01, 0x00 }, b.ToArray());
             b.Clear();
 
-            Assert.Throws<ArgumentNullException>(() => e.CustomAttributeSignature(null, _ => { }));
-            Assert.Throws<ArgumentNullException>(() => e.CustomAttributeSignature(_ => { }, null));
+            Assert.Throws<ArgumentNullException>(() => e.CustomAttributeSignature(null, n => { }));
+            Assert.Throws<ArgumentNullException>(() => e.CustomAttributeSignature(f => { }, null));
         }
 
         [Fact]
@@ -208,26 +210,28 @@ namespace System.Reflection.Metadata.Ecma335.Tests
             var e = new MethodSignatureEncoder(b, hasVarArgs: false);
             Assert.Same(b, e.Builder);
 
-            var parts = e.Parameters(0);
+            ReturnTypeEncoder returnType;
+            ParametersEncoder parameters;
+            e.Parameters(0, out returnType, out parameters);
             AssertEx.Equal(new byte[] { 0x00 }, b.ToArray());
-            Assert.Same(b, parts.Item1.Builder);
-            Assert.Same(b, parts.Item2.Builder);
+            Assert.Same(b, parameters.Builder);
+            Assert.Same(b, returnType.Builder);
             b.Clear();
 
-            e.Parameters(1000000);
+            e.Parameters(1000000, out returnType, out parameters);
             AssertEx.Equal(new byte[] { 0xC0, 0x0F, 0x42, 0x40 }, b.ToArray());
             b.Clear();
 
             e.Parameters(10,
-                part => Assert.Same(b, part.Builder),
-                part => Assert.Same(b, part.Builder));
+                rt => Assert.Same(b, rt.Builder),
+                ps => Assert.Same(b, ps.Builder));
             AssertEx.Equal(new byte[] { 0x0A }, b.ToArray());
             b.Clear();
 
-            Assert.Throws<ArgumentOutOfRangeException>(() => e.Parameters(-1));
-            Assert.Throws<ArgumentOutOfRangeException>(() => e.Parameters(BlobWriterImpl.MaxCompressedIntegerValue + 1));
-            Assert.Throws<ArgumentNullException>(() => e.Parameters(0, null, _ => { }));
-            Assert.Throws<ArgumentNullException>(() => e.Parameters(0, _ => { }, null));
+            Assert.Throws<ArgumentOutOfRangeException>(() => e.Parameters(-1, out returnType, out parameters));
+            Assert.Throws<ArgumentOutOfRangeException>(() => e.Parameters(BlobWriterImpl.MaxCompressedIntegerValue + 1, out returnType, out parameters));
+            Assert.Throws<ArgumentNullException>(() => e.Parameters(0, null, ps => { }));
+            Assert.Throws<ArgumentNullException>(() => e.Parameters(0, rt => { }, null));
         }
 
         [Fact]
@@ -412,19 +416,21 @@ namespace System.Reflection.Metadata.Ecma335.Tests
             var e = new LiteralEncoder(b);
             Assert.Same(b, e.Builder);
 
-            var parts = e.TaggedVector();
+            CustomAttributeArrayTypeEncoder arrayType;
+            VectorEncoder vector;
+            e.TaggedVector(out arrayType, out vector);
 
             AssertEx.Equal(new byte[0], b.ToArray());
-            Assert.Same(b, parts.Item1.Builder);
-            Assert.Same(b, parts.Item2.Builder);
+            Assert.Same(b, arrayType.Builder);
+            Assert.Same(b, vector.Builder);
             b.Clear();
 
             e.TaggedVector(
-                part => Assert.Same(b, part.Builder),
-                part => Assert.Same(b, part.Builder));
+                at => Assert.Same(b, at.Builder), 
+                v => Assert.Same(b, v.Builder));
 
-            Assert.Throws<ArgumentNullException>(() => e.TaggedVector(null, _ => { }));
-            Assert.Throws<ArgumentNullException>(() => e.TaggedVector(_ => { }, null));
+            Assert.Throws<ArgumentNullException>(() => e.TaggedVector(null, v => { }));
+            Assert.Throws<ArgumentNullException>(() => e.TaggedVector(at => { }, null));
         }
 
         [Fact]
@@ -446,19 +452,21 @@ namespace System.Reflection.Metadata.Ecma335.Tests
             var e = new LiteralEncoder(b);
             Assert.Same(b, e.Builder);
 
-            var parts = e.TaggedScalar();
+            CustomAttributeElementTypeEncoder elementType;
+            ScalarEncoder scalar;
+            e.TaggedScalar(out elementType, out scalar);
 
             AssertEx.Equal(new byte[0], b.ToArray());
-            Assert.Same(b, parts.Item1.Builder);
-            Assert.Same(b, parts.Item2.Builder);
+            Assert.Same(b, elementType.Builder);
+            Assert.Same(b, scalar.Builder);
             b.Clear();
 
             e.TaggedScalar(
-                part => Assert.Same(b, part.Builder),
-                part => Assert.Same(b, part.Builder));
+                et => Assert.Same(b, et.Builder),
+                s => Assert.Same(b, s.Builder));
 
-            Assert.Throws<ArgumentNullException>(() => e.TaggedScalar(null, _ => { }));
-            Assert.Throws<ArgumentNullException>(() => e.TaggedScalar(_ => { }, null));
+            Assert.Throws<ArgumentNullException>(() => e.TaggedScalar(null, s => { }));
+            Assert.Throws<ArgumentNullException>(() => e.TaggedScalar(et => { }, null));
         }
 
         [Fact]
@@ -647,18 +655,21 @@ namespace System.Reflection.Metadata.Ecma335.Tests
             var e = new NamedArgumentsEncoder(b);
             Assert.Same(b, e.Builder);
 
-            var parts = e.AddArgument(true);
+            NamedArgumentTypeEncoder type;
+            NameEncoder name;
+            LiteralEncoder literal;
+            e.AddArgument(true, out type, out name, out literal);
 
             AssertEx.Equal(new byte[] { 0x53 }, b.ToArray());
-            Assert.Same(b, parts.Item1.Builder);
-            Assert.Same(b, parts.Item2.Builder);
-            Assert.Same(b, parts.Item3.Builder);
+            Assert.Same(b, type.Builder);
+            Assert.Same(b, name.Builder);
+            Assert.Same(b, literal.Builder);
             b.Clear();
 
             e.AddArgument(false,
-                part => Assert.Same(b, part.Builder),
-                part => Assert.Same(b, part.Builder),
-                part => Assert.Same(b, part.Builder));
+                t => Assert.Same(b, t.Builder),
+                n => Assert.Same(b, n.Builder),
+                l => Assert.Same(b, l.Builder));
             AssertEx.Equal(new byte[] { 0x54 }, b.ToArray());
             b.Clear();
 
@@ -1035,20 +1046,22 @@ namespace System.Reflection.Metadata.Ecma335.Tests
             var e = new SignatureTypeEncoder(b);
             Assert.Same(b, e.Builder);
 
-            var parts = e.Array();
+            SignatureTypeEncoder elementType;
+            ArrayShapeEncoder arrayShape;
+            e.Array(out elementType, out arrayShape);
             AssertEx.Equal(new byte[] { 0x14 }, b.ToArray());
-            Assert.Same(b, parts.Item1.Builder);
-            Assert.Same(b, parts.Item2.Builder);
+            Assert.Same(b, elementType.Builder);
+            Assert.Same(b, arrayShape.Builder);
             b.Clear();
 
             e.Array(
-                part => Assert.Same(b, part.Builder),
-                part => Assert.Same(b, part.Builder));
+                t => Assert.Same(b, t.Builder),
+                s => Assert.Same(b, s.Builder));
             AssertEx.Equal(new byte[] { 0x14 }, b.ToArray());
             b.Clear();
 
-            Assert.Throws<ArgumentNullException>(() => e.Array(null, _ => { }));
-            Assert.Throws<ArgumentNullException>(() => e.Array(_ => { }, null));
+            Assert.Throws<ArgumentNullException>(() => e.Array(null, n => { }));
+            Assert.Throws<ArgumentNullException>(() => e.Array(n => { }, null));
         }
 
         [Fact]

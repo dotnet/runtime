@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Diagnostics;
 
 namespace System.Linq.Expressions
@@ -106,7 +105,7 @@ namespace System.Linq.Expressions
         /// <returns>A <see cref="LabelExpression"/> with the given default value.</returns>
         public static LabelExpression Label(LabelTarget target, Expression defaultValue)
         {
-            ValidateGoto(target, ref defaultValue, nameof(target), nameof(defaultValue));
+            ValidateGoto(target, ref defaultValue, nameof(target), nameof(defaultValue), null);
             return new LabelExpression(target, defaultValue);
         }
     }

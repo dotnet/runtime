@@ -135,7 +135,7 @@ namespace System.Runtime.Loader.Tests
             // Attempt to load the assembly in secondary load context
             var slcLoadedAssembly = slc.LoadFromAssemblyName(assemblyName);
             
-            // We should have successfully loaded the assembly in default context.
+            // We should have successfully loaded the assembly in secondary load context.
             Assert.NotNull(slcLoadedAssembly);
 
             // And make sure the simple name matches
@@ -169,9 +169,13 @@ namespace System.Runtime.Loader.Tests
             // The assembly loaded in DefaultContext should have a different reference from the one in secondary load context
             Assert.NotEqual(slcLoadedAssembly, assemblyExpectedFromLoad);
 
-            // This will resolve the assembly via event invocation.
+            // Reset the non-Null resolution counter
+            s_NumNonNullResolutions = 0;
+
+            // Since the assembly is already loaded in TPA Binder, we will get that back without invoking any Resolving event handlers
             var assemblyExpected = AssemblyLoadContext.Default.LoadFromAssemblyName(assemblyName);
-            
+            Assert.Equal(0, s_NumNonNullResolutions);
+
             // We should have successfully loaded the assembly in default context.
             Assert.NotNull(assemblyExpected);
 
@@ -298,7 +302,7 @@ namespace System.Runtime.Loader.Tests
             Assert.Equal(olc, loadedContext);
             Assert.Equal(true, olc.LoadedFromContext);
 
-            // Now, do the same from an assembly that we explicitly had loaded in DefaultContext
+            // Now, do the same for an assembly that we explicitly had loaded in DefaultContext
             // in the caller of this method and ALSO loaded in the current load context. We should get it from our LoadContext,
             // without invoking the Load override, since it is already loaded.
             assemblyName = "System.Runtime.Loader.Noop.Assembly";

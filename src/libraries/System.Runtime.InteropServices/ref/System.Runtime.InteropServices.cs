@@ -387,19 +387,16 @@ namespace System.Runtime.InteropServices
         [System.Security.SecurityCriticalAttribute]
         public static void Copy(float[] source, int startIndex, System.IntPtr destination, int length) { }
         [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
-        [System.ObsoleteAttribute("CreateAggregatedObject(IntPtr, Object) may be unavailable in future releases. Instead, use CreateAggregatedObject<T>(IntPtr, T). For more info, go to http://go.microsoft.com/fwlink/?LinkID=296518")]
         [System.Security.SecurityCriticalAttribute]
         public static System.IntPtr CreateAggregatedObject(System.IntPtr pOuter, object o) { return default(System.IntPtr); }
         [System.Security.SecurityCriticalAttribute]
         public static System.IntPtr CreateAggregatedObject<T>(System.IntPtr pOuter, T o) { return default(System.IntPtr); }
         [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
-        [System.ObsoleteAttribute("CreateWrapperOfType(Object, Type) may be unavailable in future releases. Instead, use CreateWrapperOfType<T,T2>(T). For more info, go to http://go.microsoft.com/fwlink/?LinkID=296519")]
         [System.Security.SecurityCriticalAttribute]
         public static object CreateWrapperOfType(object o, System.Type t) { return default(object); }
         [System.Security.SecurityCriticalAttribute]
         public static TWrapper CreateWrapperOfType<T, TWrapper>(T o) { return default(TWrapper); }
         [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
-        [System.ObsoleteAttribute("DestroyStructure(IntPtr, Type) may be unavailable in future releases. Instead, use DestroyStructure<T>(IntPtr). For more info, go to http://go.microsoft.com/fwlink/?LinkID=296520")]
         [System.Security.SecurityCriticalAttribute]
         public static void DestroyStructure(System.IntPtr ptr, System.Type structuretype) { }
         [System.Security.SecurityCriticalAttribute]
@@ -413,17 +410,14 @@ namespace System.Runtime.InteropServices
         [System.Security.SecurityCriticalAttribute]
         public static void FreeHGlobal(System.IntPtr hglobal) { }
         [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
-        [System.ObsoleteAttribute("GetComInterfaceForObject(Object, Type) may be unavailable in future releases. Instead, use GetComInterfaceForObject<T,T2>(T). For more info, go to http://go.microsoft.com/fwlink/?LinkID=296509")]
         [System.Security.SecurityCriticalAttribute]
         public static System.IntPtr GetComInterfaceForObject(object o, System.Type T) { return default(System.IntPtr); }
         [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
-        [System.ObsoleteAttribute("GetComInterfaceForObject(Object, Type, CustomQueryInterfaceMode) and support for ICustomQueryInterface may be unavailable in future releases.")]
         [System.Security.SecurityCriticalAttribute]
         public static System.IntPtr GetComInterfaceForObject(object o, System.Type T, System.Runtime.InteropServices.CustomQueryInterfaceMode mode) { return default(System.IntPtr); }
         [System.Security.SecurityCriticalAttribute]
         public static System.IntPtr GetComInterfaceForObject<T, TInterface>(T o) { return default(System.IntPtr); }
         [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
-        [System.ObsoleteAttribute("GetDelegateForFunctionPointer(IntPtr, Type) may be unavailable in future releases. Instead, use GetDelegateForFunctionPointer<T>(IntPtr). For more info, go to http://go.microsoft.com/fwlink/?LinkID=296521")]
         [System.Security.SecurityCriticalAttribute]
         public static System.Delegate GetDelegateForFunctionPointer(System.IntPtr ptr, System.Type t) { return default(System.Delegate); }
         [System.Security.SecurityCriticalAttribute]
@@ -437,7 +431,6 @@ namespace System.Runtime.InteropServices
         [System.Security.SecurityCriticalAttribute]
         public static System.Exception GetExceptionForHR(int errorCode, System.IntPtr errorInfo) { return default(System.Exception); }
         [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
-        [System.ObsoleteAttribute("GetFunctionPointerForDelegate(Delegate) may be unavailable in future releases. Instead, use GetFunctionPointerForDelegate<T>(T). For more info, go to http://go.microsoft.com/fwlink/?LinkID=296522")]
         [System.Security.SecurityCriticalAttribute]
         public static System.IntPtr GetFunctionPointerForDelegate(System.Delegate d) { return default(System.IntPtr); }
         [System.Security.SecurityCriticalAttribute]
@@ -485,7 +478,6 @@ namespace System.Runtime.InteropServices
         public static object GetUniqueObjectForIUnknown(System.IntPtr unknown) { return default(object); }
         public static bool IsComObject(object o) { return default(bool); }
         [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
-        [System.ObsoleteAttribute("OffsetOf(Type, string) may be unavailable in future releases. Instead, use OffsetOf<T>(string). For more info, go to http://go.microsoft.com/fwlink/?LinkID=296511")]
         public static System.IntPtr OffsetOf(System.Type t, string fieldName) { return default(System.IntPtr); }
         public static System.IntPtr OffsetOf<T>(string fieldName) { return default(System.IntPtr); }
         [System.Security.SecurityCriticalAttribute]
@@ -503,11 +495,9 @@ namespace System.Runtime.InteropServices
         [System.Security.SecurityCriticalAttribute]
         public static string PtrToStringUTF8(System.IntPtr ptr, int byteLen) { return default(string); }        
         [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
-        [System.ObsoleteAttribute("PtrToStructure(IntPtr, Object) may be unavailable in future releases. Instead, use PtrToStructure<T>(IntPtr). For more info, go to http://go.microsoft.com/fwlink/?LinkID=296512")]
         [System.Security.SecurityCriticalAttribute]
         public static void PtrToStructure(System.IntPtr ptr, object structure) { }
         [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
-        [System.ObsoleteAttribute("PtrToStructure(IntPtr, Type) may be unavailable in future releases. Instead, use PtrToStructure<T>(IntPtr). For more info, go to http://go.microsoft.com/fwlink/?LinkID=296513")]
         [System.Security.SecurityCriticalAttribute]
         public static object PtrToStructure(System.IntPtr ptr, System.Type structureType) { return default(object); }
         [System.Security.SecurityCriticalAttribute]
@@ -565,10 +555,8 @@ namespace System.Runtime.InteropServices
         [System.Security.SecurityCriticalAttribute]
         public static int ReleaseComObject(object o) { return default(int); }
         [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
-        [System.ObsoleteAttribute("SizeOf(Object) may be unavailable in future releases. Instead, use SizeOf<T>(). For more info, go to http://go.microsoft.com/fwlink/?LinkID=296514")]
         public static int SizeOf(object structure) { return default(int); }
         [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
-        [System.ObsoleteAttribute("SizeOf(Type) may be unavailable in future releases. Instead, use SizeOf<T>(). For more info, go to http://go.microsoft.com/fwlink/?LinkID=296515")]
         public static int SizeOf(System.Type t) { return default(int); }
         public static int SizeOf<T>() { return default(int); }
         public static int SizeOf<T>(T structure) { return default(int); }
@@ -585,7 +573,6 @@ namespace System.Runtime.InteropServices
         [System.Security.SecurityCriticalAttribute]
         public static System.IntPtr StringToHGlobalUni(string s) { return default(System.IntPtr); }
         [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
-        [System.ObsoleteAttribute("StructureToPtr(Object, IntPtr, Boolean) may be unavailable in future releases. Instead, use StructureToPtr<T>(T, IntPtr, Boolean). For more info, go to http://go.microsoft.com/fwlink/?LinkID=296516")]
         [System.Security.SecurityCriticalAttribute]
         public static void StructureToPtr(object structure, System.IntPtr ptr, bool fDeleteOld) { }
         [System.Security.SecurityCriticalAttribute]
@@ -595,7 +582,6 @@ namespace System.Runtime.InteropServices
         [System.Security.SecurityCriticalAttribute]
         public static void ThrowExceptionForHR(int errorCode, System.IntPtr errorInfo) { }
         [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
-        [System.ObsoleteAttribute("UnsafeAddrOfPinnedArrayElement(Array, Int32) may be unavailable in future releases. Instead, use UnsafeAddrOfPinnedArrayElement<T>(T[], Int32). For more info, go to http://go.microsoft.com/fwlink/?LinkID=296517")]
         [System.Security.SecurityCriticalAttribute]
         public static System.IntPtr UnsafeAddrOfPinnedArrayElement(System.Array arr, int index) { return default(System.IntPtr); }
         [System.Security.SecurityCriticalAttribute]
@@ -796,6 +782,7 @@ namespace System.Runtime.InteropServices
         LPStruct = 43,
         LPTStr = 22,
         LPWStr = 21,
+        LPUTF8Str = 48,
         R4 = 11,
         R8 = 12,
         [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
