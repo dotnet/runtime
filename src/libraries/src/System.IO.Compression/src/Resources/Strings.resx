@@ -306,6 +306,9 @@
   <data name="UnsupportedCompression" xml:space="preserve">
     <value>The archive entry was compressed using an unsupported compression method.</value>
   </data>
+  <data name="UnsupportedCompressionMethod" xml:space="preserve">
+    <value>The archive entry was compressed using {0} and is not supported.</value>
+  </data>
   <data name="UpdateModeCapabilities" xml:space="preserve">
     <value>Update mode requires a stream with read, write, and seek capabilities.</value>
   </data>
