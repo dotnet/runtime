@@ -35,8 +35,8 @@ namespace System.Net.WebSockets.Tests
         public void ConstructorTests_WebSocketError_Success(WebSocketError error)
         {
             var wse = new WebSocketException(error);
-            Assert.Equal(wse.WebSocketErrorCode, error);
-            Assert.NotEqual(wse.Message, "");
+            Assert.Equal(error, wse.WebSocketErrorCode);
+            Assert.NotEqual("", wse.Message);
             Assert.Null(wse.InnerException);
         }
 
@@ -45,8 +45,8 @@ namespace System.Net.WebSockets.Tests
         {
             const string Message = "Message";
             var wse = new WebSocketException(error, Message);
-            Assert.Equal(wse.WebSocketErrorCode, error);
-            Assert.Equal(wse.Message, Message);
+            Assert.Equal(error, wse.WebSocketErrorCode);
+            Assert.Equal(Message, wse.Message);
             Assert.Null(wse.InnerException);
         }
 
@@ -55,9 +55,9 @@ namespace System.Net.WebSockets.Tests
         {
             var inner = new Exception();
             var wse = new WebSocketException(error, inner);
-            Assert.Equal(wse.WebSocketErrorCode, error);
-            Assert.NotEqual(wse.Message, "");
-            Assert.Equal(wse.InnerException, inner);
+            Assert.Equal(error, wse.WebSocketErrorCode);
+            Assert.NotEqual("", wse.Message);
+            Assert.Same(inner, wse.InnerException);
         }
 
         [Theory, MemberData(nameof(ErrorData))]
@@ -66,9 +66,9 @@ namespace System.Net.WebSockets.Tests
             const string Message = "Message";
             var inner = new Exception();
             var wse = new WebSocketException(error, Message, inner);
-            Assert.Equal(wse.WebSocketErrorCode, error);
-            Assert.Equal(wse.Message, Message);
-            Assert.Equal(wse.InnerException, inner);
+            Assert.Equal(error, wse.WebSocketErrorCode);
+            Assert.Equal(Message, wse.Message);
+            Assert.Same(inner, wse.InnerException);
         }
 
         [Theory, MemberData(nameof(NativeErrorData))]
@@ -76,8 +76,8 @@ namespace System.Net.WebSockets.Tests
         {
             var wse = new WebSocketException(nativeError);
             Assert.Equal(expectedHResult, wse.HResult);
-            Assert.Equal(wse.WebSocketErrorCode, webSocketError);
-            Assert.NotEqual(wse.Message, "");
+            Assert.Equal(webSocketError, wse.WebSocketErrorCode);
+            Assert.NotEqual("", wse.Message);
             Assert.Null(wse.InnerException);
         }
 
@@ -87,8 +87,8 @@ namespace System.Net.WebSockets.Tests
             const string Message = "Message";
             var wse = new WebSocketException(nativeError, Message);
             Assert.Equal(expectedHResult, wse.HResult);
-            Assert.Equal(wse.WebSocketErrorCode, webSocketError);
-            Assert.Equal(wse.Message, Message);
+            Assert.Equal(webSocketError, wse.WebSocketErrorCode);
+            Assert.Equal(Message, wse.Message);
             Assert.Null(wse.InnerException);
         }
 
@@ -98,9 +98,9 @@ namespace System.Net.WebSockets.Tests
             var inner = new Exception();
             var wse = new WebSocketException(nativeError, inner);
             Assert.Equal(expectedHResult, wse.HResult);
-            Assert.Equal(wse.WebSocketErrorCode, webSocketError);
-            Assert.NotEqual(wse.Message, "");
-            Assert.Equal(wse.InnerException, inner);
+            Assert.Equal(webSocketError, wse.WebSocketErrorCode);
+            Assert.NotEqual("", wse.Message);
+            Assert.Same(inner, wse.InnerException);
         }
 
         [Theory, MemberData(nameof(UnrelatedErrorData))]
@@ -108,8 +108,8 @@ namespace System.Net.WebSockets.Tests
         {
             var wse = new WebSocketException(error, nativeError);
             Assert.Equal(expectedHResult, wse.HResult);
-            Assert.Equal(wse.WebSocketErrorCode, error);
-            Assert.NotEqual(wse.Message, "");
+            Assert.Equal(error, wse.WebSocketErrorCode);
+            Assert.NotEqual("", wse.Message);
             Assert.Null(wse.InnerException);
         }
 
@@ -119,8 +119,8 @@ namespace System.Net.WebSockets.Tests
             const string Message = "Message";
             var wse = new WebSocketException(error, nativeError, Message);
             Assert.Equal(expectedHResult, wse.HResult);
-            Assert.Equal(wse.WebSocketErrorCode, error);
-            Assert.Equal(wse.Message, Message);
+            Assert.Equal(error, wse.WebSocketErrorCode);
+            Assert.Equal(Message, wse.Message);
             Assert.Null(wse.InnerException);
         }
 
@@ -130,9 +130,9 @@ namespace System.Net.WebSockets.Tests
             var inner = new Exception();
             var wse = new WebSocketException(error, nativeError, inner);
             Assert.Equal(expectedHResult, wse.HResult);
-            Assert.Equal(wse.WebSocketErrorCode, error);
-            Assert.NotEqual(wse.Message, "");
-            Assert.Equal(wse.InnerException, inner);
+            Assert.Equal(error, wse.WebSocketErrorCode);
+            Assert.NotEqual("", wse.Message);
+            Assert.Same(inner, wse.InnerException);
         }
 
         [Theory, MemberData(nameof(UnrelatedErrorData))]
@@ -142,9 +142,9 @@ namespace System.Net.WebSockets.Tests
             var inner = new Exception();
             var wse = new WebSocketException(error, nativeError, Message, inner);
             Assert.Equal(expectedHResult, wse.HResult);
-            Assert.Equal(wse.WebSocketErrorCode, error);
-            Assert.Equal(wse.Message, Message);
-            Assert.Equal(wse.InnerException, inner);
+            Assert.Equal(error, wse.WebSocketErrorCode);
+            Assert.Equal(Message, wse.Message);
+            Assert.Same(inner, wse.InnerException);
         }
 
         [Fact]
@@ -152,8 +152,8 @@ namespace System.Net.WebSockets.Tests
         {
             const string Message = "Message";
             var wse = new WebSocketException(Message);
-            Assert.Equal(wse.WebSocketErrorCode, WebSocketError.Success);
-            Assert.Equal(wse.Message, Message);
+            Assert.Equal(WebSocketError.Success, wse.WebSocketErrorCode);
+            Assert.Equal(Message, wse.Message);
             Assert.Null(wse.InnerException);
         }
 
@@ -163,9 +163,9 @@ namespace System.Net.WebSockets.Tests
             const string Message = "Message";
             var inner = new Exception();
             var wse = new WebSocketException(Message, inner);
-            Assert.Equal(wse.WebSocketErrorCode, WebSocketError.Success);
-            Assert.Equal(wse.Message, Message);
-            Assert.Equal(wse.InnerException, inner);
+            Assert.Equal(WebSocketError.Success, wse.WebSocketErrorCode);
+            Assert.Equal(Message, wse.Message);
+            Assert.Same(inner, wse.InnerException);
         }
     }
 }
