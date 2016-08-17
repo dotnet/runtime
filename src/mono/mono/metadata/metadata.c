@@ -6459,6 +6459,12 @@ mono_type_is_reference (MonoType *type)
 		!mono_metadata_generic_class_is_valuetype (type->data.generic_class))));
 }
 
+mono_bool
+mono_type_is_generic_parameter (MonoType *type)
+{
+	return !type->byref && (type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR);
+}
+
 /**
  * mono_signature_get_return_type:
  * @sig: the method signature inspected
