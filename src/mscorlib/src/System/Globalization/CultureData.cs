@@ -186,7 +186,6 @@ namespace System.Globalization
         private bool bFramework; // Flags for indicate if the culture is one of Whidbey cultures
 #endif
 
-#if !FEATURE_CORECLR
         // Region Name to Culture Name mapping table
         // (In future would be nice to be in registry or something)
 
@@ -333,8 +332,6 @@ namespace System.Globalization
             }
         }
         private volatile static Dictionary<string, string> s_RegionNames;
-
-#endif
 
         /////////////////////////////////////////////////////////////////////////
         // Build our invariant information
@@ -761,10 +758,10 @@ namespace System.Globalization
                 }
             }
 
-#if !FEATURE_CORECLR
             //
             // Not found in the hash table, look it up the hard way
             //
+#if !FEATURE_CORECLR
 #if FEATURE_WIN32_REGISTRY
             // First try the registry in case there are overrides of our table
             try
@@ -798,6 +795,7 @@ namespace System.Globalization
             catch (ObjectDisposedException) { }
             catch (ArgumentException) { }
 #endif // FEATURE_WIN32_REGISTRY
+#endif // !FEATURE_CORECLR
 
             // If not a valid mapping from the registry we'll have to try the hard coded table
             if (retVal == null || (retVal.IsNeutralCulture == true))
@@ -809,7 +807,7 @@ namespace System.Globalization
                     retVal = GetCultureData(RegionNames[cultureName], useUserOverride);
                 }
             }
-#endif // !FEATURE_CORECLR
+
             // If not found in the hard coded table we'll have to find a culture that works for us
             if (retVal == null || (retVal.IsNeutralCulture == true))
             {
