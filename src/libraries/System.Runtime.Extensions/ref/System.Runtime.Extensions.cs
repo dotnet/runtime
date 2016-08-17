@@ -543,10 +543,13 @@ namespace System
         public static double Asin(double d) { return default(double); }
         public static double Atan(double d) { return default(double); }
         public static double Atan2(double y, double x) { return default(double); }
+        public static long BigMul(int a, int b) { return default(long); }
         public static decimal Ceiling(decimal d) { return default(decimal); }
         public static double Ceiling(double a) { return default(double); }
         public static double Cos(double d) { return default(double); }
         public static double Cosh(double value) { return default(double); }
+        public static int DivRem(int a, int b, out int result) { result = default(int); return default(int); }
+        public static long DivRem(long a, long b, out long result) { result = default(long); return default(long); }
         public static double Exp(double d) { return default(double); }
         public static decimal Floor(decimal d) { return default(decimal); }
         public static double Floor(double d) { return default(double); }
@@ -608,11 +611,6 @@ namespace System
         public static double Tanh(double value) { return default(double); }
         public static decimal Truncate(decimal d) { return default(decimal); }
         public static double Truncate(double d) { return default(double); }
-    }
-    public enum MidpointRounding
-    {
-        AwayFromZero = 1,
-        ToEven = 0,
     }
     public sealed class OperatingSystem
     {
