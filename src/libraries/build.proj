@@ -81,7 +81,12 @@
 
     <Message Importance="High" Text="[$([System.DateTime]::Now.ToString('HH:mm:ss.ff'))] Restoring all packages..." />
 
+    <IsRestoreRequired ProjectJsons="@(ProjectJsonFiles)" PackagesFolder="$(PackagesDir)">
+      <Output TaskParameter="RestoreRequired" PropertyName="RestoreRequired" />
+    </IsRestoreRequired>
+    
     <Exec Command="$(DnuRestoreCommand) @(DnuRestoreDir->'&quot;%(Identity)&quot;', ' ')"
+          Condition="'$(RestoreRequired)' == 'true'"
           StandardOutputImportance="Low"
           CustomErrorRegularExpression="(^Unable to locate .*)|(^Updating the invalid lock file with .*)"
           ContinueOnError="ErrorAndContinue" />
