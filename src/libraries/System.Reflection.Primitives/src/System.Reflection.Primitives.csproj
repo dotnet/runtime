@@ -5,9 +5,16 @@
     <AssemblyName>System.Reflection.Primitives</AssemblyName>
     <AssemblyVersion>4.0.2.0</AssemblyVersion>
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)'!='netcore50'">true</IsPartialFacadeAssembly>
-    <PackageTargetFramework Condition="'$(PackageTargetFramework)' == ''">netstandard1.3</PackageTargetFramework>
     <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.0</NuGetTargetMoniker>
   </PropertyGroup>
+  <ItemGroup Condition="'$(PackageTargetFramework)' == ''">
+    <PackageDestination Include="lib/netstandard1.3">
+      <TargetFramework>netstandard1.3</TargetFramework>
+    </PackageDestination>
+    <PackageDestination Include="lib/uap10.1">
+      <TargetFramework>uap10.1</TargetFramework>
+    </PackageDestination>
+  </ItemGroup>
   <!-- Help VS understand available configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
@@ -15,7 +22,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcore50_Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Release|AnyCPU'" />
-  <ItemGroup Condition="'$(TargetGroup)'!='netcore50'">
+  <ItemGroup Condition="'$(TargetGroup)'!='netcore50' and '$(TargetGroup)' != 'uap101aot'">
     <TargetingPackReference Include="mscorlib" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)'=='netcore50'">
@@ -28,6 +35,8 @@
     <Compile Include="System\Reflection\ParameterAttributes.cs" />
     <Compile Include="System\Reflection\PropertyAttributes.cs" />
     <Compile Include="System\Reflection\TypeAttributes.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)'=='netcore50' or '$(TargetGroup)'=='uap101aot'">
     <Compile Include="System\Reflection\Emit\FlowControl.cs" />
     <Compile Include="System\Reflection\Emit\Opcode.cs" />
     <Compile Include="System\Reflection\Emit\OpCodes.cs" />
@@ -35,6 +44,9 @@
     <Compile Include="System\Reflection\Emit\OperandType.cs" />
     <Compile Include="System\Reflection\Emit\PackingSize.cs" />
     <Compile Include="System\Reflection\Emit\StackBehaviour.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)'=='uap101aot'">
+    <TargetingPackReference Include="System.Private.CoreLib" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />
