@@ -254,50 +254,58 @@ namespace System
                 Marshal.PtrToStringUni((IntPtr)version.szCSDVersion));
         });
 
-        private static unsafe int ProcessorCountCore
+        public static int ProcessorCount
         {
             get
             {
-                // Determine how much size we need for a call to GetLogicalProcessorInformationEx
-                uint len = 0;
-                if (!Interop.mincore.GetLogicalProcessorInformationEx(Interop.mincore.LOGICAL_PROCESSOR_RELATIONSHIP.RelationGroup, IntPtr.Zero, ref len) &&
-                    Marshal.GetLastWin32Error() == Interop.mincore.Errors.ERROR_INSUFFICIENT_BUFFER)
-                {
-                    // Allocate that much space
-                    Debug.Assert(len > 0);
-                    var buffer = new byte[len];
-                    fixed (byte* bufferPtr = buffer)
-                    {
-                        // Call GetLogicalProcessorInformationEx with the allocated buffer
-                        if (Interop.mincore.GetLogicalProcessorInformationEx(Interop.mincore.LOGICAL_PROCESSOR_RELATIONSHIP.RelationGroup, (IntPtr)bufferPtr, ref len))
-                        {
-                            // Walk each SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX in the buffer, where the Size of each dictates how
-                            // much space it's consuming.  For each group relation, count the number of active processors in each of its group infos.
-                            int processorCount = 0;
-                            byte* ptr = bufferPtr, endPtr = bufferPtr + len;
-                            while (ptr < endPtr)
-                            {
-                                var current = (Interop.mincore.SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX*)ptr;
-                                if (current->Relationship == Interop.mincore.LOGICAL_PROCESSOR_RELATIONSHIP.RelationGroup)
-                                {
-                                    Interop.mincore.PROCESSOR_GROUP_INFO* groupInfo = &current->Group.GroupInfo;
-                                    int groupCount = current->Group.ActiveGroupCount;
-                                    for (int i = 0; i < groupCount; i++)
-                                    {
-                                        processorCount += (groupInfo + i)->ActiveProcessorCount;
-                                    }
-                                }
-                                ptr += current->Size;
-                            }
-                            return processorCount;
-                        }
-                    }
-                }
-
-                // GetLogicalProcessorInformationEx didn't work for some reason.  Fall back to using GetSystemInfo.
-                return ProcessorCountFromSystemInfo;
+                // First try GetLogicalProcessorInformationEx, caching the result as desktop/coreclr does.
+                // If that fails for some reason, fall back to a non-cached result from GetSystemInfo.
+                // (See SystemNative::GetProcessorCount in coreclr for a comparison.)
+                int pc = s_processorCountFromGetLogicalProcessorInformationEx.Value;
+                return pc != 0 ? pc : ProcessorCountFromSystemInfo;
             }
         }
+
+        private static readonly unsafe Lazy<int> s_processorCountFromGetLogicalProcessorInformationEx = new Lazy<int>(() =>
+        {
+            // Determine how much size we need for a call to GetLogicalProcessorInformationEx
+            uint len = 0;
+            if (!Interop.mincore.GetLogicalProcessorInformationEx(Interop.mincore.LOGICAL_PROCESSOR_RELATIONSHIP.RelationGroup, IntPtr.Zero, ref len) &&
+                Marshal.GetLastWin32Error() == Interop.mincore.Errors.ERROR_INSUFFICIENT_BUFFER)
+            {
+                // Allocate that much space
+                Debug.Assert(len > 0);
+                var buffer = new byte[len];
+                fixed (byte* bufferPtr = buffer)
+                {
+                    // Call GetLogicalProcessorInformationEx with the allocated buffer
+                    if (Interop.mincore.GetLogicalProcessorInformationEx(Interop.mincore.LOGICAL_PROCESSOR_RELATIONSHIP.RelationGroup, (IntPtr)bufferPtr, ref len))
+                    {
+                        // Walk each SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX in the buffer, where the Size of each dictates how
+                        // much space it's consuming.  For each group relation, count the number of active processors in each of its group infos.
+                        int processorCount = 0;
+                        byte* ptr = bufferPtr, endPtr = bufferPtr + len;
+                        while (ptr < endPtr)
+                        {
+                            var current = (Interop.mincore.SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX*)ptr;
+                            if (current->Relationship == Interop.mincore.LOGICAL_PROCESSOR_RELATIONSHIP.RelationGroup)
+                            {
+                                Interop.mincore.PROCESSOR_GROUP_INFO* groupInfo = &current->Group.GroupInfo;
+                                int groupCount = current->Group.ActiveGroupCount;
+                                for (int i = 0; i < groupCount; i++)
+                                {
+                                    processorCount += (groupInfo + i)->ActiveProcessorCount;
+                                }
+                            }
+                            ptr += current->Size;
+                        }
+                        return processorCount;
+                    }
+                }
+            }
+
+            return 0;
+        });
 
         private static void SetEnvironmentVariableCore(string variable, string value)
         {

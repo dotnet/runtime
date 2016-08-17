@@ -40,7 +40,7 @@ namespace System
             return new OperatingSystem(PlatformID.Win32NT, new Version(0, 0));
         });
 
-        private static int ProcessorCountCore => ProcessorCountFromSystemInfo;
+        public static int ProcessorCount => ProcessorCountFromSystemInfo;
 
         private static void SetEnvironmentVariableCore(string variable, string value)
         {
