@@ -4,9 +4,16 @@
   <PropertyGroup>
     <AssemblyVersion>4.0.0.0</AssemblyVersion>
     <OutputType>Library</OutputType>
-    <PackageTargetFramework>netstandard1.0</PackageTargetFramework>
     <NuGetTargetMoniker>.NETStandard,Version=v1.0</NuGetTargetMoniker>
   </PropertyGroup>
+  <ItemGroup>  
+    <PackageDestination Include="ref/netstandard1.0">
+      <TargetFramework>netstandard1.0</TargetFramework>
+    </PackageDestination>
+    <PackageDestination Include="ref/uap10.1">
+      <TargetFramework>uap10.1</TargetFramework>
+    </PackageDestination>
+  </ItemGroup>
   <ItemGroup>
     <Compile Include="System.Reflection.Primitives.cs" />
   </ItemGroup>

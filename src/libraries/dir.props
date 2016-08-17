@@ -85,6 +85,16 @@
     <EnableDotnetAnalyzers Condition="'$(EnableDotnetAnalyzers)'==''">true</EnableDotnetAnalyzers>
   </PropertyGroup>
 
+  <!-- Explicitly setting 
+       - SupportsUWP to true when TargetGroup is uap101*. This will enable the correct pinvoke checker to be picked 
+       - BlockReflectionAttribute to true. This will enable injecting BlockReflectionAttribute.cs into the compile target.
+       TODO: Both of these properties are being set in buildtools targets, however they need to be updated to reflect uap101 changes.
+  -->
+  <PropertyGroup Condition="'$(TargetGroup)' == 'uap101' or '$(TargetGroup)' == 'uap101aot'">
+    <SupportsUWP>true</SupportsUWP>
+    <BlockReflectionAttribute>true</BlockReflectionAttribute>
+  </PropertyGroup>
+
   <!-- Package dependency validation -->
   <PropertyGroup>
     <ValidatePackageVersions>true</ValidatePackageVersions>
@@ -108,10 +118,14 @@
       <IdentityRegex>^(?i)(Microsoft\.NETCore\.Runtime.*)|(Microsoft\.TargetingPack\.Private\.CoreCLR)$</IdentityRegex>
       <ExpectedPrerelease>$(CoreClrExpectedPrerelease)</ExpectedPrerelease>
     </ValidationPattern>
+    <!-- Disabling validation of NetNative targeting pack. The TP used by netcore50 target frameworks is different than the 
+         one that's used by uap10.1 target frameworks. ValidatePackageVersions currently doesn't support multi-value ExpectedVersion.
+         We need to figure out how we compose the new TP, such that it's consumable by both frameworks.
     <ValidationPattern Include="CoreLibTargetingPackVersions">
       <IdentityRegex>^(?i)Microsoft\.TargetingPack\.Private\.NETNative$</IdentityRegex>
       <ExpectedPrerelease>$(ExternalExpectedPrerelease)</ExpectedPrerelease>
     </ValidationPattern>
+    -->
     <ValidationPattern Include="TargetingPackVersions">
       <IdentityRegex>^(?i)Microsoft\.TargetingPack\.(NetFramework.*|Private\.WinRT)$</IdentityRegex>
       <ExpectedVersion>1.0.1</ExpectedVersion>
@@ -288,6 +302,8 @@
     <TargetGroup Condition="'$(TargetGroup)'=='' and $(Configuration.Contains('net451'))">net451</TargetGroup>
     <TargetGroup Condition="'$(TargetGroup)'=='' and $(Configuration.Contains('win8'))">win8</TargetGroup>
     <TargetGroup Condition="'$(TargetGroup)'=='' and $(Configuration.Contains('wpa81'))">wpa81</TargetGroup>
+    <TargetGroup Condition="'$(TargetGroup)'=='' and $(Configuration.Contains('uap101aot'))">uap101aot</TargetGroup>
+    <TargetGroup Condition="'$(TargetGroup)'=='' and $(Configuration.Contains('uap101'))">uap101</TargetGroup>
   </PropertyGroup>
 
   <!-- Set up Default symbol and optimization for Configuration -->
@@ -522,6 +538,19 @@
       <PropertyGroup>
         <PackageTargetFramework>wpa81</PackageTargetFramework>
         <NuGetTargetMoniker>WindowsPhoneApp,Version=v8.1</NuGetTargetMoniker>
+      </PropertyGroup>
+    </When>
+    <When Condition="'$(TargetGroup)'=='uap101aot'">
+      <PropertyGroup>
+        <PackageTargetFramework>uap10.1</PackageTargetFramework>
+        <PackageTargetRuntime>aot</PackageTargetRuntime>
+        <NuGetTargetMoniker>UAP,Version=v10.1</NuGetTargetMoniker>
+      </PropertyGroup>
+    </When>
+    <When Condition="'$(TargetGroup)'=='uap101'">
+      <PropertyGroup>
+        <PackageTargetFramework>uap10.1</PackageTargetFramework>
+        <NuGetTargetMoniker>UAP,Version=v10.1</NuGetTargetMoniker>
       </PropertyGroup>
     </When>
     <Otherwise>
