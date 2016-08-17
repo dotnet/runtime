@@ -5,7 +5,7 @@
 #define LOG_HEADER_ID 0x4D505A01
 #define LOG_VERSION_MAJOR 0
 #define LOG_VERSION_MINOR 4
-#define LOG_DATA_VERSION 12
+#define LOG_DATA_VERSION 13
 /*
  * Changes in data versions:
  * version 2: added offsets in heap walk
@@ -27,6 +27,7 @@
                added TYPE_GC_HANDLE_{CREATED,DESTROYED}_BT
                TYPE_JIT events are no longer guaranteed to have code start/size info (can be zero)
  * version 12: added MONO_COUNTER_PROFILER
+ * version 13: added MONO_GC_EVENT_{PRE_STOP_WORLD_LOCKED,POST_START_WORLD_UNLOCKED}
  */
 
 enum {

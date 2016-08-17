@@ -1339,7 +1339,7 @@ gc_event (MonoProfiler *profiler, MonoGCEvent ev, int generation)
 		if (generation == mono_gc_max_generation ())
 			gc_count++;
 		break;
-	case MONO_GC_EVENT_PRE_STOP_WORLD:
+	case MONO_GC_EVENT_PRE_STOP_WORLD_LOCKED:
 		/*
 		 * Ensure that no thread can be in the middle of writing to
 		 * a buffer when the world stops...
@@ -1364,7 +1364,7 @@ gc_event (MonoProfiler *profiler, MonoGCEvent ev, int generation)
 	case MONO_GC_EVENT_PRE_START_WORLD:
 		heap_walk (profiler);
 		break;
-	case MONO_GC_EVENT_POST_START_WORLD:
+	case MONO_GC_EVENT_POST_START_WORLD_UNLOCKED:
 		/*
 		 * Similarly, we must now make sure that any object moves
 		 * written to the GC thread's buffer are flushed. Otherwise,

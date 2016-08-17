@@ -39,6 +39,7 @@ typedef enum {
 	MONO_PROFILE_FAILED
 } MonoProfileResult;
 
+// Keep somewhat in sync with libgc/include/gc.h:enum GC_EventType
 typedef enum {
 	MONO_GC_EVENT_START,
 	MONO_GC_EVENT_MARK_START,
@@ -46,10 +47,26 @@ typedef enum {
 	MONO_GC_EVENT_RECLAIM_START,
 	MONO_GC_EVENT_RECLAIM_END,
 	MONO_GC_EVENT_END,
+	/*
+	 * This is the actual arrival order of the following events:
+	 *
+	 * MONO_GC_EVENT_PRE_STOP_WORLD
+	 * MONO_GC_EVENT_PRE_STOP_WORLD_LOCKED
+	 * MONO_GC_EVENT_POST_STOP_WORLD
+	 * MONO_GC_EVENT_PRE_START_WORLD
+	 * MONO_GC_EVENT_POST_START_WORLD_UNLOCKED
+	 * MONO_GC_EVENT_POST_START_WORLD
+	 *
+	 * The LOCKED and UNLOCKED events guarantee that, by the time they arrive,
+	 * the GC and suspend locks will both have been acquired and released,
+	 * respectively.
+	 */
 	MONO_GC_EVENT_PRE_STOP_WORLD,
 	MONO_GC_EVENT_POST_STOP_WORLD,
 	MONO_GC_EVENT_PRE_START_WORLD,
-	MONO_GC_EVENT_POST_START_WORLD
+	MONO_GC_EVENT_POST_START_WORLD,
+	MONO_GC_EVENT_PRE_STOP_WORLD_LOCKED,
+	MONO_GC_EVENT_POST_START_WORLD_UNLOCKED
 } MonoGCEvent;
 
 /* coverage info */

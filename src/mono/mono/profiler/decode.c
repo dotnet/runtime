@@ -1862,9 +1862,11 @@ gc_event_name (int ev)
 	case MONO_GC_EVENT_RECLAIM_END: return "reclaim end";
 	case MONO_GC_EVENT_END: return "end";
 	case MONO_GC_EVENT_PRE_STOP_WORLD: return "pre stop";
+	case MONO_GC_EVENT_PRE_STOP_WORLD_LOCKED: return "pre stop lock";
 	case MONO_GC_EVENT_POST_STOP_WORLD: return "post stop";
 	case MONO_GC_EVENT_PRE_START_WORLD: return "pre start";
 	case MONO_GC_EVENT_POST_START_WORLD: return "post start";
+	case MONO_GC_EVENT_POST_START_WORLD_UNLOCKED: return "post start unlock";
 	default:
 		return "unknown";
 	}
