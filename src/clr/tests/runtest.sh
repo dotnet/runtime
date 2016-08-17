@@ -618,7 +618,7 @@ function upload_core_file_to_dumpling {
     fi
 
     # The output from this will include a unique ID for this dump.
-    ./$dumpling_script "--corefile" "$core_file_name" "upload" "--addpaths" $paths_to_add "--squelch" >> $dumpling_file
+    ./$dumpling_script "--corefile" "$core_file_name" "upload" "--addpaths" $paths_to_add "--squelch" | tee -a $dumpling_file
 }
 
 function preserve_core_file {
