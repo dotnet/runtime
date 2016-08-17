@@ -1,33 +1,34 @@
 {
   "frameworks": {
-    "netstandard1.4": {
+    "netstandard1.7": {
       "dependencies": {
-        "Microsoft.NETCore.Platforms": "1.0.1",
-        "Microsoft.Win32.Primitives": "4.0.0",
-        "System.Collections": "4.0.10",
-        "System.Collections.Specialized": "4.0.0",
-        "System.Collections.NonGeneric": "4.0.0",
-        "System.Diagnostics.Debug": "4.0.10",
-        "System.Diagnostics.Process": "4.1.0",
-        "System.Diagnostics.TraceSource": "4.0.0",
-        "System.IO": "4.0.10",
-        "System.Resources.ResourceManager": "4.0.0",
-        "System.Runtime": "4.0.20",
-        "System.Runtime.Extensions": "4.0.10",
-        "System.Runtime.Serialization.Formatters": "4.0.1-beta-devapi-24415-01",
-        "System.Runtime.InteropServices": "4.0.20",
-        "System.Threading": "4.0.10",
-        "System.Threading.Tasks": "4.0.10",
-        "System.Threading.Thread": "4.0.0",
-        "System.Threading.ThreadPool": "4.0.10",
-        "System.Threading.Timer": "4.0.0",
-        "System.Xml.XPath": "4.0.0"
+        "Microsoft.NETCore.Platforms": "1.0.2-beta-devapi-24416-01",
+        "Microsoft.Win32.Primitives": "4.0.2-beta-devapi-24416-01",
+        "System.Collections": "4.1.0-beta-devapi-24416-01",
+        "System.Collections.Specialized": "4.0.2-beta-devapi-24416-01",
+        "System.Collections.NonGeneric": "4.1.0-beta-devapi-24416-01",
+        "System.Diagnostics.Debug": "4.0.12-beta-devapi-24416-01",
+        "System.Globalization": "4.0.12-beta-devapi-24416-01",
+        "System.Diagnostics.Process": "4.1.1-beta-devapi-24416-01",
+        "System.Diagnostics.TraceSource": "4.0.1-beta-devapi-24416-01",
+        "System.IO": "4.2.0-beta-devapi-24416-01",
+        "System.Resources.ResourceManager": "4.0.2-beta-devapi-24416-01",
+        "System.Runtime": "4.2.0-beta-devapi-24416-01",
+        "System.Runtime.Extensions": "4.2.0-beta-devapi-24416-01",
+        "System.Runtime.Serialization.Formatters": "4.0.1-beta-devapi-24416-01",
+        "System.Runtime.InteropServices": "4.2.0-beta-devapi-24416-01",
+        "System.Threading": "4.0.12-beta-devapi-24416-01",
+        "System.Threading.Tasks": "4.0.12-beta-devapi-24416-01",
+        "System.Threading.Thread": "4.0.1-beta-devapi-24416-01",
+        "System.Threading.ThreadPool": "4.0.11-beta-devapi-24416-01",
+        "System.Threading.Timer": "4.0.2-beta-devapi-24416-01",
+        "System.Xml.XPath": "4.0.2-beta-devapi-24416-01"
       },
       "imports": [
-        "dotnet5.4"
+        "dotnet5.8"
       ]
     },
-    "net46": {
+    "net463": {
       "dependencies": {
         "Microsoft.TargetingPack.NETFramework.v4.6": "1.0.1"
       }
