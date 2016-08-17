@@ -60,7 +60,6 @@
 
   <PropertyGroup Condition="'$(RestoreDuringBuild)'=='true'">
     <TraversalBuildDependsOn>
-      ValidateAllProjectDependencies;
       BatchRestorePackages;
       ValidateExactRestore;
       CreateOrUpdateCurrentVersionFile;
@@ -76,7 +75,7 @@
 
   <UsingTask TaskName="GatherDirectoriesToRestore" AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.Tasks.dll" />
 
-  <Target Name="BatchRestorePackages">
+  <Target Name="BatchRestorePackages" DependsOnTargets="VerifyDependencies">
     <MakeDir Directories="$(PackagesDir)" Condition="!Exists('$(PackagesDir)')" /> 
 
     <Message Importance="High" Text="[$([System.DateTime]::Now.ToString('HH:mm:ss.ff'))] Restoring all packages..." />
@@ -103,23 +102,6 @@
       <Message Importance="High" Text="[$([System.DateTime]::Now.ToString('HH:mm:ss.ff'))] Generating Test project.json's...done" />
   </Target>
 
-  <!-- Task from buildtools that validates dependencies contained in project.json files. -->
-  <UsingTask TaskName="ValidateProjectDependencyVersions" AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.Tasks.dll" />
-
-  <Target Name="ValidateAllProjectDependencies"
-          Condition="'$(ValidatePackageVersions)'=='true' and '@(ProjectJsonFiles)'!=''">
-    <ValidateProjectDependencyVersions ProjectJsons="@(ProjectJsonFiles)"
-                                       ProhibitFloatingDependencies="$(ProhibitFloatingDependencies)"
-                                       ValidationPatterns="@(ValidationPattern)" />
-  </Target>
-
-  <Target Name="UpdateInvalidPackageVersions">
-    <ValidateProjectDependencyVersions ProjectJsons="@(ProjectJsonFiles)"
-                                       ProhibitFloatingDependencies="$(ProhibitFloatingDependencies)"
-                                       ValidationPatterns="@(ValidationPattern)"
-                                       UpdateInvalidDependencies="true" />
-  </Target>
-  
   <!-- Task from buildtools that uses lockfiles to validate that packages restored are exactly what were specified. -->
   <UsingTask TaskName="ValidateExactRestore" AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.Tasks.dll" />
   
