@@ -1872,6 +1872,18 @@ gc_event_name (int ev)
 	}
 }
 
+static const char*
+sync_point_name (int type)
+{
+	switch (type) {
+	case SYNC_POINT_PERIODIC: return "periodic";
+	case SYNC_POINT_WORLD_STOP: return "world stop";
+	case SYNC_POINT_WORLD_START: return "world start";
+	default:
+		return "unknown";
+	}
+}
+
 static uint64_t clause_summary [MONO_EXCEPTION_CLAUSE_FAULT + 1];
 static uint64_t throw_count = 0;
 static TraceDesc exc_traces;
@@ -3035,6 +3047,18 @@ decode_buffer (ProfContext *ctx)
 			}
 			break;
 		}
+		case TYPE_META: {
+			int subtype = *p & 0xf0;
+			uint64_t tdiff = decode_uleb128 (p + 1, &p);
+			LOG_TIME (time_base, tdiff);
+			time_base += tdiff;
+			if (subtype == TYPE_SYNC_POINT) {
+				int type = *p++;
+				if (debug)
+					fprintf (outfile, "sync point %i (%s)\n", type, sync_point_name (type));
+			}
+			break;
+		}
 		default:
 			fprintf (outfile, "unhandled profiler event: 0x%x at file offset: %llu + %lld (len: %d\n)\n", *p, (unsigned long long) file_offset, (long long) (p - ctx->buf), len);
 			exit (1);
@@ -3794,6 +3818,8 @@ dump_stats (void)
 	DUMP_EVENT_STAT (TYPE_COVERAGE, TYPE_COVERAGE_METHOD);
 	DUMP_EVENT_STAT (TYPE_COVERAGE, TYPE_COVERAGE_STATEMENT);
 	DUMP_EVENT_STAT (TYPE_COVERAGE, TYPE_COVERAGE_CLASS);
+
+	DUMP_EVENT_STAT (TYPE_META, TYPE_SYNC_POINT);
 }
 
 

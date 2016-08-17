@@ -28,6 +28,7 @@
                TYPE_JIT events are no longer guaranteed to have code start/size info (can be zero)
  * version 12: added MONO_COUNTER_PROFILER
  * version 13: added MONO_GC_EVENT_{PRE_STOP_WORLD_LOCKED,POST_START_WORLD_UNLOCKED}
+               added TYPE_META + TYPE_SYNC_POINT
  */
 
 enum {
@@ -41,6 +42,7 @@ enum {
 	TYPE_SAMPLE,
 	TYPE_RUNTIME,
 	TYPE_COVERAGE,
+	TYPE_META,
 	/* extended type for TYPE_HEAP */
 	TYPE_HEAP_START  = 0 << 4,
 	TYPE_HEAP_END    = 1 << 4,
@@ -92,8 +94,16 @@ enum {
 	TYPE_COVERAGE_METHOD   = 1 << 4,
 	TYPE_COVERAGE_STATEMENT = 2 << 4,
 	TYPE_COVERAGE_CLASS = 3 << 4,
+	/* extended type for TYPE_META */
+	TYPE_SYNC_POINT = 0 << 4,
 	TYPE_END
 };
+
+typedef enum {
+	SYNC_POINT_PERIODIC,
+	SYNC_POINT_WORLD_STOP,
+	SYNC_POINT_WORLD_START
+} MonoProfilerSyncPointType;
 
 // Sampling sources
 // Unless you have compiled with --enable-perf-events, only SAMPLE_CYCLES is available

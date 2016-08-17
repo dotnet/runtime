@@ -427,6 +427,13 @@ static MonoLinkedListSet profiler_thread_list;
  *  [partially_covered: uleb128] the number of partially covered methods
  *    currently partially_covered will always be 0, and fully_covered is the
  *    number of methods that are fully and partially covered.
+ *
+ * type meta format:
+ * type: TYPE_META
+ * exinfo: one of: TYPE_SYNC_POINT
+ * [time diff: uleb128] nanoseconds since last timing
+ * if exinfo == TYPE_SYNC_POINT
+ *	[type: byte] MonoProfilerSyncPointType enum value
  */
 
 /*
@@ -1210,6 +1217,62 @@ send_if_needed_threadless (MonoProfiler *prof)
 		safe_send_threadless (prof);
 }
 
+// Assumes that the exclusive lock is held.
+static void
+sync_point_flush (MonoProfiler *prof)
+{
+	g_assert (InterlockedReadPointer (&buffer_rwlock_exclusive) == (gpointer) thread_id () && "Why don't we hold the exclusive lock?");
+
+	MONO_LLS_FOREACH_SAFE (&profiler_thread_list, MonoProfilerThread, thread) {
+		send_buffer (prof, thread);
+		init_buffer_state (thread);
+	} MONO_LLS_FOREACH_SAFE_END
+}
+
+// Assumes that the exclusive lock is held.
+static void
+sync_point_mark (MonoProfiler *prof, MonoProfilerSyncPointType type)
+{
+	g_assert (InterlockedReadPointer (&buffer_rwlock_exclusive) == (gpointer) thread_id () && "Why don't we hold the exclusive lock?");
+
+	ENTER_LOG;
+
+	LogBuffer *logbuffer = ensure_logbuf (
+		EVENT_SIZE /* event */ +
+		LEB128_SIZE /* time */ +
+		LEB128_SIZE /* type */
+	);
+
+	uint64_t now = current_time ();
+
+	emit_byte (logbuffer, TYPE_META | TYPE_SYNC_POINT);
+	emit_time (logbuffer, now);
+	emit_byte (logbuffer, type);
+
+	EXIT_LOG;
+
+	switch (type) {
+	case SYNC_POINT_PERIODIC:
+		safe_send_threadless (prof);
+		break;
+	case SYNC_POINT_WORLD_STOP:
+	case SYNC_POINT_WORLD_START:
+		safe_send (prof);
+		break;
+	default:
+		g_assert_not_reached ();
+		break;
+	}
+}
+
+// Assumes that the exclusive lock is held.
+static void
+sync_point (MonoProfiler *prof, MonoProfilerSyncPointType type)
+{
+	sync_point_flush (prof);
+	sync_point_mark (prof, type);
+}
+
 static int
 gc_reference (MonoObject *obj, MonoClass *klass, uintptr_t size, uintptr_t num, MonoObject **refs, uintptr_t *offsets, void *data)
 {
@@ -1354,12 +1417,7 @@ gc_event (MonoProfiler *profiler, MonoGCEvent ev, int generation)
 		 * committed to the log file before any object move events
 		 * that will be produced during this GC.
 		 */
-		g_assert (InterlockedReadPointer (&buffer_rwlock_exclusive) == (gpointer) thread_id () && "Why don't we hold the exclusive lock?");
-
-		MONO_LLS_FOREACH_SAFE (&profiler_thread_list, MonoProfilerThread, thread) {
-			send_buffer (profiler, thread);
-			init_buffer_state (thread);
-		} MONO_LLS_FOREACH_SAFE_END
+		sync_point (profiler, SYNC_POINT_WORLD_STOP);
 		break;
 	case MONO_GC_EVENT_PRE_START_WORLD:
 		heap_walk (profiler);
@@ -1371,7 +1429,7 @@ gc_event (MonoProfiler *profiler, MonoGCEvent ev, int generation)
 		 * object allocation events for certain addresses could come
 		 * after the move events that made those addresses available.
 		 */
-		safe_send (profiler);
+		sync_point_mark (profiler, SYNC_POINT_WORLD_START);
 
 		/*
 		 * Finally, it is safe to allow other threads to write to
@@ -4469,15 +4527,9 @@ helper_thread (void* arg)
 
 		counters_and_perfcounters_sample (prof);
 
-		send_if_needed_threadless (prof);
-
 		buffer_lock_excl ();
 
-		// Periodically flush all thread-local buffers.
-		MONO_LLS_FOREACH_SAFE (&profiler_thread_list, MonoProfilerThread, thread) {
-			send_buffer (prof, thread);
-			init_buffer_state (thread);
-		} MONO_LLS_FOREACH_SAFE_END
+		sync_point (prof, SYNC_POINT_PERIODIC);
 
 		buffer_unlock_excl ();
 
