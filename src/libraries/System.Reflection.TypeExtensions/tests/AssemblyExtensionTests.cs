@@ -11,22 +11,22 @@ namespace System.Reflection.Tests
         [Fact]
         public void GetExportedTypesTest()
         {
-            Assembly executingAssembly = this.GetType().GetTypeInfo().Assembly;
-            Assert.True(executingAssembly.GetExportedTypes().Length >= 183);
+            Assembly executingAssembly = GetType().GetTypeInfo().Assembly;
+            Assert.True(executingAssembly.GetExportedTypes().Length >= 120);
         }
 
         [Fact]
         public void GetModulesTest()
         {
-            Assembly executingAssembly = this.GetType().GetTypeInfo().Assembly;
+            Assembly executingAssembly = GetType().GetTypeInfo().Assembly;
             Assert.Equal(1, executingAssembly.GetModules().Length);
         }
 
         [Fact]
         public void GetTypes()
         {
-            Assembly executingAssembly = this.GetType().GetTypeInfo().Assembly;
-            Assert.True(executingAssembly.GetTypes().Length >= 236);
+            Assembly executingAssembly = GetType().GetTypeInfo().Assembly;
+            Assert.True(executingAssembly.GetTypes().Length >= 225);
         }
     }
 }
