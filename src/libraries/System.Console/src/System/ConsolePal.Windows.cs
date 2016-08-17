@@ -914,7 +914,7 @@ namespace System
             get
             {
                 Interop.mincore.CONSOLE_SCREEN_BUFFER_INFO csbi = GetBufferInfo();
-                return csbi.srWindow.Left;
+                return csbi.srWindow.Top;
             }
             set
             {
