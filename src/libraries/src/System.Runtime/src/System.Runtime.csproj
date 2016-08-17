@@ -38,7 +38,8 @@
   <ItemGroup Condition="'$(TargetGroup)'!='netcore50aot' And ('$(TargetGroup)'!='net462' AND '$(TargetGroup)'!='net463')">
     <Compile Include="System\ComponentModel\DefaultValueAttribute.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)'==''">
+  <!-- TODO: Uncomment/fix all of this when we actually build this lib for netcore50aot
+  <ItemGroup Condition="'$(TargetGroup)'=='netcore50aot'">
     <Compile Include="$(CommonPath)\System\NonSerializedAttribute.cs">
       <Link>System\NonSerializedAttribute.cs</Link>
     </Compile>
@@ -85,6 +86,7 @@
       <Link>System\Runtime\Serialization\StreamingContext.cs</Link>
     </Compile>
   </ItemGroup>
+  -->
   <ItemGroup Condition="'$(TargetGroup)' != 'net462' And '$(TargetGroup)' != 'net463'">
     <ProjectReference Include="..\..\System.Private.Uri\src\System.Private.Uri.csproj">
       <OSGroup>Windows_NT</OSGroup>
