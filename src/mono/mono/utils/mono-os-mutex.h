@@ -169,7 +169,7 @@ mono_os_cond_timedwait (mono_cond_t *cond, mono_mutex_t *mutex, guint32 timeout_
 
 	res = gettimeofday (&tv, NULL);
 	if (G_UNLIKELY (res != 0))
-		g_error ("%s: pthread_cond_timedwait failed with \"%s\" (%d)", __func__, g_strerror (errno), errno);
+		g_error ("%s: gettimeofday failed with \"%s\" (%d)", __func__, g_strerror (errno), errno);
 
 	tv.tv_sec += timeout_ms / 1000;
 	usecs = tv.tv_usec + ((timeout_ms % 1000) * 1000);
