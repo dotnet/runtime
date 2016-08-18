@@ -600,7 +600,15 @@ namespace System.Security
         
         internal SecurityException(string message, Object deny, Object permitOnly, MethodInfo method, Object demanded, IPermission permThatFailed)
                     : this(){}
-                    
+
+        [System.Security.SecuritySafeCritical]  // auto-generated
+        protected SecurityException(SerializationInfo info, StreamingContext context) : base(info, context)
+        {
+            if (info == null)
+                throw new ArgumentNullException("info");
+            Contract.EndContractBlock();
+        }
+
         public override String ToString() 
                 {
                     return base.ToString();
