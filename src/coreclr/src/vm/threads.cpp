@@ -4704,7 +4704,7 @@ WaitCompleted:
     return ret;
 }
 
-#ifndef FEATURE_CORECLR
+#ifndef FEATURE_PAL
 //--------------------------------------------------------------------
 // Only one style of wait for DoSignalAndWait since we don't support this on STA Threads
 //--------------------------------------------------------------------
@@ -4851,7 +4851,7 @@ WaitCompleted:
 
     return ret;
 }
-#endif // FEATURE_CORECLR
+#endif // !FEATURE_PAL
 
 #ifdef FEATURE_SYNCHRONIZATIONCONTEXT_WAIT
 DWORD Thread::DoSyncContextWait(OBJECTREF *pSyncCtxObj, int countHandles, HANDLE *handles, BOOL waitAll, DWORD millis)
