@@ -3706,36 +3706,48 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 		case OP_ATOMIC_LOAD_I1: {
 			code = emit_addx_imm (code, ARMREG_LR, ins->inst_basereg, ins->inst_offset);
+			if (ins->backend.memory_barrier_kind == MONO_MEMORY_BARRIER_SEQ)
+				arm_dmb (code, 0);
 			arm_ldarb (code, ins->dreg, ARMREG_LR);
 			arm_sxtbx (code, ins->dreg, ins->dreg);
 			break;
 		}
 		case OP_ATOMIC_LOAD_U1: {
 			code = emit_addx_imm (code, ARMREG_LR, ins->inst_basereg, ins->inst_offset);
+			if (ins->backend.memory_barrier_kind == MONO_MEMORY_BARRIER_SEQ)
+				arm_dmb (code, 0);
 			arm_ldarb (code, ins->dreg, ARMREG_LR);
 			arm_uxtbx (code, ins->dreg, ins->dreg);
 			break;
 		}
 		case OP_ATOMIC_LOAD_I2: {
 			code = emit_addx_imm (code, ARMREG_LR, ins->inst_basereg, ins->inst_offset);
+			if (ins->backend.memory_barrier_kind == MONO_MEMORY_BARRIER_SEQ)
+				arm_dmb (code, 0);
 			arm_ldarh (code, ins->dreg, ARMREG_LR);
 			arm_sxthx (code, ins->dreg, ins->dreg);
 			break;
 		}
 		case OP_ATOMIC_LOAD_U2: {
 			code = emit_addx_imm (code, ARMREG_LR, ins->inst_basereg, ins->inst_offset);
+			if (ins->backend.memory_barrier_kind == MONO_MEMORY_BARRIER_SEQ)
+				arm_dmb (code, 0);
 			arm_ldarh (code, ins->dreg, ARMREG_LR);
 			arm_uxthx (code, ins->dreg, ins->dreg);
 			break;
 		}
 		case OP_ATOMIC_LOAD_I4: {
 			code = emit_addx_imm (code, ARMREG_LR, ins->inst_basereg, ins->inst_offset);
+			if (ins->backend.memory_barrier_kind == MONO_MEMORY_BARRIER_SEQ)
+				arm_dmb (code, 0);
 			arm_ldarw (code, ins->dreg, ARMREG_LR);
 			arm_sxtwx (code, ins->dreg, ins->dreg);
 			break;
 		}
 		case OP_ATOMIC_LOAD_U4: {
 			code = emit_addx_imm (code, ARMREG_LR, ins->inst_basereg, ins->inst_offset);
+			if (ins->backend.memory_barrier_kind == MONO_MEMORY_BARRIER_SEQ)
+				arm_dmb (code, 0);
 			arm_ldarw (code, ins->dreg, ARMREG_LR);
 			arm_movw (code, ins->dreg, ins->dreg); /* Clear upper half of the register. */
 			break;
@@ -3743,11 +3755,15 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_ATOMIC_LOAD_I8:
 		case OP_ATOMIC_LOAD_U8: {
 			code = emit_addx_imm (code, ARMREG_LR, ins->inst_basereg, ins->inst_offset);
+			if (ins->backend.memory_barrier_kind == MONO_MEMORY_BARRIER_SEQ)
+				arm_dmb (code, 0);
 			arm_ldarx (code, ins->dreg, ARMREG_LR);
 			break;
 		}
 		case OP_ATOMIC_LOAD_R4: {
 			code = emit_addx_imm (code, ARMREG_LR, ins->inst_basereg, ins->inst_offset);
+			if (ins->backend.memory_barrier_kind == MONO_MEMORY_BARRIER_SEQ)
+				arm_dmb (code, 0);
 			if (cfg->r4fp) {
 				arm_ldarw (code, ARMREG_LR, ARMREG_LR);
 				arm_fmov_rx_to_double (code, ins->dreg, ARMREG_LR);
@@ -3760,6 +3776,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 		case OP_ATOMIC_LOAD_R8: {
 			code = emit_addx_imm (code, ARMREG_LR, ins->inst_basereg, ins->inst_offset);
+			if (ins->backend.memory_barrier_kind == MONO_MEMORY_BARRIER_SEQ)
+				arm_dmb (code, 0);
 			arm_ldarx (code, ARMREG_LR, ARMREG_LR);
 			arm_fmov_rx_to_double (code, ins->dreg, ARMREG_LR);
 			break;
