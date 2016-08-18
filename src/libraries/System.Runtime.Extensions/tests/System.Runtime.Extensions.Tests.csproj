@@ -31,6 +31,7 @@
     <Compile Include="System\BitConverter.cs" />
     <Compile Include="System\Convert.BoxedObjectCheck.cs" />
     <Compile Include="System\Convert.FromBase64.cs" />
+    <Compile Include="System\Convert.IsDBNull.cs" Condition="'$(TargetGroup)'=='netstandard1.7'" />
     <Compile Include="System\Convert.TestBase.cs" />
     <Compile Include="System\Convert.ToBase64CharArray.cs" />
     <Compile Include="System\Convert.ToBase64String.cs" />

@@ -128,5 +128,18 @@ namespace System.Tests
             Double[] expectedValues = { (Double)UInt64.MaxValue, (Double)UInt64.MinValue };
             Verify(Convert.ToDouble, testValues, expectedValues);
         }
+#if netstandard17
+        [Fact]
+        public void FromChar()
+        {
+            Assert.Throws<InvalidCastException>(() => Convert.ToDouble(char.MinValue));
+        }
+
+        [Fact]
+        public void FromDateTime()
+        {
+            Assert.Throws<InvalidCastException>(() => Convert.ToDouble(DateTime.MinValue));
+        }
+#endif
     }
 }

@@ -192,5 +192,12 @@ namespace System.Tests
             UInt64[] overflowValues = { UInt64.MaxValue };
             VerifyThrows<OverflowException, UInt64>(Convert.ToSByte, overflowValues);
         }
+#if netstandard17
+        [Fact]
+        public void FromDateTime()
+        {
+            Assert.Throws<InvalidCastException>(() => Convert.ToSByte(DateTime.MaxValue));
+        }
+#endif
     }
 }

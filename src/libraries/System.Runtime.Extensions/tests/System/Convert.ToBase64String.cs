@@ -57,5 +57,20 @@ namespace System.Tests
             Assert.Throws<ArgumentOutOfRangeException>(() => Convert.ToBase64String(inputBytes, 0, inputBytes.Length + 1));
             Assert.Throws<ArgumentOutOfRangeException>(() => Convert.ToBase64String(inputBytes, 1, inputBytes.Length));
         }
+#if netstandard17
+
+        [Fact]
+        public static void SimpleTest()
+        {
+            byte[] barray = new byte[] { 1, 2, 3};
+            byte[] subset = new byte[] { 2, 3 };
+            string s1 = Convert.ToBase64String(barray, Base64FormattingOptions.InsertLineBreaks);
+            string s2 = Convert.ToBase64String(barray, Base64FormattingOptions.None);
+            string s3 = Convert.ToBase64String(barray, 1, 2, Base64FormattingOptions.None);
+            Assert.Equal(barray, Convert.FromBase64String(s1));
+            Assert.True(!s2.Contains("\n"));
+            Assert.Equal(subset, Convert.FromBase64String(s3));
+        }
+#endif
     }
 }

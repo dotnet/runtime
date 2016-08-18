@@ -128,5 +128,18 @@ namespace System.Tests
             Single[] expectedValues = { UInt64.MaxValue, UInt64.MinValue };
             Verify(Convert.ToSingle, testValues, expectedValues);
         }
+#if netstandard17
+        [Fact]
+        public void FromDateTime()
+        {
+            Assert.Throws<InvalidCastException>(() => Convert.ToSingle(DateTime.MaxValue));
+        }
+
+        [Fact]
+        public void FromChar()
+        {
+            Assert.Throws<InvalidCastException>(() => Convert.ToSingle(char.MinValue));
+        }
+#endif
     }
 }
