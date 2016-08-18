@@ -14,8 +14,11 @@
  * Licensed under the MIT license. See LICENSE file in the project root for full license information.
  */
 #include <config.h>
+#include <glib.h>
 #include "mono/metadata/assembly.h"
 #include "mono/metadata/debug-helpers.h"
+#include "mono/metadata/dynamic-image-internals.h"
+#include "mono/metadata/dynamic-stream-internals.h"
 #include "mono/metadata/exception.h"
 #include "mono/metadata/gc-internals.h"
 #include "mono/metadata/mono-ptr-array.h"
@@ -29,6 +32,7 @@
 #include "mono/metadata/security-core-clr.h"
 #include "mono/metadata/tabledefs.h"
 #include "mono/metadata/tokentype.h"
+
 #include "mono/utils/checked-build.h"
 #include "mono/utils/mono-digest.h"
 
@@ -69,61 +73,19 @@ typedef struct {
 	MonoString *dll, *dllentry;
 } ReflectionMethodBuilder;
 
-typedef struct {
+struct _GenericParamTableEntry {
 	guint32 owner;
 	MonoReflectionGenericParam *gparam;
-} GenericParamTableEntry;
-
-
-const unsigned char table_sizes [MONO_TABLE_NUM] = {
-	MONO_MODULE_SIZE,
-	MONO_TYPEREF_SIZE,
-	MONO_TYPEDEF_SIZE,
-	0,
-	MONO_FIELD_SIZE,
-	0,
-	MONO_METHOD_SIZE,
-	0,
-	MONO_PARAM_SIZE,
-	MONO_INTERFACEIMPL_SIZE,
-	MONO_MEMBERREF_SIZE,	/* 0x0A */
-	MONO_CONSTANT_SIZE,
-	MONO_CUSTOM_ATTR_SIZE,
-	MONO_FIELD_MARSHAL_SIZE,
-	MONO_DECL_SECURITY_SIZE,
-	MONO_CLASS_LAYOUT_SIZE,
-	MONO_FIELD_LAYOUT_SIZE,	/* 0x10 */
-	MONO_STAND_ALONE_SIGNATURE_SIZE,
-	MONO_EVENT_MAP_SIZE,
-	0,
-	MONO_EVENT_SIZE,
-	MONO_PROPERTY_MAP_SIZE,
-	0,
-	MONO_PROPERTY_SIZE,
-	MONO_METHOD_SEMA_SIZE,
-	MONO_METHODIMPL_SIZE,
-	MONO_MODULEREF_SIZE,	/* 0x1A */
-	MONO_TYPESPEC_SIZE,
-	MONO_IMPLMAP_SIZE,	
-	MONO_FIELD_RVA_SIZE,
-	0,
-	0,
-	MONO_ASSEMBLY_SIZE,	/* 0x20 */
-	MONO_ASSEMBLY_PROCESSOR_SIZE,
-	MONO_ASSEMBLYOS_SIZE,
-	MONO_ASSEMBLYREF_SIZE,
-	MONO_ASSEMBLYREFPROC_SIZE,
-	MONO_ASSEMBLYREFOS_SIZE,
-	MONO_FILE_SIZE,
-	MONO_EXP_TYPE_SIZE,
-	MONO_MANIFEST_SIZE,
-	MONO_NESTED_CLASS_SIZE,
-
-	MONO_GENERICPARAM_SIZE,	/* 0x2A */
-	MONO_METHODSPEC_SIZE,
-	MONO_GENPARCONSTRAINT_SIZE
-
 };
+
+void
+mono_sre_generic_param_table_entry_free (GenericParamTableEntry *entry)
+{
+	mono_gc_deregister_root ((char*) &entry->gparam);
+	g_free (entry);
+}
+
+
 
 static GENERATE_GET_CLASS_WITH_CACHE (marshal_as_attribute, System.Runtime.InteropServices, MarshalAsAttribute);
 
@@ -133,7 +95,6 @@ static guint32 mono_image_get_methodbuilder_token (MonoDynamicImage *assembly, M
 static guint32 mono_image_get_ctorbuilder_token (MonoDynamicImage *assembly, MonoReflectionCtorBuilder *cb, MonoError *error);
 static guint32 mono_image_get_sighelper_token (MonoDynamicImage *assembly, MonoReflectionSigHelper *helper, MonoError *error);
 static gboolean ensure_runtime_vtable (MonoClass *klass, MonoError  *error);
-static gpointer resolve_object (MonoImage *image, MonoObject *obj, MonoClass **handle_class, MonoGenericContext *context, MonoError *error);
 static guint32 mono_image_get_methodref_token_for_methodbuilder (MonoDynamicImage *assembly, MonoReflectionMethodBuilder *method, MonoError *error);
 static guint32 encode_generic_method_sig (MonoDynamicImage *assembly, MonoGenericContext *context);
 static gpointer register_assembly (MonoDomain *domain, MonoReflectionAssembly *res, MonoAssembly *assembly);
@@ -186,94 +147,12 @@ static void init_type_builder_generics (MonoObject *type, MonoError *error);
 
 #define mono_type_array_get_and_resolve(array, index, error) mono_reflection_type_get_handle ((MonoReflectionType*)mono_array_get (array, gpointer, index), error)
 
-
-// The dynamic images list is only needed to support the mempool reference tracking feature in checked-build.
-static GPtrArray *dynamic_images;
-static mono_mutex_t dynamic_images_mutex;
-
 static void mono_image_module_basic_init (MonoReflectionModuleBuilder *module);
-
-static inline void
-dynamic_images_lock (void)
-{
-	mono_os_mutex_lock (&dynamic_images_mutex);
-}
-
-static inline void
-dynamic_images_unlock (void)
-{
-	mono_os_mutex_unlock (&dynamic_images_mutex);
-}
-
-/**
- * mono_find_dynamic_image_owner:
- *
- * Find the dynamic image, if any, which a given pointer is located in the memory of.
- */
-MonoImage *
-mono_find_dynamic_image_owner (void *ptr)
-{
-	MonoImage *owner = NULL;
-	int i;
-
-	dynamic_images_lock ();
-
-	if (dynamic_images)
-	{
-		for (i = 0; !owner && i < dynamic_images->len; ++i) {
-			MonoImage *image = (MonoImage *)g_ptr_array_index (dynamic_images, i);
-			if (mono_mempool_contains_addr (image->mempool, ptr))
-				owner = image;
-		}
-	}
-
-	dynamic_images_unlock ();
-
-	return owner;
-}
 
 void
 mono_reflection_emit_init (void)
 {
-	mono_os_mutex_init (&dynamic_images_mutex);
-}
-
-static inline void
-dynamic_image_lock (MonoDynamicImage *image)
-{
-	MONO_ENTER_GC_SAFE;
-	mono_image_lock ((MonoImage*)image);
-	MONO_EXIT_GC_SAFE;
-}
-
-static inline void
-dynamic_image_unlock (MonoDynamicImage *image)
-{
-	mono_image_unlock ((MonoImage*)image);
-}
-
-static void
-register_dyn_token (MonoDynamicImage *assembly, guint32 token, MonoObject *obj)
-{
-	MONO_REQ_GC_UNSAFE_MODE;
-
-	dynamic_image_lock (assembly);
-	mono_g_hash_table_insert (assembly->tokens, GUINT_TO_POINTER (token), obj);
-	dynamic_image_unlock (assembly);
-}
-
-static MonoObject*
-lookup_dyn_token (MonoDynamicImage *assembly, guint32 token)
-{
-	MONO_REQ_GC_UNSAFE_MODE;
-
-	MonoObject *obj;
-
-	dynamic_image_lock (assembly);
-	obj = (MonoObject *)mono_g_hash_table_lookup (assembly->tokens, GUINT_TO_POINTER (token));
-	dynamic_image_unlock (assembly);
-
-	return obj;
+	mono_dynamic_images_init ();
 }
 
 static void
@@ -427,182 +306,36 @@ alloc_table (MonoDynamicTable *table, guint nrows)
 	}
 }
 
-static void
-make_room_in_stream (MonoDynamicStream *stream, int size)
-{
-	MONO_REQ_GC_NEUTRAL_MODE;
-
-	if (size <= stream->alloc_size)
-		return;
-	
-	while (stream->alloc_size <= size) {
-		if (stream->alloc_size < 4096)
-			stream->alloc_size = 4096;
-		else
-			stream->alloc_size *= 2;
-	}
-	
-	stream->data = (char *)g_realloc (stream->data, stream->alloc_size);
-}
-
 static guint32
 string_heap_insert (MonoDynamicStream *sh, const char *str)
 {
-	MONO_REQ_GC_NEUTRAL_MODE;
-
-	guint32 idx;
-	guint32 len;
-	gpointer oldkey, oldval;
-
-	if (g_hash_table_lookup_extended (sh->hash, str, &oldkey, &oldval))
-		return GPOINTER_TO_UINT (oldval);
-
-	len = strlen (str) + 1;
-	idx = sh->index;
-	
-	make_room_in_stream (sh, idx + len);
-
-	/*
-	 * We strdup the string even if we already copy them in sh->data
-	 * so that the string pointers in the hash remain valid even if
-	 * we need to realloc sh->data. We may want to avoid that later.
-	 */
-	g_hash_table_insert (sh->hash, g_strdup (str), GUINT_TO_POINTER (idx));
-	memcpy (sh->data + idx, str, len);
-	sh->index += len;
-	return idx;
+	return mono_dynstream_insert_string (sh, str);
 }
 
 static guint32
 string_heap_insert_mstring (MonoDynamicStream *sh, MonoString *str, MonoError *error)
 {
-	MONO_REQ_GC_UNSAFE_MODE;
-
-	mono_error_init (error);
-	char *name = mono_string_to_utf8_checked (str, error);
-	return_val_if_nok (error, -1);
-	guint32 idx;
-	idx = string_heap_insert (sh, name);
-	g_free (name);
-	return idx;
+	return mono_dynstream_insert_mstring (sh, str, error);
 }
-
-#ifndef DISABLE_REFLECTION_EMIT
-static void
-string_heap_init (MonoDynamicStream *sh)
-{
-	MONO_REQ_GC_NEUTRAL_MODE;
-
-	sh->index = 0;
-	sh->alloc_size = 4096;
-	sh->data = (char *)g_malloc (4096);
-	sh->hash = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
-	string_heap_insert (sh, "");
-}
-#endif
 
 static guint32
 mono_image_add_stream_data (MonoDynamicStream *stream, const char *data, guint32 len)
 {
-	MONO_REQ_GC_NEUTRAL_MODE;
-
-	guint32 idx;
-	
-	make_room_in_stream (stream, stream->index + len);
-	memcpy (stream->data + stream->index, data, len);
-	idx = stream->index;
-	stream->index += len;
-	/* 
-	 * align index? Not without adding an additional param that controls it since
-	 * we may store a blob value in pieces.
-	 */
-	return idx;
+	return mono_dynstream_add_data (stream, data, len);
 }
 
 static guint32
 mono_image_add_stream_zero (MonoDynamicStream *stream, guint32 len)
 {
-	MONO_REQ_GC_NEUTRAL_MODE;
-
-	guint32 idx;
-	
-	make_room_in_stream (stream, stream->index + len);
-	memset (stream->data + stream->index, 0, len);
-	idx = stream->index;
-	stream->index += len;
-	return idx;
+	return mono_dynstream_add_zero (stream, len);
 }
 
 static void
 stream_data_align (MonoDynamicStream *stream)
 {
-	MONO_REQ_GC_NEUTRAL_MODE;
-
-	char buf [4] = {0};
-	guint32 count = stream->index % 4;
-
-	/* we assume the stream data will be aligned */
-	if (count)
-		mono_image_add_stream_data (stream, buf, 4 - count);
+	mono_dynstream_data_align (stream);
 }
 
-#ifndef DISABLE_REFLECTION_EMIT
-static int
-mono_blob_entry_hash (const char* str)
-{
-	MONO_REQ_GC_NEUTRAL_MODE;
-
-	guint len, h;
-	const char *end;
-	len = mono_metadata_decode_blob_size (str, &str);
-	if (len > 0) {
-		end = str + len;
-		h = *str;
-		for (str += 1; str < end; str++)
-			h = (h << 5) - h + *str;
-		return h;
-	} else {
-		return 0;
-	}
-}
-
-static gboolean
-mono_blob_entry_equal (const char *str1, const char *str2) {
-	MONO_REQ_GC_NEUTRAL_MODE;
-
-	int len, len2;
-	const char *end1;
-	const char *end2;
-	len = mono_metadata_decode_blob_size (str1, &end1);
-	len2 = mono_metadata_decode_blob_size (str2, &end2);
-	if (len != len2)
-		return 0;
-	return memcmp (end1, end2, len) == 0;
-}
-#endif
-
-static guint32
-add_to_blob_cached (MonoDynamicImage *assembly, char *b1, int s1, char *b2, int s2)
-{
-	MONO_REQ_GC_NEUTRAL_MODE;
-
-	guint32 idx;
-	char *copy;
-	gpointer oldkey, oldval;
-
-	copy = (char *)g_malloc (s1+s2);
-	memcpy (copy, b1, s1);
-	memcpy (copy + s1, b2, s2);
-	if (g_hash_table_lookup_extended (assembly->blob_cache, copy, &oldkey, &oldval)) {
-		g_free (copy);
-		idx = GPOINTER_TO_UINT (oldval);
-	} else {
-		idx = mono_image_add_stream_data (&assembly->blob, b1, s1);
-		mono_image_add_stream_data (&assembly->blob, b2, s2);
-		g_hash_table_insert (assembly->blob_cache, copy, GUINT_TO_POINTER (idx));
-	}
-	return idx;
-}
 
 static guint32
 sigbuffer_add_to_blob_cached (MonoDynamicImage *assembly, SigBuffer *buf)
@@ -615,7 +348,7 @@ sigbuffer_add_to_blob_cached (MonoDynamicImage *assembly, SigBuffer *buf)
 	/* store length */
 	g_assert (size <= (buf->end - buf->buf));
 	mono_metadata_encode_value (size, b, &b);
-	return add_to_blob_cached (assembly, blob_size, b-blob_size, buf->buf, size);
+	return mono_dynamic_image_add_to_blob_cached (assembly, blob_size, b-blob_size, buf->buf, size);
 }
 
 
@@ -682,11 +415,11 @@ add_mono_string_to_blob_cached (MonoDynamicImage *assembly, MonoString *str)
 		const char *p = (const char*)mono_string_chars (str);
 
 		swap_with_size (swapped, p, 2, mono_string_length (str));
-		idx = add_to_blob_cached (assembly, blob_size, b-blob_size, swapped, len);
+		idx = mono_dynamic_image_add_to_blob_cached (assembly, blob_size, b-blob_size, swapped, len);
 		g_free (swapped);
 	}
 #else
-	idx = add_to_blob_cached (assembly, blob_size, b-blob_size, (char*)mono_string_chars (str), len);
+	idx = mono_dynamic_image_add_to_blob_cached (assembly, blob_size, b-blob_size, (char*)mono_string_chars (str), len);
 #endif
 	return idx;
 }
@@ -1412,7 +1145,7 @@ mono_image_add_cattrs (MonoDynamicImage *assembly, guint32 idx, guint32 type, Mo
 		values [MONO_CUSTOM_ATTR_TYPE] = type;
 		p = blob_size;
 		mono_metadata_encode_value (mono_array_length (cattr->data), p, &p);
-		values [MONO_CUSTOM_ATTR_VALUE] = add_to_blob_cached (assembly, blob_size, p - blob_size,
+		values [MONO_CUSTOM_ATTR_VALUE] = mono_dynamic_image_add_to_blob_cached (assembly, blob_size, p - blob_size,
 			mono_array_addr (cattr->data, char, 0), mono_array_length (cattr->data));
 		values += MONO_CUSTOM_ATTR_SIZE;
 		++table->next_idx;
@@ -1999,11 +1732,11 @@ handle_enum:
 			const char *p = (const char*)mono_string_chars (str);
 
 			swap_with_size (swapped, p, 2, mono_string_length (str));
-			idx = add_to_blob_cached (assembly, blob_size, b-blob_size, swapped, len);
+			idx = mono_dynamic_image_add_to_blob_cached (assembly, blob_size, b-blob_size, swapped, len);
 			g_free (swapped);
 		}
 #else
-		idx = add_to_blob_cached (assembly, blob_size, b-blob_size, (char*)mono_string_chars (str), len);
+		idx = mono_dynamic_image_add_to_blob_cached (assembly, blob_size, b-blob_size, (char*)mono_string_chars (str), len);
 #endif
 
 		g_free (buf);
@@ -2023,7 +1756,7 @@ handle_enum:
 	swap_with_size (blob_size, box_val, len, 1);
 	mono_image_add_stream_data (&assembly->blob, blob_size, len);
 #else
-	idx = add_to_blob_cached (assembly, blob_size, b-blob_size, box_val, len);
+	idx = mono_dynamic_image_add_to_blob_cached (assembly, blob_size, b-blob_size, box_val, len);
 #endif
 
 	g_free (buf);
@@ -2641,7 +2374,7 @@ mono_image_typedef_or_ref_full (MonoDynamicImage *assembly, MonoType *type, gboo
 			(type->type != MONO_TYPE_MVAR)) {
 		MonoReflectionTypeBuilder *tb = (MonoReflectionTypeBuilder *)mono_class_get_ref_info (klass);
 		token = MONO_TYPEDEFORREF_TYPEDEF | (tb->table_idx << MONO_TYPEDEFORREF_BITS);
-		register_dyn_token (assembly, token, (MonoObject *)mono_class_get_ref_info (klass));
+		mono_dynamic_image_register_token (assembly, token, (MonoObject *)mono_class_get_ref_info (klass));
 		return token;
 	}
 
@@ -2664,7 +2397,7 @@ mono_image_typedef_or_ref_full (MonoDynamicImage *assembly, MonoType *type, gboo
 	token = MONO_TYPEDEFORREF_TYPEREF | (table->next_idx << MONO_TYPEDEFORREF_BITS); /* typeref */
 	g_hash_table_insert (assembly->typeref, type, GUINT_TO_POINTER(token));
 	table->next_idx ++;
-	register_dyn_token (assembly, token, (MonoObject *)mono_class_get_ref_info (klass));
+	mono_dynamic_image_register_token (assembly, token, (MonoObject *)mono_class_get_ref_info (klass));
 	return token;
 }
 
@@ -3722,12 +3455,20 @@ reflection_cc_to_file (int call_conv) {
 }
 #endif /* !DISABLE_REFLECTION_EMIT */
 
-typedef struct {
+struct _ArrayMethod {
 	MonoType *parent;
 	MonoMethodSignature *sig;
 	char *name;
 	guint32 token;
-} ArrayMethod;
+};
+
+void
+mono_sre_array_method_free (ArrayMethod *am)
+{
+	g_free (am->sig);
+	g_free (am->name);
+	g_free (am);
+}
 
 #ifndef DISABLE_REFLECTION_EMIT
 static guint32
@@ -4436,16 +4177,6 @@ compare_interface_impl (const void *a, const void *b)
 	return a_values [MONO_INTERFACEIMPL_INTERFACE] - b_values [MONO_INTERFACEIMPL_INTERFACE];
 }
 
-static void
-pad_heap (MonoDynamicStream *sh)
-{
-	if (sh->index & 3) {
-		int sz = 4 - (sh->index & 3);
-		memset (sh->data + sh->index, 0, sz);
-		sh->index += sz;
-	}
-}
-
 struct StreamDesc {
 	const char *name;
 	MonoDynamicStream *stream;
@@ -4509,10 +4240,10 @@ build_compressed_metadata (MonoDynamicImage *assembly, MonoError *error)
 	meta = &assembly->image;
 
 	/* sizes should be multiple of 4 */
-	pad_heap (&assembly->blob);
-	pad_heap (&assembly->guid);
-	pad_heap (&assembly->sheap);
-	pad_heap (&assembly->us);
+	mono_dynstream_data_align (&assembly->blob);
+	mono_dynstream_data_align (&assembly->guid);
+	mono_dynstream_data_align (&assembly->sheap);
+	mono_dynstream_data_align (&assembly->us);
 
 	/* Setup the info used by compute_sizes () */
 	meta->idx_blob_wide = assembly->blob.index >= 65536 ? 1 : 0;
@@ -5264,19 +4995,6 @@ mono_image_build_metadata (MonoReflectionModuleBuilder *moduleb, MonoError *erro
 #endif /* DISABLE_REFLECTION_EMIT_SAVE */
 
 
-typedef struct {
-	guint32 import_lookup_table;
-	guint32 timestamp;
-	guint32 forwarder;
-	guint32 name_rva;
-	guint32 import_address_table_rva;
-} MonoIDT;
-
-typedef struct {
-	guint32 name_rva;
-	guint32 flags;
-} MonoILT;
-
 #ifndef DISABLE_REFLECTION_EMIT
 
 /*
@@ -5319,7 +5037,7 @@ mono_image_insert_string (MonoReflectionModuleBuilder *module, MonoString *str)
 		idx = assembly->us.index ++;
 	}
 
-	register_dyn_token (assembly, MONO_TOKEN_STRING | idx, (MonoObject*)str);
+	mono_dynamic_image_register_token (assembly, MONO_TOKEN_STRING | idx, (MonoObject*)str);
 
 	return MONO_TOKEN_STRING | idx;
 }
@@ -5431,7 +5149,7 @@ mono_image_create_method_token (MonoDynamicImage *assembly, MonoObject *obj, Mon
 	}
 
 	g_hash_table_insert (assembly->vararg_aux_hash, GUINT_TO_POINTER (token), sig);
-	register_dyn_token (assembly, token, obj);
+	mono_dynamic_image_register_token (assembly, token, obj);
 	return token;
 fail:
 	g_assert (!mono_error_ok (error));
@@ -5623,241 +5341,8 @@ mono_image_create_token (MonoDynamicImage *assembly, MonoObject *obj,
 	return token;
 }
 
-/*
- * mono_image_register_token:
- *
- *   Register the TOKEN->OBJ mapping in the mapping table in ASSEMBLY. This is required for
- * the Module.ResolveXXXToken () methods to work.
- */
-void
-mono_image_register_token (MonoDynamicImage *assembly, guint32 token, MonoObject *obj)
-{
-	MonoObject *prev;
 
-	dynamic_image_lock (assembly);
-	prev = (MonoObject *)mono_g_hash_table_lookup (assembly->tokens, GUINT_TO_POINTER (token));
-	if (prev) {
-		/* There could be multiple MethodInfo objects with the same token */
-		//g_assert (prev == obj);
-	} else {
-		mono_g_hash_table_insert (assembly->tokens, GUINT_TO_POINTER (token), obj);
-	}
-	dynamic_image_unlock (assembly);
-}
-
-static MonoDynamicImage*
-create_dynamic_mono_image (MonoDynamicAssembly *assembly, char *assembly_name, char *module_name)
-{
-	static const guchar entrycode [16] = {0xff, 0x25, 0};
-	MonoDynamicImage *image;
-	int i;
-
-	const char *version;
-
-	if (!strcmp (mono_get_runtime_info ()->framework_version, "2.1"))
-		version = "v2.0.50727"; /* HACK: SL 2 enforces the .net 2 metadata version */
-	else
-		version = mono_get_runtime_info ()->runtime_version;
-
-#if HAVE_BOEHM_GC
-	/* The MonoGHashTable's need GC tracking */
-	image = (MonoDynamicImage *)GC_MALLOC (sizeof (MonoDynamicImage));
-#else
-	image = g_new0 (MonoDynamicImage, 1);
 #endif
-
-	mono_profiler_module_event (&image->image, MONO_PROFILE_START_LOAD);
-	
-	/*g_print ("created image %p\n", image);*/
-	/* keep in sync with image.c */
-	image->image.name = assembly_name;
-	image->image.assembly_name = image->image.name; /* they may be different */
-	image->image.module_name = module_name;
-	image->image.version = g_strdup (version);
-	image->image.md_version_major = 1;
-	image->image.md_version_minor = 1;
-	image->image.dynamic = TRUE;
-
-	image->image.references = g_new0 (MonoAssembly*, 1);
-	image->image.references [0] = NULL;
-
-	mono_image_init (&image->image);
-
-	image->token_fixups = mono_g_hash_table_new_type ((GHashFunc)mono_object_hash, NULL, MONO_HASH_KEY_GC, MONO_ROOT_SOURCE_REFLECTION, "dynamic module token fixups table");
-	image->method_to_table_idx = g_hash_table_new (NULL, NULL);
-	image->field_to_table_idx = g_hash_table_new (NULL, NULL);
-	image->method_aux_hash = g_hash_table_new (NULL, NULL);
-	image->vararg_aux_hash = g_hash_table_new (NULL, NULL);
-	image->handleref = g_hash_table_new (NULL, NULL);
-	image->handleref_managed = mono_g_hash_table_new_type ((GHashFunc)mono_object_hash, NULL, MONO_HASH_KEY_GC, MONO_ROOT_SOURCE_REFLECTION, "dynamic module reference-to-token table");
-	image->tokens = mono_g_hash_table_new_type (NULL, NULL, MONO_HASH_VALUE_GC, MONO_ROOT_SOURCE_REFLECTION, "dynamic module tokens table");
-	image->generic_def_objects = mono_g_hash_table_new_type (NULL, NULL, MONO_HASH_VALUE_GC, MONO_ROOT_SOURCE_REFLECTION, "dynamic module generic definitions table");
-	image->methodspec = mono_g_hash_table_new_type ((GHashFunc)mono_object_hash, NULL, MONO_HASH_KEY_GC, MONO_ROOT_SOURCE_REFLECTION, "dynamic module method specifications table");
-	image->typespec = g_hash_table_new ((GHashFunc)mono_metadata_type_hash, (GCompareFunc)mono_metadata_type_equal);
-	image->typeref = g_hash_table_new ((GHashFunc)mono_metadata_type_hash, (GCompareFunc)mono_metadata_type_equal);
-	image->blob_cache = g_hash_table_new ((GHashFunc)mono_blob_entry_hash, (GCompareFunc)mono_blob_entry_equal);
-	image->gen_params = g_ptr_array_new ();
-	image->remapped_tokens = mono_g_hash_table_new_type (NULL, NULL, MONO_HASH_VALUE_GC, MONO_ROOT_SOURCE_REFLECTION, "dynamic module remapped tokens table");
-
-	/*g_print ("string heap create for image %p (%s)\n", image, module_name);*/
-	string_heap_init (&image->sheap);
-	mono_image_add_stream_data (&image->us, "", 1);
-	add_to_blob_cached (image, (char*) "", 1, NULL, 0);
-	/* import tables... */
-	mono_image_add_stream_data (&image->code, (char*)entrycode, sizeof (entrycode));
-	image->iat_offset = mono_image_add_stream_zero (&image->code, 8); /* two IAT entries */
-	image->idt_offset = mono_image_add_stream_zero (&image->code, 2 * sizeof (MonoIDT)); /* two IDT entries */
-	image->imp_names_offset = mono_image_add_stream_zero (&image->code, 2); /* flags for name entry */
-	mono_image_add_stream_data (&image->code, "_CorExeMain", 12);
-	mono_image_add_stream_data (&image->code, "mscoree.dll", 12);
-	image->ilt_offset = mono_image_add_stream_zero (&image->code, 8); /* two ILT entries */
-	stream_data_align (&image->code);
-
-	image->cli_header_offset = mono_image_add_stream_zero (&image->code, sizeof (MonoCLIHeader));
-
-	for (i=0; i < MONO_TABLE_NUM; ++i) {
-		image->tables [i].next_idx = 1;
-		image->tables [i].columns = table_sizes [i];
-	}
-
-	image->image.assembly = (MonoAssembly*)assembly;
-	image->run = assembly->run;
-	image->save = assembly->save;
-	image->pe_kind = 0x1; /* ILOnly */
-	image->machine = 0x14c; /* I386 */
-	
-	mono_profiler_module_loaded (&image->image, MONO_PROFILE_OK);
-
-	dynamic_images_lock ();
-
-	if (!dynamic_images)
-		dynamic_images = g_ptr_array_new ();
-
-	g_ptr_array_add (dynamic_images, image);
-
-	dynamic_images_unlock ();
-
-	return image;
-}
-#endif
-
-static void
-free_blob_cache_entry (gpointer key, gpointer val, gpointer user_data)
-{
-	g_free (key);
-}
-
-static void
-release_hashtable (MonoGHashTable **hash)
-{
-	if (*hash) {
-		mono_g_hash_table_destroy (*hash);
-		*hash = NULL;
-	}
-}
-
-void
-mono_dynamic_image_release_gc_roots (MonoDynamicImage *image)
-{
-	release_hashtable (&image->token_fixups);
-	release_hashtable (&image->handleref_managed);
-	release_hashtable (&image->tokens);
-	release_hashtable (&image->remapped_tokens);
-	release_hashtable (&image->generic_def_objects);
-	release_hashtable (&image->methodspec);
-}
-
-// Free dynamic image pass one: Free resources but not image itself
-void
-mono_dynamic_image_free (MonoDynamicImage *image)
-{
-	MonoDynamicImage *di = image;
-	GList *list;
-	int i;
-
-	if (di->methodspec)
-		mono_g_hash_table_destroy (di->methodspec);
-	if (di->typespec)
-		g_hash_table_destroy (di->typespec);
-	if (di->typeref)
-		g_hash_table_destroy (di->typeref);
-	if (di->handleref)
-		g_hash_table_destroy (di->handleref);
-	if (di->handleref_managed)
-		mono_g_hash_table_destroy (di->handleref_managed);
-	if (di->tokens)
-		mono_g_hash_table_destroy (di->tokens);
-	if (di->remapped_tokens)
-		mono_g_hash_table_destroy (di->remapped_tokens);
-	if (di->generic_def_objects)
-		mono_g_hash_table_destroy (di->generic_def_objects);
-	if (di->blob_cache) {
-		g_hash_table_foreach (di->blob_cache, free_blob_cache_entry, NULL);
-		g_hash_table_destroy (di->blob_cache);
-	}
-	if (di->standalonesig_cache)
-		g_hash_table_destroy (di->standalonesig_cache);
-	for (list = di->array_methods; list; list = list->next) {
-		ArrayMethod *am = (ArrayMethod *)list->data;
-		g_free (am->sig);
-		g_free (am->name);
-		g_free (am);
-	}
-	g_list_free (di->array_methods);
-	if (di->gen_params) {
-		for (i = 0; i < di->gen_params->len; i++) {
-			GenericParamTableEntry *entry = (GenericParamTableEntry *)g_ptr_array_index (di->gen_params, i);
-			mono_gc_deregister_root ((char*) &entry->gparam);
-			g_free (entry);
-		}
-	 	g_ptr_array_free (di->gen_params, TRUE);
-	}
-	if (di->token_fixups)
-		mono_g_hash_table_destroy (di->token_fixups);
-	if (di->method_to_table_idx)
-		g_hash_table_destroy (di->method_to_table_idx);
-	if (di->field_to_table_idx)
-		g_hash_table_destroy (di->field_to_table_idx);
-	if (di->method_aux_hash)
-		g_hash_table_destroy (di->method_aux_hash);
-	if (di->vararg_aux_hash)
-		g_hash_table_destroy (di->vararg_aux_hash);
-	g_free (di->strong_name);
-	g_free (di->win32_res);
-	if (di->public_key)
-		g_free (di->public_key);
-
-	/*g_print ("string heap destroy for image %p\n", di);*/
-	mono_dynamic_stream_reset (&di->sheap);
-	mono_dynamic_stream_reset (&di->code);
-	mono_dynamic_stream_reset (&di->resources);
-	mono_dynamic_stream_reset (&di->us);
-	mono_dynamic_stream_reset (&di->blob);
-	mono_dynamic_stream_reset (&di->tstream);
-	mono_dynamic_stream_reset (&di->guid);
-	for (i = 0; i < MONO_TABLE_NUM; ++i) {
-		g_free (di->tables [i].values);
-	}
-
-	dynamic_images_lock ();
-
-	if (dynamic_images)
-		g_ptr_array_remove (dynamic_images, di);
-
-	dynamic_images_unlock ();
-}
-
-// Free dynamic image pass two: Free image itself (might never get called in some debug modes)
-void
-mono_dynamic_image_free_image (MonoDynamicImage *image)
-{
-	/* See create_dynamic_mono_image () */
-#if HAVE_BOEHM_GC
-	/* Allocated using GC_MALLOC */
-#else
-	g_free (image);
-#endif
-}
 
 #ifndef DISABLE_REFLECTION_EMIT
 
@@ -5929,7 +5414,7 @@ mono_image_basic_init (MonoReflectionAssemblyBuilder *assemblyb)
 	char *assembly_name = mono_string_to_utf8_checked (assemblyb->name, &error);
 	if (mono_error_set_pending_exception (&error))
 		return;
-	image = create_dynamic_mono_image (assembly, assembly_name, g_strdup ("RefEmit_YouForgotToDefineAModule"));
+	image = mono_dynamic_image_create (assembly, assembly_name, g_strdup ("RefEmit_YouForgotToDefineAModule"));
 	image->initial_image = TRUE;
 	assembly->assembly.aname.name = image->image.name;
 	assembly->assembly.image = &image->image;
@@ -6710,7 +6195,7 @@ image_module_basic_init (MonoReflectionModuleBuilder *moduleb, MonoError *error)
 			g_free (name);
 			return FALSE;
 		}
-		image = create_dynamic_mono_image (ab->dynamic_assembly, name, fqname);
+		image = mono_dynamic_image_create (ab->dynamic_assembly, name, fqname);
 
 		moduleb->module.image = &image->image;
 		moduleb->dynamic_image = image;
@@ -7739,7 +7224,7 @@ reflection_setup_internal_class (MonoReflectionTypeBuilder *tb, MonoError *error
 		g_assert (mono_class_get_ref_info (klass) == tb);
 	}
 
-	register_dyn_token (tb->module->dynamic_image, MONO_TOKEN_TYPE_DEF | tb->table_idx, (MonoObject*)tb);
+	mono_dynamic_image_register_token (tb->module->dynamic_image, MONO_TOKEN_TYPE_DEF | tb->table_idx, (MonoObject*)tb);
 
 	if (parent != NULL) {
 		mono_class_setup_parent (klass, parent);
@@ -9716,7 +9201,7 @@ reflection_create_dynamic_method (MonoReflectionDynamicMethod *mb, MonoError *er
 			handle_class = mono_defaults.methodhandle_class;
 		} else {
 			MonoException *ex = NULL;
-			ref = resolve_object (mb->module->image, obj, &handle_class, NULL, error);
+			ref = mono_reflection_resolve_object (mb->module->image, obj, &handle_class, NULL, error);
 			if (!is_ok  (error)) {
 				g_free (rmb.refs);
 				return FALSE;
@@ -9797,19 +9282,6 @@ ves_icall_DynamicMethod_create_dynamic_method (MonoReflectionDynamicMethod *mb)
 
 #endif /* DISABLE_REFLECTION_EMIT */
 
-/**
- * 
- * mono_reflection_is_valid_dynamic_token:
- * 
- * Returns TRUE if token is valid.
- * 
- */
-gboolean
-mono_reflection_is_valid_dynamic_token (MonoDynamicImage *image, guint32 token)
-{
-	return lookup_dyn_token (image, token) != NULL;
-}
-
 MonoMethodSignature *
 mono_reflection_lookup_signature (MonoImage *image, MonoMethod *method, guint32 token, MonoError *error)
 {
@@ -9826,41 +9298,6 @@ mono_reflection_lookup_signature (MonoImage *image, MonoMethod *method, guint32 
 }
 
 #ifndef DISABLE_REFLECTION_EMIT
-
-/**
- * mono_reflection_lookup_dynamic_token:
- *
- * Finish the Builder object pointed to by TOKEN and return the corresponding
- * runtime structure. If HANDLE_CLASS is not NULL, it is set to the class required by 
- * mono_ldtoken. If valid_token is TRUE, assert if it is not found in the token->object
- * mapping table.
- *
- * LOCKING: Take the loader lock
- */
-gpointer
-mono_reflection_lookup_dynamic_token (MonoImage *image, guint32 token, gboolean valid_token, MonoClass **handle_class, MonoGenericContext *context, MonoError *error)
-{
-	MonoDynamicImage *assembly = (MonoDynamicImage*)image;
-	MonoObject *obj;
-	MonoClass *klass;
-
-	mono_error_init (error);
-	
-	obj = lookup_dyn_token (assembly, token);
-	if (!obj) {
-		if (valid_token)
-			g_error ("Could not find required dynamic token 0x%08x", token);
-		else {
-			mono_error_set_execution_engine (error, "Could not find dynamic token 0x%08x", token);
-			return NULL;
-		}
-	}
-
-	if (!handle_class)
-		handle_class = &klass;
-	gpointer result = resolve_object (image, obj, handle_class, context, error);
-	return result;
-}
 
 /*
  * ensure_complete_type:
@@ -9894,8 +9331,8 @@ ensure_complete_type (MonoClass *klass, MonoError *error)
 	}
 }
 
-static gpointer
-resolve_object (MonoImage *image, MonoObject *obj, MonoClass **handle_class, MonoGenericContext *context, MonoError *error)
+gpointer
+mono_reflection_resolve_object (MonoImage *image, MonoObject *obj, MonoClass **handle_class, MonoGenericContext *context, MonoError *error)
 {
 	gpointer result = NULL;
 
@@ -10315,11 +9752,6 @@ mono_image_create_token (MonoDynamicImage *assembly, MonoObject *obj,
 }
 
 void
-mono_image_register_token (MonoDynamicImage *assembly, guint32 token, MonoObject *obj)
-{
-}
-
-void
 mono_reflection_generic_class_initialize (MonoReflectionGenericClass *type, MonoArray *fields)
 {
 	g_assert_not_reached ();
@@ -10370,13 +9802,6 @@ ves_icall_SignatureHelper_get_signature_field (MonoReflectionSigHelper *sig)
 void 
 ves_icall_DynamicMethod_create_dynamic_method (MonoReflectionDynamicMethod *mb)
 {
-}
-
-gpointer
-mono_reflection_lookup_dynamic_token (MonoImage *image, guint32 token, gboolean valid_token, MonoClass **handle_class, MonoGenericContext *context, MonoError *error)
-{
-	mono_error_init (error);
-	return NULL;
 }
 
 MonoType*

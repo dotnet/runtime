@@ -32,6 +32,8 @@
     <ClCompile Include="..\mono\metadata\debug-mono-ppdb.c" />
     <ClCompile Include="..\mono\metadata\debug-mono-symfile.c" />
     <ClCompile Include="..\mono\metadata\decimal-ms.c" />
+    <ClCompile Include="..\mono\metadata\dynamic-image.c" />
+    <ClCompile Include="..\mono\metadata\dynamic-stream.c" />
     <ClCompile Include="..\mono\metadata\domain.c" />
     <ClCompile Include="..\mono\metadata\environment.c" />
     <ClCompile Include="..\mono\metadata\exception.c" />
@@ -123,6 +125,8 @@
     <ClInclude Include="..\mono\metadata\debug-mono-ppdb.h" />
     <ClInclude Include="..\mono\metadata\debug-mono-symfile.h" />
     <ClInclude Include="..\mono\metadata\domain-internals.h" />
+    <ClInclude Include="..\mono\metadata\dynamic-image-internals.h" />
+    <ClInclude Include="..\mono\metadata\dynamic-stream-internals.h" />
     <ClInclude Include="..\mono\metadata\environment.h" />
     <ClInclude Include="..\mono\metadata\exception.h" />
     <ClInclude Include="..\mono\metadata\file-io.h" />

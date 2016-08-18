@@ -12,6 +12,7 @@
 #include <config.h>
 
 #include <mono/metadata/object-internals.h>
+#include <mono/metadata/dynamic-image-internals.h>
 #include <mono/metadata/verify.h>
 #include <mono/metadata/verify-internals.h>
 #include <mono/metadata/opcodes.h>
@@ -371,7 +372,7 @@ static gboolean
 token_bounds_check (MonoImage *image, guint32 token)
 {
 	if (image_is_dynamic (image))
-		return mono_reflection_is_valid_dynamic_token ((MonoDynamicImage*)image, token);
+		return mono_dynamic_image_is_valid_token ((MonoDynamicImage*)image, token);
 	return image->tables [mono_metadata_token_table (token)].rows >= mono_metadata_token_index (token) && mono_metadata_token_index (token) > 0;
 }
 

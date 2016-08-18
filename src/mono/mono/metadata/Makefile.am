@@ -201,6 +201,9 @@ common_sources = \
 	verify.c		\
 	verify-internals.h	\
 	wrapper-types.h	\
+	dynamic-image-internals.h	\
+	dynamic-stream.c	\
+	dynamic-stream-internals.h	\
 	reflection-cache.h	\
 	custom-attrs-internals.h	\
 	sre-internals.h	\
@@ -226,6 +229,7 @@ gc_dependent_sources = \
 	monitor.c	\
 	mono-hash.c	\
 	object.c	\
+	dynamic-image.c	\
 	sre.c \
 	custom-attrs.c	\
 	reflection.c
