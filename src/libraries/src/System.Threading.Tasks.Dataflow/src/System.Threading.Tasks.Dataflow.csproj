@@ -5,7 +5,6 @@
     <ProjectGuid>{1DD0FF15-6234-4BD6-850A-317F05479554}</ProjectGuid>
     <RootNamespace>System.Threading.Tasks.Dataflow</RootNamespace>
     <AssemblyName>System.Threading.Tasks.Dataflow</AssemblyName>
-    <AssemblyVersion>4.6.1.0</AssemblyVersion>
     <DocumentationFile>$(OutputPath)System.Threading.Tasks.Dataflow.XML</DocumentationFile>
     <DefineConstants>$(DefineConstants);CONCURRENT_COLLECTIONS;FEATURE_TRACING</DefineConstants>
     <PackageTargetFramework>netstandard1.1</PackageTargetFramework>
