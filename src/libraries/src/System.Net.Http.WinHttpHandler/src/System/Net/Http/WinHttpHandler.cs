@@ -47,6 +47,13 @@ namespace System.Net.Http
     public class WinHttpHandler : HttpMessageHandler
 #endif
     {
+#if NET46
+        internal static Version HttpVersion20 => new Version(2,0);
+        internal static Version HttpVersionUnknown => new Version(0,0);
+#else
+        internal static Version HttpVersion20 => HttpVersion.Version20;
+        internal static Version HttpVersionUnknown => HttpVersion.Unknown;
+#endif
         private static readonly TimeSpan s_maxTimeout = TimeSpan.FromMilliseconds(int.MaxValue);
 
         private object _lockObject = new object();
@@ -960,6 +967,7 @@ namespace System.Net.Http
             SetRequestHandleClientCertificateOptions(state.RequestHandle, state.RequestMessage.RequestUri);
             SetRequestHandleCredentialsOptions(state);
             SetRequestHandleBufferingOptions(state.RequestHandle);
+            SetRequestHandleHttp2Options(state.RequestHandle, state.RequestMessage.Version);
         }
 
         private void SetRequestHandleProxyOptions(WinHttpRequestState state)
@@ -1175,6 +1183,27 @@ namespace System.Net.Http
             SetWinHttpOption(requestHandle, Interop.WinHttp.WINHTTP_OPTION_MAX_RESPONSE_HEADER_SIZE, ref optionData);
             optionData = (uint)_maxResponseDrainSize;
             SetWinHttpOption(requestHandle, Interop.WinHttp.WINHTTP_OPTION_MAX_RESPONSE_DRAIN_SIZE, ref optionData);
+        }
+
+        private void SetRequestHandleHttp2Options(SafeWinHttpHandle requestHandle, Version requestVersion)
+        {
+            Debug.Assert(requestHandle != null);
+            if (requestVersion == HttpVersion20)
+            {
+                WinHttpTraceHelper.Trace("WinHttpHandler.SetRequestHandleHttp2Options: setting HTTP/2 option");
+                uint optionData = Interop.WinHttp.WINHTTP_PROTOCOL_FLAG_HTTP2;
+                if (Interop.WinHttp.WinHttpSetOption(
+                    requestHandle,
+                    Interop.WinHttp.WINHTTP_OPTION_ENABLE_HTTP_PROTOCOL,
+                    ref optionData))
+                {
+                    WinHttpTraceHelper.Trace("WinHttpHandler.SetRequestHandleHttp2Options: HTTP/2 option supported");
+                }
+                else
+                {
+                    WinHttpTraceHelper.Trace("WinHttpHandler.SetRequestHandleHttp2Options: HTTP/2 option not supported");
+                }
+            }
         }
 
         private void SetWinHttpOption(SafeWinHttpHandle handle, uint option, ref uint optionData)
