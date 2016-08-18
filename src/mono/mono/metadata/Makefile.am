@@ -202,8 +202,8 @@ common_sources = \
 	verify-internals.h	\
 	wrapper-types.h	\
 	reflection-cache.h	\
-	reflection-custom-attrs-internals.h	\
-	reflection-emit-internals.h	\
+	custom-attrs-internals.h	\
+	sre-internals.h	\
 	reflection-internals.h	\
 	file-mmap-posix.c	\
 	file-mmap-windows.c	\
@@ -226,9 +226,9 @@ gc_dependent_sources = \
 	monitor.c	\
 	mono-hash.c	\
 	object.c	\
-	reflection.c \
-	reflection-custom-attrs.c	\
-	reflection-query.c
+	sre.c \
+	custom-attrs.c	\
+	reflection.c
 
 
 boehm_sources = \

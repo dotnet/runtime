@@ -1,10 +1,23 @@
+/*
+ * custom-attrs.c: Custom attributes.
+ * 
+ * Author:
+ *   Paolo Molaro (lupus@ximian.com)
+ *
+ * Copyright 2001-2003 Ximian, Inc (http://www.ximian.com)
+ * Copyright 2004-2009 Novell, Inc (http://www.novell.com)
+ * Copyright 2011 Rodrigo Kumpera
+ * Copyright 2016 Microsoft
+ *
+ * Licensed under the MIT license. See LICENSE file in the project root for full license information.
+ */
 #include <config.h>
 #include "mono/metadata/gc-internals.h"
 #include "mono/metadata/mono-endian.h"
 #include "mono/metadata/object-internals.h"
 #include "mono/metadata/reflection-cache.h"
-#include "mono/metadata/reflection-custom-attrs-internals.h"
-#include "mono/metadata/reflection-emit-internals.h"
+#include "mono/metadata/custom-attrs-internals.h"
+#include "mono/metadata/sre-internals.h"
 #include "mono/metadata/reflection-internals.h"
 #include "mono/metadata/tabledefs.h"
 #include "mono/metadata/tokentype.h"

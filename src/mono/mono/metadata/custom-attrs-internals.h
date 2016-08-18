@@ -1,5 +1,5 @@
-#ifndef __MONO_METADATA_REFLECTION_CUSTOM_ATTRS_INTERNALS_H__
-#define __MONO_METADATA_REFLECTION_CUSTOM_ATTRS_INTERNALS_H__
+#ifndef __MONO_METADATA_CUSTOM_ATTRS_INTERNALS_H__
+#define __MONO_METADATA_CUSTOM_ATTRS_INTERNALS_H__
 
 #include <mono/metadata/object.h>
 #include <mono/metadata/reflection.h>

@@ -1,5 +1,9 @@
-#ifndef __MONO_METADATA_REFLECTION_EMIT_INTERNALS_H__
-#define __MONO_METADATA_REFLECTION_EMIT_INTERNALS_H__
+/* 
+ * Copyright 2016 Microsoft
+ * Licensed under the MIT license. See LICENSE file in the project root for full license information.
+ */
+#ifndef __MONO_METADATA_SRE_INTERNALS_H__
+#define __MONO_METADATA_SRE_INTERNALS_H__
 
 void
 mono_reflection_emit_init (void);
@@ -44,5 +48,5 @@ MonoMethod*
 mono_reflection_method_on_tb_inst_get_handle (MonoReflectionMethodOnTypeBuilderInst *m, MonoError *error);
 
 
-#endif  /* __MONO_METADATA_REFLECTION_EMIT_INTERNALS_H__ */
+#endif  /* __MONO_METADATA_SRE_INTERNALS_H__ */
 
