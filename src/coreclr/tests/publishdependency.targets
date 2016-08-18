@@ -9,23 +9,13 @@
   </ItemGroup>
 
   <ItemGroup>
-    <AllProjectJsonLockFiles Include="$(SourceDir)**\*\project.lock.json"/>
+    <ProjectLockJsonFiles Include="$(SourceDir)\runtime\project.lock.json"/>
   </ItemGroup>
 
   <Target Name="CopyDependecyToCoreRoot"
-    Inputs="@(AllProjectJsonLockFiles)"
+    Inputs="@(ProjectLockJsonFiles)"
     Outputs="$(CORE_ROOT)\*.*">
-    
-    <ItemGroup>
-      <ProjectJsonLockFileExclude Include="$(SourceDir).nuget\project.lock.json" />
-      <ProjectJsonLockFileExclude Include="$(SourceDir)Test*\**\project.lock.json" />
-      <ProjectJsonLockFileExclude Include="$(SourceDir)Common\Coreclr.TestWrapper\**\project.lock.json" />
-      <ProjectJsonLockFileExclude Include="$(SourceDir)packages\**\*\project.lock.json" />
-    </ItemGroup>
 
-    <ItemGroup>
-      <ProjectLockJsonFiles Include="@(AllProjectJsonLockFiles)"  Exclude="@(ProjectJsonLockFileExclude)"/>
-    </ItemGroup>
 
     <!-- This will use the overridden PrereleaseResolveNuGetPackageAssets, which outputs copy local items
          for the xunit wrapper projects -->
