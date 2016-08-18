@@ -10,7 +10,13 @@ namespace System.Globalization
 {
     public partial class TextInfo
     {
-        private bool m_needsTurkishCasing;
+        enum TurkishCasing
+        {
+            NotInitialized,
+            NotNeeded,
+            Needed
+        }
+        private TurkishCasing m_needsTurkishCasing;
 
         //////////////////////////////////////////////////////////////////////////
         ////
@@ -29,7 +35,7 @@ namespace System.Globalization
 
         private void FinishInitialization(string textInfoName)
         {
-            m_needsTurkishCasing = NeedsTurkishCasing(textInfoName);
+            m_needsTurkishCasing = TurkishCasing.NotInitialized;
         }
 
         [SecuritySafeCritical]
@@ -107,13 +113,20 @@ namespace System.Globalization
             {
                 Interop.GlobalizationInterop.ChangeCaseInvariant(src, srcLen, dstBuffer, dstBufferCapacity, bToUpper);
             }
-            else if (m_needsTurkishCasing)
-            {
-                Interop.GlobalizationInterop.ChangeCaseTurkish(src, srcLen, dstBuffer, dstBufferCapacity, bToUpper);
-            }
             else
             {
-                Interop.GlobalizationInterop.ChangeCase(src, srcLen, dstBuffer, dstBufferCapacity, bToUpper);
+                if (m_needsTurkishCasing == TurkishCasing.NotInitialized)
+                {
+                    m_needsTurkishCasing = NeedsTurkishCasing(m_textInfoName) ? TurkishCasing.Needed : TurkishCasing.NotNeeded;
+                }
+                if ( m_needsTurkishCasing == TurkishCasing.Needed)
+                {
+                    Interop.GlobalizationInterop.ChangeCaseTurkish(src, srcLen, dstBuffer, dstBufferCapacity, bToUpper);
+                }
+                else
+                {
+                    Interop.GlobalizationInterop.ChangeCase(src, srcLen, dstBuffer, dstBufferCapacity, bToUpper);
+                }
             }
         }
 
