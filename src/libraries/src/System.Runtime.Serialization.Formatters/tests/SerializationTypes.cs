@@ -271,7 +271,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
     }
 
     [Serializable]
-    public sealed class BasicISerializableObject : ISerializable
+    public class BasicISerializableObject : ISerializable
     {
         private NonSerializablePair<int, string> _data;
 
@@ -300,6 +300,13 @@ namespace System.Runtime.Serialization.Formatters.Tests
         }
 
         public override int GetHashCode() => 1;
+    }
+
+    [Serializable]
+    public sealed class DerivedISerializableWithNonPublicDeserializationCtor : BasicISerializableObject
+    {
+        public DerivedISerializableWithNonPublicDeserializationCtor(int value1, string value2) : base(value1, value2) { }
+        private DerivedISerializableWithNonPublicDeserializationCtor(SerializationInfo info, StreamingContext context) : base(info, context) { }
     }
 
     [Serializable]
