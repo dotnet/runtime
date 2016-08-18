@@ -539,26 +539,28 @@ function skip_non_playlist_test {
 }
 
 function set_up_core_dump_generation {
-    if [ "$(uname -s)" == "Darwin" ]; then
-        # On OS X, we will enable core dump generation only if there are no core 
-        # files already in /cores/ at this point. This is being done to prevent
-        # inadvertently flooding the CI machines with dumps.
-        if [ ! "$(ls -A /cores)" ]; then 
-            ulimit -c unlimited
-        fi
-    elif [ "$(uname -s)" == "Linux" ]; then
-        # On Linux, we'll enable core file generation unconditionally, and if a dump
-        # is generated, we will print some useful information from it and delete the
-        # dump immediately.
+    # We will only enable dump generation here if we're on Mac or Linux
+    if [[ ! ( "$(uname -s)" == "Darwin" || "$(uname -s)" == "Linux" ) ]]; then
+        return
+    fi
 
+    # We won't enable dump generation on OS X/macOS if the machine hasn't been
+    # configured with the kern.corefile pattern we expect.
+    if [[ ( "$(uname -s)" == "Darwin" && "$(sysctl -n kern.corefile)" != "core.%P" ) ]]; then
+        echo "WARNING: Core dump generation not being enabled due to unexpected kern.corefile value."
+        return
+    fi
+
+    # Allow dump generation
+    ulimit -c unlimited
+
+    if [ "$(uname -s)" == "Linux" ]; then
         if [ -e /proc/self/coredump_filter ]; then
             # Include memory in private and shared file-backed mappings in the dump.
             # This ensures that we can see disassembly from our shared libraries when
             # inspecting the contents of the dump. See 'man core' for details.
             echo 0x3F > /proc/self/coredump_filter
         fi
-
-        ulimit -c unlimited
     fi
 }
 
@@ -596,10 +598,10 @@ function upload_core_file_to_dumpling {
     local core_file_name=$1
     local dumpling_script="dumpling.py"
     local dumpling_file="local_dumplings.txt"
-    
-    # dumpling requires that the file exist before appending. 
+
+    # dumpling requires that the file exist before appending.
     touch ./$dumpling_file
-    
+
     if [ ! -x $dumpling_script ]; then
         download_dumpling_script
     fi
@@ -647,8 +649,11 @@ function inspect_and_delete_core_files {
     # Depending on distro/configuration, the core files may either be named "core"
     # or "core.<PID>" by default. We will read /proc/sys/kernel/core_uses_pid to 
     # determine which one it is.
+    # On OS X/macOS, we checked the kern.corefile value before enabling core dump
+    # generation, so we know it always includes the PID.
     local core_name_uses_pid=0
-    if [ -e /proc/sys/kernel/core_uses_pid ] && [ "1" == $(cat /proc/sys/kernel/core_uses_pid) ]; then
+    if [[ (( -e /proc/sys/kernel/core_uses_pid ) && ( "1" == $(cat /proc/sys/kernel/core_uses_pid) )) 
+          || ( "$(uname -s)" == "Darwin" ) ]]; then
         core_name_uses_pid=1
     fi
 
@@ -684,10 +689,9 @@ function run_test {
     "./$scriptFileName" >"$outputFileName" 2>&1
     local testScriptExitCode=$?
 
-    # On Linux, we will try to print some information from generated core dumps if
-    # a debugger is available, and possibly store a dump in a non-transient location.
-    # On OS X, any dump that's generated will be handled manually.
-    if [ "$limitedCoreDumps" == "ON" ] && [ "$(uname -s)" == "Linux" ]; then
+    # We will try to print some information from generated core dumps if a debugger
+    # is available, and possibly store a dump in a non-transient location.
+    if [ "$limitedCoreDumps" == "ON" ]; then
         inspect_and_delete_core_files
     fi
 
