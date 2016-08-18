@@ -607,12 +607,16 @@ inline void Compiler::impAppendStmt(GenTreePtr stmt, unsigned chkLevel)
     GenTreePtr expr  = stmt->gtStmt.gtStmtExpr;
     unsigned   flags = expr->gtFlags & GTF_GLOB_EFFECT;
 
-    /* Assignment to (unaliased) locals don't count as a side-effect as
-       we handle them specially using impSpillLclRefs(). Temp locals should
-       be fine too. */
+    // Assignment to (unaliased) locals don't count as a side-effect as
+    // we handle them specially using impSpillLclRefs(). Temp locals should
+    // be fine too.
+    // TODO-1stClassStructs: The check below should apply equally to struct assignments,
+    // but previously the block ops were always being marked GTF_GLOB_REF, even if
+    // the operands could not be global refs.
 
     if ((expr->gtOper == GT_ASG) && (expr->gtOp.gtOp1->gtOper == GT_LCL_VAR) &&
-        !(expr->gtOp.gtOp1->gtFlags & GTF_GLOB_REF) && !gtHasLocalsWithAddrOp(expr->gtOp.gtOp2))
+        !(expr->gtOp.gtOp1->gtFlags & GTF_GLOB_REF) && !gtHasLocalsWithAddrOp(expr->gtOp.gtOp2) &&
+        !varTypeIsStruct(expr->gtOp.gtOp1))
     {
         unsigned op2Flags = expr->gtOp.gtOp2->gtFlags & GTF_GLOB_EFFECT;
         assert(flags == (op2Flags | GTF_ASG));
@@ -1086,7 +1090,7 @@ GenTreePtr Compiler::impAssignStruct(GenTreePtr           dest,
 
     GenTreePtr destAddr;
 
-    if (dest->gtOper == GT_IND || dest->gtOper == GT_OBJ)
+    if (dest->gtOper == GT_IND || dest->OperIsBlk())
     {
         destAddr = dest->gtOp.gtOp1;
     }
@@ -1555,7 +1559,7 @@ GenTreePtr Compiler::impNormStructVal(GenTreePtr           structVal,
     }
     else
     {
-        // In general a OBJ is an IND and could raise an exception
+        // In general a OBJ is an indirection and could raise an exception.
         structObj->gtFlags |= GTF_EXCEPT;
     }
     return (structObj);
@@ -3070,14 +3074,15 @@ GenTreePtr Compiler::impInitializeArrayIntrinsic(CORINFO_SIG_INFO* sig)
 
     //
     // At this point we are ready to commit to implementing the InitializeArray
-    // instrinsic using a struct assignment.  Pop the arguments from the stack and
+    // intrinsic using a struct assignment.  Pop the arguments from the stack and
     // return the struct assignment node.
     //
 
     impPopStack();
     impPopStack();
 
-    GenTreePtr dst;
+    const unsigned   blkSize = size.Value();
+    GenTreePtr       dst;
 
     if (isMDArray)
     {
@@ -3090,10 +3095,11 @@ GenTreePtr Compiler::impInitializeArrayIntrinsic(CORINFO_SIG_INFO* sig)
         dst = gtNewOperNode(GT_ADDR, TYP_BYREF, gtNewIndexRef(elementType, arrayLocalNode, gtNewIconNode(0)));
     }
 
+    GenTreePtr srcAddr = gtNewIconHandleNode((size_t) initData, GTF_ICON_STATIC_HDL);
     return gtNewBlkOpNode(GT_COPYBLK,
-                          dst,                                                        // dst
-                          gtNewIconHandleNode((size_t)initData, GTF_ICON_STATIC_HDL), // src
-                          gtNewIconNode(size.Value()),                                // size
+                          dst,                    // dst
+                          srcAddr,                // src
+                          gtNewIconNode(blkSize), // size
                           false);
 }
 
@@ -13073,7 +13079,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         assert(!"Unexpected fieldAccessor");
                 }
 
-                /* Create the member assignment, unless we have a struct */
+                // Create the member assignment, unless we have a struct.
+                // TODO-1stClassStructs: This could be limited to TYP_STRUCT, to avoid extra copies.
                 bool deferStructAssign = varTypeIsStruct(lclTyp);
 
                 if (!deferStructAssign)

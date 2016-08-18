@@ -724,17 +724,13 @@ void Compiler::compUpdateLifeVar(GenTreePtr tree, VARSET_TP* pLastUseVars)
     LclVarDsc*   varDsc = lvaTable + lclNum;
 
 #ifdef DEBUG
-#if !defined(_TARGET_AMD64_) // no addr nodes on AMD and experimenting with with encountering vars in 'random' order
+#if !defined(_TARGET_AMD64_)
+    // There are no addr nodes on ARM and we are experimenting with encountering vars in 'random' order.
     // Struct fields are not traversed in a consistent order, so ignore them when
     // verifying that we see the var nodes in execution order
     if (ForCodeGen)
     {
-        if (tree->gtOper == GT_OBJ)
-        {
-            // The tree must have the particular form OBJ(ADDR(LCL)); no need to do the check below.
-            assert(indirAddrLocal != NULL);
-        }
-        else if (tree->OperIsIndir())
+        if (tree->OperIsIndir())
         {
             assert(indirAddrLocal != NULL);
         }

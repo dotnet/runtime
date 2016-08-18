@@ -1080,6 +1080,17 @@ public:
     bool OperIsInitBlkOp() const;
     bool OperIsDynBlkOp();
 
+    static
+    bool OperIsBlk(genTreeOps gtOper)
+    {
+        return (gtOper == GT_OBJ);
+    }
+
+    bool OperIsBlk() const
+    {
+        return OperIsBlk(OperGet());
+    }
+
     bool OperIsPutArgStk() const
     {
         return gtOper == GT_PUTARG_STK;
@@ -1491,6 +1502,19 @@ public:
     // set gtOper and only keep GTF_COMMON_MASK flags
     void ChangeOper(genTreeOps oper, ValueNumberUpdate vnUpdate = CLEAR_VN);
     void ChangeOperUnchecked(genTreeOps oper);
+
+    void                        ChangeType(var_types newType)
+    {
+        var_types oldType = gtType;
+        gtType = newType;
+        GenTree* node = this;
+        while (node->gtOper == GT_COMMA)
+        {
+            node = node->gtGetOp2();
+            assert(node->gtType == oldType);
+            node->gtType = newType;
+        }
+    }
 
     bool IsLocal() const
     {
