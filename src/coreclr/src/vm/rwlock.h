@@ -204,6 +204,9 @@ private:
     static LONG RWInterlockedCompareExchange(LONG RAW_KEYWORD(volatile) *pvDestination,
                                               LONG dwExchange,
                                               LONG dwComperand);
+    static LONGLONG RWInterlockedCompareExchange64(LONGLONG RAW_KEYWORD(volatile) *pvDestination,
+                                                   LONGLONG qwExchange,
+                                                   LONGLONG qwComparand);
     static void* RWInterlockedCompareExchangePointer(PVOID RAW_KEYWORD(volatile) *pvDestination,
                                                    PVOID pExchange,
                                                    PVOID pComparand);
@@ -267,8 +270,7 @@ private:
 #endif
 
     // Static data
-    static Volatile<LONG> s_mostRecentULockID;
-    static Volatile<LONG> s_mostRecentLLockID;
+    static Volatile<LONGLONG> s_mostRecentLockID;
     static CrstStatic       s_RWLockCrst;
 };
 
