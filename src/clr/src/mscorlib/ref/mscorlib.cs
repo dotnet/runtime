@@ -11267,6 +11267,7 @@ namespace System.Security
         public SecurityException() { }
         public SecurityException(string message) { }
         public SecurityException(string message, System.Exception inner) { }
+        protected SecurityException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
         [System.Security.SecurityCriticalAttribute]
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public override string ToString() { throw null; }
@@ -11301,6 +11302,7 @@ namespace System.Security
         public VerificationException() { }
         public VerificationException(string message) { }
         public VerificationException(string message, System.Exception innerException) { }
+        protected VerificationException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
     }
 }
 namespace System.Security.Permissions
