@@ -1197,15 +1197,15 @@ namespace System.Linq.Expressions
             return method;
         }
 
-        private static bool IsCompatible(MethodBase m, Expression[] args)
+        private static bool IsCompatible(MethodBase m, Expression[] arguments)
         {
             ParameterInfo[] parms = m.GetParametersCached();
-            if (parms.Length != args.Length)
+            if (parms.Length != arguments.Length)
                 return false;
-            for (int i = 0; i < args.Length; i++)
+            for (int i = 0; i < arguments.Length; i++)
             {
-                Expression arg = args[i];
-                ContractUtils.RequiresNotNull(arg, "argument");
+                Expression arg = arguments[i];
+                ContractUtils.RequiresNotNull(arg, nameof(arguments));
                 Type argType = arg.Type;
                 Type pType = parms[i].ParameterType;
                 if (pType.IsByRef)
