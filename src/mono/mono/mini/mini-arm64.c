@@ -3768,24 +3768,32 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_ATOMIC_STORE_U1: {
 			code = emit_addx_imm (code, ARMREG_LR, ins->inst_destbasereg, ins->inst_offset);
 			arm_stlrb (code, ARMREG_LR, ins->sreg1);
+			if (ins->backend.memory_barrier_kind == MONO_MEMORY_BARRIER_SEQ)
+				arm_dmb (code, 0);
 			break;
 		}
 		case OP_ATOMIC_STORE_I2:
 		case OP_ATOMIC_STORE_U2: {
 			code = emit_addx_imm (code, ARMREG_LR, ins->inst_destbasereg, ins->inst_offset);
 			arm_stlrh (code, ARMREG_LR, ins->sreg1);
+			if (ins->backend.memory_barrier_kind == MONO_MEMORY_BARRIER_SEQ)
+				arm_dmb (code, 0);
 			break;
 		}
 		case OP_ATOMIC_STORE_I4:
 		case OP_ATOMIC_STORE_U4: {
 			code = emit_addx_imm (code, ARMREG_LR, ins->inst_destbasereg, ins->inst_offset);
 			arm_stlrw (code, ARMREG_LR, ins->sreg1);
+			if (ins->backend.memory_barrier_kind == MONO_MEMORY_BARRIER_SEQ)
+				arm_dmb (code, 0);
 			break;
 		}
 		case OP_ATOMIC_STORE_I8:
 		case OP_ATOMIC_STORE_U8: {
 			code = emit_addx_imm (code, ARMREG_LR, ins->inst_destbasereg, ins->inst_offset);
 			arm_stlrx (code, ARMREG_LR, ins->sreg1);
+			if (ins->backend.memory_barrier_kind == MONO_MEMORY_BARRIER_SEQ)
+				arm_dmb (code, 0);
 			break;
 		}
 		case OP_ATOMIC_STORE_R4: {
@@ -3798,12 +3806,16 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				arm_fmov_double_to_rx (code, ARMREG_IP0, FP_TEMP_REG);
 				arm_stlrw (code, ARMREG_LR, ARMREG_IP0);
 			}
+			if (ins->backend.memory_barrier_kind == MONO_MEMORY_BARRIER_SEQ)
+				arm_dmb (code, 0);
 			break;
 		}
 		case OP_ATOMIC_STORE_R8: {
 			code = emit_addx_imm (code, ARMREG_LR, ins->inst_destbasereg, ins->inst_offset);
 			arm_fmov_double_to_rx (code, ARMREG_IP0, ins->sreg1);
 			arm_stlrx (code, ARMREG_LR, ARMREG_IP0);
+			if (ins->backend.memory_barrier_kind == MONO_MEMORY_BARRIER_SEQ)
+				arm_dmb (code, 0);
 			break;
 		}
 
