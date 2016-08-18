@@ -500,7 +500,11 @@ namespace System.Threading
                                         WaitHandle toSignal,
                                         WaitHandle toWaitOn)
         {
+#if PLATFORM_UNIX
+            throw new PlatformNotSupportedException();
+#else
             return SignalAndWait(toSignal,toWaitOn,-1,false);
+#endif
         }
 
         public static bool SignalAndWait(
@@ -509,12 +513,16 @@ namespace System.Threading
                                         TimeSpan timeout,
                                         bool exitContext)
         {
+#if PLATFORM_UNIX
+            throw new PlatformNotSupportedException();
+#else
             long tm = (long)timeout.TotalMilliseconds;
             if (-1 > tm || (long) Int32.MaxValue < tm)
             {
                 throw new ArgumentOutOfRangeException("timeout", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegOrNegative1"));
             }
             return SignalAndWait(toSignal,toWaitOn,(int)tm,exitContext);
+#endif
         }
 
         [System.Security.SecuritySafeCritical]  // auto-generated
@@ -525,6 +533,9 @@ namespace System.Threading
                                         int millisecondsTimeout,
                                         bool exitContext)
         {
+#if PLATFORM_UNIX
+            throw new PlatformNotSupportedException();
+#else
             if(null == toSignal)
             {
                 throw new ArgumentNullException("toSignal");
@@ -569,6 +580,7 @@ namespace System.Threading
 
             //Timeout
             return false;
+#endif
         }
 
         private static void ThrowAbandonedMutexException()
