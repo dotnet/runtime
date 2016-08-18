@@ -10,7 +10,7 @@
                                          AllowFallbackOnTargetSelection="true"
                                          IncludeFrameworkReferences="false"
                                          NuGetPackagesDirectory="$(PackagesDir)"
-                                         RuntimeIdentifier="dotnet"
+                                         RuntimeIdentifier="$(TestNugetRuntimeId)"
                                          ProjectLanguage="$(Language)"
                                          ProjectLockFile="$(ProjectLockJson)"
                                          TargetMonikers="$(TargetFrameworkMoniker)">
