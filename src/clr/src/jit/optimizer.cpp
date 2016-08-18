@@ -6409,8 +6409,18 @@ bool Compiler::optVNIsLoopInvariant(ValueNum vn, unsigned lnum, VNToBoolMap* loo
     }
     else
     {
-        // Otherwise, assume non-function "new, unique" VN's are not loop invariant.
-        res = false;
+        // Non-function "new, unique" VN's may be annotated with the loop nest where
+        // their definition occurs.
+        BasicBlock::loopNumber vnLoopNum = vnStore->LoopOfVN(vn);
+
+        if (vnLoopNum == MAX_LOOP_NUM)
+        {
+            res = false;
+        }
+        else
+        {
+            res = !optLoopContains(lnum, vnLoopNum);
+        }
     }
 
     loopVnInvariantCache->Set(vn, res);
