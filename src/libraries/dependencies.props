@@ -1,0 +1,97 @@
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <!-- Source of truth for dependency tooling: the commit hash of the dotnet/versions master branch as of the last auto-upgrade. -->
+  <PropertyGroup>
+    <CoreFxCurrentRef>e39a63f68adeb45d0ef1a7a157cbf13c89ce3d2d</CoreFxCurrentRef>
+    <CoreClrCurrentRef>e39a63f68adeb45d0ef1a7a157cbf13c89ce3d2d</CoreClrCurrentRef>
+    <ExternalCurrentRef>e39a63f68adeb45d0ef1a7a157cbf13c89ce3d2d</ExternalCurrentRef>
+  </PropertyGroup>
+
+  <!-- Auto-upgraded properties for each build info dependency. -->
+  <PropertyGroup>
+    <CoreFxExpectedPrerelease>beta-24418-01</CoreFxExpectedPrerelease>
+    <CoreClrExpectedPrerelease>beta-24418-02</CoreClrExpectedPrerelease>
+    <ExternalExpectedPrerelease>beta-24418-00</ExternalExpectedPrerelease>
+  </PropertyGroup>
+
+  <!-- Full package version strings that are used in other parts of the build. -->
+  <PropertyGroup>
+    <AppXRunnerVersion>1.0.3-prerelease-00614-01</AppXRunnerVersion>
+  </PropertyGroup>
+
+  <!-- Package dependency verification/auto-upgrade configuration. -->
+  <PropertyGroup>
+    <BaseDotNetBuildInfo>build-info/dotnet/</BaseDotNetBuildInfo>
+    <DependencyBranch>master</DependencyBranch>
+    <CurrentRefXmlPath>$(MSBuildThisFileFullPath)</CurrentRefXmlPath>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <RemoteDependencyBuildInfo Include="CoreFx">
+      <BuildInfoPath>$(BaseDotNetBuildInfo)corefx/$(DependencyBranch)</BuildInfoPath>
+      <CurrentRef>$(CoreFxCurrentRef)</CurrentRef>
+    </RemoteDependencyBuildInfo>
+    <RemoteDependencyBuildInfo Include="CoreClr">
+      <BuildInfoPath>$(BaseDotNetBuildInfo)coreclr/$(DependencyBranch)</BuildInfoPath>
+      <CurrentRef>$(CoreClrCurrentRef)</CurrentRef>
+    </RemoteDependencyBuildInfo>
+    <RemoteDependencyBuildInfo Include="External">
+      <BuildInfoPath>$(BaseDotNetBuildInfo)projectk-tfs/$(DependencyBranch)</BuildInfoPath>
+      <CurrentRef>$(ExternalCurrentRef)</CurrentRef>
+    </RemoteDependencyBuildInfo>
+
+    <DependencyBuildInfo Include="@(RemoteDependencyBuildInfo)">
+      <RawVersionsBaseUrl>https://raw.githubusercontent.com/dotnet/versions</RawVersionsBaseUrl>
+    </DependencyBuildInfo>
+
+    <XmlUpdateStep Include="CoreFx">
+      <Path>$(MSBuildThisFileFullPath)</Path>
+      <ElementName>CoreFxExpectedPrerelease</ElementName>
+      <BuildInfoName>CoreFx</BuildInfoName>
+    </XmlUpdateStep>
+    <XmlUpdateStep Include="CoreClr">
+      <Path>$(MSBuildThisFileFullPath)</Path>
+      <ElementName>CoreClrExpectedPrerelease</ElementName>
+      <BuildInfoName>CoreClr</BuildInfoName>
+    </XmlUpdateStep>
+    <XmlUpdateStep Include="External">
+      <Path>$(MSBuildThisFileFullPath)</Path>
+      <ElementName>ExternalExpectedPrerelease</ElementName>
+      <BuildInfoName>External</BuildInfoName>
+    </XmlUpdateStep>
+  </ItemGroup>
+
+  <!-- Set up dependencies on packages that aren't found in a BuildInfo. -->
+  <ItemGroup>
+    <TargetingPackDependency Include="Microsoft.TargetingPack.NETFramework.v4.5" />
+    <TargetingPackDependency Include="Microsoft.TargetingPack.NETFramework.v4.5.1" />
+    <TargetingPackDependency Include="Microsoft.TargetingPack.NETFramework.v4.5.2" />
+    <TargetingPackDependency Include="Microsoft.TargetingPack.NETFramework.v4.6" />
+    <TargetingPackDependency Include="Microsoft.TargetingPack.NETFramework.v4.6.1" />
+    <TargetingPackDependency Include="Microsoft.TargetingPack.NETFramework.v4.6.2" />
+    <TargetingPackDependency Include="Microsoft.TargetingPack.Private.WinRT" />
+    <StaticDependency Include="@(TargetingPackDependency)">
+      <Version>1.0.1</Version>
+    </StaticDependency>
+
+    <XUnitDependency Include="xunit"/>
+    <XUnitDependency Include="xunit.runner.utility"/>
+    <XUnitDependency Include="xunit.runner.console"/>
+    <StaticDependency Include="@(XUnitDependency)">
+      <Version>2.1.0</Version>
+    </StaticDependency>
+
+    <StaticDependency Include="Microsoft.xunit.netcore.extensions;Microsoft.DotNet.BuildTools.TestSuite">
+      <Version>1.0.0-prerelease-00704-03</Version>
+    </StaticDependency>
+
+    <DependencyBuildInfo Include="@(StaticDependency)">
+      <PackageId>%(Identity)</PackageId>
+      <UpdateStableVersions>true</UpdateStableVersions>
+    </DependencyBuildInfo>
+
+    <DependencyBuildInfo Include="uwpRunnerVersion">
+      <PackageId>microsoft.xunit.runner.uwp</PackageId>
+      <Version>$(AppXRunnerVersion)</Version>
+    </DependencyBuildInfo>
+  </ItemGroup>
+</Project>

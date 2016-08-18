@@ -83,6 +83,12 @@ namespace System.Runtime.Serialization.Json
             }
         }
 
+        internal static JsonReadWriteDelegates TryGetReadWriteDelegatesFromGeneratedAssembly(DataContract c)
+        {
+            JsonReadWriteDelegates result = GetGeneratedReadWriteDelegates(c);
+            return result;
+        }
+
         [SecuritySafeCritical]
         public static JsonDataContract GetJsonDataContract(DataContract traditionalDataContract)
         {

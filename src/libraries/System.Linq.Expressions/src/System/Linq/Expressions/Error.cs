@@ -825,7 +825,7 @@ namespace System.Linq.Expressions
         /// </summary>
         internal static Exception OutOfRange(string paramName, object p1)
         {
-            return new ArgumentOutOfRangeException(Strings.OutOfRange(paramName, p1), paramName);
+            return new ArgumentOutOfRangeException(paramName, Strings.OutOfRange(paramName, p1));
         }
         /// <summary>
         /// InvalidOperationException with message like "Cannot redefine label '{0}' in an inner block."

@@ -2400,11 +2400,11 @@ namespace System.Linq.Expressions.Interpreter
 
                 if (updaters != null)
                 {
-                    _instructions.EmitByRefNew(node.Constructor, updaters.ToArray());
+                    _instructions.EmitByRefNew(node.Constructor, parameters, updaters.ToArray());
                 }
                 else
                 {
-                    _instructions.EmitNew(node.Constructor);
+                    _instructions.EmitNew(node.Constructor, parameters);
                 }
             }
             else

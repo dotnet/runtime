@@ -16,6 +16,9 @@ namespace System.Net.Http
     {
         private const string EncodingNameDeflate = "DEFLATE";
         private const string EncodingNameGzip = "GZIP";
+#if NET46
+        private static readonly Version HttpVersionUnknown = new Version(0,0);
+#endif
 
         public static HttpResponseMessage CreateResponseMessage(
             WinHttpRequestState state,
@@ -40,7 +43,11 @@ namespace System.Net.Http
             response.Version =
                 CharArrayHelpers.EqualsOrdinalAsciiIgnoreCase("HTTP/1.1", buffer, 0, versionLength) ? HttpVersion.Version11 :
                 CharArrayHelpers.EqualsOrdinalAsciiIgnoreCase("HTTP/1.0", buffer, 0, versionLength) ? HttpVersion.Version10 :
+#if NET46
+                HttpVersionUnknown;
+#else
                 HttpVersion.Unknown;
+#endif
 
             response.StatusCode = (HttpStatusCode)GetResponseHeaderNumberInfo(
                 requestHandle,

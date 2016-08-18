@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Reflection.Internal;
+
 namespace System.Reflection.PortableExecutable
 {
     public sealed class PEHeaderBuilder
@@ -35,6 +37,13 @@ namespace System.Reflection.PortableExecutable
         public ulong SizeOfHeapReserve { get; }
         public ulong SizeOfHeapCommit { get; }
 
+        /// <summary>
+        /// Creates PE header builder.
+        /// </summary>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// <paramref name="fileAlignment"/> is not power of 2 between 512 and 64K, or
+        /// <paramref name="sectionAlignment"/> not power of 2 or it's less than <paramref name="fileAlignment"/>.
+        /// </exception>
         public PEHeaderBuilder(
             Machine machine = 0,
             int sectionAlignment = 0x2000,
@@ -56,6 +65,16 @@ namespace System.Reflection.PortableExecutable
             ulong sizeOfHeapReserve = 0x00100000,
             ulong sizeOfHeapCommit = 0x1000)
         {
+            if (fileAlignment < 512 || fileAlignment > 64 * 1024 || BitArithmetic.CountBits(fileAlignment) != 1)
+            {
+                Throw.ArgumentOutOfRange(nameof(fileAlignment));
+            }
+
+            if (sectionAlignment < fileAlignment || BitArithmetic.CountBits(sectionAlignment) != 1)
+            {
+                Throw.ArgumentOutOfRange(nameof(sectionAlignment));
+            }
+
             Machine = machine;
             SectionAlignment = sectionAlignment;
             FileAlignment = fileAlignment;

@@ -6,6 +6,9 @@
       <OSGroup>Unix</OSGroup>
     </Project>
     <Project Include="System.Security.Cryptography.Algorithms.csproj">
+      <OSGroup>OSX</OSGroup>
+    </Project>
+    <Project Include="System.Security.Cryptography.Algorithms.csproj">
       <OSGroup>Windows_NT</OSGroup>
     </Project>
     <Project Include="System.Security.Cryptography.Algorithms.csproj">

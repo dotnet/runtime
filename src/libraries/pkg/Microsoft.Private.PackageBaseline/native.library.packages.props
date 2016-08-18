@@ -35,5 +35,15 @@
     <NativeLibrary Include="System.Security.Cryptography.Native">
       <Package>runtime.native.System.Security.Cryptography</Package>
     </NativeLibrary>
+
+    <!-- runtime.native.System.Security.Cryptography.Apple -->
+    <NativeLibrary Include="System.Security.Cryptography.Native.Apple">
+      <Package>runtime.native.System.Security.Cryptography.Apple</Package>
+    </NativeLibrary>
+
+    <!-- runtime.native.System.Security.Cryptography.OpenSsl -->
+    <NativeLibrary Include="System.Security.Cryptography.Native.OpenSsl">
+      <Package>runtime.native.System.Security.Cryptography.OpenSsl</Package>
+    </NativeLibrary>
   </ItemGroup>
 </Project>
