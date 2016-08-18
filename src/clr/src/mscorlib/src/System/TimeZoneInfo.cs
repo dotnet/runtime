@@ -52,7 +52,9 @@ namespace System {
 
     [Serializable]
     [System.Security.Permissions.HostProtection(MayLeakOnAbort = true)]
+#if !FEATURE_CORECLR
     [TypeForwardedFrom("System.Core, Version=3.5.0.0, Culture=Neutral, PublicKeyToken=b77a5c561934e089")]
+#endif
     sealed public class TimeZoneInfo : IEquatable<TimeZoneInfo>, ISerializable, IDeserializationCallback
     {
         // ---- SECTION:  members supporting exposed properties -------------*
@@ -4452,7 +4454,9 @@ namespace System {
 ============================================================*/
         [Serializable]
         [System.Security.Permissions.HostProtection(MayLeakOnAbort = true)]
+#if !FEATURE_CORECLR
         [TypeForwardedFrom("System.Core, Version=3.5.0.0, Culture=Neutral, PublicKeyToken=b77a5c561934e089")]
+#endif
         sealed public class AdjustmentRule : IEquatable<AdjustmentRule>, ISerializable, IDeserializationCallback
             {
 
@@ -4760,7 +4764,9 @@ namespace System {
 ============================================================*/
         [Serializable]
         [System.Security.Permissions.HostProtection(MayLeakOnAbort = true)]
+#if !FEATURE_CORECLR
         [TypeForwardedFrom("System.Core, Version=3.5.0.0, Culture=Neutral, PublicKeyToken=b77a5c561934e089")]
+#endif
         public struct TransitionTime : IEquatable<TransitionTime>, ISerializable, IDeserializationCallback
         {
             // ---- SECTION:  members supporting exposed properties -------------*
