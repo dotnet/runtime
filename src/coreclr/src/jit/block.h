@@ -897,17 +897,18 @@ struct BasicBlock
 
     /* The following fields used for loop detection */
 
+    typedef unsigned char loopNumber;
     static const unsigned NOT_IN_LOOP = UCHAR_MAX;
 
 #ifdef DEBUG
     // This is the label a loop gets as part of the second, reachability-based
     // loop discovery mechanism.  This is apparently only used for debugging.
     // We hope we'll eventually just have one loop-discovery mechanism, and this will go away.
-    unsigned char bbLoopNum; // set to 'n' for a loop #n header
-#endif                       // DEBUG
+    loopNumber bbLoopNum; // set to 'n' for a loop #n header
+#endif                    // DEBUG
 
-    unsigned char bbNatLoopNum; // Index, in optLoopTable, of most-nested loop that contains this block,
-                                // or else NOT_IN_LOOP if this block is not in a loop.
+    loopNumber bbNatLoopNum; // Index, in optLoopTable, of most-nested loop that contains this block,
+                             // or else NOT_IN_LOOP if this block is not in a loop.
 
 #define MAX_LOOP_NUM 16       // we're using a 'short' for the mask
 #define LOOP_MASK_TP unsigned // must be big enough for a mask
