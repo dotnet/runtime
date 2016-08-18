@@ -579,5 +579,6 @@
   </PropertyGroup>
 
   <!-- Use Roslyn Compilers to build -->
-  <Import Project="$(RoslynPropsFile)" Condition="Exists('$(RoslynPropsFile)') and '$(UseRoslynCompilers)'!='false'" />
+  <Import Project="$(RoslynPropsFile)" Condition="'$(OSEnvironment)'!='Unix' and Exists('$(RoslynPropsFile)') and '$(UseRoslynCompilers)'!='false'" />
+  <Import Project="$(RoslynPropsFile)" Condition="'$(OSEnvironment)'=='Unix' and Exists('$(RoslynPropsFile)')" />
 </Project>
