@@ -178,6 +178,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
 
             // ISerializable
             yield return new BasicISerializableObject(1, "2");
+            yield return new DerivedISerializableWithNonPublicDeserializationCtor(1, "2");
 
             // Various other special cases
             yield return new TypeWithoutNamespace();
