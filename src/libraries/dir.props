@@ -105,7 +105,7 @@
     <ExternalExpectedPrerelease>beta-24418-00</ExternalExpectedPrerelease>
 
     <CoreFxVersionsIdentityRegex>^(?i)(((System\..*)(?&lt;!System\.ServiceModel\..*))|(NETStandard\.Library)|(Microsoft\.CSharp)|(Microsoft\.NETCore\.Targets)|(Microsoft\.NETCore\.Platforms)|(Microsoft\.Win32\..*)|(Microsoft\.VisualBasic))(?&lt;!TestData)$</CoreFxVersionsIdentityRegex>
-	<BaseDotNetBuildInfoUrl>https://raw.githubusercontent.com/dotnet/versions/master/build-info/dotnet/</BaseDotNetBuildInfoUrl>
+    <BaseDotNetBuildInfoUrl>https://raw.githubusercontent.com/dotnet/versions/master/build-info/dotnet/</BaseDotNetBuildInfoUrl>
     <DependencyBranch>master</DependencyBranch>
   </PropertyGroup>
 
@@ -114,7 +114,7 @@
   <!-- Dependency auto-upgrade configuration -->
   <ItemGroup>
     <DependencyBuildInfo Include="CoreFx">
-      <RawUrl>$(BaseDotNetBuildInfoUrl)corefx/$(DependencyBranch)</RawUrl>
+      <RawUrl>$(BaseDotNetBuildInfoUrl)corefx/dev/api</RawUrl>
     </DependencyBuildInfo>
     <DependencyBuildInfo Include="CoreClr">
       <RawUrl>$(BaseDotNetBuildInfoUrl)coreclr/$(DependencyBranch)</RawUrl>
