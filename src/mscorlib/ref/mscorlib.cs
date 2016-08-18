@@ -12584,20 +12584,31 @@ namespace System.Threading
         protected static readonly System.IntPtr InvalidHandle;
         public const int WaitTimeout = 258;
         protected WaitHandle() { }
+        [System.ObsoleteAttribute("Use the SafeWaitHandle property instead.")]
+        public virtual System.IntPtr Handle { [System.Security.SecuritySafeCriticalAttribute]get { return default(System.IntPtr); } [System.Security.SecurityCriticalAttribute]set { } }
         public Microsoft.Win32.SafeHandles.SafeWaitHandle SafeWaitHandle { [System.Security.SecurityCriticalAttribute]get { throw null; } [System.Security.SecurityCriticalAttribute]set { } }
         public virtual void Close() { }
         public void Dispose() { }
         [System.Security.SecuritySafeCriticalAttribute]
         protected virtual void Dispose(bool explicitDisposing) { }
+        public static bool SignalAndWait(System.Threading.WaitHandle toSignal, System.Threading.WaitHandle toWaitOn) { return default(bool); }
+        public static bool SignalAndWait(System.Threading.WaitHandle toSignal, System.Threading.WaitHandle toWaitOn, int millisecondsTimeout, bool exitContext) { return default(bool); }
+        public static bool SignalAndWait(System.Threading.WaitHandle toSignal, System.Threading.WaitHandle toWaitOn, System.TimeSpan timeout, bool exitContext) { return default(bool); }
         public static bool WaitAll(System.Threading.WaitHandle[] waitHandles) { throw null; }
         public static bool WaitAll(System.Threading.WaitHandle[] waitHandles, int millisecondsTimeout) { throw null; }
+        public static bool WaitAll(System.Threading.WaitHandle[] waitHandles, int millisecondsTimeout, bool exitContext) { return default(bool); }
         public static bool WaitAll(System.Threading.WaitHandle[] waitHandles, System.TimeSpan timeout) { throw null; }
+        public static bool WaitAll(System.Threading.WaitHandle[] waitHandles, System.TimeSpan timeout, bool exitContext) { return default(bool); }
         public static int WaitAny(System.Threading.WaitHandle[] waitHandles) { throw null; }
         public static int WaitAny(System.Threading.WaitHandle[] waitHandles, int millisecondsTimeout) { throw null; }
+        public static int WaitAny(System.Threading.WaitHandle[] waitHandles, int millisecondsTimeout, bool exitContext) { return default(int); }
         public static int WaitAny(System.Threading.WaitHandle[] waitHandles, System.TimeSpan timeout) { throw null; }
+        public static int WaitAny(System.Threading.WaitHandle[] waitHandles, System.TimeSpan timeout, bool exitContext) { return default(int); }
         public virtual bool WaitOne() { throw null; }
         public virtual bool WaitOne(int millisecondsTimeout) { throw null; }
+        public virtual bool WaitOne(int millisecondsTimeout, bool exitContext) { return default(bool); }
         public virtual bool WaitOne(System.TimeSpan timeout) { throw null; }
+        public virtual bool WaitOne(System.TimeSpan timeout, bool exitContext) { return default(bool); }
     }
     [System.Runtime.InteropServices.ComVisibleAttribute(false)]
     public partial class WaitHandleCannotBeOpenedException : System.Exception
