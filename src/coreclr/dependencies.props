@@ -15,7 +15,7 @@
   <!-- Full package version strings that are used in other parts of the build. -->
   <PropertyGroup>
     <CoreClrPackageVersion>1.1.0-beta-24431-01</CoreClrPackageVersion>
-    <XunitPackageVersion>2.1.0</XunitPackageVersion>
+    <XunitPackageVersion>2.2.0-beta2-build3300</XunitPackageVersion>
   </PropertyGroup>
 
   <!-- Package dependency verification/auto-upgrade configuration. -->
@@ -72,6 +72,7 @@
       <Version>$(XunitPackageVersion)</Version>
     </StaticDependency>
 
+    <XunitPerformanceDependency Include="Microsoft.DotNet.xunit.performance" />
     <XunitPerformanceDependency Include="Microsoft.DotNet.xunit.performance.analysis" />
     <XunitPerformanceDependency Include="Microsoft.DotNet.xunit.performance.analysis.cli" />
     <XunitPerformanceDependency Include="Microsoft.DotNet.xunit.performance.metrics" />
@@ -79,7 +80,7 @@
     <XunitPerformanceDependency Include="Microsoft.DotNet.xunit.performance.runner.cli" />
     <XunitPerformanceDependency Include="Microsoft.DotNet.xunit.performance.runner.Windows" />
     <StaticDependency Include="@(XunitPerformanceDependency)">
-      <Version>1.0.0-alpha-build0035</Version>
+      <Version>1.0.0-alpha-build0040</Version>
     </StaticDependency>
 
     <StaticDependency Include="xunit.console.netcore">

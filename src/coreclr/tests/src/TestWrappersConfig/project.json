@@ -1,10 +1,17 @@
 {
   "dependencies": {
-    "xunit": "2.1.0",
-    "xunit.assert": "2.1.0",
-    "xunit.core": "2.1.0"
+    "xunit": "2.2.0-beta2-build3300",
+    "xunit.assert": "2.2.0-beta2-build3300",
+    "xunit.core": "2.2.0-beta2-build3300",
+    "xunit.runner.msbuild": "2.2.0-beta2-build3300"
   },
   "frameworks": {
+    "netcoreapp1.0": {
+      "imports": [
+        "dnxcore50",  
+        "portable-net45+win8"
+      ]
+    },
     "net45": {
       "imports": "portable-net45+win8"
     }
