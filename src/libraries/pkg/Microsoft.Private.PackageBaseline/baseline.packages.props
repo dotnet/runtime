@@ -406,34 +406,34 @@
 
     <!-- private dependencies -->
     <BaseLinePackage Include="runtime.native.System">
-      <Version>4.0.0</Version>
+      <Version>4.3.0</Version>
     </BaseLinePackage>
     <BaseLinePackage Include="runtime.native.System.Data.SqlClient.sni">
-      <Version>4.0.0</Version>
+      <Version>4.3.0</Version>
     </BaseLinePackage>
     <BaseLinePackage Include="runtime.native.System.IO.Compression">
-      <Version>4.1.0</Version>
+      <Version>4.3.0</Version>
     </BaseLinePackage>
     <BaseLinePackage Include="runtime.native.System.Net.Http">
-      <Version>4.0.1</Version>
+      <Version>4.3.0</Version>
     </BaseLinePackage>
     <BaseLinePackage Include="runtime.native.System.Net.Security">
-      <Version>4.0.1</Version>
+      <Version>4.3.0</Version>
     </BaseLinePackage>
     <BaseLinePackage Include="runtime.native.System.Security.Cryptography">
-      <Version>4.0.0</Version>
+      <Version>4.3.0</Version>
     </BaseLinePackage>
     <BaseLinePackage Include="runtime.native.System.Security.Cryptography.Apple">
-      <Version>4.0.1</Version>
+      <Version>4.3.0</Version>
     </BaseLinePackage>
     <BaseLinePackage Include="runtime.native.System.Security.Cryptography.OpenSsl">
-      <Version>4.0.1</Version>
+      <Version>4.3.0</Version>
     </BaseLinePackage>
     <BaseLinePackage Include="System.Private.DataContractSerialization">
-      <Version>4.1.1</Version>
+      <Version>4.3.0</Version>
     </BaseLinePackage>
     <BaseLinePackage Include="System.Private.Uri">
-      <Version>4.0.1</Version>
+      <Version>4.3.0</Version>
     </BaseLinePackage>
   </ItemGroup>
 </Project>
