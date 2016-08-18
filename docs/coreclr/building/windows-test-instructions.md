@@ -74,6 +74,9 @@ If you wish to run the test under a debugger (e.g. [WinDbg](http://msdn.microsof
 
      <repo_root>\binaries\tests\x64\debug\Exceptions\Finalization\Finalizer.cmd -debug <debuggerFullPath>
     
+Note:
+1. The Managed libraries in the above CORE_ROOT is populated from the [project.json](https://github.com/dotnet/coreclr/blob/master/tests/src/runtime/project.json), this is distinct from what was used to build the test.
+
 **Modifying a test**
 
 If test changes are needed, make the change and build the test project. This will binplace the binaries in test binaries folder (e.g. `<repo_root>\binaries\tests\x64\debug\Exceptions\Finalization`). At this point, follow the steps to re-run a failed test to re-run the modified test.
