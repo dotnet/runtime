@@ -322,6 +322,7 @@
     <TargetGroup Condition="'$(TargetGroup)'=='' and $(Configuration.Contains('netcore50aot'))">netcore50aot</TargetGroup>
     <TargetGroup Condition="'$(TargetGroup)'=='' and $(Configuration.Contains('netstandard13aot'))">netstandard13aot</TargetGroup>
     <TargetGroup Condition="'$(TargetGroup)'=='' and $(Configuration.Contains('netstandard15aot'))">netstandard15aot</TargetGroup>
+    <TargetGroup Condition="'$(TargetGroup)'=='' and $(Configuration.Contains('netstandard1.7'))">netstandard1.7</TargetGroup>
     <TargetGroup Condition="'$(TargetGroup)'=='' and $(Configuration.Contains('netcore50'))">netcore50</TargetGroup>
     <TargetGroup Condition="'$(TargetGroup)'=='' and $(Configuration.Contains('netcoreapp1.0'))">netcoreapp1.0</TargetGroup>
     <TargetGroup Condition="'$(TargetGroup)'=='' and $(Configuration.Contains('netcoreapp1.1'))">netcoreapp1.1</TargetGroup>
