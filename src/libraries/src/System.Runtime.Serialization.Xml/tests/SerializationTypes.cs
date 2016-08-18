@@ -1518,6 +1518,12 @@ namespace SerializationTypes
         public int B;
     }
 
+    public struct SimpleStructWithProperties
+    {
+        public int Num { get; set; }
+        public string Text { get; set; }
+    }
+
     public class WithEnums
     {
         public IntEnum Int { get; set; }
@@ -2397,6 +2403,206 @@ namespace SerializationTypes
         public SimpleType[][] TwoDArrayOfSimpleType;
     }
 
+    public class SimpleTypeWithMoreFields
+    {
+        public string StringField;
+        public int IntField;
+        public MyEnum EnumField;
+        public List<string> CollectionField;
+        public List<SimpleTypeWithMoreFields> SimpleTypeList;
+    }
+
+    // New types
+    public class TypeWithPrimitiveProperties
+    {
+        public string P1 { get; set; }
+        public int P2 { get; set; }
+        public override bool Equals(object obj)
+        {
+            TypeWithPrimitiveProperties other = obj as TypeWithPrimitiveProperties;
+            if (other == this)
+            {
+                return true;
+            }
+            if (other == null)
+            {
+                return false;
+            }
+            return this.P1 == other.P1 && this.P2 == other.P2;
+        }
+        public override int GetHashCode()
+        {
+            return P1.GetHashCode() ^ P2.GetHashCode();
+        }
+    }
+
+    public class TypeWithPrimitiveFields
+    {
+        public string P1;
+        public int P2;
+    }
+
+    public class TypeWithAllPrimitiveProperties
+    {
+        public bool BooleanMember { get; set; }
+        //public byte[] ByteArrayMember { get; set; }
+        public char CharMember { get; set; }
+        public DateTime DateTimeMember { get; set; }
+        public decimal DecimalMember { get; set; }
+        public double DoubleMember { get; set; }
+        public float FloatMember { get; set; }
+        public Guid GuidMember { get; set; }
+        //public byte[] HexBinaryMember { get; set; }
+        public string StringMember { get; set; }
+        public int IntMember { get; set; }
+    }
+
+    public class TypeImplementsGenericICollection<T> : ICollection<T>
+    {
+        private List<T> _items = new List<T>();
+
+        public TypeImplementsGenericICollection()
+        {
+        }
+
+        public TypeImplementsGenericICollection(params T[] values)
+        {
+            _items.AddRange(values);
+        }
+
+        public void Add(T item)
+        {
+            _items.Add(item);
+        }
+
+        public void Clear()
+        {
+            _items.Clear();
+        }
+
+        public bool Contains(T item)
+        {
+            return _items.Contains(item);
+        }
+
+        public void CopyTo(T[] array, int arrayIndex)
+        {
+            _items.CopyTo(array, arrayIndex);
+        }
+
+        public int Count
+        {
+            get { return _items.Count; }
+        }
+
+        public bool IsReadOnly
+        {
+            get { return ((ICollection<T>)_items).IsReadOnly; }
+        }
+
+        public bool Remove(T item)
+        {
+            return _items.Remove(item);
+        }
+
+        public IEnumerator<T> GetEnumerator()
+        {
+            return ((ICollection<T>)_items).GetEnumerator();
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return ((IEnumerable)_items).GetEnumerator();
+        }
+    }
+
+    public class MyNonGenericDictionary : IDictionary
+    {
+        private Dictionary<object, object> _d = new Dictionary<object, object>();
+
+        public void Add(object key, object value)
+        {
+            _d.Add(key, value);
+        }
+
+        public void Clear()
+        {
+            _d.Clear();
+        }
+
+        public bool Contains(object key)
+        {
+            return _d.ContainsKey(key);
+        }
+
+        public IDictionaryEnumerator GetEnumerator()
+        {
+            return ((IDictionary)_d).GetEnumerator();
+        }
+
+        public bool IsFixedSize
+        {
+            get { return ((IDictionary)_d).IsFixedSize; }
+        }
+
+        public bool IsReadOnly
+        {
+            get { return ((IDictionary)_d).IsReadOnly; }
+        }
+
+        public ICollection Keys
+        {
+            get { return _d.Keys; }
+        }
+
+        public void Remove(object key)
+        {
+            _d.Remove(key);
+        }
+
+        public ICollection Values
+        {
+            get { return _d.Values; }
+        }
+
+        public object this[object key]
+        {
+            get
+            {
+                return _d[key];
+            }
+            set
+            {
+                _d[key] = value;
+            }
+        }
+
+        public void CopyTo(Array array, int index)
+        {
+            ((IDictionary)_d).CopyTo(array, index);
+        }
+
+        public int Count
+        {
+            get { return _d.Count; }
+        }
+
+        public bool IsSynchronized
+        {
+            get { return ((IDictionary)_d).IsSynchronized; }
+        }
+
+        public object SyncRoot
+        {
+            get { return ((IDictionary)_d).SyncRoot; }
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return ((IEnumerable)_d).GetEnumerator();
+        }
+    }
+
     public class TypeWith2DArrayProperty2
     {
         [System.Xml.Serialization.XmlArrayItemAttribute("SimpleType", typeof(SimpleType[]), IsNullable = false)]
@@ -2437,6 +2643,28 @@ namespace DuplicateTypeNamesTest.ns2
     public enum EnumA
     {
         uno, dos, tres,
+    }
+}
+
+public class TypeWithPrivateFieldAndPrivateGetPublicSetProperty
+{
+    private string _name;
+
+    public string Name
+    {
+        private get
+        {
+            return _name;
+        }
+        set
+        {
+            _name = value;
+        }
+    }
+
+    public string GetName()
+    {
+        return _name;
     }
 }
 
@@ -2951,3 +3179,26 @@ public sealed class TypeWithInternalDefaultConstructorWithoutDataContractAttribu
     [DataMember]
     public string Name { get; set; }
 }
+
+[DataContract]
+public class TypeWithEmitDefaultValueFalse
+{
+    [DataMember(EmitDefaultValue = false)]
+    public string Name = null;
+    [DataMember(EmitDefaultValue = false)]
+    public int ID = 0;
+}
+
+[DataContract(Namespace = "ItemTypeNamespace")]
+public class TypeWithNonDefaultNamcespace
+{
+    [DataMember]
+    public string Name;
+}
+
+[CollectionDataContract(Namespace = "CollectionNamespace")]
+public class CollectionOfTypeWithNonDefaultNamcespace : List<TypeWithNonDefaultNamcespace>
+{
+
+}
+

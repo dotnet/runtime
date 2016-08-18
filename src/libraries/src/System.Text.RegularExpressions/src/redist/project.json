@@ -7,6 +7,6 @@
     "netcore50": {}
   },
   "runtimes": {
-    "win8": { }
+    "win8": {}
   }
 }

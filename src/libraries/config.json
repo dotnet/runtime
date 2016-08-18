@@ -31,7 +31,7 @@
       "defaultValue": "${OSRid}-x64"
     },
     "TestWithLocalLibraries": {
-      "description": "Enables/Disables run test with local libraries.",
+      "description": "Enables/Disables building and running tests against local libraries.",
       "valueType": "property",
       "values": ["True", "False"],
       "defaultValue": true
@@ -67,7 +67,7 @@
       "defaultValue": true
     },
     "SkipManagedPackageBuild": {
-      "description": "Enables/Disables building packages for manage builds.",
+      "description": "Enables/Disables building packages for managed builds.",
       "valueType": "property",
       "values": ["True", "False"],
       "defaultValue": false
@@ -79,7 +79,7 @@
       "defaultValue": true
     },
     "BuildTestsAgainstPackages": {
-      "description": "Allows to build tests against product packages.",
+      "description": "Allows building tests against product packages.",
       "valueType": "property",
       "values": ["True", "False"],
       "defaultValue": false
@@ -139,24 +139,24 @@
       "defaultValue": ""
     },
     "GenerateNativeVersionInfo": {
-      "description": "Allows to generate the native version header.",
+      "description": "Enables generation of the native version header.",
       "valueType": "property",
       "values": ["True", "False"],
       "defaultValue": true
     },
     "SkipManagedPackageBuild": {
-      "description": "Allows to skip building packages from managed binaries.",
+      "description": "Skips building packages from managed binaries.",
       "valueType": "property",
       "values": ["True", "False"],
       "defaultValue": false
     },
     "BuildPackageLibraryReferences": {
-      "description": "Allows to build libraries referenced by packages",
+      "description": "Enables building libraries referenced by packages",
       "valueType": "property",
       "values": ["True", "False"],
       "defaultValue": true
     },
-    "MsBuildNodoReuse": {
+    "MsBuildNodeReuse": {
       "description": "Disables node reuse.",
       "valueType": "passThrough",
       "values": [],
@@ -219,7 +219,7 @@
     "ProcessorCount": {
       "description": "Sets the value of the number of processors available.",
       "valueType": "passThrough",
-      "values": ["NUmeric values"],
+      "values": ["Numeric values"],
       "defaultValue": "--numproc ${ProcessorCount}"
     },
     "Project": {
@@ -235,7 +235,7 @@
       "defaultValue": ""
     },
     "BatchGenerateTestProjectJsons": {
-      "description": "MsBuild target that generates the project Jsons files to build tests against packages.",
+      "description": "MsBuild target that generates the project.json files to build tests against packages.",
       "valueType": "target",
       "values": [],
       "defaultValue": ""
@@ -253,7 +253,7 @@
       "defaultValue": ""
     },
     "UpdateInvalidPackageVersions": {
-      "description": "MsBuild target that looks through all dependencies and using the validation rules, it updates any invalid versions.",
+      "description": "MsBuild target that looks through all dependencies and using the validation rules, updates any invalid versions.",
       "valueType": "target",
       "values": [],
       "defaultValue": ""
@@ -427,10 +427,10 @@
             "MsBuildLogging": "/flp:v=diag;LogFile=build-managed.log"
           }
         },
-        "nodoReuse":{
+        "nodeReuse":{
           "description": "Disables node reuse because it causes file locking issues. Only available in the Desktop MsBuild.",
           "settings":{
-            "MsBuildNodoReuse": "default"
+            "MsBuildNodeReuse": "default"
           }
         },
         "binclashWindows":{

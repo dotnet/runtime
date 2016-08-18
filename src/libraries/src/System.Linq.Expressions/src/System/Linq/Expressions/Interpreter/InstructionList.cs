@@ -857,12 +857,22 @@ namespace System.Linq.Expressions.Interpreter
 
         public void EmitNew(ConstructorInfo constructorInfo)
         {
-            Emit(new NewInstruction(constructorInfo));
+            EmitNew(constructorInfo, constructorInfo.GetParameters());
+        }
+
+        public void EmitNew(ConstructorInfo constructorInfo, ParameterInfo[] parameters)
+        {
+            Emit(new NewInstruction(constructorInfo, parameters.Length));
         }
 
         public void EmitByRefNew(ConstructorInfo constructorInfo, ByRefUpdater[] updaters)
         {
-            Emit(new ByRefNewInstruction(constructorInfo, updaters));
+            EmitByRefNew(constructorInfo, constructorInfo.GetParameters(), updaters);
+        }
+
+        public void EmitByRefNew(ConstructorInfo constructorInfo, ParameterInfo[] parameters, ByRefUpdater[] updaters)
+        {
+            Emit(new ByRefNewInstruction(constructorInfo, parameters.Length, updaters));
         }
 
         internal void EmitCreateDelegate(LightDelegateCreator creator)

@@ -320,16 +320,14 @@ def osShortName = ['Windows 10': 'win10',
         // Set up standard options.
         Utilities.standardJobSetup(newJob, project, /* isPR */ false, "*/${branch}")
         
-        // Set a periodic trigger
-        // Temporarily disabled until private triggers are stable
-        // Utilities.addPeriodicTrigger(newJob, '@daily')
+        // Set a daily trigger
+        Utilities.addPeriodicTrigger(newJob, '@daily')
         
         // Set up a PR trigger that is only triggerable by certain members
         Utilities.addPrivateGithubPRTriggerForBranch(newJob, branch, "Windows_NT ARM64 ${configurationGroup} Build and Test", "(?i).*test\\W+ARM64\\W+${os}\\W+${configurationGroup}", null, arm64Users)
 
         // Set up a per-push trigger
-        // Temporarily disabled until private triggers are stable
-        // Utilities.addGithubPushTrigger(newJob)
+        Utilities.addGithubPushTrigger(newJob)
 
         // Get results
         Utilities.addXUnitDotNETResults(newJob, 'bin/tests/testresults/**/testResults.xml')

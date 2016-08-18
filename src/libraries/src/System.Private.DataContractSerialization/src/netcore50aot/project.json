@@ -3,7 +3,7 @@
     "netcore50": {
       "dependencies": {
         "Microsoft.NETCore.Platforms": "1.0.1",
-        "Microsoft.TargetingPack.Private.NETNative": "1.0.1-beta-24404-00",
+        "Microsoft.TargetingPack.Private.NETNative": "1.0.1-beta-24418-00",
         "System.Collections": "4.0.10",
         "System.Collections.Concurrent": "4.0.10",
         "System.Diagnostics.Debug": "4.0.10",
@@ -29,6 +29,7 @@
         "System.Threading": "4.0.10",
         "System.Threading.Tasks": "4.0.10",
         "System.Xml.ReaderWriter": "4.0.10",
+        "System.Xml.XDocument": "4.0.10",
         "System.Xml.XmlSerializer": "4.0.10"
       }
     }

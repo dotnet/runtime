@@ -231,6 +231,9 @@
   <data name="Cryptography_UnexpectedTransformTruncation" xml:space="preserve">
     <value>CNG provider unexpectedly terminated encryption or decryption prematurely.</value>
   </data>
+  <data name="Cryptography_Unmapped_System_Typed_Error" xml:space="preserve">
+    <value>The system cryptographic library returned error '{0}' of type '{1}'</value>
+  </data>
   <data name="Cryptography_UnsupportedPaddingMode" xml:space="preserve">
     <value>The specified PaddingMode is not supported.</value>
   </data>

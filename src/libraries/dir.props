@@ -1,8 +1,8 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Condition="Exists('..\dir.props')" Project="..\dir.props" />
 
-  <!-- We shipped assembly file version 4.6.x up until the end of rc3.  Version assembly as 
+  <!-- We shipped assembly file version 4.6.x up until the end of rc3.  Version assembly as
         4.6.x to ensure compatability in Visual Studio for an in-place update. -->
   <PropertyGroup>
     <MajorVersion>4</MajorVersion>
@@ -18,7 +18,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <XunitPerfAnalysisPackageVersion>1.0.0-alpha-build0039</XunitPerfAnalysisPackageVersion>
+    <XunitPerfAnalysisPackageVersion>1.0.0-alpha-build0040</XunitPerfAnalysisPackageVersion>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -68,91 +68,11 @@
     <EnableDotnetAnalyzers Condition="'$(EnableDotnetAnalyzers)'==''">true</EnableDotnetAnalyzers>
   </PropertyGroup>
 
-  <!-- Package dependency validation -->
-  <PropertyGroup>
-    <ValidatePackageVersions>true</ValidatePackageVersions>
-    <ProhibitFloatingDependencies>true</ProhibitFloatingDependencies>
-
-    <CoreFxExpectedPrerelease>beta-24403-05</CoreFxExpectedPrerelease>
-    <CoreClrExpectedPrerelease>beta-24405-03</CoreClrExpectedPrerelease>
-    <ExternalExpectedPrerelease>beta-24404-00</ExternalExpectedPrerelease>
-
-    <CoreFxVersionsIdentityRegex>^(?i)((System\..*)|(NETStandard\.Library)|(Microsoft\.CSharp)|(Microsoft\.NETCore\.Targets)|(Microsoft\.NETCore\.Platforms)|(Microsoft\.Win32\..*)|(Microsoft\.VisualBasic))(?&lt;!TestData)$</CoreFxVersionsIdentityRegex>
-
-    <BaseDotNetBuildInfoUrl>https://raw.githubusercontent.com/dotnet/versions/master/build-info/dotnet/</BaseDotNetBuildInfoUrl>
-    <DependencyBranch>master</DependencyBranch>
-  </PropertyGroup>
+  <!-- Provides package dependency version properties and verification/auto-upgrade configuration -->
+  <Import Project="$(MSBuildThisFileDirectory)dependencies.props" />
 
   <Import Project="$(MSBuildThisFileDirectory)pkg/ExternalPackages/versions.props" Condition="Exists('$(MSBuildThisFileDirectory)pkg/ExternalPackages/versions.props')" />
 
-  <!-- Dependency auto-upgrade configuration -->
-  <ItemGroup>
-    <DependencyBuildInfo Include="CoreFx">
-      <RawUrl>$(BaseDotNetBuildInfoUrl)corefx/$(DependencyBranch)</RawUrl>
-    </DependencyBuildInfo>
-    <DependencyBuildInfo Include="CoreClr">
-      <RawUrl>$(BaseDotNetBuildInfoUrl)coreclr/$(DependencyBranch)</RawUrl>
-    </DependencyBuildInfo>
-    <DependencyBuildInfo Include="External">
-      <RawUrl>$(BaseDotNetBuildInfoUrl)projectk-tfs/$(DependencyBranch)</RawUrl>
-    </DependencyBuildInfo>
-
-    <XmlUpdateStep Include="CoreFx">
-      <Path>$(MSBuildThisFileFullPath)</Path>
-      <ElementName>CoreFxExpectedPrerelease</ElementName>
-      <BuildInfoName>CoreFx</BuildInfoName>
-    </XmlUpdateStep>
-    <XmlUpdateStep Include="CoreClr">
-      <Path>$(MSBuildThisFileFullPath)</Path>
-      <ElementName>CoreClrExpectedPrerelease</ElementName>
-      <BuildInfoName>CoreClr</BuildInfoName>
-    </XmlUpdateStep>
-    <XmlUpdateStep Include="External">
-      <Path>$(MSBuildThisFileFullPath)</Path>
-      <ElementName>ExternalExpectedPrerelease</ElementName>
-      <BuildInfoName>External</BuildInfoName>
-    </XmlUpdateStep>
-  </ItemGroup>
-
-  <ItemGroup>
-    <ValidationPattern Include="CoreFxVersions">
-      <IdentityRegex>$(CoreFxVersionsIdentityRegex)</IdentityRegex>
-      <ExpectedPrerelease>$(CoreFxExpectedPrerelease)</ExpectedPrerelease>
-    </ValidationPattern>
-    <ValidationPattern Include="CoreClrVersions">
-      <IdentityRegex>^(?i)(Microsoft\.NETCore\.Runtime.*)|(Microsoft\.TargetingPack\.Private\.CoreCLR)$</IdentityRegex>
-      <ExpectedPrerelease>$(CoreClrExpectedPrerelease)</ExpectedPrerelease>
-    </ValidationPattern>
-    <ValidationPattern Include="CoreLibTargetingPackVersions">
-      <IdentityRegex>^(?i)Microsoft\.TargetingPack\.Private\.NETNative$</IdentityRegex>
-      <ExpectedPrerelease>$(ExternalExpectedPrerelease)</ExpectedPrerelease>
-    </ValidationPattern>
-    <ValidationPattern Include="TargetingPackVersions">
-      <IdentityRegex>^(?i)Microsoft\.TargetingPack\.(NetFramework.*|Private\.WinRT)$</IdentityRegex>
-      <ExpectedVersion>1.0.1</ExpectedVersion>
-    </ValidationPattern>
-    <ValidationPattern Include="xUnitStableVersions">
-      <IdentityRegex>^(?i)xunit$</IdentityRegex>
-      <ExpectedVersion>2.1.0</ExpectedVersion>
-    </ValidationPattern>
-    <ValidationPattern Include="xUnitExtensionsVersions">
-      <IdentityRegex>^(?i)Microsoft\.xunit\.netcore\.extensions$</IdentityRegex>
-      <ExpectedVersion>1.0.0-prerelease-00704-03</ExpectedVersion>
-    </ValidationPattern>
-    <ValidationPattern Include="buildToolsTestSuiteVersions">
-      <IdentityRegex>^(?i)Microsoft\.DotNet\.BuildTools\.TestSuite$</IdentityRegex>
-      <ExpectedVersion>1.0.0-prerelease-00704-03</ExpectedVersion>
-    </ValidationPattern>
-    <ValidationPattern Include="uwpRunnerVersion">
-      <IdentityRegex>^(?i)microsoft\.xunit\.runner\.uwp$</IdentityRegex>
-      <ExpectedVersion>$(AppXRunnerVersion)</ExpectedVersion>
-    </ValidationPattern>
-  </ItemGroup>
-
-  <!-- Runner versions -->
-  <PropertyGroup>
-    <AppXRunnerVersion>1.0.3-prerelease-00614-01</AppXRunnerVersion>
-  </PropertyGroup>
   <!-- Import packaging props -->
   <Import Project="$(MSBuildThisFileDirectory)Packaging.props"/>
 
@@ -514,7 +434,7 @@
     <!-- we default TestTFM and FilterToTestTFM to netcoreapp1.0 if they are not explicity defined -->
     <DefaultTestTFM Condition="'$(DefaultTestTFM)'==''">netcoreapp1.0</DefaultTestTFM>
     <TestTFM Condition="'$(TestTFM)'==''">$(DefaultTestTFM)</TestTFM>
-    <FilterToTestTFM Condition="'$(FilterToTestTFM)'==''">$(DefaultTestTFM)</FilterToTestTFM>        
+    <FilterToTestTFM Condition="'$(FilterToTestTFM)'==''">$(DefaultTestTFM)</FilterToTestTFM>
   </PropertyGroup>
 
   <PropertyGroup>

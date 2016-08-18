@@ -1,10 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
-
+using System;
 using System.IO;
 using System.Text;
 using System.Threading;
+using System.Collections.Generic;
 using Xunit;
 
 namespace System.Diagnostics.Tests
@@ -126,6 +127,8 @@ namespace System.Diagnostics.Tests
         public void TestAsyncHalfCharacterAtATime()
         {
             var receivedOutput = false;
+            var collectedExceptions = new List<Exception>();
+
             Process p = CreateProcess(() =>
             {
                 var stdout = Console.OpenStandardOutput();
@@ -143,11 +146,20 @@ namespace System.Diagnostics.Tests
             p.StartInfo.StandardOutputEncoding = Encoding.Unicode;
             p.OutputDataReceived += (s, e) =>
             {
-                if (!receivedOutput)
+                try
                 {
-                    Assert.Equal(e.Data, "a");
+                    if (!receivedOutput)
+                    {
+                        Assert.Equal(e.Data, "a");
+                    }
+                    receivedOutput = true;
                 }
-                receivedOutput = true;
+                catch (Exception ex)
+                {
+                    // This ensures that the exception in event handlers does not break
+                    // the whole unittest
+                    collectedExceptions.Add(ex);
+                }
             };
             p.Start();
             p.BeginOutputReadLine();
@@ -156,6 +168,12 @@ namespace System.Diagnostics.Tests
             p.WaitForExit(); // This ensures async event handlers are finished processing.
 
             Assert.True(receivedOutput);
+
+            if (collectedExceptions.Count > 0)
+            {
+                // Re-throw collected exceptions
+                throw new AggregateException(collectedExceptions);
+            }
         }
 
         [Fact]

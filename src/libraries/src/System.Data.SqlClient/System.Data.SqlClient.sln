@@ -1,6 +1,6 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
-VisualStudioVersion = 14.0.24720.0
+VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Data.SqlClient", "src\System.Data.SqlClient.csproj", "{D4550556-4745-457F-BA8F-3EBF3836D6B4}"
 EndProject
@@ -9,6 +9,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Data.SqlClient.Tests", "tests\FunctionalTests\System.Data.SqlClient.Tests.csproj", "{F3E72F35-0351-4D67-9388-725BCAD807BA}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Data.SqlClient.ManualTesting.Tests", "tests\ManualTests\System.Data.SqlClient.ManualTesting.Tests.csproj", "{45DB5F86-7AE3-45C6-870D-F9357B66BDB5}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "stresstest", "tests\stress\StressTest\stresstest.csproj", "{529B187A-DE4F-4F4D-9FBB-D3D416FDB683}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -52,6 +54,18 @@ Global
 		{45DB5F86-7AE3-45C6-870D-F9357B66BDB5}.Windows_Debug|Any CPU.Build.0 = Windows_Debug|Any CPU
 		{45DB5F86-7AE3-45C6-870D-F9357B66BDB5}.Windows_Release|Any CPU.ActiveCfg = Windows_Release|Any CPU
 		{45DB5F86-7AE3-45C6-870D-F9357B66BDB5}.Windows_Release|Any CPU.Build.0 = Windows_Release|Any CPU
+		{529B187A-DE4F-4F4D-9FBB-D3D416FDB683}.Debug|Any CPU.ActiveCfg = Windows_Debug|Any CPU
+		{529B187A-DE4F-4F4D-9FBB-D3D416FDB683}.Debug|Any CPU.Build.0 = Windows_Debug|Any CPU
+		{529B187A-DE4F-4F4D-9FBB-D3D416FDB683}.Release|Any CPU.ActiveCfg = Windows_Release|Any CPU
+		{529B187A-DE4F-4F4D-9FBB-D3D416FDB683}.Release|Any CPU.Build.0 = Windows_Release|Any CPU
+		{529B187A-DE4F-4F4D-9FBB-D3D416FDB683}.Unix_Debug|Any CPU.ActiveCfg = Unix_Debug|Any CPU
+		{529B187A-DE4F-4F4D-9FBB-D3D416FDB683}.Unix_Debug|Any CPU.Build.0 = Unix_Debug|Any CPU
+		{529B187A-DE4F-4F4D-9FBB-D3D416FDB683}.Unix_Release|Any CPU.ActiveCfg = Unix_Release|Any CPU
+		{529B187A-DE4F-4F4D-9FBB-D3D416FDB683}.Unix_Release|Any CPU.Build.0 = Unix_Release|Any CPU
+		{529B187A-DE4F-4F4D-9FBB-D3D416FDB683}.Windows_Debug|Any CPU.ActiveCfg = Windows_Debug|Any CPU
+		{529B187A-DE4F-4F4D-9FBB-D3D416FDB683}.Windows_Debug|Any CPU.Build.0 = Windows_Debug|Any CPU
+		{529B187A-DE4F-4F4D-9FBB-D3D416FDB683}.Windows_Release|Any CPU.ActiveCfg = Windows_Release|Any CPU
+		{529B187A-DE4F-4F4D-9FBB-D3D416FDB683}.Windows_Release|Any CPU.Build.0 = Windows_Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
