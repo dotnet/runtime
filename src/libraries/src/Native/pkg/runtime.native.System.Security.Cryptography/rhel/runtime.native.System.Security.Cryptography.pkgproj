@@ -2,7 +2,6 @@
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <Version>4.0.1</Version>
     <PackageTargetRuntime>rhel.7-$(PackagePlatform)</PackageTargetRuntime>
     <!-- only build for x64 -->
     <PackagePlatforms>x64;</PackagePlatforms>
