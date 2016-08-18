@@ -57,27 +57,11 @@ static guint64 stat_bytes_alloced_los = 0;
  * tlab_real_end points to the end of the TLAB.
  */
 
-/*
- * FIXME: What is faster, a TLS variable pointing to a structure, or separate TLS 
- * variables for next+temp_end ?
- */
 #ifdef HAVE_KW_THREAD
-static __thread char *tlab_start;
-static __thread char *tlab_next;
-static __thread char *tlab_temp_end;
-static __thread char *tlab_real_end;
-/* Used by the managed allocator/wbarrier */
-static __thread char **tlab_next_addr MONO_ATTR_USED;
-#ifndef SGEN_WITHOUT_MONO
-static __thread volatile int *in_critical_region_addr MONO_ATTR_USED;
-#endif
-#endif
-
-#ifdef HAVE_KW_THREAD
-#define TLAB_START	tlab_start
-#define TLAB_NEXT	tlab_next
-#define TLAB_TEMP_END	tlab_temp_end
-#define TLAB_REAL_END	tlab_real_end
+#define TLAB_START	(sgen_thread_info->tlab_start)
+#define TLAB_NEXT	(sgen_thread_info->tlab_next)
+#define TLAB_TEMP_END	(sgen_thread_info->tlab_temp_end)
+#define TLAB_REAL_END	(sgen_thread_info->tlab_real_end)
 #else
 #define TLAB_START	(__thread_info__->tlab_start)
 #define TLAB_NEXT	(__thread_info__->tlab_next)
@@ -490,26 +474,6 @@ sgen_alloc_obj_mature (GCVTable vtable, size_t size)
 	return res;
 }
 
-void
-sgen_init_tlab_info (SgenThreadInfo* info)
-{
-#ifndef HAVE_KW_THREAD
-	SgenThreadInfo *__thread_info__ = info;
-#endif
-
-	info->tlab_start_addr = &TLAB_START;
-	info->tlab_next_addr = &TLAB_NEXT;
-	info->tlab_temp_end_addr = &TLAB_TEMP_END;
-	info->tlab_real_end_addr = &TLAB_REAL_END;
-
-#ifdef HAVE_KW_THREAD
-	tlab_next_addr = &tlab_next;
-#ifndef SGEN_WITHOUT_MONO
-	in_critical_region_addr = &info->client_info.in_critical_region;
-#endif
-#endif
-}
-
 /*
  * Clear the thread local TLAB variables for all threads.
  */
@@ -518,30 +482,16 @@ sgen_clear_tlabs (void)
 {
 	FOREACH_THREAD (info) {
 		/* A new TLAB will be allocated when the thread does its first allocation */
-		*info->tlab_start_addr = NULL;
-		*info->tlab_next_addr = NULL;
-		*info->tlab_temp_end_addr = NULL;
-		*info->tlab_real_end_addr = NULL;
+		info->tlab_start = NULL;
+		info->tlab_next = NULL;
+		info->tlab_temp_end = NULL;
+		info->tlab_real_end = NULL;
 	} FOREACH_THREAD_END
 }
 
 void
 sgen_init_allocator (void)
 {
-#if defined(HAVE_KW_THREAD) && !defined(SGEN_WITHOUT_MONO)
-	int tlab_next_addr_offset = -1;
-	int tlab_temp_end_offset = -1;
-	int in_critical_region_addr_offset = -1;
-
-	MONO_THREAD_VAR_OFFSET (tlab_next_addr, tlab_next_addr_offset);
-	MONO_THREAD_VAR_OFFSET (tlab_temp_end, tlab_temp_end_offset);
-	MONO_THREAD_VAR_OFFSET (in_critical_region_addr, in_critical_region_addr_offset);
-
-	mono_tls_key_set_offset (TLS_KEY_SGEN_TLAB_NEXT_ADDR, tlab_next_addr_offset);
-	mono_tls_key_set_offset (TLS_KEY_SGEN_TLAB_TEMP_END, tlab_temp_end_offset);
-	mono_tls_key_set_offset (TLS_KEY_SGEN_IN_CRITICAL_REGION_ADDR, in_critical_region_addr_offset);
-#endif
-
 #ifdef HEAVY_STATISTICS
 	mono_counters_register ("# objects allocated", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_objects_alloced);
 	mono_counters_register ("bytes allocated", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_bytes_alloced);

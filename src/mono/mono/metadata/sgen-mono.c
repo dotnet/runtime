@@ -995,32 +995,7 @@ static gboolean use_managed_allocator = TRUE;
 
 #ifdef MANAGED_ALLOCATION
 
-#ifdef HAVE_KW_THREAD
-
-#define EMIT_TLS_ACCESS_VAR(_mb, _var) /* nothing to do */
-
-#define EMIT_TLS_ACCESS_IN_CRITICAL_REGION_ADDR(mb, _var) \
-	do { \
-		mono_mb_emit_byte ((mb), MONO_CUSTOM_PREFIX); \
-		mono_mb_emit_byte ((mb), CEE_MONO_TLS); \
-		mono_mb_emit_i4 ((mb), TLS_KEY_SGEN_IN_CRITICAL_REGION_ADDR); \
-	} while (0)
-
-#define EMIT_TLS_ACCESS_NEXT_ADDR(mb, _var)	do {	\
-	mono_mb_emit_byte ((mb), MONO_CUSTOM_PREFIX);	\
-	mono_mb_emit_byte ((mb), CEE_MONO_TLS);		\
-	mono_mb_emit_i4 ((mb), TLS_KEY_SGEN_TLAB_NEXT_ADDR);		\
-	} while (0)
-
-#define EMIT_TLS_ACCESS_TEMP_END(mb, _var)	do {	\
-	mono_mb_emit_byte ((mb), MONO_CUSTOM_PREFIX);	\
-	mono_mb_emit_byte ((mb), CEE_MONO_TLS);		\
-	mono_mb_emit_i4 ((mb), TLS_KEY_SGEN_TLAB_TEMP_END);		\
-	} while (0)
-
-#else
-
-#if defined(TARGET_OSX) || defined(TARGET_WIN32) || defined(TARGET_ANDROID) || defined(TARGET_IOS)
+#if defined(HAVE_KW_THREAD) || defined(TARGET_OSX) || defined(TARGET_WIN32) || defined(TARGET_ANDROID) || defined(TARGET_IOS)
 
 // Cache the SgenThreadInfo pointer in a local 'var'.
 #define EMIT_TLS_ACCESS_VAR(mb, var) \
@@ -1041,9 +1016,8 @@ static gboolean use_managed_allocator = TRUE;
 
 #define EMIT_TLS_ACCESS_NEXT_ADDR(mb, var)	do {	\
 	mono_mb_emit_ldloc ((mb), (var));		\
-	mono_mb_emit_icon ((mb), MONO_STRUCT_OFFSET (SgenThreadInfo, tlab_next_addr));	\
+	mono_mb_emit_icon ((mb), MONO_STRUCT_OFFSET (SgenThreadInfo, tlab_next));	\
 	mono_mb_emit_byte ((mb), CEE_ADD);		\
-	mono_mb_emit_byte ((mb), CEE_LDIND_I);		\
 	} while (0)
 
 #define EMIT_TLS_ACCESS_TEMP_END(mb, var)	do {	\
@@ -1058,7 +1032,6 @@ static gboolean use_managed_allocator = TRUE;
 #define EMIT_TLS_ACCESS_NEXT_ADDR(mb, _var)	do { g_error ("sgen is not supported when using --with-tls=pthread.\n"); } while (0)
 #define EMIT_TLS_ACCESS_TEMP_END(mb, _var)	do { g_error ("sgen is not supported when using --with-tls=pthread.\n"); } while (0)
 #define EMIT_TLS_ACCESS_IN_CRITICAL_REGION_ADDR(mb, _var)	do { g_error ("sgen is not supported when using --with-tls=pthread.\n"); } while (0)
-#endif
 
 #endif
 
@@ -1146,6 +1119,10 @@ create_allocator (int atype, ManagedAllocatorVariant variant)
 		goto done;
 	}
 
+	/*
+	 * Tls access might call foreign code or code without jinfo. This can
+	 * only happen if we are outside of the critical region.
+	 */
 	EMIT_TLS_ACCESS_VAR (mb, thread_var);
 
 	size_var = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
@@ -1508,10 +1485,10 @@ mono_gc_get_managed_allocator_by_type (int atype, ManagedAllocatorVariant varian
 	MonoMethod *res;
 	MonoMethod **cache;
 
-	if (!use_managed_allocator)
+	if (variant == MANAGED_ALLOCATOR_REGULAR && !use_managed_allocator)
 		return NULL;
 
-	if (!mono_runtime_has_tls_get ())
+	if (variant == MANAGED_ALLOCATOR_REGULAR && !mono_runtime_has_tls_get ())
 		return NULL;
 
 	switch (variant) {
@@ -3013,7 +2990,7 @@ mono_gc_base_init (void)
 
 #if defined(HAVE_KW_THREAD)
 	/* This can happen with using libmonosgen.so */
-	if (mono_tls_key_get_offset (TLS_KEY_SGEN_TLAB_NEXT_ADDR) == -1)
+	if (mono_tls_key_get_offset (TLS_KEY_SGEN_THREAD_INFO) == -1)
 		sgen_set_use_managed_allocator (FALSE);
 #endif
 

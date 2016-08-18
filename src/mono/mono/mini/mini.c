@@ -1983,6 +1983,18 @@ mono_create_tls_get (MonoCompile *cfg, MonoTlsKey key)
 	if (!cfg->backend->have_tls_get)
 		return NULL;
 
+#ifdef HAVE_KW_THREAD
+	/*
+	 * MONO_THREAD_VAR_OFFSET definitions don't work when loading mono as a
+	 * dynamic library. This means that we need to be conservative and don't
+	 * aot code that contains these tls chunks.
+	 *
+	 * FIXME Remove HAVE_KW_THREAD altogether and use only pthread since it
+	 * simplifies the code alot.
+	 */
+	if (!cfg->full_aot)
+		cfg->disable_aot = TRUE;
+#endif
 	/*
 	 * TLS offsets might be different at AOT time, so load them from a GOT slot and
 	 * use a different opcode.

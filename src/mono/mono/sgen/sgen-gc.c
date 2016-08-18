@@ -2545,11 +2545,7 @@ sgen_get_current_collection_generation (void)
 void*
 sgen_thread_register (SgenThreadInfo* info, void *stack_bottom_fallback)
 {
-#ifndef HAVE_KW_THREAD
 	info->tlab_start = info->tlab_next = info->tlab_temp_end = info->tlab_real_end = NULL;
-#endif
-
-	sgen_init_tlab_info (info);
 
 	sgen_client_thread_register (info, stack_bottom_fallback);
 
