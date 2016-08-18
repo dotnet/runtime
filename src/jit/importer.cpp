@@ -12375,16 +12375,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 if (compIsForInlining())
                 {
-                    if ((prefixFlags & PREFIX_TAILCALL_EXPLICIT) != 0)
-                    {
-#ifdef DEBUG
-                        if (verbose)
-                        {
-                            printf("\n\nIgnoring the tail call prefix in the inlinee %s\n", info.compFullName);
-                        }
-#endif
-                        prefixFlags &= ~PREFIX_TAILCALL_EXPLICIT;
-                    }
+                    // We rule out inlinees with explicit tail calls in fgMakeBasicBlocks.
+                    assert((prefixFlags & PREFIX_TAILCALL_EXPLICIT) == 0);
                 }
                 else
                 {
@@ -12399,14 +12391,14 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         // safe here to read next opcode without bounds check.
                         newBBcreatedForTailcallStress =
                             impOpcodeIsCallOpcode(opcode) && // Current opcode is a CALL, (not a CEE_NEWOBJ). So, don't
-                                                             // make it jump to RET.
+                                                                // make it jump to RET.
                             (OPCODE)getU1LittleEndian(codeAddr + sz) == CEE_RET; // Next opcode is a CEE_RET
 
                         if (newBBcreatedForTailcallStress &&
                             !(prefixFlags & PREFIX_TAILCALL_EXPLICIT) && // User hasn't set "tail." prefix yet.
                             verCheckTailCallConstraint(opcode, &resolvedToken,
-                                                       constraintCall ? &constrainedResolvedToken : nullptr,
-                                                       true) // Is it legal to do talcall?
+                                constraintCall ? &constrainedResolvedToken : nullptr,
+                                true) // Is it legal to do talcall?
                             )
                         {
                             // Stress the tailcall.
