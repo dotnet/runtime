@@ -3631,11 +3631,12 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			guint8 *buf [16];
 
 			buf [0] = code;
-			arm_ldaxrw (code, ARMREG_IP0, sreg1);
+			arm_ldxrw (code, ARMREG_IP0, sreg1);
 			arm_addx (code, ARMREG_IP0, ARMREG_IP0, sreg2);
 			arm_stlxrw (code, ARMREG_IP1, ARMREG_IP0, sreg1);
 			arm_cbnzw (code, ARMREG_IP1, buf [0]);
 
+			arm_dmb (code, 0);
 			arm_movx (code, dreg, ARMREG_IP0);
 			break;
 		}
@@ -3643,11 +3644,12 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			guint8 *buf [16];
 
 			buf [0] = code;
-			arm_ldaxrx (code, ARMREG_IP0, sreg1);
+			arm_ldxrx (code, ARMREG_IP0, sreg1);
 			arm_addx (code, ARMREG_IP0, ARMREG_IP0, sreg2);
 			arm_stlxrx (code, ARMREG_IP1, ARMREG_IP0, sreg1);
 			arm_cbnzx (code, ARMREG_IP1, buf [0]);
 
+			arm_dmb (code, 0);
 			arm_movx (code, dreg, ARMREG_IP0);
 			break;
 		}
@@ -3655,10 +3657,11 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			guint8 *buf [16];
 
 			buf [0] = code;
-			arm_ldaxrw (code, ARMREG_IP0, sreg1);
+			arm_ldxrw (code, ARMREG_IP0, sreg1);
 			arm_stlxrw (code, ARMREG_IP1, sreg2, sreg1);
 			arm_cbnzw (code, ARMREG_IP1, buf [0]);
 
+			arm_dmb (code, 0);
 			arm_movx (code, dreg, ARMREG_IP0);
 			break;
 		}
@@ -3666,10 +3669,11 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			guint8 *buf [16];
 
 			buf [0] = code;
-			arm_ldaxrx (code, ARMREG_IP0, sreg1);
+			arm_ldxrx (code, ARMREG_IP0, sreg1);
 			arm_stlxrx (code, ARMREG_IP1, sreg2, sreg1);
 			arm_cbnzw (code, ARMREG_IP1, buf [0]);
 
+			arm_dmb (code, 0);
 			arm_movx (code, dreg, ARMREG_IP0);
 			break;
 		}
@@ -3678,7 +3682,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
 			/* sreg2 is the value, sreg3 is the comparand */
 			buf [0] = code;
-			arm_ldaxrw (code, ARMREG_IP0, sreg1);
+			arm_ldxrw (code, ARMREG_IP0, sreg1);
 			arm_cmpw (code, ARMREG_IP0, ins->sreg3);
 			buf [1] = code;
 			arm_bcc (code, ARMCOND_NE, 0);
@@ -3686,6 +3690,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			arm_cbnzw (code, ARMREG_IP1, buf [0]);
 			arm_patch_rel (buf [1], code, MONO_R_ARM64_BCC);
 
+			arm_dmb (code, 0);
 			arm_movx (code, dreg, ARMREG_IP0);
 			break;
 		}
@@ -3693,7 +3698,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			guint8 *buf [16];
 
 			buf [0] = code;
-			arm_ldaxrx (code, ARMREG_IP0, sreg1);
+			arm_ldxrx (code, ARMREG_IP0, sreg1);
 			arm_cmpx (code, ARMREG_IP0, ins->sreg3);
 			buf [1] = code;
 			arm_bcc (code, ARMCOND_NE, 0);
@@ -3701,6 +3706,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			arm_cbnzw (code, ARMREG_IP1, buf [0]);
 			arm_patch_rel (buf [1], code, MONO_R_ARM64_BCC);
 
+			arm_dmb (code, 0);
 			arm_movx (code, dreg, ARMREG_IP0);
 			break;
 		}
