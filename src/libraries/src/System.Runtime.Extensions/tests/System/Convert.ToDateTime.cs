@@ -144,5 +144,41 @@ namespace System.Tests
         {
             Assert.Throws<InvalidCastException>(() => Convert.ToDateTime(1.0m));
         }
+#if netstandard
+        [Fact]
+        public void FromByte()
+        {
+            Assert.Throws<InvalidCastException>(() => Convert.ToDateTime(byte.MinValue));
+        }
+
+        [Fact]
+        public void FromSByte()
+        {
+            Assert.Throws<InvalidCastException>(() => Convert.ToDateTime(sbyte.MinValue));
+        }
+
+        [Fact]
+        public void FromFloat()
+        {
+            Assert.Throws<InvalidCastException>(() => Convert.ToDateTime(float.MinValue));
+        }
+        [Fact]
+        public void FromUShort()
+        {
+            Assert.Throws<InvalidCastException>(() => Convert.ToDateTime(ushort.MinValue));
+        }
+
+        [Fact]
+        public void FromUInt()
+        {
+            Assert.Throws<InvalidCastException>(() => Convert.ToDateTime(uint.MinValue));
+        }
+
+        [Fact]
+        public void FromULong()
+        {
+            Assert.Throws<InvalidCastException>(() => Convert.ToDateTime(ulong.MinValue));
+        }
+#endif
     }
 }

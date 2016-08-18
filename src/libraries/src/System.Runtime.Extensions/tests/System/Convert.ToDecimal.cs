@@ -134,5 +134,18 @@ namespace System.Tests
             Decimal[] expectedValues = { UInt64.MaxValue, UInt64.MinValue };
             Verify(Convert.ToDecimal, testValues, expectedValues);
         }
+#if netstandard17
+        [Fact]
+        public void FromChar()
+        {
+            Assert.Throws<InvalidCastException>(() => Convert.ToDecimal(char.MinValue));
+        }
+
+        [Fact]
+        public void FromDateTime()
+        {
+            Assert.Throws<InvalidCastException>(() => Convert.ToDecimal(DateTime.MinValue));
+        }
+#endif
     }
 }

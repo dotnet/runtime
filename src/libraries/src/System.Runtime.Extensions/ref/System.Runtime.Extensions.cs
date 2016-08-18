@@ -8,6 +8,13 @@
 
 namespace System
 {
+    [Flags]
+    public enum Base64FormattingOptions
+    {
+        None = 0,
+        InsertLineBreaks = 1
+    }
+
     public static partial class BitConverter
     {
         public static readonly bool IsLittleEndian;
@@ -45,6 +52,58 @@ namespace System
     }
     public static partial class Convert
     {
+        public static readonly object DBNull;
+        public static object ChangeType(object value, TypeCode typeCode) { return default(object); }
+        public static bool IsDBNull(object value) { return default(bool); }
+        public static int ToBase64CharArray(byte[] inArray, int offsetIn, int length, char[] outArray, int offsetOut, Base64FormattingOptions options) { return default(int); }
+        public static string ToBase64String(byte[] inArray, Base64FormattingOptions options) { return default(string); }
+        public static string ToBase64String(byte[] inArray, int offset, int length, Base64FormattingOptions options) { return default(string); }
+        public static bool ToBoolean(char value) { return default(bool); }
+        public static bool ToBoolean(DateTime value) { return default(bool); }
+        public static byte ToByte(DateTime value) { return default(byte); }
+        public static char ToChar(bool value) { return default(char); }
+        public static char ToChar(char value) { return default(char); }
+        public static char ToChar(DateTime value) { return default(char); }
+        public static char ToChar(decimal value) { return default(char); }
+        public static char ToChar(double value) { return default(char); }
+        public static char ToChar(float value) { return default(char); }
+        public static DateTime ToDateTime(bool value) { return default(DateTime); }
+        public static DateTime ToDateTime(byte value) { return default(DateTime); }
+        public static DateTime ToDateTime(char value) { return default(DateTime); }
+        public static DateTime ToDateTime(DateTime value) { return default(DateTime); }
+        public static DateTime ToDateTime(decimal value) { return default(DateTime); }
+        public static DateTime ToDateTime(double value) { return default(DateTime); }
+        public static DateTime ToDateTime(short value) { return default(DateTime); }
+        public static DateTime ToDateTime(int value) { return default(DateTime); }
+        public static DateTime ToDateTime(long value) { return default(DateTime); }
+        [System.CLSCompliant(false)]
+        public static DateTime ToDateTime(sbyte value) { return default(DateTime); }
+        public static DateTime ToDateTime(float value) { return default(DateTime); }
+        [System.CLSCompliant(false)]
+        public static DateTime ToDateTime(ushort value) { return default(DateTime); }
+        [System.CLSCompliant(false)]
+        public static DateTime ToDateTime(uint value) { return default(DateTime); }
+        [System.CLSCompliant(false)]
+        public static DateTime ToDateTime(ulong value) { return default(DateTime); }
+        public static decimal ToDecimal(char value) { return default(decimal); }
+        public static decimal ToDecimal(DateTime value) { return default(decimal); }
+        public static double ToDouble(char value) { return default(double); }
+        public static double ToDouble(DateTime value) { return default(double); }
+        public static short ToInt16(DateTime value) { return default(short); }
+        public static int ToInt32(DateTime value) { return default(int); }
+        public static long ToInt64(DateTime value) { return default(long); }
+        [System.CLSCompliant(false)]
+        public static sbyte ToSByte(DateTime value) { return default(sbyte); }
+        public static float ToSingle(char value) { return default(float); }
+        public static float ToSingle(DateTime value) { return default(float); }
+        public static string ToString(string value) { return default(string); }
+        public static string ToString(string value, IFormatProvider provider) { return default(string); }
+        [System.CLSCompliant(false)]
+        public static ushort ToUInt16(DateTime value) { return default(ushort); }
+        [System.CLSCompliant(false)]
+        public static uint ToUInt32(DateTime value) { return default(uint); }
+        [System.CLSCompliant(false)]
+        public static ulong ToUInt64(DateTime value) { return default(ulong); }
         public static object ChangeType(object value, System.Type conversionType) { return default(object); }
         public static object ChangeType(object value, System.Type conversionType, System.IFormatProvider provider) { return default(object); }
         public static object ChangeType(object value, System.TypeCode typeCode, System.IFormatProvider provider) { return default(object); }

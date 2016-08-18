@@ -651,6 +651,10 @@ namespace System.Tests
                 result = Convert.ToString(testValues[i], NumberFormatInfo.CurrentInfo);
                 Assert.Equal(testValues[i].ToString(), result);
             }
+
+            string testValue = "Hello World!";
+            Assert.Equal(testValue, Convert.ToString(testValue));
+            Assert.Equal(testValue, Convert.ToString(testValue, NumberFormatInfo.CurrentInfo));
         }
 
         [Fact]
