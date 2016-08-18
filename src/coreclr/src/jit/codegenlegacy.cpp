@@ -8991,7 +8991,10 @@ void CodeGen::genCodeForBlkOp(GenTreePtr tree, regMaskTP destReg)
     GenTreePtr opsPtr[3];
     regMaskTP  regsPtr[3];
 
-    noway_assert(oper == GT_COPYBLK || oper == GT_INITBLK);
+    const bool isCopyBlk   = (oper == GT_COPYBLK);
+    const bool isInitBlk   = (oper == GT_INITBLK);
+    const bool sizeIsConst = op2->IsCnsIntOrI();
+    noway_assert(isCopyBlk || isInitBlk);
     noway_assert(op1->IsList());
 
 #ifdef _TARGET_ARM_
@@ -9006,15 +9009,15 @@ void CodeGen::genCodeForBlkOp(GenTreePtr tree, regMaskTP destReg)
         destPtr     = op1->gtOp.gtOp1;
         srcPtrOrVal = op1->gtOp.gtOp2;
         noway_assert(destPtr->TypeGet() == TYP_BYREF || varTypeIsIntegral(destPtr->TypeGet()));
-        noway_assert((oper == GT_COPYBLK &&
+        noway_assert((isCopyBlk &&
                       (srcPtrOrVal->TypeGet() == TYP_BYREF || varTypeIsIntegral(srcPtrOrVal->TypeGet()))) ||
-                     (oper == GT_INITBLK && varTypeIsIntegral(srcPtrOrVal->TypeGet())));
+                     (isInitBlk && varTypeIsIntegral(srcPtrOrVal->TypeGet())));
 
         noway_assert(op1 && op1->IsList());
         noway_assert(destPtr && srcPtrOrVal);
 
 #if CPU_USES_BLOCK_MOVE
-        regs = (oper == GT_INITBLK) ? RBM_EAX : RBM_ESI; // What is the needReg for Val/Src
+        regs = isInitBlk ? RBM_EAX : RBM_ESI; // What is the needReg for Val/Src
 
         /* Some special code for block moves/inits for constant sizes */
 
@@ -9022,20 +9025,20 @@ void CodeGen::genCodeForBlkOp(GenTreePtr tree, regMaskTP destReg)
         // Is this a fixed size COPYBLK?
         //      or a fixed size INITBLK with a constant init value?
         //
-        if ((op2->IsCnsIntOrI()) && ((oper == GT_COPYBLK) || (srcPtrOrVal->IsCnsIntOrI())))
+        if ((sizeIsConst) && (isCopyBlk || (srcPtrOrVal->IsCnsIntOrI())))
         {
             size_t      length  = (size_t)op2->gtIntCon.gtIconVal;
             size_t      initVal = 0;
             instruction ins_P, ins_PR, ins_B;
 
-            if (oper == GT_INITBLK)
+            if (isInitBlk)
             {
                 ins_P  = INS_stosp;
                 ins_PR = INS_r_stosp;
                 ins_B  = INS_stosb;
 
                 /* Properly extend the init constant from a U1 to a U4 */
-                initVal = 0xFF & ((unsigned)op1->gtOp.gtOp2->gtIntCon.gtIconVal);
+                initVal = 0xFF & ((unsigned)srcPtrOrVal->gtIntCon.gtIconVal);
 
                 /* If it is a non-zero value we have to replicate      */
                 /* the byte value four times to form the DWORD         */
@@ -9052,11 +9055,11 @@ void CodeGen::genCodeForBlkOp(GenTreePtr tree, regMaskTP destReg)
                     }
                     else
                     {
-                        op1->gtOp.gtOp2->gtType = TYP_INT;
+                        srcPtrOrVal->gtType = TYP_INT;
                     }
 #endif // _TARGET_64BIT_
                 }
-                op1->gtOp.gtOp2->gtIntCon.gtIconVal = initVal;
+                srcPtrOrVal->gtIntCon.gtIconVal = initVal;
             }
             else
             {
@@ -9102,7 +9105,7 @@ void CodeGen::genCodeForBlkOp(GenTreePtr tree, regMaskTP destReg)
                     movqLenMax = 48;
                 }
 
-                if ((compiler->compCodeOpt() == Compiler::FAST_CODE) || (oper == GT_INITBLK))
+                if ((compiler->compCodeOpt() == Compiler::FAST_CODE) || isInitBlk)
                 {
                     // Be more aggressive when optimizing for speed
                     // InitBlk uses fewer instructions
@@ -9116,7 +9119,7 @@ void CodeGen::genCodeForBlkOp(GenTreePtr tree, regMaskTP destReg)
                     if ((length % 8) == 0)
                     {
                         bWillUseOnlySSE2 = true;
-                        if (oper == GT_INITBLK && (initVal == 0))
+                        if (isInitBlk && (initVal == 0))
                         {
                             bNeedEvaluateCnst = false;
                             noway_assert((op1->gtOp.gtOp2->OperGet() == GT_CNS_INT));
@@ -9127,7 +9130,7 @@ void CodeGen::genCodeForBlkOp(GenTreePtr tree, regMaskTP destReg)
 
 #endif // !_TARGET_64BIT_
 
-            const bool bWillTrashRegSrc = ((oper == GT_COPYBLK) && !bWillUseOnlySSE2);
+            const bool bWillTrashRegSrc = (isCopyBlk && !bWillUseOnlySSE2);
             /* Evaluate dest and src/val */
 
             if (op1->gtFlags & GTF_REVERSE_OPS)
@@ -9160,7 +9163,7 @@ void CodeGen::genCodeForBlkOp(GenTreePtr tree, regMaskTP destReg)
                 int       blkDisp = 0;
                 regNumber xmmReg  = REG_XMM0;
 
-                if (oper == GT_INITBLK)
+                if (isInitBlk)
                 {
                     if (initVal)
                     {
@@ -9175,11 +9178,11 @@ void CodeGen::genCodeForBlkOp(GenTreePtr tree, regMaskTP destReg)
 
                 JITLOG_THIS(compiler,
                             (LL_INFO100, "Using XMM instructions for %3d byte %s while compiling %s\n", length,
-                             (oper == GT_INITBLK) ? "initblk" : "copyblk", compiler->info.compFullName));
+                             isInitBlk ? "initblk" : "copyblk", compiler->info.compFullName));
 
                 while (length > 7)
                 {
-                    if (oper == GT_INITBLK)
+                    if (isInitBlk)
                     {
                         getEmitter()->emitIns_AR_R(INS_movq, EA_8BYTE, xmmReg, REG_EDI, blkDisp);
                     }
@@ -9197,7 +9200,7 @@ void CodeGen::genCodeForBlkOp(GenTreePtr tree, regMaskTP destReg)
                     noway_assert(bNeedEvaluateCnst);
                     noway_assert(!bWillUseOnlySSE2);
 
-                    if (oper == GT_COPYBLK)
+                    if (isCopyBlk)
                     {
                         inst_RV_IV(INS_add, REG_ESI, blkDisp, emitActualTypeSize(srcPtrOrVal->TypeGet()));
                         bTrashedESI = true;
@@ -9234,7 +9237,7 @@ void CodeGen::genCodeForBlkOp(GenTreePtr tree, regMaskTP destReg)
                 }
 
                 bTrashedEDI = true;
-                if (oper == GT_COPYBLK)
+                if (isCopyBlk)
                     bTrashedESI = true;
             }
             else
@@ -9252,7 +9255,7 @@ void CodeGen::genCodeForBlkOp(GenTreePtr tree, regMaskTP destReg)
                 regTracker.rsTrackRegTrash(REG_ECX);
 
                 bTrashedEDI = true;
-                if (oper == GT_COPYBLK)
+                if (isCopyBlk)
                     bTrashedESI = true;
             }
 
@@ -9265,11 +9268,11 @@ void CodeGen::genCodeForBlkOp(GenTreePtr tree, regMaskTP destReg)
                 noway_assert(bNeedEvaluateCnst);
                 noway_assert(length < 8);
 
-                instGen((oper == GT_INITBLK) ? INS_stosd : INS_movsd);
+                instGen((isInitBlk) ? INS_stosd : INS_movsd);
                 length -= 4;
 
                 bTrashedEDI = true;
-                if (oper == GT_COPYBLK)
+                if (isCopyBlk)
                     bTrashedESI = true;
             }
 
@@ -9285,7 +9288,7 @@ void CodeGen::genCodeForBlkOp(GenTreePtr tree, regMaskTP destReg)
                 }
 
                 bTrashedEDI = true;
-                if (oper == GT_COPYBLK)
+                if (isCopyBlk)
                     bTrashedESI = true;
             }
 
@@ -9311,7 +9314,7 @@ void CodeGen::genCodeForBlkOp(GenTreePtr tree, regMaskTP destReg)
 
             compiler->fgOrderBlockOps(tree, RBM_EDI, regs, RBM_ECX, opsPtr, regsPtr); // OUT arguments
 
-            noway_assert(((oper == GT_INITBLK) && (regs == RBM_EAX)) || ((oper == GT_COPYBLK) && (regs == RBM_ESI)));
+            noway_assert((isInitBlk && (regs == RBM_EAX)) || (isCopyBlk && (regs == RBM_ESI)));
             genComputeReg(opsPtr[0], regsPtr[0], RegSet::EXACT_REG, RegSet::KEEP_REG, (regsPtr[0] != RBM_EAX));
             genComputeReg(opsPtr[1], regsPtr[1], RegSet::EXACT_REG, RegSet::KEEP_REG, (regsPtr[1] != RBM_EAX));
             genComputeReg(opsPtr[2], regsPtr[2], RegSet::EXACT_REG, RegSet::KEEP_REG, (regsPtr[2] != RBM_EAX));
@@ -9328,7 +9331,7 @@ void CodeGen::genCodeForBlkOp(GenTreePtr tree, regMaskTP destReg)
             noway_assert((op2->gtFlags & GTF_REG_VAL) && // Size
                          (op2->gtRegNum == REG_ECX));
 
-            if (oper == GT_INITBLK)
+            if (isInitBlk)
                 instGen(INS_r_stosb);
             else
                 instGen(INS_r_movsb);
@@ -9336,7 +9339,7 @@ void CodeGen::genCodeForBlkOp(GenTreePtr tree, regMaskTP destReg)
             regTracker.rsTrackRegTrash(REG_EDI);
             regTracker.rsTrackRegTrash(REG_ECX);
 
-            if (oper == GT_COPYBLK)
+            if (isCopyBlk)
                 regTracker.rsTrackRegTrash(REG_ESI);
             // else No need to trash EAX as it wasnt destroyed by the "rep stos"
 
@@ -9355,7 +9358,7 @@ void CodeGen::genCodeForBlkOp(GenTreePtr tree, regMaskTP destReg)
         // Is this a fixed size COPYBLK?
         //      or a fixed size INITBLK with a constant init value?
         //
-        if ((op2->OperGet() == GT_CNS_INT) && ((oper == GT_COPYBLK) || (srcPtrOrVal->OperGet() == GT_CNS_INT)))
+        if ((op2->OperGet() == GT_CNS_INT) && (isCopyBlk || (srcPtrOrVal->OperGet() == GT_CNS_INT)))
         {
             GenTreePtr dstOp          = op1->gtOp.gtOp1;
             GenTreePtr srcOp          = op1->gtOp.gtOp2;
@@ -9364,7 +9367,7 @@ void CodeGen::genCodeForBlkOp(GenTreePtr tree, regMaskTP destReg)
             unsigned   initVal        = 0;
             bool       useLoop        = false;
 
-            if (oper == GT_INITBLK)
+            if (isInitBlk)
             {
                 /* Properly extend the init constant from a U1 to a U4 */
                 initVal = 0xFF & ((unsigned)srcOp->gtIntCon.gtIconVal);
@@ -9381,7 +9384,7 @@ void CodeGen::genCodeForBlkOp(GenTreePtr tree, regMaskTP destReg)
             }
 
             // Will we be using a loop to implement this INITBLK/COPYBLK?
-            if (((oper == GT_COPYBLK) && (fullStoreCount >= 8)) || ((oper == GT_INITBLK) && (fullStoreCount >= 16)))
+            if ((isCopyBlk && (fullStoreCount >= 8)) || (isInitBlk && (fullStoreCount >= 16)))
             {
                 useLoop = true;
             }
@@ -9427,7 +9430,7 @@ void CodeGen::genCodeForBlkOp(GenTreePtr tree, regMaskTP destReg)
             emitAttr dstType      = (varTypeIsGC(dstOp) && !dstIsOnStack) ? EA_BYREF : EA_PTRSIZE;
             emitAttr srcType;
 
-            if (oper == GT_COPYBLK)
+            if (isCopyBlk)
             {
                 // Prefer a low register,but avoid one of the ones we've already grabbed
                 regTemp = regSet.rsGrabReg(regSet.rsNarrowHint(regSet.rsRegMaskCanGrab() & ~usedRegs, RBM_LOW_REGS));
@@ -9451,7 +9454,7 @@ void CodeGen::genCodeForBlkOp(GenTreePtr tree, regMaskTP destReg)
             {
                 for (unsigned i = 0; i < fullStoreCount; i++)
                 {
-                    if (oper == GT_COPYBLK)
+                    if (isCopyBlk)
                     {
                         getEmitter()->emitIns_R_R_I(loadIns, EA_4BYTE, regTemp, regSrc, i * TARGET_POINTER_SIZE);
                         getEmitter()->emitIns_R_R_I(storeIns, EA_4BYTE, regTemp, regDst, i * TARGET_POINTER_SIZE);
@@ -9473,7 +9476,7 @@ void CodeGen::genCodeForBlkOp(GenTreePtr tree, regMaskTP destReg)
 
                 // We need a second temp register for CopyBlk
                 regNumber regTemp2 = REG_STK;
-                if (oper == GT_COPYBLK)
+                if (isCopyBlk)
                 {
                     // Prefer a low register, but avoid one of the ones we've already grabbed
                     regTemp2 =
@@ -9492,7 +9495,7 @@ void CodeGen::genCodeForBlkOp(GenTreePtr tree, regMaskTP destReg)
                 genDefineTempLabel(loopTopBlock);
 
                 // The loop body
-                if (oper == GT_COPYBLK)
+                if (isCopyBlk)
                 {
                     getEmitter()->emitIns_R_R_I(loadIns, EA_4BYTE, regTemp, regSrc, 0);
                     getEmitter()->emitIns_R_R_I(loadIns, EA_4BYTE, regTemp2, regSrc, TARGET_POINTER_SIZE);
@@ -9523,7 +9526,7 @@ void CodeGen::genCodeForBlkOp(GenTreePtr tree, regMaskTP destReg)
 
                 if (length & TARGET_POINTER_SIZE)
                 {
-                    if (oper == GT_COPYBLK)
+                    if (isCopyBlk)
                     {
                         getEmitter()->emitIns_R_R_I(loadIns, EA_4BYTE, regTemp, regSrc, 0);
                         getEmitter()->emitIns_R_R_I(storeIns, EA_4BYTE, regTemp, regDst, 0);
@@ -9546,7 +9549,7 @@ void CodeGen::genCodeForBlkOp(GenTreePtr tree, regMaskTP destReg)
                 loadIns  = ins_Load(TYP_USHORT);  // INS_ldrh
                 storeIns = ins_Store(TYP_USHORT); // INS_strh
 
-                if (oper == GT_COPYBLK)
+                if (isCopyBlk)
                 {
                     getEmitter()->emitIns_R_R_I(loadIns, EA_2BYTE, regTemp, regSrc, finalOffset);
                     getEmitter()->emitIns_R_R_I(storeIns, EA_2BYTE, regTemp, regDst, finalOffset);
@@ -9566,7 +9569,7 @@ void CodeGen::genCodeForBlkOp(GenTreePtr tree, regMaskTP destReg)
                 loadIns  = ins_Load(TYP_UBYTE);  // INS_ldrb
                 storeIns = ins_Store(TYP_UBYTE); // INS_strb
 
-                if (oper == GT_COPYBLK)
+                if (isCopyBlk)
                 {
                     getEmitter()->emitIns_R_R_I(loadIns, EA_1BYTE, regTemp, regSrc, finalOffset);
                     getEmitter()->emitIns_R_R_I(storeIns, EA_1BYTE, regTemp, regDst, finalOffset);
@@ -9613,7 +9616,7 @@ void CodeGen::genCodeForBlkOp(GenTreePtr tree, regMaskTP destReg)
 
             regSet.rsLockUsedReg(RBM_ARG_0 | RBM_ARG_1 | RBM_ARG_2);
 
-            genEmitHelperCall(oper == GT_COPYBLK ? CORINFO_HELP_MEMCPY
+            genEmitHelperCall(isCopyBlk ? CORINFO_HELP_MEMCPY
                                                  /* GT_INITBLK */
                                                  : CORINFO_HELP_MEMSET,
                               0, EA_UNKNOWN);
@@ -9626,7 +9629,7 @@ void CodeGen::genCodeForBlkOp(GenTreePtr tree, regMaskTP destReg)
             genReleaseReg(opsPtr[2]);
         }
 
-        if ((oper == GT_COPYBLK) && tree->AsBlkOp()->IsVolatile())
+        if (isCopyBlk && tree->AsBlkOp()->IsVolatile())
         {
             // Emit a memory barrier instruction after the CopyBlk
             instGen_MemoryBarrier();
