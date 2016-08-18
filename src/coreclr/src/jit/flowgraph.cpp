@@ -5401,9 +5401,19 @@ void Compiler::fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, BYTE*
                 jmpKind = BBJ_EHFINALLYRET;
                 break;
 
+            case CEE_TAILCALL:
+                if (compIsForInlining())
+                {
+                    // TODO-CQ: We can inline some callees with explicit tail calls if we can guarantee that the calls
+                    // can be dispatched as tail calls from the caller.
+                    compInlineResult->NoteFatal(InlineObservation::CALLEE_EXPLICIT_TAIL_PREFIX);
+                    return;
+                }
+
+                __fallthrough;
+
             case CEE_READONLY:
             case CEE_CONSTRAINED:
-            case CEE_TAILCALL:
             case CEE_VOLATILE:
             case CEE_UNALIGNED:
                 // fgFindJumpTargets should have ruled out this possibility
@@ -5847,6 +5857,11 @@ void Compiler::fgFindBasicBlocks()
 
     if (compIsForInlining())
     {
+        if (compInlineResult->IsFailure())
+        {
+            return;
+        }
+
         bool hasReturnBlocks           = false;
         bool hasMoreThanOneReturnBlock = false;
 
