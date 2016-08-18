@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -27,6 +27,7 @@
     <ClCompile Include="..\mono\metadata\cominterop.c" />
     <ClCompile Include="..\mono\metadata\console-win32.c" />
     <ClCompile Include="..\mono\metadata\coree.c" />
+    <ClCompile Include="..\mono\metadata\custom-attrs.c" />
     <ClCompile Include="..\mono\metadata\debug-helpers.c" />
     <ClCompile Include="..\mono\metadata\debug-mono-ppdb.c" />
     <ClCompile Include="..\mono\metadata\debug-mono-symfile.c" />
@@ -99,6 +100,7 @@
     <ClCompile Include="..\mono\metadata\sgen-toggleref.c" />
     <ClCompile Include="..\mono\metadata\sgen-stw.c" />
     <ClCompile Include="..\mono\metadata\socket-io.c" />
+    <ClCompile Include="..\mono\metadata\sre.c" />
     <ClCompile Include="..\mono\metadata\string-icalls.c" />
     <ClCompile Include="..\mono\metadata\sysmath.c" />
     <ClCompile Include="..\mono\metadata\threads.c" />
@@ -116,6 +118,7 @@
     <ClInclude Include="..\mono\metadata\coree.h" />
     <ClInclude Include="..\mono\metadata\culture-info-tables.h" />
     <ClInclude Include="..\mono\metadata\culture-info.h" />
+    <ClInclude Include="..\mono\metadata\custom-attrs-internals.h" />
     <ClInclude Include="..\mono\metadata\debug-helpers.h" />
     <ClInclude Include="..\mono\metadata\debug-mono-ppdb.h" />
     <ClInclude Include="..\mono\metadata\debug-mono-symfile.h" />
@@ -167,6 +170,8 @@
     <ClInclude Include="..\mono\metadata\profiler.h" />
     <ClInclude Include="..\mono\metadata\rand.h" />
     <ClInclude Include="..\mono\metadata\reflection.h" />
+    <ClInclude Include="..\mono\metadata\reflection-cache.h" />
+    <ClInclude Include="..\mono\metadata\reflection-internals.h" />
     <ClInclude Include="..\mono\metadata\runtime.h" />
     <ClInclude Include="..\mono\metadata\security-core-clr.h" />
     <ClInclude Include="..\mono\metadata\security-manager.h" />
@@ -174,6 +179,7 @@
     <ClInclude Include="..\mono\metadata\sgen-bridge.h" />
     <ClInclude Include="..\mono\metadata\sgen-toggleref.h" />
     <ClInclude Include="..\mono\metadata\socket-io.h" />
+    <ClInclude Include="..\mono\metadata\sre-internals.h" />
     <ClInclude Include="..\mono\metadata\string-icalls.h" />
     <ClInclude Include="..\mono\metadata\sysmath.h" />
     <ClInclude Include="..\mono\metadata\tabledefs.h" />
