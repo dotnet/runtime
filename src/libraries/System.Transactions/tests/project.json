@@ -1,14 +1,18 @@
 {
   "dependencies": {
-    "Microsoft.NETCore.Platforms": "1.0.2-beta-devapi-24415-01",
-    "System.Collections.Concurrent": "4.0.13-beta-devapi-24415-01",
-    "System.Collections.NonGeneric": "4.1.0-beta-devapi-24415-01",
-    "System.Diagnostics.TraceSource": "4.0.1-beta-devapi-24415-01",
-    "System.Resources.ResourceManager": "4.0.2-beta-devapi-24415-01",
-    "System.Runtime": "4.2.0-beta-devapi-24415-01",
-    "System.Runtime.Extensions": "4.2.0-beta-devapi-24415-01",
-    "System.Runtime.Serialization.Formatters": "4.0.1-beta-devapi-24415-01",
-    "System.Threading": "4.0.12-beta-devapi-24415-01",
+    "Microsoft.NETCore.Platforms": "1.0.2-beta-devapi-24416-01",
+    "System.Collections.Concurrent": "4.0.13-beta-devapi-24416-01",
+    "System.Collections.NonGeneric": "4.1.0-beta-devapi-24416-01",
+    "System.Diagnostics.TraceSource": "4.0.1-beta-devapi-24416-01",
+    "System.Resources.ResourceManager": "4.0.2-beta-devapi-24416-01",
+    "System.Runtime": "4.2.0-beta-devapi-24416-01",
+    "System.Runtime.Extensions": "4.2.0-beta-devapi-24416-01",
+    "System.Runtime.Serialization.Formatters": "4.0.1-beta-devapi-24416-01",
+    "System.Threading": "4.0.12-beta-devapi-24416-01",
+    "System.Threading.Thread": "4.0.1-beta-devapi-24416-01",
+    "System.Threading.ThreadPool": "4.0.11-beta-devapi-24416-01",
+    "System.Xml.XPath": "4.0.2-beta-devapi-24416-01",
+    "System.Diagnostics.Process": "4.1.1-beta-devapi-24416-01",
     "test-runtime": {
       "target": "project",
       "exclude": "compile"
@@ -17,12 +21,24 @@
     "Microsoft.DotNet.BuildTools.TestSuite": "1.0.0-prerelease-00704-03"
   },
   "frameworks": {
-    "netstandard1.4": {}
+    "netstandard1.7": {}
   },
   "supports": {
-    "coreFx.Test.netcoreapp1.0": {},
-    "coreFx.Test.net461": {},
-    "coreFx.Test.net462": {},
-    "coreFx.Test.net463": {}
+    "coreFx.Test.netcoreapp1.1-ns17": {
+        "netstandard1.7": [
+            "win7-x86",
+            "win7-x64",
+            "win10-arm64",
+            "osx.10.10-x64",
+            "centos.7-x64",
+            "debian.8-x64",
+            "rhel.7-x64",
+            "ubuntu.14.04-x64",
+            "ubuntu.16.04-x64",
+            "fedora.23-x64",
+            "linux-x64",
+            "opensuse.13.2-x64"
+        ]
+    }
   }
 }
