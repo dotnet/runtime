@@ -2,11 +2,12 @@
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
-    <ProjectReference Include="..\src\System.Transactions.builds">
-      <SupportedFramework>net461;netcoreapp1.0;$(AllXamarinFrameworks)</SupportedFramework>
+    <ProjectReference Include="..\ref\System.Transactions.csproj">
+      <SupportedFramework>net463;netcoreapp1.1;$(AllXamarinFrameworks)</SupportedFramework>
     </ProjectReference>
+    <ProjectReference Include="..\src\System.Transactions.builds" />
 
-    <InboxOnTargetFramework Include="net461">
+    <InboxOnTargetFramework Include="net463">
       <AsFrameworkReference>true</AsFrameworkReference>
     </InboxOnTargetFramework>
 
