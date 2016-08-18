@@ -100,9 +100,9 @@
     <ValidatePackageVersions>true</ValidatePackageVersions>
     <ProhibitFloatingDependencies>true</ProhibitFloatingDependencies>
 
-    <CoreFxExpectedPrerelease>beta-devapi-24416-01</CoreFxExpectedPrerelease>
-    <CoreClrExpectedPrerelease>beta-24416-03</CoreClrExpectedPrerelease>
-    <ExternalExpectedPrerelease>beta-24415-00</ExternalExpectedPrerelease>
+    <CoreFxExpectedPrerelease>beta-devapi-24418-01</CoreFxExpectedPrerelease>
+    <CoreClrExpectedPrerelease>beta-24418-02</CoreClrExpectedPrerelease>
+    <ExternalExpectedPrerelease>beta-24418-00</ExternalExpectedPrerelease>
 
     <CoreFxVersionsIdentityRegex>^(?i)(((System\..*)(?&lt;!System\.ServiceModel\..*))|(NETStandard\.Library)|(Microsoft\.CSharp)|(Microsoft\.NETCore\.Targets)|(Microsoft\.NETCore\.Platforms)|(Microsoft\.Win32\..*)|(Microsoft\.VisualBasic))(?&lt;!TestData)$</CoreFxVersionsIdentityRegex>
 	<BaseDotNetBuildInfoUrl>https://raw.githubusercontent.com/dotnet/versions/master/build-info/dotnet/</BaseDotNetBuildInfoUrl>
