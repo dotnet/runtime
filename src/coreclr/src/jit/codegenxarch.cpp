@@ -2176,6 +2176,17 @@ void CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
                     break;
                 }
 #endif // !defined(_TARGET_64BIT_)
+                
+#ifdef FEATURE_SIMD
+                if (varTypeIsSIMD(targetType) && (targetReg != REG_NA) && op1->IsCnsIntOrI())
+                {
+                    // This is only possible for a zero-init.
+                    noway_assert(op1->IsIntegralConst(0));
+                    genSIMDZero(targetType, varDsc->lvBaseType, targetReg);
+                    genProduceReg(treeNode);
+                    break;
+                }
+#endif // FEATURE_SIMD
 
                 genConsumeRegs(op1);
 
@@ -2183,7 +2194,7 @@ void CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
                 {
                     // stack store
                     emit->emitInsMov(ins_Store(targetType, compiler->isSIMDTypeLocalAligned(lclNum)),
-                                     emitTypeSize(treeNode), treeNode);
+                                     emitTypeSize(targetType), treeNode);
                     varDsc->lvRegNum = REG_STK;
                 }
                 else

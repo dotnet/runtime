@@ -917,7 +917,7 @@ void SsaBuilder::TreeRenameVariables(GenTree* tree, BasicBlock* block, SsaRename
     {
         GenTreePtr lhs     = tree->gtOp.gtOp1->gtEffectiveVal(/*commaOnly*/ true);
         GenTreePtr trueLhs = lhs->gtEffectiveVal(/*commaOnly*/ true);
-        if (trueLhs->OperGet() == GT_IND)
+        if (trueLhs->OperIsIndir())
         {
             trueLhs->gtFlags |= GTF_IND_ASG_LHS;
         }
