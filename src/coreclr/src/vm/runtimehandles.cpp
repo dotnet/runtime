@@ -328,7 +328,10 @@ FCIMPL3(void, RuntimeMethodHandle::CheckLinktimeDemands, ReflectMethodObject *pM
     CONTRACTL_END;
 
     if(!Security::IsTransparencyEnforcementEnabled())
+    {
+        FCUnique(0xb0);
         return;
+    }
 
     REFLECTMETHODREF refMethod = (REFLECTMETHODREF)ObjectToOBJECTREF(pMethodUNSAFE);
     REFLECTMODULEBASEREF refModule = (REFLECTMODULEBASEREF)ObjectToOBJECTREF(pModuleUNSAFE);
@@ -846,7 +849,10 @@ void QCALLTYPE RuntimeFieldHandle::CheckAttributeAccess(FieldDesc *pFD, QCall::M
     CONTRACTL_END;
     
     if(!Security::IsTransparencyEnforcementEnabled())
+    {
+        FCUnique(0xb1);
         return;
+    }
 
     BEGIN_QCALL;
 
