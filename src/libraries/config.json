@@ -275,78 +275,15 @@
       "valueType": "target",
       "values": [],
       "defaultValue": ""
-    }
+    },
+    "ProducesTarget": {
+      "description": "MsBuild target that displays all of the artifacts this repo produces.",
+      "valueType": "target",
+      "values": [],
+      "defaultValue": ""
+    }    
   },
   "commands": {
-    "sync":{
-      "alias":{
-        "p":{
-          "description": "Restores all NuGet packages for repository.",
-          "settings":{
-            "RestoreDuringBuild":  true,
-            "BatchRestorePackages": "default"
-          }
-        },
-        "ab":{
-          "description": "Downloads the latests product packages from Azure. The values for '-AzureAccount' and '-AzureToken' are required",
-          "settings":{
-            "Project": "src/syncAzure.proj",
-          }
-        },
-        "t":{
-          "description": "Generates project.jsons for test projects, restores packages, builds product and then builds tests against the generated project.json files.",
-          "settings":{
-            "RestoreDuringBuild":  true,
-            "BuildTestsAgainstPackages": true,
-            "BatchGenerateTestProjectJsons":  "default",
-            "BatchRestorePackages": "default"
-          }
-        },
-        "AzureAccount":{
-          "description": "Account name to connect to Azure Blob storage. Required for -ab to work.",
-          "settings":{
-            "CloudDropAccountName": "default"
-          }
-        },
-        "AzureToken":{
-          "description": "Account token to connect to Azure Blob storage. Required for -ab to work.",
-          "settings":{
-            "CloudDropAccessToken": "default"
-          }
-        },
-        "Container":{
-          "description": "Container name of the Azure Blob where the packages are going to be stored.",
-          "settings":{
-            "ContainerName": "default"
-          }
-        },
-        "BuildMajor": {
-          "description": "To download a specific group of product packages, specify build number. The value for -BuildMinor required.",
-          "settings": {
-            "BuildNumberMajor": "default"
-          }
-        },
-        "BuildMinor": {
-          "description": "To download a specific group of product packages, specify build number. The value for -BuildMajor required.",
-          "settings": {
-            "BuildNumberMinor": "default"
-          }
-        },
-        "verbose":{
-          "description": "Passes /flp:v=diag to the msbuild command or the value passed by the user.",
-          "settings":{
-            "MsBuildLogging": "/flp:v=diag;LogFile=sync.log"
-          }
-        }
-      },
-      "defaultValues":{
-        "toolName": "msbuild",
-        "settings": {
-          "MsBuildParameters":"default",
-          "MsBuildLogging":"/flp:v=normal;LogFile=sync.log"
-        }
-      }
-    },
     "build-managed":{
       "alias":{
         "binaries":{
@@ -497,6 +434,46 @@
          }
       }
     },
+    "clean":{
+      "alias":{
+        "b":{
+          "description": "Deletes the binary output directory.",
+          "settings":{
+            "CleanAllProjects": "default"
+          }
+        },
+        "p":{
+          "description": "Deletes the repo-local nuget package directory.",
+          "settings":{
+            "CleanPackages": "default"
+            }
+        },
+        "c":{
+          "description": "Deletes the user-local nuget package cache.",
+          "settings":{
+            "CleanPackagesCache": "default"
+          }
+        }
+      },
+      "defaultValues":{
+        "toolName": "msbuild",
+        "settings": {
+          "MsBuildParameters":"default",
+          "MsBuildLogging":"/flp:v=normal;LogFile=clean.log"
+        }
+      }
+    },
+    "produces":{
+      "alias":{},
+      "defaultValues":{
+        "toolName": "msbuild",
+        "settings": {
+          "Project": "src/packages.builds",
+          "MsBuildParameters": "default",
+          "ProducesTarget":"default"
+        }
+      }
+    },
     "publish-packages":{
       "alias":{
         "AzureAccount":{
@@ -533,24 +510,64 @@
         }
       }
     },
-    "clean":{
+    "sync":{
       "alias":{
-        "b":{
-          "description": "Deletes the binary output directory.",
+        "p":{
+          "description": "Restores all NuGet packages for repository.",
           "settings":{
-            "CleanAllProjects": "default"
+            "RestoreDuringBuild":  true,
+            "BatchRestorePackages": "default"
           }
         },
-        "p":{
-          "description": "Deletes the repo-local nuget package directory.",
+        "ab":{
+          "description": "Downloads the latests product packages from Azure. The values for '-AzureAccount' and '-AzureToken' are required",
           "settings":{
-            "CleanPackages": "default"
-            }
+            "Project": "src/syncAzure.proj"
+          }
         },
-        "c":{
-          "description": "Deletes the user-local nuget package cache.",
+        "t":{
+          "description": "Generates project.jsons for test projects, restores packages, builds product and then builds tests against the generated project.json files.",
           "settings":{
-            "CleanPackagesCache": "default"
+            "RestoreDuringBuild":  true,
+            "BuildTestsAgainstPackages": true,
+            "BatchGenerateTestProjectJsons":  "default",
+            "BatchRestorePackages": "default"
+          }
+        },
+        "AzureAccount":{
+          "description": "Account name to connect to Azure Blob storage. Required for -ab to work.",
+          "settings":{
+            "CloudDropAccountName": "default"
+          }
+        },
+        "AzureToken":{
+          "description": "Account token to connect to Azure Blob storage. Required for -ab to work.",
+          "settings":{
+            "CloudDropAccessToken": "default"
+          }
+        },
+        "Container":{
+          "description": "Container name of the Azure Blob where the packages are going to be stored.",
+          "settings":{
+            "ContainerName": "default"
+          }
+        },
+        "BuildMajor": {
+          "description": "To download a specific group of product packages, specify build number. The value for -BuildMinor required.",
+          "settings": {
+            "BuildNumberMajor": "default"
+          }
+        },
+        "BuildMinor": {
+          "description": "To download a specific group of product packages, specify build number. The value for -BuildMajor required.",
+          "settings": {
+            "BuildNumberMinor": "default"
+          }
+        },
+        "verbose":{
+          "description": "Passes /flp:v=diag to the msbuild command or the value passed by the user.",
+          "settings":{
+            "MsBuildLogging": "/flp:v=diag;LogFile=sync.log"
           }
         }
       },
@@ -558,7 +575,7 @@
         "toolName": "msbuild",
         "settings": {
           "MsBuildParameters":"default",
-          "MsBuildLogging":"/flp:v=normal;LogFile=clean.log"
+          "MsBuildLogging":"/flp:v=normal;LogFile=sync.log"
         }
       }
     }
