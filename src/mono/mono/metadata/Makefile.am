@@ -201,6 +201,12 @@ common_sources = \
 	verify.c		\
 	verify-internals.h	\
 	wrapper-types.h	\
+	dynamic-image-internals.h	\
+	dynamic-stream.c	\
+	dynamic-stream-internals.h	\
+	reflection-cache.h	\
+	custom-attrs-internals.h	\
+	sre-internals.h	\
 	reflection-internals.h	\
 	file-mmap-posix.c	\
 	file-mmap-windows.c	\
@@ -223,7 +229,13 @@ gc_dependent_sources = \
 	monitor.c	\
 	mono-hash.c	\
 	object.c	\
+	dynamic-image.c	\
+	sre.c	\
+	sre-encode.c	\
+	sre-save.c	\
+	custom-attrs.c	\
 	reflection.c
+
 
 boehm_sources = \
 	boehm-gc.c

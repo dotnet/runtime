@@ -1390,9 +1390,6 @@ mono_reflection_lookup_dynamic_token (MonoImage *image, guint32 token, gboolean 
 gboolean
 mono_reflection_call_is_assignable_to (MonoClass *klass, MonoClass *oklass, MonoError *error);
 
-gboolean
-mono_reflection_is_valid_dynamic_token (MonoDynamicImage *image, guint32 token);
-
 void
 ves_icall_System_Reflection_CustomAttributeData_ResolveArgumentsInternal (MonoReflectionMethod *method, MonoReflectionAssembly *assembly, gpointer data, guint32 data_length, MonoArray **ctor_args, MonoArray ** named_args);
 

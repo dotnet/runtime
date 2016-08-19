@@ -1,13 +1,21 @@
 /* 
  * Copyright 2014 Xamarin Inc
+ * Copyright 2016 Microsoft
  * Licensed under the MIT license. See LICENSE file in the project root for full license information.
  */
 #ifndef __MONO_METADATA_REFLECTION_INTERNALS_H__
 #define __MONO_METADATA_REFLECTION_INTERNALS_H__
 
 #include <mono/metadata/reflection.h>
+#include <mono/metadata/class-internals.h>
 #include <mono/utils/mono-compiler.h>
 #include <mono/utils/mono-error.h>
+
+gboolean
+mono_reflection_is_usertype (MonoReflectionType *ref);
+
+MonoReflectionType*
+mono_reflection_type_resolve_user_types (MonoReflectionType *type, MonoError *error);
 
 MonoType*
 mono_reflection_get_type_checked (MonoImage *rootimage, MonoImage* image, MonoTypeNameParse *info, mono_bool ignorecase, mono_bool *type_resolve, MonoError *error);
