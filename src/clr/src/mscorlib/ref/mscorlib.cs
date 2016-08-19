@@ -3933,7 +3933,7 @@ namespace System
     {
     }
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
-    public partial class WeakReference
+    public partial class WeakReference : System.Runtime.Serialization.ISerializable
     {
         [System.Security.SecuritySafeCriticalAttribute]
         protected WeakReference() { }
@@ -3942,14 +3942,16 @@ namespace System
         protected WeakReference(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public virtual bool IsAlive { [System.Security.SecuritySafeCriticalAttribute][System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)]get { throw null; } }
         public virtual object Target { [System.Security.SecuritySafeCriticalAttribute][System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)]get { throw null; } [System.Security.SecuritySafeCriticalAttribute][System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)]set { } }
+        public virtual void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public virtual bool TrackResurrection { get { throw null; } }
         ~WeakReference() { }
     }
-    public sealed partial class WeakReference<T> where T : class
+    public sealed partial class WeakReference<T> : System.Runtime.Serialization.ISerializable where T : class
     {
         public WeakReference(T target) { }
         public WeakReference(T target, bool trackResurrection) { }
         ~WeakReference() { }
+        public void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public void SetTarget(T target) { }
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]public bool TryGetTarget(out T target) { target = default(T); throw null; }
     }
