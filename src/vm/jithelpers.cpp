@@ -588,17 +588,8 @@ FORCEINLINE INT64 FastDbl2Lng(double val)
     FCALL_CONTRACT;
     return HCCALL1_V(JIT_Dbl2Lng, val);
 #else
-// In x86/x64, conversion result of negative double to unsigned integer is
-// bit-equivalent unsigned value.
-// But other architecture's compiler convert negative doubles to zero when
-// the target is unsigned.
-#ifdef _TARGET_XARCH_
     FCALL_CONTRACT;
     return((__int64) val);
-#else
-    FCALL_CONTRACT;
-    return((unsigned __int64) val);
-#endif
 #endif
 }
 
@@ -623,7 +614,15 @@ HCIMPL1_V(UINT64, JIT_Dbl2ULng, double val)
     const double two63  = 2147483648.0 * 4294967296.0;
     UINT64 ret;
     if (val < two63) {
+#ifdef _TARGET_XARCH_
         ret = FastDbl2Lng(val);
+#else
+// In x86/x64, conversion result of negative double to unsigned integer is
+// bit-equivalent unsigned value.
+// But other architecture's compiler convert negative doubles to zero when
+// the target is unsigned.
+        ret = UINT64(val);
+#endif
     }
     else {        
         // subtract 0x8000000000000000, do the convert then add it back again
