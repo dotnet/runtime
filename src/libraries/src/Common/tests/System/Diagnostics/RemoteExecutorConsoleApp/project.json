@@ -1,12 +1,12 @@
 {
   "dependencies": {
-    "System.Runtime": "4.2.0-beta-devapi-24418-01",
-    "Microsoft.NETCore.Platforms": "1.0.2-beta-devapi-24418-01",
+    "System.Runtime": "4.2.0-beta-devapi-24419-01",
+    "Microsoft.NETCore.Platforms": "1.0.2-beta-devapi-24419-01",
     "System.Console": "4.0.0",
-    "System.Diagnostics.Process": "4.1.1-beta-devapi-24418-01",
-    "System.IO": "4.2.0-beta-devapi-24418-01",
-    "System.Reflection": "4.1.1-beta-devapi-24418-01",
-    "System.Threading.Tasks": "4.0.12-beta-devapi-24418-01",
+    "System.Diagnostics.Process": "4.1.1-beta-devapi-24419-01",
+    "System.IO": "4.2.0-beta-devapi-24419-01",
+    "System.Reflection": "4.1.1-beta-devapi-24419-01",
+    "System.Threading.Tasks": "4.0.12-beta-devapi-24419-01",
     "test-runtime": {
       "target": "project",
       "exclude": "compile"
