@@ -1710,7 +1710,9 @@ combinedScenarios.each { scenario ->
                                         }
                                         else
                                         {
-                                            buildCommands += "./build.sh verbose ${lowerConfiguration} ${arch}"
+                                            def bootstrapRid = Utilities.getBoostrapPublishRid(os)
+                                            def bootstrapRidEnv = bootstrapRid != null ? "__PUBLISH_RID=${bootstrapRid} " : ''
+                                            buildCommands += "${bootstrapRidEnv}./build.sh verbose ${lowerConfiguration} ${arch}"
                                         }
                                         buildCommands += "src/pal/tests/palsuite/runpaltests.sh \${WORKSPACE}/bin/obj/${osGroup}.${arch}.${configuration} \${WORKSPACE}/bin/paltestout"
                                     
