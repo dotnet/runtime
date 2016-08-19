@@ -87,7 +87,7 @@ namespace System.Dynamic.Utils
             return ((ReadOnlyCollection<T>)collectionOrT)[0];
         }
 
-        public static void ValidateArgumentTypes(MethodBase method, ExpressionType nodeKind, ref ReadOnlyCollection<Expression> arguments)
+        public static void ValidateArgumentTypes(MethodBase method, ExpressionType nodeKind, ref ReadOnlyCollection<Expression> arguments, string methodParamName)
         {
             Debug.Assert(nodeKind == ExpressionType.Invoke || nodeKind == ExpressionType.Call || nodeKind == ExpressionType.Dynamic || nodeKind == ExpressionType.New);
 
@@ -100,7 +100,7 @@ namespace System.Dynamic.Utils
             {
                 Expression arg = arguments[i];
                 ParameterInfo pi = pis[i];
-                arg = ValidateOneArgument(method, nodeKind, arg, pi);
+                arg = ValidateOneArgument(method, nodeKind, arg, pi, methodParamName, nameof(arguments));
 
                 if (newArgs == null && arg != arguments[i])
                 {
@@ -141,15 +141,15 @@ namespace System.Dynamic.Utils
             }
         }
 
-        public static Expression ValidateOneArgument(MethodBase method, ExpressionType nodeKind, Expression arguments, ParameterInfo pi)
+        public static Expression ValidateOneArgument(MethodBase method, ExpressionType nodeKind, Expression arguments, ParameterInfo pi, string methodParamName, string argumentParamName)
         {
-            RequiresCanRead(arguments, nameof(arguments));
+            RequiresCanRead(arguments, argumentParamName);
             Type pType = pi.ParameterType;
             if (pType.IsByRef)
             {
                 pType = pType.GetElementType();
             }
-            TypeUtils.ValidateType(pType, nameof(pi));
+            TypeUtils.ValidateType(pType, methodParamName);
             if (!TypeUtils.AreReferenceAssignable(pType, arguments.Type))
             {
                 if (!TryQuote(pType, ref arguments))
@@ -158,7 +158,7 @@ namespace System.Dynamic.Utils
                     switch (nodeKind)
                     {
                         case ExpressionType.New:
-                            throw Error.ExpressionTypeDoesNotMatchConstructorParameter(arguments.Type, pType);
+                            throw Error.ExpressionTypeDoesNotMatchConstructorParameter(arguments.Type, pType, argumentParamName);
                         case ExpressionType.Invoke:
                             throw Error.ExpressionTypeDoesNotMatchParameter(arguments.Type, pType);
                         case ExpressionType.Dynamic:

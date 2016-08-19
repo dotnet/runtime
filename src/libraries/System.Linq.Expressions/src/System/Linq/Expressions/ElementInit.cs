@@ -108,7 +108,7 @@ namespace System.Linq.Expressions
 
             RequiresCanRead(argumentsRO, nameof(arguments));
             ValidateElementInitAddMethodInfo(addMethod, nameof(addMethod));
-            ValidateArgumentTypes(addMethod, ExpressionType.Call, ref argumentsRO);
+            ValidateArgumentTypes(addMethod, ExpressionType.Call, ref argumentsRO, nameof(addMethod));
             return new ElementInit(addMethod, argumentsRO);
         }
 

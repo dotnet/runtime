@@ -730,7 +730,7 @@ namespace System.Linq.Expressions
 
             ValidateArgumentCount(method, ExpressionType.Call, 1, pis);
 
-            arg0 = ValidateOneArgument(method, ExpressionType.Call, arg0, pis[0]);
+            arg0 = ValidateOneArgument(method, ExpressionType.Call, arg0, pis[0], nameof(method), nameof(arg0));
 
             return new MethodCallExpression1(method, arg0);
         }
@@ -752,8 +752,8 @@ namespace System.Linq.Expressions
 
             ValidateArgumentCount(method, ExpressionType.Call, 2, pis);
 
-            arg0 = ValidateOneArgument(method, ExpressionType.Call, arg0, pis[0]);
-            arg1 = ValidateOneArgument(method, ExpressionType.Call, arg1, pis[1]);
+            arg0 = ValidateOneArgument(method, ExpressionType.Call, arg0, pis[0], nameof(method), nameof(arg0));
+            arg1 = ValidateOneArgument(method, ExpressionType.Call, arg1, pis[1], nameof(method), nameof(arg1));
 
             return new MethodCallExpression2(method, arg0, arg1);
         }
@@ -777,9 +777,9 @@ namespace System.Linq.Expressions
 
             ValidateArgumentCount(method, ExpressionType.Call, 3, pis);
 
-            arg0 = ValidateOneArgument(method, ExpressionType.Call, arg0, pis[0]);
-            arg1 = ValidateOneArgument(method, ExpressionType.Call, arg1, pis[1]);
-            arg2 = ValidateOneArgument(method, ExpressionType.Call, arg2, pis[2]);
+            arg0 = ValidateOneArgument(method, ExpressionType.Call, arg0, pis[0], nameof(method), nameof(arg0));
+            arg1 = ValidateOneArgument(method, ExpressionType.Call, arg1, pis[1], nameof(method), nameof(arg1));
+            arg2 = ValidateOneArgument(method, ExpressionType.Call, arg2, pis[2], nameof(method), nameof(arg2));
 
             return new MethodCallExpression3(method, arg0, arg1, arg2);
         }
@@ -805,10 +805,10 @@ namespace System.Linq.Expressions
 
             ValidateArgumentCount(method, ExpressionType.Call, 4, pis);
 
-            arg0 = ValidateOneArgument(method, ExpressionType.Call, arg0, pis[0]);
-            arg1 = ValidateOneArgument(method, ExpressionType.Call, arg1, pis[1]);
-            arg2 = ValidateOneArgument(method, ExpressionType.Call, arg2, pis[2]);
-            arg3 = ValidateOneArgument(method, ExpressionType.Call, arg3, pis[3]);
+            arg0 = ValidateOneArgument(method, ExpressionType.Call, arg0, pis[0], nameof(method), nameof(arg0));
+            arg1 = ValidateOneArgument(method, ExpressionType.Call, arg1, pis[1], nameof(method), nameof(arg1));
+            arg2 = ValidateOneArgument(method, ExpressionType.Call, arg2, pis[2], nameof(method), nameof(arg2));
+            arg3 = ValidateOneArgument(method, ExpressionType.Call, arg3, pis[3], nameof(method), nameof(arg3));
 
             return new MethodCallExpression4(method, arg0, arg1, arg2, arg3);
         }
@@ -837,11 +837,11 @@ namespace System.Linq.Expressions
 
             ValidateArgumentCount(method, ExpressionType.Call, 5, pis);
 
-            arg0 = ValidateOneArgument(method, ExpressionType.Call, arg0, pis[0]);
-            arg1 = ValidateOneArgument(method, ExpressionType.Call, arg1, pis[1]);
-            arg2 = ValidateOneArgument(method, ExpressionType.Call, arg2, pis[2]);
-            arg3 = ValidateOneArgument(method, ExpressionType.Call, arg3, pis[3]);
-            arg4 = ValidateOneArgument(method, ExpressionType.Call, arg4, pis[4]);
+            arg0 = ValidateOneArgument(method, ExpressionType.Call, arg0, pis[0], nameof(method), nameof(arg0));
+            arg1 = ValidateOneArgument(method, ExpressionType.Call, arg1, pis[1], nameof(method), nameof(arg1));
+            arg2 = ValidateOneArgument(method, ExpressionType.Call, arg2, pis[2], nameof(method), nameof(arg2));
+            arg3 = ValidateOneArgument(method, ExpressionType.Call, arg3, pis[3], nameof(method), nameof(arg3));
+            arg4 = ValidateOneArgument(method, ExpressionType.Call, arg4, pis[4], nameof(method), nameof(arg4));
 
             return new MethodCallExpression5(method, arg0, arg1, arg2, arg3, arg4);
         }
@@ -920,7 +920,7 @@ namespace System.Linq.Expressions
 
             ValidateArgumentCount(method, ExpressionType.Call, 1, pis);
 
-            arg0 = ValidateOneArgument(method, ExpressionType.Call, arg0, pis[0]);
+            arg0 = ValidateOneArgument(method, ExpressionType.Call, arg0, pis[0], nameof(method), nameof(arg0));
 
             if (instance != null)
             {
@@ -948,8 +948,8 @@ namespace System.Linq.Expressions
 
             ValidateArgumentCount(method, ExpressionType.Call, 2, pis);
 
-            arg0 = ValidateOneArgument(method, ExpressionType.Call, arg0, pis[0]);
-            arg1 = ValidateOneArgument(method, ExpressionType.Call, arg1, pis[1]);
+            arg0 = ValidateOneArgument(method, ExpressionType.Call, arg0, pis[0], nameof(method), nameof(arg0));
+            arg1 = ValidateOneArgument(method, ExpressionType.Call, arg1, pis[1], nameof(method), nameof(arg1));
 
             if (instance != null)
             {
@@ -979,9 +979,9 @@ namespace System.Linq.Expressions
 
             ValidateArgumentCount(method, ExpressionType.Call, 3, pis);
 
-            arg0 = ValidateOneArgument(method, ExpressionType.Call, arg0, pis[0]);
-            arg1 = ValidateOneArgument(method, ExpressionType.Call, arg1, pis[1]);
-            arg2 = ValidateOneArgument(method, ExpressionType.Call, arg2, pis[2]);
+            arg0 = ValidateOneArgument(method, ExpressionType.Call, arg0, pis[0], nameof(method), nameof(arg0));
+            arg1 = ValidateOneArgument(method, ExpressionType.Call, arg1, pis[1], nameof(method), nameof(arg1));
+            arg2 = ValidateOneArgument(method, ExpressionType.Call, arg2, pis[2], nameof(method), nameof(arg2));
 
             if (instance != null)
             {
@@ -1084,7 +1084,7 @@ namespace System.Linq.Expressions
 
             ValidateMethodInfo(method, nameof(method));
             ValidateStaticOrInstanceMethod(instance, method);
-            ValidateArgumentTypes(method, ExpressionType.Call, ref argList);
+            ValidateArgumentTypes(method, ExpressionType.Call, ref argList, nameof(method));
 
             if (instance == null)
             {
@@ -1126,9 +1126,9 @@ namespace System.Linq.Expressions
             }
         }
 
-        public static void ValidateArgumentTypes(MethodBase method, ExpressionType nodeKind, ref ReadOnlyCollection<Expression> arguments)
+        public static void ValidateArgumentTypes(MethodBase method, ExpressionType nodeKind, ref ReadOnlyCollection<Expression> arguments, string methodParamName)
         {
-            ExpressionUtils.ValidateArgumentTypes(method, nodeKind, ref arguments);
+            ExpressionUtils.ValidateArgumentTypes(method, nodeKind, ref arguments, methodParamName);
         }
 
         private static ParameterInfo[] GetParametersForValidation(MethodBase method, ExpressionType nodeKind)
@@ -1141,9 +1141,9 @@ namespace System.Linq.Expressions
             ExpressionUtils.ValidateArgumentCount(method, nodeKind, count, pis);
         }
 
-        public static Expression ValidateOneArgument(MethodBase method, ExpressionType nodeKind, Expression arg, ParameterInfo pi)
+        public static Expression ValidateOneArgument(MethodBase method, ExpressionType nodeKind, Expression arg, ParameterInfo pi, string methodParamName, string argumentParamName)
         {
-            return ExpressionUtils.ValidateOneArgument(method, nodeKind, arg, pi);
+            return ExpressionUtils.ValidateOneArgument(method, nodeKind, arg, pi, methodParamName, argumentParamName);
         }
 
         // Attempts to auto-quote the expression tree. Returns true if it succeeded, false otherwise.

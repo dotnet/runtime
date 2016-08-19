@@ -82,9 +82,9 @@ namespace System.Dynamic.Utils
         /// <summary>
         /// ArgumentException with message like "Expression of type '{0}' cannot be used for constructor parameter of type '{1}'"
         /// </summary>
-        internal static Exception ExpressionTypeDoesNotMatchConstructorParameter(object p0, object p1)
+        internal static Exception ExpressionTypeDoesNotMatchConstructorParameter(object p0, object p1, string paramName)
         {
-            return new ArgumentException(Strings.ExpressionTypeDoesNotMatchConstructorParameter(p0, p1));
+            return new ArgumentException(Strings.ExpressionTypeDoesNotMatchConstructorParameter(p0, p1), paramName);
         }
     }
 }

@@ -167,7 +167,7 @@ namespace System.Linq.Expressions
             TypeUtils.ValidateType(constructor.DeclaringType, nameof(constructor));
             ValidateConstructor(constructor, nameof(constructor));
             var argList = arguments.ToReadOnly();
-            ValidateArgumentTypes(constructor, ExpressionType.New, ref argList);
+            ValidateArgumentTypes(constructor, ExpressionType.New, ref argList, nameof(constructor));
 
             return new NewExpression(constructor, argList, null);
         }
@@ -250,15 +250,15 @@ namespace System.Linq.Expressions
                 for (int i = 0, n = arguments.Count; i < n; i++)
                 {
                     Expression arg = arguments[i];
-                    RequiresCanRead(arg, "argument");
+                    RequiresCanRead(arg, nameof(arguments));
                     MemberInfo member = members[i];
-                    ContractUtils.RequiresNotNull(member, nameof(member));
+                    ContractUtils.RequiresNotNull(member, nameof(members));
                     if (!TypeUtils.AreEquivalent(member.DeclaringType, constructor.DeclaringType))
                     {
-                        throw Error.ArgumentMemberNotDeclOnType(member.Name, constructor.DeclaringType.Name);
+                        throw Error.ArgumentMemberNotDeclOnType(member.Name, constructor.DeclaringType.Name, nameof(members));
                     }
                     Type memberType;
-                    ValidateAnonymousTypeMember(ref member, out memberType);
+                    ValidateAnonymousTypeMember(ref member, out memberType, nameof(members));
                     if (!TypeUtils.AreReferenceAssignable(memberType, arg.Type))
                     {
                         if (!TryQuote(memberType, ref arg))
@@ -276,7 +276,7 @@ namespace System.Linq.Expressions
                     {
                         if (!TryQuote(pType, ref arg))
                         {
-                            throw Error.ExpressionTypeDoesNotMatchConstructorParameter(arg.Type, pType);
+                            throw Error.ExpressionTypeDoesNotMatchConstructorParameter(arg.Type, pType, nameof(arguments));
                         }
                     }
                     if (newArguments == null && arg != arguments[i])
@@ -325,14 +325,14 @@ namespace System.Linq.Expressions
         }
 
 
-        private static void ValidateAnonymousTypeMember(ref MemberInfo member, out Type memberType)
+        private static void ValidateAnonymousTypeMember(ref MemberInfo member, out Type memberType, string paramName)
         {
             FieldInfo field = member as FieldInfo;
             if (field != null)
             {
                 if (field.IsStatic)
                 {
-                    throw Error.ArgumentMustBeInstanceMember(nameof(member));
+                    throw Error.ArgumentMustBeInstanceMember(paramName);
                 }
                 memberType = field.FieldType;
                 return;
@@ -343,11 +343,11 @@ namespace System.Linq.Expressions
             {
                 if (!pi.CanRead)
                 {
-                    throw Error.PropertyDoesNotHaveGetter(pi, nameof(member));
+                    throw Error.PropertyDoesNotHaveGetter(pi, paramName);
                 }
                 if (pi.GetGetMethod().IsStatic)
                 {
-                    throw Error.ArgumentMustBeInstanceMember(nameof(member));
+                    throw Error.ArgumentMustBeInstanceMember(paramName);
                 }
                 memberType = pi.PropertyType;
                 return;
@@ -358,15 +358,15 @@ namespace System.Linq.Expressions
             {
                 if (method.IsStatic)
                 {
-                    throw Error.ArgumentMustBeInstanceMember(nameof(member));
+                    throw Error.ArgumentMustBeInstanceMember(paramName);
                 }
 
-                PropertyInfo prop = GetProperty(method, nameof(member));
+                PropertyInfo prop = GetProperty(method, paramName);
                 member = prop;
                 memberType = prop.PropertyType;
                 return;
             }
-            throw Error.ArgumentMustBeFieldInfoOrPropertyInfoOrMethod(nameof(member));
+            throw Error.ArgumentMustBeFieldInfoOrPropertyInfoOrMethod(paramName);
         }
 
         private static void ValidateConstructor(ConstructorInfo constructor, string paramName)
