@@ -11,10 +11,9 @@
 #define _WAPI_WAIT_H_
 
 #include "mono/io-layer/status.h"
+#include "mono/utils/w32handle.h"
 
 G_BEGIN_DECLS
-
-#define MAXIMUM_WAIT_OBJECTS 64
 
 #define INFINITE		0xFFFFFFFF
 
@@ -27,16 +26,12 @@ G_BEGIN_DECLS
 #define WAIT_TIMEOUT		STATUS_TIMEOUT
 #define WAIT_IO_COMPLETION	STATUS_USER_APC
 
-extern guint32 WaitForSingleObject(gpointer handle, guint32 timeout);
 extern guint32 WaitForSingleObjectEx(gpointer handle, guint32 timeout, 
 					gboolean alertable);
 extern guint32 SignalObjectAndWait(gpointer signal_handle, gpointer wait,
 				   guint32 timeout, gboolean alertable);
-extern guint32 WaitForMultipleObjects(guint32 numobjects, gpointer *handles,
-				      gboolean waitall, guint32 timeout);
 extern guint32 WaitForMultipleObjectsEx(guint32 numobjects, gpointer *handles,
 				      gboolean waitall, guint32 timeout, gboolean alertable);
-extern guint32 WaitForInputIdle(gpointer handle, guint32 timeout);
 
 G_END_DECLS
 #endif /* _WAPI_WAIT_H_ */

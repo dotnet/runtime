@@ -1472,7 +1472,7 @@ mono_threadpool_ms_remove_domain_jobs (MonoDomain *domain, int timeout)
 		}
 
 		MONO_ENTER_GC_SAFE;
-		WaitForSingleObject (sem, timeout != -1 ? end - now : timeout);
+		WaitForSingleObjectEx (sem, timeout != -1 ? end - now : timeout, FALSE);
 		MONO_EXIT_GC_SAFE;
 	}
 

@@ -8001,7 +8001,12 @@ ves_icall_Microsoft_Win32_NativeMethods_TerminateProcess (gpointer handle, gint3
 ICALL_EXPORT gint32
 ves_icall_Microsoft_Win32_NativeMethods_WaitForInputIdle (gpointer handle, gint32 milliseconds)
 {
+#ifdef HOST_WIN32
 	return WaitForInputIdle (handle, milliseconds);
+#else
+	/*TODO: Not implemented*/
+	return WAIT_TIMEOUT;
+#endif
 }
 
 ICALL_EXPORT MonoBoolean

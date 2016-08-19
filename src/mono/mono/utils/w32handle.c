@@ -47,6 +47,7 @@
 #include "mono-os-mutex.h"
 #include "mono-proclib.h"
 #include "mono-threads.h"
+#include "mono-time.h"
 
 #undef DEBUG_REFS
 
@@ -54,6 +55,8 @@
 
 /* must be a power of 2 */
 #define HANDLE_PER_SLOT	(256)
+
+#define INFINITE 0xFFFFFFFF
 
 typedef struct {
 	MonoW32HandleType type;
@@ -194,7 +197,7 @@ mono_w32handle_issignalled (gpointer handle)
 	return handle_data->signalled;
 }
 
-int
+static int
 mono_w32handle_lock_signal_mutex (void)
 {
 #ifdef DEBUG
@@ -206,7 +209,7 @@ mono_w32handle_lock_signal_mutex (void)
 	return 0;
 }
 
-int
+static int
 mono_w32handle_unlock_signal_mutex (void)
 {
 #ifdef DEBUG
@@ -895,12 +898,10 @@ spin (guint32 ms)
 	nanosleep (&sleepytime, NULL);
 }
 
-gboolean
-mono_w32handle_count_signalled_handles (guint32 numhandles, gpointer *handles,
-	gboolean waitall, guint32 *retcount, guint32 *lowest)
+static void
+mono_w32handle_lock_handles (gpointer *handles, gsize numhandles)
 {
-	guint32 count, i, iter=0;
-	gboolean ret;
+	guint32 i, iter=0;
 	int thr_ret;
 
 	/* Lock all the handles, with backoff */
@@ -945,45 +946,10 @@ again:
 	}
 
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_W32HANDLE, "%s: Locked all handles", __func__);
-
-	count=0;
-	*lowest=numhandles;
-
-	for(i=0; i<numhandles; i++) {
-		gpointer handle = handles[i];
-
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_W32HANDLE, "%s: Checking handle %p", __func__, handle);
-
-		if(((mono_w32handle_test_capabilities (handle, MONO_W32HANDLE_CAP_OWN)==TRUE) &&
-		    (mono_w32handle_ops_isowned (handle) == TRUE)) ||
-		   (mono_w32handle_issignalled (handle))) {
-			count++;
-
-			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_W32HANDLE, "%s: Handle %p signalled", __func__,
-				   handle);
-			if(*lowest>i) {
-				*lowest=i;
-			}
-		}
-	}
-
-	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_W32HANDLE, "%s: %d event handles signalled", __func__, count);
-
-	if ((waitall == TRUE && count == numhandles) ||
-	    (waitall == FALSE && count > 0)) {
-		ret=TRUE;
-	} else {
-		ret=FALSE;
-	}
-
-	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_W32HANDLE, "%s: Returning %d", __func__, ret);
-
-	*retcount=count;
-
-	return(ret);
 }
 
-void mono_w32handle_unlock_handles (guint32 numhandles, gpointer *handles)
+static void
+mono_w32handle_unlock_handles (gpointer *handles, gsize numhandles)
 {
 	guint32 i;
 	int thr_ret;
@@ -1048,7 +1014,7 @@ signal_global (gpointer unused)
 	mono_os_mutex_unlock (&global_signal_mutex);
 }
 
-int
+static int
 mono_w32handle_timedwait_signal (guint32 timeout, gboolean poll, gboolean *alerted)
 {
 	int res;
@@ -1097,7 +1063,7 @@ signal_handle_and_unref (gpointer handle)
 	mono_w32handle_unref (handle);
 }
 
-int
+static int
 mono_w32handle_timedwait_signal_handle (gpointer handle, guint32 timeout, gboolean poll, gboolean *alerted)
 {
 	MonoW32HandleBase *handle_data;
@@ -1160,6 +1126,390 @@ void mono_w32handle_dump (void)
 	}
 
 	mono_os_mutex_unlock (&scan_mutex);
+}
+
+static gboolean
+own_if_signalled (gpointer handle)
+{
+	if (!mono_w32handle_issignalled (handle))
+		return FALSE;
+
+	mono_w32handle_ops_own (handle);
+	return TRUE;
+}
+
+static gboolean
+own_if_owned( gpointer handle)
+{
+	if (!mono_w32handle_ops_isowned (handle))
+		return FALSE;
+
+	mono_w32handle_ops_own (handle);
+	return TRUE;
+}
+
+MonoW32HandleWaitRet
+mono_w32handle_wait_one (gpointer handle, guint32 timeout, gboolean alertable)
+{
+	MonoW32HandleWaitRet ret;
+	gboolean alerted;
+	gint64 start;
+	gint thr_ret;
+
+	alerted = FALSE;
+
+	if (mono_w32handle_test_capabilities (handle, MONO_W32HANDLE_CAP_SPECIAL_WAIT)) {
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_W32HANDLE, "%s: handle %p has special wait",
+			__func__, handle);
+
+		switch (mono_w32handle_ops_specialwait (handle, timeout, alertable ? &alerted : NULL)) {
+		case WAIT_OBJECT_0:
+			ret = MONO_W32HANDLE_WAIT_RET_SUCCESS_0;
+			break;
+		case WAIT_IO_COMPLETION:
+			ret = MONO_W32HANDLE_WAIT_RET_ALERTED;
+			break;
+		case WAIT_TIMEOUT:
+			ret = MONO_W32HANDLE_WAIT_RET_TIMEOUT;
+			break;
+		case WAIT_FAILED:
+			ret = MONO_W32HANDLE_WAIT_RET_FAILED;
+			break;
+		default:
+			g_assert_not_reached ();
+		}
+
+		if (alerted)
+			ret = MONO_W32HANDLE_WAIT_RET_ALERTED;
+
+		return ret;
+	}
+
+	if (!mono_w32handle_test_capabilities (handle, MONO_W32HANDLE_CAP_WAIT)) {
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_W32HANDLE, "%s: handle %p can't be waited for",
+			__func__, handle);
+
+		return MONO_W32HANDLE_WAIT_RET_FAILED;
+	}
+
+	thr_ret = mono_w32handle_lock_handle (handle);
+	g_assert (thr_ret == 0);
+
+	if (mono_w32handle_test_capabilities (handle, MONO_W32HANDLE_CAP_OWN)) {
+		if (own_if_owned (handle)) {
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_W32HANDLE, "%s: handle %p already owned",
+				__func__, handle);
+
+			ret = MONO_W32HANDLE_WAIT_RET_SUCCESS_0;
+			goto done;
+		}
+	}
+
+	if (timeout != INFINITE)
+		start = mono_msec_ticks ();
+
+	for (;;) {
+		gint waited;
+
+		if (own_if_signalled (handle)) {
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_W32HANDLE, "%s: handle %p signalled",
+				__func__, handle);
+
+			ret = MONO_W32HANDLE_WAIT_RET_SUCCESS_0;
+			goto done;
+		}
+
+		mono_w32handle_ops_prewait (handle);
+
+		if (timeout == INFINITE) {
+			waited = mono_w32handle_timedwait_signal_handle (handle, INFINITE, FALSE, alertable ? &alerted : NULL);
+		} else {
+			gint64 elapsed;
+
+			elapsed = mono_msec_ticks () - start;
+			if (elapsed > timeout) {
+				ret = MONO_W32HANDLE_WAIT_RET_TIMEOUT;
+				goto done;
+			}
+
+			waited = mono_w32handle_timedwait_signal_handle (handle, timeout - elapsed, FALSE, alertable ? &alerted : NULL);
+		}
+
+		if (alerted) {
+			ret = MONO_W32HANDLE_WAIT_RET_ALERTED;
+			goto done;
+		}
+
+		if (waited != 0) {
+			ret = MONO_W32HANDLE_WAIT_RET_TIMEOUT;
+			goto done;
+		}
+	}
+
+done:
+	thr_ret = mono_w32handle_unlock_handle (handle);
+	g_assert (thr_ret == 0);
+
+	return ret;
+}
+
+MonoW32HandleWaitRet
+mono_w32handle_wait_multiple (gpointer *handles, gsize nhandles, gboolean waitall, guint32 timeout, gboolean alertable)
+{
+	MonoW32HandleWaitRet ret;
+	gboolean alerted, poll;
+	gint i, thr_ret;
+	gint64 start;
+	gpointer handles_sorted [MONO_W32HANDLE_MAXIMUM_WAIT_OBJECTS];
+
+	if (nhandles == 0)
+		return MONO_W32HANDLE_WAIT_RET_FAILED;
+
+	if (nhandles == 1)
+		return mono_w32handle_wait_one (handles [0], timeout, alertable);
+
+	alerted = FALSE;
+
+	if (nhandles > MONO_W32HANDLE_MAXIMUM_WAIT_OBJECTS) {
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_W32HANDLE, "%s: too many handles: %d",
+			__func__, nhandles);
+
+		return MONO_W32HANDLE_WAIT_RET_FAILED;
+	}
+
+	for (i = 0; i < nhandles; ++i) {
+		if (!mono_w32handle_test_capabilities (handles[i], MONO_W32HANDLE_CAP_WAIT)
+			 && !mono_w32handle_test_capabilities (handles[i], MONO_W32HANDLE_CAP_SPECIAL_WAIT))
+		{
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_W32HANDLE, "%s: handle %p can't be waited for",
+				   __func__, handles [i]);
+
+			return MONO_W32HANDLE_WAIT_RET_FAILED;
+		}
+
+		handles_sorted [i] = handles [i];
+	}
+
+	qsort (handles_sorted, nhandles, sizeof (gpointer), g_direct_equal);
+	for (i = 1; i < nhandles; ++i) {
+		if (handles_sorted [i - 1] == handles_sorted [i]) {
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_W32HANDLE, "%s: handle %p is duplicated",
+				__func__, handles_sorted [i]);
+
+			return MONO_W32HANDLE_WAIT_RET_FAILED;
+		}
+	}
+
+	poll = FALSE;
+	for (i = 0; i < nhandles; ++i) {
+		if (mono_w32handle_get_type (handles [i]) == MONO_W32HANDLE_PROCESS) {
+			/* Can't wait for a process handle + another handle without polling */
+			poll = TRUE;
+		}
+	}
+
+	if (timeout != INFINITE)
+		start = mono_msec_ticks ();
+
+	for (i = 0; i < nhandles; ++i) {
+		/* Add a reference, as we need to ensure the handle wont
+		 * disappear from under us while we're waiting in the loop
+		 * (not lock, as we don't want exclusive access here) */
+		mono_w32handle_ref (handles [i]);
+	}
+
+	for (;;) {
+		gsize count, lowest;
+		gboolean signalled;
+		gint waited;
+
+		count = 0;
+		lowest = nhandles;
+
+		mono_w32handle_lock_handles (handles, nhandles);
+
+		for (i = 0; i < nhandles; i++) {
+			if ((mono_w32handle_test_capabilities (handles [i], MONO_W32HANDLE_CAP_OWN) && mono_w32handle_ops_isowned (handles [i]))
+				 || mono_w32handle_issignalled (handles [i]))
+			{
+				count ++;
+
+				if (i < lowest)
+					lowest = i;
+			}
+		}
+
+		signalled = (waitall && count == nhandles) || (!waitall && count > 0);
+
+		if (signalled) {
+			for (i = 0; i < nhandles; i++)
+				own_if_signalled (handles [i]);
+		}
+
+		mono_w32handle_unlock_handles (handles, nhandles);
+
+		if (signalled) {
+			ret = MONO_W32HANDLE_WAIT_RET_SUCCESS_0 + lowest;
+			goto done;
+		}
+
+		for (i = 0; i < nhandles; i++) {
+			mono_w32handle_ops_prewait (handles[i]);
+
+			if (mono_w32handle_test_capabilities (handles [i], MONO_W32HANDLE_CAP_SPECIAL_WAIT)
+				 && !mono_w32handle_issignalled (handles [i]))
+			{
+				mono_w32handle_ops_specialwait (handles [i], 0, alertable ? &alerted : NULL);
+			}
+		}
+
+		thr_ret = mono_w32handle_lock_signal_mutex ();
+		g_assert (thr_ret == 0);
+
+		if (waitall) {
+			signalled = TRUE;
+			for (i = 0; i < nhandles; ++i) {
+				if (!mono_w32handle_issignalled (handles [i])) {
+					signalled = FALSE;
+					break;
+				}
+			}
+		} else {
+			signalled = FALSE;
+			for (i = 0; i < nhandles; ++i) {
+				if (mono_w32handle_issignalled (handles [i])) {
+					signalled = TRUE;
+					break;
+				}
+			}
+		}
+
+		waited = 0;
+
+		if (!signalled) {
+			if (timeout == INFINITE) {
+				waited = mono_w32handle_timedwait_signal (INFINITE, poll, alertable ? &alerted : NULL);
+			} else {
+				gint64 elapsed;
+
+				elapsed = mono_msec_ticks () - start;
+				if (elapsed > timeout) {
+					ret = MONO_W32HANDLE_WAIT_RET_TIMEOUT;
+
+					thr_ret = mono_w32handle_unlock_signal_mutex ();
+					g_assert (thr_ret == 0);
+
+					goto done;
+				}
+
+				waited = mono_w32handle_timedwait_signal (timeout - elapsed, poll, alertable ? &alerted : NULL);
+			}
+		}
+
+		thr_ret = mono_w32handle_unlock_signal_mutex ();
+		g_assert (thr_ret == 0);
+
+		if (alerted) {
+			ret = MONO_W32HANDLE_WAIT_RET_ALERTED;
+			goto done;
+		}
+
+		if (waited != 0) {
+			ret = MONO_W32HANDLE_WAIT_RET_TIMEOUT;
+			goto done;
+		}
+	}
+
+done:
+	for (i = 0; i < nhandles; i++) {
+		/* Unref everything we reffed above */
+		mono_w32handle_unref (handles [i]);
+	}
+
+	return ret;
+}
+
+MonoW32HandleWaitRet
+mono_w32handle_signal_and_wait (gpointer signal_handle, gpointer wait_handle, guint32 timeout, gboolean alertable)
+{
+	MonoW32HandleWaitRet ret;
+	gint64 start;
+	gboolean alerted;
+	gint thr_ret;
+
+	alerted = FALSE;
+
+	if (!mono_w32handle_test_capabilities (signal_handle, MONO_W32HANDLE_CAP_SIGNAL))
+		return MONO_W32HANDLE_WAIT_RET_FAILED;
+	if (!mono_w32handle_test_capabilities (wait_handle, MONO_W32HANDLE_CAP_WAIT))
+		return MONO_W32HANDLE_WAIT_RET_FAILED;
+
+	if (mono_w32handle_test_capabilities (wait_handle, MONO_W32HANDLE_CAP_SPECIAL_WAIT)) {
+		g_warning ("%s: handle %p has special wait, implement me!!", __func__, wait_handle);
+		return MONO_W32HANDLE_WAIT_RET_FAILED;
+	}
+
+	thr_ret = mono_w32handle_lock_handle (wait_handle);
+	g_assert (thr_ret == 0);
+
+	mono_w32handle_ops_signal (signal_handle);
+
+	if (mono_w32handle_test_capabilities (wait_handle, MONO_W32HANDLE_CAP_OWN)) {
+		if (own_if_owned (wait_handle)) {
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_W32HANDLE, "%s: handle %p already owned",
+				__func__, wait_handle);
+
+			ret = MONO_W32HANDLE_WAIT_RET_SUCCESS_0;
+			goto done;
+		}
+	}
+
+	if (timeout != INFINITE)
+		start = mono_msec_ticks ();
+
+	for (;;) {
+		gint waited;
+
+		if (own_if_signalled (wait_handle)) {
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_W32HANDLE, "%s: handle %p signalled",
+				__func__, wait_handle);
+
+			ret = MONO_W32HANDLE_WAIT_RET_SUCCESS_0;
+			goto done;
+		}
+
+		mono_w32handle_ops_prewait (wait_handle);
+
+		if (timeout == INFINITE) {
+			waited = mono_w32handle_timedwait_signal_handle (wait_handle, INFINITE, FALSE, alertable ? &alerted : NULL);
+		} else {
+			gint64 elapsed;
+
+			elapsed = mono_msec_ticks () - start;
+			if (elapsed > timeout) {
+				ret = MONO_W32HANDLE_WAIT_RET_TIMEOUT;
+				goto done;
+			}
+
+			waited = mono_w32handle_timedwait_signal_handle (wait_handle, timeout - elapsed, FALSE, alertable ? &alerted : NULL);
+		}
+
+		if (alerted) {
+			ret = MONO_W32HANDLE_WAIT_RET_ALERTED;
+			goto done;
+		}
+
+		if (waited != 0) {
+			ret = MONO_W32HANDLE_WAIT_RET_TIMEOUT;
+			goto done;
+		}
+	}
+
+done:
+	thr_ret = mono_w32handle_unlock_handle (wait_handle);
+	g_assert (thr_ret == 0);
+
+	return ret;
 }
 
 #endif /* !defined(HOST_WIN32) */
