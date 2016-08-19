@@ -125,13 +125,13 @@ namespace System.Diagnostics {
                 if (s_symbolsMethodInfo == null)
                 {
                     s_symbolsType = Type.GetType(
-                        "System.Diagnostics.StackTraceSymbols, System.Diagnostics.StackTrace, Version=1.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a",
+                        "System.Diagnostics.StackTraceSymbols, System.Diagnostics.StackTrace, Version=4.0.3.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a",
                         throwOnError: false);
 
                     if (s_symbolsType == null)
                         return;
 
-                    s_symbolsMethodInfo = s_symbolsType.GetMethod("GetSourceLineInfo");
+                    s_symbolsMethodInfo = s_symbolsType.GetMethod("GetSourceLineInfo", BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance);
                     if (s_symbolsMethodInfo == null)
                         return;
                 }
@@ -147,7 +147,7 @@ namespace System.Diagnostics {
 
                 for (int index = 0; index < iFrameCount; index++)
                 {
-                    // If there was some reason not to try get get the symbols from the portable PDB reader like the module was
+                    // If there was some reason not to try get the symbols from the portable PDB reader like the module was
                     // ENC or the source/line info was already retrieved, the method token is 0.
                     if (rgiMethodToken[index] != 0)
                     {
