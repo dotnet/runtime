@@ -576,14 +576,19 @@ function print_info_from_core_file {
         return
     fi
 
-    # Check for the existence of GDB on the path
-    hash gdb 2>/dev/null || { echo >&2 "GDB was not found. Unable to print core file."; return; }
+    # Use LLDB to inspect the core dump on Mac, and GDB everywhere else.
+    if [[ "$OSName" == "Darwin" ]]; then
+        hash lldb 2>/dev/null || { echo >&2 "LLDB was not found. Unable to print core file."; return; }
 
-    echo "Printing info from core file $core_file_name"
+        echo "Printing info from core file $core_file_name"
+        lldb -c $core_file_name -b -o 'bt'
+    else
+        # Use GDB to print the backtrace from the core file.
+        hash gdb 2>/dev/null || { echo >&2 "GDB was not found. Unable to print core file."; return; }
 
-    # Open the dump in GDB and print the stack from each thread. We can add more
-    # commands here if desired.
-    gdb --batch -ex "thread apply all bt full" -ex "quit" $executable_name $core_file_name
+        echo "Printing info from core file $core_file_name"
+        gdb --batch -ex "thread apply all bt full" -ex "quit" $executable_name $core_file_name
+    fi
 }
 
 function download_dumpling_script {
