@@ -103,22 +103,22 @@ namespace Microsoft.Win32.RegistryTests
 
         [Theory]
         [MemberData(nameof(TestRegistrySubKeyNames))]
-        public void CreateSubKey_Writable_KeyExists_OpensKeyWithFixedUpName(string subKeyName) =>
-            Verify_CreateSubKey_KeyExists_OpensKeyWithFixedUpName(() => TestRegistryKey.CreateSubKey(subKeyName, writable: true));
+        public void CreateSubKey_Writable_KeyExists_OpensKeyWithFixedUpName(string expected, string subKeyName) =>
+            Verify_CreateSubKey_KeyExists_OpensKeyWithFixedUpName(expected, () => TestRegistryKey.CreateSubKey(subKeyName, writable: true));
 
         [Theory]
         [MemberData(nameof(TestRegistrySubKeyNames))]
-        public void CreateSubKey_NonWritable_KeyExists_OpensKeyWithFixedUpName(string subKeyName) =>
-            Verify_CreateSubKey_KeyExists_OpensKeyWithFixedUpName(() => TestRegistryKey.CreateSubKey(subKeyName, writable: false));
+        public void CreateSubKey_NonWritable_KeyExists_OpensKeyWithFixedUpName(string expected, string subKeyName) =>
+            Verify_CreateSubKey_KeyExists_OpensKeyWithFixedUpName(expected, () => TestRegistryKey.CreateSubKey(subKeyName, writable: false));
 
         [Theory]
         [MemberData(nameof(TestRegistrySubKeyNames))]
-        public void CreateSubKey_Writable_KeyDoesNotExist_CreatesKeyWithFixedUpName(string subKeyName) =>
-            Verify_CreateSubKey_KeyDoesNotExist_CreatesKeyWithFixedUpName(() => TestRegistryKey.CreateSubKey(subKeyName, writable: true));
+        public void CreateSubKey_Writable_KeyDoesNotExist_CreatesKeyWithFixedUpName(string expected, string subKeyName) =>
+            Verify_CreateSubKey_KeyDoesNotExist_CreatesKeyWithFixedUpName(expected, () => TestRegistryKey.CreateSubKey(subKeyName, writable: true));
 
         [Theory]
         [MemberData(nameof(TestRegistrySubKeyNames))]
-        public void CreateSubKey_NonWritable_KeyDoesNotExist_CreatesKeyWithFixedUpName(string subKeyName) =>
-            Verify_CreateSubKey_KeyDoesNotExist_CreatesKeyWithFixedUpName(() => TestRegistryKey.CreateSubKey(subKeyName, writable: false));
+        public void CreateSubKey_NonWritable_KeyDoesNotExist_CreatesKeyWithFixedUpName(string expected, string subKeyName) =>
+            Verify_CreateSubKey_KeyDoesNotExist_CreatesKeyWithFixedUpName(expected, () => TestRegistryKey.CreateSubKey(subKeyName, writable: false));
     }
 }

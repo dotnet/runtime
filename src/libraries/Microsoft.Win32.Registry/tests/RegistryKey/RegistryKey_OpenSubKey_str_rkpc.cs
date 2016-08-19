@@ -64,22 +64,22 @@ namespace Microsoft.Win32.RegistryTests
 
         [Theory]
         [MemberData(nameof(TestRegistrySubKeyNames))]
-        public void OpenSubKey_Writable_KeyExists_OpensWithFixedUpName(string subKeyName) =>
-            Verify_OpenSubKey_KeyExists_OpensWithFixedUpName(() => TestRegistryKey.OpenSubKey(subKeyName, Writable));
+        public void OpenSubKey_Writable_KeyExists_OpensWithFixedUpName(string expected, string subKeyName) =>
+            Verify_OpenSubKey_KeyExists_OpensWithFixedUpName(expected, () => TestRegistryKey.OpenSubKey(subKeyName, Writable));
 
         [Theory]
         [MemberData(nameof(TestRegistrySubKeyNames))]
-        public void OpenSubKey_NonWritable_KeyExists_OpensWithFixedUpName(string subKeyName) =>
-            Verify_OpenSubKey_KeyExists_OpensWithFixedUpName(() => TestRegistryKey.OpenSubKey(subKeyName, NonWritable));
+        public void OpenSubKey_NonWritable_KeyExists_OpensWithFixedUpName(string expected, string subKeyName) =>
+            Verify_OpenSubKey_KeyExists_OpensWithFixedUpName(expected, () => TestRegistryKey.OpenSubKey(subKeyName, NonWritable));
 
         [Theory]
         [MemberData(nameof(TestRegistrySubKeyNames))]
-        public void OpenSubKey_Writable_KeyDoesNotExist_ReturnsNull(string subKeyName) =>
-            Verify_OpenSubKey_KeyDoesNotExist_ReturnsNull(() => TestRegistryKey.OpenSubKey(subKeyName, Writable));
+        public void OpenSubKey_Writable_KeyDoesNotExist_ReturnsNull(string expected, string subKeyName) =>
+            Verify_OpenSubKey_KeyDoesNotExist_ReturnsNull(expected, () => TestRegistryKey.OpenSubKey(subKeyName, Writable));
 
         [Theory]
         [MemberData(nameof(TestRegistrySubKeyNames))]
-        public void OpenSubKey_NonWritable_KeyDoesNotExist_ReturnsNull(string subKeyName) =>
-            Verify_OpenSubKey_KeyDoesNotExist_ReturnsNull(() => TestRegistryKey.OpenSubKey(subKeyName, NonWritable));
+        public void OpenSubKey_NonWritable_KeyDoesNotExist_ReturnsNull(string expected, string subKeyName) =>
+            Verify_OpenSubKey_KeyDoesNotExist_ReturnsNull(expected, () => TestRegistryKey.OpenSubKey(subKeyName, NonWritable));
     }
 }

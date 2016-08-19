@@ -74,22 +74,22 @@ namespace Microsoft.Win32.RegistryTests
 
         [Theory]
         [MemberData(nameof(TestRegistrySubKeyNames))]
-        public void DeleteSubKey_KeyExists_ThrowOnMissing_KeyDeleted(string subkeyName) =>
-            Verify_DeleteSubKey_KeyExists_KeyDeleted(() => TestRegistryKey.DeleteSubKey(subkeyName, throwOnMissingSubKey: true));
+        public void DeleteSubKey_KeyExists_ThrowOnMissing_KeyDeleted(string expected, string subkeyName) =>
+            Verify_DeleteSubKey_KeyExists_KeyDeleted(expected, () => TestRegistryKey.DeleteSubKey(subkeyName, throwOnMissingSubKey: true));
 
         [Theory]
         [MemberData(nameof(TestRegistrySubKeyNames))]
-        public void DeleteSubKey_KeyExists_DoNotThrow_KeyDeleted(string subkeyName) =>
-            Verify_DeleteSubKey_KeyExists_KeyDeleted(() => TestRegistryKey.DeleteSubKey(subkeyName, throwOnMissingSubKey: false));
+        public void DeleteSubKey_KeyExists_DoNotThrow_KeyDeleted(string expected, string subkeyName) =>
+            Verify_DeleteSubKey_KeyExists_KeyDeleted(expected, () => TestRegistryKey.DeleteSubKey(subkeyName, throwOnMissingSubKey: false));
 
         [Theory]
         [MemberData(nameof(TestRegistrySubKeyNames))]
-        public void DeleteSubKey_KeyDoesNotExists_ThrowOnMissing_Throws(string subkeyName) =>
-            Verify_DeleteSubKey_KeyDoesNotExists_Throws(() => TestRegistryKey.DeleteSubKey(subkeyName, throwOnMissingSubKey: true));
+        public void DeleteSubKey_KeyDoesNotExists_ThrowOnMissing_Throws(string expected, string subkeyName) =>
+            Verify_DeleteSubKey_KeyDoesNotExists_Throws(expected, () => TestRegistryKey.DeleteSubKey(subkeyName, throwOnMissingSubKey: true));
 
         [Theory]
         [MemberData(nameof(TestRegistrySubKeyNames))]
-        public void DeleteSubKey_KeyDoesNotExists_DoNotThrow_DoesNotThrow(string subkeyName) =>
-            Verify_DeleteSubKey_KeyDoesNotExists_DoesNotThrow(() => TestRegistryKey.DeleteSubKey(subkeyName, throwOnMissingSubKey: false));
+        public void DeleteSubKey_KeyDoesNotExists_DoNotThrow_DoesNotThrow(string expected, string subkeyName) =>
+            Verify_DeleteSubKey_KeyDoesNotExists_DoesNotThrow(expected, () => TestRegistryKey.DeleteSubKey(subkeyName, throwOnMissingSubKey: false));
     }
 }

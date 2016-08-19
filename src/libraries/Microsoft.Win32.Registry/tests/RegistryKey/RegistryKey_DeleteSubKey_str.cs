@@ -55,12 +55,12 @@ namespace Microsoft.Win32.RegistryTests
 
         [Theory]
         [MemberData(nameof(TestRegistrySubKeyNames))]
-        public void DeleteSubKey_KeyExists_KeyDeleted(string subkeyName) =>
-            Verify_DeleteSubKey_KeyExists_KeyDeleted(() => TestRegistryKey.DeleteSubKey(subkeyName));
+        public void DeleteSubKey_KeyExists_KeyDeleted(string expected, string subkeyName) =>
+            Verify_DeleteSubKey_KeyExists_KeyDeleted(expected, () => TestRegistryKey.DeleteSubKey(subkeyName));
 
         [Theory]
         [MemberData(nameof(TestRegistrySubKeyNames))]
-        public void DeleteSubKey_KeyDoesNotExists_Throws(string subkeyName) =>
-            Verify_DeleteSubKey_KeyDoesNotExists_Throws(() => TestRegistryKey.DeleteSubKey(subkeyName));
+        public void DeleteSubKey_KeyDoesNotExists_Throws(string expected, string subkeyName) =>
+            Verify_DeleteSubKey_KeyDoesNotExists_Throws(expected, () => TestRegistryKey.DeleteSubKey(subkeyName));
     }
 }

@@ -86,13 +86,13 @@ namespace Microsoft.Win32.RegistryTests
 
         [Theory]
         [MemberData(nameof(TestRegistrySubKeyNames))]
-        public void DeleteSubKeyTree_KeyExists_KeyDeleted(string subKeyName) =>
-            Verify_DeleteSubKeyTree_KeyExists_KeyDeleted(() => TestRegistryKey.DeleteSubKeyTree(subKeyName));
+        public void DeleteSubKeyTree_KeyExists_KeyDeleted(string expected, string subKeyName) =>
+            Verify_DeleteSubKeyTree_KeyExists_KeyDeleted(expected, () => TestRegistryKey.DeleteSubKeyTree(subKeyName));
 
 
         [Theory]
         [MemberData(nameof(TestRegistrySubKeyNames))]
-        public void Verify_DeleteSubKeyTree_KeyDoesNotExists_Throws(string subKeyName) =>
-            Verify_DeleteSubKeyTree_KeyDoesNotExists_Throws(() => TestRegistryKey.DeleteSubKeyTree(subKeyName));
+        public void Verify_DeleteSubKeyTree_KeyDoesNotExists_Throws(string expected, string subKeyName) =>
+            Verify_DeleteSubKeyTree_KeyDoesNotExists_Throws(expected, () => TestRegistryKey.DeleteSubKeyTree(subKeyName));
     }
 }
