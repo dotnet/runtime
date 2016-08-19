@@ -267,4 +267,24 @@ namespace System.Linq.Expressions.Tests
         {
         }
     }
+
+    public static class Unreadable<T>
+    {
+        public static T WriteOnly { set { } }
+    }
+
+    public class GenericClass<T>
+    {
+        public void Method() { }
+    }
+
+    public class NonGenericClass
+    {
+        #pragma warning disable 0067
+        public event EventHandler Event;
+        #pragma warning restore 0067
+
+        public void GenericMethod<T>() { }
+        public static void StaticMethod() { }
+    }
 }
