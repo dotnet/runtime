@@ -365,7 +365,7 @@ void ARMMachine::Unassembly (
     bool fLastWasMovW = false;
     INT_PTR lowbits = 0;
     ULONG curLine = -1;
-    char  filename[MAX_PATH_FNAME+1];
+    WCHAR filename[MAX_LONGPATH];
     ULONG linenum;
 
     while (PC < PCEnd)
@@ -375,13 +375,12 @@ void ARMMachine::Unassembly (
 
         // Print out line numbers if needed
         if (!bSuppressLines
-            && SUCCEEDED(GetLineByOffset(TO_CDADDR(PC), 
-                           &linenum, filename, MAX_PATH_FNAME+1)))
+            && SUCCEEDED(GetLineByOffset(TO_CDADDR(PC), &linenum, filename, MAX_LONGPATH)))
         {
             if (linenum != curLine)
             {
                 curLine = linenum;
-                ExtOut("\n%s @ %d:\n", filename, linenum);
+                ExtOut("\n%S @ %d:\n", filename, linenum);
             }
         }
 
