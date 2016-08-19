@@ -14,26 +14,26 @@ namespace System.Reflection.Metadata.Tests
     {
         public static void LoadPEAndValidate(byte[] peImage, Action<PEReader> validator, bool useStream = false)
         {
-            string tempFile = Path.GetTempFileName();
-            File.WriteAllBytes(tempFile, peImage);
-
-            using (SafeLibraryHandle libHandle = global::Interop.mincore.LoadLibraryExW(tempFile, IntPtr.Zero, 0))
+            using (var tempFile = new TempFile(Path.GetTempFileName()))
             {
-                byte* peImagePtr = (byte*)global::Interop.mincore.GetModuleHandle(Path.GetFileName(tempFile));
+                File.WriteAllBytes(tempFile.Path, peImage);
 
-                Assert.True(peImagePtr != null);
-                Assert.Equal('M', (char)peImagePtr[0]);
-                Assert.Equal('Z', (char)peImagePtr[1]);
-
-                using (var peReader = useStream ?
-                    new PEReader(new ReadOnlyUnmanagedMemoryStream(peImagePtr, int.MaxValue), PEStreamOptions.IsLoadedImage) : 
-                    new PEReader(peImagePtr, int.MaxValue, isLoadedImage: true))
+                using (SafeLibraryHandle libHandle = global::Interop.mincore.LoadLibraryExW(tempFile.Path, IntPtr.Zero, 0))
                 {
-                    validator(peReader);
+                    byte* peImagePtr = (byte*)global::Interop.mincore.GetModuleHandle(Path.GetFileName(tempFile.Path));
+
+                    Assert.True(peImagePtr != null);
+                    Assert.Equal('M', (char)peImagePtr[0]);
+                    Assert.Equal('Z', (char)peImagePtr[1]);
+
+                    using (var peReader = useStream ?
+                        new PEReader(new ReadOnlyUnmanagedMemoryStream(peImagePtr, int.MaxValue), PEStreamOptions.IsLoadedImage) :
+                        new PEReader(peImagePtr, int.MaxValue, isLoadedImage: true))
+                    {
+                        validator(peReader);
+                    }
                 }
             }
-
-            File.Delete(tempFile);
         }
     }
 }
