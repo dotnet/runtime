@@ -37,12 +37,7 @@ namespace System.Reflection.Emit.Tests
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.NotPublic);
             TypeBuilder nestedType = type.DefineNestedType(name);
-            Assert.Equal(name, nestedType.Name);
-            Assert.Equal(TypeAttributes.AutoLayout | TypeAttributes.AnsiClass | TypeAttributes.Class | TypeAttributes.NestedPrivate, nestedType.Attributes);
-            Assert.Equal(typeof(object), nestedType.BaseType);
-            Assert.Equal(0, nestedType.Size);
-            Assert.Equal(PackingSize.Unspecified, nestedType.PackingSize);
-            Assert.Empty(nestedType.ImplementedInterfaces);
+            Helpers.VerifyType(nestedType, type.Module, type, name, TypeAttributes.AutoLayout | TypeAttributes.AnsiClass | TypeAttributes.Class | TypeAttributes.NestedPrivate, typeof(object), 0, PackingSize.Unspecified, new Type[0]);
         }
 
         [Theory]
@@ -58,10 +53,7 @@ namespace System.Reflection.Emit.Tests
 
                 TypeAttributes noBaseTypeAttributes = TypeAttributes.AutoLayout | TypeAttributes.AnsiClass | TypeAttributes.Class | TypeAttributes.NestedPublic | TypeAttributes.ClassSemanticsMask | TypeAttributes.Abstract;
                 Type expectedBaseType = attributes == noBaseTypeAttributes ? null : typeof(object);
-                Assert.Equal(expectedBaseType, nestedType.BaseType);
-                Assert.Equal(0, nestedType.Size);
-                Assert.Equal(PackingSize.Unspecified, nestedType.PackingSize);
-                Assert.Empty(nestedType.ImplementedInterfaces);
+                Helpers.VerifyType(nestedType, type.Module, type, name, attributes, expectedBaseType, 0, PackingSize.Unspecified, new Type[0]);
             }
         }
 
@@ -74,12 +66,7 @@ namespace System.Reflection.Emit.Tests
             foreach (string name in new string[] { "abc", "a\0b\0cd" })
             {
                 TypeBuilder nestedType = type.DefineNestedType(name, attributes, parent);
-                Assert.Equal(name, nestedType.Name);
-                Assert.Equal(attributes, nestedType.Attributes);
-                Assert.Equal(parent, nestedType.BaseType);
-                Assert.Equal(0, nestedType.Size);
-                Assert.Equal(PackingSize.Unspecified, nestedType.PackingSize);
-                Assert.Empty(nestedType.ImplementedInterfaces);
+                Helpers.VerifyType(nestedType, type.Module, type, name, attributes, parent, 0, PackingSize.Unspecified, new Type[0]);
             }
         }
 
@@ -94,12 +81,7 @@ namespace System.Reflection.Emit.Tests
                 foreach (string name in new string[] { "abc", "a\0b\0cd" })
                 {
                     TypeBuilder nestedType = type.DefineNestedType(name, attributes, parent, size);
-                    Assert.Equal(name, nestedType.Name);
-                    Assert.Equal(attributes, nestedType.Attributes);
-                    Assert.Equal(parent, nestedType.BaseType);
-                    Assert.Equal(size, nestedType.Size);
-                    Assert.Equal(PackingSize.Unspecified, nestedType.PackingSize);
-                    Assert.Empty(nestedType.ImplementedInterfaces);
+                    Helpers.VerifyType(nestedType, type.Module, type, name, attributes, parent, size, PackingSize.Unspecified, new Type[0]);
                 }
             }
         }
@@ -115,12 +97,7 @@ namespace System.Reflection.Emit.Tests
                 foreach (string name in new string[] { "abc", "a\0b\0cd" })
                 {
                     TypeBuilder nestedType = type.DefineNestedType(name, attributes, parent, packagingSize);
-                    Assert.Equal(name, nestedType.Name);
-                    Assert.Equal(attributes, nestedType.Attributes);
-                    Assert.Equal(parent, nestedType.BaseType);
-                    Assert.Equal(0, nestedType.Size);
-                    Assert.Equal(packagingSize, nestedType.PackingSize);
-                    Assert.Empty(nestedType.ImplementedInterfaces);
+                    Helpers.VerifyType(nestedType, type.Module, type, name, attributes, parent, 0, packagingSize, new Type[0]);
                 }
             }
         }
@@ -134,12 +111,7 @@ namespace System.Reflection.Emit.Tests
             foreach (string name in new string[] { "abc", "a\0b\0cd" })
             {
                 TypeBuilder nestedType = type.DefineNestedType(name, attributes, parent, new Type[] { typeof(IComparable) });
-                Assert.Equal(name, nestedType.Name);
-                Assert.Equal(attributes, nestedType.Attributes);
-                Assert.Equal(parent, nestedType.BaseType);
-                Assert.Equal(0, nestedType.Size);
-                Assert.Equal(PackingSize.Unspecified, nestedType.PackingSize);
-                Assert.Equal(new Type[] { typeof(IComparable) }, nestedType.ImplementedInterfaces);
+                Helpers.VerifyType(nestedType, type.Module, type, name, attributes, parent, 0, PackingSize.Unspecified, new Type[] { typeof(IComparable) });
             }
         }
 

@@ -21,6 +21,15 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
+        public void IsAssignableFrom()
+        {
+            EnumBuilder enumBuilder = Helpers.DynamicEnum(TypeAttributes.Public, typeof(int));
+            Assert.False(enumBuilder.IsAssignableFrom(null));
+            Assert.True(enumBuilder.IsAssignableFrom(typeof(int).GetTypeInfo()));
+            Assert.False(enumBuilder.IsAssignableFrom(typeof(short).GetTypeInfo()));
+        }
+
+        [Fact]
         public void GetElementType_ThrowsNotSupportedException()
         {
             EnumBuilder enumBuilder = Helpers.DynamicEnum(TypeAttributes.Public, typeof(int));
