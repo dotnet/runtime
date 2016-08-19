@@ -13,6 +13,8 @@ namespace System.Data.SqlClient
 
         private static int s_sniMaxComposedSpnLength = -1;
 
+        private const int SniOpenTimeOut = -1; // infinite
+
         [UnmanagedFunctionPointer(CallingConvention.StdCall)]
         internal delegate void SqlAsyncCallbackDelegate(IntPtr m_ConsKey, IntPtr pPacket, uint dwError);
 
@@ -116,6 +118,13 @@ namespace System.Data.SqlClient
             SNI_QUERY_CONN_SUPPORTS_SYNC_OVER_ASYNC,
         }
 
+        internal enum TransparentNetworkResolutionMode : byte
+        {
+            DisabledMode = 0,
+            SequentialMode,
+            ParallelMode
+        };
+
         [StructLayout(LayoutKind.Sequential)]
         private struct Sni_Consumer_Info
         {
@@ -127,7 +136,7 @@ namespace System.Data.SqlClient
             public IntPtr fnAcceptComp;
             public uint dwNumProts;
             public IntPtr rgListenInfo;
-            public uint NodeAffinity;
+            public IntPtr NodeAffinity;
         }
 
         [StructLayout(LayoutKind.Sequential)]
@@ -148,6 +157,9 @@ namespace System.Data.SqlClient
             public int timeout;
             [MarshalAs(UnmanagedType.Bool)]
             public bool fParallel;
+            public TransparentNetworkResolutionMode transparentNetworkResolution;
+            public int totalTimeout;
+            public bool isAzureSqlServerEndpoint;
         }
 
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
