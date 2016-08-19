@@ -24,6 +24,8 @@ if /i "%__Arch%" == "x64" (set __CmakeGenerator=%__CmakeGenerator% Win64)
 if /i "%__Arch%" == "arm64" (set __CmakeGenerator=%__CmakeGenerator% Win64)
 if /i "%__Arch%" == "arm" (set __CmakeGenerator=%__CmakeGenerator% ARM)
 
+if /i "%__NMakeMakefiles%" == "1" (set __CmakeGenerator=NMake Makefiles)
+
 :loop
 if [%4] == [] goto end_loop
 set __ExtraCmakeParams=%__ExtraCmakeParams% %4
