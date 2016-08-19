@@ -1469,6 +1469,11 @@
         ]
     },
     {
+        "Name": "System.Security.Permissions",
+        "Description": "Provides types supporting Code Access Security (CAS).",
+        "CommonTypes": [ ]
+    },
+    {
         "Name": "System.Security.Principal",
         "Description": "Provides the base interfaces for principal and identity objects that represents the security context under which code is running.",
         "CommonTypes": [

@@ -19,6 +19,7 @@
     <!-- temporary change until buildtools can be updated https://github.com/dotnet/buildtools/issues/831 -->
     <LineupPackageVersion Condition="'$(LineupPackageVersion)' == ''">1.0.3</LineupPackageVersion>
     <PlatformPackageVersion Condition="'$(PlatformPackageVersion)' == ''">1.0.2</PlatformPackageVersion>
+    <SkipValidatePackageTargetFramework>true</SkipValidatePackageTargetFramework>
   </PropertyGroup>
 
   <Import Condition="Exists('pkg/baseline/baseline.props')" Project="pkg/baseline/baseline.props" />
