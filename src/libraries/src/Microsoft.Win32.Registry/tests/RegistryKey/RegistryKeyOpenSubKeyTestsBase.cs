@@ -9,21 +9,21 @@ namespace Microsoft.Win32.RegistryTests
 {
     public abstract class RegistryKeyOpenSubKeyTestsBase : RegistryTestsBase
     {
-        protected void Verify_OpenSubKey_KeyExists_OpensWithFixedUpName(Func<RegistryKey> openSubKey)
+        protected void Verify_OpenSubKey_KeyExists_OpensWithFixedUpName(string expected, Func<RegistryKey> openSubKey)
         {
-            CreateTestRegistrySubKey();
+            CreateTestRegistrySubKey(expected);
 
             using (RegistryKey key = openSubKey())
             {
                 Assert.NotNull(key);
                 Assert.Equal(1, TestRegistryKey.SubKeyCount);
-                Assert.Equal(TestRegistrySubKeyFullName, key.Name);
+                Assert.Equal(TestRegistryKey.Name + @"\" + expected, key.Name);
             }
         }
 
-        protected void Verify_OpenSubKey_KeyDoesNotExist_ReturnsNull(Func<RegistryKey> openSubKey)
+        protected void Verify_OpenSubKey_KeyDoesNotExist_ReturnsNull(string expected, Func<RegistryKey> openSubKey)
         {
-            Assert.Null(TestRegistryKey.OpenSubKey(TestRegistrySubKeyName));
+            Assert.Null(TestRegistryKey.OpenSubKey(expected));
             Assert.Equal(0, TestRegistryKey.SubKeyCount);
 
             Assert.Null(openSubKey());

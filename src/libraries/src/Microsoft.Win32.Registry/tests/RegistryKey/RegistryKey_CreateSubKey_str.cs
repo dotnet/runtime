@@ -117,12 +117,12 @@ namespace Microsoft.Win32.RegistryTests
 
         [Theory]
         [MemberData(nameof(TestRegistrySubKeyNames))]
-        public void CreateSubKey_KeyExists_OpensKeyWithFixedUpName(string subKeyName) =>
-            Verify_CreateSubKey_KeyExists_OpensKeyWithFixedUpName(() => TestRegistryKey.CreateSubKey(subKeyName));
+        public void CreateSubKey_KeyExists_OpensKeyWithFixedUpName(string expected, string subKeyName) =>
+            Verify_CreateSubKey_KeyExists_OpensKeyWithFixedUpName(expected, () => TestRegistryKey.CreateSubKey(subKeyName));
 
         [Theory]
         [MemberData(nameof(TestRegistrySubKeyNames))]
-        public void CreateSubKey_KeyDoesNotExist_CreatesKeyWithFixedUpName(string subKeyName) =>
-            Verify_CreateSubKey_KeyDoesNotExist_CreatesKeyWithFixedUpName(() => TestRegistryKey.CreateSubKey(subKeyName));
+        public void CreateSubKey_KeyDoesNotExist_CreatesKeyWithFixedUpName(string expected, string subKeyName) =>
+            Verify_CreateSubKey_KeyDoesNotExist_CreatesKeyWithFixedUpName(expected, () => TestRegistryKey.CreateSubKey(subKeyName));
     }
 }

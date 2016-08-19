@@ -9,28 +9,28 @@ namespace Microsoft.Win32.RegistryTests
 {
     public abstract class RegistryKeyCreateSubKeyTestsBase : RegistryTestsBase
     {
-        protected void Verify_CreateSubKey_KeyExists_OpensKeyWithFixedUpName(Func<RegistryKey> createSubKey)
+        protected void Verify_CreateSubKey_KeyExists_OpensKeyWithFixedUpName(string expected, Func<RegistryKey> createSubKey)
         {
-            CreateTestRegistrySubKey();
+            CreateTestRegistrySubKey(expected);
 
             using (RegistryKey key = createSubKey())
             {
                 Assert.NotNull(key);
                 Assert.Equal(1, TestRegistryKey.SubKeyCount);
-                Assert.Equal(TestRegistrySubKeyFullName, key.Name);
+                Assert.Equal(TestRegistryKey.Name + @"\" + expected, key.Name);
             }
         }
 
-        protected void Verify_CreateSubKey_KeyDoesNotExist_CreatesKeyWithFixedUpName(Func<RegistryKey> createSubKey)
+        protected void Verify_CreateSubKey_KeyDoesNotExist_CreatesKeyWithFixedUpName(string expected, Func<RegistryKey> createSubKey)
         {
-            Assert.Null(TestRegistryKey.OpenSubKey(TestRegistrySubKeyName));
+            Assert.Null(TestRegistryKey.OpenSubKey(expected));
             Assert.Equal(0, TestRegistryKey.SubKeyCount);
 
             using (RegistryKey key = createSubKey())
             {
                 Assert.NotNull(key);
                 Assert.Equal(1, TestRegistryKey.SubKeyCount);
-                Assert.Equal(TestRegistrySubKeyFullName, key.Name);
+                Assert.Equal(TestRegistryKey.Name + @"\" + expected, key.Name);
             }
         }
     }

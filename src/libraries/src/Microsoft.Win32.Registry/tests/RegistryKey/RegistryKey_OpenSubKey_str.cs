@@ -66,12 +66,12 @@ namespace Microsoft.Win32.RegistryTests
 
         [Theory]
         [MemberData(nameof(TestRegistrySubKeyNames))]
-        public void OpenSubKey_KeyExists_OpensWithFixedUpName(string subKeyName) =>
-            Verify_OpenSubKey_KeyExists_OpensWithFixedUpName(() => TestRegistryKey.OpenSubKey(subKeyName));
+        public void OpenSubKey_KeyExists_OpensWithFixedUpName(string expected, string subKeyName) =>
+            Verify_OpenSubKey_KeyExists_OpensWithFixedUpName(expected, () => TestRegistryKey.OpenSubKey(subKeyName));
 
         [Theory]
         [MemberData(nameof(TestRegistrySubKeyNames))]
-        public void OpenSubKey_KeyDoesNotExist_ReturnsNull(string subKeyName) =>
-            Verify_OpenSubKey_KeyDoesNotExist_ReturnsNull(() => TestRegistryKey.OpenSubKey(subKeyName));
+        public void OpenSubKey_KeyDoesNotExist_ReturnsNull(string expected, string subKeyName) =>
+            Verify_OpenSubKey_KeyDoesNotExist_ReturnsNull(expected, () => TestRegistryKey.OpenSubKey(subKeyName));
     }
 }
