@@ -102,10 +102,8 @@ namespace System.Reflection
         }
 
         public bool IsIn { get { return((Attributes & ParameterAttributes.In) != 0); } }        
-        public bool IsOut { get { return((Attributes & ParameterAttributes.Out) != 0); } }  
-#if FEATURE_USE_LCID        
-        public bool IsLcid { get { return((Attributes & ParameterAttributes.Lcid) != 0); } }        
-#endif
+        public bool IsOut { get { return((Attributes & ParameterAttributes.Out) != 0); } }
+        public bool IsLcid { get { return((Attributes & ParameterAttributes.Lcid) != 0); } }
         public bool IsRetval { get { return((Attributes & ParameterAttributes.Retval) != 0); } }        
         public bool IsOptional { get { return((Attributes & ParameterAttributes.Optional) != 0); } }
 
