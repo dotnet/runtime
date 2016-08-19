@@ -74,7 +74,6 @@
 
     <TestWorkingDir>$(__TestWorkingDir)\</TestWorkingDir>
     <TestWorkingDir Condition="'$(__TestWorkingDir)'==''">$(RootBinDir)tests\$(BuildOS).$(BuildArch).$(BuildType)\</TestWorkingDir>
-    <BuildToolsTaskDir Condition="'$(BuildToolsTargets45)' == 'true'">$(ToolsDir)net45/</BuildToolsTaskDir>
 
     <Platform Condition="'$(Platform)' == ''">$(BuildArch)</Platform>
     <Platform Condition="'$(Platform)' == 'amd64'">x64</Platform>
@@ -118,14 +117,6 @@
     <DnuRestoreCommand>$(DnuRestoreCommand) "$(DotnetToolCommand)"</DnuRestoreCommand>
     <DnuRestoreCommand>$(DnuRestoreCommand) restore</DnuRestoreCommand>
     <DnuRestoreCommand>$(DnuRestoreCommand) --packages "$(PackagesDir.TrimEnd('\\'))"</DnuRestoreCommand>
-  </PropertyGroup>
-
-  <!--
-    Set up Roslyn predefines
-  -->
-  <PropertyGroup>
-    <RoslynPackageDir>$(PackagesDir)/$(RoslynPackageName).$(RoslynVersion)/</RoslynPackageDir>
-    <RoslynPropsFile>$(RoslynPackageDir)build/Microsoft.Net.ToolsetCompilers.props</RoslynPropsFile>
   </PropertyGroup>
 
   <!-- Setup common target properties that we use to conditionally include sources -->
