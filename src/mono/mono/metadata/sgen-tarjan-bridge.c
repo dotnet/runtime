@@ -19,8 +19,6 @@
 
 #include "sgen/sgen-gc.h"
 #include "sgen-bridge-internals.h"
-#include "sgen/sgen-hash-table.h"
-#include "sgen/sgen-qsort.h"
 #include "tabledefs.h"
 #include "utils/mono-logger-internals.h"
 
