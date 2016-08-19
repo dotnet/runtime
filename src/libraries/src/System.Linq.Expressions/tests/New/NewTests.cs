@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections.Generic;
 using System.Reflection;
 using Xunit;
 
@@ -247,9 +248,7 @@ namespace System.Linq.Expressions.Tests
 
         class TestPrivateDefaultConstructor
         {
-            private TestPrivateDefaultConstructor()
-            {
-            }
+            private TestPrivateDefaultConstructor() { }
 
             public static Func<TestPrivateDefaultConstructor> GetInstanceFunc(bool useInterpreter)
             {
@@ -257,22 +256,36 @@ namespace System.Linq.Expressions.Tests
                 return lambda.Compile(useInterpreter);
             }
 
-            public override string ToString()
-            {
-                return "Test instance";
-            }
+            public override string ToString() => "Test instance";
         }
 
         [Fact]
-        public static void CheckNewWithStaticCtor()
+        public static void New_NullConstructor_ThrowsArgumentNullException()
+        {
+            Assert.Throws<ArgumentNullException>("constructor", () => Expression.New((ConstructorInfo)null));
+            Assert.Throws<ArgumentNullException>("constructor", () => Expression.New(null, new Expression[0]));
+            Assert.Throws<ArgumentNullException>("constructor", () => Expression.New(null, (IEnumerable<Expression>)new Expression[0]));
+
+            Assert.Throws<ArgumentNullException>("constructor", () => Expression.New(null, new Expression[0], new MemberInfo[0]));
+            Assert.Throws<ArgumentNullException>("constructor", () => Expression.New(null, new Expression[0], (IEnumerable<MemberInfo>)new MemberInfo[0]));
+        }
+
+        [Fact]
+        public static void StaticConstructor_ThrowsArgumentException()
         {
             var cctor = typeof(StaticCtor).GetTypeInfo().DeclaredConstructors.Single(c => c.IsStatic);
+
             Assert.Throws<ArgumentException>("constructor", () => Expression.New(cctor));
+            Assert.Throws<ArgumentException>("constructor", () => Expression.New(cctor, new Expression[0]));
+            Assert.Throws<ArgumentException>("constructor", () => Expression.New(cctor, (IEnumerable<Expression>)new Expression[0]));
+
+            Assert.Throws<ArgumentException>("constructor", () => Expression.New(cctor, new Expression[0], new MemberInfo[0]));
+            Assert.Throws<ArgumentException>("constructor", () => Expression.New(cctor, new Expression[0], (IEnumerable<MemberInfo>)new MemberInfo[0]));
         }
 
         [Theory]
         [ClassData(typeof(CompilationTypes))]
-        public static void CheckNewWithAbstractCtor(bool useInterpretation)
+        public static void Compile_AbstractCtor_ThrowsInvalidOperationExeption(bool useInterpretation)
         {
             var ctor = typeof(AbstractCtor).GetTypeInfo().DeclaredConstructors.Single();
             var f = Expression.Lambda<Func<AbstractCtor>>(Expression.New(ctor));
@@ -280,18 +293,225 @@ namespace System.Linq.Expressions.Tests
             Assert.Throws<InvalidOperationException>(() => f.Compile(useInterpretation));
         }
 
+        [Fact]
+        public static void ConstructorDeclaringType_GenericTypeDefinition_ThrowsArgumentException()
+        {
+            ConstructorInfo constructor = typeof(GenericClass<>).GetConstructor(new Type[0]);
+
+            Assert.Throws<ArgumentException>("constructor", () => Expression.New(constructor));
+            Assert.Throws<ArgumentException>("constructor", () => Expression.New(constructor, new Expression[0]));
+            Assert.Throws<ArgumentException>("constructor", () => Expression.New(constructor, (IEnumerable<Expression>)new Expression[0]));
+
+        }
+
+        [Fact]
+        public static void ConstructorDeclaringType_GenericTypeDefintion_Works()
+        {
+            // Should probably throw an ArgumentException, similar to other overloads
+            ConstructorInfo constructor = typeof(GenericClass<>).GetConstructor(new Type[0]);
+
+            Expression.New(constructor, new Expression[0], new MemberInfo[0]);
+            Expression.New(constructor, new Expression[0], new MemberInfo[0]);
+        }
+
+        public static IEnumerable<object[]> ConstructorAndArguments_DifferentLengths_TestData()
+        {
+            yield return new object[] { typeof(ClassWithCtors).GetConstructor(new Type[0]), new Expression[2] };
+            yield return new object[] { typeof(ClassWithCtors).GetConstructor(new Type[] { typeof(string) }), new Expression[0] };
+            yield return new object[] { typeof(ClassWithCtors).GetConstructor(new Type[] { typeof(string) }), new Expression[2] };
+        }
+
+        [Theory]
+        [MemberData(nameof(ConstructorAndArguments_DifferentLengths_TestData))]
+        public static void ConstructorAndArguments_DifferentLengths_ThrowsArgumentException(ConstructorInfo constructor, Expression[] expressions)
+        {
+            if (expressions.Length == 0)
+            {
+                Assert.Throws<ArgumentException>(null, () => Expression.New(constructor));
+            }
+            Assert.Throws<ArgumentException>(null, () => Expression.New(constructor, expressions));
+            Assert.Throws<ArgumentException>(null, () => Expression.New(constructor, (IEnumerable<Expression>)expressions));
+
+            Assert.Throws<ArgumentException>(null, () => Expression.New(constructor, expressions, new MemberInfo[expressions.Length]));
+            Assert.Throws<ArgumentException>(null, () => Expression.New(constructor, expressions, (IEnumerable<MemberInfo>)new MemberInfo[expressions.Length]));
+        }
+
+        [Fact]
+        public static void Arguments_ExpressionNotReadable_ThrowsArgumentExeption()
+        {
+            ConstructorInfo constructor = typeof(ClassWithCtors).GetConstructor(new Type[] { typeof(string) });
+            Expression[] expressions = new Expression[] { Expression.Property(null, typeof(Unreachable<string>), nameof(Unreachable<string>.WriteOnly)) };
+
+            Assert.Throws<ArgumentException>("arguments", () => Expression.New(constructor, expressions));
+            Assert.Throws<ArgumentException>("arguments", () => Expression.New(constructor, (IEnumerable<Expression>)expressions));
+
+            Assert.Throws<ArgumentException>("arguments", () => Expression.New(constructor, expressions, new MemberInfo[1]));
+            Assert.Throws<ArgumentException>("arguments", () => Expression.New(constructor, expressions, (IEnumerable<MemberInfo>)new MemberInfo[1]));
+        }
+
+        [Fact]
+        public static void ConstructorAndArguments_IncompatibleTypes_ThrowsArgumentException()
+        {
+            ConstructorInfo constructor = typeof(ClassWithCtors).GetConstructor(new Type[] { typeof(string) });
+            Expression[] expressions = new Expression[] { Expression.Constant(5) };
+            
+            Assert.Throws<ArgumentException>("arguments", () => Expression.New(constructor, expressions));
+            Assert.Throws<ArgumentException>("arguments", () => Expression.New(constructor, (IEnumerable<Expression>)expressions));
+
+            MemberInfo[] members = new MemberInfo[] { typeof(ClassWithCtors).GetProperty(nameof(ClassWithCtors.IntProperty)) };
+            Assert.Throws<ArgumentException>("arguments", () => Expression.New(constructor, expressions, members));
+            Assert.Throws<ArgumentException>("arguments", () => Expression.New(constructor, expressions, members));
+        }
+
+        public static IEnumerable<object[]> ArgumentsAndMembers_DifferentLengths_TestData()
+        {
+            yield return new object[] { typeof(ClassWithCtors).GetConstructor(new Type[0]), new Expression[0], new MemberInfo[1] };
+            yield return new object[] { typeof(ClassWithCtors).GetConstructor(new Type[] { typeof(string) }), new Expression[1], new MemberInfo[0] };
+            yield return new object[] { typeof(ClassWithCtors).GetConstructor(new Type[] { typeof(string) }), new Expression[1], new MemberInfo[2] };
+        }
+
+        [Theory]
+        [MemberData(nameof(ArgumentsAndMembers_DifferentLengths_TestData))]
+        public static void ArgumentsAndMembers_DifferentLengths_ThrowsArgumentException(ConstructorInfo constructor, Expression[] arguments, MemberInfo[] members)
+        {
+            Assert.Throws<ArgumentException>(null, () => Expression.New(constructor, arguments, members));
+            Assert.Throws<ArgumentException>(null, () => Expression.New(constructor, arguments, (IEnumerable<MemberInfo>)members));
+        }
+
+        [Fact]
+        public static void Members_MemberNotOnDeclaringType_ThrowsArgumentException()
+        {
+            ConstructorInfo constructor = typeof(ClassWithCtors).GetConstructor(new Type[] { typeof(string) });
+            Expression[] arguments = new Expression[] { Expression.Constant("hello") };
+            MemberInfo[] members = new MemberInfo[] { typeof(Unreachable<string>).GetProperty(nameof(Unreachable<string>.WriteOnly)) };
+
+            Assert.Throws<ArgumentException>("members", () => Expression.New(constructor, arguments, members));
+            Assert.Throws<ArgumentException>("members", () => Expression.New(constructor, arguments, (IEnumerable<MemberInfo>)members));
+        }
+
+        [Theory]
+        [InlineData(nameof(ClassWithCtors.s_field))]
+        [InlineData(nameof(ClassWithCtors.StaticProperty))]
+        [InlineData(nameof(ClassWithCtors.StaticMethod))]
+        public static void Members_StaticMember_ThrowsArgumentException(string memberName)
+        {
+            ConstructorInfo constructor = typeof(ClassWithCtors).GetConstructor(new Type[] { typeof(string) });
+            Expression[] arguments = new Expression[] { Expression.Constant("hello") };
+            MemberInfo[] members = new MemberInfo[] { typeof(ClassWithCtors).GetMember(memberName).First() };
+
+            Assert.Throws<ArgumentException>("members", () => Expression.New(constructor, arguments, members));
+            Assert.Throws<ArgumentException>("members", () => Expression.New(constructor, arguments, (IEnumerable<MemberInfo>)members));
+        }
+        
+        [Fact]
+        public static void Members_MemberWriteOnly_ThrowsArgumentException()
+        {
+            ConstructorInfo constructor = typeof(ClassWithCtors).GetConstructor(new Type[] { typeof(string) });
+            Expression[] arguments = new Expression[] { Expression.Constant("hello") };
+            MemberInfo[] members = new MemberInfo[] { typeof(ClassWithCtors).GetProperty(nameof(ClassWithCtors.WriteOnlyProperty)) };
+
+            Assert.Throws<ArgumentException>("members", () => Expression.New(constructor, arguments, members));
+            Assert.Throws<ArgumentException>("members", () => Expression.New(constructor, arguments, (IEnumerable<MemberInfo>)members));
+        }
+
+        [Fact]
+        public static void Members_MemberNotPropertyAccessor_ThrowsArgumentException()
+        {
+            ConstructorInfo constructor = typeof(ClassWithCtors).GetConstructor(new Type[] { typeof(string) });
+            Expression[] arguments = new Expression[] { Expression.Constant("hello") };
+            MemberInfo[] members = new MemberInfo[] { typeof(ClassWithCtors).GetMethod(nameof(ClassWithCtors.InstanceMethod)) };
+
+            Assert.Throws<ArgumentException>("members", () => Expression.New(constructor, arguments, members));
+            Assert.Throws<ArgumentException>("members", () => Expression.New(constructor, arguments, (IEnumerable<MemberInfo>)members));
+        }
+
+        [Fact]
+        public static void Members_MemberNotFieldPropertyOrMethod_ThrowsArgumentException()
+        {
+            ConstructorInfo constructor = typeof(ClassWithCtors).GetConstructor(new Type[] { typeof(string) });
+            Expression[] arguments = new Expression[] { Expression.Constant("hello") };
+            MemberInfo[] members = new MemberInfo[] { constructor };
+
+            Assert.Throws<ArgumentException>("members", () => Expression.New(constructor, arguments, members));
+            Assert.Throws<ArgumentException>("members", () => Expression.New(constructor, arguments, (IEnumerable<MemberInfo>)members));
+        }
+
+        [Fact]
+        public static void Members_ArgumentTypeAndMemberTypeDontMatch_ThrowsArgumentException()
+        {
+            ConstructorInfo constructor = typeof(ClassWithCtors).GetConstructor(new Type[] { typeof(string) });
+            Expression[] arguments = new Expression[] { Expression.Constant("hello") };
+            MemberInfo[] members = new MemberInfo[] { typeof(ClassWithCtors).GetField(nameof(ClassWithCtors._field)) };
+
+            Assert.Throws<ArgumentException>(null, () => Expression.New(constructor, arguments, members));
+            Assert.Throws<ArgumentException>(null, () => Expression.New(constructor, arguments, (IEnumerable<MemberInfo>)members));
+        }
+
+        [Fact]
+        public static void Type_Null_ThrowsArgumentNullException()
+        {
+            Assert.Throws<ArgumentNullException>("type", () => Expression.New((Type)null));
+        }
+
+        public static IEnumerable<object[]> Type_InvalidType_TestData()
+        {
+            yield return new object[] { typeof(void) };
+            yield return new object[] { typeof(int).MakeByRefType() };
+            yield return new object[] { typeof(StaticCtor) };
+            yield return new object[] { typeof(ClassWithNoDefaultCtor) };
+        }
+
+        [Theory]
+        [MemberData(nameof(Type_InvalidType_TestData))]
+        [InlineData(typeof(int*))]
+        public static void Type_InvalidType_ThrowsArgumentException(Type type)
+        {
+            Assert.Throws<ArgumentException>("type", () => Expression.New(type));
+        }
+
         static class StaticCtor
         {
-            static StaticCtor()
-            {
-            }
+            static StaticCtor() { }
         }
 
         abstract class AbstractCtor
         {
-            public AbstractCtor()
-            {
-            }
+            public AbstractCtor() { }
+        }
+
+        class GenericClass<T>
+        {
+            public GenericClass() { }
+        }
+
+        class ClassWithCtors
+        {
+            public ClassWithCtors() { }
+            public ClassWithCtors(string obj) { }
+
+            public string StringProperty { get; set; }
+            public int IntProperty { get; set; }
+            public int WriteOnlyProperty { set { } }
+
+#pragma warning disable 0649
+            public int _field;
+            public static int s_field;
+#pragma warning restore 0649
+
+            public static string StaticProperty { get; set; }
+            public static void StaticMethod() { }
+
+            public void InstanceMethod() { }
+        }
+
+        class ClassWithNoDefaultCtor
+        {
+            public ClassWithNoDefaultCtor(string s) { }
+        }
+
+        static class Unreachable<T>
+        {
+            public static T WriteOnly { set { } }
         }
     }
 }

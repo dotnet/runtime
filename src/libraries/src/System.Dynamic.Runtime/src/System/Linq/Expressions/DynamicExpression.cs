@@ -812,7 +812,7 @@ namespace System.Linq.Expressions
             var method = GetValidMethodForDynamic(delegateType);
 
             var args = arguments.ToReadOnly();
-            ExpressionUtils.ValidateArgumentTypes(method, ExpressionType.Dynamic, ref args);
+            ExpressionUtils.ValidateArgumentTypes(method, ExpressionType.Dynamic, ref args, nameof(delegateType));
 
             return DynamicExpression.Make(method.GetReturnType(), delegateType, binder, args);
         }
@@ -841,7 +841,7 @@ namespace System.Linq.Expressions
 
             ExpressionUtils.ValidateArgumentCount(method, ExpressionType.Dynamic, 2, parameters);
             ValidateDynamicArgument(arg0);
-            ExpressionUtils.ValidateOneArgument(method, ExpressionType.Dynamic, arg0, parameters[1]);
+            ExpressionUtils.ValidateOneArgument(method, ExpressionType.Dynamic, arg0, parameters[1], nameof(delegateType), nameof(arg0));
 
             return DynamicExpression.Make(method.GetReturnType(), delegateType, binder, arg0);
         }
@@ -871,9 +871,9 @@ namespace System.Linq.Expressions
 
             ExpressionUtils.ValidateArgumentCount(method, ExpressionType.Dynamic, 3, parameters);
             ValidateDynamicArgument(arg0);
-            ExpressionUtils.ValidateOneArgument(method, ExpressionType.Dynamic, arg0, parameters[1]);
+            ExpressionUtils.ValidateOneArgument(method, ExpressionType.Dynamic, arg0, parameters[1], nameof(delegateType), nameof(arg0));
             ValidateDynamicArgument(arg1);
-            ExpressionUtils.ValidateOneArgument(method, ExpressionType.Dynamic, arg1, parameters[2]);
+            ExpressionUtils.ValidateOneArgument(method, ExpressionType.Dynamic, arg1, parameters[2], nameof(delegateType), nameof(arg1));
 
             return DynamicExpression.Make(method.GetReturnType(), delegateType, binder, arg0, arg1);
         }
@@ -904,11 +904,11 @@ namespace System.Linq.Expressions
 
             ExpressionUtils.ValidateArgumentCount(method, ExpressionType.Dynamic, 4, parameters);
             ValidateDynamicArgument(arg0);
-            ExpressionUtils.ValidateOneArgument(method, ExpressionType.Dynamic, arg0, parameters[1]);
+            ExpressionUtils.ValidateOneArgument(method, ExpressionType.Dynamic, arg0, parameters[1], nameof(delegateType), nameof(arg0));
             ValidateDynamicArgument(arg1);
-            ExpressionUtils.ValidateOneArgument(method, ExpressionType.Dynamic, arg1, parameters[2]);
+            ExpressionUtils.ValidateOneArgument(method, ExpressionType.Dynamic, arg1, parameters[2], nameof(delegateType), nameof(arg1));
             ValidateDynamicArgument(arg2);
-            ExpressionUtils.ValidateOneArgument(method, ExpressionType.Dynamic, arg2, parameters[3]);
+            ExpressionUtils.ValidateOneArgument(method, ExpressionType.Dynamic, arg2, parameters[3], nameof(delegateType), nameof(arg2));
 
             return DynamicExpression.Make(method.GetReturnType(), delegateType, binder, arg0, arg1, arg2);
         }
@@ -940,13 +940,13 @@ namespace System.Linq.Expressions
 
             ExpressionUtils.ValidateArgumentCount(method, ExpressionType.Dynamic, 5, parameters);
             ValidateDynamicArgument(arg0);
-            ExpressionUtils.ValidateOneArgument(method, ExpressionType.Dynamic, arg0, parameters[1]);
+            ExpressionUtils.ValidateOneArgument(method, ExpressionType.Dynamic, arg0, parameters[1], nameof(delegateType), nameof(arg0));
             ValidateDynamicArgument(arg1);
-            ExpressionUtils.ValidateOneArgument(method, ExpressionType.Dynamic, arg1, parameters[2]);
+            ExpressionUtils.ValidateOneArgument(method, ExpressionType.Dynamic, arg1, parameters[2], nameof(delegateType), nameof(arg1));
             ValidateDynamicArgument(arg2);
-            ExpressionUtils.ValidateOneArgument(method, ExpressionType.Dynamic, arg2, parameters[3]);
+            ExpressionUtils.ValidateOneArgument(method, ExpressionType.Dynamic, arg2, parameters[3], nameof(delegateType), nameof(arg2));
             ValidateDynamicArgument(arg3);
-            ExpressionUtils.ValidateOneArgument(method, ExpressionType.Dynamic, arg3, parameters[4]);
+            ExpressionUtils.ValidateOneArgument(method, ExpressionType.Dynamic, arg3, parameters[4], nameof(delegateType), nameof(arg3));
 
             return DynamicExpression.Make(method.GetReturnType(), delegateType, binder, arg0, arg1, arg2, arg3);
         }
