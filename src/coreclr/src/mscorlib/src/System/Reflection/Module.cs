@@ -84,7 +84,6 @@ namespace System.Reflection
         public static readonly TypeFilter FilterTypeName;
         public static readonly TypeFilter FilterTypeNameIgnoreCase;
 
-#if !FEATURE_CORECLR
         public static bool operator ==(Module left, Module right)
         {
             if (ReferenceEquals(left, right))
@@ -103,7 +102,6 @@ namespace System.Reflection
         {
             return !(left == right);
         }
-#endif // !FEATURE_CORECLR
 
         public override bool Equals(object o)
         {
