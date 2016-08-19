@@ -7,7 +7,7 @@ using Xunit;
 
 namespace Microsoft.Win32.RegistryTests
 {
-    public class RegistryKey_DeleteSubKeyTree : RegistryTestsBase
+    public class RegistryKey_DeleteSubKeyTree : RegistryKeyDeleteSubKeyTreeTestsBase
     {
         [Fact]
         public void NegativeTests()
@@ -67,5 +67,25 @@ namespace Microsoft.Win32.RegistryTests
                 TestRegistryKey.DeleteSubKeyTree(subKeyExists2, true);
             }
         }
+
+        [Theory]
+        [MemberData(nameof(TestRegistrySubKeyNames))]
+        public void DeleteSubKeyTree_ThrowOnMissing_KeyExists_KeyDeleted(string subKeyName) =>
+            Verify_DeleteSubKeyTree_KeyExists_KeyDeleted(() => TestRegistryKey.DeleteSubKeyTree(subKeyName, throwOnMissingSubKey: true));
+
+        [Theory]
+        [MemberData(nameof(TestRegistrySubKeyNames))]
+        public void DeleteSubKeyTree_DoNotThrow_KeyExists_KeyDeleted(string subKeyName) =>
+            Verify_DeleteSubKeyTree_KeyExists_KeyDeleted(() => TestRegistryKey.DeleteSubKeyTree(subKeyName, throwOnMissingSubKey: false));
+
+        [Theory]
+        [MemberData(nameof(TestRegistrySubKeyNames))]
+        public void DeleteSubKeyTree_ThrowOnMissing_KeyDoesNotExists_Throws(string subKeyName) =>
+            Verify_DeleteSubKeyTree_KeyDoesNotExists_Throws(() => TestRegistryKey.DeleteSubKeyTree(subKeyName, throwOnMissingSubKey: true));
+
+        [Theory]
+        [MemberData(nameof(TestRegistrySubKeyNames))]
+        public void DeleteSubKeyTree_DoNotThrow_KeyDoesNotExists_DoesNotThrow(string subKeyName) =>
+            Verify_DeleteSubKeyTree_KeyDoesNotExists_DoesNotThrow(() => TestRegistryKey.DeleteSubKeyTree(subKeyName, throwOnMissingSubKey: false));
     }
 }

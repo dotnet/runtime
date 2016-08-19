@@ -9,7 +9,7 @@ using Xunit;
 
 namespace Microsoft.Win32.RegistryTests
 {
-    public class RegistryKey_CreateSubKey_str_rkpc : RegistryTestsBase
+    public class RegistryKey_CreateSubKey_str_rkpc : RegistryKeyCreateSubKeyTestsBase
     {
         [Fact]
         public void CreateWriteableSubkeyAndWrite()
@@ -100,5 +100,25 @@ namespace Microsoft.Win32.RegistryTests
 
             Assert.NotNull(TestRegistryKey.CreateSubKey(subkey));
         }
+
+        [Theory]
+        [MemberData(nameof(TestRegistrySubKeyNames))]
+        public void CreateSubKey_Writable_KeyExists_OpensKeyWithFixedUpName(string subKeyName) =>
+            Verify_CreateSubKey_KeyExists_OpensKeyWithFixedUpName(() => TestRegistryKey.CreateSubKey(subKeyName, writable: true));
+
+        [Theory]
+        [MemberData(nameof(TestRegistrySubKeyNames))]
+        public void CreateSubKey_NonWritable_KeyExists_OpensKeyWithFixedUpName(string subKeyName) =>
+            Verify_CreateSubKey_KeyExists_OpensKeyWithFixedUpName(() => TestRegistryKey.CreateSubKey(subKeyName, writable: false));
+
+        [Theory]
+        [MemberData(nameof(TestRegistrySubKeyNames))]
+        public void CreateSubKey_Writable_KeyDoesNotExist_CreatesKeyWithFixedUpName(string subKeyName) =>
+            Verify_CreateSubKey_KeyDoesNotExist_CreatesKeyWithFixedUpName(() => TestRegistryKey.CreateSubKey(subKeyName, writable: true));
+
+        [Theory]
+        [MemberData(nameof(TestRegistrySubKeyNames))]
+        public void CreateSubKey_NonWritable_KeyDoesNotExist_CreatesKeyWithFixedUpName(string subKeyName) =>
+            Verify_CreateSubKey_KeyDoesNotExist_CreatesKeyWithFixedUpName(() => TestRegistryKey.CreateSubKey(subKeyName, writable: false));
     }
 }
