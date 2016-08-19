@@ -3904,6 +3904,7 @@ namespace System
         public Version(int major, int minor, int build) { }
         public Version(int major, int minor, int build, int revision) { }
         public Version(string version) { }
+        public Version() { }
         public int Build { get { throw null; } }
         public int Major { get { throw null; } }
         public short MajorRevision { get { throw null; } }
