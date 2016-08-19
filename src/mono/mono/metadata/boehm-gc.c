@@ -22,6 +22,7 @@
 #include <mono/metadata/metadata-internals.h>
 #include <mono/metadata/marshal.h>
 #include <mono/metadata/runtime.h>
+#include <mono/metadata/handle.h>
 #include <mono/metadata/sgen-toggleref.h>
 #include <mono/utils/atomic.h>
 #include <mono/utils/mono-logger-internals.h>
@@ -388,6 +389,9 @@ boehm_thread_register (MonoThreadInfo* info, void *baseptr)
 	res = GC_register_my_thread (&sb);
 	if (res == GC_UNIMPLEMENTED)
 	    return NULL; /* Cannot happen with GC v7+. */
+
+	info->handle_stack = mono_handle_stack_alloc ();
+
 	return info;
 }
 
