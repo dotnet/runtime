@@ -2570,9 +2570,14 @@ public:
         /* [size_is][out] */ BYTE *outBuffer);
 
     HRESULT RequestGetModulePtr(IN ULONG32 inBufferSize,
-                              IN BYTE* inBuffer,
-                              IN ULONG32 outBufferSize,
-                              OUT BYTE* outBuffer);
+                                IN BYTE* inBuffer,
+                                IN ULONG32 outBufferSize,
+                                OUT BYTE* outBuffer);
+
+    HRESULT RequestGetModuleData(IN ULONG32 inBufferSize,
+                                 IN BYTE* inBuffer,
+                                 IN ULONG32 outBufferSize,
+                                 OUT BYTE* outBuffer);
 
     Module* GetModule(void)
     {

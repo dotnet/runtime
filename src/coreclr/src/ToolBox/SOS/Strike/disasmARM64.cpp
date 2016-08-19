@@ -163,7 +163,7 @@ void ARM64Machine::Unassembly (
     char line[1024];
     ULONG lineNum;
     ULONG curLine = -1;
-    char fileName[MAX_PATH_FNAME+1];
+    WCHAR fileName[MAX_LONGPATH];
     char *ptr;
     INT_PTR accumulatedConstant = 0;
     BOOL loBitsSet = FALSE;
@@ -203,18 +203,18 @@ void ARM64Machine::Unassembly (
         
         // This is the new instruction
 
-
         if (IsInterrupt())
             return;
         //
         // Print out line numbers if needed
         //
-        if (!bSuppressLines && SUCCEEDED(GetLineByOffset(TO_CDADDR(currentPC), &lineNum, fileName, MAX_PATH_FNAME+1)))
+        if (!bSuppressLines && 
+            SUCCEEDED(GetLineByOffset(TO_CDADDR(currentPC), &lineNum, fileName, MAX_LONGPATH)))
         {
             if (lineNum != curLine)
             {
                 curLine = lineNum;
-                ExtOut("\n%s @ %d:\n", fileName, lineNum);
+                ExtOut("\n%S @ %d:\n", fileName, lineNum);
             }
         }
 
