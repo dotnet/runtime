@@ -122,7 +122,15 @@ typedef struct _ScanData {
 	unsigned obj_state : 2;
 } ScanData;
 
+// Should color be made visible to client even though it has no bridges?
+static inline gboolean bridgeless_color_is_heavy (ColorData *data) {
+   return TRUE;
+}
 
+// Should color be made visible to client?
+static inline gboolean color_visible_to_client (ColorData *data) {
+   return dyn_array_ptr_size (&data->bridges) || bridgeless_color_is_heavy (data);
+}
 
 // Stacks of ScanData objects used for tarjan algorithm.
 // The Tarjan algorithm is normally defined recursively; here scan_stack simulates the call stack of a recursive algorithm,
@@ -159,6 +167,7 @@ static ObjectBucket *root_object_bucket;
 static ObjectBucket *cur_object_bucket;
 static int object_data_count;
 
+// Arenas to allocate ScanData from
 static ObjectBucket*
 new_object_bucket (void)
 {
@@ -211,7 +220,7 @@ free_object_buckets (void)
 //ColorData buckets
 #define NUM_COLOR_ENTRIES ((BUCKET_SIZE - SIZEOF_VOID_P * 2) / sizeof (ColorData))
 
-// Same as ObjectBucket except NUM_COLOR_ENTRIES and NUM_SCAN_ENTRIES differ
+// Arenas for ColorDatas, same as ObjectBucket except items-per-bucket differs
 typedef struct _ColorBucket ColorBucket;
 struct _ColorBucket {
 	ColorBucket *next;
@@ -358,7 +367,9 @@ typedef struct {
 } HashEntry;
 
 /*
-We tried 2/32, 2/128, 4/32, 4/128, 6/128 and 8/128.
+The merge cache maps an ordered list of ColorDatas [the color_merge_array] to a single ColorData.
+
+About cache bucket tuning: We tried 2/32, 2/128, 4/32, 4/128, 6/128 and 8/128.
 
 The performance cost between 4/128 and 8/128 is so small since cache movement happens completely in the same cacheline,
 making the extra space pretty much free.
@@ -409,8 +420,9 @@ match_colors (DynPtrArray *a, DynPtrArray *b)
 	return TRUE;
 }
 
-static int cache_hits, cache_misses;
+static int cache_hits, cache_misses, cache_abstains;
 
+// The cache contains only non-bridged colors.
 static ColorData*
 find_in_cache (int *insert_index)
 {
@@ -419,8 +431,10 @@ find_in_cache (int *insert_index)
 
 	size = dyn_array_ptr_size (&color_merge_array);
 	/* Cache checking is very ineficient with a lot of elements*/
-	if (size > 3)
+	if (size > 3) {
+		++cache_abstains;
 		return NULL;
+	}
 
 	hash = 0;
 	for (i = 0 ; i < size; ++i)
@@ -448,13 +462,15 @@ find_in_cache (int *insert_index)
 	return NULL;
 }
 
+// A color is needed for an SCC. If the SCC has bridges, the color MUST be newly allocated.
+// If the SCC lacks bridges, the allocator MAY use the cache to merge it with an existing one.
 static ColorData*
-new_color (gboolean force_new)
+new_color (gboolean has_bridges)
 {
 	int i = -1;
 	ColorData *cd;
 	/* XXX Try to find an equal one and return it */
-	if (!force_new) {
+	if (!has_bridges) {
 		cd = find_in_cache (&i);
 		if (cd)
 			return cd;
@@ -606,16 +622,24 @@ compute_low (ScanData *data)
 	#include "sgen/sgen-scan-object.h"
 }
 
+// A non-bridged object needs a single color describing the current merge array.
 static ColorData*
 reduce_color (void)
 {
 	ColorData *color = NULL;
 	int size = dyn_array_ptr_size (&color_merge_array);
 
+	// Merge array is empty-- this SCC points to no bridged colors.
+	// This SCC can be ignored completely.
 	if (size == 0)
 		color = NULL;
+
+	// Merge array has one item-- this SCC points to a single bridged color.
+	// This SCC can be forwarded to the pointed-to color.
 	else if (size == 1) {
 		color = (ColorData *)dyn_array_ptr_get (&color_merge_array, 0);
+
+	// This SCC gets to talk to the color allocator.
 	} else
 		color = new_color (FALSE);
 
@@ -889,7 +913,7 @@ gather_xrefs (ColorData *color)
 		if (src->visited)
 			continue;
 		src->visited = TRUE;
-		if (dyn_array_ptr_size (&src->bridges))
+		if (color_visible_to_client (src))
 			dyn_array_ptr_add (&color_merge_array, src);
 		else
 			gather_xrefs (src);
@@ -905,7 +929,7 @@ reset_xrefs (ColorData *color)
 		if (!src->visited)
 			continue;
 		src->visited = FALSE;
-		if (!dyn_array_ptr_size (&src->bridges))
+		if (!color_visible_to_client (src))
 			reset_xrefs (src);
 	}
 }
@@ -934,15 +958,26 @@ processing_build_callback_data (int generation)
 	printf ("number of SCCs %d\n", num_colors_with_bridges);
 #endif
 
+	// Count the number of SCCs visible to the client
+	int num_sccs = 0;
+	for (cur = root_color_bucket; cur; cur = cur->next) {
+		ColorData *cd;
+		for (cd = &cur->data [0]; cd < cur->next_data; ++cd) {
+			if (color_visible_to_client (cd))
+				num_sccs++;
+		}
+	}
+
 	/* This is a straightforward translation from colors to the bridge callback format. */
-	api_sccs = (MonoGCBridgeSCC **)sgen_alloc_internal_dynamic (sizeof (MonoGCBridgeSCC*) * num_colors_with_bridges, INTERNAL_MEM_BRIDGE_DATA, TRUE);
+	api_sccs = (MonoGCBridgeSCC **)sgen_alloc_internal_dynamic (sizeof (MonoGCBridgeSCC*) * num_sccs, INTERNAL_MEM_BRIDGE_DATA, TRUE);
 	api_index = xref_count = 0;
 
+	// Convert visible SCCs, along with their bridged object list, to MonoGCBridgeSCCs in the client's SCC list
 	for (cur = root_color_bucket; cur; cur = cur->next) {
 		ColorData *cd;
 		for (cd = &cur->data [0]; cd < cur->next_data; ++cd) {
 			int bridges = dyn_array_ptr_size (&cd->bridges);
-			if (!bridges)
+			if (!(bridges || bridgeless_color_is_heavy (cd)))
 				continue;
 
 			api_sccs [api_index] = (MonoGCBridgeSCC *)sgen_alloc_internal_dynamic (sizeof (MonoGCBridgeSCC) + sizeof (MonoObject*) * bridges, INTERNAL_MEM_BRIDGE_DATA, TRUE);
@@ -959,11 +994,11 @@ processing_build_callback_data (int generation)
 
 	scc_setup_time = step_timer (&curtime);
 
+	// Eliminate non-visible SCCs from the SCC list and redistribute xrefs
 	for (cur = root_color_bucket; cur; cur = cur->next) {
 		ColorData *cd;
 		for (cd = &cur->data [0]; cd < cur->next_data; ++cd) {
-			int bridges = dyn_array_ptr_size (&cd->bridges);
-			if (!bridges)
+			if (!color_visible_to_client (cd))
 				continue;
 
 			dyn_array_ptr_empty (&color_merge_array);
@@ -981,18 +1016,18 @@ processing_build_callback_data (int generation)
 	dump_color_table (" after xref pass", TRUE);
 #endif
 
+	// Write out xrefs array
 	api_xrefs = (MonoGCBridgeXRef *)sgen_alloc_internal_dynamic (sizeof (MonoGCBridgeXRef) * xref_count, INTERNAL_MEM_BRIDGE_DATA, TRUE);
 	api_index = 0;
 	for (cur = root_color_bucket; cur; cur = cur->next) {
 		ColorData *src;
 		for (src = &cur->data [0]; src < cur->next_data; ++src) {
-			int bridges = dyn_array_ptr_size (&src->bridges);
-			if (!bridges)
+			if (!color_visible_to_client (src))
 				continue;
 
 			for (j = 0; j < dyn_array_ptr_size (&src->other_colors); ++j) {
 				ColorData *dest = (ColorData *)dyn_array_ptr_get (&src->other_colors, j);
-				g_assert (dyn_array_ptr_size (&dest->bridges)); /* We flattened the color graph, so this must never happen. */
+				g_assert (color_visible_to_client (dest)); /* Supposedly we already eliminated all xrefs to non-visible objects. */
 
 				api_xrefs [api_index].src_scc_index = src->api_index;
 				api_xrefs [api_index].dst_scc_index = dest->api_index;
@@ -1011,7 +1046,7 @@ processing_build_callback_data (int generation)
 #endif
 
 	//FIXME move half of the cleanup to before the bridge callback?
-	bridge_processor->num_sccs = num_colors_with_bridges;
+	bridge_processor->num_sccs = num_sccs;
 	bridge_processor->api_sccs = api_sccs;
 	bridge_processor->num_xrefs = xref_count;
 	bridge_processor->api_xrefs = api_xrefs;
@@ -1033,10 +1068,10 @@ processing_after_callback (int generation)
 
 	cleanup_time = step_timer (&curtime);
 
-	mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_GC, "GC_TAR_BRIDGE bridges %d objects %d colors %d ignored %d sccs %d xref %d cache %d/%d setup %.2fms tarjan %.2fms scc-setup %.2fms gather-xref %.2fms xref-setup %.2fms cleanup %.2fms",
+	mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_GC, "GC_TAR_BRIDGE bridges %d objects %d colors %d ignored %d sccs %d xref %d cache %d/%d/%d setup %.2fms tarjan %.2fms scc-setup %.2fms gather-xref %.2fms xref-setup %.2fms cleanup %.2fms",
 		bridge_count, object_count, color_count,
 		ignored_objects, scc_count, xref_count,
-		cache_hits, cache_misses,
+		cache_hits, cache_misses, cache_abstains,
 		setup_time / 10000.0f,
 		tarjan_time / 10000.0f,
 		scc_setup_time / 10000.0f,
@@ -1044,7 +1079,7 @@ processing_after_callback (int generation)
 		xref_setup_time / 10000.0f,
 		cleanup_time / 10000.0f);
 
-	cache_hits = cache_misses = 0;
+	cache_hits = cache_misses = cache_abstains = 0;
 	ignored_objects = 0;
 }
 
