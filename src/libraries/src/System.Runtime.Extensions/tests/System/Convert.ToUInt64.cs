@@ -178,6 +178,7 @@ namespace System.Tests
             UInt64[] expectedValues = { UInt64.MaxValue, UInt64.MinValue };
             Verify(Convert.ToUInt64, testValues, expectedValues);
         }
+
 #if netstandard17
         [Fact]
         public void FromDateTime()

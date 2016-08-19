@@ -94,6 +94,7 @@ namespace System.Tests
             Assert.Throws<ArgumentOutOfRangeException>(() => Convert.ToBase64CharArray(inputBytes, 0, inputBytes.Length + 1, outputBuffer, 0));
             Assert.Throws<ArgumentOutOfRangeException>(() => Convert.ToBase64CharArray(inputBytes, 1, inputBytes.Length, outputBuffer, 0));
         }
+
 #if netstandard17
         [Fact]
         public static void SimpleTest()

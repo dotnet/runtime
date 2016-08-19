@@ -14,6 +14,7 @@ namespace System.Tests
             Boolean[] testValues = { true, false };
             Verify(Convert.ToBoolean, testValues, testValues);
         }
+
         [Fact]
         public void FromByte()
         {
@@ -123,6 +124,7 @@ namespace System.Tests
             Boolean[] expectedValues = { false, true };
             Verify(Convert.ToBoolean, testValues, expectedValues);
         }
+
 #if netstandard17
         [Fact]
         public void FromChar()

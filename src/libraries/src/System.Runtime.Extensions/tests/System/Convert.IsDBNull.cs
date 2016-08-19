@@ -9,7 +9,6 @@ namespace System.Tests
 {
     public class IsDBNullTests
     {
-#if netstandard17
         [Fact]
         public static void SimpleTest()
         {
@@ -19,6 +18,5 @@ namespace System.Tests
             Assert.Equal(false, Convert.IsDBNull('x'));
             Assert.Equal(false, Convert.IsDBNull(1.1));
         }
-#endif
     }
 }
