@@ -10,10 +10,10 @@ namespace System.Security.Permissions
         public ReflectionPermissionAttribute(System.Security.Permissions.SecurityAction action) : base(default(System.Security.Permissions.SecurityAction)) { }
         public System.Security.Permissions.ReflectionPermissionFlag Flags { get; set; }
         public bool MemberAccess { get; set; }
-        [System.ObsoleteAttribute]
+        [System.ObsoleteAttribute("This permission is no longer used by the CLR.")]
         public bool ReflectionEmit { get; set; }
         public bool RestrictedMemberAccess { get; set; }
-        [System.ObsoleteAttribute("not enforced in 2.0+")]
+        [System.ObsoleteAttribute("This API has been deprecated. http://go.microsoft.com/fwlink/?linkid=14202")]
         public bool TypeInformation { get; set; }
         public override System.Security.IPermission CreatePermission() { return default(System.Security.IPermission); }
     }

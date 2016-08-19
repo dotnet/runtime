@@ -20,6 +20,7 @@ namespace System.Security {
   }
   public partial class HostProtectionException : System.SystemException {
     public HostProtectionException() { }
+    protected HostProtectionException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
     public HostProtectionException(string message) : base(message) { }
     public HostProtectionException(string message, System.Exception e) : base(message, e) { }
     public HostProtectionException(string message, System.Security.Permissions.HostProtectionResource protectedResources, System.Security.Permissions.HostProtectionResource demandedResources) { }
@@ -79,7 +80,7 @@ namespace System.Security {
     public override bool Equals(object o) => base.Equals(o);
     public override int GetHashCode() => base.GetHashCode();
   }
-  public partial class PermissionSet : System.Collections.ICollection, System.Collections.IEnumerable, System.Security.ISecurityEncodable, System.Security.IStackWalk {
+  public partial class PermissionSet : System.Collections.ICollection, System.Collections.IEnumerable, System.Runtime.Serialization.IDeserializationCallback, System.Security.ISecurityEncodable, System.Security.IStackWalk {
     public PermissionSet(System.Security.Permissions.PermissionState state) { }
     public PermissionSet(System.Security.PermissionSet permSet) { }
     public virtual int Count { get { return default(int); } }
@@ -108,6 +109,7 @@ namespace System.Security {
     public System.Security.IPermission RemovePermission(System.Type permClass) { return default(System.Security.IPermission); }
     public static void RevertAssert() { }
     public System.Security.IPermission SetPermission(System.Security.IPermission perm) { return default(System.Security.IPermission); }
+    void System.Runtime.Serialization.IDeserializationCallback.OnDeserialization(object sender) { }
     public override string ToString() => base.ToString();
     public System.Security.PermissionSet Union(System.Security.PermissionSet other) { return default(System.Security.PermissionSet); }
   }
@@ -139,7 +141,7 @@ namespace System.Security {
   public static partial class SecurityManager {
     [System.ObsoleteAttribute]
     public static bool CheckExecutionRights { get; set; }
-    [System.ObsoleteAttribute("The security manager cannot be turned off on MS runtime")]
+    [System.ObsoleteAttribute]
     public static bool SecurityEnabled { get; set; }
     public static void GetZoneAndOrigin(out System.Collections.ArrayList zone, out System.Collections.ArrayList origin) { zone = default(System.Collections.ArrayList); origin = default(System.Collections.ArrayList); }
     [System.ObsoleteAttribute]
@@ -428,7 +430,7 @@ namespace System.Security.Permissions {
   [System.AttributeUsageAttribute((System.AttributeTargets)109, AllowMultiple=true, Inherited=false)]
   public sealed partial class RegistryPermissionAttribute : System.Security.Permissions.CodeAccessSecurityAttribute {
     public RegistryPermissionAttribute(System.Security.Permissions.SecurityAction action) : base (default(System.Security.Permissions.SecurityAction)) { }
-    [System.ObsoleteAttribute("use newer properties")]
+    [System.ObsoleteAttribute]
     public string All { get; set; }
     public string ChangeAccessControl { get; set; }
     public string Create { get; set; }
@@ -441,16 +443,16 @@ namespace System.Security.Permissions {
   public enum SecurityAction {
     Assert = 3,
     Demand = 2,
-    [System.ObsoleteAttribute("This requests should not be used")]
+    [System.ObsoleteAttribute]
     Deny = 4,
     InheritanceDemand = 7,
     LinkDemand = 6,
     PermitOnly = 5,
-    [System.ObsoleteAttribute("This requests should not be used")]
+    [System.ObsoleteAttribute]
     RequestMinimum = 8,
-    [System.ObsoleteAttribute("This requests should not be used")]
+    [System.ObsoleteAttribute]
     RequestOptional = 9,
-    [System.ObsoleteAttribute("This requests should not be used")]
+    [System.ObsoleteAttribute]
     RequestRefuse = 10,
   }
   [System.AttributeUsageAttribute((System.AttributeTargets)109, AllowMultiple=true, Inherited=false)]
@@ -786,16 +788,17 @@ namespace System.Security.Policy {
     public override int GetHashCode() => base.GetHashCode();
     public override string ToString() => base.ToString();
   }
-  public sealed partial class Hash : System.Security.Policy.EvidenceBase {
+  public sealed partial class Hash : System.Security.Policy.EvidenceBase, System.Runtime.Serialization.ISerializable {
     public Hash(System.Reflection.Assembly assembly) { }
     public byte[] MD5 { get { return default(byte[]); } }
     public byte[] SHA1 { get { return default(byte[]); } }
     public static System.Security.Policy.Hash CreateMD5(byte[] md5) { return default(System.Security.Policy.Hash); }
     public static System.Security.Policy.Hash CreateSHA1(byte[] sha1) { return default(System.Security.Policy.Hash); }
     public byte[] GenerateHash(System.Security.Cryptography.HashAlgorithm hashAlg) { return default(byte[]); }
+    public void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
     public override string ToString() => base.ToString();
   }
-  public sealed partial class HashMembershipCondition : System.Security.ISecurityEncodable, System.Security.ISecurityPolicyEncodable, System.Security.Policy.IMembershipCondition {
+  public sealed partial class HashMembershipCondition : System.Runtime.Serialization.IDeserializationCallback, System.Runtime.Serialization.ISerializable, System.Security.ISecurityEncodable, System.Security.ISecurityPolicyEncodable, System.Security.Policy.IMembershipCondition {
     public HashMembershipCondition(System.Security.Cryptography.HashAlgorithm hashAlg, byte[] value) { }
     public System.Security.Cryptography.HashAlgorithm HashAlgorithm { get; set; }
     public byte[] HashValue { get; set; }
@@ -803,6 +806,8 @@ namespace System.Security.Policy {
     public System.Security.Policy.IMembershipCondition Copy() { return this; }
     public override bool Equals(object o) => base.Equals(o);
     public override int GetHashCode() => base.GetHashCode();
+    void System.Runtime.Serialization.IDeserializationCallback.OnDeserialization(object sender) { }
+    void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
     public override string ToString() => base.ToString();
   }
   public partial interface IIdentityPermissionFactory {
@@ -840,30 +845,31 @@ namespace System.Security.Policy {
   }
   public partial class PolicyException : System.SystemException {
     public PolicyException() { }
+    protected PolicyException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
     public PolicyException(string message) : base(message) { }
     public PolicyException(string message, System.Exception exception) : base(message, exception) { }
   }
   public sealed partial class PolicyLevel {
     internal PolicyLevel() { }
-    [System.ObsoleteAttribute("All GACed assemblies are now fully trusted and all permissions now succeed on fully trusted code.")]
+    [System.ObsoleteAttribute]
     public System.Collections.IList FullTrustAssemblies { get { return default(System.Collections.IList); } }
     public string Label { get { return default(string); } }
     public System.Collections.IList NamedPermissionSets { get { return default(System.Collections.IList); } }
     public System.Security.Policy.CodeGroup RootCodeGroup { get; set; }
     public string StoreLocation { get { return default(string); } }
     public System.Security.PolicyLevelType Type { get { return default(System.Security.PolicyLevelType); } }
-    [System.ObsoleteAttribute("All GACed assemblies are now fully trusted and all permissions now succeed on fully trusted code.")]
+    [System.ObsoleteAttribute]
     public void AddFullTrustAssembly(System.Security.Policy.StrongName sn) { }
-    [System.ObsoleteAttribute("All GACed assemblies are now fully trusted and all permissions now succeed on fully trusted code.")]
+    [System.ObsoleteAttribute]
     public void AddFullTrustAssembly(System.Security.Policy.StrongNameMembershipCondition snMC) { }
     public void AddNamedPermissionSet(System.Security.NamedPermissionSet permSet) { }
     public System.Security.NamedPermissionSet ChangeNamedPermissionSet(string name, System.Security.PermissionSet pSet) { return default(System.Security.NamedPermissionSet); }
     public static System.Security.Policy.PolicyLevel CreateAppDomainLevel() { return default(System.Security.Policy.PolicyLevel); }
     public System.Security.NamedPermissionSet GetNamedPermissionSet(string name) { return default(System.Security.NamedPermissionSet); }
     public void Recover() { }
-    [System.ObsoleteAttribute("All GACed assemblies are now fully trusted and all permissions now succeed on fully trusted code.")]
+    [System.ObsoleteAttribute]
     public void RemoveFullTrustAssembly(System.Security.Policy.StrongName sn) { }
-    [System.ObsoleteAttribute("All GACed assemblies are now fully trusted and all permissions now succeed on fully trusted code.")]
+    [System.ObsoleteAttribute]
     public void RemoveFullTrustAssembly(System.Security.Policy.StrongNameMembershipCondition snMC) { }
     public System.Security.NamedPermissionSet RemoveNamedPermissionSet(System.Security.NamedPermissionSet permSet) { return default(System.Security.NamedPermissionSet); }
     public System.Security.NamedPermissionSet RemoveNamedPermissionSet(string name) { return default(System.Security.NamedPermissionSet); }

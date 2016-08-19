@@ -7,18 +7,18 @@ namespace System.Security.Policy
     public abstract partial class CodeGroup
     {
         protected CodeGroup(System.Security.Policy.IMembershipCondition membershipCondition, System.Security.Policy.PolicyStatement policy) { }
-        public virtual string AttributeString { get { return default(string); } }
+        public virtual string AttributeString { get { return null; } }
         public System.Collections.IList Children { get; set; }
         public string Description { get; set; }
         public System.Security.Policy.IMembershipCondition MembershipCondition { get; set; }
         public abstract string MergeLogic { get; }
         public string Name { get; set; }
-        public virtual string PermissionSetName { get { return default(string); } }
+        public virtual string PermissionSetName { get { return null; } }
         public System.Security.Policy.PolicyStatement PolicyStatement { get; set; }
         public void AddChild(System.Security.Policy.CodeGroup group) { }
         public abstract System.Security.Policy.CodeGroup Copy();
         public override bool Equals(object o) => base.Equals(o);
-        public bool Equals(System.Security.Policy.CodeGroup cg, bool compareChildren) { return default(bool); }
+        public bool Equals(System.Security.Policy.CodeGroup cg, bool compareChildren) { return false; }
         public override int GetHashCode() => base.GetHashCode();
         public void RemoveChild(System.Security.Policy.CodeGroup group) { }
         public abstract System.Security.Policy.PolicyStatement Resolve(System.Security.Policy.Evidence evidence);

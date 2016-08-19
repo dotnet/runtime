@@ -9,7 +9,7 @@ namespace System.Security.Policy
         public PolicyStatement(System.Security.PermissionSet permSet) { }
         public PolicyStatement(System.Security.PermissionSet permSet, System.Security.Policy.PolicyStatementAttribute attributes) { }
         public System.Security.Policy.PolicyStatementAttribute Attributes { get; set; }
-        public string AttributeString { get { return default(string); } }
+        public string AttributeString { get { return null; } }
         public System.Security.PermissionSet PermissionSet { get; set; }
         public System.Security.Policy.PolicyStatement Copy() { return this; }
         public override bool Equals(object o) => base.Equals(o);

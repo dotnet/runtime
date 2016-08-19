@@ -8,6 +8,6 @@ namespace System.Security
     {
         protected SecurityState() { }
         public abstract void EnsureState();
-        public bool IsStateAvailable() { return default(bool); }
+        public bool IsStateAvailable() { return false; }
     }
 }

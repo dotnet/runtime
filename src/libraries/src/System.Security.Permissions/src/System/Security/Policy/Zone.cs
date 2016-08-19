@@ -8,7 +8,7 @@ namespace System.Security.Policy
     {
         public Zone(System.Security.SecurityZone zone) { }
         public System.Security.SecurityZone SecurityZone { get { return default(System.Security.SecurityZone); } }
-        public object Copy() { return default(object); }
+        public object Copy() { return null; }
         public static System.Security.Policy.Zone CreateFromUrl(string url) { return default(System.Security.Policy.Zone); }
         public System.Security.IPermission CreateIdentityPermission(System.Security.Policy.Evidence evidence) { return default(System.Security.IPermission); }
         public override bool Equals(object o) => base.Equals(o);

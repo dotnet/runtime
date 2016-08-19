@@ -10,7 +10,7 @@ namespace System.Security.Policy
         public string Name { get; set; }
         public System.Security.Permissions.StrongNamePublicKeyBlob PublicKey { get; set; }
         public System.Version Version { get; set; }
-        public bool Check(System.Security.Policy.Evidence evidence) { return default(bool); }
+        public bool Check(System.Security.Policy.Evidence evidence) { return false; }
         public System.Security.Policy.IMembershipCondition Copy() { return this; }
         public override bool Equals(object o) => base.Equals(o);
         public override int GetHashCode() => base.GetHashCode();

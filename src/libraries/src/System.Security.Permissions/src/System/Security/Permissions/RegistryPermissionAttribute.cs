@@ -8,7 +8,7 @@ namespace System.Security.Permissions
     public sealed partial class RegistryPermissionAttribute : System.Security.Permissions.CodeAccessSecurityAttribute
     {
         public RegistryPermissionAttribute(System.Security.Permissions.SecurityAction action) : base(default(System.Security.Permissions.SecurityAction)) { }
-        [System.ObsoleteAttribute("use newer properties")]
+        [System.ObsoleteAttribute("Please use the ViewAndModify property instead.")]
         public string All { get; set; }
         public string ChangeAccessControl { get; set; }
         public string Create { get; set; }
