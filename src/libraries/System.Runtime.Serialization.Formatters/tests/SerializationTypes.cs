@@ -404,6 +404,13 @@ namespace System.Runtime.Serialization.Formatters.Tests
         public object Value;
     }
 
+    [Serializable]
+    public class ObjectWithStateAndMethod
+    {
+        public int State;
+        public int GetState() => State;
+    }
+
     internal sealed class ObjectReferenceEqualityComparer : IEqualityComparer<object>
     {
         public new bool Equals(object x, object y) => ReferenceEquals(x, y);
