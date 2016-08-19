@@ -48,8 +48,8 @@ namespace System.Net.Http
 #endif
     {
 #if NET46
-        internal static Version HttpVersion20 => new Version(2,0);
-        internal static Version HttpVersionUnknown => new Version(0,0);
+        internal static readonly Version HttpVersion20 = new Version(2, 0);
+        internal static readonly Version HttpVersionUnknown = new Version(0, 0);
 #else
         internal static Version HttpVersion20 => HttpVersion.Version20;
         internal static Version HttpVersionUnknown => HttpVersion.Unknown;
