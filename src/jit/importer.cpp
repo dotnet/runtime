@@ -7551,7 +7551,11 @@ GenTreePtr Compiler::impFixupCallStructReturn(GenTreePtr call, CORINFO_CLASS_HAN
             return call;
         }
 
-        return impAssignMultiRegTypeToVar(call, retClsHnd);
+        unsigned retRegCount = retTypeDesc->GetReturnRegCount();
+        if (retRegCount >= 2)
+        {
+            return impAssignMultiRegTypeToVar(call, retClsHnd);
+        }
     }
 #endif // _TARGET_ARM_
 
@@ -7689,7 +7693,7 @@ GenTreePtr Compiler::impFixupStructReturnType(GenTreePtr op, CORINFO_CLASS_HANDL
 
 #elif FEATURE_MULTIREG_RET && defined(_TARGET_ARM_)
 
-    if (!info.compIsVarArgs && IsHfa(retClsHnd))
+    if (varTypeIsStruct(info.compRetNativeType) && !info.compIsVarArgs && IsHfa(retClsHnd))
     {
         if (op->gtOper == GT_LCL_VAR)
         {
