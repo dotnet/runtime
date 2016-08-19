@@ -7,7 +7,7 @@ using System;
 
 namespace Microsoft.Win32.RegistryTests
 {
-    public class RegistryKey_DeleteSubKey_str : RegistryTestsBase
+    public class RegistryKey_DeleteSubKey_str : RegistryKeyDeleteSubKeyTestsBase
     {
         [Fact]
         public void NegativeTests()
@@ -52,5 +52,15 @@ namespace Microsoft.Win32.RegistryTests
             Assert.Null(TestRegistryKey.OpenSubKey(TestRegistryKeyName));
             Assert.Equal(expected: 0, actual: TestRegistryKey.SubKeyCount);
         }
+
+        [Theory]
+        [MemberData(nameof(TestRegistrySubKeyNames))]
+        public void DeleteSubKey_KeyExists_KeyDeleted(string subkeyName) =>
+            Verify_DeleteSubKey_KeyExists_KeyDeleted(() => TestRegistryKey.DeleteSubKey(subkeyName));
+
+        [Theory]
+        [MemberData(nameof(TestRegistrySubKeyNames))]
+        public void DeleteSubKey_KeyDoesNotExists_Throws(string subkeyName) =>
+            Verify_DeleteSubKey_KeyDoesNotExists_Throws(() => TestRegistryKey.DeleteSubKey(subkeyName));
     }
 }
