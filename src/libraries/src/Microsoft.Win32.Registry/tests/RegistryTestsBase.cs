@@ -54,5 +54,34 @@ namespace Microsoft.Win32.RegistryTests
             //   classes running concurrently
             return "corefxtest_" + GetType().Name;
         }
+
+        protected const string TestRegistrySubKeyName = @"Foo\Bar";
+
+        protected string TestRegistrySubKeyFullName => TestRegistryKey.Name + @"\" + TestRegistrySubKeyName;
+
+        public static readonly object[][] TestRegistrySubKeyNames =
+        {
+            new object[] { @"Foo\Bar" },
+            new object[] { @"Foo\\Bar" },
+            new object[] { @"Foo\\\Bar" },
+            new object[] { @"Foo\Bar\" },
+            new object[] { @"Foo\Bar\\" },
+            new object[] { @"Foo\Bar\\\" },
+            new object[] { @"Foo\\Bar\" },
+            new object[] { @"Foo\\Bar\\" },
+            new object[] { @"Foo\\Bar\\\" },
+        };
+
+        protected void CreateTestRegistrySubKey()
+        {
+            Assert.Equal(0, TestRegistryKey.SubKeyCount);
+
+            using (RegistryKey key = TestRegistryKey.CreateSubKey(TestRegistrySubKeyName))
+            {
+                Assert.NotNull(key);
+                Assert.Equal(1, TestRegistryKey.SubKeyCount);
+                Assert.Equal(TestRegistrySubKeyFullName, key.Name);
+            }
+        }
     }
 }
