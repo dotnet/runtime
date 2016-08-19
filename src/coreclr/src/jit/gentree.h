@@ -117,6 +117,9 @@ enum genTreeKinds
 
     GTK_LOCAL = 0x0200, // is a local access (load, store, phi)
 
+    GTK_NOVALUE = 0x0400, // node does not produce a value
+    GTK_NOTLIR  = 0x0800, // node is not allowed in LIR
+
     /* Define composite value(s) */
 
     GTK_SMPOP = (GTK_UNOP | GTK_BINOP | GTK_RELOP | GTK_LOGOP)
@@ -235,6 +238,7 @@ public:
     }
 };
 
+class GenTreeUseEdgeIterator;
 class GenTreeOperandIterator;
 
 /*****************************************************************************/
@@ -386,6 +390,8 @@ struct GenTree
                           // valid only for CSE expressions
 
 #endif // FEATURE_ANYCSE
+
+    unsigned char gtLIRFlags; // Used for nodes that are in LIR. See LIR::Flags in lir.h for the various flags.
 
 #if ASSERTION_PROP
     unsigned short gtAssertionNum; // 0 or Assertion table index
@@ -936,12 +942,8 @@ public:
 
 //----------------------------------------------------------------
 
-#define GTF_STMT_CMPADD 0x80000000     // GT_STMT    -- added by compiler
-#define GTF_STMT_HAS_CSE 0x40000000    // GT_STMT    -- CSE def or use was subsituted
-#define GTF_STMT_TOP_LEVEL 0x20000000  // GT_STMT    -- Top-level statement -
-                                       //               true iff gtStmtList->gtPrev == nullptr
-                                       //               True for all stmts when in FGOrderTree
-#define GTF_STMT_SKIP_LOWER 0x10000000 // GT_STMT    -- Skip lowering if we already lowered an embedded stmt.
+#define GTF_STMT_CMPADD 0x80000000  // GT_STMT    -- added by compiler
+#define GTF_STMT_HAS_CSE 0x40000000 // GT_STMT    -- CSE def or use was subsituted
 
 //----------------------------------------------------------------
 
@@ -990,6 +992,55 @@ public:
     static unsigned StripExOp(unsigned opKind)
     {
         return opKind & ~GTK_EXOP;
+    }
+
+    bool IsValue() const
+    {
+        if ((OperKind(gtOper) & GTK_NOVALUE) != 0)
+        {
+            return false;
+        }
+
+        if (gtOper == GT_NOP || gtOper == GT_CALL)
+        {
+            return gtType != TYP_VOID;
+        }
+
+        return true;
+    }
+
+    bool IsLIR() const
+    {
+        if ((OperKind(gtOper) & GTK_NOTLIR) != 0)
+        {
+            return false;
+        }
+
+        switch (gtOper)
+        {
+            case GT_NOP:
+                // NOPs may only be present in LIR if they do not produce a value.
+                return IsNothingNode();
+
+            case GT_ARGPLACE:
+            case GT_LIST:
+                // ARGPLACE and LIST nodes may not be present in a block's LIR sequence, but they may
+                // be present as children of an LIR node.
+                return (gtNext == nullptr) && (gtPrev == nullptr);
+
+            case GT_ADDR:
+            {
+                // ADDR ndoes may only be present in LIR if the location they refer to is not a
+                // local, class variable, or IND node.
+                GenTree*   location   = const_cast<GenTree*>(this)->gtGetOp1();
+                genTreeOps locationOp = location->OperGet();
+                return !location->IsLocal() && (locationOp != GT_CLS_VAR) && (locationOp != GT_IND);
+            }
+
+            default:
+                // All other nodes are assumed to be correct.
+                return true;
+        }
     }
 
     static bool OperIsConst(genTreeOps gtOper)
@@ -1094,6 +1145,16 @@ public:
     bool OperIsPutArgStk() const
     {
         return gtOper == GT_PUTARG_STK;
+    }
+
+    bool OperIsPutArgReg() const
+    {
+        return gtOper == GT_PUTARG_REG;
+    }
+
+    bool OperIsPutArg() const
+    {
+        return OperIsPutArgStk() || OperIsPutArgReg();
     }
 
     bool OperIsAddrMode() const
@@ -1421,6 +1482,10 @@ public:
     // can be modified; otherwise, return null.
     GenTreePtr* gtGetChildPointer(GenTreePtr parent);
 
+    // Given a tree node, if this node uses that node, return the use as an out parameter and return true.
+    // Otherwise, return false.
+    bool TryGetUse(GenTree* def, GenTree*** use, bool expandMultiRegArgs = true);
+
     // Get the parent of this node, and optionally capture the pointer to the child so that it can be modified.
     GenTreePtr gtGetParent(GenTreePtr** parentChildPtrPtr);
 
@@ -1448,9 +1513,6 @@ public:
     // (<= 32 bit) constant.  If it returns true, it sets "*offset" to (one of the) constant value(s), and
     // "*addr" to the other argument.
     bool IsAddWithI32Const(GenTreePtr* addr, int* offset);
-
-    // Insert 'node' after this node in execution order.
-    void InsertAfterSelf(GenTree* node, GenTreeStmt* stmt = nullptr);
 
 public:
 #if SMALL_TREE_NODES
@@ -1710,6 +1772,9 @@ public:
     // register.
     bool IsRegOptional() const;
 
+    // Returns "true" iff "this" is a phi-related node (i.e. a GT_PHI_ARG, GT_PHI, or a PhiDefn).
+    bool IsPhiNode();
+
     // Returns "true" iff "*this" is an assignment (GT_ASG) tree that defines an SSA name (lcl = phi(...));
     bool IsPhiDefn();
 
@@ -1740,15 +1805,26 @@ public:
     // Requires "childNum < NumChildren()".  Returns the "n"th child of "this."
     GenTreePtr GetChild(unsigned childNum);
 
+    // Returns an iterator that will produce the use edge to each operand of this node. Differs
+    // from the sequence of nodes produced by a loop over `GetChild` in its handling of call, phi,
+    // and block op nodes. If `expandMultiRegArgs` is true, an multi-reg args passed to a call
+    // will appear be expanded from their GT_LIST node into that node's contents.
+    GenTreeUseEdgeIterator GenTree::UseEdgesBegin(bool expandMultiRegArgs = true);
+    GenTreeUseEdgeIterator GenTree::UseEdgesEnd();
+
+    IteratorPair<GenTreeUseEdgeIterator> GenTree::UseEdges(bool expandMultiRegArgs = true);
+
     // Returns an iterator that will produce each operand of this node. Differs from the sequence
     // of nodes produced by a loop over `GetChild` in its handling of call, phi, and block op
     // nodes. If `expandMultiRegArgs` is true, an multi-reg args passed to a call will appear
     // be expanded from their GT_LIST node into that node's contents.
-    GenTreeOperandIterator OperandsBegin(bool expandMultiRegArgs = false);
+    GenTreeOperandIterator OperandsBegin(bool expandMultiRegArgs = true);
     GenTreeOperandIterator OperandsEnd();
 
     // Returns a range that will produce the operands of this node in use order.
-    IteratorPair<GenTreeOperandIterator> Operands(bool expandMultiRegArgs = false);
+    IteratorPair<GenTreeOperandIterator> Operands(bool expandMultiRegArgs = true);
+
+    bool Precedes(GenTree* other);
 
     // The maximum possible # of children of any node.
     static const int MAX_CHILDREN = 6;
@@ -1774,6 +1850,7 @@ public:
     }
 
 #ifdef DEBUG
+
 private:
     GenTree& operator=(const GenTree& gt)
     {
@@ -1804,62 +1881,112 @@ public:
 };
 
 //------------------------------------------------------------------------
-// GenTreeOperandIterator: an iterator that will produce each operand of a
+// GenTreeUseEdgeIterator: an iterator that will produce each use edge of a
 //                         GenTree node in the order in which they are
-//                         used. Note that the operands of a node may not
+//                         used. Note that the use edges of a node may not
 //                         correspond exactly to the nodes on the other
 //                         ends of its use edges: in particular, GT_LIST
 //                         nodes are expanded into their component parts
 //                         (with the optional exception of multi-reg
 //                         arguments). This differs from the behavior of
-//                         GenTree::GetChild(), which does not expand
+//                         GenTree::GetChildPointer(), which does not expand
 //                         lists.
 //
 // Note: valid values of this type may be obtained by calling
-// `GenTree::OperandsBegin` and `GenTree::OperandsEnd`.
-class GenTreeOperandIterator
+// `GenTree::UseEdgesBegin` and `GenTree::UseEdgesEnd`.
+//
+class GenTreeUseEdgeIterator final
 {
-    friend GenTreeOperandIterator GenTree::OperandsBegin(bool expandMultiRegArgs);
-    friend GenTreeOperandIterator GenTree::OperandsEnd();
+    friend class GenTreeOperandIterator;
+    friend GenTreeUseEdgeIterator GenTree::UseEdgesBegin(bool expandMultiRegArgs);
+    friend GenTreeUseEdgeIterator GenTree::UseEdgesEnd();
 
-    GenTree* m_node;
-    GenTree* m_operand;
-    GenTree* m_argList;
-    GenTree* m_multiRegArg;
-    bool     m_expandMultiRegArgs;
-    int      m_state;
+    GenTree*  m_node;
+    GenTree** m_edge;
+    GenTree*  m_argList;
+    GenTree*  m_multiRegArg;
+    bool      m_expandMultiRegArgs;
+    int       m_state;
 
-    GenTreeOperandIterator(GenTree* node, bool expandMultiRegArgs);
+    GenTreeUseEdgeIterator(GenTree* node, bool expandMultiRegArgs);
 
-    GenTree* GetNextOperand() const;
-    void     MoveToNextCallOperand();
-    void     MoveToNextPhiOperand();
+    GenTree** GetNextUseEdge() const;
+    void      MoveToNextCallUseEdge();
+    void      MoveToNextPhiUseEdge();
 #ifdef FEATURE_SIMD
-    void MoveToNextSIMDOperand();
+    void MoveToNextSIMDUseEdge();
 #endif
 
 public:
-    GenTreeOperandIterator();
+    GenTreeUseEdgeIterator();
 
-    inline GenTree*& operator*()
+    inline GenTree** operator*()
     {
-        return m_operand;
+        return m_edge;
     }
 
     inline GenTree** operator->()
     {
-        return &m_operand;
+        return m_edge;
     }
 
-    inline bool operator==(const GenTreeOperandIterator& other) const
+    inline bool operator==(const GenTreeUseEdgeIterator& other) const
     {
         if (m_state == -1 || other.m_state == -1)
         {
             return m_state == other.m_state;
         }
 
-        return (m_node == other.m_node) && (m_operand == other.m_operand) && (m_argList == other.m_argList) &&
+        return (m_node == other.m_node) && (m_edge == other.m_edge) && (m_argList == other.m_argList) &&
                (m_state == other.m_state);
+    }
+
+    inline bool operator!=(const GenTreeUseEdgeIterator& other) const
+    {
+        return !(operator==(other));
+    }
+
+    GenTreeUseEdgeIterator& operator++();
+};
+
+//------------------------------------------------------------------------
+// GenTreeOperandIterator: an iterator that will produce each operand of a
+//                         GenTree node in the order in which they are
+//                         used. This uses `GenTreeUseEdgeIterator` under
+//                         the covers and comes with the same caveats
+//                         w.r.t. `GetChild`.
+//
+// Note: valid values of this type may be obtained by calling
+// `GenTree::OperandsBegin` and `GenTree::OperandsEnd`.
+class GenTreeOperandIterator final
+{
+    friend GenTreeOperandIterator GenTree::OperandsBegin(bool expandMultiRegArgs);
+    friend GenTreeOperandIterator GenTree::OperandsEnd();
+
+    GenTreeUseEdgeIterator m_useEdges;
+
+    GenTreeOperandIterator(GenTree* node, bool expandMultiRegArgs) : m_useEdges(node, expandMultiRegArgs)
+    {
+    }
+
+public:
+    GenTreeOperandIterator() : m_useEdges()
+    {
+    }
+
+    inline GenTree* operator*()
+    {
+        return *(*m_useEdges);
+    }
+
+    inline GenTree* operator->()
+    {
+        return *(*m_useEdges);
+    }
+
+    inline bool operator==(const GenTreeOperandIterator& other) const
+    {
+        return m_useEdges == other.m_useEdges;
     }
 
     inline bool operator!=(const GenTreeOperandIterator& other) const
@@ -1867,7 +1994,11 @@ public:
         return !(operator==(other));
     }
 
-    GenTreeOperandIterator& operator++();
+    inline GenTreeOperandIterator& operator++()
+    {
+        ++m_useEdges;
+        return *this;
+    }
 };
 
 /*****************************************************************************/
@@ -4032,40 +4163,6 @@ struct GenTreeStmt : public GenTree
     IL_OFFSET gtStmtLastILoffs; // instr offset at end of stmt
 #endif
 
-    bool gtStmtIsTopLevel()
-    {
-        return (gtFlags & GTF_STMT_TOP_LEVEL) != 0;
-    }
-
-    bool gtStmtIsEmbedded()
-    {
-        return !gtStmtIsTopLevel();
-    }
-
-    // Return the next statement, if it is embedded, otherwise nullptr
-    GenTreeStmt* gtStmtNextIfEmbedded()
-    {
-        GenTree* nextStmt = gtNext;
-        if (nextStmt != nullptr && nextStmt->gtStmt.gtStmtIsEmbedded())
-        {
-            return nextStmt->AsStmt();
-        }
-        else
-        {
-            return nullptr;
-        }
-    }
-
-    GenTree* gtStmtNextTopLevelStmt()
-    {
-        GenTree* nextStmt = gtNext;
-        while (nextStmt != nullptr && nextStmt->gtStmt.gtStmtIsEmbedded())
-        {
-            nextStmt = nextStmt->gtNext;
-        }
-        return nextStmt;
-    }
-
     __declspec(property(get = getNextStmt)) GenTreeStmt* gtNextStmt;
 
     __declspec(property(get = getPrevStmt)) GenTreeStmt* gtPrevStmt;
@@ -4108,8 +4205,6 @@ struct GenTreeStmt : public GenTree
     {
         // Statements can't have statements as part of their expression tree.
         assert(expr->gtOper != GT_STMT);
-
-        gtFlags |= GTF_STMT_TOP_LEVEL;
 
         // Set the statement to have the same costs as the top node of the tree.
         // This is used long before costs have been assigned, so we need to copy

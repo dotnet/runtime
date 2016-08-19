@@ -24,6 +24,9 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 #include "jit.h"
 #include "opcode.h"
+#include "varset.h"
+#include "gentree.h"
+#include "lir.h"
 #include "block.h"
 #include "inline.h"
 #include "jiteh.h"
@@ -32,7 +35,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "sm.h"
 #include "simplerhash.h"
 #include "cycletimer.h"
-#include "varset.h"
 #include "blockset.h"
 #include "jitstd.h"
 #include "arraystack.h"
@@ -116,8 +118,6 @@ void* __cdecl operator new(size_t n, void* p, const jitstd::placement_t& syntax_
 
 /* This is included here and not earlier as it needs the definition of "CSE"
  * which is defined in the section above */
-
-#include "gentree.h"
 
 /*****************************************************************************/
 
@@ -1400,6 +1400,7 @@ class Compiler
     friend class CodeGen;
     friend class LclVarDsc;
     friend class TempDsc;
+    friend class LIR;
     friend class ObjectAllocator;
 
 #ifndef _TARGET_64BIT_
@@ -2074,7 +2075,7 @@ public:
 // Functions to display the trees
 
 #ifdef DEBUG
-    void gtDispNode(GenTreePtr tree, IndentStack* indentStack, __in_z const char* msg);
+    void gtDispNode(GenTreePtr tree, IndentStack* indentStack, __in_z const char* msg, bool isLIR);
 
     void gtDispVN(GenTreePtr tree);
     void gtDispConst(GenTreePtr tree);
@@ -2100,7 +2101,8 @@ public:
     void gtDispTree(GenTreePtr           tree,
                     IndentStack*         indentStack = nullptr,
                     __in_opt const char* msg         = nullptr,
-                    bool                 topOnly     = false);
+                    bool                 topOnly     = false,
+                    bool                 isLIR       = false);
     void gtGetLclVarNameInfo(unsigned lclNum, const char** ilKindOut, const char** ilNameOut, unsigned* ilNumOut);
     int gtGetLclVarName(unsigned lclNum, char* buf, unsigned buf_remaining);
     char* gtGetLclVarName(unsigned lclNum);
@@ -2111,12 +2113,11 @@ public:
     void gtDispArgList(GenTreePtr tree, IndentStack* indentStack);
     void gtDispFieldSeq(FieldSeqNode* pfsn);
 
-    GenTreePtr gtDispLinearTree(GenTreeStmt*         curStmt,
-                                GenTreePtr           nextLinearNode,
-                                GenTreePtr           tree,
-                                IndentStack*         indentStack,
-                                __in_opt const char* msg = nullptr);
-    GenTreePtr gtDispLinearStmt(GenTreeStmt* stmt, IndentStack* indentStack = nullptr);
+    void gtDispRange(LIR::ReadOnlyRange const& range);
+
+    void gtDispTreeRange(LIR::Range& containingRange, GenTree* tree);
+
+    void gtDispLIRNode(GenTree* node);
 #endif
 
     // For tree walks
@@ -2476,6 +2477,7 @@ public:
 
     static fgWalkPreFn lvaDecRefCntsCB;
     void lvaDecRefCnts(GenTreePtr tree);
+    void lvaDecRefCnts(BasicBlock* basicBlock, GenTreePtr tree);
     void lvaRecursiveDecRefCounts(GenTreePtr tree);
     void lvaRecursiveIncRefCounts(GenTreePtr tree);
 
@@ -3372,12 +3374,7 @@ public:
     //  - In FGOrderTree, the dominant ordering is the tree order, and the nodes contained in
     //    each tree and sub-tree are contiguous, and can be traversed (in gtNext/gtPrev order)
     //    by traversing the tree according to the order of the operands.
-    //  - In FGOrderLinear, the dominant ordering is the linear order.  Each statement is either
-    //    a top-level statement (GTF_STMT_TOP_LEVEL), or its nodes are ordered within the previous
-    //    top-level statement.  It is an invariant that such nodes are FULLY embedded in the top-
-    //    level statement (i.e. both the first and last node, in execution order, for the top-level
-    //    statement DO NOT belong to one of the embedded trees).  It is possible that we will want
-    //    to relax this requirement, but it makes it easier to validate the order.
+    //  - In FGOrderLinear, the dominant ordering is the linear order.
 
     enum FlowGraphOrder
     {
@@ -3469,14 +3466,13 @@ public:
     BasicBlock* fgSplitBlockAtBeginning(BasicBlock* curr);
     BasicBlock* fgSplitBlockAtEnd(BasicBlock* curr);
     BasicBlock* fgSplitBlockAfterStatement(BasicBlock* curr, GenTree* stmt);
+    BasicBlock* fgSplitBlockAfterNode(BasicBlock* curr, GenTree* node); // for LIR
     BasicBlock* fgSplitEdge(BasicBlock* curr, BasicBlock* succ);
 
     GenTreeStmt* fgNewStmtFromTree(GenTreePtr tree, BasicBlock* block, IL_OFFSETX offs);
     GenTreeStmt* fgNewStmtFromTree(GenTreePtr tree);
     GenTreeStmt* fgNewStmtFromTree(GenTreePtr tree, BasicBlock* block);
     GenTreeStmt* fgNewStmtFromTree(GenTreePtr tree, IL_OFFSETX offs);
-
-    GenTreePtr fgGetLastTopLevelStmt(BasicBlock* block);
 
     GenTreePtr fgGetTopLevelQmark(GenTreePtr expr, GenTreePtr* ppDst = nullptr);
     void fgExpandQmarkForCastInstOf(BasicBlock* block, GenTreePtr stmt);
@@ -3504,7 +3500,8 @@ public:
 #ifdef LEGACY_BACKEND
     GenTreePtr fgLegacyPerStatementLocalVarLiveness(GenTreePtr startNode, GenTreePtr relopNode, GenTreePtr asgdLclVar);
 #else
-    void fgPerStatementLocalVarLiveness(GenTreePtr startNode, GenTreePtr asgdLclVar);
+    void fgPerNodeLocalVarLiveness(GenTree* node, GenTree* asgdLclVar);
+    void fgPerStatementLocalVarLiveness(GenTree* node, GenTree* asgdLclVar);
 #endif
     void fgPerBlockLocalVarLiveness();
 
@@ -3535,11 +3532,15 @@ public:
                                    VARSET_VALARG_TP volatileVars,
                                    bool* pStmtInfoDirty DEBUGARG(bool* treeModf));
 
+    VARSET_VALRET_TP fgComputeLifeLIR(VARSET_VALARG_TP life, BasicBlock* block, VARSET_VALARG_TP volatileVars);
+
     bool fgRemoveDeadStore(GenTree**  pTree,
                            LclVarDsc* varDsc,
                            VARSET_TP  life,
                            bool*      doAgain,
                            bool* pStmtInfoDirty DEBUGARG(bool* treeModf));
+
+    bool fgTryRemoveDeadLIRStore(LIR::Range& blockRange, GenTree* node, GenTree** next);
 
     // For updating liveset during traversal AFTER fgComputeLife has completed
     VARSET_VALRET_TP fgGetVarBits(GenTreePtr tree);
@@ -4058,8 +4059,6 @@ public:
 
     void fgRemoveEmptyBlocks();
 
-    void fgRemoveLinearOrderDependencies(GenTreePtr stmt);
-
     void fgRemoveStmt(BasicBlock* block, GenTreePtr stmt, bool updateRefCnt = true);
 
     bool fgCheckRemoveStmt(BasicBlock* block, GenTreePtr stmt);
@@ -4189,6 +4188,7 @@ public:
     void fgDispBasicBlocks(BasicBlock* firstBlock, BasicBlock* lastBlock, bool dumpTrees);
     void fgDispBasicBlocks(bool dumpTrees = false);
     void fgDumpStmtTree(GenTreePtr stmt, unsigned blkNum);
+    void fgDumpBlock(BasicBlock* block);
     void fgDumpTrees(BasicBlock* firstBlock, BasicBlock* lastBlock);
 
     static fgWalkPreFn fgStress64RsltMulCB;
@@ -4212,19 +4212,8 @@ public:
                                 regMaskTP*  regsPtr); // OUT
 #endif                                                // LEGACY_BACKEND
 
-    static GenTreeStmt* fgFindTopLevelStmtBackwards(GenTreeStmt* stmt);
     static GenTreePtr fgGetFirstNode(GenTreePtr tree);
-    static void fgSnipNode(GenTreeStmt* stmt, GenTreePtr node);
-    static void fgSnipInnerNode(GenTreePtr node);
-    static void fgDeleteTreeFromList(GenTreeStmt* stmt, GenTreePtr tree);
     static bool fgTreeIsInStmt(GenTree* tree, GenTreeStmt* stmt);
-    static void fgInsertTreeInListBefore(GenTree* tree, GenTree* insertionPoint, GenTreeStmt* stmt);
-    static void fgInsertTreeInListAfter(GenTree* tree, GenTree* insertionPoint, GenTreeStmt* stmt);
-    GenTreeStmt* fgInsertTreeBeforeAsEmbedded(GenTree* tree, GenTree* before, GenTreeStmt* stmt, BasicBlock* block);
-    GenTreeStmt* fgInsertTreeAfterAsEmbedded(GenTree* tree, GenTree* before, GenTreeStmt* stmt, BasicBlock* block);
-    bool fgNodeContainsEmbeddedStatement(GenTree* tree, GenTreeStmt* topLevel);
-    void fgRemoveContainedEmbeddedStatements(GenTreePtr tree, GenTreeStmt* topLevel, BasicBlock* block);
-    bool fgStmtContainsNode(GenTreeStmt* stmt, GenTree* tree);
 
     inline bool fgIsInlining()
     {
@@ -4377,24 +4366,14 @@ private:
 
 public: // Used by linear scan register allocation
     GenTreePtr fgInsertStmtBefore(BasicBlock* block, GenTreePtr insertionPoint, GenTreePtr stmt);
-    void fgReplaceStmt(BasicBlock* block, GenTreeStmt* stmt, GenTreePtr newTree);
 
 private:
     GenTreePtr fgInsertStmtListAfter(BasicBlock* block, GenTreePtr stmtAfter, GenTreePtr stmtList);
 
     GenTreePtr fgMorphSplitTree(GenTree** splitPoint, GenTree* stmt, BasicBlock* blk);
 
-    //                  insert the given subtree as an embedded statement of parentStmt
-    GenTreeStmt* fgMakeEmbeddedStmt(BasicBlock* block, GenTreePtr tree, GenTreePtr parentStmt);
-
-    //                  Insert the given single node before 'before'.
-    //                  Either the callee must ensure that 'before' is part of compCurStmt,
-    //                  or before->gtPrev must be non-null
-    void fgInsertLinearNodeBefore(GenTreePtr newNode, GenTreePtr before);
-
     //                  Create a new temporary variable to hold the result of *ppTree,
     //                  and transform the graph accordingly.
-    GenTreeStmt* fgInsertEmbeddedFormTemp(GenTree** ppTree, unsigned lvaNum = BAD_VAR_NUM);
     GenTree* fgInsertCommaFormTemp(GenTree** ppTree, CORINFO_CLASS_HANDLE structType = nullptr);
     GenTree* fgMakeMultiUse(GenTree** ppTree);
 
@@ -4402,8 +4381,10 @@ private:
     //                  if it happens to be an argument to a call.
     void fgFixupIfCallArg(ArrayStack<GenTree*>* parentStack, GenTree* oldChild, GenTree* newChild);
 
+public:
     void fgFixupArgTabEntryPtr(GenTreePtr parentCall, GenTreePtr oldArg, GenTreePtr newArg);
 
+private:
     //                  Recognize a bitwise rotation pattern and convert into a GT_ROL or a GT_ROR node.
     GenTreePtr fgRecognizeAndMorphBitwiseRotation(GenTreePtr tree);
     bool fgOperIsBitwiseRotationRoot(genTreeOps oper);
@@ -4414,9 +4395,9 @@ private:
     GenTree* fgTreeSeqLst;
     GenTree* fgTreeSeqBeg;
 
-    GenTree* fgSetTreeSeq(GenTree* tree, GenTree* prev = nullptr);
-    void fgSetTreeSeqHelper(GenTree* tree);
-    void fgSetTreeSeqFinish(GenTreePtr tree);
+    GenTree* fgSetTreeSeq(GenTree* tree, GenTree* prev = nullptr, bool isLIR = false);
+    void fgSetTreeSeqHelper(GenTree* tree, bool isLIR);
+    void fgSetTreeSeqFinish(GenTreePtr tree, bool isLIR);
     void fgSetStmtSeq(GenTree* tree);
     void fgSetBlockOrder(BasicBlock* block);
 

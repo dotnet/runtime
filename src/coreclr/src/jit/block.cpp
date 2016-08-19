@@ -326,7 +326,9 @@ void BasicBlock::dspFlags()
     }
 #if FEATURE_EH_FUNCLETS && defined(_TARGET_ARM_)
     if (bbFlags & BBF_FINALLY_TARGET)
+    {
         printf("ftarget ");
+    }
 #endif // FEATURE_EH_FUNCLETS && defined(_TARGET_ARM_)
     if (bbFlags & BBF_BACKWARD_JUMP)
     {
@@ -348,10 +350,17 @@ void BasicBlock::dspFlags()
     {
         printf("IBC ");
     }
+#ifdef LEGACY_BACKEND
     if (bbFlags & BBF_FORWARD_SWITCH)
     {
         printf("fswitch ");
     }
+#else  // !LEGACY_BACKEND
+    if (bbFlags & BBF_IS_LIR)
+    {
+        printf("LIR ");
+    }
+#endif // LEGACY_BACKEND
     if (bbFlags & BBF_KEEP_BBJ_ALWAYS)
     {
         printf("KEEP ");
@@ -591,6 +600,33 @@ void BasicBlock::CloneBlockState(Compiler* compiler, BasicBlock* to, const Basic
     }
 }
 
+// LIR helpers
+void BasicBlock::MakeLIR(GenTree* firstNode, GenTree* lastNode)
+{
+#ifdef LEGACY_BACKEND
+    unreached();
+#else  // !LEGACY_BACKEND
+    assert(!IsLIR());
+    assert((firstNode == nullptr) == (lastNode == nullptr));
+    assert((firstNode == lastNode) || firstNode->Precedes(lastNode));
+
+    m_firstNode = firstNode;
+    m_lastNode  = lastNode;
+    bbFlags |= BBF_IS_LIR;
+#endif // LEGACY_BACKEND
+}
+
+bool BasicBlock::IsLIR()
+{
+#ifdef LEGACY_BACKEND
+    return false;
+#else  // !LEGACY_BACKEND
+    const bool isLIR = (bbFlags & BBF_IS_LIR) != 0;
+    assert((bbTreeList == nullptr) || ((isLIR) == !bbTreeList->IsStatement()));
+    return isLIR;
+#endif // LEGACY_BACKEND
+}
+
 //------------------------------------------------------------------------
 // firstStmt: Returns the first statement in the block
 //
@@ -600,7 +636,6 @@ void BasicBlock::CloneBlockState(Compiler* compiler, BasicBlock* to, const Basic
 // Return Value:
 //    The first statement in the block's bbTreeList.
 //
-
 GenTreeStmt* BasicBlock::firstStmt()
 {
     if (bbTreeList == nullptr)
@@ -620,9 +655,6 @@ GenTreeStmt* BasicBlock::firstStmt()
 // Return Value:
 //    The last statement in the block's bbTreeList.
 //
-// Notes:
-//    The last statement may be an embedded statement, when in linear order.
-
 GenTreeStmt* BasicBlock::lastStmt()
 {
     if (bbTreeList == nullptr)
@@ -635,37 +667,21 @@ GenTreeStmt* BasicBlock::lastStmt()
     return result->AsStmt();
 }
 
+
 //------------------------------------------------------------------------
-// lastTopLevelStmt: Returns the last top-level statement in the block
+// BasicBlock::firstNode: Returns the first node in the block.
 //
-// Arguments:
-//    None.
-//
-// Return Value:
-//    The last statement in the block's bbTreeList.
-//
-// Notes:
-//    The last statement may be an embedded statement, when in linear order,
-//    so this method is provided to obtain the last top-level statement, which
-//    will also contain the last tree nodes in execution order.
-
-GenTreeStmt* BasicBlock::lastTopLevelStmt()
+GenTree* BasicBlock::firstNode()
 {
-    if (bbTreeList == nullptr)
-    {
-        return nullptr;
-    }
+    return IsLIR() ? bbTreeList : Compiler::fgGetFirstNode(firstStmt()->gtStmtExpr);
+}
 
-    GenTreePtr stmt = lastStmt();
-
-#ifndef LEGACY_BACKEND
-    while ((stmt->gtFlags & GTF_STMT_TOP_LEVEL) == 0)
-    {
-        stmt = stmt->gtPrev;
-    }
-#endif // !LEGACY_BACKEND
-
-    return stmt->AsStmt();
+//------------------------------------------------------------------------
+// BasicBlock::lastNode: Returns the last node in the block.
+//
+GenTree* BasicBlock::lastNode()
+{
+    return IsLIR() ? m_lastNode : lastStmt()->gtStmtExpr;
 }
 
 //------------------------------------------------------------------------
@@ -734,4 +750,22 @@ unsigned PtrKeyFuncs<BasicBlock>::GetHashCode(const BasicBlock* ptr)
     }
 #endif
     return ptr->bbNum;
+}
+
+bool BasicBlock::isEmpty()
+{
+    if (!IsLIR())
+    {
+        return (this->FirstNonPhiDef() == nullptr);
+    }
+
+    for (GenTree* node : LIR::AsRange(this).NonPhiNodes())
+    {
+        if (node->OperGet() != GT_IL_OFFSET)
+        {
+            return false;
+        }
+    }
+
+    return true;
 }

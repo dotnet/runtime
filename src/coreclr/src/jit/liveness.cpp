@@ -52,8 +52,15 @@ void Compiler::fgMarkUseDef(GenTreeLclVarCommon* tree, GenTree* asgdLclVar)
         varDsc->lvRefCnt = 1;
     }
 
-    if (asgdLclVar)
+    // NOTE: the analysis done below is neither necessary nor correct for LIR: it depends on
+    // the nodes that precede `asgdLclVar` in execution order to factor into the dataflow for the
+    // value being assigned to the local var, which is not necessarily the case without tree
+    // order. Furthermore, LIR is always traversed in an order that reflects the dataflow for the
+    // block.
+    if (asgdLclVar != nullptr)
     {
+        assert(!compCurBB->IsLIR());
+
         /* we have an assignment to a local var : asgdLclVar = ... tree ...
          * check for x = f(x) case */
 
@@ -274,16 +281,188 @@ void Compiler::fgLocalVarLivenessInit()
 //
 #ifndef LEGACY_BACKEND
 //------------------------------------------------------------------------
-// fgPerStatementLocalVarLiveness:
+// fgPerNodeLocalVarLiveness:
 //   Set fgCurHeapUse and fgCurHeapDef when the global heap is read or updated
 //   Call fgMarkUseDef for any Local variables encountered
 //
 // Arguments:
-//    startNode   must be the first node in the statement
-//    asgdLclVar  is either nullptr or the assignement's left-hand-side GT_LCL_VAR
-//                it is used as an argument to fgMarkUseDef()
+//    tree       - The current node.
+//    asgdLclVar - Either nullptr or the assignement's left-hand-side GT_LCL_VAR.
+//                 Used as an argument to fgMarkUseDef(); only valid for HIR blocks.
 //
-void Compiler::fgPerStatementLocalVarLiveness(GenTreePtr startNode, GenTreePtr asgdLclVar)
+void Compiler::fgPerNodeLocalVarLiveness(GenTree* tree, GenTree* asgdLclVar)
+{
+    assert(tree != nullptr);
+    assert(asgdLclVar == nullptr || !compCurBB->IsLIR());
+
+    switch (tree->gtOper)
+    {
+        case GT_QMARK:
+        case GT_COLON:
+            // We never should encounter a GT_QMARK or GT_COLON node
+            noway_assert(!"unexpected GT_QMARK/GT_COLON");
+            break;
+
+        case GT_LCL_VAR:
+        case GT_LCL_FLD:
+        case GT_LCL_VAR_ADDR:
+        case GT_LCL_FLD_ADDR:
+        case GT_STORE_LCL_VAR:
+        case GT_STORE_LCL_FLD:
+            fgMarkUseDef(tree->AsLclVarCommon(), asgdLclVar);
+            break;
+
+        case GT_CLS_VAR:
+            // For Volatile indirection, first mutate the global heap
+            // see comments in ValueNum.cpp (under case GT_CLS_VAR)
+            // This models Volatile reads as def-then-use of the heap.
+            // and allows for a CSE of a subsequent non-volatile read
+            if ((tree->gtFlags & GTF_FLD_VOLATILE) != 0)
+            {
+                // For any Volatile indirection, we must handle it as a
+                // definition of the global heap
+                fgCurHeapDef = true;
+            }
+            // If the GT_CLS_VAR is the lhs of an assignment, we'll handle it as a heap def, when we get to assignment.
+            // Otherwise, we treat it as a use here.
+            if (!fgCurHeapDef && (tree->gtFlags & GTF_CLS_VAR_ASG_LHS) == 0)
+            {
+                fgCurHeapUse = true;
+            }
+            break;
+
+        case GT_IND:
+            // For Volatile indirection, first mutate the global heap
+            // see comments in ValueNum.cpp (under case GT_CLS_VAR)
+            // This models Volatile reads as def-then-use of the heap.
+            // and allows for a CSE of a subsequent non-volatile read
+            if ((tree->gtFlags & GTF_IND_VOLATILE) != 0)
+            {
+                // For any Volatile indirection, we must handle it as a
+                // definition of the global heap
+                fgCurHeapDef = true;
+            }
+
+            // If the GT_IND is the lhs of an assignment, we'll handle it
+            // as a heap def, when we get to assignment.
+            // Otherwise, we treat it as a use here.
+            if ((tree->gtFlags & GTF_IND_ASG_LHS) == 0)
+            {
+                GenTreeLclVarCommon* dummyLclVarTree = nullptr;
+                bool                 dummyIsEntire   = false;
+                GenTreePtr           addrArg         = tree->gtOp.gtOp1->gtEffectiveVal(/*commaOnly*/ true);
+                if (!addrArg->DefinesLocalAddr(this, /*width doesn't matter*/ 0, &dummyLclVarTree, &dummyIsEntire))
+                {
+                    if (!fgCurHeapDef)
+                    {
+                        fgCurHeapUse = true;
+                    }
+                }
+                else
+                {
+                    // Defines a local addr
+                    assert(dummyLclVarTree != nullptr);
+                    fgMarkUseDef(dummyLclVarTree->AsLclVarCommon(), asgdLclVar);
+                }
+            }
+            break;
+
+        // These should have been morphed away to become GT_INDs:
+        case GT_FIELD:
+        case GT_INDEX:
+            unreached();
+            break;
+
+        // We'll assume these are use-then-defs of the heap.
+        case GT_LOCKADD:
+        case GT_XADD:
+        case GT_XCHG:
+        case GT_CMPXCHG:
+            if (!fgCurHeapDef)
+            {
+                fgCurHeapUse = true;
+            }
+            fgCurHeapDef   = true;
+            fgCurHeapHavoc = true;
+            break;
+
+        case GT_MEMORYBARRIER:
+            // Simliar to any Volatile indirection, we must handle this as a definition of the global heap
+            fgCurHeapDef = true;
+            break;
+
+        // For now, all calls read/write the heap, the latter in its entirety.  Might tighten this case later.
+        case GT_CALL:
+        {
+            GenTreeCall* call    = tree->AsCall();
+            bool         modHeap = true;
+            if (call->gtCallType == CT_HELPER)
+            {
+                CorInfoHelpFunc helpFunc = eeGetHelperNum(call->gtCallMethHnd);
+
+                if (!s_helperCallProperties.MutatesHeap(helpFunc) && !s_helperCallProperties.MayRunCctor(helpFunc))
+                {
+                    modHeap = false;
+                }
+            }
+            if (modHeap)
+            {
+                if (!fgCurHeapDef)
+                {
+                    fgCurHeapUse = true;
+                }
+                fgCurHeapDef   = true;
+                fgCurHeapHavoc = true;
+            }
+        }
+
+            // If this is a p/invoke unmanaged call or if this is a tail-call
+            // and we have an unmanaged p/invoke call in the method,
+            // then we're going to run the p/invoke epilog.
+            // So we mark the FrameRoot as used by this instruction.
+            // This ensures that the block->bbVarUse will contain
+            // the FrameRoot local var if is it a tracked variable.
+
+            if ((tree->gtCall.IsUnmanaged() || (tree->gtCall.IsTailCall() && info.compCallUnmanaged)))
+            {
+                assert((!opts.ShouldUsePInvokeHelpers()) || (info.compLvFrameListRoot == BAD_VAR_NUM));
+                if (!opts.ShouldUsePInvokeHelpers())
+                {
+                    /* Get the TCB local and mark it as used */
+
+                    noway_assert(info.compLvFrameListRoot < lvaCount);
+
+                    LclVarDsc* varDsc = &lvaTable[info.compLvFrameListRoot];
+
+                    if (varDsc->lvTracked)
+                    {
+                        if (!VarSetOps::IsMember(this, fgCurDefSet, varDsc->lvVarIndex))
+                        {
+                            VarSetOps::AddElemD(this, fgCurUseSet, varDsc->lvVarIndex);
+                        }
+                    }
+                }
+            }
+
+            break;
+
+        default:
+
+            // Determine whether it defines a heap location.
+            if (tree->OperIsAssignment() || tree->OperIsBlkOp())
+            {
+                GenTreeLclVarCommon* dummyLclVarTree = nullptr;
+                if (!tree->DefinesLocal(this, &dummyLclVarTree))
+                {
+                    // If it doesn't define a local, then it might update the heap.
+                    fgCurHeapDef = true;
+                }
+            }
+            break;
+    }
+}
+
+void Compiler::fgPerStatementLocalVarLiveness(GenTree* startNode, GenTree* asgdLclVar)
 {
     // The startNode must be the 1st node of the statement.
     assert(startNode == compCurStmt->gtStmt.gtStmtList);
@@ -292,177 +471,13 @@ void Compiler::fgPerStatementLocalVarLiveness(GenTreePtr startNode, GenTreePtr a
     assert((asgdLclVar == nullptr) || (asgdLclVar->gtOper == GT_LCL_VAR || asgdLclVar->gtOper == GT_STORE_LCL_VAR));
 
     // We always walk every node in statement list
-    for (GenTreePtr tree = startNode; (tree != nullptr); tree = tree->gtNext)
+    for (GenTreePtr node = startNode; node != nullptr; node = node->gtNext)
     {
-        switch (tree->gtOper)
-        {
-            case GT_QMARK:
-            case GT_COLON:
-                // We never should encounter a GT_QMARK or GT_COLON node
-                noway_assert(!"unexpected GT_QMARK/GT_COLON");
-                break;
-
-            case GT_LCL_VAR:
-            case GT_LCL_FLD:
-            case GT_LCL_VAR_ADDR:
-            case GT_LCL_FLD_ADDR:
-            case GT_STORE_LCL_VAR:
-            case GT_STORE_LCL_FLD:
-                fgMarkUseDef(tree->AsLclVarCommon(), asgdLclVar);
-                break;
-
-            case GT_CLS_VAR:
-                // For Volatile indirection, first mutate the global heap
-                // see comments in ValueNum.cpp (under case GT_CLS_VAR)
-                // This models Volatile reads as def-then-use of the heap.
-                // and allows for a CSE of a subsequent non-volatile read
-                if ((tree->gtFlags & GTF_FLD_VOLATILE) != 0)
-                {
-                    // For any Volatile indirection, we must handle it as a
-                    // definition of the global heap
-                    fgCurHeapDef = true;
-                }
-                // If the GT_CLS_VAR is the lhs of an assignment, we'll handle it as a heap def, when we get to
-                // assignment.
-                // Otherwise, we treat it as a use here.
-                if (!fgCurHeapDef && (tree->gtFlags & GTF_CLS_VAR_ASG_LHS) == 0)
-                {
-                    fgCurHeapUse = true;
-                }
-                break;
-
-            case GT_IND:
-                // For Volatile indirection, first mutate the global heap
-                // see comments in ValueNum.cpp (under case GT_CLS_VAR)
-                // This models Volatile reads as def-then-use of the heap.
-                // and allows for a CSE of a subsequent non-volatile read
-                if ((tree->gtFlags & GTF_IND_VOLATILE) != 0)
-                {
-                    // For any Volatile indirection, we must handle it as a
-                    // definition of the global heap
-                    fgCurHeapDef = true;
-                }
-
-                // If the GT_IND is the lhs of an assignment, we'll handle it
-                // as a heap def, when we get to assignment.
-                // Otherwise, we treat it as a use here.
-                if ((tree->gtFlags & GTF_IND_ASG_LHS) == 0)
-                {
-                    GenTreeLclVarCommon* dummyLclVarTree = nullptr;
-                    bool                 dummyIsEntire   = false;
-                    GenTreePtr           addrArg         = tree->gtOp.gtOp1->gtEffectiveVal(/*commaOnly*/ true);
-                    if (!addrArg->DefinesLocalAddr(this, /*width doesn't matter*/ 0, &dummyLclVarTree, &dummyIsEntire))
-                    {
-                        if (!fgCurHeapDef)
-                        {
-                            fgCurHeapUse = true;
-                        }
-                    }
-                    else
-                    {
-                        // Defines a local addr
-                        assert(dummyLclVarTree != nullptr);
-                        fgMarkUseDef(dummyLclVarTree->AsLclVarCommon(), asgdLclVar);
-                    }
-                }
-                break;
-
-            // These should have been morphed away to become GT_INDs:
-            case GT_FIELD:
-            case GT_INDEX:
-                unreached();
-                break;
-
-            // We'll assume these are use-then-defs of the heap.
-            case GT_LOCKADD:
-            case GT_XADD:
-            case GT_XCHG:
-            case GT_CMPXCHG:
-                if (!fgCurHeapDef)
-                {
-                    fgCurHeapUse = true;
-                }
-                fgCurHeapDef   = true;
-                fgCurHeapHavoc = true;
-                break;
-
-            case GT_MEMORYBARRIER:
-                // Simliar to any Volatile indirection, we must handle this as a definition of the global heap
-                fgCurHeapDef = true;
-                break;
-
-            // For now, all calls read/write the heap, the latter in its entirety.  Might tighten this case later.
-            case GT_CALL:
-            {
-                GenTreeCall* call    = tree->AsCall();
-                bool         modHeap = true;
-                if (call->gtCallType == CT_HELPER)
-                {
-                    CorInfoHelpFunc helpFunc = eeGetHelperNum(call->gtCallMethHnd);
-
-                    if (!s_helperCallProperties.MutatesHeap(helpFunc) && !s_helperCallProperties.MayRunCctor(helpFunc))
-                    {
-                        modHeap = false;
-                    }
-                }
-                if (modHeap)
-                {
-                    if (!fgCurHeapDef)
-                    {
-                        fgCurHeapUse = true;
-                    }
-                    fgCurHeapDef   = true;
-                    fgCurHeapHavoc = true;
-                }
-            }
-
-                // If this is a p/invoke unmanaged call or if this is a tail-call
-                // and we have an unmanaged p/invoke call in the method,
-                // then we're going to run the p/invoke epilog.
-                // So we mark the FrameRoot as used by this instruction.
-                // This ensures that the block->bbVarUse will contain
-                // the FrameRoot local var if is it a tracked variable.
-
-                if ((tree->gtCall.IsUnmanaged() || (tree->gtCall.IsTailCall() && info.compCallUnmanaged)))
-                {
-                    assert((!opts.ShouldUsePInvokeHelpers()) || (info.compLvFrameListRoot == BAD_VAR_NUM));
-                    if (!opts.ShouldUsePInvokeHelpers())
-                    {
-                        /* Get the TCB local and mark it as used */
-
-                        noway_assert(info.compLvFrameListRoot < lvaCount);
-
-                        LclVarDsc* varDsc = &lvaTable[info.compLvFrameListRoot];
-
-                        if (varDsc->lvTracked)
-                        {
-                            if (!VarSetOps::IsMember(this, fgCurDefSet, varDsc->lvVarIndex))
-                            {
-                                VarSetOps::AddElemD(this, fgCurUseSet, varDsc->lvVarIndex);
-                            }
-                        }
-                    }
-                }
-
-                break;
-
-            default:
-
-                // Determine whether it defines a heap location.
-                if (tree->OperIsAssignment() || tree->OperIsBlkOp())
-                {
-                    GenTreeLclVarCommon* dummyLclVarTree = nullptr;
-                    if (!tree->DefinesLocal(this, &dummyLclVarTree))
-                    {
-                        // If it doesn't define a local, then it might update the heap.
-                        fgCurHeapDef = true;
-                    }
-                }
-                break;
-        }
+        fgPerNodeLocalVarLiveness(node, asgdLclVar);
     }
 }
-#endif // LEGACY_BACKEND
+
+#endif // !LEGACY_BACKEND
 
 /*****************************************************************************/
 void Compiler::fgPerBlockLocalVarLiveness()
@@ -546,65 +561,79 @@ void Compiler::fgPerBlockLocalVarLiveness()
 
         compCurBB = block;
 
-        for (stmt = block->FirstNonPhiDef(); stmt; stmt = stmt->gtNext)
+        if (!block->IsLIR())
         {
-            noway_assert(stmt->gtOper == GT_STMT);
-
-            if (!stmt->gtStmt.gtStmtIsTopLevel())
+            for (stmt = block->FirstNonPhiDef(); stmt; stmt = stmt->gtNext)
             {
-                continue;
-            }
+                noway_assert(stmt->gtOper == GT_STMT);
 
-            compCurStmt = stmt;
+                compCurStmt = stmt;
 
-            asgdLclVar = nullptr;
-            tree       = stmt->gtStmt.gtStmtExpr;
-            noway_assert(tree);
+                asgdLclVar = nullptr;
+                tree       = stmt->gtStmt.gtStmtExpr;
+                noway_assert(tree);
 
-            // The following code checks if we have an assignment expression
-            // which may become a GTF_VAR_USEDEF - x=f(x).
-            // consider if LHS is local var - ignore if RHS contains SIDE_EFFECTS
+                // The following code checks if we have an assignment expression
+                // which may become a GTF_VAR_USEDEF - x=f(x).
+                // consider if LHS is local var - ignore if RHS contains SIDE_EFFECTS
 
-            if ((tree->gtOper == GT_ASG && tree->gtOp.gtOp1->gtOper == GT_LCL_VAR) || tree->gtOper == GT_STORE_LCL_VAR)
-            {
-                noway_assert(tree->gtOp.gtOp1);
-                GenTreePtr rhsNode;
-                if (tree->gtOper == GT_ASG)
+                if ((tree->gtOper == GT_ASG && tree->gtOp.gtOp1->gtOper == GT_LCL_VAR) ||
+                    tree->gtOper == GT_STORE_LCL_VAR)
                 {
-                    noway_assert(tree->gtOp.gtOp2);
-                    asgdLclVar = tree->gtOp.gtOp1;
-                    rhsNode    = tree->gtOp.gtOp2;
-                }
-                else
-                {
-                    asgdLclVar = tree;
-                    rhsNode    = tree->gtOp.gtOp1;
-                }
+                    noway_assert(tree->gtOp.gtOp1);
+                    GenTreePtr rhsNode;
+                    if (tree->gtOper == GT_ASG)
+                    {
+                        noway_assert(tree->gtOp.gtOp2);
+                        asgdLclVar = tree->gtOp.gtOp1;
+                        rhsNode    = tree->gtOp.gtOp2;
+                    }
+                    else
+                    {
+                        asgdLclVar = tree;
+                        rhsNode    = tree->gtOp.gtOp1;
+                    }
 
-                // If this is an assignment to local var with no SIDE EFFECTS,
-                // set asgdLclVar so that genMarkUseDef will flag potential
-                // x=f(x) expressions as GTF_VAR_USEDEF.
-                // Reset the flag before recomputing it - it may have been set before,
-                // but subsequent optimizations could have removed the rhs reference.
-                asgdLclVar->gtFlags &= ~GTF_VAR_USEDEF;
-                if ((rhsNode->gtFlags & GTF_SIDE_EFFECT) == 0)
-                {
-                    noway_assert(asgdLclVar->gtFlags & GTF_VAR_DEF);
+                    // If this is an assignment to local var with no SIDE EFFECTS,
+                    // set asgdLclVar so that genMarkUseDef will flag potential
+                    // x=f(x) expressions as GTF_VAR_USEDEF.
+                    // Reset the flag before recomputing it - it may have been set before,
+                    // but subsequent optimizations could have removed the rhs reference.
+                    asgdLclVar->gtFlags &= ~GTF_VAR_USEDEF;
+                    if ((rhsNode->gtFlags & GTF_SIDE_EFFECT) == 0)
+                    {
+                        noway_assert(asgdLclVar->gtFlags & GTF_VAR_DEF);
+                    }
+                    else
+                    {
+                        asgdLclVar = nullptr;
+                    }
                 }
-                else
-                {
-                    asgdLclVar = nullptr;
-                }
-            }
 
 #ifdef LEGACY_BACKEND
-            tree = fgLegacyPerStatementLocalVarLiveness(stmt->gtStmt.gtStmtList, NULL, asgdLclVar);
+                tree = fgLegacyPerStatementLocalVarLiveness(stmt->gtStmt.gtStmtList, NULL, asgdLclVar);
 
-            // We must have walked to the end of this statement.
-            noway_assert(!tree);
-#else
-            fgPerStatementLocalVarLiveness(stmt->gtStmt.gtStmtList, asgdLclVar);
-#endif // LEGACY_BACKEND
+                // We must have walked to the end of this statement.
+                noway_assert(!tree);
+#else  // !LEGACY_BACKEND
+                fgPerStatementLocalVarLiveness(stmt->gtStmt.gtStmtList, asgdLclVar);
+#endif // !LEGACY_BACKEND
+            }
+        }
+        else
+        {
+#ifdef LEGACY_BACKEND
+            unreached();
+#else  // !LEGACY_BACKEND
+            // NOTE: the `asgdLclVar` analysis done above is not correct for LIR: it depends
+            // on all of the nodes that precede `asgdLclVar` in execution order to factor into the
+            // dataflow for the value being assigned to the local var, which is not necessarily the
+            // case without tree order. As a result, we simply pass `nullptr` for `asgdLclVar`.
+            for (GenTree* node : LIR::AsRange(block).NonPhiNodes())
+            {
+                fgPerNodeLocalVarLiveness(node, nullptr);
+            }
+#endif // !LEGACY_BACKEND
         }
 
         /* Get the TCB local and mark it as used */
@@ -1069,9 +1098,15 @@ void Compiler::fgExtendDbgLifetimes()
                 continue;
             }
 
+            // TODO-LIR: the code below does not work for blocks that contain LIR. As a result,
+            //           we must run liveness at least once before any LIR is created in order
+            //           to ensure that this code doesn't attempt to insert HIR into LIR blocks.
+
             // If we haven't already done this ...
             if (!fgLocalVarLivenessDone)
             {
+                assert(!block->IsLIR());
+
                 // Create a "zero" node
 
                 GenTreePtr zero = gtNewZeroConNode(genActualType(type));
@@ -1726,7 +1761,13 @@ bool Compiler::fgComputeLifeLocal(VARSET_TP& life, VARSET_TP& keepAliveVars, Gen
                        GTF_VAR_USEASG and we are in an interior statement
                        that will be used (e.g. while (i++) or a GT_COMMA) */
 
-                    return true;
+                    // Do not consider this store dead if the target local variable represents
+                    // a promoted struct field of an address exposed local or if the address
+                    // of the variable has been exposed. Improved alias analysis could allow
+                    // stores to these sorts of variables to be removed at the cost of compile
+                    // time.
+                    return !varDsc->lvAddrExposed &&
+                           !(varDsc->lvIsStructField && lvaTable[varDsc->lvParentLcl].lvAddrExposed);
                 }
             }
 
@@ -1891,6 +1932,46 @@ VARSET_VALRET_TP Compiler::fgComputeLife(VARSET_VALARG_TP lifeArg,
     }
 
     // Return the set of live variables out of this statement
+    return life;
+}
+
+VARSET_VALRET_TP Compiler::fgComputeLifeLIR(VARSET_VALARG_TP lifeArg, BasicBlock* block, VARSET_VALARG_TP volatileVars)
+{
+    VARSET_TP VARSET_INIT(this, life, lifeArg); // lifeArg is const ref; copy to allow modification.
+
+    VARSET_TP VARSET_INIT(this, keepAliveVars, volatileVars);
+#ifdef DEBUGGING_SUPPORT
+    VarSetOps::UnionD(this, keepAliveVars, block->bbScope); // Don't kill vars in scope
+#endif
+
+    noway_assert(VarSetOps::Equal(this, VarSetOps::Intersection(this, keepAliveVars, life), keepAliveVars));
+
+    LIR::Range& blockRange      = LIR::AsRange(block);
+    GenTree*    firstNonPhiNode = blockRange.FirstNonPhiNode();
+    if (firstNonPhiNode == nullptr)
+    {
+        return life;
+    }
+
+    for (GenTree *node = blockRange.LastNode(), *next = nullptr, *end = firstNonPhiNode->gtPrev; node != end;
+         node = next)
+    {
+        next = node->gtPrev;
+
+        if (node->OperGet() == GT_CALL)
+        {
+            fgComputeLifeCall(life, node->AsCall());
+        }
+        else if (node->OperIsNonPhiLocal() || node->OperIsLocalAddr())
+        {
+            bool isDeadStore = fgComputeLifeLocal(life, keepAliveVars, node, node);
+            if (isDeadStore)
+            {
+                fgTryRemoveDeadLIRStore(blockRange, node, &next);
+            }
+        }
+    }
+
     return life;
 }
 
@@ -2245,6 +2326,84 @@ VARSET_VALRET_TP Compiler::fgComputeLife(VARSET_VALARG_TP lifeArg,
 
 #endif // !LEGACY_BACKEND
 
+bool Compiler::fgTryRemoveDeadLIRStore(LIR::Range& blockRange, GenTree* node, GenTree** next)
+{
+    assert(node != nullptr);
+    assert(next != nullptr);
+
+    assert(node->OperIsLocalStore() || node->OperIsLocalAddr());
+
+    GenTree* store = nullptr;
+    GenTree* value = nullptr;
+    if (node->OperIsLocalStore())
+    {
+        store = node;
+        value = store->gtGetOp1();
+    }
+    else if (node->OperIsLocalAddr())
+    {
+        LIR::Use addrUse;
+        if (!blockRange.TryGetUse(node, &addrUse) || (addrUse.User()->OperGet() != GT_STOREIND))
+        {
+            *next = node->gtPrev;
+            return false;
+        }
+
+        store = addrUse.User();
+        value = store->gtGetOp2();
+    }
+
+    bool               isClosed      = false;
+    unsigned           sideEffects   = 0;
+    LIR::ReadOnlyRange operandsRange = blockRange.GetRangeOfOperandTrees(store, &isClosed, &sideEffects);
+    if (!isClosed || ((sideEffects & GTF_SIDE_EFFECT) != 0) ||
+        (((sideEffects & GTF_ORDER_SIDEEFF) != 0) && (value->OperGet() == GT_CATCH_ARG)))
+    {
+        // If the range of the operands contains unrelated code or if it contains any side effects,
+        // do not remove it. Instead, just remove the store.
+
+        *next = node->gtPrev;
+    }
+    else
+    {
+        // Okay, the operands to the store form a contiguous range that has no side effects. Remove the
+        // range containing the operands and decrement the local var ref counts appropriately.
+
+        // Compute the next node to process. Note that we must be careful not to set the next node to
+        // process to a node that we are about to remove.
+        if (node->OperIsLocalStore())
+        {
+            assert(node == store);
+            *next = (operandsRange.LastNode()->gtNext == store) ? operandsRange.FirstNode()->gtPrev : node->gtPrev;
+        }
+        else
+        {
+            assert(operandsRange.Contains(node));
+            *next = operandsRange.FirstNode()->gtPrev;
+        }
+
+        blockRange.Delete(this, compCurBB, std::move(operandsRange));
+    }
+
+    // If the store is marked as a late argument, it is referenced by a call. Instead of removing it,
+    // bash it to a NOP.
+    if ((store->gtFlags & GTF_LATE_ARG) != 0)
+    {
+        if (store->IsLocal())
+        {
+            lvaDecRefCnts(compCurBB, store);
+        }
+
+        store->gtBashToNOP();
+    }
+    else
+    {
+        blockRange.Delete(this, compCurBB, store);
+    }
+
+    return true;
+}
+
 // fgRemoveDeadStore - remove a store to a local which has no exposed uses.
 //
 //   pTree          - GenTree** to local, including store-form local or local addr (post-rationalize)
@@ -2258,6 +2417,12 @@ VARSET_VALRET_TP Compiler::fgComputeLife(VARSET_VALARG_TP lifeArg,
 bool Compiler::fgRemoveDeadStore(
     GenTree** pTree, LclVarDsc* varDsc, VARSET_TP life, bool* doAgain, bool* pStmtInfoDirty DEBUGARG(bool* treeModf))
 {
+    assert(!compRationalIRForm);
+
+    // Vars should have already been checked for address exposure by this point.
+    assert(!varDsc->lvIsStructField || !lvaTable[varDsc->lvParentLcl].lvAddrExposed);
+    assert(!varDsc->lvAddrExposed);
+
     GenTree*       asgNode  = nullptr;
     GenTree*       rhsNode  = nullptr;
     GenTree*       addrNode = nullptr;
@@ -2442,11 +2607,6 @@ bool Compiler::fgRemoveDeadStore(
 
             if (rhsNode->gtFlags & GTF_SIDE_EFFECT)
             {
-                if (compRationalIRForm)
-                {
-                    return false;
-                }
-
             EXTRACT_SIDE_EFFECTS:
                 /* Extract the side effects */
 
@@ -2517,14 +2677,6 @@ bool Compiler::fgRemoveDeadStore(
                     }
                 }
 
-                // If there is an embedded statement this could be tricky because we need to
-                // walk them next, and we have already skipped over them because they were
-                // not top level (but will be if we delete the top level statement)
-                if (compCurStmt->gtStmt.gtNextStmt && !compCurStmt->gtStmt.gtNextStmt->gtStmtIsTopLevel())
-                {
-                    return false;
-                }
-
                 /* No side effects - remove the whole statement from the block->bbTreeList */
 
                 fgRemoveStmt(compCurBB, compCurStmt);
@@ -2540,17 +2692,7 @@ bool Compiler::fgRemoveDeadStore(
         {
             /* This is an INTERIOR STATEMENT with a dead assignment - remove it */
 
-            // don't want to deal with this
-            if (compRationalIRForm)
-            {
-                return false;
-            }
-
             noway_assert(!VarSetOps::IsMember(this, life, varDsc->lvVarIndex));
-
-            JITDUMP("interior assign\n");
-            DISPTREE(asgNode);
-            JITDUMP("\n");
 
             if (rhsNode->gtFlags & GTF_SIDE_EFFECT)
             {
@@ -2633,17 +2775,6 @@ bool Compiler::fgRemoveDeadStore(
 
                 /* Change the assignment to a GT_NOP node */
 
-                if (compRationalIRForm)
-                {
-                    JITDUMP("deleting tree:\n");
-                    DISPTREE(rhsNode);
-                    fgDeleteTreeFromList(compCurStmt->AsStmt(), rhsNode);
-                    if (tree->gtOper == GT_STOREIND)
-                    {
-                        fgDeleteTreeFromList(compCurStmt->AsStmt(), asgNode->gtOp.gtOp1);
-                    }
-                }
-
                 asgNode->gtBashToNOP();
 
 #ifdef DEBUG
@@ -2653,17 +2784,14 @@ bool Compiler::fgRemoveDeadStore(
 
             /* Re-link the nodes for this statement - Do not update ordering! */
 
-            if (!compRationalIRForm)
-            {
-                // Do not update costs by calling gtSetStmtInfo. fgSetStmtSeq modifies
-                // the tree threading based on the new costs. Removing nodes could
-                // cause a subtree to get evaluated first (earlier second) during the
-                // liveness walk. Instead just set a flag that costs are dirty and
-                // caller has to call gtSetStmtInfo.
-                *pStmtInfoDirty = true;
+            // Do not update costs by calling gtSetStmtInfo. fgSetStmtSeq modifies
+            // the tree threading based on the new costs. Removing nodes could
+            // cause a subtree to get evaluated first (earlier second) during the
+            // liveness walk. Instead just set a flag that costs are dirty and
+            // caller has to call gtSetStmtInfo.
+            *pStmtInfoDirty = true;
 
-                fgSetStmtSeq(compCurStmt);
-            }
+            fgSetStmtSeq(compCurStmt);
 
             /* Continue analysis from this node */
 
@@ -2857,56 +2985,62 @@ void Compiler::fgInterBlockLocalVarLiveness()
 
         fgMarkIntf(life);
 
-        /* Get the first statement in the block */
-
-        GenTreePtr firstStmt = block->FirstNonPhiDef();
-
-        if (!firstStmt)
+        if (!block->IsLIR())
         {
-            continue;
-        }
+            /* Get the first statement in the block */
 
-        /* Walk all the statements of the block backwards - Get the LAST stmt */
+            GenTreePtr firstStmt = block->FirstNonPhiDef();
 
-        GenTreePtr nextStmt = block->bbTreeList->gtPrev;
-
-        do
-        {
-#ifdef DEBUG
-            bool treeModf = false;
-#endif // DEBUG
-            noway_assert(nextStmt);
-            noway_assert(nextStmt->gtOper == GT_STMT);
-
-            compCurStmt = nextStmt;
-            nextStmt    = nextStmt->gtPrev;
-
-            if (!compCurStmt->gtStmt.gtStmtIsTopLevel())
+            if (!firstStmt)
             {
                 continue;
             }
 
-            /* Compute the liveness for each tree node in the statement */
-            bool stmtInfoDirty = false;
+            /* Walk all the statements of the block backwards - Get the LAST stmt */
 
-            VarSetOps::AssignNoCopy(this, life, fgComputeLife(life, compCurStmt->gtStmt.gtStmtExpr, nullptr,
-                                                              volatileVars, &stmtInfoDirty DEBUGARG(&treeModf)));
+            GenTreePtr nextStmt = block->bbTreeList->gtPrev;
 
-            if (stmtInfoDirty)
+            do
             {
-                gtSetStmtInfo(compCurStmt);
-                fgSetStmtSeq(compCurStmt);
-            }
+#ifdef DEBUG
+                bool treeModf = false;
+#endif // DEBUG
+                noway_assert(nextStmt);
+                noway_assert(nextStmt->gtOper == GT_STMT);
+
+                compCurStmt = nextStmt;
+                nextStmt    = nextStmt->gtPrev;
+
+                /* Compute the liveness for each tree node in the statement */
+                bool stmtInfoDirty = false;
+
+                VarSetOps::AssignNoCopy(this, life, fgComputeLife(life, compCurStmt->gtStmt.gtStmtExpr, nullptr,
+                                                                  volatileVars, &stmtInfoDirty DEBUGARG(&treeModf)));
+
+                if (stmtInfoDirty)
+                {
+                    gtSetStmtInfo(compCurStmt);
+                    fgSetStmtSeq(compCurStmt);
+                }
 
 #ifdef DEBUG
-            if (verbose && treeModf)
-            {
-                printf("\nfgComputeLife modified tree:\n");
-                gtDispTree(compCurStmt->gtStmt.gtStmtExpr);
-                printf("\n");
-            }
+                if (verbose && treeModf)
+                {
+                    printf("\nfgComputeLife modified tree:\n");
+                    gtDispTree(compCurStmt->gtStmt.gtStmtExpr);
+                    printf("\n");
+                }
 #endif // DEBUG
-        } while (compCurStmt != firstStmt);
+            } while (compCurStmt != firstStmt);
+        }
+        else
+        {
+#ifdef LEGACY_BACKEND
+            unreached();
+#else  // !LEGACY_BACKEND
+            VarSetOps::AssignNoCopy(this, life, fgComputeLifeLIR(life, block, volatileVars));
+#endif // !LEGACY_BACKEND
+        }
 
         /* Done with the current block - if we removed any statements, some
          * variables may have become dead at the beginning of the block
