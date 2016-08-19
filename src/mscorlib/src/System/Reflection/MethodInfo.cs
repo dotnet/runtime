@@ -39,7 +39,6 @@ namespace System.Reflection
         protected MethodInfo() { }
         #endregion
 
-#if !FEATURE_CORECLR
         public static bool operator ==(MethodInfo left, MethodInfo right)
         {
             if (ReferenceEquals(left, right))
@@ -57,7 +56,6 @@ namespace System.Reflection
         {
             return !(left == right);
         }
-#endif // !FEATURE_CORECLR
 
         public override bool Equals(object obj)
         {

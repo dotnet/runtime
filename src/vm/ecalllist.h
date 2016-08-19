@@ -387,11 +387,9 @@ FCFuncEnd()
 
 FCFuncStart(gSystem_Type)
     FCIntrinsic("GetTypeFromHandle", RuntimeTypeHandle::GetTypeFromHandle, CORINFO_INTRINSIC_GetTypeFromHandle)
-#ifndef FEATURE_CORECLR
     FCFuncElement("GetTypeFromHandleUnsafe", RuntimeTypeHandle::GetRuntimeType)
     FCIntrinsic("op_Equality", RuntimeTypeHandle::TypeEQ, CORINFO_INTRINSIC_TypeEQ)
     FCIntrinsic("op_Inequality", RuntimeTypeHandle::TypeNEQ, CORINFO_INTRINSIC_TypeNEQ)
-#endif // !FEATURE_CORECLR
 FCFuncEnd()
 
 FCFuncStart(gSystem_RuntimeType)
@@ -401,8 +399,8 @@ FCFuncStart(gSystem_RuntimeType)
     FCFuncElement("AllocateValueType", ReflectionInvocation::AllocateValueType)
 #if defined(FEATURE_COMINTEROP)
     FCFuncElement("GetTypeFromCLSIDImpl", ReflectionInvocation::GetClassFromCLSID)
-#if !defined(FEATURE_CORECLR)
     FCFuncElement("GetTypeFromProgIDImpl", ReflectionInvocation::GetClassFromProgID)
+#if !defined(FEATURE_CORECLR)
     FCFuncElement("InvokeDispMethod", ReflectionInvocation::InvokeDispMethod)
 #endif 
 #ifdef FEATURE_COMINTEROP_WINRT_MANAGED_ACTIVATION
