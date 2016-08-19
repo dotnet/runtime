@@ -2031,7 +2031,13 @@ GenTreePtr Compiler::fgMakeTmpArgNode(
         }
         else
         {
-            arg      = gtNewOperNode(GT_ADDR, type, arg);
+#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+            // TODO-Cleanup: Fix this - we should never have an address that is TYP_STRUCT.
+            var_types addrType = type;
+#else
+            var_types addrType = TYP_BYREF;
+#endif
+            arg      = gtNewOperNode(GT_ADDR, addrType, arg);
             addrNode = arg;
 
 #if FEATURE_MULTIREG_ARGS
