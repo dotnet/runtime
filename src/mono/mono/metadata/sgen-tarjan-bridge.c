@@ -92,13 +92,21 @@ enum {
 /*
 Optimizations:
 	We can split this data structure in two, those with bridges and those without
+	(and only bridgeless need to record incoming_colors)
 */
+#define API_INDEX_BITS        26
+#define INCOMING_COLORS_BITS  5
+#define API_INDEX_MAX         ((1<<API_INDEX_BITS)-1)
+#define INCOMING_COLORS_MAX   ((1<<INCOMING_COLORS_BITS)-1)
 typedef struct {
     // Colors (ColorDatas) linked to by objects with this color
 	DynPtrArray other_colors;
     // Bridge objects (GCObjects) held by objects with this color
 	DynPtrArray bridges;
-	int api_index    : 31;
+    // Index of this color's MonoGCBridgeSCC in the array passed to the client (or -1 for none)
+	signed api_index         : API_INDEX_BITS;
+    // Count of colors that list this color in their other_colors
+	unsigned incoming_colors : INCOMING_COLORS_BITS;
 	unsigned visited : 1;
 } ColorData;
 
@@ -113,7 +121,7 @@ typedef struct _ScanData {
 	// Tarjan algorithm index (order visited)
 	int index;
 	// Tarjan index of lowest-index object known reachable from here
-	int low_index : 27;
+	signed low_index : 27;
 
 	// See "ScanData state" enum above
 	unsigned state : 2;
@@ -122,9 +130,20 @@ typedef struct _ScanData {
 	unsigned obj_state : 2;
 } ScanData;
 
-// Should color be made visible to client even though it has no bridges?
+#define HEAVY_REFS_MIN 2
+#define HEAVY_COMBINED_REFS_MIN 60
+
+/* Should color be made visible to client even though it has no bridges?
+ * If fanin and fanout are both greater than 2, then returning TRUE here will add one node to
+ * the final graph and reduce the total number of edges by some number. Return true if we
+ * estimate the number of reduced edges to be enough to justify the new node.
+ * Notice fanout is capped at INCOMING_COLORS_MAX so we can't know its exact true value.
+ */
 static inline gboolean bridgeless_color_is_heavy (ColorData *data) {
-   return TRUE;
+   int fanin = data->incoming_colors;
+   int fanout = dyn_array_ptr_size (&data->other_colors);
+   return fanin > HEAVY_REFS_MIN && fanout > HEAVY_REFS_MIN
+       && fanin*fanout >= HEAVY_COMBINED_REFS_MIN;
 }
 
 // Should color be made visible to client?
@@ -146,6 +165,7 @@ static DynPtrArray color_merge_array;
 static int ignored_objects;
 static int object_index;
 static int num_colors_with_bridges;
+static int num_sccs;
 static int xref_count;
 
 static size_t setup_time, tarjan_time, scc_setup_time, gather_xref_time, xref_setup_time, cleanup_time;
@@ -467,11 +487,11 @@ find_in_cache (int *insert_index)
 static ColorData*
 new_color (gboolean has_bridges)
 {
-	int i = -1;
+	int cacheSlot = -1;
 	ColorData *cd;
 	/* XXX Try to find an equal one and return it */
 	if (!has_bridges) {
-		cd = find_in_cache (&i);
+		cd = find_in_cache (&cacheSlot);
 		if (cd)
 			return cd;
 	}
@@ -479,9 +499,16 @@ new_color (gboolean has_bridges)
 	cd = alloc_color_data ();
 	cd->api_index = -1;
 	dyn_array_ptr_set_all (&cd->other_colors, &color_merge_array);
-	/* if i >= 0, it means we prepared a given slot to receive the new color */
-	if (i >= 0)
-		merge_cache [i][0].color = cd;
+
+	// Inform targets
+	for (int i = 0; i < dyn_array_ptr_size (&color_merge_array); ++i) {
+		ColorData *points_to = (ColorData *)dyn_array_ptr_get (&color_merge_array, i);
+		points_to->incoming_colors = MIN (points_to->incoming_colors + 1, INCOMING_COLORS_MAX);
+	}
+
+	/* if cacheSlot >= 0, it means we prepared a given slot to receive the new color */
+	if (cacheSlot >= 0)
+		merge_cache [cacheSlot][0].color = cd;
 
 	return cd;
 }
@@ -937,9 +964,7 @@ reset_xrefs (ColorData *color)
 static void
 processing_build_callback_data (int generation)
 {
-	int j, api_index;
-	MonoGCBridgeSCC **api_sccs;
-	MonoGCBridgeXRef *api_xrefs;
+	int j;
 	gint64 curtime;
 	ColorBucket *cur;
 
@@ -959,7 +984,7 @@ processing_build_callback_data (int generation)
 #endif
 
 	// Count the number of SCCs visible to the client
-	int num_sccs = 0;
+	num_sccs = 0;
 	for (cur = root_color_bucket; cur; cur = cur->next) {
 		ColorData *cd;
 		for (cd = &cur->data [0]; cd < cur->next_data; ++cd) {
@@ -969,8 +994,9 @@ processing_build_callback_data (int generation)
 	}
 
 	/* This is a straightforward translation from colors to the bridge callback format. */
-	api_sccs = (MonoGCBridgeSCC **)sgen_alloc_internal_dynamic (sizeof (MonoGCBridgeSCC*) * num_sccs, INTERNAL_MEM_BRIDGE_DATA, TRUE);
-	api_index = xref_count = 0;
+	MonoGCBridgeSCC **api_sccs = (MonoGCBridgeSCC **)sgen_alloc_internal_dynamic (sizeof (MonoGCBridgeSCC*) * num_sccs, INTERNAL_MEM_BRIDGE_DATA, TRUE);
+	int api_index = 0;
+	xref_count = 0;
 
 	// Convert visible SCCs, along with their bridged object list, to MonoGCBridgeSCCs in the client's SCC list
 	for (cur = root_color_bucket; cur; cur = cur->next) {
@@ -988,6 +1014,8 @@ processing_build_callback_data (int generation)
 
 			for (j = 0; j < bridges; ++j)
 				api_sccs [api_index]->objs [j] = (MonoObject *)dyn_array_ptr_get (&cd->bridges, j);
+
+			g_assert(api_index < API_INDEX_MAX);
 			api_index++;
 		}
 	}
@@ -1017,8 +1045,8 @@ processing_build_callback_data (int generation)
 #endif
 
 	// Write out xrefs array
-	api_xrefs = (MonoGCBridgeXRef *)sgen_alloc_internal_dynamic (sizeof (MonoGCBridgeXRef) * xref_count, INTERNAL_MEM_BRIDGE_DATA, TRUE);
-	api_index = 0;
+	MonoGCBridgeXRef *api_xrefs = (MonoGCBridgeXRef *)sgen_alloc_internal_dynamic (sizeof (MonoGCBridgeXRef) * xref_count, INTERNAL_MEM_BRIDGE_DATA, TRUE);
+	int xref_index = 0;
 	for (cur = root_color_bucket; cur; cur = cur->next) {
 		ColorData *src;
 		for (src = &cur->data [0]; src < cur->next_data; ++src) {
@@ -1029,14 +1057,15 @@ processing_build_callback_data (int generation)
 				ColorData *dest = (ColorData *)dyn_array_ptr_get (&src->other_colors, j);
 				g_assert (color_visible_to_client (dest)); /* Supposedly we already eliminated all xrefs to non-visible objects. */
 
-				api_xrefs [api_index].src_scc_index = src->api_index;
-				api_xrefs [api_index].dst_scc_index = dest->api_index;
-				++api_index;
+				api_xrefs [xref_index].src_scc_index = src->api_index;
+				api_xrefs [xref_index].dst_scc_index = dest->api_index;
+
+				++xref_index;
 			}
 		}
 	}
 
-	g_assert (xref_count == api_index);
+	g_assert (xref_count == xref_index);
 	xref_setup_time = step_timer (&curtime);
 
 #if defined (DUMP_GRAPH)
@@ -1059,7 +1088,7 @@ processing_after_callback (int generation)
 	int bridge_count = dyn_array_ptr_size (&registered_bridges);
 	int object_count = object_data_count;
 	int color_count = color_data_count;
-	int scc_count = num_colors_with_bridges;
+	int colors_with_bridges_count = num_colors_with_bridges;
 
 	SGEN_TV_GETTIME (curtime);
 
@@ -1068,9 +1097,9 @@ processing_after_callback (int generation)
 
 	cleanup_time = step_timer (&curtime);
 
-	mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_GC, "GC_TAR_BRIDGE bridges %d objects %d colors %d ignored %d sccs %d xref %d cache %d/%d/%d setup %.2fms tarjan %.2fms scc-setup %.2fms gather-xref %.2fms xref-setup %.2fms cleanup %.2fms",
-		bridge_count, object_count, color_count,
-		ignored_objects, scc_count, xref_count,
+	mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_GC, "GC_TAR_BRIDGE bridges %d objects %d opaque %d colors %d colors-bridged %d colors-visible %d xref %d cache %d/%d/%d setup %.2fms tarjan %.2fms scc-setup %.2fms gather-xref %.2fms xref-setup %.2fms cleanup %.2fms",
+		bridge_count, object_count, ignored_objects,
+		color_count, colors_with_bridges_count, num_sccs, xref_count,
 		cache_hits, cache_misses, cache_abstains,
 		setup_time / 10000.0f,
 		tarjan_time / 10000.0f,
