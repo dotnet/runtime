@@ -1,0 +1,2 @@
+JIT/Directed/tailcall/tailcall/tailcall.sh
+JIT/jit64/opt/cse/HugeArray1/HugeArray1.sh
