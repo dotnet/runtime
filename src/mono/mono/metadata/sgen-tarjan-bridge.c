@@ -159,8 +159,16 @@ static DynPtrArray scan_stack, loop_stack;
 // GCObjects on which register_finalized_object has been called
 static DynPtrArray registered_bridges;
 
-// ColorData objects
+// As we traverse the graph, which ColorData objects are accessible from our current position?
 static DynPtrArray color_merge_array;
+// Running hash of the contents of the color_merge_array.
+static int color_merge_array_hash;
+
+static void color_merge_array_empty ()
+{
+	dyn_array_ptr_empty (&color_merge_array);
+	color_merge_array_hash = 0;
+}
 
 static int ignored_objects;
 static int object_index;
@@ -403,16 +411,20 @@ Memory wise, 4/32 takes 512 and 8/128 takes 8k, so it's quite reasonable.
 #define COLOR_CACHE_SIZE 128
 static HashEntry merge_cache [COLOR_CACHE_SIZE][ELEMENTS_PER_BUCKET];
 
+// Ensure the hash function does not produce the same values on every run
+static int hash_perturb;
+
 static int
 mix_hash (size_t hash)
 {
-	return (int)(((hash * 215497) >> 16) ^ ((hash * 1823231) + hash));
+	return (int)(((hash * 215497) >> 16) ^ ((hash * 1823231) + hash) ^ hash_perturb);
 }
 
 static void
 reset_cache (void)
 {
 	memset (merge_cache, 0, sizeof (merge_cache));
+	++hash_perturb;
 }
 
 
@@ -425,6 +437,13 @@ dyn_array_ptr_contains (DynPtrArray *da, void *x)
 			return TRUE;
 	return FALSE;
 }
+
+static gboolean
+match_colors_estimate (DynPtrArray *a, DynPtrArray *b)
+{
+	return dyn_array_ptr_size (a) == dyn_array_ptr_size (b);
+}
+
 
 static gboolean
 match_colors (DynPtrArray *a, DynPtrArray *b)
@@ -440,7 +459,7 @@ match_colors (DynPtrArray *a, DynPtrArray *b)
 	return TRUE;
 }
 
-static int cache_hits, cache_misses, cache_abstains;
+static int cache_hits, cache_semihits, cache_misses;
 
 // The cache contains only non-bridged colors.
 static ColorData*
@@ -450,16 +469,9 @@ find_in_cache (int *insert_index)
 	int i, hash, size, index;
 
 	size = dyn_array_ptr_size (&color_merge_array);
-	/* Cache checking is very ineficient with a lot of elements*/
-	if (size > 3) {
-		++cache_abstains;
-		return NULL;
-	}
 
-	hash = 0;
-	for (i = 0 ; i < size; ++i)
-		hash += mix_hash ((size_t)dyn_array_ptr_get (&color_merge_array, i));
-	if (!hash)
+	hash = color_merge_array_hash;
+	if (!hash) // 0 is used to indicate an empty bucket entry
 		hash = 1;
 
 	index = hash & (COLOR_CACHE_SIZE - 1);
@@ -467,9 +479,23 @@ find_in_cache (int *insert_index)
 	for (i = 0; i < ELEMENTS_PER_BUCKET; ++i) {
 		if (bucket [i].hash != hash)
 			continue;
-		if (match_colors (&bucket [i].color->other_colors, &color_merge_array)) {
-			++cache_hits;
-			return bucket [i].color;
+
+		/* Color equality checking is very expensive with a lot of elements, so when there are many
+		 * elements we switch to a cheap comparison method which allows false positives. When false
+		 * positives occur the worst that can happen is two items will be inappropriately merged
+		 * and memory will be retained longer than it should be. We assume that will correct itself
+		 * on the next GC (the hash_perturb mechanism increases the probability of this).
+		 */
+		if (size > 3) {
+			if (match_colors_estimate (&bucket [i].color->other_colors, &color_merge_array)) {
+				++cache_semihits;
+				return bucket [i].color;
+			}
+		} else {
+			if (match_colors (&bucket [i].color->other_colors, &color_merge_array)) {
+				++cache_hits;
+				return bucket [i].color;
+			}
 		}
 	}
 
@@ -628,6 +654,7 @@ compute_low_index (ScanData *data, GCObject *obj)
 
 	cd = other->color;
 	if (!cd->visited) {
+		color_merge_array_hash += mix_hash ((size_t) other->color);
 		dyn_array_ptr_add (&color_merge_array, other->color);
 		cd->visited = TRUE;
 	}
@@ -743,7 +770,7 @@ create_scc (ScanData *data)
 		g_assert (cd->visited);
 		cd->visited = FALSE;
 	}
-	dyn_array_ptr_empty (&color_merge_array);
+	color_merge_array_empty ();
 	found_bridge = FALSE;
 }
 
@@ -753,7 +780,7 @@ dfs (void)
 	g_assert (dyn_array_ptr_size (&scan_stack) == 1);
 	g_assert (dyn_array_ptr_size (&loop_stack) == 0);
 
-	dyn_array_ptr_empty (&color_merge_array);
+	color_merge_array_empty ();
 
 	while (dyn_array_ptr_size (&scan_stack) > 0) {
 		ScanData *data = (ScanData *)dyn_array_ptr_pop (&scan_stack);
@@ -1029,7 +1056,7 @@ processing_build_callback_data (int generation)
 			if (!color_visible_to_client (cd))
 				continue;
 
-			dyn_array_ptr_empty (&color_merge_array);
+			color_merge_array_empty ();
 			gather_xrefs (cd);
 			reset_xrefs (cd);
 			dyn_array_ptr_set_all (&cd->other_colors, &color_merge_array);
@@ -1100,7 +1127,7 @@ processing_after_callback (int generation)
 	mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_GC, "GC_TAR_BRIDGE bridges %d objects %d opaque %d colors %d colors-bridged %d colors-visible %d xref %d cache %d/%d/%d setup %.2fms tarjan %.2fms scc-setup %.2fms gather-xref %.2fms xref-setup %.2fms cleanup %.2fms",
 		bridge_count, object_count, ignored_objects,
 		color_count, colors_with_bridges_count, num_sccs, xref_count,
-		cache_hits, cache_misses, cache_abstains,
+		cache_hits, cache_semihits, cache_misses,
 		setup_time / 10000.0f,
 		tarjan_time / 10000.0f,
 		scc_setup_time / 10000.0f,
@@ -1108,7 +1135,7 @@ processing_after_callback (int generation)
 		xref_setup_time / 10000.0f,
 		cleanup_time / 10000.0f);
 
-	cache_hits = cache_misses = cache_abstains = 0;
+	cache_hits = cache_semihits = cache_misses = 0;
 	ignored_objects = 0;
 }
 
