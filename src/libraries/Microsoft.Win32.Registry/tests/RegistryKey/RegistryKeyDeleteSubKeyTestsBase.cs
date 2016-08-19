@@ -9,25 +9,25 @@ namespace Microsoft.Win32.RegistryTests
 {
     public abstract class RegistryKeyDeleteSubKeyTestsBase : RegistryTestsBase
     {
-        protected void Verify_DeleteSubKey_KeyExists_KeyDeleted(Action deleteSubKey)
+        protected void Verify_DeleteSubKey_KeyExists_KeyDeleted(string expected, Action deleteSubKey)
         {
-            CreateTestRegistrySubKey();
+            CreateTestRegistrySubKey(expected);
 
             deleteSubKey();
-            Assert.Null(TestRegistryKey.OpenSubKey(TestRegistryKeyName));
+            Assert.Null(TestRegistryKey.OpenSubKey(expected));
         }
 
-        protected void Verify_DeleteSubKey_KeyDoesNotExists_Throws(Action deleteSubKey)
+        protected void Verify_DeleteSubKey_KeyDoesNotExists_Throws(string expected, Action deleteSubKey)
         {
-            Assert.Null(TestRegistryKey.OpenSubKey(TestRegistrySubKeyName));
+            Assert.Null(TestRegistryKey.OpenSubKey(expected));
             Assert.Equal(0, TestRegistryKey.SubKeyCount);
 
             Assert.Throws<ArgumentException>(() => deleteSubKey());
         }
 
-        protected void Verify_DeleteSubKey_KeyDoesNotExists_DoesNotThrow(Action deleteSubKey)
+        protected void Verify_DeleteSubKey_KeyDoesNotExists_DoesNotThrow(string expected, Action deleteSubKey)
         {
-            Assert.Null(TestRegistryKey.OpenSubKey(TestRegistrySubKeyName));
+            Assert.Null(TestRegistryKey.OpenSubKey(expected));
             Assert.Equal(0, TestRegistryKey.SubKeyCount);
 
             deleteSubKey();
