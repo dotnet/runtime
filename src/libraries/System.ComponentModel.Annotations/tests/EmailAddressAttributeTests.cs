@@ -11,144 +11,113 @@ namespace System.ComponentModel.DataAnnotations
         private static readonly ValidationContext s_testValidationContext = new ValidationContext(new object());
 
         [Fact]
-        public static void EmailAddressAttribute_creation_DataType_and_CustomDataType()
+        public static void DataType_CustomDataType_ReturnExpected()
         {
             var attribute = new EmailAddressAttribute();
             Assert.Equal(DataType.EmailAddress, attribute.DataType);
             Assert.Null(attribute.CustomDataType);
         }
 
-        [Fact]
-        public static void Validate_successful_for_null_address()
+        [Theory]
+        [InlineData(null)]
+        [InlineData("someName@someDomain.com")]
+        [InlineData("1234@someDomain.com")]
+        [InlineData("firstName.lastName@someDomain.com")]
+        [InlineData("\u00A0@someDomain.com")]
+        [InlineData("!#$%&'*+-/=?^_`|~@someDomain.com")]
+        [InlineData("\"firstName.lastName\"@someDomain.com")]
+        [InlineData("someName@someDomain.com")]
+        [InlineData("someName@some~domain.com")]
+        [InlineData("someName@some_domain.com")]
+        [InlineData("someName@1234.com")]
+        [InlineData("someName@someDomain\uFFEF.com")]
+        public static void Validate_ValidValue_DoesNotThrow(string value)
         {
             var attribute = new EmailAddressAttribute();
+            attribute.Validate(value, s_testValidationContext);
+        }
 
-            AssertEx.DoesNotThrow(() => attribute.Validate(null, s_testValidationContext)); // Null is valid
+        [Theory]
+        [InlineData(0)]
+        [InlineData("")]
+        [InlineData(" \r \t \n")]
+        [InlineData("@someDomain.com")]
+        [InlineData("@someDomain@abc.com")]
+        [InlineData("someName")]
+        [InlineData("someName@")]
+        [InlineData("someName@a@b.com")]
+        public static void Validate_InvalidValue_ThrowsValidationException(object value)
+        {
+            var attribute = new EmailAddressAttribute();
+            Assert.Throws<ValidationException>(() => attribute.Validate(value, s_testValidationContext));
         }
 
         [Fact]
-        public static void Validate_successful_for_valid_local_part()
+        public static void Validate_ErrorMessageNotSet_ThrowsInvalidOperationException()
         {
-            var attribute = new EmailAddressAttribute();
-
-            AssertEx.DoesNotThrow(() => attribute.Validate("someName@someDomain.com", s_testValidationContext)); // Simple valid value
-            AssertEx.DoesNotThrow(() => attribute.Validate("1234@someDomain.com", s_testValidationContext)); // numbers are valid
-            AssertEx.DoesNotThrow(() => attribute.Validate("firstName.lastName@someDomain.com", s_testValidationContext)); // With dot in name
-            AssertEx.DoesNotThrow(() => attribute.Validate("\u00A0@someDomain.com", s_testValidationContext)); // With valid \u character
-            AssertEx.DoesNotThrow(() => attribute.Validate("!#$%&'*+-/=?^_`|~@someDomain.com", s_testValidationContext)); // With valid (but unusual) characters
-            AssertEx.DoesNotThrow(() => attribute.Validate("\"firstName.lastName\"@someDomain.com", s_testValidationContext)); // quotes around whole local part
-        }
-
-        [Fact]
-        public static void Validate_successful_for_valid_domain_part()
-        {
-            var attribute = new EmailAddressAttribute();
-
-            AssertEx.DoesNotThrow(() => attribute.Validate("someName@someDomain.com", s_testValidationContext)); // Simple valid value
-            AssertEx.DoesNotThrow(() => attribute.Validate("someName@some~domain.com", s_testValidationContext)); // With tilde
-            AssertEx.DoesNotThrow(() => attribute.Validate("someName@some_domain.com", s_testValidationContext)); // With underscore
-            AssertEx.DoesNotThrow(() => attribute.Validate("someName@1234.com", s_testValidationContext)); // numbers are valid
-            AssertEx.DoesNotThrow(() => attribute.Validate("someName@someDomain\uFFEF.com", s_testValidationContext)); // With valid \u character
-        }
-
-        [Fact]
-        public static void Validate_throws_for_invalid_local_part()
-        {
-            var attribute = new EmailAddressAttribute();
-
-            Assert.Throws<ValidationException>(() => attribute.Validate("@someDomain.com", s_testValidationContext)); // no local part
-            Assert.Throws<ValidationException>(() => attribute.Validate("@someDomain@abc.com", s_testValidationContext)); // multiple @'s
-        }
-
-        [Fact]
-        public static void Validate_throws_for_invalid_domain_name()
-        {
-            var attribute = new EmailAddressAttribute();
-
-            Assert.Throws<ValidationException>(() => attribute.Validate("someName", s_testValidationContext)); // no domain
-            Assert.Throws<ValidationException>(() => attribute.Validate("someName@", s_testValidationContext)); // no domain
-            Assert.Throws<ValidationException>(() => attribute.Validate("someName@a@b.com", s_testValidationContext)); // multiple @'s
-        }
-
-        [Fact]
-        public static void Validate_throws_InvalidOperationException_if_ErrorMessage_is_null()
-        {
-            var attribute = new EmailAddressAttribute();
-            attribute.ErrorMessage = null; // note: this overrides the default value
+            var attribute = new EmailAddressAttribute() { ErrorMessage = null };
             Assert.Throws<InvalidOperationException>(() => attribute.Validate("InvalidEmailAddress", s_testValidationContext));
         }
 
         [Fact]
-        public static void Validate_throws_InvalidOperationException_if_ErrorMessage_and_ErrorMessageResourceName_are_set()
+        public static void Validate_ErrorMessageSet_ErrorMessageResourceNameSet_ThrowsInvalidOperationException()
         {
-            var attribute = new EmailAddressAttribute();
-            attribute.ErrorMessage = "SomeErrorMessage";
-            attribute.ErrorMessageResourceName = "SomeErrorMessageResourceName";
+            var attribute = new EmailAddressAttribute() { ErrorMessage = "Some", ErrorMessageResourceName = "Some" };
             Assert.Throws<InvalidOperationException>(() => attribute.Validate("InvalidEmailAddress", s_testValidationContext));
         }
 
         [Fact]
-        public static void Validate_throws_InvalidOperationException_if_ErrorMessageResourceName_set_but_ErrorMessageResourceType_not_set()
+        public static void Validate_ErrorMessageResourceNameSet_ErrorMessageResourceTypeNotSet_ThrowsInvalidOperationException()
         {
-            var attribute = new EmailAddressAttribute();
-            attribute.ErrorMessageResourceName = "SomeErrorMessageResourceName";
-            attribute.ErrorMessageResourceType = null;
+            var attribute = new EmailAddressAttribute() { ErrorMessageResourceName = "Some", ErrorMessageResourceType = null };
             Assert.Throws<InvalidOperationException>(() => attribute.Validate("InvalidEmailAddress", s_testValidationContext));
         }
 
         [Fact]
-        public static void Validate_throws_InvalidOperationException_if_ErrorMessageResourceType_set_but_ErrorMessageResourceName_not_set()
+        public static void Validate_ErrorMessageResourceNameNotSet_ErrorMessageResourceTypeSet_ThrowsInvalidOperationException()
         {
-            var attribute = new EmailAddressAttribute();
-            attribute.ErrorMessageResourceName = null;
-            attribute.ErrorMessageResourceType = typeof(ErrorMessageResources);
+            var attribute = new EmailAddressAttribute() { ErrorMessageResourceName = null, ErrorMessageResourceType = typeof(ErrorMessageResources) };
             Assert.Throws<InvalidOperationException>(() => attribute.Validate("InvalidEmailAddress", s_testValidationContext));
         }
 
         [Fact]
-        public static void GetValidationResult_returns_ErrorMessage_if_ErrorMessage_overrides_default()
+        public static void GetValidationResult_ErrorMessageSet_ReturnsOverridenValue()
         {
             var attribute = new EmailAddressAttribute();
             attribute.ErrorMessage = "SomeErrorMessage";
             var toBeTested = new EmailClassToBeTested();
             var validationContext = new ValidationContext(toBeTested);
-            validationContext.MemberName = "EmailPropertyToBeTested";
+            validationContext.MemberName = nameof(EmailClassToBeTested.EmailPropertyToBeTested);
             var validationResult = attribute.GetValidationResult(toBeTested, validationContext);
             Assert.Equal("SomeErrorMessage", validationResult.ErrorMessage);
         }
 
-
         [Fact]
-        public static void GetValidationResult_returns_DefaultErrorMessage_if_ErrorMessage_is_not_set()
+        public static void GetValidationResult_ErrorMessageNotSet_ReturnsDefaultValue()
         {
             var attribute = new EmailAddressAttribute();
             var toBeTested = new EmailClassToBeTested();
             var validationContext = new ValidationContext(toBeTested);
-            validationContext.MemberName = "EmailPropertyToBeTested";
-            AssertEx.DoesNotThrow(() => attribute.GetValidationResult(toBeTested, validationContext));
+            validationContext.MemberName = nameof(EmailClassToBeTested.EmailPropertyToBeTested);
+            attribute.GetValidationResult(toBeTested, validationContext);
         }
 
         [Fact]
-        public static void GetValidationResult_returns_ErrorMessage_from_resource_if_ErrorMessageResourceName_and_ErrorMessageResourceType_both_set()
+        public static void GetValidationResult_ErrorMessageSetFromResource_ReturnsExpectedValue()
         {
             var attribute = new EmailAddressAttribute();
             attribute.ErrorMessageResourceName = "InternalErrorMessageTestProperty";
             attribute.ErrorMessageResourceType = typeof(ErrorMessageResources);
             var toBeTested = new EmailClassToBeTested();
             var validationContext = new ValidationContext(toBeTested);
-            validationContext.MemberName = "EmailPropertyToBeTested";
+            validationContext.MemberName = nameof(EmailClassToBeTested.EmailPropertyToBeTested);
             var validationResult = attribute.GetValidationResult(toBeTested, validationContext);
-            Assert.Equal(
-                "Error Message from ErrorMessageResources.InternalErrorMessageTestProperty",
-                validationResult.ErrorMessage);
+            Assert.Equal("Error Message from ErrorMessageResources.InternalErrorMessageTestProperty", validationResult.ErrorMessage);
         }
     }
 
     public class EmailClassToBeTested
     {
-        public string EmailPropertyToBeTested
-        {
-            get { return "InvalidEmailAddress"; }
-        }
+        public string EmailPropertyToBeTested => "InvalidEmailAddress";
     }
 }
