@@ -5313,7 +5313,6 @@ namespace System
             return _CreateEnum(enumType, value);
         }
 
-#if FEATURE_COMINTEROP
         [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private extern Object InvokeDispMethod(
@@ -5339,7 +5338,6 @@ namespace System
             throw new NotImplementedException("CoreCLR_REMOVED -- Unmanaged activation removed"); 
         }
 #endif // FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
-#endif
 
         #endregion
 
