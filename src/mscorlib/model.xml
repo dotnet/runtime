@@ -3413,6 +3413,7 @@
       <Member Name="GetHashCode" />
       <Member Name="GetInvocationList" />
       <Member Name="GetMethodImpl" />
+      <Member Name="GetObjectData(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
       <Member Name="op_Equality(System.MulticastDelegate,System.MulticastDelegate)" />
       <Member Name="op_Inequality(System.MulticastDelegate,System.MulticastDelegate)" />
       <Member Name="RemoveImpl(System.Delegate)" />
