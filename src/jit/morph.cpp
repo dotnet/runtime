@@ -113,31 +113,6 @@ GenTreePtr Compiler::fgMorphIntoHelperCall(GenTreePtr tree, int helper, GenTreeA
 }
 
 /*****************************************************************************
- * This node should not be referenced by anyone now. Set its values to garbage
- * to catch extra references
- */
-
-inline void DEBUG_DESTROY_NODE(GenTreePtr tree)
-{
-#ifdef DEBUG
-    // printf("DEBUG_DESTROY_NODE for [0x%08x]\n", tree);
-
-    // Save gtOper in case we want to find out what this node was
-    tree->gtOperSave = tree->gtOper;
-
-    tree->gtType = TYP_UNDEF;
-    tree->gtFlags |= 0xFFFFFFFF & ~GTF_NODE_MASK;
-    if (tree->OperIsSimple())
-    {
-        tree->gtOp.gtOp1 = tree->gtOp.gtOp2 = nullptr;
-    }
-    // Must do this last, because the "gtOp" check above will fail otherwise.
-    // Don't call SetOper, because GT_COUNT is not a valid value
-    tree->gtOper = GT_COUNT;
-#endif
-}
-
-/*****************************************************************************
  *
  *  Determine if a relop must be morphed to a qmark to manifest a boolean value.
  *  This is done when code generation can't create straight-line code to do it.
@@ -7109,7 +7084,7 @@ void Compiler::fgMorphTailCall(GenTreeCall* call)
 void Compiler::fgMorphRecursiveFastTailCallIntoLoop(BasicBlock* block, GenTreeCall* recursiveTailCall)
 {
     assert(recursiveTailCall->IsTailCallConvertibleToLoop());
-    GenTreePtr last = fgGetLastTopLevelStmt(block);
+    GenTreePtr last = block->lastStmt();
     assert(recursiveTailCall == last->gtStmt.gtStmtExpr);
 
     // Transform recursive tail call into a loop.
@@ -17364,9 +17339,7 @@ void Compiler::fgMarkAddressExposedLocals()
 
 bool Compiler::fgNodesMayInterfere(GenTree* write, GenTree* read)
 {
-    LclVarDsc* srcVar     = nullptr;
-    bool       srcAliased = false;
-    bool       dstAliased = false;
+    LclVarDsc* srcVar = nullptr;
 
     bool readIsIndir  = read->OperIsIndir() || read->OperIsImplicitIndir();
     bool writeIsIndir = write->OperIsIndir() || write->OperIsImplicitIndir();

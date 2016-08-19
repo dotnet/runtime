@@ -135,13 +135,15 @@ private:
         {
             // The home bucket is empty; use it.
             //
-            // Note that the next offset does not need to be updated: whether or not it is non-zero,
-            // it is already correct, since we're inserting at the head of the list.
-            home->m_isFull      = true;
-            home->m_firstOffset = 0;
-            home->m_hash        = hash;
-            home->m_key         = key;
-            home->m_value       = value;
+            // Note that `m_firstOffset` does not need to be updated: whether or not it is non-zero,
+            // it is already correct, since we're inserting at the head of the list. `m_nextOffset`
+            // must be 0, however, since this node should not be part of a list.
+            assert(home->m_nextOffset == 0);
+
+            home->m_isFull = true;
+            home->m_hash   = hash;
+            home->m_key    = key;
+            home->m_value  = value;
             return true;
         }
 
@@ -172,6 +174,8 @@ private:
                 }
 
                 unsigned offset = (bucketIndex - precedingIndexInChain) & mask;
+                assert(offset != 0);
+
                 if (precedingIndexInChain == homeIndex)
                 {
                     buckets[precedingIndexInChain].m_firstOffset = offset;
@@ -473,8 +477,7 @@ public:
             return false;
         }
 
-        Bucket* bucket   = &m_buckets[bucketIndex];
-        bucket->m_isFull = false;
+        Bucket* bucket = &m_buckets[bucketIndex];
 
         if (precedingIndexInChain != bucketIndex)
         {
@@ -501,6 +504,9 @@ public:
                 m_buckets[precedingIndexInChain].m_nextOffset = nextOffset;
             }
         }
+
+        bucket->m_isFull     = false;
+        bucket->m_nextOffset = 0;
 
         m_numFullBuckets--;
 
