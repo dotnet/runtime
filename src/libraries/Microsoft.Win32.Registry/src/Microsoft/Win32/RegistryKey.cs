@@ -317,10 +317,8 @@ namespace Microsoft.Win32
         /// read-only access.
         /// </summary>
         /// <returns>the Subkey requested, or <b>null</b> if the operation failed.</returns>
-        public RegistryKey OpenSubKey(string name, bool writable)
-        {
-            return InternalOpenSubKey(name, writable);
-        }
+        public RegistryKey OpenSubKey(string name, bool writable) =>
+            OpenSubKey(name, GetRegistryKeyRights(writable));
 
         public RegistryKey OpenSubKey(string name, RegistryRights rights)
         {

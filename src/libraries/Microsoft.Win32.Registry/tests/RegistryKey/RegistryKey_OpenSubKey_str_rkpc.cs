@@ -8,7 +8,7 @@ using Xunit;
 
 namespace Microsoft.Win32.RegistryTests
 {
-    public class RegistryKey_OpenSubKey_str_rkpc : RegistryTestsBase
+    public class RegistryKey_OpenSubKey_str_rkpc : RegistryKeyOpenSubKeyTestsBase
     {
         [Fact]
         public void NegativeTests()
@@ -58,5 +58,28 @@ namespace Microsoft.Win32.RegistryTests
                 Assert.NotNull(rk.OpenSubKey(valueName));
             }
         }
+
+        private const RegistryRights Writable = RegistryRights.ReadKey | RegistryRights.WriteKey;
+        private const RegistryRights NonWritable = RegistryRights.ReadKey;
+
+        [Theory]
+        [MemberData(nameof(TestRegistrySubKeyNames))]
+        public void OpenSubKey_Writable_KeyExists_OpensWithFixedUpName(string subKeyName) =>
+            Verify_OpenSubKey_KeyExists_OpensWithFixedUpName(() => TestRegistryKey.OpenSubKey(subKeyName, Writable));
+
+        [Theory]
+        [MemberData(nameof(TestRegistrySubKeyNames))]
+        public void OpenSubKey_NonWritable_KeyExists_OpensWithFixedUpName(string subKeyName) =>
+            Verify_OpenSubKey_KeyExists_OpensWithFixedUpName(() => TestRegistryKey.OpenSubKey(subKeyName, NonWritable));
+
+        [Theory]
+        [MemberData(nameof(TestRegistrySubKeyNames))]
+        public void OpenSubKey_Writable_KeyDoesNotExist_ReturnsNull(string subKeyName) =>
+            Verify_OpenSubKey_KeyDoesNotExist_ReturnsNull(() => TestRegistryKey.OpenSubKey(subKeyName, Writable));
+
+        [Theory]
+        [MemberData(nameof(TestRegistrySubKeyNames))]
+        public void OpenSubKey_NonWritable_KeyDoesNotExist_ReturnsNull(string subKeyName) =>
+            Verify_OpenSubKey_KeyDoesNotExist_ReturnsNull(() => TestRegistryKey.OpenSubKey(subKeyName, NonWritable));
     }
 }
