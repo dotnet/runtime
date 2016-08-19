@@ -2462,6 +2462,7 @@ namespace System
         public Version(int major, int minor, int build) { }
         public Version(int major, int minor, int build, int revision) { }
         public Version(string version) { }
+        public Version() { }
         public int Build { get { return default(int); } }
         public int Major { get { return default(int); } }
         public short MajorRevision { get { return default(short); } }
