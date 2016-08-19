@@ -46,7 +46,8 @@ struct ZeroInit
 // Private requests for DataModules
 enum
 {
-    DACDATAMODULEPRIV_REQUEST_GET_MODULEPTR = 0xf0000000
+    DACDATAMODULEPRIV_REQUEST_GET_MODULEPTR = 0xf0000000,
+    DACDATAMODULEPRIV_REQUEST_GET_MODULEDATA = 0xf0000001
 };
 
 
@@ -902,9 +903,24 @@ struct DacpGetModuleAddress : ZeroInit<DacpGetModuleAddress>
     CLRDATA_ADDRESS ModulePtr;
     HRESULT Request(IXCLRDataModule* pDataModule)
     {
-        return pDataModule->Request(DACDATAMODULEPRIV_REQUEST_GET_MODULEPTR,
-                                0, NULL,
-                                sizeof(*this), (PBYTE) this);
+        return pDataModule->Request(DACDATAMODULEPRIV_REQUEST_GET_MODULEPTR, 0, NULL, sizeof(*this), (PBYTE) this);
+    }
+};
+
+struct DacpGetModuleData : ZeroInit<DacpGetModuleData>
+{
+    BOOL IsDynamic;
+    BOOL IsInMemory;
+    BOOL IsFileLayout;
+    CLRDATA_ADDRESS PEFile;
+    CLRDATA_ADDRESS LoadedPEAddress;
+    ULONG64 LoadedPESize;
+    CLRDATA_ADDRESS InMemoryPdbAddress;
+    ULONG64 InMemoryPdbSize;
+
+    HRESULT Request(IXCLRDataModule* pDataModule)
+    {
+        return pDataModule->Request(DACDATAMODULEPRIV_REQUEST_GET_MODULEDATA, 0, NULL, sizeof(*this), (PBYTE) this);
     }
 };
 
