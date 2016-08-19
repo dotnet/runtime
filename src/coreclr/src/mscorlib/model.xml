@@ -6550,6 +6550,16 @@
       <Member MemberType="Property" Name="IsClosed" />
       <Member MemberType="Property" Name="IsInvalid" />
     </Type>
+    <Type Name="Microsoft.Win32.SafeHandles.SafeHandleMinusOneIsInvalid">
+      <Member Name="#ctor" />
+      <Member Name="#ctor(System.Boolean)" />
+      <Member Name="get_IsInvalid" />
+    </Type>
+    <Type Name="Microsoft.Win32.SafeHandles.SafeHandleZeroOrMinusOneIsInvalid">
+      <Member Name="#ctor" />
+      <Member Name="#ctor(System.Boolean)" />
+      <Member Name="get_IsInvalid" />
+    </Type>
     <Type Name="Microsoft.Win32.SafeHandles.SafeWaitHandle">
       <Member Name="#ctor(System.IntPtr,System.Boolean)" />
       <Member Status="ApiRoot" Name="ReleaseHandle" />
