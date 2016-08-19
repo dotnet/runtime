@@ -181,6 +181,7 @@ namespace System.Tests
             UInt64[] overflowValues = { UInt64.MaxValue };
             VerifyThrows<OverflowException, UInt64>(Convert.ToInt16, overflowValues);
         }
+
 #if netstandard17
         [Fact]
         public void FromDateTime()

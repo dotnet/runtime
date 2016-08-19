@@ -128,6 +128,7 @@ namespace System.Tests
             Double[] expectedValues = { (Double)UInt64.MaxValue, (Double)UInt64.MinValue };
             Verify(Convert.ToDouble, testValues, expectedValues);
         }
+
 #if netstandard17
         [Fact]
         public void FromChar()

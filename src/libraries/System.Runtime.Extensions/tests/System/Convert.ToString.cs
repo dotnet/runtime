@@ -652,9 +652,11 @@ namespace System.Tests
                 Assert.Equal(testValues[i].ToString(), result);
             }
 
+#if netstandard17
             string testValue = "Hello World!";
             Assert.Equal(testValue, Convert.ToString(testValue));
             Assert.Equal(testValue, Convert.ToString(testValue, NumberFormatInfo.CurrentInfo));
+#endif
         }
 
         [Fact]

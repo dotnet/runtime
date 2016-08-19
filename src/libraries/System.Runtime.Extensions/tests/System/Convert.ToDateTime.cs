@@ -144,7 +144,8 @@ namespace System.Tests
         {
             Assert.Throws<InvalidCastException>(() => Convert.ToDateTime(1.0m));
         }
-#if netstandard
+
+#if netstandard17
         [Fact]
         public void FromByte()
         {

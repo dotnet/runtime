@@ -134,6 +134,7 @@ namespace System.Tests
             Decimal[] expectedValues = { UInt64.MaxValue, UInt64.MinValue };
             Verify(Convert.ToDecimal, testValues, expectedValues);
         }
+
 #if netstandard17
         [Fact]
         public void FromChar()

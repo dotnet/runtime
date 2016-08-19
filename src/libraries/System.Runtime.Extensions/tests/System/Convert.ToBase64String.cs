@@ -57,8 +57,8 @@ namespace System.Tests
             Assert.Throws<ArgumentOutOfRangeException>(() => Convert.ToBase64String(inputBytes, 0, inputBytes.Length + 1));
             Assert.Throws<ArgumentOutOfRangeException>(() => Convert.ToBase64String(inputBytes, 1, inputBytes.Length));
         }
-#if netstandard17
 
+#if netstandard17
         [Fact]
         public static void SimpleTest()
         {
