@@ -43,7 +43,7 @@ namespace System.ComponentModel.DataAnnotations
             ValidationContext context = new ValidationContext(new CompareObject("a")) { DisplayName = "CurrentProperty" };
 
             yield return new object[] { nameof(CompareObject.CompareProperty), context, nameof(CompareObject.CompareProperty), typeof(ValidationException) };
-            yield return new object[] { nameof(CompareObject.ComparePropertyWithDisplayName), context, "DisplayName", typeof(ValidationException) };
+            yield return new object[] { nameof(CompareObject.ComparePropertyWithDisplayName), context, "CustomDisplayName", typeof(ValidationException) };
             yield return new object[] { "UnknownPropertyName", context, null, typeof(ValidationException) };
 
             ValidationContext subClassContext = new ValidationContext(new CompareObjectSubClass("a"));
@@ -58,24 +58,28 @@ namespace System.ComponentModel.DataAnnotations
         public static void Validate_Invalid_Throws(string otherProperty, ValidationContext context, string otherPropertyDisplayName, Type exceptionType)
         {
             var attribute = new CompareAttribute(otherProperty);
-
-            string previousErrorMessage = attribute.FormatErrorMessage("name");
+            
             Assert.Throws(exceptionType, () => attribute.Validate("b", context));
             Assert.Equal(otherPropertyDisplayName, attribute.OtherPropertyDisplayName);
-
-            string newErrorMessage = attribute.FormatErrorMessage("name");
-            if (otherPropertyDisplayName == null || otherProperty.Equals(otherPropertyDisplayName))
-            {
-                Assert.Equal(previousErrorMessage, newErrorMessage);
-            }
-            else
-            {
-                Assert.NotEqual(previousErrorMessage, newErrorMessage);
-            }
 
             // Make sure that we can run Validate twice
             Assert.Throws(exceptionType, () => attribute.Validate("b", context));
             Assert.Equal(otherPropertyDisplayName, attribute.OtherPropertyDisplayName);
+        }
+
+        [Fact]
+        public static void Validate_PropertyHasDisplayName_UpdatesFormatErrorMessageToContainDisplayName()
+        {
+            CompareAttribute attribute = new CompareAttribute(nameof(CompareObject.ComparePropertyWithDisplayName));
+
+            string oldErrorMessage = attribute.FormatErrorMessage("name");
+            Assert.False(oldErrorMessage.Contains("CustomDisplayName"));
+
+            Assert.Throws<ValidationException>(() => attribute.Validate("test1", new ValidationContext(new CompareObject("test"))));
+
+            string newErrorMessage = attribute.FormatErrorMessage("name");
+            Assert.NotEqual(oldErrorMessage, newErrorMessage);
+            Assert.True(newErrorMessage.Contains("CustomDisplayName"));
         }
 
         [Fact]
@@ -100,7 +104,7 @@ namespace System.ComponentModel.DataAnnotations
         {
             public string CompareProperty { get; set; }
 
-            [Display(Name = "DisplayName")]
+            [Display(Name = "CustomDisplayName")]
             public string ComparePropertyWithDisplayName { get; set; }
 
             public string this[int index] { get { return "abc"; } set { } }
