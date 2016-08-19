@@ -3631,11 +3631,12 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			guint8 *buf [16];
 
 			buf [0] = code;
-			arm_ldaxrw (code, ARMREG_IP0, sreg1);
+			arm_ldxrw (code, ARMREG_IP0, sreg1);
 			arm_addx (code, ARMREG_IP0, ARMREG_IP0, sreg2);
 			arm_stlxrw (code, ARMREG_IP1, ARMREG_IP0, sreg1);
 			arm_cbnzw (code, ARMREG_IP1, buf [0]);
 
+			arm_dmb (code, 0);
 			arm_movx (code, dreg, ARMREG_IP0);
 			break;
 		}
@@ -3643,11 +3644,12 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			guint8 *buf [16];
 
 			buf [0] = code;
-			arm_ldaxrx (code, ARMREG_IP0, sreg1);
+			arm_ldxrx (code, ARMREG_IP0, sreg1);
 			arm_addx (code, ARMREG_IP0, ARMREG_IP0, sreg2);
 			arm_stlxrx (code, ARMREG_IP1, ARMREG_IP0, sreg1);
 			arm_cbnzx (code, ARMREG_IP1, buf [0]);
 
+			arm_dmb (code, 0);
 			arm_movx (code, dreg, ARMREG_IP0);
 			break;
 		}
@@ -3655,10 +3657,11 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			guint8 *buf [16];
 
 			buf [0] = code;
-			arm_ldaxrw (code, ARMREG_IP0, sreg1);
+			arm_ldxrw (code, ARMREG_IP0, sreg1);
 			arm_stlxrw (code, ARMREG_IP1, sreg2, sreg1);
 			arm_cbnzw (code, ARMREG_IP1, buf [0]);
 
+			arm_dmb (code, 0);
 			arm_movx (code, dreg, ARMREG_IP0);
 			break;
 		}
@@ -3666,10 +3669,11 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			guint8 *buf [16];
 
 			buf [0] = code;
-			arm_ldaxrx (code, ARMREG_IP0, sreg1);
+			arm_ldxrx (code, ARMREG_IP0, sreg1);
 			arm_stlxrx (code, ARMREG_IP1, sreg2, sreg1);
 			arm_cbnzw (code, ARMREG_IP1, buf [0]);
 
+			arm_dmb (code, 0);
 			arm_movx (code, dreg, ARMREG_IP0);
 			break;
 		}
@@ -3678,7 +3682,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
 			/* sreg2 is the value, sreg3 is the comparand */
 			buf [0] = code;
-			arm_ldaxrw (code, ARMREG_IP0, sreg1);
+			arm_ldxrw (code, ARMREG_IP0, sreg1);
 			arm_cmpw (code, ARMREG_IP0, ins->sreg3);
 			buf [1] = code;
 			arm_bcc (code, ARMCOND_NE, 0);
@@ -3686,6 +3690,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			arm_cbnzw (code, ARMREG_IP1, buf [0]);
 			arm_patch_rel (buf [1], code, MONO_R_ARM64_BCC);
 
+			arm_dmb (code, 0);
 			arm_movx (code, dreg, ARMREG_IP0);
 			break;
 		}
@@ -3693,7 +3698,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			guint8 *buf [16];
 
 			buf [0] = code;
-			arm_ldaxrx (code, ARMREG_IP0, sreg1);
+			arm_ldxrx (code, ARMREG_IP0, sreg1);
 			arm_cmpx (code, ARMREG_IP0, ins->sreg3);
 			buf [1] = code;
 			arm_bcc (code, ARMCOND_NE, 0);
@@ -3701,41 +3706,54 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			arm_cbnzw (code, ARMREG_IP1, buf [0]);
 			arm_patch_rel (buf [1], code, MONO_R_ARM64_BCC);
 
+			arm_dmb (code, 0);
 			arm_movx (code, dreg, ARMREG_IP0);
 			break;
 		}
 		case OP_ATOMIC_LOAD_I1: {
 			code = emit_addx_imm (code, ARMREG_LR, ins->inst_basereg, ins->inst_offset);
+			if (ins->backend.memory_barrier_kind == MONO_MEMORY_BARRIER_SEQ)
+				arm_dmb (code, 0);
 			arm_ldarb (code, ins->dreg, ARMREG_LR);
 			arm_sxtbx (code, ins->dreg, ins->dreg);
 			break;
 		}
 		case OP_ATOMIC_LOAD_U1: {
 			code = emit_addx_imm (code, ARMREG_LR, ins->inst_basereg, ins->inst_offset);
+			if (ins->backend.memory_barrier_kind == MONO_MEMORY_BARRIER_SEQ)
+				arm_dmb (code, 0);
 			arm_ldarb (code, ins->dreg, ARMREG_LR);
 			arm_uxtbx (code, ins->dreg, ins->dreg);
 			break;
 		}
 		case OP_ATOMIC_LOAD_I2: {
 			code = emit_addx_imm (code, ARMREG_LR, ins->inst_basereg, ins->inst_offset);
+			if (ins->backend.memory_barrier_kind == MONO_MEMORY_BARRIER_SEQ)
+				arm_dmb (code, 0);
 			arm_ldarh (code, ins->dreg, ARMREG_LR);
 			arm_sxthx (code, ins->dreg, ins->dreg);
 			break;
 		}
 		case OP_ATOMIC_LOAD_U2: {
 			code = emit_addx_imm (code, ARMREG_LR, ins->inst_basereg, ins->inst_offset);
+			if (ins->backend.memory_barrier_kind == MONO_MEMORY_BARRIER_SEQ)
+				arm_dmb (code, 0);
 			arm_ldarh (code, ins->dreg, ARMREG_LR);
 			arm_uxthx (code, ins->dreg, ins->dreg);
 			break;
 		}
 		case OP_ATOMIC_LOAD_I4: {
 			code = emit_addx_imm (code, ARMREG_LR, ins->inst_basereg, ins->inst_offset);
+			if (ins->backend.memory_barrier_kind == MONO_MEMORY_BARRIER_SEQ)
+				arm_dmb (code, 0);
 			arm_ldarw (code, ins->dreg, ARMREG_LR);
 			arm_sxtwx (code, ins->dreg, ins->dreg);
 			break;
 		}
 		case OP_ATOMIC_LOAD_U4: {
 			code = emit_addx_imm (code, ARMREG_LR, ins->inst_basereg, ins->inst_offset);
+			if (ins->backend.memory_barrier_kind == MONO_MEMORY_BARRIER_SEQ)
+				arm_dmb (code, 0);
 			arm_ldarw (code, ins->dreg, ARMREG_LR);
 			arm_movw (code, ins->dreg, ins->dreg); /* Clear upper half of the register. */
 			break;
@@ -3743,11 +3761,15 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_ATOMIC_LOAD_I8:
 		case OP_ATOMIC_LOAD_U8: {
 			code = emit_addx_imm (code, ARMREG_LR, ins->inst_basereg, ins->inst_offset);
+			if (ins->backend.memory_barrier_kind == MONO_MEMORY_BARRIER_SEQ)
+				arm_dmb (code, 0);
 			arm_ldarx (code, ins->dreg, ARMREG_LR);
 			break;
 		}
 		case OP_ATOMIC_LOAD_R4: {
 			code = emit_addx_imm (code, ARMREG_LR, ins->inst_basereg, ins->inst_offset);
+			if (ins->backend.memory_barrier_kind == MONO_MEMORY_BARRIER_SEQ)
+				arm_dmb (code, 0);
 			if (cfg->r4fp) {
 				arm_ldarw (code, ARMREG_LR, ARMREG_LR);
 				arm_fmov_rx_to_double (code, ins->dreg, ARMREG_LR);
@@ -3760,6 +3782,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 		case OP_ATOMIC_LOAD_R8: {
 			code = emit_addx_imm (code, ARMREG_LR, ins->inst_basereg, ins->inst_offset);
+			if (ins->backend.memory_barrier_kind == MONO_MEMORY_BARRIER_SEQ)
+				arm_dmb (code, 0);
 			arm_ldarx (code, ARMREG_LR, ARMREG_LR);
 			arm_fmov_rx_to_double (code, ins->dreg, ARMREG_LR);
 			break;
@@ -3768,24 +3792,32 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_ATOMIC_STORE_U1: {
 			code = emit_addx_imm (code, ARMREG_LR, ins->inst_destbasereg, ins->inst_offset);
 			arm_stlrb (code, ARMREG_LR, ins->sreg1);
+			if (ins->backend.memory_barrier_kind == MONO_MEMORY_BARRIER_SEQ)
+				arm_dmb (code, 0);
 			break;
 		}
 		case OP_ATOMIC_STORE_I2:
 		case OP_ATOMIC_STORE_U2: {
 			code = emit_addx_imm (code, ARMREG_LR, ins->inst_destbasereg, ins->inst_offset);
 			arm_stlrh (code, ARMREG_LR, ins->sreg1);
+			if (ins->backend.memory_barrier_kind == MONO_MEMORY_BARRIER_SEQ)
+				arm_dmb (code, 0);
 			break;
 		}
 		case OP_ATOMIC_STORE_I4:
 		case OP_ATOMIC_STORE_U4: {
 			code = emit_addx_imm (code, ARMREG_LR, ins->inst_destbasereg, ins->inst_offset);
 			arm_stlrw (code, ARMREG_LR, ins->sreg1);
+			if (ins->backend.memory_barrier_kind == MONO_MEMORY_BARRIER_SEQ)
+				arm_dmb (code, 0);
 			break;
 		}
 		case OP_ATOMIC_STORE_I8:
 		case OP_ATOMIC_STORE_U8: {
 			code = emit_addx_imm (code, ARMREG_LR, ins->inst_destbasereg, ins->inst_offset);
 			arm_stlrx (code, ARMREG_LR, ins->sreg1);
+			if (ins->backend.memory_barrier_kind == MONO_MEMORY_BARRIER_SEQ)
+				arm_dmb (code, 0);
 			break;
 		}
 		case OP_ATOMIC_STORE_R4: {
@@ -3798,12 +3830,16 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				arm_fmov_double_to_rx (code, ARMREG_IP0, FP_TEMP_REG);
 				arm_stlrw (code, ARMREG_LR, ARMREG_IP0);
 			}
+			if (ins->backend.memory_barrier_kind == MONO_MEMORY_BARRIER_SEQ)
+				arm_dmb (code, 0);
 			break;
 		}
 		case OP_ATOMIC_STORE_R8: {
 			code = emit_addx_imm (code, ARMREG_LR, ins->inst_destbasereg, ins->inst_offset);
 			arm_fmov_double_to_rx (code, ARMREG_IP0, ins->sreg1);
 			arm_stlrx (code, ARMREG_LR, ARMREG_IP0);
+			if (ins->backend.memory_barrier_kind == MONO_MEMORY_BARRIER_SEQ)
+				arm_dmb (code, 0);
 			break;
 		}
 
