@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using Xunit;
 
 namespace System.ComponentModel.DataAnnotations
@@ -10,160 +11,85 @@ namespace System.ComponentModel.DataAnnotations
     {
         private static readonly ValidationContext s_testValidationContext = new ValidationContext(new object());
 
-        [Fact]
-        public static void EnumDataTypeAttribute_creation_DataType_and_CustomDataType()
+        [Theory]
+        [InlineData(null)]
+        [InlineData(typeof(string))]
+        [InlineData(typeof(NonFlagsEnumType))]
+        [InlineData(typeof(FlagsEnumType))]
+        public static void Ctor(Type enumType)
         {
-            var attribute = new EnumDataTypeAttribute(null);
+            var attribute = new EnumDataTypeAttribute(enumType);
             Assert.Equal(DataType.Custom, attribute.DataType);
             Assert.Equal("Enumeration", attribute.CustomDataType);
+
+            Assert.Equal(enumType, attribute.EnumType);
         }
 
-        [Fact]
-        public static void Can_get_EnumType()
+        [Theory]
+        [InlineData(typeof(NonFlagsEnumType), null)]
+        [InlineData(typeof(NonFlagsEnumType), "")]
+        [InlineData(typeof(NonFlagsEnumType), NonFlagsEnumType.A)]
+        [InlineData(typeof(NonFlagsEnumType), 10)]
+        [InlineData(typeof(NonFlagsEnumType), 100)]
+        [InlineData(typeof(FlagsEnumType), FlagsEnumType.X)]
+        [InlineData(typeof(FlagsEnumType), FlagsEnumType.X | FlagsEnumType.Y)]
+        [InlineData(typeof(FlagsEnumType), 5)]
+        [InlineData(typeof(FlagsEnumType), 7)]
+        [InlineData(typeof(NonFlagsEnumType), "A")]
+        [InlineData(typeof(NonFlagsEnumType), "B")]
+        [InlineData(typeof(NonFlagsEnumType), "C")]
+        [InlineData(typeof(NonFlagsEnumType), "0")]
+        [InlineData(typeof(NonFlagsEnumType), "10")]
+        [InlineData(typeof(NonFlagsEnumType), "100")]
+        [InlineData(typeof(FlagsEnumType), "X")]
+        [InlineData(typeof(FlagsEnumType), "X, Y")]
+        [InlineData(typeof(FlagsEnumType), "X, Y, Z")]
+        [InlineData(typeof(FlagsEnumType), "1")]
+        [InlineData(typeof(FlagsEnumType), "5")]
+        [InlineData(typeof(FlagsEnumType), "7")]
+        public static void Validate_Valid_DoesNotThrow(Type enumType, object value)
         {
-            var attribute = new EnumDataTypeAttribute(null);
-            Assert.Null(attribute.EnumType);
-
-            attribute = new EnumDataTypeAttribute(typeof(NonFlagsEnumType));
-            Assert.Equal(typeof(NonFlagsEnumType), attribute.EnumType);
+            var attribute = new EnumDataTypeAttribute(enumType);
+            attribute.Validate(value, s_testValidationContext);
         }
 
-        [Fact]
-        public static void Validate_successful_for_null_value()
+        [Theory]
+        [InlineData(null)]
+        [InlineData(typeof(string))]
+        [InlineData(typeof(NonFlagsEnumType?))]
+        [InlineData(typeof(FlagsEnumType?))]
+        public static void Validate_InvalidEnumType_ThrowsInvalidOperationException(Type enumType)
         {
-            var attribute = new EnumDataTypeAttribute(typeof(NonFlagsEnumType));
-            AssertEx.DoesNotThrow(() => attribute.Validate(null, s_testValidationContext)); // Null is valid
+            var attribute = new EnumDataTypeAttribute(enumType);
+            Assert.Throws<InvalidOperationException>(() => attribute.Validate("AnyValue", s_testValidationContext));
         }
 
-        [Fact]
-        public static void Validate_throws_InvalidOperationException_for_null_EnumType()
+        public static IEnumerable<object[]> Validate_Invalid_TestData()
         {
-            var attribute = new EnumDataTypeAttribute(null);
-            Assert.Null(attribute.EnumType);
-            Assert.Throws<InvalidOperationException>(
-                () => attribute.Validate("Value does not matter - EnumType is null", s_testValidationContext));
+            yield return new object[] { typeof(NonFlagsEnumType), FlagsEnumType.X };
+            yield return new object[] { typeof(NonFlagsEnumType), new object() };
+            yield return new object[] { typeof(NonFlagsEnumType), true };
+            yield return new object[] { typeof(NonFlagsEnumType), 1.1f };
+            yield return new object[] { typeof(NonFlagsEnumType), 123.456d };
+            yield return new object[] { typeof(NonFlagsEnumType), 123.456m };
+            yield return new object[] { typeof(NonFlagsEnumType), '0' };
+            yield return new object[] { typeof(NonFlagsEnumType), 42 };
+            yield return new object[] { typeof(NonFlagsEnumType), "NoSuchValue" };
+            yield return new object[] { typeof(NonFlagsEnumType), "42" };
+
+            yield return new object[] { typeof(FlagsEnumType), 0 };
+            yield return new object[] { typeof(FlagsEnumType), 8 };
+            yield return new object[] { typeof(FlagsEnumType), "NoSuchValue" };
+            yield return new object[] { typeof(FlagsEnumType), "0" };
+            yield return new object[] { typeof(FlagsEnumType), "8" };
         }
 
-
-        [Fact]
-        public static void Validate_throws_InvalidOperationException_for_non_enum_EnumType()
+        [Theory]
+        [MemberData(nameof(Validate_Invalid_TestData))]
+        public static void Validate_Invalid_ThrowsValidationException(Type enumType, object value)
         {
-            var attribute = new EnumDataTypeAttribute(typeof(string));
-            Assert.Equal(typeof(string), attribute.EnumType);
-            Assert.Throws<InvalidOperationException>(
-                () => attribute.Validate("Value does not matter - EnumType is not an enum", s_testValidationContext));
-        }
-
-        [Fact]
-        public static void Validate_throws_InvalidOperationException_for_Nullable_EnumType()
-        {
-            var attribute = new EnumDataTypeAttribute(typeof(Nullable<NonFlagsEnumType>));
-            Assert.Throws<InvalidOperationException>(
-                () => attribute.Validate("Value does not matter - EnumType is Nullable", s_testValidationContext));
-
-            attribute = new EnumDataTypeAttribute(typeof(Nullable<FlagsEnumType>));
-            Assert.Throws<InvalidOperationException>(
-                () => attribute.Validate("Value does not matter - EnumType is Nullable", s_testValidationContext));
-        }
-
-        [Fact]
-        public static void Validate_successful_for_null_or_empty_value()
-        {
-            var attribute = new EnumDataTypeAttribute(typeof(NonFlagsEnumType));
-            AssertEx.DoesNotThrow(() => attribute.Validate(null, s_testValidationContext));
-            AssertEx.DoesNotThrow(() => attribute.Validate(string.Empty, s_testValidationContext));
-        }
-
-        [Fact]
-        public static void Validate_throws_for_non_matching_EnumType()
-        {
-            var attribute = new EnumDataTypeAttribute(typeof(NonFlagsEnumType));
-            Assert.Throws<ValidationException>(() => attribute.Validate(FlagsEnumType.X, s_testValidationContext));
-        }
-
-        [Fact]
-        public static void Validate_throws_for_non_ValueType_value()
-        {
-            var attribute = new EnumDataTypeAttribute(typeof(NonFlagsEnumType));
-            Assert.Throws<ValidationException>(() => attribute.Validate(new object(), s_testValidationContext));
-        }
-
-        [Fact]
-        public static void Validate_throws_for_non_integral_values()
-        {
-            var attribute = new EnumDataTypeAttribute(typeof(NonFlagsEnumType));
-            Assert.Throws<ValidationException>(() => attribute.Validate(true, s_testValidationContext)); // bool
-            Assert.Throws<ValidationException>(() => attribute.Validate(1.1f, s_testValidationContext)); // float
-            Assert.Throws<ValidationException>(() => attribute.Validate(123.456d, s_testValidationContext)); // double
-            Assert.Throws<ValidationException>(() => attribute.Validate(123.456m, s_testValidationContext)); // decimal
-            Assert.Throws<ValidationException>(() => attribute.Validate('0', s_testValidationContext)); // char
-        }
-
-        [Fact]
-        public static void Validate_successful_for_matching_non_flags_enums_and_matching_values()
-        {
-            var attribute = new EnumDataTypeAttribute(typeof(NonFlagsEnumType));
-            AssertEx.DoesNotThrow(() => attribute.Validate(NonFlagsEnumType.A, s_testValidationContext));
-            AssertEx.DoesNotThrow(() => attribute.Validate(10, s_testValidationContext));
-            AssertEx.DoesNotThrow(() => attribute.Validate(100, s_testValidationContext));
-        }
-
-        [Fact]
-        public static void Validate_successful_for_matching_flags_enums_and_matching_values()
-        {
-            var attribute = new EnumDataTypeAttribute(typeof(FlagsEnumType));
-            AssertEx.DoesNotThrow(() => attribute.Validate(FlagsEnumType.X, s_testValidationContext));
-            AssertEx.DoesNotThrow(() => attribute.Validate(FlagsEnumType.X | FlagsEnumType.Y, s_testValidationContext));
-            AssertEx.DoesNotThrow(() => attribute.Validate(5, s_testValidationContext));
-            AssertEx.DoesNotThrow(() => attribute.Validate(7, s_testValidationContext));
-        }
-
-        [Fact]
-        public static void Validate_throws_for_matching_non_flags_enums_and_non_matching_values()
-        {
-            var attribute = new EnumDataTypeAttribute(typeof(NonFlagsEnumType));
-            Assert.Throws<ValidationException>(() => attribute.Validate(42, s_testValidationContext));
-        }
-
-        [Fact]
-        public static void Validate_throws_for_matching_flags_enums_and_non_matching_values()
-        {
-            var attribute = new EnumDataTypeAttribute(typeof(FlagsEnumType));
-            Assert.Throws<ValidationException>(() => attribute.Validate(0, s_testValidationContext));
-            Assert.Throws<ValidationException>(() => attribute.Validate(8, s_testValidationContext));
-        }
-
-        [Fact]
-        public static void Validate_successful_for_string_values_which_can_be_converted_to_enum_values()
-        {
-            var attribute = new EnumDataTypeAttribute(typeof(NonFlagsEnumType));
-            AssertEx.DoesNotThrow(() => attribute.Validate("A", s_testValidationContext));
-            AssertEx.DoesNotThrow(() => attribute.Validate("B", s_testValidationContext));
-            AssertEx.DoesNotThrow(() => attribute.Validate("C", s_testValidationContext));
-            AssertEx.DoesNotThrow(() => attribute.Validate("0", s_testValidationContext));
-            AssertEx.DoesNotThrow(() => attribute.Validate("10", s_testValidationContext));
-            AssertEx.DoesNotThrow(() => attribute.Validate("100", s_testValidationContext));
-
-            attribute = new EnumDataTypeAttribute(typeof(FlagsEnumType));
-            AssertEx.DoesNotThrow(() => attribute.Validate("X", s_testValidationContext));
-            AssertEx.DoesNotThrow(() => attribute.Validate("X, Y", s_testValidationContext));
-            AssertEx.DoesNotThrow(() => attribute.Validate("X, Y, Z", s_testValidationContext));
-            AssertEx.DoesNotThrow(() => attribute.Validate("1", s_testValidationContext));
-            AssertEx.DoesNotThrow(() => attribute.Validate("5", s_testValidationContext));
-            AssertEx.DoesNotThrow(() => attribute.Validate("7", s_testValidationContext));
-        }
-
-        [Fact]
-        public static void Validate_throws_for_string_values_which_cannot_be_converted_to_enum_values()
-        {
-            var attribute = new EnumDataTypeAttribute(typeof(NonFlagsEnumType));
-            Assert.Throws<ValidationException>(() => attribute.Validate("NonExist", s_testValidationContext));
-            Assert.Throws<ValidationException>(() => attribute.Validate("42", s_testValidationContext));
-
-            attribute = new EnumDataTypeAttribute(typeof(FlagsEnumType));
-            Assert.Throws<ValidationException>(() => attribute.Validate("NonExist", s_testValidationContext));
-            Assert.Throws<ValidationException>(() => attribute.Validate("0", s_testValidationContext));
-            Assert.Throws<ValidationException>(() => attribute.Validate("8", s_testValidationContext));
+            var attribute = new EnumDataTypeAttribute(enumType);
+            Assert.Throws<ValidationException>(() => attribute.Validate(value, s_testValidationContext));
         }
 
         private enum NonFlagsEnumType
