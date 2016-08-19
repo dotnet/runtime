@@ -70,6 +70,7 @@ namespace System.Tests
             Assert.Equal(barray, Convert.FromBase64String(s1));
             Assert.True(!s2.Contains("\n"));
             Assert.Equal(subset, Convert.FromBase64String(s3));
+            Assert.Equal(barray, Convert.FromBase64String(s2));
         }
 #endif
     }

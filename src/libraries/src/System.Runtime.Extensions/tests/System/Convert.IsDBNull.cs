@@ -17,6 +17,7 @@ namespace System.Tests
             Assert.Equal(false, Convert.IsDBNull(true));
             Assert.Equal(false, Convert.IsDBNull('x'));
             Assert.Equal(false, Convert.IsDBNull(1.1));
+            Assert.Equal(false, Convert.IsDBNull(null));
         }
     }
 }
