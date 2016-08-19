@@ -13,14 +13,13 @@ def projectFolder = Utilities.getFolderName(project) + '/' + Utilities.getFolder
             label('performance')
             steps {
                     // Batch
-                    batchFile("python tests\\scripts\\machinedata.py")
+                    batchFile("C:\\tools\\nuget install Microsoft.BenchView.JSONFormat -Source http://benchviewtestfeed.azurewebsites.net/nuget -OutputDirectory C:\\tools -Prerelease")
+                    batchFile("python C:\\tools\\Microsoft.BenchView.JSONFormat.0.1.0-pre008\\tools\\machinedata.py")
                     batchFile("set __TestIntermediateDir=int&&build.cmd release x64")
                     batchFile("tests\\runtest.cmd release x64")
                     batchFile("tests\\scripts\\run-xunit-perf.cmd")
             }
         }
-
-        //Utilities.setMachineAffinity(newJob, os, 'latest-or-auto-elevated') // Disable to forcely use physical machine.
 
         // Save machinedata.json to /artifact/bin/ Jenkins dir
         def archiveSettings = new ArchivalSettings()
