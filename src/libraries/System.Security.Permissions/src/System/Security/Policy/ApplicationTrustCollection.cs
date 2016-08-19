@@ -7,12 +7,12 @@ namespace System.Security.Policy
     public sealed partial class ApplicationTrustCollection : System.Collections.ICollection, System.Collections.IEnumerable
     {
         internal ApplicationTrustCollection() { }
-        public int Count { get { return default(int); } }
-        public bool IsSynchronized { get { return default(bool); } }
+        public int Count { get { return 0; } }
+        public bool IsSynchronized { get { return false; } }
         public System.Security.Policy.ApplicationTrust this[int index] { get { return default(System.Security.Policy.ApplicationTrust); } }
         public System.Security.Policy.ApplicationTrust this[string appFullName] { get { return default(System.Security.Policy.ApplicationTrust); } }
-        public object SyncRoot { get { return default(object); } }
-        public int Add(System.Security.Policy.ApplicationTrust trust) { return default(int); }
+        public object SyncRoot { get { return null; } }
+        public int Add(System.Security.Policy.ApplicationTrust trust) { return 0; }
         public void AddRange(System.Security.Policy.ApplicationTrust[] trusts) { }
         public void AddRange(System.Security.Policy.ApplicationTrustCollection trusts) { }
         public void Clear() { }

@@ -8,7 +8,7 @@ namespace System.Security.Policy
     {
         public SiteMembershipCondition(string site) { }
         public string Site { get; set; }
-        public bool Check(System.Security.Policy.Evidence evidence) { return default(bool); }
+        public bool Check(System.Security.Policy.Evidence evidence) { return false; }
         public System.Security.Policy.IMembershipCondition Copy() { return default(System.Security.Policy.IMembershipCondition); }
         public override bool Equals(object o) => base.Equals(o);
         public override int GetHashCode() => base.GetHashCode();

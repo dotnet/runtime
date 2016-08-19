@@ -10,7 +10,7 @@ namespace System.Security
         public void Assert() { }
         public abstract System.Security.IPermission Copy();
         public void Demand() { }
-        [System.ObsoleteAttribute]
+        [System.ObsoleteAttribute("Deny is obsolete and will be removed in a future release of the .NET Framework. See http://go.microsoft.com/fwlink/?LinkID=155570 for more information.")]
         public void Deny() { throw new System.NotSupportedException(); }
         public override bool Equals(object obj) => base.Equals(obj);
         public override int GetHashCode() => base.GetHashCode();

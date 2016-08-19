@@ -8,8 +8,8 @@ namespace System.Security.Policy
     {
         internal ApplicationTrustEnumerator() { }
         public System.Security.Policy.ApplicationTrust Current { get { return default(System.Security.Policy.ApplicationTrust); } }
-        object System.Collections.IEnumerator.Current { get { return default(object); } }
-        public bool MoveNext() { return default(bool); }
+        object System.Collections.IEnumerator.Current { get { return null; } }
+        public bool MoveNext() { return false; }
         public void Reset() { }
     }
 }

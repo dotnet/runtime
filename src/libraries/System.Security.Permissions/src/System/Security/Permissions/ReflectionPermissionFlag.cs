@@ -7,14 +7,14 @@ namespace System.Security.Permissions
     [System.FlagsAttribute]
     public enum ReflectionPermissionFlag
     {
-        [System.ObsoleteAttribute]
+        [System.ObsoleteAttribute("This permission has been deprecated. Use PermissionState.Unrestricted to get full access.")]
         AllFlags = 7,
         MemberAccess = 2,
         NoFlags = 0,
-        [System.ObsoleteAttribute]
+        [System.ObsoleteAttribute("This permission is no longer used by the CLR.")]
         ReflectionEmit = 4,
         RestrictedMemberAccess = 8,
-        [System.ObsoleteAttribute("not used anymore")]
+        [System.ObsoleteAttribute("This API has been deprecated. http://go.microsoft.com/fwlink/?linkid=14202")]
         TypeInformation = 1,
     }
 }

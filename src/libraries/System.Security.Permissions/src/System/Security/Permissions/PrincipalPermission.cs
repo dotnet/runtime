@@ -15,8 +15,8 @@ namespace System.Security.Permissions
         public override bool Equals(object o) => base.Equals(o);
         public override int GetHashCode() => base.GetHashCode();
         public System.Security.IPermission Intersect(System.Security.IPermission target) { return default(System.Security.IPermission); }
-        public bool IsSubsetOf(System.Security.IPermission target) { return default(bool); }
-        public bool IsUnrestricted() { return default(bool); }
+        public bool IsSubsetOf(System.Security.IPermission target) { return false; }
+        public bool IsUnrestricted() { return false; }
         public override string ToString() => base.ToString();
         public System.Security.IPermission Union(System.Security.IPermission other) { return default(System.Security.IPermission); }
     }

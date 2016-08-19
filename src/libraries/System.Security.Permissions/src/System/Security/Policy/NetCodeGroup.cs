@@ -9,9 +9,9 @@ namespace System.Security.Policy
         public static readonly string AbsentOriginScheme;
         public static readonly string AnyOtherOriginScheme;
         public NetCodeGroup(System.Security.Policy.IMembershipCondition membershipCondition) : base(default(System.Security.Policy.IMembershipCondition), default(System.Security.Policy.PolicyStatement)) { }
-        public override string AttributeString { get { return default(string); } }
-        public override string MergeLogic { get { return default(string); } }
-        public override string PermissionSetName { get { return default(string); } }
+        public override string AttributeString { get { return null; } }
+        public override string MergeLogic { get { return null; } }
+        public override string PermissionSetName { get { return null; } }
         public void AddConnectAccess(string originScheme, System.Security.Policy.CodeConnectAccess connectAccess) { }
         public override System.Security.Policy.CodeGroup Copy() { return default(System.Security.Policy.CodeGroup); }
         public override bool Equals(object o) => base.Equals(o);

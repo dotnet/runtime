@@ -10,10 +10,10 @@ namespace System.Security.Permissions
         public EnvironmentPermission(System.Security.Permissions.PermissionState state) { }
         public void AddPathList(System.Security.Permissions.EnvironmentPermissionAccess flag, string pathList) { }
         public override System.Security.IPermission Copy() { return default(System.Security.IPermission); }
-        public string GetPathList(System.Security.Permissions.EnvironmentPermissionAccess flag) { return default(string); }
+        public string GetPathList(System.Security.Permissions.EnvironmentPermissionAccess flag) { return null; }
         public override System.Security.IPermission Intersect(System.Security.IPermission target) { return default(System.Security.IPermission); }
-        public override bool IsSubsetOf(System.Security.IPermission target) { return default(bool); }
-        public bool IsUnrestricted() { return default(bool); }
+        public override bool IsSubsetOf(System.Security.IPermission target) { return false; }
+        public bool IsUnrestricted() { return false; }
         public void SetPathList(System.Security.Permissions.EnvironmentPermissionAccess flag, string pathList) { }
         public override System.Security.IPermission Union(System.Security.IPermission other) { return default(System.Security.IPermission); }
     }

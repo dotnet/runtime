@@ -7,8 +7,8 @@ namespace System.Security.Policy
     public sealed partial class ApplicationDirectory : System.Security.Policy.EvidenceBase
     {
         public ApplicationDirectory(string name) { }
-        public string Directory { get { return default(string); } }
-        public object Copy() { return default(object); }
+        public string Directory { get { return null; } }
+        public object Copy() { return null; }
         public override bool Equals(object o) => base.Equals(o);
         public override int GetHashCode() => base.GetHashCode();
         public override string ToString() => base.ToString();

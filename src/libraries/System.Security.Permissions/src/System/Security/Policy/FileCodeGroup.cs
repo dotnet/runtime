@@ -7,9 +7,9 @@ namespace System.Security.Policy
     public sealed partial class FileCodeGroup : System.Security.Policy.CodeGroup
     {
         public FileCodeGroup(System.Security.Policy.IMembershipCondition membershipCondition, System.Security.Permissions.FileIOPermissionAccess access) : base(default(System.Security.Policy.IMembershipCondition), default(System.Security.Policy.PolicyStatement)) { }
-        public override string AttributeString { get { return default(string); } }
-        public override string MergeLogic { get { return default(string); } }
-        public override string PermissionSetName { get { return default(string); } }
+        public override string AttributeString { get { return null; } }
+        public override string MergeLogic { get { return null; } }
+        public override string PermissionSetName { get { return null; } }
         public override System.Security.Policy.CodeGroup Copy() { return default(System.Security.Policy.CodeGroup); }
         public override bool Equals(object o) => base.Equals(o);
         public override int GetHashCode() => base.GetHashCode();

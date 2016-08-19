@@ -11,8 +11,8 @@ namespace System.Security.Permissions
         public System.Security.Permissions.TypeDescriptorPermissionFlags Flags { get; set; }
         public override System.Security.IPermission Copy() { return this; }
         public override System.Security.IPermission Intersect(System.Security.IPermission target) { return default(System.Security.IPermission); }
-        public override bool IsSubsetOf(System.Security.IPermission target) { return default(bool); }
-        public bool IsUnrestricted() { return default(bool); }
+        public override bool IsSubsetOf(System.Security.IPermission target) { return false; }
+        public bool IsUnrestricted() { return false; }
         public override System.Security.IPermission Union(System.Security.IPermission target) { return default(System.Security.IPermission); }
     }
 }

@@ -27,8 +27,4 @@ namespace System.Security.Principal
         Impersonation = 3,
         None = 0,
     }
-    public class SecurityElement
-    {
-
-    }
 }
