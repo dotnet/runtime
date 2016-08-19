@@ -144,8 +144,10 @@ protected:
     void genUpdateLife(GenTreePtr tree);
     void genUpdateLife(VARSET_VALARG_TP newLife);
 
+#ifdef LEGACY_BACKEND
     regMaskTP genLiveMask(GenTreePtr tree);
     regMaskTP genLiveMask(VARSET_VALARG_TP liveSet);
+#endif
 
     void genGetRegPairFromMask(regMaskTP regPairMask, regNumber* pLoReg, regNumber* pHiReg);
 

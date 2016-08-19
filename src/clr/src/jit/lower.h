@@ -49,13 +49,15 @@ public:
 #endif // _TARGET_64BIT_
 
 private:
-    // Friends
-    static Compiler::fgWalkResult LowerNodeHelper(GenTreePtr* ppTree, Compiler::fgWalkData* data);
-    static Compiler::fgWalkResult TreeInfoInitHelper(GenTreePtr* ppTree, Compiler::fgWalkData* data);
+#ifdef DEBUG
+    static void CheckCallArg(GenTree* arg);
+    static void CheckCall(GenTreeCall* call);
+    static void CheckNode(GenTree* node);
+    static bool CheckBlock(Compiler* compiler, BasicBlock* block);
+#endif // DEBUG
 
-    // Member Functions
-    void LowerNode(GenTreePtr* tree, Compiler::fgWalkData* data);
-    GenTreeStmt* LowerMorphAndSeqTree(GenTree* tree);
+    void LowerBlock(BasicBlock* block);
+    GenTree* LowerNode(GenTree* node);
     void CheckVSQuirkStackPaddingNeeded(GenTreeCall* call);
 
     // ------------------------------
@@ -74,6 +76,7 @@ private:
     GenTree* LowerVirtualVtableCall(GenTreeCall* call);
     GenTree* LowerVirtualStubCall(GenTreeCall* call);
     void LowerArgsForCall(GenTreeCall* call);
+    void ReplaceArgWithPutArgOrCopy(GenTreePtr* ppChild, GenTreePtr newNode);
     GenTree* NewPutArg(GenTreeCall* call, GenTreePtr arg, fgArgTabEntryPtr info, var_types type);
     void LowerArg(GenTreeCall* call, GenTreePtr* ppTree);
     void InsertPInvokeCallProlog(GenTreeCall* call);
@@ -90,25 +93,6 @@ private:
     GenTree* CreateFrameLinkUpdate(FrameLinkAction);
     GenTree* AddrGen(ssize_t addr, regNumber reg = REG_NA);
     GenTree* AddrGen(void* addr, regNumber reg = REG_NA);
-
-    // return concatenation of two trees, which currently uses a comma and really should not
-    // because we're not supposed to have commas in codegen
-    GenTree* Concat(GenTree* first, GenTree* second)
-    {
-        // if any is null, it must be the first
-        if (first == nullptr)
-        {
-            return second;
-        }
-        else if (second == nullptr)
-        {
-            return first;
-        }
-        else
-        {
-            return comp->gtNewOperNode(GT_COMMA, TYP_I_IMPL, first, second);
-        }
-    }
 
     GenTree* Ind(GenTree* tree)
     {
@@ -143,7 +127,7 @@ private:
     bool IsCallTargetInRange(void* addr);
 
     void TreeNodeInfoInit(GenTree* stmt);
-    void TreeNodeInfoInit(GenTreePtr* tree, GenTree* parent);
+
 #if defined(_TARGET_XARCH_)
     void TreeNodeInfoInitSimple(GenTree* tree);
 
@@ -221,23 +205,24 @@ private:
 #endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
     void TreeNodeInfoInitLclHeap(GenTree* tree);
 
-    void SpliceInUnary(GenTreePtr parent, GenTreePtr* ppChild, GenTreePtr newNode);
     void DumpNodeInfoMap();
 
     // Per tree node member functions
-    void LowerInd(GenTreePtr* ppTree);
-    void LowerAddrMode(GenTreePtr* ppTree, GenTree* before, Compiler::fgWalkData* data, bool isIndir);
-    void LowerAdd(GenTreePtr* ppTree, Compiler::fgWalkData* data);
-    void LowerUnsignedDivOrMod(GenTree* tree);
-    void LowerSignedDivOrMod(GenTreePtr* ppTree, Compiler::fgWalkData* data);
+    void LowerStoreInd(GenTree* node);
+    GenTree* LowerAdd(GenTree* node);
+    void LowerUnsignedDivOrMod(GenTree* node);
+    GenTree* LowerSignedDivOrMod(GenTree* node);
 
-    // Remove the nodes that are no longer used after an addressing mode is constructed under a GT_IND
-    void LowerIndCleanupHelper(GenTreeAddrMode* addrMode, GenTreePtr tree);
-    void LowerSwitch(GenTreePtr* ppTree);
-    void LowerCast(GenTreePtr* ppTree);
-    void LowerCntBlockOp(GenTreePtr* ppTree);
+    GenTree* TryCreateAddrMode(LIR::Use&& use, bool isIndir);
+    void AddrModeCleanupHelper(GenTreeAddrMode* addrMode, GenTree* node);
 
+    GenTree* LowerSwitch(GenTree* node);
+    void LowerCast(GenTree* node);
+
+#if defined(_TARGET_XARCH_)
     void SetMulOpCounts(GenTreePtr tree);
+#endif // defined(_TARGET_XARCH_)
+
     void LowerCmp(GenTreePtr tree);
 
 #if !CPU_LOAD_STORE_ARCH
@@ -248,7 +233,7 @@ private:
     void LowerStoreLoc(GenTreeLclVarCommon* tree);
     void SetIndirAddrOpCounts(GenTree* indirTree);
     void LowerGCWriteBarrier(GenTree* tree);
-    void LowerArrElem(GenTree** ppTree, Compiler::fgWalkData* data);
+    GenTree* LowerArrElem(GenTree* node);
     void LowerRotate(GenTree* tree);
 
     // Utility functions
@@ -260,12 +245,7 @@ public:
 private:
     static bool NodesAreEquivalentLeaves(GenTreePtr candidate, GenTreePtr storeInd);
 
-    GenTreePtr CreateLocalTempAsg(GenTreePtr rhs, unsigned refCount, GenTreePtr* ppLclVar = nullptr);
-    GenTreeStmt* CreateTemporary(GenTree** ppTree);
-    bool AreSourcesPossiblyModified(GenTree* use, GenTree* src1, GenTree* src2);
-    void ReplaceNode(GenTree** ppTreeLocation, GenTree* replacementNode, GenTree* stmt, BasicBlock* block);
-
-    void UnlinkNode(GenTree** ppParentLink, GenTree* stmt, BasicBlock* block);
+    bool AreSourcesPossiblyModified(GenTree* addr, GenTree* base, GenTree* index);
 
     // return true if 'childNode' is an immediate that can be contained
     //  by the 'parentNode' (i.e. folded into an instruction)
@@ -282,9 +262,14 @@ private:
     // can be contained.
     bool IsSafeToContainMem(GenTree* parentNode, GenTree* childNode);
 
+    inline LIR::Range& BlockRange() const
+    {
+        return LIR::AsRange(m_block);
+    }
+
     LinearScan* m_lsra;
-    BasicBlock* currBlock;
     unsigned    vtableCallTemp; // local variable we use as a temp for vtable calls
+    BasicBlock* m_block;
 };
 
 #endif // _LOWER_H_

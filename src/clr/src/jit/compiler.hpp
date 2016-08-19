@@ -824,9 +824,10 @@ void* GenTree::operator new(size_t sz, Compiler* comp, genTreeOps oper)
 // GenTree constructor
 inline GenTree::GenTree(genTreeOps oper, var_types type DEBUGARG(bool largeNode))
 {
-    gtOper  = oper;
-    gtType  = type;
-    gtFlags = 0;
+    gtOper     = oper;
+    gtType     = type;
+    gtFlags    = 0;
+    gtLIRFlags = 0;
 #ifdef DEBUG
     gtDebugFlags = 0;
 #endif // DEBUG
@@ -2768,7 +2769,23 @@ inline bool Compiler::fgIsThrowHlpBlk(BasicBlock* block)
         return false;
     }
 
-    GenTreePtr call = block->bbTreeList->gtStmt.gtStmtExpr;
+    GenTree* call = block->lastNode();
+
+#ifdef DEBUG
+    if (block->IsLIR())
+    {
+        LIR::Range& blockRange = LIR::AsRange(block);
+        for (LIR::Range::ReverseIterator node = blockRange.rbegin(), end = blockRange.rend(); node != end; ++node)
+        {
+            if (node->OperGet() == GT_CALL)
+            {
+                assert(*node == call);
+                assert(node == blockRange.rbegin());
+                break;
+            }
+        }
+    }
+#endif
 
     if (!call || (call->gtOper != GT_CALL))
     {
@@ -4569,9 +4586,9 @@ inline bool BasicBlock::endsWithJmpMethod(Compiler* comp)
 {
     if (comp->compJmpOpUsed && (bbJumpKind == BBJ_RETURN) && (bbFlags & BBF_HAS_JMP))
     {
-        GenTreePtr last = comp->fgGetLastTopLevelStmt(this);
-        assert(last != nullptr);
-        return last->gtStmt.gtStmtExpr->gtOper == GT_JMP;
+        GenTree* lastNode = this->lastNode();
+        assert(lastNode != nullptr);
+        return lastNode->OperGet() == GT_JMP;
     }
 
     return false;
@@ -4635,12 +4652,10 @@ inline bool BasicBlock::endsWithTailCall(Compiler* comp,
 
         if (result)
         {
-            GenTreePtr last = comp->fgGetLastTopLevelStmt(this);
-            assert(last != nullptr);
-            last = last->gtStmt.gtStmtExpr;
-            if (last->OperGet() == GT_CALL)
+            GenTree* lastNode = this->lastNode();
+            if (lastNode->OperGet() == GT_CALL)
             {
-                GenTreeCall* call = last->AsCall();
+                GenTreeCall* call = lastNode->AsCall();
                 if (tailCallsConvertibleToLoopOnly)
                 {
                     result = call->IsTailCallConvertibleToLoop();
@@ -4687,19 +4702,6 @@ inline bool BasicBlock::endsWithTailCallConvertibleToLoop(Compiler* comp, GenTre
     return endsWithTailCall(comp, fastTailCallsOnly, tailCallsConvertibleToLoopOnly, tailCall);
 }
 
-// Returns the last top level stmt of a given basic block.
-// Returns nullptr if the block is empty.
-inline GenTreePtr Compiler::fgGetLastTopLevelStmt(BasicBlock* block)
-{
-    // Return if the block is empty
-    if (block->bbTreeList == nullptr)
-    {
-        return nullptr;
-    }
-
-    return fgFindTopLevelStmtBackwards(block->bbTreeList->gtPrev->AsStmt());
-}
-
 inline GenTreeBlkOp* Compiler::gtCloneCpObjNode(GenTreeCpObj* source)
 {
     GenTreeCpObj* result = new (this, GT_COPYOBJ) GenTreeCpObj(source->gtGcPtrCount, source->gtSlots, source->gtGcPtrs);
@@ -4715,6 +4717,31 @@ inline static bool StructHasOverlappingFields(DWORD attribs)
 inline static bool StructHasCustomLayout(DWORD attribs)
 {
     return ((attribs & CORINFO_FLG_CUSTOMLAYOUT) != 0);
+}
+
+/*****************************************************************************
+ * This node should not be referenced by anyone now. Set its values to garbage
+ * to catch extra references
+ */
+
+inline void DEBUG_DESTROY_NODE(GenTreePtr tree)
+{
+#ifdef DEBUG
+    // printf("DEBUG_DESTROY_NODE for [0x%08x]\n", tree);
+
+    // Save gtOper in case we want to find out what this node was
+    tree->gtOperSave = tree->gtOper;
+
+    tree->gtType = TYP_UNDEF;
+    tree->gtFlags |= 0xFFFFFFFF & ~GTF_NODE_MASK;
+    if (tree->OperIsSimple())
+    {
+        tree->gtOp.gtOp1 = tree->gtOp.gtOp2 = nullptr;
+    }
+    // Must do this last, because the "gtOp" check above will fail otherwise.
+    // Don't call SetOper, because GT_COUNT is not a valid value
+    tree->gtOper = GT_COUNT;
+#endif
 }
 
 /*****************************************************************************/

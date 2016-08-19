@@ -55,6 +55,7 @@
         <CppCompile Include="..\Instr.cpp" />
         <CppCompile Include="..\JitTelemetry.cpp" />
         <CppCompile Include="..\LclVars.cpp" />
+        <CppCompile Include="..\LIR.cpp" />
         <CppCompile Include="..\Liveness.cpp" />
         <CppCompile Include="..\Morph.cpp" />
         <CppCompile Include="..\Optimizer.cpp" />
