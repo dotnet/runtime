@@ -144,10 +144,10 @@ namespace System.Tests
 
 #if netstandard17
         [Fact]
-        public void FromChar()
+        public void FromSingleChar()
         {
             char testValue = char.MinValue;
-            Assert.Throws<InvalidCastException>(() => Convert.ToChar(testValue));
+            Assert.Equal(testValue, Convert.ToChar(testValue));
         }
 
         [Fact]
