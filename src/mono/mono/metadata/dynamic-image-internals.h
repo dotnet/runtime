@@ -6,6 +6,7 @@
 #define __MONO_METADATA_DYNAMIC_IMAGE_INTERNALS_H__
 
 #include <mono/metadata/object.h>
+#include <mono/metadata/metadata-internals.h>
 
 typedef struct {
 	guint32 import_lookup_table;
@@ -36,6 +37,8 @@ mono_dynamic_image_create (MonoDynamicAssembly *assembly, char *assembly_name, c
 guint32
 mono_dynamic_image_add_to_blob_cached (MonoDynamicImage *assembly, char *b1, int s1, char *b2, int s2);
 
+void
+mono_dynimage_alloc_table (MonoDynamicTable *table, guint nrows);
 
 #endif  /* __MONO_METADATA_DYNAMIC_IMAGE_INTERNALS_H__ */
 

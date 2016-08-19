@@ -230,7 +230,9 @@ gc_dependent_sources = \
 	mono-hash.c	\
 	object.c	\
 	dynamic-image.c	\
-	sre.c \
+	sre.c	\
+	sre-encode.c	\
+	sre-save.c	\
 	custom-attrs.c	\
 	reflection.c
 

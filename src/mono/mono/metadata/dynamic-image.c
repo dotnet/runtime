@@ -426,6 +426,25 @@ mono_dynamic_image_add_to_blob_cached (MonoDynamicImage *assembly, char *b1, int
 	return idx;
 }
 
+void
+mono_dynimage_alloc_table (MonoDynamicTable *table, guint nrows)
+{
+	MONO_REQ_GC_NEUTRAL_MODE;
+
+	table->rows = nrows;
+	g_assert (table->columns);
+	if (nrows + 1 >= table->alloc_rows) {
+		while (nrows + 1 >= table->alloc_rows) {
+			if (table->alloc_rows == 0)
+				table->alloc_rows = 16;
+			else
+				table->alloc_rows *= 2;
+		}
+
+		table->values = (guint32 *)g_renew (guint32, table->values, (table->alloc_rows) * table->columns);
+	}
+}
+
 
 static void
 free_blob_cache_entry (gpointer key, gpointer val, gpointer user_data)
