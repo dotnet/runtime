@@ -398,7 +398,7 @@ public:
     // Insert a copy in the case where a tree node value must be moved to a different
     // register at the point of use, or it is reloaded to a different register
     // than the one it was spilled from
-    void insertCopyOrReload(GenTreePtr tree, unsigned multiRegIdx, RefPosition* refPosition);
+    void insertCopyOrReload(BasicBlock* block, GenTreePtr tree, unsigned multiRegIdx, RefPosition* refPosition);
 
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
     // Insert code to save and restore the upper half of a vector that lives
@@ -613,8 +613,12 @@ private:
     void lsraDumpIntervals(const char* msg);
     void dumpRefPositions(const char* msg);
     void dumpVarRefPositions(const char* msg);
+
+    static bool IsResolutionMove(GenTree* node);
+    static bool IsResolutionNode(LIR::Range& containingRange, GenTree* node);
+
     void verifyFinalAllocation();
-    void verifyResolutionMove(GenTreeStmt* resolutionStmt, LsraLocation currentLocation);
+    void verifyResolutionMove(GenTree* resolutionNode, LsraLocation currentLocation);
 #else  // !DEBUG
     bool             doSelectNearest()
     {
@@ -743,6 +747,7 @@ private:
 
     // Return the registers killed by the given tree node.
     regMaskTP getKillSetForNode(GenTree* tree);
+
     // Given some tree node add refpositions for all the registers this node kills
     bool buildKillPositionsForNode(GenTree* tree, LsraLocation currentLoc);
 
@@ -770,7 +775,7 @@ private:
 
     void buildInternalRegisterUsesForNode(GenTree* tree, LsraLocation currentLoc, RefPosition* defs[], int total);
 
-    void resolveLocalRef(GenTreePtr treeNode, RefPosition* currentRefPosition);
+    void resolveLocalRef(BasicBlock* block, GenTreePtr treeNode, RefPosition* currentRefPosition);
 
     void insertMove(BasicBlock* block, GenTreePtr insertionPoint, unsigned lclNum, regNumber inReg, regNumber outReg);
 
@@ -931,6 +936,11 @@ private:
                               char*             operandString,
                               unsigned          operandStringLength);
     void lsraDispNode(GenTreePtr tree, LsraTupleDumpMode mode, bool hasDest);
+    void DumpOperandDefs(GenTree* operand,
+                         bool& first,
+                         LsraTupleDumpMode mode,
+                         char* operandString,
+                         const unsigned operandStringLength);
     void TupleStyleDump(LsraTupleDumpMode mode);
 
     bool         dumpTerse;

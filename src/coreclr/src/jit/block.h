@@ -268,13 +268,17 @@ public:
     }
 };
 
-/*****************************************************************************
- *
- *  The following structure describes a basic block.
- */
-
-struct BasicBlock
+//------------------------------------------------------------------------
+// BasicBlock: describes a basic block in the flowgraph.
+//
+// Note that this type derives from LIR::Range in order to make the LIR
+// utilities that are polymorphic over basic block and scratch ranges
+// faster and simpler.
+//
+struct BasicBlock : private LIR::Range
 {
+    friend class LIR;
+
     BasicBlock* bbNext; // next BB in ascending PC offset order
     BasicBlock* bbPrev;
 
@@ -287,7 +291,8 @@ struct BasicBlock
         }
     }
 
-    unsigned bbNum;          // the block's number
+    unsigned bbNum; // the block's number
+
     unsigned bbPostOrderNum; // the block's post order number in the graph.
     unsigned bbRefs; // number of blocks that can reach here, either by fall-through or a branch. If this falls to zero,
                      // the block is unreachable.
@@ -340,9 +345,13 @@ struct BasicBlock
                                       // BBJ_ALWAYS); see isBBCallAlwaysPair().
 #define BBF_LOOP_PREHEADER 0x08000000 // BB is a loop preheader block
 
-#define BBF_COLD 0x10000000            // BB is cold
-#define BBF_PROF_WEIGHT 0x20000000     // BB weight is computed from profile data
+#define BBF_COLD 0x10000000        // BB is cold
+#define BBF_PROF_WEIGHT 0x20000000 // BB weight is computed from profile data
+#ifdef LEGACY_BACKEND
 #define BBF_FORWARD_SWITCH 0x40000000  // Aux flag used in FP codegen to know if a jmptable entry has been forwarded
+#else                                  // !LEGACY_BACKEND
+#define BBF_IS_LIR 0x40000000          // Set if the basic block contains LIR (as opposed to HIR)
+#endif                                 // LEGACY_BACKEND
 #define BBF_KEEP_BBJ_ALWAYS 0x80000000 // A special BBJ_ALWAYS block, used by EH code generation. Keep the jump kind
                                        // as BBJ_ALWAYS. Used for the paired BBJ_ALWAYS block following the
                                        // BBJ_CALLFINALLY block, as well as, on x86, the final step block out of a
@@ -365,9 +374,14 @@ struct BasicBlock
 
 // Flags a block should not have had before it is split.
 
+#ifdef LEGACY_BACKEND
 #define BBF_SPLIT_NONEXIST                                                                                             \
     (BBF_CHANGED | BBF_LOOP_HEAD | BBF_LOOP_CALL0 | BBF_LOOP_CALL1 | BBF_RETLESS_CALL | BBF_LOOP_PREHEADER |           \
      BBF_COLD | BBF_FORWARD_SWITCH)
+#else // !LEGACY_BACKEND
+#define BBF_SPLIT_NONEXIST                                                                                             \
+    (BBF_CHANGED | BBF_LOOP_HEAD | BBF_LOOP_CALL0 | BBF_LOOP_CALL1 | BBF_RETLESS_CALL | BBF_LOOP_PREHEADER | BBF_COLD)
+#endif // LEGACY_BACKEND
 
 // Flags lost by the top block when a block is split.
 // Note, this is a conservative guess.
@@ -532,10 +546,7 @@ struct BasicBlock
 
     // Returns "true" if the block is empty. Empty here means there are no statement
     // trees *except* PHI definitions.
-    bool isEmpty()
-    {
-        return (this->FirstNonPhiDef() == nullptr);
-    }
+    bool isEmpty();
 
     // Returns "true" iff "this" is the first block of a BBJ_CALLFINALLY/BBJ_ALWAYS pair --
     // a block corresponding to an exit from the try of a try/finally.  In the flow graph,
@@ -622,7 +633,18 @@ struct BasicBlock
         return bbRefs;
     }
 
-    GenTree*    bbTreeList;   // the body of the block
+    __declspec(property(get = getBBTreeList, put = setBBTreeList)) GenTree* bbTreeList; // the body of the block.
+
+    GenTree* getBBTreeList() const
+    {
+        return m_firstNode;
+    }
+
+    void setBBTreeList(GenTree* tree)
+    {
+        m_firstNode = tree;
+    }
+
     EntryState* bbEntryState; // verifier tracked state of all entries in stack.
 
 #define NO_BASE_TMP UINT_MAX // base# to use when we have none
@@ -965,6 +987,9 @@ struct BasicBlock
     GenTreeStmt* lastStmt();
     GenTreeStmt* lastTopLevelStmt();
 
+    GenTree* firstNode();
+    GenTree* lastNode();
+
     bool containsStatement(GenTree* statement);
 
     bool endsWithJmpMethod(Compiler* comp);
@@ -1072,6 +1097,9 @@ public:
     // Clone block state and statements from 'from' block to 'to' block.
     // Assumes that "to" is an empty block.
     static void CloneBlockState(Compiler* compiler, BasicBlock* to, const BasicBlock* from);
+
+    void MakeLIR(GenTree* firstNode, GenTree* lastNode);
+    bool IsLIR();
 };
 
 template <>

@@ -46,6 +46,7 @@ set( JIT_SOURCES
   jiteh.cpp
   jittelemetry.cpp
   lclvars.cpp
+  lir.cpp
   liveness.cpp
   loopcloning.cpp
   lower.cpp
