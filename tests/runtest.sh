@@ -120,9 +120,8 @@ esac
 dumplingsListPath="$PWD/dumplings.txt"
 if [ -f "$dumplingsListPath" ]; then
     rm "$dumplingsListPath"
-fi  
+fi
 
-touch $dumplingsListPath
 find . -type f -name "local_dumplings.txt" -exec rm {} \;
 
 function xunit_output_begin {
@@ -1158,7 +1157,11 @@ print_results
 echo "constructing $dumplingsListPath"
 find . -type f -name "local_dumplings.txt" -exec cat {} \; > $dumplingsListPath
 
-cat $dumplingsListPath
+if [ -s $dumplingsListPath ]; then
+    cat $dumplingsListPath
+else
+    rm $dumplingsListPath
+fi
 
 time_end=$(date +"%s")
 time_diff=$(($time_end-$time_start))
