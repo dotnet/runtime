@@ -11,7 +11,7 @@ namespace System.ComponentModel.DataAnnotations
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        public void Can_construct_and_both_AllowEdit_and_AllowInitialValue_are_set(bool value)
+        public void Ctor(bool value)
         {
             var attribute = new EditableAttribute(value);
             Assert.Equal(value, attribute.AllowEdit);
@@ -21,7 +21,7 @@ namespace System.ComponentModel.DataAnnotations
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        public void Properties_are_independent(bool value)
+        public void Properties_ChangingOneProperty_DoesNotAffectTheOther(bool value)
         {
             var attribute = new EditableAttribute(value);
             Assert.Equal(value, attribute.AllowEdit);
