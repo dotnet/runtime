@@ -2030,10 +2030,15 @@ void MyICJI::getModuleNativeEntryPointRange(
 //
 DWORD MyICJI::getExpectedTargetArchitecture()
 {
-#ifdef _TARGET_AMD64_
-    return IMAGE_FILE_MACHINE_AMD64;
-#endif
-#ifdef _TARGET_X86_
+#if defined(_TARGET_X86_)
     return IMAGE_FILE_MACHINE_I386;
+#elif defined(_TARGET_AMD64_)
+    return IMAGE_FILE_MACHINE_AMD64;
+#elif defined(_TARGET_ARM_)
+    return IMAGE_FILE_MACHINE_ARMNT;
+#elif defined(_TARGET_ARM64_)
+    return IMAGE_FILE_MACHINE_ARM64;
+#else
+    return IMAGE_FILE_MACHINE_UNKNOWN;
 #endif
 }
