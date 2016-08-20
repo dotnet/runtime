@@ -280,6 +280,7 @@ namespace System.Reflection.Tests
         [MemberData(nameof(Modules_TestData))]
         public void Modules(Assembly assembly)
         {
+            Assert.NotEmpty(assembly.Modules);
             foreach (Module module in assembly.Modules)
             {
                 Assert.NotNull(module);
