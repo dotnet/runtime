@@ -27,9 +27,6 @@
     <Compile Include="Test.il" />
   </ItemGroup>
 
-  <ItemGroup>
-    <None Include="app.config" />
-  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="Foo.ilproj" />

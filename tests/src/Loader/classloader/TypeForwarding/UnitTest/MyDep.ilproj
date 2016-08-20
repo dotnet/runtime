@@ -26,9 +26,6 @@
     <Compile Include="MyDep.il" />
   </ItemGroup>
 
-  <ItemGroup>
-    <None Include="app.config" />
-  </ItemGroup>
   
   <PropertyGroup>
     <Optimize>True</Optimize>
