@@ -255,7 +255,7 @@ namespace System.Linq.Expressions
 
             bool prefix = IsPrefix;
             var index = (IndexExpression)_operand;
-            int count = index.Arguments.Count;
+            int count = index.ArgumentCount;
             var block = new Expression[count + (prefix ? 2 : 4)];
             var temps = new ParameterExpression[count + (prefix ? 1 : 2)];
             var args = new ParameterExpression[count];
@@ -266,7 +266,7 @@ namespace System.Linq.Expressions
             i++;
             while (i <= count)
             {
-                var arg = index.Arguments[i - 1];
+                var arg = index.GetArgument(i - 1);
                 args[i - 1] = temps[i] = Parameter(arg.Type, null);
                 block[i] = Assign(temps[i], arg);
                 i++;

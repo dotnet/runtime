@@ -171,10 +171,10 @@ namespace System.Linq.Expressions.Compiler
         {
             IndexExpression index = (IndexExpression)node.Left;
 
-            ChildRewriter cr = new ChildRewriter(this, stack, 2 + index.Arguments.Count);
+            ChildRewriter cr = new ChildRewriter(this, stack, 2 + index.ArgumentCount);
 
             cr.Add(index.Object);
-            cr.Add(index.Arguments);
+            cr.AddArguments(index);
             cr.Add(node.Right);
 
             if (cr.Action == RewriteAction.SpillStack)
@@ -396,12 +396,12 @@ namespace System.Linq.Expressions.Compiler
         {
             IndexExpression node = (IndexExpression)expr;
 
-            ChildRewriter cr = new ChildRewriter(this, stack, node.Arguments.Count + 1);
+            ChildRewriter cr = new ChildRewriter(this, stack, node.ArgumentCount + 1);
 
             // For instance methods, the instance executes on the
             // stack as is, but stays on the stack, making it non-empty.
             cr.Add(node.Object);
-            cr.Add(node.Arguments);
+            cr.AddArguments(node);
 
             if (cr.Action == RewriteAction.SpillStack)
             {
@@ -425,7 +425,7 @@ namespace System.Linq.Expressions.Compiler
         {
             MethodCallExpression node = (MethodCallExpression)expr;
 
-            ChildRewriter cr = new ChildRewriter(this, stack, node.Arguments.Count + 1);
+            ChildRewriter cr = new ChildRewriter(this, stack, node.ArgumentCount + 1);
 
             // For instance methods, the instance executes on the
             // stack as is, but stays on the stack, making it non-empty.
@@ -491,8 +491,8 @@ namespace System.Linq.Expressions.Compiler
             if (lambda != null)
             {
                 // Arguments execute on current stack
-                cr = new ChildRewriter(this, stack, node.Arguments.Count);
-                cr.Add(node.Arguments);
+                cr = new ChildRewriter(this, stack, node.ArgumentCount);
+                cr.AddArguments(node);
 
                 if (cr.Action == RewriteAction.SpillStack)
                 {
@@ -512,13 +512,13 @@ namespace System.Linq.Expressions.Compiler
                 return new Result(result.Action | spiller._lambdaRewrite, result.Node);
             }
 
-            cr = new ChildRewriter(this, stack, node.Arguments.Count + 1);
+            cr = new ChildRewriter(this, stack, node.ArgumentCount + 1);
 
             // first argument starts on stack as provided
             cr.Add(node.Expression);
 
             // rest of arguments have non-empty stack (delegate instance on the stack)
-            cr.Add(node.Arguments);
+            cr.AddArguments(node);
 
             if (cr.Action == RewriteAction.SpillStack)
             {
@@ -535,7 +535,7 @@ namespace System.Linq.Expressions.Compiler
 
             // The first expression starts on a stack as provided by parent,
             // rest are definitely non-empty (which ChildRewriter guarantees)
-            ChildRewriter cr = new ChildRewriter(this, stack, node.Arguments.Count);
+            ChildRewriter cr = new ChildRewriter(this, stack, node.ArgumentCount);
             cr.AddArguments(node);
 
             if (cr.Action == RewriteAction.SpillStack)
