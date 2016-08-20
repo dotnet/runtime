@@ -6,9 +6,9 @@ namespace System.Reflection.Tests
 {
     public class Helpers
     {
-        public static EventInfo GetEvent(Type type, string name)
-        {
-            return type.GetEvent(name, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance);
-        }
+        private const BindingFlags AllFlags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance;
+
+        public static EventInfo GetEvent(Type type, string name) => type.GetEvent(name, AllFlags);
+        public static FieldInfo GetField(Type type, string name) => type.GetField(name, AllFlags);
     }
 }
