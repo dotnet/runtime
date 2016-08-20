@@ -174,6 +174,20 @@ check_cxx_source_compiles(
 
 check_cxx_source_compiles(
     "
+    #include <dirent.h>
+    int main(void)
+    {
+        DIR* dir;
+        struct dirent* entry;
+        struct dirent* result;
+        readdir_r(dir, entry, &result);
+        return 0;
+    }
+    "
+    HAVE_READDIR_R)
+
+check_cxx_source_compiles(
+    "
     #include <sys/types.h>
     #include <sys/event.h>
     int main(void)
@@ -274,12 +288,12 @@ check_cxx_source_runs(
     #include <sys/time.h>
     int main()
     {
-        int ret; 
+        int ret;
         struct timespec ts;
         ret = clock_gettime(CLOCK_MONOTONIC, &ts);
         exit(ret);
     }
-    " 
+    "
     HAVE_CLOCK_MONOTONIC)
 
 check_function_exists(
@@ -399,9 +413,9 @@ check_function_exists(
 
 set (HAVE_INOTIFY 0)
 if (HAVE_INOTIFY_INIT AND HAVE_INOTIFY_ADD_WATCH AND HAVE_INOTIFY_RM_WATCH)
-	set (HAVE_INOTIFY 1)
+    set (HAVE_INOTIFY 1)
 elseif (CMAKE_SYSTEM_NAME STREQUAL Linux)
-	message(FATAL_ERROR "Cannot find inotify functions on a Linux platform.")
+    message(FATAL_ERROR "Cannot find inotify functions on a Linux platform.")
 endif()
 
 check_cxx_source_compiles(
@@ -428,8 +442,8 @@ check_cxx_source_compiles(
 check_cxx_source_compiles(
     "
     #include <curl/curl.h>
-    int main() 
-    { 
+    int main()
+    {
         int i = CURL_SSLVERSION_TLSv1_0;
         i = CURL_SSLVERSION_TLSv1_1;
         i = CURL_SSLVERSION_TLSv1_2;
