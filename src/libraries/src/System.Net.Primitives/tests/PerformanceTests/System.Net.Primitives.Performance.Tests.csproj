@@ -10,7 +10,7 @@
     <ProjectGuid>{86256B36-4C78-4A71-A80A-CCA35C4AE758}</ProjectGuid>
     <OutputType>Library</OutputType>
     <IncludePerformanceTests>true</IncludePerformanceTests>
-    <AssemblyName>System.Collections.NonGeneric.Performance.Tests</AssemblyName>
+    <AssemblyName>System.Net.Primitives.Performance.Tests</AssemblyName>
     <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
   </PropertyGroup>
   <!-- Help VS understand available configurations -->
