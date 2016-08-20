@@ -14809,6 +14809,7 @@ bool GenTree::isContained() const
         case GT_STOREIND:
         case GT_JTRUE:
         case GT_RETURN:
+        case GT_RETFILT:
         case GT_STORE_LCL_FLD:
         case GT_STORE_LCL_VAR:
         case GT_ARR_BOUNDS_CHECK:
@@ -14857,13 +14858,6 @@ bool GenTree::isContained() const
             //
             assert(gtType == TYP_VOID);
             return false;
-        case GT_RETFILT:
-            if (gtType == TYP_VOID)
-            {
-                return false; // endfinally case
-            }
-
-            __fallthrough;
 
         default:
             // if it's contained it better have a parent
