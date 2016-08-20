@@ -27,9 +27,6 @@
     <Compile Include="exec3.il" />
   </ItemGroup>
 
-  <ItemGroup>
-    <None Include="app.config" />
-  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="nesting3.ilproj" />

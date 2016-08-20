@@ -27,9 +27,6 @@
     <Compile Include="Test6_ImplementingClass.il" />
   </ItemGroup>
 
-  <ItemGroup>
-    <None Include="app.config" />
-  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="Test6_forwarder.ilproj" />
