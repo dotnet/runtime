@@ -1367,30 +1367,6 @@ static const char info[] =
 #define error_if_aot_unsupported()
 #endif
 
-#ifdef HOST_WIN32
-BOOL APIENTRY DllMain (HMODULE module_handle, DWORD reason, LPVOID reserved)
-{
-	if (!mono_gc_dllmain (module_handle, reason, reserved))
-		return FALSE;
-
-	switch (reason)
-	{
-	case DLL_PROCESS_ATTACH:
-		mono_install_runtime_load (mini_init);
-		break;
-	case DLL_PROCESS_DETACH:
-		if (coree_module_handle)
-			FreeLibrary (coree_module_handle);
-		break;
-	case DLL_THREAD_DETACH:
-		mono_thread_info_detach ();
-		break;
-	
-	}
-	return TRUE;
-}
-#endif
-
 static gboolean enable_debugging;
 
 /*

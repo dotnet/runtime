@@ -20,7 +20,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\mono\sgen\sgen-alloc.c" />
-    <ClCompile Include="..\mono\metadata\sgen-bridge.c" />
     <ClCompile Include="..\mono\sgen\sgen-array-list.c" />
     <ClCompile Include="..\mono\sgen\sgen-cardtable.c" />
     <ClCompile Include="..\mono\sgen\sgen-debug.c" />

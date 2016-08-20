@@ -11,4 +11,14 @@
       <UniqueIdentifier>{5370c3c4-b6ec-4f8a-8b21-ce4e782720a6}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\mono\mini\mini-windows-dllmain.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="mono.def">
+      <Filter>Resource Files</Filter>
+    </None>
+  </ItemGroup>
 </Project>

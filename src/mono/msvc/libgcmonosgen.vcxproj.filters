@@ -4,9 +4,6 @@
     <ClCompile Include="..\mono\sgen\sgen-alloc.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\mono\metadata\sgen-bridge.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\mono\sgen\sgen-cardtable.c">
       <Filter>Source Files</Filter>
     </ClCompile>

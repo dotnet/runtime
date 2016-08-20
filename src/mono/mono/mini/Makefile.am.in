@@ -372,7 +372,8 @@ darwin_sources = \
 	mini-darwin.c
 
 windows_sources = \
-	mini-windows.c
+	mini-windows.c \
+	mini-windows-dllmain.c
 
 posix_sources = \
 	mini-posix.c

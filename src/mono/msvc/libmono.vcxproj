@@ -120,7 +120,7 @@
       <LinkLibraryDependencies>true</LinkLibraryDependencies>
     </ProjectReference>
     <Link>
-      <AdditionalDependencies>eglib.lib;libmonoutils.lib;libmonoruntime$(MONO_TARGET_SUFFIX).lib;libmono-static$(MONO_TARGET_SUFFIX).lib;$(GC_LIB);%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>eglib.lib;$(MONO_STATIC_LIBMONO_LIB);%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <ModuleDefinitionFile>$(MONO_DEF)</ModuleDefinitionFile>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -168,7 +168,7 @@
       <LinkLibraryDependencies>true</LinkLibraryDependencies>
     </ProjectReference>
     <Link>
-      <AdditionalDependencies>eglib.lib;libmonoutils.lib;libmonoruntime$(MONO_TARGET_SUFFIX).lib;libmono-static$(MONO_TARGET_SUFFIX).lib;$(GC_LIB);%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>eglib.lib;$(MONO_STATIC_LIBMONO_LIB);%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <ModuleDefinitionFile>$(MONO_DEF)</ModuleDefinitionFile>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -207,7 +207,7 @@
       <LinkLibraryDependencies>true</LinkLibraryDependencies>
     </ProjectReference>
     <Link>
-      <AdditionalDependencies>eglib.lib;libmonoutils.lib;libmonoruntime$(MONO_TARGET_SUFFIX).lib;libmono-static$(MONO_TARGET_SUFFIX).lib;$(GC_LIB);%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>eglib.lib;$(MONO_STATIC_LIBMONO_LIB);%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <ModuleDefinitionFile>$(MONO_DEF)</ModuleDefinitionFile>
       <RandomizedBaseAddress>false</RandomizedBaseAddress>
@@ -251,7 +251,7 @@
       <LinkLibraryDependencies>true</LinkLibraryDependencies>
     </ProjectReference>
     <Link>
-      <AdditionalDependencies>eglib.lib;libmonoutils.lib;libmonoruntime$(MONO_TARGET_SUFFIX).lib;libmono-static$(MONO_TARGET_SUFFIX).lib;$(GC_LIB);%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>eglib.lib;$(MONO_STATIC_LIBMONO_LIB);%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <ModuleDefinitionFile>$(MONO_DEF)</ModuleDefinitionFile>
       <ImportLibrary>$(MONO_BUILD_DIR_PREFIX)$(Platform)\lib\$(Configuration)\$(TargetName).lib</ImportLibrary>
@@ -294,6 +294,12 @@
     <ProjectReference Include="libmonoutils.vcxproj">
       <Project>{8fc2b0c8-51ad-49df-851f-5d01a77a75e4}</Project>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\mono\mini\mini-windows-dllmain.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="mono.def" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

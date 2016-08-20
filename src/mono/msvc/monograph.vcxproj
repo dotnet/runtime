@@ -110,7 +110,7 @@
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
     </ProjectReference>
     <Link>
-      <AdditionalDependencies>eglib.lib;mono-2.0$(MONO_TARGET_SUFFIX).lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>eglib.lib;$(MONO_LIBMONO_LIB);%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
@@ -143,7 +143,7 @@
       <DataExecutionPrevention>
       </DataExecutionPrevention>
       <TargetMachine>MachineX86</TargetMachine>
-      <AdditionalDependencies>eglib.lib;mono-2.0$(MONO_TARGET_SUFFIX).lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>eglib.lib;$(MONO_LIBMONO_LIB);%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -167,7 +167,7 @@
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
     </ProjectReference>
     <Link>
-      <AdditionalDependencies>eglib.lib;mono-2.0$(MONO_TARGET_SUFFIX).lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>eglib.lib;$(MONO_LIBMONO_LIB);%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
@@ -197,7 +197,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <TargetMachine>MachineX64</TargetMachine>
-      <AdditionalDependencies>eglib.lib;mono-2.0$(MONO_TARGET_SUFFIX).lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>eglib.lib;$(MONO_LIBMONO_LIB);%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>

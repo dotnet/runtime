@@ -26,15 +26,15 @@ IF EXIST %EGLIB_CONFIG_H% (
 	)
 )
 
-%windir%\system32\WindowsPowerShell\v1.0\powershell.exe -executionpolicy bypass -NonInteractive -File compare-config-files.ps1 %WIN_CONFIG_H% %CONFIG_H% %CONFIGURE_AC% >$null 2>&1
+%windir%\system32\WindowsPowerShell\v1.0\powershell.exe -executionpolicy bypass -NonInteractive -File compare-config-files.ps1 %WIN_CONFIG_H% %CONFIG_H% %CONFIGURE_AC% 2>&1
 
 IF NOT %ERRORLEVEL% == 0 (
 	ECHO copy %WIN_CONFIG_H% %CONFIG_H%
 	copy %WIN_CONFIG_H% %CONFIG_H%
-	%windir%\system32\WindowsPowerShell\v1.0\powershell.exe -NonInteractive -Command "(Get-Content %CONFIG_H%) -replace '#MONO_VERSION#', (Select-String -path %CONFIGURE_AC% -pattern 'AC_INIT\(mono, \[(.*)\]').Matches[0].Groups[1].Value | Set-Content %CONFIG_H%" >$null 2>&1
+	%windir%\system32\WindowsPowerShell\v1.0\powershell.exe -NonInteractive -Command "(Get-Content %CONFIG_H%) -replace '#MONO_VERSION#', (Select-String -path %CONFIGURE_AC% -pattern 'AC_INIT\(mono, \[(.*)\]').Matches[0].Groups[1].Value | Set-Content %CONFIG_H%" 2>&1
 )
 
-%windir%\system32\WindowsPowerShell\v1.0\powershell.exe -executionpolicy bypass -NonInteractive -File compare-config-files.ps1 %EGLIB_WIN_CONFIG_H% %EGLIB_CONFIG_H% >$null 2>&1
+%windir%\system32\WindowsPowerShell\v1.0\powershell.exe -executionpolicy bypass -NonInteractive -File compare-config-files.ps1 %EGLIB_WIN_CONFIG_H% %EGLIB_CONFIG_H% 2>&1
 
 IF NOT %ERRORLEVEL% == 0 (
 	ECHO copy %EGLIB_WIN_CONFIG_H% %EGLIB_CONFIG_H%
@@ -42,7 +42,7 @@ IF NOT %ERRORLEVEL% == 0 (
 )
 
 SET VERSION_CONTENT="#define FULL_VERSION \"Visual Studio built mono\""
-%windir%\system32\WindowsPowerShell\v1.0\powershell.exe -executionpolicy bypass -NonInteractive -File compare-config-content.ps1 %VERSION_CONTENT% %VERSION_H%
+%windir%\system32\WindowsPowerShell\v1.0\powershell.exe -executionpolicy bypass -NonInteractive -File compare-config-content.ps1 %VERSION_CONTENT% %VERSION_H%  2>&1
 
 
 IF NOT %ERRORLEVEL% == 0 (

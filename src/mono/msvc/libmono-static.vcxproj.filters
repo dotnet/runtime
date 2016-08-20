@@ -103,9 +103,6 @@
     <ClCompile Include="..\mono\mini\mini-x86.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\mono\metadata\remoting.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\mono\mini\seq-points.c">
       <Filter>Source Files</Filter>
     </ClCompile>

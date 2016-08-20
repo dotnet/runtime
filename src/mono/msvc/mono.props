@@ -13,6 +13,8 @@
     <MONO_USE_SEPARATE_BUILD_DIR>true</MONO_USE_SEPARATE_BUILD_DIR>
     <!-- When true, all binaries and libraries will link using static c-runtime. When false, all binaries and libraries will link using dynamic c-runtime.  -->
     <MONO_USE_STATIC_C_RUNTIME>false</MONO_USE_STATIC_C_RUNTIME>
+    <!-- When true, mono binaries will link using static libmono. When false, mono binaries will link using dynamic libmono.  -->
+    <MONO_USE_STATIC_LIBMONO>false</MONO_USE_STATIC_LIBMONO>
   </PropertyGroup>
   <PropertyGroup Label="MonoDirectories">
     <top_srcdir>$(MSBuildProjectDirectory)/..</top_srcdir>
@@ -51,6 +53,17 @@
     <MONO_TARGET_SUFFIX Condition="'$(MONO_USE_TARGET_SUFFIX)'=='true'">-boehm</MONO_TARGET_SUFFIX>
     <MONO_BUILD_DIR_PREFIX Condition="'$(MONO_USE_SEPARATE_BUILD_DIR)'=='true'">$(MONO_BUILD_DIR_PREFIX)boehm/</MONO_BUILD_DIR_PREFIX>
   </PropertyGroup>
+  <PropertyGroup Label="Static-Mono-Libraries">
+    <MONO_RUNTIME_LIBS>libmonoutils.lib;libmonoruntime$(MONO_TARGET_SUFFIX).lib;$(GC_LIB)</MONO_RUNTIME_LIBS>
+    <MONO_STATIC_LIBMONO_LIB>libmono-static$(MONO_TARGET_SUFFIX).lib;$(MONO_RUNTIME_LIBS)</MONO_STATIC_LIBMONO_LIB>
+    <MONO_DYNAMIC_LIBMONO_LIB>mono-2.0$(MONO_TARGET_SUFFIX).lib</MONO_DYNAMIC_LIBMONO_LIB>
+  </PropertyGroup>
+  <PropertyGroup Label="Static-libmono-Library" Condition="$(MONO_USE_STATIC_LIBMONO)=='true'">
+    <MONO_LIBMONO_LIB>$(MONO_STATIC_LIBMONO_LIB)</MONO_LIBMONO_LIB>
+  </PropertyGroup>
+  <PropertyGroup Label="Dynamic-libmono-Library" Condition="$(MONO_USE_STATIC_LIBMONO)!='true'">
+    <MONO_LIBMONO_LIB>$(MONO_DYNAMIC_LIBMONO_LIB)</MONO_LIBMONO_LIB>
+  </PropertyGroup>
   <PropertyGroup Label="MonoProfiler">
     <VTUNE_INCLUDE_DIR>$(ProgramFiles)/Intel/VTune Amplifier XE 2013/include</VTUNE_INCLUDE_DIR>
   </PropertyGroup>
@@ -72,6 +85,9 @@
     </BuildMacro>
     <BuildMacro Include="MONO_USE_STATIC_C_RUNTIME">
       <Value>$(MONO_USE_STATIC_C_RUNTIME)</Value>
+    </BuildMacro>
+    <BuildMacro Include="MONO_USE_STATIC_LIBMONO">
+      <Value>$(MONO_USE_STATIC_LIBMONO)</Value>
     </BuildMacro>
   </ItemGroup>
   <ItemDefinitionGroup>

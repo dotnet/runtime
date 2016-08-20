@@ -110,7 +110,7 @@
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
     </ProjectReference>
     <Link>
-      <AdditionalDependencies>eglib.lib;libmonoruntime$(MONO_TARGET_SUFFIX).lib;libmonoutils.lib;$(GC_LIB);%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>eglib.lib;$(MONO_RUNTIME_LIBS);%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
@@ -143,7 +143,7 @@
       <DataExecutionPrevention>
       </DataExecutionPrevention>
       <TargetMachine>MachineX86</TargetMachine>
-      <AdditionalDependencies>eglib.lib;libmonoruntime$(MONO_TARGET_SUFFIX).lib;libmonoutils.lib;$(GC_LIB);%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>eglib.lib;$(MONO_RUNTIME_LIBS);%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -167,7 +167,7 @@
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
     </ProjectReference>
     <Link>
-      <AdditionalDependencies>eglib.lib;libmonoruntime$(MONO_TARGET_SUFFIX).lib;libmonoutils.lib;$(GC_LIB);%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>eglib.lib;$(MONO_RUNTIME_LIBS);%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
@@ -198,7 +198,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <TargetMachine>MachineX64</TargetMachine>
-      <AdditionalDependencies>eglib.lib;libmonoruntime$(MONO_TARGET_SUFFIX).lib;libmonoutils.lib;$(GC_LIB);%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>eglib.lib;$(MONO_RUNTIME_LIBS);%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
