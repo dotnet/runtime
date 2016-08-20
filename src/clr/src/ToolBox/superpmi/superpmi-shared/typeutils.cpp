@@ -112,7 +112,7 @@ bool TypeUtils::ValueClassRequiresByref(MethodContext *mc, CORINFO_CLASS_HANDLE 
     size_t size = mc->repGetClassSize(clsHnd);
     return ((size > sizeof(void *)) || ((size & (size - 1)) != 0));
 #else
-    LogException(EXCEPTIONCODE_TYPEUTILS, "unsupported architecture");
+    LogException(EXCEPTIONCODE_TYPEUTILS, "unsupported architecture", "");
     return false;
 #endif
 }
