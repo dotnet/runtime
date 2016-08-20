@@ -30,13 +30,6 @@
     <Compile Include="LargeObjectAlloc2.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="$(GCPackagesConfigFileDirectory)minimal\project.json" />
-  </ItemGroup>
-  <PropertyGroup>
-    <ProjectJson>$(GCPackagesConfigFileDirectory)minimal\project.json</ProjectJson>
-    <ProjectLockJson>$(GCPackagesConfigFileDirectory)minimal\project.lock.json</ProjectLockJson>
-  </PropertyGroup>
-  <ItemGroup>
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
