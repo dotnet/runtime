@@ -30,14 +30,6 @@
     <Compile Include="finalnstruct.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="app.config" />
-    <None Include="$(GCPackagesConfigFileDirectory)extra\project.json" />
-  </ItemGroup>
-  <PropertyGroup>
-    <ProjectJson>$(GCPackagesConfigFileDirectory)extra\project.json</ProjectJson>
-    <ProjectLockJson>$(GCPackagesConfigFileDirectory)extra\project.lock.json</ProjectLockJson>
-  </PropertyGroup>
-  <ItemGroup>
     <ProjectReference Include="strmap.csproj" />
   </ItemGroup>
   <ItemGroup>
