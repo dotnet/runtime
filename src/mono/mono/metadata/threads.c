@@ -723,11 +723,16 @@ static guint32 WINAPI start_wrapper_internal(void *data)
 
 	mono_thread_init_apartment_state ();
 
-	if(internal->start_notify!=NULL) {
+	if (internal->start_notify)
 		/* Let the thread that called Start() know we're
 		 * ready
 		 */
-		ReleaseSemaphore (internal->start_notify, 1, NULL);
+		mono_coop_sem_post (internal->start_notify);
+
+	if (InterlockedDecrement ((gint32*)&internal->start_notify_refcount) == 0) {
+		mono_coop_sem_destroy (internal->start_notify);
+		g_free (internal->start_notify);
+		internal->start_notify = NULL;
 	}
 
 	g_free (start_info);
@@ -851,15 +856,9 @@ create_thread (MonoThread *thread, MonoInternalThread *internal, StartInfo *star
 	mono_g_hash_table_insert (threads_starting_up, thread, thread);
 	mono_threads_unlock ();
 
-	internal->start_notify = CreateSemaphore (NULL, 0, 0x7fffffff, NULL);
-	if (!internal->start_notify) {
-		mono_threads_lock ();
-		mono_g_hash_table_remove (threads_starting_up, thread);
-		mono_threads_unlock ();
-		g_warning ("%s: CreateSemaphore error 0x%x", __func__, GetLastError ());
-		g_free (start_info);
-		return FALSE;
-	}
+	internal->start_notify = g_new0 (MonoCoopSem, 1);
+	mono_coop_sem_init (internal->start_notify, 0);
+	internal->start_notify_refcount = 2;
 
 	if (stack_size == 0)
 		stack_size = default_stacksize_for_thread (internal);
@@ -902,20 +901,18 @@ create_thread (MonoThread *thread, MonoInternalThread *internal, StartInfo *star
 
 	mono_thread_info_resume (tid);
 
-	if (internal->start_notify) {
-		/*
-		 * Wait for the thread to set up its TLS data etc, so
-		 * theres no potential race condition if someone tries
-		 * to look up the data believing the thread has
-		 * started
-		 */
-		THREAD_DEBUG (g_message ("%s: (%"G_GSIZE_FORMAT") waiting for thread %p (%"G_GSIZE_FORMAT") to start", __func__, mono_native_thread_id_get (), internal, (gsize)internal->tid));
+	/*
+	 * Wait for the thread to set up its TLS data etc, so
+	 * theres no potential race condition if someone tries
+	 * to look up the data believing the thread has
+	 * started
+	 */
+	THREAD_DEBUG (g_message ("%s: (%"G_GSIZE_FORMAT") waiting for thread %p (%"G_GSIZE_FORMAT") to start", __func__, mono_native_thread_id_get (), internal, (gsize)internal->tid));
 
-		MONO_ENTER_GC_SAFE;
-		WaitForSingleObjectEx (internal->start_notify, INFINITE, FALSE);
-		MONO_EXIT_GC_SAFE;
-
-		CloseHandle (internal->start_notify);
+	mono_coop_sem_wait (internal->start_notify, MONO_SEM_FLAGS_NONE);
+	if (InterlockedDecrement ((gint32*)&internal->start_notify_refcount) == 0) {
+		mono_coop_sem_destroy (internal->start_notify);
+		g_free (internal->start_notify);
 		internal->start_notify = NULL;
 	}
 

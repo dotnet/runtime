@@ -353,7 +353,7 @@ struct _MonoInternalThread {
 	MonoException *abort_exc;
 	int abort_state_handle;
 	guint64 tid;	/* This is accessed as a gsize in the code (so it can hold a 64bit pointer on systems that need it), but needs to reserve 64 bits of space on all machines as it corresponds to a field in managed code */
-	HANDLE	    start_notify;
+	MonoCoopSem *start_notify;
 	gpointer stack_ptr;
 	gpointer *static_data;
 	void *thread_info; /*This is MonoThreadInfo*, but to simplify dependencies, let's make it a void* here. */
@@ -382,7 +382,7 @@ struct _MonoInternalThread {
 	 * Please synchronize any changes with InternalThread in Thread.cs, i.e. add the
 	 * same field there.
 	 */
-	gpointer unused1;
+	gsize start_notify_refcount;
 	gpointer unused2;
 };
 
