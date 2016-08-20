@@ -330,7 +330,7 @@ void LazyMachState::unwindLazyState(LazyMachState* baseState,
             DacError(hr);
         }
 #else // DACCESS_COMPILE
-        BOOL success = PAL_VirtualUnwind(&ctx, &nonVolContextPtrs);
+        BOOL success = PAL_VirtualUnwind(&context, &nonVolContextPtrs);
         if (!success)
         {
             _ASSERTE(!"unwindLazyState: Unwinding failed");
