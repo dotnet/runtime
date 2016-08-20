@@ -2785,157 +2785,177 @@
   {
     .entrypoint
     .maxstack  1
-	
-    IL_0000:  ldstr      "Condition1.Test1"
-    IL_0001:  call       int32 TailcallVerify.Program::Run(string)      
-    IL_0002:  pop	
-    IL_0003:  ldstr      "Condition1.Test2"
-    IL_0004:  call       int32 TailcallVerify.Program::Run(string)      
-    IL_0005:  pop	
-    IL_0006:  ldstr      "Condition1.Test3"
-    IL_0007:  call       int32 TailcallVerify.Program::Run(string)      
-    IL_0008:  pop	
-    IL_0009:  ldstr      "Condition2.Test1"
-    IL_000a:  call       int32 TailcallVerify.Program::Run(string)      
-    IL_000b:  pop	
-    IL_000c:  ldstr      "Condition2.Test2"
-    IL_000d:  call       int32 TailcallVerify.Program::Run(string)      
-    IL_000e:  pop	
-    IL_000f:  ldstr      "Condition3.Test1"
-    IL_0010:  call       int32 TailcallVerify.Program::Run(string)      
-    IL_0011:  pop	
-    IL_0012:  ldstr      "Condition3.Test2"
-    IL_0013:  call       int32 TailcallVerify.Program::Run(string)      
-	IL_0014:  pop	
-    IL_0015:  ldstr      "Condition4.Test1"
-    IL_0016:  call       int32 TailcallVerify.Program::Run(string)      
-    IL_0017:  pop	
-    IL_0018:  ldstr      "Condition4.Test2"
-    IL_0019:  call       int32 TailcallVerify.Program::Run(string)     
-    IL_001a:  pop	
-    IL_001b:  ldstr      "Condition5.Test1"
-    IL_001c:  call       int32 TailcallVerify.Program::Run(string)      
-    IL_001d:  pop	
-    IL_001e:  ldstr      "Condition5.Test2"
-    IL_001f:  call       int32 TailcallVerify.Program::Run(string)     
-    IL_0020:  pop	
-    IL_0021:  ldstr      "Condition5.Test3"
-    IL_0022:  call       int32 TailcallVerify.Program::Run(string)      
-    IL_0023:  pop	
-    IL_0024:  ldstr      "Condition5.Test4"
-    IL_0025:  call       int32 TailcallVerify.Program::Run(string)    
-    IL_0026:  pop	
-	IL_0027:  ldstr      "Condition5.Test5"
-    IL_0028:  call       int32 TailcallVerify.Program::Run(string)    
-    IL_0029:  pop	
-    IL_002a:  ldstr      "Condition5.Test6"
-    IL_002b:  call       int32 TailcallVerify.Program::Run(string)      
-    IL_002c:  pop		
-    IL_002d:  ldstr      "Condition5.Test7"
-    IL_002e:  call       int32 TailcallVerify.Program::Run(string)      
-    IL_002f:  pop	
-    IL_0030:  ldstr      "Condition5.Test8"
-    IL_003a:  call       int32 TailcallVerify.Program::Run(string)      
-    IL_003b:  pop	
-    IL_003c:  ldstr      "Condition5.Test9"
-    IL_003d:  call       int32 TailcallVerify.Program::Run(string)    
-    IL_003e:  pop	
-    IL_003f:  ldstr      "Condition6.Test1"
-    IL_0040:  call       int32 TailcallVerify.Program::Run(string)      
-    IL_0041:  pop	
-    IL_0042:  ldstr      "Condition6.Test2"
-    IL_0043:  call       int32 TailcallVerify.Program::Run(string)      
-    IL_0044:  pop	 
-    IL_0045:  ldstr      "Condition6.Test3"
-    IL_0046:  call       int32 TailcallVerify.Program::Run(string)      
-    IL_0047:  pop	
-    IL_0048:  ldstr      "Condition6.Test4"
-    IL_0049:  call       int32 TailcallVerify.Program::Run(string)      
-    IL_004a:  pop	
-    IL_004b:  ldstr      "Condition6.Test5"
-    IL_004c:  call       int32 TailcallVerify.Program::Run(string)      
-    IL_004d:  pop	
-	IL_004e:  ldstr      "Condition7.Test1"
-    IL_004f:  call       int32 TailcallVerify.Program::Run(string)    
-    IL_0050:  pop	
-	IL_0051:  ldstr      "Condition7.Test2"
-    IL_0052:  call       int32 TailcallVerify.Program::Run(string)    
-    IL_0053:  pop	
-    IL_0054:  ldstr      "Condition7.Test3"
-    IL_0055:  call       int32 TailcallVerify.Program::Run(string)      
-    IL_0056:  pop	
-    IL_0057:  ldstr      "Condition7.Test4"
-    IL_0058:  call       int32 TailcallVerify.Program::Run(string)      
-    IL_0059:  pop	
-    IL_005a:  ldstr      "Condition8.Test1"
-    IL_005b:  call       int32 TailcallVerify.Program::Run(string)      
-    IL_005c:  pop	
-    IL_005d:  ldstr      "Condition8.Test2"
-    IL_005e:  call       int32 TailcallVerify.Program::Run(string)      
-    IL_005f:  pop	
-    IL_0060:  ldstr      "Condition8.Test3"
-    IL_0061:  call       int32 TailcallVerify.Program::Run(string)      
-    IL_0062:  pop	
-    IL_0063:  ldstr      "Condition9.Test1"
-    IL_0064:  call       int32 TailcallVerify.Program::Run(string)      
-    IL_0065:  pop	
-    IL_0066:  ldstr      "Condition10.Test1"
-    IL_0067:  call       int32 TailcallVerify.Program::Run(string)     
-    IL_0068:  pop	
-    IL_0069:  ldstr      "Condition10.Test2"
-    IL_006a:  call       int32 TailcallVerify.Program::Run(string)     
-    IL_006b:  pop	
-    IL_006c:  ldstr      "Condition10.Test3"
-    IL_006d:  call       int32 TailcallVerify.Program::Run(string)      
-    IL_006e:  pop	
-    IL_0070:  ldstr      "Condition10.Test4"
-    IL_0071:  call       int32 TailcallVerify.Program::Run(string)      
-    IL_0072:  pop	
-    IL_0073:  ldstr      "Condition10.Test5"
-    IL_0074:  call       int32 TailcallVerify.Program::Run(string)      
-    IL_0075:  pop	
-    IL_0076:  ldstr      "Condition11.Test1"
-    IL_0077:  call       int32 TailcallVerify.Program::Run(string)      
-    IL_0078:  pop	
-    IL_0079:  ldstr      "Condition11.Test2"
-    IL_007a:  call       int32 TailcallVerify.Program::Run(string)      
-    IL_007b:  pop	
-    IL_007c:  ldstr      "Condition12.Test1"
-    IL_007d:  call       int32 TailcallVerify.Program::Run(string)      
-    IL_007e:  pop	
-    IL_007f:  ldstr      "Condition13.Test1"
-    IL_0080:  call       int32 TailcallVerify.Program::Run(string)      
-    IL_0081:  pop	
-    IL_0082:  ldstr      "Condition16.Test1"
-    IL_0083:  call       int32 TailcallVerify.Program::Run(string)      
-    IL_0084:  pop	
-    IL_0085:  ldstr      "Condition17.Test1"
-    IL_0086:  call       int32 TailcallVerify.Program::Run(string)      
-    IL_0087:  pop	
-    IL_0088:  ldstr      "Condition17.Test4"
-    IL_0089:  call       int32 TailcallVerify.Program::Run(string)      
-    IL_008a:  pop	
-    IL_008b:  ldstr      "Condition18.Test1"
-    IL_008c:  call       int32 TailcallVerify.Program::Run(string)      
-    IL_008d:  pop	
-    IL_0091:  ldstr      "Condition18.Test3"
-    IL_0092:  call       int32 TailcallVerify.Program::Run(string)      
-    IL_0093:  pop	
-    IL_0094:  ldstr      "Condition19.Test1"
-    IL_0095:  call       int32 TailcallVerify.Program::Run(string)      
-    IL_0096:  pop	
-    IL_0097:  ldstr      "Condition19.Test2"
-    IL_0098:  call       int32 TailcallVerify.Program::Run(string)      
-    IL_0099:  pop	
-    IL_009a:  ldstr      "Condition20.Test1"
-    IL_009b:  call       int32 TailcallVerify.Program::Run(string)      
-    IL_009c:  pop	
-    IL_00a6:  ldstr      "Condition22.Test2"
-    IL_00a7:  call       int32 TailcallVerify.Program::Run(string)      
-    IL_00a8:  pop	
-    IL_00a9:  ldstr      "Condition22.Test4"
-    IL_00aa:  call       int32 TailcallVerify.Program::Run(string)      
-    IL_00ba:  ret    
+
+    ldstr      "Condition1.Test1"
+    call       int32 TailcallVerify.Program::Run(string)
+    pop
+    ldstr      "Condition1.Test2"
+    call       int32 TailcallVerify.Program::Run(string)
+    pop
+    ldstr      "Condition1.Test3"
+    call       int32 TailcallVerify.Program::Run(string)
+    pop
+    ldstr      "Condition2.Test1"
+    call       int32 TailcallVerify.Program::Run(string)
+    pop
+    ldstr      "Condition2.Test2"
+    call       int32 TailcallVerify.Program::Run(string)
+    pop
+    ldstr      "Condition3.Test1"
+    call       int32 TailcallVerify.Program::Run(string)
+    pop
+    ldstr      "Condition3.Test2"
+    call       int32 TailcallVerify.Program::Run(string)
+    pop
+    ldstr      "Condition4.Test1"
+    call       int32 TailcallVerify.Program::Run(string)
+    pop
+    ldstr      "Condition4.Test2"
+    call       int32 TailcallVerify.Program::Run(string)
+    pop
+    ldstr      "Condition5.Test1"
+    call       int32 TailcallVerify.Program::Run(string)      
+    pop	
+    ldstr      "Condition5.Test2"
+    call       int32 TailcallVerify.Program::Run(string)     
+    pop	
+    ldstr      "Condition5.Test3"
+    call       int32 TailcallVerify.Program::Run(string)      
+    pop	
+    ldstr      "Condition5.Test4"
+    call       int32 TailcallVerify.Program::Run(string)    
+    pop	
+    ldstr      "Condition5.Test5"
+    call       int32 TailcallVerify.Program::Run(string)    
+    pop	
+    ldstr      "Condition5.Test6"
+    call       int32 TailcallVerify.Program::Run(string)      
+    pop		
+    ldstr      "Condition5.Test7"
+    call       int32 TailcallVerify.Program::Run(string)      
+    pop	
+    ldstr      "Condition5.Test8"
+    call       int32 TailcallVerify.Program::Run(string)      
+    pop	
+    ldstr      "Condition5.Test9"
+    call       int32 TailcallVerify.Program::Run(string)    
+    pop	
+    ldstr      "Condition6.Test1"
+    call       int32 TailcallVerify.Program::Run(string)      
+    pop	
+    ldstr      "Condition6.Test2"
+    call       int32 TailcallVerify.Program::Run(string)      
+    pop	 
+    ldstr      "Condition6.Test3"
+    call       int32 TailcallVerify.Program::Run(string)      
+    pop	
+    ldstr      "Condition6.Test4"
+    call       int32 TailcallVerify.Program::Run(string)      
+    pop	
+    ldstr      "Condition6.Test5"
+    call       int32 TailcallVerify.Program::Run(string)      
+    pop	
+    ldstr      "Condition7.Test1"
+    call       int32 TailcallVerify.Program::Run(string)    
+    pop	
+    ldstr      "Condition7.Test2"
+    call       int32 TailcallVerify.Program::Run(string)    
+    pop	
+    ldstr      "Condition7.Test3"
+    call       int32 TailcallVerify.Program::Run(string)      
+    pop	
+    ldstr      "Condition7.Test4"
+    call       int32 TailcallVerify.Program::Run(string)      
+    pop	
+
+    // Condition8 tests use varargs calling conventions.
+    // The lines below should be uncommented when/if CoreCLR starts
+    // supporting varargs.
+    //ldstr      "Condition8.Test1"
+    //call       int32 TailcallVerify.Program::Run(string)
+    //pop
+    //ldstr      "Condition8.Test2"
+    //call       int32 TailcallVerify.Program::Run(string)
+    //pop
+    //ldstr      "Condition8.Test3"
+    //call       int32 TailcallVerify.Program::Run(string)
+    //pop
+
+    ldstr      "Condition9.Test1"
+    call       int32 TailcallVerify.Program::Run(string)
+    pop
+    ldstr      "Condition10.Test1"
+    call       int32 TailcallVerify.Program::Run(string)
+    pop
+    ldstr      "Condition10.Test2"
+    call       int32 TailcallVerify.Program::Run(string)
+    pop
+    ldstr      "Condition10.Test3"
+    call       int32 TailcallVerify.Program::Run(string)
+    pop
+    ldstr      "Condition10.Test4"
+    call       int32 TailcallVerify.Program::Run(string)
+    pop
+    ldstr      "Condition10.Test5"
+    call       int32 TailcallVerify.Program::Run(string)
+    pop
+    ldstr      "Condition11.Test1"
+    call       int32 TailcallVerify.Program::Run(string)
+    pop
+    ldstr      "Condition11.Test2"
+    call       int32 TailcallVerify.Program::Run(string)
+    pop
+    ldstr      "Condition12.Test1"
+    call       int32 TailcallVerify.Program::Run(string)
+    pop
+    ldstr      "Condition13.Test1"
+    call       int32 TailcallVerify.Program::Run(string)
+    pop
+    ldstr      "Condition16.Test1"
+    call       int32 TailcallVerify.Program::Run(string)
+    pop
+    ldstr      "Condition17.Test1"
+    call       int32 TailcallVerify.Program::Run(string)
+    pop
+    ldstr      "Condition17.Test4"
+    call       int32 TailcallVerify.Program::Run(string)
+    pop
+    ldstr      "Condition18.Test1"
+    call       int32 TailcallVerify.Program::Run(string)
+    pop
+    ldstr      "Condition18.Test3"
+    call       int32 TailcallVerify.Program::Run(string)
+    pop
+    ldstr      "Condition19.Test1"
+    call       int32 TailcallVerify.Program::Run(string)
+    pop
+    ldstr      "Condition19.Test2"
+    call       int32 TailcallVerify.Program::Run(string)
+    pop
+    ldstr      "Condition20.Test1"
+    call       int32 TailcallVerify.Program::Run(string)
+    pop
+    ldstr      "Condition21.Test1"
+    call       int32 TailcallVerify.Program::Run(string)
+    pop
+    ldstr      "Condition21.Test2"
+    call       int32 TailcallVerify.Program::Run(string)
+    pop
+    ldstr      "Condition21.Test3"
+    call       int32 TailcallVerify.Program::Run(string)
+    pop
+    ldstr      "Condition21.Test6"
+    call       int32 TailcallVerify.Program::Run(string)
+    pop
+    ldstr      "Condition21.Test7"
+    call       int32 TailcallVerify.Program::Run(string)
+    pop
+    ldstr      "Condition22.Test2"
+    call       int32 TailcallVerify.Program::Run(string)
+    pop
+    ldstr      "Condition22.Test4"
+    call       int32 TailcallVerify.Program::Run(string)
+    ret    
   } // end of method Program::Main
     
   .method private hidebysig static void  Usage() cil managed
@@ -8771,7 +8791,7 @@
     .maxstack  3
     .locals init ([0] valuetype TailcallVerify.ValueType3Bytes v,
              [1] class [mscorlib]System.Exception e)
-    IL_0000:  ldstr      "Executing Condition4.Test1 - Caller: Arguments: No"
+    IL_0000:  ldstr      "Executing Condition4.Test2 - Caller: Arguments: No"
     + "ne - ReturnType: 3 byte struct; Callee: Arguments: None - ReturnType: 3"
     + " byte struct [Verifying the field values in the return type struct]"
     IL_0005:  call       void [System.Console]System.Console::WriteLine(string)

@@ -370,6 +370,9 @@
     <ExcludeList Include="$(XunitTestBinBase)\baseservices\threading\waithandle\waitall\waitallex8a\*">
       <Issue>3832</Issue>
     </ExcludeList>
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\tailcall_v4\smallFrame\smallFrame.cmd">
+      <Issue>tail. call pop ret is only supported on amd64</Issue>
+    </ExcludeList>
   </ItemGroup>
   
   <!-- Tests that need to be triaged for vararg usage as that is not supported -->
