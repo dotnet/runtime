@@ -17,7 +17,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Common", "Common", "{0FBFD9
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Exceptions", "Exceptions", "{210C3FE7-130B-4D37-8030-16BC2E6A0927}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "JIt", "JIt", "{F03E5C26-F7BE-4BEF-9CBC-EAFC5A2C7760}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "JIT", "JIT", "{F03E5C26-F7BE-4BEF-9CBC-EAFC5A2C7760}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "CodeGenBringUpTests", "CodeGenBringUpTests", "{954F04D0-2FFD-4923-BE9A-2F9F58145708}"
 EndProject
@@ -175,7 +175,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ConstrainedCall", "Constrai
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ConstrainedCall", "JIT\Generics\ConstrainedCall\ConstrainedCall.csproj", "{A8F91D1C-92D3-4385-9EA0-E646003015B3}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Contraints", "Contraints", "{8B7F7CB1-2377-45A1-B24F-01B1ECEEB49B}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Constraints", "Constraints", "{8B7F7CB1-2377-45A1-B24F-01B1ECEEB49B}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Constraints", "JIT\Generics\Constraints\Constraints.csproj", "{6898B405-0970-4406-BA98-F50CDAB1A849}"
 EndProject
@@ -189,7 +189,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Boxing", "JIT\Generics\Conv
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Reference", "JIT\Generics\Conversions\Reference\Reference.csproj", "{317F35A1-3733-4F67-9BF3-C1C567B0D85E}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Converage", "Converage", "{B8C4748A-787E-4ED4-A290-3A9A8C3B8EC2}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Coverage", "Coverage", "{B8C4748A-787E-4ED4-A290-3A9A8C3B8EC2}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Coverage", "JIT\Generics\Coverage\Coverage.csproj", "{B4E5FBBF-5CD2-4A9A-8E6C-1BFE877FA8E5}"
 EndProject
