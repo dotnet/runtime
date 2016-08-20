@@ -577,7 +577,7 @@
     <GlobalizationSources Include="$(BclSourcesRoot)\System\Globalization\NumberStyles.cs" />
     <GlobalizationSources Include="$(BclSourcesRoot)\System\Globalization\TimeSpanFormat.cs" />
     <GlobalizationSources Include="$(BclSourcesRoot)\System\Globalization\TimeSpanParse.cs" />
-    <GlobalizationSources Include="$(BclSourcesRoot)\System\Globalization\DayLightTime.cs" />
+    <GlobalizationSources Include="$(BclSourcesRoot)\System\Globalization\DaylightTime.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(FeatureCoreFxGlobalization)' != 'true'">
     <GlobalizationSources Include="$(BclSourcesRoot)\System\Globalization\BidiCategory.cs" />
