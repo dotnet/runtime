@@ -51,6 +51,9 @@
     <Compile Include="..\..\Common\src\Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs">
       <Link>Common\Microsoft\Win32\Handles\SafeLibraryHandle.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\tests\System\IO\TempFile.cs">
+      <Link>Common\System\IO\TempFile.cs</Link>
+    </Compile>
     <Compile Include="Metadata\BlobContentIdTests.cs" />
     <Compile Include="Metadata\BlobTests.cs" />
     <Compile Include="Metadata\BlobUtilitiesTests.cs" />
