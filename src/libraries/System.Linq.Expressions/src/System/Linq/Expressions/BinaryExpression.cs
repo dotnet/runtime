@@ -265,16 +265,18 @@ namespace System.Linq.Expressions
 
             var index = (IndexExpression)_left;
 
-            var vars = new List<ParameterExpression>(index.Arguments.Count + 2);
-            var exprs = new List<Expression>(index.Arguments.Count + 3);
+            var vars = new List<ParameterExpression>(index.ArgumentCount + 2);
+            var exprs = new List<Expression>(index.ArgumentCount + 3);
 
             var tempObj = Expression.Variable(index.Object.Type, "tempObj");
             vars.Add(tempObj);
             exprs.Add(Expression.Assign(tempObj, index.Object));
 
-            var tempArgs = new List<Expression>(index.Arguments.Count);
-            foreach (var arg in index.Arguments)
+            var n = index.ArgumentCount;
+            var tempArgs = new List<Expression>(n);
+            for (var i = 0; i < n; i++)
             {
+                var arg = index.GetArgument(i);
                 var tempArg = Expression.Variable(arg.Type, "tempArg" + tempArgs.Count);
                 vars.Add(tempArg);
                 tempArgs.Add(tempArg);
