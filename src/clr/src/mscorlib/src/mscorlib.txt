@@ -1997,7 +1997,6 @@ Serialization_TypeLoadFailure = Unable to load type {0} required for deserializa
 Serialization_RequireFullTrust = A type '{0}' that is defined in a partially trusted assembly cannot be type forwarded from an assembly with a different Public Key Token or without a public key token. To fix this, please either turn on unsafeTypeForwarding flag in the configuration file or remove the TypeForwardedFrom attribute.
 ; The following serialization exception messages appear in native resources too (mscorrc.rc)
 Serialization_TypeResolved = Type is not resolved for member '{0}'.
-Serialization_MemberOutOfRange = The deserialized value of the member "{0}" in the class "{1}" is out of range.
 #endif  // FEATURE_SERIALIZATION
 
 ;
