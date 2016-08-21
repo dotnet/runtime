@@ -1,0 +1,20 @@
+{
+  "dependencies": {
+    "Microsoft.NETCore.Platforms": "1.0.1",
+    "System.IO.FileSystem": "4.0.1",
+    "System.Runtime.InteropServices": "4.1.0",
+    "System.Reflection.Metadata": "1.4.1-beta-24417-02"
+  },
+  "frameworks": {
+    "netcoreapp1.0": {}
+  },
+  "runtimes": {
+    "win7-x86": {},
+    "win7-x64": {},
+    "ubuntu.14.04-x64": {},
+    "osx.10.10-x64": {},
+    "centos.7-x64": {},
+    "rhel.7-x64": {},
+    "debian.8-x64": {}
+  }
+}
