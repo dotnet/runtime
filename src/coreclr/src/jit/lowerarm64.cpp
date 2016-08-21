@@ -250,7 +250,7 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
                 assert(tree->TypeGet() == TYP_INT);
 
                 info->srcCount = 1;
-                info->dstCount = 1;
+                info->dstCount = 0;
 
                 info->setSrcCandidates(l, RBM_INTRET);
                 tree->gtOp.gtOp1->gtLsraInfo.setSrcCandidates(l, RBM_INTRET);
@@ -342,7 +342,7 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
             // this just turns into a compare of its child with an int
             // + a conditional call
             info->srcCount = 1;
-            info->dstCount = 1;
+            info->dstCount = 0;
             break;
 
         case GT_MOD:
