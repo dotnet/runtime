@@ -3895,7 +3895,6 @@
       <Member Name="ReorderArgumentArray(System.Object[]@,System.Object)" />
       <Member Name="SelectMethod(System.Reflection.BindingFlags,System.Reflection.MethodBase[],System.Type[],System.Reflection.ParameterModifier[])" />
       <Member Name="SelectProperty(System.Reflection.BindingFlags,System.Reflection.PropertyInfo[],System.Type,System.Type[],System.Reflection.ParameterModifier[])" />
-      <Member Name="CanChangeType(System.Object,System.Type,System.Globalization.CultureInfo)" />
     </Type>
     <Type Name="System.Reflection.BindingFlags">
       <Member MemberType="Field" Name="CreateInstance" />

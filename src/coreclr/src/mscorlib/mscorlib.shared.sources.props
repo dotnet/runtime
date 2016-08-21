@@ -264,6 +264,8 @@
     <SystemSources Condition="'$(FeatureCoreClr)'=='true'" Include="$(BclSourcesRoot)\System\AppContext\AppContextDefaultValues.CoreClrOverrides.cs" />
     <SystemSources Include="$(BclSourcesRoot)\System\AppContext\AppContextDefaultValues.Defaults.cs" />
     <SystemSources Include="$(BclSourcesRoot)\System\AppContext\AppContextDefaultValues.Defaults.Central.cs" />
+    <SystemSources Include="$(BclSourcesRoot)\System\CurrentTimeZone.cs" />
+    <SystemSources Include="$(BclSourcesRoot)\System\TimeZone.cs" />
     <SystemSources Include="$(BclSourcesRoot)\System\Object.cs" />
     <SystemSources Include="$(BclSourcesRoot)\System\ICloneable.cs" />
     <SystemSources Include="$(BclSourcesRoot)\System\Action.cs" />
@@ -575,6 +577,7 @@
     <GlobalizationSources Include="$(BclSourcesRoot)\System\Globalization\NumberStyles.cs" />
     <GlobalizationSources Include="$(BclSourcesRoot)\System\Globalization\TimeSpanFormat.cs" />
     <GlobalizationSources Include="$(BclSourcesRoot)\System\Globalization\TimeSpanParse.cs" />
+    <GlobalizationSources Include="$(BclSourcesRoot)\System\Globalization\DaylightTime.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(FeatureCoreFxGlobalization)' != 'true'">
     <GlobalizationSources Include="$(BclSourcesRoot)\System\Globalization\BidiCategory.cs" />
@@ -590,7 +593,6 @@
     <GlobalizationSources Include="$(BclSourcesRoot)\System\Globalization\CultureTypes.cs" />
     <GlobalizationSources Include="$(BclSourcesRoot)\System\Globalization\DateTimeFormatInfo.cs" />
     <GlobalizationSources Include="$(BclSourcesRoot)\System\Globalization\DateTimeFormatInfoScanner.cs" />
-    <GlobalizationSources Include="$(BclSourcesRoot)\System\Globalization\DaylightTime.cs" />
     <GlobalizationSources Include="$(BclSourcesRoot)\System\Globalization\DigitShapes.cs" />
     <GlobalizationSources Include="$(BclSourcesRoot)\System\Globalization\EncodingDataItem.cs" />
     <GlobalizationSources Include="$(BclSourcesRoot)\System\Globalization\EncodingTable.cs" />
@@ -640,7 +642,6 @@
     <GlobalizationSources Include="$(CoreFxSourcesRoot)\System\Globalization\CultureNotFoundException.cs" />
     <GlobalizationSources Include="$(CoreFxSourcesRoot)\System\Globalization\DateTimeFormatInfo.cs" />
     <GlobalizationSources Include="$(CoreFxSourcesRoot)\System\Globalization\DateTimeFormatInfoScanner.cs" />
-    <GlobalizationSources Include="$(CoreFxSourcesRoot)\System\Globalization\DayLightTime.cs" />
     <GlobalizationSources Include="$(CoreFxSourcesRoot)\System\Globalization\EastAsianLunisolarCalendar.cs" />
     <GlobalizationSources Include="$(CoreFxSourcesRoot)\System\Globalization\GregorianCalendar.cs" />
     <GlobalizationSources Include="$(CoreFxSourcesRoot)\System\Globalization\GregorianCalendarHelper.cs" />
