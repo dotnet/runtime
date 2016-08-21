@@ -250,8 +250,8 @@ int coreclr_initialize(
 
         hr = coreclr_create_delegate(*hostHandle,
                                      *domainId,
-                                     "System.Diagnostics.Debug.SymbolReader",
-                                     "System.Diagnostics.Debug.SymbolReader.SymbolReader",
+                                     "SOS.NETCore",
+                                     "SOS.SymbolReader",
                                      "GetInfoForMethod",
                                      (void**)&getInfoForMethodDelegate);
 

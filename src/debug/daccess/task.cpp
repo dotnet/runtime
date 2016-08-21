@@ -2710,6 +2710,56 @@ ClrDataModule::RequestGetModulePtr(
     outGMA->ModulePtr = TO_CDADDR(PTR_HOST_TO_TADDR(m_module));
     return S_OK;    
 }
+
+HRESULT 
+ClrDataModule::RequestGetModuleData(
+    /* [in] */ ULONG32 inBufferSize,
+    /* [size_is][in] */ BYTE *inBuffer,
+    /* [in] */ ULONG32 outBufferSize,
+    /* [size_is][out] */ BYTE *outBuffer)
+{
+    // Validate params.
+    // Input: Nothing.
+    // Output: a DacpGetModuleData structure.
+    if ((inBufferSize != 0) ||
+        (inBuffer != NULL) ||
+        (outBufferSize != sizeof(DacpGetModuleData)) ||
+        (outBuffer == NULL))
+    {
+        return E_INVALIDARG;
+    }
+
+    DacpGetModuleData * outGMD = reinterpret_cast<DacpGetModuleData *>(outBuffer);
+    ZeroMemory(outGMD, sizeof(DacpGetModuleData));
+
+    Module* pModule = GetModule();
+    PEFile *pPEFile = pModule->GetFile();
+
+    outGMD->PEFile = TO_CDADDR(PTR_HOST_TO_TADDR(pPEFile));
+    outGMD->IsDynamic = pModule->IsReflection();
+
+    if (pPEFile != NULL)
+    {
+        outGMD->IsInMemory = pPEFile->GetPath().IsEmpty();
+
+        COUNT_T peSize;
+        outGMD->LoadedPEAddress = TO_CDADDR(PTR_TO_TADDR(pPEFile->GetLoadedImageContents(&peSize)));
+        outGMD->LoadedPESize = (ULONG64)peSize;
+        outGMD->IsFileLayout = pPEFile->GetLoaded()->IsFlat();
+    }
+
+    // If there is a in memory symbol stream
+    CGrowableStream* stream = pModule->GetInMemorySymbolStream();
+    if (stream != NULL)
+    {
+        // Save the in-memory PDB address and size
+        MemoryRange range = stream->GetRawBuffer();
+        outGMD->InMemoryPdbAddress = TO_CDADDR(PTR_TO_TADDR(range.StartAddress()));
+        outGMD->InMemoryPdbSize = range.Size();
+    }
+
+    return S_OK;    
+}
         
 HRESULT STDMETHODCALLTYPE
 ClrDataModule::Request( 
@@ -2742,9 +2792,11 @@ ClrDataModule::Request(
             break;
 
         case DACDATAMODULEPRIV_REQUEST_GET_MODULEPTR:
-            status = RequestGetModulePtr(inBufferSize, inBuffer,
-                                         outBufferSize, outBuffer);
+            status = RequestGetModulePtr(inBufferSize, inBuffer, outBufferSize, outBuffer);
+            break;
 
+        case DACDATAMODULEPRIV_REQUEST_GET_MODULEDATA:
+            status = RequestGetModuleData(inBufferSize, inBuffer, outBufferSize, outBuffer);
             break;
                 
         default:

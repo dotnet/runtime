@@ -67,6 +67,17 @@ extern "C" {
 #define DEBUG_CLASS_USER_WINDOWS  2
 #define DEBUG_CLASS_IMAGE_FILE    3
 
+// Generic dump types.  These can be used
+// with either user or kernel sessions.
+// Session-type-specific aliases are also
+// provided.
+#define DEBUG_DUMP_SMALL      1024
+#define DEBUG_DUMP_DEFAULT    1025
+#define DEBUG_DUMP_FULL       1026
+#define DEBUG_DUMP_IMAGE_FILE 1027
+#define DEBUG_DUMP_TRACE_LOG  1028
+#define DEBUG_DUMP_WINDOWS_CE 1029
+
 #define IMAGE_FILE_MACHINE_I386              0x014c  // Intel 386.
 #define IMAGE_FILE_MACHINE_ARMNT             0x01c4  // ARM Thumb-2 Little-Endian
 #define IMAGE_FILE_MACHINE_AMD64             0x8664  // AMD64 (K8)

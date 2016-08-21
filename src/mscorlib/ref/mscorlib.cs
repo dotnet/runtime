@@ -19,9 +19,15 @@ namespace Internal.Runtime.Augments
 namespace Microsoft.Win32.SafeHandles
 {
     [System.Security.SecurityCriticalAttribute]
+    public abstract partial class SafeHandleMinusOneIsInvalid : System.Runtime.InteropServices.SafeHandle
+    {
+        protected SafeHandleMinusOneIsInvalid() { }
+        public override bool IsInvalid { [System.Security.SecurityCriticalAttribute]get { throw null; } }
+    }
+    [System.Security.SecurityCriticalAttribute]
     public abstract partial class SafeHandleZeroOrMinusOneIsInvalid : System.Runtime.InteropServices.SafeHandle
     {
-        internal SafeHandleZeroOrMinusOneIsInvalid() { }
+        protected SafeHandleZeroOrMinusOneIsInvalid() { }
         public override bool IsInvalid { [System.Security.SecurityCriticalAttribute]get { throw null; } }
     }
     [System.Security.SecurityCriticalAttribute]
@@ -3972,6 +3978,7 @@ namespace System
         public Version(int major, int minor, int build) { }
         public Version(int major, int minor, int build, int revision) { }
         public Version(string version) { }
+        public Version() { }
         public int Build { get { throw null; } }
         public int Major { get { throw null; } }
         public short MajorRevision { get { throw null; } }
