@@ -3685,6 +3685,9 @@ void Lowering::DoPhase()
         {
             TreeNodeInfoInit(node);
 
+            // Only nodes that produce values should have a non-zero dstCount.
+            assert((node->gtLsraInfo.dstCount == 0) || node->IsValue());
+
             // If the node produces an unused value, mark it as a local def-use
             if ((node->gtLIRFlags & LIR::Flags::IsUnusedValue) != 0)
             {
