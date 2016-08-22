@@ -384,22 +384,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
         [MemberData(nameof(SerializableExceptions))]
         public void Roundtrip_Exceptions(Exception expected)
         {
-            for (int i = 0; i < 2; i++)
-            {
-                Exception actual = FormatterClone(expected);
-
-                Assert.Equal(expected.StackTrace, actual.StackTrace);
-                Assert.Equal(expected.Data, actual.Data);
-                Assert.Equal(expected.Message, actual.Message);
-                Assert.Equal(expected.Source, actual.Source);
-                Assert.Equal(expected.ToString(), actual.ToString());
-                Assert.Equal(expected.HResult, actual.HResult);
-
-                if (i == 0)
-                {
-                    try { throw expected; } catch { }
-                }
-            }
+            BinaryFormatterHelpers.AssertRoundtrips(expected);
         }
 
         private static int Identity(int i) => i;
