@@ -3545,7 +3545,7 @@ void GCInfo::gcInfoBlockHdrSave(GcInfoEncoder* gcInfoEncoder, unsigned methodSiz
         case TYP_STRUCT:
         {
             CORINFO_CLASS_HANDLE structType = compiler->info.compMethodInfo->args.retTypeClass;
-            if (compiler->IsMultiRegReturnedType(structType))
+            if (compiler->IsMultiRegReturnedType(structType) && !compiler->IsHfa(structType))
             {
                 BYTE gcPtrs[2] = {TYPE_GC_NONE, TYPE_GC_NONE};
                 compiler->info.compCompHnd->getClassGClayout(structType, gcPtrs);
