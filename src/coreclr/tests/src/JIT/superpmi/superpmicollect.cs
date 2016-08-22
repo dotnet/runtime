@@ -259,9 +259,13 @@ namespace SuperPMICollection
             // is changed.
             //
             // TODO: this should probably be loaded dynamically from a .json/.xml file.
+            //
+            // Note: We previously used
+            //      JIT\Performance\CodeQuality\Roslyn\CscBench\CscBench.cmd
+            // but it doesn't currently run on x86 due to this issue: https://github.com/dotnet/coreclr/issues/6844.
             string[] SuperPMICollectionTestProgramsList =
             {
-                @"JIT\Performance\CodeQuality\Roslyn\CscBench\CscBench.cmd",
+                @"JIT\Performance\CodeQuality\Bytemark\Bytemark\Bytemark.cmd",
                 @"JIT\Methodical\fp\exgen\10w5d_cs_do\10w5d_cs_do.cmd",
                 @"JIT\Generics\Coverage\chaos65204782cs\chaos65204782cs.cmd"
             };
