@@ -787,6 +787,15 @@ namespace System.Linq.Expressions
             RequiresCanRead(expression, nameof(expression));
             ContractUtils.RequiresNotNull(type, nameof(type));
             TypeUtils.ValidateType(type, nameof(type));
+            if (type.IsByRef)
+            {
+                throw Error.TypeMustNotBeByRef(nameof(type));
+            }
+
+            if (type.IsPointer)
+            {
+                throw Error.TypeMustNotBePointer(nameof(type));
+            }
 
             if (method == null)
             {
@@ -828,6 +837,15 @@ namespace System.Linq.Expressions
             RequiresCanRead(expression, nameof(expression));
             ContractUtils.RequiresNotNull(type, nameof(type));
             TypeUtils.ValidateType(type, nameof(type));
+            if (type.IsByRef)
+            {
+                throw Error.TypeMustNotBeByRef(nameof(type));
+            }
+
+            if (type.IsPointer)
+            {
+                throw Error.TypeMustNotBePointer(nameof(type));
+            }
 
             if (method == null)
             {

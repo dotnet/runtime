@@ -13,8 +13,6 @@ namespace System
 {
     public static partial class Environment
     {
-        private static readonly Lazy<int> s_processorCount = new Lazy<int>(() => ProcessorCountCore);
-
         public static string CommandLine
         {
             get
@@ -153,9 +151,7 @@ namespace System
         public static bool Is64BitProcess => IntPtr.Size == 8;
 
         public static bool Is64BitOperatingSystem => Is64BitProcess || Is64BitOperatingSystemWhen32BitProcess;
-
-        public static int ProcessorCount => s_processorCount.Value;
-
+        
         public static void SetEnvironmentVariable(string variable, string value)
         {
             ValidateVariableAndValue(variable, ref value);

@@ -4,12 +4,18 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.Tracing;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Runtime.Remoting.Messaging;
 using System.Runtime.Serialization.Formatters.Binary;
+using System.Security;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Runtime.Serialization.Formatters.Tests
@@ -39,6 +45,9 @@ namespace System.Runtime.Serialization.Formatters.Tests
             yield return float.MaxValue;
             yield return double.MinValue;
             yield return double.MaxValue;
+            yield return decimal.MinValue;
+            yield return decimal.MaxValue;
+            yield return decimal.MinusOne;
             yield return true;
             yield return false;
             yield return "";
@@ -58,13 +67,27 @@ namespace System.Runtime.Serialization.Formatters.Tests
             yield return (StructWithIntField?)new StructWithIntField() { X = 42 };
 
             // Other core serializable types
+            yield return IntPtr.Zero;
+            yield return UIntPtr.Zero;
+            yield return DateTime.Now;
+            yield return DateTimeOffset.Now;
+            yield return DateTimeKind.Local;
             yield return TimeSpan.FromDays(7);
             yield return new Version(1, 2, 3, 4);
-            yield return Tuple.Create(1, "2", Tuple.Create(3.4));
             yield return new Guid("0CACAA4D-C6BD-420A-B660-2F557337CA89");
             yield return new AttributeUsageAttribute(AttributeTargets.Class);
             yield return new List<int>();
             yield return new List<int>() { 1, 2, 3, 4, 5 };
+            yield return new Dictionary<int, string>() { { 1, "test" }, { 2, "another test" } };
+            yield return Tuple.Create(1);
+            yield return Tuple.Create(1, "2");
+            yield return Tuple.Create(1, "2", 3u);
+            yield return Tuple.Create(1, "2", 3u, 4L);
+            yield return Tuple.Create(1, "2", 3u, 4L, 5.6);
+            yield return Tuple.Create(1, "2", 3u, 4L, 5.6, 7.8f);
+            yield return Tuple.Create(1, "2", 3u, 4L, 5.6, 7.8f, 9m);
+            yield return Tuple.Create(1, "2", 3u, 4L, 5.6, 7.8f, 9m, Tuple.Create(10));
+            yield return new KeyValuePair<int, byte>(42, 84);
 
             // Arrays of primitive types
             yield return Enumerable.Range(0, 256).Select(i => (byte)i).ToArray();
@@ -111,6 +134,10 @@ namespace System.Runtime.Serialization.Formatters.Tests
             var arr = Array.CreateInstance(typeof(string), new[] { 1, 2 }, new[] { 3, 4 });
             arr.SetValue("hello", new[] { 3, 5 });
             yield return arr;
+
+            //// Various globalization types
+            //yield return CultureInfo.CurrentCulture;
+            //yield return CultureInfo.InvariantCulture;
 
             // Custom object
             var sealedObjectWithIntStringFields = new SealedObjectWithIntStringFields();
@@ -178,6 +205,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
 
             // ISerializable
             yield return new BasicISerializableObject(1, "2");
+            yield return new DerivedISerializableWithNonPublicDeserializationCtor(1, "2");
 
             // Various other special cases
             yield return new TypeWithoutNamespace();
@@ -189,14 +217,6 @@ namespace System.Runtime.Serialization.Formatters.Tests
             yield return new NonSerializableClass();
             yield return new SerializableClassWithBadField();
             yield return new object[] { 1, 2, 3, new NonSerializableClass() };
-
-            // TODO: Move these to the serializable category when enabled in the runtime
-            var e = new OperationCanceledException();
-            yield return e;
-            try { throw e; } catch { } yield return e;
-            yield return new Dictionary<int, string>() { { 1, "test" }, { 2, "another test" } };
-            yield return IntPtr.Zero;
-            yield return UIntPtr.Zero;
         }
 
         public static IEnumerable<object[]> ValidateBasicObjectsRoundtrip_MemberData()
@@ -286,6 +306,128 @@ namespace System.Runtime.Serialization.Formatters.Tests
             {
                 Assert.Same(result[0], result[i]);
             }
+        }
+
+        public static IEnumerable<object[]> SerializableExceptions()
+        {
+            yield return new object[] { new AbandonedMutexException() };
+            yield return new object[] { new AggregateException(new FieldAccessException(), new MemberAccessException()) };
+            yield return new object[] { new AmbiguousMatchException() };
+            yield return new object[] { new ArgumentException("message", "paramName") };
+            yield return new object[] { new ArgumentNullException("paramName") };
+            yield return new object[] { new ArgumentOutOfRangeException("paramName", 42, "message") };
+            yield return new object[] { new ArithmeticException() };
+            yield return new object[] { new ArrayTypeMismatchException("message") };
+            yield return new object[] { new BadImageFormatException("message", "filename") };
+            yield return new object[] { new COMException() };
+            //yield return new object[] { new CultureNotFoundException() };
+            yield return new object[] { new DataMisalignedException("message") };
+            yield return new object[] { new DecoderFallbackException() };
+            yield return new object[] { new DirectoryNotFoundException() };
+            yield return new object[] { new DivideByZeroException() };
+            yield return new object[] { new DllNotFoundException() };
+            yield return new object[] { new EncoderFallbackException() };
+            yield return new object[] { new EndOfStreamException() };
+            yield return new object[] { new EventSourceException() };
+            yield return new object[] { new Exception("message") };
+            yield return new object[] { new FieldAccessException("message", new FieldAccessException()) };
+            yield return new object[] { new FileLoadException() };
+            yield return new object[] { new FileNotFoundException() };
+            yield return new object[] { new FormatException("message") };
+            yield return new object[] { new IndexOutOfRangeException() };
+            yield return new object[] { new InsufficientExecutionStackException() };
+            yield return new object[] { new InvalidCastException() };
+            yield return new object[] { new InvalidComObjectException() };
+            yield return new object[] { new InvalidOleVariantTypeException() };
+            yield return new object[] { new InvalidOperationException() };
+            yield return new object[] { new InvalidProgramException() };
+            yield return new object[] { new InvalidTimeZoneException() };
+            yield return new object[] { new IOException() };
+            yield return new object[] { new KeyNotFoundException() };
+            yield return new object[] { new LockRecursionException() };
+            yield return new object[] { new MarshalDirectiveException() };
+            yield return new object[] { new MemberAccessException() };
+            yield return new object[] { new MethodAccessException() };
+            yield return new object[] { new MissingFieldException() };
+            yield return new object[] { new MissingMemberException() };
+            yield return new object[] { new NotImplementedException() };
+            yield return new object[] { new NotSupportedException() };
+            yield return new object[] { new NullReferenceException() };
+            yield return new object[] { new ObjectDisposedException("objectName") };
+            yield return new object[] { new OperationCanceledException(new CancellationTokenSource().Token) };
+            yield return new object[] { new OutOfMemoryException() };
+            yield return new object[] { new OverflowException() };
+            yield return new object[] { new PathTooLongException() };
+            yield return new object[] { new PlatformNotSupportedException() };
+            yield return new object[] { new RankException() };
+            yield return new object[] { new SafeArrayRankMismatchException() };
+            yield return new object[] { new SafeArrayTypeMismatchException() };
+            yield return new object[] { new SecurityException() };
+            yield return new object[] { new SEHException() };
+            yield return new object[] { new SemaphoreFullException() };
+            yield return new object[] { new SerializationException() };
+            yield return new object[] { new SynchronizationLockException() };
+            yield return new object[] { new TargetInvocationException("message", new Exception()) };
+            yield return new object[] { new TargetParameterCountException() };
+            yield return new object[] { new TaskCanceledException(Task.CompletedTask) };
+            yield return new object[] { new TaskSchedulerException() };
+            yield return new object[] { new TimeoutException() };
+            yield return new object[] { new TypeAccessException() };
+            yield return new object[] { new TypeInitializationException(typeof(string).FullName, new Exception()) };
+            yield return new object[] { new TypeLoadException() };
+            yield return new object[] { new UnauthorizedAccessException("message", new ArgumentNullException()) };
+            yield return new object[] { new VerificationException() };
+            yield return new object[] { new WaitHandleCannotBeOpenedException() };
+        }
+
+        [Theory]
+        [MemberData(nameof(SerializableExceptions))]
+        public void Roundtrip_Exceptions(Exception expected)
+        {
+            BinaryFormatterHelpers.AssertRoundtrips(expected);
+        }
+
+        private static int Identity(int i) => i;
+
+        [Fact]
+        public void Roundtrip_Delegates_NoTarget()
+        {
+            Func<int, int> expected = Identity;
+            Assert.Null(expected.Target);
+
+            Func<int, int> actual = FormatterClone(expected);
+
+            Assert.NotSame(expected, actual);
+            Assert.Same(expected.GetMethodInfo(), actual.GetMethodInfo());
+            Assert.Equal(expected(42), actual(42));
+        }
+
+        [Fact]
+        public void Roundtrip_Delegates_Target()
+        {
+            var owsam = new ObjectWithStateAndMethod { State = 42 };
+            Func<int> expected = owsam.GetState;
+            Assert.Same(owsam, expected.Target);
+
+            Func<int> actual = FormatterClone(expected);
+
+            Assert.NotSame(expected, actual);
+            Assert.NotSame(expected.Target, actual.Target);
+            Assert.Equal(expected(), actual());
+        }
+
+        public static IEnumerable<object[]> SerializableObjectsWithFuncOfObjectToCompare()
+        {
+            object target = 42;
+            yield return new object[] { new Random(), new Func<object, object>(o => ((Random)o).Next()) };
+        }
+
+        [Theory]
+        [MemberData(nameof(SerializableObjectsWithFuncOfObjectToCompare))]
+        public void Roundtrip_ObjectsWithComparers(object obj, Func<object, object> getResult)
+        {
+            object actual = FormatterClone(obj);
+            Assert.Equal(getResult(obj), getResult(actual));
         }
 
         public static IEnumerable<object[]> ValidateNonSerializableTypes_MemberData()
@@ -523,7 +665,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
                 const int FuzzingsPerObject = 20;
                 for (int i = 0; i < FuzzingsPerObject; i++)
                 {
-                    yield return new object[] { obj, rand };
+                    yield return new object[] { obj, rand, i };
                 }
             }
         }
@@ -531,7 +673,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
         [OuterLoop]
         [Theory]
         [MemberData(nameof(Deserialize_FuzzInput_MemberData))]
-        public void Deserialize_FuzzInput(object obj, Random rand)
+        public void Deserialize_FuzzInput(object obj, Random rand, int fuzzTrial)
         {
             // Get the serialized data for the object
             var f = new BinaryFormatter();
@@ -561,6 +703,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
             catch (OverflowException) { }
             catch (NullReferenceException) { }
             catch (SerializationException) { }
+            catch (TargetInvocationException) { }
         }
 
         [Fact]

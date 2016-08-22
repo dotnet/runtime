@@ -2,13 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Text;
-using System.Net.Mime;
-using System.Globalization;
-using System.Collections;
 using System.Diagnostics;
-using System.Collections.Generic;
+using System.Net.Mime;
 
 namespace System.Net.Mail
 {
@@ -33,24 +28,6 @@ namespace System.Net.Mail
             MailAddress parsedAddress = MailAddressParser.ParseAddress(data, false, ref index);
             Debug.Assert(index == -1, "The index indicates that part of the address was not parsed: " + index);
             return parsedAddress;
-        }
-
-        // Parse a comma separated list of MailAddress's
-        //
-        // Throws a FormatException if any MailAddress is invalid.
-        internal static IList<MailAddress> ParseMultipleAddresses(string data)
-        {
-            IList<MailAddress> results = new List<MailAddress>();
-            int index = data.Length - 1;
-            while (index >= 0)
-            {
-                // Because we're parsing in reverse, we must make an effort to preserve the order of the addresses.
-                results.Insert(0, MailAddressParser.ParseAddress(data, true, ref index));
-                Debug.Assert(index == -1 || data[index] == MailBnfHelper.Comma,
-                    "separator not found while parsing multiple addresses");
-                index--;
-            }
-            return results;
         }
 
         //
@@ -223,7 +200,7 @@ namespace System.Net.Mail
                 // before the next address.
                 if (index >= 0 &&
                         !(
-                            MailBnfHelper.Whitespace.Contains(data[index]) // < local@domain >
+                            MailBnfHelper.IsAllowedWhiteSpace(data[index]) // < local@domain >
                             || data[index] == MailBnfHelper.EndComment // <(comment)local@domain>
                             || (expectAngleBracket && data[index] == MailBnfHelper.StartAngleBracket) // <local@domain>
                             || (expectMultipleAddresses && data[index] == MailBnfHelper.Comma) // local@dom,local@dom

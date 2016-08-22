@@ -11,15 +11,15 @@
         </member>
         <member name="M:System.Runtime.CompilerServices.Unsafe.Read``1(System.Void*)">
             <summary>
-            Reads a value of type T from the given location.
+            Reads a value of type <typeparamref name="T"/> from the given location.
             </summary>
             <typeparam name="T">The type to read.</typeparam>
             <param name="source">The location to read from.</param>
-            <returns>An object of type T read from the given location.</returns>
+            <returns>An object of type <typeparamref name="T"/> read from the given location.</returns>
         </member>
         <member name="M:System.Runtime.CompilerServices.Unsafe.Write``1(System.Void*,``0)">
             <summary>
-            Writes a value of type T to the given location.
+            Writes a value of type <typeparamref name="T"/> to the given location.
             </summary>
             <typeparam name="T">The type of value to write.</typeparam>
             <param name="destination">The location to write to.</param>
@@ -27,7 +27,7 @@
         </member>
         <member name="M:System.Runtime.CompilerServices.Unsafe.Copy``1(System.Void*,``0@)">
             <summary>
-            Copies a value of type T to the given location.
+            Copies a value of type <typeparamref name="T"/> to the given location.
             </summary>
             <typeparam name="T">The type of value to copy.</typeparam>
             <param name="destination">The location to copy to.</param>
@@ -35,7 +35,7 @@
         </member>
         <member name="M:System.Runtime.CompilerServices.Unsafe.Copy``1(``0@,System.Void*)">
             <summary>
-            Copies a value of type T to the given location.
+            Copies a value of type <typeparamref name="T"/> to the given location.
             </summary>
             <typeparam name="T">The type of value to copy.</typeparam>
             <param name="destination">The location to copy to.</param>
@@ -54,7 +54,7 @@
             Returns the size of an object of the given type parameter.
             </summary>
             <typeparam name="T">The type of object whose size is retrieved.</typeparam>
-            <returns>The size of an object of type T.</returns>
+            <returns>The size of an object of type <typeparamref name="T"/>.</returns>
         </member>
         <member name="M:System.Runtime.CompilerServices.Unsafe.As``1(System.Object)">
             <summary>
@@ -66,11 +66,46 @@
         </member>
         <member name="M:System.Runtime.CompilerServices.Unsafe.AsRef``1(System.Void*)">
             <summary>
-            Reinterprets the given location as a reference to a value of type T.
+            Reinterprets the given location as a reference to a value of type <typeparamref name="T"/>.
             </summary>
             <typeparam name="T">The type of the interpreted location.</typeparam>
             <param name="source">The location of the value to reference.</param>
-            <returns>A reference to a value of type T.</returns>
+            <returns>A reference to a value of type <typeparamref name="T"/>.</returns>
+        </member>
+        <member name="M:System.Runtime.CompilerServices.Unsafe.As``2(``0@)">
+            <summary>
+            Reinterprets the given reference as a reference to a value of type <typeparamref name="TTo"/>.
+            </summary>
+            <typeparam name="TFrom">The type of reference to reinterpret.</typeparam>
+            <typeparam name="TTo">The desired type of the reference.</typeparam>
+            <param name="source">The reference to reinterpret.</param>
+            <returns>A reference to a value of type <typeparamref name="TTo"/>.</returns>
+        </member>
+        <member name="M:System.Runtime.CompilerServices.Unsafe.Add``1(``0@,System.Int32)">
+            <summary>
+            Adds an element offset to the given reference.
+            </summary>
+            <typeparam name="T">The type of reference.</typeparam>
+            <param name="source">The reference to add the offset to.</param>
+            <param name="elementOffset">The offset to add.</param>
+            <returns>A new reference that reflects the addition of offset to pointer.</returns>
+        </member>
+        <member name="M:System.Runtime.CompilerServices.Unsafe.Subtract``1(``0@,System.Int32)">
+            <summary>
+            Subtracts an element offset from the given reference.
+            </summary>
+            <typeparam name="T">The type of reference.</typeparam>
+            <param name="source">The reference to subtract the offset from.</param>
+            <param name="elementOffset">The offset to subtract.</param>
+            <returns>A new reference that reflects the subraction of offset from pointer.</returns>
+        </member>
+        <member name="M:System.Runtime.CompilerServices.Unsafe.AreSame``1(``0@,``0@)">
+            <summary>
+            Determines whether the specified references point to the same location.
+            </summary>
+            <param name="left">The first reference to compare.</param>
+            <param name="right">The second reference to compare.</param>
+            <returns><c>true</c> if <paramref name="left"/> and <paramref name="right"/> point to the same location; otherwise <c>false</c>.</returns>
         </member>
         <member name="M:System.Runtime.CompilerServices.Unsafe.CopyBlock(System.Void*,System.Void*,System.UInt32)">
             <summary>

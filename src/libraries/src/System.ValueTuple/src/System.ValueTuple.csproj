@@ -22,6 +22,11 @@
     <Compile Include="System\ValueTuple\ValueTuple.cs" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="$(CommonPath)\System\Numerics\Hashing\HashHelpers.cs">
+      <Link>Common\System\Numerics\Hashing\HashHelpers.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
     <None Include="project.json" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />

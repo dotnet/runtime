@@ -44,5 +44,18 @@
     <TargetFrameworkProfile></TargetFrameworkProfile>
     <!-- We set this property to avoid MSBuild errors regarding not setting TargetFrameworkProfile (see above line) -->
     <PortableNuGetMode>true</PortableNuGetMode>
+    <!-- tests should not set this.  A value of netstandard* triggers validation which is irrelevant for tests.  Remove once ValidatePackageTargetFramework target is removed -->
+    <PackageTargetFramework Condition="'$(IsTestProject)' == 'true'"></PackageTargetFramework>
   </PropertyGroup>
+
+  <!--
+    add the test-runtime project.json to the list of supplemental test data so it will get included
+    in the test archive; the stress test build system depends on it when building test mixes.
+  -->
+  <ItemGroup Condition="'$(IsTestProject)'=='true'">
+    <SupplementalTestData Include="$(SourceDir)Common/test-runtime/project.json">
+      <DestinationDir>test-runtime/</DestinationDir>
+    </SupplementalTestData>
+  </ItemGroup>
+
 </Project>

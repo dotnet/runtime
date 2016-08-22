@@ -2217,9 +2217,9 @@ namespace System.Reflection.Metadata.Tests
 
             mdBuilder.AddModule(0, default(StringHandle), default(GuidHandle), default(GuidHandle), default(GuidHandle));
 
-            var rootBuilder = new MetadataRootBuilder(mdBuilder);
+            var rootBuilder = new MetadataRootBuilder(mdBuilder, suppressValidation: true); // NestedClass not sorted
             var mdBlob = new BlobBuilder();
-            rootBuilder.Serialize(mdBlob, 0, 0, suppressValidation: true); // NestedClass not sorted
+            rootBuilder.Serialize(mdBlob, 0, 0);
 
             // validate sizes table rows that reference guids:
             using (var mdProvider = MetadataReaderProvider.FromMetadataImage(mdBlob.ToImmutableArray()))

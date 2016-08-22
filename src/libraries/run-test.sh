@@ -40,6 +40,7 @@ usage()
     echo "                                      default: detect current OS"
     echo
     echo "Execution options:"
+    echo "    --sequential                      Run tests sequentially (default is to run in parallel)."
     echo "    --restrict-proj <regex>           Run test projects that match regex"
     echo "                                      default: .* (all projects)"
     echo "    --useServerGC                     Enable Server GC for this test run"
@@ -260,6 +261,7 @@ coreclr_code_coverage()
 
 # Parse arguments
 
+RunTestSequential=0
 ((serverGC = 0))
 
 while [[ $# > 0 ]]
@@ -301,6 +303,9 @@ do
         ;;
         --coreclr-src)
         CoreClrSrc=$2
+        ;;
+        --sequential)
+        RunTestSequential=1
         ;;
         --useServerGC)
         ((serverGC = 1))
@@ -392,10 +397,15 @@ ensure_binaries_are_present
 TestsFailed=0
 numberOfProcesses=0
 
-if [ `uname` = "NetBSD" ]; then
-  maxProcesses=$(($(getconf NPROCESSORS_ONLN)+1))
+if [ $RunTestSequential -eq 1 ]
+then
+    maxProcesses=1;
 else
-  maxProcesses=$(($(getconf _NPROCESSORS_ONLN)+1))
+    if [ `uname` = "NetBSD" ]; then
+      maxProcesses=$(($(getconf NPROCESSORS_ONLN)+1))
+    else
+      maxProcesses=$(($(getconf _NPROCESSORS_ONLN)+1))
+    fi
 fi
 
 run_all_tests "AnyOS.AnyCPU.$ConfigurationGroup"

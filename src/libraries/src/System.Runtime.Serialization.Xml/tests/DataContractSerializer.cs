@@ -795,6 +795,18 @@ public static partial class DataContractSerializerTests
     }
 
     [Fact]
+    public static void DCS_TypeWithPrivateFieldAndPrivateGetPublicSetProperty()
+    {
+        TypeWithPrivateFieldAndPrivateGetPublicSetProperty x = new TypeWithPrivateFieldAndPrivateGetPublicSetProperty
+        {
+            Name = "foo",
+        };
+
+        TypeWithPrivateFieldAndPrivateGetPublicSetProperty y = SerializeAndDeserialize<TypeWithPrivateFieldAndPrivateGetPublicSetProperty>(x, @"<TypeWithPrivateFieldAndPrivateGetPublicSetProperty xmlns=""http://schemas.datacontract.org/2004/07/"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><Name>foo</Name></TypeWithPrivateFieldAndPrivateGetPublicSetProperty>");
+        Assert.Equal(x.GetName(), y.GetName());
+    }
+
+    [Fact]
     public static void DCS_DataContractAttribute()
     {
         SerializeAndDeserialize<DCA_1>(new DCA_1 { P1 = "xyz" }, @"<DCA_1 xmlns=""http://schemas.datacontract.org/2004/07/SerializationTypes"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""/>");
@@ -889,6 +901,19 @@ public static partial class DataContractSerializerTests
     {
         CircularLinkDerived circularLinkDerived = new CircularLinkDerived(true);
         SerializeAndDeserialize<CircularLinkDerived>(circularLinkDerived, @"<CircularLinkDerived z:Id=""i1"" xmlns=""http://schemas.datacontract.org/2004/07/SerializationTypes"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:z=""http://schemas.microsoft.com/2003/10/Serialization/""><Link z:Id=""i2""><Link z:Id=""i3""><Link z:Ref=""i1""/><RandomHangingLink i:nil=""true""/></Link><RandomHangingLink i:nil=""true""/></Link><RandomHangingLink z:Id=""i4""><Link z:Id=""i5""><Link z:Id=""i6"" i:type=""CircularLinkDerived""><Link z:Ref=""i4""/><RandomHangingLink i:nil=""true""/></Link><RandomHangingLink i:nil=""true""/></Link><RandomHangingLink i:nil=""true""/></RandomHangingLink></CircularLinkDerived>");
+    }
+
+    [Fact]
+    public static void DCS_DataMemberNames()
+    {
+        var obj = new AppEnvironment()
+        {
+            ScreenDpi = 440,
+            ScreenOrientation = "horizontal"
+        };
+        var actual = SerializeAndDeserialize(obj, "<AppEnvironment xmlns=\"http://schemas.datacontract.org/2004/07/\" xmlns:i=\"http://www.w3.org/2001/XMLSchema-instance\"><screen_dpi_x0028_x_x003A_y_x0029_>440</screen_dpi_x0028_x_x003A_y_x0029_><screen_x003A_orientation>horizontal</screen_x003A_orientation></AppEnvironment>");
+        Assert.StrictEqual(obj.ScreenDpi, actual.ScreenDpi);
+        Assert.StrictEqual(obj.ScreenOrientation, actual.ScreenOrientation);
     }
 
     [Fact]
@@ -1200,6 +1225,16 @@ public static partial class DataContractSerializerTests
         Assert.Null(actual.Struct2);
         Assert.StrictEqual(item.Struct1.Value.A, actual.Struct1.Value.A);
         Assert.StrictEqual(item.Struct1.Value.B, actual.Struct1.Value.B);
+    }
+
+    [Fact]
+    public static void DCS_SimpleStructWithProperties()
+    {
+        SimpleStructWithProperties x = new SimpleStructWithProperties() { Num = 1, Text = "Foo" };
+        var y = SerializeAndDeserialize(x, "<SimpleStructWithProperties xmlns=\"http://schemas.datacontract.org/2004/07/SerializationTypes\" xmlns:i=\"http://www.w3.org/2001/XMLSchema-instance\"><Num>1</Num><Text>Foo</Text></SimpleStructWithProperties>");
+
+        Assert.True(x.Num == y.Num, "x.Num != y.Num");
+        Assert.True(x.Text == y.Text, "x.Text != y.Text");
     }
 
     [Fact]
@@ -2174,6 +2209,357 @@ public static partial class DataContractSerializerTests
         Assert.True(root2.Children[0] == root2.Children[2], "root2.Children[0] != root2.Children[2]");
     }
 
+    [Fact]
+    public static void DCS_TypeWithPrimitiveProperties()
+    {
+        TypeWithPrimitiveProperties x = new TypeWithPrimitiveProperties { P1 = "abc", P2 = 11 };
+        TypeWithPrimitiveProperties y = SerializeAndDeserialize<TypeWithPrimitiveProperties>(x, @"<TypeWithPrimitiveProperties xmlns=""http://schemas.datacontract.org/2004/07/SerializationTypes"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><P1>abc</P1><P2>11</P2></TypeWithPrimitiveProperties>");
+        Assert.StrictEqual(x.P1, y.P1);
+        Assert.StrictEqual(x.P2, y.P2);
+    }
+
+    [Fact]
+    public static void DCS_TypeWithPrimitiveFields()
+    {
+        TypeWithPrimitiveFields x = new TypeWithPrimitiveFields { P1 = "abc", P2 = 11 };
+        TypeWithPrimitiveFields y = SerializeAndDeserialize<TypeWithPrimitiveFields>(x, @"<TypeWithPrimitiveFields xmlns=""http://schemas.datacontract.org/2004/07/SerializationTypes"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><P1>abc</P1><P2>11</P2></TypeWithPrimitiveFields>");
+        Assert.StrictEqual(x.P1, y.P1);
+        Assert.StrictEqual(x.P2, y.P2);
+    }
+
+    [Fact]
+    public static void DCS_TypeWithAllPrimitiveProperties()
+    {
+        TypeWithAllPrimitiveProperties x = new TypeWithAllPrimitiveProperties
+        {
+            BooleanMember = true,
+            //ByteArrayMember = new byte[] { 1, 2, 3, 4 },
+            CharMember = 'C',
+            DateTimeMember = new DateTime(2016, 7, 8, 9, 10, 11),
+            DecimalMember = new decimal(123, 456, 789, true, 0),
+            DoubleMember = 123.456,
+            FloatMember = 456.789f,
+            GuidMember = Guid.Parse("2054fd3e-e118-476a-9962-1a882be51860"),
+            //public byte[] HexBinaryMember 
+            StringMember = "abc",
+            IntMember = 123
+        };
+        TypeWithAllPrimitiveProperties y = SerializeAndDeserialize<TypeWithAllPrimitiveProperties>(x, @"<TypeWithAllPrimitiveProperties xmlns=""http://schemas.datacontract.org/2004/07/SerializationTypes"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><BooleanMember>true</BooleanMember><CharMember>67</CharMember><DateTimeMember>2016-07-08T09:10:11</DateTimeMember><DecimalMember>-14554481076115341312123</DecimalMember><DoubleMember>123.456</DoubleMember><FloatMember>456.789</FloatMember><GuidMember>2054fd3e-e118-476a-9962-1a882be51860</GuidMember><IntMember>123</IntMember><StringMember>abc</StringMember></TypeWithAllPrimitiveProperties>");
+        Assert.StrictEqual(x.BooleanMember, y.BooleanMember);
+        //Assert.StrictEqual(x.ByteArrayMember, y.ByteArrayMember);
+        Assert.StrictEqual(x.CharMember, y.CharMember);
+        Assert.StrictEqual(x.DateTimeMember, y.DateTimeMember);
+        Assert.StrictEqual(x.DecimalMember, y.DecimalMember);
+        Assert.StrictEqual(x.DoubleMember, y.DoubleMember);
+        Assert.StrictEqual(x.FloatMember, y.FloatMember);
+        Assert.StrictEqual(x.GuidMember, y.GuidMember);
+        Assert.StrictEqual(x.StringMember, y.StringMember);
+        Assert.StrictEqual(x.IntMember, y.IntMember);
+    }
+
+    #region Array of primitive types
+
+    [Fact]
+    public static void DCS_ArrayOfBoolean()
+    {
+        var value = new bool[] { true, false, true };
+        var deserialized = SerializeAndDeserialize(value, @"<ArrayOfboolean xmlns=""http://schemas.microsoft.com/2003/10/Serialization/Arrays"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><boolean>true</boolean><boolean>false</boolean><boolean>true</boolean></ArrayOfboolean>");
+        Assert.StrictEqual(value.Length, deserialized.Length);
+        Assert.StrictEqual(true, Enumerable.SequenceEqual(value, deserialized));
+    }
+
+    [ActiveIssue(10852, PlatformID.Linux)]
+    [Fact]
+    public static void DCS_ArrayOfDateTime()
+    {
+        var value = new DateTime[] { new DateTime(2000, 1, 2, 3, 4, 5), new DateTime(2011, 2, 3, 4, 5, 6) };
+        var deserialized = SerializeAndDeserialize(value, @"<ArrayOfdateTime xmlns=""http://schemas.microsoft.com/2003/10/Serialization/Arrays"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><dateTime>2000-01-02T03:04:05-08:00</dateTime><dateTime>2011-02-03T04:05:06-08:00</dateTime></ArrayOfdateTime>");
+        Assert.StrictEqual(value.Length, deserialized.Length);
+        Assert.StrictEqual(true, Enumerable.SequenceEqual(value, deserialized));
+    }
+
+    [Fact]
+    public static void DCS_ArrayOfDecimal()
+    {
+        var value = new decimal[] { new decimal(1, 2, 3, false, 1), new decimal(4, 5, 6, true, 2) };
+        var deserialized = SerializeAndDeserialize(value, @"<ArrayOfdecimal xmlns=""http://schemas.microsoft.com/2003/10/Serialization/Arrays"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><decimal>5534023222971858944.1</decimal><decimal>-1106804644637321461.80</decimal></ArrayOfdecimal>");
+        Assert.StrictEqual(value.Length, deserialized.Length);
+        Assert.StrictEqual(true, Enumerable.SequenceEqual(value, deserialized));
+    }
+
+    [Fact]
+    public static void DCS_ArrayOfInt32()
+    {
+        var value = new int[] { 123, int.MaxValue, int.MinValue };
+        var deserialized = SerializeAndDeserialize(value, @"<ArrayOfint xmlns=""http://schemas.microsoft.com/2003/10/Serialization/Arrays"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><int>123</int><int>2147483647</int><int>-2147483648</int></ArrayOfint>");
+        Assert.StrictEqual(value.Length, deserialized.Length);
+        Assert.StrictEqual(true, Enumerable.SequenceEqual(value, deserialized));
+    }
+
+    [Fact]
+    public static void DCS_ArrayOfInt64()
+    {
+        var value = new long[] { 123, long.MaxValue, long.MinValue };
+        var deserialized = SerializeAndDeserialize(value, @"<ArrayOflong xmlns=""http://schemas.microsoft.com/2003/10/Serialization/Arrays"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><long>123</long><long>9223372036854775807</long><long>-9223372036854775808</long></ArrayOflong>");
+        Assert.StrictEqual(value.Length, deserialized.Length);
+        Assert.StrictEqual(true, Enumerable.SequenceEqual(value, deserialized));
+    }
+
+    [Fact]
+    public static void DCS_ArrayOfSingle()
+    {
+        var value = new float[] { 1.23f, 4.56f, 7.89f };
+        var deserialized = SerializeAndDeserialize(value, @"<ArrayOffloat xmlns=""http://schemas.microsoft.com/2003/10/Serialization/Arrays"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><float>1.23</float><float>4.56</float><float>7.89</float></ArrayOffloat>");
+        Assert.StrictEqual(value.Length, deserialized.Length);
+        Assert.StrictEqual(true, Enumerable.SequenceEqual(value, deserialized));
+    }
+
+    [Fact]
+    public static void DCS_ArrayOfDouble()
+    {
+        var value = new double[] { 1.23, 4.56, 7.89 };
+        var deserialized = SerializeAndDeserialize(value, @"<ArrayOfdouble xmlns=""http://schemas.microsoft.com/2003/10/Serialization/Arrays"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><double>1.23</double><double>4.56</double><double>7.89</double></ArrayOfdouble>");
+        Assert.StrictEqual(value.Length, deserialized.Length);
+        Assert.StrictEqual(true, Enumerable.SequenceEqual(value, deserialized));
+    }
+
+    [Fact]
+    public static void DCS_ArrayOfString()
+    {
+        var value = new string[] { "abc", "def", "xyz" };
+        var deserialized = SerializeAndDeserialize(value, @"<ArrayOfstring xmlns=""http://schemas.microsoft.com/2003/10/Serialization/Arrays"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><string>abc</string><string>def</string><string>xyz</string></ArrayOfstring>");
+        Assert.StrictEqual(value.Length, deserialized.Length);
+        Assert.StrictEqual(true, Enumerable.SequenceEqual(value, deserialized));
+    }
+
+    [Fact]
+    public static void DCS_ArrayOfTypeWithPrimitiveProperties()
+    {
+        var value = new TypeWithPrimitiveProperties[]
+        {
+            new TypeWithPrimitiveProperties() { P1 = "abc" , P2 = 123 },
+            new TypeWithPrimitiveProperties() { P1 = "def" , P2 = 456 },
+        };
+        var deserialized = SerializeAndDeserialize(value, @"<ArrayOfTypeWithPrimitiveProperties xmlns=""http://schemas.datacontract.org/2004/07/SerializationTypes"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><TypeWithPrimitiveProperties><P1>abc</P1><P2>123</P2></TypeWithPrimitiveProperties><TypeWithPrimitiveProperties><P1>def</P1><P2>456</P2></TypeWithPrimitiveProperties></ArrayOfTypeWithPrimitiveProperties>");
+        Assert.StrictEqual(value.Length, deserialized.Length);
+        Assert.StrictEqual(true, Enumerable.SequenceEqual(value, deserialized));
+    }
+
+    [Fact]
+    public static void DCS_ArrayOfSimpleType()
+    {
+        // Intentionally set count to 64 to test array resizing functionality during de-serialization.
+        int count = 64;
+        var value = new SimpleType[count];
+        for (int i = 0; i < count; i++)
+        {
+            value[i] = new SimpleType() { P1 = i.ToString(), P2 = i };
+        }
+
+        var deserialized = SerializeAndDeserialize(value, baseline: null, skipStringCompare: true);
+        Assert.StrictEqual(value.Length, deserialized.Length);
+        Assert.StrictEqual(0, deserialized[0].P2);
+        Assert.StrictEqual(1, deserialized[1].P2);
+        Assert.StrictEqual(count-1, deserialized[count-1].P2);
+    }
+
+    [Fact]
+    public static void DCS_TypeWithEmitDefaultValueFalse()
+    {
+        var value = new TypeWithEmitDefaultValueFalse();
+
+        var actual = SerializeAndDeserialize(value, "<TypeWithEmitDefaultValueFalse xmlns=\"http://schemas.datacontract.org/2004/07/\" xmlns:i=\"http://www.w3.org/2001/XMLSchema-instance\"/>");
+
+        Assert.NotNull(actual);
+        Assert.Equal(value.Name, actual.Name);
+        Assert.Equal(value.ID, actual.ID);
+    }
+
+    #endregion
+
+    #region Collection
+
+    [Fact]
+    public static void DCS_GenericICollectionOfBoolean()
+    {
+        var value = new TypeImplementsGenericICollection<bool>() { true, false, true };
+        var deserialized = SerializeAndDeserialize(value, @"<ArrayOfboolean xmlns=""http://schemas.microsoft.com/2003/10/Serialization/Arrays"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><boolean>true</boolean><boolean>false</boolean><boolean>true</boolean></ArrayOfboolean>");
+        Assert.StrictEqual(value.Count, deserialized.Count);
+        Assert.StrictEqual(true, Enumerable.SequenceEqual(value, deserialized));
+    }
+
+    //[Fact]
+    // This also fails without using reflection based fallback
+    public static void DCS_GenericICollectionOfDateTime()
+    {
+        var value = new TypeImplementsGenericICollection<DateTime>() { new DateTime(2000, 1, 2, 3, 4, 5), new DateTime(2011, 2, 3, 4, 5, 6) };
+        var deserialized = SerializeAndDeserialize(value, @"<ArrayOfdateTime xmlns=""http://schemas.microsoft.com/2003/10/Serialization/Arrays"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><dateTime>2000-01-02T03:04:05-08:00</dateTime><dateTime>2011-02-03T04:05:06-08:00</dateTime></ArrayOfdateTime>");
+        Assert.StrictEqual(value.Count, deserialized.Count);
+        Assert.StrictEqual(true, Enumerable.SequenceEqual(value, deserialized));
+    }
+
+    [Fact]
+    public static void DCS_GenericICollectionOfDecimal()
+    {
+        var value = new TypeImplementsGenericICollection<decimal>() { new decimal(1, 2, 3, false, 1), new decimal(4, 5, 6, true, 2) };
+        var deserialized = SerializeAndDeserialize(value, @"<ArrayOfdecimal xmlns=""http://schemas.microsoft.com/2003/10/Serialization/Arrays"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><decimal>5534023222971858944.1</decimal><decimal>-1106804644637321461.80</decimal></ArrayOfdecimal>");
+        Assert.StrictEqual(value.Count, deserialized.Count);
+        Assert.StrictEqual(true, Enumerable.SequenceEqual(value, deserialized));
+    }
+
+    [Fact]
+    public static void DCS_GenericICollectionOfInt32()
+    {
+        TypeImplementsGenericICollection<int> x = new TypeImplementsGenericICollection<int>(123, int.MaxValue, int.MinValue);
+        TypeImplementsGenericICollection<int> y = SerializeAndDeserialize(x, @"<ArrayOfint xmlns=""http://schemas.microsoft.com/2003/10/Serialization/Arrays"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><int>123</int><int>2147483647</int><int>-2147483648</int></ArrayOfint>");
+
+        Assert.NotNull(y);
+        Assert.StrictEqual(x.Count, y.Count);
+        Assert.True(x.SequenceEqual(y));
+    }
+
+    [Fact]
+    public static void DCS_GenericICollectionOfInt64()
+    {
+        var value = new TypeImplementsGenericICollection<long>() { 123, long.MaxValue, long.MinValue };
+        var deserialized = SerializeAndDeserialize(value, @"<ArrayOflong xmlns=""http://schemas.microsoft.com/2003/10/Serialization/Arrays"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><long>123</long><long>9223372036854775807</long><long>-9223372036854775808</long></ArrayOflong>");
+        Assert.StrictEqual(value.Count, deserialized.Count);
+        Assert.StrictEqual(true, Enumerable.SequenceEqual(value, deserialized));
+    }
+
+    [Fact]
+    public static void DCS_GenericICollectionOfSingle()
+    {
+        var value = new TypeImplementsGenericICollection<float>() { 1.23f, 4.56f, 7.89f };
+        var deserialized = SerializeAndDeserialize(value, @"<ArrayOffloat xmlns=""http://schemas.microsoft.com/2003/10/Serialization/Arrays"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><float>1.23</float><float>4.56</float><float>7.89</float></ArrayOffloat>");
+        Assert.StrictEqual(value.Count, deserialized.Count);
+        Assert.StrictEqual(true, Enumerable.SequenceEqual(value, deserialized));
+    }
+
+    [Fact]
+    public static void DCS_GenericICollectionOfDouble()
+    {
+        var value = new TypeImplementsGenericICollection<double>() { 1.23, 4.56, 7.89 };
+        var deserialized = SerializeAndDeserialize(value, @"<ArrayOfdouble xmlns=""http://schemas.microsoft.com/2003/10/Serialization/Arrays"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><double>1.23</double><double>4.56</double><double>7.89</double></ArrayOfdouble>");
+        Assert.StrictEqual(value.Count, deserialized.Count);
+        Assert.StrictEqual(true, Enumerable.SequenceEqual(value, deserialized));
+    }
+
+    [Fact]
+    public static void DCS_GenericICollectionOfString()
+    {
+        TypeImplementsGenericICollection<string> value = new TypeImplementsGenericICollection<string>("a1", "a2");
+        TypeImplementsGenericICollection<string> deserialized = SerializeAndDeserialize(value, @"<ArrayOfstring xmlns=""http://schemas.microsoft.com/2003/10/Serialization/Arrays"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><string>a1</string><string>a2</string></ArrayOfstring>");
+
+        Assert.NotNull(deserialized);
+        Assert.StrictEqual(value.Count, deserialized.Count);
+        Assert.True(value.SequenceEqual(deserialized));
+    }
+
+    [Fact]
+    public static void DCS_GenericICollectionOfTypeWithPrimitiveProperties()
+    {
+        var value = new TypeImplementsGenericICollection<TypeWithPrimitiveProperties>()
+        {
+            new TypeWithPrimitiveProperties() { P1 = "abc" , P2 = 123 },
+            new TypeWithPrimitiveProperties() { P1 = "def" , P2 = 456 },
+        };
+        var deserialized = SerializeAndDeserialize(value, @"<ArrayOfTypeWithPrimitiveProperties xmlns=""http://schemas.datacontract.org/2004/07/SerializationTypes"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><TypeWithPrimitiveProperties><P1>abc</P1><P2>123</P2></TypeWithPrimitiveProperties><TypeWithPrimitiveProperties><P1>def</P1><P2>456</P2></TypeWithPrimitiveProperties></ArrayOfTypeWithPrimitiveProperties>");
+        Assert.StrictEqual(value.Count, deserialized.Count);
+        Assert.StrictEqual(true, Enumerable.SequenceEqual(value, deserialized));
+    }
+
+    [Fact]
+    public static void DCS_CollectionOfTypeWithNonDefaultNamcespace()
+    {
+        var value = new CollectionOfTypeWithNonDefaultNamcespace();
+        value.Add(new TypeWithNonDefaultNamcespace() { Name = "foo" });
+
+        var actual = SerializeAndDeserialize(value, "<CollectionOfTypeWithNonDefaultNamcespace xmlns=\"CollectionNamespace\" xmlns:i=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:a=\"ItemTypeNamespace\"><TypeWithNonDefaultNamcespace><a:Name>foo</a:Name></TypeWithNonDefaultNamcespace></CollectionOfTypeWithNonDefaultNamcespace>");
+        Assert.NotNull(actual);
+        Assert.NotNull(actual[0]);
+        Assert.Equal(value[0].Name, actual[0].Name);
+    }
+
+    #endregion
+
+    #region Generic Dictionary
+
+    [Fact]
+    public static void DCS_GenericDictionaryOfInt32Boolean()
+    {
+        var value = new Dictionary<int, bool>();
+        value.Add(123, true);
+        value.Add(456, false);
+        var deserialized = SerializeAndDeserialize(value, @"<ArrayOfKeyValueOfintboolean xmlns=""http://schemas.microsoft.com/2003/10/Serialization/Arrays"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><KeyValueOfintboolean><Key>123</Key><Value>true</Value></KeyValueOfintboolean><KeyValueOfintboolean><Key>456</Key><Value>false</Value></KeyValueOfintboolean></ArrayOfKeyValueOfintboolean>");
+        Assert.StrictEqual(value.Count, deserialized.Count);
+        Assert.StrictEqual(true, Enumerable.SequenceEqual(value.ToArray(), deserialized.ToArray()));
+    }
+
+    [Fact]
+    public static void DCS_GenericDictionaryOfInt32String()
+    {
+        var value = new Dictionary<int, string>();
+        value.Add(123, "abc");
+        value.Add(456, "def");
+        var deserialized = SerializeAndDeserialize(value, @"<ArrayOfKeyValueOfintstring xmlns=""http://schemas.microsoft.com/2003/10/Serialization/Arrays"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><KeyValueOfintstring><Key>123</Key><Value>abc</Value></KeyValueOfintstring><KeyValueOfintstring><Key>456</Key><Value>def</Value></KeyValueOfintstring></ArrayOfKeyValueOfintstring>");
+        Assert.StrictEqual(value.Count, deserialized.Count);
+        Assert.StrictEqual(true, Enumerable.SequenceEqual(value.ToArray(), deserialized.ToArray()));
+    }
+
+    [Fact]
+    public static void DCS_GenericDictionaryOfStringInt32()
+    {
+        var value = new Dictionary<string, int>();
+        value.Add("abc", 123);
+        value.Add("def", 456);
+        var deserialized = SerializeAndDeserialize(value, @"<ArrayOfKeyValueOfstringint xmlns=""http://schemas.microsoft.com/2003/10/Serialization/Arrays"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><KeyValueOfstringint><Key>abc</Key><Value>123</Value></KeyValueOfstringint><KeyValueOfstringint><Key>def</Key><Value>456</Value></KeyValueOfstringint></ArrayOfKeyValueOfstringint>");
+        Assert.StrictEqual(value.Count, deserialized.Count);
+        Assert.StrictEqual(true, Enumerable.SequenceEqual(value.ToArray(), deserialized.ToArray()));
+    }
+
+    #endregion
+
+    #region Non-Generic Dictionary
+
+    [Fact]
+    public static void DCS_NonGenericDictionaryOfInt32Boolean()
+    {
+        var value = new MyNonGenericDictionary();
+        value.Add(123, true);
+        value.Add(456, false);
+        var deserialized = SerializeAndDeserialize(value, @"<ArrayOfKeyValueOfanyTypeanyType xmlns=""http://schemas.microsoft.com/2003/10/Serialization/Arrays"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><KeyValueOfanyTypeanyType><Key i:type=""a:int"" xmlns:a=""http://www.w3.org/2001/XMLSchema"">123</Key><Value i:type=""a:boolean"" xmlns:a=""http://www.w3.org/2001/XMLSchema"">true</Value></KeyValueOfanyTypeanyType><KeyValueOfanyTypeanyType><Key i:type=""a:int"" xmlns:a=""http://www.w3.org/2001/XMLSchema"">456</Key><Value i:type=""a:boolean"" xmlns:a=""http://www.w3.org/2001/XMLSchema"">false</Value></KeyValueOfanyTypeanyType></ArrayOfKeyValueOfanyTypeanyType>");
+        Assert.StrictEqual(value.Count, deserialized.Count);
+        Assert.StrictEqual(true, Enumerable.SequenceEqual(value.Keys.Cast<int>().ToArray(), deserialized.Keys.Cast<int>().ToArray()));
+        Assert.StrictEqual(true, Enumerable.SequenceEqual(value.Values.Cast<bool>().ToArray(), deserialized.Values.Cast<bool>().ToArray()));
+    }
+
+    [Fact]
+    public static void DCS_NonGenericDictionaryOfInt32String()
+    {
+        var value = new MyNonGenericDictionary();
+        value.Add(123, "abc");
+        value.Add(456, "def");
+        var deserialized = SerializeAndDeserialize(value, @"<ArrayOfKeyValueOfanyTypeanyType xmlns=""http://schemas.microsoft.com/2003/10/Serialization/Arrays"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><KeyValueOfanyTypeanyType><Key i:type=""a:int"" xmlns:a=""http://www.w3.org/2001/XMLSchema"">123</Key><Value i:type=""a:string"" xmlns:a=""http://www.w3.org/2001/XMLSchema"">abc</Value></KeyValueOfanyTypeanyType><KeyValueOfanyTypeanyType><Key i:type=""a:int"" xmlns:a=""http://www.w3.org/2001/XMLSchema"">456</Key><Value i:type=""a:string"" xmlns:a=""http://www.w3.org/2001/XMLSchema"">def</Value></KeyValueOfanyTypeanyType></ArrayOfKeyValueOfanyTypeanyType>");
+        Assert.StrictEqual(value.Count, deserialized.Count);
+        Assert.StrictEqual(true, Enumerable.SequenceEqual(value.Keys.Cast<int>().ToArray(), deserialized.Keys.Cast<int>().ToArray()));
+        Assert.StrictEqual(true, Enumerable.SequenceEqual(value.Values.Cast<string>().ToArray(), deserialized.Values.Cast<string>().ToArray()));
+    }
+
+    [Fact]
+    public static void DCS_NonGenericDictionaryOfStringInt32()
+    {
+        var value = new MyNonGenericDictionary();
+        value.Add("abc", 123);
+        value.Add("def", 456);
+        var deserialized = SerializeAndDeserialize(value, @"<ArrayOfKeyValueOfanyTypeanyType xmlns=""http://schemas.microsoft.com/2003/10/Serialization/Arrays"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><KeyValueOfanyTypeanyType><Key i:type=""a:string"" xmlns:a=""http://www.w3.org/2001/XMLSchema"">abc</Key><Value i:type=""a:int"" xmlns:a=""http://www.w3.org/2001/XMLSchema"">123</Value></KeyValueOfanyTypeanyType><KeyValueOfanyTypeanyType><Key i:type=""a:string"" xmlns:a=""http://www.w3.org/2001/XMLSchema"">def</Key><Value i:type=""a:int"" xmlns:a=""http://www.w3.org/2001/XMLSchema"">456</Value></KeyValueOfanyTypeanyType></ArrayOfKeyValueOfanyTypeanyType>");
+        Assert.StrictEqual(value.Count, deserialized.Count);
+        Assert.StrictEqual(true, Enumerable.SequenceEqual(value.Keys.Cast<string>().ToArray(), deserialized.Keys.Cast<string>().ToArray()));
+        Assert.StrictEqual(true, Enumerable.SequenceEqual(value.Values.Cast<int>().ToArray(), deserialized.Values.Cast<int>().ToArray()));
+    }
+
+    #endregion
+
     private static T SerializeAndDeserialize<T>(T value, string baseline, DataContractSerializerSettings settings = null, Func<DataContractSerializer> serializerFactory = null, bool skipStringCompare = false)
     {
         DataContractSerializer dcs;
@@ -2192,10 +2578,10 @@ public static partial class DataContractSerializerTests
             ms.Position = 0;
 
             string actualOutput = new StreamReader(ms).ReadToEnd();
-            Utils.CompareResult result = Utils.Compare(baseline, actualOutput);
 
             if (!skipStringCompare)
             {
+                Utils.CompareResult result = Utils.Compare(baseline, actualOutput);
                 Assert.True(result.Equal, string.Format("{1}{0}Test failed for input: {2}{0}Expected: {3}{0}Actual: {4}",
                     Environment.NewLine, result.ErrorMessage, value, baseline, actualOutput));
             }

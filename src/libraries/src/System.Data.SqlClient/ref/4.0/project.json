@@ -8,7 +8,6 @@
       "imports": [
         "dotnet5.3"
       ]
-
     }
   }
 }

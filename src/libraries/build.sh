@@ -17,7 +17,7 @@ usage()
     echo
 }
 
-if [ $1 == "-?" ]; then
+if [ "$1" == "-?" ]; then
     usage
 fi
 

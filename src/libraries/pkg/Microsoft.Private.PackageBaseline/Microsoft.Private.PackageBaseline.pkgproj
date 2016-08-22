@@ -4,6 +4,7 @@
   
   <PropertyGroup>
     <Version>1.0.1</Version>
+    <HarvestStablePackage>false</HarvestStablePackage>
     <SkipPackageFileCheck>true</SkipPackageFileCheck>
   </PropertyGroup>
   
