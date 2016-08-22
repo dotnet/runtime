@@ -196,6 +196,11 @@ build_coreclr()
 
     # Build CoreCLR
 
+    if [ $__ConfigureOnly == 1 ]; then
+        echo "Skipping CoreCLR build."
+        return
+    fi
+
     echo "Executing $buildTool install -j $NumProc"
 
     $buildTool install -j $NumProc
@@ -537,8 +542,8 @@ while :; do
 
         configureonly)
             __ConfigureOnly=1
-            __SkipCoreCLR=1
             __SkipMSCorLib=1
+            __SkipNuget=1
             __IncludeTests=
             ;;
 
