@@ -489,8 +489,13 @@ ves_icall_System_IO_MonoIO_FindFirst (MonoString *path,
 	ifh = g_new (IncrementalFind, 1);
 	ifh->find_handle = find_handle;
 	ifh->utf8_path = mono_string_to_utf8_checked (path, &error);
-	if (mono_error_set_pending_exception (&error))
+	if (mono_error_set_pending_exception (&error)) {
+		MONO_ENTER_GC_SAFE;
+		FindClose (find_handle);
+		MONO_EXIT_GC_SAFE;
+		g_free (ifh);
 		return NULL;
+	}
 	ifh->domain = mono_domain_get ();
 	*handle = ifh;
 
