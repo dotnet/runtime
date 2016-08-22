@@ -5,7 +5,7 @@
     <Version>1.1.0</Version>
     <SkipPackageFileCheck>true</SkipPackageFileCheck>
     <SkipValidatePackage>true</SkipValidatePackage>
-    <PackagePlatforms>x64;x86;arm64;arm</PackagePlatforms>
+    <PackagePlatforms>x64;x86;arm64;arm;</PackagePlatforms>
     <OutputPath>$(PackagesOutputPath)</OutputPath>
     <IncludeRuntimeJson>true</IncludeRuntimeJson>
   </PropertyGroup>
@@ -19,6 +19,9 @@
     </ProjectReference>
     <ProjectReference Include="win\Microsoft.NETCore.ILAsm.pkgproj">
       <Platform>x86</Platform>
+    </ProjectReference>
+    <ProjectReference Include="win\Microsoft.NETCore.ILAsm.pkgproj">
+      <Platform>arm</Platform>
     </ProjectReference>
     <ProjectReference Include="debian\Microsoft.NETCore.ILAsm.pkgproj">
       <Platform>amd64</Platform>

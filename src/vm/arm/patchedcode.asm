@@ -119,6 +119,8 @@ $label
 ; patchable location where the write-barriers are copied over at runtime
  
     LEAF_ENTRY JIT_PatchedWriteBarrierStart
+        ; Cannot be empty function to prevent LNK1223
+        bx lr
     LEAF_END
  
     ; These write barriers are overwritten on the fly
@@ -139,6 +141,8 @@ $label
     LEAF_END_MARKED JIT_ByRefWriteBarrier 
 
     LEAF_ENTRY JIT_PatchedWriteBarrierLast
+        ; Cannot be empty function to prevent LNK1223
+        bx lr
     LEAF_END
 
 ; JIT Allocation helpers when TLS Index for Thread is low enough for fast helpers

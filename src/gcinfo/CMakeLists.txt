@@ -5,12 +5,14 @@ set( GCINFO_SOURCES
   gcinfoencoder.cpp
 )
 
-if(CLR_CMAKE_PLATFORM_ARCH_I386)
+
+if(CLR_CMAKE_TARGET_ARCH_I386)
   list(APPEND GCINFO_SOURCES
     ../gcdump/gcdump.cpp
     ../gcdump/${ARCH_SOURCES_DIR}/gcdumpx86.cpp
   )
-endif(CLR_CMAKE_PLATFORM_ARCH_I386)
+endif(CLR_CMAKE_TARGET_ARCH_I386)
+
 
 convert_to_absolute_path(GCINFO_SOURCES ${GCINFO_SOURCES})
 
