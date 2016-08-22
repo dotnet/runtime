@@ -11,6 +11,10 @@ project(CoreCLR)
 # Include cmake functions
 include(functions.cmake)
 
+message(STATUS "CMAKE_VS_PLATFORM_TOOLSET is ${CMAKE_VS_PLATFORM_TOOLSET}")
+message(STATUS "CMAKE_VS_PLATFORM_NAME is ${CMAKE_VS_PLATFORM_NAME}")
+message(STATUS "CMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION is ${CMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION}")
+
 # Set commonly used directory names
 set(CLR_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 set(VM_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src/vm)
@@ -33,7 +37,19 @@ endif()
 
 # Ensure other tools are present
 if (WIN32)
-    enable_language(ASM_MASM)
+    if(CLR_CMAKE_HOST_ARCH STREQUAL arm)
+      # Explicitly specify the assembler to be used for Arm32 compile
+      file(TO_CMAKE_PATH "$ENV{VCINSTALLDIR}\\bin\\x86_arm\\armasm.exe" CMAKE_ASM_COMPILER)
+
+      set(CMAKE_ASM_MASM_COMPILER ${CMAKE_ASM_COMPILER})
+      message(CMAKE_ASM_MASM_COMPILER explicitly set to: ${CMAKE_ASM_MASM_COMPILER}) 
+      
+      # Enable generic assembly compilation to avoid CMake generate VS proj files that explicitly
+      # use ml[64].exe as the assembler.
+      enable_language(ASM)
+    else()
+      enable_language(ASM_MASM)
+    endif()
 
     # Ensure that MC is present
     find_program(MC mc)
@@ -186,6 +202,8 @@ elseif(WIN32)
     set(CLR_CMAKE_PLATFORM_ARCH_AMD64 1)
   elseif(CLR_CMAKE_HOST_ARCH STREQUAL x86)
     set(CLR_CMAKE_PLATFORM_ARCH_I386 1)
+  elseif(CLR_CMAKE_HOST_ARCH STREQUAL arm)
+    set(CLR_CMAKE_PLATFORM_ARCH_ARM 1)
   elseif(CLR_CMAKE_HOST_ARCH STREQUAL arm64)
     set(CLR_CMAKE_PLATFORM_ARCH_ARM64 1)
   else()

@@ -122,7 +122,10 @@ if %__TotalSpecifiedBuildArch% GTR 1 (
 
 if %__BuildArchX64%==1      set __BuildArch=x64
 if %__BuildArchX86%==1      set __BuildArch=x86
-if %__BuildArchArm%==1      set __BuildArch=arm
+if %__BuildArchArm%==1 (
+    set __BuildArch=arm
+    set __CrossArch=x86
+)
 if %__BuildArchArm64%==1 (
     set __BuildArch=arm64
     set __CrossArch=x64
@@ -207,6 +210,7 @@ if %__BuildNative% EQU 1 (
     :: Set the environment for the native build
     set __VCBuildArch=x86_amd64
     if /i "%__BuildArch%" == "x86" ( set __VCBuildArch=x86 )
+    if /i "%__BuildArch%" == "arm" (set __VCBuildArch=x86_arm)
     echo %__MsgPrefix%Using environment: "%__VSToolsRoot%\..\..\VC\vcvarsall.bat" !__VCBuildArch!
     call                                 "%__VSToolsRoot%\..\..\VC\vcvarsall.bat" !__VCBuildArch!
 	@if defined __echo @echo on
@@ -251,9 +255,15 @@ REM === Build Cross-Architecture Native Components (if applicable)
 REM ===
 REM =========================================================================================
 
-REM cross-arch build only enabled for arm64
-
 if /i "%__BuildArch%"=="arm64" (
+    set __DoCrossArchBuild=1
+    )
+
+if /i "%__BuildArch%"=="arm" (
+    set __DoCrossArchBuild=1
+    )
+
+if /i "%__DoCrossArchBuild%"=="1" (
 
     echo %__MsgPrefix%Commencing build of cross architecture native components for %__BuildOS%.%__BuildArch%.%__BuildType%
 
@@ -297,6 +307,7 @@ if /i "%__BuildArch%"=="arm64" (
 )
 
 :SkipCrossCompBuild
+
 REM =========================================================================================
 REM ===
 REM === CoreLib and NuGet package build section.
@@ -355,7 +366,6 @@ if %__BuildNativeCoreLib% EQU 1 (
 )
 
 if %__BuildPackages% EQU 1 (
-
     set __MsbuildLog=/flp:Verbosity=normal;LogFile="%__LogsDir%\Nuget_%__BuildOS%__%__BuildArch%__%__BuildType%.log"
 	set __MsbuildWrn=/flp1:WarningsOnly;LogFile="%__LogsDir%\Nuget_%__BuildOS%__%__BuildArch%__%__BuildType%.wrn"
 	set __MsbuildErr=/flp2:ErrorsOnly;LogFile="%__LogsDir%\Nuget_%__BuildOS%__%__BuildArch%__%__BuildType%.err"
