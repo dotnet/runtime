@@ -141,21 +141,5 @@ namespace System.Tests
             UInt64[] overflowValues = { UInt64.MaxValue, (UInt64)UInt16.MaxValue + 1 };
             VerifyThrows<OverflowException, UInt64>(Convert.ToChar, overflowValues);
         }
-
-#if netstandard17
-        [Fact]
-        public void FromSingleChar()
-        {
-            char testValue = char.MinValue;
-            Assert.Equal(testValue, Convert.ToChar(testValue));
-        }
-
-        [Fact]
-        public void FromDateTime()
-        {
-            DateTime testValue = DateTime.MinValue;
-            Assert.Throws<InvalidCastException>(() => Convert.ToChar(testValue));
-        }
-#endif
     }
 }

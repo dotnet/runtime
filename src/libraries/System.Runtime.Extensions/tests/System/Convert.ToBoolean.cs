@@ -124,21 +124,5 @@ namespace System.Tests
             Boolean[] expectedValues = { false, true };
             Verify(Convert.ToBoolean, testValues, expectedValues);
         }
-
-#if netstandard17
-        [Fact]
-        public void FromChar()
-        {
-            char testValue = char.MinValue;
-            Assert.Throws<InvalidCastException>(() => Convert.ToBoolean(testValue));
-        }
-
-        [Fact]
-        public void FromDateTime()
-        {
-            DateTime testValue = DateTime.MinValue;
-            Assert.Throws<InvalidCastException>(() => Convert.ToBoolean(testValue));
-        }
-#endif
     }
 }

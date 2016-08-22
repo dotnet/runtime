@@ -181,13 +181,5 @@ namespace System.Tests
             UInt64[] values = { UInt64.MaxValue };
             VerifyThrows<OverflowException, UInt64>(Convert.ToUInt32, values);
         }
-
-#if netstandard17
-        [Fact]
-        public void FromDateTime()
-        {
-            Assert.Throws<InvalidCastException>(() => Convert.ToUInt32(DateTime.MaxValue));
-        }
-#endif
     }
 }
