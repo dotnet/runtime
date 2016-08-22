@@ -4198,8 +4198,6 @@ public:
     void fgDebugCheckBlockLinks();
     void fgDebugCheckLinks(bool morphTrees = false);
     void fgDebugCheckNodeLinks(BasicBlock* block, GenTreePtr stmt);
-    unsigned fgDebugCheckLinearTree(BasicBlock* block, GenTreePtr stmt, GenTreePtr tree, bool printNodes = false);
-    void fgDebugCheckLinearNodeLinks(BasicBlock* block, GenTreePtr topLevelStmt, bool printNodes = false);
     void fgDebugCheckFlags(GenTreePtr tree);
 #endif
 
