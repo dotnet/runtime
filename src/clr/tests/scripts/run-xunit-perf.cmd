@@ -57,4 +57,6 @@ xunit.performance.run.exe %BENCHNAME%.exe -runner xunit.console.netcore.exe -run
 
 xunit.performance.analysis.exe %PERFOUT%.xml -xml %XMLOUT% > %BENCHNAME%-analysis.out
 
+type %XMLOUT% | findstr "test name"
 type %XMLOUT% | findstr Duration
+type %XMLOUT% | findstr InstRetired
