@@ -21,7 +21,7 @@
     <PlatformPackageVersion Condition="'$(PlatformPackageVersion)' == ''">1.0.2</PlatformPackageVersion>
 
     <!-- by default all packages will use the same version which revs with respect to product version -->
-    <Version Condition="'$(Version)' == ''">4.3.0</Version>
+    <PackageVersion Condition="'$(PackageVersion)' == ''">4.3.0</PackageVersion>
   </PropertyGroup>
 
   <Import Condition="Exists('pkg/baseline/baseline.props')" Project="pkg/baseline/baseline.props" />

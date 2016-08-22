@@ -7,7 +7,7 @@
   </PropertyGroup>
   <ItemGroup>
     <!-- When updating ExternalExpectedPrerelease with a version that 
-         below should be updated to $(Version)-$(ExternalExpectedPrerelease) -->
+         below should be updated to $(PackageVersion)-$(ExternalExpectedPrerelease) -->
     <RuntimeDependency Include="runtime.win10-x64-aot.runtime.native.System.IO.Compression">
       <TargetRuntime>win10-amd64-aot</TargetRuntime>
       <Version>4.1.1-$(ExternalExpectedPrerelease)</Version>
