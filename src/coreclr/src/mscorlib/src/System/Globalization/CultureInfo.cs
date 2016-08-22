@@ -44,7 +44,7 @@ namespace System.Globalization {
 
     [Serializable]
     [System.Runtime.InteropServices.ComVisible(true)]
-    public class CultureInfo : ICloneable, IFormatProvider {
+    public partial class CultureInfo : ICloneable, IFormatProvider {
         //--------------------------------------------------------------------//
         //                        Internal Information                        //
         //--------------------------------------------------------------------//

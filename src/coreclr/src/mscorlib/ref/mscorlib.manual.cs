@@ -82,7 +82,7 @@ namespace System.Globalization
 
     [System.FlagsAttribute]
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
-    internal enum CultureTypes
+    public enum CultureTypes
     {
         AllCultures = 7,
         [System.ObsoleteAttribute("This value has been deprecated.  Please use other values in CultureTypes.")]

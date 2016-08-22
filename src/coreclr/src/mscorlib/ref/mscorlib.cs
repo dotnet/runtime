@@ -5329,10 +5329,8 @@ namespace System.Globalization
     {
         public const int CurrentEra = 0;
         protected Calendar() { }
-#if FEATURE_COREFX_GLOBALIZATION
         [System.Runtime.InteropServices.ComVisibleAttribute(false)]
         public virtual System.Globalization.CalendarAlgorithmType AlgorithmType { get { throw null; } }
-#endif
         protected virtual int DaysInYearBeforeMinSupportedYear { get { throw null; } }
         public abstract int[] Eras { get; }
         [System.Runtime.InteropServices.ComVisibleAttribute(false)]
@@ -5362,6 +5360,8 @@ namespace System.Globalization
         public abstract int GetEra(System.DateTime time);
         public virtual int GetHour(System.DateTime time) { throw null; }
         [System.Runtime.InteropServices.ComVisibleAttribute(false)]
+        public virtual int GetLeapMonth(int year) { throw null; }
+        [System.Runtime.InteropServices.ComVisibleAttribute(false)]
         public virtual int GetLeapMonth(int year, int era) { throw null; }
         public virtual double GetMilliseconds(System.DateTime time) { throw null; }
         public virtual int GetMinute(System.DateTime time) { throw null; }
@@ -5377,11 +5377,12 @@ namespace System.Globalization
         public abstract bool IsLeapMonth(int year, int month, int era);
         public virtual bool IsLeapYear(int year) { throw null; }
         public abstract bool IsLeapYear(int year, int era);
+        [System.Runtime.InteropServices.ComVisibleAttribute(false)]
+        public static System.Globalization.Calendar ReadOnly(System.Globalization.Calendar calendar) { throw null; }
         public virtual System.DateTime ToDateTime(int year, int month, int day, int hour, int minute, int second, int millisecond) { throw null; }
         public abstract System.DateTime ToDateTime(int year, int month, int day, int hour, int minute, int second, int millisecond, int era);
         public virtual int ToFourDigitYear(int year) { throw null; }
     }
-#if FEATURE_COREFX_GLOBALIZATION
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public enum CalendarAlgorithmType
     {
@@ -5390,7 +5391,6 @@ namespace System.Globalization
         SolarCalendar = 1,
         Unknown = 0,
     }
-#endif
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public enum CalendarWeekRule
     {
@@ -5400,6 +5400,10 @@ namespace System.Globalization
     }
     public static partial class CharUnicodeInfo
     {
+        public static int GetDecimalDigitValue(char ch) { throw null; }
+        public static int GetDecimalDigitValue(string s, int index) { throw null; }
+        public static int GetDigitValue(char ch) { throw null; }
+        public static int GetDigitValue(string s, int index) { throw null; }
         public static double GetNumericValue(char ch) { throw null; }
         public static double GetNumericValue(string s, int index) { throw null; }
         public static System.Globalization.UnicodeCategory GetUnicodeCategory(char ch) { throw null; }
@@ -5420,8 +5424,9 @@ namespace System.Globalization
         public override int GetEra(System.DateTime time) { throw null; }
     }
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
-    public partial class CompareInfo
+    public partial class CompareInfo : System.Runtime.Serialization.IDeserializationCallback
     {
+        public int LCID { get { throw null; } }
         internal CompareInfo() { }
         [System.Runtime.InteropServices.ComVisibleAttribute(false)]
         public virtual string Name { get { throw null; } }
@@ -5434,17 +5439,24 @@ namespace System.Globalization
         [System.Security.SecuritySafeCriticalAttribute]
         public virtual int Compare(string string1, string string2, System.Globalization.CompareOptions options) { throw null; }
         public override bool Equals(object value) { throw null; }
+        public static System.Globalization.CompareInfo GetCompareInfo(int culture) { throw null; }
+        public static System.Globalization.CompareInfo GetCompareInfo(int culture, System.Reflection.Assembly assembly) { throw null; }
         public static System.Globalization.CompareInfo GetCompareInfo(string name) { throw null; }
+        public static System.Globalization.CompareInfo GetCompareInfo(string name, System.Reflection.Assembly assembly) { throw null; }
         public override int GetHashCode() { throw null; }
         public virtual int GetHashCode(string source, System.Globalization.CompareOptions options) { throw null; }
+        public virtual System.Globalization.SortKey GetSortKey(string source) { throw null; }
+        public virtual System.Globalization.SortKey GetSortKey(string source, System.Globalization.CompareOptions options) { throw null; }
         public virtual int IndexOf(string source, char value) { throw null; }
         public virtual int IndexOf(string source, char value, System.Globalization.CompareOptions options) { throw null; }
+        public virtual int IndexOf(string source, char value, int startIndex) { throw null; }
         public virtual int IndexOf(string source, char value, int startIndex, System.Globalization.CompareOptions options) { throw null; }
         public virtual int IndexOf(string source, char value, int startIndex, int count) { throw null; }
         [System.Security.SecuritySafeCriticalAttribute]
         public virtual int IndexOf(string source, char value, int startIndex, int count, System.Globalization.CompareOptions options) { throw null; }
         public virtual int IndexOf(string source, string value) { throw null; }
         public virtual int IndexOf(string source, string value, System.Globalization.CompareOptions options) { throw null; }
+        public virtual int IndexOf(string source, string value, int startIndex) { throw null; }
         public virtual int IndexOf(string source, string value, int startIndex, System.Globalization.CompareOptions options) { throw null; }
         public virtual int IndexOf(string source, string value, int startIndex, int count) { throw null; }
         [System.Security.SecuritySafeCriticalAttribute]
@@ -5452,21 +5464,29 @@ namespace System.Globalization
         public virtual bool IsPrefix(string source, string prefix) { throw null; }
         [System.Security.SecuritySafeCriticalAttribute]
         public virtual bool IsPrefix(string source, string prefix, System.Globalization.CompareOptions options) { throw null; }
+        [System.Runtime.InteropServices.ComVisibleAttribute(false)]
+        public static bool IsSortable(char ch) { throw null; }
+        [System.Runtime.InteropServices.ComVisibleAttribute(false)]
+        [System.Security.SecuritySafeCriticalAttribute]
+        public static bool IsSortable(string text) { throw null; }
         public virtual bool IsSuffix(string source, string suffix) { throw null; }
         [System.Security.SecuritySafeCriticalAttribute]
         public virtual bool IsSuffix(string source, string suffix, System.Globalization.CompareOptions options) { throw null; }
         public virtual int LastIndexOf(string source, char value) { throw null; }
         public virtual int LastIndexOf(string source, char value, System.Globalization.CompareOptions options) { throw null; }
+        public virtual int LastIndexOf(string source, char value, int startIndex) { throw null; }
         public virtual int LastIndexOf(string source, char value, int startIndex, System.Globalization.CompareOptions options) { throw null; }
         public virtual int LastIndexOf(string source, char value, int startIndex, int count) { throw null; }
         [System.Security.SecuritySafeCriticalAttribute]
         public virtual int LastIndexOf(string source, char value, int startIndex, int count, System.Globalization.CompareOptions options) { throw null; }
         public virtual int LastIndexOf(string source, string value) { throw null; }
         public virtual int LastIndexOf(string source, string value, System.Globalization.CompareOptions options) { throw null; }
+        public virtual int LastIndexOf(string source, string value, int startIndex) { throw null; }
         public virtual int LastIndexOf(string source, string value, int startIndex, System.Globalization.CompareOptions options) { throw null; }
         public virtual int LastIndexOf(string source, string value, int startIndex, int count) { throw null; }
         [System.Security.SecuritySafeCriticalAttribute]
         public virtual int LastIndexOf(string source, string value, int startIndex, int count, System.Globalization.CompareOptions options) { throw null; }
+        void System.Runtime.Serialization.IDeserializationCallback.OnDeserialization(object sender) { }
         public override string ToString() { throw null; }
     }
     [System.FlagsAttribute]
@@ -5486,7 +5506,10 @@ namespace System.Globalization
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public partial class CultureInfo : System.ICloneable, System.IFormatProvider
     {
+        public CultureInfo(int culture) { throw null; }
+        public CultureInfo(int culture, bool useUserOverride) { throw null; }
         public CultureInfo(string name) { }
+        public CultureInfo(string name, bool useUserOverride) { throw null; }
         public virtual System.Globalization.Calendar Calendar { get { throw null; } }
         public virtual System.Globalization.CompareInfo CompareInfo { get { throw null; } }
         public static System.Globalization.CultureInfo CurrentCulture { get { throw null; } set { } }
@@ -5496,18 +5519,30 @@ namespace System.Globalization
         public static System.Globalization.CultureInfo DefaultThreadCurrentUICulture { get { throw null; } [System.Security.SecuritySafeCriticalAttribute]set { } }
         public virtual string DisplayName { [System.Security.SecuritySafeCriticalAttribute]get { throw null; } }
         public virtual string EnglishName { [System.Security.SecuritySafeCriticalAttribute]get { throw null; } }
+        public static System.Globalization.CultureInfo InstalledUICulture { get { throw null; } }
         public static System.Globalization.CultureInfo InvariantCulture { get { throw null; } }
         public virtual bool IsNeutralCulture { get { throw null; } }
         public bool IsReadOnly { get { throw null; } }
+        public virtual int LCID { get { throw null; } }
         public virtual string Name { get { throw null; } }
         public virtual string NativeName { [System.Security.SecuritySafeCriticalAttribute]get { throw null; } }
         public virtual System.Globalization.NumberFormatInfo NumberFormat { get { throw null; } set { } }
         public virtual System.Globalization.Calendar[] OptionalCalendars { get { throw null; } }
         public virtual System.Globalization.CultureInfo Parent { [System.Security.SecuritySafeCriticalAttribute]get { throw null; } }
         public virtual System.Globalization.TextInfo TextInfo { get { throw null; } }
+        public virtual string ThreeLetterISOLanguageName { get { throw null; } }
+        public virtual string ThreeLetterWindowsLanguageName { get { throw null; } }
         public virtual string TwoLetterISOLanguageName { [System.Security.SecuritySafeCriticalAttribute]get { throw null; } }
+        public bool UseUserOverride { get { throw null; } }
+        public void ClearCachedData() { throw null; }
         public virtual object Clone() { throw null; }
+        public static System.Globalization.CultureInfo CreateSpecificCulture(string name) { throw null; }
         public override bool Equals(object value) { throw null; }
+        public static System.Globalization.CultureInfo GetCultureInfo(int culture) { throw null; }
+        public static System.Globalization.CultureInfo GetCultureInfo(string name) { throw null; }
+        public static System.Globalization.CultureInfo GetCultureInfo(string name, string altName) { throw null; }
+        public static System.Globalization.CultureInfo GetCultureInfoByIetfLanguageTag(string name) { throw null; }
+        public static System.Globalization.CultureInfo[] GetCultures(System.Globalization.CultureTypes types) { throw null; }
         public virtual object GetFormat(System.Type formatType) { throw null; }
         public override int GetHashCode() { throw null; }
         public static System.Globalization.CultureInfo ReadOnly(System.Globalization.CultureInfo ci) { throw null; }
@@ -5519,10 +5554,13 @@ namespace System.Globalization
         public CultureNotFoundException() { }
         public CultureNotFoundException(string message) { }
         public CultureNotFoundException(string message, System.Exception innerException) { }
+        public CultureNotFoundException(string message, int invalidCultureId, System.Exception innerException) { }
+        public CultureNotFoundException(string paramName, int invalidCultureId, string message) { }
         public CultureNotFoundException(string paramName, string message) { }
         public CultureNotFoundException(string message, string invalidCultureName, System.Exception innerException) { }
         public CultureNotFoundException(string paramName, string invalidCultureName, string message) { }
         protected CultureNotFoundException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
+        public virtual System.Nullable<int> InvalidCultureId { get { throw null; } }
         public virtual string InvalidCultureName { get { throw null; } }
         public override string Message { get { throw null; } }
         [System.Security.SecurityCriticalAttribute]
@@ -5540,6 +5578,7 @@ namespace System.Globalization
         public System.Globalization.Calendar Calendar { get { throw null; } set { } }
         public System.Globalization.CalendarWeekRule CalendarWeekRule { get { throw null; } set { } }
         public static System.Globalization.DateTimeFormatInfo CurrentInfo { get { throw null; } }
+        public string DateSeparator { get { throw null; } set { throw null; } }
         public string[] DayNames { get { throw null; } set { } }
         public System.DayOfWeek FirstDayOfWeek { get { throw null; } set { } }
         public string FullDateTimePattern { get { throw null; } set { } }
@@ -5551,6 +5590,8 @@ namespace System.Globalization
         [System.Runtime.InteropServices.ComVisibleAttribute(false)]
         public string[] MonthGenitiveNames { get { throw null; } set { } }
         public string[] MonthNames { get { throw null; } set { } }
+        [System.Runtime.InteropServices.ComVisibleAttribute(false)]
+        public string NativeCalendarName { get { throw null; } }
         public string PMDesignator { [System.Security.SecuritySafeCriticalAttribute]get { throw null; } set { } }
         public string RFC1123Pattern { get { throw null; } }
         public string ShortDatePattern { get { throw null; } set { } }
@@ -5558,19 +5599,26 @@ namespace System.Globalization
         public string[] ShortestDayNames { get { throw null; } set { } }
         public string ShortTimePattern { get { throw null; } set { } }
         public string SortableDateTimePattern { get { throw null; } }
+        public string TimeSeparator { get { throw null; } set { throw null; } }
         public string UniversalSortableDateTimePattern { get { throw null; } }
         public string YearMonthPattern { get { throw null; } set { } }
         public object Clone() { throw null; }
         public string GetAbbreviatedDayName(System.DayOfWeek dayofweek) { throw null; }
         public string GetAbbreviatedEraName(int era) { throw null; }
         public string GetAbbreviatedMonthName(int month) { throw null; }
+        public string[] GetAllDateTimePatterns() { throw null; }
+        public string[] GetAllDateTimePatterns(char format) { throw null; }
         public string GetDayName(System.DayOfWeek dayofweek) { throw null; }
         public int GetEra(string eraName) { throw null; }
         public string GetEraName(int era) { throw null; }
         public object GetFormat(System.Type formatType) { throw null; }
         public static System.Globalization.DateTimeFormatInfo GetInstance(System.IFormatProvider provider) { throw null; }
         public string GetMonthName(int month) { throw null; }
+        [System.Runtime.InteropServices.ComVisibleAttribute(false)]
+        public string GetShortestDayName(System.DayOfWeek dayOfWeek) { throw null; }
         public static System.Globalization.DateTimeFormatInfo ReadOnly(System.Globalization.DateTimeFormatInfo dtfi) { throw null; }
+        [System.Runtime.InteropServices.ComVisibleAttribute(false)]
+        public void SetAllDateTimePatterns(string[] patterns, char format) { throw null; }
     }
     [System.FlagsAttribute]
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
@@ -5586,6 +5634,21 @@ namespace System.Globalization
         NoCurrentDateDefault = 8,
         None = 0,
         RoundtripKind = 128,
+    }
+    [System.Runtime.InteropServices.ComVisibleAttribute(true)]
+    public partial class DaylightTime
+    {
+        public DaylightTime(System.DateTime start, System.DateTime end, System.TimeSpan delta) { throw null; }
+        public System.TimeSpan Delta { get { throw null; } }
+        public System.DateTime End { get { throw null; } }
+        public System.DateTime Start { get { throw null; } }
+    }
+    [System.Runtime.InteropServices.ComVisibleAttribute(true)]
+    public enum DigitShapes
+    {
+        Context = 0,
+        NativeNational = 2,
+        None = 1,
     }
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public abstract partial class EastAsianLunisolarCalendar : System.Globalization.Calendar
@@ -5664,6 +5727,7 @@ namespace System.Globalization
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public partial class HebrewCalendar : System.Globalization.Calendar
     {
+        public static readonly int HebrewEra;
         public HebrewCalendar() { }
 #if FEATURE_COREFX_GLOBALIZATION
         public override System.Globalization.CalendarAlgorithmType AlgorithmType { get { throw null; } }
@@ -5693,6 +5757,7 @@ namespace System.Globalization
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public partial class HijriCalendar : System.Globalization.Calendar
     {
+        public static readonly int HijriEra;
         public HijriCalendar() { }
 #if FEATURE_COREFX_GLOBALIZATION
         [System.Runtime.InteropServices.ComVisibleAttribute(false)]
@@ -5724,6 +5789,20 @@ namespace System.Globalization
         public override bool IsLeapYear(int year, int era) { throw null; }
         public override System.DateTime ToDateTime(int year, int month, int day, int hour, int minute, int second, int millisecond, int era) { throw null; }
         public override int ToFourDigitYear(int year) { throw null; }
+    }
+    public sealed partial class IdnMapping
+    {
+        public IdnMapping() { }
+        public bool AllowUnassigned { get { throw null; } set { throw null; } }
+        public bool UseStd3AsciiRules { get { throw null; } set { throw null; } }
+        public override bool Equals(object obj) { throw null; }
+        public string GetAscii(string unicode) { throw null; }
+        public string GetAscii(string unicode, int index) { throw null; }
+        public string GetAscii(string unicode, int index, int count) { throw null; }
+        public override int GetHashCode() { throw null; }
+        public string GetUnicode(string ascii) { throw null; }
+        public string GetUnicode(string ascii, int index) { throw null; }
+        public string GetUnicode(string ascii, int index, int count) { throw null; }
     }
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public partial class JapaneseCalendar : System.Globalization.Calendar
@@ -5864,9 +5943,13 @@ namespace System.Globalization
         public int CurrencyPositivePattern { get { throw null; } set { } }
         public string CurrencySymbol { get { throw null; } set { } }
         public static System.Globalization.NumberFormatInfo CurrentInfo { get { throw null; } }
+        [System.Runtime.InteropServices.ComVisibleAttribute(false)]
+        public System.Globalization.DigitShapes DigitSubstitution { get { throw null; } set { throw null; } }
         public static System.Globalization.NumberFormatInfo InvariantInfo { get { throw null; } }
         public bool IsReadOnly { get { throw null; } }
         public string NaNSymbol { get { throw null; } set { } }
+        [System.Runtime.InteropServices.ComVisibleAttribute(false)]
+        public string[] NativeDigits { get { throw null; } set { throw null; } }
         public string NegativeInfinitySymbol { get { throw null; } set { } }
         public string NegativeSign { get { throw null; } set { } }
         public int NumberDecimalDigits { get { throw null; } set { } }
@@ -5943,21 +6026,52 @@ namespace System.Globalization
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public partial class RegionInfo
     {
+        public RegionInfo(int culture) { throw null; }
         [System.Security.SecuritySafeCriticalAttribute]
         public RegionInfo(string name) { }
         public virtual string CurrencySymbol { [System.Security.SecuritySafeCriticalAttribute]get { throw null; } }
+        [System.Runtime.InteropServices.ComVisibleAttribute(false)]
+        public virtual string CurrencyEnglishName { get { throw null; } }
+        [System.Runtime.InteropServices.ComVisibleAttribute(false)]
+        public virtual string CurrencyNativeName { get { throw null; } }
         public static System.Globalization.RegionInfo CurrentRegion { [System.Security.SecuritySafeCriticalAttribute]get { throw null; } }
         public virtual string DisplayName { [System.Security.SecuritySafeCriticalAttribute]get { throw null; } }
         public virtual string EnglishName { [System.Security.SecuritySafeCriticalAttribute]get { throw null; } }
+        [System.Runtime.InteropServices.ComVisibleAttribute(false)]
+        public virtual int GeoId { get { throw null; } }
         public virtual bool IsMetric { get { throw null; } }
         public virtual string ISOCurrencySymbol { [System.Security.SecuritySafeCriticalAttribute]get { throw null; } }
         public virtual string Name { get { throw null; } }
         [System.Runtime.InteropServices.ComVisibleAttribute(false)]
         public virtual string NativeName { [System.Security.SecuritySafeCriticalAttribute]get { throw null; } }
+        public virtual string ThreeLetterISORegionName { get { throw null; } }
+        public virtual string ThreeLetterWindowsRegionName { get { throw null; } }
         public virtual string TwoLetterISORegionName { [System.Security.SecuritySafeCriticalAttribute]get { throw null; } }
         public override bool Equals(object value) { throw null; }
         public override int GetHashCode() { throw null; }
         public override string ToString() { throw null; }
+    }
+    [System.Runtime.InteropServices.ComVisibleAttribute(true)]
+    public partial class SortKey
+    {
+        internal SortKey() { throw null; }
+        public virtual byte[] KeyData { get { throw null; } }
+        public virtual string OriginalString { get { throw null; } }
+        public static int Compare(System.Globalization.SortKey sortkey1, System.Globalization.SortKey sortkey2) { throw null; }
+        public override bool Equals(object value) { throw null; }
+        public override int GetHashCode() { throw null; }
+        public override string ToString() { throw null; }
+    }
+    public sealed partial class SortVersion : System.IEquatable<System.Globalization.SortVersion>
+    {
+        public SortVersion(int fullVersion, System.Guid sortId) { throw null; }
+        public int FullVersion { get { throw null; } }
+        public System.Guid SortId { get { throw null; } }
+        public bool Equals(System.Globalization.SortVersion other) { throw null; }
+        public override bool Equals(object obj) { throw null; }
+        public override int GetHashCode() { throw null; }
+        public static bool operator ==(System.Globalization.SortVersion left, System.Globalization.SortVersion right) { throw null; }
+        public static bool operator !=(System.Globalization.SortVersion left, System.Globalization.SortVersion right) { throw null; }
     }
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public partial class StringInfo
@@ -5975,6 +6089,8 @@ namespace System.Globalization
         public static System.Globalization.TextElementEnumerator GetTextElementEnumerator(string str) { throw null; }
         public static System.Globalization.TextElementEnumerator GetTextElementEnumerator(string str, int index) { throw null; }
         public static int[] ParseCombiningCharacters(string str) { throw null; }
+        public string SubstringByTextElements(int startingTextElement) { throw null; }
+        public string SubstringByTextElements(int startingTextElement, int lengthInTextElements) { throw null; }
     }
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public partial class TaiwanCalendar : System.Globalization.Calendar
@@ -6032,25 +6148,35 @@ namespace System.Globalization
         public void Reset() { }
     }
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
-    public partial class TextInfo : System.ICloneable
+    public partial class TextInfo : System.ICloneable, System.Runtime.Serialization.IDeserializationCallback
     {
         internal TextInfo() { }
+        public virtual int ANSICodePage { get { throw null; } }
         [System.Runtime.InteropServices.ComVisibleAttribute(false)]
         public string CultureName { get { throw null; } }
+        public virtual int EBCDICCodePage { get { throw null; } }
         [System.Runtime.InteropServices.ComVisibleAttribute(false)]
         public bool IsReadOnly { get { throw null; } }
         [System.Runtime.InteropServices.ComVisibleAttribute(false)]
         public bool IsRightToLeft { get { throw null; } }
+        [System.Runtime.InteropServices.ComVisibleAttribute(false)]
+        public int LCID { get { throw null; } }
         public virtual string ListSeparator { [System.Security.SecuritySafeCriticalAttribute]get { throw null; } [System.Runtime.InteropServices.ComVisibleAttribute(false)]set { } }
+        public virtual int MacCodePage { get { throw null; } }
+        public virtual int OEMCodePage { get { throw null; } }
         [System.Runtime.InteropServices.ComVisibleAttribute(false)]
         public virtual object Clone() { throw null; }
         public override bool Equals(object obj) { throw null; }
         public override int GetHashCode() { throw null; }
+        [System.Runtime.InteropServices.ComVisibleAttribute(false)]
+        public static System.Globalization.TextInfo ReadOnly(System.Globalization.TextInfo textInfo) { throw null; }
+        void System.Runtime.Serialization.IDeserializationCallback.OnDeserialization(object sender) { throw null; }
         [System.Security.SecuritySafeCriticalAttribute]
         public virtual char ToLower(char c) { throw null; }
         [System.Security.SecuritySafeCriticalAttribute]
         public virtual string ToLower(string str) { throw null; }
         public override string ToString() { throw null; }
+        public string ToTitleCase(string str) { throw null; }
         [System.Security.SecuritySafeCriticalAttribute]
         public virtual char ToUpper(char c) { throw null; }
         [System.Security.SecuritySafeCriticalAttribute]
@@ -6101,6 +6227,7 @@ namespace System.Globalization
     }
     public partial class UmAlQuraCalendar : System.Globalization.Calendar
     {
+        public const int UmAlQuraEra = 1;
         public UmAlQuraCalendar() { }
 #if FEATURE_COREFX_GLOBALIZATION
         public override System.Globalization.CalendarAlgorithmType AlgorithmType { get { throw null; } }

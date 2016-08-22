@@ -32,7 +32,7 @@ namespace System.Globalization
 
     [Serializable]
     [System.Runtime.InteropServices.ComVisible(true)]
-    public abstract class Calendar : ICloneable
+    public abstract partial class Calendar : ICloneable
     {
         // Number of 100ns (10E-7 second) ticks per time unit
         internal const long TicksPerMillisecond = 10000;

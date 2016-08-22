@@ -20,7 +20,7 @@ namespace System.Globalization {
 
     [System.Runtime.InteropServices.ComVisible(true)]
     [Serializable]
-    public class SortKey
+    public partial class SortKey
     {
         //--------------------------------------------------------------------//
         //                        Internal Information                        //

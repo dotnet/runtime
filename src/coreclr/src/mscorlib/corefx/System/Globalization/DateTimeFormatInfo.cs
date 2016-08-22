@@ -56,7 +56,7 @@ namespace System.Globalization
 
     [Serializable]
     [System.Runtime.InteropServices.ComVisible(true)]
-    public sealed class DateTimeFormatInfo : IFormatProvider, ICloneable
+    public sealed partial class DateTimeFormatInfo : IFormatProvider, ICloneable
     {
         // cache for the invariant culture.
         // invariantInfo is constant irrespective of your current culture.
@@ -820,6 +820,10 @@ namespace System.Globalization
                 Contract.Assert(this.dateSeparator != null, "DateTimeFormatInfo.DateSeparator, dateSeparator != null");
                 return (this.dateSeparator);
             }
+            set
+            {
+                throw null;
+            }
         }
 
 
@@ -1275,6 +1279,11 @@ namespace System.Globalization
                 }
                 Contract.Assert(this.timeSeparator != null, "DateTimeFormatInfo.TimeSeparator, timeSeparator != null");
                 return (timeSeparator);
+            }
+
+            set
+            {
+                throw null;
             }
         }
 
