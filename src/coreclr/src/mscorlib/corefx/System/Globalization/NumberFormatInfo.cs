@@ -43,7 +43,7 @@ namespace System.Globalization
 
     [Serializable]
     [System.Runtime.InteropServices.ComVisible(true)]
-    sealed public class NumberFormatInfo : IFormatProvider, ICloneable
+    sealed public partial class NumberFormatInfo : IFormatProvider, ICloneable
     {
         // invariantInfo is constant irrespective of your current culture.
         private static volatile NumberFormatInfo invariantInfo;

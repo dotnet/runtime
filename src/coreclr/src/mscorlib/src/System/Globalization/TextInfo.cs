@@ -29,7 +29,7 @@ namespace System.Globalization {
 
     [Serializable]
     [System.Runtime.InteropServices.ComVisible(true)]
-    public class TextInfo : ICloneable, IDeserializationCallback
+    public partial class TextInfo : ICloneable, IDeserializationCallback
     {
         //--------------------------------------------------------------------//
         //                        Internal Information                        //

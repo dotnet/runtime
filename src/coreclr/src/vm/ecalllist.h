@@ -1442,9 +1442,9 @@ FCFuncStart(gCompareInfoFuncs)
     QCFuncElement("InternalCompareString", COMNlsInfo::InternalCompareString)
     QCFuncElement("InternalFindNLSStringEx", COMNlsInfo::InternalFindNLSStringEx)
     QCFuncElement("NativeInternalInitSortHandle", COMNlsInfo::InternalInitSortHandle)
-#ifndef FEATURE_CORECLR
     QCFuncElement("InternalIsSortable", COMNlsInfo::InternalIsSortable)
     QCFuncElement("InternalGetSortKey", COMNlsInfo::InternalGetSortKey)
+#ifndef FEATURE_CORECLR
     QCFuncElement("InternalGetSortVersion", COMNlsInfo::InternalGetSortVersion)
     QCFuncElement("InternalGetNlsVersionEx", COMNlsInfo::InternalGetNlsVersionEx)
 #endif
