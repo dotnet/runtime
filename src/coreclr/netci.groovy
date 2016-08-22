@@ -1094,13 +1094,13 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                     switch (scenario) {
                         case 'default':
                             Utilities.addPrivateGithubPRTriggerForBranch(job, branch, contextString,
-                            "(?i).*test\\W+${os}\\W+${architecture}\\W+${configuration}", null, arm64Users)
+                            "(?i).*test\\W+${os}\\W+${architecture}\\W+${configuration}.*", null, arm64Users)
                             break
                         case 'pri1r2r':
                         case 'gcstress0x3':
                         case 'gcstress0xc':
                             Utilities.addPrivateGithubPRTriggerForBranch(job, branch, contextString,
-                            "(?i).*test\\W+${os}\\W+${architecture}\\W+${configuration}\\W+${scenario}", null, arm64Users)
+                            "(?i).*test\\W+${os}\\W+${architecture}\\W+${configuration}\\W+${scenario}.*", null, arm64Users)
                             break
                     }
                     break
