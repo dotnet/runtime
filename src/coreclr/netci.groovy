@@ -76,7 +76,7 @@ class Constants {
                                         'r2r_jitstressregs4', 'r2r_jitstressregs8', 'r2r_jitstressregsx10', 'r2r_jitstressregsx80',
                                         'r2r_jitminopts', 'r2r_jitforcerelocs']
     // This is the basic set of scenarios
-    def static basicScenarios = ['default', 'pri1', 'ilrt', 'r2r', 'pri1r2r', 'gcstress15_pri1r2r', 'longgc', 'coverage', 'gcsimulator'] + r2rJitStressScenarios
+    def static basicScenarios = ['default', 'pri1', 'ilrt', 'r2r', 'pri1r2r', 'gcstress15_pri1r2r', 'longgc', 'coverage', 'formatting', 'gcsimulator'] + r2rJitStressScenarios
     def static configurationList = ['Debug', 'Checked', 'Release']
     // This is the set of architectures
     def static architectureList = ['arm', 'arm64', 'x64', 'x86ryujit', 'x86lb']
@@ -248,6 +248,10 @@ def static getJobName(def configuration, def architecture, def os, def scenario,
             if (scenario == 'default') {
                 // For now we leave x64 off of the name for compatibility with other jobs
                 baseName = configuration.toLowerCase() + '_' + os.toLowerCase()
+            }
+            else if (scenario == 'formatting') {
+                // we don't care about the configuration for the formatting job. It runs all configs
+                baseName = architecture.toLowerCase() + '_' + os.toLowerCase()
             }
             else {
                 baseName = architecture.toLowerCase() + '_' + configuration.toLowerCase() + '_' + os.toLowerCase()
@@ -454,6 +458,11 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                 assert architecture == 'x64'
                 Utilities.addPeriodicTrigger(job, '@weekly')
                 break
+            case 'formatting':
+                assert (os == 'Windows_NT' || os == "Ubuntu")
+                assert architecture == 'x64'
+                Utilities.addGithubPushTrigger(job)
+                break
             case 'jitstressregs1':
             case 'jitstressregs2':
             case 'jitstressregs3':
@@ -543,6 +552,15 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                 }
                 break
             }
+
+            if (scenario == 'formatting') {
+                assert configuration == 'Checked'
+                if (os == 'Windows_NT' || os == 'Ubuntu') {
+                    Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} Formatting Build & Test", "(?i).*test\\W+formatting.*")
+                }
+                break
+            }
+
             switch (os) {
                 // OpenSUSE, Debian & RedHat get trigger phrases for pri 0 build, and pri 1 build & test
                 case 'OpenSUSE13.2':
@@ -1447,6 +1465,19 @@ combinedScenarios.each { scenario ->
                                     return
                                 }
                                 break
+                            // We only run Windows and Ubuntu x64 Checked for formatting right now
+                            case 'formatting':
+                                if (os != 'Windows_NT' && os != 'Ubuntu') {
+                                    return
+                                }
+                                if (architecture != 'x64') {
+                                    return
+                                }
+                                if (configuration != 'Checked') {
+                                    return
+                                }
+                                println("Formatting not skipped: ${os} ${architecture} ${configuration}")
+                                break
                             case 'default':
                                 // Nothing skipped
                                 break
@@ -1512,6 +1543,38 @@ combinedScenarios.each { scenario ->
                                         buildCommands += "build.cmd ${lowerConfiguration} ${arch} skiptests"
                                         buildCommands += "set __TestIntermediateDir=int&&build-test.cmd ${lowerConfiguration} ${arch}"
                                     }
+                                    else if (scenario == 'formatting') {
+                                        // Build with NMake Makefiles for all configurations
+                                        buildCommands += "set __TestIntermediateDir=int&&build.cmd Debug ${arch} usenmakemakefiles"
+                                        buildCommands += "set __TestIntermediateDir=int&&build.cmd Checked ${arch} usenmakemakefiles"
+                                        buildCommands += "set __TestIntermediateDir=int&&build.cmd Release ${arch} usenmakemakefiles"
+
+                                        // Download jitutils
+                                        def url = "https://raw.githubusercontent.com/dotnet/jitutils/master/bootstrap.cmd"
+                                        def outfile = "bootstrap.cmd"
+                                        buildCommands += "powershell Invoke-WebRequest -Uri ${url} -OutFile ${outfile}"
+
+                                        // Install x64 dotnet cli version 1.0.0.0
+                                        def dotnetcliUrl = "https://go.microsoft.com/fwlink/?LinkID=809115"
+                                        buildCommands += "mkdir Tools\\dotnetcli-jitutils&&powershell -Command \"Invoke-WebRequest -Uri ${dotnetcliUrl} -OutFile Tools\\dotnetcli-jitutils\\dotnetcli-jitutils.zip; Add-Type -Assembly 'System.IO.Compression.FileSystem'; [System.IO.Compression.ZipFile]::ExtractToDirectory(Tools\\dotnetcli-jitutils\\dotnetcli-jitutils.zip, Tools\\dotnetcli-jitutils)\""
+                                        
+                                        // Run bootstrap script
+                                        buildCommands += "set PATH=%PATH%;%WORKSPACE%\\Tools\\dotnetcli-jitutils&&bootstrap.cmd"
+                                        
+                                        // run jit-format
+                                        buildCommands += "set PATH=%PATH%;%WORKSPACE%\\Tools\\dotnetcli-jitutils;%WORKSPACE%\\jitutils\\bin&&jit-format.cmd -a ${arch} -b Checked -o Windows_NT -c %WORKSPACE% --verbose --projects dll"
+                                        buildCommands += "set PATH=%PATH%;%WORKSPACE%\\Tools\\dotnetcli-jitutils;%WORKSPACE%\\jitutils\\bin&&jit-format.cmd -a ${arch} -b Checked -o Windows_NT -c %WORKSPACE% --verbose --projects standalone"
+                                        buildCommands += "set PATH=%PATH%;%WORKSPACE%\\Tools\\dotnetcli-jitutils;%WORKSPACE%\\jitutils\\bin&&jit-format.cmd -a ${arch} -b Checked -o Windows_NT -c %WORKSPACE% --verbose --projects crossgen"
+                                        
+                                        buildCommands += "set PATH=%PATH%;%WORKSPACE%\\Tools\\dotnetcli-jitutils;%WORKSPACE%\\jitutils\\bin&&jit-format.cmd -a ${arch} -b Debug -o Windows_NT -c %WORKSPACE% --verbose --projects dll"
+                                        buildCommands += "set PATH=%PATH%;%WORKSPACE%\\Tools\\dotnetcli-jitutils;%WORKSPACE%\\jitutils\\bin&&jit-format.cmd -a ${arch} -b Debug -o Windows_NT -c %WORKSPACE% --verbose --projects standalone"
+                                        buildCommands += "set PATH=%PATH%;%WORKSPACE%\\Tools\\dotnetcli-jitutils;%WORKSPACE%\\jitutils\\bin&&jit-format.cmd -a ${arch} -b Debug -o Windows_NT -c %WORKSPACE% --verbose --projects crossgen"
+                                        
+                                        buildCommands += "set PATH=%PATH%;%WORKSPACE%\\Tools\\dotnetcli-jitutils;%WORKSPACE%\\jitutils\\bin&&jit-format.cmd -a ${arch} -b Release -o Windows_NT -c %WORKSPACE% --verbose --projects dll"
+                                        buildCommands += "set PATH=%PATH%;%WORKSPACE%\\Tools\\dotnetcli-jitutils;%WORKSPACE%\\jitutils\\bin&&jit-format.cmd -a ${arch} -b Release -o Windows_NT -c %WORKSPACE% --verbose --projects standalone"
+                                        buildCommands += "set PATH=%PATH%;%WORKSPACE%\\Tools\\dotnetcli-jitutils;%WORKSPACE%\\jitutils\\bin&&jit-format.cmd -a ${arch} -b Release -o Windows_NT -c %WORKSPACE% --verbose --projects crossgen"
+                                        break
+                                    }
                                     else {
                                         println("Unknown scenario: ${scenario}")
                                         assert false
@@ -1520,7 +1583,7 @@ combinedScenarios.each { scenario ->
                                     // If we are running a stress mode, we should write out the set of key
                                     // value env pairs to a file at this point and then we'll pass that to runtest.cmd
 
-                                    if (!isBuildOnly) {
+                                    if (!isBuildOnly && scenario != 'formatting') {
                                         //If this is a crossgen build, pass 'crossgen' to runtest.cmd
                                         def crossgenStr = ''
                                         def runcrossgentestsStr = ''
@@ -1699,6 +1762,40 @@ combinedScenarios.each { scenario ->
                                     def arch = architecture
                                     if (architecture == 'x86ryujit' || architecture == 'x86lb') {
                                         arch = 'x86'
+                                    }
+
+                                    if (scenario == 'formatting') {
+                                        // configure all of the configurations
+                                        buildCommands += "./build.sh verbose configureonly release x64"
+                                        buildCommands += "./build.sh verbose configureonly checked x64"
+                                        buildCommands += "./build.sh verbose configureonly debug x64"
+
+                                        // install correct version of dotnet cli
+                                        def dotnetCliUrl = "https://go.microsoft.com/fwlink/?LinkID=809118"
+                                        def dotnetCliTar = "dotnetcli.tar"
+                                        def dotnetCliPath = "\${WORKSPACE}/Tools/dotnetcli-jitutils"
+                                        buildCommands += "wget --trust-server-names ${dotnetCliUrl} -O ${dotnetCliTar}.gz; gunzip ${dotnetCliTar}.gz; mkdir ${dotnetCliPath}; tar -xf ${dotnetCliTar} -C ${dotnetCliPath}"
+                                        
+                                        // get and run bootstrap script
+                                        def url = "https://raw.githubusercontent.com/dotnet/jitutils/master/bootstrap.sh"
+                                        buildCommands += "wget ${url}"
+                                        buildCommands += "chmod 751 bootstrap.sh"
+                                        buildCommands += "export PATH=\${PATH}:${dotnetCliPath}; ./bootstrap.sh"
+                                        def jitutilsPath = "\${WORKSPACE}/jitutils/bin"
+
+                                        // run jit-format
+                                        buildCommands += "export PATH=\${PATH}:${dotnetCliPath}:${jitutilsPath}&&jit-format -a ${arch} -b Checked -o Linux -c \${WORKSPACE} --verbose --projects dll"
+                                        buildCommands += "export PATH=\${PATH}:${dotnetCliPath}:${jitutilsPath}&&jit-format -a ${arch} -b Checked -o Linux -c \${WORKSPACE} --verbose --projects standalone"
+                                        buildCommands += "export PATH=\${PATH}:${dotnetCliPath}:${jitutilsPath}&&jit-format -a ${arch} -b Checked -o Linux -c \${WORKSPACE} --verbose --projects crossgen"
+
+                                        buildCommands += "export PATH=\${PATH}:${dotnetCliPath}:${jitutilsPath}&&jit-format -a ${arch} -b Debug -o Linux -c \${WORKSPACE} --verbose --projects dll"
+                                        buildCommands += "export PATH=\${PATH}:${dotnetCliPath}:${jitutilsPath}&&jit-format -a ${arch} -b Debug -o Linux -c \${WORKSPACE} --verbose --projects standalone"
+                                        buildCommands += "export PATH=\${PATH}:${dotnetCliPath}:${jitutilsPath}&&jit-format -a ${arch} -b Debug -o Linux -c \${WORKSPACE} --verbose --projects crossgen"
+
+                                        buildCommands += "export PATH=\${PATH}:${dotnetCliPath}:${jitutilsPath}&&jit-format -a ${arch} -b Release -o Linux -c \${WORKSPACE} --verbose --projects dll"
+                                        buildCommands += "export PATH=\${PATH}:${dotnetCliPath}:${jitutilsPath}&&jit-format -a ${arch} -b Release -o Linux -c \${WORKSPACE} --verbose --projects standalone"
+                                        buildCommands += "export PATH=\${PATH}:${dotnetCliPath}:${jitutilsPath}&&jit-format -a ${arch} -b Release -o Linux -c \${WORKSPACE} --verbose --projects crossgen"
+                                        break
                                     }
                                 
                                     if (!enableCorefxTesting) {
@@ -1967,6 +2064,15 @@ combinedScenarios.each { scenario ->
                                 if (configuration != 'Release') {
                                     return
                                 }
+                            case 'formatting':
+                                // We only want Ubuntu Checked for formatting
+                                if (os != 'Ubuntu') {
+                                    return
+                                }
+                                if (configuration != 'Checked') {
+                                    return
+                                }
+                                break
                             case 'default':
                                 // Nothing skipped
                                 break
