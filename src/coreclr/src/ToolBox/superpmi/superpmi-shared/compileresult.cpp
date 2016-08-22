@@ -729,7 +729,7 @@ void CompileResult::applyRelocs(unsigned char *block1, ULONG blocksize1, void *o
             break;
         #endif // _TARGET_X86_
 
-        #if defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
+        #if defined(_TARGET_X86_) || defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_)
         case IMAGE_REL_BASED_REL32:
             {
                 DWORDLONG target = tmp.target + tmp.addlDelta;
@@ -737,7 +737,7 @@ void CompileResult::applyRelocs(unsigned char *block1, ULONG blocksize1, void *o
                 DWORDLONG baseAddr = fixupLocation + sizeof(INT32);
                 INT64 delta = (INT64)((BYTE *)target - baseAddr);
 
-        #if defined(_TARGET_AMD64_)
+        #if defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_)
                 if (delta != (INT64)(int)delta)
                 {
                     // This isn't going to fit in a signed 32-bit address. Use something that will fit,
@@ -750,11 +750,11 @@ void CompileResult::applyRelocs(unsigned char *block1, ULONG blocksize1, void *o
 
                     delta = newdelta;
                 }
-        #endif // defined(_TARGET_AMD64_)
+        #endif // defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_)
 
                 if (delta != (INT64)(int)delta)
                 {
-        #if defined(_TARGET_AMD64_)
+        #if defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_)
                     LogError("REL32 relocation overflows field! delta=0x%016llX", delta);
         #else
                     LogError("REL32 relocation overflows field! delta=0x%08X", delta);
@@ -770,9 +770,9 @@ void CompileResult::applyRelocs(unsigned char *block1, ULONG blocksize1, void *o
                 }
             }
             break;
-        #endif // defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
+        #endif // defined(_TARGET_X86_) || defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_)
 
-        #if defined(_TARGET_AMD64_)
+        #if defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_)
         case IMAGE_REL_BASED_DIR64:
             {
                 DWORDLONG fixupLocation = tmp.location + tmp.slotNum;
@@ -786,7 +786,15 @@ void CompileResult::applyRelocs(unsigned char *block1, ULONG blocksize1, void *o
                 }
             }
             break;
-        #endif // defined(_TARGET_AMD64_)
+        #endif // defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_)
+
+        #ifdef _TARGET_ARM64_
+        case IMAGE_REL_ARM64_BRANCH26:   // 26 bit offset << 2 & sign ext, for B and BL
+        case IMAGE_REL_ARM64_PAGEBASE_REL21:
+        case IMAGE_REL_ARM64_PAGEOFFSET_12A:
+            LogError("Unimplemented reloc type %u", tmp.fRelocType);
+            break;
+        #endif // _TARGET_ARM64_          
 
         default:
             LogError("Unknown reloc type %u", tmp.fRelocType);
