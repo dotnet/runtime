@@ -16593,7 +16593,7 @@ Compiler::fgWalkResult Compiler::fgMorphLocalField(GenTreePtr tree, fgWalkData* 
             // We need to keep the types 'compatible'.  If we can switch back to a GT_LCL_VAR
             CLANG_FORMAT_COMMENT_ANCHOR;
 
-#ifdef ARM_SOFTFP
+#ifdef _TARGET_ARM_
             assert(varTypeIsIntegralOrI(tree->TypeGet()) || varTypeIsFloating(tree->TypeGet()));
 #else
             assert(varTypeIsIntegralOrI(tree->TypeGet()));
