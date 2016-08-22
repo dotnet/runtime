@@ -762,11 +762,16 @@ namespace System.Runtime.Serialization
             {
                 if (s_getDefaultValueMethod == null)
                 {
-                    s_getDefaultValueMethod = typeof(XmlObjectSerializerWriteContext).GetMethod("GetDefaultValue", Globals.ScanAllMembers);
+                    s_getDefaultValueMethod = typeof(XmlObjectSerializerWriteContext).GetMethod(nameof(XmlObjectSerializerWriteContext.GetDefaultValue), Globals.ScanAllMembers);
                     Debug.Assert(s_getDefaultValueMethod != null);
                 }
                 return s_getDefaultValueMethod;
             }
+        }
+
+        internal static object GetDefaultValue(Type type)
+        {
+            return GetDefaultValueMethod.MakeGenericMethod(type).Invoke(null, Array.Empty<object>());
         }
 
         [SecurityCritical]

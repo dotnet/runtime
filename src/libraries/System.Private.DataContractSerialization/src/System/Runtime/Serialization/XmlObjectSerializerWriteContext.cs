@@ -186,7 +186,7 @@ namespace System.Runtime.Serialization
                     return;
                 dataContract = GetDataContract(declaredTypeHandle, declaredType);
 #else
-            DataContract dataContract = DataContract.GetDataContractFromGeneratedAssembly(declaredType);
+            DataContract dataContract = DataContract.GetDataContract(declaredType);
             if (dataContract.TypeIsInterface && dataContract.TypeIsCollectionInterface)
             {
                 if (OnHandleIsReference(xmlWriter, dataContract, obj))

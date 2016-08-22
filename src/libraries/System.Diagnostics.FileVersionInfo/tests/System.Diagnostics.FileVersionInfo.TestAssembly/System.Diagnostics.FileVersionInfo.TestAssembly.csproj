@@ -10,7 +10,7 @@
     <NuGetPackageImportStamp>62805582</NuGetPackageImportStamp>
     <ProjectGuid>{28EB14BE-3BC9-4543-ABA6-A932424DFBD0}</ProjectGuid>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
-    <NuGetTargetMoniker>.NETStandard,Version=v1.0</NuGetTargetMoniker>
+    <NuGetTargetMoniker>.NETStandard,Version=v1.3</NuGetTargetMoniker>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU'" />

@@ -1,7 +1,14 @@
 {
   "dependencies": {
-    "System.Runtime": "4.2.0-beta-devapi-24415-01",
-    "System.Reflection": "4.1.1-beta-devapi-24415-01"
+    "System.Runtime": "4.2.0-beta-devapi-24422-01",
+    "System.Reflection": "4.1.1-beta-devapi-24422-01",
+    "test-runtime": {
+      "target": "project",
+      "exclude": "compile"
+    },
+    "System.Reflection.Emit": "4.0.2-beta-devapi-24422-01",
+    "System.Reflection.Primitives": "4.0.2-beta-devapi-24422-01",
+    "System.Reflection.TypeExtensions": "4.1.1-beta-devapi-24422-01"
   },
   "frameworks": {
     "netstandard1.6": {}

@@ -236,6 +236,17 @@ namespace System.Runtime.Serialization.Json
             return ParseJsonDate(ReadElementContentAsString(), _dateTimeFormat);
         }
 
+        #if USE_REFEMIT
+        public override bool TryReadDateTimeArray(XmlObjectSerializerReadContext context,
+#else
+        internal override bool TryReadDateTimeArray(XmlObjectSerializerReadContext context,
+#endif
+        XmlDictionaryString itemName, XmlDictionaryString itemNamespace,
+            int arrayLength, out DateTime[] array)
+        {
+            return TryReadJsonDateTimeArray(context, itemName, itemNamespace, arrayLength, out array);
+        }
+
         internal bool TryReadJsonDateTimeArray(XmlObjectSerializerReadContext context,
             XmlDictionaryString itemName, XmlDictionaryString itemNamespace,
             int arrayLength, out DateTime[] array)

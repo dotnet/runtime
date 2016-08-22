@@ -9,8 +9,19 @@
     <AssemblyName>System.Runtime.Serialization.Formatters.Tests</AssemblyName>
     <RootNamespace>System.Runtime.Serialization.Formatters.Tests</RootNamespace>
     <IncludePerformanceTests>true</IncludePerformanceTests>
+    <!--
+      Until we get first class support for NS1.7 and Netcoreapp1.1
+      we need to hard code $(TestTFM) and $(TestNugetTargetMoniker)
+      in the project file.
+    -->
+    <TestTFM>netcoreapp1.1</TestTFM>
     <NugetTargetMoniker>.NETStandard,Version=v1.7</NugetTargetMoniker>
   </PropertyGroup>
+  <ItemGroup>
+    <TestNugetTargetMoniker Include="$(NugetTargetMoniker)">
+      <Folder>netcoreapp1.1</Folder>
+    </TestNugetTargetMoniker>
+  </ItemGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
@@ -29,6 +40,9 @@
     </Compile>
     <Compile Include="$(CommonTestPath)\System\IO\FileCleanupTestBase.cs">
       <Link>Common\System\IO\FileCleanupTestBase.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs">
+      <Link>Common\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>

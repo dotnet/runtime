@@ -11,5 +11,6 @@ internal static partial class Interop
         internal const string libproc = "libproc";
         internal const string LibSystemKernel = "/usr/lib/system/libsystem_kernel";
         internal const string SystemConfigurationLibrary = "/System/Library/Frameworks/SystemConfiguration.framework/SystemConfiguration";
+        internal const string AppleCryptoNative = "System.Security.Cryptography.Native.Apple";
     }
 }

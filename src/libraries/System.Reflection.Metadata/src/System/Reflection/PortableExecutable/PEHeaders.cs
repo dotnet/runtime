@@ -19,6 +19,8 @@ namespace System.Reflection.PortableExecutable
         private readonly PEHeader _peHeader;
         private readonly ImmutableArray<SectionHeader> _sectionHeaders;
         private readonly CorHeader _corHeader;
+        private readonly bool _isLoadedImage;
+
         private readonly int _metadataStartOffset = -1;
         private readonly int _metadataSize;
         private readonly int _coffHeaderStartOffset = -1;
@@ -49,6 +51,22 @@ namespace System.Reflection.PortableExecutable
         /// <exception cref="ArgumentNullException"><paramref name="peStream"/> is null.</exception>
         /// <exception cref="ArgumentOutOfRangeException">Size is negative or extends past the end of the stream.</exception>
         public PEHeaders(Stream peStream, int size)
+            : this(peStream, size, isLoadedImage: false)
+        {
+        }
+
+        /// <summary>
+        /// Reads PE headers from the current location in the stream.
+        /// </summary>
+        /// <param name="peStream">Stream containing PE image of the given size starting at its current position.</param>
+        /// <param name="size">Size of the PE image.</param>
+        /// <param name="isLoadedImage">True if the PE image has been loaded into memory by the OS loader.</param>
+        /// <exception cref="BadImageFormatException">The data read from stream have invalid format.</exception>
+        /// <exception cref="IOException">Error reading from the stream.</exception>
+        /// <exception cref="ArgumentException">The stream doesn't support seek operations.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="peStream"/> is null.</exception>
+        /// <exception cref="ArgumentOutOfRangeException">Size is negative or extends past the end of the stream.</exception>
+        public PEHeaders(Stream peStream, int size, bool isLoadedImage)
         {
             if (peStream == null)
             {
@@ -59,6 +77,8 @@ namespace System.Reflection.PortableExecutable
             {
                 throw new ArgumentException(SR.StreamMustSupportReadAndSeek, nameof(peStream));
             }
+
+            _isLoadedImage = isLoadedImage;
 
             int actualSize = StreamExtensions.GetAndValidateSize(peStream, size, nameof(peStream));
             var reader = new PEBinaryReader(peStream, actualSize);
@@ -310,7 +330,7 @@ namespace System.Reflection.PortableExecutable
                 throw new BadImageFormatException(SR.SectionTooSmall);
             }
 
-            offset = _sectionHeaders[sectionIndex].PointerToRawData + relativeOffset;
+            offset = _isLoadedImage ? directory.RelativeVirtualAddress : _sectionHeaders[sectionIndex].PointerToRawData + relativeOffset;
             return true;
         }
 
@@ -336,7 +356,7 @@ namespace System.Reflection.PortableExecutable
             return -1;
         }
 
-        private int IndexOfSection(string name)
+        internal int IndexOfSection(string name)
         {
             for (int i = 0; i < SectionHeaders.Length; i++)
             {
@@ -361,8 +381,16 @@ namespace System.Reflection.PortableExecutable
                     return;
                 }
 
-                start = SectionHeaders[cormeta].PointerToRawData;
-                size = SectionHeaders[cormeta].SizeOfRawData;
+                if (_isLoadedImage)
+                {
+                    start = SectionHeaders[cormeta].VirtualAddress;
+                    size = SectionHeaders[cormeta].VirtualSize;
+                }
+                else
+                {
+                    start = SectionHeaders[cormeta].PointerToRawData;
+                    size = SectionHeaders[cormeta].SizeOfRawData;
+                }
             }
             else if (_corHeader == null)
             {

@@ -191,7 +191,7 @@ namespace System
             return num;
         }
 
-        private static int ProcessorCountCore => (int)Interop.Sys.SysConf(Interop.Sys.SysConfName._SC_NPROCESSORS_ONLN);
+        public static int ProcessorCount => (int)Interop.Sys.SysConf(Interop.Sys.SysConfName._SC_NPROCESSORS_ONLN);
 
         private static void SetEnvironmentVariableCore(string variable, string value)
         {

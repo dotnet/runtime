@@ -34,6 +34,22 @@ namespace System.Runtime.Serialization
         private ISerializationSurrogateProvider _serializationSurrogateProvider;
         private bool _serializeReadOnlyTypes;
 
+        private static SerializationOption _option = SerializationOption.ReflectionAsBackup;
+        private static bool _optionAlreadySet;
+        public static SerializationOption Option
+        {
+            get { return _option; }
+            set
+            {
+                if (_optionAlreadySet)
+                {
+                    throw new InvalidOperationException("Can only set once");
+                }
+                _optionAlreadySet = true;
+                _option = value;
+            }
+        }
+
         public DataContractSerializer(Type type)
             : this(type, (IEnumerable<Type>)null)
         {

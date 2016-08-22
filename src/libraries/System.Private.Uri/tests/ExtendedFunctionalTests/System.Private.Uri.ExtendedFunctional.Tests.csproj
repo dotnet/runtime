@@ -6,8 +6,19 @@
     <ProjectGuid>{0febe054-68ac-446f-b999-9068736d3cec}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AssemblyName>System.Private.Uri.Tests</AssemblyName>
+    <!--
+      Until we get first class support for NS1.7 and Netcoreapp1.1
+      we need to hard code $(TestTFM) and $(TestNugetTargetMoniker)
+      in the project file.
+    -->
+    <TestTFM>netcoreapp1.1</TestTFM>
     <NugetTargetMoniker>.NETStandard,Version=v1.7</NugetTargetMoniker>
   </PropertyGroup>
+  <ItemGroup>
+    <TestNugetTargetMoniker Include="$(NugetTargetMoniker)">
+      <Folder>netcoreapp1.1</Folder>
+    </TestNugetTargetMoniker>
+  </ItemGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
   <ItemGroup>

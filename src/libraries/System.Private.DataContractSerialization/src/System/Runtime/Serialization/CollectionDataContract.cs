@@ -16,9 +16,13 @@ namespace System.Runtime.Serialization
     using DataContractDictionary = System.Collections.Generic.Dictionary<System.Xml.XmlQualifiedName, DataContract>;
     using System.Security;
 
+    // The interface is a perf optimization.
+    // Only KeyValuePairAdapter should implement the interface.
+    internal interface IKeyValuePairAdapter { }
+
     //Special Adapter class to serialize KeyValuePair as Dictionary needs it when polymorphism is involved
     [DataContract(Namespace = "http://schemas.datacontract.org/2004/07/System.Collections.Generic")]
-    internal class KeyValuePairAdapter<K, T>
+    internal class KeyValuePairAdapter<K, T> : IKeyValuePairAdapter
     {
         private K _kvpKey;
         private T _kvpValue;
@@ -66,11 +70,21 @@ namespace System.Runtime.Serialization
         }
     }
 
+#if USE_REFEMIT
+    public interface IKeyValue
+#else
+    internal interface IKeyValue
+#endif
+    {
+        object Key { get; set; }
+        object Value { get; set; }
+    }
+
     [DataContract(Namespace = "http://schemas.microsoft.com/2003/10/Serialization/Arrays")]
 #if USE_REFEMIT
-    public struct KeyValue<K, V>
+    public struct KeyValue<K, V> : IKeyValue
 #else
-    internal struct KeyValue<K, V>
+    internal struct KeyValue<K, V> : IKeyValue
 #endif
     {
         private K _key;
@@ -94,6 +108,18 @@ namespace System.Runtime.Serialization
         {
             get { return _value; }
             set { _value = value; }
+        }
+
+        object IKeyValue.Key
+        {
+            get { return _key; }
+            set { _key = (K)value; }
+        }
+        
+        object IKeyValue.Value
+        {
+            get { return _value; }
+            set { _value = (V)value; }
         }
     }
 
@@ -453,8 +479,12 @@ namespace System.Runtime.Serialization
             { return _helper.InvalidCollectionInSharedContractMessage; }
         }
 
-#if !NET_NATIVE
+#if NET_NATIVE
+        private XmlFormatCollectionWriterDelegate _xmlFormatWriterDelegate;
+        public XmlFormatCollectionWriterDelegate XmlFormatWriterDelegate
+#else
         internal XmlFormatCollectionWriterDelegate XmlFormatWriterDelegate
+#endif
         {
             /// <SecurityNote>
             /// Critical - fetches the critical xmlFormatWriterDelegate property
@@ -463,6 +493,13 @@ namespace System.Runtime.Serialization
             [SecuritySafeCritical]
             get
             {
+#if NET_NATIVE
+                if (DataContractSerializer.Option == SerializationOption.CodeGenOnly
+                || (DataContractSerializer.Option == SerializationOption.ReflectionAsBackup && _xmlFormatWriterDelegate != null))
+                {
+                    return _xmlFormatWriterDelegate;
+                }
+#endif
                 if (_helper.XmlFormatWriterDelegate == null)
                 {
                     lock (this)
@@ -477,13 +514,20 @@ namespace System.Runtime.Serialization
                 }
                 return _helper.XmlFormatWriterDelegate;
             }
-        }
-#else
-        public XmlFormatCollectionWriterDelegate XmlFormatWriterDelegate { get; set; }
+            set
+            {
+#if NET_NATIVE
+                _xmlFormatWriterDelegate = value;
 #endif
+            }
+        }
 
-#if !NET_NATIVE
+#if NET_NATIVE
+        private XmlFormatCollectionReaderDelegate _xmlFormatReaderDelegate;
+        public XmlFormatCollectionReaderDelegate XmlFormatReaderDelegate
+#else
         internal XmlFormatCollectionReaderDelegate XmlFormatReaderDelegate
+#endif
         {
             /// <SecurityNote>
             /// Critical - fetches the critical xmlFormatReaderDelegate property
@@ -492,6 +536,13 @@ namespace System.Runtime.Serialization
             [SecuritySafeCritical]
             get
             {
+#if NET_NATIVE
+                if (DataContractSerializer.Option == SerializationOption.CodeGenOnly
+                || (DataContractSerializer.Option == SerializationOption.ReflectionAsBackup && _xmlFormatReaderDelegate != null))
+                {
+                    return _xmlFormatReaderDelegate;
+                }
+#endif
                 if (_helper.XmlFormatReaderDelegate == null)
                 {
                     lock (this)
@@ -506,13 +557,20 @@ namespace System.Runtime.Serialization
                 }
                 return _helper.XmlFormatReaderDelegate;
             }
-        }
-#else
-        public XmlFormatCollectionReaderDelegate XmlFormatReaderDelegate { get; set; }
+            set
+            {
+#if NET_NATIVE
+                _xmlFormatReaderDelegate = value;
 #endif
+            }
+        }
 
-#if !NET_NATIVE
+#if NET_NATIVE
+        private XmlFormatGetOnlyCollectionReaderDelegate _xmlFormatGetOnlyCollectionReaderDelegate;
+        public XmlFormatGetOnlyCollectionReaderDelegate XmlFormatGetOnlyCollectionReaderDelegate
+#else
         internal XmlFormatGetOnlyCollectionReaderDelegate XmlFormatGetOnlyCollectionReaderDelegate
+#endif
         {
             /// <SecurityNote>
             /// Critical - fetches the critical xmlFormatReaderDelegate property
@@ -521,6 +579,13 @@ namespace System.Runtime.Serialization
             [SecuritySafeCritical]
             get
             {
+#if NET_NATIVE
+                if (DataContractSerializer.Option == SerializationOption.CodeGenOnly
+                || (DataContractSerializer.Option == SerializationOption.ReflectionAsBackup && _xmlFormatGetOnlyCollectionReaderDelegate != null))
+                {
+                    return _xmlFormatGetOnlyCollectionReaderDelegate;
+                }
+#endif
                 if (_helper.XmlFormatGetOnlyCollectionReaderDelegate == null)
                 {
                     lock (this)
@@ -540,10 +605,23 @@ namespace System.Runtime.Serialization
                 }
                 return _helper.XmlFormatGetOnlyCollectionReaderDelegate;
             }
-        }
-#else
-        public XmlFormatGetOnlyCollectionReaderDelegate XmlFormatGetOnlyCollectionReaderDelegate { get; set; }
+            set
+            {
+#if NET_NATIVE
+                _xmlFormatGetOnlyCollectionReaderDelegate = value;
 #endif
+            }
+        }
+
+        internal void IncrementCollectionCount(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContext context)
+        {
+            _helper.IncrementCollectionCount(xmlWriter, obj, context);
+        }
+
+        internal IEnumerator GetEnumeratorForCollection(object obj, out Type enumeratorReturnType)
+        {
+            return _helper.GetEnumeratorForCollection(obj, out enumeratorReturnType);
+        }
 
         [SecurityCritical]
         /// <SecurityNote>
@@ -730,11 +808,11 @@ namespace System.Runtime.Serialization
                         }
                         else
                         {
-#if NET_NATIVE
                             _itemContract = DataContract.GetDataContractFromGeneratedAssembly(ItemType);
-#else
-                            _itemContract = DataContract.GetDataContract(ItemType);
-#endif
+                            if (_itemContract == null)
+                            {
+                                _itemContract = DataContract.GetDataContract(ItemType);
+                            }
                         }
                     }
                     return _itemContract;
@@ -857,6 +935,145 @@ namespace System.Runtime.Serialization
                 get { return _xmlFormatGetOnlyCollectionReaderDelegate; }
                 set { _xmlFormatGetOnlyCollectionReaderDelegate = value; }
             }
+
+            private delegate void IncrementCollectionCountDelegate(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContext context);
+
+            private IncrementCollectionCountDelegate _incrementCollectionCountDelegate = null;
+
+            private static void DummyIncrementCollectionCount(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContext context) { }
+
+            internal void IncrementCollectionCount(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContext context)
+            {
+                if (_incrementCollectionCountDelegate == null)
+                {
+                    switch (Kind)
+                    {
+                        case CollectionKind.Collection:
+                        case CollectionKind.List:
+                        case CollectionKind.Dictionary:
+                            {
+                                _incrementCollectionCountDelegate = (x, o, c) =>
+                                {
+                                    context.IncrementCollectionCount(x, (ICollection)o);
+                                };
+                            }
+                            break;
+                        case CollectionKind.GenericCollection:
+                        case CollectionKind.GenericList:
+                            {
+                                var buildIncrementCollectionCountDelegate = s_buildIncrementCollectionCountDelegateMethod.MakeGenericMethod(ItemType);
+                                _incrementCollectionCountDelegate = (IncrementCollectionCountDelegate)buildIncrementCollectionCountDelegate.Invoke(null, Array.Empty<object>());
+                            }
+                            break;
+                        case CollectionKind.GenericDictionary:
+                            {
+                                var buildIncrementCollectionCountDelegate = s_buildIncrementCollectionCountDelegateMethod.MakeGenericMethod(Globals.TypeOfKeyValuePair.MakeGenericType(ItemType.GetGenericArguments()));
+                                _incrementCollectionCountDelegate = (IncrementCollectionCountDelegate)buildIncrementCollectionCountDelegate.Invoke(null, Array.Empty<object>());
+                            }
+                            break;
+                        default:
+                            // Do nothing.
+                            _incrementCollectionCountDelegate = DummyIncrementCollectionCount;
+                            break;
+                    }
+                }
+
+                _incrementCollectionCountDelegate(xmlWriter, obj, context);
+            }
+
+            private static MethodInfo s_buildIncrementCollectionCountDelegateMethod = typeof(CollectionDataContractCriticalHelper).GetMethod(nameof(BuildIncrementCollectionCountDelegate), Globals.ScanAllMembers);
+
+            private static IncrementCollectionCountDelegate BuildIncrementCollectionCountDelegate<T>()
+            {
+                return (xmlwriter, obj, context) =>
+                {
+                    context.IncrementCollectionCountGeneric<T>(xmlwriter, (ICollection<T>)obj);
+    
+                };
+            }
+
+            private delegate IEnumerator CreateGenericDictionaryEnumeratorDelegate(IEnumerator enumerator);
+
+            private CreateGenericDictionaryEnumeratorDelegate _createGenericDictionaryEnumeratorDelegate;
+
+            internal IEnumerator GetEnumeratorForCollection(object obj, out Type enumeratorReturnType)
+            {
+                IEnumerator enumerator = ((IEnumerable)obj).GetEnumerator();
+                if (Kind == CollectionKind.GenericDictionary)
+                {
+                    if (_createGenericDictionaryEnumeratorDelegate == null)
+                    {
+                        var keyValueTypes = ItemType.GetGenericArguments();
+                        var buildCreateGenericDictionaryEnumerator = s_buildCreateGenericDictionaryEnumerator.MakeGenericMethod(keyValueTypes[0], keyValueTypes[1]);
+                        _createGenericDictionaryEnumeratorDelegate = (CreateGenericDictionaryEnumeratorDelegate)buildCreateGenericDictionaryEnumerator.Invoke(null, Array.Empty<object>());
+                    }
+
+                    enumerator = _createGenericDictionaryEnumeratorDelegate(enumerator);                                       
+                }
+                else if (Kind == CollectionKind.Dictionary)
+                {
+                    enumerator = new DictionaryEnumerator(((IDictionary)obj).GetEnumerator());
+                }
+
+                enumeratorReturnType = EnumeratorReturnType;
+
+                return enumerator;
+            }
+
+            private Type _enumeratorReturnType;
+
+            public Type EnumeratorReturnType
+            {
+                get
+                {
+                    _enumeratorReturnType = _enumeratorReturnType ?? GetCollectionEnumeratorReturnType();
+                    return _enumeratorReturnType;
+                }
+            }
+
+            private Type GetCollectionEnumeratorReturnType()
+            {
+                Type enumeratorReturnType;
+                if (Kind == CollectionKind.GenericDictionary)
+                {
+                    var keyValueTypes = ItemType.GetGenericArguments();
+                    enumeratorReturnType =  Globals.TypeOfKeyValue.MakeGenericType(keyValueTypes);
+                }
+                else if (Kind == CollectionKind.Dictionary)
+                {
+
+                    enumeratorReturnType = Globals.TypeOfObject;
+                }
+                else if (Kind == CollectionKind.GenericCollection
+                      || Kind == CollectionKind.GenericList)
+                {
+                    enumeratorReturnType = ItemType;
+                }
+                else
+                {
+                    var enumeratorType = GetEnumeratorMethod.ReturnType;
+                    if (enumeratorType.GetTypeInfo().IsGenericType)
+                    {
+                        MethodInfo getCurrentMethod = enumeratorType.GetMethod(Globals.GetCurrentMethodName, BindingFlags.Instance | BindingFlags.Public, Array.Empty<Type>());
+                        enumeratorReturnType = getCurrentMethod.ReturnType;
+                    }
+                    else
+                    {
+                        enumeratorReturnType = Globals.TypeOfObject;
+                    }
+                }
+
+                return enumeratorReturnType;
+            }
+
+            private static MethodInfo s_buildCreateGenericDictionaryEnumerator = typeof(CollectionDataContractCriticalHelper).GetMethod(nameof(BuildCreateGenericDictionaryEnumerator), Globals.ScanAllMembers);
+            private static CreateGenericDictionaryEnumeratorDelegate BuildCreateGenericDictionaryEnumerator<K, V>()
+            {
+                return (enumerator) =>
+                {
+                    return new GenericDictionaryEnumerator<K, V>((IEnumerator<KeyValuePair<K, V>>)enumerator);
+                };
+            }
         }
 
         private DataContract GetSharedTypeContract(Type type)
@@ -929,29 +1146,32 @@ namespace System.Runtime.Serialization
 
         internal static bool TryCreateGetOnlyCollectionDataContract(Type type, out DataContract dataContract)
         {
-#if !NET_NATIVE
-            Type itemType;
-            if (type.IsArray)
-            {
-                dataContract = new CollectionDataContract(type);
-                return true;
-            }
-            else
-            {
-                return IsCollectionOrTryCreate(type, true /*tryCreate*/, out dataContract, out itemType, false /*constructorRequired*/);
-            }
-#else
             dataContract = DataContract.GetDataContractFromGeneratedAssembly(type);
-            if (dataContract is CollectionDataContract)
+            if (dataContract == null)
             {
-                return true;
+                Type itemType;
+                if (type.IsArray)
+                {
+                    dataContract = new CollectionDataContract(type);
+                    return true;
+                }
+                else
+                {
+                    return IsCollectionOrTryCreate(type, true /*tryCreate*/, out dataContract, out itemType, false /*constructorRequired*/);
+                }
             }
             else
             {
-                dataContract = null;
-                return false;
+                if (dataContract is CollectionDataContract)
+                {
+                    return true;
+                }
+                else
+                {
+                    dataContract = null;
+                    return false;
+                }
             }
-#endif
         }
 
         internal static MethodInfo GetTargetMethodWithName(string name, Type type, Type interfaceType)
@@ -1152,11 +1372,12 @@ namespace System.Runtime.Serialization
                     GetCollectionMethods(type, knownInterfaceType, addMethodTypeArray,
                                      true /*addMethodOnInterface*/,
                                      out getEnumeratorMethod, out addMethod);
-#if !NET_NATIVE
-                    dataContract = new CollectionDataContract(type, kind, itemType, getEnumeratorMethod, addMethod, defaultCtor, !constructorRequired);
-#else
+
                     dataContract = DataContract.GetDataContractFromGeneratedAssembly(type);
-#endif
+                    if (dataContract == null)
+                    {
+                        dataContract = new CollectionDataContract(type, kind, itemType, getEnumeratorMethod, addMethod, defaultCtor, !constructorRequired);
+                    }
                 }
             }
 

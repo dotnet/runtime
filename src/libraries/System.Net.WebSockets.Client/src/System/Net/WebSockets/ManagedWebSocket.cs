@@ -30,7 +30,6 @@ namespace System.Net.WebSockets
         /// <param name="stream">The connected Stream.</param>
         /// <param name="isServer">true if this is the server-side of the connection; false if this is the client-side of the connection.</param>
         /// <param name="subprotocol">The agreed upon subprotocol for the connection.</param>
-        /// <param name="state">The current state of the websocket connection.</param>
         /// <param name="keepAliveIntervalSeconds">The interval to use for keep-alive pings.</param>
         /// <param name="receiveBufferSize">The buffer size to use for received data.</param>
         /// <returns>The created <see cref="ManagedWebSocket"/> instance.</returns>
@@ -453,6 +452,7 @@ namespace System.Net.WebSockets
 
             // Write the message header data to the buffer.
             int headerLength;
+            int? maskOffset = null;
             if (_isServer)
             {
                 // The server doesn't send a mask, so the mask offset returned by WriteHeader
@@ -463,15 +463,20 @@ namespace System.Net.WebSockets
             {
                 // We need to know where the mask starts so that we can use the mask to manipulate the payload data,
                 // and we need to know the total length for sending it on the wire.
-                int maskOffset = WriteHeader(opcode, _sendBuffer, payloadBuffer, endOfMessage, useMask: true);
-                headerLength = maskOffset + MaskLength;
+                maskOffset = WriteHeader(opcode, _sendBuffer, payloadBuffer, endOfMessage, useMask: true);
+                headerLength = maskOffset.GetValueOrDefault() + MaskLength;
+            }
 
-                // If there is payload data, XOR it with the mask.  We do the manipulation in the send buffer so as to avoid
+            // Write the payload
+            if (payloadBuffer.Count > 0)
+            {
+                Buffer.BlockCopy(payloadBuffer.Array, payloadBuffer.Offset, _sendBuffer, headerLength, payloadBuffer.Count);
+
+                // If we added a mask to the header, XOR the payload with the mask.  We do the manipulation in the send buffer so as to avoid
                 // changing the data in the caller-supplied payload buffer.
-                if (payloadBuffer.Count > 0)
+                if (maskOffset.HasValue)
                 {
-                    Buffer.BlockCopy(payloadBuffer.Array, payloadBuffer.Offset, _sendBuffer, headerLength, payloadBuffer.Count);
-                    ApplyMask(_sendBuffer, headerLength, _sendBuffer, maskOffset, 0, payloadBuffer.Count);
+                    ApplyMask(_sendBuffer, headerLength, _sendBuffer, maskOffset.Value, 0, payloadBuffer.Count);
                 }
             }
 
@@ -871,7 +876,7 @@ namespace System.Net.WebSockets
         }
 
         /// <summary>Parses a message header from the buffer.  This assumes the header is in the buffer.</summary>
-        /// <param name="header">The read header.</param>
+        /// <param name="resultHeader">The read header.</param>
         /// <returns>true if a header was read; false if the header was invalid.</returns>
         private bool TryParseMessageHeaderFromReceiveBuffer(out MessageHeader resultHeader)
         {
@@ -914,6 +919,9 @@ namespace System.Net.WebSockets
                     shouldFail = true;
                 }
                 header.Mask = CombineMaskBytes(_receiveBuffer, _receiveBufferOffset);
+
+                // Consume the mask bytes
+                ConsumeFromBuffer(4);
             }
 
             // Do basic validation of the header
@@ -1026,7 +1034,7 @@ namespace System.Net.WebSockets
 
         /// <summary>Sends a close message to the server.</summary>
         /// <param name="closeStatus">The close status to send.</param>
-        /// <param name="statusDescription">The close status description to send.</param>
+        /// <param name="closeStatusDescription">The close status description to send.</param>
         /// <param name="cancellationToken">The CancellationToken to use to cancel the websocket.</param>
         private async Task SendCloseFrameAsync(WebSocketCloseStatus closeStatus, string closeStatusDescription, CancellationToken cancellationToken)
         {
@@ -1142,9 +1150,9 @@ namespace System.Net.WebSockets
         /// <param name="toMask">The buffer to which the mask should be applied.</param>
         /// <param name="toMaskOffset">The offset into <paramref name="toMask"/> at which the mask should start to be applied.</param>
         /// <param name="mask">The four-byte mask, stored as an Int32.</param>
-        /// <param name="maskOffsetIndex">The index into the mas</param>
+        /// <param name="maskIndex">The index into the mask.</param>
         /// <param name="count">The number of bytes to mask.</param>
-        /// <returns></returns>
+        /// <returns>The next index into the mask to be used for future applications of the mask.</returns>
         private static unsafe int ApplyMask(byte[] toMask, int toMaskOffset, int mask, int maskIndex, long count)
         {
             Debug.Assert(toMaskOffset <= toMask.Length - count, $"Unexpected inputs: {toMaskOffset}, {toMask.Length}, {count}");

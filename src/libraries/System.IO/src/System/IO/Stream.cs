@@ -249,7 +249,7 @@ namespace System.IO
                 Task.Factory.FromAsync(
                     (localBuffer, localOffset, localCount, callback, state) => ((Stream)state).BeginRead(localBuffer, localOffset, localCount, callback, state),
                     iar => ((Stream)iar.AsyncState).EndRead(iar),
-                    buffer, offset, count, this, TaskCreationOptions.DenyChildAttach | TaskCreationOptions.HideScheduler);
+                    buffer, offset, count, this);
         }
 
         public virtual IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback callback, object state) =>
@@ -296,7 +296,7 @@ namespace System.IO
                 Task.Factory.FromAsync(
                     (localBuffer, localOffset, localCount, callback, state) => ((Stream)state).BeginWrite(localBuffer, localOffset, localCount, callback, state),
                     iar => ((Stream)iar.AsyncState).EndWrite(iar),
-                    buffer, offset, count, this, TaskCreationOptions.DenyChildAttach | TaskCreationOptions.HideScheduler);
+                    buffer, offset, count, this);
         }
 
         public virtual IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback callback, object state) =>
