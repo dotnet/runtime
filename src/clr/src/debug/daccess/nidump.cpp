@@ -3120,7 +3120,7 @@ void NativeImageDumper::DumpCompleteMethod(PTR_Module module, MethodIterator& mi
 #ifdef _TARGET_X86_
         InfoHdr hdr;
         stringOutFn( "method info Block:\n" );
-        curGCInfoPtr += gcDump.DumpInfoHdr(PTR_CBYTE(gcInfoToken.Info), &hdr, &methodSize, 0);
+        curGCInfoPtr += gcDump.DumpInfoHdr(curGCInfoPtr, &hdr, &methodSize, 0);
         stringOutFn( "\n" );
 #endif
 
@@ -9439,10 +9439,12 @@ void NativeImageDumper::DumpReadyToRunMethod(PCODE pEntryPoint, PTR_RUNTIME_FUNC
         g_holdStringOutData.Clear();
         GCDump gcDump(GCINFO_VERSION);
         gcDump.gcPrintf = stringOutFn;
-#if !defined(_TARGET_X86_) && defined(USE_GC_INFO_DECODER)
         UINT32 r2rversion = m_pReadyToRunHeader->MajorVersion;
         UINT32 gcInfoVersion = GCInfoToken::ReadyToRunVersionToGcInfoVersion(r2rversion);
-        GcInfoDecoder gcInfoDecoder({ curGCInfoPtr, gcInfoVersion }, DECODE_CODE_LENGTH);
+        GCInfoToken gcInfoToken = { curGCInfoPtr, gcInfoVersion };
+
+#if !defined(_TARGET_X86_) && defined(USE_GC_INFO_DECODER)
+        GcInfoDecoder gcInfoDecoder(gcInfoToken, DECODE_CODE_LENGTH);
         methodSize = gcInfoDecoder.GetCodeLength();
 #endif
 
