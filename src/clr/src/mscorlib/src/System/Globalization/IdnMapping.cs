@@ -132,7 +132,8 @@ namespace System.Globalization
 
         public String GetAscii(String unicode, int index, int count)
         {
-            if (unicode==null) throw new ArgumentNullException("unicode");
+            throw null;
+            /*if (unicode==null) throw new ArgumentNullException("unicode");
             if (index < 0 || count < 0)
                 throw new ArgumentOutOfRangeException((index < 0) ? "index" : "count",
                       Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
@@ -187,7 +188,7 @@ namespace System.Globalization
             }
 
             // Go ahead and encode it
-            return punycode_encode(unicode);
+            return punycode_encode(unicode);*/
         }
 
 

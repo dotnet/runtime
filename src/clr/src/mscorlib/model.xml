@@ -2131,6 +2131,7 @@
       <Member Name="AddSeconds(System.DateTime,System.Int32)" />
       <Member Name="AddWeeks(System.DateTime,System.Int32)" />
       <Member Name="AddYears(System.DateTime,System.Int32)" />
+      <Member Name="Clone" />
       <Member Name="get_Eras" />
       <Member Name="get_IsReadOnly" />
       <Member Name="get_MaxSupportedDateTime" />
@@ -2145,6 +2146,7 @@
       <Member Name="GetDaysInYear(System.Int32,System.Int32)" />
       <Member Name="GetEra(System.DateTime)" />
       <Member Name="GetHour(System.DateTime)" />
+      <Member Name="GetLeapMonth(System.Int32)" />
       <Member Name="GetMilliseconds(System.DateTime)" />
       <Member Name="GetMinute(System.DateTime)" />
       <Member Name="GetMonth(System.DateTime)" />
@@ -2159,6 +2161,7 @@
       <Member Name="IsLeapMonth(System.Int32,System.Int32,System.Int32)" />
       <Member Name="IsLeapYear(System.Int32)" />
       <Member Name="IsLeapYear(System.Int32,System.Int32)" />
+      <Member Name="ReadOnly(System.Globalization.Calendar)" />
       <Member Name="set_TwoDigitYearMax(System.Int32)" />
       <Member Name="ToDateTime(System.Int32,System.Int32,System.Int32,System.Int32,System.Int32,System.Int32,System.Int32)" />
       <Member Name="ToDateTime(System.Int32,System.Int32,System.Int32,System.Int32,System.Int32,System.Int32,System.Int32,System.Int32)" />
@@ -2175,6 +2178,13 @@
       <Member Status="ImplRoot" MemberType="Field" Name="CAL_GREGORIAN_XLIT_ENGLISH" Condition="not FEATURE_COREFX_GLOBALIZATION" />
       <Member Status="ImplRoot" MemberType="Field" Name="CAL_GREGORIAN_XLIT_FRENCH" Condition="not FEATURE_COREFX_GLOBALIZATION" />
     </Type>
+    <Type Name="System.Globalization.CalendarAlgorithmType">
+      <Member MemberType="Field" Name="LunarCalendar" />
+      <Member MemberType="Field" Name="LunisolarCalendar" />
+      <Member MemberType="Field" Name="SolarCalendar" />
+      <Member MemberType="Field" Name="Unknown" />
+      <Member MemberType="Field" Name="value__" />
+    </Type>
     <Type Name="System.Globalization.CalendarWeekRule">
       <Member MemberType="Field" Name="FirstDay" />
       <Member MemberType="Field" Name="FirstFourDayWeek" />
@@ -2182,6 +2192,10 @@
       <Member MemberType="Field" Name="value__" />
     </Type>
     <Type Name="System.Globalization.CharUnicodeInfo">
+      <Member Name="GetDecimalDigitValue(System.Char)" />
+      <Member Name="GetDecimalDigitValue(System.String,System.Int32)" />
+      <Member Name="GetDigitValue(System.Char)" />
+      <Member Name="GetDigitValue(System.String,System.Int32)" />
       <Member Name="GetNumericValue(System.Char)" />
       <Member Name="GetNumericValue(System.String,System.Int32)" />
       <Member Name="GetUnicodeCategory(System.Char)" />
@@ -2208,38 +2222,52 @@
       <Member Name="Compare(System.String,System.String)" />
       <Member Name="Compare(System.String,System.String,System.Globalization.CompareOptions)" />
       <Member Name="Equals(System.Object)" />
+      <Member Name="get_LCID" />
       <Member Name="get_Name" />
+      <Member Name="GetCompareInfo(System.Int32)" />
+      <Member Name="GetCompareInfo(System.Int32,System.Reflection.Assembly)" />
       <Member Name="GetCompareInfo(System.String)" />
+      <Member Name="GetCompareInfo(System.String,System.Reflection.Assembly)" />
       <Member Name="GetHashCode" />
       <Member Name="GetHashCode(System.String,System.Globalization.CompareOptions)" />
+      <Member Name="GetSortKey(System.String)" />
+      <Member Name="GetSortKey(System.String,System.Globalization.CompareOptions)" />
       <Member Name="IndexOf(System.String,System.Char)" />
       <Member Name="IndexOf(System.String,System.Char,System.Globalization.CompareOptions)" />
+      <Member Name="IndexOf(System.String,System.Char,System.Int32)" />
       <Member Name="IndexOf(System.String,System.Char,System.Int32,System.Globalization.CompareOptions)" />
       <Member Name="IndexOf(System.String,System.Char,System.Int32,System.Int32)" />
       <Member Name="IndexOf(System.String,System.Char,System.Int32,System.Int32,System.Globalization.CompareOptions)" />
       <Member Name="IndexOf(System.String,System.String)" />
       <Member Name="IndexOf(System.String,System.String,System.Globalization.CompareOptions)" />
+      <Member Name="IndexOf(System.String,System.String,System.Int32)" />
       <Member Name="IndexOf(System.String,System.String,System.Int32,System.Globalization.CompareOptions)" />
       <Member Name="IndexOf(System.String,System.String,System.Int32,System.Int32)" />
       <Member Name="IndexOf(System.String,System.String,System.Int32,System.Int32,System.Globalization.CompareOptions)" />
       <Member Name="IsPrefix(System.String,System.String)" />
       <Member Name="IsPrefix(System.String,System.String,System.Globalization.CompareOptions)" />
+      <Member Name="IsSortable(System.Char)" />
+      <Member Name="IsSortable(System.String)" />
       <Member Name="IsSuffix(System.String,System.String)" />
       <Member Name="IsSuffix(System.String,System.String,System.Globalization.CompareOptions)" />
       <Member Name="LastIndexOf(System.String,System.Char)" />
       <Member Name="LastIndexOf(System.String,System.Char,System.Globalization.CompareOptions)" />
+      <Member Name="LastIndexOf(System.String,System.Char,System.Int32)" />
       <Member Name="LastIndexOf(System.String,System.Char,System.Int32,System.Globalization.CompareOptions)" />
       <Member Name="LastIndexOf(System.String,System.Char,System.Int32,System.Int32)" />
       <Member Name="LastIndexOf(System.String,System.Char,System.Int32,System.Int32,System.Globalization.CompareOptions)" />
       <Member Name="LastIndexOf(System.String,System.String)" />
       <Member Name="LastIndexOf(System.String,System.String,System.Globalization.CompareOptions)" />
+      <Member Name="LastIndexOf(System.String,System.String,System.Int32)" />
       <Member Name="LastIndexOf(System.String,System.String,System.Int32,System.Globalization.CompareOptions)" />
       <Member Name="LastIndexOf(System.String,System.String,System.Int32,System.Int32)" />
       <Member Name="LastIndexOf(System.String,System.String,System.Int32,System.Int32,System.Globalization.CompareOptions)" />
       <Member Status="ImplRoot" Name="OnDeserialized(System.Runtime.Serialization.StreamingContext)" />
       <Member Status="ImplRoot" Name="OnDeserializing(System.Runtime.Serialization.StreamingContext)" />
       <Member Status="ImplRoot" Name="OnSerializing(System.Runtime.Serialization.StreamingContext)" />
+      <Member Status="ImplRoot" Name="System.Runtime.Serialization.IDeserializationCallback.OnDeserialization(System.Object)" />
       <Member Name="ToString" />
+      <Member MemberType="Property" Name="LCID" />
       <Member MemberType="Property" Name="Name" />
     </Type>
     <Type Name="System.Globalization.CompareOptions">
@@ -2255,8 +2283,13 @@
       <Member MemberType="Field" Name="value__" />
     </Type>
     <Type Name="System.Globalization.CultureInfo">
+      <Member Name="#ctor(System.Int32)" />
+      <Member Name="#ctor(System.Int32,System.Boolean)" />
       <Member Name="#ctor(System.String)" />
+      <Member Name="#ctor(System.String,System.Boolean)" />
+      <Member Name="ClearCachedData" />
       <Member Name="Clone" />
+      <Member Name="CreateSpecificCulture(System.String)" />
       <Member Name="Equals(System.Object)" />
       <Member Name="get_Calendar" />
       <Member Name="get_CompareInfo" />
@@ -2267,16 +2300,26 @@
       <Member Name="get_DateTimeFormat" />
       <Member Name="get_DisplayName" />
       <Member Name="get_EnglishName" />
+      <Member Name="get_InstalledUICulture" />
       <Member Name="get_InvariantCulture" />
       <Member Name="get_IsNeutralCulture" />
       <Member Name="get_IsReadOnly" />
+      <Member Name="get_LCID" />
       <Member Name="get_Name" />
       <Member Name="get_NativeName" />
       <Member Name="get_NumberFormat" />
       <Member Name="get_OptionalCalendars" />
       <Member Name="get_Parent" />
       <Member Name="get_TextInfo" />
+      <Member Name="get_ThreeLetterISOLanguageName" />
+      <Member Name="get_ThreeLetterWindowsLanguageName" />
       <Member Name="get_TwoLetterISOLanguageName" />
+      <Member Name="get_UseUserOverride" />
+      <Member Name="GetCultureInfo(System.Int32)" />
+      <Member Name="GetCultureInfo(System.String)" />
+      <Member Name="GetCultureInfo(System.String,System.String)" />
+      <Member Name="GetCultureInfoByIetfLanguageTag(System.String)" />
+      <Member Name="GetCultures(System.Globalization.CultureTypes)" />
       <Member Name="GetFormat(System.Type)" />
       <Member Name="GetHashCode" />
       <Member Status="ImplRoot" Name="OnDeserialized(System.Runtime.Serialization.StreamingContext)" />
@@ -2299,16 +2342,21 @@
       <Member MemberType="Property" Name="DefaultThreadCurrentUICulture"/>
       <Member MemberType="Property" Name="DisplayName" />
       <Member MemberType="Property" Name="EnglishName" />
+      <Member MemberType="Property" Name="InstalledUICulture" />
       <Member MemberType="Property" Name="InvariantCulture" />
       <Member MemberType="Property" Name="IsNeutralCulture" />
       <Member MemberType="Property" Name="IsReadOnly" />
+      <Member MemberType="Property" Name="LCID" />
       <Member MemberType="Property" Name="Name" />
       <Member MemberType="Property" Name="NativeName" />
       <Member MemberType="Property" Name="NumberFormat" />
       <Member MemberType="Property" Name="OptionalCalendars" />
       <Member MemberType="Property" Name="Parent" />
       <Member MemberType="Property" Name="TextInfo" />
+      <Member MemberType="Property" Name="ThreeLetterISOLanguageName" />
+      <Member MemberType="Property" Name="ThreeLetterWindowsLanguageName" />
       <Member MemberType="Property" Name="TwoLetterISOLanguageName" />
+      <Member MemberType="Property" Name="UseUserOverride" />
       <Member Status="ImplRoot" MemberType="Property" Name="SortName" />
       <Member Status="ImplRoot" MemberType="Field" Name="m_parent" />
       <Member Status="ImplRoot" MemberType="Field" Name="m_useUserOverride" Condition="not FEATURE_COREFX_GLOBALIZATION" />
@@ -2318,13 +2366,29 @@
       <Member Name="#ctor(System.String)" />
       <Member Name="#ctor(System.String,System.String)" />
       <Member Name="#ctor(System.String,System.Exception)" />
+      <Member Name="#ctor(System.String,System.Int32,System.Exception)" />
+      <Member Name="#ctor(System.String,System.Int32,System.String)" />
       <Member Name="#ctor(System.String,System.String,System.String)" />
       <Member Name="#ctor(System.String,System.String,System.Exception)" />
       <Member Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
+      <Member Name="get_InvalidCultureId" />
       <Member Name="get_InvalidCultureName" />
       <Member Name="get_Message" />
+      <Member Name="GetObjectData(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
+      <Member MemberType="Property" Name="InvalidCultureId" />
       <Member MemberType="Property" Name="InvalidCultureName" />
       <Member MemberType="Property" Name="Message" />
+    </Type>
+    <Type Name="System.Globalization.CultureTypes">
+      <Member MemberType="Field" Name="AllCultures" />
+      <Member MemberType="Field" Name="FrameworkCultures" />
+      <Member MemberType="Field" Name="InstalledWin32Cultures" />
+      <Member MemberType="Field" Name="NeutralCultures" />
+      <Member MemberType="Field" Name="ReplacementCultures" />
+      <Member MemberType="Field" Name="SpecificCultures" />
+      <Member MemberType="Field" Name="UserCustomCulture" />
+      <Member MemberType="Field" Name="value__" />
+      <Member MemberType="Field" Name="WindowsOnlyCultures" />
     </Type>
     <Type Name="System.Globalization.DateTimeFormatInfo">
       <Member Name="#ctor" />
@@ -2336,6 +2400,7 @@
       <Member Name="get_Calendar" />
       <Member Name="get_CalendarWeekRule" />
       <Member Name="get_CurrentInfo" />
+      <Member Name="get_DateSeparator" />
       <Member Name="get_DayNames" />
       <Member Name="get_FirstDayOfWeek" />
       <Member Name="get_FullDateTimePattern" />
@@ -2346,23 +2411,28 @@
       <Member Name="get_MonthDayPattern" />
       <Member Name="get_MonthGenitiveNames" />
       <Member Name="get_MonthNames" />
+      <Member Name="get_NativeCalendarName" />
       <Member Name="get_PMDesignator" />
       <Member Name="get_RFC1123Pattern" />
       <Member Name="get_ShortDatePattern" />
       <Member Name="get_ShortestDayNames" />
       <Member Name="get_ShortTimePattern" />
       <Member Name="get_SortableDateTimePattern" />
+      <Member Name="get_TimeSeparator" />
       <Member Name="get_UniversalSortableDateTimePattern" />
       <Member Name="get_YearMonthPattern" />
       <Member Name="GetAbbreviatedDayName(System.DayOfWeek)" />
       <Member Name="GetAbbreviatedEraName(System.Int32)" />
       <Member Name="GetAbbreviatedMonthName(System.Int32)" />
+      <Member Name="GetAllDateTimePatterns" />
+      <Member Name="GetAllDateTimePatterns(System.Char)" />
       <Member Name="GetDayName(System.DayOfWeek)" />
       <Member Name="GetEra(System.String)" />
       <Member Name="GetEraName(System.Int32)" />
       <Member Name="GetFormat(System.Type)" />
       <Member Name="GetInstance(System.IFormatProvider)" />
       <Member Name="GetMonthName(System.Int32)" />
+      <Member Name="GetShortestDayName(System.DayOfWeek)" />
       <Member Status="ImplRoot" Name="OnDeserialized(System.Runtime.Serialization.StreamingContext)" />
       <Member Status="ImplRoot" Name="OnSerializing(System.Runtime.Serialization.StreamingContext)" />
       <Member Name="ReadOnly(System.Globalization.DateTimeFormatInfo)" />
@@ -2372,6 +2442,7 @@
       <Member Name="set_AMDesignator(System.String)" />
       <Member Name="set_Calendar(System.Globalization.Calendar)" />
       <Member Name="set_CalendarWeekRule(System.Globalization.CalendarWeekRule)" />
+      <Member Name="set_DateSeparator(System.String)" />
       <Member Name="set_DayNames(System.String[])" />
       <Member Name="set_FirstDayOfWeek(System.DayOfWeek)" />
       <Member Name="set_FullDateTimePattern(System.String)" />
@@ -2384,7 +2455,9 @@
       <Member Name="set_ShortDatePattern(System.String)" />
       <Member Name="set_ShortestDayNames(System.String[])" />
       <Member Name="set_ShortTimePattern(System.String)" />
+      <Member Name="set_TimeSeparator(System.String)" />
       <Member Name="set_YearMonthPattern(System.String)" />
+      <Member Name="SetAllDateTimePatterns(System.String[],System.Char)" />
       <Member MemberType="Property" Name="AbbreviatedDayNames" />
       <Member MemberType="Property" Name="AbbreviatedMonthGenitiveNames" />
       <Member MemberType="Property" Name="AbbreviatedMonthNames" />
@@ -2392,6 +2465,7 @@
       <Member MemberType="Property" Name="Calendar" />
       <Member MemberType="Property" Name="CalendarWeekRule" />
       <Member MemberType="Property" Name="CurrentInfo" />
+      <Member MemberType="Property" Name="DateSeparator" />
       <Member MemberType="Property" Name="DayNames" />
       <Member MemberType="Property" Name="FirstDayOfWeek" />
       <Member MemberType="Property" Name="FullDateTimePattern" />
@@ -2402,12 +2476,14 @@
       <Member MemberType="Property" Name="MonthDayPattern" />
       <Member MemberType="Property" Name="MonthGenitiveNames" />
       <Member MemberType="Property" Name="MonthNames" />
+      <Member MemberType="Property" Name="NativeCalendarName" />
       <Member MemberType="Property" Name="PMDesignator" />
       <Member MemberType="Property" Name="RFC1123Pattern" />
       <Member MemberType="Property" Name="ShortDatePattern" />
       <Member MemberType="Property" Name="ShortestDayNames" />
       <Member MemberType="Property" Name="ShortTimePattern" />
       <Member MemberType="Property" Name="SortableDateTimePattern" />
+      <Member MemberType="Property" Name="TimeSeparator" />
       <Member MemberType="Property" Name="UniversalSortableDateTimePattern" />
       <Member MemberType="Property" Name="YearMonthPattern" />
     </Type>
@@ -2424,7 +2500,21 @@
       <Member MemberType="Field" Name="RoundtripKind" />
       <Member MemberType="Field" Name="value__" />
     </Type>
-
+    <Type Name="System.Globalization.DaylightTime">
+      <Member Name="#ctor(System.DateTime,System.DateTime,System.TimeSpan)" />
+      <Member Name="get_Delta" />
+      <Member Name="get_End" />
+      <Member Name="get_Start" />
+      <Member MemberType="Property" Name="Delta" />
+      <Member MemberType="Property" Name="End" />
+      <Member MemberType="Property" Name="Start" />
+    </Type>
+    <Type Name="System.Globalization.DigitShapes">
+      <Member MemberType="Field" Name="Context" />
+      <Member MemberType="Field" Name="NativeNational" />
+      <Member MemberType="Field" Name="None" />
+      <Member MemberType="Field" Name="value__" />
+    </Type>
     <Type Name="System.Globalization.PersianCalendar">
       <Member MemberType="Field" Name="PersianEra" />
       <Member Name="#ctor" />
@@ -2607,6 +2697,7 @@
       <Member MemberType="Property" Name="TwoDigitYearMax" />
     </Type>
     <Type Name="System.Globalization.HebrewCalendar">
+      <Member MemberType="Field" Name="HebrewEra" />
       <Member Name="#ctor" />
       <Member Name="AddMonths(System.DateTime,System.Int32)" />
       <Member Name="AddYears(System.DateTime,System.Int32)" />
@@ -2636,6 +2727,7 @@
       <Member MemberType="Property" Name="TwoDigitYearMax" />
     </Type>
     <Type Name="System.Globalization.HijriCalendar">
+      <Member MemberType="Field" Name="HijriEra" />
       <Member Name="#ctor" />
       <Member Name="AddMonths(System.DateTime,System.Int32)" />
       <Member Name="AddYears(System.DateTime,System.Int32)" />
@@ -2666,6 +2758,23 @@
       <Member MemberType="Property" Name="MaxSupportedDateTime" />
       <Member MemberType="Property" Name="MinSupportedDateTime" />
       <Member MemberType="Property" Name="TwoDigitYearMax" />
+    </Type>
+    <Type Name="System.Globalization.IdnMapping">
+      <Member Name="#ctor" />
+      <Member Name="Equals(System.Object)" />
+      <Member Name="get_AllowUnassigned" />
+      <Member Name="get_UseStd3AsciiRules" />
+      <Member Name="GetAscii(System.String)" />
+      <Member Name="GetAscii(System.String,System.Int32)" />
+      <Member Name="GetAscii(System.String,System.Int32,System.Int32)" />
+      <Member Name="GetHashCode" />
+      <Member Name="GetUnicode(System.String)" />
+      <Member Name="GetUnicode(System.String,System.Int32)" />
+      <Member Name="GetUnicode(System.String,System.Int32,System.Int32)" />
+      <Member Name="set_AllowUnassigned(System.Boolean)" />
+      <Member Name="set_UseStd3AsciiRules(System.Boolean)" />
+      <Member MemberType="Property" Name="AllowUnassigned" />
+      <Member MemberType="Property" Name="UseStd3AsciiRules" />
     </Type>
     <Type Name="System.Globalization.KoreanCalendar">
       <Member MemberType="Field" Name="KoreanEra" />
@@ -2711,6 +2820,7 @@
       <Member MemberType="Property" Name="MinSupportedDateTime" />
     </Type>
     <Type Name="System.Globalization.UmAlQuraCalendar">
+      <Member MemberType="Field" Name="UmAlQuraEra" />
       <Member Name="#ctor" />
       <Member Name="AddMonths(System.DateTime,System.Int32)" />
       <Member Name="AddYears(System.DateTime,System.Int32)" />
@@ -2750,9 +2860,11 @@
       <Member Name="get_CurrencyPositivePattern" />
       <Member Name="get_CurrencySymbol" />
       <Member Name="get_CurrentInfo" />
+      <Member Name="get_DigitSubstitution" />
       <Member Name="get_InvariantInfo" />
       <Member Name="get_IsReadOnly" />
       <Member Name="get_NaNSymbol" />
+      <Member Name="get_NativeDigits" />
       <Member Name="get_NegativeInfinitySymbol" />
       <Member Name="get_NegativeSign" />
       <Member Name="get_NumberDecimalDigits" />
@@ -2783,7 +2895,9 @@
       <Member Name="set_CurrencyNegativePattern(System.Int32)" />
       <Member Name="set_CurrencyPositivePattern(System.Int32)" />
       <Member Name="set_CurrencySymbol(System.String)" />
+      <Member Name="set_DigitSubstitution(System.Globalization.DigitShapes)" />
       <Member Name="set_NaNSymbol(System.String)" />
+      <Member Name="set_NativeDigits(System.String[])" />
       <Member Name="set_NegativeInfinitySymbol(System.String)" />
       <Member Name="set_NegativeSign(System.String)" />
       <Member Name="set_NumberDecimalDigits(System.Int32)" />
@@ -2809,9 +2923,11 @@
       <Member MemberType="Property" Name="CurrencyPositivePattern" />
       <Member MemberType="Property" Name="CurrencySymbol" />
       <Member MemberType="Property" Name="CurrentInfo" />
+      <Member MemberType="Property" Name="DigitSubstitution" />
       <Member MemberType="Property" Name="InvariantInfo" />
       <Member MemberType="Property" Name="IsReadOnly" />
       <Member MemberType="Property" Name="NaNSymbol" />
+      <Member MemberType="Property" Name="NativeDigits" />
       <Member MemberType="Property" Name="NegativeInfinitySymbol" />
       <Member MemberType="Property" Name="NegativeSign" />
       <Member MemberType="Property" Name="NumberDecimalDigits" />
@@ -2853,30 +2969,63 @@
       <Member MemberType="Field" Name="value__" />
     </Type>
     <Type Name="System.Globalization.RegionInfo">
+      <Member Name="#ctor(System.Int32)" />
       <Member Name="#ctor(System.String)" />
       <Member Name="Equals(System.Object)" />
       <Member Name="get_CurrencySymbol" />
+      <Member Name="get_CurrencyEnglishName" />
+      <Member Name="get_CurrencyNativeName" />
       <Member Name="get_CurrentRegion" />
       <Member Name="get_DisplayName" />
       <Member Name="get_EnglishName" />
+      <Member Name="get_GeoId" />
       <Member Name="get_IsMetric" />
       <Member Name="get_ISOCurrencySymbol" />
       <Member Name="get_Name" />
       <Member Name="get_NativeName" />
+      <Member Name="get_ThreeLetterISORegionName" />
+      <Member Name="get_ThreeLetterWindowsRegionName" />
       <Member Name="get_TwoLetterISORegionName" />
       <Member Name="GetHashCode" />
       <Member Status="ImplRoot" Name="OnDeserialized(System.Runtime.Serialization.StreamingContext)" />
       <Member Status="ImplRoot" Name="OnSerializing(System.Runtime.Serialization.StreamingContext)" />
       <Member Name="ToString" />
       <Member MemberType="Property" Name="CurrencySymbol" />
+      <Member MemberType="Property" Name="CurrencyEnglishName" />
+      <Member MemberType="Property" Name="CurrencyNativeName" />
       <Member MemberType="Property" Name="CurrentRegion" />
       <Member MemberType="Property" Name="DisplayName" />
       <Member MemberType="Property" Name="EnglishName" />
+      <Member MemberType="Property" Name="GeoId" />
       <Member MemberType="Property" Name="IsMetric" />
       <Member MemberType="Property" Name="ISOCurrencySymbol" />
       <Member MemberType="Property" Name="Name" />
       <Member MemberType="Property" Name="NativeName" />
+      <Member MemberType="Property" Name="ThreeLetterISORegionName" />
+      <Member MemberType="Property" Name="ThreeLetterWindowsRegionName" />
       <Member MemberType="Property" Name="TwoLetterISORegionName" />
+    </Type>
+    <Type Name="System.Globalization.SortKey">
+      <Member Name="Compare(System.Globalization.SortKey,System.Globalization.SortKey)" />
+      <Member Name="Equals(System.Object)" />
+      <Member Name="get_KeyData" />
+      <Member Name="get_OriginalString" />
+      <Member Name="GetHashCode" />
+      <Member Name="ToString" />
+      <Member MemberType="Property" Name="KeyData" />
+      <Member MemberType="Property" Name="OriginalString" />
+    </Type>
+    <Type Name="System.Globalization.SortVersion">
+      <Member Name="#ctor(System.Int32,System.Guid)" />
+      <Member Name="Equals(System.Globalization.SortVersion)" />
+      <Member Name="Equals(System.Object)" />
+      <Member Name="get_FullVersion" />
+      <Member Name="get_SortId" />
+      <Member Name="GetHashCode" />
+      <Member Name="op_Equality(System.Globalization.SortVersion,System.Globalization.SortVersion)" />
+      <Member Name="op_Inequality(System.Globalization.SortVersion,System.Globalization.SortVersion)" />
+      <Member MemberType="Property" Name="FullVersion" />
+      <Member MemberType="Property" Name="SortId" />
     </Type>
     <Type Name="System.Globalization.StringInfo">
       <Member Name="#ctor" />
@@ -2893,6 +3042,8 @@
       <Member Status="ImplRoot" Name="OnDeserializing(System.Runtime.Serialization.StreamingContext)" />
       <Member Name="ParseCombiningCharacters(System.String)" />
       <Member Name="set_String(System.String)" />
+      <Member Name="SubstringByTextElements(System.Int32)" />
+      <Member Name="SubstringByTextElements(System.Int32,System.Int32)" />
       <Member MemberType="Property" Name="LengthInTextElements" />
       <Member MemberType="Property" Name="String" />
     </Type>
@@ -2950,25 +3101,39 @@
       <Member MemberType="Property" Name="ElementIndex" />
     </Type>
     <Type Name="System.Globalization.TextInfo">
+      <Member Name="Clone" />
       <Member Name="Equals(System.Object)" />
+      <Member Name="get_ANSICodePage" />
       <Member Name="get_CultureName" />
+      <Member Name="get_EBCDICCodePage" />
       <Member Name="get_IsReadOnly" />
       <Member Name="get_IsRightToLeft" />
+      <Member Name="get_LCID" />
       <Member Name="get_ListSeparator" />
+      <Member Name="get_MacCodePage" />
+      <Member Name="get_OEMCodePage" />
       <Member Name="GetHashCode" />
       <Member Status="ImplRoot" Name="OnDeserialized(System.Runtime.Serialization.StreamingContext)" />
       <Member Status="ImplRoot" Name="OnDeserializing(System.Runtime.Serialization.StreamingContext)" />
       <Member Status="ImplRoot" Name="OnSerializing(System.Runtime.Serialization.StreamingContext)" />
+      <Member Status="ImplRoot" Name="System.Runtime.Serialization.IDeserializationCallback.OnDeserialization(System.Object)" />
+      <Member Name="ReadOnly(System.Globalization.TextInfo)" />
       <Member Name="set_ListSeparator(System.String)" />
       <Member Name="ToLower(System.Char)" />
       <Member Name="ToLower(System.String)" />
       <Member Name="ToString" />
+      <Member Name="ToTitleCase(System.String)" />
       <Member Name="ToUpper(System.Char)" />
       <Member Name="ToUpper(System.String)" />
+      <Member MemberType="Property" Name="ANSICodePage" />
       <Member MemberType="Property" Name="CultureName" />
+      <Member MemberType="Property" Name="EBCDICCodePage" />
       <Member MemberType="Property" Name="IsReadOnly" />
       <Member MemberType="Property" Name="IsRightToLeft" />
+      <Member MemberType="Property" Name="LCID" />
       <Member MemberType="Property" Name="ListSeparator" />
+      <Member MemberType="Property" Name="MacCodePage" />
+      <Member MemberType="Property" Name="OEMCodePage" />
     </Type>
     <Type Name="System.Globalization.ThaiBuddhistCalendar">
       <Member MemberType="Field" Name="ThaiBuddhistEra" />

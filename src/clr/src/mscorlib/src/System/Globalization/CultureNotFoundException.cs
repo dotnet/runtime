@@ -12,7 +12,7 @@ namespace System.Globalization {
     
     [System.Runtime.InteropServices.ComVisible(true)]
     [Serializable]
-    public class CultureNotFoundException : ArgumentException, ISerializable
+    public partial class CultureNotFoundException : ArgumentException, ISerializable
     {
         private string          m_invalidCultureName; // unrecognized culture name
 #if !FEATURE_CORECLR
