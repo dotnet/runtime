@@ -94,18 +94,5 @@ namespace System.Tests
             Assert.Throws<ArgumentOutOfRangeException>(() => Convert.ToBase64CharArray(inputBytes, 0, inputBytes.Length + 1, outputBuffer, 0));
             Assert.Throws<ArgumentOutOfRangeException>(() => Convert.ToBase64CharArray(inputBytes, 1, inputBytes.Length, outputBuffer, 0));
         }
-
-#if netstandard17
-        [Fact]
-        public static void SimpleTest()
-        {
-            byte[] barray = new byte[256];
-            char[] carray = new char[352];
-            int length = Convert.ToBase64CharArray(barray, 0, barray.Length, carray, 0, Base64FormattingOptions.InsertLineBreaks);
-            int length2 = Convert.ToBase64CharArray(barray, 0, barray.Length, carray, 0, Base64FormattingOptions.None);
-            Assert.Equal(length, 352);
-            Assert.Equal(length, 352);
-        }
-#endif
     }
 }
