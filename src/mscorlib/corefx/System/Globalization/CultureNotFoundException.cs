@@ -14,7 +14,7 @@ namespace System.Globalization
 {
     [Serializable]
     [System.Runtime.InteropServices.ComVisible(true)]
-    public class CultureNotFoundException : ArgumentException, ISerializable
+    public partial class CultureNotFoundException : ArgumentException, ISerializable
     {
         private string m_invalidCultureName; // unrecognized culture name
 

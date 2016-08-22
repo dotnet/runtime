@@ -860,6 +860,10 @@ namespace System.Globalization {
                 return (this.dateSeparator);
             }
 
+#if FEATURE_CORECLR
+            set { throw new NotImplementedException(); }
+#endif
+
 #if !FEATURE_CORECLR
             set {
                 if (IsReadOnly)
@@ -1305,6 +1309,10 @@ namespace System.Globalization {
                 Contract.Assert(this.timeSeparator != null, "DateTimeFormatInfo.TimeSeparator, timeSeparator != null");
                 return (timeSeparator);
             }
+
+#if FEATURE_CORECLR
+            set { throw new NotImplementedException(); }
+#endif
 
 #if !FEATURE_CORECLR
             set {
