@@ -45,7 +45,7 @@ GOTO :DONE
   echo "Usage..."
   echo "gen-buildsys-win.bat <path to top level CMakeLists.txt> <VSVersion>"
   echo "Specify the path to the top level CMake file - <ProjectK>/src/NDP"
-  echo "Specify the VSVersion to be used - VS2013 or VS2015"
+  echo "Specify the VSVersion to be used - VS2015"
   EXIT /B 1
 
 :DONE

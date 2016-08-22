@@ -164,9 +164,10 @@
     <MinOSForArch Condition="'$(PackagePlatform)' == 'arm'">win8</MinOSForArch>
     <MinOSForArch Condition="'$(PackagePlatform)' == 'arm64'">win10</MinOSForArch>
 
-    <!-- Arm64 cross target components are x64 hosted -->
-    <HasCrossTargetComponents Condition="'$(PackagePlatform)' =='arm64'">true</HasCrossTargetComponents>
+    <!-- Define packaging attributes for cross target components -->
+    <HasCrossTargetComponents Condition="'$(TargetsWindows)' == 'true' and ('$(PackagePlatform)' =='arm64' or '$(PackagePlatform)' =='arm')">true</HasCrossTargetComponents>
     <CrossTargetComponentFolder Condition="'$(PackagePlatform)' == 'arm64'">x64</CrossTargetComponentFolder>
+    <CrossTargetComponentFolder Condition="'$(PackagePlatform)' == 'arm'">x86</CrossTargetComponentFolder>
 
     <PackageOutputPath>$(PackagesBinDir)/pkg/</PackageOutputPath>
     <SymbolPackageOutputPath>$(PackagesBinDir)/symbolpkg/</SymbolPackageOutputPath>
