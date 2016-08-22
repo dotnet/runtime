@@ -7275,18 +7275,8 @@ ReturnKind GetReturnKindFromMethodTable(Thread *pThread, EECodeInfo *codeInfo)
 
 ReturnKind GetReturnKind(Thread *pThread, EECodeInfo *codeInfo)
 {
-    ReturnKind returnKind = RT_Illegal;
-
-#ifdef _TARGET_X86_  
-    // X86 GCInfo updates yet to be implemented.
-#else
     GCInfoToken gcInfoToken = codeInfo->GetGCInfoToken();
-    if (gcInfoToken.IsReturnKindAvailable()) 
-    {
-        GcInfoDecoder gcInfoDecoder(gcInfoToken, DECODE_RETURN_KIND);
-        returnKind = gcInfoDecoder.GetReturnKind();
-    }
-#endif // _TARGET_X86_
+    ReturnKind returnKind = codeInfo->GetCodeManager()->GetReturnKind(gcInfoToken);
 
     if (!IsValidReturnKind(returnKind))
     {

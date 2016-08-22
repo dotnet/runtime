@@ -80,7 +80,7 @@ void SetupAndSprinkleBreakpoints(
 
     gcCover->methodRegion      = methodRegionInfo;
     gcCover->codeMan           = pCodeInfo->GetCodeManager();
-    gcCover->gcInfoToken           = pCodeInfo->GetGCInfoToken();
+    gcCover->gcInfoToken       = pCodeInfo->GetGCInfoToken();
     gcCover->callerThread      = 0;
     gcCover->doingEpilogChecks = true;    
 
@@ -583,7 +583,7 @@ void GCCoverageInfo::SprinkleBreakpoints(
 #ifdef _TARGET_X86_
         // we will whack every instruction in the prolog and epilog to make certain
         // our unwinding logic works there.  
-        if (codeMan->IsInPrologOrEpilog((cur - codeStart) + (DWORD)regionOffsetAdj, gcInfoToken.Info, NULL)) {
+        if (codeMan->IsInPrologOrEpilog((cur - codeStart) + (DWORD)regionOffsetAdj, gcInfoToken, NULL)) {
             *cur = INTERRUPT_INSTR;
         }
 #endif
@@ -1527,7 +1527,7 @@ void DoGcStress (PCONTEXT regs, MethodDesc *pMD)
     /* are we in a prolog or epilog?  If so just test the unwind logic
        but don't actually do a GC since the prolog and epilog are not
        GC safe points */
-    if (gcCover->codeMan->IsInPrologOrEpilog(offset, gcCover->gcInfoToken.Info, NULL))
+    if (gcCover->codeMan->IsInPrologOrEpilog(offset, gcCover->gcInfoToken, NULL))
     {
         // We are not at a GC safe point so we can't Suspend EE (Suspend EE will yield to GC).
         // But we still have to update the GC Stress instruction. We do it directly without suspending
