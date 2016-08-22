@@ -240,7 +240,8 @@ def osShortName = ['Windows 10': 'win10',
             Utilities.standardJobSetup(newJob, project, isPR, "*/${branch}")
             // Add the unit test results
             Utilities.addXUnitDotNETResults(newJob, 'bin/tests/**/testResults.xml')
-
+            // Add archival for the built data.
+            Utilities.addArchival(newJob, "msbuild.log", '', doNotFailIfNothingArchived=true, archiveOnlyIfSuccessful=false)
             // Set up appropriate triggers.  PR on demand, otherwise nightly
             if (isPR) {
                 // Set PR trigger.
@@ -382,7 +383,7 @@ def osShortName = ['Windows 10': 'win10',
                 archiveContents += ",bin/build.tar.gz"
             }
             // Add archival for the built data.
-            Utilities.addArchival(newJob, archiveContents)
+            Utilities.addArchival(newJob, archiveContents, '', doNotFailIfNothingArchived=true, archiveOnlyIfSuccessful=false)
             // Set up triggers
             if (isPR) {
                 // Set PR trigger, we run Windows_NT, Ubuntu 14.04, CentOS 7.1 and OSX on every PR.
