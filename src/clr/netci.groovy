@@ -22,6 +22,7 @@ def static getOSGroup(def os) {
         'FreeBSD':'FreeBSD',
         'CentOS7.1': 'Linux',
         'OpenSUSE13.2': 'Linux',
+        'OpenSUSE42.1': 'Linux',
         'LinuxARMEmulator': 'Linux']
     def osGroup = osGroupMap.get(os, null) 
     assert osGroup != null : "Could not find os group for ${os}"
@@ -34,7 +35,7 @@ class Constants {
     // The Windows_NT_BuildOnly OS is a way to speed up the Non-NT builds temporarily by avoiding
     // test execution in the build flow runs.  It generates the exact same build
     // as Windows_NT but without the tests.
-    def static osList = ['Ubuntu', 'Debian8.4', 'OSX', 'Windows_NT', 'Windows_NT_BuildOnly', 'FreeBSD', 'CentOS7.1', 'OpenSUSE13.2', 'RHEL7.2', 'LinuxARMEmulator', 'Ubuntu16.04', 'Fedora23']
+    def static osList = ['Ubuntu', 'Debian8.4', 'OSX', 'Windows_NT', 'Windows_NT_BuildOnly', 'FreeBSD', 'CentOS7.1', 'OpenSUSE13.2', 'OpenSUSE42.1', 'RHEL7.2', 'LinuxARMEmulator', 'Ubuntu16.04', 'Fedora23']
     def static crossList = ['Ubuntu', 'OSX', 'CentOS7.1', 'RHEL7.2', 'Debian8.4', 'OpenSUSE13.2']
     // This is a set of JIT stress modes combined with the set of variables that
     // need to be set to actually enable that stress mode.  The key of the map is the stress mode and
@@ -558,6 +559,7 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                     break
                 case 'Fedora23':
                 case 'Ubuntu16.04':
+                case 'OpenSUSE42.1':
                     assert !isFlowJob
                     assert scenario == 'default'
                     Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} Build", "(?i).*test\\W+${os}\\W+.*")
@@ -1688,6 +1690,7 @@ combinedScenarios.each { scenario ->
                         case 'CentOS7.1':
                         case 'RHEL7.2':
                         case 'OpenSUSE13.2':
+                        case 'OpenSUSE42.1':
                         case 'Fedora23':
                             switch (architecture) {
                                 case 'x64':
@@ -1707,7 +1710,9 @@ combinedScenarios.each { scenario ->
                                         }
                                         else
                                         {
-                                            buildCommands += "./build.sh verbose ${lowerConfiguration} ${arch}"
+                                            def bootstrapRid = Utilities.getBoostrapPublishRid(os)
+                                            def bootstrapRidEnv = bootstrapRid != null ? "__PUBLISH_RID=${bootstrapRid} " : ''
+                                            buildCommands += "${bootstrapRidEnv}./build.sh verbose ${lowerConfiguration} ${arch}"
                                         }
                                         buildCommands += "src/pal/tests/palsuite/runpaltests.sh \${WORKSPACE}/bin/obj/${osGroup}.${arch}.${configuration} \${WORKSPACE}/bin/paltestout"
                                     
