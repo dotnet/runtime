@@ -617,7 +617,7 @@ namespace System.Text.RegularExpressions.Tests
             try
             {
                 // In invariant culture, the unicode char matches differ from expected values provided.
-                if (originalCulture == CultureInfo.InvariantCulture)
+                if (originalCulture.Equals(CultureInfo.InvariantCulture))
                 {
                     CultureInfo.CurrentCulture = s_enUSCulture;
                 }
@@ -645,7 +645,7 @@ namespace System.Text.RegularExpressions.Tests
             }
             finally
             {
-                if (cultureInfo != null || originalCulture == CultureInfo.InvariantCulture)
+                if (cultureInfo != null || originalCulture.Equals(CultureInfo.InvariantCulture))
                 {
                     CultureInfo.CurrentCulture = originalCulture;
                 }
