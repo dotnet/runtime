@@ -6076,6 +6076,9 @@
       <Member Name="#ctor(System.String)" />
       <Member MemberType="Property" Name="AssemblyFullName" />
     </Type>
+    <Type Name="System.Runtime.CompilerServices.SuppressIldasmAttribute">
+      <Member Name="#ctor" />
+    </Type>
     <!-- #if FEATURE_CORRUPTING_EXCEPTIONS -->
     <Type Name="System.Runtime.ExceptionServices.HandleProcessCorruptedStateExceptionsAttribute">
       <Member Name="#ctor" />

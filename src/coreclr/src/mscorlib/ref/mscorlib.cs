@@ -9757,6 +9757,11 @@ namespace System.Runtime.CompilerServices
         public StateMachineAttribute(System.Type stateMachineType) { }
         public System.Type StateMachineType { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
     }
+    [System.AttributeUsage((System.AttributeTargets)(1) | (System.AttributeTargets)(2))]
+    public sealed partial class SuppressIldasmAttribute : System.Attribute
+    {
+        public SuppressIldasmAttribute() { }
+    }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
     public partial struct TaskAwaiter : System.Runtime.CompilerServices.ICriticalNotifyCompletion, System.Runtime.CompilerServices.INotifyCompletion
     {
