@@ -268,11 +268,9 @@ unsigned LIR::Use::ReplaceWithLclVar(Compiler* compiler, unsigned blockWeight, u
     compiler->lvaTable[lclNum].incRefCnts(blockWeight, compiler);
 
     GenTreeLclVar* store = compiler->gtNewTempAssign(lclNum, node)->AsLclVar();
-    store->CopyCosts(node);
 
     GenTree* load =
         new (compiler, GT_LCL_VAR) GenTreeLclVar(store->TypeGet(), store->AsLclVarCommon()->GetLclNum(), BAD_IL_OFFSET);
-    compiler->gtPrepareCost(load);
 
     m_range->InsertAfter(node, store, load);
 
