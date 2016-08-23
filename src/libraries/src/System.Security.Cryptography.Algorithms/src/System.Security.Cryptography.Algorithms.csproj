@@ -22,6 +22,8 @@
     <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.6</NuGetTargetMoniker>
     <GenFacadesArgs Condition="'$(TargetGroup)'=='net463'">$(GenFacadesArgs) -ignoreMissingTypes</GenFacadesArgs>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'OSX_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'OSX_Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU'" />
@@ -237,24 +239,46 @@
     </Compile>
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true' AND '$(TargetsOSX)' != 'true' ">
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.EVP.cs">
+      <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.EVP.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.Hmac.cs">
+      <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.Hmac.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeEvpMdCtxHandle.Unix.cs">
+      <Link>Common\Microsoft\Win32\SafeHandles\SafeEvpMdCtxHandle.Unix.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeHmacCtxHandle.Unix.cs">
+      <Link>Common\Microsoft\Win32\SafeHandles\SafeHmacCtxHandle.Unix.cs</Link>
+    </Compile>
+    <Compile Include="Internal\Cryptography\HashProviderDispenser.Unix.cs" />
     <Compile Include="System\Security\Cryptography\RNGCryptoServiceProvider.Unix.cs" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsOSX)' == 'true' ">
     <Compile Include="$(CommonPath)\Interop\OSX\Interop.Libraries.cs">
       <Link>Common\Interop\OSX\Interop.Libraries.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Digest.cs">
+      <Link>Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Digest.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Err.cs">
       <Link>Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Err.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Hmac.cs">
+      <Link>Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Hmac.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.PAL_HashAlgorithm.cs">
+      <Link>Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.PAL_HashAlgorithm.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Random.cs">
       <Link>Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Random.cs</Link>
     </Compile>
+    <Compile Include="Internal\Cryptography\HashProviderDispenser.OSX.cs" />
     <Compile Include="System\Security\Cryptography\RNGCryptoServiceProvider.OSX.cs" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
     <Compile Include="System\Security\Cryptography\ECDsaOpenSsl.cs" />
     <Compile Include="Internal\Cryptography\AesImplementation.Unix.cs" />
-    <Compile Include="Internal\Cryptography\HashProviderDispenser.Unix.cs" />
     <Compile Include="Internal\Cryptography\OpenSslCipher.cs" />
     <Compile Include="Internal\Cryptography\TripleDesImplementation.Unix.cs" />
     <Compile Include="$(CommonPath)\Internal\Cryptography\OpenSslAsymmetricAlgorithmCore.cs">
@@ -284,9 +308,6 @@
     <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.ERR.cs">
       <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.ERR.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.EVP.cs">
-      <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.EVP.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.EVP.Cipher.cs">
       <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.EVP.Cipher.cs</Link>
     </Compile>
@@ -295,9 +316,6 @@
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.RAND.cs">
       <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.RAND.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.Hmac.cs">
-      <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.Hmac.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.Rsa.cs">
       <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.Rsa.cs</Link>
@@ -316,12 +334,6 @@
     </Compile>
     <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeEvpCipherCtxHandle.Unix.cs">
       <Link>Common\Microsoft\Win32\SafeHandles\SafeEvpCipherCtxHandle.Unix.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeEvpMdCtxHandle.Unix.cs">
-      <Link>Common\Microsoft\Win32\SafeHandles\SafeEvpMdCtxHandle.Unix.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeHmacCtxHandle.Unix.cs">
-      <Link>Common\Microsoft\Win32\SafeHandles\SafeHmacCtxHandle.Unix.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeRsaHandle.Unix.cs">
       <Link>Common\Microsoft\Win32\SafeHandles\SafeRsaHandle.Unix.cs</Link>
