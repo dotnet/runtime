@@ -904,9 +904,9 @@ namespace System.Xml.Serialization
 
             if (hasValidStringValue)
             {
-                if (method.HasFlag(WritePrimitiveMethodRequirement.WriteElementString))
+                if (hasRequirement(method, WritePrimitiveMethodRequirement.WriteElementString))
                 {
-                    if (method.HasFlag(WritePrimitiveMethodRequirement.Raw))
+                    if (hasRequirement(method, WritePrimitiveMethodRequirement.Raw))
                     {
                         WriteElementString(name, ns, stringValue, xmlQualifiedName);
                     }
@@ -916,9 +916,9 @@ namespace System.Xml.Serialization
                     }
                 }
 
-                else if (method.HasFlag(WritePrimitiveMethodRequirement.WriteNullableStringLiteral))
+                else if (hasRequirement(method, WritePrimitiveMethodRequirement.WriteNullableStringLiteral))
                 {
-                    if (method.HasFlag(WritePrimitiveMethodRequirement.Raw))
+                    if (hasRequirement(method, WritePrimitiveMethodRequirement.Raw))
                     {
                         WriteNullableStringLiteral(name, ns, stringValue);
                     }
@@ -927,7 +927,7 @@ namespace System.Xml.Serialization
                         WriteNullableStringLiteralRaw(name, ns, stringValue);
                     }
                 }
-                else if (method.HasFlag(WritePrimitiveMethodRequirement.WriteAttribute))
+                else if (hasRequirement(method, WritePrimitiveMethodRequirement.WriteAttribute))
                 {
                     WriteAttribute(name, ns, stringValue);
                 }
@@ -940,15 +940,15 @@ namespace System.Xml.Serialization
             else if (o is byte[])
             {
                 byte[] a = (byte[])o;
-                if (method.HasFlag(WritePrimitiveMethodRequirement.WriteElementString) && method.HasFlag(WritePrimitiveMethodRequirement.Raw))
+                if (hasRequirement(method, WritePrimitiveMethodRequirement.WriteElementString | WritePrimitiveMethodRequirement.Raw))
                 {
                     WriteElementStringRaw(name, ns, FromByteArrayBase64(a));
                 }
-                else if (method.HasFlag(WritePrimitiveMethodRequirement.WriteNullableStringLiteral) && method.HasFlag(WritePrimitiveMethodRequirement.Raw))
+                else if (hasRequirement(method, WritePrimitiveMethodRequirement.WriteNullableStringLiteral | WritePrimitiveMethodRequirement.Raw))
                 {
                     WriteNullableStringLiteralRaw(name, ns, FromByteArrayBase64(a));
                 }
-                else if (method.HasFlag(WritePrimitiveMethodRequirement.WriteAttribute))
+                else if (hasRequirement(method, WritePrimitiveMethodRequirement.WriteAttribute))
                 {
                     WriteAttribute(name, ns, a);
                 }
@@ -963,7 +963,11 @@ namespace System.Xml.Serialization
                 // #10593: Add More Tests for Serialization Code
                 Debug.Assert(false);
             }
+        }
 
+        private bool hasRequirement(WritePrimitiveMethodRequirement value, WritePrimitiveMethodRequirement requirement)
+        {
+            return (value & requirement) == requirement;
         }
 
         private bool IsDefaultValue(TypeMapping mapping, object o, object value, bool isNullable)
@@ -1017,7 +1021,7 @@ namespace System.Xml.Serialization
                     }
                     else
                     {
-                        Debug.Assert(false, $"The FormatterName for DateTime is unknown: {typeDesc.FormatterName}");
+                        throw new InvalidOperationException(SR.Format(SR.XmlInternalErrorDetails, "Invalid DateTime"));
                     }
                 }
                 else if (typeDesc == QnameTypeDesc)
