@@ -55,7 +55,7 @@ Want to chat with other members of the CoreFX community?
 This project has adopted the code of conduct defined by the [Contributor Covenant](http://contributor-covenant.org/)
 to clarify expected behavior in our community. For more information, see the [.NET Foundation Code of Conduct](http://www.dotnetfoundation.org/code-of-conduct).
 
-### Reporting security issues and bugs
+### Reporting security issues and security bugs
 
 Security issues and bugs should be reported privately, via email, to the
 Microsoft Security Response Center (MSRC) <secure@microsoft.com>. You should
