@@ -97,7 +97,7 @@ internal static partial class Interop
                     IntPtr allGroupOidInfo = CryptFindOIDInfo(keyType, rawKey, OidGroup.All);
                     if (allGroupOidInfo != IntPtr.Zero)
                     {
-                        return Marshal.PtrToStructure<CRYPT_OID_INFO>(fullOidInfo);
+                        return Marshal.PtrToStructure<CRYPT_OID_INFO>(allGroupOidInfo);
                     }
                 }
 
