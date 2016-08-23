@@ -13,6 +13,10 @@ namespace System.Security.Policy
         public System.Security.PermissionSet PermissionSet { get; set; }
         public System.Security.Policy.PolicyStatement Copy() { return this; }
         public override bool Equals(object o) => base.Equals(o);
+        public void FromXml(System.Security.SecurityElement et) { }
+        public void FromXml(System.Security.SecurityElement et, System.Security.Policy.PolicyLevel level) { }
         public override int GetHashCode() => base.GetHashCode();
+        public System.Security.SecurityElement ToXml() { return default(System.Security.SecurityElement); }
+        public System.Security.SecurityElement ToXml(System.Security.Policy.PolicyLevel level) { return default(System.Security.SecurityElement); }
     }
 }

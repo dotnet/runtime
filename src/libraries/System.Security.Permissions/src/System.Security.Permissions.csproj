@@ -104,6 +104,7 @@
     <Compile Include="System\Security\Policy\NetCodeGroup.cs" />
     <Compile Include="System\Security\Policy\PermissionRequestEvidence.cs" />
     <Compile Include="System\Security\SecurityCriticalScope.cs" />
+    <Compile Include="System\Security\SecurityElement.cs" />
     <Compile Include="System\Security\SecurityManager.cs" />
     <Compile Include="System\Security\SecurityState.cs" />
     <Compile Include="System\Security\SecurityZone.cs" />

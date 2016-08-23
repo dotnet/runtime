@@ -11,11 +11,13 @@ namespace System.Security {
     [System.ObsoleteAttribute]
     public void Deny() { }
     public override bool Equals(object o) => base.Equals(o);
+    public abstract void FromXml(System.Security.SecurityElement elem);
     public override int GetHashCode() => base.GetHashCode();
     public abstract System.Security.IPermission Intersect(System.Security.IPermission target);
     public abstract bool IsSubsetOf(System.Security.IPermission target);
     public void PermitOnly() { }
     public override string ToString() => base.ToString();
+    public abstract System.Security.SecurityElement ToXml();
     public virtual System.Security.IPermission Union(System.Security.IPermission other) { return default(System.Security.IPermission); }
   }
   public partial class HostProtectionException : System.SystemException {
@@ -59,8 +61,12 @@ namespace System.Security {
     System.Security.IPermission Union(System.Security.IPermission target);
   }
   public partial interface ISecurityEncodable {
+    void FromXml(System.Security.SecurityElement e);
+    System.Security.SecurityElement ToXml();
   }
   public partial interface ISecurityPolicyEncodable {
+    void FromXml(System.Security.SecurityElement e, System.Security.Policy.PolicyLevel level);
+    System.Security.SecurityElement ToXml(System.Security.Policy.PolicyLevel level);
   }
   public partial interface IStackWalk {
     void Assert();
@@ -78,7 +84,9 @@ namespace System.Security {
     public override System.Security.PermissionSet Copy() { return this; }
     public System.Security.NamedPermissionSet Copy(string name) { return this; }
     public override bool Equals(object o) => base.Equals(o);
+    public override void FromXml(System.Security.SecurityElement et) { }
     public override int GetHashCode() => base.GetHashCode();
+    public override System.Security.SecurityElement ToXml() { return default(System.Security.SecurityElement); }
   }
   public partial class PermissionSet : System.Collections.ICollection, System.Collections.IEnumerable, System.Runtime.Serialization.IDeserializationCallback, System.Security.ISecurityEncodable, System.Security.IStackWalk {
     public PermissionSet(System.Security.Permissions.PermissionState state) { }
@@ -98,6 +106,7 @@ namespace System.Security {
     [System.ObsoleteAttribute]
     public void Deny() { }
     public override bool Equals(object o) => base.Equals(o);
+    public virtual void FromXml(System.Security.SecurityElement et) { }
     public System.Collections.IEnumerator GetEnumerator() { return default(System.Collections.IEnumerator); }
     public override int GetHashCode() => base.GetHashCode();
     public System.Security.IPermission GetPermission(System.Type permClass) { return default(System.Security.IPermission); }
@@ -111,6 +120,7 @@ namespace System.Security {
     public System.Security.IPermission SetPermission(System.Security.IPermission perm) { return default(System.Security.IPermission); }
     void System.Runtime.Serialization.IDeserializationCallback.OnDeserialization(object sender) { }
     public override string ToString() => base.ToString();
+    public virtual System.Security.SecurityElement ToXml() { return default(System.Security.SecurityElement); }
     public System.Security.PermissionSet Union(System.Security.PermissionSet other) { return default(System.Security.PermissionSet); }
   }
   public enum PolicyLevelType {
@@ -137,6 +147,28 @@ namespace System.Security {
   public enum SecurityCriticalScope {
     Everything = 1,
     Explicit = 0,
+  }
+  public sealed partial class SecurityElement {
+    public SecurityElement(string tag) { }
+    public SecurityElement(string tag, string text) { }
+    public System.Collections.Hashtable Attributes { get; set; }
+    public System.Collections.ArrayList Children { get; set; }
+    public string Tag { get; set; }
+    public string Text { get; set; }
+    public void AddAttribute(string name, string value) { }
+    public void AddChild(System.Security.SecurityElement child) { }
+    public string Attribute(string name) { return default(string); }
+    public System.Security.SecurityElement Copy() { return default(System.Security.SecurityElement); }
+    public bool Equal(System.Security.SecurityElement other) { return default(bool); }
+    public static string Escape(string str) { return default(string); }
+    public static System.Security.SecurityElement FromString(string xml) { return default(System.Security.SecurityElement); }
+    public static bool IsValidAttributeName(string name) { return default(bool); }
+    public static bool IsValidAttributeValue(string value) { return default(bool); }
+    public static bool IsValidTag(string tag) { return default(bool); }
+    public static bool IsValidText(string text) { return default(bool); }
+    public System.Security.SecurityElement SearchForChildByTag(string tag) { return default(System.Security.SecurityElement); }
+    public string SearchForTextOfTag(string tag) { return default(string); }
+    public override string ToString() => base.ToString();
   }
   public static partial class SecurityManager {
     [System.ObsoleteAttribute]
@@ -198,11 +230,13 @@ namespace System.Security.Permissions {
     public EnvironmentPermission(System.Security.Permissions.PermissionState state) { }
     public void AddPathList(System.Security.Permissions.EnvironmentPermissionAccess flag, string pathList) { }
     public override System.Security.IPermission Copy() { return this; }
+    public override void FromXml(System.Security.SecurityElement esd) { }
     public string GetPathList(System.Security.Permissions.EnvironmentPermissionAccess flag) { return default(string); }
     public override System.Security.IPermission Intersect(System.Security.IPermission target) { return default(System.Security.IPermission); }
     public override bool IsSubsetOf(System.Security.IPermission target) { return default(bool); }
     public bool IsUnrestricted() { return default(bool); }
     public void SetPathList(System.Security.Permissions.EnvironmentPermissionAccess flag, string pathList) { }
+    public override System.Security.SecurityElement ToXml() { return default(System.Security.SecurityElement); }
     public override System.Security.IPermission Union(System.Security.IPermission other) { return default(System.Security.IPermission); }
   }
   [System.FlagsAttribute]
@@ -225,9 +259,11 @@ namespace System.Security.Permissions {
     public FileDialogPermission(System.Security.Permissions.PermissionState state) { }
     public System.Security.Permissions.FileDialogPermissionAccess Access { get; set; }
     public override System.Security.IPermission Copy() { return this; }
+    public override void FromXml(System.Security.SecurityElement esd) { }
     public override System.Security.IPermission Intersect(System.Security.IPermission target) { return default(System.Security.IPermission); }
     public override bool IsSubsetOf(System.Security.IPermission target) { return default(bool); }
     public bool IsUnrestricted() { return default(bool); }
+    public override System.Security.SecurityElement ToXml() { return default(System.Security.SecurityElement); }
     public override System.Security.IPermission Union(System.Security.IPermission target) { return default(System.Security.IPermission); }
   }
   [System.FlagsAttribute]
@@ -254,6 +290,7 @@ namespace System.Security.Permissions {
     public void AddPathList(System.Security.Permissions.FileIOPermissionAccess access, string[] pathList) { }
     public override System.Security.IPermission Copy() { return this; }
     public override bool Equals(object o) => base.Equals(o);
+    public override void FromXml(System.Security.SecurityElement esd) { }
     public override int GetHashCode() => base.GetHashCode();
     public string[] GetPathList(System.Security.Permissions.FileIOPermissionAccess access) { return default(string[]); }
     public override System.Security.IPermission Intersect(System.Security.IPermission target) { return default(System.Security.IPermission); }
@@ -261,6 +298,7 @@ namespace System.Security.Permissions {
     public bool IsUnrestricted() { return default(bool); }
     public void SetPathList(System.Security.Permissions.FileIOPermissionAccess access, string path) { }
     public void SetPathList(System.Security.Permissions.FileIOPermissionAccess access, string[] pathList) { }
+    public override System.Security.SecurityElement ToXml() { return default(System.Security.SecurityElement); }
     public override System.Security.IPermission Union(System.Security.IPermission other) { return default(System.Security.IPermission); }
   }
   [System.FlagsAttribute]
@@ -276,8 +314,10 @@ namespace System.Security.Permissions {
     public GacIdentityPermission() { }
     public GacIdentityPermission(System.Security.Permissions.PermissionState state) { }
     public override System.Security.IPermission Copy() { return this; }
+    public override void FromXml(System.Security.SecurityElement securityElement) { }
     public override System.Security.IPermission Intersect(System.Security.IPermission target) { return default(System.Security.IPermission); }
     public override bool IsSubsetOf(System.Security.IPermission target) { return default(bool); }
+    public override System.Security.SecurityElement ToXml() { return default(System.Security.SecurityElement); }
     public override System.Security.IPermission Union(System.Security.IPermission target) { return default(System.Security.IPermission); }
   }
   [System.AttributeUsageAttribute((System.AttributeTargets)109, AllowMultiple=true, Inherited=false)]
@@ -340,11 +380,13 @@ namespace System.Security.Permissions {
     public System.Security.IPermission Copy() { return this; }
     public void Demand() { }
     public override bool Equals(object o) => base.Equals(o);
+    public void FromXml(System.Security.SecurityElement elem) { }
     public override int GetHashCode() => base.GetHashCode();
     public System.Security.IPermission Intersect(System.Security.IPermission target) { return default(System.Security.IPermission); }
     public bool IsSubsetOf(System.Security.IPermission target) { return default(bool); }
     public bool IsUnrestricted() { return default(bool); }
     public override string ToString() => base.ToString();
+    public System.Security.SecurityElement ToXml() { return default(System.Security.SecurityElement); }
     public System.Security.IPermission Union(System.Security.IPermission other) { return default(System.Security.IPermission); }
   }
   [System.AttributeUsageAttribute((System.AttributeTargets)68, AllowMultiple=true, Inherited=false)]
@@ -360,8 +402,10 @@ namespace System.Security.Permissions {
     public PublisherIdentityPermission(System.Security.Permissions.PermissionState state) { }
     public System.Security.Cryptography.X509Certificates.X509Certificate Certificate { get; set; }
     public override System.Security.IPermission Copy() { return this; }
+    public override void FromXml(System.Security.SecurityElement esd) { }
     public override System.Security.IPermission Intersect(System.Security.IPermission target) { return default(System.Security.IPermission); }
     public override bool IsSubsetOf(System.Security.IPermission target) { return default(bool); }
+    public override System.Security.SecurityElement ToXml() { return default(System.Security.SecurityElement); }
     public override System.Security.IPermission Union(System.Security.IPermission target) { return default(System.Security.IPermission); }
   }
   [System.AttributeUsageAttribute((System.AttributeTargets)109, AllowMultiple=true, Inherited=false)]
@@ -377,9 +421,11 @@ namespace System.Security.Permissions {
     public ReflectionPermission(System.Security.Permissions.ReflectionPermissionFlag flag) { }
     public System.Security.Permissions.ReflectionPermissionFlag Flags { get; set; }
     public override System.Security.IPermission Copy() { return this; }
+    public override void FromXml(System.Security.SecurityElement esd) { }
     public override System.Security.IPermission Intersect(System.Security.IPermission target) { return default(System.Security.IPermission); }
     public override bool IsSubsetOf(System.Security.IPermission target) { return default(bool); }
     public bool IsUnrestricted() { return default(bool); }
+    public override System.Security.SecurityElement ToXml() { return default(System.Security.SecurityElement); }
     public override System.Security.IPermission Union(System.Security.IPermission other) { return default(System.Security.IPermission); }
   }
   [System.AttributeUsageAttribute((System.AttributeTargets)109, AllowMultiple=true, Inherited=false)]
@@ -412,11 +458,13 @@ namespace System.Security.Permissions {
     public RegistryPermission(System.Security.Permissions.RegistryPermissionAccess access, string pathList) { }
     public void AddPathList(System.Security.Permissions.RegistryPermissionAccess access, string pathList) { }
     public override System.Security.IPermission Copy() { return this; }
+    public override void FromXml(System.Security.SecurityElement elem) { }
     public string GetPathList(System.Security.Permissions.RegistryPermissionAccess access) { return default(string); }
     public override System.Security.IPermission Intersect(System.Security.IPermission target) { return default(System.Security.IPermission); }
     public override bool IsSubsetOf(System.Security.IPermission target) { return default(bool); }
     public bool IsUnrestricted() { return default(bool); }
     public void SetPathList(System.Security.Permissions.RegistryPermissionAccess access, string pathList) { }
+    public override System.Security.SecurityElement ToXml() { return default(System.Security.SecurityElement); }
     public override System.Security.IPermission Union(System.Security.IPermission other) { return default(System.Security.IPermission); }
   }
   [System.FlagsAttribute]
@@ -467,9 +515,11 @@ namespace System.Security.Permissions {
     public SecurityPermission(System.Security.Permissions.SecurityPermissionFlag flag) { }
     public System.Security.Permissions.SecurityPermissionFlag Flags { get; set; }
     public override System.Security.IPermission Copy() { return this; }
+    public override void FromXml(System.Security.SecurityElement esd) { }
     public override System.Security.IPermission Intersect(System.Security.IPermission target) { return default(System.Security.IPermission); }
     public override bool IsSubsetOf(System.Security.IPermission target) { return default(bool); }
     public bool IsUnrestricted() { return default(bool); }
+    public override System.Security.SecurityElement ToXml() { return default(System.Security.SecurityElement); }
     public override System.Security.IPermission Union(System.Security.IPermission target) { return default(System.Security.IPermission); }
   }
   [System.AttributeUsageAttribute((System.AttributeTargets)109, AllowMultiple=true, Inherited=false)]
@@ -516,8 +566,10 @@ namespace System.Security.Permissions {
     public SiteIdentityPermission(string site) { }
     public string Site { get; set; }
     public override System.Security.IPermission Copy() { return this; }
+    public override void FromXml(System.Security.SecurityElement esd) { }
     public override System.Security.IPermission Intersect(System.Security.IPermission target) { return default(System.Security.IPermission); }
     public override bool IsSubsetOf(System.Security.IPermission target) { return default(bool); }
+    public override System.Security.SecurityElement ToXml() { return default(System.Security.SecurityElement); }
     public override System.Security.IPermission Union(System.Security.IPermission target) { return default(System.Security.IPermission); }
   }
   [System.AttributeUsageAttribute((System.AttributeTargets)109, AllowMultiple=true, Inherited=false)]
@@ -533,8 +585,10 @@ namespace System.Security.Permissions {
     public System.Security.Permissions.StrongNamePublicKeyBlob PublicKey { get; set; }
     public System.Version Version { get; set; }
     public override System.Security.IPermission Copy() { return this; }
+    public override void FromXml(System.Security.SecurityElement e) { }
     public override System.Security.IPermission Intersect(System.Security.IPermission target) { return default(System.Security.IPermission); }
     public override bool IsSubsetOf(System.Security.IPermission target) { return default(bool); }
+    public override System.Security.SecurityElement ToXml() { return default(System.Security.SecurityElement); }
     public override System.Security.IPermission Union(System.Security.IPermission target) { return default(System.Security.IPermission); }
   }
   [System.AttributeUsageAttribute((System.AttributeTargets)109, AllowMultiple=true, Inherited=false)]
@@ -556,9 +610,11 @@ namespace System.Security.Permissions {
     public TypeDescriptorPermission(System.Security.Permissions.TypeDescriptorPermissionFlags flag) { }
     public System.Security.Permissions.TypeDescriptorPermissionFlags Flags { get; set; }
     public override System.Security.IPermission Copy() { return this; }
+    public override void FromXml(System.Security.SecurityElement securityElement) { }
     public override System.Security.IPermission Intersect(System.Security.IPermission target) { return default(System.Security.IPermission); }
     public override bool IsSubsetOf(System.Security.IPermission target) { return default(bool); }
     public bool IsUnrestricted() { return default(bool); }
+    public override System.Security.SecurityElement ToXml() { return default(System.Security.SecurityElement); }
     public override System.Security.IPermission Union(System.Security.IPermission target) { return default(System.Security.IPermission); }
   }
   [System.FlagsAttribute]
@@ -574,9 +630,11 @@ namespace System.Security.Permissions {
     public System.Security.Permissions.UIPermissionClipboard Clipboard { get; set; }
     public System.Security.Permissions.UIPermissionWindow Window { get; set; }
     public override System.Security.IPermission Copy() { return this; }
+    public override void FromXml(System.Security.SecurityElement esd) { }
     public override System.Security.IPermission Intersect(System.Security.IPermission target) { return default(System.Security.IPermission); }
     public override bool IsSubsetOf(System.Security.IPermission target) { return default(bool); }
     public bool IsUnrestricted() { return default(bool); }
+    public override System.Security.SecurityElement ToXml() { return default(System.Security.SecurityElement); }
     public override System.Security.IPermission Union(System.Security.IPermission target) { return default(System.Security.IPermission); }
   }
   [System.AttributeUsageAttribute((System.AttributeTargets)109, AllowMultiple=true, Inherited=false)]
@@ -602,8 +660,10 @@ namespace System.Security.Permissions {
     public UrlIdentityPermission(string site) { }
     public string Url { get; set; }
     public override System.Security.IPermission Copy() { return this; }
+    public override void FromXml(System.Security.SecurityElement esd) { }
     public override System.Security.IPermission Intersect(System.Security.IPermission target) { return default(System.Security.IPermission); }
     public override bool IsSubsetOf(System.Security.IPermission target) { return default(bool); }
+    public override System.Security.SecurityElement ToXml() { return default(System.Security.SecurityElement); }
     public override System.Security.IPermission Union(System.Security.IPermission target) { return default(System.Security.IPermission); }
   }
   [System.AttributeUsageAttribute((System.AttributeTargets)109, AllowMultiple=true, Inherited=false)]
@@ -617,8 +677,10 @@ namespace System.Security.Permissions {
     public ZoneIdentityPermission(System.Security.SecurityZone zone) { }
     public System.Security.SecurityZone SecurityZone { get; set; }
     public override System.Security.IPermission Copy() { return this; }
+    public override void FromXml(System.Security.SecurityElement esd) { }
     public override System.Security.IPermission Intersect(System.Security.IPermission target) { return default(System.Security.IPermission); }
     public override bool IsSubsetOf(System.Security.IPermission target) { return default(bool); }
+    public override System.Security.SecurityElement ToXml() { return default(System.Security.SecurityElement); }
     public override System.Security.IPermission Union(System.Security.IPermission target) { return default(System.Security.IPermission); }
   }
   [System.AttributeUsageAttribute((System.AttributeTargets)109, AllowMultiple=true, Inherited=false)]
@@ -634,8 +696,12 @@ namespace System.Security.Policy {
     public bool Check(System.Security.Policy.Evidence evidence) { return default(bool); }
     public System.Security.Policy.IMembershipCondition Copy() { return this; }
     public override bool Equals(object o) => base.Equals(o);
+    public void FromXml(System.Security.SecurityElement e) { }
+    public void FromXml(System.Security.SecurityElement e, System.Security.Policy.PolicyLevel level) { }
     public override int GetHashCode() => base.GetHashCode();
     public override string ToString() => base.ToString();
+    public System.Security.SecurityElement ToXml() { return default(System.Security.SecurityElement); }
+    public System.Security.SecurityElement ToXml(System.Security.Policy.PolicyLevel level) { return default(System.Security.SecurityElement); }
   }
   public sealed partial class ApplicationDirectory : System.Security.Policy.EvidenceBase {
     public ApplicationDirectory(string name) { }
@@ -650,8 +716,12 @@ namespace System.Security.Policy {
     public bool Check(System.Security.Policy.Evidence evidence) { return default(bool); }
     public System.Security.Policy.IMembershipCondition Copy() { return this; }
     public override bool Equals(object o) => base.Equals(o);
+    public void FromXml(System.Security.SecurityElement e) { }
+    public void FromXml(System.Security.SecurityElement e, System.Security.Policy.PolicyLevel level) { }
     public override int GetHashCode() => base.GetHashCode();
     public override string ToString() => base.ToString();
+    public System.Security.SecurityElement ToXml() { return default(System.Security.SecurityElement); }
+    public System.Security.SecurityElement ToXml(System.Security.Policy.PolicyLevel level) { return default(System.Security.SecurityElement); }
   }
   public sealed partial class ApplicationTrust : System.Security.Policy.EvidenceBase, System.Security.ISecurityEncodable {
     public ApplicationTrust() { }
@@ -661,6 +731,8 @@ namespace System.Security.Policy {
     public System.Collections.Generic.IList<System.Security.Policy.StrongName> FullTrustAssemblies { get { return default(System.Collections.Generic.IList<System.Security.Policy.StrongName>); } }
     public bool IsApplicationTrustedToRun { get; set; }
     public bool Persist { get; set; }
+    public void FromXml(System.Security.SecurityElement element) { }
+    public System.Security.SecurityElement ToXml() { return default(System.Security.SecurityElement); }
   }
   public sealed partial class ApplicationTrustCollection : System.Collections.ICollection, System.Collections.IEnumerable {
     internal ApplicationTrustCollection() { }
@@ -717,12 +789,18 @@ namespace System.Security.Policy {
     public System.Security.Policy.PolicyStatement PolicyStatement { get; set; }
     public void AddChild(System.Security.Policy.CodeGroup group) { }
     public abstract System.Security.Policy.CodeGroup Copy();
+    protected virtual void CreateXml(System.Security.SecurityElement element, System.Security.Policy.PolicyLevel level) { }
     public override bool Equals(object o) => base.Equals(o);
     public bool Equals(System.Security.Policy.CodeGroup cg, bool compareChildren) { return default(bool); }
+    public void FromXml(System.Security.SecurityElement e) { }
+    public void FromXml(System.Security.SecurityElement e, System.Security.Policy.PolicyLevel level) { }
     public override int GetHashCode() => base.GetHashCode();
+    protected virtual void ParseXml(System.Security.SecurityElement e, System.Security.Policy.PolicyLevel level) { }
     public void RemoveChild(System.Security.Policy.CodeGroup group) { }
     public abstract System.Security.Policy.PolicyStatement Resolve(System.Security.Policy.Evidence evidence);
     public abstract System.Security.Policy.CodeGroup ResolveMatchingCodeGroups(System.Security.Policy.Evidence evidence);
+    public System.Security.SecurityElement ToXml() { return default(System.Security.SecurityElement); }
+    public System.Security.SecurityElement ToXml(System.Security.Policy.PolicyLevel level) { return default(System.Security.SecurityElement); }
   }
   public sealed partial class Evidence : System.Collections.ICollection, System.Collections.IEnumerable {
     public Evidence() { }
@@ -760,8 +838,10 @@ namespace System.Security.Policy {
     public override string MergeLogic { get { return default(string); } }
     public override string PermissionSetName { get { return default(string); } }
     public override System.Security.Policy.CodeGroup Copy() { return this; }
+    protected override void CreateXml(System.Security.SecurityElement element, System.Security.Policy.PolicyLevel level) { }
     public override bool Equals(object o) => base.Equals(o);
     public override int GetHashCode() => base.GetHashCode();
+    protected override void ParseXml(System.Security.SecurityElement e, System.Security.Policy.PolicyLevel level) { }
     public override System.Security.Policy.PolicyStatement Resolve(System.Security.Policy.Evidence evidence) { return default(System.Security.Policy.PolicyStatement); }
     public override System.Security.Policy.CodeGroup ResolveMatchingCodeGroups(System.Security.Policy.Evidence evidence) { return default(System.Security.Policy.CodeGroup); }
   }
@@ -785,8 +865,12 @@ namespace System.Security.Policy {
     public bool Check(System.Security.Policy.Evidence evidence) { return default(bool); }
     public System.Security.Policy.IMembershipCondition Copy() { return this; }
     public override bool Equals(object o) => base.Equals(o);
+    public void FromXml(System.Security.SecurityElement e) { }
+    public void FromXml(System.Security.SecurityElement e, System.Security.Policy.PolicyLevel level) { }
     public override int GetHashCode() => base.GetHashCode();
     public override string ToString() => base.ToString();
+    public System.Security.SecurityElement ToXml() { return default(System.Security.SecurityElement); }
+    public System.Security.SecurityElement ToXml(System.Security.Policy.PolicyLevel level) { return default(System.Security.SecurityElement); }
   }
   public sealed partial class Hash : System.Security.Policy.EvidenceBase, System.Runtime.Serialization.ISerializable {
     public Hash(System.Reflection.Assembly assembly) { }
@@ -805,10 +889,14 @@ namespace System.Security.Policy {
     public bool Check(System.Security.Policy.Evidence evidence) { return default(bool); }
     public System.Security.Policy.IMembershipCondition Copy() { return this; }
     public override bool Equals(object o) => base.Equals(o);
+    public void FromXml(System.Security.SecurityElement e) { }
+    public void FromXml(System.Security.SecurityElement e, System.Security.Policy.PolicyLevel level) { }
     public override int GetHashCode() => base.GetHashCode();
     void System.Runtime.Serialization.IDeserializationCallback.OnDeserialization(object sender) { }
     void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
     public override string ToString() => base.ToString();
+    public System.Security.SecurityElement ToXml() { return default(System.Security.SecurityElement); }
+    public System.Security.SecurityElement ToXml(System.Security.Policy.PolicyLevel level) { return default(System.Security.SecurityElement); }
   }
   public partial interface IIdentityPermissionFactory {
     System.Security.IPermission CreateIdentityPermission(System.Security.Policy.Evidence evidence);
@@ -828,9 +916,11 @@ namespace System.Security.Policy {
     public override string PermissionSetName { get { return default(string); } }
     public void AddConnectAccess(string originScheme, System.Security.Policy.CodeConnectAccess connectAccess) { }
     public override System.Security.Policy.CodeGroup Copy() { return this; }
+    protected override void CreateXml(System.Security.SecurityElement element, System.Security.Policy.PolicyLevel level) { }
     public override bool Equals(object o) => base.Equals(o);
     public System.Collections.DictionaryEntry[] GetConnectAccessRules() { return default(System.Collections.DictionaryEntry[]); }
     public override int GetHashCode() => base.GetHashCode();
+    protected override void ParseXml(System.Security.SecurityElement e, System.Security.Policy.PolicyLevel level) { }
     public void ResetConnectAccess() { }
     public override System.Security.Policy.PolicyStatement Resolve(System.Security.Policy.Evidence evidence) { return default(System.Security.Policy.PolicyStatement); }
     public override System.Security.Policy.CodeGroup ResolveMatchingCodeGroups(System.Security.Policy.Evidence evidence) { return default(System.Security.Policy.CodeGroup); }
@@ -865,6 +955,7 @@ namespace System.Security.Policy {
     public void AddNamedPermissionSet(System.Security.NamedPermissionSet permSet) { }
     public System.Security.NamedPermissionSet ChangeNamedPermissionSet(string name, System.Security.PermissionSet pSet) { return default(System.Security.NamedPermissionSet); }
     public static System.Security.Policy.PolicyLevel CreateAppDomainLevel() { return default(System.Security.Policy.PolicyLevel); }
+    public void FromXml(System.Security.SecurityElement e) { }
     public System.Security.NamedPermissionSet GetNamedPermissionSet(string name) { return default(System.Security.NamedPermissionSet); }
     public void Recover() { }
     [System.ObsoleteAttribute]
@@ -876,6 +967,7 @@ namespace System.Security.Policy {
     public void Reset() { }
     public System.Security.Policy.PolicyStatement Resolve(System.Security.Policy.Evidence evidence) { return default(System.Security.Policy.PolicyStatement); }
     public System.Security.Policy.CodeGroup ResolveMatchingCodeGroups(System.Security.Policy.Evidence evidence) { return default(System.Security.Policy.CodeGroup); }
+    public System.Security.SecurityElement ToXml() { return default(System.Security.SecurityElement); }
   }
   public sealed partial class PolicyStatement : System.Security.ISecurityEncodable, System.Security.ISecurityPolicyEncodable {
     public PolicyStatement(System.Security.PermissionSet permSet) { }
@@ -885,7 +977,11 @@ namespace System.Security.Policy {
     public System.Security.PermissionSet PermissionSet { get; set; }
     public System.Security.Policy.PolicyStatement Copy() { return this; }
     public override bool Equals(object o) => base.Equals(o);
+    public void FromXml(System.Security.SecurityElement et) { }
+    public void FromXml(System.Security.SecurityElement et, System.Security.Policy.PolicyLevel level) { }
     public override int GetHashCode() => base.GetHashCode();
+    public System.Security.SecurityElement ToXml() { return default(System.Security.SecurityElement); }
+    public System.Security.SecurityElement ToXml(System.Security.Policy.PolicyLevel level) { return default(System.Security.SecurityElement); }
   }
   [System.FlagsAttribute]
   public enum PolicyStatementAttribute {
@@ -909,8 +1005,12 @@ namespace System.Security.Policy {
     public bool Check(System.Security.Policy.Evidence evidence) { return default(bool); }
     public System.Security.Policy.IMembershipCondition Copy() { return this; }
     public override bool Equals(object o) => base.Equals(o);
+    public void FromXml(System.Security.SecurityElement e) { }
+    public void FromXml(System.Security.SecurityElement e, System.Security.Policy.PolicyLevel level) { }
     public override int GetHashCode() => base.GetHashCode();
     public override string ToString() => base.ToString();
+    public System.Security.SecurityElement ToXml() { return default(System.Security.SecurityElement); }
+    public System.Security.SecurityElement ToXml(System.Security.Policy.PolicyLevel level) { return default(System.Security.SecurityElement); }
   }
   public sealed partial class Site : System.Security.Policy.EvidenceBase, System.Security.Policy.IIdentityPermissionFactory {
     public Site(string name) { }
@@ -928,8 +1028,12 @@ namespace System.Security.Policy {
     public bool Check(System.Security.Policy.Evidence evidence) { return default(bool); }
     public System.Security.Policy.IMembershipCondition Copy() { return this; }
     public override bool Equals(object o) => base.Equals(o);
+    public void FromXml(System.Security.SecurityElement e) { }
+    public void FromXml(System.Security.SecurityElement e, System.Security.Policy.PolicyLevel level) { }
     public override int GetHashCode() => base.GetHashCode();
     public override string ToString() => base.ToString();
+    public System.Security.SecurityElement ToXml() { return default(System.Security.SecurityElement); }
+    public System.Security.SecurityElement ToXml(System.Security.Policy.PolicyLevel level) { return default(System.Security.SecurityElement); }
   }
   public sealed partial class StrongName : System.Security.Policy.EvidenceBase, System.Security.Policy.IIdentityPermissionFactory {
     public StrongName(System.Security.Permissions.StrongNamePublicKeyBlob blob, string name, System.Version version) { }
@@ -950,8 +1054,12 @@ namespace System.Security.Policy {
     public bool Check(System.Security.Policy.Evidence evidence) { return default(bool); }
     public System.Security.Policy.IMembershipCondition Copy() { return this; }
     public override bool Equals(object o) => base.Equals(o);
+    public void FromXml(System.Security.SecurityElement e) { }
+    public void FromXml(System.Security.SecurityElement e, System.Security.Policy.PolicyLevel level) { }
     public override int GetHashCode() => base.GetHashCode();
     public override string ToString() => base.ToString();
+    public System.Security.SecurityElement ToXml() { return default(System.Security.SecurityElement); }
+    public System.Security.SecurityElement ToXml(System.Security.Policy.PolicyLevel level) { return default(System.Security.SecurityElement); }
   }
   public partial class TrustManagerContext {
     public TrustManagerContext() { }
@@ -989,8 +1097,12 @@ namespace System.Security.Policy {
     public bool Check(System.Security.Policy.Evidence evidence) { return default(bool); }
     public System.Security.Policy.IMembershipCondition Copy() { return this; }
     public override bool Equals(object o) => base.Equals(o);
+    public void FromXml(System.Security.SecurityElement e) { }
+    public void FromXml(System.Security.SecurityElement e, System.Security.Policy.PolicyLevel level) { }
     public override int GetHashCode() => base.GetHashCode();
     public override string ToString() => base.ToString();
+    public System.Security.SecurityElement ToXml() { return default(System.Security.SecurityElement); }
+    public System.Security.SecurityElement ToXml(System.Security.Policy.PolicyLevel level) { return default(System.Security.SecurityElement); }
   }
   public sealed partial class Zone : System.Security.Policy.EvidenceBase, System.Security.Policy.IIdentityPermissionFactory {
     public Zone(System.Security.SecurityZone zone) { }
@@ -1008,7 +1120,11 @@ namespace System.Security.Policy {
     public bool Check(System.Security.Policy.Evidence evidence) { return default(bool); }
     public System.Security.Policy.IMembershipCondition Copy() { return this; }
     public override bool Equals(object o) => base.Equals(o);
+    public void FromXml(System.Security.SecurityElement e) { }
+    public void FromXml(System.Security.SecurityElement e, System.Security.Policy.PolicyLevel level) { }
     public override int GetHashCode() => base.GetHashCode();
     public override string ToString() => base.ToString();
+    public System.Security.SecurityElement ToXml() { return default(System.Security.SecurityElement); }
+    public System.Security.SecurityElement ToXml(System.Security.Policy.PolicyLevel level) { return default(System.Security.SecurityElement); }
   }
 }

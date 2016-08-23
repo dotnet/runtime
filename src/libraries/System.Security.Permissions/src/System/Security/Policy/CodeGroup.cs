@@ -17,11 +17,17 @@ namespace System.Security.Policy
         public System.Security.Policy.PolicyStatement PolicyStatement { get; set; }
         public void AddChild(System.Security.Policy.CodeGroup group) { }
         public abstract System.Security.Policy.CodeGroup Copy();
+        protected virtual void CreateXml(System.Security.SecurityElement element, System.Security.Policy.PolicyLevel level) { }
         public override bool Equals(object o) => base.Equals(o);
+        public void FromXml(System.Security.SecurityElement e) { }
+        public void FromXml(System.Security.SecurityElement e, System.Security.Policy.PolicyLevel level) { }
         public bool Equals(System.Security.Policy.CodeGroup cg, bool compareChildren) { return false; }
         public override int GetHashCode() => base.GetHashCode();
+        protected virtual void ParseXml(System.Security.SecurityElement e, System.Security.Policy.PolicyLevel level) { }
         public void RemoveChild(System.Security.Policy.CodeGroup group) { }
         public abstract System.Security.Policy.PolicyStatement Resolve(System.Security.Policy.Evidence evidence);
         public abstract System.Security.Policy.CodeGroup ResolveMatchingCodeGroups(System.Security.Policy.Evidence evidence);
+        public System.Security.SecurityElement ToXml() { return default(System.Security.SecurityElement); }
+        public System.Security.SecurityElement ToXml(System.Security.Policy.PolicyLevel level) { return default(System.Security.SecurityElement); }
     }
 }

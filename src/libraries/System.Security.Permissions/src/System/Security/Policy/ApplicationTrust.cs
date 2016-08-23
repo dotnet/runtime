@@ -13,5 +13,7 @@ namespace System.Security.Policy
         public System.Collections.Generic.IList<System.Security.Policy.StrongName> FullTrustAssemblies { get { return default(System.Collections.Generic.IList<System.Security.Policy.StrongName>); } }
         public bool IsApplicationTrustedToRun { get; set; }
         public bool Persist { get; set; }
+        public void FromXml(System.Security.SecurityElement element) { }
+        public System.Security.SecurityElement ToXml() { return default(System.Security.SecurityElement); }
     }
 }

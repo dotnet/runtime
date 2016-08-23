@@ -17,6 +17,9 @@ namespace System.Security.Permissions.Tests
             string path = ep.GetPathList(new Permissions.EnvironmentPermissionAccess());
             bool isunrestricted = ep.IsUnrestricted();
             ep.SetPathList(new Permissions.EnvironmentPermissionAccess(), "testpath2");
+            System.Security.SecurityElement se = new System.Security.SecurityElement("");
+            ep.FromXml(se);
+            se = ep.ToXml();
         }
         [Fact]
         public static void EnvironmentPermissionsAttributeCallMethods()
@@ -33,6 +36,9 @@ namespace System.Security.Permissions.Tests
             bool issubset = fdp.IsSubsetOf(ip);
             bool isunrestricted = fdp.IsUnrestricted();
             IPermission ip3 = fdp.Union(ip2);
+            System.Security.SecurityElement se = new System.Security.SecurityElement("");
+            fdp.FromXml(se);
+            se = fdp.ToXml();
         }
         [Fact]
         public static void FileDialogPermissionAttributeCallMethods()
@@ -58,6 +64,9 @@ namespace System.Security.Permissions.Tests
             fiop.SetPathList(fiopa, "testpath");
             fiop.SetPathList(fiopa, new string[1] { "testpath" });
             IPermission ip3 = fiop.Union(ip);
+            System.Security.SecurityElement se = new System.Security.SecurityElement("");
+            fiop.FromXml(se);
+            se = fiop.ToXml();
         }
         [Fact]
         public static void GacIdentityPermissionCallMethods()
@@ -67,6 +76,9 @@ namespace System.Security.Permissions.Tests
             IPermission ip2 = gip.Intersect(ip);
             bool issubset = gip.IsSubsetOf(ip);
             IPermission ip3 = gip.Union(ip2);
+            System.Security.SecurityElement se = new System.Security.SecurityElement("");
+            gip.FromXml(se);
+            se = gip.ToXml();
         }
         [Fact]
         public static void GacIdentityPermissionAttributeCallMethods()
@@ -88,6 +100,9 @@ namespace System.Security.Permissions.Tests
             testbool = pp.IsUnrestricted();
             string teststring = pp.ToString();
             ip2 = pp.Union(ip);
+            System.Security.SecurityElement se = new System.Security.SecurityElement("");
+            pp.FromXml(se);
+            se = pp.ToXml();
         }
         [Fact]
         public static void PrincipalPermissionAttributeCallMethods()
@@ -104,6 +119,9 @@ namespace System.Security.Permissions.Tests
             IPermission ip2 = pip.Intersect(ip);
             bool testbool = pip.IsSubsetOf(ip);
             ip2 = pip.Union(ip);
+            System.Security.SecurityElement se = new System.Security.SecurityElement("");
+            pip.FromXml(se);
+            se = pip.ToXml();
         }
         [Fact]
         public static void PublisherIdentityPermissionAttributeCallMethods()
@@ -121,6 +139,9 @@ namespace System.Security.Permissions.Tests
             bool testbool = rp.IsSubsetOf(ip);
             testbool = rp.IsUnrestricted();
             ip2 = rp.Union(ip);
+            System.Security.SecurityElement se = new System.Security.SecurityElement("");
+            rp.FromXml(se);
+            se = rp.ToXml();
         }
         [Fact]
         public static void ReflectionPermissionAttributeCallMethods()
@@ -143,6 +164,9 @@ namespace System.Security.Permissions.Tests
             testbool = rp.IsUnrestricted();
             rp.SetPathList(rpa, "testpath");
             ip2 = rp.Union(ip);
+            System.Security.SecurityElement se = new System.Security.SecurityElement("");
+            rp.FromXml(se);
+            se = rp.ToXml();
         }
         [Fact]
         public static void RegistryPermissionAttributeCallMethods()
@@ -160,6 +184,9 @@ namespace System.Security.Permissions.Tests
             bool testbool = sp.IsSubsetOf(ip);
             testbool = sp.IsUnrestricted();
             ip2 = sp.Union(ip);
+            System.Security.SecurityElement se = new System.Security.SecurityElement("");
+            sp.FromXml(se);
+            se = sp.ToXml();
         }
         [Fact]
         public static void SecurityPermissionAttributeCallMethods()
@@ -176,6 +203,9 @@ namespace System.Security.Permissions.Tests
             IPermission ip2 = sip.Intersect(ip);
             bool testbool = sip.IsSubsetOf(ip);
             ip2 = sip.Union(ip);
+            System.Security.SecurityElement se = new System.Security.SecurityElement("");
+            sip.FromXml(se);
+            se = sip.ToXml();
         }
         [Fact]
         public static void SiteIdentityPermissionAttributeCallMethods()
@@ -192,6 +222,9 @@ namespace System.Security.Permissions.Tests
             IPermission ip2 = snip.Intersect(ip);
             bool testbool = snip.IsSubsetOf(ip);
             ip2 = snip.Union(ip);
+            System.Security.SecurityElement se = new System.Security.SecurityElement("");
+            snip.FromXml(se);
+            se = snip.ToXml();
         }
         [Fact]
         public static void StrongNameIdentityPermissionAttributeCallMethods()
@@ -217,6 +250,9 @@ namespace System.Security.Permissions.Tests
             bool testbool = tdp.IsSubsetOf(ip);
             testbool = tdp.IsUnrestricted();
             ip2 = tdp.Union(ip);
+            System.Security.SecurityElement se = new System.Security.SecurityElement("");
+            tdp.FromXml(se);
+            se = tdp.ToXml();
         }
         [Fact]
         public static void UIPermissionCallMethods()
@@ -230,6 +266,9 @@ namespace System.Security.Permissions.Tests
             bool testbool = uip.IsSubsetOf(ip);
             testbool = uip.IsUnrestricted();
             ip2 = uip.Union(ip);
+            System.Security.SecurityElement se = new System.Security.SecurityElement("");
+            uip.FromXml(se);
+            se = uip.ToXml();
         }
         [Fact]
         public static void UIPermissionAttributeCallMethods()
@@ -246,6 +285,9 @@ namespace System.Security.Permissions.Tests
             IPermission ip2 = uip.Intersect(ip);
             bool testbool = uip.IsSubsetOf(ip);
             ip2 = uip.Union(ip);
+            System.Security.SecurityElement se = new System.Security.SecurityElement("");
+            uip.FromXml(se);
+            se = uip.ToXml();
         }
         [Fact]
         public static void UrlIdentityPermissionAttributeCallMethods()
@@ -261,6 +303,9 @@ namespace System.Security.Permissions.Tests
             IPermission ip = zip.Copy();
             IPermission ip2 = zip.Intersect(ip);
             bool testbool = zip.IsSubsetOf(ip);
+            System.Security.SecurityElement se = new System.Security.SecurityElement("");
+            zip.FromXml(se);
+            se = zip.ToXml();
         }
         [Fact]
         public static void ZoneIdentityPermissionAttributeCallMethods()
