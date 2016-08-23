@@ -7336,6 +7336,8 @@ public:
     bool    compCodeGenDone;
     int64_t compNumStatementLinksTraversed; // # of links traversed while doing debug checks
     bool    fgNormalizeEHDone;              // Has the flowgraph EH normalization phase been done?
+    size_t  compSizeEstimate;               // The estimated size of the method as per `gtSetEvalOrder`.
+    size_t  compCycleEstimate;              // The estimated cycle count of the method as per `gtSetEvalOrder`
 #endif                                      // DEBUG
 
     bool fgLocalVarLivenessDone; // Note that this one is used outside of debug.

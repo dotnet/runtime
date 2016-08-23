@@ -335,12 +335,7 @@ void Rationalizer::RewriteCopyBlk(LIR::Use& use)
         // Since destination is known to be a SIMD type, src must be a SIMD type too
         // though we cannot figure it out easily enough. Transform src into
         // GT_IND(src) of simdType.
-        //
-        // We need to initialize costs on indir so that CopyCosts() while creating
-        // an addrmode will not hit asserts. These costs are not used further down
-        // but setting them to a reasonable value based on the logic in gtSetEvalOrder().
         GenTree* indir = comp->gtNewOperNode(GT_IND, simdType, srcAddr);
-        indir->SetCosts(IND_COST_EX, 2);
         BlockRange().InsertAfter(srcAddr, indir);
 
         cpBlk->gtGetOp1()->gtOp.gtOp2 = indir;
@@ -484,7 +479,6 @@ void Rationalizer::RewriteNodeAsCall(GenTree**             use,
     // Create the call node
     GenTreeCall* call = comp->gtNewCallNode(CT_USER_FUNC, callHnd, tree->gtType, args);
     call              = comp->fgMorphArgs(call);
-    call->CopyCosts(tree);
 #ifdef FEATURE_READYTORUN_COMPILER
     call->gtCall.setEntryPoint(entryPoint);
 #endif
@@ -774,8 +768,6 @@ void Rationalizer::RewriteAssignment(LIR::Use& use)
                 store->gtFlags |= GTF_REVERSE_OPS;
             }
 
-            store->CopyCosts(assignment);
-
             // TODO: JIT dump
 
             // Remove the GT_IND node and replace the assignment node with the store
@@ -989,7 +981,6 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, ArrayStack<G
             if (!isLHSOfAssignment)
             {
                 GenTree* ind = comp->gtNewOperNode(GT_IND, node->TypeGet(), node);
-                ind->CopyCosts(node);
 
                 node->SetOper(GT_CLS_VAR_ADDR);
                 node->gtType = TYP_BYREF;
@@ -1082,8 +1073,6 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, ArrayStack<G
                 GenTree*     address = new (comp, GT_LEA) GenTreeAddrMode(TYP_BYREF, simdNode->gtOp1, simdNode->gtOp2,
                                                                       baseTypeSize, offsetof(CORINFO_Array, u1Elems));
                 GenTree* ind = comp->gtNewOperNode(GT_IND, simdType, address);
-                address->CopyCosts(simdNode);
-                ind->CopyCosts(simdNode);
 
                 BlockRange().InsertBefore(simdNode, address, ind);
                 use.ReplaceWith(comp, ind);

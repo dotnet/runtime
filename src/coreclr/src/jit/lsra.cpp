@@ -7601,7 +7601,6 @@ void LinearScan::insertCopyOrReload(BasicBlock* block, GenTreePtr tree, unsigned
 
         GenTreeCopyOrReload* newNode = new (compiler, oper) GenTreeCopyOrReload(oper, treeType, tree);
         assert(refPosition->registerAssignment != RBM_NONE);
-        newNode->CopyCosts(tree);
         newNode->SetRegNumByIdx(refPosition->assignedReg(), multiRegIdx);
         newNode->gtLsraInfo.isLsraAdded   = true;
         newNode->gtLsraInfo.isLocalDefUse = false;
