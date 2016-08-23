@@ -54,7 +54,7 @@ internal static partial class Interop
             internal ulong rsslim;
             //internal ulong startcode;
             //internal ulong endcode;
-            internal ulong startstack;
+            //internal ulong startstack;
             //internal ulong kstkesp;
             //internal ulong kstkeip;
             //internal ulong signal;
@@ -254,9 +254,6 @@ internal static partial class Interop
             results.vsize = parser.ParseNextUInt64();
             results.rss = parser.ParseNextInt64();
             results.rsslim = parser.ParseNextUInt64();
-            parser.MoveNextOrFail(); // startcode
-            parser.MoveNextOrFail(); // endcode
-            results.startstack = parser.ParseNextUInt64();
 
             // The following lines are commented out as there's no need to parse through
             // the rest of the entry (we've gotten all of the data we need).  Should any
@@ -264,6 +261,9 @@ internal static partial class Interop
             // through and including the one that's needed.  For now, these are being left 
             // commented to document what's available in the remainder of the entry.
 
+            //parser.MoveNextOrFail(); // startcode
+            //parser.MoveNextOrFail(); // endcode
+            //parser.MoveNextOrFail(); // startstack
             //parser.MoveNextOrFail(); // kstkesp
             //parser.MoveNextOrFail(); // kstkeip
             //parser.MoveNextOrFail(); // signal
