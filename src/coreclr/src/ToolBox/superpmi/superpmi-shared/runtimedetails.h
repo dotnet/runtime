@@ -11,13 +11,17 @@
 
 //Our little collection of enough of the CLR data to get the JIT up and working...
 #define FEATURE_CLRSQM
-#ifdef _M_X64
+
+#if !defined(_TARGET_AMD64_) && !defined(_TARGET_X86_) && !defined(_TARGET_ARM64_) && !defined(_TARGET_ARM_)
+#if defined(_M_X64)
 #define _TARGET_AMD64_ 1
-#endif
-#ifdef _M_IX86
+#elif defined(_M_IX86)
 #define _TARGET_X86_ 1
 #endif
+#endif // _TARGET_* not previously defined
+
 #define __EXCEPTION_RECORD_CLR //trick out clrntexception.h to not include another exception record....
+
 #include <mscoree.h>
 #include <corjit.h>
 #include <utilcode.h>
