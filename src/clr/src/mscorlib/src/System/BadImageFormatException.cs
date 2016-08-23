@@ -90,7 +90,6 @@ namespace System {
 
             if (StackTrace != null)
                 s += Environment.NewLine + StackTrace;
-#if FEATURE_FUSION
             try
             {
                 if(FusionLog!=null)
@@ -106,7 +105,6 @@ namespace System {
             {
             
             }
-#endif
             return s;
         }
 
@@ -114,7 +112,6 @@ namespace System {
             // Base class constructor will check info != null.
 
             _fileName = info.GetString("BadImageFormat_FileName");
-#if FEATURE_FUSION
             try
             {
                 _fusionLog = info.GetString("BadImageFormat_FusionLog");
@@ -123,7 +120,6 @@ namespace System {
             {
                 _fusionLog = null;
             }
-#endif
         }
 
         private BadImageFormatException(String fileName, String fusionLog, int hResult)
@@ -135,13 +131,13 @@ namespace System {
             SetMessageField();
         }
 
-#if FEATURE_FUSION
         public String FusionLog {
             [System.Security.SecuritySafeCritical]  // auto-generated
+#pragma warning disable CS0618 // Type or member is obsolete
             [SecurityPermissionAttribute( SecurityAction.Demand, Flags = SecurityPermissionFlag.ControlEvidence | SecurityPermissionFlag.ControlPolicy)]
+#pragma warning restore CS0618 // Type or member is obsolete
             get { return _fusionLog; }
         }
-#endif
 
         [System.Security.SecurityCritical]  // auto-generated_required
         public override void GetObjectData(SerializationInfo info, StreamingContext context) {
@@ -150,7 +146,6 @@ namespace System {
 
             // Serialize data for this class
             info.AddValue("BadImageFormat_FileName", _fileName, typeof(String));
-#if FEATURE_FUSION
             try
             {
                 info.AddValue("BadImageFormat_FusionLog", FusionLog, typeof(String));
@@ -158,7 +153,6 @@ namespace System {
             catch (SecurityException)
             {
             }
-#endif
         }
     }
 }
