@@ -4424,6 +4424,21 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, CORJIT_F
 
 #ifdef DEBUG
     fgDebugCheckLinks(compStressCompile(STRESS_REMORPH_TREES, 50));
+
+    // Stash the current estimate of the function's size if necessary.
+    if (verbose)
+    {
+        compSizeEstimate = 0;
+        compCycleEstimate = 0;
+        for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
+        {
+            for (GenTreeStmt* statement = block->firstStmt(); statement != nullptr; statement = statement->getNextStmt())
+            {
+                compSizeEstimate += statement->GetCostSz();
+                compCycleEstimate += statement->GetCostEx();
+            }
+        }
+    }
 #endif
 
 #ifndef LEGACY_BACKEND

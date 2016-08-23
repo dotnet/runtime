@@ -830,9 +830,6 @@ GenTreePtr Lowering::NewPutArg(GenTreeCall* call, GenTreePtr arg, fgArgTabEntryP
                                                                 info->structDesc.eightByteSizes[ctr]),
                         argListPtr->gtOp.gtOp1);
 
-                    // CopyCosts
-                    newOper->CopyCosts(argListPtr->gtOp.gtOp1);
-
                     // Splice in the new GT_PUTARG_REG node in the GT_LIST
                     ReplaceArgWithPutArgOrCopy(&argListPtr->gtOp.gtOp1, newOper);
                 }
@@ -862,9 +859,6 @@ GenTreePtr Lowering::NewPutArg(GenTreeCall* call, GenTreePtr arg, fgArgTabEntryP
 
                 // Create a new GT_PUTARG_REG node with op1
                 GenTreePtr newOper = comp->gtNewOperNode(GT_PUTARG_REG, curTyp, curOp);
-
-                // CopyCosts
-                newOper->CopyCosts(argListPtr->gtOp.gtOp1);
 
                 // Splice in the new GT_PUTARG_REG node in the GT_LIST
                 ReplaceArgWithPutArgOrCopy(&argListPtr->gtOp.gtOp1, newOper);
@@ -931,8 +925,6 @@ GenTreePtr Lowering::NewPutArg(GenTreeCall* call, GenTreePtr arg, fgArgTabEntryP
         }
 #endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
     }
-
-    putArg->CopyCosts(arg);
 
     if (arg->InReg())
     {
@@ -1052,7 +1044,6 @@ void Lowering::LowerArg(GenTreeCall* call, GenTreePtr* ppArg)
             var_types  intType = (type == TYP_DOUBLE) ? TYP_LONG : TYP_INT;
             GenTreePtr intArg  = comp->gtNewOperNode(GT_COPY, intType, arg);
 
-            intArg->CopyCosts(arg);
             info->node = intArg;
             ReplaceArgWithPutArgOrCopy(ppArg, intArg);
 
@@ -2068,7 +2059,6 @@ GenTree* Lowering::LowerDelegateInvoke(GenTreeCall* call)
         GenTreeAddrMode(TYP_REF, originalThisExpr, nullptr, 0, comp->eeGetEEInfo()->offsetOfDelegateInstance);
 
     GenTree* newThis = comp->gtNewOperNode(GT_IND, TYP_REF, newThisAddr);
-    newThis->SetCosts(IND_COST_EX, 2);
 
     BlockRange().InsertAfter(originalThisExpr, newThisAddr, newThis);
 
@@ -3078,7 +3068,6 @@ GenTree* Lowering::TryCreateAddrMode(LIR::Use&& use, bool isIndir)
 
     GenTreeAddrMode* addrMode = new (comp, GT_LEA) GenTreeAddrMode(addrModeType, base, index, scale, offset);
 
-    addrMode->CopyCosts(addr);
     addrMode->gtRsvdRegs = addr->gtRsvdRegs;
     addrMode->gtFlags |= (addr->gtFlags & (GTF_ALL_EFFECT | GTF_IND_FLAGS));
 
@@ -3503,10 +3492,6 @@ GenTree* Lowering::LowerArrElem(GenTree* node)
 
     GenTreePtr leaNode = new (comp, GT_LEA) GenTreeAddrMode(arrElem->TypeGet(), leaBase, leaIndexNode, scale, offset);
     leaNode->gtFlags |= GTF_REVERSE_OPS;
-
-    // Set the costs for all of the new nodes. Depends on the new nodes all participating in the
-    // dataflow tree rooted at `leaNode`.
-    comp->gtPrepareCost(leaNode);
 
     BlockRange().InsertBefore(insertionPoint, leaNode);
 
