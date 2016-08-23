@@ -413,7 +413,6 @@
         "toolName": "msbuild",
         "settings": {
           "Project": "src/packages.builds",
-          "MsBuildParameters": "default",
           "ProducesTarget":"default"
         }
       }
