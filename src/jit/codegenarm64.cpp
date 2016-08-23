@@ -1419,8 +1419,6 @@ void CodeGen::genCodeForBBlist()
 
 #ifdef DEBUG
     genInterruptibleUsed = true;
-    UINT64 totalCostEx   = 0;
-    UINT64 totalCostSz   = 0;
 
     // You have to be careful if you create basic blocks from now on
     compiler->fgSafeBasicBlockCreation = false;
@@ -1741,14 +1739,6 @@ void CodeGen::genCodeForBBlist()
                     }
                 }
             }
-
-            // TODO-LIR: the cost accounting performed below is incorrect: each operator's cost includes the
-            //           cost of its operands, so the total cost of the block is grossly overestimated. Fixing
-            //           this requires the ability to calculate the cost of the operator itself.
-            //
-            // totalCostEx += (UINT64)node->gtCostEx * block->getBBWeight(compiler);
-            // totalCostSz += (UINT64)node->gtCostSz;
-
 #endif // DEBUG
 
             genCodeForTreeNode(node);
@@ -2077,7 +2067,7 @@ void CodeGen::genCodeForBBlist()
     if (compiler->verbose)
     {
         printf("\n# ");
-        printf("totalCostEx = %6d, totalCostSz = %5d ", totalCostEx, totalCostSz);
+        printf("compCycleEstimate = %6d, compSizeEstimate = %5d ", compiler->compCycleEstimate, compiler->compSizeEstimate);
         printf("%s\n", compiler->info.compFullName);
     }
 #endif
