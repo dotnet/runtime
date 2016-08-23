@@ -613,21 +613,36 @@ HCIMPL1_V(UINT64, JIT_Dbl2ULng, double val)
 
     const double two63  = 2147483648.0 * 4294967296.0;
     UINT64 ret;
-    if (val < two63) {
 #ifdef _TARGET_XARCH_
+    if (val < two63) {
         ret = FastDbl2Lng(val);
+    }
+    else {        
+        // subtract 0x8000000000000000, do the convert then add it back again
+        ret = FastDbl2Lng(val - two63) + I64(0x8000000000000000);
+    }
 #else
 // In x86/x64, conversion result of negative double to unsigned integer is
 // bit-equivalent unsigned value.
 // But other architecture's compiler convert negative doubles to zero when
 // the target is unsigned.
+    if (!_finite(val)) {
         ret = UINT64(val);
-#endif
     }
-    else {        
-        // subtract 0x8000000000000000, do the convert then add it back again
-        ret = FastDbl2Lng(val - two63) + I64(0x8000000000000000);
-}
+    else {
+        if (val >= 0.0) {
+            if (val < two63) {
+                ret = UINT64(val);
+            }
+            else {
+                ret = FastDbl2Lng(val - two63) + I64(0x8000000000000000);
+            }
+        }
+        else {
+            ret = UINT64(val);
+        }
+    }
+#endif
     return ret;
 }
 HCIMPLEND
