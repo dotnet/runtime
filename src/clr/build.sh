@@ -153,7 +153,14 @@ build_coreclr()
     if [ $__UseNinja == 1 ]; then
         generator="ninja"
         buildFile="build.ninja"
-        buildTool="ninja"
+        if which ninja >/dev/null 2>&1; then
+            buildTool="ninja"
+        elif which ninja-build >/dev/null 2>&1; then
+            buildTool="ninja-build"
+        else
+           echo "Unable to locate ninja!" 1>&2
+           exit 1
+        fi
     fi
 
     if [ $__SkipConfigure == 0 ]; then
