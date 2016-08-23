@@ -20,7 +20,7 @@ namespace System.Tests
         [InlineData(6, 13952, 2000, 1952)]
         [InlineData(0, 0, 2000, 0)]
         [InlineData(-7, -14032, 2000, -32)]
-        [InlineData(-1073741, -2147483647, 2000, -1648)]
+        [InlineData(-1073741, -2147483648, 2000, -1648)]
         [InlineData(-1073741, 2147483647, -2000, 1647)]
         [InlineData(-6, 13952, -2000, 1952)]
         public static void DivRem(int quotient, int dividend, int divisor, int expectedRemainder)
@@ -32,9 +32,9 @@ namespace System.Tests
 
         [Theory]
         [InlineData(4611686018427387L, 9223372036854775807L, 2000L, 1807L)]
-        [InlineData(-4611686018427387L, -9223372036854775807L, -2000L, -1808L)]
+        [InlineData(4611686018427387L, -9223372036854775808L, -2000L, -1808L)]
         [InlineData(-4611686018427387L, 9223372036854775807L, -2000L, 1807L)]
-        [InlineData(4611686018427387L, -9223372036854775807L, -2000L, -1808L)]
+        [InlineData(-4611686018427387L, -9223372036854775808L, 2000L, -1808L)]
         [InlineData(6L, 13952L, 2000L, 1952L)]
         [InlineData(0L, 0L, 2000L, 0L)]
         [InlineData(-7L, -14032L, 2000L, -32L)]
