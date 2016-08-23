@@ -2261,8 +2261,8 @@ namespace System.Linq.Expressions.Interpreter
                             LocalDefinition? objTmp = null;
                             if (indexNode.Object != null)
                             {
-                                Compile(indexNode.Object);
                                 objTmp = _locals.DefineLocal(Expression.Parameter(indexNode.Object.Type), _instructions.Count);
+                                EmitThisForMethodCall(indexNode.Object);
                                 _instructions.EmitDup();
                                 _instructions.EmitStoreLocal(objTmp.Value.Index);
                             }
