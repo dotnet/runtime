@@ -24,12 +24,6 @@
       "values": [],
       "defaultValue": ""
     },
-    "MsBuildParameters": {
-      "description": "MsBuild building options.",
-      "valueType": "passThrough",
-      "values": [],
-      "defaultValue": "/nologo /verbosity:minimal /clp:Summary"
-    },
     "MsBuildFileLogging": {
       "description": "MsBuild logging options.",
       "valueType": "passThrough",
@@ -228,12 +222,6 @@
       "values": [ "real" ],
       "defaultValue": ""
     },
-    "maxcpucount": {
-      "description": "Msbuild internal command.",
-      "valueType": "internal",
-      "values": [],
-      "defaultValue": ""
-    },
     "CLRTestPriorityToBuild": {
       "description": "Sets priority to build test.",
       "valueType": "property",
@@ -342,12 +330,6 @@
             "CLRTestPriorityToBuild": "default"
           }
         },
-        "sequential": {
-          "description": "Sets sequential build",
-          "settings": {
-            "maxcpucount": "default"
-          }
-        },
         "skipRestore": {
           "description": "Skips restoring packages during build.",
           "settings": {
@@ -364,8 +346,6 @@
       "defaultValues": {
         "toolName": "msbuild",
         "settings": {
-          "maxcpucount": "default",
-          "MsBuildParameters": "default",
           "MsBuildLog": "default",
           "MsBuildWrn": "default",
           "MsBuildErr": "default"
@@ -422,8 +402,6 @@
       "defaultValues": {
         "toolName": "msbuild",
         "settings": {
-          "MsBuildParameters": "default",
-          "maxcpucount": "default",
           "MsBuildFileLogging": "/flp:v=detailed;LogFile=sync.log"
         }
       }
@@ -465,8 +443,6 @@
         "toolName": "msbuild",
         "settings": {
           "Project": "./src/publish.proj",
-          "MsBuildParameters": "default",
-          "maxcpucount": "default",
           "MsBuildFileLogging": "/flp:v=detailed;LogFile=publish-packages.log"
         }
       }
@@ -495,9 +471,7 @@
       "defaultValues": {
         "toolName": "msbuild",
         "settings": {
-          "MsBuildParameters": "default",
           "__BuildOS": "default",
-          "maxcpucount": "default",
           "MsBuildFileLogging": "/flp:v=detailed;Append;LogFile=build-packages.log",
           "MsBuildEventLogging": "default"
         }
@@ -506,9 +480,15 @@
   },
   "tools": {
     "msbuild": {
-      "run": {
-        "windows": "Tools\\msbuild.cmd",
-        "unix": "Tools/msbuild.sh"
+      "osSpecific": {
+        "windows": {
+          "defaultParameters": "/nologo /verbosity:minimal /clp:Summary /maxcpucount /nodeReuse:false",
+          "path": "Tools/msbuild.cmd"
+        },
+        "unix": {
+          "defaultParameters": "/nologo /verbosity:minimal /clp:Summary /maxcpucount",
+          "path": "Tools/msbuild.sh"
+        }
       },
       "valueTypes": {
         "property": "/p:{name}={value}",
