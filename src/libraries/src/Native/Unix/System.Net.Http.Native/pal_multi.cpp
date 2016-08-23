@@ -92,6 +92,11 @@ extern "C" int32_t HttpNative_MultiWait(CURLM* multiHandle,
         {
             pollfd pfd = { .fd = ToFileDescriptor(extraFileDescriptor),.events = POLLIN,.revents = 0 };
             poll(&pfd, 1, 0);
+
+            //
+            // We ignore any failure in poll(), to preserve the result from curl_multi_wait.  If poll() fails, it should
+            // leave revents cleared.
+            //
             *isExtraFileDescriptorActive = (pfd.revents & POLLIN) != 0;
         }
     }
