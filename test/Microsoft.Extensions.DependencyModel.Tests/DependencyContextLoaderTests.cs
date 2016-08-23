@@ -167,7 +167,8 @@ namespace Microsoft.Extensions.DependencyModel.Tests
                 new string[] { },
                 new Dependency[] { },
                 false,
-                "path");
+                "path",
+                "hashPath");
         }
 
         private RuntimeLibrary CreateRuntime(string name)
@@ -182,7 +183,8 @@ namespace Microsoft.Extensions.DependencyModel.Tests
                 new ResourceAssembly[] { },
                 new Dependency[] {},
                 false,
-                "path");
+                "path",
+                "hashPath");
         }
     }
 }

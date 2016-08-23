@@ -497,6 +497,7 @@ namespace Microsoft.Extensions.DependencyModel
             string type = null;
             bool serviceable = false;
             string path = null;
+            string hashPath = null;
 
             reader.ReadStartObject();
 
@@ -516,6 +517,9 @@ namespace Microsoft.Extensions.DependencyModel
                     case DependencyContextStrings.PathPropertyName:
                         path = reader.ReadAsString();
                         break;
+                    case DependencyContextStrings.HashPathPropertyName:
+                        hashPath = reader.ReadAsString();
+                        break;
                     default:
                         throw new FormatException($"Unknown property name '{reader.Value}'");
                 }
@@ -528,7 +532,8 @@ namespace Microsoft.Extensions.DependencyModel
                 Hash = hash,
                 Type = Pool(type),
                 Serviceable = serviceable,
-                Path = path
+                Path = path,
+                HashPath = hashPath
             };
         }
 
@@ -638,7 +643,8 @@ namespace Microsoft.Extensions.DependencyModel
                     resourceAssemblies: targetLibrary.Resources ?? Enumerable.Empty<ResourceAssembly>(),
                     dependencies: targetLibrary.Dependencies,
                     serviceable: stub.Serviceable,
-                    path: stub.Path);
+                    path: stub.Path,
+                    hashPath: stub.HashPath);
             }
             else
             {
@@ -651,7 +657,8 @@ namespace Microsoft.Extensions.DependencyModel
                     assemblies,
                     targetLibrary.Dependencies,
                     stub.Serviceable,
-                    stub.Path);
+                    stub.Path,
+                    stub.HashPath);
             }
         }
 
@@ -715,6 +722,8 @@ namespace Microsoft.Extensions.DependencyModel
             public bool Serviceable;
 
             public string Path;
+
+            public string HashPath;
         }
     }
 }

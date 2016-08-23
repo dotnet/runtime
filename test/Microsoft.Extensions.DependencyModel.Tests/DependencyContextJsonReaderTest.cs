@@ -190,7 +190,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
         }
 
         [Fact]
-        public void ReadsCompilationTargetWithMissingPath()
+        public void ReadsCompilationTargetWithMissingPathAndHashPath()
         {
             var context = Read(
 @"{
@@ -223,6 +223,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
             package.Type.Should().Be("package");
             package.Serviceable.Should().Be(false);
             package.Path.Should().BeNull();
+            package.HashPath.Should().BeNull();
         }
 
         [Fact]
@@ -311,7 +312,8 @@ namespace Microsoft.Extensions.DependencyModel.Tests
             ""type"": ""package"",
             ""serviceable"": false,
             ""sha512"": ""HASH-System.Banana"",
-            ""path"": ""PackagePath""
+            ""path"": ""PackagePath"",
+            ""hashPath"": ""PackageHashPath""
         },
     }
 }");
@@ -328,6 +330,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
             package.Type.Should().Be("package");
             package.Serviceable.Should().Be(false);
             package.Path.Should().Be("PackagePath");
+            package.HashPath.Should().Be("PackageHashPath");
             package.ResourceAssemblies.Should().Contain(a => a.Path == "System.Banana.resources.dll")
                 .Subject.Locale.Should().Be("en-US");
 
