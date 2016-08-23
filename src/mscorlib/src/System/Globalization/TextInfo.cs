@@ -121,7 +121,6 @@ namespace System.Globalization {
         [OptionalField(VersionAdded = 2)]
         private string customCultureName;
 
-#if !FEATURE_CORECLR
         // the following fields are defined to keep compatibility with Everett.
         // don't change/remove the names/types of these fields.
         [OptionalField(VersionAdded = 1)]
@@ -130,7 +129,6 @@ namespace System.Globalization {
         internal bool   m_useUserOverride;
         [OptionalField(VersionAdded = 1)]
         internal int    m_win32LangID;
-#endif // !FEATURE_CORECLR
 
 
         [OnDeserializing] 
