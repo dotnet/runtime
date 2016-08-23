@@ -21,11 +21,6 @@
     <BuildToolsTargets45>true</BuildToolsTargets45>   
   </PropertyGroup>  
 
-  <!-- Make the stable version of xunit that the tests depend on available to both the project.json generation and the validation task. -->
-  <PropertyGroup>
-    <XunitPackageVersion>2.1.0</XunitPackageVersion>
-  </PropertyGroup>
-
   <!-- Common repo directories -->
   <PropertyGroup>
     <CopyNuGetImplementations Condition="'$(CopyNuGetImplementations)'==''">false</CopyNuGetImplementations>
@@ -38,35 +33,8 @@
     <SkipImportILTargets>true</SkipImportILTargets>
   </PropertyGroup>
 
-   <!-- Package dependency validation -->
-  <PropertyGroup>
-    <ValidatePackageVersions>true</ValidatePackageVersions>
-    <ProhibitFloatingDependencies>true</ProhibitFloatingDependencies>
-
-    <CoreFxExpectedPrerelease>beta-24328-05</CoreFxExpectedPrerelease>
-    <CoreClrPackageVersion>1.0.4-beta-24325-02</CoreClrPackageVersion>
-
-    <CoreFxVersionsIdentityRegex>^(?i)((System\..*)|(Microsoft\.CSharp)|(Microsoft\.NETCore.*)|(Microsoft\.Win32\..*)|(Microsoft\.VisualBasic))(?&lt;!TestData)$</CoreFxVersionsIdentityRegex>
-  </PropertyGroup>
-
-  <ItemGroup>
-    <ValidationPattern Include="CoreFxVersions">
-      <IdentityRegex>$(CoreFxVersionsIdentityRegex)</IdentityRegex>
-      <ExpectedPrerelease>$(CoreFxExpectedPrerelease)</ExpectedPrerelease>
-    </ValidationPattern>
-    <ValidationPattern Include="XunitPackageVersions">
-      <IdentityRegex>^(?i)(xunit(\.assert|\.core|\.runner\.(utility|msbuild))?)$</IdentityRegex>
-      <ExpectedVersion>$(XunitPackageVersion)</ExpectedVersion>
-    </ValidationPattern>
-    <ValidationPattern Include="XunitConsoleVersion">
-      <IdentityRegex>^(?i)(xunit\.console\.netcore)$</IdentityRegex>
-      <ExpectedVersion>1.0.2-prerelease-00101</ExpectedVersion>
-    </ValidationPattern>
-    <ValidationPattern Include="XunitPerformanceVersion">
-      <IdentityRegex>^(?i)Microsoft\.DotNet\.xunit\.performance.*$</IdentityRegex>
-      <ExpectedVersion>1.0.0-alpha-build0035</ExpectedVersion>
-    </ValidationPattern>
-  </ItemGroup>
+  <!-- Provides properties for dependency versions and configures dependency verification/auto-upgrade. -->
+  <Import Project="$(ProjectDir)..\dependencies.props" />
 
   <!-- Common nuget properties -->
   <PropertyGroup>
