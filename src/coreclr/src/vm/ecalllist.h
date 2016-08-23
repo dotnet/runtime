@@ -1545,12 +1545,10 @@ FCFuncEnd()
 
 FCFuncStart(gGCInterfaceFuncs)
     FCFuncElement("GetGenerationWR", GCInterface::GetGenerationWR)
-#ifndef FEATURE_CORECLR
     FCFuncElement("_RegisterForFullGCNotification", GCInterface::RegisterForFullGCNotification)
     FCFuncElement("_CancelFullGCNotification", GCInterface::CancelFullGCNotification)
     FCFuncElement("_WaitForFullGCApproach", GCInterface::WaitForFullGCApproach)
     FCFuncElement("_WaitForFullGCComplete", GCInterface::WaitForFullGCComplete)
-#endif
     FCFuncElement("_CollectionCount", GCInterface::CollectionCount)
     FCFuncElement("GetGCLatencyMode", GCInterface::GetGcLatencyMode)
     FCFuncElement("SetGCLatencyMode", GCInterface::SetGcLatencyMode)

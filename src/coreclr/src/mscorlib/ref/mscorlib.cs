@@ -66,10 +66,39 @@ namespace System
     public sealed partial class Activator
     {
         internal Activator() { }
+        public static System.Runtime.Remoting.ObjectHandle CreateComInstanceFrom(string assemblyName, string typeName) { throw null; }
+        public static System.Runtime.Remoting.ObjectHandle CreateComInstanceFrom(string assemblyName, string typeName, byte[] hashValue, System.Configuration.Assemblies.AssemblyHashAlgorithm hashAlgorithm) { throw null; }
+        [System.Security.SecurityCriticalAttribute]
+        public static System.Runtime.Remoting.ObjectHandle CreateInstance(System.AppDomain domain, string assemblyName, string typeName) { throw null; }
+        [System.Security.SecurityCriticalAttribute]
+        public static System.Runtime.Remoting.ObjectHandle CreateInstance(System.AppDomain domain, string assemblyName, string typeName, bool ignoreCase, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder binder, object[] args, System.Globalization.CultureInfo culture, object[] activationAttributes) { throw null; }
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+        [System.Security.SecuritySafeCriticalAttribute]
+        public static System.Runtime.Remoting.ObjectHandle CreateInstance(string assemblyName, string typeName) { throw null; }
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+        [System.Security.SecuritySafeCriticalAttribute]
+        public static System.Runtime.Remoting.ObjectHandle CreateInstance(string assemblyName, string typeName, bool ignoreCase, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder binder, object[] args, System.Globalization.CultureInfo culture, object[] activationAttributes) { throw null; }
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+        [System.Security.SecuritySafeCriticalAttribute]
+        public static System.Runtime.Remoting.ObjectHandle CreateInstance(string assemblyName, string typeName, object[] activationAttributes) { throw null; }
         public static object CreateInstance(System.Type type) { throw null; }
-        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]public static object CreateInstance(System.Type type, bool nonPublic) { throw null; }
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+        public static object CreateInstance(System.Type type, bool nonPublic) { throw null; }
         public static object CreateInstance(System.Type type, params object[] args) { throw null; }
-        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]public static T CreateInstance<T>() { throw null; }
+        public static object CreateInstance(System.Type type, object[] args, object[] activationAttributes) { throw null; }
+        public static object CreateInstance(System.Type type, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder binder, object[] args, System.Globalization.CultureInfo culture) { throw null; }
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+        [System.Security.SecuritySafeCriticalAttribute]
+        public static object CreateInstance(System.Type type, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder binder, object[] args, System.Globalization.CultureInfo culture, object[] activationAttributes) { throw null; }
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+        public static T CreateInstance<T>() { throw null; }
+        [System.Security.SecurityCriticalAttribute]
+        public static System.Runtime.Remoting.ObjectHandle CreateInstanceFrom(System.AppDomain domain, string assemblyFile, string typeName) { throw null; }
+        [System.Security.SecurityCriticalAttribute]
+        public static System.Runtime.Remoting.ObjectHandle CreateInstanceFrom(System.AppDomain domain, string assemblyFile, string typeName, bool ignoreCase, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder binder, object[] args, System.Globalization.CultureInfo culture, object[] activationAttributes) { throw null; }
+        public static System.Runtime.Remoting.ObjectHandle CreateInstanceFrom(string assemblyFile, string typeName) { throw null; }
+        public static System.Runtime.Remoting.ObjectHandle CreateInstanceFrom(string assemblyFile, string typeName, bool ignoreCase, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder binder, object[] args, System.Globalization.CultureInfo culture, object[] activationAttributes) { throw null; }
+        public static System.Runtime.Remoting.ObjectHandle CreateInstanceFrom(string assemblyFile, string typeName, object[] activationAttributes) { throw null; }
     }
     [System.Diagnostics.DebuggerDisplayAttribute("Count = {InnerExceptionCount}")]
     public partial class AggregateException : System.Exception
@@ -135,6 +164,20 @@ namespace System
         public AppDomainUnloadedException(string message) { }
         public AppDomainUnloadedException(string message, System.Exception innerException) { }
         protected AppDomainUnloadedException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
+    }
+    [System.Runtime.InteropServices.ComVisibleAttribute(true)]
+    public sealed partial class ApplicationId
+    {
+        public ApplicationId(byte[] publicKeyToken, string name, System.Version version, string processorArchitecture, string culture) { }
+        public string Culture { get { throw null; } }
+        public string Name { get { throw null; } }
+        public string ProcessorArchitecture { get { throw null; } }
+        public byte[] PublicKeyToken { get { throw null; } }
+        public System.Version Version { get { throw null; } }
+        public System.ApplicationId Copy() { throw null; }
+        public override bool Equals(object o) { throw null; }
+        public override int GetHashCode() { throw null; }
+        public override string ToString() { throw null; }
     }
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public partial class ApplicationException : System.Exception
@@ -386,13 +429,22 @@ namespace System
         protected ArrayTypeMismatchException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
     }
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
+    public partial class AssemblyLoadEventArgs : System.EventArgs
+    {
+        public AssemblyLoadEventArgs(System.Reflection.Assembly loadedAssembly) { }
+        public System.Reflection.Assembly LoadedAssembly { get { throw null; } }
+    }
+    [System.Runtime.InteropServices.ComVisibleAttribute(true)]
+    public delegate void AssemblyLoadEventHandler(object sender, System.AssemblyLoadEventArgs args);
+    [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public delegate void AsyncCallback(System.IAsyncResult ar);
-    [System.AttributeUsageAttribute((System.AttributeTargets)(32767), Inherited=true, AllowMultiple=false)]
+    [System.AttributeUsageAttribute((System.AttributeTargets)(32767), Inherited = true, AllowMultiple = false)]
     [System.Runtime.InteropServices.ClassInterfaceAttribute((System.Runtime.InteropServices.ClassInterfaceType)(0))]
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public abstract partial class Attribute
     {
         protected Attribute() { }
+        public virtual object TypeId { get { throw null; } }
         [System.Security.SecuritySafeCriticalAttribute]
         public override bool Equals(object obj) { throw null; }
         public static System.Attribute GetCustomAttribute(System.Reflection.Assembly element, System.Type attributeType) { throw null; }
@@ -421,6 +473,7 @@ namespace System
         public static System.Attribute[] GetCustomAttributes(System.Reflection.ParameterInfo element, System.Type attributeType, bool inherit) { throw null; }
         [System.Security.SecuritySafeCriticalAttribute]
         public override int GetHashCode() { throw null; }
+        public virtual bool IsDefaultAttribute() { throw null; }
         public static bool IsDefined(System.Reflection.Assembly element, System.Type attributeType) { throw null; }
         public static bool IsDefined(System.Reflection.Assembly element, System.Type attributeType, bool inherit) { throw null; }
         public static bool IsDefined(System.Reflection.MemberInfo element, System.Type attributeType) { throw null; }
@@ -465,13 +518,16 @@ namespace System
     public partial class BadImageFormatException : System.SystemException
     {
         public BadImageFormatException() { }
+        protected BadImageFormatException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public BadImageFormatException(string message) { }
         public BadImageFormatException(string message, System.Exception inner) { }
         public BadImageFormatException(string message, string fileName) { }
         public BadImageFormatException(string message, string fileName, System.Exception inner) { }
-        protected BadImageFormatException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
         public string FileName { get { throw null; } }
+        public string FusionLog { [System.Security.SecuritySafeCriticalAttribute]get { throw null; } }
         public override string Message { get { throw null; } }
+        [System.Security.SecurityCriticalAttribute]
+        public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public override string ToString() { throw null; }
     }
     [System.FlagsAttribute]
@@ -729,6 +785,11 @@ namespace System
         public static void Write(string s) { }
         public static void WriteLine() { }
         public static void WriteLine(string s) { }
+    }
+    [System.Runtime.InteropServices.ComVisibleAttribute(true)]
+    public abstract partial class ContextBoundObject
+    {
+        protected ContextBoundObject() { }
     }
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public partial class ContextMarshalException : System.SystemException
@@ -1323,16 +1384,16 @@ namespace System
         Unspecified = 0,
         Utc = 1,
     }
-    public partial struct DateTimeOffset : System.IComparable, System.IComparable<System.DateTimeOffset>, System.IEquatable<System.DateTimeOffset>, System.IFormattable
+    public partial struct DateTimeOffset : System.IComparable, System.IComparable<System.DateTimeOffset>, System.IEquatable<System.DateTimeOffset>, System.IFormattable, System.Runtime.Serialization.IDeserializationCallback, System.Runtime.Serialization.ISerializable
     {
         public static readonly System.DateTimeOffset MaxValue;
         public static readonly System.DateTimeOffset MinValue;
-        public DateTimeOffset(System.DateTime dateTime) { throw null;}
-        public DateTimeOffset(System.DateTime dateTime, System.TimeSpan offset) { throw null;}
-        public DateTimeOffset(int year, int month, int day, int hour, int minute, int second, int millisecond, System.Globalization.Calendar calendar, System.TimeSpan offset) { throw null;}
-        public DateTimeOffset(int year, int month, int day, int hour, int minute, int second, int millisecond, System.TimeSpan offset) { throw null;}
-        public DateTimeOffset(int year, int month, int day, int hour, int minute, int second, System.TimeSpan offset) { throw null;}
-        public DateTimeOffset(long ticks, System.TimeSpan offset) { throw null;}
+        public DateTimeOffset(System.DateTime dateTime) { throw null; }
+        public DateTimeOffset(System.DateTime dateTime, System.TimeSpan offset) { throw null; }
+        public DateTimeOffset(int year, int month, int day, int hour, int minute, int second, int millisecond, System.Globalization.Calendar calendar, System.TimeSpan offset) { throw null; }
+        public DateTimeOffset(int year, int month, int day, int hour, int minute, int second, int millisecond, System.TimeSpan offset) { throw null; }
+        public DateTimeOffset(int year, int month, int day, int hour, int minute, int second, System.TimeSpan offset) { throw null; }
+        public DateTimeOffset(long ticks, System.TimeSpan offset) { throw null; }
         public System.DateTime Date { get { throw null; } }
         public System.DateTime DateTime { get { throw null; } }
         public int Day { get { throw null; } }
@@ -1375,7 +1436,7 @@ namespace System
         public static bool operator ==(System.DateTimeOffset left, System.DateTimeOffset right) { throw null; }
         public static bool operator >(System.DateTimeOffset left, System.DateTimeOffset right) { throw null; }
         public static bool operator >=(System.DateTimeOffset left, System.DateTimeOffset right) { throw null; }
-        public static implicit operator System.DateTimeOffset (System.DateTime dateTime) { throw null; }
+        public static implicit operator System.DateTimeOffset(System.DateTime dateTime) { throw null; }
         public static bool operator !=(System.DateTimeOffset left, System.DateTimeOffset right) { throw null; }
         public static bool operator <(System.DateTimeOffset left, System.DateTimeOffset right) { throw null; }
         public static bool operator <=(System.DateTimeOffset left, System.DateTimeOffset right) { throw null; }
@@ -1390,6 +1451,9 @@ namespace System
         public System.TimeSpan Subtract(System.DateTimeOffset value) { throw null; }
         public System.DateTimeOffset Subtract(System.TimeSpan value) { throw null; }
         int System.IComparable.CompareTo(object obj) { throw null; }
+        void System.Runtime.Serialization.IDeserializationCallback.OnDeserialization(object sender) { }
+        [System.Security.SecurityCriticalAttribute]
+        void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public long ToFileTime() { throw null; }
         public System.DateTimeOffset ToLocalTime() { throw null; }
         public System.DateTimeOffset ToOffset(System.TimeSpan offset) { throw null; }
@@ -1444,7 +1508,7 @@ namespace System
     }
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct Decimal : System.IComparable, System.IComparable<decimal>, System.IConvertible, System.IEquatable<decimal>, System.IFormattable
+    public partial struct Decimal : System.IComparable, System.IComparable<decimal>, System.IConvertible, System.IEquatable<decimal>, System.IFormattable, System.Runtime.Serialization.IDeserializationCallback
     {
         [System.Runtime.CompilerServices.DecimalConstantAttribute((byte)0, (byte)0, (uint)4294967295, (uint)4294967295, (uint)4294967295)]
         public static readonly decimal MaxValue;
@@ -1456,18 +1520,20 @@ namespace System
         public static readonly decimal One;
         [System.Runtime.CompilerServices.DecimalConstantAttribute((byte)0, (byte)0, (uint)0, (uint)0, (uint)0)]
         public static readonly decimal Zero;
-        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)][System.Security.SecuritySafeCriticalAttribute]
-        public Decimal(double value) { throw null;}
-        public Decimal(int value) { throw null;}
-        public Decimal(int lo, int mid, int hi, bool isNegative, byte scale) { throw null;}
-        public Decimal(int[] bits) { throw null;}
-        public Decimal(long value) { throw null;}
-        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)][System.Security.SecuritySafeCriticalAttribute]
-        public Decimal(float value) { throw null;}
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)]
+        [System.Security.SecuritySafeCriticalAttribute]
+        public Decimal(double value) { throw null; }
+        public Decimal(int value) { throw null; }
+        public Decimal(int lo, int mid, int hi, bool isNegative, byte scale) { throw null; }
+        public Decimal(int[] bits) { throw null; }
+        public Decimal(long value) { throw null; }
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)]
+        [System.Security.SecuritySafeCriticalAttribute]
+        public Decimal(float value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public Decimal(uint value) { throw null;}
+        public Decimal(uint value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public Decimal(ulong value) { throw null;}
+        public Decimal(ulong value) { throw null; }
         [System.Security.SecuritySafeCriticalAttribute]
         public static System.Decimal Add(System.Decimal d1, System.Decimal d2) { throw null; }
         public static System.Decimal Ceiling(System.Decimal d) { throw null; }
@@ -1489,7 +1555,8 @@ namespace System
         public static System.Decimal Floor(System.Decimal d) { throw null; }
         public static System.Decimal FromOACurrency(long cy) { throw null; }
         public static int[] GetBits(System.Decimal d) { throw null; }
-        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)][System.Security.SecuritySafeCriticalAttribute]
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)]
+        [System.Security.SecuritySafeCriticalAttribute]
         public override int GetHashCode() { throw null; }
         public System.TypeCode GetTypeCode() { throw null; }
         [System.Security.SecuritySafeCriticalAttribute]
@@ -1502,40 +1569,40 @@ namespace System
         public static System.Decimal operator /(System.Decimal d1, System.Decimal d2) { throw null; }
         [System.Security.SecuritySafeCriticalAttribute]
         public static bool operator ==(System.Decimal d1, System.Decimal d2) { throw null; }
-        public static explicit operator byte (System.Decimal value) { throw null; }
-        public static explicit operator char (System.Decimal value) { throw null; }
-        public static explicit operator double (System.Decimal value) { throw null; }
-        public static explicit operator short (System.Decimal value) { throw null; }
-        public static explicit operator int (System.Decimal value) { throw null; }
-        public static explicit operator long (System.Decimal value) { throw null; }
+        public static explicit operator byte(System.Decimal value) { throw null; }
+        public static explicit operator char(System.Decimal value) { throw null; }
+        public static explicit operator double(System.Decimal value) { throw null; }
+        public static explicit operator short(System.Decimal value) { throw null; }
+        public static explicit operator int(System.Decimal value) { throw null; }
+        public static explicit operator long(System.Decimal value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static explicit operator sbyte (System.Decimal value) { throw null; }
-        public static explicit operator float (System.Decimal value) { throw null; }
+        public static explicit operator sbyte(System.Decimal value) { throw null; }
+        public static explicit operator float(System.Decimal value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static explicit operator ushort (System.Decimal value) { throw null; }
+        public static explicit operator ushort(System.Decimal value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static explicit operator uint (System.Decimal value) { throw null; }
+        public static explicit operator uint(System.Decimal value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static explicit operator ulong (System.Decimal value) { throw null; }
-        public static explicit operator System.Decimal (double value) { throw null; }
-        public static explicit operator System.Decimal (float value) { throw null; }
+        public static explicit operator ulong(System.Decimal value) { throw null; }
+        public static explicit operator System.Decimal(double value) { throw null; }
+        public static explicit operator System.Decimal(float value) { throw null; }
         [System.Security.SecuritySafeCriticalAttribute]
         public static bool operator >(System.Decimal d1, System.Decimal d2) { throw null; }
         [System.Security.SecuritySafeCriticalAttribute]
         public static bool operator >=(System.Decimal d1, System.Decimal d2) { throw null; }
-        public static implicit operator System.Decimal (byte value) { throw null; }
-        public static implicit operator System.Decimal (char value) { throw null; }
-        public static implicit operator System.Decimal (short value) { throw null; }
-        public static implicit operator System.Decimal (int value) { throw null; }
-        public static implicit operator System.Decimal (long value) { throw null; }
+        public static implicit operator System.Decimal(byte value) { throw null; }
+        public static implicit operator System.Decimal(char value) { throw null; }
+        public static implicit operator System.Decimal(short value) { throw null; }
+        public static implicit operator System.Decimal(int value) { throw null; }
+        public static implicit operator System.Decimal(long value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static implicit operator System.Decimal (sbyte value) { throw null; }
+        public static implicit operator System.Decimal(sbyte value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static implicit operator System.Decimal (ushort value) { throw null; }
+        public static implicit operator System.Decimal(ushort value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static implicit operator System.Decimal (uint value) { throw null; }
+        public static implicit operator System.Decimal(uint value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static implicit operator System.Decimal (ulong value) { throw null; }
+        public static implicit operator System.Decimal(ulong value) { throw null; }
         public static System.Decimal operator ++(System.Decimal d) { throw null; }
         [System.Security.SecuritySafeCriticalAttribute]
         public static bool operator !=(System.Decimal d1, System.Decimal d2) { throw null; }
@@ -1578,8 +1645,10 @@ namespace System
         ushort System.IConvertible.ToUInt16(System.IFormatProvider provider) { throw null; }
         uint System.IConvertible.ToUInt32(System.IFormatProvider provider) { throw null; }
         ulong System.IConvertible.ToUInt64(System.IFormatProvider provider) { throw null; }
+        void System.Runtime.Serialization.IDeserializationCallback.OnDeserialization(object sender) { }
         public static byte ToByte(System.Decimal value) { throw null; }
-        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)][System.Security.SecuritySafeCriticalAttribute]
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)]
+        [System.Security.SecuritySafeCriticalAttribute]
         public static double ToDouble(System.Decimal d) { throw null; }
         public static short ToInt16(System.Decimal value) { throw null; }
         [System.Security.SecuritySafeCriticalAttribute]
@@ -1589,7 +1658,8 @@ namespace System
         public static long ToOACurrency(System.Decimal value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static sbyte ToSByte(System.Decimal value) { throw null; }
-        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)][System.Security.SecuritySafeCriticalAttribute]
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)]
+        [System.Security.SecuritySafeCriticalAttribute]
         public static float ToSingle(System.Decimal d) { throw null; }
         [System.Security.SecuritySafeCriticalAttribute]
         public override string ToString() { throw null; }
@@ -1879,9 +1949,10 @@ namespace System
     public partial class Exception : System.Runtime.Serialization.ISerializable
     {
         public Exception() { }
+        [System.Security.SecuritySafeCriticalAttribute]
+        protected Exception(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public Exception(string message) { }
         public Exception(string message, System.Exception innerException) { }
-        protected Exception(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public virtual System.Collections.IDictionary Data { [System.Security.SecuritySafeCriticalAttribute]get { throw null; } }
         public virtual string HelpLink { get { throw null; } set { } }
         public int HResult { get { throw null; } protected set { } }
@@ -1893,6 +1964,7 @@ namespace System
         public virtual System.Exception GetBaseException() { throw null; }
         [System.Security.SecurityCriticalAttribute]
         public virtual void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
+        public new System.Type GetType() { throw null; }
         [System.Security.SecuritySafeCriticalAttribute]
         public override string ToString() { throw null; }
     }
@@ -1957,6 +2029,8 @@ namespace System
         public static int MaxGeneration { [System.Security.SecuritySafeCriticalAttribute]get { throw null; } }
         [System.Security.SecurityCriticalAttribute]
         public static void AddMemoryPressure(long bytesAllocated) { }
+        [System.Security.SecurityCriticalAttribute]
+        public static void CancelFullGCNotification() { }
         [System.Security.SecuritySafeCriticalAttribute]
         public static void Collect() { }
         public static void Collect(int generation) { }
@@ -1968,21 +2042,41 @@ namespace System
         public static void Collect(int generation, System.GCCollectionMode mode, bool blocking, bool compacting) { }
         [System.Security.SecuritySafeCriticalAttribute]
         public static int CollectionCount(int generation) { throw null; }
-        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)][System.Security.SecuritySafeCriticalAttribute]
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)]
+        [System.Security.SecuritySafeCriticalAttribute]
         public static int GetGeneration(object obj) { throw null; }
         [System.Security.SecuritySafeCriticalAttribute]
         public static int GetGeneration(System.WeakReference wo) { throw null; }
         [System.Security.SecuritySafeCriticalAttribute]
         public static long GetTotalMemory(bool forceFullCollection) { throw null; }
-        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]public static void KeepAlive(object obj) { }
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+        public static void KeepAlive(object obj) { }
+        [System.Security.SecurityCriticalAttribute]
+        public static void RegisterForFullGCNotification(int maxGenerationThreshold, int largeObjectHeapThreshold) { }
         [System.Security.SecurityCriticalAttribute]
         public static void RemoveMemoryPressure(long bytesAllocated) { }
         [System.Security.SecuritySafeCriticalAttribute]
         public static void ReRegisterForFinalize(object obj) { }
         [System.Security.SecuritySafeCriticalAttribute]
         public static void SuppressFinalize(object obj) { }
+        [System.Security.SecurityCriticalAttribute]
+        public static System.GCNotificationStatus WaitForFullGCApproach() { throw null; }
+        [System.Security.SecurityCriticalAttribute]
+        public static System.GCNotificationStatus WaitForFullGCApproach(int millisecondsTimeout) { throw null; }
+        [System.Security.SecurityCriticalAttribute]
+        public static System.GCNotificationStatus WaitForFullGCComplete() { throw null; }
+        [System.Security.SecurityCriticalAttribute]
+        public static System.GCNotificationStatus WaitForFullGCComplete(int millisecondsTimeout) { throw null; }
         [System.Security.SecuritySafeCriticalAttribute]
         public static void WaitForPendingFinalizers() { }
+    }
+    public enum GCNotificationStatus
+    {
+        Canceled = 2,
+        Failed = 1,
+        NotApplicable = 4,
+        Succeeded = 0,
+        Timeout = 3,
     }
     public enum GCCollectionMode
     {
@@ -2101,6 +2195,12 @@ namespace System
         public InsufficientExecutionStackException() { }
         public InsufficientExecutionStackException(string message) { }
         public InsufficientExecutionStackException(string message, System.Exception innerException) { }
+    }
+    public sealed partial class InsufficientMemoryException : System.OutOfMemoryException
+    {
+        public InsufficientMemoryException() { }
+        public InsufficientMemoryException(string message) { }
+        public InsufficientMemoryException(string message, System.Exception innerException) { }
     }
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
@@ -2228,16 +2328,16 @@ namespace System
     }
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct IntPtr
+    public partial struct IntPtr : System.Runtime.Serialization.ISerializable
     {
         public static readonly System.IntPtr Zero;
         [System.Security.SecuritySafeCriticalAttribute]
-        public IntPtr(int value) { throw null;}
+        public IntPtr(int value) { throw null; }
         [System.Security.SecuritySafeCriticalAttribute]
-        public IntPtr(long value) { throw null;}
+        public IntPtr(long value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         [System.Security.SecurityCriticalAttribute]
-        public unsafe IntPtr(void* value) { throw null;}
+        public unsafe IntPtr(void* value) { throw null; }
         public static int Size { get { throw null; } }
         public static System.IntPtr Add(System.IntPtr pointer, int offset) { throw null; }
         [System.Security.SecuritySafeCriticalAttribute]
@@ -2247,22 +2347,24 @@ namespace System
         public static System.IntPtr operator +(System.IntPtr pointer, int offset) { throw null; }
         [System.Security.SecuritySafeCriticalAttribute]
         public static bool operator ==(System.IntPtr value1, System.IntPtr value2) { throw null; }
-        public static explicit operator System.IntPtr (int value) { throw null; }
-        public static explicit operator System.IntPtr (long value) { throw null; }
+        public static explicit operator System.IntPtr(int value) { throw null; }
+        public static explicit operator System.IntPtr(long value) { throw null; }
         [System.Security.SecuritySafeCriticalAttribute]
-        public static explicit operator int (System.IntPtr value) { throw null; }
+        public static explicit operator int(System.IntPtr value) { throw null; }
         [System.Security.SecuritySafeCriticalAttribute]
-        public static explicit operator long (System.IntPtr value) { throw null; }
+        public static explicit operator long(System.IntPtr value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         [System.Security.SecuritySafeCriticalAttribute]
         public unsafe static explicit operator void* (System.IntPtr value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         [System.Security.SecurityCriticalAttribute]
-        public unsafe static explicit operator System.IntPtr (void* value) { throw null; }
+        public unsafe static explicit operator System.IntPtr(void* value) { throw null; }
         [System.Security.SecuritySafeCriticalAttribute]
         public static bool operator !=(System.IntPtr value1, System.IntPtr value2) { throw null; }
         public static System.IntPtr operator -(System.IntPtr pointer, int offset) { throw null; }
         public static System.IntPtr Subtract(System.IntPtr pointer, int offset) { throw null; }
+        [System.Security.SecurityCriticalAttribute]
+        void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         [System.Security.SecuritySafeCriticalAttribute]
         public int ToInt32() { throw null; }
         [System.Security.SecuritySafeCriticalAttribute]
@@ -2342,9 +2444,35 @@ namespace System
         public override string ToString() { throw null; }
     }
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
+    public enum LoaderOptimization
+    {
+        [System.ObsoleteAttribute("This method has been deprecated. Please use Assembly.Load() instead. http://go.microsoft.com/fwlink/?linkid=14202")]
+        DisallowBindings = 4,
+        [System.ObsoleteAttribute("This method has been deprecated. Please use Assembly.Load() instead. http://go.microsoft.com/fwlink/?linkid=14202")]
+        DomainMask = 3,
+        MultiDomain = 2,
+        MultiDomainHost = 3,
+        NotSpecified = 0,
+        SingleDomain = 1,
+    }
+    [System.AttributeUsageAttribute((System.AttributeTargets)(64))]
+    [System.Runtime.InteropServices.ComVisibleAttribute(true)]
+    public sealed partial class LoaderOptimizationAttribute : System.Attribute
+    {
+        public LoaderOptimizationAttribute(byte value) { }
+        public LoaderOptimizationAttribute(System.LoaderOptimization value) { }
+        public System.LoaderOptimization Value { get { throw null; } }
+    }
+    [System.Runtime.InteropServices.ComVisibleAttribute(true)]
+    public sealed partial class LocalDataStoreSlot
+    {
+        internal LocalDataStoreSlot() { }
+        ~LocalDataStoreSlot() { }
+    }
+    [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public abstract partial class MarshalByRefObject
     {
-        internal MarshalByRefObject() { }
+        protected MarshalByRefObject() { }
     }
     public static partial class Math
     {
@@ -2477,18 +2605,23 @@ namespace System
     public partial class MissingFieldException : System.MissingMemberException, System.Runtime.Serialization.ISerializable
     {
         public MissingFieldException() { }
+        protected MissingFieldException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public MissingFieldException(string message) { }
         public MissingFieldException(string message, System.Exception inner) { }
-        protected MissingFieldException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
+        public MissingFieldException(string className, string fieldName) { }
         public override string Message { [System.Security.SecuritySafeCriticalAttribute]get { throw null; } }
     }
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public partial class MissingMemberException : System.MemberAccessException, System.Runtime.Serialization.ISerializable
     {
+        protected string ClassName;
+        protected string MemberName;
+        protected byte[] Signature;
         public MissingMemberException() { }
+        protected MissingMemberException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public MissingMemberException(string message) { }
         public MissingMemberException(string message, System.Exception inner) { }
-        protected MissingMemberException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
+        public MissingMemberException(string className, string memberName) { }
         public override string Message { [System.Security.SecuritySafeCriticalAttribute]get { throw null; } }
         [System.Security.SecurityCriticalAttribute]
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
@@ -2497,9 +2630,10 @@ namespace System
     public partial class MissingMethodException : System.MissingMemberException, System.Runtime.Serialization.ISerializable
     {
         public MissingMethodException() { }
+        protected MissingMethodException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public MissingMethodException(string message) { }
         public MissingMethodException(string message, System.Exception inner) { }
-        protected MissingMethodException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
+        public MissingMethodException(string className, string methodName) { }
         public override string Message { [System.Security.SecuritySafeCriticalAttribute]get { throw null; } }
     }
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
@@ -2667,7 +2801,9 @@ namespace System
     {
         public OperatingSystem(System.PlatformID platform, System.Version version) { }
         public System.PlatformID Platform { get { throw null; } }
+        public string ServicePack { get { throw null; } }
         public System.Version Version { get { throw null; } }
+        public string VersionString { get { throw null; } }
         public object Clone() { throw null; }
         [System.Security.SecurityCriticalAttribute]
         public void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
@@ -2775,6 +2911,7 @@ namespace System
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
     public partial struct RuntimeFieldHandle : System.Runtime.Serialization.ISerializable
     {
+        public System.IntPtr Value { [System.Security.SecurityCriticalAttribute]get { throw null; } }
         [System.Security.SecuritySafeCriticalAttribute]
         public override bool Equals(object obj) { throw null; }
         [System.Security.SecuritySafeCriticalAttribute]
@@ -2795,6 +2932,8 @@ namespace System
         public override bool Equals(object obj) { throw null; }
         [System.Security.SecuritySafeCriticalAttribute]
         public bool Equals(System.RuntimeMethodHandle handle) { throw null; }
+        [System.Security.SecurityCriticalAttribute]
+        public System.IntPtr GetFunctionPointer() { throw null; }
         [System.Security.SecuritySafeCriticalAttribute]
         public override int GetHashCode() { throw null; }
         [System.Security.SecurityCriticalAttribute]
@@ -2810,6 +2949,8 @@ namespace System
         public override bool Equals(object obj) { throw null; }
         public bool Equals(System.RuntimeTypeHandle handle) { throw null; }
         public override int GetHashCode() { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public System.ModuleHandle GetModuleHandle() { throw null; }
         [System.Security.SecurityCriticalAttribute]
         public void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public static bool operator ==(object left, System.RuntimeTypeHandle right) { throw null; }
@@ -2948,25 +3089,33 @@ namespace System
     public sealed partial class String : System.Collections.Generic.IEnumerable<char>, System.Collections.IEnumerable, System.ICloneable, System.IComparable, System.IComparable<string>, System.IConvertible, System.IEquatable<string>
     {
         public static readonly string Empty;
-        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)][System.CLSCompliantAttribute(false)]
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)]
+        [System.CLSCompliantAttribute(false)]
         [System.Security.SecurityCriticalAttribute]
         public unsafe String(char* value) { }
-        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)][System.CLSCompliantAttribute(false)]
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)]
+        [System.CLSCompliantAttribute(false)]
         [System.Security.SecurityCriticalAttribute]
         public unsafe String(char* value, int startIndex, int length) { }
-        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)][System.Security.SecuritySafeCriticalAttribute]
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)]
+        [System.Security.SecuritySafeCriticalAttribute]
         public String(char c, int count) { }
-        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)][System.Security.SecuritySafeCriticalAttribute]
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)]
+        [System.Security.SecuritySafeCriticalAttribute]
         public String(char[] value) { }
-        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)][System.Security.SecuritySafeCriticalAttribute]
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)]
+        [System.Security.SecuritySafeCriticalAttribute]
         public String(char[] value, int startIndex, int length) { }
-        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)][System.CLSCompliantAttribute(false)]
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)]
+        [System.CLSCompliantAttribute(false)]
         [System.Security.SecurityCriticalAttribute]
         public unsafe String(sbyte* value) { }
-        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)][System.CLSCompliantAttribute(false)]
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)]
+        [System.CLSCompliantAttribute(false)]
         [System.Security.SecurityCriticalAttribute]
         public unsafe String(sbyte* value, int startIndex, int length) { }
-        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)][System.CLSCompliantAttribute(false)]
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)]
+        [System.CLSCompliantAttribute(false)]
         [System.Security.SecurityCriticalAttribute]
         public unsafe String(sbyte* value, int startIndex, int length, System.Text.Encoding enc) { }
         [System.Runtime.CompilerServices.IndexerName("Chars")]
@@ -3013,6 +3162,7 @@ namespace System
         [System.Security.SecuritySafeCriticalAttribute]
         public void CopyTo(int sourceIndex, char[] destination, int destinationIndex, int count) { }
         public bool EndsWith(System.String value) { throw null; }
+        public bool EndsWith(System.String value, bool ignoreCase, System.Globalization.CultureInfo culture) { throw null; }
         [System.Runtime.InteropServices.ComVisibleAttribute(false)]
         [System.Security.SecuritySafeCriticalAttribute]
         public bool EndsWith(System.String value, System.StringComparison comparisonType) { throw null; }
@@ -3047,7 +3197,8 @@ namespace System
         public int IndexOf(System.String value, System.StringComparison comparisonType) { throw null; }
         public int IndexOfAny(char[] anyOf) { throw null; }
         public int IndexOfAny(char[] anyOf, int startIndex) { throw null; }
-        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)][System.Security.SecuritySafeCriticalAttribute]
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)]
+        [System.Security.SecuritySafeCriticalAttribute]
         public int IndexOfAny(char[] anyOf, int startIndex, int count) { throw null; }
         [System.Security.SecuritySafeCriticalAttribute]
         public System.String Insert(int startIndex, System.String value) { throw null; }
@@ -3079,7 +3230,8 @@ namespace System
         public int LastIndexOf(System.String value, System.StringComparison comparisonType) { throw null; }
         public int LastIndexOfAny(char[] anyOf) { throw null; }
         public int LastIndexOfAny(char[] anyOf, int startIndex) { throw null; }
-        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)][System.Security.SecuritySafeCriticalAttribute]
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)]
+        [System.Security.SecuritySafeCriticalAttribute]
         public int LastIndexOfAny(char[] anyOf, int startIndex, int count) { throw null; }
         public static bool operator ==(System.String a, System.String b) { throw null; }
         public static bool operator !=(System.String a, System.String b) { throw null; }
@@ -3274,8 +3426,7 @@ namespace System
         public static bool TryParseExact(string input, string[] formats, System.IFormatProvider formatProvider, System.Globalization.TimeSpanStyles styles, out System.TimeSpan result) { result = default(System.TimeSpan); throw null; }
         public static bool TryParseExact(string input, string[] formats, System.IFormatProvider formatProvider, out System.TimeSpan result) { result = default(System.TimeSpan); throw null; }
     }
-    [System.Runtime.CompilerServices.TypeForwardedFromAttribute("System.Core, Version=3.5.0.0, Culture=Neutral, PublicKeyToken=b77a5c561934e089")]
-    public sealed partial class TimeZoneInfo : System.IEquatable<System.TimeZoneInfo>
+    public sealed partial class TimeZoneInfo : System.IEquatable<System.TimeZoneInfo>, System.Runtime.Serialization.IDeserializationCallback, System.Runtime.Serialization.ISerializable
     {
         internal TimeZoneInfo() { }
         public System.TimeSpan BaseUtcOffset { get { throw null; } }
@@ -3308,23 +3459,34 @@ namespace System
         public static System.Collections.ObjectModel.ReadOnlyCollection<System.TimeZoneInfo> GetSystemTimeZones() { throw null; }
         public System.TimeSpan GetUtcOffset(System.DateTime dateTime) { throw null; }
         public System.TimeSpan GetUtcOffset(System.DateTimeOffset dateTimeOffset) { throw null; }
+        public bool HasSameRules(System.TimeZoneInfo other) { throw null; }
         public bool IsAmbiguousTime(System.DateTime dateTime) { throw null; }
         public bool IsAmbiguousTime(System.DateTimeOffset dateTimeOffset) { throw null; }
         public bool IsDaylightSavingTime(System.DateTime dateTime) { throw null; }
         public bool IsDaylightSavingTime(System.DateTimeOffset dateTimeOffset) { throw null; }
         public bool IsInvalidTime(System.DateTime dateTime) { throw null; }
+        void System.Runtime.Serialization.IDeserializationCallback.OnDeserialization(object sender) { }
+        [System.Security.SecurityCriticalAttribute]
+        void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
+        public string ToSerializedString() { throw null; }
         public override string ToString() { throw null; }
-        [System.Runtime.CompilerServices.TypeForwardedFromAttribute("System.Core, Version=3.5.0.0, Culture=Neutral, PublicKeyToken=b77a5c561934e089")]
-        public sealed partial class AdjustmentRule : System.IEquatable<System.TimeZoneInfo.AdjustmentRule>
+        public sealed partial class AdjustmentRule : System.IEquatable<System.TimeZoneInfo.AdjustmentRule>, System.Runtime.Serialization.IDeserializationCallback, System.Runtime.Serialization.ISerializable
         {
             internal AdjustmentRule() { }
+            public System.DateTime DateEnd { get { throw null; } }
+            public System.DateTime DateStart { get { throw null; } }
+            public System.TimeSpan DaylightDelta { get { throw null; } }
+            public System.TimeZoneInfo.TransitionTime DaylightTransitionEnd { get { throw null; } }
+            public System.TimeZoneInfo.TransitionTime DaylightTransitionStart { get { throw null; } }
             public static System.TimeZoneInfo.AdjustmentRule CreateAdjustmentRule(System.DateTime dateStart, System.DateTime dateEnd, System.TimeSpan daylightDelta, System.TimeZoneInfo.TransitionTime daylightTransitionStart, System.TimeZoneInfo.TransitionTime daylightTransitionEnd) { throw null; }
             public bool Equals(System.TimeZoneInfo.AdjustmentRule other) { throw null; }
             public override int GetHashCode() { throw null; }
+            void System.Runtime.Serialization.IDeserializationCallback.OnDeserialization(object sender) { }
+            [System.Security.SecurityCriticalAttribute]
+            void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         }
-        [System.Runtime.CompilerServices.TypeForwardedFromAttribute("System.Core, Version=3.5.0.0, Culture=Neutral, PublicKeyToken=b77a5c561934e089")]
         [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-        public partial struct TransitionTime : System.IEquatable<System.TimeZoneInfo.TransitionTime>
+        public partial struct TransitionTime : System.IEquatable<System.TimeZoneInfo.TransitionTime>, System.Runtime.Serialization.IDeserializationCallback, System.Runtime.Serialization.ISerializable
         {
             public int Day { get { throw null; } }
             public System.DayOfWeek DayOfWeek { get { throw null; } }
@@ -3339,6 +3501,9 @@ namespace System
             public override int GetHashCode() { throw null; }
             public static bool operator ==(System.TimeZoneInfo.TransitionTime t1, System.TimeZoneInfo.TransitionTime t2) { throw null; }
             public static bool operator !=(System.TimeZoneInfo.TransitionTime t1, System.TimeZoneInfo.TransitionTime t2) { throw null; }
+            void System.Runtime.Serialization.IDeserializationCallback.OnDeserialization(object sender) { }
+            [System.Security.SecurityCriticalAttribute]
+            void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         }
     }
     [System.Runtime.CompilerServices.TypeForwardedFromAttribute("System.Core, Version=3.5.0.0, Culture=Neutral, PublicKeyToken=b77a5c561934e089")]
@@ -3737,6 +3902,14 @@ namespace System
         [System.Security.SecurityCriticalAttribute]
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
     }
+    [System.Runtime.InteropServices.ComVisibleAttribute(true)]
+    public partial class TypeUnloadedException : System.SystemException
+    {
+        public TypeUnloadedException() { }
+        protected TypeUnloadedException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
+        public TypeUnloadedException(string message) { }
+        public TypeUnloadedException(string message, System.Exception innerException) { }
+    }
     internal sealed class TypeNameParser : System.IDisposable
     {
         [System.Security.SecuritySafeCriticalAttribute]public void Dispose() { throw null; }
@@ -3898,16 +4071,16 @@ namespace System
     [System.CLSCompliantAttribute(false)]
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct UIntPtr
+    public partial struct UIntPtr : System.Runtime.Serialization.ISerializable
     {
         public static readonly System.UIntPtr Zero;
         [System.Security.SecuritySafeCriticalAttribute]
-        public UIntPtr(uint value) { throw null;}
+        public UIntPtr(uint value) { throw null; }
         [System.Security.SecuritySafeCriticalAttribute]
-        public UIntPtr(ulong value) { throw null;}
+        public UIntPtr(ulong value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         [System.Security.SecurityCriticalAttribute]
-        public unsafe UIntPtr(void* value) { throw null;}
+        public unsafe UIntPtr(void* value) { throw null; }
         public static int Size { get { throw null; } }
         public static System.UIntPtr Add(System.UIntPtr pointer, int offset) { throw null; }
         [System.Security.SecuritySafeCriticalAttribute]
@@ -3917,22 +4090,24 @@ namespace System
         public static System.UIntPtr operator +(System.UIntPtr pointer, int offset) { throw null; }
         [System.Security.SecuritySafeCriticalAttribute]
         public static bool operator ==(System.UIntPtr value1, System.UIntPtr value2) { throw null; }
-        public static explicit operator System.UIntPtr (uint value) { throw null; }
-        public static explicit operator System.UIntPtr (ulong value) { throw null; }
+        public static explicit operator System.UIntPtr(uint value) { throw null; }
+        public static explicit operator System.UIntPtr(ulong value) { throw null; }
         [System.Security.SecuritySafeCriticalAttribute]
-        public static explicit operator uint (System.UIntPtr value) { throw null; }
+        public static explicit operator uint(System.UIntPtr value) { throw null; }
         [System.Security.SecuritySafeCriticalAttribute]
-        public static explicit operator ulong (System.UIntPtr value) { throw null; }
+        public static explicit operator ulong(System.UIntPtr value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         [System.Security.SecurityCriticalAttribute]
         public unsafe static explicit operator void* (System.UIntPtr value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         [System.Security.SecurityCriticalAttribute]
-        public unsafe static explicit operator System.UIntPtr (void* value) { throw null; }
+        public unsafe static explicit operator System.UIntPtr(void* value) { throw null; }
         [System.Security.SecuritySafeCriticalAttribute]
         public static bool operator !=(System.UIntPtr value1, System.UIntPtr value2) { throw null; }
         public static System.UIntPtr operator -(System.UIntPtr pointer, int offset) { throw null; }
         public static System.UIntPtr Subtract(System.UIntPtr pointer, int offset) { throw null; }
+        [System.Security.SecurityCriticalAttribute]
+        void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         [System.CLSCompliantAttribute(false)]
         [System.Security.SecuritySafeCriticalAttribute]
         public unsafe void* ToPointer() { throw null; }
@@ -11448,6 +11623,15 @@ namespace System.Runtime.Loader
         protected System.IntPtr LoadUnmanagedDllFromPath(string unmanagedDllPath) { throw null; }
         public void SetProfileOptimizationRoot(string directoryPath) { }
         public void StartProfileOptimization(string profile) { }
+    }
+}
+namespace System.Runtime.Remoting
+{
+    [System.Runtime.InteropServices.ClassInterfaceAttribute((System.Runtime.InteropServices.ClassInterfaceType)(2))]
+    [System.Runtime.InteropServices.ComVisibleAttribute(true)]
+    public partial class ObjectHandle
+    {
+        internal ObjectHandle() { }
     }
 }
 namespace System.Runtime.Serialization
