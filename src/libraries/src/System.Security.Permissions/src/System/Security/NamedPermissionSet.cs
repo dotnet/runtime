@@ -15,6 +15,8 @@ namespace System.Security
         public override System.Security.PermissionSet Copy() { return default(System.Security.PermissionSet); }
         public System.Security.NamedPermissionSet Copy(string name) { return default(System.Security.NamedPermissionSet); }
         public override bool Equals(object o) => base.Equals(o);
+        public override void FromXml(System.Security.SecurityElement et) { }
         public override int GetHashCode() => base.GetHashCode();
+        public override System.Security.SecurityElement ToXml() { return default(System.Security.SecurityElement); }
     }
 }
