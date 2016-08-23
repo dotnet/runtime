@@ -65,10 +65,29 @@
       <Member Status="ApiRoot" Name="Invoke(T1,T2,T3,T4,T5,T6,T7,T8)" />
     </Type>
     <Type Name="System.Activator">
+      <Member Name="CreateComInstanceFrom(System.String,System.String)" />
+      <Member Name="CreateComInstanceFrom(System.String,System.String,System.Byte[],System.Configuration.Assemblies.AssemblyHashAlgorithm)" />
+      <Member Name="CreateInstance(System.AppDomain,System.String,System.String)" />
+      <Member Name="CreateInstance(System.AppDomain,System.String,System.String,System.Boolean,System.Reflection.BindingFlags,System.Reflection.Binder,System.Object[],System.Globalization.CultureInfo,System.Object[])" />
+      <Member Name="CreateInstance(System.String,System.String)" />
+      <Member Name="CreateInstance(System.String,System.String,System.Boolean,System.Reflection.BindingFlags,System.Reflection.Binder,System.Object[],System.Globalization.CultureInfo,System.Object[])" />
+      <Member Name="CreateInstance(System.String,System.String,System.Object[])" />
       <Member Name="CreateInstance(System.Type)" />
+      <Member Name="CreateInstance(System.Type,System.Boolean)" />
       <Member Name="CreateInstance(System.Type,System.Object[])" />
+      <Member Name="CreateInstance(System.Type,System.Object[],System.Object[])" />
+      <Member Name="CreateInstance(System.Type,System.Reflection.BindingFlags,System.Reflection.Binder,System.Object[],System.Globalization.CultureInfo)" />
+      <Member Name="CreateInstance(System.Type,System.Reflection.BindingFlags,System.Reflection.Binder,System.Object[],System.Globalization.CultureInfo,System.Object[])" />
       <Member Name="CreateInstance&lt;T&gt;" />
-      <Member Name="CreateInstance(System.Type,System.Boolean)"/>
+      <Member Name="CreateInstanceFrom(System.AppDomain,System.String,System.String)" />
+      <Member Name="CreateInstanceFrom(System.AppDomain,System.String,System.String,System.Boolean,System.Reflection.BindingFlags,System.Reflection.Binder,System.Object[],System.Globalization.CultureInfo,System.Object[])" />
+      <Member Name="CreateInstanceFrom(System.String,System.String)" />
+      <Member Name="CreateInstanceFrom(System.String,System.String,System.Boolean,System.Reflection.BindingFlags,System.Reflection.Binder,System.Object[],System.Globalization.CultureInfo,System.Object[])" />
+      <Member Name="CreateInstanceFrom(System.String,System.String,System.Object[])" />
+      <Member Status="ImplRoot" Name="System.Runtime.InteropServices._Activator.GetIDsOfNames(System.Guid@,System.IntPtr,System.UInt32,System.UInt32,System.IntPtr)" />
+      <Member Status="ImplRoot" Name="System.Runtime.InteropServices._Activator.GetTypeInfo(System.UInt32,System.UInt32,System.IntPtr)" />
+      <Member Status="ImplRoot" Name="System.Runtime.InteropServices._Activator.GetTypeInfoCount(System.UInt32@)" />
+      <Member Status="ImplRoot" Name="System.Runtime.InteropServices._Activator.Invoke(System.UInt32,System.Guid@,System.UInt32,System.Int16,System.IntPtr,System.IntPtr,System.IntPtr,System.IntPtr)" />
     </Type>
     <Type Name="System.AppDomain">
       <Member Name="get_CurrentDomain" />
@@ -138,6 +157,23 @@
       <Member Name="#ctor(System.String)" />
       <Member Name="#ctor(System.String,System.Exception)" />
       <Member Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
+    </Type>
+    <Type Name="System.ApplicationId">
+      <Member Name="#ctor(System.Byte[],System.String,System.Version,System.String,System.String)" />
+      <Member Name="Copy" />
+      <Member Name="Equals(System.Object)" />
+      <Member Name="get_Culture" />
+      <Member Name="get_Name" />
+      <Member Name="get_ProcessorArchitecture" />
+      <Member Name="get_PublicKeyToken" />
+      <Member Name="get_Version" />
+      <Member Name="GetHashCode" />
+      <Member Name="ToString" />
+      <Member MemberType="Property" Name="Culture" />
+      <Member MemberType="Property" Name="Name" />
+      <Member MemberType="Property" Name="ProcessorArchitecture" />
+      <Member MemberType="Property" Name="PublicKeyToken" />
+      <Member MemberType="Property" Name="Version" />
     </Type>
     <Type Status="ImplRoot" Name="System.Collections.ArrayList">
       <Member Name="ReadOnly(System.Collections.IList)" />
@@ -305,6 +341,17 @@
       <Member Name="#ctor(System.String,System.Exception)" />
       <Member Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
     </Type>
+    <Type Name="System.AssemblyLoadEventHandler">
+      <Member Name="#ctor(System.Object,System.IntPtr)" />
+      <Member Name="BeginInvoke(System.Object,System.AssemblyLoadEventArgs,System.AsyncCallback,System.Object)" />
+      <Member Name="EndInvoke(System.IAsyncResult)" />
+      <Member Name="Invoke(System.Object,System.AssemblyLoadEventArgs)" />
+    </Type>
+    <Type Name="System.AssemblyLoadEventArgs">
+      <Member Name="#ctor(System.Reflection.Assembly)" />
+      <Member Name="get_LoadedAssembly" />
+      <Member MemberType="Property" Name="LoadedAssembly" />
+    </Type>
     <Type Name="System.AsyncCallback">
       <Member Name="#ctor(System.Object,System.IntPtr)" />
       <Member Name="BeginInvoke(System.IAsyncResult,System.AsyncCallback,System.Object)" />
@@ -314,6 +361,7 @@
     <Type Name="System.Attribute">
       <Member Name="#ctor" />
       <Member Name="Equals(System.Object)" />
+      <Member Name="get_TypeId" />
       <Member Name="GetCustomAttribute(System.Reflection.Assembly,System.Type)" />
       <Member Name="GetCustomAttribute(System.Reflection.Assembly,System.Type,System.Boolean)" />
       <Member Name="GetCustomAttribute(System.Reflection.MemberInfo,System.Type)" />
@@ -339,6 +387,7 @@
       <Member Name="GetCustomAttributes(System.Reflection.ParameterInfo,System.Type)" />
       <Member Name="GetCustomAttributes(System.Reflection.ParameterInfo,System.Type,System.Boolean)" />
       <Member Name="GetHashCode" />
+      <Member Name="IsDefaultAttribute" />
       <Member Name="IsDefined(System.Reflection.Assembly,System.Type)" />
       <Member Name="IsDefined(System.Reflection.Assembly,System.Type,System.Boolean)" />
       <Member Name="IsDefined(System.Reflection.MemberInfo,System.Type)" />
@@ -348,6 +397,7 @@
       <Member Name="IsDefined(System.Reflection.ParameterInfo,System.Type)" />
       <Member Name="IsDefined(System.Reflection.ParameterInfo,System.Type,System.Boolean)" />
       <Member Name="Match(System.Object)" />
+      <Member MemberType="Property" Name="TypeId" />
     </Type>
     <Type Name="System.AttributeTargets">
       <Member MemberType="Field" Name="All" />
@@ -421,7 +471,9 @@
       <Member Name="#ctor(System.String,System.String,System.Exception)" />
       <Member Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
       <Member Name="get_FileName" />
+      <Member Name="get_FusionLog" />
       <Member MemberType="Property" Name="FileName" />
+      <Member MemberType="Property" Name="FusionLog" />
     </Type>
     <Type Name="System.Boolean">
       <Member MemberType="Field" Name="FalseString" />
@@ -1011,6 +1063,9 @@
     </Type>
     <Type Name="System.Reflection.Metadata.AssemblyExtensions">
       <Member Name="TryGetRawMetadata(System.Reflection.Assembly,System.Byte*@,System.Int32@)"/>
+    </Type>
+    <Type Name="System.ContextBoundObject">
+      <Member Name="#ctor" />
     </Type>
     <Type Name="System.ContextMarshalException">
       <Member Name="#ctor" />
@@ -1876,10 +1931,10 @@
     </Type>
     <Type Name="System.DuplicateWaitObjectException">
       <Member Name="#ctor" />
+      <Member Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
       <Member Name="#ctor(System.String)" />
       <Member Name="#ctor(System.String,System.Exception)" />
       <Member Name="#ctor(System.String,System.String)" />
-      <Member Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
     </Type>
     <Type Name="System.EntryPointNotFoundException">
       <Member Name="#ctor" />
@@ -1990,6 +2045,7 @@
       <Member Name="get_Source" />
       <Member Name="get_TargetSite" />
       <Member Name="GetBaseException" />
+      <Member Name="GetType" />
       <Member Name="set_HelpLink(System.String)" />
       <Member Name="set_HResult(System.Int32)" />
       <Member Name="set_Source(System.String)" />
@@ -2103,6 +2159,7 @@
     </Type>
     <Type Name="System.GC">
       <Member Name="AddMemoryPressure(System.Int64)" />
+      <Member Name="CancelFullGCNotification" />
       <Member Name="Collect" />
       <Member Name="Collect(System.Int32)" />
       <Member Name="Collect(System.Int32,System.GCCollectionMode)" />
@@ -2114,11 +2171,24 @@
       <Member Name="get_MaxGeneration" />
       <Member Name="GetTotalMemory(System.Boolean)" />
       <Member Name="KeepAlive(System.Object)" />
+      <Member Name="RegisterForFullGCNotification(System.Int32,System.Int32)" />
       <Member Name="RemoveMemoryPressure(System.Int64)" />
       <Member Name="ReRegisterForFinalize(System.Object)" />
       <Member Name="SuppressFinalize(System.Object)" />
+      <Member Name="WaitForFullGCApproach" />
+      <Member Name="WaitForFullGCApproach(System.Int32)" />
+      <Member Name="WaitForFullGCComplete" />
+      <Member Name="WaitForFullGCComplete(System.Int32)" />
       <Member Name="WaitForPendingFinalizers" />
       <Member MemberType="Property" Name="MaxGeneration" />
+    </Type>
+    <Type Name="System.GCNotificationStatus">
+      <Member MemberType="Field" Name="Canceled" />
+      <Member MemberType="Field" Name="Failed" />
+      <Member MemberType="Field" Name="NotApplicable" />
+      <Member MemberType="Field" Name="Succeeded" />
+      <Member MemberType="Field" Name="Timeout" />
+      <Member MemberType="Field" Name="value__" />
     </Type>
     <Type Name="System.Globalization.Calendar">
       <Member MemberType="Field" Name="CurrentEra" />
@@ -3291,6 +3361,11 @@
       <Member Status="ImplRoot" Name="CommonlyUsedGenericInstantiations" />
       <Member Status="ImplRoot" Name="CommonlyUsedWinRTRedirectedInterfaceStubs" Condition="FEATURE_COMINTEROP" />
     </Type>
+    <Type Name="System.InsufficientMemoryException">
+      <Member Name="#ctor" />
+      <Member Name="#ctor(System.String)" />
+      <Member Name="#ctor(System.String,System.Exception)" />
+    </Type>
     <Type Name="System.Int16">
       <Member MemberType="Field" Name="MaxValue" />
       <Member MemberType="Field" Name="MinValue" />
@@ -3447,7 +3522,26 @@
       <Member Name="get_Value"/>
       <Member Status="ImplRoot" Name="OnSerializing(System.Runtime.Serialization.StreamingContext)" />
     </Type>
+    <Type Name="System.LoaderOptimization">
+      <Member MemberType="Field" Name="DisallowBindings" />
+      <Member MemberType="Field" Name="DomainMask" />
+      <Member MemberType="Field" Name="MultiDomain" />
+      <Member MemberType="Field" Name="MultiDomainHost" />
+      <Member MemberType="Field" Name="NotSpecified" />
+      <Member MemberType="Field" Name="SingleDomain" />
+      <Member MemberType="Field" Name="value__" />
+    </Type>
+    <Type Name="System.LoaderOptimizationAttribute">
+      <Member Name="#ctor(System.Byte)" />
+      <Member Name="#ctor(System.LoaderOptimization)" />
+      <Member Name="get_Value" />
+      <Member MemberType="Property" Name="Value" />
+    </Type>
+    <Type Name="System.LocalDataStoreSlot">
+      <Member Status="ImplRoot" Name="Finalize" />
+    </Type>
     <Type Name="System.MarshalByRefObject">
+      <Member Name="#ctor" />
     </Type>
     <Type Status="ImplRoot" Name="System.System_LazyDebugView&lt;T&gt;">
       <Member Status="ImplRoot" Name="#ctor(System.Lazy&lt;T&gt;)"/>
@@ -3554,27 +3648,33 @@
     <Type Name="System.MissingFieldException">
       <Member Name="#ctor" />
       <Member Name="#ctor(System.String)" />
+      <Member Name="#ctor(System.String,System.String)" />
       <Member Name="#ctor(System.String,System.Exception)" />
       <Member Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
     </Type>
     <Type Name="System.MissingMemberException">
+      <Member MemberType="Field" Name="ClassName" />
+      <Member MemberType="Field" Name="MemberName" />
+      <Member MemberType="Field" Name="Signature" />
       <Member Name="#ctor" />
       <Member Name="#ctor(System.String)" />
       <Member Name="#ctor(System.String,System.Exception)" />
+      <Member Name="#ctor(System.String,System.String)" />
       <Member Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
     </Type>
     <Type Name="System.MissingMethodException">
       <Member Name="#ctor" />
       <Member Name="#ctor(System.String)" />
       <Member Name="#ctor(System.String,System.Exception)" />
+      <Member Name="#ctor(System.String,System.String)" />
       <Member Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
     </Type>
     <Type Name="System.ModuleHandle">
       <Member MemberType="Field" Name="EmptyHandle" />
-      <Member Name="get_MDStreamVersion" />
       <Member Name="GetHashCode" />
       <Member Name="Equals(System.Object)" />
       <Member Name="Equals(System.ModuleHandle)" />
+      <Member Name="get_MDStreamVersion" />
       <Member Name="op_Equality(System.ModuleHandle,System.ModuleHandle)" />
       <Member Name="op_Inequality(System.ModuleHandle,System.ModuleHandle)" />
       <Member Name="GetRuntimeTypeHandleFromMetadataToken(System.Int32)" />
@@ -3586,6 +3686,7 @@
       <Member Name="ResolveMethodHandle(System.Int32,System.RuntimeTypeHandle[],System.RuntimeTypeHandle[])" />
       <Member Name="ResolveFieldHandle(System.Int32)" />
       <Member Name="ResolveFieldHandle(System.Int32,System.RuntimeTypeHandle[],System.RuntimeTypeHandle[])" />
+      <Member MemberType="Property" Name="MDStreamVersion" />
     </Type>
     <Type Name="System.MTAThreadAttribute">
       <Member Name="#ctor" />
@@ -3709,9 +3810,13 @@
       <Member Name="Clone" />
       <Member Name="get_Platform" />
       <Member Name="get_Version" />
+      <Member Name="get_ServicePack" />
+      <Member Name="get_VersionString" />
       <Member Name="ToString" />
       <Member MemberType="Property" Name="Platform" />
       <Member MemberType="Property" Name="Version" />
+      <Member MemberType="Property" Name="ServicePack" />
+      <Member MemberType="Property" Name="VersionString" />
     </Type>
     <Type Name="System.OutOfMemoryException">
       <Member Name="#ctor" />
@@ -4297,6 +4402,7 @@
       <Member Name="Equals(System.RuntimeTypeHandle)" />
       <Member Name="op_Equality(System.Object,System.RuntimeTypeHandle)" />
       <Member Name="op_Equality(System.RuntimeTypeHandle,System.Object)" />
+      <Member Name="GetModuleHandle" />
       <Member Name="op_Inequality(System.Object,System.RuntimeTypeHandle)" />
       <Member Name="op_Inequality(System.RuntimeTypeHandle,System.Object)" />
       <Member Status="ImplRoot" Name="GetTypeHelper(System.Type,System.Type[],System.IntPtr,System.Int32)" /> <!-- EE -->
@@ -6809,15 +6915,18 @@
     </Type>
     <Type Name="System.RuntimeFieldHandle">
       <Member Status="ImplRoot" Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
-      <Member Name="Equals(System.RuntimeFieldHandle)" />      
+      <Member Name="Equals(System.RuntimeFieldHandle)" />
+      <Member Name="get_Value" />    
       <Member Name="op_Equality(System.RuntimeFieldHandle,System.RuntimeFieldHandle)" />
       <Member Name="op_Inequality(System.RuntimeFieldHandle,System.RuntimeFieldHandle)" />
+      <Member MemberType="Property" Name="Value" />
     </Type>
     <Type Name="System.RuntimeMethodHandle">
       <Member Status="ImplRoot" Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
       <Member Name="Equals(System.RuntimeMethodHandle)" />
       <Member Status="ImplRoot" Name="GetValueInternal(System.RuntimeMethodHandle)" />
       <Member Name="get_Value" />
+      <Member Name="GetFunctionPointer" />
       <Member MemberType="Property" Name="Value" />
       <Member Name="op_Equality(System.RuntimeMethodHandle,System.RuntimeMethodHandle)" />
       <Member Name="op_Inequality(System.RuntimeMethodHandle,System.RuntimeMethodHandle)" />
@@ -6942,6 +7051,7 @@
       <Member Name="Copy(System.String)" />
       <Member Name="CopyTo(System.Int32,System.Char[],System.Int32,System.Int32)" />
       <Member Name="EndsWith(System.String)" />
+      <Member Name="EndsWith(System.String,System.Boolean,System.Globalization.CultureInfo)" />
       <Member Name="EndsWith(System.String,System.StringComparison)" />
       <Member Name="Equals(System.Object)" />
       <Member Name="Equals(System.String)" />
@@ -7958,7 +8068,7 @@
       <Member Name="ConvertTime(System.DateTime,System.TimeZoneInfo)" />
       <Member Name="ConvertTime(System.DateTime,System.TimeZoneInfo,System.TimeZoneInfo)" />
       <Member Name="ConvertTime(System.DateTimeOffset,System.TimeZoneInfo)" />
-<!-- Need Linux implementation
+<!-- Need Linux Implementation
       <Member Name="ConvertTimeBySystemTimeZoneId(System.DateTime,System.String)" />
       <Member Name="ConvertTimeBySystemTimeZoneId(System.DateTime,System.String,System.String)" />
       <Member Name="ConvertTimeBySystemTimeZoneId(System.DateTimeOffset,System.String)" />
@@ -7986,11 +8096,13 @@
       <Member Name="GetAmbiguousTimeOffsets(System.DateTime)" />
       <Member Name="GetUtcOffset(System.DateTimeOffset)" />
       <Member Name="GetUtcOffset(System.DateTime)" />
+      <Member Name="HasSameRules(System.TimeZoneInfo)" />
       <Member Name="IsAmbiguousTime(System.DateTimeOffset)" />
       <Member Name="IsAmbiguousTime(System.DateTime)" />
       <Member Name="IsDaylightSavingTime(System.DateTimeOffset)" />
       <Member Name="IsDaylightSavingTime(System.DateTime)" />
       <Member Name="IsInvalidTime(System.DateTime)" />
+      <Member Name="ToSerializedString" />
       <Member Name="GetHashCode" />
       <Member Name="GetSystemTimeZones" />
       <Member Name="ToString" />
@@ -8007,6 +8119,16 @@
       <Member Status="ImplRoot" Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
       <!-- CreateAdjustmentRule doesn't have a public contract, but tests and other callers can use Reflection to invoke it, so ensure it is left in mscorlib. -->
       <Member Status="ApiRoot" Name="CreateAdjustmentRule(System.DateTime,System.DateTime,System.TimeSpan,System.TimeZoneInfo+TransitionTime,System.TimeZoneInfo+TransitionTime)" />
+      <Member Name="get_DateEnd" />
+      <Member Name="get_DateStart" />
+      <Member Name="get_DaylightDelta" />
+      <Member Name="get_DaylightTransitionEnd" />
+      <Member Name="get_DaylightTransitionStart" />
+      <Member MemberType="Property" Name="DateEnd" />
+      <Member MemberType="Property" Name="DateStart" />
+      <Member MemberType="Property" Name="DaylightDelta" />
+      <Member MemberType="Property" Name="DaylightTransitionEnd" />
+      <Member MemberType="Property" Name="DaylightTransitionStart" />
     </Type>
     <Type Name="System.TimeZoneInfo+TransitionTime">
       <Member Status="ImplRoot" Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
@@ -8435,6 +8557,12 @@
       <Member Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
       <Member Name="get_TypeName" />
       <Member MemberType="Property" Name="TypeName" />
+    </Type>
+    <Type Name="System.TypeUnloadedException">
+      <Member Name="#ctor" />
+      <Member Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
+      <Member Name="#ctor(System.String)" />
+      <Member Name="#ctor(System.String,System.Exception)" />
     </Type>
     <Type Name="System.UInt16">
       <Member MemberType="Field" Name="MaxValue" />
@@ -9287,7 +9415,6 @@
     </Type>
     <Type Status="ImplRoot" Name="System.Configuration.Assemblies.AssemblyHashAlgorithm" />
     <Type Status="ImplRoot" Name="System.Configuration.Assemblies.AssemblyVersionCompatibility" />
-    <Type Status="ImplRoot" Name="System.ContextBoundObject" />
     <Type Status="ImplRoot" Name="System.CrossAppDomainMarshaledException">
       <Member Name="#ctor(System.String,System.Int32)" />
     </Type>
@@ -9576,7 +9703,6 @@
       <Member MemberType="Property" Name="CompletedSynchronously" />
       <Member MemberType="Property" Name="IsCompleted" />
     </Type>
-    <Type Status="ImplRoot" Name="System.LoaderOptimization" />
     <Type Name="System.OperationCanceledException" >
       <Member Name="#ctor" />
       <Member Name="#ctor(System.String)" />
@@ -9594,7 +9720,6 @@
     <Type Status="ImplRoot" Name="System.Reflection.Emit.DynamicResolver" />
     <Type Status="ImplRoot" Name="System.Reflection.Emit.DynamicResolver+SecurityControlFlags" />
     <Type Status="ImplRoot" Name="System.Reflection.Emit.DynamicScope" />
-
     <Type Name="System.Reflection.ExceptionHandlingClause" >
       <Member Name="#ctor" />
       <Member Name="get_CatchType" />
@@ -10395,7 +10520,6 @@
     <Type Name="System.ThreadStaticAttribute">
         <Member Name="#ctor" />
     </Type>
-    <Type Status="ImplRoot" Name="System.TypeUnloadedException" />
     <Type Status="ImplRoot" Name="System.Runtime.InteropServices.PInvokeMap" />
     <Type Name="System.ArgIterator">  <!-- for MC++ -->
       <Member Status="ImplRoot" Name="#ctor(System.RuntimeArgumentHandle,System.Void*)" /> <!-- EE - il stubs -->
