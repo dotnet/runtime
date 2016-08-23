@@ -83,6 +83,7 @@
     <Compile Include="$(CommonTestPath)\System\PlatformDetection.cs">
       <Link>Common\System\PlatformDetection.cs</Link>
     </Compile>
+    <Compile Condition="'$(TargetGroup)'=='netstandard1.7'" Include="System\Math.netstandard1.7.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />
