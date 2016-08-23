@@ -731,6 +731,7 @@ namespace System
         public static bool Equals(decimal d1, decimal d2) { return default(bool); }
         public override bool Equals(object value) { return default(bool); }
         public static decimal Floor(decimal d) { return default(decimal); }
+        public static decimal FromOACurrency(long cy) { return default(decimal); }
         public static int[] GetBits(decimal d) { return default(int[]); }
         public override int GetHashCode() { return default(int); }
         public static decimal Multiply(decimal d1, decimal d2) { return default(decimal); }
@@ -785,6 +786,10 @@ namespace System
         public static decimal Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider provider) { return default(decimal); }
         public static decimal Parse(string s, System.IFormatProvider provider) { return default(decimal); }
         public static decimal Remainder(decimal d1, decimal d2) { return default(decimal); }
+        public static decimal Round(decimal d) { return default(decimal); }
+        public static decimal Round(decimal d, int decimals) { return default(decimal); }
+        public static decimal Round(decimal d, int decimals, MidpointRounding mode) { return default(decimal); }
+        public static decimal Round(decimal d, MidpointRounding mode) { return default(decimal); }
         public static decimal Subtract(decimal d1, decimal d2) { return default(decimal); }
         int System.IComparable.CompareTo(object value) { return default(int); }
         System.TypeCode System.IConvertible.GetTypeCode() { return default(System.TypeCode); }
@@ -808,6 +813,7 @@ namespace System
         public static short ToInt16(decimal value) { return default(short); }
         public static int ToInt32(decimal d) { return default(int); }
         public static long ToInt64(decimal d) { return default(long); }
+        public static long ToOACurrency(decimal value) { return default(long); }
         [System.CLSCompliantAttribute(false)]
         public static sbyte ToSByte(decimal value) { return default(sbyte); }
         public static float ToSingle(decimal d) { return default(float); }
@@ -1365,6 +1371,11 @@ namespace System
         public MethodAccessException(string message) { }
         public MethodAccessException(string message, System.Exception inner) { }
         protected MethodAccessException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
+    }
+    public enum MidpointRounding
+    {
+        ToEven,
+        AwayFromZero,
     }
     public partial class MissingFieldException : System.MissingMemberException, System.Runtime.Serialization.ISerializable
     {
