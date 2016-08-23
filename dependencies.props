@@ -1,0 +1,94 @@
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <!-- Source of truth for dependency tooling: the commit hash of the dotnet/versions master branch as of the last auto-upgrade. -->
+  <PropertyGroup>
+    <CoreFxCurrentRef>afe7fab6bb2a2cd82d381eab880d290b23ed5214</CoreFxCurrentRef>
+    <CoreClrCurrentRef>5adc811e2d62ae1543bc3e88748476d088532d2a</CoreClrCurrentRef>
+    <ExternalCurrentRef>039e8532657c2599e2f8baf2c3dcd95265f28645</ExternalCurrentRef>
+  </PropertyGroup>
+
+  <!-- Auto-upgraded properties for each build info dependency. -->
+  <PropertyGroup>
+    <CoreFxExpectedPrerelease>beta-24328-05</CoreFxExpectedPrerelease>
+    <ExternalExpectedPrerelease>beta-24417-00</ExternalExpectedPrerelease>
+  </PropertyGroup>
+
+  <!-- Full package version strings that are used in other parts of the build. -->
+  <PropertyGroup>
+    <CoreClrPackageVersion>1.0.4-beta-24325-02</CoreClrPackageVersion>
+    <XunitPackageVersion>2.1.0</XunitPackageVersion>
+  </PropertyGroup>
+
+  <!-- Package dependency verification/auto-upgrade configuration. -->
+  <PropertyGroup>
+    <BaseDotNetBuildInfo>build-info/dotnet/</BaseDotNetBuildInfo>
+    <DependencyBranch>master</DependencyBranch>
+    <CurrentRefXmlPath>$(MSBuildThisFileFullPath)</CurrentRefXmlPath>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <RemoteDependencyBuildInfo Include="CoreFx">
+      <BuildInfoPath>$(BaseDotNetBuildInfo)corefx/$(DependencyBranch)</BuildInfoPath>
+      <CurrentRef>$(CoreFxCurrentRef)</CurrentRef>
+    </RemoteDependencyBuildInfo>
+    <RemoteDependencyBuildInfo Include="CoreClr">
+      <BuildInfoPath>$(BaseDotNetBuildInfo)coreclr/$(DependencyBranch)</BuildInfoPath>
+      <CurrentRef>$(CoreClrCurrentRef)</CurrentRef>
+    </RemoteDependencyBuildInfo>
+    <RemoteDependencyBuildInfo Include="External">
+      <BuildInfoPath>$(BaseDotNetBuildInfo)projectk-tfs/$(DependencyBranch)</BuildInfoPath>
+      <CurrentRef>$(ExternalCurrentRef)</CurrentRef>
+    </RemoteDependencyBuildInfo>
+
+    <DependencyBuildInfo Include="@(RemoteDependencyBuildInfo)">
+      <RawVersionsBaseUrl>https://raw.githubusercontent.com/dotnet/versions</RawVersionsBaseUrl>
+    </DependencyBuildInfo>
+
+    <XmlUpdateStep Include="CoreFx">
+      <Path>$(MSBuildThisFileFullPath)</Path>
+      <ElementName>CoreFxExpectedPrerelease</ElementName>
+      <BuildInfoName>CoreFx</BuildInfoName>
+    </XmlUpdateStep>
+    <XmlUpdateStep Include="CoreClr">
+      <Path>$(MSBuildThisFileFullPath)</Path>
+      <ElementName>CoreClrPackageVersion</ElementName>
+      <PackageId>Microsoft.NETCore.Runtime.CoreCLR</PackageId>
+    </XmlUpdateStep>
+    <XmlUpdateStep Include="External">
+      <Path>$(MSBuildThisFileFullPath)</Path>
+      <ElementName>ExternalExpectedPrerelease</ElementName>
+      <BuildInfoName>External</BuildInfoName>
+    </XmlUpdateStep>
+  </ItemGroup>
+
+  <!-- Set up dependencies on packages that aren't found in a BuildInfo. -->
+  <ItemGroup>
+    <XUnitDependency Include="xunit"/>
+    <XUnitDependency Include="xunit.assert"/>
+    <XUnitDependency Include="xunit.core"/>
+    <XUnitDependency Include="xunit.runner.console"/>
+    <XUnitDependency Include="xunit.runner.msbuild"/>
+    <XUnitDependency Include="xunit.runner.utility"/>
+    <StaticDependency Include="@(XUnitDependency)">
+      <Version>$(XunitPackageVersion)</Version>
+    </StaticDependency>
+
+    <XunitPerformanceDependency Include="Microsoft.DotNet.xunit.performance.analysis" />
+    <XunitPerformanceDependency Include="Microsoft.DotNet.xunit.performance.analysis.cli" />
+    <XunitPerformanceDependency Include="Microsoft.DotNet.xunit.performance.metrics" />
+    <XunitPerformanceDependency Include="Microsoft.DotNet.xunit.performance.run.core" />
+    <XunitPerformanceDependency Include="Microsoft.DotNet.xunit.performance.runner.cli" />
+    <XunitPerformanceDependency Include="Microsoft.DotNet.xunit.performance.runner.Windows" />
+    <StaticDependency Include="@(XunitPerformanceDependency)">
+      <Version>1.0.0-alpha-build0035</Version>
+    </StaticDependency>
+
+    <StaticDependency Include="xunit.console.netcore">
+      <Version>1.0.2-prerelease-00101</Version>
+    </StaticDependency>
+
+    <DependencyBuildInfo Include="@(StaticDependency)">
+      <PackageId>%(Identity)</PackageId>
+      <UpdateStableVersions>true</UpdateStableVersions>
+    </DependencyBuildInfo>
+  </ItemGroup>
+</Project>
