@@ -20,13 +20,13 @@ namespace System.IO.IsolatedStorage
             SetErrorCode(COR_E_ISOSTORE);
         }
 
-        public IsolatedStorageException(String message)
+        public IsolatedStorageException(string message)
             : base(message)
         {
             SetErrorCode(COR_E_ISOSTORE);
         }
 
-        public IsolatedStorageException(String message, Exception inner)
+        public IsolatedStorageException(string message, Exception inner)
             : base(message, inner)
         {
             SetErrorCode(COR_E_ISOSTORE);
@@ -34,7 +34,7 @@ namespace System.IO.IsolatedStorage
 
         private void SetErrorCode(int hr)
         {
-            this.HResult = hr;
+            HResult = hr;
         }
     }
 }
