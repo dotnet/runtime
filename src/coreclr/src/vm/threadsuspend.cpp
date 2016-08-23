@@ -21,9 +21,7 @@
 // from ntstatus.h
 #define STATUS_SUSPEND_COUNT_EXCEEDED    ((NTSTATUS)0xC000004AL)
 
-#if defined(_TARGET_X86_) || defined(_TARGET_AMD64_) || defined(_TARGET_ARM_)
 #define HIJACK_NONINTERRUPTIBLE_THREADS
-#endif
 
 bool ThreadSuspend::s_fSuspendRuntimeInProgress = false;
 
@@ -7013,7 +7011,7 @@ StackWalkAction SWCB_GetExecutionState(CrawlFrame *pCF, VOID *pData)
                 // return address for hijacking.
                 if (!pES->m_IsInterruptible)
                 {
-#if defined(_TARGET_AMD64_) || defined(_TARGET_ARM_)
+#if defined(_TARGET_AMD64_) || defined(_TARGET_ARM_) || defined(_TARGET_ARM64_) 
                     PREGDISPLAY pRDT = pCF->GetRegisterSet();
                     _ASSERTE(pRDT != NULL);
 
@@ -7027,7 +7025,7 @@ StackWalkAction SWCB_GetExecutionState(CrawlFrame *pCF, VOID *pData)
                     {
                          // We already have the caller context available at this point
                         _ASSERTE(pRDT->IsCallerContextValid);
-#ifdef _TARGET_ARM_
+#if defined(_TARGET_ARM_) || defined(_TARGET_ARM64_)
 
                         // Why do we use CallerContextPointers below?
                         //
@@ -7078,7 +7076,7 @@ StackWalkAction SWCB_GetExecutionState(CrawlFrame *pCF, VOID *pData)
                     // peel off the next frame to expose the return address on the stack
                     pES->m_FirstPass = FALSE;
                     action = SWA_CONTINUE;
-#endif // _TARGET_AMD64_ || _TARGET_ARM_
+#endif // _TARGET_AMD64_ || _TARGET_ARM_ || _TARGET_ARM64_
                 }
 #endif // HIJACK_NONINTERRUPTIBLE_THREADS
             }
