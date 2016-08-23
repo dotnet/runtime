@@ -554,18 +554,14 @@ DEFINE_FIELD_U(iFirstDayOfWeek,       CultureDataBaseObject,  iFirstDayOfWeek)
 DEFINE_FIELD_U(iFirstWeekOfYear,      CultureDataBaseObject,  iFirstWeekOfYear)
 DEFINE_FIELD_U(waCalendars,           CultureDataBaseObject,  waCalendars)
 DEFINE_FIELD_U(calendars,             CultureDataBaseObject,  calendars)
-#ifndef FEATURE_CORECLR
 DEFINE_FIELD_U(iReadingLayout,        CultureDataBaseObject,  iReadingLayout)
-#endif
 DEFINE_FIELD_U(sTextInfo,             CultureDataBaseObject,  sTextInfo)
 DEFINE_FIELD_U(sCompareInfo,          CultureDataBaseObject,  sCompareInfo)
 DEFINE_FIELD_U(sScripts,              CultureDataBaseObject,  sScripts)
 DEFINE_FIELD_U(bUseOverrides,         CultureDataBaseObject,  bUseOverrides)
 DEFINE_FIELD_U(bNeutral,              CultureDataBaseObject,  bNeutral)
-#ifndef FEATURE_CORECLR
 DEFINE_FIELD_U(bWin32Installed,       CultureDataBaseObject,  bWin32Installed)
 DEFINE_FIELD_U(bFramework,            CultureDataBaseObject,  bFramework)
-#endif 
 #endif
 #ifndef FEATURE_COREFX_GLOBALIZATION
 DEFINE_CLASS_U(Globalization,          CalendarData,           CalendarDataBaseObject)
@@ -1089,18 +1085,18 @@ DEFINE_FIELD_U(numberNegativePattern,  NumberFormatInfo,   cNegativeNumberFormat
 DEFINE_FIELD_U(percentPositivePattern, NumberFormatInfo,   cPositivePercentFormat)
 DEFINE_FIELD_U(percentNegativePattern, NumberFormatInfo,   cNegativePercentFormat)
 DEFINE_FIELD_U(percentDecimalDigits,   NumberFormatInfo,   cPercentDecimals)
-#ifndef FEATURE_CORECLR
+#ifndef FEATURE_COREFX_GLOBALIZATION
 DEFINE_FIELD_U(digitSubstitution,      NumberFormatInfo,   iDigitSubstitution)
-#endif // !FEATURE_CORECLR
+#endif
 DEFINE_FIELD_U(isReadOnly,             NumberFormatInfo,   bIsReadOnly)
 #ifndef FEATURE_COREFX_GLOBALIZATION
 DEFINE_FIELD_U(m_useUserOverride,      NumberFormatInfo,   bUseUserOverride)
 #endif
 DEFINE_FIELD_U(m_isInvariant,          NumberFormatInfo,   bIsInvariant)
-#ifndef FEATURE_CORECLR
+#ifndef FEATURE_COREFX_GLOBALIZATION
 DEFINE_FIELD_U(validForParseAsNumber,  NumberFormatInfo,   bvalidForParseAsNumber)
 DEFINE_FIELD_U(validForParseAsCurrency,NumberFormatInfo,   bvalidForParseAsCurrency)
-#endif // !FEATURE_CORECLR
+#endif
 
 // Defined as element type alias
 // DEFINE_CLASS(OBJECT,                System,                 Object)
