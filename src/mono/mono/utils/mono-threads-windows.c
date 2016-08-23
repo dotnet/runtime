@@ -194,48 +194,45 @@ inner_start_thread (LPVOID arg)
 HANDLE
 mono_threads_platform_create_thread (MonoThreadStart start_routine, gpointer arg, MonoThreadParm *tp, MonoNativeThreadId *out_tid)
 {
-	ThreadStartInfo *start_info;
+	ThreadStartInfo start_info;
 	HANDLE result;
 	DWORD thread_id;
 	guint32 creation_flags = tp->creation_flags;
 	int res;
 
-	start_info = g_malloc0 (sizeof (ThreadStartInfo));
-	if (!start_info)
-		return NULL;
-	mono_coop_sem_init (&(start_info->registered), 0);
-	start_info->arg = arg;
-	start_info->priority = tp->priority;
-	start_info->start_routine = start_routine;
-	start_info->suspend = creation_flags & CREATE_SUSPENDED;
+	memset (&start_info, 0, sizeof (start_info));
+	mono_coop_sem_init (&(start_info.registered), 0);
+	start_info.arg = arg;
+	start_info.start_routine = start_routine;
+	start_info.suspend = creation_flags & CREATE_SUSPENDED;
+	start_info.priority = tp->priority;
 	creation_flags &= ~CREATE_SUSPENDED;
-	if (start_info->suspend) {
-		start_info->suspend_event = CreateEvent (NULL, TRUE, FALSE, NULL);
-		if (!start_info->suspend_event)
+	if (start_info.suspend) {
+		start_info.suspend_event = CreateEvent (NULL, TRUE, FALSE, NULL);
+		if (!start_info.suspend_event)
 			return NULL;
 	}
 
-	result = CreateThread (NULL, tp->stack_size, inner_start_thread, start_info, creation_flags, &thread_id);
+	result = CreateThread (NULL, tp->stack_size, inner_start_thread, &start_info, creation_flags, &thread_id);
 	if (result) {
-		res = mono_coop_sem_wait (&(start_info->registered), MONO_SEM_FLAGS_NONE);
+		res = mono_coop_sem_wait (&(start_info.registered), MONO_SEM_FLAGS_NONE);
 		g_assert (res != -1);
 
 		/* A new handle has been opened when attaching
 		 * the thread, so we don't need this one */
 		CloseHandle (result);
 
-		if (start_info->suspend) {
-			g_assert (SuspendThread (result) != (DWORD)-1);
-			SetEvent (start_info->suspend_event);
+		if (start_info.suspend) {
+			g_assert (SuspendThread (start_info.handle) != (DWORD)-1);
+			SetEvent (start_info.suspend_event);
 		}
-	} else if (start_info->suspend) {
-		CloseHandle (start_info->suspend_event);
+	} else if (start_info.suspend) {
+		CloseHandle (start_info.suspend_event);
 	}
 	if (out_tid)
 		*out_tid = thread_id;
-	mono_coop_sem_destroy (&(start_info->registered));
-	g_free (start_info);
-	return result;
+	mono_coop_sem_destroy (&(start_info.registered));
+	return start_info.handle;
 }
 
 
