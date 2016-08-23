@@ -274,7 +274,10 @@ namespace System.Runtime.Serialization
             set { _helper.UnderlyingType = value; }
         }
 
-        public Type OriginalUnderlyingType { get; set; }
+        public Type OriginalUnderlyingType
+        {
+            get { return _helper.OriginalUnderlyingType; }
+        }
 
         public virtual bool IsBuiltInDataContract
         {
@@ -538,6 +541,7 @@ namespace System.Runtime.Serialization
             private static object s_clrTypeStringsLock = new object();
 
             private Type _underlyingType;
+            private Type _originalUnderlyingType;
             private bool _isReference;
             private bool _isValueType;
             private XmlQualifiedName _stableName;
@@ -785,6 +789,16 @@ namespace System.Runtime.Serialization
                 return type;
             }
 
+            // Maps adapted types back to the original type
+            // Any change to this method should be reflected in GetDataContractAdapterType
+            internal static Type GetDataContractOriginalType(Type type)
+            {
+                if (type == Globals.TypeOfDateTimeOffsetAdapter)
+                {
+                    return Globals.TypeOfDateTimeOffset;
+                }
+                return type;
+            }
             private static RuntimeTypeHandle GetDataContractAdapterTypeHandle(RuntimeTypeHandle typeHandle)
             {
                 if (Globals.TypeOfDateTimeOffset.TypeHandle.Equals(typeHandle))
@@ -1086,6 +1100,17 @@ namespace System.Runtime.Serialization
                 set { _underlyingType = value; }
             }
 
+            internal Type OriginalUnderlyingType
+            {
+                get
+                {
+                    if (_originalUnderlyingType == null)
+                    {
+                        _originalUnderlyingType = GetDataContractOriginalType(this._underlyingType);
+                    }
+                    return _originalUnderlyingType;
+                }
+            }
             internal virtual bool IsBuiltInDataContract
             {
                 get
