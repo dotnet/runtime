@@ -13,6 +13,14 @@ namespace System.Security.Cryptography.Hashing.Algorithms.Tests
             return SHA256.Create();
         }
 
+        [Fact]
+        public void Sha256_Empty()
+        {
+            Verify(
+                Array.Empty<byte>(),
+                "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855");
+        }
+
         // These test cases are from http://csrc.nist.gov/publications/fips/fips180-2/fips180-2.pdf Appendix B
         [Fact]
         public void Sha256_Fips180_1()
