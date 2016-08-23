@@ -2,14 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.IO;
-using Microsoft.Win32.SafeHandles;
-using System.Collections.Generic;
-using System.Security;
-using System.Runtime.InteropServices;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Linq;
 
 namespace System.IO.IsolatedStorage
@@ -90,17 +83,16 @@ namespace System.IO.IsolatedStorage
             }
         }
 
-        public void DeleteFile(String file)
+        public void DeleteFile(string file)
         {
             if (file == null)
                 throw new ArgumentNullException(nameof(file));
-            Contract.EndContractBlock();
 
             EnsureStoreIsValid();
 
             try
             {
-                String fullPath = GetFullPath(file);
+                string fullPath = GetFullPath(file);
                 File.Delete(fullPath);
             }
             catch (Exception e)
@@ -125,22 +117,20 @@ namespace System.IO.IsolatedStorage
         {
             if (path == null)
                 throw new ArgumentNullException(nameof(path));
-            Contract.EndContractBlock();
 
             EnsureStoreIsValid();
 
             return Directory.Exists(GetFullPath(path));
         }
 
-        public void CreateDirectory(String dir)
+        public void CreateDirectory(string dir)
         {
             if (dir == null)
                 throw new ArgumentNullException(nameof(dir));
-            Contract.EndContractBlock();
 
             EnsureStoreIsValid();
 
-            String isPath = GetFullPath(dir); // Prepend IS root
+            string isPath = GetFullPath(dir); // Prepend IS root
 
             // We can save a bunch of work if the directory we want to create already exists.  This also
             // saves us in the case where sub paths are inaccessible (due to ERROR_ACCESS_DENIED) but the
@@ -169,11 +159,10 @@ namespace System.IO.IsolatedStorage
             }
         }
 
-        public void DeleteDirectory(String dir)
+        public void DeleteDirectory(string dir)
         {
             if (dir == null)
                 throw new ArgumentNullException(nameof(dir));
-            Contract.EndContractBlock();
 
             EnsureStoreIsValid();
 
@@ -188,19 +177,16 @@ namespace System.IO.IsolatedStorage
             }
         }
 
-        public String[] GetFileNames()
+        public string[] GetFileNames()
         {
             return GetFileNames("*");
         }
 
-        /*
-         * foo\abc*.txt will give all abc*.txt files in foo directory
-         */
-        public String[] GetFileNames(String searchPattern)
+        // foo\abc*.txt will give all abc*.txt files in foo directory
+        public string[] GetFileNames(string searchPattern)
         {
             if (searchPattern == null)
                 throw new ArgumentNullException(nameof(searchPattern));
-            Contract.EndContractBlock();
 
             EnsureStoreIsValid();
 
@@ -216,20 +202,16 @@ namespace System.IO.IsolatedStorage
             }
         }
 
-        public String[] GetDirectoryNames()
+        public string[] GetDirectoryNames()
         {
             return GetDirectoryNames("*");
         }
 
-        /*
-         * foo\data* will give all directory names in foo directory that
-         * starts with data
-         */
-        public String[] GetDirectoryNames(String searchPattern)
+        // foo\data* will give all directory names in foo directory that starts with data
+        public string[] GetDirectoryNames(string searchPattern)
         {
             if (searchPattern == null)
                 throw new ArgumentNullException(nameof(searchPattern));
-            Contract.EndContractBlock();
 
             EnsureStoreIsValid();
 
@@ -274,12 +256,10 @@ namespace System.IO.IsolatedStorage
             if (path == null)
                 throw new ArgumentNullException(nameof(path));
 
-            if (path == String.Empty)
+            if (path == string.Empty)
             {
                 throw new ArgumentException(SR.Argument_EmptyPath, nameof(path));
             }
-
-            Contract.EndContractBlock();
 
             EnsureStoreIsValid();
 
@@ -298,12 +278,10 @@ namespace System.IO.IsolatedStorage
             if (path == null)
                 throw new ArgumentNullException(nameof(path));
 
-            if (path == String.Empty)
+            if (path == string.Empty)
             {
                 throw new ArgumentException(SR.Argument_EmptyPath, nameof(path));
             }
-
-            Contract.EndContractBlock();
 
             EnsureStoreIsValid();
 
@@ -322,12 +300,10 @@ namespace System.IO.IsolatedStorage
             if (path == null)
                 throw new ArgumentNullException(nameof(path));
 
-            if (path == String.Empty)
+            if (path == string.Empty)
             {
                 throw new ArgumentException(SR.Argument_EmptyPath, nameof(path));
             }
-
-            Contract.EndContractBlock();
 
             EnsureStoreIsValid();
 
@@ -341,7 +317,6 @@ namespace System.IO.IsolatedStorage
             }
         }
 
-
         public void CopyFile(string sourceFileName, string destinationFileName)
         {
             if (sourceFileName == null)
@@ -350,17 +325,15 @@ namespace System.IO.IsolatedStorage
             if (destinationFileName == null)
                 throw new ArgumentNullException(nameof(destinationFileName));
 
-            if (sourceFileName == String.Empty)
+            if (sourceFileName == string.Empty)
             {
                 throw new ArgumentException(SR.Argument_EmptyPath, nameof(sourceFileName));
             }
 
-            if (destinationFileName == String.Empty)
+            if (destinationFileName == string.Empty)
             {
                 throw new ArgumentException(SR.Argument_EmptyPath, nameof(destinationFileName));
             }
-
-            Contract.EndContractBlock();
 
             CopyFile(sourceFileName, destinationFileName, false);
         }
@@ -373,22 +346,20 @@ namespace System.IO.IsolatedStorage
             if (destinationFileName == null)
                 throw new ArgumentNullException(nameof(destinationFileName));
 
-            if (sourceFileName == String.Empty)
+            if (sourceFileName == string.Empty)
             {
                 throw new ArgumentException(SR.Argument_EmptyPath, nameof(sourceFileName));
             }
 
-            if (destinationFileName == String.Empty)
+            if (destinationFileName == string.Empty)
             {
                 throw new ArgumentException(SR.Argument_EmptyPath, nameof(destinationFileName));
             }
 
-            Contract.EndContractBlock();
-
             EnsureStoreIsValid();
 
-            String sourceFileNameFullPath = GetFullPath(sourceFileName);
-            String destinationFileNameFullPath = GetFullPath(destinationFileName);
+            string sourceFileNameFullPath = GetFullPath(sourceFileName);
+            string destinationFileNameFullPath = GetFullPath(destinationFileName);
 
             try
             {
@@ -396,7 +367,7 @@ namespace System.IO.IsolatedStorage
             }
             catch (FileNotFoundException)
             {
-                throw new FileNotFoundException(String.Format(SR.PathNotFound_Path, sourceFileName));
+                throw new FileNotFoundException(string.Format(SR.PathNotFound_Path, sourceFileName));
             }
             catch (PathTooLongException)
             {
@@ -416,22 +387,20 @@ namespace System.IO.IsolatedStorage
             if (destinationFileName == null)
                 throw new ArgumentNullException(nameof(destinationFileName));
 
-            if (sourceFileName == String.Empty)
+            if (sourceFileName == string.Empty)
             {
                 throw new ArgumentException(SR.Argument_EmptyPath, nameof(sourceFileName));
             }
 
-            if (destinationFileName == String.Empty)
+            if (destinationFileName == string.Empty)
             {
                 throw new ArgumentException(SR.Argument_EmptyPath, nameof(destinationFileName));
             }
 
-            Contract.EndContractBlock();
-
             EnsureStoreIsValid();
 
-            String sourceFileNameFullPath = GetFullPath(sourceFileName);
-            String destinationFileNameFullPath = GetFullPath(destinationFileName);
+            string sourceFileNameFullPath = GetFullPath(sourceFileName);
+            string destinationFileNameFullPath = GetFullPath(destinationFileName);
 
             try
             {
@@ -439,7 +408,7 @@ namespace System.IO.IsolatedStorage
             }
             catch (FileNotFoundException)
             {
-                throw new FileNotFoundException(String.Format(SR.PathNotFound_Path, sourceFileName));
+                throw new FileNotFoundException(string.Format(SR.PathNotFound_Path, sourceFileName));
             }
             catch (PathTooLongException)
             {
@@ -459,22 +428,20 @@ namespace System.IO.IsolatedStorage
             if (destinationDirectoryName == null)
                 throw new ArgumentNullException(nameof(destinationDirectoryName));
 
-            if (sourceDirectoryName == String.Empty)
+            if (sourceDirectoryName == string.Empty)
             {
                 throw new ArgumentException(SR.Argument_EmptyPath, nameof(sourceDirectoryName));
             }
 
-            if (destinationDirectoryName == String.Empty)
+            if (destinationDirectoryName == string.Empty)
             {
                 throw new ArgumentException(SR.Argument_EmptyPath, nameof(destinationDirectoryName));
             }
 
-            Contract.EndContractBlock();
-
             EnsureStoreIsValid();
 
-            String sourceDirectoryNameFullPath = GetFullPath(sourceDirectoryName);
-            String destinationDirectoryNameFullPath = GetFullPath(destinationDirectoryName);
+            string sourceDirectoryNameFullPath = GetFullPath(sourceDirectoryName);
+            string destinationDirectoryNameFullPath = GetFullPath(destinationDirectoryName);
 
             try
             {
@@ -482,7 +449,7 @@ namespace System.IO.IsolatedStorage
             }
             catch (DirectoryNotFoundException)
             {
-                throw new DirectoryNotFoundException(String.Format(SR.PathNotFound_Path, sourceDirectoryName));
+                throw new DirectoryNotFoundException(string.Format(SR.PathNotFound_Path, sourceDirectoryName));
             }
             catch (PathTooLongException)
             {
@@ -494,9 +461,6 @@ namespace System.IO.IsolatedStorage
             }
         }
 
-        /*
-         * Public Static Methods
-         */
         public static IsolatedStorageFile GetUserStoreForApplication()
         {
             return GetUserStore();
@@ -511,9 +475,6 @@ namespace System.IO.IsolatedStorage
             return isf;
         }
 
-        /*
-         * Private Instance Methods
-         */
         internal string GetFullPath(string partialPath)
         {
             Debug.Assert(partialPath != null, "partialPath should be non null");
@@ -534,14 +495,11 @@ namespace System.IO.IsolatedStorage
             return Path.Combine(_appFilesPath, partialPath);
         }
 
-        /*
-         * Private Static Methods
-         */
         private static void CreatePathPrefixIfNeeded(string path)
         {
             string root = Path.GetPathRoot(path);
 
-            Debug.Assert(!String.IsNullOrEmpty(root), "Path.GetPathRoot returned null or empty for: " + path);
+            Debug.Assert(!string.IsNullOrEmpty(root), "Path.GetPathRoot returned null or empty for: " + path);
 
             try
             {
@@ -579,7 +537,6 @@ namespace System.IO.IsolatedStorage
         {
             if (Disposed)
                 throw new ObjectDisposedException(null, SR.IsolatedStorage_StoreNotOpen);
-            Contract.EndContractBlock();
 
             if (IsDeleted)
             {
@@ -596,8 +553,6 @@ namespace System.IO.IsolatedStorage
             _disposed = true;
         }
 
-
-        [SecurityCritical]
         internal static Exception GetIsolatedStorageException(string exceptionMsg, Exception rootCause)
         {
             IsolatedStorageException e = new IsolatedStorageException(exceptionMsg, rootCause);

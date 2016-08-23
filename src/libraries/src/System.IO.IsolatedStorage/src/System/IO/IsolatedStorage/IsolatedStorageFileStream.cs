@@ -2,11 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.IO;
-using Microsoft.Win32.SafeHandles;
-using System.Security;
-using System.Diagnostics.Contracts;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -14,27 +9,27 @@ namespace System.IO.IsolatedStorage
 {
     public class IsolatedStorageFileStream : Stream
     {
-        private const String s_BackSlash = "\\";
+        private const string s_BackSlash = "\\";
 
         private FileStream _fs;
         private IsolatedStorageFile _isf;
-        private String _givenPath;
-        private String _fullPath;
+        private string _givenPath;
+        private string _fullPath;
 
         private IsolatedStorageFileStream() { }
 
-        public IsolatedStorageFileStream(String path, FileMode mode,
+        public IsolatedStorageFileStream(string path, FileMode mode,
                 IsolatedStorageFile isf)
             : this(path, mode, (mode == FileMode.Append ? FileAccess.Write : FileAccess.ReadWrite), FileShare.None, isf)
         {
         }
-        public IsolatedStorageFileStream(String path, FileMode mode,
+        public IsolatedStorageFileStream(string path, FileMode mode,
                 FileAccess access, IsolatedStorageFile isf)
             : this(path, mode, access, access == FileAccess.Read ?
                 FileShare.Read : FileShare.None, DefaultBufferSize, isf)
         {
         }
-        public IsolatedStorageFileStream(String path, FileMode mode,
+        public IsolatedStorageFileStream(string path, FileMode mode,
                 FileAccess access, FileShare share, IsolatedStorageFile isf)
             : this(path, mode, access, share, DefaultBufferSize, isf)
         {
@@ -44,13 +39,12 @@ namespace System.IO.IsolatedStorage
 
         // If the isolated storage file is null, then we default to using a file
         // that is scoped by user, appdomain, and assembly.
-        public IsolatedStorageFileStream(String path, FileMode mode,
+        public IsolatedStorageFileStream(string path, FileMode mode,
             FileAccess access, FileShare share, int bufferSize,
             IsolatedStorageFile isf)
         {
             if (path == null)
                 throw new ArgumentNullException(nameof(path));
-            Contract.EndContractBlock();
 
             if ((path.Length == 0) || path.Equals(s_BackSlash))
                 throw new ArgumentException(
@@ -101,7 +95,6 @@ namespace System.IO.IsolatedStorage
 
         public override bool CanRead
         {
-            [Pure]
             get
             {
                 return _fs.CanRead;
@@ -110,7 +103,6 @@ namespace System.IO.IsolatedStorage
 
         public override bool CanWrite
         {
-            [Pure]
             get
             {
                 return _fs.CanWrite;
@@ -119,7 +111,6 @@ namespace System.IO.IsolatedStorage
 
         public override bool CanSeek
         {
-            [Pure]
             get
             {
                 return _fs.CanSeek;
@@ -149,7 +140,6 @@ namespace System.IO.IsolatedStorage
 
         public string Name
         {
-            [SecurityCritical]
             get
             {
                 return _fullPath;
