@@ -247,7 +247,7 @@
              <Issue>needs triage</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)\JIT\Performance\CodeQuality\Roslyn\CscBench\CscBench.cmd">
-             <Issue>needs triage</Issue>
+             <Issue>6844</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V1.2-Beta1\b103058\b103058\b103058.cmd">
              <Issue>needs triage</Issue>
@@ -397,9 +397,6 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\int64\superlong\_il_relsuperlong\_il_relsuperlong.cmd">
              <Issue>6778</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\superpmi\superpmicollect\superpmicollect.cmd">
-             <Issue>6830</Issue>
         </ExcludeList>
     </ItemGroup>
     
