@@ -362,7 +362,8 @@ mono_strength_reduction_ins (MonoCompile *cfg, MonoInst *ins, const char **spec)
 	}
 	case OP_IDIV_UN_IMM:
 	case OP_IDIV_IMM: {
-		allocated_vregs = mono_strength_reduction_division (cfg, ins);
+		if (!COMPILE_LLVM (cfg))
+			allocated_vregs = mono_strength_reduction_division (cfg, ins);
 		break;
 	}
 #if SIZEOF_REGISTER == 8
