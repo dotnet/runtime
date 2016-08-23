@@ -134,7 +134,7 @@ namespace System.Dynamic.Utils
                         throw Error.IncorrectNumberOfLambdaArguments();
                     case ExpressionType.Dynamic:
                     case ExpressionType.Call:
-                        throw Error.IncorrectNumberOfMethodCallArguments(method);
+                        throw Error.IncorrectNumberOfMethodCallArguments(method, nameof(method));
                     default:
                         throw ContractUtils.Unreachable;
                 }

@@ -423,7 +423,7 @@ namespace System.Linq.Expressions
             ValidateOperator(method, nameof(method));
             ParameterInfo[] pms = method.GetParametersCached();
             if (pms.Length != 1)
-                throw Error.IncorrectNumberOfMethodCallArguments(method);
+                throw Error.IncorrectNumberOfMethodCallArguments(method, nameof(method));
             if (ParameterIsAssignable(pms[0], operand.Type))
             {
                 ValidateParamswithOperandsOrThrow(pms[0].ParameterType, operand.Type, unaryType, method.Name);
@@ -470,7 +470,7 @@ namespace System.Linq.Expressions
             ParameterInfo[] pms = method.GetParametersCached();
             if (pms.Length != 1)
             {
-                throw Error.IncorrectNumberOfMethodCallArguments(method);
+                throw Error.IncorrectNumberOfMethodCallArguments(method, nameof(method));
             }
             if (ParameterIsAssignable(pms[0], operand.Type) && TypeUtils.AreEquivalent(method.ReturnType, convertToType))
             {

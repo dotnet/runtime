@@ -60,7 +60,6 @@
     <Compile Include="BinaryOperators\Bitwise\BinaryNullableOrTests.cs" />
     <Compile Include="BinaryOperators\Bitwise\BinaryOrTests.cs" />
     <Compile Include="BinaryOperators\Coalesce\BinaryCoalesceTests.cs" />
-    <Compile Include="BinaryOperators\Coalesce\BinaryNullableCoalesceTests.cs" />
     <Compile Include="BinaryOperators\Comparison\BinaryEqualTests.cs" />
     <Compile Include="BinaryOperators\Comparison\BinaryGreaterThanOrEqualTests.cs" />
     <Compile Include="BinaryOperators\Comparison\BinaryGreaterThanTests.cs" />
