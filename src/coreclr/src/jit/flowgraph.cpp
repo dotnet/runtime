@@ -8981,12 +8981,16 @@ void Compiler::fgSimpleLowering()
                     {
                         con             = gtNewIconNode(arrLen->ArrLenOffset(), TYP_I_IMPL);
                         con->gtRsvdRegs = 0;
-                        con->gtCopyFPlvl(arr);
+
                         add             = gtNewOperNode(GT_ADD, TYP_REF, arr, con);
                         add->gtRsvdRegs = arr->gtRsvdRegs;
+
+#ifdef LEGACY_BACKEND
+                        con->gtCopyFPlvl(arr);
+
                         add->gtCopyFPlvl(arr);
                         add->CopyCosts(arr);
-#ifdef LEGACY_BACKEND
+
                         arr->gtNext = con;
                         con->gtPrev = arr;
 
