@@ -2,12 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Security;
 using Windows.Storage;
 
 namespace System.IO.IsolatedStorage
 {
-    [SecurityCritical]
     internal class IsolatedStorageSecurityState
     {
         private string _rootUserDirectory;
@@ -19,12 +17,11 @@ namespace System.IO.IsolatedStorage
             return state.RootUserDirectory;
         }
 
-        [SecurityCritical]
         private IsolatedStorageSecurityState()
         {
         }
 
-        private String RootUserDirectory
+        private string RootUserDirectory
         {
             get
             {
@@ -36,7 +33,6 @@ namespace System.IO.IsolatedStorage
             }
         }
 
-        [SecurityCritical]
         private void EnsureState()
         {
             try
