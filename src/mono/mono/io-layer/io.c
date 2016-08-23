@@ -1994,9 +1994,14 @@ gboolean MoveFile (const gunichar2 *name, const gunichar2 *dest_name)
 		case EXDEV:
 			/* Ignore here, it is dealt with below */
 			break;
-			
+
+		case ENOENT:
+			/* We already know src exists. Must be dest that doesn't exist. */
+			_wapi_set_last_path_error_from_errno (NULL, utf8_dest_name);
+			break;
+
 		default:
-			_wapi_set_last_path_error_from_errno (NULL, utf8_name);
+			_wapi_set_last_error_from_errno ();
 		}
 	}
 	
