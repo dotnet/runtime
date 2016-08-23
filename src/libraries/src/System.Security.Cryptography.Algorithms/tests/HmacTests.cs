@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.IO;
 using Test.Cryptography;
 using Xunit;
 
@@ -91,6 +92,101 @@ namespace System.Security.Cryptography.Hashing.Algorithms.Tests
                 hmac.Key = overSizedKey;
                 byte[] actualHash = hmac.ComputeHash(data);
                 Assert.Equal<byte>(expectedHash, actualHash);
+            }
+        }
+
+        [Fact]
+        public void InvalidInput_Null()
+        {
+            using (HMAC hash = Create())
+            {
+                Assert.Throws<ArgumentNullException>("buffer", () => hash.ComputeHash((byte[])null));
+                Assert.Throws<ArgumentNullException>("buffer", () => hash.ComputeHash(null, 0, 0));
+                Assert.Throws<NullReferenceException>(() => hash.ComputeHash((Stream)null));
+            }
+        }
+
+        [Fact]
+        public void InvalidInput_NegativeOffset()
+        {
+            using (HMAC hash = Create())
+            {
+                Assert.Throws<ArgumentOutOfRangeException>("offset", () => hash.ComputeHash(Array.Empty<byte>(), -1, 0));
+            }
+        }
+
+        [Fact]
+        public void InvalidInput_NegativeCount()
+        {
+            using (HMAC hash = Create())
+            {
+                Assert.Throws<ArgumentException>(null, () => hash.ComputeHash(Array.Empty<byte>(), 0, -1));
+            }
+        }
+
+        [Fact]
+        public void InvalidInput_TooBigOffset()
+        {
+            using (HMAC hash = Create())
+            {
+                Assert.Throws<ArgumentException>(null, () => hash.ComputeHash(Array.Empty<byte>(), 1, 0));
+            }
+        }
+
+        [Fact]
+        public void InvalidInput_TooBigCount()
+        {
+            byte[] nonEmpty = new byte[53];
+
+            using (HMAC hash = Create())
+            {
+                Assert.Throws<ArgumentException>(null, () => hash.ComputeHash(nonEmpty, 0, nonEmpty.Length + 1));
+                Assert.Throws<ArgumentException>(null, () => hash.ComputeHash(nonEmpty, 1, nonEmpty.Length));
+                Assert.Throws<ArgumentException>(null, () => hash.ComputeHash(nonEmpty, 2, nonEmpty.Length - 1));
+                Assert.Throws<ArgumentException>(null, () => hash.ComputeHash(Array.Empty<byte>(), 0, 1));
+            }
+        }
+
+        [Fact]
+        public void BoundaryCondition_Count0()
+        {
+            byte[] nonEmpty = new byte[53];
+
+            using (HMAC hash = Create())
+            {
+                byte[] emptyHash = hash.ComputeHash(Array.Empty<byte>());
+                byte[] shouldBeEmptyHash = hash.ComputeHash(nonEmpty, nonEmpty.Length, 0);
+
+                Assert.Equal(emptyHash, shouldBeEmptyHash);
+
+                shouldBeEmptyHash = hash.ComputeHash(nonEmpty, 0, 0);
+                Assert.Equal(emptyHash, shouldBeEmptyHash);
+
+                nonEmpty[0] = 0xFF;
+                nonEmpty[nonEmpty.Length - 1] = 0x77;
+
+                shouldBeEmptyHash = hash.ComputeHash(nonEmpty, nonEmpty.Length, 0);
+                Assert.Equal(emptyHash, shouldBeEmptyHash);
+
+                shouldBeEmptyHash = hash.ComputeHash(nonEmpty, 0, 0);
+                Assert.Equal(emptyHash, shouldBeEmptyHash);
+            }
+        }
+
+        [Fact]
+        public void OffsetAndCountRespected()
+        {
+            byte[] dataA = { 1, 1, 2, 3, 5, 8 };
+            byte[] dataB = { 0, 1, 1, 2, 3, 5, 8, 13 };
+
+            using (HMAC hash = Create())
+            {
+                byte[] baseline = hash.ComputeHash(dataA);
+
+                // Skip the 0 byte, and stop short of the 13.
+                byte[] offsetData = hash.ComputeHash(dataB, 1, dataA.Length);
+
+                Assert.Equal(baseline, offsetData);
             }
         }
     }
