@@ -27,7 +27,8 @@ namespace Microsoft.Extensions.DependencyModel
                   resourceAssemblies,
                   dependencies,
                   serviceable,
-                  path: null)
+                  path: null,
+                  hashPath: null)
         {
         }
 
@@ -40,8 +41,16 @@ namespace Microsoft.Extensions.DependencyModel
             IEnumerable<ResourceAssembly> resourceAssemblies,
             IEnumerable<Dependency> dependencies,
             bool serviceable,
-            string path)
-            : base(type, name, version, hash, dependencies, serviceable, path)
+            string path,
+            string hashPath)
+            : base(type,
+                  name,
+                  version,
+                  hash,
+                  dependencies,
+                  serviceable,
+                  path,
+                  hashPath)
         {
             if (runtimeAssemblyGroups == null)
             {
