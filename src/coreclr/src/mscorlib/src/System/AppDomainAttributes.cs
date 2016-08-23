@@ -21,13 +21,10 @@ namespace System {
         SingleDomain            = 1,
         MultiDomain             = 2,
         MultiDomainHost         = 3,
-#if !FEATURE_CORECLR
         [Obsolete("This method has been deprecated. Please use Assembly.Load() instead. http://go.microsoft.com/fwlink/?linkid=14202")]
         DomainMask              = 3,
-
         [Obsolete("This method has been deprecated. Please use Assembly.Load() instead. http://go.microsoft.com/fwlink/?linkid=14202")]
-        DisallowBindings        = 4           
-#endif        
+        DisallowBindings        = 4         
     }
 
     [AttributeUsage (AttributeTargets.Method)]  
