@@ -125,7 +125,8 @@ namespace Microsoft.Extensions.DependencyModel.Tests
                                             new Dependency("Fruits.Abstract.dll","2.0.0")
                                         },
                                         true,
-                                        "PackagePath"
+                                        "PackagePath",
+                                        "PackageHashPath"
                                     )
                             }));
 
@@ -145,6 +146,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
             library.Should().HavePropertyValue("type", "package");
             library.Should().HavePropertyValue("serviceable", true);
             library.Should().HavePropertyValue("path", "PackagePath");
+            library.Should().HavePropertyValue("hashPath", "PackageHashPath");
         }
 
         [Fact]
@@ -174,7 +176,8 @@ namespace Microsoft.Extensions.DependencyModel.Tests
                                             new Dependency("Fruits.Abstract.dll","2.0.0")
                                         },
                                         true,
-                                        "PackagePath"
+                                        "PackagePath",
+                                        "PackageHashPath"
                                     ),
                             }));
 
@@ -211,6 +214,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
             library.Should().HavePropertyValue("type", "package");
             library.Should().HavePropertyValue("serviceable", true);
             library.Should().HavePropertyValue("path", "PackagePath");
+            library.Should().HavePropertyValue("hashPath", "PackageHashPath");
         }
 
         [Fact]
@@ -232,7 +236,8 @@ namespace Microsoft.Extensions.DependencyModel.Tests
                                             new Dependency("Fruits.Abstract.dll","2.0.0")
                                         },
                                         true,
-                                        "PackagePath"
+                                        "PackagePath",
+                                        "PackageHashPath"
                                     )
                             },
                             runtimeLibraries: new[]
@@ -255,7 +260,8 @@ namespace Microsoft.Extensions.DependencyModel.Tests
                                             new Dependency("Fruits.Abstract.dll","2.0.0")
                                         },
                                         true,
-                                        "PackagePath"
+                                        "PackagePath",
+                                        "PackageHashPath"
                                     ),
                             }));
 
@@ -291,6 +297,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
             library.Should().HavePropertyValue("type", "package");
             library.Should().HavePropertyValue("serviceable", true);
             library.Should().HavePropertyValue("path", "PackagePath");
+            library.Should().HavePropertyValue("hashPath", "PackageHashPath");
         }
 
         [Fact]
@@ -318,7 +325,8 @@ namespace Microsoft.Extensions.DependencyModel.Tests
                                             new Dependency("Fruits.Abstract.dll","2.0.0")
                                         },
                                         true,
-                                        "PackagePath"
+                                        "PackagePath",
+                                        "PackageHashPath"
                                     ),
                             }));
 
@@ -340,6 +348,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
             library.Should().HavePropertyValue("type", "package");
             library.Should().HavePropertyValue("serviceable", true);
             library.Should().HavePropertyValue("path", "PackagePath");
+            library.Should().HavePropertyValue("hashPath", "PackageHashPath");
         }
 
         [Fact]
@@ -367,7 +376,8 @@ namespace Microsoft.Extensions.DependencyModel.Tests
                                         new ResourceAssembly[] { },
                                         new Dependency[] { },
                                         true,
-                                        "PackagePath"
+                                        "PackagePath",
+                                        "PackageHashPath"
                                     ),
                             }));
 
@@ -417,7 +427,8 @@ namespace Microsoft.Extensions.DependencyModel.Tests
                                         },
                                         new Dependency[] { },
                                         true,
-                                        "PackagePath"
+                                        "PackagePath",
+                                        "PackageHashPath"
                                     ),
                             }));
 
@@ -452,7 +463,8 @@ namespace Microsoft.Extensions.DependencyModel.Tests
                                         },
                                         new Dependency[] { },
                                         true,
-                                        "PackagePath"
+                                        "PackagePath",
+                                        "PackageHashPath"
                                     ),
                             }));
 
@@ -484,7 +496,8 @@ namespace Microsoft.Extensions.DependencyModel.Tests
                                             new Dependency("Fruits.Abstract.dll","2.0.0")
                                         },
                                         true,
-                                        "PackagePath"
+                                        "PackagePath",
+                                        "PackageHashPath"
                                     )
                             }));
 
