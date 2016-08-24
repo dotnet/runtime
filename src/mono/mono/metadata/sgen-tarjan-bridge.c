@@ -81,6 +81,36 @@ class_kind (MonoClass *klass)
 //enable usage logging
 // #define DUMP_GRAPH 1
 
+/* Used in bridgeless_color_is_heavy:
+ * The idea here is as long as the reference fanin and fanout on a node are both 2 or greater, then
+ * removing that node will result in a net increase in edge count. So the question is which node
+ * removals are counterproductive (i.e., how many edges saved balances out one node added).
+ * The number of edges saved by preserving a node is (fanin*fanout - fanin - fanout).
+ *
+ * With all that in mind:
+ *
+ * - HEAVY_REFS_MIN is the number that *both* fanin and fanout must meet to preserve the node.
+ * - HEAVY_COMBINED_REFS_MIN is the number (fanin*fanout) must meet to preserve the node.
+ *
+ * Note HEAVY_COMBINED_REFS_MIN must be <= 2*INCOMING_COLORS_MAX, or we won't know the true fanin.
+ */
+
+#define HEAVY_REFS_MIN 2
+#define HEAVY_COMBINED_REFS_MIN 60
+
+/* Used in ColorData:
+ * The higher INCOMING_COLORS_BITS is the higher HEAVY_COMBINED_REFS_MIN can be (see above).
+ * However, API_INDEX_BITS + INCOMING_COLORS_BITS must be equal to 31, and if API_INDEX_BITS is too
+ * low then terrible things will happen if too many colors are generated. (The number of colors we
+ * will ever attempt to generate is currently naturally limited by the JNI GREF limit.)
+ */
+
+#define API_INDEX_BITS        26
+#define INCOMING_COLORS_BITS  5
+
+#define API_INDEX_MAX         ((1<<API_INDEX_BITS)-1)
+#define INCOMING_COLORS_MAX   ((1<<INCOMING_COLORS_BITS)-1)
+
 // ScanData state
 enum {
 	INITIAL,
@@ -94,18 +124,14 @@ Optimizations:
 	We can split this data structure in two, those with bridges and those without
 	(and only bridgeless need to record incoming_colors)
 */
-#define API_INDEX_BITS        26
-#define INCOMING_COLORS_BITS  5
-#define API_INDEX_MAX         ((1<<API_INDEX_BITS)-1)
-#define INCOMING_COLORS_MAX   ((1<<INCOMING_COLORS_BITS)-1)
 typedef struct {
-    // Colors (ColorDatas) linked to by objects with this color
+	// Colors (ColorDatas) linked to by objects with this color
 	DynPtrArray other_colors;
-    // Bridge objects (GCObjects) held by objects with this color
+	// Bridge objects (GCObjects) held by objects with this color
 	DynPtrArray bridges;
-    // Index of this color's MonoGCBridgeSCC in the array passed to the client (or -1 for none)
+	// Index of this color's MonoGCBridgeSCC in the array passed to the client (or -1 for none)
 	signed api_index         : API_INDEX_BITS;
-    // Count of colors that list this color in their other_colors
+	// Count of colors that list this color in their other_colors
 	unsigned incoming_colors : INCOMING_COLORS_BITS;
 	unsigned visited : 1;
 } ColorData;
@@ -130,25 +156,21 @@ typedef struct _ScanData {
 	unsigned obj_state : 2;
 } ScanData;
 
-#define HEAVY_REFS_MIN 2
-#define HEAVY_COMBINED_REFS_MIN 60
-
 /* Should color be made visible to client even though it has no bridges?
- * If fanin and fanout are both greater than 2, then returning TRUE here will add one node to
- * the final graph and reduce the total number of edges by some number. Return true if we
- * estimate the number of reduced edges to be enough to justify the new node.
- * Notice fanout is capped at INCOMING_COLORS_MAX so we can't know its exact true value.
+ * True if we predict the number of reduced edges to be enough to justify the extra node.
  */
-static inline gboolean bridgeless_color_is_heavy (ColorData *data) {
-   int fanin = data->incoming_colors;
-   int fanout = dyn_array_ptr_size (&data->other_colors);
-   return fanin > HEAVY_REFS_MIN && fanout > HEAVY_REFS_MIN
-       && fanin*fanout >= HEAVY_COMBINED_REFS_MIN;
+static inline gboolean
+bridgeless_color_is_heavy (ColorData *data) {
+	int fanin = data->incoming_colors;
+	int fanout = dyn_array_ptr_size (&data->other_colors);
+	return fanin > HEAVY_REFS_MIN && fanout > HEAVY_REFS_MIN
+		&& fanin*fanout >= HEAVY_COMBINED_REFS_MIN;
 }
 
 // Should color be made visible to client?
-static inline gboolean color_visible_to_client (ColorData *data) {
-   return dyn_array_ptr_size (&data->bridges) || bridgeless_color_is_heavy (data);
+static inline gboolean
+color_visible_to_client (ColorData *data) {
+	return dyn_array_ptr_size (&data->bridges) || bridgeless_color_is_heavy (data);
 }
 
 // Stacks of ScanData objects used for tarjan algorithm.
@@ -1177,6 +1199,7 @@ sgen_tarjan_bridge_init (SgenBridgeProcessor *collector)
 	sgen_register_fixed_internal_mem_type (INTERNAL_MEM_TARJAN_OBJ_BUCKET, BUCKET_SIZE);
 	g_assert (sizeof (ObjectBucket) <= BUCKET_SIZE);
 	g_assert (sizeof (ColorBucket) <= BUCKET_SIZE);
+	g_assert (API_INDEX_BITS + INCOMING_COLORS_BITS <= 31);
 	bridge_processor = collector;
 }
 
