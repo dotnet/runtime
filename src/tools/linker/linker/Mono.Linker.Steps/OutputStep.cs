@@ -129,7 +129,7 @@ namespace Mono.Linker.Steps {
 
 		static FileInfo GetOriginalAssemblyFileInfo (AssemblyDefinition assembly)
 		{
-			return new FileInfo (assembly.MainModule.FullyQualifiedName);
+			return new FileInfo (assembly.MainModule.FileName);
 		}
 
 		static void CopyAssembly (FileInfo fi, string directory, bool symbols)
