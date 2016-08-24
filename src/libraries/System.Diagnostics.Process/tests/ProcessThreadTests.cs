@@ -117,25 +117,16 @@ namespace System.Diagnostics.Tests
         [Fact]
         public void TestStartAddressProperty()
         {
-            Process p = Process.GetCurrentProcess();
-            try
+            using (Process p = Process.GetCurrentProcess())
             {
-                if (p.Threads.Count != 0)
-                {
-                    ProcessThread thread = p.Threads[0];
-                    if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                    {
-                        Assert.True((long)thread.StartAddress >= 0);
-                    }
-                    else
-                    {
-                        Assert.Equal(RuntimeInformation.IsOSPlatform(OSPlatform.OSX), thread.StartAddress == IntPtr.Zero);
-                    }
-                }
-            }
-            finally
-            {
-                p.Dispose();
+                ProcessThreadCollection threads = p.Threads;
+                Assert.NotNull(threads);
+                Assert.NotEmpty(threads);
+
+                IntPtr startAddress = threads[0].StartAddress; 
+
+                // There's nothing we can really validate about StartAddress, other than that we can get its value
+                // without throwing.  All values (even zero) are valid on all platforms.
             }
         }
 
