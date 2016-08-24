@@ -335,6 +335,9 @@
         <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\int64\superlong\_il_relsuperlong\_il_relsuperlong.cmd">
              <Issue>6778</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\GC\Scenarios\DoublinkList\dlstack\*">
+             <Issue>6553</Issue>
+        </ExcludeList>
     </ItemGroup>
     
     <!-- Tests that need to be triaged for vararg usage as that is not supported -->
