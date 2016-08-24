@@ -1,21 +1,10 @@
 namespace System.Globalization
 {
-    public partial class CompareInfo : System.Runtime.Serialization.IDeserializationCallback
-    {
-        public int LCID { get { throw new NotImplementedException(); } }
-        public static System.Globalization.CompareInfo GetCompareInfo(int culture) { throw new NotImplementedException(); }
-        public static System.Globalization.CompareInfo GetCompareInfo(int culture, System.Reflection.Assembly assembly) { throw new NotImplementedException(); }
-    }
-
     public partial class CultureInfo : System.ICloneable, System.IFormatProvider
     {
-        public CultureInfo(int culture) { throw new NotImplementedException(); }
-        public CultureInfo(int culture, bool useUserOverride) { throw new NotImplementedException(); }
-        public virtual int LCID { get { throw new NotImplementedException(); } }
         public virtual string ThreeLetterISOLanguageName { get { throw new NotImplementedException(); } }
         public virtual string ThreeLetterWindowsLanguageName { get { throw new NotImplementedException(); } }
         public static System.Globalization.CultureInfo CreateSpecificCulture(string name) { throw new NotImplementedException(); }
-        public static System.Globalization.CultureInfo GetCultureInfo(int culture) { throw new NotImplementedException(); }
         public static System.Globalization.CultureInfo GetCultureInfoByIetfLanguageTag(string name) { throw new NotImplementedException(); }
         public static System.Globalization.CultureInfo[] GetCultures(System.Globalization.CultureTypes types) { throw new NotImplementedException(); }
     }
@@ -34,15 +23,8 @@ namespace System.Globalization
         public String TimeSeparator { set { throw null; } }
     }*/
 
-    public sealed partial class NumberFormatInfo : System.ICloneable, System.IFormatProvider
-    {
-        [System.Runtime.InteropServices.ComVisibleAttribute(false)]
-        public System.Globalization.DigitShapes DigitSubstitution { get { throw new NotImplementedException(); } set { throw new NotImplementedException(); } }
-    }
-
     public partial class RegionInfo
     {
-        public RegionInfo(int culture) { throw new NotImplementedException(); }
         public virtual string ThreeLetterISORegionName { get { throw new NotImplementedException(); } }
         public virtual string ThreeLetterWindowsRegionName { get { throw new NotImplementedException(); } }
     }
@@ -69,7 +51,6 @@ namespace System.Globalization
         public virtual int ANSICodePage { get { throw new NotImplementedException(); } }
         public virtual int EBCDICCodePage { get { throw new NotImplementedException(); } }
         [System.Runtime.InteropServices.ComVisibleAttribute(false)]
-        public int LCID { get { throw new NotImplementedException(); } }
         public virtual int MacCodePage { get { throw new NotImplementedException(); } }
         public virtual int OEMCodePage { get { throw new NotImplementedException(); } }
         public string ToTitleCase(string str) { throw new NotImplementedException(); }
