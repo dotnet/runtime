@@ -27,9 +27,6 @@
     <Compile Include="CMain.il" />
   </ItemGroup>
 
-  <ItemGroup>
-    <None Include="app.config" />
-  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="BarImpl.ilproj" />

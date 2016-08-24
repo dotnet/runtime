@@ -20,9 +20,6 @@
     <Compile Include="Generated31.il" />
   </ItemGroup>
 
-  <ItemGroup>
-    <None Include="..\app.config" />
-  </ItemGroup>
   
   <ItemGroup>
     <ProjectReference Include="..\TestFramework\TestFramework.csproj" />
