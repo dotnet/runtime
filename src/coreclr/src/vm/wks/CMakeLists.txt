@@ -30,7 +30,7 @@ if (WIN32)
 
           # Inserts a custom command in CMake build to preprocess each asm source file
           get_filename_component(name ${ASM_FILE} NAME_WE)
-          file(TO_CMAKE_PATH "$ENV{__IntermediatesDir}/${name}.asm" ASM_PREPROCESSED_FILE)
+          file(TO_CMAKE_PATH "${CMAKE_CURRENT_BINARY_DIR}/${name}.asm" ASM_PREPROCESSED_FILE)
           preprocess_def_file(${ASM_FILE} ${ASM_PREPROCESSED_FILE})
 
           # On Arm32, compile the preprocessed binary to .obj
@@ -40,7 +40,6 @@ if (WIN32)
           # Generate the batch file that will invoke the assembler
           file(TO_CMAKE_PATH "${CMAKE_CURRENT_BINARY_DIR}/runasm_${name}_${CMAKE_BUILD_TYPE}.cmd" ASM_SCRIPT_FILE)
 
-          # ARM32TODO: Set asm options global so that all invocations can use it.
           file(GENERATE OUTPUT "${ASM_SCRIPT_FILE}"
                     CONTENT "\"${CMAKE_ASM_MASM_COMPILER}\" -g ${ASM_INCLUDE_DIRECTORIES} ${ASM_DEFINITIONS} ${ASM_CMDLINE}")
 
