@@ -277,6 +277,7 @@ namespace System.Runtime.Serialization
         public Type OriginalUnderlyingType
         {
             get { return _helper.OriginalUnderlyingType; }
+            set { _helper.OriginalUnderlyingType = value; }
         }
 
         public virtual bool IsBuiltInDataContract
@@ -1109,6 +1110,10 @@ namespace System.Runtime.Serialization
                         _originalUnderlyingType = GetDataContractOriginalType(this._underlyingType);
                     }
                     return _originalUnderlyingType;
+                }
+                set
+                {
+                    _originalUnderlyingType = value;
                 }
             }
             internal virtual bool IsBuiltInDataContract
