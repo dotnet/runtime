@@ -329,9 +329,6 @@
         <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\perffix\primitivevt\mixed1_cs_do\mixed1_cs_do.cmd">
              <Issue>6097</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V1-M11-Beta1\b44410\b44410\b44410.cmd">
-             <Issue>6588</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\eh\basics\loopEH\loopEH.cmd">
              <Issue>6778</Issue>
         </ExcludeList>
