@@ -187,6 +187,10 @@ while :; do
             __ClangMajorVersion=3
             __ClangMinorVersion=8
             ;;
+        clang3.9)
+            __ClangMajorVersion=3
+            __ClangMinorVersion=9
+            ;;
         cross)
             __CrossBuild=1
             ;;
