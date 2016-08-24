@@ -15,30 +15,6 @@
 #if !defined(HOST_WIN32)
 
 #include <glib.h>
-#include <pthread.h>
-#include <errno.h>
-#include <unistd.h>
-#ifdef HAVE_SIGNAL_H
-#include <signal.h>
-#endif
-#include <string.h>
-#include <sys/types.h>
-#ifdef HAVE_SYS_SOCKET_H
-#  include <sys/socket.h>
-#endif
-#ifdef HAVE_SYS_UN_H
-#  include <sys/un.h>
-#endif
-#ifdef HAVE_SYS_MMAN_H
-#  include <sys/mman.h>
-#endif
-#ifdef HAVE_DIRENT_H
-#  include <dirent.h>
-#endif
-#include <sys/stat.h>
-#ifdef HAVE_SYS_RESOURCE_H
-#  include <sys/resource.h>
-#endif
 
 #include "w32handle.h"
 
