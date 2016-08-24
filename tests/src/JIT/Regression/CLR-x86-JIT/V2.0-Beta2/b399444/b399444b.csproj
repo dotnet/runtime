@@ -37,10 +37,6 @@
     <Compile Include="Repro.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="$(JitPackagesConfigFileDirectory)extra\project.json" />
-    <None Include="app.config" />
-  </ItemGroup>
-  <ItemGroup>
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
   </ItemGroup>
   <PropertyGroup>
