@@ -50,9 +50,13 @@ namespace System.Text
 
             Surrogate:
             Real Unicode value = (HighSurrogate - 0xD800) * 0x400 + (LowSurrogate - 0xDC00) + 0x10000
-         */
+        */
 
         private const int UTF8_CODEPAGE=65001;
+        
+        // Used by Encoding.UTF8 for lazy initialization
+        // The initialization code will not be run until a static member of the class is referenced
+        internal static readonly UTF8Encoding s_default = new UTF8Encoding(encoderShouldEmitUTF8Identifier: true);
 
         // Yes, the idea of emitting U+FEFF as a UTF-8 identifier has made it into
         // the standard.
