@@ -98,6 +98,7 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetsUnix)' != 'true'">
+    <FeatureUseLcid>true</FeatureUseLcid>
     <FeatureImplicitLongPath>true</FeatureImplicitLongPath>
   </PropertyGroup>
 </Project>
