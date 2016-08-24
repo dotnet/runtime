@@ -7,6 +7,7 @@
 #include "pal_utilities.h"
 
 #include <assert.h>
+#include <poll.h>
 
 static_assert(PAL_CURLM_CALL_MULTI_PERFORM == CURLM_CALL_MULTI_PERFORM, "");
 static_assert(PAL_CURLM_OK == CURLM_OK, "");
@@ -69,8 +70,36 @@ extern "C" int32_t HttpNative_MultiWait(CURLM* multiHandle,
     int numFds;
     CURLMcode result = curl_multi_wait(multiHandle, &extraFds, 1, FailsafeTimeoutMilliseconds, &numFds);
 
-    *isExtraFileDescriptorActive = (extraFds.revents & CURL_WAIT_POLLIN) != 0;
-    *isTimeout = numFds == 0;
+    if (numFds == 0)
+    {
+        *isTimeout = true;
+        *isExtraFileDescriptorActive = false;
+    }
+    else
+    {
+        *isTimeout = false;
+
+        //
+        // Prior to libcurl version 7.32.0, the revents field was not returned properly for "extra" file descriptors
+        // passed to curl_multi_wait.  See https://github.com/dotnet/corefx/issues/9751.  So if we have a libcurl
+        // prior to that version, we need to do our own poll to get the status of the extra file descriptor.
+        //
+        if (curl_version_info(CURLVERSION_NOW)->version_num >= 0x073200)
+        {
+            *isExtraFileDescriptorActive = (extraFds.revents & CURL_WAIT_POLLIN) != 0;
+        }
+        else
+        {
+            pollfd pfd = { .fd = ToFileDescriptor(extraFileDescriptor),.events = POLLIN,.revents = 0 };
+            poll(&pfd, 1, 0);
+
+            //
+            // We ignore any failure in poll(), to preserve the result from curl_multi_wait.  If poll() fails, it should
+            // leave revents cleared.
+            //
+            *isExtraFileDescriptorActive = (pfd.revents & POLLIN) != 0;
+        }
+    }
 
     return result;
 }
