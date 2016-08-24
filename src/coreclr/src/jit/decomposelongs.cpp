@@ -569,7 +569,6 @@ GenTree* DecomposeLongs::DecomposeCall(LIR::Use& use)
 // Return Value:
 //    The next node to process.
 //
-// TODO-LIR: replace comments below that use embedded statements with ones that do not.
 GenTree* DecomposeLongs::DecomposeStoreInd(LIR::Use& use)
 {
     assert(use.IsInitialized());
@@ -579,32 +578,16 @@ GenTree* DecomposeLongs::DecomposeStoreInd(LIR::Use& use)
 
     assert(tree->gtOp.gtOp2->OperGet() == GT_LONG);
 
-    // Example input trees (a nested embedded statement case)
+    // Example input (address expression omitted):
     //
-    //   <linkBegin Node>
-    //   *  stmtExpr  void  (top level) (IL   ???...  ???)
-    //   |  /--*  argPlace  ref    $280
-    //   |  +--*  argPlace  int    $4a
-    //   |  |  {  *  stmtExpr  void  (embedded) (IL   ???...  ???)
-    //   |  |  {  |     /--*  lclVar    ref    V11 tmp9         u:3 $21c
-    //   |  |  {  |     +--*  const     int    4 $44
-    //   |  |  {  |  /--*  +         byref  $2c8
-    //   |  |  {  |  |     {  *  stmtExpr  void  (embedded) (IL   ???...  ???)
-    //   |  |  {  |  |     {  |  /--*  lclFld    long   V01 arg1         u:2[+8] Fseq[i] $380
-    //   |  |  {  |  |     {  \--*  st.lclVar long  (P) V21 cse8
-    //   |  |  {  |  |     {  \--*    int    V21.hi (offs=0x00) -> V22 rat0
-    //   |  |  {  |  |     {  \--*    int    V21.hi (offs=0x04) -> V23 rat1
-    //   |  |  {  |  |  /--*  lclVar    int    V22 rat0          $380
-    //   |  |  {  |  |  +--*  lclVar    int    V23 rat1
-    //   |  |  {  |  +--*  gt_long   long
-    //   |  |  {  \--*  storeIndir long
-    //   |  +--*  lclVar    ref    V11 tmp9         u:3 (last use) $21c
-    //   |  +--*  lclVar    ref    V02 tmp0         u:3 $280
-    //   |  +--*  const     int    8 $4a
-    //   \--*  call help void   HELPER.CORINFO_HELP_ARRADDR_ST $205
-    //  <linkEndNode>
-    //
-    // (editor brace matching compensation: }}}}}}}}}}}}}}}}}})
+    //  t51 = const     int    0x37C05E7D
+    // t154 = const     int    0x2A0A3C80
+    //      / --*  t51    int
+    //      + --*  t154   int
+    // t155 = *gt_long   long
+    //      / --*  t52    byref
+    //      + --*  t155   long
+    //      *  storeIndir long
 
     GenTree* gtLong      = tree->gtOp.gtOp2;
     unsigned blockWeight = m_block->getBBWeight(m_compiler);
@@ -631,73 +614,15 @@ GenTree* DecomposeLongs::DecomposeStoreInd(LIR::Use& use)
         DISPTREERANGE(BlockRange(), op2.Def());
     }
 
-    // Example trees after embedded statements for address and data are added.
-    // This example saves all address and data trees into temp variables
-    // to show how those embedded statements are created.
-    //
-    //  *  stmtExpr  void  (top level) (IL   ???...  ???)
-    //  |  /--*  argPlace  ref    $280
-    //  |  +--*  argPlace  int    $4a
-    //  |  |  {  *  stmtExpr  void  (embedded) (IL   ???...  ???)
-    //  |  |  {  |     /--*  lclVar    ref    V11 tmp9         u:3 $21c
-    //  |  |  {  |     +--*  const     int    4 $44
-    //  |  |  {  |  /--*  +         byref  $2c8
-    //  |  |  {  \--*  st.lclVar byref  V24 rat2
-    //  |  |  {  *  stmtExpr  void  (embedded) (IL   ???...  ???)
-    //  |  |  {  |  /--*  lclVar    byref  V24 rat2
-    //  |  |  {  |  |     {  *  stmtExpr  void  (embedded) (IL   ???...  ???)
-    //  |  |  {  |  |     {  |  /--*  lclFld    long   V01 arg1         u:2[+8] Fseq[i] $380380
-    //  |  |  {  |  |     {  \--*  st.lclVar long  (P) V21 cse8
-    //  |  |  {  |  |     {  \--*    int    V21.hi (offs=0x00) -> V22 rat0
-    //  |  |  {  |  |     {  \--*    int    V21.hi (offs=0x04) -> V23 rat1
-    //  |  |  {  |  |     {  *  stmtExpr  void  (embedded) (IL   ???...  ???)
-    //  |  |  {  |  |     {  |  /--*  lclVar    int    V22 rat0          $380
-    //  |  |  {  |  |     {  \--*  st.lclVar int    V25 rat3
-    //  |  |  {  |  |  /--*  lclVar    int    V25 rat3
-    //  |  |  {  |  |  |  {  *  stmtExpr  void  (embedded) (IL   ???...  ???)
-    //  |  |  {  |  |  |  {  |  /--*  lclVar    int    V23 rat1
-    //  |  |  {  |  |  |  {  \--*  st.lclVar int    V26 rat4
-    //  |  |  {  |  |  +--*  lclVar    int    V26 rat4
-    //  |  |  {  |  +--*  gt_long   long
-    //  |  |  {  \--*  storeIndir long
-    //  |  +--*  lclVar    ref    V11 tmp9         u:3 (last use) $21c
-    //  |  +--*  lclVar    ref    V02 tmp0         u:3 $280
-    //  |  +--*  const     int    8 $4a
-    //  \--*  call help void   HELPER.CORINFO_HELP_ARRADDR_ST $205
-    //
-    // (editor brace matching compensation: }}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}})
-
     GenTree* addrBase    = tree->gtOp.gtOp1;
     GenTree* dataHigh    = gtLong->gtOp.gtOp2;
     GenTree* dataLow     = gtLong->gtOp.gtOp1;
     GenTree* storeIndLow = tree;
 
-    // Rewrite storeIndLow tree to save only lower 32-bit data.
-    //
-    //  |  |  {  |  /--*  lclVar    byref  V24 rat2   (address)
-    //  ...
-    //  |  |  {  |  +--*  lclVar    int    V25 rat3   (lower 32-bit data)
-    //  |  |  {  |  {  *  stmtExpr  void  (embedded) (IL   ???...  ???)
-    //  |  |  {  |  {  |  /--*  lclVar    int    V23 rat1
-    //  |  |  {  |  {  \--*  st.lclVar int    V26 rat4
-    //  |  |  {  \--*  storeIndir int
-    //
-    // (editor brace matching compensation: }}}}}}}}})
-
     BlockRange().Remove(gtLong);
     BlockRange().Remove(dataHigh);
     storeIndLow->gtOp.gtOp2 = dataLow;
     storeIndLow->gtType     = TYP_INT;
-
-    // Construct storeIndHigh tree
-    //
-    // | | {  *stmtExpr  void  (embedded)(IL ? ? ? ... ? ? ? )
-    // | | { | / --*  lclVar    int    V26 rat4
-    // | | { | | / --*  lclVar    byref  V24 rat2
-    // | | { | +--*  lea(b + 4)  ref
-    // | | {  \--*  storeIndir int
-    //
-    // (editor brace matching compensation: }}}}})
 
     GenTree* addrBaseHigh = new (m_compiler, GT_LCL_VAR)
         GenTreeLclVar(GT_LCL_VAR, addrBase->TypeGet(), addrBase->AsLclVarCommon()->GetLclNum(), BAD_IL_OFFSET);
@@ -711,47 +636,22 @@ GenTree* DecomposeLongs::DecomposeStoreInd(LIR::Use& use)
 
     return storeIndHigh;
 
-    // Example final output
+    // Example final output:
     //
-    //  *  stmtExpr  void  (top level) (IL   ???...  ???)
-    //  |  /--*  argPlace  ref    $280
-    //  |  +--*  argPlace  int    $4a
-    //  |  |     {  *  stmtExpr  void  (embedded) (IL   ???...  ???)
-    //  |  |     {  |     /--*  lclVar    ref    V11 tmp9         u:3 $21c
-    //  |  |     {  |     +--*  const     int    4 $44
-    //  |  |     {  |  /--*  +         byref  $2c8
-    //  |  |     {  \--*  st.lclVar byref  V24 rat2
-    //  |  |     {  *  stmtExpr  void  (embedded) (IL   ???...  ???)
-    //  |  |     {  |  /--*  lclVar    byref  V24 rat2
-    //  |  |     {  |  |  {  *  stmtExpr  void  (embedded) (IL   ???...  ???)
-    //  |  |     {  |  |  {  |     /--*  lclFld    int    V01 arg1         u:2[+8] Fseq[i] $380
-    //  |  |     {  |  |  {  |     +--*  lclFld    int    V01 arg1         [+12]
-    //  |  |     {  |  |  {  |  /--*  gt_long   long
-    //  |  |     {  |  |  {  \--*  st.lclVar long  (P) V21 cse8
-    //  |  |     {  |  |  {  \--*    int    V21.hi (offs=0x00) -> V22 rat0
-    //  |  |     {  |  |  {  \--*    int    V21.hi (offs=0x04) -> V23 rat1
-    //  |  |     {  |  |  {  *  stmtExpr  void  (embedded) (IL   ???...  ???)
-    //  |  |     {  |  |  {  |  /--*  lclVar    int    V22 rat0          $380
-    //  |  |     {  |  |  {  \--*  st.lclVar int    V25 rat3
-    //  |  |     {  |  +--*  lclVar    int    V25 rat3
-    //  |  |     {  |  {  *  stmtExpr  void  (embedded) (IL   ???...  ???)
-    //  |  |     {  |  {  |  /--*  lclVar    int    V23 rat1
-    //  |  |     {  |  {  \--*  st.lclVar int    V26 rat4
-    //  |  |     {  \--*  storeIndir int
-    //  |  |     {  *  stmtExpr  void  (embedded) (IL   ???...  ???)
-    //  |  |     {  |  /--*  lclVar    int    V26 rat4
-    //  |  |     {  |  |  /--*  lclVar    byref  V24 rat2
-    //  |  |     {  |  +--*  lea(b+4)  ref
-    //  |  |     {  \--*  storeIndir int
-    //  |  |  /--*  lclVar    ref    V11 tmp9         u:3 (last use) $21c
-    //  |  +--*  putarg_stk [+0x00] ref
-    //  |  |  /--*  lclVar    ref    V02 tmp0         u:3 $280
-    //  |  +--*  putarg_reg ref
-    //  |  |  /--*  const     int    8 $4a
-    //  |  +--*  putarg_reg int
-    //  \--*  call help void   HELPER.CORINFO_HELP_ARRADDR_ST $205
-    //
-    // (editor brace matching compensation: }}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}})
+    //      /--*  t52    byref
+    //      *  st.lclVar byref  V07 rat0
+    // t158 = lclVar    byref  V07 rat0
+    //  t51 = const     int    0x37C05E7D
+    //      /--*  t158   byref
+    //      +--*  t51    int
+    //      *  storeIndir int
+    // t154 = const     int    0x2A0A3C80
+    // t159 = lclVar    byref  V07 rat0
+    //        /--*  t159   byref
+    // t160 = *  lea(b + 4)  ref
+    //      /--*  t154   int
+    //      +--*  t160   ref
+    //      *  storeIndir int
 }
 
 //------------------------------------------------------------------------
