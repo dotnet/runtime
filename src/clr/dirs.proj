@@ -20,10 +20,6 @@
     <ProjectFile Include="src\dirs.proj" Condition="'$(BuildSysBuildOnlyForARM64)' == 'true'" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(BuildExePhase)' == '1' and '$(FeatureCoreclr)' == 'true'">
-    <ProjectFile Include="xplat\GetAllXPlatBinaries.proj" Condition="'$(BuildArchitecture)' == 'amd64'" />
-  </ItemGroup>
-
   <!--Import the targets-->
   <Import Project="$(_NTDRIVE)$(_NTROOT)\tools\Microsoft.DevDiv.Traversal.targets" />
 </Project>
