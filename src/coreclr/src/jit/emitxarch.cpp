@@ -2975,7 +2975,6 @@ regNumber emitter::emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, G
                 // src is a class static variable
                 // dst is a register
                 emitIns_R_C(ins, attr, dst->gtRegNum, memBase->gtClsVar.gtClsVarHnd, 0);
-                codeGen->genProduceReg(dst);
             }
         }
         else // The memory op is in the dest position.
