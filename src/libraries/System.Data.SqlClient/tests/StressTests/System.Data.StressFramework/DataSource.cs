@@ -51,7 +51,7 @@ namespace Stress.Data
         /// <summary>
         /// this method is used to create the data source, based on its type
         /// </summary>
-        static public DataSource Create(string name, DataSourceType sourceType, bool isDefault, IDictionary<string, string> properties)
+        public static DataSource Create(string name, DataSourceType sourceType, bool isDefault, IDictionary<string, string> properties)
         {
             switch (sourceType)
             {

@@ -54,7 +54,6 @@ namespace Stress.Data
         public abstract string GetParameterName(string pName);
 
 
-        // TODO: can use use AutoIncrement on schema column infor instead?
         public abstract bool PrimaryKeyValueIsRequired
         {
             get;
