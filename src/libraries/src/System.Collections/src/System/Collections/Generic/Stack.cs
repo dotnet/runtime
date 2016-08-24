@@ -20,6 +20,9 @@ namespace System.Collections.Generic
 
     [DebuggerTypeProxy(typeof(StackDebugView<>))]
     [DebuggerDisplay("Count = {Count}")]
+#if netstandard17
+    [Serializable]
+#endif
     public class Stack<T> : IEnumerable<T>,
         System.Collections.ICollection,
         IReadOnlyCollection<T>
@@ -27,6 +30,9 @@ namespace System.Collections.Generic
         private T[] _array;     // Storage for stack elements
         private int _size;           // Number of items in the stack.
         private int _version;        // Used to keep enumerator in sync w/ collection.
+#if netstandard17
+        [NonSerialized]
+#endif
         private object _syncRoot;
 
         private const int DefaultCapacity = 4;
@@ -255,6 +261,9 @@ namespace System.Collections.Generic
 
         /// <include file='doc\Stack.uex' path='docs/doc[@for="StackEnumerator"]/*' />
         [SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes", Justification = "not an expected scenario")]
+#if netstandard17
+        [Serializable]
+#endif
         public struct Enumerator : IEnumerator<T>,
             System.Collections.IEnumerator
         {

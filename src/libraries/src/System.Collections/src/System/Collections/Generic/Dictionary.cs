@@ -7,13 +7,22 @@ using System.Collections;
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Runtime.CompilerServices;
+#if netstandard17
+using System.Runtime.Serialization;
+#endif
 
 namespace System.Collections.Generic
 {
     [DebuggerTypeProxy(typeof(IDictionaryDebugView<,>))]
     [DebuggerDisplay("Count = {Count}")]
     [System.Runtime.InteropServices.ComVisible(false)]
+#if netstandard17
+    [Serializable]
+#endif
     public class Dictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDictionary, IReadOnlyDictionary<TKey, TValue>
+#if netstandard17
+        , ISerializable, IDeserializationCallback
+#endif
     {
         private struct Entry
         {
@@ -34,6 +43,14 @@ namespace System.Collections.Generic
         private KeyCollection keys;
         private ValueCollection values;
         private object _syncRoot;
+
+#if netstandard17
+        // constants for serialization
+        private const String VersionName = "Version";
+        private const String HashSizeName = "HashSize"; // Must save buckets.Length
+        private const String KeyValuePairsName = "KeyValuePairs";
+        private const String ComparerName = "Comparer";
+#endif
 
         public Dictionary() : this(0, null) { }
 
@@ -82,6 +99,16 @@ namespace System.Collections.Generic
                 Add(pair.Key, pair.Value);
             }
         }
+
+#if netstandard17
+        protected Dictionary(SerializationInfo info, StreamingContext context)
+        {
+            // We can't do anything with the keys and values until the entire graph has been deserialized
+            // and we have a resonable estimate that GetHashCode is not going to fail.  For the time being,
+            // we'll just cache this.  The graph is not valid until OnDeserialization has been called.
+            HashHelpers.SerializationInfoTable.Add(this, info);
+        }
+#endif
 
         public IEqualityComparer<TKey> Comparer
         {
@@ -273,6 +300,27 @@ namespace System.Collections.Generic
             return new Enumerator(this, Enumerator.KeyValuePair);
         }
 
+#if netstandard17
+        public virtual void GetObjectData(SerializationInfo info, StreamingContext context)
+        {
+            if (info == null)
+            {
+                throw new ArgumentNullException(nameof(info));
+            }
+
+            info.AddValue(VersionName, version);
+            info.AddValue(ComparerName, HashHelpers.GetEqualityComparerForSerialization(comparer), typeof(IEqualityComparer<TKey>));
+            info.AddValue(HashSizeName, buckets == null ? 0 : buckets.Length); // This is the length of the bucket array
+
+            if (buckets != null)
+            {
+                var array = new KeyValuePair<TKey, TValue>[Count];
+                CopyTo(array, 0);
+                info.AddValue(KeyValuePairsName, array, typeof(KeyValuePair<TKey, TValue>[]));
+            }
+        }
+#endif
+
         private int FindEntry(TKey key)
         {
             if (key == null)
@@ -365,6 +413,56 @@ namespace System.Collections.Generic
             }
 #endif
         }
+
+#if netstandard17
+        public virtual void OnDeserialization(object sender)
+        {
+            SerializationInfo siInfo;
+            HashHelpers.SerializationInfoTable.TryGetValue(this, out siInfo);
+            if (siInfo == null)
+            {
+                // We can return immediately if this function is called twice. 
+                // Note we remove the serialization info from the table at the end of this method.
+                return;
+            }
+
+            int realVersion = siInfo.GetInt32(VersionName);
+            int hashsize = siInfo.GetInt32(HashSizeName);
+            comparer = (IEqualityComparer<TKey>)siInfo.GetValue(ComparerName, typeof(IEqualityComparer<TKey>));
+
+            if (hashsize != 0)
+            {
+                buckets = new int[hashsize];
+                for (int i = 0; i < buckets.Length; i++) buckets[i] = -1;
+                entries = new Entry[hashsize];
+                freeList = -1;
+
+                KeyValuePair<TKey, TValue>[] array = 
+                    (KeyValuePair<TKey, TValue>[])siInfo.GetValue(KeyValuePairsName, typeof(KeyValuePair<TKey, TValue>[]));
+
+                if (array == null)
+                {
+                    throw new SerializationException(ExceptionResource.Serialization_MissingKeys);
+                }
+
+                for (int i = 0; i < array.Length; i++)
+                {
+                    if (array[i].Key == null)
+                    {
+                        throw new SerializationException(ExceptionResource.Serialization_NullKey);
+                    }
+                    Insert(array[i].Key, array[i].Value, true);
+                }
+            }
+            else
+            {
+                buckets = null;
+            }
+
+            version = realVersion;
+            HashHelpers.SerializationInfoTable.Remove(this);
+        }
+#endif
 
         private void Resize()
         {
@@ -696,6 +794,9 @@ namespace System.Collections.Generic
             }
         }
 
+#if netstandard17
+        [Serializable]
+#endif
         public struct Enumerator : IEnumerator<KeyValuePair<TKey, TValue>>,
             IDictionaryEnumerator
         {
@@ -824,6 +925,9 @@ namespace System.Collections.Generic
 
         [DebuggerTypeProxy(typeof(DictionaryKeyCollectionDebugView<,>))]
         [DebuggerDisplay("Count = {Count}")]
+#if netstandard17
+        [Serializable]
+#endif
         public sealed class KeyCollection : ICollection<TKey>, ICollection, IReadOnlyCollection<TKey>
         {
             private Dictionary<TKey, TValue> dictionary;
@@ -975,6 +1079,9 @@ namespace System.Collections.Generic
                 get { return ((ICollection)dictionary).SyncRoot; }
             }
 
+#if netstandard17
+            [Serializable]
+#endif
             public struct Enumerator : IEnumerator<TKey>, System.Collections.IEnumerator
             {
                 private Dictionary<TKey, TValue> dictionary;
@@ -1053,6 +1160,9 @@ namespace System.Collections.Generic
 
         [DebuggerTypeProxy(typeof(DictionaryValueCollectionDebugView<,>))]
         [DebuggerDisplay("Count = {Count}")]
+#if netstandard17
+        [Serializable]
+#endif
         public sealed class ValueCollection : ICollection<TValue>, ICollection, IReadOnlyCollection<TValue>
         {
             private Dictionary<TKey, TValue> dictionary;
@@ -1202,6 +1312,9 @@ namespace System.Collections.Generic
                 get { return ((ICollection)dictionary).SyncRoot; }
             }
 
+#if netstandard17
+            [Serializable]
+#endif
             public struct Enumerator : IEnumerator<TValue>, System.Collections.IEnumerator
             {
                 private Dictionary<TKey, TValue> dictionary;

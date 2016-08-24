@@ -16,6 +16,9 @@ using System.Diagnostics.Contracts;
 
 namespace System.Collections
 {
+#if netstandard17
+    [Serializable]
+#endif
     public class CaseInsensitiveComparer : IComparer
     {
         private CompareInfo _compareInfo;

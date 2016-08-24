@@ -12,6 +12,9 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+#if netstandard17
+using System.Runtime.Serialization;
+#endif
 
 namespace System.Collections.Generic
 {
@@ -45,7 +48,13 @@ namespace System.Collections.Generic
     [SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix", Justification = "by design name choice")]
     [DebuggerTypeProxy(typeof(ICollectionDebugView<>))]
     [DebuggerDisplay("Count = {Count}")]
+#if netstandard17
+    [Serializable]
+#endif
     public class SortedSet<T> : ISet<T>, ICollection<T>, ICollection, IReadOnlyCollection<T>
+#if netstandard17
+        , ISerializable, IDeserializationCallback
+#endif
     {
         #region local variables/constants
         private Node _root;
@@ -53,6 +62,26 @@ namespace System.Collections.Generic
         private int _count;
         private int _version;
         private object _syncRoot;
+#if netstandard17
+        private SerializationInfo _siInfo; //A temporary variable which we need during deserialization
+        [NonSerialized]
+
+        private const String ComparerName = "Comparer";
+        private const String CountName = "Count";
+        private const String ItemsName = "Items";
+        private const String VersionName = "Version";
+        //needed for enumerator
+        private const String TreeName = "Tree";
+        private const String NodeValueName = "Item";
+        private const String EnumStartName = "EnumStarted";        
+        private const String ReverseName = "Reverse";
+        private const String EnumVersionName = "EnumVersion";
+        //needed for TreeSubset
+        private const String minName = "Min";
+        private const String maxName = "Max";
+        private const String lBoundActiveName = "lBoundActive";
+        private const String uBoundActiveName = "uBoundActive";
+#endif
 
         internal const int StackAllocThreshold = 100;
 
@@ -159,6 +188,13 @@ namespace System.Collections.Generic
                 }
             }
         }
+
+#if netstandard17
+        protected SortedSet(SerializationInfo info, StreamingContext context)
+        {
+            _siInfo = info;
+        }
+#endif
 
         #endregion
 
@@ -1876,8 +1912,14 @@ namespace System.Collections.Generic
         /// This class represents a subset view into the tree. Any changes to this view
         /// are reflected in the actual tree. Uses the Comparator of the underlying tree.
         /// </summary>
-        /// <typeparam name="T"></typeparam>   
+        /// <typeparam name="T"></typeparam>
+#if netstandard17
+        [Serializable]
+#endif
         internal sealed class TreeSubSet : SortedSet<T>
+#if netstandard17
+            , ISerializable, IDeserializationCallback
+#endif
         {
             private SortedSet<T> _underlying;
             private T _min, _max;
@@ -1908,6 +1950,14 @@ namespace System.Collections.Generic
                 _version = -1;
                 VersionCheckImpl();
             }
+
+#if netstandard17
+            private TreeSubSet(SerializationInfo info, StreamingContext context)
+            {
+                _siInfo = info;
+                OnDeserializationImpl(info);
+            }
+#endif
 
             /// <summary>
             /// Additions to this tree need to be added to the underlying tree as well
@@ -2163,11 +2213,158 @@ namespace System.Collections.Generic
                 Debug.Assert(this.versionUpToDate() && _root == _underlying.FindRange(_min, _max));
 #endif
             }
+
+#if netstandard17
+            void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
+            {
+                GetObjectData(info, context);
+            }
+
+            protected override void GetObjectData(SerializationInfo info, StreamingContext context)
+            {
+                if (info == null)
+                {
+                    throw new ArgumentNullException(nameof(info));
+                }
+            
+                info.AddValue(maxName, _max, typeof(T));
+                info.AddValue(minName, _min, typeof(T));
+                info.AddValue(lBoundActiveName, _lBoundActive);
+                info.AddValue(uBoundActiveName, _uBoundActive);
+
+                base.GetObjectData(info, context);
+            }
+
+            void IDeserializationCallback.OnDeserialization(Object sender)
+            {
+                // Don't do anything here as its already been done by the constructor
+            }
+
+            protected override void OnDeserialization(Object sender)
+            {
+                OnDeserializationImpl(sender);
+            }
+
+            private void OnDeserializationImpl(Object sender)
+            {
+                if (_siInfo == null)
+                {
+                    throw new SerializationException(SR.Serialization_InvalidOnDeser);
+                }
+
+                _comparer = (IComparer<T>)_siInfo.GetValue(ComparerName, typeof(IComparer<T>));
+                int savedCount = _siInfo.GetInt32(CountName);
+                _max = (T)_siInfo.GetValue(maxName, typeof(T));
+                _min = (T)_siInfo.GetValue(minName, typeof(T));
+                _lBoundActive = _siInfo.GetBoolean(lBoundActiveName);
+                _uBoundActive = _siInfo.GetBoolean(uBoundActiveName);
+                _underlying = new SortedSet<T>();
+
+                if (savedCount != 0)
+                {
+                    T[] items = (T[])_siInfo.GetValue(ItemsName, typeof(T[]));
+
+                    if (items == null)
+                    {
+                        throw new SerializationException(SR.Serialization_MissingValues);
+                    }
+
+                    for (int i = 0; i < items.Length; i++)
+                    {
+                        _underlying.Add(items[i]);
+                    }
+                }
+
+                _underlying._version = _siInfo.GetInt32(VersionName);
+                _count = _underlying._count;
+                _version = _underlying._version - 1;
+                VersionCheck(); //this should update the count to be right and update root to be right
+
+                if (_count != savedCount)
+                {
+                    throw new SerializationException(SR.Serialization_MismatchedCount);
+                }
+
+                _siInfo = null;
+            }
+#endif
         }
 
+#if netstandard17
+        void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
+        {
+            GetObjectData(info, context);
+        }
+
+        protected virtual void GetObjectData(SerializationInfo info, StreamingContext context)
+        {
+            if (info == null)
+            {
+                throw new ArgumentNullException(nameof(info));
+            }
+
+            info.AddValue(CountName, _count); //This is the length of the bucket array.
+            info.AddValue(ComparerName, _comparer, typeof(IComparer<T>));
+            info.AddValue(VersionName, _version);
+
+            if (_root != null)
+            {
+                T[] items = new T[Count];
+                CopyTo(items, 0);
+                info.AddValue(ItemsName, items, typeof(T[]));
+            }
+        }
+
+        void IDeserializationCallback.OnDeserialization(Object sender)
+        {
+            OnDeserialization(sender);
+        }
+
+        protected virtual void OnDeserialization(Object sender)
+        {
+            if (_comparer != null)
+            {
+                return; // Somebody had a dependency on this class and fixed us up before the ObjectManager got to it.
+            }
+
+            if (_siInfo == null)
+            {
+                throw new SerializationException(SR.Serialization_InvalidOnDeser);
+            }
+
+            _comparer = (IComparer<T>)_siInfo.GetValue(ComparerName, typeof(IComparer<T>));
+            int savedCount = _siInfo.GetInt32(CountName);
+
+            if (savedCount != 0)
+            {
+                T[] items = (T[])_siInfo.GetValue(ItemsName, typeof(T[]));
+
+                if (items == null)
+                {
+                    throw new SerializationException(SR.Serialization_MissingValues);
+                }
+
+                for (int i = 0; i < items.Length; i++)
+                {
+                    Add(items[i]);
+                }
+            }
+
+            _version = _siInfo.GetInt32(VersionName);
+            if (_count != savedCount)
+            {
+                throw new SerializationException(SR.Serialization_MismatchedCount);
+            }
+
+            _siInfo = null;
+        }
+#endif
         #endregion
 
         #region Helper Classes
+#if netstandard17
+        [Serializable]
+#endif
         internal sealed class Node
         {
             public bool IsRed;
@@ -2191,7 +2388,13 @@ namespace System.Collections.Generic
         }
 
         [SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes", Justification = "not an expected scenario")]
+#if netstandard17
+        [Serializable]
+#endif
         public struct Enumerator : IEnumerator<T>, IEnumerator
+#if netstandard17
+            , ISerializable, IDeserializationCallback
+#endif
         {
             private SortedSet<T> _tree;
             private int _version;
@@ -2200,13 +2403,15 @@ namespace System.Collections.Generic
             private SortedSet<T>.Node _current;
 
             private bool _reverse;
+#if netstandard17
+            private SerializationInfo _siInfo;
+            private static SortedSet<T>.Node s_dummyNode = new SortedSet<T>.Node(default(T));
+#endif
 
             internal Enumerator(SortedSet<T> set)
             {
                 _tree = set;
-                //this is a hack to make sure that the underlying subset has not been changed since
-                //TODO: more elegant way to ensure failfast on concurrency failures
-                _tree.VersionCheck();
+                _tree.VersionCheck(); // make sure that the underlying subset has not been changed since
 
                 _version = _tree._version;
 
@@ -2214,23 +2419,94 @@ namespace System.Collections.Generic
                 _stack = new Stack<SortedSet<T>.Node>(2 * (int)SortedSet<T>.log2(set.Count + 1));
                 _current = null;
                 _reverse = false;
+
+#if netstandard17
+                _siInfo = null;
+#endif
+
                 Intialize();
             }
 
             internal Enumerator(SortedSet<T> set, bool reverse)
             {
                 _tree = set;
-                //this is a hack to make sure that the underlying subset has not been changed since
-                //TODO: more elegant way to ensure failfast on concurrency failures
-                _tree.VersionCheck();
+                _tree.VersionCheck(); // make sure that the underlying subset has not been changed since
                 _version = _tree._version;
 
                 // 2lg(n + 1) is the maximum height
                 _stack = new Stack<SortedSet<T>.Node>(2 * (int)SortedSet<T>.log2(set.Count + 1));
                 _current = null;
                 _reverse = reverse;
+
+#if netstandard17
+                _siInfo = null;
+#endif
+
                 Intialize();
             }
+
+#if netstandard17
+            private Enumerator(SerializationInfo info, StreamingContext context)
+            {
+                _tree = null;
+                _version = -1;
+                _current = null;
+                _reverse = false;
+                _stack = null;
+                _siInfo = info;
+            }
+
+            void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
+            {
+                GetObjectData(info, context);
+            }
+
+            private void GetObjectData(SerializationInfo info, StreamingContext context)
+            {
+                if (info == null)
+                {
+                    throw new ArgumentNullException(nameof(info));
+                }
+
+                info.AddValue(TreeName, _tree, typeof(SortedSet<T>));
+                info.AddValue(EnumVersionName, _version);
+                info.AddValue(ReverseName, _reverse);
+                info.AddValue(EnumStartName, !NotStartedOrEnded);
+                info.AddValue(NodeValueName, (_current == null ? s_dummyNode.Item : _current.Item), typeof(T));
+            }
+
+            void IDeserializationCallback.OnDeserialization(Object sender)
+            {
+                OnDeserialization(sender);
+            }
+
+            private void OnDeserialization(Object sender)
+            {
+                if (_siInfo == null)
+                {
+                    throw new SerializationException(SR.Serialization_InvalidOnDeser);
+                }
+
+                _tree = (SortedSet<T>)_siInfo.GetValue(TreeName, typeof(SortedSet<T>));
+                _version = _siInfo.GetInt32(EnumVersionName);
+                _reverse = _siInfo.GetBoolean(ReverseName);
+                bool EnumStarted = _siInfo.GetBoolean(EnumStartName);
+                _stack = new Stack<SortedSet<T>.Node>(2 * (int)SortedSet<T>.log2(_tree.Count + 1));
+                _current = null;
+                if (EnumStarted)
+                {
+                    T item = (T)_siInfo.GetValue(NodeValueName, typeof(T));
+                    Intialize();
+
+                    //go until it reaches the value we want
+                    while (this.MoveNext())
+                    {
+                        if (_tree.Comparer.Compare(Current, item) == 0)
+                            break;
+                    }
+                }
+            }
+#endif
 
             private void Intialize()
             {
@@ -2259,8 +2535,7 @@ namespace System.Collections.Generic
 
             public bool MoveNext()
             {
-                //this is a hack to make sure that the underlying subset has not been changed since
-                //TODO: more elegant way to ensure failfast on concurrency failures
+                // Make sure that the underlying subset has not been changed since
                 _tree.VersionCheck();
 
                 if (_version != _tree._version)

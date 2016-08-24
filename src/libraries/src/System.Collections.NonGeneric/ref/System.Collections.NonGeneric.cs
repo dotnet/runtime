@@ -112,12 +112,14 @@ namespace System.Collections
         void System.Collections.IList.Insert(int index, object value) { }
         void System.Collections.IList.Remove(object value) { }
     }
-    public sealed partial class Comparer : System.Collections.IComparer
+    public sealed partial class Comparer : System.Collections.IComparer, System.Runtime.Serialization.ISerializable
     {
         public static readonly System.Collections.Comparer Default;
         public static readonly System.Collections.Comparer DefaultInvariant;
         public Comparer(System.Globalization.CultureInfo culture) { }
+        private Comparer(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public int Compare(object a, object b) { return default(int); }
+        public void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
     }
     public abstract partial class DictionaryBase : System.Collections.ICollection, System.Collections.IDictionary, System.Collections.IEnumerable
     {
@@ -150,7 +152,7 @@ namespace System.Collections
         void System.Collections.IDictionary.Remove(object key) { }
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { return default(System.Collections.IEnumerator); }
     }
-    public partial class Hashtable : System.Collections.ICollection, System.Collections.IDictionary, System.Collections.IEnumerable
+    public partial class Hashtable : System.Collections.ICollection, System.Collections.IDictionary, System.Collections.IEnumerable, System.Runtime.Serialization.ISerializable, System.Runtime.Serialization.IDeserializationCallback
     {
         public Hashtable() { }
         public Hashtable(System.Collections.IDictionary d) { }
@@ -172,6 +174,7 @@ namespace System.Collections
         public Hashtable(int capacity, float loadFactor, System.Collections.IEqualityComparer equalityComparer) { }
         [System.ObsoleteAttribute("Please use Hashtable(int, float, IEqualityComparer) instead.")]
         public Hashtable(int capacity, float loadFactor, System.Collections.IHashCodeProvider hcp, System.Collections.IComparer comparer) { }
+        protected Hashtable(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         [System.ObsoleteAttribute("Please use KeyComparer properties.")]
         protected System.Collections.IComparer comparer { get { return default(System.Collections.IComparer); } set { } }
         public virtual int Count { get { return default(int); } }
@@ -194,7 +197,9 @@ namespace System.Collections
         public virtual void CopyTo(System.Array array, int arrayIndex) { }
         public virtual System.Collections.IDictionaryEnumerator GetEnumerator() { return default(System.Collections.IDictionaryEnumerator); }
         protected virtual int GetHash(object key) { return default(int); }
+        public virtual void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         protected virtual bool KeyEquals(object item, object key) { return default(bool); }
+        public virtual void OnDeserialization(object sender) { }
         public virtual void Remove(object key) { }
         public static System.Collections.Hashtable Synchronized(System.Collections.Hashtable table) { return default(System.Collections.Hashtable); }
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { return default(System.Collections.IEnumerator); }

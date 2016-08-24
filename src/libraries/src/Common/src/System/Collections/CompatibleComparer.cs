@@ -6,6 +6,9 @@
 
 namespace System.Collections
 {
+#if netstandard17
+    [Serializable]
+#endif
     internal sealed class CompatibleComparer : IEqualityComparer
     {
         private readonly IHashCodeProvider _hcp;

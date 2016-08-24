@@ -13,6 +13,9 @@ using System.Collections;
 
 namespace System.Collections.Generic
 {
+#if netstandard17
+    [Serializable]
+#endif
     public abstract class EqualityComparer<T> : IEqualityComparer, IEqualityComparer<T>
     {
         protected EqualityComparer()
@@ -126,6 +129,9 @@ namespace System.Collections.Generic
     //    incompatible with Object.Equals(). That goes specifically against the documented guidelines (and would in any case,
     //    break any hashcode-dependent collection.) 
     //
+#if netstandard17
+    [Serializable]
+#endif
     internal sealed class LastResortEqualityComparer<T> : EqualityComparer<T>
     {
         public LastResortEqualityComparer()
@@ -150,6 +156,9 @@ namespace System.Collections.Generic
         }
     }
 
+#if netstandard17
+    [Serializable]
+#endif
     internal sealed class EqualityComparerForSByte : EqualityComparer<sbyte>
     {
         public override bool Equals(sbyte x, sbyte y)
@@ -163,6 +172,9 @@ namespace System.Collections.Generic
         }
     }
 
+#if netstandard17
+    [Serializable]
+#endif
     internal sealed class EqualityComparerForByte : EqualityComparer<byte>
     {
         public override bool Equals(byte x, byte y)
@@ -176,6 +188,9 @@ namespace System.Collections.Generic
         }
     }
 
+#if netstandard17
+    [Serializable]
+#endif
     internal sealed class EqualityComparerForInt16 : EqualityComparer<short>
     {
         public override bool Equals(short x, short y)
@@ -189,6 +204,9 @@ namespace System.Collections.Generic
         }
     }
 
+#if netstandard17
+    [Serializable]
+#endif
     internal sealed class EqualityComparerForUInt16 : EqualityComparer<ushort>
     {
         public override bool Equals(ushort x, ushort y)
@@ -202,6 +220,9 @@ namespace System.Collections.Generic
         }
     }
 
+#if netstandard17
+    [Serializable]
+#endif
     internal sealed class EqualityComparerForInt32 : EqualityComparer<int>
     {
         public override bool Equals(int x, int y)
@@ -215,6 +236,9 @@ namespace System.Collections.Generic
         }
     }
 
+#if netstandard17
+    [Serializable]
+#endif
     internal sealed class EqualityComparerForUInt32 : EqualityComparer<uint>
     {
         public override bool Equals(uint x, uint y)
@@ -228,6 +252,9 @@ namespace System.Collections.Generic
         }
     }
 
+#if netstandard17
+    [Serializable]
+#endif
     internal sealed class EqualityComparerForInt64 : EqualityComparer<long>
     {
         public override bool Equals(long x, long y)
@@ -241,6 +268,9 @@ namespace System.Collections.Generic
         }
     }
 
+#if netstandard17
+    [Serializable]
+#endif
     internal sealed class EqualityComparerForUInt64 : EqualityComparer<ulong>
     {
         public override bool Equals(ulong x, ulong y)
@@ -254,6 +284,9 @@ namespace System.Collections.Generic
         }
     }
 
+#if netstandard17
+    [Serializable]
+#endif
     internal sealed class EqualityComparerForIntPtr : EqualityComparer<IntPtr>
     {
         public override bool Equals(IntPtr x, IntPtr y)
@@ -267,6 +300,9 @@ namespace System.Collections.Generic
         }
     }
 
+#if netstandard17
+    [Serializable]
+#endif
     internal sealed class EqualityComparerForUIntPtr : EqualityComparer<UIntPtr>
     {
         public override bool Equals(UIntPtr x, UIntPtr y)
@@ -280,6 +316,9 @@ namespace System.Collections.Generic
         }
     }
 
+#if netstandard17
+    [Serializable]
+#endif
     internal sealed class EqualityComparerForSingle : EqualityComparer<float>
     {
         public override bool Equals(float x, float y)
@@ -294,6 +333,9 @@ namespace System.Collections.Generic
         }
     }
 
+#if netstandard17
+    [Serializable]
+#endif
     internal sealed class EqualityComparerForDouble : EqualityComparer<double>
     {
         public override bool Equals(double x, double y)
@@ -308,6 +350,9 @@ namespace System.Collections.Generic
         }
     }
 
+#if netstandard17
+    [Serializable]
+#endif
     internal sealed class EqualityComparerForDecimal : EqualityComparer<decimal>
     {
         public override bool Equals(decimal x, decimal y)
@@ -321,6 +366,9 @@ namespace System.Collections.Generic
         }
     }
 
+#if netstandard17
+    [Serializable]
+#endif
     internal sealed class EqualityComparerForString : EqualityComparer<string>
     {
         public override bool Equals(string x, string y)
