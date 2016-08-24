@@ -89,6 +89,8 @@ $(_XunitEpilog)
     <NuGetPackageImportStamp>7a9bfb7d</NuGetPackageImportStamp>
     <CLRTestKind>BuildOnly</CLRTestKind>
     <IsTestProject>true</IsTestProject>
+    <ProjectJson>%24(TestWrappersPackagesConfigFileDirectory)project.json</ProjectJson>
+    <ProjectLockJson>%24(TestWrappersPackagesConfigFileDirectory)project.lock.json</ProjectLockJson>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '%24(Configuration)|%24(Platform)' == 'Debug|AnyCPU' ">
@@ -97,9 +99,6 @@ $(_XunitEpilog)
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(XunitWrapper).cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="%24(TestWrappersPackagesConfigFileDirectory)project.json" />
   </ItemGroup>
   <ItemGroup>
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
@@ -148,8 +147,7 @@ $(_XunitEpilog)
   </Target>
   
   <Target Name="BuildXunitWrapper">
-    <MSBuild Projects="$(XunitWrapperSrcDir)\$(XunitWrapper).csproj"
-             Properties="RestorePackages=false"/>
+    <MSBuild Projects="$(XunitWrapperSrcDir)\$(XunitWrapper).csproj"/>
   </Target>
 
   <Target Name="CreateXunitFacts">
@@ -352,11 +350,9 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
   </Target>
 
   <!-- All the test projects need to add dependency to currently built runtime as they require that to run. 
-       In addition the version number of built runtime can change so all project.json needs to be dynamically generated. 
-       In order to avoid regenerating project.json for all the tests projects...I added a common project for all the tests.
-       This project is at tests\src\common\test_runtime\test_runtime.csproj. This project is adding common dependencies to
-       all the tests like dependency on Microsoft.netcore.runtime.coreclr ..etc. Project.json for this project is dynamically 
-       generated via task CreateTestRuntimeJsonFile. -->
+       In addition the version number of built runtime can change so all project.json needs to be dynamically generated.
+       Instead the following task creates a project.json with dependencies like  Microsoft.netcore.runtime.coreclr ..etc.
+        -->
   <Target Name="CreateTestRuntimeJsonFile">
     <ItemGroup>
       <CoreclrPackage Include="$(CORE_ROOT)\.nuget\**\Microsoft.NETCore.Runtime.CoreCLR.*.nupkg"/>
@@ -402,7 +398,7 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
              Targets="CreateTestRuntimeJsonFile"/>  
      
     <!-- generate project.lock.json file corresponding to above json file -->
-    <MSBuild Projects="src\Common\test_runtime\test_runtime.csproj"/>
+    <MSBuild Projects="src\Common\test_dependencies\test_dependencies.csproj"/>
     
     <!-- Package each perf test, upload it and trigger event to execute the tests -->  
     <MSBuild Projects="$(MSBuildProjectFile)" Targets="UploadPerfAssemblies" />  
@@ -417,7 +413,7 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
              Condition=" '$(BuildWrappers)'=='true' " />
 
     <!-- generate project.lock.json file corresponding to above json file -->
-    <MSBuild Projects="src\Common\test_runtime\test_runtime.csproj"
+    <MSBuild Projects="src\Common\test_dependencies\test_dependencies.csproj"
              Condition=" '$(BuildWrappers)'=='true' " />
 
     <!-- Default for building -->
