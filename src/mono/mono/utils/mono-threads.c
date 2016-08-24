@@ -373,6 +373,7 @@ register_thread (MonoThreadInfo *info, gpointer baseptr)
 
 	info->stackdata = g_byte_array_new ();
 
+	mono_threads_platform_register (info);
 	mono_threads_suspend_register (info);
 
 	/*

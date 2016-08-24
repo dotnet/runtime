@@ -293,6 +293,11 @@ mono_w32handle_unlock_handle (gpointer handle)
 void
 mono_w32handle_init (void)
 {
+	static gboolean initialized = FALSE;
+
+	if (initialized)
+		return;
+
 	g_assert ((sizeof (handle_ops) / sizeof (handle_ops[0]))
 		  == MONO_W32HANDLE_COUNT);
 
@@ -313,6 +318,8 @@ mono_w32handle_init (void)
 
 	mono_os_cond_init (&global_signal_cond);
 	mono_os_mutex_init (&global_signal_mutex);
+
+	initialized = TRUE;
 }
 
 static void mono_w32handle_unref_full (gpointer handle, gboolean ignore_private_busy_handles);
@@ -350,8 +357,6 @@ mono_w32handle_cleanup (void)
 static void mono_w32handle_init_handle (MonoW32HandleBase *handle,
 			       MonoW32HandleType type, gpointer handle_specific)
 {
-	g_assert (!shutting_down);
-	
 	handle->type = type;
 	handle->signalled = FALSE;
 	handle->ref = 1;
@@ -377,8 +382,6 @@ static guint32 mono_w32handle_new_internal (MonoW32HandleType type,
 	guint32 i, k, count;
 	static guint32 last = 0;
 	gboolean retry = FALSE;
-	
-	g_assert (!shutting_down);
 	
 	/* A linear scan should be fast enough.  Start from the last
 	 * allocation, assuming that handles are allocated more often
