@@ -30,6 +30,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
+        [ActiveIssue(11088, PlatformID.Windows)]
         [ConditionalFact(nameof(NoSocketsReuseUnicastPortSupport))]
         public void ReuseUnicastPort_CreateSocketGetOption_NoSocketsReuseUnicastPortSupport_Throws()
         {
@@ -48,6 +49,7 @@ namespace System.Net.Sockets.Tests
             Assert.Equal(0, optionValue);
         }
 
+        [ActiveIssue(11088, PlatformID.Windows)]
         [ConditionalFact(nameof(NoSocketsReuseUnicastPortSupport))]
         public void ReuseUnicastPort_CreateSocketSetOption_NoSocketsReuseUnicastPortSupport_Throws()
         {
