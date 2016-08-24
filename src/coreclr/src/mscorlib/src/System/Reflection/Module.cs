@@ -1187,7 +1187,7 @@ namespace System.Reflection
                 if (i == -1)
                     return s;
 
-                return new String(s.ToCharArray(), i + 1, s.Length - i - 1);
+                return s.Substring(i + 1);
             }
         }
 
