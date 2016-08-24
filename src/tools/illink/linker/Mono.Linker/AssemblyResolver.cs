@@ -65,7 +65,7 @@ namespace Mono.Linker {
 		public void CacheAssembly (AssemblyDefinition assembly)
 		{
 			_assemblies [assembly.Name.Name] = assembly;
-			base.AddSearchDirectory (Path.GetDirectoryName (assembly.MainModule.FullyQualifiedName));
+			base.AddSearchDirectory (Path.GetDirectoryName (assembly.MainModule.FileName));
 		}
 	}
 }
