@@ -147,7 +147,7 @@ namespace System.Diagnostics
                                 _threadId = (ulong)tid,
                                 _basePriority = pi.BasePriority,
                                 _currentPriority = (int)stat.nice,
-                                _startAddress = (IntPtr)(void *)stat.startstack,
+                                _startAddress = IntPtr.Zero,
                                 _threadState = ProcFsStateToThreadState(stat.state),
                                 _threadWaitReason = ThreadWaitReason.Unknown
                             });
