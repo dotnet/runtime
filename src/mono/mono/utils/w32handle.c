@@ -293,6 +293,11 @@ mono_w32handle_unlock_handle (gpointer handle)
 void
 mono_w32handle_init (void)
 {
+	static gboolean initialized = FALSE;
+
+	if (initialized)
+		return;
+
 	g_assert ((sizeof (handle_ops) / sizeof (handle_ops[0]))
 		  == MONO_W32HANDLE_COUNT);
 
@@ -313,6 +318,8 @@ mono_w32handle_init (void)
 
 	mono_os_cond_init (&global_signal_cond);
 	mono_os_mutex_init (&global_signal_mutex);
+
+	initialized = TRUE;
 }
 
 static void mono_w32handle_unref_full (gpointer handle, gboolean ignore_private_busy_handles);

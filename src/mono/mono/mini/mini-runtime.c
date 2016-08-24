@@ -65,6 +65,7 @@
 #include <mono/utils/mono-threads.h>
 #include <mono/utils/mono-threads-coop.h>
 #include <mono/utils/checked-build.h>
+#include <mono/utils/w32handle.h>
 #include <mono/io-layer/io-layer.h>
 
 #include "mini.h"
@@ -3569,6 +3570,10 @@ mini_init (const char *filename, const char *runtime_version)
 
 	mono_counters_init ();
 
+#ifndef HOST_WIN32
+	mono_w32handle_init ();
+#endif
+
 	mono_threads_runtime_init (&ticallbacks);
 
 	if (g_getenv ("MONO_DEBUG") != NULL)
@@ -4109,6 +4114,10 @@ mini_cleanup (MonoDomain *domain)
 	mono_os_mutex_destroy (&jit_mutex);
 
 	mono_code_manager_cleanup ();
+
+#ifndef HOST_WIN32
+	mono_w32handle_cleanup ();
+#endif
 }
 
 void
