@@ -8446,11 +8446,17 @@ GenTree** GenTreeUseEdgeIterator::GetNextUseEdge() const
             }
 
         // Call, phi, and SIMD nodes are handled by MoveNext{Call,Phi,SIMD}UseEdge, repsectively.
+        //
+        // If FEATURE_MULTIREG_ARGS is enabled, so PUTARG_STK nodes also have special handling.
         case GT_CALL:
         case GT_PHI:
 #ifdef FEATURE_SIMD
         case GT_SIMD:
 #endif
+#if FEATURE_MULTIREG_ARGS
+        case GT_PUTARG_STK:
+#endif
+
             break;
 
         case GT_INITBLK:
@@ -8774,7 +8780,55 @@ void GenTreeUseEdgeIterator::MoveToNextSIMDUseEdge()
         }
     }
 }
-#endif
+#endif // FEATURE_SIMD
+
+#if FEATURE_MULTIREG_ARGS
+void GenTreeUseEdgeIterator::MoveToNextPutArgStkUseEdge()
+{
+    assert(m_node->OperGet() == GT_PUTARG_STK);
+
+    GenTreeUnOp* putArg = m_node->AsUnOp();
+
+    for (;;)
+    {
+        switch (m_state)
+        {
+            case 0:
+                if ((putArg->gtOp1->OperGet() != GT_LIST) || !m_expandMultiRegArgs)
+                {
+                    m_state = 2;
+                    m_edge = &putArg->gtOp1;
+                    return;
+                }
+
+                m_state   = 1;
+                m_argList = putArg->gtOp1;
+                break;
+
+            case 1:
+                if (m_argList == nullptr)
+                {
+                    m_state = 2;
+                }
+                else
+                {
+                    GenTreeArgList* argNode = m_argList->AsArgList();
+                    m_edge                  = &argNode->gtOp1;
+                    m_argList               = argNode->Rest();
+                    return;
+                }
+                break;
+
+            default:
+                m_node    = nullptr;
+                m_edge    = nullptr;
+                m_argList = nullptr;
+                m_state   = -1;
+                return;
+        }
+    }
+}
+#endif // FEATURE_MULTIREG_ARGS
 
 //------------------------------------------------------------------------
 // GenTreeUseEdgeIterator::operator++:
@@ -8805,6 +8859,12 @@ GenTreeUseEdgeIterator& GenTreeUseEdgeIterator::operator++()
         else if (op == GT_SIMD)
         {
             MoveToNextSIMDUseEdge();
+        }
+#endif
+#if FEATURE_MULTIREG_ARGS
+        else if (op == GT_PUTARG_STK)
+        {
+            MoveToNextPutArgStkUseEdge();
         }
 #endif
         else
