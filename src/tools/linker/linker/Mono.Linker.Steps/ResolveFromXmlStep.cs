@@ -174,6 +174,14 @@ namespace Mono.Linker.Steps {
 
 			Annotations.Mark (type);
 
+			if (type.IsNested) {
+				var parent = type;
+				while (parent.IsNested) {
+					parent = parent.DeclaringType;
+					Annotations.Mark (parent);
+				}
+			}
+
 			switch (preserve) {
 			case TypePreserve.Nothing:
 				if (!nav.HasChildren)
