@@ -400,9 +400,7 @@ FCFuncStart(gSystem_RuntimeType)
 #if defined(FEATURE_COMINTEROP)
     FCFuncElement("GetTypeFromCLSIDImpl", ReflectionInvocation::GetClassFromCLSID)
     FCFuncElement("GetTypeFromProgIDImpl", ReflectionInvocation::GetClassFromProgID)
-#if !defined(FEATURE_CORECLR)
     FCFuncElement("InvokeDispMethod", ReflectionInvocation::InvokeDispMethod)
-#endif 
 #ifdef FEATURE_COMINTEROP_WINRT_MANAGED_ACTIVATION
     FCFuncElement("IsTypeExportedToWindowsRuntime", RuntimeTypeHandle::IsTypeExportedToWindowsRuntime)
 #endif
@@ -1469,10 +1467,8 @@ FCFuncStart(gCultureDataFuncs)
     FCFuncElement("nativeInitCultureData", COMNlsInfo::nativeInitCultureData)
     FCFuncElement("nativeGetNumberFormatInfoValues", COMNlsInfo::nativeGetNumberFormatInfoValues)
     FCFuncElement("nativeEnumTimeFormats", CalendarData::nativeEnumTimeFormats)
-#ifdef FEATURE_USE_LCID
     FCFuncElement("LCIDToLocaleName", COMNlsInfo::LCIDToLocaleName)
     FCFuncElement("LocaleNameToLCID", COMNlsInfo::LocaleNameToLCID)    
-#endif // FEATURE_USE_LCID
 
     QCFuncElement("nativeEnumCultureNames", COMNlsInfo::nativeEnumCultureNames)
 

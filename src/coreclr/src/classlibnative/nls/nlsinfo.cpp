@@ -796,7 +796,6 @@ BOOL COMNlsInfo::CallGetLocaleInfoEx(LPCWSTR localeName, int lcType, STRINGREF* 
     return (result != 0);
 }
 
-#ifdef FEATURE_USE_LCID
 FCIMPL1(Object*, COMNlsInfo::LCIDToLocaleName, LCID lcid)
 {
     FCALL_CONTRACT;
@@ -849,7 +848,6 @@ FCIMPL1(INT32, COMNlsInfo::LocaleNameToLCID, StringObject* localeNameUNSAFE)
     return result;
 }
 FCIMPLEND
-#endif // FEATURE_USE_LCID
 
 ////////////////////////////////////////////////////////////////////////
 //
@@ -1007,10 +1005,8 @@ FCIMPL3(FC_BOOL_RET, COMNlsInfo::nativeGetNumberFormatInfoValues,
     _ASSERT(ret == TRUE);
     ret &= CallGetLocaleInfoEx(pLocaleName, LOCALE_INEGNUMBER| LOCALE_RETURN_NUMBER         , &(gc.numfmt->cNegativeNumberFormat), useUserOverride);
     _ASSERT(ret == TRUE);
-#ifndef FEATURE_CORECLR
     ret &= CallGetLocaleInfoEx(pLocaleName, LOCALE_IDIGITSUBSTITUTION | LOCALE_RETURN_NUMBER, &(gc.numfmt->iDigitSubstitution), useUserOverride);
     _ASSERT(ret == TRUE);
-#endif
 
     // LOCALE_SNATIVEDIGITS (gc.tempArray of strings)
     if (GetNativeDigitsFromWin32(pLocaleName, &gc.tempArray, useUserOverride)) {
@@ -2880,10 +2876,8 @@ FCIMPL1(FC_BOOL_RET, COMNlsInfo::nativeInitCultureData, CultureDataBaseObject *c
     // Remember our neutrality
     gc.cultureData->bNeutral = (bNeutral != 0);
 
-#ifndef FEATURE_CORECLR
     gc.cultureData->bWin32Installed = (IsOSValidLocaleName(buffer, gc.cultureData->bNeutral) != 0);
     gc.cultureData->bFramework = (IsWhidbeyFrameworkCulture(buffer) != 0);
-#endif // FEATURE_CORECLR
 
 
     // Note: Parents will be set dynamically
