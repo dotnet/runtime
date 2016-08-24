@@ -118,6 +118,22 @@ namespace System.Runtime.Serialization
         public virtual long GetId(object obj, out bool firstTime) { firstTime = default(bool); return default(long); }
         public virtual long HasId(object obj, out bool firstTime) { firstTime = default(bool); return default(long); }
     }
+    public partial class ObjectManager
+    {
+        public ObjectManager(System.Runtime.Serialization.ISurrogateSelector selector, System.Runtime.Serialization.StreamingContext context) { }
+        public virtual void DoFixups() { }
+        public virtual object GetObject(long objectID) { return default(object); }
+        public virtual void RaiseDeserializationEvent() { }
+        public void RaiseOnDeserializingEvent(object obj) { }
+        public virtual void RecordArrayElementFixup(long arrayToBeFixed, int index, long objectRequired) { }
+        public virtual void RecordArrayElementFixup(long arrayToBeFixed, int[] indices, long objectRequired) { }
+        public virtual void RecordDelayedFixup(long objectToBeFixed, string memberName, long objectRequired) { }
+        public virtual void RecordFixup(long objectToBeFixed, System.Reflection.MemberInfo member, long objectRequired) { }
+        public virtual void RegisterObject(object obj, long objectID) { }
+        public void RegisterObject(object obj, long objectID, System.Runtime.Serialization.SerializationInfo info) { }
+        public void RegisterObject(object obj, long objectID, System.Runtime.Serialization.SerializationInfo info, long idOfContainingObj, System.Reflection.MemberInfo member) { }
+        public void RegisterObject(object obj, long objectID, System.Runtime.Serialization.SerializationInfo info, long idOfContainingObj, System.Reflection.MemberInfo member, int[] arrayIndex) { }
+    }
     public abstract partial class SerializationBinder
     {
         protected SerializationBinder() { }
