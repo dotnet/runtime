@@ -86,16 +86,9 @@ namespace System.Text
     [Serializable]
     public abstract class Encoding : ICloneable
     {
-        private static volatile Encoding defaultEncoding;
-        private static volatile Encoding unicodeEncoding;
-        private static volatile Encoding bigEndianUnicode;
-        private static volatile Encoding utf7Encoding;
-        private static volatile Encoding utf8Encoding;
-        private static volatile Encoding utf32Encoding;
-        private static volatile Encoding asciiEncoding;
-        private static volatile Encoding latin1Encoding;
+        private static Encoding defaultEncoding;
         
-        static volatile Hashtable encodings;
+        private static volatile Hashtable encodings;
 
         //
         // The following values are from mlang.idl.  These values
@@ -893,29 +886,14 @@ namespace System.Text
 
         // Returns an encoding for the ASCII character set. The returned encoding
         // will be an instance of the ASCIIEncoding class.
-        //
 
-        public static Encoding ASCII
-        {
-            get
-            {
-                if (asciiEncoding == null) asciiEncoding = new ASCIIEncoding();
-                return asciiEncoding;
-            }
-        }
+        public static Encoding ASCII => ASCIIEncoding.s_default;
 
         // Returns an encoding for the Latin1 character set. The returned encoding
         // will be an instance of the Latin1Encoding class.
         //
         // This is for our optimizations
-        private static Encoding Latin1
-        {
-            get
-            {
-                if (latin1Encoding == null) latin1Encoding = new Latin1Encoding();
-                return latin1Encoding;
-            }
-        }
+        private static Encoding Latin1 => Latin1Encoding.s_default;
 
         // Returns the number of bytes required to encode the given character
         // array.
@@ -1369,6 +1347,9 @@ namespace System.Text
         [System.Security.SecurityCritical]  // auto-generated
         private static Encoding CreateDefaultEncoding()
         {
+            // defaultEncoding should be null if we get here, but we can't
+            // assert that in case another thread beat us to the initialization
+
             Encoding enc;
 
 #if FEATURE_CODEPAGES_FILE            
@@ -1387,23 +1368,15 @@ namespace System.Text
             // For silverlight we use UTF8 since ANSI isn't available
             enc = UTF8;
 
-#endif //FEATURE_CODEPAGES_FILE            
+#endif // FEATURE_CODEPAGES_FILE
 
-            return (enc);
+            // This method should only ever return one Encoding instance
+            return Interlocked.CompareExchange(ref defaultEncoding, enc, null) ?? enc;
         }
 
         // Returns an encoding for the system's current ANSI code page.
-        //
 
-        public static Encoding Default {
-            [System.Security.SecuritySafeCritical]  // auto-generated
-            get {
-                if (defaultEncoding == null) {
-                    defaultEncoding = CreateDefaultEncoding();
-                }
-                return defaultEncoding;
-            }
-        }
+        public static Encoding Default => defaultEncoding ?? CreateDefaultEncoding();
 
         // Returns an Encoder object for this encoding. The returned object
         // can be used to encode a sequence of characters into a sequence of bytes.
@@ -1479,59 +1452,31 @@ namespace System.Text
         //
         // It will use little endian byte order, but will detect
         // input in big endian if it finds a byte order mark per Unicode 2.0.
-        //
 
-        public static Encoding Unicode {
-            get {
-                if (unicodeEncoding == null) unicodeEncoding = new UnicodeEncoding(false, true);
-                return unicodeEncoding;
-            }
-        }
+        public static Encoding Unicode => UnicodeEncoding.s_littleEndianDefault;
 
         // Returns an encoding for Unicode format. The returned encoding will be
         // an instance of the UnicodeEncoding class.
         //
         // It will use big endian byte order, but will detect
         // input in little endian if it finds a byte order mark per Unicode 2.0.
-        //
 
-        public static Encoding BigEndianUnicode {
-            get {
-                if (bigEndianUnicode == null) bigEndianUnicode = new UnicodeEncoding(true, true);
-                return bigEndianUnicode;
-            }
-        }
+        public static Encoding BigEndianUnicode => UnicodeEncoding.s_bigEndianDefault;
 
         // Returns an encoding for the UTF-7 format. The returned encoding will be
         // an instance of the UTF7Encoding class.
-        //
-        public static Encoding UTF7 {
-            get {
-                if (utf7Encoding == null) utf7Encoding = new UTF7Encoding();
-                return utf7Encoding;
-            }
-        }
+
+        public static Encoding UTF7 => UTF7Encoding.s_default;
         
         // Returns an encoding for the UTF-8 format. The returned encoding will be
         // an instance of the UTF8Encoding class.
-        //
 
-        public static Encoding UTF8 {
-            get {
-                if (utf8Encoding == null) utf8Encoding = new UTF8Encoding(true);
-                return utf8Encoding;
-            }
-        }
+        public static Encoding UTF8 => UTF8Encoding.s_default;
 
         // Returns an encoding for the UTF-32 format. The returned encoding will be
         // an instance of the UTF32Encoding class.
-        //
-        public static Encoding UTF32 {
-            get {
-                if (utf32Encoding == null) utf32Encoding = new UTF32Encoding(false, true);
-                return utf32Encoding;
-            }
-        }
+
+        public static Encoding UTF32 => UTF32Encoding.s_default;
 
         public override bool Equals(Object value) {
             Encoding that = value as Encoding;
