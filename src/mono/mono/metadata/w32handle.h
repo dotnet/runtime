@@ -108,6 +108,9 @@ mono_w32handle_new_fd (MonoW32HandleType type, int fd, gpointer handle_specific)
 MonoW32HandleType
 mono_w32handle_get_type (gpointer handle);
 
+const gchar*
+mono_w32handle_get_typename (MonoW32HandleType type);
+
 gboolean
 mono_w32handle_lookup (gpointer handle, MonoW32HandleType type, gpointer *handle_specific);
 
@@ -130,31 +133,7 @@ gboolean
 mono_w32handle_test_capabilities (gpointer handle, MonoW32HandleCapability caps);
 
 void
-mono_w32handle_ops_close (gpointer handle, gpointer data);
-
-void
-mono_w32handle_ops_signal (gpointer handle);
-
-gboolean
-mono_w32handle_ops_own (gpointer handle, guint32 *statuscode);
-
-gboolean
-mono_w32handle_ops_isowned (gpointer handle);
-
-MonoW32HandleWaitRet
-mono_w32handle_ops_specialwait (gpointer handle, guint32 timeout, gboolean *alerted);
-
-void
-mono_w32handle_ops_prewait (gpointer handle);
-
-void
-mono_w32handle_ops_details (MonoW32HandleType type, gpointer data);
-
-const gchar*
-mono_w32handle_ops_typename (MonoW32HandleType type);
-
-gsize
-mono_w32handle_ops_typesize (MonoW32HandleType type);
+mono_w32handle_force_close (gpointer handle, gpointer data);
 
 void
 mono_w32handle_set_signal_state (gpointer handle, gboolean state, gboolean broadcast);

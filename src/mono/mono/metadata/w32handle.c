@@ -114,6 +114,15 @@ mono_w32handle_get_type (gpointer handle)
 	return handle_data->type;
 }
 
+static const gchar*
+mono_w32handle_ops_typename (MonoW32HandleType type);
+
+const gchar*
+mono_w32handle_get_typename (MonoW32HandleType type)
+{
+	return mono_w32handle_ops_typename (type);
+}
+
 void
 mono_w32handle_set_signal_state (gpointer handle, gboolean state, gboolean broadcast)
 {
@@ -308,6 +317,9 @@ mono_w32handle_cleanup (void)
 	for (i = 0; i < SLOT_MAX; ++i)
 		g_free (private_handles [i]);
 }
+
+static gsize
+mono_w32handle_ops_typesize (MonoW32HandleType type);
 
 static void mono_w32handle_init_handle (MonoW32HandleBase *handle,
 			       MonoW32HandleType type, gpointer handle_specific)
@@ -651,6 +663,15 @@ mono_w32handle_unref (gpointer handle)
 	}
 }
 
+static void
+mono_w32handle_ops_close (gpointer handle, gpointer data);
+
+void
+mono_w32handle_force_close (gpointer handle, gpointer data)
+{
+	mono_w32handle_ops_close (handle, data);
+}
+
 void
 mono_w32handle_register_ops (MonoW32HandleType type, MonoW32HandleOps *ops)
 {
@@ -691,7 +712,8 @@ static void (*_wapi_handle_ops_get_close_func (MonoW32HandleType type))(gpointer
 	return (NULL);
 }
 
-void mono_w32handle_ops_close (gpointer handle, gpointer data)
+static void
+mono_w32handle_ops_close (gpointer handle, gpointer data)
 {
 	MonoW32HandleBase *handle_data;
 	MonoW32HandleType type;
@@ -708,7 +730,8 @@ void mono_w32handle_ops_close (gpointer handle, gpointer data)
 	}
 }
 
-void mono_w32handle_ops_details (MonoW32HandleType type, gpointer data)
+static void
+mono_w32handle_ops_details (MonoW32HandleType type, gpointer data)
 {
 	if (handle_ops[type] != NULL &&
 	    handle_ops[type]->details != NULL) {
@@ -716,21 +739,24 @@ void mono_w32handle_ops_details (MonoW32HandleType type, gpointer data)
 	}
 }
 
-const gchar* mono_w32handle_ops_typename (MonoW32HandleType type)
+static const gchar*
+mono_w32handle_ops_typename (MonoW32HandleType type)
 {
 	g_assert (handle_ops [type]);
 	g_assert (handle_ops [type]->typename);
 	return handle_ops [type]->typename ();
 }
 
-gsize mono_w32handle_ops_typesize (MonoW32HandleType type)
+static gsize
+mono_w32handle_ops_typesize (MonoW32HandleType type)
 {
 	g_assert (handle_ops [type]);
 	g_assert (handle_ops [type]->typesize);
 	return handle_ops [type]->typesize ();
 }
 
-void mono_w32handle_ops_signal (gpointer handle)
+static void
+mono_w32handle_ops_signal (gpointer handle)
 {
 	MonoW32HandleBase *handle_data;
 	MonoW32HandleType type;
@@ -746,7 +772,8 @@ void mono_w32handle_ops_signal (gpointer handle)
 	}
 }
 
-gboolean mono_w32handle_ops_own (gpointer handle, guint32 *statuscode)
+static gboolean
+mono_w32handle_ops_own (gpointer handle, guint32 *statuscode)
 {
 	MonoW32HandleBase *handle_data;
 	MonoW32HandleType type;
@@ -764,7 +791,8 @@ gboolean mono_w32handle_ops_own (gpointer handle, guint32 *statuscode)
 	}
 }
 
-gboolean mono_w32handle_ops_isowned (gpointer handle)
+static gboolean
+mono_w32handle_ops_isowned (gpointer handle)
 {
 	MonoW32HandleBase *handle_data;
 	MonoW32HandleType type;
@@ -782,7 +810,7 @@ gboolean mono_w32handle_ops_isowned (gpointer handle)
 	}
 }
 
-MonoW32HandleWaitRet
+static MonoW32HandleWaitRet
 mono_w32handle_ops_specialwait (gpointer handle, guint32 timeout, gboolean *alerted)
 {
 	MonoW32HandleBase *handle_data;
@@ -802,7 +830,8 @@ mono_w32handle_ops_specialwait (gpointer handle, guint32 timeout, gboolean *aler
 	}
 }
 
-void mono_w32handle_ops_prewait (gpointer handle)
+static void
+mono_w32handle_ops_prewait (gpointer handle)
 {
 	MonoW32HandleBase *handle_data;
 	MonoW32HandleType type;

@@ -130,7 +130,7 @@ static gboolean
 cleanup_close (gpointer handle, gpointer data, gpointer user_data)
 {
 	if (mono_w32handle_get_type (handle) == MONO_W32HANDLE_SOCKET)
-		mono_w32handle_ops_close (handle, data);
+		mono_w32handle_force_close (handle, data);
 
 	return FALSE;
 }

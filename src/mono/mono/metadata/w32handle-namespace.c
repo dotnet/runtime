@@ -84,7 +84,7 @@ mono_w32handle_namespace_search_handle_callback (gpointer handle, gpointer data,
 		if (type != search_data->type) {
 			/* Its the wrong type, so fail now */
 			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: handle %p matches name but is wrong type: %s",
-				__func__, handle, mono_w32handle_ops_typename (type));
+				__func__, handle, mono_w32handle_get_typename (type));
 			search_data->ret = INVALID_HANDLE_VALUE;
 		} else {
 			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: handle %p matches name and type",
@@ -111,7 +111,7 @@ mono_w32handle_namespace_search_handle (MonoW32HandleType type, gchar *name)
 		g_error ("%s: type %s does not have a namespace", __func__, type);
 
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Lookup for handle named [%s] type %s",
-		__func__, name, mono_w32handle_ops_typename (type));
+		__func__, name, mono_w32handle_get_typename (type));
 
 	search_data.ret = NULL;
 	search_data.type = type;
