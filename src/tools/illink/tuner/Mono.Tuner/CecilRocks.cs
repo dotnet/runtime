@@ -477,12 +477,12 @@ namespace Mono.Tuner {
 			while (type != null) {
 				// does the type implements it itself
 				if (type.HasInterfaces) {
-					foreach (TypeReference iface in type.Interfaces) {
-						string fullname = (generic) ? iface.GetElementType ().FullName : iface.FullName;
+					foreach (var iface in type.Interfaces) {
+						string fullname = (generic) ? iface.InterfaceType.GetElementType ().FullName : iface.InterfaceType.FullName;
 						if (fullname == interfaceName)
 							return true;
 						//if not, then maybe one of its parent interfaces does
-						if (Implements (iface.Resolve (), interfaceName, generic))
+						if (Implements (iface.InterfaceType.Resolve (), interfaceName, generic))
 							return true;
 					}
 				}
