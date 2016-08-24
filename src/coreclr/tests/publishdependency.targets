@@ -9,13 +9,17 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectLockJsonFiles Include="$(SourceDir)\runtime\project.lock.json"/>
+    <ProjectLockJsonFiles Include="$(SourceDir)Common\test_runtime\project.lock.json"/>
+    <ProjectLockJsonFiles Include="$(SourceDir)Common\test_dependencies\project.lock.json"/>
   </ItemGroup>
 
   <Target Name="CopyDependecyToCoreRoot"
     Inputs="@(ProjectLockJsonFiles)"
     Outputs="$(CORE_ROOT)\*.*">
 
+    <MSBuild Projects="$(SourceDir)Common\test_runtime\test_runtime.csproj"/>
+
+    <MSBuild Projects="$(SourceDir)Common\test_dependencies\test_dependencies.csproj"/>
 
     <!-- This will use the overridden PrereleaseResolveNuGetPackageAssets, which outputs copy local items
          for the xunit wrapper projects -->
