@@ -32,7 +32,6 @@ namespace Stress.Data
         {
             s_sqlTypes = new Dictionary<Type, Func<DataStressReader, int, CancellationToken, Random, Task<object>>>();
 
-            // TODO: It is necessary to unwrap the ".Value" of the returned object?
             s_sqlTypes.Add(typeof(SqlBinary), (reader, ordinal, token, rnd) => reader.GetFieldValueSyncOrAsync<SqlBinary>(ordinal, token, rnd));
             s_sqlTypes.Add(typeof(SqlBoolean), (reader, ordinal, token, rnd) => reader.GetFieldValueSyncOrAsync<SqlBoolean>(ordinal, token, rnd));
             s_sqlTypes.Add(typeof(SqlByte), (reader, ordinal, token, rnd) => reader.GetFieldValueSyncOrAsync<SqlByte>(ordinal, token, rnd));

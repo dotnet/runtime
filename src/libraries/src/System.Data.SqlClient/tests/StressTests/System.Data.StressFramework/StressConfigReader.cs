@@ -13,7 +13,7 @@ namespace Stress.Data
     /// <summary>
     /// Reads the configuration from a configuration file and provides the configuration
     /// </summary>
-    class StressConfigReader
+    internal class StressConfigReader
     {
         private string _configFilePath;
         private const string dataStressSettings = "dataStressSettings";
