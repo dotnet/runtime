@@ -11,9 +11,6 @@
  */
 
 #include <config.h>
-
-#if !defined(HOST_WIN32)
-
 #include <glib.h>
 
 #include "w32handle.h"
@@ -825,6 +822,9 @@ void mono_w32handle_ops_prewait (gpointer handle)
 static void
 spin (guint32 ms)
 {
+#ifdef HOST_WIN32
+	SleepEx (ms, TRUE);
+#else
 	struct timespec sleepytime;
 
 	g_assert (ms < 1000);
@@ -832,6 +832,7 @@ spin (guint32 ms)
 	sleepytime.tv_sec = 0;
 	sleepytime.tv_nsec = ms * 1000000;
 	nanosleep (&sleepytime, NULL);
+#endif /* HOST_WIN32 */
 }
 
 static void
@@ -1420,5 +1421,3 @@ done:
 
 	return ret;
 }
-
-#endif /* !defined(HOST_WIN32) */
