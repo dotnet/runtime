@@ -703,7 +703,7 @@ rcheck-nunit: mono $(regtests)
 		<test-results failures='$$failurescount' total='1' not-run='0' name='regression-tests.dummy' date='$$(date +%F)' time='$$(date +%T)'>\
 			<test-suite name='regression-tests.dummy' success='$$successbool' time='0'>\
 				<results><test-case name='MonoTests.regressions.100percentsuccess' executed='True' success='$$successbool' time='0'>" > TestResult-regression.xml; \
-					if [ "$$successbool" = "False" ]; then echo "<failure><message>$$(cat regressiontests.out)</message><stack-trace></stack-trace></failure>" >> TestResult-regression.xml; fi; \
+					if [ "$$successbool" = "False" ]; then echo "<failure><message><![CDATA[$$(cat regressiontests.out)]]></message><stack-trace></stack-trace></failure>" >> TestResult-regression.xml; fi; \
 				echo "</test-case></results>\
 			</test-suite>\
 		</test-results>" >> TestResult-regression.xml; exit $$failurescount
