@@ -20,6 +20,9 @@ namespace System.Collections
     // buffer, so Enqueue can be O(n).  Dequeue is O(1).
     [DebuggerTypeProxy(typeof(System.Collections.Queue.QueueDebugView))]
     [DebuggerDisplay("Count = {Count}")]
+#if netstandard17
+    [Serializable]
+#endif
     public class Queue : ICollection
     {
         private Object[] _array;
@@ -28,6 +31,9 @@ namespace System.Collections
         private int _size;       // Number of elements.
         private int _growFactor; // 100 == 1.0, 130 == 1.3, 200 == 2.0
         private int _version;
+#if netstandard17
+        [NonSerialized]
+#endif
         private Object _syncRoot;
 
         private const int _MinimumGrow = 4;
@@ -319,6 +325,9 @@ namespace System.Collections
 
 
         // Implements a synchronization wrapper around a queue.
+#if netstandard17
+        [Serializable]
+#endif
         private class SynchronizedQueue : Queue
         {
             private Queue _q;
@@ -441,6 +450,9 @@ namespace System.Collections
         // Implements an enumerator for a Queue.  The enumerator uses the
         // internal version number of the list to ensure that no modifications are
         // made to the list while an enumeration is in progress.
+#if netstandard17
+        [Serializable]
+#endif
         private class QueueEnumerator : IEnumerator
         {
             private Queue _q;

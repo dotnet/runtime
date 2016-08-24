@@ -8,6 +8,9 @@ using System.Diagnostics.Contracts;
 
 namespace System.Collections.Generic
 {
+#if netstandard17
+    [Serializable]
+#endif
     public abstract class Comparer<T> : IComparer, IComparer<T>
     {
         protected Comparer()
@@ -69,7 +72,9 @@ namespace System.Collections.Generic
         private static Comparer<T> _default;
     }
 
-
+#if netstandard17
+    [Serializable]
+#endif
     internal class DefaultComparer<T> : Comparer<T>
     {
         public override int Compare(T x, T y)
@@ -114,6 +119,9 @@ namespace System.Collections.Generic
         }
     }
 
+#if netstandard17
+    [Serializable]
+#endif
     internal class ComparisonComparer<T> : Comparer<T>
     {
         private readonly Comparison<T> _comparison;
@@ -129,6 +137,9 @@ namespace System.Collections.Generic
         }
     }
 
+#if netstandard17
+    [Serializable]
+#endif
     internal class Int32Comparer : Comparer<Int32>
     {
         public override int Compare(int x, int y)
