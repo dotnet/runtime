@@ -632,6 +632,8 @@ GenTree* DecomposeLongs::DecomposeStoreInd(LIR::Use& use)
     storeIndHigh->gtFlags = (storeIndLow->gtFlags & (GTF_ALL_EFFECT | GTF_LIVENESS_MASK));
     storeIndHigh->gtFlags |= GTF_REVERSE_OPS;
 
+    m_compiler->lvaIncRefCnts(addrBaseHigh);
+
     BlockRange().InsertAfter(storeIndLow, dataHigh, addrBaseHigh, addrHigh, storeIndHigh);
 
     return storeIndHigh;
@@ -682,6 +684,8 @@ GenTree* DecomposeLongs::DecomposeInd(LIR::Use& use)
     GenTreePtr addrHigh =
         new (m_compiler, GT_LEA) GenTreeAddrMode(TYP_REF, addrBaseHigh, nullptr, 0, genTypeSize(TYP_INT));
     GenTreePtr indHigh = new (m_compiler, GT_IND) GenTreeIndir(GT_IND, TYP_INT, addrHigh, nullptr);
+
+    m_compiler->lvaIncRefCnts(addrBaseHigh);
 
     BlockRange().InsertAfter(indLow, addrBaseHigh, addrHigh, indHigh);
 
