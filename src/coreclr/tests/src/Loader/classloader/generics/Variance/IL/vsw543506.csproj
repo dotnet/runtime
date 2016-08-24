@@ -27,10 +27,6 @@
     <Compile Include="vsw543506.cs" />
   </ItemGroup>
 
-  <ItemGroup>
-    <None Include="app.config" />
-    <None Include="project.json" />
-  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="varlib.ilproj" />

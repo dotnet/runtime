@@ -27,10 +27,6 @@
     <Compile Include="dev10_432038.cs" />
   </ItemGroup>
 
-  <ItemGroup>
-    <None Include="app.config" />
-    <None Include="project.json" />
-  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="foo2.csproj" />

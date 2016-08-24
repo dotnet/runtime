@@ -27,10 +27,6 @@
     <Compile Include="LoadType.cs" />
   </ItemGroup>
 
-  <ItemGroup>
-    <None Include="app.config" />
-    <None Include="project.json" />
-  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="Type.ilproj" />
