@@ -266,35 +266,8 @@
     <!-- The following x86 failures only occur with RyuJIT/x86 -->
 
     <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(BuildArch)' == 'x86'">
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\stringintern\_Simpletest1\_Simpletest1.cmd">
-             <Issue>3554</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\stringintern\_XAssemblytest1-xassem\_XAssemblytest1-xassem.cmd">
-             <Issue>3554</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\stringintern\_XModuletest1-xmod\_XModuletest1-xmod.cmd">
-             <Issue>3554</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\stringintern\test1-xassem\test1-xassem.cmd">
-             <Issue>3554</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\stringintern\test4-xassem\test4-xassem.cmd">
-             <Issue>3554</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\stringintern\_Simpletest4\_Simpletest4.cmd">
-             <Issue>3554</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\stringintern\_XAssemblytest4-xassem\_XAssemblytest4-xassem.cmd">
-             <Issue>3554</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\stringintern\_XModuletest4-xmod\_XModuletest4-xmod.cmd">
-             <Issue>3554</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)\JIT\Performance\CodeQuality\Serialization\Serialize\Serialize.cmd">
              <Issue>3597</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\Performance\CodeQuality\V8\DeltaBlue\DeltaBlue\DeltaBlue.cmd">
-             <Issue>4817</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\MDArray\basics\stringarr_cs_do\stringarr_cs_do.cmd">
              <Issue>4844</Issue>
