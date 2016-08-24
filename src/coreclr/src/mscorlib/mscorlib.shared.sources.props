@@ -580,7 +580,7 @@
     <GlobalizationSources Include="$(BclSourcesRoot)\System\Globalization\DaylightTime.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(FeatureCoreFxGlobalization)' != 'true'">
-    <GlobalizationSources Include="$(BclSourcesRoot)\System\Globalization\STUBS.cs" />
+    <GlobalizationSources Condition="'$(FeatureCoreClr)'=='true'" Include="$(BclSourcesRoot)\System\Globalization\STUBS.cs" />
     <GlobalizationSources Include="$(BclSourcesRoot)\System\Globalization\BidiCategory.cs" />
     <GlobalizationSources Include="$(BclSourcesRoot)\System\Globalization\Calendar.cs" />
     <GlobalizationSources Include="$(BclSourcesRoot)\System\Globalization\CalendarData.cs" />
@@ -629,7 +629,7 @@
   </ItemGroup>
   <ItemGroup Condition="'$(FeatureCoreFxGlobalization)' == 'true'">
     <GlobalizationSources Include="$(CoreFxSourcesRoot)\SR.cs" />
-    <GlobalizationSources Include="$(CoreFxSourcesRoot)\System\Globalization\STUBS.cs" />
+    <GlobalizationSources Condition="'$(FeatureCoreClr)'=='true'" Include="$(CoreFxSourcesRoot)\System\Globalization\STUBS.cs" />
     <GlobalizationSources Include="$(CoreFxSourcesRoot)\System\Globalization\Calendar.cs" />
     <GlobalizationSources Include="$(CoreFxSourcesRoot)\System\Globalization\CalendarData.cs" />
     <GlobalizationSources Include="$(CoreFxSourcesRoot)\System\Globalization\CalendarWeekRule.cs" />
