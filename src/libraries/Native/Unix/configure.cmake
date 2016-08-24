@@ -24,6 +24,9 @@ else ()
     message(FATAL_ERROR "Unknown platform.  Cannot define PAL_UNIX_NAME, used by RuntimeInformation.")
 endif ()
 
+# We compile with -Werror, so we need to make sure these code fragments compile without warnings.
+set(CMAKE_REQUIRED_FLAGS -Werror)
+
 # in_pktinfo: Find whether this struct exists
 check_include_files(
     linux/in.h
@@ -168,7 +171,11 @@ check_struct_has_member(
 check_cxx_source_compiles(
     "
     #include <string.h>
-    int main() { char* c = strerror_r(0, 0, 0); }
+    int main()
+    {
+        char buffer[1];
+        char* c = strerror_r(0, buffer, 0);
+    }
     "
     HAVE_GNU_STRERROR_R)
 
