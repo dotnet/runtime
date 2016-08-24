@@ -27,10 +27,6 @@
     <Compile Include="L-1-7-3.cs" />
   </ItemGroup>
 
-  <ItemGroup>
-    <None Include="app.config" />
-    <None Include="project.json" />
-  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="L-1-7-3D.csproj" />

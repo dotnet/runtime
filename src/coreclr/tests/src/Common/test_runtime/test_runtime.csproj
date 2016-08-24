@@ -5,15 +5,17 @@
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <CLRTestKind>BuildOnly</CLRTestKind>
-    <!-- Skip validation of the test_runtime project created by the test build. -->
-    <ValidatePackageVersions>false</ValidatePackageVersions>
+    <!-- Reset the Default project.json-->
+    <ProjectJson></ProjectJson>
+    <ProjectLockJson></ProjectLockJson>
   </PropertyGroup>
   <ItemGroup>
      <DnuSourceList Include="$(CORE_ROOT)\.nuget\pkg" /> 
   </ItemGroup>
   <ItemGroup>
-    <None Include="$(TestRuntimeProjectJson)" />
+    <None Include="project.json" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
-  <Target Name="Build" /> 
+  <Target Name="Build"
+     DependsOnTargets="ResolveReferences" /> 
 </Project>
