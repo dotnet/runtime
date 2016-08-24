@@ -1916,6 +1916,9 @@ class GenTreeUseEdgeIterator final
 #ifdef FEATURE_SIMD
     void MoveToNextSIMDUseEdge();
 #endif
+#if FEATURE_MULTIREG_ARGS
+    void MoveToNextPutArgStkUseEdge();
+#endif
 
 public:
     GenTreeUseEdgeIterator();
