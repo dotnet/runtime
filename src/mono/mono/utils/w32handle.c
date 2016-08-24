@@ -357,8 +357,6 @@ mono_w32handle_cleanup (void)
 static void mono_w32handle_init_handle (MonoW32HandleBase *handle,
 			       MonoW32HandleType type, gpointer handle_specific)
 {
-	g_assert (!shutting_down);
-	
 	handle->type = type;
 	handle->signalled = FALSE;
 	handle->ref = 1;
@@ -384,8 +382,6 @@ static guint32 mono_w32handle_new_internal (MonoW32HandleType type,
 	guint32 i, k, count;
 	static guint32 last = 0;
 	gboolean retry = FALSE;
-	
-	g_assert (!shutting_down);
 	
 	/* A linear scan should be fast enough.  Start from the last
 	 * allocation, assuming that handles are allocated more often
