@@ -23,7 +23,7 @@ if(CLR_CMAKE_PLATFORM_ARCH_ARM64)
 elseif(CLR_CMAKE_PLATFORM_ARCH_ARM)
     
     # On Arm32 for Windows, use C++ compiler to process the .asm since it includes C-style headers.
-    set(DBGHELPERS_ASM $ENV{__IntermediatesDir}/dbghelpers.asm)
+    set(DBGHELPERS_ASM ${CMAKE_CURRENT_BINARY_DIR}/dbghelpers.asm)
     set(ASM_OPTIONS " -g ")
     
     preprocess_def_file(${ASM_FILE} ${DBGHELPERS_ASM})
