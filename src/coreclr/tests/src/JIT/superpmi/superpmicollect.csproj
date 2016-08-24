@@ -31,6 +31,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="superpmicollect.cs" />
+  </ItemGroup>
 
     <!-- Add project references to those tests that we run as part of the test -->
     <!-- Don't do this now; it simply builds and copies these EXE/PDB, but not the .cmd/.sh, which we use.
@@ -38,11 +39,6 @@
     <ProjectReference Include="..\Methodical\fp\exgen\10w5d_cs_do.csproj" />
     <ProjectReference Include="..\Generics\Coverage\chaos65204782cs.csproj" />
     -->
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="$(JitPackagesConfigFileDirectory)extra\project.json" />
-    <None Include="app.config" />
-  </ItemGroup>
   <ItemGroup>
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
   </ItemGroup>
