@@ -68,7 +68,7 @@ namespace System.Reflection.Metadata
                 Throw.ValueArgumentNull();
             }
 
-            return _reader.StringStream.Equals(handle, value, _reader.utf8Decoder, ignoreCase);
+            return _reader.StringStream.Equals(handle, value, _reader.Utf8Decoder, ignoreCase);
         }
 
         public bool Equals(NamespaceDefinitionHandle handle, string value)
@@ -85,10 +85,10 @@ namespace System.Reflection.Metadata
 
             if (handle.HasFullName)
             {
-                return _reader.StringStream.Equals(handle.GetFullName(), value, _reader.utf8Decoder, ignoreCase);
+                return _reader.StringStream.Equals(handle.GetFullName(), value, _reader.Utf8Decoder, ignoreCase);
             }
 
-            return value == _reader.namespaceCache.GetFullName(handle);
+            return value == _reader.NamespaceCache.GetFullName(handle);
         }
 
         public bool Equals(DocumentNameBlobHandle handle, string value)
@@ -118,7 +118,7 @@ namespace System.Reflection.Metadata
                 Throw.ValueArgumentNull();
             }
 
-            return _reader.StringStream.StartsWith(handle, value, _reader.utf8Decoder, ignoreCase);
+            return _reader.StringStream.StartsWith(handle, value, _reader.Utf8Decoder, ignoreCase);
         }
     }
 }

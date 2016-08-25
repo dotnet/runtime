@@ -25,7 +25,15 @@ namespace System.Reflection.Metadata
 
         private byte* _currentPointer;
 
-        public unsafe BlobReader(byte* buffer, int length)
+        /// <summary>
+        /// Creates a reader of the specified memory block.
+        /// </summary>
+        /// <param name="buffer">Pointer to the start of the memory block.</param>
+        /// <param name="length">Length in bytes of the memory block.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="buffer"/> is null and <paramref name="length"/> is greater than zero.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="length"/> is negative.</exception>
+        /// <exception cref="PlatformNotSupportedException">The current platform is not little-endian.</exception>
+        public BlobReader(byte* buffer, int length)
             : this(MemoryBlock.CreateChecked(buffer, length))
         {
 

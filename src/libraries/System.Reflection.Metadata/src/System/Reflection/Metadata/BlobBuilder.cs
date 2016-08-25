@@ -13,7 +13,7 @@ using System.Runtime.InteropServices;
 namespace System.Reflection.Metadata
 {
     [DebuggerDisplay("{GetDebuggerDisplay(),nq}")]
-    public unsafe partial class BlobBuilder
+    public partial class BlobBuilder
     {
         // The implementation is akin to StringBuilder. 
         // The differences:
@@ -746,7 +746,7 @@ namespace System.Reflection.Metadata
 
         /// <exception cref="ArgumentNullException"><paramref name="buffer"/> is null.</exception>
         /// <exception cref="InvalidOperationException">Builder is not writable, it has been linked with another one.</exception>
-        public unsafe void WriteBytes(byte[] buffer)
+        public void WriteBytes(byte[] buffer)
         {
             WriteBytes(buffer, 0, buffer?.Length ?? 0);
         }
@@ -937,7 +937,7 @@ namespace System.Reflection.Metadata
         /// </summary>
         /// <exception cref="ArgumentNullException"><paramref name="value"/> is null.</exception>
         /// <exception cref="InvalidOperationException">Builder is not writable, it has been linked with another one.</exception>
-        public void WriteUTF16(char[] value)
+        public unsafe void WriteUTF16(char[] value)
         {
             if (value == null)
             {
@@ -965,7 +965,7 @@ namespace System.Reflection.Metadata
         /// </summary>
         /// <exception cref="ArgumentNullException"><paramref name="value"/> is null.</exception>
         /// <exception cref="InvalidOperationException">Builder is not writable, it has been linked with another one.</exception>
-        public void WriteUTF16(string value)
+        public unsafe void WriteUTF16(string value)
         {
             if (value == null)
             {
@@ -1044,7 +1044,7 @@ namespace System.Reflection.Metadata
             WriteUTF8(value, 0, value.Length, allowUnpairedSurrogates, prependSize: false);
         }
 
-        internal void WriteUTF8(string str, int start, int length, bool allowUnpairedSurrogates, bool prependSize)
+        internal unsafe void WriteUTF8(string str, int start, int length, bool allowUnpairedSurrogates, bool prependSize)
         {
             Debug.Assert(start >= 0);
             Debug.Assert(length >= 0);

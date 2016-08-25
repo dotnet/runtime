@@ -4,16 +4,29 @@
 
 using System.Collections.Immutable;
 using System.IO;
-using System.Reflection.Metadata;
-using System.Reflection.Metadata.Tests;
+using System.Reflection.Metadata.Ecma335;
+using System.Text;
 using Xunit;
 
 namespace System.Reflection.Metadata.Tests
 {
     public class MetadataReaderProviderTests
     {
+        private static BlobBuilder BuildMetadataImage()
+        {
+            var mdBuilder = new MetadataBuilder();
+            mdBuilder.AddModule(0, default(StringHandle), default(GuidHandle), default(GuidHandle), default(GuidHandle));
+
+            var rootBuilder = new MetadataRootBuilder(mdBuilder, "v9.9.9.9");
+
+            var builder = new BlobBuilder();
+            rootBuilder.Serialize(builder, 0, 0);
+
+            return builder;
+        }
+
         [Fact]
-        public unsafe void FromMetadataImage1()
+        public unsafe void FromMetadataImage_BadArgs()
         {
             Assert.Throws<ArgumentNullException>(() => MetadataReaderProvider.FromMetadataImage(null, 10));
 
@@ -63,6 +76,44 @@ namespace System.Reflection.Metadata.Tests
         {
             var provider = MetadataReaderProvider.FromMetadataStream(new MemoryStream(), MetadataStreamOptions.PrefetchMetadata);
             Assert.Throws<BadImageFormatException>(() => provider.GetMetadataReader());
+        }
+
+        [Fact]
+        public unsafe void GetMetadataReader_FromMetadataImage()
+        {
+            var provider = MetadataReaderProvider.FromMetadataImage(BuildMetadataImage().ToImmutableArray());
+
+            var decoder = new TestMetadataStringDecoder(Encoding.UTF8, (a, b) => "str");
+
+            var reader1 = provider.GetMetadataReader(MetadataReaderOptions.None, decoder);
+            Assert.Equal("str", reader1.MetadataVersion);
+            Assert.Same(reader1.Utf8Decoder, decoder);
+            Assert.Equal(reader1.Options, MetadataReaderOptions.None);
+
+            var reader2 = provider.GetMetadataReader();
+            Assert.Same(reader1, reader2);
+
+            provider.Dispose();
+            Assert.Throws<ObjectDisposedException>(() => provider.GetMetadataReader());
+        }
+
+        [Fact]
+        public unsafe void GetMetadataReader_FromMetadataStream()
+        {
+            var provider = MetadataReaderProvider.FromMetadataStream(new MemoryStream(BuildMetadataImage().ToArray()));
+
+            var decoder = new TestMetadataStringDecoder(Encoding.UTF8, (a, b) => "str");
+
+            var reader1 = provider.GetMetadataReader(MetadataReaderOptions.None, decoder);
+            Assert.Equal("str", reader1.MetadataVersion);
+            Assert.Same(reader1.Utf8Decoder, decoder);
+            Assert.Equal(reader1.Options, MetadataReaderOptions.None);
+
+            var reader2 = provider.GetMetadataReader();
+            Assert.Same(reader1, reader2);
+
+            provider.Dispose();
+            Assert.Throws<ObjectDisposedException>(() => provider.GetMetadataReader());
         }
 
         [Fact]

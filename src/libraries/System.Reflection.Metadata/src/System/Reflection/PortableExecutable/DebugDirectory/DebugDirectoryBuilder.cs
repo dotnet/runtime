@@ -39,6 +39,15 @@ namespace System.Reflection.PortableExecutable
             });
         }
 
+        /// <summary>
+        /// Adds a CodeView entry.
+        /// </summary>
+        /// <param name="pdbPath">Path to the PDB. Shall not be empty.</param>
+        /// <param name="pdbContentId">Unique id of the PDB content.</param>
+        /// <param name="portablePdbVersion">Version of Portable PDB format (e.g. 0x0100 for 1.0), or 0 if the PDB is not portable.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="pdbPath"/> is null.</exception>
+        /// <exception cref="ArgumentException"><paramref name="pdbPath"/> contains NUL character.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="portablePdbVersion"/> is smaller than 0x0100.</exception>
         public void AddCodeViewEntry(
             string pdbPath,
             BlobContentId pdbContentId,
@@ -47,6 +56,17 @@ namespace System.Reflection.PortableExecutable
             if (pdbPath == null)
             {
                 Throw.ArgumentNull(nameof(pdbPath));
+            }
+
+            // We allow NUL characters to allow for padding for backward compat purposes.
+            if (pdbPath.Length == 0 || pdbPath.IndexOf('\0') == 0)
+            {
+                Throw.InvalidArgument(SR.ExpectedNonEmptyString, nameof(pdbPath));
+            }
+
+            if (portablePdbVersion > 0 && portablePdbVersion < PortablePdbVersions.MinFormatVersion)
+            {
+                Throw.ArgumentOutOfRange(nameof(portablePdbVersion));
             }
 
             int dataSize = WriteCodeViewData(_dataBuilder, pdbPath, pdbContentId.Guid);
@@ -58,16 +78,31 @@ namespace System.Reflection.PortableExecutable
                 dataSize: dataSize);
         }
 
+        /// <summary>
+        /// Adds Reproducible entry.
+        /// </summary>
         public void AddReproducibleEntry()
         {
             AddEntry(type: DebugDirectoryEntryType.Reproducible, version: 0, stamp: 0);
         }
 
+        /// <summary>
+        /// Adds Embedded Portable PDB entry.
+        /// </summary>
+        /// <param name="debugMetadata">Portable PDB metadata builder.</param>
+        /// <param name="portablePdbVersion">Version of Portable PDB format (e.g. 0x0100 for 1.0).</param>
+        /// <exception cref="ArgumentNullException"><paramref name="debugMetadata"/> is null.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="portablePdbVersion"/> is smaller than 0x0100.</exception>
         public void AddEmbeddedPortablePdbEntry(BlobBuilder debugMetadata, ushort portablePdbVersion)
         {
             if (debugMetadata == null)
             {
                 Throw.ArgumentNull(nameof(debugMetadata));
+            }
+
+            if (portablePdbVersion < PortablePdbVersions.MinFormatVersion)
+            {
+                Throw.ArgumentOutOfRange(nameof(portablePdbVersion));
             }
 
             int dataSize = WriteEmbeddedPortablePdbData(_dataBuilder, debugMetadata);

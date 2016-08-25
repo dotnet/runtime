@@ -38,7 +38,8 @@ namespace System.Reflection.Metadata
 
         internal const uint DebugDirectoryEmbeddedSignature = 0x4244504d;
 
-        internal static uint DebugDirectoryEntryVersion(ushort portablePdbVersion) => 'P' << 24 | 'M' << 16 | (uint)portablePdbVersion;
+        internal const ushort PortableCodeViewVersionMagic = 0x504d;
+        internal static uint DebugDirectoryEntryVersion(ushort portablePdbVersion) => PortableCodeViewVersionMagic << 16 | (uint)portablePdbVersion;
         internal static uint DebugDirectoryEmbeddedVersion(ushort portablePdbVersion) => (uint)DefaultEmbeddedVersion << 16 | portablePdbVersion;
         internal static string Format(ushort version) => (version >> 8) + "." + (version & 0xff);
     }

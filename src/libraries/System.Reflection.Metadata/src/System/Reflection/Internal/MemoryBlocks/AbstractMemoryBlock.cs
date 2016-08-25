@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Immutable;
+using System.Reflection.Metadata;
 
 namespace System.Reflection.Internal
 {
@@ -20,6 +21,8 @@ namespace System.Reflection.Internal
         /// Size of the block.
         /// </summary>
         public abstract int Size { get; }
+
+        public unsafe BlobReader GetReader() => new BlobReader(Pointer, Size);
 
         /// <summary>
         /// Returns the content of the entire memory block. 

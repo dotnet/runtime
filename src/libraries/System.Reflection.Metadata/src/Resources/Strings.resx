@@ -354,9 +354,6 @@
   <data name="UnexpectedEmbeddedPortablePdbDataSignature" xml:space="preserve">
     <value>Unexpected Embedded Portable PDB data signature value.</value>
   </data>
-  <data name="InvalidPathPadding" xml:space="preserve">
-    <value>The path must be padded with NUL characters.</value>
-  </data>
   <data name="UnexpectedSignatureHeader" xml:space="preserve">
     <value>Expected signature header for '{0}', but found '{1}' (0x{2:x2}).</value>
   </data>
@@ -375,8 +372,8 @@
   <data name="NotTypeDefOrRefOrSpecHandle" xml:space="preserve">
     <value>Specified handle is not a TypeDefinitionHandle, TypeRefererenceHandle, or TypeSpecificationHandle.</value>
   </data>
-  <data name="NotCodeViewEntry" xml:space="preserve">
-    <value>The Debug directory was not of type CodeView.</value>
+  <data name="UnexpectedDebugDirectoryType" xml:space="preserve">
+    <value>The Debug directory was not of type {0}.</value>
   </data>
   <data name="HeapSizeLimitExceeded" xml:space="preserve">
     <value>The limit on the size of {0} heap has been exceeded.</value>
