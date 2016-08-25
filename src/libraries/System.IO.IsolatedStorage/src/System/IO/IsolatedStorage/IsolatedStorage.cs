@@ -142,36 +142,9 @@ namespace System.IO.IsolatedStorage
         {
             Scope = scope;
 
-            // NetFX (desktop CLR) IsolatedStorage uses identity from System.Security.Policy.Evidence to build
-            // the folder structure on disk. It would use the "best" available evidence in this order:
-            //
-            //  1. Publisher (Authenticode)
-            //  2. StrongName
-            //  3. Url (CodeBase)
-            //  4. Site
-            //  5. Zone
-            //
-            // For CoreFx StrongName and Url are the only relevant types. By default evidence for the Domain comes
-            // from the Assembly which comes from the EntryAssembly(). We'll emulate the legacy default behavior
-            // by pulling directly from EntryAssembly.
-
-            Assembly assembly = Assembly.GetEntryAssembly();
-            AssemblyName assemblyName = assembly.GetName();
-            Uri codeBase = new Uri(assembly.CodeBase);
             object identity = null;
-
-            string hash = Helper.GetNormalizedStrongNameHash(assemblyName);
-            if (hash != null)
-            {
-                hash = $"StrongName{SeparatorInternal}{hash}";
-                identity = assemblyName;
-            }
-            else
-            {
-                hash = Helper.GetNormalizedUriHash(codeBase);
-                hash = $"Url{SeparatorInternal}{hash}";
-                identity = codeBase;
-            }
+            string hash = null;
+            Helper.GetDefaultIdentityAndHash(ref identity, ref hash, SeparatorInternal);
 
             if (Helper.IsApplication(scope))
             {

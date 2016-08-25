@@ -1,3 +1,0 @@
-Compat issues with assembly System.IO.IsolatedStorage:
-CannotAddAbstractMembers : Member 'System.IO.IsolatedStorage.IsolatedStorage.GetPermission(System.Security.PermissionSet)' is abstract in the implementation but is missing in the contract.
-Total Issues: 1

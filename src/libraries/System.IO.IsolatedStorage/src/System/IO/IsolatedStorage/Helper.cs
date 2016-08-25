@@ -14,11 +14,11 @@ namespace System.IO.IsolatedStorage
     {
         private const string IsolatedStorageDirectoryName = "IsolatedStorage";
 
-        private static string s_MachineRootDirectory;
-        private static string s_RoamingUserRootDirectory;
-        private static string s_UserRootDirectory;
+        private static string s_machineRootDirectory;
+        private static string s_roamingUserRootDirectory;
+        private static string s_userRootDirectory;
 
-        private static readonly char[] s_Base32Char =
+        private static readonly char[] s_base32Char =
         {
             'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h',
             'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p',
@@ -33,22 +33,26 @@ namespace System.IO.IsolatedStorage
 
             if (IsRoaming(scope))
             {
-                if (string.IsNullOrEmpty(s_RoamingUserRootDirectory))
-                    s_RoamingUserRootDirectory = GetDataDirectory(scope);
-                return s_RoamingUserRootDirectory;
+                if (string.IsNullOrEmpty(s_roamingUserRootDirectory))
+                {
+                    s_roamingUserRootDirectory = GetDataDirectory(scope);
+                }
+                return s_roamingUserRootDirectory;
             }
 
             if (IsMachine(scope))
             {
-                if (string.IsNullOrEmpty(s_MachineRootDirectory))
-                    s_MachineRootDirectory = GetDataDirectory(scope);
-                return s_MachineRootDirectory;
+                if (string.IsNullOrEmpty(s_machineRootDirectory))
+                {
+                    s_machineRootDirectory = GetDataDirectory(scope);
+                }
+                return s_machineRootDirectory;
             }
 
-            if (string.IsNullOrEmpty(s_UserRootDirectory))
-                s_UserRootDirectory = GetDataDirectory(scope);
+            if (string.IsNullOrEmpty(s_userRootDirectory))
+                s_userRootDirectory = GetDataDirectory(scope);
 
-            return s_UserRootDirectory;
+            return s_userRootDirectory;
         }
 
         private static string GetRandomDirectory(string rootDirectory, IsolatedStorageScope scope)
@@ -56,23 +60,27 @@ namespace System.IO.IsolatedStorage
             string randomDirectory = GetExistingRandomDirectory(rootDirectory);
             if (string.IsNullOrEmpty(randomDirectory))
             {
-                Mutex m = CreateMutexNotOwned(rootDirectory);
-                if (!m.WaitOne())
-                    throw new IsolatedStorageException(SR.IsolatedStorage_Init);
-
-                try
+                using (Mutex m = CreateMutexNotOwned(rootDirectory))
                 {
-                    randomDirectory = GetExistingRandomDirectory(rootDirectory);
-                    if (string.IsNullOrEmpty(randomDirectory))
+                    if (!m.WaitOne())
                     {
-                        // Someone else hasn't created the directory before we took the lock
-                        randomDirectory = Path.Combine(rootDirectory, Path.GetRandomFileName(), Path.GetRandomFileName());
-                        CreateDirectory(randomDirectory, scope);
+                        throw new IsolatedStorageException(SR.IsolatedStorage_Init);
                     }
-                }
-                finally
-                {
-                    m.ReleaseMutex();
+
+                    try
+                    {
+                        randomDirectory = GetExistingRandomDirectory(rootDirectory);
+                        if (string.IsNullOrEmpty(randomDirectory))
+                        {
+                            // Someone else hasn't created the directory before we took the lock
+                            randomDirectory = Path.Combine(rootDirectory, Path.GetRandomFileName(), Path.GetRandomFileName());
+                            CreateDirectory(randomDirectory, scope);
+                        }
+                    }
+                    finally
+                    {
+                        m.ReleaseMutex();
+                    }
                 }
             }
 
@@ -186,18 +194,18 @@ namespace System.IO.IsolatedStorage
                 b4 = (i < l) ? buff[i++] : (byte)0;
 
                 // Consume the 5 Least significant bits of each byte
-                sb.Append(s_Base32Char[b0 & 0x1F]);
-                sb.Append(s_Base32Char[b1 & 0x1F]);
-                sb.Append(s_Base32Char[b2 & 0x1F]);
-                sb.Append(s_Base32Char[b3 & 0x1F]);
-                sb.Append(s_Base32Char[b4 & 0x1F]);
+                sb.Append(s_base32Char[b0 & 0x1F]);
+                sb.Append(s_base32Char[b1 & 0x1F]);
+                sb.Append(s_base32Char[b2 & 0x1F]);
+                sb.Append(s_base32Char[b3 & 0x1F]);
+                sb.Append(s_base32Char[b4 & 0x1F]);
 
                 // Consume 3 MSB of b0, b1, MSB bits 6, 7 of b3, b4
-                sb.Append(s_Base32Char[(
+                sb.Append(s_base32Char[(
                         ((b0 & 0xE0) >> 5) |
                         ((b3 & 0x60) >> 2))]);
 
-                sb.Append(s_Base32Char[(
+                sb.Append(s_base32Char[(
                         ((b1 & 0xE0) >> 5) |
                         ((b4 & 0x60) >> 2))]);
 
@@ -212,36 +220,17 @@ namespace System.IO.IsolatedStorage
                 if ((b4 & 0x80) != 0)
                     b2 |= 0x10;
 
-                sb.Append(s_Base32Char[b2]);
+                sb.Append(s_base32Char[b2]);
 
             } while (i < l);
 
             return sb.ToString();
         }
 
-        internal static bool IsMachine(IsolatedStorageScope scope)
-        {
-            return ((scope & IsolatedStorageScope.Machine) != 0);
-        }
-
-        internal static bool IsAssembly(IsolatedStorageScope scope)
-        {
-            return ((scope & IsolatedStorageScope.Assembly) != 0);
-        }
-
-        internal static bool IsApplication(IsolatedStorageScope scope)
-        {
-            return ((scope & IsolatedStorageScope.Application) != 0);
-        }
-
-        internal static bool IsRoaming(IsolatedStorageScope scope)
-        {
-            return ((scope & IsolatedStorageScope.Roaming) != 0);
-        }
-
-        internal static bool IsDomain(IsolatedStorageScope scope)
-        {
-            return ((scope & IsolatedStorageScope.Domain) != 0);
-        }
+        internal static bool IsMachine(IsolatedStorageScope scope) => ((scope & IsolatedStorageScope.Machine) != 0);
+        internal static bool IsAssembly(IsolatedStorageScope scope) => ((scope & IsolatedStorageScope.Assembly) != 0);
+        internal static bool IsApplication(IsolatedStorageScope scope) => ((scope & IsolatedStorageScope.Application) != 0);
+        internal static bool IsRoaming(IsolatedStorageScope scope) => ((scope & IsolatedStorageScope.Roaming) != 0);
+        internal static bool IsDomain(IsolatedStorageScope scope) => ((scope & IsolatedStorageScope.Domain) != 0);
     }
 }
