@@ -588,6 +588,7 @@ typedef struct {
 	void (*mono_raise_exception_with_ctx) (MonoException *ex, MonoContext *ctx);
 	gboolean (*mono_exception_walk_trace) (MonoException *ex, MonoInternalExceptionFrameWalk func, gpointer user_data);
 	gboolean (*mono_install_handler_block_guard) (MonoThreadUnwindState *unwind_state);
+	gboolean (*mono_current_thread_has_handle_block_guard) (void);
 } MonoRuntimeExceptionHandlingCallbacks;
 
 /* used to free a dynamic method */

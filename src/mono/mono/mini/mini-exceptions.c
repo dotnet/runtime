@@ -94,6 +94,7 @@ static void restore_stack_protection (void);
 static void mono_walk_stack_full (MonoJitStackWalk func, MonoContext *start_ctx, MonoDomain *domain, MonoJitTlsData *jit_tls, MonoLMF *lmf, MonoUnwindOptions unwind_options, gpointer user_data);
 static void mono_raise_exception_with_ctx (MonoException *exc, MonoContext *ctx);
 static void mono_runtime_walk_stack_with_ctx (MonoJitStackWalk func, MonoContext *start_ctx, MonoUnwindOptions unwind_options, void *user_data);
+static gboolean mono_current_thread_has_handle_block_guard (void);
 
 void
 mono_exceptions_init (void)
@@ -136,6 +137,7 @@ mono_exceptions_init (void)
 	cbs.mono_raise_exception_with_ctx = mono_raise_exception_with_ctx;
 	cbs.mono_exception_walk_trace = mono_exception_walk_trace;
 	cbs.mono_install_handler_block_guard = mono_install_handler_block_guard;
+	cbs.mono_current_thread_has_handle_block_guard = mono_current_thread_has_handle_block_guard;
 	mono_install_eh_callbacks (&cbs);
 }
 
@@ -2676,9 +2678,22 @@ mono_install_handler_block_guard (MonoThreadUnwindState *ctx)
 	return TRUE;
 }
 
+static gboolean
+mono_current_thread_has_handle_block_guard (void)
+{
+	MonoJitTlsData *jit_tls = (MonoJitTlsData *)mono_native_tls_get_value (mono_jit_tls_id);
+	return jit_tls && jit_tls->handler_block_return_address != NULL;
+}
+
 #else
 gboolean
 mono_install_handler_block_guard (MonoThreadUnwindState *ctx)
+{
+	return FALSE;
+}
+
+static gboolean
+mono_current_thread_has_handle_block_guard (void)
 {
 	return FALSE;
 }
