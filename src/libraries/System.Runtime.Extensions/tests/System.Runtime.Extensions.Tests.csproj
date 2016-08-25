@@ -114,11 +114,5 @@
       <Name>VoidMainWithExitCodeApp</Name>
     </ProjectReference>
   </ItemGroup>
-  <!-- ToDo: Remove this target once the infrastructure for testing in netcoreapp1.1 is ready -->
-  <Target Name="RemoveUnwantedTestMonikers" Condition="'$(TargetGroup)'=='netstandard1.7'" BeforeTargets="CopyTestToTestDirectory">
-    <ItemGroup>
-        <TestNugetTargetMoniker Remove=".NETCoreApp,Version=v1.1" />
-    </ItemGroup>
-  </Target>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
