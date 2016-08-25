@@ -53,7 +53,7 @@ internal static partial class Interop
             byte* pbIv,
             PAL_SymmetricOptions options,
             out SafeAppleCryptorHandle cryptor,
-            out int errorCode);
+            out int ccStatus);
 
         [DllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_CryptorUpdate")]
         internal static extern unsafe int CryptorUpdate(
@@ -63,7 +63,7 @@ internal static partial class Interop
             byte* pbOutput,
             int cbOutput,
             out int cbWritten,
-            out int errorCode);
+            out int ccStatus);
 
         [DllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_CryptorFinal")]
         internal static extern unsafe int CryptorFinal(
@@ -71,10 +71,10 @@ internal static partial class Interop
             byte* pbOutput,
             int cbOutput,
             out int cbWritten,
-            out int errorCode);
+            out int ccStatus);
 
         [DllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_CryptorReset")]
-        internal static extern unsafe int CryptorReset(SafeAppleCryptorHandle cryptor, byte* pbIv, out int errorCode);
+        internal static extern unsafe int CryptorReset(SafeAppleCryptorHandle cryptor, byte* pbIv, out int ccStatus);
     }
 }
 
