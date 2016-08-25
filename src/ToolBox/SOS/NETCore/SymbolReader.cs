@@ -144,22 +144,29 @@ namespace SOS
         internal static IntPtr LoadSymbolsForModule(string assemblyPath, bool isFileLayout, IntPtr loadedPeAddress, int loadedPeSize, 
             IntPtr inMemoryPdbAddress, int inMemoryPdbSize, ReadMemoryDelegate readMemory)
         {
-            TargetStream peStream = null;
-            if (assemblyPath == null && loadedPeAddress != IntPtr.Zero)
+            try
             {
-                peStream = new TargetStream(loadedPeAddress, loadedPeSize, readMemory);
+                TargetStream peStream = null;
+                if (assemblyPath == null && loadedPeAddress != IntPtr.Zero)
+                {
+                    peStream = new TargetStream(loadedPeAddress, loadedPeSize, readMemory);
+                }
+                TargetStream pdbStream = null;
+                if (inMemoryPdbAddress != IntPtr.Zero)
+                {
+                    pdbStream = new TargetStream(inMemoryPdbAddress, inMemoryPdbSize, readMemory);
+                }
+                OpenedReader openedReader = GetReader(assemblyPath, isFileLayout, peStream, pdbStream);
+                if (openedReader != null)
+                {
+                    GCHandle gch = GCHandle.Alloc(openedReader);
+                    return GCHandle.ToIntPtr(gch);
+                }
             }
-            TargetStream pdbStream = null;
-            if (inMemoryPdbAddress != IntPtr.Zero)
+            catch
             {
-                pdbStream = new TargetStream(inMemoryPdbAddress, inMemoryPdbSize, readMemory);
             }
-            OpenedReader openedReader = GetReader(assemblyPath, isFileLayout, peStream, pdbStream);
-            if (openedReader == null)
-                return IntPtr.Zero;
-
-            GCHandle gch = GCHandle.Alloc(openedReader);
-            return GCHandle.ToIntPtr(gch);
+            return IntPtr.Zero;
         }
 
         /// <summary>
@@ -493,7 +500,7 @@ namespace SOS
                 provider = MetadataReaderProvider.FromPortablePdbStream(pdbStream);
                 result = new OpenedReader(provider, provider.GetMetadataReader());
             }
-            catch (BadImageFormatException)
+            catch (Exception e) when (e is BadImageFormatException || e is IOException)
             {
                 return null;
             }
