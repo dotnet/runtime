@@ -4,6 +4,7 @@ set(SOURCES RefCharArrayNative.cpp )
 
 # add the executable
 add_library (RefCharArrayNative SHARED ${SOURCES})
+target_link_libraries(RefCharArrayNative ${LINK_LIBRARIES_ADDITIONAL}) 
 
 #get_cmake_property(_variableNames VARIABLES)
 #foreach (_variableName ${_variableNames})
