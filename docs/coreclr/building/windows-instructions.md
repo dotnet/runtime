@@ -15,16 +15,18 @@ Visual Studio must be installed. Supported versions:
 
 - [Visual Studio 2015](https://www.visualstudio.com/downloads/visual-studio-2015-downloads-vs) (Community, Professional, Enterprise)
 
-To debug managed code, ensure you have installed atleast [Visual Studio 2015 Update 3](https://blogs.msdn.microsoft.com/visualstudio/2016/06/07/visual-studio-2015-update-3-rc/).
+To debug managed code, ensure you have installed atleast [Visual Studio 2015 Update 3](https://www.visualstudio.com/en-us/news/releasenotes/vs2015-update3-vs).
 
-Make sure that you install "VC++ Tools". By default they will not be installed.
+Make sure that you install "VC++ Tools". By default, they will not be installed.
+
+To build for Arm32, you need to have [Windows SDK for Windows 10](https://developer.microsoft.com/en-us/windows/downloads) installed. 
 
 Visual Studio Express is not supported.
 
 CMake
 -----
 
-The CoreCLR build relies on CMake for the build. We are currently using CMake 3.0.2, although later versions likely work.
+The CoreCLR repo build has been validated using CMake 3.5.2. 
 
 - Install [CMake](http://www.cmake.org/download) for Windows.
 - Add it to the PATH environment variable.
