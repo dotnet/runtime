@@ -7241,7 +7241,11 @@ emit_method_inner (EmitContext *ctx)
 		ctx->module->max_method_idx = MAX (ctx->module->max_method_idx, cfg->method_index);
 
 		// FIXME: beforefieldinit
-		if (ctx->has_got_access || mono_class_get_cctor (cfg->method->klass)) {
+		/*
+		 * NATIVE_TO_MANAGED methods might be called on a thread not attached to the runtime, so they are initialized when loaded
+		 * in load_method ().
+		 */
+		if ((ctx->has_got_access || mono_class_get_cctor (cfg->method->klass)) && !(cfg->method->wrapper_type == MONO_WRAPPER_NATIVE_TO_MANAGED)) {
 			/*
 			 * linkonce methods shouldn't have initialization,
 			 * because they might belong to assemblies which

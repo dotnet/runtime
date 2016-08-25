@@ -3908,7 +3908,8 @@ load_method (MonoDomain *domain, MonoAotModule *amodule, MonoImage *image, MonoM
 		}
 	}
 
-	if (!(is_llvm_code (amodule, code) && (amodule->info.flags & MONO_AOT_FILE_FLAG_LLVM_ONLY))) {
+	if (!(is_llvm_code (amodule, code) && (amodule->info.flags & MONO_AOT_FILE_FLAG_LLVM_ONLY)) ||
+		(mono_llvm_only && method && method->wrapper_type == MONO_WRAPPER_NATIVE_TO_MANAGED)) {
 		res = init_method (amodule, method_index, method, NULL, NULL, error);
 		if (!res)
 			goto cleanup;
