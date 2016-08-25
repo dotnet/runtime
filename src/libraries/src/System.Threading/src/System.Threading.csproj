@@ -4,7 +4,6 @@
   <PropertyGroup>
     <ProjectGuid>{604027F5-1DFC-42F4-B4FE-61F8789BA647}</ProjectGuid>
     <AssemblyName>System.Threading</AssemblyName>
-    <AssemblyVersion>4.0.12.0</AssemblyVersion>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <PackageTargetFramework Condition="'$(PackageTargetFramework)' == ''">netstandard1.3</PackageTargetFramework>

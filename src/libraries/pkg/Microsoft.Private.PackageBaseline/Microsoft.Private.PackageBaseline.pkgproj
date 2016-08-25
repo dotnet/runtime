@@ -9,7 +9,10 @@
   </PropertyGroup>
   
   <ItemGroup>
-    <File Include="*.props">
+    <File Include="Microsoft.Private.PackageBaseline.props">
+      <TargetPath>build</TargetPath>
+    </File>
+    <File Include="packageIndex.json">
       <TargetPath>build</TargetPath>
     </File>
   </ItemGroup>

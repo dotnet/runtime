@@ -2,20 +2,18 @@
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <!-- TODO: Get this from the file version -->
-    <Version>4.0.2</Version>
     <SkipPackageFileCheck>true</SkipPackageFileCheck>
     <SkipValidatePackage>true</SkipValidatePackage>
   </PropertyGroup>
   <ItemGroup>
     <Dependency Include="runtime.win7-x64.runtime.native.System.Data.SqlClient.sni">
-      <Version>4.0.2-$(ExternalExpectedPrerelease)</Version>
+      <Version>$(PackageVersion)-$(ExternalExpectedPrerelease)</Version>
     </Dependency>
     <Dependency Include="runtime.win7-x86.runtime.native.System.Data.SqlClient.sni">
-      <Version>4.0.2-$(ExternalExpectedPrerelease)</Version>
+      <Version>$(PackageVersion)-$(ExternalExpectedPrerelease)</Version>
     </Dependency>
     <Dependency Include="runtime.win10-arm64.runtime.native.System.Data.SqlClient.sni">
-      <Version>4.0.2-$(ExternalExpectedPrerelease)</Version>
+      <Version>$(PackageVersion)-$(ExternalExpectedPrerelease)</Version>
     </Dependency>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />

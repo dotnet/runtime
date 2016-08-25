@@ -5,7 +5,6 @@
     <ProjectGuid>{A6BA5DF2-772E-4DA1-BC2D-89FF4A21EE4F}</ProjectGuid>
     <RootNamespace>System.Threading.Tasks.Parallel</RootNamespace>
     <AssemblyName>System.Threading.Tasks.Parallel</AssemblyName>
-    <AssemblyVersion>4.0.2.0</AssemblyVersion>
     <FileAlignment>512</FileAlignment>
     <DefineConstants>$(DefineConstants);CONCURRENT_COLLECTIONS;FEATURE_TRACING</DefineConstants>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>

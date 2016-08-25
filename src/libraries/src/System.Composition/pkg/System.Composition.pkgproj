@@ -2,10 +2,6 @@
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
 
-  <PropertyGroup>
-    <Version>1.0.31</Version>
-  </PropertyGroup>
-
   <ItemGroup>
     <ProjectReference Include="..\..\System.Composition.AttributedModel\pkg\System.Composition.AttributedModel.pkgproj" />
     <ProjectReference Include="..\..\System.Composition.Convention\pkg\System.Composition.Convention.pkgproj" />

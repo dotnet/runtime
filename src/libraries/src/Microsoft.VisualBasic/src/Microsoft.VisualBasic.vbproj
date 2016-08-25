@@ -13,7 +13,6 @@
     <WarningsNotAsErrors>42025</WarningsNotAsErrors>
     <DefineConstants>$(DefineConstants),LATEBINDING=True</DefineConstants>
     <AssemblyName>Microsoft.VisualBasic</AssemblyName>
-    <AssemblyVersion>10.0.2.0</AssemblyVersion>
     <NoStdLib>true</NoStdLib>
     <PackageTargetFramework>netstandard1.3</PackageTargetFramework>
     <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.3</NuGetTargetMoniker>

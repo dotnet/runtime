@@ -3,7 +3,6 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <AssemblyName>System.Resources.ResourceManager</AssemblyName>
-    <AssemblyVersion>4.0.2.0</AssemblyVersion>
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)' != 'netcore50aot'">true</IsPartialFacadeAssembly>
     <ResourcesSourceOutputDirectory Condition="'$(TargetGroup)' != 'netcore50aot'">None</ResourcesSourceOutputDirectory>
     <SkipCommonResourcesIncludes Condition="'$(TargetGroup)'=='netcore50aot'">true</SkipCommonResourcesIncludes>

@@ -15,7 +15,6 @@
     <PackageTargetFramework Condition="'$(PackageTargetFramework)' == ''">netstandard1.3</PackageTargetFramework>
     <PackageTargetRuntime>win8</PackageTargetRuntime>
     <PackageTargetRuntime Condition="'$(TargetGroup)' == 'netcore50aot'">win8-aot</PackageTargetRuntime>
-    <AssemblyVersion>4.0.12.0</AssemblyVersion>
     <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.3</NuGetTargetMoniker>
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetGroup)'==''">

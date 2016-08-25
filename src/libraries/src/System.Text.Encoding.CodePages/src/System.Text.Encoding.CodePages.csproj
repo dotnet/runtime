@@ -11,7 +11,6 @@
     <OutputType>Library</OutputType>
     <RootNamespace>System.Text.Encoding.CodePages</RootNamespace>
     <AssemblyName>System.Text.Encoding.CodePages</AssemblyName>
-    <AssemblyVersion>4.0.2.0</AssemblyVersion>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <PackageTargetFramework Condition="'$(TargetsUnix)' == 'true'">netstandard1.3</PackageTargetFramework>
     <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.3</NuGetTargetMoniker>
