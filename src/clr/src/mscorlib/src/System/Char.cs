@@ -163,10 +163,7 @@ namespace System {
       ==============================================================================*/
       // Provides a string representation of a character.
       [Pure]
-      public static String ToString(char c) {
-          Contract.Ensures(Contract.Result<String>() != null);
-          return new String(c, 1);
-      }
+      public static string ToString(char c) => string.CreateFromChar(c);
 
       public static char Parse(String s) {
           if (s==null) {
