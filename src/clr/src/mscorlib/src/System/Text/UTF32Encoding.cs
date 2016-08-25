@@ -34,9 +34,10 @@ namespace System.Text
             Real Unicode value = (HighSurrogate - 0xD800) * 0x400 + (LowSurrogate - 0xDC00) + 0x10000
         */
 
-        // Used by Encoding.UTF32 for lazy initialization
+        // Used by Encoding.UTF32/BigEndianUTF32 for lazy initialization
         // The initialization code will not be run until a static member of the class is referenced
         internal static readonly UTF32Encoding s_default = new UTF32Encoding(bigEndian: false, byteOrderMark: true);
+        internal static readonly UTF32Encoding s_bigEndianDefault = new UTF32Encoding(bigEndian: true, byteOrderMark: true);
 
         private bool emitUTF32ByteOrderMark = false;
         private bool isThrowException = false;
