@@ -6226,9 +6226,28 @@ bool Compiler::optHoistLoopExprsForTree(
         // be hoisted so that they are evaluated in the same order as they would have been in the loop,
         // and therefore throw exceptions in the same order.  (So we don't use GTF_GLOBALLY_VISIBLE_SIDE_EFFECTS
         // here, since that includes exceptions.)
-        if (tree->gtFlags & GTF_CALL)
+        if (tree->IsCall())
         {
-            *pFirstBlockAndBeforeSideEffect = false;
+            // If it's a call, it must be a helper call that does not mutate the heap.
+            // Further, if it may run a cctor, it must be labeled as "Hoistable"
+            // (meaning it won't run a cctor because the class is not precise-init).
+            GenTreeCall* call = tree->AsCall();
+            if (call->gtCallType != CT_HELPER)
+            {
+                *pFirstBlockAndBeforeSideEffect = false;
+            }
+            else
+            {
+                CorInfoHelpFunc helpFunc = eeGetHelperNum(call->gtCallMethHnd);
+                if (s_helperCallProperties.MutatesHeap(helpFunc))
+                {
+                    *pFirstBlockAndBeforeSideEffect = false;
+                }
+                else if (s_helperCallProperties.MayRunCctor(helpFunc) && (call->gtFlags & GTF_CALL_HOISTABLE) == 0)
+                {
+                    *pFirstBlockAndBeforeSideEffect = false;
+                }
+            }
         }
         else if (tree->OperIsAssignment())
         {
