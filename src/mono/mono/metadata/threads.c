@@ -1005,7 +1005,6 @@ mono_thread_attach_full (MonoDomain *domain, gboolean force_attach)
 	MonoThreadInfo *info;
 	MonoInternalThread *thread;
 	MonoThread *current_thread;
-	HANDLE thread_handle;
 	MonoNativeThreadId tid;
 
 	if ((thread = mono_thread_internal_current ())) {
@@ -1019,21 +1018,17 @@ mono_thread_attach_full (MonoDomain *domain, gboolean force_attach)
 		g_error ("Thread %"G_GSIZE_FORMAT" calling into managed code is not registered with the GC. On UNIX, this can be fixed by #include-ing <gc.h> before <pthread.h> in the file containing the thread creation code.", mono_native_thread_id_get ());
 	}
 
-	thread = create_internal_thread ();
-
-	thread_handle = mono_thread_info_open_handle ();
-	g_assert (thread_handle);
+	info = mono_thread_info_current ();
 
 	tid=mono_native_thread_id_get ();
 
-	thread->handle = thread_handle;
+	thread = create_internal_thread ();
+	thread->handle = mono_thread_info_get_handle (info);
 	thread->tid = MONO_NATIVE_THREAD_ID_TO_UINT (tid);
 	thread->stack_ptr = &tid;
 
-	THREAD_DEBUG (g_message ("%s: Attached thread ID %"G_GSIZE_FORMAT" (handle %p)", __func__, tid, thread_handle));
+	THREAD_DEBUG (g_message ("%s: Attached thread ID %"G_GSIZE_FORMAT" (handle %p)", __func__, tid, thread->handle));
 
-	info = mono_thread_info_current ();
-	g_assert (info);
 	thread->thread_info = info;
 	thread->small_id = info->small_id;
 

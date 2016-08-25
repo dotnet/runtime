@@ -322,24 +322,6 @@ mono_threads_platform_unregister (MonoThreadInfo *info)
 {
 }
 
-HANDLE
-mono_threads_platform_open_handle (void)
-{
-	HANDLE thread_handle;
-
-	thread_handle = GetCurrentThread ();
-	g_assert (thread_handle);
-
-	/*
-	 * The handle returned by GetCurrentThread () is a pseudo handle, so it can't be used to
-	 * refer to the thread from other threads for things like aborting.
-	 */
-	DuplicateHandle (GetCurrentProcess (), thread_handle, GetCurrentProcess (), &thread_handle,
-					 THREAD_ALL_ACCESS, TRUE, 0);
-
-	return thread_handle;
-}
-
 int
 mono_threads_get_max_stack_size (void)
 {
