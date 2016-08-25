@@ -9,6 +9,7 @@
  */
 
 #include "config.h"
+
 #ifdef HAVE_SGEN_GC
 
 
@@ -65,6 +66,10 @@ mono_gc_get_restart_signal (void)
 {
 	return -1;
 }
-
-#endif
+#else
+	#ifdef _MSC_VER
+		// Quiet Visual Studio linker warning, LNK4221, in cases when this source file intentional ends up empty.
+		void __mono_win32_sgen_os_coop_quiet_lnk4221(void) {}
+	#endif
+#endif /* USE_COOP_GC */
 #endif

@@ -24,7 +24,6 @@
 
 #include "lock-tracer.h"
 
-
 /*
  * This is a very simple lock trace implementation. It can be used to verify that the runtime is
  * correctly following all locking rules.
@@ -141,5 +140,9 @@ mono_locks_lock_released (RuntimeLocks kind, gpointer lock)
 {
 	add_record (RECORD_LOCK_RELEASED, kind, lock);
 }
-
-#endif
+#else
+	#ifdef _MSC_VER
+		// Quiet Visual Studio linker warning, LNK4221, in cases when this source file intentional ends up empty.
+		void __mono_win32_lock_tracer_quiet_lnk4221(void) {}
+	#endif
+#endif /* LOCK_TRACER */

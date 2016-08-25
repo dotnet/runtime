@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -80,6 +80,7 @@
     <ClCompile Include="..\mono\metadata\mono-security.c" />
     <ClCompile Include="..\mono\metadata\seq-points-data.c" />
     <ClCompile Include="..\mono\metadata\sgen-mono.c" />
+    <ClCompile Include="..\mono\metadata\sgen-os-coop.c" />
     <ClCompile Include="..\mono\metadata\threadpool-ms-io.c" />
     <ClCompile Include="..\mono\metadata\threadpool-ms.c" />
     <ClCompile Include="..\mono\metadata\sgen-bridge.c" />
