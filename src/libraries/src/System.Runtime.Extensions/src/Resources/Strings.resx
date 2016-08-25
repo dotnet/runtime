@@ -324,4 +324,7 @@
   <data name="UnknownError_Num" xml:space="preserve">
     <value>Unknown error '{0}'.</value>
   </data>
+  <data name="PersistedFiles_NoHomeDirectory" xml:space="preserve">
+    <value>The home directory of the current user could not be determined.</value>
+  </data>
 </root>
