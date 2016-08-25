@@ -55,6 +55,10 @@
       <OSGroup>Linux</OSGroup>
       <Platform>amd64</Platform>
     </Project>
+    <Project Condition="'$(TargetsLinux)' == 'true' and '$(DistroRid)' == 'ubuntu.16.10-x64'" Include="ubuntu/16.10/Microsoft.NETCore.Runtime.CoreCLR.pkgproj">
+      <OSGroup>Linux</OSGroup>
+      <Platform>amd64</Platform>
+    </Project>
     <Project Condition="'$(TargetsOSX)' == 'true'" Include="osx/Microsoft.NETCore.Runtime.CoreCLR.pkgproj">
       <OSGroup>OSX</OSGroup>
       <Platform>amd64</Platform>
