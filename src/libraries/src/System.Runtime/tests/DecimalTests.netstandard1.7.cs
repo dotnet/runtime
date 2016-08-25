@@ -13,7 +13,7 @@ namespace System.Tests
         public static IEnumerable<object[]> FromOACurrency_TestData()
         {
             yield return new object[] { 0L, 0m };
-            yield return new object[] { 1L, 0.001m };
+            yield return new object[] { 1L, 0.0001m };
             yield return new object[] { 100000L, 10m };
             yield return new object[] { 10000000000L, 1000000m };
             yield return new object[] { 1000000000000000000L, 100000000000000m };
@@ -126,7 +126,7 @@ namespace System.Tests
         [MemberData(nameof(Round_Digit_Mid_Valid_TestData))]
         public static void Round(decimal d1, int digits, MidpointRounding m, decimal expected)
         {
-            Assert.Equal(expected, decimal.Round(d1, digits));
+            Assert.Equal(expected, decimal.Round(d1, digits, m));
         }
 
         public static IEnumerable<object[]> Round_Mid_Valid_TestData()
