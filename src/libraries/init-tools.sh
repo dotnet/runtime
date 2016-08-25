@@ -31,7 +31,7 @@ OSName=$(uname -s)
                 __DOTNET_PKG=dotnet-dev-ubuntu.14.04-x64
             else
                 source /etc/os-release
-                if [[ "$ID" == "ubuntu" && "$VERSION_ID" != "14.04" && "$VERSION_ID" != "16.04" ]]; then
+                if [[ "$ID" == "ubuntu" && "$VERSION_ID" != "14.04" && "$VERSION_ID" != "16.04" && "$VERSION_ID" != "16.10" ]]; then
                     echo "Unsupported Ubuntu version, falling back to Ubuntu 14.04."
                     __DOTNET_PKG=dotnet-dev-ubuntu.14.04-x64
                 else
