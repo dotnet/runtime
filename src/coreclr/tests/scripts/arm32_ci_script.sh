@@ -180,6 +180,10 @@ function mount_emulator {
     mount_with_checking "-o bind" "/dev/pts" "$__ARMRootfsMountPath/dev/pts"
     mount_with_checking "-t tmpfs" "shm"     "$__ARMRootfsMountPath/run/shm"
     mount_with_checking "-o bind" "/sys"     "$__ARMRootfsMountPath/sys"
+    if [ ! -d "$__ARMRootfsMountPath/bindings/tmp" ]; then
+        sudo mkdir -p "$__ARMRootfsMountPath/bindings/tmp"
+    fi
+    mount_with_checking "-o bind" "/mnt"     "$__ARMRootfsMountPath/bindings/tmp"
 }
 
 #Cross builds coreclr
@@ -265,7 +269,7 @@ function copy_to_emulator {
 #Runs tests in an emulated mode
 function run_tests {
     sudo chroot $__ARMRootfsMountPath /bin/bash -x <<EOF
-        cd /home/coreclr
+        cd "$__ARMEmulCoreclr"
         ./tests/runtest.sh --testRootDir=$__testRootDirBase \
                            --mscorlibDir=$__mscorlibDirBase \
                            --coreFxNativeBinDir=$__coreFxNativeBinDirBase \
@@ -392,10 +396,16 @@ fi
 __buildDirName="$__buildOS.$__buildArch.$__buildConfig"
 
 #Define emulator paths
-__ARMRootfsCoreclrPath="$__ARMRootfsMountPath/home/coreclr"
-__ARMRootfsCorefxPath="$__ARMRootfsMountPath/home/corefx"
-__ARMEmulCoreclr="/home/coreclr"
-__ARMEmulCorefx="/home/corefx"
+__TempFolder="bindings/tmp/arm32_ci_temp"
+
+if [ ! -d "$__TempFolder" ]; then
+    mkdir "$__TempFolder"
+fi
+
+__ARMRootfsCoreclrPath="$__ARMRootfsMountPath/$__TempFolder/coreclr"
+__ARMRootfsCorefxPath="$__ARMRootfsMountPath/$__TempFolder/corefx"
+__ARMEmulCoreclr="/$__TempFolder/coreclr"
+__ARMEmulCorefx="/$__TempFolder/corefx"
 __testRootDirBase=
 __mscorlibDirBase=
 __coreFxNativeBinDirBase=
@@ -440,5 +450,7 @@ run_tests
 #Clean the environment
 (set +x; echo 'Cleaning environment...')
 clean_env
+
+rm -r "/mnt/arm32_ci_temp"
 
 (set +x; echo 'Build and test complete')
