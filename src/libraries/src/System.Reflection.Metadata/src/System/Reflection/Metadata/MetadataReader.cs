@@ -7,8 +7,6 @@ using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Reflection.Internal;
 using System.Reflection.Metadata.Ecma335;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Text;
 
 namespace System.Reflection.Metadata
@@ -18,15 +16,16 @@ namespace System.Reflection.Metadata
     /// </summary>
     public sealed partial class MetadataReader
     {
-        private readonly MetadataReaderOptions _options;
-        internal readonly MetadataStringDecoder utf8Decoder;
-        internal readonly NamespaceCache namespaceCache;
-        private Dictionary<TypeDefinitionHandle, ImmutableArray<TypeDefinitionHandle>> _lazyNestedTypesMap;
+        internal readonly MetadataStringDecoder Utf8Decoder;
+        internal readonly NamespaceCache NamespaceCache;
         internal readonly MemoryBlock Block;
 
         // A row id of "mscorlib" AssemblyRef in a WinMD file (each WinMD file must have such a reference).
         internal readonly int WinMDMscorlibRef;
 
+        private readonly MetadataReaderOptions _options;
+        private Dictionary<TypeDefinitionHandle, ImmutableArray<TypeDefinitionHandle>> _lazyNestedTypesMap;
+        
         #region Constructors
 
         /// <summary>
@@ -97,7 +96,7 @@ namespace System.Reflection.Metadata
             this.Block = new MemoryBlock(metadata, length);
 
             _options = options;
-            this.utf8Decoder = utf8Decoder;
+            this.Utf8Decoder = utf8Decoder;
 
             var headerReader = new BlobReader(this.Block);
             this.ReadMetadataHeader(ref headerReader, out _versionString);
@@ -140,7 +139,7 @@ namespace System.Reflection.Metadata
             }
 
             //  read 
-            this.namespaceCache = new NamespaceCache(this);
+            this.NamespaceCache = new NamespaceCache(this);
 
             if (_metadataKind != MetadataKind.Ecma335)
             {
@@ -207,7 +206,7 @@ namespace System.Reflection.Metadata
             }
 
             int numberOfBytesRead;
-            versionString = memReader.GetMemoryBlockAt(0, versionStringSize).PeekUtf8NullTerminated(0, null, utf8Decoder, out numberOfBytesRead, '\0');
+            versionString = memReader.GetMemoryBlockAt(0, versionStringSize).PeekUtf8NullTerminated(0, null, Utf8Decoder, out numberOfBytesRead, '\0');
             memReader.SkipBytes(versionStringSize);
         }
 
@@ -834,36 +833,11 @@ namespace System.Reflection.Metadata
 
         #region Helpers
 
-        // internal for testing
-        internal NamespaceCache NamespaceCache
-        {
-            get { return namespaceCache; }
-        }
-
-        internal bool UseFieldPtrTable
-        {
-            get { return this.FieldPtrTable.NumberOfRows > 0; }
-        }
-
-        internal bool UseMethodPtrTable
-        {
-            get { return this.MethodPtrTable.NumberOfRows > 0; }
-        }
-
-        internal bool UseParamPtrTable
-        {
-            get { return this.ParamPtrTable.NumberOfRows > 0; }
-        }
-
-        internal bool UseEventPtrTable
-        {
-            get { return this.EventPtrTable.NumberOfRows > 0; }
-        }
-
-        internal bool UsePropertyPtrTable
-        {
-            get { return this.PropertyPtrTable.NumberOfRows > 0; }
-        }
+        internal bool UseFieldPtrTable => FieldPtrTable.NumberOfRows > 0;
+        internal bool UseMethodPtrTable => MethodPtrTable.NumberOfRows > 0;
+        internal bool UseParamPtrTable => ParamPtrTable.NumberOfRows > 0;
+        internal bool UseEventPtrTable => EventPtrTable.NumberOfRows > 0;
+        internal bool UsePropertyPtrTable => PropertyPtrTable.NumberOfRows > 0;
 
         internal void GetFieldRange(TypeDefinitionHandle typeDef, out int firstFieldRowId, out int lastFieldRowId)
         {
@@ -1083,17 +1057,17 @@ namespace System.Reflection.Metadata
 
         public string GetString(StringHandle handle)
         {
-            return StringStream.GetString(handle, utf8Decoder);
+            return StringStream.GetString(handle, Utf8Decoder);
         }
 
         public string GetString(NamespaceDefinitionHandle handle)
         {
             if (handle.HasFullName)
             {
-                return StringStream.GetString(handle.GetFullName(), utf8Decoder);
+                return StringStream.GetString(handle.GetFullName(), Utf8Decoder);
             }
 
-            return namespaceCache.GetFullName(handle);
+            return NamespaceCache.GetFullName(handle);
         }
 
         public byte[] GetBlobBytes(BlobHandle handle)
@@ -1146,13 +1120,13 @@ namespace System.Reflection.Metadata
 
         public NamespaceDefinition GetNamespaceDefinitionRoot()
         {
-            NamespaceData data = namespaceCache.GetRootNamespace();
+            NamespaceData data = NamespaceCache.GetRootNamespace();
             return new NamespaceDefinition(data);
         }
 
         public NamespaceDefinition GetNamespaceDefinition(NamespaceDefinitionHandle handle)
         {
-            NamespaceData data = namespaceCache.GetNamespaceData(handle);
+            NamespaceData data = NamespaceCache.GetNamespaceData(handle);
             return new NamespaceDefinition(data);
         }
 

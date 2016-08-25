@@ -2642,7 +2642,7 @@ namespace System.Reflection.Metadata.Tests
                     offsetToModuleTable = offsetToMetadata + peReader.GetMetadataReader().GetTableMetadataOffset(TableIndex.Module);
 
                     // skip root header
-                    BlobReader blobReader = new BlobReader(metadata.Pointer, metadata.Length);
+                    BlobReader blobReader = metadata.GetReader();
                     blobReader.ReadUInt32(); // signature
                     blobReader.ReadUInt16(); // major version
                     blobReader.ReadUInt16(); // minor version

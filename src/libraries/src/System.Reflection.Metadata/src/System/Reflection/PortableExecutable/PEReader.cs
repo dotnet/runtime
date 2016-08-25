@@ -6,8 +6,10 @@ using System.Collections.Immutable;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
+using System.Linq;
 using System.Reflection.Internal;
 using System.Reflection.Metadata;
+using System.Runtime.ExceptionServices;
 using System.Threading;
 
 namespace System.Reflection.PortableExecutable
@@ -518,7 +520,7 @@ namespace System.Reflection.PortableExecutable
         /// </summary>
         /// <exception cref="BadImageFormatException">Bad format of the entry.</exception>
         /// <exception cref="IOException">IO error while reading from the underlying stream.</exception>
-        public unsafe ImmutableArray<DebugDirectoryEntry> ReadDebugDirectory()
+        public ImmutableArray<DebugDirectoryEntry> ReadDebugDirectory()
         {
             var debugDirectory = PEHeaders.PEHeader.DebugTableDirectory;
             if (debugDirectory.Size == 0)
@@ -539,8 +541,7 @@ namespace System.Reflection.PortableExecutable
 
             using (AbstractMemoryBlock block = _peImage.GetMemoryBlock(position, debugDirectory.Size))
             {
-                var reader = new BlobReader(block.Pointer, block.Size);
-                return ReadDebugDirectoryEntries(reader);
+                return ReadDebugDirectoryEntries(block.GetReader());
             }
         }
 
@@ -585,40 +586,37 @@ namespace System.Reflection.PortableExecutable
         /// <exception cref="ArgumentException"><paramref name="entry"/> is not a CodeView entry.</exception>
         /// <exception cref="BadImageFormatException">Bad format of the data.</exception>
         /// <exception cref="IOException">IO error while reading from the underlying stream.</exception>
-        public unsafe CodeViewDebugDirectoryData ReadCodeViewDebugDirectoryData(DebugDirectoryEntry entry)
+        public CodeViewDebugDirectoryData ReadCodeViewDebugDirectoryData(DebugDirectoryEntry entry)
         {
             if (entry.Type != DebugDirectoryEntryType.CodeView)
             {
-                throw new ArgumentException(SR.NotCodeViewEntry, nameof(entry));
+                Throw.InvalidArgument(SR.Format(SR.UnexpectedDebugDirectoryType, nameof(DebugDirectoryEntryType.CodeView)), nameof(entry));
             }
 
             using (var block = GetDebugDirectoryEntryDataBlock(entry))
             {
-                var reader = new BlobReader(block.Pointer, block.Size);
-
-                if (reader.ReadByte() != (byte)'R' ||
-                    reader.ReadByte() != (byte)'S' ||
-                    reader.ReadByte() != (byte)'D' ||
-                    reader.ReadByte() != (byte)'S')
-                {
-                    throw new BadImageFormatException(SR.UnexpectedCodeViewDataSignature);
-                }
-
-                Guid guid = reader.ReadGuid();
-                int age = reader.ReadInt32();
-                string path = reader.ReadUtf8NullTerminated();
-
-                // path may be padded with NULs
-                while (reader.RemainingBytes > 0)
-                {
-                    if (reader.ReadByte() != 0)
-                    {
-                        throw new BadImageFormatException(SR.InvalidPathPadding);
-                    }
-                }
-
-                return new CodeViewDebugDirectoryData(guid, age, path);
+                return DecodeCodeViewDebugDirectoryData(block);                
             }
+        }
+
+        // internal for testing
+        internal static CodeViewDebugDirectoryData DecodeCodeViewDebugDirectoryData(AbstractMemoryBlock block)
+        {
+            var reader = block.GetReader();
+
+            if (reader.ReadByte() != (byte)'R' ||
+                reader.ReadByte() != (byte)'S' ||
+                reader.ReadByte() != (byte)'D' ||
+                reader.ReadByte() != (byte)'S')
+            {
+                throw new BadImageFormatException(SR.UnexpectedCodeViewDataSignature);
+            }
+
+            Guid guid = reader.ReadGuid();
+            int age = reader.ReadInt32();
+            string path = reader.ReadUtf8NullTerminated();
+
+            return new CodeViewDebugDirectoryData(guid, age, path);
         }
 
         /// <summary>
@@ -629,11 +627,11 @@ namespace System.Reflection.PortableExecutable
         /// </returns>
         /// <exception cref="ArgumentException"><paramref name="entry"/> is not a <see cref="DebugDirectoryEntryType.EmbeddedPortablePdb"/> entry.</exception>
         /// <exception cref="BadImageFormatException">Bad format of the data.</exception>
-        public unsafe MetadataReaderProvider ReadEmbeddedPortablePdbDebugDirectoryData(DebugDirectoryEntry entry)
+        public MetadataReaderProvider ReadEmbeddedPortablePdbDebugDirectoryData(DebugDirectoryEntry entry)
         {
             if (entry.Type != DebugDirectoryEntryType.EmbeddedPortablePdb)
             {
-                throw new ArgumentException(SR.NotCodeViewEntry, nameof(entry));
+                Throw.InvalidArgument(SR.Format(SR.UnexpectedDebugDirectoryType, nameof(DebugDirectoryEntryType.EmbeddedPortablePdb)), nameof(entry));
             }
 
             ValidateEmbeddedPortablePdbVersion(entry);
@@ -671,10 +669,7 @@ namespace System.Reflection.PortableExecutable
         {
             byte[] decompressed;
             
-            const int headerSize = 2 * sizeof(int);
-
-            var headerReader = new BlobReader(block.Pointer, headerSize);
-
+            var headerReader = block.GetReader();
             if (headerReader.ReadUInt32() != PortablePdbVersions.DebugDirectoryEmbeddedSignature)
             {
                 throw new BadImageFormatException(SR.UnexpectedEmbeddedPortablePdbDataSignature);
@@ -691,7 +686,7 @@ namespace System.Reflection.PortableExecutable
                 throw new BadImageFormatException(SR.DataTooBig);
             }
 
-            var compressed = new ReadOnlyUnmanagedMemoryStream(block.Pointer + headerSize, block.Size - headerSize);
+            var compressed = new ReadOnlyUnmanagedMemoryStream(headerReader.CurrentPointer, headerReader.RemainingBytes);
             var deflate = new DeflateStream(compressed, CompressionMode.Decompress, leaveOpen: true);
 
             if (decompressedSize > 0)
@@ -723,5 +718,222 @@ namespace System.Reflection.PortableExecutable
 
             return ImmutableByteArrayInterop.DangerousCreateFromUnderlyingArray(ref decompressed);
         }
+
+        /// <summary>
+        /// Opens a Portable PDB associated with this PE image.
+        /// </summary>
+        /// <param name="peImagePath">
+        /// The path to the PE image. The path is used to locate the PDB file located in the directory containing the PE file.
+        /// </param>
+        /// <param name="pdbFileStreamProvider">
+        /// If specified, called to open a <see cref="Stream"/> for a given file path. 
+        /// The provider is expected to either return a readable and seekable <see cref="Stream"/>, 
+        /// or <c>null</c> if the target file doesn't exist or should be ignored for some reason.
+        /// 
+        /// The provider shall throw <see cref="IOException"/> if it fails to open the file due to an unexpected IO error.
+        /// </param>
+        /// <param name="pdbReaderProvider">
+        /// If successful, a new instance of <see cref="MetadataReaderProvider"/> to be used to read the Portable PDB,.
+        /// </param>
+        /// <param name="pdbPath">
+        /// If successful and the PDB is found in a file, the path to the file. Returns <c>null</c> if the PDB is embedded in the PE image itself.
+        /// </param>
+        /// <returns>
+        /// True if the PE image has a PDB associated with it and the PDB has been successfully opened.
+        /// </returns>
+        /// <remarks>
+        /// Implements a simple PDB file lookup based on the content of the PE image Debug Directory.
+        /// A sophisticated tool might need to follow up with additional lookup on search paths or symbol server.
+        /// 
+        /// The method looks the PDB up in the following steps in the listed order:
+        /// 1) Check for a matching PDB file of the name found in the CodeView entry in the directory containing the PE file (the directory of <paramref name="peImagePath"/>).
+        /// 2) Check for a PDB embedded in the PE image itself.
+        /// 
+        /// The first PDB that matches the information specified in the Debug Directory is returned.
+        /// </remarks>
+        /// <exception cref="ArgumentNullException"><paramref name="peImagePath"/> or <paramref name="pdbFileStreamProvider"/> is null.</exception>
+        /// <exception cref="InvalidOperationException">The stream returned from <paramref name="pdbFileStreamProvider"/> doesn't support read and seek operations.</exception>
+        /// <exception cref="BadImageFormatException">No matching PDB file is found due to an error: The PE image or the PDB is invalid.</exception>
+        /// <exception cref="IOException">No matching PDB file is found due to an error: An IO error occurred while reading the PE image or the PDB.</exception>
+        public bool TryOpenAssociatedPortablePdb(string peImagePath, Func<string, Stream> pdbFileStreamProvider, out MetadataReaderProvider pdbReaderProvider, out string pdbPath)
+        {
+            if (peImagePath == null)
+            {
+                Throw.ArgumentNull(nameof(peImagePath));
+            }
+
+            if (pdbFileStreamProvider == null)
+            {
+                Throw.ArgumentNull(nameof(pdbFileStreamProvider));
+            }
+
+            pdbReaderProvider = null;
+            pdbPath = null;
+
+            string peImageDirectory;
+            try
+            {
+                peImageDirectory = Path.GetDirectoryName(peImagePath);
+            }
+            catch (Exception e)
+            {
+                throw new ArgumentException(e.Message, nameof(peImagePath));
+            }
+
+            Exception errorToReport = null;
+            var entries = ReadDebugDirectory();
+
+            // First try .pdb file specified in CodeView data (we prefer .pdb file on disk over embedded PDB
+            // since embedded PDB needs decompression which is less efficient than memory-mapping the file).
+            var codeViewEntry = entries.FirstOrDefault(e => e.IsPortableCodeView);
+            if (codeViewEntry.DataSize != 0 && 
+                TryOpenCodeViewPortablePdb(codeViewEntry, peImageDirectory, pdbFileStreamProvider, out pdbReaderProvider, out pdbPath, ref errorToReport))
+            {
+                return true;
+            }
+
+            // if it failed try Embedded Portable PDB (if available):
+            var embeddedPdbEntry = entries.FirstOrDefault(e => e.Type == DebugDirectoryEntryType.EmbeddedPortablePdb);
+            if (embeddedPdbEntry.DataSize != 0 &&
+                TryOpenEmbeddedPortablePdb(embeddedPdbEntry, out pdbReaderProvider, ref errorToReport))
+            {
+                return true;
+            }
+
+            // Report any metadata and IO errors. PDB might exist but we couldn't read some metadata. 
+            // The caller might chose to ignore the failure or report it to the user.
+            if (errorToReport != null)
+            {
+                Debug.Assert(errorToReport is BadImageFormatException || errorToReport is IOException);
+                ExceptionDispatchInfo.Capture(errorToReport).Throw();
+            }
+
+            return false;
+        }
+
+        private bool TryOpenCodeViewPortablePdb(DebugDirectoryEntry codeViewEntry, string peImageDirectory, Func<string, Stream> pdbFileStreamProvider, out MetadataReaderProvider provider, out string pdbPath, ref Exception errorToReport)
+        {
+            pdbPath = null;
+            provider = null;
+
+            CodeViewDebugDirectoryData data;
+
+            try
+            {
+                data = ReadCodeViewDebugDirectoryData(codeViewEntry);
+            }
+            catch (Exception e) when (e is BadImageFormatException || e is IOException)
+            {
+                errorToReport = errorToReport ?? e;
+                return false;
+            }
+
+            if (data.Age != 1)
+            {
+                // not a portable code view:
+                return false;
+            }
+
+            var id = new BlobContentId(data.Guid, codeViewEntry.Stamp);
+           
+            // The interpretation os the path in the CodeView needs to be platform agnostic,
+            // so that PDBs built on Windows work on Unix-like systems and vice versa.
+            // System.IO.Path.GetFileName() on Unix-like systems doesn't treat '\' as a file name separator,
+            // so we need a custom implementation. Also avoid throwing an exception if the path contains invalid characters,
+            // they might not be invalid on the other platform. It's up to the FS APIs to deal with that when opening the stream.
+            string collocatedPdbPath = PathUtilities.CombinePathWithRelativePath(peImageDirectory, PathUtilities.GetFileName(data.Path));
+
+            if (TryOpenPortablePdbFile(collocatedPdbPath, id, pdbFileStreamProvider, out provider, ref errorToReport))
+            {
+                pdbPath = collocatedPdbPath;
+                return true;
+            }
+
+            return false;
+        }
+
+        private bool TryOpenPortablePdbFile(string path, BlobContentId id, Func<string, Stream> pdbFileStreamProvider, out MetadataReaderProvider provider, ref Exception errorToReport)
+        {
+            provider = null;
+            MetadataReaderProvider candidate = null;
+
+            try
+            {
+                Stream pdbStream;
+
+                try
+                {
+                    pdbStream = pdbFileStreamProvider(path);
+                }
+                catch (FileNotFoundException)
+                {
+                    // Not an unexpected IO exception, continue witout reporting the error.
+                    pdbStream = null;
+                }
+
+                if (pdbStream == null)
+                {
+                    return false;
+                }
+
+                if (!pdbStream.CanRead || !pdbStream.CanSeek)
+                {
+                    throw new InvalidOperationException(SR.StreamMustSupportReadAndSeek);
+                }
+
+                candidate = MetadataReaderProvider.FromPortablePdbStream(pdbStream);
+
+                // Validate that the PDB matches the assembly version
+                if (new BlobContentId(candidate.GetMetadataReader().DebugMetadataHeader.Id) != id)
+                {
+                    return false;
+                }
+
+                provider = candidate;
+                return true;
+            }
+            catch (Exception e) when (e is BadImageFormatException || e is IOException)
+            {
+                errorToReport = errorToReport ?? e;
+                return false;
+            }
+            finally
+            {
+                if (provider == null)
+                {
+                    candidate?.Dispose();
+                }
+            }
+        }
+
+        private bool TryOpenEmbeddedPortablePdb(DebugDirectoryEntry embeddedPdbEntry, out MetadataReaderProvider provider, ref Exception errorToReport)
+        {
+            provider = null;
+            MetadataReaderProvider candidate = null;
+
+            try
+            {
+                candidate = ReadEmbeddedPortablePdbDebugDirectoryData(embeddedPdbEntry);
+
+                // throws if headers are invalid:
+                candidate.GetMetadataReader();
+
+                provider = candidate;
+                return true;
+            }
+            catch (Exception e) when (e is BadImageFormatException || e is IOException)
+            {
+                errorToReport = errorToReport ?? e;
+                return false;
+            }
+            finally
+            {
+                if (candidate == null)
+                {
+                    candidate?.Dispose();
+                }
+            }
+        }
+
     }
 }

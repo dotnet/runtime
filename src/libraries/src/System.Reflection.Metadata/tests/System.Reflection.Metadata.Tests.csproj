@@ -87,10 +87,13 @@
     <Compile Include="PortableExecutable\DebugDirectoryBuilderTests.cs" />
     <Compile Include="PortableExecutable\PEHeaderBuilderTests.cs" />
     <Compile Include="PortableExecutable\PEMemoryBlockTests.cs" />
+    <Compile Include="PortableExecutable\TestStream.cs" />
     <Compile Include="TestUtilities\ByteArrayUtilities.cs" />
     <Compile Include="TestUtilities\LoaderUtilities.cs" />
     <Compile Include="TestUtilities\PinnedBlob.cs" />
     <Compile Include="TestUtilities\SigningUtilities.cs" />
+    <Compile Include="TestUtilities\TestBuilders.cs" />
+    <Compile Include="TestUtilities\TestMetadataStringDecoder.cs" />
     <Compile Include="Utilities\AbstractMemoryBlockTests.cs" />
     <Compile Include="PortableExecutable\BadImageFormat.cs" />
     <Compile Include="PortableExecutable\DebugDirectoryTests.cs" />
@@ -101,8 +104,6 @@
     <Compile Include="PortableExecutable\SectionHeaderTests.cs" />
     <Compile Include="Utilities\StreamExtensionsTests.cs" />
     <Compile Include="Metadata\MetadataReaderProviderTests.cs" />
-    <EmbeddedResource Include="Resources\Misc\KeyPair.snk" />
-    <None Include="Resources\PortablePdbs\Documents.cs" />
     <Compile Include="Resources\TestResources.cs" />
     <Compile Include="TestUtilities\AssertEx.cs" />
     <Compile Include="TestUtilities\DiffUtil.cs" />
@@ -119,6 +120,8 @@
     <None Include="project.json" />
     <None Include="Resources\Namespace\NamespaceForwardedCS.cs" />
     <None Include="Resources\Namespace\NamespaceTests.cs" />
+    <EmbeddedResource Include="Resources\Namespace\NamespaceForwardedCS.dll" />
+    <EmbeddedResource Include="Resources\Namespace\NamespaceTests.dll" />
     <None Include="Resources\Interop\Interop.Mock01.cs" />
     <None Include="Resources\Interop\Interop.Mock01.Impl.cs" />
     <None Include="Resources\Interop\IndexerWithByRefParam.il" />
@@ -126,6 +129,7 @@
     <EmbeddedResource Include="Resources\Interop\Interop.Mock01.dll" />
     <EmbeddedResource Include="Resources\Interop\Interop.Mock01.Impl.dll" />
     <None Include="Resources\Misc\CPPClassLibrary2.h" />
+    <EmbeddedResource Include="Resources\Misc\KeyPair.snk" />
     <EmbeddedResource Include="Resources\Misc\CPPClassLibrary2.obj" />
     <None Include="Resources\Misc\EmptyType.il" />
     <EmbeddedResource Include="Resources\Misc\EmptyType.dll" />
@@ -135,8 +139,6 @@
     <EmbeddedResource Include="Resources\Misc\Deterministic.dll" />
     <None Include="Resources\Misc\Debug.cs" />
     <EmbeddedResource Include="Resources\Misc\Debug.dll" />
-    <EmbeddedResource Include="Resources\Namespace\NamespaceForwardedCS.dll" />
-    <EmbeddedResource Include="Resources\Namespace\NamespaceTests.dll" />
     <None Include="Resources\NetModule\AppCS.cs" />
     <EmbeddedResource Include="Resources\NetModule\AppCS.exe" />
     <None Include="Resources\NetModule\ModuleCS00.cs" />
@@ -149,7 +151,9 @@
     <None Include="Resources\WinRT\Lib.cs" />
     <EmbeddedResource Include="Resources\PortablePdbs\Documents.dll" />
     <EmbeddedResource Include="Resources\PortablePdbs\Documents.pdb" />
+    <EmbeddedResource Include="Resources\PortablePdbs\Documents.Embedded.dll" />
     <None Include="Resources\PortablePdbs\Documents.cmd" />
+    <None Include="Resources\PortablePdbs\Documents.cs" />
   </ItemGroup>
   <ItemGroup>
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
