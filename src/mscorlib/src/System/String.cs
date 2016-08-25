@@ -1962,19 +1962,14 @@ namespace System {
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public extern String(char c, int count);
     
-        //
-        //
-        // INSTANCE METHODS
-        //
-        //
-    
         // Provides a culture-correct string comparison. StrA is compared to StrB
         // to determine whether it is lexicographically less, equal, or greater, and then returns
         // either a negative integer, 0, or a positive integer; respectively.
         //
         [Pure]
-        public static int Compare(String strA, String strB) {
-            return CultureInfo.CurrentCulture.CompareInfo.Compare(strA, strB, CompareOptions.None);
+        public static int Compare(String strA, String strB)
+        {
+            return Compare(strA, strB, StringComparison.CurrentCulture);
         }
     
 
@@ -1986,10 +1981,8 @@ namespace System {
         [Pure]
         public static int Compare(String strA, String strB, bool ignoreCase)
         {
-            if (ignoreCase) {
-                return CultureInfo.CurrentCulture.CompareInfo.Compare(strA, strB, CompareOptions.IgnoreCase);
-            }
-            return CultureInfo.CurrentCulture.CompareInfo.Compare(strA, strB, CompareOptions.None);
+            var comparisonType = ignoreCase ? StringComparison.CurrentCultureIgnoreCase : StringComparison.CurrentCulture;
+            return Compare(strA, strB, comparisonType);
         }
 
   
@@ -2000,22 +1993,24 @@ namespace System {
         public static int Compare(String strA, String strB, StringComparison comparisonType) 
         {
             // Single comparison to check if comparisonType is within [CurrentCulture .. OrdinalIgnoreCase]
-            if ((uint) (comparisonType                     - StringComparison.CurrentCulture) > 
-                (uint) (StringComparison.OrdinalIgnoreCase - StringComparison.CurrentCulture)) {
+            if ((uint)(comparisonType - StringComparison.CurrentCulture) > (uint)(StringComparison.OrdinalIgnoreCase - StringComparison.CurrentCulture))
+            {
                 throw new ArgumentException(Environment.GetResourceString("NotSupported_StringComparison"), "comparisonType");
             }
             Contract.EndContractBlock();
 
-            if ((Object)strA == (Object)strB) {
+            if (object.ReferenceEquals(strA, strB))
+            {
                 return 0;
             }
 
-            //they can't both be null;
-            if (strA == null) {
+            // They can't both be null at this point.
+            if (strA == null)
+            {
                 return -1;
             }
-            
-            if (strB == null) {
+            if (strB == null)
+            {
                 return 1;
             }
 
@@ -2067,7 +2062,8 @@ namespace System {
         //
         [Pure]
         public static int Compare(String strA, String strB, CultureInfo culture, CompareOptions options) {
-            if (culture==null) {
+            if (culture == null)
+            {
                 throw new ArgumentNullException("culture");
             }
             Contract.EndContractBlock();
@@ -2084,16 +2080,10 @@ namespace System {
         // by culture
         //
         [Pure]
-        public static int Compare(String strA, String strB, bool ignoreCase, CultureInfo culture) {
-            if (culture == null) {
-                throw new ArgumentNullException("culture");
-            }
-            Contract.EndContractBlock();
-    
-            if (ignoreCase) {
-                return culture.CompareInfo.Compare(strA, strB, CompareOptions.IgnoreCase);
-            }
-            return culture.CompareInfo.Compare(strA, strB, CompareOptions.None);
+        public static int Compare(String strA, String strB, bool ignoreCase, CultureInfo culture)
+        {
+            var options = ignoreCase ? CompareOptions.IgnoreCase : CompareOptions.None;
+            return Compare(strA, strB, culture, options);
         }
 
         // Determines whether two string regions match.  The substring of strA beginning
@@ -2187,8 +2177,10 @@ namespace System {
         // beginning at indexB of the same length.
         //
         [Pure]
-        public static int Compare(String strA, int indexA, String strB, int indexB, int length, CultureInfo culture, CompareOptions options) {
-            if (culture==null) {
+        public static int Compare(String strA, int indexA, String strB, int indexB, int length, CultureInfo culture, CompareOptions options)
+        {
+            if (culture == null)
+            {
                 throw new ArgumentNullException("culture");
             }
             Contract.EndContractBlock();
@@ -2196,19 +2188,17 @@ namespace System {
             int lengthA = length;
             int lengthB = length;
 
-            if (strA!=null) {
-                if (strA.Length - indexA < lengthA) {
-                  lengthA = (strA.Length - indexA);
-                }
+            if (strA != null)
+            {
+                lengthA = Math.Min(lengthA, strA.Length - indexA);
             }
 
-            if (strB!=null) {
-                if (strB.Length - indexB < lengthB) {
-                    lengthB = (strB.Length - indexB);
-                }
+            if (strB != null)
+            {
+                lengthB = Math.Min(lengthB, strB.Length - indexB);
             }
     
-            return culture.CompareInfo.Compare(strA,indexA,lengthA, strB, indexB, lengthB, options);
+            return culture.CompareInfo.Compare(strA, indexA, lengthA, strB, indexB, lengthB, options);
         }
 
         [Pure]
@@ -2219,59 +2209,42 @@ namespace System {
             }
             Contract.EndContractBlock();
             
-            if (strA == null || strB == null) {
-                 if ((Object)strA==(Object)strB) { //they're both null;
-                     return 0;
-                 }
+            if (strA == null || strB == null)
+            {
+                if (object.ReferenceEquals(strA, strB))
+                {
+                    // They're both null
+                    return 0;
+                }
 
-                 return (strA==null)? -1 : 1; //-1 if A is null, 1 if B is null.
-            }    
-            
-            if (length < 0) {
-                throw new ArgumentOutOfRangeException("length",
-                                                      Environment.GetResourceString("ArgumentOutOfRange_NegativeLength"));
+                return strA == null ? -1 : 1;
             }
 
-            if (indexA < 0) {
-                throw new ArgumentOutOfRangeException("indexA",
-                                                     Environment.GetResourceString("ArgumentOutOfRange_Index"));
+            if (length < 0)
+            {
+                throw new ArgumentOutOfRangeException("length", Environment.GetResourceString("ArgumentOutOfRange_NegativeLength"));
             }
 
-            if (indexB < 0) {
-                throw new ArgumentOutOfRangeException("indexB",
-                                                     Environment.GetResourceString("ArgumentOutOfRange_Index"));
+            if (indexA < 0 || indexB < 0)
+            {
+                string paramName = indexA < 0 ? "indexA" : "indexB";
+                throw new ArgumentOutOfRangeException(paramName, Environment.GetResourceString("ArgumentOutOfRange_Index"));
             }
 
-            if (strA.Length - indexA < 0) {
-                throw new ArgumentOutOfRangeException("indexA",
-                                                      Environment.GetResourceString("ArgumentOutOfRange_Index"));
+            if (strA.Length - indexA < 0 || strB.Length - indexB < 0)
+            {
+                string paramName = strA.Length - indexA < 0 ? "indexA" : "indexB";
+                throw new ArgumentOutOfRangeException(paramName, Environment.GetResourceString("ArgumentOutOfRange_Index"));
             }
 
-            if (strB.Length - indexB < 0) {
-                throw new ArgumentOutOfRangeException("indexB",
-                                                      Environment.GetResourceString("ArgumentOutOfRange_Index"));
-            }
-            
-            if( ( length == 0 )  ||
-                ((strA == strB) && (indexA == indexB)) ){
+            if (length == 0 || (object.ReferenceEquals(strA, strB) && indexA == indexB))
+            {
                 return 0;
             }
 
-            int lengthA = length;
-            int lengthB = length;
+            int lengthA = Math.Min(length, strA.Length - indexA);
+            int lengthB = Math.Min(length, strB.Length - indexB);
 
-            if (strA!=null) {
-                if (strA.Length - indexA < lengthA) {
-                  lengthA = (strA.Length - indexA);
-                }
-            }
-
-            if (strB!=null) {
-                if (strB.Length - indexB < lengthB) {
-                    lengthB = (strB.Length - indexB);
-                }
-            }
-    
             switch (comparisonType) {
                 case StringComparison.CurrentCulture:
                     return CultureInfo.CurrentCulture.CompareInfo.Compare(strA, indexA, lengthA, strB, indexB, lengthB, CompareOptions.None);
@@ -2306,43 +2279,48 @@ namespace System {
         // if this is equal to value, or a value greater than 0 if this is greater than value.
         //
         [Pure]
-        public int CompareTo(Object value) {
-            if (value == null) {
+        public int CompareTo(Object value)
+        {
+            if (value == null)
+            {
                 return 1;
             }
 
-            if (!(value is String)) {
+            string other = value as string;
+
+            if (other == null)
+            {
                 throw new ArgumentException(Environment.GetResourceString("Arg_MustBeString"));
             }
 
-            return String.Compare(this,(String)value, StringComparison.CurrentCulture);
+            return CompareTo(other); // will call the string-based overload
         }
     
         // Determines the sorting relation of StrB to the current instance.
         //
         [Pure]
-        public int CompareTo(String strB) {
-            if (strB==null) {
-                return 1;
-            }
-
-            return CultureInfo.CurrentCulture.CompareInfo.Compare(this, strB, 0);
+        public int CompareTo(String strB)
+        {
+            return string.Compare(this, strB, StringComparison.CurrentCulture);
         }
 
         // Compares strA and strB using an ordinal (code-point) comparison.
         //
         [Pure]
-        public static int CompareOrdinal(String strA, String strB) {
-            if ((Object)strA == (Object)strB) {
+        public static int CompareOrdinal(String strA, String strB)
+        {
+            if (object.ReferenceEquals(strA, strB))
+            {
                 return 0;
             }
 
-            //they can't both be null;
-            if( strA == null) {
+            // They can't both be null at this point.
+            if (strA == null)
+            {
                 return -1;
             }
-            
-            if( strB == null) {
+            if (strB == null)
+            {
                 return 1;
             }
 
@@ -2970,7 +2948,8 @@ namespace System {
         // Creates a copy of this string in lower case.  The culture is set by culture.
         [Pure]
         public String ToLower(CultureInfo culture) {
-            if (culture==null) {
+            if (culture == null)
+            {
                 throw new ArgumentNullException("culture");
             }
             Contract.Ensures(Contract.Result<String>() != null);
@@ -2998,7 +2977,8 @@ namespace System {
         // Creates a copy of this string in upper case.  The culture is set by culture.
         [Pure]
         public String ToUpper(CultureInfo culture) {
-            if (culture==null) {
+            if (culture == null)
+            {
                 throw new ArgumentNullException("culture");
             }
             Contract.Ensures(Contract.Result<String>() != null);
