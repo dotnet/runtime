@@ -1697,5 +1697,44 @@ namespace System.Net.Http.Functional.Tests
             }
         }
         #endregion
+
+        #region Uri wire transmission encoding tests
+        [Fact]
+        public async Task SendRequest_UriPathHasReservedChars_ServerReceivedExpectedPath()
+        {
+            await LoopbackServer.CreateServerAsync(async (server, rootUrl) =>
+            {
+                var uri = new Uri($"http://{rootUrl.Host}:{rootUrl.Port}/test[]");
+                _output.WriteLine(uri.AbsoluteUri.ToString());
+                var request = new HttpRequestMessage(HttpMethod.Get, uri);
+                string statusLine = string.Empty;
+
+                using (var client = new HttpClient())
+                {
+                    Task<HttpResponseMessage> getResponse = client.SendAsync(request);
+
+                    await LoopbackServer.AcceptSocketAsync(server, async (s, stream, reader, writer) =>
+                    {
+                        statusLine = reader.ReadLine();
+                        _output.WriteLine(statusLine);
+                        while (!string.IsNullOrEmpty(reader.ReadLine())) ;
+
+                        await writer.WriteAsync(
+                            $"HTTP/1.1 200 OK\r\n" +
+                            $"Date: {DateTimeOffset.UtcNow:R}\r\n" +
+                            "Content-Length: 0\r\n" +
+                            "\r\n");
+                        s.Shutdown(SocketShutdown.Send);
+                    });
+
+                    using (HttpResponseMessage response = await getResponse)
+                    {
+                        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                        Assert.True(statusLine.Contains(uri.PathAndQuery), $"statusLine should contain {uri.PathAndQuery}");
+                    }
+                }
+            });
+        }
+        #endregion
     }
 }
