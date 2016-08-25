@@ -9,6 +9,5 @@ fi
 __toolRuntime=$__scriptpath/Tools
 __dotnet=$__toolRuntime/dotnetcli/dotnet
 
-echo Running: $__dotnet $__toolRuntime/run.exe $*
 $__dotnet $__toolRuntime/run.exe $*
 exit $?
