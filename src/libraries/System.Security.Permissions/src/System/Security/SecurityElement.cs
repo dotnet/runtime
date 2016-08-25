@@ -13,17 +13,17 @@ namespace System.Security
         public string Tag { get; set; }
         public string Text { get; set; }
         public void AddAttribute(string name, string value) { }
-        public void AddChild(System.Security.SecurityElement child) { }
+        public void AddChild(SecurityElement child) { }
         public string Attribute(string name) { return default(string); }
-        public System.Security.SecurityElement Copy() { return default(System.Security.SecurityElement); }
-        public bool Equal(System.Security.SecurityElement other) { return false; }
+        public SecurityElement Copy() { return this; }
+        public bool Equal(SecurityElement other) { return false; }
         public static string Escape(string str) { return default(string); }
-        public static System.Security.SecurityElement FromString(string xml) { return default(System.Security.SecurityElement); }
+        public static SecurityElement FromString(string xml) { return default(SecurityElement); }
         public static bool IsValidAttributeName(string name) { return false; }
         public static bool IsValidAttributeValue(string value) { return false; }
         public static bool IsValidTag(string tag) { return false; }
         public static bool IsValidText(string text) { return false; }
-        public System.Security.SecurityElement SearchForChildByTag(string tag) { return default(System.Security.SecurityElement); }
+        public SecurityElement SearchForChildByTag(string tag) { return default(SecurityElement); }
         public string SearchForTextOfTag(string tag) { return default(string); }
         public override string ToString() => base.ToString();
     }

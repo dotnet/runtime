@@ -26,7 +26,7 @@ namespace System.Security.Permissions.Tests
             bool isunrestricted = ps.IsUnrestricted();
             string s = ps.ToString();
             PermissionSet ps4 = ps.Union(ps2);
-            System.Security.SecurityElement se = new System.Security.SecurityElement("");
+            SecurityElement se = new SecurityElement("");
             ps.FromXml(se);
             se = ps.ToXml();
         }
@@ -45,7 +45,7 @@ namespace System.Security.Permissions.Tests
             NamedPermissionSet nps2 = nps.Copy("Test");
             nps.Equals(nps2);
             int hash = nps.GetHashCode();
-            System.Security.SecurityElement se = new System.Security.SecurityElement("");
+            SecurityElement se = new SecurityElement("");
             nps.FromXml(se);
             se = nps.ToXml();
         }
