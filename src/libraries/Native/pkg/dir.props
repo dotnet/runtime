@@ -32,6 +32,7 @@
     <Fedora23NativePath Condition="'$(Fedora23NativePath)' == ''">$(BuildNativePath)</Fedora23NativePath>
     <OSXNativePath Condition="'$(OSXNativePath)' == ''">$(BuildNativePath)</OSXNativePath>
     <OpenSuse132NativePath Condition="'$(OpenSuse132NativePath)' == ''">$(BuildNativePath)</OpenSuse132NativePath>
+    <OpenSuse421NativePath Condition="'$(OpenSuse421NativePath)' == ''">$(BuildNativePath)</OpenSuse421NativePath>
     <Ubuntu1404NativePath Condition="'$(Ubuntu1404NativePath)' == ''">$(BuildNativePath)</Ubuntu1404NativePath>
     <Ubuntu1604NativePath Condition="'$(Ubuntu1604NativePath)' == ''">$(BuildNativePath)</Ubuntu1604NativePath>
     <SkipPackageFileCheck>true</SkipPackageFileCheck>
