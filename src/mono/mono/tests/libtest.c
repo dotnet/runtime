@@ -7220,3 +7220,12 @@ mono_return_double_array4 (double_array4 sa4, int addend) {
 	return sa4;
 }
 
+typedef struct {
+	int array [3];
+} FixedArrayStruct;
+
+LIBTEST_API int STDCALL
+mono_test_marshal_fixed_array (FixedArrayStruct s)
+{
+	return s.array [0] + s.array [1] + s.array [2];
+}

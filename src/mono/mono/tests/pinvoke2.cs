@@ -9,7 +9,7 @@ using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using System.Reflection.Emit;
 
-public class Tests {
+public unsafe class Tests {
 
 	public int int_field;
 
@@ -1903,6 +1903,24 @@ public class Tests {
 			return 1;
 		else
 			return 0;
+	}
+
+    [StructLayout(LayoutKind.Explicit, Size = 12)]
+	public struct FixedArrayStruct {
+        [FieldOffset(0)]
+        public fixed int array[3];
+	}
+
+	[DllImport ("libtest", EntryPoint="mono_test_marshal_fixed_array")]
+	public static extern int mono_test_marshal_fixed_array (FixedArrayStruct s);
+
+	public static unsafe int test_6_fixed_array_struct () {
+		var s = new FixedArrayStruct ();
+		s.array [0] = 1;
+		s.array [1] = 2;
+		s.array [2] = 3;
+
+		return mono_test_marshal_fixed_array (s);
 	}
 }
 

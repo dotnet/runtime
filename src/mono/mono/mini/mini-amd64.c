@@ -402,6 +402,10 @@ collect_field_info_nested (MonoClass *klass, StructFieldInfo *fields, int index,
 															   info->fields [i].mspec,
 															   &align, TRUE, unicode);
 				fields [index].offset = offset + info->fields [i].offset;
+				if (i == info->num_fields - 1 && fields [index].size + fields [index].offset < info->native_size) {
+					/* This can happen with .pack directives eg. 'fixed' arrays */
+					fields [index].size = info->native_size - fields [index].offset;
+				}
 				index ++;
 			}
 		}
