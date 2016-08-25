@@ -3,7 +3,6 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <!-- rev'ed to 4.0.1.0 even though 4.0.0.0 never shipped so that we can drop pre-release down to beta -->
-    <AssemblyVersion>4.0.1.0</AssemblyVersion>
     <ProjectGuid>{4C2655DB-BD9E-4C86-83A6-744ECDDBDF29}</ProjectGuid>
     <PackageTargetFramework>netstandard1.0</PackageTargetFramework>
     <DocumentationFile>$(OutputPath)$(AssemblyName).xml</DocumentationFile>

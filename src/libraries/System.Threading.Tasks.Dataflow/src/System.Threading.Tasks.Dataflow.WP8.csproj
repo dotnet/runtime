@@ -5,7 +5,6 @@
     <ProjectGuid>{0C10C503-FD37-4990-BD0F-B79FE22203DD}</ProjectGuid>
     <RootNamespace>System.Threading.Tasks.Dataflow</RootNamespace>
     <AssemblyName>System.Threading.Tasks.Dataflow</AssemblyName>
-    <AssemblyVersion>4.6.1.0</AssemblyVersion>
     <DocumentationFile>$(OutputPath)System.Threading.Tasks.Dataflow.XML</DocumentationFile>
     <PackageTargetFramework>netstandard1.0</PackageTargetFramework>
     <ProjectJson>wp8/project.json</ProjectJson>

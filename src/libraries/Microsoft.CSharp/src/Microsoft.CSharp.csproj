@@ -4,7 +4,6 @@
   <PropertyGroup>
     <ProjectGuid>{96AA2060-C846-4E56-9509-E8CB9C114C8F}</ProjectGuid>
     <AssemblyName>Microsoft.CSharp</AssemblyName>
-    <AssemblyVersion>4.0.2.0</AssemblyVersion>
     <RootNamespace>Microsoft.CSharp</RootNamespace>
     <PackageTargetFramework>netstandard1.3</PackageTargetFramework>
     <!-- dotnet/corefx#3128 tracks removing this exclusion -->

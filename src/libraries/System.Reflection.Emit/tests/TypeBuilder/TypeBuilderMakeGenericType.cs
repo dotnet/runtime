@@ -14,7 +14,8 @@ namespace System.Reflection.Emit.Tests
             string mscorlibFullName = typeof(int).GetTypeInfo().Assembly.FullName;
             yield return new object[] { new string[] { "U", "T" }, new Type[] { typeof(string), typeof(int) }, "TestType[[System.String, " + mscorlibFullName + "],[System.Int32, " + mscorlibFullName + "]]" };
 
-            yield return new object[] { new string[] { "U", "T" }, new Type[] { typeof(MakeGenericTypeClass), typeof(MakeGenericTypeInterface) }, "TestType[[System.Reflection.Emit.Tests.MakeGenericTypeClass, System.Reflection.Emit.Tests, Version=999.999.999.999, Culture=neutral, PublicKeyToken=9d77cc7ad39b68eb],[System.Reflection.Emit.Tests.MakeGenericTypeInterface, System.Reflection.Emit.Tests, Version=999.999.999.999, Culture=neutral, PublicKeyToken=9d77cc7ad39b68eb]]" };
+            string thisAssemblyFullName = typeof(TypeBuilderMakeGenericType).GetTypeInfo().Assembly.FullName;
+            yield return new object[] { new string[] { "U", "T" }, new Type[] { typeof(MakeGenericTypeClass), typeof(MakeGenericTypeInterface) }, "TestType[[System.Reflection.Emit.Tests.MakeGenericTypeClass, " + thisAssemblyFullName + "],[System.Reflection.Emit.Tests.MakeGenericTypeInterface, " + thisAssemblyFullName + "]]" };
 
             yield return new object[] { new string[] { "U" }, new Type[] { typeof(string) }, "TestType[[System.String, " + mscorlibFullName + "]]" };
         }

@@ -4,7 +4,6 @@
   <PropertyGroup>
     <ProjectGuid>{DAA1EA56-C318-4D2E-AB8D-1AB87D9F98F5}</ProjectGuid>
     <AssemblyName>System.Xml.XPath.XDocument</AssemblyName>
-    <AssemblyVersion>4.0.2.0</AssemblyVersion>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <PackageTargetFramework Condition="'$(PackageTargetFramework)'==''">netstandard1.3</PackageTargetFramework>
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)'=='net46'">true</IsPartialFacadeAssembly>
