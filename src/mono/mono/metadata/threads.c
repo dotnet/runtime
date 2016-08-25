@@ -971,7 +971,7 @@ mono_thread_create_internal (MonoDomain *domain, gpointer func, gpointer arg, gb
 	/* Check that the managed and unmanaged layout of MonoInternalThread matches */
 #ifndef MONO_CROSS_COMPILE
 	if (mono_check_corlib_version () == NULL)
-		g_assert (((char*)&internal->unused2 - (char*)internal) == mono_defaults.internal_thread_class->fields [mono_defaults.internal_thread_class->field.count - 1].offset);
+		g_assert (((char*)&internal->cctor_exec_depth - (char*)internal) == mono_defaults.internal_thread_class->fields [mono_defaults.internal_thread_class->field.count - 1].offset);
 #endif
 
 	return internal;
@@ -4792,6 +4792,13 @@ async_abort_critical (MonoThreadInfo *info, gpointer ud)
 	gboolean running_managed;
 
 	if (mono_get_eh_callbacks ()->mono_install_handler_block_guard (mono_thread_info_get_suspend_state (info)))
+		return MonoResumeThread;
+
+	/*
+	The target thread is running at least one .cctor, which must not be interrupted, so we give up.
+	The .cctor code will give them a chance when appropriate.
+	*/
+	if (thread->cctor_exec_depth)
 		return MonoResumeThread;
 
 	/*someone is already interrupting it*/
