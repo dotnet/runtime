@@ -112,7 +112,7 @@ namespace Internal.Cryptography
         private unsafe int CipherUpdate(byte[] input, int inputOffset, int count, byte[] output, int outputOffset)
         {
             int ret;
-            int errorCode;
+            int ccStatus;
             int bytesWritten;
 
             if (count == 0)
@@ -133,10 +133,10 @@ namespace Internal.Cryptography
                     outputCurrent,
                     output.Length - outputOffset,
                     out bytesWritten,
-                    out errorCode);
+                    out ccStatus);
             }
 
-            ProcessInteropError(ret, errorCode);
+            ProcessInteropError(ret, ccStatus);
 
             return bytesWritten;
         }
@@ -147,7 +147,7 @@ namespace Internal.Cryptography
             byte[] key)
         {
             int ret;
-            int errorCode;
+            int ccStatus;
 
             byte[] iv = IV;
 
@@ -166,10 +166,10 @@ namespace Internal.Cryptography
                     pbIv,
                     Interop.AppleCrypto.PAL_SymmetricOptions.None,
                     out _cryptor,
-                    out errorCode);
+                    out ccStatus);
             }
 
-            ProcessInteropError(ret, errorCode);
+            ProcessInteropError(ret, ccStatus);
         }
 
         private Interop.AppleCrypto.PAL_ChainingMode GetPalChainMode(CipherMode cipherMode)
@@ -188,19 +188,19 @@ namespace Internal.Cryptography
         private unsafe void Reset()
         {
             int ret;
-            int errorCode;
+            int ccStatus;
 
             byte[] iv = IV;
 
             fixed (byte* pbIv = iv)
             {
-                ret = Interop.AppleCrypto.CryptorReset(_cryptor, pbIv, out errorCode);
+                ret = Interop.AppleCrypto.CryptorReset(_cryptor, pbIv, out ccStatus);
             }
 
-            ProcessInteropError(ret, errorCode);
+            ProcessInteropError(ret, ccStatus);
         }
 
-        private static void ProcessInteropError(int functionReturnCode, int emittedErrorCode)
+        private static void ProcessInteropError(int functionReturnCode, int ccStatus)
         {
             // Success
             if (functionReturnCode == 1)
@@ -211,9 +211,9 @@ namespace Internal.Cryptography
             // Platform error
             if (functionReturnCode == 0)
             {
-                Debug.Assert(emittedErrorCode != 0, "Interop function returned 0 but a system code of success");
+                Debug.Assert(ccStatus != 0, "Interop function returned 0 but a system code of success");
                 throw Interop.AppleCrypto.CreateExceptionForCCError(
-                    emittedErrorCode,
+                    ccStatus,
                     Interop.AppleCrypto.CCCryptorStatus);
             }
 
