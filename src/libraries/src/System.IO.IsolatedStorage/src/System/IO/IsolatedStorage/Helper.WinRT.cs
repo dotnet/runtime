@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
+using Windows.ApplicationModel;
 using Windows.Storage;
 
 namespace System.IO.IsolatedStorage
@@ -17,10 +19,7 @@ namespace System.IO.IsolatedStorage
 
             if (IsMachine(scope))
             {
-                // TODO:
-                // Windows 10 introduced a way to share across multiple users:
-                // dataDirectory = dataDirectory = ApplicationData.Current.SharedLocalFolder.Path;
-                throw new PlatformNotSupportedException();
+                dataDirectory = ApplicationData.Current.SharedLocalFolder.Path;
             }
             else
             {
@@ -43,6 +42,26 @@ namespace System.IO.IsolatedStorage
         {
             // ACL'ing isn't an issue in WinRT, just create it
             Directory.CreateDirectory(path);
+        }
+
+        internal static void GetDefaultIdentityAndHash(ref object identity, ref string hash, char separator)
+        {
+            // WinRT creates an ApplicationSecurityInfo off of the AppDomain.CurrentDomain.ActivationContext.
+            // Evidence is built as follows:
+            //
+            //   StrongName <- ApplicationId.PublicKeyToken/Name/Version
+            //   Url <- ApplicationContext.Identity.CodeBase
+            //   Zone <- Zone.CreateFromUrl(Url)
+            //   Site <- Site.CreateFromUrl(Url) *if* not file://
+
+            // TODO: https://github.com/dotnet/corefx/issues/11123
+            // When we have Assembly.GetEntryAssembly() we can utilize it to get the AssemblyName and
+            // Codebase to unify the logic. For now we'll use installed location from the package.
+            Uri codeBase = new Uri(Package.Current.InstalledLocation.Path);
+
+            hash = GetNormalizedUriHash(codeBase);
+            hash = "Url" + separator + hash;
+            identity = codeBase;
         }
     }
 }

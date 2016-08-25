@@ -30,7 +30,6 @@ namespace System.IO.IsolatedStorage
         protected virtual char SeparatorExternal { get { throw null; } }
         protected virtual char SeparatorInternal { get { throw null; } }
         public virtual long UsedSize { get { throw null; } }
-        // protected abstract System.Security.Permissions.IsolatedStoragePermission GetPermission(System.Security.PermissionSet ps);
         public virtual bool IncreaseQuotaTo(long newQuotaSize) { throw null; }
         
         protected void InitStore(System.IO.IsolatedStorage.IsolatedStorageScope scope, System.Type appEvidenceType) { }
@@ -42,8 +41,6 @@ namespace System.IO.IsolatedStorage
     public partial class IsolatedStorageException : System.Exception
     {
         public IsolatedStorageException() { }
-        // PermissionSet isn't available in CoreFx
-        // protected IsolatedStorageException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public IsolatedStorageException(string message) { }
         public IsolatedStorageException(string message, System.Exception inner) { }
     }
@@ -83,12 +80,8 @@ namespace System.IO.IsolatedStorage
         public static System.IO.IsolatedStorage.IsolatedStorageFile GetMachineStoreForApplication() { throw null; }
         public static System.IO.IsolatedStorage.IsolatedStorageFile GetMachineStoreForAssembly() { throw null; }
         public static System.IO.IsolatedStorage.IsolatedStorageFile GetMachineStoreForDomain() { throw null; }
-        // PermissionSet isn't available in CoreFx
-        // protected override System.Security.Permissions.IsolatedStoragePermission GetPermission(System.Security.PermissionSet ps) { throw null; }
         public static System.IO.IsolatedStorage.IsolatedStorageFile GetStore(System.IO.IsolatedStorage.IsolatedStorageScope scope, object applicationIdentity) { throw null; }
         public static System.IO.IsolatedStorage.IsolatedStorageFile GetStore(System.IO.IsolatedStorage.IsolatedStorageScope scope, object domainIdentity, object assemblyIdentity) { throw null; }
-        // Evidence isn't available in CoreFx
-        // public static System.IO.IsolatedStorage.IsolatedStorageFile GetStore(System.IO.IsolatedStorage.IsolatedStorageScope scope, System.Security.Policy.Evidence domainEvidence, System.Type domainEvidenceType, System.Security.Policy.Evidence assemblyEvidence, System.Type assemblyEvidenceType) { throw null; }
         public static System.IO.IsolatedStorage.IsolatedStorageFile GetStore(System.IO.IsolatedStorage.IsolatedStorageScope scope, System.Type applicationEvidenceType) { throw null; }
         public static System.IO.IsolatedStorage.IsolatedStorageFile GetStore(System.IO.IsolatedStorage.IsolatedStorageScope scope, System.Type domainEvidenceType, System.Type assemblyEvidenceType) { throw null; }
         public static System.IO.IsolatedStorage.IsolatedStorageFile GetUserStoreForApplication() { throw null; }
@@ -118,24 +111,30 @@ namespace System.IO.IsolatedStorage
         public override bool CanRead { get { throw null; } }
         public override bool CanSeek { get { throw null; } }
         public override bool CanWrite { get { throw null; } }
+        // https://github.com/dotnet/corefx/issues/11127
         // [System.ObsoleteAttribute("This property has been deprecated.  Please use IsolatedStorageFileStream's SafeFileHandle property instead.  http://go.microsoft.com/fwlink/?linkid=14202")]
-        // public override System.IntPtr Handle { [System.Security.SecurityCriticalAttribute]get { throw null; } }
+        // public override System.IntPtr Handle { get { throw null; } }
         public override bool IsAsync { get { throw null; } }
         public override long Length { get { throw null; } }
         public override long Position { get { throw null; } set { } }
-        // public override Microsoft.Win32.SafeHandles.SafeFileHandle SafeFileHandle { [System.Security.SecurityCriticalAttribute]get { throw null; } }
+        public override Microsoft.Win32.SafeHandles.SafeFileHandle SafeFileHandle { get { throw null; } }
+
+        // https://github.com/dotnet/corefx/issues/11126
         // public override System.IAsyncResult BeginRead(byte[] buffer, int offset, int numBytes, System.AsyncCallback userCallback, object stateObject) { throw null; }
         // public override System.IAsyncResult BeginWrite(byte[] buffer, int offset, int numBytes, System.AsyncCallback userCallback, object stateObject) { throw null; }
         protected override void Dispose(bool disposing) { }
+        // https://github.com/dotnet/corefx/issues/11126
         // public override int EndRead(System.IAsyncResult asyncResult) { throw null; }
         // public override void EndWrite(System.IAsyncResult asyncResult) { }
         public override void Flush() { }
         public override void Flush(bool flushToDisk) { }
+        // https://github.com/dotnet/corefx/issues/11128
         // public override void Lock(long position, long length) { }
         public override int Read(byte[] buffer, int offset, int count) { throw null; }
         public override int ReadByte() { throw null; }
         public override long Seek(long offset, System.IO.SeekOrigin origin) { throw null; }
         public override void SetLength(long value) { }
+        // https://github.com/dotnet/corefx/issues/11128
         // public override void Unlock(long position, long length) { }
         public override void Write(byte[] buffer, int offset, int count) { }
         public override void WriteByte(byte value) { }

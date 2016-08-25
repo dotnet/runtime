@@ -613,15 +613,21 @@ namespace System.IO.IsolatedStorage
             return e;
         }
 
+        public override bool IncreaseQuotaTo(long newQuotaSize)
+        {
+            // We don't support quotas, just call it ok
+            return true;
+        }
+
         public override void Remove()
         {
-            // TODO: 
+            // TODO: https://github.com/dotnet/corefx/issues/11125
             throw new NotImplementedException();
         }
 
         public static void Remove(IsolatedStorageScope scope)
         {
-            // TODO:
+            // TODO: https://github.com/dotnet/corefx/issues/11125
             throw new NotImplementedException();
         }
 
