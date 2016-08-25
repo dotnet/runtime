@@ -11,6 +11,7 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <NoStdLib>true</NoStdLib>
     <NoCompilerStandardLib>true</NoCompilerStandardLib>
+    <UseOpenKey Condition="'$(UseOpenKey)'==''">true</UseOpenKey>
   </PropertyGroup>
 
   <!-- Default configurations to help VS understand the options -->
