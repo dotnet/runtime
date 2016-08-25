@@ -1,4 +1,12 @@
 
+if(WIN32)
+	if(CLR_CMAKE_HOST_ARCH STREQUAL arm)
+	    list(APPEND LINK_LIBRARIES_ADDITIONAL
+	        ole32.lib
+	    )
+	endif(CLR_CMAKE_HOST_ARCH STREQUAL arm)
+endif(WIN32)
+
 include_directories(common)
 add_subdirectory(NativeCallable)
 add_subdirectory(PrimitiveMarshalling/Bool)
