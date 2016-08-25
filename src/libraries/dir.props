@@ -25,12 +25,6 @@
     <InputOSGroup Condition="'$(InputOSGroup)'==''">$(OSEnvironment)</InputOSGroup>
   </PropertyGroup>
 
-  <!-- Build Tools Versions -->
-  <PropertyGroup>
-    <RoslynVersion>1.0.0-rc3-20150510-01</RoslynVersion>
-    <RoslynPackageName>Microsoft.Net.ToolsetCompilers</RoslynPackageName>
-  </PropertyGroup>
-
   <!-- Informs build tools to apply .NET Framework metadata if not a test project -->
   <PropertyGroup>
     <IsDotNetFrameworkProductAssembly>true</IsDotNetFrameworkProductAssembly>
@@ -55,14 +49,9 @@
 
     <!-- Input Directories -->
     <PackagesDir Condition="'$(PackagesDir)'==''">$(ProjectDir)packages/</PackagesDir>
-    <ToolRuntimePath Condition="'$(ToolRuntimePath)'==''">$(ProjectDir)Tools/</ToolRuntimePath>
     <ToolsDir Condition="'$(UseToolRuntimeForToolsDir)'=='true'">$(ToolRuntimePath)</ToolsDir>
     <ToolsDir Condition="'$(ToolsDir)'==''">$(ProjectDir)Tools/</ToolsDir>
-    <DotnetCliPath Condition="'$(DotnetCliPath)'==''">$(ToolRuntimePath)dotnetcli/</DotnetCliPath>
-    <OverrideToolHost>$(DotnetCliPath)dotnet</OverrideToolHost>
-    <BuildToolsTaskDir Condition="'$(BuildToolsTargets45)' == 'true'">$(ToolsDir)net45/</BuildToolsTaskDir>
-    <BuildToolsTaskDir Condition="'$(BuildToolsTaskDir)'==''">$(ToolsDir)</BuildToolsTaskDir>
-    <UseRoslynCompilers Condition="'$(UseRoslynCompilers)'=='' and '$(OSEnvironment)'!='Windows_NT'">false</UseRoslynCompilers>
+    <ToolRuntimePath Condition="'$(ToolRuntimePath)'==''">$(ToolsDir)</ToolRuntimePath>
   </PropertyGroup>
 
   <Import Project="$(ToolRuntimePath)BuildVersion.targets" Condition="Exists('$(ToolRuntimePath)BuildVersion.targets')" />
@@ -71,12 +60,6 @@
     <GenFacadesArgs>-ignoreBuildAndRevisionMismatch</GenFacadesArgs>
   </PropertyGroup>
 
-  <!-- Use Roslyn Compilers to build -->
-  <PropertyGroup Condition="'$(UseRoslynCompilers)'!='false'">
-    <UseSharedCompilation>true</UseSharedCompilation>
-  </PropertyGroup>
-  <Import Project="$(ToolRuntimePath)/net45/roslyn/build/Microsoft.Net.Compilers.props" Condition="'$(UseRoslynCompilers)'!='false' AND Exists('$(ToolRuntimePath)/net45/roslyn/build/Microsoft.Net.Compilers.props')" />
-
   <!-- Import Build tools common props file where repo-independent properties are found -->
   <Import Project="$(ToolsDir)Build.Common.props" Condition="Exists('$(ToolsDir)Build.Common.props')" />
 
@@ -84,6 +67,9 @@
   <PropertyGroup>
     <EnableDotnetAnalyzers Condition="'$(EnableDotnetAnalyzers)'==''">true</EnableDotnetAnalyzers>
   </PropertyGroup>
+
+  <!-- Provides package dependency version properties and verification/auto-upgrade configuration -->
+  <Import Project="$(MSBuildThisFileDirectory)dependencies.props" />
 
   <!-- Explicitly setting 
        - SupportsUWP to true when TargetGroup is uap101*. This will enable the correct pinvoke checker to be picked 
@@ -95,94 +81,8 @@
     <BlockReflectionAttribute>true</BlockReflectionAttribute>
   </PropertyGroup>
 
-  <!-- Package dependency validation -->
-  <PropertyGroup>
-    <ValidatePackageVersions>true</ValidatePackageVersions>
-    <ProhibitFloatingDependencies>true</ProhibitFloatingDependencies>
-
-    <CoreFxExpectedPrerelease>beta-devapi-24422-01</CoreFxExpectedPrerelease>
-    <CoreClrExpectedPrerelease>beta-24419-04</CoreClrExpectedPrerelease>
-    <ExternalExpectedPrerelease>beta-24418-00</ExternalExpectedPrerelease>
-
-    <CoreFxVersionsIdentityRegex>^(?i)(((System\..*)(?&lt;!System\.ServiceModel\..*))|(NETStandard\.Library)|(Microsoft\.CSharp)|(Microsoft\.NETCore\.Targets)|(Microsoft\.NETCore\.Platforms)|(Microsoft\.Win32\..*)|(Microsoft\.VisualBasic))(?&lt;!TestData)$</CoreFxVersionsIdentityRegex>
-	<BaseDotNetBuildInfoUrl>https://raw.githubusercontent.com/dotnet/versions/master/build-info/dotnet/</BaseDotNetBuildInfoUrl>
-    <DependencyBranch>master</DependencyBranch>
-  </PropertyGroup>
-
   <Import Project="$(MSBuildThisFileDirectory)pkg/ExternalPackages/versions.props" Condition="Exists('$(MSBuildThisFileDirectory)pkg/ExternalPackages/versions.props')" />
 
-  <!-- Dependency auto-upgrade configuration -->
-  <ItemGroup>
-    <DependencyBuildInfo Include="CoreFx">
-      <RawUrl>$(BaseDotNetBuildInfoUrl)corefx/$(DependencyBranch)</RawUrl>
-    </DependencyBuildInfo>
-    <DependencyBuildInfo Include="CoreClr">
-      <RawUrl>$(BaseDotNetBuildInfoUrl)coreclr/$(DependencyBranch)</RawUrl>
-    </DependencyBuildInfo>
-    <DependencyBuildInfo Include="External">
-      <RawUrl>$(BaseDotNetBuildInfoUrl)projectk-tfs/$(DependencyBranch)</RawUrl>
-    </DependencyBuildInfo>
-
-    <XmlUpdateStep Include="CoreFx">
-      <Path>$(MSBuildThisFileFullPath)</Path>
-      <ElementName>CoreFxExpectedPrerelease</ElementName>
-      <BuildInfoName>CoreFx</BuildInfoName>
-    </XmlUpdateStep>
-    <XmlUpdateStep Include="CoreClr">
-      <Path>$(MSBuildThisFileFullPath)</Path>
-      <ElementName>CoreClrExpectedPrerelease</ElementName>
-      <BuildInfoName>CoreClr</BuildInfoName>
-    </XmlUpdateStep>
-    <XmlUpdateStep Include="External">
-      <Path>$(MSBuildThisFileFullPath)</Path>
-      <ElementName>ExternalExpectedPrerelease</ElementName>
-      <BuildInfoName>External</BuildInfoName>
-    </XmlUpdateStep>
-  </ItemGroup>
-
-  <ItemGroup>
-    <ValidationPattern Include="CoreFxVersions">
-      <IdentityRegex>$(CoreFxVersionsIdentityRegex)</IdentityRegex>
-      <ExpectedPrerelease>$(CoreFxExpectedPrerelease)</ExpectedPrerelease>
-    </ValidationPattern>
-    <ValidationPattern Include="CoreClrVersions">
-      <IdentityRegex>^(?i)(Microsoft\.NETCore\.Runtime.*)|(Microsoft\.TargetingPack\.Private\.CoreCLR)$</IdentityRegex>
-      <ExpectedPrerelease>$(CoreClrExpectedPrerelease)</ExpectedPrerelease>
-    </ValidationPattern>
-    <!-- Disabling validation of NetNative targeting pack. The TP used by netcore50 target frameworks is different than the 
-         one that's used by uap10.1 target frameworks. ValidatePackageVersions currently doesn't support multi-value ExpectedVersion.
-         We need to figure out how we compose the new TP, such that it's consumable by both frameworks.
-    <ValidationPattern Include="CoreLibTargetingPackVersions">
-      <IdentityRegex>^(?i)Microsoft\.TargetingPack\.Private\.NETNative$</IdentityRegex>
-      <ExpectedPrerelease>$(ExternalExpectedPrerelease)</ExpectedPrerelease>
-    </ValidationPattern>
-    -->
-    <ValidationPattern Include="TargetingPackVersions">
-      <IdentityRegex>^(?i)Microsoft\.TargetingPack\.(NetFramework.*|Private\.WinRT)$</IdentityRegex>
-      <ExpectedVersion>1.0.1</ExpectedVersion>
-    </ValidationPattern>
-    <ValidationPattern Include="xUnitStableVersions">
-      <IdentityRegex>^(?i)xunit$</IdentityRegex>
-      <ExpectedVersion>2.1.0</ExpectedVersion>
-    </ValidationPattern>
-    <ValidationPattern Include="xUnitExtensionsVersions">
-      <IdentityRegex>^(?i)Microsoft\.xunit\.netcore\.extensions$</IdentityRegex>
-      <ExpectedVersion>1.0.0-prerelease-00704-03</ExpectedVersion>
-    </ValidationPattern>
-    <ValidationPattern Include="buildToolsTestSuiteVersions">
-      <IdentityRegex>^(?i)Microsoft\.DotNet\.BuildTools\.TestSuite$</IdentityRegex>
-      <ExpectedVersion>1.0.0-prerelease-00704-03</ExpectedVersion>
-    </ValidationPattern>
-    <ValidationPattern Include="uwpRunnerVersion">
-      <IdentityRegex>^(?i)microsoft\.xunit\.runner\.uwp$</IdentityRegex>
-      <ExpectedVersion>$(AppXRunnerVersion)</ExpectedVersion>
-    </ValidationPattern>
-  </ItemGroup>
-
-  <!-- Runner versions -->
-  <PropertyGroup>
-    <AppXRunnerVersion>1.0.3-prerelease-00614-01</AppXRunnerVersion>
-  </PropertyGroup>
   <!-- Import packaging props -->
   <Import Project="$(MSBuildThisFileDirectory)Packaging.props"/>
 
@@ -239,37 +139,6 @@
   <PropertyGroup Condition="'$(BuildAllProjects)'=='true'">
     <!-- When we do a traversal build we get all packages up front, don't restore them again -->
     <RestorePackages>false</RestorePackages>
-  </PropertyGroup>
-
-  <!--
-    On Unix we always use a version of Roslyn we restore from NuGet and we have to work around some known issues.
-  -->
-  <PropertyGroup Condition="'$(OsEnvironment)'=='Unix'">
-    <RoslynPackageDir>$(PackagesDir)/$(RoslynPackageName).$(RoslynVersion)/</RoslynPackageDir>
-    <RoslynPropsFile>$(RoslynPackageDir)build/Microsoft.Net.ToolsetCompilers.props</RoslynPropsFile>
-
-    <!--
-      Portable PDBs are now supported in Linux and OSX with .Net Core MSBuild.
-    -->
-    <DebugType>Portable</DebugType>
-
-    <!--
-      Delay signing with the ECMA key currently doesn't work.
-      https://github.com/dotnet/roslyn/issues/2444
-    -->
-    <UseECMAKey>false</UseECMAKey>
-
-    <!--
-      Full signing with Open key doesn't work with Portable Csc.
-      https://github.com/dotnet/roslyn/issues/8210
-    -->
-    <UseOpenKey>false</UseOpenKey>
-
-    <!--
-      Mono currently doesn't include VB targets for portable, notably /lib/mono/xbuild/Microsoft/Portable/v4.5/Microsoft.Portable.VisualBasic.targets.
-      Fixed in https://github.com/mono/mono/pull/1726.
-    -->
-    <IncludeVbProjects>false</IncludeVbProjects>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -676,6 +545,7 @@
     <SkipTests Condition="'$(SkipTests)'=='' and ('$(OsEnvironment)'=='Windows_NT' and '$(TargetsWindows)'!='true' and '$(OSGroup)'!='AnyOS')">true</SkipTests>
   </PropertyGroup>
 
-  <Import Project="$(RoslynPropsFile)" Condition="'$(OsEnvironment)'=='Unix' and Exists('$(RoslynPropsFile)')" />
-
+  <!-- Use Roslyn Compilers to build -->
+  <Import Project="$(RoslynPropsFile)" Condition="'$(OSEnvironment)'!='Unix' and Exists('$(RoslynPropsFile)') and '$(UseRoslynCompilers)'!='false'" />
+  <Import Project="$(RoslynPropsFile)" Condition="'$(OSEnvironment)'=='Unix' and Exists('$(RoslynPropsFile)')" />
 </Project>
