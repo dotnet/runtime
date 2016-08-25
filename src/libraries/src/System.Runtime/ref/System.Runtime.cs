@@ -3504,6 +3504,11 @@ namespace System.Runtime.CompilerServices
         public StrongBox(T value) { }
         object System.Runtime.CompilerServices.IStrongBox.Value { get { return default(object); } set { } }
     }
+    [System.AttributeUsage((System.AttributeTargets)(1) | (System.AttributeTargets)(2))]
+    public sealed partial class SuppressIldasmAttribute : System.Attribute
+    {
+        public SuppressIldasmAttribute() { }
+    }
     [System.AttributeUsageAttribute((System.AttributeTargets)(5148), Inherited = false, AllowMultiple = false)]
     public sealed partial class TypeForwardedFromAttribute : System.Attribute
     {
