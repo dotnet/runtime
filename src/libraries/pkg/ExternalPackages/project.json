@@ -1,8 +1,0 @@
-{
-  "dependencies": {
-    "Microsoft.Private.Intellisense": "1.0.0-beta-24507-00"
-  },
-  "frameworks": {
-    "netstandard1.0": {}
-  }
-}
