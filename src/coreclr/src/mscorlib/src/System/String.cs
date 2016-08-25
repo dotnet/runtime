@@ -25,6 +25,7 @@ namespace System {
     using System.Runtime.Versioning;
     using Microsoft.Win32;
     using System.Diagnostics.Contracts;
+    using System.Security;
 
     //
     // For Information on these methods, please see COMString.cpp
@@ -1488,7 +1489,6 @@ namespace System {
             return TrimHelper(trimChars,TrimTail);
         }
     
-    
         // Creates a new string with the characters copied in from ptr. If
         // ptr is null, a 0-length string (like String.Empty) is returned.
         //
@@ -1566,6 +1566,17 @@ namespace System {
             }
 
             return s;
+        }
+
+        // This is only intended to be used by char.ToString.
+        // It is necessary to put the code in this class instead of Char, since m_firstChar is a private member.
+        // Making m_firstChar internal would be dangerous since it would make it much easier to break String's immutability.
+        [SecuritySafeCritical]
+        internal static string CreateFromChar(char c)
+        {
+            string result = FastAllocateString(1);
+            result.m_firstChar = c;
+            return result;
         }
                 
         [System.Security.SecuritySafeCritical]  // auto-generated
