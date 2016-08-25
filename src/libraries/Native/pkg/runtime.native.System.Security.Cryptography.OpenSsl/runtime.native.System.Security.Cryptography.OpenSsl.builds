@@ -23,6 +23,10 @@
       <OSGroup>ubuntu.16.04</OSGroup>
       <Platform>amd64</Platform>
     </Project>
+    <Project Include="ubuntu\16.10\runtime.native.System.Security.Cryptography.OpenSsl.pkgproj">
+      <OSGroup>ubuntu.16.10</OSGroup>
+      <Platform>amd64</Platform>
+    </Project>
     <Project Include="osx\runtime.native.System.Security.Cryptography.OpenSsl.pkgproj">
       <OSGroup>osx.10</OSGroup>
       <Platform>amd64</Platform>
