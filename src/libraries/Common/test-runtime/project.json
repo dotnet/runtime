@@ -2,7 +2,7 @@
   "dependencies": {
     "Microsoft.NETCore.Platforms": "1.0.2-beta-devapi-24422-01",
     "Microsoft.NETCore.Targets": "1.0.3-beta-devapi-24422-01",
-    "Microsoft.NETCore.TestHost": "1.1.0-beta-24416-04",
+    "Microsoft.NETCore.TestHost": "1.1.0-beta-24419-04",
     "Microsoft.NETCore.Runtime.CoreCLR": "1.1.0-beta-24419-04",
     "System.Diagnostics.Contracts": "4.0.2-beta-devapi-24422-01",
     "System.IO.Compression": "4.2.0-beta-devapi-24422-01",
