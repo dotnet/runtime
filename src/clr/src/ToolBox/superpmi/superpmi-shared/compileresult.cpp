@@ -729,7 +729,7 @@ void CompileResult::applyRelocs(unsigned char *block1, ULONG blocksize1, void *o
             break;
         #endif // _TARGET_X86_
 
-        #if defined(_TARGET_X86_) || defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_)
+        #if defined(_TARGET_X86_) || defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_) || defined(_TARGET_ARM_)
         case IMAGE_REL_BASED_REL32:
             {
                 DWORDLONG target = tmp.target + tmp.addlDelta;
@@ -770,7 +770,7 @@ void CompileResult::applyRelocs(unsigned char *block1, ULONG blocksize1, void *o
                 }
             }
             break;
-        #endif // defined(_TARGET_X86_) || defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_)
+        #endif // defined(_TARGET_X86_) || defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_) || defined(_TARGET_ARM_)
 
         #if defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_)
         case IMAGE_REL_BASED_DIR64:

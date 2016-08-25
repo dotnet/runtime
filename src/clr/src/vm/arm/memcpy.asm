@@ -31,7 +31,7 @@
         pld     [r1]                                    ; preload the first cache line
         cmp     r2, #16                                 ; less than 16 bytes?
         mov     r3, r0                                  ; use r3 as our destination
-        bhs     __FCallMemcpy_large                     ; go to the large copy case directly
+        bhs.W     __FCallMemcpy_large                   ; go to the large copy case directly. ".W" indicates encoding using 32bits
 
 CpySmal tbb     [pc, r2]                                ; branch to specialized bits for small copies
 __SwitchTable1_Copy

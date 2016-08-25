@@ -5,12 +5,14 @@
     <Version>1.1.0</Version>
     <SkipPackageFileCheck>true</SkipPackageFileCheck>
     <SkipValidatePackage>true</SkipValidatePackage>
-    <PackagePlatforms>x64;x86;arm64;arm</PackagePlatforms>
+    <PackagePlatforms>x64;x86;arm64;arm;</PackagePlatforms>
     <OutputPath>$(PackagesOutputPath)</OutputPath>
     <IncludeRuntimeJson>true</IncludeRuntimeJson>
   </PropertyGroup>
   <ItemGroup>
-    <!-- Declare a runtime dependency on the win8-arm CoreCLR built using the TFS builds -->
+    <!-- ARM32_TODO: Clean this up.
+      Declare a runtime dependency on the win8-arm CoreCLR built using the TFS builds 
+    -->
     <RuntimeDependency Include="runtime.win8-arm.Microsoft.NETCore.Runtime.CoreCLR">
       <TargetRuntime>win8-arm</TargetRuntime>
       <Version>1.1.0-$(ExternalExpectedPrerelease)</Version>
@@ -29,6 +31,9 @@
     </ProjectReference>
     <ProjectReference Include="win\Microsoft.NETCore.Runtime.CoreCLR.pkgproj">
       <Platform>x86</Platform>
+    </ProjectReference>
+    <ProjectReference Include="win\Microsoft.NETCore.Runtime.CoreCLR.pkgproj">
+      <Platform>arm</Platform>
     </ProjectReference>
     <ProjectReference Include="debian\Microsoft.NETCore.Runtime.CoreCLR.pkgproj">
       <Platform>amd64</Platform>
