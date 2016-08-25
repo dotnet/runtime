@@ -13,13 +13,13 @@ namespace System.Security.Permissions
         public System.Security.IPermission Copy() { return default(System.Security.IPermission); }
         public void Demand() { throw new System.Security.SecurityException(); }
         public override bool Equals(object o) => base.Equals(o);
-        public void FromXml(System.Security.SecurityElement elem) { }
+        public void FromXml(SecurityElement elem) { }
         public override int GetHashCode() => base.GetHashCode();
         public System.Security.IPermission Intersect(System.Security.IPermission target) { return default(System.Security.IPermission); }
         public bool IsSubsetOf(System.Security.IPermission target) { return false; }
         public bool IsUnrestricted() { return false; }
         public override string ToString() => base.ToString();
-        public System.Security.SecurityElement ToXml() { return default(System.Security.SecurityElement); }
+        public SecurityElement ToXml() { return default(SecurityElement); }
         public System.Security.IPermission Union(System.Security.IPermission other) { return default(System.Security.IPermission); }
     }
 }

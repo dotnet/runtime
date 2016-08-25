@@ -21,7 +21,7 @@ namespace System.Security.Permissions.Tests
         public static void ApplicationTrustCallMethods()
         {
             Policy.ApplicationTrust at = new Policy.ApplicationTrust();
-            System.Security.SecurityElement se = new System.Security.SecurityElement("");
+            SecurityElement se = new SecurityElement("");
             at.FromXml(se);
             se = at.ToXml();
         }
@@ -51,7 +51,7 @@ namespace System.Security.Permissions.Tests
             Policy.PermissionRequestEvidence pre = new Policy.PermissionRequestEvidence(ps, ps, ps);
             Policy.PermissionRequestEvidence obj = pre.Copy();
             string str = ps.ToString();
-            System.Security.SecurityElement se = new System.Security.SecurityElement("");
+            SecurityElement se = new SecurityElement("");
             ps.FromXml(se);
             se = ps.ToXml();
         }

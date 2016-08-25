@@ -23,7 +23,7 @@ namespace System.Security
         [System.ObsoleteAttribute("Deny is obsolete and will be removed in a future release of the .NET Framework. See http://go.microsoft.com/fwlink/?LinkID=155570 for more information.")]
         public void Deny() { throw new System.NotSupportedException(); }
         public override bool Equals(object o) => base.Equals(o);
-        public virtual void FromXml(System.Security.SecurityElement et) { }
+        public virtual void FromXml(SecurityElement et) { }
         public System.Collections.IEnumerator GetEnumerator() { return default(System.Collections.IEnumerator); }
         public override int GetHashCode() => base.GetHashCode();
         public System.Security.IPermission GetPermission(System.Type permClass) { return default(System.Security.IPermission); }
@@ -37,7 +37,7 @@ namespace System.Security
         public System.Security.IPermission SetPermission(System.Security.IPermission perm) { return default(System.Security.IPermission); }
         void System.Runtime.Serialization.IDeserializationCallback.OnDeserialization(object sender) { }
         public override string ToString() => base.ToString();
-        public virtual System.Security.SecurityElement ToXml() { return default(System.Security.SecurityElement); }
+        public virtual SecurityElement ToXml() { return default(SecurityElement); }
         public System.Security.PermissionSet Union(System.Security.PermissionSet other) { return default(System.Security.PermissionSet); }
     }
 }

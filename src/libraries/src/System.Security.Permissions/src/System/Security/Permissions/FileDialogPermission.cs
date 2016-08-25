@@ -10,11 +10,11 @@ namespace System.Security.Permissions
         public FileDialogPermission(System.Security.Permissions.PermissionState state) { }
         public System.Security.Permissions.FileDialogPermissionAccess Access { get; set; }
         public override System.Security.IPermission Copy() { return this; }
-        public override void FromXml(System.Security.SecurityElement esd) { }
+        public override void FromXml(SecurityElement esd) { }
         public override System.Security.IPermission Intersect(System.Security.IPermission target) { return default(System.Security.IPermission); }
         public override bool IsSubsetOf(System.Security.IPermission target) { return false; }
         public bool IsUnrestricted() { return false; }
-        public override System.Security.SecurityElement ToXml() { return default(System.Security.SecurityElement); }
+        public override SecurityElement ToXml() { return default(SecurityElement); }
         public override System.Security.IPermission Union(System.Security.IPermission target) { return default(System.Security.IPermission); }
     }
 }

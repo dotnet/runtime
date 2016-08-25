@@ -17,7 +17,7 @@ namespace System.Security.Permissions.Tests
             check = amc.Equals(new object());
             int hash = amc.GetHashCode();
             string str = amc.ToString();
-            System.Security.SecurityElement se = new System.Security.SecurityElement("");
+            SecurityElement se = new SecurityElement("");
             Policy.PolicyLevel pl = (Policy.PolicyLevel)Activator.CreateInstance(typeof(Policy.PolicyLevel), true);
             amc.FromXml(se);
             amc.FromXml(se, pl);
@@ -33,7 +33,7 @@ namespace System.Security.Permissions.Tests
             check = admc.Equals(new object());
             int hash = admc.GetHashCode();
             string str = admc.ToString();
-            System.Security.SecurityElement se = new System.Security.SecurityElement("");
+            SecurityElement se = new SecurityElement("");
             Policy.PolicyLevel pl = (Policy.PolicyLevel)Activator.CreateInstance(typeof(Policy.PolicyLevel), true);
             admc.FromXml(se);
             admc.FromXml(se, pl);
@@ -49,7 +49,7 @@ namespace System.Security.Permissions.Tests
             check = gmc.Equals(new object());
             int hash = gmc.GetHashCode();
             string str = gmc.ToString();
-            System.Security.SecurityElement se = new System.Security.SecurityElement("");
+            SecurityElement se = new SecurityElement("");
             Policy.PolicyLevel pl = (Policy.PolicyLevel)Activator.CreateInstance(typeof(Policy.PolicyLevel), true);
             gmc.FromXml(se);
             gmc.FromXml(se, pl);
@@ -65,7 +65,7 @@ namespace System.Security.Permissions.Tests
             check = hmc.Equals(new object());
             int hash = hmc.GetHashCode();
             string str = hmc.ToString();
-            System.Security.SecurityElement se = new System.Security.SecurityElement("");
+            SecurityElement se = new SecurityElement("");
             Policy.PolicyLevel pl = (Policy.PolicyLevel)Activator.CreateInstance(typeof(Policy.PolicyLevel), true);
             hmc.FromXml(se);
             hmc.FromXml(se, pl);
@@ -81,7 +81,7 @@ namespace System.Security.Permissions.Tests
             check = pmc.Equals(new object());
             int hash = pmc.GetHashCode();
             string str = pmc.ToString();
-            System.Security.SecurityElement se = new System.Security.SecurityElement("");
+            SecurityElement se = new SecurityElement("");
             Policy.PolicyLevel pl = (Policy.PolicyLevel)Activator.CreateInstance(typeof(Policy.PolicyLevel), true);
             pmc.FromXml(se);
             pmc.FromXml(se, pl);
@@ -97,7 +97,7 @@ namespace System.Security.Permissions.Tests
             check = smc.Equals(new object());
             int hash = smc.GetHashCode();
             string str = smc.ToString();
-            System.Security.SecurityElement se = new System.Security.SecurityElement("");
+            SecurityElement se = new SecurityElement("");
             Policy.PolicyLevel pl = (Policy.PolicyLevel)Activator.CreateInstance(typeof(Policy.PolicyLevel), true);
             smc.FromXml(se);
             smc.FromXml(se, pl);
@@ -113,7 +113,7 @@ namespace System.Security.Permissions.Tests
             check = snmc.Equals(new object());
             int hash = snmc.GetHashCode();
             string str = snmc.ToString();
-            System.Security.SecurityElement se = new System.Security.SecurityElement("");
+            SecurityElement se = new SecurityElement("");
             Policy.PolicyLevel pl = (Policy.PolicyLevel)Activator.CreateInstance(typeof(Policy.PolicyLevel), true);
             snmc.FromXml(se);
             snmc.FromXml(se, pl);
