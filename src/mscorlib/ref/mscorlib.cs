@@ -21,19 +21,19 @@ namespace Microsoft.Win32.SafeHandles
     [System.Security.SecurityCriticalAttribute]
     public abstract partial class SafeHandleMinusOneIsInvalid : System.Runtime.InteropServices.SafeHandle
     {
-        protected SafeHandleMinusOneIsInvalid() { }
+        protected SafeHandleMinusOneIsInvalid(bool ownsHandle) { }
         public override bool IsInvalid { [System.Security.SecurityCriticalAttribute]get { throw null; } }
     }
     [System.Security.SecurityCriticalAttribute]
     public abstract partial class SafeHandleZeroOrMinusOneIsInvalid : System.Runtime.InteropServices.SafeHandle
     {
-        protected SafeHandleZeroOrMinusOneIsInvalid() { }
+        protected SafeHandleZeroOrMinusOneIsInvalid(bool ownsHandle) { }
         public override bool IsInvalid { [System.Security.SecurityCriticalAttribute]get { throw null; } }
     }
     [System.Security.SecurityCriticalAttribute]
     public sealed partial class SafeWaitHandle : Microsoft.Win32.SafeHandles.SafeHandleZeroOrMinusOneIsInvalid
     {
-        public SafeWaitHandle(System.IntPtr existingHandle, bool ownsHandle) { }
+        public SafeWaitHandle(System.IntPtr existingHandle, bool ownsHandle) : base(ownsHandle) { }
         [System.Security.SecurityCriticalAttribute]
         protected override bool ReleaseHandle() { throw null; }
     }
@@ -3930,7 +3930,7 @@ namespace System
     [System.Security.SecurityCriticalAttribute]
     internal class SafeTypeNameParserHandle : Microsoft.Win32.SafeHandles.SafeHandleZeroOrMinusOneIsInvalid
     {
-        public SafeTypeNameParserHandle(): base() { }
+        public SafeTypeNameParserHandle(): base(default(bool)) { }
         [System.Security.SecurityCriticalAttribute]
         protected override bool ReleaseHandle() { throw null; }
     }
@@ -10857,7 +10857,7 @@ namespace System.Runtime.InteropServices
     [System.Security.SecurityCriticalAttribute]
     public abstract partial class SafeBuffer : Microsoft.Win32.SafeHandles.SafeHandleZeroOrMinusOneIsInvalid
     {
-        protected SafeBuffer(bool ownsHandle) { }
+        protected SafeBuffer(bool ownsHandle) : base(ownsHandle) { }
         [System.CLSCompliantAttribute(false)]
         public ulong ByteLength { get { throw null; } }
         [System.CLSCompliantAttribute(false)]
