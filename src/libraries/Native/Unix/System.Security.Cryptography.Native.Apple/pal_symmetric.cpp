@@ -4,6 +4,8 @@
 
 #include "pal_symmetric.h"
 
+#include <assert.h>
+
 static_assert(PAL_OperationEncrypt == kCCEncrypt, "");
 static_assert(PAL_OperationDecrypt == kCCDecrypt, "");
 
