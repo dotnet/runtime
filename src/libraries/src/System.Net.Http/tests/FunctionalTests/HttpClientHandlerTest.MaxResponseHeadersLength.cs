@@ -91,6 +91,8 @@ namespace System.Net.Http.Functional.Tests
                         {
                             await Assert.ThrowsAsync<HttpRequestException>(() => getAsync);
                         }
+                        
+                        return null;
                     });
                 }
             });
