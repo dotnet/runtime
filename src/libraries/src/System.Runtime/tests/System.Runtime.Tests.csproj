@@ -99,6 +99,8 @@
     <Compile Include="ArrayTests.netstandard1.7.cs" />
     <Compile Include="EnumTests.netstandard1.7.cs" />
     <Compile Include="DecimalTests.netstandard1.7.cs" />
+    <Compile Include="TimeZoneInfoTests.netstandard1.7.cs" />
+    <Compile Include="TimeZoneNotFoundExceptionTests.netstandard1.7.cs" />
     <Compile Include="VersionTests.netstandard1.7.cs" />
     <Compile Include="System\AccessViolationExceptionTests.cs" />
     <Compile Include="System\ExternalExceptionTests.cs" />

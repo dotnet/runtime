@@ -11,7 +11,7 @@ using Xunit;
 
 namespace System.Tests
 {
-    public static class TimeZoneInfoTests
+    public static partial class TimeZoneInfoTests
     {
         private static readonly bool s_isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
         private static readonly bool s_isOSX = RuntimeInformation.IsOSPlatform(OSPlatform.OSX);
@@ -101,7 +101,7 @@ namespace System.Tests
             {
                 tripoli = TimeZoneInfo.FindSystemTimeZoneById(s_strLibya);
             }
-            catch (Exception /* TimeZoneNotFoundException */ )
+            catch (Exception /* TimeZoneNotFoundException in netstandard1.7 test*/ )
             {
                 // Libya time zone not found
                 Console.WriteLine("Warning: Libya time zone is not exist in this machine");
@@ -138,10 +138,7 @@ namespace System.Tests
 
             VerifyConvertException<ArgumentNullException>(time1, null);
 
-            //
-            // We catch Exception here instead of TimeZoneNotFoundException because TimeZoneNotFoundException is not exposed 
-            // in .NET Core
-            //
+            // We catch TimeZoneNotFoundException in then netstandard1.7 tests
 
             VerifyConvertException<Exception>(time1, string.Empty);
             VerifyConvertException<Exception>(time1, "    ");
