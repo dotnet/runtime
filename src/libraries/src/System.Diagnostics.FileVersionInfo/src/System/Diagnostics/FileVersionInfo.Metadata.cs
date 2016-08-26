@@ -11,6 +11,8 @@ namespace System.Diagnostics
 {
     public sealed partial class FileVersionInfo
     {
+        private static readonly char[] s_versionSeparators = new char[] { '.' };
+
         private FileVersionInfo(string fileName)
         {
             _fileName = fileName;
@@ -101,6 +103,8 @@ namespace System.Diagnostics
             _isPrivateBuild = false;
             _isSpecialBuild = false;
 
+            bool sawAssemblyInformationalVersionAttribute = false;
+
             // Everything else is parsed from assembly attributes
             MetadataStringComparer comparer = metadataReader.StringComparer;
             foreach (CustomAttributeHandle attrHandle in assemblyDefinition.GetCustomAttributes())
@@ -124,34 +128,14 @@ namespace System.Diagnostics
                     }
                     else if (comparer.Equals(typeNameHandle, "AssemblyFileVersionAttribute"))
                     {
-                        string versionString = string.Empty;
-                        GetStringAttributeArgumentValue(metadataReader, attr, ref versionString);
-                        Version v;
-                        if (Version.TryParse(versionString, out v))
-                        {
-                            _fileVersion = v.ToString();
-                            _fileMajor = v.Major;
-                            _fileMinor = v.Minor;
-                            _fileBuild = v.Build != -1 ? v.Build : 0;
-                            _filePrivate = v.Revision != -1 ? v.Revision : 0;
-
-                            // When the managed compiler sees an [AssemblyVersion(...)] attribute, it uses that to set 
-                            // both the assembly version and the product version in the Win32 resources. If it doesn't 
-                            // see an [AssemblyVersion(...)], then it sets the assembly version to 0.0.0.0, however it 
-                            // sets the product version in the Win32 resources to whatever was defined in the 
-                            // [AssemblyFileVersionAttribute(...)] if there was one.  Without parsing the Win32 resources,
-                            // we can't differentiate these two cases, so given the rarity of explicitly setting an 
-                            // assembly's version number to 0.0.0.0, we assume that if it is 0.0.0.0 then the attribute 
-                            // wasn't specified and we use the file version.
-                            if (_productVersion == "0.0.0.0")
-                            {
-                                _productVersion = _fileVersion;
-                                _productMajor = _fileMajor;
-                                _productMinor = _fileMinor;
-                                _productBuild = _fileBuild;
-                                _productPrivate = _filePrivate;
-                            }
-                        }
+                        GetStringAttributeArgumentValue(metadataReader, attr, ref _fileVersion);
+                        ParseVersion(_fileVersion, out _fileMajor, out _fileMinor, out _fileBuild, out _filePrivate);
+                    }
+                    else if (comparer.Equals(typeNameHandle, "AssemblyInformationalVersionAttribute"))
+                    {
+                        GetStringAttributeArgumentValue(metadataReader, attr, ref _productVersion);
+                        ParseVersion(_productVersion, out _productMajor, out _productMinor, out _productBuild, out _productPrivate);
+                        sawAssemblyInformationalVersionAttribute = true;
                     }
                     else if (comparer.Equals(typeNameHandle, "AssemblyProductAttribute"))
                     {
@@ -167,6 +151,81 @@ namespace System.Diagnostics
                     }
                 }
             }
+
+            // When the managed compiler sees an [AssemblyVersion(...)] attribute, it uses that to set 
+            // both the assembly version and the product version in the Win32 resources. If it doesn't 
+            // see an [AssemblyVersion(...)], then it sets the assembly version to 0.0.0.0, however it 
+            // sets the product version in the Win32 resources to whatever was defined in the 
+            // [AssemblyFileVersionAttribute(...)] if there was one (unless there is an AssemblyInformationalVersionAttribute,
+            // in which case it always uses that for the product version).  Without parsing the Win32 resources,
+            // we can't differentiate these two cases, so given the rarity of explicitly setting an 
+            // assembly's version number to 0.0.0.0, we assume that if it is 0.0.0.0 then the attribute 
+            // wasn't specified and we use the file version.
+
+            if (!sawAssemblyInformationalVersionAttribute && _productVersion == "0.0.0.0")
+            {
+                _productVersion = _fileVersion;
+                _productMajor = _fileMajor;
+                _productMinor = _fileMinor;
+                _productBuild = _fileBuild;
+                _productPrivate = _filePrivate;
+            }
+        }
+
+        /// <summary>Parses the version into its constituent parts.</summary>
+        private static void ParseVersion(string versionString, out int major, out int minor, out int build, out int priv)
+        {
+            // Relatively-forgiving parsing of a version:
+            // - If there are more than four parts (separated by periods), all results are deemed 0
+            // - If any part fails to parse completely as an integer, no further parts are parsed and are left as 0.
+            // - If any part partially parses as an integer, that value is used for that part.
+            // - Whitespace is treated like any other non-digit character and thus isn't ignored.
+            // - Each component is parsed as a ushort, allowing for overflow.
+
+            string[] parts = versionString.Split(s_versionSeparators);
+            major = minor = build = priv = 0;
+            if (parts.Length <= 4)
+            {
+                bool endedEarly;
+                if (parts.Length > 0)
+                {
+                    major = ParseUInt16UntilNonDigit(parts[0], out endedEarly);
+                    if (!endedEarly && parts.Length > 1)
+                    {
+                        minor = ParseUInt16UntilNonDigit(parts[1], out endedEarly);
+                        if (!endedEarly && parts.Length > 2)
+                        {
+                            build = ParseUInt16UntilNonDigit(parts[2], out endedEarly);
+                            if (!endedEarly && parts.Length > 3)
+                            {
+                                priv = ParseUInt16UntilNonDigit(parts[3], out endedEarly);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        /// <summary>Parses a string as a UInt16 until it hits a non-digit.</summary>
+        /// <param name="s">The string to parse.</param>
+        /// <returns>The parsed value.</returns>
+        private static ushort ParseUInt16UntilNonDigit(string s, out bool endedEarly)
+        {
+            endedEarly = false;
+            ushort result = 0;
+
+            for (int index = 0; index < s.Length; index++)
+            {
+                char c = s[index];
+                if (c < '0' || c > '9')
+                {
+                    endedEarly = true;
+                    break;
+                }
+                result = (ushort)((result * 10) + (c - '0')); // explicitly allow for overflow, as this is the behavior employed on Windows
+            }
+
+            return result;
         }
 
         /// <summary>Gets the name of an attribute.</summary>
