@@ -24,7 +24,7 @@ namespace System {
 
     [Serializable]
     [System.Runtime.InteropServices.ComVisible(true)]
-    public struct IntPtr : ISerializable
+    public struct IntPtr : IEquatable<IntPtr>, ISerializable
     {
         [SecurityCritical]
         unsafe private void* m_value; // The compiler treats void* closest to uint hence explicit casts are required to preserve int behavior
@@ -103,6 +103,12 @@ namespace System {
                 return (m_value == ((IntPtr)obj).m_value);
             }
             return false;
+        }
+
+        [SecuritySafeCritical]
+        unsafe bool IEquatable<IntPtr>.Equals(IntPtr other)
+        {
+            return m_value == other.m_value;
         }
     
         [System.Security.SecuritySafeCritical]  // auto-generated
