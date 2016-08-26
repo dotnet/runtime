@@ -2806,8 +2806,6 @@ static void
 free_generic_class (MonoGenericClass *gclass)
 {
 	/* The gclass itself is allocated from the image set mempool */
-	if (gclass->is_dynamic)
-		mono_reflection_free_dynamic_generic_class (gclass);
 	if (gclass->cached_class && gclass->cached_class->interface_id)
 		mono_unload_interface_id (gclass->cached_class);
 }
@@ -2984,13 +2982,9 @@ mono_metadata_lookup_generic_class (MonoClass *container_class, MonoGenericInst 
 		return gclass;
 	}
 
-	if (is_dynamic) {
-		MonoDynamicGenericClass *dgclass = mono_image_set_new0 (set, MonoDynamicGenericClass, 1);
-		gclass = &dgclass->generic_class;
+	gclass = mono_image_set_new0 (set, MonoGenericClass, 1);
+	if (is_dynamic)
 		gclass->is_dynamic = 1;
-	} else {
-		gclass = mono_image_set_new0 (set, MonoGenericClass, 1);
-	}
 
 	gclass->is_tb_open = is_tb_open;
 	gclass->container_class = container_class;

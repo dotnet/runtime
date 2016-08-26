@@ -1396,9 +1396,6 @@ ves_icall_System_Reflection_CustomAttributeData_ResolveArgumentsInternal (MonoRe
 MonoType*
 mono_reflection_type_get_handle (MonoReflectionType *ref, MonoError *error);
 
-void
-mono_reflection_free_dynamic_generic_class (MonoGenericClass *gclass);
-
 gboolean
 mono_image_build_metadata (MonoReflectionModuleBuilder *module, MonoError *error);
 

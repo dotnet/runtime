@@ -700,24 +700,14 @@ mono_field_get_object_checked (MonoDomain *domain, MonoClass *klass, MonoClassFi
 	res->field = field;
 	MONO_OBJECT_SETREF (res, name, mono_string_new (domain, mono_field_get_name (field)));
 
-	if (mono_is_sr_field_on_inst (field)) {
-		res->attrs = mono_reflection_get_field_on_inst_generic_type (field)->attrs;
-
+	if (field->type) {
 		rt = mono_type_get_object_checked (domain, field->type, error);
 		if (!mono_error_ok (error))
 			return NULL;
 
 		MONO_OBJECT_SETREF (res, type, rt);
-	} else {
-		if (field->type) {
-			rt = mono_type_get_object_checked (domain, field->type, error);
-			if (!mono_error_ok (error))
-				return NULL;
-
-			MONO_OBJECT_SETREF (res, type, rt);
-		}
-		res->attrs = mono_field_get_flags (field);
 	}
+	res->attrs = mono_field_get_flags (field);
 	CACHE_OBJECT (MonoReflectionField *, field, res, klass);
 }
 
@@ -2172,18 +2162,6 @@ mono_reflection_get_token_checked (MonoObject *obj, MonoError *error)
 	} else if (strcmp (klass->name, "MonoField") == 0) {
 		MonoReflectionField *f = (MonoReflectionField*)obj;
 
-		if (mono_is_sr_field_on_inst (f->field)) {
-			MonoDynamicGenericClass *dgclass = (MonoDynamicGenericClass*)f->field->parent->generic_class;
-
-			if (f->field >= dgclass->fields && f->field < dgclass->fields + dgclass->count_fields) {
-				int field_index = f->field - dgclass->fields;
-				MonoObject *obj;
-
-				g_assert (field_index >= 0 && field_index < dgclass->count_fields);
-				obj = dgclass->field_objects [field_index];
-				return mono_reflection_get_token_checked (obj, error);
-			}
-		}
 		token = mono_class_get_field_token (f->field);
 	} else if (strcmp (klass->name, "MonoProperty") == 0) {
 		MonoReflectionProperty *p = (MonoReflectionProperty*)obj;

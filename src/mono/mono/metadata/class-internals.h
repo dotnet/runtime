@@ -529,8 +529,9 @@ struct _MonoMethodInflated {
 struct _MonoGenericClass {
 	MonoClass *container_class;	/* the generic type definition */
 	MonoGenericContext context;	/* a context that contains the type instantiation doesn't contain any method instantiation */ /* FIXME: Only the class_inst member of "context" is ever used, so this field could be replaced with just a monogenericinst */
-	guint is_dynamic  : 1;		/* We're a MonoDynamicGenericClass */
+	guint is_dynamic  : 1;		/* Contains dynamic types */
 	guint is_tb_open  : 1;		/* This is the fully open instantiation for a type_builder. Quite ugly, but it's temporary.*/
+	guint need_sync   : 1;      /* Only if dynamic. Need to be synchronized with its container class after its finished. */
 	MonoClass *cached_class;	/* if present, the MonoClass corresponding to the instantiation.  */
 
 	/* 
@@ -539,21 +540,6 @@ struct _MonoGenericClass {
 	 * so it is easy to free.
 	 */
 	MonoImageSet *owner;
-};
-
-/*
- * This is used when instantiating a generic type definition which is
- * a TypeBuilder.
- */
-struct _MonoDynamicGenericClass {
-	MonoGenericClass generic_class;
-	int count_fields;
-	MonoClassField *fields;
-	guint initialized;
-	/* The non-inflated types of the fields */
-	MonoType **field_generic_types;
-	/* The managed objects representing the fields */
-	MonoObject **field_objects;
 };
 
 /*

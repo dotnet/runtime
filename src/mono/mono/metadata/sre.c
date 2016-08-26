@@ -942,68 +942,8 @@ mono_image_get_ctorbuilder_token (MonoDynamicImage *assembly, MonoReflectionCtor
 static gboolean
 is_field_on_inst (MonoClassField *field)
 {
-	return (field->parent->generic_class && field->parent->generic_class->is_dynamic && ((MonoDynamicGenericClass*)field->parent->generic_class)->fields);
+	return field->parent->generic_class && field->parent->generic_class->is_dynamic;
 }
-
-/*
- * If FIELD is a field of a MonoDynamicGenericClass, return its non-inflated type.
- */
-static MonoType*
-get_field_on_inst_generic_type (MonoClassField *field)
-{
-	MonoClass *klass, *gtd;
-	MonoDynamicGenericClass *dgclass;
-	int field_index;
-
-	g_assert (is_field_on_inst (field));
-
-	dgclass = (MonoDynamicGenericClass*)field->parent->generic_class;
-
-	if (field >= dgclass->fields && field - dgclass->fields < dgclass->count_fields) {
-		field_index = field - dgclass->fields;
-		return dgclass->field_generic_types [field_index];		
-	}
-
-	klass = field->parent;
-	gtd = klass->generic_class->container_class;
-
-	if (field >= klass->fields && field - klass->fields < klass->field.count) {
-		field_index = field - klass->fields;
-		return gtd->fields [field_index].type;
-	}
-
-	g_assert_not_reached ();
-	return 0;
-}
-
-#ifndef DISABLE_REFLECTION_EMIT
-gboolean
-mono_is_sr_field_on_inst (MonoClassField *field)
-{
-	return is_field_on_inst (field);
-}
-#else
-gboolean
-mono_is_sr_field_on_inst (MonoClassField *field)
-{
-	return FALSE;
-}
-#endif /*DISABLE_REFLECTION_EMIT*/
-
-#ifndef DISABLE_REFLECTION_EMIT
-MonoType*
-mono_reflection_get_field_on_inst_generic_type (MonoClassField *field)
-{
-	return get_field_on_inst_generic_type (field);
-}
-#else
-MonoType*
-mono_reflection_get_field_on_inst_generic_type (MonoClassField *field)
-{
-	g_assert_not_reached ();
-	return NULL;
-}
-#endif /* DISABLE_REFLECTION_EMIT */
 
 #ifndef DISABLE_REFLECTION_EMIT
 static guint32
@@ -1023,10 +963,7 @@ mono_image_get_fieldref_token (MonoDynamicImage *assembly, MonoObject *f, MonoCl
 		int index = field - field->parent->fields;
 		type = mono_field_get_type (&field->parent->generic_class->container_class->fields [index]);
 	} else {
-		if (is_field_on_inst (field))
-			type = get_field_on_inst_generic_type (field);
-		else
-			type = mono_field_get_type (field);
+		type = mono_field_get_type (field);
 	}
 	token = mono_image_get_memberref_token (assembly, &field->parent->byval_arg,
 											mono_field_get_name (field),
@@ -3954,98 +3891,37 @@ inflate_method (MonoReflectionType *type, MonoObject *obj, MonoError *error)
 	return inflate_mono_method (mono_class_from_mono_type (t), method, obj);
 }
 
-/*TODO avoid saving custom attrs for generic classes as it's enough to have them on the generic type definition.*/
-static gboolean
-reflection_generic_class_initialize (MonoReflectionGenericClass *type, MonoArray *fields, MonoError *error)
+static void
+reflection_generic_class_initialize (MonoReflectionGenericClass *type, MonoError *error)
 {
 	MonoGenericClass *gclass;
-	MonoDynamicGenericClass *dgclass;
 	MonoClass *klass, *gklass;
 	MonoType *gtype;
-	int i;
 
 	mono_error_init (error);
 
 	gtype = mono_reflection_type_get_handle ((MonoReflectionType*)type, error);
-	return_val_if_nok (error, FALSE);
+	return_if_nok (error);
 	klass = mono_class_from_mono_type (gtype);
 	g_assert (gtype->type == MONO_TYPE_GENERICINST);
 	gclass = gtype->data.generic_class;
 
 	if (!gclass->is_dynamic)
-		return TRUE;
-
-	dgclass = (MonoDynamicGenericClass *) gclass;
-
-	if (dgclass->initialized)
-		return TRUE;
+		return;
 
 	gklass = gclass->container_class;
 	mono_class_init (gklass);
 
-	dgclass->count_fields = fields ? mono_array_length (fields) : 0;
-
-	dgclass->fields = mono_image_set_new0 (gclass->owner, MonoClassField, dgclass->count_fields);
-	dgclass->field_objects = mono_image_set_new0 (gclass->owner, MonoObject*, dgclass->count_fields);
-	dgclass->field_generic_types = mono_image_set_new0 (gclass->owner, MonoType*, dgclass->count_fields);
-
-	for (i = 0; i < dgclass->count_fields; i++) {
-		MonoObject *obj = (MonoObject *)mono_array_get (fields, gpointer, i);
-		MonoClassField *field, *inflated_field = NULL;
-
-		if (!strcmp (obj->vtable->klass->name, "FieldBuilder")) {
-			inflated_field = field = fieldbuilder_to_mono_class_field (klass, (MonoReflectionFieldBuilder *) obj, error);
-			return_val_if_nok (error, FALSE);
-		} else if (!strcmp (obj->vtable->klass->name, "MonoField"))
-			field = ((MonoReflectionField *) obj)->field;
-		else {
-			field = NULL; /* prevent compiler warning */
-			g_assert_not_reached ();
-		}
-
-		dgclass->fields [i] = *field;
-		dgclass->fields [i].parent = klass;
-		dgclass->fields [i].type = mono_class_inflate_generic_type_checked (
-			field->type, mono_generic_class_get_context ((MonoGenericClass *) dgclass), error);
-		mono_error_assert_ok (error); /* FIXME don't swallow the error */
-		dgclass->field_generic_types [i] = field->type;
-		MONO_GC_REGISTER_ROOT_IF_MOVING (dgclass->field_objects [i], MONO_ROOT_SOURCE_REFLECTION, "dynamic generic class field object");
-		dgclass->field_objects [i] = obj;
-
-		if (inflated_field) {
-			g_free (inflated_field);
-		} else {
-			dgclass->fields [i].name = mono_image_set_strdup (gclass->owner, dgclass->fields [i].name);
-		}
-	}
-
-	dgclass->initialized = TRUE;
-	return TRUE;
+	/* Mark this as needing synchronization with its generic container */
+	gclass->need_sync = TRUE;
 }
 
 void
 mono_reflection_generic_class_initialize (MonoReflectionGenericClass *type, MonoArray *fields)
 {
 	MonoError error;
-	(void) reflection_generic_class_initialize (type, fields, &error);
+	reflection_generic_class_initialize (type, &error);
 	mono_error_set_pending_exception (&error);
-}
-
-void
-mono_reflection_free_dynamic_generic_class (MonoGenericClass *gclass)
-{
-	MonoDynamicGenericClass *dgclass;
-	int i;
-
-	g_assert (gclass->is_dynamic);
-
-	dgclass = (MonoDynamicGenericClass *)gclass;
-
-	for (i = 0; i < dgclass->count_fields; ++i) {
-		MonoClassField *field = dgclass->fields + i;
-		mono_metadata_free_type (field->type);
-		MONO_GC_UNREGISTER_ROOT_IF_MOVING (dgclass->field_objects [i]);
-	}
 }
 
 /**
@@ -4054,7 +3930,7 @@ mono_reflection_free_dynamic_generic_class (MonoGenericClass *gclass)
  * @error: set on error
  *
  * Assumes that the generic container of @klass has its vtable
- * initialized, and updates the parent class, insterfaces, methods and
+ * initialized, and updates the parent class, interfaces, methods and
  * fields of @klass by inflating the types using the generic context.
  *
  * On success returns TRUE, on failure returns FALSE and sets @error.
@@ -4064,7 +3940,6 @@ static gboolean
 fix_partial_generic_class (MonoClass *klass, MonoError *error)
 {
 	MonoClass *gklass = klass->generic_class->container_class;
-	MonoDynamicGenericClass *dgclass;
 	int i;
 
 	mono_error_init (error);
@@ -4072,7 +3947,6 @@ fix_partial_generic_class (MonoClass *klass, MonoError *error)
 	if (klass->wastypebuilder)
 		return TRUE;
 
-	dgclass = (MonoDynamicGenericClass *)  klass->generic_class;
 	if (klass->parent != gklass->parent) {
 		MonoType *parent_type = mono_class_inflate_generic_type_checked (&gklass->parent->byval_arg, &klass->generic_class->context, error);
 		if (mono_error_ok (error)) {
@@ -4090,7 +3964,7 @@ fix_partial_generic_class (MonoClass *klass, MonoError *error)
 		}
 	}
 
-	if (!dgclass->initialized)
+	if (!klass->generic_class->need_sync)
 		return TRUE;
 
 	if (klass->method.count != gklass->method.count) {
@@ -5645,12 +5519,6 @@ mono_reflection_type_get_handle (MonoReflectionType* ref, MonoError *error)
 	if (!ref)
 		return NULL;
 	return ref->type;
-}
-
-void
-mono_reflection_free_dynamic_generic_class (MonoGenericClass *gclass)
-{
-	g_assert_not_reached ();
 }
 
 #endif /* DISABLE_REFLECTION_EMIT */

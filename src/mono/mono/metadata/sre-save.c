@@ -1749,8 +1749,6 @@ fixup_method (MonoReflectionILGen *ilgen, gpointer value, MonoDynamicImage *asse
 			} else if (!strcmp (iltoken->member->vtable->klass->name, "FieldBuilder")) {
 				continue;
 			} else if (!strcmp (iltoken->member->vtable->klass->name, "MonoField")) {
-				MonoClassField *f = ((MonoReflectionField*)iltoken->member)->field;
-				g_assert (mono_is_sr_field_on_inst (f));
 				continue;
 			} else if (!strcmp (iltoken->member->vtable->klass->name, "MethodBuilder") ||
 					!strcmp (iltoken->member->vtable->klass->name, "ConstructorBuilder")) {
