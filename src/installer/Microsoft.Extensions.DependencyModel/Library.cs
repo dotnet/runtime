@@ -15,7 +15,7 @@ namespace Microsoft.Extensions.DependencyModel
             string hash,
             IEnumerable<Dependency> dependencies,
             bool serviceable)
-            : this(type, name, version, hash, dependencies, serviceable, path: null)
+            : this(type, name, version, hash, dependencies, serviceable, path: null, hashPath: null)
         {
         }
 
@@ -25,7 +25,8 @@ namespace Microsoft.Extensions.DependencyModel
             string hash,
             IEnumerable<Dependency> dependencies,
             bool serviceable,
-            string path)
+            string path,
+            string hashPath)
         {
             if (string.IsNullOrEmpty(type))
             {
@@ -50,6 +51,7 @@ namespace Microsoft.Extensions.DependencyModel
             Dependencies = dependencies.ToArray();
             Serviceable = serviceable;
             Path = path;
+            HashPath = hashPath;
         }
 
         public string Type { get; }
@@ -65,5 +67,7 @@ namespace Microsoft.Extensions.DependencyModel
         public bool Serviceable { get; }
 
         public string Path { get; }
+
+        public string HashPath { get; }
     }
 }

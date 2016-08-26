@@ -13,6 +13,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
         public static readonly Dependency[] DefaultDependencies = { };
         public static readonly bool DefaultServiceable = true;
         public static readonly string DefaultPath = "MyPackagePath";
+        public static readonly string DefaultHashPath = "MyPackageHashPath";
 
         public static readonly string DefaultAssembly = "My.Package.dll";
         public static readonly string SecondAssembly = "My.PackageEx.dll";
@@ -39,7 +40,8 @@ namespace Microsoft.Extensions.DependencyModel.Tests
             string[] assemblies = null,
             Dependency[] dependencies = null,
             bool? serviceable = null,
-            string path = null)
+            string path = null,
+            string hashPath = null)
         {
             return new CompilationLibrary(
                 libraryType ?? DefaultType,
@@ -49,7 +51,8 @@ namespace Microsoft.Extensions.DependencyModel.Tests
                 assemblies ?? DefaultAssemblies,
                 dependencies ?? DefaultDependencies,
                 serviceable ?? DefaultServiceable,
-                path ?? DefaultPath);
+                path ?? DefaultPath,
+                hashPath ?? DefaultHashPath);
         }
     }
 

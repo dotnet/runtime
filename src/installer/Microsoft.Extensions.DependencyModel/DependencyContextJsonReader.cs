@@ -75,7 +75,9 @@ namespace Microsoft.Extensions.DependencyModel
                     case DependencyContextStrings.RuntimesPropertyName:
                         runtimeFallbacks = ReadRuntimes(reader);
                         break;
-
+                    default:
+                        reader.Skip();
+                        break;
                 }
             }
 
@@ -177,8 +179,6 @@ namespace Microsoft.Extensions.DependencyModel
                     case DependencyContextStrings.RuntimeTargetSignaturePropertyName:
                         runtimeSignature = propertyValue;
                         break;
-                    default:
-                        throw new FormatException($"Unknown property name '{propertyName}'");
                 }
             }
 
@@ -243,7 +243,8 @@ namespace Microsoft.Extensions.DependencyModel
                         generateXmlDocumentation = reader.ReadAsBoolean();
                         break;
                     default:
-                        throw new FormatException($"Unknown property name '{reader.Value}'");
+                        reader.Skip();
+                        break;
                 }
             }
 
@@ -338,7 +339,8 @@ namespace Microsoft.Extensions.DependencyModel
                         compileOnly = reader.ReadAsBoolean();
                         break;
                     default:
-                        throw new FormatException($"Unknown property name '{reader.Value}'");
+                        reader.Skip();
+                        break;
                 }
             }
 
@@ -421,8 +423,6 @@ namespace Microsoft.Extensions.DependencyModel
                         case DependencyContextStrings.AssetTypePropertyName:
                             runtimeTarget.Type = Pool(propertyValue);
                             break;
-                        default:
-                            throw new FormatException($"Unknown property name '{propertyName}'");
                     }
                 }
 
@@ -497,6 +497,7 @@ namespace Microsoft.Extensions.DependencyModel
             string type = null;
             bool serviceable = false;
             string path = null;
+            string hashPath = null;
 
             reader.ReadStartObject();
 
@@ -516,8 +517,12 @@ namespace Microsoft.Extensions.DependencyModel
                     case DependencyContextStrings.PathPropertyName:
                         path = reader.ReadAsString();
                         break;
+                    case DependencyContextStrings.HashPathPropertyName:
+                        hashPath = reader.ReadAsString();
+                        break;
                     default:
-                        throw new FormatException($"Unknown property name '{reader.Value}'");
+                        reader.Skip();
+                        break;
                 }
             }
 
@@ -528,7 +533,8 @@ namespace Microsoft.Extensions.DependencyModel
                 Hash = hash,
                 Type = Pool(type),
                 Serviceable = serviceable,
-                Path = path
+                Path = path,
+                HashPath = hashPath
             };
         }
 
@@ -567,7 +573,7 @@ namespace Microsoft.Extensions.DependencyModel
             var nameWithVersion = targetLibrary.Name;
             LibraryStub stub;
 
-            if (!libraryStubs.TryGetValue(nameWithVersion, out stub))
+            if (libraryStubs == null || !libraryStubs.TryGetValue(nameWithVersion, out stub))
             {
                 throw new InvalidOperationException($"Cannot find library information for {nameWithVersion}");
             }
@@ -638,7 +644,8 @@ namespace Microsoft.Extensions.DependencyModel
                     resourceAssemblies: targetLibrary.Resources ?? Enumerable.Empty<ResourceAssembly>(),
                     dependencies: targetLibrary.Dependencies,
                     serviceable: stub.Serviceable,
-                    path: stub.Path);
+                    path: stub.Path,
+                    hashPath: stub.HashPath);
             }
             else
             {
@@ -651,7 +658,8 @@ namespace Microsoft.Extensions.DependencyModel
                     assemblies,
                     targetLibrary.Dependencies,
                     stub.Serviceable,
-                    stub.Path);
+                    stub.Path,
+                    stub.HashPath);
             }
         }
 
@@ -715,6 +723,8 @@ namespace Microsoft.Extensions.DependencyModel
             public bool Serviceable;
 
             public string Path;
+
+            public string HashPath;
         }
     }
 }
