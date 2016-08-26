@@ -125,7 +125,8 @@ namespace Microsoft.Extensions.DependencyModel.Tests
                                             new Dependency("Fruits.Abstract.dll","2.0.0")
                                         },
                                         true,
-                                        "PackagePath"
+                                        "PackagePath",
+                                        "PackageHashPath"
                                     )
                             }));
 
@@ -145,6 +146,50 @@ namespace Microsoft.Extensions.DependencyModel.Tests
             library.Should().HavePropertyValue("type", "package");
             library.Should().HavePropertyValue("serviceable", true);
             library.Should().HavePropertyValue("path", "PackagePath");
+            library.Should().HavePropertyValue("hashPath", "PackageHashPath");
+        }
+
+        [Fact]
+        public void ExcludesPathAndHashPath()
+        {
+            var result = Save(Create(
+                            "Target",
+                            "runtime",
+                            true,
+                            compileLibraries: new[]
+                            {
+                                new CompilationLibrary(
+                                        "package",
+                                        "PackageName",
+                                        "1.2.3",
+                                        "HASH",
+                                        new [] {"Banana.dll"},
+                                        new [] {
+                                            new Dependency("Fruits.Abstract.dll","2.0.0")
+                                        },
+                                        true,
+                                        path: null,
+                                        hashPath: null
+                                    )
+                            }));
+
+            // targets
+            var targets = result.Should().HavePropertyAsObject("targets").Subject;
+            var target = targets.Should().HavePropertyAsObject("Target").Subject;
+            var library = target.Should().HavePropertyAsObject("packagename/1.2.3").Subject;
+            var dependencies = library.Should().HavePropertyAsObject("dependencies").Subject;
+            dependencies.Should().HavePropertyValue("Fruits.Abstract.dll", "2.0.0");
+            library.Should().HavePropertyAsObject("compile")
+                .Subject.Should().HaveProperty("Banana.dll");
+
+            //libraries
+            var libraries = result.Should().HavePropertyAsObject("libraries").Subject;
+            library = libraries.Should().HavePropertyAsObject("packagename/1.2.3").Subject;
+            library.Should().HavePropertyValue("sha512", "HASH");
+            library.Should().HavePropertyValue("type", "package");
+            library.Should().HavePropertyValue("serviceable", true);
+            library.Should().NotHaveProperty("path");
+            library.Should().NotHaveProperty("hashPath");
         }
 
         [Fact]
@@ -174,7 +219,8 @@ namespace Microsoft.Extensions.DependencyModel.Tests
                                             new Dependency("Fruits.Abstract.dll","2.0.0")
                                         },
                                         true,
-                                        "PackagePath"
+                                        "PackagePath",
+                                        "PackageHashPath"
                                     ),
                             }));
 
@@ -211,6 +257,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
             library.Should().HavePropertyValue("type", "package");
             library.Should().HavePropertyValue("serviceable", true);
             library.Should().HavePropertyValue("path", "PackagePath");
+            library.Should().HavePropertyValue("hashPath", "PackageHashPath");
         }
 
         [Fact]
@@ -232,7 +279,8 @@ namespace Microsoft.Extensions.DependencyModel.Tests
                                             new Dependency("Fruits.Abstract.dll","2.0.0")
                                         },
                                         true,
-                                        "PackagePath"
+                                        "PackagePath",
+                                        "PackageHashPath"
                                     )
                             },
                             runtimeLibraries: new[]
@@ -255,7 +303,8 @@ namespace Microsoft.Extensions.DependencyModel.Tests
                                             new Dependency("Fruits.Abstract.dll","2.0.0")
                                         },
                                         true,
-                                        "PackagePath"
+                                        "PackagePath",
+                                        "PackageHashPath"
                                     ),
                             }));
 
@@ -291,6 +340,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
             library.Should().HavePropertyValue("type", "package");
             library.Should().HavePropertyValue("serviceable", true);
             library.Should().HavePropertyValue("path", "PackagePath");
+            library.Should().HavePropertyValue("hashPath", "PackageHashPath");
         }
 
         [Fact]
@@ -318,7 +368,8 @@ namespace Microsoft.Extensions.DependencyModel.Tests
                                             new Dependency("Fruits.Abstract.dll","2.0.0")
                                         },
                                         true,
-                                        "PackagePath"
+                                        "PackagePath",
+                                        "PackageHashPath"
                                     ),
                             }));
 
@@ -340,6 +391,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
             library.Should().HavePropertyValue("type", "package");
             library.Should().HavePropertyValue("serviceable", true);
             library.Should().HavePropertyValue("path", "PackagePath");
+            library.Should().HavePropertyValue("hashPath", "PackageHashPath");
         }
 
         [Fact]
@@ -367,7 +419,8 @@ namespace Microsoft.Extensions.DependencyModel.Tests
                                         new ResourceAssembly[] { },
                                         new Dependency[] { },
                                         true,
-                                        "PackagePath"
+                                        "PackagePath",
+                                        "PackageHashPath"
                                     ),
                             }));
 
@@ -417,7 +470,8 @@ namespace Microsoft.Extensions.DependencyModel.Tests
                                         },
                                         new Dependency[] { },
                                         true,
-                                        "PackagePath"
+                                        "PackagePath",
+                                        "PackageHashPath"
                                     ),
                             }));
 
@@ -452,7 +506,8 @@ namespace Microsoft.Extensions.DependencyModel.Tests
                                         },
                                         new Dependency[] { },
                                         true,
-                                        "PackagePath"
+                                        "PackagePath",
+                                        "PackageHashPath"
                                     ),
                             }));
 
@@ -484,7 +539,8 @@ namespace Microsoft.Extensions.DependencyModel.Tests
                                             new Dependency("Fruits.Abstract.dll","2.0.0")
                                         },
                                         true,
-                                        "PackagePath"
+                                        "PackagePath",
+                                        "PackageHashPath"
                                     )
                             }));
 
