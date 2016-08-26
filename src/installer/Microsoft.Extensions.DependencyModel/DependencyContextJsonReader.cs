@@ -75,7 +75,9 @@ namespace Microsoft.Extensions.DependencyModel
                     case DependencyContextStrings.RuntimesPropertyName:
                         runtimeFallbacks = ReadRuntimes(reader);
                         break;
-
+                    default:
+                        reader.Skip();
+                        break;
                 }
             }
 
@@ -177,8 +179,6 @@ namespace Microsoft.Extensions.DependencyModel
                     case DependencyContextStrings.RuntimeTargetSignaturePropertyName:
                         runtimeSignature = propertyValue;
                         break;
-                    default:
-                        throw new FormatException($"Unknown property name '{propertyName}'");
                 }
             }
 
@@ -243,7 +243,8 @@ namespace Microsoft.Extensions.DependencyModel
                         generateXmlDocumentation = reader.ReadAsBoolean();
                         break;
                     default:
-                        throw new FormatException($"Unknown property name '{reader.Value}'");
+                        reader.Skip();
+                        break;
                 }
             }
 
@@ -338,7 +339,8 @@ namespace Microsoft.Extensions.DependencyModel
                         compileOnly = reader.ReadAsBoolean();
                         break;
                     default:
-                        throw new FormatException($"Unknown property name '{reader.Value}'");
+                        reader.Skip();
+                        break;
                 }
             }
 
@@ -421,8 +423,6 @@ namespace Microsoft.Extensions.DependencyModel
                         case DependencyContextStrings.AssetTypePropertyName:
                             runtimeTarget.Type = Pool(propertyValue);
                             break;
-                        default:
-                            throw new FormatException($"Unknown property name '{propertyName}'");
                     }
                 }
 
@@ -521,7 +521,8 @@ namespace Microsoft.Extensions.DependencyModel
                         hashPath = reader.ReadAsString();
                         break;
                     default:
-                        throw new FormatException($"Unknown property name '{reader.Value}'");
+                        reader.Skip();
+                        break;
                 }
             }
 
@@ -572,7 +573,7 @@ namespace Microsoft.Extensions.DependencyModel
             var nameWithVersion = targetLibrary.Name;
             LibraryStub stub;
 
-            if (!libraryStubs.TryGetValue(nameWithVersion, out stub))
+            if (libraryStubs == null || !libraryStubs.TryGetValue(nameWithVersion, out stub))
             {
                 throw new InvalidOperationException($"Cannot find library information for {nameWithVersion}");
             }

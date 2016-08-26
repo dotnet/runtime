@@ -16,7 +16,19 @@ namespace Microsoft.Extensions.DependencyModel
             if (reader.Read() && reader.TokenType == JsonToken.PropertyName)
             {
                 name = (string)reader.Value;
-                value = reader.ReadAsString();
+                
+                if (reader.Read())
+                {
+                    if (reader.TokenType == JsonToken.String)
+                    {
+                        value = (string)reader.Value;
+                    }
+                    else
+                    {
+                        reader.Skip();
+                    }
+                }
+
                 return true;
             }
 
