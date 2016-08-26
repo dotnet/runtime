@@ -66,10 +66,13 @@ void ObjectAllocator::MorphAllocObjNodes()
 
     foreach_block(comp, block)
     {
-        if ((block->bbFlags & BBF_HAS_NEWOBJ) == 0)
+        const bool basicBlockHasNewObj = (block->bbFlags & BBF_HAS_NEWOBJ) == BBF_HAS_NEWOBJ;
+#ifndef DEBUG
+        if (!basicBlockHasNewObj)
         {
             continue;
         }
+#endif // DEBUG
 
         for (GenTreeStmt* stmt = block->firstStmt(); stmt; stmt = stmt->gtNextStmt)
         {
@@ -90,6 +93,7 @@ void ObjectAllocator::MorphAllocObjNodes()
 
             if (canonicalAllocObjFound)
             {
+                assert(basicBlockHasNewObj);
                 //------------------------------------------------------------------------
                 // We expect the following expression tree at this point
                 //  *  GT_STMT   void  (top level)
