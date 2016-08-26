@@ -3,6 +3,9 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Reflection;
 using Xunit;
 
 namespace System.Collections.Tests
@@ -55,6 +58,20 @@ namespace System.Collections.Tests
         /// false.
         /// </summary>
         protected virtual bool Enumerator_Current_UndefinedOperation_Throws => false;
+
+        /// <summary>
+        /// Specifies whether this IEnumerable follows some sort of ordering pattern.
+        /// </summary>
+        protected virtual EnumerableOrder Order => EnumerableOrder.Sequential;
+
+        /// <summary>
+        /// An enum to allow specification of the order of the Enumerable. Used in validation for enumerables.
+        /// </summary>
+        protected enum EnumerableOrder
+        {
+            Unspecified,
+            Sequential
+        }
 
         #endregion
 
@@ -300,6 +317,39 @@ namespace System.Collections.Tests
             });
         }
 
+        #endregion
+
+        #region Serialization
+        #if netstandard17
+
+        [Theory]
+        [MemberData(nameof(ValidCollectionSizes))]
+        public void IGenericSharedAPI_SerializeDeserialize(int count)
+        {
+            IEnumerable expected = NonGenericIEnumerableFactory(count);
+
+            var bf = new System.Runtime.Serialization.Formatters.Binary.BinaryFormatter();
+            using (var ms = new MemoryStream())
+            {
+                bf.Serialize(ms, expected);
+                ms.Position = 0;
+                IEnumerable actual = (IEnumerable)bf.Deserialize(ms);
+
+                if (Order == EnumerableOrder.Sequential)
+                {
+                    Assert.Equal(expected, actual);
+                }
+                else
+                {
+                    var expectedSet = new HashSet<object>(expected.Cast<object>());
+                    var actualSet = new HashSet<object>(actual.Cast<object>());
+                    Assert.Subset(expectedSet, actualSet);
+                    Assert.Subset(actualSet, expectedSet);
+                }
+            }
+        }
+        
+        #endif
         #endregion
     }
 }
