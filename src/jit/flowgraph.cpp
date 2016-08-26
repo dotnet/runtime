@@ -14170,6 +14170,10 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
     /* Mark the jump dest block as being a jump target */
     bJump->bbJumpDest->bbFlags |= BBF_JMP_TARGET | BBF_HAS_LABEL;
 
+    // We need to update the following flags of the bJump block if they were set in the bbJumpDest block
+    bJump->bbFlags |= (bJump->bbJumpDest->bbFlags
+                    & (BBF_HAS_NEWOBJ | BBF_HAS_NEWARRAY | BBF_HAS_NULLCHECK | BBF_HAS_IDX_LEN | BBF_HAS_VTABREF));
+
     /* Update bbRefs and bbPreds */
 
     // bJump now falls through into the next block
