@@ -4,6 +4,9 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+#if netstandard17
+using System.Runtime.Serialization;
+#endif
 
 namespace System.Collections.Generic
 {
@@ -982,6 +985,10 @@ namespace System.Collections.Generic
         public TreeSet(ICollection<T> collection) : base(collection) { }
 
         public TreeSet(ICollection<T> collection, IComparer<T> comparer) : base(collection, comparer) { }
+
+#if netstandard17
+        public TreeSet(SerializationInfo siInfo, StreamingContext context) : base(siInfo, context) { }
+#endif
 
         internal override bool AddIfNotPresent(T item)
         {

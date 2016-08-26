@@ -4,12 +4,28 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{7F5F5134-00FE-4DE8-B20C-3DA8BA2EBA68}</ProjectGuid>
     <OutputType>Library</OutputType>
     <RootNamespace>System.Collections.Specialized.Tests</RootNamespace>
     <AssemblyName>System.Collections.Specialized.Tests</AssemblyName>
-    <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
+    <ProjectGuid>{7F5F5134-00FE-4DE8-B20C-3DA8BA2EBA68}</ProjectGuid>
+    <!--
+    TODO: Uncomment once a System.Collection.NonGeneric is published containing the serialization changes.
+          System.Collections.Specialized collections depend on those types being serializable.
+    <DefineConstants Condition="'$(TargetGroup)'=='netstandard1.7'">$(DefineConstants);netstandard17</DefineConstants>
+    -->
+    <NugetTargetMoniker Condition="'$(NugetTargetMoniker)'==''">.NETStandard,Version=v1.3</NugetTargetMoniker>
+    <!-- 
+        Until we get first class support for NS1.7 and Netcoreapp1.1 
+        we need to hard code $(TestTFM) and $(TestNugetTargetMoniker) 
+        in the project file. 
+      -->
+    <TestTFM Condition="'$(TargetGroup)'=='netstandard1.7'">netcoreapp1.1</TestTFM>
   </PropertyGroup>
+  <ItemGroup Condition="'$(TargetGroup)'=='netstandard1.7'">
+    <TestNugetTargetMoniker Include="$(NugetTargetMoniker)">
+      <Folder>netcoreapp1.1</Folder>
+    </TestNugetTargetMoniker>
+  </ItemGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
   </PropertyGroup>

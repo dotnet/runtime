@@ -3,7 +3,9 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+#if netstandard17
 using System.Runtime.Serialization;
+#endif
 
 namespace System.Collections.Specialized
 {
@@ -20,8 +22,13 @@ namespace System.Collections.Specialized
     /// contained ArrayList and Hashtable deserialized before it tries to get its count and objects.
     /// </para>
     /// </devdoc>
+#if netstandard17
     [Serializable]
-    public class OrderedDictionary : IOrderedDictionary, ISerializable, IDeserializationCallback
+#endif
+    public class OrderedDictionary : IOrderedDictionary
+#if netstandard17
+        , ISerializable, IDeserializationCallback
+#endif
     {
         private ArrayList _objectsArray;
         private Hashtable _objectsTable;
@@ -29,7 +36,9 @@ namespace System.Collections.Specialized
         private IEqualityComparer _comparer;
         private bool _readOnly;
         private Object _syncRoot;
+#if netstandard17
         private SerializationInfo _siInfo; //A temporary variable which we need during deserialization.
+#endif
 
         private const string KeyComparerName = "KeyComparer";
         private const string ArrayListName = "ArrayList";
@@ -65,6 +74,7 @@ namespace System.Collections.Specialized
             _initialCapacity = dictionary._initialCapacity;
         }
 
+#if netstandard17
         protected OrderedDictionary(SerializationInfo info, StreamingContext context)
         {
             // We can't do anything with the keys and values until the entire graph has been deserialized
@@ -72,6 +82,7 @@ namespace System.Collections.Specialized
             // The graph is not valid until OnDeserialization has been called.
             _siInfo = info;
         }
+#endif
 
         /// <devdoc>
         /// Gets the size of the table.
@@ -362,21 +373,22 @@ namespace System.Collections.Specialized
             objectsArray.RemoveAt(index);
         }
 
-        #region IDictionary implementation
+#region IDictionary implementation
         public virtual IDictionaryEnumerator GetEnumerator()
         {
             return new OrderedDictionaryEnumerator(objectsArray, OrderedDictionaryEnumerator.DictionaryEntry);
         }
-        #endregion
+#endregion
 
-        #region IEnumerable implementation
+#region IEnumerable implementation
         IEnumerator IEnumerable.GetEnumerator()
         {
             return new OrderedDictionaryEnumerator(objectsArray, OrderedDictionaryEnumerator.DictionaryEntry);
         }
-        #endregion
+#endregion
 
-        #region ISerializable implementation 
+#if netstandard17
+#region ISerializable implementation 
         public virtual void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             if (info == null)
@@ -392,9 +404,9 @@ namespace System.Collections.Specialized
             _objectsArray.CopyTo(serArray);
             info.AddValue(ArrayListName, serArray);
         }
-        #endregion
+#endregion
 
-        #region IDeserializationCallback implementation
+#region IDeserializationCallback implementation
         void IDeserializationCallback.OnDeserialization(object sender)
         {
             if (_siInfo == null)
@@ -426,8 +438,8 @@ namespace System.Collections.Specialized
                 }
             }
         }
-        #endregion
-
+#endregion
+#endif
         /// <devdoc>
         /// OrderedDictionaryEnumerator works just like any other IDictionaryEnumerator, but it retrieves DictionaryEntries
         /// in the order by index.

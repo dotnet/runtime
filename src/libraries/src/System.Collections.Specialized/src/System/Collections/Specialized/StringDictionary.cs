@@ -11,7 +11,9 @@ namespace System.Collections.Specialized
     ///    <para>Consider this class obsolete - use Dictionary&lt;String, String&gt; instead
     ///       with a proper StringComparer instance.</para>
     /// </devdoc>
+#if netstandard17
     [Serializable]
+#endif
     public class StringDictionary : IEnumerable
     {
         // For compatibility, we want the Keys property to return values in lower-case.

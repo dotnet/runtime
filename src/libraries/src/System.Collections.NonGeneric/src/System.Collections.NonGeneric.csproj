@@ -9,7 +9,7 @@
     <AssemblyVersion Condition="'$(TargetGroup)'=='netstandard1.3' OR '$(TargetGroup)'=='net46'">4.0.2.0</AssemblyVersion>
     <ContractProject Condition="'$(TargetGroup)'=='netstandard1.3' OR '$(TargetGroup)'=='net46'">../ref/4.0.1/System.Collections.NonGeneric.depproj</ContractProject>
     <PackageTargetFramework Condition="'$(TargetGroup)' == ''">netstandard1.7</PackageTargetFramework>
-    <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'net46' OR '$(TargetGroup)' == 'net463'">true</IsPartialFacadeAssembly>
+    <IsPartialFacadeAssembly Condition="'$(TargetGroup)'=='net46' OR '$(TargetGroup)'=='net463'">true</IsPartialFacadeAssembly>
     <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NuGetTargetMoniker>
     <DefineConstants Condition="'$(AssemblyVersion)'=='4.1.0.0'">$(DefineConstants);netstandard17</DefineConstants>
   </PropertyGroup>
