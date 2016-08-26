@@ -1148,24 +1148,6 @@ namespace System.Runtime.InteropServices
 
 
         //====================================================================
-        // Converts the CLR exception to an HRESULT. This function also sets
-        // up an IErrorInfo for the exception.
-        //====================================================================
-        [System.Security.SecurityCritical]  // auto-generated_required
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        public static extern int GetHRForException(Exception e);
-
-        //====================================================================
-        // Converts the CLR exception to an HRESULT. This function also sets
-        // up an IErrorInfo for the exception.
-        // This function is only used in WinRT and converts ObjectDisposedException
-        // to RO_E_CLOSED
-        //====================================================================
-        [System.Security.SecurityCritical]  // auto-generated_required
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern int GetHRForException_WinRT(Exception e);
-
-        //====================================================================
         // This method is intended for compiler code generators rather
         // than applications. 
         //====================================================================
@@ -1335,6 +1317,24 @@ namespace System.Runtime.InteropServices
         }
 
 #if FEATURE_COMINTEROP
+
+        //====================================================================
+        // Converts the CLR exception to an HRESULT. This function also sets
+        // up an IErrorInfo for the exception.
+        //====================================================================
+        [System.Security.SecurityCritical]  // auto-generated_required
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        public static extern int GetHRForException(Exception e);
+
+        //====================================================================
+        // Converts the CLR exception to an HRESULT. This function also sets
+        // up an IErrorInfo for the exception.
+        // This function is only used in WinRT and converts ObjectDisposedException
+        // to RO_E_CLOSED
+        //====================================================================
+        [System.Security.SecurityCritical]  // auto-generated_required
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        internal static extern int GetHRForException_WinRT(Exception e);
 
 		internal static readonly Guid ManagedNameGuid = new Guid("{0F21F359-AB84-41E8-9A78-36D110E6D2F9}"); 
        
