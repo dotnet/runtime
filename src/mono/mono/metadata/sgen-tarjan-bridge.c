@@ -39,13 +39,6 @@
  *     which colors. The color graph then becomes the reduced SCC graph.
  */
 
-static void
-enable_accounting (void)
-{
-	// bridge_accounting_enabled = TRUE;
-	// hash_table = (SgenHashTable)SGEN_HASH_TABLE_INIT (INTERNAL_MEM_BRIDGE_HASH_TABLE, INTERNAL_MEM_BRIDGE_HASH_TABLE_ENTRY, sizeof (HashEntryWithAccounting), mono_aligned_addr_hash, NULL);
-}
-
 // Is this class bridged or not, and should its dependencies be scanned or not?
 // The result of this callback will be cached for use by is_opaque_object later.
 static MonoGCBridgeObjectKind
@@ -432,8 +425,10 @@ Memory wise, 4/32 takes 512 and 8/128 takes 8k, so it's quite reasonable.
 #define ELEMENTS_PER_BUCKET 8
 #define COLOR_CACHE_SIZE 128
 static HashEntry merge_cache [COLOR_CACHE_SIZE][ELEMENTS_PER_BUCKET];
-
 static unsigned int hash_perturb;
+
+// If true, disable an optimization where sometimes SCC nodes are merged without a perfect check
+static gboolean scc_precise_merge;
 
 static unsigned int
 mix_hash (uintptr_t source)
@@ -459,7 +454,10 @@ static void
 reset_cache (void)
 {
 	memset (merge_cache, 0, sizeof (merge_cache));
-	++hash_perturb;
+
+	// When using the precise merge debug option, we do not want the inconsistency caused by hash_perturb.
+	if (!scc_precise_merge)
+		++hash_perturb;
 }
 
 
@@ -494,6 +492,8 @@ match_colors (DynPtrArray *a, DynPtrArray *b)
 	return TRUE;
 }
 
+// If scc_precise_merge, "semihits" refers to find_in_cache calls aborted because the merge array was too large.
+// Otherwise "semihits" refers to cache hits where the match was only estimated.
 static int cache_hits, cache_semihits, cache_misses;
 
 // The cache contains only non-bridged colors.
@@ -505,6 +505,21 @@ find_in_cache (int *insert_index)
 
 	size = dyn_array_ptr_size (&color_merge_array);
 
+	/* Color equality checking is very expensive with a lot of elements, so when there are many
+	 * elements we switch to a cheap comparison method which allows false positives. When false
+	 * positives occur the worst that can happen is two items will be inappropriately merged
+	 * and memory will be retained longer than it should be. We assume that will correct itself
+	 * on the next GC (the hash_perturb mechanism increases the probability of this).
+	 *
+	 * Because this has *some* potential to create problems, if the user set the debug option
+	 * 'enable-tarjan-precise-merge' we bail out early (and never merge SCCs with >3 colors).
+	 */
+	gboolean color_merge_array_large = size > 3;
+	if (scc_precise_merge && color_merge_array_large) {
+		++cache_semihits;
+		return NULL;
+	}
+
 	unsigned int hash = color_merge_array_hash;
 	if (!hash) // 0 is used to indicate an empty bucket entry
 		hash = 1;
@@ -515,13 +530,7 @@ find_in_cache (int *insert_index)
 		if (bucket [i].hash != hash)
 			continue;
 
-		/* Color equality checking is very expensive with a lot of elements, so when there are many
-		 * elements we switch to a cheap comparison method which allows false positives. When false
-		 * positives occur the worst that can happen is two items will be inappropriately merged
-		 * and memory will be retained longer than it should be. We assume that will correct itself
-		 * on the next GC (the hash_perturb mechanism increases the probability of this).
-		 */
-		if (size > 3) {
+		if (color_merge_array_large) {
 			if (match_colors_estimate (&bucket [i].color->other_colors, &color_merge_array)) {
 				++cache_semihits;
 				return bucket [i].color;
@@ -1159,10 +1168,10 @@ processing_after_callback (int generation)
 
 	cleanup_time = step_timer (&curtime);
 
-	mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_GC, "GC_TAR_BRIDGE bridges %d objects %d opaque %d colors %d colors-bridged %d colors-visible %d xref %d cache %d/%d/%d setup %.2fms tarjan %.2fms scc-setup %.2fms gather-xref %.2fms xref-setup %.2fms cleanup %.2fms",
+	mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_GC, "GC_TAR_BRIDGE bridges %d objects %d opaque %d colors %d colors-bridged %d colors-visible %d xref %d cache-hit %d cache-%s %d cache-miss %d setup %.2fms tarjan %.2fms scc-setup %.2fms gather-xref %.2fms xref-setup %.2fms cleanup %.2fms",
 		bridge_count, object_count, ignored_objects,
 		color_count, colors_with_bridges_count, num_sccs, xref_count,
-		cache_hits, cache_semihits, cache_misses,
+		cache_hits, (scc_precise_merge ? "abstain" : "semihit"), cache_semihits, cache_misses,
 		setup_time / 10000.0f,
 		tarjan_time / 10000.0f,
 		scc_setup_time / 10000.0f,
@@ -1196,6 +1205,15 @@ describe_pointer (GCObject *obj)
 	// printf ("  is visited: %d\n", (int)entry->is_visited);
 }
 
+static void
+set_config (const SgenBridgeProcessorConfig *config)
+{
+	if (config->scc_precise_merge) {
+		hash_perturb = 0;
+		scc_precise_merge = TRUE;
+	}
+}
+
 void
 sgen_tarjan_bridge_init (SgenBridgeProcessor *collector)
 {
@@ -1206,8 +1224,7 @@ sgen_tarjan_bridge_init (SgenBridgeProcessor *collector)
 	collector->class_kind = class_kind;
 	collector->register_finalized_object = register_finalized_object;
 	collector->describe_pointer = describe_pointer;
-	collector->enable_accounting = enable_accounting;
-	// collector->set_dump_prefix = set_dump_prefix;
+	collector->set_config = set_config;
 
 	sgen_register_fixed_internal_mem_type (INTERNAL_MEM_TARJAN_OBJ_BUCKET, BUCKET_SIZE);
 	g_assert (sizeof (ObjectBucket) <= BUCKET_SIZE);
