@@ -281,6 +281,45 @@ namespace Microsoft.Extensions.DependencyModel.Tests
         }
 
         [Fact]
+        public void ReadsCompilationTargetWithNullPathAndHashPath()
+        {
+            var context = Read(
+@"{
+    ""targets"": {
+        "".NETCoreApp,Version=v1.0"": {
+            ""System.Banana/1.0.0"": {
+                ""dependencies"": {
+                    ""System.Foo"": ""1.0.0""
+                },
+                ""compile"": {
+                    ""ref/dotnet5.4/System.Banana.dll"": { }
+                }
+            }
+        }
+    },
+    ""libraries"":{
+        ""System.Banana/1.0.0"": {
+            ""type"": ""package"",
+            ""serviceable"": false,
+            ""sha512"": ""HASH-System.Banana"",
+            ""path"": null,
+            ""hashPath"": null
+        },
+    }
+}");
+            context.CompileLibraries.Should().HaveCount(1);
+
+            var package = context.CompileLibraries.Should().Contain(l => l.Name == "System.Banana").Subject;
+            package.Version.Should().Be("1.0.0");
+            package.Assemblies.Should().BeEquivalentTo("ref/dotnet5.4/System.Banana.dll");
+            package.Hash.Should().Be("HASH-System.Banana");
+            package.Type.Should().Be("package");
+            package.Serviceable.Should().Be(false);
+            package.Path.Should().BeNull();
+            package.HashPath.Should().BeNull();
+        }
+
+        [Fact]
         public void ReadsCompilationTargetWithMissingPathAndHashPath()
         {
             var context = Read(
