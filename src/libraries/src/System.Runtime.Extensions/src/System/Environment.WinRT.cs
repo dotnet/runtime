@@ -26,7 +26,7 @@ namespace System
 
         private static string GetFolderPathCore(SpecialFolder folder, SpecialFolderOption option)
         {
-            throw new PlatformNotSupportedException();
+            return string.Empty;
         }
 
         private static bool Is64BitOperatingSystemWhen32BitProcess => false;

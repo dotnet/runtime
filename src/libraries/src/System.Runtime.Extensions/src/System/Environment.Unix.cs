@@ -10,6 +10,7 @@ using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Threading;
 
 namespace System
 {
@@ -38,6 +39,8 @@ namespace System
             return results;
         });
         private static readonly bool IsMac = Interop.Sys.GetUnixName() == "OSX";
+        private static Func<string, IEnumerable<string>> s_fileReadLines;
+        private static Action<string> s_directoryCreateDirectory;
 
         private static string CurrentDirectoryCore
         {
@@ -138,8 +141,13 @@ namespace System
                 Debug.Assert(option == SpecialFolderOption.Create);
 
                 // TODO #11151: Replace with Directory.CreateDirectory once we have access to System.IO.FileSystem here.
-                Type dirType = Type.GetType("System.IO.Directory, System.IO.FileSystem, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", throwOnError: false);
-                dirType?.GetTypeInfo().GetDeclaredMethod("CreateDirectory").Invoke(null, new object[] { path });
+                Action<string> createDirectory = LazyInitializer.EnsureInitialized(ref s_directoryCreateDirectory, () =>
+                {
+                    Type dirType = Type.GetType("System.IO.Directory, System.IO.FileSystem, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", throwOnError: true);
+                    MethodInfo mi = dirType.GetTypeInfo().GetDeclaredMethod("CreateDirectory");
+                    return (Action<string>)mi.CreateDelegate(typeof(Action<string>));
+                });
+                createDirectory(path);
 
                 return path;
             }
@@ -193,7 +201,7 @@ namespace System
                     // "$XDG_DATA_HOME defines the base directory relative to which user specific data files should be stored."
                     // "If $XDG_DATA_HOME is either not set or empty, a default equal to $HOME/.local/share should be used."
                     string data = GetEnvironmentVariable("XDG_DATA_HOME");
-                    if (string.IsNullOrEmpty(data))
+                    if (string.IsNullOrEmpty(data) || data[0] != '/')
                     {
                         data = Path.Combine(home, ".local", "share");
                     }
@@ -231,7 +239,7 @@ namespace System
             // "$XDG_CONFIG_HOME defines the base directory relative to which user specific configuration files should be stored."
             // "If $XDG_CONFIG_HOME is either not set or empty, a default equal to $HOME/.config should be used."
             string config = GetEnvironmentVariable("XDG_CONFIG_HOME");
-            if (string.IsNullOrEmpty(config))
+            if (string.IsNullOrEmpty(config) || config[0] != '/')
             {
                 config = Path.Combine(home, ".config");
             }
@@ -245,10 +253,17 @@ namespace System
             Debug.Assert(!string.IsNullOrEmpty(fallback), $"Expected non-empty fallback");
 
             string envPath = GetEnvironmentVariable(key);
-            if (!string.IsNullOrEmpty(envPath))
+            if (!string.IsNullOrEmpty(envPath) && envPath[0] == '/')
             {
                 return envPath;
             }
+
+            // Use the user-dirs.dirs file to look up the right config.
+            // Note that the docs also highlight a list of directories in which to look for this file:
+            // "$XDG_CONFIG_DIRS defines the preference-ordered set of base directories to search for configuration files in addition
+            //  to the $XDG_CONFIG_HOME base directory. The directories in $XDG_CONFIG_DIRS should be seperated with a colon ':'. If
+            //  $XDG_CONFIG_DIRS is either not set or empty, a value equal to / etc / xdg should be used."
+            // For simplicity, we don't currently do that.  We can add it if/when necessary.
 
             string userDirsPath = Path.Combine(GetXdgConfig(homeDir), "user-dirs.dirs");
             if (Interop.Sys.Access(userDirsPath, Interop.Sys.AccessMode.R_OK) == 0)
@@ -256,32 +271,48 @@ namespace System
                 try
                 {
                     // TODO #11151: Replace with direct usage of File.ReadLines or equivalent once we have access to System.IO.FileSystem here.
-                    Type fileType = Type.GetType("System.IO.File, System.IO.FileSystem, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", throwOnError: false);
-                    IEnumerable<string> lines = fileType?.GetTypeInfo().GetDeclaredMethod("ReadLines").Invoke(null, new object[] { userDirsPath }) as IEnumerable<string>;
+                    Func<string, IEnumerable<string>> readLines = LazyInitializer.EnsureInitialized(ref s_fileReadLines, () =>
+                    {
+                        Type fileType = Type.GetType("System.IO.File, System.IO.FileSystem, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", throwOnError: false);
+                        if (fileType != null)
+                        {
+                            foreach (MethodInfo mi in fileType.GetTypeInfo().GetDeclaredMethods("ReadLines"))
+                            {
+                                if (mi.GetParameters().Length == 1)
+                                {
+                                    return (Func<string, IEnumerable<string>>)mi.CreateDelegate(typeof(Func<string, IEnumerable<string>>));
+                                }
+                            }
+                        }
+                        return null;
+                    });
+
+                    IEnumerable<string> lines = readLines?.Invoke(userDirsPath);
                     if (lines != null)
                     {
                         foreach (string line in lines)
                         {
-                            // Example line:
+                            // Example lines:
                             // XDG_DESKTOP_DIR="$HOME/Desktop"
+                            // XDG_PICTURES_DIR = "/absolute/path"
 
                             // Skip past whitespace at beginning of line
                             int pos = 0;
-                            while (pos < line.Length && char.IsWhiteSpace(line[pos])) pos++;
+                            SkipWhitespace(line, ref pos);
                             if (pos >= line.Length) continue;
 
                             // Skip past requested key name
                             if (string.CompareOrdinal(line, pos, key, 0, key.Length) != 0) continue;
                             pos += key.Length;
 
-                            // Skip until and past '='
-                            while (pos < line.Length && line[pos] != '=') pos++; // skip until '='
-                            if (pos >= line.Length) continue;
+                            // Skip past whitespace and past '='
+                            SkipWhitespace(line, ref pos);
+                            if (pos >= line.Length - 4 || line[pos] != '=') continue; // 4 for ="" and at least one char between quotes
                             pos++; // skip past '='
 
-                            // Skip until and past '"'
-                            while (pos < line.Length && line[pos] != '"') pos++; // skip until '"'
-                            if (pos >= line.Length) continue;
+                            // Skip past whitespace and past first quote
+                            SkipWhitespace(line, ref pos);
+                            if (pos >= line.Length - 3 || line[pos] != '"') continue; // 3 for "" and at least one char between quotes
                             pos++; // skip past opening '"'
 
                             // Skip past relative prefix if one exists
@@ -317,6 +348,11 @@ namespace System
             }
 
             return Path.Combine(homeDir, fallback);
+        }
+
+        private static void SkipWhitespace(string line, ref int pos)
+        {
+            while (pos < line.Length && char.IsWhiteSpace(line[pos])) pos++;
         }
 
         public static string[] GetLogicalDrives() => Interop.Sys.GetAllMountPoints();
