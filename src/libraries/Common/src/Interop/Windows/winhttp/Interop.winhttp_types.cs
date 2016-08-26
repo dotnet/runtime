@@ -61,6 +61,7 @@ internal partial class Interop
         public const ushort INTERNET_DEFAULT_HTTPS_PORT = 443;
 
         public const uint WINHTTP_FLAG_SECURE = 0x00800000;
+        public const uint WINHTTP_FLAG_ESCAPE_DISABLE = 0x00000040;
 
         public const StringBuilder WINHTTP_NO_ADDITIONAL_HEADERS = null;
 

@@ -801,6 +801,15 @@ namespace System.Net.Http
                     httpVersion = "HTTP/1.1";
                 }
 
+                // Turn off additional URI reserved character escaping (percent-encoding). This matches
+                // .NET Framework behavior. System.Uri establishes the baseline rules for percent-encoding
+                // of reserved characters.
+                uint flags = Interop.WinHttp.WINHTTP_FLAG_ESCAPE_DISABLE;
+                if (secureConnection)
+                {
+                    flags |= Interop.WinHttp.WINHTTP_FLAG_SECURE;
+                }
+
                 // Create an HTTP request handle.
                 state.RequestHandle = Interop.WinHttp.WinHttpOpenRequest(
                     connectHandle,
@@ -809,7 +818,7 @@ namespace System.Net.Http
                     httpVersion,
                     Interop.WinHttp.WINHTTP_NO_REFERER,
                     Interop.WinHttp.WINHTTP_DEFAULT_ACCEPT_TYPES,
-                    secureConnection ? Interop.WinHttp.WINHTTP_FLAG_SECURE : 0);
+                    flags);
                 ThrowOnInvalidHandle(state.RequestHandle);
                 state.RequestHandle.SetParentHandle(connectHandle);
 
