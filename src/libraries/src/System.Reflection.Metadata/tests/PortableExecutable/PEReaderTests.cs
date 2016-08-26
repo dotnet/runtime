@@ -2,16 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.IO;
-using System.Reflection;
-using System.Reflection.Internal;
-using System.Reflection.Internal.Tests;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Reflection.Metadata.Tests;
-using System.Runtime.InteropServices;
 using Xunit;
 
 namespace System.Reflection.PortableExecutable.Tests
@@ -767,6 +761,53 @@ namespace System.Reflection.PortableExecutable.Tests
                 Assert.Throws<InvalidOperationException>(() =>
                     reader.TryOpenAssociatedPortablePdb(Path.Combine("pedir", "file.exe"), _ => { return new TestStream(canRead: true, canWrite: true, canSeek: false); }, out pdbProvider, out pdbPath));
             }
+        }
+
+        [Fact]
+        public void Dispose()
+        {
+            var peStream = new MemoryStream(PortablePdbs.DocumentsEmbeddedDll);
+            var reader = new PEReader(peStream);
+
+            MetadataReaderProvider pdbProvider;
+            string pdbPath;
+
+            Assert.True(reader.TryOpenAssociatedPortablePdb(@"x", _ => null, out pdbProvider, out pdbPath));
+            Assert.NotNull(pdbProvider);
+            Assert.Null(pdbPath);
+
+            var ddEntries = reader.ReadDebugDirectory();
+            var ddCodeView = ddEntries[0];
+            var ddEmbedded = ddEntries[2];
+
+            var embeddedPdbProvider = reader.ReadEmbeddedPortablePdbDebugDirectoryData(ddEmbedded);
+
+            // dispose the PEReader:
+            reader.Dispose();
+
+            Assert.False(reader.IsEntireImageAvailable);
+
+            Assert.Throws<ObjectDisposedException>(() => reader.PEHeaders);
+            Assert.Throws<ObjectDisposedException>(() => reader.HasMetadata);
+            Assert.Throws<ObjectDisposedException>(() => reader.GetMetadata());
+            Assert.Throws<ObjectDisposedException>(() => reader.GetSectionData(1000));
+            Assert.Throws<ObjectDisposedException>(() => reader.GetMetadataReader());
+            Assert.Throws<ObjectDisposedException>(() => reader.GetMethodBody(0));
+            Assert.Throws<ObjectDisposedException>(() => reader.GetEntireImage());
+            Assert.Throws<ObjectDisposedException>(() => reader.ReadDebugDirectory());
+            Assert.Throws<ObjectDisposedException>(() => reader.ReadCodeViewDebugDirectoryData(ddCodeView));
+            Assert.Throws<ObjectDisposedException>(() => reader.ReadEmbeddedPortablePdbDebugDirectoryData(ddEmbedded));
+
+            MetadataReaderProvider __;
+            string ___;
+            Assert.Throws<ObjectDisposedException>(() => reader.TryOpenAssociatedPortablePdb(@"x", _ => null, out __, out ___));
+
+            // ok to use providers after PEReader disposed:
+            var pdbReader = pdbProvider.GetMetadataReader();
+            Assert.Equal(13, pdbReader.Documents.Count);
+
+            pdbReader = embeddedPdbProvider.GetMetadataReader();
+            Assert.Equal(13, pdbReader.Documents.Count);
         }
     }
 }

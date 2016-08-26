@@ -79,29 +79,19 @@ namespace System.Reflection.Metadata.Tests
         }
 
         [Fact]
-        public unsafe void GetMetadataReader_FromMetadataImage()
+        public void GetMetadataReader_FromMetadataImage()
         {
-            var provider = MetadataReaderProvider.FromMetadataImage(BuildMetadataImage().ToImmutableArray());
-
-            var decoder = new TestMetadataStringDecoder(Encoding.UTF8, (a, b) => "str");
-
-            var reader1 = provider.GetMetadataReader(MetadataReaderOptions.None, decoder);
-            Assert.Equal("str", reader1.MetadataVersion);
-            Assert.Same(reader1.Utf8Decoder, decoder);
-            Assert.Equal(reader1.Options, MetadataReaderOptions.None);
-
-            var reader2 = provider.GetMetadataReader();
-            Assert.Same(reader1, reader2);
-
-            provider.Dispose();
-            Assert.Throws<ObjectDisposedException>(() => provider.GetMetadataReader());
+            TestGetMetadataReader(MetadataReaderProvider.FromMetadataImage(BuildMetadataImage().ToImmutableArray()));
         }
 
         [Fact]
-        public unsafe void GetMetadataReader_FromMetadataStream()
+        public void GetMetadataReader_FromMetadataStream()
         {
-            var provider = MetadataReaderProvider.FromMetadataStream(new MemoryStream(BuildMetadataImage().ToArray()));
+            TestGetMetadataReader(MetadataReaderProvider.FromMetadataStream(new MemoryStream(BuildMetadataImage().ToArray())));
+        }
 
+        private unsafe void TestGetMetadataReader(MetadataReaderProvider provider)
+        {
             var decoder = new TestMetadataStringDecoder(Encoding.UTF8, (a, b) => "str");
 
             var reader1 = provider.GetMetadataReader(MetadataReaderOptions.None, decoder);
@@ -109,10 +99,26 @@ namespace System.Reflection.Metadata.Tests
             Assert.Same(reader1.Utf8Decoder, decoder);
             Assert.Equal(reader1.Options, MetadataReaderOptions.None);
 
-            var reader2 = provider.GetMetadataReader();
+            var reader2 = provider.GetMetadataReader(MetadataReaderOptions.None, decoder);
             Assert.Same(reader1, reader2);
 
+            var reader3 = provider.GetMetadataReader(MetadataReaderOptions.None);
+            Assert.NotSame(reader2, reader3);
+            Assert.Equal("v9.9.9.9", reader3.MetadataVersion);
+            Assert.Same(reader3.Utf8Decoder, MetadataStringDecoder.DefaultUTF8);
+            Assert.Equal(reader3.Options, MetadataReaderOptions.None);
+
+            var reader4 = provider.GetMetadataReader(MetadataReaderOptions.None);
+            Assert.Same(reader3, reader4);
+
+            var reader5 = provider.GetMetadataReader(MetadataReaderOptions.ApplyWindowsRuntimeProjections);
+            Assert.NotSame(reader4, reader5);
+            Assert.Equal("v9.9.9.9", reader5.MetadataVersion);
+            Assert.Same(reader5.Utf8Decoder, MetadataStringDecoder.DefaultUTF8);
+            Assert.Equal(reader5.Options, MetadataReaderOptions.ApplyWindowsRuntimeProjections);
+
             provider.Dispose();
+            Assert.Throws<ObjectDisposedException>(() => provider.GetMetadataReader(MetadataReaderOptions.ApplyWindowsRuntimeProjections));
             Assert.Throws<ObjectDisposedException>(() => provider.GetMetadataReader());
         }
 
