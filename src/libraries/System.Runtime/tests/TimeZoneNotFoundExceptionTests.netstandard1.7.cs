@@ -24,7 +24,7 @@ namespace System.Tests
         [Fact]
         public static void Ctor_String_Exception()
         {
-            string message = "Created StackOverflowException";
+            string message = "New TimeZoneNotFoundException";
             var innerException = new Exception("Created inner exception");
             var exception = new TimeZoneNotFoundException(message, innerException);
             Assert.Equal(message, exception.Message);

@@ -27,30 +27,6 @@ namespace System.Tests
         }
 
         [Fact]
-        public static void LibyaTimeZone_TimeZoneNotFoundException()
-        {
-            TimeZoneInfo tripoli;
-            // Make sure first the timezone data is updated in the machine as it should include Libya Timezone
-            try
-            {
-                tripoli = TimeZoneInfo.FindSystemTimeZoneById(s_strLibya);
-            }
-            catch (TimeZoneNotFoundException)
-            {
-                // Libya time zone not found
-                Console.WriteLine("Warning: Libya time zone is not exist in this machine");
-                return;
-            }
-
-            var startOf2012 = new DateTime(2012, 1, 1, 0, 0, 0, DateTimeKind.Utc);
-            var endOf2011 = startOf2012.AddTicks(-1);
-
-            DateTime libyaLocalTime = TimeZoneInfo.ConvertTime(endOf2011, tripoli);
-            DateTime expectResult = new DateTime(2012, 1, 1, 2, 0, 0).AddTicks(-1);
-            Assert.True(libyaLocalTime.Equals(expectResult), string.Format("Expected {0} and got {1}", expectResult, libyaLocalTime));
-        }
-
-        [Fact]
         public static void ConvertTime_DateTimeOffset_Invalid_TimeZoneNotFoundException()
         {
             DateTimeOffset time1 = new DateTimeOffset(2006, 5, 12, 0, 0, 0, TimeSpan.Zero);
@@ -256,9 +232,9 @@ namespace System.Tests
             });
         }
 
-        private static void VerifyCustomTimeZoneException<EXCTYPE>(string id, TimeSpan baseUtcOffset, string displayName, string standardDisplayName, string daylightDisplayName = null, TimeZoneInfo.AdjustmentRule[] adjustmentRules = null) where EXCTYPE : Exception
+        private static void VerifyCustomTimeZoneException<ExceptionType>(string id, TimeSpan baseUtcOffset, string displayName, string standardDisplayName, string daylightDisplayName = null, TimeZoneInfo.AdjustmentRule[] adjustmentRules = null) where ExceptionType : Exception
         {
-            Assert.ThrowsAny<EXCTYPE>(() =>
+            Assert.ThrowsAny<ExceptionType>(() =>
             {
                 if (daylightDisplayName == null && adjustmentRules == null)
                 {
