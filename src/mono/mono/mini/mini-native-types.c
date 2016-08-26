@@ -406,6 +406,13 @@ mono_class_is_magic_float (MonoClass *klass)
 
 	if (strcmp ("nfloat", klass->name) == 0) {
 		magic_nfloat_class = klass;
+
+		/* Assert that we are using the matching assembly */
+		MonoClassField *value_field = mono_class_get_field_from_name (klass, "v");
+		g_assert (value_field);
+		MonoType *t = mono_field_get_type (value_field);
+		g_assert (t->type == mini_native_type_replace_type (&klass->byval_arg)->type);
+
 		return TRUE;
 	}
 	return FALSE;
