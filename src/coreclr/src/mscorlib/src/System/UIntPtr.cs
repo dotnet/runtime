@@ -22,7 +22,7 @@ namespace System {
     [Serializable]
     [CLSCompliant(false)] 
     [System.Runtime.InteropServices.ComVisible(true)]
-    public struct UIntPtr : ISerializable
+    public struct UIntPtr : IEquatable<UIntPtr>, ISerializable
     {
         [SecurityCritical]
         unsafe private void* m_value;
@@ -83,6 +83,12 @@ namespace System {
                 return (m_value == ((UIntPtr)obj).m_value);
             }
             return false;
+        }
+
+        [SecuritySafeCritical]
+        unsafe bool IEquatable<UIntPtr>.Equals(UIntPtr other)
+        {
+            return m_value == other.m_value;
         }
     
         [System.Security.SecuritySafeCritical]  // auto-generated
