@@ -1892,7 +1892,7 @@ namespace System
         public static bool TryParseExact(string input, string[] formats, System.IFormatProvider formatProvider, System.Globalization.TimeSpanStyles styles, out System.TimeSpan result) { result = default(System.TimeSpan); return default(bool); }
         public static bool TryParseExact(string input, string[] formats, System.IFormatProvider formatProvider, out System.TimeSpan result) { result = default(System.TimeSpan); return default(bool); }
     }
-    public sealed partial class TimeZoneInfo : System.IEquatable<System.TimeZoneInfo>
+    public sealed partial class TimeZoneInfo : System.IEquatable<System.TimeZoneInfo>, System.Runtime.Serialization.ISerializable, System.Runtime.Serialization.IDeserializationCallback
     {
         internal TimeZoneInfo() { }
         public System.TimeSpan BaseUtcOffset { get { return default(System.TimeSpan); } }
@@ -1903,23 +1903,80 @@ namespace System
         public string StandardName { get { return default(string); } }
         public bool SupportsDaylightSavingTime { get { return default(bool); } }
         public static System.TimeZoneInfo Utc { get { return default(System.TimeZoneInfo); } }
+        public static void ClearCachedData() { }
         public static System.DateTime ConvertTime(System.DateTime dateTime, System.TimeZoneInfo destinationTimeZone) { return default(System.DateTime); }
         public static System.DateTime ConvertTime(System.DateTime dateTime, System.TimeZoneInfo sourceTimeZone, System.TimeZoneInfo destinationTimeZone) { return default(System.DateTime); }
         public static System.DateTimeOffset ConvertTime(System.DateTimeOffset dateTimeOffset, System.TimeZoneInfo destinationTimeZone) { return default(System.DateTimeOffset); }
+        public static System.DateTime ConvertTimeFromUtc(System.DateTime dateTime, System.TimeZoneInfo destinationTimeZone) { return default(System.DateTime); }
+        public static System.DateTime ConvertTimeToUtc(System.DateTime dateTime) { return default(System.DateTime); }
+        public static System.DateTime ConvertTimeToUtc(System.DateTime dateTime, System.TimeZoneInfo sourceTimeZone) { return default(System.DateTime); }
+        public static System.TimeZoneInfo CreateCustomTimeZone(string id, System.TimeSpan baseUtcOffset, string displayName, string standardDisplayName) { return default(System.TimeZoneInfo); }
+        public static System.TimeZoneInfo CreateCustomTimeZone(string id, System.TimeSpan baseUtcOffset, string displayName, string standardDisplayName, string daylightDisplayName, System.TimeZoneInfo.AdjustmentRule[] adjustmentRules) { return default(System.TimeZoneInfo); }
+        public static System.TimeZoneInfo CreateCustomTimeZone(string id, System.TimeSpan baseUtcOffset, string displayName, string standardDisplayName, string daylightDisplayName, System.TimeZoneInfo.AdjustmentRule[] adjustmentRules, bool disableDaylightSavingTime) { return default(System.TimeZoneInfo); }
+        public override bool Equals(object obj) { return default(bool); }
         public bool Equals(System.TimeZoneInfo other) { return default(bool); }
         public static System.TimeZoneInfo FindSystemTimeZoneById(string id) { return default(System.TimeZoneInfo); }
+        public static System.TimeZoneInfo FromSerializedString(string source) { return default(System.TimeZoneInfo); }
+        public System.TimeZoneInfo.AdjustmentRule[] GetAdjustmentRules() { return default(System.TimeZoneInfo.AdjustmentRule[]); }
         public System.TimeSpan[] GetAmbiguousTimeOffsets(System.DateTime dateTime) { return default(System.TimeSpan[]); }
         public System.TimeSpan[] GetAmbiguousTimeOffsets(System.DateTimeOffset dateTimeOffset) { return default(System.TimeSpan[]); }
         public override int GetHashCode() { return default(int); }
         public static System.Collections.ObjectModel.ReadOnlyCollection<System.TimeZoneInfo> GetSystemTimeZones() { return default(System.Collections.ObjectModel.ReadOnlyCollection<System.TimeZoneInfo>); }
         public System.TimeSpan GetUtcOffset(System.DateTime dateTime) { return default(System.TimeSpan); }
         public System.TimeSpan GetUtcOffset(System.DateTimeOffset dateTimeOffset) { return default(System.TimeSpan); }
+        public bool HasSameRules(System.TimeZoneInfo other) { return default(bool); }
         public bool IsAmbiguousTime(System.DateTime dateTime) { return default(bool); }
         public bool IsAmbiguousTime(System.DateTimeOffset dateTimeOffset) { return default(bool); }
         public bool IsDaylightSavingTime(System.DateTime dateTime) { return default(bool); }
         public bool IsDaylightSavingTime(System.DateTimeOffset dateTimeOffset) { return default(bool); }
         public bool IsInvalidTime(System.DateTime dateTime) { return default(bool); }
+        public string ToSerializedString() { return default(string); }
         public override string ToString() { return default(string); }
+        void System.Runtime.Serialization.IDeserializationCallback.OnDeserialization(object sender) { }
+        [System.Security.SecurityCriticalAttribute]
+        void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
+        public sealed partial class AdjustmentRule : System.IEquatable<System.TimeZoneInfo.AdjustmentRule>, System.Runtime.Serialization.IDeserializationCallback, System.Runtime.Serialization.ISerializable
+        {
+            internal AdjustmentRule() { }
+            public System.DateTime DateEnd { get { throw null; } }
+            public System.DateTime DateStart { get { throw null; } }
+            public System.TimeSpan DaylightDelta { get { throw null; } }
+            public System.TimeZoneInfo.TransitionTime DaylightTransitionEnd { get { throw null; } }
+            public System.TimeZoneInfo.TransitionTime DaylightTransitionStart { get { throw null; } }
+            public static System.TimeZoneInfo.AdjustmentRule CreateAdjustmentRule(System.DateTime dateStart, System.DateTime dateEnd, System.TimeSpan daylightDelta, System.TimeZoneInfo.TransitionTime daylightTransitionStart, System.TimeZoneInfo.TransitionTime daylightTransitionEnd) { throw null; }
+            public bool Equals(System.TimeZoneInfo.AdjustmentRule other) { throw null; }
+            public override int GetHashCode() { throw null; }
+            void System.Runtime.Serialization.IDeserializationCallback.OnDeserialization(object sender) { }
+            [System.Security.SecurityCriticalAttribute]
+            void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
+        }
+        [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
+        public partial struct TransitionTime : System.IEquatable<System.TimeZoneInfo.TransitionTime>, System.Runtime.Serialization.IDeserializationCallback, System.Runtime.Serialization.ISerializable
+        {
+            public int Day { get { throw null; } }
+            public System.DayOfWeek DayOfWeek { get { throw null; } }
+            public bool IsFixedDateRule { get { throw null; } }
+            public int Month { get { throw null; } }
+            public System.DateTime TimeOfDay { get { throw null; } }
+            public int Week { get { throw null; } }
+            public static System.TimeZoneInfo.TransitionTime CreateFixedDateRule(System.DateTime timeOfDay, int month, int day) { throw null; }
+            public static System.TimeZoneInfo.TransitionTime CreateFloatingDateRule(System.DateTime timeOfDay, int month, int week, System.DayOfWeek dayOfWeek) { throw null; }
+            public override bool Equals(object obj) { throw null; }
+            public bool Equals(System.TimeZoneInfo.TransitionTime other) { throw null; }
+            public override int GetHashCode() { throw null; }
+            public static bool operator ==(System.TimeZoneInfo.TransitionTime t1, System.TimeZoneInfo.TransitionTime t2) { throw null; }
+            public static bool operator !=(System.TimeZoneInfo.TransitionTime t1, System.TimeZoneInfo.TransitionTime t2) { throw null; }
+            void System.Runtime.Serialization.IDeserializationCallback.OnDeserialization(object sender) { }
+            [System.Security.SecurityCriticalAttribute]
+            void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
+        }
+    }
+    public partial class TimeZoneNotFoundException : System.Exception
+    {
+        public TimeZoneNotFoundException() { }
+        protected TimeZoneNotFoundException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
+        public TimeZoneNotFoundException(string message) { }
+        public TimeZoneNotFoundException(string message, System.Exception innerException) { }
     }
     public static partial class Tuple
     {
