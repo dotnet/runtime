@@ -311,6 +311,9 @@
         <ExcludeList Include="$(XunitTestBinBase)\GC\Scenarios\DoublinkList\dlstack\*">
              <Issue>6553</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\JitBlue\DevDiv_255263\DevDiv_255263\DevDiv_255263.cmd">
+             <Issue>6940</Issue>
+        </ExcludeList>
     </ItemGroup>
     
     <!-- Tests that need to be triaged for vararg usage as that is not supported -->
