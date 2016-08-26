@@ -328,12 +328,22 @@ namespace Microsoft.Extensions.DependencyModel
 
         private JObject WriteLibrary(Library library)
         {
-            return new JObject(
+            var libraryJson = new JObject(
                 new JProperty(DependencyContextStrings.TypePropertyName, library.Type),
                 new JProperty(DependencyContextStrings.ServiceablePropertyName, library.Serviceable),
-                new JProperty(DependencyContextStrings.Sha512PropertyName, library.Hash),
-                new JProperty(DependencyContextStrings.PathPropertyName, library.Path),
-                new JProperty(DependencyContextStrings.HashPathPropertyName, library.HashPath));
+                new JProperty(DependencyContextStrings.Sha512PropertyName, library.Hash));
+
+            if (library.Path != null)
+            {
+                libraryJson.Add(new JProperty(DependencyContextStrings.PathPropertyName, library.Path));
+            }
+
+            if (library.HashPath != null)
+            {
+                libraryJson.Add(new JProperty(DependencyContextStrings.HashPathPropertyName, library.HashPath));
+            }
+
+            return libraryJson;
         }
 
         private string NormalizePath(string path)
