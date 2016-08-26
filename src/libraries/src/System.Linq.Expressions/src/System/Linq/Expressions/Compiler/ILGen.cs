@@ -545,7 +545,7 @@ namespace System.Linq.Expressions.Compiler
         // matches TryEmitILConstant
         private static bool CanEmitILConstant(Type type)
         {
-            switch (type.GetTypeCode())
+            switch (type.GetNonNullableType().GetTypeCode())
             {
                 case TypeCode.Boolean:
                 case TypeCode.SByte:
@@ -649,6 +649,21 @@ namespace System.Linq.Expressions.Compiler
 
         private static bool TryEmitILConstant(this ILGenerator il, object value, Type type)
         {
+            Debug.Assert(value != null);
+
+            if (type.IsNullableType())
+            {
+                Type nonNullType = type.GetNonNullableType();
+
+                if (TryEmitILConstant(il, value, nonNullType))
+                {
+                    il.Emit(OpCodes.Newobj, type.GetConstructor(new[] { nonNullType }));
+                    return true;
+                }
+
+                return false;
+            }
+
             switch (type.GetTypeCode())
             {
                 case TypeCode.Boolean:
