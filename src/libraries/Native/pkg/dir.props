@@ -30,6 +30,7 @@
     <RHELNativePath Condition="'$(RHELNativePath)' == ''">$(BuildNativePath)</RHELNativePath>
     <DebianNativePath Condition="'$(DebianNativePath)' == ''">$(BuildNativePath)</DebianNativePath>
     <Fedora23NativePath Condition="'$(Fedora23NativePath)' == ''">$(BuildNativePath)</Fedora23NativePath>
+    <Fedora24NativePath Condition="'$(Fedora24NativePath)' == ''">$(BuildNativePath)</Fedora24NativePath>
     <OSXNativePath Condition="'$(OSXNativePath)' == ''">$(BuildNativePath)</OSXNativePath>
     <OpenSuse132NativePath Condition="'$(OpenSuse132NativePath)' == ''">$(BuildNativePath)</OpenSuse132NativePath>
     <OpenSuse421NativePath Condition="'$(OpenSuse421NativePath)' == ''">$(BuildNativePath)</OpenSuse421NativePath>
