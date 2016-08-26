@@ -11313,39 +11313,15 @@ CHK_OVF:
                     // constants in a target-specific function.
                     CLANG_FORMAT_COMMENT_ANCHOR;
 
-#ifdef _TARGET_XARCH_
                     // Don't fold conversions of +inf/-inf to integral value as the value returned by JIT helper
                     // doesn't match with the C compiler's cast result.
                     return tree;
-#else //!_TARGET_XARCH_
+                }
 
-                    switch (tree->CastToType())
-                    {  
-                    case TYP_BYTE:
-                        i1 = ssize_t(INT8(d1)); goto CNS_INT;
-                    case TYP_UBYTE:
-                        i1 = ssize_t(UINT8(d1)); goto CNS_INT;
-                    case TYP_SHORT:
-                        i1 = ssize_t(INT16(d1)); goto CNS_INT;
-                    case TYP_CHAR:
-                        i1 = ssize_t(UINT16(d1)); goto CNS_INT;
-                    case TYP_INT:
-                        i1 = ssize_t(INT32(d1)); goto CNS_INT;
-                    case TYP_UINT:
-                        i1 = ssize_t(UINT32(d1)); goto CNS_INT;
-                    case TYP_LONG: 
-                        lval1 = INT64(d1); goto CNS_LONG;
-                    case TYP_ULONG:
-                        lval1 = UINT64(d1); goto CNS_LONG;
-                    case TYP_FLOAT:
-                    case TYP_DOUBLE:
-                        if (op1->gtType == TYP_FLOAT)
-                            d1 = forceCastToFloat(d1);  // it's only !_finite() after this conversion
-                        goto CNS_DOUBLE;
-                    default:
-                        unreached();
-                    }
-#endif //!_TARGET_XARCH_
+                if (d1 < 0.0) {
+                    if (tree->CastToType() == TYP_CHAR || tree->CastToType() == TYP_UBYTE ||
+                        tree->CastToType() == TYP_UINT || tree->CastToType() == TYP_ULONG)
+                    return tree;
                 }
                
                 switch (tree->CastToType())
