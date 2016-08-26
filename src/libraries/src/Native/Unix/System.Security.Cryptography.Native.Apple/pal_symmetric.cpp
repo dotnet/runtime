@@ -51,7 +51,7 @@ extern "C" int AppleCryptoNative_CryptorCreate(PAL_SymmetricOperation operation,
 
     // Ensure we aren't passing through things we don't understand
     assert(operation == PAL_OperationEncrypt || operation == PAL_OperationDecrypt);
-    assert(algorithm == PAL_AlgorithmAES || operation == PAL_Algorithm3DES);
+    assert(algorithm == PAL_AlgorithmAES || algorithm == PAL_Algorithm3DES);
     assert(chainingMode == PAL_ChainingModeECB || chainingMode == PAL_ChainingModeCBC);
     assert(paddingMode == PAL_PaddingModeNone || paddingMode == PAL_PaddingModePkcs7);
     assert(options == 0);
