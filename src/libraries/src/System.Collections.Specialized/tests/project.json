@@ -24,8 +24,8 @@
     "netstandard1.3": {},
     "netstandard1.7": {
         "dependencies": {
-		    "System.Globalization.Extensions": "4.0.2-beta-devapi-24422-01",
-            "System.Runtime.Serialization.Formatters": "4.0.1-beta-devapi-24422-01",
+		    "System.Globalization.Extensions": "4.0.2-beta-devapi-24424-01",
+            "System.Runtime.Serialization.Formatters": "4.0.1-beta-devapi-24424-01",
         }
     }
   },
