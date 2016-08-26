@@ -3,10 +3,11 @@
 // See the LICENSE file in the project root for more information.
 
 using Microsoft.Win32.SafeHandles;
+using System.Diagnostics;
 
 namespace System.IO
 {
-    internal abstract class FileStreamBase : Stream
+    internal abstract partial class FileStreamBase : Stream
     {
         protected readonly FileStream _parent;
 
@@ -26,6 +27,5 @@ namespace System.IO
         public abstract SafeFileHandle SafeFileHandle { get; }
 
         public abstract void Flush(bool flushToDisk);
-
     }
 }
