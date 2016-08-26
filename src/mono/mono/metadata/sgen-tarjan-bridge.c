@@ -184,7 +184,7 @@ static DynPtrArray registered_bridges;
 // As we traverse the graph, which ColorData objects are accessible from our current position?
 static DynPtrArray color_merge_array;
 // Running hash of the contents of the color_merge_array.
-static int color_merge_array_hash;
+static unsigned int color_merge_array_hash;
 
 static void color_merge_array_empty ()
 {
@@ -413,7 +413,7 @@ find_or_create_data (GCObject *obj)
 //----------
 typedef struct {
 	ColorData *color;
-	int hash;
+	unsigned int hash;
 } HashEntry;
 
 /*
@@ -433,13 +433,26 @@ Memory wise, 4/32 takes 512 and 8/128 takes 8k, so it's quite reasonable.
 #define COLOR_CACHE_SIZE 128
 static HashEntry merge_cache [COLOR_CACHE_SIZE][ELEMENTS_PER_BUCKET];
 
-// Ensure the hash function does not produce the same values on every run
-static int hash_perturb;
+static unsigned int hash_perturb;
 
-static int
-mix_hash (size_t hash)
+static unsigned int
+mix_hash (uintptr_t source)
 {
-	return (int)(((hash * 215497) >> 16) ^ ((hash * 1823231) + hash) ^ hash_perturb);
+	unsigned int hash = source;
+
+	// The full hash determines whether two colors can be merged-- sometimes exclusively.
+	// This value changes every GC, so XORing it in before performing the hash will make the
+	// chance that two different colors will produce the same hash on successive GCs very low.
+	hash = hash ^ hash_perturb;
+
+	// Actual hash
+	hash = (((hash * 215497) >> 16) ^ ((hash * 1823231) + hash));
+
+	// Mix in highest bits on 64-bit systems only
+	if (sizeof (source) > 4)
+		hash = hash ^ (source >> 32);
+
+	return hash;
 }
 
 static void
@@ -488,11 +501,11 @@ static ColorData*
 find_in_cache (int *insert_index)
 {
 	HashEntry *bucket;
-	int i, hash, size, index;
+	int i, size, index;
 
 	size = dyn_array_ptr_size (&color_merge_array);
 
-	hash = color_merge_array_hash;
+	unsigned int hash = color_merge_array_hash;
 	if (!hash) // 0 is used to indicate an empty bucket entry
 		hash = 1;
 
@@ -676,7 +689,7 @@ compute_low_index (ScanData *data, GCObject *obj)
 
 	cd = other->color;
 	if (!cd->visited) {
-		color_merge_array_hash += mix_hash ((size_t) other->color);
+		color_merge_array_hash += mix_hash ((uintptr_t) other->color);
 		dyn_array_ptr_add (&color_merge_array, other->color);
 		cd->visited = TRUE;
 	}
