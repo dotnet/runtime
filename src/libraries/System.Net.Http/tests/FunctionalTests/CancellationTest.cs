@@ -55,6 +55,8 @@ namespace System.Net.Http.Functional.Tests
                         await Task.Delay(1000);
                         triggerRequestCancel.SetResult(true); // allow request to cancel
                         await triggerResponseWrite.Task; // pause until we're released
+                        
+                        return null;
                     });
 
                     var stopwatch = Stopwatch.StartNew();
@@ -104,6 +106,8 @@ namespace System.Net.Http.Functional.Tests
                             (startResponseBody ? "20 bytes of the body" : ""));
 
                         await triggerResponseWrite.Task; // pause until we're released
+                        
+                        return null;
                     });
 
                     using (HttpResponseMessage response = await client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead))
