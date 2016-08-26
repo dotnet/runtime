@@ -1968,68 +1968,6 @@ mono_reflection_dynimage_basic_init (MonoReflectionAssemblyBuilder *assemblyb)
 #endif /* !DISABLE_REFLECTION_EMIT */
 
 #ifndef DISABLE_REFLECTION_EMIT
-
-MonoReflectionModule *
-mono_image_load_module_dynamic (MonoReflectionAssemblyBuilder *ab, MonoString *fileName, MonoError *error)
-{
-	char *name;
-	MonoImage *image;
-	MonoImageOpenStatus status;
-	MonoDynamicAssembly *assembly;
-	guint32 module_count;
-	MonoImage **new_modules;
-	gboolean *new_modules_loaded;
-	
-	mono_error_init (error);
-	
-	name = mono_string_to_utf8_checked (fileName, error);
-	return_val_if_nok (error, NULL);
-
-	image = mono_image_open (name, &status);
-	if (!image) {
-		if (status == MONO_IMAGE_ERROR_ERRNO)
-			mono_error_set_exception_instance (error, mono_get_exception_file_not_found (fileName));
-		else
-			mono_error_set_bad_image_name (error, name, NULL);
-		g_free (name);
-		return NULL;
-	}
-
-	g_free (name);
-
-	assembly = ab->dynamic_assembly;
-	image->assembly = (MonoAssembly*)assembly;
-
-	module_count = image->assembly->image->module_count;
-	new_modules = g_new0 (MonoImage *, module_count + 1);
-	new_modules_loaded = g_new0 (gboolean, module_count + 1);
-
-	if (image->assembly->image->modules)
-		memcpy (new_modules, image->assembly->image->modules, module_count * sizeof (MonoImage *));
-	if (image->assembly->image->modules_loaded)
-		memcpy (new_modules_loaded, image->assembly->image->modules_loaded, module_count * sizeof (gboolean));
-	new_modules [module_count] = image;
-	new_modules_loaded [module_count] = TRUE;
-	mono_image_addref (image);
-
-	g_free (image->assembly->image->modules);
-	image->assembly->image->modules = new_modules;
-	image->assembly->image->modules_loaded = new_modules_loaded;
-	image->assembly->image->module_count ++;
-
-	mono_assembly_load_references (image, &status);
-	if (status) {
-		mono_image_close (image);
-		mono_error_set_exception_instance (error, mono_get_exception_file_not_found (fileName));
-		return NULL;
-	}
-
-	return mono_module_get_object_checked (mono_domain_get (), image, error);
-}
-
-#endif /* DISABLE_REFLECTION_EMIT */
-
-#ifndef DISABLE_REFLECTION_EMIT
 static gpointer
 register_assembly (MonoDomain *domain, MonoReflectionAssembly *res, MonoAssembly *assembly)
 {
@@ -5365,13 +5303,6 @@ mono_image_module_basic_init (MonoReflectionModuleBuilder *moduleb)
 	g_assert_not_reached ();
 }
 
-MonoReflectionModule *
-mono_image_load_module_dynamic (MonoReflectionAssemblyBuilder *ab, MonoString *fileName, MonoError *error)
-{
-	g_assert_not_reached ();
-	return NULL;
-}
-
 guint32
 mono_image_insert_string (MonoReflectionModuleBuilder *module, MonoString *str)
 {
@@ -5523,15 +5454,6 @@ ves_icall_ModuleBuilder_GetRegisteredToken (MonoReflectionModuleBuilder *mb, gui
 	mono_loader_unlock ();
 
 	return obj;
-}
-
-MonoReflectionModule*
-ves_icall_AssemblyBuilder_InternalAddModule (MonoReflectionAssemblyBuilder *ab, MonoString *fileName)
-{
-	MonoError error;
-	MonoReflectionModule *result = mono_image_load_module_dynamic (ab, fileName, &error);
-	mono_error_set_pending_exception (&error);
-	return result;
 }
 
 /**
