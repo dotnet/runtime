@@ -53,6 +53,7 @@ namespace System.Net.Security.Tests
             });
         }
 
+        [ActiveIssue(11170, Xunit.PlatformID.OSX)]
         [Theory]
         [MemberData(nameof(ProtocolMismatchData))]
         public async Task ServerAsyncAuthenticate_MismatchProtocols_Fails(
