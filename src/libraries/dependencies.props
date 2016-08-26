@@ -3,14 +3,14 @@
   <PropertyGroup>
     <CoreFxCurrentRef>f704e1b0f02874713803d3db713bdc6773a3aff6</CoreFxCurrentRef>
     <CoreClrCurrentRef>a357b13917a4ce68f51bb21ae13e6b60ca0b7613</CoreClrCurrentRef>
-    <ExternalCurrentRef>f704e1b0f02874713803d3db713bdc6773a3aff6</ExternalCurrentRef>
+    <ExternalCurrentRef>b127e60aa87c189b94a8b49aece49989cb5e4be6</ExternalCurrentRef>
   </PropertyGroup>
 
   <!-- Auto-upgraded properties for each build info dependency. -->
   <PropertyGroup>
     <CoreFxExpectedPrerelease>beta-devapi-24424-01</CoreFxExpectedPrerelease>
     <CoreClrExpectedPrerelease>beta-24426-03</CoreClrExpectedPrerelease>
-    <ExternalExpectedPrerelease>beta-24424-00</ExternalExpectedPrerelease>
+    <ExternalExpectedPrerelease>beta-24426-00</ExternalExpectedPrerelease>
   </PropertyGroup>
 
   <!-- Full package version strings that are used in other parts of the build. -->
