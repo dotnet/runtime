@@ -83,11 +83,10 @@ namespace System.Net.Test.Common
         {
             // Read request line and headers. Skip any request body.
             var lines = new List<string>();
-            string line = await reader.ReadLineAsync().ConfigureAwait(false);
-            while (!string.IsNullOrEmpty(line))
+            string line;
+            while (!string.IsNullOrEmpty(line = await reader.ReadLineAsync().ConfigureAwait(false)))
             {
                 lines.Add(line);
-                line = await reader.ReadLineAsync().ConfigureAwait(false);
             }
 
             await writer.WriteAsync(response ?? DefaultHttpResponse).ConfigureAwait(false);
@@ -119,8 +118,7 @@ namespace System.Net.Test.Common
                 using (var reader = new StreamReader(stream, Encoding.ASCII))
                 using (var writer = new StreamWriter(stream, Encoding.ASCII) { AutoFlush = true })
                 {
-                    List<string> result = await funcAsync(s, stream, reader, writer).ConfigureAwait(false);
-                    return result;
+                    return await funcAsync(s, stream, reader, writer).ConfigureAwait(false);
                 }
             }
         }
