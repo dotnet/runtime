@@ -9,7 +9,7 @@
       "dependencies": {
         "Microsoft.CSharp": "4.0.2-beta-devapi-24424-01",
         "Microsoft.NETCore.Platforms": "1.0.2-beta-devapi-24424-01",
-        "Microsoft.NETCore.Runtime.CoreCLR": "1.1.0-beta-24425-04",
+        "Microsoft.NETCore.Runtime.CoreCLR": "1.1.0-beta-24426-02",
         "Microsoft.Win32.Registry": "4.0.1-beta-devapi-24424-01",
         "System.Collections": "4.1.0-beta-devapi-24424-01",
         "System.Collections.NonGeneric": "4.1.0-beta-devapi-24424-01",
