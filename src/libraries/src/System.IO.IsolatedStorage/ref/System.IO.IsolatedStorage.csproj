@@ -2,16 +2,35 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <AssemblyVersion>4.0.2.0</AssemblyVersion>
+    <AssemblyVersion>4.1.0.0</AssemblyVersion>
     <OutputType>Library</OutputType>
-    <PackageTargetFramework>netstandard1.4</PackageTargetFramework>
-    <NuGetTargetMoniker>.NETStandard,Version=v1.4</NuGetTargetMoniker>
+    <NuGetTargetMoniker>.NETStandard,Version=v1.7</NuGetTargetMoniker>
+    <ProjectGuid>{27225772-FE8B-49D7-8E58-29242D536130}</ProjectGuid>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <OutputPath>bin\Release\</OutputPath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)' == 'Windows_Debug'">
+    <OutputPath>bin\Windows_Debug\</OutputPath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)' == 'Windows_Release'">
+    <OutputPath>bin\Windows_Release\</OutputPath>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.IO.IsolatedStorage.cs" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="4.0\project.json" />
+    <None Include="4.0\System.IO.IsolatedStorage.depproj" />
     <None Include="project.json" />
+  </ItemGroup>
+  <ItemGroup>
+     <PackageDestination Include="ref/netstandard1.7">
+       <TargetFramework>netstandard1.7</TargetFramework>
+     </PackageDestination>
+     <PackageDestination Include="ref/uap10.1">
+       <TargetFramework>uap10.1</TargetFramework>
+     </PackageDestination>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
