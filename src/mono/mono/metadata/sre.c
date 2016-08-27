@@ -3100,17 +3100,6 @@ ves_icall_TypeBuilder_setup_internal_class (MonoReflectionTypeBuilder *tb)
 	mono_error_set_pending_exception (&error);
 }
 
-/*
- * ves_icall_TypeBuilder_setup_generic_class:
- * @tb: a TypeBuilder object
- *
- * Setup the generic class before adding the first generic parameter.
- */
-void
-ves_icall_TypeBuilder_setup_generic_class (MonoReflectionTypeBuilder *tb)
-{
-}
-
 /**
  * mono_reflection_create_generic_class:
  * @tb: a TypeBuilder object
@@ -5268,12 +5257,6 @@ mono_reflection_get_custom_attrs_blob (MonoReflectionAssembly *assembly, MonoObj
 
 void
 ves_icall_TypeBuilder_setup_internal_class (MonoReflectionTypeBuilder *tb)
-{
-	g_assert_not_reached ();
-}
-
-void
-ves_icall_TypeBuilder_setup_generic_class (MonoReflectionTypeBuilder *tb)
 {
 	g_assert_not_reached ();
 }

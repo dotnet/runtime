@@ -576,7 +576,6 @@ ICALL(TYPEB_1, "create_generic_class", ves_icall_TypeBuilder_create_generic_clas
 ICALL(TYPEB_3, "create_runtime_class", ves_icall_TypeBuilder_create_runtime_class)
 ICALL(TYPEB_4, "get_IsGenericParameter", ves_icall_TypeBuilder_get_IsGenericParameter)
 ICALL(TYPEB_5, "get_event_info", ves_icall_TypeBuilder_get_event_info)
-ICALL(TYPEB_6, "setup_generic_class", ves_icall_TypeBuilder_setup_generic_class)
 ICALL(TYPEB_7, "setup_internal_class", ves_icall_TypeBuilder_setup_internal_class)
 
 ICALL_TYPE(EVENTI, "System.Reflection.EventInfo", EVENTI_1)

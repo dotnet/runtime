@@ -1350,9 +1350,6 @@ void          mono_dynamic_image_release_gc_roots (MonoDynamicImage *image);
 
 void        mono_reflection_setup_internal_class  (MonoReflectionTypeBuilder *tb);
 
-void
-ves_icall_TypeBuilder_setup_generic_class (MonoReflectionTypeBuilder *tb);
-
 MonoReflectionType*
 ves_icall_TypeBuilder_create_runtime_class (MonoReflectionTypeBuilder *tb);
 
