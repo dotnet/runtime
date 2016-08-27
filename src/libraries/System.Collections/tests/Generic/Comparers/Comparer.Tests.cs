@@ -19,10 +19,13 @@ namespace System.Collections.Generic.Tests
         [MemberData(nameof(UIntEnumComparisonsData))]
         [MemberData(nameof(LongEnumComparisonsData))]
         [MemberData(nameof(PlainObjectComparisonsData))]
-        public void MostComparisons<T>(T left, T right, int expected) // xUnit is awesome and supports generic theories :-)
+        public void MostComparisons<T>(T left, T right, int expected)
         {
             var comparer = Comparer<T>.Default;
             Assert.Equal(expected, Math.Sign(comparer.Compare(left, right)));
+            
+            // Because of these asserts we don't need to explicitly add tests for
+            // 0 being an expected value, it is done automatically for every input
             Assert.Equal(0, comparer.Compare(left, left));
             Assert.Equal(0, comparer.Compare(right, right));
 
@@ -62,14 +65,16 @@ namespace System.Collections.Generic.Tests
             }
         }
 
+        // NOTE: The test cases from the MemberData don't include 0 as the expected value,
+        // since for each case we automatically test that Compare(lhs, lhs) and Compare(rhs, rhs)
+        // are both 0.
+
         public static IEnumerable<object[]> IComparableComparisonsData()
         {
             var testCases = new[]
             {
                 Tuple.Create(new GenericComparable(3), new GenericComparable(4), -1),
                 Tuple.Create(new GenericComparable(5), new GenericComparable(2), 1),
-                Tuple.Create(new GenericComparable(int.MinValue), new GenericComparable(int.MinValue), 0),
-                Tuple.Create(default(GenericComparable), default(GenericComparable), 0), // default(T) is used to help the compiler infer types here
                 // GenericComparable's CompareTo does not handle nulls intentionally, the Comparer should check both
                 // inputs for null before dispatching to CompareTo
                 Tuple.Create(new GenericComparable(int.MinValue), default(GenericComparable), 1)
@@ -87,7 +92,6 @@ namespace System.Collections.Generic.Tests
             var testCases = new[]
             {
                 Tuple.Create(3UL, 5UL, -1),
-                Tuple.Create(0x55555UL, 0x55555UL, 0),
                 // Catch any attempt to cast the enum value to a signed type,
                 // which may result in overflow and an incorrect comparison
                 Tuple.Create(ulong.MaxValue, (ulong)long.MaxValue, 1),
@@ -107,7 +111,6 @@ namespace System.Collections.Generic.Tests
             {
                 Tuple.Create(-1, 4, -1),
                 Tuple.Create(-222, -375, 1),
-                Tuple.Create(int.MinValue, int.MinValue, 0),
                 // The same principle applies for overflow in signed types as above,
                 // the implementation should not cast to an unsigned type
                 Tuple.Create(int.MaxValue, int.MinValue, 1),
@@ -125,7 +128,6 @@ namespace System.Collections.Generic.Tests
         {
             var testCases = new[]
             {
-                Tuple.Create(5u, 5u, 0),
                 Tuple.Create(445u, 123u, 1),
                 Tuple.Create(uint.MaxValue, 111u, 1),
                 Tuple.Create(uint.MaxValue - 333, uint.MaxValue, -1)
@@ -142,11 +144,9 @@ namespace System.Collections.Generic.Tests
         {
             var testCases = new[]
             {
-                Tuple.Create(555L, 555L, 0),
                 Tuple.Create(182912398L, 33L, 1),
                 Tuple.Create(long.MinValue, long.MaxValue, -1),
-                Tuple.Create(long.MinValue + 9, long.MinValue, 1),
-                Tuple.Create(-1L, -1L, 0)
+                Tuple.Create(long.MinValue + 9, long.MinValue, 1)
             };
             
             foreach (var testCase in testCases)
@@ -162,7 +162,6 @@ namespace System.Collections.Generic.Tests
 
             var testCases = new[]
             {
-                Tuple.Create(default(object), default(object), 0),
                 Tuple.Create(obj, obj, 0), // even if it doesn't implement IComparable, if 2 refs are the same then the result should be 0
                 Tuple.Create(default(object), obj, -1) // even if it doesn't implement IComparable, if one side is null -1 or 1 should be returned
             };
@@ -250,9 +249,9 @@ namespace System.Collections.Generic.Tests
 
             // As above, the comparer should handle null inputs itself and only
             // return -1, 0, or 1 in such circumstances
-            Assert.Equal(0, comparer.Compare(null, null));
+            Assert.Equal(0, comparer.Compare(null, null)); // null and null should have the same sorting order
             Assert.InRange(comparer.Compare(null, left), -1, 0);
-            Assert.InRange(comparer.Compare(null, right), -1, 0);
+            Assert.InRange(comparer.Compare(null, right), -1, 0); // "null" values should come before anything else
             Assert.InRange(comparer.Compare(left, null), 0, 1);
             Assert.InRange(comparer.Compare(right, null), 0, 1);
         }
@@ -261,9 +260,7 @@ namespace System.Collections.Generic.Tests
         {
             var testCases = new[]
             {
-                Tuple.Create(default(int), false, default(int), false, 0), // null and null should have the same sorting order
-                Tuple.Create(int.MinValue, true, int.MinValue, true, 0),
-                Tuple.Create(default(int), false, int.MinValue, true, -1), // "null" values should come before anything else
+                Tuple.Create(default(int), false, int.MinValue, true, -1),
                 Tuple.Create(int.MaxValue, true, int.MinValue, true, 1) // Comparisons between two non-null nullables should work as normal
             };
 
@@ -283,10 +280,8 @@ namespace System.Collections.Generic.Tests
 
             var testCases = new[]
             {
-                Tuple.Create(default(int), false, default(int), false, 0),
                 Tuple.Create(int.MinValue, true, default(int), false, 1), // "null" values should come first
-                Tuple.Create(-1, true, 4, true, -1),
-                Tuple.Create(999, true, 999, true, 0)
+                Tuple.Create(-1, true, 4, true, -1)
             };
 
             foreach (var testCase in testCases)
