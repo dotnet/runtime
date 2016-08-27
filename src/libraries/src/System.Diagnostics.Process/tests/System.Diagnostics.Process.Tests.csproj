@@ -10,7 +10,9 @@
     <AssemblyName>System.Diagnostics.Process.Tests</AssemblyName>
     <NuGetPackageImportStamp>b62eec4b</NuGetPackageImportStamp>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <NugetTargetMoniker>.NETStandard,Version=v1.4</NugetTargetMoniker>
+    <NugetTargetMoniker Condition="'$(TestTFM)' != 'net46'">.NETStandard,Version=v1.4</NugetTargetMoniker>
+    <NugetTargetMoniker Condition="'$(TestTFM)' == 'net46'">.NETStandard,Version=v1.3</NugetTargetMoniker>
+    <DefineConstants Condition="'$(TestTFM)' == 'net46'">NET46</DefineConstants>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />

@@ -231,21 +231,6 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [PlatformSpecific(PlatformID.Windows)] // UseShellExecute currently not supported on Windows
-        [Fact]
-        public void TestUseShellExecuteProperty_SetAndGet_Windows()
-        {
-            ProcessStartInfo psi = new ProcessStartInfo();
-            Assert.False(psi.UseShellExecute);
-
-            // Calling the setter
-            Assert.Throws<PlatformNotSupportedException>(() => { psi.UseShellExecute = true; });
-            psi.UseShellExecute = false;
-
-            // Calling the getter
-            Assert.False(psi.UseShellExecute, "UseShellExecute=true is not supported on onecore.");
-        }
-
         [PlatformSpecific(PlatformID.AnyUnix)]
         [Fact]
         public void TestUseShellExecuteProperty_SetAndGet_Unix()
@@ -313,7 +298,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-
+#if !NET46
         [Fact, PlatformSpecific(PlatformID.AnyUnix)]
         public void TestUserCredentialsPropertiesOnUnix()
         {
@@ -323,27 +308,19 @@ namespace System.Diagnostics.Tests
             Assert.Throws<PlatformNotSupportedException>(() => _process.StartInfo.LoadUserProfile);
         }
 
+        [PlatformSpecific(PlatformID.Windows)] // UseShellExecute currently not supported on Windows
         [Fact]
-        public void TestWorkingDirectoryProperty()
+        public void TestUseShellExecuteProperty_SetAndGet_Windows()
         {
-            // check defaults
-            Assert.Equal(string.Empty, _process.StartInfo.WorkingDirectory);
+            ProcessStartInfo psi = new ProcessStartInfo();
+            Assert.False(psi.UseShellExecute);
 
-            Process p = CreateProcessLong();
-            p.StartInfo.WorkingDirectory = Directory.GetCurrentDirectory();
+            // Calling the setter
+            Assert.Throws<PlatformNotSupportedException>(() => { psi.UseShellExecute = true; });
+            psi.UseShellExecute = false;
 
-            try
-            {
-                p.Start();
-                Assert.Equal(Directory.GetCurrentDirectory(), p.StartInfo.WorkingDirectory);
-            }
-            finally
-            {
-                if (!p.HasExited)
-                    p.Kill();
-
-                Assert.True(p.WaitForExit(WaitInMS));
-            }
+            // Calling the getter
+            Assert.False(psi.UseShellExecute, "UseShellExecute=true is not supported on onecore.");
         }
 
         [Fact, PlatformSpecific(PlatformID.Windows), OuterLoop] // Requires admin privileges
@@ -406,6 +383,30 @@ namespace System.Diagnostics.Tests
 
                     Assert.True(p.WaitForExit(WaitInMS));
                 }
+            }
+        }
+#endif
+
+        [Fact]
+        public void TestWorkingDirectoryProperty()
+        {
+            // check defaults
+            Assert.Equal(string.Empty, _process.StartInfo.WorkingDirectory);
+
+            Process p = CreateProcessLong();
+            p.StartInfo.WorkingDirectory = Directory.GetCurrentDirectory();
+
+            try
+            {
+                p.Start();
+                Assert.Equal(Directory.GetCurrentDirectory(), p.StartInfo.WorkingDirectory);
+            }
+            finally
+            {
+                if (!p.HasExited)
+                    p.Kill();
+
+                Assert.True(p.WaitForExit(WaitInMS));
             }
         }
 

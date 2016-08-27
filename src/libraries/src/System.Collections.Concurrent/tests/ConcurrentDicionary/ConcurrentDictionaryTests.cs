@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -739,7 +740,14 @@ namespace System.Collections.Concurrent.Tests
         public static void IDicionary_Remove_NullKeyInKeyValuePair_ThrowsArgumentNullException()
         {
             IDictionary<string, int> dictionary = new ConcurrentDictionary<string, int>();
-            Assert.Throws<ArgumentNullException>("keyValuePair", () => dictionary.Remove(new KeyValuePair<string, int>(null, 0)));
+            if (RuntimeInformation.FrameworkDescription.Contains(".NET Framework"))
+            {
+                Assert.Throws<ArgumentNullException>(() => dictionary.Remove(new KeyValuePair<string, int>(null, 0)));
+            }
+            else
+            {
+                Assert.Throws<ArgumentNullException>("keyValuePair", () => dictionary.Remove(new KeyValuePair<string, int>(null, 0)));
+            }
         }
 
         [Fact]
