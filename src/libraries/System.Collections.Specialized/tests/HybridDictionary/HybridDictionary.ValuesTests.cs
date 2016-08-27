@@ -47,6 +47,11 @@ namespace System.Collections.Specialized.Tests
         [MemberData(nameof(ValidCollectionSizes))]
         public override void ICollection_NonGeneric_CopyTo_NonZeroLowerBound(int count)
         {
+            // When the collection is of type ListDictionary.NodeKeyValueCollection, array space checks are not performed. 
+            // Array checks in clr don't throw when array length = 0
+            if (Helpers.IsDesktopJob && count == 0)
+                return;
+
             ICollection collection = NonGenericICollectionFactory(count);
             Array arr = Array.CreateInstance(typeof(object), new int[] { count }, new int[] { 2 });
             Assert.Equal(1, arr.Rank);
@@ -56,12 +61,50 @@ namespace System.Collections.Specialized.Tests
             // the lower bounds of the destination array for count > 10
             if (count < 10)
             {
-                Assert.Throws<ArgumentException>("array", () => collection.CopyTo(arr, 0));
+                Assert.Throws(Helpers.IsDesktopJob ? typeof(IndexOutOfRangeException) : typeof(ArgumentException), () => collection.CopyTo(arr, 0));
             }
             else
             {
                 Assert.Throws<IndexOutOfRangeException>(() => collection.CopyTo(arr, 0));
             }
+        }
+
+        [Theory]
+        [MemberData(nameof(ValidCollectionSizes))]
+        public override void ICollection_NonGeneric_CopyTo_IndexEqualToArrayCount_ThrowsArgumentException(int count)
+        {
+            ICollection collection = NonGenericICollectionFactory(count);
+            object[] array = new object[count];
+            if (count > 0)
+                Assert.Throws(Helpers.IsDesktopJob && count < 10 ? typeof(IndexOutOfRangeException) : typeof(ArgumentException), () => collection.CopyTo(array, count));
+            else
+                collection.CopyTo(array, count); // does nothing since the array is empty
+        }
+
+        [Theory]
+        [MemberData(nameof(ValidCollectionSizes))]
+        public override void ICollection_NonGeneric_CopyTo_NotEnoughSpaceInOffsettedArray_ThrowsArgumentException(int count)
+        {
+            if (count > 0) // Want the T array to have at least 1 element
+            {
+                ICollection collection = NonGenericICollectionFactory(count);
+                object[] array = new object[count];
+                Assert.Throws(Helpers.IsDesktopJob && count < 10 ? typeof(IndexOutOfRangeException) : typeof(ArgumentException), () => collection.CopyTo(array, 1));
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(ValidCollectionSizes))]
+        public override void ICollection_NonGeneric_CopyTo_IndexLargerThanArrayCount_ThrowsAnyArgumentException(int count)
+        {
+            // When the collection is of type ListDictionary.NodeKeyValueCollection, array space checks are not performed. 
+            // Array checks in clr don't throw when array length = 0
+            if (Helpers.IsDesktopJob && count == 0)
+                return;
+
+            ICollection collection = NonGenericICollectionFactory(count);
+            object[] array = new object[count];
+            Assert.Throws(Helpers.IsDesktopJob && count < 10 ? typeof(IndexOutOfRangeException) : typeof(ArgumentException), () => collection.CopyTo(array, count + 1));
         }
     }
 }

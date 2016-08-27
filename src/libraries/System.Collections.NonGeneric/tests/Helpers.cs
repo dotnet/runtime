@@ -3,11 +3,14 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Globalization;
+using System.Runtime.InteropServices;
 
 namespace System.Collections.Tests
 {
     internal static class Helpers
     {
+        public static bool IsDesktopJob = RuntimeInformation.FrameworkDescription.Contains(".NET Framework");
+
         public static void PerformActionOnAllHashtableWrappers(Hashtable hashtable, Action<Hashtable> action)
         {
             // Synchronized returns a slightly different version of Hashtable

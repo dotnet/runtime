@@ -3,12 +3,15 @@
 // See the LICENSE file in the project root for more information.
 
 using Xunit;
+using System.Runtime.InteropServices;
 
 namespace System.Diagnostics.Tests
 {
     public class DebugTests
     {
-        [Fact]
+        public static bool IsNotDesktopJob = !RuntimeInformation.FrameworkDescription.Contains(".NET Framework");
+
+        [ConditionalFact(nameof(IsNotDesktopJob))]
         public void Asserts()
         {
             VerifyLogged(() => { Debug.Assert(true); }, "");
@@ -22,14 +25,14 @@ namespace System.Diagnostics.Tests
             VerifyAssert(() => { Debug.Assert(false, "assert passed", "nothing is wrong {0} {1}", 'a', 'b'); }, "assert passed", "nothing is wrong a b");      
         }
 
-        [Fact]
+        [ConditionalFact(nameof(IsNotDesktopJob))]
         public void Fail()
         {
             VerifyAssert(() => { Debug.Fail("something bad happened"); }, "something bad happened");
             VerifyAssert(() => { Debug.Fail("something bad happened", "really really bad"); }, "something bad happened", "really really bad");        
         }
 
-        [Fact]
+        [ConditionalFact(nameof(IsNotDesktopJob))]
         public void Write()
         {
             VerifyLogged(() => { Debug.Write(5); }, "5");
@@ -45,7 +48,7 @@ namespace System.Diagnostics.Tests
             VerifyLogged(() => { Debug.Write(longString); }, longString);
         }
 
-        [Fact]
+        [ConditionalFact(nameof(IsNotDesktopJob))]
         public void WriteLine()
         {
             VerifyLogged(() => { Debug.WriteLine(5); }, "5" + Environment.NewLine);
@@ -59,7 +62,7 @@ namespace System.Diagnostics.Tests
             VerifyLogged(() => { Debug.WriteLine("{0} {1}", 'a', 'b'); }, "a b" + Environment.NewLine);
         }
 
-        [Fact]
+        [ConditionalFact(nameof(IsNotDesktopJob))]
         public void WriteIf()
         {
             VerifyLogged(() => { Debug.WriteIf(true, 5); }, "5");
@@ -75,7 +78,7 @@ namespace System.Diagnostics.Tests
             VerifyLogged(() => { Debug.WriteIf(false, "logged", "category"); }, "");                
         }
 
-        [Fact]
+        [ConditionalFact(nameof(IsNotDesktopJob))]
         public void WriteLineIf()
         {
             VerifyLogged(() => { Debug.WriteLineIf(true, 5); }, "5" + Environment.NewLine);

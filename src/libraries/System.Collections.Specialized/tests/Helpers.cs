@@ -2,10 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Runtime.InteropServices;
+
 namespace System.Collections.Specialized.Tests
 {
     public static class Helpers
     {
+        public static bool IsDesktopJob = RuntimeInformation.FrameworkDescription.Contains(".NET Framework");
+
         public static MyNameObjectCollection CreateNameObjectCollection(int count)
         {
             MyNameObjectCollection nameObjectCollection = new MyNameObjectCollection();

@@ -40,6 +40,11 @@ namespace System.Collections.Specialized.Tests
         [MemberData(nameof(ValidCollectionSizes))]
         public override void ICollection_NonGeneric_CopyTo_NonZeroLowerBound(int count)
         {
+            // When the collection is of type ListDictionary.NodeKeyValueCollection, array space checks are not performed. 
+            // Array checks in clr don't throw when array length = 0
+            if (Helpers.IsDesktopJob && count == 0)
+                return;
+
             ICollection collection = NonGenericICollectionFactory(count);
             Array arr = Array.CreateInstance(typeof(object), new int[] { count }, new int[] { 2 });
             Assert.Equal(1, arr.Rank);
@@ -49,7 +54,7 @@ namespace System.Collections.Specialized.Tests
             // the lower bounds of the destination array for count > 10
             if (count < 10)
             {
-                Assert.Throws<ArgumentException>("array", () => collection.CopyTo(arr, 0));
+                Assert.Throws(Helpers.IsDesktopJob ? typeof(IndexOutOfRangeException) : typeof(ArgumentException), () => collection.CopyTo(arr, 0));
             }
             else
             {
