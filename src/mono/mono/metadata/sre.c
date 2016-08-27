@@ -5286,12 +5286,6 @@ mono_reflection_create_generic_class (MonoReflectionTypeBuilder *tb, MonoError *
 }
 
 void
-ves_icall_TypeBuilder_create_internal_class (MonoReflectionTypeBuilder *tb)
-{
-	g_assert_not_reached ();
-}
-
-void
 mono_reflection_dynimage_basic_init (MonoReflectionAssemblyBuilder *assemblyb)
 {
 	g_error ("This mono runtime was configured with --enable-minimal=reflection_emit, so System.Reflection.Emit is not supported.");
