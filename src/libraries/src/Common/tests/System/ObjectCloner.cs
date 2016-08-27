@@ -17,8 +17,7 @@ namespace System
     {
         // This should only be used for reference types.
         // Simply doing T copied = value will give you the same effect with a value type.
-        public static T MemberwiseClone<T>(T obj)
-            where T : class
+        public static T MemberwiseClone<T>(T obj) where T : class
         {
             Debug.Assert(obj != null);
 

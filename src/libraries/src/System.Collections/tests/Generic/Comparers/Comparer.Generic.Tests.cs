@@ -11,7 +11,7 @@ using Xunit;
 
 namespace System.Collections.Generic.Tests
 {
-    public abstract partial class ComparerGenericTests<T>
+    public abstract partial class ComparersGenericTests<T>
     {
         [Fact]
         public void ComparerDefault()
@@ -36,7 +36,7 @@ namespace System.Collections.Generic.Tests
             // If we are running on full framework/CoreCLR, Comparer<T> additionally
             // overrides the Equals(object) and GetHashCode() methods for itself,
             // presumably to support serialization, so test that behavior as well.
-            // This is not done in .NET Native.
+            // This is not done in .NET Native yet: dotnet/corert#1736
             if (!RuntimeDetection.IsNetNative)
             {
                 var cloned = ObjectCloner.MemberwiseClone(comparer); // calls MemberwiseClone() on the comparer via reflection, which returns a different instance
@@ -64,7 +64,7 @@ namespace System.Collections.Generic.Tests
             // If we are running on full framework/CoreCLR, Comparer<T> additionally
             // overrides the Equals(object) and GetHashCode() methods for itself,
             // presumably to support serialization, so test that behavior as well.
-            // This is not done in .NET Native.
+            // This is not done in .NET Native yet: dotnet/corert#1736
             if (!RuntimeDetection.IsNetNative)
             {
                 var cloned = ObjectCloner.MemberwiseClone(comparer);
@@ -88,11 +88,11 @@ namespace System.Collections.Generic.Tests
                 Assert.Throws<ArgumentException>(() => comparer.Compare(notOfTypeT, default(T))); // lhs is the problem
                 Assert.Throws<ArgumentException>(() => comparer.Compare(default(T), notOfTypeT)); // rhs is the problem
             }
-            else if (!typeof(T).GetTypeInfo().IsAssignableFrom(typeof(Task<T>))) // catch cases where Task<T> actually is a T, like object or non-generic Task
+            if (!(notOfTypeT is T)) // catch cases where Task<T> actually is a T, like object or non-generic Task
             {
                 Assert.Throws<ArgumentException>(() => comparer.Compare(notOfTypeT, notOfTypeT)); // The implementation should not attempt to short-circuit if both sides have reference equality
+                Assert.Throws<ArgumentException>(() => comparer.Compare(notOfTypeT, Task.FromResult(default(T)))); // And it should also work when they don't
             }
-            Assert.Throws<ArgumentException>(() => comparer.Compare(notOfTypeT, Task.FromResult(default(T)))); // And it should also work when they don't
         }
 
         [Fact]
