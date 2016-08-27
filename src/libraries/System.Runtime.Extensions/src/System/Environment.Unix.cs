@@ -7,14 +7,16 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Threading;
 
 namespace System
 {
     public static partial class Environment
     {
-        private readonly unsafe static Lazy<LowLevelDictionary<string, string>> s_environ = new Lazy<LowLevelDictionary<string, string>>(() =>
+        private static readonly unsafe Lazy<LowLevelDictionary<string, string>> s_environ = new Lazy<LowLevelDictionary<string, string>>(() =>
         {
             var results = new LowLevelDictionary<string, string>();
             byte** environ = Interop.Sys.GetEnviron();
@@ -36,6 +38,9 @@ namespace System
             }
             return results;
         });
+        private static readonly bool IsMac = Interop.Sys.GetUnixName() == "OSX";
+        private static Func<string, IEnumerable<string>> s_fileReadLines;
+        private static Action<string> s_directoryCreateDirectory;
 
         private static string CurrentDirectoryCore
         {
@@ -112,21 +117,242 @@ namespace System
 
         private static string GetFolderPathCore(SpecialFolder folder, SpecialFolderOption option)
         {
-            string home = GetEnvironmentVariable("HOME");
+            // Get the path for the SpecialFolder
+            string path = GetFolderPathCoreWithoutValidation(folder);
+            Debug.Assert(path != null);
+
+            // If we didn't get one, or if we got one but we're not supposed to verify it,
+            // or if we're supposed to verify it and it passes verification, return the path.
+            if (path.Length == 0 ||
+                option == SpecialFolderOption.DoNotVerify ||
+                Interop.Sys.Access(path, Interop.Sys.AccessMode.R_OK) == 0)
+            {
+                return path;
+            }
+
+            // Failed verification.  If None, then we're supposed to return an empty string.
+            // If Create, we're supposed to create it and then return the path.
+            if (option == SpecialFolderOption.None)
+            {
+                return string.Empty;
+            }
+            else
+            {
+                Debug.Assert(option == SpecialFolderOption.Create);
+
+                // TODO #11151: Replace with Directory.CreateDirectory once we have access to System.IO.FileSystem here.
+                Action<string> createDirectory = LazyInitializer.EnsureInitialized(ref s_directoryCreateDirectory, () =>
+                {
+                    Type dirType = Type.GetType("System.IO.Directory, System.IO.FileSystem, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", throwOnError: true);
+                    MethodInfo mi = dirType.GetTypeInfo().GetDeclaredMethod("CreateDirectory");
+                    return (Action<string>)mi.CreateDelegate(typeof(Action<string>));
+                });
+                createDirectory(path);
+
+                return path;
+            }
+        }
+
+        private static string GetFolderPathCoreWithoutValidation(SpecialFolder folder)
+        {
+            // First handle any paths that involve only static paths, avoiding the overheads of getting user-local paths.
+            // https://www.freedesktop.org/software/systemd/man/file-hierarchy.html
+            switch (folder)
+            {
+                case SpecialFolder.CommonApplicationData: return "/usr/share";
+                case SpecialFolder.CommonTemplates: return "/usr/share/templates";
+            }
+            if (IsMac)
+            {
+                switch (folder)
+                {
+                    case SpecialFolder.ProgramFiles: return "/Applications";
+                    case SpecialFolder.System: return "/System";
+                }
+            }
+
+            // All other paths are based on the XDG Base Directory Specification:
+            // https://specifications.freedesktop.org/basedir-spec/latest/
+            string home;
+            try
+            {
+                home = PersistedFiles.GetHomeDirectory();
+            }
+            catch (Exception exc)
+            {
+                Debug.Fail($"Unable to get home directory: {exc}");
+                home = Path.GetTempPath();
+            }
+            Debug.Assert(!string.IsNullOrEmpty(home), "Expected non-null or empty HOME");
+
+            // TODO: Consider caching (or precomputing and caching) all subsequent results.
+            // This would significantly improve performance for repeated access, at the expense
+            // of not being responsive to changes in the underlying environment variables,
+            // configuration files, etc.
 
             switch (folder)
             {
-                case SpecialFolder.Personal: // same as SpecialFolder.MyDocuments
-                    if (!string.IsNullOrEmpty(home))
+                case SpecialFolder.UserProfile:
+                case SpecialFolder.MyDocuments: // same value as Personal
+                    return home;
+                case SpecialFolder.ApplicationData:
+                    return GetXdgConfig(home);
+                case SpecialFolder.LocalApplicationData:
+                    // "$XDG_DATA_HOME defines the base directory relative to which user specific data files should be stored."
+                    // "If $XDG_DATA_HOME is either not set or empty, a default equal to $HOME/.local/share should be used."
+                    string data = GetEnvironmentVariable("XDG_DATA_HOME");
+                    if (string.IsNullOrEmpty(data) || data[0] != '/')
                     {
-                        return home;
+                        data = Path.Combine(home, ".local", "share");
                     }
-                    break;
+                    return data;
 
-                // TODO: Add more special folder handling
+                case SpecialFolder.Desktop:
+                case SpecialFolder.DesktopDirectory:
+                    return ReadXdgDirectory(home, "XDG_DESKTOP_DIR", "Desktop");
+                case SpecialFolder.Templates:
+                    return ReadXdgDirectory(home, "XDG_TEMPLATES_DIR", "Templates");
+                case SpecialFolder.MyVideos:
+                    return ReadXdgDirectory(home, "XDG_VIDEOS_DIR", "Videos");
+
+                case SpecialFolder.MyMusic:
+                    return IsMac ? Path.Combine(home, "Music") : ReadXdgDirectory(home, "XDG_MUSIC_DIR", "Music");
+                case SpecialFolder.MyPictures:
+                    return IsMac ? Path.Combine(home, "Pictures") : ReadXdgDirectory(home, "XDG_PICTURES_DIR", "Pictures");
+                case SpecialFolder.Fonts:
+                    return IsMac ? Path.Combine(home, "Library", "Fonts") : Path.Combine(home, ".fonts");
+
+                case SpecialFolder.Favorites:
+                    if (IsMac) return Path.Combine(home, "Library", "Favorites");
+                    break;
+                case SpecialFolder.InternetCache:
+                    if (IsMac) return Path.Combine(home, "Library", "Caches");
+                    break;
             }
 
-            throw new PlatformNotSupportedException();
+            // No known path for the SpecialFolder
+            return string.Empty;
+        }
+
+        private static string GetXdgConfig(string home)
+        {
+            // "$XDG_CONFIG_HOME defines the base directory relative to which user specific configuration files should be stored."
+            // "If $XDG_CONFIG_HOME is either not set or empty, a default equal to $HOME/.config should be used."
+            string config = GetEnvironmentVariable("XDG_CONFIG_HOME");
+            if (string.IsNullOrEmpty(config) || config[0] != '/')
+            {
+                config = Path.Combine(home, ".config");
+            }
+            return config;
+        }
+
+        private static string ReadXdgDirectory(string homeDir, string key, string fallback)
+        {
+            Debug.Assert(!string.IsNullOrEmpty(homeDir), $"Expected non-empty homeDir");
+            Debug.Assert(!string.IsNullOrEmpty(key), $"Expected non-empty key");
+            Debug.Assert(!string.IsNullOrEmpty(fallback), $"Expected non-empty fallback");
+
+            string envPath = GetEnvironmentVariable(key);
+            if (!string.IsNullOrEmpty(envPath) && envPath[0] == '/')
+            {
+                return envPath;
+            }
+
+            // Use the user-dirs.dirs file to look up the right config.
+            // Note that the docs also highlight a list of directories in which to look for this file:
+            // "$XDG_CONFIG_DIRS defines the preference-ordered set of base directories to search for configuration files in addition
+            //  to the $XDG_CONFIG_HOME base directory. The directories in $XDG_CONFIG_DIRS should be seperated with a colon ':'. If
+            //  $XDG_CONFIG_DIRS is either not set or empty, a value equal to / etc / xdg should be used."
+            // For simplicity, we don't currently do that.  We can add it if/when necessary.
+
+            string userDirsPath = Path.Combine(GetXdgConfig(homeDir), "user-dirs.dirs");
+            if (Interop.Sys.Access(userDirsPath, Interop.Sys.AccessMode.R_OK) == 0)
+            {
+                try
+                {
+                    // TODO #11151: Replace with direct usage of File.ReadLines or equivalent once we have access to System.IO.FileSystem here.
+                    Func<string, IEnumerable<string>> readLines = LazyInitializer.EnsureInitialized(ref s_fileReadLines, () =>
+                    {
+                        Type fileType = Type.GetType("System.IO.File, System.IO.FileSystem, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", throwOnError: false);
+                        if (fileType != null)
+                        {
+                            foreach (MethodInfo mi in fileType.GetTypeInfo().GetDeclaredMethods("ReadLines"))
+                            {
+                                if (mi.GetParameters().Length == 1)
+                                {
+                                    return (Func<string, IEnumerable<string>>)mi.CreateDelegate(typeof(Func<string, IEnumerable<string>>));
+                                }
+                            }
+                        }
+                        return null;
+                    });
+
+                    IEnumerable<string> lines = readLines?.Invoke(userDirsPath);
+                    if (lines != null)
+                    {
+                        foreach (string line in lines)
+                        {
+                            // Example lines:
+                            // XDG_DESKTOP_DIR="$HOME/Desktop"
+                            // XDG_PICTURES_DIR = "/absolute/path"
+
+                            // Skip past whitespace at beginning of line
+                            int pos = 0;
+                            SkipWhitespace(line, ref pos);
+                            if (pos >= line.Length) continue;
+
+                            // Skip past requested key name
+                            if (string.CompareOrdinal(line, pos, key, 0, key.Length) != 0) continue;
+                            pos += key.Length;
+
+                            // Skip past whitespace and past '='
+                            SkipWhitespace(line, ref pos);
+                            if (pos >= line.Length - 4 || line[pos] != '=') continue; // 4 for ="" and at least one char between quotes
+                            pos++; // skip past '='
+
+                            // Skip past whitespace and past first quote
+                            SkipWhitespace(line, ref pos);
+                            if (pos >= line.Length - 3 || line[pos] != '"') continue; // 3 for "" and at least one char between quotes
+                            pos++; // skip past opening '"'
+
+                            // Skip past relative prefix if one exists
+                            bool relativeToHome = false;
+                            const string RelativeToHomePrefix = "$HOME/";
+                            if (string.CompareOrdinal(line, pos, RelativeToHomePrefix, 0, RelativeToHomePrefix.Length) == 0)
+                            {
+                                relativeToHome = true;
+                                pos += RelativeToHomePrefix.Length;
+                            }
+                            else if (line[pos] != '/') // if not relative to home, must be absolute path
+                            {
+                                continue;
+                            }
+
+                            // Find end of path
+                            int endPos = line.IndexOf('"', pos);
+                            if (endPos <= pos) continue;
+
+                            // Got we need.  Now extract it.
+                            string path = line.Substring(pos, endPos - pos);
+                            return relativeToHome ?
+                                Path.Combine(homeDir, path) :
+                                path;
+                        }
+                    }
+                }
+                catch (Exception exc)
+                {
+                    // assembly not found, file not found, errors reading file, etc. Just eat everything.
+                    Debug.Fail($"Failed reading {userDirsPath}: {exc}");
+                }
+            }
+
+            return Path.Combine(homeDir, fallback);
+        }
+
+        private static void SkipWhitespace(string line, ref int pos)
+        {
+            while (pos < line.Length && char.IsWhiteSpace(line[pos])) pos++;
         }
 
         public static string[] GetLogicalDrives() => Interop.Sys.GetAllMountPoints();
@@ -255,7 +481,7 @@ namespace System
                 }
 
                 // Fallback to heap allocations if necessary, growing the buffer until
-                // we succeed.  TryGetHomeDirectory will throw if there's an unexpected error.
+                // we succeed.  TryGetUserNameFromPasswd will throw if there's an unexpected error.
                 int lastBufLen = BufLen;
                 while (true)
                 {

@@ -189,33 +189,87 @@
     </Compile>
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true' And '$(CoreClrOrCorRt)' == 'true'"> <!-- Microsoft.Win32.Registry, needed for some Environment env var support -->
-    <Compile Include="..\..\Microsoft.Win32.Registry\src\Microsoft\Win32\Registry.cs" />
-    <Compile Include="..\..\Microsoft.Win32.Registry\src\Microsoft\Win32\RegistryKey.cs" />
-    <Compile Include="..\..\Microsoft.Win32.Registry\src\Microsoft\Win32\RegistryHive.cs" />
-    <Compile Include="..\..\Microsoft.Win32.Registry\src\Microsoft\Win32\RegistryOptions.cs" />
-    <Compile Include="..\..\Microsoft.Win32.Registry\src\Microsoft\Win32\RegistryValueKind.cs" />
-    <Compile Include="..\..\Microsoft.Win32.Registry\src\Microsoft\Win32\RegistryValueOptions.cs" />
-    <Compile Include="..\..\Microsoft.Win32.Registry\src\Microsoft\Win32\RegistryView.cs" />
-    <Compile Include="..\..\Microsoft.Win32.Registry\src\Microsoft\Win32\RegistryKey.Windows.cs" />
-    <Compile Include="..\..\Microsoft.Win32.Registry\src\Microsoft\Win32\SafeHandles\SafeRegistryHandle.cs" />
-    <Compile Include="..\..\Microsoft.Win32.Registry\src\Microsoft\Win32\SafeHandles\SafeRegistryHandle.Windows.cs" />
-    <Compile Include="..\..\Microsoft.Win32.Registry\src\Microsoft\Win32\ThrowHelper.cs" />
-    <Compile Include="..\..\Microsoft.Win32.Registry\src\System\Security\AccessControl\RegistryRights.cs" />
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.RegCloseKey.cs" />
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.RegConnectRegistry.cs" />
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.RegCreateKeyEx.cs" />
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.RegDeleteKeyEx.cs" />
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.RegDeleteValue.cs" />
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.RegEnumKeyEx.cs" />
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.RegEnumValue.cs" />
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.RegFlushKey.cs" />
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.RegOpenKeyEx.cs" />
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.RegQueryInfoKey.cs" />
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.RegQueryValueEx.cs" />
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.RegSetValueEx.cs" />
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.RegistryOptions.cs" />
-    <Compile Include="$(CommonPath)\Interop\Windows\Interop.BOOL.cs" />
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.SECURITY_ATTRIBUTES.cs" />
+    <Compile Include="..\..\Microsoft.Win32.Registry\src\Microsoft\Win32\Registry.cs">
+      <Link>Microsoft.Win32.Registry\src\Microsoft\Win32\Registry.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Microsoft.Win32.Registry\src\Microsoft\Win32\RegistryKey.cs">
+      <Link>Microsoft.Win32.Registry\src\Microsoft\Win32\RegistryKey.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Microsoft.Win32.Registry\src\Microsoft\Win32\RegistryHive.cs">
+      <Link>Microsoft.Win32.Registry\src\Microsoft\Win32\RegistryHive.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Microsoft.Win32.Registry\src\Microsoft\Win32\RegistryOptions.cs">
+      <Link>Microsoft.Win32.Registry\src\Microsoft\Win32\RegistryOptions.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Microsoft.Win32.Registry\src\Microsoft\Win32\RegistryValueKind.cs">
+      <Link>Microsoft.Win32.Registry\src\Microsoft\Win32\RegistryValueKind.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Microsoft.Win32.Registry\src\Microsoft\Win32\RegistryValueOptions.cs">
+      <Link>Microsoft.Win32.Registry\src\Microsoft\Win32\RegistryValueOptions.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Microsoft.Win32.Registry\src\Microsoft\Win32\RegistryView.cs">
+      <Link>Microsoft.Win32.Registry\src\Microsoft\Win32\RegistryView.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Microsoft.Win32.Registry\src\Microsoft\Win32\RegistryKey.Windows.cs">
+      <Link>Microsoft.Win32.Registry\src\Microsoft\Win32\Registry.Windows.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Microsoft.Win32.Registry\src\Microsoft\Win32\SafeHandles\SafeRegistryHandle.cs">
+      <Link>Microsoft.Win32.Registry\src\Microsoft\Win32\SafeHandles\SafeRegistryHandle.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Microsoft.Win32.Registry\src\Microsoft\Win32\SafeHandles\SafeRegistryHandle.Windows.cs">
+      <Link>Microsoft.Win32.Registry\src\Microsoft\Win32\SafeHandles\SafeRegistryHandle.Windows.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Microsoft.Win32.Registry\src\Microsoft\Win32\ThrowHelper.cs">
+      <Link>Microsoft.Win32.Registry\src\Microsoft\Win32\ThrowHelper.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Microsoft.Win32.Registry\src\System\Security\AccessControl\RegistryRights.cs">
+      <Link>Microsoft.Win32.Registry\src\Microsoft\Win32\RegistryRights.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.RegCloseKey.cs">
+      <Link>Common\Interop\Windows\mincore\Interop.RegCloseKey.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.RegConnectRegistry.cs">
+      <Link>Common\Interop\Windows\mincore\Interop.RegConnectRegistry.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.RegCreateKeyEx.cs">
+      <Link>Common\Interop\Windows\mincore\Interop.RegCreateKeyEx.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.RegDeleteKeyEx.cs">
+      <Link>Common\Interop\Windows\mincore\Interop.RegDeleteKeyEx.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.RegDeleteValue.cs">
+      <Link>Common\Interop\Windows\mincore\Interop.RegDeleteValue.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.RegEnumKeyEx.cs">
+      <Link>Common\Interop\Windows\mincore\Interop.RegEnumKeyEx.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.RegEnumValue.cs">
+      <Link>Common\Interop\Windows\mincore\Interop.RegEnumValue.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.RegFlushKey.cs">
+      <Link>Common\Interop\Windows\mincore\Interop.RegFlushKey.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.RegOpenKeyEx.cs">
+      <Link>Common\Interop\Windows\mincore\Interop.RegOpenKeyEx.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.RegQueryInfoKey.cs">
+      <Link>Common\Interop\Windows\mincore\Interop.RegQueryInfoKey.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.RegQueryValueEx.cs">
+      <Link>Common\Interop\Windows\mincore\Interop.RegQueryValueEx.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.RegSetValueEx.cs">
+      <Link>Common\Interop\Windows\mincore\Interop.RegSetValueEx.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.RegistryOptions.cs">
+      <Link>Common\Interop\Windows\mincore\Interop.RegistryOptions.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Interop.BOOL.cs">
+      <Link>Common\Interop\Windows\mincore\Interop.BOOL.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.SECURITY_ATTRIBUTES.cs">
+      <Link>Common\Interop\Windows\mincore\Interop.SECURITY_ATTRIBUTES.cs</Link>
+    </Compile>
   </ItemGroup>
   <!-- UNIX: CoreCLR -->
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
@@ -230,6 +284,9 @@
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\Interop.IOErrors.cs">
       <Link>Common\Interop\Unix\Interop.IOErrors.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Access.cs">
+      <Link>Common\Interop\Unix\System.Native\Interop.Access.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.ChDir.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.ChDir.cs</Link>
@@ -255,6 +312,9 @@
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetPwUid.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.GetPwUid.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetUnixName.cs">
+      <Link>Common\Interop\Unix\System.Native\Interop.GetUnixName.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetUnixRelease.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.GetUnixRelease.cs</Link>
     </Compile>
@@ -278,6 +338,12 @@
     </Compile>
     <Compile Include="$(CommonPath)\System\IO\PathInternal.Unix.cs">
       <Link>Common\System\IO\PathInternal.Unix.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\IO\PersistedFiles.Unix.cs">
+      <Link>Common\System\IO\PersistedFiles.Unix.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\IO\PersistedFiles.Names.Unix.cs">
+      <Link>Common\System\IO\PersistedFiles.Unix.cs</Link>
     </Compile>
   </ItemGroup>
   <!-- WINDOWS: .NET Native -->

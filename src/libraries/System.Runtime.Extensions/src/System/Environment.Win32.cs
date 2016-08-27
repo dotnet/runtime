@@ -214,7 +214,7 @@ namespace System
                     return SystemDirectory;
                 default:
                     // TODO: SHGetFolderPath is not available in the approved API list
-                    throw new PlatformNotSupportedException();
+                    return string.Empty;
             }
         }
 
