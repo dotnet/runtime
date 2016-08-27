@@ -247,20 +247,50 @@ namespace System.Collections.Generic.Tests
             Assert.Equal(0, comparer.Compare(left, left));
             Assert.Equal(0, comparer.Compare(right, right));
 
+            // Converting the comparer to a non-generic IComparer lets us
+            // test the explicit implementation of IComparer.Compare as well,
+            // which accepts 2 objects rather than nullables.
+            IComparer nonGenericComparer = comparer;
+
+            // The way this works is that, assuming two non-null nullables,
+            // T? will get boxed to a object with GetType() == typeof(T),
+            // (object is T?) will be true, and then it will get converted
+            // back to a T?.
+            // If one of the inputs is null, it will get boxed to a null object
+            // and then IComparer.Compare() should take care of it itself.
+            Assert.Equal(expected, Math.Sign(nonGenericComparer.Compare(left, right)));
+            Assert.Equal(0, nonGenericComparer.Compare(left, left));
+            Assert.Equal(0, nonGenericComparer.Compare(right, right));
+
             // As above, the comparer should handle null inputs itself and only
             // return -1, 0, or 1 in such circumstances
             Assert.Equal(0, comparer.Compare(null, null)); // null and null should have the same sorting order
-            Assert.InRange(comparer.Compare(null, left), -1, 0);
-            Assert.InRange(comparer.Compare(null, right), -1, 0); // "null" values should come before anything else
+            Assert.InRange(comparer.Compare(null, left), -1, 0); // "null" values should come before anything else
+            Assert.InRange(comparer.Compare(null, right), -1, 0);
             Assert.InRange(comparer.Compare(left, null), 0, 1);
             Assert.InRange(comparer.Compare(right, null), 0, 1);
+
+            Assert.Equal(0, nonGenericComparer.Compare(null, null));
+            Assert.InRange(nonGenericComparer.Compare(null, left), -1, 0);
+            Assert.InRange(nonGenericComparer.Compare(null, right), -1, 0);
+            Assert.InRange(nonGenericComparer.Compare(left, null), 0, 1);
+            Assert.InRange(nonGenericComparer.Compare(right, null), 0, 1);
+
+            // new T?() < new T?(default(T))
+            Assert.Equal(-1, comparer.Compare(null, default(T)));
+            Assert.Equal(1, comparer.Compare(default(T), null));
+            Assert.Equal(0, comparer.Compare(default(T), default(T)));
+            
+            Assert.Equal(-1, nonGenericComparer.Compare(null, default(T)));
+            Assert.Equal(1, nonGenericComparer.Compare(default(T), null));
+            Assert.Equal(0, nonGenericComparer.Compare(default(T), default(T)));
         }
 
         public static IEnumerable<object[]> NullableOfIntComparisonsData()
         {
             var testCases = new[]
             {
-                Tuple.Create(default(int), false, int.MinValue, true, -1),
+                Tuple.Create(default(int), false, int.MinValue, true, -1), // "null" values should come before anything else
                 Tuple.Create(int.MaxValue, true, int.MinValue, true, 1) // Comparisons between two non-null nullables should work as normal
             };
 
