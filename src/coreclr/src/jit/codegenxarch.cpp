@@ -3489,8 +3489,12 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeInitBlk* initBlkNode)
 
         if (initVal->gtIntCon.gtIconVal != 0)
         {
-            emit->emitIns_R_R(INS_mov_i2xmm, EA_8BYTE, tmpReg, valReg);
+            emit->emitIns_R_R(INS_mov_i2xmm, EA_PTRSIZE, tmpReg, valReg);
             emit->emitIns_R_R(INS_punpckldq, EA_8BYTE, tmpReg, tmpReg);
+#ifdef _TARGET_X86_
+            // For x86, we need one more to convert it from 8 bytes to 16 bytes.
+            emit->emitIns_R_R(INS_punpckldq, EA_8BYTE, tmpReg, tmpReg);
+#endif // _TARGET_X86_
         }
         else
         {
