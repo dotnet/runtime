@@ -199,10 +199,40 @@ namespace System.Tests
 
         [Fact]
         [PlatformSpecific(Xunit.PlatformID.AnyUnix)]
-        public void GetFolderPath_Unix_PersonalIsHome()
+        public void GetFolderPath_Unix_PersonalIsHomeAndUserProfile()
         {
             Assert.Equal(Environment.GetEnvironmentVariable("HOME"), Environment.GetFolderPath(Environment.SpecialFolder.Personal));
             Assert.Equal(Environment.GetEnvironmentVariable("HOME"), Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments));
+            Assert.Equal(Environment.GetEnvironmentVariable("HOME"), Environment.GetFolderPath(Environment.SpecialFolder.UserProfile));
+        }
+
+        [Theory]
+        [PlatformSpecific(Xunit.PlatformID.AnyUnix)]
+        [InlineData(Environment.SpecialFolder.CommonApplicationData)]
+        [InlineData(Environment.SpecialFolder.CommonTemplates)]
+        [InlineData(Environment.SpecialFolder.ApplicationData)]
+        [InlineData(Environment.SpecialFolder.LocalApplicationData)]
+        [InlineData(Environment.SpecialFolder.Desktop)]
+        [InlineData(Environment.SpecialFolder.DesktopDirectory)]
+        [InlineData(Environment.SpecialFolder.Templates)]
+        [InlineData(Environment.SpecialFolder.MyVideos)]
+        [InlineData(Environment.SpecialFolder.MyMusic)]
+        [InlineData(Environment.SpecialFolder.MyPictures)]
+        [InlineData(Environment.SpecialFolder.Fonts)]
+        public void GetFolderPath_Unix_NonEmptyFolderPaths(Environment.SpecialFolder folder)
+        {
+            Assert.NotEmpty(Environment.GetFolderPath(folder));
+        }
+
+        [Theory]
+        [PlatformSpecific(Xunit.PlatformID.OSX)]
+        [InlineData(Environment.SpecialFolder.Favorites)]
+        [InlineData(Environment.SpecialFolder.InternetCache)]
+        [InlineData(Environment.SpecialFolder.ProgramFiles)]
+        [InlineData(Environment.SpecialFolder.System)]
+        public void GetFolderPath_OSX_NonEmptyFolderPaths(Environment.SpecialFolder folder)
+        {
+            Assert.NotEmpty(Environment.GetFolderPath(folder));
         }
 
         [Fact]
