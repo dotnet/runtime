@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
@@ -73,19 +74,28 @@ namespace System.Net.Test.Common
                 .Where(a => a.IsIPv6LinkLocal)
                 .FirstOrDefault();
 
-        public static Task ReadRequestAndSendResponseAsync(Socket server, string response = null, Options options = null)
+        public static Task<List<string>> ReadRequestAndSendResponseAsync(Socket server, string response = null, Options options = null)
         {
             return AcceptSocketAsync(server, (s, stream, reader, writer) => ReadWriteAcceptedAsync(s, reader, writer, response), options);
         }
 
-        public static async Task ReadWriteAcceptedAsync(Socket s, StreamReader reader, StreamWriter writer, string response = null)
+        public static async Task<List<string>> ReadWriteAcceptedAsync(Socket s, StreamReader reader, StreamWriter writer, string response = null)
         {
-            while (!string.IsNullOrEmpty(await reader.ReadLineAsync().ConfigureAwait(false))) ;
+            // Read request line and headers. Skip any request body.
+            var lines = new List<string>();
+            string line;
+            while (!string.IsNullOrEmpty(line = await reader.ReadLineAsync().ConfigureAwait(false)))
+            {
+                lines.Add(line);
+            }
+
             await writer.WriteAsync(response ?? DefaultHttpResponse).ConfigureAwait(false);
             s.Shutdown(SocketShutdown.Send);
+
+            return lines;
         }
 
-        public static async Task AcceptSocketAsync(Socket server, Func<Socket, Stream, StreamReader, StreamWriter, Task> funcAsync, Options options = null)
+        public static async Task<List<string>> AcceptSocketAsync(Socket server, Func<Socket, Stream, StreamReader, StreamWriter, Task<List<string>>> funcAsync, Options options = null)
         {
             options = options ?? new Options();
             using (Socket s = await server.AcceptAsync().ConfigureAwait(false))
@@ -108,7 +118,7 @@ namespace System.Net.Test.Common
                 using (var reader = new StreamReader(stream, Encoding.ASCII))
                 using (var writer = new StreamWriter(stream, Encoding.ASCII) { AutoFlush = true })
                 {
-                    await funcAsync(s, stream, reader, writer).ConfigureAwait(false);
+                    return await funcAsync(s, stream, reader, writer).ConfigureAwait(false);
                 }
             }
         }
@@ -182,6 +192,8 @@ namespace System.Net.Test.Common
                 }
 
                 client.Shutdown(SocketShutdown.Both);
+                
+                return null;
             }), out localEndPoint);
         }
     }
