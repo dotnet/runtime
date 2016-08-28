@@ -303,5 +303,9 @@ typedef SSIZE_T ssize_t;
 #define MONO_COLD
 #endif
 
+#if defined (__GNUC__) && defined (__GNUC_MINOR__) && defined (__GNUC_PATCHLEVEL__)
+#define MONO_GNUC_VERSION (__GNUC__ * 10000 + __GNUC_MINOR__ * 100 + __GNUC_PATCHLEVEL__)
+#endif
+
 #endif /* __UTILS_MONO_COMPILER_H__*/
 
