@@ -1,6 +1,7 @@
 #include <config.h>
 #include <fcntl.h>
 #include <mono/metadata/assembly.h>
+#include <mono/metadata/mono-config.h>
 #include <mono/utils/mono-mmap.h>
 #include "mini.h"
 
@@ -104,12 +105,14 @@ probe_embedded (const char *program, int *ref_argc, char **ref_argv [])
 			char *aname = g_strdup (config);
 			aname [strlen(aname)-strlen(".config")] = 0;
 			mono_register_config_for_assembly (aname, config);
-		} else if (strncmp (kind, "system_config:", strlen ("system_config:")) == 0){
-			printf ("TODO s-Found: %s %llx\n", kind, (long long)offset);
+		} else if (strncmp (kind, "systemconfig:", strlen ("systemconfig:")) == 0){
+			mono_config_parse_memory (kind + strlen ("systemconfig:"));
 		} else if (strncmp (kind, "options:", strlen ("options:")) == 0){
 			mono_parse_options_from (kind + strlen("options:"), ref_argc, ref_argv);
 		} else if (strncmp (kind, "config_dir:", strlen ("config_dir:")) == 0){
-			printf ("TODO Found: %s %llx\n", kind, (long long)offset);
+			mono_set_dirs (getenv ("MONO_PATH"), kind + strlen ("config_dir:"));
+		} else if (strncmp (kind, "machineconfig:", strlen ("machineconfig:")) == 0) {
+			mono_register_machine_config (kind + strlen ("machineconfig:"));
 		} else {
 			fprintf (stderr, "Unknown stream on embedded package: %s\n", kind);
 			exit (1);
