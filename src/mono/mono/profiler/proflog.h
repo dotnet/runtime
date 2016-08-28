@@ -29,6 +29,18 @@
  * version 12: added MONO_COUNTER_PROFILER
  * version 13: added MONO_GC_EVENT_{PRE_STOP_WORLD_LOCKED,POST_START_WORLD_UNLOCKED}
                added TYPE_META + TYPE_SYNC_POINT
+               removed il and native offset in TYPE_SAMPLE_HIT
+               methods in backtraces are now encoded as proper method pointers
+               removed flags in backtrace format
+               removed flags in metadata events
+               changed the following fields to a single byte rather than leb128
+                   TYPE_GC_EVENT: event_type, generation
+                   TYPE_HEAP_ROOT: root_type
+                   TYPE_JITHELPER: type
+                   TYPE_SAMPLE_HIT: sample_type
+                   TYPE_CLAUSE: clause_type
+                   TYPE_SAMPLE_COUNTERS_DESC: type, unit, variance
+                   TYPE_SAMPLE_COUNTERS: type
  */
 
 enum {
