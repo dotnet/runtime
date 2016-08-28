@@ -4711,6 +4711,8 @@ start_dumper_thread (MonoProfiler* prof)
 static void
 runtime_initialized (MonoProfiler *profiler)
 {
+	InterlockedWrite (&runtime_inited, 1);
+
 #ifndef DISABLE_HELPER_THREAD
 	if (hs_mode_ondemand || need_helper_thread) {
 		if (!start_helper_thread (profiler))
@@ -4721,7 +4723,23 @@ runtime_initialized (MonoProfiler *profiler)
 	start_writer_thread (profiler);
 	start_dumper_thread (profiler);
 
-	InterlockedWrite (&runtime_inited, 1);
+	mono_counters_register ("Sample hits", MONO_COUNTER_UINT | MONO_COUNTER_PROFILER | MONO_COUNTER_MONOTONIC, &sample_hits);
+	mono_counters_register ("Sample flushes", MONO_COUNTER_UINT | MONO_COUNTER_PROFILER | MONO_COUNTER_MONOTONIC, &sample_flushes);
+	mono_counters_register ("Sample events allocated", MONO_COUNTER_UINT | MONO_COUNTER_PROFILER | MONO_COUNTER_MONOTONIC, &sample_allocations);
+	mono_counters_register ("Log buffers allocated", MONO_COUNTER_UINT | MONO_COUNTER_PROFILER | MONO_COUNTER_MONOTONIC, &buffer_allocations);
+	mono_counters_register ("Thread start events", MONO_COUNTER_UINT | MONO_COUNTER_PROFILER | MONO_COUNTER_MONOTONIC, &thread_starts);
+	mono_counters_register ("Thread stop events", MONO_COUNTER_UINT | MONO_COUNTER_PROFILER | MONO_COUNTER_MONOTONIC, &thread_ends);
+	mono_counters_register ("Domain load events", MONO_COUNTER_UINT | MONO_COUNTER_PROFILER | MONO_COUNTER_MONOTONIC, &domain_loads);
+	mono_counters_register ("Domain unload events", MONO_COUNTER_UINT | MONO_COUNTER_PROFILER | MONO_COUNTER_MONOTONIC, &domain_unloads);
+	mono_counters_register ("Context load events", MONO_COUNTER_UINT | MONO_COUNTER_PROFILER | MONO_COUNTER_MONOTONIC, &context_loads);
+	mono_counters_register ("Context unload events", MONO_COUNTER_UINT | MONO_COUNTER_PROFILER | MONO_COUNTER_MONOTONIC, &context_unloads);
+	mono_counters_register ("Assembly load events", MONO_COUNTER_UINT | MONO_COUNTER_PROFILER | MONO_COUNTER_MONOTONIC, &assembly_loads);
+	mono_counters_register ("Assembly unload events", MONO_COUNTER_UINT | MONO_COUNTER_PROFILER | MONO_COUNTER_MONOTONIC, &assembly_unloads);
+	mono_counters_register ("Image load events", MONO_COUNTER_UINT | MONO_COUNTER_PROFILER | MONO_COUNTER_MONOTONIC, &image_loads);
+	mono_counters_register ("Image unload events", MONO_COUNTER_UINT | MONO_COUNTER_PROFILER | MONO_COUNTER_MONOTONIC, &image_unloads);
+	mono_counters_register ("Class load events", MONO_COUNTER_UINT | MONO_COUNTER_PROFILER | MONO_COUNTER_MONOTONIC, &class_loads);
+	mono_counters_register ("Class unload events", MONO_COUNTER_UINT | MONO_COUNTER_PROFILER | MONO_COUNTER_MONOTONIC, &class_unloads);
+
 #ifndef DISABLE_HELPER_THREAD
 	counters_init (profiler);
 	counters_sample (profiler, 0);
@@ -5031,23 +5049,6 @@ mono_profiler_startup (const char *desc)
 		MONO_PROFILE_ASSEMBLY_EVENTS;
 
 	max_allocated_sample_hits = mono_cpu_count () * 1000;
-
-	mono_counters_register ("Sample hits", MONO_COUNTER_UINT | MONO_COUNTER_PROFILER | MONO_COUNTER_MONOTONIC, &sample_hits);
-	mono_counters_register ("Sample flushes", MONO_COUNTER_UINT | MONO_COUNTER_PROFILER | MONO_COUNTER_MONOTONIC, &sample_flushes);
-	mono_counters_register ("Sample events allocated", MONO_COUNTER_UINT | MONO_COUNTER_PROFILER | MONO_COUNTER_MONOTONIC, &sample_allocations);
-	mono_counters_register ("Log buffers allocated", MONO_COUNTER_UINT | MONO_COUNTER_PROFILER | MONO_COUNTER_MONOTONIC, &buffer_allocations);
-	mono_counters_register ("Thread start events", MONO_COUNTER_UINT | MONO_COUNTER_PROFILER | MONO_COUNTER_MONOTONIC, &thread_starts);
-	mono_counters_register ("Thread stop events", MONO_COUNTER_UINT | MONO_COUNTER_PROFILER | MONO_COUNTER_MONOTONIC, &thread_ends);
-	mono_counters_register ("Domain load events", MONO_COUNTER_UINT | MONO_COUNTER_PROFILER | MONO_COUNTER_MONOTONIC, &domain_loads);
-	mono_counters_register ("Domain unload events", MONO_COUNTER_UINT | MONO_COUNTER_PROFILER | MONO_COUNTER_MONOTONIC, &domain_unloads);
-	mono_counters_register ("Context load events", MONO_COUNTER_UINT | MONO_COUNTER_PROFILER | MONO_COUNTER_MONOTONIC, &context_loads);
-	mono_counters_register ("Context unload events", MONO_COUNTER_UINT | MONO_COUNTER_PROFILER | MONO_COUNTER_MONOTONIC, &context_unloads);
-	mono_counters_register ("Assembly load events", MONO_COUNTER_UINT | MONO_COUNTER_PROFILER | MONO_COUNTER_MONOTONIC, &assembly_loads);
-	mono_counters_register ("Assembly unload events", MONO_COUNTER_UINT | MONO_COUNTER_PROFILER | MONO_COUNTER_MONOTONIC, &assembly_unloads);
-	mono_counters_register ("Image load events", MONO_COUNTER_UINT | MONO_COUNTER_PROFILER | MONO_COUNTER_MONOTONIC, &image_loads);
-	mono_counters_register ("Image unload events", MONO_COUNTER_UINT | MONO_COUNTER_PROFILER | MONO_COUNTER_MONOTONIC, &image_unloads);
-	mono_counters_register ("Class load events", MONO_COUNTER_UINT | MONO_COUNTER_PROFILER | MONO_COUNTER_MONOTONIC, &class_loads);
-	mono_counters_register ("Class unload events", MONO_COUNTER_UINT | MONO_COUNTER_PROFILER | MONO_COUNTER_MONOTONIC, &class_unloads);
 
 	p = desc;
 	if (strncmp (p, "log", 3))
