@@ -9,10 +9,6 @@ namespace System
 {
     // Provides methods for making shallow/deep clones of objects.
 
-    // NOTE TO CONSUMERS: This class will only compile with netstandard1.5
-    // and above, since it appears BindingFlags and TypeInfo.GetMethod are
-    // not available in lower versions.
-
     public static class ObjectCloner
     {
         // This should only be used for reference types.
@@ -22,10 +18,9 @@ namespace System
             Debug.Assert(obj != null);
 
             // Invoke MemberwiseClone() via reflection to create a shallow copy of the object
-            var bindingFlags = BindingFlags.Instance | BindingFlags.NonPublic;
             MethodInfo memberwiseClone = typeof(object)
                 .GetTypeInfo()
-                .GetMethod("MemberwiseClone", bindingFlags);
+                .GetDeclaredMethod("MemberwiseClone");
             object cloned = memberwiseClone.Invoke(obj, parameters: Array.Empty<object>());
 
             Debug.Assert(cloned != null && !object.ReferenceEquals(obj, cloned));
