@@ -273,7 +273,7 @@ static MonoLinkedListSet profiler_thread_list;
  * 	[name: string] domain friendly name
  * if mtype == TYPE_CONTEXT
  * 	[domain: sleb128] domain id as pointer
- * if mtype == TYPE_THREAD && (format_version < 11 || (format_version > 10 && exinfo == 0))
+ * if mtype == TYPE_THREAD && exinfo == 0
  * 	[name: string] thread name
  *
  * type method format:
@@ -318,9 +318,9 @@ static MonoLinkedListSet profiler_thread_list;
  * 	[class: sleb128] the object MonoClass* as a difference from ptr_base
  * 	[size: uleb128] size of the object on the heap
  * 	[num_refs: uleb128] number of object references
- * 	if (format version > 1) each referenced objref is preceded by a
- *	uleb128 encoded offset: the first offset is from the object address
- *	and each next offset is relative to the previous one
+ * 	each referenced objref is preceded by a uleb128 encoded offset: the
+ * 	first offset is from the object address and each next offset is relative
+ * 	to the previous one
  * 	[objrefs: sleb128]+ object referenced as a difference from obj_base
  * 	The same object can appear multiple times, but only the first time
  * 	with size != 0: in the other cases this data will only be used to
@@ -339,14 +339,12 @@ static MonoLinkedListSet profiler_thread_list;
  * if exinfo == TYPE_SAMPLE_HIT
  * 	[sample_type: byte] type of sample (SAMPLE_*)
  * 	[timestamp: uleb128] nanoseconds since startup (note: different from other timestamps!)
- * 	if (format_version > 10)
- * 		[thread: sleb128] thread id as difference from ptr_base
+ * 	[thread: sleb128] thread id as difference from ptr_base
  * 	[count: uleb128] number of following instruction addresses
  * 	[ip: sleb128]* instruction pointer as difference from ptr_base
- *	if (format_version > 5)
- *		[mbt_count: uleb128] number of managed backtrace frames
- *		[method: sleb128]* MonoMethod* as a pointer difference from the last such
- * 		pointer or the buffer method_base (the first such method can be also indentified by ip, but this is not neccessarily true)
+ *	[mbt_count: uleb128] number of managed backtrace frames
+ *	[method: sleb128]* MonoMethod* as a pointer difference from the last such
+ * 	pointer or the buffer method_base (the first such method can be also indentified by ip, but this is not neccessarily true)
  * if exinfo == TYPE_SAMPLE_USYM
  * 	[address: sleb128] symbol address as a difference from ptr_base
  * 	[size: uleb128] symbol size (may be 0 if unknown)
