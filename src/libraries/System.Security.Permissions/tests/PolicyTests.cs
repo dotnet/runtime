@@ -30,6 +30,9 @@ namespace System.Security.Permissions.Tests
             Policy.Evidence evidence = new Policy.Evidence();
             Policy.PolicyStatement ps = pl.Resolve(evidence);
             Policy.CodeGroup cg = pl.ResolveMatchingCodeGroups(evidence);
+            SecurityElement se = new SecurityElement("");
+            pl.FromXml(se);
+            se = pl.ToXml();
         }
         [Fact]
         public static void PolicyStatementCallMethods()
@@ -38,6 +41,12 @@ namespace System.Security.Permissions.Tests
             Policy.PolicyStatement ps2 = ps.Copy();
             bool equals = ps.Equals(ps2);
             int hash = ps.GetHashCode();
+            SecurityElement se = new SecurityElement("");
+            Policy.PolicyLevel pl = (Policy.PolicyLevel)Activator.CreateInstance(typeof(Policy.PolicyLevel), true);
+            ps.FromXml(se);
+            ps.FromXml(se, pl);
+            se = ps.ToXml();
+            se = ps.ToXml(pl);
         }
     }
 }

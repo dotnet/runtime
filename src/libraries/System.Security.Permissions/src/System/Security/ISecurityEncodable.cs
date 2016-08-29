@@ -6,5 +6,7 @@ namespace System.Security
 {
     public partial interface ISecurityEncodable
     {
+        void FromXml(SecurityElement e);
+        SecurityElement ToXml();
     }
 }

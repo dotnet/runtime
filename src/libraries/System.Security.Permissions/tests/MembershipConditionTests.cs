@@ -17,6 +17,12 @@ namespace System.Security.Permissions.Tests
             check = amc.Equals(new object());
             int hash = amc.GetHashCode();
             string str = amc.ToString();
+            SecurityElement se = new SecurityElement("");
+            Policy.PolicyLevel pl = (Policy.PolicyLevel)Activator.CreateInstance(typeof(Policy.PolicyLevel), true);
+            amc.FromXml(se);
+            amc.FromXml(se, pl);
+            se = amc.ToXml();
+            se = amc.ToXml(pl);
         }
         [Fact]
         public static void ApplicationDirectoryMembershipConditionCallMethods()
@@ -27,6 +33,12 @@ namespace System.Security.Permissions.Tests
             check = admc.Equals(new object());
             int hash = admc.GetHashCode();
             string str = admc.ToString();
+            SecurityElement se = new SecurityElement("");
+            Policy.PolicyLevel pl = (Policy.PolicyLevel)Activator.CreateInstance(typeof(Policy.PolicyLevel), true);
+            admc.FromXml(se);
+            admc.FromXml(se, pl);
+            se = admc.ToXml();
+            se = admc.ToXml(pl);
         }
         [Fact]
         public static void GacMembershipConditionCallMethods()
@@ -37,6 +49,12 @@ namespace System.Security.Permissions.Tests
             check = gmc.Equals(new object());
             int hash = gmc.GetHashCode();
             string str = gmc.ToString();
+            SecurityElement se = new SecurityElement("");
+            Policy.PolicyLevel pl = (Policy.PolicyLevel)Activator.CreateInstance(typeof(Policy.PolicyLevel), true);
+            gmc.FromXml(se);
+            gmc.FromXml(se, pl);
+            se = gmc.ToXml();
+            se = gmc.ToXml(pl);
         }
         [Fact]
         public static void HashMembershipConditionCallMethods()
@@ -47,6 +65,12 @@ namespace System.Security.Permissions.Tests
             check = hmc.Equals(new object());
             int hash = hmc.GetHashCode();
             string str = hmc.ToString();
+            SecurityElement se = new SecurityElement("");
+            Policy.PolicyLevel pl = (Policy.PolicyLevel)Activator.CreateInstance(typeof(Policy.PolicyLevel), true);
+            hmc.FromXml(se);
+            hmc.FromXml(se, pl);
+            se = hmc.ToXml();
+            se = hmc.ToXml(pl);
         }
         [Fact]
         public static void PublisherMembershipConditionCallMethods()
@@ -57,6 +81,12 @@ namespace System.Security.Permissions.Tests
             check = pmc.Equals(new object());
             int hash = pmc.GetHashCode();
             string str = pmc.ToString();
+            SecurityElement se = new SecurityElement("");
+            Policy.PolicyLevel pl = (Policy.PolicyLevel)Activator.CreateInstance(typeof(Policy.PolicyLevel), true);
+            pmc.FromXml(se);
+            pmc.FromXml(se, pl);
+            se = pmc.ToXml();
+            se = pmc.ToXml(pl);
         }
         [Fact]
         public static void SiteMembershipConditionCallMethods()
@@ -67,6 +97,12 @@ namespace System.Security.Permissions.Tests
             check = smc.Equals(new object());
             int hash = smc.GetHashCode();
             string str = smc.ToString();
+            SecurityElement se = new SecurityElement("");
+            Policy.PolicyLevel pl = (Policy.PolicyLevel)Activator.CreateInstance(typeof(Policy.PolicyLevel), true);
+            smc.FromXml(se);
+            smc.FromXml(se, pl);
+            se = smc.ToXml();
+            se = smc.ToXml(pl);
         }
         [Fact]
         public static void StrongNameMembershipConditionCallMethods()
@@ -77,6 +113,12 @@ namespace System.Security.Permissions.Tests
             check = snmc.Equals(new object());
             int hash = snmc.GetHashCode();
             string str = snmc.ToString();
+            SecurityElement se = new SecurityElement("");
+            Policy.PolicyLevel pl = (Policy.PolicyLevel)Activator.CreateInstance(typeof(Policy.PolicyLevel), true);
+            snmc.FromXml(se);
+            snmc.FromXml(se, pl);
+            se = snmc.ToXml();
+            se = snmc.ToXml(pl);
         }
     }
 }

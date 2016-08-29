@@ -10,8 +10,10 @@ namespace System.Security.Permissions
         public PublisherIdentityPermission(System.Security.Permissions.PermissionState state) { }
         public System.Security.Cryptography.X509Certificates.X509Certificate Certificate { get; set; }
         public override System.Security.IPermission Copy() { return this; }
+        public override void FromXml(SecurityElement esd) { }
         public override System.Security.IPermission Intersect(System.Security.IPermission target) { return default(System.Security.IPermission); }
         public override bool IsSubsetOf(System.Security.IPermission target) { return false; }
+        public override SecurityElement ToXml() { return default(SecurityElement); }
         public override System.Security.IPermission Union(System.Security.IPermission target) { return default(System.Security.IPermission); }
     }
 }

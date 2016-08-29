@@ -21,6 +21,7 @@ namespace System.Security.Policy
         public void AddNamedPermissionSet(System.Security.NamedPermissionSet permSet) { }
         public System.Security.NamedPermissionSet ChangeNamedPermissionSet(string name, System.Security.PermissionSet pSet) { return default(System.Security.NamedPermissionSet); }
         public static System.Security.Policy.PolicyLevel CreateAppDomainLevel() { return default(System.Security.Policy.PolicyLevel); }
+        public void FromXml(SecurityElement e) { }
         public System.Security.NamedPermissionSet GetNamedPermissionSet(string name) { return default(System.Security.NamedPermissionSet); }
         public void Recover() { }
         [System.ObsoleteAttribute("Because all GAC assemblies always get full trust, the full trust list is no longer meaningful. You should install any assemblies that are used in security policy in the GAC to ensure they are trusted.")]
@@ -32,5 +33,6 @@ namespace System.Security.Policy
         public void Reset() { }
         public System.Security.Policy.PolicyStatement Resolve(System.Security.Policy.Evidence evidence) { return default(System.Security.Policy.PolicyStatement); }
         public System.Security.Policy.CodeGroup ResolveMatchingCodeGroups(System.Security.Policy.Evidence evidence) { return default(System.Security.Policy.CodeGroup); }
+        public SecurityElement ToXml() { return default(SecurityElement); }
     }
 }

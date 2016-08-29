@@ -21,6 +21,9 @@ namespace System.Security.Permissions.Tests
         public static void ApplicationTrustCallMethods()
         {
             Policy.ApplicationTrust at = new Policy.ApplicationTrust();
+            SecurityElement se = new SecurityElement("");
+            at.FromXml(se);
+            se = at.ToXml();
         }
         [Fact]
         public static void GacInstalledCallMethods()
@@ -48,6 +51,9 @@ namespace System.Security.Permissions.Tests
             Policy.PermissionRequestEvidence pre = new Policy.PermissionRequestEvidence(ps, ps, ps);
             Policy.PermissionRequestEvidence obj = pre.Copy();
             string str = ps.ToString();
+            SecurityElement se = new SecurityElement("");
+            ps.FromXml(se);
+            se = ps.ToXml();
         }
     }
 }
