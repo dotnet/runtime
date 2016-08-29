@@ -232,16 +232,16 @@ namespace System.Reflection.Metadata.Ecma335
             switch (heapIndex)
             {
                 case HeapIndex.UserString:
-                    return reader.UserStringStream.Block;
+                    return reader.UserStringHeap.Block;
 
                 case HeapIndex.String:
-                    return reader.StringStream.Block;
+                    return reader.StringHeap.Block;
 
                 case HeapIndex.Blob:
-                    return reader.BlobStream.Block;
+                    return reader.BlobHeap.Block;
 
                 case HeapIndex.Guid:
-                    return reader.GuidStream.Block;
+                    return reader.GuidHeap.Block;
 
                 default:
                     throw new ArgumentOutOfRangeException(nameof(heapIndex));
@@ -259,7 +259,7 @@ namespace System.Reflection.Metadata.Ecma335
                 Throw.ArgumentNull(nameof(reader));
             }
 
-            return reader.UserStringStream.GetNextHandle(handle);
+            return reader.UserStringHeap.GetNextHandle(handle);
         }
 
         /// <summary>
@@ -273,7 +273,7 @@ namespace System.Reflection.Metadata.Ecma335
                 Throw.ArgumentNull(nameof(reader));
             }
 
-            return reader.BlobStream.GetNextHandle(handle);
+            return reader.BlobHeap.GetNextHandle(handle);
         }
 
         /// <summary>
@@ -287,7 +287,7 @@ namespace System.Reflection.Metadata.Ecma335
                 Throw.ArgumentNull(nameof(reader));
             }
 
-            return reader.StringStream.GetNextHandle(handle);
+            return reader.StringHeap.GetNextHandle(handle);
         }
 
         /// <summary>

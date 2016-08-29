@@ -60,7 +60,7 @@ namespace System.Reflection.Metadata
 
         public SequencePointCollection GetSequencePoints()
         {
-            return new SequencePointCollection(_reader.BlobStream.GetMemoryBlock(SequencePointsBlob), Document);
+            return new SequencePointCollection(_reader.BlobHeap.GetMemoryBlock(SequencePointsBlob), Document);
         }
 
         /// <summary>
