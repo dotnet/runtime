@@ -27,6 +27,12 @@ namespace System
         /// <param name="array">The target array.</param>
         public Span(T[] array)
         {
+            if (default(T) == null) // Arrays of valuetypes are never covariant
+            {
+                if (array.GetType() != typeof(T[]))
+                    ThrowHelper.ThrowArrayTypeMismatchException();
+            }
+
             JitHelpers.SetByRef(out _rawPointer, ref JitHelpers.GetArrayData(array));
             _length = array.Length;
         }
@@ -42,6 +48,12 @@ namespace System
         {
             if ((uint)start >= (uint)array.Length || (uint)length > (uint)(array.Length - start))
                 ThrowHelper.ThrowArgumentOutOfRangeException();
+
+            if (default(T) == null) // Arrays of valuetypes are never covariant
+            {
+                if (array.GetType() != typeof(T[]))
+                    ThrowHelper.ThrowArrayTypeMismatchException();
+            }
 
             JitHelpers.SetByRef(out _rawPointer, ref JitHelpers.AddByRef(ref JitHelpers.GetArrayData(array), start));
             _length = length;
