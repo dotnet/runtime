@@ -369,13 +369,16 @@ fi
 
 # Install xunit performance packages
 export NUGET_PACKAGE=$testNativeBinDir/../../../../packages
+echo "NUGET_PACKAGE = $NUGET_PACKAGE"
 
 echo "dir $testNativeBinDir/../../../../Tools"
 dir $testNativeBinDir/../../../../Tools
 echo "dir $testNativeBinDir/../../../../Tools/dotnetcli"
 dir $testNativeBinDir/../../../../Tools/dotnetcli
 
+pushd $testNativeBinDir/../../../../tests/scripts
 $testNativeBinDir/../../../../Tools/dotnetcli/dotnet restore --fallbacksource https://dotnet.myget.org/F/dotnet-buildtools/ --fallbacksource https://dotnet.myget.org/F/dotnet-core/
+popd
 
 # Creat coreoverlay dir which contains all dependent binaries
 create_core_overlay
