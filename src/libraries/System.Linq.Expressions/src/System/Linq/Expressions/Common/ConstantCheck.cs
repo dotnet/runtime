@@ -5,7 +5,7 @@
 using System.Dynamic.Utils;
 using System.Reflection;
 
-namespace System.Linq.Expressions.Compiler
+namespace System.Linq.Expressions
 {
     internal enum AnalyzeTypeIsResult
     {
