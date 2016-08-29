@@ -60,10 +60,10 @@ namespace System.Runtime.CompilerServices {
         public byte m_data;
     }
 
-    internal class ArrayPinningHelper<T>
+    internal class ArrayPinningHelper
     {
         public IntPtr m_lengthAndPadding;
-        public T m_arrayData;
+        public byte m_arrayData;
     }
 
     [FriendAccessAllowed]
@@ -230,41 +230,40 @@ namespace System.Runtime.CompilerServices {
 #if FEATURE_SPAN_OF_T
         static internal ref T GetByRef<T>(ref IntPtr byref)
         {
-            // The body of this function will be replaced by the EE with unsafe code that just returns o!!!
-            // See getILIntrinsicImplementation for how this happens.  
+            // The body of this function will be replaced by the EE with unsafe code!!!
+            // See getILIntrinsicImplementation for how this happens.
             throw new InvalidOperationException();
         }
 
         static internal void SetByRef<T>(out IntPtr byref, ref T value)
         {
-            // The body of this function will be replaced by the EE with unsafe code that just returns o!!!
-            // See getILIntrinsicImplementation for how this happens.  
+            // The body of this function will be replaced by the EE with unsafe code!!!
+            // See getILIntrinsicImplementation for how this happens.
             throw new InvalidOperationException();
         }
 
         static internal ref T AddByRef<T>(ref T pointer, int count)
         {
-            // The body of this function will be replaced by the EE with unsafe code that just returns o!!!
-            // See getILIntrinsicImplementation for how this happens.  
+            // The body of this function will be replaced by the EE with unsafe code!!!
+            // See getILIntrinsicImplementation for how this happens.
+            typeof(T).ToString(); // Type used by the actual method body
             throw new InvalidOperationException();
         }
 
         static internal bool ByRefEquals<T>(ref T refA, ref T refB)
         {
-            // The body of this function will be replaced by the EE with unsafe code that just returns o!!!
+            // The body of this function will be replaced by the EE with unsafe code!!!
             // See getILIntrinsicImplementation for how this happens.  
             throw new InvalidOperationException();
         }
-#endif
 
         static internal ref T GetArrayData<T>(T[] array)
         {
-            // This cast is really unsafe - call the private version that does not assert in debug
-#if _DEBUG
-            return ref UnsafeCastInternal<ArrayPinningHelper<T>>(array).m_arrayData;
-#else
-            return ref UnsafeCast<ArrayPinningHelper<T>>(array).m_arrayData;
-#endif
+            // The body of this function will be replaced by the EE with unsafe code!!!
+            // See getILIntrinsicImplementation for how this happens.
+            typeof(ArrayPinningHelper).ToString(); // Type used by the actual method body
+            throw new InvalidOperationException();
         }
+#endif // FEATURE_SPAN_OF_T
     }
 }

@@ -44,6 +44,10 @@ namespace System {
     [Pure]
     internal static class ThrowHelper {    
 #if FEATURE_SPAN_OF_T
+        internal static void ThrowArrayTypeMismatchException() {
+            throw new ArrayTypeMismatchException();
+        }
+
         internal static void ThrowArgumentOutOfRangeException() {
             throw new ArgumentOutOfRangeException();
         }
