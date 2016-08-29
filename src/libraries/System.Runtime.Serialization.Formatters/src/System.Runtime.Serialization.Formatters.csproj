@@ -68,6 +68,9 @@
     <ProjectReference Include="../../System.Runtime/pkg/System.Runtime.pkgproj">
         <Name>System.Runtime</Name>
     </ProjectReference>
+    <ProjectReference Include="../../System.Text.Encoding/pkg/System.Text.Encoding.pkgproj">
+        <Name>System.Text.Encoding</Name>
+    </ProjectReference>
     <ProjectReference Include="../../System.Runtime.Serialization.Primitives/pkg/System.Runtime.Serialization.Primitives.pkgproj">
         <Name>System.Runtime.Serialization.Primitives</Name>
     </ProjectReference>

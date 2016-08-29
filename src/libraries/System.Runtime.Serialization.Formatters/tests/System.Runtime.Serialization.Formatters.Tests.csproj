@@ -50,6 +50,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\System.Runtime\pkg\System.Runtime.pkgproj" />
+    <ProjectReference Include="..\..\System.Text.Encoding\pkg\System.Text.Encoding.pkgproj" />
     <ProjectReference Include="..\..\System.Runtime.Serialization.Primitives\pkg\System.Runtime.Serialization.Primitives.pkgproj" />
 
     <ProjectReference Include="$(CommonTestPath)\System\Diagnostics\RemoteExecutorConsoleApp\RemoteExecutorConsoleApp.csproj">
