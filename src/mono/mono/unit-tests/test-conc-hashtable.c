@@ -11,6 +11,7 @@
 #include "utils/mono-threads.h"
 #include "utils/mono-conc-hashtable.h"
 #include "utils/checked-build.h"
+#include "utils/w32handle.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -335,6 +336,9 @@ main (void)
 	memset (&ticallbacks, 0, sizeof (ticallbacks));
 	ticallbacks.thread_state_init = thread_state_init;
 	mono_threads_runtime_init (&ticallbacks);
+#ifndef HOST_WIN32
+	mono_w32handle_init ();
+#endif
 
 	mono_thread_info_attach ((gpointer)&cb);
 
