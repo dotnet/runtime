@@ -101,10 +101,8 @@ public:
     //
     static FCDECL1(FC_BOOL_RET, nativeInitCultureData, CultureDataBaseObject *data);
     static FCDECL3(FC_BOOL_RET, nativeGetNumberFormatInfoValues, StringObject* localeNameUNSAFE, NumberFormatInfo* nfi, CLR_BOOL useUserOverride);
-#ifdef FEATURE_USE_LCID
     static FCDECL1(Object*, LCIDToLocaleName, LCID lcid);
     static FCDECL1(INT32, LocaleNameToLCID, StringObject* localeNameUNSAFE);
-#endif // FEATURE_USE_LCID
 
     static INT32 QCALLTYPE InternalCompareString (INT_PTR handle, INT_PTR handleOrigin, LPCWSTR localeName, LPCWSTR string1, INT32 offset1, INT32 length1, LPCWSTR string2, INT32 offset2, INT32 length2, INT32 flags);
     static INT32 QCALLTYPE InternalGetGlobalizedHashCode(INT_PTR handle, INT_PTR handleOrigin, LPCWSTR localeName, LPCWSTR pString, INT32 length, INT32 dwFlagsIn, BOOL bForceRandomizedHashing, INT64 additionalEntropy);

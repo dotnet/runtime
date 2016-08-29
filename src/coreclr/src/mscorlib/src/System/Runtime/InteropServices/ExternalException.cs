@@ -21,9 +21,7 @@ namespace System.Runtime.InteropServices {
     // exceptions.
     // 
     [System.Runtime.InteropServices.ComVisible(true)]
-#if FEATURE_SERIALIZATION
     [Serializable]
-#endif
     public class ExternalException : SystemException {
         public ExternalException() 
             : base(Environment.GetResourceString("Arg_ExternalException")) {

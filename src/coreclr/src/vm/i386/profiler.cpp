@@ -330,8 +330,6 @@ LPVOID ProfileArgIterator::GetReturnBufferAddr(void)
     default:
         return &(pData->eax);
     }
-
-    _ASSERTE(!"SHOULD NOT REACH HERE!");
 }
 
 #endif // PROFILING_SUPPORTED

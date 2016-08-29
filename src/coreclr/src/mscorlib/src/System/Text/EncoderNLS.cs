@@ -21,13 +21,8 @@ namespace System.Text
     // of Encoding objects.
     //
 
-#if FEATURE_SERIALIZATION
     [Serializable]
-#endif
-    internal class EncoderNLS : Encoder
-#if FEATURE_SERIALIZATION
-        , ISerializable
-#endif
+    internal class EncoderNLS : Encoder, ISerializable
     {
         // Need a place for the last left over character, most of our encodings use this
         internal char   charLeftOver;
@@ -49,7 +44,6 @@ namespace System.Text
                             Environment.GetResourceString("NotSupported_TypeCannotDeserialized"), this.GetType()));
         }
 
-#if FEATURE_SERIALIZATION
         // ISerializable implementation. called during serialization.
         [System.Security.SecurityCritical]  // auto-generated_required
         void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
@@ -59,7 +53,6 @@ namespace System.Text
             info.AddValue("charLeftOver", this.charLeftOver);
             info.SetType(typeof(Encoding.DefaultEncoder));
         }
-#endif
 
 #endregion Serialization 
 

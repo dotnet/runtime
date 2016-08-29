@@ -25,9 +25,7 @@ namespace System.Reflection
     using RuntimeTypeCache = System.RuntimeType.RuntimeTypeCache;
     using System.Runtime.CompilerServices;
 
-#if FEATURE_SERIALIZATION
     [Serializable]
-#endif
     [ClassInterface(ClassInterfaceType.None)]
     [ComDefaultInterface(typeof(_ConstructorInfo))]
 #pragma warning disable 618
@@ -48,7 +46,6 @@ namespace System.Reflection
         protected ConstructorInfo() { }
         #endregion
 
-#if !FEATURE_CORECLR
         public static bool operator ==(ConstructorInfo left, ConstructorInfo right)
         {
             if (ReferenceEquals(left, right))
@@ -66,7 +63,6 @@ namespace System.Reflection
         {
             return !(left == right);
         }
-#endif // !FEATURE_CORECLR
 
         public override bool Equals(object obj)
         {
@@ -158,9 +154,7 @@ namespace System.Reflection
 #endif
     }
 
-#if FEATURE_SERIALIZATION
     [Serializable]
-#endif
     internal sealed class RuntimeConstructorInfo : ConstructorInfo, ISerializable, IRuntimeMethodInfo
     {
         #region Private Data Members

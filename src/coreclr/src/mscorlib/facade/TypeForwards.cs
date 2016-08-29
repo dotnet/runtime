@@ -10,7 +10,6 @@ using System.Runtime.CompilerServices;
 [assembly: TypeForwardedTo(typeof(System.Resources.PRIExceptionInfo))]
 [assembly: TypeForwardedTo(typeof(System.Runtime.InteropServices.WindowsRuntime.WindowsRuntimeImportAttribute))]
 [assembly: TypeForwardedTo(typeof(System.Runtime.InteropServices.WindowsRuntime.IRestrictedErrorInfo))]
-[assembly: TypeForwardedTo(typeof(System.Globalization.CultureTypes))]
 [assembly: TypeForwardedTo(typeof(System.StubHelpers.EventArgsMarshaler))]
 [assembly: TypeForwardedTo(typeof(System.StubHelpers.InterfaceMarshaler))]
 #endif

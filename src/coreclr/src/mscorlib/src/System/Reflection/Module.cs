@@ -55,9 +55,7 @@ namespace System.Reflection
         ARM     = 0x01c4,
     }
 
-#if FEATURE_SERIALIZATION
     [Serializable]
-#endif
     [ClassInterface(ClassInterfaceType.None)]
     [ComDefaultInterface(typeof(_Module))]
     [System.Runtime.InteropServices.ComVisible(true)]
@@ -86,7 +84,6 @@ namespace System.Reflection
         public static readonly TypeFilter FilterTypeName;
         public static readonly TypeFilter FilterTypeNameIgnoreCase;
 
-#if !FEATURE_CORECLR
         public static bool operator ==(Module left, Module right)
         {
             if (ReferenceEquals(left, right))
@@ -105,7 +102,6 @@ namespace System.Reflection
         {
             return !(left == right);
         }
-#endif // !FEATURE_CORECLR
 
         public override bool Equals(object o)
         {
@@ -1191,7 +1187,7 @@ namespace System.Reflection
                 if (i == -1)
                     return s;
 
-                return new String(s.ToCharArray(), i + 1, s.Length - i - 1);
+                return s.Substring(i + 1);
             }
         }
 

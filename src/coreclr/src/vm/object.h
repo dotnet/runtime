@@ -1863,10 +1863,10 @@ private:
     STRINGREF m_nonSortName;                // name w/o sort info (de-DE for de-DE_phoneb)
     STRINGREF m_sortName;                   // Sort only name (de-DE_phoneb, en-us for fj-fj (w/us sort)
     CULTUREINFOBASEREF m_parent;
-#if !FEATURE_CORECLR
+#ifndef FEATURE_COREFX_GLOBALIZATION
     INT32    iDataItem;                     // NEVER USED, DO NOT USE THIS! (Serialized in Whidbey/Everett)
     INT32    iCultureID;                    // NEVER USED, DO NOT USE THIS! (Serialized in Whidbey/Everett)
-#endif // !FEATURE_CORECLR
+#endif // !FEATURE_COREFX_GLOBALIZATION
 #ifdef FEATURE_LEAK_CULTURE_INFO
     INT32 m_createdDomainID;
 #endif // FEATURE_LEAK_CULTURE_INFO
@@ -1875,9 +1875,7 @@ private:
 #ifdef FEATURE_LEAK_CULTURE_INFO
     CLR_BOOL m_isSafeCrossDomain;
 #endif // FEATURE_LEAK_CULTURE_INFO
-#ifndef FEATURE_COREFX_GLOBALIZATION
     CLR_BOOL m_useUserOverride;
-#endif
 
 public:
     CULTUREINFOBASEREF GetParent()
@@ -1970,8 +1968,7 @@ public:
         /* 0x160 */ STRINGREF sCompareInfo             ; // Compare info name (including sorting key) to use if custom
         /* 0x168 */ STRINGREF sScripts                 ; // Typical Scripts for this locale (latn;cyrl; etc)
 
-#if !defined(FEATURE_CORECLR)
-        // desktop only fields - these are ordered correctly
+        // these are ordered correctly
         /* ????? */ STRINGREF sAbbrevLang              ; // abbreviated language name (Windows Language Name) ex: ENU
         /* ????? */ STRINGREF sAbbrevCountry           ; // abbreviated country name (RegionInfo) (Windows Region Name) ex: USA
         /* ????? */ STRINGREF sISO639Language2         ; // 3 char ISO 639 lang name 2 ex: eng
@@ -1979,7 +1976,6 @@ public:
         /* ????? */ STRINGREF sConsoleFallbackName     ; // The culture name for the console fallback UI culture
         /* ????? */ STRINGREF sKeyboardsToInstall      ; // Keyboard installation string.
         /* ????? */ STRINGREF fontSignature            ; // Font signature (16 WORDS)
-#endif
 
 // Unused for now:        /* ????? */ INT32    iCountry                  ; // (user can override) country code (RegionInfo)
         /* 0x170 */ INT32    iGeoId                    ; // GeoId
@@ -1998,21 +1994,18 @@ public:
         /* 0x1a0 */ INT32    iFirstWeekOfYear          ; // (user can override) first week of year (gregorian really)
 
         /* ????? */ INT32    iReadingLayout; // Reading Layout Data (0-3)
-#if !defined(FEATURE_CORECLR)
-        // desktop only fields - these are ordered correctly
+
+        // these are ordered correctly
         /* ????? */ INT32    iDefaultAnsiCodePage      ; // default ansi code page ID (ACP)
         /* ????? */ INT32    iDefaultOemCodePage       ; // default oem code page ID (OCP or OEM)
         /* ????? */ INT32    iDefaultMacCodePage       ; // default macintosh code page
         /* ????? */ INT32    iDefaultEbcdicCodePage    ; // default EBCDIC code page
         /* ????? */ INT32    iLanguage                 ; // locale ID (0409) - NO sort information
         /* ????? */ INT32    iInputLanguageHandle      ; // input language handle
-#endif
         /* 0x1a4 */ CLR_BOOL bUseOverrides             ; // use user overrides?
         /* 0x1a5 */ CLR_BOOL bNeutral                  ; // Flags for the culture (ie: neutral or not right now)        
-#if !defined(FEATURE_CORECLR)
         /* ????? */ CLR_BOOL bWin32Installed           ; // Flags indicate if the culture is Win32 installed       
         /* ????? */ CLR_BOOL bFramework                ; // Flags for indicate if the culture is one of Whidbey cultures 
-#endif
 
 }; // class CultureDataBaseObject
 
@@ -2668,9 +2661,7 @@ class AssemblyNameBaseObject : public Object
     OBJECTREF     m_pCodeBase;
     OBJECTREF     m_pVersion;
     OBJECTREF     m_StrongNameKeyPair;
-#ifdef FEATURE_SERIALIZATION
     OBJECTREF     m_siInfo;
-#endif
     U1ARRAYREF    m_HashForControl;
     DWORD         m_HashAlgorithm;
     DWORD         m_HashAlgorithmForControl;
@@ -4572,19 +4563,19 @@ public:
     INT32 cPositivePercentFormat;   // positivePercentFormat
     INT32 cNegativePercentFormat;   // negativePercentFormat
     INT32 cPercentDecimals;         // percentDecimalDigits
-#ifndef FEATURE_CORECLR    
+#ifndef FEATURE_COREFX_GLOBALIZATION    
     INT32 iDigitSubstitution;       // digitSubstitution
-#endif    
+#endif
 
     CLR_BOOL bIsReadOnly;              // Is this NumberFormatInfo ReadOnly?
 #ifndef FEATURE_COREFX_GLOBALIZATION
     CLR_BOOL bUseUserOverride;         // Flag to use user override. Only used from managed code.
 #endif
     CLR_BOOL bIsInvariant;             // Is this the NumberFormatInfo for the Invariant Culture?
-#ifndef FEATURE_CORECLR    
+#ifndef FEATURE_COREFX_GLOBALIZATION
     CLR_BOOL bvalidForParseAsNumber;   // NEVER USED, DO NOT USE THIS! (Serialized in Whidbey/Everett)
     CLR_BOOL bvalidForParseAsCurrency; // NEVER USED, DO NOT USE THIS! (Serialized in Whidbey/Everett)
-#endif // !FEATURE_CORECLR
+#endif
 };
 
 typedef NumberFormatInfo * NUMFMTREF;

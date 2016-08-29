@@ -1259,19 +1259,28 @@ ICLRPrivBinder* AssemblySpec::GetBindingContextFromParentAssembly(AppDomain *pDo
     }
 
 #if defined(FEATURE_HOST_ASSEMBLY_RESOLVER)
+    if (GetPreferFallbackLoadContextBinder())
+    {
+        // If we have been asked to use the fallback load context binder (currently only supported for AssemblyLoadContext.LoadFromAssemblyName),
+        // then pretend we do not have any binder yet available.
+        _ASSERTE(GetFallbackLoadContextBinderForRequestingAssembly() != NULL);
+        pParentAssemblyBinder = NULL;
+    }
+
     if (pParentAssemblyBinder == NULL)
     {
         // If the parent assembly binder is not available, then we maybe dealing with one of the following
         // assembly scenarios:
         //
         // 1) Domain Neutral assembly
-        // 2) RefEmitted assembly
-        // 3) Entrypoint assembly
+        // 2) Entrypoint assembly
+        // 3) RefEmitted assembly
+        // 4) AssemblyLoadContext.LoadFromAssemblyName
         //
-        // For (1) and (3), we will need to bind against the DefaultContext binder (aka TPA Binder). This happens
+        // For (1) and (2), we will need to bind against the DefaultContext binder (aka TPA Binder). This happens
         // below if we do not find the parent assembly binder.
         //
-        // For (2), check if we have the fallback load context binder for the requesting dynamic assembly available.
+        // For (3) and (4), fetch the fallback load context binder reference.
         
         pParentAssemblyBinder = GetFallbackLoadContextBinderForRequestingAssembly();
     }

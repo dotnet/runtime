@@ -22,13 +22,8 @@ namespace System.Text
     ** to Everett compatibility as well.
     ==============================================================================*/
 
-#if FEATURE_SERIALIZATION
     [Serializable]
-#endif
-    internal sealed class MLangCodePageEncoding : IObjectReference
-#if FEATURE_SERIALIZATION
-        , ISerializable
-#endif
+    internal sealed class MLangCodePageEncoding : IObjectReference, ISerializable
     {
         // Temp stuff
         [NonSerialized]
@@ -99,7 +94,6 @@ namespace System.Text
             return this.realEncoding;
         }
 
-#if FEATURE_SERIALIZATION
         // ISerializable implementation
         [System.Security.SecurityCritical]  // auto-generated_required
         void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
@@ -108,16 +102,10 @@ namespace System.Text
             Contract.Assert(false, "Didn't expect to make it to MLangCodePageEncoding ISerializable.GetObjectData");
             throw new ArgumentException(Environment.GetResourceString("Arg_ExecutionEngineException"));        
         }
-#endif
 
 // Same problem with the Encoder, this only happens with Everett Encoders
-#if FEATURE_SERIALIZATION
         [Serializable]
-#endif
-        internal sealed class MLangEncoder : IObjectReference
-#if FEATURE_SERIALIZATION
-            , ISerializable
-#endif
+        internal sealed class MLangEncoder : IObjectReference, ISerializable
         {
             // Might need this when GetRealObjecting
             [NonSerialized]
@@ -140,7 +128,6 @@ namespace System.Text
                 return this.realEncoding.GetEncoder();
             }
 
-#if FEATURE_SERIALIZATION
             // ISerializable implementation, get data for this object
             [System.Security.SecurityCritical]  // auto-generated_required
             void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
@@ -149,18 +136,12 @@ namespace System.Text
                 Contract.Assert(false, "Didn't expect to make it to MLangCodePageEncoding.MLangEncoder.GetObjectData");
                 throw new ArgumentException(Environment.GetResourceString("Arg_ExecutionEngineException"));
             }
-#endif
         }
 
 
         // Same problem with the Decoder, this only happens with Everett Decoders
-#if FEATURE_SERIALIZATION
         [Serializable]
-#endif
-        internal sealed class MLangDecoder : IObjectReference
-#if FEATURE_SERIALIZATION
-            , ISerializable
-#endif
+        internal sealed class MLangDecoder : IObjectReference, ISerializable
         {
             // Might need this when GetRealObjecting
             [NonSerialized]
@@ -183,7 +164,6 @@ namespace System.Text
                 return this.realEncoding.GetDecoder();
             }
 
-#if FEATURE_SERIALIZATION
             // ISerializable implementation, get data for this object
             [System.Security.SecurityCritical]  // auto-generated_required
             void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
@@ -192,7 +172,6 @@ namespace System.Text
                 Contract.Assert(false, "Didn't expect to make it to MLangCodePageEncoding.MLangDecoder.GetObjectData");
                 throw new ArgumentException(Environment.GetResourceString("Arg_ExecutionEngineException"));
             }
-#endif
         }
     }
 }

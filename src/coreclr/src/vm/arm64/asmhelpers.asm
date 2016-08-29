@@ -43,6 +43,14 @@
     IMPORT  g_card_table
     IMPORT  g_TrapReturningThreads
     IMPORT  g_dispatch_cache_chain_success_counter
+#ifdef WRITE_BARRIER_CHECK
+    SETALIAS g_GCShadow, ?g_GCShadow@@3PEAEEA
+    SETALIAS g_GCShadowEnd, ?g_GCShadowEnd@@3PEAEEA
+
+    IMPORT g_lowest_address
+    IMPORT $g_GCShadow
+    IMPORT $g_GCShadowEnd
+#endif // WRITE_BARRIER_CHECK
 
     TEXTAREA
 
@@ -272,15 +280,13 @@ ThePreStubPatchLabel
 ;   x15  : trashed
 ;
     WRITE_BARRIER_ENTRY JIT_CheckedWriteBarrier
-;; ARM64TODO: Temporary indirect access till support for :lo12:symbol is added
-        ldr      x12,  =g_lowest_address
-        ldr      x12,  [x12]
+        adrp     x12,  g_lowest_address
+        ldr      x12,  [x12, g_lowest_address]
         cmp      x14,  x12
         blt      NotInHeap
 
-;; ARM64TODO: Temporary indirect access till support for :lo12:symbol is added
-        ldr      x12, =g_highest_address 
-        ldr      x12, [x12] 
+        adrp      x12, g_highest_address 
+        ldr      x12, [x12, g_highest_address] 
         cmp      x14, x12
         blt      JIT_WriteBarrier
 
@@ -303,24 +309,64 @@ NotInHeap
         dmb      ST
         str      x15, [x14]
 
+#ifdef WRITE_BARRIER_CHECK
+        ; Update GC Shadow Heap  
+
+        ; need temporary registers. Save them before using. 
+        stp      x12, x13, [sp, #-16]!
+
+        ; Compute address of shadow heap location:
+        ;   pShadow = $g_GCShadow + (x14 - g_lowest_address)
+        adrp     x12, g_lowest_address
+        ldr      x12, [x12, g_lowest_address]
+        sub      x12, x14, x12
+        adrp     x13, $g_GCShadow
+        ldr      x13, [x13, $g_GCShadow]
+        add      x12, x13, x12
+
+        ; if (pShadow >= $g_GCShadowEnd) goto end
+        adrp     x13, $g_GCShadowEnd
+        ldr      x13, [x13, $g_GCShadowEnd]
+        cmp      x12, x13
+        bhs      shadowupdateend
+
+        ; *pShadow = x15
+        str      x15, [x12]
+
+        ; Ensure that the write to the shadow heap occurs before the read from the GC heap so that race
+        ; conditions are caught by INVALIDGCVALUE.
+        dmb      sy
+
+        ; if ([x14] == x15) goto end
+        ldr      x13, [x14]
+        cmp      x13, x15
+        beq shadowupdateend
+
+        ; *pShadow = INVALIDGCVALUE (0xcccccccd)        
+        mov      x13, #0
+        movk     x13, #0xcccd
+        movk     x13, #0xcccc, LSL #16
+        str      x13, [x12]
+
+shadowupdateend
+        ldp      x12, x13, [sp],#16        
+#endif
+
         ; Branch to Exit if the reference is not in the Gen0 heap
         ;
-;; ARM64TODO: Temporary indirect access till support for :lo12:symbol is added
-        ldr      x12,  =g_ephemeral_low
-        ldr      x12,  [x12]
+        adrp     x12,  g_ephemeral_low
+        ldr      x12,  [x12, g_ephemeral_low]
         cmp      x15,  x12
         blt      Exit
 
-;; ARM64TODO: Temporary indirect access till support for :lo12:symbol is added
-        ldr      x12, =g_ephemeral_high 
-        ldr      x12, [x12]
+        adrp     x12, g_ephemeral_high 
+        ldr      x12, [x12, g_ephemeral_high]
         cmp      x15,  x12
         bgt      Exit
 
         ; Check if we need to update the card table        
-;; ARM64TODO: Temporary indirect access till support for :lo12:symbol is added
-        ldr      x12, =g_card_table
-        ldr      x12, [x12]
+        adrp     x12, g_card_table
+        ldr      x12, [x12, g_card_table]
         add      x15,  x12, x14 lsr #11
         ldrb     w12, [x15]
         cmp      x12, 0xFF
@@ -1068,6 +1114,7 @@ FaultingExceptionFrame_FrameOffset        SETA  SIZEOF__GSCookie
 ;   x12       contains our contract the DispatchToken
 ; Must be preserved:
 ;   x0        contains the instance object ref that we are making an interface call on
+;   x9        Must point to a ResolveCacheElem [For Sanity]
 ;  [x1-x7]    contains any additional register arguments for the interface method
 ;
 ; Loaded from x0 
@@ -1093,7 +1140,7 @@ PROMOTE_CHAIN_FLAG  SETA  2
         
         ldr     x13, [x0]         ; retrieve the MethodTable from the object ref in x0
 MainLoop 
-        ldr     x9, [x9, #24]     ; x9 <= the next entry in the chain
+        ldr     x9, [x9, #ResolveCacheElem__pNext]     ; x9 <= the next entry in the chain
         cmp     x9, #0
         beq     Fail
 
@@ -1106,18 +1153,18 @@ MainLoop
         
 Success         
         ldr     x13, =g_dispatch_cache_chain_success_counter
-        ldr     x9, [x13]
-        subs    x9, x9, #1
-        str     x9, [x13]
+        ldr     x16, [x13]
+        subs    x16, x16, #1
+        str     x16, [x13]
         blt     Promote
 
-        ldr     x16, [x9, #16]    ; get the ImplTarget
+        ldr     x16, [x9, #ResolveCacheElem__target]    ; get the ImplTarget
         br      x16               ; branch to interface implemenation target
         
 Promote
                                   ; Move this entry to head postion of the chain
-        mov     x9, #256
-        str     x9, [x13]         ; be quick to reset the counter so we don't get a bunch of contending threads
+        mov     x16, #256
+        str     x16, [x13]         ; be quick to reset the counter so we don't get a bunch of contending threads
         orr     x11, x11, #PROMOTE_CHAIN_FLAG   ; set PROMOTE_CHAIN_FLAG 
 
 Fail           
@@ -1208,10 +1255,43 @@ Fail
         mov x9, x0
 
         EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
-
+        PATCH_LABEL StubDispatchFixupPatchLabel
         EPILOG_BRANCH_REG  x9
 
         NESTED_END
+#endif
+
+#ifdef FEATURE_COMINTEROP
+; ------------------------------------------------------------------
+; Function used by COM interop to get floating point return value (since it's not in the same
+; register(s) as non-floating point values).
+;
+; On entry;
+;   x0          : size of the FP result (4 or 8 bytes)
+;   x1          : pointer to 64-bit buffer to receive result
+;
+; On exit:
+;   buffer pointed to by x1 on entry contains the float or double argument as appropriate
+;
+    LEAF_ENTRY getFPReturn
+    str d0, [x1]
+    LEAF_END
+
+; ------------------------------------------------------------------
+; Function used by COM interop to set floating point return value (since it's not in the same
+; register(s) as non-floating point values).
+;
+; On entry:
+;   x0          : size of the FP result (4 or 8 bytes)
+;   x1          : 32-bit or 64-bit FP result
+;
+; On exit:
+;   s0          : float result if x0 == 4
+;   d0          : double result if x0 == 8
+;
+    LEAF_ENTRY setFPReturn
+    fmov d0, x1
+    LEAF_END
 #endif
 
 ; Must be at very end of file

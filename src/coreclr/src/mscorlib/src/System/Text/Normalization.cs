@@ -305,6 +305,7 @@ namespace System.Text
             return new String(cBuffer, 0, iLength);
         }
 
+#if !FEATURE_CORECLR
         [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         unsafe private static extern int nativeNormalizationNormalizeString(
@@ -323,5 +324,27 @@ namespace System.Text
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         unsafe private static extern void nativeNormalizationInitNormalization(
             NormalizationForm normForm, byte* pTableData);
+#else
+        unsafe private static int nativeNormalizationNormalizeString(
+            NormalizationForm normForm, ref int iError,
+            String lpSrcString, int cwSrcLength,
+            char[] lpDstString, int cwDstLength)
+        {
+            throw new NotImplementedException();
+        }
+
+        unsafe private static bool nativeNormalizationIsNormalizedString(
+            NormalizationForm normForm, ref int iError,
+            String lpString, int cwLength)
+        {
+            throw new NotImplementedException();
+        }
+
+        unsafe private static void nativeNormalizationInitNormalization(
+            NormalizationForm normForm, byte* pTableData)
+        {
+            throw new NotImplementedException();
+        }
+#endif
     }
 }

@@ -50,9 +50,13 @@ namespace System.Text
 
             Surrogate:
             Real Unicode value = (HighSurrogate - 0xD800) * 0x400 + (LowSurrogate - 0xDC00) + 0x10000
-         */
+        */
 
         private const int UTF8_CODEPAGE=65001;
+        
+        // Used by Encoding.UTF8 for lazy initialization
+        // The initialization code will not be run until a static member of the class is referenced
+        internal static readonly UTF8Encoding s_default = new UTF8Encoding(encoderShouldEmitUTF8Identifier: true);
 
         // Yes, the idea of emitting U+FEFF as a UTF-8 identifier has made it into
         // the standard.
@@ -2154,13 +2158,8 @@ namespace System.Text
                    UTF8_CODEPAGE + (emitUTF8Identifier?1:0);
         }
 
-#if FEATURE_SERIALIZATION
         [Serializable]
-#endif
-        internal class UTF8Encoder : EncoderNLS
-#if FEATURE_SERIALIZATION
-            , ISerializable
-#endif
+        internal class UTF8Encoder : EncoderNLS, ISerializable
         {
             // We must save a high surrogate value until the next call, looking
             // for a low surrogate value.
@@ -2194,7 +2193,6 @@ namespace System.Text
                 }
             }
 
-#if FEATURE_SERIALIZATION
             // ISerializable implementation, get data for this object
             [System.Security.SecurityCritical]  // auto-generated_required
             void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
@@ -2214,7 +2212,6 @@ namespace System.Text
                 info.AddValue("storedSurrogate", this.surrogateChar > 0 ? true : false);
                 info.AddValue("mustFlush", false);  // Everett doesn't actually use this either, but it accidently serialized it!
             }
-#endif
 
             public override void Reset()
 
@@ -2234,13 +2231,8 @@ namespace System.Text
             }
         }
 
-#if FEATURE_SERIALIZATION
         [Serializable]
-#endif
-        internal class UTF8Decoder : DecoderNLS
-#if FEATURE_SERIALIZATION
-            , ISerializable
-#endif
+        internal class UTF8Decoder : DecoderNLS, ISerializable
         {
             // We'll need to remember the previous information. See the comments around definition
             // of FinalByte for details.
@@ -2275,7 +2267,6 @@ namespace System.Text
                 }
             }
 
-#if FEATURE_SERIALIZATION
             // ISerializable implementation, get data for this object
             [System.Security.SecurityCritical]  // auto-generated_required
             void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
@@ -2295,7 +2286,6 @@ namespace System.Text
                 info.AddValue("isSurrogate", false);
                 info.AddValue("byteSequence", (int)0);
             }
-#endif
 
             public override void Reset()
             {

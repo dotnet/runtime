@@ -382,7 +382,7 @@ FCIMPL4(INT32, WaitHandleNative::CorWaitMultipleNative, Object* waitObjectsUNSAF
 }
 FCIMPLEND
 
-#ifndef FEATURE_CORECLR
+#ifndef FEATURE_PAL
 FCIMPL5(INT32, WaitHandleNative::CorSignalAndWaitOneNative, SafeHandle* safeWaitHandleSignalUNSAFE,SafeHandle* safeWaitHandleWaitUNSAFE, INT32 timeout, CLR_BOOL hasThreadAffinity, CLR_BOOL exitContext)
 {
     FCALL_CONTRACT;
@@ -415,9 +415,11 @@ FCIMPL5(INT32, WaitHandleNative::CorSignalAndWaitOneNative, SafeHandle* safeWait
     Context* defaultContext = pThread->GetDomain()->GetDefaultContext();
     _ASSERTE(defaultContext);
 
+#ifndef FEATURE_CORECLR
     // DoSignalAndWait calls LeaveRuntime/EnterRuntime which may cause the current
     // fiber to be re-scheduled.
     ThreadAffinityAndCriticalRegionHolder affinityAndCriticalRegionHolder(hasThreadAffinity);
+#endif // !FEATURE_CORECLR
 
     SafeHandleHolder shhSignal(&shSignal);
     SafeHandleHolder shhWait(&shWait);
@@ -442,6 +444,7 @@ FCIMPL5(INT32, WaitHandleNative::CorSignalAndWaitOneNative, SafeHandle* safeWait
         res = pThread->DoSignalAndWait(handles,timeout,TRUE /*alertable*/);
     }
 
+#ifndef FEATURE_CORECLR
     if (res == WAIT_OBJECT_0 && hasThreadAffinity) {
         affinityAndCriticalRegionHolder.SuppressRelease();
     }
@@ -449,6 +452,7 @@ FCIMPL5(INT32, WaitHandleNative::CorSignalAndWaitOneNative, SafeHandle* safeWait
         _ASSERTE(hasThreadAffinity);
         affinityAndCriticalRegionHolder.SuppressRelease();    
     }
+#endif // !FEATURE_CORECLR
 
     retVal = res;
 
@@ -456,4 +460,4 @@ FCIMPL5(INT32, WaitHandleNative::CorSignalAndWaitOneNative, SafeHandle* safeWait
     return retVal;
 }
 FCIMPLEND
-#endif // !FEATURE_CORECLR
+#endif // !FEATURE_PAL

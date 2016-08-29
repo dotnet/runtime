@@ -15,12 +15,15 @@ namespace System.Text
     using System.Diagnostics.Contracts;
 
 
-#if FEATURE_SERIALIZATION
     [Serializable]
-#endif
     [System.Runtime.InteropServices.ComVisible(true)]
     public class UnicodeEncoding : Encoding
     {
+        // Used by Encoding.BigEndianUnicode/Unicode for lazy initialization
+        // The initialization code will not be run until a static member of the class is referenced
+        internal static readonly UnicodeEncoding s_bigEndianDefault = new UnicodeEncoding(bigEndian: true, byteOrderMark: true);
+        internal static readonly UnicodeEncoding s_littleEndianDefault = new UnicodeEncoding(bigEndian: false, byteOrderMark: true);
+
         [OptionalField(VersionAdded = 2)]
         internal bool isThrowException = false;
         
@@ -1763,13 +1766,8 @@ namespace System.Text
                    (byteOrderMark?4:0) + (bigEndian?8:0);
         }
 
-#if FEATURE_SERIALIZATION
         [Serializable]
-#endif
-        private class Decoder : System.Text.DecoderNLS
-#if FEATURE_SERIALIZATION
-            , ISerializable
-#endif
+        private class Decoder : System.Text.DecoderNLS, ISerializable
         {
             internal int lastByte = -1;
             internal char lastChar = '\0';
@@ -1804,7 +1802,6 @@ namespace System.Text
                 }
             }
 
-#if FEATURE_SERIALIZATION
             // ISerializable implementation, get data for this object
             [System.Security.SecurityCritical]  // auto-generated_required
             void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
@@ -1822,7 +1819,6 @@ namespace System.Text
                 // Everett Only
                 info.AddValue("bigEndian", ((UnicodeEncoding)(this.m_encoding)).bigEndian);
             }
-#endif
 
             public override void Reset()
             {

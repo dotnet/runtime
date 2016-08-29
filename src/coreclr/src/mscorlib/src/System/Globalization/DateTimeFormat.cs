@@ -1009,7 +1009,7 @@ namespace System {
                 case 'O':
                 case 's':
                 case 'u':            
-                    results = new String[] {Format(dateTime, new String(new char[] {format}), dtfi)};
+                    results = new String[] {Format(dateTime, new String(format, 1), dtfi)};
                     break;   
                 default:
                     throw new FormatException(Environment.GetResourceString("Format_InvalidString"));

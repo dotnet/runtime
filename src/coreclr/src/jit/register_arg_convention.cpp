@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-
 #include "jitpch.h"
 #ifdef _MSC_VER
 #pragma hdrstop
@@ -15,14 +14,14 @@ unsigned InitVarDscInfo::allocRegArg(var_types type, unsigned numRegs /* = 1 */)
     assert(numRegs > 0);
 
     unsigned resultArgNum = regArgNum(type);
-    bool isBackFilled = false;
+    bool     isBackFilled = false;
 
 #ifdef _TARGET_ARM_
     // Check for back-filling
-    if (varTypeIsFloating(type) &&              // We only back-fill the float registers
-        !anyFloatStackArgs &&                   // Is it legal to back-fill? (We haven't put any FP args on the stack yet)
-        (numRegs == 1) &&                       // Is there a possibility we could back-fill?
-        (fltArgSkippedRegMask != RBM_NONE))     // Is there an available back-fill slot?
+    if (varTypeIsFloating(type) &&          // We only back-fill the float registers
+        !anyFloatStackArgs &&               // Is it legal to back-fill? (We haven't put any FP args on the stack yet)
+        (numRegs == 1) &&                   // Is there a possibility we could back-fill?
+        (fltArgSkippedRegMask != RBM_NONE)) // Is there an available back-fill slot?
     {
         // We will never back-fill something greater than a single register
         // (TYP_FLOAT, or TYP_STRUCT HFA with a single float). This is because
@@ -31,7 +30,7 @@ unsigned InitVarDscInfo::allocRegArg(var_types type, unsigned numRegs /* = 1 */)
 
         // Back-fill the register
         regMaskTP backFillBitMask = genFindLowestBit(fltArgSkippedRegMask);
-        fltArgSkippedRegMask &= ~backFillBitMask;   // Remove the back-filled register(s) from the skipped mask
+        fltArgSkippedRegMask &= ~backFillBitMask; // Remove the back-filled register(s) from the skipped mask
         resultArgNum = genMapFloatRegNumToRegArgNum(genRegNumFromMask(backFillBitMask));
         assert(resultArgNum < MAX_FLOAT_REG_ARG);
         isBackFilled = true;
@@ -61,10 +60,10 @@ bool InitVarDscInfo::enoughAvailRegs(var_types type, unsigned numRegs /* = 1 */)
 
 #ifdef _TARGET_ARM_
     // Check for back-filling
-    if (varTypeIsFloating(type) &&              // We only back-fill the float registers
-        !anyFloatStackArgs &&                   // Is it legal to back-fill? (We haven't put any FP args on the stack yet)
-        (numRegs == 1) &&                       // Is there a possibility we could back-fill?
-        (fltArgSkippedRegMask != RBM_NONE))     // Is there an available back-fill slot?
+    if (varTypeIsFloating(type) &&          // We only back-fill the float registers
+        !anyFloatStackArgs &&               // Is it legal to back-fill? (We haven't put any FP args on the stack yet)
+        (numRegs == 1) &&                   // Is there a possibility we could back-fill?
+        (fltArgSkippedRegMask != RBM_NONE)) // Is there an available back-fill slot?
     {
         backFillCount = 1;
     }
@@ -79,13 +78,17 @@ unsigned InitVarDscInfo::alignReg(var_types type, unsigned requiredRegAlignment)
 
     assert(requiredRegAlignment > 0);
     if (requiredRegAlignment == 1)
-        return 0;   // Everything is always "1" aligned
+    {
+        return 0; // Everything is always "1" aligned
+    }
 
     assert(requiredRegAlignment == 2); // we don't expect anything else right now
 
     int alignMask = regArgNum(type) & (requiredRegAlignment - 1);
     if (alignMask == 0)
-        return 0;   // We're already aligned
+    {
+        return 0; // We're already aligned
+    }
 
     unsigned cAlignSkipped = requiredRegAlignment - alignMask;
     assert(cAlignSkipped == 1); // Alignment is currently only 1 or 2, so misalignment can only be 1.
@@ -97,8 +100,8 @@ unsigned InitVarDscInfo::alignReg(var_types type, unsigned requiredRegAlignment)
     }
 #endif // _TARGET_ARM_
 
-    assert(regArgNum(type) + cAlignSkipped <= maxRegArgNum(type));  // if equal, then we aligned the last slot, and the
-                                                                    // arg can't be enregistered
+    assert(regArgNum(type) + cAlignSkipped <= maxRegArgNum(type)); // if equal, then we aligned the last slot, and the
+                                                                   // arg can't be enregistered
     regArgNum(type) += cAlignSkipped;
 
     return cAlignSkipped;
@@ -107,10 +110,14 @@ unsigned InitVarDscInfo::alignReg(var_types type, unsigned requiredRegAlignment)
 bool InitVarDscInfo::canEnreg(var_types type, unsigned numRegs /* = 1 */)
 {
     if (!isRegParamType(type))
+    {
         return false;
+    }
 
     if (!enoughAvailRegs(type, numRegs))
+    {
         return false;
+    }
 
     return true;
 }

@@ -4,7 +4,7 @@
 
 /*****************************************************************************/
 #ifndef CompMemKindMacro
-#error  Define CompMemKindMacro before including this file.
+#error Define CompMemKindMacro before including this file.
 #endif
 
 // This list of macro invocations should be used to define the CompMemKind enumeration,

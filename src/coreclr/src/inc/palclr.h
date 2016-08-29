@@ -86,6 +86,7 @@
 #endif
 
 #define DIRECTORY_SEPARATOR_CHAR_A '\\'
+#define DIRECTORY_SEPARATOR_STR_A "\\"
 #define DIRECTORY_SEPARATOR_CHAR_W W('\\')
 #define DIRECTORY_SEPARATOR_STR_W W("\\")
 
@@ -484,7 +485,14 @@
 //  and it provides __declspec(selectany) to instruct the linker to merge
 //  duplicate external const static data copies into one.
 //  
+#if defined(SOURCE_FORMATTING)
+#define SELECTANY extern
+#else
 #define SELECTANY extern __declspec(selectany)
+#endif
+#if defined(SOURCE_FORMATTING)
+#define __annotation(x)
+#endif
         
 
 #if defined(_DEBUG_IMPL) && !defined(JIT_BUILD) && !defined(JIT64_BUILD) && !defined(CROSS_COMPILE) && !defined(_TARGET_ARM_) // @ARMTODO: no contracts for speed

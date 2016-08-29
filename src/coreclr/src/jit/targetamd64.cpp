@@ -13,7 +13,7 @@
 
 #include "target.h"
 
-const char *                    Target::g_tgtCPUName = "x64";
-const Target::ArgOrder          Target::g_tgtArgOrder = ARG_ORDER_R2L;
+const char*            Target::g_tgtCPUName  = "x64";
+const Target::ArgOrder Target::g_tgtArgOrder = ARG_ORDER_R2L;
 
 #endif // _TARGET_AMD64_

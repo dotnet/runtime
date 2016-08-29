@@ -13,9 +13,7 @@
 namespace System.Reflection {
 
     // Define the delegate
-#if FEATURE_SERIALIZATION
     [Serializable]
-#endif
     [System.Runtime.InteropServices.ComVisible(true)]
     public delegate bool TypeFilter(Type m, Object filterCriteria);
 }

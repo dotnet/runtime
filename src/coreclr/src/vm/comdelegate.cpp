@@ -2596,7 +2596,7 @@ BOOL COMDelegate::NeedsWrapperDelegate(MethodDesc* pTargetMD)
 #ifdef _TARGET_ARM_
     // For arm VSD expects r4 to contain the indirection cell. However r4 is a non-volatile register
     // and its value must be preserved. So we need to erect a frame and store indirection cell in r4 before calling
-    // virtual stub dispatch. Erecting frame is already done by secure delegates so the secureDelegate infrastructure 
+    // virtual stub dispatch. Erecting frame is already done by secure delegates so the secureDelegate infrastructure
     //  can easliy be used for our purpose.
     // set needsSecureDelegate flag in order to erect a frame. (Secure Delegate stub also loads the right value in r4)
     if (!pTargetMD->IsStatic() && pTargetMD->IsVirtual() && !pTargetMD->GetMethodTable()->IsValueType())
@@ -2931,7 +2931,47 @@ PCODE COMDelegate::GetSecureInvoke(MethodDesc* pMD)
 #ifdef FEATURE_CAS_POLICY
 #error GetSecureInvoke not implemented
 #else
-    UNREACHABLE();
+    GCX_PREEMP();
+
+    MetaSig sig(pMD);
+
+    BOOL fReturnVal = !sig.IsReturnTypeVoid();
+
+    SigTypeContext emptyContext;
+    ILStubLinker sl(pMD->GetModule(), pMD->GetSignature(), &emptyContext, pMD, TRUE, TRUE, FALSE);
+
+    ILCodeStream *pCode = sl.NewCodeStream(ILStubLinker::kDispatch);
+
+    // Load the "real" delegate
+    pCode->EmitLoadThis();
+    pCode->EmitLDFLD(pCode->GetToken(MscorlibBinder::GetField(FIELD__MULTICAST_DELEGATE__INVOCATION_LIST)));
+
+    // Load the arguments
+    UINT paramCount = 0;
+    while(paramCount < sig.NumFixedArgs())
+      pCode->EmitLDARG(paramCount++);
+
+    // Call the delegate
+    pCode->EmitCALL(pCode->GetToken(pMD), sig.NumFixedArgs(), fReturnVal);
+
+    // Return
+    pCode->EmitRET();
+
+    PCCOR_SIGNATURE pSig;
+    DWORD cbSig;
+
+    pMD->GetSig(&pSig,&cbSig);
+
+    MethodDesc* pStubMD =
+      ILStubCache::CreateAndLinkNewILStubMethodDesc(pMD->GetLoaderAllocator(),
+                                                    pMD->GetMethodTable(),
+                                                    ILSTUB_SECUREDELEGATE_INVOKE,
+                                                    pMD->GetModule(),
+                                                    pSig, cbSig,
+                                                    NULL,
+                                                    &sl);
+
+    return Stub::NewStub(JitILStub(pStubMD))->GetEntryPoint();
 #endif
 }
 #else // FEATURE_STUBS_AS_IL

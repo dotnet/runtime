@@ -92,6 +92,7 @@ if(WIN32)
     kernel32.lib
     user32.lib
     ole32.lib
+    oleaut32.lib
     dbghelp.lib
     uuid.lib
     version.lib

@@ -1,0 +1,15 @@
+{
+  "dependencies": {
+    "Microsoft.DotNet.xunit.performance.run.core": "1.0.0-alpha-build0035",
+    "Microsoft.DotNet.xunit.performance.analysis.cli": "1.0.0-alpha-build0035",
+    "Microsoft.DotNet.xunit.performance.runner.cli": "1.0.0-alpha-build0035",
+    "Microsoft.DotNet.xunit.performance":"1.0.0-alpha-build0035",
+    "xunit.console.netcore": "1.0.3-prerelease-00607-01",
+    "Microsoft.DotNet.BuildTools.TestSuite": "1.0.0-prerelease-00629-04",
+  },
+  "frameworks": {
+    "netstandard1.3":{
+    "imports":["dnxcore50", "portable-net45+win8"]
+     }
+  }
+}
