@@ -382,6 +382,11 @@ create_core_overlay
 precompile_overlay_assemblies
 copy_test_native_bin_to_test_root
 
+echo "find $testNativeBinDir/../../../../../../ -name 'Microsoft.DotNet.xunit.performance.runner.cli.dll'"
+find $testNativeBinDir/../../../../../../ -name 'Microsoft.DotNet.xunit.performance.runner.cli.dll'
+echo "find $testNativeBinDir/../../../../../ -name 'Microsoft.DotNet.xunit.performance.runner.cli.dll'"
+find $testNativeBinDir/../../../../../ -name 'Microsoft.DotNet.xunit.performance.runner.cli.dll'
+
 # Deploy xunit performance packages
 cd $CORE_ROOT
 
