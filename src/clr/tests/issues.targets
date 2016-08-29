@@ -266,12 +266,6 @@
     <!-- The following x86 failures only occur with RyuJIT/x86 -->
 
     <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(BuildArch)' == 'x86'">
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\MDArray\basics\stringarr_cs_do\stringarr_cs_do.cmd">
-             <Issue>4844</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\MDArray\basics\stringarr_cs_ro\stringarr_cs_ro.cmd">
-             <Issue>4844</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)\JIT\opt\Tailcall\TailcallVerifyWithPrefix\TailcallVerifyWithPrefix.cmd" >
             <Issue>x86 JIT doesn't support tail call opt</Issue>
         </ExcludeList>
