@@ -1306,7 +1306,7 @@ namespace System.Text
             return new DefaultDecoder(this);
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
+        [System.Security.SecuritySafeCritical]
         private static Encoding CreateDefaultEncoding()
         {
             // defaultEncoding should be null if we get here, but we can't
