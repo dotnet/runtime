@@ -24,6 +24,6 @@ namespace System.Security.Cryptography
         // CngKeyBlob formats for RSA key blobs
         private static readonly CngKeyBlobFormat s_rsaFullPrivateBlob = new CngKeyBlobFormat(Interop.BCrypt.KeyBlobType.BCRYPT_RSAFULLPRIVATE_BLOB);
         private static readonly CngKeyBlobFormat s_rsaPrivateBlob = new CngKeyBlobFormat(Interop.BCrypt.KeyBlobType.BCRYPT_RSAPRIVATE_BLOB);
-        private static readonly CngKeyBlobFormat s_rsaPublicBlob = new CngKeyBlobFormat(Interop.BCrypt.KeyBlobType.BCRYPT_PUBLIC_KEY_BLOB);
+        private static readonly CngKeyBlobFormat s_rsaPublicBlob = new CngKeyBlobFormat(Interop.BCrypt.KeyBlobType.BCRYPT_RSAPUBLIC_KEY_BLOB);
     }
 }

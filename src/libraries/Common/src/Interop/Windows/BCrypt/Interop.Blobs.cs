@@ -18,8 +18,42 @@ internal partial class Interop
         /// </summary>
         internal static void Emit(byte[] blob, ref int offset, byte[] value)
         {
+            Debug.Assert(blob != null);
+            Debug.Assert(offset >= 0);
+
             Buffer.BlockCopy(value, 0, blob, offset, value.Length);
             offset += value.Length;
+        }
+
+        /// <summary>
+        ///     Append "value" to the data already in blob.
+        /// </summary>
+        internal static void EmitByte(byte[] blob, ref int offset, byte value, int count = 1)
+        {
+            Debug.Assert(blob != null);
+            Debug.Assert(offset >= 0);
+            Debug.Assert(count > 0);
+
+            int finalOffset = offset + count;
+            for (int i = offset; i < finalOffset; i++)
+            {
+                blob[i] = value;
+            }
+            offset = finalOffset;
+        }
+
+        /// <summary>
+        ///     Append "value" in big Endian format to the data already in blob.
+        /// </summary>
+        internal static void EmitBigEndian(byte[] blob, ref int offset, int value)
+        {
+            Debug.Assert(blob != null);
+            Debug.Assert(offset >= 0);
+
+            blob[offset++] = ((byte)(value >> 24));
+            blob[offset++] = ((byte)(value >> 16));
+            blob[offset++] = ((byte)(value >> 8));
+            blob[offset++] = ((byte)(value));
         }
 
         /// <summary>
@@ -38,6 +72,11 @@ internal partial class Interop
         /// </summary>
         internal enum KeyBlobMagicNumber : int
         {
+            BCRYPT_DSA_PUBLIC_MAGIC = 0x42505344,
+            BCRYPT_DSA_PRIVATE_MAGIC = 0x56505344,
+            BCRYPT_DSA_PUBLIC_MAGIC_V2 = 0x32425044,
+            BCRYPT_DSA_PRIVATE_MAGIC_V2 = 0x32565044,
+
             BCRYPT_ECDH_PUBLIC_P256_MAGIC = 0x314B4345,
             BCRYPT_ECDH_PRIVATE_P256_MAGIC = 0x324B4345,
             BCRYPT_ECDH_PUBLIC_P384_MAGIC = 0x334B4345,
@@ -67,9 +106,17 @@ internal partial class Interop
         /// </summary>
         internal static class KeyBlobType
         {
+            internal const string BCRYPT_PUBLIC_KEY_BLOB = "PUBLICBLOB";
+            internal const string BCRYPT_PRIVATE_KEY_BLOB = "PRIVATEBLOB";
+
             internal const string BCRYPT_RSAFULLPRIVATE_BLOB = "RSAFULLPRIVATEBLOB";
             internal const string BCRYPT_RSAPRIVATE_BLOB = "RSAPRIVATEBLOB";
-            internal const string BCRYPT_PUBLIC_KEY_BLOB = "RSAPUBLICBLOB";
+            internal const string BCRYPT_RSAPUBLIC_KEY_BLOB = "RSAPUBLICBLOB";
+
+            internal const string BCRYPT_DSA_PUBLIC_BLOB = "DSAPUBLICBLOB";
+            internal const string BCRYPT_DSA_PRIVATE_BLOB = "DSAPRIVATEBLOB";
+            internal const string LEGACY_DSA_V2_PUBLIC_BLOB = "V2CAPIDSAPUBLICBLOB";
+            internal const string LEGACY_DSA_V2_PRIVATE_BLOB = "V2CAPIDSAPRIVATEBLOB";
 
             internal const string BCRYPT_ECCPUBLIC_BLOB = "ECCPUBLICBLOB";
             internal const string BCRYPT_ECCPRIVATE_BLOB = "ECCPRIVATEBLOB";
@@ -89,6 +136,47 @@ internal partial class Interop
             internal int cbModulus;
             internal int cbPrime1;
             internal int cbPrime2;
+        }
+
+        /// <summary>
+        ///     The BCRYPT_DSA_KEY_BLOB structure is used as a v1 header for a DSA public key or private key BLOB in memory.
+        /// </summary>
+        [StructLayout(LayoutKind.Sequential)]
+        unsafe internal struct BCRYPT_DSA_KEY_BLOB
+        {
+            internal KeyBlobMagicNumber Magic;
+            internal int cbKey;
+            internal fixed byte Count[4];
+            internal fixed byte Seed[20];
+            internal fixed byte q[20];
+        }
+
+        /// <summary>
+        ///     The BCRYPT_DSA_KEY_BLOB structure is used as a v2 header for a DSA public key or private key BLOB in memory.
+        /// </summary>
+        [StructLayout(LayoutKind.Sequential)]
+        unsafe internal struct BCRYPT_DSA_KEY_BLOB_V2
+        {
+            internal KeyBlobMagicNumber Magic;
+            internal int cbKey;
+            internal HASHALGORITHM_ENUM hashAlgorithm;
+            internal DSAFIPSVERSION_ENUM standardVersion;
+            internal int cbSeedLength;
+            internal int cbGroupSize;
+            internal fixed byte Count[4];
+        }
+
+        public enum HASHALGORITHM_ENUM
+        {
+            DSA_HASH_ALGORITHM_SHA1 = 0,
+            DSA_HASH_ALGORITHM_SHA256 = 1,
+            DSA_HASH_ALGORITHM_SHA512 = 2,
+        }
+
+        public enum DSAFIPSVERSION_ENUM
+        {
+            DSA_FIPS186_2 = 0,
+            DSA_FIPS186_3 = 1,
         }
 
         /// <summary>
