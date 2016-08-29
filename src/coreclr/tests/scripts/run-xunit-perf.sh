@@ -377,6 +377,19 @@ DO_SETUP=TRUE
 
 if [ ${DO_SETUP} == "TRUE" ]; then
 
+echo "dir $testNativeBinDir/../../../../../"
+dir $testNativeBinDir/../../../../../
+echo "dir $testNativeBinDir/../../../../../packages"
+dir $testNativeBinDir/../../../../../packages
+echo "dir $testNativeBinDir/../../../../../packages/Microsoft.DotNet.xunit.performance.runner.cli"
+dir $testNativeBinDir/../../../../../packages/Microsoft.DotNet.xunit.performance.runner.cli
+echo "dir $testNativeBinDir/../../../../../packages/Microsoft.DotNet.xunit.performance.runner.cli/1.0.0-alpha-build0035"
+dir $testNativeBinDir/../../../../../packages/Microsoft.DotNet.xunit.performance.runner.cli/1.0.0-alpha-build0035
+echo "dir $testNativeBinDir/../../../../../packages/Microsoft.DotNet.xunit.performance.runner.cli/1.0.0-alpha-build0035/lib"
+dir $testNativeBinDir/../../../../../packages/Microsoft.DotNet.xunit.performance.runner.cli/1.0.0-alpha-build0035/lib
+echo "dir $testNativeBinDir/../../../../../packages/Microsoft.DotNet.xunit.performance.runner.cli/1.0.0-alpha-build0035/lib/netstandard1.3"
+dir $testNativeBinDir/../../../../../packages/Microsoft.DotNet.xunit.performance.runner.cli/1.0.0-alpha-build0035/lib/netstandard1.3
+
 sudo cp  $testNativeBinDir/../../../../../packages/Microsoft.DotNet.xunit.performance.runner.cli/1.0.0-alpha-build0035/lib/netstandard1.3/Microsoft.DotNet.xunit.performance.runner.cli.dll .
 
 sudo cp  $testNativeBinDir/../../../../../packages/Microsoft.DotNet.xunit.performance.run.core/1.0.0-alpha-build0035/lib/dotnet/*.dll .
