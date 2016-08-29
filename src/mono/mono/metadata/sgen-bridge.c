@@ -666,6 +666,20 @@ register_test_bridge_callbacks (const char *bridge_class_name)
 }
 
 gboolean
+sgen_bridge_handle_gc_param (const char *opt)
+{
+	assert (!bridge_processor_started ());
+
+	if (!strcmp (opt, "bridge-require-precise-merge")) {
+		bridge_processor_config.scc_precise_merge = TRUE;
+	} else {
+		return FALSE;
+	}
+
+	return TRUE;
+}
+
+gboolean
 sgen_bridge_handle_gc_debug (const char *opt)
 {
 	assert (!bridge_processor_started ());
@@ -675,8 +689,6 @@ sgen_bridge_handle_gc_debug (const char *opt)
 		register_test_bridge_callbacks (g_strdup (opt));
 	} else if (!strcmp (opt, "enable-bridge-accounting")) {
 		bridge_processor_config.accounting = TRUE;
-	} else if (!strcmp (opt, "enable-tarjan-precise-merge")) {
-		bridge_processor_config.scc_precise_merge = TRUE;
 	} else if (g_str_has_prefix (opt, "bridge-dump=")) {
 		char *prefix = strchr (opt, '=') + 1;
 		set_dump_prefix(prefix);

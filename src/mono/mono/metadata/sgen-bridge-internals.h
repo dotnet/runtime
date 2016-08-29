@@ -33,6 +33,7 @@ void sgen_bridge_describe_pointer (GCObject *object);
 gboolean sgen_is_bridge_object (GCObject *obj);
 void sgen_mark_bridge_object (GCObject *obj);
 
+gboolean sgen_bridge_handle_gc_param (const char *opt);
 gboolean sgen_bridge_handle_gc_debug (const char *opt);
 void sgen_bridge_print_gc_debug_usage (void);
 
