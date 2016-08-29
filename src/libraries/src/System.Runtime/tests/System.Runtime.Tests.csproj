@@ -97,8 +97,10 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'netstandard1.7'">
     <Compile Include="ArrayTests.netstandard1.7.cs" />
-    <Compile Include="EnumTests.netstandard1.7.cs" />
+    <Compile Include="CompareToTests.cs" />
     <Compile Include="DecimalTests.netstandard1.7.cs" />
+    <Compile Include="EnumTests.netstandard1.7.cs" />
+    <Compile Include="GetTypeCodeTests.cs" />
     <Compile Include="TimeZoneInfoTests.netstandard1.7.cs" />
     <Compile Include="TimeZoneNotFoundExceptionTests.netstandard1.7.cs" />
     <Compile Include="VersionTests.netstandard1.7.cs" />
