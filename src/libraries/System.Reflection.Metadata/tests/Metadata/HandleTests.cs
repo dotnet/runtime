@@ -566,21 +566,37 @@ namespace System.Reflection.Metadata.Tests
             Assert.Equal(StringKind.Plain, str.StringKind);
             Assert.False(str.IsVirtual);
             Assert.Equal(123, str.GetHeapOffset());
+            Assert.Equal(str, (Handle)str);
+            Assert.Equal(str, (StringHandle)(Handle)str);
+            Assert.Equal(0x78, ((Handle)str).VType);
+            Assert.Equal(123, ((Handle)str).Offset);
 
             var vstr = StringHandle.FromVirtualIndex(StringHandle.VirtualIndex.AttributeTargets);
             Assert.Equal(StringKind.Virtual, vstr.StringKind);
             Assert.True(vstr.IsVirtual);
             Assert.Equal(StringHandle.VirtualIndex.AttributeTargets, vstr.GetVirtualIndex());
+            Assert.Equal(vstr, (Handle)vstr);
+            Assert.Equal(vstr, (StringHandle)(Handle)vstr);
+            Assert.Equal(0xF8, ((Handle)vstr).VType);
+            Assert.Equal((int)StringHandle.VirtualIndex.AttributeTargets, ((Handle)vstr).Offset);
 
             var dot = StringHandle.FromOffset(123).WithDotTermination();
             Assert.Equal(StringKind.DotTerminated, dot.StringKind);
             Assert.False(dot.IsVirtual);
             Assert.Equal(123, dot.GetHeapOffset());
+            Assert.Equal(dot, (Handle)dot);
+            Assert.Equal(dot, (StringHandle)(Handle)dot);
+            Assert.Equal(0x79, ((Handle)dot).VType);
+            Assert.Equal(123, ((Handle)dot).Offset);
 
             var winrtPrefix = StringHandle.FromOffset(123).WithWinRTPrefix();
             Assert.Equal(StringKind.WinRTPrefixed, winrtPrefix.StringKind);
             Assert.True(winrtPrefix.IsVirtual);
             Assert.Equal(123, winrtPrefix.GetHeapOffset());
+            Assert.Equal(winrtPrefix, (Handle)winrtPrefix);
+            Assert.Equal(winrtPrefix, (StringHandle)(Handle)winrtPrefix);
+            Assert.Equal(0xF9, ((Handle)winrtPrefix).VType);
+            Assert.Equal(123, ((Handle)winrtPrefix).Offset);
         }
 
         [Fact]
@@ -589,14 +605,26 @@ namespace System.Reflection.Metadata.Tests
             var full = NamespaceDefinitionHandle.FromFullNameOffset(123);
             Assert.False(full.IsVirtual);
             Assert.Equal(123, full.GetHeapOffset());
+            Assert.Equal(full, (Handle)full);
+            Assert.Equal(full, (NamespaceDefinitionHandle)(Handle)full);
+            Assert.Equal(0x7C, ((Handle)full).VType);
+            Assert.Equal(123, ((Handle)full).Offset);
 
             var virtual1 = NamespaceDefinitionHandle.FromVirtualIndex(123);
             Assert.True(virtual1.IsVirtual);
+            Assert.Equal(virtual1, (Handle)virtual1);
+            Assert.Equal(virtual1, (NamespaceDefinitionHandle)(Handle)virtual1);
+            Assert.Equal(0xFC, ((Handle)virtual1).VType);
+            Assert.Equal(123, ((Handle)virtual1).Offset);
 
-            var virtual2 = NamespaceDefinitionHandle.FromVirtualIndex((UInt32.MaxValue >> 3));
+            var virtual2 = NamespaceDefinitionHandle.FromVirtualIndex(uint.MaxValue >> 3);
             Assert.True(virtual2.IsVirtual);
+            Assert.Equal(virtual2, (Handle)virtual2);
+            Assert.Equal(virtual2, (NamespaceDefinitionHandle)(Handle)virtual2);
+            Assert.Equal(0xFC, ((Handle)virtual2).VType);
+            Assert.Equal((int)(uint.MaxValue >> 3), ((Handle)virtual2).Offset);
 
-            Assert.Throws<BadImageFormatException>(() => NamespaceDefinitionHandle.FromVirtualIndex((UInt32.MaxValue >> 3) + 1));
+            Assert.Throws<BadImageFormatException>(() => NamespaceDefinitionHandle.FromVirtualIndex((uint.MaxValue >> 3) + 1));
         }
 
         [Fact]

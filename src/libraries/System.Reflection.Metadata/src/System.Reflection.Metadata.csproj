@@ -45,6 +45,10 @@
     <Compile Include="System\Reflection\Metadata\Ecma335\MetadataRootBuilder.cs" />
     <Compile Include="System\Reflection\Metadata\Ecma335\SerializedMetadataHeaps.cs" />
     <Compile Include="System\Reflection\Metadata\EntityHandle.cs" />
+    <Compile Include="System\Reflection\Metadata\Internal\VirtualHeap.cs" />
+    <Compile Include="System\Reflection\Metadata\Internal\GuidHeap.cs" />
+    <Compile Include="System\Reflection\Metadata\Internal\BlobHeap.cs" />
+    <Compile Include="System\Reflection\Metadata\Internal\StringHeap.cs" />
     <Compile Include="System\Reflection\Metadata\PooledBlobBuilder.cs" />
     <Compile Include="System\Reflection\Metadata\Blob.cs" />
     <Compile Include="System\Reflection\Metadata\BlobWriter.cs" />
@@ -164,7 +168,7 @@
     <Compile Include="System\Reflection\Metadata\Internal\HasDeclSecurityTag.cs" />
     <Compile Include="System\Reflection\Metadata\Internal\HasFieldMarshalTag.cs" />
     <Compile Include="System\Reflection\Metadata\Internal\HasSemanticsTag.cs" />
-    <Compile Include="System\Reflection\Metadata\Internal\Heaps.cs" />
+    <Compile Include="System\Reflection\Metadata\Internal\UserStringHeap.cs" />
     <Compile Include="System\Reflection\Metadata\Internal\ImplementationTag.cs" />
     <Compile Include="System\Reflection\Metadata\Internal\MemberForwardedTag.cs" />
     <Compile Include="System\Reflection\Metadata\Internal\MemberRefParentTag.cs" />
