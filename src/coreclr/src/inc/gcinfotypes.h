@@ -289,6 +289,13 @@ inline bool IsValidReturnRegister(size_t regNo)
         ;
 }
 
+inline bool IsStructReturnKind(ReturnKind returnKind)
+{
+    // Two bits encode integer/ref/float return-kinds.
+    // Encodings needing more than two bits are (non-scalar) struct-returns.
+    return returnKind > 3;
+}
+
 // Helpers for combining/extracting individual ReturnKinds from/to Struct ReturnKinds.
 // Encoding is two bits per register
 

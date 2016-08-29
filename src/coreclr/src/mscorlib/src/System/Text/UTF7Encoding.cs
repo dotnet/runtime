@@ -14,9 +14,7 @@ namespace System.Text
     using System.Diagnostics.Contracts;
 
 
-#if FEATURE_SERIALIZATION
     [Serializable]
-#endif
     [System.Runtime.InteropServices.ComVisible(true)]
     public class UTF7Encoding : Encoding
     {
@@ -32,6 +30,10 @@ namespace System.Text
         // These are the characters that can be optionally directly encoded in UTF7.
         private const String optionalChars =
             "!\"#$%&*;<=>@[]^_`{|}";
+
+        // Used by Encoding.UTF7 for lazy initialization
+        // The initialization code will not be run until a static member of the class is referenced
+        internal static readonly UTF7Encoding s_default = new UTF7Encoding();
 
         // The set of base 64 characters.
         private byte[] base64Bytes;
@@ -101,7 +103,6 @@ namespace System.Text
         }
 
 
-#region Serialization
         [OnDeserializing]
         private void OnDeserializing(StreamingContext ctx)
         {
@@ -122,7 +123,6 @@ namespace System.Text
 
             MakeTables();
         }
-#endregion Serialization
 
 
 
@@ -644,15 +644,10 @@ namespace System.Text
             return charCount;
         }
 
-#if FEATURE_SERIALIZATION
         [Serializable]
-#endif
         // Of all the amazing things... This MUST be Decoder so that our com name
         // for System.Text.Decoder doesn't change
-        private class Decoder : DecoderNLS
-#if FEATURE_SERIALIZATION
-            , ISerializable
-#endif
+        private class Decoder : DecoderNLS, ISerializable
         {
             /*private*/
             internal int bits;
@@ -678,7 +673,6 @@ namespace System.Text
                 this.m_encoding = (Encoding)info.GetValue("encoding", typeof(Encoding));
             }
 
-#if FEATURE_SERIALIZATION
             // ISerializable implementation, get data for this object
             [System.Security.SecurityCritical]  // auto-generated_required
             void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
@@ -693,7 +687,6 @@ namespace System.Text
                 info.AddValue("bitCount", this.bitCount);
                 info.AddValue("firstByte", this.firstByte);
             }
-#endif
 
             public override void Reset()
             {
@@ -716,15 +709,10 @@ namespace System.Text
             }
         }
 
-#if FEATURE_SERIALIZATION
         [Serializable]
-#endif
         // Of all the amazing things... This MUST be Encoder so that our com name
         // for System.Text.Encoder doesn't change
-        private class Encoder : EncoderNLS
-#if FEATURE_SERIALIZATION
-            , ISerializable
-#endif
+        private class Encoder : EncoderNLS, ISerializable
         {
             /*private*/
             internal int bits;
@@ -748,7 +736,6 @@ namespace System.Text
                 this.m_encoding = (Encoding)info.GetValue("encoding", typeof(Encoding));
             }
 
-#if FEATURE_SERIALIZATION
             // ISerializable implementation, get data for this object
             [System.Security.SecurityCritical]  // auto-generated_required
             void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
@@ -762,7 +749,6 @@ namespace System.Text
                 info.AddValue("bits", this.bits);
                 info.AddValue("bitCount", this.bitCount);
             }
-#endif
 
             public override void Reset()
             {

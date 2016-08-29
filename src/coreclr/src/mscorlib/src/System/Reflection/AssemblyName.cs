@@ -25,16 +25,11 @@ namespace System.Reflection {
     using System.Runtime.Versioning;
     using System.Diagnostics.Contracts;
 
-#if FEATURE_SERIALIZATION
     [Serializable]
-#endif
     [ClassInterface(ClassInterfaceType.None)]
     [ComDefaultInterface(typeof(_AssemblyName))]
     [System.Runtime.InteropServices.ComVisible(true)]
-    public sealed class AssemblyName : _AssemblyName, ICloneable
-#if FEATURE_SERIALIZATION
-        , ISerializable, IDeserializationCallback
-#endif
+    public sealed class AssemblyName : _AssemblyName, ICloneable, ISerializable, IDeserializationCallback
     {
         //
         // READ ME
@@ -50,9 +45,7 @@ namespace System.Reflection {
         
         private StrongNameKeyPair            _StrongNameKeyPair;
 
-#if FEATURE_SERIALIZATION
         private SerializationInfo m_siInfo; //A temporary variable which we need during deserialization.
-#endif
 
         private byte[]                _HashForControl;
         private AssemblyHashAlgorithm _HashAlgorithm;
@@ -302,7 +295,6 @@ namespace System.Reflection {
                 return s;
         }
 
-#if FEATURE_SERIALIZATION
         [System.Security.SecurityCritical]  // auto-generated_required
         public void GetObjectData(SerializationInfo info, StreamingContext context)
         {
@@ -367,7 +359,6 @@ namespace System.Reflection {
             //The graph is not valid until OnDeserialization() has been called.
             m_siInfo = info; 
         }
-#endif // FEATURE_SERIALIZATION
 
         [System.Security.SecuritySafeCritical]  // auto-generated
         public AssemblyName(String assemblyName)

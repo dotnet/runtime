@@ -24,6 +24,8 @@ if /i "%__Arch%" == "x64" (set __CmakeGenerator=%__CmakeGenerator% Win64)
 if /i "%__Arch%" == "arm64" (set __CmakeGenerator=%__CmakeGenerator% Win64)
 if /i "%__Arch%" == "arm" (set __CmakeGenerator=%__CmakeGenerator% ARM)
 
+if /i "%__NMakeMakefiles%" == "1" (set __CmakeGenerator=NMake Makefiles)
+
 :loop
 if [%4] == [] goto end_loop
 set __ExtraCmakeParams=%__ExtraCmakeParams% %4
@@ -45,7 +47,7 @@ GOTO :DONE
   echo "Usage..."
   echo "gen-buildsys-win.bat <path to top level CMakeLists.txt> <VSVersion>"
   echo "Specify the path to the top level CMake file - <ProjectK>/src/NDP"
-  echo "Specify the VSVersion to be used - VS2013 or VS2015"
+  echo "Specify the VSVersion to be used - VS2015"
   EXIT /B 1
 
 :DONE

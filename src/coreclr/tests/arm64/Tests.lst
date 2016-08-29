@@ -18,7 +18,7 @@ RelativePath=baseservices\compilerservices\dynamicobjectproperties\TestAPIs\Test
 WorkingDir=baseservices\compilerservices\dynamicobjectproperties\TestAPIs
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri1;RT;EXPECTED_PASS
+Categories=Pri1;RT;EXPECTED_FAIL;ISSUE_6857
 HostStyle=0
 [TestGC.cmd_3]
 RelativePath=baseservices\compilerservices\dynamicobjectproperties\TestGC\TestGC.cmd
@@ -53036,7 +53036,7 @@ RelativePath=JIT\Methodical\tailcall_v4\smallFrame\smallFrame.cmd
 WorkingDir=JIT\Methodical\tailcall_v4\smallFrame
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri0;JIT;EXPECTED_PASS
+Categories=Pri0;JIT;EXPECTED_FAIL;ISSUE_6881
 HostStyle=0
 [tailcall_AV.cmd_7668]
 RelativePath=JIT\Methodical\tailcall_v4\tailcall_AV\tailcall_AV.cmd
@@ -55528,7 +55528,7 @@ RelativePath=JIT\Performance\CodeQuality\Roslyn\CscBench\CscBench.cmd
 WorkingDir=JIT\Performance\CodeQuality\Roslyn\CscBench
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri0;EXPECTED_FAIL;ISSUE_6583;LONG_RUNNING
+Categories=Pri0;EXPECTED_FAIL;ISSUE_6893;LONG_RUNNING
 HostStyle=0
 [SciMark.cmd_8027]
 RelativePath=JIT\Performance\CodeQuality\SciMark\SciMark\SciMark.cmd
@@ -67652,7 +67652,7 @@ RelativePath=managed\Compilation\Compilation\Compilation.cmd
 WorkingDir=managed\Compilation\Compilation
 Expected=0
 MaxAllowedDurationSeconds=800
-Categories=Pri0;RT;EXPECTED_FAIL;ISSUE_6583;NATIVE_INTEROP;LONG_RUNNING
+Categories=Pri0;RT;EXPECTED_FAIL;ISSUE_6893;NATIVE_INTEROP;LONG_RUNNING
 HostStyle=0
 [generics.cmd_9787]
 RelativePath=readytorun\generics\generics.cmd

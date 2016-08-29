@@ -2,17 +2,17 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-#define GCS  EA_GCREF
-#define BRS  EA_BYREF
-#define PS   EA_PTRSIZE
-#define PST  (sizeof(void*)/sizeof(int))
+#define GCS EA_GCREF
+#define BRS EA_BYREF
+#define PS EA_PTRSIZE
+#define PST (sizeof(void*) / sizeof(int))
 
 #ifdef _TARGET_64BIT_
-# define VTF_I32    0
-# define VTF_I64    VTF_I
+#define VTF_I32 0
+#define VTF_I64 VTF_I
 #else
-# define VTF_I32    VTF_I
-# define VTF_I64    0
+#define VTF_I32 VTF_I
+#define VTF_I64 0
 #endif
 
 /*  tn  - TYP_name
@@ -73,9 +73,9 @@ DEF_TP(SIMD32   ,"simd32" , TYP_SIMD32,  TI_STRUCT,32,32, 32,   8,16, VTF_S,    
 DEF_TP(UNKNOWN ,"unknown" ,TYP_UNKNOWN,  TI_ERROR, 0,  0,  0,   0, 0, VTF_ANY,        0           )
 // clang-format on
 
-#undef  GCS
-#undef  BRS
-#undef  PS
-#undef  PST
-#undef  VTF_I32
-#undef  VTF_I64
+#undef GCS
+#undef BRS
+#undef PS
+#undef PST
+#undef VTF_I32
+#undef VTF_I64

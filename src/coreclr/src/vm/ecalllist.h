@@ -387,11 +387,9 @@ FCFuncEnd()
 
 FCFuncStart(gSystem_Type)
     FCIntrinsic("GetTypeFromHandle", RuntimeTypeHandle::GetTypeFromHandle, CORINFO_INTRINSIC_GetTypeFromHandle)
-#ifndef FEATURE_CORECLR
     FCFuncElement("GetTypeFromHandleUnsafe", RuntimeTypeHandle::GetRuntimeType)
     FCIntrinsic("op_Equality", RuntimeTypeHandle::TypeEQ, CORINFO_INTRINSIC_TypeEQ)
     FCIntrinsic("op_Inequality", RuntimeTypeHandle::TypeNEQ, CORINFO_INTRINSIC_TypeNEQ)
-#endif // !FEATURE_CORECLR
 FCFuncEnd()
 
 FCFuncStart(gSystem_RuntimeType)
@@ -401,10 +399,8 @@ FCFuncStart(gSystem_RuntimeType)
     FCFuncElement("AllocateValueType", ReflectionInvocation::AllocateValueType)
 #if defined(FEATURE_COMINTEROP)
     FCFuncElement("GetTypeFromCLSIDImpl", ReflectionInvocation::GetClassFromCLSID)
-#if !defined(FEATURE_CORECLR)
     FCFuncElement("GetTypeFromProgIDImpl", ReflectionInvocation::GetClassFromProgID)
     FCFuncElement("InvokeDispMethod", ReflectionInvocation::InvokeDispMethod)
-#endif 
 #ifdef FEATURE_COMINTEROP_WINRT_MANAGED_ACTIVATION
     FCFuncElement("IsTypeExportedToWindowsRuntime", RuntimeTypeHandle::IsTypeExportedToWindowsRuntime)
 #endif
@@ -1368,9 +1364,9 @@ FCFuncEnd()
 FCFuncStart(gWaitHandleFuncs)
     FCFuncElement("WaitOneNative", WaitHandleNative::CorWaitOneNative)
     FCFuncElement("WaitMultiple", WaitHandleNative::CorWaitMultipleNative)
-#ifndef FEATURE_CORECLR
+#ifndef FEATURE_PAL
     FCFuncElement("SignalAndWaitOne", WaitHandleNative::CorSignalAndWaitOneNative)
-#endif // !FEATURE_CORECLR
+#endif // !FEATURE_PAL
 FCFuncEnd()
 
 FCFuncStart(gNumberFuncs)
@@ -1444,9 +1440,9 @@ FCFuncStart(gCompareInfoFuncs)
     QCFuncElement("InternalCompareString", COMNlsInfo::InternalCompareString)
     QCFuncElement("InternalFindNLSStringEx", COMNlsInfo::InternalFindNLSStringEx)
     QCFuncElement("NativeInternalInitSortHandle", COMNlsInfo::InternalInitSortHandle)
-#ifndef FEATURE_CORECLR
     QCFuncElement("InternalIsSortable", COMNlsInfo::InternalIsSortable)
     QCFuncElement("InternalGetSortKey", COMNlsInfo::InternalGetSortKey)
+#ifndef FEATURE_CORECLR
     QCFuncElement("InternalGetSortVersion", COMNlsInfo::InternalGetSortVersion)
     QCFuncElement("InternalGetNlsVersionEx", COMNlsInfo::InternalGetNlsVersionEx)
 #endif
@@ -1471,10 +1467,8 @@ FCFuncStart(gCultureDataFuncs)
     FCFuncElement("nativeInitCultureData", COMNlsInfo::nativeInitCultureData)
     FCFuncElement("nativeGetNumberFormatInfoValues", COMNlsInfo::nativeGetNumberFormatInfoValues)
     FCFuncElement("nativeEnumTimeFormats", CalendarData::nativeEnumTimeFormats)
-#ifdef FEATURE_USE_LCID
     FCFuncElement("LCIDToLocaleName", COMNlsInfo::LCIDToLocaleName)
     FCFuncElement("LocaleNameToLCID", COMNlsInfo::LocaleNameToLCID)    
-#endif // FEATURE_USE_LCID
 
     QCFuncElement("nativeEnumCultureNames", COMNlsInfo::nativeEnumCultureNames)
 
@@ -1547,12 +1541,10 @@ FCFuncEnd()
 
 FCFuncStart(gGCInterfaceFuncs)
     FCFuncElement("GetGenerationWR", GCInterface::GetGenerationWR)
-#ifndef FEATURE_CORECLR
     FCFuncElement("_RegisterForFullGCNotification", GCInterface::RegisterForFullGCNotification)
     FCFuncElement("_CancelFullGCNotification", GCInterface::CancelFullGCNotification)
     FCFuncElement("_WaitForFullGCApproach", GCInterface::WaitForFullGCApproach)
     FCFuncElement("_WaitForFullGCComplete", GCInterface::WaitForFullGCComplete)
-#endif
     FCFuncElement("_CollectionCount", GCInterface::CollectionCount)
     FCFuncElement("GetGCLatencyMode", GCInterface::GetGcLatencyMode)
     FCFuncElement("SetGCLatencyMode", GCInterface::SetGcLatencyMode)
@@ -1608,11 +1600,11 @@ FCFuncStart(gInteropMarshalFuncs)
     FCFuncElement("StructureToPtr", MarshalNative::StructureToPtr)
     FCFuncElement("ThrowExceptionForHRInternal", MarshalNative::ThrowExceptionForHR)
     FCFuncElement("GetExceptionForHRInternal", MarshalNative::GetExceptionForHR)
-    FCFuncElement("GetHRForException", MarshalNative::GetHRForException)
-    FCFuncElement("GetHRForException_WinRT", MarshalNative::GetHRForException_WinRT)
     FCFuncElement("GetDelegateForFunctionPointerInternal", MarshalNative::GetDelegateForFunctionPointerInternal)
     FCFuncElement("GetFunctionPointerForDelegateInternal", MarshalNative::GetFunctionPointerForDelegateInternal)
 #ifdef FEATURE_COMINTEROP
+    FCFuncElement("GetHRForException", MarshalNative::GetHRForException)
+    FCFuncElement("GetHRForException_WinRT", MarshalNative::GetHRForException_WinRT)
     FCFuncElement("GetRawIUnknownForComObjectNoAddRef", MarshalNative::GetRawIUnknownForComObjectNoAddRef)
     FCFuncElement("IsComObject", MarshalNative::IsComObject)
     FCFuncElement("GetObjectForIUnknown", MarshalNative::GetObjectForIUnknown)
@@ -2100,9 +2092,7 @@ FCFuncStart(gWeakReferenceOfTFuncs)
     FCFuncElement("Finalize", WeakReferenceOfTNative::Finalize)
     FCFuncElement("get_Target", WeakReferenceOfTNative::GetTarget)
     FCFuncElement("set_Target", WeakReferenceOfTNative::SetTarget)
-#ifndef FEATURE_CORECLR
     FCFuncElement("IsTrackResurrection", WeakReferenceOfTNative::IsTrackResurrection)
-#endif
 FCFuncEnd()
 
 #ifdef FEATURE_COMINTEROP

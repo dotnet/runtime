@@ -685,11 +685,13 @@ namespace System.Threading
             if (null == callback)
             {
                 WorkStealingQueue[] otherQueues = allThreadQueues.Current;
-                int i = tl.random.Next(otherQueues.Length);
                 int c = otherQueues.Length;
+                int maxIndex = c - 1;
+                int i = tl.random.Next(c);
                 while (c > 0)
                 {
-                    WorkStealingQueue otherQueue = Volatile.Read(ref otherQueues[i % otherQueues.Length]);
+                    i = (i < maxIndex) ? i + 1 : 0;
+                    WorkStealingQueue otherQueue = Volatile.Read(ref otherQueues[i]);
                     if (otherQueue != null &&
                         otherQueue != wsq &&
                         otherQueue.TrySteal(out callback, ref missedSteal))
@@ -697,7 +699,6 @@ namespace System.Threading
                         Contract.Assert(null != callback);
                         break;
                     }
-                    i++;
                     c--;
                 }
             }

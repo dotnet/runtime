@@ -328,6 +328,15 @@ elseif(CLR_CMAKE_TARGET_ARCH_I386)
         ${ARCH_SOURCES_DIR}/gmsasm.asm
         ${ARCH_SOURCES_DIR}/jithelp.asm
     )
+elseif(CLR_CMAKE_TARGET_ARCH_ARM)
+    set(VM_SOURCES_WKS_ARCH_ASM
+        ${ARCH_SOURCES_DIR}/asmhelpers.asm
+        ${ARCH_SOURCES_DIR}/CrtHelpers.asm
+        ${ARCH_SOURCES_DIR}/ehhelpers.asm
+        ${ARCH_SOURCES_DIR}/memcpy.asm
+        ${ARCH_SOURCES_DIR}/patchedcode.asm
+        ${ARCH_SOURCES_DIR}/PInvokeStubs.asm
+    )
 elseif(CLR_CMAKE_TARGET_ARCH_ARM64)
     set(VM_SOURCES_WKS_ARCH_ASM
         ${ARCH_SOURCES_DIR}/AsmHelpers.asm

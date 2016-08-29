@@ -24,9 +24,7 @@ namespace System {
     // message describing what was wrong and which parameter is incorrect.
     // 
     [System.Runtime.InteropServices.ComVisible(true)]
-#if FEATURE_SERIALIZATION
     [Serializable]
-#endif
     public class ArgumentException : SystemException, ISerializable {
         private String m_paramName;
         

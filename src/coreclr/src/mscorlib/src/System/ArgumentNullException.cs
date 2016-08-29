@@ -22,9 +22,7 @@ namespace System {
     // is null when it shouldn't be.
     // 
     [System.Runtime.InteropServices.ComVisible(true)]
-#if FEATURE_SERIALIZATION
     [Serializable]
-#endif
     public class ArgumentNullException : ArgumentException
     {
         // Creates a new ArgumentNullException with its message 

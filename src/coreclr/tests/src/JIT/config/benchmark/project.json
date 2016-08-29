@@ -24,10 +24,6 @@
     "xunit": "2.1.0",
     "xunit.console.netcore": "1.0.2-prerelease-00101",
     "xunit.runner.utility": "2.1.0",
-    "test_runtime": {
-      "target": "project",
-      "exclude": "compile"
-    }
   },
   "frameworks": {
     "netcoreapp1.0": {

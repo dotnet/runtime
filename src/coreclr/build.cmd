@@ -101,6 +101,7 @@ if /i "%1" == "skipmscorlib"        (set __BuildCoreLib=0&set __BuildNativeCoreL
 if /i "%1" == "skipnative"          (set __BuildNative=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "skiptests"           (set __BuildTests=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "skipbuildpackages"   (set __BuildPackages=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "usenmakemakefiles"   (set __NMakeMakefiles=1&set __ConfigureOnly=1&set __BuildNative=1&set __BuildNativeCoreLib=0&set __BuildCoreLib=0&set __BuildTests=0&set __BuildPackages=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "buildjit32"          (set __BuildJit32="-DBUILD_JIT32=1"&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "toolset_dir"         (set __ToolsetDir=%2&set __PassThroughArgs=%__PassThroughArgs% %2&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
 
@@ -122,7 +123,10 @@ if %__TotalSpecifiedBuildArch% GTR 1 (
 
 if %__BuildArchX64%==1      set __BuildArch=x64
 if %__BuildArchX86%==1      set __BuildArch=x86
-if %__BuildArchArm%==1      set __BuildArch=arm
+if %__BuildArchArm%==1 (
+    set __BuildArch=arm
+    set __CrossArch=x86
+)
 if %__BuildArchArm64%==1 (
     set __BuildArch=arm64
     set __CrossArch=x64
@@ -143,6 +147,7 @@ set __RunArgs=-BuildOS=%__BuildOS% -BuildType=%__BuildType% -BuildArch=%__BuildA
 :: Set the remaining variables based upon the determined build configuration
 set "__BinDir=%__RootBinDir%\Product\%__BuildOS%.%__BuildArch%.%__BuildType%"
 set "__IntermediatesDir=%__RootBinDir%\obj\%__BuildOS%.%__BuildArch%.%__BuildType%"
+if "%__NMakeMakefiles%"=="1" (set "__IntermediatesDir=%__RootBinDir%\nmakeobj\%__BuildOS%.%__BuildArch%.%__BuildType%")
 set "__PackagesBinDir=%__BinDir%\.nuget"
 set "__TestRootDir=%__RootBinDir%\tests"
 set "__TestBinDir=%__TestRootDir%\%__BuildOS%.%__BuildArch%.%__BuildType%"
@@ -207,6 +212,7 @@ if %__BuildNative% EQU 1 (
     :: Set the environment for the native build
     set __VCBuildArch=x86_amd64
     if /i "%__BuildArch%" == "x86" ( set __VCBuildArch=x86 )
+    if /i "%__BuildArch%" == "arm" (set __VCBuildArch=x86_arm)
     echo %__MsgPrefix%Using environment: "%__VSToolsRoot%\..\..\VC\vcvarsall.bat" !__VCBuildArch!
     call                                 "%__VSToolsRoot%\..\..\VC\vcvarsall.bat" !__VCBuildArch!
 	@if defined __echo @echo on
@@ -251,9 +257,15 @@ REM === Build Cross-Architecture Native Components (if applicable)
 REM ===
 REM =========================================================================================
 
-REM cross-arch build only enabled for arm64
-
 if /i "%__BuildArch%"=="arm64" (
+    set __DoCrossArchBuild=1
+    )
+
+if /i "%__BuildArch%"=="arm" (
+    set __DoCrossArchBuild=1
+    )
+
+if /i "%__DoCrossArchBuild%"=="1" (
 
     echo %__MsgPrefix%Commencing build of cross architecture native components for %__BuildOS%.%__BuildArch%.%__BuildType%
 
@@ -297,6 +309,7 @@ if /i "%__BuildArch%"=="arm64" (
 )
 
 :SkipCrossCompBuild
+
 REM =========================================================================================
 REM ===
 REM === CoreLib and NuGet package build section.
@@ -355,7 +368,6 @@ if %__BuildNativeCoreLib% EQU 1 (
 )
 
 if %__BuildPackages% EQU 1 (
-
     set __MsbuildLog=/flp:Verbosity=normal;LogFile="%__LogsDir%\Nuget_%__BuildOS%__%__BuildArch%__%__BuildType%.log"
 	set __MsbuildWrn=/flp1:WarningsOnly;LogFile="%__LogsDir%\Nuget_%__BuildOS%__%__BuildArch%__%__BuildType%.wrn"
 	set __MsbuildErr=/flp2:ErrorsOnly;LogFile="%__LogsDir%\Nuget_%__BuildOS%__%__BuildArch%__%__BuildType%.err"

@@ -21,13 +21,8 @@ namespace System.Text
     // of Encoding objects.
     //
 
-#if FEATURE_SERIALIZATION
     [Serializable]
-#endif
-    internal class DecoderNLS : Decoder
-#if FEATURE_SERIALIZATION
-        , ISerializable
-#endif
+    internal class DecoderNLS : Decoder, ISerializable
     {
         // Remember our encoding
                         protected   Encoding m_encoding;
@@ -46,7 +41,6 @@ namespace System.Text
                             Environment.GetResourceString("NotSupported_TypeCannotDeserialized"), this.GetType()));
         }
 
-#if FEATURE_SERIALIZATION
         // ISerializable implementation. called during serialization.
         [System.Security.SecurityCritical]  // auto-generated_required
         void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
@@ -55,7 +49,6 @@ namespace System.Text
             info.AddValue("encoding", this.m_encoding);
             info.SetType(typeof(Encoding.DefaultDecoder));
         }
-#endif
 
 #endregion Serialization 
 

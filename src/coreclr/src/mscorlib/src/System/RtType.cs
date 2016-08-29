@@ -79,9 +79,7 @@ namespace System
         FullName,
     }
 
-#if FEATURE_SERIALIZATION
     [Serializable]
-#endif
     internal class RuntimeType : 
         System.Reflection.TypeInfo, ISerializable, ICloneable
     {
@@ -3919,17 +3917,9 @@ namespace System
             if (!(valueType.IsEnum || IsIntegerType(valueType)))
                 throw new ArgumentException(Environment.GetResourceString("Arg_MustBeEnumBaseTypeOrEnum"), "value");
 
-            ulong[] ulValues = Enum.InternalGetValues(this);
             ulong ulValue = Enum.ToUInt64(value);
-            int index = Array.BinarySearch(ulValues, ulValue);
 
-            if (index >= 0)
-            {
-                string[] names = Enum.InternalGetNames(this);
-                return names[index];
-            }
-
-            return null;
+            return Enum.GetEnumName(this, ulValue);
         }
         #endregion
 
@@ -5323,7 +5313,6 @@ namespace System
             return _CreateEnum(enumType, value);
         }
 
-#if FEATURE_COMINTEROP
         [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private extern Object InvokeDispMethod(
@@ -5349,7 +5338,6 @@ namespace System
             throw new NotImplementedException("CoreCLR_REMOVED -- Unmanaged activation removed"); 
         }
 #endif // FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
-#endif
 
         #endregion
 
@@ -5573,9 +5561,7 @@ namespace System
     // method (RuntimeType) and an instance of this type will work around the reason to have this type in the 
     // first place. However given RuntimeType is not public all its methods are protected and require full trust
     // to be accessed
-#if FEATURE_SERIALIZATION
     [Serializable]
-#endif
     internal class ReflectionOnlyType : RuntimeType {
 
         private ReflectionOnlyType() {}

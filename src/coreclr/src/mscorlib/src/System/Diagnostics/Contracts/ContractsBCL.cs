@@ -202,11 +202,7 @@ namespace System.Diagnostics.Contracts {
         }
     }
 
-#if FEATURE_SERIALIZATION
     [Serializable]
-#else
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1032:ImplementStandardExceptionConstructors")]
-#endif
     [SuppressMessage("Microsoft.Design", "CA1064:ExceptionsShouldBePublic")]
     internal sealed class ContractException : Exception
     {
@@ -238,7 +234,6 @@ namespace System.Diagnostics.Contracts {
             this._Condition = condition;
         }
 
-#if FEATURE_SERIALIZATION
         private ContractException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context)
             : base(info, context)
         {
@@ -246,7 +241,6 @@ namespace System.Diagnostics.Contracts {
             _UserMessage = info.GetString("UserMessage");
             _Condition = info.GetString("Condition");
         }
-#endif // FEATURE_SERIALIZATION
 
 #if FEATURE_UNTRUSTED_CALLERS && FEATURE_SERIALIZATION
         [SecurityCritical]

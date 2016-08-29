@@ -284,7 +284,7 @@
       <Issue>needs triage</Issue>
     </ExcludeList>
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Performance\CodeQuality\Roslyn\CscBench\CscBench.cmd">
-      <Issue>needs triage</Issue>
+      <Issue>6844</Issue>
     </ExcludeList>
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\delegate\_simpleoddpower_il_r\_simpleoddpower_il_r.cmd">
       <Issue>needs triage</Issue>
@@ -369,6 +369,9 @@
     </ExcludeList>
     <ExcludeList Include="$(XunitTestBinBase)\baseservices\threading\waithandle\waitall\waitallex8a\*">
       <Issue>3832</Issue>
+    </ExcludeList>
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\tailcall_v4\smallFrame\smallFrame.cmd">
+      <Issue>tail. call pop ret is only supported on amd64</Issue>
     </ExcludeList>
   </ItemGroup>
   

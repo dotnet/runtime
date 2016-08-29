@@ -6,10 +6,11 @@
 
 //
 
-using System.Threading;
 using System;
 using System.Globalization;
 using System.Diagnostics.Contracts;
+using System.Runtime.Serialization;
+using System.Threading;
 
 namespace System.Globalization
 {
@@ -17,6 +18,7 @@ namespace System.Globalization
     // 0 CurrentEra (AD)
     // 1 BeforeCurrentEra (BC)
 
+    [Serializable]
     [System.Runtime.InteropServices.ComVisible(true)]
 
     public class GregorianCalendar : Calendar
@@ -53,6 +55,16 @@ namespace System.Globalization
 
         private static volatile Calendar s_defaultInstance;
 
+        [OnDeserialized]
+        private void OnDeserialized(StreamingContext ctx)
+        {
+            if (m_type < GregorianCalendarTypes.Localized ||
+                m_type > GregorianCalendarTypes.TransliteratedFrench)
+            {
+                throw new SerializationException(
+                    String.Format(CultureInfo.CurrentCulture, SR.Serialization_MemberOutOfRange, "type", "GregorianCalendar"));
+            }
+        }
 
         [System.Runtime.InteropServices.ComVisible(false)]
         public override DateTime MinSupportedDateTime

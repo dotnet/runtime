@@ -33,7 +33,7 @@ enum ReturnValues
 
 #define NumItems(s) (sizeof(s) / sizeof(s[0]))
 
-STDAPI CreatePDBWorker(LPCWSTR pwzAssemblyPath, LPCWSTR pwzPlatformAssembliesPaths, LPCWSTR pwzTrustedPlatformAssemblies, LPCWSTR pwzPlatformResourceRoots, LPCWSTR pwzAppPaths, LPCWSTR pwzAppNiPaths, LPCWSTR pwzPdbPath, BOOL fGeneratePDBLinesInfo, LPCWSTR pwzManagedPdbSearchPath, LPCWSTR pwzPlatformWinmdPaths);
+STDAPI CreatePDBWorker(LPCWSTR pwzAssemblyPath, LPCWSTR pwzPlatformAssembliesPaths, LPCWSTR pwzTrustedPlatformAssemblies, LPCWSTR pwzPlatformResourceRoots, LPCWSTR pwzAppPaths, LPCWSTR pwzAppNiPaths, LPCWSTR pwzPdbPath, BOOL fGeneratePDBLinesInfo, LPCWSTR pwzManagedPdbSearchPath, LPCWSTR pwzPlatformWinmdPaths, LPCWSTR pwzDiasymreaderPath);
 STDAPI NGenWorker(LPCWSTR pwzFilename, DWORD dwFlags, LPCWSTR pwzPlatformAssembliesPaths, LPCWSTR pwzTrustedPlatformAssemblies, LPCWSTR pwzPlatformResourceRoots, LPCWSTR pwzAppPaths, LPCWSTR pwzOutputFilename=NULL, LPCWSTR pwzPlatformWinmdPaths=NULL, ICorSvcLogger *pLogger = NULL, LPCWSTR pwszCLRJITPath = nullptr);
 void SetSvcLogger(ICorSvcLogger *pCorSvcLogger);
 #ifdef FEATURE_CORECLR
@@ -175,7 +175,11 @@ void PrintUsageHelper()
        W(" Debugging Parameters\n")
        W("    /CreatePDB <Dir to store PDB> [/lines [<search path for managed PDB>] ]\n")
        W("        When specifying /CreatePDB, the native image should be created\n")
-       W("        first, and <assembly name> should be the path to the NI.")
+       W("        first, and <assembly name> should be the path to the NI.\n")
+#ifdef FEATURE_CORECLR
+       W("    /DiasymreaderPath <Path to diasymreader.dll>\n")
+       W("        - Specifies the absolute file path to diasymreader.dll to be used.\n")
+#endif // FEATURE_CORECLR
 #elif defined(FEATURE_PERFMAP)
        W(" Debugging Parameters\n")
        W("    /CreatePerfMap <Dir to store perf map>\n")
@@ -458,6 +462,8 @@ int _cdecl wmain(int argc, __in_ecount(argc) WCHAR **argv)
     LPCWSTR pwszCLRJITPath = nullptr;
 #endif // defined(FEATURE_CORECLR) && !defined(FEATURE_MERGE_JIT_AND_ENGINE)
 
+    LPCWSTR pwzDiasymreaderPath = nullptr;
+
     HRESULT hr;
 
 #ifndef PLATFORM_UNIX
@@ -701,6 +707,16 @@ int _cdecl wmain(int argc, __in_ecount(argc) WCHAR **argv)
             argv--;
             argc++;
         }
+#ifdef FEATURE_CORECLR
+        else if (MatchParameter(*argv, W("DiasymreaderPath")) && (argc > 1))
+        {
+            pwzDiasymreaderPath = argv[1];
+
+            // skip diasymreader Path
+            argv++;
+            argc--;
+        }
+#endif // FEATURE_CORECLR
 #endif // NO_NGENPDB
 #ifdef FEATURE_PERFMAP
         else if (MatchParameter(*argv, W("CreatePerfMap")) && (argc > 1))
@@ -798,6 +814,22 @@ int _cdecl wmain(int argc, __in_ecount(argc) WCHAR **argv)
         Output(W("The /App_Ni_Paths switch can only be used with the /CreatePDB switch.\n"));
         exit(FAILURE_RESULT);
     }
+
+#if defined(FEATURE_CORECLR) && !defined(FEATURE_MERGE_JIT_AND_ENGINE)
+    if (pwszCLRJITPath != nullptr && fCreatePDB)
+    {
+        Output(W("The /JITPath switch can not be used with the /CreatePDB switch.\n"));
+        exit(FAILURE_RESULT);
+    }
+#endif // defined(FEATURE_CORECLR) && !defined(FEATURE_MERGE_JIT_AND_ENGINE)
+
+#if defined(FEATURE_CORECLR) && !defined(NO_NGENPDB)
+    if (pwzDiasymreaderPath != nullptr && !fCreatePDB)
+    {
+        Output(W("The /DiasymreaderPath switch can only be used with the /CreatePDB switch.\n"));
+        exit(FAILURE_RESULT);
+    }
+#endif // defined(FEATURE_CORECLR) && !defined(NO_NGENPDB)
 
 #if defined(FEATURE_CORECLR)
     if ((pwzTrustedPlatformAssemblies != nullptr) && (pwzPlatformAssembliesPaths != nullptr))
@@ -931,7 +963,8 @@ int _cdecl wmain(int argc, __in_ecount(argc) WCHAR **argv)
             wzDirectoryToStorePDB, 
             fGeneratePDBLinesInfo, 
             pwzSearchPathForManagedPDB,
-            pwzPlatformWinmdPaths);
+            pwzPlatformWinmdPaths,
+            pwzDiasymreaderPath);
         
     }
     else

@@ -71,4 +71,16 @@
 #pragma warning(disable :4706)   // assignment within conditional expression
 #pragma warning(error   :4806)   // unsafe operation involving type 'bool'
 #pragma warning(disable :4995)   // '_OLD_IOSTREAMS_ARE_DEPRECATED': name was marked as #pragma deprecated
+
+#if defined(_DEBUG) && (!defined(_MSC_FULL_VER) || (_MSC_FULL_VER <= 181040116))
+// The CLR header file check.h, macro CHECK_MSG_EX, can create unreachable code if the LEAVE_DEBUG_ONLY_CODE
+// macro is not empty (such as it is defined in contract.h) and the _RESULT macro expands to "return".
+// Checked-in compilers used by the TFS-based desktop build (e.g., version 18.10.40116.8) started reporting
+// unreachable code warnings when debugholder.h was changed to no longer #define "return" to something relatively
+// complex. However, newer compilers, such as Visual Studio 2015, used to build the CLR from the open source
+// GitHub repo, still do not report this warning. We don't want to disable this warning for open source build,
+// which will use a newer compiler. Hence, only disable it for older compilers.
+#pragma warning(disable :4702)   // unreachable code
+#endif
+
 #endif  // defined(_MSC_VER)

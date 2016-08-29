@@ -400,11 +400,13 @@ FORCEINLINE static void *GetCOMIPFromRCW_GetTarget(IUnknown *pUnk, ComPlusCallIn
         pComInfo->m_pInterceptStub = (LPVOID)-1;
     }
 #else // _TARGET_X86_
+#ifdef FEATURE_INCLUDE_ALL_INTERFACES 
     if (NDirect::IsHostHookEnabled())
     {
         // There's one static stub on !_TARGET_X86_.
         return (LPVOID)GetEEFuncEntryPoint(PInvokeStubForHost);
     }
+#endif // FEATURE_INCLUDE_ALL_INTERFACES 
 #endif // _TARGET_X86_
 #endif // FEATURE_CORECLR
 
@@ -1259,11 +1261,13 @@ FCIMPL2(void*, StubHelpers::GetDelegateTarget, DelegateObject *pThisUNSAFE, UINT
     // see IL code gen in NDirectStubLinker::DoNDirect for details.
     *ppStubArg = target;
 
+#ifdef FEATURE_INCLUDE_ALL_INTERFACES 
     if (NDirect::IsHostHookEnabled())
     {
         // There's one static stub on !_TARGET_X86_.
         pEntryPoint = GetEEFuncEntryPoint(PInvokeStubForHost);
     }
+#endif // FEATURE_INCLUDE_ALL_INTERFACES 
 #elif defined(_TARGET_ARM_)
     // @ARMTODO: Nothing to do for ARM yet since we don't support the hosted path.
 #endif // _WIN64, _TARGET_ARM_
@@ -2166,6 +2170,7 @@ FCIMPLEND
 FCIMPL2(void, StubHelpers::MulticastDebuggerTraceHelper, Object* element, INT32 count)
 {
     FCALL_CONTRACT;
+    FCUnique(0xa5);
 }
 FCIMPLEND
 #endif // FEATURE_STUBS_AS_IL
