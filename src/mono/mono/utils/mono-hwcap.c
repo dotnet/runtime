@@ -24,6 +24,10 @@
 
 #include "mono/utils/mono-hwcap.h"
 
+#define MONO_HWCAP_VAR(NAME) gboolean mono_hwcap_ ## NAME = FALSE;
+#include "mono/utils/mono-hwcap-vars.h"
+#undef MONO_HWCAP_VAR
+
 static gboolean hwcap_inited = FALSE;
 
 void
@@ -35,19 +39,21 @@ mono_hwcap_init (void)
 	if (hwcap_inited)
 		return;
 
-#ifdef MONO_CROSS_COMPILE
-	/*
-	 * If we're cross-compiling, we want to be as
-	 * conservative as possible so that we produce
-	 * code that's portable. Default to that.
-	 */
-	if (!conservative)
-		conservative = "1";
-#endif
-
 	if (!conservative || strncmp (conservative, "1", 1))
 		mono_hwcap_arch_init ();
 
 	if (verbose && !strncmp (verbose, "1", 1))
-		mono_hwcap_print (stdout);
+		mono_hwcap_print ();
+}
+
+void
+mono_hwcap_print (void)
+{
+	g_print ("[mono-hwcap] Detected following hardware capabilities:\n\n");
+
+#define MONO_HWCAP_VAR(NAME) g_print ("\t" #NAME " = %s\n", mono_hwcap_ ## NAME ? "yes" : "no");
+#include "mono/utils/mono-hwcap-vars.h"
+#undef MONO_HWCAP_VAR
+
+	g_print ("\n");
 }

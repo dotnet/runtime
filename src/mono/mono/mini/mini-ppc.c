@@ -17,7 +17,7 @@
 #include <mono/metadata/debug-helpers.h>
 #include <mono/utils/mono-proclib.h>
 #include <mono/utils/mono-mmap.h>
-#include <mono/utils/mono-hwcap-ppc.h>
+#include <mono/utils/mono-hwcap.h>
 
 #include "mini-ppc.h"
 #ifdef TARGET_POWERPC64

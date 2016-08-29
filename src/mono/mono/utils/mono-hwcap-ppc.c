@@ -19,18 +19,12 @@
  * Licensed under the MIT license. See LICENSE file in the project root for full license information.
  */
 
-#include "mono/utils/mono-hwcap-ppc.h"
+#include "mono/utils/mono-hwcap.h"
 
 #if defined(__linux__) && defined(HAVE_SYS_AUXV_H)
 #include <string.h>
 #include <sys/auxv.h>
 #endif
-
-gboolean mono_hwcap_ppc_has_icache_snoop = FALSE;
-gboolean mono_hwcap_ppc_is_isa_2x = FALSE;
-gboolean mono_hwcap_ppc_is_isa_64 = FALSE;
-gboolean mono_hwcap_ppc_has_move_fpr_gpr = FALSE;
-gboolean mono_hwcap_ppc_has_multiple_ls_units = FALSE;
 
 void
 mono_hwcap_arch_init (void)
@@ -65,14 +59,4 @@ mono_hwcap_arch_init (void)
 			mono_hwcap_ppc_has_multiple_ls_units = TRUE;
 	}
 #endif
-}
-
-void
-mono_hwcap_print (FILE* f)
-{
-	g_fprintf (f, "mono_hwcap_ppc_has_icache_snoop = %i\n", mono_hwcap_ppc_has_icache_snoop);
-	g_fprintf (f, "mono_hwcap_ppc_is_isa_2x = %i\n", mono_hwcap_ppc_is_isa_2x);
-	g_fprintf (f, "mono_hwcap_ppc_is_isa_64 = %i\n", mono_hwcap_ppc_is_isa_64);
-	g_fprintf (f, "mono_hwcap_ppc_has_move_fpr_gpr = %i\n", mono_hwcap_ppc_has_move_fpr_gpr);
-	g_fprintf (f, "mono_hwcap_ppc_has_multiple_ls_units = %i\n", mono_hwcap_ppc_has_multiple_ls_units);
 }

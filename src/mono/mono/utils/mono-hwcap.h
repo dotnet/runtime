@@ -8,6 +8,10 @@
 
 #include "mono/utils/mono-compiler.h"
 
+#define MONO_HWCAP_VAR(NAME) extern gboolean mono_hwcap_ ## NAME;
+#include "mono/utils/mono-hwcap-vars.h"
+#undef MONO_HWCAP_VAR
+
 /* Call this function to perform hardware feature detection. Until
  * this function has been called, all feature variables will be
  * FALSE as a default.
@@ -17,17 +21,14 @@
  * result in an inconsistent state of the variables. Further,
  * feature variables should not be read *while* this function is
  * executing.
- *
- * To get at feature variables, include the appropriate header,
- * e.g. mono-hwcap-x86.h for x86(-64).
  */
 void mono_hwcap_init (void);
 
 /* Implemented in mono-hwcap-$TARGET.c. Do not call. */
 void mono_hwcap_arch_init (void);
 
-/* Print detected features to the given file. */
-void mono_hwcap_print (FILE *f);
+/* Print detected features to stdout. */
+void mono_hwcap_print (void);
 
 /* Please note: If you're going to use the Linux auxiliary vector
  * to detect CPU features, don't use any of the constant names in

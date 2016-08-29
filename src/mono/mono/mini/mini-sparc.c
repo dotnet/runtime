@@ -28,7 +28,7 @@
 #include <mono/metadata/debug-helpers.h>
 #include <mono/metadata/tokentype.h>
 #include <mono/utils/mono-math.h>
-#include <mono/utils/mono-hwcap-sparc.h>
+#include <mono/utils/mono-hwcap.h>
 
 #include "mini-sparc.h"
 #include "trace.h"
