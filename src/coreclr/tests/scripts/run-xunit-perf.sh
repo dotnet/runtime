@@ -367,10 +367,22 @@ if [ -d "$mscorlibDir" ] && [ -d "$mscorlibDir/bin" ]; then
     cp $mscorlibDir/bin/* $mscorlibDir
 fi
 
+# Install xunit performance packages
+export NUGET_PACKAGE=$testNativeBinDir/../../../../packages
+
+echo "dir $testNativeBinDir/../../../../Tools"
+dir $testNativeBinDir/../../../../Tools
+echo "dir $testNativeBinDir/../../../../Tools/dotnetcli"
+dir $testNativeBinDir/../../../../Tools/dotnetcli
+
+$testNativeBinDir/../../../../Tools/dotnetcli/dotnet restore --fallbacksource https://dotnet.myget.org/F/dotnet-buildtools/ --fallbacksource https://dotnet.myget.org/F/dotnet-core/
+
+# Creat coreoverlay dir which contains all dependent binaries
 create_core_overlay
 precompile_overlay_assemblies
 copy_test_native_bin_to_test_root
 
+# Deploy xunit performance packages
 cd $CORE_ROOT
 
 DO_SETUP=TRUE
@@ -396,6 +408,7 @@ sudo cp  $testNativeBinDir/../../../../../packages/Microsoft.DotNet.xunit.perfor
 
 fi
 
+# Run coreclr performance tests
 echo "Test root dir is: $testRootDir"
 tests=($(find $testRootDir/JIT/Performance/CodeQuality -name '*.exe'))
 
