@@ -15,6 +15,7 @@ namespace System.Security.Permissions
         public void AddPathList(System.Security.Permissions.FileIOPermissionAccess access, string[] pathList) { }
         public override System.Security.IPermission Copy() { return this; }
         public override bool Equals(object o) => base.Equals(o);
+        public override void FromXml(SecurityElement esd) { }
         public override int GetHashCode() => base.GetHashCode();
         public string[] GetPathList(System.Security.Permissions.FileIOPermissionAccess access) { return null; }
         public override System.Security.IPermission Intersect(System.Security.IPermission target) { return default(System.Security.IPermission); }
@@ -22,6 +23,7 @@ namespace System.Security.Permissions
         public bool IsUnrestricted() { return false; }
         public void SetPathList(System.Security.Permissions.FileIOPermissionAccess access, string path) { }
         public void SetPathList(System.Security.Permissions.FileIOPermissionAccess access, string[] pathList) { }
+        public override SecurityElement ToXml() { return default(SecurityElement); }
         public override System.Security.IPermission Union(System.Security.IPermission other) { return default(System.Security.IPermission); }
     }
 }

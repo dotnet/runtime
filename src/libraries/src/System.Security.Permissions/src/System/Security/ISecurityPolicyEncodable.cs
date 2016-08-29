@@ -6,5 +6,7 @@ namespace System.Security
 {
     public partial interface ISecurityPolicyEncodable
     {
+        void FromXml(SecurityElement e, System.Security.Policy.PolicyLevel level);
+        SecurityElement ToXml(System.Security.Policy.PolicyLevel level);
     }
 }

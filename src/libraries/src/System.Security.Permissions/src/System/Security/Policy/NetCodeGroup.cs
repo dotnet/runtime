@@ -14,9 +14,11 @@ namespace System.Security.Policy
         public override string PermissionSetName { get { return null; } }
         public void AddConnectAccess(string originScheme, System.Security.Policy.CodeConnectAccess connectAccess) { }
         public override System.Security.Policy.CodeGroup Copy() { return default(System.Security.Policy.CodeGroup); }
+        protected override void CreateXml(SecurityElement element, System.Security.Policy.PolicyLevel level) { }
         public override bool Equals(object o) => base.Equals(o);
         public System.Collections.DictionaryEntry[] GetConnectAccessRules() { return default(System.Collections.DictionaryEntry[]); }
         public override int GetHashCode() => base.GetHashCode();
+        protected override void ParseXml(SecurityElement e, System.Security.Policy.PolicyLevel level) { }
         public void ResetConnectAccess() { }
         public override System.Security.Policy.PolicyStatement Resolve(System.Security.Policy.Evidence evidence) { return default(System.Security.Policy.PolicyStatement); }
         public override System.Security.Policy.CodeGroup ResolveMatchingCodeGroups(System.Security.Policy.Evidence evidence) { return default(System.Security.Policy.CodeGroup); }
