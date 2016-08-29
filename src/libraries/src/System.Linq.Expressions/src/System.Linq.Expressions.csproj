@@ -142,6 +142,7 @@
     <Compile Include="System\Linq\Expressions\Utils.cs" />
     <Compile Include="System\Linq\IQueryable.cs" />
     <Compile Include="System\Runtime\CompilerServices\IRuntimeVariables.cs" />
+    <Compile Include="System\Linq\Expressions\Common\ConstantCheck.cs" />
     <None Include="project.json" />
   </ItemGroup>
   <ItemGroup Condition=" '$(IsInterpreting)' != 'true' And '$(TargetGroup)' != 'net463'">
@@ -162,7 +163,6 @@
     <Compile Include="System\Linq\Expressions\Compiler\BoundConstants.cs" />
     <Compile Include="System\Linq\Expressions\Compiler\CompilerScope.cs" />
     <Compile Include="System\Linq\Expressions\Compiler\CompilerScope.Storage.cs" />
-    <Compile Include="System\Linq\Expressions\Compiler\ConstantCheck.cs" />
     <Compile Include="System\Linq\Expressions\Compiler\HoistedLocals.cs" />
     <Compile Include="System\Linq\Expressions\Compiler\ILGen.cs" />
     <Compile Include="System\Linq\Expressions\Compiler\KeyedQueue.cs" />
@@ -195,7 +195,6 @@
     <Compile Include="System\Linq\Expressions\Interpreter\BranchLabel.cs" />
     <Compile Include="System\Linq\Expressions\Interpreter\CallInstruction.cs" />
     <Compile Include="System\Linq\Expressions\Interpreter\CallInstruction.Generated.cs" />
-    <Compile Include="System\Linq\Expressions\Interpreter\ConstantCheck.cs" />
     <Compile Include="System\Linq\Expressions\Interpreter\ControlFlowInstructions.cs" />
     <Compile Include="System\Linq\Expressions\Interpreter\DivInstruction.cs" />
     <Compile Include="System\Linq\Expressions\Interpreter\EqualInstruction.cs" />
