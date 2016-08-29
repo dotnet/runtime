@@ -52,13 +52,6 @@ namespace System.IO.Compression
 
         public unsafe bool Inflate(out byte b)
         {
-            // If Inflate is called on an invalid or unready inflater, return 0 to indicate no bytes have been read.
-            if (NeedsInput() || _inputBufferHandle == null || !_inputBufferHandle.IsAllocated)
-            {
-                b = 0;
-                return false;
-            }
-
             fixed (byte* bufPtr = &b)
             {
                 int bytesRead = InflateVerified(bufPtr, 1);
@@ -70,7 +63,7 @@ namespace System.IO.Compression
         public unsafe int Inflate(byte[] bytes, int offset, int length)
         {
             // If Inflate is called on an invalid or unready inflater, return 0 to indicate no bytes have been read.
-            if (NeedsInput() || _inputBufferHandle == null || !_inputBufferHandle.IsAllocated || length == 0)
+            if (length == 0)
                 return 0;
 
             Debug.Assert(null != bytes, "Can't pass in a null output buffer!");
@@ -83,7 +76,6 @@ namespace System.IO.Compression
         public unsafe int InflateVerified(byte* bufPtr, int length)
         {
             // State is valid; attempt inflation
-            Debug.Assert(!NeedsInput() && _inputBufferHandle != null && _inputBufferHandle.IsAllocated && length != 0);
             try
             {
                 int bytesRead;
