@@ -33,8 +33,15 @@ void sgen_bridge_describe_pointer (GCObject *object);
 gboolean sgen_is_bridge_object (GCObject *obj);
 void sgen_mark_bridge_object (GCObject *obj);
 
+gboolean sgen_bridge_handle_gc_param (const char *opt);
 gboolean sgen_bridge_handle_gc_debug (const char *opt);
 void sgen_bridge_print_gc_debug_usage (void);
+
+typedef struct {
+	char *dump_prefix;
+	gboolean accounting;
+	gboolean scc_precise_merge; // Used by Tarjan
+} SgenBridgeProcessorConfig;
 
 typedef struct {
 	void (*reset_data) (void);
@@ -44,10 +51,9 @@ typedef struct {
 	MonoGCBridgeObjectKind (*class_kind) (MonoClass *klass);
 	void (*register_finalized_object) (GCObject *object);
 	void (*describe_pointer) (GCObject *object);
-	void (*enable_accounting) (void);
 
-	// Optional-- used for debugging
-	void (*set_dump_prefix) (const char *prefix);
+	/* Should be called once, immediately after init */
+	void (*set_config) (const SgenBridgeProcessorConfig *);
 
 	/*
 	 * These are set by processing_build_callback_data().

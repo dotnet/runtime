@@ -17,8 +17,8 @@
  * When SGen is done marking, it puts together a list of all dead bridged
  * objects.  This is passed to the bridge processor, which does an analysis to
  * simplify the graph: It replaces strongly-connected components with single
- * nodes, and then removes any nodes corresponding to components which do not
- * contain bridged objects.
+ * nodes, and may remove nodes corresponding to components which do not contain
+ * bridged objects.
  *
  * The output of the SCC analysis is passed to the client's `cross_references()`
  * callback.  This consists of 2 arrays, an array of SCCs (MonoGCBridgeSCC),
@@ -54,7 +54,7 @@
 MONO_BEGIN_DECLS
 
 enum {
-	SGEN_BRIDGE_VERSION = 4
+	SGEN_BRIDGE_VERSION = 5
 };
 	
 typedef enum {

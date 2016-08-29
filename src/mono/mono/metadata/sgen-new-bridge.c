@@ -101,6 +101,8 @@ typedef struct _SCC {
 #endif
 } SCC;
 
+static char *dump_prefix = NULL;
+
 // Maps managed objects to corresponding HashEntry stricts
 static SgenHashTable hash_table = SGEN_HASH_TABLE_INIT (INTERNAL_MEM_BRIDGE_HASH_TABLE, INTERNAL_MEM_BRIDGE_HASH_TABLE_ENTRY, sizeof (HashEntry), mono_aligned_addr_hash, NULL);
 
@@ -161,11 +163,16 @@ dyn_array_int_contains (DynIntArray *da, int x)
 #endif
 
 static void
-enable_accounting (void)
+set_config (const SgenBridgeProcessorConfig *config)
 {
-	SgenHashTable table = SGEN_HASH_TABLE_INIT (INTERNAL_MEM_BRIDGE_HASH_TABLE, INTERNAL_MEM_BRIDGE_HASH_TABLE_ENTRY, sizeof (HashEntryWithAccounting), mono_aligned_addr_hash, NULL);
-	bridge_accounting_enabled = TRUE;
-	hash_table = table;
+	if (config->accounting) {
+		SgenHashTable table = SGEN_HASH_TABLE_INIT (INTERNAL_MEM_BRIDGE_HASH_TABLE, INTERNAL_MEM_BRIDGE_HASH_TABLE_ENTRY, sizeof (HashEntryWithAccounting), mono_aligned_addr_hash, NULL);
+		bridge_accounting_enabled = TRUE;
+		hash_table = table;
+	}
+	if (config->dump_prefix) {
+		dump_prefix = strdup (config->dump_prefix);
+	}
 }
 
 static MonoGCBridgeObjectKind
@@ -604,8 +611,6 @@ reset_flags (SCC *scc)
 }
 #endif
 
-static char *dump_prefix = NULL;
-
 static void
 dump_graph (void)
 {
@@ -655,12 +660,6 @@ dump_graph (void)
 	fprintf (file, "</graph></gexf>\n");
 
 	fclose (file);
-}
-
-static void
-set_dump_prefix (const char *prefix)
-{
-	dump_prefix = strdup (prefix);
 }
 
 static int
@@ -1087,8 +1086,7 @@ sgen_new_bridge_init (SgenBridgeProcessor *collector)
 	collector->class_kind = class_kind;
 	collector->register_finalized_object = register_finalized_object;
 	collector->describe_pointer = describe_pointer;
-	collector->enable_accounting = enable_accounting;
-	collector->set_dump_prefix = set_dump_prefix;
+	collector->set_config = set_config;
 
 	bridge_processor = collector;
 }

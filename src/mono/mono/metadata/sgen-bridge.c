@@ -33,6 +33,8 @@ typedef enum {
 static BridgeProcessorSelection bridge_processor_selection = BRIDGE_PROCESSOR_DEFAULT;
 // Most recently requested callbacks
 static MonoGCBridgeCallbacks pending_bridge_callbacks;
+// Configuration to be passed to bridge processor after init
+static SgenBridgeProcessorConfig bridge_processor_config;
 // Currently-in-use callbacks
 MonoGCBridgeCallbacks bridge_callbacks;
 
@@ -84,6 +86,12 @@ bridge_processor_name (const char *name)
 	}
 }
 
+static gboolean
+bridge_processor_started ()
+{
+	return bridge_processor.reset_data != NULL;
+}
+
 // Initialize a single bridge processor
 static void
 init_bridge_processor (SgenBridgeProcessor *processor, BridgeProcessorSelection selection)
@@ -133,8 +141,16 @@ sgen_init_bridge ()
 		bridge_callbacks = pending_bridge_callbacks;
 
 		// If a bridge was registered but there is no bridge processor yet
-		if (bridge_callbacks.cross_references && !bridge_processor.reset_data)
+		if (bridge_callbacks.cross_references && !bridge_processor_started ()) {
 			init_bridge_processor (&bridge_processor, bridge_processor_selection);
+
+			if (bridge_processor.set_config)
+				bridge_processor.set_config (&bridge_processor_config);
+
+			// Config is no longer needed so free its memory
+			free (bridge_processor_config.dump_prefix);
+			bridge_processor_config.dump_prefix = NULL;
+		}
 
 		sgen_gc_unlock ();
 	}
@@ -147,7 +163,7 @@ sgen_set_bridge_implementation (const char *name)
 
 	if (selection == BRIDGE_PROCESSOR_INVALID)
 		g_warning ("Invalid value for bridge processor implementation, valid values are: 'new', 'old' and 'tarjan'.");
-	else if (bridge_processor.reset_data)
+	else if (bridge_processor_started ())
 		g_warning ("Cannot set bridge processor implementation once bridge has already started");
 	else
 		bridge_processor_selection = selection;
@@ -480,12 +496,9 @@ sgen_bridge_describe_pointer (GCObject *obj)
 static void
 set_dump_prefix (const char *prefix)
 {
-	if (!bridge_processor.set_dump_prefix) {
-		fprintf (stderr, "Warning: Bridge implementation does not support dumping - ignoring.\n");
-		return;
-	}
-
-	bridge_processor.set_dump_prefix (prefix);
+	if (bridge_processor_config.dump_prefix)
+		free (bridge_processor_config.dump_prefix);
+	bridge_processor_config.dump_prefix = strdup (prefix);
 }
 
 /* Test support code */
@@ -653,21 +666,38 @@ register_test_bridge_callbacks (const char *bridge_class_name)
 }
 
 gboolean
+sgen_bridge_handle_gc_param (const char *opt)
+{
+	g_assert (!bridge_processor_started ());
+
+	if (!strcmp (opt, "bridge-require-precise-merge")) {
+		bridge_processor_config.scc_precise_merge = TRUE;
+	} else {
+		return FALSE;
+	}
+
+	return TRUE;
+}
+
+gboolean
 sgen_bridge_handle_gc_debug (const char *opt)
 {
+	g_assert (!bridge_processor_started ());
+
 	if (g_str_has_prefix (opt, "bridge=")) {
 		opt = strchr (opt, '=') + 1;
 		register_test_bridge_callbacks (g_strdup (opt));
 	} else if (!strcmp (opt, "enable-bridge-accounting")) {
-		bridge_processor.enable_accounting ();
+		bridge_processor_config.accounting = TRUE;
 	} else if (g_str_has_prefix (opt, "bridge-dump=")) {
 		char *prefix = strchr (opt, '=') + 1;
-		set_dump_prefix (prefix);
+		set_dump_prefix(prefix);
 	} else if (g_str_has_prefix (opt, "bridge-compare-to=")) {
 		const char *name = strchr (opt, '=') + 1;
 		BridgeProcessorSelection selection = bridge_processor_name (name);
 
 		if (selection != BRIDGE_PROCESSOR_INVALID) {
+			// Compare processor doesn't get config
 			init_bridge_processor (&compare_to_bridge_processor, selection);
 		} else {
 			g_warning ("Invalid bridge implementation to compare against - ignoring.");

@@ -111,13 +111,29 @@ class Driver {
 		var heads = new Bridge [FAN_OUT];
 		for (int i = 0; i < FAN_OUT; ++i)
 			heads [i] = new Bridge ();
-		var multiplexer = new Bridge [FAN_OUT];
-		for (int i = 0; i < FAN_OUT; ++i)
-		{
-			heads [i].Links.Add (multiplexer);
-			multiplexer [i] = new Bridge ();
+
+		// We make five identical multiplexers to verify Tarjan-bridge can merge them together correctly.
+		var MULTIPLEXER_COUNT = 5;
+		Bridge[] multiplexer0 = null;
+		for(int m = 0; m < MULTIPLEXER_COUNT; m++) {
+			var multiplexer = new Bridge [FAN_OUT];
+			if (m == 0) {
+				multiplexer0 = multiplexer;
+				for (int i = 0; i < FAN_OUT; ++i)
+				{
+					heads [i].Links.Add (multiplexer);
+					multiplexer [i] = new Bridge ();
+				}
+			} else {
+				for (int i = 0; i < FAN_OUT; ++i)
+				{
+					heads [i].Links.Add (multiplexer);
+					multiplexer [i] = multiplexer0 [i];
+				}
+			}
 		}
-		Console.WriteLine ("-double fan done-");
+
+		Console.WriteLine ("-double fan x5 done-");
 	}
 
 	/*

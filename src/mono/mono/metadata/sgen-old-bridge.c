@@ -372,11 +372,13 @@ dyn_array_int_merge_one (DynIntArray *array, int value)
 
 
 static void
-enable_accounting (void)
+set_config (const SgenBridgeProcessorConfig *config)
 {
-	SgenHashTable table = SGEN_HASH_TABLE_INIT (INTERNAL_MEM_BRIDGE_HASH_TABLE, INTERNAL_MEM_BRIDGE_HASH_TABLE_ENTRY, sizeof (HashEntryWithAccounting), mono_aligned_addr_hash, NULL);
-	bridge_accounting_enabled = TRUE;
-	hash_table = table;
+	if (config->accounting) {
+		SgenHashTable table = SGEN_HASH_TABLE_INIT (INTERNAL_MEM_BRIDGE_HASH_TABLE, INTERNAL_MEM_BRIDGE_HASH_TABLE_ENTRY, sizeof (HashEntryWithAccounting), mono_aligned_addr_hash, NULL);
+		bridge_accounting_enabled = TRUE;
+		hash_table = table;
+	}
 }
 
 static MonoGCBridgeObjectKind
@@ -922,7 +924,7 @@ sgen_old_bridge_init (SgenBridgeProcessor *collector)
 	collector->class_kind = class_kind;
 	collector->register_finalized_object = register_finalized_object;
 	collector->describe_pointer = describe_pointer;
-	collector->enable_accounting = enable_accounting;
+	collector->set_config = set_config;
 
 	bridge_processor = collector;
 }
