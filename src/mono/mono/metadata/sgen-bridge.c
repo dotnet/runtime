@@ -668,7 +668,7 @@ register_test_bridge_callbacks (const char *bridge_class_name)
 gboolean
 sgen_bridge_handle_gc_param (const char *opt)
 {
-	assert (!bridge_processor_started ());
+	g_assert (!bridge_processor_started ());
 
 	if (!strcmp (opt, "bridge-require-precise-merge")) {
 		bridge_processor_config.scc_precise_merge = TRUE;
@@ -682,7 +682,7 @@ sgen_bridge_handle_gc_param (const char *opt)
 gboolean
 sgen_bridge_handle_gc_debug (const char *opt)
 {
-	assert (!bridge_processor_started ());
+	g_assert (!bridge_processor_started ());
 
 	if (g_str_has_prefix (opt, "bridge=")) {
 		opt = strchr (opt, '=') + 1;
