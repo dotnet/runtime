@@ -71,3 +71,9 @@ GC/Features/LOHFragmentation/lohfragmentation/lohfragmentation.sh
 GC/Features/SustainedLowLatency/scenario/scenario.sh
 GC/Regressions/dev10bugs/536168/536168/536168.sh
 GC/Stress/Framework/ReliabilityFramework/ReliabilityFramework.sh
+Loader/classloader/TypeGeneratorTests/TypeGeneratorTest612/Generated612/Generated612.sh
+Loader/classloader/TypeGeneratorTests/TypeGeneratorTest613/Generated613/Generated613.sh
+Loader/classloader/TypeGeneratorTests/TypeGeneratorTest614/Generated614/Generated614.sh
+Loader/classloader/TypeGeneratorTests/TypeGeneratorTest681/Generated681/Generated681.sh
+Loader/classloader/TypeGeneratorTests/TypeGeneratorTest682/Generated682/Generated682.sh
+Loader/classloader/TypeGeneratorTests/TypeGeneratorTest683/Generated683/Generated683.sh

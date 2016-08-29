@@ -18,7 +18,7 @@ As much as possible, we should link to the most authoritative and recent source 
 * PAL: [Platform Adaptation Layer](http://archive.oreilly.com/pub/a/dotnet/2002/03/04/rotor.html). Provides an abstraction layer between the runtime and the operating system
 * PE: Portable Executable.
 * ProjectN: Codename for the first version of [.NET Native for UWP](https://msdn.microsoft.com/en-us/vstudio/dotnetnative.aspx).
-* ReadyToRun: A flavor of native images - command line switch of [crossgen](https://github.com/dotnet/coreclr/blob/master/src/tools/crossgen/crossgen.cpp). We do plan to add docs as part of [#227](https://github.com/dotnet/coreclr/issues/227).
+* ReadyToRun: A flavor of native images - command line switch of [crossgen](../building/crossgen.md).
 * Redhawk: Codename for experimental minimal managed code runtime that evolved into [CoreRT](https://github.com/dotnet/corert/).
 * SOS: [Son of Strike](http://blogs.msdn.com/b/jasonz/archive/2003/10/21/53581.aspx). The debugging extension for DbgEng based debuggers. Uses the DAC as an abstraction layer for its operation.
 * SVR: The CLR used to be built as two variants, with one called "mscorsvr.dll", to mean the "server" version. In particular, it contained the server GC implementation, which was intended for multi-threaded apps capable of taking advantage of multiple processors. In the .NET Framework 2 release, the two variants were merged into "mscorwks.dll". The WKS version was the default, however the SVR version remained available.

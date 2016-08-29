@@ -26,12 +26,15 @@
     <SosSourceDir>$(ClrBase)\src\toolbox\sos\strike</SosSourceDir>
     <CompilerWarnings>
     </CompilerWarnings>
-    <UserIncludes>$(SosSourceDir)\inc;
+    <UserIncludes>
+        $(SosSourceDir)\inc;
         $(UserIncludes);
         $(Clrbase)\src\vm;
         $(Clrbase)\src\inc;
         $(Clrbase)\src\gcdump;
-        $(Clrbase)\src\Debug\shim</UserIncludes>
+        $(Clrbase)\src\Debug\shim;
+        $(Clrbase)\src\coreclr\hosts\inc
+    </UserIncludes>
     <OutputName>SOS</OutputName>
     <FileToMarkForSigning>$(BinariesDirectory)\$(OutputName).dll</FileToMarkForSigning>
     <TargetType>DYNLINK</TargetType>
@@ -68,6 +71,7 @@
     <TargetLib Include="$(SdkLibPath)\kernel32.lib" />
     <TargetLib Include="$(SdkLibPath)\user32.lib" />
     <TargetLib Include="$(SdkLibPath)\ole32.lib" />
+    <TargetLib Include="$(SdkLibPath)\oleaut32.lib" />
     <TargetLib Include="$(SdkLibPath)\dbghelp.lib" />
     <TargetLib Include="$(SdkLibPath)\uuid.lib" />
     <TargetLib Include="$(SdkLibPath)\version.lib" />

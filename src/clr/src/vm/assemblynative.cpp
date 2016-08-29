@@ -137,7 +137,7 @@ FCIMPL1(FC_BOOL_RET, AssemblyNative::IsNewPortableAssembly, AssemblyNameBaseObje
 FCIMPLEND
 #endif // FEATURE_FUSION
 
-FCIMPL9(Object*, AssemblyNative::Load, AssemblyNameBaseObject* assemblyNameUNSAFE, 
+FCIMPL10(Object*, AssemblyNative::Load, AssemblyNameBaseObject* assemblyNameUNSAFE, 
         StringObject* codeBaseUNSAFE, 
         Object* securityUNSAFE, 
         AssemblyBaseObject* requestingAssemblyUNSAFE,
@@ -145,7 +145,8 @@ FCIMPL9(Object*, AssemblyNative::Load, AssemblyNameBaseObject* assemblyNameUNSAF
         ICLRPrivBinder * pPrivHostBinder,
         CLR_BOOL fThrowOnFileNotFound,
         CLR_BOOL fForIntrospection,
-        CLR_BOOL fSuppressSecurityChecks)
+        CLR_BOOL fSuppressSecurityChecks,
+        INT_PTR ptrLoadContextBinder)
 {
     FCALL_CONTRACT;
 
@@ -243,10 +244,17 @@ FCIMPL9(Object*, AssemblyNative::Load, AssemblyNameBaseObject* assemblyNameUNSAF
         spec.SetParentAssembly(pParentAssembly);
 
 #if defined(FEATURE_HOST_ASSEMBLY_RESOLVER)    
-    // If the requesting assembly has Fallback LoadContext binder available,
-    // then set it up in the AssemblySpec.
-    if (pRefAssembly != NULL)
+    // Have we been passed the reference to the binder against which this load should be triggered?
+    // If so, then use it to set the fallback load context binder.
+    if (ptrLoadContextBinder != NULL)
     {
+        spec.SetFallbackLoadContextBinderForRequestingAssembly(reinterpret_cast<ICLRPrivBinder *>(ptrLoadContextBinder));
+        spec.SetPreferFallbackLoadContextBinder();
+    }
+    else if (pRefAssembly != NULL)
+    {
+        // If the requesting assembly has Fallback LoadContext binder available,
+        // then set it up in the AssemblySpec.
         PEFile *pRefAssemblyManifestFile = pRefAssembly->GetManifestFile();
         spec.SetFallbackLoadContextBinderForRequestingAssembly(pRefAssemblyManifestFile->GetFallbackLoadContextBinder());
     }

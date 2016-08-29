@@ -38,20 +38,14 @@ class ComCallMethodDesc;
 
 #define USE_INDIRECT_CODEHEADER
 
-#ifdef FEATURE_REMOTING
-#define HAS_REMOTING_PRECODE                    1
-#endif
-
-//ARM64TODO: Enable it once we complete work on precode
 //#define HAS_FIXUP_PRECODE                       1
 //#define HAS_FIXUP_PRECODE_CHUNKS                1
 
 // ThisPtrRetBufPrecode one is necessary for closed delegates over static methods with return buffer
 #define HAS_THISPTR_RETBUF_PRECODE              1
 
-//ARM64TODO: verify this
 #define CODE_SIZE_ALIGN                         8
-#define CACHE_LINE_SIZE                         32  // As per Intel Optimization Manual the cache line size is 32 bytes
+#define CACHE_LINE_SIZE                         64
 #define LOG2SLOT                                LOG2_PTRSIZE
 
 #define ENREGISTERED_RETURNTYPE_MAXSIZE         32  // bytes (four FP registers: d0,d1,d2 and d3)
@@ -71,7 +65,6 @@ class ComCallMethodDesc;
 // as large as the largest FieldMarshaler subclass. This requirement
 // is guarded by an assert.
 //=======================================================================
-//ARM64TODO: verify this
 #define MAXFIELDMARSHALERSIZE               40
 
 //**********************************************************************
@@ -320,8 +313,8 @@ inline PCODE decodeBackToBackJump(PCODE pBuffer)
 
 inline BOOL IsUnmanagedValueTypeReturnedByRef(UINT sizeofvaluetype) 
 {
-//   ARM64TODO : Check if we need to consider HFA
-    return (sizeofvaluetype > 8);
+    // ARM64TODO: Does this need to care about HFA. It does not for ARM32
+    return (sizeofvaluetype > ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE);
 }
 
 
@@ -476,9 +469,7 @@ extern "C" void SinglecastDelegateInvokeStub();
 
 
 // preferred alignment for data
-//ARM64TODO: double check
 #define DATA_ALIGNMENT 8
-
 
 struct DECLSPEC_ALIGN(16) UMEntryThunkCode
 {
@@ -715,58 +706,5 @@ struct ThisPtrRetBufPrecode {
     }
 };
 typedef DPTR(ThisPtrRetBufPrecode) PTR_ThisPtrRetBufPrecode;
-
-
-#ifdef HAS_REMOTING_PRECODE
-
-// Precode with embedded remoting interceptor
-struct RemotingPrecode {
-
-    static const int Type = 0x02;
-
-    // push {r1,lr}
-    // ldr r1, [pc, #16]    ; =m_pPrecodeRemotingThunk
-    // blx r1
-    // pop {r1,lr}
-    // ldr pc, [pc, #12]    ; =m_pLocalTarget
-    // nop                  ; padding for alignment
-    // dcd m_pMethodDesc
-    // dcd m_pPrecodeRemotingThunk
-    // dcd m_pLocalTarget
-    WORD    m_rgCode[8];
-    TADDR   m_pMethodDesc;
-    TADDR   m_pPrecodeRemotingThunk;
-    TADDR   m_pLocalTarget;
-
-    void Init(MethodDesc* pMD, LoaderAllocator *pLoaderAllocator = NULL);
-
-    TADDR GetMethodDesc()
-    {
-        _ASSERTE(!"ARM64:NYI");
-        return NULL;
-    }
-
-    PCODE GetTarget()
-    { 
-        _ASSERTE(!"ARM64:NYI");
-        return NULL;
-    }
-
-    BOOL SetTargetInterlocked(TADDR target, TADDR expected)
-    {
-        _ASSERTE(!"ARM64:NYI");
-        return NULL;
-    }
-
-#ifdef FEATURE_PREJIT
-    void Fixup(DataImage *image, ZapNode *pCodeNode);
-#endif
-};
-typedef DPTR(RemotingPrecode) PTR_RemotingPrecode;
-
-EXTERN_C void PrecodeRemotingThunk();
-
-#endif // HAS_REMOTING_PRECODE
-
 
 #endif // __cgencpu_h__

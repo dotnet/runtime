@@ -43,6 +43,11 @@
     <_CLRTestNeedsProjectToRun Condition=" '$(_CLRTestNeedsToRun)' and '!$(_CLRTestBuildsExecutable)' ">true</_CLRTestNeedsProjectToRun>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(ReferenceLocalMscorlib)' == 'true'">
+    <ProjectJson>$(SourceDir)Common/empty/project.json</ProjectJson>
+    <ProjectLockJson>$(SourceDir)Common/empty/project.lock.json</ProjectLockJson>
+  </PropertyGroup>
+
   <!--
   If it needs ProjectToRun, turn the project into a ProjectReference so it gets built
   -->

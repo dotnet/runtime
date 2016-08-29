@@ -13,9 +13,7 @@ using System.Diagnostics.Contracts;
 
 namespace System
 {
-#if FEATURE_SERIALIZATION
     [Serializable]
-#endif
     internal sealed class DelegateSerializationHolder : IObjectReference, ISerializable
     {
         #region Static Members
@@ -223,7 +221,7 @@ namespace System
 #if FEATURE_REMOTING                
                     Object target = de.target != null ? RemotingServices.CheckCast(de.target, targetType) : null;
 #else
-                    if(!targetType.IsInstanceOfType(de.target))
+                    if(de.target != null && !targetType.IsInstanceOfType(de.target))
                         throw new InvalidCastException();
                     Object target=de.target;
 #endif

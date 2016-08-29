@@ -12,14 +12,21 @@ namespace System.Globalization
     public partial class CompareInfo
     {
         [SecurityCritical]
-        private readonly Interop.GlobalizationInterop.SafeSortHandle m_sortHandle;
+        [NonSerialized]
+        private Interop.GlobalizationInterop.SafeSortHandle m_sortHandle;
 
-        private readonly bool m_isAsciiEqualityOrdinal;
+        [NonSerialized]
+        private bool m_isAsciiEqualityOrdinal;
 
         [SecuritySafeCritical]
         internal CompareInfo(CultureInfo culture)
         {
             m_name = culture.m_name;
+            InitSort(culture);
+        }
+
+        private void InitSort(CultureInfo culture)
+        {
             m_sortName = culture.SortName;
             m_sortHandle = Interop.GlobalizationInterop.GetSortHandle(GetNullTerminatedUtf8String(m_sortName));
             m_isAsciiEqualityOrdinal = (m_sortName == "en-US" || m_sortName == "");

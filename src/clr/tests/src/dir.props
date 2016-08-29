@@ -73,5 +73,9 @@
   <PropertyGroup>
     <ZapRequire Condition="'$(ZapRequire)' == ''">2</ZapRequire>
   </PropertyGroup>
-
+  
+  <PropertyGroup>
+    <ProjectJson>$(SourceDir)Common\test_dependencies\project.json</ProjectJson>
+    <ProjectLockJson>$(SourceDir)Common\test_dependencies\project.lock.json</ProjectLockJson>
+  </PropertyGroup>
 </Project>

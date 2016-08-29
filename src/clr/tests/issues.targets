@@ -190,6 +190,24 @@
         <ExcludeList Include="$(XunitTestBinBase)\GC\LargeMemory\API\gc\collect\*">
              <Issue>3392</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\TypeGeneratorTests\TypeGeneratorTest612\Generated612\*">
+             <Issue>6707</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\TypeGeneratorTests\TypeGeneratorTest613\Generated613\*">
+             <Issue>6707</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\TypeGeneratorTests\TypeGeneratorTest614\Generated614\*">
+             <Issue>6707</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\TypeGeneratorTests\TypeGeneratorTest681\Generated681\*">
+             <Issue>6707</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\TypeGeneratorTests\TypeGeneratorTest682\Generated682\*">
+             <Issue>6707</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\TypeGeneratorTests\TypeGeneratorTest683\Generated683\*">
+             <Issue>6707</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <!-- The following are baseline x86 failures -->
@@ -229,7 +247,7 @@
              <Issue>needs triage</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)\JIT\Performance\CodeQuality\Roslyn\CscBench\CscBench.cmd">
-             <Issue>needs triage</Issue>
+             <Issue>6844</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V1.2-Beta1\b103058\b103058\b103058.cmd">
              <Issue>needs triage</Issue>
@@ -240,40 +258,16 @@
         <ExcludeList Include="$(XunitTestBinBase)\managed\Compilation\Compilation\Compilation.cmd">
              <Issue>needs triage</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\tailcall_v4\smallFrame\smallFrame.cmd">
+             <Issue>tail. call pop ret is only supported on amd64</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <!-- The following x86 failures only occur with RyuJIT/x86 -->
 
     <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(BuildArch)' == 'x86'">
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\stringintern\_Simpletest1\_Simpletest1.cmd">
-             <Issue>3554</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\stringintern\_XAssemblytest1-xassem\_XAssemblytest1-xassem.cmd">
-             <Issue>3554</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\stringintern\_XModuletest1-xmod\_XModuletest1-xmod.cmd">
-             <Issue>3554</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\stringintern\test1-xassem\test1-xassem.cmd">
-             <Issue>3554</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\stringintern\test4-xassem\test4-xassem.cmd">
-             <Issue>3554</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\stringintern\_Simpletest4\_Simpletest4.cmd">
-             <Issue>3554</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\stringintern\_XAssemblytest4-xassem\_XAssemblytest4-xassem.cmd">
-             <Issue>3554</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\stringintern\_XModuletest4-xmod\_XModuletest4-xmod.cmd">
-             <Issue>3554</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)\JIT\Performance\CodeQuality\Serialization\Serialize\Serialize.cmd">
              <Issue>3597</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\Performance\CodeQuality\V8\DeltaBlue\DeltaBlue\DeltaBlue.cmd">
-             <Issue>4817</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\MDArray\basics\stringarr_cs_do\stringarr_cs_do.cmd">
              <Issue>4844</Issue>
@@ -281,95 +275,20 @@
         <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\MDArray\basics\stringarr_cs_ro\stringarr_cs_ro.cmd">
              <Issue>4844</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\SIMD\CircleInConvex_r\CircleInConvex_r.cmd">
-            <Issue>4992</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\SIMD\CircleInConvex_ro\CircleInConvex_ro.cmd">
-            <Issue>4992</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)\JIT\opt\Tailcall\TailcallVerifyWithPrefix\TailcallVerifyWithPrefix.cmd" >
             <Issue>x86 JIT doesn't support tail call opt</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\fp\exgen\10w5d_cs_do\10w5d_cs_do.cmd">
-             <Issue>6097</Issue>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\eh\basics\loopEH\loopEH.cmd">
+             <Issue>6778</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\fp\exgen\10w250d_cs_do\10w250d_cs_do.cmd">
-             <Issue>6097</Issue>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\int64\superlong\_il_relsuperlong\_il_relsuperlong.cmd">
+             <Issue>6778</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\perffix\primitivevt\mixed1_cs_ro\mixed1_cs_ro.cmd">
-             <Issue>6097</Issue>
+        <ExcludeList Include="$(XunitTestBinBase)\GC\Scenarios\DoublinkList\dlstack\*">
+             <Issue>6553</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\fp\exgen\10w250d_cs_ro\10w250d_cs_ro.cmd">
-             <Issue>6097</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\fp\exgen\10w5d_cs_ro\10w5d_cs_ro.cmd">
-             <Issue>6097</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\perffix\primitivevt\mixed1_cs_do\mixed1_cs_do.cmd">
-             <Issue>6097</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\hfa\main\testA\hfa_sd2A_d\hfa_sd2A_d.cmd">
-            <Issue>6180</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\hfa\main\testA\hfa_sd2A_r\hfa_sd2A_r.cmd">
-            <Issue>6180</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\hfa\main\testA\hfa_sf2A_d\hfa_sf2A_d.cmd">
-            <Issue>6180</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\hfa\main\testA\hfa_sf2A_r\hfa_sf2A_r.cmd">
-            <Issue>6180</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\hfa\main\testB\hfa_sd2B_d\hfa_sd2B_d.cmd">
-            <Issue>6180</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\hfa\main\testB\hfa_sd2B_r\hfa_sd2B_r.cmd">
-            <Issue>6180</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\hfa\main\testB\hfa_sf2B_d\hfa_sf2B_d.cmd">
-            <Issue>6180</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\hfa\main\testB\hfa_sf2B_r\hfa_sf2B_r.cmd">
-            <Issue>6180</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\hfa\main\testC\hfa_sd2C_d\hfa_sd2C_d.cmd">
-            <Issue>6180</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\hfa\main\testC\hfa_sd2C_r\hfa_sd2C_r.cmd">
-            <Issue>6180</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\hfa\main\testC\hfa_sf2C_d\hfa_sf2C_d.cmd">
-            <Issue>6180</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\hfa\main\testC\hfa_sf2C_r\hfa_sf2C_r.cmd">
-            <Issue>6180</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\hfa\main\testE\hfa_sd2E_d\hfa_sd2E_d.cmd">
-            <Issue>6180</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\hfa\main\testE\hfa_sd2E_r\hfa_sd2E_r.cmd">
-            <Issue>6180</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\hfa\main\testE\hfa_sf2E_d\hfa_sf2E_d.cmd">
-            <Issue>6180</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\hfa\main\testE\hfa_sf2E_r\hfa_sf2E_r.cmd">
-            <Issue>6180</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\hfa\main\testG\hfa_sd2G_d\hfa_sd2G_d.cmd">
-            <Issue>6180</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\hfa\main\testG\hfa_sd2G_r\hfa_sd2G_r.cmd">
-            <Issue>6180</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\hfa\main\testG\hfa_sf2G_d\hfa_sf2G_d.cmd">
-            <Issue>6180</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\hfa\main\testG\hfa_sf2G_r\hfa_sf2G_r.cmd">
-            <Issue>6180</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V1-M11-Beta1\b44410\b44410\b44410.cmd">
-             <Issue>6588</Issue>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\JitBlue\DevDiv_255263\DevDiv_255263\DevDiv_255263.cmd">
+             <Issue>6940</Issue>
         </ExcludeList>
     </ItemGroup>
     
@@ -541,9 +460,6 @@
              <Issue>needs triage</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V2.0-Beta2\b409748\b409748\b409748.cmd">
-             <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\opt\Tailcall\TailcallVerifyWithPrefix\TailcallVerifyWithPrefix.cmd">
              <Issue>needs triage</Issue>
         </ExcludeList>
     </ItemGroup>

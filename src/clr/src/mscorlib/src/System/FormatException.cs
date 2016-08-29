@@ -12,12 +12,9 @@
 ===========================================================*/
 namespace System {
     
-    using System;
     using System.Runtime.Serialization;
-[System.Runtime.InteropServices.ComVisible(true)]
-#if FEATURE_SERIALIZATION
+    [System.Runtime.InteropServices.ComVisible(true)]
     [Serializable]
-#endif
     public class FormatException : SystemException {
         public FormatException() 
             : base(Environment.GetResourceString("Arg_FormatException")) {

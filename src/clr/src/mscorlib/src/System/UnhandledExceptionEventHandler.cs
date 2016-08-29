@@ -8,9 +8,7 @@ namespace System {
 #if FEATURE_CORECLR
      [System.Security.SecurityCritical] // auto-generated
 #endif
-#if FEATURE_SERIALIZATION
     [Serializable]
-#endif
     [System.Runtime.InteropServices.ComVisible(true)]
     public delegate void UnhandledExceptionEventHandler(Object sender, UnhandledExceptionEventArgs e);
 }

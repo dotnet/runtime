@@ -83,21 +83,10 @@ namespace System.Text
     //
 
     [System.Runtime.InteropServices.ComVisible(true)]
-#if FEATURE_SERIALIZATION
     [Serializable]
-#endif
     public abstract class Encoding : ICloneable
     {
-        private static volatile Encoding defaultEncoding;
-        private static volatile Encoding unicodeEncoding;
-        private static volatile Encoding bigEndianUnicode;
-        private static volatile Encoding utf7Encoding;
-        private static volatile Encoding utf8Encoding;
-        private static volatile Encoding utf32Encoding;
-        private static volatile Encoding asciiEncoding;
-        private static volatile Encoding latin1Encoding;
-        
-        static volatile Hashtable encodings;
+        private static Encoding defaultEncoding;
 
         //
         // The following values are from mlang.idl.  These values
@@ -382,6 +371,7 @@ namespace System.Text
             return dstEncoding.GetBytes(srcEncoding.GetChars(bytes, index, count));
         }
 
+#if FEATURE_CODEPAGES_FILE
         // Private object for locking instead of locking on a public type for SQL reliability work.
         private static Object s_InternalSyncObject;
         private static Object InternalSyncObject {
@@ -393,6 +383,11 @@ namespace System.Text
                 return s_InternalSyncObject;
             }
         }
+
+        // On Desktop, encoding instances that aren't cached in a static field are cached in
+        // a hash table by codepage.
+        private static volatile Hashtable encodings;
+#endif
 
 #if !FEATURE_CORECLR
         [System.Security.SecurityCritical]
@@ -429,9 +424,34 @@ namespace System.Text
 
             // Our Encoding
 
+            // See if the encoding is cached in a static field.
+            switch (codepage)
+            {
+                case CodePageDefault: return Default;            // 0
+                case CodePageUnicode: return Unicode;            // 1200
+                case CodePageBigEndian: return BigEndianUnicode; // 1201
+                case CodePageUTF32: return UTF32;                // 12000
+                case CodePageUTF32BE: return BigEndianUTF32;     // 12001
+                case CodePageUTF7: return UTF7;                  // 65000
+                case CodePageUTF8: return UTF8;                  // 65001
+                case CodePageASCII: return ASCII;                // 20127
+                case ISO_8859_1: return Latin1;                  // 28591
+
+                // We don't allow the following special code page values that Win32 allows.
+                case CodePageNoOEM:                              // 1 CP_OEMCP
+                case CodePageNoMac:                              // 2 CP_MACCP
+                case CodePageNoThread:                           // 3 CP_THREAD_ACP
+                case CodePageNoSymbol:                           // 42 CP_SYMBOL
+                    throw new ArgumentException(Environment.GetResourceString(
+                        "Argument_CodepageNotSupported", codepage), "codepage");
+            }
+
+#if FEATURE_CODEPAGES_FILE
+            object key = codepage; // Box once
+
             // See if we have a hash table with our encoding in it already.
             if (encodings != null) {
-                result = (Encoding)encodings[codepage];
+                result = (Encoding)encodings[key];
             }
 
             if (result == null)
@@ -446,92 +466,34 @@ namespace System.Text
                     }
 
                     // Double check that we don't have one in the table (in case another thread beat us here)
-                    if ((result = (Encoding)encodings[codepage]) != null)
+                    if ((result = (Encoding)encodings[key]) != null)
                         return result;
 
-                    // Special case the commonly used Encoding classes here, then call
-                    // GetEncodingRare to avoid loading classes like MLangCodePageEncoding
-                    // and ASCIIEncoding.  ASP.NET uses UTF-8 & ISO-8859-1.
-                    switch (codepage)
+                    if (codepage == CodePageWindows1252)
                     {
-                        case CodePageDefault:                   // 0, default code page
-                            result = Encoding.Default;
-                            break;
-                        case CodePageUnicode:                   // 1200, Unicode
-                            result = Unicode;
-                            break;
-                        case CodePageBigEndian:                 // 1201, big endian unicode
-                            result = BigEndianUnicode;
-                            break;
-#if FEATURE_CODEPAGES_FILE                            
-                        case CodePageWindows1252:               // 1252, Windows
-                            result = new SBCSCodePageEncoding(codepage);
-                            break;
-#else
-                            // on desktop, UTF7 is handled by GetEncodingRare.
-                            // On Coreclr, we handle this directly without bringing GetEncodingRare, so that we get real UTF-7 encoding.
-                        case CodePageUTF7:                      // 65000, UTF7
-                            result = UTF7;
-                            break;
-                        case CodePageUTF32:             // 12000
-                            result = UTF32;
-                            break;
-                        case CodePageUTF32BE:           // 12001
-                            result = new UTF32Encoding(true, true);
-                            break;
-#endif
-                        case CodePageUTF8:                      // 65001, UTF8
-                            result = UTF8;
-                            break;
-
-                        // These are (hopefully) not very common, but also shouldn't slow us down much and make default
-                        // case able to handle more code pages by calling GetEncodingCodePage
-                        case CodePageNoOEM:             // 1
-                        case CodePageNoMac:             // 2
-                        case CodePageNoThread:          // 3
-                        case CodePageNoSymbol:          // 42
-                            // Win32 also allows the following special code page values.  We won't allow them except in the
-                            // CP_ACP case.
-                            // #define CP_ACP                    0           // default to ANSI code page
-                            // #define CP_OEMCP                  1           // default to OEM  code page
-                            // #define CP_MACCP                  2           // default to MAC  code page
-                            // #define CP_THREAD_ACP             3           // current thread's ANSI code page
-                            // #define CP_SYMBOL                 42          // SYMBOL translations
-                            throw new ArgumentException(Environment.GetResourceString(
-                                "Argument_CodepageNotSupported", codepage), "codepage");
-                        // Have to do ASCII and Latin 1 first so they don't get loaded as code pages
-                        case CodePageASCII:             // 20127
-                            result = ASCII;
-                            break;
-                        case ISO_8859_1:                // 28591
-                            result = Latin1;
-                            break;
-                        default:
-                        {
-#if FEATURE_CODEPAGES_FILE
-                            // 1st assume its a code page.
-                            result = GetEncodingCodePage(codepage);
-                            if (result == null)
-                                result = GetEncodingRare(codepage);
-                            break;
-#else
-                            // Is it a valid code page?
-                            if (EncodingTable.GetCodePageDataItem(codepage) == null)
-                            {
-                                throw new NotSupportedException(
-                                    Environment.GetResourceString("NotSupported_NoCodepageData", codepage));
-                            }
-
-                            result = UTF8;
-                            break;
-#endif // FEATURE_CODEPAGES_FILE
-                        }
+                        result = new SBCSCodePageEncoding(codepage);
                     }
-                    encodings.Add(codepage, result);
-                }
+                    else
+                    {
+                        result = GetEncodingCodePage(codepage) ?? GetEncodingRare(codepage);
+                    }
 
+                    Contract.Assert(result != null, "result != null");
+
+                    encodings.Add(key, result);
+                }
             }
             return result;
+#else
+            // Is it a valid code page?
+            if (EncodingTable.GetCodePageDataItem(codepage) == null)
+            {
+                throw new NotSupportedException(
+                    Environment.GetResourceString("NotSupported_NoCodepageData", codepage));
+            }
+
+            return UTF8;
+#endif // FEATURE_CODEPAGES_FILE
         }
 
         [Pure]
@@ -562,15 +524,6 @@ namespace System.Text
             Encoding result;
             switch (codepage)
             {
-                case CodePageUTF7:              // 65000
-                    result = UTF7;
-                    break;
-                case CodePageUTF32:             // 12000
-                    result = UTF32;
-                    break;
-                case CodePageUTF32BE:           // 12001
-                    result = new UTF32Encoding(true, true);
-                    break;
                 case ISCIIAssemese:
                 case ISCIIBengali:
                 case ISCIIDevanagari:
@@ -895,29 +848,14 @@ namespace System.Text
 
         // Returns an encoding for the ASCII character set. The returned encoding
         // will be an instance of the ASCIIEncoding class.
-        //
 
-        public static Encoding ASCII
-        {
-            get
-            {
-                if (asciiEncoding == null) asciiEncoding = new ASCIIEncoding();
-                return asciiEncoding;
-            }
-        }
+        public static Encoding ASCII => ASCIIEncoding.s_default;
 
         // Returns an encoding for the Latin1 character set. The returned encoding
         // will be an instance of the Latin1Encoding class.
         //
         // This is for our optimizations
-        private static Encoding Latin1
-        {
-            get
-            {
-                if (latin1Encoding == null) latin1Encoding = new Latin1Encoding();
-                return latin1Encoding;
-            }
-        }
+        private static Encoding Latin1 => Latin1Encoding.s_default;
 
         // Returns the number of bytes required to encode the given character
         // array.
@@ -1371,6 +1309,9 @@ namespace System.Text
         [System.Security.SecurityCritical]  // auto-generated
         private static Encoding CreateDefaultEncoding()
         {
+            // defaultEncoding should be null if we get here, but we can't
+            // assert that in case another thread beat us to the initialization
+
             Encoding enc;
 
 #if FEATURE_CODEPAGES_FILE            
@@ -1389,23 +1330,15 @@ namespace System.Text
             // For silverlight we use UTF8 since ANSI isn't available
             enc = UTF8;
 
-#endif //FEATURE_CODEPAGES_FILE            
+#endif // FEATURE_CODEPAGES_FILE
 
-            return (enc);
+            // This method should only ever return one Encoding instance
+            return Interlocked.CompareExchange(ref defaultEncoding, enc, null) ?? enc;
         }
 
         // Returns an encoding for the system's current ANSI code page.
-        //
 
-        public static Encoding Default {
-            [System.Security.SecuritySafeCritical]  // auto-generated
-            get {
-                if (defaultEncoding == null) {
-                    defaultEncoding = CreateDefaultEncoding();
-                }
-                return defaultEncoding;
-            }
-        }
+        public static Encoding Default => defaultEncoding ?? CreateDefaultEncoding();
 
         // Returns an Encoder object for this encoding. The returned object
         // can be used to encode a sequence of characters into a sequence of bytes.
@@ -1481,59 +1414,38 @@ namespace System.Text
         //
         // It will use little endian byte order, but will detect
         // input in big endian if it finds a byte order mark per Unicode 2.0.
-        //
 
-        public static Encoding Unicode {
-            get {
-                if (unicodeEncoding == null) unicodeEncoding = new UnicodeEncoding(false, true);
-                return unicodeEncoding;
-            }
-        }
+        public static Encoding Unicode => UnicodeEncoding.s_littleEndianDefault;
 
         // Returns an encoding for Unicode format. The returned encoding will be
         // an instance of the UnicodeEncoding class.
         //
         // It will use big endian byte order, but will detect
         // input in little endian if it finds a byte order mark per Unicode 2.0.
-        //
 
-        public static Encoding BigEndianUnicode {
-            get {
-                if (bigEndianUnicode == null) bigEndianUnicode = new UnicodeEncoding(true, true);
-                return bigEndianUnicode;
-            }
-        }
+        public static Encoding BigEndianUnicode => UnicodeEncoding.s_bigEndianDefault;
 
         // Returns an encoding for the UTF-7 format. The returned encoding will be
         // an instance of the UTF7Encoding class.
-        //
-        public static Encoding UTF7 {
-            get {
-                if (utf7Encoding == null) utf7Encoding = new UTF7Encoding();
-                return utf7Encoding;
-            }
-        }
+
+        public static Encoding UTF7 => UTF7Encoding.s_default;
         
         // Returns an encoding for the UTF-8 format. The returned encoding will be
         // an instance of the UTF8Encoding class.
-        //
 
-        public static Encoding UTF8 {
-            get {
-                if (utf8Encoding == null) utf8Encoding = new UTF8Encoding(true);
-                return utf8Encoding;
-            }
-        }
+        public static Encoding UTF8 => UTF8Encoding.s_default;
+
+        // Returns an encoding for the UTF-32 format. The returned encoding will be
+        // an instance of the UTF32Encoding class.
+
+        public static Encoding UTF32 => UTF32Encoding.s_default;
 
         // Returns an encoding for the UTF-32 format. The returned encoding will be
         // an instance of the UTF32Encoding class.
         //
-        public static Encoding UTF32 {
-            get {
-                if (utf32Encoding == null) utf32Encoding = new UTF32Encoding(false, true);
-                return utf32Encoding;
-            }
-        }
+        // It will use big endian byte order.
+
+        private static Encoding BigEndianUTF32 => UTF32Encoding.s_bigEndianDefault;
 
         public override bool Equals(Object value) {
             Encoding that = value as Encoding;
@@ -1612,13 +1524,8 @@ namespace System.Text
             decoder.ClearMustFlush();
         }
 
-#if FEATURE_SERIALIZATION
         [Serializable]
-#endif
-        internal class DefaultEncoder : Encoder, IObjectReference
-#if FEATURE_SERIALIZATION
-            , ISerializable
-#endif
+        internal class DefaultEncoder : Encoder, IObjectReference, ISerializable
         {
             private Encoding m_encoding;
             [NonSerialized] private bool m_hasInitializedEncoding;
@@ -1676,7 +1583,6 @@ namespace System.Text
                 return encoder;
             }
 
-#if FEATURE_SERIALIZATION
             // ISerializable implementation, get data for this object
             [System.Security.SecurityCritical]  // auto-generated_required
             void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
@@ -1688,7 +1594,6 @@ namespace System.Text
                 // All we have is our encoding
                 info.AddValue("encoding", this.m_encoding);
             }
-#endif
 
             // Returns the number of bytes the next call to GetBytes will
             // produce if presented with the given range of characters and the given
@@ -1745,13 +1650,8 @@ namespace System.Text
             }
         }
 
-#if FEATURE_SERIALIZATION
         [Serializable]
-#endif
-        internal class DefaultDecoder : Decoder, IObjectReference
-#if FEATURE_SERIALIZATION
-            , ISerializable
-#endif
+        internal class DefaultDecoder : Decoder, IObjectReference, ISerializable
         {
             private Encoding m_encoding;
             [NonSerialized]
@@ -1804,7 +1704,6 @@ namespace System.Text
                 return decoder;
             }
 
-#if FEATURE_SERIALIZATION
             // ISerializable implementation, get data for this object
             [System.Security.SecurityCritical]  // auto-generated_required
             void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
@@ -1816,7 +1715,6 @@ namespace System.Text
                 // All we have is our encoding
                 info.AddValue("encoding", this.m_encoding);
             }
-#endif
 
             // Returns the number of characters the next call to GetChars will
             // produce if presented with the given range of bytes. The returned value

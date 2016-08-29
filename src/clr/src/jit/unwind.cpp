@@ -49,7 +49,10 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 //    A start location of nullptr means the beginning of the code.
 //    An end location of nullptr means the end of the code.
 //
-void Compiler::unwindGetFuncLocations(FuncInfoDsc* func, bool getHotSectionData, /* OUT */ emitLocation** ppStartLoc, /* OUT */ emitLocation** ppEndLoc)
+void Compiler::unwindGetFuncLocations(FuncInfoDsc*             func,
+                                      bool                     getHotSectionData,
+                                      /* OUT */ emitLocation** ppStartLoc,
+                                      /* OUT */ emitLocation** ppEndLoc)
 {
     if (func->funKind == FUNC_ROOT)
     {
@@ -59,7 +62,8 @@ void Compiler::unwindGetFuncLocations(FuncInfoDsc* func, bool getHotSectionData,
 
         if (getHotSectionData)
         {
-            *ppStartLoc = nullptr; // nullptr emit location means the beginning of the code. This is to handle the first fragment prolog.
+            *ppStartLoc = nullptr; // nullptr emit location means the beginning of the code. This is to handle the first
+                                   // fragment prolog.
 
             if (fgFirstColdBlock != nullptr)
             {
@@ -86,7 +90,7 @@ void Compiler::unwindGetFuncLocations(FuncInfoDsc* func, bool getHotSectionData,
             assert(fgFirstColdBlock != nullptr); // There better be a cold section!
 
             *ppStartLoc = new (this, CMK_UnwindInfo) emitLocation(ehEmitCookie(fgFirstColdBlock));
-            *ppEndLoc = nullptr; // nullptr end location means the end of the code
+            *ppEndLoc   = nullptr; // nullptr end location means the end of the code
         }
     }
     else
@@ -105,7 +109,9 @@ void Compiler::unwindGetFuncLocations(FuncInfoDsc* func, bool getHotSectionData,
         {
             assert(func->funKind == FUNC_HANDLER);
             *ppStartLoc = new (this, CMK_UnwindInfo) emitLocation(ehEmitCookie(HBtab->ebdHndBeg));
-            *ppEndLoc   = (HBtab->ebdHndLast->bbNext == nullptr) ? nullptr : new (this, CMK_UnwindInfo) emitLocation(ehEmitCookie(HBtab->ebdHndLast->bbNext));
+            *ppEndLoc   = (HBtab->ebdHndLast->bbNext == nullptr)
+                            ? nullptr
+                            : new (this, CMK_UnwindInfo) emitLocation(ehEmitCookie(HBtab->ebdHndLast->bbNext));
         }
     }
 }
@@ -127,16 +133,36 @@ void Compiler::unwindGetFuncLocations(FuncInfoDsc* func, bool getHotSectionData,
 #elif defined(_TARGET_X86_)
 
 // Stub routines that do nothing
-void Compiler::unwindBegProlog() { }
-void Compiler::unwindEndProlog() { }
-void Compiler::unwindBegEpilog() { }
-void Compiler::unwindEndEpilog() { }
-void Compiler::unwindReserve() { }
-void Compiler::unwindEmit(void* pHotCode, void* pColdCode) { }
-void Compiler::unwindPush(regNumber reg) { }
-void Compiler::unwindAllocStack(unsigned size) { }
-void Compiler::unwindSetFrameReg(regNumber reg, unsigned offset) { }
-void Compiler::unwindSaveReg(regNumber reg, unsigned offset) { }
+void Compiler::unwindBegProlog()
+{
+}
+void Compiler::unwindEndProlog()
+{
+}
+void Compiler::unwindBegEpilog()
+{
+}
+void Compiler::unwindEndEpilog()
+{
+}
+void Compiler::unwindReserve()
+{
+}
+void Compiler::unwindEmit(void* pHotCode, void* pColdCode)
+{
+}
+void Compiler::unwindPush(regNumber reg)
+{
+}
+void Compiler::unwindAllocStack(unsigned size)
+{
+}
+void Compiler::unwindSetFrameReg(regNumber reg, unsigned offset)
+{
+}
+void Compiler::unwindSaveReg(regNumber reg, unsigned offset)
+{
+}
 
 #else // _TARGET_*
 

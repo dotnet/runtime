@@ -120,9 +120,8 @@ esac
 dumplingsListPath="$PWD/dumplings.txt"
 if [ -f "$dumplingsListPath" ]; then
     rm "$dumplingsListPath"
-fi  
+fi
 
-touch $dumplingsListPath
 find . -type f -name "local_dumplings.txt" -exec rm {} \;
 
 function xunit_output_begin {
@@ -539,26 +538,28 @@ function skip_non_playlist_test {
 }
 
 function set_up_core_dump_generation {
-    if [ "$(uname -s)" == "Darwin" ]; then
-        # On OS X, we will enable core dump generation only if there are no core 
-        # files already in /cores/ at this point. This is being done to prevent
-        # inadvertently flooding the CI machines with dumps.
-        if [ ! "$(ls -A /cores)" ]; then 
-            ulimit -c unlimited
-        fi
-    elif [ "$(uname -s)" == "Linux" ]; then
-        # On Linux, we'll enable core file generation unconditionally, and if a dump
-        # is generated, we will print some useful information from it and delete the
-        # dump immediately.
+    # We will only enable dump generation here if we're on Mac or Linux
+    if [[ ! ( "$(uname -s)" == "Darwin" || "$(uname -s)" == "Linux" ) ]]; then
+        return
+    fi
 
+    # We won't enable dump generation on OS X/macOS if the machine hasn't been
+    # configured with the kern.corefile pattern we expect.
+    if [[ ( "$(uname -s)" == "Darwin" && "$(sysctl -n kern.corefile)" != "core.%P" ) ]]; then
+        echo "WARNING: Core dump generation not being enabled due to unexpected kern.corefile value."
+        return
+    fi
+
+    # Allow dump generation
+    ulimit -c unlimited
+
+    if [ "$(uname -s)" == "Linux" ]; then
         if [ -e /proc/self/coredump_filter ]; then
             # Include memory in private and shared file-backed mappings in the dump.
             # This ensures that we can see disassembly from our shared libraries when
             # inspecting the contents of the dump. See 'man core' for details.
             echo 0x3F > /proc/self/coredump_filter
         fi
-
-        ulimit -c unlimited
     fi
 }
 
@@ -574,14 +575,19 @@ function print_info_from_core_file {
         return
     fi
 
-    # Check for the existence of GDB on the path
-    hash gdb 2>/dev/null || { echo >&2 "GDB was not found. Unable to print core file."; return; }
+    # Use LLDB to inspect the core dump on Mac, and GDB everywhere else.
+    if [[ "$OSName" == "Darwin" ]]; then
+        hash lldb 2>/dev/null || { echo >&2 "LLDB was not found. Unable to print core file."; return; }
 
-    echo "Printing info from core file $core_file_name"
+        echo "Printing info from core file $core_file_name"
+        lldb -c $core_file_name -b -o 'bt'
+    else
+        # Use GDB to print the backtrace from the core file.
+        hash gdb 2>/dev/null || { echo >&2 "GDB was not found. Unable to print core file."; return; }
 
-    # Open the dump in GDB and print the stack from each thread. We can add more
-    # commands here if desired.
-    gdb --batch -ex "thread apply all bt full" -ex "quit" $executable_name $core_file_name
+        echo "Printing info from core file $core_file_name"
+        gdb --batch -ex "thread apply all bt full" -ex "quit" $executable_name $core_file_name
+    fi
 }
 
 function download_dumpling_script {
@@ -596,10 +602,10 @@ function upload_core_file_to_dumpling {
     local core_file_name=$1
     local dumpling_script="dumpling.py"
     local dumpling_file="local_dumplings.txt"
-    
-    # dumpling requires that the file exist before appending. 
+
+    # dumpling requires that the file exist before appending.
     touch ./$dumpling_file
-    
+
     if [ ! -x $dumpling_script ]; then
         download_dumpling_script
     fi
@@ -618,7 +624,7 @@ function upload_core_file_to_dumpling {
     fi
 
     # The output from this will include a unique ID for this dump.
-    ./$dumpling_script "--corefile" "$core_file_name" "upload" "--addpaths" $paths_to_add "--squelch" >> $dumpling_file
+    ./$dumpling_script "--corefile" "$core_file_name" "upload" "--addpaths" $paths_to_add "--squelch" | tee -a $dumpling_file
 }
 
 function preserve_core_file {
@@ -647,8 +653,11 @@ function inspect_and_delete_core_files {
     # Depending on distro/configuration, the core files may either be named "core"
     # or "core.<PID>" by default. We will read /proc/sys/kernel/core_uses_pid to 
     # determine which one it is.
+    # On OS X/macOS, we checked the kern.corefile value before enabling core dump
+    # generation, so we know it always includes the PID.
     local core_name_uses_pid=0
-    if [ -e /proc/sys/kernel/core_uses_pid ] && [ "1" == $(cat /proc/sys/kernel/core_uses_pid) ]; then
+    if [[ (( -e /proc/sys/kernel/core_uses_pid ) && ( "1" == $(cat /proc/sys/kernel/core_uses_pid) )) 
+          || ( "$(uname -s)" == "Darwin" ) ]]; then
         core_name_uses_pid=1
     fi
 
@@ -684,10 +693,9 @@ function run_test {
     "./$scriptFileName" >"$outputFileName" 2>&1
     local testScriptExitCode=$?
 
-    # On Linux, we will try to print some information from generated core dumps if
-    # a debugger is available, and possibly store a dump in a non-transient location.
-    # On OS X, any dump that's generated will be handled manually.
-    if [ "$limitedCoreDumps" == "ON" ] && [ "$(uname -s)" == "Linux" ]; then
+    # We will try to print some information from generated core dumps if a debugger
+    # is available, and possibly store a dump in a non-transient location.
+    if [ "$limitedCoreDumps" == "ON" ]; then
         inspect_and_delete_core_files
     fi
 
@@ -1149,7 +1157,11 @@ print_results
 echo "constructing $dumplingsListPath"
 find . -type f -name "local_dumplings.txt" -exec cat {} \; > $dumplingsListPath
 
-cat $dumplingsListPath
+if [ -s $dumplingsListPath ]; then
+    cat $dumplingsListPath
+else
+    rm $dumplingsListPath
+fi
 
 time_end=$(date +"%s")
 time_diff=$(($time_end-$time_start))

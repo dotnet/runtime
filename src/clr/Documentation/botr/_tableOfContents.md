@@ -1,5 +1,10 @@
 
-Welcome to the Book of the (.NET) Runtime (BOTR).  
+#The Book of the Runtime
+
+Welcome to the Book of the Runtime (BOTR) for the .NET Runtime.   This contains 
+a collection of articles about the non-trivial internals of the .NET Runtime.   Its
+intended audience are people actually modifying the code or simply wishing to have a 
+deep understanding of the runtime.  
 
 Below is a table of contents.   
 

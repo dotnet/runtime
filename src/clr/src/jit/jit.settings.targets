@@ -55,6 +55,7 @@
         <CppCompile Include="..\Instr.cpp" />
         <CppCompile Include="..\JitTelemetry.cpp" />
         <CppCompile Include="..\LclVars.cpp" />
+        <CppCompile Include="..\LIR.cpp" />
         <CppCompile Include="..\Liveness.cpp" />
         <CppCompile Include="..\Morph.cpp" />
         <CppCompile Include="..\Optimizer.cpp" />
@@ -84,6 +85,7 @@
         <CppCompile Include="..\inlinepolicy.cpp" />
         <CppCompile Include="..\jitconfig.cpp" />
         <CppCompile Include="..\hostallocator.cpp" />
+        <CppCompile Include="..\objectalloc.cpp" />
         <CppCompile Condition="'$(ClDefines.Contains(`LEGACY_BACKEND`))'=='True'" Include="..\CodeGenLegacy.cpp" />
         <CppCompile Condition="'$(ClDefines.Contains(`LEGACY_BACKEND`))'=='False'"  Include="..\Lower.cpp" />
         <CppCompile Condition="'$(ClDefines.Contains(`LEGACY_BACKEND`))'=='False'"  Include="..\LSRA.cpp" />

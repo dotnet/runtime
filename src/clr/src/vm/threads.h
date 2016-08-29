@@ -3504,19 +3504,19 @@ public:
 
     DWORD          DoAppropriateWait(AppropriateWaitFunc func, void *args, DWORD millis,
                                      WaitMode mode, PendingSync *syncInfo = 0);
-#ifndef FEATURE_CORECLR
+#ifndef FEATURE_PAL
     DWORD          DoSignalAndWait(HANDLE *handles, DWORD millis, BOOL alertable,
                                      PendingSync *syncState = 0);
-#endif
+#endif // !FEATURE_PAL
 private:
     void           DoAppropriateWaitWorkerAlertableHelper(WaitMode mode);
     DWORD          DoAppropriateWaitWorker(int countHandles, HANDLE *handles, BOOL waitAll,
                                            DWORD millis, WaitMode mode);
     DWORD          DoAppropriateWaitWorker(AppropriateWaitFunc func, void *args,
                                            DWORD millis, WaitMode mode);
-#ifndef FEATURE_CORECLR
+#ifndef FEATURE_PAL
     DWORD          DoSignalAndWaitWorker(HANDLE* pHandles, DWORD millis,BOOL alertable);
-#endif
+#endif // !FEATURE_PAL
     DWORD          DoAppropriateAptStateWait(int numWaiters, HANDLE* pHandles, BOOL bWaitAll, DWORD timeout, WaitMode mode);
 #ifdef FEATURE_SYNCHRONIZATIONCONTEXT_WAIT
     DWORD          DoSyncContextWait(OBJECTREF *pSyncCtxObj, int countHandles, HANDLE *handles, BOOL waitAll, DWORD millis);

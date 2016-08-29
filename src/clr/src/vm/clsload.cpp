@@ -4186,10 +4186,11 @@ ClassLoader::LoadTypeHandleForTypeKey_Body(
 #endif
     }
 
-retry:
     ReleaseHolder<PendingTypeLoadEntry> pLoadingEntry;
+    CrstHolderWithState unresolvedClassLockHolder(&m_UnresolvedClassLock, false);
 
-    CrstHolderWithState unresolvedClassLockHolder(&m_UnresolvedClassLock);
+retry:
+    unresolvedClassLockHolder.Acquire();    
 
     // Is it in the hash of classes currently being loaded?
     pLoadingEntry = m_pUnresolvedClassHash->GetValue(pTypeKey);
@@ -4360,12 +4361,24 @@ retry:
         // Release the lock before proceeding. The unhandled exception filters take number of locks that
         // have ordering violations with this lock.
         unresolvedClassLockHolder.Release();
+        
+        // Unblock any thread waiting to load same type as in TypeLoadEntry
+        pLoadingEntry->UnblockWaiters();
     }
     EX_END_HOOK;
 
     // Unlink this class from the unresolved class list.
     unresolvedClassLockHolder.Acquire();
     m_pUnresolvedClassHash->DeleteValue(pTypeKey);
+    unresolvedClassLockHolder.Release();
+
+    // Unblock any thread waiting to load same type as in TypeLoadEntry. This should be done
+    // after pLoadingEntry is removed from m_pUnresolvedClassHash. Otherwise the other thread
+    // (which was waiting) will keep spinning for a while after waking up, till the current thread removes 
+    //  pLoadingEntry from m_pUnresolvedClassHash. This can cause hang in situation when the current 
+    // thread is a background thread and so will get very less processor cycle to perform subsequent
+    // operations to remove the entry from hash later. 
+    pLoadingEntry->UnblockWaiters();
 
     if (currentLevel < targetLevel)
         goto retry;

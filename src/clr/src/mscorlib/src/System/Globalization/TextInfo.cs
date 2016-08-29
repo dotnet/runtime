@@ -27,14 +27,9 @@ namespace System.Globalization {
     using System.Diagnostics.Contracts;
 
 
-#if FEATURE_SERIALIZATION
     [Serializable]
-#endif
     [System.Runtime.InteropServices.ComVisible(true)]
-    public class TextInfo : ICloneable
-#if FEATURE_SERIALIZATION
-        , IDeserializationCallback
-#endif
+    public partial class TextInfo : ICloneable, IDeserializationCallback
     {
         //--------------------------------------------------------------------//
         //                        Internal Information                        //
@@ -126,7 +121,6 @@ namespace System.Globalization {
         [OptionalField(VersionAdded = 2)]
         private string customCultureName;
 
-#if !FEATURE_CORECLR
         // the following fields are defined to keep compatibility with Everett.
         // don't change/remove the names/types of these fields.
         [OptionalField(VersionAdded = 1)]
@@ -135,7 +129,6 @@ namespace System.Globalization {
         internal bool   m_useUserOverride;
         [OptionalField(VersionAdded = 1)]
         internal int    m_win32LangID;
-#endif // !FEATURE_CORECLR
 
 
         [OnDeserializing] 
@@ -899,13 +892,11 @@ namespace System.Globalization {
             }
         }
 
-#if FEATURE_SERIALIZATION
         /// <internalonly/>
         void IDeserializationCallback.OnDeserialization(Object sender)
         {
             OnDeserialized();
         }
-#endif
 
         //
         // Get case-insensitive hash code for the specified string.

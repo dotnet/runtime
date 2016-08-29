@@ -11,12 +11,12 @@
 #include "bitsetasshortlong.h"
 
 ///////////////////////////////////////////////////////////////////////////////
-// 
+//
 // CompAllocBitSetTraits: a base class for other BitSet traits classes.
-// 
+//
 // The classes in this file define "BitSetTraits" arguments to the "BitSetOps" type, ones that assume that
 // Compiler* is the "Env" type.
-// 
+//
 // This class just captures the compiler's allocator as an IAllocator.
 //
 class CompAllocBitSetTraits
@@ -30,14 +30,14 @@ public:
 };
 
 ///////////////////////////////////////////////////////////////////////////////
-// 
+//
 // TrackedVarBitSetTraits
-// 
+//
 // This class is customizes the bit set to represent sets of tracked local vars.
 // The size of the bitset is determined by the # of tracked locals (up to some internal
 // maximum), and the Compiler* tracks the tracked local epochs.
 //
-class TrackedVarBitSetTraits: public CompAllocBitSetTraits
+class TrackedVarBitSetTraits : public CompAllocBitSetTraits
 {
 public:
     static inline unsigned GetSize(Compiler* comp);
@@ -50,16 +50,16 @@ public:
 };
 
 ///////////////////////////////////////////////////////////////////////////////
-// 
+//
 // AllVarBitSetTraits
-// 
+//
 // This class is customizes the bit set to represent sets of all local vars (tracked or not) --
 // at least up to some maximum index.  (This index is private to the Compiler, and it is
 // the responsibility of the compiler not to use indices >= this maximum.)
 // We rely on the fact that variables are never deleted, and therefore use the
 // total # of locals as the epoch number (up to the maximum).
 //
-class AllVarBitSetTraits: public CompAllocBitSetTraits
+class AllVarBitSetTraits : public CompAllocBitSetTraits
 {
 public:
     static inline unsigned GetSize(Compiler* comp);
@@ -72,9 +72,9 @@ public:
 };
 
 ///////////////////////////////////////////////////////////////////////////////
-// 
+//
 // BasicBlockBitSetTraits
-// 
+//
 // This class is customizes the bit set to represent sets of BasicBlocks.
 // The size of the bitset is determined by maximum assigned BasicBlock number
 // (Compiler::fgBBNumMax) (Note that fgBBcount is not equal to this during inlining,
@@ -83,7 +83,7 @@ public:
 // Thus, if you only care about the inlinee, during inlining, this bit set will waste
 // the lower numbered block bits.) The Compiler* tracks the BasicBlock epochs.
 //
-class BasicBlockBitSetTraits: public CompAllocBitSetTraits
+class BasicBlockBitSetTraits : public CompAllocBitSetTraits
 {
 public:
     static inline unsigned GetSize(Compiler* comp);
@@ -96,23 +96,21 @@ public:
 };
 
 ///////////////////////////////////////////////////////////////////////////////
-// 
+//
 // BitVecTraits
-// 
+//
 // This class simplifies creation and usage of "ShortLong" bitsets.
 //
 struct BitVecTraits
 {
 private:
-    unsigned size;
+    unsigned  size;
     Compiler* comp;
 
 public:
-
-    BitVecTraits(unsigned size, Compiler* comp)
-        : size(size)
-        , comp(comp)
-    { }
+    BitVecTraits(unsigned size, Compiler* comp) : size(size), comp(comp)
+    {
+    }
 
     static inline IAllocator* GetAllocator(BitVecTraits* b);
 

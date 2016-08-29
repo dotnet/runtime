@@ -153,7 +153,14 @@ build_coreclr()
     if [ $__UseNinja == 1 ]; then
         generator="ninja"
         buildFile="build.ninja"
-        buildTool="ninja"
+        if which ninja >/dev/null 2>&1; then
+            buildTool="ninja"
+        elif which ninja-build >/dev/null 2>&1; then
+            buildTool="ninja-build"
+        else
+           echo "Unable to locate ninja!" 1>&2
+           exit 1
+        fi
     fi
 
     if [ $__SkipConfigure == 0 ]; then
@@ -196,6 +203,11 @@ build_coreclr()
 
     # Build CoreCLR
 
+    if [ $__ConfigureOnly == 1 ]; then
+        echo "Skipping CoreCLR build."
+        return
+    fi
+
     echo "Executing $buildTool install -j $NumProc"
 
     $buildTool install -j $NumProc
@@ -226,6 +238,9 @@ isMSBuildOnNETCoreSupported()
                 "opensuse.13.2-x64")
                     __isMSBuildOnNETCoreSupported=1
                     ;;
+                "opensuse.42.1-x64")
+                    __isMSBuildOnNETCoreSupported=1
+                    ;;
                 "rhel.7.2-x64")
                     __isMSBuildOnNETCoreSupported=1
                     ;;
@@ -233,6 +248,9 @@ isMSBuildOnNETCoreSupported()
                     __isMSBuildOnNETCoreSupported=1
                     ;;
                 "ubuntu.16.04-x64")
+                    __isMSBuildOnNETCoreSupported=1
+                    ;;
+                "ubuntu.16.10-x64")
                     __isMSBuildOnNETCoreSupported=1
                     ;;
                 *)
@@ -528,14 +546,19 @@ while :; do
             __ClangMinorVersion=8
             ;;
 
+        clang3.9)
+            __ClangMajorVersion=3
+            __ClangMinorVersion=9
+            ;;
+
         ninja)
             __UseNinja=1
             ;;
 
         configureonly)
             __ConfigureOnly=1
-            __SkipCoreCLR=1
             __SkipMSCorLib=1
+            __SkipNuget=1
             __IncludeTests=
             ;;
 

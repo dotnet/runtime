@@ -273,7 +273,7 @@ FCIMPL0(FC_BOOL_RET, ThreadPoolNative::NotifyRequestComplete)
         }
 
         if (needReset)
-            pThread->InternalReset (FALSE, TRUE, TRUE, FALSE);
+            pThread->InternalReset(FALSE, TRUE, TRUE, FALSE);
 
         HELPER_METHOD_FRAME_END();    
     }

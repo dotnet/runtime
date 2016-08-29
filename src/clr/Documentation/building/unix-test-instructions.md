@@ -28,7 +28,7 @@ See runtest.sh usage information:
 
 > `~/coreclr$ tests/runtest.sh --help`
 
-Run tests:
+Run tests (`Debug` may be replaced with `Release` or `Checked`, depending on which Configuration you've built):
 
 > ```bash
 > ~/coreclr$ tests/runtest.sh
@@ -36,7 +36,7 @@ Run tests:
 >     --testNativeBinDir=~/coreclr/bin/obj/Linux.x64.Debug/tests
 >     --coreClrBinDir=~/coreclr/bin/Product/Linux.x64.Debug
 >     --mscorlibDir=/media/coreclr/bin/Product/Linux.x64.Debug
->     --coreFxBinDir="~/corefx/bin/Linux.AnyCPU.Release;~/corefx/bin/Unix.AnyCPU.Release;~/corefx/bin/AnyOS.AnyCPU.Release"
+>     --coreFxBinDir="~/corefx/bin/Linux.AnyCPU.Debug;~/corefx/bin/Unix.AnyCPU.Debug;~/corefx/bin/AnyOS.AnyCPU.Debug"
 >     --coreFxNativeBinDir=~/corefx/bin/Linux.x64.Debug
 > ```
 

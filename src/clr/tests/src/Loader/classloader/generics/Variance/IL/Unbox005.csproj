@@ -27,10 +27,6 @@
     <Compile Include="Unbox005.cs" />
   </ItemGroup>
 
-  <ItemGroup>
-    <None Include="app.config" />
-    <None Include="project.json" />
-  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="Lib.ilproj" />

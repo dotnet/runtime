@@ -147,23 +147,22 @@ void LegalPolicy::SetFailure(InlineObservation obs)
 
     switch (m_Decision)
     {
-    case InlineDecision::FAILURE:
-        // Repeated failure only ok if evaluating a prejit root
-        // (since we can't fail fast because we're not inlining)
-        // or if inlining and the observation is CALLSITE_TOO_MANY_LOCALS
-        // (since we can't fail fast from lvaGrabTemp).
-        assert(m_IsPrejitRoot ||
-               (obs == InlineObservation::CALLSITE_TOO_MANY_LOCALS));
-        break;
-    case InlineDecision::UNDECIDED:
-    case InlineDecision::CANDIDATE:
-        m_Decision = InlineDecision::FAILURE;
-        m_Observation = obs;
-        break;
-    default:
-        // SUCCESS, NEVER, or ??
-        assert(!"Unexpected m_Decision");
-        unreached();
+        case InlineDecision::FAILURE:
+            // Repeated failure only ok if evaluating a prejit root
+            // (since we can't fail fast because we're not inlining)
+            // or if inlining and the observation is CALLSITE_TOO_MANY_LOCALS
+            // (since we can't fail fast from lvaGrabTemp).
+            assert(m_IsPrejitRoot || (obs == InlineObservation::CALLSITE_TOO_MANY_LOCALS));
+            break;
+        case InlineDecision::UNDECIDED:
+        case InlineDecision::CANDIDATE:
+            m_Decision    = InlineDecision::FAILURE;
+            m_Observation = obs;
+            break;
+        default:
+            // SUCCESS, NEVER, or ??
+            assert(!"Unexpected m_Decision");
+            unreached();
     }
 }
 
@@ -180,19 +179,19 @@ void LegalPolicy::SetNever(InlineObservation obs)
 
     switch (m_Decision)
     {
-    case InlineDecision::NEVER:
-        // Repeated never only ok if evaluating a prejit root
-        assert(m_IsPrejitRoot);
-        break;
-    case InlineDecision::UNDECIDED:
-    case InlineDecision::CANDIDATE:
-        m_Decision = InlineDecision::NEVER;
-        m_Observation = obs;
-        break;
-    default:
-        // SUCCESS, FAILURE or ??
-        assert(!"Unexpected m_Decision");
-        unreached();
+        case InlineDecision::NEVER:
+            // Repeated never only ok if evaluating a prejit root
+            assert(m_IsPrejitRoot);
+            break;
+        case InlineDecision::UNDECIDED:
+        case InlineDecision::CANDIDATE:
+            m_Decision    = InlineDecision::NEVER;
+            m_Observation = obs;
+            break;
+        default:
+            // SUCCESS, FAILURE or ??
+            assert(!"Unexpected m_Decision");
+            unreached();
     }
 }
 
@@ -219,7 +218,7 @@ void LegalPolicy::SetCandidate(InlineObservation obs)
     assert(!InlDecisionIsSuccess(m_Decision));
 
     // Update, overriding any previous candidacy.
-    m_Decision = InlineDecision::CANDIDATE;
+    m_Decision    = InlineDecision::CANDIDATE;
     m_Observation = obs;
 }
 
@@ -249,79 +248,79 @@ void LegacyPolicy::NoteBool(InlineObservation obs, bool value)
 
     // Handle most information here
     bool isInformation = (impact == InlineImpact::INFORMATION);
-    bool propagate = !isInformation;
+    bool propagate     = !isInformation;
 
     if (isInformation)
     {
         switch (obs)
         {
-        case InlineObservation::CALLEE_IS_FORCE_INLINE:
-            // We may make the force-inline observation more than
-            // once.  All observations should agree.
-            assert(!m_IsForceInlineKnown || (m_IsForceInline == value));
-            m_IsForceInline = value;
-            m_IsForceInlineKnown = true;
-            break;
+            case InlineObservation::CALLEE_IS_FORCE_INLINE:
+                // We may make the force-inline observation more than
+                // once.  All observations should agree.
+                assert(!m_IsForceInlineKnown || (m_IsForceInline == value));
+                m_IsForceInline      = value;
+                m_IsForceInlineKnown = true;
+                break;
 
-        case InlineObservation::CALLEE_IS_INSTANCE_CTOR:
-            m_IsInstanceCtor = value;
-            break;
+            case InlineObservation::CALLEE_IS_INSTANCE_CTOR:
+                m_IsInstanceCtor = value;
+                break;
 
-        case InlineObservation::CALLEE_CLASS_PROMOTABLE:
-            m_IsFromPromotableValueClass = value;
-            break;
+            case InlineObservation::CALLEE_CLASS_PROMOTABLE:
+                m_IsFromPromotableValueClass = value;
+                break;
 
-        case InlineObservation::CALLEE_HAS_SIMD:
-            m_HasSimd = value;
-            break;
+            case InlineObservation::CALLEE_HAS_SIMD:
+                m_HasSimd = value;
+                break;
 
-        case InlineObservation::CALLEE_LOOKS_LIKE_WRAPPER:
-            // LegacyPolicy ignores this for prejit roots.
-            if (!m_IsPrejitRoot)
-            {
-                m_LooksLikeWrapperMethod = value;
-            }
-            break;
+            case InlineObservation::CALLEE_LOOKS_LIKE_WRAPPER:
+                // LegacyPolicy ignores this for prejit roots.
+                if (!m_IsPrejitRoot)
+                {
+                    m_LooksLikeWrapperMethod = value;
+                }
+                break;
 
-        case InlineObservation::CALLEE_ARG_FEEDS_CONSTANT_TEST:
-            // LegacyPolicy ignores this for prejit roots.
-            if (!m_IsPrejitRoot)
-            {
-                m_ArgFeedsConstantTest++;
-            }
-            break;
+            case InlineObservation::CALLEE_ARG_FEEDS_CONSTANT_TEST:
+                // LegacyPolicy ignores this for prejit roots.
+                if (!m_IsPrejitRoot)
+                {
+                    m_ArgFeedsConstantTest++;
+                }
+                break;
 
-        case InlineObservation::CALLEE_ARG_FEEDS_RANGE_CHECK:
-            // LegacyPolicy ignores this for prejit roots.
-            if (!m_IsPrejitRoot)
-            {
-                m_ArgFeedsRangeCheck++;
-            }
-            break;
+            case InlineObservation::CALLEE_ARG_FEEDS_RANGE_CHECK:
+                // LegacyPolicy ignores this for prejit roots.
+                if (!m_IsPrejitRoot)
+                {
+                    m_ArgFeedsRangeCheck++;
+                }
+                break;
 
-        case InlineObservation::CALLEE_HAS_SWITCH:
-        case InlineObservation::CALLEE_UNSUPPORTED_OPCODE:
-            // LegacyPolicy ignores these for prejit roots.
-            if (!m_IsPrejitRoot)
-            {
-                // Pass these on, they should cause inlining to fail.
-                propagate = true;
-            }
-            break;
+            case InlineObservation::CALLEE_HAS_SWITCH:
+            case InlineObservation::CALLEE_UNSUPPORTED_OPCODE:
+                // LegacyPolicy ignores these for prejit roots.
+                if (!m_IsPrejitRoot)
+                {
+                    // Pass these on, they should cause inlining to fail.
+                    propagate = true;
+                }
+                break;
 
-        case InlineObservation::CALLSITE_CONSTANT_ARG_FEEDS_TEST:
-            // We shouldn't see this for a prejit root since
-            // we don't know anything about callers.
-            assert(!m_IsPrejitRoot);
-            m_ConstantArgFeedsConstantTest++;
-            break;
+            case InlineObservation::CALLSITE_CONSTANT_ARG_FEEDS_TEST:
+                // We shouldn't see this for a prejit root since
+                // we don't know anything about callers.
+                assert(!m_IsPrejitRoot);
+                m_ConstantArgFeedsConstantTest++;
+                break;
 
-        case InlineObservation::CALLEE_BEGIN_OPCODE_SCAN:
+            case InlineObservation::CALLEE_BEGIN_OPCODE_SCAN:
             {
                 // Set up the state machine, if this inline is
                 // discretionary and is still a candidate.
-                if (InlDecisionIsCandidate(m_Decision)
-                    && (m_Observation == InlineObservation::CALLEE_IS_DISCRETIONARY_INLINE))
+                if (InlDecisionIsCandidate(m_Decision) &&
+                    (m_Observation == InlineObservation::CALLEE_IS_DISCRETIONARY_INLINE))
                 {
                     // Better not have a state machine already.
                     assert(m_StateMachine == nullptr);
@@ -331,7 +330,7 @@ void LegacyPolicy::NoteBool(InlineObservation obs, bool value)
                 break;
             }
 
-        case InlineObservation::CALLEE_END_OPCODE_SCAN:
+            case InlineObservation::CALLEE_END_OPCODE_SCAN:
             {
                 if (m_StateMachine != nullptr)
                 {
@@ -345,7 +344,7 @@ void LegacyPolicy::NoteBool(InlineObservation obs, bool value)
                 // This allows for CALL, RET, and one more non-ld/st
                 // instruction.
                 if (((m_InstructionCount - m_LoadStoreCount) < 4) ||
-                    (((double)m_LoadStoreCount/(double)m_InstructionCount) > .90))
+                    (((double)m_LoadStoreCount / (double)m_InstructionCount) > .90))
                 {
                     m_MethodIsMostlyLoadStore = true;
                 }
@@ -373,8 +372,8 @@ void LegacyPolicy::NoteBool(InlineObservation obs, bool value)
 
                 if (!m_IsPrejitRoot)
                 {
-                    InlineStrategy* strategy = m_RootCompiler->m_inlineStrategy;
-                    bool overBudget = strategy->BudgetCheck(m_CodeSize);
+                    InlineStrategy* strategy   = m_RootCompiler->m_inlineStrategy;
+                    bool            overBudget = strategy->BudgetCheck(m_CodeSize);
                     if (overBudget)
                     {
                         SetFailure(InlineObservation::CALLSITE_OVER_BUDGET);
@@ -384,9 +383,9 @@ void LegacyPolicy::NoteBool(InlineObservation obs, bool value)
                 break;
             }
 
-        default:
-            // Ignore the remainder for now
-            break;
+            default:
+                // Ignore the remainder for now
+                break;
         }
     }
 
@@ -407,7 +406,7 @@ void LegacyPolicy::NoteInt(InlineObservation obs, int value)
 {
     switch (obs)
     {
-    case InlineObservation::CALLEE_MAXSTACK:
+        case InlineObservation::CALLEE_MAXSTACK:
         {
             assert(m_IsForceInlineKnown);
 
@@ -421,7 +420,7 @@ void LegacyPolicy::NoteInt(InlineObservation obs, int value)
             break;
         }
 
-    case InlineObservation::CALLEE_NUMBER_OF_BASIC_BLOCKS:
+        case InlineObservation::CALLEE_NUMBER_OF_BASIC_BLOCKS:
         {
             assert(m_IsForceInlineKnown);
             assert(value != 0);
@@ -436,7 +435,7 @@ void LegacyPolicy::NoteInt(InlineObservation obs, int value)
             break;
         }
 
-    case InlineObservation::CALLEE_IL_CODE_SIZE:
+        case InlineObservation::CALLEE_IL_CODE_SIZE:
         {
             assert(m_IsForceInlineKnown);
             assert(value != 0);
@@ -468,7 +467,7 @@ void LegacyPolicy::NoteInt(InlineObservation obs, int value)
             break;
         }
 
-    case InlineObservation::CALLSITE_DEPTH:
+        case InlineObservation::CALLSITE_DEPTH:
         {
             unsigned depth = static_cast<unsigned>(value);
 
@@ -480,8 +479,8 @@ void LegacyPolicy::NoteInt(InlineObservation obs, int value)
             break;
         }
 
-    case InlineObservation::CALLEE_OPCODE_NORMED:
-    case InlineObservation::CALLEE_OPCODE:
+        case InlineObservation::CALLEE_OPCODE_NORMED:
+        case InlineObservation::CALLEE_OPCODE:
         {
             m_InstructionCount++;
             OPCODE opcode = static_cast<OPCODE>(value);
@@ -508,12 +507,9 @@ void LegacyPolicy::NoteInt(InlineObservation obs, int value)
 
             // Look for opcodes that imply loads and stores.
             // Logic here is as it is to match legacy behavior.
-            if ((opcode >= CEE_LDARG_0  && opcode <= CEE_STLOC_S)  ||
-                (opcode >= CEE_LDARG    && opcode <= CEE_STLOC)    ||
-                (opcode >= CEE_LDNULL   && opcode <= CEE_LDC_R8)   ||
-                (opcode >= CEE_LDIND_I1 && opcode <= CEE_STIND_R8) ||
-                (opcode >= CEE_LDFLD    && opcode <= CEE_STOBJ)    ||
-                (opcode >= CEE_LDELEMA  && opcode <= CEE_STELEM)   ||
+            if ((opcode >= CEE_LDARG_0 && opcode <= CEE_STLOC_S) || (opcode >= CEE_LDARG && opcode <= CEE_STLOC) ||
+                (opcode >= CEE_LDNULL && opcode <= CEE_LDC_R8) || (opcode >= CEE_LDIND_I1 && opcode <= CEE_STIND_R8) ||
+                (opcode >= CEE_LDFLD && opcode <= CEE_STOBJ) || (opcode >= CEE_LDELEMA && opcode <= CEE_STELEM) ||
                 (opcode == CEE_POP))
             {
                 m_LoadStoreCount++;
@@ -522,18 +518,17 @@ void LegacyPolicy::NoteInt(InlineObservation obs, int value)
             break;
         }
 
-    case InlineObservation::CALLSITE_FREQUENCY:
-        assert(m_CallsiteFrequency == InlineCallsiteFrequency::UNUSED);
-        m_CallsiteFrequency = static_cast<InlineCallsiteFrequency>(value);
-        assert(m_CallsiteFrequency != InlineCallsiteFrequency::UNUSED);
-        break;
+        case InlineObservation::CALLSITE_FREQUENCY:
+            assert(m_CallsiteFrequency == InlineCallsiteFrequency::UNUSED);
+            m_CallsiteFrequency = static_cast<InlineCallsiteFrequency>(value);
+            assert(m_CallsiteFrequency != InlineCallsiteFrequency::UNUSED);
+            break;
 
-    default:
-        // Ignore all other information
-        break;
+        default:
+            // Ignore all other information
+            break;
     }
 }
-
 
 //------------------------------------------------------------------------
 // DetermineMultiplier: determine benefit multiplier for this inline
@@ -566,7 +561,8 @@ double LegacyPolicy::DetermineMultiplier()
     if (m_HasSimd)
     {
         multiplier += JitConfig.JitInlineSIMDMultiplier();
-        JITDUMP("\nInline candidate has SIMD type args, locals or return value.  Multiplier increased to %g.", multiplier);
+        JITDUMP("\nInline candidate has SIMD type args, locals or return value.  Multiplier increased to %g.",
+                multiplier);
     }
 
 #endif // FEATURE_SIMD
@@ -603,30 +599,30 @@ double LegacyPolicy::DetermineMultiplier()
 
     switch (m_CallsiteFrequency)
     {
-    case InlineCallsiteFrequency::RARE:
-        // Note this one is not additive, it uses '=' instead of '+='
-        multiplier = 1.3;
-        JITDUMP("\nInline candidate callsite is rare.  Multiplier limited to %g.", multiplier);
-        break;
-    case InlineCallsiteFrequency::BORING:
-        multiplier += 1.3;
-        JITDUMP("\nInline candidate callsite is boring.  Multiplier increased to %g.", multiplier);
-        break;
-    case InlineCallsiteFrequency::WARM:
-        multiplier += 2.0;
-        JITDUMP("\nInline candidate callsite is warm.  Multiplier increased to %g.", multiplier);
-        break;
-    case InlineCallsiteFrequency::LOOP:
-        multiplier += 3.0;
-        JITDUMP("\nInline candidate callsite is in a loop.  Multiplier increased to %g.", multiplier);
-        break;
-    case InlineCallsiteFrequency::HOT:
-        multiplier += 3.0;
-        JITDUMP("\nInline candidate callsite is hot.  Multiplier increased to %g.", multiplier);
-        break;
-    default:
-        assert(!"Unexpected callsite frequency");
-        break;
+        case InlineCallsiteFrequency::RARE:
+            // Note this one is not additive, it uses '=' instead of '+='
+            multiplier = 1.3;
+            JITDUMP("\nInline candidate callsite is rare.  Multiplier limited to %g.", multiplier);
+            break;
+        case InlineCallsiteFrequency::BORING:
+            multiplier += 1.3;
+            JITDUMP("\nInline candidate callsite is boring.  Multiplier increased to %g.", multiplier);
+            break;
+        case InlineCallsiteFrequency::WARM:
+            multiplier += 2.0;
+            JITDUMP("\nInline candidate callsite is warm.  Multiplier increased to %g.", multiplier);
+            break;
+        case InlineCallsiteFrequency::LOOP:
+            multiplier += 3.0;
+            JITDUMP("\nInline candidate callsite is in a loop.  Multiplier increased to %g.", multiplier);
+            break;
+        case InlineCallsiteFrequency::HOT:
+            multiplier += 3.0;
+            JITDUMP("\nInline candidate callsite is hot.  Multiplier increased to %g.", multiplier);
+            break;
+        default:
+            assert(!"Unexpected callsite frequency");
+            break;
     }
 
 #ifdef DEBUG
@@ -684,27 +680,25 @@ int LegacyPolicy::DetermineNativeSizeEstimate()
 
 int LegacyPolicy::DetermineCallsiteNativeSizeEstimate(CORINFO_METHOD_INFO* methInfo)
 {
-    int callsiteSize = 55;   // Direct call take 5 native bytes; indirect call takes 6 native bytes.
+    int callsiteSize = 55; // Direct call take 5 native bytes; indirect call takes 6 native bytes.
 
     bool hasThis = methInfo->args.hasThis();
 
     if (hasThis)
     {
-        callsiteSize += 30;  // "mov" or "lea"
+        callsiteSize += 30; // "mov" or "lea"
     }
 
     CORINFO_ARG_LIST_HANDLE argLst = methInfo->args.args;
-    COMP_HANDLE comp = m_RootCompiler->info.compCompHnd;
+    COMP_HANDLE             comp   = m_RootCompiler->info.compCompHnd;
 
-    for (unsigned i = (hasThis ? 1 : 0);
-         i < methInfo->args.totalILArgs();
-         i++, argLst = comp->getArgNext(argLst))
+    for (unsigned i = (hasThis ? 1 : 0); i < methInfo->args.totalILArgs(); i++, argLst = comp->getArgNext(argLst))
     {
-        var_types sigType = (var_types) m_RootCompiler->eeGetArgType(argLst, &methInfo->args);
+        var_types sigType = (var_types)m_RootCompiler->eeGetArgType(argLst, &methInfo->args);
 
         if (sigType == TYP_STRUCT)
         {
-            typeInfo  verType  = m_RootCompiler->verParseArgSigToTypeInfo(&methInfo->args, argLst);
+            typeInfo verType = m_RootCompiler->verParseArgSigToTypeInfo(&methInfo->args, argLst);
 
             /*
 
@@ -719,7 +713,7 @@ int LegacyPolicy::DetermineCallsiteNativeSizeEstimate(CORINFO_METHOD_INFO* methI
 
             // NB sizeof (void*) fails to convey intent when cross-jitting.
 
-            unsigned opsz = (unsigned)(roundUp(comp->getClassSize(verType.GetClassHandle()), sizeof(void*)));
+            unsigned opsz  = (unsigned)(roundUp(comp->getClassSize(verType.GetClassHandle()), sizeof(void*)));
             unsigned slots = opsz / sizeof(void*);
 
             callsiteSize += slots * 20; // "push    gword ptr [EAX+offs]  "
@@ -753,12 +747,10 @@ void LegacyPolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
 #if defined(DEBUG)
 
     // Punt if we're inlining and we've reached the acceptance limit.
-    int limit = JitConfig.JitInlineLimit();
+    int      limit   = JitConfig.JitInlineLimit();
     unsigned current = m_RootCompiler->m_inlineStrategy->GetInlineCount();
 
-    if (!m_IsPrejitRoot &&
-        (limit >= 0) &&
-        (current >= static_cast<unsigned>(limit)))
+    if (!m_IsPrejitRoot && (limit >= 0) && (current >= static_cast<unsigned>(limit)))
     {
         SetFailure(InlineObservation::CALLSITE_OVER_INLINE_LIMIT);
         return;
@@ -769,10 +761,10 @@ void LegacyPolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
     assert(InlDecisionIsCandidate(m_Decision));
     assert(m_Observation == InlineObservation::CALLEE_IS_DISCRETIONARY_INLINE);
 
-    m_CalleeNativeSizeEstimate = DetermineNativeSizeEstimate();
+    m_CalleeNativeSizeEstimate   = DetermineNativeSizeEstimate();
     m_CallsiteNativeSizeEstimate = DetermineCallsiteNativeSizeEstimate(methodInfo);
-    m_Multiplier = DetermineMultiplier();
-    const int threshold = (int)(m_CallsiteNativeSizeEstimate * m_Multiplier);
+    m_Multiplier                 = DetermineMultiplier();
+    const int threshold          = (int)(m_CallsiteNativeSizeEstimate * m_Multiplier);
 
     // Note the LegacyPolicy estimates are scaled up by SIZE_SCALE
     JITDUMP("\ncalleeNativeSizeEstimate=%d\n", m_CalleeNativeSizeEstimate)
@@ -785,12 +777,9 @@ void LegacyPolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
     {
         // Inline appears to be unprofitable
         JITLOG_THIS(m_RootCompiler,
-                    (LL_INFO100000,
-                     "Native estimate for function size exceeds threshold"
-                     " for inlining %g > %g (multiplier = %g)\n",
-                     (double) m_CalleeNativeSizeEstimate / SIZE_SCALE,
-                     (double) threshold / SIZE_SCALE,
-                     m_Multiplier));
+                    (LL_INFO100000, "Native estimate for function size exceeds threshold"
+                                    " for inlining %g > %g (multiplier = %g)\n",
+                     (double)m_CalleeNativeSizeEstimate / SIZE_SCALE, (double)threshold / SIZE_SCALE, m_Multiplier));
 
         // Fail the inline
         if (m_IsPrejitRoot)
@@ -806,12 +795,9 @@ void LegacyPolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
     {
         // Inline appears to be profitable
         JITLOG_THIS(m_RootCompiler,
-                    (LL_INFO100000,
-                     "Native estimate for function size is within threshold"
-                     " for inlining %g <= %g (multiplier = %g)\n",
-                     (double) m_CalleeNativeSizeEstimate / SIZE_SCALE,
-                     (double) threshold / SIZE_SCALE,
-                     m_Multiplier));
+                    (LL_INFO100000, "Native estimate for function size is within threshold"
+                                    " for inlining %g <= %g (multiplier = %g)\n",
+                     (double)m_CalleeNativeSizeEstimate / SIZE_SCALE, (double)threshold / SIZE_SCALE, m_Multiplier));
 
         // Update candidacy
         if (m_IsPrejitRoot)
@@ -863,15 +849,15 @@ void EnhancedLegacyPolicy::NoteBool(InlineObservation obs, bool value)
 {
     switch (obs)
     {
-    case InlineObservation::CALLEE_DOES_NOT_RETURN:
-        m_IsNoReturn = value;
-        m_IsNoReturnKnown = true;
-        break;
+        case InlineObservation::CALLEE_DOES_NOT_RETURN:
+            m_IsNoReturn      = value;
+            m_IsNoReturnKnown = true;
+            break;
 
-    default:
-        // Pass all other information to the legacy policy
-        LegacyPolicy::NoteBool(obs, value);
-        break;
+        default:
+            // Pass all other information to the legacy policy
+            LegacyPolicy::NoteBool(obs, value);
+            break;
     }
 }
 
@@ -886,16 +872,16 @@ void EnhancedLegacyPolicy::NoteInt(InlineObservation obs, int value)
 {
     switch (obs)
     {
-    case InlineObservation::CALLEE_NUMBER_OF_BASIC_BLOCKS:
+        case InlineObservation::CALLEE_NUMBER_OF_BASIC_BLOCKS:
         {
             assert(value != 0);
             assert(m_IsNoReturnKnown);
 
             //
-            // Let's be conservative for now and reject inlining of "no return" methods only 
-            // if the callee contains a single basic block. This covers most of the use cases 
-            // (typical throw helpers simply do "throw new X();" and so they have a single block) 
-            // without affecting more exotic cases (loops that do actual work for example) where 
+            // Let's be conservative for now and reject inlining of "no return" methods only
+            // if the callee contains a single basic block. This covers most of the use cases
+            // (typical throw helpers simply do "throw new X();" and so they have a single block)
+            // without affecting more exotic cases (loops that do actual work for example) where
             // failure to inline could negatively impact code quality.
             //
 
@@ -913,10 +899,10 @@ void EnhancedLegacyPolicy::NoteInt(InlineObservation obs, int value)
             break;
         }
 
-    default:
-        // Pass all other information to the legacy policy
-        LegacyPolicy::NoteInt(obs, value);
-        break;
+        default:
+            // Pass all other information to the legacy policy
+            LegacyPolicy::NoteInt(obs, value);
+            break;
     }
 }
 
@@ -927,13 +913,13 @@ void EnhancedLegacyPolicy::NoteInt(InlineObservation obs, int value)
 bool EnhancedLegacyPolicy::PropagateNeverToRuntime() const
 {
     //
-    // Do not propagate the "no return" observation. If we do this then future inlining 
-    // attempts will fail immediately without marking the call node as "no return". 
+    // Do not propagate the "no return" observation. If we do this then future inlining
+    // attempts will fail immediately without marking the call node as "no return".
     // This can have an adverse impact on caller's code quality as it may have to preserve
     // registers across the call.
-    // TODO-Throughput: We should persist the "no return" information in the runtime 
+    // TODO-Throughput: We should persist the "no return" information in the runtime
     // so we don't need to re-analyze the inlinee all the time.
-    // 
+    //
 
     bool propagate = (m_Observation != InlineObservation::CALLEE_DOES_NOT_RETURN);
 
@@ -1001,31 +987,31 @@ void RandomPolicy::NoteBool(InlineObservation obs, bool value)
 
     // Handle most information here
     bool isInformation = (impact == InlineImpact::INFORMATION);
-    bool propagate = !isInformation;
+    bool propagate     = !isInformation;
 
     if (isInformation)
     {
         switch (obs)
         {
-        case InlineObservation::CALLEE_IS_FORCE_INLINE:
-            // The RandomPolicy still honors force inlines.
-            //
-            // We may make the force-inline observation more than
-            // once.  All observations should agree.
-            assert(!m_IsForceInlineKnown || (m_IsForceInline == value));
-            m_IsForceInline = value;
-            m_IsForceInlineKnown = true;
-            break;
+            case InlineObservation::CALLEE_IS_FORCE_INLINE:
+                // The RandomPolicy still honors force inlines.
+                //
+                // We may make the force-inline observation more than
+                // once.  All observations should agree.
+                assert(!m_IsForceInlineKnown || (m_IsForceInline == value));
+                m_IsForceInline      = value;
+                m_IsForceInlineKnown = true;
+                break;
 
-        case InlineObservation::CALLEE_HAS_SWITCH:
-        case InlineObservation::CALLEE_UNSUPPORTED_OPCODE:
-            // Pass these on, they should cause inlining to fail.
-            propagate = true;
-            break;
+            case InlineObservation::CALLEE_HAS_SWITCH:
+            case InlineObservation::CALLEE_UNSUPPORTED_OPCODE:
+                // Pass these on, they should cause inlining to fail.
+                propagate = true;
+                break;
 
-        default:
-            // Ignore the remainder for now
-            break;
+            default:
+                // Ignore the remainder for now
+                break;
         }
     }
 
@@ -1047,7 +1033,7 @@ void RandomPolicy::NoteInt(InlineObservation obs, int value)
     switch (obs)
     {
 
-    case InlineObservation::CALLEE_IL_CODE_SIZE:
+        case InlineObservation::CALLEE_IL_CODE_SIZE:
         {
             assert(m_IsForceInlineKnown);
             assert(value != 0);
@@ -1067,9 +1053,9 @@ void RandomPolicy::NoteInt(InlineObservation obs, int value)
             break;
         }
 
-    default:
-        // Ignore all other information
-        break;
+        default:
+            // Ignore all other information
+            break;
     }
 }
 
@@ -1092,8 +1078,8 @@ void RandomPolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
     // Budget check.
     if (!m_IsPrejitRoot)
     {
-        InlineStrategy* strategy = m_RootCompiler->m_inlineStrategy;
-        bool overBudget = strategy->BudgetCheck(m_CodeSize);
+        InlineStrategy* strategy   = m_RootCompiler->m_inlineStrategy;
+        bool            overBudget = strategy->BudgetCheck(m_CodeSize);
         if (overBudget)
         {
             SetFailure(InlineObservation::CALLSITE_OVER_BUDGET);
@@ -1183,7 +1169,7 @@ void RandomPolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
 
 #ifdef _MSC_VER
 // Disable warning about new array member initialization behavior
-#pragma warning( disable : 4351 )
+#pragma warning(disable : 4351)
 #endif
 
 //------------------------------------------------------------------------
@@ -1255,46 +1241,46 @@ DiscretionaryPolicy::DiscretionaryPolicy(Compiler* compiler, bool isPrejitRoot)
 
 void DiscretionaryPolicy::NoteBool(InlineObservation obs, bool value)
 {
-    switch(obs)
+    switch (obs)
     {
-    case InlineObservation::CALLEE_LOOKS_LIKE_WRAPPER:
-        m_LooksLikeWrapperMethod = value;
-        break;
+        case InlineObservation::CALLEE_LOOKS_LIKE_WRAPPER:
+            m_LooksLikeWrapperMethod = value;
+            break;
 
-    case InlineObservation::CALLEE_ARG_FEEDS_CONSTANT_TEST:
-        assert(value);
-        m_ArgFeedsConstantTest++;
-        break;
+        case InlineObservation::CALLEE_ARG_FEEDS_CONSTANT_TEST:
+            assert(value);
+            m_ArgFeedsConstantTest++;
+            break;
 
-    case InlineObservation::CALLEE_ARG_FEEDS_RANGE_CHECK:
-        assert(value);
-        m_ArgFeedsRangeCheck++;
-        break;
+        case InlineObservation::CALLEE_ARG_FEEDS_RANGE_CHECK:
+            assert(value);
+            m_ArgFeedsRangeCheck++;
+            break;
 
-    case InlineObservation::CALLSITE_CONSTANT_ARG_FEEDS_TEST:
-        assert(value);
-        m_ConstantArgFeedsConstantTest++;
-        break;
+        case InlineObservation::CALLSITE_CONSTANT_ARG_FEEDS_TEST:
+            assert(value);
+            m_ConstantArgFeedsConstantTest++;
+            break;
 
-    case InlineObservation::CALLEE_IS_CLASS_CTOR:
-        m_IsClassCtor = value;
-        break;
+        case InlineObservation::CALLEE_IS_CLASS_CTOR:
+            m_IsClassCtor = value;
+            break;
 
-    case InlineObservation::CALLSITE_IS_SAME_THIS:
-        m_IsSameThis = value;
-        break;
+        case InlineObservation::CALLSITE_IS_SAME_THIS:
+            m_IsSameThis = value;
+            break;
 
-    case InlineObservation::CALLER_HAS_NEWARRAY:
-        m_CallerHasNewArray = value;
-        break;
+        case InlineObservation::CALLER_HAS_NEWARRAY:
+            m_CallerHasNewArray = value;
+            break;
 
-    case InlineObservation::CALLER_HAS_NEWOBJ:
-        m_CallerHasNewObj = value;
-        break;
+        case InlineObservation::CALLER_HAS_NEWOBJ:
+            m_CallerHasNewObj = value;
+            break;
 
-    default:
-        LegacyPolicy::NoteBool(obs, value);
-        break;
+        default:
+            LegacyPolicy::NoteBool(obs, value);
+            break;
     }
 }
 
@@ -1310,28 +1296,28 @@ void DiscretionaryPolicy::NoteInt(InlineObservation obs, int value)
     switch (obs)
     {
 
-    case InlineObservation::CALLEE_IL_CODE_SIZE:
-        // Override how code size is handled
-        {
-            assert(m_IsForceInlineKnown);
-            assert(value != 0);
-            m_CodeSize = static_cast<unsigned>(value);
-
-            if (m_IsForceInline)
+        case InlineObservation::CALLEE_IL_CODE_SIZE:
+            // Override how code size is handled
             {
-                // Candidate based on force inline
-                SetCandidate(InlineObservation::CALLEE_IS_FORCE_INLINE);
-            }
-            else
-            {
-                // Candidate, pending profitability evaluation
-                SetCandidate(InlineObservation::CALLEE_IS_DISCRETIONARY_INLINE);
+                assert(m_IsForceInlineKnown);
+                assert(value != 0);
+                m_CodeSize = static_cast<unsigned>(value);
+
+                if (m_IsForceInline)
+                {
+                    // Candidate based on force inline
+                    SetCandidate(InlineObservation::CALLEE_IS_FORCE_INLINE);
+                }
+                else
+                {
+                    // Candidate, pending profitability evaluation
+                    SetCandidate(InlineObservation::CALLEE_IS_DISCRETIONARY_INLINE);
+                }
+
+                break;
             }
 
-            break;
-        }
-
-    case InlineObservation::CALLEE_OPCODE:
+        case InlineObservation::CALLEE_OPCODE:
         {
             // This tries to do a rough binning of opcodes based
             // on similarity of impact on codegen.
@@ -1341,26 +1327,26 @@ void DiscretionaryPolicy::NoteInt(InlineObservation obs, int value)
             break;
         }
 
-    case InlineObservation::CALLEE_MAXSTACK:
-        m_Maxstack = value;
-        break;
+        case InlineObservation::CALLEE_MAXSTACK:
+            m_Maxstack = value;
+            break;
 
-    case InlineObservation::CALLEE_NUMBER_OF_BASIC_BLOCKS:
-        m_BlockCount = value;
-        break;
+        case InlineObservation::CALLEE_NUMBER_OF_BASIC_BLOCKS:
+            m_BlockCount = value;
+            break;
 
-    case InlineObservation::CALLSITE_DEPTH:
-        m_Depth = value;
-        break;
+        case InlineObservation::CALLSITE_DEPTH:
+            m_Depth = value;
+            break;
 
-    case InlineObservation::CALLSITE_WEIGHT:
-        m_CallSiteWeight = static_cast<unsigned>(value);
-        break;
+        case InlineObservation::CALLSITE_WEIGHT:
+            m_CallSiteWeight = static_cast<unsigned>(value);
+            break;
 
-    default:
-        // Delegate remainder to the LegacyPolicy.
-        LegacyPolicy::NoteInt(obs, value);
-        break;
+        default:
+            // Delegate remainder to the LegacyPolicy.
+            LegacyPolicy::NoteInt(obs, value);
+            break;
     }
 }
 
@@ -1650,12 +1636,10 @@ void DiscretionaryPolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo
 #if defined(DEBUG)
 
     // Punt if we're inlining and we've reached the acceptance limit.
-    int limit = JitConfig.JitInlineLimit();
+    int      limit   = JitConfig.JitInlineLimit();
     unsigned current = m_RootCompiler->m_inlineStrategy->GetInlineCount();
 
-    if (!m_IsPrejitRoot &&
-        (limit >= 0) &&
-        (current >= static_cast<unsigned>(limit)))
+    if (!m_IsPrejitRoot && (limit >= 0) && (current >= static_cast<unsigned>(limit)))
     {
         SetFailure(InlineObservation::CALLSITE_OVER_INLINE_LIMIT);
         return;
@@ -1690,14 +1674,14 @@ void DiscretionaryPolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo
 void DiscretionaryPolicy::MethodInfoObservations(CORINFO_METHOD_INFO* methodInfo)
 {
     CORINFO_SIG_INFO& locals = methodInfo->locals;
-    m_LocalCount = locals.numArgs;
+    m_LocalCount             = locals.numArgs;
 
-    CORINFO_SIG_INFO& args = methodInfo->args;
-    const unsigned argCount = args.numArgs;
-    m_ArgCount = argCount;
+    CORINFO_SIG_INFO& args     = methodInfo->args;
+    const unsigned    argCount = args.numArgs;
+    m_ArgCount                 = argCount;
 
     const unsigned pointerSize = sizeof(void*);
-    unsigned i = 0;
+    unsigned       i           = 0;
 
     // Implicit arguments
 
@@ -1723,14 +1707,14 @@ void DiscretionaryPolicy::MethodInfoObservations(CORINFO_METHOD_INFO* methodInfo
 
     // Explicit arguments
 
-    unsigned j = 0;
+    unsigned                j             = 0;
     CORINFO_ARG_LIST_HANDLE argListHandle = args.args;
-    COMP_HANDLE comp = m_RootCompiler->info.compCompHnd;
+    COMP_HANDLE             comp          = m_RootCompiler->info.compCompHnd;
 
     while ((i < MAX_ARGS) && (j < argCount))
     {
         CORINFO_CLASS_HANDLE classHandle;
-        CorInfoType type = strip(comp->getArgType(&args, argListHandle, &classHandle));
+        CorInfoType          type = strip(comp->getArgType(&args, argListHandle, &classHandle));
 
         m_ArgType[i] = type;
 
@@ -1831,7 +1815,7 @@ void DiscretionaryPolicy::EstimateCodeSize()
     // clang-format on
 
     // Scaled up and reported as an integer value.
-    m_ModelCodeSizeEstimate = (int) (SIZE_SCALE * sizeEstimate);
+    m_ModelCodeSizeEstimate = (int)(SIZE_SCALE * sizeEstimate);
 }
 
 //------------------------------------------------------------------------
@@ -1860,7 +1844,7 @@ void DiscretionaryPolicy::EstimatePerformanceImpact()
     // clang-format on
 
     // Scaled up and reported as an integer value.
-    m_PerCallInstructionEstimate = (int) (SIZE_SCALE * perCallSavingsEstimate);
+    m_PerCallInstructionEstimate = (int)(SIZE_SCALE * perCallSavingsEstimate);
 }
 
 //------------------------------------------------------------------------
@@ -1981,12 +1965,12 @@ void DiscretionaryPolicy::DumpData(FILE* file) const
 
     for (unsigned i = 0; i < MAX_ARGS; i++)
     {
-        fprintf(file, ",%u", (unsigned) m_ArgSize[i]);
+        fprintf(file, ",%u", (unsigned)m_ArgSize[i]);
     }
 
     fprintf(file, ",%u", m_LocalCount);
     fprintf(file, ",%u", m_ReturnType);
-    fprintf(file, ",%u", (unsigned) m_ReturnSize);
+    fprintf(file, ",%u", (unsigned)m_ReturnSize);
     fprintf(file, ",%u", m_ArgAccessCount);
     fprintf(file, ",%u", m_LocalAccessCount);
     fprintf(file, ",%u", m_IntConstantCount);
@@ -2045,8 +2029,7 @@ void DiscretionaryPolicy::DumpData(FILE* file) const
 //    compiler -- compiler instance doing the inlining (root compiler)
 //    isPrejitRoot -- true if this compiler is prejitting the root method
 
-ModelPolicy::ModelPolicy(Compiler* compiler, bool isPrejitRoot)
-    : DiscretionaryPolicy(compiler, isPrejitRoot)
+ModelPolicy::ModelPolicy(Compiler* compiler, bool isPrejitRoot) : DiscretionaryPolicy(compiler, isPrejitRoot)
 {
     // Empty
 }
@@ -2096,9 +2079,7 @@ void ModelPolicy::NoteInt(InlineObservation obs, int value)
 
     // Fail fast for inlinees that are too large to ever inline.
     // The value of 120 is model-dependent; see notes above.
-    if (!m_IsForceInline &&
-        (obs == InlineObservation::CALLEE_IL_CODE_SIZE) &&
-        (value >= 120))
+    if (!m_IsForceInline && (obs == InlineObservation::CALLEE_IL_CODE_SIZE) && (value >= 120))
     {
         // Callee too big, not a candidate
         SetNever(InlineObservation::CALLEE_TOO_MUCH_IL);
@@ -2147,10 +2128,8 @@ void ModelPolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
     if (m_ModelCodeSizeEstimate <= 0)
     {
         // Inline will likely decrease code size
-        JITLOG_THIS(m_RootCompiler,
-                    (LL_INFO100000,
-                     "Inline profitable, will decrease code size by %g bytes\n",
-                     (double) -m_ModelCodeSizeEstimate / SIZE_SCALE));
+        JITLOG_THIS(m_RootCompiler, (LL_INFO100000, "Inline profitable, will decrease code size by %g bytes\n",
+                                     (double)-m_ModelCodeSizeEstimate / SIZE_SCALE));
 
         if (m_IsPrejitRoot)
         {
@@ -2174,7 +2153,7 @@ void ModelPolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
         // The per call instruction estimate is negative if the inline
         // will reduce instruction count. Flip the sign here to make
         // positive be better and negative worse.
-        double perCallBenefit = -((double) m_PerCallInstructionEstimate / (double) m_ModelCodeSizeEstimate);
+        double perCallBenefit = -((double)m_PerCallInstructionEstimate / (double)m_ModelCodeSizeEstimate);
 
         // Now estimate the local call frequency.
         //
@@ -2187,22 +2166,22 @@ void ModelPolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
 
         switch (m_CallsiteFrequency)
         {
-        case InlineCallsiteFrequency::RARE:
-            callSiteWeight = 0.1;
-            break;
-        case InlineCallsiteFrequency::BORING:
-            callSiteWeight = 1.0;
-            break;
-        case InlineCallsiteFrequency::WARM:
-            callSiteWeight = 1.5;
-            break;
-        case InlineCallsiteFrequency::LOOP:
-        case InlineCallsiteFrequency::HOT:
-            callSiteWeight = 3.0;
-            break;
-        default:
-            assert(false);
-            break;
+            case InlineCallsiteFrequency::RARE:
+                callSiteWeight = 0.1;
+                break;
+            case InlineCallsiteFrequency::BORING:
+                callSiteWeight = 1.0;
+                break;
+            case InlineCallsiteFrequency::WARM:
+                callSiteWeight = 1.5;
+                break;
+            case InlineCallsiteFrequency::LOOP:
+            case InlineCallsiteFrequency::HOT:
+                callSiteWeight = 3.0;
+                break;
+            default:
+                assert(false);
+                break;
         }
 
         // Determine the estimated number of instructions saved per
@@ -2216,16 +2195,13 @@ void ModelPolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
         // the value of 0.2 below indicates we'll allow inlines that
         // grow code by as many as 5 bytes to save 1 instruction
         // execution (per call to the root method).
-        double threshold = 0.20;
-        bool shouldInline = (benefit > threshold);
+        double threshold    = 0.20;
+        bool   shouldInline = (benefit > threshold);
 
         JITLOG_THIS(m_RootCompiler,
-            (LL_INFO100000,
-                "Inline %s profitable: benefit=%g (weight=%g, percall=%g, size=%g)\n",
-                shouldInline ? "is" : "is not",
-                benefit, callSiteWeight,
-                (double) m_PerCallInstructionEstimate / SIZE_SCALE,
-                (double) m_ModelCodeSizeEstimate / SIZE_SCALE));
+                    (LL_INFO100000, "Inline %s profitable: benefit=%g (weight=%g, percall=%g, size=%g)\n",
+                     shouldInline ? "is" : "is not", benefit, callSiteWeight,
+                     (double)m_PerCallInstructionEstimate / SIZE_SCALE, (double)m_ModelCodeSizeEstimate / SIZE_SCALE));
 
         if (!shouldInline)
         {
@@ -2263,8 +2239,7 @@ void ModelPolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
 //    compiler -- compiler instance doing the inlining (root compiler)
 //    isPrejitRoot -- true if this compiler is prejitting the root method
 
-FullPolicy::FullPolicy(Compiler* compiler, bool isPrejitRoot)
-    : DiscretionaryPolicy(compiler, isPrejitRoot)
+FullPolicy::FullPolicy(Compiler* compiler, bool isPrejitRoot) : DiscretionaryPolicy(compiler, isPrejitRoot)
 {
     // Empty
 }
@@ -2318,8 +2293,7 @@ void FullPolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
 //    compiler -- compiler instance doing the inlining (root compiler)
 //    isPrejitRoot -- true if this compiler is prejitting the root method
 
-SizePolicy::SizePolicy(Compiler* compiler, bool isPrejitRoot)
-    : DiscretionaryPolicy(compiler, isPrejitRoot)
+SizePolicy::SizePolicy(Compiler* compiler, bool isPrejitRoot) : DiscretionaryPolicy(compiler, isPrejitRoot)
 {
     // Empty
 }
@@ -2338,17 +2312,16 @@ void SizePolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
 
     // Does this inline increase the estimated size beyond
     // the original size estimate?
-    const InlineStrategy* strategy = m_RootCompiler->m_inlineStrategy;
-    const int initialSize = strategy->GetInitialSizeEstimate();
-    const int currentSize = strategy->GetCurrentSizeEstimate();
-    const int newSize     = currentSize + m_ModelCodeSizeEstimate;
+    const InlineStrategy* strategy    = m_RootCompiler->m_inlineStrategy;
+    const int             initialSize = strategy->GetInitialSizeEstimate();
+    const int             currentSize = strategy->GetCurrentSizeEstimate();
+    const int             newSize     = currentSize + m_ModelCodeSizeEstimate;
 
     if (newSize <= initialSize)
     {
         // Estimated size impact is acceptable, so inline here.
         JITLOG_THIS(m_RootCompiler,
-                    (LL_INFO100000,
-                     "Inline profitable, root size estimate %d is less than initial size %d\n",
+                    (LL_INFO100000, "Inline profitable, root size estimate %d is less than initial size %d\n",
                      newSize / SIZE_SCALE, initialSize / SIZE_SCALE));
 
         if (m_IsPrejitRoot)
@@ -2384,7 +2357,7 @@ void SizePolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
 // and provide file access to the inline xml
 
 bool          ReplayPolicy::s_WroteReplayBanner = false;
-FILE*         ReplayPolicy::s_ReplayFile = nullptr;
+FILE*         ReplayPolicy::s_ReplayFile        = nullptr;
 CritSecObject ReplayPolicy::s_XmlReaderLock;
 
 //------------------------------------------------------------------------/
@@ -2408,14 +2381,13 @@ ReplayPolicy::ReplayPolicy(Compiler* compiler, bool isPrejitRoot)
         {
             // Nope, open it up.
             const wchar_t* replayFileName = JitConfig.JitInlineReplayFile();
-            s_ReplayFile = _wfopen(replayFileName, W("r"));
+            s_ReplayFile                  = _wfopen(replayFileName, W("r"));
 
             // Display banner to stderr, unless we're dumping inline Xml,
             // in which case the policy name is captured in the Xml.
             if (JitConfig.JitInlineDumpXml() == 0)
             {
-                fprintf(stderr, "*** %s inlines from %ws\n",
-                        s_ReplayFile == nullptr ? "Unable to replay" : "Replaying",
+                fprintf(stderr, "*** %s inlines from %ws\n", s_ReplayFile == nullptr ? "Unable to replay" : "Replaying",
                         replayFileName);
             }
 
@@ -2455,7 +2427,7 @@ bool ReplayPolicy::FindMethod()
 
     // See if we've already found this method.
     InlineStrategy* inlineStrategy = m_RootCompiler->m_inlineStrategy;
-    long filePosition = inlineStrategy->GetMethodXmlFilePosition();
+    long            filePosition   = inlineStrategy->GetMethodXmlFilePosition();
 
     if (filePosition == -1)
     {
@@ -2472,10 +2444,8 @@ bool ReplayPolicy::FindMethod()
     // Else, scan the file. Might be nice to build an index
     // or something, someday.
     const mdMethodDef methodToken =
-        m_RootCompiler->info.compCompHnd->getMethodDefFromMethod(
-            m_RootCompiler->info.compMethodHnd);
-    const unsigned methodHash =
-        m_RootCompiler->info.compMethodHash();
+        m_RootCompiler->info.compCompHnd->getMethodDefFromMethod(m_RootCompiler->info.compMethodHnd);
+    const unsigned methodHash = m_RootCompiler->info.compMethodHash();
 
     bool foundMethod = false;
     char buffer[256];
@@ -2503,7 +2473,7 @@ bool ReplayPolicy::FindMethod()
 
         // See if token matches
         unsigned token = 0;
-        int count = sscanf(buffer, " <Token>%u</Token> ", &token);
+        int      count = sscanf(buffer, " <Token>%u</Token> ", &token);
         if ((count != 1) || (token != methodToken))
         {
             continue;
@@ -2517,7 +2487,7 @@ bool ReplayPolicy::FindMethod()
 
         // See if hash matches
         unsigned hash = 0;
-        count = sscanf(buffer, " <Hash>%u</Hash> ", &hash);
+        count         = sscanf(buffer, " <Hash>%u</Hash> ", &hash);
         if ((count != 1) || (hash != methodHash))
         {
             continue;
@@ -2575,13 +2545,9 @@ bool ReplayPolicy::FindContext(InlineContext* context)
     // See if we see an inline entry for this context.
     //
     // Token and Hash we're looking for.
-    mdMethodDef contextToken =
-        m_RootCompiler->info.compCompHnd->getMethodDefFromMethod(
-            context->GetCallee());
-    unsigned contextHash =
-        m_RootCompiler->info.compCompHnd->getMethodHash(
-            context->GetCallee());
-    unsigned contextOffset = (unsigned) context->GetOffset();
+    mdMethodDef contextToken  = m_RootCompiler->info.compCompHnd->getMethodDefFromMethod(context->GetCallee());
+    unsigned    contextHash   = m_RootCompiler->info.compCompHnd->getMethodHash(context->GetCallee());
+    unsigned    contextOffset = (unsigned)context->GetOffset();
 
     return FindInline(contextToken, contextHash, contextOffset);
 }
@@ -2609,7 +2575,7 @@ bool ReplayPolicy::FindInline(unsigned token, unsigned hash, unsigned offset)
 {
     char buffer[256];
     bool foundInline = false;
-    int  depth = 0;
+    int  depth       = 0;
 
     while (!foundInline)
     {
@@ -2680,7 +2646,7 @@ bool ReplayPolicy::FindInline(unsigned token, unsigned hash, unsigned offset)
 
         // Match token
         unsigned inlineToken = 0;
-        int count = sscanf(buffer, " <Token>%u</Token> ", &inlineToken);
+        int      count       = sscanf(buffer, " <Token>%u</Token> ", &inlineToken);
 
         if ((count != 1) || (inlineToken != token))
         {
@@ -2695,7 +2661,7 @@ bool ReplayPolicy::FindInline(unsigned token, unsigned hash, unsigned offset)
 
         // Match hash
         unsigned inlineHash = 0;
-        count = sscanf(buffer, " <Hash>%u</Hash> ", &inlineHash);
+        count               = sscanf(buffer, " <Hash>%u</Hash> ", &inlineHash);
 
         if ((count != 1) || (inlineHash != hash))
         {
@@ -2710,7 +2676,7 @@ bool ReplayPolicy::FindInline(unsigned token, unsigned hash, unsigned offset)
 
         // Match offset
         unsigned inlineOffset = 0;
-        count = sscanf(buffer, " <Offset>%u</Offset> ", &inlineOffset);
+        count                 = sscanf(buffer, " <Offset>%u</Offset> ", &inlineOffset);
         if ((count != 1) || (inlineOffset != offset))
         {
             continue;
@@ -2729,7 +2695,7 @@ bool ReplayPolicy::FindInline(unsigned token, unsigned hash, unsigned offset)
         if (fgets(buffer, sizeof(buffer), s_ReplayFile) != nullptr)
         {
             unsigned collectData = 0;
-            count = sscanf(buffer, " <CollectData>%u</CollectData> ", &collectData);
+            count                = sscanf(buffer, " <CollectData>%u</CollectData> ", &collectData);
 
             if (count == 1)
             {
@@ -2763,20 +2729,18 @@ bool ReplayPolicy::FindInline(unsigned token, unsigned hash, unsigned offset)
 bool ReplayPolicy::FindInline(CORINFO_METHOD_HANDLE callee)
 {
     // Token and Hash we're looking for
-    mdMethodDef calleeToken =
-        m_RootCompiler->info.compCompHnd->getMethodDefFromMethod(callee);
-    unsigned calleeHash =
-        m_RootCompiler->info.compCompHnd->getMethodHash(callee);
+    mdMethodDef calleeToken = m_RootCompiler->info.compCompHnd->getMethodDefFromMethod(callee);
+    unsigned    calleeHash  = m_RootCompiler->info.compCompHnd->getMethodHash(callee);
 
     // Abstract this or just pass through raw bits
     // See matching code in xml writer
     int offset = -1;
     if (m_Offset != BAD_IL_OFFSET)
     {
-        offset = (int) jitGetILoffs(m_Offset);
+        offset = (int)jitGetILoffs(m_Offset);
     }
 
-    unsigned calleeOffset = (unsigned) offset;
+    unsigned calleeOffset = (unsigned)offset;
 
     bool foundInline = FindInline(calleeToken, calleeHash, calleeOffset);
 
@@ -2800,7 +2764,7 @@ void ReplayPolicy::NoteBool(InlineObservation obs, bool value)
     if (!m_IsPrejitRoot && (obs == InlineObservation::CALLEE_IS_FORCE_INLINE))
     {
         m_WasForceInline = value;
-        value = false;
+        value            = false;
     }
 
     DiscretionaryPolicy::NoteBool(obs, value);
@@ -2855,7 +2819,7 @@ void ReplayPolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
             {
                 // Finally, find this candidate within its context
                 CORINFO_METHOD_HANDLE calleeHandle = methodInfo->ftn;
-                accept = FindInline(calleeHandle);
+                accept                             = FindInline(calleeHandle);
             }
         }
     }

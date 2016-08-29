@@ -7286,7 +7286,7 @@ ReturnKind GetReturnKind(Thread *pThread, EECodeInfo *codeInfo)
     if (gcInfoToken.IsReturnKindAvailable()) 
     {
         GcInfoDecoder gcInfoDecoder(gcInfoToken, DECODE_RETURN_KIND);
-        ReturnKind returnKind = gcInfoDecoder.GetReturnKind();
+        returnKind = gcInfoDecoder.GetReturnKind();
     }
 #endif // _TARGET_X86_
 

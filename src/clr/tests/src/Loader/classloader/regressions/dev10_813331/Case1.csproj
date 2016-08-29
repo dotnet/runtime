@@ -27,10 +27,6 @@
     <Compile Include="Case1.cs" />
   </ItemGroup>
 
-  <ItemGroup>
-    <None Include="app.config" />
-    <None Include="project.json" />
-  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="Library1.csproj" />

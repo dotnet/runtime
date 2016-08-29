@@ -2488,6 +2488,12 @@ StackWalkAction StackFrameIterator::NextRaw(void)
             bool fInsertCacheEntry = m_crawl.stackWalkCache.Enabled() && 
                                      (m_flags & LIGHTUNWIND) &&
                                      (m_pCachedGSCookie == NULL);
+ 
+            // Is this a dynamic method. Dynamic methods can be GC collected and so IP to method mapping
+            // is not persistent. Therefore do not cache information for this frame.
+            BOOL isCollectableMethod = ExecutionManager::IsCollectibleMethod(m_crawl.GetMethodToken());
+            if(isCollectableMethod)
+                fInsertCacheEntry = FALSE;
 
             StackwalkCacheUnwindInfo unwindInfo;
 

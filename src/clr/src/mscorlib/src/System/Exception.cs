@@ -29,9 +29,7 @@ namespace System {
 
     [ClassInterface(ClassInterfaceType.None)]
     [ComDefaultInterface(typeof(_Exception))]
-#if FEATURE_SERIALIZATION
     [Serializable]
-#endif
     [ComVisible(true)]
     public class Exception : ISerializable, _Exception
     {
@@ -915,15 +913,13 @@ namespace System {
             // Get the current stack trace string. 
             return ToString(true, true);
         }
-
-#if !FEATURE_CORECLR
+        
         // this method is required so Object.GetType is not made virtual by the compiler
         // _Exception.GetType()
         public new Type GetType()
         {
             return base.GetType();
         }
-#endif
 
         internal bool IsTransient
         {

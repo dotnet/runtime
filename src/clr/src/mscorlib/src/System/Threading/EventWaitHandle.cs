@@ -56,7 +56,7 @@ namespace System.Threading
 #else
                 if (System.IO.Path.MaxPath < name.Length)
                 {
-                    throw new ArgumentException(Environment.GetResourceString("Argument_WaitHandleNameTooLong", name));
+                    throw new ArgumentException(Environment.GetResourceString("Argument_WaitHandleNameTooLong", Path.MaxPath), "name");
                 }
 #endif
             }
@@ -105,7 +105,7 @@ namespace System.Threading
 #else
                 if (System.IO.Path.MaxPath < name.Length)
                 {
-                    throw new ArgumentException(Environment.GetResourceString("Argument_WaitHandleNameTooLong", name));
+                    throw new ArgumentException(Environment.GetResourceString("Argument_WaitHandleNameTooLong", Path.MaxPath), "name");
                 }
 #endif
             }
@@ -226,7 +226,7 @@ namespace System.Threading
 
             if(null != name && System.IO.Path.MaxPath < name.Length)
             {
-                throw new ArgumentException(Environment.GetResourceString("Argument_WaitHandleNameTooLong",name));
+                throw new ArgumentException(Environment.GetResourceString("Argument_WaitHandleNameTooLong", Path.MaxPath), "name");
             }
             
             Contract.EndContractBlock();

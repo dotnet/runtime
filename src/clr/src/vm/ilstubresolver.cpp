@@ -91,6 +91,7 @@ LPCUTF8 ILStubResolver::GetStubMethodName()
         case MulticastDelegateStub:  return "IL_STUB_MulticastDelegate_Invoke";
         case UnboxingILStub:         return "IL_STUB_UnboxingStub";
         case InstantiatingStub:      return "IL_STUB_InstantiatingStub";
+        case SecureDelegateStub:     return "IL_STUB_SecureDelegate_Invoke";
 #endif
         default:
             UNREACHABLE_MSG("Unknown stub type");

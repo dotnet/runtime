@@ -13,7 +13,6 @@ using System.Threading;
 using System.Runtime.Versioning;
 using Microsoft.Win32.SafeHandles;
 
-#if !FEATURE_CORECLR
 namespace System
 {
     [SecurityCritical]
@@ -364,4 +363,3 @@ namespace System
         #endregion
     }
 }
-#endif //!FEATURE_CORECLR
