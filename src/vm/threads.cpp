@@ -2375,10 +2375,7 @@ BOOL Thread::InitThread(BOOL fInternal)
 
     // Set floating point mode to round to nearest
 #ifndef FEATURE_PAL
-#ifndef _TARGET_ARM64_
-    //ARM64TODO: remove the ifdef
     (void) _controlfp_s( NULL, _RC_NEAR, _RC_CHOP|_RC_UP|_RC_DOWN|_RC_NEAR );
-#endif
 
     m_pTEB = (struct _NT_TIB*)NtCurrentTeb();
 
@@ -4707,7 +4704,7 @@ WaitCompleted:
     return ret;
 }
 
-#ifndef FEATURE_CORECLR
+#ifndef FEATURE_PAL
 //--------------------------------------------------------------------
 // Only one style of wait for DoSignalAndWait since we don't support this on STA Threads
 //--------------------------------------------------------------------
@@ -4854,7 +4851,7 @@ WaitCompleted:
 
     return ret;
 }
-#endif // FEATURE_CORECLR
+#endif // !FEATURE_PAL
 
 #ifdef FEATURE_SYNCHRONIZATIONCONTEXT_WAIT
 DWORD Thread::DoSyncContextWait(OBJECTREF *pSyncCtxObj, int countHandles, HANDLE *handles, BOOL waitAll, DWORD millis)

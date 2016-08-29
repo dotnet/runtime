@@ -135,10 +135,6 @@ public:
             m_pException=NULL;
         }
         EX_END_CATCH(SwallowAllExceptions);
-
-        _ASSERTE(m_fLockAcquired);
-        m_Crst.Leave();
-        m_fLockAcquired = FALSE;
     }
     
     void SetResult(TypeHandle typeHnd)
@@ -153,6 +149,17 @@ public:
         CONTRACTL_END;
 
         m_typeHandle = typeHnd;
+    }
+    
+    void UnblockWaiters()
+    {
+        CONTRACTL
+        {
+              NOTHROW;
+              PRECONDITION(HasLock());
+              PRECONDITION(m_dwWaitCount > 0);
+        }
+        CONTRACTL_END;
 
         _ASSERTE(m_fLockAcquired);
         m_Crst.Leave();

@@ -12,9 +12,7 @@ using System.Diagnostics.Contracts;
 
 namespace System.Reflection 
 {
-#if FEATURE_SERIALIZATION
     [Serializable]
-#endif
     internal class MemberInfoSerializationHolder : ISerializable, IObjectReference 
     {
         #region Staitc Public Members

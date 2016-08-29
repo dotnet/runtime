@@ -16,9 +16,7 @@ namespace System.Runtime.InteropServices {
     using System.Runtime.Serialization;
 
     [System.Runtime.InteropServices.ComVisible(true)]
-#if FEATURE_SERIALIZATION
     [Serializable]
-#endif
     public class InvalidOleVariantTypeException : SystemException {
         public InvalidOleVariantTypeException() 
             : base(Environment.GetResourceString("Arg_InvalidOleVariantTypeException")) {

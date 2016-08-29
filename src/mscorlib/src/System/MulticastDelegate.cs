@@ -12,9 +12,7 @@ namespace System
     using System.Diagnostics.Contracts;
     using System.Reflection.Emit;
 
-#if FEATURE_SERIALIZATION
     [Serializable]
-#endif
     [System.Runtime.InteropServices.ComVisible(true)]
     public abstract class MulticastDelegate : Delegate
     {

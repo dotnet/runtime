@@ -27,9 +27,6 @@
     <Compile Include="exec16.il" />
   </ItemGroup>
 
-  <ItemGroup>
-    <None Include="app.config" />
-  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="nesting16.ilproj" />

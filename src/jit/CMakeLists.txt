@@ -1,4 +1,5 @@
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 include_directories("./jitstd")
 include_directories("../inc")
@@ -46,11 +47,13 @@ set( JIT_SOURCES
   jiteh.cpp
   jittelemetry.cpp
   lclvars.cpp
+  lir.cpp
   liveness.cpp
   loopcloning.cpp
   lower.cpp
   lsra.cpp
   morph.cpp
+  objectalloc.cpp
   optcse.cpp
   optimizer.cpp
   rangecheck.cpp

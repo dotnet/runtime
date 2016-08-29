@@ -174,7 +174,7 @@ NESTED_END JIT_RareDisableHelper, _TEXT
 #ifdef FEATURE_HIJACK
 
 //------------------------------------------------
-// OnHijackScalarTripThread
+// OnHijackTripThread
 //
 NESTED_ENTRY OnHijackTripThread, _TEXT, NoHandler
 

@@ -12,9 +12,7 @@ namespace System {
     using System.Runtime.Remoting;
     using System.Runtime.Serialization;
 
-#if FEATURE_SERIALIZATION
     [Serializable]
-#endif
     internal sealed class Empty : ISerializable
     {
         private Empty() {

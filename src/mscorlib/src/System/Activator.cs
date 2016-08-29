@@ -562,7 +562,6 @@ namespace System {
                                                                    activationAttributes,
                                                                    null);
         }
-#if FEATURE_COMINTEROP
 
 #if FEATURE_CLICKONCE
         [System.Security.SecuritySafeCritical]  // auto-generated
@@ -630,7 +629,6 @@ namespace System {
                 return Handle;
             }
         }
-#endif // FEATURE_COMINTEROP                                  
 
 #if FEATURE_REMOTING
         //  This method is a helper method and delegates to the remoting 
@@ -663,8 +661,7 @@ namespace System {
                 BCLDebug.Trace("REMOTE", "{0}{1}", title, failure);
 #endif            
         }
-
-#if !FEATURE_CORECLR
+        
         void _Activator.GetTypeInfoCount(out uint pcTInfo)
         {
             throw new NotImplementedException();
@@ -686,7 +683,6 @@ namespace System {
         {
             throw new NotImplementedException();
         }
-#endif
     }
 }
 

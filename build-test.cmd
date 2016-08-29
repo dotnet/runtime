@@ -158,8 +158,21 @@ if defined __ToolsetDir (
 )
 
 set __BuildLogRootName=Tests_Native
-call %__ProjectDir%\run.cmd build -Project="%__NativeTestIntermediatesDir%\install.vcxproj" %__msbuildNativeArgs% %__RunArgs% %__unprocessedBuildArgs%
-if errorlevel 1 exit /b 1
+set __BuildLog=%__LogsDir%\%__BuildLogRootName%_%__BuildOS%__%__BuildArch%__%__BuildType%.log
+set __BuildWrn=%__LogsDir%\%__BuildLogRootName%_%__BuildOS%__%__BuildArch%__%__BuildType%.wrn
+set __BuildErr=%__LogsDir%\%__BuildLogRootName%_%__BuildOS%__%__BuildArch%__%__BuildType%.err
+set __msbuildLog=/flp:Verbosity=normal;LogFile="%__BuildLog%"
+set __msbuildWrn=/flp1:WarningsOnly;LogFile="%__BuildWrn%"
+set __msbuildErr=/flp2:ErrorsOnly;LogFile="%__BuildErr%"
+
+call %__ProjectDir%\run.cmd build -Project="%__NativeTestIntermediatesDir%\install.vcxproj" -MsBuildLog=!__msbuildLog! -MsBuildWrn=!__msbuildWrn! -MsBuildErr=!__msbuildErr! %__msbuildNativeArgs% %__RunArgs% %__unprocessedBuildArgs%
+if errorlevel 1 (
+    echo %__MsgPrefix%Error: build failed. Refer to the build log files for details:
+    echo     %__BuildLog%
+    echo     %__BuildWrn%
+    echo     %__BuildErr%
+    exit /b 1
+)
 
 :skipnative
 

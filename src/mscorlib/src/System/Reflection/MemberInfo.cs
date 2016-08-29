@@ -74,7 +74,6 @@ namespace System.Reflection
         
         #endregion
 
-#if !FEATURE_CORECLR
         public static bool operator ==(MemberInfo left, MemberInfo right)
         {
             if (ReferenceEquals(left, right))
@@ -107,7 +106,6 @@ namespace System.Reflection
         {
             return !(left == right);
         }
-#endif // !FEATURE_CORECLR
 
         public override bool Equals(object obj)
         {

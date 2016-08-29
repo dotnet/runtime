@@ -20,7 +20,8 @@ namespace System.Globalization
     **      UmAlQura    1318/01/01   1500/12/30
     */
 
-    public class UmAlQuraCalendar : Calendar
+    [Serializable]
+    public partial class UmAlQuraCalendar : Calendar
     {
         internal const int MinCalendarYear = 1318;
         internal const int MaxCalendarYear = 1500;

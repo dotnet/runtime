@@ -87,7 +87,6 @@ If test changes are needed, make the change and build the test project. This wil
 4. Add the project of the new test to `<repo_root>\tests\src\AllTestProjects.sln` in VS
 5. Add source files to this newly added project.
 6. Indicate the success of the test by returning `100`.
-7. Add the .NET CoreFX contract references, as required, via the Nuget Package Manager in Visual Studio. *Make sure this does not change the csproj. If it does, then undo the change in the csproj.*
 8. Add any other projects as a dependency, if needed.
 9. Build the test.
 10. Follow the steps to re-run a failed test to validate the new test.
@@ -101,3 +100,7 @@ Note:
      ``<DisableProjectBuild Condition=" '$(Platform)' == 'arm64' ">true</DisableProjectBuild>``
 
   ``</PropertyGroup>``
+
+2. To Add Nuget\MyGet Refernces use this (project.json)[https://github.com/dotnet/coreclr/blob/master/tests/src/Common/test_dependencies/project.json]
+
+3. To Build against the mscorlib facade add  ``<ReferenceLocalMscorlib>true</ReferenceLocalMscorlib>`` to your project

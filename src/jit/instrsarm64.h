@@ -19,29 +19,29 @@
 ******************************************************************************/
 
 #if !defined(_TARGET_ARM64_)
-  #error Unexpected target type
+#error Unexpected target type
 #endif
 
 #ifndef INST1
-#error  INST1 must be defined before including this file.
+#error INST1 must be defined before including this file.
 #endif
 #ifndef INST2
-#error  INST2 must be defined before including this file.
+#error INST2 must be defined before including this file.
 #endif
 #ifndef INST3
-#error  INST3 must be defined before including this file.
+#error INST3 must be defined before including this file.
 #endif
 #ifndef INST4
-#error  INST4 must be defined before including this file.
+#error INST4 must be defined before including this file.
 #endif
 #ifndef INST5
-#error  INST5 must be defined before including this file.
+#error INST5 must be defined before including this file.
 #endif
 #ifndef INST6
-#error  INST6 must be defined before including this file.
+#error INST6 must be defined before including this file.
 #endif
 #ifndef INST9
-#error  INST9 must be defined before including this file.
+#error INST9 must be defined before including this file.
 #endif
 
 /*****************************************************************************/
@@ -944,11 +944,11 @@ INST1(uxtl2,   "uxtl2",  0, 0, IF_DV_2O,  0x6F00A400)
 // clang-format on
 
 /*****************************************************************************/
-#undef  INST1
-#undef  INST2
-#undef  INST3
-#undef  INST4
-#undef  INST5
-#undef  INST6
-#undef  INST9
+#undef INST1
+#undef INST2
+#undef INST3
+#undef INST4
+#undef INST5
+#undef INST6
+#undef INST9
 /*****************************************************************************/

@@ -20,6 +20,7 @@ namespace System.Globalization
     **      TaiwanLunisolar     1912/01/01          2050/13/29
     */
 
+    [Serializable]
     public class TaiwanLunisolarCalendar : EastAsianLunisolarCalendar
     {
         // Since

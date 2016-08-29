@@ -33,14 +33,9 @@ namespace System {
     // out and for internal readability.
     
     [StructLayout(LayoutKind.Auto)]
-#if FEATURE_SERIALIZATION
     [Serializable]
-#endif
     public struct DateTimeOffset : IComparable, IFormattable,
-                                   IComparable<DateTimeOffset>, IEquatable<DateTimeOffset>
-#if FEATURE_SERIALIZATION
-        , ISerializable, IDeserializationCallback
-#endif
+                                   IComparable<DateTimeOffset>, IEquatable<DateTimeOffset>, ISerializable, IDeserializationCallback
     {
         // Constants
         internal const Int64 MaxOffset = TimeSpan.TicksPerHour * 14;
@@ -507,7 +502,6 @@ namespace System {
         
         // ----- SECTION: private serialization instance methods  ----------------*
 
-#if FEATURE_SERIALIZATION
         void IDeserializationCallback.OnDeserialization(Object sender) {
             try {
                 m_offsetMinutes = ValidateOffset(Offset);
@@ -540,7 +534,6 @@ namespace System {
             m_dateTime      = (DateTime)info.GetValue("DateTime", typeof(DateTime));
             m_offsetMinutes = (Int16)info.GetValue("OffsetMinutes", typeof(Int16));
         }  
-#endif
 
         // Returns the hash code for this DateTimeOffset.
         //

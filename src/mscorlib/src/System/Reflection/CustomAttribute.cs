@@ -324,6 +324,11 @@ namespace System.Reflection
             MetadataEnumResult tkCustomAttributeTokens;
             scope.EnumCustomAttributes(targetToken, out tkCustomAttributeTokens);
 
+            if (tkCustomAttributeTokens.Length == 0)
+            {
+                return Array.Empty<CustomAttributeRecord>();
+            }
+
             CustomAttributeRecord[] records = new CustomAttributeRecord[tkCustomAttributeTokens.Length];
 
             for (int i = 0; i < records.Length; i++)
@@ -2102,14 +2107,10 @@ namespace System.Reflection
             {
                 // See //depot/DevDiv/private/Main/ndp/clr/src/MD/Compiler/CustAttr.cpp
                 typeof(FieldOffsetAttribute) as RuntimeType, // field
-#if FEATURE_SERIALIZATION
                 typeof(SerializableAttribute) as RuntimeType, // class, struct, enum, delegate
-#endif
                 typeof(MarshalAsAttribute) as RuntimeType, // parameter, field, return-value
                 typeof(ComImportAttribute) as RuntimeType, // class, interface 
-#if FEATURE_SERIALIZATION
                 typeof(NonSerializedAttribute) as RuntimeType, // field, inherited
-#endif
                 typeof(InAttribute) as RuntimeType, // parameter
                 typeof(OutAttribute) as RuntimeType, // parameter
                 typeof(OptionalAttribute) as RuntimeType, // parameter
@@ -2166,13 +2167,11 @@ namespace System.Reflection
             List<Attribute> pcas = new List<Attribute>();
             Attribute pca = null;
 
-#if FEATURE_SERIALIZATION
             if (all || caType == (RuntimeType)typeof(SerializableAttribute))
             {
                 pca = SerializableAttribute.GetCustomAttribute(type);
                 if (pca != null) pcas.Add(pca);
             }
-#endif 
             if (all || caType == (RuntimeType)typeof(ComImportAttribute))
             {
                 pca = ComImportAttribute.GetCustomAttribute(type);
@@ -2204,12 +2203,10 @@ namespace System.Reflection
             if (!all && s_pca.GetValueOrDefault(caType) == null && !IsSecurityAttribute(caType))
                 return false;
 
-#if FEATURE_SERIALIZATION
             if (all || caType == (RuntimeType)typeof(SerializableAttribute)) 
             { 
                 if (SerializableAttribute.IsDefined(type)) return true;
             }
-#endif
             if (all || caType == (RuntimeType)typeof(ComImportAttribute)) 
             { 
                 if (ComImportAttribute.IsDefined(type)) return true;
@@ -2431,13 +2428,11 @@ namespace System.Reflection
                 pca = FieldOffsetAttribute.GetCustomAttribute(field);
                 if (pca != null) pcas[count++] = pca;
             }
-#if FEATURE_SERIALIZATION
             if (all || caType == (RuntimeType)typeof(NonSerializedAttribute))
             {
                 pca = NonSerializedAttribute.GetCustomAttribute(field);
                 if (pca != null) pcas[count++] = pca;
             }
-#endif
             return pcas;
         }
         [System.Security.SecurityCritical]  // auto-generated
@@ -2455,12 +2450,10 @@ namespace System.Reflection
             {
                 if (FieldOffsetAttribute.IsDefined(field)) return true;
             }
-#if FEATURE_SERIALIZATION
             if (all || caType == (RuntimeType)typeof(NonSerializedAttribute)) 
             { 
                 if (NonSerializedAttribute.IsDefined(field)) return true;
             }
-#endif
 
             return false;
         }

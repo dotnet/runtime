@@ -231,11 +231,11 @@ TODO: Talk about initializing strutures before use
 #if COR_JIT_EE_VERSION > 460
 
 // Update this one
-SELECTANY const GUID JITEEVersionIdentifier = { /* 718c4238-2a85-45de-88ad-9b1fed806547 */
-    0x718c4238,
-    0x2a85,
-    0x45de,
-    { 0x88, 0xad, 0x9b, 0x1f, 0xed, 0x80, 0x65, 0x47 }
+SELECTANY const GUID JITEEVersionIdentifier = { /* 0b17dfeb-1ead-4e06-b025-d60d3a493b53 */
+    0x0b17dfeb,
+    0x1ead,
+    0x4e06,
+    { 0xb0, 0x25, 0xd6, 0x0d, 0x3a, 0x49, 0x3b, 0x53 }
 };
 
 #else
@@ -1686,6 +1686,8 @@ struct CORINFO_CALL_INFO
     };
 
     CORINFO_CONST_LOOKUP    instParamLookup;    // Used by Ready-to-Run
+
+    BOOL                    secureDelegateInvoke;
 };
 
 //----------------------------------------------------------------------------
@@ -1807,6 +1809,9 @@ struct CORINFO_EE_INFO
     // Delegate offsets
     unsigned    offsetOfDelegateInstance;
     unsigned    offsetOfDelegateFirstTarget;
+
+    // Secure delegate offsets
+    unsigned    offsetOfSecureDelegateIndirectCell;
 
     // Remoting offsets
     unsigned    offsetOfTransparentProxyRP;

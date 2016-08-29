@@ -458,5 +458,65 @@
         <ExcludeList Include="$(XunitTestBinBase)\JIT\Performance\CodeQuality\Math\Functions\Functions\Functions.cmd">
             <Issue>5430</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\GC\Coverage\smalloom\smalloom.cmd">
+            <Issue>6714</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\tailcall\tailcall\tailcall.cmd">
+            <Issue>6714</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V2.0-Beta2\b399444\b399444b\b399444b.cmd">
+            <Issue>6714</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\VS-ia64-JIT\V2.0-Beta2\b311420\b311420\b311420.cmd">
+            <Issue>6714</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V1-M09.5-PDC\b28776\b28776\b28776.cmd">
+            <Issue>6714</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\opt\virtualstubdispatch\bigvtbl\bigvtbl_cs_d\bigvtbl_cs_d.cmd">
+            <Issue>6714</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\opt\virtualstubdispatch\bigvtbl\bigvtbl_cs_r\bigvtbl_cs_r.cmd">
+            <Issue>6714</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\TSAmbiguities\CollapsedInterfaces\HelloWorld\HelloWorld.cmd">
+            <Issue>6714</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\GC\Coverage\LargeObjectAlloc2\LargeObjectAlloc2.cmd">
+            <Issue>6714</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Generics\Coverage\chaos65204782cs\chaos65204782cs.cmd">
+            <Issue>6714</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Generics\Coverage\chaos65204782cs_o\chaos65204782cs_o.cmd">
+            <Issue>6714</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\explicit\basic\_il_relrefarg_i4\_il_relrefarg_i4.cmd">
+            <Issue>6714</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\opt\cse\HugeArray\HugeArray.cmd">
+            <Issue>6714</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\opt\virtualstubdispatch\bigvtbl\bigvtbl_cs_do\bigvtbl_cs_do.cmd">
+            <Issue>6714</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\methodoverriding\regressions\549411\exploit\exploit.cmd">
+            <Issue>6717</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\GC\API\GC\GetGenerationWR2\GetGenerationWR2.cmd">
+            <Issue>6717</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\GC\API\GC\GetGeneration\GetGeneration.cmd">
+            <Issue>6717</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\GC\Features\HeapExpansion\pluggaps\pluggaps.cmd">
+            <Issue>6720</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V1-M09.5-PDC\b16335\b16335\b16335.cmd">
+            <Issue>6718</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\gc\regress\vswhidbey\143837\143837.cmd">
+            <Issue>6718</Issue>
+        </ExcludeList>
     </ItemGroup>
 </Project>

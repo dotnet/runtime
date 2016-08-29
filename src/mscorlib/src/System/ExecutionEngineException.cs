@@ -21,9 +21,7 @@ namespace System {
 	using System.Runtime.Serialization;
     [Obsolete("This type previously indicated an unspecified fatal error in the runtime. The runtime no longer raises this exception so this type is obsolete.")]
     [System.Runtime.InteropServices.ComVisible(true)]
-#if FEATURE_SERIALIZATION
     [Serializable]
-#endif
     public sealed class ExecutionEngineException : SystemException {
         public ExecutionEngineException() 
             : base(Environment.GetResourceString("Arg_ExecutionEngineException")) {
