@@ -378,13 +378,13 @@ DO_SETUP=TRUE
 
 if [ ${DO_SETUP} == "TRUE" ]; then
 
-cp  /home/ddcloud/git/coreclr/packages/Microsoft.DotNet.xunit.performance.runner.cli/1.0.0-alpha-build0035/lib/netstandard1.3/Microsoft.DotNet.xunit.performance.runner.cli.dll .
+sudo cp  $testNativeBinDir/../../../../packages/Microsoft.DotNet.xunit.performance.runner.cli/1.0.0-alpha-build0035/lib/netstandard1.3/Microsoft.DotNet.xunit.performance.runner.cli.dll .
 
-cp  /home/ddcloud/git/coreclr/packages/Microsoft.DotNet.xunit.performance.run.core/1.0.0-alpha-build0035/lib/dotnet/*.dll .
+sudo cp  $testNativeBinDir/../../../../packages/Microsoft.DotNet.xunit.performance.run.core/1.0.0-alpha-build0035/lib/dotnet/*.dll .
 
 fi
 
-tests=($(find ~/test/Windows_NT.x64.Release/JIT/Performance/CodeQuality -name '*.exe'))
+tests=($(find $testRootDir/JIT/Performance/CodeQuality -name '*.exe'))
 
 for testcase in ${tests[@]}; do
 
