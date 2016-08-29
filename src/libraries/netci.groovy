@@ -445,7 +445,7 @@ def osShortName = ['Windows 10': 'win10',
             // Set up triggers
             if (isPR) {
                 if (osName == 'LinuxARMEmulator') {
-                    Utilities.addGithubPRTriggerForBranch(newJob, branch, "Innerloop Linux ARM Emulator ${configurationGroup} Cross Build", "(?i).*test\\W+Innerloop\\W+Linux\\W+ARM\\W+Emulator\\W+${configurationGroup}\\W+Cross\\W+Build.*")
+                    Utilities.addGithubPRTriggerForBranch(newJob, branch, "Innerloop Linux ARM Emulator ${configurationGroup} Cross Build")
                 }
             }
             else {
