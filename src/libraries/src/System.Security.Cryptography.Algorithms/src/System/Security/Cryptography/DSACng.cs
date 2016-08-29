@@ -2,23 +2,22 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Diagnostics;
-
 using Microsoft.Win32.SafeHandles;
+using System.Diagnostics;
 
 namespace System.Security.Cryptography
 {
-    public partial class RSA : AsymmetricAlgorithm
+    public partial class DSA : AsymmetricAlgorithm
     {
-        public static RSA Create()
+        public static DSA Create()
         {
-            return new RSAImplementation.RSACng();
+            return new DSAImplementation.DSACng();
         }
     }
 
-    internal static partial class RSAImplementation
+    internal static partial class DSAImplementation
     {
-        public sealed partial class RSACng : RSA
+        public sealed partial class DSACng : DSA
         {
             private SafeNCryptKeyHandle _keyHandle;
             private int _lastKeySize;
@@ -34,9 +33,9 @@ namespace System.Security.Cryptography
                         _keyHandle.Dispose();
                     }
 
-                    const string BCRYPT_RSA_ALGORITHM = "RSA";
+                    const string BCRYPT_DSA_ALGORITHM = "DSA";
 
-                    _keyHandle = CngKeyLite.GenerateNewExportableKey(BCRYPT_RSA_ALGORITHM, keySize);
+                    _keyHandle = CngKeyLite.GenerateNewExportableKey(BCRYPT_DSA_ALGORITHM, keySize);
                     _lastKeySize = keySize;
                 }
 
@@ -46,8 +45,8 @@ namespace System.Security.Cryptography
             private byte[] ExportKeyBlob(bool includePrivateParameters)
             {
                 string blobType = includePrivateParameters ?
-                    Interop.BCrypt.KeyBlobType.BCRYPT_RSAFULLPRIVATE_BLOB :
-                    Interop.BCrypt.KeyBlobType.BCRYPT_RSAPUBLIC_KEY_BLOB;
+                    Interop.BCrypt.KeyBlobType.BCRYPT_PRIVATE_KEY_BLOB :
+                    Interop.BCrypt.KeyBlobType.BCRYPT_PUBLIC_KEY_BLOB;
 
                 using (SafeNCryptKeyHandle keyHandle = GetDuplicatedKeyHandle())
                 {
@@ -57,9 +56,10 @@ namespace System.Security.Cryptography
 
             private void ImportKeyBlob(byte[] rsaBlob, bool includePrivate)
             {
+                // Generic blob types used here
                 string blobType = includePrivate ?
-                    Interop.BCrypt.KeyBlobType.BCRYPT_RSAPRIVATE_BLOB :
-                    Interop.BCrypt.KeyBlobType.BCRYPT_RSAPUBLIC_KEY_BLOB;
+                    Interop.BCrypt.KeyBlobType.BCRYPT_PRIVATE_KEY_BLOB :
+                    Interop.BCrypt.KeyBlobType.BCRYPT_PUBLIC_KEY_BLOB;
 
                 SafeNCryptKeyHandle keyHandle = CngKeyLite.ImportKeyBlob(blobType, rsaBlob);
 
@@ -78,11 +78,6 @@ namespace System.Security.Cryptography
                 // Since the key is already loaded, we know that Windows thought it to be valid;
                 // therefore we should set KeySizeValue directly to bypass the LegalKeySizes conformance
                 // check.
-                //
-                // For RSA there are known cases where this change matters. RSACryptoServiceProvider can
-                // create a 384-bit RSA key, which we consider too small to be legal. It can also create
-                // a 1032-bit RSA key, which we consider illegal because it doesn't match our 64-bit
-                // alignment requirement. (In both cases Windows loads it just fine)
                 ForceSetKeySize(newKeySize);
                 _lastKeySize = newKeySize;
             }
