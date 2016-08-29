@@ -76,7 +76,7 @@ class Constants {
                                         'r2r_jitstressregs4', 'r2r_jitstressregs8', 'r2r_jitstressregsx10', 'r2r_jitstressregsx80',
                                         'r2r_jitminopts', 'r2r_jitforcerelocs']
     // This is the basic set of scenarios
-    def static basicScenarios = ['default', 'pri1', 'ilrt', 'r2r', 'pri1r2r', 'gcstress15_pri1r2r', 'longgc', 'coverage', 'gcsimulator'] + r2rJitStressScenarios
+    def static basicScenarios = ['default', 'pri1', 'ilrt', 'r2r', 'pri1r2r', 'gcstress15_pri1r2r', 'longgc', 'coverage', 'formatting', 'gcsimulator'] + r2rJitStressScenarios
     def static configurationList = ['Debug', 'Checked', 'Release']
     // This is the set of architectures
     def static architectureList = ['arm', 'arm64', 'x64', 'x86ryujit', 'x86lb']
@@ -248,6 +248,10 @@ def static getJobName(def configuration, def architecture, def os, def scenario,
             if (scenario == 'default') {
                 // For now we leave x64 off of the name for compatibility with other jobs
                 baseName = configuration.toLowerCase() + '_' + os.toLowerCase()
+            }
+            else if (scenario == 'formatting') {
+                // we don't care about the configuration for the formatting job. It runs all configs
+                baseName = architecture.toLowerCase() + '_' + os.toLowerCase()
             }
             else {
                 baseName = architecture.toLowerCase() + '_' + configuration.toLowerCase() + '_' + os.toLowerCase()
@@ -454,6 +458,11 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                 assert architecture == 'x64'
                 Utilities.addPeriodicTrigger(job, '@weekly')
                 break
+            case 'formatting':
+                assert (os == 'Windows_NT' || os == "Ubuntu")
+                assert architecture == 'x64'
+                Utilities.addGithubPushTrigger(job)
+                break
             case 'jitstressregs1':
             case 'jitstressregs2':
             case 'jitstressregs3':
@@ -543,6 +552,15 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                 }
                 break
             }
+
+            if (scenario == 'formatting') {
+                assert configuration == 'Checked'
+                if (os == 'Windows_NT' || os == 'Ubuntu') {
+                    Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} Formatting", "(?i).*test\\W+${os}\\W+formatting.*")
+                }
+                break
+            }
+
             switch (os) {
                 // OpenSUSE, Debian & RedHat get trigger phrases for pri 0 build, and pri 1 build & test
                 case 'OpenSUSE13.2':
@@ -1641,6 +1659,21 @@ combinedScenarios.each { scenario ->
                                     return
                                 }
                                 break
+                            // We only run Windows and Ubuntu x64 Checked for formatting right now
+                            case 'formatting':
+                                if (os != 'Windows_NT' && os != 'Ubuntu') {
+                                    return
+                                }
+                                if (architecture != 'x64') {
+                                    return
+                                }
+                                if (configuration != 'Checked') {
+                                    return
+                                }
+                                if (isBuildOnly) {
+                                    return
+                                }
+                                break
                             case 'default':
                                 // Nothing skipped
                                 break
@@ -1705,6 +1738,10 @@ combinedScenarios.each { scenario ->
                                     else if (isLongGc(scenario)) {
                                         buildCommands += "build.cmd ${lowerConfiguration} ${arch} skiptests"
                                         buildCommands += "set __TestIntermediateDir=int&&build-test.cmd ${lowerConfiguration} ${arch}"
+                                    }
+                                    else if (scenario == 'formatting') {
+                                        buildCommands += "python tests\\scripts\\format.py -c %WORKSPACE% -o Windows_NT -a ${arch}"
+                                        break
                                     }
                                     else {
                                         println("Unknown scenario: ${scenario}")
@@ -1899,6 +1936,11 @@ combinedScenarios.each { scenario ->
                                     def arch = architecture
                                     if (architecture == 'x86ryujit' || architecture == 'x86lb') {
                                         arch = 'x86'
+                                    }
+
+                                    if (scenario == 'formatting') {
+                                        buildCommands += "python tests/scripts/format.py -c \${WORKSPACE} -o Linux -a ${arch}"
+                                        break
                                     }
                                 
                                     if (!enableCorefxTesting) {
@@ -2167,6 +2209,8 @@ combinedScenarios.each { scenario ->
                                 if (configuration != 'Release') {
                                     return
                                 }
+                            case 'formatting':
+                                return
                             case 'default':
                                 // Nothing skipped
                                 break
