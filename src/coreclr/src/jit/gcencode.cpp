@@ -1777,7 +1777,11 @@ size_t GCInfo::gcMakeRegPtrTable(BYTE* dest, int mask, const InfoHdr& header, un
                      */
 
                     /* Has this argument been enregistered? */
+#ifndef LEGACY_BACKEND
+                    if (!varDsc->lvOnFrame)
+#else  // LEGACY_BACKEND
                     if (varDsc->lvRegister)
+#endif // LEGACY_BACKEND
                     {
                         /* if a CEE_JMP has been used, then we need to report all the arguments
                            even if they are enregistered, since we will be using this value
