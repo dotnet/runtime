@@ -705,6 +705,8 @@ PAL_IsDebuggerPresent()
         }
     }
 
+    close(status_fd);
+
     return debugger_present;
 #elif defined(__APPLE__)
     struct kinfo_proc info = {};
