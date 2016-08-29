@@ -2896,6 +2896,7 @@ namespace System.Globalization
         public virtual System.DateTime AddSeconds(System.DateTime time, int seconds) { return default(System.DateTime); }
         public virtual System.DateTime AddWeeks(System.DateTime time, int weeks) { return default(System.DateTime); }
         public abstract System.DateTime AddYears(System.DateTime time, int years);
+        public virtual object Clone() { return default(object); }
         public abstract int GetDayOfMonth(System.DateTime time);
         public abstract System.DayOfWeek GetDayOfWeek(System.DateTime time);
         public abstract int GetDayOfYear(System.DateTime time);
@@ -2905,6 +2906,7 @@ namespace System.Globalization
         public abstract int GetDaysInYear(int year, int era);
         public abstract int GetEra(System.DateTime time);
         public virtual int GetHour(System.DateTime time) { return default(int); }
+        public virtual int GetLeapMonth(int year) { return default(int); }
         public virtual int GetLeapMonth(int year, int era) { return default(int); }
         public virtual double GetMilliseconds(System.DateTime time) { return default(double); }
         public virtual int GetMinute(System.DateTime time) { return default(int); }
@@ -2920,15 +2922,359 @@ namespace System.Globalization
         public abstract bool IsLeapMonth(int year, int month, int era);
         public virtual bool IsLeapYear(int year) { return default(bool); }
         public abstract bool IsLeapYear(int year, int era);
+        public static System.Globalization.Calendar ReadOnly(System.Globalization.Calendar calendar) { return default(System.Globalization.Calendar); }
         public virtual System.DateTime ToDateTime(int year, int month, int day, int hour, int minute, int second, int millisecond) { return default(System.DateTime); }
         public abstract System.DateTime ToDateTime(int year, int month, int day, int hour, int minute, int second, int millisecond, int era);
         public virtual int ToFourDigitYear(int year) { return default(int); }
+    }
+    public enum CalendarAlgorithmType
+    {
+        LunarCalendar = 2,
+        LunisolarCalendar = 3,
+        SolarCalendar = 1,
+        Unknown = 0,
     }
     public enum CalendarWeekRule
     {
         FirstDay = 0,
         FirstFourDayWeek = 2,
         FirstFullWeek = 1,
+    }
+    public partial class ChineseLunisolarCalendar : System.Globalization.EastAsianLunisolarCalendar
+    {
+        public ChineseLunisolarCalendar() { }
+        public override int[] Eras { get { return default(int[]); } }
+        public override System.DateTime MaxSupportedDateTime { get { return default(System.DateTime); } }
+        public override System.DateTime MinSupportedDateTime { get { return default(System.DateTime); } }
+        public override int GetEra(System.DateTime time) { return default(int); }
+    }
+    public abstract partial class EastAsianLunisolarCalendar : System.Globalization.Calendar
+    {
+        internal EastAsianLunisolarCalendar() { }
+        public override int TwoDigitYearMax { get { return default(int); } set { } }
+        public override System.DateTime AddMonths(System.DateTime time, int months) { return default(System.DateTime); }
+        public override System.DateTime AddYears(System.DateTime time, int years) { return default(System.DateTime); }
+        public int GetCelestialStem(int sexagenaryYear) { return default(int); }
+        public override int GetDayOfMonth(System.DateTime time) { return default(int); }
+        public override System.DayOfWeek GetDayOfWeek(System.DateTime time) { return default(System.DayOfWeek); }
+        public override int GetDayOfYear(System.DateTime time) { return default(int); }
+        public override int GetDaysInMonth(int year, int month, int era) { return default(int); }
+        public override int GetDaysInYear(int year, int era) { return default(int); }
+        public override int GetLeapMonth(int year, int era) { return default(int); }
+        public override int GetMonth(System.DateTime time) { return default(int); }
+        public override int GetMonthsInYear(int year, int era) { return default(int); }
+        public virtual int GetSexagenaryYear(System.DateTime time) { return default(int); }
+        public int GetTerrestrialBranch(int sexagenaryYear) { return default(int); }
+        public override int GetYear(System.DateTime time) { return default(int); }
+        public override bool IsLeapDay(int year, int month, int day, int era) { return default(bool); }
+        public override bool IsLeapMonth(int year, int month, int era) { return default(bool); }
+        public override bool IsLeapYear(int year, int era) { return default(bool); }
+        public override System.DateTime ToDateTime(int year, int month, int day, int hour, int minute, int second, int millisecond, int era) { return default(System.DateTime); }
+        public override int ToFourDigitYear(int year) { return default(int); }
+    }
+    public partial class GregorianCalendar : System.Globalization.Calendar
+    {
+        public GregorianCalendar() { }
+        public GregorianCalendar(System.Globalization.GregorianCalendarTypes type) { }
+        public virtual System.Globalization.GregorianCalendarTypes CalendarType { get { return default(System.Globalization.GregorianCalendarTypes); } set { } }
+        public override int[] Eras { get { return default(int[]); } }
+        public override System.DateTime MaxSupportedDateTime { get { return default(System.DateTime); } }
+        public override System.DateTime MinSupportedDateTime { get { return default(System.DateTime); } }
+        public override int TwoDigitYearMax { get { return default(int); } set { } }
+        public override System.DateTime AddMonths(System.DateTime time, int months) { return default(System.DateTime); }
+        public override System.DateTime AddYears(System.DateTime time, int years) { return default(System.DateTime); }
+        public override int GetDayOfMonth(System.DateTime time) { return default(int); }
+        public override System.DayOfWeek GetDayOfWeek(System.DateTime time) { return default(System.DayOfWeek); }
+        public override int GetDayOfYear(System.DateTime time) { return default(int); }
+        public override int GetDaysInMonth(int year, int month, int era) { return default(int); }
+        public override int GetDaysInYear(int year, int era) { return default(int); }
+        public override int GetEra(System.DateTime time) { return default(int); }
+        public override int GetLeapMonth(int year, int era) { return default(int); }
+        public override int GetMonth(System.DateTime time) { return default(int); }
+        public override int GetMonthsInYear(int year, int era) { return default(int); }
+        public override int GetYear(System.DateTime time) { return default(int); }
+        public override bool IsLeapDay(int year, int month, int day, int era) { return default(bool); }
+        public override bool IsLeapMonth(int year, int month, int era) { return default(bool); }
+        public override bool IsLeapYear(int year, int era) { return default(bool); }
+        public override System.DateTime ToDateTime(int year, int month, int day, int hour, int minute, int second, int millisecond, int era) { return default(System.DateTime); }
+        public override int ToFourDigitYear(int year) { return default(int); }
+    }
+    public enum GregorianCalendarTypes
+    {
+        Arabic = 10,
+        Localized = 1,
+        MiddleEastFrench = 9,
+        TransliteratedEnglish = 11,
+        TransliteratedFrench = 12,
+        USEnglish = 2,
+    }
+    public partial class HebrewCalendar : System.Globalization.Calendar
+    {
+        public static readonly int HebrewEra;
+        public HebrewCalendar() { }
+        public override int[] Eras { get { return default(int[]); } }
+        public override System.DateTime MaxSupportedDateTime { get { return default(System.DateTime); } }
+        public override System.DateTime MinSupportedDateTime { get { return default(System.DateTime); } }
+        public override int TwoDigitYearMax { get { return default(int); } set { } }
+        public override System.DateTime AddMonths(System.DateTime time, int months) { return default(System.DateTime); }
+        public override System.DateTime AddYears(System.DateTime time, int years) { return default(System.DateTime); }
+        public override int GetDayOfMonth(System.DateTime time) { return default(int); }
+        public override System.DayOfWeek GetDayOfWeek(System.DateTime time) { return default(System.DayOfWeek); }
+        public override int GetDayOfYear(System.DateTime time) { return default(int); }
+        public override int GetDaysInMonth(int year, int month, int era) { return default(int); }
+        public override int GetDaysInYear(int year, int era) { return default(int); }
+        public override int GetEra(System.DateTime time) { return default(int); }
+        public override int GetLeapMonth(int year, int era) { return default(int); }
+        public override int GetMonth(System.DateTime time) { return default(int); }
+        public override int GetMonthsInYear(int year, int era) { return default(int); }
+        public override int GetYear(System.DateTime time) { return default(int); }
+        public override bool IsLeapDay(int year, int month, int day, int era) { return default(bool); }
+        public override bool IsLeapMonth(int year, int month, int era) { return default(bool); }
+        public override bool IsLeapYear(int year, int era) { return default(bool); }
+        public override System.DateTime ToDateTime(int year, int month, int day, int hour, int minute, int second, int millisecond, int era) { return default(System.DateTime); }
+        public override int ToFourDigitYear(int year) { return default(int); }
+    }
+    public partial class HijriCalendar : System.Globalization.Calendar
+    {
+        public static readonly int HijriEra;
+        public HijriCalendar() { }
+        public override int[] Eras { get { return default(int[]); } }
+        public int HijriAdjustment { get { return default(int); } set { } }
+        public override System.DateTime MaxSupportedDateTime { get { return default(System.DateTime); } }
+        public override System.DateTime MinSupportedDateTime { get { return default(System.DateTime); } }
+        public override int TwoDigitYearMax { get { return default(int); } set { } }
+        public override System.DateTime AddMonths(System.DateTime time, int months) { return default(System.DateTime); }
+        public override System.DateTime AddYears(System.DateTime time, int years) { return default(System.DateTime); }
+        public override int GetDayOfMonth(System.DateTime time) { return default(int); }
+        public override System.DayOfWeek GetDayOfWeek(System.DateTime time) { return default(System.DayOfWeek); }
+        public override int GetDayOfYear(System.DateTime time) { return default(int); }
+        public override int GetDaysInMonth(int year, int month, int era) { return default(int); }
+        public override int GetDaysInYear(int year, int era) { return default(int); }
+        public override int GetEra(System.DateTime time) { return default(int); }
+        public override int GetLeapMonth(int year, int era) { return default(int); }
+        public override int GetMonth(System.DateTime time) { return default(int); }
+        public override int GetMonthsInYear(int year, int era) { return default(int); }
+        public override int GetYear(System.DateTime time) { return default(int); }
+        public override bool IsLeapDay(int year, int month, int day, int era) { return default(bool); }
+        public override bool IsLeapMonth(int year, int month, int era) { return default(bool); }
+        public override bool IsLeapYear(int year, int era) { return default(bool); }
+        public override System.DateTime ToDateTime(int year, int month, int day, int hour, int minute, int second, int millisecond, int era) { return default(System.DateTime); }
+        public override int ToFourDigitYear(int year) { return default(int); }
+    }
+    public partial class JapaneseCalendar : System.Globalization.Calendar
+    {
+        public JapaneseCalendar() { }
+        public override int[] Eras { get { return default(int[]); } }
+        public override System.DateTime MaxSupportedDateTime { get { return default(System.DateTime); } }
+        public override System.DateTime MinSupportedDateTime { get { return default(System.DateTime); } }
+        public override int TwoDigitYearMax { get { return default(int); } set { } }
+        public override System.DateTime AddMonths(System.DateTime time, int months) { return default(System.DateTime); }
+        public override System.DateTime AddYears(System.DateTime time, int years) { return default(System.DateTime); }
+        public override int GetDayOfMonth(System.DateTime time) { return default(int); }
+        public override System.DayOfWeek GetDayOfWeek(System.DateTime time) { return default(System.DayOfWeek); }
+        public override int GetDayOfYear(System.DateTime time) { return default(int); }
+        public override int GetDaysInMonth(int year, int month, int era) { return default(int); }
+        public override int GetDaysInYear(int year, int era) { return default(int); }
+        public override int GetEra(System.DateTime time) { return default(int); }
+        public override int GetLeapMonth(int year, int era) { return default(int); }
+        public override int GetMonth(System.DateTime time) { return default(int); }
+        public override int GetMonthsInYear(int year, int era) { return default(int); }
+        public override int GetWeekOfYear(System.DateTime time, System.Globalization.CalendarWeekRule rule, System.DayOfWeek firstDayOfWeek) { return default(int); }
+        public override int GetYear(System.DateTime time) { return default(int); }
+        public override bool IsLeapDay(int year, int month, int day, int era) { return default(bool); }
+        public override bool IsLeapMonth(int year, int month, int era) { return default(bool); }
+        public override bool IsLeapYear(int year, int era) { return default(bool); }
+        public override System.DateTime ToDateTime(int year, int month, int day, int hour, int minute, int second, int millisecond, int era) { return default(System.DateTime); }
+        public override int ToFourDigitYear(int year) { return default(int); }
+    }
+    public partial class JapaneseLunisolarCalendar : System.Globalization.EastAsianLunisolarCalendar
+    {
+        public JapaneseLunisolarCalendar() { }
+        public override int[] Eras { get { return default(int[]); } }
+        public override System.DateTime MaxSupportedDateTime { get { return default(System.DateTime); } }
+        public override System.DateTime MinSupportedDateTime { get { return default(System.DateTime); } }
+        public override int GetEra(System.DateTime time) { return default(int); }
+    }
+    public partial class JulianCalendar : System.Globalization.Calendar
+    {
+        public JulianCalendar() { }
+        public override int[] Eras { get { return default(int[]); } }
+        public override System.DateTime MaxSupportedDateTime { get { return default(System.DateTime); } }
+        public override System.DateTime MinSupportedDateTime { get { return default(System.DateTime); } }
+        public override int TwoDigitYearMax { get { return default(int); } set { } }
+        public override System.DateTime AddMonths(System.DateTime time, int months) { return default(System.DateTime); }
+        public override System.DateTime AddYears(System.DateTime time, int years) { return default(System.DateTime); }
+        public override int GetDayOfMonth(System.DateTime time) { return default(int); }
+        public override System.DayOfWeek GetDayOfWeek(System.DateTime time) { return default(System.DayOfWeek); }
+        public override int GetDayOfYear(System.DateTime time) { return default(int); }
+        public override int GetDaysInMonth(int year, int month, int era) { return default(int); }
+        public override int GetDaysInYear(int year, int era) { return default(int); }
+        public override int GetEra(System.DateTime time) { return default(int); }
+        public override int GetLeapMonth(int year, int era) { return default(int); }
+        public override int GetMonth(System.DateTime time) { return default(int); }
+        public override int GetMonthsInYear(int year, int era) { return default(int); }
+        public override int GetYear(System.DateTime time) { return default(int); }
+        public override bool IsLeapDay(int year, int month, int day, int era) { return default(bool); }
+        public override bool IsLeapMonth(int year, int month, int era) { return default(bool); }
+        public override bool IsLeapYear(int year, int era) { return default(bool); }
+        public override System.DateTime ToDateTime(int year, int month, int day, int hour, int minute, int second, int millisecond, int era) { return default(System.DateTime); }
+        public override int ToFourDigitYear(int year) { return default(int); }
+    }
+    public partial class KoreanCalendar : System.Globalization.Calendar
+    {
+        public KoreanCalendar() { }
+        public override int[] Eras { get { return default(int[]); } }
+        public override System.DateTime MaxSupportedDateTime { get { return default(System.DateTime); } }
+        public override System.DateTime MinSupportedDateTime { get { return default(System.DateTime); } }
+        public override int TwoDigitYearMax { get { return default(int); } set { } }
+        public override System.DateTime AddMonths(System.DateTime time, int months) { return default(System.DateTime); }
+        public override System.DateTime AddYears(System.DateTime time, int years) { return default(System.DateTime); }
+        public override int GetDayOfMonth(System.DateTime time) { return default(int); }
+        public override System.DayOfWeek GetDayOfWeek(System.DateTime time) { return default(System.DayOfWeek); }
+        public override int GetDayOfYear(System.DateTime time) { return default(int); }
+        public override int GetDaysInMonth(int year, int month, int era) { return default(int); }
+        public override int GetDaysInYear(int year, int era) { return default(int); }
+        public override int GetEra(System.DateTime time) { return default(int); }
+        public override int GetLeapMonth(int year, int era) { return default(int); }
+        public override int GetMonth(System.DateTime time) { return default(int); }
+        public override int GetMonthsInYear(int year, int era) { return default(int); }
+        public override int GetWeekOfYear(System.DateTime time, System.Globalization.CalendarWeekRule rule, System.DayOfWeek firstDayOfWeek) { return default(int); }
+        public override int GetYear(System.DateTime time) { return default(int); }
+        public override bool IsLeapDay(int year, int month, int day, int era) { return default(bool); }
+        public override bool IsLeapMonth(int year, int month, int era) { return default(bool); }
+        public override bool IsLeapYear(int year, int era) { return default(bool); }
+        public override System.DateTime ToDateTime(int year, int month, int day, int hour, int minute, int second, int millisecond, int era) { return default(System.DateTime); }
+        public override int ToFourDigitYear(int year) { return default(int); }
+    }
+    public partial class KoreanLunisolarCalendar : System.Globalization.EastAsianLunisolarCalendar
+    {
+        public KoreanLunisolarCalendar() { }
+        public override int[] Eras { get { return default(int[]); } }
+        public override System.DateTime MaxSupportedDateTime { get { return default(System.DateTime); } }
+        public override System.DateTime MinSupportedDateTime { get { return default(System.DateTime); } }
+        public override int GetEra(System.DateTime time) { return default(int); }
+    }
+    public partial class PersianCalendar : System.Globalization.Calendar
+    {
+        public PersianCalendar() { }
+        public override int[] Eras { get { return default(int[]); } }
+        public override System.DateTime MaxSupportedDateTime { get { return default(System.DateTime); } }
+        public override System.DateTime MinSupportedDateTime { get { return default(System.DateTime); } }
+        public override int TwoDigitYearMax { get { return default(int); } set { } }
+        public override System.DateTime AddMonths(System.DateTime time, int months) { return default(System.DateTime); }
+        public override System.DateTime AddYears(System.DateTime time, int years) { return default(System.DateTime); }
+        public override int GetDayOfMonth(System.DateTime time) { return default(int); }
+        public override System.DayOfWeek GetDayOfWeek(System.DateTime time) { return default(System.DayOfWeek); }
+        public override int GetDayOfYear(System.DateTime time) { return default(int); }
+        public override int GetDaysInMonth(int year, int month, int era) { return default(int); }
+        public override int GetDaysInYear(int year, int era) { return default(int); }
+        public override int GetEra(System.DateTime time) { return default(int); }
+        public override int GetLeapMonth(int year, int era) { return default(int); }
+        public override int GetMonth(System.DateTime time) { return default(int); }
+        public override int GetMonthsInYear(int year, int era) { return default(int); }
+        public override int GetYear(System.DateTime time) { return default(int); }
+        public override bool IsLeapDay(int year, int month, int day, int era) { return default(bool); }
+        public override bool IsLeapMonth(int year, int month, int era) { return default(bool); }
+        public override bool IsLeapYear(int year, int era) { return default(bool); }
+        public override System.DateTime ToDateTime(int year, int month, int day, int hour, int minute, int second, int millisecond, int era) { return default(System.DateTime); }
+        public override int ToFourDigitYear(int year) { return default(int); }
+    }
+    public partial class TaiwanCalendar : System.Globalization.Calendar
+    {
+        public TaiwanCalendar() { }
+        public override int[] Eras { get { return default(int[]); } }
+        public override System.DateTime MaxSupportedDateTime { get { return default(System.DateTime); } }
+        public override System.DateTime MinSupportedDateTime { get { return default(System.DateTime); } }
+        public override int TwoDigitYearMax { get { return default(int); } set { } }
+        public override System.DateTime AddMonths(System.DateTime time, int months) { return default(System.DateTime); }
+        public override System.DateTime AddYears(System.DateTime time, int years) { return default(System.DateTime); }
+        public override int GetDayOfMonth(System.DateTime time) { return default(int); }
+        public override System.DayOfWeek GetDayOfWeek(System.DateTime time) { return default(System.DayOfWeek); }
+        public override int GetDayOfYear(System.DateTime time) { return default(int); }
+        public override int GetDaysInMonth(int year, int month, int era) { return default(int); }
+        public override int GetDaysInYear(int year, int era) { return default(int); }
+        public override int GetEra(System.DateTime time) { return default(int); }
+        public override int GetLeapMonth(int year, int era) { return default(int); }
+        public override int GetMonth(System.DateTime time) { return default(int); }
+        public override int GetMonthsInYear(int year, int era) { return default(int); }
+        public override int GetWeekOfYear(System.DateTime time, System.Globalization.CalendarWeekRule rule, System.DayOfWeek firstDayOfWeek) { return default(int); }
+        public override int GetYear(System.DateTime time) { return default(int); }
+        public override bool IsLeapDay(int year, int month, int day, int era) { return default(bool); }
+        public override bool IsLeapMonth(int year, int month, int era) { return default(bool); }
+        public override bool IsLeapYear(int year, int era) { return default(bool); }
+        public override System.DateTime ToDateTime(int year, int month, int day, int hour, int minute, int second, int millisecond, int era) { return default(System.DateTime); }
+        public override int ToFourDigitYear(int year) { return default(int); }
+    }
+    public partial class TaiwanLunisolarCalendar : System.Globalization.EastAsianLunisolarCalendar
+    {
+        public TaiwanLunisolarCalendar() { }
+        public override int[] Eras { get { return default(int[]); } }
+        public override System.DateTime MaxSupportedDateTime { get { return default(System.DateTime); } }
+        public override System.DateTime MinSupportedDateTime { get { return default(System.DateTime); } }
+        public override int GetEra(System.DateTime time) { return default(int); }
+    }
+    public partial class ThaiBuddhistCalendar : System.Globalization.Calendar
+    {
+        public ThaiBuddhistCalendar() { }
+        public override int[] Eras { get { return default(int[]); } }
+        public override System.DateTime MaxSupportedDateTime { get { return default(System.DateTime); } }
+        public override System.DateTime MinSupportedDateTime { get { return default(System.DateTime); } }
+        public override int TwoDigitYearMax { get { return default(int); } set { } }
+        public override System.DateTime AddMonths(System.DateTime time, int months) { return default(System.DateTime); }
+        public override System.DateTime AddYears(System.DateTime time, int years) { return default(System.DateTime); }
+        public override int GetDayOfMonth(System.DateTime time) { return default(int); }
+        public override System.DayOfWeek GetDayOfWeek(System.DateTime time) { return default(System.DayOfWeek); }
+        public override int GetDayOfYear(System.DateTime time) { return default(int); }
+        public override int GetDaysInMonth(int year, int month, int era) { return default(int); }
+        public override int GetDaysInYear(int year, int era) { return default(int); }
+        public override int GetEra(System.DateTime time) { return default(int); }
+        public override int GetLeapMonth(int year, int era) { return default(int); }
+        public override int GetMonth(System.DateTime time) { return default(int); }
+        public override int GetMonthsInYear(int year, int era) { return default(int); }
+        public override int GetWeekOfYear(System.DateTime time, System.Globalization.CalendarWeekRule rule, System.DayOfWeek firstDayOfWeek) { return default(int); }
+        public override int GetYear(System.DateTime time) { return default(int); }
+        public override bool IsLeapDay(int year, int month, int day, int era) { return default(bool); }
+        public override bool IsLeapMonth(int year, int month, int era) { return default(bool); }
+        public override bool IsLeapYear(int year, int era) { return default(bool); }
+        public override System.DateTime ToDateTime(int year, int month, int day, int hour, int minute, int second, int millisecond, int era) { return default(System.DateTime); }
+        public override int ToFourDigitYear(int year) { return default(int); }
+    }
+    public partial class UmAlQuraCalendar : System.Globalization.Calendar
+    {
+        public const int UmAlQuraEra = 1;
+        public UmAlQuraCalendar() { }
+        public override int[] Eras { get { return default(int[]); } }
+        public override System.DateTime MaxSupportedDateTime { get { return default(System.DateTime); } }
+        public override System.DateTime MinSupportedDateTime { get { return default(System.DateTime); } }
+        public override int TwoDigitYearMax { get { return default(int); } set { } }
+        public override System.DateTime AddMonths(System.DateTime time, int months) { return default(System.DateTime); }
+        public override System.DateTime AddYears(System.DateTime time, int years) { return default(System.DateTime); }
+        public override int GetDayOfMonth(System.DateTime time) { return default(int); }
+        public override System.DayOfWeek GetDayOfWeek(System.DateTime time) { return default(System.DayOfWeek); }
+        public override int GetDayOfYear(System.DateTime time) { return default(int); }
+        public override int GetDaysInMonth(int year, int month, int era) { return default(int); }
+        public override int GetDaysInYear(int year, int era) { return default(int); }
+        public override int GetEra(System.DateTime time) { return default(int); }
+        public override int GetLeapMonth(int year, int era) { return default(int); }
+        public override int GetMonth(System.DateTime time) { return default(int); }
+        public override int GetMonthsInYear(int year, int era) { return default(int); }
+        public override int GetYear(System.DateTime time) { return default(int); }
+        public override bool IsLeapDay(int year, int month, int day, int era) { return default(bool); }
+        public override bool IsLeapMonth(int year, int month, int era) { return default(bool); }
+        public override bool IsLeapYear(int year, int era) { return default(bool); }
+        public override System.DateTime ToDateTime(int year, int month, int day, int hour, int minute, int second, int millisecond, int era) { return default(System.DateTime); }
+        public override int ToFourDigitYear(int year) { return default(int); }
+    }
+    public static partial class CharUnicodeInfo
+    {
+        public static int GetDecimalDigitValue(char ch) { return default(int); }
+        public static int GetDecimalDigitValue(string s, int index) { return default(int); }
+        public static int GetDigitValue(char ch) { return default(int); }
+        public static int GetDigitValue(string s, int index) { return default(int); }
+        public static double GetNumericValue(char ch) { return default(double); }
+        public static double GetNumericValue(string s, int index) { return default(double); }
+        public static System.Globalization.UnicodeCategory GetUnicodeCategory(char ch) { return default(System.Globalization.UnicodeCategory); }
+        public static System.Globalization.UnicodeCategory GetUnicodeCategory(string s, int index) { return default(System.Globalization.UnicodeCategory); }
     }
     [System.FlagsAttribute]
     public enum DateTimeStyles
@@ -2984,9 +3330,10 @@ namespace System.Globalization
         OrdinalIgnoreCase = 268435456,
         StringSort = 536870912,
     }
-    public partial class CompareInfo
+    public partial class CompareInfo : System.Runtime.Serialization.IDeserializationCallback
     {
         internal CompareInfo() { }
+        public int LCID { get { return default(int); } }
         public virtual string Name { get { return default(string); } }
         public virtual int Compare(string string1, int offset1, int length1, string string2, int offset2, int length2) { return default(int); }
         public virtual int Compare(string string1, int offset1, int length1, string string2, int offset2, int length2, System.Globalization.CompareOptions options) { return default(int); }
@@ -2995,33 +3342,46 @@ namespace System.Globalization
         public virtual int Compare(string string1, string string2) { return default(int); }
         public virtual int Compare(string string1, string string2, System.Globalization.CompareOptions options) { return default(int); }
         public override bool Equals(object value) { return default(bool); }
+        public static System.Globalization.CompareInfo GetCompareInfo(int culture) { return default(System.Globalization.CompareInfo); }
         public static System.Globalization.CompareInfo GetCompareInfo(string name) { return default(System.Globalization.CompareInfo); }
+        // Temproray disable the API's depends on System.Reflection.Assembly till we get it defined in System.Runtime
+//        public static System.Globalization.CompareInfo GetCompareInfo(int culture, System.Reflection.Assembly assembly) { return default(System.Globalization.CompareInfo); }
+//        public static System.Globalization.CompareInfo GetCompareInfo(string name, System.Reflection.Assembly assembly) { return default(System.Globalization.CompareInfo); }
         public override int GetHashCode() { return default(int); }
         public virtual int GetHashCode(string source, System.Globalization.CompareOptions options) { return default(int); }
+        public virtual System.Globalization.SortKey GetSortKey(string source) { return default(System.Globalization.SortKey); }
+        public virtual System.Globalization.SortKey GetSortKey(string source, System.Globalization.CompareOptions options) { return default(System.Globalization.SortKey); }
         public virtual int IndexOf(string source, char value) { return default(int); }
         public virtual int IndexOf(string source, char value, System.Globalization.CompareOptions options) { return default(int); }
+        public virtual int IndexOf(string source, char value, int startIndex) { return default(int); }
         public virtual int IndexOf(string source, char value, int startIndex, System.Globalization.CompareOptions options) { return default(int); }
         public virtual int IndexOf(string source, char value, int startIndex, int count) { return default(int); }
         public virtual int IndexOf(string source, char value, int startIndex, int count, System.Globalization.CompareOptions options) { return default(int); }
         public virtual int IndexOf(string source, string value) { return default(int); }
         public virtual int IndexOf(string source, string value, System.Globalization.CompareOptions options) { return default(int); }
+        public virtual int IndexOf(string source, string value, int startIndex) { return default(int); }
         public virtual int IndexOf(string source, string value, int startIndex, System.Globalization.CompareOptions options) { return default(int); }
         public virtual int IndexOf(string source, string value, int startIndex, int count) { return default(int); }
         public virtual int IndexOf(string source, string value, int startIndex, int count, System.Globalization.CompareOptions options) { return default(int); }
         public virtual bool IsPrefix(string source, string prefix) { return default(bool); }
         public virtual bool IsPrefix(string source, string prefix, System.Globalization.CompareOptions options) { return default(bool); }
+        public static bool IsSortable(char ch) { return default(bool); }
+        public static bool IsSortable(string text) { return default(bool); }
         public virtual bool IsSuffix(string source, string suffix) { return default(bool); }
         public virtual bool IsSuffix(string source, string suffix, System.Globalization.CompareOptions options) { return default(bool); }
         public virtual int LastIndexOf(string source, char value) { return default(int); }
         public virtual int LastIndexOf(string source, char value, System.Globalization.CompareOptions options) { return default(int); }
+        public virtual int LastIndexOf(string source, char value, int startIndex) { return default(int); }
         public virtual int LastIndexOf(string source, char value, int startIndex, System.Globalization.CompareOptions options) { return default(int); }
         public virtual int LastIndexOf(string source, char value, int startIndex, int count) { return default(int); }
         public virtual int LastIndexOf(string source, char value, int startIndex, int count, System.Globalization.CompareOptions options) { return default(int); }
         public virtual int LastIndexOf(string source, string value) { return default(int); }
         public virtual int LastIndexOf(string source, string value, System.Globalization.CompareOptions options) { return default(int); }
         public virtual int LastIndexOf(string source, string value, int startIndex, System.Globalization.CompareOptions options) { return default(int); }
+        public virtual int LastIndexOf(string source, string value, int startIndex) { return default(int); }
         public virtual int LastIndexOf(string source, string value, int startIndex, int count) { return default(int); }
         public virtual int LastIndexOf(string source, string value, int startIndex, int count, System.Globalization.CompareOptions options) { return default(int); }
+        void System.Runtime.Serialization.IDeserializationCallback.OnDeserialization(object sender) { }
         public override string ToString() { return default(string); }
     }
     public sealed partial class DateTimeFormatInfo : System.IFormatProvider
@@ -3034,6 +3394,7 @@ namespace System.Globalization
         public System.Globalization.Calendar Calendar { get { return default(System.Globalization.Calendar); } set { } }
         public System.Globalization.CalendarWeekRule CalendarWeekRule { get { return default(System.Globalization.CalendarWeekRule); } set { } }
         public static System.Globalization.DateTimeFormatInfo CurrentInfo { get { return default(System.Globalization.DateTimeFormatInfo); } }
+        public string DateSeparator { get { return default(string); } set { } }
         public string[] DayNames { get { return default(string[]); } set { } }
         public System.DayOfWeek FirstDayOfWeek { get { return default(System.DayOfWeek); } set { } }
         public string FullDateTimePattern { get { return default(string); } set { } }
@@ -3044,25 +3405,44 @@ namespace System.Globalization
         public string MonthDayPattern { get { return default(string); } set { } }
         public string[] MonthGenitiveNames { get { return default(string[]); } set { } }
         public string[] MonthNames { get { return default(string[]); } set { } }
+        public string NativeCalendarName { get { return default(string); } }
         public string PMDesignator { get { return default(string); } set { } }
         public string RFC1123Pattern { get { return default(string); } }
         public string ShortDatePattern { get { return default(string); } set { } }
         public string[] ShortestDayNames { get { return default(string[]); } set { } }
         public string ShortTimePattern { get { return default(string); } set { } }
         public string SortableDateTimePattern { get { return default(string); } }
+        public string TimeSeparator { get { return default(string); } set { } }
         public string UniversalSortableDateTimePattern { get { return default(string); } }
         public string YearMonthPattern { get { return default(string); } set { } }
         public object Clone() { return default(object); }
         public string GetAbbreviatedDayName(System.DayOfWeek dayofweek) { return default(string); }
         public string GetAbbreviatedEraName(int era) { return default(string); }
         public string GetAbbreviatedMonthName(int month) { return default(string); }
+        public string[] GetAllDateTimePatterns() { return default(string[]); }
+        public string[] GetAllDateTimePatterns(char format) { return default(string[]); }
         public string GetDayName(System.DayOfWeek dayofweek) { return default(string); }
         public int GetEra(string eraName) { return default(int); }
         public string GetEraName(int era) { return default(string); }
         public object GetFormat(System.Type formatType) { return default(object); }
         public static System.Globalization.DateTimeFormatInfo GetInstance(System.IFormatProvider provider) { return default(System.Globalization.DateTimeFormatInfo); }
         public string GetMonthName(int month) { return default(string); }
+        public string GetShortestDayName(System.DayOfWeek dayOfWeek) { return default(string); }
         public static System.Globalization.DateTimeFormatInfo ReadOnly(System.Globalization.DateTimeFormatInfo dtfi) { return default(System.Globalization.DateTimeFormatInfo); }
+        public void SetAllDateTimePatterns(string[] patterns, char format) { }
+    }
+    public partial class DaylightTime
+    {
+        public DaylightTime(System.DateTime start, System.DateTime end, System.TimeSpan delta) { }
+        public System.TimeSpan Delta { get { return default(System.TimeSpan); } }
+        public System.DateTime End { get { return default(System.DateTime); } }
+        public System.DateTime Start { get { return default(System.DateTime); } }
+    }
+    public enum DigitShapes
+    {
+        Context = 0,
+        NativeNational = 2,
+        None = 1,
     }
     public sealed partial class NumberFormatInfo : System.IFormatProvider
     {
@@ -3075,9 +3455,11 @@ namespace System.Globalization
         public int CurrencyPositivePattern { get { return default(int); } set { } }
         public string CurrencySymbol { get { return default(string); } set { } }
         public static System.Globalization.NumberFormatInfo CurrentInfo { get { return default(System.Globalization.NumberFormatInfo); } }
+        public System.Globalization.DigitShapes DigitSubstitution { get { return default(System.Globalization.DigitShapes); } set { } }
         public static System.Globalization.NumberFormatInfo InvariantInfo { get { return default(System.Globalization.NumberFormatInfo); } }
         public bool IsReadOnly { get { return default(bool); } }
         public string NaNSymbol { get { return default(string); } set { } }
+        public string[] NativeDigits { get { return default(string[]); } set { } }
         public string NegativeInfinitySymbol { get { return default(string); } set { } }
         public string NegativeSign { get { return default(string); } set { } }
         public int NumberDecimalDigits { get { return default(int); } set { } }
@@ -3100,24 +3482,36 @@ namespace System.Globalization
         public static System.Globalization.NumberFormatInfo GetInstance(System.IFormatProvider formatProvider) { return default(System.Globalization.NumberFormatInfo); }
         public static System.Globalization.NumberFormatInfo ReadOnly(System.Globalization.NumberFormatInfo nfi) { return default(System.Globalization.NumberFormatInfo); }
     }
-    public partial class TextInfo
+    public partial class TextInfo : System.ICloneable, System.Runtime.Serialization.IDeserializationCallback
     {
         internal TextInfo() { }
+        public virtual int ANSICodePage { get { return default(int); } }
         public string CultureName { get { return default(string); } }
+        public virtual int EBCDICCodePage { get { return default(int); } }
         public bool IsReadOnly { get { return default(bool); } }
         public bool IsRightToLeft { get { return default(bool); } }
+        public int LCID { get { return default(int); } }
         public virtual string ListSeparator { get { return default(string); } set { } }
+        public virtual int MacCodePage { get { return default(int); } }
+        public virtual int OEMCodePage { get { return default(int); } }
+        public virtual object Clone() { return default(object); }
         public override bool Equals(object obj) { return default(bool); }
         public override int GetHashCode() { return default(int); }
+        public static System.Globalization.TextInfo ReadOnly(System.Globalization.TextInfo textInfo) { return default(System.Globalization.TextInfo); }
+        void System.Runtime.Serialization.IDeserializationCallback.OnDeserialization(object sender) { }
         public virtual char ToLower(char c) { return default(char); }
         public virtual string ToLower(string str) { return default(string); }
         public override string ToString() { return default(string); }
+        public string ToTitleCase(string str) { return default(string); }
         public virtual char ToUpper(char c) { return default(char); }
         public virtual string ToUpper(string str) { return default(string); }
     }
     public partial class CultureInfo : System.IFormatProvider
     {
+        public CultureInfo(int culture) { }
+        public CultureInfo(int culture, bool useUserOverride) { }
         public CultureInfo(string name) { }
+        public CultureInfo(string name, bool useUserOverride) { }
         public virtual System.Globalization.Calendar Calendar { get { return default(System.Globalization.Calendar); } }
         public virtual System.Globalization.CompareInfo CompareInfo { get { return default(System.Globalization.CompareInfo); } }
         public static System.Globalization.CultureInfo CurrentCulture { get { return default(System.Globalization.CultureInfo); } set { } }
@@ -3127,18 +3521,29 @@ namespace System.Globalization
         public static System.Globalization.CultureInfo DefaultThreadCurrentUICulture { get { return default(System.Globalization.CultureInfo); } set { } }
         public virtual string DisplayName { get { return default(string); } }
         public virtual string EnglishName { get { return default(string); } }
+        public static System.Globalization.CultureInfo InstalledUICulture { get { return default(System.Globalization.CultureInfo); } }
         public static System.Globalization.CultureInfo InvariantCulture { get { return default(System.Globalization.CultureInfo); } }
         public virtual bool IsNeutralCulture { get { return default(bool); } }
         public bool IsReadOnly { get { return default(bool); } }
+        public virtual int LCID { get { return default(int); } }
         public virtual string Name { get { return default(string); } }
         public virtual string NativeName { get { return default(string); } }
         public virtual System.Globalization.NumberFormatInfo NumberFormat { get { return default(System.Globalization.NumberFormatInfo); } set { } }
         public virtual System.Globalization.Calendar[] OptionalCalendars { get { return default(System.Globalization.Calendar[]); } }
         public virtual System.Globalization.CultureInfo Parent { get { return default(System.Globalization.CultureInfo); } }
         public virtual System.Globalization.TextInfo TextInfo { get { return default(System.Globalization.TextInfo); } }
+        public virtual string ThreeLetterISOLanguageName { get { return default(string); } }
+        public virtual string ThreeLetterWindowsLanguageName { get { return default(string); } }
         public virtual string TwoLetterISOLanguageName { get { return default(string); } }
+        public bool UseUserOverride { get { throw null; } }
         public virtual object Clone() { return default(object); }
+        public static System.Globalization.CultureInfo CreateSpecificCulture(string name) { return default(System.Globalization.CultureInfo); }
         public override bool Equals(object value) { return default(bool); }
+        public static System.Globalization.CultureInfo GetCultureInfo(int culture) { return default(System.Globalization.CultureInfo); }
+        public static System.Globalization.CultureInfo GetCultureInfo(string name) { return default(System.Globalization.CultureInfo); }
+        public static System.Globalization.CultureInfo GetCultureInfo(string name, string altName) { return default(System.Globalization.CultureInfo); }
+        public static System.Globalization.CultureInfo GetCultureInfoByIetfLanguageTag(string name) { return default(System.Globalization.CultureInfo); }
+        public static System.Globalization.CultureInfo[] GetCultures(System.Globalization.CultureTypes types) { return default(System.Globalization.CultureInfo[]); }
         public virtual object GetFormat(System.Type formatType) { return default(object); }
         public override int GetHashCode() { return default(int); }
         public static System.Globalization.CultureInfo ReadOnly(System.Globalization.CultureInfo ci) { return default(System.Globalization.CultureInfo); }
@@ -3149,13 +3554,28 @@ namespace System.Globalization
         public CultureNotFoundException() { }
         public CultureNotFoundException(string message) { }
         public CultureNotFoundException(string message, System.Exception innerException) { }
+        public CultureNotFoundException(string message, int invalidCultureId, System.Exception innerException) { }
+        public CultureNotFoundException(string paramName, int invalidCultureId, string message) { }
         public CultureNotFoundException(string paramName, string message) { }
         public CultureNotFoundException(string message, string invalidCultureName, System.Exception innerException) { }
         public CultureNotFoundException(string paramName, string invalidCultureName, string message) { }
         protected CultureNotFoundException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
+        public virtual System.Nullable<int> InvalidCultureId { get { return default(System.Nullable<int>); } }
         public virtual string InvalidCultureName { get { return default(string); } }
         public override string Message { get { return default(string); } }
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
+    }
+    [System.FlagsAttribute]
+    public enum CultureTypes
+    {
+        AllCultures = 7,
+        FrameworkCultures = 64,
+        InstalledWin32Cultures = 4,
+        NeutralCultures = 1,
+        ReplacementCultures = 16,
+        SpecificCultures = 2,
+        UserCustomCulture = 8,
+        WindowsOnlyCultures = 32,
     }
     public enum UnicodeCategory
     {
@@ -3189,6 +3609,74 @@ namespace System.Globalization
         Surrogate = 16,
         TitlecaseLetter = 2,
         UppercaseLetter = 0,
+    }
+    public partial class RegionInfo
+    {
+        public RegionInfo(int culture) { }
+        public RegionInfo(string name) { }
+        public virtual string CurrencyEnglishName { get { return default(string); } }
+        public virtual string CurrencyNativeName { get { return default(string); } }
+        public virtual string CurrencySymbol { get { return default(string); } }
+        public static System.Globalization.RegionInfo CurrentRegion { get { return default(System.Globalization.RegionInfo); } }
+        public virtual string DisplayName { get { return default(string); } }
+        public virtual string EnglishName { get { return default(string); } }
+        public virtual int GeoId { get { return default(int); } }
+        public virtual bool IsMetric { get { return default(bool); } }
+        public virtual string ISOCurrencySymbol { get { return default(string); } }
+        public virtual string Name { get { return default(string); } }
+        public virtual string NativeName { get { return default(string); } }
+        public virtual string ThreeLetterISORegionName { get { return default(string); } }
+        public virtual string ThreeLetterWindowsRegionName { get { return default(string); } }
+        public virtual string TwoLetterISORegionName { get { return default(string); } }
+        public override bool Equals(object value) { return default(bool); }
+        public override int GetHashCode() { return default(int); }
+        public override string ToString() { return default(string); }
+    }
+    public partial class SortKey
+    {
+        internal SortKey() { }
+        public virtual byte[] KeyData { get { return default(byte[]); } }
+        public virtual string OriginalString { get { return default(string); } }
+        public static int Compare(System.Globalization.SortKey sortkey1, System.Globalization.SortKey sortkey2) { return default(int); }
+        public override bool Equals(object value) { return default(bool); }
+        public override int GetHashCode() { return default(int); }
+        public override string ToString() { return default(string); }
+    }
+    public sealed partial class SortVersion : System.IEquatable<System.Globalization.SortVersion>
+    {
+        public SortVersion(int fullVersion, System.Guid sortId) { }
+        public int FullVersion { get { return default(int); } }
+        public System.Guid SortId { get { return default(System.Guid); } }
+        public bool Equals(System.Globalization.SortVersion other) { return default(bool); }
+        public override bool Equals(object obj) { return default(bool); }
+        public override int GetHashCode() { return default(int); }
+        public static bool operator ==(System.Globalization.SortVersion left, System.Globalization.SortVersion right) { return default(bool); }
+        public static bool operator !=(System.Globalization.SortVersion left, System.Globalization.SortVersion right) { return default(bool); }
+    }
+    public partial class StringInfo
+    {
+        public StringInfo() { }
+        public StringInfo(string value) { }
+        public int LengthInTextElements { get { return default(int); } }
+        public string String { get { return default(string); } set { } }
+        public override bool Equals(object value) { return default(bool); }
+        public override int GetHashCode() { return default(int); }
+        public static string GetNextTextElement(string str) { return default(string); }
+        public static string GetNextTextElement(string str, int index) { return default(string); }
+        public static System.Globalization.TextElementEnumerator GetTextElementEnumerator(string str) { return default(System.Globalization.TextElementEnumerator); }
+        public static System.Globalization.TextElementEnumerator GetTextElementEnumerator(string str, int index) { return default(System.Globalization.TextElementEnumerator); }
+        public static int[] ParseCombiningCharacters(string str) { return default(int[]); }
+        public string SubstringByTextElements(int startingTextElement) { return default(string); }
+        public string SubstringByTextElements(int startingTextElement, int lengthInTextElements) { return default(string); }
+    }
+    public partial class TextElementEnumerator : System.Collections.IEnumerator
+    {
+        internal TextElementEnumerator() { }
+        public object Current { get { return default(object); } }
+        public int ElementIndex { get { return default(int); } }
+        public string GetTextElement() { return default(string); }
+        public bool MoveNext() { return default(bool); }
+        public void Reset() { }
     }
 }
 namespace System.IO
@@ -3935,6 +4423,191 @@ namespace System.Text
         public System.Text.StringBuilder Replace(string oldValue, string newValue, int startIndex, int count) { return default(System.Text.StringBuilder); }
         public override string ToString() { return default(string); }
         public string ToString(int startIndex, int length) { return default(string); }
+    }
+    public abstract partial class Decoder
+    {
+        protected Decoder() { }
+        public System.Text.DecoderFallback Fallback { get { return default(System.Text.DecoderFallback); } set { } }
+        public System.Text.DecoderFallbackBuffer FallbackBuffer { get { return default(System.Text.DecoderFallbackBuffer); } }
+        public virtual void Convert(byte[] bytes, int byteIndex, int byteCount, char[] chars, int charIndex, int charCount, bool flush, out int bytesUsed, out int charsUsed, out bool completed) { bytesUsed = default(int); charsUsed = default(int); completed = default(bool); }
+        public abstract int GetCharCount(byte[] bytes, int index, int count);
+        public virtual int GetCharCount(byte[] bytes, int index, int count, bool flush) { return default(int); }
+        public abstract int GetChars(byte[] bytes, int byteIndex, int byteCount, char[] chars, int charIndex);
+        public virtual int GetChars(byte[] bytes, int byteIndex, int byteCount, char[] chars, int charIndex, bool flush) { return default(int); }
+        public virtual void Reset() { }
+    }
+    public sealed partial class DecoderExceptionFallback : System.Text.DecoderFallback
+    {
+        public DecoderExceptionFallback() { }
+        public override int MaxCharCount { get { return default(int); } }
+        public override System.Text.DecoderFallbackBuffer CreateFallbackBuffer() { return default(System.Text.DecoderFallbackBuffer); }
+        public override bool Equals(object value) { return default(bool); }
+        public override int GetHashCode() { return default(int); }
+    }
+    public abstract partial class DecoderFallback
+    {
+        protected DecoderFallback() { }
+        public static System.Text.DecoderFallback ExceptionFallback { get { return default(System.Text.DecoderFallback); } }
+        public abstract int MaxCharCount { get; }
+        public static System.Text.DecoderFallback ReplacementFallback { get { return default(System.Text.DecoderFallback); } }
+        public abstract System.Text.DecoderFallbackBuffer CreateFallbackBuffer();
+    }
+    public abstract partial class DecoderFallbackBuffer
+    {
+        protected DecoderFallbackBuffer() { }
+        public abstract int Remaining { get; }
+        public abstract bool Fallback(byte[] bytesUnknown, int index);
+        public abstract char GetNextChar();
+        public abstract bool MovePrevious();
+        public virtual void Reset() { }
+    }
+    public sealed partial class DecoderFallbackException : System.ArgumentException
+    {
+        public DecoderFallbackException() { }
+        public DecoderFallbackException(string message) { }
+        public DecoderFallbackException(string message, byte[] bytesUnknown, int index) { }
+        public DecoderFallbackException(string message, System.Exception innerException) { }
+        public byte[] BytesUnknown { get { return default(byte[]); } }
+        public int Index { get { return default(int); } }
+    }
+    public sealed partial class DecoderReplacementFallback : System.Text.DecoderFallback
+    {
+        public DecoderReplacementFallback() { }
+        public DecoderReplacementFallback(string replacement) { }
+        public string DefaultString { get { return default(string); } }
+        public override int MaxCharCount { get { return default(int); } }
+        public override System.Text.DecoderFallbackBuffer CreateFallbackBuffer() { return default(System.Text.DecoderFallbackBuffer); }
+        public override bool Equals(object value) { return default(bool); }
+        public override int GetHashCode() { return default(int); }
+    }
+    public abstract partial class Encoder
+    {
+        protected Encoder() { }
+        public System.Text.EncoderFallback Fallback { get { return default(System.Text.EncoderFallback); } set { } }
+        public System.Text.EncoderFallbackBuffer FallbackBuffer { get { return default(System.Text.EncoderFallbackBuffer); } }
+        public virtual void Convert(char[] chars, int charIndex, int charCount, byte[] bytes, int byteIndex, int byteCount, bool flush, out int charsUsed, out int bytesUsed, out bool completed) { charsUsed = default(int); bytesUsed = default(int); completed = default(bool); }
+        public abstract int GetByteCount(char[] chars, int index, int count, bool flush);
+        public abstract int GetBytes(char[] chars, int charIndex, int charCount, byte[] bytes, int byteIndex, bool flush);
+        public virtual void Reset() { }
+    }
+    public sealed partial class EncoderExceptionFallback : System.Text.EncoderFallback
+    {
+        public EncoderExceptionFallback() { }
+        public override int MaxCharCount { get { return default(int); } }
+        public override System.Text.EncoderFallbackBuffer CreateFallbackBuffer() { return default(System.Text.EncoderFallbackBuffer); }
+        public override bool Equals(object value) { return default(bool); }
+        public override int GetHashCode() { return default(int); }
+    }
+    public abstract partial class EncoderFallback
+    {
+        protected EncoderFallback() { }
+        public static System.Text.EncoderFallback ExceptionFallback { get { return default(System.Text.EncoderFallback); } }
+        public abstract int MaxCharCount { get; }
+        public static System.Text.EncoderFallback ReplacementFallback { get { return default(System.Text.EncoderFallback); } }
+        public abstract System.Text.EncoderFallbackBuffer CreateFallbackBuffer();
+    }
+    public abstract partial class EncoderFallbackBuffer
+    {
+        protected EncoderFallbackBuffer() { }
+        public abstract int Remaining { get; }
+        public abstract bool Fallback(char charUnknownHigh, char charUnknownLow, int index);
+        public abstract bool Fallback(char charUnknown, int index);
+        public abstract char GetNextChar();
+        public abstract bool MovePrevious();
+        public virtual void Reset() { }
+    }
+    public sealed partial class EncoderFallbackException : System.ArgumentException
+    {
+        public EncoderFallbackException() { }
+        public EncoderFallbackException(string message) { }
+        public EncoderFallbackException(string message, System.Exception innerException) { }
+        public char CharUnknown { get { return default(char); } }
+        public char CharUnknownHigh { get { return default(char); } }
+        public char CharUnknownLow { get { return default(char); } }
+        public int Index { get { return default(int); } }
+        public bool IsUnknownSurrogate() { return default(bool); }
+    }
+    public sealed partial class EncoderReplacementFallback : System.Text.EncoderFallback
+    {
+        public EncoderReplacementFallback() { }
+        public EncoderReplacementFallback(string replacement) { }
+        public string DefaultString { get { return default(string); } }
+        public override int MaxCharCount { get { return default(int); } }
+        public override System.Text.EncoderFallbackBuffer CreateFallbackBuffer() { return default(System.Text.EncoderFallbackBuffer); }
+        public override bool Equals(object value) { return default(bool); }
+        public override int GetHashCode() { return default(int); }
+    }
+    public abstract partial class Encoding
+    {
+        protected Encoding() { }
+        protected Encoding(int codePage) { }
+        protected Encoding(int codePage, System.Text.EncoderFallback encoderFallback, System.Text.DecoderFallback decoderFallback) { }
+        public static System.Text.Encoding ASCII { get { return default(System.Text.Encoding); } }
+        public static System.Text.Encoding BigEndianUnicode { get { return default(System.Text.Encoding); } }
+        public virtual int CodePage { get { return default(int); } }
+        public System.Text.DecoderFallback DecoderFallback { get { return default(System.Text.DecoderFallback); } }
+        public System.Text.EncoderFallback EncoderFallback { get { return default(System.Text.EncoderFallback); } }
+        public virtual string EncodingName { get { return default(string); } }
+        public virtual bool IsSingleByte { get { return default(bool); } }
+        public static System.Text.Encoding Unicode { get { return default(System.Text.Encoding); } }
+        public static System.Text.Encoding UTF32 { get { return default(System.Text.Encoding); } }
+        public static System.Text.Encoding UTF7 { get { return default(System.Text.Encoding); } }
+        public static System.Text.Encoding UTF8 { get { return default(System.Text.Encoding); } }
+        public virtual string WebName { get { return default(string); } }
+        public virtual object Clone() { return default(object); }
+        public static byte[] Convert(System.Text.Encoding srcEncoding, System.Text.Encoding dstEncoding, byte[] bytes) { return default(byte[]); }
+        public static byte[] Convert(System.Text.Encoding srcEncoding, System.Text.Encoding dstEncoding, byte[] bytes, int index, int count) { return default(byte[]); }
+        public override bool Equals(object value) { return default(bool); }
+        [System.CLSCompliantAttribute(false)]
+        [System.Security.SecurityCriticalAttribute]
+        public unsafe virtual int GetByteCount(char* chars, int count) { return default(int); }
+        public virtual int GetByteCount(char[] chars) { return default(int); }
+        public abstract int GetByteCount(char[] chars, int index, int count);
+        public virtual int GetByteCount(string s) { return default(int); }
+        [System.CLSCompliantAttribute(false)]
+        [System.Security.SecurityCriticalAttribute]
+        public unsafe virtual int GetBytes(char* chars, int charCount, byte* bytes, int byteCount) { return default(int); }
+        public virtual byte[] GetBytes(char[] chars) { return default(byte[]); }
+        public virtual byte[] GetBytes(char[] chars, int index, int count) { return default(byte[]); }
+        public abstract int GetBytes(char[] chars, int charIndex, int charCount, byte[] bytes, int byteIndex);
+        public virtual byte[] GetBytes(string s) { return default(byte[]); }
+        public virtual int GetBytes(string s, int charIndex, int charCount, byte[] bytes, int byteIndex) { return default(int); }
+        [System.CLSCompliantAttribute(false)]
+        [System.Security.SecurityCriticalAttribute]
+        public unsafe virtual int GetCharCount(byte* bytes, int count) { return default(int); }
+        public virtual int GetCharCount(byte[] bytes) { return default(int); }
+        public abstract int GetCharCount(byte[] bytes, int index, int count);
+        [System.CLSCompliantAttribute(false)]
+        [System.Security.SecurityCriticalAttribute]
+        public unsafe virtual int GetChars(byte* bytes, int byteCount, char* chars, int charCount) { return default(int); }
+        public virtual char[] GetChars(byte[] bytes) { return default(char[]); }
+        public virtual char[] GetChars(byte[] bytes, int index, int count) { return default(char[]); }
+        public abstract int GetChars(byte[] bytes, int byteIndex, int byteCount, char[] chars, int charIndex);
+        public virtual System.Text.Decoder GetDecoder() { return default(System.Text.Decoder); }
+        public virtual System.Text.Encoder GetEncoder() { return default(System.Text.Encoder); }
+        public static System.Text.Encoding GetEncoding(int codepage) { return default(System.Text.Encoding); }
+        public static System.Text.Encoding GetEncoding(int codepage, System.Text.EncoderFallback encoderFallback, System.Text.DecoderFallback decoderFallback) { return default(System.Text.Encoding); }
+        public static System.Text.Encoding GetEncoding(string name) { return default(System.Text.Encoding); }
+        public static System.Text.Encoding GetEncoding(string name, System.Text.EncoderFallback encoderFallback, System.Text.DecoderFallback decoderFallback) { return default(System.Text.Encoding); }
+        public override int GetHashCode() { return default(int); }
+        public abstract int GetMaxByteCount(int charCount);
+        public abstract int GetMaxCharCount(int byteCount);
+        public virtual byte[] GetPreamble() { return default(byte[]); }
+        [System.CLSCompliantAttribute(false)]
+        [System.Security.SecurityCriticalAttribute]
+        public unsafe string GetString(byte* bytes, int byteCount) { return default(string); }
+        public virtual string GetString(byte[] bytes) { return default(string); }
+        public virtual string GetString(byte[] bytes, int index, int count) { return default(string); }
+        [System.Security.SecurityCriticalAttribute]
+        public static void RegisterProvider(System.Text.EncodingProvider provider) { }
+    }
+    public abstract partial class EncodingProvider
+    {
+        public EncodingProvider() { }
+        public abstract System.Text.Encoding GetEncoding(int codepage);
+        public virtual System.Text.Encoding GetEncoding(int codepage, System.Text.EncoderFallback encoderFallback, System.Text.DecoderFallback decoderFallback) { return default(System.Text.Encoding); }
+        public abstract System.Text.Encoding GetEncoding(string name);
+        public virtual System.Text.Encoding GetEncoding(string name, System.Text.EncoderFallback encoderFallback, System.Text.DecoderFallback decoderFallback) { return default(System.Text.Encoding); }
     }
 }
 namespace System.Threading
