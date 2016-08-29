@@ -1349,6 +1349,7 @@ DEFINE_METHOD(JIT_HELPERS,          GET_BYREF,              GetByRef, NoSig)
 DEFINE_METHOD(JIT_HELPERS,          SET_BYREF,              SetByRef, NoSig)
 DEFINE_METHOD(JIT_HELPERS,          ADD_BYREF,              AddByRef, NoSig)
 DEFINE_METHOD(JIT_HELPERS,          BYREF_EQUALS,           ByRefEquals, NoSig)
+DEFINE_METHOD(JIT_HELPERS,          GET_ARRAY_DATA,         GetArrayData, NoSig)
 #endif
 
 DEFINE_CLASS(INTERLOCKED,           Threading,              Interlocked)
@@ -1357,6 +1358,9 @@ DEFINE_METHOD(INTERLOCKED,          COMPARE_EXCHANGE_OBJECT,CompareExchange, SM_
 
 DEFINE_CLASS(PINNING_HELPER,        CompilerServices,       PinningHelper)
 DEFINE_FIELD(PINNING_HELPER,        M_DATA,                 m_data)
+
+DEFINE_CLASS(ARRAY_PINNING_HELPER,  CompilerServices,       ArrayPinningHelper)
+DEFINE_FIELD(ARRAY_PINNING_HELPER,  M_ARRAY_DATA,           m_arrayData)
 
 DEFINE_CLASS(RUNTIME_WRAPPED_EXCEPTION, CompilerServices,   RuntimeWrappedException)
 DEFINE_METHOD(RUNTIME_WRAPPED_EXCEPTION, OBJ_CTOR,          .ctor,                      IM_Obj_RetVoid)
