@@ -314,7 +314,6 @@ coreFxNativeBinDir=
 
 for i in "$@"
 do
-    echo "Current param is $i"
     case $i in
         -h|--help)
             print_usage
@@ -378,12 +377,13 @@ DO_SETUP=TRUE
 
 if [ ${DO_SETUP} == "TRUE" ]; then
 
-sudo cp  $testNativeBinDir/../../../../packages/Microsoft.DotNet.xunit.performance.runner.cli/1.0.0-alpha-build0035/lib/netstandard1.3/Microsoft.DotNet.xunit.performance.runner.cli.dll .
+sudo cp  $testNativeBinDir/../../../../../packages/Microsoft.DotNet.xunit.performance.runner.cli/1.0.0-alpha-build0035/lib/netstandard1.3/Microsoft.DotNet.xunit.performance.runner.cli.dll .
 
-sudo cp  $testNativeBinDir/../../../../packages/Microsoft.DotNet.xunit.performance.run.core/1.0.0-alpha-build0035/lib/dotnet/*.dll .
+sudo cp  $testNativeBinDir/../../../../../packages/Microsoft.DotNet.xunit.performance.run.core/1.0.0-alpha-build0035/lib/dotnet/*.dll .
 
 fi
 
+echo "Test root dir is: $testRootDir"
 tests=($(find $testRootDir/JIT/Performance/CodeQuality -name '*.exe'))
 
 for testcase in ${tests[@]}; do
