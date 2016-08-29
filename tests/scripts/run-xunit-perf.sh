@@ -2,11 +2,11 @@
 
 function print_usage {
     echo ''
-    echo 'CoreCLR test runner script.'
+    echo 'CoreCLR perf test script on Linux.'
     echo ''
     echo 'Typical command line:'
     echo ''
-    echo 'coreclr/tests/runtest.sh'
+    echo 'coreclr/tests/scripts/run-xunit-perf.sh'
     echo '    --testRootDir="temp/Windows_NT.x64.Debug"'
     echo '    --testNativeBinDir="coreclr/bin/obj/Linux.x64.Debug/tests"'
     echo '    --coreClrBinDir="coreclr/bin/Product/Linux.x64.Debug"'
@@ -314,6 +314,7 @@ coreFxNativeBinDir=
 
 for i in "$@"
 do
+    echo "Current param is $i"
     case $i in
         -h|--help)
             print_usage
