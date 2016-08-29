@@ -266,9 +266,6 @@
     <!-- The following x86 failures only occur with RyuJIT/x86 -->
 
     <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(BuildArch)' == 'x86'">
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\Performance\CodeQuality\Serialization\Serialize\Serialize.cmd">
-             <Issue>3597</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\MDArray\basics\stringarr_cs_do\stringarr_cs_do.cmd">
              <Issue>4844</Issue>
         </ExcludeList>
