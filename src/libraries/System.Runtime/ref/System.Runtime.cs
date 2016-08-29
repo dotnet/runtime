@@ -338,8 +338,8 @@ namespace System
         public override bool Equals(object obj) { return default(bool); }
         public override int GetHashCode() { return default(int); }
         public static bool Parse(string value) { return default(bool); }
-        int System.IComparable.CompareTo(object obj) { return default(int); }
-        System.TypeCode System.IConvertible.GetTypeCode() { return default(System.TypeCode); }
+        public int CompareTo(object obj) { return default(int); }
+        public System.TypeCode GetTypeCode() { return default(System.TypeCode); }
         bool System.IConvertible.ToBoolean(System.IFormatProvider provider) { return default(bool); }
         byte System.IConvertible.ToByte(System.IFormatProvider provider) { return default(byte); }
         char System.IConvertible.ToChar(System.IFormatProvider provider) { return default(char); }
@@ -385,8 +385,8 @@ namespace System
         public static byte Parse(string s, System.Globalization.NumberStyles style) { return default(byte); }
         public static byte Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider provider) { return default(byte); }
         public static byte Parse(string s, System.IFormatProvider provider) { return default(byte); }
-        int System.IComparable.CompareTo(object value) { return default(int); }
-        System.TypeCode System.IConvertible.GetTypeCode() { return default(System.TypeCode); }
+        public int CompareTo(object value) { return default(int); }
+        public System.TypeCode GetTypeCode() { return default(System.TypeCode); }
         bool System.IConvertible.ToBoolean(System.IFormatProvider provider) { return default(bool); }
         byte System.IConvertible.ToByte(System.IFormatProvider provider) { return default(byte); }
         char System.IConvertible.ToChar(System.IFormatProvider provider) { return default(char); }
@@ -454,8 +454,8 @@ namespace System
         public static bool IsWhiteSpace(char c) { return default(bool); }
         public static bool IsWhiteSpace(string s, int index) { return default(bool); }
         public static char Parse(string s) { return default(char); }
-        int System.IComparable.CompareTo(object value) { return default(int); }
-        System.TypeCode System.IConvertible.GetTypeCode() { return default(System.TypeCode); }
+        public int CompareTo(object value) { return default(int); }
+        public System.TypeCode GetTypeCode() { return default(System.TypeCode); }
         bool System.IConvertible.ToBoolean(System.IFormatProvider provider) { return default(bool); }
         byte System.IConvertible.ToByte(System.IFormatProvider provider) { return default(byte); }
         char System.IConvertible.ToChar(System.IFormatProvider provider) { return default(char); }
@@ -791,8 +791,8 @@ namespace System
         public static decimal Round(decimal d, int decimals, MidpointRounding mode) { return default(decimal); }
         public static decimal Round(decimal d, MidpointRounding mode) { return default(decimal); }
         public static decimal Subtract(decimal d1, decimal d2) { return default(decimal); }
-        int System.IComparable.CompareTo(object value) { return default(int); }
-        System.TypeCode System.IConvertible.GetTypeCode() { return default(System.TypeCode); }
+        public int CompareTo(object value) { return default(int); }
+        public System.TypeCode GetTypeCode() { return default(System.TypeCode); }
         bool System.IConvertible.ToBoolean(System.IFormatProvider provider) { return default(bool); }
         byte System.IConvertible.ToByte(System.IFormatProvider provider) { return default(byte); }
         char System.IConvertible.ToChar(System.IFormatProvider provider) { return default(char); }
@@ -875,8 +875,8 @@ namespace System
         public static double Parse(string s, System.Globalization.NumberStyles style) { return default(double); }
         public static double Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider provider) { return default(double); }
         public static double Parse(string s, System.IFormatProvider provider) { return default(double); }
-        int System.IComparable.CompareTo(object value) { return default(int); }
-        System.TypeCode System.IConvertible.GetTypeCode() { return default(System.TypeCode); }
+        public int CompareTo(object value) { return default(int); }
+        public System.TypeCode GetTypeCode() { return default(System.TypeCode); }
         bool System.IConvertible.ToBoolean(System.IFormatProvider provider) { return default(bool); }
         byte System.IConvertible.ToByte(System.IFormatProvider provider) { return default(byte); }
         char System.IConvertible.ToChar(System.IFormatProvider provider) { return default(char); }
@@ -1162,8 +1162,8 @@ namespace System
         public static short Parse(string s, System.Globalization.NumberStyles style) { return default(short); }
         public static short Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider provider) { return default(short); }
         public static short Parse(string s, System.IFormatProvider provider) { return default(short); }
-        int System.IComparable.CompareTo(object value) { return default(int); }
-        System.TypeCode System.IConvertible.GetTypeCode() { return default(System.TypeCode); }
+        public int CompareTo(object value) { return default(int); }
+        public System.TypeCode GetTypeCode() { return default(System.TypeCode); }
         bool System.IConvertible.ToBoolean(System.IFormatProvider provider) { return default(bool); }
         byte System.IConvertible.ToByte(System.IFormatProvider provider) { return default(byte); }
         char System.IConvertible.ToChar(System.IFormatProvider provider) { return default(char); }
@@ -1199,8 +1199,8 @@ namespace System
         public static int Parse(string s, System.Globalization.NumberStyles style) { return default(int); }
         public static int Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider provider) { return default(int); }
         public static int Parse(string s, System.IFormatProvider provider) { return default(int); }
-        int System.IComparable.CompareTo(object value) { return default(int); }
-        System.TypeCode System.IConvertible.GetTypeCode() { return default(System.TypeCode); }
+        public int CompareTo(object value) { return default(int); }
+        public System.TypeCode GetTypeCode() { return default(System.TypeCode); }
         bool System.IConvertible.ToBoolean(System.IFormatProvider provider) { return default(bool); }
         byte System.IConvertible.ToByte(System.IFormatProvider provider) { return default(byte); }
         char System.IConvertible.ToChar(System.IFormatProvider provider) { return default(char); }
@@ -1236,8 +1236,8 @@ namespace System
         public static long Parse(string s, System.Globalization.NumberStyles style) { return default(long); }
         public static long Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider provider) { return default(long); }
         public static long Parse(string s, System.IFormatProvider provider) { return default(long); }
-        int System.IComparable.CompareTo(object value) { return default(int); }
-        System.TypeCode System.IConvertible.GetTypeCode() { return default(System.TypeCode); }
+        public int CompareTo(object value) { return default(int); }
+        public System.TypeCode GetTypeCode() { return default(System.TypeCode); }
         bool System.IConvertible.ToBoolean(System.IFormatProvider provider) { return default(bool); }
         byte System.IConvertible.ToByte(System.IFormatProvider provider) { return default(byte); }
         char System.IConvertible.ToChar(System.IFormatProvider provider) { return default(char); }
@@ -1578,8 +1578,8 @@ namespace System
         public static sbyte Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider provider) { return default(sbyte); }
         [System.CLSCompliantAttribute(false)]
         public static sbyte Parse(string s, System.IFormatProvider provider) { return default(sbyte); }
-        int System.IComparable.CompareTo(object obj) { return default(int); }
-        System.TypeCode System.IConvertible.GetTypeCode() { return default(System.TypeCode); }
+        public int CompareTo(object obj) { return default(int); }
+        public System.TypeCode GetTypeCode() { return default(System.TypeCode); }
         bool System.IConvertible.ToBoolean(System.IFormatProvider provider) { return default(bool); }
         byte System.IConvertible.ToByte(System.IFormatProvider provider) { return default(byte); }
         char System.IConvertible.ToChar(System.IFormatProvider provider) { return default(char); }
@@ -1632,8 +1632,8 @@ namespace System
         public static float Parse(string s, System.Globalization.NumberStyles style) { return default(float); }
         public static float Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider provider) { return default(float); }
         public static float Parse(string s, System.IFormatProvider provider) { return default(float); }
-        int System.IComparable.CompareTo(object value) { return default(int); }
-        System.TypeCode System.IConvertible.GetTypeCode() { return default(System.TypeCode); }
+        public int CompareTo(object value) { return default(int); }
+        public System.TypeCode GetTypeCode() { return default(System.TypeCode); }
         bool System.IConvertible.ToBoolean(System.IFormatProvider provider) { return default(bool); }
         byte System.IConvertible.ToByte(System.IFormatProvider provider) { return default(byte); }
         char System.IConvertible.ToChar(System.IFormatProvider provider) { return default(char); }
@@ -2211,8 +2211,8 @@ namespace System
         public static ushort Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider provider) { return default(ushort); }
         [System.CLSCompliantAttribute(false)]
         public static ushort Parse(string s, System.IFormatProvider provider) { return default(ushort); }
-        int System.IComparable.CompareTo(object value) { return default(int); }
-        System.TypeCode System.IConvertible.GetTypeCode() { return default(System.TypeCode); }
+        public int CompareTo(object value) { return default(int); }
+        public System.TypeCode GetTypeCode() { return default(System.TypeCode); }
         bool System.IConvertible.ToBoolean(System.IFormatProvider provider) { return default(bool); }
         byte System.IConvertible.ToByte(System.IFormatProvider provider) { return default(byte); }
         char System.IConvertible.ToChar(System.IFormatProvider provider) { return default(char); }
@@ -2255,8 +2255,8 @@ namespace System
         public static uint Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider provider) { return default(uint); }
         [System.CLSCompliantAttribute(false)]
         public static uint Parse(string s, System.IFormatProvider provider) { return default(uint); }
-        int System.IComparable.CompareTo(object value) { return default(int); }
-        System.TypeCode System.IConvertible.GetTypeCode() { return default(System.TypeCode); }
+        public int CompareTo(object value) { return default(int); }
+        public System.TypeCode GetTypeCode() { return default(System.TypeCode); }
         bool System.IConvertible.ToBoolean(System.IFormatProvider provider) { return default(bool); }
         byte System.IConvertible.ToByte(System.IFormatProvider provider) { return default(byte); }
         char System.IConvertible.ToChar(System.IFormatProvider provider) { return default(char); }
@@ -2299,8 +2299,8 @@ namespace System
         public static ulong Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider provider) { return default(ulong); }
         [System.CLSCompliantAttribute(false)]
         public static ulong Parse(string s, System.IFormatProvider provider) { return default(ulong); }
-        int System.IComparable.CompareTo(object value) { return default(int); }
-        System.TypeCode System.IConvertible.GetTypeCode() { return default(System.TypeCode); }
+        public int CompareTo(object value) { return default(int); }
+        public System.TypeCode GetTypeCode() { return default(System.TypeCode); }
         bool System.IConvertible.ToBoolean(System.IFormatProvider provider) { return default(bool); }
         byte System.IConvertible.ToByte(System.IFormatProvider provider) { return default(byte); }
         char System.IConvertible.ToChar(System.IFormatProvider provider) { return default(char); }
