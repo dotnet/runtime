@@ -48,9 +48,7 @@ namespace System.Collections.Generic
     // 
     [DebuggerTypeProxy(typeof(IDictionaryDebugView<,>))]
     [DebuggerDisplay("Count = {Count}")]
-#if netstandard17
     [Serializable]
-#endif
     public class SortedList<TKey, TValue> :
         IDictionary<TKey, TValue>, IDictionary, IReadOnlyDictionary<TKey, TValue>
     {
@@ -61,9 +59,7 @@ namespace System.Collections.Generic
         private IComparer<TKey> _comparer;
         private KeyList _keyList;
         private ValueList _valueList;
-#if netstandard17
         [NonSerialized]
-#endif
         private object _syncRoot;
 
         private const int DefaultCapacity = 4;
@@ -763,9 +759,7 @@ namespace System.Collections.Generic
         }
 
         /// <include file='doc\SortedList.uex' path='docs/doc[@for="SortedListEnumerator"]/*' />
-#if netstandard17
         [Serializable]
-#endif
         private struct Enumerator : IEnumerator<KeyValuePair<TKey, TValue>>, IDictionaryEnumerator
         {
             private SortedList<TKey, TValue> _sortedList;
@@ -893,9 +887,7 @@ namespace System.Collections.Generic
             }
         }
 
-#if netstandard17
         [Serializable]
-#endif
         private sealed class SortedListKeyEnumerator : IEnumerator<TKey>, IEnumerator
         {
             private SortedList<TKey, TValue> _sortedList;
@@ -966,9 +958,7 @@ namespace System.Collections.Generic
             }
         }
 
-#if netstandard17
         [Serializable]
-#endif
         private sealed class SortedListValueEnumerator : IEnumerator<TValue>, IEnumerator
         {
             private SortedList<TKey, TValue> _sortedList;
@@ -1041,9 +1031,7 @@ namespace System.Collections.Generic
 
         [DebuggerTypeProxy(typeof(DictionaryKeyCollectionDebugView<,>))]
         [DebuggerDisplay("Count = {Count}")]
-#if netstandard17
         [Serializable]
-#endif
         private sealed class KeyList : IList<TKey>, ICollection
         {
             private SortedList<TKey, TValue> _dict;
@@ -1162,9 +1150,7 @@ namespace System.Collections.Generic
 
         [DebuggerTypeProxy(typeof(DictionaryValueCollectionDebugView<,>))]
         [DebuggerDisplay("Count = {Count}")]
-#if netstandard17
         [Serializable]
-#endif
         private sealed class ValueList : IList<TValue>, ICollection
         {
             private SortedList<TKey, TValue> _dict;

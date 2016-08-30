@@ -15,9 +15,7 @@
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Runtime.CompilerServices;
-#if netstandard17
 using System.Runtime.Serialization;
-#endif
 using System.Threading;
 
 namespace System.Collections
@@ -58,13 +56,8 @@ namespace System.Collections
     //
     [DebuggerTypeProxy(typeof(System.Collections.Hashtable.HashtableDebugView))]
     [DebuggerDisplay("Count = {Count}")]
-#if netstandard17
     [Serializable]
-#endif
-    public class Hashtable : IDictionary
-#if netstandard17
-        , ISerializable, IDeserializationCallback
-#endif
+    public class Hashtable : IDictionary, ISerializable, IDeserializationCallback
     {
         /*
           This Hashtable uses double hashing.  There are hashsize buckets in the 
@@ -120,7 +113,6 @@ namespace System.Collections
         internal const Int32 HashPrime = 101;
         private const Int32 InitialSize = 3;
 
-#if netstandard17
         private const String LoadFactorName = "LoadFactor";
         private const String VersionName = "Version";
         private const String ComparerName = "Comparer";
@@ -129,7 +121,6 @@ namespace System.Collections
         private const String KeysName = "Keys";
         private const String ValuesName = "Values";
         private const String KeyComparerName = "KeyComparer";
-#endif
 
         // Deleted entries have their key set to buckets
 
@@ -387,7 +378,6 @@ namespace System.Collections
             while (e.MoveNext()) Add(e.Key, e.Value);
         }
 
-#if netstandard17
         protected Hashtable(SerializationInfo info, StreamingContext context)
         {
             //We can't do anything with the keys and values until the entire graph has been deserialized
@@ -395,7 +385,6 @@ namespace System.Collections
             //we'll just cache this.  The graph is not valid until OnDeserialization has been called.
             HashHelpers.SerializationInfoTable.Add(this, info);
         }
-#endif
 
         // ?InitHash? is basically an implementation of classic DoubleHashing (see http://en.wikipedia.org/wiki/Double_hashing)  
         //
@@ -1150,7 +1139,6 @@ namespace System.Collections
             return new SyncHashtable(table);
         }
 
-#if netstandard17
         public virtual void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             if (info == null)
@@ -1307,13 +1295,10 @@ namespace System.Collections
 
             HashHelpers.SerializationInfoTable.Remove(this);
         }
-#endif
 
         // Implements a Collection for the keys of a hashtable. An instance of this
         // class is created by the GetKeys method of a hashtable.
-#if netstandard17
         [Serializable]
-#endif
         private class KeyCollection : ICollection
         {
             private Hashtable _hashtable;
@@ -1360,9 +1345,7 @@ namespace System.Collections
 
         // Implements a Collection for the values of a hashtable. An instance of
         // this class is created by the GetValues method of a hashtable.
-#if netstandard17
         [Serializable]
-#endif
         private class ValueCollection : ICollection
         {
             private Hashtable _hashtable;
@@ -1408,9 +1391,7 @@ namespace System.Collections
         }
 
         // Synchronized wrapper for hashtable
-#if netstandard17
         [Serializable]
-#endif
         private class SyncHashtable : Hashtable, IEnumerable
         {
             protected Hashtable _table;
@@ -1420,7 +1401,6 @@ namespace System.Collections
                 _table = table;
             }
 
-#if netstandard17
             internal SyncHashtable(SerializationInfo info, StreamingContext context) : base(info, context)
             {
                 _table = (Hashtable)info.GetValue("ParentTable", typeof(Hashtable));
@@ -1445,7 +1425,6 @@ namespace System.Collections
                     info.AddValue("ParentTable", _table, typeof(Hashtable));
                 }
             }
-#endif
 
             public override int Count
             {
@@ -1582,14 +1561,12 @@ namespace System.Collections
                 }
             }
 
-#if netstandard17
             public override void OnDeserialization(Object sender)
             {
                 // Does nothing.  We have to implement this because our parent HT implements it,
                 // but it doesn't do anything meaningful.  The real work will be done when we
                 // call OnDeserialization on our parent table.
             }
-#endif
 
             internal override KeyValuePairs[] ToKeyValuePairsArray()
             {
@@ -1601,9 +1578,7 @@ namespace System.Collections
         // Implements an enumerator for a hashtable. The enumerator uses the
         // internal version number of the hashtable to ensure that no modifications
         // are made to the hashtable while an enumeration is in progress.
-#if netstandard17
         [Serializable]
-#endif
         private class HashtableEnumerator : IDictionaryEnumerator
         {
             private Hashtable _hashtable;
@@ -1807,10 +1782,8 @@ namespace System.Collections
         // This is the maximum prime smaller than Array.MaxArrayLength
         public const int MaxPrimeArrayLength = 0x7FEFFFFD;
 
-#if netstandard17
         private static ConditionalWeakTable<object, SerializationInfo> s_serializationInfoTable;
         public static ConditionalWeakTable<object, SerializationInfo> SerializationInfoTable => LazyInitializer.EnsureInitialized(ref s_serializationInfoTable);
-#endif
 
 #if FEATURE_RANDOMIZED_STRING_HASHING
         public static bool IsWellKnownEqualityComparer(object comparer)

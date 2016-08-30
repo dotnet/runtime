@@ -4,27 +4,18 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-#if netstandard17
 using System.Runtime.Serialization;
-#endif
 
 namespace System.Collections.Generic
 {
     [DebuggerTypeProxy(typeof(IDictionaryDebugView<,>))]
     [DebuggerDisplay("Count = {Count}")]
-#if netstandard17
     [Serializable]
-#endif
     public class SortedDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDictionary, IReadOnlyDictionary<TKey, TValue>
     {
-#if netstandard17
         [NonSerialized]
-#endif
         private KeyCollection _keys;
-
-#if netstandard17
         [NonSerialized]
-#endif
         private ValueCollection _values;
 
         private TreeSet<KeyValuePair<TKey, TValue>> _set;
@@ -563,9 +554,7 @@ namespace System.Collections.Generic
 
         [DebuggerTypeProxy(typeof(DictionaryKeyCollectionDebugView<,>))]
         [DebuggerDisplay("Count = {Count}")]
-#if netstandard17
         [Serializable]
-#endif
         public sealed class KeyCollection : ICollection<TKey>, ICollection, IReadOnlyCollection<TKey>
         {
             private SortedDictionary<TKey, TValue> _dictionary;
@@ -750,9 +739,7 @@ namespace System.Collections.Generic
 
         [DebuggerTypeProxy(typeof(DictionaryValueCollectionDebugView<,>))]
         [DebuggerDisplay("Count = {Count}")]
-#if netstandard17
         [Serializable]
-#endif
         public sealed class ValueCollection : ICollection<TValue>, ICollection, IReadOnlyCollection<TValue>
         {
             private SortedDictionary<TKey, TValue> _dictionary;
@@ -935,9 +922,7 @@ namespace System.Collections.Generic
             }
         }
 
-#if netstandard17
         [Serializable]
-#endif
         internal sealed class KeyValuePairComparer : Comparer<KeyValuePair<TKey, TValue>>
         {
             internal IComparer<TKey> keyComparer;
@@ -971,9 +956,7 @@ namespace System.Collections.Generic
     /// The only thing that makes it different from SortedSet is that it throws on duplicates
     /// </summary>
     /// <typeparam name="T"></typeparam>
-#if netstandard17
     [Serializable]
-#endif
     internal sealed class TreeSet<T> : SortedSet<T>
     {
         public TreeSet()
@@ -986,9 +969,7 @@ namespace System.Collections.Generic
 
         public TreeSet(ICollection<T> collection, IComparer<T> comparer) : base(collection, comparer) { }
 
-#if netstandard17
         public TreeSet(SerializationInfo siInfo, StreamingContext context) : base(siInfo, context) { }
-#endif
 
         internal override bool AddIfNotPresent(T item)
         {

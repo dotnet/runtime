@@ -3,28 +3,23 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <ProjectGuid>{D5FF747F-7A0B-9003-885A-FE9A63E755E5}</ProjectGuid>
-    <IsPartialFacadeAssembly Condition="'$(TargetGroup)' != 'netcore50aot' OR '$(TargetGroup)' != 'net463'">true</IsPartialFacadeAssembly>
     <AssemblyName>System.Collections</AssemblyName>
     <AssemblyVersion>4.1.0.0</AssemblyVersion>
-    <AssemblyVersion Condition="'$(TargetGroup)'=='netstandard1.3'">4.0.12.0</AssemblyVersion>
-    <ContractProject Condition="'$(TargetGroup)'=='netstandard1.3'">../ref/4.0.10/System.Collections.depproj</ContractProject>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <PackageTargetFramework Condition="'$(PackageTargetFramework)' == ''">netstandard1.7</PackageTargetFramework>
     <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NuGetTargetMoniker>
-    <DefineConstants Condition="'$(AssemblyVersion)'=='4.1.0.0'">$(DefineConstants);netstandard17</DefineConstants>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the options -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard1.3_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard1.346_Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcore50aot_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcore50aotao_Release|AnyCPU'" />
-  <ItemGroup Condition="'$(TargetGroup)' == '' OR '$(TargetGroup)'=='netstandard1.3'">
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard1.7_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard1.7_Release|AnyCPU'" />
+  <ItemGroup Condition="'$(TargetGroup)' == '' OR '$(TargetGroup)'=='netstandard1.7'">
     <ProjectReference Include="..\..\System.Runtime\src\System.Runtime.csproj">
-      <TargetGroup>netstandard1.5</TargetGroup>
+      <TargetGroup>netstandard1.7</TargetGroup>
     </ProjectReference>
     <ProjectReference Include="..\..\System.Diagnostics.Debug\src\System.Diagnostics.Debug.csproj">
       <UndefineProperties>%(ProjectReference.UndefineProperties);TargetGroup</UndefineProperties>
@@ -53,14 +48,6 @@
     <Compile Include="$(CommonPath)\System\Collections\Generic\EnumerableHelpers.cs">
       <Link>Common\System\Collections\Generic\EnumerableHelpers.cs</Link>
     </Compile>
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netcore50aot'">
-    <Compile Include="System\Converter.cs" />
-    <Compile Include="System\Collections\BitArray.cs" />
-    <Compile Include="System\Collections\Generic\Comparer.cs" />
-    <Compile Include="System\Collections\Generic\Dictionary.cs" />
-    <Compile Include="System\Collections\Generic\EqualityComparer.cs" />
-    <Compile Include="System\Collections\Generic\List.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'net463'">
     <TargetingPackReference Include="mscorlib" />

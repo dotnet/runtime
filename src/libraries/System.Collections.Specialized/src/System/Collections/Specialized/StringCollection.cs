@@ -8,9 +8,7 @@ namespace System.Collections.Specialized
     /// <devdoc>
     ///    <para>Represents a collection of strings.</para>
     /// </devdoc>
-#if netstandard17
     [Serializable]
-#endif
     public class StringCollection : IList
     {
         private readonly ArrayList _data = new ArrayList();

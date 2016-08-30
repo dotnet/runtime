@@ -8,9 +8,7 @@
  *
  */
 
-#if netstandard17
 using System.Runtime.Serialization;
- #endif
 using System.Text;
 
 namespace System.Collections.Specialized
@@ -19,9 +17,7 @@ namespace System.Collections.Specialized
     /// <para>Represents a sorted collection of associated <see cref='System.String' qualify='true'/> keys and <see cref='System.String' qualify='true'/> values that
     ///    can be accessed either with the hash code of the key or with the index.</para>
     /// </devdoc>
-#if netstandard17
     [Serializable]
-#endif
     public class NameValueCollection : NameObjectCollectionBase
     {
         private String[] _all;
@@ -87,11 +83,9 @@ namespace System.Collections.Specialized
             Add(col);
         }
 
-#if netstandard17
         protected NameValueCollection(SerializationInfo info, StreamingContext context) : base(info, context)
         {
         }
-#endif
 
         //
         //  Helper methods

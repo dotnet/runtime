@@ -4,36 +4,26 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-#if netstandard17
 using System.Runtime.Serialization;
-#endif
 
 namespace System.Collections.Generic
 {
     [DebuggerTypeProxy(typeof(ICollectionDebugView<>))]
     [DebuggerDisplay("Count = {Count}")]
-#if netstandard17
     [Serializable]
-#endif
-    public class LinkedList<T> : ICollection<T>, ICollection, IReadOnlyCollection<T>
-#if netstandard17
-        , ISerializable, IDeserializationCallback
-#endif
+    public class LinkedList<T> : ICollection<T>, ICollection, IReadOnlyCollection<T>, ISerializable, IDeserializationCallback
     {
         // This LinkedList is a doubly-Linked circular list.
         internal LinkedListNode<T> head;
         internal int count;
         internal int version;
         private object _syncRoot;
-
-#if netstandard17
         private SerializationInfo _siInfo; //A temporary variable which we need during deserialization.  
 
         // names for serialization
-        const String VersionName = "Version";
-        const String CountName = "Count";  
-        const String ValuesName = "Data";
-#endif
+        private const string VersionName = "Version";
+        private const string CountName = "Count";  
+        private const string ValuesName = "Data";
 
         public LinkedList()
         {
@@ -52,12 +42,10 @@ namespace System.Collections.Generic
             }
         }
 
-#if netstandard17
         protected LinkedList(SerializationInfo info, StreamingContext context)
         {
             _siInfo = info;
         }
-#endif
 
         public int Count
         {
@@ -344,7 +332,6 @@ namespace System.Collections.Generic
             InternalRemoveNode(head.prev);
         }
 
-#if netstandard17
         public virtual void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             // Customized serialization for LinkedList.
@@ -397,7 +384,6 @@ namespace System.Collections.Generic
             version = realVersion;
             _siInfo = null;
         }
-#endif
 
         private void InternalInsertNodeBefore(LinkedListNode<T> node, LinkedListNode<T> newNode)
         {
@@ -551,27 +537,20 @@ namespace System.Collections.Generic
         }
 
         [SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes", Justification = "not an expected scenario")]
-#if netstandard17
         [Serializable]
-#endif
-        public struct Enumerator : IEnumerator<T>, IEnumerator
-#if netstandard17
-            , ISerializable, IDeserializationCallback
-#endif
+        public struct Enumerator : IEnumerator<T>, IEnumerator, ISerializable, IDeserializationCallback
         {
             private LinkedList<T> _list;
             private LinkedListNode<T> _node;
             private int _version;
             private T _current;
             private int _index;
-#if netstandard17
             private SerializationInfo _siInfo; //A temporary variable which we need during deserialization.
 
             const string LinkedListName = "LinkedList";
             const string CurrentValueName = "Current";
             const string VersionName = "Version";
             const string IndexName = "Index";
-#endif
 
             internal Enumerator(LinkedList<T> list)
             {
@@ -580,12 +559,9 @@ namespace System.Collections.Generic
                 _node = list.head;
                 _current = default(T);
                 _index = 0;
-#if netstandard17
                 _siInfo = null;
-#endif
             }
 
-#if netstandard17
             internal Enumerator(SerializationInfo info, StreamingContext context)
             {
                 _siInfo = info;
@@ -595,7 +571,6 @@ namespace System.Collections.Generic
                 _current = default(T);
                 _index = 0;
             }
-#endif
 
             public T Current
             {
@@ -654,7 +629,6 @@ namespace System.Collections.Generic
             {
             }
 
-#if netstandard17
             void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
             {
                 if (info == null)
@@ -716,7 +690,6 @@ namespace System.Collections.Generic
 
                 _siInfo = null;
             }
-#endif
         }
     }
 

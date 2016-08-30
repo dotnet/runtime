@@ -12,9 +12,7 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-#if netstandard17
 using System.Runtime.Serialization;
-#endif
 
 namespace System.Collections.Generic
 {
@@ -48,40 +46,33 @@ namespace System.Collections.Generic
     [SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix", Justification = "by design name choice")]
     [DebuggerTypeProxy(typeof(ICollectionDebugView<>))]
     [DebuggerDisplay("Count = {Count}")]
-#if netstandard17
     [Serializable]
-#endif
-    public class SortedSet<T> : ISet<T>, ICollection<T>, ICollection, IReadOnlyCollection<T>
-#if netstandard17
-        , ISerializable, IDeserializationCallback
-#endif
+    public class SortedSet<T> : ISet<T>, ICollection<T>, ICollection, IReadOnlyCollection<T>, ISerializable, IDeserializationCallback
     {
         #region local variables/constants
         private Node _root;
         private IComparer<T> _comparer;
         private int _count;
         private int _version;
-        private object _syncRoot;
-#if netstandard17
-        private SerializationInfo _siInfo; //A temporary variable which we need during deserialization
         [NonSerialized]
+        private object _syncRoot;
+        private SerializationInfo _siInfo; //A temporary variable which we need during deserialization
 
-        private const String ComparerName = "Comparer";
-        private const String CountName = "Count";
-        private const String ItemsName = "Items";
-        private const String VersionName = "Version";
+        private const string ComparerName = "Comparer";
+        private const string CountName = "Count";
+        private const string ItemsName = "Items";
+        private const string VersionName = "Version";
         //needed for enumerator
-        private const String TreeName = "Tree";
-        private const String NodeValueName = "Item";
-        private const String EnumStartName = "EnumStarted";        
-        private const String ReverseName = "Reverse";
-        private const String EnumVersionName = "EnumVersion";
+        private const string TreeName = "Tree";
+        private const string NodeValueName = "Item";
+        private const string EnumStartName = "EnumStarted";        
+        private const string ReverseName = "Reverse";
+        private const string EnumVersionName = "EnumVersion";
         //needed for TreeSubset
-        private const String minName = "Min";
-        private const String maxName = "Max";
-        private const String lBoundActiveName = "lBoundActive";
-        private const String uBoundActiveName = "uBoundActive";
-#endif
+        private const string minName = "Min";
+        private const string maxName = "Max";
+        private const string lBoundActiveName = "lBoundActive";
+        private const string uBoundActiveName = "uBoundActive";
 
         internal const int StackAllocThreshold = 100;
 
@@ -189,12 +180,10 @@ namespace System.Collections.Generic
             }
         }
 
-#if netstandard17
         protected SortedSet(SerializationInfo info, StreamingContext context)
         {
             _siInfo = info;
         }
-#endif
 
         #endregion
 
@@ -1913,13 +1902,8 @@ namespace System.Collections.Generic
         /// are reflected in the actual tree. Uses the Comparator of the underlying tree.
         /// </summary>
         /// <typeparam name="T"></typeparam>
-#if netstandard17
         [Serializable]
-#endif
-        internal sealed class TreeSubSet : SortedSet<T>
-#if netstandard17
-            , ISerializable, IDeserializationCallback
-#endif
+        internal sealed class TreeSubSet : SortedSet<T>, ISerializable, IDeserializationCallback
         {
             private SortedSet<T> _underlying;
             private T _min, _max;
@@ -1951,13 +1935,11 @@ namespace System.Collections.Generic
                 VersionCheckImpl();
             }
 
-#if netstandard17
             private TreeSubSet(SerializationInfo info, StreamingContext context)
             {
                 _siInfo = info;
                 OnDeserializationImpl(info);
             }
-#endif
 
             /// <summary>
             /// Additions to this tree need to be added to the underlying tree as well
@@ -2214,7 +2196,6 @@ namespace System.Collections.Generic
 #endif
             }
 
-#if netstandard17
             void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
             {
                 GetObjectData(info, context);
@@ -2287,10 +2268,8 @@ namespace System.Collections.Generic
 
                 _siInfo = null;
             }
-#endif
         }
 
-#if netstandard17
         void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
         {
             GetObjectData(info, context);
@@ -2358,13 +2337,10 @@ namespace System.Collections.Generic
 
             _siInfo = null;
         }
-#endif
         #endregion
 
         #region Helper Classes
-#if netstandard17
         [Serializable]
-#endif
         internal sealed class Node
         {
             public bool IsRed;
@@ -2388,13 +2364,8 @@ namespace System.Collections.Generic
         }
 
         [SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes", Justification = "not an expected scenario")]
-#if netstandard17
         [Serializable]
-#endif
-        public struct Enumerator : IEnumerator<T>, IEnumerator
-#if netstandard17
-            , ISerializable, IDeserializationCallback
-#endif
+        public struct Enumerator : IEnumerator<T>, IEnumerator, ISerializable, IDeserializationCallback
         {
             private SortedSet<T> _tree;
             private int _version;
@@ -2403,10 +2374,8 @@ namespace System.Collections.Generic
             private SortedSet<T>.Node _current;
 
             private bool _reverse;
-#if netstandard17
             private SerializationInfo _siInfo;
             private static SortedSet<T>.Node s_dummyNode = new SortedSet<T>.Node(default(T));
-#endif
 
             internal Enumerator(SortedSet<T> set)
             {
@@ -2420,9 +2389,7 @@ namespace System.Collections.Generic
                 _current = null;
                 _reverse = false;
 
-#if netstandard17
                 _siInfo = null;
-#endif
 
                 Intialize();
             }
@@ -2438,14 +2405,11 @@ namespace System.Collections.Generic
                 _current = null;
                 _reverse = reverse;
 
-#if netstandard17
                 _siInfo = null;
-#endif
 
                 Intialize();
             }
 
-#if netstandard17
             private Enumerator(SerializationInfo info, StreamingContext context)
             {
                 _tree = null;
@@ -2506,7 +2470,6 @@ namespace System.Collections.Generic
                     }
                 }
             }
-#endif
 
             private void Intialize()
             {

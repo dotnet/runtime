@@ -11,9 +11,7 @@ namespace System.Collections
     /// this provides an efficient mechanism for getting the hashcode of the string ignoring case.
     /// </summary>
     [Obsolete("Please use StringComparer instead.")]
-#if netstandard17
     [Serializable]
-#endif
     public class CaseInsensitiveHashCodeProvider : IHashCodeProvider
     {
         private static volatile CaseInsensitiveHashCodeProvider s_invariantCaseInsensitiveHashCodeProvider = null;
