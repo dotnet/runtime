@@ -15,9 +15,7 @@ namespace System.Globalization {
     public partial class CultureNotFoundException : ArgumentException, ISerializable
     {
         private string          m_invalidCultureName; // unrecognized culture name
-#if !FEATURE_CORECLR
         private Nullable<int>   m_invalidCultureId;   // unrecognized culture Lcid
-#endif //!FEATURE_CORECLR
 
         public CultureNotFoundException()
             : base(DefaultMessage)
@@ -38,7 +36,7 @@ namespace System.Globalization {
             : base(message, innerException)
         {
         }
-#if !FEATURE_CORECLR
+
         public CultureNotFoundException(String paramName, int invalidCultureId, String message)
             : base(message, paramName)
         {
@@ -50,7 +48,6 @@ namespace System.Globalization {
         {
             m_invalidCultureId = invalidCultureId;
         }
-#endif //!FEATURE_CORECLR
 
         public CultureNotFoundException(String paramName, string invalidCultureName, String message)
             : base(message, paramName)
@@ -65,9 +62,7 @@ namespace System.Globalization {
         }
 
         protected CultureNotFoundException(SerializationInfo info, StreamingContext context) : base(info, context) {
-#if !FEATURE_CORECLR
             m_invalidCultureId      = (Nullable<int>) info.GetValue("InvalidCultureId", typeof(Nullable<int>));
-#endif //!FEATURE_CORECLR
             m_invalidCultureName    = (string) info.GetValue("InvalidCultureName", typeof(string));
         }
 
@@ -79,18 +74,14 @@ namespace System.Globalization {
             Contract.EndContractBlock();
             base.GetObjectData(info, context);
             Nullable<int> invalidCultureId = null;
-#if !FEATURE_CORECLR
             invalidCultureId = m_invalidCultureId;
-#endif //!FEATURE_CORECLR
             info.AddValue("InvalidCultureId", invalidCultureId, typeof(Nullable<int>));
             info.AddValue("InvalidCultureName", m_invalidCultureName, typeof(string));
         }
-#if !FEATURE_CORECLR
         public virtual Nullable<int> InvalidCultureId
         {
             get { return m_invalidCultureId; }
         }
-#endif //!FEATURE_CORECLR
 
         public virtual string InvalidCultureName
         {
@@ -109,13 +100,11 @@ namespace System.Globalization {
         {
             get
             {
-#if !FEATURE_CORECLR
                 if (InvalidCultureId != null)
                 {
                     return String.Format(CultureInfo.InvariantCulture,
                                         "{0} (0x{0:x4})", (int)InvalidCultureId);
                 }
-#endif //!FEATURE_CORECLR
                 return InvalidCultureName;
             }
         }
@@ -126,9 +115,7 @@ namespace System.Globalization {
             {
                 String s = base.Message;
                 if (
-#if !FEATURE_CORECLR
                     m_invalidCultureId != null || 
-#endif //!FEATURE_CORECLR
                     m_invalidCultureName != null) 
                 {
                     String valueMessage = Environment.GetResourceString("Argument_CultureInvalidIdentifier", FormatedInvalidCultureId);
