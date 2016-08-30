@@ -12,9 +12,7 @@
 #pragma warning disable 618 // obsolete types, namely IHashCodeProvider
 
 using System.Globalization;
-#if netstandard17
 using System.Runtime.Serialization;
-#endif
 
 namespace System.Collections.Specialized
 {
@@ -23,15 +21,9 @@ namespace System.Collections.Specialized
     ///    and <see cref='System.Object' qualify='true'/> values that can be accessed either with the hash code of
     ///    the key or with the index.</para>
     /// </devdoc>
-#if netstandard17
     [Serializable]
-#endif
-    public abstract class NameObjectCollectionBase : ICollection
-#if netstandard17
-        , ISerializable, IDeserializationCallback
-#endif
+    public abstract class NameObjectCollectionBase : ICollection, ISerializable, IDeserializationCallback
     {
-#if netstandard17
         // const names used for serialization
         private const String ReadOnlyName = "ReadOnly";
         private const String CountName = "Count";
@@ -41,7 +33,6 @@ namespace System.Collections.Specialized
         private const String ValuesName = "Values";
         private const String KeyComparerName = "KeyComparer";
         private const String VersionName = "Version";
-#endif
 
         private bool _readOnly = false;
         private ArrayList _entriesArray;
@@ -50,10 +41,8 @@ namespace System.Collections.Specialized
         private volatile NameObjectEntry _nullKeyEntry;
         private KeysCollection _keys;
         private int _version;
-#if netstandard17
         private SerializationInfo _serializationInfo;
         [NonSerialized]
-#endif
         private Object _syncRoot;
 
         private static readonly StringComparer s_defaultComparer = CultureInfo.InvariantCulture.CompareInfo.GetStringComparer(CompareOptions.IgnoreCase);
@@ -88,7 +77,6 @@ namespace System.Collections.Specialized
             Reset(capacity);
         }
 
-#if netstandard17
         protected NameObjectCollectionBase(SerializationInfo info, StreamingContext context)
         {
             _serializationInfo = info;
@@ -232,7 +220,6 @@ namespace System.Collections.Specialized
                 _version = serializedVersion;
             }
         }
-#endif
 
         //
         // Private helpers
@@ -637,9 +624,7 @@ namespace System.Collections.Specialized
         // Enumerator over keys of NameObjectCollection
         //
 
-#if netstandard17
         [Serializable]
-#endif
         internal class NameObjectKeysEnumerator : IEnumerator
         {
             private int _pos;
@@ -700,9 +685,7 @@ namespace System.Collections.Specialized
         /// <devdoc>
         /// <para>Represents a collection of the <see cref='System.String' qualify='true'/> keys of a collection.</para>
         /// </devdoc>
-#if netstandard17
         [Serializable]
-#endif
         public class KeysCollection : ICollection
         {
             private NameObjectCollectionBase _coll;

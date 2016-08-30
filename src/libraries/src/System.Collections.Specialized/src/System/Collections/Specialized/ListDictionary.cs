@@ -11,18 +11,14 @@ namespace System.Collections.Specialized
     ///    This should not be used if performance is important for large numbers of elements.
     ///  </para>
     /// </devdoc>
-#if netstandard17
     [Serializable]
-#endif
     public class ListDictionary : IDictionary
     {
         private DictionaryNode _head;
         private int _version;
         private int _count;
         private readonly IComparer _comparer;
-#if netstandard17
         [NonSerialized]
-#endif
         private Object _syncRoot;
 
         public ListDictionary()
@@ -506,9 +502,7 @@ namespace System.Collections.Specialized
             }
         }
 
-#if netstandard17
         [Serializable]
-#endif
         private class DictionaryNode
         {
             public object key;

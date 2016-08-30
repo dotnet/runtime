@@ -9,12 +9,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\System.Collections.csproj" />
-    <ProjectReference Include="..\..\src\System.Collections.csproj">
-      <TargetGroup>netstandard1.3</TargetGroup>
-    </ProjectReference>
-    <ProjectReference Include="..\..\src\redist\System.Collections.depproj">
-      <TargetGroup>netcore50</TargetGroup>
-    </ProjectReference>
 
     <!-- AOT implementation comes from AOT package -->
     <File Include="$(PlaceholderFile)">

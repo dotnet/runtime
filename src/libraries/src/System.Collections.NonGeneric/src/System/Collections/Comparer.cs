@@ -13,19 +13,12 @@
 
 using System.Globalization;
 using System.Diagnostics.Contracts;
-#if netstandard17
 using System.Runtime.Serialization;
-#endif
 
 namespace System.Collections
 {
-#if netstandard17
     [Serializable]
-#endif
-    public sealed class Comparer : IComparer
-#if netstandard17
-        , ISerializable
-#endif
+    public sealed class Comparer : IComparer, ISerializable
     {
         private CompareInfo _compareInfo;
         public static readonly Comparer Default = new Comparer(CultureInfo.CurrentCulture);
@@ -43,7 +36,6 @@ namespace System.Collections
             _compareInfo = culture.CompareInfo;
         }
 
-#if netstandard17
         private Comparer(SerializationInfo info, StreamingContext context)
         {
             _compareInfo = null;
@@ -71,7 +63,6 @@ namespace System.Collections
                 info.AddValue(CompareInfoName, _compareInfo);
             }
         }
-#endif
 
         // Compares two Objects by calling CompareTo.
         // If a == b, 0 is returned.

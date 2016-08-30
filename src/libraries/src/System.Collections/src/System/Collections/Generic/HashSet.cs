@@ -5,9 +5,7 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Contracts;
-#if netstandard17
 using System.Runtime.Serialization;
-#endif
 
 namespace System.Collections.Generic
 {
@@ -50,13 +48,8 @@ namespace System.Collections.Generic
     [DebuggerTypeProxy(typeof(ICollectionDebugView<>))]
     [DebuggerDisplay("Count = {Count}")]
     [SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix", Justification = "By design")]
-#if netstandard17
     [Serializable]
-#endif
-    public class HashSet<T> : ICollection<T>, ISet<T>, IReadOnlyCollection<T>
-#if netstandard17
-        , ISerializable, IDeserializationCallback
-#endif
+    public class HashSet<T> : ICollection<T>, ISet<T>, IReadOnlyCollection<T>, ISerializable, IDeserializationCallback
     {
         // store lower 31 bits of hash code
         private const int Lower31BitMask = 0x7FFFFFFF;
@@ -69,13 +62,11 @@ namespace System.Collections.Generic
         // This is set to 3 because capacity is acceptable as 2x rounded up to nearest prime.
         private const int ShrinkThreshold = 3;
 
-#if netstandard17
         // constants for serialization
-        private const String CapacityName = "Capacity";
-        private const String ElementsName = "Elements";
-        private const String ComparerName = "Comparer";
-        private const String VersionName = "Version";
-#endif
+        private const string CapacityName = "Capacity";
+        private const string ElementsName = "Elements";
+        private const string ComparerName = "Comparer";
+        private const string VersionName = "Version";
 
         private int[] _buckets;
         private Slot[] _slots;
@@ -85,9 +76,7 @@ namespace System.Collections.Generic
         private IEqualityComparer<T> _comparer;
         private int _version;
 
-#if netstandard17
         private SerializationInfo _siInfo; // temporary variable needed during deserialization
-#endif
 
         #region Constructors
 
@@ -152,7 +141,6 @@ namespace System.Collections.Generic
             }
         }
 
-#if netstandard17
         protected HashSet(SerializationInfo info, StreamingContext context)
         {
             // We can't do anything with the keys and values until the entire graph has been 
@@ -161,7 +149,6 @@ namespace System.Collections.Generic
             // OnDeserialization has been called.
             _siInfo = info;
         }
-#endif
 
         // Initializes the HashSet from another HashSet with the same element type and
         // equality comparer.
@@ -362,7 +349,6 @@ namespace System.Collections.Generic
 
         #endregion
 
-#if netstandard17
         #region ISerializable methods
 
         public virtual void GetObjectData(SerializationInfo info, StreamingContext context)
@@ -430,7 +416,6 @@ namespace System.Collections.Generic
         }
 
         #endregion
-#endif
 
         #region HashSet methods
 
@@ -1722,9 +1707,7 @@ namespace System.Collections.Generic
             internal T value;
         }
 
-#if netstandard17
         [Serializable]
-#endif
         public struct Enumerator : IEnumerator<T>, IEnumerator
         {
             private HashSet<T> _set;
