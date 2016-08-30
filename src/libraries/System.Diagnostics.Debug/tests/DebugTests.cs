@@ -9,9 +9,8 @@ namespace System.Diagnostics.Tests
 {
     public class DebugTests
     {
-        public static bool IsNotDesktopJob = !RuntimeInformation.FrameworkDescription.Contains(".NET Framework");
-
-        [ConditionalFact(nameof(IsNotDesktopJob))]
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Net46)]
         public void Asserts()
         {
             VerifyLogged(() => { Debug.Assert(true); }, "");
@@ -25,14 +24,16 @@ namespace System.Diagnostics.Tests
             VerifyAssert(() => { Debug.Assert(false, "assert passed", "nothing is wrong {0} {1}", 'a', 'b'); }, "assert passed", "nothing is wrong a b");      
         }
 
-        [ConditionalFact(nameof(IsNotDesktopJob))]
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Net46)]
         public void Fail()
         {
             VerifyAssert(() => { Debug.Fail("something bad happened"); }, "something bad happened");
             VerifyAssert(() => { Debug.Fail("something bad happened", "really really bad"); }, "something bad happened", "really really bad");        
         }
 
-        [ConditionalFact(nameof(IsNotDesktopJob))]
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Net46)]
         public void Write()
         {
             VerifyLogged(() => { Debug.Write(5); }, "5");
@@ -48,7 +49,8 @@ namespace System.Diagnostics.Tests
             VerifyLogged(() => { Debug.Write(longString); }, longString);
         }
 
-        [ConditionalFact(nameof(IsNotDesktopJob))]
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Net46)]
         public void WriteLine()
         {
             VerifyLogged(() => { Debug.WriteLine(5); }, "5" + Environment.NewLine);
@@ -62,7 +64,8 @@ namespace System.Diagnostics.Tests
             VerifyLogged(() => { Debug.WriteLine("{0} {1}", 'a', 'b'); }, "a b" + Environment.NewLine);
         }
 
-        [ConditionalFact(nameof(IsNotDesktopJob))]
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Net46)]
         public void WriteIf()
         {
             VerifyLogged(() => { Debug.WriteIf(true, 5); }, "5");
@@ -78,7 +81,8 @@ namespace System.Diagnostics.Tests
             VerifyLogged(() => { Debug.WriteIf(false, "logged", "category"); }, "");                
         }
 
-        [ConditionalFact(nameof(IsNotDesktopJob))]
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Net46)]
         public void WriteLineIf()
         {
             VerifyLogged(() => { Debug.WriteLineIf(true, 5); }, "5" + Environment.NewLine);
