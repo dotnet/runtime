@@ -16,6 +16,8 @@ Note that these conventions are different from the CLR C++ Coding Conventions, d
 
 > Note: the JIT currently doesn't follow some of these conventions very widely. The non-conformant code should be updated, eventually.
 
+> Note: we now use jit-format to format our code. All changes it makes supersede the conventions in this doc. Please see the [jit-format documentation](https://github.com/dotnet/jitutils/blob/master/doc/getstarted.md#formatting-jit-source) for instructions on running jit-format.
+
 # How to use this document
 
 * All new code written in the JIT should adhere to these conventions.
