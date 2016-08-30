@@ -113,7 +113,7 @@ address, which means objects of lower addresses on the segment are
 older than those of higher addresses. Again there are exceptions that
 will be described below.
 
-Heap segments can be aquired as needed. They are  deleted when they
+Heap segments can be acquired as needed. They are  deleted when they
 don’t contain any live objects, however the initial segment on the heap
 will always exist. For each heap, one segment at a time is acquired,
 which is done during a GC for small objects and during allocation time
