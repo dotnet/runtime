@@ -29,7 +29,7 @@ namespace System.ComponentModel
             [SuppressMessage("Microsoft.Security", "CA2122:DoNotIndirectlyExposeMethodsWithLinkDemands")]
             get
             {
-                ListEntry e = null;
+                ListEntry e = Find(key);
                 if (e != null)
                 {
                     return e.handler;
