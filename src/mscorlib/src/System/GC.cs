@@ -381,6 +381,15 @@ namespace System {
 
         [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        private static extern long _GetAllocatedBytesForCurrentThread();
+
+        [System.Security.SecuritySafeCritical]  // auto-generated
+        public static long GetAllocatedBytesForCurrentThread() {
+            return _GetAllocatedBytesForCurrentThread();
+        }
+
+        [System.Security.SecurityCritical]  // auto-generated
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern bool _RegisterForFullGCNotification(int maxGenerationPercentage, int largeObjectHeapPercentage);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
