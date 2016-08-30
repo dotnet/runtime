@@ -1894,7 +1894,6 @@ public static partial class DataContractJsonSerializerTests
         Assert.StrictEqual(x.P2, y.P2);
     }
 
-    [ActiveIssue(10852, PlatformID.Linux)]
     [Fact]
     public static void DCJS_TypeWithAllPrimitiveProperties()
     {
@@ -1903,7 +1902,7 @@ public static partial class DataContractJsonSerializerTests
             BooleanMember = true,
             //ByteArrayMember = new byte[] { 1, 2, 3, 4 },
             CharMember = 'C',
-            DateTimeMember = new DateTime(2016, 7, 8, 9, 10, 11),
+            DateTimeMember = new DateTime(2016, 7, 8, 9, 10, 11, DateTimeKind.Utc),
             DecimalMember = new decimal(123, 456, 789, true, 0),
             DoubleMember = 123.456,
             FloatMember = 456.789f,
@@ -1912,7 +1911,7 @@ public static partial class DataContractJsonSerializerTests
             StringMember = "abc",
             IntMember = 123
         };
-        TypeWithAllPrimitiveProperties y = SerializeAndDeserialize<TypeWithAllPrimitiveProperties>(x, "{\"BooleanMember\":true,\"CharMember\":\"C\",\"DateTimeMember\":\"\\/Date(1467994211000-0700)\\/\",\"DecimalMember\":-14554481076115341312123,\"DoubleMember\":123.456,\"FloatMember\":456.789,\"GuidMember\":\"2054fd3e-e118-476a-9962-1a882be51860\",\"IntMember\":123,\"StringMember\":\"abc\"}");
+        TypeWithAllPrimitiveProperties y = SerializeAndDeserialize<TypeWithAllPrimitiveProperties>(x, "{\"BooleanMember\":true,\"CharMember\":\"C\",\"DateTimeMember\":\"\\/Date(1467969011000)\\/\",\"DecimalMember\":-14554481076115341312123,\"DoubleMember\":123.456,\"FloatMember\":456.789,\"GuidMember\":\"2054fd3e-e118-476a-9962-1a882be51860\",\"IntMember\":123,\"StringMember\":\"abc\"}");
         Assert.StrictEqual(x.BooleanMember, y.BooleanMember);
         //Assert.StrictEqual(x.ByteArrayMember, y.ByteArrayMember);
         Assert.StrictEqual(x.CharMember, y.CharMember);
@@ -1936,12 +1935,11 @@ public static partial class DataContractJsonSerializerTests
         Assert.StrictEqual(true, Enumerable.SequenceEqual(value, deserialized));
     }
 
-    [ActiveIssue(10852, PlatformID.Linux)]
     [Fact]
     public static void DCJS_ArrayOfDateTime()
     {
-        var value = new DateTime[] { new DateTime(2000, 1, 2, 3, 4, 5), new DateTime(2011, 2, 3, 4, 5, 6) };
-        var deserialized = SerializeAndDeserialize(value, "[\"\\/Date(946811045000-0800)\\/\",\"\\/Date(1296734706000-0800)\\/\"]");
+        var value = new DateTime[] { new DateTime(2000, 1, 2, 3, 4, 5, DateTimeKind.Utc), new DateTime(2011, 2, 3, 4, 5, 6, DateTimeKind.Utc) };
+        var deserialized = SerializeAndDeserialize(value, "[\"\\/Date(946782245000)\\/\",\"\\/Date(1296705906000)\\/\"]");
         Assert.StrictEqual(value.Length, deserialized.Length);
         Assert.StrictEqual(true, Enumerable.SequenceEqual(value, deserialized));
     }
