@@ -310,15 +310,23 @@ inline ReturnKind GetStructReturnKind(ReturnKind reg0, ReturnKind reg1)
     return structReturnKind;
 }
 
-inline ReturnKind ExtractRegReturnKind(ReturnKind returnKind, size_t regNo)
+// Extract returnKind for the specified return register.
+// Also determines if higher ordinal return registers contain object references
+inline ReturnKind ExtractRegReturnKind(ReturnKind returnKind, size_t returnRegOrdinal, bool& moreRegs)
 {
     _ASSERTE(IsValidReturnKind(returnKind));
-    _ASSERTE(IsValidReturnRegister(regNo));
+    _ASSERTE(IsValidReturnRegister(returnRegOrdinal));
 
-    ReturnKind regReturnKind = (ReturnKind)((returnKind >> (regNo * 2)) & 3);
+    // Return kind of each return register is encoded in two bits at returnRegOrdinal*2 position from LSB
+    ReturnKind regReturnKind = (ReturnKind)((returnKind >> (returnRegOrdinal * 2)) & 3);
+    
+    // Check if any other higher ordinal return registers have object references. 
+    // ReturnKind of higher ordinal return registers are encoded at (returnRegOrdinal+1)*2) position from LSB
+    // If all of the remaining bits are 0 then there isn't any more RT_Object or RT_ByRef encoded in returnKind. 
+    moreRegs = (returnKind >> ((returnRegOrdinal+1) * 2)) != 0;
 
     _ASSERTE(IsValidReturnKind(regReturnKind));
-    _ASSERTE((regNo == 0) || IsValidFieldReturnKind(regReturnKind));
+    _ASSERTE((returnRegOrdinal == 0) || IsValidFieldReturnKind(regReturnKind));
 
     return regReturnKind;
 }
