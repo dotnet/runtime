@@ -2109,6 +2109,7 @@
       <Member Name="Collect(System.Int32,System.GCCollectionMode,System.Boolean)" />
       <Member Name="Collect(System.Int32,System.GCCollectionMode,System.Boolean,System.Boolean)" />
       <Member Name="CollectionCount(System.Int32)" />
+      <Member Name="GetAllocatedBytesForCurrentThread" />
       <Member Name="GetGeneration(System.Object)" />
       <Member Name="GetGeneration(System.WeakReference)" />
       <Member Name="get_MaxGeneration" />
