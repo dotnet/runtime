@@ -5056,17 +5056,16 @@ mono_thread_internal_check_for_interruption_critical (MonoInternalThread *thread
 void
 mono_thread_internal_unhandled_exception (MonoObject* exc)
 {
-	if (mono_runtime_unhandled_exception_policy_get () == MONO_UNHANDLED_POLICY_CURRENT) {
-		MonoClass *klass = exc->vtable->klass;
-		if (is_threadabort_exception (klass)) {
-			mono_thread_internal_reset_abort (mono_thread_internal_current ());
-		} else if (!is_appdomainunloaded_exception (klass)) {
-			mono_unhandled_exception (exc);
-			if (mono_environment_exitcode_get () == 1) {
-				mono_environment_exitcode_set (255);
-				mono_invoke_unhandled_exception_hook (exc);
-				g_assert_not_reached ();
-			}
+	MonoClass *klass = exc->vtable->klass;
+	if (is_threadabort_exception (klass)) {
+		mono_thread_internal_reset_abort (mono_thread_internal_current ());
+	} else if (!is_appdomainunloaded_exception (klass)
+		&& mono_runtime_unhandled_exception_policy_get () == MONO_UNHANDLED_POLICY_CURRENT) {
+		mono_unhandled_exception (exc);
+		if (mono_environment_exitcode_get () == 1) {
+			mono_environment_exitcode_set (255);
+			mono_invoke_unhandled_exception_hook (exc);
+			g_assert_not_reached ();
 		}
 	}
 }
