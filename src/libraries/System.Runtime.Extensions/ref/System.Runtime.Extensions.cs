@@ -8,6 +8,15 @@
 
 namespace System
 {
+   public partial class AppDomain
+   {
+       private AppDomain() {}
+       public static AppDomain CurrentDomain { get { return default(AppDomain); } }
+       public string BaseDirectory { get { return default(string); } }
+       public string RelativeSearchPath { get { return default(string); } }
+       public event System.UnhandledExceptionEventHandler UnhandledException { add { } remove { } } 
+   }
+
     [Flags]
     public enum Base64FormattingOptions
     {

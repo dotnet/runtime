@@ -54,6 +54,16 @@ namespace System
         public static object CreateInstance(System.Type type, params object[] args) { return default(object); }
         public static T CreateInstance<T>() { return default(T); }
     }
+
+    public static partial class AppContext
+    {
+        public static string BaseDirectory { get { return default(string); } }
+        public static void SetSwitch(string switchName, bool isEnabled) { }
+        public static event System.UnhandledExceptionEventHandler UnhandledException { add { } remove { } }
+        public static bool TryGetSwitch(string switchName, out bool isEnabled) { isEnabled = default(bool); return default(bool); }
+        public static string TargetFrameworkName { get { return default(string); } }
+        public static object GetData(string name) { return default(object); }
+    }
     
     public partial class EntryPointNotFoundException : System.TypeLoadException
     {
@@ -2595,6 +2605,15 @@ namespace System
         public UnauthorizedAccessException(string message, System.Exception inner) { }
         protected UnauthorizedAccessException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
     }
+
+    public partial class UnhandledExceptionEventArgs : System.EventArgs
+    {
+        public UnhandledExceptionEventArgs(object exception, bool isTerminating) { }
+        public object ExceptionObject { get { throw null; } }
+        public bool IsTerminating { get { throw null; } }
+    }
+    public delegate void UnhandledExceptionEventHandler(object sender, System.UnhandledExceptionEventArgs e);
+
     public partial class Uri
     {
         public static readonly string SchemeDelimiter;
