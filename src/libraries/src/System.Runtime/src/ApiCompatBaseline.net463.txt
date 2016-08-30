@@ -1,3 +1,7 @@
+MembersMustExist : Member 'System.Type.IsSecurityCritical.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Type.IsSecuritySafeCritical.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Type.IsSecurityTransparent.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Reflection.Pointer..ctor()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.AppContext.TargetFrameworkName.get()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.AppContext.GetData(System.String)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.AppContext.add_UnhandledException(System.UnhandledExceptionEventHandler)' does not exist in the implementation but it does exist in the contract.
