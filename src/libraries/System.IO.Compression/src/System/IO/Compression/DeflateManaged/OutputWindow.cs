@@ -16,8 +16,8 @@ namespace System.IO.Compression
     //
     internal class OutputWindow
     {
-        private const int WindowSize = 32768;
-        private const int WindowMask = 32767;
+        private const int WindowSize = 65536;
+        private const int WindowMask = 65535;
 
         private byte[] _window = new byte[WindowSize]; //The window is 2^15 bytes
         private int _end;       // this is the position to where we should write next byte 

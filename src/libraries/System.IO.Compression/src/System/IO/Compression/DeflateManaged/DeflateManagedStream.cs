@@ -43,6 +43,17 @@ namespace System.IO.Compression
             InitializeInflater(stream, leaveOpen, reader);
         }
 
+        // A specific constructor to allow decompression of Deflate64
+        internal DeflateManagedStream(Stream stream, bool deflate64)
+        {
+            if (stream == null)
+                throw new ArgumentNullException(nameof(stream));
+            if (!stream.CanRead)
+                throw new ArgumentException(SR.NotSupported_UnreadableStream, nameof(stream));
+
+            InitializeInflater(stream, false, null, deflate64);
+        }
+
         public DeflateManagedStream(Stream stream, CompressionMode mode, bool leaveOpen)
         {
             if (stream == null)
@@ -79,15 +90,15 @@ namespace System.IO.Compression
 
 
         /// <summary>
-        /// Sets up this DeflateManagedStream to be used for Zlib Inflation/Decompression
+        /// Sets up this DeflateManagedStream to be used for Inflation/Decompression
         /// </summary>
-        internal void InitializeInflater(Stream stream, bool leaveOpen, IFileFormatReader reader = null)
+        internal void InitializeInflater(Stream stream, bool leaveOpen, IFileFormatReader reader = null, bool deflate64 = false)
         {
             Debug.Assert(stream != null);
             if (!stream.CanRead)
                 throw new ArgumentException(SR.NotSupported_UnreadableStream, nameof(stream));
 
-            _inflater = new InflaterManaged(reader);
+            _inflater = new InflaterManaged(reader, deflate64);
 
             _stream = stream;
             _mode = CompressionMode.Decompress;
@@ -96,7 +107,7 @@ namespace System.IO.Compression
         }
 
         /// <summary>
-        /// Sets up this DeflateManagedStream to be used for Zlib Deflation/Compression
+        /// Sets up this DeflateManagedStream to be used for Deflation/Compression
         /// </summary>
         internal void InitializeDeflater(Stream stream, bool leaveOpen, CompressionLevel compressionLevel)
         {

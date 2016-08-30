@@ -36,17 +36,18 @@ namespace System.IO.Compression
 
         // Extra bits for length code 257 - 285.  
         private static readonly byte[] s_extraLengthBits = {
-            0,0,0,0,0,0,0,0,1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4,5,5,5,5,0};
+            0,0,0,0,0,0,0,0,1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4,5,5,5,5,16,56,62};
 
         // The base length for length code 257 - 285.
         // The formula to get the real length for a length code is lengthBase[code - 257] + (value stored in extraBits)
         private static readonly int[] s_lengthBase = {
-            3,4,5,6,7,8,9,10,11,13,15,17,19,23,27,31,35,43,51,59,67,83,99,115,131,163,195,227,258};
+            3,4,5,6,7,8,9,10,11,13,15,17,19,23,27,31,35,43,51,59,67,83,99,115,131,163,195,227,3,0,0};
 
-        // The base distance for distance code 0 - 29    
+
+        // The base distance for distance code 0 - 31
         // The real distance for a distance code is  distanceBasePosition[code] + (value stored in extraBits)
         private static readonly int[] s_distanceBasePosition = {
-            1,2,3,4,5,7,9,13,17,25,33,49,65,97,129,193,257,385,513,769,1025,1537,2049,3073,4097,6145,8193,12289,16385,24577,0,0};
+            1,2,3,4,5,7,9,13,17,25,33,49,65,97,129,193,257,385,513,769,1025,1537,2049,3073,4097,6145,8193,12289,16385,24577,32769,49153};
 
         // code lengths for code length alphabet is stored in following order
         private static readonly byte[] s_codeOrder = { 16, 17, 18, 0, 8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 14, 1, 15 };
@@ -85,27 +86,30 @@ namespace System.IO.Compression
 
         private byte[] _codeList;        // temporary array to store the code length for literal/Length and distance
         private byte[] _codeLengthTreeCodeLength;
+        private bool _deflate64;
         private HuffmanTree _codeLengthTree;
 
         private IFileFormatReader _formatReader;  // class to decode header and footer (e.g. gzip)
 
-        public InflaterManaged()
+        public InflaterManaged(bool deflate64)
         {
             _output = new OutputWindow();
             _input = new InputBuffer();
 
             _codeList = new byte[HuffmanTree.MaxLiteralTreeElements + HuffmanTree.MaxDistTreeElements];
             _codeLengthTreeCodeLength = new byte[HuffmanTree.NumberOfCodeLengthTreeElements];
+            _deflate64 = deflate64;
             Reset();
         }
 
-        internal InflaterManaged(IFileFormatReader reader)
+        internal InflaterManaged(IFileFormatReader reader, bool deflate64)
         {
             _output = new OutputWindow();
             _input = new InputBuffer();
 
             _codeList = new byte[HuffmanTree.MaxLiteralTreeElements + HuffmanTree.MaxDistTreeElements];
             _codeLengthTreeCodeLength = new byte[HuffmanTree.NumberOfCodeLengthTreeElements];
+            _deflate64 = deflate64;
             if (reader != null)
             {
                 _formatReader = reader;
@@ -452,9 +456,9 @@ namespace System.IO.Compression
                                 symbol += 3;   // match length = 3,4,5,6,7,8,9,10
                                 _extraBits = 0;
                             }
-                            else if (symbol == 28)
+                            else if (!_deflate64 && symbol == 28)
                             { // extra bits for code 285 is 0 
-                                symbol = 258;             // code 285 means length 258    
+                                symbol = 258;             // code 285 means length 258
                                 _extraBits = 0;
                             }
                             else
@@ -660,15 +664,15 @@ namespace System.IO.Compression
                         }
                         else
                         {
-                            if (!_input.EnsureBitsAvailable(7))
-                            { // it doesn't matter if we require more bits here
-                                _state = InflaterState.ReadingTreeCodesAfter;
-                                return false;
-                            }
-
                             int repeatCount;
                             if (_lengthCode == 16)
                             {
+                                if (!_input.EnsureBitsAvailable(2))
+                                {
+                                    _state = InflaterState.ReadingTreeCodesAfter;
+                                    return false;
+                                }
+
                                 if (_loopCounter == 0)
                                 {          // can't have "prev code" on first code
                                     throw new InvalidDataException();
@@ -689,6 +693,12 @@ namespace System.IO.Compression
                             }
                             else if (_lengthCode == 17)
                             {
+                                if (!_input.EnsureBitsAvailable(3))
+                                {
+                                    _state = InflaterState.ReadingTreeCodesAfter;
+                                    return false;
+                                }
+
                                 repeatCount = _input.GetBits(3) + 3;
 
                                 if (_loopCounter + repeatCount > _codeArraySize)
@@ -703,6 +713,12 @@ namespace System.IO.Compression
                             }
                             else
                             { // code == 18
+                                if (!_input.EnsureBitsAvailable(7))
+                                {
+                                    _state = InflaterState.ReadingTreeCodesAfter;
+                                    return false;
+                                }
+
                                 repeatCount = _input.GetBits(7) + 11;
 
                                 if (_loopCounter + repeatCount > _codeArraySize)
