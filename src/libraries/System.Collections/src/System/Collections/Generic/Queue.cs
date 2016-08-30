@@ -236,7 +236,8 @@ namespace System.Collections.Generic
         }
 
         // Removes the object at the head of the queue and returns it. If the queue
-        // is empty, this method simply returns null.
+        // is empty, this method throws an 
+        // InvalidOperationException.
         /// <include file='doc\Queue.uex' path='docs/doc[@for="Queue.Dequeue"]/*' />
         public T Dequeue()
         {
