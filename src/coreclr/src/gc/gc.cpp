@@ -36716,9 +36716,10 @@ void initGCShadow()
             // running we need to be in a state that will not trigger any 
             // additional AVs while we fail to allocate a shadow segment, i.e. 
             // ensure calls to updateGCShadow() checkGCWriteBarrier() don't AV
+            deleteGCShadow();
             return;
         }
-        
+
         g_GCShadowEnd += len;
     }
 
