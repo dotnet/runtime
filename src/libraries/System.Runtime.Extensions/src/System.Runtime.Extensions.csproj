@@ -12,6 +12,7 @@
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <!-- System.IO.Path conflicts between type in partial facade and in mscorlib -->
     <NoWarn>0436</NoWarn>
+    <NuGetTargetMoniker Condition="'$(NuGetTargetMoniker)' == ''">.NETStandard,Version=v1.5</NuGetTargetMoniker>
     <PackageTargetFramework Condition="'$(PackageTargetFramework)' == ''">netstandard1.5</PackageTargetFramework>
     <CoreClrOrCorRt Condition="'$(TargetGroup)' == '' Or '$(TargetGroup)' == 'netstandard15aot'">true</CoreClrOrCorRt>
   </PropertyGroup>
