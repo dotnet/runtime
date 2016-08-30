@@ -98,18 +98,34 @@ namespace System.Diagnostics.Tests
 
                 // Make sure each thread's start time is at least the process'
                 // start time and not beyond the current time.
-                Assert.All(
-                    threads.Cast<ProcessThread>(),
-                    t => Assert.InRange(t.StartTime.ToUniversalTime(), startTime - allowedWindow, curTime + allowedWindow));
+                int passed = 0;
+                foreach (ProcessThread t in threads.Cast<ProcessThread>())
+                {
+                    try
+                    {
+                        Assert.InRange(t.StartTime.ToUniversalTime(), startTime - allowedWindow, curTime + allowedWindow);
+                        passed++;
+                    }
+                    catch (InvalidOperationException)
+                    {
+                        // The thread may have gone away between our getting its info and attempting to access its StartTime
+                    }
+                }
+                Assert.True(passed > 0, "Expected at least one thread to be valid for StartTime");
 
                 // Now add a thread, and from that thread, while it's still alive, verify
                 // that there's at least one thread greater than the current time we previously grabbed.
                 await Task.Factory.StartNew(() =>
                 {
                     p.Refresh();
-                    Assert.Contains(
-                        p.Threads.Cast<ProcessThread>(),
-                        t => t.StartTime.ToUniversalTime() >= curTime - allowedWindow);
+                    try
+                    {
+                        Assert.Contains(p.Threads.Cast<ProcessThread>(), t => t.StartTime.ToUniversalTime() >= curTime - allowedWindow);
+                    }
+                    catch (InvalidOperationException)
+                    {
+                        // A thread may have gone away between our getting its info and attempting to access its StartTime
+                    }
                 }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
             }
         }
