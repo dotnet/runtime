@@ -1,6 +1,6 @@
 {
   "frameworks": {
-    "netcoreapp1.0": {
+    "netstandard1.5": {
       "dependencies": {
         "Microsoft.TargetingPack.Private.CoreCLR": "1.1.0-beta-24430-01"
       },
@@ -17,14 +17,6 @@
       "dependencies": {
         "Microsoft.TargetingPack.Private.NETNative": "1.0.1-beta-24430-00",
         "Microsoft.TargetingPack.Private.WinRT": "1.0.1"
-      }
-    },
-    "netstandard1.5": {
-      "imports": [
-        "netcore50"
-      ],
-      "dependencies": {
-        "Microsoft.TargetingPack.Private.NETNative": "1.0.1-beta-24430-00"
       }
     }
   }
