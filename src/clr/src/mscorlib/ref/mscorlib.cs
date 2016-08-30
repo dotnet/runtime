@@ -3206,6 +3206,9 @@ namespace System
         public static System.String Intern(System.String str) { throw null; }
         [System.Security.SecuritySafeCriticalAttribute]
         public static System.String IsInterned(System.String str) { throw null; }
+        public bool IsNormalized() { throw null; }
+        [System.Security.SecuritySafeCriticalAttribute]
+        public bool IsNormalized(System.Text.NormalizationForm normalizationForm) { throw null; }
         public static bool IsNullOrEmpty(System.String value) { throw null; }
         public static bool IsNullOrWhiteSpace(System.String value) { throw null; }
         [System.Runtime.InteropServices.ComVisibleAttribute(false)]
@@ -3233,6 +3236,9 @@ namespace System
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)]
         [System.Security.SecuritySafeCriticalAttribute]
         public int LastIndexOfAny(char[] anyOf, int startIndex, int count) { throw null; }
+        public System.String Normalize() { throw null; }
+        [System.Security.SecuritySafeCriticalAttribute]
+        public System.String Normalize(System.Text.NormalizationForm normalizationForm) { throw null; }
         public static bool operator ==(System.String a, System.String b) { throw null; }
         public static bool operator !=(System.String a, System.String b) { throw null; }
         public System.String PadLeft(int totalWidth) { throw null; }
@@ -12206,6 +12212,15 @@ namespace System.Text
         public override bool Equals(object value) { throw null; }
         public override int GetHashCode() { throw null; }
     }
+    public sealed partial class EncoderExceptionFallbackBuffer : System.Text.EncoderFallbackBuffer
+    {
+        public EncoderExceptionFallbackBuffer() { }
+        public override int Remaining { get { throw null; } }
+        public override bool Fallback(char charUnknownHigh, char charUnknownLow, int index) { throw null; }
+        public override bool Fallback(char charUnknown, int index) { throw null; }
+        public override char GetNextChar() { throw null; }
+        public override bool MovePrevious() { throw null; }
+    }
     public abstract partial class EncoderFallback
     {
         protected EncoderFallback() { }
@@ -12338,12 +12353,20 @@ namespace System.Text
         public unsafe string GetString(byte* bytes, int byteCount) { throw null; }
         public virtual string GetString(byte[] bytes) { throw null; }
         public virtual string GetString(byte[] bytes, int index, int count) { throw null; }
+        [System.Runtime.InteropServices.ComVisibleAttribute(false)]
+        public bool IsAlwaysNormalized() { throw null; }
+        [System.Runtime.InteropServices.ComVisibleAttribute(false)]
+        public virtual bool IsAlwaysNormalized(System.Text.NormalizationForm form) { throw null; }
         public static void RegisterProvider(System.Text.EncodingProvider provider) { }
     }
     public sealed partial class EncodingInfo
     {
         internal EncodingInfo() { }
+        public int CodePage { get { throw null; } }
+        public string DisplayName { get { throw null; } }
+        public string Name { get { throw null; } }
         public override bool Equals(object value) { throw null; }
+        public System.Text.Encoding GetEncoding() { throw null; }
         public override int GetHashCode() { throw null; }
     }
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
@@ -12354,6 +12377,14 @@ namespace System.Text
         public virtual System.Text.Encoding GetEncoding(int codepage, System.Text.EncoderFallback encoderFallback, System.Text.DecoderFallback decoderFallback) { throw null; }
         public abstract System.Text.Encoding GetEncoding(string name);
         public virtual System.Text.Encoding GetEncoding(string name, System.Text.EncoderFallback encoderFallback, System.Text.DecoderFallback decoderFallback) { throw null; }
+    }
+    [System.Runtime.InteropServices.ComVisibleAttribute(true)]
+    public enum NormalizationForm
+    {
+        FormC = 1,
+        FormD = 2,
+        FormKC = 5,
+        FormKD = 6,
     }
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public sealed partial class StringBuilder
@@ -12457,6 +12488,7 @@ namespace System.Text
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public partial class UnicodeEncoding : System.Text.Encoding
     {
+        public const int CharSize = 2;
         public UnicodeEncoding() { }
         public UnicodeEncoding(bool bigEndian, bool byteOrderMark) { }
         public UnicodeEncoding(bool bigEndian, bool byteOrderMark, bool throwOnInvalidBytes) { }

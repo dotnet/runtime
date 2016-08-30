@@ -305,7 +305,7 @@ namespace System.Text
             return new String(cBuffer, 0, iLength);
         }
 
-#if !FEATURE_CORECLR
+#if !FEATURE_COREFX_GLOBALIZATION
         [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         unsafe private static extern int nativeNormalizationNormalizeString(
