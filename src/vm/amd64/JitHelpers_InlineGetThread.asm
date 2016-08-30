@@ -960,6 +960,10 @@ endif
         ret
 
     PrepareToWaitThinLock:
+        ; Return failure if timeout is zero
+        cmp     dword ptr [rsp + 10h], 0
+        je      TimeoutZero
+ 
         ; If we are on an MP system, we try spinning for a certain number of iterations
         cmp     dword ptr [g_SystemInfo + OFFSETOF__g_SystemInfo__dwNumberOfProcessors], 1
         jle     FramedLockHelper
@@ -981,6 +985,16 @@ endif
 
     RetryHelperThinLock:
         jmp     RetryThinLock
+
+	TimeoutZero:
+        ; Did not acquire, return FALSE
+        mov     byte ptr [r8], 0
+ifdef MON_DEBUG
+ifdef TRACK_SYNC
+        add     rsp, MON_ENTER_STACK_SIZE_INLINEGETTHREAD
+endif
+endif
+        ret
 
     HaveHashOrSyncBlockIndex:
         ; If we have a hash code already, we need to create a sync block
@@ -1067,9 +1081,21 @@ endif
         ret
 
     PrepareToWait:
+        ; Return failure if timeout is zero
+        cmp     dword ptr [rsp + 10h], 0
+ifdef MON_DEBUG
+ifdef TRACK_SYNC
+        ; if we are using the _DEBUG stuff then rsp has been adjusted
+        ; so compare the value at the adjusted position
+        ; there's really little harm in the extra stack read
+        cmp     dword ptr [rsp + MON_ENTER_STACK_SIZE_INLINEGETTHREAD + 10h]
+endif
+endif
+        je      TimeoutZero
+
         ; If we are on an MP system, we try spinning for a certain number of iterations
         cmp     dword ptr [g_SystemInfo + OFFSETOF__g_SystemInfo__dwNumberOfProcessors], 1
-        jle     WouldBlock
+        jle     Block
     
         ; Exponential backoff; delay by approximately 2*r10d clock cycles
         mov     eax, r10d
@@ -1084,29 +1110,7 @@ endif
         cmp     r10d, dword ptr [g_SpinConstants + OFFSETOF__g_SpinConstants__dwMaximumDuration]
         jle     RetrySyncBlock
 
-        ; We would need to block to enter the section. Return failure if
-        ; timeout is zero, else call the farmed helper to do the blocking
-        ; form of TryEnter.
-    WouldBlock:
-        mov     rdx, [rsp + 10h]
-        ; if we are using the _DEBUG stuff then rsp has been adjusted
-        ; just overwrite the wrong RDX value that we already retrieved
-        ; there's really little harm in the extra stack read
-ifdef MON_DEBUG
-ifdef TRACK_SYNC
-        mov     rdx, [rsp + MON_ENTER_STACK_SIZE_INLINEGETTHREAD + 10h]
-endif
-endif
-        test    rdx, rdx
-        jnz     Block
-        ; Return FALSE
-        mov		byte ptr [r8], 0
-ifdef MON_DEBUG
-ifdef TRACK_SYNC
-        add     rsp, MON_ENTER_STACK_SIZE_INLINEGETTHREAD
-endif
-endif
-        ret
+        jmp     Block
 
     RetryHelperSyncBlock:
         jmp     RetrySyncBlock
