@@ -17,6 +17,7 @@
 #include <mono/metadata/threads.h>
 #include <mono/metadata/mono-gc.h>
 #include <mono/metadata/debug-helpers.h>
+#include <mono/metadata/mono-gc.h>
 #include <mono/metadata/mono-perfcounters.h>
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/assembly.h>
@@ -4370,7 +4371,6 @@ helper_thread (void* arg)
 	int command_socket;
 	int len;
 	char buf [64];
-	MonoThread *thread = NULL;
 
 	mono_threads_attach_tools_thread ();
 	mono_native_thread_set_name (mono_native_thread_id_get (), "Profiler helper");
@@ -4430,8 +4430,6 @@ helper_thread (void* arg)
 		if (FD_ISSET (prof->pipes [0], &rfds)) {
 			char c;
 			read (prof->pipes [0], &c, 1);
-			if (thread)
-				mono_thread_detach (thread);
 			if (do_debug)
 				fprintf (stderr, "helper shutdown\n");
 #if USE_PERF_EVENTS
@@ -4472,17 +4470,9 @@ helper_thread (void* arg)
 			}
 			buf [len] = 0;
 			if (strcmp (buf, "heapshot\n") == 0) {
+				// Rely on the finalization callbacks invoking process_requests ().
 				heapshot_requested = 1;
-				//fprintf (stderr, "perform heapshot\n");
-				if (InterlockedRead (&runtime_inited) && !thread) {
-					thread = mono_thread_attach (mono_get_root_domain ());
-					/*fprintf (stderr, "attached\n");*/
-				}
-				if (thread) {
-					process_requests (prof);
-					mono_thread_detach (thread);
-					thread = NULL;
-				}
+				mono_gc_finalize_notify ();
 			}
 			continue;
 		}
