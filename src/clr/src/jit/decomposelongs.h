@@ -47,6 +47,7 @@ private:
     GenTree* DecomposeNot(LIR::Use& use);
     GenTree* DecomposeNeg(LIR::Use& use);
     GenTree* DecomposeArith(LIR::Use& use);
+    GenTree* DecomposeShift(LIR::Use& use);
 
     // Helper functions
     GenTree* FinalizeDecomposition(LIR::Use& use, GenTree* loResult, GenTree* hiResult);
