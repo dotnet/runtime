@@ -12047,9 +12047,8 @@ GenTreePtr Compiler::gtFoldExprConst(GenTreePtr tree)
                             return tree;
                         }
 
-                        if (d1 < 0.0) {
-                            if (tree->CastToType() == TYP_CHAR || tree->CastToType() == TYP_UBYTE ||
-                                tree->CastToType() == TYP_UINT || tree->CastToType() == TYP_ULONG)
+                        if (d1 <= -1.0 && varTypeIsUnsigned(tree->CastToType())) 
+                        {
                             return tree;
                         }
                
