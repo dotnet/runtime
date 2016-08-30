@@ -6238,8 +6238,10 @@ ves_icall_System_Delegate_CreateDelegate_internal (MonoReflectionType *type, Mon
 	}
 
 	if (sig->generic_param_count && method->wrapper_type == MONO_WRAPPER_NONE) {
-		if (!method->is_inflated)
-			mono_raise_exception(mono_get_exception_argument("method", " Cannot bind to the target method because its signature differs from that of the delegate type"));
+		if (!method->is_inflated) {
+			mono_set_pending_exception(mono_get_exception_argument("method", " Cannot bind to the target method because its signature differs from that of the delegate type"));
+			return NULL;
+		}
 	}
 
 	delegate = mono_object_new_checked (mono_object_domain (type), delegate_class, &error);
