@@ -2389,7 +2389,7 @@ mono_handle_native_sigsegv (int signal, void *ctx, MONO_SIG_HANDLER_INFO_TYPE *i
 	for (i =0; i < size; ++i) {
 		mono_runtime_printf_err ("\t%s", names [i]);
 	}
-	free (names);
+	g_free (names);
 
 	/* Try to get more meaningful information using gdb */
 

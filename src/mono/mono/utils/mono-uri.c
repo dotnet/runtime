@@ -36,7 +36,7 @@ mono_escape_uri_string (const gchar *string)
 #if TEST
 int main ()
 {
-	char *s = malloc (256);
+	char *s = g_malloc (256);
 	int i = 0;
 	
 	s [255] = 0;

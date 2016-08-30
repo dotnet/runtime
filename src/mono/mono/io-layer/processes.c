@@ -1476,7 +1476,7 @@ static int load_modules_callback (struct dl_phdr_info *info, size_t size, void *
 	    + sizeof (info->dlpi_phnum))
 		return (-1);
 
-	struct dl_phdr_info *cpy = calloc(1, sizeof(struct dl_phdr_info));
+	struct dl_phdr_info *cpy = g_calloc (1, sizeof(struct dl_phdr_info));
 	if (!cpy)
 		return (-1);
 
@@ -1512,7 +1512,7 @@ static GSList *load_modules (void)
 		MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: inode=%d, filename=%s, address_start=%p, address_end=%p", __func__,
 				   mod->inode, mod->filename, mod->address_start, mod->address_end);
 
-		free(info);
+		g_free (info);
 
 		if (g_slist_find_custom (ret, mod, find_procmodule) == NULL) {
 			ret = g_slist_prepend (ret, mod);
@@ -1911,12 +1911,12 @@ get_process_name_from_proc (pid_t pid)
 	if (sysctl(mib, 4, NULL, &size, NULL, 0) < 0)
 		return(ret);
 
-	if ((pi = malloc(size)) == NULL)
+	if ((pi = g_malloc (size)) == NULL)
 		return(ret);
 
 	if (sysctl (mib, 4, pi, &size, NULL, 0) < 0) {
 		if (errno == ENOMEM) {
-			free(pi);
+			g_free (pi);
 			MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Didn't allocate enough memory for kproc info", __func__);
 		}
 		return(ret);
@@ -1925,7 +1925,7 @@ get_process_name_from_proc (pid_t pid)
 	if (strlen (pi->kp_proc.p_comm) > 0)
 		ret = g_strdup (pi->kp_proc.p_comm);
 
-	free(pi);
+	g_free (pi);
 #endif
 #elif defined(USE_BSD_LOADER)
 #if defined(__FreeBSD__)
@@ -1938,12 +1938,12 @@ get_process_name_from_proc (pid_t pid)
 		return(ret);
 	}
 
-	if ((pi = malloc(size)) == NULL)
+	if ((pi = g_malloc (size)) == NULL)
 		return(ret);
 
 	if (sysctl (mib, 4, pi, &size, NULL, 0) < 0) {
 		if (errno == ENOMEM) {
-			free(pi);
+			g_free (pi);
 			MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Didn't allocate enough memory for kproc info", __func__);
 		}
 		return(ret);
@@ -1951,7 +1951,7 @@ get_process_name_from_proc (pid_t pid)
 
 	if (strlen (pi->ki_comm) > 0)
 		ret = g_strdup (pi->ki_comm);
-	free(pi);
+	g_free (pi);
 #elif defined(__OpenBSD__)
 	mib [0] = CTL_KERN;
 	mib [1] = KERN_PROC;
@@ -1966,7 +1966,7 @@ retry:
 		return(ret);
 	}
 
-	if ((pi = malloc(size)) == NULL)
+	if ((pi = g_malloc (size)) == NULL)
 		return(ret);
 
 	mib[5] = (int)(size / sizeof(struct kinfo_proc));
@@ -1974,7 +1974,7 @@ retry:
 	if ((sysctl (mib, 6, pi, &size, NULL, 0) < 0) ||
 		(size != sizeof (struct kinfo_proc))) {
 		if (errno == ENOMEM) {
-			free(pi);
+			g_free (pi);
 			goto retry;
 		}
 		return(ret);
@@ -1983,7 +1983,7 @@ retry:
 	if (strlen (pi->p_comm) > 0)
 		ret = g_strdup (pi->p_comm);
 
-	free(pi);
+	g_free (pi);
 #endif
 #elif defined(USE_HAIKU_LOADER)
 	image_info imageInfo;

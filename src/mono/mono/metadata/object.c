@@ -1206,7 +1206,7 @@ mono_method_get_imt_slot (MonoMethod *method)
 		break;
 	}
 	
-	free (hashes_start);
+	g_free (hashes_start);
 	/* Report the result */
 	return c % MONO_IMT_SIZE;
 }
@@ -1334,7 +1334,7 @@ imt_sort_slot_entries (MonoImtBuilderEntry *entries) {
 
 	imt_emit_ir (sorted_array, 0, number_of_entries, result);
 
-	free (sorted_array);
+	g_free (sorted_array);
 	return result;
 }
 
@@ -1514,7 +1514,7 @@ build_imt_slots (MonoClass *klass, MonoVTable *vt, MonoDomain *domain, gpointer*
 			entry = next;
 		}
 	}
-	free (imt_builder);
+	g_free (imt_builder);
 	/* we OR the bitmap since we may build just a single imt slot at a time */
 	vt->imt_collisions_bitmap |= imt_collisions_bitmap;
 }

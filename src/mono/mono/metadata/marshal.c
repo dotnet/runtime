@@ -778,7 +778,7 @@ mono_free_lparray (MonoArray *array, gpointer* nativeArray)
 	if (klass->element_class->byval_arg.type == MONO_TYPE_CLASS) {
 		for(i = 0; i < array->max_length; ++i)
 			mono_marshal_free_ccw (mono_array_get (array, MonoObject*, i));
-		free(nativeArray);
+		g_free (nativeArray);
 	}
 #endif
 }

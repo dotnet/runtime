@@ -2038,7 +2038,7 @@ write_file (int src_fd, int dest_fd, struct stat *st_src, gboolean report_errors
 	MonoThreadInfo *info = mono_thread_info_current ();
 
 	buf_size = buf_size < 8192 ? 8192 : (buf_size > 65536 ? 65536 : buf_size);
-	buf = (char *) malloc (buf_size);
+	buf = (char *) g_malloc (buf_size);
 
 	for (;;) {
 		remain = read (src_fd, buf, buf_size);
@@ -2049,7 +2049,7 @@ write_file (int src_fd, int dest_fd, struct stat *st_src, gboolean report_errors
 			if (report_errors)
 				_wapi_set_last_error_from_errno ();
 
-			free (buf);
+			g_free (buf);
 			return FALSE;
 		}
 		if (remain == 0) {
@@ -2065,7 +2065,7 @@ write_file (int src_fd, int dest_fd, struct stat *st_src, gboolean report_errors
 				if (report_errors)
 					_wapi_set_last_error_from_errno ();
 				MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: write failed.", __func__);
-				free (buf);
+				g_free (buf);
 				return FALSE;
 			}
 
@@ -2074,7 +2074,7 @@ write_file (int src_fd, int dest_fd, struct stat *st_src, gboolean report_errors
 		}
 	}
 
-	free (buf);
+	g_free (buf);
 	return TRUE ;
 }
 

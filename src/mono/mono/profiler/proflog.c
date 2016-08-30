@@ -1939,7 +1939,7 @@ class_loaded (MonoProfiler *prof, MonoClass *klass, int result)
 	if (runtime_inited)
 		mono_free (name);
 	else
-		free (name);
+		g_free (name);
 
 	send_if_needed (prof);
 
@@ -1983,7 +1983,7 @@ class_unloaded (MonoProfiler *prof, MonoClass *klass)
 	if (runtime_inited)
 		mono_free (name);
 	else
-		free (name);
+		g_free (name);
 
 	send_if_needed (prof);
 
@@ -2562,7 +2562,7 @@ add_code_pointer (uintptr_t ip)
 				add_code_page (n, size_code_pages, code_pages [i]);
 		}
 		if (code_pages)
-			free (code_pages);
+			g_free (code_pages);
 		code_pages = n;
 	}
 	num_code_pages += add_code_page (code_pages, size_code_pages, ip & CPAGE_MASK);
@@ -2742,7 +2742,7 @@ elf_dl_callback (struct dl_phdr_info *info, size_t size, void *data)
 			filename = buf;
 		}
 	}
-	obj = calloc (sizeof (BinaryObject), 1);
+	obj = g_calloc (sizeof (BinaryObject), 1);
 	obj->addr = (void*)info->dlpi_addr;
 	obj->name = pstrdup (filename);
 	obj->next = prof->binary_objects;
@@ -2816,7 +2816,7 @@ symbol_for (uintptr_t code)
 		names = backtrace_symbols (&ip, 1);
 		if (names) {
 			const char* p = names [0];
-			free (names);
+			g_free (names);
 			return p;
 		}
 		*/
@@ -3143,13 +3143,13 @@ setup_perf_event (void)
 	int i, count = 0;
 	mmap_mask = num_pages * getpagesize () - 1;
 	num_perf = mono_cpu_count ();
-	perf_data = calloc (num_perf, sizeof (PerfData));
+	perf_data = g_calloc (num_perf, sizeof (PerfData));
 	for (i = 0; i < num_perf; ++i) {
 		count += setup_perf_event_for_cpu (perf_data + i, i);
 	}
 	if (count)
 		return 1;
-	free (perf_data);
+	g_free (perf_data);
 	perf_data = NULL;
 	return 0;
 }
@@ -3187,7 +3187,7 @@ counters_add_agent (MonoCounter *counter)
 		if (agent->counter == counter) {
 			agent->value_size = 0;
 			if (agent->value) {
-				free (agent->value);
+				g_free (agent->value);
 				agent->value = NULL;
 			}
 			mono_os_mutex_unlock (&counters_mutex);
@@ -3316,7 +3316,7 @@ counters_sample (MonoProfiler *profiler, uint64_t timestamp)
 	counters_emit (profiler);
 
 	buffer_size = 8;
-	buffer = calloc (1, buffer_size);
+	buffer = g_calloc (1, buffer_size);
 
 	mono_os_mutex_lock (&counters_mutex);
 
@@ -3352,7 +3352,7 @@ counters_sample (MonoProfiler *profiler, uint64_t timestamp)
 			continue; // FIXME error
 		} else if (size > buffer_size) {
 			buffer_size = size;
-			buffer = realloc (buffer, buffer_size);
+			buffer = g_realloc (buffer, buffer_size);
 		}
 
 		memset (buffer, 0, buffer_size);
@@ -3363,7 +3363,7 @@ counters_sample (MonoProfiler *profiler, uint64_t timestamp)
 		type = mono_counter_get_type (counter);
 
 		if (!agent->value) {
-			agent->value = calloc (1, size);
+			agent->value = g_calloc (1, size);
 			agent->value_size = size;
 		} else {
 			if (type == MONO_COUNTER_STRING) {
@@ -3413,14 +3413,14 @@ counters_sample (MonoProfiler *profiler, uint64_t timestamp)
 		}
 
 		if (type == MONO_COUNTER_STRING && size > agent->value_size) {
-			agent->value = realloc (agent->value, size);
+			agent->value = g_realloc (agent->value, size);
 			agent->value_size = size;
 		}
 
 		if (size > 0)
 			memcpy (agent->value, buffer, size);
 	}
-	free (buffer);
+	g_free (buffer);
 
 	emit_value (logbuffer, 0);
 
@@ -4350,8 +4350,8 @@ log_shutdown (MonoProfiler *prof)
 
 	PROF_TLS_FREE ();
 
-	free (prof->args);
-	free (prof);
+	g_free (prof->args);
+	g_free (prof);
 }
 
 static char*
@@ -4660,7 +4660,7 @@ handle_writer_queue_entry (MonoProfiler *prof)
 			mono_free (name);
 
 		free_info:
-			free (info);
+			g_free (info);
 		}
 
 		g_ptr_array_free (entry->methods, TRUE);
@@ -4889,7 +4889,7 @@ create_profiler (const char *args, const char *filename, GPtrArray *filters)
 			int s = strlen (nf) + 32;
 			char *p = (char *)malloc (s);
 			snprintf (p, s, "|mprof-report '--out=%s' -", nf);
-			free (nf);
+			g_free (nf);
 			nf = p;
 		}
 	}
@@ -5074,7 +5074,7 @@ set_sample_mode (char* val, int allow_empty)
 	if (strcmp (val, "mono") == 0) {
 		do_mono_sample = 1;
 		sample_type = SAMPLE_CYCLES;
-		free (val);
+		g_free (val);
 		return;
 	}
 	for (smode = sample_modes; smode->name; smode++) {
@@ -5097,7 +5097,7 @@ set_sample_mode (char* val, int allow_empty)
 	} else {
 		sample_freq = 100;
 	}
-	free (val);
+	g_free (val);
 }
 
 static void
@@ -5109,7 +5109,7 @@ set_hsmode (char* val, int allow_empty)
 		return;
 	if (strcmp (val, "ondemand") == 0) {
 		hs_mode_ondemand = 1;
-		free (val);
+		g_free (val);
 		return;
 	}
 	count = strtoul (val, &end, 10);
@@ -5121,7 +5121,7 @@ set_hsmode (char* val, int allow_empty)
 		hs_mode_gc = count;
 	else
 		usage (1);
-	free (val);
+	g_free (val);
 }
 
 /*
@@ -5206,7 +5206,7 @@ mono_profiler_startup (const char *desc)
 				fast_time = 2;
 			else
 				usage (1);
-			free (val);
+			g_free (val);
 			continue;
 		}
 		if ((opt = match_option (p, "report", NULL)) != p) {
@@ -5256,7 +5256,7 @@ mono_profiler_startup (const char *desc)
 		if ((opt = match_option (p, "port", &val)) != p) {
 			char *end;
 			command_port = strtoul (val, &end, 10);
-			free (val);
+			g_free (val);
 			continue;
 		}
 		if ((opt = match_option (p, "maxframes", &val)) != p) {
@@ -5264,7 +5264,7 @@ mono_profiler_startup (const char *desc)
 			num_frames = strtoul (val, &end, 10);
 			if (num_frames > MAX_FRAMES)
 				num_frames = MAX_FRAMES;
-			free (val);
+			g_free (val);
 			notraces = num_frames == 0;
 			continue;
 		}
@@ -5273,13 +5273,13 @@ mono_profiler_startup (const char *desc)
 			max_allocated_sample_hits = strtoul (val, &end, 10);
 			if (!max_allocated_sample_hits)
 				max_allocated_sample_hits = G_MAXINT32;
-			free (val);
+			g_free (val);
 			continue;
 		}
 		if ((opt = match_option (p, "calldepth", &val)) != p) {
 			char *end;
 			max_call_depth = strtoul (val, &end, 10);
-			free (val);
+			g_free (val);
 			continue;
 		}
 		if ((opt = match_option (p, "counters", NULL)) != p) {

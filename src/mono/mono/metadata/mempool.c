@@ -215,7 +215,7 @@ mono_backtrace (int size)
         for (i = 1; i < symbols; ++i) {
                 g_print ("\t%s\n", names [i]);
         }
-        free (names);
+        g_free (names);
         mono_os_mutex_unlock (&mempool_tracing_lock);
 }
 
