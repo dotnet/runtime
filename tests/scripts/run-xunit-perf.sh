@@ -369,7 +369,7 @@ fi
 
 # Install xunit performance packages
 export NUGET_PACKAGES=$testNativeBinDir/../../../../packages
-echo "NUGET_PACKAGES = $NUGET_PACKAGE"
+echo "NUGET_PACKAGES = $NUGET_PACKAGES"
 
 echo "dir $testNativeBinDir/../../../../Tools"
 dir $testNativeBinDir/../../../../Tools
