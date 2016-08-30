@@ -309,10 +309,12 @@ LOCAL_LABEL(LNullThis):
 //
 // r12 = UMEntryThunk*
 //
-        NESTED_ENTRY UMThunkStub,_TEXT,NoHandler
+        NESTED_ENTRY UMThunkStub,_TEXT,UnhandledExceptionHandlerUnix
         PROLOG_PUSH         "{r4,r5,r7,r11,lr}"
-        push                {r0-r3,r12}
-        PROLOG_STACK_SAVE_OFFSET   r7, #28
+        PROLOG_STACK_SAVE_OFFSET   r7, #8
+
+        alloc_stack         4 * 5
+        stm                 sp, {r0-r3,r12}
 
         //GBLA UMThunkStub_HiddenArgOffest // offset of saved UMEntryThunk *
         //GBLA UMThunkStub_StackArgsOffest // offset of original stack args
@@ -378,8 +380,7 @@ LOCAL_LABEL(UMThunkStub_PostCall):
         mov                 r4, 0
         str                 r4, [r5, #Thread__m_fPreemptiveGCDisabled]
 
-        EPILOG_STACK_RESTORE_OFFSET    r7, #28
-        free_stack           4 * 5
+        EPILOG_STACK_RESTORE_OFFSET    r7, #8
         EPILOG_POP           "{r4,r5,r7,r11,pc}"
 
 LOCAL_LABEL(UMThunkStub_DoThreadSetup):
