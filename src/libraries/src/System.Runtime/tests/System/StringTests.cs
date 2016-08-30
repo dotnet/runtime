@@ -702,15 +702,15 @@ namespace System.Tests
             Assert.Throws<ArgumentOutOfRangeException>("indexB", () => string.CompareOrdinal("a", 0, "bb", 3, 0)); // IndexB > strB.Length
 
             // Length < 0
-            Assert.Throws<ArgumentOutOfRangeException>("count", () => string.CompareOrdinal("a", 0, "bb", 0, -1));
+            Assert.Throws<ArgumentOutOfRangeException>("length", () => string.CompareOrdinal("a", 0, "bb", 0, -1));
 
             // We must validate arguments before any short-circuiting is done (besides for nulls)
-            Assert.Throws<ArgumentOutOfRangeException>("count", () => string.CompareOrdinal("foo", -1, "foo", -1, -1)); // count should be validated first
+            Assert.Throws<ArgumentOutOfRangeException>("length", () => string.CompareOrdinal("foo", -1, "foo", -1, -1)); // length should be validated first
             Assert.Throws<ArgumentOutOfRangeException>("indexA", () => string.CompareOrdinal("foo", -1, "foo", -1, 0)); // then indexA
             Assert.Throws<ArgumentOutOfRangeException>("indexB", () => string.CompareOrdinal("foo", 0, "foo", -1, 0)); // then indexB
             Assert.Throws<ArgumentOutOfRangeException>("indexA", () => string.CompareOrdinal("foo", 4, "foo", 4, 0)); // indexA > strA.Length first
             Assert.Throws<ArgumentOutOfRangeException>("indexB", () => string.CompareOrdinal("foo", 3, "foo", 4, 0)); // then indexB > strB.Length
-            Assert.Throws<ArgumentOutOfRangeException>("count", () => string.CompareOrdinal("foo", 0, "foo", 0, -1)); // early return should not kick in if count is invalid
+            Assert.Throws<ArgumentOutOfRangeException>("length", () => string.CompareOrdinal("foo", 0, "foo", 0, -1)); // early return should not kick in if length is invalid
         }
 
         [Theory]
