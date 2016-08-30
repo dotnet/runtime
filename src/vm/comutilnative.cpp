@@ -1922,6 +1922,24 @@ FCIMPL0(int, GCInterface::GetMaxGeneration)
 }
 FCIMPLEND
 
+/*===============================GetAllocatedBytesForCurrentThread===============================
+**Action: Computes the allocated bytes so far on the current thread
+**Returns: The allocated bytes so far on the current thread
+**Arguments: None
+**Exceptions: None
+==============================================================================*/
+FCIMPL0(INT64, GCInterface::GetAllocatedBytesForCurrentThread)
+{
+    FCALL_CONTRACT;
+
+    INT64 currentAllocated = 0;
+    Thread *pThread = GetThread();
+    alloc_context* ac = pThread->GetAllocContext();
+    currentAllocated = ac->alloc_bytes + ac->alloc_bytes_loh - (ac->alloc_limit - ac->alloc_ptr);
+
+    return currentAllocated;
+}
+FCIMPLEND
 
 /*==============================SuppressFinalize================================
 **Action: Indicate that an object's finalizer should not be run by the system
