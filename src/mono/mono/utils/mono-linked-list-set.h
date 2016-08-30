@@ -24,7 +24,6 @@ struct _MonoLinkedListSetNode {
 typedef struct {
 	MonoLinkedListSetNode *head;
 	void (*free_node_func)(void *);
-	HazardFreeLocking locking;
 } MonoLinkedListSet;
 
 
@@ -45,20 +44,20 @@ Those are low level operations. prev, cur, next are returned in the hazard point
 You must manually clean the hazard pointer table after using them.
 */
 
-void
-mono_lls_init (MonoLinkedListSet *list, void (*free_node_func)(void *), HazardFreeLocking free_node_func_locking);
+MONO_API void
+mono_lls_init (MonoLinkedListSet *list, void (*free_node_func)(void *));
 
-gboolean
-mono_lls_find (MonoLinkedListSet *list, MonoThreadHazardPointers *hp, uintptr_t key, HazardFreeContext context);
+MONO_API gboolean
+mono_lls_find (MonoLinkedListSet *list, MonoThreadHazardPointers *hp, uintptr_t key);
 
-gboolean
-mono_lls_insert (MonoLinkedListSet *list, MonoThreadHazardPointers *hp, MonoLinkedListSetNode *value, HazardFreeContext context);
+MONO_API gboolean
+mono_lls_insert (MonoLinkedListSet *list, MonoThreadHazardPointers *hp, MonoLinkedListSetNode *value);
 
-gboolean
-mono_lls_remove (MonoLinkedListSet *list, MonoThreadHazardPointers *hp, MonoLinkedListSetNode *value, HazardFreeContext context);
+MONO_API gboolean
+mono_lls_remove (MonoLinkedListSet *list, MonoThreadHazardPointers *hp, MonoLinkedListSetNode *value);
 
-gpointer
-get_hazardous_pointer_with_mask (gpointer volatile *pp, MonoThreadHazardPointers *hp, int hazard_index);
+MONO_API gpointer
+mono_lls_get_hazardous_pointer_with_mask (gpointer volatile *pp, MonoThreadHazardPointers *hp, int hazard_index);
 
 static inline gboolean
 mono_lls_filter_accept_all (gpointer elem)
@@ -108,12 +107,12 @@ mono_lls_filter_accept_all (gpointer elem)
 			restart__ = FALSE; \
 			MonoLinkedListSetNode **prev__ = &list__->head; \
 			mono_hazard_pointer_set (hp__, 2, prev__); \
-			MonoLinkedListSetNode *cur__ = (MonoLinkedListSetNode *) get_hazardous_pointer_with_mask ((gpointer *) prev__, hp__, 1); \
+			MonoLinkedListSetNode *cur__ = (MonoLinkedListSetNode *) mono_lls_get_hazardous_pointer_with_mask ((gpointer *) prev__, hp__, 1); \
 			while (1) { \
 				if (!cur__) { \
 					break; \
 				} \
-				MonoLinkedListSetNode *next__ = (MonoLinkedListSetNode *) get_hazardous_pointer_with_mask ((gpointer *) &cur__->next, hp__, 0); \
+				MonoLinkedListSetNode *next__ = (MonoLinkedListSetNode *) mono_lls_get_hazardous_pointer_with_mask ((gpointer *) &cur__->next, hp__, 0); \
 				uintptr_t ckey__ = cur__->key; \
 				mono_memory_read_barrier (); \
 				if (*prev__ != cur__) { \

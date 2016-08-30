@@ -31,7 +31,8 @@ typedef enum {
 	MONO_PROFILE_IOMAP_EVENTS     = 1 << 18, /* this should likely be removed, too */
 	MONO_PROFILE_GC_MOVES         = 1 << 19,
 	MONO_PROFILE_GC_ROOTS         = 1 << 20,
-	MONO_PROFILE_CONTEXT_EVENTS   = 1 << 21
+	MONO_PROFILE_CONTEXT_EVENTS   = 1 << 21,
+	MONO_PROFILE_GC_FINALIZATION  = 1 << 22
 } MonoProfileFlags;
 
 typedef enum {
@@ -39,6 +40,7 @@ typedef enum {
 	MONO_PROFILE_FAILED
 } MonoProfileResult;
 
+// Keep somewhat in sync with libgc/include/gc.h:enum GC_EventType
 typedef enum {
 	MONO_GC_EVENT_START,
 	MONO_GC_EVENT_MARK_START,
@@ -46,10 +48,26 @@ typedef enum {
 	MONO_GC_EVENT_RECLAIM_START,
 	MONO_GC_EVENT_RECLAIM_END,
 	MONO_GC_EVENT_END,
+	/*
+	 * This is the actual arrival order of the following events:
+	 *
+	 * MONO_GC_EVENT_PRE_STOP_WORLD
+	 * MONO_GC_EVENT_PRE_STOP_WORLD_LOCKED
+	 * MONO_GC_EVENT_POST_STOP_WORLD
+	 * MONO_GC_EVENT_PRE_START_WORLD
+	 * MONO_GC_EVENT_POST_START_WORLD_UNLOCKED
+	 * MONO_GC_EVENT_POST_START_WORLD
+	 *
+	 * The LOCKED and UNLOCKED events guarantee that, by the time they arrive,
+	 * the GC and suspend locks will both have been acquired and released,
+	 * respectively.
+	 */
 	MONO_GC_EVENT_PRE_STOP_WORLD,
 	MONO_GC_EVENT_POST_STOP_WORLD,
 	MONO_GC_EVENT_PRE_START_WORLD,
-	MONO_GC_EVENT_POST_START_WORLD
+	MONO_GC_EVENT_POST_START_WORLD,
+	MONO_GC_EVENT_PRE_STOP_WORLD_LOCKED,
+	MONO_GC_EVENT_POST_START_WORLD_UNLOCKED
 } MonoGCEvent;
 
 /* coverage info */
@@ -150,6 +168,9 @@ typedef void (*MonoProfileGCResizeFunc)   (MonoProfiler *prof, int64_t new_size)
 typedef void (*MonoProfileGCHandleFunc)   (MonoProfiler *prof, int op, int type, uintptr_t handle, MonoObject *obj);
 typedef void (*MonoProfileGCRootFunc)     (MonoProfiler *prof, int num_roots, void **objects, int *root_types, uintptr_t *extra_info);
 
+typedef void (*MonoProfileGCFinalizeFunc)  (MonoProfiler *prof);
+typedef void (*MonoProfileGCFinalizeObjectFunc) (MonoProfiler *prof, MonoObject *obj);
+
 typedef void (*MonoProfileIomapFunc) (MonoProfiler *prof, const char *report, const char *pathname, const char *new_pathname);
 
 typedef mono_bool (*MonoProfileCoverageFilterFunc)   (MonoProfiler *prof, MonoMethod *method);
@@ -197,6 +218,7 @@ MONO_API void mono_profiler_coverage_get  (MonoProfiler *prof, MonoMethod *metho
 MONO_API void mono_profiler_install_gc    (MonoProfileGCFunc callback, MonoProfileGCResizeFunc heap_resize_callback);
 MONO_API void mono_profiler_install_gc_moves    (MonoProfileGCMoveFunc callback);
 MONO_API void mono_profiler_install_gc_roots    (MonoProfileGCHandleFunc handle_callback, MonoProfileGCRootFunc roots_callback);
+MONO_API void mono_profiler_install_gc_finalize (MonoProfileGCFinalizeFunc begin, MonoProfileGCFinalizeObjectFunc begin_obj, MonoProfileGCFinalizeObjectFunc end_obj, MonoProfileGCFinalizeFunc end);
 MONO_API void mono_profiler_install_runtime_initialized (MonoProfileFunc runtime_initialized_callback);
 
 MONO_API void mono_profiler_install_code_chunk_new (MonoProfilerCodeChunkNew callback);

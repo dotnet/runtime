@@ -170,7 +170,7 @@ desc_alloc (void)
 	for (;;) {
 		gboolean success;
 
-		desc = (Descriptor *) get_hazardous_pointer ((gpointer * volatile)&desc_avail, hp, 1);
+		desc = (Descriptor *) mono_get_hazardous_pointer ((gpointer * volatile)&desc_avail, hp, 1);
 		if (desc) {
 			Descriptor *next = desc->next;
 			success = (InterlockedCompareExchangePointer ((gpointer * volatile)&desc_avail, next, desc) == desc);

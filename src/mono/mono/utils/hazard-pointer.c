@@ -29,7 +29,6 @@
 typedef struct {
 	gpointer p;
 	MonoHazardousFreeFunc free_func;
-	HazardFreeLocking locking;
 } DelayedFreeItem;
 
 /* The hazard table */
@@ -191,7 +190,7 @@ mono_hazard_pointer_get (void)
    mono_jit_info_table_add(), which doesn't have to care about hazards
    because it holds the respective domain lock. */
 gpointer
-get_hazardous_pointer (gpointer volatile *pp, MonoThreadHazardPointers *hp, int hazard_index)
+mono_get_hazardous_pointer (gpointer volatile *pp, MonoThreadHazardPointers *hp, int hazard_index)
 {
 	gpointer p;
 
@@ -288,7 +287,7 @@ mono_hazard_pointer_restore_for_signal_handler (int small_id)
 }
 
 static gboolean
-try_free_delayed_free_item (HazardFreeContext context)
+try_free_delayed_free_item (void)
 {
 	DelayedFreeItem item;
 	gboolean popped = mono_lock_free_array_queue_pop (&delayed_free_queue, &item);
@@ -296,8 +295,7 @@ try_free_delayed_free_item (HazardFreeContext context)
 	if (!popped)
 		return FALSE;
 
-	if ((context == HAZARD_FREE_ASYNC_CTX && item.locking == HAZARD_FREE_MAY_LOCK) ||
-	    (is_pointer_hazardous (item.p))) {
+	if (is_pointer_hazardous (item.p)) {
 		mono_lock_free_array_queue_push (&delayed_free_queue, &item);
 		return FALSE;
 	}
@@ -348,7 +346,7 @@ mono_thread_hazardous_try_free (gpointer p, MonoHazardousFreeFunc free_func)
 void
 mono_thread_hazardous_queue_free (gpointer p, MonoHazardousFreeFunc free_func)
 {
-	DelayedFreeItem item = { p, free_func, HAZARD_FREE_MAY_LOCK };
+	DelayedFreeItem item = { p, free_func };
 
 	InterlockedIncrement (&hazardous_pointer_count);
 
@@ -369,7 +367,7 @@ mono_hazard_pointer_install_free_queue_size_callback (MonoHazardFreeQueueSizeCal
 void
 mono_thread_hazardous_try_free_all (void)
 {
-	while (try_free_delayed_free_item (HAZARD_FREE_SAFE_CTX))
+	while (try_free_delayed_free_item ())
 		;
 }
 
@@ -378,7 +376,7 @@ mono_thread_hazardous_try_free_some (void)
 {
 	int i;
 	for (i = 0; i < 10; ++i)
-		try_free_delayed_free_item (HAZARD_FREE_SAFE_CTX);
+		try_free_delayed_free_item ();
 }
 
 void

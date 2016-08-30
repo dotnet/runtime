@@ -145,10 +145,6 @@ void     mono_gchandle_free_domain  (MonoDomain *domain);
 
 typedef void (*FinalizerThreadCallback) (gpointer user_data);
 
-/* if there are finalizers to run, run them. Returns the number of finalizers run */
-gboolean mono_gc_pending_finalizers (void);
-void     mono_gc_finalize_notify    (void);
-
 void* mono_gc_alloc_pinned_obj (MonoVTable *vtable, size_t size);
 void* mono_gc_alloc_obj (MonoVTable *vtable, size_t size);
 void* mono_gc_alloc_vector (MonoVTable *vtable, size_t size, uintptr_t max_length);

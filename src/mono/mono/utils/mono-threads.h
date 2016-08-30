@@ -416,7 +416,7 @@ mono_thread_info_is_async_context (void);
 void
 mono_thread_info_get_stack_bounds (guint8 **staddr, size_t *stsize);
 
-gboolean
+MONO_API gboolean
 mono_thread_info_yield (void);
 
 gint

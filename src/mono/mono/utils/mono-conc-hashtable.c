@@ -164,7 +164,7 @@ mono_conc_hashtable_lookup (MonoConcurrentHashTable *hash_table, gpointer key)
 	hp = mono_hazard_pointer_get ();
 
 retry:
-	table = (conc_table *)get_hazardous_pointer ((gpointer volatile*)&hash_table->table, hp, 0);
+	table = (conc_table *)mono_get_hazardous_pointer ((gpointer volatile*)&hash_table->table, hp, 0);
 	table_mask = table->table_size - 1;
 	kvs = table->kvs;
 	i = hash & table_mask;

@@ -418,7 +418,7 @@ uintptr_t
 process_id (void)
 {
 #ifdef HOST_WIN32
-	return 0; /* FIXME */
+	return GetCurrentProcessId ();
 #else
 	return (uintptr_t)getpid ();
 #endif
