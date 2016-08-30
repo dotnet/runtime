@@ -770,7 +770,7 @@ mono_thread_info_core_resume (MonoThreadInfo *info)
 		MonoNativeThreadId tid = mono_thread_info_get_tid (info);
 		/* Have to special case this, as the normal suspend/resume pair are racy, they don't work if he resume is received before the suspend */
 		info->create_suspended = FALSE;
-		mono_threads_platform_resume_created (info, tid);
+		mono_coop_sem_post (&info->create_suspended_sem);
 		return TRUE;
 	}
 

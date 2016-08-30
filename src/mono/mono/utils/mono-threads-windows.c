@@ -154,7 +154,6 @@ typedef struct {
 	gint32 priority;
 	MonoCoopSem registered;
 	gboolean suspend;
-	HANDLE suspend_event;
 	HANDLE handle;
 } ThreadStartInfo;
 
@@ -166,22 +165,28 @@ inner_start_thread (LPVOID arg)
 	LPTHREAD_START_ROUTINE start_func = start_info->start_routine;
 	DWORD result;
 	gboolean suspend = start_info->suspend;
-	HANDLE suspend_event = start_info->suspend_event;
 	MonoThreadInfo *info;
+	int res;
 
 	info = mono_thread_info_attach (&result);
 	info->runtime_thread = TRUE;
-	info->create_suspended = suspend;
 
 	start_info->handle = info->handle;
 
 	mono_threads_platform_set_priority(info, start_info->priority);
 
+	if (suspend) {
+		info->create_suspended = TRUE;
+		mono_coop_sem_init (&info->create_suspended_sem, 0);
+	}
+
 	mono_coop_sem_post (&(start_info->registered));
 
 	if (suspend) {
-		WaitForSingleObject (suspend_event, INFINITE); /* caller will suspend the thread before setting the event. */
-		CloseHandle (suspend_event);
+		res = mono_coop_sem_wait (&info->create_suspended_sem, MONO_SEM_FLAGS_NONE);
+		g_assert (res != -1);
+
+		mono_coop_sem_destroy (&info->create_suspended_sem);
 	}
 
 	result = start_func (t_arg);
@@ -207,11 +212,6 @@ mono_threads_platform_create_thread (MonoThreadStart start_routine, gpointer arg
 	start_info.suspend = creation_flags & CREATE_SUSPENDED;
 	start_info.priority = tp->priority;
 	creation_flags &= ~CREATE_SUSPENDED;
-	if (start_info.suspend) {
-		start_info.suspend_event = CreateEvent (NULL, TRUE, FALSE, NULL);
-		if (!start_info.suspend_event)
-			return NULL;
-	}
 
 	result = CreateThread (NULL, tp->stack_size, inner_start_thread, &start_info, creation_flags, &thread_id);
 	if (result) {
@@ -221,13 +221,6 @@ mono_threads_platform_create_thread (MonoThreadStart start_routine, gpointer arg
 		/* A new handle has been opened when attaching
 		 * the thread, so we don't need this one */
 		CloseHandle (result);
-
-		if (start_info.suspend) {
-			g_assert (SuspendThread (start_info.handle) != (DWORD)-1);
-			SetEvent (start_info.suspend_event);
-		}
-	} else if (start_info.suspend) {
-		CloseHandle (start_info.suspend_event);
 	}
 	if (out_tid)
 		*out_tid = thread_id;
@@ -252,17 +245,6 @@ gboolean
 mono_native_thread_create (MonoNativeThreadId *tid, gpointer func, gpointer arg)
 {
 	return CreateThread (NULL, 0, (func), (arg), 0, (tid)) != NULL;
-}
-
-void
-mono_threads_platform_resume_created (MonoThreadInfo *info, MonoNativeThreadId tid)
-{
-	HANDLE handle;
-
-	handle = OpenThread (THREAD_ALL_ACCESS, TRUE, tid);
-	g_assert (handle);
-	ResumeThread (handle);
-	CloseHandle (handle);
 }
 
 #if HAVE_DECL___READFSDWORD==0

@@ -228,17 +228,6 @@ mono_threads_platform_create_thread (MonoThreadStart start_routine, gpointer arg
 	return start_info.handle;
 }
 
-/*
- * mono_threads_platform_resume_created:
- *
- *   Resume a newly created thread created using CREATE_SUSPENDED.
- */
-void
-mono_threads_platform_resume_created (MonoThreadInfo *info, MonoNativeThreadId tid)
-{
-	mono_coop_sem_post (&info->create_suspended_sem);
-}
-
 gboolean
 mono_threads_platform_yield (void)
 {
