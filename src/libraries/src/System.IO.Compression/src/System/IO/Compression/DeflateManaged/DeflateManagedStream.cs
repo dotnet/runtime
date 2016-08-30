@@ -1,22 +1,24 @@
-// Copyright (c) Microsoft. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Diagnostics.Contracts;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Diagnostics.Contracts;
 
 namespace System.IO.Compression
 {
-    public partial class DeflateStream : Stream
+    internal partial class DeflateManagedStream : Stream
     {
         internal const int DefaultBufferSize = 8192;
 
         private Stream _stream;
         private CompressionMode _mode;
         private bool _leaveOpen;
-        private IInflater _inflater;
-        private IDeflater _deflater;
+        private InflaterManaged _inflater;
+        private DeflaterManaged _deflater;
         private byte[] _buffer;
 
         private int _asyncOperations;
@@ -25,153 +27,89 @@ namespace System.IO.Compression
         private bool _wroteHeader;
         private bool _wroteBytes;
 
-        private enum WorkerType : byte { Unknown = 0, Managed = 1, ZLib = 2 };
-        private static readonly WorkerType s_deflaterType = WorkerType.ZLib; // TODO (Issue #4451) WorkerType should be removed when the managed implementation is removed
-#if DEBUG
-        // This field is used for testing purposes and is accessed via reflection.
-        // NOTE: If the name of this field changes, the test must also be updated.
-        private static WorkerType s_forcedTestingDeflaterType = WorkerType.Unknown;
-#endif
-
-        public DeflateStream(Stream stream, CompressionMode mode)
-            : this(stream, mode, false)
+        public DeflateManagedStream(Stream stream, CompressionMode mode) : this(stream, mode, false)
         {
         }
-
+        
         // Since a reader is being taken, CompressionMode.Decompress is implied
-        internal DeflateStream(Stream stream, bool leaveOpen, IFileFormatReader reader)
+        internal DeflateManagedStream(Stream stream, bool leaveOpen, IFileFormatReader reader)
         {
             Debug.Assert(reader != null, "The IFileFormatReader passed to the internal DeflateStream constructor must be non-null");
             if (stream == null)
-                throw new ArgumentNullException("stream");
+                throw new ArgumentNullException(nameof(stream));
             if (!stream.CanRead)
-                throw new ArgumentException(SR.NotReadableStream, "stream");
+                throw new ArgumentException(SR.NotSupported_UnreadableStream, nameof(stream));
 
-            _inflater = CreateInflater(reader);
+            InitializeInflater(stream, leaveOpen, reader);
+        }
+
+        public DeflateManagedStream(Stream stream, CompressionMode mode, bool leaveOpen)
+        {
+            if (stream == null)
+                throw new ArgumentNullException(nameof(stream));
+
+            switch (mode)
+            {
+                case CompressionMode.Decompress:
+                    InitializeInflater(stream, leaveOpen);
+                    break;
+
+                case CompressionMode.Compress:
+                    InitializeDeflater(stream, leaveOpen, CompressionLevel.Optimal);
+                    break;
+
+                default:
+                    throw new ArgumentException(SR.ArgumentOutOfRange_Enum, nameof(mode));
+            }
+        }
+
+        // Implies mode = Compress
+        public DeflateManagedStream(Stream stream, CompressionLevel compressionLevel) : this(stream, compressionLevel, false)
+        {
+        }
+
+        // Implies mode = Compress
+        public DeflateManagedStream(Stream stream, CompressionLevel compressionLevel, bool leaveOpen)
+        {
+            if (stream == null)
+                throw new ArgumentNullException(nameof(stream));
+
+            InitializeDeflater(stream, leaveOpen, compressionLevel);
+        }
+
+
+        /// <summary>
+        /// Sets up this DeflateManagedStream to be used for Zlib Inflation/Decompression
+        /// </summary>
+        internal void InitializeInflater(Stream stream, bool leaveOpen, IFileFormatReader reader = null)
+        {
+            Debug.Assert(stream != null);
+            if (!stream.CanRead)
+                throw new ArgumentException(SR.NotSupported_UnreadableStream, nameof(stream));
+
+            _inflater = new InflaterManaged(reader);
+
             _stream = stream;
             _mode = CompressionMode.Decompress;
             _leaveOpen = leaveOpen;
             _buffer = new byte[DefaultBufferSize];
         }
 
-
-        public DeflateStream(Stream stream, CompressionMode mode, bool leaveOpen)
+        /// <summary>
+        /// Sets up this DeflateManagedStream to be used for Zlib Deflation/Compression
+        /// </summary>
+        internal void InitializeDeflater(Stream stream, bool leaveOpen, CompressionLevel compressionLevel)
         {
-            if (stream == null)
-                throw new ArgumentNullException("stream");
-            
-            switch (mode)
-            {
-                case CompressionMode.Decompress:
-                    if (!stream.CanRead)
-                    {
-                        throw new ArgumentException(SR.NotReadableStream, "stream");
-                    }
-                    _inflater = CreateInflater();
-                    break;
-
-                case CompressionMode.Compress:
-                    if (!stream.CanWrite)
-                    {
-                        throw new ArgumentException(SR.NotWriteableStream, "stream");
-                    }
-                    _deflater = CreateDeflater(null);
-                    break;
-
-                default:
-                    throw new ArgumentException(SR.ArgumentOutOfRange_Enum, "mode");
-            }
-
-            _stream = stream;
-            _mode = mode;
-            _leaveOpen = leaveOpen;
-            _buffer = new byte[DefaultBufferSize];
-        }
-
-        // Implies mode = Compress
-        public DeflateStream(Stream stream, CompressionLevel compressionLevel)
-
-            : this(stream, compressionLevel, false)
-        {
-        }
-
-        // Implies mode = Compress
-        public DeflateStream(Stream stream, CompressionLevel compressionLevel, bool leaveOpen)
-        {
-            if (stream == null)
-                throw new ArgumentNullException("stream");
-
+            Debug.Assert(stream != null);
             if (!stream.CanWrite)
-                throw new ArgumentException(SR.NotWriteableStream, "stream");
+                throw new ArgumentException(SR.NotSupported_UnwritableStream, nameof(stream));
 
-            // Checking of compressionLevel is passed down to the IDeflater implementation as it
-            // is a pugable component that completely encapsulates the meaning of compressionLevel.
-
-            Contract.EndContractBlock();
+            _deflater = new DeflaterManaged();
 
             _stream = stream;
             _mode = CompressionMode.Compress;
             _leaveOpen = leaveOpen;
-
-            _deflater = CreateDeflater(compressionLevel);
-
             _buffer = new byte[DefaultBufferSize];
-        }
-
-        private static IDeflater CreateDeflater(CompressionLevel? compressionLevel)
-        {
-            // The deflator type (zlib or managed) is normally determined by s_deflatorType,
-            // which is initialized by the provider based on what's available on the system.
-            // But for testing purposes, we sometimes want to override this, forcing
-            // compression/decompression to use a particular type.
-            WorkerType deflatorType = s_deflaterType;
-#if DEBUG
-            if (s_forcedTestingDeflaterType != WorkerType.Unknown)
-                deflatorType = s_forcedTestingDeflaterType;
-#endif
-
-            if (deflatorType == WorkerType.ZLib)
-            {
-                return compressionLevel.HasValue ?
-                    new DeflaterZLib(compressionLevel.Value) :
-                    new DeflaterZLib();
-            }
-            else
-            {
-                Debug.Assert(deflatorType == WorkerType.Managed);
-                return new DeflaterManaged();
-            }
-        }
-
-        private static IInflater CreateInflater(IFileFormatReader reader = null)
-        {
-            // The deflator type (zlib or managed) is normally determined by s_deflatorType,
-            // which is initialized by the provider based on what's available on the system.
-            // But for testing purposes, we sometimes want to override this, forcing
-            // compression/decompression to use a particular type.
-            WorkerType deflatorType = s_deflaterType;
-#if DEBUG
-            if (s_forcedTestingDeflaterType != WorkerType.Unknown)
-                deflatorType = s_forcedTestingDeflaterType;
-#endif
-
-            if (deflatorType == WorkerType.ZLib)
-            {
-                // Rather than reading raw data and using a FormatReader to interpret
-                // headers/footers manually, we instead set the zlib stream to parse
-                // that information for us.
-                if (reader == null)
-                    return new InflaterZlib(ZLibNative.Deflate_DefaultWindowBits);
-                else
-                {
-                    Debug.Assert(reader.ZLibWindowSize == 47, "A GZip reader must be designated with ZLibWindowSize == 47. Other header formats aren't supported by ZLib.");
-                    return new InflaterZlib(reader.ZLibWindowSize);
-                }
-            }
-            else
-            {
-                return new InflaterManaged(reader);
-            }
         }
 
         internal void SetFileFormatWriter(IFileFormatWriter writer)
@@ -317,13 +255,13 @@ namespace System.IO.Compression
         private void ValidateParameters(byte[] array, int offset, int count)
         {
             if (array == null)
-                throw new ArgumentNullException("array");
+                throw new ArgumentNullException(nameof(array));
 
             if (offset < 0)
-                throw new ArgumentOutOfRangeException("offset");
+                throw new ArgumentOutOfRangeException(nameof(offset));
 
             if (count < 0)
-                throw new ArgumentOutOfRangeException("count");
+                throw new ArgumentOutOfRangeException(nameof(count));
 
             if (array.Length - offset < count)
                 throw new ArgumentException(SR.InvalidArgumentOffsetCount);
@@ -332,19 +270,37 @@ namespace System.IO.Compression
         private void EnsureNotDisposed()
         {
             if (_stream == null)
-                throw new ObjectDisposedException(null, SR.ObjectDisposed_StreamClosed);
+                ThrowStreamClosedException();
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void ThrowStreamClosedException()
+        {
+            throw new ObjectDisposedException(null, SR.ObjectDisposed_StreamClosed);
         }
 
         private void EnsureDecompressionMode()
         {
             if (_mode != CompressionMode.Decompress)
-                throw new InvalidOperationException(SR.CannotReadFromDeflateStream);
+                ThrowCannotReadFromDeflateManagedStreamException();
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void ThrowCannotReadFromDeflateManagedStreamException()
+        {
+            throw new InvalidOperationException(SR.CannotReadFromDeflateStream);
         }
 
         private void EnsureCompressionMode()
         {
             if (_mode != CompressionMode.Compress)
-                throw new InvalidOperationException(SR.CannotWriteToDeflateStream);
+                ThrowCannotWriteToDeflateManagedStreamException();
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void ThrowCannotWriteToDeflateManagedStreamException()
+        {
+            throw new InvalidOperationException(SR.CannotWriteToDeflateStream);
         }
 
         public override Task<int> ReadAsync(Byte[] array, int offset, int count, CancellationToken cancellationToken)
@@ -387,7 +343,7 @@ namespace System.IO.Compression
                 readTask = _stream.ReadAsync(_buffer, 0, _buffer.Length, cancellationToken);
                 if (readTask == null)
                 {
-                    throw new InvalidOperationException(SR.NotReadableStream);
+                    throw new InvalidOperationException(SR.NotSupported_UnreadableStream);
                 }
 
                 return ReadAsyncCore(readTask, array, offset, count, cancellationToken);
@@ -436,7 +392,7 @@ namespace System.IO.Compression
                         readTask = _stream.ReadAsync(_buffer, 0, _buffer.Length, cancellationToken);
                         if (readTask == null)
                         {
-                            throw new InvalidOperationException(SR.NotReadableStream);
+                            throw new InvalidOperationException(SR.NotSupported_UnreadableStream);
                         }
                     }
                     else
@@ -453,14 +409,10 @@ namespace System.IO.Compression
 
         public override void Write(byte[] array, int offset, int count)
         {
+            // Validate the state and the parameters
             EnsureCompressionMode();
             ValidateParameters(array, offset, count);
             EnsureNotDisposed();
-            InternalWrite(array, offset, count);
-        }
-
-        internal void InternalWrite(byte[] array, int offset, int count)
-        {
             DoMaintenance(array, offset, count);
 
             // Write compressed the bytes we already passed to the deflater:
@@ -480,16 +432,10 @@ namespace System.IO.Compression
             {
                 int compressedBytes = _deflater.GetDeflateOutput(_buffer);
                 if (compressedBytes > 0)
-                    DoWrite(_buffer, 0, compressedBytes);
+                {
+                    _stream.Write(_buffer, 0, compressedBytes);
+                }
             }
-        }
-
-        private void DoWrite(byte[] array, int offset, int count)
-        {
-            Debug.Assert(array != null);
-            Debug.Assert(count != 0);
-
-            _stream.Write(array, offset, count);
         }
 
         // Perform deflate-mode maintenance required due to custom header and footer writers
@@ -535,12 +481,12 @@ namespace System.IO.Compression
 
             // Some deflaters (e.g. ZLib) write more than zero bytes for zero byte inputs.
             // This round-trips and we should be ok with this, but our legacy managed deflater
-            // always wrote zero output for zero input and upstack code (e.g. GZipStream)
+            // always wrote zero output for zero input and upstack code (e.g. ZipArchiveEntry)
             // took dependencies on it. Thus, make sure to only "flush" when we actually had
             // some input:
             if (_wroteBytes)
             {
-                // Compress any bytes left:                        
+                // Compress any bytes left
                 WriteDeflaterOutput();
 
                 // Pull out any bytes left inside deflater:
@@ -551,7 +497,7 @@ namespace System.IO.Compression
                     finished = _deflater.Finish(_buffer, out compressedBytes);
 
                     if (compressedBytes > 0)
-                        DoWrite(_buffer, 0, compressedBytes);
+                        _stream.Write(_buffer, 0, compressedBytes);
                 } while (!finished);
             }
             else
@@ -610,9 +556,9 @@ namespace System.IO.Compression
                         _inflater = null;
                         base.Dispose(disposing);
                     }
-                }  // finally
-            }  // finally
-        }  // Dispose
+                }
+            }
+        }
 
         public override Task WriteAsync(Byte[] array, int offset, int count, CancellationToken cancellationToken)
         {
@@ -643,7 +589,5 @@ namespace System.IO.Compression
                 Interlocked.Decrement(ref _asyncOperations);
             }
         }
-
-    }  // public class DeflateStream
-}  // namespace System.IO.Compression
-
+    }
+}

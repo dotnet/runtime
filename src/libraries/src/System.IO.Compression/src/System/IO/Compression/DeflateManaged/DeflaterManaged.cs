@@ -1,7 +1,7 @@
-// Copyright (c) Microsoft. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
-//
 
 //
 //  zlib.h -- interface of the 'zlib' general purpose compression library
@@ -35,11 +35,11 @@ using System.Diagnostics.Contracts;
 
 namespace System.IO.Compression
 {
-    internal class DeflaterManaged : IDeflater
+    internal class DeflaterManaged : IDisposable
     {
         private const int MinBlockSize = 256;
         private const int MaxHeaderFooterGoo = 120;
-        private const int CleanCopySize = DeflateStream.DefaultBufferSize - MaxHeaderFooterGoo;
+        private const int CleanCopySize = DeflateManagedStream.DefaultBufferSize - MaxHeaderFooterGoo;
         private const double BadCompressionThreshold = 1.0;
 
         private FastEncoder _deflateEncoder;
@@ -60,20 +60,14 @@ namespace System.IO.Compression
             _processingState = DeflaterState.NotStarted;
         }
 
-        private bool NeedsInput()
-        {
-            // Convenience method to call NeedsInput privately without a cast.
-            return ((IDeflater)this).NeedsInput();
-        }
-
-        bool IDeflater.NeedsInput()
+        internal bool NeedsInput()
         {
             return _input.Count == 0 && _deflateEncoder.BytesInHistory == 0;
         }
 
         // Sets the input to compress. The only buffer copy occurs when the input is copied
         // to the FastEncoderWindow
-        void IDeflater.SetInput(byte[] inputBuffer, int startIndex, int count)
+        internal void SetInput(byte[] inputBuffer, int startIndex, int count)
         {
             Debug.Assert(_input.Count == 0, "We have something left in previous input!");
 
@@ -101,7 +95,7 @@ namespace System.IO.Compression
             }
         }
 
-        int IDeflater.GetDeflateOutput(byte[] outputBuffer)
+        internal int GetDeflateOutput(byte[] outputBuffer)
         {
             Debug.Assert(outputBuffer != null, "Can't pass in a null output buffer!");
             Debug.Assert(!NeedsInput(), "GetDeflateOutput should only be called after providing input");
@@ -224,7 +218,7 @@ namespace System.IO.Compression
             return _output.BytesWritten;
         }
 
-        bool IDeflater.Finish(byte[] outputBuffer, out int bytesRead)
+        internal bool Finish(byte[] outputBuffer, out int bytesRead)
         {
             Debug.Assert(outputBuffer != null, "Can't pass in a null output buffer!");
             Debug.Assert(_processingState == DeflaterState.NotStarted ||
@@ -259,9 +253,6 @@ namespace System.IO.Compression
             return true;
         }
 
-        void IDisposable.Dispose() { }
-        protected void Dispose(bool disposing) { }
-
         // Is compression ratio under threshold?
         private bool UseCompressed(double ratio)
         {
@@ -288,7 +279,7 @@ namespace System.IO.Compression
         // small buffers, they won't get the "don't increase size" improvements.
         //
         // An earlier iteration of this fix handled that data separately by buffering this data until it 
-        // reached a reasonable size, but given that Flush is not implemented on DeflateStream, this meant
+        // reached a reasonable size, but given that Flush is not implemented on DeflateManagedStream, this meant
         // data could be flushed only on Dispose. In the future, it would be reasonable to revisit this, in
         // case this isn't breaking.
         //
@@ -315,5 +306,9 @@ namespace System.IO.Compression
             CheckingForIncompressible,
             HandlingSmallData
         }
+
+        internal void Dispose() { }
+        internal void Dispose(bool disposing) { }
+        void IDisposable.Dispose() { }
     }  // internal class DeflaterManaged
 }  // namespace System.IO.Compression
