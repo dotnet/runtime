@@ -368,8 +368,8 @@ if [ -d "$mscorlibDir" ] && [ -d "$mscorlibDir/bin" ]; then
 fi
 
 # Install xunit performance packages
-export NUGET_PACKAGE=$testNativeBinDir/../../../../packages
-echo "NUGET_PACKAGE = $NUGET_PACKAGE"
+export NUGET_PACKAGES=$testNativeBinDir/../../../../packages
+echo "NUGET_PACKAGES = $NUGET_PACKAGE"
 
 echo "dir $testNativeBinDir/../../../../Tools"
 dir $testNativeBinDir/../../../../Tools
