@@ -624,7 +624,7 @@ namespace System.Tests
             Assert.Throws<ArgumentOutOfRangeException>("indexB", () => string.CompareOrdinal("a", 0, "bb", 3, 0)); // IndexB > strB.Length
 
             // Length < 0
-            Assert.Throws<ArgumentOutOfRangeException>("count", () => string.CompareOrdinal("a", 0, "bb", 0, -1));
+            Assert.Throws<ArgumentOutOfRangeException>("length", () => string.CompareOrdinal("a", 0, "bb", 0, -1));
         }
 
         [Theory]
