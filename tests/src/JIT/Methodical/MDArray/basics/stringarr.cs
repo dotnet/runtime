@@ -165,15 +165,17 @@ public class string1
             m++;
         }
 
+        pass = true;
         for (int i = 0; i < size; i++)
         {
-            pass = true;
             for (int j = 0; j < size; j++)
+            {
                 if (ima2d[i, j] != refa2d[i][j])
                 {
                     Console.WriteLine("i={0}, j={1}, imr[i,j] {2}!=refr[i][j] {3}", i, j, ima2d[i, j], refa2d[i][j]);
                     pass = false;
                 }
+            }
         }
 
         if (pass)
@@ -214,15 +216,17 @@ public class string1
             m++;
         }
 
+        pass = true;
         for (int i = 0; i < size; i++)
         {
-            pass = true;
             for (int j = 0; j < size; j++)
+            {
                 if (ima3d[i, size, j] != refa3d[i][j])
                 {
                     Console.WriteLine("i={0}, j={1}, imr[i,{4},j] {2}!=refr[i][j] {3}", i, j, ima3d[i, size, j], refa3d[i][j], size);
                     pass = false;
                 }
+            }
         }
 
         if (pass)
