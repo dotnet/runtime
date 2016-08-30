@@ -1138,10 +1138,7 @@ major_get_and_reset_num_major_objects_marked (void)
 
 /* gcc 4.2.1 from xcode4 crashes on sgen_card_table_get_card_address () when this is enabled */
 #if defined(PLATFORM_MACOSX)
-#define GCC_VERSION (__GNUC__ * 10000 \
-                               + __GNUC_MINOR__ * 100 \
-                               + __GNUC_PATCHLEVEL__)
-#if GCC_VERSION <= 40300
+#if MONO_GNUC_VERSION <= 40300
 #undef PREFETCH_CARDS
 #endif
 #endif

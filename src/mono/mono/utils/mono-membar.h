@@ -60,21 +60,6 @@ static inline void mono_memory_write_barrier (void)
 {
 	mono_memory_barrier ();
 }
-#elif defined(__ia64__)
-static inline void mono_memory_barrier (void)
-{
-	__asm__ __volatile__ ("mf" : : : "memory");
-}
-
-static inline void mono_memory_read_barrier (void)
-{
-	mono_memory_barrier ();
-}
-
-static inline void mono_memory_write_barrier (void)
-{
-	mono_memory_barrier ();
-}
 #else
 #error "Don't know how to do memory barriers!"
 #endif

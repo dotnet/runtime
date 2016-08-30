@@ -14,6 +14,7 @@
 
 #include "config.h"
 #include <glib.h>
+#include <mono/utils/mono-membar.h>
 
 /*
 The current Nexus 7 arm-v7a fails with:
@@ -29,7 +30,6 @@ Apple targets have historically being problematic, xcode 4.6 would miscompile th
 #define WIN32_LEAN_AND_MEAN
 #endif
 #include <windows.h>
-#include <mono/utils/mono-membar.h>
 
 /* mingw is missing InterlockedCompareExchange64 () from winbase.h */
 #if HAVE_DECL_INTERLOCKEDCOMPAREEXCHANGE64==0
@@ -180,30 +180,63 @@ static inline void InterlockedWrite16(volatile gint16 *dst, gint16 val)
 /* Prefer GCC atomic ops if the target supports it (see configure.ac). */
 #elif defined(USE_GCC_ATOMIC_OPS)
 
+/*
+ * As of this comment (August 2016), all current Clang versions get atomic
+ * intrinsics on ARM64 wrong. All GCC versions prior to 5.3.0 do, too. The bug
+ * is the same: The compiler developers thought that the acq + rel barriers
+ * that ARM64 load/store instructions can impose are sufficient to provide
+ * sequential consistency semantics. This is not the case:
+ *
+ *     http://lists.infradead.org/pipermail/linux-arm-kernel/2014-February/229588.html
+ *
+ * We work around this bug by inserting full barriers around each atomic
+ * intrinsic if we detect that we're built with a buggy compiler.
+ */
+
+#if defined (HOST_ARM64) && (defined (__clang__) || MONO_GNUC_VERSION < 50300)
+#define WRAP_ATOMIC_INTRINSIC(INTRIN) \
+	({ \
+		mono_memory_barrier (); \
+		__typeof__ (INTRIN) atomic_ret__ = (INTRIN); \
+		mono_memory_barrier (); \
+		atomic_ret__; \
+	})
+
+#define gcc_sync_val_compare_and_swap(a, b, c) WRAP_ATOMIC_INTRINSIC (__sync_val_compare_and_swap (a, b, c))
+#define gcc_sync_add_and_fetch(a, b) WRAP_ATOMIC_INTRINSIC (__sync_add_and_fetch (a, b))
+#define gcc_sync_sub_and_fetch(a, b) WRAP_ATOMIC_INTRINSIC (__sync_sub_and_fetch (a, b))
+#define gcc_sync_fetch_and_add(a, b) WRAP_ATOMIC_INTRINSIC (__sync_fetch_and_add (a, b))
+#else
+#define gcc_sync_val_compare_and_swap(a, b, c) __sync_val_compare_and_swap (a, b, c)
+#define gcc_sync_add_and_fetch(a, b) __sync_add_and_fetch (a, b)
+#define gcc_sync_sub_and_fetch(a, b) __sync_sub_and_fetch (a, b)
+#define gcc_sync_fetch_and_add(a, b) __sync_fetch_and_add (a, b)
+#endif
+
 static inline gint32 InterlockedCompareExchange(volatile gint32 *dest,
 						gint32 exch, gint32 comp)
 {
-	return __sync_val_compare_and_swap (dest, comp, exch);
+	return gcc_sync_val_compare_and_swap (dest, comp, exch);
 }
 
 static inline gpointer InterlockedCompareExchangePointer(volatile gpointer *dest, gpointer exch, gpointer comp)
 {
-	return __sync_val_compare_and_swap (dest, comp, exch);
+	return gcc_sync_val_compare_and_swap (dest, comp, exch);
 }
 
 static inline gint32 InterlockedAdd(volatile gint32 *dest, gint32 add)
 {
-	return __sync_add_and_fetch (dest, add);
+	return gcc_sync_add_and_fetch (dest, add);
 }
 
 static inline gint32 InterlockedIncrement(volatile gint32 *val)
 {
-	return __sync_add_and_fetch (val, 1);
+	return gcc_sync_add_and_fetch (val, 1);
 }
 
 static inline gint32 InterlockedDecrement(volatile gint32 *val)
 {
-	return __sync_sub_and_fetch (val, 1);
+	return gcc_sync_sub_and_fetch (val, 1);
 }
 
 static inline gint32 InterlockedExchange(volatile gint32 *val, gint32 new_val)
@@ -211,7 +244,7 @@ static inline gint32 InterlockedExchange(volatile gint32 *val, gint32 new_val)
 	gint32 old_val;
 	do {
 		old_val = *val;
-	} while (__sync_val_compare_and_swap (val, old_val, new_val) != old_val);
+	} while (gcc_sync_val_compare_and_swap (val, old_val, new_val) != old_val);
 	return old_val;
 }
 
@@ -221,30 +254,30 @@ static inline gpointer InterlockedExchangePointer(volatile gpointer *val,
 	gpointer old_val;
 	do {
 		old_val = *val;
-	} while (__sync_val_compare_and_swap (val, old_val, new_val) != old_val);
+	} while (gcc_sync_val_compare_and_swap (val, old_val, new_val) != old_val);
 	return old_val;
 }
 
 static inline gint32 InterlockedExchangeAdd(volatile gint32 *val, gint32 add)
 {
-	return __sync_fetch_and_add (val, add);
+	return gcc_sync_fetch_and_add (val, add);
 }
 
 static inline gint8 InterlockedRead8(volatile gint8 *src)
 {
 	/* Kind of a hack, but GCC doesn't give us anything better, and it's
 	 * certainly not as bad as using a CAS loop. */
-	return __sync_fetch_and_add (src, 0);
+	return gcc_sync_fetch_and_add (src, 0);
 }
 
 static inline gint16 InterlockedRead16(volatile gint16 *src)
 {
-	return __sync_fetch_and_add (src, 0);
+	return gcc_sync_fetch_and_add (src, 0);
 }
 
 static inline gint32 InterlockedRead(volatile gint32 *src)
 {
-	return __sync_fetch_and_add (src, 0);
+	return gcc_sync_fetch_and_add (src, 0);
 }
 
 static inline void InterlockedWrite8(volatile gint8 *dst, gint8 val)
@@ -253,7 +286,7 @@ static inline void InterlockedWrite8(volatile gint8 *dst, gint8 val)
 	gint8 old_val;
 	do {
 		old_val = *dst;
-	} while (__sync_val_compare_and_swap (dst, old_val, val) != old_val);
+	} while (gcc_sync_val_compare_and_swap (dst, old_val, val) != old_val);
 }
 
 static inline void InterlockedWrite16(volatile gint16 *dst, gint16 val)
@@ -261,7 +294,7 @@ static inline void InterlockedWrite16(volatile gint16 *dst, gint16 val)
 	gint16 old_val;
 	do {
 		old_val = *dst;
-	} while (__sync_val_compare_and_swap (dst, old_val, val) != old_val);
+	} while (gcc_sync_val_compare_and_swap (dst, old_val, val) != old_val);
 }
 
 static inline void InterlockedWrite(volatile gint32 *dst, gint32 val)
@@ -270,7 +303,7 @@ static inline void InterlockedWrite(volatile gint32 *dst, gint32 val)
 	gint32 old_val;
 	do {
 		old_val = *dst;
-	} while (__sync_val_compare_and_swap (dst, old_val, val) != old_val);
+	} while (gcc_sync_val_compare_and_swap (dst, old_val, val) != old_val);
 }
 
 #if defined (TARGET_OSX) || defined (__arm__) || (defined (__mips__) && !defined (__mips64)) || (defined (__powerpc__) && !defined (__powerpc64__)) || (defined (__sparc__) && !defined (__arch64__))
@@ -281,33 +314,33 @@ static inline void InterlockedWrite(volatile gint32 *dst, gint32 val)
 
 static inline gint64 InterlockedCompareExchange64(volatile gint64 *dest, gint64 exch, gint64 comp)
 {
-	return __sync_val_compare_and_swap (dest, comp, exch);
+	return gcc_sync_val_compare_and_swap (dest, comp, exch);
 }
 
 static inline gint64 InterlockedAdd64(volatile gint64 *dest, gint64 add)
 {
-	return __sync_add_and_fetch (dest, add);
+	return gcc_sync_add_and_fetch (dest, add);
 }
 
 static inline gint64 InterlockedIncrement64(volatile gint64 *val)
 {
-	return __sync_add_and_fetch (val, 1);
+	return gcc_sync_add_and_fetch (val, 1);
 }
 
 static inline gint64 InterlockedDecrement64(volatile gint64 *val)
 {
-	return __sync_sub_and_fetch (val, 1);
+	return gcc_sync_sub_and_fetch (val, 1);
 }
 
 static inline gint64 InterlockedExchangeAdd64(volatile gint64 *val, gint64 add)
 {
-	return __sync_fetch_and_add (val, add);
+	return gcc_sync_fetch_and_add (val, add);
 }
 
 static inline gint64 InterlockedRead64(volatile gint64 *src)
 {
 	/* Kind of a hack, but GCC doesn't give us anything better. */
-	return __sync_fetch_and_add (src, 0);
+	return gcc_sync_fetch_and_add (src, 0);
 }
 
 #else
@@ -391,122 +424,6 @@ static inline void InterlockedWrite64(volatile gint64 *dst, gint64 val)
 {
 	/* Nothing useful from GCC at all, so fall back to CAS. */
 	InterlockedExchange64 (dst, val);
-}
-
-#elif defined(__ia64__)
-
-#ifdef __INTEL_COMPILER
-#include <ia64intrin.h>
-#endif
-
-static inline gint32 InterlockedCompareExchange(gint32 volatile *dest,
-						gint32 exch, gint32 comp)
-{
-	gint32 old;
-	guint64 real_comp;
-
-#ifdef __INTEL_COMPILER
-	old = _InterlockedCompareExchange (dest, exch, comp);
-#else
-	/* cmpxchg4 zero extends the value read from memory */
-	real_comp = (guint64)(guint32)comp;
-	asm volatile ("mov ar.ccv = %2 ;;\n\t"
-				  "cmpxchg4.acq %0 = [%1], %3, ar.ccv\n\t"
-				  : "=r" (old) : "r" (dest), "r" (real_comp), "r" (exch));
-#endif
-
-	return(old);
-}
-
-static inline gpointer InterlockedCompareExchangePointer(gpointer volatile *dest,
-						gpointer exch, gpointer comp)
-{
-	gpointer old;
-
-#ifdef __INTEL_COMPILER
-	old = _InterlockedCompareExchangePointer (dest, exch, comp);
-#else
-	asm volatile ("mov ar.ccv = %2 ;;\n\t"
-				  "cmpxchg8.acq %0 = [%1], %3, ar.ccv\n\t"
-				  : "=r" (old) : "r" (dest), "r" (comp), "r" (exch));
-#endif
-
-	return(old);
-}
-
-static inline gint32 InterlockedIncrement(gint32 volatile *val)
-{
-#ifdef __INTEL_COMPILER
-	return _InterlockedIncrement (val);
-#else
-	gint32 old;
-
-	do {
-		old = *val;
-	} while (InterlockedCompareExchange (val, old + 1, old) != old);
-
-	return old + 1;
-#endif
-}
-
-static inline gint32 InterlockedDecrement(gint32 volatile *val)
-{
-#ifdef __INTEL_COMPILER
-	return _InterlockedDecrement (val);
-#else
-	gint32 old;
-
-	do {
-		old = *val;
-	} while (InterlockedCompareExchange (val, old - 1, old) != old);
-
-	return old - 1;
-#endif
-}
-
-static inline gint32 InterlockedExchange(gint32 volatile *dest, gint32 new_val)
-{
-#ifdef __INTEL_COMPILER
-	return _InterlockedExchange (dest, new_val);
-#else
-	gint32 res;
-
-	do {
-		res = *dest;
-	} while (InterlockedCompareExchange (dest, new_val, res) != res);
-
-	return res;
-#endif
-}
-
-static inline gpointer InterlockedExchangePointer(gpointer volatile *dest, gpointer new_val)
-{
-#ifdef __INTEL_COMPILER
-	return (gpointer)_InterlockedExchange64 ((gint64*)dest, (gint64)new_val);
-#else
-	gpointer res;
-
-	do {
-		res = *dest;
-	} while (InterlockedCompareExchangePointer (dest, new_val, res) != res);
-
-	return res;
-#endif
-}
-
-static inline gint32 InterlockedExchangeAdd(gint32 volatile *val, gint32 add)
-{
-	gint32 old;
-
-#ifdef __INTEL_COMPILER
-	old = _InterlockedExchangeAdd (val, add);
-#else
-	do {
-		old = *val;
-	} while (InterlockedCompareExchange (val, old + add, old) != old);
-
-	return old;
-#endif
 }
 
 #else
