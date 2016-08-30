@@ -6388,6 +6388,16 @@ GenTreeArgList* Compiler::gtNewArgList(GenTreePtr arg1, GenTreePtr arg2)
 
 /*****************************************************************************
  *
+ *  Create a list out of the three values.
+ */
+
+GenTreeArgList* Compiler::gtNewArgList(GenTreePtr arg1, GenTreePtr arg2, GenTreePtr arg3)
+{
+    return new (this, GT_LIST) GenTreeArgList(arg1, gtNewArgList(arg2, arg3));
+}
+
+/*****************************************************************************
+ *
  *  Given a GT_CALL node, access the fgArgInfo and find the entry
  *  that has the matching argNum and return the fgArgTableEntryPtr
  */

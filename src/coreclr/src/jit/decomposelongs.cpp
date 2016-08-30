@@ -223,7 +223,7 @@ GenTree* DecomposeLongs::DecomposeNode(LIR::Use& use)
         case GT_LSH:
         case GT_RSH:
         case GT_RSZ:
-            NYI("Arithmetic binary operators on TYP_LONG - SHIFT");
+            nextNode = DecomposeShift(use);
             break;
 
         case GT_ROL:
@@ -847,6 +847,86 @@ GenTree* DecomposeLongs::DecomposeArith(LIR::Use& use)
     }
 
     return FinalizeDecomposition(use, loResult, hiResult);
+}
+
+//------------------------------------------------------------------------
+// DecomposeShift: Decompose GT_LSH, GT_RSH, GT_RSZ. For shift nodes, we need to use
+// the shift helper functions, so we here convert the shift into a helper call by
+// pulling its arguments out of linear order and making them the args to a call, then
+// replacing the original node with the new call.
+//
+// Arguments:
+//    use - the LIR::Use object for the def that needs to be decomposed.
+//
+// Return Value:
+//    The next node to process.
+//
+GenTree* DecomposeLongs::DecomposeShift(LIR::Use& use)
+{
+    assert(use.IsInitialized());
+
+    GenTree* tree   = use.Def();
+    GenTree* gtLong = tree->gtGetOp1();
+    genTreeOps oper = tree->OperGet();
+
+    assert((oper == GT_LSH) || (oper == GT_RSH) || (oper == GT_RSZ));
+
+    unsigned blockWeight = m_block->getBBWeight(m_compiler);
+
+    LIR::Use loOp1Use(BlockRange(), &gtLong->gtOp.gtOp1, gtLong);
+    loOp1Use.ReplaceWithLclVar(m_compiler, blockWeight);
+
+    LIR::Use hiOp1Use(BlockRange(), &gtLong->gtOp.gtOp2, gtLong);
+    hiOp1Use.ReplaceWithLclVar(m_compiler, blockWeight);
+
+    LIR::Use shiftWidthUse(BlockRange(), &tree->gtOp.gtOp2, tree);
+    shiftWidthUse.ReplaceWithLclVar(m_compiler, blockWeight);
+
+    GenTree* loOp1 = gtLong->gtGetOp1();
+    GenTree* hiOp1 = gtLong->gtGetOp2();
+
+    GenTree* shiftWidthOp = tree->gtGetOp2();
+
+    BlockRange().Remove(gtLong);
+    BlockRange().Remove(loOp1);
+    BlockRange().Remove(hiOp1);
+
+    BlockRange().Remove(shiftWidthOp);
+
+    // TODO-X86-CQ: If the shift operand is a GT_CNS_INT, we should pipe the instructions through to codegen
+    // and generate the shift instructions ourselves there, rather than replacing it with a helper call.
+
+    unsigned helper;
+
+    switch (oper)
+    {
+        case GT_LSH:
+            helper = CORINFO_HELP_LLSH;
+            break;
+        case GT_RSH:
+            helper = CORINFO_HELP_LRSH;
+            break;
+        case GT_RSZ:
+            helper = CORINFO_HELP_LRSZ;
+            break;
+        default:
+            unreached();
+    }
+
+    GenTreeArgList* argList = m_compiler->gtNewArgList(loOp1, hiOp1, shiftWidthOp);
+
+    GenTree* call = m_compiler->gtNewHelperCallNode(helper, TYP_LONG, 0, argList);
+
+    GenTreeCall*    callNode    = call->AsCall();
+    ReturnTypeDesc* retTypeDesc = callNode->GetReturnTypeDesc();
+    retTypeDesc->InitializeLongReturnType(m_compiler);
+
+    call = m_compiler->fgMorphArgs(callNode);
+    BlockRange().InsertAfter(tree, LIR::SeqTree(m_compiler, call));
+    
+    BlockRange().Remove(tree);
+    use.ReplaceWith(m_compiler, call);
+    return call;
 }
 
 //------------------------------------------------------------------------
