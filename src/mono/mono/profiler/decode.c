@@ -2400,6 +2400,21 @@ decode_buffer (ProfContext *ctx)
 					fprintf (outfile, "handle (%s) %u destroyed\n", get_handle_name (htype), handle);
 				if (frames != sframes)
 					free (frames);
+			} else if (subtype == TYPE_GC_FINALIZE_START) {
+				// TODO: Generate a finalizer report based on these events.
+				if (debug)
+					fprintf (outfile, "gc finalizer queue being processed at %llu\n", (unsigned long long) time_base);
+			} else if (subtype == TYPE_GC_FINALIZE_END) {
+				if (debug)
+					fprintf (outfile, "gc finalizer queue finished processing at %llu\n", (unsigned long long) time_base);
+			} else if (subtype == TYPE_GC_FINALIZE_OBJECT_START) {
+				intptr_t objdiff = decode_sleb128 (p, &p);
+				if (debug)
+					fprintf (outfile, "gc finalizing object %p at %llu\n", (void *) OBJ_ADDR (objdiff), (unsigned long long) time_base);
+			} else if (subtype == TYPE_GC_FINALIZE_OBJECT_END) {
+				intptr_t objdiff = decode_sleb128 (p, &p);
+				if (debug)
+					fprintf (outfile, "gc finalized object %p at %llu\n", (void *) OBJ_ADDR (objdiff), (unsigned long long) time_base);
 			}
 			break;
 		}

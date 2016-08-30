@@ -231,7 +231,8 @@ static MonoLinkedListSet profiler_thread_list;
  * type GC format:
  * type: TYPE_GC
  * exinfo: one of TYPE_GC_EVENT, TYPE_GC_RESIZE, TYPE_GC_MOVE, TYPE_GC_HANDLE_CREATED[_BT],
- * TYPE_GC_HANDLE_DESTROYED[_BT]
+ * TYPE_GC_HANDLE_DESTROYED[_BT], TYPE_GC_FINALIZE_START, TYPE_GC_FINALIZE_END,
+ * TYPE_GC_FINALIZE_OBJECT_START, TYPE_GC_FINALIZE_OBJECT_END
  * [time diff: uleb128] nanoseconds since last timing
  * if exinfo == TYPE_GC_RESIZE
  *	[heap_size: uleb128] new heap size
@@ -254,6 +255,8 @@ static MonoLinkedListSet profiler_thread_list;
  *	upper bits reserved as flags
  *	[handle: uleb128] GC handle value
  * 	If exinfo == TYPE_GC_HANDLE_DESTROYED_BT, a backtrace follows.
+ * if exinfo == TYPE_GC_FINALIZE_OBJECT_{START,END}
+ * 	[object: sleb128] the object as a difference from obj_base
  *
  * type metadata format:
  * type: TYPE_METADATA
@@ -1613,6 +1616,74 @@ gc_handle (MonoProfiler *prof, int op, int type, uintptr_t handle, MonoObject *o
 
 	if (do_bt)
 		emit_bt (prof, logbuffer, &data);
+
+	EXIT_LOG;
+
+	process_requests (prof);
+}
+
+static void
+finalize_begin (MonoProfiler *prof)
+{
+	ENTER_LOG;
+
+	LogBuffer *buf = ensure_logbuf (
+		EVENT_SIZE /* event */
+	);
+
+	emit_event (buf, TYPE_GC_FINALIZE_START | TYPE_GC);
+
+	EXIT_LOG;
+
+	process_requests (prof);
+}
+
+static void
+finalize_end (MonoProfiler *prof)
+{
+	ENTER_LOG;
+
+	LogBuffer *buf = ensure_logbuf (
+		EVENT_SIZE /* event */
+	);
+
+	emit_event (buf, TYPE_GC_FINALIZE_END | TYPE_GC);
+
+	EXIT_LOG;
+
+	process_requests (prof);
+}
+
+static void
+finalize_object_begin (MonoProfiler *prof, MonoObject *obj)
+{
+	ENTER_LOG;
+
+	LogBuffer *buf = ensure_logbuf (
+		EVENT_SIZE /* event */ +
+		LEB128_SIZE /* obj */
+	);
+
+	emit_event (buf, TYPE_GC_FINALIZE_OBJECT_START | TYPE_GC);
+	emit_obj (buf, obj);
+
+	EXIT_LOG;
+
+	process_requests (prof);
+}
+
+static void
+finalize_object_end (MonoProfiler *prof, MonoObject *obj)
+{
+	ENTER_LOG;
+
+	LogBuffer *buf = ensure_logbuf (
+		EVENT_SIZE /* event */ +
+		LEB128_SIZE /* obj */
+	);
+
+	emit_event (buf, TYPE_GC_FINALIZE_OBJECT_END | TYPE_GC);
+	emit_obj (buf, obj);
 
 	EXIT_LOG;
 
@@ -5046,7 +5117,7 @@ mono_profiler_startup (const char *desc)
 		MONO_PROFILE_ENTER_LEAVE|MONO_PROFILE_JIT_COMPILATION|MONO_PROFILE_EXCEPTIONS|
 		MONO_PROFILE_MONITOR_EVENTS|MONO_PROFILE_MODULE_EVENTS|MONO_PROFILE_GC_ROOTS|
 		MONO_PROFILE_INS_COVERAGE|MONO_PROFILE_APPDOMAIN_EVENTS|MONO_PROFILE_CONTEXT_EVENTS|
-		MONO_PROFILE_ASSEMBLY_EVENTS;
+		MONO_PROFILE_ASSEMBLY_EVENTS|MONO_PROFILE_GC_FINALIZATION;
 
 	max_allocated_sample_hits = mono_cpu_count () * 1000;
 
@@ -5250,6 +5321,7 @@ mono_profiler_startup (const char *desc)
 	mono_profiler_install_allocation (gc_alloc);
 	mono_profiler_install_gc_moves (gc_moves);
 	mono_profiler_install_gc_roots (gc_handle, gc_roots);
+	mono_profiler_install_gc_finalize (finalize_begin, finalize_object_begin, finalize_object_end, finalize_end);
 	mono_profiler_install_appdomain (NULL, domain_loaded, domain_unloaded, NULL);
 	mono_profiler_install_appdomain_name (domain_name);
 	mono_profiler_install_context (context_loaded, context_unloaded);

@@ -52,6 +52,7 @@
                    TYPE_COVERAGE_ASSEMBLY
                moved the time field in TYPE_SAMPLE_HIT to right after the event byte, now encoded as a regular time field
                changed the time field in TYPE_SAMPLE_COUNTERS to be encoded as a regular time field (in nanoseconds)
+               added TYPE_GC_FINALIZE_{START,END,OBJECT_START,OBJECT_END}
  */
 
 enum {
@@ -89,6 +90,10 @@ enum {
 	TYPE_GC_HANDLE_DESTROYED    = 5 << 4,
 	TYPE_GC_HANDLE_CREATED_BT   = 6 << 4,
 	TYPE_GC_HANDLE_DESTROYED_BT = 7 << 4,
+	TYPE_GC_FINALIZE_START = 8 << 4,
+	TYPE_GC_FINALIZE_END = 9 << 4,
+	TYPE_GC_FINALIZE_OBJECT_START = 10 << 4,
+	TYPE_GC_FINALIZE_OBJECT_END = 11 << 4,
 	/* extended type for TYPE_METHOD */
 	TYPE_LEAVE     = 1 << 4,
 	TYPE_ENTER     = 2 << 4,
