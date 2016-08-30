@@ -41,6 +41,17 @@
                    TYPE_CLAUSE: clause_type
                    TYPE_SAMPLE_COUNTERS_DESC: type, unit, variance
                    TYPE_SAMPLE_COUNTERS: type
+               added time fields to all events that were missing one
+                   TYPE_HEAP_OBJECT
+                   TYPE_HEAP_ROOT
+                   TYPE_SAMPLE_USYM
+                   TYPE_SAMPLE_COUNTERS_DESC
+                   TYPE_COVERAGE_METHOD
+                   TYPE_COVERAGE_STATEMENT
+                   TYPE_COVERAGE_CLASS
+                   TYPE_COVERAGE_ASSEMBLY
+               moved the time field in TYPE_SAMPLE_HIT to right after the event byte, now encoded as a regular time field
+               changed the time field in TYPE_SAMPLE_COUNTERS to be encoded as a regular time field (in nanoseconds)
  */
 
 enum {

@@ -2569,7 +2569,14 @@ decode_buffer (ProfContext *ctx)
 			if (subtype == TYPE_HEAP_OBJECT) {
 				HeapObjectDesc *ho = NULL;
 				int i;
-				intptr_t objdiff = decode_sleb128 (p + 1, &p);
+				intptr_t objdiff;
+				if (ctx->data_version > 12) {
+					uint64_t tdiff = decode_uleb128 (p + 1, &p);
+					LOG_TIME (time_base, tdiff);
+					time_base += tdiff;
+					objdiff = decode_sleb128 (p, &p);
+				} else
+					objdiff = decode_sleb128 (p + 1, &p);
 				intptr_t ptrdiff = decode_sleb128 (p, &p);
 				uint64_t size = decode_uleb128 (p, &p);
 				uintptr_t num = decode_uleb128 (p, &p);
@@ -2602,7 +2609,14 @@ decode_buffer (ProfContext *ctx)
 				if (debug && size)
 					fprintf (outfile, "traced object %p, size %llu (%s), refs: %zd\n", (void*)OBJ_ADDR (objdiff), (unsigned long long) size, cd->name, num);
 			} else if (subtype == TYPE_HEAP_ROOT) {
-				uintptr_t num = decode_uleb128 (p + 1, &p);
+				uintptr_t num;
+				if (ctx->data_version > 12) {
+					uint64_t tdiff = decode_uleb128 (p + 1, &p);
+					LOG_TIME (time_base, tdiff);
+					time_base += tdiff;
+					num = decode_uleb128 (p, &p);
+				} else
+					num = decode_uleb128 (p + 1, &p);
 				uintptr_t gc_num G_GNUC_UNUSED = decode_uleb128 (p, &p);
 				int i;
 				for (i = 0; i < num; ++i) {
@@ -2806,12 +2820,17 @@ decode_buffer (ProfContext *ctx)
 			if (subtype == TYPE_SAMPLE_HIT) {
 				int i;
 				int sample_type;
+				uint64_t tstamp;
 				if (ctx->data_version > 12) {
-					p++;
+					uint64_t tdiff = decode_uleb128 (p + 1, &p);
+					LOG_TIME (time_base, tdiff);
+					time_base += tdiff;
 					sample_type = *p++;
-				} else
+					tstamp = time_base;
+				} else {
 					sample_type = decode_uleb128 (p + 1, &p);
-				uint64_t tstamp = decode_uleb128 (p, &p);
+					tstamp = decode_uleb128 (p, &p);
+				}
 				void *tid = (void *) thread_id;
 				if (ctx->data_version > 10)
 					tid = (void *) (ptr_base + decode_sleb128 (p, &p));
@@ -2840,7 +2859,14 @@ decode_buffer (ProfContext *ctx)
 				}
 			} else if (subtype == TYPE_SAMPLE_USYM) {
 				/* un unmanaged symbol description */
-				uintptr_t addr = ptr_base + decode_sleb128 (p + 1, &p);
+				uintptr_t addr;
+				if (ctx->data_version > 12) {
+					uint64_t tdiff = decode_uleb128 (p + 1, &p);
+					LOG_TIME (time_base, tdiff);
+					time_base += tdiff;
+					addr = ptr_base + decode_sleb128 (p, &p);
+				} else
+					addr = ptr_base + decode_sleb128 (p + 1, &p);
 				uintptr_t size = decode_uleb128 (p, &p);
 				char *name;
 				name = pstrdup ((char*)p);
@@ -2865,7 +2891,14 @@ decode_buffer (ProfContext *ctx)
 				while (*p) p++;
 				p++;
 			} else if (subtype == TYPE_SAMPLE_COUNTERS_DESC) {
-				uint64_t i, len = decode_uleb128 (p + 1, &p);
+				uint64_t i, len;
+				if (ctx->data_version > 12) {
+					uint64_t tdiff = decode_uleb128 (p + 1, &p);
+					LOG_TIME (time_base, tdiff);
+					time_base += tdiff;
+					len = decode_uleb128 (p, &p);
+				} else
+					len = decode_uleb128 (p + 1, &p);
 				for (i = 0; i < len; i++) {
 					uint64_t type, unit, variance, index;
 					uint64_t section = decode_uleb128 (p, &p);
@@ -2894,7 +2927,14 @@ decode_buffer (ProfContext *ctx)
 				int i;
 				CounterValue *value, *previous = NULL;
 				CounterList *list;
-				uint64_t timestamp = decode_uleb128 (p + 1, &p);
+				uint64_t timestamp; // milliseconds since startup
+				if (ctx->data_version > 12) {
+					uint64_t tdiff = decode_uleb128 (p + 1, &p);
+					LOG_TIME (time_base, tdiff);
+					time_base += tdiff;
+					timestamp = (time_base - startup_time) / 1000 / 1000;
+				} else
+					timestamp = decode_uleb128 (p + 1, &p);
 				uint64_t time_between = timestamp / 1000 * 1000 * 1000 * 1000 + startup_time;
 				while (1) {
 					uint64_t type, index = decode_uleb128 (p, &p);
@@ -2975,6 +3015,13 @@ decode_buffer (ProfContext *ctx)
 				int token, n_offsets, method_id;
 
 				p++;
+
+				if (ctx->data_version > 12) {
+					uint64_t tdiff = decode_uleb128 (p, &p);
+					LOG_TIME (time_base, tdiff);
+					time_base += tdiff;
+				}
+
 				assembly = (const char *)p; while (*p) p++; p++;
 				klass = (const char *)p; while (*p) p++; p++;
 				name = (const char *)p; while (*p) p++; p++;
@@ -3004,6 +3051,13 @@ decode_buffer (ProfContext *ctx)
 				int offset, count, line, column, method_id;
 
 				p++;
+
+				if (ctx->data_version > 12) {
+					uint64_t tdiff = decode_uleb128 (p, &p);
+					LOG_TIME (time_base, tdiff);
+					time_base += tdiff;
+				}
+
 				method_id = decode_uleb128 (p, &p);
 				offset = decode_uleb128 (p, &p);
 				count = decode_uleb128 (p, &p);
@@ -3024,6 +3078,12 @@ decode_buffer (ProfContext *ctx)
 				char *name, *guid, *filename;
 				int number_of_methods, fully_covered, partially_covered;
 				p++;
+
+				if (ctx->data_version > 12) {
+					uint64_t tdiff = decode_uleb128 (p, &p);
+					LOG_TIME (time_base, tdiff);
+					time_base += tdiff;
+				}
 
 				name = (char *)p; while (*p) p++; p++;
 				guid = (char *)p; while (*p) p++; p++;
@@ -3047,6 +3107,12 @@ decode_buffer (ProfContext *ctx)
 				char *assembly_name, *class_name;
 				int number_of_methods, fully_covered, partially_covered;
 				p++;
+
+				if (ctx->data_version > 12) {
+					uint64_t tdiff = decode_uleb128 (p, &p);
+					LOG_TIME (time_base, tdiff);
+					time_base += tdiff;
+				}
 
 				assembly_name = (char *)p; while (*p) p++; p++;
 				class_name = (char *)p; while (*p) p++; p++;
