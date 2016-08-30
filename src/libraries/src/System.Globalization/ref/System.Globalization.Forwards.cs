@@ -13,3 +13,7 @@
 [assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Globalization.TextInfo))]
 [assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Globalization.CultureNotFoundException))]
 [assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Globalization.UnicodeCategory))]
+[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Globalization.CharUnicodeInfo))]
+[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Globalization.RegionInfo))]
+[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Globalization.StringInfo))]
+[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Globalization.TextElementEnumerator))]

@@ -8,9 +8,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\System.Globalization.Calendars.csproj" />
-    <ProjectReference Include="..\..\src\System.Globalization.Calendars.csproj">
-      <TargetGroup>netcore50</TargetGroup>
-    </ProjectReference>
 
     <!-- desktop facade is in the ref package -->
     <ExternalOnTargetFramework Include="net"/>
