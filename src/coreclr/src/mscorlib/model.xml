@@ -7085,10 +7085,8 @@
       <Member Name="Insert(System.Int32,System.String)" />
       <Member Name="Intern(System.String)" />
       <Member Name="IsInterned(System.String)" />
-<!--
       <Member Name="IsNormalized" />
       <Member Name="IsNormalized(System.Text.NormalizationForm)" />
--->
       <Member Name="IsNullOrEmpty(System.String)" />
       <Member Name="IsNullOrWhiteSpace(System.String)" />
       <Member Name="Join(System.String,System.Object[])" />
@@ -7108,10 +7106,8 @@
       <Member Name="LastIndexOfAny(System.Char[])" />
       <Member Name="LastIndexOfAny(System.Char[],System.Int32)" />
       <Member Name="LastIndexOfAny(System.Char[],System.Int32,System.Int32)" />
-<!--
       <Member Name="Normalize" />
       <Member Name="Normalize(System.Text.NormalizationForm)" />
--->
       <Member Name="op_Equality(System.String,System.String)" />
       <Member Name="op_Inequality(System.String,System.String)" />
       <Member Name="PadLeft(System.Int32)" />
@@ -7364,6 +7360,15 @@
       <Member Name="GetHashCode" />
       <Member MemberType="Property" Name="MaxCharCount" />
     </Type>
+    <Type Name="System.Text.EncoderExceptionFallbackBuffer">
+      <Member Name="#ctor" />
+      <Member Name="Fallback(System.Char,System.Char,System.Int32)" />
+      <Member Name="Fallback(System.Char,System.Int32)" />
+      <Member Name="get_Remaining" />
+      <Member Name="GetNextChar" />
+      <Member Name="MovePrevious" />
+      <Member MemberType="Property" Name="Remaining" />
+    </Type>
     <Type Name="System.Text.EncoderFallbackException">
       <Member Name="#ctor" />
       <Member Name="#ctor(System.String)" />
@@ -7458,10 +7463,8 @@
       <Member Name="GetPreamble" />
       <Member Name="GetString(System.Byte[])" />
       <Member Name="GetString(System.Byte[],System.Int32,System.Int32)" />
-<!--
       <Member Name="IsAlwaysNormalized" />
       <Member Name="IsAlwaysNormalized(System.Text.NormalizationForm)" />
-    -->
       <Member Status="ImplRoot" Name="OnDeserialized(System.Runtime.Serialization.StreamingContext)" />
       <Member Status="ImplRoot" Name="OnDeserializing(System.Runtime.Serialization.StreamingContext)" />
       <Member Status="ImplRoot" Name="OnSerializing(System.Runtime.Serialization.StreamingContext)" />
@@ -7487,6 +7490,24 @@
       <Member MemberType="Property" Name="UTF7" />
       <Member MemberType="Property" Name="UTF8" />
       <Member MemberType="Property" Name="WebName" />
+    </Type>
+    <Type Name="System.Text.EncodingInfo">
+      <Member Name="Equals(System.Object)" />
+      <Member Name="get_CodePage" />
+      <Member Name="get_DisplayName" />
+      <Member Name="get_Name" />
+      <Member Name="GetEncoding" />
+      <Member Name="GetHashCode" />
+      <Member MemberType="Property" Name="CodePage" />
+      <Member MemberType="Property" Name="DisplayName" />
+      <Member MemberType="Property" Name="Name" />
+    </Type>
+    <Type Name="System.Text.NormalizationForm">
+      <Member MemberType="Field" Name="FormC" />
+      <Member MemberType="Field" Name="FormD" />
+      <Member MemberType="Field" Name="FormKC" />
+      <Member MemberType="Field" Name="FormKD" />
+      <Member MemberType="Field" Name="value__" />
     </Type>
     <Type Name="System.Text.StringBuilder">
       <Member Name="#ctor" />
@@ -7571,6 +7592,7 @@
       <Member Status="ImplRoot" Name="ReplaceBufferAnsiInternal(System.SByte*,System.Int32)" /> <!-- EE - il stubs -->
     </Type>
     <Type Name="System.Text.UnicodeEncoding">
+      <Member MemberType="Field" Name="CharSize" />
       <Member Name="#ctor" />
       <Member Name="#ctor(System.Boolean,System.Boolean)" />
       <Member Name="#ctor(System.Boolean,System.Boolean,System.Boolean)" />

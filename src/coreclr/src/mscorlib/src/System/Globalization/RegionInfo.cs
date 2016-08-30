@@ -458,7 +458,6 @@ namespace System.Globalization {
         }
 
 
-#if !FEATURE_CORECLR
         ////////////////////////////////////////////////////////////////////////
         //
         //  ThreeLetterISORegionName
@@ -490,7 +489,6 @@ namespace System.Globalization {
                 return (this.m_cultureData.SABBREVCTRYNAME);
             }
         }
-#endif
 
         ////////////////////////////////////////////////////////////////////////
         //

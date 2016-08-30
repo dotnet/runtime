@@ -225,7 +225,7 @@ private:
     //  Definitions.
     //
 
-#ifndef FEATURE_CORECLR
+#ifndef FEATURE_COREFX_GLOBALIZATION
     // Normalization
     static HMODULE m_hNormalization;
     static PFN_NORMALIZATION_IS_NORMALIZED_STRING m_pfnNormalizationIsNormalizedStringFunc;

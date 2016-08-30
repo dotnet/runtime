@@ -346,35 +346,40 @@ namespace System.Globalization {
         ////////////////////////////////////////////////////////////////////////
 
 
-#if !FEATURE_CORECLR
-        public virtual int ANSICodePage {
-            get {
+        public virtual int ANSICodePage 
+        {
+            get 
+            {
                 return (this.m_cultureData.IDEFAULTANSICODEPAGE);
             }
         }
 
  
-        public virtual int OEMCodePage {
-            get {
+        public virtual int OEMCodePage 
+        {
+            get 
+            {
                 return (this.m_cultureData.IDEFAULTOEMCODEPAGE);
             }
         }
 
 
-        public virtual int MacCodePage {
-            get {
+        public virtual int MacCodePage 
+        {
+            get 
+            {
                 return (this.m_cultureData.IDEFAULTMACCODEPAGE);
             }
         }
 
 
-        public virtual int EBCDICCodePage {
-            get {
+        public virtual int EBCDICCodePage 
+        {
+            get 
+            {
                 return (this.m_cultureData.IDEFAULTEBCDICCODEPAGE);
             }
         }
-#endif
-
 
         ////////////////////////////////////////////////////////////////////////
         //
@@ -683,25 +688,29 @@ namespace System.Globalization {
         // titlecasing.  Windows 7 is expected to be the first release with this feature.  On the Macintosh side,
         // titlecasing is not available as of version 10.5 of the operating system.
         //
-#if !FEATURE_CORECLR
-        public unsafe String ToTitleCase(String str) {
-            if (str==null)  {
+        public unsafe String ToTitleCase(String str) 
+        {
+            if (str == null)  
+            {
                 throw new ArgumentNullException("str");
             }
             Contract.EndContractBlock();
-            if (str.Length == 0) {
+            if (str.Length == 0) 
+            {
                 return (str);
             }
 
             StringBuilder result = new StringBuilder();
             String lowercaseData = null;
 
-            for (int i = 0; i < str.Length; i++) {
+            for (int i = 0; i < str.Length; i++) 
+            {
                 UnicodeCategory charType;
                 int charLen;
 
                 charType = CharUnicodeInfo.InternalGetUnicodeCategory(str, i, out charLen);
-                if (Char.CheckLetter(charType)) {
+                if (Char.CheckLetter(charType)) 
+                {
                     // Do the titlecasing for the first character of the word.
                     i = AddTitlecaseLetter(ref result, ref str, i, charLen) + 1;
                      
@@ -717,30 +726,43 @@ namespace System.Globalization {
                     //
                     bool hasLowerCase = (charType == UnicodeCategory.LowercaseLetter);
                     // Use a loop to find all of the other letters following this letter.
-                    while (i < str.Length) {
+                    while (i < str.Length) 
+                    {
                         charType = CharUnicodeInfo.InternalGetUnicodeCategory(str, i, out charLen);
-                        if (IsLetterCategory(charType)) {
-                            if (charType == UnicodeCategory.LowercaseLetter) {
+                        if (IsLetterCategory(charType)) 
+                        {
+                            if (charType == UnicodeCategory.LowercaseLetter) 
+                            {
                                 hasLowerCase = true;
                             }
                             i += charLen;
-                        } else if (str[i] == '\'') {
+                        } 
+                        else if (str[i] == '\'') 
+                        {
                             i++;
-                            if (hasLowerCase) {
-                                if (lowercaseData==null) {
+                            if (hasLowerCase) 
+                            {
+                                if (lowercaseData == null) 
+                                {
                                     lowercaseData = this.ToLower(str);
                                 }
                                 result.Append(lowercaseData, lowercaseStart, i - lowercaseStart);
-                            } else {
+                            } 
+                            else 
+                            {
                                 result.Append(str, lowercaseStart, i - lowercaseStart);
                             }
                             lowercaseStart = i;
                             hasLowerCase = true;
-                        } else if (!IsWordSeparator(charType)) {
+                        } 
+                        else if (!IsWordSeparator(charType)) 
+                        {
                             // This category is considered to be part of the word.
                             // This is any category that is marked as false in wordSeprator array.
                             i+= charLen;
-                        } else {
+                        } 
+                        else 
+                        {
                             // A word separator. Break out of the loop.
                             break;
                         }
@@ -748,23 +770,30 @@ namespace System.Globalization {
 
                     int count = i - lowercaseStart;
 
-                    if (count>0) {
-                        if (hasLowerCase) {
-                            if (lowercaseData==null) {
+                    if (count>0) 
+                    {
+                        if (hasLowerCase) 
+                        {
+                            if (lowercaseData == null) 
+                            {
                                 lowercaseData = this.ToLower(str);
                             }
                             result.Append(lowercaseData, lowercaseStart, count);
-                        } else {
+                        } 
+                        else 
+                        {
                             result.Append(str, lowercaseStart, count);
                         }
                     }
 
-                    if (i < str.Length) {
+                    if (i < str.Length) 
+                    {
                         // not a letter, just append it
                         i = AddNonLetter(ref result, ref str, i, charLen);
                     }
                 }
-                else {
+                else 
+                {
                     // not a letter, just append it
                     i = AddNonLetter(ref result, ref str, i, charLen);
                 }
@@ -772,31 +801,38 @@ namespace System.Globalization {
             return (result.ToString());
         }
 
-        private static int AddNonLetter(ref StringBuilder result, ref String input, int inputIndex, int charLen) {
+        private static int AddNonLetter(ref StringBuilder result, ref String input, int inputIndex, int charLen) 
+        {
             Contract.Assert(charLen == 1 || charLen == 2, "[TextInfo.AddNonLetter] CharUnicodeInfo.InternalGetUnicodeCategory returned an unexpected charLen!");
-            if (charLen == 2) {
+            if (charLen == 2) 
+            {
                 // Surrogate pair
                 result.Append(input[inputIndex++]);
                 result.Append(input[inputIndex]);
             }
-            else {
+            else 
+            {
                 result.Append(input[inputIndex]);
             }                   
             return inputIndex;
         }
 
 
-        private int AddTitlecaseLetter(ref StringBuilder result, ref String input, int inputIndex, int charLen) {
+        private int AddTitlecaseLetter(ref StringBuilder result, ref String input, int inputIndex, int charLen) 
+        {
             Contract.Assert(charLen == 1 || charLen == 2, "[TextInfo.AddTitlecaseLetter] CharUnicodeInfo.InternalGetUnicodeCategory returned an unexpected charLen!");
 
             // for surrogate pairs do a simple ToUpper operation on the substring
-            if (charLen == 2) {
+            if (charLen == 2) 
+            {
                 // Surrogate pair
                 result.Append( this.ToUpper(input.Substring(inputIndex, charLen)) );
                 inputIndex++;
             }
-            else {
-                switch (input[inputIndex]) {
+            else 
+            {
+                switch (input[inputIndex]) 
+                {
                     //
                     // For AppCompat, the Titlecase Case Mapping data from NDP 2.0 is used below.
                     case (char)0x01C4:  // DZ with Caron -> Dz with Caron
@@ -865,19 +901,19 @@ namespace System.Globalization {
             /* true  */ (1 << 28) | // OtherSymbol = 28,
             /* false */ (0 << 29);  // OtherNotAssigned = 29;
 
-        private static bool IsWordSeparator(UnicodeCategory category) {
+        private static bool IsWordSeparator(UnicodeCategory category) 
+        {
             return (wordSeparatorMask & (1 << (int)category)) != 0;
         }
 
-        private static bool IsLetterCategory(UnicodeCategory uc) {
+        private static bool IsLetterCategory(UnicodeCategory uc) 
+        {
             return (uc == UnicodeCategory.UppercaseLetter
                  || uc == UnicodeCategory.LowercaseLetter
                  || uc == UnicodeCategory.TitlecaseLetter
                  || uc == UnicodeCategory.ModifierLetter
                  || uc == UnicodeCategory.OtherLetter);
         }
-#endif
-
 
         // IsRightToLeft
         //
