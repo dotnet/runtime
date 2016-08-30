@@ -6,15 +6,8 @@
     <RootNamespace>System.Composition</RootNamespace>
     <AssemblyName>System.Composition.Runtime</AssemblyName>
     <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.0</NuGetTargetMoniker>
+    <PackageTargetFramework Condition="'$(TargetGroup)' == ''">netstandard1.0;portable-net45+win8+wp8+wpa81</PackageTargetFramework>
   </PropertyGroup>
-  <ItemGroup Condition="'$(PackageTargetFramework)' == ''">
-    <PackageDestination Include="lib/netstandard1.0">
-      <TargetFramework>netstandard1.0</TargetFramework>
-    </PackageDestination>
-    <PackageDestination Include="lib/portable-net45+win8+wp8+wpa81">
-      <TargetFramework>portable-net45+win8+wp8+wpa81</TargetFramework>
-    </PackageDestination>
-  </ItemGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU' " />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU' " />
   <ItemGroup>
