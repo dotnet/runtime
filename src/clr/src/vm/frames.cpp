@@ -1142,14 +1142,14 @@ void HijackFrame::GcScanRoots(promote_func *fn, ScanContext* sc)
     _ASSERTE(IsValidReturnKind(returnKind));
 
     int regNo = 0;
-    bool moreRegisters;
+    bool moreRegisters = false;
 
     do 
     {
-        moreRegisters = false;
+        ReturnKind r = ExtractRegReturnKind(returnKind, regNo, moreRegisters);
         PTR_PTR_Object objPtr = dac_cast<PTR_PTR_Object>(&m_Args->ReturnValue[regNo]);
 
-        switch (returnKind)
+        switch (r)
         {
 #ifdef _TARGET_X86_
         case RT_Float: // Fall through
@@ -1173,14 +1173,10 @@ void HijackFrame::GcScanRoots(promote_func *fn, ScanContext* sc)
             break;
 
         default:
-#ifdef FEATURE_MULTIREG_RETURN
-            moreRegisters = true;
-            regNo++;
-            returnKind = ExtractRegReturnKind(returnKind, regNo);
-#else
             _ASSERTE(!"Impossible two bit encoding"); 
-#endif
         }
+        
+        regNo++;
     } while (moreRegisters);
 }
 
