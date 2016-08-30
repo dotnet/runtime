@@ -7,7 +7,6 @@
     <AssemblyName>System.Threading.Tasks.Dataflow</AssemblyName>
     <DocumentationFile>$(OutputPath)System.Threading.Tasks.Dataflow.XML</DocumentationFile>
     <DefineConstants>$(DefineConstants);CONCURRENT_COLLECTIONS;FEATURE_TRACING</DefineConstants>
-    <PackageTargetFramework>netstandard1.1</PackageTargetFramework>
     <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.1</NuGetTargetMoniker>
   </PropertyGroup>
   <ItemGroup>
