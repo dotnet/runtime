@@ -359,32 +359,8 @@ namespace System.Xml.Serialization
             ilg = new CodeGenerator(this.typeBuilder);
             ilg.BeginMethod(typeof(void), "InitCallbacks", Array.Empty<Type>(), Array.Empty<string>(),
                 CodeGenerator.ProtectedOverrideMethodAttributes);
-
-            string dummyArrayMethodName = NextMethodName("Array");
-            bool needDummyArrayMethod = false;
             ilg.EndMethod();
-
-            if (needDummyArrayMethod)
-            {
-                ilg.BeginMethod(
-                    typeof(object),
-                    GetMethodBuilder(dummyArrayMethodName),
-                    Array.Empty<Type>(),
-                    Array.Empty<string>(),
-                    CodeGenerator.PrivateMethodAttributes);
-                MethodInfo XmlSerializationReader_UnknownNode1 = typeof(XmlSerializationReader).GetMethod(
-                      "UnknownNode",
-                      CodeGenerator.InstanceBindingFlags,
-                      new Type[] { typeof(object) }
-                      );
-                ilg.Ldarg(0);
-                ilg.Load(null);
-                ilg.Call(XmlSerializationReader_UnknownNode1);
-                ilg.Load(null);
-                ilg.EndMethod();
-            }
         }
-
 
         private string GenerateMembersElement(XmlMembersMapping xmlMembersMapping)
         {
