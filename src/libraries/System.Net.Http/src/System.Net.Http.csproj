@@ -20,11 +20,6 @@
     <ProjectJson>unix/project.json</ProjectJson>
     <ProjectLockJson>unix/project.lock.json</ProjectLockJson>
   </PropertyGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == '' AND '$(TargetsWindows)' == 'true'">
-    <PackageDestination Include="runtimes/$(PackageTargetRuntime)/lib/netstandard1.3">
-      <TargetFramework>netstandard1.3</TargetFramework>
-    </PackageDestination>
-  </ItemGroup>
   <!-- Help VS understand available configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Release|AnyCPU'" />
