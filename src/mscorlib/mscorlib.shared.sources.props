@@ -276,8 +276,12 @@
     <SystemSources Include="$(BclSourcesRoot)\System\ThrowHelper.cs" />
     <SystemSources Include="$(BclSourcesRoot)\System\Tuple.cs" />
     <SystemSources Include="$(BclSourcesRoot)\System\String.cs" />
+    <SystemSources Include="$(BclSourcesRoot)\System\String.Comparison.cs" />
+    <SystemSources Include="$(BclSourcesRoot)\System\String.Manipulation.cs" />
+    <SystemSources Include="$(BclSourcesRoot)\System\String.Searching.cs" />
     <SystemSources Include="$(BclSourcesRoot)\System\StringComparer.cs" />
     <SystemSources Include="$(BclSourcesRoot)\System\StringComparison.cs" />
+    <SystemSources Include="$(BclSourcesRoot)\System\StringSplitOptions.cs" />
     <SystemSources Include="$(BclSourcesRoot)\System\Text\StringBuilder.cs" />
     <SystemSources Include="$(BclSourcesRoot)\System\Text\StringBuilderCache.cs" />
     <SystemSources Include="$(BclSourcesRoot)\System\Exception.cs" />
