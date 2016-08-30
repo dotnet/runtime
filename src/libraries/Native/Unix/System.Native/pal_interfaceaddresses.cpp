@@ -48,8 +48,13 @@ extern "C" int32_t SystemNative_EnumerateInterfaceAddresses(IPv4AddressFound onI
         // Use if_indextoname to map back to the true device name.
         char actualName[IF_NAMESIZE];
         char* result = if_indextoname(interfaceIndex, actualName);
-        assert(result == actualName && result != nullptr);
-        (void)result; // Silence compiler warnings about unused variables on release mode
+        if (result == nullptr)
+        {
+            freeifaddrs(headAddr);
+            return -1;
+        }
+        
+        assert(result == actualName);
         int family = current->ifa_addr->sa_family;
         if (family == AF_INET)
         {
