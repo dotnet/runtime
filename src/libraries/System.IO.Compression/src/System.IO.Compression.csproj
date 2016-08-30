@@ -34,6 +34,25 @@
     <Compile Include="$(CommonPath)\System\IO\PathInternal.cs">
       <Link>Common\System\IO\PathInternal.cs</Link>
     </Compile>
+    <Compile Include="System\IO\Compression\Deflate64\BlockType.cs" />
+    <Compile Include="System\IO\Compression\Deflate64\CopyEncoder.cs" />
+    <Compile Include="System\IO\Compression\Deflate64\DeflateInput.cs" />
+    <Compile Include="System\IO\Compression\Deflate64\DeflaterManaged.cs" />
+    <Compile Include="System\IO\Compression\Deflate64\FastEncoder.cs" />
+    <Compile Include="System\IO\Compression\Deflate64\FastEncoderStatus.cs" />
+    <Compile Include="System\IO\Compression\Deflate64\FastEncoderWindow.cs" />
+    <Compile Include="System\IO\Compression\Deflate64\FileFormats.cs" />
+    <Compile Include="System\IO\Compression\Deflate64\HuffmanTree.cs" />
+    <Compile Include="System\IO\Compression\Deflate64\IDeflater.cs" />
+    <Compile Include="System\IO\Compression\Deflate64\IInflater.cs" />
+    <Compile Include="System\IO\Compression\Deflate64\InflaterManaged.cs" />
+    <Compile Include="System\IO\Compression\Deflate64\InflaterState.cs" />
+    <Compile Include="System\IO\Compression\Deflate64\InputBuffer.cs" />
+    <Compile Include="System\IO\Compression\Deflate64\Match.cs" />
+    <Compile Include="System\IO\Compression\Deflate64\MatchState.cs" />
+    <Compile Include="System\IO\Compression\Deflate64\OutputBuffer.cs" />
+    <Compile Include="System\IO\Compression\Deflate64\OutputWindow.cs" />
+    <Compile Include="System\IO\Compression\Deflate64\Deflate64stream.cs" />
   </ItemGroup>
   <!-- Files exclusive to Core -->
   <ItemGroup Condition="'$(TargetGroup)' != 'net46'">
