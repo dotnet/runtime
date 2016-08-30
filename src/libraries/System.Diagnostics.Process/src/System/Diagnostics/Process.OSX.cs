@@ -58,7 +58,7 @@ namespace System.Diagnostics
                 // nanoseconds elapse from boot to that the process started) to seconds.
                 EnsureState(State.HaveId);
                 Interop.libproc.rusage_info_v3 info = Interop.libproc.proc_pid_rusage(_processId);
-                double seconds = info.ri_proc_start_abstime / NanoSecondToSecondFactor;
+                double seconds = info.ri_proc_start_abstime / (double)NanoSecondToSecondFactor;
                 
                 // Convert timespan from boot to process start datetime.
                 return BootTimeToDateTime(TimeSpan.FromSeconds(seconds));
