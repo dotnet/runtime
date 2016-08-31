@@ -3255,7 +3255,7 @@ mono_marshal_get_delegate_invoke_internal (MonoMethod *method, gboolean callvirt
 	gboolean closed_over_null = FALSE;
 	MonoGenericContext *ctx = NULL;
 	MonoGenericContainer *container = NULL;
-	MonoMethod *orig_method = NULL;
+	MonoMethod *orig_method = method;
 	WrapperInfo *info;
 	WrapperSubtype subtype = WRAPPER_SUBTYPE_NONE;
 	gboolean found;
@@ -3299,7 +3299,6 @@ mono_marshal_get_delegate_invoke_internal (MonoMethod *method, gboolean callvirt
 	 * For generic delegates, create a generic wrapper, and return an instance to help AOT.
 	 */
 	if (method->is_inflated && subtype == WRAPPER_SUBTYPE_NONE) {
-		orig_method = method;
 		ctx = &((MonoMethodInflated*)method)->context;
 		method = ((MonoMethodInflated*)method)->declaring;
 
@@ -3548,7 +3547,7 @@ mono_marshal_get_delegate_invoke_internal (MonoMethod *method, gboolean callvirt
 #endif /* DISABLE_JIT */
 
 	info = mono_wrapper_info_create (mb, subtype);
-	info->d.delegate_invoke.method = method;
+	info->d.delegate_invoke.method = orig_method;
 
 	if (ctx) {
 		MonoMethod *def;
