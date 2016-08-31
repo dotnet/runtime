@@ -9732,6 +9732,10 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				}
 
 				if (!has_vtargs) {
+					if (need_seq_point) {
+						emit_seq_point (cfg, method, ip, FALSE, TRUE);
+						need_seq_point = FALSE;
+					}
 					for (i = 0; i < n; ++i)
 						EMIT_NEW_ARGSTORE (cfg, ins, i, sp [i]);
 					MONO_INST_NEW (cfg, ins, OP_BR);
