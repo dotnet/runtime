@@ -16,6 +16,7 @@
 #include <mono/metadata/profiler.h>
 #include <mono/metadata/threads.h>
 #include <mono/metadata/debug-helpers.h>
+#include <mono/metadata/mono-config.h>
 #include <mono/metadata/mono-gc.h>
 #include <mono/metadata/mono-perfcounters.h>
 #include <mono/metadata/appdomain.h>
@@ -173,7 +174,12 @@ static MonoLinkedListSet profiler_thread_list;
  * [flags: 4 bytes] file format flags, should be 0 for now
  * [pid: 4 bytes] pid of the profiled process
  * [port: 2 bytes] tcp port for server if != 0
- * [sysid: 2 bytes] operating system and architecture identifier
+ * [args size: 4 bytes] size of args
+ * [args: string] arguments passed to the profiler
+ * [arch size: 4 bytes] size of arch
+ * [arch: string] architecture the profiler is running on
+ * [os size: 4 bytes] size of os
+ * [os: string] operating system the profiler is running on
  *
  * The multiple byte integers are in little-endian format.
  *
@@ -586,6 +592,7 @@ struct _MonoProfiler {
 #if defined (HAVE_SYS_ZLIB)
 	gzFile gzfile;
 #endif
+	char *args;
 	uint64_t startup_time;
 	int pipe_output;
 	int last_gc_gen_started;
@@ -1019,22 +1026,55 @@ write_int64 (char *buf, int64_t value)
 	return buf + 8;
 }
 
+static char *
+write_header_string (char *p, const char *str)
+{
+	size_t len = strlen (str) + 1;
+
+	p = write_int32 (p, len);
+	strcpy (p, str);
+
+	return p + len;
+}
+
 static void
 dump_header (MonoProfiler *profiler)
 {
-	char hbuf [128];
+	const char *args = profiler->args;
+	const char *arch = mono_config_get_cpu ();
+	const char *os = mono_config_get_os ();
+
+	char *hbuf = malloc (
+		sizeof (gint32) /* header id */ +
+		sizeof (gint8) /* major version */ +
+		sizeof (gint8) /* minor version */ +
+		sizeof (gint8) /* data version */ +
+		sizeof (gint8) /* word size */ +
+		sizeof (gint64) /* startup time */ +
+		sizeof (gint32) /* timer overhead */ +
+		sizeof (gint32) /* flags */ +
+		sizeof (gint32) /* process id */ +
+		sizeof (gint16) /* command port */ +
+		sizeof (gint32) + strlen (args) /* arguments */ +
+		sizeof (gint32) + strlen (arch) /* architecture */ +
+		sizeof (gint32) + strlen (os) /* operating system */
+	);
 	char *p = hbuf;
+
 	p = write_int32 (p, LOG_HEADER_ID);
 	*p++ = LOG_VERSION_MAJOR;
 	*p++ = LOG_VERSION_MINOR;
 	*p++ = LOG_DATA_VERSION;
-	*p++ = sizeof (void*);
-	p = write_int64 (p, ((uint64_t)time (NULL)) * 1000); /* startup time */
-	p = write_int32 (p, get_timer_overhead ()); /* timer overhead */
+	*p++ = sizeof (void *);
+	p = write_int64 (p, ((uint64_t) time (NULL)) * 1000);
+	p = write_int32 (p, get_timer_overhead ());
 	p = write_int32 (p, 0); /* flags */
-	p = write_int32 (p, process_id ()); /* pid */
-	p = write_int16 (p, profiler->command_port); /* port */
-	p = write_int16 (p, 0); /* opsystem */
+	p = write_int32 (p, process_id ());
+	p = write_int16 (p, profiler->command_port);
+	p = write_header_string (p, args);
+	p = write_header_string (p, arch);
+	p = write_header_string (p, os);
+
 #if defined (HAVE_SYS_ZLIB)
 	if (profiler->gzfile) {
 		gzwrite (profiler->gzfile, hbuf, p - hbuf);
@@ -1044,6 +1084,8 @@ dump_header (MonoProfiler *profiler)
 		fwrite (hbuf, p - hbuf, 1, profiler->file);
 		fflush (profiler->file);
 	}
+
+	free (hbuf);
 }
 
 static void
@@ -4308,6 +4350,7 @@ log_shutdown (MonoProfiler *prof)
 
 	PROF_TLS_FREE ();
 
+	free (prof->args);
 	free (prof);
 }
 
@@ -4821,13 +4864,14 @@ runtime_initialized (MonoProfiler *profiler)
 }
 
 static MonoProfiler*
-create_profiler (const char *filename, GPtrArray *filters)
+create_profiler (const char *args, const char *filename, GPtrArray *filters)
 {
 	MonoProfiler *prof;
 	char *nf;
 	int force_delete = 0;
 	prof = (MonoProfiler *)calloc (1, sizeof (MonoProfiler));
 
+	prof->args = pstrdup (args);
 	prof->command_port = command_port;
 	if (filename && *filename == '-') {
 		force_delete = 1;
@@ -5307,7 +5351,7 @@ mono_profiler_startup (const char *desc)
 
 	PROF_TLS_INIT ();
 
-	prof = create_profiler (filename, filters);
+	prof = create_profiler (desc, filename, filters);
 	if (!prof) {
 		PROF_TLS_FREE ();
 		return;
