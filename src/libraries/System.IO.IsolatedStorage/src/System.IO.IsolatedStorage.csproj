@@ -36,6 +36,9 @@
     <Compile Include="System\IO\IsolatedStorage\Helper.cs" />
     <Compile Include="System\IO\IsolatedStorage\INormalizeForIsolatedStorage.cs" />
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == ''">
+    <Compile Include="System\IO\IsolatedStorage\IsolatedStorageException.Serialization.cs" />
+  </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' != 'net463' and '$(EnableWinRT)' != 'true'">
     <Compile Include="System\IO\IsolatedStorage\Helper.Win32.Unix.cs" />
   </ItemGroup>
