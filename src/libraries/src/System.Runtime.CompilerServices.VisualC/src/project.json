@@ -2,7 +2,7 @@
   "frameworks": {
     "netstandard1.3": {
       "dependencies": {
-        "Microsoft.TargetingPack.Private.CoreCLR": "1.1.0-beta-24430-03"
+        "Microsoft.TargetingPack.Private.CoreCLR": "1.1.0-beta-24431-02"
       },
       "imports": [
         "dotnet5.4"
