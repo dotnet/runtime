@@ -85,11 +85,20 @@
     <Compile Include="$(CommonTestPath)\System\Collections\TestingTypes.cs" >
       <Link>Common\System\Collections\TestingTypes.cs</Link>
     </Compile>
+    <Compile Include="$(CommonTestPath)\System\ObjectCloner.cs" >
+      <Link>Common\System\ObjectCloner.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\RuntimeDetection.cs" >
+      <Link>Common\System\RuntimeDetection.cs</Link>
+    </Compile>
     <!-- Generic tests -->
     <Compile Include="StructuralComparisonsTests.cs" />
     <Compile Include="BitArray\BitArray_CtorTests.cs" />
     <Compile Include="BitArray\BitArray_GetSetTests.cs" />
     <Compile Include="BitArray\BitArray_OperatorsTests.cs" />
+    <Compile Include="Generic\Comparers\Comparer.Generic.Tests.cs" />
+    <Compile Include="Generic\Comparers\Comparer.Tests.cs" />
+    <Compile Include="Generic\Comparers\Comparers.Generic.cs" />
     <Compile Include="Generic\Dictionary\Dictionary.Tests.cs" />
     <Compile Include="Generic\Dictionary\HashCollisionScenarios\InputData.cs" />
     <Compile Include="Generic\Dictionary\HashCollisionScenarios\OutOfBoundsRegression.cs" />
