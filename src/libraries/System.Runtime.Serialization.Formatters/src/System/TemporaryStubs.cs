@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -6,6 +6,7 @@ using System.Reflection;
 
 namespace System
 {
+    [Serializable]
     internal class MarshalByRefObject { } // TODO: Replace with real MarshalByRefObject when it's available
 
     internal sealed class TypedReference // TODO: Replace with System.TypedReference when available and functional
