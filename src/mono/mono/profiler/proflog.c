@@ -4264,6 +4264,15 @@ log_shutdown (MonoProfiler *prof)
 
 	cleanup_reusable_samples (prof);
 
+	/*
+	 * Pump the entire hazard free queue to make sure that anything we allocated
+	 * in the profiler will be freed. If we don't do this, the runtime could get
+	 * around to freeing some items after the profiler has been unloaded, which
+	 * would mean calling into functions in the profiler library, leading to a
+	 * crash.
+	 */
+	mono_thread_hazardous_try_free_all ();
+
 	g_assert (!InterlockedRead (&buffer_rwlock_count) && "Why is the reader count still non-zero?");
 	g_assert (!InterlockedReadPointer (&buffer_rwlock_exclusive) && "Why does someone still hold the exclusive lock?");
 
