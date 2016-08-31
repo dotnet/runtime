@@ -213,38 +213,12 @@ namespace System.Linq.Expressions
         /// otherwise, returns the original expression.</returns>
         protected internal virtual Expression VisitBlock(BlockExpression node)
         {
-            int count = node.ExpressionCount;
-            Expression[] nodes = null;
-            for (int i = 0; i < count; i++)
-            {
-                Expression oldNode = node.GetExpression(i);
-                Expression newNode = Visit(oldNode);
-
-                if (oldNode != newNode)
-                {
-                    if (nodes == null)
-                    {
-                        nodes = new Expression[count];
-                    }
-                    nodes[i] = newNode;
-                }
-            }
+            Expression[] nodes = ExpressionVisitorUtils.VisitBlockExpressions(this, node);
             var v = VisitAndConvert(node.Variables, "VisitBlock");
 
             if (v == node.Variables && nodes == null)
             {
                 return node;
-            }
-
-            if (nodes != null)
-            {
-                for (int i = 0; i < count; i++)
-                {
-                    if (nodes[i] == null)
-                    {
-                        nodes[i] = node.GetExpression(i);
-                    }
-                }
             }
 
             return node.Rewrite(v, nodes);
@@ -423,7 +397,7 @@ namespace System.Linq.Expressions
         protected internal virtual Expression VisitMethodCall(MethodCallExpression node)
         {
             Expression o = Visit(node.Object);
-            Expression[] a = VisitArguments((IArgumentProvider)node);
+            Expression[] a = VisitArguments(node);
             if (o == node.Object && a == null)
             {
                 return node;
@@ -452,7 +426,13 @@ namespace System.Linq.Expressions
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1711:IdentifiersShouldNotHaveIncorrectSuffix")]
         protected internal virtual Expression VisitNew(NewExpression node)
         {
-            return node.Update(Visit(node.Arguments));
+            Expression[] a = VisitArguments(node);
+            if (a == null)
+            {
+                return node;
+            }
+
+            return node.Update(a);
         }
 
         /// <summary>
