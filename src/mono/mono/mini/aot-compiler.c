@@ -10433,6 +10433,10 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 		aot_printerrf (acfg, "--aot=llvmonly requires a runtime that supports gsharedvt.\n");
 		return 1;
 #endif
+#ifndef ENABLE_LLVM
+		aot_printerrf (acfg, "--aot=llvmonly requires a runtime compiled with llvm support.\n");
+		return 1;
+#endif
 	}
 
 #if defined(MONO_ARCH_GSHAREDVT_SUPPORTED)
