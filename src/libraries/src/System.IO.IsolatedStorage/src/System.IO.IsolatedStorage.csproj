@@ -8,7 +8,6 @@
     <AssemblyName>System.IO.IsolatedStorage</AssemblyName>
     <ProjectGuid>{FAF5D1E4-BA43-4663-8429-C069066D75CB}</ProjectGuid>
     <EnableWinRT>true</EnableWinRT>
-    <AssemblyVersion>4.0.2.0</AssemblyVersion>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the options -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcore50_Debug|AnyCPU'" />

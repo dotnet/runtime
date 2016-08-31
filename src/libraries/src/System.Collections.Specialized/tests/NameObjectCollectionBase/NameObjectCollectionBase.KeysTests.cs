@@ -156,7 +156,7 @@ namespace System.Collections.Specialized.Tests
             ICollection keysCollection = keys;
 
             Assert.Throws<ArgumentNullException>("array", () => keysCollection.CopyTo(null, 0));
-            Assert.Throws<ArgumentException>("array", () => keysCollection.CopyTo(new string[count, count], 0));
+            Assert.Throws<ArgumentException>(() => keysCollection.CopyTo(new string[count, count], 0));
 
             if (count > 0)
             {

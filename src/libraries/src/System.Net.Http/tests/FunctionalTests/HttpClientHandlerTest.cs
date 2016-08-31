@@ -837,6 +837,8 @@ namespace System.Net.Http.Functional.Tests
                                 Assert.True(bytesRead < buffer.Length, "bytesRead should be less than buffer.Length");
                             }
                         }
+                        
+                        return null;
                     });
                 }
             });
@@ -857,6 +859,7 @@ namespace System.Net.Http.Functional.Tests
                         Task server1 = LoopbackServer.AcceptSocketAsync(socket1, async (s, stream, reader, writer) =>
                         {
                             await unblockServers.Task;
+                            return null;
                         });
 
                         // Second server connects and sends some but not all headers
@@ -865,6 +868,7 @@ namespace System.Net.Http.Functional.Tests
                             while (!string.IsNullOrEmpty(await reader.ReadLineAsync())) ;
                             await writer.WriteAsync($"HTTP/1.1 200 OK\r\n");
                             await unblockServers.Task;
+                            return null;
                         });
 
                         // Third server connects and sends all headers and some but not all of the body
@@ -876,6 +880,7 @@ namespace System.Net.Http.Functional.Tests
                             await unblockServers.Task;
                             await writer.WriteAsync("1234567890");
                             s.Shutdown(SocketShutdown.Send);
+                            return null;
                         });
 
                         // Make three requests
@@ -1218,6 +1223,8 @@ namespace System.Net.Http.Functional.Tests
                             Assert.True(contentDisposed, "Expected request content to be disposed");
                             Assert.Equal("abcdefghij", await response.Content.ReadAsStringAsync());
                         }
+                        
+                        return null;
                     });
                 });
             }
@@ -1279,6 +1286,8 @@ namespace System.Net.Http.Functional.Tests
                             Assert.True(contentDisposed, "Expected request content to be disposed");
                             Assert.Equal("abcdefghij", await response.Content.ReadAsStringAsync());
                         }
+                        
+                        return null;
                     });
                 });
             }
@@ -1567,36 +1576,27 @@ namespace System.Net.Http.Functional.Tests
                 {
                     Task<HttpResponseMessage> getResponse = client.SendAsync(request);
 
-                    await LoopbackServer.AcceptSocketAsync(server, async (s, stream, reader, writer) =>
-                    {
-                        string statusLine = reader.ReadLine();
-                        while (!string.IsNullOrEmpty(reader.ReadLine())) ;
-
-                        if (statusLine.Contains("/1.0"))
-                        {
-                            receivedRequestVersion = new Version(1, 0);
-                        }
-                        else if (statusLine.Contains("/1.1"))
-                        {
-                            receivedRequestVersion = new Version(1, 1);
-                        }
-                        else
-                        {
-                            Assert.True(false, "Invalid HTTP request version");
-                        }
-
-                        await writer.WriteAsync(
-                            $"HTTP/1.1 200 OK\r\n" +
-                            $"Date: {DateTimeOffset.UtcNow:R}\r\n" +
-                            "Content-Length: 0\r\n" +
-                            "\r\n");
-                        s.Shutdown(SocketShutdown.Send);
-                    });
+                    List<string> receivedRequest = await LoopbackServer.ReadRequestAndSendResponseAsync(server);
 
                     using (HttpResponseMessage response = await getResponse)
                     {
                         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
                     }
+
+                    string statusLine = receivedRequest[0];
+                    if (statusLine.Contains("/1.0"))
+                    {
+                        receivedRequestVersion = new Version(1, 0);
+                    }
+                    else if (statusLine.Contains("/1.1"))
+                    {
+                        receivedRequestVersion = new Version(1, 1);
+                    }
+                    else
+                    {
+                        Assert.True(false, "Invalid HTTP request version");
+                    }
+                    
                 }
             });
             
@@ -1695,6 +1695,33 @@ namespace System.Net.Http.Functional.Tests
                 yield return new object[] { new NetworkCredential("user:name", "password"), wrapCredsInCache };
                 yield return new object[] { new NetworkCredential("username", "password", "dom:\\ain"), wrapCredsInCache };
             }
+        }
+        #endregion
+
+        #region Uri wire transmission encoding tests
+        [Fact]
+        public async Task SendRequest_UriPathHasReservedChars_ServerReceivedExpectedPath()
+        {
+            await LoopbackServer.CreateServerAsync(async (server, rootUrl) =>
+            {
+                var uri = new Uri($"http://{rootUrl.Host}:{rootUrl.Port}/test[]");
+                _output.WriteLine(uri.AbsoluteUri.ToString());
+                var request = new HttpRequestMessage(HttpMethod.Get, uri);
+                string statusLine = string.Empty;
+
+                using (var client = new HttpClient())
+                {
+                    Task<HttpResponseMessage> getResponse = client.SendAsync(request);
+
+                    List<string> receivedRequest = await LoopbackServer.ReadRequestAndSendResponseAsync(server);
+
+                    using (HttpResponseMessage response = await getResponse)
+                    {
+                        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                        Assert.True(receivedRequest[0].Contains(uri.PathAndQuery), $"statusLine should contain {uri.PathAndQuery}");
+                    }
+                }
+            });
         }
         #endregion
     }

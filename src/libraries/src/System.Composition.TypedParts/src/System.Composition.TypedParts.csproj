@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
@@ -6,16 +6,8 @@
     <RootNamespace>System.Composition</RootNamespace>
     <AssemblyName>System.Composition.TypedParts</AssemblyName>
     <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.0</NuGetTargetMoniker>
-    <AssemblyVersion>1.0.31.0</AssemblyVersion>
+    <PackageTargetFramework Condition="'$(TargetGroup)' == ''">netstandard1.0;portable-net45+win8+wp8+wpa81</PackageTargetFramework>
   </PropertyGroup>
-  <ItemGroup Condition="'$(PackageTargetFramework)' == ''">
-    <PackageDestination Include="lib/netstandard1.0">
-      <TargetFramework>netstandard1.0</TargetFramework>
-    </PackageDestination>
-    <PackageDestination Include="lib/portable-net45+win8+wp8+wpa81">
-      <TargetFramework>portable-net45+win8+wp8+wpa81</TargetFramework>
-    </PackageDestination>
-  </ItemGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
   <PropertyGroup>

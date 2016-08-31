@@ -1,3 +1,9 @@
 <Project ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="..\Microsoft.Private.PackageBaseline\Microsoft.Private.PackageBaseline.props" />
+  
+  <PropertyGroup>
+    <!-- Set PackageIndexFile to point to our local repo's index.  This tells the packaging targets
+         which index should be used for updates -->
+    <PackageIndexFile>$(MSBuildThisFileDirectory)..\Microsoft.Private.PackageBaseline\packageIndex.json</PackageIndexFile>
+  </PropertyGroup>
 </Project>
