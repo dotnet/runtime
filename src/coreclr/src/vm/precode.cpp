@@ -433,7 +433,7 @@ BOOL Precode::SetTargetInterlocked(PCODE target)
     // SetTargetInterlocked does not modify code on ARM so the flush instruction cache is
     // not necessary.
     //
-#if !defined(_TARGET_ARM_)
+#if !defined(_TARGET_ARM_) && !defined(_TARGET_ARM64_)
     if (ret) {
         FlushInstructionCache(GetCurrentProcess(),this,SizeOf());
     }

@@ -494,14 +494,22 @@ void HelperMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
 
 TADDR FixupPrecode::GetMethodDesc()
 {
-    _ASSERTE(!"ARM64:NYI");
-    return NULL;
+    LIMITED_METHOD_DAC_CONTRACT;
+
+    // This lookup is also manually inlined in PrecodeFixupThunk assembly code
+    TADDR base = *PTR_TADDR(GetBase());
+    if (base == NULL)
+        return NULL;
+    return base + (m_MethodDescChunkIndex * MethodDesc::ALIGNMENT);
 }
 
 #ifdef DACCESS_COMPILE
 void FixupPrecode::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 {
-    _ASSERTE(!"ARM64:NYI");
+	SUPPORTS_DAC;
+	DacEnumMemoryRegion(dac_cast<TADDR>(this), sizeof(FixupPrecode));
+
+	DacEnumMemoryRegion(GetBase(), sizeof(TADDR));
 }
 #endif // DACCESS_COMPILE
 
@@ -574,19 +582,78 @@ void NDirectImportPrecode::Fixup(DataImage *image)
 
 void FixupPrecode::Init(MethodDesc* pMD, LoaderAllocator *pLoaderAllocator, int iMethodDescChunkIndex /*=0*/, int iPrecodeChunkIndex /*=0*/)
 {
-    _ASSERTE(!"ARM64:NYI");
+    WRAPPER_NO_CONTRACT;
+    
+    InitCommon();
+
+    // Initialize chunk indices only if they are not initialized yet. This is necessary to make MethodDesc::Reset work.
+    if (m_PrecodeChunkIndex == 0)
+    {
+        _ASSERTE(FitsInU1(iPrecodeChunkIndex));
+        m_PrecodeChunkIndex = static_cast<BYTE>(iPrecodeChunkIndex);
+    }
+
+    if (iMethodDescChunkIndex != -1)
+    {
+        if (m_MethodDescChunkIndex == 0)
+        {
+            _ASSERTE(FitsInU1(iMethodDescChunkIndex));
+            m_MethodDescChunkIndex = static_cast<BYTE>(iMethodDescChunkIndex);
+        }
+
+        if (*(void**)GetBase() == NULL)
+            *(void**)GetBase() = (BYTE*)pMD - (iMethodDescChunkIndex * MethodDesc::ALIGNMENT);
+    }
+
+    _ASSERTE(GetMethodDesc() == (TADDR)pMD);
+
+    if (pLoaderAllocator != NULL)
+    {
+        m_pTarget = GetEEFuncEntryPoint(PrecodeFixupThunk);
+    }
 }
 
 #ifdef FEATURE_NATIVE_IMAGE_GENERATION
 // Partial initialization. Used to save regrouped chunks.
 void FixupPrecode::InitForSave(int iPrecodeChunkIndex)
 {
-    _ASSERTE(!"ARM64:NYI");
+    STANDARD_VM_CONTRACT;
+
+    InitCommon();
+
+    _ASSERTE(FitsInU1(iPrecodeChunkIndex));
+    m_PrecodeChunkIndex = static_cast<BYTE>(iPrecodeChunkIndex);
+    // The rest is initialized in code:FixupPrecode::Fixup
 }
 
 void FixupPrecode::Fixup(DataImage *image, MethodDesc * pMD)
 {
-    _ASSERTE(!"ARM64:NYI");
+    STANDARD_VM_CONTRACT;
+
+    // Note that GetMethodDesc() does not return the correct value because of 
+    // regrouping of MethodDescs into hot and cold blocks. That's why the caller
+    // has to supply the actual MethodDesc
+
+    SSIZE_T mdChunkOffset;
+    ZapNode * pMDChunkNode = image->GetNodeForStructure(pMD, &mdChunkOffset);
+    ZapNode * pHelperThunk = image->GetHelperThunk(CORINFO_HELP_EE_PRECODE_FIXUP);
+
+    image->FixupFieldToNode(this, offsetof(FixupPrecode, m_pTarget), pHelperThunk);
+
+    // Set the actual chunk index
+    FixupPrecode * pNewPrecode = (FixupPrecode *)image->GetImagePointer(this);
+
+    size_t mdOffset = mdChunkOffset - sizeof(MethodDescChunk);
+    size_t chunkIndex = mdOffset / MethodDesc::ALIGNMENT;
+    _ASSERTE(FitsInU1(chunkIndex));
+    pNewPrecode->m_MethodDescChunkIndex = (BYTE)chunkIndex;
+
+    // Fixup the base of MethodDescChunk
+    if (m_PrecodeChunkIndex == 0)
+    {
+        image->FixupFieldToNode(this, (BYTE *)GetBase() - (BYTE *)this,
+            pMDChunkNode, sizeof(MethodDescChunk));
+    }
 }
 #endif // FEATURE_NATIVE_IMAGE_GENERATION
 
@@ -618,7 +685,20 @@ BOOL DoesSlotCallPrestub(PCODE pCode)
 {
     PTR_DWORD pInstr = dac_cast<PTR_DWORD>(PCODEToPINSTR(pCode));
 
-    // ARM64TODO: Check for FixupPrecode
+    //FixupPrecode
+#if defined(HAS_FIXUP_PRECODE)
+    if (FixupPrecode::IsFixupPrecodeByASM(pCode))
+    {
+        PCODE pTarget = dac_cast<PTR_FixupPrecode>(pInstr)->m_pTarget;
+        
+        if (isJump(pTarget))
+        {
+            pTarget = decodeJump(pTarget);
+        }
+
+        return pTarget == (TADDR)PrecodeFixupThunk;
+    }
+#endif
 
     // StubPrecode
     if (pInstr[0] == 0x10000089 && // adr x9, #16
@@ -627,7 +707,10 @@ BOOL DoesSlotCallPrestub(PCODE pCode)
     {
         PCODE pTarget = dac_cast<PTR_StubPrecode>(pInstr)->m_pTarget;
 
-        // ARM64TODO: implement for NGen case
+        if (isJump(pTarget))
+        {
+            pTarget = decodeJump(pTarget);
+        }
 
         return pTarget == GetPreStubEntryPoint();
     }
