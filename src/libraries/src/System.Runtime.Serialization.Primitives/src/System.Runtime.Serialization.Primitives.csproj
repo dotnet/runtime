@@ -35,12 +35,12 @@
     <Compile Include="System\Runtime\Serialization\KnownTypeAttribute.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)'=='netstandard1.3' Or '$(TargetGroup)'=='netcore50aot'">
-    <Compile Include="$(CommonPath)\System\Runtime\Serialization\OnDeserializedAttribute.cs" />
-    <Compile Include="$(CommonPath)\System\Runtime\Serialization\OnDeserializingAttribute.cs" />
-    <Compile Include="$(CommonPath)\System\Runtime\Serialization\OnSerializedAttribute.cs" />
-    <Compile Include="$(CommonPath)\System\Runtime\Serialization\OnSerializingAttribute.cs" />
-    <Compile Include="$(CommonPath)\System\Runtime\Serialization\SerializationException.cs" />
-    <Compile Include="$(CommonPath)\System\Runtime\Serialization\StreamingContext.cs" />
+    <Compile Include="System\Runtime\Serialization\OnDeserializedAttribute.cs" />
+    <Compile Include="System\Runtime\Serialization\OnDeserializingAttribute.cs" />
+    <Compile Include="System\Runtime\Serialization\OnSerializedAttribute.cs" />
+    <Compile Include="System\Runtime\Serialization\OnSerializingAttribute.cs" />
+    <Compile Include="System\Runtime\Serialization\SerializationException.cs" />
+    <Compile Include="System\Runtime\Serialization\StreamingContext.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)'==''">
     <!-- ToDo: Remove this dependency once System.Runtime is published. -->
