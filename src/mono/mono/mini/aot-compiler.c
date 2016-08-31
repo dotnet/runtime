@@ -9964,7 +9964,7 @@ compile_asm (MonoAotCompile *acfg)
 		wrap_path (g_strdup_printf ("%s.o", acfg->tmpfname)), ld_flags);
 #else
 	// Default (linux)
-	char *args = g_strdup_printf ("%s %s -shared -o %s %s %s %s", tool_prefix, LD_OPTIONS,
+	char *args = g_strdup_printf ("%s -shared -o %s %s %s %s", LD_OPTIONS,
 		wrap_path (tmp_outfile_name), wrap_path (llvm_ofile),
 		wrap_path (g_strdup_printf ("%s.o", acfg->tmpfname)), ld_flags);
 
