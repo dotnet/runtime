@@ -208,7 +208,9 @@ static MonoLinkedListSet profiler_thread_list;
  * [method_base: 8 bytes] base value for MonoMethod pointers
  *
  * event format:
- * [extended info: upper 4 bits] [type: lower 4 bits] [data]*
+ * [extended info: upper 4 bits] [type: lower 4 bits]
+ * [time diff: uleb128] nanoseconds since last timing
+ * [data]*
  * The data that follows depends on type and the extended info.
  * Type is one of the enum values in proflog.h: TYPE_ALLOC, TYPE_GC,
  * TYPE_METADATA, TYPE_METHOD, TYPE_EXCEPTION, TYPE_MONITOR, TYPE_HEAP.
@@ -224,7 +226,6 @@ static MonoLinkedListSet profiler_thread_list;
  * type alloc format:
  * type: TYPE_ALLOC
  * exinfo: flags: TYPE_ALLOC_BT
- * [time diff: uleb128] nanoseconds since last timing
  * [ptr: sleb128] class as a byte difference from ptr_base
  * [obj: sleb128] object address as a byte difference from obj_base
  * [size: uleb128] size of the object in the heap
@@ -235,7 +236,6 @@ static MonoLinkedListSet profiler_thread_list;
  * exinfo: one of TYPE_GC_EVENT, TYPE_GC_RESIZE, TYPE_GC_MOVE, TYPE_GC_HANDLE_CREATED[_BT],
  * TYPE_GC_HANDLE_DESTROYED[_BT], TYPE_GC_FINALIZE_START, TYPE_GC_FINALIZE_END,
  * TYPE_GC_FINALIZE_OBJECT_START, TYPE_GC_FINALIZE_OBJECT_END
- * [time diff: uleb128] nanoseconds since last timing
  * if exinfo == TYPE_GC_RESIZE
  *	[heap_size: uleb128] new heap size
  * if exinfo == TYPE_GC_EVENT
@@ -263,7 +263,6 @@ static MonoLinkedListSet profiler_thread_list;
  * type metadata format:
  * type: TYPE_METADATA
  * exinfo: one of: TYPE_END_LOAD, TYPE_END_UNLOAD (optional for TYPE_THREAD and TYPE_DOMAIN)
- * [time diff: uleb128] nanoseconds since last timing
  * [mtype: byte] metadata type, one of: TYPE_CLASS, TYPE_IMAGE, TYPE_ASSEMBLY, TYPE_DOMAIN,
  * TYPE_THREAD, TYPE_CONTEXT
  * [pointer: sleb128] pointer of the metadata type depending on mtype
@@ -284,7 +283,6 @@ static MonoLinkedListSet profiler_thread_list;
  * type method format:
  * type: TYPE_METHOD
  * exinfo: one of: TYPE_LEAVE, TYPE_ENTER, TYPE_EXC_LEAVE, TYPE_JIT
- * [time diff: uleb128] nanoseconds since last timing
  * [method: sleb128] MonoMethod* as a pointer difference from the last such
  * pointer or the buffer method_base
  * if exinfo == TYPE_JIT
@@ -295,7 +293,6 @@ static MonoLinkedListSet profiler_thread_list;
  * type exception format:
  * type: TYPE_EXCEPTION
  * exinfo: TYPE_THROW_BT flag or one of: TYPE_CLAUSE
- * [time diff: uleb128] nanoseconds since last timing
  * if exinfo == TYPE_CLAUSE
  * 	[clause type: byte] MonoExceptionEnum enum value
  * 	[clause index: uleb128] index of the current clause
@@ -308,7 +305,6 @@ static MonoLinkedListSet profiler_thread_list;
  * type runtime format:
  * type: TYPE_RUNTIME
  * exinfo: one of: TYPE_JITHELPER
- * [time diff: uleb128] nanoseconds since last timing
  * if exinfo == TYPE_JITHELPER
  *	[type: byte] MonoProfilerCodeBufferType enum value
  *	[buffer address: sleb128] pointer to the native code as a diff from ptr_base
@@ -319,7 +315,6 @@ static MonoLinkedListSet profiler_thread_list;
  * type monitor format:
  * type: TYPE_MONITOR
  * exinfo: TYPE_MONITOR_BT flag and one of: MONO_PROFILER_MONITOR_(CONTENTION|FAIL|DONE)
- * [time diff: uleb128] nanoseconds since last timing
  * [object: sleb128] the lock object as a difference from obj_base
  * if exinfo.low3bits == MONO_PROFILER_MONITOR_CONTENTION
  *	If the TYPE_MONITOR_BT flag is set, a backtrace follows.
@@ -327,10 +322,6 @@ static MonoLinkedListSet profiler_thread_list;
  * type heap format
  * type: TYPE_HEAP
  * exinfo: one of TYPE_HEAP_START, TYPE_HEAP_END, TYPE_HEAP_OBJECT, TYPE_HEAP_ROOT
- * if exinfo == TYPE_HEAP_START
- * 	[time diff: uleb128] nanoseconds since last timing
- * if exinfo == TYPE_HEAP_END
- * 	[time diff: uleb128] nanoseconds since last timing
  * if exinfo == TYPE_HEAP_OBJECT
  * 	[object: sleb128] the object as a difference from obj_base
  * 	[class: sleb128] the object MonoClass* as a difference from ptr_base
@@ -356,7 +347,6 @@ static MonoLinkedListSet profiler_thread_list;
  * exinfo: one of TYPE_SAMPLE_HIT, TYPE_SAMPLE_USYM, TYPE_SAMPLE_UBIN, TYPE_SAMPLE_COUNTERS_DESC, TYPE_SAMPLE_COUNTERS
  * if exinfo == TYPE_SAMPLE_HIT
  * 	[sample_type: byte] type of sample (SAMPLE_*)
- * 	[timestamp: uleb128] nanoseconds since startup (note: different from other timestamps!)
  * 	[thread: sleb128] thread id as difference from ptr_base
  * 	[count: uleb128] number of following instruction addresses
  * 	[ip: sleb128]* instruction pointer as difference from ptr_base
@@ -368,7 +358,6 @@ static MonoLinkedListSet profiler_thread_list;
  * 	[size: uleb128] symbol size (may be 0 if unknown)
  * 	[name: string] symbol name
  * if exinfo == TYPE_SAMPLE_UBIN
- * 	[time diff: uleb128] nanoseconds since last timing
  * 	[address: sleb128] address where binary has been loaded
  * 	[offset: uleb128] file offset of mapping (the same file can be mapped multiple times)
  * 	[size: uleb128] memory size
@@ -385,7 +374,6 @@ static MonoLinkedListSet profiler_thread_list;
  * 		[variance: byte] variance of counter
  * 		[index: uleb128] unique index of counter
  * if exinfo == TYPE_SAMPLE_COUNTERS
- * 	[timestamp: uleb128] sampling timestamp
  * 	while true:
  * 		[index: uleb128] unique index of counter
  * 		if index == 0:
@@ -439,7 +427,6 @@ static MonoLinkedListSet profiler_thread_list;
  * type meta format:
  * type: TYPE_META
  * exinfo: one of: TYPE_SYNC_POINT
- * [time diff: uleb128] nanoseconds since last timing
  * if exinfo == TYPE_SYNC_POINT
  *	[type: byte] MonoProfilerSyncPointType enum value
  */
