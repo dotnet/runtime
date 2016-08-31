@@ -1264,7 +1264,6 @@ LIR::ReadOnlyRange LIR::Range::GetMarkedRange(unsigned  markCount,
             for (GenTree* operand : firstNode->Operands())
             {
                 // Do not mark nodes that do not appear in the execution order
-                assert(operand->OperGet() != GT_LIST);
                 if (operand->OperGet() == GT_ARGPLACE)
                 {
                     continue;

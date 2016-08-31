@@ -3198,7 +3198,7 @@ static int ComputeOperandDstCount(GenTree* operand)
                operand->OperIsCompare());
         return 0;
     }
-    else if (operand->OperIsStore() || operand->TypeGet() == TYP_VOID)
+    else if (!operand->OperIsAggregate() && (operand->OperIsStore() || operand->TypeGet() == TYP_VOID))
     {
         // Stores and void-typed operands may be encountered when processing call nodes, which contain
         // pointers to argument setup stores.
@@ -3206,10 +3206,10 @@ static int ComputeOperandDstCount(GenTree* operand)
     }
     else
     {
-        // If a non-void-types operand is not an unsued value and does not have source registers, that
-        // argument is contained within its parent and produces `sum(operand_dst_count)` registers.
+        // If an aggregate or non-void-typed operand is not an unsued value and does not have source registers,
+        // that argument is contained within its parent and produces `sum(operand_dst_count)` registers.
         int dstCount = 0;
-        for (GenTree* op : operand->Operands(true))
+        for (GenTree* op : operand->Operands())
         {
             dstCount += ComputeOperandDstCount(op);
         }
@@ -3234,7 +3234,7 @@ static int ComputeOperandDstCount(GenTree* operand)
 static int ComputeAvailableSrcCount(GenTree* node)
 {
     int numSources = 0;
-    for (GenTree* operand : node->Operands(true))
+    for (GenTree* operand : node->Operands())
     {
         numSources += ComputeOperandDstCount(operand);
     }
@@ -3253,11 +3253,9 @@ void LinearScan::buildRefPositionsForNode(GenTree*                  tree,
     assert(!isRegPairType(tree->TypeGet()));
 #endif // _TARGET_ARM_
 
-    // The tree traversal doesn't visit GT_LIST or GT_ARGPLACE nodes
-    if (tree->OperGet() == GT_LIST || tree->OperGet() == GT_ARGPLACE)
-    {
-        return;
-    }
+    // The LIR traversal doesn't visit non-aggregate GT_LIST or GT_ARGPLACE nodes
+    assert(tree->OperGet() != GT_ARGPLACE);
+    assert((tree->OperGet() != GT_LIST) || tree->AsArgList()->IsAggregate());
 
     // These nodes are eliminated by the Rationalizer.
     if (tree->OperGet() == GT_CLS_VAR)
@@ -3410,7 +3408,7 @@ void LinearScan::buildRefPositionsForNode(GenTree*                  tree,
             {
                 // Get the location info for the register defined by the first operand.
                 LocationInfoList operandDefs;
-                bool found = operandToLocationInfoMap.TryGetValue(*(tree->OperandsBegin(true)), &operandDefs);
+                bool found = operandToLocationInfoMap.TryGetValue(*(tree->OperandsBegin()), &operandDefs);
                 assert(found);
 
                 // Since we only expect to consume one register, we should only have a single register to
@@ -3514,7 +3512,7 @@ void LinearScan::buildRefPositionsForNode(GenTree*                  tree,
 
         // Get the register information for the first operand of the node.
         LocationInfoList operandDefs;
-        bool             found = operandToLocationInfoMap.TryGetValue(*(tree->OperandsBegin(true)), &operandDefs);
+        bool             found = operandToLocationInfoMap.TryGetValue(*(tree->OperandsBegin()), &operandDefs);
         assert(found);
 
         // Preference the destination to the interval of the first register defined by the first operand.
@@ -3531,7 +3529,7 @@ void LinearScan::buildRefPositionsForNode(GenTree*                  tree,
     int internalCount = buildInternalRegisterDefsForNode(tree, currentLoc, internalRefs);
 
     // pop all ref'd tree temps
-    GenTreeOperandIterator iterator = tree->OperandsBegin(true);
+    GenTreeOperandIterator iterator = tree->OperandsBegin();
 
     // `operandDefs` holds the list of `LocationInfo` values for the registers defined by the current
     // operand. `operandDefsIterator` points to the current `LocationInfo` value in `operandDefs`.
@@ -3796,11 +3794,11 @@ void LinearScan::buildRefPositionsForNode(GenTree*                  tree,
 #endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
 
     bool isContainedNode =
-        !noAdd && consume == 0 && produce == 0 && tree->TypeGet() != TYP_VOID && !tree->OperIsStore();
+        !noAdd && consume == 0 && produce == 0 && (tree->OperIsAggregate() || (tree->TypeGet() != TYP_VOID && !tree->OperIsStore()));
     if (isContainedNode)
     {
         // Contained nodes map to the concatenated lists of their operands.
-        for (GenTree* op : tree->Operands(true))
+        for (GenTree* op : tree->Operands())
         {
             if (!op->gtLsraInfo.definesAnyRegisters)
             {
