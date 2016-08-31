@@ -468,17 +468,17 @@ namespace System.Linq.Expressions
                 {
                     Expression arg = arguments[i];
                     ParameterInfo pi = indexes[i];
-                    RequiresCanRead(arg, nameof(arguments));
+                    RequiresCanRead(arg, nameof(arguments), i);
 
                     Type pType = pi.ParameterType;
-                    if (pType.IsByRef) throw Error.AccessorsCannotHaveByRefArgs($"{nameof(indexes)}[{i}]");
-                    TypeUtils.ValidateType(pType, $"{nameof(indexes)}[{i}]");
+                    if (pType.IsByRef) throw Error.AccessorsCannotHaveByRefArgs(nameof(indexes), i);
+                    TypeUtils.ValidateType(pType, nameof(indexes), i);
 
                     if (!TypeUtils.AreReferenceAssignable(pType, arg.Type))
                     {
                         if (!TryQuote(pType, ref arg))
                         {
-                            throw Error.ExpressionTypeDoesNotMatchMethodParameter(arg.Type, pType, method);
+                            throw Error.ExpressionTypeDoesNotMatchMethodParameter(arg.Type, pType, method, nameof(arguments), i);
                         }
                     }
                     if (newArgs == null && arg != arguments[i])

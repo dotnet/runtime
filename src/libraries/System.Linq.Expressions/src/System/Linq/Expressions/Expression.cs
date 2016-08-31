@@ -284,7 +284,12 @@ namespace System.Linq.Expressions
 
         private static void RequiresCanRead(Expression expression, string paramName)
         {
-            ExpressionUtils.RequiresCanRead(expression, paramName);
+            ExpressionUtils.RequiresCanRead(expression, paramName, -1);
+        }
+
+        private static void RequiresCanRead(Expression expression, string paramName, int index)
+        {
+            ExpressionUtils.RequiresCanRead(expression, paramName, index);
         }
 
         private static void RequiresCanRead(IReadOnlyList<Expression> items, string paramName)
@@ -293,7 +298,7 @@ namespace System.Linq.Expressions
             // this is called a lot, avoid allocating an enumerator if we can...
             for (int i = 0; i < items.Count; i++)
             {
-                RequiresCanRead(items[i], paramName);
+                RequiresCanRead(items[i], paramName, i);
             }
         }
 
@@ -337,7 +342,7 @@ namespace System.Linq.Expressions
                     return;
             }
 
-            throw new ArgumentException(Strings.ExpressionMustBeWriteable, paramName);
+            throw Error.ExpressionMustBeWriteable(paramName);
         }
     }
 }

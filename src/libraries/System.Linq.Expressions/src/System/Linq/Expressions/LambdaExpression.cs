@@ -490,7 +490,7 @@ namespace System.Linq.Expressions
                     typeArgs[i] = param.IsByRef ? param.Type.MakeByRefType() : param.Type;
                     if (!set.Add(param))
                     {
-                        throw Error.DuplicateVariable(param, $"parameters[{i}]");
+                        throw Error.DuplicateVariable(param, nameof(parameters), i);
                     }
                 }
             }
@@ -568,7 +568,7 @@ namespace System.Linq.Expressions
                 {
                     ParameterExpression pex = parameters[i];
                     ParameterInfo pi = pis[i];
-                    RequiresCanRead(pex, nameof(parameters));
+                    RequiresCanRead(pex, nameof(parameters), i);
                     Type pType = pi.ParameterType;
                     if (pex.IsByRef)
                     {
@@ -585,7 +585,7 @@ namespace System.Linq.Expressions
                     }
                     if (!set.Add(pex))
                     {
-                        throw Error.DuplicateVariable(pex, $"{nameof(parameters)}[{i}]");
+                        throw Error.DuplicateVariable(pex, nameof(parameters), i);
                     }
                 }
             }

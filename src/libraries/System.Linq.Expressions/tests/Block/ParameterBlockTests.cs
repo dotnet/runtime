@@ -76,10 +76,10 @@ namespace System.Linq.Expressions.Tests
             {
                 Expression[] expressions = expressionList.ToArray();
                 expressions[i] = null;
-                Assert.Throws<ArgumentNullException>("expressions", () => Expression.Block(SingleParameter, expressions));
-                Assert.Throws<ArgumentNullException>("expressions", () => Expression.Block(SingleParameter, expressions.Skip(0)));
-                Assert.Throws<ArgumentNullException>("expressions", () => Expression.Block(typeof(int), SingleParameter, expressions));
-                Assert.Throws<ArgumentNullException>("expressions", () => Expression.Block(typeof(int), SingleParameter, expressions.Skip(0)));
+                Assert.Throws<ArgumentNullException>($"expressions[{i}]", () => Expression.Block(SingleParameter, expressions));
+                Assert.Throws<ArgumentNullException>($"expressions[{i}]", () => Expression.Block(SingleParameter, expressions.Skip(0)));
+                Assert.Throws<ArgumentNullException>($"expressions[{i}]", () => Expression.Block(typeof(int), SingleParameter, expressions));
+                Assert.Throws<ArgumentNullException>($"expressions[{i}]", () => Expression.Block(typeof(int), SingleParameter, expressions.Skip(0)));
             }
         }
 
@@ -92,10 +92,10 @@ namespace System.Linq.Expressions.Tests
             {
                 Expression[] expressions = expressionList.ToArray();
                 expressions[i] = UnreadableExpression;
-                Assert.Throws<ArgumentException>("expressions", () => Expression.Block(SingleParameter, expressions));
-                Assert.Throws<ArgumentException>("expressions", () => Expression.Block(SingleParameter, expressions.Skip(0)));
-                Assert.Throws<ArgumentException>("expressions", () => Expression.Block(typeof(int), SingleParameter, expressions));
-                Assert.Throws<ArgumentException>("expressions", () => Expression.Block(typeof(int), SingleParameter, expressions.Skip(0)));
+                Assert.Throws<ArgumentException>($"expressions[{i}]", () => Expression.Block(SingleParameter, expressions));
+                Assert.Throws<ArgumentException>($"expressions[{i}]", () => Expression.Block(SingleParameter, expressions.Skip(0)));
+                Assert.Throws<ArgumentException>($"expressions[{i}]", () => Expression.Block(typeof(int), SingleParameter, expressions));
+                Assert.Throws<ArgumentException>($"expressions[{i}]", () => Expression.Block(typeof(int), SingleParameter, expressions.Skip(0)));
             }
         }
 
