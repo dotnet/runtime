@@ -4129,9 +4129,6 @@
       <Member MemberType="Field" Name="Retargetable" />
       <Member MemberType="Field" Name="value__" />
     </Type>
-    <Type Name="System.Reflection.AssemblyNameProxy">
-      <Member Name="#ctor" />
-    </Type>
     <Type Name="System.Reflection.AssemblyProductAttribute">
       <Member Name="#ctor(System.String)" />
       <Member Name="get_Product" />
@@ -5912,7 +5909,6 @@
       <Member MemberType="Property" Name="Item(System.Int32)" />
     </Type>
     <Type Name="System.Reflection.Pointer" >
-      <Member Name="#ctor" />
       <Member Name="Box(System.Void*,System.Type)" />
       <Member Name="Unbox(System.Object)" />
       <Member Name="System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
