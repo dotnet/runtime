@@ -111,8 +111,6 @@ extern MonoString* ves_icall_System_Environment_GetOSVersionString (void);
 
 ICALL_EXPORT MonoReflectionAssembly* ves_icall_System_Reflection_Assembly_GetCallingAssembly (void);
 
-TYPED_HANDLE_DECL (MonoReflectionType);
-
 /* Lazy class loading functions */
 static GENERATE_GET_CLASS_WITH_CACHE (system_version, System, Version)
 static GENERATE_GET_CLASS_WITH_CACHE (assembly_name, System.Reflection, AssemblyName)
@@ -2638,37 +2636,38 @@ ves_icall_RuntimeType_get_DeclaringType (MonoReflectionType *type)
 	return ret;
 }
 
-ICALL_EXPORT MonoString*
-ves_icall_RuntimeType_get_Name (MonoReflectionType *type)
+ICALL_EXPORT MonoStringHandle
+ves_icall_RuntimeType_get_Name (MonoReflectionTypeHandle reftype, MonoError *error)
 {
-	MonoDomain *domain = mono_domain_get (); 
-	MonoClass *klass = mono_class_from_mono_type (type->type);
+	MonoDomain *domain = mono_domain_get ();
+	MonoType *type = MONO_HANDLE_RAW(reftype)->type; 
+	MonoClass *klass = mono_class_from_mono_type (type);
 
-	if (type->type->byref) {
+	if (type->byref) {
 		char *n = g_strdup_printf ("%s&", klass->name);
-		MonoString *res = mono_string_new (domain, n);
+		MonoStringHandle res = mono_string_new_handle (domain, n, error);
 
 		g_free (n);
 
 		return res;
 	} else {
-		return mono_string_new (domain, klass->name);
+		return mono_string_new_handle (domain, klass->name, error);
 	}
 }
 
-ICALL_EXPORT MonoString*
-ves_icall_RuntimeType_get_Namespace (MonoReflectionType *type)
+ICALL_EXPORT MonoStringHandle
+ves_icall_RuntimeType_get_Namespace (MonoReflectionTypeHandle type, MonoError *error)
 {
 	MonoDomain *domain = mono_domain_get (); 
-	MonoClass *klass = mono_class_from_mono_type (type->type);
+	MonoClass *klass = mono_class_from_mono_type_handle (type);
 
 	while (klass->nested_in)
 		klass = klass->nested_in;
 
 	if (klass->name_space [0] == '\0')
-		return NULL;
+		return NULL_HANDLE_STRING;
 	else
-		return mono_string_new (domain, klass->name_space);
+		return mono_string_new_handle (domain, klass->name_space, error);
 }
 
 ICALL_EXPORT gint32
@@ -4542,15 +4541,12 @@ ves_icall_System_Reflection_Assembly_load_with_partial_name (MonoString *mname, 
 	return result;
 }
 
-ICALL_EXPORT MonoString *
-ves_icall_System_Reflection_Assembly_get_location (MonoReflectionAssembly *assembly)
+ICALL_EXPORT MonoStringHandle
+ves_icall_System_Reflection_Assembly_get_location (MonoReflectionAssemblyHandle refassembly, MonoError *error)
 {
-	MonoDomain *domain = mono_object_domain (assembly); 
-	MonoString *res;
-
-	res = mono_string_new (domain, mono_image_get_filename (assembly->assembly->image));
-
-	return res;
+	MonoDomain *domain = MONO_HANDLE_DOMAIN (refassembly);
+	MonoAssembly *assembly = MONO_HANDLE_RAW (refassembly)->assembly;
+	return mono_string_new_handle (domain, mono_image_get_filename (assembly->image), error);
 }
 
 ICALL_EXPORT MonoBoolean
@@ -4559,12 +4555,13 @@ ves_icall_System_Reflection_Assembly_get_ReflectionOnly (MonoReflectionAssembly 
 	return assembly->assembly->ref_only;
 }
 
-ICALL_EXPORT MonoString *
-ves_icall_System_Reflection_Assembly_InternalImageRuntimeVersion (MonoReflectionAssembly *assembly)
+ICALL_EXPORT MonoStringHandle
+ves_icall_System_Reflection_Assembly_InternalImageRuntimeVersion (MonoReflectionAssemblyHandle refassembly, MonoError *error)
 {
-	MonoDomain *domain = mono_object_domain (assembly); 
+	MonoDomain *domain = MONO_HANDLE_DOMAIN (refassembly);
+	MonoAssembly *assembly = MONO_HANDLE_RAW (refassembly)->assembly;
 
-	return mono_string_new (domain, assembly->assembly->image->version);
+	return mono_string_new_handle (domain, assembly->image->version, error);
 }
 
 ICALL_EXPORT MonoReflectionMethod*
@@ -4619,8 +4616,8 @@ ves_icall_System_Reflection_Assembly_GetManifestResourceNames (MonoReflectionAss
 	return result;
 }
 
-ICALL_EXPORT MonoString*
-ves_icall_System_Reflection_Assembly_GetAotId ()
+ICALL_EXPORT MonoStringHandle
+ves_icall_System_Reflection_Assembly_GetAotId (MonoError *error)
 {
 	int i;
 	guint8 aotid_sum = 0;
@@ -4636,8 +4633,11 @@ ves_icall_System_Reflection_Assembly_GetAotId ()
 
 	if (aotid_sum == 0)
 		return NULL;
-	
-	return mono_string_new (domain, mono_guid_to_string((guint8*) aotid));
+
+	gchar *guid = mono_guid_to_string((guint8*) aotid);
+	MonoStringHandle res = mono_string_new_handle (domain, guid, error);
+	g_free (guid);
+	return res;
 }
 
 static MonoObject*
@@ -5219,7 +5219,7 @@ ves_icall_System_RuntimeType_getFullName (MonoReflectionTypeHandle object, gbool
 		return NULL_HANDLE_STRING;
 	}
 
-	res = mono_string_new_handle (domain, name);
+	res = mono_string_new_handle (domain, name, error);
 	g_free (name);
 
 	return res;
@@ -5703,13 +5703,14 @@ ves_icall_System_Reflection_Module_Close (MonoReflectionModule *module)
 		mono_image_close (module->image);*/
 }
 
-ICALL_EXPORT MonoString*
-ves_icall_System_Reflection_Module_GetGuidInternal (MonoReflectionModule *module)
+ICALL_EXPORT MonoStringHandle
+ves_icall_System_Reflection_Module_GetGuidInternal (MonoReflectionModuleHandle refmodule, MonoError *error)
 {
-	MonoDomain *domain = mono_object_domain (module); 
+	MonoDomain *domain = MONO_HANDLE_DOMAIN (refmodule);
+	MonoImage *image = MONO_HANDLE_RAW (refmodule)->image;
 
-	g_assert (module->image);
-	return mono_string_new (domain, module->image->guid);
+	g_assert (image);
+	return mono_string_new_handle (domain, image->guid, error);
 }
 
 ICALL_EXPORT gpointer
@@ -6549,27 +6550,20 @@ ves_icall_System_Environment_GetIs64BitOperatingSystem (void)
 #endif
 }
 
-ICALL_EXPORT MonoString *
-ves_icall_System_Environment_GetEnvironmentVariable (MonoString *name)
+ICALL_EXPORT MonoStringHandle
+ves_icall_System_Environment_GetEnvironmentVariable_native (const gchar *utf8_name, MonoError *error)
 {
-	MonoError error;
 	const gchar *value;
-	gchar *utf8_name;
 
-	if (name == NULL)
-		return NULL;
+	if (utf8_name == NULL)
+		return NULL_HANDLE_STRING;
 
-	utf8_name = mono_string_to_utf8_checked (name, &error);	/* FIXME: this should be ascii */
-	if (mono_error_set_pending_exception (&error))
-		return NULL;
 	value = g_getenv (utf8_name);
 
-	g_free (utf8_name);
-
 	if (value == 0)
-		return NULL;
+		return NULL_HANDLE_STRING;
 	
-	return mono_string_new (mono_domain_get (), value);
+	return mono_string_new_handle (mono_domain_get (), value, error);
 }
 
 /*
@@ -6768,10 +6762,10 @@ ves_icall_System_Environment_Exit (int result)
 	exit (result);
 }
 
-ICALL_EXPORT MonoString*
-ves_icall_System_Environment_GetGacPath (void)
+ICALL_EXPORT MonoStringHandle
+ves_icall_System_Environment_GetGacPath (MonoError *error)
 {
-	return mono_string_new (mono_domain_get (), mono_assembly_getrootdir ());
+	return mono_string_new_handle (mono_domain_get (), mono_assembly_getrootdir (), error);
 }
 
 ICALL_EXPORT MonoString*
@@ -6872,10 +6866,10 @@ ves_icall_System_IO_DriveInfo_GetDriveFormat (MonoString *path)
 	return result;
 }
 
-ICALL_EXPORT MonoString *
-ves_icall_System_Environment_InternalGetHome (void)
+ICALL_EXPORT MonoStringHandle
+ves_icall_System_Environment_InternalGetHome (MonoError *error)
 {
-	return mono_string_new (mono_domain_get (), g_get_home_dir ());
+	return mono_string_new_handle (mono_domain_get (), g_get_home_dir (), error);
 }
 
 static const char *encodings [] = {
@@ -7125,10 +7119,10 @@ ves_icall_System_Runtime_Activation_ActivationServices_AllocateUninitializedClas
 	}
 }
 
-ICALL_EXPORT MonoString *
-ves_icall_System_IO_get_temp_path (void)
+ICALL_EXPORT MonoStringHandle
+ves_icall_System_IO_get_temp_path (MonoError *error)
 {
-	return mono_string_new (mono_domain_get (), g_get_tmp_dir ());
+	return mono_string_new_handle (mono_domain_get (), g_get_tmp_dir (), error);
 }
 
 #ifndef PLATFORM_NO_DRIVEINFO
@@ -7246,17 +7240,18 @@ get_bundled_app_config (void)
 	return mono_string_new (mono_domain_get (), app_config);
 }
 
-static MonoString *
-get_bundled_machine_config (void)
+/* this is an icall */
+static MonoStringHandle
+get_bundled_machine_config (MonoError *error)
 {
 	const gchar *machine_config;
 
 	machine_config = mono_get_machine_config ();
 
 	if (!machine_config)
-		return NULL;
+		return NULL_HANDLE_STRING;
 
-	return mono_string_new (mono_domain_get (), machine_config);
+	return mono_string_new_handle (mono_domain_get (), machine_config, error);
 }
 
 ICALL_EXPORT MonoString *

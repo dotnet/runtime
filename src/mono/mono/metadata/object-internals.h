@@ -7,6 +7,7 @@
 #include <mono/metadata/mempool.h>
 #include <mono/metadata/class-internals.h>
 #include <mono/metadata/threads-types.h>
+#include <mono/metadata/handle.h>
 #include <mono/io-layer/io-layer.h>
 #include "mono/utils/mono-compiler.h"
 #include "mono/utils/mono-error.h"
@@ -261,6 +262,9 @@ struct _MonoReflectionType {
 	MonoObject object;
 	MonoType  *type;
 };
+
+/* Safely access System.Type from native code */
+TYPED_HANDLE_DECL (MonoReflectionType);
 
 /* This corresponds to System.RuntimeType */
 typedef struct {
@@ -808,6 +812,9 @@ struct _MonoReflectionAssembly {
 	MonoString *name;
 };
 
+/* Safely access System.Reflection.Assembly from native code */
+TYPED_HANDLE_DECL (MonoReflectionAssembly);
+
 typedef struct {
 	MonoReflectionType *utype;
 	MonoArray *values;
@@ -1096,6 +1103,9 @@ struct _MonoReflectionModule {
 	MonoBoolean is_resource;
 	guint32 token;
 };
+
+/* Safely access System.Reflection.Module from native code */
+TYPED_HANDLE_DECL (MonoReflectionModule);
 
 typedef struct {
 	MonoReflectionModule module;

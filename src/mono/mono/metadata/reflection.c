@@ -2863,3 +2863,14 @@ mono_reflection_assembly_get_assembly (MonoReflectionAssembly *refassembly)
 	return refassembly->assembly;
 }
 
+/**
+ * mono_class_from_mono_type_handle:
+ * @reftype: the System.Type handle
+ *
+ * Returns the MonoClass* corresponding to the given type.
+ */
+MonoClass*
+mono_class_from_mono_type_handle (MonoReflectionTypeHandle reftype)
+{
+	return mono_class_from_mono_type (MONO_HANDLE_RAW (reftype)->type);
+}
