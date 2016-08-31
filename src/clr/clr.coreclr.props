@@ -32,7 +32,6 @@
     <FeatureMergeCultureSupportAndEngine>true</FeatureMergeCultureSupportAndEngine>
     <FeatureMergeJitAndEngine>true</FeatureMergeJitAndEngine>
     <FeatureMulticoreJIT>true</FeatureMulticoreJIT>
-    <FeatureNormIdnaOnly>true</FeatureNormIdnaOnly>
     <FeaturePrejit>true</FeaturePrejit>
     <FeatureStandaloneSn>true</FeatureStandaloneSn>
     <FeatureStrongnameDelaySigningAllowed>true</FeatureStrongnameDelaySigningAllowed>
