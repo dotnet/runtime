@@ -1038,13 +1038,12 @@ dump_header (MonoProfiler *profiler)
 #if defined (HAVE_SYS_ZLIB)
 	if (profiler->gzfile) {
 		gzwrite (profiler->gzfile, hbuf, p - hbuf);
-	} else {
-		fwrite (hbuf, p - hbuf, 1, profiler->file);
-	}
-#else
-	fwrite (hbuf, p - hbuf, 1, profiler->file);
-	fflush (profiler->file);
+	} else
 #endif
+	{
+		fwrite (hbuf, p - hbuf, 1, profiler->file);
+		fflush (profiler->file);
+	}
 }
 
 static void
@@ -1107,8 +1106,10 @@ dump_buffer (MonoProfiler *profiler, LogBuffer *buf)
 {
 	char hbuf [128];
 	char *p = hbuf;
+
 	if (buf->next)
 		dump_buffer (profiler, buf->next);
+
 	p = write_int32 (p, BUF_ID);
 	p = write_int32 (p, buf->cursor - buf->buf);
 	p = write_int64 (p, buf->time_base);
@@ -1116,18 +1117,19 @@ dump_buffer (MonoProfiler *profiler, LogBuffer *buf)
 	p = write_int64 (p, buf->obj_base);
 	p = write_int64 (p, buf->thread_id);
 	p = write_int64 (p, buf->method_base);
+
 #if defined (HAVE_SYS_ZLIB)
 	if (profiler->gzfile) {
 		gzwrite (profiler->gzfile, hbuf, p - hbuf);
 		gzwrite (profiler->gzfile, buf->buf, buf->cursor - buf->buf);
-	} else {
+	} else
 #endif
+	{
 		fwrite (hbuf, p - hbuf, 1, profiler->file);
 		fwrite (buf->buf, buf->cursor - buf->buf, 1, profiler->file);
 		fflush (profiler->file);
-#if defined (HAVE_SYS_ZLIB)
 	}
-#endif
+
 	free_buffer (buf, buf->size);
 }
 
