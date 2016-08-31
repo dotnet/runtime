@@ -117,19 +117,5 @@ namespace System.Dynamic.Utils
             }
             return null;
         }
-
-        public static MethodInfo[] GetMethodsIgnoreCase(this Type type, BindingFlags flags, string name)
-        {
-            var list = new List<MethodInfo>();
-            foreach (var method in type.GetRuntimeMethods())
-            {
-                // TODO: Binding flags filter
-                if (method.Name.Equals(name, StringComparison.CurrentCultureIgnoreCase))
-                {
-                    list.Add(method);
-                }
-            }
-            return list.ToArray();
-        }
     }
 }
