@@ -218,7 +218,8 @@ static MonoLinkedListSet profiler_thread_list;
  *
  * backtrace format:
  * [num: uleb128] number of frames following
- * [frame: sleb128]* num MonoMethod pointers as differences from ptr_base
+ * [frame: sleb128]* mum MonoMethod* as a pointer difference from the last such
+ * pointer or the buffer method_base
  *
  * type alloc format:
  * type: TYPE_ALLOC
