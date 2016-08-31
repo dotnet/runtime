@@ -35,6 +35,11 @@
   <!-- Tasks from buildtools for easy project.json dependency updates -->
   <UsingTask TaskName="UpdatePackageDependencyVersion" AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.Tasks.dll" />
 
+  <!-- Create a collection of all project.json files for dependency updates. -->
+  <ItemGroup>
+    <ProjectJsonFiles Include="$(SourceDir)**\project.json" />
+  </ItemGroup>
+
   <Target Name="UpdatePackageDependencyVersion">
     <UpdatePackageDependencyVersion ProjectJsons="@(ProjectJsonFiles)"
                                     PackageId="$(PackageId)"
