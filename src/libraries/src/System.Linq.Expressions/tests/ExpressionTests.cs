@@ -398,7 +398,7 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public void ConfirmCannotReadSequence()
         {
-            Assert.Throws<ArgumentException>("expressions", () => Expression.Block(typeof(void), UnreadableExpressions));
+            Assert.Throws<ArgumentException>("expressions[0]", () => Expression.Block(typeof(void), UnreadableExpressions));
         }
 
         [Theory, MemberData(nameof(UnwritableExpressionData))]

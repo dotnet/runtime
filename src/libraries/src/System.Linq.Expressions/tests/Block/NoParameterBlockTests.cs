@@ -213,12 +213,12 @@ namespace System.Linq.Expressions.Tests
             {
                 Expression[] expressions = expressionList.ToArray();
                 expressions[i] = null;
-                Assert.Throws<ArgumentNullException>("expressions", () => Expression.Block(expressions));
-                Assert.Throws<ArgumentNullException>("expressions", () => Expression.Block(expressions.Skip(0)));
-                Assert.Throws<ArgumentNullException>("expressions", () => Expression.Block(typeof(int), expressions));
-                Assert.Throws<ArgumentNullException>("expressions", () => Expression.Block(typeof(int), expressions.Skip(0)));
-                Assert.Throws<ArgumentNullException>("expressions", () => Expression.Block(typeof(int), null, expressions));
-                Assert.Throws<ArgumentNullException>("expressions", () => Expression.Block(typeof(int), null, expressions.Skip(0)));
+                Assert.Throws<ArgumentNullException>($"expressions[{i}]", () => Expression.Block(expressions));
+                Assert.Throws<ArgumentNullException>($"expressions[{i}]", () => Expression.Block(expressions.Skip(0)));
+                Assert.Throws<ArgumentNullException>($"expressions[{i}]", () => Expression.Block(typeof(int), expressions));
+                Assert.Throws<ArgumentNullException>($"expressions[{i}]", () => Expression.Block(typeof(int), expressions.Skip(0)));
+                Assert.Throws<ArgumentNullException>($"expressions[{i}]", () => Expression.Block(typeof(int), null, expressions));
+                Assert.Throws<ArgumentNullException>($"expressions[{i}]", () => Expression.Block(typeof(int), null, expressions.Skip(0)));
             }
         }
 
@@ -231,12 +231,12 @@ namespace System.Linq.Expressions.Tests
             {
                 Expression[] expressions = expressionList.ToArray();
                 expressions[i] = UnreadableExpression;
-                Assert.Throws<ArgumentException>("expressions", () => Expression.Block(expressions));
-                Assert.Throws<ArgumentException>("expressions", () => Expression.Block(expressions.Skip(0)));
-                Assert.Throws<ArgumentException>("expressions", () => Expression.Block(typeof(int), expressions));
-                Assert.Throws<ArgumentException>("expressions", () => Expression.Block(typeof(int), expressions.Skip(0)));
-                Assert.Throws<ArgumentException>("expressions", () => Expression.Block(typeof(int), null, expressions));
-                Assert.Throws<ArgumentException>("expressions", () => Expression.Block(typeof(int), null, expressions.Skip(0)));
+                Assert.Throws<ArgumentException>($"expressions[{i}]", () => Expression.Block(expressions));
+                Assert.Throws<ArgumentException>($"expressions[{i}]", () => Expression.Block(expressions.Skip(0)));
+                Assert.Throws<ArgumentException>($"expressions[{i}]", () => Expression.Block(typeof(int), expressions));
+                Assert.Throws<ArgumentException>($"expressions[{i}]", () => Expression.Block(typeof(int), expressions.Skip(0)));
+                Assert.Throws<ArgumentException>($"expressions[{i}]", () => Expression.Block(typeof(int), null, expressions));
+                Assert.Throws<ArgumentException>($"expressions[{i}]", () => Expression.Block(typeof(int), null, expressions.Skip(0)));
             }
         }
 

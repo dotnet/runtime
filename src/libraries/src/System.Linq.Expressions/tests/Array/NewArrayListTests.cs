@@ -1644,7 +1644,8 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void NullInitializer()
         {
-            Assert.Throws<ArgumentNullException>("initializers", () => Expression.NewArrayInit(typeof(int), null, null));
+            Assert.Throws<ArgumentNullException>("initializers[0]", () => Expression.NewArrayInit(typeof(int), new Expression[] { null, null }));
+            Assert.Throws<ArgumentNullException>("initializers[0]", () => Expression.NewArrayInit(typeof(int), new List<Expression> { null, null }));
         }
 
         [Fact]
