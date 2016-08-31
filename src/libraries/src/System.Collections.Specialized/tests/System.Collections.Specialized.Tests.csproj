@@ -108,6 +108,16 @@
     <Compile Include="StringDictionary\StringDictionary.ValuesTests.cs" />
     <Compile Include="StringDictionary\StringDictionaryClearTests.cs" />
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)'!='netstandard1.7'">
+    <Compile Include="$(CommonPath)\System\SerializableAttribute.cs">
+      <Link>Common\System\SerializableAttribute.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)'=='netstandard1.7'">
+    <Compile Include="$(CommonTestPath)\System\Collections\IEnumerable.NonGeneric.Serialization.Tests.cs" >
+      <Link>Common\System\Collections\IEnumerable.NonGeneric.Serialization.Tests.cs</Link>
+    </Compile>
+  </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\pkg\System.Collections.Specialized.pkgproj">
       <Project>{63634289-90d7-4947-8bf3-dbbe98d76c85}</Project>

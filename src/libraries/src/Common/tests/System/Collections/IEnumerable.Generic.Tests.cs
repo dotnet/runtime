@@ -14,7 +14,7 @@ namespace System.Collections.Tests
     /// Contains tests that ensure the correctness of any class that implements the generic
     /// IEnumerable interface.
     /// </summary>
-    public abstract class IEnumerable_Generic_Tests<T> : TestBase<T>
+    public abstract partial class IEnumerable_Generic_Tests<T> : TestBase<T>
     {
         #region IEnumerable<T> Helper Methods
 
@@ -731,39 +731,6 @@ namespace System.Collections.Tests
             }
         }
 
-        #endregion
-
-        #region Serialization
-        #if netstandard17
-        
-        [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
-        public void IGenericSharedAPI_SerializeDeserialize(int count)
-        {
-            IEnumerable<T> expected = GenericIEnumerableFactory(count);
-
-            var bf = new System.Runtime.Serialization.Formatters.Binary.BinaryFormatter();
-            using (var ms = new MemoryStream())
-            {
-                bf.Serialize(ms, expected);
-                ms.Position = 0;
-                IEnumerable<T> actual = (IEnumerable<T>)bf.Deserialize(ms);
-
-                if (Order == EnumerableOrder.Sequential)
-                {
-                    Assert.Equal(expected, actual);
-                }
-                else
-                {
-                    var expectedSet = new HashSet<T>(expected);
-                    var actualSet = new HashSet<T>(actual);
-                    Assert.Subset(expectedSet, actualSet);
-                    Assert.Subset(actualSet, expectedSet);
-                }
-            }
-        }
-        
-        #endif
         #endregion
     }
 }
