@@ -22,7 +22,7 @@ namespace System.Collections.Specialized.Tests
         protected override Type ICollection_NonGeneric_CopyTo_ArrayOfEnumType_ThrowType => typeof(InvalidCastException);
         protected override Type ICollection_NonGeneric_CopyTo_ArrayOfIncorrectReferenceType_ThrowType => typeof(InvalidCastException);
         protected override Type ICollection_NonGeneric_CopyTo_ArrayOfIncorrectValueType_ThrowType => typeof(InvalidCastException);
-        protected override Type ICollection_NonGeneric_CopyTo_NonZeroLowerBound_ThrowType => Helpers.IsDesktopJob ? typeof(IndexOutOfRangeException) : typeof(ArgumentException);
+        protected override Type ICollection_NonGeneric_CopyTo_NonZeroLowerBound_ThrowType => typeof(IndexOutOfRangeException);
 
         protected override object CreateTKey(int seed)
         {
@@ -39,13 +39,9 @@ namespace System.Collections.Specialized.Tests
         [MemberData(nameof(ValidCollectionSizes))]
         public override void ICollection_NonGeneric_CopyTo_IndexLargerThanArrayCount_ThrowsAnyArgumentException(int count)
         {
-            // When the collection is of type ListDictionary.NodeKeyValueCollection, array space checks are not performed. 
-            // Array checks in clr don't throw when array length = 0
-            if (Helpers.IsDesktopJob && count == 0)
-                return;
-
             ICollection collection = NonGenericICollectionFactory(count);
             object[] array = new object[count];
+            
             Assert.Throws(ICollection_NonGeneric_CopyTo_IndexLargerThanArrayCount_ThrowType, () => collection.CopyTo(array, count + 1));
         }
 
@@ -55,14 +51,16 @@ namespace System.Collections.Specialized.Tests
         {
             ICollection collection = NonGenericICollectionFactory(count);
 
-            // When the collection is of type ListDictionary.NodeKeyValueCollection, array space checks are not performed. 
-            // Array checks in clr don't throw when array length = 0
-            if (Helpers.IsDesktopJob && count == 0)
-                return;
-
             Array arr = Array.CreateInstance(typeof(object), new int[1] { count }, new int[1] { 2 });
             Assert.Equal(1, arr.Rank);
             Assert.Equal(2, arr.GetLowerBound(0));
+            if (count == 0)
+            {
+                collection.CopyTo(arr, count);
+                Assert.Equal(0, arr.Length);
+                return;
+            }
+
             Assert.Throws(ICollection_NonGeneric_CopyTo_NonZeroLowerBound_ThrowType, () => collection.CopyTo(arr, 0));
         }
     }

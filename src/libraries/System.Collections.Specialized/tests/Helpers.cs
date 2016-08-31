@@ -8,8 +8,6 @@ namespace System.Collections.Specialized.Tests
 {
     public static class Helpers
     {
-        public static bool IsDesktopJob = RuntimeInformation.FrameworkDescription.Contains(".NET Framework");
-
         public static MyNameObjectCollection CreateNameObjectCollection(int count)
         {
             MyNameObjectCollection nameObjectCollection = new MyNameObjectCollection();
