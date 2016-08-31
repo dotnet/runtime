@@ -940,6 +940,9 @@ public:
 
 #define GTF_ARRLEN_ARR_IDX 0x80000000 // GT_ARR_LENGTH -- Length which feeds into an array index expression
 
+#define GTF_LIST_AGGREGATE 0x80000000 // GT_LIST -- Indicates that this list should be treated as an
+                                      //            anonymous aggregate value (e.g. a multi-value argument).
+
 //----------------------------------------------------------------
 
 #define GTF_STMT_CMPADD 0x80000000  // GT_STMT    -- added by compiler
@@ -1006,6 +1009,11 @@ public:
             return gtType != TYP_VOID;
         }
 
+        if (gtOper == GT_LIST)
+        {
+            return (gtFlags & GTF_LIST_AGGREGATE) != 0;
+        }
+
         return true;
     }
 
@@ -1023,10 +1031,14 @@ public:
                 return IsNothingNode();
 
             case GT_ARGPLACE:
-            case GT_LIST:
-                // ARGPLACE and LIST nodes may not be present in a block's LIR sequence, but they may
+                // ARGPLACE nodes may not be present in a block's LIR sequence, but they may
                 // be present as children of an LIR node.
                 return (gtNext == nullptr) && (gtPrev == nullptr);
+
+            case GT_LIST:
+                // LIST nodes may only be present in an LIR sequence if they represent aggregates.
+                // They are always allowed, however, as children of an LIR node.
+                return ((gtFlags & GTF_LIST_AGGREGATE) != 0) || ((gtNext == nullptr) && (gtPrev == nullptr));
 
             case GT_ADDR:
             {
@@ -1407,6 +1419,11 @@ public:
         return OperIsSIMD(gtOper);
     }
 
+    bool OperIsAggregate()
+    {
+        return (gtOper == GT_LIST) && ((gtFlags & GTF_LIST_AGGREGATE) != 0);
+    }
+
     // Requires that "op" is an op= operator.  Returns
     // the corresponding "op".
     static genTreeOps OpAsgToOper(genTreeOps op);
@@ -1484,7 +1501,7 @@ public:
 
     // Given a tree node, if this node uses that node, return the use as an out parameter and return true.
     // Otherwise, return false.
-    bool TryGetUse(GenTree* def, GenTree*** use, bool expandMultiRegArgs = true);
+    bool TryGetUse(GenTree* def, GenTree*** use);
 
     // Get the parent of this node, and optionally capture the pointer to the child so that it can be modified.
     GenTreePtr gtGetParent(GenTreePtr** parentChildPtrPtr);
@@ -1807,22 +1824,20 @@ public:
 
     // Returns an iterator that will produce the use edge to each operand of this node. Differs
     // from the sequence of nodes produced by a loop over `GetChild` in its handling of call, phi,
-    // and block op nodes. If `expandMultiRegArgs` is true, an multi-reg args passed to a call
-    // will appear be expanded from their GT_LIST node into that node's contents.
-    GenTreeUseEdgeIterator GenTree::UseEdgesBegin(bool expandMultiRegArgs = true);
+    // and block op nodes.
+    GenTreeUseEdgeIterator GenTree::UseEdgesBegin();
     GenTreeUseEdgeIterator GenTree::UseEdgesEnd();
 
-    IteratorPair<GenTreeUseEdgeIterator> GenTree::UseEdges(bool expandMultiRegArgs = true);
+    IteratorPair<GenTreeUseEdgeIterator> GenTree::UseEdges();
 
     // Returns an iterator that will produce each operand of this node. Differs from the sequence
     // of nodes produced by a loop over `GetChild` in its handling of call, phi, and block op
-    // nodes. If `expandMultiRegArgs` is true, an multi-reg args passed to a call will appear
-    // be expanded from their GT_LIST node into that node's contents.
-    GenTreeOperandIterator OperandsBegin(bool expandMultiRegArgs = true);
+    // nodes.
+    GenTreeOperandIterator OperandsBegin();
     GenTreeOperandIterator OperandsEnd();
 
     // Returns a range that will produce the operands of this node in use order.
-    IteratorPair<GenTreeOperandIterator> Operands(bool expandMultiRegArgs = true);
+    IteratorPair<GenTreeOperandIterator> Operands();
 
     bool Precedes(GenTree* other);
 
@@ -1898,17 +1913,15 @@ public:
 class GenTreeUseEdgeIterator final
 {
     friend class GenTreeOperandIterator;
-    friend GenTreeUseEdgeIterator GenTree::UseEdgesBegin(bool expandMultiRegArgs);
+    friend GenTreeUseEdgeIterator GenTree::UseEdgesBegin();
     friend GenTreeUseEdgeIterator GenTree::UseEdgesEnd();
 
     GenTree*  m_node;
     GenTree** m_edge;
     GenTree*  m_argList;
-    GenTree*  m_multiRegArg;
-    bool      m_expandMultiRegArgs;
     int       m_state;
 
-    GenTreeUseEdgeIterator(GenTree* node, bool expandMultiRegArgs);
+    GenTreeUseEdgeIterator(GenTree* node);
 
     GenTree** GetNextUseEdge() const;
     void      MoveToNextCallUseEdge();
@@ -1916,9 +1929,7 @@ class GenTreeUseEdgeIterator final
 #ifdef FEATURE_SIMD
     void MoveToNextSIMDUseEdge();
 #endif
-#if FEATURE_MULTIREG_ARGS
-    void MoveToNextPutArgStkUseEdge();
-#endif
+    void MoveToNextAggregateUseEdge();
 
 public:
     GenTreeUseEdgeIterator();
@@ -1963,12 +1974,12 @@ public:
 // `GenTree::OperandsBegin` and `GenTree::OperandsEnd`.
 class GenTreeOperandIterator final
 {
-    friend GenTreeOperandIterator GenTree::OperandsBegin(bool expandMultiRegArgs);
+    friend GenTreeOperandIterator GenTree::OperandsBegin();
     friend GenTreeOperandIterator GenTree::OperandsEnd();
 
     GenTreeUseEdgeIterator m_useEdges;
 
-    GenTreeOperandIterator(GenTree* node, bool expandMultiRegArgs) : m_useEdges(node, expandMultiRegArgs)
+    GenTreeOperandIterator(GenTree* node) : m_useEdges(node)
     {
     }
 
@@ -2616,6 +2627,11 @@ struct GenTreeField : public GenTree
 // method names for the arguments.
 struct GenTreeArgList : public GenTreeOp
 {
+    bool IsAggregate() const
+    {
+        return (gtFlags & GTF_LIST_AGGREGATE) != 0;
+    }
+
     GenTreePtr& Current()
     {
         return gtOp1;
@@ -2648,6 +2664,8 @@ struct GenTreeArgList : public GenTreeOp
             gtFlags |= rest->gtFlags & GTF_ALL_EFFECT;
         }
     }
+
+    GenTreeArgList* Prepend(Compiler* compiler, GenTree* element);
 };
 
 // There was quite a bit of confusion in the code base about which of gtOp1 and gtOp2 was the

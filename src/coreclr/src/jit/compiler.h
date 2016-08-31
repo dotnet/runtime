@@ -1933,9 +1933,10 @@ public:
     GenTreePtr gtNewIndexRef(var_types typ, GenTreePtr arrayOp, GenTreePtr indexOp);
 
     GenTreeArgList* gtNewArgList(GenTreePtr op);
-
     GenTreeArgList* gtNewArgList(GenTreePtr op1, GenTreePtr op2);
     GenTreeArgList* gtNewArgList(GenTreePtr op1, GenTreePtr op2, GenTreePtr op3);
+
+    GenTreeArgList* gtNewAggregate(GenTree* element);
 
     static fgArgTabEntryPtr gtArgEntryByArgNum(GenTreePtr call, unsigned argNum);
     static fgArgTabEntryPtr gtArgEntryByNode(GenTreePtr call, GenTreePtr node);

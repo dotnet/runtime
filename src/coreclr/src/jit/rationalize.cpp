@@ -865,16 +865,22 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, ArrayStack<G
 
     // First, remove any preceeding GT_LIST nodes, which are not otherwise visited by the tree walk.
     //
-    // NOTE: GT_LIST nodes that are used by block ops and phi nodes will in fact be visited.
-    for (GenTree* prev = node->gtPrev; prev != nullptr && prev->OperGet() == GT_LIST; prev = node->gtPrev)
+    // NOTE: GT_LIST nodes that are used as aggregates, by block ops, and by phi nodes will in fact be visited.
+    for (GenTree* prev = node->gtPrev;
+        prev != nullptr && prev->OperGet() == GT_LIST && !(prev->AsArgList()->IsAggregate());
+        prev = node->gtPrev)
     {
         BlockRange().Remove(prev);
     }
 
-    // In addition, remove the current node if it is a GT_LIST node.
-    if ((*useEdge)->OperGet() == GT_LIST)
+    // In addition, remove the current node if it is a GT_LIST node that is not an aggregate.
+    if (node->OperGet() == GT_LIST)
     {
-        BlockRange().Remove(*useEdge);
+        GenTreeArgList* list = node->AsArgList();
+        if (!list->IsAggregate())
+        {
+            BlockRange().Remove(list);
+        }
         return Compiler::WALK_CONTINUE;
     }
 
