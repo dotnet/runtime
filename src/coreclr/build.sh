@@ -1,15 +1,12 @@
 #!/usr/bin/env bash
 
 # resolve python-version to use
-if [ "$PYTHON" == "" ] ; then
-    if which python >/dev/null 2>&1
-    then
+if [ "$PYTHON" == "" ]; then
+    if hash python 2>/dev/null; then
        PYTHON=python
-    elif which python2 >/dev/null 2>&1
-    then
+    elif hash python2 2>/dev/null; then
        PYTHON=python2
-    elif which python2.7 >/dev/null 2>&1
-    then
+    elif hash python2.7 2>/dev/null; then
        PYTHON=python2.7
     else
        echo "Unable to locate build-dependency python2.x!" 1>&2
@@ -19,8 +16,7 @@ fi
 
 # validate python-dependency
 # useful in case of explicitly set option.
-if ! which $PYTHON > /dev/null 2>&1
-then
+if ! hash $PYTHON 2>/dev/null; then
    echo "Unable to locate build-dependency python2.x ($PYTHON)!" 1>&2
    exit 1
 fi
@@ -153,9 +149,9 @@ build_coreclr()
     if [ $__UseNinja == 1 ]; then
         generator="ninja"
         buildFile="build.ninja"
-        if which ninja >/dev/null 2>&1; then
+        if hash ninja 2>/dev/null; then
             buildTool="ninja"
-        elif which ninja-build >/dev/null 2>&1; then
+        elif hash ninja-build 2>/dev/null; then
             buildTool="ninja-build"
         else
            echo "Unable to locate ninja!" 1>&2

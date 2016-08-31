@@ -85,15 +85,15 @@ if [ ! -e $__PROJECT_JSON_FILE ]; then
 
     if [ ! -e $__DOTNET_PATH ]; then
         # curl has HTTPS CA trust-issues less often than wget, so lets try that first.
-        which curl > /dev/null 2> /dev/null
-        if [ $? -ne 0 ]; then
-          mkdir -p "$__DOTNET_PATH"
-          wget -q -O $__DOTNET_PATH/dotnet.tar $__CLIDownloadURL
-          echo "wget -q -O $__DOTNET_PATH/dotnet.tar $__CLIDownloadURL"
+        if hash curl 2>/dev/null; then
+            curl --retry 10 -sSL --create-dirs -o $__DOTNET_PATH/dotnet.tar $__CLIDownloadURL
+            echo "curl --retry 10 -sSL --create-dirs -o $__DOTNET_PATH/dotnet.tar $__CLIDownloadURL"
         else
-          curl --retry 10 -sSL --create-dirs -o $__DOTNET_PATH/dotnet.tar $__CLIDownloadURL
-          echo "curl --retry 10 -sSL --create-dirs -o $__DOTNET_PATH/dotnet.tar $__CLIDownloadURL"
+            mkdir -p "$__DOTNET_PATH"
+            wget -q -O $__DOTNET_PATH/dotnet.tar $__CLIDownloadURL
+            echo "wget -q -O $__DOTNET_PATH/dotnet.tar $__CLIDownloadURL"
         fi
+
         cd $__DOTNET_PATH
         tar -xf $__DOTNET_PATH/dotnet.tar
         if [ -n "$BUILDTOOLS_OVERRIDE_RUNTIME" ]; then
