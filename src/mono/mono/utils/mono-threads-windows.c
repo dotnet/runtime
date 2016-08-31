@@ -296,12 +296,14 @@ mono_threads_platform_yield (void)
 void
 mono_threads_platform_exit (int exit_code)
 {
+	mono_thread_info_detach ();
 	ExitThread (exit_code);
 }
 
 void
 mono_threads_platform_unregister (MonoThreadInfo *info)
 {
+	mono_threads_platform_set_exited (info);
 }
 
 int
@@ -352,6 +354,10 @@ mono_native_thread_set_name (MonoNativeThreadId tid, const char *name)
 void
 mono_threads_platform_set_exited (MonoThreadInfo *info)
 {
+	g_assert (info->handle);
+	// No need to call CloseHandle() here since the InternalThread
+	// destructor will close the handle when the finalizer thread calls it
+	info->handle = NULL;
 }
 
 void
