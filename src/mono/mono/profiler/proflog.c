@@ -292,6 +292,19 @@ static MonoLinkedListSet profiler_thread_list;
  *	[code size: uleb128] size of the generated code
  *	[name: string] full method name
  *
+ * type exception format:
+ * type: TYPE_EXCEPTION
+ * exinfo: TYPE_THROW_BT flag or one of: TYPE_CLAUSE
+ * [time diff: uleb128] nanoseconds since last timing
+ * if exinfo == TYPE_CLAUSE
+ * 	[clause type: byte] MonoExceptionEnum enum value
+ * 	[clause index: uleb128] index of the current clause
+ * 	[method: sleb128] MonoMethod* as a pointer difference from the last such
+ * 	pointer or the buffer method_base
+ * else
+ * 	[object: sleb128] the exception object as a difference from obj_base
+ * 	if exinfo has TYPE_THROW_BT set, a backtrace follows.
+ *
  * type runtime format:
  * type: TYPE_RUNTIME
  * exinfo: one of: TYPE_JITHELPER
