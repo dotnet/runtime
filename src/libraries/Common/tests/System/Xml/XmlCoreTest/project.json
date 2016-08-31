@@ -1,15 +1,15 @@
 {
   "dependencies": {
-    "Microsoft.NETCore.Platforms": "4.3.0-beta-24430-01",
-    "System.Collections": "4.3.0-beta-24430-01",
+    "Microsoft.NETCore.Platforms": "4.3.0-beta-24431-01",
+    "System.Collections": "4.3.0-beta-24431-01",
     "System.Console": "4.0.0",
-    "System.IO": "4.3.0-beta-24430-01",
-    "System.Runtime": "4.3.0-beta-24430-01",
-    "System.Runtime.Extensions": "4.3.0-beta-24430-01",
-    "System.Text.Encoding": "4.3.0-beta-24430-01",
-    "System.Threading": "4.3.0-beta-24430-01",
-    "System.Threading.Tasks": "4.3.0-beta-24430-01",
-    "System.Xml.ReaderWriter": "4.3.0-beta-24430-01",
+    "System.IO": "4.3.0-beta-24431-01",
+    "System.Runtime": "4.3.0-beta-24431-01",
+    "System.Runtime.Extensions": "4.3.0-beta-24431-01",
+    "System.Text.Encoding": "4.3.0-beta-24431-01",
+    "System.Threading": "4.3.0-beta-24431-01",
+    "System.Threading.Tasks": "4.3.0-beta-24431-01",
+    "System.Xml.ReaderWriter": "4.3.0-beta-24431-01",
     "test-runtime": {
       "target": "project",
       "exclude": "compile"
