@@ -15,7 +15,6 @@
 #include "../metadata/metadata-internals.h"
 #include <mono/metadata/profiler.h>
 #include <mono/metadata/threads.h>
-#include <mono/metadata/mono-gc.h>
 #include <mono/metadata/debug-helpers.h>
 #include <mono/metadata/mono-gc.h>
 #include <mono/metadata/mono-perfcounters.h>
