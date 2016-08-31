@@ -510,6 +510,11 @@ void Compiler::optFoldNullCheck(GenTreePtr tree)
     //                             |
     //                             x
 
+    if ((compCurBB->bbFlags & BBF_HAS_NULLCHECK) == 0)
+    {
+        return;
+    }
+
     assert(tree->OperGet() == GT_IND);
     if (tree->gtGetOp1()->OperGet() == GT_LCL_VAR)
     {
