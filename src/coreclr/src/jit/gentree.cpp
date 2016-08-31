@@ -953,6 +953,27 @@ Compiler::fgWalkResult Compiler::fgWalkTreePostRec(GenTreePtr* pTree, fgWalkData
         }
         break;
 
+        case GT_LIST:
+        {
+            GenTreeArgList* list = tree->AsArgList();
+            if (list->IsAggregate())
+            {
+                for (; list != nullptr; list = list->Rest())
+                {
+                    result = fgWalkTreePostRec<computeStack>(&list->gtOp1, fgWalkData);
+                    if (result == WALK_ABORT)
+                    {
+                        return result;
+                    }
+                }
+                break;
+            }
+
+            // GT_LIST nodes that do not represent aggregate arguments intentionally fall through to the
+            // default node processing below.
+            __fallthrough;
+        }
+
         default:
             if (kind & GTK_SMPOP)
             {
@@ -5699,9 +5720,9 @@ GenTreePtr* GenTree::gtGetChildPointer(GenTreePtr parent)
     return nullptr;
 }
 
-bool GenTree::TryGetUse(GenTree* def, GenTree*** use, bool expandMultiRegArgs)
+bool GenTree::TryGetUse(GenTree* def, GenTree*** use)
 {
-    for (GenTree** useEdge : UseEdges(expandMultiRegArgs))
+    for (GenTree** useEdge : UseEdges())
     {
         if (*useEdge == def)
         {
@@ -6384,6 +6405,29 @@ GenTreeArgList* Compiler::gtNewArgList(GenTreePtr arg)
 GenTreeArgList* Compiler::gtNewArgList(GenTreePtr arg1, GenTreePtr arg2)
 {
     return new (this, GT_LIST) GenTreeArgList(arg1, gtNewArgList(arg2));
+}
+
+//------------------------------------------------------------------------
+// Compiler::gtNewAggregate:
+//    Creates a new aggregate argument node. These nodes are used to
+//    represent arguments that are composed of multiple values (e.g.
+//    the lclVars that represent the fields of a promoted struct).
+//
+//    Note that aggregate arguments are currently represented by GT_LIST
+//    nodes that are marked with the GTF_LIST_AGGREGATE flag. This
+//    representation may be changed in the future to instead use its own
+//    node type (e.g. GT_AGGREGATE).
+//
+// Arguments:
+//    firstElement - The first element in the aggregate's list of values.
+//
+// Returns:
+//    The newly-created aggregate node.
+GenTreeArgList* Compiler::gtNewAggregate(GenTree* firstElement)
+{
+    GenTreeArgList* agg = gtNewArgList(firstElement);
+    agg->gtFlags |= GTF_LIST_AGGREGATE;
+    return agg;
 }
 
 /*****************************************************************************
@@ -8356,18 +8400,14 @@ GenTreeUseEdgeIterator::GenTreeUseEdgeIterator()
     : m_node(nullptr)
     , m_edge(nullptr)
     , m_argList(nullptr)
-    , m_multiRegArg(nullptr)
-    , m_expandMultiRegArgs(false)
     , m_state(-1)
 {
 }
 
-GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node, bool expandMultiRegArgs)
+GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
     : m_node(node)
     , m_edge(nullptr)
     , m_argList(nullptr)
-    , m_multiRegArg(nullptr)
-    , m_expandMultiRegArgs(expandMultiRegArgs)
     , m_state(0)
 {
     assert(m_node != nullptr);
@@ -8456,17 +8496,11 @@ GenTree** GenTreeUseEdgeIterator::GetNextUseEdge() const
             }
 
         // Call, phi, and SIMD nodes are handled by MoveNext{Call,Phi,SIMD}UseEdge, repsectively.
-        //
-        // If FEATURE_MULTIREG_ARGS is enabled, so PUTARG_STK nodes also have special handling.
         case GT_CALL:
         case GT_PHI:
 #ifdef FEATURE_SIMD
         case GT_SIMD:
 #endif
-#if FEATURE_MULTIREG_ARGS
-        case GT_PUTARG_STK:
-#endif
-
             break;
 
         case GT_INITBLK:
@@ -8532,6 +8566,14 @@ GenTree** GenTreeUseEdgeIterator::GetNextUseEdge() const
         }
         break;
 
+        case GT_LIST:
+            if (m_node->AsArgList()->IsAggregate())
+            {
+                // List nodes that represent aggregates are handled by MoveNextAggregateUseEdge.
+                break;
+            }
+            __fallthrough;
+
         default:
             if (m_node->OperIsConst() || m_node->OperIsLeaf())
             {
@@ -8568,14 +8610,25 @@ GenTree** GenTreeUseEdgeIterator::GetNextUseEdge() const
 //
 void GenTreeUseEdgeIterator::MoveToNextCallUseEdge()
 {
+    enum
+    {
+        CALL_INSTANCE = 0,
+        CALL_ARGS = 1,
+        CALL_LATE_ARGS = 2,
+        CALL_CONTROL_EXPR = 3,
+        CALL_COOKIE = 4,
+        CALL_ADDRESS = 5,
+        CALL_TERMINAL = 6,
+    };
+
     GenTreeCall* call = m_node->AsCall();
 
     for (;;)
     {
         switch (m_state)
         {
-            case 0:
-                m_state   = 1;
+            case CALL_INSTANCE:
+                m_state   = CALL_ARGS;
                 m_argList = call->gtCallArgs;
 
                 if (call->gtCallObjp != nullptr)
@@ -8585,13 +8638,13 @@ void GenTreeUseEdgeIterator::MoveToNextCallUseEdge()
                 }
                 break;
 
-            case 1:
-            case 3:
+            case CALL_ARGS:
+            case CALL_LATE_ARGS:
                 if (m_argList == nullptr)
                 {
-                    m_state += 2;
+                    m_state++;
 
-                    if (m_state == 3)
+                    if (m_state == CALL_LATE_ARGS)
                     {
                         m_argList = call->gtCallLateArgs;
                     }
@@ -8599,38 +8652,14 @@ void GenTreeUseEdgeIterator::MoveToNextCallUseEdge()
                 else
                 {
                     GenTreeArgList* argNode = m_argList->AsArgList();
-                    if (m_expandMultiRegArgs && argNode->gtOp1->OperGet() == GT_LIST)
-                    {
-                        m_state += 1;
-                        m_multiRegArg = argNode->gtOp1;
-                    }
-                    else
-                    {
-                        m_edge    = &argNode->gtOp1;
-                        m_argList = argNode->Rest();
-                        return;
-                    }
-                }
-                break;
-
-            case 2:
-            case 4:
-                if (m_multiRegArg == nullptr)
-                {
-                    m_state -= 1;
-                    m_argList = m_argList->AsArgList()->Rest();
-                }
-                else
-                {
-                    GenTreeArgList* regNode = m_multiRegArg->AsArgList();
-                    m_edge                  = &regNode->gtOp1;
-                    m_multiRegArg           = regNode->Rest();
+                    m_edge                  = &argNode->gtOp1;
+                    m_argList               = argNode->Rest();
                     return;
                 }
                 break;
 
-            case 5:
-                m_state = call->gtCallType == CT_INDIRECT ? 6 : 8;
+            case CALL_CONTROL_EXPR:
+                m_state = call->gtCallType == CT_INDIRECT ? CALL_COOKIE : CALL_TERMINAL;
 
                 if (call->gtControlExpr != nullptr)
                 {
@@ -8639,10 +8668,10 @@ void GenTreeUseEdgeIterator::MoveToNextCallUseEdge()
                 }
                 break;
 
-            case 6:
+            case 4:
                 assert(call->gtCallType == CT_INDIRECT);
 
-                m_state = 7;
+                m_state = CALL_ADDRESS;
 
                 if (call->gtCallCookie != nullptr)
                 {
@@ -8651,10 +8680,10 @@ void GenTreeUseEdgeIterator::MoveToNextCallUseEdge()
                 }
                 break;
 
-            case 7:
+            case 5:
                 assert(call->gtCallType == CT_INDIRECT);
 
-                m_state = 8;
+                m_state = CALL_TERMINAL;
                 if (call->gtCallAddr != nullptr)
                 {
                     m_edge = &call->gtCallAddr;
@@ -8792,27 +8821,18 @@ void GenTreeUseEdgeIterator::MoveToNextSIMDUseEdge()
 }
 #endif // FEATURE_SIMD
 
-#if FEATURE_MULTIREG_ARGS
-void GenTreeUseEdgeIterator::MoveToNextPutArgStkUseEdge()
+void GenTreeUseEdgeIterator::MoveToNextAggregateUseEdge()
 {
-    assert(m_node->OperGet() == GT_PUTARG_STK);
-
-    GenTreeUnOp* putArg = m_node->AsUnOp();
+    assert(m_node->OperGet() == GT_LIST);
+    assert(m_node->AsArgList()->IsAggregate());
 
     for (;;)
     {
         switch (m_state)
         {
             case 0:
-                if ((putArg->gtOp1->OperGet() != GT_LIST) || !m_expandMultiRegArgs)
-                {
-                    m_state = 2;
-                    m_edge = &putArg->gtOp1;
-                    return;
-                }
-
                 m_state   = 1;
-                m_argList = putArg->gtOp1;
+                m_argList = m_node;
                 break;
 
             case 1:
@@ -8822,9 +8842,9 @@ void GenTreeUseEdgeIterator::MoveToNextPutArgStkUseEdge()
                 }
                 else
                 {
-                    GenTreeArgList* argNode = m_argList->AsArgList();
-                    m_edge                  = &argNode->gtOp1;
-                    m_argList               = argNode->Rest();
+                    GenTreeArgList* aggNode = m_argList->AsArgList();
+                    m_edge                  = &aggNode->gtOp1;
+                    m_argList               = aggNode->Rest();
                     return;
                 }
                 break;
@@ -8838,7 +8858,6 @@ void GenTreeUseEdgeIterator::MoveToNextPutArgStkUseEdge()
         }
     }
 }
-#endif // FEATURE_MULTIREG_ARGS
 
 //------------------------------------------------------------------------
 // GenTreeUseEdgeIterator::operator++:
@@ -8871,12 +8890,10 @@ GenTreeUseEdgeIterator& GenTreeUseEdgeIterator::operator++()
             MoveToNextSIMDUseEdge();
         }
 #endif
-#if FEATURE_MULTIREG_ARGS
-        else if (op == GT_PUTARG_STK)
+        else if ((op == GT_LIST) && (m_node->AsArgList()->IsAggregate()))
         {
-            MoveToNextPutArgStkUseEdge();
+            MoveToNextAggregateUseEdge();
         }
-#endif
         else
         {
             m_edge = GetNextUseEdge();
@@ -8896,9 +8913,9 @@ GenTreeUseEdgeIterator& GenTreeUseEdgeIterator::operator++()
     return *this;
 }
 
-GenTreeUseEdgeIterator GenTree::UseEdgesBegin(bool expandMultiRegArgs)
+GenTreeUseEdgeIterator GenTree::UseEdgesBegin()
 {
-    return GenTreeUseEdgeIterator(this, expandMultiRegArgs);
+    return GenTreeUseEdgeIterator(this);
 }
 
 GenTreeUseEdgeIterator GenTree::UseEdgesEnd()
@@ -8906,14 +8923,14 @@ GenTreeUseEdgeIterator GenTree::UseEdgesEnd()
     return GenTreeUseEdgeIterator();
 }
 
-IteratorPair<GenTreeUseEdgeIterator> GenTree::UseEdges(bool expandMultiRegArgs)
+IteratorPair<GenTreeUseEdgeIterator> GenTree::UseEdges()
 {
-    return MakeIteratorPair(UseEdgesBegin(expandMultiRegArgs), UseEdgesEnd());
+    return MakeIteratorPair(UseEdgesBegin(), UseEdgesEnd());
 }
 
-GenTreeOperandIterator GenTree::OperandsBegin(bool expandMultiRegArgs)
+GenTreeOperandIterator GenTree::OperandsBegin()
 {
-    return GenTreeOperandIterator(this, expandMultiRegArgs);
+    return GenTreeOperandIterator(this);
 }
 
 GenTreeOperandIterator GenTree::OperandsEnd()
@@ -8921,9 +8938,9 @@ GenTreeOperandIterator GenTree::OperandsEnd()
     return GenTreeOperandIterator();
 }
 
-IteratorPair<GenTreeOperandIterator> GenTree::Operands(bool expandMultiRegArgs)
+IteratorPair<GenTreeOperandIterator> GenTree::Operands()
 {
-    return MakeIteratorPair(OperandsBegin(expandMultiRegArgs), OperandsEnd());
+    return MakeIteratorPair(OperandsBegin(), OperandsEnd());
 }
 
 bool GenTree::Precedes(GenTree* other)
@@ -11132,8 +11149,7 @@ void Compiler::gtDispLIRNode(GenTree* node)
     // Visit operands
     IndentInfo operandArc         = IIArcTop;
     int        callArgNumber      = 0;
-    const bool expandMultiRegArgs = false;
-    for (GenTree* operand : node->Operands(expandMultiRegArgs))
+    for (GenTree* operand : node->Operands())
     {
         if (operand->IsArgPlaceHolderNode() || !operand->IsValue())
         {
@@ -15952,6 +15968,24 @@ bool GenTree::isCommutativeSIMDIntrinsic()
     }
 }
 #endif // FEATURE_SIMD
+
+//---------------------------------------------------------------------------------------
+// GenTreeArgList::Prepend:
+//    Prepends an element to a GT_LIST.
+// 
+// Arguments:
+//    compiler - The compiler context.
+//    element  - The element to prepend.
+//
+// Returns:
+//    The new head of the list.
+GenTreeArgList* GenTreeArgList::Prepend(Compiler* compiler, GenTree* element)
+{
+    GenTreeArgList* head = compiler->gtNewListNode(element, this);
+    head->gtFlags |= (gtFlags & GTF_LIST_AGGREGATE);
+    gtFlags &= ~GTF_LIST_AGGREGATE;
+    return head;
+}
 
 //---------------------------------------------------------------------------------------
 // InitializeStructReturnType:

@@ -17979,7 +17979,7 @@ void Compiler::fgSetTreeSeqFinish(GenTreePtr tree, bool isLIR)
 {
     // If we are sequencing a node that does not appear in LIR,
     // do not add it to the list.
-    if (isLIR && ((tree->OperGet() == GT_LIST) || tree->OperGet() == GT_ARGPLACE))
+    if (isLIR && (((tree->OperGet() == GT_LIST) && !tree->AsArgList()->IsAggregate()) || tree->OperGet() == GT_ARGPLACE))
     {
         return;
     }
