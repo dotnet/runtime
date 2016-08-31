@@ -19,6 +19,7 @@ namespace System.Collections.Generic
     // circular buffer, so Enqueue can be O(n).  Dequeue is O(1).
     [DebuggerTypeProxy(typeof(QueueDebugView<>))]
     [DebuggerDisplay("Count = {Count}")]
+    [Serializable]
     public class Queue<T> : IEnumerable<T>,
         System.Collections.ICollection,
         IReadOnlyCollection<T>
@@ -28,6 +29,7 @@ namespace System.Collections.Generic
         private int _tail;       // The index at which to enqueue if the queue isn't full.
         private int _size;       // Number of elements.
         private int _version;
+        [NonSerialized]
         private object _syncRoot;
 
         private const int MinimumGrow = 4;
@@ -364,6 +366,7 @@ namespace System.Collections.Generic
         // made to the list while an enumeration is in progress.
         /// <include file='doc\Queue.uex' path='docs/doc[@for="QueueEnumerator"]/*' />
         [SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes", Justification = "not an expected scenario")]
+        [Serializable]
         public struct Enumerator : IEnumerator<T>,
             System.Collections.IEnumerator
         {

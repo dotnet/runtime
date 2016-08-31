@@ -5,6 +5,7 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Contracts;
+using System.Runtime.Serialization;
 
 namespace System.Collections.Generic
 {
@@ -47,7 +48,8 @@ namespace System.Collections.Generic
     [DebuggerTypeProxy(typeof(ICollectionDebugView<>))]
     [DebuggerDisplay("Count = {Count}")]
     [SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix", Justification = "By design")]
-    public class HashSet<T> : ICollection<T>, ISet<T>, IReadOnlyCollection<T>
+    [Serializable]
+    public class HashSet<T> : ICollection<T>, ISet<T>, IReadOnlyCollection<T>, ISerializable, IDeserializationCallback
     {
         // store lower 31 bits of hash code
         private const int Lower31BitMask = 0x7FFFFFFF;
@@ -60,6 +62,12 @@ namespace System.Collections.Generic
         // This is set to 3 because capacity is acceptable as 2x rounded up to nearest prime.
         private const int ShrinkThreshold = 3;
 
+        // constants for serialization
+        private const string CapacityName = "Capacity";
+        private const string ElementsName = "Elements";
+        private const string ComparerName = "Comparer";
+        private const string VersionName = "Version";
+
         private int[] _buckets;
         private Slot[] _slots;
         private int _count;
@@ -67,6 +75,8 @@ namespace System.Collections.Generic
         private int _freeList;
         private IEqualityComparer<T> _comparer;
         private int _version;
+
+        private SerializationInfo _siInfo; // temporary variable needed during deserialization
 
         #region Constructors
 
@@ -129,6 +139,15 @@ namespace System.Collections.Generic
                     TrimExcess();
                 }
             }
+        }
+
+        protected HashSet(SerializationInfo info, StreamingContext context)
+        {
+            // We can't do anything with the keys and values until the entire graph has been 
+            // deserialized and we have a reasonable estimate that GetHashCode is not going to 
+            // fail.  For the time being, we'll just cache this.  The graph is not valid until 
+            // OnDeserialization has been called.
+            _siInfo = info;
         }
 
         // Initializes the HashSet from another HashSet with the same element type and
@@ -326,6 +345,74 @@ namespace System.Collections.Generic
         IEnumerator IEnumerable.GetEnumerator()
         {
             return new Enumerator(this);
+        }
+
+        #endregion
+
+        #region ISerializable methods
+
+        public virtual void GetObjectData(SerializationInfo info, StreamingContext context)
+        {
+            if (info == null)
+            {
+                throw new ArgumentNullException(nameof(info));
+            }
+
+            info.AddValue(VersionName, _version); // need to serialize version to avoid problems with serializing while enumerating
+            info.AddValue(ComparerName, _comparer, typeof(IComparer<T>));
+            info.AddValue(CapacityName, _buckets == null ? 0 : _buckets.Length);
+
+            if (_buckets != null)
+            {
+                T[] array = new T[_count];
+                CopyTo(array);
+                info.AddValue(ElementsName, array, typeof(T[]));
+            }
+        }
+
+        #endregion
+
+        #region IDeserializationCallback methods
+
+        public virtual void OnDeserialization(Object sender)
+        {
+            if (_siInfo == null)
+            {
+                // It might be necessary to call OnDeserialization from a container if the 
+                // container object also implements OnDeserialization. We can return immediately
+                // if this function is called twice. Note we set _siInfo to null at the end of this method.
+                return;
+            }
+
+            int capacity = _siInfo.GetInt32(CapacityName);
+            _comparer = (IEqualityComparer<T>)_siInfo.GetValue(ComparerName, typeof(IEqualityComparer<T>));
+            _freeList = -1;
+
+            if (capacity != 0)
+            {
+                _buckets = new int[capacity];
+                _slots = new Slot[capacity];
+
+                T[] array = (T[])_siInfo.GetValue(ElementsName, typeof(T[]));
+
+                if (array == null)
+                {
+                    throw new SerializationException(SR.Serialization_MissingKeys);
+                }
+
+                // there are no resizes here because we already set capacity above
+                for (int i = 0; i < array.Length; i++)
+                {
+                    AddIfNotPresent(array[i]);
+                }
+            }
+            else
+            {
+                _buckets = null;
+            }
+
+            _version = _siInfo.GetInt32(VersionName);
+            _siInfo = null;
         }
 
         #endregion
@@ -1620,6 +1707,7 @@ namespace System.Collections.Generic
             internal T value;
         }
 
+        [Serializable]
         public struct Enumerator : IEnumerator<T>, IEnumerator
         {
             private HashSet<T> _set;

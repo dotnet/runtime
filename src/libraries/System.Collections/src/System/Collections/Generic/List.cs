@@ -19,6 +19,7 @@ namespace System.Collections.Generic
     // 
     [DebuggerTypeProxy(typeof(ICollectionDebugView<>))]
     [DebuggerDisplay("Count = {Count}")]
+    [Serializable]
     public class List<T> : IList<T>, System.Collections.IList, IReadOnlyList<T>
     {
         private const int _defaultCapacity = 4;
@@ -27,6 +28,7 @@ namespace System.Collections.Generic
         [ContractPublicPropertyName("Count")]
         private int _size;
         private int _version;
+        [NonSerialized]
         private object _syncRoot;
 
         static readonly T[] _emptyArray = new T[0];
@@ -1160,6 +1162,7 @@ namespace System.Collections.Generic
             return true;
         }
 
+        [Serializable]
         public struct Enumerator : IEnumerator<T>, System.Collections.IEnumerator
         {
             private List<T> list;

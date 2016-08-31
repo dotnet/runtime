@@ -10,6 +10,7 @@ namespace System.Collections
     // A vector of bits.  Use this to store bits efficiently, without having to do bit 
     // shifting yourself.
     [System.Runtime.InteropServices.ComVisible(true)]
+    [Serializable]
     public sealed class BitArray : ICollection
     {
         private BitArray()
@@ -495,6 +496,7 @@ namespace System.Collections
             return n > 0 ? (((n - 1) / div) + 1) : 0;
         }
 
+        [Serializable]
         private class BitArrayEnumeratorSimple : IEnumerator
         {
             private BitArray bitarray;
@@ -552,6 +554,7 @@ namespace System.Collections
         private int[] m_array;
         private int m_length;
         private int _version;
+        [NonSerialized]
         private object _syncRoot;
 
         private const int _ShrinkThreshold = 256;
