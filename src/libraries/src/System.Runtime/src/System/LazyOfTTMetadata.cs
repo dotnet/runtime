@@ -8,6 +8,7 @@ using System.Threading;
 
 namespace System
 {
+    [Serializable]
     public class Lazy<T, TMetadata> : Lazy<T>
     {
         private readonly TMetadata _metadata;
