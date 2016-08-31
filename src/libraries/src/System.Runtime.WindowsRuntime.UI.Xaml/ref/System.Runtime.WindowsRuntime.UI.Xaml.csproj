@@ -4,7 +4,6 @@
   <PropertyGroup>
     <UseECMAKey Condition="'$(UseECMAKey)' == ''">true</UseECMAKey>
     <OutputType>Library</OutputType>
-    <PackageTargetFramework>netstandard1.1</PackageTargetFramework>
     <NuGetTargetMoniker>.NETStandard,Version=v1.1</NuGetTargetMoniker>
   </PropertyGroup>
   <ItemGroup>

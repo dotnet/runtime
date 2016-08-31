@@ -10,7 +10,6 @@
     <ContractProject Condition="'$(TargetGroup)'=='netcore50'">..\ref\4.0.0\System.AppContext.depproj</ContractProject>
     <!-- The following line needs to be removed once we have a targeting pack for 4.6.3 -->
     <TargetingPackNugetPackageId Condition="'$(TargetGroup)'=='net463'">Microsoft.TargetingPack.NETFramework.v4.6.2</TargetingPackNugetPackageId>
-    <PackageTargetFramework Condition="'$(PackageTargetFramework)' == ''">netstandard1.6</PackageTargetFramework>
     <ExcludeResourcesImport Condition="'$(IsPartialFacadeAssembly)'=='true'">true</ExcludeResourcesImport>
     <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.6</NuGetTargetMoniker>
   </PropertyGroup>

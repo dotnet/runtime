@@ -7,18 +7,9 @@
     <AssemblyName>System.Threading.Tasks.Dataflow</AssemblyName>
     <DocumentationFile>$(OutputPath)System.Threading.Tasks.Dataflow.XML</DocumentationFile>
     <DefineConstants>$(DefineConstants);CONCURRENT_COLLECTIONS;FEATURE_TRACING</DefineConstants>
-    <PackageTargetFramework>netstandard1.1</PackageTargetFramework>
     <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.1</NuGetTargetMoniker>
+    <PackageTargetFramework Condition="'$(TargetGroup)' == ''">netstandard1.1;portable-net45+win8+wpa81</PackageTargetFramework>
   </PropertyGroup>
-  <ItemGroup>
-    <PackageDestination Include="lib/netstandard1.1">
-      <TargetFramework>netstandard1.1</TargetFramework>
-    </PackageDestination>
-    <!-- Support targets that were supported in previous package versions -->
-    <PackageDestination Include="lib/portable-net45+win8+wpa81">
-      <TargetFramework>portable-net45+win8+wpa81</TargetFramework>
-    </PackageDestination>
-  </ItemGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />

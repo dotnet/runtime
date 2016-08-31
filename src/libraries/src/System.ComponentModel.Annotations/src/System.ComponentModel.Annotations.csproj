@@ -5,7 +5,6 @@
     <ProjectGuid>{4266D58F-EB60-46C2-BA81-3ABDE759A7D5}</ProjectGuid>
     <RootNamespace>System.ComponentModel.Annotations</RootNamespace>
     <AssemblyName>System.ComponentModel.Annotations</AssemblyName>
-    <PackageTargetFramework Condition="'$(PackageTargetFramework)'==''">netstandard1.4</PackageTargetFramework>
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)'=='net461'">true</IsPartialFacadeAssembly>
     <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.4</NuGetTargetMoniker>
   </PropertyGroup>

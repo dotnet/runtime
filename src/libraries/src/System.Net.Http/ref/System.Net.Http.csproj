@@ -4,15 +4,8 @@
   <PropertyGroup>
     <OutputType>Library</OutputType>
     <NuGetTargetMoniker>.NETStandard,Version=v1.3</NuGetTargetMoniker>
+    <PackageTargetFramework>netstandard1.3;net46</PackageTargetFramework>
   </PropertyGroup>
-  <ItemGroup>
-    <PackageDestination Include="ref/netstandard1.3">
-      <TargetFramework>netstandard1.3</TargetFramework>
-    </PackageDestination>
-    <PackageDestination Include="ref/net46">
-      <TargetFramework>net46</TargetFramework>
-    </PackageDestination>
-  </ItemGroup>
   <ItemGroup>
     <Compile Include="System.Net.Http.cs" />
   </ItemGroup>

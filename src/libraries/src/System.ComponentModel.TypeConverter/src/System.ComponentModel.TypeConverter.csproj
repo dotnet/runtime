@@ -7,7 +7,6 @@
     <AssemblyName>System.ComponentModel.TypeConverter</AssemblyName>
     <AssemblyVersion Condition="'$(TargetGroup)' == 'netstandard1.0' OR '$(TargetGroup)'=='net45'">4.0.0.0</AssemblyVersion>
     <ContractProject Condition="'$(TargetGroup)' == 'netstandard1.0' OR '$(TargetGroup)'=='net45'">..\ref\4.0\$(AssemblyName).depproj</ContractProject>
-    <PackageTargetFramework Condition="'$(PackageTargetFramework)'==''">netstandard1.5</PackageTargetFramework>
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)'=='net45' OR '$(TargetGroup)'=='net462'">true</IsPartialFacadeAssembly>
     <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.5</NuGetTargetMoniker>
   </PropertyGroup>
