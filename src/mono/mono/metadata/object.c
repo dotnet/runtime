@@ -432,11 +432,10 @@ mono_runtime_class_init_full (MonoVTable *vtable, MonoError *error)
 
 	if (do_initialization) {
 		MonoException *exc = NULL;
-		MonoInternalThread *thread = mono_thread_internal_current ();
-		++thread->cctor_exec_depth;
-		mono_memory_barrier ();
+
+		mono_threads_begin_abort_protected_block ();
 		mono_runtime_try_invoke (method, NULL, NULL, (MonoObject**) &exc, error);
-		--thread->cctor_exec_depth;
+		mono_threads_end_abort_protected_block ();
 
 		//exception extracted, error will be set to the right value later
 		if (exc == NULL && !mono_error_ok (error))//invoking failed but exc was not set
@@ -482,8 +481,8 @@ mono_runtime_class_init_full (MonoVTable *vtable, MonoError *error)
 		if (exc && mono_object_class (exc) == mono_defaults.threadabortexception_class)
 			pending_tae = exc;
 		//TAEs are blocked around .cctors, they must escape as soon as no cctor is left to run.
-		if (!thread->cctor_exec_depth && !pending_tae && !mono_get_eh_callbacks ()->mono_current_thread_has_handle_block_guard ())
-			pending_tae = mono_thread_resume_interruption ();
+		if (!pending_tae)
+			pending_tae = mono_thread_try_resume_interruption ();
 	} else {
 		/* this just blocks until the initializing thread is done */
 		mono_type_init_lock (lock);
@@ -4672,10 +4671,13 @@ mono_unhandled_exception (MonoObject *exc)
 	if (!current_appdomain_delegate && !root_appdomain_delegate) {
 		mono_print_unhandled_exception (exc);
 	} else {
+		/* unhandled exception callbacks must not be aborted */
+		mono_threads_begin_abort_protected_block ();
 		if (root_appdomain_delegate)
 			call_unhandled_exception_delegate (root_domain, root_appdomain_delegate, exc);
 		if (current_appdomain_delegate)
 			call_unhandled_exception_delegate (current_domain, current_appdomain_delegate, exc);
+		mono_threads_end_abort_protected_block ();
 	}
 
 	/* set exitcode only if we will abort the process */
@@ -7545,14 +7547,16 @@ ves_icall_System_Runtime_Remoting_Messaging_AsyncResult_Invoke (MonoAsyncResult 
 
 		ac->msg->exc = NULL;
 
-		MonoError invoke_error;
-		res = mono_message_invoke (ares->async_delegate, ac->msg, &ac->msg->exc, &ac->out_args, &invoke_error);
+		res = mono_message_invoke (ares->async_delegate, ac->msg, &ac->msg->exc, &ac->out_args, &error);
+
+		/* The exit side of the invoke must not be aborted as it would leave the runtime in an undefined state */
+		mono_threads_begin_abort_protected_block ();
 
 		if (!ac->msg->exc) {
-			MonoException *ex = mono_error_convert_to_exception (&invoke_error);
+			MonoException *ex = mono_error_convert_to_exception (&error);
 			ac->msg->exc = (MonoObject *)ex;
 		} else {
-			mono_error_cleanup (&invoke_error);
+			mono_error_cleanup (&error);
 		}
 
 		MONO_OBJECT_SETREF (ac, res, res);
@@ -7566,11 +7570,14 @@ ves_icall_System_Runtime_Remoting_Messaging_AsyncResult_Invoke (MonoAsyncResult 
 		if (wait_event != NULL)
 			SetEvent (wait_event);
 
-		if (ac->cb_method) {
+		mono_error_init (&error); //the else branch would leave it in an undefined state
+		if (ac->cb_method)
 			mono_runtime_invoke_checked (ac->cb_method, ac->cb_target, (gpointer*) &ares, &error);
-			if (mono_error_set_pending_exception (&error))
-				return NULL;
-		}
+
+		mono_threads_end_abort_protected_block ();
+
+		if (mono_error_set_pending_exception (&error))
+			return NULL;
 	}
 
 	return res;

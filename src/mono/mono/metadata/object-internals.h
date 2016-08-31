@@ -387,7 +387,7 @@ struct _MonoInternalThread {
 	 * same field there.
 	 */
 	gsize start_notify_refcount;
-	gsize	cctor_exec_depth;
+	gsize abort_protected_block_count;
 };
 
 struct _MonoThread {
