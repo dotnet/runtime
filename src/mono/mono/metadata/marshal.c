@@ -10949,7 +10949,12 @@ ves_icall_System_Runtime_InteropServices_Marshal_StringToHGlobalAnsi (MonoString
 	if (!tres)
 		return tres;
 
-	len = strlen (tres) + 1;
+	/*
+	 * mono_string_to_utf8_checked() returns a memory area at least as large as the size of the
+	 * MonoString, even if it contains NULL characters. The copy we allocate here has to be equally
+	 * large.
+	 */
+	len = MAX (strlen (tres) + 1, string->length);
 	ret = ves_icall_System_Runtime_InteropServices_Marshal_AllocHGlobal (len);
 	memcpy (ret, tres, len);
 	g_free (tres);
