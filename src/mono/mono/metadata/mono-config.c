@@ -91,6 +91,39 @@
 #endif
 #endif
 
+/**
+ * mono_config_get_os:
+ *
+ * Returns the operating system that Mono is running on, as used for dllmap entries.
+ */
+const char *
+mono_config_get_os (void)
+{
+	return CONFIG_OS;
+}
+
+/**
+ * mono_config_get_cpu:
+ *
+ * Returns the architecture that Mono is running on, as used for dllmap entries.
+ */
+const char *
+mono_config_get_cpu (void)
+{
+	return CONFIG_CPU;
+}
+
+/**
+ * mono_config_get_wordsize:
+ *
+ * Returns the word size that Mono is running on, as used for dllmap entries.
+ */
+const char *
+mono_config_get_wordsize (void)
+{
+	return CONFIG_WORDSIZE;
+}
+
 static void start_element (GMarkupParseContext *context, 
                            const gchar         *element_name,
 			   const gchar        **attribute_names,
