@@ -279,7 +279,7 @@ If return non null Hazard Pointer 1 holds the return value.
 MonoThreadInfo*
 mono_thread_info_lookup (MonoNativeThreadId id)
 {
-		MonoThreadHazardPointers *hp = mono_hazard_pointer_get ();
+	MonoThreadHazardPointers *hp = mono_hazard_pointer_get ();
 
 	if (!mono_lls_find (&thread_list, hp, (uintptr_t)id)) {
 		mono_hazard_pointer_clear_all (hp, -1);
@@ -767,7 +767,6 @@ mono_thread_info_core_resume (MonoThreadInfo *info)
 {
 	gboolean res = FALSE;
 	if (info->create_suspended) {
-		MonoNativeThreadId tid = mono_thread_info_get_tid (info);
 		/* Have to special case this, as the normal suspend/resume pair are racy, they don't work if he resume is received before the suspend */
 		info->create_suspended = FALSE;
 		mono_coop_sem_post (&info->create_suspended_sem);
