@@ -2078,7 +2078,7 @@ code_buffer_new (MonoProfiler *prof, void *buffer, int size, MonoProfilerCodeBuf
 static void
 throw_exc (MonoProfiler *prof, MonoObject *object)
 {
-	int do_bt = (nocalls && InterlockedRead (&runtime_inited) && !notraces) ? TYPE_EXCEPTION_BT : 0;
+	int do_bt = (nocalls && InterlockedRead (&runtime_inited) && !notraces) ? TYPE_THROW_BT : 0;
 	FrameData data;
 
 	if (do_bt)

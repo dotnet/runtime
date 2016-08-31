@@ -75,13 +75,6 @@ enum {
 	/* extended type for TYPE_METADATA */
 	TYPE_END_LOAD     = 2 << 4,
 	TYPE_END_UNLOAD   = 4 << 4,
-	/* metadata type byte for TYPE_METADATA */
-	TYPE_CLASS     = 1,
-	TYPE_IMAGE     = 2,
-	TYPE_ASSEMBLY  = 3,
-	TYPE_DOMAIN    = 4,
-	TYPE_THREAD    = 5,
-	TYPE_CONTEXT   = 6,
 	/* extended type for TYPE_GC */
 	TYPE_GC_EVENT  = 1 << 4,
 	TYPE_GC_RESIZE = 2 << 4,
@@ -100,9 +93,9 @@ enum {
 	TYPE_EXC_LEAVE = 3 << 4,
 	TYPE_JIT       = 4 << 4,
 	/* extended type for TYPE_EXCEPTION */
-	TYPE_THROW        = 0 << 4,
-	TYPE_CLAUSE       = 1 << 4,
-	TYPE_EXCEPTION_BT = 1 << 7,
+	TYPE_THROW_NO_BT = 0 << 7,
+	TYPE_THROW_BT    = 1 << 7,
+	TYPE_CLAUSE      = 1 << 4,
 	/* extended type for TYPE_ALLOC */
 	TYPE_ALLOC_NO_BT  = 0 << 4,
 	TYPE_ALLOC_BT     = 1 << 4,
@@ -125,6 +118,16 @@ enum {
 	/* extended type for TYPE_META */
 	TYPE_SYNC_POINT = 0 << 4,
 	TYPE_END
+};
+
+enum {
+	/* metadata type byte for TYPE_METADATA */
+	TYPE_CLASS    = 1,
+	TYPE_IMAGE    = 2,
+	TYPE_ASSEMBLY = 3,
+	TYPE_DOMAIN   = 4,
+	TYPE_THREAD   = 5,
+	TYPE_CONTEXT  = 6,
 };
 
 typedef enum {
