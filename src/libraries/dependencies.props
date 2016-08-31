@@ -4,6 +4,7 @@
     <CoreFxCurrentRef>f704e1b0f02874713803d3db713bdc6773a3aff6</CoreFxCurrentRef>
     <CoreClrCurrentRef>b4a6eb15a48473adef5506c606b431955409e087</CoreClrCurrentRef>
     <ExternalCurrentRef>b4a6eb15a48473adef5506c606b431955409e087</ExternalCurrentRef>
+    <ProjectNTfsCurrentRef>b4a6eb15a48473adef5506c606b431955409e087</ProjectNTfsCurrentRef>
   </PropertyGroup>
 
   <!-- Auto-upgraded properties for each build info dependency. -->
@@ -26,14 +27,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!--
-      Disabling validation of NetNative targeting pack. The TP used by netcore50 target frameworks
-      is different than the one that's used by uap10.1 target frameworks. VerifyDependencies
-      currently doesn't support multi-value Version. We need to figure out how we compose the
-      new TP, such that it's consumable by both frameworks.
-    -->
-    <DisabledBuildInfoPackages Include="Microsoft.TargetingPack.Private.NETNative" />
-
     <RemoteDependencyBuildInfo Include="CoreFx">
       <BuildInfoPath>$(BaseDotNetBuildInfo)corefx/dev/api</BuildInfoPath>
       <CurrentRef>$(CoreFxCurrentRef)</CurrentRef>
@@ -46,10 +39,13 @@
       <BuildInfoPath>$(BaseDotNetBuildInfo)projectk-tfs/$(DependencyBranch)</BuildInfoPath>
       <CurrentRef>$(ExternalCurrentRef)</CurrentRef>
     </RemoteDependencyBuildInfo>
+    <RemoteDependencyBuildInfo Include="ProjectNTfs">
+      <BuildInfoPath>$(BaseDotNetBuildInfo)projectn-tfs/$(DependencyBranch)</BuildInfoPath>
+      <CurrentRef>$(ProjectNTfsCurrentRef)</CurrentRef>
+    </RemoteDependencyBuildInfo>
 
     <DependencyBuildInfo Include="@(RemoteDependencyBuildInfo)">
       <RawVersionsBaseUrl>https://raw.githubusercontent.com/dotnet/versions</RawVersionsBaseUrl>
-      <DisabledPackages>@(DisabledBuildInfoPackages)</DisabledPackages>
     </DependencyBuildInfo>
 
     <XmlUpdateStep Include="CoreFx">
