@@ -3431,7 +3431,7 @@ public:
     BYTE                              *m_argData;
     MethodDesc                        *m_md;
     PCODE                              m_targetCodeAddr;
-    INT64                              m_result;
+    ARG_SLOT                           m_result[NUMBER_RETURNVALUE_SLOTS];
     TypeHandle                         m_resultType;
     SIZE_T                             m_arrayRank;
     FUNC_EVAL_ABORT_TYPE               m_aborting;          // Has an abort been requested, and what type.
