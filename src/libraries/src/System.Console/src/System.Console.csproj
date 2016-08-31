@@ -266,6 +266,11 @@
       <Link>Common\Interop\Unix\Interop.StdinReady.cs"</Link>
     </Compile>
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)'=='netstandard1.3' Or '$(TargetGroup)' == 'netcore50'">
+    <Compile Include="$(CommonPath)\System\SerializableAttribute.cs">
+      <Link>Common\System\SerializableAttribute.cs"</Link>
+    </Compile>
+  </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'net46' OR '$(TargetGroup)' == 'net463'">
     <TargetingPackReference Include="mscorlib" />
   </ItemGroup>
