@@ -10,8 +10,10 @@ using System.Reflection;
 [assembly:AssemblyCompanyAttribute("The name of the company.")]
 // FileDescription
 [assembly:AssemblyTitleAttribute("My File")]
-// FileVersion & ProductVersion
+// FileVersion
 [assembly:AssemblyFileVersionAttribute("4.3.2.1")]
+// ProductVersion (overrides FileVersion to be the ProductVersion)
+[assembly: AssemblyInformationalVersionAttribute("1.2.3-beta.4")]
 // LegalCopyright
 [assembly:AssemblyCopyrightAttribute("Copyright, you betcha!")]
 // LegalTrademarks

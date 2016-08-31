@@ -138,14 +138,17 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                         Assert.True(Directory.Exists(storeDirectory), "Directory.Exists(storeDirectory)");
                         Assert.Equal(1, Directory.GetFiles(storeDirectory).Length);
 
-                        X509Certificate2Collection storeCerts = store.Certificates;
-
-                        Assert.Equal(1, storeCerts.Count);
-
-                        using (X509Certificate2 storeCert = storeCerts[0])
+                        using (var coll = new ImportedCollection(store.Certificates))
                         {
-                            Assert.Equal(cert, storeCert);
-                            Assert.NotSame(cert, storeCert);
+                            X509Certificate2Collection storeCerts = coll.Collection;
+
+                            Assert.Equal(1, storeCerts.Count);
+
+                            using (X509Certificate2 storeCert = storeCerts[0])
+                            {
+                                Assert.Equal(cert, storeCert);
+                                Assert.NotSame(cert, storeCert);
+                            }
                         }
                     }
                 });
@@ -175,14 +178,17 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                         Assert.True(Directory.Exists(storeDirectory), "Directory.Exists(storeDirectory)");
                         Assert.Equal(1, Directory.GetFiles(storeDirectory).Length);
 
-                        X509Certificate2Collection storeCerts = store.Certificates;
-
-                        Assert.Equal(1, storeCerts.Count);
-
-                        using (X509Certificate2 storeCert = storeCerts[0])
+                        using (var coll = new ImportedCollection(store.Certificates))
                         {
-                            Assert.Equal(cert, storeCert);
-                            Assert.NotSame(cert, storeCert);
+                            X509Certificate2Collection storeCerts = coll.Collection;
+
+                            Assert.Equal(1, storeCerts.Count);
+
+                            using (X509Certificate2 storeCert = storeCerts[0])
+                            {
+                                Assert.Equal(cert, storeCert);
+                                Assert.NotSame(cert, storeCert);
+                            }
                         }
                     }
                 });
@@ -566,6 +572,49 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                             storeClone.Add(certD);
                             AssertEqualContents(store, storeClone);
                         }
+                    }
+                });
+        }
+
+        [Fact]
+        [OuterLoop( /* Alters user/machine state */)]
+        private static void X509Store_FiltersDuplicateOnLoad()
+        {
+            RunX509StoreTest(
+                (store, storeDirectory) =>
+                {
+                    using (var certA = new X509Certificate2(TestData.MsCertificate))
+                    {
+                        store.Open(OpenFlags.ReadWrite);
+
+                        store.Add(certA);
+
+                        // Emulate a race condition of parallel adds with the following flow
+                        // AdderA: Notice [thumbprint].pfx is available, create it (0 bytes)
+                        // AdderB: Notice [thumbprint].pfx already exists, but can't be read, move to [thumbprint].1.pfx
+                        // AdderA: finish write
+                        // AdderB: finish write
+
+                        string[] files = Directory.GetFiles(storeDirectory, "*.pfx");
+                        Assert.Equal(1, files.Length);
+
+                        string srcFile = files[0];
+                        string baseName = Path.GetFileNameWithoutExtension(srcFile);
+                        string destFile = Path.Combine(storeDirectory, srcFile + ".1.pfx");
+                        File.Copy(srcFile, destFile);
+
+                        using (var coll = new ImportedCollection(store.Certificates))
+                        {
+                            Assert.Equal(1, coll.Collection.Count);
+                            Assert.Equal(certA, coll.Collection[0]);
+                        }
+
+                        // Also check that remove removes both files.
+
+                        store.Remove(certA);
+
+                        string[] filesAfter = Directory.GetFiles(storeDirectory, "*.pfx");
+                        Assert.Equal(0, filesAfter.Length);
                     }
                 });
         }

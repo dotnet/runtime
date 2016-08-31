@@ -4,35 +4,19 @@
   <PropertyGroup>
     <ProjectGuid>{F24D3391-2928-4E83-AADE-B34423498750}</ProjectGuid>
     <AssemblyName>System.Diagnostics.DiagnosticSource</AssemblyName>
-    <AssemblyVersion>4.0.1.0</AssemblyVersion>
     <DocumentationFile>$(OutputPath)$(AssemblyName).xml</DocumentationFile>
     <UseOpenKey Condition="'$(UseOpenKey)'==''">true</UseOpenKey>
     <!-- unset PackageTargetFramework we'll use PackageDestination instead -->
     <PackageTargetFramework />
     <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.3</NuGetTargetMoniker>
-  </PropertyGroup>
-  <!-- By default we build the 'latest'  which is netstandard1.3 -->
-  <ItemGroup Condition="'$(TargetGroup)' == ''">
-    <PackageDestination Include="lib/netstandard1.3">
-      <TargetFramework>netstandard1.3</TargetFramework>
-    </PackageDestination>
     <!-- duplicate in net46 folder so older nuget clients can consume -->
-    <PackageDestination Include="lib/net46">
-      <TargetFramework>net46</TargetFramework>
-    </PackageDestination>
-  </ItemGroup>
-  <!-- However to allow it to work on V4.5 runtimes and other old platforms
-       we also have a separate complilation of this DLL that works for V4.5
-       (which is netstandard1.1 -->
-  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard1.1'">
-    <PackageDestination Include="lib/netstandard1.1">
-      <TargetFramework>netstandard1.1</TargetFramework>
-    </PackageDestination>
-    <!-- duplicate in portable folder so older nuget clients can consume -->
-    <PackageDestination Include="lib/portable-net45+win8+wpa81">
-      <TargetFramework>portable-net45+win8+wpa81</TargetFramework>
-    </PackageDestination>
-  </ItemGroup>
+    <PackageTargetFramework  Condition="'$(TargetGroup)' == ''">netstandard1.3;net46</PackageTargetFramework>
+    <!-- To allow this library to work on V4.5 runtimes and other old platforms
+         we also have a separate complilation of this DLL that works for V4.5
+         (which is netstandard1.1).  Again we duplicate in a portable-* folder
+         to work with older NuGet clients -->
+    <PackageTargetFramework  Condition="'$(TargetGroup)' == 'netstandard1.1'">netstandard1.1;portable-net45+win8+wpa81</PackageTargetFramework>
+  </PropertyGroup>
   <PropertyGroup Condition="'$(TargetGroup)' == 'netstandard1.1'">
     <DefineConstants>;NO_EVENTSOURCE_COMPLEX_TYPE_SUPPORT</DefineConstants>
   </PropertyGroup>

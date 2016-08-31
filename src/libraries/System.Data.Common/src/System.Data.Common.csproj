@@ -4,20 +4,12 @@
   <PropertyGroup>
     <ProjectGuid>{29EF8D53-8E84-4E49-B90F-5950A2FE7D54}</ProjectGuid>
     <AssemblyName>System.Data.Common</AssemblyName>
-    <AssemblyVersion>4.1.1.0</AssemblyVersion>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <PlatformTarget>AnyCPU</PlatformTarget>
     <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.0</NuGetTargetMoniker>
+    <PackageTargetFramework Condition="'$(TargetGroup)' == ''">netstandard1.2;portable-net451+win8+wp8+wpa81</PackageTargetFramework>
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'net451'">true</IsPartialFacadeAssembly>
   </PropertyGroup>
-  <ItemGroup Condition="'$(PackageTargetFramework)' == ''">
-    <PackageDestination Include="lib/netstandard1.2">
-      <TargetFramework>netstandard1.2</TargetFramework>
-    </PackageDestination>
-    <PackageDestination Include="lib/portable-net451+win8+wp8+wpa81">
-      <TargetFramework>portable-net451+win8+wp8+wpa81</TargetFramework>
-    </PackageDestination>
-  </ItemGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">

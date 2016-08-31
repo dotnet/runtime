@@ -872,7 +872,7 @@ namespace System.Net.Security
                     GlobalLog.Assert("SafeDeleteContext::AcceptSecurityContext()|inSecBuffer == null || inSecBuffers == null");
                 }
 
-                Debug.Fail("SafeDeleteContext::AcceptSecurityContext()|outSecBuffer != null");
+                Debug.Fail("SafeDeleteContext::AcceptSecurityContext()|inSecBuffer == null || inSecBuffers == null");
             }
 
             if (inCredentials == null)

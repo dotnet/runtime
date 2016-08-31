@@ -55,6 +55,16 @@ extern "C" int32_t CryptoNative_Pkcs12Parse(PKCS12* p12, const char* pass, EVP_P
         // error queue.  If we're returning success, clear the error queue.
         ERR_clear_error();
     }
+    else
+    {
+        // If PKCS12_parse encounters an error it will free the handles it 
+        // created, but it does not clear the output parameters they were 
+        // placed in.
+        // If those handles make it back into managed code they will crash 
+        // the coreclr when Disposed.
+        *pkey = nullptr;
+        *cert = nullptr;
+    }
 
     return ret;
 }

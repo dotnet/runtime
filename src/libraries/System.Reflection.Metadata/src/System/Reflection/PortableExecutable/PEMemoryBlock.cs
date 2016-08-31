@@ -64,7 +64,7 @@ namespace System.Reflection.PortableExecutable
         /// Reads the content of a part of the block into an array.
         /// </summary>
         /// <exception cref="ArgumentOutOfRangeException">Specified range is not contained within the block.</exception>
-        public unsafe ImmutableArray<byte> GetContent(int start, int length)
+        public ImmutableArray<byte> GetContent(int start, int length)
         {
             BlobUtilities.ValidateRange(Length, start, length, nameof(length));
             return _block?.GetContentUnchecked(_offset + start, length) ?? ImmutableArray<byte>.Empty;

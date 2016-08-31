@@ -159,12 +159,12 @@ namespace System.Diagnostics.Tests
                 LegalTrademarks = "TM",
                 OriginalFilename = TestAssemblyFileName,
                 PrivateBuild = "",
-                ProductBuildPart = 2,
-                ProductMajorPart = 4,
-                ProductMinorPart = 3,
+                ProductBuildPart = 3,
+                ProductMajorPart = 1,
+                ProductMinorPart = 2,
                 ProductName = "The greatest product EVER",
-                ProductPrivatePart = 1,
-                ProductVersion = "4.3.2.1",
+                ProductPrivatePart = 0,
+                ProductVersion = "1.2.3-beta.4",
                 SpecialBuild = "",
             });
         }

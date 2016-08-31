@@ -4,10 +4,8 @@
   <PropertyGroup>
     <RootNamespace>System.Diagnostics.TextWriterTraceListener</RootNamespace>
     <AssemblyName>System.Diagnostics.TextWriterTraceListener</AssemblyName>
-    <AssemblyVersion>4.0.1.0</AssemblyVersion>
     <ProjectGuid>{315929D9-D76E-47E9-BE82-C787FB3A7876}</ProjectGuid>
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'net46'">true</IsPartialFacadeAssembly>
-    <PackageTargetFramework Condition="'$(PackageTargetFramework)' == ''">netstandard1.3</PackageTargetFramework>
     <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.3</NuGetTargetMoniker>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->

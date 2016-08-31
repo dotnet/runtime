@@ -35,7 +35,7 @@ namespace System.Reflection.Metadata
 
         public ImportDefinitionCollection GetImports()
         {
-            return new ImportDefinitionCollection(_reader.BlobStream.GetMemoryBlock(ImportsBlob));
+            return new ImportDefinitionCollection(_reader.BlobHeap.GetMemoryBlock(ImportsBlob));
         }
     }
 }

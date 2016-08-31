@@ -1,0 +1,12 @@
+{
+  "frameworks": {
+    "netstandard1.5": {
+      "imports": [
+        "netcore50"
+      ],
+      "dependencies": {
+        "Microsoft.TargetingPack.Private.NETNative": "1.0.1-beta-24430-00"
+      }
+    }
+  }
+}

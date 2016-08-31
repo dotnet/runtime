@@ -9,6 +9,7 @@ namespace System.Diagnostics.Tests
     public class DebugTests
     {
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Net46)]
         public void Asserts()
         {
             VerifyLogged(() => { Debug.Assert(true); }, "");
@@ -23,6 +24,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Net46)]
         public void Fail()
         {
             VerifyAssert(() => { Debug.Fail("something bad happened"); }, "something bad happened");
@@ -30,6 +32,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Net46)]
         public void Write()
         {
             VerifyLogged(() => { Debug.Write(5); }, "5");
@@ -46,6 +49,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Net46)]
         public void WriteLine()
         {
             VerifyLogged(() => { Debug.WriteLine(5); }, "5" + Environment.NewLine);
@@ -60,6 +64,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Net46)]
         public void WriteIf()
         {
             VerifyLogged(() => { Debug.WriteIf(true, 5); }, "5");
@@ -76,6 +81,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Net46)]
         public void WriteLineIf()
         {
             VerifyLogged(() => { Debug.WriteLineIf(true, 5); }, "5" + Environment.NewLine);
