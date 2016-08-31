@@ -226,7 +226,7 @@
             <Issue>x86 JIT doesn't support implicit tail call optimization or tail. call pop ret sequence</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)\JIT\Performance\CodeQuality\Roslyn\CscBench\CscBench.cmd">
-            <Issue>6844</Issue>
+            <Issue>7038,7173</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\Dev11\External\dev11_239804\ShowLocallocAlignment\ShowLocallocAlignment.cmd">
             <Issue>needs triage</Issue>
