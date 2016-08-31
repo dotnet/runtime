@@ -4774,6 +4774,12 @@ int Compiler::compCompile(CORINFO_METHOD_HANDLE methodHnd,
         {
             assert(compJitFuncInfoFile == nullptr);
             compJitFuncInfoFile = _wfopen(compJitFuncInfoFilename, W("a"));
+            if (compJitFuncInfoFile == nullptr)
+            {
+#if defined(DEBUG) && !defined(FEATURE_PAL) // no 'perror' in the PAL
+                perror("Failed to open JitFuncInfoLogFile");
+#endif // defined(DEBUG) && !defined(FEATURE_PAL)
+            }
         }
     }
 #endif // FUNC_INFO_LOGGING
