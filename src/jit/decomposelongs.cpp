@@ -239,7 +239,7 @@ GenTree* DecomposeLongs::DecomposeNode(LIR::Use& use)
             break;
 
         case GT_MUL:
-            NYI("Arithmetic binary operators on TYP_LONG - GT_MUL");
+            nextNode = DecomposeMul(use);
             break;
 
         case GT_DIV:
@@ -423,10 +423,12 @@ GenTree* DecomposeLongs::DecomposeStoreLclVar(LIR::Use& use)
 
     GenTree* tree = use.Def();
     GenTree* rhs  = tree->gtGetOp1();
-    if ((rhs->OperGet() == GT_PHI) || (rhs->OperGet() == GT_CALL))
+    if ((rhs->OperGet() == GT_PHI) || (rhs->OperGet() == GT_CALL) ||
+            ((rhs->OperGet() == GT_MUL_LONG) && (rhs->gtFlags & GTF_MUL_64RSLT) != 0))
     {
         // GT_CALLs are not decomposed, so will not be converted to GT_LONG
         // GT_STORE_LCL_VAR = GT_CALL are handled in genMultiRegCallStoreToLocal
+        // GT_MULs are not decomposed, so will not be converted to GT_LONG
         return tree->gtNext;
     }
 
@@ -567,35 +569,7 @@ GenTree* DecomposeLongs::DecomposeCall(LIR::Use& use)
     assert(use.Def()->OperGet() == GT_CALL);
 
     // We only need to force var = call() if the call's result is used.
-    if (use.IsDummyUse())
-        return use.Def()->gtNext;
-
-    GenTree* user = use.User();
-    if (user->OperGet() == GT_STORE_LCL_VAR)
-    {
-        // If parent is already a STORE_LCL_VAR, we can skip it if
-        // it is already marked as lvIsMultiRegRet.
-        unsigned varNum = user->AsLclVarCommon()->gtLclNum;
-        if (m_compiler->lvaTable[varNum].lvIsMultiRegRet)
-        {
-            return use.Def()->gtNext;
-        }
-        else if (!m_compiler->lvaTable[varNum].lvPromoted)
-        {
-            // If var wasn't promoted, we can just set lvIsMultiRegRet.
-            m_compiler->lvaTable[varNum].lvIsMultiRegRet = true;
-            return use.Def()->gtNext;
-        }
-    }
-
-    GenTree* originalNode = use.Def();
-
-    // Otherwise, we need to force var = call()
-    unsigned varNum                              = use.ReplaceWithLclVar(m_compiler, m_blockWeight);
-    m_compiler->lvaTable[varNum].lvIsMultiRegRet = true;
-
-    // Decompose the new LclVar use
-    return DecomposeLclVar(use);
+    return StoreNodeToVar(use);
 }
 
 //------------------------------------------------------------------------
@@ -946,6 +920,97 @@ GenTree* DecomposeLongs::DecomposeShift(LIR::Use& use)
 }
 
 //------------------------------------------------------------------------
+// DecomposeMul: Decompose GT_MUL. The only GT_MULs that make it to decompose are
+// those with the GTF_MUL_64RSLT flag set. These muls result in a mul instruction that
+// returns its result in two registers like GT_CALLs do. Additionally, these muls are
+// guaranteed to be in the form long = (long)int * (long)int. Therefore, to decompose
+// these nodes, we convert them into GT_MUL_LONGs, undo the cast from int to long by
+// stripping out the lo ops, and force them into the form var = mul, as we do for
+// GT_CALLs. In codegen, we then produce a mul instruction that produces the result
+// in edx:eax, and store those registers on the stack in genStoreLongLclVar.
+//
+// All other GT_MULs have been converted to helper calls in morph.cpp
+//
+// Arguments:
+//    use - the LIR::Use object for the def that needs to be decomposed.
+//
+// Return Value:
+//    The next node to process.
+//
+GenTree* DecomposeLongs::DecomposeMul(LIR::Use& use)
+{
+    assert(use.IsInitialized());
+
+    GenTree*   tree = use.Def();
+    genTreeOps oper = tree->OperGet();
+
+    assert(oper == GT_MUL);
+    assert((tree->gtFlags & GTF_MUL_64RSLT) != 0);
+
+    GenTree* op1 = tree->gtGetOp1();
+    GenTree* op2 = tree->gtGetOp2();
+
+    GenTree* loOp1 = op1->gtGetOp1();
+    GenTree* hiOp1 = op1->gtGetOp2();
+    GenTree* loOp2 = op2->gtGetOp1();
+    GenTree* hiOp2 = op2->gtGetOp2();
+
+    Range().Remove(hiOp1);
+    Range().Remove(hiOp2);
+    Range().Remove(op1);
+    Range().Remove(op2);
+
+    // Get rid of the hi ops. We don't need them.
+    tree->gtOp.gtOp1 = loOp1;
+    tree->gtOp.gtOp2 = loOp2;
+    tree->gtOper = GT_MUL_LONG;
+
+    return StoreNodeToVar(use);
+}
+
+//------------------------------------------------------------------------
+// StoreNodeToVar: Check if the user is a STORE_LCL_VAR, and if it isn't,
+// store the node to a var. Then decompose the new LclVar.
+//
+// Arguments:
+//    use - the LIR::Use object for the def that needs to be decomposed.
+//
+// Return Value:
+//    The next node to process.
+//
+GenTree* DecomposeLongs::StoreNodeToVar(LIR::Use& use)
+{
+    if (use.IsDummyUse())
+        return use.Def()->gtNext;
+
+    GenTree* tree = use.Def();
+    GenTree* user = use.User();
+
+    if (user->OperGet() == GT_STORE_LCL_VAR)
+    {
+        // If parent is already a STORE_LCL_VAR, we can skip it if
+        // it is already marked as lvIsMultiRegRet.
+        unsigned varNum = user->AsLclVarCommon()->gtLclNum;
+        if (m_compiler->lvaTable[varNum].lvIsMultiRegRet)
+        {
+            return tree->gtNext;
+        }
+        else if (!m_compiler->lvaTable[varNum].lvPromoted)
+        {
+            // If var wasn't promoted, we can just set lvIsMultiRegRet.
+            m_compiler->lvaTable[varNum].lvIsMultiRegRet = true;
+            return tree->gtNext;
+        }
+    }
+
+    // Otherwise, we need to force var = call()
+    unsigned varNum                              = use.ReplaceWithLclVar(m_compiler, m_blockWeight);
+    m_compiler->lvaTable[varNum].lvIsMultiRegRet = true;
+
+    // Decompose the new LclVar use
+    return DecomposeLclVar(use);
+}
+//------------------------------------------------------------------------
 // GetHiOper: Convert arithmetic operator to "high half" operator of decomposed node.
 //
 // Arguments:
@@ -964,9 +1029,6 @@ genTreeOps DecomposeLongs::GetHiOper(genTreeOps oper)
             break;
         case GT_SUB:
             return GT_SUB_HI;
-            break;
-        case GT_MUL:
-            return GT_MUL_HI;
             break;
         case GT_DIV:
             return GT_DIV_HI;
