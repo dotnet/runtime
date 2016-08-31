@@ -127,7 +127,7 @@ inline BOOL IsCustomCultureId(LCID lcid)
     return (lcid == LOCALE_CUSTOM_DEFAULT || lcid == LOCALE_CUSTOM_UNSPECIFIED);
 }
 
-#ifndef FEATURE_CORECLR
+#ifndef FEATURE_COREFX_GLOBALIZATION
 //
 // Normalization Implementation
 //
@@ -136,7 +136,7 @@ HMODULE COMNlsInfo::m_hNormalization = NULL;
 PFN_NORMALIZATION_IS_NORMALIZED_STRING COMNlsInfo::m_pfnNormalizationIsNormalizedStringFunc = NULL;
 PFN_NORMALIZATION_NORMALIZE_STRING COMNlsInfo::m_pfnNormalizationNormalizeStringFunc = NULL;
 PFN_NORMALIZATION_INIT_NORMALIZATION COMNlsInfo::m_pfnNormalizationInitNormalizationFunc = NULL;
-#endif
+#endif // FEATURE_COREFX_GLOBALIZATION
 
 #if FEATURE_CODEPAGES_FILE
 /*============================nativeCreateOpenFileMapping============================
@@ -2623,7 +2623,7 @@ FCIMPL0(CodePageDataItem *, COMNlsInfo::nativeGetCodePageTableDataPointer)
 FCIMPLEND
 
 
-#ifndef FEATURE_CORECLR
+#ifndef FEATURE_COREFX_GLOBALIZATION
 //
 // Normalization
 //
@@ -2722,12 +2722,15 @@ void QCALLTYPE COMNlsInfo::nativeNormalizationInitNormalization(int NormForm, BY
             if (!hNormalization)
                ThrowLastError();
         }
+#ifndef FEATURE_CORECLR
+        // in coreclr we should always find the normalization in kernel32 as it supports Win7 and up 
         else
         {
             HRESULT hr = g_pCLRRuntime->LoadLibrary(NORMALIZATION_DLL, &hNormalization);
             if (FAILED(hr))
                 ThrowHR(hr);
         }
+#endif // FEATURE_CORECLR
 
         _ASSERTE(hNormalization != NULL);
         m_hNormalization = hNormalization;
@@ -2767,7 +2770,7 @@ void QCALLTYPE COMNlsInfo::nativeNormalizationInitNormalization(int NormForm, BY
     END_QCALL;
 }
 
-#endif // FEATURE_CORECLR
+#endif // FEATURE_COREFX_GLOBALIZATION
 
 
 //

@@ -584,7 +584,6 @@
     <GlobalizationSources Include="$(BclSourcesRoot)\System\Globalization\DaylightTime.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(FeatureCoreFxGlobalization)' != 'true'">
-    <GlobalizationSources Condition="'$(FeatureCoreClr)'=='true'" Include="$(BclSourcesRoot)\System\Globalization\STUBS.cs" />
     <GlobalizationSources Include="$(BclSourcesRoot)\System\Globalization\BidiCategory.cs" />
     <GlobalizationSources Include="$(BclSourcesRoot)\System\Globalization\Calendar.cs" />
     <GlobalizationSources Include="$(BclSourcesRoot)\System\Globalization\CalendarData.cs" />
@@ -614,6 +613,7 @@
     <GlobalizationSources Include="$(BclSourcesRoot)\System\Globalization\KoreanCalendar.cs" />
     <GlobalizationSources Include="$(BclSourcesRoot)\System\Globalization\RegionInfo.cs" />
     <GlobalizationSources Include="$(BclSourcesRoot)\System\Globalization\SortKey.cs" />
+    <GlobalizationSources Include="$(BclSourcesRoot)\System\Globalization\SortVersion.cs" />
     <GlobalizationSources Include="$(BclSourcesRoot)\System\Globalization\StringInfo.cs" />
     <GlobalizationSources Include="$(BclSourcesRoot)\System\Globalization\TaiwanCalendar.cs" />
     <GlobalizationSources Include="$(BclSourcesRoot)\System\Globalization\TextElementEnumerator.cs" />
