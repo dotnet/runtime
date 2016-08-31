@@ -72,11 +72,13 @@ namespace System.Runtime.Serialization
     {
         public IgnoreDataMemberAttribute() { }
     }
+    [Serializable]
     public partial class InvalidDataContractException : System.Exception
     {
         public InvalidDataContractException() { }
         public InvalidDataContractException(string message) { }
         public InvalidDataContractException(string message, System.Exception innerException) { }
+        protected InvalidDataContractException(SerializationInfo info, StreamingContext context) : base(info, context) { }
     }
     public partial interface ISerializationSurrogateProvider
     {

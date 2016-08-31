@@ -42,6 +42,9 @@
     <Compile Include="System\Runtime\Serialization\SerializationException.cs" />
     <Compile Include="System\Runtime\Serialization\StreamingContext.cs" />
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)'=='' Or '$(TargetGroup)'=='netstandard1.7'">
+    <Compile Include="System\Runtime\Serialization\InvalidDataContractException.Serialization.cs" />
+  </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)'==''">
     <!-- ToDo: Remove this dependency once System.Runtime is published. -->
     <ProjectReference Include="..\..\System.Runtime\pkg\System.Runtime.pkgproj">
