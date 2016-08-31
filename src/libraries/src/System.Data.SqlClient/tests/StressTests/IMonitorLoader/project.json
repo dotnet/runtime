@@ -1,7 +1,7 @@
 {
   "dependencies": {
-    "Microsoft.NETCore.Platforms": "4.3.0-beta-24430-01",
-    "System.Collections": "4.3.0-beta-24430-01"
+    "Microsoft.NETCore.Platforms": "4.3.0-beta-24431-01",
+    "System.Collections": "4.3.0-beta-24431-01"
   },
   "frameworks": {
     "netstandard1.3": {}
