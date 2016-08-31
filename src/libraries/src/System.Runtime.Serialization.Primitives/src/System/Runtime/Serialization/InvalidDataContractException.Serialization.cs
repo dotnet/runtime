@@ -6,21 +6,13 @@ using System;
 
 namespace System.Runtime.Serialization
 {
+    [Serializable]
     public partial class InvalidDataContractException : Exception
     {
-        public InvalidDataContractException()
-            : base()
-        {
-        }
-
-        public InvalidDataContractException(String message)
-            : base(message)
-        {
-        }
-
-        public InvalidDataContractException(String message, Exception innerException)
-            : base(message, innerException)
+        protected InvalidDataContractException(SerializationInfo info, StreamingContext context)
+            : base(info, context)
         {
         }
     }
 }
+
