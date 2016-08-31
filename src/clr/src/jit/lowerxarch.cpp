@@ -435,6 +435,9 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
 
         case GT_MUL:
         case GT_MULHI:
+#if defined(_TARGET_X86_) && !defined(LEGACY_BACKEND)
+        case GT_MUL_LONG:
+#endif
             SetMulOpCounts(tree);
             break;
 
@@ -3739,8 +3742,11 @@ bool Lowering::SetStoreIndOpCountsIfRMWMemOp(GenTreePtr storeInd)
  */
 void Lowering::SetMulOpCounts(GenTreePtr tree)
 {
+#if defined(_TARGET_X86_)
+    assert(tree->OperGet() == GT_MUL || tree->OperGet() == GT_MULHI || tree->OperGet() == GT_MUL_LONG);
+#else
     assert(tree->OperGet() == GT_MUL || tree->OperGet() == GT_MULHI);
-
+#endif
     TreeNodeInfo* info = &(tree->gtLsraInfo);
 
     info->srcCount = 2;
@@ -3787,7 +3793,12 @@ void Lowering::SetMulOpCounts(GenTreePtr tree)
     // three-op form:   reg = r/m * imm
 
     // This special widening 32x32->64 MUL is not used on x64
-    assert((tree->gtFlags & GTF_MUL_64RSLT) == 0);
+#if defined(_TARGET_X86_)
+    if(tree->OperGet() != GT_MUL_LONG)
+#endif
+    {
+        assert((tree->gtFlags & GTF_MUL_64RSLT) == 0);
+    }
 
     // Multiply should never be using small types
     assert(!varTypeIsSmall(tree->TypeGet()));
@@ -3805,7 +3816,11 @@ void Lowering::SetMulOpCounts(GenTreePtr tree)
         info->setDstCandidates(m_lsra, RBM_RAX);
         hasImpliedFirstOperand = true;
     }
-    else if (tree->gtOper == GT_MULHI)
+    else if (tree->gtOper == GT_MULHI
+#if defined(_TARGET_X86_)
+            || tree->OperGet() == GT_MUL_LONG
+#endif
+            )
     {
         // have to use the encoding:RDX:RAX = RAX * rm
         info->setDstCandidates(m_lsra, RBM_RAX);
