@@ -613,7 +613,7 @@
     <GlobalizationSources Include="$(BclSourcesRoot)\System\Globalization\KoreanCalendar.cs" />
     <GlobalizationSources Include="$(BclSourcesRoot)\System\Globalization\RegionInfo.cs" />
     <GlobalizationSources Include="$(BclSourcesRoot)\System\Globalization\SortKey.cs" />
-    <GlobalizationSources Include="$(BclSourcesRoot)\System\Globalization\SortVersion.cs" />
+    <GlobalizationSources Condition="'$(FeatureCoreclr)' == 'true'" Include="$(BclSourcesRoot)\System\Globalization\SortVersion.cs" />
     <GlobalizationSources Include="$(BclSourcesRoot)\System\Globalization\StringInfo.cs" />
     <GlobalizationSources Include="$(BclSourcesRoot)\System\Globalization\TaiwanCalendar.cs" />
     <GlobalizationSources Include="$(BclSourcesRoot)\System\Globalization\TextElementEnumerator.cs" />
