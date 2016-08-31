@@ -15,8 +15,8 @@
 #include "../metadata/metadata-internals.h"
 #include <mono/metadata/profiler.h>
 #include <mono/metadata/threads.h>
-#include <mono/metadata/mono-gc.h>
 #include <mono/metadata/debug-helpers.h>
+#include <mono/metadata/mono-config.h>
 #include <mono/metadata/mono-gc.h>
 #include <mono/metadata/mono-perfcounters.h>
 #include <mono/metadata/appdomain.h>
@@ -174,7 +174,12 @@ static MonoLinkedListSet profiler_thread_list;
  * [flags: 4 bytes] file format flags, should be 0 for now
  * [pid: 4 bytes] pid of the profiled process
  * [port: 2 bytes] tcp port for server if != 0
- * [sysid: 2 bytes] operating system and architecture identifier
+ * [args size: 4 bytes] size of args
+ * [args: string] arguments passed to the profiler
+ * [arch size: 4 bytes] size of arch
+ * [arch: string] architecture the profiler is running on
+ * [os size: 4 bytes] size of os
+ * [os: string] operating system the profiler is running on
  *
  * The multiple byte integers are in little-endian format.
  *
@@ -208,7 +213,9 @@ static MonoLinkedListSet profiler_thread_list;
  * [method_base: 8 bytes] base value for MonoMethod pointers
  *
  * event format:
- * [extended info: upper 4 bits] [type: lower 4 bits] [data]*
+ * [extended info: upper 4 bits] [type: lower 4 bits]
+ * [time diff: uleb128] nanoseconds since last timing
+ * [data]*
  * The data that follows depends on type and the extended info.
  * Type is one of the enum values in proflog.h: TYPE_ALLOC, TYPE_GC,
  * TYPE_METADATA, TYPE_METHOD, TYPE_EXCEPTION, TYPE_MONITOR, TYPE_HEAP.
@@ -218,12 +225,12 @@ static MonoLinkedListSet profiler_thread_list;
  *
  * backtrace format:
  * [num: uleb128] number of frames following
- * [frame: sleb128]* num MonoMethod pointers as differences from ptr_base
+ * [frame: sleb128]* mum MonoMethod* as a pointer difference from the last such
+ * pointer or the buffer method_base
  *
  * type alloc format:
  * type: TYPE_ALLOC
  * exinfo: flags: TYPE_ALLOC_BT
- * [time diff: uleb128] nanoseconds since last timing
  * [ptr: sleb128] class as a byte difference from ptr_base
  * [obj: sleb128] object address as a byte difference from obj_base
  * [size: uleb128] size of the object in the heap
@@ -234,7 +241,6 @@ static MonoLinkedListSet profiler_thread_list;
  * exinfo: one of TYPE_GC_EVENT, TYPE_GC_RESIZE, TYPE_GC_MOVE, TYPE_GC_HANDLE_CREATED[_BT],
  * TYPE_GC_HANDLE_DESTROYED[_BT], TYPE_GC_FINALIZE_START, TYPE_GC_FINALIZE_END,
  * TYPE_GC_FINALIZE_OBJECT_START, TYPE_GC_FINALIZE_OBJECT_END
- * [time diff: uleb128] nanoseconds since last timing
  * if exinfo == TYPE_GC_RESIZE
  *	[heap_size: uleb128] new heap size
  * if exinfo == TYPE_GC_EVENT
@@ -262,7 +268,6 @@ static MonoLinkedListSet profiler_thread_list;
  * type metadata format:
  * type: TYPE_METADATA
  * exinfo: one of: TYPE_END_LOAD, TYPE_END_UNLOAD (optional for TYPE_THREAD and TYPE_DOMAIN)
- * [time diff: uleb128] nanoseconds since last timing
  * [mtype: byte] metadata type, one of: TYPE_CLASS, TYPE_IMAGE, TYPE_ASSEMBLY, TYPE_DOMAIN,
  * TYPE_THREAD, TYPE_CONTEXT
  * [pointer: sleb128] pointer of the metadata type depending on mtype
@@ -283,7 +288,6 @@ static MonoLinkedListSet profiler_thread_list;
  * type method format:
  * type: TYPE_METHOD
  * exinfo: one of: TYPE_LEAVE, TYPE_ENTER, TYPE_EXC_LEAVE, TYPE_JIT
- * [time diff: uleb128] nanoseconds since last timing
  * [method: sleb128] MonoMethod* as a pointer difference from the last such
  * pointer or the buffer method_base
  * if exinfo == TYPE_JIT
@@ -291,10 +295,21 @@ static MonoLinkedListSet profiler_thread_list;
  *	[code size: uleb128] size of the generated code
  *	[name: string] full method name
  *
+ * type exception format:
+ * type: TYPE_EXCEPTION
+ * exinfo: TYPE_THROW_BT flag or one of: TYPE_CLAUSE
+ * if exinfo == TYPE_CLAUSE
+ * 	[clause type: byte] MonoExceptionEnum enum value
+ * 	[clause index: uleb128] index of the current clause
+ * 	[method: sleb128] MonoMethod* as a pointer difference from the last such
+ * 	pointer or the buffer method_base
+ * else
+ * 	[object: sleb128] the exception object as a difference from obj_base
+ * 	if exinfo has TYPE_THROW_BT set, a backtrace follows.
+ *
  * type runtime format:
  * type: TYPE_RUNTIME
  * exinfo: one of: TYPE_JITHELPER
- * [time diff: uleb128] nanoseconds since last timing
  * if exinfo == TYPE_JITHELPER
  *	[type: byte] MonoProfilerCodeBufferType enum value
  *	[buffer address: sleb128] pointer to the native code as a diff from ptr_base
@@ -305,7 +320,6 @@ static MonoLinkedListSet profiler_thread_list;
  * type monitor format:
  * type: TYPE_MONITOR
  * exinfo: TYPE_MONITOR_BT flag and one of: MONO_PROFILER_MONITOR_(CONTENTION|FAIL|DONE)
- * [time diff: uleb128] nanoseconds since last timing
  * [object: sleb128] the lock object as a difference from obj_base
  * if exinfo.low3bits == MONO_PROFILER_MONITOR_CONTENTION
  *	If the TYPE_MONITOR_BT flag is set, a backtrace follows.
@@ -313,10 +327,6 @@ static MonoLinkedListSet profiler_thread_list;
  * type heap format
  * type: TYPE_HEAP
  * exinfo: one of TYPE_HEAP_START, TYPE_HEAP_END, TYPE_HEAP_OBJECT, TYPE_HEAP_ROOT
- * if exinfo == TYPE_HEAP_START
- * 	[time diff: uleb128] nanoseconds since last timing
- * if exinfo == TYPE_HEAP_END
- * 	[time diff: uleb128] nanoseconds since last timing
  * if exinfo == TYPE_HEAP_OBJECT
  * 	[object: sleb128] the object as a difference from obj_base
  * 	[class: sleb128] the object MonoClass* as a difference from ptr_base
@@ -342,7 +352,6 @@ static MonoLinkedListSet profiler_thread_list;
  * exinfo: one of TYPE_SAMPLE_HIT, TYPE_SAMPLE_USYM, TYPE_SAMPLE_UBIN, TYPE_SAMPLE_COUNTERS_DESC, TYPE_SAMPLE_COUNTERS
  * if exinfo == TYPE_SAMPLE_HIT
  * 	[sample_type: byte] type of sample (SAMPLE_*)
- * 	[timestamp: uleb128] nanoseconds since startup (note: different from other timestamps!)
  * 	[thread: sleb128] thread id as difference from ptr_base
  * 	[count: uleb128] number of following instruction addresses
  * 	[ip: sleb128]* instruction pointer as difference from ptr_base
@@ -354,7 +363,6 @@ static MonoLinkedListSet profiler_thread_list;
  * 	[size: uleb128] symbol size (may be 0 if unknown)
  * 	[name: string] symbol name
  * if exinfo == TYPE_SAMPLE_UBIN
- * 	[time diff: uleb128] nanoseconds since last timing
  * 	[address: sleb128] address where binary has been loaded
  * 	[offset: uleb128] file offset of mapping (the same file can be mapped multiple times)
  * 	[size: uleb128] memory size
@@ -371,7 +379,6 @@ static MonoLinkedListSet profiler_thread_list;
  * 		[variance: byte] variance of counter
  * 		[index: uleb128] unique index of counter
  * if exinfo == TYPE_SAMPLE_COUNTERS
- * 	[timestamp: uleb128] sampling timestamp
  * 	while true:
  * 		[index: uleb128] unique index of counter
  * 		if index == 0:
@@ -425,7 +432,6 @@ static MonoLinkedListSet profiler_thread_list;
  * type meta format:
  * type: TYPE_META
  * exinfo: one of: TYPE_SYNC_POINT
- * [time diff: uleb128] nanoseconds since last timing
  * if exinfo == TYPE_SYNC_POINT
  *	[type: byte] MonoProfilerSyncPointType enum value
  */
@@ -586,6 +592,7 @@ struct _MonoProfiler {
 #if defined (HAVE_SYS_ZLIB)
 	gzFile gzfile;
 #endif
+	char *args;
 	uint64_t startup_time;
 	int pipe_output;
 	int last_gc_gen_started;
@@ -1019,32 +1026,66 @@ write_int64 (char *buf, int64_t value)
 	return buf + 8;
 }
 
+static char *
+write_header_string (char *p, const char *str)
+{
+	size_t len = strlen (str) + 1;
+
+	p = write_int32 (p, len);
+	strcpy (p, str);
+
+	return p + len;
+}
+
 static void
 dump_header (MonoProfiler *profiler)
 {
-	char hbuf [128];
+	const char *args = profiler->args;
+	const char *arch = mono_config_get_cpu ();
+	const char *os = mono_config_get_os ();
+
+	char *hbuf = malloc (
+		sizeof (gint32) /* header id */ +
+		sizeof (gint8) /* major version */ +
+		sizeof (gint8) /* minor version */ +
+		sizeof (gint8) /* data version */ +
+		sizeof (gint8) /* word size */ +
+		sizeof (gint64) /* startup time */ +
+		sizeof (gint32) /* timer overhead */ +
+		sizeof (gint32) /* flags */ +
+		sizeof (gint32) /* process id */ +
+		sizeof (gint16) /* command port */ +
+		sizeof (gint32) + strlen (args) /* arguments */ +
+		sizeof (gint32) + strlen (arch) /* architecture */ +
+		sizeof (gint32) + strlen (os) /* operating system */
+	);
 	char *p = hbuf;
+
 	p = write_int32 (p, LOG_HEADER_ID);
 	*p++ = LOG_VERSION_MAJOR;
 	*p++ = LOG_VERSION_MINOR;
 	*p++ = LOG_DATA_VERSION;
-	*p++ = sizeof (void*);
-	p = write_int64 (p, ((uint64_t)time (NULL)) * 1000); /* startup time */
-	p = write_int32 (p, get_timer_overhead ()); /* timer overhead */
+	*p++ = sizeof (void *);
+	p = write_int64 (p, ((uint64_t) time (NULL)) * 1000);
+	p = write_int32 (p, get_timer_overhead ());
 	p = write_int32 (p, 0); /* flags */
-	p = write_int32 (p, process_id ()); /* pid */
-	p = write_int16 (p, profiler->command_port); /* port */
-	p = write_int16 (p, 0); /* opsystem */
+	p = write_int32 (p, process_id ());
+	p = write_int16 (p, profiler->command_port);
+	p = write_header_string (p, args);
+	p = write_header_string (p, arch);
+	p = write_header_string (p, os);
+
 #if defined (HAVE_SYS_ZLIB)
 	if (profiler->gzfile) {
 		gzwrite (profiler->gzfile, hbuf, p - hbuf);
-	} else {
-		fwrite (hbuf, p - hbuf, 1, profiler->file);
-	}
-#else
-	fwrite (hbuf, p - hbuf, 1, profiler->file);
-	fflush (profiler->file);
+	} else
 #endif
+	{
+		fwrite (hbuf, p - hbuf, 1, profiler->file);
+		fflush (profiler->file);
+	}
+
+	free (hbuf);
 }
 
 static void
@@ -1107,8 +1148,10 @@ dump_buffer (MonoProfiler *profiler, LogBuffer *buf)
 {
 	char hbuf [128];
 	char *p = hbuf;
+
 	if (buf->next)
 		dump_buffer (profiler, buf->next);
+
 	p = write_int32 (p, BUF_ID);
 	p = write_int32 (p, buf->cursor - buf->buf);
 	p = write_int64 (p, buf->time_base);
@@ -1116,18 +1159,19 @@ dump_buffer (MonoProfiler *profiler, LogBuffer *buf)
 	p = write_int64 (p, buf->obj_base);
 	p = write_int64 (p, buf->thread_id);
 	p = write_int64 (p, buf->method_base);
+
 #if defined (HAVE_SYS_ZLIB)
 	if (profiler->gzfile) {
 		gzwrite (profiler->gzfile, hbuf, p - hbuf);
 		gzwrite (profiler->gzfile, buf->buf, buf->cursor - buf->buf);
-	} else {
+	} else
 #endif
+	{
 		fwrite (hbuf, p - hbuf, 1, profiler->file);
 		fwrite (buf->buf, buf->cursor - buf->buf, 1, profiler->file);
 		fflush (profiler->file);
-#if defined (HAVE_SYS_ZLIB)
 	}
-#endif
+
 	free_buffer (buf, buf->size);
 }
 
@@ -2077,7 +2121,7 @@ code_buffer_new (MonoProfiler *prof, void *buffer, int size, MonoProfilerCodeBuf
 static void
 throw_exc (MonoProfiler *prof, MonoObject *object)
 {
-	int do_bt = (nocalls && InterlockedRead (&runtime_inited) && !notraces) ? TYPE_EXCEPTION_BT : 0;
+	int do_bt = (nocalls && InterlockedRead (&runtime_inited) && !notraces) ? TYPE_THROW_BT : 0;
 	FrameData data;
 
 	if (do_bt)
@@ -4264,6 +4308,15 @@ log_shutdown (MonoProfiler *prof)
 
 	cleanup_reusable_samples (prof);
 
+	/*
+	 * Pump the entire hazard free queue to make sure that anything we allocated
+	 * in the profiler will be freed. If we don't do this, the runtime could get
+	 * around to freeing some items after the profiler has been unloaded, which
+	 * would mean calling into functions in the profiler library, leading to a
+	 * crash.
+	 */
+	mono_thread_hazardous_try_free_all ();
+
 	g_assert (!InterlockedRead (&buffer_rwlock_count) && "Why is the reader count still non-zero?");
 	g_assert (!InterlockedReadPointer (&buffer_rwlock_exclusive) && "Why does someone still hold the exclusive lock?");
 
@@ -4297,6 +4350,7 @@ log_shutdown (MonoProfiler *prof)
 
 	PROF_TLS_FREE ();
 
+	free (prof->args);
 	free (prof);
 }
 
@@ -4810,13 +4864,14 @@ runtime_initialized (MonoProfiler *profiler)
 }
 
 static MonoProfiler*
-create_profiler (const char *filename, GPtrArray *filters)
+create_profiler (const char *args, const char *filename, GPtrArray *filters)
 {
 	MonoProfiler *prof;
 	char *nf;
 	int force_delete = 0;
 	prof = (MonoProfiler *)calloc (1, sizeof (MonoProfiler));
 
+	prof->args = pstrdup (args);
 	prof->command_port = command_port;
 	if (filename && *filename == '-') {
 		force_delete = 1;
@@ -5296,7 +5351,7 @@ mono_profiler_startup (const char *desc)
 
 	PROF_TLS_INIT ();
 
-	prof = create_profiler (filename, filters);
+	prof = create_profiler (desc, filename, filters);
 	if (!prof) {
 		PROF_TLS_FREE ();
 		return;

@@ -1517,6 +1517,9 @@ typedef struct {
 	int timer_overhead;
 	int pid;
 	int port;
+	char *args;
+	char *arch;
+	char *os;
 	uint64_t startup_time;
 	ThreadContext *threads;
 	ThreadContext *current_thread;
@@ -2755,7 +2758,7 @@ decode_buffer (ProfContext *ctx)
 		}
 		case TYPE_EXCEPTION: {
 			int subtype = *p & 0x70;
-			int has_bt = *p & TYPE_EXCEPTION_BT;
+			int has_bt = *p & TYPE_THROW_BT;
 			uint64_t tdiff = decode_uleb128 (p + 1, &p);
 			MethodDesc* sframes [8];
 			MethodDesc** frames = sframes;
@@ -3174,6 +3177,20 @@ decode_buffer (ProfContext *ctx)
 	return 1;
 }
 
+static int
+read_header_string (ProfContext *ctx, char **field)
+{
+	if (!load_data (ctx, 4))
+		return 0;
+
+	if (!load_data (ctx, read_int32 (ctx->buf)))
+		return 0;
+
+	*field = pstrdup ((const char *) ctx->buf);
+
+	return 1;
+}
+
 static ProfContext*
 load_file (char *name)
 {
@@ -3191,7 +3208,7 @@ load_file (char *name)
 	if (ctx->file != stdin)
 		ctx->gzfile = gzdopen (fileno (ctx->file), "rb");
 #endif
-	if (!load_data (ctx, 32))
+	if (!load_data (ctx, 30))
 		return NULL;
 	p = ctx->buf;
 	if (read_int32 (p) != LOG_HEADER_ID || p [6] > LOG_DATA_VERSION)
@@ -3208,6 +3225,17 @@ load_file (char *name)
 	ctx->timer_overhead = read_int32 (p + 16);
 	ctx->pid = read_int32 (p + 24);
 	ctx->port = read_int16 (p + 28);
+	if (ctx->version_major >= 1) {
+		if (!read_header_string (ctx, &ctx->args))
+			return NULL;
+		if (!read_header_string (ctx, &ctx->arch))
+			return NULL;
+		if (!read_header_string (ctx, &ctx->os))
+			return NULL;
+	} else {
+		if (!load_data (ctx, 2)) /* old opsys field, was never used */
+			return NULL;
+	}
 	return ctx;
 }
 
@@ -3245,6 +3273,11 @@ dump_header (ProfContext *ctx)
 	fprintf (outfile, "\nMono log profiler data\n");
 	fprintf (outfile, "\tProfiler version: %d.%d\n", ctx->version_major, ctx->version_minor);
 	fprintf (outfile, "\tData version: %d\n", ctx->data_version);
+	if (ctx->version_major >= 1) {
+		fprintf (outfile, "\tArguments: %s\n", ctx->args);
+		fprintf (outfile, "\tArchitecture: %s\n", ctx->arch);
+		fprintf (outfile, "\tOperating system: %s\n", ctx->os);
+	}
 	fprintf (outfile, "\tMean timer overhead: %d nanoseconds\n", ctx->timer_overhead);
 	fprintf (outfile, "\tProgram startup: %s", t);
 	if (ctx->pid)
@@ -3897,9 +3930,9 @@ dump_stats (void)
 	DUMP_EVENT_STAT (TYPE_METHOD, TYPE_EXC_LEAVE);
 	DUMP_EVENT_STAT (TYPE_METHOD, TYPE_JIT);
 
-	DUMP_EVENT_STAT (TYPE_EXCEPTION, TYPE_THROW);
+	DUMP_EVENT_STAT (TYPE_EXCEPTION, TYPE_THROW_NO_BT);
+	DUMP_EVENT_STAT (TYPE_EXCEPTION, TYPE_THROW_BT);
 	DUMP_EVENT_STAT (TYPE_EXCEPTION, TYPE_CLAUSE);
-	DUMP_EVENT_STAT (TYPE_EXCEPTION, TYPE_EXCEPTION_BT);
 
 	DUMP_EVENT_STAT (TYPE_MONITOR, TYPE_MONITOR_NO_BT);
 	DUMP_EVENT_STAT (TYPE_MONITOR, TYPE_MONITOR_BT);

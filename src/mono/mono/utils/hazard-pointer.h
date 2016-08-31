@@ -23,7 +23,7 @@ typedef void (*MonoHazardousFreeFunc) (gpointer p);
 MONO_API gboolean mono_thread_hazardous_try_free (gpointer p, MonoHazardousFreeFunc free_func);
 MONO_API void mono_thread_hazardous_queue_free (gpointer p, MonoHazardousFreeFunc free_func);
 
-void mono_thread_hazardous_try_free_all (void);
+MONO_API void mono_thread_hazardous_try_free_all (void);
 void mono_thread_hazardous_try_free_some (void);
 MONO_API MonoThreadHazardPointers* mono_hazard_pointer_get (void);
 gpointer mono_get_hazardous_pointer (gpointer volatile *pp, MonoThreadHazardPointers *hp, int hazard_index);
