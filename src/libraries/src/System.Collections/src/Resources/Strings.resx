@@ -216,4 +216,16 @@
   <data name="SortedSet_LowerValueGreaterThanUpperValue" xml:space="preserve">
     <value>Must be less than or equal to upperValue.</value>
   </data>
+  <data name="Serialization_InvalidOnDeser" xml:space="preserve">
+    <value>OnDeserialization method was called while the object was not being deserialized.</value>
+  </data>
+  <data name="Serialization_MismatchedCount" xml:space="preserve">
+    <value>The serialized Count information doesn't match the number of items.</value>
+  </data>
+  <data name="Serialization_MissingKeys" xml:space="preserve">
+    <value>The keys for this dictionary are missing.</value>
+  </data>
+  <data name="Serialization_MissingValues" xml:space="preserve">
+    <value>The values for this dictionary are missing.</value>
+  </data>
 </root>

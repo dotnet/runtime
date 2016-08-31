@@ -14,6 +14,7 @@ namespace System.Collections.Specialized
     ///    ambient culture and has been optimized for looking up case-insensitive symbols
     ///  </para>
     /// </devdoc>
+    [Serializable]
     public class HybridDictionary : IDictionary
     {
         // These numbers have been carefully tested to be optimal. Please don't change them

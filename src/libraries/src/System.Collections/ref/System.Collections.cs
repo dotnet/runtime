@@ -48,12 +48,13 @@ namespace System.Collections.Generic
         public static System.Collections.Generic.Comparer<T> Create(System.Comparison<T> comparison) { return default(System.Collections.Generic.Comparer<T>); }
         int System.Collections.IComparer.Compare(object x, object y) { return default(int); }
     }
-    public partial class Dictionary<TKey, TValue> : System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<TKey, TValue>>, System.Collections.Generic.IDictionary<TKey, TValue>, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<TKey, TValue>>, System.Collections.Generic.IReadOnlyCollection<System.Collections.Generic.KeyValuePair<TKey, TValue>>, System.Collections.Generic.IReadOnlyDictionary<TKey, TValue>, System.Collections.ICollection, System.Collections.IDictionary, System.Collections.IEnumerable
+    public partial class Dictionary<TKey, TValue> : System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<TKey, TValue>>, System.Collections.Generic.IDictionary<TKey, TValue>, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<TKey, TValue>>, System.Collections.Generic.IReadOnlyCollection<System.Collections.Generic.KeyValuePair<TKey, TValue>>, System.Collections.Generic.IReadOnlyDictionary<TKey, TValue>, System.Collections.ICollection, System.Collections.IDictionary, System.Collections.IEnumerable, System.Runtime.Serialization.IDeserializationCallback, System.Runtime.Serialization.ISerializable
     {
         public Dictionary() { }
         public Dictionary(System.Collections.Generic.IDictionary<TKey, TValue> dictionary) { }
         public Dictionary(System.Collections.Generic.IDictionary<TKey, TValue> dictionary, System.Collections.Generic.IEqualityComparer<TKey> comparer) { }
         public Dictionary(System.Collections.Generic.IEqualityComparer<TKey> comparer) { }
+        protected Dictionary(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public Dictionary(int capacity) { }
         public Dictionary(int capacity, System.Collections.Generic.IEqualityComparer<TKey> comparer) { }
         public System.Collections.Generic.IEqualityComparer<TKey> Comparer { get { return default(System.Collections.Generic.IEqualityComparer<TKey>); } }
@@ -78,6 +79,8 @@ namespace System.Collections.Generic
         public bool ContainsKey(TKey key) { return default(bool); }
         public bool ContainsValue(TValue value) { return default(bool); }
         public System.Collections.Generic.Dictionary<TKey, TValue>.Enumerator GetEnumerator() { return default(System.Collections.Generic.Dictionary<TKey, TValue>.Enumerator); }
+        public virtual void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
+        public virtual void OnDeserialization(object sender) { }
         public bool Remove(TKey key) { return default(bool); }
         void System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<TKey, TValue>>.Add(System.Collections.Generic.KeyValuePair<TKey, TValue> keyValuePair) { }
         bool System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<TKey, TValue>>.Contains(System.Collections.Generic.KeyValuePair<TKey, TValue> keyValuePair) { return default(bool); }
@@ -165,12 +168,13 @@ namespace System.Collections.Generic
         bool System.Collections.IEqualityComparer.Equals(object x, object y) { return default(bool); }
         int System.Collections.IEqualityComparer.GetHashCode(object obj) { return default(int); }
     }
-    public partial class HashSet<T> : System.Collections.Generic.ICollection<T>, System.Collections.Generic.IEnumerable<T>, System.Collections.Generic.IReadOnlyCollection<T>, System.Collections.Generic.ISet<T>, System.Collections.IEnumerable
+    public partial class HashSet<T> : System.Collections.Generic.ICollection<T>, System.Collections.Generic.IEnumerable<T>, System.Collections.Generic.IReadOnlyCollection<T>, System.Collections.Generic.ISet<T>, System.Collections.IEnumerable, System.Runtime.Serialization.IDeserializationCallback, System.Runtime.Serialization.ISerializable
     {
         public HashSet() { }
         public HashSet(System.Collections.Generic.IEnumerable<T> collection) { }
         public HashSet(System.Collections.Generic.IEnumerable<T> collection, System.Collections.Generic.IEqualityComparer<T> comparer) { }
         public HashSet(System.Collections.Generic.IEqualityComparer<T> comparer) { }
+        protected HashSet(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public System.Collections.Generic.IEqualityComparer<T> Comparer { get { return default(System.Collections.Generic.IEqualityComparer<T>); } }
         public int Count { get { return default(int); } }
         bool System.Collections.Generic.ICollection<T>.IsReadOnly { get { return default(bool); } }
@@ -183,11 +187,13 @@ namespace System.Collections.Generic
         public static IEqualityComparer<HashSet<T>> CreateSetComparer() { return default(IEqualityComparer<HashSet<T>>); }
         public void ExceptWith(System.Collections.Generic.IEnumerable<T> other) { }
         public System.Collections.Generic.HashSet<T>.Enumerator GetEnumerator() { return default(System.Collections.Generic.HashSet<T>.Enumerator); }
+        public virtual void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public void IntersectWith(System.Collections.Generic.IEnumerable<T> other) { }
         public bool IsProperSubsetOf(System.Collections.Generic.IEnumerable<T> other) { return default(bool); }
         public bool IsProperSupersetOf(System.Collections.Generic.IEnumerable<T> other) { return default(bool); }
         public bool IsSubsetOf(System.Collections.Generic.IEnumerable<T> other) { return default(bool); }
         public bool IsSupersetOf(System.Collections.Generic.IEnumerable<T> other) { return default(bool); }
+        public virtual void OnDeserialization(object sender) { }
         public bool Overlaps(System.Collections.Generic.IEnumerable<T> other) { return default(bool); }
         public bool Remove(T item) { return default(bool); }
         public int RemoveWhere(System.Predicate<T> match) { return default(int); }
@@ -208,10 +214,11 @@ namespace System.Collections.Generic
             void System.Collections.IEnumerator.Reset() { }
         }
     }
-    public partial class LinkedList<T> : System.Collections.Generic.ICollection<T>, System.Collections.Generic.IEnumerable<T>, System.Collections.Generic.IReadOnlyCollection<T>, System.Collections.ICollection, System.Collections.IEnumerable
+    public partial class LinkedList<T> : System.Collections.Generic.ICollection<T>, System.Collections.Generic.IEnumerable<T>, System.Collections.Generic.IReadOnlyCollection<T>, System.Collections.ICollection, System.Collections.IEnumerable, System.Runtime.Serialization.IDeserializationCallback, System.Runtime.Serialization.ISerializable
     {
         public LinkedList() { }
         public LinkedList(System.Collections.Generic.IEnumerable<T> collection) { }
+        protected LinkedList(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public int Count { get { return default(int); } }
         public System.Collections.Generic.LinkedListNode<T> First { get { return default(System.Collections.Generic.LinkedListNode<T>); } }
         public System.Collections.Generic.LinkedListNode<T> Last { get { return default(System.Collections.Generic.LinkedListNode<T>); } }
@@ -232,6 +239,8 @@ namespace System.Collections.Generic
         public System.Collections.Generic.LinkedListNode<T> Find(T value) { return default(System.Collections.Generic.LinkedListNode<T>); }
         public System.Collections.Generic.LinkedListNode<T> FindLast(T value) { return default(System.Collections.Generic.LinkedListNode<T>); }
         public System.Collections.Generic.LinkedList<T>.Enumerator GetEnumerator() { return default(System.Collections.Generic.LinkedList<T>.Enumerator); }
+        public virtual void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
+        public virtual void OnDeserialization(object sender) { }
         public bool Remove(T value) { return default(bool); }
         public void Remove(System.Collections.Generic.LinkedListNode<T> node) { }
         public void RemoveFirst() { }
@@ -241,12 +250,14 @@ namespace System.Collections.Generic
         void System.Collections.ICollection.CopyTo(System.Array array, int index) { }
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { return default(System.Collections.IEnumerator); }
         [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-        public partial struct Enumerator : System.Collections.Generic.IEnumerator<T>, System.Collections.IEnumerator, System.IDisposable
+        public partial struct Enumerator : System.Collections.Generic.IEnumerator<T>, System.Collections.IEnumerator, System.IDisposable, System.Runtime.Serialization.IDeserializationCallback, System.Runtime.Serialization.ISerializable
         {
             public T Current { get { return default(T); } }
             object System.Collections.IEnumerator.Current { get { return default(object); } }
             public void Dispose() { }
+            void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
             public bool MoveNext() { return default(bool); }
+            void System.Runtime.Serialization.IDeserializationCallback.OnDeserialization(Object sender) { }
             void System.Collections.IEnumerator.Reset() { }
         }
     }
@@ -521,12 +532,13 @@ namespace System.Collections.Generic
         public void TrimExcess() { }
         public bool TryGetValue(TKey key, out TValue value) { value = default(TValue); return default(bool); }
     }
-    public partial class SortedSet<T> : System.Collections.Generic.ICollection<T>, System.Collections.Generic.IEnumerable<T>, System.Collections.Generic.IReadOnlyCollection<T>, System.Collections.Generic.ISet<T>, System.Collections.ICollection, System.Collections.IEnumerable
+    public partial class SortedSet<T> : System.Collections.Generic.ICollection<T>, System.Collections.Generic.IEnumerable<T>, System.Collections.Generic.IReadOnlyCollection<T>, System.Collections.Generic.ISet<T>, System.Collections.ICollection, System.Collections.IEnumerable, System.Runtime.Serialization.IDeserializationCallback, System.Runtime.Serialization.ISerializable
     {
         public SortedSet() { }
         public SortedSet(System.Collections.Generic.IComparer<T> comparer) { }
         public SortedSet(System.Collections.Generic.IEnumerable<T> collection) { }
         public SortedSet(System.Collections.Generic.IEnumerable<T> collection, System.Collections.Generic.IComparer<T> comparer) { }
+        protected SortedSet(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public System.Collections.Generic.IComparer<T> Comparer { get { return default(System.Collections.Generic.IComparer<T>); } }
         public int Count { get { return default(int); } }
         public T Max { get { return default(T); } }
@@ -544,12 +556,16 @@ namespace System.Collections.Generic
         public static IEqualityComparer<SortedSet<T>> CreateSetComparer(IEqualityComparer<T> memberEqualityComparer) { return default(IEqualityComparer<SortedSet<T>>); }
         public void ExceptWith(System.Collections.Generic.IEnumerable<T> other) { }
         public System.Collections.Generic.SortedSet<T>.Enumerator GetEnumerator() { return default(System.Collections.Generic.SortedSet<T>.Enumerator); }
+        void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
+        protected virtual void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public virtual System.Collections.Generic.SortedSet<T> GetViewBetween(T lowerValue, T upperValue) { return default(System.Collections.Generic.SortedSet<T>); }
         public virtual void IntersectWith(System.Collections.Generic.IEnumerable<T> other) { }
         public bool IsProperSubsetOf(System.Collections.Generic.IEnumerable<T> other) { return default(bool); }
         public bool IsProperSupersetOf(System.Collections.Generic.IEnumerable<T> other) { return default(bool); }
         public bool IsSubsetOf(System.Collections.Generic.IEnumerable<T> other) { return default(bool); }
         public bool IsSupersetOf(System.Collections.Generic.IEnumerable<T> other) { return default(bool); }
+        protected virtual void OnDeserialization(object sender) { }
+        void System.Runtime.Serialization.IDeserializationCallback.OnDeserialization(object sender) { }
         public bool Overlaps(System.Collections.Generic.IEnumerable<T> other) { return default(bool); }
         public bool Remove(T item) { return default(bool); }
         public int RemoveWhere(System.Predicate<T> match) { return default(int); }
@@ -562,12 +578,14 @@ namespace System.Collections.Generic
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { return default(System.Collections.IEnumerator); }
         public void UnionWith(System.Collections.Generic.IEnumerable<T> other) { }
         [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-        public partial struct Enumerator : System.Collections.Generic.IEnumerator<T>, System.Collections.IEnumerator, System.IDisposable
+        public partial struct Enumerator : System.Collections.Generic.IEnumerator<T>, System.Collections.IEnumerator, System.IDisposable, System.Runtime.Serialization.IDeserializationCallback, System.Runtime.Serialization.ISerializable
         {
             public T Current { get { return default(T); } }
             object System.Collections.IEnumerator.Current { get { return default(object); } }
             public void Dispose() { }
+            void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
             public bool MoveNext() { return default(bool); }
+            void System.Runtime.Serialization.IDeserializationCallback.OnDeserialization(object sender) { }
             void System.Collections.IEnumerator.Reset() { }
         }
     }

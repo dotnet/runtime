@@ -13,10 +13,12 @@
 
 using System.Globalization;
 using System.Diagnostics.Contracts;
+using System.Runtime.Serialization;
 
 namespace System.Collections
 {
-    public sealed class Comparer : IComparer
+    [Serializable]
+    public sealed class Comparer : IComparer, ISerializable
     {
         private CompareInfo _compareInfo;
         public static readonly Comparer Default = new Comparer(CultureInfo.CurrentCulture);
@@ -32,6 +34,34 @@ namespace System.Collections
             }
             Contract.EndContractBlock();
             _compareInfo = culture.CompareInfo;
+        }
+
+        private Comparer(SerializationInfo info, StreamingContext context)
+        {
+            _compareInfo = null;
+            SerializationInfoEnumerator enumerator = info.GetEnumerator();
+            while (enumerator.MoveNext())
+            {
+                switch (enumerator.Name)
+                {
+                    case CompareInfoName:
+                        _compareInfo = (CompareInfo)info.GetValue(CompareInfoName, typeof(CompareInfo));
+                        break;
+                }
+            }
+        }
+
+        public void GetObjectData(SerializationInfo info, StreamingContext context)
+        {
+            if (info == null)
+            {
+                throw new ArgumentNullException(nameof(info));
+            }
+
+            if (_compareInfo != null)
+            {
+                info.AddValue(CompareInfoName, _compareInfo);
+            }
         }
 
         // Compares two Objects by calling CompareTo.

@@ -4,12 +4,6 @@
   <ItemGroup>
     <Project Include="System.Collections.NonGeneric.csproj" />
     <Project Include="System.Collections.NonGeneric.csproj">
-      <TargetGroup>netstandard1.3</TargetGroup>
-    </Project>
-    <Project Include="System.Collections.NonGeneric.csproj">
-      <TargetGroup>net46</TargetGroup>
-    </Project>
-    <Project Include="System.Collections.NonGeneric.csproj">
       <TargetGroup>net463</TargetGroup>
     </Project>
   </ItemGroup>

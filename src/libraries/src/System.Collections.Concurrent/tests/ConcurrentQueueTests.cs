@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Tests;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -11,8 +12,15 @@ using Xunit;
 
 namespace System.Collections.Concurrent.Tests
 {
-    public class ConcurrentQueueTests
+    public class ConcurrentQueueTests : IEnumerable_Generic_Tests<int>
     {
+        protected override IEnumerable<ModifyEnumerable> ModifyEnumerables => new List<ModifyEnumerable>();
+        protected override IEnumerable<int> GenericIEnumerableFactory(int count) => new ConcurrentQueue<int>(Enumerable.Range(0, count));
+        protected override int CreateT(int seed) => new Random(seed).Next();
+        protected override EnumerableOrder Order => EnumerableOrder.Unspecified;
+        protected override bool ResetImplemented => false;
+        protected override bool IEnumerable_Generic_Enumerator_Current_EnumerationNotStarted_ThrowsInvalidOperationException => false;
+
         [Fact]
         public void Ctor_NoArg_ItemsAndCountMatch()
         {
