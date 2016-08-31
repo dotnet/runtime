@@ -876,13 +876,8 @@ mono_arch_get_call_target (guint8 *code)
 {
 	guint32 ins = ((guint32*)(gpointer)code) [-1];
 
-#if MONOTOUCH
 	/* Should be a 'bl' or a 'b' */
 	if (((ins >> 25) & 0x7) == 0x5) {
-#else
-	/* Should be a 'bl' */
-	if ((((ins >> 25) & 0x7) == 0x5) && (((ins >> 24) & 0x1) == 0x1)) {
-#endif
 		gint32 disp = ((((gint32)ins) & 0xffffff) << 8) >> 8;
 		guint8 *target = code - 4 + 8 + (disp * 4);
 
