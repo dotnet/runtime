@@ -43,6 +43,7 @@ namespace System.IO.IsolatedStorage
         public IsolatedStorageException() { }
         public IsolatedStorageException(string message) { }
         public IsolatedStorageException(string message, System.Exception inner) { }
+        protected IsolatedStorageException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
     }
 
     public sealed partial class IsolatedStorageFile : System.IO.IsolatedStorage.IsolatedStorage, System.IDisposable
