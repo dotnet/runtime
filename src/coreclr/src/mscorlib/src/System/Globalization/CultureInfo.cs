@@ -581,7 +581,6 @@ namespace System.Globalization {
         // if we can't find a bigger name.  That doesn't help with things like "zh" though, so
         // the approach is of questionable value
         //
-#if !FEATURE_CORECLR
         public static CultureInfo CreateSpecificCulture(String name) {
             Contract.Ensures(Contract.Result<CultureInfo>() != null);
 
@@ -622,7 +621,6 @@ namespace System.Globalization {
 
             return (new CultureInfo(culture.m_cultureData.SSPECIFICCULTURE));
         }
-#endif // !FEATURE_CORECLR
 
         internal static bool VerifyCultureName(String cultureName, bool throwException) 
         {
@@ -988,7 +986,6 @@ namespace System.Globalization {
         }
 #endif
 
-#if !FEATURE_CORECLR
         public static CultureInfo[] GetCultures(CultureTypes types) {
             Contract.Ensures(Contract.Result<CultureInfo[]>() != null);
             // internally we treat UserCustomCultures as Supplementals but v2
@@ -999,7 +996,6 @@ namespace System.Globalization {
             }
             return (CultureData.GetCultures(types));
         }
-#endif
 
         ////////////////////////////////////////////////////////////////////////
         //
@@ -1124,7 +1120,6 @@ namespace System.Globalization {
             }
         }
 
-#if !FEATURE_CORECLR
         // ie: eng
         public virtual String ThreeLetterISOLanguageName {
             [System.Security.SecuritySafeCritical]  // auto-generated
@@ -1149,7 +1144,6 @@ namespace System.Globalization {
                 return (this.m_cultureData.SABBREVLANGNAME);
             }
         }
-#endif
 
         ////////////////////////////////////////////////////////////////////////
         //
@@ -1901,7 +1895,6 @@ namespace System.Globalization {
         }
 
 
-#if !FEATURE_CORECLR
         // This function is deprecated, we don't like it
         public static CultureInfo GetCultureInfoByIetfLanguageTag(string name)
         {
@@ -1929,7 +1922,7 @@ namespace System.Globalization {
             
             return ci;
         }
-#endif
+
         private static volatile bool s_isTaiwanSku;
         private static volatile bool s_haveIsTaiwanSku;
         internal static bool IsTaiwanSku
