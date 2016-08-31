@@ -26,13 +26,16 @@ public:
     void PrepareForDecomposition();
     void DecomposeBlock(BasicBlock* block);
 
+    static void DecomposeRange(Compiler* compiler, unsigned blockWeight, LIR::Range& range);
+
 private:
-    inline LIR::Range& BlockRange() const
+    inline LIR::Range& Range() const
     {
-        return LIR::AsRange(m_block);
+        return *m_range;
     }
 
     // Driver functions
+    void DecomposeRangeHelper();
     GenTree* DecomposeNode(LIR::Use& use);
 
     // Per-node type decompose cases
@@ -57,7 +60,8 @@ private:
 
     // Data
     Compiler*   m_compiler;
-    BasicBlock* m_block;
+    unsigned    m_blockWeight;
+    LIR::Range* m_range;
 };
 
 #endif // _DECOMPOSELONGS_H_

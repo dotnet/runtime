@@ -303,6 +303,8 @@ public:
 
     static Range EmptyRange();
     static Range SeqTree(Compiler* compiler, GenTree* tree);
+
+    static void InsertBeforeTerminator(BasicBlock* block, LIR::Range&& range);
 };
 
 #endif // _LIR_H_
