@@ -6,16 +6,9 @@
     <AssemblyName>System.Threading.Tasks.Extensions</AssemblyName>
     <DocumentationFile>$(OutputPath)$(AssemblyName).xml</DocumentationFile>
     <UseOpenKey Condition="'$(UseOpenKey)'==''">true</UseOpenKey>
+    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.0</NuGetTargetMoniker>
+    <PackageTargetFramework Condition="'$(TargetGroup)' == ''">netstandard1.0;portable-net45+win8+wp8+wpa81</PackageTargetFramework>
   </PropertyGroup>
-  <ItemGroup Condition="'$(PackageTargetFramework)' == ''">
-    <PackageDestination Include="lib/netstandard1.0">
-      <TargetFramework>netstandard1.0</TargetFramework>
-    </PackageDestination>
-    <!-- Support downlevel targets -->
-    <PackageDestination Include="lib/portable-net45+win8+wp8+wpa81">
-      <TargetFramework>portable-net45+win8+wp8+wpa81</TargetFramework>
-    </PackageDestination>
-  </ItemGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
