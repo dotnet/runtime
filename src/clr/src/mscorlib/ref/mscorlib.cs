@@ -7347,11 +7347,6 @@ namespace System.Reflection
         PublicKey = 1,
         Retargetable = 256,
     }
-    [System.Runtime.InteropServices.ComVisibleAttribute(true)]
-    public class AssemblyNameProxy : System.MarshalByRefObject
-    {
-        internal AssemblyNameProxy() { }
-    }
     [System.AttributeUsageAttribute((System.AttributeTargets)(1), Inherited=false)]
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public sealed partial class AssemblyProductAttribute : System.Attribute
@@ -8089,6 +8084,7 @@ namespace System.Reflection
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public sealed class Pointer : System.Runtime.Serialization.ISerializable
     {
+        private Pointer() { }
         [System.Security.SecurityCriticalAttribute]
         public static unsafe Object Box(void *ptr, System.Type type) { throw null; }
         [System.Security.SecurityCriticalAttribute]
