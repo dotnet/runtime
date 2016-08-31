@@ -335,9 +335,9 @@ extern Volatile<LONG> g_fInExecuteMainMethod;
 
 //*******************************************************************************
 #ifdef FEATURE_INTERPRETER
-ARG_SLOT MethodDescCallSite::CallTargetWorker(const ARG_SLOT *pArguments, bool transitionToPreemptive)
+void MethodDescCallSite::CallTargetWorker(const ARG_SLOT *pArguments, ARG_SLOT *pReturnValue, int cbReturnValue, bool transitionToPreemptive)
 #else
-ARG_SLOT MethodDescCallSite::CallTargetWorker(const ARG_SLOT *pArguments)
+void MethodDescCallSite::CallTargetWorker(const ARG_SLOT *pArguments, ARG_SLOT *pReturnValue, int cbReturnValue)
 #endif
 {
     //
@@ -443,6 +443,18 @@ ARG_SLOT MethodDescCallSite::CallTargetWorker(const ARG_SLOT *pArguments)
 
 #ifdef _DEBUG
         {
+#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING_ITF
+            // Validate that the return value is not too big for the buffer passed
+            if (m_pMD->GetMethodTable()->IsRegPassedStruct())
+            {
+                TypeHandle thReturnValueType;
+                if (m_methodSig.GetReturnTypeNormalized(&thReturnValueType) == ELEMENT_TYPE_VALUETYPE)
+                {
+                    _ASSERTE(cbReturnValue >= thReturnValueType.GetSize());
+                }
+            }
+#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING_ITF
+
             // The metasig should be reset
             _ASSERTE(m_methodSig.GetArgNum() == 0);
 
@@ -637,20 +649,22 @@ ARG_SLOT MethodDescCallSite::CallTargetWorker(const ARG_SLOT *pArguments)
         memcpyNoGCRefs(pvRetBuff, &callDescrData.returnValue, sizeof(callDescrData.returnValue));
     }
 
-    ARG_SLOT retval = *(ARG_SLOT *)(&callDescrData.returnValue);
+    if (pReturnValue != NULL)
+    {
+        _ASSERTE(cbReturnValue <= sizeof(callDescrData.returnValue));
+        memcpyNoGCRefs(pReturnValue, &callDescrData.returnValue, cbReturnValue);
 
 #if !defined(_WIN64) && BIGENDIAN
-    {
-        GCX_FORBID();
-
-        if (!m_methodSig.Is64BitReturn())
         {
-            retval >>= 32;
+            GCX_FORBID();
+
+            if (!m_methodSig.Is64BitReturn())
+            {
+                pReturnValue[0] >>= 32;
+            }
         }
-    }
 #endif // !defined(_WIN64) && BIGENDIAN
-    
-    return retval;
+    }
 }
 
 void CallDefaultConstructor(OBJECTREF ref)

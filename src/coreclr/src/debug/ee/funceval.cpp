@@ -2775,7 +2775,7 @@ void UnpackFuncEvalResult(DebuggerEval *pDE,
     {
         // We purposely do not morph nullables to be boxed Ts here because debugger EE's otherwise
         // have no way of creating true nullables that they need for their own purposes. 
-        pDE->m_result = ObjToArgSlot(newObj);
+        pDE->m_result[0] = ObjToArgSlot(newObj);
         pDE->m_retValueBoxing = Debugger::AllBoxed;
     }
     else if (!RetValueType.IsNull())
@@ -2803,12 +2803,12 @@ void UnpackFuncEvalResult(DebuggerEval *pDE,
         {
             // box the primitive returned, retObject is a true nullable for nullabes, It will be Normalized later
             CopyValueClass(retObject->GetData(),
-                           &(pDE->m_result),
+                           pDE->m_result,
                            RetValueType.GetMethodTable(),
                            retObject->GetAppDomain());
         }
 
-        pDE->m_result = ObjToArgSlot(retObject);
+        pDE->m_result[0] = ObjToArgSlot(retObject);
         pDE->m_retValueBoxing = Debugger::AllBoxed;
     }
     else
@@ -2833,8 +2833,8 @@ void UnpackFuncEvalResult(DebuggerEval *pDE,
         IsElementTypeSpecial(retClassET))
     {
         LOG((LF_CORDB, LL_EVERYTHING, "Creating strong handle for boxed DoNormalFuncEval result.\n"));
-        OBJECTHANDLE oh = pDE->m_thread->GetDomain()->CreateStrongHandle(ArgSlotToObj(pDE->m_result));
-        pDE->m_result = (INT64)(LONG_PTR)oh;
+        OBJECTHANDLE oh = pDE->m_thread->GetDomain()->CreateStrongHandle(ArgSlotToObj(pDE->m_result[0]));
+        pDE->m_result[0] = (INT64)(LONG_PTR)oh;
         pDE->m_vmObjectHandle = VMPTR_OBJECTHANDLE::MakePtr(oh);
     }
 }
@@ -2930,13 +2930,13 @@ void UnpackFuncEvalArguments(DebuggerEval *pDE,
  *    None.
  *
  */
-void FuncEvalWrapper(MethodDescCallSite* pMDCS, DebuggerEval *pDE, ARG_SLOT *pArguments, BYTE *pCatcherStackAddr)
+void FuncEvalWrapper(MethodDescCallSite* pMDCS, DebuggerEval *pDE, const ARG_SLOT *pArguments, BYTE *pCatcherStackAddr)
 {
     struct Param : NotifyOfCHFFilterWrapperParam
     {
         MethodDescCallSite* pMDCS;
         DebuggerEval *pDE;
-        ARG_SLOT *pArguments;
+        const ARG_SLOT *pArguments;
     }; 
     
     Param param;
@@ -2947,7 +2947,7 @@ void FuncEvalWrapper(MethodDescCallSite* pMDCS, DebuggerEval *pDE, ARG_SLOT *pAr
 
     PAL_TRY(Param *, pParam, &param)
     {
-        pParam->pDE->m_result = pParam->pMDCS->CallWithValueTypes_RetArgSlot(pParam->pArguments);
+        pParam->pMDCS->CallWithValueTypes_RetArgSlot(pParam->pArguments, pParam->pDE->m_result, sizeof(pParam->pDE->m_result));
     }
     PAL_EXCEPT_FILTER(NotifyOfCHFFilterWrapper)
     {
@@ -3003,13 +3003,12 @@ static void RecordFuncEvalException(DebuggerEval *pDE,
             //
             // This is the abort we sent down.
             //
-            pDE->m_result = NULL;
+            memset(pDE->m_result, 0, sizeof(pDE->m_result));
             pDE->m_resultType = TypeHandle();
             pDE->m_aborted = true;
             pDE->m_retValueBoxing = Debugger::NoValueTypeBoxing;
 
             LOG((LF_CORDB, LL_EVERYTHING, "D::FEHW - funceval abort exception.\n"));
-
         }
         else
         {
@@ -3022,11 +3021,11 @@ static void RecordFuncEvalException(DebuggerEval *pDE,
             //
             // The result is the exception object.
             //
-            pDE->m_result = ObjToArgSlot(ppException);
+            pDE->m_result[0] = ObjToArgSlot(ppException);
 
             pDE->m_resultType = ppException->GetTypeHandle();
-            OBJECTHANDLE oh = pDE->m_thread->GetDomain()->CreateStrongHandle(ArgSlotToObj(pDE->m_result));
-            pDE->m_result = (INT64)PTR_TO_CORDB_ADDRESS(oh);
+            OBJECTHANDLE oh = pDE->m_thread->GetDomain()->CreateStrongHandle(ArgSlotToObj(pDE->m_result[0]));
+            pDE->m_result[0] = (ARG_SLOT)PTR_TO_CORDB_ADDRESS(oh);
             pDE->m_vmObjectHandle = VMPTR_OBJECTHANDLE::MakePtr(oh);
             pDE->m_retValueBoxing = Debugger::NoValueTypeBoxing;
 
@@ -3035,15 +3034,14 @@ static void RecordFuncEvalException(DebuggerEval *pDE,
     }
     else
     {
-
         //
         // The result is the exception object.
         //
-        pDE->m_result = ObjToArgSlot(ppException);
+        pDE->m_result[0] = ObjToArgSlot(ppException);
 
         pDE->m_resultType = ppException->GetTypeHandle();
-        OBJECTHANDLE oh = pDE->m_thread->GetDomain()->CreateStrongHandle(ArgSlotToObj(pDE->m_result));
-        pDE->m_result = (INT64)(LONG_PTR)oh;
+        OBJECTHANDLE oh = pDE->m_thread->GetDomain()->CreateStrongHandle(ArgSlotToObj(pDE->m_result[0]));
+        pDE->m_result[0] = (ARG_SLOT)(LONG_PTR)oh;
         pDE->m_vmObjectHandle = VMPTR_OBJECTHANDLE::MakePtr(oh);
 
         pDE->m_retValueBoxing = Debugger::NoValueTypeBoxing;
@@ -3597,7 +3595,7 @@ void FuncEvalHijackRealWorker(DebuggerEval *pDE, Thread* pThread, FuncEvalFrame*
 
                 // Make a strong handle for the result.
                 OBJECTHANDLE oh = pDE->m_thread->GetDomain()->CreateStrongHandle(newObj);
-                pDE->m_result = (INT64)(LONG_PTR)oh;
+                pDE->m_result[0] = (ARG_SLOT)(LONG_PTR)oh;
                 pDE->m_vmObjectHandle = VMPTR_OBJECTHANDLE::MakePtr(oh);
 
                 break;
@@ -3627,7 +3625,7 @@ void FuncEvalHijackRealWorker(DebuggerEval *pDE, Thread* pThread, FuncEvalFrame*
 
                 // Place the result in a strong handle to protect it from a collection.
                 OBJECTHANDLE oh = pDE->m_thread->GetDomain()->CreateStrongHandle(newObj);
-                pDE->m_result = (INT64)(LONG_PTR)oh;
+                pDE->m_result[0] = (ARG_SLOT)(LONG_PTR)oh;
                 pDE->m_vmObjectHandle = VMPTR_OBJECTHANDLE::MakePtr(oh);
 
                 break;
@@ -3673,7 +3671,7 @@ void FuncEvalHijackRealWorker(DebuggerEval *pDE, Thread* pThread, FuncEvalFrame*
 
                 // Place the result in a strong handle to protect it from a collection.
                 OBJECTHANDLE oh = pDE->m_thread->GetDomain()->CreateStrongHandle(newObj);
-                pDE->m_result = (INT64)(LONG_PTR)oh;
+                pDE->m_result[0] = (ARG_SLOT)(LONG_PTR)oh;
                 pDE->m_vmObjectHandle = VMPTR_OBJECTHANDLE::MakePtr(oh);
 
                 break;
