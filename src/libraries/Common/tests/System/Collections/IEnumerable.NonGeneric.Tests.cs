@@ -14,7 +14,7 @@ namespace System.Collections.Tests
     /// Contains tests that ensure the correctness of any class that implements the nongeneric
     /// IEnumerable interface
     /// </summary>
-    public abstract class IEnumerable_NonGeneric_Tests : TestBase
+    public abstract partial class IEnumerable_NonGeneric_Tests : TestBase
     {
         #region IEnumerable Helper Methods
 
@@ -317,39 +317,6 @@ namespace System.Collections.Tests
             });
         }
 
-        #endregion
-
-        #region Serialization
-        #if netstandard17
-
-        [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
-        public void IGenericSharedAPI_SerializeDeserialize(int count)
-        {
-            IEnumerable expected = NonGenericIEnumerableFactory(count);
-
-            var bf = new System.Runtime.Serialization.Formatters.Binary.BinaryFormatter();
-            using (var ms = new MemoryStream())
-            {
-                bf.Serialize(ms, expected);
-                ms.Position = 0;
-                IEnumerable actual = (IEnumerable)bf.Deserialize(ms);
-
-                if (Order == EnumerableOrder.Sequential)
-                {
-                    Assert.Equal(expected, actual);
-                }
-                else
-                {
-                    var expectedSet = new HashSet<object>(expected.Cast<object>());
-                    var actualSet = new HashSet<object>(actual.Cast<object>());
-                    Assert.Subset(expectedSet, actualSet);
-                    Assert.Subset(actualSet, expectedSet);
-                }
-            }
-        }
-        
-        #endif
         #endregion
     }
 }

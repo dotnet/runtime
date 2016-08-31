@@ -147,9 +147,7 @@ namespace System.Collections.Tests
 
     #region TestClasses
 
-#if netstandard17
     [Serializable]
-#endif
     public struct SimpleInt : IStructuralComparable, IStructuralEquatable, IComparable, IComparable<SimpleInt>
     {
         private int _val;
@@ -197,9 +195,7 @@ namespace System.Collections.Tests
         }
     }
 
-#if netstandard17
     [Serializable]
-#endif
     public class WrapStructural_Int : IEqualityComparer<int>, IComparer<int>
     {
         public int Compare(int x, int y)
@@ -218,9 +214,7 @@ namespace System.Collections.Tests
         }
     }
 
-#if netstandard17
     [Serializable]
-#endif
     public class WrapStructural_SimpleInt : IEqualityComparer<SimpleInt>, IComparer<SimpleInt>
     {
         public int Compare(SimpleInt x, SimpleInt y)
