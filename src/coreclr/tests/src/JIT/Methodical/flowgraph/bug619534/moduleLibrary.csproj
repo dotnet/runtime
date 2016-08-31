@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
@@ -6,7 +6,7 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <AssemblyName>$(MSBuildProjectName)</AssemblyName>
     <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>{95DFC527-4DC1-495E-97D7-E94EE1F7140D}</ProjectGuid>
+    <ProjectGuid>{57A93F23-5D4F-4B04-B0BD-78C0470733B6}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <FileAlignment>512</FileAlignment>
@@ -15,7 +15,7 @@
     <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\..\</SolutionDir>
     <NuGetPackageImportStamp>7a9bfb7d</NuGetPackageImportStamp>
     <CLRTestKind>BuildOnly</CLRTestKind>
-    <GenerateRunScript>false</GenerateRunScript> 
+    <GenerateRunScript>false</GenerateRunScript>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -28,7 +28,8 @@
     </CodeAnalysisDependentAssemblyPaths>
   </ItemGroup>
   <PropertyGroup>
-    <DebugType></DebugType>
+    <DebugType>
+    </DebugType>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="moduleLibrary.cs" />
@@ -42,5 +43,5 @@
   </PropertyGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
   <PropertyGroup Condition=" '$(MsBuildProjectDirOverride)' != '' ">
-  </PropertyGroup> 
+  </PropertyGroup>
 </Project>
