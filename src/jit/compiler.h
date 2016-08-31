@@ -1935,6 +1935,7 @@ public:
     GenTreeArgList* gtNewArgList(GenTreePtr op);
 
     GenTreeArgList* gtNewArgList(GenTreePtr op1, GenTreePtr op2);
+    GenTreeArgList* gtNewArgList(GenTreePtr op1, GenTreePtr op2, GenTreePtr op3);
 
     static fgArgTabEntryPtr gtArgEntryByArgNum(GenTreePtr call, unsigned argNum);
     static fgArgTabEntryPtr gtArgEntryByNode(GenTreePtr call, GenTreePtr node);

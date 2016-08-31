@@ -549,6 +549,10 @@ typedef unsigned short regPairNoSmall; // arm: need 12 bits
   #define RBM_LNGARG_0            (RBM_EAX|RBM_EDX)
   #define PREDICT_PAIR_LNGARG_0    PREDICT_PAIR_EAXEDX
 
+  #define REG_LNGARG_LO             REG_EAX
+  #define RBM_LNGARG_LO             RBM_EAX
+  #define REG_LNGARG_HI             REG_EDX
+  #define RBM_LNGARG_HI             RBM_EDX
   // register to hold shift amount
   #define REG_SHIFT                REG_ECX
   #define RBM_SHIFT                RBM_ECX

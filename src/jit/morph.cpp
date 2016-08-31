@@ -2785,6 +2785,20 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
             assert(arg1 != nullptr);
             nonStandardArgs.Add(arg1, REG_PINVOKE_FRAME);
         }
+        // The x86 shift helpers have custom calling conventions and expect the lo part of the long to be in EAX and the
+        // hi part to be in EDX. This sets the argument registers up correctly.
+        else if (call->IsHelperCall(this, CORINFO_HELP_LLSH) || call->IsHelperCall(this, CORINFO_HELP_LRSH) || call->IsHelperCall(this, CORINFO_HELP_LRSZ))
+        {
+            GenTreeArgList* args = call->gtCallArgs;
+            GenTree* arg1 = args->Current();
+            assert(arg1 != nullptr);
+            nonStandardArgs.Add(arg1, REG_LNGARG_LO);
+
+            args = args->Rest();
+            GenTree* arg2 = args->Current();
+            assert(arg2 != nullptr);
+            nonStandardArgs.Add(arg2, REG_LNGARG_HI);
+        }
 #endif // !defined(LEGACY_BACKEND) && defined(_TARGET_X86_)
 
 #if !defined(LEGACY_BACKEND) && !defined(_TARGET_X86_)
