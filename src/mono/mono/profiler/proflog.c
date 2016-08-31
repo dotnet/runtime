@@ -1055,9 +1055,9 @@ dump_header (MonoProfiler *profiler)
 		sizeof (gint32) /* flags */ +
 		sizeof (gint32) /* process id */ +
 		sizeof (gint16) /* command port */ +
-		sizeof (gint32) + strlen (args) /* arguments */ +
-		sizeof (gint32) + strlen (arch) /* architecture */ +
-		sizeof (gint32) + strlen (os) /* operating system */
+		sizeof (gint32) + strlen (args) + 1 /* arguments */ +
+		sizeof (gint32) + strlen (arch) + 1 /* architecture */ +
+		sizeof (gint32) + strlen (os) + 1 /* operating system */
 	);
 	char *p = hbuf;
 
