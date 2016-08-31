@@ -819,7 +819,9 @@ GenTreePtr Lowering::NewPutArg(GenTreeCall* call, GenTreePtr arg, fgArgTabEntryP
                 // clang-format on
 
                 assert(arg->OperGet() == GT_LIST);
+
                 GenTreeArgList* argListPtr = arg->AsArgList();
+                assert(argListPtr->IsAggregate());
 
                 for (unsigned ctr = 0; argListPtr != nullptr; argListPtr = argListPtr->Rest(), ctr++)
                 {
@@ -850,7 +852,9 @@ GenTreePtr Lowering::NewPutArg(GenTreeCall* call, GenTreePtr arg, fgArgTabEntryP
         if ((info->numRegs > 1) && (arg->OperGet() == GT_LIST))
         {
             assert(arg->OperGet() == GT_LIST);
+
             GenTreeArgList* argListPtr = arg->AsArgList();
+            assert(argListPtr->IsAggregate());
 
             for (unsigned ctr = 0; argListPtr != nullptr; argListPtr = argListPtr->Rest(), ctr++)
             {
@@ -1060,7 +1064,6 @@ void Lowering::LowerArg(GenTreeCall* call, GenTreePtr* ppArg)
         // If an extra node is returned, splice it in the right place in the tree.
         if (arg != putArg)
         {
-            // putArg and arg are equals if arg is GT_LIST (a list of multiple LCL_FLDs to be passed in registers.)
             ReplaceArgWithPutArgOrCopy(ppArg, putArg);
         }
     }
@@ -3726,9 +3729,14 @@ void Lowering::CheckCallArg(GenTree* arg)
 #endif
 
         case GT_LIST:
-            for (GenTreeArgList* list = arg->AsArgList(); list != nullptr; list = list->Rest())
             {
-                assert(list->Current()->OperIsPutArg());
+                GenTreeArgList* list = arg->AsArgList();
+                assert(list->IsAggregate());
+
+                for (; list != nullptr; list = list->Rest())
+                {
+                    assert(list->Current()->OperIsPutArg());
+                }
             }
             break;
 
