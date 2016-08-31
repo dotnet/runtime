@@ -4,6 +4,7 @@
 
 namespace System
 {
+    [Serializable]
     [Flags]
     public enum ConsoleModifiers
     {
