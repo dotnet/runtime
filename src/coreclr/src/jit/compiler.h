@@ -3839,7 +3839,7 @@ public:
     // If you have already retrieved the struct size then pass it as the optional third argument
     //
     var_types getReturnTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
-                                     structPassingKind*   wbPassStruct,
+                                     structPassingKind*   wbPassStruct = nullptr,
                                      unsigned             structSize = 0);
 
 #ifdef DEBUG
