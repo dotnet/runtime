@@ -389,23 +389,30 @@ namespace SOS
         /// <remarks>used by the gdb JIT support (not SOS). Does not support in-memory PEs or PDBs</remarks>
         internal static bool GetInfoForMethod(string assemblyPath, int methodToken, ref MethodDebugInfo debugInfo)
         {
-            List<DebugInfo> points = null;
-
-            if (!GetDebugInfoForMethod(assemblyPath, methodToken, out points))
+            try
             {
-                return false;
+                List<DebugInfo> points = null;
+
+                if (!GetDebugInfoForMethod(assemblyPath, methodToken, out points))
+                {
+                    return false;
+                }
+                var structSize = Marshal.SizeOf<DebugInfo>();
+
+                debugInfo.size = points.Count;
+                var ptr = debugInfo.points;
+
+                foreach (var info in points)
+                {
+                    Marshal.StructureToPtr(info, ptr, false);
+                    ptr = (IntPtr)(ptr.ToInt64() + structSize);
+                }
+                return true;
             }
-            var structSize = Marshal.SizeOf<DebugInfo>();
-
-            debugInfo.size = points.Count;
-            var ptr = debugInfo.points;
-
-            foreach (var info in points)
+            catch
             {
-                Marshal.StructureToPtr(info, ptr, false);
-                ptr = (IntPtr)(ptr.ToInt64() + structSize);
             }
-            return true;
+            return false;
         }
 
         /// <summary>

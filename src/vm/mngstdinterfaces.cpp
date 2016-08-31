@@ -228,7 +228,7 @@ LPVOID MngStdItfBase::ForwardCallToManagedView(
             MethodDescCallSite mngItf(pMngItfMD, CRemotingServices::GetStubForInterfaceMethod(pMngItfMD));
 
             // Call the stub with the args we were passed originally.
-            Result = (Object*)mngItf.CallWithValueTypes_RetArgSlot(pArgs);
+            Result = (Object*)mngItf.Call_RetArgSlot(pArgs);
             if (mngItf.GetMetaSig()->IsObjectRefReturnType()) 
             {
                 Lr.Result = ObjectToOBJECTREF(Result);
