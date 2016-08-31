@@ -315,7 +315,7 @@
 
     JITHELPER(CORINFO_HELP_EE_PRESTUB,          ThePreStub,                 CORINFO_HELP_SIG_NO_ALIGN_STUB)
 
-#if defined(_TARGET_X86_) || defined(_TARGET_AMD64_) || defined(_TARGET_ARM_)
+#if defined(HAS_FIXUP_PRECODE) 
     JITHELPER(CORINFO_HELP_EE_PRECODE_FIXUP,    PrecodeFixupThunk,          CORINFO_HELP_SIG_NO_ALIGN_STUB)
 #else
     JITHELPER(CORINFO_HELP_EE_PRECODE_FIXUP,    NULL,                       CORINFO_HELP_SIG_NO_ALIGN_STUB)
