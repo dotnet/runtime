@@ -101,7 +101,9 @@
     <Compile Include="DecimalTests.netstandard1.7.cs" />
     <Compile Include="EnumTests.netstandard1.7.cs" />
     <Compile Include="GetTypeCodeTests.cs" />
+    <!-- Disabling TimeZoneInfoTests because they are failing in non-Windows netcoreapp1.1 runs. Issue: https://github.com/dotnet/corefx/issues/11307
     <Compile Include="TimeZoneInfoTests.netstandard1.7.cs" />
+    -->
     <Compile Include="TimeZoneNotFoundExceptionTests.netstandard1.7.cs" />
     <Compile Include="VersionTests.netstandard1.7.cs" />
     <Compile Include="System\AccessViolationExceptionTests.cs" />
@@ -132,11 +134,5 @@
     <ProjectReference Include="..\..\System.Private.Uri\pkg\System.Private.Uri.pkgproj">
     </ProjectReference>
   </ItemGroup>
-  <!-- ToDo: Remove this target once the infrastructure for testing in netcoreapp1.1 is ready -->
-  <Target Name="RemoveUnwantedTestMonikers" Condition="'$(TargetGroup)'=='netstandard1.7'" BeforeTargets="CopyTestToTestDirectory">
-    <ItemGroup>
-      <TestNugetTargetMoniker Remove=".NETCoreApp,Version=v1.1" />
-    </ItemGroup>
-  </Target>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

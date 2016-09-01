@@ -12,6 +12,7 @@
     <NugetTargetMoniker>.NETStandard,Version=v1.7</NugetTargetMoniker>
     <TestTFM>netcoreapp1.1</TestTFM>
     <ProjectGuid>{492EC54D-D2C4-4B3F-AC1F-646B3F7EBB02}</ProjectGuid>
+    <NugetTargetMoniker Condition="'$(NugetTargetMoniker)'==''">.NETStandard,Version=v1.7</NugetTargetMoniker>
   </PropertyGroup>
   <ItemGroup>
     <TestNugetTargetMoniker Include="$(NugetTargetMoniker)">
