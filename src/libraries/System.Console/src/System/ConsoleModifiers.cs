@@ -4,8 +4,8 @@
 
 namespace System
 {
-    [Serializable]
     [Flags]
+    [Serializable]
     public enum ConsoleModifiers
     {
         Alt = 1,
