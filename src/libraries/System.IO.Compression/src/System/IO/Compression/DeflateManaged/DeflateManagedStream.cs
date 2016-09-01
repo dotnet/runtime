@@ -44,14 +44,14 @@ namespace System.IO.Compression
         }
 
         // A specific constructor to allow decompression of Deflate64
-        internal DeflateManagedStream(Stream stream, bool deflate64)
+        internal DeflateManagedStream(Stream stream, ZipArchiveEntry.CompressionMethodValues method)
         {
             if (stream == null)
                 throw new ArgumentNullException(nameof(stream));
             if (!stream.CanRead)
                 throw new ArgumentException(SR.NotSupported_UnreadableStream, nameof(stream));
 
-            InitializeInflater(stream, false, null, deflate64);
+            InitializeInflater(stream, false, null, method);
         }
 
         public DeflateManagedStream(Stream stream, CompressionMode mode, bool leaveOpen)
@@ -92,13 +92,14 @@ namespace System.IO.Compression
         /// <summary>
         /// Sets up this DeflateManagedStream to be used for Inflation/Decompression
         /// </summary>
-        internal void InitializeInflater(Stream stream, bool leaveOpen, IFileFormatReader reader = null, bool deflate64 = false)
+        internal void InitializeInflater(Stream stream, bool leaveOpen, IFileFormatReader reader = null, ZipArchiveEntry.CompressionMethodValues method = ZipArchiveEntry.CompressionMethodValues.Deflate)
         {
             Debug.Assert(stream != null);
+            Debug.Assert(method == ZipArchiveEntry.CompressionMethodValues.Deflate || method == ZipArchiveEntry.CompressionMethodValues.Deflate64);
             if (!stream.CanRead)
                 throw new ArgumentException(SR.NotSupported_UnreadableStream, nameof(stream));
 
-            _inflater = new InflaterManaged(reader, deflate64);
+            _inflater = new InflaterManaged(reader, method == ZipArchiveEntry.CompressionMethodValues.Deflate64 ? true : false);
 
             _stream = stream;
             _mode = CompressionMode.Decompress;
@@ -313,6 +314,14 @@ namespace System.IO.Compression
         {
             throw new InvalidOperationException(SR.CannotWriteToDeflateStream);
         }
+
+#if netstandard17
+        public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback asyncCallback, object asyncState) =>
+            TaskToApm.Begin(ReadAsync(buffer, offset, count, CancellationToken.None), asyncCallback, asyncState);
+
+        public override int EndRead(IAsyncResult asyncResult) =>
+            TaskToApm.End<int>(asyncResult);
+#endif
 
         public override Task<int> ReadAsync(Byte[] array, int offset, int count, CancellationToken cancellationToken)
         {

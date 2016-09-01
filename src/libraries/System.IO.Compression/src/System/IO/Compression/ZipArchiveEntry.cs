@@ -425,7 +425,7 @@ namespace System.IO.Compression
             {
                 if (value == CompressionMethodValues.Deflate)
                     VersionToExtractAtLeast(ZipVersionNeededValues.Deflate);
-                if (value == CompressionMethodValues.Deflate64)
+                else if (value == CompressionMethodValues.Deflate64)
                     VersionToExtractAtLeast(ZipVersionNeededValues.Deflate64);
                 _storedCompressionMethod = value;
             }
@@ -676,7 +676,7 @@ namespace System.IO.Compression
                     uncompressedStream = new DeflateStream(compressedStreamToRead, CompressionMode.Decompress);
                     break;
                 case CompressionMethodValues.Deflate64:
-                    uncompressedStream = new DeflateManagedStream(compressedStreamToRead, deflate64: true);
+                    uncompressedStream = new DeflateManagedStream(compressedStreamToRead, CompressionMethodValues.Deflate64);
                     break;
                 case CompressionMethodValues.Stored:
                 default:
@@ -1292,7 +1292,7 @@ namespace System.IO.Compression
         [Flags]
         private enum BitFlagValues : ushort { DataDescriptor = 0x8, UnicodeFileName = 0x800 }
 
-        private enum CompressionMethodValues : ushort { Stored = 0x0, Deflate = 0x8, Deflate64 = 0x9, BZip2 = 0xC, LZMA = 0xE }
+        internal enum CompressionMethodValues : ushort { Stored = 0x0, Deflate = 0x8, Deflate64 = 0x9, BZip2 = 0xC, LZMA = 0xE }
 
         private enum OpenableValues { Openable, FileNonExistent, FileTooLarge }
         #endregion Nested Types
