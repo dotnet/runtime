@@ -1740,7 +1740,7 @@ combinedScenarios.each { scenario ->
                                         buildCommands += "set __TestIntermediateDir=int&&build-test.cmd ${lowerConfiguration} ${arch}"
                                     }
                                     else if (scenario == 'formatting') {
-                                        buildCommands += "python tests\\scripts\\format.py -c %WORKSPACE% -o Windows_NT -a ${arch}"
+                                        buildCommands += "python -u tests\\scripts\\format.py -c %WORKSPACE% -o Windows_NT -a ${arch}"
                                         break
                                     }
                                     else {
