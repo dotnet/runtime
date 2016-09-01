@@ -10,6 +10,7 @@ namespace System.Net.Sockets.Tests
 {
     public class NetworkStreamTest
     {
+        [OuterLoop] // TODO: Issue #11345
         [Theory]
         [MemberData(nameof(NonCanceledTokens))]
         public async Task ReadWriteAsync_NonCanceled_Success(CancellationToken nonCanceledToken)
@@ -26,6 +27,7 @@ namespace System.Net.Sockets.Tests
             });
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [Fact]
         public async Task ReadWriteAsync_Canceled_ThrowsOperationCanceledException()
         {

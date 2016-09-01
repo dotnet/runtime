@@ -22,6 +22,7 @@ namespace System.Net.Security.Tests
             _output = output;
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [Fact]
         [PlatformSpecific(PlatformID.Windows)]
         public async Task SslStream_ClientAndServerUsesAuxRecord_Ok()

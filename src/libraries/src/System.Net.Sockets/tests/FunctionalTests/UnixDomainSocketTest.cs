@@ -23,6 +23,7 @@ namespace System.Net.Sockets.Tests
             _log = TestLogging.GetInstance();
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [Fact]
         [PlatformSpecific(PlatformID.Windows)]
         public void Socket_CreateUnixDomainSocket_Throws_OnWindows()
@@ -31,6 +32,7 @@ namespace System.Net.Sockets.Tests
             Assert.Equal(SocketError.AddressFamilyNotSupported, e.SocketErrorCode);
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [Fact]
         [PlatformSpecific(PlatformID.AnyUnix)]
         public async Task Socket_ConnectAsyncUnixDomainSocketEndPoint_Success()
@@ -85,6 +87,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [Fact]
         [PlatformSpecific(PlatformID.AnyUnix)]
         public async Task Socket_ConnectAsyncUnixDomainSocketEndPoint_NotServer()
@@ -118,6 +121,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [Fact]
         [PlatformSpecific(PlatformID.AnyUnix)]
         public void Socket_SendReceive_Success()
@@ -156,6 +160,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [Fact]
         [PlatformSpecific(PlatformID.AnyUnix)]
         public async Task Socket_SendReceiveAsync_Success()
@@ -194,6 +199,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [Fact]
         [PlatformSpecific(PlatformID.AnyUnix)] 
         public void ConcurrentSendReceive()
