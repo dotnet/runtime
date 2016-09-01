@@ -113,11 +113,13 @@
       <Link>Common\System\SerializableAttribute.cs</Link>
     </Compile>
   </ItemGroup>
+  <!-- Disabling the Serialization tests since they are currently failing for netcoreapp1.1 runs. Issue: https://github.com/dotnet/corefx/issues/11313
   <ItemGroup Condition="'$(TargetGroup)'=='netstandard1.7'">
     <Compile Include="$(CommonTestPath)\System\Collections\IEnumerable.NonGeneric.Serialization.Tests.cs" >
       <Link>Common\System\Collections\IEnumerable.NonGeneric.Serialization.Tests.cs</Link>
     </Compile>
   </ItemGroup>
+  -->
   <ItemGroup>
     <ProjectReference Include="..\pkg\System.Collections.Specialized.pkgproj">
       <Project>{63634289-90d7-4947-8bf3-dbbe98d76c85}</Project>

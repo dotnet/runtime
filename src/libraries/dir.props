@@ -472,9 +472,8 @@
   <PropertyGroup>
     <TestTFM Condition="'$(TestTFM)'=='' AND '$(TargetGroup)'=='netstandard1.7'">netcoreapp1.1</TestTFM>
     <TestTFM Condition="'$(TestTFM)'==''">netcoreapp1.0</TestTFM>
-    <FilterToTestTFM Condition="'$(FilterToTestTFM)'=='' AND '$(TestTFM)'=='netcoreapp1.1'">netcoreapp1.1</FilterToTestTFM>
-    <!-- we default FilterToTestTFM to netcoreapp1.0 if it is not explicity defined -->
-    <FilterToTestTFM Condition="'$(FilterToTestTFM)'==''">netcoreapp1.0</FilterToTestTFM>        
+    <!-- we default FilterToTestTFM to netcoreapp1.1 if it is not explicity defined -->
+    <FilterToTestTFM Condition="'$(FilterToTestTFM)'==''">netcoreapp1.1</FilterToTestTFM>        
   </PropertyGroup>
 
   <ItemGroup>

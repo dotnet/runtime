@@ -58,4 +58,17 @@
     </SupplementalTestData>
   </ItemGroup>
 
+  <!-- ToDo: Remove this target and the following ItemGroup once the mapping between netstandard1.7 and netcoreapp1.1 is supported. Issue https://github.com/dotnet/corefx/issues/11321 -->
+  <Target Name="RemoveUnwantedTestMonikers" Condition="'$(TargetGroup)'=='netstandard1.7'" BeforeTargets="CopyTestToTestDirectory">
+    <ItemGroup>
+        <TestNugetTargetMoniker Remove=".NETCoreApp,Version=v1.1" />
+    </ItemGroup>
+  </Target>
+
+  <ItemGroup Condition="'$(TargetGroup)'=='netstandard1.7'">
+    <TestNugetTargetMoniker Include="$(NugetTargetMoniker)">
+      <Folder>netcoreapp1.1</Folder>
+    </TestNugetTargetMoniker>
+  </ItemGroup>
+
 </Project>

@@ -11,6 +11,7 @@
     "System.Runtime.Numerics": "4.0.2-beta-devapi-24424-01",
     "System.Security.Cryptography.Encoding": "4.0.1-beta-devapi-24424-01",
     "System.Security.Cryptography.Primitives": "4.0.1-beta-devapi-24424-01",
+    "runtime.native.System.Security.Cryptography.Apple": "4.0.1-beta-devapi-24424-01",
     "System.Text.Encoding.Extensions": "4.0.12-beta-devapi-24424-01",
     "System.Text.RegularExpressions": "4.2.0-beta-devapi-24424-01",
     "test-runtime": {
