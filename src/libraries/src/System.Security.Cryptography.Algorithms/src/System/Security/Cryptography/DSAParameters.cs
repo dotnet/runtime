@@ -4,6 +4,10 @@
 
 namespace System.Security.Cryptography
 {
+    // DSAParameters is serializable so that one could pass the public parameters
+    // across a remote call, but we explicitly make the private key X non-serializable
+    // so you cannot accidently send it along with the public parameters.
+    [Serializable]
     public struct DSAParameters
     {
         public byte[] P;
@@ -11,7 +15,7 @@ namespace System.Security.Cryptography
         public byte[] G;
         public byte[] Y;
         public byte[] J;
-        public byte[] X;
+        [NonSerialized] public byte[] X;
         public byte[] Seed;
         public int Counter;
     }

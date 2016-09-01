@@ -2,13 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-//------------------------------------------------------------
-
 using System;
 
 namespace System.Runtime.Serialization
 {
-    public class InvalidDataContractException : Exception
+    public partial class InvalidDataContractException : Exception
     {
         public InvalidDataContractException()
             : base()
@@ -26,4 +24,3 @@ namespace System.Runtime.Serialization
         }
     }
 }
-

@@ -5,6 +5,7 @@
 namespace System
 {
     [Flags]
+    [Serializable]
     public enum ConsoleModifiers
     {
         Alt = 1,
