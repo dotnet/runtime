@@ -31,6 +31,13 @@ namespace System.Globalization
         ////                        Internal Information                        //
         ////--------------------------------------------------------------------//
 
+        private enum Tristate : byte
+        {
+            NotInitialized,
+            True,
+            False,
+        }
+
         ////
         ////  Variables.
         ////
@@ -57,7 +64,7 @@ namespace System.Globalization
         [NonSerialized]
         private String _textInfoName;     // Name of the text info we're using (ie: _cultureData.STEXTINFO)
         [NonSerialized]
-        private bool? _isAsciiCasingSameAsInvariant;
+        private Tristate _isAsciiCasingSameAsInvariant = Tristate.NotInitialized;
 
         // Invariant text info
         internal static TextInfo Invariant
@@ -355,13 +362,13 @@ namespace System.Globalization
         {
             get
             {
-                if (_isAsciiCasingSameAsInvariant == null)
+                if (_isAsciiCasingSameAsInvariant == Tristate.NotInitialized)
                 {
                     _isAsciiCasingSameAsInvariant = CultureInfo.GetCultureInfo(_textInfoName).CompareInfo.Compare("abcdefghijklmnopqrstuvwxyz",
                                                                              "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
-                                                                             CompareOptions.IgnoreCase) == 0;
+                                                                             CompareOptions.IgnoreCase) == 0 ? Tristate.True : Tristate.False;
                 }
-                return (bool)_isAsciiCasingSameAsInvariant;
+                return _isAsciiCasingSameAsInvariant == Tristate.True;
             }
         }
 
