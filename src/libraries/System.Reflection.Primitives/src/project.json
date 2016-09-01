@@ -1,15 +1,23 @@
 {
   "frameworks": {
-    "netstandard1.7": {
+    "netstandard1.0": {
       "dependencies": {
         "Microsoft.NETCore.Platforms": "1.0.1",
         "Microsoft.TargetingPack.Private.CoreCLR": "1.1.0-beta-24431-03"
       },
       "imports": [
-        "dotnet5.8"
+        "dotnet5.1"
       ]
     },
-    "net463": {
+    "netcore50": {
+      "dependencies": {
+        "Microsoft.NETCore.Platforms": "1.0.1",
+        "System.Diagnostics.Contracts": "4.0.0",
+        "System.Runtime": "4.0.0",
+        "System.Threading": "4.0.10"
+      }
+    },
+    "net46": {
       "dependencies": {
         "Microsoft.TargetingPack.NETFramework.v4.6": "1.0.1"
       }

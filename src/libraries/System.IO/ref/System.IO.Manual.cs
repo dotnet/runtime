@@ -9,5 +9,3 @@
 // Types moved down into System.Runtime
 [assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.IO.FileNotFoundException))]
 [assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.IO.IOException))]
-[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.IO.SeekOrigin))]
-[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.IO.Stream))]

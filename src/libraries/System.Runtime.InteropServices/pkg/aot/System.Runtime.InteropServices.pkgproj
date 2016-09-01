@@ -9,7 +9,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- all assets are harvested -->
+    <ProjectReference Include="..\..\src\redist\System.Runtime.InteropServices.depproj">
+      <TargetGroup>netcore50aot</TargetGroup>
+    </ProjectReference>
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />

@@ -1,0 +1,12 @@
+{
+  "dependencies": {
+    "System.Runtime.InteropServices": "4.0.10"
+  },
+  "frameworks": {
+    "netstandard1.2": {
+      "imports": [
+        "dotnet5.3"
+      ]
+    }
+  }
+}
