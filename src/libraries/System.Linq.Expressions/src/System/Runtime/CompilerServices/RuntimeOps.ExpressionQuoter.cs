@@ -9,6 +9,7 @@ using System.Dynamic.Utils;
 using System.Linq.Expressions;
 using System.Linq.Expressions.Compiler;
 using System.Reflection;
+using static System.Linq.Expressions.CachedReflectionInfo;
 
 namespace System.Runtime.CompilerServices
 {
@@ -149,7 +150,7 @@ namespace System.Runtime.CompilerServices
 
                 // Otherwise, we need to return an object that merges them
                 return Expression.Call(
-                    typeof(RuntimeOps).GetMethod("MergeRuntimeVariables"),
+                    RuntimeOps_MergeRuntimeVariables,
                     Expression.RuntimeVariables(new TrueReadOnlyCollection<ParameterExpression>(vars.ToArray())),
                     boxesConst,
                     Expression.Constant(indexes)

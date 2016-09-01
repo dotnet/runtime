@@ -815,7 +815,7 @@ namespace System.Linq.Expressions
         protected internal override Expression VisitExtension(Expression node)
         {
             // Prefer an overridden ToString, if available.
-            var toString = node.GetType().GetMethod("ToString", Array.Empty<Type>());
+            var toString = node.GetType().GetMethod("ToString", Type.EmptyTypes);
             if (toString.DeclaringType != typeof(Expression) && !toString.IsStatic)
             {
                 Out(node.ToString());

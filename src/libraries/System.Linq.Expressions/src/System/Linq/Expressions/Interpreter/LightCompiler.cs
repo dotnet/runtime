@@ -8,6 +8,7 @@ using System.Dynamic.Utils;
 using System.Globalization;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using static System.Linq.Expressions.CachedReflectionInfo;
 
 using AstUtils = System.Linq.Expressions.Utils;
 
@@ -1550,7 +1551,7 @@ namespace System.Linq.Expressions.Interpreter
                 if (switchType == TypeCode.String)
                 {
                     // If we have a comparison other than string equality, bail
-                    MethodInfo equality = typeof(string).GetMethod("op_Equality", new[] { typeof(string), typeof(string) });
+                    MethodInfo equality = String_op_Equality_String_String;
                     if (equality != null && !equality.IsStatic)
                     {
                         equality = null;

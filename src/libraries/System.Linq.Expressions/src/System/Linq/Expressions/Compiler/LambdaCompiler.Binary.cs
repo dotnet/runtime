@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Dynamic.Utils;
 using System.Reflection;
 using System.Reflection.Emit;
+using static System.Linq.Expressions.CachedReflectionInfo;
 
 namespace System.Linq.Expressions.Compiler
 {
@@ -708,7 +709,7 @@ namespace System.Linq.Expressions.Compiler
             _ilg.Emit(OpCodes.Br_S, labReturnValue);
 
             _ilg.MarkLabel(labReturnValue);
-            ConstructorInfo ci = type.GetConstructor(new Type[] { typeof(bool) });
+            ConstructorInfo ci = type.GetConstructor(ArrayOfType_Bool);
             _ilg.Emit(OpCodes.Newobj, ci);
             _ilg.Emit(OpCodes.Stloc, locLeft);
             _ilg.Emit(OpCodes.Br, labExit);
@@ -781,7 +782,7 @@ namespace System.Linq.Expressions.Compiler
             _ilg.Emit(OpCodes.Br_S, labReturnValue);
 
             _ilg.MarkLabel(labReturnValue);
-            ConstructorInfo ci = type.GetConstructor(new Type[] { typeof(bool) });
+            ConstructorInfo ci = type.GetConstructor(ArrayOfType_Bool);
             _ilg.Emit(OpCodes.Newobj, ci);
             _ilg.Emit(OpCodes.Stloc, locLeft);
             _ilg.Emit(OpCodes.Br, labExit);
