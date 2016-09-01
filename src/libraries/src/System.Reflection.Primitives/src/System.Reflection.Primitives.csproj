@@ -2,14 +2,14 @@
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
+    <AssemblyVersion>4.1.0.0</AssemblyVersion>
     <AssemblyName>System.Reflection.Primitives</AssemblyName>
-    <AssemblyVersion>4.0.2.0</AssemblyVersion>
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)'!='netcore50'">true</IsPartialFacadeAssembly>
-    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.0</NuGetTargetMoniker>
+    <NuGetTargetMoniker Condition="'$(NuGetTargetMoniker)' == ''">.NETStandard,Version=v1.7</NuGetTargetMoniker>
   </PropertyGroup>
   <ItemGroup Condition="'$(PackageTargetFramework)' == ''">
-    <PackageDestination Include="lib/netstandard1.3">
-      <TargetFramework>netstandard1.3</TargetFramework>
+    <PackageDestination Include="lib/netstandard1.7">
+      <TargetFramework>netstandard1.7</TargetFramework>
     </PackageDestination>
     <PackageDestination Include="lib/uap10.1">
       <TargetFramework>uap10.1</TargetFramework>
@@ -18,25 +18,12 @@
   <!-- Help VS understand available configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcore50_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcore50_Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Release|AnyCPU'" />
-  <ItemGroup Condition="'$(TargetGroup)'!='netcore50' and '$(TargetGroup)' != 'uap101aot'">
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Release|AnyCPU'" />
+  <ItemGroup Condition="'$(TargetGroup)' != 'uap101aot'">
     <TargetingPackReference Include="mscorlib" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)'=='netcore50'">
-    <Compile Include="System\Reflection\CallingConventions.cs" />
-    <Compile Include="System\Reflection\EventAttributes.cs" />
-    <Compile Include="System\Reflection\FieldAttributes.cs" />
-    <Compile Include="System\Reflection\GenericParameterAttributes.cs" />
-    <Compile Include="System\Reflection\MethodAttributes.cs" />
-    <Compile Include="System\Reflection\MethodImplAttributes.cs" />
-    <Compile Include="System\Reflection\ParameterAttributes.cs" />
-    <Compile Include="System\Reflection\PropertyAttributes.cs" />
-    <Compile Include="System\Reflection\TypeAttributes.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)'=='netcore50' or '$(TargetGroup)'=='uap101aot'">
+  <ItemGroup Condition="'$(TargetGroup)'=='uap101aot'">
     <Compile Include="System\Reflection\Emit\FlowControl.cs" />
     <Compile Include="System\Reflection\Emit\Opcode.cs" />
     <Compile Include="System\Reflection\Emit\OpCodes.cs" />

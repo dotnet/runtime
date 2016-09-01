@@ -6,9 +6,6 @@ using System.Reflection;
 
 namespace System
 {
-    [Serializable]
-    internal class MarshalByRefObject { } // TODO: Replace with real MarshalByRefObject when it's available
-
     internal sealed class TypedReference // TODO: Replace with System.TypedReference when available and functional
     {
         internal object _target;
