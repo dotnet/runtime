@@ -4794,8 +4794,8 @@ async_abort_critical (MonoThreadInfo *info, gpointer ud)
 		return MonoResumeThread;
 
 	/*
-	The target thread is running at least one .cctor, which must not be interrupted, so we give up.
-	The .cctor code will give them a chance when appropriate.
+	The target thread is running at least one protected block, which must not be interrupted, so we give up.
+	The protected block code will give them a chance when appropriate.
 	*/
 	if (thread->abort_protected_block_count)
 		return MonoResumeThread;
@@ -4857,6 +4857,9 @@ self_abort_internal (MonoError *error)
 	/* FIXME this is insanely broken, it doesn't cause interruption to happen synchronously
 	 * since passing FALSE to mono_thread_request_interruption makes sure it returns NULL */
 
+	/*
+	Self aborts ignore the protected block logic and raise the TAE regardless. This is verified by one of the tests in mono/tests/abort-cctor.cs.
+	*/
 	exc = mono_thread_request_interruption (TRUE);
 	if (exc)
 		mono_error_set_exception_instance (error, exc);
