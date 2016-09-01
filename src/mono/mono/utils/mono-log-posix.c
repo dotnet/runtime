@@ -25,7 +25,7 @@
 #include <errno.h>
 #include <time.h>
 #include <sys/time.h>
-#include "mono-logger.h"
+#include "mono-logger-internals.h"
 
 static void *logUserData = NULL;
 
@@ -70,7 +70,7 @@ mono_log_open_syslog(const char *ident, void *userData)
 }
 
 /**
- * mono_log_write_logfile
+ * mono_log_write_syslog
  * 	
  * 	Write data to the log file.
  *
@@ -80,9 +80,9 @@ mono_log_open_syslog(const char *ident, void *userData)
  * 	@vargs - Variable argument list
  */
 void
-mono_log_write_syslog(const char *domain, GLogLevelFlags level, mono_bool hdr, const char *format, va_list args)
+mono_log_write_syslog(const char *domain, GLogLevelFlags level, mono_bool hdr, const char *message)
 {
-	vsyslog(mapSyslogLevel(level), format, args);
+	syslog (mapSyslogLevel(level), "%s", message);
 
 	if (level == G_LOG_FLAG_FATAL)
 		abort();

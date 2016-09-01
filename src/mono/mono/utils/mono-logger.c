@@ -29,7 +29,7 @@ static MonoLogCallParm logCallback = {
 typedef struct {
    MonoLogCallback legacy_callback;
    gpointer user_data;
-} legacyLoggerUserData;
+} UserSuppliedLoggerUserData;
 
 /**
  * mono_trace_init:
@@ -81,19 +81,19 @@ mono_trace_cleanup (void)
 void 
 mono_tracev_inner (GLogLevelFlags level, MonoTraceMask mask, const char *format, va_list args)
 {
+	char *log_message;
 	if (level_stack == NULL) {
 		mono_trace_init ();
 		if(level > mono_internal_current_level || !(mask & mono_internal_current_mask))
 			return;
 	}
 
-	if (logCallback.opener == NULL) {
-		logCallback.opener = mono_log_open_logfile;
-		logCallback.writer = mono_log_write_logfile;
-		logCallback.closer = mono_log_close_logfile;
-		logCallback.opener(NULL, NULL);
-	}
-	logCallback.writer(mono_log_domain, level, logCallback.header, format, args);
+	g_assert (logCallback.opener); // mono_trace_init should have provided us with one!
+
+	if (g_vasprintf (&log_message, format, args) < 0)
+		return;
+	logCallback.writer (mono_log_domain, level, logCallback.header, log_message);
+	g_free (log_message);
 }
 
 /**
@@ -340,13 +340,19 @@ log_level_get_name (GLogLevelFlags log_level)
  * logging. We ignore the header request as legacy handlers never had headers.
  */
 static void
-callback_adapter(const char *domain, GLogLevelFlags level, mono_bool fatal, const char *fmt, va_list args)
+callback_adapter (const char *domain, GLogLevelFlags level, mono_bool fatal, const char *message)
 {
-	legacyLoggerUserData *ll = (legacyLoggerUserData *) logCallback.user_data;
-	const char *msg = g_strdup_vprintf (fmt, args);
+	UserSuppliedLoggerUserData *ll =logCallback.user_data;
 
-	ll->legacy_callback (domain, log_level_get_name(level), msg, fatal, ll->user_data);
-	g_free ((void *) msg);
+	ll->legacy_callback (domain, log_level_get_name(level), message, fatal, ll->user_data);
+}
+
+static void
+eglib_log_adapter (const gchar *log_domain, GLogLevelFlags log_level, const gchar *message, gpointer user_data)
+{
+	UserSuppliedLoggerUserData *ll = logCallback.user_data;
+
+	ll->legacy_callback (log_domain, log_level_get_name (log_level), message, log_level & G_LOG_LEVEL_ERROR, ll->user_data);
 }
 
 /**
@@ -369,7 +375,7 @@ static void
 legacy_closer(void)
 {
 	if (logCallback.user_data != NULL) {
-		g_free (logCallback.user_data); /* This is a LegacyLoggerUserData struct */
+		g_free (logCallback.user_data); /* This is a UserSuppliedLoggerUserData struct */
 		logCallback.opener = NULL;	
 		logCallback.writer = NULL;
 		logCallback.closer = NULL;
@@ -386,15 +392,16 @@ legacy_closer(void)
  * 
  * The log handler replaces the default runtime logger. All logging requests with be routed to it.
  * If the fatal argument in the callback is true, the callback must abort the current process. The runtime expects that
- * execution will not resume after a fatal error. This is for "old-style" or legacy log handers.
+ * execution will not resume after a fatal error.
  */
 void
 mono_trace_set_log_handler (MonoLogCallback callback, void *user_data)
 {
-        g_assert (callback);
+	g_assert (callback);
+
 	if (logCallback.closer != NULL)
 		logCallback.closer();
-	legacyLoggerUserData *ll = g_malloc (sizeof (legacyLoggerUserData));
+	UserSuppliedLoggerUserData *ll = g_malloc (sizeof (UserSuppliedLoggerUserData));
 	ll->legacy_callback = callback;
 	ll->user_data = user_data;
 	logCallback.opener = legacy_opener;
@@ -402,6 +409,14 @@ mono_trace_set_log_handler (MonoLogCallback callback, void *user_data)
 	logCallback.closer = legacy_closer;
 	logCallback.user_data = ll;
 	logCallback.dest = NULL;
+
+	g_log_set_default_handler (eglib_log_adapter, user_data);
+}
+
+static void
+structured_log_adapter (const gchar *log_domain, GLogLevelFlags log_level, const gchar *message, gpointer user_data)
+{
+	logCallback.writer (log_domain, log_level, logCallback.header, message);
 }
 
 /**
@@ -425,7 +440,9 @@ mono_trace_set_log_handler_internal (MonoLogCallParm *callback, void *user_data)
 	logCallback.closer = callback->closer;
 	logCallback.header = mono_trace_log_header;
 	logCallback.dest   = callback->dest;
-	logCallback.opener(logCallback.dest, user_data);
+	logCallback.opener (logCallback.dest, user_data);
+
+	g_log_set_default_handler (structured_log_adapter, user_data);
 }
 
 static void

@@ -25,7 +25,7 @@
 #else
 #include <process.h>
 #endif
-#include "mono-logger.h"
+#include "mono-logger-internals.h"
 
 static FILE *logFile = NULL;
 static void *logUserData = NULL;
@@ -98,19 +98,17 @@ mono_log_open_logfile(const char *path, void *userData)
  * 	@vargs - Variable argument list
  */
 void
-mono_log_write_logfile(const char *domain, GLogLevelFlags level, mono_bool hdr, const char *format, va_list args)
+mono_log_write_logfile (const char *log_domain, GLogLevelFlags level, mono_bool hdr, const char *message)
 {
 	time_t t;
-	char logTime[80],	
-	     logMessage[512];
-	pid_t pid;
-	int iLog = 0;
-	size_t nLog;
 
 	if (logFile == NULL)
 		logFile = stdout;
 
 	if (hdr) {
+		pid_t pid;
+		char logTime [80];
+
 #ifndef HOST_WIN32
 		struct tm tod;
 		time(&t);
@@ -124,15 +122,14 @@ mono_log_write_logfile(const char *domain, GLogLevelFlags level, mono_bool hdr, 
 		pid = _getpid();
 		strftime(logTime, sizeof(logTime), "%F %T", tod);
 #endif
-		iLog = sprintf(logMessage, "%s level[%c] mono[%d]: ",
-			       logTime,mapLogFileLevel(level),pid);
+		fprintf (logFile, "%s level[%c] mono[%d]: %s\n", logTime, mapLogFileLevel (level), pid, message);
+	} else {
+		fprintf (logFile, "%s%s%s\n",
+			log_domain != NULL ? log_domain : "",
+			log_domain != NULL ? ": " : "",
+			message);
 	}
-	nLog = sizeof(logMessage) - iLog - 2;
-	vsnprintf(logMessage+iLog, nLog, format, args);
-	iLog = strlen(logMessage);
-	logMessage[iLog++] = '\n';
-	logMessage[iLog++] = '\0';
-	fputs(logMessage, logFile);
+
 	fflush(logFile);
 
 	if (level == G_LOG_FLAG_FATAL)

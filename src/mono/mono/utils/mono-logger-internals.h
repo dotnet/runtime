@@ -149,6 +149,31 @@ mono_trace_message(MonoTraceMask mask, const char *format, ...)
 
 #endif
 
+/* Internal logging API */
+typedef void (*MonoLoggerOpen) (const char *, void *);
+typedef void (*MonoLoggerWrite) (const char *, GLogLevelFlags, mono_bool, const char *);
+typedef void (*MonoLoggerClose) (void);
+
+typedef struct _MonoLogCallParm_ {
+	MonoLoggerOpen 	opener;		/* Routine to open logging */
+	MonoLoggerWrite	writer;		/* Routine to write log data */
+	MonoLoggerClose closer; 	/* Routine to close logging */
+	char		*dest;		/* Log destination */
+	void		*user_data;	/* User data from legacy handler */
+	mono_bool       header;		/* Whether we want pid/time/date in log message */
+} MonoLogCallParm;
+
+void mono_trace_set_log_handler_internal (MonoLogCallParm *callback, void *user_data);
+void mono_trace_set_logdest_string (const char *value);
+void mono_trace_set_logheader_string (const char *value);
+
+void mono_log_open_syslog (const char *, void *);
+void mono_log_write_syslog (const char *, GLogLevelFlags, mono_bool, const char *);
+void mono_log_close_syslog (void);
+
+void mono_log_open_logfile (const char *, void *);
+void mono_log_write_logfile (const char *, GLogLevelFlags, mono_bool, const char *);
+void mono_log_close_logfile (void);
 
 G_END_DECLS
 
