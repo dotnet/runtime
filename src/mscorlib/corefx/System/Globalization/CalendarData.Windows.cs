@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
+
 using System;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
@@ -139,15 +140,11 @@ namespace System.Globalization
             }
 
             GCHandle contextHandle = GCHandle.Alloc(data);
-
             try
             {
-                EnumCalendarInfoExExCallback callback = new EnumCalendarInfoExExCallback(EnumCalendarsCallback);
-                Interop.mincore_private.LParamCallbackContext context = new Interop.mincore_private.LParamCallbackContext();
-                context.lParam = (IntPtr)contextHandle;
-
                 // Now call the enumeration API. Work is done by our callback function
-                Interop.mincore_private.EnumCalendarInfoExEx(callback, localeName, ENUM_ALL_CALENDARS, null, CAL_ICALINTVALUE, context);
+                IntPtr callback = AddrofIntrinsics.AddrOf<Func<IntPtr, uint, IntPtr, IntPtr, Interop.BOOL>>(EnumCalendarsCallback);
+                Interop.mincore.EnumCalendarInfoExEx(callback, localeName, ENUM_ALL_CALENDARS, null, CAL_ICALINTVALUE, (IntPtr)contextHandle);
             }
             finally
             {
@@ -171,30 +168,30 @@ namespace System.Globalization
 
         // PAL Layer ends here
 
-        const uint CAL_RETURN_NUMBER = 0x20000000;
-        const uint CAL_RETURN_GENITIVE_NAMES = 0x10000000;
-        const uint CAL_NOUSEROVERRIDE = 0x80000000;
-        const uint CAL_SCALNAME = 0x00000002;
-        const uint CAL_SMONTHDAY = 0x00000038;
-        const uint CAL_SSHORTDATE = 0x00000005;
-        const uint CAL_SLONGDATE = 0x00000006;
-        const uint CAL_SYEARMONTH = 0x0000002f;
-        const uint CAL_SDAYNAME7 = 0x0000000d;
-        const uint CAL_SABBREVDAYNAME7 = 0x00000014;
-        const uint CAL_SMONTHNAME1 = 0x00000015;
-        const uint CAL_SABBREVMONTHNAME1 = 0x00000022;
-        const uint CAL_SSHORTESTDAYNAME7 = 0x00000037;
-        const uint CAL_SERASTRING = 0x00000004;
-        const uint CAL_SABBREVERASTRING = 0x00000039;
-        const uint CAL_ICALINTVALUE = 0x00000001;
-        const uint CAL_ITWODIGITYEARMAX = 0x00000030;
+        private const uint CAL_RETURN_NUMBER = 0x20000000;
+        private const uint CAL_RETURN_GENITIVE_NAMES = 0x10000000;
+        private const uint CAL_NOUSEROVERRIDE = 0x80000000;
+        private const uint CAL_SCALNAME = 0x00000002;
+        private const uint CAL_SMONTHDAY = 0x00000038;
+        private const uint CAL_SSHORTDATE = 0x00000005;
+        private const uint CAL_SLONGDATE = 0x00000006;
+        private const uint CAL_SYEARMONTH = 0x0000002f;
+        private const uint CAL_SDAYNAME7 = 0x0000000d;
+        private const uint CAL_SABBREVDAYNAME7 = 0x00000014;
+        private const uint CAL_SMONTHNAME1 = 0x00000015;
+        private const uint CAL_SABBREVMONTHNAME1 = 0x00000022;
+        private const uint CAL_SSHORTESTDAYNAME7 = 0x00000037;
+        private const uint CAL_SERASTRING = 0x00000004;
+        private const uint CAL_SABBREVERASTRING = 0x00000039;
+        private const uint CAL_ICALINTVALUE = 0x00000001;
+        private const uint CAL_ITWODIGITYEARMAX = 0x00000030;
 
-        const uint ENUM_ALL_CALENDARS = 0xffffffff;
+        private const uint ENUM_ALL_CALENDARS = 0xffffffff;
 
-        const uint LOCALE_SSHORTDATE = 0x0000001F;
-        const uint LOCALE_SLONGDATE = 0x00000020;
-        const uint LOCALE_SYEARMONTH = 0x00001006;
-        const uint LOCALE_ICALENDARTYPE = 0x00001009;
+        private const uint LOCALE_SSHORTDATE = 0x0000001F;
+        private const uint LOCALE_SLONGDATE = 0x00000020;
+        private const uint LOCALE_SYEARMONTH = 0x00001006;
+        private const uint LOCALE_ICALENDARTYPE = 0x00001009;
 
         ////////////////////////////////////////////////////////////////////////
         //
@@ -272,16 +269,17 @@ namespace System.Globalization
         }
 
         // Context for EnumCalendarInfoExEx callback.
-        class EnumData
+        private class EnumData
         {
             public string userOverride;
             public LowLevelList<string> strings;
         }
 
         // EnumCalendarInfoExEx callback itself.
-        static unsafe bool EnumCalendarInfoCallback(IntPtr lpCalendarInfoString, uint calendar, IntPtr pReserved, Interop.mincore_private.LParamCallbackContext contextHandle)
+        [NativeCallable(CallingConvention = CallingConvention.StdCall)]
+        private static unsafe Interop.BOOL EnumCalendarInfoCallback(IntPtr lpCalendarInfoString, uint calendar, IntPtr pReserved, IntPtr lParam)
         {
-            EnumData context = (EnumData)((GCHandle)contextHandle.lParam).Target;
+            EnumData context = (EnumData)((GCHandle)lParam).Target;
             try
             {
                 string calendarInfo = new string((char*)lpCalendarInfoString);
@@ -290,11 +288,11 @@ namespace System.Globalization
                 if (context.userOverride != calendarInfo)
                     context.strings.Add(calendarInfo);
 
-                return true;
+                return Interop.BOOL.TRUE;
             }
             catch (Exception)
             {
-                return false;
+                return Interop.BOOL.FALSE;
             }
         }
 
@@ -334,12 +332,9 @@ namespace System.Globalization
             GCHandle contextHandle = GCHandle.Alloc(context);
             try
             {
-                EnumCalendarInfoExExCallback callback = new EnumCalendarInfoExExCallback(EnumCalendarInfoCallback);
-                Interop.mincore_private.LParamCallbackContext ctx = new Interop.mincore_private.LParamCallbackContext();
-                ctx.lParam = (IntPtr)contextHandle;
-
                 // Now call the enumeration API. Work is done by our callback function
-                Interop.mincore_private.EnumCalendarInfoExEx(callback, localeName, (uint)calendar, null, calType, ctx);
+                IntPtr callback = AddrofIntrinsics.AddrOf<Func<IntPtr, uint, IntPtr, IntPtr, Interop.BOOL>>(EnumCalendarInfoCallback);
+                Interop.mincore.EnumCalendarInfoExEx(callback, localeName, (uint)calendar, null, calType, (IntPtr)contextHandle);
             }
             finally
             {
@@ -379,7 +374,7 @@ namespace System.Globalization
         //      OUT pOutputStrings      The output string[] value.
         //
         ////////////////////////////////////////////////////////////////////////
-        static bool GetCalendarDayInfo(string localeName, CalendarId calendar, uint calType, out string[] outputStrings)
+        private static bool GetCalendarDayInfo(string localeName, CalendarId calendar, uint calType, out string[] outputStrings)
         {
             bool result = true;
 
@@ -412,7 +407,7 @@ namespace System.Globalization
         //      OUT pOutputStrings      The output string[] value.
         //
         ////////////////////////////////////////////////////////////////////////
-        static bool GetCalendarMonthInfo(string localeName, CalendarId calendar, uint calType, out string[] outputStrings)
+        private static bool GetCalendarMonthInfo(string localeName, CalendarId calendar, uint calType, out string[] outputStrings)
         {
             //
             // We'll need a new array of 13 items
@@ -434,26 +429,27 @@ namespace System.Globalization
         //
         // struct to help our calendar data enumaration callback
         //
-        class EnumCalendarsData
+        private class EnumCalendarsData
         {
             public int userOverride;   // user override value (if found)
             public LowLevelList<int> calendars;      // list of calendars found so far
         }
 
-        static bool EnumCalendarsCallback(IntPtr lpCalendarInfoString, uint calendar, IntPtr reserved, Interop.mincore_private.LParamCallbackContext cxt)
+        [NativeCallable(CallingConvention = CallingConvention.StdCall)]
+        private static Interop.BOOL EnumCalendarsCallback(IntPtr lpCalendarInfoString, uint calendar, IntPtr reserved, IntPtr lParam)
         {
-            EnumCalendarsData context = (EnumCalendarsData)((GCHandle)cxt.lParam).Target;
+            EnumCalendarsData context = (EnumCalendarsData)((GCHandle)lParam).Target;
             try
             {
                 // If we had a user override, check to make sure this differs
                 if (context.userOverride != calendar)
                     context.calendars.Add((int)calendar);
 
-                return true;
+                return Interop.BOOL.TRUE;
             }
             catch (Exception)
             {
-                return false;
+                return Interop.BOOL.FALSE;
             }
         }
 

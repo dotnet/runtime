@@ -232,7 +232,7 @@ namespace System.Globalization
         //
         ////////////////////////////////////////////////////////////////////////////
 
-        enum HebrewToken : short
+        private enum HebrewToken : short
         {
             Invalid = -1,
             Digit400 = 0,
@@ -253,7 +253,7 @@ namespace System.Globalization
         //
         ////////////////////////////////////////////////////////////////////////////
 
-        struct HebrewValue
+        private struct HebrewValue
         {
             internal HebrewToken token;
             internal short value;
@@ -268,7 +268,7 @@ namespace System.Globalization
         // Map a Hebrew character from U+05D0 ~ U+05EA to its digit value.
         // The value is -1 if the Hebrew character does not have a associated value.
         //
-        static readonly HebrewValue[] HebrewValues = {
+        private static readonly HebrewValue[] s_hebrewValues = {
             new HebrewValue(HebrewToken.Digit1, 1) , // '\x05d0
             new HebrewValue(HebrewToken.Digit1, 2) , // '\x05d1
             new HebrewValue(HebrewToken.Digit1, 3) , // '\x05d2
@@ -298,8 +298,8 @@ namespace System.Globalization
             new HebrewValue(HebrewToken.Digit400, 400) , // '\x05ea;
         };
 
-        const int minHebrewNumberCh = 0x05d0;
-        static char maxHebrewNumberCh = (char)(minHebrewNumberCh + HebrewValues.Length - 1);
+        private const int minHebrewNumberCh = 0x05d0;
+        private static char s_maxHebrewNumberCh = (char)(minHebrewNumberCh + s_hebrewValues.Length - 1);
 
         ////////////////////////////////////////////////////////////////////////////
         //
@@ -335,7 +335,7 @@ namespace System.Globalization
         // 
         // The state machine for Hebrew number pasing.
         //
-        readonly static HS[] NumberPasingState =
+        private readonly static HS[] s_numberPasingState =
         {
             // 400            300/200         100             90~10           8~1      6,       7,       9,          '           "
             /* 0 */
@@ -375,7 +375,7 @@ namespace System.Globalization
         };
 
         // Count of valid HebrewToken, column count in the NumberPasingState array
-        const int HebrewTokenCount = 10;
+        private const int HebrewTokenCount = 10;
 
 
         ////////////////////////////////////////////////////////////////////////
@@ -398,7 +398,7 @@ namespace System.Globalization
 
         internal static HebrewNumberParsingState ParseByChar(char ch, ref HebrewNumberParsingContext context)
         {
-            Debug.Assert(NumberPasingState.Length == HebrewTokenCount * ((int)HS.S9_DQ + 1));
+            Debug.Assert(s_numberPasingState.Length == HebrewTokenCount * ((int)HS.S9_DQ + 1));
 
             HebrewToken token;
             if (ch == '\'')
@@ -412,14 +412,14 @@ namespace System.Globalization
             else
             {
                 int index = (int)ch - minHebrewNumberCh;
-                if (index >= 0 && index < HebrewValues.Length)
+                if (index >= 0 && index < s_hebrewValues.Length)
                 {
-                    token = HebrewValues[index].token;
+                    token = s_hebrewValues[index].token;
                     if (token == HebrewToken.Invalid)
                     {
                         return (HebrewNumberParsingState.NotHebrewDigit);
                     }
-                    context.result += HebrewValues[index].value;
+                    context.result += s_hebrewValues[index].value;
                 }
                 else
                 {
@@ -427,7 +427,7 @@ namespace System.Globalization
                     return (HebrewNumberParsingState.NotHebrewDigit);
                 }
             }
-            context.state = NumberPasingState[(int)context.state * (int)HebrewTokenCount + (int)token];
+            context.state = s_numberPasingState[(int)context.state * (int)HebrewTokenCount + (int)token];
             if (context.state == HS._err)
             {
                 // Invalid Hebrew state.  This indicates an incorrect Hebrew number.
@@ -455,9 +455,9 @@ namespace System.Globalization
 
         internal static bool IsDigit(char ch)
         {
-            if (ch >= minHebrewNumberCh && ch <= maxHebrewNumberCh)
+            if (ch >= minHebrewNumberCh && ch <= s_maxHebrewNumberCh)
             {
-                return (HebrewValues[ch - minHebrewNumberCh].value >= 0);
+                return (s_hebrewValues[ch - minHebrewNumberCh].value >= 0);
             }
             return (ch == '\'' || ch == '\"');
         }

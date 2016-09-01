@@ -2,10 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-// 
-
-// 
-
 using System;
 using System.Threading;
 using System.Runtime.Serialization;
@@ -16,7 +12,7 @@ namespace System.Globalization
     [System.Runtime.InteropServices.ComVisible(true)]
     public partial class CultureNotFoundException : ArgumentException, ISerializable
     {
-        private string m_invalidCultureName; // unrecognized culture name
+        private string _invalidCultureName; // unrecognized culture name
 
         public CultureNotFoundException()
             : base(DefaultMessage)
@@ -41,18 +37,18 @@ namespace System.Globalization
         public CultureNotFoundException(String paramName, string invalidCultureName, String message)
             : base(message, paramName)
         {
-            m_invalidCultureName = invalidCultureName;
+            _invalidCultureName = invalidCultureName;
         }
 
         public CultureNotFoundException(String message, string invalidCultureName, Exception innerException)
             : base(message, innerException)
         {
-            m_invalidCultureName = invalidCultureName;
+            _invalidCultureName = invalidCultureName;
         }
 
         protected CultureNotFoundException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
-            m_invalidCultureName = (string)info.GetValue("InvalidCultureName", typeof(string));
+            _invalidCultureName = (string)info.GetValue("InvalidCultureName", typeof(string));
         }
 
         [System.Security.SecurityCritical]  // auto-generated_required
@@ -64,12 +60,12 @@ namespace System.Globalization
             }
 
             base.GetObjectData(info, context);
-            info.AddValue("InvalidCultureName", m_invalidCultureName, typeof(string));
+            info.AddValue("InvalidCultureName", _invalidCultureName, typeof(string));
         }
 
         public virtual string InvalidCultureName
         {
-            get { return m_invalidCultureName; }
+            get { return _invalidCultureName; }
         }
 
         private static String DefaultMessage
@@ -94,7 +90,7 @@ namespace System.Globalization
             {
                 String s = base.Message;
                 if (
-                    m_invalidCultureName != null)
+                    _invalidCultureName != null)
                 {
                     String valueMessage = SR.Format(SR.Argument_CultureInvalidIdentifier, FormatedInvalidCultureId);
                     if (s == null)

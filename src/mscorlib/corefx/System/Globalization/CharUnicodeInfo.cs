@@ -4,13 +4,11 @@
 
 ////////////////////////////////////////////////////////////////////////////
 //
-//  Class:    CharacterInfo
 //
 //  Purpose:  This class implements a set of methods for retrieving
 //            character type information.  Character type information is
 //            independent of culture and region.
 //
-//  Date:     August 12, 1998
 //
 ////////////////////////////////////////////////////////////////////////////
 
@@ -172,7 +170,6 @@ namespace System.Globalization
         //
         // Note that for ch in the range D800-DFFF we just treat it as any other non-numeric character
         //
-        [System.Security.SecuritySafeCritical]  // auto-generated
         internal unsafe static double InternalGetNumericValue(int ch)
         {
             Contract.Assert(ch >= 0 && ch <= 0x10ffff, "ch is not in valid Unicode range.");
@@ -268,7 +265,6 @@ namespace System.Globalization
         //
         ////////////////////////////////////////////////////////////////////////
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         internal unsafe static byte InternalGetCategoryValue(int ch, int offset)
         {
             Contract.Assert(ch >= 0 && ch <= 0x10ffff, "ch is not in valid Unicode range.");
