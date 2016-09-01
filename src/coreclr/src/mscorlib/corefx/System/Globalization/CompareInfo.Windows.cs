@@ -79,13 +79,16 @@ namespace System.Globalization
 
             int tmpHash = 0;
 
-            if (Interop.mincore.LCMapStringEx(_sortHandle != IntPtr.Zero ? null : _sortName,
-                                              LCMAP_HASH | (uint)GetNativeCompareFlags(options),
-                                              source, source.Length,
-                                              &tmpHash, sizeof(int),
-                                              null, null, _sortHandle) == 0)
+            fixed (char* pSource = source)
             {
-                Environment.FailFast("LCMapStringEx failed!");
+                if (Interop.mincore.LCMapStringEx(_sortHandle != IntPtr.Zero ? null : _sortName,
+                                                  LCMAP_HASH | (uint)GetNativeCompareFlags(options),
+                                                  pSource, source.Length,
+                                                  &tmpHash, sizeof(int),
+                                                  null, null, _sortHandle) == 0)
+                {
+                    Environment.FailFast("LCMapStringEx failed!");
+                }
             }
 
             return tmpHash;
@@ -168,6 +171,8 @@ namespace System.Globalization
             Contract.Assert(target != null);
             Contract.Assert((options & CompareOptions.OrdinalIgnoreCase) == 0);
 
+            // TODO: Consider moving this up to the relevent APIs we need to ensure this behavior for
+            // and add a precondition that target is not empty. 
             if (target.Length == 0)
                 return startIndex;       // keep Whidbey compatibility
 
@@ -199,6 +204,8 @@ namespace System.Globalization
             Contract.Assert(target != null);
             Contract.Assert((options & CompareOptions.OrdinalIgnoreCase) == 0);
 
+            // TODO: Consider moving this up to the relevent APIs we need to ensure this behavior for
+            // and add a precondition that target is not empty. 
             if (target.Length == 0)
                 return startIndex;       // keep Whidbey compatibility
 
@@ -266,6 +273,7 @@ namespace System.Globalization
         private const int FIND_FROMSTART = 0x00400000;
         private const int FIND_FROMEND = 0x00800000;
 
+        // TODO: Instead of this method could we just have upstack code call IndexOfOrdinal with ignoreCase = false?
         private static unsafe int FastIndexOfString(string source, string target, int startIndex, int sourceCount, int targetCount, bool findLastIndex)
         {
             int retValue = -1;
@@ -367,6 +375,9 @@ namespace System.Globalization
             if ((options & CompareOptions.IgnoreWidth) != 0) { nativeCompareFlags |= NORM_IGNOREWIDTH; }
             if ((options & CompareOptions.StringSort) != 0) { nativeCompareFlags |= SORT_STRINGSORT; }
 
+            // TODO: Can we try for GetNativeCompareFlags to never
+            // take Ordinal or OrdinalIgnoreCase.  This value is not part of Win32, we just handle it special
+            // in some places.
             // Suffix & Prefix shouldn't use this, make sure to turn off the NORM_LINGUISTIC_CASING flag
             if (options == CompareOptions.Ordinal) { nativeCompareFlags = COMPARE_OPTIONS_ORDINAL; }
 
