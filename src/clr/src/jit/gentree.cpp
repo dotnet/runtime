@@ -947,7 +947,7 @@ Compiler::fgWalkResult Compiler::fgWalkTreePostRec(GenTreePtr* pTree, fgWalkData
                 return result;
             }
             break;
-#if 0
+
         case GT_PHI:
         {
             GenTreeUnOp* phi = tree->AsUnOp();
@@ -963,8 +963,7 @@ Compiler::fgWalkResult Compiler::fgWalkTreePostRec(GenTreePtr* pTree, fgWalkData
                 }
             }
         }
-#endif
-            break;
+        break;
 
         case GT_LIST:
         {
@@ -2527,9 +2526,6 @@ AGAIN:
                     break;
                 case GT_CAST:
                     hash ^= tree->gtCast.gtCastType;
-                    break;
-                case GT_OBJ:
-                    hash ^= static_cast<unsigned>(reinterpret_cast<uintptr_t>(tree->gtObj.gtClass));
                     break;
                 case GT_INDEX:
                     hash += tree->gtIndex.gtIndElemSize;
@@ -6822,10 +6818,8 @@ GenTree* Compiler::gtNewObjNode(CORINFO_CLASS_HANDLE structHnd, GenTree* addr)
             return gtNewOperNode(GT_IND, nodeType, addr);
         }
     }
-    GenTreeBlk* newBlkOrObjNode;
-    {
-        newBlkOrObjNode = new (this, GT_OBJ) GenTreeObj(nodeType, addr, structHnd, size);
-    }
+    GenTreeBlk* newBlkOrObjNode = new (this, GT_OBJ) GenTreeObj(nodeType, addr, structHnd, size);
+
     // An Obj is not a global reference, if it is known to be a local struct.
     if ((addr->gtFlags & GTF_GLOB_REF) == 0)
     {
@@ -7172,7 +7166,6 @@ GenTree* Compiler::gtNewBlkOpNode(
     {
         srcOrFillVal->gtFlags |= GTF_DONT_CSE;
         if (srcOrFillVal->OperIsIndir() && (srcOrFillVal->gtGetOp1()->gtOper == GT_ADDR))
-        // && (srcOrFillVal->gtGetOp1()->gtGetOp1()->TypeGet() == dst->TypeGet()))
         {
             srcOrFillVal = srcOrFillVal->gtGetOp1()->gtGetOp1();
         }
@@ -7885,8 +7878,6 @@ GenTreePtr Compiler::gtCloneExpr(GenTree* tree,
         case GT_DYN_BLK:
             copy = new (this, oper) GenTreeDynBlk(gtCloneExpr(tree->gtDynBlk.Addr(), addFlags, varNum, varVal),
                                                   gtCloneExpr(tree->gtDynBlk.gtDynamicSize, addFlags, varNum, varVal));
-            // ??? WHY IS THIS HERE?? THE ABOVE SHOULD HAVE SET IT CORRECTLY ???
-            // copy->gtDynBlk.gtOp1 = tree->gtDynBlk.gtOp1;
             break;
 
         default:
@@ -8527,45 +8518,6 @@ unsigned GenTree::NumChildren()
     }
 }
 
-#if 0
-GenTree**
-GenTree::GetDynBlkOperandInOrder(int index)
-{
-    GenTreeDynBlk* dynBlk;
-    dynBlk = AsDynBlk();
-    int unorderedIndex = index;
-    if ((gtOper == GT_DYN_BLK) && (unorderedIndex == 1))
-    {
-        unorderedIndex = 2;
-    }
-    if ((unorderedIndex != 2) && IsReverseOp())
-    {
-        unorderedIndex ^= 1;
-    }
-    switch(unorderedIndex)
-    {
-        case 0:
-            return &(dynBlk->gtOp1);
-        case 1:
-            if (gtOper == GT_STORE_DYN_BLK)
-            {
-                return &(dynBlk->gtOp2);
-            }
-            else
-            {
-                assert(!"Invalid index for dynamic block operand");
-            }
-            unreached();
-
-        case 2:
-            return &(dynBlk->gtDynamicSize);
-
-        default:
-            return nullptr;
-    }
-}
-#endif
-
 GenTreePtr GenTree::GetChild(unsigned childNum)
 {
     assert(childNum < NumChildren()); // Precondition.
@@ -8579,6 +8531,8 @@ GenTreePtr GenTree::GetChild(unsigned childNum)
     // This code is here to duplicate the former case where the size may be evaluated prior to the
     // source and destination addresses. In order to do this, we treat the size as a child of the
     // assignment.
+    // TODO-1stClassStructs: Revisit the need to duplicate former behavior, so that we can remove
+    // these special cases.
     if ((OperGet() == GT_ASG) && (gtOp.gtOp1->OperGet() == GT_DYN_BLK) && (childNum == 2))
     {
         return gtOp.gtOp1->AsDynBlk()->gtDynamicSize;
