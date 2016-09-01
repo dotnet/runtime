@@ -22,6 +22,7 @@ namespace System.Net.Http.Functional.Tests
             _output = output;
         }
         
+        [OuterLoop] // TODO: Issue #11345
         [Fact]
         [PlatformSpecific(PlatformID.Windows)]
         public async Task HttpClient_ClientUsesAuxRecord_Ok()

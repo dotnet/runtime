@@ -15,6 +15,7 @@ namespace System.Net.Http.Functional.Tests
 {
     public class HttpClientHandler_ServerCertificates_Test
     {
+        [OuterLoop] // TODO: Issue #11345
         [Fact]
         public async Task NoCallback_ValidCertificate_CallbackNotCalled()
         {
@@ -34,6 +35,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [ConditionalFact(nameof(BackendSupportsCustomCertificateHandling))]
         public async Task UseCallback_NotSecureConnection_CallbackNotCalled()
         {
@@ -67,6 +69,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [ConditionalTheory(nameof(BackendSupportsCustomCertificateHandling))]
         [MemberData(nameof(UseCallback_ValidCertificate_ExpectedValuesDuringCallback_Urls))]
         public async Task UseCallback_ValidCertificate_ExpectedValuesDuringCallback(Uri url, bool checkRevocation)
@@ -95,6 +98,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [ConditionalFact(nameof(BackendSupportsCustomCertificateHandling))]
         public async Task UseCallback_CallbackReturnsFailure_ThrowsException()
         {
@@ -106,6 +110,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [ConditionalFact(nameof(BackendSupportsCustomCertificateHandling))]
         public async Task UseCallback_CallbackThrowsException_ExceptionPropagates()
         {
@@ -125,6 +130,7 @@ namespace System.Net.Http.Functional.Tests
             new object[] { Configuration.Http.WrongHostNameCertRemoteServer },
         };
 
+        [OuterLoop] // TODO: Issue #11345
         [Theory]
         [MemberData(nameof(CertificateValidationServers))]
         public async Task NoCallback_BadCertificate_ThrowsException(string url)
@@ -135,6 +141,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [Fact]
         public async Task NoCallback_RevokedCertificate_NoRevocationChecking_Succeeds()
         {
@@ -145,6 +152,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [ConditionalFact(nameof(BackendSupportsCustomCertificateHandling))]
         public async Task NoCallback_RevokedCertificate_RevocationChecking_Fails()
         {
@@ -162,6 +170,7 @@ namespace System.Net.Http.Functional.Tests
             new object[] { Configuration.Http.WrongHostNameCertRemoteServer , SslPolicyErrors.RemoteCertificateNameMismatch},
         };
 
+        [OuterLoop] // TODO: Issue #11345
         [ActiveIssue(7812, PlatformID.Windows)]
         [ConditionalTheory(nameof(BackendSupportsCustomCertificateHandling))]
         [MemberData(nameof(CertificateValidationServersAndExpectedPolicies))]
@@ -191,6 +200,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [ConditionalFact(nameof(BackendDoesNotSupportCustomCertificateHandling))]
         public async Task SSLBackendNotSupported_Callback_ThrowsPlatformNotSupportedException()
         {
@@ -200,6 +210,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [ConditionalFact(nameof(BackendDoesNotSupportCustomCertificateHandling))]
         public async Task SSLBackendNotSupported_Revocation_ThrowsPlatformNotSupportedException()
         {
@@ -209,6 +220,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [PlatformSpecific(PlatformID.Windows)] // CopyToAsync(Stream, TransportContext) isn't used on unix
         [Fact]
         public async Task PostAsync_Post_ChannelBinding_ConfiguredCorrectly()

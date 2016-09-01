@@ -31,6 +31,7 @@ namespace System.Net.Sockets.Tests
 */
         };
 
+        [OuterLoop] // TODO: Issue #11345
         [Theory, MemberData(nameof(DualModeSuccessInputs))]
         public void DualMode_Success(SocketType socketType, ProtocolType protocolType)
         {
@@ -39,6 +40,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [Theory, MemberData(nameof(DualModeFailureInputs))]
         public void DualMode_Failure(SocketType socketType, ProtocolType protocolType)
         {
@@ -52,6 +54,7 @@ namespace System.Net.Sockets.Tests
             new object[] { AddressFamily.InterNetworkV6, SocketType.Dgram, ProtocolType.Udp },
         };
 
+        [OuterLoop] // TODO: Issue #11345
         [Theory, MemberData(nameof(CtorSuccessInputs))]
         public void Ctor_Success(AddressFamily addressFamily, SocketType socketType, ProtocolType protocolType)
         {
@@ -79,6 +82,7 @@ namespace System.Net.Sockets.Tests
 */
         };
 
+        [OuterLoop] // TODO: Issue #11345
         [Theory, MemberData(nameof(CtorFailureInputs))]
         public void Ctor_Failure(AddressFamily addressFamily, SocketType socketType, ProtocolType protocolType)
         {
