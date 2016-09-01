@@ -265,16 +265,18 @@ namespace System.Linq.Expressions
 
             var index = (IndexExpression)_left;
 
-            var vars = new List<ParameterExpression>(index.Arguments.Count + 2);
-            var exprs = new List<Expression>(index.Arguments.Count + 3);
+            var vars = new List<ParameterExpression>(index.ArgumentCount + 2);
+            var exprs = new List<Expression>(index.ArgumentCount + 3);
 
             var tempObj = Expression.Variable(index.Object.Type, "tempObj");
             vars.Add(tempObj);
             exprs.Add(Expression.Assign(tempObj, index.Object));
 
-            var tempArgs = new List<Expression>(index.Arguments.Count);
-            foreach (var arg in index.Arguments)
+            var n = index.ArgumentCount;
+            var tempArgs = new List<Expression>(n);
+            for (var i = 0; i < n; i++)
             {
+                var arg = index.GetArgument(i);
                 var tempArg = Expression.Variable(arg.Type, "tempArg" + tempArgs.Count);
                 vars.Add(tempArg);
                 tempArgs.Add(tempArg);
@@ -671,7 +673,7 @@ namespace System.Linq.Expressions
             ValidateOperator(method, nameof(method));
             ParameterInfo[] pms = method.GetParametersCached();
             if (pms.Length != 2)
-                throw Error.IncorrectNumberOfMethodCallArguments(method);
+                throw Error.IncorrectNumberOfMethodCallArguments(method, nameof(method));
             if (ParameterIsAssignable(pms[0], left.Type) && ParameterIsAssignable(pms[1], right.Type))
             {
                 ValidateParamswithOperandsOrThrow(pms[0].ParameterType, left.Type, binaryType, method.Name);
@@ -852,7 +854,7 @@ namespace System.Linq.Expressions
             ValidateOperator(method, nameof(method));
             ParameterInfo[] pms = method.GetParametersCached();
             if (pms.Length != 2)
-                throw Error.IncorrectNumberOfMethodCallArguments(method);
+                throw Error.IncorrectNumberOfMethodCallArguments(method, nameof(method));
             if (!ParameterIsAssignable(pms[0], left))
             {
                 if (!(TypeUtils.IsNullableType(left) && ParameterIsAssignable(pms[0], TypeUtils.GetNonNullableType(left))))
@@ -883,15 +885,15 @@ namespace System.Linq.Expressions
             {
                 throw Error.LogicalOperatorMustHaveBooleanOperators(nodeType, method.Name);
             }
-            VerifyOpTrueFalse(nodeType, left, opFalse);
-            VerifyOpTrueFalse(nodeType, left, opTrue);
+            VerifyOpTrueFalse(nodeType, left, opFalse, nameof(method));
+            VerifyOpTrueFalse(nodeType, left, opTrue, nameof(method));
         }
 
-        private static void VerifyOpTrueFalse(ExpressionType nodeType, Type left, MethodInfo opTrue)
+        private static void VerifyOpTrueFalse(ExpressionType nodeType, Type left, MethodInfo opTrue, string paramName)
         {
             ParameterInfo[] pmsOpTrue = opTrue.GetParametersCached();
             if (pmsOpTrue.Length != 1)
-                throw Error.IncorrectNumberOfMethodCallArguments(opTrue);
+                throw Error.IncorrectNumberOfMethodCallArguments(opTrue, paramName);
 
             if (!ParameterIsAssignable(pmsOpTrue[0], left))
             {
@@ -1492,13 +1494,13 @@ namespace System.Linq.Expressions
             MethodInfo method = delegateType.GetMethod("Invoke");
             if (method.ReturnType == typeof(void))
             {
-                throw Error.UserDefinedOperatorMustNotBeVoid(conversion, nameof(method));
+                throw Error.UserDefinedOperatorMustNotBeVoid(conversion, nameof(conversion));
             }
             ParameterInfo[] pms = method.GetParametersCached();
             Debug.Assert(pms.Length == conversion.Parameters.Count);
             if (pms.Length != 1)
             {
-                throw Error.IncorrectNumberOfMethodCallArguments(conversion);
+                throw Error.IncorrectNumberOfMethodCallArguments(conversion, nameof(conversion));
             }
             // The return type must match exactly.
             // We could weaken this restriction and
@@ -1656,7 +1658,7 @@ namespace System.Linq.Expressions
             Debug.Assert(pms.Length == conversion.Parameters.Count);
             if (pms.Length != 1)
             {
-                throw Error.IncorrectNumberOfMethodCallArguments(conversion);
+                throw Error.IncorrectNumberOfMethodCallArguments(conversion, nameof(conversion));
             }
             if (!TypeUtils.AreEquivalent(mi.ReturnType, left.Type))
             {

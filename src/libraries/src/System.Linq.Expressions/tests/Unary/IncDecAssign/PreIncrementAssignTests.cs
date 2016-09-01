@@ -179,7 +179,7 @@ namespace System.Linq.Expressions.Tests
         {
             Expression variable = Expression.Variable(typeof(string));
             MethodInfo method = typeof(object).GetTypeInfo().GetDeclaredMethod("ReferenceEquals");
-            Assert.Throws<ArgumentException>(null, () => Expression.PreIncrementAssign(variable, method));
+            Assert.Throws<ArgumentException>("method", () => Expression.PreIncrementAssign(variable, method));
         }
 
         [Fact]

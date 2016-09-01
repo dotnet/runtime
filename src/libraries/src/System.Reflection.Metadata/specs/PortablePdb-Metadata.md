@@ -424,7 +424,7 @@ _start-offset_ shall point to the starting byte of an instruction of the MoveNex
 _start-offset_ + _length_ shall point to the starting byte of an instruction or be equal to the size of the IL stream of the MoveNext method of the state machine type.
 
 ##### <a name="DynamicLocalVariables"></a>Dynamic Local Variables (C# compiler)
-Parent: LocalVariables or LocalConstant
+Parent: LocalVariable or LocalConstant
 
 Kind: {83C563C4-B4F3-47D5-B824-BA5441477EA8}
 
@@ -432,7 +432,7 @@ Structure:
 
     Blob ::= bit-sequence
 
-A sequence of bits for a local variable or constant whose type contains _dynamic_ type (e.g. dynamic, dynamic[], List<dynamic> etc.) that describes which System.Object types encoded in the metadata signature of the local type were specified as _dynamic_ in source code.
+A sequence of bits for a local variable or constant whose type contains _dynamic_ type (e.g. ```dynamic```, ```dynamic[]```, ```List<dynamic>``` etc.) that describes which System.Object types encoded in the metadata signature of the local type were specified as _dynamic_ in source code.
 
 Bits of the sequence are grouped by 8. If the sequence length is not a multiple of 8 it is padded by 0 bit to the closest multiple of 8. Each group of 8 bits is encoded as a byte whose least significant bit is the first bit of the group and the highest significant bit is the 8th bit of the group. The sequence is encoded as a sequence of bytes representing these groups. Trailing zero bytes may be omitted.
 

@@ -7,7 +7,6 @@
   <PropertyGroup>
     <ProjectGuid>{845D2B72-D8A4-42E5-9BE9-17639EC4FC1A}</ProjectGuid>
     <AssemblyName>System.Runtime.Extensions</AssemblyName>
-    <AssemblyVersion>4.2.0.0</AssemblyVersion>
     <AssemblyVersion Condition="'$(TargetGroup)'=='netstandard1.5' Or '$(TargetGroup)'=='net462' Or '$(TargetGroup)'=='netcore50' Or '$(TargetGroup)'=='netcore50aot' Or '$(TargetGroup)'=='netstandard15aot'">4.1.1.0</AssemblyVersion>
     <ContractProject Condition="'$(AssemblyVersion)'=='4.1.1.0'">../ref/4.1.0/System.Runtime.Extensions.depproj</ContractProject>
     <OutputType>Library</OutputType>
@@ -16,7 +15,7 @@
     <!-- System.IO.Path conflicts between type in partial facade and in mscorlib -->
     <NoWarn>0436</NoWarn>
     <PackageTargetFramework Condition="'$(PackageTargetFramework)' == ''">netstandard1.7</PackageTargetFramework>
-    <NuGetTargetMoniker Condition="'$(TargetGroup)'=='netstandard1.5'">.NETCoreApp,Version=v1.0</NuGetTargetMoniker>
+    <NuGetTargetMoniker Condition="'$(TargetGroup)'=='netstandard1.5'">.NETStandard,Version=v1.5</NuGetTargetMoniker>
     <CoreClrOrCorRt Condition="'$(TargetGroup)' == '' Or '$(TargetGroup)' == 'netstandard1.5' Or '$(TargetGroup)' == 'netstandard15aot'">true</CoreClrOrCorRt>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->

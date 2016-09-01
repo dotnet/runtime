@@ -71,4 +71,11 @@
     </TestNugetTargetMoniker>
   </ItemGroup>
 
+  <Target Name="ProducesPackageId" 
+          Returns="@(PackageIds)">
+    <ItemGroup>
+      <PackageIds Include="$(Id)" />
+    </ItemGroup>
+  </Target>
+
 </Project>

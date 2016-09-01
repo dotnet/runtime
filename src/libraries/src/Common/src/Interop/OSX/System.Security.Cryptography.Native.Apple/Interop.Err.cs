@@ -9,6 +9,7 @@ internal static partial class Interop
 {
     internal static partial class AppleCrypto
     {
+        internal const string CCCryptorStatus = "CCCryptorStatus";
         internal const string CCRNGStatus = "CCRNGStatus";
 
         internal static Exception CreateExceptionForCCError(int errorCode, string errorType)

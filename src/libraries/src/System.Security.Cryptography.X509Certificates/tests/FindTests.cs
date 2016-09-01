@@ -216,6 +216,82 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
+        [Fact]
+        public static void FindByValidThumbprint_RootCert()
+        {
+            using (X509Store machineRoot = new X509Store(StoreName.Root, StoreLocation.LocalMachine))
+            {
+                machineRoot.Open(OpenFlags.ReadOnly);
+
+                using (var watchedStoreCerts = new ImportedCollection(machineRoot.Certificates))
+                {
+                    X509Certificate2Collection storeCerts = watchedStoreCerts.Collection;
+                    X509Certificate2 rootCert = null;
+                    TimeSpan tolerance = TimeSpan.FromHours(12);
+
+                    // These APIs use local time, so use DateTime.Now, not DateTime.UtcNow.
+                    DateTime notBefore = DateTime.Now;
+                    DateTime notAfter = DateTime.Now.Subtract(tolerance);
+
+                    foreach (X509Certificate2 cert in storeCerts)
+                    {
+                        if (cert.NotBefore < notBefore && cert.NotAfter > notAfter)
+                        {
+                            X509KeyUsageExtension keyUsageExtension = null;
+
+                            foreach (X509Extension extension in cert.Extensions)
+                            {
+                                keyUsageExtension = extension as X509KeyUsageExtension;
+
+                                if (keyUsageExtension != null)
+                                {
+                                    break;
+                                }
+                            }
+
+                            // Some tool is putting the com.apple.systemdefault utility cert in the
+                            // LM\Root store on OSX machines; but it gets rejected by OpenSSL as an
+                            // invalid root for not having the Certificate Signing key usage value.
+                            //
+                            // While the real problem seems to be with whatever tool is putting it
+                            // in the bundle; we can work around it here.
+                            const X509KeyUsageFlags RequiredFlags = X509KeyUsageFlags.KeyCertSign;
+
+                            // No key usage extension means "good for all usages"
+                            if (keyUsageExtension == null ||
+                                (keyUsageExtension.KeyUsages & RequiredFlags) == RequiredFlags)
+                            {
+                                rootCert = cert;
+                                break;
+                            }
+                        }
+                    }
+
+                    // Just in case someone has a system with no valid trusted root certs whatsoever.
+                    if (rootCert != null)
+                    {
+                        X509Certificate2Collection matches =
+                            storeCerts.Find(X509FindType.FindByThumbprint, rootCert.Thumbprint, true);
+
+                        using (new ImportedCollection(matches))
+                        {
+                            // Improve the debuggability, since the root cert found on each
+                            // machine might be different
+                            if (matches.Count == 0)
+                            {
+                                Assert.True(
+                                    false,
+                                    $"Root certificate '{rootCert.Subject}' ({rootCert.NotBefore} - {rootCert.NotAfter}) is findable with thumbprint '{rootCert.Thumbprint}' and validOnly=true");
+                            }
+
+                            Assert.NotSame(rootCert, matches[0]);
+                            Assert.Equal(rootCert, matches[0]);
+                        }
+                    }
+                }
+            }
+        }
+
         [Theory]
         [InlineData("Nothing")]
         [InlineData("US, Redmond, Microsoft Corporation, MOPR, Microsoft Corporation")]

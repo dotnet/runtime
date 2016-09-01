@@ -17,7 +17,9 @@ namespace System
         public static bool IsOSX { get; } = RuntimeInformation.IsOSPlatform(OSPlatform.OSX);
         public static bool IsNetBSD { get; } = RuntimeInformation.IsOSPlatform(OSPlatform.Create("NETBSD"));
         public static bool IsNotWindowsNanoServer { get; } = (IsWindows &&
-                File.Exists(Path.Combine(Environment.GetEnvironmentVariable("windir"), "regedit.exe")));
+            File.Exists(Path.Combine(Environment.GetEnvironmentVariable("windir"), "regedit.exe")));
+        public static bool IsWindows10Version1607OrGreater { get; } = IsWindows &&
+            GetWindowsVersion() == 10 && GetWindowsMinorVersion() == 0 && GetWindowsBuildNumber() >= 14393;
 
         public static int WindowsVersion { get; } = GetWindowsVersion();
 
@@ -102,6 +104,19 @@ namespace System
                 osvi.dwOSVersionInfoSize = (uint)Marshal.SizeOf(osvi);
                 Assert.Equal(0, RtlGetVersion(out osvi));
                 return (int)osvi.dwMinorVersion;
+            }
+
+            return -1;
+        }
+
+        private static int GetWindowsBuildNumber()
+        {
+            if (IsWindows)
+            {
+                RTL_OSVERSIONINFOEX osvi = new RTL_OSVERSIONINFOEX();
+                osvi.dwOSVersionInfoSize = (uint)Marshal.SizeOf(osvi);
+                Assert.Equal(0, RtlGetVersion(out osvi));
+                return (int)osvi.dwBuildNumber;
             }
 
             return -1;

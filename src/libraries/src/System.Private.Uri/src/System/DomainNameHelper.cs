@@ -324,7 +324,7 @@ namespace System
             {
                 // just lowercase for ascii
                 string unescapedHostname = new string(hostname, start, end - start);
-                return ((unescapedHostname != null) ? unescapedHostname.ToLowerInvariant() : null);
+                return unescapedHostname.ToLowerInvariant();
             }
             else
             {

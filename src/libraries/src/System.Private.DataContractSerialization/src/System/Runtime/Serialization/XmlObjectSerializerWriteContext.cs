@@ -621,20 +621,20 @@ namespace System.Runtime.Serialization
 
         protected virtual bool WriteTypeInfo(XmlWriterDelegator writer, DataContract contract, DataContract declaredContract)
         {
-            if (XmlObjectSerializer.IsContractDeclared(contract, declaredContract))
+            if (!XmlObjectSerializer.IsContractDeclared(contract, declaredContract))
             {
-                return false;
+                if (DataContractResolver == null)
+                {
+                    WriteTypeInfo(writer, contract.Name, contract.Namespace);
+                    return true;
+                }
+                else
+                {
+                    WriteResolvedTypeInfo(writer, contract.OriginalUnderlyingType, declaredContract.OriginalUnderlyingType);
+                    return false;
+                }
             }
-            bool hasResolver = DataContractResolver != null;
-            if (hasResolver)
-            {
-                WriteResolvedTypeInfo(writer, contract.UnderlyingType, declaredContract.UnderlyingType);
-            }
-            else
-            {
-                WriteTypeInfo(writer, contract.Name, contract.Namespace);
-            }
-            return hasResolver;
+            return false;
         }
 
         protected virtual void WriteTypeInfo(XmlWriterDelegator writer, string dataContractName, string dataContractNamespace)

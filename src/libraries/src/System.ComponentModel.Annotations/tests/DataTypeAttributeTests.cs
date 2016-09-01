@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
+using System.Linq;
 using Xunit;
 
 namespace System.ComponentModel.DataAnnotations
@@ -10,105 +12,94 @@ namespace System.ComponentModel.DataAnnotations
     {
         private static readonly ValidationContext s_testValidationContext = new ValidationContext(new object());
 
-        [Fact]
-        public static void DataType_and_CustomDataType_assigned_correctly_for_all_non_custom_DataTypes()
+        private static readonly DataType[] s_dataTypes = (DataType[])Enum.GetValues(typeof(DataType));
+        public static IEnumerable<object[]> DataTypes_TestData => s_dataTypes.Select(type => new object[] { type });
+
+        [Theory]
+        [MemberData(nameof(DataTypes_TestData))]
+        [InlineData((DataType)(-1))]
+        [InlineData(DataType.Upload + 1)]
+        public static void Ctor_DataType(DataType dataType)
         {
-            foreach (var enumValue in Enum.GetValues(typeof(DataType)))
+            DataTypeAttribute attribute = new DataTypeAttribute(dataType);
+            Assert.Equal(dataType, attribute.DataType);
+            Assert.Null(attribute.CustomDataType);
+
+            bool expectedNull = dataType != DataType.Date && dataType != DataType.Time && dataType != DataType.Currency;
+            Assert.Equal(expectedNull, attribute.DisplayFormat == null);
+        }
+
+        [Theory]
+        [MemberData(nameof(DataTypes_TestData))]
+        public static void GetDataTypeName_ReturnsExpectedName(DataType dataType)
+        {
+            if (dataType != DataType.Custom)
             {
-                var dataType = (DataType)enumValue;
-                if (DataType.Custom != dataType)
-                {
-                    var attribute = new DataTypeAttribute(dataType);
-                    Assert.Equal(dataType, attribute.DataType);
-                    Assert.Null(attribute.CustomDataType);
-                }
+                DataTypeAttribute attribute = new DataTypeAttribute(dataType);
+                Assert.Equal(Enum.GetName(typeof(DataType), dataType), attribute.GetDataTypeName());
             }
         }
 
-        [Fact]
-        public static void GetDataTypeName_and_Validate_successful_for_all_non_custom_DataTypes()
+        [Theory]
+        [InlineData((DataType)(-1))]
+        [InlineData(DataType.Upload + 1)]
+        public static void GetDataTypeName_InvalidDataType_ThrowsIndexOutOfRangeException(DataType dataType)
         {
-            foreach (var enumValue in Enum.GetValues(typeof(DataType)))
+            DataTypeAttribute attribute = new DataTypeAttribute(dataType);
+            Assert.Throws<IndexOutOfRangeException>(() => attribute.GetDataTypeName());
+        }
+
+        [Theory]
+        [InlineData((DataType)(-1))]
+        [InlineData(DataType.Upload + 1)]
+        public static void Validate_InvalidDataType_DoesNotThrow(DataType dataType)
+        {
+            DataTypeAttribute attribute = new DataTypeAttribute(dataType);
+            attribute.Validate(new object(), s_testValidationContext);
+        }
+
+        [Theory]
+        [MemberData(nameof(DataTypes_TestData))]
+        public static void Validate_DoesNotThrow(DataType dataType)
+        {
+            if (dataType != DataType.Custom)
             {
-                var dataType = (DataType)enumValue;
-                if (DataType.Custom != dataType)
-                {
-                    var attribute = new DataTypeAttribute(dataType);
-                    Assert.Equal(Enum.GetName(typeof(DataType), enumValue), attribute.GetDataTypeName());
-                    AssertEx.DoesNotThrow(() => attribute.Validate(new object(), s_testValidationContext));
-                }
+                DataTypeAttribute attribute = new DataTypeAttribute(dataType);
+                attribute.Validate(new object(), s_testValidationContext);
             }
         }
 
-        [Fact]
-        public static void DataType_and_CustomDataType_assigned_correctly_for_custom_DataType()
+        [Theory]
+        [InlineData("CustomValue")]
+        [InlineData("")]
+        [InlineData(null)]
+        public static void Ctor_String(string customDataType)
         {
-            var attribute = new DataTypeAttribute("CustomValue");
+            DataTypeAttribute attribute = new DataTypeAttribute(customDataType);
             Assert.Equal(DataType.Custom, attribute.DataType);
-            Assert.Equal("CustomValue", attribute.CustomDataType);
-        }
+            Assert.Equal(customDataType, attribute.CustomDataType);
 
-        [Fact]
-        public static void GetDataTypeName_and_IsValid_on_null_custom_DataTypeAttribute_throws_exception()
-        {
-            var attribute = new DataTypeAttribute((string)null);
-            Assert.Equal(DataType.Custom, attribute.DataType); // Only throw when call GetDataTypeName() or Validate()
-            Assert.Null(attribute.CustomDataType); // Only throw when call GetDataTypeName() or Validate()
-            Assert.Throws<InvalidOperationException>(() => attribute.GetDataTypeName());
-            Assert.Throws<InvalidOperationException>(() => attribute.Validate(new object(), s_testValidationContext));
-        }
-
-        [Fact]
-        public static void GetDataTypeName_and_IsValid_on_empty_custom_DataTypeAttribute_throws_exception()
-        {
-            var attribute = new DataTypeAttribute(string.Empty);
-            Assert.Equal(DataType.Custom, attribute.DataType); // Only throw when call GetDataTypeName() or Validate()
-            AssertEx.Empty(attribute.CustomDataType); // Only throw when call GetDataTypeName() or Validate()
-            Assert.Throws<InvalidOperationException>(() => attribute.GetDataTypeName());
-            Assert.Throws<InvalidOperationException>(() => attribute.Validate(new object(), s_testValidationContext));
-        }
-
-        [Fact]
-        public static void GetDataTypeName_and_IsValid_on_non_null_custom_DataTypeAttribute_is_successful()
-        {
-            var attribute = new DataTypeAttribute("TestCustomDataType");
-            Assert.Equal("TestCustomDataType", attribute.GetDataTypeName());
-            AssertEx.DoesNotThrow(() => attribute.Validate(new object(), s_testValidationContext));
-        }
-
-        [Fact]
-        public static void DisplayFormat_set_correctly_for_date_time_and_currency()
-        {
-            var dateAttribute = new DataTypeAttribute(DataType.Date);
-            Assert.NotNull(dateAttribute.DisplayFormat);
-            Assert.Equal("{0:d}", dateAttribute.DisplayFormat.DataFormatString);
-            Assert.True(dateAttribute.DisplayFormat.ApplyFormatInEditMode);
-
-            var timeAttribute = new DataTypeAttribute(DataType.Time);
-            Assert.NotNull(timeAttribute.DisplayFormat);
-            Assert.Equal("{0:t}", timeAttribute.DisplayFormat.DataFormatString);
-            Assert.True(timeAttribute.DisplayFormat.ApplyFormatInEditMode);
-
-            var currencyAttribute = new DataTypeAttribute(DataType.Currency);
-            Assert.NotNull(currencyAttribute.DisplayFormat);
-            Assert.Equal("{0:C}", currencyAttribute.DisplayFormat.DataFormatString);
-            Assert.False(currencyAttribute.DisplayFormat.ApplyFormatInEditMode);
-        }
-
-        [Fact]
-        public static void DisplayFormat_null_for_non_date_time_and_currency()
-        {
-            foreach (var enumValue in Enum.GetValues(typeof(DataType)))
+            if (string.IsNullOrEmpty(customDataType))
             {
-                var dataType = (DataType)enumValue;
-                if (DataType.Date != dataType
-                    && DataType.Time != dataType
-                    && DataType.Currency != dataType)
-                {
-                    var attribute = new DataTypeAttribute(dataType);
-                    Assert.Null(attribute.DisplayFormat);
-                }
+                Assert.Throws<InvalidOperationException>(() => attribute.GetDataTypeName());
+                Assert.Throws<InvalidOperationException>(() => attribute.Validate(new object(), s_testValidationContext));
             }
+            else
+            {
+                Assert.Equal(customDataType, attribute.GetDataTypeName());
+                attribute.Validate(new object(), s_testValidationContext);
+            }
+        }
+
+        [Theory]
+        [InlineData(DataType.Date, "{0:d}", true)]
+        [InlineData(DataType.Time, "{0:t}", true)]
+        [InlineData(DataType.Currency, "{0:C}", false)]
+        public static void DisplayFormat_ReturnsExpected(DataType dataType, string dataFormatString, bool applyFormatInEditMode)
+        {
+            DataTypeAttribute attribute = new DataTypeAttribute(dataType);
+            Assert.Equal(dataFormatString, attribute.DisplayFormat.DataFormatString);
+            Assert.Equal(applyFormatInEditMode, attribute.DisplayFormat.ApplyFormatInEditMode);
         }
     }
 }

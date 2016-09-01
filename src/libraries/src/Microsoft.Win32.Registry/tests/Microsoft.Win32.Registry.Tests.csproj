@@ -52,6 +52,10 @@
     <Compile Include="RegistryKey\RegistryKey_OpenSubKey_str_rkpc.cs" />
     <Compile Include="RegistryKey\RegistryKey_SetValueKind_str_obj_valueKind.cs" />
     <Compile Include="RegistryKey\RegistryKey_SetValue_str_obj.cs" />
+    <Compile Include="RegistryKey\RegistryKeyCreateSubKeyTestsBase.cs" />
+    <Compile Include="RegistryKey\RegistryKeyDeleteSubKeyTestsBase.cs" />
+    <Compile Include="RegistryKey\RegistryKeyDeleteSubKeyTreeTestsBase.cs" />
+    <Compile Include="RegistryKey\RegistryKeyOpenSubKeyTestsBase.cs" />
     <Compile Include="RegistryKey\SafeRegistryHandle.cs" />
     <Compile Include="RegistryTestsBase.cs" />
     <Compile Include="TestData.cs" />

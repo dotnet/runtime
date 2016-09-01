@@ -450,5 +450,22 @@ namespace System.Reflection.Metadata.Tests
                 Fail($"Expected 0 items but found {list.Count}: {message}\r\nItems:\r\n    {string.Join("\r\n    ", list)}");
             }
         }
+
+        public static void Throws<T>(Func<object> testCode, Action<T> exceptionValidation) where T : Exception
+        {
+            try
+            {
+                testCode();
+                Assert.False(true, $"Exception of type '{typeof(T)}' was expected but none was thrown.");
+            }
+            catch (T e)
+            {
+                exceptionValidation(e);
+            }
+            catch (Exception e)
+            {
+                Assert.False(true, $"Exception of type '{typeof(T)}' was expected but '{e.GetType()}' was thrown instead.");
+            }
+        }
     }
 }

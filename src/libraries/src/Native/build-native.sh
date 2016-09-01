@@ -187,6 +187,10 @@ while :; do
             __ClangMajorVersion=3
             __ClangMinorVersion=8
             ;;
+        clang3.9)
+            __ClangMajorVersion=3
+            __ClangMinorVersion=9
+            ;;
         cross)
             __CrossBuild=1
             ;;
@@ -217,6 +221,27 @@ while :; do
 
     shift
 done
+
+# Set cross build
+CPUName=$(uname -p)
+# Some Linux platforms report unknown for platform, but the arch for machine.
+if [ $CPUName == "unknown" ]; then
+    CPUName=$(uname -m)
+fi
+case $CPUName in
+    i686)
+        if [ $__BuildArch != x86 ]; then
+            __CrossBuild=1
+            echo "Set CrossBuild for $__BuildArch build"
+        fi
+        ;;
+    x86_64)
+        if [ $__BuildArch != x64 ]; then
+            __CrossBuild=1
+            echo "Set CrossBuild for $__BuildArch build"
+        fi
+        ;;
+esac
 
 # Set the remaining variables based upon the determined build configuration
 __IntermediatesDir="$__rootbinpath/obj/$__BuildOS.$__BuildArch.$__BuildType/Native"

@@ -64,20 +64,20 @@ namespace System.Reflection.Metadata
 
             StringHandle name = TypeDefTable.GetName(typeDef);
 
-            int index = StringStream.BinarySearchRaw(s_projectedTypeNames, name);
+            int index = StringHeap.BinarySearchRaw(s_projectedTypeNames, name);
             if (index < 0)
             {
                 return TypeDefTreatment.None;
             }
 
             StringHandle namespaceName = TypeDefTable.GetNamespace(typeDef);
-            if (StringStream.EqualsRaw(namespaceName, StringStream.GetVirtualValue(s_projectionInfos[index].ClrNamespace)))
+            if (StringHeap.EqualsRaw(namespaceName, StringHeap.GetVirtualString(s_projectionInfos[index].ClrNamespace)))
             {
                 return s_projectionInfos[index].Treatment;
             }
 
             // TODO: we can avoid this comparison if info.DotNetNamespace == info.WinRtNamespace 
-            if (StringStream.EqualsRaw(namespaceName, s_projectionInfos[index].WinRTNamespace))
+            if (StringHeap.EqualsRaw(namespaceName, s_projectionInfos[index].WinRTNamespace))
             {
                 return s_projectionInfos[index].Treatment | TypeDefTreatment.MarkInternalFlag;
             }
@@ -89,8 +89,8 @@ namespace System.Reflection.Metadata
         {
             InitializeProjectedTypes();
 
-            int index = StringStream.BinarySearchRaw(s_projectedTypeNames, TypeRefTable.GetName(typeRef));
-            if (index >= 0 && StringStream.EqualsRaw(TypeRefTable.GetNamespace(typeRef), s_projectionInfos[index].WinRTNamespace))
+            int index = StringHeap.BinarySearchRaw(s_projectedTypeNames, TypeRefTable.GetName(typeRef));
+            if (index >= 0 && StringHeap.EqualsRaw(TypeRefTable.GetNamespace(typeRef), s_projectionInfos[index].WinRTNamespace))
             {
                 isIDisposable = s_projectionInfos[index].IsIDisposable;
                 return index;
@@ -317,7 +317,7 @@ namespace System.Reflection.Metadata
                 return false;
             }
 
-            return StringStream.StartsWithRaw(TypeDefTable.GetName(typeDef), ClrPrefix);
+            return StringHeap.StartsWithRaw(TypeDefTable.GetName(typeDef), ClrPrefix);
         }
 
         #endregion
@@ -342,16 +342,16 @@ namespace System.Reflection.Metadata
 
         private TypeRefTreatment GetSpecialTypeRefTreatment(TypeReferenceHandle handle)
         {
-            if (StringStream.EqualsRaw(TypeRefTable.GetNamespace(handle), "System"))
+            if (StringHeap.EqualsRaw(TypeRefTable.GetNamespace(handle), "System"))
             {
                 StringHandle name = TypeRefTable.GetName(handle);
 
-                if (StringStream.EqualsRaw(name, "MulticastDelegate"))
+                if (StringHeap.EqualsRaw(name, "MulticastDelegate"))
                 {
                     return TypeRefTreatment.SystemDelegate;
                 }
 
-                if (StringStream.EqualsRaw(name, "Attribute"))
+                if (StringHeap.EqualsRaw(name, "Attribute"))
                 {
                     return TypeRefTreatment.SystemAttribute;
                 }
@@ -362,14 +362,14 @@ namespace System.Reflection.Metadata
 
         private bool IsSystemAttribute(TypeReferenceHandle handle)
         {
-            return StringStream.EqualsRaw(TypeRefTable.GetNamespace(handle), "System") &&
-                   StringStream.EqualsRaw(TypeRefTable.GetName(handle), "Attribute");
+            return StringHeap.EqualsRaw(TypeRefTable.GetNamespace(handle), "System") &&
+                   StringHeap.EqualsRaw(TypeRefTable.GetName(handle), "Attribute");
         }
 
         private bool IsSystemEnum(TypeReferenceHandle handle)
         {
-            return StringStream.EqualsRaw(TypeRefTable.GetNamespace(handle), "System") &&
-                   StringStream.EqualsRaw(TypeRefTable.GetName(handle), "Enum");
+            return StringHeap.EqualsRaw(TypeRefTable.GetNamespace(handle), "System") &&
+                   StringHeap.EqualsRaw(TypeRefTable.GetName(handle), "Enum");
         }
 
         private bool NeedsWinRTPrefix(TypeAttributes flags, EntityHandle extends)
@@ -386,12 +386,12 @@ namespace System.Reflection.Metadata
 
             // Check if the type is a delegate, struct, or attribute
             TypeReferenceHandle extendsRefHandle = (TypeReferenceHandle)extends;
-            if (StringStream.EqualsRaw(TypeRefTable.GetNamespace(extendsRefHandle), "System"))
+            if (StringHeap.EqualsRaw(TypeRefTable.GetNamespace(extendsRefHandle), "System"))
             {
                 StringHandle nameHandle = TypeRefTable.GetName(extendsRefHandle);
-                if (StringStream.EqualsRaw(nameHandle, "MulticastDelegate")
-                    || StringStream.EqualsRaw(nameHandle, "ValueType")
-                    || StringStream.EqualsRaw(nameHandle, "Attribute"))
+                if (StringHeap.EqualsRaw(nameHandle, "MulticastDelegate")
+                    || StringHeap.EqualsRaw(nameHandle, "ValueType")
+                    || StringHeap.EqualsRaw(nameHandle, "Attribute"))
                 {
                     return false;
                 }
@@ -528,14 +528,14 @@ namespace System.Reflection.Metadata
 
                 Debug.Assert(!namespaceHandle.IsVirtual && !nameHandle.IsVirtual);
 
-                if (StringStream.EqualsRaw(namespaceHandle, "Windows.UI.Xaml"))
+                if (StringHeap.EqualsRaw(namespaceHandle, "Windows.UI.Xaml"))
                 {
-                    if (StringStream.EqualsRaw(nameHandle, "TreatAsPublicMethodAttribute"))
+                    if (StringHeap.EqualsRaw(nameHandle, "TreatAsPublicMethodAttribute"))
                     {
                         treatment |= MethodDefTreatment.MarkPublicFlag;
                     }
 
-                    if (StringStream.EqualsRaw(nameHandle, "TreatAsAbstractMethodAttribute"))
+                    if (StringHeap.EqualsRaw(nameHandle, "TreatAsAbstractMethodAttribute"))
                     {
                         treatment |= MethodDefTreatment.MarkAbstractFlag;
                     }
@@ -559,7 +559,7 @@ namespace System.Reflection.Metadata
             var flags = FieldTable.GetFlags(handle);
             FieldDefTreatment treatment = FieldDefTreatment.None;
 
-            if ((flags & FieldAttributes.RTSpecialName) != 0 && StringStream.EqualsRaw(FieldTable.GetName(handle), "value__"))
+            if ((flags & FieldAttributes.RTSpecialName) != 0 && StringHeap.EqualsRaw(FieldTable.GetName(handle), "value__"))
             {
                 TypeDefinitionHandle typeDef = GetDeclaringType(handle);
 
@@ -568,8 +568,8 @@ namespace System.Reflection.Metadata
                 {
                     var typeRef = (TypeReferenceHandle)baseTypeHandle;
 
-                    if (StringStream.EqualsRaw(TypeRefTable.GetName(typeRef), "Enum") &&
-                        StringStream.EqualsRaw(TypeRefTable.GetNamespace(typeRef), "System"))
+                    if (StringHeap.EqualsRaw(TypeRefTable.GetName(typeRef), "Enum") &&
+                        StringHeap.EqualsRaw(TypeRefTable.GetNamespace(typeRef), "System"))
                     {
                         treatment = FieldDefTreatment.EnumValue;
                     }
@@ -632,7 +632,7 @@ namespace System.Reflection.Metadata
             else if (parent.Kind == HandleKind.TypeSpecification)
             {
                 BlobHandle blob = TypeSpecTable.GetSignature((TypeSpecificationHandle)parent);
-                BlobReader sig = new BlobReader(BlobStream.GetMemoryBlock(blob));
+                BlobReader sig = new BlobReader(BlobHeap.GetMemoryBlock(blob));
 
                 if (sig.Length < 2 ||
                     sig.ReadByte() != (byte)CorElementType.ELEMENT_TYPE_GENERICINST ||
@@ -665,7 +665,7 @@ namespace System.Reflection.Metadata
         {
             for (int i = 1; i <= AssemblyRefTable.NumberOfNonVirtualRows; i++)
             {
-                if (StringStream.EqualsRaw(AssemblyRefTable.GetName(i), "mscorlib"))
+                if (StringHeap.EqualsRaw(AssemblyRefTable.GetName(i), "mscorlib"))
                 {
                     return i;
                 }
@@ -694,14 +694,14 @@ namespace System.Reflection.Metadata
             }
 
             var targetTypeDef = (TypeDefinitionHandle)parent;
-            if (StringStream.EqualsRaw(TypeDefTable.GetNamespace(targetTypeDef), "Windows.Foundation.Metadata"))
+            if (StringHeap.EqualsRaw(TypeDefTable.GetNamespace(targetTypeDef), "Windows.Foundation.Metadata"))
             {
-                if (StringStream.EqualsRaw(TypeDefTable.GetName(targetTypeDef), "VersionAttribute"))
+                if (StringHeap.EqualsRaw(TypeDefTable.GetName(targetTypeDef), "VersionAttribute"))
                 {
                     return CustomAttributeValueTreatment.AttributeUsageVersionAttribute;
                 }
 
-                if (StringStream.EqualsRaw(TypeDefTable.GetName(targetTypeDef), "DeprecatedAttribute"))
+                if (StringHeap.EqualsRaw(TypeDefTable.GetName(targetTypeDef), "DeprecatedAttribute"))
                 {
                     return CustomAttributeValueTreatment.AttributeUsageDeprecatedAttribute;
                 }
@@ -736,8 +736,8 @@ namespace System.Reflection.Metadata
             }
 
             var attributeTypeRef = (TypeReferenceHandle)attributeType;
-            return StringStream.EqualsRaw(TypeRefTable.GetName(attributeTypeRef), "AttributeUsageAttribute") &&
-                   StringStream.EqualsRaw(TypeRefTable.GetNamespace(attributeTypeRef), "Windows.Foundation.Metadata");
+            return StringHeap.EqualsRaw(TypeRefTable.GetName(attributeTypeRef), "AttributeUsageAttribute") &&
+                   StringHeap.EqualsRaw(TypeRefTable.GetNamespace(attributeTypeRef), "Windows.Foundation.Metadata");
         }
 
         private bool HasAttribute(EntityHandle token, string asciiNamespaceName, string asciiTypeName)
@@ -746,8 +746,8 @@ namespace System.Reflection.Metadata
             {
                 StringHandle namespaceName, typeName;
                 if (GetAttributeTypeNameRaw(caHandle, out namespaceName, out typeName) &&
-                    StringStream.EqualsRaw(typeName, asciiTypeName) &&
-                    StringStream.EqualsRaw(namespaceName, asciiNamespaceName))
+                    StringHeap.EqualsRaw(typeName, asciiTypeName) &&
+                    StringHeap.EqualsRaw(namespaceName, asciiNamespaceName))
                 {
                     return true;
                 }

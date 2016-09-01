@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
@@ -24,21 +24,7 @@
     <Compile Include="AssemblyName\AssemblyName_ProcessorArchitectureTests.cs" />
     <Compile Include="AssemblyName\AssemblyName_PropertyTests.cs" />
     <Compile Include="AssemblyName\CultureName.cs" />
-    <Compile Include="Assembly\Assembly_CustomAttributeTests.cs" />
-    <Compile Include="Assembly\Assembly_DefinedTypeTests.cs" />
-    <Compile Include="Assembly\Assembly_EntryPointTests.cs" />
-    <Compile Include="Assembly\Assembly_EmbeddedFiles.cs" />
-    <Compile Include="Assembly\Assembly_EqualsTests.cs" />
-    <Compile Include="Assembly\Assembly_ExportedTypesTests.cs" />
-    <Compile Include="Assembly\Assembly_GetHashcodeTests.cs" />
-    <Compile Include="Assembly\Assembly_GetTypeTests.cs" />
-    <Compile Include="Assembly\Assembly_IsDynamicTests.cs" />
-    <Compile Include="Assembly\Assembly_LoadTests.cs" />
-    <Compile Include="Assembly\Assembly_LocationTests.cs" />
-    <Compile Include="Assembly\Assembly_Members.cs" />
-    <Compile Include="Assembly\Assembly_ModulesTests.cs" />
-    <Compile Include="Assembly\Assembly_ToStringTests.cs" />
-    <Compile Include="Assembly\Assembly_GetEntryAssembly.cs" />
+    <Compile Include="AssemblyTests.cs" />
     <Compile Include="Common\ReflectionTestData.cs" />
     <Compile Include="ConstructorInfoTests.cs" />
     <Compile Include="EventInfo\EventInfo_Members.cs" />
@@ -65,6 +51,7 @@
     <Compile Include="MethodInfo\MethodInfo_SpecialReturnTypeTests.cs" />
     <Compile Include="MethodInfo\MethodInfo_ToStringTests.cs" />
     <Compile Include="Module\ModuleTests.cs" />
+    <Compile Include="Common.cs" />
     <Compile Include="ParameterInfoTests.cs" />
     <Compile Include="PropertyInfo\PropertyInfo_GetConstantValueTests.cs" />
     <Compile Include="PropertyInfo\PropertyInfo_GetSetMethodTests.cs" />
@@ -97,10 +84,10 @@
     <Compile Include="ExceptionTests.cs" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="Assembly\EmbeddedImage.png">
+    <EmbeddedResource Include="Resources\EmbeddedImage.png">
       <LogicalName>EmbeddedImage.png</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="ManifestResourceInfo\ResourceTextFile.txt">
+    <EmbeddedResource Include="Resources\ResourceTextFile.txt">
       <LogicalName>ResourceTextFile.txt</LogicalName>
     </EmbeddedResource>
   </ItemGroup>

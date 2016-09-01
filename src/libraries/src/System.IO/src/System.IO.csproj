@@ -4,20 +4,11 @@
   <PropertyGroup>
     <AssemblyName>System.IO</AssemblyName>
     <ProjectGuid>{07390899-C8F6-4e83-A3A9-6867B8CB46A0}</ProjectGuid>
-    <AssemblyVersion>4.2.0.0</AssemblyVersion>
     <AssemblyVersion Condition="'$(TargetGroup)' == 'net462' Or '$(TargetGroup)' == 'netstandard1.6' Or '$(TargetGroup)'=='netstandard13aot'">4.1.0.0</AssemblyVersion>
     <ContractProject Condition="'$(AssemblyVersion)' == '4.1.0.0'">..\ref\4.1\System.IO.depproj</ContractProject>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NuGetTargetMoniker>
   </PropertyGroup>
-  <ItemGroup Condition="'$(PackageTargetFramework)' == ''">
-    <PackageDestination Include="lib/netstandard1.7">
-      <TargetFramework>netstandard1.7</TargetFramework>
-    </PackageDestination>
-    <PackageDestination Include="lib/uap10.1">
-      <TargetFramework>uap10.1</TargetFramework>
-    </PackageDestination>
-  </ItemGroup>
   <!-- Default configurations to help VS understand the options -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />

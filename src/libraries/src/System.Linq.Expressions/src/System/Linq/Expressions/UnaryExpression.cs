@@ -255,7 +255,7 @@ namespace System.Linq.Expressions
 
             bool prefix = IsPrefix;
             var index = (IndexExpression)_operand;
-            int count = index.Arguments.Count;
+            int count = index.ArgumentCount;
             var block = new Expression[count + (prefix ? 2 : 4)];
             var temps = new ParameterExpression[count + (prefix ? 1 : 2)];
             var args = new ParameterExpression[count];
@@ -266,7 +266,7 @@ namespace System.Linq.Expressions
             i++;
             while (i <= count)
             {
-                var arg = index.Arguments[i - 1];
+                var arg = index.GetArgument(i - 1);
                 args[i - 1] = temps[i] = Parameter(arg.Type, null);
                 block[i] = Assign(temps[i], arg);
                 i++;
@@ -423,7 +423,7 @@ namespace System.Linq.Expressions
             ValidateOperator(method, nameof(method));
             ParameterInfo[] pms = method.GetParametersCached();
             if (pms.Length != 1)
-                throw Error.IncorrectNumberOfMethodCallArguments(method);
+                throw Error.IncorrectNumberOfMethodCallArguments(method, nameof(method));
             if (ParameterIsAssignable(pms[0], operand.Type))
             {
                 ValidateParamswithOperandsOrThrow(pms[0].ParameterType, operand.Type, unaryType, method.Name);
@@ -470,7 +470,7 @@ namespace System.Linq.Expressions
             ParameterInfo[] pms = method.GetParametersCached();
             if (pms.Length != 1)
             {
-                throw Error.IncorrectNumberOfMethodCallArguments(method);
+                throw Error.IncorrectNumberOfMethodCallArguments(method, nameof(method));
             }
             if (ParameterIsAssignable(pms[0], operand.Type) && TypeUtils.AreEquivalent(method.ReturnType, convertToType))
             {

@@ -2,11 +2,12 @@
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <Version>4.1.1</Version>
     <SkipPackageFileCheck>true</SkipPackageFileCheck>
     <SkipValidatePackage>true</SkipValidatePackage>
   </PropertyGroup>
   <ItemGroup>
+    <!-- When updating ExternalExpectedPrerelease with a version that 
+         below should be updated to $(PackageVersion)-$(ExternalExpectedPrerelease) -->
     <RuntimeDependency Include="runtime.win10-x64-aot.runtime.native.System.IO.Compression">
       <TargetRuntime>win10-amd64-aot</TargetRuntime>
       <Version>4.1.1-$(ExternalExpectedPrerelease)</Version>
@@ -35,16 +36,25 @@
     <ProjectReference Include="fedora\23\runtime.native.System.IO.Compression.pkgproj">
       <Platform>amd64</Platform>
     </ProjectReference>
+    <ProjectReference Include="fedora\24\runtime.native.System.IO.Compression.pkgproj">
+      <Platform>amd64</Platform>
+    </ProjectReference>
     <ProjectReference Include="osx\runtime.native.System.IO.Compression.pkgproj">
       <Platform>amd64</Platform>
     </ProjectReference>
     <ProjectReference Include="opensuse\13.2\runtime.native.System.IO.Compression.pkgproj">
       <Platform>amd64</Platform>
     </ProjectReference>
+    <ProjectReference Include="opensuse\42.1\runtime.native.System.IO.Compression.pkgproj">
+      <Platform>amd64</Platform>
+    </ProjectReference>
     <ProjectReference Include="ubuntu\14.04\runtime.native.System.IO.Compression.pkgproj">
       <Platform>amd64</Platform>
     </ProjectReference>
     <ProjectReference Include="ubuntu\16.04\runtime.native.System.IO.Compression.pkgproj">
+      <Platform>amd64</Platform>
+    </ProjectReference>
+    <ProjectReference Include="ubuntu\16.10\runtime.native.System.IO.Compression.pkgproj">
       <Platform>amd64</Platform>
     </ProjectReference>
     <ProjectReference Include="win\runtime.native.System.IO.Compression.pkgproj">

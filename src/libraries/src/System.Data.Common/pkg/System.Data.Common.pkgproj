@@ -18,5 +18,10 @@
     <InboxOnTargetFramework Include="xamarintvos10" />
     <InboxOnTargetFramework Include="xamarinwatchos10" />
   </ItemGroup>
+  <ItemGroup>
+    <ValidatePackageSuppression Include="SuppressNETStandardInference">
+      <Value>.NETCore,Version=v4.5;WindowsPhone,Version=v8.0</Value>
+    </ValidatePackageSuppression>
+  </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

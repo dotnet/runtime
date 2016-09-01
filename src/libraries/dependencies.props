@@ -85,6 +85,10 @@
       <Version>2.1.0</Version>
     </StaticDependency>
 
+	<!--
+      The NETNative targeting pack is in the projectn-tfs build-info, but auto-upgrade isn't wanted.
+      Verify it at a static version rather than referencing the build-info.
+    -->
     <StaticDependency Include="Microsoft.xunit.netcore.extensions;Microsoft.DotNet.BuildTools.TestSuite">
       <Version>1.0.0-prerelease-00704-03</Version>
     </StaticDependency>

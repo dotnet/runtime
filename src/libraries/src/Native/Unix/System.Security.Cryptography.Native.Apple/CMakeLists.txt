@@ -6,7 +6,10 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 add_definitions(-DPIC=1)
 
 set(NATIVECRYPTO_SOURCES
+    pal_digest.cpp
+    pal_hmac.cpp
     pal_random.cpp
+    pal_symmetric.cpp
 )
 
 add_library(System.Security.Cryptography.Native.Apple

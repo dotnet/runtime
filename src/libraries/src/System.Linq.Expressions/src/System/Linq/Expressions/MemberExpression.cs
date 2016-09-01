@@ -179,6 +179,7 @@ namespace System.Linq.Expressions
         public static MemberExpression Field(Expression expression, string fieldName)
         {
             RequiresCanRead(expression, nameof(expression));
+            ContractUtils.RequiresNotNull(fieldName, nameof(fieldName));
 
             // bind to public names first
             FieldInfo fi = expression.Type.GetField(fieldName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.IgnoreCase | BindingFlags.FlattenHierarchy);
@@ -293,12 +294,12 @@ namespace System.Linq.Expressions
                 }
                 else if (mi.GetParametersCached().Length != 1)
                 {
-                    throw Error.IncorrectNumberOfMethodCallArguments(mi);
+                    throw Error.IncorrectNumberOfMethodCallArguments(mi, nameof(property));
                 }
             }
             else if (mi.GetParametersCached().Length != 0)
             {
-                throw Error.IncorrectNumberOfMethodCallArguments(mi);
+                throw Error.IncorrectNumberOfMethodCallArguments(mi, nameof(property));
             }
 
             if (mi.IsStatic)

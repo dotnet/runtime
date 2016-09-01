@@ -61,6 +61,7 @@ internal partial class Interop
         public const ushort INTERNET_DEFAULT_HTTPS_PORT = 443;
 
         public const uint WINHTTP_FLAG_SECURE = 0x00800000;
+        public const uint WINHTTP_FLAG_ESCAPE_DISABLE = 0x00000040;
 
         public const StringBuilder WINHTTP_NO_ADDITIONAL_HEADERS = null;
 
@@ -148,6 +149,10 @@ internal partial class Interop
         public const uint WINHTTP_OPTION_CONNECTION_INFO = 93;
 
         public const uint WINHTTP_OPTION_ASSURED_NON_BLOCKING_CALLBACKS = 111;
+
+        public const uint WINHTTP_OPTION_ENABLE_HTTP_PROTOCOL = 133;
+        public const uint WINHTTP_OPTION_HTTP_PROTOCOL_USED = 134;
+        public const uint WINHTTP_PROTOCOL_FLAG_HTTP2 = 0x1;
 
         public const uint WINHTTP_OPTION_UPGRADE_TO_WEB_SOCKET = 114;
         public const uint WINHTTP_OPTION_WEB_SOCKET_CLOSE_TIMEOUT = 115;

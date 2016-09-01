@@ -727,7 +727,8 @@ namespace System.Diagnostics.Tests
         }
 
         [PlatformSpecific(PlatformID.Windows)]
-        [Fact]
+        // NativeErrorCode not 193 on Windows Nano for ERROR_BAD_EXE_FORMAT, issue #10290
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void TestStartOnWindowsWithBadFileFormat()
         {
             string path = GetTestFilePath();

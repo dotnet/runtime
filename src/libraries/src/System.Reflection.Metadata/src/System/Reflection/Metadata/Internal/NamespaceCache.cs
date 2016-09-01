@@ -82,7 +82,7 @@ namespace System.Reflection.Metadata.Ecma335
             int currentSegment = 0;
             while (currentSegment < segmentIndex)
             {
-                int currentIndex = _metadataReader.StringStream.IndexOfRaw(lastFoundIndex + 1, '.');
+                int currentIndex = _metadataReader.StringHeap.IndexOfRaw(lastFoundIndex + 1, '.');
                 if (currentIndex == -1)
                 {
                     break;

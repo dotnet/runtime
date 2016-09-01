@@ -64,15 +64,15 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public void NoArguments()
         {
-            Assert.Throws<ArgumentException>(null, () => Expression.ElementInit(typeof(List<int>).GetMethod("Add")));
-            Assert.Throws<ArgumentException>(null, () => Expression.ElementInit(typeof(List<int>).GetMethod("Add"), Enumerable.Empty<Expression>()));
+            Assert.Throws<ArgumentException>("method", () => Expression.ElementInit(typeof(List<int>).GetMethod("Add")));
+            Assert.Throws<ArgumentException>("method", () => Expression.ElementInit(typeof(List<int>).GetMethod("Add"), Enumerable.Empty<Expression>()));
         }
 
         [Fact]
         public void ArgumentCountWrong()
         {
-            Assert.Throws<ArgumentException>(null, () => Expression.ElementInit(typeof(List<int>).GetMethod("Add"), Expression.Constant(0), Expression.Constant(1)));
-            Assert.Throws<ArgumentException>(null, () => Expression.ElementInit(typeof(List<int>).GetMethod("Add"), Enumerable.Repeat(Expression.Constant(0), 2)));
+            Assert.Throws<ArgumentException>("method", () => Expression.ElementInit(typeof(List<int>).GetMethod("Add"), Expression.Constant(0), Expression.Constant(1)));
+            Assert.Throws<ArgumentException>("method", () => Expression.ElementInit(typeof(List<int>).GetMethod("Add"), Enumerable.Repeat(Expression.Constant(0), 2)));
         }
 
         [Fact]
