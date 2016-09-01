@@ -240,12 +240,10 @@ static guint64 stat_major_blocks_alloced = 0;
 static guint64 stat_major_blocks_freed = 0;
 static guint64 stat_major_blocks_lazy_swept = 0;
 
-#if SIZEOF_VOID_P != 8
 static guint64 stat_major_blocks_freed_ideal = 0;
 static guint64 stat_major_blocks_freed_less_ideal = 0;
 static guint64 stat_major_blocks_freed_individual = 0;
 static guint64 stat_major_blocks_alloced_less_ideal = 0;
-#endif
 
 #ifdef SGEN_COUNT_NUMBER_OF_MAJOR_OBJECTS_MARKED
 static guint64 num_major_objects_marked = 0;
@@ -1941,7 +1939,6 @@ major_finish_major_collection (ScannedObjectCounts *counts)
 #endif
 }
 
-#if SIZEOF_VOID_P != 8
 static int
 compare_pointers (const void *va, const void *vb) {
 	char *a = *(char**)va, *b = *(char**)vb;
@@ -1951,7 +1948,6 @@ compare_pointers (const void *va, const void *vb) {
 		return 1;
 	return 0;
 }
-#endif
 
 /*
  * This is called with sweep completed and the world stopped.
@@ -1969,7 +1965,6 @@ major_free_swept_blocks (size_t section_reserve)
 		return;
 #endif
 
-#if SIZEOF_VOID_P != 8
 	{
 		int i, num_empty_blocks_orig, num_blocks, arr_length;
 		void *block;
@@ -2089,7 +2084,6 @@ major_free_swept_blocks (size_t section_reserve)
 	 */
 	if (num_empty_blocks <= num_major_sections)
 		return;
-#endif
 
 	while (num_empty_blocks > section_reserve) {
 		void *next = *(void**)empty_blocks;
@@ -2102,9 +2096,7 @@ major_free_swept_blocks (size_t section_reserve)
 		--num_empty_blocks;
 
 		++stat_major_blocks_freed;
-#if SIZEOF_VOID_P != 8
 		++stat_major_blocks_freed_individual;
-#endif
 	}
 }
 
@@ -2593,12 +2585,10 @@ sgen_marksweep_init_internal (SgenMajorCollector *collector, gboolean is_concurr
 	mono_counters_register ("# major blocks allocated", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_major_blocks_alloced);
 	mono_counters_register ("# major blocks freed", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_major_blocks_freed);
 	mono_counters_register ("# major blocks lazy swept", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_major_blocks_lazy_swept);
-#if SIZEOF_VOID_P != 8
 	mono_counters_register ("# major blocks freed ideally", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_major_blocks_freed_ideal);
 	mono_counters_register ("# major blocks freed less ideally", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_major_blocks_freed_less_ideal);
 	mono_counters_register ("# major blocks freed individually", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_major_blocks_freed_individual);
 	mono_counters_register ("# major blocks allocated less ideally", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_major_blocks_alloced_less_ideal);
-#endif
 
 	collector->section_size = MAJOR_SECTION_SIZE;
 
