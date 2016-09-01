@@ -33,6 +33,7 @@ namespace System.Net.Security.Tests
             return true;  // allow everything
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [Fact]
         public async Task ClientDefaultEncryption_ServerRequireEncryption_ConnectWithEncryption()
         {
@@ -53,6 +54,7 @@ namespace System.Net.Security.Tests
             }
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [Fact]
         public async Task ClientDefaultEncryption_ServerAllowNoEncryption_ConnectWithEncryption()
         {
@@ -73,6 +75,7 @@ namespace System.Net.Security.Tests
             }
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [Fact]
         public async Task ClientDefaultEncryption_ServerNoEncryption_NoConnect()
         {

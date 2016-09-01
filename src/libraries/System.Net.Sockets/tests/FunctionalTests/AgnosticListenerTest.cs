@@ -19,6 +19,7 @@ namespace System.Net.Sockets.Tests
             Assert.True(Capability.IPv4Support() && Capability.IPv6Support());
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [Fact]
         public void Create_Success()
         {
@@ -30,6 +31,7 @@ namespace System.Net.Sockets.Tests
             listener.Stop();
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [Fact]
         public void ConnectWithV4_Success()
         {
@@ -46,6 +48,7 @@ namespace System.Net.Sockets.Tests
             listener.Stop();
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [Fact]
         public void ConnectWithV6_Success()
         {
@@ -62,6 +65,7 @@ namespace System.Net.Sockets.Tests
             listener.Stop();
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [Fact]
         public void ConnectWithV4AndV6_Success()
         {
@@ -96,7 +100,8 @@ namespace System.Net.Sockets.Tests
 
         #region GC Finalizer test
         // This test assumes sequential execution of tests and that it is going to be executed after other tests
-        // that used Sockets. 
+        // that used Sockets.
+        [OuterLoop] // TODO: Issue #11345
         [Fact]
         public void TestFinalizers()
         {

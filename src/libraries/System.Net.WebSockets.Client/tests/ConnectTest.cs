@@ -16,6 +16,7 @@ namespace System.Net.WebSockets.Client.Tests
     {
         public ConnectTest(ITestOutputHelper output) : base(output) { }
 
+        [OuterLoop] // TODO: Issue #11345
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(UnavailableWebSocketServers))]
         public async Task ConnectAsync_NotWebSocketServer_ThrowsWebSocketExceptionWithMessage(Uri server)
         {
@@ -31,18 +32,21 @@ namespace System.Net.WebSockets.Client.Tests
             }
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
         public async Task EchoBinaryMessage_Success(Uri server)
         {
             await WebSocketHelper.TestEcho(server, WebSocketMessageType.Binary, TimeOutMilliseconds, _output);
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
         public async Task EchoTextMessage_Success(Uri server)
         {
             await WebSocketHelper.TestEcho(server, WebSocketMessageType.Text, TimeOutMilliseconds, _output);
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoHeadersServers))]
         public async Task ConnectAsync_AddCustomHeaders_Success(Uri server)
         {
@@ -80,6 +84,7 @@ namespace System.Net.WebSockets.Client.Tests
             }
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoHeadersServers))]
         public async Task ConnectAsync_CookieHeaders_Success(Uri server)
         {
@@ -120,6 +125,7 @@ namespace System.Net.WebSockets.Client.Tests
             }
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
         public async Task ConnectAsync_PassNoSubProtocol_ServerRequires_ThrowsWebSocketExceptionWithMessage(Uri server)
         {
@@ -141,6 +147,7 @@ namespace System.Net.WebSockets.Client.Tests
             }
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
         public async Task ConnectAsync_PassMultipleSubProtocols_ServerRequires_ConnectionUsesAgreedSubProtocol(Uri server)
         {

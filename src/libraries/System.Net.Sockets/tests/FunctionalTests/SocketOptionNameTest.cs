@@ -30,6 +30,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [ActiveIssue(11088, PlatformID.Windows)]
         [ConditionalFact(nameof(NoSocketsReuseUnicastPortSupport))]
         public void ReuseUnicastPort_CreateSocketGetOption_NoSocketsReuseUnicastPortSupport_Throws()
@@ -40,6 +41,7 @@ namespace System.Net.Sockets.Tests
                 socket.GetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseUnicastPort));
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [ConditionalFact(nameof(SocketsReuseUnicastPortSupport))]
         public void ReuseUnicastPort_CreateSocketGetOption_SocketsReuseUnicastPortSupport_OptionIsZero()
         {
@@ -49,6 +51,7 @@ namespace System.Net.Sockets.Tests
             Assert.Equal(0, optionValue);
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [ActiveIssue(11088, PlatformID.Windows)]
         [ConditionalFact(nameof(NoSocketsReuseUnicastPortSupport))]
         public void ReuseUnicastPort_CreateSocketSetOption_NoSocketsReuseUnicastPortSupport_Throws()
@@ -59,6 +62,7 @@ namespace System.Net.Sockets.Tests
                 socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseUnicastPort, 1));
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [ConditionalFact(nameof(SocketsReuseUnicastPortSupport))]
         public void ReuseUnicastPort_CreateSocketSetOptionToZeroAndGetOption_SocketsReuseUnicastPortSupport_OptionIsZero()
         {
@@ -73,6 +77,7 @@ namespace System.Net.Sockets.Tests
         // The socket option 'ReuseUnicastPost' only works on Windows 10 systems. In addition, setting the option
         // is a no-op unless specialized network settings using PowerShell configuration are first applied to the
         // machine. This is currently difficult to test in the CI environment. So, this ests will be disabled for now
+        [OuterLoop] // TODO: Issue #11345
         [ActiveIssue(4887)]
         public void ReuseUnicastPort_CreateSocketSetOptionToOneAndGetOption_SocketsReuseUnicastPortSupport_OptionIsOne()
         {
@@ -83,6 +88,7 @@ namespace System.Net.Sockets.Tests
             Assert.Equal(1, optionValue);
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [Fact]
         public void MulticastOption_CreateSocketSetGetOption_GroupAndInterfaceIndex_SetSucceeds_GetThrows()
         {
@@ -97,6 +103,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [Fact]
         public async Task MulticastInterface_Set_AnyInterface_Succeeds()
         {
@@ -104,6 +111,7 @@ namespace System.Net.Sockets.Tests
             await MulticastInterface_Set_Helper(0);
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [Fact]
         [PlatformSpecific(PlatformID.Windows)] // see comment below
         public async Task MulticastInterface_Set_Loopback_Succeeds()
@@ -145,6 +153,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [Fact]
         public void MulticastInterface_Set_InvalidIndex_Throws()
         {
@@ -156,6 +165,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [Theory]
         [InlineData(false)]
         [InlineData(true)]

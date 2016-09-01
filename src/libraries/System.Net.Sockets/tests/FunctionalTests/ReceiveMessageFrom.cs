@@ -8,6 +8,7 @@ namespace System.Net.Sockets.Tests
 {
     public class ReceiveMessageFrom
     {
+        [OuterLoop] // TODO: Issue #11345
         [Fact]
         public void Success()
         {
