@@ -71,7 +71,7 @@ namespace System.Globalization
         //
         // Using a field initializer rather than a static constructor so that the whole class can be lazy
         // init.
-        static internal volatile EraInfo[] japaneseEraInfo;
+        internal static volatile EraInfo[] japaneseEraInfo;
 
         //
         // Read our era info

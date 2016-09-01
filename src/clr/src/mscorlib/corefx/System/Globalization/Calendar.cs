@@ -62,10 +62,10 @@ namespace System.Globalization
         internal const long MaxMillis = (long)DaysTo10000 * MillisPerDay;
 
 
-        private int m_currentEraValue = -1;
+        private int _currentEraValue = -1;
 
         [OptionalField(VersionAdded = 2)]
-        private bool m_isReadOnly = false;
+        private bool _isReadOnly = false;
 
 #if INSIDE_CLR
         internal const CalendarId CAL_HEBREW = CalendarId.HEBREW;
@@ -137,7 +137,7 @@ namespace System.Globalization
         [System.Runtime.InteropServices.ComVisible(false)]
         public bool IsReadOnly
         {
-            get { return (m_isReadOnly); }
+            get { return (_isReadOnly); }
         }
 
         ////////////////////////////////////////////////////////////////////////
@@ -178,7 +178,7 @@ namespace System.Globalization
 
         internal void VerifyWritable()
         {
-            if (m_isReadOnly)
+            if (_isReadOnly)
             {
                 throw new InvalidOperationException(SR.InvalidOperation_ReadOnly);
             }
@@ -186,7 +186,7 @@ namespace System.Globalization
 
         internal void SetReadOnlyState(bool readOnly)
         {
-            m_isReadOnly = readOnly;
+            _isReadOnly = readOnly;
         }
 
 
@@ -204,12 +204,12 @@ namespace System.Globalization
             get
             {
                 // The following code assumes that the current era value can not be -1.
-                if (m_currentEraValue == -1)
+                if (_currentEraValue == -1)
                 {
                     Contract.Assert(BaseCalendarID != CalendarId.UNINITIALIZED_VALUE, "[Calendar.CurrentEraValue] Expected a real calendar ID");
-                    m_currentEraValue = CalendarData.GetCalendarData(BaseCalendarID).iCurrentEra;
+                    _currentEraValue = CalendarData.GetCalendarData(BaseCalendarID).iCurrentEra;
                 }
-                return (m_currentEraValue);
+                return (_currentEraValue);
             }
         }
 
@@ -840,7 +840,6 @@ namespace System.Globalization
             throw new ArgumentOutOfRangeException(null, SR.ArgumentOutOfRange_BadHourMinuteSecond);
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         internal static int GetSystemTwoDigitYearSetting(CalendarId CalID, int defaultYearValue)
         {
             // Call nativeGetTwoDigitYearMax

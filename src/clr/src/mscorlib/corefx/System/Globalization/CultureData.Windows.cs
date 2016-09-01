@@ -1,8 +1,11 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 using System.Runtime.InteropServices;
 using System.Text;
-
 using Internal.Runtime.Augments;
 
 namespace System.Globalization
@@ -14,7 +17,7 @@ namespace System.Globalization
         private const uint LOCALE_SISO3166CTRYNAME = 0x0000005A;
 
         private const uint TIME_NOSECONDS = 0x00000002;
-        
+
         /// <summary>
         /// Check with the OS to see if this is a valid culture.
         /// If so we populate a limited number of fields.  If its not valid we return false.
@@ -55,9 +58,9 @@ namespace System.Globalization
             const uint LOCALE_ILANGUAGE = 0x00000001;
             const uint LOCALE_INEUTRAL = 0x00000071;
             const uint LOCALE_SNAME = 0x0000005c;
-            
+
             int result;
-            string realNameBuffer = this.sRealName;
+            string realNameBuffer = _sRealName;
             char* pBuffer = stackalloc char[LOCALE_NAME_MAX_LENGTH];
 
             result = Interop.mincore.GetLocaleInfoEx(realNameBuffer, LOCALE_SNAME, pBuffer, LOCALE_NAME_MAX_LENGTH);
@@ -71,8 +74,8 @@ namespace System.Globalization
             // It worked, note that the name is the locale name, so use that (even for neutrals)
             // We need to clean up our "real" name, which should look like the windows name right now
             // so overwrite the input with the cleaned up name
-            this.sRealName = new String(pBuffer, 0, result - 1);
-            realNameBuffer = this.sRealName;
+            _sRealName = new String(pBuffer, 0, result - 1);
+            realNameBuffer = _sRealName;
 
             // Check for neutrality, don't expect to fail
             // (buffer has our name in it, so we don't have to do the gc. stuff)
@@ -84,21 +87,21 @@ namespace System.Globalization
             }
 
             // Remember our neutrality
-            this.bNeutral = *((uint*)pBuffer) != 0;
+            _bNeutral = *((uint*)pBuffer) != 0;
 
             // Note: Parents will be set dynamically
 
             // Start by assuming the windows name'll be the same as the specific name since windows knows
             // about specifics on all versions.  Only for downlevel Neutral locales does this have to change.
-            this.sWindowsName = realNameBuffer;
+            _sWindowsName = realNameBuffer;
 
             // Neutrals and non-neutrals are slightly different
-            if (this.bNeutral)
+            if (_bNeutral)
             {
                 // Neutral Locale
 
                 // IETF name looks like neutral name
-                this.sName = realNameBuffer;
+                _sName = realNameBuffer;
 
                 // Specific locale name is whatever ResolveLocaleName (win7+) returns.
                 // (Buffer has our name in it, and we can recycle that because windows resolves it before writing to the buffer)
@@ -111,7 +114,7 @@ namespace System.Globalization
                 }
                 // We found a locale name, so use it.
                 // In vista this should look like a sort name (de-DE_phoneb) or a specific culture (en-US) and be in the "pretty" form
-                this.sSpecificCulture = new String(pBuffer, 0, result - 1);
+                _sSpecificCulture = new String(pBuffer, 0, result - 1);
             }
             else
             {
@@ -121,9 +124,9 @@ namespace System.Globalization
                 // On mac we'll use this as well, even for neutrals. There's no obvious specific
                 // culture to use and this isn't exposed, but behaviorally this is correct on mac.
                 // Note that specifics include the sort name (de-DE_phoneb)
-                this.sSpecificCulture = realNameBuffer;
+                _sSpecificCulture = realNameBuffer;
 
-                this.sName = realNameBuffer;
+                _sName = realNameBuffer;
 
                 // We need the IETF name (sname)
                 // If we aren't an alt sort locale then this is the same as the windows name.
@@ -136,15 +139,15 @@ namespace System.Globalization
                     return false;
                 }
 
-                this.iLanguage = *((int*)pBuffer);
+                _iLanguage = *((int*)pBuffer);
 
-                if (!IsCustomCultureId(this.iLanguage))
+                if (!IsCustomCultureId(_iLanguage))
                 {
                     // not custom locale
                     int index = realNameBuffer.IndexOf('_');
                     if (index > 0 && index < realNameBuffer.Length)
                     {
-                        this.sName = realNameBuffer.Substring(0, index);
+                        _sName = realNameBuffer.Substring(0, index);
                     }
                 }
             }
@@ -153,16 +156,14 @@ namespace System.Globalization
             return true;
         }
 
-        [System.Security.SecurityCritical]
         private string GetLocaleInfo(LocaleStringData type)
         {
-            Contract.Assert(this.sWindowsName != null, "[CultureData.DoGetLocaleInfo] Expected this.sWindowsName to be populated by already");
-            return GetLocaleInfo(this.sWindowsName, type);
+            Contract.Assert(_sWindowsName != null, "[CultureData.DoGetLocaleInfo] Expected _sWindowsName to be populated by already");
+            return GetLocaleInfo(_sWindowsName, type);
         }
 
         // For LOCALE_SPARENT we need the option of using the "real" name (forcing neutral names) instead of the
         // "windows" name, which can be specific for downlevel (< windows 7) os's.
-        [System.Security.SecurityCritical]
         private string GetLocaleInfo(string localeName, LocaleStringData type)
         {
             uint lctype = (uint)type;
@@ -182,30 +183,31 @@ namespace System.Globalization
 
             // Ask OS for data, note that we presume it returns success, so we have to know that
             // sWindowsName is valid before calling.
-            Contract.Assert(this.sWindowsName != null, "[CultureData.DoGetLocaleInfoInt] Expected this.sWindowsName to be populated by already");
-            int result = Interop.mincore.GetLocaleInfoExInt(this.sWindowsName, lctype);
+            Contract.Assert(_sWindowsName != null, "[CultureData.DoGetLocaleInfoInt] Expected _sWindowsName to be populated by already");
+            int result = Interop.mincore.GetLocaleInfoExInt(_sWindowsName, lctype);
 
             return result;
         }
 
         private int[] GetLocaleInfo(LocaleGroupingData type)
         {
-            return ConvertWin32GroupString(GetLocaleInfoFromLCType(this.sWindowsName, (uint)type, UseUserOverride));
+            return ConvertWin32GroupString(GetLocaleInfoFromLCType(_sWindowsName, (uint)type, UseUserOverride));
         }
 
         private string GetTimeFormatString()
         {
             const uint LOCALE_STIMEFORMAT = 0x00001003;
 
-            return ReescapeWin32String(GetLocaleInfoFromLCType(this.sWindowsName, LOCALE_STIMEFORMAT, UseUserOverride));
+            return ReescapeWin32String(GetLocaleInfoFromLCType(_sWindowsName, LOCALE_STIMEFORMAT, UseUserOverride));
         }
 
         private int GetFirstDayOfWeek()
         {
-            Contract.Assert(this.sWindowsName != null, "[CultureData.DoGetLocaleInfoInt] Expected this.sWindowsName to be populated by already");
+            Contract.Assert(_sWindowsName != null, "[CultureData.DoGetLocaleInfoInt] Expected _sWindowsName to be populated by already");
 
-            int result = Interop.mincore.GetLocaleInfoExInt(this.sWindowsName, 
-                LocaleNumberData.FirstDayOfWeek | (!UseUserOverride ? LOCALE_NOUSEROVERRIDE : 0));
+            const uint LOCALE_IFIRSTDAYOFWEEK = 0x0000100C;
+
+            int result = Interop.mincore.GetLocaleInfoExInt(_sWindowsName, LOCALE_IFIRSTDAYOFWEEK | (!UseUserOverride ? LOCALE_NOUSEROVERRIDE : 0));
 
             // Win32 and .NET disagree on the numbering for days of the week, so we have to convert.
             return ConvertFirstDayOfWeekMonToSun(result);
@@ -214,8 +216,8 @@ namespace System.Globalization
         private String[] GetTimeFormats()
         {
             // Note that this gets overrides for us all the time
-            Contract.Assert(this.sWindowsName != null, "[CultureData.DoEnumTimeFormats] Expected this.sWindowsName to be populated by already");
-            String[] result = ReescapeWin32Strings(nativeEnumTimeFormats(this.sWindowsName, 0, UseUserOverride));
+            Contract.Assert(_sWindowsName != null, "[CultureData.DoEnumTimeFormats] Expected _sWindowsName to be populated by already");
+            String[] result = ReescapeWin32Strings(nativeEnumTimeFormats(_sWindowsName, 0, UseUserOverride));
 
             return result;
         }
@@ -223,8 +225,8 @@ namespace System.Globalization
         private String[] GetShortTimeFormats()
         {
             // Note that this gets overrides for us all the time
-            Contract.Assert(this.sWindowsName != null, "[CultureData.DoEnumShortTimeFormats] Expected this.sWindowsName to be populated by already");
-            String[] result = ReescapeWin32Strings(nativeEnumTimeFormats(this.sWindowsName, TIME_NOSECONDS, UseUserOverride));
+            Contract.Assert(_sWindowsName != null, "[CultureData.DoEnumShortTimeFormats] Expected _sWindowsName to be populated by already");
+            String[] result = ReescapeWin32Strings(nativeEnumTimeFormats(_sWindowsName, TIME_NOSECONDS, UseUserOverride));
 
             return result;
         }
@@ -234,7 +236,7 @@ namespace System.Globalization
         private static CultureData GetCultureDataFromRegionName(String regionName)
         {
             Contract.Assert(regionName != null);
-            
+
             const uint LOCALE_SUPPLEMENTAL = 0x00000002;
             const uint LOCALE_SPECIFICDATA = 0x00000020;
 
@@ -245,11 +247,8 @@ namespace System.Globalization
             GCHandle contextHandle = GCHandle.Alloc(context);
             try
             {
-                EnumLocalesProcEx callback = new EnumLocalesProcEx(EnumSystemLocalesProc);
-                Interop.mincore_private.LParamCallbackContext ctx = new Interop.mincore_private.LParamCallbackContext();
-                ctx.lParam = (IntPtr)contextHandle;
-
-                Interop.mincore_obsolete.EnumSystemLocalesEx(callback, LOCALE_SPECIFICDATA | LOCALE_SUPPLEMENTAL, ctx, IntPtr.Zero);
+                IntPtr callback = AddrofIntrinsics.AddrOf<Func<IntPtr, uint, IntPtr, Interop.BOOL>>(EnumSystemLocalesProc);
+                Interop.mincore.EnumSystemLocalesEx(callback, LOCALE_SPECIFICDATA | LOCALE_SUPPLEMENTAL, (IntPtr)contextHandle, IntPtr.Zero);
             }
             finally
             {
@@ -277,12 +276,11 @@ namespace System.Globalization
 
         private static CultureInfo GetUserDefaultCulture()
         {
-            return (CultureInfo)WinRTInterop.Callbacks.GetUserDefaultCulture(); 
+            return (CultureInfo)WinRTInterop.Callbacks.GetUserDefaultCulture();
         }
 
         // PAL methods end here.
 
-        [System.Security.SecurityCritical]
         private static string GetLocaleInfoFromLCType(string localeName, uint lctype, bool useUserOveride)
         {
             Contract.Assert(localeName != null, "[CultureData.GetLocaleInfoFromLCType] Expected localeName to be not be null");
@@ -456,16 +454,17 @@ namespace System.Globalization
 
 
         // Context for EnumCalendarInfoExEx callback.
-        class EnumLocaleData
+        private class EnumLocaleData
         {
             public string regionName;
             public string cultureName;
         }
 
         // EnumSystemLocaleEx callback.
-        static unsafe bool EnumSystemLocalesProc(IntPtr lpLocaleString, uint flags, Interop.mincore_private.LParamCallbackContext contextHandle)
+        [NativeCallable(CallingConvention = CallingConvention.StdCall)]
+        private static unsafe Interop.BOOL EnumSystemLocalesProc(IntPtr lpLocaleString, uint flags, IntPtr contextHandle)
         {
-            EnumLocaleData context = (EnumLocaleData)((GCHandle)contextHandle.lParam).Target;
+            EnumLocaleData context = (EnumLocaleData)((GCHandle)contextHandle).Target;
             try
             {
                 string cultureName = new string((char*)lpLocaleString);
@@ -473,36 +472,37 @@ namespace System.Globalization
                 if (regionName != null && regionName.Equals(context.regionName, StringComparison.OrdinalIgnoreCase))
                 {
                     context.cultureName = cultureName;
-                    return false; // we found a match, then stop the enumeration
+                    return Interop.BOOL.FALSE; // we found a match, then stop the enumeration
                 }
 
-                return true;
+                return Interop.BOOL.TRUE;
             }
             catch (Exception)
             {
-                return false;
+                return Interop.BOOL.FALSE;
             }
         }
 
         // Context for EnumTimeFormatsEx callback.
-        class EnumData
+        private class EnumData
         {
             public LowLevelList<string> strings;
         }
 
         // EnumTimeFormatsEx callback itself.
-        private static unsafe bool EnumTimeCallback(IntPtr lpTimeFormatString, Interop.mincore_private.LParamCallbackContext contextHandle)
+        [NativeCallable(CallingConvention = CallingConvention.StdCall)]
+        private static unsafe Interop.BOOL EnumTimeCallback(IntPtr lpTimeFormatString, IntPtr lParam)
         {
-            EnumData context = (EnumData)((GCHandle)contextHandle.lParam).Target;
+            EnumData context = (EnumData)((GCHandle)lParam).Target;
 
             try
             {
                 context.strings.Add(new string((char*)lpTimeFormatString));
-                return true;
+                return Interop.BOOL.TRUE;
             }
             catch (Exception)
             {
-                return false;
+                return Interop.BOOL.FALSE;
             }
         }
 
@@ -515,15 +515,11 @@ namespace System.Globalization
             data.strings = new LowLevelList<string>();
 
             GCHandle dataHandle = GCHandle.Alloc(data);
-
             try
             {
-                EnumTimeFormatsProcEx callback = new EnumTimeFormatsProcEx(EnumTimeCallback);
-                Interop.mincore_private.LParamCallbackContext cxt = new Interop.mincore_private.LParamCallbackContext();
-                cxt.lParam = (IntPtr)dataHandle;
-
                 // Now call the enumeration API. Work is done by our callback function
-                Interop.mincore_private.EnumTimeFormatsEx(callback, localeName, (uint)dwFlags, cxt);
+                IntPtr callback = AddrofIntrinsics.AddrOf<Func<IntPtr, IntPtr, Interop.BOOL>>(EnumTimeCallback);
+                Interop.mincore.EnumTimeFormatsEx(callback, localeName, (uint)dwFlags, (IntPtr)dataHandle);
             }
             finally
             {
@@ -561,7 +557,5 @@ namespace System.Globalization
 
             return null;
         }
-
-
     }
 }
