@@ -47,11 +47,17 @@ def static getOSGroup(def os) {
 
         Utilities.standardJobSetup(newJob, project, isPR, "*/${branch}")
         if (isPR) {
-            Utilities.addGithubPRTriggerForBranch(newJob, branch, "${os} Perf Tests") // Add a PR trigger.
+            TriggerBuilder builder = TriggerBuilder.triggerOnPullRequest()
+            builder.setGithubContext("${os} Perf Tests")
+            builder.triggerOnlyOnComment()
+            builder.setCustomTriggerPhrase("(?i).*test\\W+${os}\\W+perf.*")
+            builder.triggerForBranch(branch)
+            builder.emitTrigger(newJob)
         }
         else {
             // Set a push trigger
-            Utilities.addGithubPushTrigger(newJob)
+            TriggerBuilder builder = TriggerBuilder.triggerOnCommit()
+            builder.emitTrigger(newJob)
         }
     }
 }
@@ -123,11 +129,17 @@ def static getOSGroup(def os) {
 
         Utilities.standardJobSetup(newJob, project, isPR, "*/${branch}")
         if (isPR) {
-            Utilities.addGithubPRTriggerForBranch(newJob, branch, "${os} Perf Tests") // Add a PR trigger.
+            TriggerBuilder builder = TriggerBuilder.triggerOnPullRequest()
+            builder.setGithubContext("${os} Perf Tests")
+            builder.triggerOnlyOnComment()
+            builder.setCustomTriggerPhrase("(?i).*test\\W+${os}\\W+perf.*")
+            builder.triggerForBranch(branch)
+            builder.emitTrigger(newJob)
         }
         else {
             // Set a push trigger
-            Utilities.addGithubPushTrigger(newJob)
+            TriggerBuilder builder = TriggerBuilder.triggerOnCommit()
+            builder.emitTrigger(newJob)
         }
     } // os
 } // isPR
