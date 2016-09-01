@@ -319,6 +319,12 @@ mono_threads_platform_open_thread_handle (HANDLE handle, MonoNativeThreadId tid)
 	return OpenThread (THREAD_ALL_ACCESS, TRUE, tid);
 }
 
+void
+mono_threads_platform_close_thread_handle (HANDLE handle)
+{
+	CloseHandle (handle);
+}
+
 #if defined(_MSC_VER)
 const DWORD MS_VC_EXCEPTION=0x406D1388;
 #pragma pack(push,8)

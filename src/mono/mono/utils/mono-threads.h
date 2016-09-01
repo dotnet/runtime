@@ -473,6 +473,9 @@ mono_threads_get_max_stack_size (void);
 HANDLE
 mono_threads_open_thread_handle (HANDLE handle, MonoNativeThreadId tid);
 
+void
+mono_threads_close_thread_handle (HANDLE handle);
+
 MONO_API void
 mono_threads_attach_tools_thread (void);
 
@@ -540,6 +543,7 @@ void mono_threads_platform_get_stack_bounds (guint8 **staddr, size_t *stsize);
 gboolean mono_threads_platform_yield (void);
 void mono_threads_platform_exit (int exit_code);
 HANDLE mono_threads_platform_open_thread_handle (HANDLE handle, MonoNativeThreadId tid);
+void mono_threads_platform_close_thread_handle (HANDLE handle);
 void mono_threads_platform_set_exited (THREAD_INFO_TYPE *info);
 void mono_threads_platform_describe (THREAD_INFO_TYPE *info, GString *text);
 void mono_threads_platform_own_mutex (THREAD_INFO_TYPE *info, gpointer mutex_handle);

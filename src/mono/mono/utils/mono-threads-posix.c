@@ -274,6 +274,12 @@ mono_threads_platform_open_thread_handle (HANDLE handle, MonoNativeThreadId tid)
 	return handle;
 }
 
+void
+mono_threads_platform_close_thread_handle (HANDLE handle)
+{
+	mono_w32handle_unref (handle);
+}
+
 int
 mono_threads_pthread_kill (MonoThreadInfo *info, int signum)
 {

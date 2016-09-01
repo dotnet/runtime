@@ -1085,7 +1085,7 @@ mono_thread_detach_internal (MonoInternalThread *thread)
 	SET_CURRENT_OBJECT (NULL);
 	mono_domain_unset ();
 
-	/* Don't need to CloseHandle this thread, even though we took a
+	/* Don't need to close the handle to this thread, even though we took a
 	 * reference in mono_thread_attach (), because the GC will do it
 	 * when the Thread object is finalised.
 	 */
@@ -1214,7 +1214,7 @@ ves_icall_System_Threading_InternalThread_Thread_free_internal (MonoInternalThre
 	 * when thread_cleanup () can be called after this.
 	 */
 	if (thread)
-		CloseHandle (thread);
+		mono_threads_close_thread_handle (thread);
 
 	if (this_obj->synch_cs) {
 		MonoCoopMutex *synch_cs = this_obj->synch_cs;
@@ -2989,7 +2989,8 @@ struct wait_data
 	guint32 num;
 };
 
-static void wait_for_tids (struct wait_data *wait, guint32 timeout)
+static void
+wait_for_tids (struct wait_data *wait, guint32 timeout)
 {
 	guint32 i, ret;
 	
@@ -3006,7 +3007,7 @@ static void wait_for_tids (struct wait_data *wait, guint32 timeout)
 	}
 	
 	for(i=0; i<wait->num; i++)
-		CloseHandle (wait->handles[i]);
+		mono_threads_close_thread_handle (wait->handles [i]);
 
 	if (ret == WAIT_TIMEOUT)
 		return;
@@ -3069,7 +3070,7 @@ static void wait_for_tids_or_state_change (struct wait_data *wait, guint32 timeo
 	}
 	
 	for(i=0; i<wait->num; i++)
-		CloseHandle (wait->handles[i]);
+		mono_threads_close_thread_handle (wait->handles [i]);
 
 	if (ret == WAIT_TIMEOUT)
 		return;
@@ -3389,7 +3390,7 @@ void mono_thread_suspend_all_other_threads (void)
 			     || mono_gc_is_finalizer_internal_thread (thread)
 			     || (thread->flags & MONO_THREAD_FLAG_DONT_MANAGE)
 			) {
-				//CloseHandle (wait->handles [i]);
+				//mono_threads_close_thread_handle (wait->handles [i]);
 				wait->threads [i] = NULL; /* ignore this thread in next loop */
 				continue;
 			}
@@ -3400,7 +3401,7 @@ void mono_thread_suspend_all_other_threads (void)
 				(thread->state & ThreadState_StopRequested) != 0 ||
 				(thread->state & ThreadState_Stopped) != 0) {
 				UNLOCK_THREAD (thread);
-				CloseHandle (wait->handles [i]);
+				mono_threads_close_thread_handle (wait->handles [i]);
 				wait->threads [i] = NULL; /* ignore this thread in next loop */
 				continue;
 			}
