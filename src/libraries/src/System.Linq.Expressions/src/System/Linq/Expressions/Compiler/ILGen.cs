@@ -1080,26 +1080,16 @@ namespace System.Linq.Expressions.Compiler
         }
 
         /// <summary>
-        /// Emits an array of values of count size.  The items are emitted via the callback
-        /// which is provided with the current item index to emit.
+        /// Emits an array of values of count size.
         /// </summary>
-        internal static void EmitArray(this ILGenerator il, Type elementType, int count, Action<int> emit)
+        internal static void EmitArray(this ILGenerator il, Type elementType, int count)
         {
             ContractUtils.RequiresNotNull(elementType, nameof(elementType));
-            ContractUtils.RequiresNotNull(emit, nameof(emit));
+            
             Debug.Assert(count >= 0);
 
             il.EmitInt(count);
             il.Emit(OpCodes.Newarr, elementType);
-            for (int i = 0; i < count; i++)
-            {
-                il.Emit(OpCodes.Dup);
-                il.EmitInt(i);
-
-                emit(i);
-
-                il.EmitStoreElement(elementType);
-            }
         }
 
         /// <summary>
