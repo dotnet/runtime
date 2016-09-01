@@ -8,7 +8,6 @@ using System.Xml.Schema;
 
 namespace System.Xml.Serialization
 {
-    /// <include file='doc\XmlArrayAttribute.uex' path='docs/doc[@for="XmlArrayAttribute"]/*' />
     /// <devdoc>
     ///    <para>[To be supplied.]</para>
     /// </devdoc>
@@ -21,7 +20,6 @@ namespace System.Xml.Serialization
         private XmlSchemaForm _form = XmlSchemaForm.None;
         private int _order = -1;
 
-        /// <include file='doc\XmlArrayAttribute.uex' path='docs/doc[@for="XmlArrayAttribute.XmlArrayAttribute"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -29,7 +27,6 @@ namespace System.Xml.Serialization
         {
         }
 
-        /// <include file='doc\XmlArrayAttribute.uex' path='docs/doc[@for="XmlArrayAttribute.XmlArrayAttribute1"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -38,7 +35,6 @@ namespace System.Xml.Serialization
             _elementName = elementName;
         }
 
-        /// <include file='doc\XmlArrayAttribute.uex' path='docs/doc[@for="XmlArrayAttribute.ElementName"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -48,7 +44,6 @@ namespace System.Xml.Serialization
             set { _elementName = value; }
         }
 
-        /// <include file='doc\XmlArrayAttribute.uex' path='docs/doc[@for="XmlArrayAttribute.Namespace"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -58,7 +53,6 @@ namespace System.Xml.Serialization
             set { _ns = value; }
         }
 
-        /// <include file='doc\XmlArrayAttribute.uex' path='docs/doc[@for="XmlArrayAttribute.IsNullable"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -68,7 +62,6 @@ namespace System.Xml.Serialization
             set { _nullable = value; }
         }
 
-        /// <include file='doc\XmlArrayAttribute.uex' path='docs/doc[@for="XmlArrayAttribute.Form"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -78,7 +71,6 @@ namespace System.Xml.Serialization
             set { _form = value; }
         }
 
-        /// <include file='doc\XmlArrayAttribute.uex' path='docs/doc[@for="XmlArrayAttribute.Order"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>

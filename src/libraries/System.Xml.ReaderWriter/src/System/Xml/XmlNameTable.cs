@@ -4,7 +4,6 @@
 
 namespace System.Xml
 {
-    /// <include file='doc\XmlNameTable.uex' path='docs/doc[@for="XmlNameTable"]/*' />
     /// <devdoc>
     ///    <para> Table of atomized string objects. This provides an
     ///       efficient means for the XML parser to use the same string object for all
@@ -14,14 +13,12 @@ namespace System.Xml
     /// </devdoc>
     public abstract class XmlNameTable
     {
-        /// <include file='doc\XmlNameTable.uex' path='docs/doc[@for="XmlNameTable.Get"]/*' />
         /// <devdoc>
         ///    <para>Gets the atomized String object containing the same
         ///       chars as the specified range of chars in the given char array.</para>
         /// </devdoc>
         public abstract String Get(char[] array, int offset, int length);
 
-        /// <include file='doc\XmlNameTable.uex' path='docs/doc[@for="XmlNameTable.Get1"]/*' />
         /// <devdoc>
         ///    <para>
         ///       Gets the atomized String object containing the same
@@ -30,14 +27,12 @@ namespace System.Xml
         /// </devdoc>
         public abstract String Get(String array);
 
-        /// <include file='doc\XmlNameTable.uex' path='docs/doc[@for="XmlNameTable.Add"]/*' />
         /// <devdoc>
         ///    <para>Creates a new atom for the characters at the specified range
         ///       of characters in the specified string.</para>
         /// </devdoc>
         public abstract String Add(char[] array, int offset, int length);
 
-        /// <include file='doc\XmlNameTable.uex' path='docs/doc[@for="XmlNameTable.Add1"]/*' />
         /// <devdoc>
         ///    <para>
         ///       Creates a new atom for the specified string.
