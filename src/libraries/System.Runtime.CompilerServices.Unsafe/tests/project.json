@@ -1,7 +1,7 @@
 {
   "dependencies": {
-    "Microsoft.NETCore.Platforms": "4.3.0-beta-24501-01",
-    "System.Runtime": "4.3.0-beta-24501-01",
+    "Microsoft.NETCore.Platforms": "4.3.0-beta-24501-02",
+    "System.Runtime": "4.3.0-beta-24501-02",
     "test-runtime": {
       "target": "project",
       "exclude": "compile"
