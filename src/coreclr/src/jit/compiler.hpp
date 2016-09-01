@@ -4702,11 +4702,6 @@ inline bool BasicBlock::endsWithTailCallConvertibleToLoop(Compiler* comp, GenTre
     return endsWithTailCall(comp, fastTailCallsOnly, tailCallsConvertibleToLoopOnly, tailCall);
 }
 
-inline GenTree* Compiler::gtCloneCpObjNode(GenTree* source)
-{
-    return gtClone(source);
-}
-
 inline static bool StructHasOverlappingFields(DWORD attribs)
 {
     return ((attribs & CORINFO_FLG_OVERLAPPING_FIELDS) != 0);

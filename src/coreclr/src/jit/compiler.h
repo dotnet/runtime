@@ -1893,8 +1893,6 @@ public:
 
     GenTree* gtNewCpObjNode(GenTreePtr dst, GenTreePtr src, CORINFO_CLASS_HANDLE structHnd, bool volatil);
 
-    GenTree* gtCloneCpObjNode(GenTree* source);
-
     GenTreeArgList* gtNewListNode(GenTreePtr op1, GenTreeArgList* op2);
 
     GenTreeCall* gtNewCallNode(gtCallTypes           callType,
