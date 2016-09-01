@@ -154,50 +154,6 @@ namespace System.IO
         public override void WriteByte(byte value) { }
         public virtual void WriteTo(System.IO.Stream stream) { }
     }
-    public enum SeekOrigin
-    {
-        Begin = 0,
-        Current = 1,
-        End = 2,
-    }
-    public abstract partial class Stream : System.IDisposable
-    {
-        public static readonly System.IO.Stream Null;
-        protected Stream() { }
-        public abstract bool CanRead { get; }
-        public abstract bool CanSeek { get; }
-        public virtual bool CanTimeout { get { return default(bool); } }
-        public abstract bool CanWrite { get; }
-        public abstract long Length { get; }
-        public abstract long Position { get; set; }
-        public virtual int ReadTimeout { get { return default(int); } set { } }
-        public virtual int WriteTimeout { get { return default(int); } set { } }
-        public virtual System.IAsyncResult BeginRead(byte[] buffer, int offset, int count, System.AsyncCallback callback, object state) { return default(System.IAsyncResult); }
-        public virtual System.IAsyncResult BeginWrite(byte[] buffer, int offset, int count, System.AsyncCallback callback, object state) { return default(System.IAsyncResult); }
-        public void CopyTo(System.IO.Stream destination) { }
-        public void CopyTo(System.IO.Stream destination, int bufferSize) { }
-        public System.Threading.Tasks.Task CopyToAsync(System.IO.Stream destination) { return default(System.Threading.Tasks.Task); }
-        public System.Threading.Tasks.Task CopyToAsync(System.IO.Stream destination, int bufferSize) { return default(System.Threading.Tasks.Task); }
-        public virtual System.Threading.Tasks.Task CopyToAsync(System.IO.Stream destination, int bufferSize, System.Threading.CancellationToken cancellationToken) { return default(System.Threading.Tasks.Task); }
-        public virtual void Close() { }
-        public void Dispose() { }
-        protected virtual void Dispose(bool disposing) { }
-        public virtual int EndRead(System.IAsyncResult asyncResult) { return 0; }
-        public virtual void EndWrite(System.IAsyncResult asyncResult) { return; }
-        public abstract void Flush();
-        public System.Threading.Tasks.Task FlushAsync() { return default(System.Threading.Tasks.Task); }
-        public virtual System.Threading.Tasks.Task FlushAsync(System.Threading.CancellationToken cancellationToken) { return default(System.Threading.Tasks.Task); }
-        public abstract int Read(byte[] buffer, int offset, int count);
-        public System.Threading.Tasks.Task<int> ReadAsync(byte[] buffer, int offset, int count) { return default(System.Threading.Tasks.Task<int>); }
-        public virtual System.Threading.Tasks.Task<int> ReadAsync(byte[] buffer, int offset, int count, System.Threading.CancellationToken cancellationToken) { return default(System.Threading.Tasks.Task<int>); }
-        public virtual int ReadByte() { return default(int); }
-        public abstract long Seek(long offset, System.IO.SeekOrigin origin);
-        public abstract void SetLength(long value);
-        public abstract void Write(byte[] buffer, int offset, int count);
-        public System.Threading.Tasks.Task WriteAsync(byte[] buffer, int offset, int count) { return default(System.Threading.Tasks.Task); }
-        public virtual System.Threading.Tasks.Task WriteAsync(byte[] buffer, int offset, int count, System.Threading.CancellationToken cancellationToken) { return default(System.Threading.Tasks.Task); }
-        public virtual void WriteByte(byte value) { }
-    }
     public partial class StreamReader : System.IO.TextReader
     {
         public static readonly new System.IO.StreamReader Null;

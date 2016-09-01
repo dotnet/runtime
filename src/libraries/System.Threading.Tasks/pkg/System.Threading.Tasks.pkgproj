@@ -5,11 +5,11 @@
   </PropertyGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
-    <ProjectReference Include="..\ref\4.0.0\System.Threading.Tasks.depproj">
-      <SupportedFramework>net45;netcore45;wp8;wpa81</SupportedFramework>
-    </ProjectReference>
     <ProjectReference Include="..\ref\System.Threading.Tasks.csproj">
-      <SupportedFramework>net46;netcore50;netcoreapp1.0;$(AllXamarinFrameworks)</SupportedFramework>
+      <SupportedFramework>net463;netcoreapp1.1;netcore50;$(AllXamarinFrameworks)</SupportedFramework>
+    </ProjectReference>
+    <ProjectReference Include="..\src\System.Threading.Tasks.csproj">
+      <TargetGroup>net463</TargetGroup>
     </ProjectReference>
     <ProjectReference Include="any\System.Threading.Tasks.pkgproj" />
     <ProjectReference Include="aot\System.Threading.Tasks.pkgproj" />

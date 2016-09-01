@@ -8,9 +8,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\redist\System.Reflection.Primitives.depproj">
-      <TargetGroup>netcore50aot</TargetGroup>
-    </ProjectReference>
     <ProjectReference Include="..\..\src\System.Reflection.Primitives.csproj">
       <TargetGroup>uap101aot</TargetGroup>
     </ProjectReference>

@@ -8,15 +8,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\System.Runtime.InteropServices.csproj" />
-    <ProjectReference Include="..\..\src\redist\System.Runtime.InteropServices.depproj">
-      <TargetGroup>netcore50</TargetGroup>
-    </ProjectReference>
-
-    <!-- AOT implementation comes from AOT package -->
-    <File Include="$(PlaceholderFile)">
-      <TargetPath>runtimes/aot/lib/netcore50</TargetPath>
-      <TargetFramework>aot</TargetFramework>
-    </File>
 
     <InboxOnTargetFramework Include="MonoAndroid10" />
     <InboxOnTargetFramework Include="MonoTouch10" />
