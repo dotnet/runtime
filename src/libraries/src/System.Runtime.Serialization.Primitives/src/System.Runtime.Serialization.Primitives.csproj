@@ -42,7 +42,7 @@
     <Compile Include="System\Runtime\Serialization\SerializationException.cs" />
     <Compile Include="System\Runtime\Serialization\StreamingContext.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)'=='' Or '$(TargetGroup)'=='netstandard1.7'">
+  <ItemGroup Condition="'$(TargetGroup)'==''">
     <Compile Include="System\Runtime\Serialization\InvalidDataContractException.Serialization.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)'==''">
