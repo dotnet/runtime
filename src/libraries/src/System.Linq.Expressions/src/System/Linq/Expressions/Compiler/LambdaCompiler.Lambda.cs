@@ -8,6 +8,7 @@ using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 using System.Threading;
+using static System.Linq.Expressions.CachedReflectionInfo;
 
 namespace System.Linq.Expressions.Compiler
 {
@@ -75,7 +76,7 @@ namespace System.Linq.Expressions.Compiler
             {
                 _ilg.EmitNull();
             }
-            _ilg.EmitNew(typeof(Closure).GetConstructor(new Type[] { typeof(object[]), typeof(object[]) }));
+            _ilg.EmitNew(Closure_ObjectArray_ObjectArray);
         }
 
         /// <summary>
@@ -94,7 +95,7 @@ namespace System.Linq.Expressions.Compiler
                 _boundConstants.EmitConstant(this, dynamicMethod, typeof(MethodInfo));
                 _ilg.EmitType(delegateType);
                 EmitClosureCreation(inner);
-                _ilg.Emit(OpCodes.Callvirt, typeof(MethodInfo).GetMethod("CreateDelegate", new Type[] { typeof(Type), typeof(object) }));
+                _ilg.Emit(OpCodes.Callvirt, MethodInfo_CreateDelegate_Type_Object);
                 _ilg.Emit(OpCodes.Castclass, delegateType);
             }
             else
