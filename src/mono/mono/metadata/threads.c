@@ -971,7 +971,7 @@ mono_thread_create_internal (MonoDomain *domain, gpointer func, gpointer arg, gb
 	/* Check that the managed and unmanaged layout of MonoInternalThread matches */
 #ifndef MONO_CROSS_COMPILE
 	if (mono_check_corlib_version () == NULL)
-		g_assert (((char*)&internal->unused2 - (char*)internal) == mono_defaults.internal_thread_class->fields [mono_defaults.internal_thread_class->field.count - 1].offset);
+		g_assert (((char*)&internal->abort_protected_block_count - (char*)internal) == mono_defaults.internal_thread_class->fields [mono_defaults.internal_thread_class->field.count - 1].offset);
 #endif
 
 	return internal;
@@ -4516,7 +4516,6 @@ mono_thread_request_interruption (gboolean running_managed)
 		thread->state & ThreadState_Background)
 		ExitThread (1);
 #endif
-	
 	if (InterlockedCompareExchange (&thread->interruption_requested, 1, 0) == 1)
 		return NULL;
 	InterlockedIncrement (&thread_interruption_requested);
@@ -4795,6 +4794,13 @@ async_abort_critical (MonoThreadInfo *info, gpointer ud)
 	if (mono_get_eh_callbacks ()->mono_install_handler_block_guard (mono_thread_info_get_suspend_state (info)))
 		return MonoResumeThread;
 
+	/*
+	The target thread is running at least one protected block, which must not be interrupted, so we give up.
+	The protected block code will give them a chance when appropriate.
+	*/
+	if (thread->abort_protected_block_count)
+		return MonoResumeThread;
+
 	/*someone is already interrupting it*/
 	if (InterlockedCompareExchange (&thread->interruption_requested, 1, 0) == 1)
 		return MonoResumeThread;
@@ -4852,6 +4858,9 @@ self_abort_internal (MonoError *error)
 	/* FIXME this is insanely broken, it doesn't cause interruption to happen synchronously
 	 * since passing FALSE to mono_thread_request_interruption makes sure it returns NULL */
 
+	/*
+	Self aborts ignore the protected block logic and raise the TAE regardless. This is verified by one of the tests in mono/tests/abort-cctor.cs.
+	*/
 	exc = mono_thread_request_interruption (TRUE);
 	if (exc)
 		mono_error_set_exception_instance (error, exc);
@@ -5175,4 +5184,37 @@ mono_threads_detach_coop (gpointer cookie, gpointer *dummy)
 				mono_domain_set (orig, TRUE);
 		}
 	}
+}
+
+void
+mono_threads_begin_abort_protected_block (void)
+{
+	MonoInternalThread *thread;
+
+	thread = mono_thread_internal_current ();
+	++thread->abort_protected_block_count;
+	mono_memory_barrier ();
+}
+
+void
+mono_threads_end_abort_protected_block (void)
+{
+	MonoInternalThread *thread;
+
+	thread = mono_thread_internal_current ();
+
+	mono_memory_barrier ();
+	--thread->abort_protected_block_count;
+}
+
+MonoException*
+mono_thread_try_resume_interruption (void)
+{
+	MonoInternalThread *thread;
+
+	thread = mono_thread_internal_current ();
+	if (thread->abort_protected_block_count || mono_get_eh_callbacks ()->mono_current_thread_has_handle_block_guard ())
+		return NULL;
+
+	return mono_thread_resume_interruption ();
 }

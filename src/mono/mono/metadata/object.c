@@ -329,6 +329,7 @@ mono_runtime_class_init_full (MonoVTable *vtable, MonoError *error)
 	MonoNativeThreadId tid;
 	int do_initialization = 0;
 	MonoDomain *last_domain = NULL;
+	MonoException * pending_tae = NULL;
 
 	mono_error_init (error);
 
@@ -431,14 +432,22 @@ mono_runtime_class_init_full (MonoVTable *vtable, MonoError *error)
 
 	if (do_initialization) {
 		MonoException *exc = NULL;
+
+		mono_threads_begin_abort_protected_block ();
 		mono_runtime_try_invoke (method, NULL, NULL, (MonoObject**) &exc, error);
-		if (exc != NULL && mono_error_ok (error)) {
-			mono_error_set_exception_instance (error, exc);
-		}
+		mono_threads_end_abort_protected_block ();
+
+		//exception extracted, error will be set to the right value later
+		if (exc == NULL && !mono_error_ok (error))//invoking failed but exc was not set
+			exc = mono_error_convert_to_exception (error);
+		else
+			mono_error_cleanup (error);
+
+		mono_error_init (error);
 
 		/* If the initialization failed, mark the class as unusable. */
 		/* Avoid infinite loops */
-		if (!(mono_error_ok(error) ||
+		if (!(!exc ||
 			  (klass->image == mono_defaults.corlib &&
 			   !strcmp (klass->name_space, "System") &&
 			   !strcmp (klass->name, "TypeInitializationException")))) {
@@ -451,15 +460,9 @@ mono_runtime_class_init_full (MonoVTable *vtable, MonoError *error)
 
 			MonoException *exc_to_throw = mono_get_exception_type_initialization_checked (full_name, exc, error);
 			g_free (full_name);
-			return_val_if_nok (error, FALSE);
 
-			mono_error_set_exception_instance (error, exc_to_throw);
+			mono_error_assert_ok (error); //We can't recover from this, no way to fail a type we can't alloc a failure.
 
-			MonoException *exc_to_store = mono_error_convert_to_exception (error);
-			/* What we really want to do here is clone the error object and store one copy in the
-			 * domain's exception hash and use the other one to error out here. */
-			mono_error_init (error);
-			mono_error_set_exception_instance (error, exc_to_store);
 			/*
 			 * Store the exception object so it could be thrown on subsequent
 			 * accesses.
@@ -467,7 +470,7 @@ mono_runtime_class_init_full (MonoVTable *vtable, MonoError *error)
 			mono_domain_lock (domain);
 			if (!domain->type_init_exception_hash)
 				domain->type_init_exception_hash = mono_g_hash_table_new_type (mono_aligned_addr_hash, NULL, MONO_HASH_VALUE_GC, MONO_ROOT_SOURCE_DOMAIN, "type initialization exceptions table");
-			mono_g_hash_table_insert (domain->type_init_exception_hash, klass, exc_to_store);
+			mono_g_hash_table_insert (domain->type_init_exception_hash, klass, exc_to_throw);
 			mono_domain_unlock (domain);
 		}
 
@@ -475,6 +478,11 @@ mono_runtime_class_init_full (MonoVTable *vtable, MonoError *error)
 			mono_domain_set (last_domain, TRUE);
 		lock->done = TRUE;
 		mono_type_init_unlock (lock);
+		if (exc && mono_object_class (exc) == mono_defaults.threadabortexception_class)
+			pending_tae = exc;
+		//TAEs are blocked around .cctors, they must escape as soon as no cctor is left to run.
+		if (!pending_tae)
+			pending_tae = mono_thread_try_resume_interruption ();
 	} else {
 		/* this just blocks until the initializing thread is done */
 		mono_type_init_lock (lock);
@@ -495,7 +503,10 @@ mono_runtime_class_init_full (MonoVTable *vtable, MonoError *error)
 		vtable->initialized = 1;
 	mono_type_initialization_unlock ();
 
-	if (vtable->init_failed) {
+	//TAE wins over TIE
+	if (pending_tae)
+		mono_error_set_exception_instance (error, pending_tae);
+	else if (vtable->init_failed) {
 		/* Either we were the initializing thread or we waited for the initialization */
 		mono_error_set_exception_instance (error, get_type_init_exception_for_vtable (vtable));
 		return FALSE;
@@ -4660,10 +4671,13 @@ mono_unhandled_exception (MonoObject *exc)
 	if (!current_appdomain_delegate && !root_appdomain_delegate) {
 		mono_print_unhandled_exception (exc);
 	} else {
+		/* unhandled exception callbacks must not be aborted */
+		mono_threads_begin_abort_protected_block ();
 		if (root_appdomain_delegate)
 			call_unhandled_exception_delegate (root_domain, root_appdomain_delegate, exc);
 		if (current_appdomain_delegate)
 			call_unhandled_exception_delegate (current_domain, current_appdomain_delegate, exc);
+		mono_threads_end_abort_protected_block ();
 	}
 
 	/* set exitcode only if we will abort the process */
@@ -7533,14 +7547,16 @@ ves_icall_System_Runtime_Remoting_Messaging_AsyncResult_Invoke (MonoAsyncResult 
 
 		ac->msg->exc = NULL;
 
-		MonoError invoke_error;
-		res = mono_message_invoke (ares->async_delegate, ac->msg, &ac->msg->exc, &ac->out_args, &invoke_error);
+		res = mono_message_invoke (ares->async_delegate, ac->msg, &ac->msg->exc, &ac->out_args, &error);
+
+		/* The exit side of the invoke must not be aborted as it would leave the runtime in an undefined state */
+		mono_threads_begin_abort_protected_block ();
 
 		if (!ac->msg->exc) {
-			MonoException *ex = mono_error_convert_to_exception (&invoke_error);
+			MonoException *ex = mono_error_convert_to_exception (&error);
 			ac->msg->exc = (MonoObject *)ex;
 		} else {
-			mono_error_cleanup (&invoke_error);
+			mono_error_cleanup (&error);
 		}
 
 		MONO_OBJECT_SETREF (ac, res, res);
@@ -7554,11 +7570,14 @@ ves_icall_System_Runtime_Remoting_Messaging_AsyncResult_Invoke (MonoAsyncResult 
 		if (wait_event != NULL)
 			SetEvent (wait_event);
 
-		if (ac->cb_method) {
+		mono_error_init (&error); //the else branch would leave it in an undefined state
+		if (ac->cb_method)
 			mono_runtime_invoke_checked (ac->cb_method, ac->cb_target, (gpointer*) &ares, &error);
-			if (mono_error_set_pending_exception (&error))
-				return NULL;
-		}
+
+		mono_threads_end_abort_protected_block ();
+
+		if (mono_error_set_pending_exception (&error))
+			return NULL;
 	}
 
 	return res;
