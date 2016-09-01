@@ -8,7 +8,6 @@ using System.Xml.Schema;
 
 namespace System.Xml.Serialization
 {
-    /// <include file='doc\XmlElementAttribute.uex' path='docs/doc[@for="XmlElementAttribute"]/*' />
     /// <devdoc>
     ///    <para>[To be supplied.]</para>
     /// </devdoc>
@@ -24,7 +23,6 @@ namespace System.Xml.Serialization
         private XmlSchemaForm _form = XmlSchemaForm.None;
         private int _order = -1;
 
-        /// <include file='doc\XmlElementAttribute.uex' path='docs/doc[@for="XmlElementAttribute.XmlElementAttribute"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -32,7 +30,6 @@ namespace System.Xml.Serialization
         {
         }
 
-        /// <include file='doc\XmlElementAttribute.uex' path='docs/doc[@for="XmlElementAttribute.XmlElementAttribute1"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -41,7 +38,6 @@ namespace System.Xml.Serialization
             _elementName = elementName;
         }
 
-        /// <include file='doc\XmlElementAttribute.uex' path='docs/doc[@for="XmlElementAttribute.XmlElementAttribute2"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -50,7 +46,6 @@ namespace System.Xml.Serialization
             _type = type;
         }
 
-        /// <include file='doc\XmlElementAttribute.uex' path='docs/doc[@for="XmlElementAttribute.XmlElementAttribute3"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -60,7 +55,6 @@ namespace System.Xml.Serialization
             _type = type;
         }
 
-        /// <include file='doc\XmlElementAttribute.uex' path='docs/doc[@for="XmlElementAttribute.Type"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -70,7 +64,6 @@ namespace System.Xml.Serialization
             set { _type = value; }
         }
 
-        /// <include file='doc\XmlElementAttribute.uex' path='docs/doc[@for="XmlElementAttribute.ElementName"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -80,7 +73,6 @@ namespace System.Xml.Serialization
             set { _elementName = value; }
         }
 
-        /// <include file='doc\XmlElementAttribute.uex' path='docs/doc[@for="XmlElementAttribute.Namespace"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -90,7 +82,6 @@ namespace System.Xml.Serialization
             set { _ns = value; }
         }
 
-        /// <include file='doc\XmlElementAttribute.uex' path='docs/doc[@for="XmlElementAttribute.DataType"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -100,7 +91,6 @@ namespace System.Xml.Serialization
             set { _dataType = value; }
         }
 
-        /// <include file='doc\XmlElementAttribute.uex' path='docs/doc[@for="XmlElementAttribute.IsNullable"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -119,7 +109,6 @@ namespace System.Xml.Serialization
             get { return _nullableSpecified; }
         }
 
-        /// <include file='doc\XmlElementAttribute.uex' path='docs/doc[@for="XmlElementAttribute.Form"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -129,7 +118,6 @@ namespace System.Xml.Serialization
             set { _form = value; }
         }
 
-        /// <include file='doc\XmlElementAttribute.uex' path='docs/doc[@for="XmlElementAttribute.Order"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
