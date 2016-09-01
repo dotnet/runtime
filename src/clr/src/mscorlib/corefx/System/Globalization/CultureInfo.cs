@@ -120,6 +120,11 @@ namespace System.Globalization
         // All of the following will be created on demand.
         //
 
+        // WARNING: We allow diagnostic tools to directly inspect these three members (s_InvariantCultureInfo, s_DefaultThreadCurrentUICulture and s_DefaultThreadCurrentCulture)
+        // See https://github.com/dotnet/corert/blob/master/Documentation/design-docs/diagnostics/diagnostics-tools-contract.md for more details. 
+        // Please do not change the type, the name, or the semantic usage of this member without understanding the implication for tools. 
+        // Get in touch with the diagnostics team if you have questions.
+
         //The Invariant culture;
         private static volatile CultureInfo s_InvariantCultureInfo;
 
@@ -212,6 +217,8 @@ namespace System.Globalization
         // We do this to try to return the system UI language and the default user languages
         // This method will fallback if this fails (like Invariant)
         //
+        // TODO: It would appear that this is only ever called with userOveride = true
+        // and this method only has one caller.  Can we fold it into the caller?
         private static CultureInfo GetCultureByName(String name, bool userOverride)
         {
             CultureInfo ci = null;
@@ -243,15 +250,14 @@ namespace System.Globalization
 
         internal static bool VerifyCultureName(String cultureName, bool throwException)
         {
-            // This function is used by ResourceManager.GetResourceFileName(). 
+            // This function is used by ResourceManager.GetResourceFileName().
             // ResourceManager searches for resource using CultureInfo.Name,
             // so we should check against CultureInfo.Name.
 
             for (int i = 0; i < cultureName.Length; i++)
             {
                 char c = cultureName[i];
-                // TODO: NLS Arrowhead - This is broken, names can only be RFC4646 names (ie: a-zA-Z0-9).
-                // TODO: NLS Arrowhead - This allows any unicode letter/digit
+                // TODO: Names can only be RFC4646 names (ie: a-zA-Z0-9) while this allows any unicode letter/digit
                 if (Char.IsLetterOrDigit(c) || c == '-' || c == '_')
                 {
                     continue;
@@ -416,10 +422,9 @@ namespace System.Globalization
         public static CultureInfo DefaultThreadCurrentCulture
         {
             get { return s_DefaultThreadCurrentCulture; }
-            [System.Security.SecuritySafeCritical]  // auto-generated
             set
             {
-                // If you add pre-conditions to this method, check to see if you also need to 
+                // If you add pre-conditions to this method, check to see if you also need to
                 // add them to Thread.CurrentCulture.set.
 
                 s_DefaultThreadCurrentCulture = value;
@@ -429,13 +434,12 @@ namespace System.Globalization
         public static CultureInfo DefaultThreadCurrentUICulture
         {
             get { return s_DefaultThreadCurrentUICulture; }
-            [System.Security.SecuritySafeCritical]  // auto-generated
             set
             {
                 //If they're trying to use a Culture with a name that we can't use in resource lookup,
                 //don't even let them set it on the thread.
 
-                // If you add more pre-conditions to this method, check to see if you also need to 
+                // If you add more pre-conditions to this method, check to see if you also need to
                 // add them to Thread.CurrentUICulture.set.
 
                 if (value != null)
@@ -560,7 +564,6 @@ namespace System.Globalization
         ////////////////////////////////////////////////////////////////////////
         public virtual String DisplayName
         {
-            [System.Security.SecuritySafeCritical]  // auto-generated
             get
             {
                 Contract.Ensures(Contract.Result<String>() != null);
@@ -581,7 +584,6 @@ namespace System.Globalization
         ////////////////////////////////////////////////////////////////////////
         public virtual String NativeName
         {
-            [System.Security.SecuritySafeCritical]  // auto-generated
             get
             {
                 Contract.Ensures(Contract.Result<String>() != null);
@@ -600,7 +602,6 @@ namespace System.Globalization
         ////////////////////////////////////////////////////////////////////////
         public virtual String EnglishName
         {
-            [System.Security.SecuritySafeCritical]  // auto-generated
             get
             {
                 Contract.Ensures(Contract.Result<String>() != null);
@@ -611,7 +612,6 @@ namespace System.Globalization
         // ie: en
         public virtual String TwoLetterISOLanguageName
         {
-            [System.Security.SecuritySafeCritical]  // auto-generated
             get
             {
                 Contract.Ensures(Contract.Result<String>() != null);
