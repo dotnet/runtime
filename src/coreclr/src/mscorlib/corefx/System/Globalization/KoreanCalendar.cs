@@ -44,7 +44,7 @@ namespace System.Globalization
         //m_EraInfo[0] = new EraInfo(1, new DateTime(1, 1, 1).Ticks, -2333, 2334, GregorianCalendar.MaxYear + 2333);
 
         // Initialize our era info.
-        static internal EraInfo[] koreanEraInfo = new EraInfo[] {
+        internal static EraInfo[] koreanEraInfo = new EraInfo[] {
             new EraInfo( 1, 1, 1, 1, -2333, 2334, GregorianCalendar.MaxYear + 2333)   // era #, start year/month/day, yearOffset, minEraYear 
         };
 
@@ -68,23 +68,6 @@ namespace System.Globalization
                 return (DateTime.MaxValue);
             }
         }
-
-        /*=================================GetDefaultInstance==========================
-        **Action: Internal method to provide a default intance of KoreanCalendar.  Used by NLS+ implementation
-        **       and other calendars.
-        **Returns:
-        **Arguments:
-        **Exceptions:
-        ============================================================================*/
-        /*
-        internal static Calendar GetDefaultInstance() {
-            if (m_defaultInstance == null) {
-                m_defaultInstance = new KoreanCalendar();
-            }
-            return (m_defaultInstance);
-        }
-        */
-
 
         public KoreanCalendar()
         {

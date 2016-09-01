@@ -70,7 +70,7 @@ namespace System.Globalization
             }
         }
 
-        static readonly int[,] yinfo =
+        private static readonly int[,] s_yinfo =
         {
             /*Y            LM        Lmon    Lday        DaysPerMonth    D1    D2    D3    D4    D5    D6    D7    D8    D9    D10    D11    D12    D13    #Days
             1960    */
@@ -220,7 +220,7 @@ namespace System.Globalization
             }
             Contract.EndContractBlock();
 
-            return yinfo[LunarYear - MIN_LUNISOLAR_YEAR, Index];
+            return s_yinfo[LunarYear - MIN_LUNISOLAR_YEAR, Index];
         }
 
         internal override int GetYear(int year, DateTime time)

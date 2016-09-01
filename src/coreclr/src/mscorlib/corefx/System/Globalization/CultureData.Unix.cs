@@ -25,10 +25,10 @@ namespace System.Globalization
         [SecuritySafeCritical]
         private unsafe bool InitCultureData()
         {
-            Contract.Assert(this.sRealName != null);
+            Contract.Assert(_sRealName != null);
 
             string alternateSortName = string.Empty;
-            string realNameBuffer = this.sRealName;
+            string realNameBuffer = _sRealName;
 
             // Basic validation
             if (realNameBuffer.Contains("@"))
@@ -50,38 +50,38 @@ namespace System.Globalization
             }
 
             // Get the locale name from ICU
-            if (!GetLocaleName(realNameBuffer, out this.sWindowsName))
+            if (!GetLocaleName(realNameBuffer, out _sWindowsName))
             {
                 return false; // fail
             }
 
             // Replace the ICU collation keyword with an _
-            index = this.sWindowsName.IndexOf(ICU_COLLATION_KEYWORD, StringComparison.Ordinal);
+            index = _sWindowsName.IndexOf(ICU_COLLATION_KEYWORD, StringComparison.Ordinal);
             if (index >= 0)
             {
-                this.sName = this.sWindowsName.Substring(0, index) + "_" + alternateSortName;
+                _sName = _sWindowsName.Substring(0, index) + "_" + alternateSortName;
             }
             else
             {
-                this.sName = this.sWindowsName;
+                _sName = _sWindowsName;
             }
-            this.sRealName = this.sName;
-            this.sSpecificCulture = this.sRealName; // we don't attempt to find a non-neutral locale if a neutral is passed in (unlike win32)
+            _sRealName = _sName;
+            _sSpecificCulture = _sRealName; // we don't attempt to find a non-neutral locale if a neutral is passed in (unlike win32)
 
-            this.iLanguage = this.ILANGUAGE;
-            if (this.iLanguage == 0)
+            _iLanguage = this.ILANGUAGE;
+            if (_iLanguage == 0)
             {
-                this.iLanguage = LOCALE_CUSTOM_UNSPECIFIED;
+                _iLanguage = LOCALE_CUSTOM_UNSPECIFIED;
             }
 
-            this.bNeutral = (this.SISO3166CTRYNAME.Length == 0);
+            _bNeutral = (this.SISO3166CTRYNAME.Length == 0);
 
             // Remove the sort from sName unless custom culture
-            if (!this.bNeutral)
+            if (!_bNeutral)
             {
-                if (!IsCustomCultureId(this.iLanguage))
+                if (!IsCustomCultureId(_iLanguage))
                 {
-                    this.sName = this.sWindowsName.Substring(0, index);
+                    _sName = _sWindowsName.Substring(0, index);
                 }
             }
             return true;
@@ -123,8 +123,8 @@ namespace System.Globalization
 
         private string GetLocaleInfo(LocaleStringData type)
         {
-            Contract.Assert(this.sWindowsName != null, "[CultureData.GetLocaleInfo] Expected this.sWindowsName to be populated already");
-            return GetLocaleInfo(this.sWindowsName, type);
+            Contract.Assert(_sWindowsName != null, "[CultureData.GetLocaleInfo] Expected _sWindowsName to be populated already");
+            return GetLocaleInfo(_sWindowsName, type);
         }
 
         // For LOCALE_SPARENT we need the option of using the "real" name (forcing neutral names) instead of the
@@ -158,7 +158,7 @@ namespace System.Globalization
         [SecuritySafeCritical]
         private int GetLocaleInfo(LocaleNumberData type)
         {
-            Contract.Assert(this.sWindowsName != null, "[CultureData.GetLocaleInfo(LocaleNumberData)] Expected this.sWindowsName to be populated already");
+            Contract.Assert(_sWindowsName != null, "[CultureData.GetLocaleInfo(LocaleNumberData)] Expected _sWindowsName to be populated already");
 
             switch (type)
             {
@@ -169,7 +169,7 @@ namespace System.Globalization
             
 
             int value = 0;
-            bool result = Interop.GlobalizationInterop.GetLocaleInfoInt(this.sWindowsName, (uint)type, ref value);
+            bool result = Interop.GlobalizationInterop.GetLocaleInfoInt(_sWindowsName, (uint)type, ref value);
             if (!result)
             {
                 // Failed, just use 0
@@ -182,11 +182,11 @@ namespace System.Globalization
         [SecuritySafeCritical]
         private int[] GetLocaleInfo(LocaleGroupingData type)
         {
-            Contract.Assert(this.sWindowsName != null, "[CultureData.GetLocaleInfo(LocaleGroupingData)] Expected this.sWindowsName to be populated already");
+            Contract.Assert(_sWindowsName != null, "[CultureData.GetLocaleInfo(LocaleGroupingData)] Expected _sWindowsName to be populated already");
 
             int primaryGroupingSize = 0;
             int secondaryGroupingSize = 0;
-            bool result = Interop.GlobalizationInterop.GetLocaleInfoGroupingSizes(this.sWindowsName, (uint)type, ref primaryGroupingSize, ref secondaryGroupingSize);
+            bool result = Interop.GlobalizationInterop.GetLocaleInfoGroupingSizes(_sWindowsName, (uint)type, ref primaryGroupingSize, ref secondaryGroupingSize);
             if (!result)
             {
                 Contract.Assert(false, "[CultureData.GetLocaleInfo(LocaleGroupingData type)] failed");
@@ -208,11 +208,11 @@ namespace System.Globalization
         [SecuritySafeCritical]
         private string GetTimeFormatString(bool shortFormat)
         {
-            Contract.Assert(this.sWindowsName != null, "[CultureData.GetTimeFormatString(bool shortFormat)] Expected this.sWindowsName to be populated already");
+            Contract.Assert(_sWindowsName != null, "[CultureData.GetTimeFormatString(bool shortFormat)] Expected _sWindowsName to be populated already");
 
             StringBuilder sb = StringBuilderCache.Acquire(ICU_ULOC_KEYWORD_AND_VALUES_CAPACITY);
 
-            bool result = Interop.GlobalizationInterop.GetLocaleTimeFormat(this.sWindowsName, shortFormat, sb, sb.Capacity);
+            bool result = Interop.GlobalizationInterop.GetLocaleTimeFormat(_sWindowsName, shortFormat, sb, sb.Capacity);
             if (!result)
             {
                 // Failed, just use empty string

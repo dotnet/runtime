@@ -7,22 +7,48 @@ using System.Diagnostics.Contracts;
 namespace System.Globalization
 {
     public partial class CompareInfo
-    {      
+    {
         internal unsafe CompareInfo(CultureInfo culture)
         {
-            this.m_name = culture.m_name;
+            _name = culture._name;
             InitSort(culture);
         }
 
         private void InitSort(CultureInfo culture)
         {
-            this.m_sortName = culture.SortName;
+            _sortName = culture.SortName;
 
             const uint LCMAP_SORTHANDLE = 0x20000000;
-            long handle;
-            int ret = Interop.mincore.LCMapStringEx(m_sortName, LCMAP_SORTHANDLE, null, 0, (IntPtr)(&handle), IntPtr.Size, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero);
 
-            _sortHandle = ret > 0 ? (IntPtr)handle : IntPtr.Zero;
+            _name = culture._name;
+            _sortName = culture.SortName;
+
+            IntPtr handle;
+            int ret = Interop.mincore.LCMapStringEx(_sortName, LCMAP_SORTHANDLE, null, 0, &handle, IntPtr.Size, null, null, IntPtr.Zero);
+            _sortHandle = ret > 0 ? handle : IntPtr.Zero;
+        }
+
+        private static unsafe int FindStringOrdinal(
+            uint dwFindStringOrdinalFlags,
+            string stringSource,
+            int offset,
+            int cchSource,
+            string value,
+            int cchValue,
+            bool bIgnoreCase)
+        {
+            fixed (char* pSource = stringSource)
+            fixed (char* pValue = value)
+            {
+                int ret = Interop.mincore.FindStringOrdinal(
+                            dwFindStringOrdinalFlags,
+                            pSource + offset,
+                            cchSource,
+                            pValue,
+                            cchValue,
+                            bIgnoreCase ? 1 : 0);
+                return ret < 0 ? ret : ret + offset;
+            }
         }
 
         internal static int IndexOfOrdinal(string source, string value, int startIndex, int count, bool ignoreCase)
@@ -30,8 +56,7 @@ namespace System.Globalization
             Contract.Assert(source != null);
             Contract.Assert(value != null);
 
-            return Interop.mincore.FindStringOrdinal(FIND_FROMSTART, source, startIndex, count, value, value.Length, ignoreCase);
-
+            return FindStringOrdinal(FIND_FROMSTART, source, startIndex, count, value, value.Length, ignoreCase);
         }
 
         internal static int LastIndexOfOrdinal(string source, string value, int startIndex, int count, bool ignoreCase)
@@ -39,7 +64,7 @@ namespace System.Globalization
             Contract.Assert(source != null);
             Contract.Assert(value != null);
 
-            return Interop.mincore.FindStringOrdinal(FIND_FROMEND, source, startIndex - count + 1, count, value, value.Length, ignoreCase);
+            return FindStringOrdinal(FIND_FROMEND, source, startIndex - count + 1, count, value, value.Length, ignoreCase);
         }
 
         private unsafe int GetHashCodeOfStringCore(string source, CompareOptions options)
@@ -53,12 +78,12 @@ namespace System.Globalization
             }
 
             int tmpHash = 0;
-            
-            if (Interop.mincore.LCMapStringEx(m_sortName, 
-                                              LCMAP_HASH | (uint)GetNativeCompareFlags(options), 
-                                              source, source.Length, 
-                                              (IntPtr)(&tmpHash), sizeof(int), 
-                                              IntPtr.Zero, IntPtr.Zero, IntPtr.Zero) == 0)
+
+            if (Interop.mincore.LCMapStringEx(_sortHandle != IntPtr.Zero ? null : _sortName,
+                                              LCMAP_HASH | (uint)GetNativeCompareFlags(options),
+                                              source, source.Length,
+                                              &tmpHash, sizeof(int),
+                                              null, null, _sortHandle) == 0)
             {
                 Environment.FailFast("LCMapStringEx failed!");
             }
@@ -72,25 +97,69 @@ namespace System.Globalization
             return Interop.mincore.CompareStringOrdinal(string1, count1, string2, count2, true) - 2;
         }
 
-        private int CompareString(string string1, int offset1, int length1, string string2, int offset2, int length2, CompareOptions options)
+        private unsafe int CompareString(string string1, int offset1, int length1, string string2, int offset2, int length2, CompareOptions options)
         {
             Contract.Assert(string1 != null);
             Contract.Assert(string2 != null);
             Contract.Assert((options & (CompareOptions.Ordinal | CompareOptions.OrdinalIgnoreCase)) == 0);
 
-            int result = Interop.mincore.CompareStringEx(_sortHandle != IntPtr.Zero ? null : m_sortName,
-                                                         GetNativeCompareFlags(options),
-                                                         string1, offset1, length1,
-                                                         string2, offset2, length2,
-                                                         _sortHandle);
+            string localeName = _sortHandle != IntPtr.Zero ? null : _sortName;
 
-            if (result == 0)
+            fixed (char* pLocaleName = localeName)
+            fixed (char* pString1 = string1)
+            fixed (char* pString2 = string2)
             {
-                Environment.FailFast("CompareStringEx failed");
-            }
+                int result = Interop.mincore.CompareStringEx(
+                                    pLocaleName,
+                                    (uint)GetNativeCompareFlags(options),
+                                    pString1 + offset1,
+                                    length1,
+                                    pString2 + offset2,
+                                    length2,
+                                    null,
+                                    null,
+                                    _sortHandle);
 
-            // Map CompareStringEx return value to -1, 0, 1.
-            return result - 2;
+                if (result == 0)
+                {
+                    Environment.FailFast("CompareStringEx failed");
+                }
+
+                // Map CompareStringEx return value to -1, 0, 1.
+                return result - 2;
+            }
+        }
+
+        private unsafe int FindString(
+                    uint dwFindNLSStringFlags,
+                    string lpStringSource,
+                    int startSource,
+                    int cchSource,
+                    string lpStringValue,
+                    int startValue,
+                    int cchValue)
+        {
+            string localeName = _sortHandle != IntPtr.Zero ? null : _sortName;
+
+            fixed (char* pLocaleName = localeName)
+            fixed (char* pSource = lpStringSource)
+            fixed (char* pValue = lpStringValue)
+            {
+                char* pS = pSource + startSource;
+                char* pV = pValue + startValue;
+
+                return Interop.mincore.FindNLSStringEx(
+                                    pLocaleName,
+                                    dwFindNLSStringFlags,
+                                    pS,
+                                    cchSource,
+                                    pV,
+                                    cchValue,
+                                    null,
+                                    null,
+                                    null,
+                                    _sortHandle);
+            }
         }
 
         private int IndexOfCore(string source, string target, int startIndex, int count, CompareOptions options)
@@ -108,15 +177,13 @@ namespace System.Globalization
             }
             else
             {
-                int retValue = Interop.mincore.FindNLSStringEx(_sortHandle != IntPtr.Zero ? null : m_sortName,
-                                                               FIND_FROMSTART | (uint)GetNativeCompareFlags(options),
+                int retValue = FindString(FIND_FROMSTART | (uint)GetNativeCompareFlags(options),
                                                                source,
                                                                startIndex,
                                                                count,
                                                                target,
                                                                0,
-                                                               target.Length,
-                                                               _sortHandle);
+                                                               target.Length);
                 if (retValue >= 0)
                 {
                     return retValue + startIndex;
@@ -141,15 +208,13 @@ namespace System.Globalization
             }
             else
             {
-                int retValue = Interop.mincore.FindNLSStringEx(_sortHandle != IntPtr.Zero ? null : m_sortName,
-                                                               FIND_FROMEND | (uint)GetNativeCompareFlags(options),
+                int retValue = FindString(FIND_FROMEND | (uint)GetNativeCompareFlags(options),
                                                                source,
                                                                startIndex - count + 1,
                                                                count,
                                                                target,
                                                                0,
-                                                               target.Length,
-                                                               _sortHandle);
+                                                               target.Length);
 
                 if (retValue >= 0)
                 {
@@ -157,7 +222,7 @@ namespace System.Globalization
                 }
             }
 
-            return -1;        
+            return -1;
         }
 
         private bool StartsWith(string source, string prefix, CompareOptions options)
@@ -166,15 +231,13 @@ namespace System.Globalization
             Contract.Assert(!string.IsNullOrEmpty(prefix));
             Contract.Assert((options & (CompareOptions.Ordinal | CompareOptions.OrdinalIgnoreCase)) == 0);
 
-            return Interop.mincore.FindNLSStringEx(_sortHandle != IntPtr.Zero ? null : m_sortName,
-                                                   FIND_STARTSWITH | (uint)GetNativeCompareFlags(options),
+            return FindString(FIND_STARTSWITH | (uint)GetNativeCompareFlags(options),
                                                    source,
                                                    0,
                                                    source.Length,
                                                    prefix,
                                                    0,
-                                                   prefix.Length,
-                                                   _sortHandle) >= 0;
+                                                   prefix.Length) >= 0;
         }
 
         private bool EndsWith(string source, string suffix, CompareOptions options)
@@ -183,16 +246,13 @@ namespace System.Globalization
             Contract.Assert(!string.IsNullOrEmpty(suffix));
             Contract.Assert((options & (CompareOptions.Ordinal | CompareOptions.OrdinalIgnoreCase)) == 0);
 
-            return Interop.mincore.FindNLSStringEx(_sortHandle != IntPtr.Zero ? null : m_sortName,
-                                                   FIND_ENDSWITH | (uint)GetNativeCompareFlags(options),
+            return FindString(FIND_ENDSWITH | (uint)GetNativeCompareFlags(options),
                                                    source,
                                                    0,
                                                    source.Length,
                                                    suffix,
                                                    0,
-                                                   suffix.Length,
-                                                   _sortHandle) >= 0;
-
+                                                   suffix.Length) >= 0;
         }
 
         // PAL ends here

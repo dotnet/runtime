@@ -37,7 +37,7 @@ namespace System.Globalization
         //m_EraInfo[0] = new EraInfo(1, new DateTime(1912, 1, 1).Ticks, 1911, 1, GregorianCalendar.MaxYear - 1911);
 
         // Initialize our era info.
-        static internal EraInfo[] taiwanEraInfo = new EraInfo[] {
+        internal static EraInfo[] taiwanEraInfo = new EraInfo[] {
             new EraInfo( 1, 1912, 1, 1, 1911, 1, GregorianCalendar.MaxYear - 1911)    // era #, start year/month/day, yearOffset, minEraYear 
         };
 

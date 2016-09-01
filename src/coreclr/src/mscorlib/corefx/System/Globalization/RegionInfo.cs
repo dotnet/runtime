@@ -2,10 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-
 ////////////////////////////////////////////////////////////////////////////
 //
-//  Class:    RegionInfo
 //
 //  Purpose:  This class represents settings specified by de jure or
 //            de facto standards for a particular country/region.  In
@@ -13,7 +11,6 @@
 //            preferences of the user and does not depend on the user's
 //            language or culture.
 //
-//  Date:     March 31, 1999
 //
 ////////////////////////////////////////////////////////////////////////////
 
@@ -38,12 +35,12 @@ namespace System.Globalization
         //
         // Name of this region (ie: es-US): serialized, the field used for deserialization
         //
-        internal String m_name;
+        internal String _name;
 
         //
         // The CultureData instance that we are going to read data from.
         //
-        internal CultureData m_cultureData;
+        internal CultureData _cultureData;
 
         //
         // The RegionInfo for our current region
@@ -61,7 +58,6 @@ namespace System.Globalization
         //  In Silverlight we enforce that RegionInfos must be created with a full culture name
         //
         ////////////////////////////////////////////////////////////////////////
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public RegionInfo(String name)
         {
             if (name == null)
@@ -77,8 +73,8 @@ namespace System.Globalization
             //
             // For CoreCLR we only want the region names that are full culture names
             //
-            this.m_cultureData = CultureData.GetCultureDataForRegion(name, true);
-            if (this.m_cultureData == null)
+            _cultureData = CultureData.GetCultureDataForRegion(name, true);
+            if (_cultureData == null)
                 throw new ArgumentException(
                     String.Format(
                         CultureInfo.CurrentCulture,
@@ -86,24 +82,22 @@ namespace System.Globalization
 
 
             // Not supposed to be neutral
-            if (this.m_cultureData.IsNeutralCulture)
+            if (_cultureData.IsNeutralCulture)
                 throw new ArgumentException(SR.Format(SR.Argument_InvalidNeutralRegionName, name), "name");
 
             SetName(name);
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         internal RegionInfo(CultureData cultureData)
         {
-            this.m_cultureData = cultureData;
-            this.m_name = this.m_cultureData.SREGIONNAME;
+            _cultureData = cultureData;
+            _name = _cultureData.SREGIONNAME;
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         private void SetName(string name)
         {
             // Use the name of the region we found
-            this.m_name = this.m_cultureData.SREGIONNAME;
+            _name = _cultureData.SREGIONNAME;
         }
 
         [OnSerializing]
@@ -113,16 +107,16 @@ namespace System.Globalization
         [OnDeserialized]
         private void OnDeserialized(StreamingContext ctx)
         {
-            m_cultureData = CultureData.GetCultureData(m_name, true);
+            _cultureData = CultureData.GetCultureData(_name, true);
 
-            if (m_cultureData == null)
+            if (_cultureData == null)
             {
                 throw new ArgumentException(
-                    String.Format(CultureInfo.CurrentCulture, SR.Argument_InvalidCultureName, m_name),
-                    "m_name");
+                    String.Format(CultureInfo.CurrentCulture, SR.Argument_InvalidCultureName, _name),
+                    "_name");
             }
 
-            m_name = this.m_cultureData.SREGIONNAME;
+            _name = _cultureData.SREGIONNAME;
         }
 
         ////////////////////////////////////////////////////////////////////////
@@ -136,7 +130,6 @@ namespace System.Globalization
         ////////////////////////////////////////////////////////////////////////
         public static RegionInfo CurrentRegion
         {
-            [System.Security.SecuritySafeCritical]  // auto-generated
             get
             {
                 RegionInfo temp = s_currentRegionInfo;
@@ -145,7 +138,7 @@ namespace System.Globalization
                     temp = new RegionInfo(CultureInfo.CurrentCulture.m_cultureData);
 
                     // Need full name for custom cultures
-                    temp.m_name = temp.m_cultureData.SREGIONNAME;
+                    temp._name = temp._cultureData.SREGIONNAME;
                     s_currentRegionInfo = temp;
                 }
                 return temp;
@@ -163,8 +156,8 @@ namespace System.Globalization
         {
             get
             {
-                Contract.Assert(m_name != null, "Expected RegionInfo.m_name to be populated already");
-                return (m_name);
+                Contract.Assert(_name != null, "Expected RegionInfo._name to be populated already");
+                return (_name);
             }
         }
 
@@ -177,10 +170,9 @@ namespace System.Globalization
         ////////////////////////////////////////////////////////////////////////
         public virtual String EnglishName
         {
-            [System.Security.SecuritySafeCritical]  // auto-generated
             get
             {
-                return (this.m_cultureData.SENGCOUNTRY);
+                return (_cultureData.SENGCOUNTRY);
             }
         }
 
@@ -195,10 +187,9 @@ namespace System.Globalization
         ////////////////////////////////////////////////////////////////////////
         public virtual String DisplayName
         {
-            [System.Security.SecuritySafeCritical]  // auto-generated
             get
             {
-                return (this.m_cultureData.SLOCALIZEDCOUNTRY);
+                return (_cultureData.SLOCALIZEDCOUNTRY);
             }
         }
 
@@ -214,10 +205,9 @@ namespace System.Globalization
         [System.Runtime.InteropServices.ComVisible(false)]
         public virtual String NativeName
         {
-            [System.Security.SecuritySafeCritical]  // auto-generated
             get
             {
-                return (this.m_cultureData.SNATIVECOUNTRY);
+                return (_cultureData.SNATIVECOUNTRY);
             }
         }
 
@@ -230,10 +220,9 @@ namespace System.Globalization
         ////////////////////////////////////////////////////////////////////////
         public virtual String TwoLetterISORegionName
         {
-            [System.Security.SecuritySafeCritical]  // auto-generated
             get
             {
-                return (this.m_cultureData.SISO3166CTRYNAME);
+                return (_cultureData.SISO3166CTRYNAME);
             }
         }
 
@@ -248,7 +237,7 @@ namespace System.Globalization
         {
             get
             {
-                int value = this.m_cultureData.IMEASURE;
+                int value = _cultureData.IMEASURE;
                 return (value == 0);
             }
         }
@@ -262,10 +251,9 @@ namespace System.Globalization
         ////////////////////////////////////////////////////////////////////////
         public virtual String CurrencySymbol
         {
-            [System.Security.SecuritySafeCritical]  // auto-generated
             get
             {
-                return (this.m_cultureData.SCURRENCY);
+                return (_cultureData.SCURRENCY);
             }
         }
 
@@ -278,10 +266,9 @@ namespace System.Globalization
         ////////////////////////////////////////////////////////////////////////
         public virtual String ISOCurrencySymbol
         {
-            [System.Security.SecuritySafeCritical]  // auto-generated
             get
             {
-                return (this.m_cultureData.SINTLSYMBOL);
+                return (_cultureData.SINTLSYMBOL);
             }
         }
 

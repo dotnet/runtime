@@ -2,19 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-// 
-
-// 
-
 ////////////////////////////////////////////////////////////////////////////
 //
-//  Class:    StringInfo
 //
 //  Purpose:  This class defines behaviors specific to a writing system.
 //            A writing system is the collection of scripts and
 //            orthographic rules required to represent a language as text.
 //
-//  Date:     March 31, 1999
 //
 ////////////////////////////////////////////////////////////////////////////
 
@@ -29,10 +23,10 @@ namespace System.Globalization
     public partial class StringInfo
     {
         [OptionalField(VersionAdded = 2)] 
-        private String m_str;
+        private String _str;
 
         [NonSerialized]
-        private int[] m_indexes;
+        private int[] _indexes;
 
         // Legacy constructor
         public StringInfo() : this("") { }
@@ -46,15 +40,15 @@ namespace System.Globalization
         [OnDeserializing]
         private void OnDeserializing(StreamingContext ctx)
         {
-            m_str = String.Empty;
+            _str = String.Empty;
         }
 
         [OnDeserialized]
         private void OnDeserialized(StreamingContext ctx)
         {
-            if (m_str.Length == 0)
+            if (_str.Length == 0)
             {
-                m_indexes = null;
+                _indexes = null;
             }
         }
 
@@ -64,7 +58,7 @@ namespace System.Globalization
             StringInfo that = value as StringInfo;
             if (that != null)
             {
-                return (this.m_str.Equals(that.m_str));
+                return (_str.Equals(that._str));
             }
             return (false);
         }
@@ -72,7 +66,7 @@ namespace System.Globalization
         [System.Runtime.InteropServices.ComVisible(false)]
         public override int GetHashCode()
         {
-            return this.m_str.GetHashCode();
+            return _str.GetHashCode();
         }
 
 
@@ -82,12 +76,12 @@ namespace System.Globalization
         {
             get
             {
-                if ((null == this.m_indexes) && (0 < this.String.Length))
+                if ((null == _indexes) && (0 < this.String.Length))
                 {
-                    this.m_indexes = StringInfo.ParseCombiningCharacters(this.String);
+                    _indexes = StringInfo.ParseCombiningCharacters(this.String);
                 }
 
-                return (this.m_indexes);
+                return (_indexes);
             }
         }
 
@@ -95,7 +89,7 @@ namespace System.Globalization
         {
             get
             {
-                return (this.m_str);
+                return (_str);
             }
             set
             {
@@ -106,8 +100,8 @@ namespace System.Globalization
                 }
                 Contract.EndContractBlock();
 
-                this.m_str = value;
-                this.m_indexes = null;
+                _str = value;
+                _indexes = null;
             }
         }
 

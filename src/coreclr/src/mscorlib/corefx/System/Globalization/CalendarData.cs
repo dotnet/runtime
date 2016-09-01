@@ -10,7 +10,6 @@ using System.Collections.Generic;
 
 namespace System.Globalization
 {
-    //
     // List of calendar data
     // Note the we cache overrides.
     // Note that localized names (resource names) aren't available from here.
