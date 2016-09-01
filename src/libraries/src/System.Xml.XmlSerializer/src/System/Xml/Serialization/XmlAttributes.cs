@@ -27,7 +27,6 @@ namespace System.Xml.Serialization
         XmlnsDeclarations = 0x800,
     }
 
-    /// <include file='doc\XmlAttributes.uex' path='docs/doc[@for="XmlAttributes"]/*' />
     /// <devdoc>
     ///    <para>[To be supplied.]</para>
     /// </devdoc>
@@ -50,7 +49,6 @@ namespace System.Xml.Serialization
         private static volatile Type s_ignoreAttributeType;
 
 
-        /// <include file='doc\XmlAttributes.uex' path='docs/doc[@for="XmlAttributes.XmlAttributes"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -95,7 +93,6 @@ namespace System.Xml.Serialization
             }
         }
 
-        /// <include file='doc\XmlAttributes.uex' path='docs/doc[@for="XmlAttributes.XmlAttributes1"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -205,7 +202,6 @@ namespace System.Xml.Serialization
             return attrs[0];
         }
 
-        /// <include file='doc\XmlAttributes.uex' path='docs/doc[@for="XmlAttributes.XmlElements"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -214,7 +210,6 @@ namespace System.Xml.Serialization
             get { return _xmlElements; }
         }
 
-        /// <include file='doc\XmlAttributes.uex' path='docs/doc[@for="XmlAttributes.XmlAttribute"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -224,7 +219,6 @@ namespace System.Xml.Serialization
             set { _xmlAttribute = value; }
         }
 
-        /// <include file='doc\XmlAttributes.uex' path='docs/doc[@for="XmlAttributes.XmlEnum"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -234,7 +228,6 @@ namespace System.Xml.Serialization
             set { _xmlEnum = value; }
         }
 
-        /// <include file='doc\XmlAttributes.uex' path='docs/doc[@for="XmlAttributes.XmlText"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -244,7 +237,6 @@ namespace System.Xml.Serialization
             set { _xmlText = value; }
         }
 
-        /// <include file='doc\XmlAttributes.uex' path='docs/doc[@for="XmlAttributes.XmlArray"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -254,7 +246,6 @@ namespace System.Xml.Serialization
             set { _xmlArray = value; }
         }
 
-        /// <include file='doc\XmlAttributes.uex' path='docs/doc[@for="XmlAttributes.XmlArrayItems"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -263,7 +254,6 @@ namespace System.Xml.Serialization
             get { return _xmlArrayItems; }
         }
 
-        /// <include file='doc\XmlAttributes.uex' path='docs/doc[@for="XmlAttributes.XmlDefaultValue"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -273,7 +263,6 @@ namespace System.Xml.Serialization
             set { _xmlDefaultValue = value; }
         }
 
-        /// <include file='doc\XmlAttributes.uex' path='docs/doc[@for="XmlAttributes.XmlIgnore"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -283,7 +272,6 @@ namespace System.Xml.Serialization
             set { _xmlIgnore = value; }
         }
 
-        /// <include file='doc\XmlAttributes.uex' path='docs/doc[@for="XmlAttributes.XmlType"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -293,7 +281,6 @@ namespace System.Xml.Serialization
             set { _xmlType = value; }
         }
 
-        /// <include file='doc\XmlAttributes.uex' path='docs/doc[@for="XmlAttributes.XmlRoot"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -303,7 +290,6 @@ namespace System.Xml.Serialization
             set { _xmlRoot = value; }
         }
 
-        /// <include file='doc\XmlAttributes.uex' path='docs/doc[@for="XmlAttributes.XmlAnyElement"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -312,7 +298,6 @@ namespace System.Xml.Serialization
             get { return _xmlAnyElements; }
         }
 
-        /// <include file='doc\XmlAttributes.uex' path='docs/doc[@for="XmlAttributes.XmlAnyAttribute"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -322,13 +307,11 @@ namespace System.Xml.Serialization
             set { _xmlAnyAttribute = value; }
         }
 
-        /// <include file='doc\XmlAttributes.uex' path='docs/doc[@for="XmlAttributes.XmlChoiceIdentifier"]/*' />
         public XmlChoiceIdentifierAttribute XmlChoiceIdentifier
         {
             get { return _xmlChoiceIdentifier; }
         }
 
-        /// <include file='doc\XmlAttributes.uex' path='docs/doc[@for="XmlAttributes.Xmlns"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
