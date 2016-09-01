@@ -22,8 +22,8 @@ namespace System.Diagnostics.Tests
                 Assert.NotNull(module.FileName);
                 Assert.NotEmpty(module.FileName);
 
-                Assert.InRange(module.BaseAddress.ToInt64(), 0, long.MaxValue);
-                Assert.InRange(module.EntryPointAddress.ToInt64(), 0, long.MaxValue);
+                Assert.InRange(module.BaseAddress.ToInt64(), long.MinValue, long.MaxValue);
+                Assert.InRange(module.EntryPointAddress.ToInt64(), long.MinValue, long.MaxValue);
                 Assert.InRange(module.ModuleMemorySize, 0, long.MaxValue);
             }
         }

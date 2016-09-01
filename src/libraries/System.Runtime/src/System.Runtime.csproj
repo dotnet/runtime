@@ -4,11 +4,9 @@
   <PropertyGroup>
     <ProjectGuid>{56B9D0A9-44D3-488E-8B42-C14A6E30CAB2}</ProjectGuid>
     <AssemblyName>System.Runtime</AssemblyName>
-    <AssemblyVersion>4.2.0.0</AssemblyVersion>
     <AssemblyVersion Condition="'$(TargetGroup)'=='net462' OR '$(TargetGroup)'=='netstandard1.5'">4.1.1.0</AssemblyVersion>
     <ContractProject Condition="'$(AssemblyVersion)'=='4.1.1.0'">../ref/4.1.0/System.Runtime.depproj</ContractProject>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
-    <PackageTargetFramework Condition="'$(PackageTargetFramework)'==''">netstandard1.7</PackageTargetFramework>
     <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NuGetTargetMoniker>
     <!-- 436 is thrown because some types conflict with existing types in mscorlib -->
     <NoWarn>0436</NoWarn>

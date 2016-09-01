@@ -6,8 +6,6 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <AssemblyName>System.Net.Http.Rtc</AssemblyName>
-    <AssemblyVersion>4.0.2.0</AssemblyVersion>
-    <PackageTargetFramework Condition="'$(PackageTargetFramework)' == ''">netstandard1.1</PackageTargetFramework>
   </PropertyGroup>
   <!-- Help VS understand available configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_netcore50_Debug|AnyCPU'" />

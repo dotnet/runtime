@@ -524,7 +524,7 @@ namespace System.Linq.Expressions
 
             ValidateArgumentCount(method, ExpressionType.Invoke, 1, pis);
 
-            arg0 = ValidateOneArgument(method, ExpressionType.Invoke, arg0, pis[0]);
+            arg0 = ValidateOneArgument(method, ExpressionType.Invoke, arg0, pis[0], nameof(expression), nameof(arg0));
 
             return new InvocationExpression1(expression, method.ReturnType, arg0);
         }
@@ -564,8 +564,8 @@ namespace System.Linq.Expressions
 
             ValidateArgumentCount(method, ExpressionType.Invoke, 2, pis);
 
-            arg0 = ValidateOneArgument(method, ExpressionType.Invoke, arg0, pis[0]);
-            arg1 = ValidateOneArgument(method, ExpressionType.Invoke, arg1, pis[1]);
+            arg0 = ValidateOneArgument(method, ExpressionType.Invoke, arg0, pis[0], nameof(expression), nameof(arg0));
+            arg1 = ValidateOneArgument(method, ExpressionType.Invoke, arg1, pis[1], nameof(expression), nameof(arg1));
 
             return new InvocationExpression2(expression, method.ReturnType, arg0, arg1);
         }
@@ -609,9 +609,9 @@ namespace System.Linq.Expressions
 
             ValidateArgumentCount(method, ExpressionType.Invoke, 3, pis);
 
-            arg0 = ValidateOneArgument(method, ExpressionType.Invoke, arg0, pis[0]);
-            arg1 = ValidateOneArgument(method, ExpressionType.Invoke, arg1, pis[1]);
-            arg2 = ValidateOneArgument(method, ExpressionType.Invoke, arg2, pis[2]);
+            arg0 = ValidateOneArgument(method, ExpressionType.Invoke, arg0, pis[0], nameof(expression), nameof(arg0));
+            arg1 = ValidateOneArgument(method, ExpressionType.Invoke, arg1, pis[1], nameof(expression), nameof(arg1));
+            arg2 = ValidateOneArgument(method, ExpressionType.Invoke, arg2, pis[2], nameof(expression), nameof(arg2));
 
             return new InvocationExpression3(expression, method.ReturnType, arg0, arg1, arg2);
         }
@@ -658,10 +658,10 @@ namespace System.Linq.Expressions
 
             ValidateArgumentCount(method, ExpressionType.Invoke, 4, pis);
 
-            arg0 = ValidateOneArgument(method, ExpressionType.Invoke, arg0, pis[0]);
-            arg1 = ValidateOneArgument(method, ExpressionType.Invoke, arg1, pis[1]);
-            arg2 = ValidateOneArgument(method, ExpressionType.Invoke, arg2, pis[2]);
-            arg3 = ValidateOneArgument(method, ExpressionType.Invoke, arg3, pis[3]);
+            arg0 = ValidateOneArgument(method, ExpressionType.Invoke, arg0, pis[0], nameof(expression), nameof(arg0));
+            arg1 = ValidateOneArgument(method, ExpressionType.Invoke, arg1, pis[1], nameof(expression), nameof(arg1));
+            arg2 = ValidateOneArgument(method, ExpressionType.Invoke, arg2, pis[2], nameof(expression), nameof(arg2));
+            arg3 = ValidateOneArgument(method, ExpressionType.Invoke, arg3, pis[3], nameof(expression), nameof(arg3));
 
             return new InvocationExpression4(expression, method.ReturnType, arg0, arg1, arg2, arg3);
         }
@@ -711,11 +711,11 @@ namespace System.Linq.Expressions
 
             ValidateArgumentCount(method, ExpressionType.Invoke, 5, pis);
 
-            arg0 = ValidateOneArgument(method, ExpressionType.Invoke, arg0, pis[0]);
-            arg1 = ValidateOneArgument(method, ExpressionType.Invoke, arg1, pis[1]);
-            arg2 = ValidateOneArgument(method, ExpressionType.Invoke, arg2, pis[2]);
-            arg3 = ValidateOneArgument(method, ExpressionType.Invoke, arg3, pis[3]);
-            arg4 = ValidateOneArgument(method, ExpressionType.Invoke, arg4, pis[4]);
+            arg0 = ValidateOneArgument(method, ExpressionType.Invoke, arg0, pis[0], nameof(expression), nameof(arg0));
+            arg1 = ValidateOneArgument(method, ExpressionType.Invoke, arg1, pis[1], nameof(expression), nameof(arg1));
+            arg2 = ValidateOneArgument(method, ExpressionType.Invoke, arg2, pis[2], nameof(expression), nameof(arg2));
+            arg3 = ValidateOneArgument(method, ExpressionType.Invoke, arg3, pis[3], nameof(expression), nameof(arg3));
+            arg4 = ValidateOneArgument(method, ExpressionType.Invoke, arg4, pis[4], nameof(expression), nameof(arg4));
 
             return new InvocationExpression5(expression, method.ReturnType, arg0, arg1, arg2, arg3, arg4);
         }
@@ -793,7 +793,7 @@ namespace System.Linq.Expressions
 
             var args = argumentList.ToReadOnly(); // Ensure is TrueReadOnlyCollection when count > 5. Returns fast if it already is.
             var mi = GetInvokeMethod(expression);
-            ValidateArgumentTypes(mi, ExpressionType.Invoke, ref args);
+            ValidateArgumentTypes(mi, ExpressionType.Invoke, ref args, nameof(expression));
             return new InvocationExpressionN(expression, args, mi.ReturnType);
         }
 

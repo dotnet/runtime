@@ -757,8 +757,7 @@ namespace System.Collections.Generic
 
             return (key is TKey);
         }
-
-        /// <include file='doc\SortedList.uex' path='docs/doc[@for="SortedListEnumerator"]/*' />
+        
         [Serializable]
         private struct Enumerator : IEnumerator<KeyValuePair<TKey, TValue>>, IDictionaryEnumerator
         {

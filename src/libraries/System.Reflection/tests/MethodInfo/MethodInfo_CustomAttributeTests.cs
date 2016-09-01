@@ -2,14 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using Xunit;
-using System;
-using System.Text;
-using System.Reflection;
-using System.Collections;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Reflection.CustomAttributesTests.Data;
+using Xunit;
 
 // Need to disable warning related to CLS Compliance as using Array as custom attribute is not CLS compliant
 #pragma warning disable 3016
@@ -24,15 +18,15 @@ namespace System.Reflection.Tests
 
         [Attr(77, name = "AttrSimple"),
         Int32Attr(77, name = "Int32AttrSimple"),
-        Int64Attr((Int64)77, name = "Int64AttrSimple"),
+        Int64Attr(77, name = "Int64AttrSimple"),
         StringAttr("hello", name = "StringAttrSimple"),
-        EnumAttr(MyColorEnum.RED, name = "EnumAttrSimple"),
+        EnumAttr(PublicEnum.Case1, name = "EnumAttrSimple"),
         TypeAttr(typeof(object), name = "TypeAttrSimple")]
         [return:Attr(77, name = "AttrSimple"),
         Int32Attr(77, name = "Int32AttrSimple"),
-        Int64Attr((Int64)77, name = "Int64AttrSimple"),
+        Int64Attr(77, name = "Int64AttrSimple"),
         StringAttr("hello", name = "StringAttrSimple"),
-        EnumAttr(MyColorEnum.RED, name = "EnumAttrSimple"),
+        EnumAttr(PublicEnum.Case1, name = "EnumAttrSimple"),
         TypeAttr(typeof(object), name = "TypeAttrSimple")]
 
         public void MyMethod() { }
@@ -49,12 +43,12 @@ namespace System.Reflection.Tests
 
         //Test for custom Attribute of type  Int32AttrSimple
         [Theory]
-        [InlineData(typeof(Int32Attr), "[System.Reflection.CustomAttributesTests.Data.Int32Attr((Int32)77, name = \"Int32AttrSimple\")]")]
-        [InlineData(typeof(Int64Attr), "[System.Reflection.CustomAttributesTests.Data.Int64Attr((Int64)77, name = \"Int64AttrSimple\")]")]
-        [InlineData(typeof(StringAttr), "[System.Reflection.CustomAttributesTests.Data.StringAttr(\"hello\", name = \"StringAttrSimple\")]")]
-        [InlineData(typeof(EnumAttr), "[System.Reflection.CustomAttributesTests.Data.EnumAttr((System.Reflection.CustomAttributesTests.Data.MyColorEnum)1, name = \"EnumAttrSimple\")]")]
-        [InlineData(typeof(TypeAttr), "[System.Reflection.CustomAttributesTests.Data.TypeAttr(typeof(System.Object), name = \"TypeAttrSimple\")]")]
-        [InlineData(typeof(Attr), "[System.Reflection.CustomAttributesTests.Data.Attr((Int32)77, name = \"AttrSimple\")]")]
+        [InlineData(typeof(Int32Attr), "[System.Reflection.Tests.Int32Attr((Int32)77, name = \"Int32AttrSimple\")]")]
+        [InlineData(typeof(Int64Attr), "[System.Reflection.Tests.Int64Attr((Int64)77, name = \"Int64AttrSimple\")]")]
+        [InlineData(typeof(StringAttr), "[System.Reflection.Tests.StringAttr(\"hello\", name = \"StringAttrSimple\")]")]
+        [InlineData(typeof(EnumAttr), "[System.Reflection.Tests.EnumAttr((System.Reflection.Tests.MyColorEnum)1, name = \"EnumAttrSimple\")]")]
+        [InlineData(typeof(TypeAttr), "[System.Reflection.Tests.TypeAttr(typeof(System.Object), name = \"TypeAttrSimple\")]")]
+        [InlineData(typeof(Attr), "[System.Reflection.Tests.Attr((Int32)77, name = \"AttrSimple\")]")]
 
 
         private void Test_Attr(Type type, string attributeStr)

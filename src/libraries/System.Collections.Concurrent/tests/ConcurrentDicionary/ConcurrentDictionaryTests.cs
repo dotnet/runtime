@@ -168,7 +168,7 @@ namespace System.Collections.Concurrent.Tests
                 var rem = pair.Value % pair.Key;
 
                 Assert.Equal(0, rem);
-                Assert.True(div > 1 && div <= threads+1, 
+                Assert.True(div > 1 && div <= threads + 1,
                     String.Format("* Invalid value={3}! TestUpdate1(cLevel={0}, threads={1}, updatesPerThread={2})", cLevel, threads, updatesPerThread, div));
             }
 
@@ -362,7 +362,7 @@ namespace System.Collections.Concurrent.Tests
 
             for (int i = 0; i < removesPerThread; i++)
             {
-                Assert.False(seen[0][i] == seen[1][i], 
+                Assert.False(seen[0][i] == seen[1][i],
                     String.Format("> FAILED. Two threads appear to have removed the same element. TestRemove2(removesPerThread={0})", removesPerThread)
                     );
             }
@@ -487,9 +487,9 @@ namespace System.Collections.Concurrent.Tests
 
             for (int i = 0; i < expectKeys.Count; i++)
             {
-                Assert.True(expectKeys[i].Equals(gotKeys[i]), 
-                    String.Format("* Test '{4}': Level={0}, initSize={1}, threads={2}, addsPerThread={3})" + Environment.NewLine + 
-                    "> FAILED.  The set of keys in the dictionary is are not the same as the expected.", 
+                Assert.True(expectKeys[i].Equals(gotKeys[i]),
+                    String.Format("* Test '{4}': Level={0}, initSize={1}, threads={2}, addsPerThread={3})" + Environment.NewLine +
+                    "> FAILED.  The set of keys in the dictionary is are not the same as the expected.",
                     cLevel, initSize, threads, addsPerThread, isAdd ? "GetOrAdd" : "GetOrUpdate"));
             }
 
@@ -739,7 +739,7 @@ namespace System.Collections.Concurrent.Tests
         public static void IDicionary_Remove_NullKeyInKeyValuePair_ThrowsArgumentNullException()
         {
             IDictionary<string, int> dictionary = new ConcurrentDictionary<string, int>();
-            Assert.Throws<ArgumentNullException>("keyValuePair", () => dictionary.Remove(new KeyValuePair<string, int>(null, 0)));
+            Assert.Throws<ArgumentNullException>(() => dictionary.Remove(new KeyValuePair<string, int>(null, 0)));
         }
 
         [Fact]

@@ -33,7 +33,6 @@ namespace System.Collections.Generic
 
         private const int DefaultCapacity = 4;
 
-        /// <include file='doc\Stack.uex' path='docs/doc[@for="Stack.Stack"]/*' />
         public Stack()
         {
             _array = Array.Empty<T>();
@@ -41,7 +40,6 @@ namespace System.Collections.Generic
 
         // Create a stack with a specific initial capacity.  The initial capacity
         // must be a non-negative number.
-        /// <include file='doc\Stack.uex' path='docs/doc[@for="Stack.Stack1"]/*' />
         public Stack(int capacity)
         {
             if (capacity < 0)
@@ -51,8 +49,6 @@ namespace System.Collections.Generic
 
         // Fills a Stack with the contents of a particular collection.  The items are
         // pushed onto the stack in the same order they are read by the enumerator.
-        //
-        /// <include file='doc\Stack.uex' path='docs/doc[@for="Stack.Stack2"]/*' />
         public Stack(IEnumerable<T> collection)
         {
             if (collection == null)
@@ -60,19 +56,16 @@ namespace System.Collections.Generic
             _array = EnumerableHelpers.ToArray(collection, out _size);
         }
 
-        /// <include file='doc\Stack.uex' path='docs/doc[@for="Stack.Count"]/*' />
         public int Count
         {
             get { return _size; }
         }
 
-        /// <include file='doc\Stack.uex' path='docs/doc[@for="Stack.IsSynchronized"]/*' />
         bool ICollection.IsSynchronized
         {
             get { return false; }
         }
 
-        /// <include file='doc\Stack.uex' path='docs/doc[@for="Stack.SyncRoot"]/*' />
         object ICollection.SyncRoot
         {
             get
@@ -86,7 +79,6 @@ namespace System.Collections.Generic
         }
 
         // Removes all Objects from the Stack.
-        /// <include file='doc\Stack.uex' path='docs/doc[@for="Stack.Clear"]/*' />
         public void Clear()
         {
             Array.Clear(_array, 0, _size); // Don't need to doc this but we clear the elements so that the gc can reclaim the references.
@@ -94,7 +86,6 @@ namespace System.Collections.Generic
             _version++;
         }
 
-        /// <include file='doc\Stack.uex' path='docs/doc[@for="Stack.Contains"]/*' />
         public bool Contains(T item)
         {
             int count = _size;
@@ -111,7 +102,6 @@ namespace System.Collections.Generic
         }
 
         // Copies the stack into an array.
-        /// <include file='doc\Stack.uex' path='docs/doc[@for="Stack.CopyTo"]/*' />
         public void CopyTo(T[] array, int arrayIndex)
         {
             if (array == null)
@@ -175,13 +165,11 @@ namespace System.Collections.Generic
         }
 
         // Returns an IEnumerator for this Stack.
-        /// <include file='doc\Stack.uex' path='docs/doc[@for="Stack.GetEnumerator"]/*' />
         public Enumerator GetEnumerator()
         {
             return new Enumerator(this);
         }
 
-        /// <include file='doc\Stack.uex' path='docs/doc[@for="Stack.IEnumerable.GetEnumerator"]/*' />
         /// <internalonly/>
         IEnumerator<T> IEnumerable<T>.GetEnumerator()
         {
@@ -205,7 +193,6 @@ namespace System.Collections.Generic
 
         // Returns the top object on the stack without removing it.  If the stack
         // is empty, Peek throws an InvalidOperationException.
-        /// <include file='doc\Stack.uex' path='docs/doc[@for="Stack.Peek"]/*' />
         public T Peek()
         {
             if (_size == 0)
@@ -215,7 +202,6 @@ namespace System.Collections.Generic
 
         // Pops an item from the top of the stack.  If the stack is empty, Pop
         // throws an InvalidOperationException.
-        /// <include file='doc\Stack.uex' path='docs/doc[@for="Stack.Pop"]/*' />
         public T Pop()
         {
             if (_size == 0)
@@ -227,8 +213,6 @@ namespace System.Collections.Generic
         }
 
         // Pushes an item to the top of the stack.
-        // 
-        /// <include file='doc\Stack.uex' path='docs/doc[@for="Stack.Push"]/*' />
         public void Push(T item)
         {
             if (_size == _array.Length)
@@ -255,7 +239,6 @@ namespace System.Collections.Generic
             return objArray;
         }
 
-        /// <include file='doc\Stack.uex' path='docs/doc[@for="StackEnumerator"]/*' />
         [SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes", Justification = "not an expected scenario")]
         [Serializable]
         public struct Enumerator : IEnumerator<T>, System.Collections.IEnumerator
@@ -273,13 +256,11 @@ namespace System.Collections.Generic
                 _currentElement = default(T);
             }
 
-            /// <include file='doc\Stack.uex' path='docs/doc[@for="StackEnumerator.Dispose"]/*' />
             public void Dispose()
             {
                 _index = -1;
             }
 
-            /// <include file='doc\Stack.uex' path='docs/doc[@for="StackEnumerator.MoveNext"]/*' />
             public bool MoveNext()
             {
                 bool retval;
@@ -305,7 +286,6 @@ namespace System.Collections.Generic
                 return retval;
             }
 
-            /// <include file='doc\Stack.uex' path='docs/doc[@for="StackEnumerator.Current"]/*' />
             public T Current
             {
                 get

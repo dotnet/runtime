@@ -198,10 +198,10 @@ namespace System.Linq.Expressions.Compiler
                 return;
             }
 
-            if (node.Arguments.Count == 1)
+            if (node.ArgumentCount == 1)
             {
                 EmitExpression(node.Object);
-                EmitExpression(node.Arguments[0]);
+                EmitExpression(node.GetArgument(0));
                 _ilg.Emit(OpCodes.Ldelema, node.Type);
             }
             else
@@ -277,9 +277,10 @@ namespace System.Linq.Expressions.Compiler
             if (node.Expression != null)
             {
                 EmitInstance(node.Expression, instanceType = node.Expression.Type);
+
                 // store in local
                 _ilg.Emit(OpCodes.Dup);
-                _ilg.Emit(OpCodes.Stloc, instanceLocal = GetLocal(instanceType));
+                _ilg.Emit(OpCodes.Stloc, instanceLocal = GetInstanceLocal(instanceType));
             }
 
             PropertyInfo pi = (PropertyInfo)node.Member;
@@ -321,15 +322,18 @@ namespace System.Linq.Expressions.Compiler
             {
                 EmitInstance(node.Object, instanceType = node.Object.Type);
 
+                // store in local
                 _ilg.Emit(OpCodes.Dup);
-                _ilg.Emit(OpCodes.Stloc, instanceLocal = GetLocal(instanceType));
+                _ilg.Emit(OpCodes.Stloc, instanceLocal = GetInstanceLocal(instanceType));
             }
 
             // Emit indexes. We don't allow byref args, so no need to worry
             // about write-backs or EmitAddress
-            List<LocalBuilder> args = new List<LocalBuilder>();
-            foreach (var arg in node.Arguments)
+            var n = node.ArgumentCount;
+            List<LocalBuilder> args = new List<LocalBuilder>(n);
+            for (var i = 0; i < n; i++)
             {
+                var arg = node.GetArgument(i);
                 EmitExpression(arg);
 
                 var argLocal = GetLocal(arg.Type);
@@ -365,6 +369,12 @@ namespace System.Linq.Expressions.Compiler
 
                 EmitSetIndexCall(node, instanceType);
             };
+        }
+
+        private LocalBuilder GetInstanceLocal(Type type)
+        {
+            var instanceLocalType = type.GetTypeInfo().IsValueType ? type.MakeByRefType() : type;
+            return GetLocal(instanceLocalType);
         }
     }
 }

@@ -44,6 +44,17 @@ extern "C" int32_t SystemNative_EnumerateInterfaceAddresses(IPv4AddressFound onI
     for (ifaddrs* current = headAddr; current != nullptr; current = current->ifa_next)
     {
         uint32_t interfaceIndex = if_nametoindex(current->ifa_name);
+        // ifa_name may be an aliased interface name.
+        // Use if_indextoname to map back to the true device name.
+        char actualName[IF_NAMESIZE];
+        char* result = if_indextoname(interfaceIndex, actualName);
+        if (result == nullptr)
+        {
+            freeifaddrs(headAddr);
+            return -1;
+        }
+        
+        assert(result == actualName);
         int family = current->ifa_addr->sa_family;
         if (family == AF_INET)
         {
@@ -67,7 +78,7 @@ extern "C" int32_t SystemNative_EnumerateInterfaceAddresses(IPv4AddressFound onI
                 sockaddr_in* mask_sain = reinterpret_cast<sockaddr_in*>(current->ifa_netmask);
                 memcpy(maskInfo.AddressBytes, &mask_sain->sin_addr.s_addr, sizeof(mask_sain->sin_addr.s_addr));
 
-                onIpv4Found(current->ifa_name, &iai, &maskInfo);
+                onIpv4Found(actualName, &iai, &maskInfo);
             }
         }
         else if (family == AF_INET6)
@@ -82,7 +93,7 @@ extern "C" int32_t SystemNative_EnumerateInterfaceAddresses(IPv4AddressFound onI
                 sockaddr_in6* sain6 = reinterpret_cast<sockaddr_in6*>(current->ifa_addr);
                 memcpy(iai.AddressBytes, sain6->sin6_addr.s6_addr, sizeof(sain6->sin6_addr.s6_addr));
                 uint32_t scopeId = sain6->sin6_scope_id;
-                onIpv6Found(current->ifa_name, &iai, &scopeId);
+                onIpv6Found(actualName, &iai, &scopeId);
             }
         }
 

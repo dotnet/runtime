@@ -103,7 +103,6 @@ namespace System.ComponentModel
             }
         }
 
-        /// <include file='doc\TypeDescriptor.uex' path='docs/doc[@for="TypeDescriptor.Refreshed"]/*' />
         /// <summary>
         ///    Occurs when Refreshed is raised for a component.
         /// </summary>
