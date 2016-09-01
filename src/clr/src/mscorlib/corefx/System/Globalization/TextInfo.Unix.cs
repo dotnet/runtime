@@ -10,15 +10,8 @@ namespace System.Globalization
 {
     public partial class TextInfo
     {
-        enum TurkishCasing
-        {
-            NotInitialized,
-            NotNeeded,
-            Needed
-        }
-
         [NonSerialized]
-        private TurkishCasing _needsTurkishCasing = TurkishCasing.NotInitialized;
+        private Tristate _needsTurkishCasing = Tristate.NotInitialized;
 
         //////////////////////////////////////////////////////////////////////////
         ////
@@ -115,11 +108,11 @@ namespace System.Globalization
             }
             else
             {
-                if (_needsTurkishCasing == TurkishCasing.NotInitialized)
+                if (_needsTurkishCasing == Tristate.NotInitialized)
                 {
-                    _needsTurkishCasing = NeedsTurkishCasing(_textInfoName) ? TurkishCasing.Needed : TurkishCasing.NotNeeded;
+                    _needsTurkishCasing = NeedsTurkishCasing(_textInfoName) ? Tristate.True : Tristate.False;
                 }
-                if ( _needsTurkishCasing == TurkishCasing.Needed)
+                if (_needsTurkishCasing == Tristate.True)
                 {
                     Interop.GlobalizationInterop.ChangeCaseTurkish(src, srcLen, dstBuffer, dstBufferCapacity, bToUpper);
                 }
