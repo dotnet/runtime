@@ -58,6 +58,7 @@ function print_usage {
     echo '  --gcsimulator                    : Runs the GCSimulator tests'
     echo '  --show-time                      : Print execution sequence and running time for each test'
     echo '  --no-lf-conversion               : Do not execute LF conversion before running test script'
+    echo '  --build-overlay-only             : Exit after overlay directory is populated'
     echo '  --limitedDumpGeneration          : Enables the generation of a limited number of core dumps if test(s) crash, even if ulimit'
     echo '                                     is zero when launching this script. This option is intended for use in CI.'
     echo ''
@@ -465,6 +466,9 @@ function read_array {
 function load_unsupported_tests {
     # Load the list of tests that are not supported on this platform. These tests are disabled (skipped) permanently.
     unsupportedTests=($(read_array "$(dirname "$0")/testsUnsupportedOutsideWindows.txt"))
+    if [ "$ARCH" == "arm" ]; then
+        unsupportedTests+=($(read_array "$(dirname "$0")/testsUnsupportedOnARM32.txt"))
+    fi
 }
 
 function load_failing_tests {
@@ -870,37 +874,70 @@ function run_tests_in_directory {
     done
 }
 
-function coreclr_code_coverage()
-{
+function coreclr_code_coverage {
+    local coverageDir="$coverageOutputDir/Coverage"
+    local toolsDir="$coverageOutputDir/Coverage/tools"
+    local reportsDir="$coverageOutputDir/Coverage/reports"
+    local packageName="unix-code-coverage-tools.1.0.0.nupkg"
 
-  local coverageDir="$coverageOutputDir/Coverage"
-  local toolsDir="$coverageOutputDir/Coverage/tools"
-  local reportsDir="$coverageOutputDir/Coverage/reports"
-  local packageName="unix-code-coverage-tools.1.0.0.nupkg"
-  rm -rf $coverageDir
-  mkdir -p $coverageDir
-  mkdir -p $toolsDir
-  mkdir -p $reportsDir
-  pushd $toolsDir > /dev/null
+    rm -rf $coverageDir
+    mkdir -p $coverageDir
+    mkdir -p $toolsDir
+    mkdir -p $reportsDir
+    pushd $toolsDir > /dev/null
 
-  echo "Pulling down code coverage tools"
-  wget -q https://www.myget.org/F/dotnet-buildtools/api/v2/package/unix-code-coverage-tools/1.0.0 -O $packageName
-  echo "Unzipping to $toolsDir"
-  unzip -q -o $packageName
+    echo "Pulling down code coverage tools"
+    wget -q https://www.myget.org/F/dotnet-buildtools/api/v2/package/unix-code-coverage-tools/1.0.0 -O $packageName
+    echo "Unzipping to $toolsDir"
+    unzip -q -o $packageName
 
-  # Invoke gcovr
-  chmod a+rwx ./gcovr
-  chmod a+rwx ./$OSName/llvm-cov
+    # Invoke gcovr
+    chmod a+rwx ./gcovr
+    chmod a+rwx ./$OSName/llvm-cov
 
-  echo
-  echo "Generating coreclr code coverage reports at $reportsDir/coreclr.html"
-  echo "./gcovr $coreClrObjs --gcov-executable=$toolsDir/$OS/llvm-cov -r $coreClrSrc --html --html-details -o $reportsDir/coreclr.html"
-  echo
-  ./gcovr $coreClrObjs --gcov-executable=$toolsDir/$OSName/llvm-cov -r $coreClrSrc --html --html-details -o $reportsDir/coreclr.html
-  exitCode=$?
-  popd > /dev/null
-  exit $exitCode
+    echo
+    echo "Generating coreclr code coverage reports at $reportsDir/coreclr.html"
+    echo "./gcovr $coreClrObjs --gcov-executable=$toolsDir/$OS/llvm-cov -r $coreClrSrc --html --html-details -o $reportsDir/coreclr.html"
+    echo
+    ./gcovr $coreClrObjs --gcov-executable=$toolsDir/$OSName/llvm-cov -r $coreClrSrc --html --html-details -o $reportsDir/coreclr.html
+    exitCode=$?
+    popd > /dev/null
+    exit $exitCode
 }
+
+function check_cpu_architecture {
+    # Use uname to determine what the CPU is.
+    local CPUName=$(uname -p)
+    local __arch=
+
+    # Some Linux platforms report unknown for platform, but the arch for machine.
+    if [ "$CPUName" == "unknown" ]; then
+        CPUName=$(uname -m)
+    fi
+
+    case $CPUName in
+        i686)
+            __arch=x86
+            ;;
+        x86_64)
+            __arch=x64
+            ;;
+        armv7l)
+            __arch=arm
+            ;;
+        aarch64)
+            __arch=arm64
+            ;;
+        *)
+            echo "Unknown CPU $CPUName detected, configuring as if for x64"
+            __arch=x64
+            ;;
+    esac
+
+    echo "$__arch"
+}
+
+ARCH=$(check_cpu_architecture)
 
 # Exit code constants
 readonly EXIT_CODE_SUCCESS=0       # Script ran normally.
@@ -922,6 +959,7 @@ testEnv=
 playlistFile=
 showTime=
 noLFConversion=
+buildOverlayOnly=
 gcsimulator=
 longgc=
 limitedCoreDumps=
@@ -1033,6 +1071,9 @@ do
         --no-lf-conversion)
             noLFConversion=ON
             ;;
+        --build-overlay-only)
+            buildOverlayOnly=ON
+            ;;
         --limitedDumpGeneration)
             limitedCoreDumps=ON
             ;;
@@ -1043,6 +1084,11 @@ do
             ;;
     esac
 done
+
+if [ -n "$coreOverlayDir" ] && [ "$buildOverlayOnly" == "ON" ]; then
+    echo "Can not use \'--coreOverlayDir=<path>\' and \'--build-overlay-only\' at the same time."
+    exit $EXIT_CODE_EXCEPTION
+fi
 
 if ((disableEventLogging == 0)); then
     export COMPlus_EnableEventLog=1
@@ -1117,6 +1163,12 @@ create_core_overlay
 precompile_overlay_assemblies
 copy_test_native_bin_to_test_root
 
+if [ "$buildOverlayOnly" == "ON" ];
+then
+    echo "Build overlay directory \'$coreOverlayDir\' complete."
+    exit 0
+fi
+
 if [ -n "$playlistFile" ]
 then
     # Use a playlist file exclusively, if it was provided
@@ -1127,8 +1179,14 @@ else
     load_failing_tests
 fi
 
-scriptPath=$(dirname $0)
-${scriptPath}/setup-runtime-dependencies.sh --outputDir=$coreOverlayDir
+# Other architectures are not supported yet.
+if [ "$ARCH" == "x64" ]
+then
+    scriptPath=$(dirname $0)
+    ${scriptPath}/setup-runtime-dependencies.sh --outputDir=$coreOverlayDir
+else
+    echo "Skip preparing for GC stress test. Dependent package is not supported on this architecture."
+fi
 
 export __TestEnv=$testEnv
 
