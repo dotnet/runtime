@@ -165,6 +165,8 @@ void genCodeForLoadOffset(instruction ins, emitAttr size, regNumber dst, GenTree
 
 void genCodeForStoreOffset(instruction ins, emitAttr size, regNumber dst, GenTree* base, unsigned offset);
 
+void genCodeForStoreBlk(GenTreeBlk* storeBlkNode);
+
 void genCodeForInitBlk(GenTreeBlk* initBlkNode);
 
 void genCodeForInitBlkRepStos(GenTreeBlk* initBlkNode);

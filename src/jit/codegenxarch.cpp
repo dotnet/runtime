@@ -2756,57 +2756,8 @@ void CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
 
         case GT_STORE_DYN_BLK:
         case GT_STORE_BLK:
-        {
-            GenTreeBlk* blkOp = treeNode->AsBlk();
-            if (blkOp->gtBlkOpGcUnsafe)
-            {
-                getEmitter()->emitDisableGC();
-            }
-            bool isCopyBlk = blkOp->OperIsCopyBlkOp();
-
-            switch (blkOp->gtBlkOpKind)
-            {
-#ifdef _TARGET_AMD64_
-                case GenTreeBlk::BlkOpKindHelper:
-                    if (isCopyBlk)
-                    {
-                        genCodeForCpBlk(blkOp);
-                    }
-                    else
-                    {
-                        genCodeForInitBlk(blkOp);
-                    }
-                    break;
-#endif // _TARGET_AMD64_
-                case GenTreeBlk::BlkOpKindRepInstr:
-                    if (isCopyBlk)
-                    {
-                        genCodeForCpBlkRepMovs(blkOp);
-                    }
-                    else
-                    {
-                        genCodeForInitBlkRepStos(blkOp);
-                    }
-                    break;
-                case GenTreeBlk::BlkOpKindUnroll:
-                    if (isCopyBlk)
-                    {
-                        genCodeForCpBlkUnroll(blkOp);
-                    }
-                    else
-                    {
-                        genCodeForInitBlkUnroll(blkOp);
-                    }
-                    break;
-                default:
-                    unreached();
-            }
-            if (blkOp->gtBlkOpGcUnsafe)
-            {
-                getEmitter()->emitEnableGC();
-            }
-        }
-        break;
+            genCodeForStoreBlk(treeNode->AsBlk());
+            break;
 
         case GT_JMPTABLE:
             genJumpTable(treeNode);
@@ -3401,6 +3352,57 @@ BAILOUT:
 #endif
 
     genProduceReg(tree);
+}
+
+void CodeGen::genCodeForStoreBlk(GenTreeBlk* storeBlkNode)
+{
+    if (storeBlkNode->gtBlkOpGcUnsafe)
+    {
+        getEmitter()->emitDisableGC();
+    }
+    bool isCopyBlk = storeBlkNode->OperIsCopyBlkOp();
+
+    switch (storeBlkNode->gtBlkOpKind)
+    {
+#ifdef _TARGET_AMD64_
+        case GenTreeBlk::BlkOpKindHelper:
+            if (isCopyBlk)
+            {
+                genCodeForCpBlk(storeBlkNode);
+            }
+            else
+            {
+                genCodeForInitBlk(storeBlkNode);
+            }
+            break;
+#endif // _TARGET_AMD64_
+        case GenTreeBlk::BlkOpKindRepInstr:
+            if (isCopyBlk)
+            {
+                genCodeForCpBlkRepMovs(storeBlkNode);
+            }
+            else
+            {
+                genCodeForInitBlkRepStos(storeBlkNode);
+            }
+            break;
+        case GenTreeBlk::BlkOpKindUnroll:
+            if (isCopyBlk)
+            {
+                genCodeForCpBlkUnroll(storeBlkNode);
+            }
+            else
+            {
+                genCodeForInitBlkUnroll(storeBlkNode);
+            }
+            break;
+        default:
+            unreached();
+    }
+    if (storeBlkNode->gtBlkOpGcUnsafe)
+    {
+        getEmitter()->emitEnableGC();
+    }
 }
 
 // Generate code for InitBlk using rep stos.
@@ -5344,7 +5346,7 @@ void CodeGen::genConsumeBlockSize(GenTreeBlk* blkNode, regNumber sizeReg)
         else
         {
             noway_assert(blkNode->gtOper == GT_STORE_DYN_BLK);
-            genConsumeReg(blkNode->AsDynBlk()->gtDynamicSize);
+            genConsumeRegAndCopy(blkNode->AsDynBlk()->gtDynamicSize, sizeReg);
         }
     }
 }
@@ -5363,12 +5365,12 @@ void CodeGen::genConsumeBlockDst(GenTreeBlk* blkNode)
 }
 
 //------------------------------------------------------------------------
-// genConsumeBlockDst: Ensure that the block source address is in its
+// genConsumeBlockSrc: Ensure that the block source address is in its
 //                     allocated register if it is non-local.
 // Arguments:
 //    blkNode - The block node
 //
-
+// Return Value://    Returns the source address node, if it is non-local,//    and nullptr otherwise.
 GenTree* CodeGen::genConsumeBlockSrc(GenTreeBlk* blkNode)
 {
     GenTree* src = blkNode->Data();
@@ -5382,6 +5384,8 @@ GenTree* CodeGen::genConsumeBlockSrc(GenTreeBlk* blkNode)
         else
         {
             // This must be a local.
+            // For this case, there is no source address register, as it is a
+            // stack-based address.
             assert(src->OperIsLocal());
             return nullptr;
         }

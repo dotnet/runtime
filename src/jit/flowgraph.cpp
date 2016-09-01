@@ -17725,8 +17725,7 @@ void Compiler::fgSetTreeSeqHelper(GenTreePtr tree, bool isLIR)
     }
 
     // Special handling for dynamic block ops.
-    if (((tree->OperGet() == GT_ASG) && (tree->gtGetOp1()->OperGet() == GT_DYN_BLK)) ||
-        (tree->OperGet() == GT_STORE_DYN_BLK))
+    if (tree->OperIsDynBlkOp())
     {
         GenTreeDynBlk* dynBlk;
         GenTree*       src;
@@ -22160,7 +22159,7 @@ GenTreePtr      Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
                     tree = gtNewBlkOpNode(gtNewLclvNode(tmpNum, lclTyp), // Dest
                                           gtNewIconNode(0), // Value
                                           info.compCompHnd->getClassSize(structType), // Size
-                                          false,            // volatil
+                                          false,            // isVolatile
                                           false);           // not copyBlock
 
                     newStmt = gtNewStmt(tree, callILOffset);

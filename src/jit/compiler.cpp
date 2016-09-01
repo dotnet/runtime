@@ -4432,11 +4432,10 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, CORJIT_F
         compCycleEstimate = 0;
         for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
         {
-            for (GenTreeStmt* statement = block->firstStmt(); statement != nullptr;
-                 statement              = statement->getNextStmt())
+            for (GenTreeStmt* stmt = block->firstStmt(); stmt != nullptr; stmt = stmt->getNextStmt())
             {
-                compSizeEstimate += statement->GetCostSz();
-                compCycleEstimate += statement->GetCostEx();
+                compSizeEstimate += stmt->GetCostSz();
+                compCycleEstimate += stmt->GetCostEx();
             }
         }
     }
