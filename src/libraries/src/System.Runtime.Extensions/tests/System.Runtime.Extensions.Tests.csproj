@@ -27,9 +27,7 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'netstandard1.7_Release|AnyCPU' " />
   <ItemGroup>
     <Compile Include="System\Diagnostics\Stopwatch.cs" />
-    <!-- Disable System.EnvironmentTests because they are failing on non-Windows. Issue: https://github.com/dotnet/corefx/issues/11306
     <Compile Include="System\EnvironmentTests.cs" Condition="'$(TargetGroup)'=='netstandard1.7'" />
-    -->
     <Compile Include="System\Environment.MachineName.cs" />
     <Compile Include="System\IO\Path.Combine.cs" />
     <Compile Include="System\Runtime\Versioning\FrameworkName.cs" />

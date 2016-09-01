@@ -208,31 +208,42 @@ namespace System.Tests
 
         [Theory]
         [PlatformSpecific(Xunit.PlatformID.AnyUnix)]
-        [InlineData(Environment.SpecialFolder.CommonApplicationData)]
-        [InlineData(Environment.SpecialFolder.CommonTemplates)]
-        [InlineData(Environment.SpecialFolder.ApplicationData)]
-        [InlineData(Environment.SpecialFolder.LocalApplicationData)]
-        [InlineData(Environment.SpecialFolder.Desktop)]
-        [InlineData(Environment.SpecialFolder.DesktopDirectory)]
-        [InlineData(Environment.SpecialFolder.Templates)]
-        [InlineData(Environment.SpecialFolder.MyVideos)]
-        [InlineData(Environment.SpecialFolder.MyMusic)]
-        [InlineData(Environment.SpecialFolder.MyPictures)]
-        [InlineData(Environment.SpecialFolder.Fonts)]
-        public void GetFolderPath_Unix_NonEmptyFolderPaths(Environment.SpecialFolder folder)
+        [InlineData(Environment.SpecialFolder.UserProfile, Environment.SpecialFolderOption.None)]
+        [InlineData(Environment.SpecialFolder.Personal, Environment.SpecialFolderOption.None)]
+        [InlineData(Environment.SpecialFolder.MyDocuments, Environment.SpecialFolderOption.None)]
+        [InlineData(Environment.SpecialFolder.CommonApplicationData, Environment.SpecialFolderOption.None)]
+        [InlineData(Environment.SpecialFolder.CommonTemplates, Environment.SpecialFolderOption.DoNotVerify)]
+        [InlineData(Environment.SpecialFolder.ApplicationData, Environment.SpecialFolderOption.DoNotVerify)]
+        [InlineData(Environment.SpecialFolder.LocalApplicationData, Environment.SpecialFolderOption.None)]
+        [InlineData(Environment.SpecialFolder.Desktop, Environment.SpecialFolderOption.DoNotVerify)]
+        [InlineData(Environment.SpecialFolder.DesktopDirectory, Environment.SpecialFolderOption.DoNotVerify)]
+        [InlineData(Environment.SpecialFolder.Templates, Environment.SpecialFolderOption.DoNotVerify)]
+        [InlineData(Environment.SpecialFolder.MyVideos, Environment.SpecialFolderOption.DoNotVerify)]
+        [InlineData(Environment.SpecialFolder.MyMusic, Environment.SpecialFolderOption.DoNotVerify)]
+        [InlineData(Environment.SpecialFolder.MyPictures, Environment.SpecialFolderOption.DoNotVerify)]
+        [InlineData(Environment.SpecialFolder.Fonts, Environment.SpecialFolderOption.DoNotVerify)]
+        public void GetFolderPath_Unix_NonEmptyFolderPaths(Environment.SpecialFolder folder, Environment.SpecialFolderOption option)
         {
-            Assert.NotEmpty(Environment.GetFolderPath(folder));
+            Assert.NotEmpty(Environment.GetFolderPath(folder, option));
+            if (option == Environment.SpecialFolderOption.None)
+            {
+                Assert.NotEmpty(Environment.GetFolderPath(folder));
+            }
         }
 
         [Theory]
         [PlatformSpecific(Xunit.PlatformID.OSX)]
-        [InlineData(Environment.SpecialFolder.Favorites)]
-        [InlineData(Environment.SpecialFolder.InternetCache)]
-        [InlineData(Environment.SpecialFolder.ProgramFiles)]
-        [InlineData(Environment.SpecialFolder.System)]
-        public void GetFolderPath_OSX_NonEmptyFolderPaths(Environment.SpecialFolder folder)
+        [InlineData(Environment.SpecialFolder.Favorites, Environment.SpecialFolderOption.DoNotVerify)]
+        [InlineData(Environment.SpecialFolder.InternetCache, Environment.SpecialFolderOption.DoNotVerify)]
+        [InlineData(Environment.SpecialFolder.ProgramFiles, Environment.SpecialFolderOption.None)]
+        [InlineData(Environment.SpecialFolder.System, Environment.SpecialFolderOption.None)]
+        public void GetFolderPath_OSX_NonEmptyFolderPaths(Environment.SpecialFolder folder, Environment.SpecialFolderOption option)
         {
-            Assert.NotEmpty(Environment.GetFolderPath(folder));
+            Assert.NotEmpty(Environment.GetFolderPath(folder, option));
+            if (option == Environment.SpecialFolderOption.None)
+            {
+                Assert.NotEmpty(Environment.GetFolderPath(folder));
+            }
         }
 
         [Fact]
