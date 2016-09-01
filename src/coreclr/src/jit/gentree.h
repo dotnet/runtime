@@ -925,10 +925,10 @@ public:
 
 #define GTF_ICON_FIELD_OFF 0x08000000 // GT_CNS_INT -- constant is a field offset
 
-#define GTF_BLK_VOLATILE                                                                                               \
-    0x40000000 // GT_ASG, GT_STORE_BLK, GT_STORE_OBJ, GT_STORE_DYNBLK -- is a volatile block operation
-#define GTF_BLK_UNALIGNED                                                                                              \
-    0x02000000 // GT_ASG, GT_STORE_BLK, GT_STORE_OBJ, GT_STORE_DYNBLK -- is an unaligned block operation
+#define GTF_BLK_VOLATILE 0x40000000  // GT_ASG, GT_STORE_BLK, GT_STORE_OBJ, GT_STORE_DYNBLK
+                                     // -- is a volatile block operation
+#define GTF_BLK_UNALIGNED 0x02000000 // GT_ASG, GT_STORE_BLK, GT_STORE_OBJ, GT_STORE_DYNBLK
+                                     // -- is an unaligned block operation
 #define GTF_BLK_INIT 0x01000000 // GT_ASG, GT_STORE_BLK, GT_STORE_OBJ, GT_STORE_DYNBLK -- is an init block operation
 
 #define GTF_OVERFLOW 0x10000000 // GT_ADD, GT_SUB, GT_MUL, - Need overflow check
@@ -1141,7 +1141,7 @@ public:
                 (gtOper == GT_STORE_OBJ) || (gtOper == GT_STORE_DYN_BLK));
     }
 
-    bool OperIsBlk()
+    bool OperIsBlk() const
     {
         return OperIsBlk(OperGet());
     }
@@ -1817,10 +1817,7 @@ public:
 
     // Requires "childNum < NumChildren()".  Returns the "n"th child of "this."
     GenTreePtr GetChild(unsigned childNum);
-#if 0
-    // Returns the i'th child of a dynamic block node, in execution order.
-    GenTreePtr* GetDynBlkOperandInOrder(int index);
-#endif
+
     // Returns an iterator that will produce the use edge to each operand of this node. Differs
     // from the sequence of nodes produced by a loop over `GetChild` in its handling of call, phi,
     // and block op nodes.
@@ -3887,7 +3884,13 @@ protected:
 #endif
 };
 
-// gtBlk  -- 'block' (GT_BLK, GT_STORE_BLK). */
+// gtBlk  -- 'block' (GT_BLK, GT_STORE_BLK).
+//
+// This is the base type for all of the nodes that represent block or struct
+// values.
+// Since it can be a store, it includes gtBlkOpKind to specify the type of
+// code generation that will be used for the block operation.
+
 struct GenTreeBlk : public GenTreeIndir
 {
 public:
@@ -3902,7 +3905,7 @@ public:
     }
 
     // The size of the buffer to be copied.
-    unsigned Size()
+    unsigned Size() const
     {
         return gtBlkSize;
     }
@@ -3963,7 +3966,9 @@ protected:
 #endif // DEBUGGABLE_GENTREE
 };
 
-// gtObj  -- 'object' (GT_OBJ). */
+// gtObj  -- 'object' (GT_OBJ).
+//
+// This node is used for block values that may have GC pointers.
 
 struct GenTreeObj : public GenTreeBlk
 {
@@ -4045,7 +4050,11 @@ struct GenTreeObj : public GenTreeBlk
 #endif
 };
 
-// gtDynBlk  -- 'dynamic block' (GT_DYN_BLK). */
+// gtDynBlk  -- 'dynamic block' (GT_DYN_BLK).
+//
+// This node is used for block values that have a dynamic size.
+// Note that such a value can never have GC pointers.
+
 struct GenTreeDynBlk : public GenTreeBlk
 {
 public:
