@@ -383,7 +383,10 @@ function create_core_overlay {
     cp -f -v "$coreFxNativeBinDir/Native/"*."$libExtension" "$coreOverlayDir/" 2>/dev/null
 
     cp -f -v "$coreClrBinDir/"* "$coreOverlayDir/" 2>/dev/null
-    cp -f -v "$mscorlibDir/mscorlib.dll" "$coreOverlayDir/"
+    cp -f -v "$mscorlibDir/mscorlib.dll" "$coreOverlayDir/" 2>/dev/null
+    if [ -d "$mscorlibDir/bin" ]; then
+        cp -f -v "$mscorlibDir/bin/"* "$coreOverlayDir/" 2>/dev/null
+    fi
     cp -n -v "$testDependenciesDir"/* "$coreOverlayDir/" 2>/dev/null
     if [ -f "$coreOverlayDir/mscorlib.ni.dll" ]; then
         # Test dependencies come from a Windows build, and mscorlib.ni.dll would be the one from Windows
@@ -1110,9 +1113,6 @@ fi
 # order for interop tests to run on linux.
 if [ -z "$mscorlibDir" ]; then
     mscorlibDir=$coreClrBinDir
-fi
-if [ -d "$mscorlibDir" ] && [ -d "$mscorlibDir/bin" ]; then
-    cp $mscorlibDir/bin/* $mscorlibDir
 fi
 
 if [ ! -z "$longgc" ]; then
