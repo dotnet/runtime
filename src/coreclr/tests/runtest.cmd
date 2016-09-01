@@ -134,7 +134,7 @@ if not defined VSINSTALLDIR (
 ::       The issue is that we extend the build with our own targets which
 ::       means that that rebuilding cannot successfully delete the task
 ::       assembly. 
-set __msbuildCommonArgs=/nologo /nodeReuse:false %__msbuildExtraArgs%
+set __msbuildCommonArgs=/nologo /nodeReuse:false %__msbuildExtraArgs% /p:Platform=%__MSBuildBuildArch%
 
 if not defined __Sequential (
     set __msbuildCommonArgs=%__msbuildCommonArgs% /maxcpucount
