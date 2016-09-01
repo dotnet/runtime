@@ -29,8 +29,40 @@ mono_main_with_options (int argc, char *argv [])
 	return mono_main (argc, argv);
 }
 
-#define STREAM_INT(x) (*(uint32_t*)x)
-#define STREAM_LONG(x) (*(uint64_t*)x)
+#define STREAM_INT(x) GUINT32_TO_LE((*(uint32_t*)x))
+#define STREAM_LONG(x) GUINT64_TO_LE((*(uint64_t*)x))
+
+/**
+ * Loads a chunk of data from the file pointed to by the
+ * @fd starting at the file offset @offset for @size bytes
+ * and returns an allocated version of that string, or NULL
+ * on error.
+ */
+static char *
+load_from_region (int fd, uint64_t offset, uint64_t size)
+{
+	char *buffer;
+	off_t loc;
+	int status;
+	
+	do {
+		loc = lseek (fd, offset, SEEK_SET);
+	} while (loc == -1 && errno == EINTR);
+	if (loc == -1)
+		return NULL;
+	buffer = g_malloc (size + 1);
+	if (buffer == NULL)
+		return NULL;
+	buffer [size] = 0;
+	do {
+		status = read (fd, buffer, size);
+	} while (status == -1 && errno == EINTR);
+	if (status == -1){
+		g_free (buffer);
+		return NULL;
+	}
+	return buffer;
+}
 
 static gboolean
 probe_embedded (const char *program, int *ref_argc, char **ref_argv [])
@@ -104,15 +136,20 @@ probe_embedded (const char *program, int *ref_argc, char **ref_argv [])
 			char *config = kind + strlen ("config:");
 			char *aname = g_strdup (config);
 			aname [strlen(aname)-strlen(".config")] = 0;
-			mono_register_config_for_assembly (aname, config);
+			mono_register_config_for_assembly (aname, load_from_region (fd, offset, item_size));
 		} else if (strncmp (kind, "systemconfig:", strlen ("systemconfig:")) == 0){
-			mono_config_parse_memory (kind + strlen ("systemconfig:"));
+			mono_config_parse_memory (load_from_region (fd, offset, item_size));
 		} else if (strncmp (kind, "options:", strlen ("options:")) == 0){
-			mono_parse_options_from (kind + strlen("options:"), ref_argc, ref_argv);
+			mono_parse_options_from (load_from_region (fd, offset, item_size), ref_argc, ref_argv);
 		} else if (strncmp (kind, "config_dir:", strlen ("config_dir:")) == 0){
-			mono_set_dirs (getenv ("MONO_PATH"), kind + strlen ("config_dir:"));
+			mono_set_dirs (getenv ("MONO_PATH"), load_from_region (fd, offset, item_size));
 		} else if (strncmp (kind, "machineconfig:", strlen ("machineconfig:")) == 0) {
-			mono_register_machine_config (kind + strlen ("machineconfig:"));
+			mono_register_machine_config (load_from_region (fd, offset, item_size));
+		} else if (strncmp (kind, "env:", strlen ("env:")) == 0){
+			char *data = load_from_region (fd, offset, item_size);
+			uint8_t count = *data++;
+			char *value = data + count + 1;
+			g_setenv (data, value, FALSE);
 		} else {
 			fprintf (stderr, "Unknown stream on embedded package: %s\n", kind);
 			exit (1);
