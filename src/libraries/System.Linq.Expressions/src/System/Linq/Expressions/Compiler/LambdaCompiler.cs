@@ -21,7 +21,7 @@ namespace System.Linq.Expressions.Compiler
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1506:AvoidExcessiveClassCoupling")]
     internal sealed partial class LambdaCompiler
     {
-        private delegate void WriteBack();
+        private delegate void WriteBack(LambdaCompiler compiler);
 
         // Information on the entire lambda tree currently being compiled
         private readonly AnalyzedTree _tree;
