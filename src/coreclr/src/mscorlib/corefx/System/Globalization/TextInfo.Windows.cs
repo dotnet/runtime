@@ -51,7 +51,7 @@ namespace System.Globalization
             }
             else
             {
-                int result;
+                int ret;
 
                 // Check for Invariant to avoid A/V in LCMapStringEx
                 uint linguisticCasing = IsInvariantLocale(_textInfoName) ? 0 : LCMAP_LINGUISTIC_CASING;
@@ -59,27 +59,29 @@ namespace System.Globalization
                 //
                 //  Create the result string.
                 //
-                char[] buffer = new char[nLengthInput];
-                fixed (char* pBuffer = buffer)
+                string result = string.FastAllocateString(nLengthInput);
+
+                fixed (char* pSource = s)
+                fixed (char* pResult = result)
                 {
-                    result = Interop.mincore.LCMapStringEx(_sortHandle != IntPtr.Zero ? null : _textInfoName,
-                                                           toUpper ? LCMAP_UPPERCASE | linguisticCasing : LCMAP_LOWERCASE | linguisticCasing,
-                                                           s,
-                                                           nLengthInput,
-                                                           pBuffer,
-                                                           nLengthInput,
-                                                           null,
-                                                           null,
-                                                           _sortHandle);
+                    ret = Interop.mincore.LCMapStringEx(_sortHandle != IntPtr.Zero ? null : _textInfoName,
+                                                        toUpper ? LCMAP_UPPERCASE | linguisticCasing : LCMAP_LOWERCASE | linguisticCasing,
+                                                        pSource,
+                                                        nLengthInput,
+                                                        pResult,
+                                                        nLengthInput,
+                                                        null,
+                                                        null,
+                                                        _sortHandle);
                 }
 
-                if (0 == result)
+                if (0 == ret)
                 {
                     throw new InvalidOperationException(SR.InvalidOperation_ReadOnly);
                 }
 
-                Contract.Assert(result == nLengthInput, "Expected getting the same length of the original string");
-                return new string(buffer, 0, result);
+                Contract.Assert(ret == nLengthInput, "Expected getting the same length of the original string");
+                return result;
             }
         }
 
@@ -92,7 +94,7 @@ namespace System.Globalization
 
             Interop.mincore.LCMapStringEx(_sortHandle != IntPtr.Zero ? null : _textInfoName,
                                           toUpper ? LCMAP_UPPERCASE | linguisticCasing : LCMAP_LOWERCASE | linguisticCasing,
-                                          new string(c, 1),
+                                          &c,
                                           1,
                                           &retVal,
                                           1,
