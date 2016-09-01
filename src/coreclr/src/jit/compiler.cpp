@@ -906,7 +906,7 @@ var_types Compiler::getArgTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
 //         that multiple registers are used to return this struct.
 //
 var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
-                                           structPassingKind*   wbReturnStruct,
+                                           structPassingKind*   wbReturnStruct /* = nullptr */,
                                            unsigned             structSize /* = 0 */)
 {
     var_types         useType           = TYP_UNKNOWN;

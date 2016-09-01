@@ -3541,6 +3541,7 @@ void GCInfo::gcInfoBlockHdrSave(GcInfoEncoder* gcInfoEncoder, unsigned methodSiz
     switch (compiler->info.compRetType)
     {
         case TYP_REF:
+        case TYP_ARRAY:
             returnKind = RT_Object;
             break;
         case TYP_BYREF:
@@ -3549,19 +3550,42 @@ void GCInfo::gcInfoBlockHdrSave(GcInfoEncoder* gcInfoEncoder, unsigned methodSiz
         case TYP_STRUCT:
         {
             CORINFO_CLASS_HANDLE structType = compiler->info.compMethodInfo->args.retTypeClass;
-            if (compiler->IsMultiRegReturnedType(structType) && !compiler->IsHfa(structType))
-            {
-                BYTE gcPtrs[2] = {TYPE_GC_NONE, TYPE_GC_NONE};
-                compiler->info.compCompHnd->getClassGClayout(structType, gcPtrs);
+            var_types retType = compiler->getReturnTypeForStruct(structType);
 
-                ReturnKind first  = GCTypeToReturnKind((CorInfoGCType)gcPtrs[0]);
-                ReturnKind second = GCTypeToReturnKind((CorInfoGCType)gcPtrs[1]);
-
-                returnKind = GetStructReturnKind(first, second);
-            }
-            else
+            switch (retType)
             {
+            case TYP_ARRAY:
+                _ASSERTE(false && "TYP_ARRAY unexpected from getReturnTypeForStruct()");
+
+            case TYP_REF:
+                returnKind = RT_Object;
+                break;
+
+            case TYP_BYREF:
+                returnKind = RT_ByRef;
+                break;
+
+            case TYP_STRUCT:
+                if (compiler->IsHfa(structType))
+                {
+                    returnKind = RT_Scalar;
+                }
+                else
+                {
+                    // Multi-reg return
+                    BYTE gcPtrs[2] = { TYPE_GC_NONE, TYPE_GC_NONE };
+                    compiler->info.compCompHnd->getClassGClayout(structType, gcPtrs);
+
+                    ReturnKind first = GCTypeToReturnKind((CorInfoGCType)gcPtrs[0]);
+                    ReturnKind second = GCTypeToReturnKind((CorInfoGCType)gcPtrs[1]);
+
+                    returnKind = GetStructReturnKind(first, second);
+                }
+                break;
+
+            default:
                 returnKind = RT_Scalar;
+                break;
             }
             break;
         }
