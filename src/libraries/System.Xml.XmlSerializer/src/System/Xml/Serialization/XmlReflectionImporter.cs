@@ -18,7 +18,6 @@ namespace System.Xml.Serialization
     using XmlSchema = System.ServiceModel.Dispatcher.XmlSchemaConstants;
     using System.Collections.Generic;
 
-    /// <include file='doc\XmlReflectionImporter.uex' path='docs/doc[@for="XmlReflectionImporter"]/*' />
     ///<internalonly/>
     /// <devdoc>
     ///    <para>[To be supplied.]</para>
@@ -49,7 +48,6 @@ namespace System.Xml.Serialization
             Element
         }
 
-        /// <include file='doc\XmlReflectionImporter.uex' path='docs/doc[@for="XmlReflectionImporter.XmlReflectionImporter"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -57,7 +55,6 @@ namespace System.Xml.Serialization
         {
         }
 
-        /// <include file='doc\XmlReflectionImporter.uex' path='docs/doc[@for="XmlReflectionImporter.XmlReflectionImporter1"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -65,7 +62,6 @@ namespace System.Xml.Serialization
         {
         }
 
-        /// <include file='doc\XmlReflectionImporter.uex' path='docs/doc[@for="XmlReflectionImporter.XmlReflectionImporter2"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -73,7 +69,6 @@ namespace System.Xml.Serialization
         {
         }
 
-        /// <include file='doc\XmlReflectionImporter.uex' path='docs/doc[@for="XmlReflectionImporter.XmlReflectionImporter3"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -89,7 +84,6 @@ namespace System.Xml.Serialization
             _modelScope = new ModelScope(_typeScope);
         }
 
-        /// <include file='doc\XmlReflectionImporter.uex' path='docs/doc[@for="XmlReflectionImporter.IncludeTypes"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -108,7 +102,6 @@ namespace System.Xml.Serialization
             }
         }
 
-        /// <include file='doc\XmlReflectionImporter.uex' path='docs/doc[@for="XmlReflectionImporter.IncludeType"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -137,7 +130,6 @@ namespace System.Xml.Serialization
             _savedArrayNamespace = previousArrayNamespace;
         }
 
-        /// <include file='doc\XmlReflectionImporter.uex' path='docs/doc[@for="XmlReflectionImporter.ImportTypeMapping"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -146,7 +138,6 @@ namespace System.Xml.Serialization
             return ImportTypeMapping(type, null, null);
         }
 
-        /// <include file='doc\XmlReflectionImporter.uex' path='docs/doc[@for="XmlReflectionImporter.ImportTypeMapping1"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -155,7 +146,6 @@ namespace System.Xml.Serialization
             return ImportTypeMapping(type, null, defaultNamespace);
         }
 
-        /// <include file='doc\XmlReflectionImporter.uex' path='docs/doc[@for="XmlReflectionImporter.ImportTypeMapping2"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -164,7 +154,6 @@ namespace System.Xml.Serialization
             return ImportTypeMapping(type, root, null);
         }
 
-        /// <include file='doc\XmlReflectionImporter.uex' path='docs/doc[@for="XmlReflectionImporter.ImportTypeMapping3"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -178,7 +167,6 @@ namespace System.Xml.Serialization
             return xmlMapping;
         }
 
-        /// <include file='doc\XmlReflectionImporter.uex' path='docs/doc[@for="XmlReflectionImporter.ImportMembersMapping"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -187,7 +175,6 @@ namespace System.Xml.Serialization
             return ImportMembersMapping(elementName, ns, members, hasWrapperElement, false);
         }
 
-        /// <include file='doc\XmlReflectionImporter.uex' path='docs/doc[@for="XmlReflectionImporter.ImportMembersMapping1"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -196,7 +183,6 @@ namespace System.Xml.Serialization
             return ImportMembersMapping(elementName, ns, members, hasWrapperElement, rpc, false);
         }
 
-        /// <include file='doc\XmlReflectionImporter.uex' path='docs/doc[@for="XmlReflectionImporter.ImportMembersMapping2"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -206,7 +192,6 @@ namespace System.Xml.Serialization
             return ImportMembersMapping(elementName, ns, members, hasWrapperElement, rpc, openModel, XmlMappingAccess.Read | XmlMappingAccess.Write);
         }
 
-        /// <include file='doc\XmlReflectionImporter.uex' path='docs/doc[@for="XmlReflectionImporter.ImportMembersMapping3"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>

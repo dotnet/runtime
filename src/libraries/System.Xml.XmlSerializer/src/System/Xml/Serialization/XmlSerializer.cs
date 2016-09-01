@@ -22,30 +22,21 @@ namespace System.Xml.Serialization
     using XmlDeserializationEvents = System.Object;
 
 
-    /// <include file='doc\XmlSerializer.uex' path='docs/doc[@for="XmlSerializerImplementation"]/*' />
     ///<internalonly/>
     /// <devdoc>
     ///    <para>[To be supplied.]</para>
     /// </devdoc>
     public abstract class XmlSerializerImplementation
     {
-        /// <include file='doc\XmlSerializer.uex' path='docs/doc[@for="XmlSerializerImplementation.Reader"]/*' />
         public virtual XmlSerializationReader Reader { get { throw new NotSupportedException(); } }
-        /// <include file='doc\XmlSerializer.uex' path='docs/doc[@for="XmlSerializerImplementation.Writer"]/*' />
         public virtual XmlSerializationWriter Writer { get { throw new NotSupportedException(); } }
-        /// <include file='doc\XmlSerializer.uex' path='docs/doc[@for="XmlSerializerImplementation.ReadMethods"]/*' />
         public virtual IDictionary ReadMethods { get { throw new NotSupportedException(); } }
-        /// <include file='doc\XmlSerializer.uex' path='docs/doc[@for="XmlSerializerImplementation.WriteMethods"]/*' />
         public virtual IDictionary WriteMethods { get { throw new NotSupportedException(); } }
-        /// <include file='doc\XmlSerializer.uex' path='docs/doc[@for="XmlSerializerImplementation.TypedSerializers"]/*' />
         public virtual IDictionary TypedSerializers { get { throw new NotSupportedException(); } }
-        /// <include file='doc\XmlSerializer.uex' path='docs/doc[@for="XmlSerializerImplementation.CanSerialize"]/*' />
         public virtual bool CanSerialize(Type type) { throw new NotSupportedException(); }
-        /// <include file='doc\XmlSerializer.uex' path='docs/doc[@for="XmlSerializerImplementation.GetSerializer"]/*' />
         public virtual XmlSerializer GetSerializer(Type type) { throw new NotSupportedException(); }
     }
 
-    /// <include file='doc\XmlSerializer.uex' path='docs/doc[@for="XmlSerializer"]/*' />
     /// <devdoc>
     ///    <para>[To be supplied.]</para>
     /// </devdoc>
@@ -84,13 +75,11 @@ namespace System.Xml.Serialization
 
         private static readonly Dictionary<Type, Dictionary<XmlSerializerMappingKey, XmlSerializer>> s_xmlSerializerTable = new Dictionary<Type, Dictionary<XmlSerializerMappingKey, XmlSerializer>>();
 
-        /// <include file='doc\XmlSerializer.uex' path='docs/doc[@for="XmlSerializer.XmlSerializer8"]/*' />
         ///<internalonly/>
         protected XmlSerializer()
         {
         }
 
-        /// <include file='doc\XmlSerializer.uex' path='docs/doc[@for="XmlSerializer.XmlSerializer"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -99,7 +88,6 @@ namespace System.Xml.Serialization
         {
         }
 
-        /// <include file='doc\XmlSerializer.uex' path='docs/doc[@for="XmlSerializer.XmlSerializer2"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -107,7 +95,6 @@ namespace System.Xml.Serialization
         {
         }
 
-        /// <include file='doc\XmlSerializer.uex' path='docs/doc[@for="XmlSerializer.XmlSerializer3"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -119,7 +106,6 @@ namespace System.Xml.Serialization
         {
         }
 
-        /// <include file='doc\XmlSerializer.uex' path='docs/doc[@for="XmlSerializer.XmlSerializer4"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -127,7 +113,6 @@ namespace System.Xml.Serialization
         {
         }
 
-        /// <include file='doc\XmlSerializer.uex' path='docs/doc[@for="XmlSerializer.XmlSerializer5"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -137,7 +122,6 @@ namespace System.Xml.Serialization
             _mapping = xmlTypeMapping;
         }
 
-        /// <include file='doc\XmlSerializer.uex' path='docs/doc[@for="XmlSerializer.XmlSerializer6"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -145,7 +129,6 @@ namespace System.Xml.Serialization
         {
         }
 
-        /// <include file='doc\XmlSerializer.uex' path='docs/doc[@for="XmlSerializer.XmlSerializer1"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -197,7 +180,6 @@ namespace System.Xml.Serialization
 #endif
         }
 
-        /// <include file='doc\XmlSerializer.uex' path='docs/doc[@for="XmlSerializer.XmlSerializer7"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -234,7 +216,6 @@ namespace System.Xml.Serialization
         }
 
 
-        /// <include file='doc\XmlSerializer.uex' path='docs/doc[@for="XmlSerializer.Serialize"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -243,7 +224,6 @@ namespace System.Xml.Serialization
             Serialize(textWriter, o, null);
         }
 
-        /// <include file='doc\XmlSerializer.uex' path='docs/doc[@for="XmlSerializer.Serialize1"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -256,7 +236,6 @@ namespace System.Xml.Serialization
             Serialize(xmlWriter, o, namespaces);
         }
 
-        /// <include file='doc\XmlSerializer.uex' path='docs/doc[@for="XmlSerializer.Serialize2"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -265,7 +244,6 @@ namespace System.Xml.Serialization
             Serialize(stream, o, null);
         }
 
-        /// <include file='doc\XmlSerializer.uex' path='docs/doc[@for="XmlSerializer.Serialize3"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -281,7 +259,6 @@ namespace System.Xml.Serialization
             Serialize(xmlWriter, o, namespaces);
         }
 
-        /// <include file='doc\XmlSerializer.uex' path='docs/doc[@for="XmlSerializer.Serialize4"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -290,7 +267,6 @@ namespace System.Xml.Serialization
             Serialize(xmlWriter, o, null);
         }
 
-        /// <include file='doc\XmlSerializer.uex' path='docs/doc[@for="XmlSerializer.Serialize5"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -298,13 +274,11 @@ namespace System.Xml.Serialization
         {
             Serialize(xmlWriter, o, namespaces, null);
         }
-        /// <include file='doc\XmlSerializer.uex' path='docs/doc[@for="XmlSerializer.Serialize6"]/*' />
         internal void Serialize(XmlWriter xmlWriter, object o, XmlSerializerNamespaces namespaces, string encodingStyle)
         {
             Serialize(xmlWriter, o, namespaces, encodingStyle, null);
         }
 
-        /// <include file='doc\XmlSerializer.uex' path='docs/doc[@for="XmlSerializer.Serialize6"]/*' />
         internal void Serialize(XmlWriter xmlWriter, object o, XmlSerializerNamespaces namespaces, string encodingStyle, string id)
         {
             try
@@ -364,7 +338,6 @@ namespace System.Xml.Serialization
             xmlWriter.Flush();
         }
 
-        /// <include file='doc\XmlSerializer.uex' path='docs/doc[@for="XmlSerializer.Deserialize"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -385,7 +358,6 @@ namespace System.Xml.Serialization
             return Deserialize(xmlReader, null);
         }
 
-        /// <include file='doc\XmlSerializer.uex' path='docs/doc[@for="XmlSerializer.Deserialize1"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -406,7 +378,6 @@ namespace System.Xml.Serialization
             return Deserialize(xmlReader, null);
         }
 
-        /// <include file='doc\XmlSerializer.uex' path='docs/doc[@for="XmlSerializer.Deserialize2"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -416,13 +387,11 @@ namespace System.Xml.Serialization
         }
 
 
-        /// <include file='doc\XmlSerializer.uex' path='docs/doc[@for="XmlSerializer.Deserialize4"]/*' />
         internal object Deserialize(XmlReader xmlReader, string encodingStyle)
         {
             return Deserialize(xmlReader, encodingStyle, _events);
         }
 
-        /// <include file='doc\XmlSerializer.uex' path='docs/doc[@for="XmlSerializer.Deserialize5"]/*' />
         internal object Deserialize(XmlReader xmlReader, string encodingStyle, XmlDeserializationEvents events)
         {
             try
@@ -492,7 +461,6 @@ namespace System.Xml.Serialization
             }
         }
 
-        /// <include file='doc\XmlSerializer.uex' path='docs/doc[@for="XmlSerializer.CanDeserialize"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -522,7 +490,6 @@ namespace System.Xml.Serialization
 #endif
         }
 
-        /// <include file='doc\XmlSerializer.uex' path='docs/doc[@for="XmlSerializer.FromMappings"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -531,7 +498,6 @@ namespace System.Xml.Serialization
             return FromMappings(mappings, (Type)null);
         }
 
-        /// <include file='doc\XmlSerializer.uex' path='docs/doc[@for="XmlSerializer.FromMappings1"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -625,7 +591,6 @@ namespace System.Xml.Serialization
 
 
 
-        /// <include file='doc\XmlSerializer.uex' path='docs/doc[@for="XmlSerializer.FromTypes"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -677,16 +642,12 @@ namespace System.Xml.Serialization
         }
 #endif
 
-        /// <include file='doc\XmlSerializer.uex' path='docs/doc[@for="XmlSerializer.CreateReader"]/*' />
         ///<internalonly/>
         protected virtual XmlSerializationReader CreateReader() { throw new PlatformNotSupportedException(); }
-        /// <include file='doc\XmlSerializer.uex' path='docs/doc[@for="XmlSerializer.Deserialize4"]/*' />
         ///<internalonly/>
         protected virtual object Deserialize(XmlSerializationReader reader) { throw new PlatformNotSupportedException(); }
-        /// <include file='doc\XmlSerializer.uex' path='docs/doc[@for="XmlSerializer.CreateWriter"]/*' />
         ///<internalonly/>
         protected virtual XmlSerializationWriter CreateWriter() { throw new PlatformNotSupportedException(); }
-        /// <include file='doc\XmlSerializer.uex' path='docs/doc[@for="XmlSerializer.Serialize7"]/*' />
         ///<internalonly/>
         protected virtual void Serialize(object o, XmlSerializationWriter writer) { throw new PlatformNotSupportedException(); }
 

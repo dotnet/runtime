@@ -9,7 +9,6 @@ using System.Text;
 
 namespace System.Xml.Serialization
 {
-    /// <include file='doc\XmlMembersMapping.uex' path='docs/doc[@for="XmlMembersMapping"]/*' />
     ///<internalonly/>
     /// <devdoc>
     ///    <para>[To be supplied.]</para>
@@ -36,7 +35,6 @@ namespace System.Xml.Serialization
             SetKeyInternal(key.ToString());
         }
 
-        /// <include file='doc\XmlMembersMapping.uex' path='docs/doc[@for="XmlMembersMapping.TypeName"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -45,7 +43,6 @@ namespace System.Xml.Serialization
             get { return Accessor.Mapping.TypeName; }
         }
 
-        /// <include file='doc\XmlMembersMapping.uex' path='docs/doc[@for="XmlMembersMapping.TypeNamespace"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -54,7 +51,6 @@ namespace System.Xml.Serialization
             get { return Accessor.Mapping.Namespace; }
         }
 
-        /// <include file='doc\XmlMembersMapping.uex' path='docs/doc[@for="XmlMembersMapping.this"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -63,7 +59,6 @@ namespace System.Xml.Serialization
             get { return _mappings[index]; }
         }
 
-        /// <include file='doc\XmlMembersMapping.uex' path='docs/doc[@for="XmlMembersMapping.Count"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
