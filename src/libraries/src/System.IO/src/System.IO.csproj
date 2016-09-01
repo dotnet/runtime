@@ -8,6 +8,7 @@
     <ContractProject Condition="'$(AssemblyVersion)' == '4.1.0.0'">..\ref\4.1\System.IO.depproj</ContractProject>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NuGetTargetMoniker>
+    <PackageTargetFramework Condition="'$(TargetGroup)' == ''">netstandard1.7;uap10.1</PackageTargetFramework>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the options -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />

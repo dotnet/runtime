@@ -757,7 +757,8 @@
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.0.1.0": "4.0.1",
-        "4.0.2.0": "4.0.2"
+        "4.0.2.0": "4.0.2",
+        "4.1.0.0": "4.3.0"
       }
     },
     "System.ComponentModel": {
@@ -831,7 +832,8 @@
       "BaselineVersion": "4.0.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
-        "4.0.1.0": "4.0.1"
+        "4.0.1.0": "4.0.1",
+        "4.1.0.0": "4.3.0"
       }
     },
     "System.Data.Common": {
@@ -1022,7 +1024,8 @@
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.0.1.0": "4.0.1",
-        "4.0.2.0": "4.0.2"
+        "4.0.2.0": "4.0.2",
+        "4.1.0.0": "4.3.0"
       }
     },
     "System.Globalization.Extensions": {
@@ -1089,7 +1092,8 @@
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.0.1.0": "4.0.1",
-        "4.0.2.0": "4.0.2"
+        "4.0.2.0": "4.0.2",
+        "4.1.0.0": "4.3.0"
       }
     },
     "System.IO.FileSystem.AccessControl": {
@@ -1143,7 +1147,8 @@
       "AssemblyVersionInPackageVersion": {
         "4.0.1.0": "4.0.1",
         "4.0.2.0": "4.3.0",
-        "4.0.0.0": "4.0.0"
+        "4.0.0.0": "4.0.0",
+        "4.1.0.0": "4.3.0"
       }
     },
     "System.IO.MemoryMappedFiles": {
@@ -1213,7 +1218,8 @@
         "4.0.10.0": "4.0.10",
         "4.1.0.0": "4.1.0",
         "4.1.1.0": "4.1.1",
-        "4.0.11.0": "4.0.11"
+        "4.0.11.0": "4.0.11",
+        "4.2.0.0": "4.3.0"
       }
     },
     "System.Linq.Parallel": {
@@ -1835,7 +1841,8 @@
         "4.0.0.0": "4.0.0",
         "4.1.0.0": "4.1.0",
         "4.2.0.0": "4.2.0",
-        "4.2.1.0": "4.2.1"
+        "4.2.1.0": "4.2.1",
+        "4.3.0.0": "4.3.0"
       }
     },
     "System.Security.Cryptography.Cng": {
@@ -2029,7 +2036,8 @@
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.0.10.0": "4.0.10",
-        "4.0.11.0": "4.0.11"
+        "4.0.11.0": "4.0.11",
+        "4.1.0.0": "4.3.0"
       }
     },
     "System.Text.Encoding.CodePages": {
@@ -2410,6 +2418,19 @@
     "System.ValueTuple": {
       "AssemblyVersionInPackageVersion": {
         "4.0.1.0": "4.3.0"
+      }
+    },
+    "System.Json": {},
+    "System.Private.Xml": {},
+    "System.Private.Xml.Linq": {},
+    "System.Security.Permissions": {
+      "AssemblyVersionInPackageVersion": {
+        "4.0.0.0": "4.3.0"
+      }
+    },
+    "System.Transactions": {
+      "AssemblyVersionInPackageVersion": {
+        "4.0.0.0": "4.3.0"
       }
     }
   },
