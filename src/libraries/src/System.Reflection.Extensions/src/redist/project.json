@@ -1,0 +1,13 @@
+{
+  "dependencies": {
+    "Microsoft.NETCore.Targets": "1.0.0",
+    "System.Reflection.Extensions": "4.0.0"
+  },
+  "frameworks": {
+    "netcore50": {}
+  },
+  "runtimes": {
+    "win8": {},
+    "win8-aot": {}
+  }
+}

@@ -37,13 +37,10 @@ namespace System
         public const double PositiveInfinity = (double)1.0 / (double)(0.0);
         public const double NaN = (double)0.0 / (double)0.0;
     }
-}
-namespace System.Reflection
-{
-    // These should be made public when reflection extensibility via contracts is supported on all platforms.
-    // In the meantime, these will be exposed via wrapper factory methods in System.Private.Reflection.Extensibility.
-    public partial struct CustomAttributeNamedArgument
+    public partial class Type
     {
-        internal CustomAttributeNamedArgument(Type attributeType, string memberName, bool isField, CustomAttributeTypedArgument typedValue) { }
+        // Members promoted from MemberInfo
+        public abstract Type DeclaringType { get; }
+        public abstract string Name { get; }
     }
 }

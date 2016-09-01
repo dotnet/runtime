@@ -1,14 +1,14 @@
 {
   "frameworks": {
-    "netstandard1.7": {
+    "netstandard1.3": {
       "dependencies": {
         "Microsoft.TargetingPack.Private.CoreCLR": "1.1.0-beta-24431-03"
       },
       "imports": [
-        "dotnet5.8"
+        "dotnet5.4"
       ]
     },
-    "net463": {
+    "net46": {
       "dependencies": {
         "Microsoft.TargetingPack.NETFramework.v4.6": "1.0.1"
       }
