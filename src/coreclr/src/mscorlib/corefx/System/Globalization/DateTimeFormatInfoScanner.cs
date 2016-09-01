@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
+
 ////////////////////////////////////////////////////////////////////////////
 //
 // DateTimeFormatInfoScanner
@@ -385,7 +386,7 @@ namespace System.Globalization
                 // Create the date word array.
                 m_dateWords = new StringList();
             }
-            // Add the ingorable symbol into the ArrayList.
+            // Add the ignorable symbol into the ArrayList.
             String temp = IgnorableSymbolChar + text;
             if (!m_dateWords.Contains(temp))
             {
@@ -397,7 +398,7 @@ namespace System.Globalization
         //
         // Flag used to trace the date patterns (yy/yyyyy/M/MM/MMM/MMM/d/dd) that we have seen.
         //
-        enum FoundDatePattern
+        private enum FoundDatePattern
         {
             None = 0x0000,
             FoundYearPatternFlag = 0x0001,
@@ -407,7 +408,7 @@ namespace System.Globalization
         }
 
         // Check if we have found all of the year/month/day pattern.
-        FoundDatePattern m_ymdFlags = FoundDatePattern.None;
+        private FoundDatePattern _ymdFlags = FoundDatePattern.None;
 
 
         ////////////////////////////////////////////////////////////////////////////
@@ -435,7 +436,7 @@ namespace System.Globalization
         internal void ScanDateWord(String pattern)
         {
             // Check if we have found all of the year/month/day pattern.
-            m_ymdFlags = FoundDatePattern.None;
+            _ymdFlags = FoundDatePattern.None;
 
             int i = 0;
             while (i < pattern.Length)
@@ -458,11 +459,11 @@ namespace System.Globalization
                                 i = AddDateWords(pattern, i + 1, "MMMM");
                             }
                         }
-                        m_ymdFlags |= FoundDatePattern.FoundMonthPatternFlag;
+                        _ymdFlags |= FoundDatePattern.FoundMonthPatternFlag;
                         break;
                     case 'y':
                         i = ScanRepeatChar(pattern, 'y', i, out chCount);
-                        m_ymdFlags |= FoundDatePattern.FoundYearPatternFlag;
+                        _ymdFlags |= FoundDatePattern.FoundYearPatternFlag;
                         break;
                     case 'd':
                         i = ScanRepeatChar(pattern, 'd', i, out chCount);
@@ -470,7 +471,7 @@ namespace System.Globalization
                         {
                             // Only count "d" & "dd".
                             // ddd, dddd are day names.  Do not count them.
-                            m_ymdFlags |= FoundDatePattern.FoundDayPatternFlag;
+                            _ymdFlags |= FoundDatePattern.FoundDayPatternFlag;
                         }
                         break;
                     case '\\':
@@ -479,21 +480,21 @@ namespace System.Globalization
                         i += 2;
                         break;
                     case '.':
-                        if (m_ymdFlags == FoundDatePattern.FoundYMDPatternFlag)
+                        if (_ymdFlags == FoundDatePattern.FoundYMDPatternFlag)
                         {
                             // If we find a dot immediately after the we have seen all of the y, m, d pattern.
                             // treat it as a ignroable symbol.  Check for comments in AddIgnorableSymbols for
                             // more details.
                             AddIgnorableSymbols(".");
-                            m_ymdFlags = FoundDatePattern.None;
+                            _ymdFlags = FoundDatePattern.None;
                         }
                         i++;
                         break;
                     default:
-                        if (m_ymdFlags == FoundDatePattern.FoundYMDPatternFlag && !Char.IsWhiteSpace(ch))
+                        if (_ymdFlags == FoundDatePattern.FoundYMDPatternFlag && !Char.IsWhiteSpace(ch))
                         {
                             // We are not seeing "." after YMD. Clear the flag.
-                            m_ymdFlags = FoundDatePattern.None;
+                            _ymdFlags = FoundDatePattern.None;
                         }
                         // We are not in quote.  Skip the current character.
                         i++;
@@ -508,8 +509,6 @@ namespace System.Globalization
         //
         ////////////////////////////////////////////////////////////////////////////
 
-        // auto-generated
-        [System.Security.SecurityCritical] // auto-generated
         internal String[] GetDateWordsOfDTFI(DateTimeFormatInfo dtfi)
         {
             // Enumarate all LongDatePatterns, and get the DateWords and scan for month postfix.

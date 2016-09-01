@@ -4,7 +4,6 @@
 
 ////////////////////////////////////////////////////////////////////////////
 //
-//  Class:    CultureInfo
 //
 //
 //  Purpose:  This class represents the software preferences of a particular
@@ -13,7 +12,7 @@
 //            as well as methods for common operations such as printing
 //            dates and sorting strings.
 //
-//  Date:     March 31, 1999
+//
 //
 //  !!!! NOTE WHEN CHANGING THIS CLASS !!!!
 //
@@ -652,7 +651,7 @@ namespace System.Globalization
             }
         }
 
-        static private bool OkayToCacheClassWithCompatibilityBehavior
+        private static bool OkayToCacheClassWithCompatibilityBehavior
         {
             get
             {
@@ -807,7 +806,7 @@ namespace System.Globalization
                 {
                     // Change the calendar of DTFI to the specified calendar of this CultureInfo.
                     DateTimeFormatInfo temp = new DateTimeFormatInfo(this.m_cultureData, this.Calendar);
-                    temp.m_isReadOnly = m_isReadOnly;
+                    temp._isReadOnly = m_isReadOnly;
                     System.Threading.Interlocked.MemoryBarrier();
                     dateTimeInfo = temp;
                 }

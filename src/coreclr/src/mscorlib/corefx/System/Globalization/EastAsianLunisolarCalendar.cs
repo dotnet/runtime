@@ -165,8 +165,6 @@ namespace System.Globalization
             throw new ArgumentOutOfRangeException("era", SR.ArgumentOutOfRange_InvalidEraValue);
         }
 
-        // Construct an instance of EastAsianLunisolar calendar.
-
         internal EastAsianLunisolarCalendar()
         {
         }
@@ -253,7 +251,7 @@ namespace System.Globalization
             return InternalGetDaysInMonth(year, month);
         }
 
-        static int GregorianIsLeapYear(int y)
+        private static int GregorianIsLeapYear(int y)
         {
             return ((((y) % 4) != 0) ? 0 : ((((y) % 100) != 0) ? 1 : ((((y) % 400) != 0) ? 0 : 1)));
         }

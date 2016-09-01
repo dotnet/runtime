@@ -16,7 +16,9 @@ namespace System.Globalization
             NotNeeded,
             Needed
         }
-        private TurkishCasing m_needsTurkishCasing;
+
+        [NonSerialized]
+        private TurkishCasing _needsTurkishCasing = TurkishCasing.NotInitialized;
 
         //////////////////////////////////////////////////////////////////////////
         ////
@@ -27,15 +29,14 @@ namespace System.Globalization
         //////////////////////////////////////////////////////////////////////////
         internal unsafe TextInfo(CultureData cultureData)
         {
-            m_cultureData = cultureData;
-            m_cultureName = m_cultureData.CultureName;
-            m_textInfoName = m_cultureData.STEXTINFO;
-            FinishInitialization(m_textInfoName);
+            _cultureData = cultureData;
+            _cultureName = _cultureData.CultureName;
+            _textInfoName = _cultureData.STEXTINFO;
+            FinishInitialization(_textInfoName);
         }
 
         private void FinishInitialization(string textInfoName)
         {
-            m_needsTurkishCasing = TurkishCasing.NotInitialized;
         }
 
         [SecuritySafeCritical]
@@ -104,9 +105,8 @@ namespace System.Globalization
             return CultureInfo.GetCultureInfo(localeName).CompareInfo.Compare("\u0131", "I", CompareOptions.IgnoreCase) == 0;
         }
 
-        private bool IsInvariant { get { return m_cultureName.Length == 0; } }
+        private bool IsInvariant { get { return _cultureName.Length == 0; } }
 
-        [SecurityCritical]
         internal unsafe void ChangeCase(char* src, int srcLen, char* dstBuffer, int dstBufferCapacity, bool bToUpper)
         {
             if (IsInvariant)
@@ -115,11 +115,11 @@ namespace System.Globalization
             }
             else
             {
-                if (m_needsTurkishCasing == TurkishCasing.NotInitialized)
+                if (_needsTurkishCasing == TurkishCasing.NotInitialized)
                 {
-                    m_needsTurkishCasing = NeedsTurkishCasing(m_textInfoName) ? TurkishCasing.Needed : TurkishCasing.NotNeeded;
+                    _needsTurkishCasing = NeedsTurkishCasing(_textInfoName) ? TurkishCasing.Needed : TurkishCasing.NotNeeded;
                 }
-                if ( m_needsTurkishCasing == TurkishCasing.Needed)
+                if ( _needsTurkishCasing == TurkishCasing.Needed)
                 {
                     Interop.GlobalizationInterop.ChangeCaseTurkish(src, srcLen, dstBuffer, dstBufferCapacity, bToUpper);
                 }
