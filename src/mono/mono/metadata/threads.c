@@ -4643,6 +4643,29 @@ mono_thread_set_state (MonoInternalThread *thread, MonoThreadState state)
 	UNLOCK_THREAD (thread);
 }
 
+/**
+ * mono_thread_test_and_set_state:
+ *
+ * Test if current state of @thread include @test. If it does not, OR @set into the state.
+ *
+ * Returns TRUE is @set was OR'd in.
+ */
+gboolean
+mono_thread_test_and_set_state (MonoInternalThread *thread, MonoThreadState test, MonoThreadState set)
+{
+	LOCK_THREAD (thread);
+
+	if ((thread->state & test) != 0) {
+		UNLOCK_THREAD (thread);
+		return FALSE;
+	}
+
+	thread->state |= set;
+	UNLOCK_THREAD (thread);
+
+	return TRUE;
+}
+
 void
 mono_thread_clr_state (MonoInternalThread *thread, MonoThreadState state)
 {
