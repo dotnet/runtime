@@ -6,7 +6,7 @@ using System;
 
 namespace System.IO.IsolatedStorage
 {
-    public class IsolatedStorageException : Exception
+    public partial class IsolatedStorageException : Exception
     {
         private const int COR_E_ISOSTORE = unchecked((int)0x80131450);
 

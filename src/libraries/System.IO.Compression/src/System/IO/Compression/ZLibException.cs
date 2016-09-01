@@ -11,7 +11,7 @@ namespace System.IO.Compression
     /// <summary>
     /// This is the exception that is thrown when a ZLib returns an error code indicating an unrecoverable error.
     /// </summary>
-    internal class ZLibException : IOException
+    internal partial class ZLibException : IOException
     {
         private string _zlibErrorContext = null;
         private string _zlibErrorMessage = null;
@@ -88,15 +88,13 @@ namespace System.IO.Compression
         public string ZLibContext
         {
             [SecurityCritical]
-            get
-            { return _zlibErrorContext; }
+            get { return _zlibErrorContext; }
         }
 
         public int ZLibErrorCode
         {
             [SecurityCritical]
-            get
-            { return (int)_zlibErrorCode; }
+            get { return (int)_zlibErrorCode; }
         }
 
         public string ZLibErrorMessage

@@ -60,6 +60,9 @@
        <Link>Common\System\Threading\Tasks\TaskToApm.cs</Link>
      </Compile>
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == '' ">
+    <Compile Include="System\IO\Compression\ZLibException.Serialization.cs" />
+  </ItemGroup>
   <!-- Windows specific files common to both net46 and Core -->
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true'">
     <Compile Include="System\IO\Compression\ZipArchiveEntry.Windows.cs" />

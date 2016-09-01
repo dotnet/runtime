@@ -58,8 +58,22 @@ namespace System.Transactions.Distributed
     /// the transaction.
     /// </summary>
     [Serializable]
-    internal class DistributedTransaction : ISerializable //, IObjectReference
+    internal class DistributedTransaction : ISerializable, IObjectReference
     {
+        internal DistributedTransaction()
+        {
+        }
+
+        protected DistributedTransaction(SerializationInfo serializationInfo, StreamingContext context)
+        {
+            if (serializationInfo == null)
+            {
+                throw new ArgumentNullException(nameof(serializationInfo));
+            }
+
+            throw NotSupported();
+        }
+
         internal Exception InnerException { get; set; }
         internal Guid Identifier { get; set; }
         internal RealDistributedTransaction RealTransaction { get; set; }
@@ -101,6 +115,11 @@ namespace System.Transactions.Distributed
             throw NotSupported();
         }
 
+        public object GetRealObject(StreamingContext context)
+        {
+            throw NotSupported();
+        }
+
         internal byte[] GetTransmitterPropagationToken()
         {
             throw NotSupported();
@@ -111,8 +130,13 @@ namespace System.Transactions.Distributed
             throw NotSupported();
         }
 
-        void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
+        void ISerializable.GetObjectData(SerializationInfo serializationInfo, StreamingContext context)
         {
+            if (serializationInfo == null)
+            {
+                throw new ArgumentNullException(nameof(serializationInfo));
+            }
+
             throw NotSupported();
         }
 
