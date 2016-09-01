@@ -538,7 +538,7 @@ gboolean mono_threads_suspend_needs_abort_syscall (void);
 
 void mono_threads_platform_register (THREAD_INFO_TYPE *info);
 void mono_threads_platform_unregister (THREAD_INFO_TYPE *info);
-HANDLE mono_threads_platform_create_thread (MonoThreadStart start, gpointer arg, MonoThreadParm *, MonoNativeThreadId *out_tid);
+int mono_threads_platform_create_thread (MonoThreadStart thread_fn, gpointer thread_data, gsize stack_size, MonoNativeThreadId *out_tid);
 void mono_threads_platform_get_stack_bounds (guint8 **staddr, size_t *stsize);
 gboolean mono_threads_platform_yield (void);
 void mono_threads_platform_exit (int exit_code);

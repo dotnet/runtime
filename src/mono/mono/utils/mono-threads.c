@@ -1138,6 +1138,75 @@ mono_thread_info_is_async_context (void)
 		return FALSE;
 }
 
+typedef struct {
+	gint32 ref;
+	MonoThreadStart start_routine;
+	gpointer start_routine_arg;
+	gboolean create_suspended;
+	gint32 priority;
+	MonoCoopSem registered;
+	MonoThreadInfo *info;
+} CreateThreadData;
+
+static gsize WINAPI
+inner_start_thread (gpointer data)
+{
+	CreateThreadData *thread_data;
+	MonoThreadInfo *info;
+	MonoThreadStart start_routine;
+	gpointer start_routine_arg;
+	guint32 start_routine_res;
+	gboolean create_suspended;
+	gint32 priority;
+	gsize dummy;
+	gint res;
+
+	thread_data = (CreateThreadData*) data;
+	g_assert (thread_data);
+
+	start_routine = thread_data->start_routine;
+	start_routine_arg = thread_data->start_routine_arg;
+
+	create_suspended = thread_data->create_suspended;
+	priority = thread_data->priority;
+
+	info = mono_thread_info_attach (&dummy);
+	info->runtime_thread = TRUE;
+
+	mono_threads_platform_set_priority (info, priority);
+
+	if (create_suspended) {
+		info->create_suspended = TRUE;
+		mono_coop_sem_init (&info->create_suspended_sem, 0);
+	}
+
+	thread_data->info = info;
+
+	mono_coop_sem_post (&thread_data->registered);
+
+	if (InterlockedDecrement (&thread_data->ref) == 0) {
+		mono_coop_sem_destroy (&thread_data->registered);
+		g_free (thread_data);
+	}
+
+	/* thread_data is not valid anymore */
+	thread_data = NULL;
+
+	if (create_suspended) {
+		res = mono_coop_sem_wait (&info->create_suspended_sem, MONO_SEM_FLAGS_NONE);
+		g_assert (res == 0);
+
+		mono_coop_sem_destroy (&info->create_suspended_sem);
+	}
+
+	/* Run the actual main function of the thread */
+	start_routine_res = start_routine (start_routine_arg);
+
+	mono_threads_platform_exit (start_routine_res);
+
+	g_assert_not_reached ();
+}
+
 /*
  * mono_threads_create_thread:
  *
@@ -1147,7 +1216,43 @@ mono_thread_info_is_async_context (void)
 HANDLE
 mono_threads_create_thread (MonoThreadStart start, gpointer arg, MonoThreadParm *tp, MonoNativeThreadId *out_tid)
 {
-	return mono_threads_platform_create_thread (start, arg, tp, out_tid);
+	CreateThreadData *thread_data;
+	MonoThreadInfo *info;
+	gint res;
+	gpointer ret;
+
+	thread_data = g_new0 (CreateThreadData, 1);
+	thread_data->ref = 2;
+	thread_data->start_routine = start;
+	thread_data->start_routine_arg = arg;
+	thread_data->create_suspended = tp->creation_flags & CREATE_SUSPENDED;
+	thread_data->priority = tp->priority;
+	mono_coop_sem_init (&thread_data->registered, 0);
+
+	res = mono_threads_platform_create_thread (inner_start_thread, (gpointer) thread_data, tp->stack_size, out_tid);
+	if (res != 0) {
+		/* ref is not going to be decremented in inner_start_thread */
+		InterlockedDecrement (&thread_data->ref);
+		ret = NULL;
+		goto done;
+	}
+
+	res = mono_coop_sem_wait (&thread_data->registered, MONO_SEM_FLAGS_NONE);
+	g_assert (res == 0);
+
+	info = thread_data->info;
+	g_assert (info);
+
+	ret = info->handle;
+	g_assert (ret);
+
+done:
+	if (InterlockedDecrement (&thread_data->ref) == 0) {
+		mono_coop_sem_destroy (&thread_data->registered);
+		g_free (thread_data);
+	}
+
+	return ret;
 }
 
 /*

@@ -107,71 +107,18 @@ mono_threads_platform_register (MonoThreadInfo *info)
 	info->handle = thread_handle_create ();
 }
 
-typedef struct {
-	void *(*start_routine)(void*);
-	void *arg;
-	int flags;
-	gint32 priority;
-	MonoCoopSem registered;
-	HANDLE handle;
-} StartInfo;
-
-static void*
-inner_start_thread (void *arg)
-{
-	StartInfo *start_info = (StartInfo *) arg;
-	void *t_arg = start_info->arg;
-	int res;
-	void *(*start_func)(void*) = start_info->start_routine;
-	guint32 flags = start_info->flags;
-	void *result;
-	MonoThreadInfo *info;
-
-	info = mono_thread_info_attach (&result);
-	info->runtime_thread = TRUE;
-
-	start_info->handle = info->handle;
-
-	mono_threads_platform_set_priority (info, start_info->priority);
-
-	if (flags & CREATE_SUSPENDED) {
-		info->create_suspended = TRUE;
-		mono_coop_sem_init (&info->create_suspended_sem, 0);
-	}
-
-	/* start_info is not valid after this */
-	mono_coop_sem_post (&(start_info->registered));
-	start_info = NULL;
-
-	if (flags & CREATE_SUSPENDED) {
-		res = mono_coop_sem_wait (&info->create_suspended_sem, MONO_SEM_FLAGS_NONE);
-		g_assert (res != -1);
-
-		mono_coop_sem_destroy (&info->create_suspended_sem);
-	}
-
-	/* Run the actual main function of the thread */
-	result = start_func (t_arg);
-
-	mono_threads_platform_exit (GPOINTER_TO_UINT (result));
-	g_assert_not_reached ();
-}
-
-HANDLE
-mono_threads_platform_create_thread (MonoThreadStart start_routine, gpointer arg, MonoThreadParm *tp, MonoNativeThreadId *out_tid)
+int
+mono_threads_platform_create_thread (MonoThreadStart thread_fn, gpointer thread_data, gsize stack_size, MonoNativeThreadId *out_tid)
 {
 	pthread_attr_t attr;
-	int res;
 	pthread_t thread;
-	StartInfo start_info;
-	guint32 stack_size;
-	int policy;
-	struct sched_param sp;
+	gint res;
 
 	res = pthread_attr_init (&attr);
 	g_assert (!res);
 
-	if (tp->stack_size == 0) {
+#ifdef HAVE_PTHREAD_ATTR_SETSTACKSIZE
+	if (stack_size == 0) {
 #if HAVE_VALGRIND_MEMCHECK_H
 		if (RUNNING_ON_VALGRIND)
 			stack_size = 1 << 20;
@@ -180,52 +127,26 @@ mono_threads_platform_create_thread (MonoThreadStart start_routine, gpointer arg
 #else
 		stack_size = (SIZEOF_VOID_P / 4) * 1024 * 1024;
 #endif
-	} else
-		stack_size = tp->stack_size;
+	}
 
 #ifdef PTHREAD_STACK_MIN
 	if (stack_size < PTHREAD_STACK_MIN)
 		stack_size = PTHREAD_STACK_MIN;
 #endif
 
-#ifdef HAVE_PTHREAD_ATTR_SETSTACKSIZE
 	res = pthread_attr_setstacksize (&attr, stack_size);
 	g_assert (!res);
-#endif
-
-	/*
-	 * For policies that respect priorities set the prirority for the new thread
-	 */ 
-	pthread_getschedparam(pthread_self(), &policy, &sp);
-	if ((policy == SCHED_FIFO) || (policy == SCHED_RR)) {
-		sp.sched_priority = win32_priority_to_posix_priority (tp->priority, policy);
-		res = pthread_attr_setschedparam (&attr, &sp);
-	}
-
-	memset (&start_info, 0, sizeof (StartInfo));
-	start_info.start_routine = (void *(*)(void *)) start_routine;
-	start_info.arg = arg;
-	start_info.flags = tp->creation_flags;
-	start_info.priority = tp->priority;
-	mono_coop_sem_init (&(start_info.registered), 0);
+#endif /* HAVE_PTHREAD_ATTR_SETSTACKSIZE */
 
 	/* Actually start the thread */
-	res = mono_gc_pthread_create (&thread, &attr, inner_start_thread, &start_info);
-	if (res) {
-		mono_coop_sem_destroy (&(start_info.registered));
-		return NULL;
-	}
-
-	/* Wait until the thread register itself in various places */
-	res = mono_coop_sem_wait (&start_info.registered, MONO_SEM_FLAGS_NONE);
-	g_assert (res != -1);
-
-	mono_coop_sem_destroy (&(start_info.registered));
+	res = mono_gc_pthread_create (&thread, &attr, (gpointer (*)(gpointer)) thread_fn, thread_data);
+	if (res)
+		return -1;
 
 	if (out_tid)
 		*out_tid = thread;
 
-	return start_info.handle;
+	return 0;
 }
 
 gboolean
