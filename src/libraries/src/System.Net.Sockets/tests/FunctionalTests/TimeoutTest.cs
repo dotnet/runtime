@@ -8,6 +8,7 @@ namespace System.Net.Sockets.Tests
 {
     public class TimeoutTest
     {
+        [OuterLoop] // TODO: Issue #11345
         [Fact]
         public void GetAndSet_Success()
         {
@@ -17,6 +18,7 @@ namespace System.Net.Sockets.Tests
             Assert.Equal(100, socket.ReceiveTimeout);
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [Fact]
         public void SocketSendTimeout_GetAndSet_Success()
         {
@@ -26,6 +28,7 @@ namespace System.Net.Sockets.Tests
             Assert.Equal(100, socket.SendTimeout);
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [Fact]
         public void ReceiveTimesOut_Throws()
         {
@@ -53,6 +56,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [Fact]
         public void SocketSendTimeout_Send_Success()
         {

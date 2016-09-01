@@ -22,6 +22,7 @@ namespace System.Net.Sockets.Tests
             _log = output;
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [Theory]
         [InlineData(0)]
         [InlineData(1)]
@@ -60,6 +61,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [Fact]
         public void ConnectedAvailable_InitialValues_Default()
         {
@@ -70,6 +72,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [Fact]
         public void ConnectedAvailable_NullClient()
         {
@@ -82,6 +85,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [Fact]
         [PlatformSpecific(PlatformID.Windows)]
         public void ExclusiveAddressUse_NullClient()
@@ -94,6 +98,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [Fact]
         [PlatformSpecific(PlatformID.Windows)]
         public void Roundtrip_ExclusiveAddressUse_GetEqualsSet()
@@ -107,6 +112,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [Fact]
         [PlatformSpecific(PlatformID.AnyUnix)]
         public void ExclusiveAddressUse_NotSupported()
@@ -121,6 +127,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [Fact]
         public void Roundtrip_LingerOption_GetEqualsSet()
         {
@@ -135,6 +142,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [Fact]
         public void Roundtrip_NoDelay_GetEqualsSet()
         {
@@ -147,6 +155,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [Fact]
         public void Roundtrip_ReceiveBufferSize_GetEqualsSet()
         {
@@ -159,6 +168,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [Fact]
         public void Roundtrip_SendBufferSize_GetEqualsSet()
         {
@@ -171,6 +181,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [Fact]
         public void Roundtrip_ReceiveTimeout_GetEqualsSet()
         {
@@ -183,6 +194,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [Fact]
         public void Roundtrip_SendTimeout_GetEqualsSet()
         {
@@ -195,6 +207,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [Fact]
         public async Task Properties_PersistAfterConnect()
         {
@@ -220,6 +233,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [Theory]
         [InlineData(false)]
         [InlineData(true)]

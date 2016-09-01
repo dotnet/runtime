@@ -24,18 +24,21 @@ namespace System.Net.Security.Tests
             _log = TestLogging.GetInstance();
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [Fact]
         public async Task ClientAsyncAuthenticate_ServerRequireEncryption_ConnectWithEncryption()
         {
             await ClientAsyncSslHelper(EncryptionPolicy.RequireEncryption);
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [Fact]
         public async Task ClientAsyncAuthenticate_ServerNoEncryption_NoConnect()
         {
             await Assert.ThrowsAsync<IOException>(() => ClientAsyncSslHelper(EncryptionPolicy.NoEncryption));
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [Theory]
         [ClassData(typeof(SslProtocolSupport.SupportedSslProtocolsTestData))]
         public async Task ClientAsyncAuthenticate_EachSupportedProtocol_Success(SslProtocols protocol)
@@ -43,6 +46,7 @@ namespace System.Net.Security.Tests
             await ClientAsyncSslHelper(protocol, protocol);
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [Theory]
         [ClassData(typeof(SslProtocolSupport.UnsupportedSslProtocolsTestData))]
         public async Task ClientAsyncAuthenticate_EachClientUnsupportedProtocol_Fail(SslProtocols protocol)
@@ -53,6 +57,7 @@ namespace System.Net.Security.Tests
             });
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [Theory]
         [MemberData(nameof(ProtocolMismatchData))]
         public async Task ClientAsyncAuthenticate_MismatchProtocols_Fails(
@@ -63,6 +68,7 @@ namespace System.Net.Security.Tests
             await Assert.ThrowsAsync(expectedException, () => ClientAsyncSslHelper(serverProtocol, clientProtocol));
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [Fact]
         public async Task ClientAsyncAuthenticate_AllServerAllClient_Success()
         {
@@ -71,6 +77,7 @@ namespace System.Net.Security.Tests
                 SslProtocolSupport.SupportedSslProtocols);
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [Fact]
         public async Task ClientAsyncAuthenticate_UnsuportedAllClient_Fail()
         {
@@ -82,6 +89,7 @@ namespace System.Net.Security.Tests
             });
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [Theory]
         [ClassData(typeof(SslProtocolSupport.SupportedSslProtocolsTestData))]
         public async Task ClientAsyncAuthenticate_AllServerVsIndividualClientSupportedProtocols_Success(
@@ -90,6 +98,7 @@ namespace System.Net.Security.Tests
             await ClientAsyncSslHelper(clientProtocol, SslProtocolSupport.SupportedSslProtocols);
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [Theory]
         [ClassData(typeof(SslProtocolSupport.SupportedSslProtocolsTestData))]
         public async Task ClientAsyncAuthenticate_IndividualServerVsAllClientSupportedProtocols_Success(

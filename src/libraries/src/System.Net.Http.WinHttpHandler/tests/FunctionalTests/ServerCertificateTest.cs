@@ -28,6 +28,7 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
             _validationCallbackHistory = new ValidationCallbackHistory();
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [Fact]
         public async Task NoCallback_ValidCertificate_CallbackNotCalled()
         {
@@ -40,6 +41,7 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
             }
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [Fact]
         public async Task UseCallback_NotSecureConnection_CallbackNotCalled()
         {
@@ -53,6 +55,7 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
             }
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [Fact]
         public async Task UseCallback_ValidCertificate_ExpectedValuesDuringCallback()
         {
@@ -68,6 +71,7 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
             }
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [Fact]
         public async Task UseCallback_RedirectandValidCertificate_ExpectedValuesDuringCallback()
         {
@@ -85,6 +89,7 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
             }
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [Fact]
         public async Task UseCallback_CallbackReturnsFailure_ThrowsInnerSecurityFailureException()
         {
@@ -103,6 +108,7 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
             }
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [Fact]
         public async Task UseCallback_CallbackThrowsSpecificException_ThrowsInnerSpecificException()
         {

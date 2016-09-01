@@ -14,6 +14,7 @@ namespace System.Net.Security.Tests
 {
     public class SslStreamNetworkStreamTest
     {
+        [OuterLoop] // TODO: Issue #11345
         [Fact]
         public async void SslStream_SendReceiveOverNetworkStream_Ok()
         {
