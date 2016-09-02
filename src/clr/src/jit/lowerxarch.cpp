@@ -33,8 +33,18 @@ void Lowering::LowerRotate(GenTreePtr tree)
 {
 }
 
-// there is not much lowering to do with storing a local but
-// we do some handling of contained immediates and widening operations of unsigneds
+//------------------------------------------------------------------------
+// LowerStoreLoc: Lower a store of a lclVar
+//
+// Arguments:
+//    storeLoc - the local store (GT_STORE_LCL_FLD or GT_STORE_LCL_VAR)
+//
+// Notes:
+//    This involves:
+//    - Setting the appropriate candidates for a store of a multi-reg call return value.
+//    - Requesting an internal register for SIMD12 stores.
+//    - Handling of contained immediates and widening operations of unsigneds.
+
 void Lowering::LowerStoreLoc(GenTreeLclVarCommon* storeLoc)
 {
     TreeNodeInfo* info = &(storeLoc->gtLsraInfo);

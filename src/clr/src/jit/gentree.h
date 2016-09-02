@@ -1146,6 +1146,16 @@ public:
         return OperIsBlk(OperGet());
     }
 
+    static bool OperIsStoreBlk(genTreeOps gtOper)
+    {
+        return ((gtOper == GT_STORE_BLK) || (gtOper == GT_STORE_OBJ) || (gtOper == GT_STORE_DYN_BLK));
+    }
+
+    bool OperIsStoreBlk() const
+    {
+        return OperIsStoreBlk(OperGet());
+    }
+
     bool OperIsPutArgStk() const
     {
         return gtOper == GT_PUTARG_STK;
@@ -4667,9 +4677,9 @@ inline bool GenTree::OperIsCopyBlkOp()
         return (varTypeIsStruct(gtGetOp1()) && ((gtFlags & GTF_BLK_INIT) == 0));
     }
 #ifndef LEGACY_BACKEND
-    else if (OperIsBlk())
+    else if (OperIsStoreBlk())
     {
-        return ((AsBlk()->Data() != nullptr) && ((gtFlags & GTF_BLK_INIT) == 0));
+        return ((gtFlags & GTF_BLK_INIT) == 0);
     }
 #endif
     return false;
@@ -4682,9 +4692,9 @@ inline bool GenTree::OperIsInitBlkOp()
         return (varTypeIsStruct(gtGetOp1()) && ((gtFlags & GTF_BLK_INIT) != 0));
     }
 #ifndef LEGACY_BACKEND
-    else if (OperIsBlk())
+    else if (OperIsStoreBlk())
     {
-        return ((AsBlk()->Data() != nullptr) && ((gtFlags & GTF_BLK_INIT) != 0));
+        return ((gtFlags & GTF_BLK_INIT) != 0);
     }
 #endif
     return false;

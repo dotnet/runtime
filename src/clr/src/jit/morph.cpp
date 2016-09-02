@@ -2047,6 +2047,9 @@ GenTreePtr Compiler::fgMakeTmpArgNode(
                 // as that is how FEATURE_UNIX_AMD64_STRUCT_PASSING works.
 
                 // Pass by value in two registers, using a regular GT_OBJ node, created below.
+                // TODO-1stClassStructs: We should not need to set the GTF_DONT_CSE flag here;
+                // this is only to preserve former behavior (though some CSE'ing of struct
+                // values can be pessimizing, so enabling this may require some additional tuning).
                 arg->gtFlags |= GTF_DONT_CSE;
             }
 #endif // _TARGET_ARM64_
@@ -8251,6 +8254,22 @@ void Compiler::fgAssignSetVarDef(GenTreePtr tree)
     }
 }
 
+//------------------------------------------------------------------------
+// fgMorphOneAsgBlockOp: Attempt to replace a block assignment with a scalar assignment
+//
+// Arguments:
+//    tree - The block assignment to be possibly morphed
+//
+// Return Value:
+//    The modified tree if successful, nullptr otherwise.
+//
+// Assumptions:
+//    'tree' must be a block assignment.
+//
+// Notes:
+//    If successful, this method always returns the incoming tree, modifying only
+//    its arguments.
+
 GenTreePtr Compiler::fgMorphOneAsgBlockOp(GenTreePtr tree)
 {
     // This must be a block assignment.
@@ -8529,7 +8548,7 @@ GenTreePtr Compiler::fgMorphOneAsgBlockOp(GenTreePtr tree)
 #if FEATURE_SIMD
             if (varTypeIsSIMD(asgType))
             {
-                assert(!isCopyBlock); // Else we would have returned the tree bove.
+                assert(!isCopyBlock); // Else we would have returned the tree above.
                 noway_assert(src->IsIntegralConst(0));
                 noway_assert(destVarDsc != nullptr);
 
@@ -9090,7 +9109,7 @@ GenTree* Compiler::fgMorphBlockOperand(GenTree* tree, var_types asgType, unsigne
     GenTree* effectiveVal = tree->gtEffectiveVal();
 
     // TODO-1stClassStucts: We would like to transform non-TYP_STRUCT nodes to
-    // either plan lclVars or GT_INDs. However, for now we want to preserve most
+    // either plain lclVars or GT_INDs. However, for now we want to preserve most
     // of the block nodes until the Rationalizer.
 
     if (!varTypeIsStruct(asgType))
@@ -9182,24 +9201,26 @@ GenTree* Compiler::fgMorphBlockOperand(GenTree* tree, var_types asgType, unsigne
 }
 
 //------------------------------------------------------------------------
-// fgMorphCopyBlock: Perform the Morphing of a GT_COPYBLK and GT_COPYOBJ nodes
+// fgMorphCopyBlock: Perform the Morphing of block copy
 //
 // Arguments:
-//    tree - a tree node with a gtOper of GT_COPYBLK or GT_COPYOBJ
-//           the child nodes for tree have already been Morphed
+//    tree - a block copy (i.e. an assignment with a block op on the lhs).
 //
 // Return Value:
-//    We can return the orginal GT_COPYBLK or GT_COPYOBJ unmodified (least desirable, but always correct)
-//    We can return a single assignment, when fgMorphOneAsgBlockOp transforms it (most desirable)
+//    We can return the orginal block copy unmodified (least desirable, but always correct)
+//    We can return a single assignment, when fgMorphOneAsgBlockOp transforms it (most desirable).
 //    If we have performed struct promotion of the Source() or the Dest() then we will try to
-//    perform a field by field assignment for each of the promoted struct fields
+//    perform a field by field assignment for each of the promoted struct fields.
+//
+// Assumptions:
+//    The child nodes for tree have already been Morphed.
 //
 // Notes:
-//    If we leave it as a GT_COPYBLK or GT_COPYOBJ we will call lvaSetVarDoNotEnregister() on both Source() and Dest()
+//    If we leave it as a block copy we will call lvaSetVarDoNotEnregister() on both Source() and Dest().
 //    When performing a field by field assignment we can have one of Source() or Dest treated as a blob of bytes
 //    and in such cases we will call lvaSetVarDoNotEnregister() on the one treated as a blob of bytes.
 //    if the Source() or Dest() is a a struct that has a "CustomLayout" and "ConstainsHoles" then we
-//    can not use a field by field assignment and must the orginal GT_COPYBLK unmodified.
+//    can not use a field by field assignment and must the orginal block copy unmodified.
 
 GenTreePtr Compiler::fgMorphCopyBlock(GenTreePtr tree)
 {
@@ -9215,7 +9236,7 @@ GenTreePtr Compiler::fgMorphCopyBlock(GenTreePtr tree)
 
 #if FEATURE_MULTIREG_RET
     // If this is a multi-reg return, we will not do any morphing of this node.
-    if ((rhs->OperGet() == GT_CALL) && rhs->AsCall()->HasMultiRegRetVal())
+    if (rhs->IsMultiRegCall())
     {
         assert(dest->OperGet() == GT_LCL_VAR);
         JITDUMP(" not morphing a multireg call return\n");
@@ -9277,7 +9298,9 @@ GenTreePtr Compiler::fgMorphCopyBlock(GenTreePtr tree)
                 if (destLclVar->lvType == TYP_STRUCT)
                 {
                     // It would be nice if lvExactSize always corresponded to the size of the struct,
-                    // but it does not for the spill temps.
+                    // but it doesn't always for the temps that the importer creates when it spills side
+                    // effects.
+                    // TODO-Cleanup: Determine when this happens, and whether it can be changed.
                     blockWidth = info.compCompHnd->getClassSize(destLclVar->lvVerTypeInfo.GetClassHandle());
                 }
                 else
