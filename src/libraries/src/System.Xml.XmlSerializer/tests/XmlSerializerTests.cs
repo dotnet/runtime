@@ -15,7 +15,7 @@ using System.Xml.Serialization;
 using Xunit;
 
 public static partial class XmlSerializerTests
-{
+{ 
     [Fact]
     public static void Xml_BoolAsRoot()
     {
@@ -1827,7 +1827,7 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
         Assert.True(SimpleType.AreEqual(simpleType2D[1][1], actual.TwoDArrayOfSimpleType[1][1]));
     }
 
-    static SimpleType[][] GetObjectwith2DArrayOfSimpleType()
+    private static SimpleType[][] GetObjectwith2DArrayOfSimpleType()
     {
         SimpleType[][] simpleType2D = new SimpleType[2][];
         simpleType2D[0] = new SimpleType[2];
@@ -1838,6 +1838,486 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
         simpleType2D[1][1] = new SimpleType() { P1 = "1 1 value", P2 = 4 };
         return simpleType2D;
     }
+
+    public static void Xml_TypeWithByteArrayAsXmlText()
+    {
+        var value = new TypeWithByteArrayAsXmlText() { Value = new byte[] { 1, 2, 3 } };
+        var actual = SerializeAndDeserialize(value, "<?xml version=\"1.0\" encoding=\"utf-8\"?>\r\n<TypeWithByteArrayAsXmlText xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">AQID</TypeWithByteArrayAsXmlText>");
+
+        Assert.NotNull(actual);
+        Assert.NotNull(actual.Value);
+        Assert.Equal(value.Value.Length, actual.Value.Length);
+        Assert.True(Enumerable.SequenceEqual(value.Value, actual.Value));
+    }
+
+    [Fact]
+    public static void Xml_SimpleType()
+    {
+        var serializer = new XmlSerializer(typeof(SimpleType));
+        var obj = new SimpleType { P1 = "foo", P2 = 1 };
+        var deserializedObj = SerializeAndDeserialize(obj,
+@"<?xml version=""1.0"" encoding=""utf-16""?>
+<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"">
+  <P1>foo</P1>
+  <P2>1</P2>
+</SimpleType>");
+        Assert.NotNull(deserializedObj);
+        Assert.StrictEqual(obj.P1, deserializedObj.P1);
+        Assert.StrictEqual(obj.P2, deserializedObj.P2);
+    }
+
+    [Fact]
+    [ActiveIssue("fails when using CodeGen as well")]
+    public static void Xml_BaseClassAndDerivedClass2WithSameProperty()
+    {
+        var value = new DerivedClassWithSameProperty2() { DateTimeProperty = new DateTime(100, DateTimeKind.Utc), IntProperty = 5, StringProperty = "TestString", ListProperty = new List<string>() };
+        value.ListProperty.AddRange(new string[] { "one", "two", "three" });
+
+        var actual = SerializeAndDeserialize(value,
+@"<?xml version=""1.0""?>
+<DerivedClassWithSameProperty2 xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"">
+  <StringProperty>TestString</StringProperty>
+  <IntProperty>5</IntProperty>
+  <DateTimeProperty>0001-01-01T00:00:00.00001</DateTimeProperty>
+  <ListProperty>
+    <string>one</string>
+    <string>two</string>
+    <string>three</string>
+  </ListProperty>
+</DerivedClassWithSameProperty2>");
+
+        Assert.StrictEqual(value.DateTimeProperty, actual.DateTimeProperty);
+        Assert.StrictEqual(value.IntProperty, actual.IntProperty);
+        Assert.StrictEqual(value.StringProperty, actual.StringProperty);
+        Assert.Equal(value.ListProperty.ToArray(), actual.ListProperty.ToArray());
+    }
+
+    [Fact]
+    public static void Xml_TypeWithPropertiesHavingDefaultValue_DefaultValue()
+    {
+        var value = new TypeWithPropertiesHavingDefaultValue()
+        {
+            StringProperty = "DefaultString",
+            EmptyStringProperty = "",
+            IntProperty = 11,
+            CharProperty = 'm'
+        };
+
+        var actual = SerializeAndDeserialize(value, "<?xml version=\"1.0\" encoding=\"utf-8\"?>\r\n<TypeWithPropertiesHavingDefaultValue xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">\r\n  <CharProperty>109</CharProperty>\r\n</TypeWithPropertiesHavingDefaultValue>");
+
+        Assert.NotNull(actual);
+        Assert.StrictEqual(value.StringProperty, actual.StringProperty);
+        Assert.StrictEqual(value.EmptyStringProperty, actual.EmptyStringProperty);
+        Assert.StrictEqual(value.IntProperty, actual.IntProperty);
+        Assert.StrictEqual(value.CharProperty, actual.CharProperty);
+    }
+
+    [Fact]
+    public static void Xml_TypeWithStringPropertyWithDefaultValue_NonDefaultValue()
+    {
+        var value = new TypeWithPropertiesHavingDefaultValue()
+        {
+            StringProperty = "NonDefaultValue",
+            EmptyStringProperty = "NonEmpty",
+            IntProperty = 12,
+            CharProperty = 'n'
+        };
+
+        var actual = SerializeAndDeserialize(value, "<?xml version=\"1.0\" encoding=\"utf-8\"?>\r\n<TypeWithPropertiesHavingDefaultValue xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">\r\n  <EmptyStringProperty>NonEmpty</EmptyStringProperty>\r\n  <StringProperty>NonDefaultValue</StringProperty>\r\n  <IntProperty>12</IntProperty>\r\n  <CharProperty>110</CharProperty>\r\n</TypeWithPropertiesHavingDefaultValue>");
+
+        Assert.NotNull(actual);
+        Assert.StrictEqual(value.StringProperty, actual.StringProperty);
+    }
+
+    [Fact]
+    public static void Xml_TypeWithEnumPropertyHavingDefaultValue()
+    {
+        var value = new TypeWithEnumPropertyHavingDefaultValue() { EnumProperty = IntEnum.Option0 };
+        var actual = SerializeAndDeserialize(value,
+            "<?xml version=\"1.0\" encoding=\"utf-8\"?>\r\n<TypeWithEnumPropertyHavingDefaultValue xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">\r\n  <EnumProperty>Option0</EnumProperty>\r\n</TypeWithEnumPropertyHavingDefaultValue>",
+            skipStringCompare: false);
+
+        Assert.NotNull(actual);
+        Assert.StrictEqual(value.EnumProperty, actual.EnumProperty);
+
+
+        value = new TypeWithEnumPropertyHavingDefaultValue() { EnumProperty = IntEnum.Option1 };
+        actual = SerializeAndDeserialize(value,
+            "<?xml version=\"1.0\" encoding=\"utf-8\"?>\r\n<TypeWithEnumPropertyHavingDefaultValue xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" />",
+            skipStringCompare: false);
+
+        Assert.NotNull(actual);
+        Assert.StrictEqual(value.EnumProperty, actual.EnumProperty);
+    }
+
+    [Fact]
+    public static void Xml_TypeWithEnumFlagPropertyHavingDefaultValue()
+    {
+        var value = new TypeWithEnumFlagPropertyHavingDefaultValue() { EnumProperty = EnumFlags.Two | EnumFlags.Three };
+        var actual = SerializeAndDeserialize(value,
+            "<?xml version=\"1.0\" encoding=\"utf-8\"?>\r\n<TypeWithEnumFlagPropertyHavingDefaultValue xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">\r\n  <EnumProperty>Two Three</EnumProperty>\r\n</TypeWithEnumFlagPropertyHavingDefaultValue>");
+
+        Assert.NotNull(actual);
+        Assert.StrictEqual(value.EnumProperty, actual.EnumProperty);
+
+
+        value = new TypeWithEnumFlagPropertyHavingDefaultValue();
+        actual = SerializeAndDeserialize(value,
+            "<?xml version=\"1.0\" encoding=\"utf-8\"?>\r\n<TypeWithEnumFlagPropertyHavingDefaultValue xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" />");
+
+        Assert.NotNull(actual);
+        Assert.StrictEqual(value.EnumProperty, actual.EnumProperty);
+    }
+
+    [Fact]
+    public static void Xml_TypeWithXmlQualifiedName()
+    {
+        var value = new TypeWithXmlQualifiedName()
+        {
+            Value = new XmlQualifiedName("FooName")
+        };
+
+        var actual = SerializeAndDeserialize(value, "<?xml version=\"1.0\" encoding=\"utf-8\"?>\r\n<TypeWithXmlQualifiedName xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">\r\n  <Value xmlns=\"\">FooName</Value>\r\n</TypeWithXmlQualifiedName>", skipStringCompare: false);
+
+        Assert.NotNull(actual);
+        Assert.StrictEqual(value.Value, actual.Value);
+    }
+
+    [Fact]
+    public static void Xml_TypeWithShouldSerializeMethod_WithDefaultValue()
+    {
+        var value = new TypeWithShouldSerializeMethod();
+
+        var actual = SerializeAndDeserialize(value, "<?xml version=\"1.0\" encoding=\"utf-8\"?>\r\n<TypeWithShouldSerializeMethod xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" />");
+
+        Assert.NotNull(actual);
+        Assert.StrictEqual(value.Foo, actual.Foo);
+    }
+
+    [Fact]
+    public static void Xml_TypeWithShouldSerializeMethod_WithNonDefaultValue()
+    {
+        var value = new TypeWithShouldSerializeMethod() { Foo = "SomeValue" };
+
+        var actual = SerializeAndDeserialize(value, "<?xml version=\"1.0\" encoding=\"utf-8\"?>\r\n<TypeWithShouldSerializeMethod xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\"><Foo>SomeValue</Foo></TypeWithShouldSerializeMethod>");
+
+        Assert.NotNull(actual);
+        Assert.StrictEqual(value.Foo, actual.Foo);
+    }
+
+    [Fact]
+    public static void Xml_KnownTypesThroughConstructorWithArrayProperties()
+    {
+        int[] intArray = new int[] { 1, 2, 3 };
+        string[] stringArray = new string[] { "a", "b" };
+
+        var value = new KnownTypesThroughConstructorWithArrayProperties() { IntArrayValue = intArray, StringArrayValue = stringArray};
+        var actual = SerializeAndDeserialize(value,
+            "<?xml version=\"1.0\" encoding=\"utf-8\"?>\r\n<KnownTypesThroughConstructorWithArrayProperties xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">\r\n  <StringArrayValue xsi:type=\"ArrayOfString\">\r\n    <string>a</string>\r\n    <string>b</string>\r\n  </StringArrayValue>\r\n  <IntArrayValue xsi:type=\"ArrayOfInt\">\r\n    <int>1</int>\r\n    <int>2</int>\r\n    <int>3</int>\r\n  </IntArrayValue>\r\n</KnownTypesThroughConstructorWithArrayProperties>",
+            () => { return new XmlSerializer(typeof(KnownTypesThroughConstructorWithArrayProperties), new Type[] { typeof(int[]), typeof(string[]) }); },
+            skipStringCompare: false);
+
+        Assert.NotNull(actual);
+
+        var actualIntArray = (int[])actual.IntArrayValue;
+        Assert.NotNull(actualIntArray);
+        Assert.Equal(intArray.Length, actualIntArray.Length);
+        Assert.True(Enumerable.SequenceEqual(intArray, actualIntArray));
+
+        var actualStringArray = (string[])actual.StringArrayValue;
+        Assert.NotNull(actualStringArray);
+        Assert.True(Enumerable.SequenceEqual(stringArray, actualStringArray));
+        Assert.Equal(stringArray.Length, actualStringArray.Length);      
+    }
+
+    [Fact]
+    public static void Xml_KnownTypesThroughConstructorWithEnumFlags()
+    {
+        var enumFlags = EnumFlags.One | EnumFlags.Four;
+        var value = new KnownTypesThroughConstructorWithValue() { Value = enumFlags };
+        var actual = SerializeAndDeserialize(value,
+            "<?xml version=\"1.0\" encoding=\"utf-8\"?>\r\n<KnownTypesThroughConstructorWithValue xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">\r\n  <Value xsi:type=\"EnumFlags\">One Four</Value>\r\n</KnownTypesThroughConstructorWithValue>",
+            () => { return new XmlSerializer(typeof(KnownTypesThroughConstructorWithValue), new Type[] { typeof(EnumFlags) }); },
+            skipStringCompare: false);
+
+        Assert.NotNull(actual);
+        Assert.Equal((EnumFlags)value.Value, (EnumFlags)actual.Value);
+    }
+
+    [Fact]
+    public static void Xml_KnownTypesThroughConstructorWithEnumFlagsXmlQualifiedName()
+    {
+        var value = new KnownTypesThroughConstructorWithValue() { Value = new XmlQualifiedName("foo") };
+        var actual = SerializeAndDeserialize(value,
+            "<?xml version=\"1.0\" encoding=\"utf-8\"?>\r\n<KnownTypesThroughConstructorWithValue xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">\r\n  <Value xsi:type=\"xsd:QName\">foo</Value>\r\n</KnownTypesThroughConstructorWithValue>",
+            () => { return new XmlSerializer(typeof(KnownTypesThroughConstructorWithValue), new Type[] { typeof(XmlQualifiedName) }); },
+            skipStringCompare: false);
+
+        Assert.NotNull(actual);
+        Assert.Equal((XmlQualifiedName)value.Value, (XmlQualifiedName)actual.Value);
+    }
+
+    [Fact]
+    static void Xml_TypeWithTypesHavingCustomFormatter()
+    {
+        var str = "The quick brown fox jumps over the lazy dog.";
+        var value = new TypeWithTypesHavingCustomFormatter()
+        {
+            DateTimeContent = new DateTime(2016, 7, 18, 0, 0, 0, DateTimeKind.Utc),
+            QNameContent = new XmlQualifiedName("QNameContent"),
+            DateContent = new DateTime(2016, 7, 18, 0, 0, 0, DateTimeKind.Utc),
+            NameContent = "NameContent",
+            NCNameContent = "NCNameContent",
+            NMTOKENContent = "NMTOKENContent",
+            NMTOKENSContent = "NMTOKENSContent",
+            Base64BinaryContent = Encoding.Unicode.GetBytes(str),
+            HexBinaryContent = Encoding.Unicode.GetBytes(str),
+        };
+
+        var actual = SerializeAndDeserialize(value,
+            "<?xml version=\"1.0\" encoding=\"utf-8\"?>\r\n<TypeWithTypesHavingCustomFormatter xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">\r\n  <DateTimeContent>2016-07-18T00:00:00Z</DateTimeContent>\r\n  <QNameContent xmlns=\"\">QNameContent</QNameContent>\r\n  <DateContent>2016-07-18</DateContent>\r\n  <NameContent>NameContent</NameContent>\r\n  <NCNameContent>NCNameContent</NCNameContent>\r\n  <NMTOKENContent>NMTOKENContent</NMTOKENContent>\r\n  <NMTOKENSContent>NMTOKENSContent</NMTOKENSContent>\r\n  <Base64BinaryContent>VABoAGUAIABxAHUAaQBjAGsAIABiAHIAbwB3AG4AIABmAG8AeAAgAGoAdQBtAHAAcwAgAG8AdgBlAHIAIAB0AGgAZQAgAGwAYQB6AHkAIABkAG8AZwAuAA==</Base64BinaryContent>\r\n  <HexBinaryContent>540068006500200071007500690063006B002000620072006F0077006E00200066006F00780020006A0075006D007000730020006F00760065007200200074006800650020006C0061007A007900200064006F0067002E00</HexBinaryContent>\r\n</TypeWithTypesHavingCustomFormatter>");
+
+        Assert.NotNull(actual);
+        Assert.True(value.DateTimeContent == actual.DateTimeContent, $"Actual DateTimeContent was not as expected. \r\n Expected: {value.DateTimeContent} \r\n Actual: {actual.DateTimeContent}");
+        Assert.True(value.QNameContent == actual.QNameContent, $"Actual QNameContent was not as expected. \r\n Expected: {value.QNameContent} \r\n Actual: {actual.QNameContent}");
+        Assert.True(value.DateContent == actual.DateContent, $"Actual DateContent was not as expected. \r\n Expected: {value.DateContent} \r\n Actual: {actual.DateContent}");
+        Assert.True(value.NameContent == actual.NameContent, $"Actual NameContent was not as expected. \r\n Expected: {value.NameContent} \r\n Actual: {actual.NameContent}");
+        Assert.True(value.NCNameContent == actual.NCNameContent, $"Actual NCNameContent was not as expected. \r\n Expected: {value.NCNameContent} \r\n Actual: {actual.NCNameContent}");
+        Assert.True(value.NMTOKENContent == actual.NMTOKENContent, $"Actual NMTOKENContent was not as expected. \r\n Expected: {value.NMTOKENContent} \r\n Actual: {actual.NMTOKENContent}");
+        Assert.True(value.NMTOKENSContent == actual.NMTOKENSContent, $"Actual NMTOKENSContent was not as expected. \r\n Expected: {value.NMTOKENSContent} \r\n Actual: {actual.NMTOKENSContent}");
+
+        Assert.NotNull(actual.Base64BinaryContent);
+        Assert.True(Enumerable.SequenceEqual(value.Base64BinaryContent, actual.Base64BinaryContent), "Actual Base64BinaryContent was not as expected.");
+
+        Assert.NotNull(actual.HexBinaryContent);
+        Assert.True(Enumerable.SequenceEqual(value.HexBinaryContent, actual.HexBinaryContent), "Actual HexBinaryContent was not as expected.");
+    }
+
+    [Fact]
+    public static void Xml_TypeWithXmlElementsAndUnnamedXmlAny()
+    {
+        XmlDocument xDoc = new XmlDocument();
+        xDoc.LoadXml(@"<html></html>");
+        XmlElement element = xDoc.CreateElement("Element");
+        element.InnerText = "Element innertext";
+
+        var value = new TypeWithXmlElementsAndUnnamedXmlAny()
+        {
+            Things = new object[] { 1, "2", element}
+        };
+
+        var actual = SerializeAndDeserialize(value,
+           "<?xml version=\"1.0\" encoding=\"utf-8\"?>\r\n<MyXmlType xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">\r\n  <int>1</int>\r\n  <string>2</string>\r\n  <Element>Element innertext</Element>\r\n</MyXmlType>");
+
+        Assert.NotNull(actual);
+        Assert.NotNull(actual.Things);
+        Assert.Equal(value.Things.Length, actual.Things.Length);
+        Assert.True(actual.Things[2] is XmlElement);
+
+        var expectedElem = (XmlElement)value.Things[2];
+        var actualElem = (XmlElement)actual.Things[2];
+        Assert.Equal(expectedElem.Name, actualElem.Name);
+        Assert.Equal(expectedElem.NamespaceURI, actualElem.NamespaceURI);
+        Assert.Equal(expectedElem.InnerText, actualElem.InnerText);
+    }
+
+    [Fact]
+    public static void Xml_TypeWithMultiXmlAnyElement()
+    {
+        XmlDocument xDoc = new XmlDocument();
+        xDoc.LoadXml(@"<html></html>");
+        XmlElement element1 = xDoc.CreateElement("name1", "ns1");
+        element1.InnerText = "Element innertext1";
+        XmlElement element2 = xDoc.CreateElement("name2", "ns2");
+        element2.InnerText = "Element innertext2";
+
+        var value = new TypeWithMultiNamedXmlAnyElement()
+        {
+            Things = new object[] { element1, element2 }
+        };
+
+        var actual = SerializeAndDeserialize(value,
+           "<?xml version=\"1.0\" encoding=\"utf-8\"?>\r\n<MyXmlType xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">\r\n  <name1 xmlns=\"ns1\">Element innertext1</name1>\r\n  <name2 xmlns=\"ns2\">Element innertext2</name2>\r\n</MyXmlType>");
+
+        Assert.NotNull(actual);
+        Assert.NotNull(actual.Things);
+        Assert.Equal(value.Things.Length, actual.Things.Length);
+
+        var expectedElem = (XmlElement)value.Things[1];
+        var actualElem = (XmlElement)actual.Things[1];
+        Assert.Equal(expectedElem.Name, actualElem.Name);
+        Assert.Equal(expectedElem.NamespaceURI, actualElem.NamespaceURI);
+        Assert.Equal(expectedElem.InnerText, actualElem.InnerText);
+
+        XmlElement element3 = xDoc.CreateElement("name3", "ns3");
+        element3.InnerText = "Element innertext3";
+        value = new TypeWithMultiNamedXmlAnyElement()
+        {
+            Things = new object[] { element3 }
+        };
+
+        Assert.Throws<InvalidOperationException>(() => actual = SerializeAndDeserialize(value, string.Empty, skipStringCompare: true));
+    }
+
+
+    [Fact]
+    public static void Xml_TypeWithMultiNamedXmlAnyElementAndOtherFields()
+    {
+        XmlDocument xDoc = new XmlDocument();
+        xDoc.LoadXml(@"<html></html>");
+        XmlElement element1 = xDoc.CreateElement("name1", "ns1");
+        element1.InnerText = "Element innertext1";
+        XmlElement element2 = xDoc.CreateElement("name2", "ns2");
+        element2.InnerText = "Element innertext2";
+
+        var value = new TypeWithMultiNamedXmlAnyElementAndOtherFields()
+        {
+            Things = new object[] { element1, element2 },
+            StringField = "foo",
+            IntField = 123
+        };
+
+        var actual = SerializeAndDeserialize(value,
+           "<?xml version=\"1.0\" encoding=\"utf-8\"?>\r\n<MyXmlType xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">\r\n  <name1 xmlns=\"ns1\">Element innertext1</name1>\r\n  <name2 xmlns=\"ns2\">Element innertext2</name2>\r\n  <StringField>foo</StringField>\r\n  <IntField>123</IntField>\r\n</MyXmlType>");
+
+        Assert.NotNull(actual);
+        Assert.NotNull(actual.Things);
+        Assert.Equal(value.Things.Length, actual.Things.Length);
+
+        var expectedElem = (XmlElement)value.Things[1];
+        var actualElem = (XmlElement)actual.Things[1];
+        Assert.Equal(expectedElem.Name, actualElem.Name);
+        Assert.Equal(expectedElem.NamespaceURI, actualElem.NamespaceURI);
+        Assert.Equal(expectedElem.InnerText, actualElem.InnerText);
+    }
+
+    [Fact]
+    public static void Xml_TypeWithArrayPropertyHavingChoice()
+    {
+        object[] choices = new object[] { "Food", 5 };
+
+        // For each item in the choices array, add an
+        // enumeration value.
+        MoreChoices[] itemChoices = new MoreChoices[] { MoreChoices.Item, MoreChoices.Amount };
+
+        var value = new TypeWithArrayPropertyHavingChoice() { ManyChoices = choices, ChoiceArray = itemChoices };
+
+        var actual = SerializeAndDeserialize(value, "<?xml version=\"1.0\" encoding=\"utf-8\"?>\r\n<TypeWithArrayPropertyHavingChoice xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">\r\n  <Item>Food</Item>\r\n  <Amount>5</Amount>\r\n</TypeWithArrayPropertyHavingChoice>");
+
+        Assert.NotNull(actual);
+        Assert.NotNull(actual.ManyChoices);
+        Assert.Equal(value.ManyChoices.Length, actual.ManyChoices.Length);
+        Assert.True(Enumerable.SequenceEqual(value.ManyChoices, actual.ManyChoices));
+    }
+
+    [Fact]
+    public static void XML_TypeWithTypeNameInXmlTypeAttribute_WithValue()
+    {
+        var value = new TypeWithTypeNameInXmlTypeAttribute() { XmlAttributeForm = "SomeValue" };
+
+        var actual = SerializeAndDeserialize(value,
+            "<?xml version=\"1.0\" encoding=\"utf-8\"?>\r\n<MyXmlType xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" XmlAttributeForm=\"SomeValue\" />",
+            skipStringCompare: false);
+
+        Assert.NotNull(actual);
+        Assert.Equal(value.XmlAttributeForm, actual.XmlAttributeForm);
+    }
+
+    [Fact]
+    public static void XML_TypeWithArrayLikeXmlAttribute()
+    {
+        var value = new TypeWithStringArrayAsXmlAttribute() { XmlAttributeForms = new string[] { "SomeValue1", "SomeValue2" } };
+
+        var actual = SerializeAndDeserialize(value,
+            "<?xml version=\"1.0\" encoding=\"utf-8\"?>\r\n<MyXmlType xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" XmlAttributeForms=\"SomeValue1 SomeValue2\" />");
+
+        Assert.NotNull(actual);
+        Assert.True(Enumerable.SequenceEqual(value.XmlAttributeForms, actual.XmlAttributeForms));
+    }
+
+    [Fact]
+    public static void XML_TypeWithArrayLikeXmlAttributeWithFields()
+    {
+        var value = new TypeWithArrayLikeXmlAttributeWithFields() { XmlAttributeForms = new string[] { "SomeValue1", "SomeValue2" }, StringField = "foo", IntField = 123 };
+
+        var actual = SerializeAndDeserialize(value,
+            "<?xml version=\"1.0\" encoding=\"utf-8\"?>\r\n<MyXmlType xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" XmlAttributeForms=\"SomeValue1 SomeValue2\">\r\n  <StringField>foo</StringField>\r\n  <IntField>123</IntField>\r\n</MyXmlType>");
+
+        Assert.NotNull(actual);
+        Assert.Equal(value.StringField, actual.StringField);
+        Assert.Equal(value.IntField, actual.IntField);
+        Assert.True(Enumerable.SequenceEqual(value.XmlAttributeForms, actual.XmlAttributeForms));
+    }
+
+    [Fact]
+    public static void XML_TypeWithByteArrayAsXmlAttribute()
+    {
+        var value = new TypeWithByteArrayAsXmlAttribute() { XmlAttributeForms = new byte[] { 0, 1, 2 } };
+
+        var actual = SerializeAndDeserialize(value,
+            "<?xml version=\"1.0\" encoding=\"utf-8\"?>\r\n<MyXmlType xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" XmlAttributeForms=\"AAEC\" />");
+
+        Assert.NotNull(actual);
+        Assert.True(Enumerable.SequenceEqual(value.XmlAttributeForms, actual.XmlAttributeForms));
+    }
+
+    [Fact]
+    public static void XML_TypeWithByteArrayArrayAsXmlAttribute()
+    {
+        var value = new TypeWithByteArrayArrayAsXmlAttribute() { XmlAttributeForms = new byte[][] { new byte[] { 1 }, new byte[] { 2 } } };
+
+        var actual = SerializeAndDeserialize(value,
+            "<?xml version=\"1.0\" encoding=\"utf-8\"?>\r\n<MyXmlType xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" XmlAttributeForms=\"AQ== Ag==\" />");
+
+        Assert.NotNull(actual);
+        Assert.Equal(value.XmlAttributeForms[0][0], actual.XmlAttributeForms[0][0]);
+        Assert.Equal(value.XmlAttributeForms[1][0], actual.XmlAttributeForms[1][0]);
+    }
+
+    [Fact]
+    public static void XML_TypeWithQNameArrayAsXmlAttribute()
+    {
+        var value = new TypeWithQNameArrayAsXmlAttribute() { XmlAttributeForms = new XmlQualifiedName[] { new XmlQualifiedName("SomeValue1", "ns1"), new XmlQualifiedName("SomeValue2", "ns2") } };
+
+        var actual = SerializeAndDeserialize(value,
+            "<?xml version=\"1.0\" encoding=\"utf-8\"?>\r\n<MyXmlType xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:q1=\"ns1\" xmlns:q2=\"ns2\" XmlAttributeForms=\"q1:SomeValue1 q2:SomeValue2\" />");
+
+        Assert.NotNull(actual);
+        Assert.True(Enumerable.SequenceEqual(value.XmlAttributeForms, actual.XmlAttributeForms));
+    }
+
+    [Fact]
+    public static void XML_TypeWithEnumArrayAsXmlAttribute()
+    {
+        var value = new TypeWithEnumArrayAsXmlAttribute() { XmlAttributeForms = new IntEnum[] { IntEnum.Option1, IntEnum.Option2 } };
+
+        var actual = SerializeAndDeserialize(value,
+            "<?xml version=\"1.0\" encoding=\"utf-8\"?>\r\n<MyXmlType xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" XmlAttributeForms=\"Option1 Option2\" />");
+
+        Assert.NotNull(actual);
+        Assert.True(Enumerable.SequenceEqual(value.XmlAttributeForms, actual.XmlAttributeForms));
+    }
+
+    [Fact]
+    public static void XML_TypeWithFieldsOrdered()
+    {
+        var value = new TypeWithFieldsOrdered()
+        {
+            IntField1 = 1,
+            IntField2 = 2,
+            StringField1 = "foo1",
+            StringField2 = "foo2"
+        };
+
+        var actual = SerializeAndDeserialize(value, "<?xml version=\"1.0\" encoding=\"utf-8\"?>\r\n<TypeWithFieldsOrdered xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">\r\n  <IntField1>1</IntField1>\r\n  <IntField2>2</IntField2>\r\n  <StringField2>foo2</StringField2>\r\n  <StringField1>foo1</StringField1>\r\n</TypeWithFieldsOrdered>");
+
+        Assert.NotNull(actual);
+        Assert.Equal(value.IntField1, actual.IntField1);
+        Assert.Equal(value.IntField2, actual.IntField2);
+        Assert.Equal(value.StringField1, actual.StringField1);
+        Assert.Equal(value.StringField2, actual.StringField2);
+    }
+
     private static T SerializeAndDeserialize<T>(T value, string baseline, Func<XmlSerializer> serializerFactory = null,
         bool skipStringCompare = false, XmlSerializerNamespaces xns = null)
     {
@@ -1862,10 +2342,9 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
 
             string actualOutput = new StreamReader(ms).ReadToEnd();
 
-            Utils.CompareResult result = Utils.Compare(baseline, actualOutput);
-
             if (!skipStringCompare)
             {
+                Utils.CompareResult result = Utils.Compare(baseline, actualOutput);
                 Assert.True(result.Equal, string.Format("{1}{0}Test failed for input: {2}{0}Expected: {3}{0}Actual: {4}",
                     Environment.NewLine, result.ErrorMessage, value, baseline, actualOutput));
             }
@@ -1877,25 +2356,3 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
         }
     }
 }
-
-#region Type for Xml_ConstructorWithXmlAttributeOverrides
-
-namespace Music
-{
-    public class Orchestra
-    {
-        public Instrument[] Instruments;
-    }
-
-    public class Instrument
-    {
-        public string Name;
-    }
-
-    public class Brass : Instrument
-    {
-        public bool IsValved;
-    }
-}
-
-#endregion
