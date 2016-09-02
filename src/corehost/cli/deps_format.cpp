@@ -43,6 +43,40 @@ void deps_json_t::reconcile_libraries_with_targets(
 
         const auto& properties = library.second.as_object();
 
+        // Get the "path" property, if available.
+        pal::string_t library_path;
+        const auto& library_path_iter = properties.find(_X("path"));
+        if (library_path_iter == properties.end())
+        {
+            library_path = _X("");
+        }
+        else
+        {
+            library_path = library_path_iter->second.as_string();
+
+			if (_X('/') != DIR_SEPARATOR)
+			{
+				replace_char(&library_path, _X('/'), DIR_SEPARATOR);
+			}
+        }
+
+        // Get the "hashPath property, if available.
+        pal::string_t library_hash_path;
+        const auto& library_hash_path_iter = properties.find(_X("hashPath"));
+        if (library_hash_path_iter == properties.end())
+        {
+            library_hash_path = _X("");
+        }
+        else
+        {
+            library_hash_path = library_hash_path_iter->second.as_string();
+
+			if (_X('/') != DIR_SEPARATOR)
+			{
+				replace_char(&library_hash_path, _X('/'), DIR_SEPARATOR);
+			}
+        }
+
         const pal::string_t& hash = properties.at(_X("sha512")).as_string();
         bool serviceable = properties.at(_X("serviceable")).as_bool();
 
@@ -63,8 +97,10 @@ void deps_json_t::reconcile_libraries_with_targets(
                 size_t pos = library.first.find(_X("/"));
                 entry.library_name = library.first.substr(0, pos);
                 entry.library_version = library.first.substr(pos + 1);
-                entry.library_type = pal::to_lower(library.second.at(_X("type")).as_string());
+                entry.library_type = pal::to_lower(properties.at(_X("type")).as_string());
                 entry.library_hash = hash;
+                entry.library_path = library_path;
+                entry.library_hash_path = library_hash_path;
                 entry.asset_name = asset_name;
                 entry.asset_type = (deps_entry_t::asset_types) i;
                 entry.relative_path = rel_path;
