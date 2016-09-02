@@ -5,8 +5,6 @@
     <ProjectGuid>{F620F382-30D1-451E-B125-2A612F92068B}</ProjectGuid>
     <RootNamespace>System.ComponentModel.Primitives</RootNamespace>
     <AssemblyName>System.ComponentModel.Primitives</AssemblyName>
-    <AssemblyVersion>4.1.1.0</AssemblyVersion>
-    <PackageTargetFramework Condition="'$(PackageTargetFramework)'==''">netstandard1.0</PackageTargetFramework>
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)'=='net45'">true</IsPartialFacadeAssembly>
     <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.0</NuGetTargetMoniker>
   </PropertyGroup>

@@ -3,11 +3,9 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <AssemblyVersion>4.2.0.0</AssemblyVersion>
     <OutputType>Library</OutputType>
     <IsCoreAssembly>true</IsCoreAssembly>
-    <PackageTargetFramework>netstandard1.7</PackageTargetFramework>
-    <NuGetTargetMoniker>.NETStandard,Version=v1.5</NuGetTargetMoniker>
+    <NuGetTargetMoniker>.NETStandard,Version=v1.7</NuGetTargetMoniker>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Runtime.cs" />

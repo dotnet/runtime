@@ -9,7 +9,7 @@ using Xunit;
 
 namespace Microsoft.Win32.RegistryTests
 {
-    public class RegistryKey_DeleteSubKeyTree_str : RegistryTestsBase
+    public class RegistryKey_DeleteSubKeyTree_str : RegistryKeyDeleteSubKeyTreeTestsBase
     {
         [Fact]
         public void NegativeTests()
@@ -83,5 +83,16 @@ namespace Microsoft.Win32.RegistryTests
             TestRegistryKey.DeleteSubKeyTree(TestRegistryKeyName);
             Assert.Null(TestRegistryKey.OpenSubKey(TestRegistryKeyName));
         }
+
+        [Theory]
+        [MemberData(nameof(TestRegistrySubKeyNames))]
+        public void DeleteSubKeyTree_KeyExists_KeyDeleted(string expected, string subKeyName) =>
+            Verify_DeleteSubKeyTree_KeyExists_KeyDeleted(expected, () => TestRegistryKey.DeleteSubKeyTree(subKeyName));
+
+
+        [Theory]
+        [MemberData(nameof(TestRegistrySubKeyNames))]
+        public void Verify_DeleteSubKeyTree_KeyDoesNotExists_Throws(string expected, string subKeyName) =>
+            Verify_DeleteSubKeyTree_KeyDoesNotExists_Throws(expected, () => TestRegistryKey.DeleteSubKeyTree(subKeyName));
     }
 }

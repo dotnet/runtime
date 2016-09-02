@@ -15,6 +15,10 @@ namespace System.Net.Test.Common
             public static string SecureHost => GetValue("COREFX_SECUREHTTPHOST", DefaultAzureServer);
 
             public static string Http2Host => GetValue("COREFX_HTTP2HOST", "http2.akamai.com");
+            
+            // This server doesn't use HTTP/2 server push (push promise) feature. Some HttpClient implementations
+            // don't support servers that use push right now.
+            public static string Http2NoPushHost => GetValue("COREFX_HTTP2NOPUSHHOST", "www.microsoft.com");
 
             public static string DomainJoinedHttpHost => GetValue("COREFX_DOMAINJOINED_HTTPHOST");
 
@@ -60,6 +64,7 @@ namespace System.Net.Test.Common
             public readonly static object[][] VerifyUploadServers = { new object[] { RemoteVerifyUploadServer }, new object[] { SecureRemoteVerifyUploadServer } };
             public readonly static object[][] CompressedServers = { new object[] { RemoteDeflateServer }, new object[] { RemoteGZipServer } };
             public readonly static object[][] Http2Servers = { new object[] { new Uri("https://" + Http2Host) } };
+            public readonly static object[][] Http2NoPushServers = { new object[] { new Uri("https://" + Http2NoPushHost) } };
 
             public static Uri NegotiateAuthUriForDefaultCreds(bool secure)
             {

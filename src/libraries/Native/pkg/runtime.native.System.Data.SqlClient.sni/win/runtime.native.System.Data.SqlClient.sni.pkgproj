@@ -2,7 +2,6 @@
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <Version>4.0.2</Version>
     <WinVersion Condition="'$(PackagePlatform)'=='arm64'">win10</WinVersion>
     <WinVersion Condition="'$(PackagePlatform)'=='x86' OR '$(PackagePlatform)'=='x64'">win7</WinVersion>
     <!-- use the same naming convention as a runtime package, but don't treat as a runtime dependency -->

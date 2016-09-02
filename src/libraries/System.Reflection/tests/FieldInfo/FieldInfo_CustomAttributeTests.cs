@@ -4,7 +4,7 @@
 
 using Xunit;
 using System.Collections.Generic;
-using System.Reflection.CustomAttributesTests.Data;
+using System.Linq;
 
 // Need to disable warning related to CLS Compliance as using Array as custom attribute is not CLS compliant
 #pragma warning disable 3016
@@ -13,15 +13,13 @@ namespace System.Reflection.Tests
 {
     public class FieldInfoTestClass
     {
-        public FieldInfoTestClass()
-        {
-        }
+        public FieldInfoTestClass() { }
 
         [Attr(77, name = "AttrSimple"),
         Int32Attr(77, name = "Int32AttrSimple"),
         Int64Attr(77, name = "Int64AttrSimple"),
         StringAttr("hello", name = "StringAttrSimple"),
-        EnumAttr(MyColorEnum.RED, name = "EnumAttrSimple"),
+        EnumAttr(PublicEnum.Case1, name = "EnumAttrSimple"),
         TypeAttr(typeof(object), name = "TypeAttrSimple")]
         public string MyField = "MyField";
 
@@ -36,16 +34,17 @@ namespace System.Reflection.Tests
     public class FieldInfoCustomAttributeTests
     {
         [Theory]
-        [InlineData(typeof(Int32Attr), "[System.Reflection.CustomAttributesTests.Data.Int32Attr((Int32)77, name = \"Int32AttrSimple\")]")]
-        [InlineData(typeof(Int64Attr), "[System.Reflection.CustomAttributesTests.Data.Int64Attr((Int64)77, name = \"Int64AttrSimple\")]")]
-        [InlineData(typeof(StringAttr), "[System.Reflection.CustomAttributesTests.Data.StringAttr(\"hello\", name = \"StringAttrSimple\")]")]
-        [InlineData(typeof(EnumAttr), "[System.Reflection.CustomAttributesTests.Data.EnumAttr((System.Reflection.CustomAttributesTests.Data.MyColorEnum)1, name = \"EnumAttrSimple\")]")]
-        [InlineData(typeof(TypeAttr), "[System.Reflection.CustomAttributesTests.Data.TypeAttr(typeof(System.Object), name = \"TypeAttrSimple\")]")]
-        [InlineData(typeof(Attr), "[System.Reflection.CustomAttributesTests.Data.Attr((Int32)77, name = \"AttrSimple\")]")]
-        public static void TestCustomAttributeDetails(Type type, string attributeStr)
+        [InlineData(typeof(Int32Attr), "[System.Reflection.Tests.Int32Attr((Int32)77, name = \"Int32AttrSimple\")]")]
+        [InlineData(typeof(Int64Attr), "[System.Reflection.Tests.Int64Attr((Int64)77, name = \"Int64AttrSimple\")]")]
+        [InlineData(typeof(StringAttr), "[System.Reflection.Tests.StringAttr(\"hello\", name = \"StringAttrSimple\")]")]
+        [InlineData(typeof(EnumAttr), "[System.Reflection.Tests.EnumAttr((System.Reflection.Tests.PublicEnum)1, name = \"EnumAttrSimple\")]")]
+        [InlineData(typeof(TypeAttr), "[System.Reflection.Tests.TypeAttr(typeof(System.Object), name = \"TypeAttrSimple\")]")]
+        [InlineData(typeof(Attr), "[System.Reflection.Tests.Attr((Int32)77, name = \"AttrSimple\")]")]
+        public static void TestCustomAttributeDetails(Type type, string expectedToString)
         {
             FieldInfo fi = GetField("MyField");
-            Assert.Contains(fi.CustomAttributes, attr => attr.AttributeType.Equals(type) && attr.ToString().Equals(attributeStr));
+            CustomAttributeData attributeData = fi.CustomAttributes.First(attribute => attribute.AttributeType.Equals(type));
+            Assert.Equal(expectedToString, attributeData.ToString());
         }
 
         // Helper method to get field from Type type

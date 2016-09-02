@@ -88,7 +88,10 @@ namespace System.Linq.Expressions.Compiler
                 Visit(MergeScopes(lambda));
                 _scopes.Pop();
                 // visit the invoke's arguments
-                Visit(node.Arguments);
+                for (int i = 0, n = node.ArgumentCount; i < n; i++)
+                {
+                    Visit(node.GetArgument(i));
+                }
                 return node;
             }
 

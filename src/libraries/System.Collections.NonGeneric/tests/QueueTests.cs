@@ -367,7 +367,7 @@ namespace System.Collections.Tests
             Helpers.PerformActionOnAllQueueWrappers(queue1, queue2 =>
             {
                 Assert.Throws<ArgumentNullException>("array", () => queue2.CopyTo(null, 0)); // Array is null
-                Assert.Throws<ArgumentException>("array", () => queue2.CopyTo(new object[150, 150], 0)); // Array is multidimensional
+                Assert.Throws<ArgumentException>(() => queue2.CopyTo(new object[150, 150], 0)); // Array is multidimensional
 
                 Assert.Throws<ArgumentOutOfRangeException>("index", () => queue2.CopyTo(new object[150], -1)); // Index < 0
 

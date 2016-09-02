@@ -290,7 +290,8 @@ namespace System.PrivateUri.Tests
 
         [Theory]
         [InlineData("fragment", "#fragment")]
-        [InlineData("#fragment", "##fragment")]
+        [InlineData("#fragment", "#fragment")]
+        [InlineData("#", "#")]
         [InlineData("", "")]
         [InlineData(null, "")]
         public void Fragment_Get_Set(string value, string expected)

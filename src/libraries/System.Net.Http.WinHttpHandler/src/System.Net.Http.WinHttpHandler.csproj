@@ -10,8 +10,6 @@
     <ProjectGuid>{F75E3008-0562-42DF-BE72-C1384F12157E}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AssemblyName>System.Net.Http.WinHttpHandler</AssemblyName>
-    <AssemblyVersion>4.0.1.0</AssemblyVersion>
-    <PackageTargetFramework Condition="'$(PackageTargetFramework)' == ''">netstandard1.3</PackageTargetFramework>
     <GeneratePlatformNotSupportedAssembly Condition="'$(TargetsUnix)' == 'true'">true</GeneratePlatformNotSupportedAssembly>
     <NuGetTargetMoniker>.NETStandard,Version=v1.3</NuGetTargetMoniker>
   </PropertyGroup>
@@ -19,6 +17,14 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU'" />
   <Import Project="System.Net.Http.WinHttpHandler.msbuild" Condition="'$(TargetsWindows)' == 'true'" />
+  <ItemGroup Condition="'$(TargetGroup)' == 'net46'">
+    <!-- Need to compile it here since the NET46 target here is building against System.Runtime whereas the
+         the list of other files in System.Net.Http.WinHttpHandler.msbuild is also used by System.Net.Http
+         library and the NET46 target there uses framework assembly references instead. -->
+    <CompileItem Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeHandleZeroOrMinusOneIsInvalid.cs" />
+    <CompileItem Include="$(CommonPath)\System\Net\HttpStatusDescription.cs" />
+    <CompileItem Include="$(CommonPath)\System\Net\HttpVersion.cs" />
+  </ItemGroup>
   <!--  For source files to be shown within the visual tree in Solution Explorer, the items must be
          included directly in the project file. We have the *.msbuild define the Compile items in a made
          up item called CompileItem and then just include it here. -->

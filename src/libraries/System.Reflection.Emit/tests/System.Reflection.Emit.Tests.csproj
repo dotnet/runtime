@@ -113,12 +113,10 @@
     <Compile Include="PropertyBuilder\PropertyBuilderSetSetMethod.cs" />
     <Compile Include="PropertyBuilder\PropertyBuilderSetValue.cs" />
     <Compile Include="TypeBuilder\TypeBuilderAddInterfaceImplementaion.cs" />
-    <Compile Include="TypeBuilder\TypeBuilderAssembly.cs" />
     <Compile Include="TypeBuilder\TypeBuilderAssemblyQualifiedName.cs" />
     <Compile Include="TypeBuilder\TypeBuilderBaseType.cs" />
     <Compile Include="TypeBuilder\TypeBuilderCreateType.cs" />
     <Compile Include="TypeBuilder\TypeBuilderDeclaringMethod.cs" />
-    <Compile Include="TypeBuilder\TypeBuilderDeclaringType.cs" />
     <Compile Include="TypeBuilder\TypeBuilderDefineConstructor.cs" />
     <Compile Include="TypeBuilder\TypeBuilderDefineDefaultConstructor.cs" />
     <Compile Include="TypeBuilder\TypeBuilderDefineEvent.cs" />
@@ -126,7 +124,6 @@
     <Compile Include="TypeBuilder\TypeBuilderDefineNestedType.cs" />
     <Compile Include="TypeBuilder\TypeBuilderDefineProperty.cs" />
     <Compile Include="TypeBuilder\TypeBuilderDefineTypeInitializer.cs" />
-    <Compile Include="TypeBuilder\TypeBuilderFullName.cs" />
     <Compile Include="TypeBuilder\TypeBuilderGenericParameterAttributes.cs" />
     <Compile Include="TypeBuilder\TypeBuilderGenericParameterPosition.cs" />
     <Compile Include="TypeBuilder\TypeBuilderGetConstructor.cs" />

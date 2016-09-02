@@ -15,6 +15,10 @@
       <OSGroup>fedora.23</OSGroup>
       <Platform>amd64</Platform>
     </Project>
+    <Project Include="fedora\24\runtime.native.System.Net.Security.pkgproj">
+      <OSGroup>fedora.24</OSGroup>
+      <Platform>amd64</Platform>
+    </Project>
     <Project Include="ubuntu\14.04\runtime.native.System.Net.Security.pkgproj">
       <OSGroup>ubuntu.14.04</OSGroup>
       <Platform>amd64</Platform>
@@ -23,12 +27,20 @@
       <OSGroup>ubuntu.16.04</OSGroup>
       <Platform>amd64</Platform>
     </Project>
+    <Project Include="ubuntu\16.10\runtime.native.System.Net.Security.pkgproj">
+      <OSGroup>ubuntu.16.10</OSGroup>
+      <Platform>amd64</Platform>
+    </Project>
     <Project Include="osx\runtime.native.System.Net.Security.pkgproj">
       <OSGroup>osx.10</OSGroup>
       <Platform>amd64</Platform>
     </Project>
     <Project Include="opensuse\13.2\runtime.native.System.Net.Security.pkgproj">
       <OSGroup>opensuse.13.2</OSGroup>
+      <Platform>amd64</Platform>
+    </Project>
+    <Project Include="opensuse\42.1\runtime.native.System.Net.Security.pkgproj">
+      <OSGroup>opensuse.42.1</OSGroup>
       <Platform>amd64</Platform>
     </Project>
   </ItemGroup>

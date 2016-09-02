@@ -8,12 +8,10 @@
     <ProjectGuid>{F9DF2357-81B4-4317-908E-512DA9395583}</ProjectGuid>
     <RootNamespace>System.Console</RootNamespace>
     <AssemblyName>System.Console</AssemblyName>
-    <AssemblyVersion>4.1.0.0</AssemblyVersion>
     <AssemblyVersion Condition="'$(TargetGroup)'=='netstandard1.3' OR '$(TargetGroup)'=='net46' OR '$(TargetGroup)'=='netcore50'">4.0.1.0</AssemblyVersion>
     <ContractProject Condition="'$(AssemblyVersion)'=='4.0.1.0'">../ref/4.0.0/System.Console.depproj</ContractProject>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'net46' OR '$(TargetGroup)' == 'net463'">true</IsPartialFacadeAssembly>
-    <PackageTargetFramework Condition="'$(PackageTargetFramework)'==''">netstandard1.7</PackageTargetFramework>
     <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NuGetTargetMoniker>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetGroup)'=='netstandard1.3'">

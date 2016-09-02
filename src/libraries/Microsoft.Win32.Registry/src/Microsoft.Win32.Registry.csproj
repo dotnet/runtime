@@ -8,10 +8,8 @@
     <ProjectGuid>{D3F18ACC-D327-4ABB-BA6C-E9C34A041B2F}</ProjectGuid>
     <RootNamespace>Microsoft.Win32.Registry</RootNamespace>
     <AssemblyName>Microsoft.Win32.Registry</AssemblyName>
-    <AssemblyVersion>4.0.1.0</AssemblyVersion>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants>$(DefineConstants);REGISTRY_ASSEMBLY</DefineConstants>
-    <PackageTargetFramework Condition="'$(PackageTargetFramework)' == ''">netstandard1.3</PackageTargetFramework>
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'net46'">true</IsPartialFacadeAssembly>
     <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.3</NuGetTargetMoniker>
   </PropertyGroup>

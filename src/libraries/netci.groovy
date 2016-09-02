@@ -240,7 +240,8 @@ def osShortName = ['Windows 10': 'win10',
             Utilities.standardJobSetup(newJob, project, isPR, "*/${branch}")
             // Add the unit test results
             Utilities.addXUnitDotNETResults(newJob, 'bin/tests/**/testResults.xml')
-
+            // Add archival for the built data.
+            Utilities.addArchival(newJob, "msbuild.log", '', doNotFailIfNothingArchived=true, archiveOnlyIfSuccessful=false)
             // Set up appropriate triggers.  PR on demand, otherwise nightly
             if (isPR) {
                 // Set PR trigger.
@@ -327,8 +328,7 @@ def osShortName = ['Windows 10': 'win10',
         Utilities.addPrivateGithubPRTriggerForBranch(newJob, branch, "Windows_NT ARM64 ${configurationGroup} Build and Test", "(?i).*test\\W+ARM64\\W+${os}\\W+${configurationGroup}", null, arm64Users)
 
         // Set up a per-push trigger
-        // Temporarily disabled until private triggers are stable
-        // Utilities.addGithubPushTrigger(newJob)
+        Utilities.addGithubPushTrigger(newJob)
 
         // Get results
         Utilities.addXUnitDotNETResults(newJob, 'bin/tests/testresults/**/testResults.xml')
@@ -383,7 +383,7 @@ def osShortName = ['Windows 10': 'win10',
                 archiveContents += ",bin/build.tar.gz"
             }
             // Add archival for the built data.
-            Utilities.addArchival(newJob, archiveContents)
+            Utilities.addArchival(newJob, archiveContents, '', doNotFailIfNothingArchived=true, archiveOnlyIfSuccessful=false)
             // Set up triggers
             if (isPR) {
                 // Set PR trigger, we run Windows_NT, Ubuntu 14.04, CentOS 7.1 and OSX on every PR.
@@ -445,7 +445,7 @@ def osShortName = ['Windows 10': 'win10',
             // Set up triggers
             if (isPR) {
                 if (osName == 'LinuxARMEmulator') {
-                    Utilities.addGithubPRTriggerForBranch(newJob, branch, "Innerloop Linux ARM Emulator ${configurationGroup} Cross Build", "(?i).*test\\W+Innerloop\\W+Linux\\W+ARM\\W+Emulator\\W+${configurationGroup}\\W+Cross\\W+Build.*")
+                    Utilities.addGithubPRTriggerForBranch(newJob, branch, "Innerloop Linux ARM Emulator ${configurationGroup} Cross Build")
                 }
             }
             else {

@@ -19,6 +19,9 @@
     <!-- temporary change until buildtools can be updated https://github.com/dotnet/buildtools/issues/831 -->
     <LineupPackageVersion Condition="'$(LineupPackageVersion)' == ''">1.0.3</LineupPackageVersion>
     <PlatformPackageVersion Condition="'$(PlatformPackageVersion)' == ''">1.0.2</PlatformPackageVersion>
+
+    <!-- by default all packages will use the same version which revs with respect to product version -->
+    <PackageVersion Condition="'$(PackageVersion)' == ''">4.3.0</PackageVersion>
     <SkipValidatePackageTargetFramework>true</SkipValidatePackageTargetFramework>
   </PropertyGroup>
 
@@ -36,11 +39,11 @@
   <!-- Add required legal files to packages -->
   <ItemGroup Condition="'$(MSBuildProjectExtension)' == '.pkgproj'">
     <File Condition="Exists('$(PackageLicenseFile)')"
-	  	    Include="$(PackageLicenseFile)" >
+          Include="$(PackageLicenseFile)" >
         <SkipPackageFileCheck>true</SkipPackageFileCheck>
     </File>
     <File Condition="Exists('$(PackageThirdPartyNoticesFile)')"
-	        Include="$(PackageThirdPartyNoticesFile)" >
+          Include="$(PackageThirdPartyNoticesFile)" >
         <SkipPackageFileCheck>true</SkipPackageFileCheck>
     </File>
   </ItemGroup>

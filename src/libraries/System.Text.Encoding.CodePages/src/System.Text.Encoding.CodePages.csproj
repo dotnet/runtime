@@ -11,19 +11,15 @@
     <OutputType>Library</OutputType>
     <RootNamespace>System.Text.Encoding.CodePages</RootNamespace>
     <AssemblyName>System.Text.Encoding.CodePages</AssemblyName>
-    <AssemblyVersion>4.0.2.0</AssemblyVersion>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <PackageTargetFramework Condition="'$(TargetsUnix)' == 'true'">netstandard1.3</PackageTargetFramework>
     <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.3</NuGetTargetMoniker>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
-    <PackageDestination Include="runtimes/win/lib/netstandard1.3">
-      <TargetFramework>netstandard1.3</TargetFramework>
-    </PackageDestination>
+    <PackageTargetFramework Include="netstandard1.3" />
     <!-- need to support rid-less restore for packages.config -->
-    <PackageDestination Include="lib/net46">
-      <TargetFramework>net46</TargetFramework>
-    </PackageDestination>
+    <PackageTargetFramework Include="net46">
+      <TargetRuntime></TargetRuntime>
+    </PackageTargetFramework>
   </ItemGroup>
   <!-- Help VS understand available configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Debug|AnyCPU'" />

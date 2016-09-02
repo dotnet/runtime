@@ -4,7 +4,6 @@
   <PropertyGroup>
     <AssemblyVersion>4.1.0.0</AssemblyVersion>
     <OutputType>Library</OutputType>
-    <PackageTargetFramework>netstandard1.7</PackageTargetFramework>
     <NuGetTargetMoniker>.NETStandard,Version=v1.7</NuGetTargetMoniker>
   </PropertyGroup>
   <ItemGroup>

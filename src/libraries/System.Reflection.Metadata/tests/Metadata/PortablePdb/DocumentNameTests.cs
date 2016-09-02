@@ -34,7 +34,7 @@ namespace System.Reflection.Metadata.Tests
 
             fixed (byte* ptr = blobHeapData)
             {
-                var blobHeap = new BlobStreamReader(new MemoryBlock(ptr, blobHeapData.Length), MetadataKind.Ecma335);
+                var blobHeap = new BlobHeap(new MemoryBlock(ptr, blobHeapData.Length), MetadataKind.Ecma335);
 
                 var handle = DocumentNameBlobHandle.FromOffset(8);
 
@@ -77,7 +77,7 @@ namespace System.Reflection.Metadata.Tests
 
             fixed (byte* ptr = blobHeapData)
             {
-                var blobHeap = new BlobStreamReader(new MemoryBlock(ptr, blobHeapData.Length), MetadataKind.Ecma335);
+                var blobHeap = new BlobHeap(new MemoryBlock(ptr, blobHeapData.Length), MetadataKind.Ecma335);
 
                 var handle = DocumentNameBlobHandle.FromOffset(3);
 
@@ -119,7 +119,7 @@ namespace System.Reflection.Metadata.Tests
 
             fixed (byte* ptr = blobHeapData)
             {
-                var blobHeap = new BlobStreamReader(new MemoryBlock(ptr, blobHeapData.Length), MetadataKind.Ecma335);
+                var blobHeap = new BlobHeap(new MemoryBlock(ptr, blobHeapData.Length), MetadataKind.Ecma335);
 
                 var handle = DocumentNameBlobHandle.FromOffset(3);
 
@@ -155,7 +155,7 @@ namespace System.Reflection.Metadata.Tests
 
             fixed (byte* ptr = blobHeapData)
             {
-                var blobHeap = new BlobStreamReader(new MemoryBlock(ptr, blobHeapData.Length), MetadataKind.Ecma335);
+                var blobHeap = new BlobHeap(new MemoryBlock(ptr, blobHeapData.Length), MetadataKind.Ecma335);
 
                 var handle = DocumentNameBlobHandle.FromOffset(3);
 
@@ -185,7 +185,7 @@ namespace System.Reflection.Metadata.Tests
 
             fixed (byte* ptr = blobHeapData)
             {
-                var blobHeap = new BlobStreamReader(new MemoryBlock(ptr, blobHeapData.Length), MetadataKind.Ecma335);
+                var blobHeap = new BlobHeap(new MemoryBlock(ptr, blobHeapData.Length), MetadataKind.Ecma335);
 
                 var handle = DocumentNameBlobHandle.FromOffset(3);
 
@@ -228,7 +228,7 @@ namespace System.Reflection.Metadata.Tests
 
             fixed (byte* ptr = blobHeapData)
             {
-                var blobHeap = new BlobStreamReader(new MemoryBlock(ptr, blobHeapData.Length), MetadataKind.Ecma335);
+                var blobHeap = new BlobHeap(new MemoryBlock(ptr, blobHeapData.Length), MetadataKind.Ecma335);
 
                 var handle = DocumentNameBlobHandle.FromOffset(7);
 
@@ -258,7 +258,7 @@ namespace System.Reflection.Metadata.Tests
 
             fixed (byte* ptr = blobHeapData)
             {
-                var blobHeap = new BlobStreamReader(new MemoryBlock(ptr, blobHeapData.Length), MetadataKind.Ecma335);
+                var blobHeap = new BlobHeap(new MemoryBlock(ptr, blobHeapData.Length), MetadataKind.Ecma335);
 
                 var handle = DocumentNameBlobHandle.FromOffset(1);
 

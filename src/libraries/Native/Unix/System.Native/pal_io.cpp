@@ -321,11 +321,13 @@ extern "C" int32_t SystemNative_GetDirentSize()
 //    size of the dirent struct.
 // 2) The managed code creates a byte[] buffer of the size of the native dirent
 //    and passes a pointer to this buffer to this function.
-// 3) This function passes input byte[] buffer to the OS to fill with dirent data
-//    which makes the 1st strcpy.
-// 4) The ConvertDirent function will set a pointer to the start of the inode name
-//    in the byte[] buffer so the managed code and find it and copy it out of the
-//    buffer into a managed string that the caller of the framework can use, making
+// 3) This function passes input byte[] buffer to the OS to fill with dirent
+//    data which makes the 1st strcpy.
+// 4) The ConvertDirent function will fill DirectoryEntry outputEntry with
+//    pointers from byte[] buffer.
+// 5) The managed code uses DirectoryEntry outputEntry to find start of d_name
+//    and the value of d_namelen, if avalable, to copy the name from
+//    byte[] buffer into a managed string that the caller can use; this makes
 //    the 2nd and final strcpy.
 extern "C" int32_t SystemNative_ReadDirR(DIR* dir, void* buffer, int32_t bufferSize, DirectoryEntry* outputEntry)
 {
@@ -341,6 +343,7 @@ extern "C" int32_t SystemNative_ReadDirR(DIR* dir, void* buffer, int32_t bufferS
 
     dirent* result = nullptr;
     dirent* entry = static_cast<dirent*>(buffer);
+#if HAVE_READDIR_R
     int error = readdir_r(dir, entry, &result);
 
     // positive error number returned -> failure
@@ -360,6 +363,27 @@ extern "C" int32_t SystemNative_ReadDirR(DIR* dir, void* buffer, int32_t bufferS
 
     // 0 returned with non-null result (guaranteed to be set to entry arg) -> success
     assert(result == entry);
+#else
+    errno = 0;
+    result = readdir(dir);
+
+    // 0 returned with null result -> end-of-stream
+    if (result == nullptr)
+    {
+        *outputEntry = {}; // managed out param must be initialized
+
+        //  kernel set errno -> failure
+        if (errno != 0)
+        {
+            assert(errno == EBADF); // Invalid directory stream descriptor dir.
+            return errno;
+        }
+        return -1;
+    }
+
+    assert(result->d_reclen <= bufferSize);
+    memcpy(entry, result, static_cast<size_t>(result->d_reclen));
+#endif
     ConvertDirent(*entry, outputEntry);
     return 0;
 }

@@ -216,12 +216,6 @@
       "values": [],
       "defaultValue": ""
     },
-    "UpdateInvalidPackageVersions": {
-      "description": "MsBuild target that looks through all dependencies and using the validation rules, updates any invalid versions.",
-      "valueType": "target",
-      "values": [],
-      "defaultValue": ""
-    },
     "CleanAllProjects": {
       "description": "MsBuild target that deletes the binary output directory.",
       "valueType": "target",
@@ -239,7 +233,13 @@
       "valueType": "target",
       "values": [],
       "defaultValue": ""
-    }
+    },
+    "ProducesTarget": {
+      "description": "MsBuild target that displays all of the artifacts this repo produces.",
+      "valueType": "target",
+      "values": [],
+      "defaultValue": ""
+    }    
   },
   "commands": {
     "build-managed": {
@@ -407,7 +407,6 @@
         "toolName": "msbuild",
         "settings": {
           "Project": "src/packages.builds",
-          "MsBuildParameters": "default",
           "ProducesTarget":"default"
         }
       }

@@ -7,7 +7,6 @@ using System;
 
 namespace System.Xml.Serialization
 {
-    /// <include file='doc\XmlTextAttribute.uex' path='docs/doc[@for="XmlTextAttribute"]/*' />
     /// <devdoc>
     ///    <para>[To be supplied.]</para>
     /// </devdoc>
@@ -17,7 +16,6 @@ namespace System.Xml.Serialization
         private Type _type;
         private string _dataType;
 
-        /// <include file='doc\XmlTextAttribute.uex' path='docs/doc[@for="XmlTextAttribute.XmlTextAttribute"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -25,7 +23,6 @@ namespace System.Xml.Serialization
         {
         }
 
-        /// <include file='doc\XmlTextAttribute.uex' path='docs/doc[@for="XmlTextAttribute.XmlTextAttribute1"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -34,7 +31,6 @@ namespace System.Xml.Serialization
             _type = type;
         }
 
-        /// <include file='doc\XmlTextAttribute.uex' path='docs/doc[@for="XmlTextAttribute.Type"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -44,7 +40,6 @@ namespace System.Xml.Serialization
             set { _type = value; }
         }
 
-        /// <include file='doc\XmlTextAttribute.uex' path='docs/doc[@for="XmlTextAttribute.DataType"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>

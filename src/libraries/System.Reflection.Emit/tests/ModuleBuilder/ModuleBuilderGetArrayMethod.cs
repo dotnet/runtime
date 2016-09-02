@@ -108,12 +108,14 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void GetArrayMethod_NullArgument_ThrowsArgumentNullException()
+        public void GetArrayMethod_InvalidArgument_ThrowsArgumentException()
         {
             ModuleBuilder module = Helpers.DynamicModule();
 
             Assert.Throws<ArgumentNullException>("arrayClass", () => module.GetArrayMethod(null, "TestMethod", CallingConventions.Standard, typeof(void), new Type[0]));
+
             Assert.Throws<ArgumentNullException>("methodName", () => module.GetArrayMethod(typeof(string[]), null, CallingConventions.Standard, typeof(void), new Type[0]));
+            Assert.Throws<ArgumentException>("methodName", () => module.GetArrayMethod(typeof(string[]), "", CallingConventions.Standard, typeof(void), new Type[0]));
 
             Assert.Throws<ArgumentNullException>("argument", () => module.GetArrayMethod(typeof(string[]), "TestMethod", CallingConventions.Standard, typeof(void), new Type[] { null }));
         }

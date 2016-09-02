@@ -230,30 +230,25 @@ namespace System.IO.Compression
         {
             if (disposing && !_isDisposed)
             {
-                switch (_mode)
+                try
                 {
-                    case ZipArchiveMode.Read:
-                        break;
-                    case ZipArchiveMode.Create:
-                    case ZipArchiveMode.Update:
-                    default:
-                        Debug.Assert(_mode == ZipArchiveMode.Update || _mode == ZipArchiveMode.Create);
-                        try
-                        {
+                    switch (_mode)
+                    {
+                        case ZipArchiveMode.Read:
+                            break;
+                        case ZipArchiveMode.Create:
+                        case ZipArchiveMode.Update:
+                        default:
+                            Debug.Assert(_mode == ZipArchiveMode.Update || _mode == ZipArchiveMode.Create);
                             WriteFile();
-                        }
-                        catch (InvalidDataException)
-                        {
-                            CloseStreams();
-                            _isDisposed = true;
-                            throw;
-                        }
-                        break;
+                            break;
+                    }
                 }
-
-                CloseStreams();
-
-                _isDisposed = true;
+                finally
+                {
+                    CloseStreams();
+                    _isDisposed = true;
+                }
             }
         }
 
@@ -671,7 +666,6 @@ namespace System.IO.Compression
         }
 
 
-        //the only exceptions that this function will throw directly are InvalidDataExceptions
         private void WriteFile()
         {
             //if we are in create mode, we always set readEntries to true in Init
@@ -691,7 +685,6 @@ namespace System.IO.Compression
 
                 _archiveStream.Seek(0, SeekOrigin.Begin);
                 _archiveStream.SetLength(0);
-                //nothing after this should throw an exception
             }
 
             foreach (ZipArchiveEntry entry in _entries)

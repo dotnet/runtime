@@ -1,2 +1,0 @@
-// Remove once we can OOB this to desktop
-PermitPortableVersionMismatch=.NETFramework,Version=v4.6.1;.NETFramework,Version=v4.6

@@ -749,7 +749,17 @@ namespace System.IO.Compression
                     if (CompressionMethod != CompressionMethodValues.Stored &&
                         CompressionMethod != CompressionMethodValues.Deflate)
                     {
-                        message = SR.UnsupportedCompression;
+                        switch (CompressionMethod)
+                        {
+                            case CompressionMethodValues.Deflate64:
+                            case CompressionMethodValues.BZip2:
+                            case CompressionMethodValues.LZMA:
+                                message = SR.Format(SR.UnsupportedCompressionMethod, CompressionMethod.ToString());
+                                break;
+                            default:
+                                message = SR.UnsupportedCompression;
+                                break;
+                        }
                         return false;
                     }
                 }
@@ -1277,7 +1287,7 @@ namespace System.IO.Compression
         [Flags]
         private enum BitFlagValues : ushort { DataDescriptor = 0x8, UnicodeFileName = 0x800 }
 
-        private enum CompressionMethodValues : ushort { Stored = 0x0, Deflate = 0x8 }
+        private enum CompressionMethodValues : ushort { Stored = 0x0, Deflate = 0x8, Deflate64 = 0x9, BZip2 = 0xC, LZMA = 0xE }
 
         private enum OpenableValues { Openable, FileNonExistent, FileTooLarge }
         #endregion Nested Types

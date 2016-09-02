@@ -22,7 +22,7 @@ namespace System.Reflection.Metadata
         /// <exception cref="BadImageFormatException">The body is not found in the metadata or is invalid.</exception>
         /// <exception cref="InvalidOperationException">Section where the method is stored is not available.</exception>
         /// <exception cref="IOException">IO error while reading from the underlying stream.</exception>
-        public static unsafe MethodBodyBlock GetMethodBody(this PEReader peReader, int relativeVirtualAddress)
+        public static MethodBodyBlock GetMethodBody(this PEReader peReader, int relativeVirtualAddress)
         {
             if (peReader == null)
             {
@@ -36,8 +36,7 @@ namespace System.Reflection.Metadata
             }
 
             // Call to validating public BlobReader constructor is by design -- we need to throw PlatformNotSupported on big-endian architecture.
-            var blobReader = new BlobReader(block.Pointer, block.Length);
-            return MethodBodyBlock.Create(blobReader);
+            return MethodBodyBlock.Create(block.GetReader());
         }
 
         /// <summary>

@@ -16,17 +16,17 @@
       "target": "project",
       "exclude": "compile"
     },
-    "Microsoft.xunit.netcore.extensions": "1.0.0-prerelease-00704-03",
-    "Microsoft.DotNet.BuildTools.TestSuite": "1.0.0-prerelease-00704-03",
+    "Microsoft.xunit.netcore.extensions": "1.0.0-prerelease-00731-01",
+    "Microsoft.DotNet.BuildTools.TestSuite": "1.0.0-prerelease-00731-01",
     "Microsoft.DotNet.xunit.performance": "1.0.0-alpha-build0039"
   },
   "frameworks": {
     "netstandard1.3": {},
     "netstandard1.7": {
-		"dependencies": {
-	        "System.Runtime.Serialization.Formatters": "4.0.1-beta-devapi-24424-01",
-		}
-	}
+      "dependencies": {
+        "System.Runtime.Serialization.Formatters": "4.0.1-beta-devapi-24424-01"
+      }
+    }
   },
   "supports": {
     "coreFx.Test.netcore50": {},

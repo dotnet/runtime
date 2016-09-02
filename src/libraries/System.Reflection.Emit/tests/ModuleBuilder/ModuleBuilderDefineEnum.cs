@@ -12,19 +12,42 @@ namespace System.Reflection.Emit.Tests
         private static Type[] s_builtInIntegerTypes = new Type[] { typeof(byte), typeof(sbyte), typeof(short), typeof(ushort),
         typeof(int), typeof(uint), typeof(long), typeof(ulong) };
 
-        [Theory]
-        [MemberData(nameof(VisibilityAttributes), true)]
-        public void DefineEnum_ValueType(TypeAttributes visibility)
+        public static IEnumerable<object[]> DefineEnum_TestData()
         {
-            foreach (Type integerType in s_builtInIntegerTypes)
+            foreach (string name in new string[] { "TestEnum", "testenum", "enum", "\uD800\uDC00", "a\0b\0c" })
             {
-                ModuleBuilder module = Helpers.DynamicModule();
-                EnumBuilder enumBuilder = module.DefineEnum("MyEnum", visibility, integerType);
-                Assert.True(enumBuilder.IsEnum);
-                Assert.Equal("MyEnum", enumBuilder.FullName);
-
-                enumBuilder.CreateTypeInfo().AsType();
+                foreach (object[] attributesData in VisibilityAttributes(true))
+                {
+                    foreach (Type underlyingType in s_builtInIntegerTypes)
+                    {
+                        yield return new object[] { name, attributesData[0], underlyingType };
+                    }
+                }
             }
+        }
+
+        [Theory]
+        [MemberData(nameof(DefineEnum_TestData))]
+        public void DefineEnum_ValueType(string name, TypeAttributes visibility, Type underlyingType)
+        {
+            ModuleBuilder module = Helpers.DynamicModule();
+            EnumBuilder enumBuilder = module.DefineEnum(name, visibility, underlyingType);
+            Assert.True(enumBuilder.IsEnum);
+
+            Assert.Same(module.Assembly, enumBuilder.Assembly);
+            Assert.Same(module, enumBuilder.Module);
+
+            Assert.Equal(name, enumBuilder.Name);
+            Assert.Equal(Helpers.GetFullName(name), enumBuilder.FullName);
+            Assert.Equal(enumBuilder.FullName + ", " + module.Assembly.FullName, enumBuilder.AssemblyQualifiedName);
+
+            Assert.Equal(typeof(Enum), enumBuilder.BaseType);
+            Assert.Equal(null, enumBuilder.DeclaringType);
+
+            Assert.True(enumBuilder.Attributes.HasFlag(visibility));
+            Assert.Equal(underlyingType, enumBuilder.UnderlyingField.FieldType);
+            
+            enumBuilder.CreateTypeInfo().AsType();
         }
 
         [Theory]
@@ -157,19 +180,6 @@ namespace System.Reflection.Emit.Tests
             {
                 return (visibility & ~TypeAttributes.VisibilityMask) != 0;
             }
-        }
-
-        private void VerificationHelperNegative(string name, TypeAttributes myTypeAttribute, Type mytype, bool flag)
-        {
-            ModuleBuilder myModuleBuilder = Helpers.DynamicModule();
-            Assert.Throws<ArgumentException>(() =>
-            {
-                EnumBuilder myEnumBuilder = myModuleBuilder.DefineEnum(name, myTypeAttribute, mytype);
-                if (!flag)
-                {
-                    myEnumBuilder = myModuleBuilder.DefineEnum(name, myTypeAttribute, typeof(int));
-                }
-            });
         }
     }
 }

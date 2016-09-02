@@ -8,10 +8,8 @@
     <ProjectGuid>{A958BBDD-3238-4E58-AB7F-390AB6D88233}</ProjectGuid>
     <RootNamespace>System.Security.SecureString</RootNamespace>
     <AssemblyName>System.Security.SecureString</AssemblyName>
-    <AssemblyVersion>4.0.1.0</AssemblyVersion>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'net46'">true</IsPartialFacadeAssembly>
-    <PackageTargetFramework Condition="'$(TargetGroup)' == ''">netstandard1.3</PackageTargetFramework>
     <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.3</NuGetTargetMoniker>
   </PropertyGroup>
   <!-- Help VS understand available configurations -->
