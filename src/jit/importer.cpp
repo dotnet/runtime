@@ -14219,7 +14219,14 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     op1  = new (this, GT_DYN_BLK) GenTreeDynBlk(op1, op3);
                     size = 0;
                 }
-                op2 = gtNewOperNode(GT_IND, TYP_STRUCT, op2);
+                if (op2->OperGet() == GT_ADDR)
+                {
+                    op2 = op2->gtOp.gtOp1;
+                }
+                else
+                {
+                    op2 = gtNewOperNode(GT_IND, TYP_STRUCT, op2);
+                }
 
                 op1 = gtNewBlkOpNode(op1, op2, size, (prefixFlags & PREFIX_VOLATILE) != 0, true);
                 goto SPILL_APPEND;

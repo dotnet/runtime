@@ -6798,7 +6798,26 @@ GenTreePtr Compiler::gtNewAssignNode(GenTreePtr dst, GenTreePtr src)
     return asg;
 }
 
-// Creates a new Obj node.
+//------------------------------------------------------------------------
+// gtNewObjNode: Creates a new Obj node.
+//
+// Arguments:
+//    structHnd - The class handle of the struct type.
+//    addr      - The address of the struct.
+//
+// Return Value:
+//    Returns a node representing the struct value at the given address.
+//
+// Assumptions:
+//    Any entry and exit conditions, such as required preconditions of
+//    data structures, memory to be freed by caller, etc.
+//
+// Notes:
+//    It will currently return a GT_OBJ node for any struct type, but may
+//    return a GT_IND or a non-indirection for a scalar type.
+//    The node will not yet have its GC info initialized. This is because
+//    we may not need this info if this is an r-value.
+
 GenTree* Compiler::gtNewObjNode(CORINFO_CLASS_HANDLE structHnd, GenTree* addr)
 {
     var_types nodeType = impNormStructType(structHnd);
@@ -6841,7 +6860,7 @@ GenTree* Compiler::gtNewObjNode(CORINFO_CLASS_HANDLE structHnd, GenTree* addr)
 void Compiler::gtSetObjGcInfo(GenTreeObj* objNode)
 {
     CORINFO_CLASS_HANDLE structHnd  = objNode->gtClass;
-    var_types            nodeType   = impNormStructType(structHnd);
+    var_types            nodeType   = objNode->TypeGet();
     unsigned             size       = objNode->gtBlkSize;
     unsigned             slots      = 0;
     unsigned             gcPtrCount = 0;
@@ -6849,6 +6868,7 @@ void Compiler::gtSetObjGcInfo(GenTreeObj* objNode)
 
     assert(varTypeIsStruct(nodeType));
     assert(size == info.compCompHnd->getClassSize(structHnd));
+    assert(nodeType == impNormStructType(structHnd));
 
     if (nodeType == TYP_STRUCT)
     {
@@ -6925,16 +6945,18 @@ GenTree* Compiler::gtNewBlockVal(GenTreePtr addr, unsigned size)
 // Creates a new assignment node for a CpObj.
 // Parameters (exactly the same as MSIL CpObj):
 //
-//  dst        - The target to copy the struct to
-//  src        - The source to copy the struct from
+//  dstAddr    - The target to copy the struct to
+//  srcAddr    - The source to copy the struct from
 //  structHnd  - A class token that represents the type of object being copied. May be null
 //               if FEATURE_SIMD is enabled and the source has a SIMD type.
 //  isVolatile - Is this marked as volatile memory?
 
-GenTree* Compiler::gtNewCpObjNode(GenTreePtr dst, GenTreePtr src, CORINFO_CLASS_HANDLE structHnd, bool isVolatile)
+GenTree* Compiler::gtNewCpObjNode(GenTreePtr dstAddr, GenTreePtr srcAddr, CORINFO_CLASS_HANDLE structHnd, bool isVolatile)
 {
-    GenTreePtr lhs = gtNewStructVal(structHnd, dst);
+    GenTreePtr lhs = gtNewStructVal(structHnd, dstAddr);
+    GenTree*   src = nullptr;
     unsigned   size;
+
     if (lhs->OperIsBlk())
     {
         size = lhs->AsBlk()->gtBlkSize;
@@ -6948,13 +6970,13 @@ GenTree* Compiler::gtNewCpObjNode(GenTreePtr dst, GenTreePtr src, CORINFO_CLASS_
         size = genTypeSize(lhs->gtType);
     }
 
-    if (src->OperGet() == GT_ADDR)
+    if (srcAddr->OperGet() == GT_ADDR)
     {
-        src = src->gtOp.gtOp1;
+        src = srcAddr->gtOp.gtOp1;
     }
     else
     {
-        src = gtNewOperNode(GT_IND, lhs->TypeGet(), src);
+        src = gtNewOperNode(GT_IND, lhs->TypeGet(), srcAddr);
     }
 
     GenTree* result = gtNewBlkOpNode(lhs, src, size, isVolatile, true);
@@ -7007,22 +7029,29 @@ void GenTreeIntCon::FixupInitBlkValue(var_types asgType)
     }
 }
 
-// Initializes a BlkOp GenTree
-// Preconditions:
-//     - Result is an assignment that is newly constructed
+// 
+//------------------------------------------------------------------------
+// gtBlockOpInit: Initializes a BlkOp GenTree
 //
-// Parameters:
-//     - result is an assignment node that is to be initialized.
-//     - dst is the target (destination) we want to either initialize or copy to
-//     - src is the init value for IniBlk or the source struct for CpBlk/CpObj
-//     - isVolatile specifies whether this node is a volatile memory operation.
+// Arguments:
+//    result     - an assignment node that is to be initialized.
+//    dst        - the target (destination) we want to either initialize or copy to.
+//    src        - the init value for InitBlk or the source struct for CpBlk/CpObj.
+//    isVolatile - specifies whether this node is a volatile memory operation.
+// 
+// Assumptions:
+//    'result' is an assignment that is newly constructed.
+//    If 'dst' is TYP_STRUCT, then it must be a block node or lclVar.
 //
-// This procedure centralizes all the logic to both enforce proper structure and
-// to properly construct any InitBlk/CpBlk node.
+// Notes:
+//    This procedure centralizes all the logic to both enforce proper structure and
+//    to properly construct any InitBlk/CpBlk node.
+
 void Compiler::gtBlockOpInit(GenTreePtr result, GenTreePtr dst, GenTreePtr srcOrFillVal, bool isVolatile)
 {
     if (!result->OperIsBlkOp())
     {
+        assert(dst->TypeGet() != TYP_STRUCT);
         return;
     }
 #ifdef DEBUG
@@ -7158,10 +7187,12 @@ void Compiler::gtBlockOpInit(GenTreePtr result, GenTreePtr dst, GenTreePtr srcOr
 //
 // Notes:
 //    If size is zero, the dst must be a GT_OBJ with the class handle.
+//    'dst' must be a block node or lclVar.
 //
 GenTree* Compiler::gtNewBlkOpNode(
     GenTreePtr dst, GenTreePtr srcOrFillVal, unsigned size, bool isVolatile, bool isCopyBlock)
 {
+    assert(dst->OperIsBlk() || dst->OperIsLocal());
     if (isCopyBlock)
     {
         srcOrFillVal->gtFlags |= GTF_DONT_CSE;

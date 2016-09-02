@@ -161,8 +161,8 @@ void Compiler::fgFixupArgTabEntryPtr(GenTreePtr parentCall, GenTreePtr oldArg, G
 // lclVar if possible.
 //
 // Arguments:
-//    ppTree      - A pointer-to-a-pointer for the GT_BLK or GT_OBJ
-//    fgWalkData  - A pointer to tree walk data providing the context
+//    use      - A use reference for a block node
+//    keepBlk  - True if this should remain a block node if it is not a lclVar
 //
 // Return Value:
 //    None.

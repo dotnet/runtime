@@ -5335,9 +5335,9 @@ void CodeGen::genConsumePutStructArgStk(
 
 void CodeGen::genConsumeBlockSize(GenTreeBlk* blkNode, regNumber sizeReg)
 {
-    unsigned blockSize = blkNode->Size();
     if (sizeReg != REG_NA)
     {
+        unsigned blockSize = blkNode->Size();
         if (blockSize != 0)
         {
             assert(blkNode->gtRsvdRegs == genRegMask(sizeReg));
@@ -5346,7 +5346,7 @@ void CodeGen::genConsumeBlockSize(GenTreeBlk* blkNode, regNumber sizeReg)
         else
         {
             noway_assert(blkNode->gtOper == GT_STORE_DYN_BLK);
-            genConsumeRegAndCopy(blkNode->AsDynBlk()->gtDynamicSize, sizeReg);
+            genConsumeReg(blkNode->AsDynBlk()->gtDynamicSize);
         }
     }
 }
