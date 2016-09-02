@@ -12,6 +12,7 @@ namespace System.Globalization.Tests
     public class CurrentCultureTests : RemoteExecutorTestBase
     {
         [Fact]
+        [ActiveIssue(11381, Xunit.PlatformID.AnyUnix)]
         public void CurrentCulture()
         {
             RemoteInvoke(() =>
@@ -38,6 +39,7 @@ namespace System.Globalization.Tests
         }
 
         [Fact]
+        [ActiveIssue(11381, Xunit.PlatformID.AnyUnix)]
         public void CurrentUICulture()
         {
             RemoteInvoke(() =>
