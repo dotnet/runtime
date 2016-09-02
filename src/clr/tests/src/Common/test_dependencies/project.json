@@ -1,7 +1,7 @@
 {
   "dependencies": {
     "xunit": "2.2.0-beta2-build3300",
-    "xunit.console.netcore": "1.0.2-prerelease-00101",
+    "xunit.console.netcore": "1.0.2-prerelease-00177",
     "xunit.runner.utility": "2.2.0-beta2-build3300",
     "Microsoft.CodeAnalysis.Compilers": "1.1.1",
     "Microsoft.DotNet.xunit.performance": "1.0.0-alpha-build0040",
