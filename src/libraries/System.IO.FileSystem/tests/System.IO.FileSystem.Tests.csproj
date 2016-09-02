@@ -61,8 +61,7 @@
     <Compile Include="FileStream\Buffering_regression.cs" />
     <Compile Include="FileStream\Flush.cs" />
     <Compile Include="FileStream\Dispose.cs" />
-    <!-- Disable the FileStream.WriteAsync tests for netcoreapp1.1 since one of them is failing. Issue: https://github.com/dotnet/corefx/issues/11303 -->
-    <Compile Condition="'$(TargetGroup)'!='netstandard1.7'" Include="FileStream\WriteAsync.cs" />
+    <Compile Include="FileStream\WriteAsync.cs" />
     <Compile Include="FileStream\Write.cs" />
     <Compile Include="FileStream\ToString.cs" />
     <Compile Include="FileStream\WriteByte.cs" />
