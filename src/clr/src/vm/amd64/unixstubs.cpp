@@ -52,7 +52,7 @@ extern "C"
               "  mov %%edx, 12(%[result])\n" \
             : "=a"(eax) /*output in eax*/\
             : "a"(arg), [result]"r"(result) /*inputs - arg in eax, result in any register*/\
-            : "eax", "rbx", "ecx", "edx" /* registers that are clobbered*/
+            : "eax", "rbx", "ecx", "edx", "memory" /* registers that are clobbered, *result is clobbered */
           );
         return eax;
     }
@@ -67,7 +67,7 @@ extern "C"
               "  mov %%edx, 12(%[result])\n" \
             : "=a"(eax) /*output in eax*/\
             : "c"(arg1), "a"(arg2), [result]"r"(result) /*inputs - arg1 in ecx, arg2 in eax, result in any register*/\
-            : "eax", "rbx", "ecx", "edx" /* registers that are clobbered*/
+            : "eax", "rbx", "ecx", "edx", "memory" /* registers that are clobbered, *result is clobbered */
           );
         return eax;
     }
