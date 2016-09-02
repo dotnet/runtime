@@ -6943,7 +6943,6 @@ void Compiler::optComputeLoopSideEffectsOfBlock(BasicBlock* blk)
                     if (!tree->DefinesLocal(this, &lclVarTree, &isEntire))
                     {
                         // For now, assume arbitrary side effects on the heap...
-                        // JBTODO [ddetlefs, 11/2012] Why not be complete, and get this case right?
                         heapHavoc = true;
                     }
                 }

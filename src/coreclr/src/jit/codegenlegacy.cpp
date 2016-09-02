@@ -8968,7 +8968,14 @@ void CodeGen::genCodeForCopyObj(GenTreePtr tree, regMaskTP destReg)
 #endif
 }
 
-//------------------------------------------------------------------------// genCodeForBlkOp: Generate code for a block copy or init operation//// Arguments://    tree    - The block assignment//    destReg - The expected destination register//void CodeGen::genCodeForBlkOp(GenTreePtr tree, regMaskTP destReg)
+//------------------------------------------------------------------------
+// genCodeForBlkOp: Generate code for a block copy or init operation
+//
+// Arguments:
+//    tree    - The block assignment
+//    destReg - The expected destination register
+//
+void CodeGen::genCodeForBlkOp(GenTreePtr tree, regMaskTP destReg)
 {
     genTreeOps oper    = tree->OperGet();
     GenTreePtr dest    = tree->gtOp.gtOp1;

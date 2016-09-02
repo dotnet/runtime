@@ -7165,10 +7165,6 @@ GenTree* Compiler::gtNewBlkOpNode(
     if (isCopyBlock)
     {
         srcOrFillVal->gtFlags |= GTF_DONT_CSE;
-        if (srcOrFillVal->OperIsIndir() && (srcOrFillVal->gtGetOp1()->gtOper == GT_ADDR))
-        {
-            srcOrFillVal = srcOrFillVal->gtGetOp1()->gtGetOp1();
-        }
     }
 
     GenTree* result = gtNewAssignNode(dst, srcOrFillVal);

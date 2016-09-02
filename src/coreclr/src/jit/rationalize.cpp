@@ -157,7 +157,7 @@ void Compiler::fgFixupArgTabEntryPtr(GenTreePtr parentCall, GenTreePtr oldArg, G
     }
 }
 
-// Rewrite a non-TYP_STRUCT indirection as GT_IND(GT_LEA(obj.op1)), or as a simple
+// Rewrite a SIMD indirection as GT_IND(GT_LEA(obj.op1)), or as a simple
 // lclVar if possible.
 //
 // Arguments:
