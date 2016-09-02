@@ -7583,7 +7583,7 @@ void CodeGen::genProfilingLeaveCallback(unsigned helper /*= CORINFO_HELP_PROF_FC
     emitAttr attr = EA_UNKNOWN;
 
     if (compiler->info.compRetType == TYP_VOID ||
-        (!compiler->info.compIsVarArgs && (varTypeIsFloating(compiler->info.compRetType) ||
+        (!compiler->info.compIsVarArgs && !compiler->opts.compUseSoftFP && (varTypeIsFloating(compiler->info.compRetType) ||
                                            compiler->IsHfa(compiler->info.compMethodInfo->args.retTypeClass))))
     {
         r0Trashed = false;
