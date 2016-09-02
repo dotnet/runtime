@@ -13865,9 +13865,9 @@ bool Compiler::gtNodeHasSideEffects(GenTreePtr tree, unsigned flags)
                     return true;
                 }
 
-                // with GTF_PERSISTENT_SIDE_EFFECTS_IN_CSE we will CSE helper calls that can run cctors.
+                // with GTF_IS_IN_CSE we will CSE helper calls that can run cctors.
                 //
-                if ((flags != GTF_PERSISTENT_SIDE_EFFECTS_IN_CSE) && (s_helperCallProperties.MayRunCctor(helper)))
+                if (((flags & GTF_IS_IN_CSE) == 0) && (s_helperCallProperties.MayRunCctor(helper)))
                 {
                     return true;
                 }
