@@ -7,10 +7,8 @@
   <PropertyGroup>
     <ProjectGuid>{00EDA5FD-E802-40D3-92D5-56C27612D36D}</ProjectGuid>
     <AssemblyName>System.Diagnostics.FileVersionInfo</AssemblyName>
-    <AssemblyVersion>4.0.1.0</AssemblyVersion>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'net46'">true</IsPartialFacadeAssembly>
-    <PackageTargetFramework Condition="'$(TargetGroup)' == ''">netstandard1.3</PackageTargetFramework>
     <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.3</NuGetTargetMoniker>
   </PropertyGroup>
   <!-- Help VS understand available configurations -->

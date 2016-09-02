@@ -43,7 +43,6 @@ namespace System.ComponentModel
             }
         }
 
-        /// <include file='doc\AsyncOperation.uex' path='docs/doc[@for="AsyncOperation.SynchronizationContext"]/*' />
         public SynchronizationContext SynchronizationContext
         {
             get

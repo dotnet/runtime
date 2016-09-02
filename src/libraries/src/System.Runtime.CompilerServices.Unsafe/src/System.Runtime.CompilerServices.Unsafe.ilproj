@@ -3,7 +3,7 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <AssemblyVersion>4.0.2.0</AssemblyVersion>
-    <PackageTargetFramework>netstandard1.0</PackageTargetFramework>
+    <NuGetTargetMoniker>.NETStandard,Version=v1.0</NuGetTargetMoniker>
     <DocumentationFile>$(MSBuildThisFileDirectory)System.Runtime.CompilerServices.Unsafe.xml</DocumentationFile>
   </PropertyGroup>
   <ItemGroup>

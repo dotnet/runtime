@@ -613,12 +613,16 @@ namespace System.Text.RegularExpressions.Tests
         [MemberData(nameof(Groups_CustomCulture_TestData))]
         public void Groups(string pattern, string input, RegexOptions options, CultureInfo cultureInfo, string[] expectedGroups)
         {
-            CultureInfo originalCulture = null;
+            CultureInfo originalCulture = CultureInfo.CurrentCulture;
             try
             {
+                // In invariant culture, the unicode char matches differ from expected values provided.
+                if (originalCulture.Equals(CultureInfo.InvariantCulture))
+                {
+                    CultureInfo.CurrentCulture = s_enUSCulture;
+                }
                 if (cultureInfo != null)
                 {
-                    originalCulture = CultureInfo.CurrentCulture;
                     CultureInfo.CurrentCulture = cultureInfo;
                 }
                 Regex regex = new Regex(pattern, options);
@@ -626,7 +630,7 @@ namespace System.Text.RegularExpressions.Tests
                 Assert.True(match.Success);
 
                 Assert.Equal(expectedGroups.Length, match.Groups.Count);
-                Assert.Equal(expectedGroups[0], match.Value);
+                Assert.True(expectedGroups[0] == match.Value, string.Format("Culture used: {0}", CultureInfo.CurrentCulture));
 
                 int[] groupNumbers = regex.GetGroupNumbers();
                 string[] groupNames = regex.GetGroupNames();
@@ -641,7 +645,7 @@ namespace System.Text.RegularExpressions.Tests
             }
             finally
             {
-                if (cultureInfo != null)
+                if (cultureInfo != null || originalCulture.Equals(CultureInfo.InvariantCulture))
                 {
                     CultureInfo.CurrentCulture = originalCulture;
                 }

@@ -2,10 +2,10 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <AssemblyVersion>4.1.0.0</AssemblyVersion>
     <OutputType>Library</OutputType>
     <NuGetTargetMoniker>.NETStandard,Version=v1.7</NuGetTargetMoniker>
     <ProjectGuid>{27225772-FE8B-49D7-8E58-29242D536130}</ProjectGuid>
+    <PackageTargetFramework>netstandard1.7;uap10.1</PackageTargetFramework>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)' == 'Release'">
     <OutputPath>bin\Release\</OutputPath>
@@ -23,14 +23,6 @@
     <None Include="4.0\project.json" />
     <None Include="4.0\System.IO.IsolatedStorage.depproj" />
     <None Include="project.json" />
-  </ItemGroup>
-  <ItemGroup>
-     <PackageDestination Include="ref/netstandard1.7">
-       <TargetFramework>netstandard1.7</TargetFramework>
-     </PackageDestination>
-     <PackageDestination Include="ref/uap10.1">
-       <TargetFramework>uap10.1</TargetFramework>
-     </PackageDestination>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

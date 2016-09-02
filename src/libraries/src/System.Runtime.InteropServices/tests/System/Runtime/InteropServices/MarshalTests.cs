@@ -128,5 +128,15 @@ namespace System.Runtime.InteropServices
                 Assert.Equal((byte)i, Marshal.ReadByte(p + i));
             }
         }
+
+        [Fact]
+        public static void GetHRForException()
+        {
+            Assert.Equal(0, Marshal.GetHRForException(null));
+
+            Exception e = new Exception();
+            Assert.InRange(Marshal.GetHRForException(e), int.MinValue, -1);
+            Assert.Equal(e.HResult, Marshal.GetHRForException(e));
+        }
     }
 }

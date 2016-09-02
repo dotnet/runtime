@@ -37,7 +37,6 @@ namespace System.Collections.Generic
 
         // Creates a queue with room for capacity objects. The default initial
         // capacity and grow factor are used.
-        /// <include file='doc\Queue.uex' path='docs/doc[@for="Queue.Queue"]/*' />
         public Queue()
         {
             _array = Array.Empty<T>();
@@ -45,8 +44,6 @@ namespace System.Collections.Generic
 
         // Creates a queue with room for capacity objects. The default grow factor
         // is used.
-        //
-        /// <include file='doc\Queue.uex' path='docs/doc[@for="Queue.Queue1"]/*' />
         public Queue(int capacity)
         {
             if (capacity < 0)
@@ -56,8 +53,6 @@ namespace System.Collections.Generic
 
         // Fills a Queue with the elements of an ICollection.  Uses the enumerator
         // to get each of the elements.
-        //
-        /// <include file='doc\Queue.uex' path='docs/doc[@for="Queue.Queue3"]/*' />
         public Queue(IEnumerable<T> collection)
         {
             if (collection == null)
@@ -67,13 +62,11 @@ namespace System.Collections.Generic
             if (_size != _array.Length) _tail = _size;
         }
 
-        /// <include file='doc\Queue.uex' path='docs/doc[@for="Queue.Count"]/*' />
         public int Count
         {
             get { return _size; }
         }
 
-        /// <include file='doc\Queue.uex' path='docs/doc[@for="Queue.IsSynchronized"]/*' />
         bool ICollection.IsSynchronized
         {
             get { return false; }
@@ -92,7 +85,6 @@ namespace System.Collections.Generic
         }
 
         // Removes all Objects from the queue.
-        /// <include file='doc\Queue.uex' path='docs/doc[@for="Queue.Clear"]/*' />
         public void Clear()
         {
             if (_size != 0)
@@ -115,8 +107,6 @@ namespace System.Collections.Generic
 
         // CopyTo copies a collection into an Array, starting at a particular
         // index into the array.
-        // 
-        /// <include file='doc\Queue.uex' path='docs/doc[@for="Queue.CopyTo"]/*' />
         public void CopyTo(T[] array, int arrayIndex)
         {
             if (array == null)
@@ -196,8 +186,6 @@ namespace System.Collections.Generic
         }
 
         // Adds item to the tail of the queue.
-        //
-        /// <include file='doc\Queue.uex' path='docs/doc[@for="Queue.Enqueue"]/*' />
         public void Enqueue(T item)
         {
             if (_size == _array.Length)
@@ -218,14 +206,11 @@ namespace System.Collections.Generic
 
         // GetEnumerator returns an IEnumerator over this Queue.  This
         // Enumerator will support removing.
-        // 
-        /// <include file='doc\Queue.uex' path='docs/doc[@for="Queue.GetEnumerator"]/*' />
         public Enumerator GetEnumerator()
         {
             return new Enumerator(this);
         }
 
-        /// <include file='doc\Queue.uex' path='docs/doc[@for="Queue.IEnumerable.GetEnumerator"]/*' />
         /// <internalonly/>
         IEnumerator<T> IEnumerable<T>.GetEnumerator()
         {
@@ -238,8 +223,8 @@ namespace System.Collections.Generic
         }
 
         // Removes the object at the head of the queue and returns it. If the queue
-        // is empty, this method simply returns null.
-        /// <include file='doc\Queue.uex' path='docs/doc[@for="Queue.Dequeue"]/*' />
+        // is empty, this method throws an 
+        // InvalidOperationException.
         public T Dequeue()
         {
             if (_size == 0)
@@ -256,7 +241,6 @@ namespace System.Collections.Generic
         // Returns the object at the head of the queue. The object remains in the
         // queue. If the queue is empty, this method throws an 
         // InvalidOperationException.
-        /// <include file='doc\Queue.uex' path='docs/doc[@for="Queue.Peek"]/*' />
         public T Peek()
         {
             if (_size == 0)
@@ -267,8 +251,6 @@ namespace System.Collections.Generic
 
         // Returns true if the queue contains at least one object equal to item.
         // Equality is determined using item.Equals().
-        //
-        /// <include file='doc\Queue.uex' path='docs/doc[@for="Queue.Contains"]/*' />
         public bool Contains(T item)
         {
             int index = _head;
@@ -287,16 +269,10 @@ namespace System.Collections.Generic
             return false;
         }
 
-        private T GetElement(int i)
-        {
-            return _array[(_head + i) % _array.Length];
-        }
-
         // Iterates over the objects in the queue, returning an array of the
         // objects in the Queue, or an empty array if the queue is empty.
         // The order of elements in the array is first in to last in, the same
         // order produced by successive calls to Dequeue.
-        /// <include file='doc\Queue.uex' path='docs/doc[@for="Queue.ToArray"]/*' />
         public T[] ToArray()
         {
             if (_size == 0)
@@ -364,7 +340,6 @@ namespace System.Collections.Generic
         // Implements an enumerator for a Queue.  The enumerator uses the
         // internal version number of the list to ensure that no modifications are
         // made to the list while an enumeration is in progress.
-        /// <include file='doc\Queue.uex' path='docs/doc[@for="QueueEnumerator"]/*' />
         [SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes", Justification = "not an expected scenario")]
         [Serializable]
         public struct Enumerator : IEnumerator<T>,
@@ -383,14 +358,12 @@ namespace System.Collections.Generic
                 _currentElement = default(T);
             }
 
-            /// <include file='doc\Queue.uex' path='docs/doc[@for="QueueEnumerator.Dispose"]/*' />
             public void Dispose()
             {
                 _index = -2;
                 _currentElement = default(T);
             }
 
-            /// <include file='doc\Queue.uex' path='docs/doc[@for="QueueEnumerator.MoveNext"]/*' />
             public bool MoveNext()
             {
                 if (_version != _q._version) throw new InvalidOperationException(SR.InvalidOperation_EnumFailedVersion);
@@ -402,16 +375,35 @@ namespace System.Collections.Generic
 
                 if (_index == _q._size)
                 {
+                    // We've run past the last element
                     _index = -2;
                     _currentElement = default(T);
                     return false;
                 }
 
-                _currentElement = _q.GetElement(_index);
+                // Cache some fields in locals to decrease code size
+                T[] array = _q._array;
+                int capacity = array.Length;
+
+                // _index represents the 0-based index into the queue, however the queue
+                // doesn't have to start from 0 and it may not even be stored contiguously in memory.
+
+                int arrayIndex = _q._head + _index; // this is the actual index into the queue's backing array
+                if (arrayIndex >= capacity)
+                {
+                    // NOTE: Originally we were using the modulo operator here, however
+                    // on Intel processors it has a very high instruction latency which
+                    // was slowing down the loop quite a bit.
+                    // Replacing it with simple comparison/subtraction operations sped up
+                    // the average foreach loop by 2x.
+
+                    arrayIndex -= capacity; // wrap around if needed
+                }
+                
+                _currentElement = array[arrayIndex];
                 return true;
             }
 
-            /// <include file='doc\Queue.uex' path='docs/doc[@for="QueueEnumerator.Current"]/*' />
             public T Current
             {
                 get

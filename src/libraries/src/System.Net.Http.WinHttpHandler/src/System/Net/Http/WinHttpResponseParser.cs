@@ -36,11 +36,18 @@ namespace System.Net.Http
 
             // Get HTTP version, status code, reason phrase from the response headers.
 
-            int versionLength = GetResponseHeader(requestHandle, Interop.WinHttp.WINHTTP_QUERY_VERSION, buffer);
-            response.Version =
-                CharArrayHelpers.EqualsOrdinalAsciiIgnoreCase("HTTP/1.1", buffer, 0, versionLength) ? HttpVersion.Version11 :
-                CharArrayHelpers.EqualsOrdinalAsciiIgnoreCase("HTTP/1.0", buffer, 0, versionLength) ? HttpVersion.Version10 :
-                HttpVersion.Unknown;
+            if (IsResponseHttp2(requestHandle))
+            {
+                response.Version = WinHttpHandler.HttpVersion20;
+            }
+            else
+            {
+                int versionLength = GetResponseHeader(requestHandle, Interop.WinHttp.WINHTTP_QUERY_VERSION, buffer);
+                response.Version =
+                    CharArrayHelpers.EqualsOrdinalAsciiIgnoreCase("HTTP/1.1", buffer, 0, versionLength) ? HttpVersion.Version11 :
+                    CharArrayHelpers.EqualsOrdinalAsciiIgnoreCase("HTTP/1.0", buffer, 0, versionLength) ? HttpVersion.Version10 :
+                    WinHttpHandler.HttpVersionUnknown;
+            }
 
             response.StatusCode = (HttpStatusCode)GetResponseHeaderNumberInfo(
                 requestHandle,
@@ -329,6 +336,27 @@ namespace System.Net.Http
                     contentHeaders.TryAddWithoutValidation(headerName, headerValue);
                 }
             }
+        }
+
+        private static bool IsResponseHttp2(SafeWinHttpHandle requestHandle)
+        {
+            uint data = 0;
+            uint dataSize = sizeof(uint);
+
+            if (Interop.WinHttp.WinHttpQueryOption(
+                requestHandle,
+                Interop.WinHttp.WINHTTP_OPTION_HTTP_PROTOCOL_USED,
+                ref data,
+                ref dataSize))
+            {
+                if ((data & Interop.WinHttp.WINHTTP_PROTOCOL_FLAG_HTTP2) != 0)
+                {
+                    WinHttpTraceHelper.Trace("WinHttpHandler.IsResponseHttp2: return true");
+                    return true;
+                }
+            }
+
+            return false;
         }
     }
 }

@@ -6,7 +6,6 @@ using System;
 
 namespace System.Xml
 {
-    /// <include file='doc\NameTable.uex' path='docs/doc[@for="NameTable"]/*' />
     /// <devdoc>
     ///    <para>
     ///       XmlNameTable implemented as a simple hash table.
@@ -41,8 +40,6 @@ namespace System.Xml
 
         //
         // Constructor
-        //
-        /// <include file='doc\NameTable.uex' path='docs/doc[@for="NameTable.NameTable"]/*' />
         /// <devdoc>
         ///      Public constructor.
         /// </devdoc>
@@ -55,8 +52,6 @@ namespace System.Xml
 
         //
         // XmlNameTable public methods
-        //
-        /// <include file='doc\NameTable.uex' path='docs/doc[@for="NameTable.Add"]/*' />
         /// <devdoc>
         ///      Add the given string to the NameTable or return
         ///      the existing string if it is already in the NameTable.
@@ -93,7 +88,6 @@ namespace System.Xml
             return AddEntry(key, hashCode);
         }
 
-        /// <include file='doc\NameTable.uex' path='docs/doc[@for="NameTable.Add1"]/*' />
         /// <devdoc>
         ///      Add the given string to the NameTable or return
         ///      the existing string if it is already in the NameTable.
@@ -127,7 +121,6 @@ namespace System.Xml
             return AddEntry(new string(key, start, len), hashCode);
         }
 
-        /// <include file='doc\NameTable.uex' path='docs/doc[@for="NameTable.Get"]/*' />
         /// <devdoc>
         ///      Find the matching string in the NameTable.
         /// </devdoc>
@@ -164,7 +157,6 @@ namespace System.Xml
             return null;
         }
 
-        /// <include file='doc\NameTable.uex' path='docs/doc[@for="NameTable.Get1"]/*' />
         /// <devdoc>
         ///      Find the matching string atom given a range of
         ///      characters.

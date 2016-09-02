@@ -12,19 +12,10 @@
     <NoWarn>1591</NoWarn>
     <CLSCompliant>false</CLSCompliant>
     <!-- rev'ed to 1.4.1 so that we can drop pre-release down to beta -->
-    <AssemblyVersion>1.4.1.0</AssemblyVersion>
     <DefineConstants>$(DefineConstants)</DefineConstants>
     <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.0</NuGetTargetMoniker>
+    <PackageTargetFramework Condition="'$(TargetGroup)' == ''">netstandard1.1;portable-net45+win8</PackageTargetFramework>
   </PropertyGroup>
-  <ItemGroup>
-    <PackageDestination Include="lib/netstandard1.1">
-      <TargetFramework>netstandard1.1</TargetFramework>
-    </PackageDestination>
-    <!-- Support targets that were supported in previous package versions -->
-    <PackageDestination Include="lib/portable-net45+win8">
-      <TargetFramework>portable-net45+win8</TargetFramework>
-    </PackageDestination>
-  </ItemGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
     <PlatformTarget>AnyCPU</PlatformTarget>
     <Optimize>false</Optimize>
@@ -38,6 +29,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Reflection\Internal\Utilities\ExceptionUtilities.cs" />
+    <Compile Include="System\Reflection\Internal\Utilities\PathUtilities.cs" />
     <Compile Include="System\Reflection\Metadata\Ecma335\Encoding\FunctionPointerAttributes.cs" />
     <Compile Include="System\Reflection\Metadata\Ecma335\Encoding\MethodBodyStreamEncoder.cs" />
     <Compile Include="System\Reflection\Metadata\Ecma335\Encoding\MethodBodyAttributes.cs" />
@@ -45,6 +37,10 @@
     <Compile Include="System\Reflection\Metadata\Ecma335\MetadataRootBuilder.cs" />
     <Compile Include="System\Reflection\Metadata\Ecma335\SerializedMetadataHeaps.cs" />
     <Compile Include="System\Reflection\Metadata\EntityHandle.cs" />
+    <Compile Include="System\Reflection\Metadata\Internal\VirtualHeap.cs" />
+    <Compile Include="System\Reflection\Metadata\Internal\GuidHeap.cs" />
+    <Compile Include="System\Reflection\Metadata\Internal\BlobHeap.cs" />
+    <Compile Include="System\Reflection\Metadata\Internal\StringHeap.cs" />
     <Compile Include="System\Reflection\Metadata\PooledBlobBuilder.cs" />
     <Compile Include="System\Reflection\Metadata\Blob.cs" />
     <Compile Include="System\Reflection\Metadata\BlobWriter.cs" />
@@ -164,7 +160,7 @@
     <Compile Include="System\Reflection\Metadata\Internal\HasDeclSecurityTag.cs" />
     <Compile Include="System\Reflection\Metadata\Internal\HasFieldMarshalTag.cs" />
     <Compile Include="System\Reflection\Metadata\Internal\HasSemanticsTag.cs" />
-    <Compile Include="System\Reflection\Metadata\Internal\Heaps.cs" />
+    <Compile Include="System\Reflection\Metadata\Internal\UserStringHeap.cs" />
     <Compile Include="System\Reflection\Metadata\Internal\ImplementationTag.cs" />
     <Compile Include="System\Reflection\Metadata\Internal\MemberForwardedTag.cs" />
     <Compile Include="System\Reflection\Metadata\Internal\MemberRefParentTag.cs" />

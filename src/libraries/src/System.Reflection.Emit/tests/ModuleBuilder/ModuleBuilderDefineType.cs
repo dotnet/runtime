@@ -2,47 +2,95 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using Xunit;
 
 namespace System.Reflection.Emit.Tests
 {
     public class ModuleBuilderDefineType
     {
-        [Fact]
-        public void DefineType_String()
+        public static IEnumerable<object[]> TestData()
         {
-            ModuleBuilder module = Helpers.DynamicModule();
-            TypeBuilder type = module.DefineType("TestType");
-            Type createdType = type.CreateTypeInfo().AsType();
-            Assert.Equal("TestType", createdType.Name);
+            foreach (string name in new string[] { "TestName", "testname", "class", "\uD800\uDC00", "a\0b\0c" })
+            {
+                foreach (TypeAttributes attributes in new TypeAttributes[] { TypeAttributes.NotPublic, TypeAttributes.Interface | TypeAttributes.Abstract, TypeAttributes.Class })
+                {
+                    foreach (Type parent in new Type[] { null, typeof(ModuleBuilderDefineType) })
+                    {
+                        foreach (PackingSize packingSize in new PackingSize[] { PackingSize.Unspecified, PackingSize.Size1 })
+                        {
+                            foreach (int size in new int[] { 0, -1, 1 })
+                            {
+                                yield return new object[] { name, attributes, parent, packingSize, size, new Type[0] };
+                            }
+                        }
+
+                        yield return new object[] { name, attributes, parent, PackingSize.Unspecified, 0, null };
+                        yield return new object[] { name, attributes, parent, PackingSize.Unspecified, 0, new Type[] { typeof(IComparable) } };
+                    }
+                }
+            }
         }
 
         [Theory]
-        [InlineData(TypeAttributes.NotPublic)]
-        [InlineData(TypeAttributes.Interface | TypeAttributes.Abstract)]
-        [InlineData(TypeAttributes.Class)]
-        public void DefineType_String_TypeAttributes(TypeAttributes attributes)
+        [MemberData(nameof(TestData))]
+        public void DefineType(string name, TypeAttributes attributes, Type parent, PackingSize packingSize, int typesize, Type[] implementedInterfaces)
         {
-            ModuleBuilder module = Helpers.DynamicModule();
-            TypeBuilder type = module.DefineType("TestType", attributes);
+            bool isDefaultImplementedInterfaces = implementedInterfaces?.Length == 0;
+            bool isDefaultPackingSize = packingSize == PackingSize.Unspecified;
+            bool isDefaultSize = typesize == 0;
+            bool isDefaultParent = parent == null;
+            bool isDefaultAttributes = attributes == TypeAttributes.NotPublic;
 
-            Type createdType = type.CreateTypeInfo().AsType();
-            Assert.Equal("TestType", createdType.Name);
-            Assert.Equal(attributes, createdType.GetTypeInfo().Attributes);
-        }
+            Action<TypeBuilder, Module> verify = (type, module) =>
+            {
+                Type baseType = attributes.HasFlag(TypeAttributes.Abstract) && parent == null ? null : (parent ?? typeof(object));
+                Helpers.VerifyType(type, module, null, name, attributes, baseType, typesize, packingSize, implementedInterfaces);
+            };
 
-        [Theory]
-        [InlineData(TypeAttributes.NotPublic)]
-        [InlineData(TypeAttributes.Class)]
-        public void DefineType_String_TypeAttributes_Type(TypeAttributes attributes)
-        {
-            ModuleBuilder module = Helpers.DynamicModule();
-            TypeBuilder type = module.DefineType("TestType", attributes, typeof(ModuleBuilderDefineType));
-
-            Type createdType = type.CreateTypeInfo().AsType();
-            Assert.Equal("TestType", createdType.Name);
-            Assert.Equal(attributes, createdType.GetTypeInfo().Attributes);
-            Assert.Equal(typeof(ModuleBuilderDefineType), createdType.GetTypeInfo().BaseType);
+            if (isDefaultImplementedInterfaces)
+            {
+                if (isDefaultSize && isDefaultPackingSize)
+                {
+                    if (isDefaultParent)
+                    {
+                        if (isDefaultAttributes)
+                        {
+                            // Use DefineType(string)
+                            ModuleBuilder module1 = Helpers.DynamicModule();
+                            verify(module1.DefineType(name), module1);
+                        }
+                        // Use DefineType(string, TypeAttributes)
+                        ModuleBuilder module2 = Helpers.DynamicModule();
+                        verify(module2.DefineType(name, attributes), module2);
+                    }
+                    // Use DefineType(string, TypeAttributes, Type)
+                    ModuleBuilder module3 = Helpers.DynamicModule();
+                    verify(module3.DefineType(name, attributes, parent), module3);
+                }
+                else if (isDefaultSize)
+                {
+                    // Use DefineType(string, TypeAttributes, Type, PackingSize)
+                    ModuleBuilder module4 = Helpers.DynamicModule();
+                    verify(module4.DefineType(name, attributes, parent, packingSize), module4);
+                }
+                else if (isDefaultPackingSize)
+                {
+                    // Use DefineType(string, TypeAttributes, Type, int)
+                    ModuleBuilder module5 = Helpers.DynamicModule();
+                    verify(module5.DefineType(name, attributes, parent, typesize), module5);
+                }
+                // Use DefineType(string, TypeAttributes, Type, PackingSize, int)
+                ModuleBuilder module6 = Helpers.DynamicModule();
+                verify(module6.DefineType(name, attributes, parent, packingSize, typesize), module6);
+            }
+            else
+            {
+                // Use DefineType(string, TypeAttributes, Type, Type[])
+                Assert.True(isDefaultSize && isDefaultPackingSize); // Sanity check
+                ModuleBuilder module7 = Helpers.DynamicModule();
+                verify(module7.DefineType(name, attributes, parent, implementedInterfaces), module7);
+            }
         }
 
         [Fact]
@@ -66,6 +114,12 @@ namespace System.Reflection.Emit.Tests
             Assert.Throws<ArgumentNullException>("fullname", () => module.DefineType(null));
             Assert.Throws<ArgumentNullException>("fullname", () => module.DefineType(null, TypeAttributes.NotPublic));
             Assert.Throws<ArgumentNullException>("fullname", () => module.DefineType(null, TypeAttributes.NotPublic, typeof(ModuleBuilderDefineType)));
+
+            Assert.Throws<ArgumentNullException>("fullname", () => module.DefineType(null, TypeAttributes.NotPublic, typeof(ModuleBuilderDefineType), PackingSize.Unspecified));
+            Assert.Throws<ArgumentNullException>("fullname", () => module.DefineType(null, TypeAttributes.NotPublic, typeof(ModuleBuilderDefineType), 0));
+            Assert.Throws<ArgumentNullException>("fullname", () => module.DefineType(null, TypeAttributes.NotPublic, typeof(ModuleBuilderDefineType), PackingSize.Unspecified, 0));
+
+            Assert.Throws<ArgumentNullException>("fullname", () => module.DefineType(null, TypeAttributes.NotPublic, typeof(ModuleBuilderDefineType), new Type[0]));
         }
 
         [Fact]
@@ -76,6 +130,12 @@ namespace System.Reflection.Emit.Tests
             Assert.Throws<ArgumentException>(null, () => module.DefineType("TestType"));
             Assert.Throws<ArgumentException>(null, () => module.DefineType("TestType", TypeAttributes.NotPublic));
             Assert.Throws<ArgumentException>(null, () => module.DefineType("TestType", TypeAttributes.NotPublic, typeof(ModuleBuilderDefineType)));
+
+            Assert.Throws<ArgumentException>(null, () => module.DefineType("TestType", TypeAttributes.NotPublic, typeof(ModuleBuilderDefineType), PackingSize.Unspecified));
+            Assert.Throws<ArgumentException>(null, () => module.DefineType("TestType", TypeAttributes.NotPublic, typeof(ModuleBuilderDefineType), 0));
+            Assert.Throws<ArgumentException>(null, () => module.DefineType("TestType", TypeAttributes.NotPublic, typeof(ModuleBuilderDefineType), PackingSize.Unspecified, 0));
+
+            Assert.Throws<ArgumentException>(null, () => module.DefineType("TestType", TypeAttributes.NotPublic, typeof(ModuleBuilderDefineType), new Type[0]));
         }
 
         [Fact]

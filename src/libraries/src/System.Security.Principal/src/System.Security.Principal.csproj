@@ -4,11 +4,9 @@
   <PropertyGroup>
     <AssemblyName>System.Security.Principal</AssemblyName>
     <ProjectGuid>{FBE16BC8-AE2D-422C-861E-861814F53AF7}</ProjectGuid>
-    <AssemblyVersion>4.0.2.0</AssemblyVersion>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'net46'">true</IsPartialFacadeAssembly>
     <ResourcesSourceOutputDirectory Condition="'$(TargetGroup)' == 'net46'">None</ResourcesSourceOutputDirectory>
-    <PackageTargetFramework Condition="'$(PackageTargetFramework)' == ''">netstandard1.0</PackageTargetFramework>
     <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.0</NuGetTargetMoniker>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the options -->

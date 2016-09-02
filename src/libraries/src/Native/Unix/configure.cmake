@@ -24,6 +24,9 @@ else ()
     message(FATAL_ERROR "Unknown platform.  Cannot define PAL_UNIX_NAME, used by RuntimeInformation.")
 endif ()
 
+# We compile with -Werror, so we need to make sure these code fragments compile without warnings.
+set(CMAKE_REQUIRED_FLAGS -Werror)
+
 # in_pktinfo: Find whether this struct exists
 check_include_files(
     linux/in.h
@@ -168,9 +171,27 @@ check_struct_has_member(
 check_cxx_source_compiles(
     "
     #include <string.h>
-    int main() { char* c = strerror_r(0, 0, 0); }
+    int main()
+    {
+        char buffer[1];
+        char* c = strerror_r(0, buffer, 0);
+    }
     "
     HAVE_GNU_STRERROR_R)
+
+check_cxx_source_compiles(
+    "
+    #include <dirent.h>
+    int main(void)
+    {
+        DIR* dir;
+        struct dirent* entry;
+        struct dirent* result;
+        readdir_r(dir, entry, &result);
+        return 0;
+    }
+    "
+    HAVE_READDIR_R)
 
 check_cxx_source_compiles(
     "
@@ -274,12 +295,12 @@ check_cxx_source_runs(
     #include <sys/time.h>
     int main()
     {
-        int ret; 
+        int ret;
         struct timespec ts;
         ret = clock_gettime(CLOCK_MONOTONIC, &ts);
         exit(ret);
     }
-    " 
+    "
     HAVE_CLOCK_MONOTONIC)
 
 check_function_exists(
@@ -399,9 +420,9 @@ check_function_exists(
 
 set (HAVE_INOTIFY 0)
 if (HAVE_INOTIFY_INIT AND HAVE_INOTIFY_ADD_WATCH AND HAVE_INOTIFY_RM_WATCH)
-	set (HAVE_INOTIFY 1)
+    set (HAVE_INOTIFY 1)
 elseif (CMAKE_SYSTEM_NAME STREQUAL Linux)
-	message(FATAL_ERROR "Cannot find inotify functions on a Linux platform.")
+    message(FATAL_ERROR "Cannot find inotify functions on a Linux platform.")
 endif()
 
 check_cxx_source_compiles(
@@ -428,8 +449,8 @@ check_cxx_source_compiles(
 check_cxx_source_compiles(
     "
     #include <curl/curl.h>
-    int main() 
-    { 
+    int main()
+    {
         int i = CURL_SSLVERSION_TLSv1_0;
         i = CURL_SSLVERSION_TLSv1_1;
         i = CURL_SSLVERSION_TLSv1_2;

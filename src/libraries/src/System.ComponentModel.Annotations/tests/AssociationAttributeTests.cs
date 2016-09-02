@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Collections.Generic;
-using System.Linq;
 using Xunit;
 
 namespace System.ComponentModel.DataAnnotations
@@ -11,46 +9,47 @@ namespace System.ComponentModel.DataAnnotations
     public class AssociationAttributeTests
     {
 #pragma warning disable 618
-        [Fact]
-        public static void Can_construct_attribute_and_get_values()
+        [Theory]
+        [InlineData("TestName", "TestThisKey", "TestOtherKey", new string[] { "TestThisKey" }, new string[] { "TestOtherKey" })]
+        [InlineData(null, "", " \t \r \n", new string[] { "" }, new string[] { "\t\r\n" })]
+        [InlineData(null, null, null, new string[0], new string[0])]
+        [InlineData("Name", "ThisKey1,  ThisKey2, ThisKey3", "OtherKey1,  OtherKey2",new string[] { "ThisKey1", "ThisKey2", "ThisKey3" }, new string[] { "OtherKey1", "OtherKey2" })]
+        public static void Constructor(string name, string thisKey, string otherKey, string[] thisKeyMembers, string[] otherKeyMembers)
         {
-            var attribute =
-                new AssociationAttribute("TestName", "TestThisKey", "TestOtherKey");
-            Assert.Equal("TestName", attribute.Name);
-            Assert.Equal("TestThisKey", attribute.ThisKey);
-            Assert.Equal("TestOtherKey", attribute.OtherKey);
+            var attribute = new AssociationAttribute(name, thisKey, otherKey);
+            Assert.Equal(name, attribute.Name);
+            Assert.Equal(thisKey, attribute.ThisKey);
+            Assert.Equal(otherKey, attribute.OtherKey);
+
+            if (thisKey == null)
+            {
+                Assert.Throws<NullReferenceException>(() => attribute.ThisKeyMembers);
+            }
+            else
+            {
+                Assert.Equal(thisKeyMembers, attribute.ThisKeyMembers);
+            }
+            if (otherKey == null)
+            {
+                Assert.Throws<NullReferenceException>(() => attribute.OtherKeyMembers);
+            }
+            else
+            {
+                Assert.Equal(otherKeyMembers, attribute.OtherKeyMembers);
+            }
         }
 
         [Fact]
-        public static void Can_construct_attribute_and_get_whitespace_values()
-        {
-            var attribute =
-                new AssociationAttribute(null, string.Empty, " \t\r\n");
-            Assert.Equal(null, attribute.Name);
-            Assert.Equal(string.Empty, attribute.ThisKey);
-            Assert.Equal(" \t\r\n", attribute.OtherKey);
-        }
-
-        [Fact]
-        public static void Can_get_and_set_IsForeignKey()
+        public static void IsForeignKey_GetSet_ReturnsExpected()
         {
             var attribute = new AssociationAttribute("Name", "ThisKey", "OtherKey");
-            Assert.Equal(false, attribute.IsForeignKey);
-            attribute.IsForeignKey = true;
-            Assert.Equal(true, attribute.IsForeignKey);
-            attribute.IsForeignKey = false;
-            Assert.Equal(false, attribute.IsForeignKey);
-        }
+            Assert.False(attribute.IsForeignKey);
 
-        [Fact]
-        public static void Can_get_ThisKeyMembers_and_OtherKeyMembers()
-        {
-            var listOfThisKeys = new List<string>() { "ThisKey1", "ThisKey2", "ThisKey3" };
-            var listOfOtherKeys = new List<string>() { "OtherKey1", "OtherKey2" };
-            // doesn't matter how many spaces are between keys, but they must be separated by a comma
-            var attribute = new AssociationAttribute("Name", "ThisKey1,  ThisKey2, ThisKey3", "OtherKey1,  OtherKey2");
-            Assert.True(listOfThisKeys.SequenceEqual(attribute.ThisKeyMembers));
-            Assert.True(listOfOtherKeys.SequenceEqual(attribute.OtherKeyMembers));
+            attribute.IsForeignKey = true;
+            Assert.True(attribute.IsForeignKey);
+
+            attribute.IsForeignKey = false;
+            Assert.False(attribute.IsForeignKey);
         }
 #pragma warning restore 618
     }

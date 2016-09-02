@@ -11,7 +11,7 @@ using System.Reflection.PortableExecutable;
 
 namespace System.Diagnostics
 {
-    public class StackTraceSymbols : IDisposable
+    internal class StackTraceSymbols : IDisposable
     {
         private sealed class OpenedReader : IDisposable
         {
@@ -66,7 +66,7 @@ namespace System.Diagnostics
         /// <param name="sourceFile">source file return</param>
         /// <param name="sourceLine">line number return</param>
         /// <param name="sourceColumn">column return</param>
-        public void GetSourceLineInfo(string assemblyPath, IntPtr loadedPeAddress, int loadedPeSize, 
+        internal void GetSourceLineInfo(string assemblyPath, IntPtr loadedPeAddress, int loadedPeSize, 
             IntPtr inMemoryPdbAddress, int inMemoryPdbSize, int methodToken, int ilOffset, 
             out string sourceFile, out int sourceLine, out int sourceColumn)
         {

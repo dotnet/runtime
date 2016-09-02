@@ -188,9 +188,36 @@ namespace System.IO
         /// NUL, or any ASCII char whose integer representation is in the range of 1 through 31).
         /// Does not check for wild card characters ? and *.
         /// </summary>
-        internal static bool HasIllegalCharacters(string path, bool checkAdditional = false)
+        internal static bool HasIllegalCharacters(string path)
         {
-            return path.IndexOfAny(InvalidPathChars) >= 0;
+            // This is equivalent to IndexOfAny(InvalidPathChars) >= 0,
+            // except faster since IndexOfAny grows slower as the input
+            // array grows larger.
+            // Since we know that some of the characters we're looking
+            // for are contiguous in the alphabet-- the path cannot contain
+            // characters 0-31-- we can optimize this for our specific use
+            // case and use simple comparison operations.
+
+            for (int i = 0; i < path.Length; i++)
+            {
+                char c = path[i];
+
+                if (c <= '\u001f')
+                {
+                    return true;
+                }
+
+                switch (c)
+                {
+                    case '"':
+                    case '<':
+                    case '>':
+                    case '|':
+                        return true;
+                }
+            }
+
+            return false;
         }
 
         /// <summary>

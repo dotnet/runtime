@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
@@ -12,6 +12,8 @@
     <OutputType>Library</OutputType>
     <AssemblyName>System.Linq.Expressions.Tests</AssemblyName>
     <RootNamespace>System.Linq.Expressions.Tests</RootNamespace>
+    <IsInterpreting Condition="'$(PackageTargetFramework)' == 'netcore50'">true</IsInterpreting>
+    <DefineConstants Condition=" '$(IsInterpreting)' != 'true' ">$(DefineConstants);FEATURE_COMPILE</DefineConstants>
     <DefineConstants Condition=" '$(FeatureInterpret)' == 'true' ">$(DefineConstants);FEATURE_INTERPRET</DefineConstants>
     <KeepAllProjectReferences>true</KeepAllProjectReferences>
     <NugetTargetMoniker>.NETStandard,Version=v1.6</NugetTargetMoniker>
@@ -25,6 +27,7 @@
     <None Include="project.json" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="CompilerTests.cs" />
     <Compile Include="Array\ArrayAccessTests.cs" />
     <Compile Include="Array\ArrayArrayIndexTests.cs" />
     <Compile Include="Array\ArrayArrayLengthTests.cs" />
@@ -60,7 +63,6 @@
     <Compile Include="BinaryOperators\Bitwise\BinaryNullableOrTests.cs" />
     <Compile Include="BinaryOperators\Bitwise\BinaryOrTests.cs" />
     <Compile Include="BinaryOperators\Coalesce\BinaryCoalesceTests.cs" />
-    <Compile Include="BinaryOperators\Coalesce\BinaryNullableCoalesceTests.cs" />
     <Compile Include="BinaryOperators\Comparison\BinaryEqualTests.cs" />
     <Compile Include="BinaryOperators\Comparison\BinaryGreaterThanOrEqualTests.cs" />
     <Compile Include="BinaryOperators\Comparison\BinaryGreaterThanTests.cs" />
@@ -85,6 +87,7 @@
     <Compile Include="Block\ParameterBlockTests.cs" />
     <Compile Include="Block\SharedBlockTests.cs" />
     <Compile Include="Call\CallFactoryTests.cs" />
+    <Compile Include="Call\CallTests.cs" />
     <Compile Include="Cast\AsNullable.cs" />
     <Compile Include="Cast\AsTests.cs" />
     <Compile Include="Cast\CastNullableTests.cs" />
@@ -97,6 +100,8 @@
     <Compile Include="Constant\ConstantTests.cs" />
     <Compile Include="Convert\ConvertCheckedTests.cs" />
     <Compile Include="Convert\ConvertTests.cs" />
+    <Compile Include="DebugInfo\DebugInfoExpressionTests.cs" />
+    <Compile Include="DebugInfo\SymbolDocumentInfoTests.cs" />
     <Compile Include="Default\DefaultTests.cs" />
     <Compile Include="DelegateType\ActionTypeTests.cs" />
     <Compile Include="DelegateType\DelegateCreationTests.cs" />
@@ -111,6 +116,10 @@
     <Compile Include="Goto\MakeGoto.cs" />
     <Compile Include="Goto\Return.cs" />
     <Compile Include="HelperTypes.cs" />
+    <Compile Include="IndexExpression\IndexExpressionHelpers.cs" />
+    <Compile Include="IndexExpression\IndexExpressionVisitorTests.cs" />
+    <Compile Include="IndexExpression\SampleClassWithProperties.cs" />
+    <Compile Include="IndexExpression\IndexExpressionTests.cs" />
     <Compile Include="Invoke\InvocationTests.cs" />
     <Compile Include="Invoke\InvokeFactoryTests.cs" />
     <Compile Include="Label\LabelTargetTests.cs" />
@@ -216,9 +225,6 @@
       <Project>{aef718e9-d4fc-418f-a7ae-ed6b2c7b3787}</Project>
       <Name>System.Linq.Expressions</Name>
     </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Visitor\" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

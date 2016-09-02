@@ -108,13 +108,13 @@ namespace System.Linq.Expressions
 
             RequiresCanRead(argumentsRO, nameof(arguments));
             ValidateElementInitAddMethodInfo(addMethod, nameof(addMethod));
-            ValidateArgumentTypes(addMethod, ExpressionType.Call, ref argumentsRO);
+            ValidateArgumentTypes(addMethod, ExpressionType.Call, ref argumentsRO, nameof(addMethod));
             return new ElementInit(addMethod, argumentsRO);
         }
 
         private static void ValidateElementInitAddMethodInfo(MethodInfo addMethod, string paramName)
         {
-            ValidateMethodInfo(addMethod, nameof(addMethod));
+            ValidateMethodInfo(addMethod, paramName);
             ParameterInfo[] pis = addMethod.GetParametersCached();
             if (pis.Length == 0)
             {

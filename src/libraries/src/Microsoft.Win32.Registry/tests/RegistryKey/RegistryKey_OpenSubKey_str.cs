@@ -8,7 +8,7 @@ using Xunit;
 
 namespace Microsoft.Win32.RegistryTests
 {
-    public class RegistryKey_OpenSubKey_str : RegistryTestsBase
+    public class RegistryKey_OpenSubKey_str : RegistryKeyOpenSubKeyTestsBase
     {
         [Fact]
         public void NegativeTests()
@@ -63,5 +63,15 @@ namespace Microsoft.Win32.RegistryTests
             Assert.Equal(subKeyNames.Length, TestRegistryKey.SubKeyCount);
             Assert.Equal(subKeyNames, TestRegistryKey.GetSubKeyNames());
         }
+
+        [Theory]
+        [MemberData(nameof(TestRegistrySubKeyNames))]
+        public void OpenSubKey_KeyExists_OpensWithFixedUpName(string expected, string subKeyName) =>
+            Verify_OpenSubKey_KeyExists_OpensWithFixedUpName(expected, () => TestRegistryKey.OpenSubKey(subKeyName));
+
+        [Theory]
+        [MemberData(nameof(TestRegistrySubKeyNames))]
+        public void OpenSubKey_KeyDoesNotExist_ReturnsNull(string expected, string subKeyName) =>
+            Verify_OpenSubKey_KeyDoesNotExist_ReturnsNull(expected, () => TestRegistryKey.OpenSubKey(subKeyName));
     }
 }

@@ -1,2 +1,0 @@
-PermitImplementation=.NETCore,Version=v4.5;WindowsPhone,Version=v8.0
-SuppressNETStandardInference=.NETCore,Version=v4.5;WindowsPhone,Version=v8.0

@@ -1,3 +1,0 @@
-PermitImplementation=.NETCore,Version=v5.0/win10-x86;.NETCore,Version=v5.0/win10-x64;.NETCore,Version=v5.0/win10-arm
-// Suppress exact match reference https://github.com/dotnet/corefx/issues/7114
-PermitHigherCompatibleImplementationVersion

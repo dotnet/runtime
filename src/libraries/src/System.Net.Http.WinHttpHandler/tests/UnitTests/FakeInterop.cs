@@ -388,6 +388,15 @@ internal static partial class Interop
             return true;
         }
 
+        public static bool WinHttpQueryOption(
+            SafeWinHttpHandle handle,
+            uint option,
+            ref uint buffer,
+            ref uint bufferSize)
+        {
+            return true;
+        }
+
         public static bool WinHttpWriteData(
             SafeWinHttpHandle requestHandle,
             IntPtr buffer,

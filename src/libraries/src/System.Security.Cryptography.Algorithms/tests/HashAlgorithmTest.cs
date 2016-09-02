@@ -53,6 +53,101 @@ namespace System.Security.Cryptography.Hashing.Algorithms.Tests
             }
         }
 
+        [Fact]
+        public void InvalidInput_Null()
+        {
+            using (HashAlgorithm hash = Create())
+            {
+                Assert.Throws<ArgumentNullException>("buffer", () => hash.ComputeHash((byte[])null));
+                Assert.Throws<ArgumentNullException>("buffer", () => hash.ComputeHash(null, 0, 0));
+                Assert.Throws<NullReferenceException>(() => hash.ComputeHash((Stream)null));
+            }
+        }
+
+        [Fact]
+        public void InvalidInput_NegativeOffset()
+        {
+            using (HashAlgorithm hash = Create())
+            {
+                Assert.Throws<ArgumentOutOfRangeException>("offset", () => hash.ComputeHash(Array.Empty<byte>(), -1, 0));
+            }
+        }
+
+        [Fact]
+        public void InvalidInput_NegativeCount()
+        {
+            using (HashAlgorithm hash = Create())
+            {
+                Assert.Throws<ArgumentException>(null, () => hash.ComputeHash(Array.Empty<byte>(), 0, -1));
+            }
+        }
+
+        [Fact]
+        public void InvalidInput_TooBigOffset()
+        {
+            using (HashAlgorithm hash = Create())
+            {
+                Assert.Throws<ArgumentException>(null, () => hash.ComputeHash(Array.Empty<byte>(), 1, 0));
+            }
+        }
+
+        [Fact]
+        public void InvalidInput_TooBigCount()
+        {
+            byte[] nonEmpty = new byte[53];
+
+            using (HashAlgorithm hash = Create())
+            {
+                Assert.Throws<ArgumentException>(null, () => hash.ComputeHash(nonEmpty, 0, nonEmpty.Length + 1));
+                Assert.Throws<ArgumentException>(null, () => hash.ComputeHash(nonEmpty, 1, nonEmpty.Length));
+                Assert.Throws<ArgumentException>(null, () => hash.ComputeHash(nonEmpty, 2, nonEmpty.Length - 1));
+                Assert.Throws<ArgumentException>(null, () => hash.ComputeHash(Array.Empty<byte>(), 0, 1));
+            }
+        }
+
+        [Fact]
+        public void BoundaryCondition_Count0()
+        {
+            byte[] nonEmpty = new byte[53];
+
+            using (HashAlgorithm hash = Create())
+            {
+                byte[] emptyHash = hash.ComputeHash(Array.Empty<byte>());
+                byte[] shouldBeEmptyHash = hash.ComputeHash(nonEmpty, nonEmpty.Length, 0);
+
+                Assert.Equal(emptyHash, shouldBeEmptyHash);
+
+                shouldBeEmptyHash = hash.ComputeHash(nonEmpty, 0, 0);
+                Assert.Equal(emptyHash, shouldBeEmptyHash);
+
+                nonEmpty[0] = 0xFF;
+                nonEmpty[nonEmpty.Length - 1] = 0x77;
+
+                shouldBeEmptyHash = hash.ComputeHash(nonEmpty, nonEmpty.Length, 0);
+                Assert.Equal(emptyHash, shouldBeEmptyHash);
+
+                shouldBeEmptyHash = hash.ComputeHash(nonEmpty, 0, 0);
+                Assert.Equal(emptyHash, shouldBeEmptyHash);
+            }
+        }
+
+        [Fact]
+        public void OffsetAndCountRespected()
+        {
+            byte[] dataA = { 1, 1, 2, 3, 5, 8 };
+            byte[] dataB = { 0, 1, 1, 2, 3, 5, 8, 13 };
+
+            using (HashAlgorithm hash = Create())
+            {
+                byte[] baseline = hash.ComputeHash(dataA);
+
+                // Skip the 0 byte, and stop short of the 13.
+                byte[] offsetData = hash.ComputeHash(dataB, 1, dataA.Length);
+
+                Assert.Equal(baseline, offsetData);
+            }
+        }
+
         protected class DataRepeatingStream : Stream
         {
             private int _remaining;

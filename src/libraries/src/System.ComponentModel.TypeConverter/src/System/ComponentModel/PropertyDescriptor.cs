@@ -247,7 +247,6 @@ namespace System.ComponentModel
             base.FillAttributes(attributeList);
         }
 
-        /// <include file='doc\PropertyDescriptor.uex' path='docs/doc[@for="PropertyDescriptor.GetChildProperties"]/*' />
         /// <summary>
         ///    <para>[To be supplied.]</para>
         /// </summary>

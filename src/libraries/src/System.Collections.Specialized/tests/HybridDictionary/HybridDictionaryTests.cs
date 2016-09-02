@@ -22,7 +22,7 @@ namespace System.Collections.Specialized.Tests
         protected override Type ICollection_NonGeneric_CopyTo_ArrayOfEnumType_ThrowType => typeof(InvalidCastException);
         protected override Type ICollection_NonGeneric_CopyTo_ArrayOfIncorrectReferenceType_ThrowType => typeof(InvalidCastException);
         protected override Type ICollection_NonGeneric_CopyTo_ArrayOfIncorrectValueType_ThrowType => typeof(InvalidCastException);
-        
+
         protected override Type ICollection_NonGeneric_SyncRootType => typeof(HybridDictionary);
 
         protected override object CreateTKey(int seed)
@@ -44,17 +44,14 @@ namespace System.Collections.Specialized.Tests
             Array arr = Array.CreateInstance(typeof(object), new int[] { count }, new int[] { 2 });
             Assert.Equal(1, arr.Rank);
             Assert.Equal(2, arr.GetLowerBound(0));
+            if (count == 0)
+            {
+                collection.CopyTo(arr, count);
+                Assert.Equal(0, arr.Length);
+                return;
+            }
 
-            // A bug in Hashtable.CopyTo (the underlying collection) means we don't check 
-            // the lower bounds of the destination array for count > 10
-            if (count < 10)
-            {
-                Assert.Throws<ArgumentException>("array", () => collection.CopyTo(arr, 0));
-            }
-            else
-            {
-                Assert.Throws<IndexOutOfRangeException>(() => collection.CopyTo(arr, 0));
-            }
+            Assert.Throws<IndexOutOfRangeException>(() => collection.CopyTo(arr, 0));
         }
     }
 }

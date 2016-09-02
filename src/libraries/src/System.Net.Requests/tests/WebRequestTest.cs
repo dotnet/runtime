@@ -8,18 +8,25 @@ namespace System.Net.Tests
 {
     public class WebRequestTest
     {
+        static WebRequestTest()
+        {
+            // Capture the value of DefaultWebProxy before any tests run.
+            // This lets us test the default value without imposing test
+            // ordering constraints which aren't natively supported by xunit.
+            initialDefaultWebProxy = WebRequest.DefaultWebProxy;
+            initialDefaultWebProxyCredentials = initialDefaultWebProxy.Credentials;
+        }
+        
         private readonly NetworkCredential _explicitCredentials = new NetworkCredential("user", "password", "domain");
+        private static IWebProxy initialDefaultWebProxy;
+        private static ICredentials initialDefaultWebProxyCredentials;
 
         [Fact]
         public void DefaultWebProxy_VerifyDefaults_Success()
         {
-            IWebProxy proxy = WebRequest.DefaultWebProxy;
-            Assert.NotNull(proxy);
+            Assert.NotNull(initialDefaultWebProxy);
 
-            // Since WebRequest.DefaultWebProxy is a static property, the initial default value for
-            // Credentials is only null iff. no other test method in the test process has changed
-            // the value in a prior test.
-            Assert.Null(proxy.Credentials);
+            Assert.Null(initialDefaultWebProxyCredentials);
         }
 
         [Fact]

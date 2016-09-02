@@ -71,4 +71,16 @@
     </TestNugetTargetMoniker>
   </ItemGroup>
 
+  <ItemGroup Condition="'$(NuGetTargetMoniker)'=='.NETStandard,Version=v1.7'">
+    <!-- Temporarily suppress the message until we get a nuget version that knows about the mapping between netstandard1.7 and uap10.1 -->
+    <SuppressPackageTargetFrameworkCompatibility Include="uap10.1" />
+  </ItemGroup>
+
+  <Target Name="ProducesPackageId" 
+          Returns="@(PackageIds)">
+    <ItemGroup>
+      <PackageIds Include="$(Id)" />
+    </ItemGroup>
+  </Target>
+
 </Project>

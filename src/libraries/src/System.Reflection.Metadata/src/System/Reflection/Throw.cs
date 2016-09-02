@@ -229,6 +229,12 @@ namespace System.Reflection
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
+        internal static void InvalidOperation_PEImageNotAvailable()
+        {
+            throw new InvalidOperationException(SR.PEImageNotAvailable);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
         internal static void TooManySubnamespaces()
         {
             throw new BadImageFormatException(SR.TooManySubnamespaces);
@@ -250,6 +256,12 @@ namespace System.Reflection
         internal static void HeapSizeLimitExceeded(HeapIndex heap)
         {
             throw new ImageFormatLimitationException(SR.Format(SR.HeapSizeLimitExceeded, heap));
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        internal static void PEReaderDisposed()
+        {
+            throw new ObjectDisposedException(nameof(PortableExecutable.PEReader));
         }
     }
 }

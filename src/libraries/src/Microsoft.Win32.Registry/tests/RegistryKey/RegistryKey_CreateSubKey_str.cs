@@ -9,7 +9,7 @@ using Xunit;
 
 namespace Microsoft.Win32.RegistryTests
 {
-    public class RegistryKey_CreateSubKey_str : RegistryTestsBase
+    public class RegistryKey_CreateSubKey_str : RegistryKeyCreateSubKeyTestsBase
     {
         [Fact]
         public void NegativeTests()
@@ -114,5 +114,15 @@ namespace Microsoft.Win32.RegistryTests
                 rk.CreateSubKey(subkeyName);
             }
         }
+
+        [Theory]
+        [MemberData(nameof(TestRegistrySubKeyNames))]
+        public void CreateSubKey_KeyExists_OpensKeyWithFixedUpName(string expected, string subKeyName) =>
+            Verify_CreateSubKey_KeyExists_OpensKeyWithFixedUpName(expected, () => TestRegistryKey.CreateSubKey(subKeyName));
+
+        [Theory]
+        [MemberData(nameof(TestRegistrySubKeyNames))]
+        public void CreateSubKey_KeyDoesNotExist_CreatesKeyWithFixedUpName(string expected, string subKeyName) =>
+            Verify_CreateSubKey_KeyDoesNotExist_CreatesKeyWithFixedUpName(expected, () => TestRegistryKey.CreateSubKey(subKeyName));
     }
 }

@@ -10,9 +10,9 @@
     <ProjectGuid>{1D422B1D-D7C4-41B9-862D-EB3D98DF37DE}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AssemblyName>System.Net.Http</AssemblyName>
-    <AssemblyVersion>4.1.1.0</AssemblyVersion>
     <WindowsRID>win</WindowsRID>
-    <PackageTargetFramework Condition="'$(TargetsUnix)' == 'true'">netstandard1.6</PackageTargetFramework>
+    <!-- Suppress warnings for type conflicts between SR in partial facade and mscorlib -->
+    <NoWarn>0436</NoWarn>
     <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.3</NuGetTargetMoniker>
     <NuGetTargetMoniker Condition="'$(TargetsUnix)' == 'true'">.NETStandard,Version=v1.6</NuGetTargetMoniker>
   </PropertyGroup>
@@ -20,17 +20,6 @@
     <ProjectJson>unix/project.json</ProjectJson>
     <ProjectLockJson>unix/project.lock.json</ProjectLockJson>
   </PropertyGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == '' AND '$(TargetsWindows)' == 'true'">
-    <PackageDestination Include="runtimes/$(PackageTargetRuntime)/lib/netstandard1.3">
-      <TargetFramework>netstandard1.3</TargetFramework>
-    </PackageDestination>
-    <PackageDestination Include="runtimes/$(PackageTargetRuntime)/lib/net46">
-      <TargetFramework>net46</TargetFramework>
-    </PackageDestination>
-    <PackageDestination Include="lib/net46">
-      <TargetFramework>net46</TargetFramework>
-    </PackageDestination>
-  </ItemGroup>
   <!-- Help VS understand available configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Release|AnyCPU'" />
@@ -112,14 +101,7 @@
     <Compile Include="System\Net\Http\Headers\ViaHeaderValue.cs" />
     <Compile Include="System\Net\Http\Headers\WarningHeaderValue.cs" />
     <!-- TODO #5715: Must be moved to the Common/System/Net folder -->
-    <Compile Include="Internal\ICloneable.cs" />
-    <Compile Include="Internal\MailAddress.cs" />
-    <Compile Include="Internal\Mail\DomainLiteralReader.cs" />
     <Compile Include="Internal\Mail\DotAtomReader.cs" />
-    <Compile Include="Internal\Mail\MailAddressParser.cs" />
-    <Compile Include="Internal\Mail\MailBnfHelper.cs" />
-    <Compile Include="Internal\Mail\QuotedPairReader.cs" />
-    <Compile Include="Internal\Mail\QuotedStringFormatReader.cs" />
     <Compile Include="Internal\Mail\WhitespaceReader.cs" />
     <Compile Include="$(CommonPath)\System\Net\Logging\LoggingHash.cs">
       <Link>Common\System\Net\Logging\LoggingHash.cs</Link>
@@ -131,11 +113,25 @@
       <Link>Common\System\Net\Logging\NetEventSource.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsWindows)' == 'true' And '$(TargetGroup)' == '' ">
+  <ItemGroup Condition=" '$(TargetsWindows)' == 'true' And '$(TargetGroup)' != 'netcore50' ">
     <Compile Include="System\Net\Http\HttpClientHandler.Windows.cs" />
+  </ItemGroup>
+  <ItemGroup Condition=" '$(TargetsWindows)' != 'true' Or '$(TargetGroup)' != 'net46' ">
+    <!-- TODO #5715: Must be moved to the Common/System/Net folder -->
+    <Compile Include="Internal\ICloneable.cs" />
+    <Compile Include="Internal\MailAddress.cs" />
+    <Compile Include="Internal\Mail\DomainLiteralReader.cs" />
+    <Compile Include="Internal\Mail\MailAddressParser.cs" />
+    <Compile Include="Internal\Mail\MailBnfHelper.cs" />
+    <Compile Include="Internal\Mail\QuotedPairReader.cs" />
+    <Compile Include="Internal\Mail\QuotedStringFormatReader.cs" />
   </ItemGroup>
   <PropertyGroup Condition=" '$(TargetsWindows)' == 'true' And '$(TargetGroup)' == '' ">
     <DefineConstants>$(DefineConstants);HTTP_DLL</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(TargetsWindows)' == 'true' And '$(TargetGroup)' == 'net46' ">
+    <DefineConstants>$(DefineConstants);HTTP_DLL;NET46</DefineConstants>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <!-- Compile the WinHttpHandler implementation into the System.Net.Http.dll binary.  This is a
          temporary solution to remove the cycle dependency between HttpClient and WinHttpHandler.
@@ -144,11 +140,11 @@
          HttpMessageHandler.cs. We also use the HTTP_DLL define to change public classes into
          internal ones to remove confusion if someone looks at the implementation dlls. They are
          public in the separate WinHttpHandler.dll binary.  -->
-  <Import Project="..\..\System.Net.Http.WinHttpHandler\src\System.Net.Http.WinHttpHandler.msbuild" Condition="'$(TargetsWindows)' == 'true' And '$(TargetGroup)' == ''" />
+  <Import Project="..\..\System.Net.Http.WinHttpHandler\src\System.Net.Http.WinHttpHandler.msbuild" Condition="'$(TargetsWindows)' == 'true' And '$(TargetGroup)' != 'netcore50'" />
   <!--  For source files to be shown within the visual tree in Solution Explorer, the items must be
          included directly in the project file. We have the *.msbuild define the Compile items in a made
          up item called CompileItem and then just include it here. -->
-  <ItemGroup Condition=" '$(TargetsWindows)' == 'true' And '$(TargetGroup)' == '' ">
+  <ItemGroup Condition=" '$(TargetsWindows)' == 'true' And '$(TargetGroup)' != 'netcore50' ">
     <Compile Include="@(CompileItem)" />
   </ItemGroup>
   <PropertyGroup Condition=" '$(TargetsUnix)' == 'true' ">
@@ -347,6 +343,12 @@
     <Compile Include="netcore50\System\Net\CookieHelper.cs" />
     <Compile Include="netcore50\System\Net\HttpHandlerToFilter.cs" />
     <Compile Include="netcore50\System\Net\HttpClientHandler.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'net46'">
+    <TargetingPackReference Include="mscorlib" />
+    <TargetingPackReference Include="System" />
+    <TargetingPackReference Include="System.Core" />
+    <TargetingPackReference Include="System.Runtime" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />

@@ -445,7 +445,7 @@ namespace System.Linq.Expressions
 
         protected internal override Expression VisitMemberInit(MemberInitExpression node)
         {
-            if (node.NewExpression.Arguments.Count == 0 &&
+            if (node.NewExpression.ArgumentCount == 0 &&
                 node.NewExpression.Type.Name.Contains("<"))
             {
                 // anonymous type constructor
@@ -513,7 +513,16 @@ namespace System.Linq.Expressions
         {
             Out(initializer.AddMethod.ToString());
             string sep = ", ";
-            VisitExpressions('(', initializer.Arguments, ')', sep);
+            Out('(');
+            for (int i = 0, n = initializer.ArgumentCount; i < n; i++)
+            {
+                if (i > 0)
+                {
+                    Out(sep);
+                }
+                Visit(initializer.GetArgument(i));
+            }
+            Out(')');
             return initializer;
         }
 
@@ -522,10 +531,10 @@ namespace System.Linq.Expressions
             Out("Invoke(");
             Visit(node.Expression);
             string sep = ", ";
-            for (int i = 0, n = node.Arguments.Count; i < n; i++)
+            for (int i = 0, n = node.ArgumentCount; i < n; i++)
             {
                 Out(sep);
-                Visit(node.Arguments[i]);
+                Visit(node.GetArgument(i));
             }
             Out(")");
             return node;
@@ -539,7 +548,7 @@ namespace System.Linq.Expressions
             if (node.Method.GetCustomAttribute(typeof(ExtensionAttribute)) != null)
             {
                 start = 1;
-                ob = node.Arguments[0];
+                ob = node.GetArgument(0);
             }
 
             if (ob != null)
@@ -549,11 +558,11 @@ namespace System.Linq.Expressions
             }
             Out(node.Method.Name);
             Out("(");
-            for (int i = start, n = node.Arguments.Count; i < n; i++)
+            for (int i = start, n = node.ArgumentCount; i < n; i++)
             {
                 if (i > start)
                     Out(", ");
-                Visit(node.Arguments[i]);
+                Visit(node.GetArgument(i));
             }
             Out(")");
             return node;
@@ -582,7 +591,7 @@ namespace System.Linq.Expressions
             Out("new " + node.Type.Name);
             Out("(");
             var members = node.Members;
-            for (int i = 0; i < node.Arguments.Count; i++)
+            for (int i = 0; i < node.ArgumentCount; i++)
             {
                 if (i > 0)
                 {
@@ -594,7 +603,7 @@ namespace System.Linq.Expressions
                     Out(name);
                     Out(" = ");
                 }
-                Visit(node.Arguments[i]);
+                Visit(node.GetArgument(i));
             }
             Out(")");
             return node;
@@ -791,7 +800,15 @@ namespace System.Linq.Expressions
                 Out(node.Indexer.Name);
             }
 
-            VisitExpressions('[', node.Arguments, ']');
+            Out('[');
+            for (int i = 0, n = node.ArgumentCount; i < n; i++)
+            {
+                if (i > 0)
+                    Out(", ");
+                Visit(node.GetArgument(i));
+            }
+            Out(']');
+
             return node;
         }
 

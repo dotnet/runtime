@@ -234,7 +234,6 @@ namespace System.Linq
             public UnionIteratorN(UnionIterator<TSource> previous, IEnumerable<TSource> next, int nextIndex)
                 : base(previous._comparer)
             {
-                Debug.Assert(previous != null);
                 Debug.Assert(next != null);
                 Debug.Assert(nextIndex > 1);
                 _previous = previous;

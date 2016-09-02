@@ -41,7 +41,7 @@
     01 00 00 00 00
   ) // false
   .hash algorithm 0x00008004
-  .ver 4:0:0:0
+  .ver 4:0:2:0
 }
 .module System.Runtime.CompilerServices.Unsafe.dll
 // MVID: {1E97D84A-565B-49C5-B60A-F31A1A4ACE13}

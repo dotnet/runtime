@@ -54,40 +54,6 @@ internal static partial class Interop
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
     internal struct UNICODE_INTPTR_STRING
     {
-        /// <remarks>
-        ///     Note - this constructor extracts the raw pointer from the safe handle, so any
-        ///     strings created with this version of the constructor will be unsafe to use after the buffer
-        ///     has been freed.
-        /// </remarks>
-        [System.Security.SecurityCritical]  // auto-generated
-        internal UNICODE_INTPTR_STRING(int stringBytes, SafeLocalAllocHandle buffer)
-        {
-            Debug.Assert(buffer == null || (stringBytes >= 0 && (ulong)stringBytes <= buffer.ByteLength),
-                            "buffer == null || (stringBytes >= 0 && stringBytes <= buffer.ByteLength)");
-
-            this.Length = (ushort)stringBytes;
-            this.MaxLength = (ushort)buffer.ByteLength;
-
-            // Marshaling with a SafePointer does not work correctly, so unfortunately we need to extract
-            // the raw handle here.
-            this.Buffer = buffer.DangerousGetHandle();
-        }
-
-        /// <remarks>
-        ///     This constructor should be used for constructing UNICODE_STRING structures with pointers
-        ///     into a block of memory managed by a SafeHandle or the GC.  It shouldn't be used to own
-        ///     any memory on its own.
-        /// </remarks>
-        internal UNICODE_INTPTR_STRING(int stringBytes, IntPtr buffer)
-        {
-            Debug.Assert((stringBytes == 0 && buffer == IntPtr.Zero) || (stringBytes > 0 && stringBytes <= UInt16.MaxValue && buffer != IntPtr.Zero),
-                            "(stringBytes == 0 && buffer == IntPtr.Zero) || (stringBytes > 0 && stringBytes <= UInt16.MaxValue && buffer != IntPtr.Zero)");
-
-            this.Length = (ushort)stringBytes;
-            this.MaxLength = (ushort)stringBytes;
-            this.Buffer = buffer;
-        }
-
         internal ushort Length;
         internal ushort MaxLength;
         internal IntPtr Buffer;

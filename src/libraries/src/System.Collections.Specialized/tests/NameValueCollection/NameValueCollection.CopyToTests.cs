@@ -59,7 +59,7 @@ namespace System.Collections.Specialized.Tests
         {
             NameValueCollection nameValueCollection = Helpers.CreateNameValueCollection(count);
             Assert.Throws<ArgumentNullException>("dest", () => nameValueCollection.CopyTo(null, 0));
-            Assert.Throws<ArgumentException>("dest", () => nameValueCollection.CopyTo(new string[count, count], 0));
+            Assert.Throws<ArgumentException>(() => nameValueCollection.CopyTo(new string[count, count], 0));
 
             Assert.Throws<ArgumentOutOfRangeException>("index", () => nameValueCollection.CopyTo(new string[count], -1));
 

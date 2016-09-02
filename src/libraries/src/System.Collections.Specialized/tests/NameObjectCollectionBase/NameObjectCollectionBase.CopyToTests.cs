@@ -49,7 +49,7 @@ namespace System.Collections.Specialized.Tests
             ICollection collection = nameObjectCollection;
 
             Assert.Throws<ArgumentNullException>("array", () => collection.CopyTo(null, 0));
-            Assert.Throws<ArgumentException>("array", () => collection.CopyTo(new string[count, count], 0));
+            Assert.Throws<ArgumentException>(() => collection.CopyTo(new string[count, count], 0));
 
             if (count > 0)
             {
