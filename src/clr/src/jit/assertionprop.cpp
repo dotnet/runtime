@@ -3424,7 +3424,6 @@ GenTreePtr Compiler::optAssertionProp_Ind(ASSERT_VALARG_TP assertions, const Gen
     // TODO-1stClassStructs: All indirections should be handled here, but
     // previously, when these indirections were GT_OBJ, or implicit due to a block
     // copy or init, they were not being handled.
-    bool propagateIndir = true;
     if (tree->TypeGet() == TYP_STRUCT)
     {
         if (tree->OperIsBlk())

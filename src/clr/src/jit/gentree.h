@@ -1453,11 +1453,6 @@ public:
             case GT_LIST:
             case GT_INTRINSIC:
             case GT_LEA:
-            case GT_STOREIND:
-            case GT_BLK:
-            case GT_OBJ:
-            case GT_STORE_BLK:
-            case GT_STORE_OBJ:
 #ifdef FEATURE_SIMD
             case GT_SIMD:
 #endif // !FEATURE_SIMD
@@ -4009,10 +4004,6 @@ struct GenTreeObj : public GenTreeBlk
             // Let's assert it just to be safe.
             noway_assert(roundUp(gtBlkSize, REGSIZE_BYTES) == gtBlkSize);
         }
-        else
-        {
-            // ChangeOper(GT_BLK);
-        }
     }
 
     void CopyGCInfo(GenTreeObj* srcObj)
@@ -5059,7 +5050,7 @@ inline var_types& GenTree::CastToType()
 //    Returns true iff the object being copied contains one or more GC pointers.
 //
 // Notes:
-//    Of the block ops only GT_COPYOBJ is allowed to have GC pointers.
+//    Of the block nodes, only GT_OBJ and ST_STORE_OBJ are allowed to have GC pointers.
 //
 inline bool GenTreeBlk::HasGCPtr()
 {
