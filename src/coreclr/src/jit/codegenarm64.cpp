@@ -3524,7 +3524,6 @@ void CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
                 assert(treeNode->AsObj()->gtGcPtrCount != 0);
                 genCodeForCpObj(treeNode->AsObj());
             }
-            break;
             __fallthrough;
 
         case GT_STORE_DYN_BLK:

@@ -1878,7 +1878,7 @@ public:
     GenTreePtr gtNewOneConNode(var_types type);
 
     GenTreeBlk* gtNewBlkOpNode(
-        genTreeOps oper, GenTreePtr dst, GenTreePtr srcOrFillVal, GenTreePtr sizeOrClsTok, bool volatil);
+        genTreeOps oper, GenTreePtr dst, GenTreePtr srcOrFillVal, GenTreePtr sizeOrClsTok, bool isVolatile);
 
     GenTree* gtNewBlkOpNode(GenTreePtr dst, GenTreePtr srcOrFillVal, unsigned size, bool isVolatile, bool isCopyBlock);
 
@@ -1891,7 +1891,7 @@ public:
     GenTree* gtNewStructVal(CORINFO_CLASS_HANDLE structHnd, GenTreePtr addr);
     GenTree* gtNewBlockVal(GenTreePtr addr, unsigned size);
 
-    GenTree* gtNewCpObjNode(GenTreePtr dst, GenTreePtr src, CORINFO_CLASS_HANDLE structHnd, bool volatil);
+    GenTree* gtNewCpObjNode(GenTreePtr dst, GenTreePtr src, CORINFO_CLASS_HANDLE structHnd, bool isVolatile);
 
     GenTreeArgList* gtNewListNode(GenTreePtr op1, GenTreeArgList* op2);
 
