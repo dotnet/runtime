@@ -311,6 +311,22 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop] // TODO: Issue #11345
         [Fact]
+        public async Task GetAsync_ServerNeedsBasicAuthAndSetDefaultCredentials_StatusCodeUnauthorized()
+        {
+            var handler = new HttpClientHandler();
+            handler.Credentials = CredentialCache.DefaultCredentials;
+            using (var client = new HttpClient(handler))
+            {
+                Uri uri = Configuration.Http.BasicAuthUriForCreds(secure:false, userName:Username, password:Password);
+                using (HttpResponseMessage response = await client.GetAsync(uri))
+                {
+                    Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+                }
+            }
+        }
+
+        [OuterLoop] // TODO: Issue #11345
+        [Fact]
         public async Task GetAsync_ServerNeedsAuthAndSetCredential_StatusCodeOK()
         {
             var handler = new HttpClientHandler();
