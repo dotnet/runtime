@@ -781,16 +781,11 @@
         "Name": "System.Linq.Expressions",
         "Description": "Provides classes, interfaces and enumerations that enable language-level code expressions to be represented as objects in the form of expression trees.",
         "CommonTypes": [
-            "System.Linq.Expressions.Expression<TDelegate>",
-            "System.Linq.Expressions.Expression",
-            "System.Linq.Expressions.MemberExpression",
-            "System.Linq.Expressions.ExpressionVisitor",
-            "System.Linq.Expressions.MethodCallExpression",
             "System.Linq.IQueryable<T>",
             "System.Linq.IQueryable",
-            "System.Linq.Expressions.NewExpression",
-            "System.Linq.Expressions.ParameterExpression",
-            "System.Linq.Expressions.ConstantExpression"
+            "System.Linq.Expressions.Expression<TDelegate>",
+            "System.Linq.Expressions.Expression",
+            "System.Linq.Expressions.ExpressionVisitor"
         ]
     },
     {
