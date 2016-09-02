@@ -83,13 +83,16 @@ namespace System.Text {
         // Creates a new empty string builder (i.e., it represents String.Empty)
         // with the default capacity (16 characters).
         public StringBuilder()
-            : this(DefaultCapacity) {
+        {
+            m_MaxCapacity = int.MaxValue;
+            m_ChunkChars = new char[DefaultCapacity];
         }
 
         // Create a new empty string builder (i.e., it represents String.Empty)
         // with the specified capacity.
         public StringBuilder(int capacity)
-            : this(String.Empty, capacity) {
+            : this(capacity, int.MaxValue)
+        {
         }
 
         // Creates a new string builder from the specified string.  If value
@@ -347,9 +350,9 @@ namespace System.Text {
                             int chunkLength = chunk.m_ChunkLength;
     
                             // Check that we will not overrun our boundaries. 
-                            if ((uint)(chunkLength + chunkOffset) <= ret.Length && (uint)chunkLength <= (uint)sourceArray.Length)
+                            if ((uint)(chunkLength + chunkOffset) <= (uint)ret.Length && (uint)chunkLength <= (uint)sourceArray.Length)
                             {
-                                fixed (char* sourcePtr = sourceArray)
+                                fixed (char* sourcePtr = &sourceArray[0])
                                     string.wstrcpy(destinationPtr + chunkOffset, sourcePtr, chunkLength);
                             }
                             else
@@ -359,9 +362,10 @@ namespace System.Text {
                         }
                         chunk = chunk.m_ChunkPrevious;
                     } while (chunk != null);
+
+                    return ret;
                 }
             }
-            return ret;
         }
 
 
@@ -422,7 +426,7 @@ namespace System.Text {
                                 char[] sourceArray = chunk.m_ChunkChars;
     
                                 // Check that we will not overrun our boundaries. 
-                                if ((uint)(chunkCount + curDestIndex) <= length && (uint)(chunkCount + chunkStartIndex) <= (uint)sourceArray.Length)
+                                if ((uint)(chunkCount + curDestIndex) <= (uint)length && (uint)(chunkCount + chunkStartIndex) <= (uint)sourceArray.Length)
                                 {
                                     fixed (char* sourcePtr = &sourceArray[chunkStartIndex])
                                         string.wstrcpy(destinationPtr + curDestIndex, sourcePtr, chunkCount);
@@ -435,9 +439,10 @@ namespace System.Text {
                         }
                         chunk = chunk.m_ChunkPrevious;
                     }
+
+                    return ret;
                 }
             }
-            return ret;
         }
 
         // Convenience method for sb.Length=0;
@@ -602,11 +607,15 @@ namespace System.Text {
             if (charCount==0) {
                 return this;
             }
-            unsafe {
+            unsafe
+            {
                 fixed (char* valueChars = &value[startIndex])
+                {
                     Append(valueChars, charCount);
+
+                    return this;
+                }
             }
-            return this;
         }
 
 
@@ -696,11 +705,15 @@ namespace System.Text {
                 throw new ArgumentOutOfRangeException("startIndex", Environment.GetResourceString("ArgumentOutOfRange_Index"));
             }
 
-            unsafe {
+            unsafe
+            {
                 fixed (char* valueChars = value)
+                {
                     Append(valueChars + startIndex, count);
+
+                    return this;
+                }
             }
-            return this;
         }
 
         [System.Runtime.InteropServices.ComVisible(false)]
@@ -818,9 +831,10 @@ namespace System.Text {
                         ReplaceInPlaceAtChunk(ref chunk, ref indexInChunk, valuePtr, value.Length);
                         --count;
                     }
+
+                    return this;
                 }
             }
-            return this;
         }
 
         // Removes the specified characters from this string builder.
@@ -2072,7 +2086,7 @@ namespace System.Text {
             if (copyCount1 > 0)
             {
                 unsafe {
-                    fixed (char* chunkCharsPtr = chunk.m_ChunkChars) {
+                    fixed (char* chunkCharsPtr = &chunk.m_ChunkChars[0]) {
                         ThreadSafeCopy(chunkCharsPtr, newChunk.m_ChunkChars, 0, copyCount1);
     
                         // Slide characters in the current buffer over to make room. 
