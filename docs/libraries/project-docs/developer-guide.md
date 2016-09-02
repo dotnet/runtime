@@ -78,7 +78,7 @@ For more information about extra parameters take a look at the scripts `build-na
 
 ##Build Managed
 Since the managed build uses the .NET Core CLI (which the build will download), managed components can only be built on a subset of distros.
-There are some additional pre-requesties from the CLI which need to be installed. Both libicu and
+There are some additional prerequisites from the CLI which need to be installed. Both libicu and
 libunwind are used by CoreCLR to execute managed code, so they must be
 installed. Since CoreFX does not actually link against these packages, runtime
 versions are sufficient.  We also require curl to be present, which we use to
@@ -246,16 +246,23 @@ If coverage succeeds, the code coverage report will be generated automatically a
 
 Code coverage reports from the continuous integration system are available from the links on the front page of the corefx repo.
 
-### Building tests with .NET Native 
+### Building tests with .NET Native (Windows only)
 
 .NET Native is a technology that allows compiling IL applications down into a native executable and minimal set of native DLLs, containing all needed functionality from the .NET Framework in native format.  For CoreFX tests, .NET Native support in CoreFX is relatively early, but supported.  
 
 ```cmd
 // To run a single project with the .NET Native toolchain, set the appropriate build flags:
 cd src\Microsoft.CSharp\tests
-msbuild /t:BuildAndTest /p:TestTFM=netcore50aot  /p:TestNugetRuntimeId=win10-x64-aot /p:TestNugetRuntimeId=win10-x64-aot /p:FilterToTestTFM=netcore50 /p:UseDotNetNativeToolchain=true
+msbuild /t:BuildAndTest /p:TestTFM=netcore50aot  /p:TestNugetRuntimeId=win10-x64-aot /p:UseDotNetNativeToolchain=true
 ```
 If native compilation succeeds, the test will build and run as a native executable named "xunit.console.netcore.exe" in a folder named "native" in the test execution folder.  Note many tests in CoreFX are not ready to run though native compilation yet.
 
+A slight variation on these arguments will allow you to build and run against netcore50, the managed version of the UWP Framework subset, used when debugging UWP applications in Visual Studio:
+```cmd
+// To run a single project with the .NET Native toolchain, set the appropriate build flags:
+cd src\Microsoft.CSharp\tests
+msbuild /t:BuildAndTest /p:TestTFM=netcore50  /p:TestNugetRuntimeId=win10-x64
+```
+In this case, your test will get executed within the context of a wrapper UWP application, targeting the Managed netcore50.
 
 The CoreFX build and test suite is a work in progress, as are the [building and testing instructions](../README.md). The .NET Core team and the community are improving Linux and OS X support on a daily basis and are adding more tests for all platforms. See [CoreFX Issues](https://github.com/dotnet/corefx/issues) to find out about specific work items or report issues.
