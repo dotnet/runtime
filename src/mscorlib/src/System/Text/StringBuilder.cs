@@ -1309,6 +1309,7 @@ namespace System.Text {
             int pos = 0;
             int len = format.Length;
             char ch = '\x0';
+            StringBuilder unescapedItemFormat = null;
 
             ICustomFormatter cf = null;
             if (provider != null) {
@@ -1426,67 +1427,83 @@ namespace System.Text {
                 // Start of parsing of optional formatting parameter.
                 //
                 Object arg = args[index];
-                StringBuilder fmt = null;
+                String itemFormat = null;
                 // Is current character a colon? which indicates start of formatting parameter.
                 if (ch == ':') {
                     pos++;
+                    int startPos = pos;
+
                     while (true) {
                         // If reached end of text then error. (Unexpected end of text)
                         if (pos == len) FormatError();
                         ch = format[pos];
                         pos++;
-                        // Is character a opening brace?
-                        if (ch == '{')
+
+                        // Is character a opening or closing brace?
+                        if (ch == '}' || ch == '{')
                         {
-                            // Yes, is next character also a opening brace, then treat as escaped. eg {{
-                            if (pos < len && format[pos] == '{')
-                                pos++;
-                            else
-                                // Error Argument Holes can not be nested.
-                                FormatError();
-                        }
-                        // Is charecter a closing brace?
-                        else if (ch == '}')
-                        {
-                            // Yes, is next character also a closing brace, then treat as escaped. eg }}
-                            if (pos < len && format[pos] == '}')
-                                pos++;
+                            if (ch == '{')
+                            {
+                                // Yes, is next character also a opening brace, then treat as escaped. eg {{
+                                if (pos < len && format[pos] == '{')
+                                    pos++;
+                                else
+                                    // Error Argument Holes can not be nested.
+                                    FormatError();
+                            }
                             else
                             {
-                                // No, then treat it as the closing brace of an Arg Hole.
-                                pos--;
-                                break;
+                                // Yes, is next character also a closing brace, then treat as escaped. eg }}
+                                if (pos < len && format[pos] == '}')
+                                    pos++;
+                                else
+                                {
+                                    // No, then treat it as the closing brace of an Arg Hole.
+                                    pos--;
+                                    break;
+                                }
                             }
+
+                            // Reaching here means the brace has been escaped
+                            // so we need to build up the format string in segments
+                            if (unescapedItemFormat == null)
+                            {
+                                unescapedItemFormat = new StringBuilder();
+                            }
+                            unescapedItemFormat.Append(format, startPos, pos - startPos - 1);
+                            startPos = pos;
                         }
-                        // build up the argument format string.
-                        if (fmt == null) {
-                            fmt = new StringBuilder();
+                    }
+
+                    if (unescapedItemFormat == null || unescapedItemFormat.Length == 0)
+                    {
+                        if (startPos != pos)
+                        {
+                            // There was no brace escaping, extract the item format as a single string
+                            itemFormat = format.Substring(startPos, pos - startPos);
                         }
-                        fmt.Append(ch);
+                    }
+                    else
+                    {
+                        unescapedItemFormat.Append(format, startPos, pos - startPos);
+                        itemFormat = unescapedItemFormat.ToString();
+                        unescapedItemFormat.Clear();
                     }
                 }
                 // If current character is not a closing brace then error. (Unexpected Character)
                 if (ch != '}') FormatError();
                 // Construct the output for this arg hole.
                 pos++;
-                String sFmt = null;
                 String s = null;
                 if (cf != null) {
-                    if (fmt != null) {
-                        sFmt = fmt.ToString();
-                    }
-                    s = cf.Format(sFmt, arg, provider);
+                    s = cf.Format(itemFormat, arg, provider);
                 }
 
                 if (s == null) {
                     IFormattable formattableArg = arg as IFormattable;
 
                     if (formattableArg != null) {
-                        if (sFmt == null && fmt != null) {
-                            sFmt = fmt.ToString();
-                        }
-
-                        s = formattableArg.ToString(sFmt, provider);
+                        s = formattableArg.ToString(itemFormat, provider);
                     } else if (arg != null) {
                         s = arg.ToString();
                     }
