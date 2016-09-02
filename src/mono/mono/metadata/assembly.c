@@ -203,6 +203,7 @@ static GSList *loaded_assembly_bindings = NULL;
 
 /* Class lazy loading functions */
 static GENERATE_TRY_GET_CLASS_WITH_CACHE (internals_visible, System.Runtime.CompilerServices, InternalsVisibleToAttribute)
+static GENERATE_TRY_GET_CLASS_WITH_CACHE (reference_assembly, System.Runtime.CompilerServices, ReferenceAssemblyAttribute)
 
 static MonoAssembly*
 mono_assembly_invoke_search_hook_internal (MonoAssemblyName *aname, MonoAssembly *requesting, gboolean refonly, gboolean postload);
@@ -1190,6 +1191,23 @@ mono_assembly_load_reference (MonoImage *image, int index)
 				   aname.major, aname.minor, aname.build, aname.revision,
 				   strlen ((char*)aname.public_key_token) == 0 ? "(none)" : (char*)aname.public_key_token, extra_msg);
 		g_free (extra_msg);
+
+	} else if (!image->assembly->ref_only) {
+		MonoError error;
+		if (mono_assembly_get_reference_assembly_attribute (reference, &error)) {
+			mono_trace (G_LOG_LEVEL_WARNING, MONO_TRACE_ASSEMBLY, "The following reference assembly assembly referenced from %s was not loaded.  Reference assemblies should not be loaded for execution.  They can only be loaded in the Reflection-only loader context:\n"
+				    "     Assembly:   %s    (assemblyref_index=%d)\n"
+				    "     Version:    %d.%d.%d.%d\n"
+				    "     Public Key: %s\n",
+				    image->name, aname.name, index,
+				    aname.major, aname.minor, aname.build, aname.revision,
+				    strlen ((char*)aname.public_key_token) == 0 ? "(none)" : (char*)aname.public_key_token);
+			reference = NULL; /* don't load reference assemblies for execution */
+		}
+		if (!is_ok (&error)) {
+			reference = NULL;
+			mono_error_cleanup (&error);
+		}
 	}
 
 	mono_assemblies_lock ();
@@ -1801,6 +1819,37 @@ mono_assembly_load_friends (MonoAssembly* ass)
 	mono_memory_barrier ();
 	ass->friend_assembly_names_inited = TRUE;
 	mono_assemblies_unlock ();
+}
+
+
+/**
+ * mono_assembly_get_reference_assembly_attribute:
+ * @assembly: a MonoAssembly
+ * @error: set on error.
+ *
+ * Returns TRUE if @assembly has the System.Runtime.CompilerServices.ReferenceAssemblyAttribute set.
+ * On error returns FALSE and sets @error.
+ */
+gboolean
+mono_assembly_get_reference_assembly_attribute (MonoAssembly *assembly, MonoError *error)
+{
+	mono_error_init (error);
+
+	MonoCustomAttrInfo *attrs = mono_custom_attrs_from_assembly_checked (assembly, error);
+	return_val_if_nok (error, FALSE);
+	if (!attrs)
+		return FALSE;
+	MonoClass *ref_asm_class = mono_class_try_get_reference_assembly_class ();
+	gboolean result = FALSE;
+	for (int i = 0; i < attrs->num_attrs; ++i) {
+		MonoCustomAttrEntry *attr = &attrs->attrs [i];
+		if (attr->ctor && attr->ctor->klass && attr->ctor->klass == ref_asm_class) {
+			result = TRUE;
+			break;
+		}
+	}
+	mono_custom_attrs_free (attrs);
+	return result;
 }
 
 /**

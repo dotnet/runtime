@@ -467,7 +467,8 @@ BASE_TEST_CS_SRC_UNIVERSAL=		\
 	pinvoke_ppcd.cs	\
 	bug-29585.cs	\
 	priority.cs	\
-	abort-cctor.cs
+	abort-cctor.cs	\
+	reference-loader.cs
 
 if INSTALL_MOBILE_STATIC
 BASE_TEST_CS_SRC= \
@@ -800,18 +801,22 @@ endif
 # but that need to be compiled
 PREREQ_IL_SRC=event-il.il module-cctor.il
 PREREQ_CS_SRC=
-PREREQ_IL_DLL_SRC=event-il.il module-cctor.il
-PREREQ_CS_DLL_SRC=
+PREREQ_IL_DLL_SRC=
+PREREQ_CS_DLL_SRC=TestingReferenceAssembly.cs TestingReferenceReferenceAssembly.cs
 
-PREREQSI_IL=$(PREREQ_IL_SRC:.il=.exe)
-PREREQSI_CS=$(PREREQ_CS_SRC:.cs=.exe)
+PREREQSI_IL=$(PREREQ_IL_SRC:.il=.exe) \
+	$(PREREQ_IL_DLL_SRC:.il=.dll)
+PREREQSI_CS=$(PREREQ_CS_SRC:.cs=.exe) \
+	$(PREREQ_CS_DLL_SRC:.cs=.dll)
 TESTSI_CS=$(TEST_CS_SRC:.cs=.exe)
 TESTSI_IL=$(TEST_IL_SRC:.il=.exe)
 TESTBS=$(BENCHSRC:.cs=.exe)
 STRESS_TESTS=$(STRESS_TESTS_SRC:.cs=.exe)
 
-PREREQSI_IL_AOT=$(PREREQ_IL_SRC:.il=.exe$(PLATFORM_AOT_SUFFIX))
-PREREQSI_CS_AOT=$(PREREQ_CS_SRC:.cs=.exe$(PLATFORM_AOT_SUFFIX))
+PREREQSI_IL_AOT=$(PREREQ_IL_SRC:.il=.exe$(PLATFORM_AOT_SUFFIX)) \
+		$(PREREQ_IL_DLL_SRC:.il=.dll$(PLATFORM_AOT_SUFFIX))
+PREREQSI_CS_AOT=$(PREREQ_CS_SRC:.cs=.exe$(PLATFORM_AOT_SUFFIX)) \
+		$(PREREQ_CS_DLL_SRC:.cs=.dll$(PLATFORM_AOT_SUFFIX))
 
 EXTRA_DIST=test-driver test-runner.cs $(TEST_CS_SRC_DIST) $(TEST_IL_SRC) \
 	$(BENCHSRC) $(STRESS_TESTS_SRC) stress-runner.pl $(PREREQ_IL_SRC) $(PREREQ_CS_SRC)
@@ -831,6 +836,12 @@ endif
 
 %.exe: %.cs $(TEST_DRIVER_DEPEND)
 	$(MCS) -r:System.dll -r:System.Xml.dll -r:System.Core.dll -r:TestDriver.dll $(TEST_DRIVER_HARD_KILL_FEATURE) -out:$@ $<
+
+%.dll: %.cs
+	$(MCS) -r:System.dll -target:library -out:$@ $<
+
+TestingReferenceReferenceAssembly.dll: TestingReferenceReferenceAssembly.cs TestingReferenceAssembly.dll
+	$(MCS) -r:TestingReferenceAssembly.dll -target:library -out:$@ $<
 
 %.exe$(PLATFORM_AOT_SUFFIX): %.exe 
 	$(RUNTIME) $(AOT_BUILD_FLAGS) $<
