@@ -75,9 +75,9 @@ GTNODE(STOREIND         , "storeIndir"    ,0,GTK_BINOP|GTK_NOVALUE) // store ind
 
                                                                       // TODO-Cleanup: GT_ARR_BOUNDS_CHECK should be made a GTK_BINOP now that it has only two child nodes
 GTNODE(ARR_BOUNDS_CHECK , "arrBndsChk"    ,0,GTK_SPECIAL|GTK_NOVALUE) // array bounds check
-GTNODE(OBJ              , "obj"           ,0,GTK_BINOP|GTK_EXOP)      // Object that MAY have gc pointers, and thus includes the relevant gc layout info.
+GTNODE(OBJ              , "obj"           ,0,GTK_UNOP|GTK_EXOP)       // Object that MAY have gc pointers, and thus includes the relevant gc layout info.
 GTNODE(STORE_OBJ        , "storeObj"      ,0,GTK_BINOP|GTK_EXOP|GTK_NOVALUE) // Object that MAY have gc pointers, and thus includes the relevant gc layout info.
-GTNODE(BLK              , "blk"           ,0,GTK_BINOP)               // Block/object with no gc pointers, and with a known size (e.g. a struct with no gc fields)
+GTNODE(BLK              , "blk"           ,0,GTK_UNOP)                // Block/object with no gc pointers, and with a known size (e.g. a struct with no gc fields)
 GTNODE(STORE_BLK        , "storeBlk"      ,0,GTK_BINOP|GTK_NOVALUE)   // Block/object with no gc pointers, and with a known size (e.g. a struct with no gc fields)
 GTNODE(DYN_BLK          , "DynBlk"        ,0,GTK_SPECIAL)             // Dynamically sized block object
 GTNODE(STORE_DYN_BLK    , "storeDynBlk"   ,0,GTK_SPECIAL|GTK_NOVALUE) // Dynamically sized block object

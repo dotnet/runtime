@@ -5370,7 +5370,10 @@ void CodeGen::genConsumeBlockDst(GenTreeBlk* blkNode)
 // Arguments:
 //    blkNode - The block node
 //
-// Return Value://    Returns the source address node, if it is non-local,//    and nullptr otherwise.
+// Return Value:
+//    Returns the source address node, if it is non-local,
+//    and nullptr otherwise.
+
 GenTree* CodeGen::genConsumeBlockSrc(GenTreeBlk* blkNode)
 {
     GenTree* src = blkNode->Data();
