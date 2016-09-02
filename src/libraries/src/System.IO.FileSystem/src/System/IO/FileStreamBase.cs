@@ -25,6 +25,7 @@ namespace System.IO
         public abstract bool IsAsync { get; }
         public abstract string Name { get; }
         public abstract SafeFileHandle SafeFileHandle { get; }
+        internal abstract bool IsClosed { get; }
 
         public abstract void Flush(bool flushToDisk);
     }

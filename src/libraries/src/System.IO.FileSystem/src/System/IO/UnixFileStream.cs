@@ -359,6 +359,8 @@ namespace System.IO
             }
         }
 
+        internal override bool IsClosed => _fileHandle.IsClosed;
+
         /// <summary>Gets or sets the position within the current stream</summary>
         public override long Position
         {
