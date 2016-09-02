@@ -23,6 +23,7 @@ namespace System.Text.Tests
             Assert.Same(string.Empty, builder.ToString());
             Assert.Equal(string.Empty, builder.ToString(0, 0));
             Assert.Equal(0, builder.Length);
+            Assert.Equal(int.MaxValue, builder.MaxCapacity);
         }
 
         [Fact]
@@ -33,6 +34,7 @@ namespace System.Text.Tests
             Assert.Equal(0, builder.Length);
 
             Assert.True(builder.Capacity >= 42);
+            Assert.Equal(int.MaxValue, builder.MaxCapacity);
         }
 
         [Fact]
