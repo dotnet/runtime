@@ -2566,3 +2566,8 @@ build(params + [CORECLR_BUILD: coreclrBuildJob.build.number,
 } // scenario
 
 JobReport.Report.generateJobReport(out)
+
+// Make the call to generate the help job
+Utilities.createHelperJob(this, project, branch,
+    "Welcome to the ${project} Repository",  // This is prepended to the help message
+    "Have a nice day!")  // This is appended to the help message.  You might put known issues here.
