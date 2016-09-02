@@ -18325,31 +18325,45 @@ void Compiler::fgSetBlockOrder(BasicBlock* block)
 }
 
 #ifdef LEGACY_BACKEND
-/*****************************************************************************
- *
- * For GT_INITBLK and GT_COPYBLK, the tree looks like this :
- *                                tree->gtOp
- *                                 /    \
- *                               /        \.
- *                           GT_LIST  [size/clsHnd]
- *                            /    \
- *                           /      \
- *                       [dest]     [val/src]
- *
- * ie. they are ternary operators. However we use nested binary trees so that
- * GTF_REVERSE_OPS will be set just like for other binary operators. As the
- * operands need to end up in specific registers to issue the "rep stos" or
- * the "rep movs" instruction, if we don't allow the order of evaluation of
- * the 3 operands to be mixed, we may generate really bad code.
- *
- * eg. For "rep stos", [val] has to be in EAX. Then if [size]
- * has a division, we will have to spill [val] from EAX. It will be better to
- * evaluate [size] and the evaluate [val] into EAX.
- *
- * This function stores the operands in the order to be evaluated
- * into opsPtr[]. The regsPtr[] contains reg0,reg1,reg2 in the correspondingly
- * switched order.
- */
+//------------------------------------------------------------------------
+// fgOrderBlockOps: Get the execution order for a block assignment
+//
+// Arguments:
+//    tree    - The block assignment
+//    reg0    - The register for the destination
+//    reg1    - The register for the source
+//    reg2    - The register for the size
+//    opsPtr  - An array of 3 GenTreePtr's, an out argument for the operands, in order
+//    regsPtr - An array of three regMaskTP - an out argument for the registers, in order
+//
+// Return Value:
+//    The return values go into the arrays that are passed in, and provide the
+//    operands and associated registers, in execution order.
+//
+// Notes:
+//    This method is somewhat convoluted in order to preserve old behavior from when
+//    block assignments had their dst and src in a GT_LIST as op1, and their size as op2.
+//    The old tree was like this:
+//                                tree->gtOp
+//                               /        \
+//                           GT_LIST  [size/clsHnd]
+//                           /      \
+//                       [dest]     [val/src]
+//
+//    The new tree looks like this:
+//                                GT_ASG
+//                               /       \
+//                           blk/obj   [val/src]
+//                           /      \
+//                    [destAddr]     [*size/clsHnd] *only for GT_DYN_BLK
+//
+//    For the (usual) case of GT_BLK or GT_OBJ, the size is always "evaluated" (i.e.
+//    instantiated into a register) last. In those cases, the GTF_REVERSE_OPS flag
+//    on the assignment works as usual.          
+//    In order to preserve previous possible orderings, the order for evaluating
+//    the size of a GT_DYN_BLK node is controlled by its gtEvalSizeFirst flag. If
+//    that is set, the size is evaluated first, and then the src and dst are evaluated
+//    according to the GTF_REVERSE_OPS flag on the assignment.
 
 void Compiler::fgOrderBlockOps(GenTreePtr  tree,
                                regMaskTP   reg0,
