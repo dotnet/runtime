@@ -101,9 +101,7 @@
     <Compile Include="DecimalTests.netstandard1.7.cs" />
     <Compile Include="EnumTests.netstandard1.7.cs" />
     <Compile Include="GetTypeCodeTests.cs" />
-    <!-- Disabling TimeZoneInfoTests because they are failing in non-Windows netcoreapp1.1 runs. Issue: https://github.com/dotnet/corefx/issues/11307
     <Compile Include="TimeZoneInfoTests.netstandard1.7.cs" />
-    -->
     <Compile Include="TimeZoneNotFoundExceptionTests.netstandard1.7.cs" />
     <Compile Include="VersionTests.netstandard1.7.cs" />
     <Compile Include="System\AccessViolationExceptionTests.cs" />

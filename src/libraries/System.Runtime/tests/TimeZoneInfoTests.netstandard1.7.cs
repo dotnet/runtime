@@ -16,7 +16,7 @@ namespace System.Tests
         [Fact]
         public static void ClearCachedData()
         {
-            TimeZoneInfo cst = TimeZoneInfo.FindSystemTimeZoneById("Central Standard Time");
+            TimeZoneInfo cst = TimeZoneInfo.FindSystemTimeZoneById(s_strSydney);
             TimeZoneInfo local = TimeZoneInfo.Local;
 
             TimeZoneInfo.ClearCachedData();
@@ -27,25 +27,35 @@ namespace System.Tests
         }
 
         [Fact]
-        public static void ConvertTime_DateTimeOffset_Invalid_TimeZoneNotFoundException()
+        public static void ConvertTime_DateTimeOffset_NullDestination_ArgumentNullException()
         {
             DateTimeOffset time1 = new DateTimeOffset(2006, 5, 12, 0, 0, 0, TimeSpan.Zero);
-
             VerifyConvertException<ArgumentNullException>(time1, null);
+        }
 
-            VerifyConvertException<TimeZoneNotFoundException>(time1, string.Empty);
-            VerifyConvertException<TimeZoneNotFoundException>(time1, "    ");
-            VerifyConvertException<TimeZoneNotFoundException>(time1, "\0");
-            VerifyConvertException<TimeZoneNotFoundException>(time1, "Pacific"); // whole string must match
-            VerifyConvertException<TimeZoneNotFoundException>(time1, "Pacific Standard Time Zone"); // no extra characters
-            VerifyConvertException<TimeZoneNotFoundException>(time1, " Pacific Standard Time"); // no leading space
-            VerifyConvertException<TimeZoneNotFoundException>(time1, "Pacific Standard Time "); // no trailing space
-            VerifyConvertException<TimeZoneNotFoundException>(time1, "\0Pacific Standard Time"); // no leading null
-            VerifyConvertException<TimeZoneNotFoundException>(time1, "Pacific Standard Time\0"); // no trailing null
-            VerifyConvertException<TimeZoneNotFoundException>(time1, "Pacific Standard Time\\  "); // no trailing null
-            VerifyConvertException<TimeZoneNotFoundException>(time1, "Pacific Standard Time\\Display");
-            VerifyConvertException<TimeZoneNotFoundException>(time1, "Pacific Standard Time\n"); // no trailing newline
-            VerifyConvertException<TimeZoneNotFoundException>(time1, new string('a', 256)); // long string
+        public static IEnumerable<object[]> ConvertTime_DateTimeOffset_InvalidDestination_TimeZoneNotFoundException_MemberData()
+        {
+            yield return new object[] { string.Empty };
+            yield return new object[] { "    " };
+            yield return new object[] { "\0" };
+            yield return new object[] { s_strPacific.Substring(0, s_strPacific.Length / 2) }; // whole string must match
+            yield return new object[] { s_strPacific + " Zone" }; // no extra characters
+            yield return new object[] { " " + s_strPacific }; // no leading space
+            yield return new object[] { s_strPacific + " " }; // no trailing space
+            yield return new object[] { "\0" + s_strPacific }; // no leading null
+            yield return new object[] { s_strPacific + "\0" }; // no trailing null
+            yield return new object[] { s_strPacific + "\\  " }; // no trailing null
+            yield return new object[] { s_strPacific + "\\Display" };
+            yield return new object[] { s_strPacific + "\n" }; // no trailing newline
+            yield return new object[] { new string('a', 100) }; // long string
+        }
+
+        [Theory]
+        [MemberData(nameof(ConvertTime_DateTimeOffset_InvalidDestination_TimeZoneNotFoundException_MemberData))]
+        public static void ConvertTime_DateTimeOffset_InvalidDestination_TimeZoneNotFoundException(string destinationId)
+        {
+            DateTimeOffset time1 = new DateTimeOffset(2006, 5, 12, 0, 0, 0, TimeSpan.Zero);
+            VerifyConvertException<TimeZoneNotFoundException>(time1, destinationId);
         }
 
         [Fact]
