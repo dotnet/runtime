@@ -1028,9 +1028,6 @@ reflection_sighelper_get_signature_local (MonoReflectionSigHelper *sig, MonoErro
 
 	mono_error_init (error);
 
-	mono_reflection_check_array_for_usertypes (sig->arguments, error);
-	return_val_if_nok (error, NULL);
-
 	sigbuffer_init (&buf, 32);
 
 	sigbuffer_add_value (&buf, 0x07);
@@ -1064,9 +1061,6 @@ reflection_sighelper_get_signature_field (MonoReflectionSigHelper *sig, MonoErro
 	SigBuffer buf;
 
 	mono_error_init (error);
-
-	mono_reflection_check_array_for_usertypes (sig->arguments, error);
-	return_val_if_nok (error, NULL);
 
 	sigbuffer_init (&buf, 32);
 

@@ -77,16 +77,6 @@ static MonoMethod * inflate_method (MonoReflectionType *type, MonoObject *obj, M
 
 static guint32 create_typespec (MonoDynamicImage *assembly, MonoType *type);
 
-#define RESOLVE_TYPE(type, error) do {					\
-	type = (MonoObject *)mono_reflection_type_resolve_user_types ((MonoReflectionType*)type, error); \
-} while (0)
-#define RESOLVE_ARRAY_TYPE_ELEMENT(array, index, error) do {		\
-	MonoReflectionType *__type = mono_array_get (array, MonoReflectionType*, index); \
-	__type = mono_reflection_type_resolve_user_types (__type, error); \
-	if (mono_error_ok (error))					\
-		mono_array_set (arr, MonoReflectionType*, index, __type); \
-} while (0)
-
 #define mono_type_array_get_and_resolve(array, index, error) mono_reflection_type_get_handle ((MonoReflectionType*)mono_array_get (array, gpointer, index), error)
 
 static void mono_image_module_basic_init (MonoReflectionModuleBuilder *module);
@@ -528,7 +518,7 @@ mono_reflection_methodbuilder_from_method_builder (ReflectionMethodBuilder *rmb,
 	memset (rmb, 0, sizeof (ReflectionMethodBuilder));
 
 	rmb->ilgen = mb->ilgen;
-	rmb->rtype = mono_reflection_type_resolve_user_types ((MonoReflectionType*)mb->rtype, error);
+	rmb->rtype = (MonoReflectionType*)mb->rtype;
 	return_val_if_nok (error, FALSE);
 	rmb->parameters = mb->parameters;
 	rmb->generic_params = mb->generic_params;
@@ -2136,26 +2126,6 @@ mono_reflection_type_get_underlying_system_type (MonoReflectionType* t, MonoErro
 	return rt;
 }
 
-MonoReflectionType*
-mono_reflection_type_resolve_user_types (MonoReflectionType *type, MonoError *error)
-{
-	mono_error_init (error);
-	if (!type || type->type)
-		return type;
-
-	if (mono_reflection_is_usertype (type)) {
-		type = mono_reflection_type_get_underlying_system_type (type, error);
-		return_val_if_nok (error, NULL);
-		if (mono_reflection_is_usertype (type)) {
-			mono_error_set_not_supported (error, "User defined subclasses of System.Type are not yet supported22");
-			return NULL;
-		}
-	}
-
-	return type;
-}
-
-
 MonoType*
 mono_reflection_type_get_handle (MonoReflectionType* ref, MonoError *error)
 {
@@ -2961,8 +2931,6 @@ reflection_setup_internal_class (MonoReflectionTypeBuilder *tb, MonoError *error
 	MonoClass *klass, *parent;
 
 	mono_error_init (error);
-	RESOLVE_TYPE (tb->parent, error);
-	return_val_if_nok (error, FALSE);
 
 	mono_loader_lock ();
 
@@ -3014,7 +2982,6 @@ reflection_setup_internal_class (MonoReflectionTypeBuilder *tb, MonoError *error
 	klass->element_class = klass;
 
 	if (mono_class_get_ref_info (klass) == NULL) {
-
 		mono_class_set_ref_info (klass, tb);
 
 		/* Put into cache so mono_class_get_checked () will find it.
@@ -4356,28 +4323,6 @@ remove_instantiations_of_and_ensure_contents (gpointer key,
 		return FALSE;
 }
 
-static void
-check_array_for_usertypes (MonoArray *arr, MonoError *error)
-{
-	mono_error_init (error);
-	int i;
-
-	if (!arr)
-		return;
-
-	for (i = 0; i < mono_array_length (arr); ++i) {
-		RESOLVE_ARRAY_TYPE_ELEMENT (arr, i, error);
-		if (!mono_error_ok (error))
-			break;
-	}
-}
-
-void
-mono_reflection_check_array_for_usertypes (MonoArray *arr, MonoError *error)
-{
-	check_array_for_usertypes (arr, error);
-}
-
 MonoReflectionType*
 ves_icall_TypeBuilder_create_runtime_class (MonoReflectionTypeBuilder *tb)
 {
@@ -4385,96 +4330,12 @@ ves_icall_TypeBuilder_create_runtime_class (MonoReflectionTypeBuilder *tb)
 	MonoClass *klass;
 	MonoDomain* domain;
 	MonoReflectionType* res;
-	int i, j;
+	int i;
 
 	mono_error_init (&error);
 
 	domain = mono_object_domain (tb);
 	klass = mono_class_from_mono_type (tb->type.type);
-
-	/*
-	 * Check for user defined Type subclasses.
-	 */
-	RESOLVE_TYPE (tb->parent, &error);
-	if (!is_ok (&error))
-		goto failure_unlocked;
-	check_array_for_usertypes (tb->interfaces, &error);
-	if (!is_ok (&error))
-		goto failure_unlocked;
-	if (tb->fields) {
-		for (i = 0; i < mono_array_length (tb->fields); ++i) {
-			MonoReflectionFieldBuilder *fb = (MonoReflectionFieldBuilder *)mono_array_get (tb->fields, gpointer, i);
-			if (fb) {
-				RESOLVE_TYPE (fb->type, &error);
-				if (!is_ok (&error))
-					goto failure_unlocked;
-				check_array_for_usertypes (fb->modreq, &error);
-				if (!is_ok (&error))
-					goto failure_unlocked;
-				check_array_for_usertypes (fb->modopt, &error);
-				if (!is_ok (&error))
-					goto failure_unlocked;
-				if (fb->marshal_info && fb->marshal_info->marshaltyperef) {
-					RESOLVE_TYPE (fb->marshal_info->marshaltyperef, &error);
-					if (!is_ok (&error))
-						goto failure_unlocked;
-				}
-			}
-		}
-	}
-	if (tb->methods) {
-		for (i = 0; i < mono_array_length (tb->methods); ++i) {
-			MonoReflectionMethodBuilder *mb = (MonoReflectionMethodBuilder *)mono_array_get (tb->methods, gpointer, i);
-			if (mb) {
-				RESOLVE_TYPE (mb->rtype, &error);
-				if (!is_ok (&error))
-					goto failure_unlocked;
-				check_array_for_usertypes (mb->return_modreq, &error);
-				if (!is_ok (&error))
-					goto failure_unlocked;
-				check_array_for_usertypes (mb->return_modopt, &error);
-				if (!is_ok (&error))
-					goto failure_unlocked;
-				check_array_for_usertypes (mb->parameters, &error);
-				if (!is_ok (&error))
-					goto failure_unlocked;
-				if (mb->param_modreq)
-					for (j = 0; j < mono_array_length (mb->param_modreq); ++j) {
-						check_array_for_usertypes (mono_array_get (mb->param_modreq, MonoArray*, j), &error);
-						if (!is_ok (&error))
-							goto failure_unlocked;
-					}
-				if (mb->param_modopt)
-					for (j = 0; j < mono_array_length (mb->param_modopt); ++j) {
-						check_array_for_usertypes (mono_array_get (mb->param_modopt, MonoArray*, j), &error);
-						if (!is_ok (&error))
-							goto failure_unlocked;
-					}
-			}
-		}
-	}
-	if (tb->ctors) {
-		for (i = 0; i < mono_array_length (tb->ctors); ++i) {
-			MonoReflectionCtorBuilder *mb = (MonoReflectionCtorBuilder *)mono_array_get (tb->ctors, gpointer, i);
-			if (mb) {
-				check_array_for_usertypes (mb->parameters, &error);
-				if (!is_ok (&error))
-					goto failure_unlocked;
-				if (mb->param_modreq)
-					for (j = 0; j < mono_array_length (mb->param_modreq); ++j) {
-						check_array_for_usertypes (mono_array_get (mb->param_modreq, MonoArray*, j), &error);
-						if (!is_ok (&error))
-							goto failure_unlocked;
-					}
-				if (mb->param_modopt)
-					for (j = 0; j < mono_array_length (mb->param_modopt); ++j) {
-						check_array_for_usertypes (mono_array_get (mb->param_modopt, MonoArray*, j), &error);
-						if (!is_ok (&error))
-							goto failure_unlocked;
-					}
-			}
-		}
-	}
 
 	mono_save_custom_attrs (klass->image, klass, tb->cattrs);
 

@@ -105,8 +105,6 @@ mono_reflection_init_type_builder_generics (MonoObject *type, MonoError *error);
 guint32
 mono_reflection_resolution_scope_from_image (MonoDynamicImage *assembly, MonoImage *image);
 
-void mono_reflection_check_array_for_usertypes (MonoArray *arr, MonoError *error);
-
 guint32 mono_reflection_method_count_clauses (MonoReflectionILGen *ilgen);
 
 
