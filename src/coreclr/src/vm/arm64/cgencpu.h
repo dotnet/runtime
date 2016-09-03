@@ -38,8 +38,8 @@ class ComCallMethodDesc;
 
 #define USE_INDIRECT_CODEHEADER
 
-//#define HAS_FIXUP_PRECODE                       1
-//#define HAS_FIXUP_PRECODE_CHUNKS                1
+#define HAS_FIXUP_PRECODE                       1
+#define HAS_FIXUP_PRECODE_CHUNKS                1
 
 // ThisPtrRetBufPrecode one is necessary for closed delegates over static methods with return buffer
 #define HAS_THISPTR_RETBUF_PRECODE              1
@@ -613,44 +613,76 @@ typedef DPTR(NDirectImportPrecode) PTR_NDirectImportPrecode;
 
 struct FixupPrecode {
 
-    static const int Type = 0xfc;
+    static const int Type = 0x0C;
 
-    // mov r12, pc
-    // ldr pc, [pc, #4]     ; =m_pTarget
+    // adr x12, #0 
+    // ldr x11, [pc, #12]     ; =m_pTarget
+    // br  x11
     // dcb m_MethodDescChunkIndex
     // dcb m_PrecodeChunkIndex
+    // 2 byte padding
     // dcd m_pTarget
-    WORD    m_rgCode[3];
+
+
+    UINT32  m_rgCode[3];
+    BYTE    padding[2];
     BYTE    m_MethodDescChunkIndex;
     BYTE    m_PrecodeChunkIndex;
     TADDR   m_pTarget;
 
     void Init(MethodDesc* pMD, LoaderAllocator *pLoaderAllocator, int iMethodDescChunkIndex = 0, int iPrecodeChunkIndex = 0);
+    void InitCommon()
+    {
+        WRAPPER_NO_CONTRACT;
+        int n = 0;
+
+        m_rgCode[n++] = 0x1000000C;   // adr x12, #0
+        m_rgCode[n++] = 0x5800006B;   // ldr x11, [pc, #12]     ; =m_pTarget
+
+        _ASSERTE((UINT32*)&m_pTarget == &m_rgCode[n + 2]);
+
+        m_rgCode[n++] = 0xD61F0160;   // br  x11
+
+        _ASSERTE(n == _countof(m_rgCode));
+    }
 
     TADDR GetBase()
     {
-        _ASSERTE(!"ARM64:NYI");
-        return NULL;
+        LIMITED_METHOD_CONTRACT;
+        SUPPORTS_DAC;
+
+        return dac_cast<TADDR>(this) + (m_PrecodeChunkIndex + 1) * sizeof(FixupPrecode);
     }
 
     TADDR GetMethodDesc();
 
     PCODE GetTarget()
     {
-        _ASSERTE(!"ARM64:NYI");
-        return NULL;
+        LIMITED_METHOD_DAC_CONTRACT;
+        return m_pTarget;
     }
 
     BOOL SetTargetInterlocked(TADDR target, TADDR expected)
     {
-        _ASSERTE(!"ARM64:NYI");
-        return NULL;
+        CONTRACTL
+        {
+            THROWS;
+            GC_TRIGGERS;
+        }
+        CONTRACTL_END;
+
+        EnsureWritableExecutablePages(&m_pTarget);
+        return (TADDR)InterlockedCompareExchange64(
+            (LONGLONG*)&m_pTarget, (TADDR)target, (TADDR)expected) == expected;
     }
 
     static BOOL IsFixupPrecodeByASM(PCODE addr)
     {
-        _ASSERTE(!"ARM64:NYI");
-        return NULL;
+        PTR_DWORD pInstr = dac_cast<PTR_DWORD>(PCODEToPINSTR(addr));
+        return
+            (pInstr[0] == 0x1000000C) &&
+            (pInstr[1] == 0x5800006B) &&
+            (pInstr[2] == 0xD61F0160);
     }
 
 #ifdef FEATURE_PREJIT
