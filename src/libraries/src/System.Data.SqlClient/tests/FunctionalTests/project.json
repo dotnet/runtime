@@ -1,15 +1,15 @@
 {
   "dependencies": {
-    "Microsoft.CSharp": "4.3.0-beta-24501-02",
-    "Microsoft.NETCore.Platforms": "4.3.0-beta-24501-02",
-    "System.Data.Common": "4.3.0-beta-24501-02",
-    "System.Data.SqlClient": "4.3.0-beta-24501-02",
-    "System.Text.Encoding.CodePages": "4.3.0-beta-24501-02",
-    "System.Text.RegularExpressions": "4.3.0-beta-24501-02",
-    "System.Collections": "4.3.0-beta-24501-02",
-    "System.Collections.Concurrent": "4.3.0-beta-24501-02",
-    "System.Diagnostics.DiagnosticSource": "4.3.0-beta-24501-02",
-    "System.Xml.ReaderWriter": "4.3.0-beta-24501-02",
+    "Microsoft.CSharp": "4.3.0-beta-24502-03",
+    "Microsoft.NETCore.Platforms": "1.0.2-beta-24502-03",
+    "System.Data.Common": "4.3.0-beta-24502-03",
+    "System.Data.SqlClient": "4.3.0-beta-24502-03",
+    "System.Text.Encoding.CodePages": "4.3.0-beta-24502-03",
+    "System.Text.RegularExpressions": "4.3.0-beta-24502-03",
+    "System.Collections": "4.3.0-beta-24502-03",
+    "System.Collections.Concurrent": "4.3.0-beta-24502-03",
+    "System.Diagnostics.DiagnosticSource": "4.3.0-beta-24502-03",
+    "System.Xml.ReaderWriter": "4.3.0-beta-24502-03",
     "test-runtime": {
       "target": "project",
       "exclude": "compile"
