@@ -8,20 +8,14 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\System.Reflection.Primitives.csproj" />
-    <ProjectReference Include="..\..\src\redist\System.Reflection.Primitives.depproj">
-      <TargetGroup>netcore50</TargetGroup>
-    </ProjectReference>
 
-    <!-- AOT implementation comes from AOT package -->
-    <File Include="$(PlaceholderFile)">
-      <TargetPath>runtimes/aot/lib/netcore50</TargetPath>
-      <TargetFramework>aot</TargetFramework>
-    </File>
     <InboxOnTargetFramework Include="MonoAndroid10" />
     <InboxOnTargetFramework Include="MonoTouch10" />
     <InboxOnTargetFramework Include="net45" />
     <InboxOnTargetFramework Include="win8" />
     <InboxOnTargetFramework Include="wp80" />
+    <InboxOnTargetFramework Include="portable45-net45+win8+wpa81" />
+    <InboxOnTargetFramework Include="portable45-net45+win8+wp8+wpa81" />
     <InboxOnTargetFramework Include="wpa81" />
     <InboxOnTargetFramework Include="xamarinios10" />
     <InboxOnTargetFramework Include="xamarinmac20" />

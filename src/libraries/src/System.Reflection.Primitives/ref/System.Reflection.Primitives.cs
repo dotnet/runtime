@@ -5,160 +5,17 @@
 // Changes to this file must follow the http://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
+// These types were moved down to System.Runtime
+[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Reflection.CallingConventions))]
+[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Reflection.EventAttributes))]
+[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Reflection.FieldAttributes))]
+[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Reflection.GenericParameterAttributes))]
+[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Reflection.MethodAttributes))]
+[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Reflection.MethodImplAttributes))]
+[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Reflection.ParameterAttributes))]
+[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Reflection.PropertyAttributes))]
+[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Reflection.TypeAttributes))]
 
-namespace System.Reflection
-{
-    [System.FlagsAttribute]
-    public enum CallingConventions
-    {
-        Any = 3,
-        ExplicitThis = 64,
-        HasThis = 32,
-        Standard = 1,
-        VarArgs = 2,
-    }
-    [System.FlagsAttribute]
-    public enum EventAttributes
-    {
-        None = 0,
-        RTSpecialName = 1024,
-        SpecialName = 512,
-    }
-    [System.FlagsAttribute]
-    public enum FieldAttributes
-    {
-        Assembly = 3,
-        FamANDAssem = 2,
-        Family = 4,
-        FamORAssem = 5,
-        FieldAccessMask = 7,
-        HasDefault = 32768,
-        HasFieldMarshal = 4096,
-        HasFieldRVA = 256,
-        InitOnly = 32,
-        Literal = 64,
-        NotSerialized = 128,
-        PinvokeImpl = 8192,
-        Private = 1,
-        PrivateScope = 0,
-        Public = 6,
-        RTSpecialName = 1024,
-        SpecialName = 512,
-        Static = 16,
-    }
-    [System.FlagsAttribute]
-    public enum GenericParameterAttributes
-    {
-        Contravariant = 2,
-        Covariant = 1,
-        DefaultConstructorConstraint = 16,
-        None = 0,
-        NotNullableValueTypeConstraint = 8,
-        ReferenceTypeConstraint = 4,
-        SpecialConstraintMask = 28,
-        VarianceMask = 3,
-    }
-    [System.FlagsAttribute]
-    public enum MethodAttributes
-    {
-        Abstract = 1024,
-        Assembly = 3,
-        CheckAccessOnOverride = 512,
-        FamANDAssem = 2,
-        Family = 4,
-        FamORAssem = 5,
-        Final = 32,
-        HasSecurity = 16384,
-        HideBySig = 128,
-        MemberAccessMask = 7,
-        NewSlot = 256,
-        PinvokeImpl = 8192,
-        Private = 1,
-        PrivateScope = 0,
-        Public = 6,
-        RequireSecObject = 32768,
-        ReuseSlot = 0,
-        RTSpecialName = 4096,
-        SpecialName = 2048,
-        Static = 16,
-        UnmanagedExport = 8,
-        Virtual = 64,
-        VtableLayoutMask = 256,
-    }
-    public enum MethodImplAttributes
-    {
-        AggressiveInlining = 256,
-        CodeTypeMask = 3,
-        ForwardRef = 16,
-        IL = 0,
-        InternalCall = 4096,
-        Managed = 0,
-        ManagedMask = 4,
-        Native = 1,
-        NoInlining = 8,
-        NoOptimization = 64,
-        OPTIL = 2,
-        PreserveSig = 128,
-        Runtime = 3,
-        Synchronized = 32,
-        Unmanaged = 4,
-    }
-    [System.FlagsAttribute]
-    public enum ParameterAttributes
-    {
-        HasDefault = 4096,
-        HasFieldMarshal = 8192,
-        In = 1,
-        Lcid = 4,
-        None = 0,
-        Optional = 16,
-        Out = 2,
-        Retval = 8,
-    }
-    [System.FlagsAttribute]
-    public enum PropertyAttributes
-    {
-        HasDefault = 4096,
-        None = 0,
-        RTSpecialName = 1024,
-        SpecialName = 512,
-    }
-    [System.FlagsAttribute]
-    public enum TypeAttributes
-    {
-        Abstract = 128,
-        AnsiClass = 0,
-        AutoClass = 131072,
-        AutoLayout = 0,
-        BeforeFieldInit = 1048576,
-        Class = 0,
-        ClassSemanticsMask = 32,
-        CustomFormatClass = 196608,
-        CustomFormatMask = 12582912,
-        ExplicitLayout = 16,
-        HasSecurity = 262144,
-        Import = 4096,
-        Interface = 32,
-        LayoutMask = 24,
-        NestedAssembly = 5,
-        NestedFamANDAssem = 6,
-        NestedFamily = 4,
-        NestedFamORAssem = 7,
-        NestedPrivate = 3,
-        NestedPublic = 2,
-        NotPublic = 0,
-        Public = 1,
-        RTSpecialName = 2048,
-        Sealed = 256,
-        SequentialLayout = 8,
-        Serializable = 8192,
-        SpecialName = 1024,
-        StringFormatMask = 196608,
-        UnicodeClass = 65536,
-        VisibilityMask = 7,
-        WindowsRuntime = 16384,
-    }
-}
 namespace System.Reflection.Emit
 {
     public enum FlowControl
