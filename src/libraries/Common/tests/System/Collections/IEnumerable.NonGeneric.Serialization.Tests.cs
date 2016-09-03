@@ -18,6 +18,14 @@ namespace System.Collections.Tests
         public void IGenericSharedAPI_SerializeDeserialize(int count)
         {
             IEnumerable expected = NonGenericIEnumerableFactory(count);
+            if (!SupportsSerialization)
+            {
+                // No assert for !IsSerializable here, as some collections are only serializable sometimes,
+                // e.g. HybridDictionary.Keys is serializable when using Hashtable.Keys but not when
+                // using ListDictionary.Keys.
+                return;
+            }
+            Assert.True(expected.GetType().GetTypeInfo().IsSerializable, "Expected IsSerializable");
 
             var bf = new BinaryFormatter();
             using (var ms = new MemoryStream())
