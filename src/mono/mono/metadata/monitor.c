@@ -930,7 +930,7 @@ retry_contended:
 	if (wait_ret == MONO_SEM_TIMEDWAIT_RET_ALERTED) {
 		LOCK_DEBUG (g_message ("%s: (%d) interrupted waiting, returning -1", __func__, id));
 		return -1;
-	} else if (wait_ret == MONO_SEM_TIMEDWAIT_RET_ALERTED) {
+	} else if (wait_ret == MONO_SEM_TIMEDWAIT_RET_TIMEDOUT) {
 		LOCK_DEBUG (g_message ("%s: (%d) timed out waiting, returning FALSE", __func__, id));
 		return 0;
 	} else {
