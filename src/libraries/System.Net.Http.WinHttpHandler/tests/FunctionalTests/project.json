@@ -1,16 +1,16 @@
 {
   "dependencies": {
-    "Microsoft.NETCore.Platforms": "4.3.0-beta-24501-02",
-    "Microsoft.Win32.Primitives": "4.3.0-beta-24501-02",
-    "System.Diagnostics.DiagnosticSource": "4.3.0-beta-24501-02",
-    "System.IO.Compression": "4.3.0-beta-24501-02",
-    "System.Linq.Expressions": "4.3.0-beta-24501-02",
-    "System.Net.Http": "4.3.0-beta-24501-02",
-    "System.Net.Primitives": "4.3.0-beta-24501-02",
-    "System.ObjectModel": "4.3.0-beta-24501-02",
-    "System.Security.Cryptography.X509Certificates": "4.3.0-beta-24501-02",
-    "System.Text.RegularExpressions": "4.3.0-beta-24501-02",
-    "System.Threading.Tasks": "4.3.0-beta-24501-02",
+    "Microsoft.NETCore.Platforms": "1.0.2-beta-24502-03",
+    "Microsoft.Win32.Primitives": "4.3.0-beta-24502-03",
+    "System.Diagnostics.DiagnosticSource": "4.3.0-beta-24502-03",
+    "System.IO.Compression": "4.3.0-beta-24502-03",
+    "System.Linq.Expressions": "4.3.0-beta-24502-03",
+    "System.Net.Http": "4.3.0-beta-24502-03",
+    "System.Net.Primitives": "4.3.0-beta-24502-03",
+    "System.ObjectModel": "4.3.0-beta-24502-03",
+    "System.Security.Cryptography.X509Certificates": "4.3.0-beta-24502-03",
+    "System.Text.RegularExpressions": "4.3.0-beta-24502-03",
+    "System.Threading.Tasks": "4.3.0-beta-24502-03",
     "test-runtime": {
       "target": "project",
       "exclude": "compile"
