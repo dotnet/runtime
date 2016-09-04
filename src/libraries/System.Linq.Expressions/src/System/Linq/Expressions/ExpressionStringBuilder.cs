@@ -646,6 +646,8 @@ namespace System.Linq.Expressions
                     Out("+");
                     break;
                 case ExpressionType.Quote:
+                case ExpressionType.PostIncrementAssign:
+                case ExpressionType.PostDecrementAssign:
                     break;
                 case ExpressionType.Throw:
                     Out("throw(");
