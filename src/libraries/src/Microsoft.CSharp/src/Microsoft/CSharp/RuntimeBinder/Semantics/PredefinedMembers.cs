@@ -300,7 +300,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
 
             return ctor;
-            throw Error.InternalCompilerError();
         }
 
         // property specific helpers
