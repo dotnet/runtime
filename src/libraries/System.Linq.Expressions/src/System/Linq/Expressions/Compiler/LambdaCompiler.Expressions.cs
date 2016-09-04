@@ -565,10 +565,14 @@ namespace System.Linq.Expressions.Compiler
 
         private void EmitDynamicExpression(Expression expr)
         {
+#if FEATURE_COMPILE_TO_METHODBUILDER
             if (!(_method is DynamicMethod))
             {
                 throw Error.CannotCompileDynamic();
             }
+#else
+            Debug.Assert(_method is DynamicMethod);
+#endif
 
             var node = (IDynamicExpression)expr;
 
@@ -917,7 +921,7 @@ namespace System.Linq.Expressions.Compiler
             throw Error.ExtensionNotReduced();
         }
 
-        #region ListInit, MemberInit
+#region ListInit, MemberInit
 
         private void EmitListInitExpression(Expression expr)
         {
@@ -1107,9 +1111,9 @@ namespace System.Linq.Expressions.Compiler
             throw Error.MemberNotFieldOrProperty(member, nameof(member));
         }
 
-        #endregion
+#endregion
 
-        #region Expression helpers
+#region Expression helpers
 
         internal static void ValidateLift(IList<ParameterExpression> variables, IList<Expression> arguments)
         {
@@ -1306,6 +1310,6 @@ namespace System.Linq.Expressions.Compiler
             }
         }
 
-        #endregion
+#endregion
     }
 }
