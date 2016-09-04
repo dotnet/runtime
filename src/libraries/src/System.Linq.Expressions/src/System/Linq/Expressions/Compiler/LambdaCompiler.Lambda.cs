@@ -7,7 +7,6 @@ using System.Dynamic.Utils;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
-using System.Threading;
 
 namespace System.Linq.Expressions.Compiler
 {
@@ -17,16 +16,23 @@ namespace System.Linq.Expressions.Compiler
     /// </summary>
     internal partial class LambdaCompiler
     {
+#if FEATURE_COMPILE_TO_METHODBUILDER
         private static int s_counter;
+#endif
 
         internal void EmitConstantArray<T>(T[] array)
         {
+#if FEATURE_COMPILE_TO_METHODBUILDER
             // Emit as runtime constant if possible
             // if not, emit into IL
             if (_method is DynamicMethod)
+#else
+            Debug.Assert(_method is DynamicMethod);
+#endif
             {
                 EmitConstant(array, typeof(T[]));
             }
+#if FEATURE_COMPILE_TO_METHODBUILDER
             else if (_typeBuilder != null)
             {
                 // store into field in our type builder, we will initialize
@@ -45,6 +51,7 @@ namespace System.Linq.Expressions.Compiler
             {
                 _ilg.EmitArray(array);
             }
+#endif
         }
 
         private void EmitClosureCreation(LambdaCompiler inner)
@@ -88,7 +95,11 @@ namespace System.Linq.Expressions.Compiler
         {
             Type delegateType = inner._lambda.Type;
             DynamicMethod dynamicMethod = inner._method as DynamicMethod;
+#if FEATURE_COMPILE_TO_METHODBUILDER
             if (dynamicMethod != null)
+#else
+            Debug.Assert(dynamicMethod != null);
+#endif
             {
                 // Emit MethodInfo.CreateDelegate instead because DynamicMethod is not in Windows 8 Profile
                 _boundConstants.EmitConstant(this, dynamicMethod, typeof(MethodInfo));
@@ -97,13 +108,15 @@ namespace System.Linq.Expressions.Compiler
                 _ilg.Emit(OpCodes.Callvirt, typeof(MethodInfo).GetMethod("CreateDelegate", new Type[] { typeof(Type), typeof(object) }));
                 _ilg.Emit(OpCodes.Castclass, delegateType);
             }
+#if FEATURE_COMPILE_TO_METHODBUILDER
             else
             {
                 // new DelegateType(closure)
                 EmitClosureCreation(inner);
-                _ilg.Emit(OpCodes.Ldftn, (MethodInfo)inner._method);
+                _ilg.Emit(OpCodes.Ldftn, inner._method);
                 _ilg.Emit(OpCodes.Newobj, (ConstructorInfo)(delegateType.GetMember(".ctor")[0]));
             }
+#endif
         }
 
         /// <summary>
@@ -116,10 +129,15 @@ namespace System.Linq.Expressions.Compiler
         {
             // 1. Create the new compiler
             LambdaCompiler impl;
+#if FEATURE_COMPILE_TO_METHODBUILDER
             if (_method is DynamicMethod)
+#else
+            Debug.Assert(_method is DynamicMethod);
+#endif
             {
                 impl = new LambdaCompiler(_tree, lambda);
             }
+#if FEATURE_COMPILE_TO_METHODBUILDER
             else
             {
                 // When the lambda does not have a name or the name is empty, generate a unique name for it.
@@ -127,6 +145,7 @@ namespace System.Linq.Expressions.Compiler
                 MethodBuilder mb = _typeBuilder.DefineMethod(name, MethodAttributes.Private | MethodAttributes.Static);
                 impl = new LambdaCompiler(_tree, lambda, mb);
             }
+#endif
 
             // 2. emit the lambda
             // Since additional ILs are always emitted after the lambda's body, should not emit with tail call optimization.
@@ -141,10 +160,12 @@ namespace System.Linq.Expressions.Compiler
             return lambda.Parameters.Map(p => p.IsByRef ? p.Type.MakeByRefType() : p.Type);
         }
 
+#if FEATURE_COMPILE_TO_METHODBUILDER
         private static string GetUniqueMethodName()
         {
-            return "<ExpressionCompilerImplementationDetails>{" + Interlocked.Increment(ref s_counter) + "}lambda_method";
+            return "<ExpressionCompilerImplementationDetails>{" + System.Threading.Interlocked.Increment(ref s_counter) + "}lambda_method";
         }
+#endif
 
         private void EmitLambdaBody()
         {
