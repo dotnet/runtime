@@ -20,6 +20,7 @@ namespace System.Collections.Specialized.Tests
         protected override bool Enumerator_Current_UndefinedOperation_Throws => true;
 
         protected override bool IsReadOnly => true;
+        protected override bool SupportsSerialization => false;
 
         protected override ICollection NonGenericICollectionFactory() => new ListDictionary().Keys;
 
