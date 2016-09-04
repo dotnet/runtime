@@ -152,7 +152,7 @@ namespace System.Linq.Expressions
     /// </remarks>
     public sealed class Expression<TDelegate> : LambdaExpression
     {
-        public Expression(Expression body, string name, bool tailCall, ReadOnlyCollection<ParameterExpression> parameters)
+        internal Expression(Expression body, string name, bool tailCall, ReadOnlyCollection<ParameterExpression> parameters)
             : base(typeof(TDelegate), name, body, tailCall, parameters)
         {
         }
