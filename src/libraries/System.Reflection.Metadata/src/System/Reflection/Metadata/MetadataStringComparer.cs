@@ -68,7 +68,7 @@ namespace System.Reflection.Metadata
                 Throw.ValueArgumentNull();
             }
 
-            return _reader.StringHeap.Equals(handle, value, _reader.Utf8Decoder, ignoreCase);
+            return _reader.StringHeap.Equals(handle, value, _reader.UTF8Decoder, ignoreCase);
         }
 
         public bool Equals(NamespaceDefinitionHandle handle, string value)
@@ -85,7 +85,7 @@ namespace System.Reflection.Metadata
 
             if (handle.HasFullName)
             {
-                return _reader.StringHeap.Equals(handle.GetFullName(), value, _reader.Utf8Decoder, ignoreCase);
+                return _reader.StringHeap.Equals(handle.GetFullName(), value, _reader.UTF8Decoder, ignoreCase);
             }
 
             return value == _reader.NamespaceCache.GetFullName(handle);
@@ -118,7 +118,7 @@ namespace System.Reflection.Metadata
                 Throw.ValueArgumentNull();
             }
 
-            return _reader.StringHeap.StartsWith(handle, value, _reader.Utf8Decoder, ignoreCase);
+            return _reader.StringHeap.StartsWith(handle, value, _reader.UTF8Decoder, ignoreCase);
         }
     }
 }
