@@ -189,7 +189,8 @@ private:
     void TreeNodeInfoInitReturn(GenTree* tree);
     void TreeNodeInfoInitShiftRotate(GenTree* tree);
     void TreeNodeInfoInitCall(GenTreeCall* call);
-    void TreeNodeInfoInitBlockStore(GenTreeBlkOp* blkNode);
+    void TreeNodeInfoInitStructArg(GenTreePtr structArg);
+    void TreeNodeInfoInitBlockStore(GenTreeBlk* blkNode);
     void TreeNodeInfoInitLogicalOp(GenTree* tree);
     void TreeNodeInfoInitModDiv(GenTree* tree);
     void TreeNodeInfoInitIntrinsic(GenTree* tree);
@@ -212,6 +213,7 @@ private:
     GenTree* LowerAdd(GenTree* node);
     void LowerUnsignedDivOrMod(GenTree* node);
     GenTree* LowerSignedDivOrMod(GenTree* node);
+    void LowerBlockStore(GenTreeBlk* blkNode);
 
     GenTree* TryCreateAddrMode(LIR::Use&& use, bool isIndir);
     void AddrModeCleanupHelper(GenTreeAddrMode* addrMode, GenTree* node);
