@@ -1644,40 +1644,38 @@ regMaskTP Compiler::rpPredictBlkAsgRegUse(GenTreePtr   tree,
     regMaskTP regMask         = RBM_NONE;
     regMaskTP interferingRegs = RBM_NONE;
 
-    bool hasGCpointer = false;
-    bool dstIsOnStack = false;
-    bool useMemHelper = false;
-    bool useBarriers  = false;
+    bool        hasGCpointer  = false;
+    bool        dstIsOnStack  = false;
+    bool        useMemHelper  = false;
+    bool        useBarriers   = false;
+    GenTreeBlk* dst           = tree->gtGetOp1()->AsBlk();
+    GenTreePtr  dstAddr       = dst->Addr();
+    GenTreePtr  srcAddrOrFill = tree->gtGetOp2();
 
-    GenTreeBlkOp* blkNode       = tree->AsBlkOp();
-    GenTreePtr    dstAddr       = blkNode->Dest();
-    GenTreePtr    op1           = blkNode->gtGetOp1();
-    GenTreePtr    srcAddrOrFill = op1->gtGetOp2();
-    GenTreePtr    sizeNode      = blkNode->gtGetOp2();
+    size_t blkSize = dst->gtBlkSize;
 
-    size_t blkSize = 0;
-
-    hasGCpointer = (blkNode->HasGCPtr());
+    hasGCpointer = (dst->HasGCPtr());
 
     bool isCopyBlk = tree->OperIsCopyBlkOp();
-    bool isCopyObj = (tree->OperGet() == GT_COPYOBJ);
-    bool isInitBlk = (tree->OperGet() == GT_INITBLK);
+    bool isCopyObj = isCopyBlk && hasGCpointer;
+    bool isInitBlk = tree->OperIsInitBlkOp();
 
-    if (sizeNode->OperGet() == GT_CNS_INT)
+    if (isCopyBlk)
     {
-        if (sizeNode->IsIconHandle(GTF_ICON_CLASS_HDL))
-        {
-            if (isCopyObj)
-            {
-                dstIsOnStack = (dstAddr->gtOper == GT_ADDR && (dstAddr->gtFlags & GTF_ADDR_ONSTACK));
-            }
+        assert(srcAddrOrFill->OperIsIndir());
+        srcAddrOrFill = srcAddrOrFill->AsIndir()->Addr();
+    }
+    else
+    {
+        // For initBlk, we don't need to worry about the GC pointers.
+        hasGCpointer = false;
+    }
 
-            CORINFO_CLASS_HANDLE clsHnd = (CORINFO_CLASS_HANDLE)sizeNode->gtIntCon.gtIconVal;
-            blkSize                     = roundUp(info.compCompHnd->getClassSize(clsHnd), TARGET_POINTER_SIZE);
-        }
-        else // gtIconVal contains amount to copy
+    if (blkSize != 0)
+    {
+        if (isCopyObj)
         {
-            blkSize = (unsigned)sizeNode->gtIntCon.gtIconVal;
+            dstIsOnStack = (dstAddr->gtOper == GT_ADDR && (dstAddr->gtFlags & GTF_ADDR_ONSTACK));
         }
 
         if (isInitBlk)
@@ -1722,7 +1720,7 @@ regMaskTP Compiler::rpPredictBlkAsgRegUse(GenTreePtr   tree,
             srcAndDstPredict = PREDICT_SCRATCH_REG;
         }
 
-        if (op1->gtFlags & GTF_REVERSE_OPS)
+        if (tree->gtFlags & GTF_REVERSE_OPS)
         {
             regMask |= rpPredictTreeRegUse(srcAddrOrFill, srcAndDstPredict, lockedRegs,
                                            dstAddr->gtRsvdRegs | avoidReg | RBM_LASTUSE);
@@ -1803,23 +1801,36 @@ regMaskTP Compiler::rpPredictBlkAsgRegUse(GenTreePtr   tree,
 #else // !_TARGET_X86_ && !_TARGET_ARM_
 #error "Non-ARM or x86 _TARGET_ in RegPredict for INITBLK/COPYBLK"
 #endif // !_TARGET_X86_ && !_TARGET_ARM_
+    regMaskTP opsPtr2RsvdRegs = opsPtr[2] == nullptr ? RBM_NONE : opsPtr[2]->gtRsvdRegs;
     regMask |= rpPredictTreeRegUse(opsPtr[0], rpGetPredictForMask(regsPtr[0]), lockedRegs,
-                                   opsPtr[1]->gtRsvdRegs | opsPtr[2]->gtRsvdRegs | RBM_LASTUSE);
+                                   opsPtr[1]->gtRsvdRegs | opsPtr2RsvdRegs | RBM_LASTUSE);
     regMask |= regsPtr[0];
     opsPtr[0]->gtUsedRegs |= regsPtr[0];
     rpRecordRegIntf(regsPtr[0], compCurLife DEBUGARG("movsd dest"));
 
     regMask |= rpPredictTreeRegUse(opsPtr[1], rpGetPredictForMask(regsPtr[1]), lockedRegs | regMask,
-                                   opsPtr[2]->gtRsvdRegs | RBM_LASTUSE);
+                                   opsPtr2RsvdRegs | RBM_LASTUSE);
     regMask |= regsPtr[1];
     opsPtr[1]->gtUsedRegs |= regsPtr[1];
     rpRecordRegIntf(regsPtr[1], compCurLife DEBUGARG("movsd src"));
 
-    regMask |= rpPredictTreeRegUse(opsPtr[2], rpGetPredictForMask(regsPtr[2]), lockedRegs | regMask, RBM_NONE);
-    regMask |= regsPtr[2];
-    opsPtr[2]->gtUsedRegs |= regsPtr[2];
+    regMaskSmall opsPtr2UsedRegs = (regMaskSmall)regsPtr[2];
+    if (opsPtr[2] == nullptr)
+    {
+        // If we have no "size" node, we will predict that regsPtr[2] will be used for the size.
+        // Note that it is quite possible that no register is required, but this preserves
+        // former behavior.
+        regMask |= rpPredictRegPick(TYP_INT, rpGetPredictForMask(regsPtr[2]), lockedRegs | regMask);
+        rpRecordRegIntf(regsPtr[2], compCurLife DEBUGARG("tmp use"));
+    }
+    else
+    {
+        regMask |= rpPredictTreeRegUse(opsPtr[2], rpGetPredictForMask(regsPtr[2]), lockedRegs | regMask, RBM_NONE);
+        opsPtr[2]->gtUsedRegs |= opsPtr2UsedRegs;
+    }
+    regMask |= opsPtr2UsedRegs;
 
-    tree->gtUsedRegs = opsPtr[0]->gtUsedRegs | opsPtr[1]->gtUsedRegs | opsPtr[2]->gtUsedRegs | (regMaskSmall)regMask;
+    tree->gtUsedRegs = opsPtr[0]->gtUsedRegs | opsPtr[1]->gtUsedRegs | opsPtr2UsedRegs | (regMaskSmall)regMask;
     return interferingRegs;
 }
 
@@ -2404,6 +2415,12 @@ regMaskTP Compiler::rpPredictTreeRegUse(GenTreePtr   tree,
         {
             case GT_ASG:
 
+                if (tree->OperIsBlkOp())
+                {
+                    interferingRegs |= rpPredictBlkAsgRegUse(tree, predictReg, lockedRegs, rsvdRegs);
+                    regMask = 0;
+                    goto RETURN_CHECK;
+                }
                 /* Is the value being assigned into a LCL_VAR? */
                 if (op1->gtOper == GT_LCL_VAR)
                 {
@@ -4249,13 +4266,6 @@ regMaskTP Compiler::rpPredictTreeRegUse(GenTreePtr   tree,
                 // The result will be put in the reg we picked for the size
                 // regMask = <already set as we want it to be>
 
-                goto RETURN_CHECK;
-
-            case GT_COPYOBJ:
-            case GT_COPYBLK:
-            case GT_INITBLK:
-                interferingRegs |= rpPredictBlkAsgRegUse(tree, predictReg, lockedRegs, rsvdRegs);
-                regMask = 0;
                 goto RETURN_CHECK;
 
             case GT_OBJ:
