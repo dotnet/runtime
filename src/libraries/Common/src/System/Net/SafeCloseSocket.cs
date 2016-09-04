@@ -146,7 +146,7 @@ namespace System.Net.Sockets
             {
                 GlobalLog.Print(
                     "SafeCloseSocket#" + LoggingHash.HashString(this) + "::ReleaseHandle() m_InnerSocket=" +
-                    _innerSocket == null ? "null" : LoggingHash.HashString(_innerSocket));
+                    (_innerSocket == null ? "null" : LoggingHash.HashString(_innerSocket)));
             }
 
             _released = true;
@@ -173,7 +173,7 @@ namespace System.Net.Sockets
             {
                 GlobalLog.Print(
                     "SafeCloseSocket#" + LoggingHash.HashString(this) + "::CloseAsIs() m_InnerSocket=" +
-                    _innerSocket == null ? "null" : LoggingHash.HashString(_innerSocket));
+                    (_innerSocket == null ? "null" : LoggingHash.HashString(_innerSocket)));
             }
 
 #if DEBUG
