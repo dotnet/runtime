@@ -30,6 +30,9 @@
 #include <glib.h>
 
 #include <windows.h>
+#ifdef _MSC_VER
+#include <shlobj.h>
+#endif
 #include <direct.h>
 #include <io.h>
 
@@ -116,20 +119,34 @@ g_path_is_absolute (const char *filename)
 const gchar *
 g_get_home_dir (void)
 {
-	/* FIXME */
-	const gchar *drive = g_getenv ("HOMEDRIVE");
-	const gchar *path = g_getenv ("HOMEPATH");
 	gchar *home_dir = NULL;
-	
-	if (drive && path) {
-		home_dir = g_malloc(strlen(drive) + strlen(path) +1);
-		if (home_dir) {
-			sprintf(home_dir, "%s%s", drive, path);
-		}
+
+#ifdef _MSC_VER
+	PWSTR profile_path = NULL;
+	HRESULT hr = SHGetKnownFolderPath (&FOLDERID_Profile, KF_FLAG_DEFAULT, NULL, &profile_path);
+	if (SUCCEEDED(hr)) {
+		home_dir = u16to8 (profile_path);
+		CoTaskMemFree (profile_path);
+	}
+#endif
+
+	if (!home_dir) {
+		home_dir = (gchar *) g_getenv ("USERPROFILE");
 	}
 
-	g_free (drive);
-	g_free (path);
+	if (!home_dir) {
+		const gchar *drive = g_getenv ("HOMEDRIVE");
+		const gchar *path = g_getenv ("HOMEPATH");
+
+		if (drive && path) {
+			home_dir = g_malloc (strlen (drive) + strlen (path) + 1);
+			if (home_dir) {
+				sprintf (home_dir, "%s%s", drive, path);
+			}
+		}
+		g_free (drive);
+		g_free (path);
+	}
 
 	return home_dir;
 }
