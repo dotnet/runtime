@@ -96,52 +96,46 @@ namespace System.Linq.Expressions.Compiler
         {
             ContractUtils.RequiresNotNull(type, nameof(type));
 
-            if (type.GetTypeInfo().IsValueType)
+            switch (type.GetTypeCode())
             {
-                if (type == typeof(int))
-                {
+                case TypeCode.Int32:
                     il.Emit(OpCodes.Ldind_I4);
-                }
-                else if (type == typeof(uint))
-                {
+                    break;
+                case TypeCode.UInt32:
                     il.Emit(OpCodes.Ldind_U4);
-                }
-                else if (type == typeof(short))
-                {
+                    break;
+                case TypeCode.Int16:
                     il.Emit(OpCodes.Ldind_I2);
-                }
-                else if (type == typeof(ushort))
-                {
+                    break;
+                case TypeCode.UInt16:
                     il.Emit(OpCodes.Ldind_U2);
-                }
-                else if (type == typeof(long) || type == typeof(ulong))
-                {
+                    break;
+                case TypeCode.Int64:
+                case TypeCode.UInt64:
                     il.Emit(OpCodes.Ldind_I8);
-                }
-                else if (type == typeof(char))
-                {
+                    break;
+                case TypeCode.Char:
                     il.Emit(OpCodes.Ldind_I2);
-                }
-                else if (type == typeof(bool))
-                {
+                    break;
+                case TypeCode.Boolean:
                     il.Emit(OpCodes.Ldind_I1);
-                }
-                else if (type == typeof(float))
-                {
+                    break;
+                case TypeCode.Single:
                     il.Emit(OpCodes.Ldind_R4);
-                }
-                else if (type == typeof(double))
-                {
+                    break;
+                case TypeCode.Double:
                     il.Emit(OpCodes.Ldind_R8);
-                }
-                else
-                {
-                    il.Emit(OpCodes.Ldobj, type);
-                }
-            }
-            else
-            {
-                il.Emit(OpCodes.Ldind_Ref);
+                    break;
+                default:
+                    if (type.GetTypeInfo().IsValueType)
+                    {
+                        il.Emit(OpCodes.Ldobj, type);
+                    }
+                    else
+                    {
+                        il.Emit(OpCodes.Ldind_Ref);
+                    }
+                    break;
             }
         }
 
@@ -153,44 +147,40 @@ namespace System.Linq.Expressions.Compiler
         {
             ContractUtils.RequiresNotNull(type, nameof(type));
 
-            if (type.GetTypeInfo().IsValueType)
+            switch (type.GetTypeCode())
             {
-                if (type == typeof(int))
-                {
+                case TypeCode.Int32:
                     il.Emit(OpCodes.Stind_I4);
-                }
-                else if (type == typeof(short))
-                {
+                    break;
+                case TypeCode.Int16:
                     il.Emit(OpCodes.Stind_I2);
-                }
-                else if (type == typeof(long) || type == typeof(ulong))
-                {
+                    break;
+                case TypeCode.Int64:
+                case TypeCode.UInt64:
                     il.Emit(OpCodes.Stind_I8);
-                }
-                else if (type == typeof(char))
-                {
+                    break;
+                case TypeCode.Char:
                     il.Emit(OpCodes.Stind_I2);
-                }
-                else if (type == typeof(bool))
-                {
+                    break;
+                case TypeCode.Boolean:
                     il.Emit(OpCodes.Stind_I1);
-                }
-                else if (type == typeof(float))
-                {
+                    break;
+                case TypeCode.Single:
                     il.Emit(OpCodes.Stind_R4);
-                }
-                else if (type == typeof(double))
-                {
+                    break;
+                case TypeCode.Double:
                     il.Emit(OpCodes.Stind_R8);
-                }
-                else
-                {
-                    il.Emit(OpCodes.Stobj, type);
-                }
-            }
-            else
-            {
-                il.Emit(OpCodes.Stind_Ref);
+                    break;
+                default:
+                    if (type.GetTypeInfo().IsValueType)
+                    {
+                        il.Emit(OpCodes.Stobj, type);
+                    }
+                    else
+                    {
+                        il.Emit(OpCodes.Stind_Ref);
+                    }
+                    break;
             }
         }
 
