@@ -16,6 +16,8 @@ namespace System.Reflection.Tests
         {
             Assert.Equal(name, type.Name);
             Assert.Equal(memberType, type.GetTypeInfo().MemberType);
+
+            Assert.Equal(memberType == MemberTypes.NestedType, type.IsNested);
         }
     }
 
