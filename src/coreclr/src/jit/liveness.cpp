@@ -2483,27 +2483,27 @@ bool Compiler::fgRemoveDeadStore(
             {
                 return false;
             }
-            switch (nextNode->OperGet())
+            if (nextNode->OperIsIndir())
             {
-                default:
-                    break;
-                case GT_IND:
-                    asgNode = nextNode->gtNext;
-                    break;
-                case GT_STOREIND:
-                    asgNode = nextNode;
-                    break;
-                case GT_LIST:
+                // This must be a non-nullcheck form of indir, or it would not be a def.
+                assert(nextNode->OperGet() != GT_NULLCHECK);
+                if (nextNode->OperIsStore())
                 {
-                    GenTree* sizeNode = nextNode->gtNext;
-                    if ((sizeNode == nullptr) || (sizeNode->OperGet() != GT_CNS_INT))
+                    asgNode = nextNode;
+                    if (asgNode->OperIsBlk())
                     {
-                        return false;
+                        rhsNode = asgNode->AsBlk()->Data();
                     }
-                    asgNode = sizeNode->gtNext;
-                    rhsNode = nextNode->gtGetOp2();
+                    // TODO-1stClassStructs: There should be an else clause here to handle
+                    // the non-block forms of store ops (GT_STORE_LCL_VAR, etc.) for which
+                    // rhsNode is op1. (This isn't really a 1stClassStructs item, but the
+                    // above was added to catch what used to be dead block ops, and that
+                    // made this omission apparent.)
                 }
-                break;
+                else
+                {
+                    asgNode = nextNode->gtNext;
+                }
             }
         }
     }
@@ -2634,6 +2634,17 @@ bool Compiler::fgRemoveDeadStore(
                     printf("\n");
                 }
 #endif // DEBUG
+                if (rhsNode->TypeGet() == TYP_STRUCT)
+                {
+                    // This is a block assignment. An indirection of the rhs is not considered to
+                    // happen until the assignment, so we will extract the side effects from only
+                    // the address.
+                    if (rhsNode->OperIsIndir())
+                    {
+                        assert(rhsNode->OperGet() != GT_NULLCHECK);
+                        rhsNode = rhsNode->AsIndir()->Addr();
+                    }
+                }
                 gtExtractSideEffList(rhsNode, &sideEffList);
 
                 if (sideEffList)
