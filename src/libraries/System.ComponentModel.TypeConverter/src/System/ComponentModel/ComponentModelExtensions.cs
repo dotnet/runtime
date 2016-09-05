@@ -74,7 +74,7 @@ namespace System.ComponentModel
             { typeof(RefreshPropertiesAttribute), attr => attr.Equals(RefreshPropertiesAttribute.Default) },
             { typeof(DesignerSerializationVisibilityAttribute), attr => attr.Equals(DesignerSerializationVisibilityAttribute.Default) },
             { typeof(ExtenderProvidedPropertyAttribute), attr => ((ExtenderProvidedPropertyAttribute)attr).ReceiverType == null },
-            { typeof(DesignerCategoryAttribute), attr => attr.Equals(DesignerCategoryAttribute.Default.Category) }
+            { typeof(DesignerCategoryAttribute), attr => attr.Equals(DesignerCategoryAttribute.Default) }
         };
     }
 }

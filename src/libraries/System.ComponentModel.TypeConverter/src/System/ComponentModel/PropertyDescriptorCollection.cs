@@ -47,7 +47,7 @@ namespace System.ComponentModel
         {
             if (properties == null)
             {
-                _properties = new PropertyDescriptor[0];
+                _properties = Array.Empty<PropertyDescriptor>();
                 _propCount = 0;
             }
             else
@@ -197,7 +197,7 @@ namespace System.ComponentModel
                 return;
             }
 
-            if (_properties == null || _properties.Length == 0)
+            if (_properties.Length == 0)
             {
                 _propCount = 0;
                 _properties = new PropertyDescriptor[sizeNeeded];
@@ -388,7 +388,7 @@ namespace System.ComponentModel
         /// </summary>
         protected void InternalSort(string[] names)
         {
-            if (_properties == null || _properties.Length == 0)
+            if (_properties.Length == 0)
             {
                 return;
             }
