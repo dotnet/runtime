@@ -331,11 +331,16 @@ mono_threads_platform_get_priority (MonoThreadInfo *info)
 	return GetThreadPriority (info->handle) + 2;
 }
 
-gboolean
+void
 mono_threads_platform_set_priority (MonoThreadInfo *info, MonoThreadPriority priority)
 {
+	BOOL res;
+
 	g_assert (info->handle);
-	return SetThreadPriority (info->handle, priority - 2);
+
+	res = SetThreadPriority (info->handle, priority - 2);
+	if (!res)
+		g_error ("%s: SetThreadPriority failed, error %d", __func__, GetLastError ());
 }
 
 void

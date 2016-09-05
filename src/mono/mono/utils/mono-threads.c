@@ -1719,8 +1719,8 @@ mono_thread_info_get_priority (MonoThreadInfo *info)
 	return mono_threads_platform_get_priority (info);
 }
 
-gboolean
+void
 mono_thread_info_set_priority (MonoThreadInfo *info, MonoThreadPriority priority)
 {
-	return mono_threads_platform_set_priority (info, priority);
+	mono_threads_platform_set_priority (info, priority);
 }

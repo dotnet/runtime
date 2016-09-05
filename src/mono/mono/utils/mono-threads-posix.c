@@ -40,44 +40,6 @@ extern int tkill (pid_t tid, int signal);
 void nacl_shutdown_gc_thread(void);
 #endif
 
-static int
-win32_priority_to_posix_priority (MonoThreadPriority priority, int policy)
-{
-	g_assert (priority >= MONO_THREAD_PRIORITY_LOWEST);
-	g_assert (priority <= MONO_THREAD_PRIORITY_HIGHEST);
-	g_assert (MONO_THREAD_PRIORITY_LOWEST < MONO_THREAD_PRIORITY_HIGHEST);
-
-/* Necessary to get valid priority range */
-#ifdef _POSIX_PRIORITY_SCHEDULING
-	int max, min;
-
-	min = sched_get_priority_min (policy);
-	max = sched_get_priority_max (policy);
-
-	if (max > 0 && min >= 0 && max > min) {
-		double srange, drange, sposition, dposition;
-		srange = MONO_THREAD_PRIORITY_HIGHEST - MONO_THREAD_PRIORITY_LOWEST;
-		drange = max - min;
-		sposition = priority - MONO_THREAD_PRIORITY_LOWEST;
-		dposition = (sposition / srange) * drange;
-		return (int)(dposition + min);
-	}
-#endif
-
-	switch (policy) {
-	case SCHED_FIFO:
-	case SCHED_RR:
-		return 50;
-#ifdef SCHED_BATCH
-	case SCHED_BATCH:
-#endif
-	case SCHED_OTHER:
-		return 0;
-	default:
-		return -1;
-	}
-}
-
 void
 mono_threads_platform_register (MonoThreadInfo *info)
 {
@@ -358,49 +320,68 @@ mono_threads_platform_get_priority (MonoThreadInfo *info)
 	return info->priority;
 }
 
-gboolean
+void
 mono_threads_platform_set_priority (MonoThreadInfo *info, MonoThreadPriority priority)
 {
-	int policy, posix_priority;
+	int policy;
 	struct sched_param param;
 	pthread_t tid;
+	gint res;
+
+	g_assert (priority >= MONO_THREAD_PRIORITY_LOWEST);
+	g_assert (priority <= MONO_THREAD_PRIORITY_HIGHEST);
+	g_assert (MONO_THREAD_PRIORITY_LOWEST < MONO_THREAD_PRIORITY_HIGHEST);
 
 	tid = mono_thread_info_get_tid (info);
 
-	switch (pthread_getschedparam (tid, &policy, &param)) {
-	case 0:
-		break;
-	case ESRCH:
-		g_warning ("pthread_getschedparam: error looking up thread id %x", (gsize)tid);
-		return FALSE;
-	default:
-		return FALSE;
+	res = pthread_getschedparam (tid, &policy, &param);
+	if (res != 0)
+		g_error ("%s: pthread_getschedparam failed, error: \"%s\" (%d)", g_strerror (res), res);
+
+#ifdef _POSIX_PRIORITY_SCHEDULING
+	int max, min;
+
+	/* Necessary to get valid priority range */
+
+	min = sched_get_priority_min (policy);
+	max = sched_get_priority_max (policy);
+
+	if (max > 0 && min >= 0 && max > min) {
+		double srange, drange, sposition, dposition;
+		srange = MONO_THREAD_PRIORITY_HIGHEST - MONO_THREAD_PRIORITY_LOWEST;
+		drange = max - min;
+		sposition = priority - MONO_THREAD_PRIORITY_LOWEST;
+		dposition = (sposition / srange) * drange;
+		param.sched_priority = (int)(dposition + min);
+	} else
+#endif
+	{
+		switch (policy) {
+		case SCHED_FIFO:
+		case SCHED_RR:
+			param.sched_priority = 50;
+			break;
+#ifdef SCHED_BATCH
+		case SCHED_BATCH:
+#endif
+		case SCHED_OTHER:
+			param.sched_priority = 0;
+			break;
+		default:
+			g_error ("%s: unknown policy %d", __func__, policy);
+		}
 	}
 
-	posix_priority =  win32_priority_to_posix_priority (priority, policy);
-	if (posix_priority < 0)
-		return FALSE;
-
-	param.sched_priority = posix_priority;
-	switch (pthread_setschedparam (tid, policy, &param)) {
-	case 0:
-		break;
-	case ESRCH:
-		g_warning ("%s: pthread_setschedprio: error looking up thread id %x", __func__, (gsize)tid);
-		return FALSE;
-	case ENOTSUP:
-		g_warning ("%s: priority %d not supported", __func__, priority);
-		return FALSE;
-	case EPERM:
-		g_warning ("%s: permission denied", __func__);
-		return FALSE;
-	default:
-		return FALSE;
+	res = pthread_setschedparam (tid, policy, &param);
+	if (res != 0) {
+		if (res == EPERM) {
+			g_warning ("%s: pthread_setschedparam failed, error: \"%s\" (%d)", g_strerror (res), res);
+			return;
+		}
+		g_error ("%s: pthread_setschedparam failed, error: \"%s\" (%d)", g_strerror (res), res);
 	}
 
 	info->priority = priority;
-	return TRUE;
-
 }
 
 static const gchar* thread_typename (void)
