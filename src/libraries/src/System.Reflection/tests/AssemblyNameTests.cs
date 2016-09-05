@@ -91,7 +91,7 @@ namespace System.Reflection.Tests
         }
 
         [Theory]
-        [MemberData("Ctor_ProcessorArchitecture_TestData")]
+        [MemberData(nameof(Ctor_ProcessorArchitecture_TestData))]
         public void Ctor_ValidArchitectureName_Succeeds(string architectureName, ProcessorArchitecture expected)
         {
             string fullName = "Test, ProcessorArchitecture=" + architectureName;
@@ -272,7 +272,7 @@ namespace System.Reflection.Tests
         }
 
         [Theory]
-        [MemberData("Version_TestData")]
+        [MemberData(nameof(Version_TestData))]
         public void Version(Version version, string versionString)
         {
             AssemblyName assemblyName = new AssemblyName("MyAssemblyName");
