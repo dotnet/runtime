@@ -507,7 +507,7 @@ namespace System.Collections.Generic
                             // update sibling, this is necessary for following processing
                             sibling = (parent.Left == current) ? parent.Right : parent.Left;
                         }
-                        Debug.Assert(sibling != null || sibling.IsRed == false, "sibling must not be null and it must be black!");
+                        Debug.Assert(sibling != null && sibling.IsRed == false, "sibling must not be null and it must be black!");
 
                         if (Is2Node(sibling))
                         {
