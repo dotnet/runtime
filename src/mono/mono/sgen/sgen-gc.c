@@ -1461,7 +1461,7 @@ enqueue_scan_from_roots_jobs (SgenGrayQueue *gc_thread_gray_queue, char *heap_st
  * Return whether any objects were late-pinned due to being out of memory.
  */
 static gboolean
-collect_nursery (const char *reason, gboolean is_overflow, SgenGrayQueue *unpin_queue, gboolean finish_up_concurrent_mark)
+collect_nursery (const char *reason, gboolean is_overflow, SgenGrayQueue *unpin_queue)
 {
 	gboolean needs_major;
 	size_t max_garbage_amount;
@@ -1531,7 +1531,7 @@ collect_nursery (const char *reason, gboolean is_overflow, SgenGrayQueue *unpin_
 
 	if (whole_heap_check_before_collection) {
 		sgen_clear_nursery_fragments ();
-		sgen_check_whole_heap (finish_up_concurrent_mark);
+		sgen_check_whole_heap (FALSE);
 	}
 
 	sgen_process_fin_stage_entries ();
@@ -2257,7 +2257,7 @@ sgen_perform_collection (size_t requested_size, int generation_to_collect, const
 		if (concurrent_collection_in_progress)
 			major_update_concurrent_collection ();
 
-		if (collect_nursery (reason, FALSE, NULL, FALSE) && !concurrent_collection_in_progress) {
+		if (collect_nursery (reason, FALSE, NULL) && !concurrent_collection_in_progress) {
 			overflow_generation_to_collect = GENERATION_OLD;
 			overflow_reason = "Minor overflow";
 		}
@@ -2267,7 +2267,7 @@ sgen_perform_collection (size_t requested_size, int generation_to_collect, const
 	} else {
 		SGEN_ASSERT (0, generation_to_collect == GENERATION_OLD, "We should have handled nursery collections above");
 		if (major_collector.is_concurrent && !wait_to_finish) {
-			collect_nursery ("Concurrent start", FALSE, NULL, FALSE);
+			collect_nursery ("Concurrent start", FALSE, NULL);
 			major_start_concurrent_collection (reason);
 			oldest_generation_collected = GENERATION_NURSERY;
 		} else if (major_do_collection (reason, FALSE, wait_to_finish)) {
@@ -2285,7 +2285,7 @@ sgen_perform_collection (size_t requested_size, int generation_to_collect, const
 		 */
 
 		if (overflow_generation_to_collect == GENERATION_NURSERY)
-			collect_nursery (overflow_reason, TRUE, NULL, FALSE);
+			collect_nursery (overflow_reason, TRUE, NULL);
 		else
 			major_do_collection (overflow_reason, TRUE, wait_to_finish);
 
