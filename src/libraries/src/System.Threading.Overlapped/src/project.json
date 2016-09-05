@@ -3,7 +3,7 @@
     "netstandard1.3": {
       "dependencies": {
         "Microsoft.NETCore.Platforms": "1.0.2-beta-24502-03",
-        "Microsoft.TargetingPack.Private.CoreCLR": "1.1.0-beta-24504-02"
+        "Microsoft.TargetingPack.Private.CoreCLR": "1.1.0-beta-24505-01"
       }
     },
     "netcore50": {
