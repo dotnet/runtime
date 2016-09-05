@@ -286,5 +286,12 @@ namespace System.Linq.Expressions.Tests
             UnaryExpression op = Expression.PostIncrementAssign(Expression.Variable(typeof(int)));
             Assert.NotSame(op, op.Update(Expression.Variable(typeof(int))));
         }
+
+        [Fact]
+        public void ToStringTest()
+        {
+            var e = Expression.PostIncrementAssign(Expression.Parameter(typeof(int), "x"));
+            Assert.Equal("x++", e.ToString());
+        }
     }
 }
