@@ -36,15 +36,15 @@ namespace System.ComponentModel
         /// </summary>
         public EventDescriptorCollection(EventDescriptor[] events)
         {
-            _events = events;
             if (events == null)
             {
-                _events = new EventDescriptor[0];
+                _events = Array.Empty<EventDescriptor>();
                 _eventCount = 0;
             }
             else
             {
-                _eventCount = _events.Length;
+                _events = events;
+                _eventCount = events.Length;
             }
             _eventsOwned = true;
         }
@@ -185,7 +185,7 @@ namespace System.ComponentModel
                 return;
             }
 
-            if (_events == null || _events.Length == 0)
+            if (_events.Length == 0)
             {
                 _eventCount = 0;
                 _events = new EventDescriptor[sizeNeeded];
@@ -371,7 +371,7 @@ namespace System.ComponentModel
         /// </summary>
         protected void InternalSort(string[] names)
         {
-            if (_events == null || _events.Length == 0)
+            if (_events.Length == 0)
             {
                 return;
             }
