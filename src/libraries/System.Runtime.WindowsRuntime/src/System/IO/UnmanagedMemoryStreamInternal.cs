@@ -58,10 +58,6 @@ namespace System.IO
      */
     internal class UnmanagedMemoryStream : Stream
     {
-        // BUGBUG: Consider removing this restriction, or making in
-        // Int64.MaxValue and ensuring we never wrap around to positive.
-        private const long UnmanagedMemStreamMaxLength = Int64.MaxValue;
-
         private unsafe byte* _mem;
         private long _length;
         private long _capacity;
@@ -226,10 +222,6 @@ namespace System.IO
             {
                 if (!_isOpen) throw new ObjectDisposedException(null, SR.ObjectDisposed_StreamClosed);
 
-                // Note: subtracting pointers returns an Int64.  Working around
-                // to avoid hitting compiler warning CS0652 on this line.
-                if (new IntPtr(value - _mem).ToInt64() > UnmanagedMemStreamMaxLength)
-                    throw new ArgumentOutOfRangeException("offset", SR.ArgumentOutOfRange_UnmanagedMemStreamLength);
                 if (value < _mem)
                     throw new IOException(SR.IO_SeekBeforeBegin);
 
@@ -272,8 +264,6 @@ namespace System.IO
                 return 0;
 
             int nInt = (int)n; // Safe because n <= count, which is an Int32
-            if (nInt < 0)
-                nInt = 0;  // _position could be beyond EOF
             Debug.Assert(pos + nInt >= 0, "_position + n >= 0");  // len is less than 2^63 -1.
 
             unsafe
@@ -306,8 +296,6 @@ namespace System.IO
         public override long Seek(long offset, SeekOrigin loc)
         {
             if (!_isOpen) throw new ObjectDisposedException(null, SR.ObjectDisposed_StreamClosed);
-            if (offset > UnmanagedMemStreamMaxLength)
-                throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_UnmanagedMemStreamLength);
             switch (loc)
             {
                 case SeekOrigin.Begin:
