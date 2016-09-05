@@ -2714,7 +2714,7 @@ namespace System {
             //! or you may introduce a security hole!
             T[] _this = JitHelpers.UnsafeCast<T[]>(this);
             if ((uint)index >= (uint)_this.Length) {
-                ThrowHelper.ThrowArgumentOutOfRangeException();
+                ThrowHelper.ThrowArgumentOutOfRange_IndexException();
             }
 
             return _this[index];
@@ -2726,7 +2726,7 @@ namespace System {
             //! or you may introduce a security hole!
             T[] _this = JitHelpers.UnsafeCast<T[]>(this);
             if ((uint)index >= (uint)_this.Length) {
-                ThrowHelper.ThrowArgumentOutOfRangeException();
+                ThrowHelper.ThrowArgumentOutOfRange_IndexException();
             }
 
             _this[index] = value;
