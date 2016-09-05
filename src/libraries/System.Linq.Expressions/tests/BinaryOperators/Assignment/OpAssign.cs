@@ -308,5 +308,39 @@ namespace System.Linq.Expressions.Tests
             else
                 yield return Tuple.Create("Power", "PowerAssign");
         }
+
+        [Theory]
+        [MemberData(nameof(ToStringData))]
+        public static void ToStringTest(ExpressionType kind, string symbol, Type type)
+        {
+            var e = Expression.MakeBinary(kind, Expression.Parameter(type, "a"), Expression.Parameter(type, "b"));
+            Assert.Equal($"(a {symbol} b)", e.ToString());
+        }
+
+        private static IEnumerable<object[]> ToStringData()
+        {
+            return ToStringDataImpl().Select(t => new object[] { t.Item1, t.Item2, t.Item3 });
+        }
+
+        private static IEnumerable<Tuple<ExpressionType, string, Type>> ToStringDataImpl()
+        {
+            yield return Tuple.Create(ExpressionType.AddAssign, "+=", typeof(int));
+            yield return Tuple.Create(ExpressionType.AddAssignChecked, "+=", typeof(int));
+            yield return Tuple.Create(ExpressionType.SubtractAssign, "-=", typeof(int));
+            yield return Tuple.Create(ExpressionType.SubtractAssignChecked, "-=", typeof(int));
+            yield return Tuple.Create(ExpressionType.MultiplyAssign, "*=", typeof(int));
+            yield return Tuple.Create(ExpressionType.MultiplyAssignChecked, "*=", typeof(int));
+            yield return Tuple.Create(ExpressionType.DivideAssign, "/=", typeof(int));
+            yield return Tuple.Create(ExpressionType.ModuloAssign, "%=", typeof(int));
+            yield return Tuple.Create(ExpressionType.PowerAssign, "**=", typeof(double));
+            yield return Tuple.Create(ExpressionType.LeftShiftAssign, "<<=", typeof(int));
+            yield return Tuple.Create(ExpressionType.RightShiftAssign, ">>=", typeof(int));
+            yield return Tuple.Create(ExpressionType.AndAssign, "&=", typeof(int));
+            yield return Tuple.Create(ExpressionType.AndAssign, "&&=", typeof(bool));
+            yield return Tuple.Create(ExpressionType.OrAssign, "|=", typeof(int));
+            yield return Tuple.Create(ExpressionType.OrAssign, "||=", typeof(bool));
+            yield return Tuple.Create(ExpressionType.ExclusiveOrAssign, "^=", typeof(int));
+            yield return Tuple.Create(ExpressionType.ExclusiveOrAssign, "^=", typeof(bool));
+        }
     }
 }

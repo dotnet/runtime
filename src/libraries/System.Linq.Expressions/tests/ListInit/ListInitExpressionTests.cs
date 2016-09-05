@@ -214,5 +214,15 @@ namespace System.Linq.Expressions.Tests
             var init = Expression.ListInit(Expression.New(typeof(List<int>)), inits);
             Assert.NotSame(init, init.Update(Expression.New(typeof(List<int>)), inits));
         }
+
+        [Fact]
+        public static void ToStringTest()
+        {
+            var e1 = Expression.ListInit(Expression.New(typeof(List<int>)), Expression.Parameter(typeof(int), "x"));
+            Assert.Equal("new List`1() {Void Add(Int32)(x)}", e1.ToString());
+
+            var e2 = Expression.ListInit(Expression.New(typeof(List<int>)), Expression.Parameter(typeof(int), "x"), Expression.Parameter(typeof(int), "y"));
+            Assert.Equal("new List`1() {Void Add(Int32)(x), Void Add(Int32)(y)}", e2.ToString());
+        }
     }
 }
