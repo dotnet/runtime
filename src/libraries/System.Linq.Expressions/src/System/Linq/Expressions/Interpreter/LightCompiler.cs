@@ -1110,7 +1110,7 @@ namespace System.Linq.Expressions.Interpreter
 
             // use numeric conversions for both numeric types and enums
             if ((TypeUtils.IsNumericOrBool(nonNullableFrom) || nonNullableFrom.GetTypeInfo().IsEnum)
-                 && (TypeUtils.IsNumeric(nonNullableTo) || nonNullableTo.GetTypeInfo().IsEnum))
+                 && (TypeUtils.IsNumeric(nonNullableTo) || nonNullableTo.GetTypeInfo().IsEnum || nonNullableTo == typeof(decimal)))
             {
                 Type enumTypeTo = null;
 
@@ -2577,6 +2577,23 @@ namespace System.Linq.Expressions.Interpreter
         {
             var node = (BinaryExpression)expr;
 
+            var hasConversion = node.Conversion != null;
+            var hasImplicitConversion = false;
+            if (!hasConversion && TypeUtils.IsNullableType(node.Left.Type))
+            {
+                // reference types don't need additional conversions (the interpreter operates on Object
+                // anyway); non-nullable value types can't occur on the left side; all that's left is
+                // nullable value types with implicit (numeric) conversions which are allowed by Coalesce
+                // factory methods
+
+                Type nnLeftType = TypeUtils.GetNonNullableType(node.Left.Type);
+                if (!TypeUtils.AreEquivalent(node.Type, nnLeftType))
+                {
+                    hasImplicitConversion = true;
+                    hasConversion = true;
+                }
+            }
+
             var leftNotNull = _instructions.MakeLabel();
             BranchLabel end = null;
 
@@ -2585,7 +2602,7 @@ namespace System.Linq.Expressions.Interpreter
             _instructions.EmitPop();
             Compile(node.Right);
 
-            if (node.Conversion != null)
+            if (hasConversion)
             {
                 // skip over conversion on RHS
                 end = _instructions.MakeLabel();
@@ -2605,7 +2622,15 @@ namespace System.Linq.Expressions.Interpreter
                 );
 
                 _locals.UndefineLocal(local, _instructions.Count);
+            }
+            else if (hasImplicitConversion)
+            {
+                Type nnLeftType = TypeUtils.GetNonNullableType(node.Left.Type);
+                CompileConvertToType(nnLeftType, node.Type, isChecked: true, isLiftedToNull: false);
+            }
 
+            if (hasConversion)
+            {
                 _instructions.MarkLabel(end);
             }
         }
