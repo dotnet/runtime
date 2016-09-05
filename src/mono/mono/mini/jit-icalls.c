@@ -1924,3 +1924,8 @@ mono_throw_method_access (MonoMethod *callee, MonoMethod *caller)
 	g_free (callee_name);
 	g_free (caller_name);
 }
+
+void
+mono_dummy_jit_icall (void)
+{
+}

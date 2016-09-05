@@ -226,4 +226,6 @@ double mono_ckfinite (double d);
 
 void mono_throw_method_access (MonoMethod *callee, MonoMethod *caller);
 
+void mono_dummy_jit_icall (void);
+
 #endif /* __MONO_JIT_ICALLS_H__ */
