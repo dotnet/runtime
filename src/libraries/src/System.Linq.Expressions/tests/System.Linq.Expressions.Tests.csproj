@@ -53,6 +53,7 @@
     <Compile Include="BinaryOperators\Arithmetic\BinaryNullableMultiplyTests.cs" />
     <Compile Include="BinaryOperators\Arithmetic\BinaryNullablePowerTests.cs" />
     <Compile Include="BinaryOperators\Arithmetic\BinaryNullableSubtractTests.cs" />
+    <Compile Include="BinaryOperators\Arithmetic\BinaryPowerTests.cs" />
     <Compile Include="BinaryOperators\Arithmetic\BinarySubtractTests.cs" />
     <Compile Include="BinaryOperators\Assignment\Assign.cs" />
     <Compile Include="BinaryOperators\Assignment\OpAssign.cs" />
