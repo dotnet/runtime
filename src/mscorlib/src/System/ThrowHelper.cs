@@ -110,6 +110,11 @@ namespace System {
             throw new ObjectDisposedException(objectName, Environment.GetResourceString(GetResourceName(resource)));
         }
 
+        internal static void ThrowNotSupportedException()
+        {
+            throw new NotSupportedException();
+        }
+
         // Allow nulls for reference types and Nullable<U>, but not for value types.
         // Aggressively inline so the jit evaluates the if in place and either drops the call altogether
         // Or just leaves null test and call to the Non-returning ThrowHelper.ThrowArgumentNullException
@@ -171,7 +176,9 @@ namespace System {
         view,
         sourceBytesToCopy,
         action,
-        comparison
+        comparison,
+        offset,
+
     }
 
     //
@@ -225,7 +232,9 @@ namespace System {
         ObjectDisposed_RegKeyClosed,
         NotSupported_InComparableType,
         Argument_InvalidRegistryOptionsCheck,
-        Argument_InvalidRegistryViewCheck
+        Argument_InvalidRegistryViewCheck,
+        InvalidOperation_NullArray,
+
     }
 }
 
