@@ -860,6 +860,19 @@ namespace System.Linq.Expressions.Tests
             Assert.ThrowsAny<Exception>(() => Expression.NewArrayInit(typeof(int), new BogusReadOnlyCollection<Expression>()));
         }
 
+        [Fact]
+        public static void ToStringTest()
+        {
+            var e1 = Expression.NewArrayInit(typeof(int));
+            Assert.Equal("new [] {}", e1.ToString());
+
+            var e2 = Expression.NewArrayInit(typeof(int), Expression.Parameter(typeof(int), "x"));
+            Assert.Equal("new [] {x}", e2.ToString());
+
+            var e3 = Expression.NewArrayInit(typeof(int), Expression.Parameter(typeof(int), "x"), Expression.Parameter(typeof(int), "y"));
+            Assert.Equal("new [] {x, y}", e3.ToString());
+        }
+
         #endregion
 
         #region Helper methods
@@ -1622,6 +1635,7 @@ namespace System.Linq.Expressions.Tests
         }
 
         #endregion
+
         [Fact]
         public static void NullType()
         {
@@ -1644,7 +1658,8 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void NullInitializer()
         {
-            Assert.Throws<ArgumentNullException>("initializers", () => Expression.NewArrayInit(typeof(int), null, null));
+            Assert.Throws<ArgumentNullException>("initializers[0]", () => Expression.NewArrayInit(typeof(int), new Expression[] { null, null }));
+            Assert.Throws<ArgumentNullException>("initializers[0]", () => Expression.NewArrayInit(typeof(int), new List<Expression> { null, null }));
         }
 
         [Fact]

@@ -840,7 +840,7 @@ namespace System.Linq.Expressions
             var parameters = method.GetParametersCached();
 
             ExpressionUtils.ValidateArgumentCount(method, ExpressionType.Dynamic, 2, parameters);
-            ValidateDynamicArgument(arg0);
+            ValidateDynamicArgument(arg0, nameof(arg0));
             ExpressionUtils.ValidateOneArgument(method, ExpressionType.Dynamic, arg0, parameters[1], nameof(delegateType), nameof(arg0));
 
             return DynamicExpression.Make(method.GetReturnType(), delegateType, binder, arg0);
@@ -870,9 +870,9 @@ namespace System.Linq.Expressions
             var parameters = method.GetParametersCached();
 
             ExpressionUtils.ValidateArgumentCount(method, ExpressionType.Dynamic, 3, parameters);
-            ValidateDynamicArgument(arg0);
+            ValidateDynamicArgument(arg0, nameof(arg0));
             ExpressionUtils.ValidateOneArgument(method, ExpressionType.Dynamic, arg0, parameters[1], nameof(delegateType), nameof(arg0));
-            ValidateDynamicArgument(arg1);
+            ValidateDynamicArgument(arg1, nameof(arg1));
             ExpressionUtils.ValidateOneArgument(method, ExpressionType.Dynamic, arg1, parameters[2], nameof(delegateType), nameof(arg1));
 
             return DynamicExpression.Make(method.GetReturnType(), delegateType, binder, arg0, arg1);
@@ -903,11 +903,11 @@ namespace System.Linq.Expressions
             var parameters = method.GetParametersCached();
 
             ExpressionUtils.ValidateArgumentCount(method, ExpressionType.Dynamic, 4, parameters);
-            ValidateDynamicArgument(arg0);
+            ValidateDynamicArgument(arg0, nameof(arg0));
             ExpressionUtils.ValidateOneArgument(method, ExpressionType.Dynamic, arg0, parameters[1], nameof(delegateType), nameof(arg0));
-            ValidateDynamicArgument(arg1);
+            ValidateDynamicArgument(arg1, nameof(arg1));
             ExpressionUtils.ValidateOneArgument(method, ExpressionType.Dynamic, arg1, parameters[2], nameof(delegateType), nameof(arg1));
-            ValidateDynamicArgument(arg2);
+            ValidateDynamicArgument(arg2, nameof(arg2));
             ExpressionUtils.ValidateOneArgument(method, ExpressionType.Dynamic, arg2, parameters[3], nameof(delegateType), nameof(arg2));
 
             return DynamicExpression.Make(method.GetReturnType(), delegateType, binder, arg0, arg1, arg2);
@@ -939,13 +939,13 @@ namespace System.Linq.Expressions
             var parameters = method.GetParametersCached();
 
             ExpressionUtils.ValidateArgumentCount(method, ExpressionType.Dynamic, 5, parameters);
-            ValidateDynamicArgument(arg0);
+            ValidateDynamicArgument(arg0, nameof(arg0));
             ExpressionUtils.ValidateOneArgument(method, ExpressionType.Dynamic, arg0, parameters[1], nameof(delegateType), nameof(arg0));
-            ValidateDynamicArgument(arg1);
+            ValidateDynamicArgument(arg1, nameof(arg1));
             ExpressionUtils.ValidateOneArgument(method, ExpressionType.Dynamic, arg1, parameters[2], nameof(delegateType), nameof(arg1));
-            ValidateDynamicArgument(arg2);
+            ValidateDynamicArgument(arg2, nameof(arg2));
             ExpressionUtils.ValidateOneArgument(method, ExpressionType.Dynamic, arg2, parameters[3], nameof(delegateType), nameof(arg2));
-            ValidateDynamicArgument(arg3);
+            ValidateDynamicArgument(arg3, nameof(arg3));
             ExpressionUtils.ValidateOneArgument(method, ExpressionType.Dynamic, arg3, parameters[4], nameof(delegateType), nameof(arg3));
 
             return DynamicExpression.Make(method.GetReturnType(), delegateType, binder, arg0, arg1, arg2, arg3);
@@ -999,7 +999,7 @@ namespace System.Linq.Expressions
         public static DynamicExpression Dynamic(CallSiteBinder binder, Type returnType, Expression arg0)
         {
             ContractUtils.RequiresNotNull(binder, nameof(binder));
-            ValidateDynamicArgument(arg0);
+            ValidateDynamicArgument(arg0, nameof(arg0));
 
             DelegateHelpers.TypeInfo info = DelegateHelpers.GetNextTypeInfo(
                 returnType,
@@ -1038,8 +1038,8 @@ namespace System.Linq.Expressions
         public static DynamicExpression Dynamic(CallSiteBinder binder, Type returnType, Expression arg0, Expression arg1)
         {
             ContractUtils.RequiresNotNull(binder, nameof(binder));
-            ValidateDynamicArgument(arg0);
-            ValidateDynamicArgument(arg1);
+            ValidateDynamicArgument(arg0, nameof(arg0));
+            ValidateDynamicArgument(arg1, nameof(arg1));
 
             DelegateHelpers.TypeInfo info = DelegateHelpers.GetNextTypeInfo(
                 returnType,
@@ -1082,9 +1082,9 @@ namespace System.Linq.Expressions
         public static DynamicExpression Dynamic(CallSiteBinder binder, Type returnType, Expression arg0, Expression arg1, Expression arg2)
         {
             ContractUtils.RequiresNotNull(binder, nameof(binder));
-            ValidateDynamicArgument(arg0);
-            ValidateDynamicArgument(arg1);
-            ValidateDynamicArgument(arg2);
+            ValidateDynamicArgument(arg0, nameof(arg0));
+            ValidateDynamicArgument(arg1, nameof(arg1));
+            ValidateDynamicArgument(arg2, nameof(arg2));
 
             DelegateHelpers.TypeInfo info = DelegateHelpers.GetNextTypeInfo(
                 returnType,
@@ -1131,10 +1131,10 @@ namespace System.Linq.Expressions
         public static DynamicExpression Dynamic(CallSiteBinder binder, Type returnType, Expression arg0, Expression arg1, Expression arg2, Expression arg3)
         {
             ContractUtils.RequiresNotNull(binder, nameof(binder));
-            ValidateDynamicArgument(arg0);
-            ValidateDynamicArgument(arg1);
-            ValidateDynamicArgument(arg2);
-            ValidateDynamicArgument(arg3);
+            ValidateDynamicArgument(arg0, nameof(arg0));
+            ValidateDynamicArgument(arg1, nameof(arg1));
+            ValidateDynamicArgument(arg2, nameof(arg2));
+            ValidateDynamicArgument(arg3, nameof(arg3));
 
             DelegateHelpers.TypeInfo info = DelegateHelpers.GetNextTypeInfo(
                 returnType,
@@ -1196,7 +1196,7 @@ namespace System.Linq.Expressions
             {
                 Expression arg = args[i];
 
-                ValidateDynamicArgument(arg);
+                ValidateDynamicArgument(arg, "arguments", i);
             }
 
             Type delegateType = DelegateHelpers.MakeCallSiteDelegate(args, returnType);
@@ -1214,9 +1214,14 @@ namespace System.Linq.Expressions
             }
         }
 
-        private static void ValidateDynamicArgument(Expression arg)
+        private static void ValidateDynamicArgument(Expression arg, string paramName)
         {
-            ExpressionUtils.RequiresCanRead(arg, "arguments");
+            ValidateDynamicArgument(arg, paramName, -1);
+        }
+
+        private static void ValidateDynamicArgument(Expression arg, string paramName, int index)
+        {
+            ExpressionUtils.RequiresCanRead(arg, paramName, index);
             var type = arg.Type;
             ContractUtils.RequiresNotNull(type, nameof(type));
             TypeUtils.ValidateType(type, nameof(type));

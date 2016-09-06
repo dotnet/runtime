@@ -78,16 +78,16 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public void ArgumentTypeMisMatch()
         {
-            Assert.Throws<ArgumentException>(null, () => Expression.ElementInit(typeof(List<int>).GetMethod("Add"), Expression.Constant("Hello")));
-            Assert.Throws<ArgumentException>(null, () => Expression.ElementInit(typeof(List<int>).GetMethod("Add"), Enumerable.Repeat(Expression.Constant("Hello"), 1)));
+            Assert.Throws<ArgumentException>("arguments[0]", () => Expression.ElementInit(typeof(List<int>).GetMethod("Add"), Expression.Constant("Hello")));
+            Assert.Throws<ArgumentException>("arguments[0]", () => Expression.ElementInit(typeof(List<int>).GetMethod("Add"), Enumerable.Repeat(Expression.Constant("Hello"), 1)));
         }
 
         [Fact]
         public void UnreadableArgument()
         {
             Expression argument = Expression.Property(null, typeof(Unreadable<int>), "WriteOnly");
-            Assert.Throws<ArgumentException>("arguments", () => Expression.ElementInit(typeof(List<int>).GetMethod("Add"), argument));
-            Assert.Throws<ArgumentException>("arguments", () => Expression.ElementInit(typeof(List<int>).GetMethod("Add"), Enumerable.Repeat(argument, 1)));
+            Assert.Throws<ArgumentException>("arguments[0]", () => Expression.ElementInit(typeof(List<int>).GetMethod("Add"), argument));
+            Assert.Throws<ArgumentException>("arguments[0]", () => Expression.ElementInit(typeof(List<int>).GetMethod("Add"), Enumerable.Repeat(argument, 1)));
         }
 
         [Fact]

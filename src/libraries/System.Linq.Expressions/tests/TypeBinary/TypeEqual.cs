@@ -187,5 +187,12 @@ namespace System.Linq.Expressions.Tests
 
             Assert.False(isNullOfType());
         }
+
+        [Fact]
+        public void ToStringTest()
+        {
+            var e = Expression.TypeEqual(Expression.Parameter(typeof(string), "s"), typeof(string));
+            Assert.Equal("(s TypeEqual String)", e.ToString());
+        }
     }
 }
