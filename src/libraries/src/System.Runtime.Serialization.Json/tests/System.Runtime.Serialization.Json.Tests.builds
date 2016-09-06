@@ -8,6 +8,7 @@
       <OSGroup>Windows_NT</OSGroup>
     </Project>
     <Project Include="Performance\System.Runtime.Serialization.Json.Performance.Tests.csproj"/>
+    <Project Include="ReflectionOnly\System.Runtime.Serialization.Json.ReflectionOnly.Tests.csproj"/>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
 </Project>

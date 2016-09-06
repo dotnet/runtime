@@ -11,6 +11,7 @@ using System.Collections.ObjectModel;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Runtime.Serialization;
 using System.Runtime.Serialization.Json;
 using System.Text;
@@ -21,6 +22,16 @@ using Xunit;
 
 public static partial class DataContractSerializerTests
 {
+#if ReflectionOnly
+    private static readonly string SerializationOptionSetterName = "set_Option";
+
+    static DataContractSerializerTests()
+    {
+        var method = typeof(DataContractSerializer).GetMethod(SerializationOptionSetterName);
+        Assert.True(method != null, $"No method named {SerializationOptionSetterName}");
+        method.Invoke(null, new object[] { 1 });
+    }
+#endif
     [Fact]
     public static void DCS_DateTimeOffsetAsRoot()
     {
