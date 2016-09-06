@@ -610,7 +610,7 @@ namespace System.Dynamic.Utils
                 case TypeCode.UInt32:
                     switch (tcDest)
                     {
-                        case TypeCode.UInt32:
+                        case TypeCode.Int64:
                         case TypeCode.UInt64:
                         case TypeCode.Single:
                         case TypeCode.Double:

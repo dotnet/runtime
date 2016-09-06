@@ -801,6 +801,24 @@ namespace System.Linq.Expressions.Compiler
                     il.Emit(OpCodes.Conv_R_Un);
                 il.Emit(OpCodes.Conv_R8);
             }
+            else if (typeTo == typeof(Decimal))
+            {
+                // NB: TypeUtils.IsImplicitNumericConversion makes the promise that implicit conversions
+                //     from various integral types and char to decimal are possible. Coalesce allows the
+                //     conversion lambda to be omitted in these cases, so we have to handle this case in
+                //     here as well, by using the op_Implicit operator implementation on System.Decimal
+                //     because there are no opcodes for System.Decimal.
+
+                Debug.Assert(typeFrom != typeTo);
+
+                MethodInfo method = typeof(Decimal).GetMethod("op_Implicit", new[] { typeFrom });
+                if (method == null)
+                {
+                    throw Error.UnhandledConvert(typeTo);
+                }
+
+                il.Emit(OpCodes.Call, method);
+            }
             else
             {
                 TypeCode tc = typeTo.GetTypeCode();
