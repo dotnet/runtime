@@ -711,9 +711,6 @@ protected:
         unsigned _idLclVar : 1;     // access a local on stack
         unsigned _idLclFPBase : 1;  // access a local on stack - SP based offset
         insOpts  _idInsOpt : 3;     // options for Load/Store instructions
-#ifdef ARM_HAZARD_AVOIDANCE
-#define _idKraitNop _idLclFPBase // Repurpose the _idLclFPBase for Krait Hazard
-#endif
 
 // For arm we have used 16 bits
 #define ID_EXTRA_BITFIELD_BITS (16)
@@ -1041,10 +1038,6 @@ protected:
         unsigned idCodeSize() const
         {
             unsigned result = (_idInsSize == ISZ_16BIT) ? 2 : (_idInsSize == ISZ_32BIT) ? 4 : 6;
-#ifdef ARM_HAZARD_AVOIDANCE
-            if (idKraitNop())
-                result += 4;
-#endif
             return result;
         }
         insSize idInsSize() const
@@ -1055,40 +1048,7 @@ protected:
         {
             _idInsSize = isz;
             assert(isz == _idInsSize);
-#ifdef ARM_HAZARD_AVOIDANCE
-            if (idIsKraitBranch() && idInstrIsT1())
-                idKraitNop(false);
-#endif
         }
-#ifdef ARM_HAZARD_AVOIDANCE
-        // This function returns true if the current instruction represents a non T1
-        // unconditional branch instruction that is subject to the Krait errata
-        // Note: The T2 pop encoding is handled separately as it only occurs in epilogs
-        //
-        bool idIsKraitBranch() const
-        {
-            if (idInstrIsT1())
-                return false;
-            if ((idIns() == INS_b) || (idIns() == INS_bl) || ((idIns() == INS_ldr) && (idReg1() == REG_PC)))
-            {
-                return true;
-            }
-            return false;
-        }
-        bool idKraitNop() const
-        {
-            if (!idIsKraitBranch())
-                return false;
-            else
-                return (_idKraitNop != 0);
-        }
-        void idKraitNop(bool val)
-        {
-            if (idIsKraitBranch())
-                _idKraitNop = val;
-            assert(val == idKraitNop());
-        }
-#endif
         insFlags idInsFlags() const
         {
             return _idInsFlags;
@@ -1310,19 +1270,6 @@ protected:
 #endif // _TARGET_ARMARCH_
 
 #if defined(_TARGET_ARM_)
-#ifdef ARM_HAZARD_AVOIDANCE
-        bool idIsLclFPBase() const
-        {
-            assert(!idIsKraitBranch());
-            return !idIsTiny() && _idLclFPBase != 0;
-        }
-        void idSetIsLclFPBase()
-        {
-            assert(!idIsKraitBranch());
-            assert(!idIsTiny());
-            _idLclFPBase = 1;
-        }
-#else
         bool idIsLclFPBase() const
         {
             return !idIsTiny() && _idLclFPBase != 0;
@@ -1332,7 +1279,6 @@ protected:
             assert(!idIsTiny());
             _idLclFPBase = 1;
         }
-#endif
 #endif // defined(_TARGET_ARM_)
 
 #ifdef RELOC_SUPPORT
@@ -1798,10 +1744,6 @@ private:
 
     unsigned emitCurIGinsCnt; // # of collected instr's in buffer
     unsigned emitCurIGsize;   // estimated code size of current group in bytes
-#ifdef ARM_HAZARD_AVOIDANCE
-#define MAX_INSTR_COUNT_T1 3
-    unsigned emitCurInstrCntT1; // The count of consecutive T1 instructions issued by the JIT
-#endif
     UNATIVE_OFFSET emitCurCodeOffset; // current code offset within group
     UNATIVE_OFFSET emitTotalCodeSize; // bytes of code in entire method
 
