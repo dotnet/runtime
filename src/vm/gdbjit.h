@@ -22,10 +22,12 @@
 #if defined(_TARGET_X86_) || defined(_TARGET_ARM_)
     typedef Elf32_Ehdr  Elf_Ehdr;
     typedef Elf32_Shdr  Elf_Shdr;
+    typedef Elf32_Sym   Elf_Sym;
 #define ADDRESS_SIZE 4    
 #elif defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_)
     typedef Elf64_Ehdr  Elf_Ehdr;
     typedef Elf64_Shdr  Elf_Shdr;
+    typedef Elf64_Sym   Elf_Sym;
 #define ADDRESS_SIZE 8    
 #else
 #error "Target is not supported"
@@ -86,6 +88,8 @@ private:
     static bool BuildELFHeader(MemBuf& buf);
     static bool BuildSectionNameTable(MemBuf& buf);
     static bool BuildSectionTable(MemBuf& buf);
+    static bool BuildSymbolTableSection(MemBuf& buf, PCODE addr, TADDR codeSize);
+    static bool BuildStringTableSection(MemBuf& strTab);
     static bool BuildDebugStrings(MemBuf& buf);
     static bool BuildDebugAbbrev(MemBuf& buf);    
     static bool BuildDebugInfo(MemBuf& buf);
@@ -102,6 +106,9 @@ private:
     static void SplitPathname(const char* path, const char*& pathName, const char*& fileName);
     static int Leb128Encode(uint32_t num, char* buf, int size);
     static int Leb128Encode(int32_t num, char* buf, int size);
+#ifdef _DEBUG
+    static void DumpElf(const char* methodName, const MemBuf& buf);
+#endif
 };
 
 #endif // #ifndef __GDBJIT_H__
