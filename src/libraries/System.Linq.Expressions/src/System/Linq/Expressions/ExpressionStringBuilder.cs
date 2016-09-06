@@ -15,10 +15,10 @@ namespace System.Linq.Expressions
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1506:AvoidExcessiveClassCoupling")]
     internal sealed class ExpressionStringBuilder : ExpressionVisitor
     {
-        private StringBuilder _out;
+        private readonly StringBuilder _out;
 
         // Associate every unique label or anonymous parameter in the tree with an integer.
-        // The label is displayed as Label_#.
+        // Labels are displayed as UnnamedLabel_#; parameters are displayed as Param_#.
         private Dictionary<object, int> _ids;
 
         private ExpressionStringBuilder()
@@ -31,78 +31,24 @@ namespace System.Linq.Expressions
             return _out.ToString();
         }
 
-        private void AddLabel(LabelTarget label)
-        {
-            if (_ids == null)
-            {
-                _ids = new Dictionary<object, int>();
-                _ids.Add(label, 0);
-            }
-            else
-            {
-                if (!_ids.ContainsKey(label))
-                {
-                    _ids.Add(label, _ids.Count);
-                }
-            }
-        }
+        private int GetLabelId(LabelTarget label) => GetId(label);
+        private int GetParamId(ParameterExpression p) => GetId(p);
 
-        private int GetLabelId(LabelTarget label)
+        private int GetId(object o)
         {
             if (_ids == null)
             {
                 _ids = new Dictionary<object, int>();
-                AddLabel(label);
-                return 0;
             }
-            else
-            {
-                int id;
-                if (!_ids.TryGetValue(label, out id))
-                {
-                    //label is met the first time
-                    id = _ids.Count;
-                    AddLabel(label);
-                }
-                return id;
-            }
-        }
 
-        private void AddParam(ParameterExpression p)
-        {
-            if (_ids == null)
+            int id;
+            if (!_ids.TryGetValue(o, out id))
             {
-                _ids = new Dictionary<object, int>();
-                _ids.Add(_ids, 0);
+                id = _ids.Count;
+                _ids.Add(o, id);
             }
-            else
-            {
-                if (!_ids.ContainsKey(p))
-                {
-                    _ids.Add(p, _ids.Count);
-                }
-            }
-        }
 
-        private int GetParamId(ParameterExpression p)
-        {
-            if (_ids == null)
-            {
-                _ids = new Dictionary<object, int>();
-                AddParam(p);
-                return 0;
-            }
-            else
-            {
-                int id;
-                if (!_ids.TryGetValue(p, out id))
-                {
-                    // p is met the first time
-                    id = _ids.Count;
-                    AddParam(p);
-                }
-                return id;
-            }
+            return id;
         }
 
         #region The printing code
@@ -683,12 +629,13 @@ namespace System.Linq.Expressions
                     throw new InvalidOperationException();
             }
             Out(op);
+            Out(' ');
             DumpLabel(node.Target);
             if (node.Value != null)
             {
                 Out(" (");
                 Visit(node.Value);
-                Out(") ");
+                Out(")");
             }
             return node;
         }
@@ -798,7 +745,7 @@ namespace System.Linq.Expressions
             else
             {
                 int labelId = GetLabelId(target);
-                Out("UnamedLabel_" + labelId);
+                Out("UnnamedLabel_" + labelId);
             }
         }
 
