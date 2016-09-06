@@ -7202,7 +7202,8 @@ void JitTimer::PrintCsvHeader()
 
     CritSecHolder csvLock(s_csvLock);
 
-    if (_waccess(jitTimeLogCsv, 0) == -1)
+    FILE* fp = _wfopen(jitTimeLogCsv, W("r"));
+    if (fp == nullptr)
     {
         // File doesn't exist, so create it and write the header
 
@@ -7225,8 +7226,8 @@ void JitTimer::PrintCsvHeader()
 
         fprintf(fp, "\"Total Cycles\",");
         fprintf(fp, "\"CPS\"\n");
-        fclose(fp);
     }
+    fclose(fp);
 }
 
 extern ICorJitHost* g_jitHost;

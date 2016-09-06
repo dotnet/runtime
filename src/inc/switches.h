@@ -203,12 +203,12 @@
 // hardware instructions (rdtsc), for accessing high-resolution hardware timers is enabled. This is disabled
 // in Silverlight (just to avoid thinking about whether the extra code space is worthwhile).
 #define FEATURE_JIT_TIMER
+#endif // FEATURE_CORECLR
 
 // This feature in RyuJIT supersedes the FEATURE_JIT_TIMER. In addition to supporting the time log file, this
 // feature also supports using COMPlus_JitTimeLogCsv=a.csv, which will dump method-level and phase-level timing
 // statistics. Also see comments on FEATURE_JIT_TIMER.
 #define FEATURE_JIT_METHOD_PERF
-#endif // FEATURE_CORECLR
 
 
 #ifndef FEATURE_USE_ASM_GC_WRITE_BARRIERS
