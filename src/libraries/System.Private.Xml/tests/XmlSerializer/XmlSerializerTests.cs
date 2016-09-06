@@ -11,6 +11,7 @@ using System.Linq;
 using System.Text;
 using System.Xml;
 using System.Xml.Linq;
+using System.Xml.Schema;
 using System.Xml.Serialization;
 using Xunit;
 
@@ -1838,6 +1839,54 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
         simpleType2D[1][1] = new SimpleType() { P1 = "1 1 value", P2 = 4 };
         return simpleType2D;
     }
+
+    [Fact]
+    public static void XmlSchemaTest()
+    {
+        var schemas = new XmlSchemas();
+        var exporter = new XmlSchemaExporter(schemas);
+        //Import the type as an XML mapping
+        XmlTypeMapping originalmapping = new XmlReflectionImporter().ImportTypeMapping(typeof(Dog));
+        //Export the XML mapping into schemas
+        exporter.ExportTypeMapping(originalmapping);
+        //Print out the schemas
+        var schemaEnumerator = new XmlSchemaEnumerator(schemas);
+        var ms = new MemoryStream();
+        string baseline = "<?xml version=\"1.0\"?>\r\n<xs:schema elementFormDefault=\"qualified\" xmlns:xs=\"http://www.w3.org/2001/XMLSchema\">\r\n  <xs:element name=\"Dog\" nillable=\"true\" type=\"Dog\" />\r\n  <xs:complexType name=\"Dog\">\r\n    <xs:complexContent mixed=\"false\">\r\n      <xs:extension base=\"Animal\">\r\n        <xs:sequence>\r\n          <xs:element minOccurs=\"1\" maxOccurs=\"1\" name=\"breed\" type=\"DogBreed\" />\r\n        </xs:sequence>\r\n      </xs:extension>\r\n    </xs:complexContent>\r\n  </xs:complexType>\r\n  <xs:complexType name=\"Animal\">\r\n    <xs:sequence>\r\n      <xs:element minOccurs=\"1\" maxOccurs=\"1\" name=\"age\" type=\"xs:int\" />\r\n      <xs:element minOccurs=\"0\" maxOccurs=\"1\" name=\"name\" type=\"xs:string\" />\r\n    </xs:sequence>\r\n  </xs:complexType>\r\n  <xs:simpleType name=\"DogBreed\">\r\n    <xs:restriction base=\"xs:string\">\r\n      <xs:enumeration value=\"GermanShepherd\" />\r\n      <xs:enumeration value=\"LabradorRetriever\" />\r\n    </xs:restriction>\r\n  </xs:simpleType>\r\n</xs:schema>";
+        schemaEnumerator.MoveNext();
+        schemaEnumerator.Current.Write(ms);
+        ms.Position = 0;
+        string actualOutput = new StreamReader(ms).ReadToEnd();
+        Utils.CompareResult result = Utils.Compare(baseline, actualOutput);
+        Assert.True(result.Equal, string.Format("{1}{0}Test failed for wrong output from schema: {0}Expected: {2}{0}Actual: {3}",
+                Environment.NewLine, result.ErrorMessage, baseline, actualOutput));
+        Assert.False(schemaEnumerator.MoveNext());
+        schemas.Compile((o, args) => {
+            throw new InvalidOperationException(string.Format("{1}{0} Test failed because schema compile failed", Environment.NewLine, args.Message));
+        }, true);
+        var importer = new XmlSchemaImporter(schemas);
+        ////Import the schema element back into an XML mapping
+        XmlTypeMapping newmapping = importer.ImportTypeMapping(new XmlQualifiedName(originalmapping.ElementName, originalmapping.Namespace));
+        Assert.NotNull(newmapping);
+        Assert.Equal(originalmapping.ElementName, newmapping.ElementName);
+        Assert.Equal(originalmapping.TypeFullName, newmapping.TypeFullName);
+        Assert.Equal(originalmapping.XsdTypeName, newmapping.XsdTypeName);
+        Assert.Equal(originalmapping.XsdTypeNamespace, newmapping.XsdTypeNamespace);
+    }
+
+    [Fact]
+    public static void XmlSerializerFactoryTest()
+    {
+        string baseline = "<?xml version=\"1.0\"?>\r\n<Dog xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">\r\n  <Age>5</Age>\r\n  <Name>Bear</Name>\r\n  <Breed>GermanShepherd</Breed>\r\n</Dog>";
+        var xsf = new XmlSerializerFactory();
+        Func<XmlSerializer> serializerfunc = () => xsf.CreateSerializer(typeof(Dog));
+        var dog1 = new Dog() { Name = "Bear", Age = 5, Breed = DogBreed.GermanShepherd };
+        var dog2 = SerializeAndDeserialize(dog1, baseline, serializerfunc);
+        Assert.Equal(dog1.Name, dog2.Name);
+        Assert.Equal(dog1.Age, dog2.Age);
+        Assert.Equal(dog1.Breed, dog2.Breed);
+    }
+
     private static T SerializeAndDeserialize<T>(T value, string baseline, Func<XmlSerializer> serializerFactory = null,
         bool skipStringCompare = false, XmlSerializerNamespaces xns = null)
     {
