@@ -2356,10 +2356,8 @@ mono_llvmonly_runtime_invoke (MonoMethod *method, RuntimeInvokeInfo *info, void 
 	runtime_invoke = (MonoObject *(*)(MonoObject *, void **, MonoObject **, void *))info->runtime_invoke;
 
 	runtime_invoke (NULL, args, exc, info->compiled_method);
-	if (exc && *exc) {
-		mono_error_set_exception_instance (error, (MonoException*) *exc);
+	if (exc && *exc)
 		return NULL;
-	}
 
 	if (sig->ret->type != MONO_TYPE_VOID && info->ret_box_class)
 		return mono_value_box_checked (domain, info->ret_box_class, retval, error);
@@ -2545,12 +2543,17 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 	}
 #endif
 
-	if (mono_llvm_only)
-		return mono_llvmonly_runtime_invoke (method, info, obj, params, exc, error);
+	MonoObject *result;
 
-	runtime_invoke = (MonoObject *(*)(MonoObject *, void **, MonoObject **, void *))info->runtime_invoke;
+	if (mono_llvm_only) {
+		result = mono_llvmonly_runtime_invoke (method, info, obj, params, exc, error);
+		if (!is_ok (error))
+			return NULL;
+	} else {
+		runtime_invoke = (MonoObject *(*)(MonoObject *, void **, MonoObject **, void *))info->runtime_invoke;
 
-	MonoObject *result = runtime_invoke ((MonoObject *)obj, params, exc, info->compiled_method);
+		result = runtime_invoke ((MonoObject *)obj, params, exc, info->compiled_method);
+	}
 	if (catchExcInMonoError && *exc != NULL)
 		mono_error_set_exception_instance (error, (MonoException*) *exc);
 	return result;
