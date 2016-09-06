@@ -1275,12 +1275,14 @@ namespace System.Linq.Expressions
                 throw Error.IncorrectNumberOfIndexes();
             }
 
-            foreach (Expression e in indexList)
+            for (int i = 0, n = indexList.Count; i < n; i++)
             {
-                RequiresCanRead(e, nameof(indexes));
+                Expression e = indexList[i];
+
+                RequiresCanRead(e, nameof(indexes), i);
                 if (e.Type != typeof(int))
                 {
-                    throw Error.ArgumentMustBeArrayIndexType(nameof(indexList));
+                    throw Error.ArgumentMustBeArrayIndexType(nameof(indexes), i);
                 }
             }
 
