@@ -4,6 +4,7 @@ set(SOURCES BoolNative.cpp )
 
 # add the executable
 add_library (BoolNative SHARED ${SOURCES})
+target_link_libraries(BoolNative ${LINK_LIBRARIES_ADDITIONAL}) 
 
 #get_cmake_property(_variableNames VARIABLES)
 #foreach (_variableName ${_variableNames})

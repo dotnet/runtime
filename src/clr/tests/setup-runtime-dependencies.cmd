@@ -35,6 +35,12 @@ goto Usage
 if not defined __OutputDir goto Usage
 if not defined __Arch goto Usage 
 
+REM Check if the platform is supported
+if /i %__Arch% == "arm" (
+    echo No runtime dependencies for Arm32.
+    exit /b 0
+    )
+
 REM =========================================================================================
 REM ===
 REM === Check if dotnet CLI and necessary directories exist

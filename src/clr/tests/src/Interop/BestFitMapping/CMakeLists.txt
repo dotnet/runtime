@@ -4,6 +4,7 @@ set(SOURCES BestFitMappingNative.cpp )
 
 # add the executable
 add_library (BestFitMappingNative SHARED ${SOURCES})
+target_link_libraries(BestFitMappingNative ${LINK_LIBRARIES_ADDITIONAL}) 
 
 #get_cmake_property(_variableNames VARIABLES)
 #foreach (_variableName ${_variableNames})
