@@ -66,7 +66,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [ActiveIssue(8410, PlatformID.Linux)]
+        [OuterLoop]
         public void FileSystemWatcher_File_Create_DeepDirectoryStructure()
         {
             using (var dir = new TempDirectory(GetTestFilePath()))
@@ -81,7 +81,7 @@ namespace System.IO.Tests
                 Action action = () => File.Create(fileName).Dispose();
                 Action cleanup = () => File.Delete(fileName);
 
-                ExpectEvent(watcher, WatcherChangeTypes.Created, action, cleanup, fileName);
+                ExpectEvent(watcher, WatcherChangeTypes.Created, action, cleanup, fileName, timeout: 10000);
             }
         }
 

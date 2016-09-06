@@ -6,7 +6,6 @@
     <RootNamespace>System.Threading.Tasks.Dataflow</RootNamespace>
     <AssemblyName>System.Threading.Tasks.Dataflow</AssemblyName>
     <DocumentationFile>$(OutputPath)System.Threading.Tasks.Dataflow.XML</DocumentationFile>
-    <PackageTargetFramework>netstandard1.0</PackageTargetFramework>
     <ProjectJson>wp8/project.json</ProjectJson>
     <ProjectLockJson>wp8/project.lock.json</ProjectLockJson>
     <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.0</NuGetTargetMoniker>

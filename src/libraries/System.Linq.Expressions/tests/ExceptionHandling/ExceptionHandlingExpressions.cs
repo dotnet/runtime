@@ -1233,5 +1233,32 @@ namespace System.Linq.Expressions.Tests
             Assert.Throws<ArgumentException>("type", () => Expression.Catch(typeof(int).MakeByRefType(), Expression.Constant(0), Expression.Constant(true)));
             Assert.Throws<ArgumentException>("type", () => Expression.MakeCatchBlock(typeof(int).MakeByRefType(), null, Expression.Constant(0), null));
         }
+
+        [Fact]
+        public void ToStringTest()
+        {
+            var e1 = Expression.Throw(Expression.Parameter(typeof(Exception), "ex"));
+            Assert.Equal("throw(ex)", e1.ToString());
+
+            var e2 = Expression.TryFinally(Expression.Empty(), Expression.Empty());
+            Assert.Equal("try { ... }", e2.ToString());
+
+            var e3 = Expression.TryFault(Expression.Empty(), Expression.Empty());
+            Assert.Equal("try { ... }", e3.ToString());
+
+            var e4 = Expression.TryCatch(Expression.Empty(), Expression.Catch(typeof(Exception), Expression.Empty()));
+            Assert.Equal("try { ... }", e4.ToString());
+
+            var e5 = Expression.Catch(typeof(Exception), Expression.Empty());
+            Assert.Equal("catch (Exception) { ... }", e5.ToString());
+
+            var e6 = Expression.Catch(Expression.Parameter(typeof(Exception), "ex"), Expression.Empty());
+            Assert.Equal("catch (Exception ex) { ... }", e6.ToString());
+
+            // NB: No ToString form for filters
+
+            var e7 = Expression.Catch(Expression.Parameter(typeof(Exception), "ex"), Expression.Empty(), Expression.Constant(true));
+            Assert.Equal("catch (Exception ex) { ... }", e7.ToString());
+        }
     }
 }

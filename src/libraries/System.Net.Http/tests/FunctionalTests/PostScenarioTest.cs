@@ -43,6 +43,7 @@ namespace System.Net.Http.Functional.Tests
             _output = output;
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [Theory, MemberData(nameof(EchoServers))]
         public async Task PostNoContentUsingContentLengthSemantics_Success(Uri serverUri)
         {
@@ -50,6 +51,7 @@ namespace System.Net.Http.Functional.Tests
                 useContentLengthUpload: true, useChunkedEncodingUpload: false);
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [Theory, MemberData(nameof(EchoServers))]
         public async Task PostEmptyContentUsingContentLengthSemantics_Success(Uri serverUri)
         {
@@ -57,6 +59,7 @@ namespace System.Net.Http.Functional.Tests
                 useContentLengthUpload: true, useChunkedEncodingUpload: false);
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [ActiveIssue(5485, PlatformID.Windows)]
         [Theory, MemberData(nameof(EchoServers))]
         public async Task PostEmptyContentUsingChunkedEncoding_Success(Uri serverUri)
@@ -65,6 +68,7 @@ namespace System.Net.Http.Functional.Tests
                 useContentLengthUpload: false, useChunkedEncodingUpload: true);
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [Theory, MemberData(nameof(EchoServers))]
         public async Task PostUsingContentLengthSemantics_Success(Uri serverUri)
         {
@@ -72,6 +76,7 @@ namespace System.Net.Http.Functional.Tests
                 useContentLengthUpload: true, useChunkedEncodingUpload: false);
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [Theory, MemberData(nameof(EchoServers))]
         public async Task PostUsingChunkedEncoding_Success(Uri serverUri)
         {
@@ -79,6 +84,7 @@ namespace System.Net.Http.Functional.Tests
                 useContentLengthUpload: false, useChunkedEncodingUpload: true);
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [Theory, MemberData(nameof(EchoServers))]
         public async Task PostSyncBlockingContentUsingChunkedEncoding_Success(Uri serverUri)
         {
@@ -86,6 +92,7 @@ namespace System.Net.Http.Functional.Tests
                 useContentLengthUpload: false, useChunkedEncodingUpload: true);
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [Theory, MemberData(nameof(EchoServers))]
         public async Task PostRepeatedFlushContentUsingChunkedEncoding_Success(Uri serverUri)
         {
@@ -93,6 +100,7 @@ namespace System.Net.Http.Functional.Tests
                 useContentLengthUpload: false, useChunkedEncodingUpload: true);
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [Theory, MemberData(nameof(EchoServers))]
         public async Task PostUsingUsingConflictingSemantics_UsesChunkedSemantics(Uri serverUri)
         {
@@ -100,6 +108,7 @@ namespace System.Net.Http.Functional.Tests
                 useContentLengthUpload: true, useChunkedEncodingUpload: true);
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [Theory, MemberData(nameof(EchoServers))]
         public async Task PostUsingNoSpecifiedSemantics_UsesChunkedSemantics(Uri serverUri)
         {
@@ -107,6 +116,7 @@ namespace System.Net.Http.Functional.Tests
                 useContentLengthUpload: false, useChunkedEncodingUpload: false);
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [Theory]
         [InlineData(5 * 1024)]
         [InlineData(63 * 1024)]
@@ -124,6 +134,7 @@ namespace System.Net.Http.Functional.Tests
                 useContentLengthUpload: true, useChunkedEncodingUpload: false);
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [Theory, MemberData(nameof(BasicAuthEchoServers))]
         public async Task PostRewindableContentUsingAuth_NoPreAuthenticate_Success(Uri serverUri)
         {
@@ -132,6 +143,7 @@ namespace System.Net.Http.Functional.Tests
             await PostUsingAuthHelper(serverUri, ExpectedContent, content, credential, false);
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [Theory, MemberData(nameof(BasicAuthEchoServers))]
         public async Task PostNonRewindableContentUsingAuth_NoPreAuthenticate_ThrowsInvalidOperationException(Uri serverUri)
         {
@@ -141,6 +153,7 @@ namespace System.Net.Http.Functional.Tests
                 PostUsingAuthHelper(serverUri, ExpectedContent, content, credential, preAuthenticate: false));
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [Theory, MemberData(nameof(BasicAuthEchoServers))]
         public async Task PostNonRewindableContentUsingAuth_PreAuthenticate_Success(Uri serverUri)
         {

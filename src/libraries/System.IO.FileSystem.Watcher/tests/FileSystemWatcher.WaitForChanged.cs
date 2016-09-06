@@ -126,6 +126,7 @@ namespace System.IO.Tests
         }
 
         [Theory]
+        [OuterLoop]
         [InlineData(WatcherChangeTypes.Created)]
         [InlineData(WatcherChangeTypes.Deleted)]
         public void CreatedDeleted_Success(WatcherChangeTypes changeType)
@@ -154,6 +155,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        [OuterLoop]
         public void Changed_Success()
         {
             using (var testDirectory = new TempDirectory(GetTestFilePath()))
@@ -178,6 +180,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        [OuterLoop]
         public void Renamed_Success()
         {
             using (var testDirectory = new TempDirectory(GetTestFilePath()))

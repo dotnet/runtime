@@ -96,7 +96,7 @@ namespace System.Reflection.Metadata.Tests
 
             var reader1 = provider.GetMetadataReader(MetadataReaderOptions.None, decoder);
             Assert.Equal("str", reader1.MetadataVersion);
-            Assert.Same(reader1.Utf8Decoder, decoder);
+            Assert.Same(reader1.UTF8Decoder, decoder);
             Assert.Equal(reader1.Options, MetadataReaderOptions.None);
 
             var reader2 = provider.GetMetadataReader(MetadataReaderOptions.None, decoder);
@@ -105,7 +105,7 @@ namespace System.Reflection.Metadata.Tests
             var reader3 = provider.GetMetadataReader(MetadataReaderOptions.None);
             Assert.NotSame(reader2, reader3);
             Assert.Equal("v9.9.9.9", reader3.MetadataVersion);
-            Assert.Same(reader3.Utf8Decoder, MetadataStringDecoder.DefaultUTF8);
+            Assert.Same(reader3.UTF8Decoder, MetadataStringDecoder.DefaultUTF8);
             Assert.Equal(reader3.Options, MetadataReaderOptions.None);
 
             var reader4 = provider.GetMetadataReader(MetadataReaderOptions.None);
@@ -114,7 +114,7 @@ namespace System.Reflection.Metadata.Tests
             var reader5 = provider.GetMetadataReader(MetadataReaderOptions.ApplyWindowsRuntimeProjections);
             Assert.NotSame(reader4, reader5);
             Assert.Equal("v9.9.9.9", reader5.MetadataVersion);
-            Assert.Same(reader5.Utf8Decoder, MetadataStringDecoder.DefaultUTF8);
+            Assert.Same(reader5.UTF8Decoder, MetadataStringDecoder.DefaultUTF8);
             Assert.Equal(reader5.Options, MetadataReaderOptions.ApplyWindowsRuntimeProjections);
 
             provider.Dispose();

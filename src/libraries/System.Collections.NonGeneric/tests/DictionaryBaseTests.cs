@@ -183,7 +183,8 @@ namespace System.Collections.Tests
         {
             MyDictionary dictBase = CreateDictionary(100);
             Assert.Throws<ArgumentNullException>("array", () => dictBase.CopyTo(null, 0)); // Array is null
-            Assert.Throws<ArgumentException>("array", () => dictBase.CopyTo(new object[100, 100], 0)); // Array is multidimensional
+
+            Assert.Throws<ArgumentException>(() => dictBase.CopyTo(new object[100, 100], 0)); // Array is multidimensional
 
             Assert.Throws<ArgumentOutOfRangeException>("arrayIndex", () => dictBase.CopyTo(new DictionaryEntry[100], -1)); // Index < 0
 

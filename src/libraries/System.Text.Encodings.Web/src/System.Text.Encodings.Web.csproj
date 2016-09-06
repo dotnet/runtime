@@ -6,7 +6,6 @@
     <RootNamespace>System.Text.Encodings.Web</RootNamespace>
     <AssemblyName>System.Text.Encodings.Web</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <PackageTargetFramework>netstandard1.0</PackageTargetFramework>
     <UseOpenKey Condition="'$(UseOpenKey)'==''">true</UseOpenKey>
     <DocumentationFile>$(OutputPath)$(AssemblyName).xml</DocumentationFile>
     <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.0</NuGetTargetMoniker>

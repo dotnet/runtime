@@ -24,17 +24,16 @@ namespace System.Reflection.Metadata
     /// </remarks>
     public class MetadataStringDecoder
     {
-        private static readonly MetadataStringDecoder s_defaultUTF8 = new MetadataStringDecoder(Encoding.UTF8);
-        private readonly Encoding _encoding;
+        /// <summary>
+        /// Gets the encoding used by this instance. 
+        /// </summary>
+        public Encoding Encoding { get; }
 
         /// <summary>
         /// The default decoder used by <see cref="MetadataReader"/> to decode UTF-8 when
         /// no decoder is provided to the constructor.
         /// </summary>
-        public static MetadataStringDecoder DefaultUTF8
-        {
-            get { return s_defaultUTF8; }
-        }
+        public static MetadataStringDecoder DefaultUTF8 { get; } = new MetadataStringDecoder(Encoding.UTF8);
 
         /// <summary>
         /// Creates a <see cref="MetadataStringDecoder"/> for the given encoding.
@@ -60,15 +59,7 @@ namespace System.Reflection.Metadata
             // encoding. I'm more comfortable sharing that hack than having the reflection over internal 
             // CreateStringFromEncoding spread.
 
-            _encoding = encoding;
-        }
-
-        /// <summary>
-        /// Gets the encoding used by this instance. 
-        /// </summary>
-        public Encoding Encoding
-        {
-            get { return _encoding; }
+            Encoding = encoding;
         }
 
         /// <summary>
@@ -82,11 +73,11 @@ namespace System.Reflection.Metadata
         /// <returns>The decoded string.</returns>
         public unsafe virtual String GetString(byte* bytes, int byteCount)
         {
-            Debug.Assert(_encoding != null);
+            Debug.Assert(Encoding != null);
 
             // Note that this call is currently wired to the light-up extension in EncodingHelper
             // for portability.
-            return _encoding.GetString(bytes, byteCount);
+            return Encoding.GetString(bytes, byteCount);
         }
     }
 }

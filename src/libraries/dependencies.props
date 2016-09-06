@@ -1,16 +1,16 @@
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <!-- Source of truth for dependency tooling: the commit hash of the dotnet/versions master branch as of the last auto-upgrade. -->
   <PropertyGroup>
-    <CoreFxCurrentRef>97813fbdd5509806f0c5cac2f675e368e7bcb0ef</CoreFxCurrentRef>
-    <CoreClrCurrentRef>f03297f4f8394adf49f0f301ed05e6985e5270dc</CoreClrCurrentRef>
-    <ExternalCurrentRef>97813fbdd5509806f0c5cac2f675e368e7bcb0ef</ExternalCurrentRef>
+    <CoreFxCurrentRef>9af3f57a71476e88e53a210111aa7c5217fa7d8e</CoreFxCurrentRef>
+    <CoreClrCurrentRef>6c43ba94713264be37d01321af15505e9229e508</CoreClrCurrentRef>
+    <ExternalCurrentRef>35f9fe6cd087265ea8bf9fcd47608aca2ab62efd</ExternalCurrentRef>
   </PropertyGroup>
 
   <!-- Auto-upgraded properties for each build info dependency. -->
   <PropertyGroup>
-    <CoreFxExpectedPrerelease>beta-24430-01</CoreFxExpectedPrerelease>
-    <CoreClrExpectedPrerelease>beta-24430-03</CoreClrExpectedPrerelease>
-    <ExternalExpectedPrerelease>beta-24430-00</ExternalExpectedPrerelease>
+    <CoreFxExpectedPrerelease>beta-24506-02</CoreFxExpectedPrerelease>
+    <CoreClrExpectedPrerelease>beta-24506-03</CoreClrExpectedPrerelease>
+    <ExternalExpectedPrerelease>beta-24506-00</ExternalExpectedPrerelease>
   </PropertyGroup>
 
   <!-- Full package version strings that are used in other parts of the build. -->
@@ -81,7 +81,15 @@
     </StaticDependency>
 
     <StaticDependency Include="Microsoft.xunit.netcore.extensions;Microsoft.DotNet.BuildTools.TestSuite">
-      <Version>1.0.0-prerelease-00704-03</Version>
+      <Version>1.0.0-prerelease-00731-01</Version>
+    </StaticDependency>
+
+    <!--
+      The NETNative targeting pack is in the projectn-tfs build-info, but auto-upgrade isn't wanted.
+      Verify it at a static version rather than referencing the build-info.
+    -->
+    <StaticDependency Include="Microsoft.TargetingPack.Private.NETNative">
+      <Version>1.0.1-beta-24430-00</Version>
     </StaticDependency>
 
     <DependencyBuildInfo Include="@(StaticDependency)">

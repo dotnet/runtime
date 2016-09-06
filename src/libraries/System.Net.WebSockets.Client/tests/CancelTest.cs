@@ -16,6 +16,7 @@ namespace System.Net.WebSockets.Client.Tests
     {
         public CancelTest(ITestOutputHelper output) : base(output) { }
 
+        [OuterLoop] // TODO: Issue #11345
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
         public async Task ConnectAsync_Cancel_ThrowsWebSocketExceptionWithMessage(Uri server)
         {
@@ -36,6 +37,7 @@ namespace System.Net.WebSockets.Client.Tests
             }
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
         public async Task SendAsync_Cancel_Success(Uri server)
         {
@@ -50,6 +52,7 @@ namespace System.Net.WebSockets.Client.Tests
             }, server);
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
         public async Task ReceiveAsync_Cancel_Success(Uri server)
         {
@@ -71,6 +74,7 @@ namespace System.Net.WebSockets.Client.Tests
             }, server);
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
         public async Task CloseAsync_Cancel_Success(Uri server)
         {
@@ -92,6 +96,7 @@ namespace System.Net.WebSockets.Client.Tests
             }, server);
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
         public async Task CloseOutputAsync_Cancel_Success(Uri server)
         {
@@ -114,6 +119,7 @@ namespace System.Net.WebSockets.Client.Tests
             }, server);
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
         public async Task ReceiveAsync_CancelAndReceive_ThrowsWebSocketExceptionWithMessage(Uri server)
         {

@@ -425,6 +425,8 @@ namespace System.IO.Compression
             {
                 if (value == CompressionMethodValues.Deflate)
                     VersionToExtractAtLeast(ZipVersionNeededValues.Deflate);
+                else if (value == CompressionMethodValues.Deflate64)
+                    VersionToExtractAtLeast(ZipVersionNeededValues.Deflate64);
                 _storedCompressionMethod = value;
             }
         }
@@ -673,9 +675,12 @@ namespace System.IO.Compression
                 case CompressionMethodValues.Deflate:
                     uncompressedStream = new DeflateStream(compressedStreamToRead, CompressionMode.Decompress);
                     break;
+                case CompressionMethodValues.Deflate64:
+                    uncompressedStream = new DeflateManagedStream(compressedStreamToRead, CompressionMethodValues.Deflate64);
+                    break;
                 case CompressionMethodValues.Stored:
                 default:
-                    //we can assume that only deflate/stored are allowed because we assume that
+                    //we can assume that only deflate/deflate64/stored are allowed because we assume that
                     //IsOpenable is checked before this function is called
                     Debug.Assert(CompressionMethod == CompressionMethodValues.Stored);
 
@@ -747,11 +752,11 @@ namespace System.IO.Compression
                 if (needToUncompress)
                 {
                     if (CompressionMethod != CompressionMethodValues.Stored &&
-                        CompressionMethod != CompressionMethodValues.Deflate)
+                        CompressionMethod != CompressionMethodValues.Deflate &&
+                        CompressionMethod != CompressionMethodValues.Deflate64)
                     {
                         switch (CompressionMethod)
                         {
-                            case CompressionMethodValues.Deflate64:
                             case CompressionMethodValues.BZip2:
                             case CompressionMethodValues.LZMA:
                                 message = SR.Format(SR.UnsupportedCompressionMethod, CompressionMethod.ToString());
@@ -1287,7 +1292,7 @@ namespace System.IO.Compression
         [Flags]
         private enum BitFlagValues : ushort { DataDescriptor = 0x8, UnicodeFileName = 0x800 }
 
-        private enum CompressionMethodValues : ushort { Stored = 0x0, Deflate = 0x8, Deflate64 = 0x9, BZip2 = 0xC, LZMA = 0xE }
+        internal enum CompressionMethodValues : ushort { Stored = 0x0, Deflate = 0x8, Deflate64 = 0x9, BZip2 = 0xC, LZMA = 0xE }
 
         private enum OpenableValues { Openable, FileNonExistent, FileTooLarge }
         #endregion Nested Types

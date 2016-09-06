@@ -32,6 +32,7 @@ namespace System.Net.Sockets.Tests
             handle.Set();
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [Fact]
         [Trait("IPv4", "true")]
         public void AcceptAsync_IpV4_Success()
@@ -73,6 +74,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [Fact]
         [Trait("IPv6", "true")]
         public void AcceptAsync_IPv6_Success()
@@ -114,6 +116,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [Fact]
         [PlatformSpecific(PlatformID.Windows)]
         public void AcceptAsync_WithReceiveBuffer_Success()
@@ -164,6 +167,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [Fact]
         [PlatformSpecific(PlatformID.AnyUnix)]
         public void AcceptAsync_WithReceiveBuffer_Failure()
@@ -193,6 +197,7 @@ namespace System.Net.Sockets.Tests
         #region GC Finalizer test
         // This test assumes sequential execution of tests and that it is going to be executed after other tests
         // that used Sockets. 
+        [OuterLoop] // TODO: Issue #11345
         [Fact]
         public void TestFinalizers()
         {

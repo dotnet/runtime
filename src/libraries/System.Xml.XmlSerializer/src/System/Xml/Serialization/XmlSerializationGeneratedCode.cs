@@ -13,7 +13,6 @@ namespace System.Xml.Serialization
     using System.Security;
     using System.Globalization;
 
-    /// <include file='doc\XmlSerializationGeneratedCode.uex' path='docs/doc[@for="XmlSerializationGeneratedCode"]/*' />
     ///<internalonly/>
     public abstract class XmlSerializationGeneratedCode
     {

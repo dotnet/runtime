@@ -210,7 +210,6 @@ namespace System.Collections.Concurrent
             : this(concurrencyLevel, DefaultCapacity, false, comparer)
         {
             if (collection == null) throw new ArgumentNullException(nameof(collection));
-            if (comparer == null) throw new ArgumentNullException(nameof(comparer));
 
             InitializeFromCollection(collection);
         }
