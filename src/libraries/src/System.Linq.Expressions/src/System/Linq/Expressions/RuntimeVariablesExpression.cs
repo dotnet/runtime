@@ -102,11 +102,7 @@ namespace System.Linq.Expressions
             var vars = variables.ToReadOnly();
             for (int i = 0; i < vars.Count; i++)
             {
-                Expression v = vars[i];
-                if (v == null)
-                {
-                    throw new ArgumentNullException($"{nameof(variables)}[{i}]");
-                }
+                ContractUtils.RequiresNotNull(vars[i], nameof(variables), i);
             }
 
             return new RuntimeVariablesExpression(vars);

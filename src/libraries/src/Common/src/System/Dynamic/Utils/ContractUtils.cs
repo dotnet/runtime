@@ -38,6 +38,16 @@ namespace System.Dynamic.Utils
             }
         }
 
+        public static void RequiresNotNull(object value, string paramName, int index)
+        {
+            Debug.Assert(!string.IsNullOrEmpty(paramName));
+
+            if (value == null)
+            {
+                throw new ArgumentNullException(GetParamName(paramName, index));
+            }
+        }
+
         public static void RequiresNotEmpty<T>(ICollection<T> collection, string paramName)
         {
             RequiresNotNull(collection, paramName);
@@ -68,9 +78,19 @@ namespace System.Dynamic.Utils
             {
                 if (array[i] == null)
                 {
-                    throw new ArgumentNullException(string.Format(System.Globalization.CultureInfo.CurrentCulture, "{0}[{1}]", arrayName, i));
+                    throw new ArgumentNullException(GetParamName(arrayName, i));
                 }
             }
+        }
+
+        private static string GetParamName(string paramName, int index)
+        {
+            if (index >= 0)
+            {
+                return $"{paramName}[{index}]";
+            }
+
+            return paramName;
         }
     }
 }
