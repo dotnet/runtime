@@ -34,6 +34,11 @@ namespace System.Dynamic.Utils
             return type.IsConstructedGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>);
         }
 
+        public static bool IsNullableOrReferenceType(this Type type)
+        {
+            return !type.GetTypeInfo().IsValueType || IsNullableType(type);
+        }
+
         public static bool IsBool(Type type)
         {
             return GetNonNullableType(type) == typeof(bool);

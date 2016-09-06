@@ -19,10 +19,14 @@ namespace System.Linq.Expressions
     {
         internal static bool IsNull(Expression e)
         {
-            if (e.NodeType == ExpressionType.Constant)
+            switch (e.NodeType)
             {
-                return ((ConstantExpression)e).Value == null;
+                case ExpressionType.Constant:
+                    return ((ConstantExpression)e).Value == null;
+                case ExpressionType.Default:
+                    return e.Type.IsNullableOrReferenceType();
             }
+
             return false;
         }
 

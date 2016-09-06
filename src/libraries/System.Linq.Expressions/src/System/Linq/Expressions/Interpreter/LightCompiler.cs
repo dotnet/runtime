@@ -756,11 +756,6 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        private static bool IsNullableOrReferenceType(Type t)
-        {
-            return !t.GetTypeInfo().IsValueType || TypeUtils.IsNullableType(t);
-        }
-
         private void CompileBinaryExpression(Expression expr)
         {
             var node = (BinaryExpression)expr;
@@ -853,7 +848,7 @@ namespace System.Linq.Expressions.Interpreter
                         default:
                             BranchLabel loadDefault = _instructions.MakeLabel();
 
-                            if (IsNullableOrReferenceType(node.Left.Type))
+                            if (node.Left.Type.IsNullableOrReferenceType())
                             {
                                 _instructions.EmitLoadLocal(leftTemp.Index);
                                 _instructions.EmitLoad(null, typeof(object));
@@ -861,7 +856,7 @@ namespace System.Linq.Expressions.Interpreter
                                 _instructions.EmitBranchTrue(loadDefault);
                             }
 
-                            if (IsNullableOrReferenceType(node.Right.Type))
+                            if (node.Right.Type.IsNullableOrReferenceType())
                             {
                                 _instructions.EmitLoadLocal(rightTemp.Index);
                                 _instructions.EmitLoad(null, typeof(object));
