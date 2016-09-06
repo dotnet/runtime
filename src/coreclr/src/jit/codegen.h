@@ -48,8 +48,6 @@ public:
                                    unsigned* cnsPtr,
                                    bool      nogen = false);
 
-    // This should move to CodeGenClassic.h after genCreateAddrMode() is no longer dependent upon it
-    void genIncRegBy(regNumber reg, ssize_t ival, GenTreePtr tree, var_types dstType = TYP_INT, bool ovfl = false);
 
 private:
 #if defined(_TARGET_XARCH_) && !FEATURE_STACK_FP_X87
