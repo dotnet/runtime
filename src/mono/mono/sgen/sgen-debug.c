@@ -251,7 +251,7 @@ sgen_check_mod_union_consistency (void)
 {
 	missing_remsets = FALSE;
 
-	major_collector.iterate_objects (ITERATE_OBJECTS_ALL, (IterateObjectCallbackFunc)check_mod_union_callback, (void*)FALSE);
+	major_collector.iterate_objects (ITERATE_OBJECTS_SWEEP_ALL, (IterateObjectCallbackFunc)check_mod_union_callback, (void*)FALSE);
 
 	sgen_los_iterate_objects ((IterateObjectCallbackFunc)check_mod_union_callback, (void*)TRUE);
 
