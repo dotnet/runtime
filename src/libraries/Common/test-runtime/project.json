@@ -2,8 +2,8 @@
   "dependencies": {
     "Microsoft.NETCore.Platforms": "1.0.2-beta-24506-02",
     "Microsoft.NETCore.Targets": "1.0.3-beta-24506-02",
-    "Microsoft.NETCore.TestHost": "1.1.0-beta-24506-02",
-    "Microsoft.NETCore.Runtime.CoreCLR": "1.1.0-beta-24506-02",
+    "Microsoft.NETCore.TestHost": "1.1.0-beta-24506-03",
+    "Microsoft.NETCore.Runtime.CoreCLR": "1.1.0-beta-24506-03",
     "System.Diagnostics.Contracts": "4.3.0-beta-24506-02",
     "System.IO.Compression": "4.3.0-beta-24506-02",
     "System.Runtime.InteropServices.RuntimeInformation": "4.3.0-beta-24506-02",
