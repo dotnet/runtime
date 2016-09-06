@@ -1223,8 +1223,9 @@ void Lowering::TreeNodeInfoInitBlockStore(GenTreeBlk* blkNode)
     LinearScan* l        = m_lsra;
     Compiler*   compiler = comp;
 
-    // Sources are dest address, initVal or source, and size
-    blkNode->gtLsraInfo.srcCount = 3;
+    // Sources are dest address and initVal or source.
+    // We may require an additional source or temp register for the size.
+    blkNode->gtLsraInfo.srcCount = 2;
     blkNode->gtLsraInfo.dstCount = 0;
 
     if ((blkNode->OperGet() == GT_STORE_OBJ) && (blkNode->AsObj()->gtGcPtrCount == 0))
@@ -1304,8 +1305,6 @@ void Lowering::TreeNodeInfoInitBlockStore(GenTreeBlk* blkNode)
     {
         // CopyObj or CopyBlk
         // Sources are src and dest and size if not constant.
-        blkNode->gtLsraInfo.srcCount = 3;
-        blkNode->gtLsraInfo.dstCount = 0;
         unsigned   size              = blkNode->gtBlkSize;
         GenTreePtr source            = blkNode->Data();
         GenTree*   srcAddr           = nullptr;
@@ -1499,7 +1498,7 @@ void Lowering::TreeNodeInfoInitSIMD(GenTree* tree)
 
         case SIMDIntrinsicInitN:
             info->srcCount = (int)(simdTree->gtSIMDSize / genTypeSize(simdTree->gtSIMDBaseType));
-            // Need an internal register to stitch together all the values into a single vector in an XMM reg
+            // Need an internal register to stitch together all the values into a single vector in an XMM reg.
             info->internalFloatCount = 1;
             info->setInternalCandidates(lsra, lsra->allSIMDRegs());
             break;
@@ -1719,7 +1718,12 @@ void Lowering::LowerGCWriteBarrier(GenTree* tree)
 void Lowering::SetIndirAddrOpCounts(GenTreePtr indirTree)
 {
     assert(indirTree->OperIsIndir());
-    assert(indirTree->TypeGet() != TYP_STRUCT);
+    // If this is the rhs of a block copy (i.e. non-enregisterable struct),
+    // it has no register requirements.
+    if (indirTree->TypeGet() == TYP_STRUCT)
+    {
+        return;
+    }
 
     GenTreePtr    addr = indirTree->gtGetOp1();
     TreeNodeInfo* info = &(indirTree->gtLsraInfo);

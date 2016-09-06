@@ -2535,6 +2535,10 @@ AGAIN:
                                                     reinterpret_cast<uintptr_t>(tree->gtAllocObj.gtAllocObjClsHnd)));
                     hash = genTreeHashAdd(hash, tree->gtAllocObj.gtNewHelper);
                     break;
+                case GT_OBJ:
+                    hash = genTreeHashAdd(hash, static_cast<unsigned>(
+                                                    reinterpret_cast<uintptr_t>(tree->gtObj.gtClass)));
+                    break;
 
                 // For the ones below no extra argument matters for comparison.
                 case GT_BOX:
@@ -15829,7 +15833,7 @@ CORINFO_CLASS_HANDLE Compiler::gtGetStructHandleIfPresent(GenTree* tree)
                 info.compCompHnd->getFieldType(tree->gtField.gtFldHnd, &structHnd);
                 break;
             case GT_ASG:
-                structHnd = gtGetStructHandle(tree->gtGetOp1());
+                structHnd = gtGetStructHandleIfPresent(tree->gtGetOp1());
                 break;
             case GT_LCL_VAR:
             case GT_LCL_FLD:
