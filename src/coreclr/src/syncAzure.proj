@@ -4,8 +4,11 @@
 
   <PropertyGroup>
     <ContainerNamePrefix Condition="'$(ContainerNamePrefix)' == ''">coreclr-$(PreReleaseLabel)</ContainerNamePrefix>
-    <ContainerName Condition="'$(ContainerNamePrefix)' != '' and '$(BuildNumberMajor)' != '' and '$(BuildNumberMinor)' != ''">$(ContainerNamePrefix)-$(BuildNumberMajor)-$(BuildNumberMinor)</ContainerName>
-    <DownloadDirectory>$(PackagesDir)AzureTransfer</DownloadDirectory>
+    <ContainerName Condition="'$(__Container)' == '' and '$(ContainerNamePrefix)' != '' and '$(BuildNumberMajor)' != '' and '$(BuildNumberMinor)' != ''">$(ContainerNamePrefix)-$(BuildNumberMajor)-$(BuildNumberMinor)</ContainerName>
+    <ContainerName Condition="'$(__Container)' != '' and '$(PublishTestNativeBins)' != 'true'">$(__Container)</ContainerName>
+    <ContainerName Condition="'$(__Container)' != '' and '$(PublishTestNativeBins)' == 'true'">$(__Container)-test-native-bins</ContainerName>
+    <DownloadDirectory Condition="'$(PublishTestNativeBins)' != 'true'">$(PackagesDir)AzureTransfer</DownloadDirectory>
+    <DownloadDirectory Condition="'$(PublishTestNativeBins)' == 'true'">$(PackagesDir)TestNativeBins</DownloadDirectory>
   </PropertyGroup>
 
   <Import Project="$(ToolsDir)SyncCloudContent.targets" />
