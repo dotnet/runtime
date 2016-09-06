@@ -996,7 +996,7 @@ public:
     // This is the unique CompTimeSummaryInfo object for this instance of the runtime.
     static CompTimeSummaryInfo s_compTimeSummary;
 
-    CompTimeSummaryInfo() : m_total(0), m_maximum(0), m_numMethods(0), m_filtered(0), m_numFilteredMethods(0)
+    CompTimeSummaryInfo() : m_numMethods(0), m_total(0), m_maximum(0), m_numFilteredMethods(0), m_filtered(0)
     {
     }
 
