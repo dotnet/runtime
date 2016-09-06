@@ -556,6 +556,14 @@ namespace System.Security.Principal
             }
         }
 
+        public virtual IntPtr Token
+        {
+            get
+            {
+                return _safeTokenHandle.DangerousGetHandle();
+            }
+        }
+
         //
         // Public methods.
         //
