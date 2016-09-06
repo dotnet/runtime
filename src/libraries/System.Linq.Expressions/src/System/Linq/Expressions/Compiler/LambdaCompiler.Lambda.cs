@@ -155,9 +155,33 @@ namespace System.Linq.Expressions.Compiler
             EmitDelegateConstruction(impl);
         }
 
-        private static Type[] GetParameterTypes(LambdaExpression lambda)
+        private static Type[] GetParameterTypes(LambdaExpression lambda, Type firstType)
         {
-            return lambda.Parameters.Map(p => p.IsByRef ? p.Type.MakeByRefType() : p.Type);
+            var parameters = lambda.Parameters;
+            var count = parameters.Count;
+
+            Type[] result;
+            int i;
+
+            if (firstType != null)
+            {
+                result = new Type[count + 1];
+                result[0] = firstType;
+                i = 1;
+            }
+            else
+            {
+                result = new Type[count];
+                i = 0;
+            }
+
+            for (var j = 0; j < count; j++, i++)
+            {
+                var p = parameters[j];
+                result[i] = p.IsByRef ? p.Type.MakeByRefType() : p.Type;
+            }
+
+            return result;
         }
 
 #if FEATURE_COMPILE_TO_METHODBUILDER
