@@ -4,7 +4,7 @@
 
 namespace System.IO.Compression
 {
-    internal enum ZipVersionNeededValues : ushort { Default = 10, ExplicitDirectory = 20, Deflate = 20, Zip64 = 45 }
+    internal enum ZipVersionNeededValues : ushort { Default = 10, ExplicitDirectory = 20, Deflate = 20, Deflate64 = 21, Zip64 = 45 }
 
     /// <summary>
     /// The upper byte of the "version made by" flag in the central directory header of a zip file represents the 

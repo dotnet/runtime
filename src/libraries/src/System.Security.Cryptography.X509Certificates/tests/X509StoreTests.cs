@@ -24,11 +24,15 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             using (X509Store store = new X509Store(StoreName.My, StoreLocation.CurrentUser))
             {
                 store.Open(OpenFlags.ReadOnly);
-                int certCount = store.Certificates.Count;
 
-                // This assert is just so certCount appears to be used, the test really
-                // is that store.get_Certificates didn't throw.
-                Assert.True(certCount >= 0);
+                using (var coll = new ImportedCollection(store.Certificates))
+                {
+                    int certCount = coll.Collection.Count;
+
+                    // This assert is just so certCount appears to be used, the test really
+                    // is that store.get_Certificates didn't throw.
+                    Assert.True(certCount >= 0);
+                }
             }
         }
 
@@ -49,12 +53,15 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             {
                 store.Open(OpenFlags.ReadOnly);
 
-                // Add only throws when it has to do work.  If, for some reason, this certificate
-                // is already present in the CurrentUser\My store, we can't really test this
-                // functionality.
-                if (!store.Certificates.Contains(cert))
+                using (var coll = new ImportedCollection(store.Certificates))
                 {
-                    Assert.ThrowsAny<CryptographicException>(() => store.Add(cert));
+                    // Add only throws when it has to do work.  If, for some reason, this certificate
+                    // is already present in the CurrentUser\My store, we can't really test this
+                    // functionality.
+                    if (!coll.Collection.Contains(cert))
+                    {
+                        Assert.ThrowsAny<CryptographicException>(() => store.Add(cert));
+                    }
                 }
             }
         }
@@ -71,12 +78,15 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 // Look through the certificates to find one with no private key to call add on.
                 // (The private key restriction is so that in the event of an "accidental success"
                 // that no potential permissions would be modified)
-                foreach (X509Certificate2 cert in store.Certificates)
+                using (var coll = new ImportedCollection(store.Certificates))
                 {
-                    if (!cert.HasPrivateKey)
+                    foreach (X509Certificate2 cert in coll.Collection)
                     {
-                        toAdd = cert;
-                        break;
+                        if (!cert.HasPrivateKey)
+                        {
+                            toAdd = cert;
+                            break;
+                        }
                     }
                 }
 
@@ -104,9 +114,12 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             {
                 store.Open(OpenFlags.ReadOnly);
 
-                if (store.Certificates.Contains(cert))
+                using (var coll = new ImportedCollection(store.Certificates))
                 {
-                    Assert.ThrowsAny<CryptographicException>(() => store.Remove(cert));
+                    if (coll.Collection.Contains(cert))
+                    {
+                        Assert.ThrowsAny<CryptographicException>(() => store.Remove(cert));
+                    }
                 }
             }
         }

@@ -135,5 +135,12 @@ namespace System.Linq.Expressions.Tests
             visitor.Visit(expression);
             Assert.Same(expression, visitor.LastTypeBinaryVisited);
         }
+
+        [Fact]
+        public void ToStringTest()
+        {
+            var e = Expression.TypeIs(Expression.Parameter(typeof(object), "o"), typeof(string));
+            Assert.Equal("(o Is String)", e.ToString());
+        }
     }
 }

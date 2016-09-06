@@ -2,16 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Dynamic.Utils;
-using System.Linq.Expressions.Compiler;
 using System.Reflection;
-using System.Threading;
-using System.Runtime.CompilerServices;
-using System.Linq.Expressions;
 
 namespace System.Linq.Expressions
 {
@@ -128,14 +123,31 @@ namespace System.Linq.Expressions
 #if FEATURE_INTERPRET
             if (preferInterpretation)
             {
-                return new System.Linq.Expressions.Interpreter.LightCompiler().CompileTop(this).CreateDelegate();
+                return new Interpreter.LightCompiler().CompileTop(this).CreateDelegate();
             }
 #endif
             return Compiler.LambdaCompiler.Compile(this);
 #else
-            return new System.Linq.Expressions.Interpreter.LightCompiler().CompileTop(this).CreateDelegate();
+            return new Interpreter.LightCompiler().CompileTop(this).CreateDelegate();
 #endif
         }
+
+#if FEATURE_COMPILE_TO_METHODBUILDER
+        /// <summary>
+        /// Compiles the lambda into a method definition.
+        /// </summary>
+        /// <param name="method">A <see cref="System.Reflection.Emit.MethodBuilder"/> which will be used to hold the lambda's IL.</param>
+        public void CompileToMethod(System.Reflection.Emit.MethodBuilder method)
+        {
+            ContractUtils.RequiresNotNull(method, nameof(method));
+            ContractUtils.Requires(method.IsStatic, nameof(method));
+            var type = method.DeclaringType.GetTypeInfo() as System.Reflection.Emit.TypeBuilder;
+            if (type == null) throw Error.MethodBuilderDoesNotHaveTypeBuilder();
+
+            Compiler.LambdaCompiler.Compile(this, method);
+        }
+#endif
+
 
 #if FEATURE_COMPILE
         internal abstract LambdaExpression Accept(Compiler.StackSpiller spiller);
@@ -152,7 +164,7 @@ namespace System.Linq.Expressions
     /// </remarks>
     public sealed class Expression<TDelegate> : LambdaExpression
     {
-        public Expression(Expression body, string name, bool tailCall, ReadOnlyCollection<ParameterExpression> parameters)
+        internal Expression(Expression body, string name, bool tailCall, ReadOnlyCollection<ParameterExpression> parameters)
             : base(typeof(TDelegate), name, body, tailCall, parameters)
         {
         }
@@ -177,12 +189,12 @@ namespace System.Linq.Expressions
 #if FEATURE_INTERPRET
             if (preferInterpretation)
             {
-                return (TDelegate)(object)new System.Linq.Expressions.Interpreter.LightCompiler().CompileTop(this).CreateDelegate();
+                return (TDelegate)(object)new Interpreter.LightCompiler().CompileTop(this).CreateDelegate();
             }
 #endif
             return (TDelegate)(object)Compiler.LambdaCompiler.Compile(this);
 #else
-            return (TDelegate)(object)new System.Linq.Expressions.Interpreter.LightCompiler().CompileTop(this).CreateDelegate();
+            return (TDelegate)(object)new Interpreter.LightCompiler().CompileTop(this).CreateDelegate();
 #endif
         }
 
@@ -490,7 +502,7 @@ namespace System.Linq.Expressions
                     typeArgs[i] = param.IsByRef ? param.Type.MakeByRefType() : param.Type;
                     if (!set.Add(param))
                     {
-                        throw Error.DuplicateVariable(param, $"parameters[{i}]");
+                        throw Error.DuplicateVariable(param, nameof(parameters), i);
                     }
                 }
             }
@@ -568,7 +580,7 @@ namespace System.Linq.Expressions
                 {
                     ParameterExpression pex = parameters[i];
                     ParameterInfo pi = pis[i];
-                    RequiresCanRead(pex, nameof(parameters));
+                    RequiresCanRead(pex, nameof(parameters), i);
                     Type pType = pi.ParameterType;
                     if (pex.IsByRef)
                     {
@@ -585,7 +597,7 @@ namespace System.Linq.Expressions
                     }
                     if (!set.Add(pex))
                     {
-                        throw Error.DuplicateVariable(pex, $"{nameof(parameters)}[{i}]");
+                        throw Error.DuplicateVariable(pex, nameof(parameters), i);
                     }
                 }
             }

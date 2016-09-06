@@ -617,5 +617,17 @@ namespace System.Linq.Expressions.Tests
             Assert.Equal("case (0, \"A\"): ...", sc.ToString());
         }
 
+        [Fact]
+        public void ToStringTest()
+        {
+            var e1 = Expression.Switch(Expression.Parameter(typeof(int), "x"), Expression.SwitchCase(Expression.Empty(), Expression.Constant(1)));
+            Assert.Equal("switch (x) { ... }", e1.ToString());
+
+            var e2 = Expression.SwitchCase(Expression.Parameter(typeof(int), "x"), Expression.Constant(1));
+            Assert.Equal("case (1): ...", e2.ToString());
+
+            var e3 = Expression.SwitchCase(Expression.Parameter(typeof(int), "x"), Expression.Constant(1), Expression.Constant(2));
+            Assert.Equal("case (1, 2): ...", e3.ToString());
+        }
     }
 }

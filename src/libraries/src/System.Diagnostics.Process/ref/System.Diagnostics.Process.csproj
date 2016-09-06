@@ -4,7 +4,6 @@
   <PropertyGroup>
     <OutputType>Library</OutputType>
     <!-- requires 5.5 since we needed surface area in Desktop 4.6.1 to support -->
-    <PackageTargetFramework>netstandard1.4</PackageTargetFramework>
     <NuGetTargetMoniker>.NETStandard,Version=v1.4</NuGetTargetMoniker>
   </PropertyGroup>
   <ItemGroup>

@@ -840,6 +840,13 @@ namespace System.Linq.Expressions.Tests
             CheckGenericWithStructRestrictionAsValueTypeHelper<Scs>(useInterpreter);
         }
 
+        [Fact]
+        public static void ToStringTest()
+        {
+            var e = Expression.TypeAs(Expression.Parameter(typeof(object), "o"), typeof(string));
+            Assert.Equal("(o As String)", e.ToString());
+        }
+
         #endregion
 
         #region Generic helpers

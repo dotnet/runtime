@@ -14,7 +14,6 @@
      -->
     <NoWarn>1698</NoWarn>
     <OutputType>Library</OutputType>
-    <PackageTargetFramework>netstandard1.2</PackageTargetFramework>
     <NuGetTargetMoniker>.NETStandard,Version=v1.2</NuGetTargetMoniker>
   </PropertyGroup>
   <ItemGroup>

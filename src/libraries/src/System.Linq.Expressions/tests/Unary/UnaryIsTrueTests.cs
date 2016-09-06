@@ -22,6 +22,13 @@ namespace System.Linq.Expressions.Tests
             }
         }
 
+        [Fact]
+        public static void ToStringTest()
+        {
+            var e = Expression.IsTrue(Expression.Parameter(typeof(bool), "x"));
+            Assert.Equal("IsTrue(x)", e.ToString());
+        }
+
         #endregion
 
         #region Test verifiers

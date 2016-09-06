@@ -5,7 +5,6 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <OutputType>Library</OutputType>
     <IsCoreAssembly>true</IsCoreAssembly>
-    <PackageTargetFramework>netstandard1.5</PackageTargetFramework>
     <NuGetTargetMoniker>.NETStandard,Version=v1.5</NuGetTargetMoniker>
   </PropertyGroup>
   <ItemGroup>

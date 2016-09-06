@@ -781,16 +781,11 @@
         "Name": "System.Linq.Expressions",
         "Description": "Provides classes, interfaces and enumerations that enable language-level code expressions to be represented as objects in the form of expression trees.",
         "CommonTypes": [
-            "System.Linq.Expressions.Expression<TDelegate>",
-            "System.Linq.Expressions.Expression",
-            "System.Linq.Expressions.MemberExpression",
-            "System.Linq.Expressions.ExpressionVisitor",
-            "System.Linq.Expressions.MethodCallExpression",
             "System.Linq.IQueryable<T>",
             "System.Linq.IQueryable",
-            "System.Linq.Expressions.NewExpression",
-            "System.Linq.Expressions.ParameterExpression",
-            "System.Linq.Expressions.ConstantExpression"
+            "System.Linq.Expressions.Expression<TDelegate>",
+            "System.Linq.Expressions.Expression",
+            "System.Linq.Expressions.ExpressionVisitor"
         ]
     },
     {
@@ -1680,10 +1675,6 @@
             "System.Threading.Tasks.Dataflow.BroadcastBlock<T>",
             "System.Threading.Tasks.Dataflow.BufferBlock<T>",
             "System.Threading.Tasks.Dataflow.DataflowBlock",
-            "System.Threading.Tasks.Dataflow.DataflowBlockOptions",
-            "System.Threading.Tasks.Dataflow.DataflowLinkOptions",
-            "System.Threading.Tasks.Dataflow.ExecutionDataflowBlockOptions",
-            "System.Threading.Tasks.Dataflow.GroupingDataflowBlockOptions",
             "System.Threading.Tasks.Dataflow.JoinBlock<T1, T2>",
             "System.Threading.Tasks.Dataflow.JoinBlock<T1, T2, T3>",
             "System.Threading.Tasks.Dataflow.TransformBlock<TInput, TOutput>",

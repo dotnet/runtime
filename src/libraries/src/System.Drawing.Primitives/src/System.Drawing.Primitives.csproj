@@ -8,7 +8,6 @@
     <RootNamespace>System.Drawing</RootNamespace>
     <AssemblyName>System.Drawing.Primitives</AssemblyName>
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'net45'">true</IsPartialFacadeAssembly>
-    <PackageTargetFramework Condition="'$(TargetGroup)' == ''">netstandard1.1</PackageTargetFramework>
     <ProjectGuid>{F9DF2357-81B4-4317-908E-512DA9395583}</ProjectGuid>
     <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.1</NuGetTargetMoniker>
   </PropertyGroup>

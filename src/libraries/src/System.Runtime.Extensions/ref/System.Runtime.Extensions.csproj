@@ -3,7 +3,6 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <OutputType>Library</OutputType>
-    <PackageTargetFramework>netstandard1.5</PackageTargetFramework>
     <NuGetTargetMoniker>.NETStandard,Version=v1.5</NuGetTargetMoniker>
   </PropertyGroup>
   <ItemGroup>

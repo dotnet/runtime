@@ -3,7 +3,6 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <ProjectGuid>{2ADDB484-6F57-4D71-A3FE-A57EC6329A2B}</ProjectGuid>
-    <PackageTargetFramework>netstandard1.1</PackageTargetFramework>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DocumentationFile>$(OutputPath)$(AssemblyName).xml</DocumentationFile>
     <UseOpenKey Condition="'$(UseOpenKey)'==''">true</UseOpenKey>

@@ -432,9 +432,6 @@
   <data name="UnhandledConvert" xml:space="preserve">
     <value>Unhandled convert: {0}</value>
   </data>
-  <data name="UnhandledExpressionType" xml:space="preserve">
-    <value>Unhandled Expression Type: {0}</value>
-  </data>
   <data name="UnhandledUnary" xml:space="preserve">
     <value>Unhandled unary: {0}</value>
   </data>
@@ -560,9 +557,6 @@
   </data>
   <data name="EnumerationIsDone" xml:space="preserve">
     <value>Enumeration has either not started or has already finished.</value>
-  </data>
-  <data name="HomogeneousAppDomainRequired" xml:space="preserve">
-    <value>Dynamic operations can only be performed in homogeneous AppDomain.</value>
   </data>
   <data name="TestValueTypeDoesNotMatchComparisonMethodParameter" xml:space="preserve">
     <value>Test value of type '{0}' cannot be used for the comparison method parameter of type '{1}'</value>

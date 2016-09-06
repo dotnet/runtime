@@ -324,8 +324,6 @@ namespace System.Collections.Concurrent
 
         /// <summary>
         /// Local helper method to steal an item from any other non empty thread
-        /// It enumerate all other threads in two passes first pass acquire the lock with TryEnter if succeeded
-        /// it steals the item, otherwise it enumerate them again in 2nd pass and acquire the lock using Enter
         /// </summary>
         /// <param name="result">To receive the item retrieved from the bag</param>
         /// <param name="take">Whether to remove or peek.</param>

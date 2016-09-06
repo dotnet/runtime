@@ -138,14 +138,17 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                         Assert.True(Directory.Exists(storeDirectory), "Directory.Exists(storeDirectory)");
                         Assert.Equal(1, Directory.GetFiles(storeDirectory).Length);
 
-                        X509Certificate2Collection storeCerts = store.Certificates;
-
-                        Assert.Equal(1, storeCerts.Count);
-
-                        using (X509Certificate2 storeCert = storeCerts[0])
+                        using (var coll = new ImportedCollection(store.Certificates))
                         {
-                            Assert.Equal(cert, storeCert);
-                            Assert.NotSame(cert, storeCert);
+                            X509Certificate2Collection storeCerts = coll.Collection;
+
+                            Assert.Equal(1, storeCerts.Count);
+
+                            using (X509Certificate2 storeCert = storeCerts[0])
+                            {
+                                Assert.Equal(cert, storeCert);
+                                Assert.NotSame(cert, storeCert);
+                            }
                         }
                     }
                 });
@@ -175,14 +178,17 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                         Assert.True(Directory.Exists(storeDirectory), "Directory.Exists(storeDirectory)");
                         Assert.Equal(1, Directory.GetFiles(storeDirectory).Length);
 
-                        X509Certificate2Collection storeCerts = store.Certificates;
-
-                        Assert.Equal(1, storeCerts.Count);
-
-                        using (X509Certificate2 storeCert = storeCerts[0])
+                        using (var coll = new ImportedCollection(store.Certificates))
                         {
-                            Assert.Equal(cert, storeCert);
-                            Assert.NotSame(cert, storeCert);
+                            X509Certificate2Collection storeCerts = coll.Collection;
+
+                            Assert.Equal(1, storeCerts.Count);
+
+                            using (X509Certificate2 storeCert = storeCerts[0])
+                            {
+                                Assert.Equal(cert, storeCert);
+                                Assert.NotSame(cert, storeCert);
+                            }
                         }
                     }
                 });

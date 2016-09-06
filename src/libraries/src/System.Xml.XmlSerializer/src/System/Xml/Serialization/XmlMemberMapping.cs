@@ -10,7 +10,6 @@ using System.CodeDom.Compiler;
 
 namespace System.Xml.Serialization
 {
-    /// <include file='doc\XmlMemberMapping.uex' path='docs/doc[@for="XmlMemberMapping"]/*' />
     /// <internalonly/>
     public class XmlMemberMapping
     {
@@ -27,13 +26,11 @@ namespace System.Xml.Serialization
             get { return _mapping.Accessor; }
         }
 
-        /// <include file='doc\XmlMemberMapping.uex' path='docs/doc[@for="XmlMemberMapping.Any"]/*' />
         public bool Any
         {
             get { return Accessor.Any; }
         }
 
-        /// <include file='doc\XmlMemberMapping.uex' path='docs/doc[@for="XmlMemberMapping.ElementName"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -42,7 +39,6 @@ namespace System.Xml.Serialization
             get { return Accessor.UnescapeName(Accessor.Name); }
         }
 
-        /// <include file='doc\XmlMemberMapping.uex' path='docs/doc[@for="XmlMemberMapping.XsdElementName"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -51,7 +47,6 @@ namespace System.Xml.Serialization
             get { return Accessor.Name; }
         }
 
-        /// <include file='doc\XmlMemberMapping.uex' path='docs/doc[@for="XmlMemberMapping.Namespace"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -60,7 +55,6 @@ namespace System.Xml.Serialization
             get { return Accessor.Namespace; }
         }
 
-        /// <include file='doc\XmlMemberMapping.uex' path='docs/doc[@for="XmlMemberMapping.MemberName"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -69,7 +63,6 @@ namespace System.Xml.Serialization
             get { return _mapping.Name; }
         }
 
-        /// <include file='doc\XmlMemberMapping.uex' path='docs/doc[@for="XmlMemberMapping.TypeName"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -78,7 +71,6 @@ namespace System.Xml.Serialization
             get { return Accessor.Mapping != null ? Accessor.Mapping.TypeName : String.Empty; }
         }
 
-        /// <include file='doc\XmlMemberMapping.uex' path='docs/doc[@for="XmlMemberMapping.TypeNamespace"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -87,7 +79,6 @@ namespace System.Xml.Serialization
             get { return Accessor.Mapping != null ? Accessor.Mapping.Namespace : null; }
         }
 
-        /// <include file='doc\XmlMemberMapping.uex' path='docs/doc[@for="XmlMemberMapping.TypeFullName"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -96,7 +87,6 @@ namespace System.Xml.Serialization
             get { return _mapping.TypeDesc.FullName; }
         }
 
-        /// <include file='doc\XmlMemberMapping.uex' path='docs/doc[@for="XmlMemberMapping.CheckSpecified"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>

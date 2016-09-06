@@ -101,7 +101,7 @@ namespace System.Security.Principal
                     int authenticationInfoLength = checked(sizeof(KERB_S4U_LOGON) + upnBytes.Length);
                     using (SafeLocalAllocHandle authenticationInfo = Interop.mincore_obsolete.LocalAlloc(0, new UIntPtr(checked((uint)authenticationInfoLength))))
                     {
-                        if (authenticationInfo.IsInvalid || authenticationInfo == null)
+                        if (authenticationInfo.IsInvalid)
                             throw new OutOfMemoryException();
 
                         KERB_S4U_LOGON* pKerbS4uLogin = (KERB_S4U_LOGON*)(authenticationInfo.DangerousGetHandle());
@@ -120,7 +120,7 @@ namespace System.Security.Principal
                         ushort sourceNameLength = checked((ushort)(sourceName.Length));
                         using (SafeLocalAllocHandle sourceNameBuffer = Interop.mincore_obsolete.LocalAlloc(0, new UIntPtr(sourceNameLength)))
                         {
-                            if (sourceNameBuffer.IsInvalid || sourceNameBuffer == null)
+                            if (sourceNameBuffer.IsInvalid)
                                 throw new OutOfMemoryException();
 
                             Marshal.Copy(sourceName, 0, sourceNameBuffer.DangerousGetHandle(), sourceName.Length);
@@ -823,15 +823,10 @@ namespace System.Security.Principal
             }
             return safeLocalAllocHandle;
         }
-        
+
         protected WindowsIdentity(WindowsIdentity identity)
-            : base(identity, null, identity._authType, null, null)
+            : base(identity, null, GetAuthType(identity), null, null)
         {
-            if (identity == null)
-                throw new ArgumentNullException(nameof(identity));
-
-            Contract.EndContractBlock();
-
             bool mustDecrement = false;
 
             try
@@ -854,6 +849,14 @@ namespace System.Security.Principal
             }
         }
 
+        private static string GetAuthType(WindowsIdentity identity)
+        {
+            if (identity == null)
+            {
+                throw new ArgumentNullException(nameof(identity));
+            }
+            return identity._authType;
+        }
 
         internal IntPtr GetTokenInternal()
         {

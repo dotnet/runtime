@@ -15,6 +15,10 @@
       <OSGroup>fedora.23</OSGroup>
       <Platform>amd64</Platform>
     </Project>
+    <Project Include="fedora\24\runtime.native.System.pkgproj">
+      <OSGroup>fedora.24</OSGroup>
+      <Platform>amd64</Platform>
+    </Project>
     <Project Include="ubuntu\14.04\runtime.native.System.pkgproj">
       <OSGroup>ubuntu.14.04</OSGroup>
       <Platform>amd64</Platform>

@@ -575,6 +575,7 @@ namespace System.IO.Tests
 
         [Fact]
         [PlatformSpecific(PlatformID.Linux)]
+        [OuterLoop]
         public void FileSystemWatcher_CreateManyConcurrentWatches()
         {
             int maxUserWatches = int.Parse(File.ReadAllText("/proc/sys/fs/inotify/max_user_watches"));

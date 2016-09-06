@@ -61,7 +61,7 @@ namespace System.Text
             return codePage;
         }
 
-        unsafe private static int InternalGetCodePageFromName(string name)
+        private static int InternalGetCodePageFromName(string name)
         {
             int left = 0;
             int right = s_encodingNameIndices.Length - 2;
@@ -128,17 +128,17 @@ namespace System.Text
             return s1.Length - length;
         }
 
-        unsafe internal static string GetWebNameFromCodePage(int codePage)
+        internal static string GetWebNameFromCodePage(int codePage)
         {
             return GetNameFromCodePage(codePage, s_webNames, s_webNameIndices, s_codePageToWebNameCache);
         }
 
-        unsafe internal static string GetEnglishNameFromCodePage(int codePage)
+        internal static string GetEnglishNameFromCodePage(int codePage)
         {
             return GetNameFromCodePage(codePage, s_englishNames, s_englishNameIndices, s_codePageToEnglishNameCache);
         }
 
-        unsafe private static string GetNameFromCodePage(int codePage, string names, int[] indices, Dictionary<int, string> cache)
+        private static string GetNameFromCodePage(int codePage, string names, int[] indices, Dictionary<int, string> cache)
         {
             string name;
 
@@ -161,10 +161,7 @@ namespace System.Text
                         }
                         else
                         {
-                            fixed (char* pChar = names)
-                            {
-                                name = new String(pChar, indices[i], indices[i + 1] - indices[i]);
-                            }
+                            name = names.Substring(indices[i], indices[i + 1] - indices[i]);
 
                             s_cacheLock.EnterWriteLock();
                             try
