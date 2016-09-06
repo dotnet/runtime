@@ -59,7 +59,7 @@ namespace System.Linq.Expressions.Compiler
         /// </summary>
         private LambdaCompiler(AnalyzedTree tree, LambdaExpression lambda)
         {
-            Type[] parameterTypes = GetParameterTypes(lambda).AddFirst(typeof(Closure));
+            Type[] parameterTypes = GetParameterTypes(lambda, typeof(Closure));
 
             var method = new DynamicMethod(lambda.Name ?? "lambda_method", lambda.ReturnType, parameterTypes, true);
 
@@ -94,20 +94,16 @@ namespace System.Linq.Expressions.Compiler
             var scope = tree.Scopes[lambda];
             var hasClosureArgument = scope.NeedsClosure;
 
-            Type[] paramTypes = GetParameterTypes(lambda);
-            if (hasClosureArgument)
-            {
-                paramTypes = paramTypes.AddFirst(typeof(Closure));
-            }
+            Type[] paramTypes = GetParameterTypes(lambda, hasClosureArgument ? typeof(Closure) : null);
 
             method.SetReturnType(lambda.ReturnType);
             method.SetParameters(paramTypes);
-            var paramNames = lambda.Parameters.Map(p => p.Name);
+            var parameters = lambda.Parameters;
             // parameters are index from 1, with closure argument we need to skip the first arg
             int startIndex = hasClosureArgument ? 2 : 1;
-            for (int i = 0; i < paramNames.Length; i++)
+            for (int i = 0, n = parameters.Count; i < n; i++)
             {
-                method.DefineParameter(i + startIndex, ParameterAttributes.None, paramNames[i]);
+                method.DefineParameter(i + startIndex, ParameterAttributes.None, parameters[i].Name);
             }
 
             _tree = tree;
