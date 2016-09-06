@@ -189,13 +189,13 @@ static MonoMethod *write_barrier_noconc_method;
 gboolean
 sgen_is_critical_method (MonoMethod *method)
 {
-	return (method == write_barrier_conc_method || method == write_barrier_noconc_method || sgen_is_managed_allocator (method));
+	return sgen_is_managed_allocator (method);
 }
 
 gboolean
 sgen_has_critical_method (void)
 {
-	return write_barrier_conc_method || write_barrier_noconc_method || sgen_has_managed_allocator ();
+	return sgen_has_managed_allocator ();
 }
 
 #ifndef DISABLE_JIT
