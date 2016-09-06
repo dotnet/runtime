@@ -6343,17 +6343,6 @@ bool CodeGen::genCanUsePopToReturn(regMaskTP maskPopRegsInt, bool jmpEpilog)
 {
     assert(compiler->compGeneratingEpilog);
 
-#ifdef ARM_HAZARD_AVOIDANCE
-    // Only need to handle the Krait Hazard when we are Jitting
-    //
-    if ((compiler->opts.eeFlags & CORJIT_FLG_PREJIT) == 0)
-    {
-        // We will never generate the T2 encoding of pop when we have a Krait Errata
-        if ((maskPopRegsInt & RBM_HIGH_REGS) != 0)
-            return false;
-    }
-#endif
-
     if (!jmpEpilog && regSet.rsMaskPreSpillRegs(true) == RBM_NONE)
         return true;
     else

@@ -1145,19 +1145,6 @@ typedef unsigned short regPairNoSmall; // arm: need 12 bits
 
 #elif defined(_TARGET_ARM_)
 
-  #define ARM_HAZARD_AVOIDANCE             // Avoid ARM hazard due to QualComm Krait processor bug.
-/*  
-  Krait Errata definition:
-
-             The problem occurs if following code pattern occurs starting at an address ending in FB8:
-  Address    
-0x*****FB8  T16 instruction
-0x*****FBA  T16 instruction
-0x*****FBC  T16 instruction
-0x*****FBE  T32 unconditional pc relative branch (spans 2 cache lines in sets 62 and 63)
-
-*/
-
   // TODO-ARM-CQ: Use shift for division by power of 2
   // TODO-ARM-CQ: Check for sdiv/udiv at runtime and generate it if available
   #define USE_HELPERS_FOR_INT_DIV  1       // BeagleBoard (ARMv7A) doesn't support SDIV/UDIV
