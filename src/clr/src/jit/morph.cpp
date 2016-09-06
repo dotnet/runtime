@@ -2003,7 +2003,7 @@ GenTreePtr Compiler::fgMakeTmpArgNode(
 
         arg->gtFlags |= GTF_DONT_CSE;
 
-#else  // !FEATURE_UNIX_AMD64_STRUCT_PASSING
+#else // !FEATURE_UNIX_AMD64_STRUCT_PASSING
         // Can this type be passed in a single register?
         // If so, the following call will return the corresponding primitive type.
         // Otherwise, it will return TYP_UNKNOWN and we will pass by reference.
@@ -5674,7 +5674,8 @@ GenTreePtr Compiler::fgMorphArrayIndex(GenTreePtr tree)
     addr = gtNewOperNode(GT_ADD, TYP_BYREF, addr, cns);
 
 #if SMALL_TREE_NODES
-    assert(tree->gtDebugFlags & GTF_DEBUG_NODE_LARGE);
+    assert((tree->gtDebugFlags & GTF_DEBUG_NODE_LARGE) ||
+           GenTree::s_gtNodeSizes[GT_IND] == TREE_NODE_SZ_SMALL);
 #endif
 
     // Change the orginal GT_INDEX node into a GT_IND node
