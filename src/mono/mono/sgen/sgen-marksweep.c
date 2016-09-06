@@ -888,19 +888,6 @@ major_iterate_objects (IterateObjectsFlags flags, IterateObjectCallbackFunc call
 
 		for (i = 0; i < count; ++i) {
 			void **obj = (void**) MS_BLOCK_OBJ (block, i);
-			/*
-			 * We've finished sweep checking, but if we're sweeping lazily and
-			 * the flags don't require us to sweep, the block might still need
-			 * sweeping.  In that case, we need to consult the mark bits to tell
-			 * us whether an object slot is live.
-			 */
-			if (!block_is_swept_or_marking (block)) {
-				int word, bit;
-				SGEN_ASSERT (6, !sweep && block->state == BLOCK_STATE_NEED_SWEEPING, "Has sweeping not finished?");
-				MS_CALC_MARK_BIT (word, bit, obj);
-				if (!MS_MARK_BIT (block, word, bit))
-					continue;
-			}
 			if (MS_OBJ_ALLOCED (obj, block))
 				callback ((GCObject*)obj, block->obj_size, data);
 		}
