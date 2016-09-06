@@ -13,21 +13,26 @@
     <!-- add relative blob path metadata -->
     <ItemGroup>
       <ForPublishing>
-        <RelativeBlobPath>$(__BuildType)/%(RecursiveDir)%(Filename)%(Extension)</RelativeBlobPath>  
+        <RelativeBlobPath Condition="'$(PublishTestNativeBins)' != 'true'">$(__BuildType)/%(RecursiveDir)%(Filename)%(Extension)</RelativeBlobPath>
+        <RelativeBlobPath Condition="'$(PublishTestNativeBins)' == 'true'">$(__DistroRid)-$(__BuildArch)/$(__BuildType)/%(RecursiveDir)%(Filename)%(Extension)</RelativeBlobPath>    
       </ForPublishing>
     </ItemGroup>
     <Error Condition="'@(ForPublishing)' == ''" Text="No items were found matching pattern '$(PublishPattern)'." />
   </Target>
 
   <PropertyGroup>
-    <PublishPattern Condition="'$(PublishPattern)' == ''">$(PackagesBinDir)**\*.nupkg</PublishPattern>
+    <PublishPattern Condition="'$(PublishPattern)' == '' and '$(PublishTestNativeBins)' != 'true'">$(PackagesBinDir)**\*.nupkg</PublishPattern>
+    <PublishPattern Condition="'$(PublishPattern)' == '' and '$(PublishTestNativeBins)' == 'true'">$(OutputPath)\tests\src\**</PublishPattern>
   </PropertyGroup>
 
   <Target Name="CreateContainerName"
           DependsOnTargets="CreateVersionFileDuringBuild"
-          Condition="'$(ContainerName)' == ''">
+          Condition="'$(ContainerName)' == '' or '$(PublishTestNativeBins)' == 'true'">
     <PropertyGroup>
-      <ContainerName>coreclr-$(PreReleaseLabel)-$(BuildNumberMajor)-$(BuildNumberMinor)</ContainerName>
+      <ContainerName Condition="'$(__Container)' == '' and '$(PublishTestNativeBins)' != 'true'">coreclr-$(PreReleaseLabel)-$(BuildNumberMajor)-$(BuildNumberMinor)</ContainerName>
+      <ContainerName Condition="'$(__Container)' == '' and '$(PublishTestNativeBins)' == 'true'">coreclr-$(PreReleaseLabel)-$(BuildNumberMajor)-$(BuildNumberMinor)-test-native-bins</ContainerName>
+      <ContainerName Condition="'$(__Container)' != '' and '$(PublishTestNativeBins)' != 'true'">$(__Container)</ContainerName>
+      <ContainerName Condition="'$(__Container)' != '' and '$(PublishTestNativeBins)' == 'true'">$(__Container)-test-native-bins</ContainerName>
     </PropertyGroup>
   </Target>
 

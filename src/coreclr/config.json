@@ -24,6 +24,12 @@
       "values": [],
       "defaultValue": ""
     },
+    "__Container": {
+      "description": "Container name for Azure upload.",
+      "valueType": "property",
+      "values": [],
+      "defaultValue": ""
+    },
     "MsBuildFileLogging": {
       "description": "MsBuild logging options.",
       "valueType": "passThrough",
@@ -240,6 +246,12 @@
       "values": [],
       "defaultValue": ""
     },
+    "CreateNonWindowsTestOverlay": {
+      "description": "Runs CreateNonWindowsTestOverlay target.",
+      "valueType": "target",
+      "values": [],
+      "defaultValue": ""
+    },
     "Verbosity": {
       "description": "Sets build verbosity.",
       "valueType": "passThrough",
@@ -260,6 +272,60 @@
     },
     "UpdateInvalidPackageVersions": {
       "description": "Runs the target to update package versions.",
+      "valueType": "target",
+      "values": [],
+      "defaultValue": ""
+    },
+    "GenerateRuntimeLayout": {
+      "description": "Generates Core_Root folder",
+      "valueType": "property",
+      "values": [ true, false ],
+      "defaultValue": true
+    },
+    "BuildTestsAgainstPackages": {
+      "description": "Sets the property specifying if we're building tests against packages",
+      "valueType": "property",
+      "values": [ true, false ],
+      "defaultValue": true
+    },
+    "PublishTestNativeBins": {
+      "description": "Publishes test native binaries to Azure on non-windows",
+      "valueType": "property",
+      "values": [ true, false ],
+      "defaultValue": true
+    },
+    "RuntimeId": {
+      "description": "Specifies the OS to build Core_Root for",
+      "valueType": "property",
+      "values": [ "debian.8-x64", "fedora.23-x64", "opensuse.13.2-x64", "opensuse.42.1-x64", "osx.10.10-x64", "rhel.7-x64", "ubuntu.14.04-x64", "ubuntu.16.04-x64", "ubuntu.16.10-x64" ],
+      "defaultValue": "${__RuntimeId}"
+    },
+    "UpdateDependencies": {
+      "description": "MsBuild target that updates project.json dependencies.",
+      "valueType": "target",
+      "values": [],
+      "defaultValue": ""
+    },
+    "BatchRestorePackages": {
+      "description": "MsBuild target that restores the packages.",
+      "valueType": "target",
+      "values": [],
+      "defaultValue": ""
+    },
+    "BinPlaceRef": {
+      "description": "Place mscorlib.dll in bin/Product ref folder for building tests against",
+      "valueType": "target",
+      "values": [],
+      "defaultValue": ""
+    },
+    "BinPlaceProduct": {
+      "description": "Place test dependencies in bin/Product folder for building tests against",
+      "valueType": "target",
+      "values": [],
+      "defaultValue": ""
+    },
+    "CopyCrossgenToProduct": {
+      "description": "Place crossgen.exe in bin/Product folder for building tests against",
       "valueType": "target",
       "values": [],
       "defaultValue": ""
@@ -380,6 +446,12 @@
             "CloudDropAccountName": "default"
           }
         },
+        "container": {
+          "description": "Container name to download from in Azure Blob storage.",
+          "settings": {
+            "__Container": "default"
+          }
+        },
         "verbose": {
           "description": "Passes /flp:v=diag to the msbuild command or the value passed by the user.",
           "settings": {
@@ -396,6 +468,12 @@
           "description": "To download a specific group of product packages, specify build number. The value for -BuildMajor required.",
           "settings": {
             "BuildNumberMinor": "default"
+          }
+        },
+        "PublishTestNativeBins": {
+          "description": "Downloads Published test native binaries.",
+          "settings": {
+            "PublishTestNativeBins": "default"
           }
         }
       },
@@ -420,6 +498,12 @@
             "CloudDropAccountName": "default"
           }
         },
+        "container": {
+          "description": "Container name to upload into in Azure Blob storage.",
+          "settings": {
+            "__Container": "default"
+          }
+        },
         "buildArch": {
           "description": "Specifies architecture to publish, can be x64, x86, arm or arm64",
           "settings": {
@@ -436,6 +520,18 @@
           "description": "Specifies the OS to publish packages.",
           "settings": {
             "__BuildOS": "default"
+          }
+        },
+        "distroRid": {
+          "description": "Specifies distro rid for Unix OS.",
+          "settings": {
+            "__DistroRid": "default"
+          }
+        },
+        "PublishTestNativeBins": {
+          "description": "Publishes test native binaries.",
+          "settings": {
+            "PublishTestNativeBins": "default"
           }
         }
       },
