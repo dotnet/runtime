@@ -985,14 +985,6 @@ namespace System.Linq.Expressions
         }
 
         /// <summary>
-        /// A string like "Unhandled Expression Type: {0}"
-        /// </summary>
-        internal static string UnhandledExpressionType(object p0)
-        {
-            return SR.Format(SR.UnhandledExpressionType, p0);
-        }
-
-        /// <summary>
         /// A string like "Unhandled unary: {0}"
         /// </summary>
         internal static string UnhandledUnary(object p0)
@@ -1203,6 +1195,7 @@ namespace System.Linq.Expressions
             }
         }
 
+#if FEATURE_COMPILE_TO_METHODBUILDER
         /// <summary>
         /// A string like "CompileToMethod cannot compile constant '{0}' because it is a non-trivial value, such as a live object. Instead, create an expression tree that can construct this value."
         /// </summary>
@@ -1221,6 +1214,18 @@ namespace System.Linq.Expressions
                 return SR.CannotCompileDynamic;
             }
         }
+
+        /// <summary>
+        /// A string like "MethodBuilder does not have a valid TypeBuilder"
+        /// </summary>
+        internal static string MethodBuilderDoesNotHaveTypeBuilder
+        {
+            get
+            {
+                return SR.MethodBuilderDoesNotHaveTypeBuilder;
+            }
+        }
+#endif
 
         /// <summary>
         /// A string like "Invalid lvalue for assignment: {0}."
@@ -1341,17 +1346,6 @@ namespace System.Linq.Expressions
         }
 
         /// <summary>
-        /// A string like "Dynamic operations can only be performed in homogeneous AppDomain."
-        /// </summary>
-        internal static string HomogeneousAppDomainRequired
-        {
-            get
-            {
-                return SR.HomogeneousAppDomainRequired;
-            }
-        }
-
-        /// <summary>
         /// A string like "Test value of type '{0}' cannot be used for the comparison method parameter of type '{1}'"
         /// </summary>
         internal static string TestValueTypeDoesNotMatchComparisonMethodParameter(object p0, object p1)
@@ -1367,6 +1361,7 @@ namespace System.Linq.Expressions
             return SR.Format(SR.SwitchValueTypeDoesNotMatchComparisonMethodParameter, p0, p1);
         }
 
+#if FEATURE_COMPILE_TO_METHODBUILDER && FEATURE_PDB_GENERATOR
         /// <summary>
         /// A string like "DebugInfoGenerator created by CreatePdbGenerator can only be used with LambdaExpression.CompileToMethod."
         /// </summary>
@@ -1377,6 +1372,7 @@ namespace System.Linq.Expressions
                 return SR.PdbGeneratorNeedsExpressionCompiler;
             }
         }
+#endif
 
 #if FEATURE_COMPILE
         /// <summary>

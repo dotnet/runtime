@@ -723,13 +723,6 @@ namespace System.Linq.Expressions
             return new ArgumentException(Strings.UnhandledConvert(p0));
         }
         /// <summary>
-        /// ArgumentException with message like "Unhandled Expression Type: {0}"
-        /// </summary>
-        internal static Exception UnhandledExpressionType(object p0)
-        {
-            return new ArgumentException(Strings.UnhandledExpressionType(p0));
-        }
-        /// <summary>
         /// ArgumentException with message like "Unhandled unary: {0}"
         /// </summary>
         internal static Exception UnhandledUnary(object p0)
@@ -890,6 +883,7 @@ namespace System.Linq.Expressions
         {
             return new InvalidOperationException(Strings.ExtensionNotReduced);
         }
+#if FEATURE_COMPILE_TO_METHODBUILDER
         /// <summary>
         /// InvalidOperationException with message like "CompileToMethod cannot compile constant '{0}' because it is a non-trivial value, such as a live object. Instead, create an expression tree that can construct this value."
         /// </summary>
@@ -904,6 +898,14 @@ namespace System.Linq.Expressions
         {
             return new NotSupportedException(Strings.CannotCompileDynamic);
         }
+        /// <summary>
+        /// ArgumentException with message like "MethodBuilder does not have a valid TypeBuilder"
+        /// </summary>
+        internal static Exception MethodBuilderDoesNotHaveTypeBuilder()
+        {
+            return new ArgumentException(Strings.MethodBuilderDoesNotHaveTypeBuilder);
+        }
+#endif
         /// <summary>
         /// InvalidOperationException with message like "Invalid lvalue for assignment: {0}."
         /// </summary>
@@ -1004,13 +1006,6 @@ namespace System.Linq.Expressions
         }
 
         /// <summary>
-        /// InvalidOperationException with message like "Dynamic operations can only be performed in homogeneous AppDomain."
-        /// </summary>
-        internal static Exception HomogeneousAppDomainRequired()
-        {
-            return new InvalidOperationException(Strings.HomogeneousAppDomainRequired);
-        }
-        /// <summary>
         /// ArgumentException with message like "Test value of type '{0}' cannot be used for the comparison method parameter of type '{1}'"
         /// </summary>
         internal static Exception TestValueTypeDoesNotMatchComparisonMethodParameter(object p0, object p1)
@@ -1024,6 +1019,8 @@ namespace System.Linq.Expressions
         {
             return new ArgumentException(Strings.SwitchValueTypeDoesNotMatchComparisonMethodParameter(p0, p1));
         }
+
+#if FEATURE_COMPILE_TO_METHODBUILDER && FEATURE_PDB_GENERATOR
         /// <summary>
         /// NotSupportedException with message like "DebugInfoGenerator created by CreatePdbGenerator can only be used with LambdaExpression.CompileToMethod."
         /// </summary>
@@ -1031,6 +1028,7 @@ namespace System.Linq.Expressions
         {
             return new NotSupportedException(Strings.PdbGeneratorNeedsExpressionCompiler);
         }
+#endif
 
         /// <summary>
         /// The exception that is thrown when the value of an argument is outside the allowable range of values as defined by the invoked method.
