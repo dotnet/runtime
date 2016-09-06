@@ -38,6 +38,7 @@ void genSetRegToIcon(regNumber reg, ssize_t val, var_types type = TYP_INT, insFl
 
 regNumber genGetRegSetToIcon(ssize_t val, regMaskTP regBest = 0, var_types type = TYP_INT);
 void genDecRegBy(regNumber reg, ssize_t ival, GenTreePtr tree);
+void genIncRegBy(regNumber reg, ssize_t ival, GenTreePtr tree, var_types dstType = TYP_INT, bool ovfl = false);
 
 void genMulRegBy(regNumber reg, ssize_t ival, GenTreePtr tree, var_types dstType = TYP_INT, bool ovfl = false);
 
