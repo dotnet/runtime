@@ -1111,11 +1111,6 @@ void emitter::emitBegFN(bool hasFramePtr
 
     emitPrologIG = emitIGlist = emitIGlast = emitCurIG = ig = emitAllocIG();
 
-#ifdef ARM_HAZARD_AVOIDANCE
-    // This first IG is actually preceeded by the method prolog which may be composed of many T1 instructions
-    emitCurInstrCntT1 = MAX_INSTR_COUNT_T1;
-#endif
-
     emitLastIns = nullptr;
 
     ig->igNext = nullptr;
@@ -1183,26 +1178,6 @@ void emitter::dispIns(instrDesc* id)
 void emitter::appendToCurIG(instrDesc* id)
 {
     emitCurIGsize += id->idCodeSize();
-
-#ifdef ARM_HAZARD_AVOIDANCE
-    //
-    // Do we have a T1 instruction or an unbound jump instruction?
-    //                      (it could be bound to a T1 instruction)
-    if (id->idInstrIsT1() ||
-        (((id->idInsFmt() == IF_T2_J2) || (id->idInsFmt() == IF_T2_J1) || (id->idInsFmt() == IF_LARGEJMP)) &&
-         (id->idIsBound() == false)))
-    {
-        if (emitCurInstrCntT1 < MAX_INSTR_COUNT_T1)
-        {
-            emitCurInstrCntT1++;
-        }
-    }
-    else
-    {
-        emitCurInstrCntT1 = 0;
-    }
-
-#endif
 }
 
 /*****************************************************************************

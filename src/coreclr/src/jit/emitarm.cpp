@@ -1406,34 +1406,6 @@ DONE:
     return false;
 }
 
-#ifdef ARM_HAZARD_AVOIDANCE
-// This function is called whenever we about to emit an unconditional branch instruction
-// that could be encoded using a T2 instruction
-// It returns true if we need to mark the instruction via idKraitNop(true)
-//
-bool emitter::emitKraitHazardActive(instrDesc* id)
-{
-    // Does the current instruction represent an
-    // unconditional branch instruction that is subject to the Krait errata
-    //
-    if (id->idIsKraitBranch())
-    {
-        // Only need to handle the Krait Hazard when we are Jitting
-        //
-        if ((emitComp->opts.eeFlags & CORJIT_FLG_PREJIT) == 0)
-        {
-            // Have we seen the necessary number of T1 instructions?
-            if (emitCurInstrCntT1 >= MAX_INSTR_COUNT_T1)
-            {
-                return true; /* Assume that we need to add a nopw as well */
-            }
-        }
-    }
-    return false;
-}
-
-#endif
-
 /*****************************************************************************
  *
  *  Add an instruction with no operands.
@@ -3304,10 +3276,6 @@ void emitter::emitIns_R_R_R_I(instruction ins,
     id->idReg2(reg2);
     id->idReg3(reg3);
 
-#ifdef ARM_HAZARD_AVOIDANCE
-    id->idKraitNop(emitKraitHazardActive(id));
-#endif
-
     dispIns(id);
     appendToCurIG(id);
 }
@@ -4234,10 +4202,6 @@ void emitter::emitIns_J(instruction ins, BasicBlock* dst, int instrCount /* = 0 
         }
     }
 
-#ifdef ARM_HAZARD_AVOIDANCE
-    id->idKraitNop(emitKraitHazardActive(id));
-#endif
-
     dispIns(id);
     appendToCurIG(id);
 }
@@ -4625,11 +4589,6 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
             id->idSetIsDspReloc();
         }
-#endif
-
-#ifdef ARM_HAZARD_AVOIDANCE
-        // Unconditional calls/branches may need nop.w for Krait errata
-        id->idKraitNop(emitKraitHazardActive(id));
 #endif
     }
 
@@ -5229,21 +5188,6 @@ BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
             /* For forward jumps, record the address of the distance value */
             id->idjTemp.idjAddr = (dstOffs > srcOffs) ? dst : NULL;
 
-#ifdef ARM_HAZARD_AVOIDANCE
-            if (id->idKraitNop())
-            {
-                // This is a pseudo-format representing a 32-bit nop followed by unconditional branch.
-                // First emit the nop
-
-                dst = emitOutputNOP(dst, INS_nopw, IF_T2_A);
-
-                // The distVal was computed based on the beginning of the pseudo-instruction, which is
-                // the 32-bit nop. So subtract the size of the nop from the offset, so it is relative to the
-                // unconditional branch.
-                distVal -= 4;
-            }
-#endif
-
             if (fmt == IF_LARGEJMP)
             {
                 // This is a pseudo-instruction format representing a large conditional branch, to allow
@@ -5820,15 +5764,6 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         case IF_T2_E0: // T2_E0   ............nnnn tttt......shmmmm       R1  R2  R3               imm2
         case IF_T2_E1: // T2_E1   ............nnnn tttt............       R1  R2
         case IF_T2_E2: // T2_E2   ................ tttt............       R1
-#ifdef ARM_HAZARD_AVOIDANCE
-            if (id->idKraitNop())
-            {
-                // This is a pseudo-format representing a 32-bit nop followed by ldr pc
-                // First emit the nop
-
-                dst = emitOutputNOP(dst, INS_nopw, IF_T2_A);
-            }
-#endif
             code = emitInsCode(ins, fmt);
             code |= insEncodeRegT2_T(id->idReg1());
             if (fmt == IF_T2_E0)
@@ -6254,16 +6189,6 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             goto DONE_CALL;
 
         case IF_T2_J3: // T2_J3   .....Siiiiiiiiii ..j.jiiiiiiiiii.      Call                imm24
-
-#ifdef ARM_HAZARD_AVOIDANCE
-            if (id->idKraitNop())
-            {
-                // This is a pseudo-format representing a 32-bit nop followed by unconditional call.
-                // First emit the nop
-
-                dst = emitOutputNOP(dst, INS_nopw, IF_T2_A);
-            }
-#endif
 
             /* Is this a "fat" call descriptor? */
 
@@ -7479,42 +7404,6 @@ void emitter::emitDispIns(
     instrDesc* id, bool isNew, bool doffs, bool asmfm, unsigned offset, BYTE* code, size_t sz, insGroup* ig)
 {
     insFormat fmt = id->idInsFmt();
-
-#ifdef ARM_HAZARD_AVOIDANCE
-    if (id->idKraitNop())
-    {
-        assert(id->idIsKraitBranch());
-
-        // We will display a nop.w unless we have an unbound INS_b instruction
-        //
-        // Most unbound INS_b instructions will be resolve to short jumps and thus
-        // we don't display the nop.w while they are unbound. If they are bound and
-        // are still marked with idKraitNop they will display the nop.w
-        //
-        if ((id->idIns() != INS_b) || id->idIsBound())
-        {
-            // First, display INS_nopw. Construct a temporary instrDesc to represent it, since
-            // there doesn't exist an actual one in the stream.
-
-            instrDesc idNOP;
-            memset(&idNOP, 0, sizeof(idNOP));
-
-            instrDesc* pidNOP = &idNOP;
-
-            pidNOP->idIns(INS_nopw);
-            pidNOP->idInsFmt(IF_T2_A);
-            pidNOP->idInsSize(emitInsSize(IF_T2_A));
-            pidNOP->idDebugOnlyInfo(id->idDebugOnlyInfo()); // share the idDebugOnlyInfo() field
-
-            size_t nopSizeOrZero = (code == NULL) ? 0 : 4; // NOPW is 4 bytes
-            emitDispInsHelp(pidNOP, false, doffs, asmfm, offset, code, nopSizeOrZero, ig);
-
-            code += nopSizeOrZero;
-            sz -= nopSizeOrZero;
-            offset += 4;
-        }
-    }
-#endif
 
     /* Special-case IF_LARGEJMP */
 

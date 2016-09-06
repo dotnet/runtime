@@ -240,9 +240,6 @@ static bool emitIns_valid_imm_for_mov(int imm);
 static bool emitIns_valid_imm_for_small_mov(regNumber reg, int imm, insFlags flags);
 static bool emitIns_valid_imm_for_add(int imm, insFlags flags);
 static bool emitIns_valid_imm_for_add_sp(int imm);
-#ifdef ARM_HAZARD_AVOIDANCE
-bool emitKraitHazardActive(instrDesc* id);
-#endif
 
 void emitIns(instruction ins);
 
