@@ -54,10 +54,10 @@ void deps_json_t::reconcile_libraries_with_targets(
         {
             library_path = library_path_iter->second.as_string();
 
-			if (_X('/') != DIR_SEPARATOR)
-			{
-				replace_char(&library_path, _X('/'), DIR_SEPARATOR);
-			}
+            if (_X('/') != DIR_SEPARATOR)
+            {
+                replace_char(&library_path, _X('/'), DIR_SEPARATOR);
+            }
         }
 
         // Get the "hashPath property, if available.
@@ -71,10 +71,10 @@ void deps_json_t::reconcile_libraries_with_targets(
         {
             library_hash_path = library_hash_path_iter->second.as_string();
 
-			if (_X('/') != DIR_SEPARATOR)
-			{
-				replace_char(&library_hash_path, _X('/'), DIR_SEPARATOR);
-			}
+            if (_X('/') != DIR_SEPARATOR)
+            {
+                replace_char(&library_hash_path, _X('/'), DIR_SEPARATOR);
+            }
         }
 
         const pal::string_t& hash = properties.at(_X("sha512")).as_string();
