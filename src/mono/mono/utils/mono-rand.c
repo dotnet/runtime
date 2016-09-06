@@ -165,27 +165,27 @@ static void
 get_entropy_from_egd (const char *path, guchar *buffer, int buffer_size, MonoError *error)
 {
 	struct sockaddr_un egd_addr;
-	gint file;
+	gint socket_fd;
 	gint ret;
 	guint offset = 0;
 	int err = 0;
 
 	mono_error_init (error);
 	
-	file = socket (PF_UNIX, SOCK_STREAM, 0);
-	if (file < 0) {
+	socket_fd = socket (PF_UNIX, SOCK_STREAM, 0);
+	if (socket_fd < 0) {
 		ret = -1;
 		err = errno;
 	} else {
 		egd_addr.sun_family = AF_UNIX;
 		strncpy (egd_addr.sun_path, path, sizeof (egd_addr.sun_path) - 1);
 		egd_addr.sun_path [sizeof (egd_addr.sun_path) - 1] = '\0';
-		ret = connect (file, (struct sockaddr*) &egd_addr, sizeof (egd_addr));
+		ret = connect (socket_fd, (struct sockaddr*) &egd_addr, sizeof (egd_addr));
 		err = errno;
 	}
 	if (ret == -1) {
-		if (file >= 0)
-			close (file);
+		if (socket_fd >= 0)
+			close (socket_fd);
 		g_warning ("Entropy problem! Can't create or connect to egd socket %s", path);
 		mono_error_set_execution_engine (error, "Failed to open egd socket %s: %s", path, strerror (err));
 		return;
@@ -199,14 +199,14 @@ get_entropy_from_egd (const char *path, guchar *buffer, int buffer_size, MonoErr
 		request [0] = 2;
 		request [1] = buffer_size < 255 ? buffer_size : 255;
 		while (count < 2) {
-			int sent = write (file, request + count, 2 - count);
+			int sent = write (socket_fd, request + count, 2 - count);
 			err = errno;
 			if (sent >= 0) {
 				count += sent;
 			} else if (err == EINTR) {
 				continue;
 			} else {
-				close (file);
+				close (socket_fd);
 				g_warning ("Send egd request failed %d", err);
 				mono_error_set_execution_engine (error, "Failed to send request to egd socket: %s", strerror (err));
 				return;
@@ -216,7 +216,7 @@ get_entropy_from_egd (const char *path, guchar *buffer, int buffer_size, MonoErr
 		count = 0;
 		while (count != request [1]) {
 			int received;
-			received = read (file, buffer + offset, request [1] - count);
+			received = read (socket_fd, buffer + offset, request [1] - count);
 			err = errno;
 			if (received > 0) {
 				count += received;
@@ -224,7 +224,7 @@ get_entropy_from_egd (const char *path, guchar *buffer, int buffer_size, MonoErr
 			} else if (received < 0 && err == EINTR) {
 				continue;
 			} else {
-				close (file);
+				close (socket_fd);
 				g_warning ("Receive egd request failed %d", err);
 				mono_error_set_execution_engine (error, "Failed to get response from egd socket: %s", strerror(err));
 				return;
@@ -234,7 +234,7 @@ get_entropy_from_egd (const char *path, guchar *buffer, int buffer_size, MonoErr
 		buffer_size -= request [1];
 	}
 
-	close (file);
+	close (socket_fd);
 }
 
 gboolean
