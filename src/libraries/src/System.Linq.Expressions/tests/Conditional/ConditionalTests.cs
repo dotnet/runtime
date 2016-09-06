@@ -229,6 +229,15 @@ namespace System.Linq.Expressions.Tests
                 typeof(List<>).MakeGenericType(typeof(List<>))));
         }
 
+        [Fact]
+        public static void ToStringTest()
+        {
+            var e1 = Expression.Condition(Expression.Parameter(typeof(bool), "a"), Expression.Parameter(typeof(int), "b"), Expression.Parameter(typeof(int), "c"));
+            Assert.Equal("IIF(a, b, c)", e1.ToString());
+
+            var e2 = Expression.IfThen(Expression.Parameter(typeof(bool), "a"), Expression.Parameter(typeof(int), "b"));
+            Assert.Equal("IIF(a, b, default(Void))", e2.ToString());
+        }
 
         private static IEnumerable<object[]> ConditionalValues()
         {

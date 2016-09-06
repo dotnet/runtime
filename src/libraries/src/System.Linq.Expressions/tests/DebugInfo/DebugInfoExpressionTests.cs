@@ -45,6 +45,13 @@ namespace System.Linq.Expressions.Tests
             VerifyDebugInfoExpression(ex, document, 0xfeefee, 0, 0xfeefee, 0, true);
         }
 
+        [Fact]
+        public static void ToStringTest()
+        {
+            var e = Expression.DebugInfo(Expression.SymbolDocument("foo.cs"), 12, 23, 34, 45);
+            Assert.Equal("<DebugInfo(foo.cs: 12, 23, 34, 45)>", e.ToString());
+        }
+
         private static void VerifyDebugInfoExpression(DebugInfoExpression ex, SymbolDocumentInfo document, int startLine, int startColumn, int endLine, int endColumn, bool isClear)
         {
             Assert.Same(document, ex.Document);

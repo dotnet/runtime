@@ -371,5 +371,12 @@ namespace System.Linq.Expressions.Tests
             Expression value = Expression.Property(null, typeof(Unreadable<int>), "WriteOnly");
             Assert.Throws<ArgumentException>("right", () => Expression.LessThan(Expression.Constant(1), value));
         }
+
+        [Fact]
+        public static void ToStringTest()
+        {
+            var e = Expression.LessThan(Expression.Parameter(typeof(int), "a"), Expression.Parameter(typeof(int), "b"));
+            Assert.Equal("(a < b)", e.ToString());
+        }
     }
 }
