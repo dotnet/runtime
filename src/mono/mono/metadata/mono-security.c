@@ -276,9 +276,9 @@ ves_icall_System_Security_Principal_WindowsIdentity_GetCurrentToken (void)
 	 */
 
 	/* thread may be impersonating somebody */
-	if (OpenThreadToken (GetCurrentThread (), TOKEN_QUERY, 1, &token) == 0) {
+	if (OpenThreadToken (GetCurrentThread (), MAXIMUM_ALLOWED, 1, &token) == 0) {
 		/* if not take the process identity */
-		OpenProcessToken (GetCurrentProcess (), TOKEN_QUERY, &token);
+		OpenProcessToken (GetCurrentProcess (), MAXIMUM_ALLOWED, &token);
 	}
 #else
 	token = GINT_TO_POINTER (geteuid ());
