@@ -119,7 +119,10 @@ namespace System.Linq.Expressions.Tests
         {
             var newExp = Expression.New(typeof(EnumerableStaticAdd));
             var adder = typeof(EnumerableStaticAdd).GetMethod(nameof(EnumerableStaticAdd.Add));
-            Assert.Throws<ArgumentException>("addMethod", () => Expression.ListInit(newExp, Expression.Constant("")));
+
+            // this exception behavior (rather than ArgumentException) is compatible with the .NET Framework
+            Assert.Throws<InvalidOperationException>(() => Expression.ListInit(newExp, Expression.Constant("")));
+
             Assert.Throws<ArgumentException>("addMethod", () => Expression.ListInit(newExp, adder, Expression.Constant("")));
             Assert.Throws<ArgumentException>("addMethod", () => Expression.ElementInit(adder, Expression.Constant("")));
             Assert.Throws<ArgumentException>("addMethod", () => Expression.ElementInit(adder, Enumerable.Repeat(Expression.Constant(""), 1)));
