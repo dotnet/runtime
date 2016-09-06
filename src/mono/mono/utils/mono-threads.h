@@ -246,6 +246,12 @@ typedef struct {
 
 	/* Stack mark for targets that explicitly require one */
 	gpointer stack_mark;
+
+#if defined(_POSIX_VERSION) || defined(__native_client__)
+	/* This is the data that was stored in the w32 handle */
+	GPtrArray *owned_mutexes;
+	gint32 priority;
+#endif
 } MonoThreadInfo;
 
 typedef struct {
@@ -549,7 +555,7 @@ void mono_threads_platform_describe (THREAD_INFO_TYPE *info, GString *text);
 void mono_threads_platform_own_mutex (THREAD_INFO_TYPE *info, gpointer mutex_handle);
 void mono_threads_platform_disown_mutex (THREAD_INFO_TYPE *info, gpointer mutex_handle);
 MonoThreadPriority mono_threads_platform_get_priority (THREAD_INFO_TYPE *info);
-gboolean mono_threads_platform_set_priority (THREAD_INFO_TYPE *info, MonoThreadPriority priority);
+void mono_threads_platform_set_priority (THREAD_INFO_TYPE *info, MonoThreadPriority priority);
 
 void mono_threads_coop_begin_global_suspend (void);
 void mono_threads_coop_end_global_suspend (void);
@@ -679,7 +685,7 @@ mono_thread_info_disown_mutex (THREAD_INFO_TYPE *info, gpointer mutex_handle);
 MonoThreadPriority
 mono_thread_info_get_priority (THREAD_INFO_TYPE *info);
 
-gboolean
+void
 mono_thread_info_set_priority (THREAD_INFO_TYPE *info, MonoThreadPriority priority);
 
 #endif /* __MONO_THREADS_H__ */
