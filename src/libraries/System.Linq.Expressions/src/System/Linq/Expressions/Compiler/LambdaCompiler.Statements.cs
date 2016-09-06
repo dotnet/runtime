@@ -175,7 +175,7 @@ namespace System.Linq.Expressions.Compiler
                 {
                     // If there are no cases and no default then the type must be void.
                     // Assert that earlier validation caught any exceptions to that.
-                    Debug.Assert(expr.Type == typeof(void));
+                    Debug.Assert(node.Type == typeof(void));
                 }
 
                 return;
@@ -817,7 +817,7 @@ namespace System.Linq.Expressions.Compiler
 
             EmitExpression(node.Body);
 
-            Type tryType = expr.Type;
+            Type tryType = node.Type;
             LocalBuilder value = null;
             if (tryType != typeof(void))
             {
