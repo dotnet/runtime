@@ -25,6 +25,27 @@ const deps_entry_t& deps_json_t::try_ni(const deps_entry_t& entry) const
     return entry;
 }
 
+pal::string_t deps_json_t::get_optional_path(
+    const json_object& properties,
+    const pal::string_t& key) const
+{
+    pal::string_t path;
+
+    const auto& iter = properties.find(key);
+
+    if (iter != properties.end())
+    {
+        path = iter->second.as_string();
+
+        if (_X('/') != DIR_SEPARATOR)
+        {
+            replace_char(&path, _X('/'), DIR_SEPARATOR);
+        }
+    }
+
+    return path;
+}
+
 void deps_json_t::reconcile_libraries_with_targets(
     const json_value& json,
     const std::function<bool(const pal::string_t&)>& library_exists_fn,
@@ -43,42 +64,11 @@ void deps_json_t::reconcile_libraries_with_targets(
 
         const auto& properties = library.second.as_object();
 
-        // Get the "path" property, if available.
-        pal::string_t library_path;
-        const auto& library_path_iter = properties.find(_X("path"));
-        if (library_path_iter == properties.end())
-        {
-            library_path = _X("");
-        }
-        else
-        {
-            library_path = library_path_iter->second.as_string();
-
-            if (_X('/') != DIR_SEPARATOR)
-            {
-                replace_char(&library_path, _X('/'), DIR_SEPARATOR);
-            }
-        }
-
-        // Get the "hashPath property, if available.
-        pal::string_t library_hash_path;
-        const auto& library_hash_path_iter = properties.find(_X("hashPath"));
-        if (library_hash_path_iter == properties.end())
-        {
-            library_hash_path = _X("");
-        }
-        else
-        {
-            library_hash_path = library_hash_path_iter->second.as_string();
-
-            if (_X('/') != DIR_SEPARATOR)
-            {
-                replace_char(&library_hash_path, _X('/'), DIR_SEPARATOR);
-            }
-        }
-
         const pal::string_t& hash = properties.at(_X("sha512")).as_string();
         bool serviceable = properties.at(_X("serviceable")).as_bool();
+
+        pal::string_t library_path = get_optional_path(properties, _X("path"));
+        pal::string_t library_hash_path = get_optional_path(properties, _X("hashPath"));
 
         for (int i = 0; i < deps_entry_t::s_known_asset_types.size(); ++i)
         {
