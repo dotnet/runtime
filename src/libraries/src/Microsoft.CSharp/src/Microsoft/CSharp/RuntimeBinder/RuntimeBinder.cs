@@ -474,16 +474,12 @@ namespace Microsoft.CSharp.RuntimeBinder
                         CType bestType;
 
                         bool res = _semanticChecker.GetTypeManager().GetBestAccessibleType(_semanticChecker, _bindingContext, actualType, out bestType);
-                        if (!res)
-                        {
-                            // Since the actual type of these arguments are never going to be pointer
-                            // types or ref/out types (they are in fact boxed into an object), we have
-                            // a guarantee that we will always be able to find a best accessible type
-                            // (which, in the worst case, may be object). However, just to be super
-                            // paranoid, let's not let a null type get back into the system.
-                            Debug.Assert(false, "Unexpected failure of GetBestAccessibleType in construction of argument array");
-                            t = typeof(object);
-                        }
+                        
+                        // Since the actual type of these arguments are never going to be pointer
+                        // types or ref/out types (they are in fact boxed into an object), we have
+                        // a guarantee that we will always be able to find a best accessible type
+                        // (which, in the worst case, may be object).
+                        Debug.Assert(res, "Unexpected failure of GetBestAccessibleType in construction of argument array");
 
                         t = bestType.AssociatedSystemType;
                     }
