@@ -355,7 +355,7 @@ namespace System.Linq.Expressions
             return visitor.VisitBinary(this);
         }
 
-        internal static Expression Create(ExpressionType nodeType, Expression left, Expression right, Type type, MethodInfo method, LambdaExpression conversion)
+        internal static BinaryExpression Create(ExpressionType nodeType, Expression left, Expression right, Type type, MethodInfo method, LambdaExpression conversion)
         {
             Debug.Assert(nodeType != ExpressionType.Assign);
             if (conversion != null)
