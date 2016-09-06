@@ -3431,3 +3431,88 @@ namespace Music
 }
 
 #endregion
+[DataContract]
+public class ObjectContainer
+{
+    [DataMember]
+    private object _data;
+
+    public ObjectContainer(object input)
+    {
+        _data = input;
+    }
+
+    public object Data
+    {
+        get { return _data; }
+    }
+}
+
+[DataContract]
+public class DTOContainer
+{
+    [DataMember]
+    public object nDTO = DateTimeOffset.MaxValue;
+}
+
+[DataContract]
+public class DTOResolver : DataContractResolver
+{
+    public override bool TryResolveType(Type dcType, Type declaredType, DataContractResolver knownTypeResolver, out XmlDictionaryString typeName, out XmlDictionaryString typeNamespace)
+    {
+        string resolvedTypeName = string.Empty;
+        string resolvedNamespace = string.Empty;
+        resolvedNamespace = "http://www.default.com";
+        switch (dcType.Name)
+        {
+            case "ObjectContainer":
+            case "DTOContainer":
+                {
+                    resolvedTypeName = dcType.Name;
+                }
+                break;
+            case "DateTimeOffset":
+                {
+                    resolvedTypeName = "DTO";
+                }
+                break;
+            default:
+                {
+                    return knownTypeResolver.TryResolveType(dcType, declaredType, null, out typeName, out typeNamespace);
+                }
+        }
+        XmlDictionary dic = new XmlDictionary();
+        typeName = dic.Add(resolvedTypeName);
+        typeNamespace = dic.Add(resolvedNamespace);
+        return true;
+    }
+
+    public override Type ResolveName(string typeName, string typeNamespace, Type declaredType, DataContractResolver knownTypeResolver)
+    {
+        switch (typeNamespace)
+        {
+            case "http://www.default.com":
+                {
+                    switch (typeName)
+                    {
+                        case "ObjectContainer":
+                            {
+                                return typeof(ObjectContainer);
+                            }
+                        case "DTOContainer":
+                            {
+                                return typeof(DTOContainer);
+                            }
+                        case "DTO":
+                            {
+                                return typeof(DateTimeOffset);
+                            }
+                        default: break;
+                    }
+                }
+                break;
+        }
+        Type result = knownTypeResolver.ResolveName(typeName, typeNamespace, declaredType, null);
+        return result;
+    }
+}

@@ -168,7 +168,7 @@ namespace System.Linq.Expressions
             for (int i = 0, n = initializerList.Count; i < n; i++)
             {
                 Expression expr = initializerList[i];
-                RequiresCanRead(expr, nameof(initializers));
+                RequiresCanRead(expr, nameof(initializers), i);
 
                 if (!TypeUtils.AreReferenceAssignable(type, expr.Type))
                 {
@@ -250,10 +250,10 @@ namespace System.Linq.Expressions
             for (int i = 0; i < dimensions; i++)
             {
                 Expression expr = boundsList[i];
-                RequiresCanRead(expr, nameof(bounds));
+                RequiresCanRead(expr, nameof(bounds), i);
                 if (!TypeUtils.IsInteger(expr.Type))
                 {
-                    throw Error.ArgumentMustBeInteger($"{nameof(bounds)}[{i}]");
+                    throw Error.ArgumentMustBeInteger(nameof(bounds), i);
                 }
             }
 

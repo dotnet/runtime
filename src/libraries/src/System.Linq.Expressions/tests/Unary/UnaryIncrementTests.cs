@@ -91,6 +91,13 @@ namespace System.Linq.Expressions.Tests
             }
         }
 
+        [Fact]
+        public static void ToStringTest()
+        {
+            var e = Expression.Increment(Expression.Parameter(typeof(int), "x"));
+            Assert.Equal("Increment(x)", e.ToString());
+        }
+
         #endregion
 
         #region Test verifiers

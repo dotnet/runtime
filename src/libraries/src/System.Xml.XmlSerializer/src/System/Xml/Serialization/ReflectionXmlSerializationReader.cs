@@ -368,7 +368,7 @@ namespace System.Xml.Serialization
             }
             else
             {
-                if (anyElementMember!= null & anyElementMember.Mapping != null)
+                if (anyElementMember!= null && anyElementMember.Mapping != null)
                 {
                     var anyElement = anyElementMember.Mapping;
 

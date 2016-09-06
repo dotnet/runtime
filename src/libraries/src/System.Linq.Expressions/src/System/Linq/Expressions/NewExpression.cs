@@ -219,7 +219,7 @@ namespace System.Linq.Expressions
             ConstructorInfo ci = null;
             if (!type.GetTypeInfo().IsValueType)
             {
-                ci = type.GetConstructors(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic).Where(c => c.GetParameters().Length == 0).SingleOrDefault();
+                ci = type.GetConstructors(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic).SingleOrDefault(c => c.GetParameters().Length == 0);
                 if (ci == null)
                 {
                     throw Error.TypeMissingDefaultConstructor(type, nameof(type));
@@ -250,20 +250,20 @@ namespace System.Linq.Expressions
                 for (int i = 0, n = arguments.Count; i < n; i++)
                 {
                     Expression arg = arguments[i];
-                    RequiresCanRead(arg, nameof(arguments));
+                    RequiresCanRead(arg, nameof(arguments), i);
                     MemberInfo member = members[i];
-                    ContractUtils.RequiresNotNull(member, nameof(members));
+                    ContractUtils.RequiresNotNull(member, nameof(members), i);
                     if (!TypeUtils.AreEquivalent(member.DeclaringType, constructor.DeclaringType))
                     {
-                        throw Error.ArgumentMemberNotDeclOnType(member.Name, constructor.DeclaringType.Name, nameof(members));
+                        throw Error.ArgumentMemberNotDeclOnType(member.Name, constructor.DeclaringType.Name, nameof(members), i);
                     }
                     Type memberType;
-                    ValidateAnonymousTypeMember(ref member, out memberType, nameof(members));
+                    ValidateAnonymousTypeMember(ref member, out memberType, nameof(members), i);
                     if (!TypeUtils.AreReferenceAssignable(memberType, arg.Type))
                     {
                         if (!TryQuote(memberType, ref arg))
                         {
-                            throw Error.ArgumentTypeDoesNotMatchMember(arg.Type, memberType);
+                            throw Error.ArgumentTypeDoesNotMatchMember(arg.Type, memberType, nameof(arguments), i);
                         }
                     }
                     ParameterInfo pi = pis[i];
@@ -276,7 +276,7 @@ namespace System.Linq.Expressions
                     {
                         if (!TryQuote(pType, ref arg))
                         {
-                            throw Error.ExpressionTypeDoesNotMatchConstructorParameter(arg.Type, pType, nameof(arguments));
+                            throw Error.ExpressionTypeDoesNotMatchConstructorParameter(arg.Type, pType, nameof(arguments), i);
                         }
                     }
                     if (newArguments == null && arg != arguments[i])
@@ -325,14 +325,14 @@ namespace System.Linq.Expressions
         }
 
 
-        private static void ValidateAnonymousTypeMember(ref MemberInfo member, out Type memberType, string paramName)
+        private static void ValidateAnonymousTypeMember(ref MemberInfo member, out Type memberType, string paramName, int index)
         {
             FieldInfo field = member as FieldInfo;
             if (field != null)
             {
                 if (field.IsStatic)
                 {
-                    throw Error.ArgumentMustBeInstanceMember(paramName);
+                    throw Error.ArgumentMustBeInstanceMember(paramName, index);
                 }
                 memberType = field.FieldType;
                 return;
@@ -343,11 +343,11 @@ namespace System.Linq.Expressions
             {
                 if (!pi.CanRead)
                 {
-                    throw Error.PropertyDoesNotHaveGetter(pi, paramName);
+                    throw Error.PropertyDoesNotHaveGetter(pi, paramName, index);
                 }
                 if (pi.GetGetMethod().IsStatic)
                 {
-                    throw Error.ArgumentMustBeInstanceMember(paramName);
+                    throw Error.ArgumentMustBeInstanceMember(paramName, index);
                 }
                 memberType = pi.PropertyType;
                 return;
@@ -358,15 +358,15 @@ namespace System.Linq.Expressions
             {
                 if (method.IsStatic)
                 {
-                    throw Error.ArgumentMustBeInstanceMember(paramName);
+                    throw Error.ArgumentMustBeInstanceMember(paramName, index);
                 }
 
-                PropertyInfo prop = GetProperty(method, paramName);
+                PropertyInfo prop = GetProperty(method, paramName, index);
                 member = prop;
                 memberType = prop.PropertyType;
                 return;
             }
-            throw Error.ArgumentMustBeFieldInfoOrPropertyInfoOrMethod(paramName);
+            throw Error.ArgumentMustBeFieldInfoOrPropertyInfoOrMethod(paramName, index);
         }
 
         private static void ValidateConstructor(ConstructorInfo constructor, string paramName)

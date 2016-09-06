@@ -136,6 +136,22 @@ namespace System.Linq.Expressions.Tests
             public override ExpressionType NodeType => (ExpressionType)(-1);
         }
 
+        private class ExtensionNoToString : Expression
+        {
+            public override ExpressionType NodeType => ExpressionType.Extension;
+            public override Type Type => typeof(int);
+            public override bool CanReduce => false;
+        }
+
+        private class ExtensionToString : Expression
+        {
+            public override ExpressionType NodeType => ExpressionType.Extension;
+            public override Type Type => typeof(int);
+            public override bool CanReduce => false;
+
+            public override string ToString() => "bar";
+        }
+
         public static IEnumerable<object[]> AllNodeTypesPlusSomeInvalid
         {
             get
@@ -398,7 +414,7 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public void ConfirmCannotReadSequence()
         {
-            Assert.Throws<ArgumentException>("expressions", () => Expression.Block(typeof(void), UnreadableExpressions));
+            Assert.Throws<ArgumentException>("expressions[0]", () => Expression.Block(typeof(void), UnreadableExpressions));
         }
 
         [Theory, MemberData(nameof(UnwritableExpressionData))]
@@ -435,6 +451,16 @@ namespace System.Linq.Expressions.Tests
         {
             var exp = Expression.Lambda<Func<int>>(new ReducesFromStrangeNodeType());
             Assert.Equal(3, exp.Compile(useInterpreter)());
+        }
+
+        [Fact]
+        public void ToStringTest()
+        {
+            var e1 = new ExtensionNoToString();
+            Assert.Equal($"[{typeof(ExtensionNoToString).FullName}]", e1.ToString());
+
+            var e2 = Expression.Add(Expression.Constant(1), new ExtensionToString());
+            Assert.Equal($"(1 + bar)", e2.ToString());
         }
     }
 }
