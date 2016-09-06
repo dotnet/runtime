@@ -3132,77 +3132,136 @@ bool GenTree::gtIsValid64RsltMul()
 
 #endif // DEBUG
 
-/*****************************************************************************
- *
- *  Figure out the evaluation order for a list of values.
- */
+ //------------------------------------------------------------------------------
+ // gtSetListOrder : Figure out the evaluation order for a list of values.
+ //
+ //
+ // Arguments:
+ //    list  - List to figure out the evaluation order for
+ //    isListCallArgs - True iff the list is a list of call arguments
+ //    callArgsInRegs -  True iff the list is a list of call arguments and they are passed in registers
+ //
+ // Return Value:
+ //    True if the operation can be a root of a bitwise rotation tree; false otherwise.
 
-unsigned Compiler::gtSetListOrder(GenTree* list, bool regs)
+unsigned            Compiler::gtSetListOrder(GenTree *list, bool isListCallArgs, bool callArgsInRegs)
 {
-    assert(list && list->IsList());
+    assert((list != nullptr) && list->IsList());
+    assert(!callArgsInRegs || isListCallArgs);
 
-    unsigned level  = 0;
-    unsigned ftreg  = 0;
-    unsigned costSz = 0;
-    unsigned costEx = 0;
+    ArrayStack<GenTree *> listNodes(this);
 
+    do
+    {
+        listNodes.Push(list);
+        list = list->gtOp.gtOp2;
+    } while ((list != nullptr) && (list->IsList()));
+
+    unsigned  nxtlvl = (list == nullptr) ? 0 : gtSetEvalOrder(list);
+    while (listNodes.Height() > 0)
+    {
 #if FEATURE_STACK_FP_X87
-    /* Save the current FP stack level since an argument list
-     * will implicitly pop the FP stack when pushing the argument */
-    unsigned FPlvlSave = codeGen->genGetFPstkLevel();
+        /* Save the current FP stack level since an argument list
+        * will implicitly pop the FP stack when pushing the argument */
+        unsigned        FPlvlSave = codeGen->genGetFPstkLevel();
 #endif // FEATURE_STACK_FP_X87
 
-    GenTreePtr next = list->gtOp.gtOp2;
+        list = listNodes.Pop();
+        assert(list && list->IsList());
+        GenTreePtr      next = list->gtOp.gtOp2;
 
-    if (next)
-    {
-        unsigned nxtlvl = gtSetListOrder(next, regs);
+        unsigned        level = 0;
+        unsigned        ftreg = 0;
 
-        ftreg |= next->gtRsvdRegs;
+        // TODO: Do we have to compute costs differently for argument lists and
+        // all other lists?
+        // https://github.com/dotnet/coreclr/issues/7095
+        unsigned        costSz = (isListCallArgs || (next == nullptr)) ? 0 : 1;
+        unsigned        costEx = (isListCallArgs || (next == nullptr)) ? 0 : 1;
 
-        if (level < nxtlvl)
+        if (next != nullptr)
         {
-            level = nxtlvl;
+            ftreg |= next->gtRsvdRegs;
+            if (isListCallArgs)
+            {
+                if (level < nxtlvl)
+                {
+                    level = nxtlvl;
+                }
+            }
+            costEx += next->gtCostEx;
+            costSz += next->gtCostSz;
         }
-        costEx += next->gtCostEx;
-        costSz += next->gtCostSz;
-    }
 
-    GenTreePtr op1 = list->gtOp.gtOp1;
-    unsigned   lvl = gtSetEvalOrder(op1);
+        GenTreePtr      op1 = list->gtOp.gtOp1;
+        unsigned        lvl = gtSetEvalOrder(op1);
 
 #if FEATURE_STACK_FP_X87
-    /* restore the FP level */
-    codeGen->genResetFPstkLevel(FPlvlSave);
+        // restore the FP level
+        codeGen->genResetFPstkLevel(FPlvlSave);
 #endif // FEATURE_STACK_FP_X87
 
-    list->gtRsvdRegs = (regMaskSmall)(ftreg | op1->gtRsvdRegs);
+        list->gtRsvdRegs = (regMaskSmall)(ftreg | op1->gtRsvdRegs);
 
-    if (level < lvl)
-    {
-        level = lvl;
-    }
+        // Swap the level counts
+        if (list->gtFlags & GTF_REVERSE_OPS)
+        {
+            unsigned tmpl;
 
-    if (op1->gtCostEx != 0)
-    {
-        costEx += op1->gtCostEx;
-        costEx += regs ? 0 : IND_COST_EX;
-    }
+            tmpl = lvl;
+            lvl = nxtlvl;
+            nxtlvl = tmpl;
+        }
 
-    if (op1->gtCostSz != 0)
-    {
-        costSz += op1->gtCostSz;
+        // TODO: Do we have to compute levels differently for argument lists and
+        // all other lists?
+        // https://github.com/dotnet/coreclr/issues/7095
+        if (isListCallArgs)
+        {
+            if (level < lvl)
+            {
+                level = lvl;
+            }
+        }
+        else
+        {
+            if (lvl < 1)
+            {
+                level = nxtlvl;
+            }
+            else if (lvl == nxtlvl)
+            {
+                level = lvl + 1;
+            }
+            else
+            {
+                level = lvl;
+            }
+        }
+
+        if (op1->gtCostEx != 0)
+        {
+            costEx += op1->gtCostEx;
+            costEx += (callArgsInRegs || !isListCallArgs) ? 0 : IND_COST_EX;
+        }
+
+        if (op1->gtCostSz != 0)
+        {
+            costSz += op1->gtCostSz;
 #ifdef _TARGET_XARCH_
-        if (regs) // push is smaller than mov to reg
+            if (callArgsInRegs)                // push is smaller than mov to reg
 #endif
-        {
-            costSz += 1;
+            {
+                costSz += 1;
+            }
         }
+
+        list->SetCosts(costEx, costSz);
+
+        nxtlvl = level;
     }
 
-    list->SetCosts(costEx, costSz);
-
-    return level;
+    return nxtlvl;
 }
 
 /*****************************************************************************
@@ -4515,6 +4574,14 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
 
                 goto DONE;
 
+            case GT_LIST:
+
+                {
+                    const bool isListCallArgs = false;
+                    const bool callArgsInRegs = false;
+                    return gtSetListOrder(tree, isListCallArgs, callArgsInRegs);
+                }
+
             default:
                 break;
         }
@@ -4957,7 +5024,9 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
 #if FEATURE_STACK_FP_X87
                 FPlvlSave = codeGen->genGetFPstkLevel();
 #endif // FEATURE_STACK_FP_X87
-                lvl2 = gtSetListOrder(tree->gtCall.gtCallArgs, false);
+                const bool isListCallArgs = true;
+                const bool callArgsInRegs = false;
+                lvl2 = gtSetListOrder(tree->gtCall.gtCallArgs, isListCallArgs, callArgsInRegs);
                 if (level < lvl2)
                 {
                     level = lvl2;
@@ -4979,7 +5048,9 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
 #if FEATURE_STACK_FP_X87
                 FPlvlSave = codeGen->genGetFPstkLevel();
 #endif // FEATURE_STACK_FP_X87
-                lvl2 = gtSetListOrder(tree->gtCall.gtCallLateArgs, true);
+                const bool isListCallArgs = true;
+                const bool callArgsInRegs = true;
+                lvl2 = gtSetListOrder(tree->gtCall.gtCallLateArgs, isListCallArgs, callArgsInRegs);
                 if (level < lvl2)
                 {
                     level = lvl2;
