@@ -93,7 +93,9 @@ namespace System.Net.Http
                         out firstSchemeIgnored,
                         out authTarget))
                     {
-                        WinHttpException.ThrowExceptionUsingLastError();
+                        // WinHTTP returns an error for schemes it doesn't handle.
+                        // So, we need to ignore the error and just let it stay at 401.
+                        break;
                     }
 
                     // WinHTTP returns the proper authTarget based on the status code (401, 407).
@@ -144,7 +146,9 @@ namespace System.Net.Http
                         out firstSchemeIgnored,
                         out authTarget))
                     {
-                        WinHttpException.ThrowExceptionUsingLastError();
+                        // WinHTTP returns an error for schemes it doesn't handle.
+                        // So, we need to ignore the error and just let it stay at 401.
+                        break;
                     }
 
                     // WinHTTP returns the proper authTarget based on the status code (401, 407).
