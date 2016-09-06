@@ -3,6 +3,7 @@ setlocal EnableDelayedExpansion
 
 :: Set the default arguments for build
 set __BuildArch=x64
+set __VCBuildArch=x86_amd64
 set __BuildType=Debug
 set __BuildOS=Windows_NT
 set __VSVersion=vs2015
@@ -35,16 +36,15 @@ if /i "%1" == "-?"    goto Usage
 if /i "%1" == "-h"    goto Usage
 if /i "%1" == "-help" goto Usage
 
-if /i "%1" == "x64"                   (set __BuildArch=x64&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%1" == "x86"                   (set __BuildArch=x86&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%1" == "arm"                   (set __BuildArch=arm&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "x64"                   (set __BuildArch=x64&set __VCBuildArch=x86_amd64&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "x86"                   (set __BuildArch=x86&set __VCBuildArch=x86&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "arm"                   (set __BuildArch=arm&set __VCBuildArch=x86_arm&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "arm64"                 (set __BuildArch=arm64&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 
 if /i "%1" == "debug"                 (set __BuildType=Debug&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "release"               (set __BuildType=Release&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "checked"               (set __BuildType=Checked&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 
-if /i "%1" == "crossgen"              (set __crossgen=true&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "skipmanaged"           (set __SkipManaged=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "updateinvalidpackages" (set __UpdateInvalidPackagesArg=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "toolset_dir"           (set __ToolsetDir=%2&set __PassThroughArgs=%__PassThroughArgs% %2&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
@@ -128,7 +128,7 @@ if defined __ToolsetDir (
 
 :: Set the environment for the native build
 echo %__MsgPrefix%Using environment: "%__VSToolsRoot%\..\..\VC\vcvarsall.bat" %__VCBuildArch%
-call                                 "%__VSToolsRoot%\..\..\VC\vcvarsall.bat" x86_amd64
+call                                 "%__VSToolsRoot%\..\..\VC\vcvarsall.bat" %__VCBuildArch%
 @if defined __echo @echo on
 
 if not defined VSINSTALLDIR (
@@ -252,7 +252,6 @@ echo.
 echo. -? -h -help: view this message.
 echo Build architecture: -buildArch: only x64 is currently allowed ^(default: x64^).
 echo Build type: -buildType: one of Debug, Checked, Release ^(default: Debug^).
-echo crossgen: enables the tests to run crossgen on the test executables before executing them. 
 echo updateinvalidpackageversions: Runs the target to update package versions.
 echo -- ... : all arguments following this tag will be passed directly to msbuild.
 echo -priority=^<N^> : specify a set of test that will be built and run, with priority N.
