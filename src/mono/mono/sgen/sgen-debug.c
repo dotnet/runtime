@@ -216,7 +216,7 @@ is_major_or_los_object_marked (GCObject *obj)
 #undef HANDLE_PTR
 #define HANDLE_PTR(ptr,obj)	do {	\
 	if (*(ptr) && !sgen_ptr_in_nursery ((char*)*(ptr)) && !is_major_or_los_object_marked ((GCObject*)*(ptr))) { \
-		if (!sgen_get_remset ()->find_address_with_cards (start, cards, (char*)(ptr))) { \
+		if (!cards || !sgen_get_remset ()->find_address_with_cards (start, cards, (char*)(ptr))) { \
 			GCVTable __vt = SGEN_LOAD_VTABLE (obj);	\
 			SGEN_LOG (0, "major->major reference %p at offset %zd in object %p (%s.%s) not found in remsets.", *(ptr), (char*)(ptr) - (char*)(obj), (obj), sgen_client_vtable_get_namespace (__vt), sgen_client_vtable_get_name (__vt)); \
 			binary_protocol_missing_remset ((obj), __vt, (int) ((char*)(ptr) - (char*)(obj)), *(ptr), (gpointer)LOAD_VTABLE(*(ptr)), object_is_pinned (*(ptr))); \
@@ -242,8 +242,6 @@ check_mod_union_callback (GCObject *obj, size_t size, void *dummy)
 		cards = sgen_los_header_for_object (obj)->cardtable_mod_union;
 	else
 		cards = sgen_get_major_collector ()->get_cardtable_mod_union_for_reference (start);
-
-	SGEN_ASSERT (0, cards, "we must have mod union for marked major objects");
 
 #include "sgen-scan-object.h"
 }
