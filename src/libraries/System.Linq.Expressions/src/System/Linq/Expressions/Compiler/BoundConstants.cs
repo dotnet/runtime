@@ -101,10 +101,12 @@ namespace System.Linq.Expressions.Compiler
         {
             Debug.Assert(!ILGen.CanEmitConstant(value, type));
 
+#if FEATURE_COMPILE_TO_METHODBUILDER
             if (!lc.CanEmitBoundConstants)
             {
                 throw Error.CannotCompileConstant(value);
             }
+#endif
 
             LocalBuilder local;
             if (_cache.TryGetValue(new TypedConstant(value, type), out local))
@@ -125,10 +127,12 @@ namespace System.Linq.Expressions.Compiler
             int count = 0;
             foreach (var reference in _references)
             {
+#if FEATURE_COMPILE_TO_METHODBUILDER
                 if (!lc.CanEmitBoundConstants)
                 {
                     throw Error.CannotCompileConstant(reference.Key.Value);
                 }
+#endif
 
                 if (ShouldCache(reference.Value))
                 {
@@ -172,7 +176,9 @@ namespace System.Linq.Expressions.Compiler
 
         private static void EmitConstantsArray(LambdaCompiler lc)
         {
+#if FEATURE_COMPILE_TO_METHODBUILDER
             Debug.Assert(lc.CanEmitBoundConstants); // this should've been checked already
+#endif
 
             lc.EmitClosureArgument();
             lc.IL.Emit(OpCodes.Ldfld, typeof(Closure).GetField("Constants"));

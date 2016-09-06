@@ -25,7 +25,12 @@ namespace System.Security.Cryptography.X509Certificates
 
         public X509ChainElementCollection ChainElements
         {
-            get { return _chainElements; }
+            get
+            {
+                if (_chainElements == null)
+                    _chainElements = new X509ChainElementCollection();
+                return _chainElements;
+            }
         }
 
         public X509ChainPolicy ChainPolicy
@@ -118,7 +123,7 @@ namespace System.Security.Cryptography.X509Certificates
         private void Reset()
         {
             _lazyChainStatus = null;
-            _chainElements = new X509ChainElementCollection();
+            _chainElements = null;
 
             IChainPal pal = _pal;
             _pal = null;
@@ -133,4 +138,3 @@ namespace System.Security.Cryptography.X509Certificates
         private readonly object _syncRoot = new object();
     }
 }
-

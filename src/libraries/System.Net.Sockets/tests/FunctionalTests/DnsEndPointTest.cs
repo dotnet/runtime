@@ -28,6 +28,7 @@ namespace System.Net.Sockets.Tests
             complete.Set();
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [Theory]
         [InlineData(SocketImplementationType.APM)]
         [InlineData(SocketImplementationType.Async)]
@@ -44,6 +45,7 @@ namespace System.Net.Sockets.Tests
             server.Dispose();
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [Fact]
         [PlatformSpecific(PlatformID.Windows)]
         public void Socket_ConnectDnsEndPoint_Failure()
@@ -68,6 +70,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [Fact]
         public void Socket_SendToDnsEndPoint_ArgumentException()
         {
@@ -80,6 +83,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [Fact]
         public void Socket_ReceiveFromDnsEndPoint_ArgumentException()
         {
@@ -95,6 +99,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [Theory]
         [InlineData(SocketImplementationType.APM)]
         [InlineData(SocketImplementationType.Async)]
@@ -112,6 +117,7 @@ namespace System.Net.Sockets.Tests
             server.Dispose();
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [Fact]
         [PlatformSpecific(PlatformID.Windows)]
         public void Socket_BeginConnectDnsEndPoint_Failure()
@@ -138,6 +144,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [Fact]
         public void Socket_BeginSendToDnsEndPoint_ArgumentException()
         {
@@ -150,6 +157,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [Theory]
         [InlineData(SocketImplementationType.APM)]
         [InlineData(SocketImplementationType.Async)]
@@ -185,6 +193,7 @@ namespace System.Net.Sockets.Tests
             server.Dispose();
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [Fact]
         [Trait("IPv4", "true")]
         [PlatformSpecific(PlatformID.Windows)]
@@ -213,6 +222,7 @@ namespace System.Net.Sockets.Tests
             sock.Dispose();
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [Fact]
         [Trait("IPv4", "true")]
         [PlatformSpecific(PlatformID.Windows)]
@@ -243,6 +253,7 @@ namespace System.Net.Sockets.Tests
             sock.Dispose();
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [Theory]
         [InlineData(SocketImplementationType.APM)]
         [InlineData(SocketImplementationType.Async)]
@@ -295,6 +306,7 @@ namespace System.Net.Sockets.Tests
             server6.Dispose();
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [Fact]
         public void Socket_StaticConnectAsync_HostNotFound()
         {
@@ -320,6 +332,7 @@ namespace System.Net.Sockets.Tests
             complete.Dispose();
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [Fact]
         public void Socket_StaticConnectAsync_ConnectionRefused()
         {
@@ -351,6 +364,7 @@ namespace System.Net.Sockets.Tests
             Assert.True(false, "This Callback should not be called");
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [Fact]
         [Trait("IPv6", "true")]
         public void Socket_StaticConnectAsync_SyncFailure()
@@ -381,7 +395,8 @@ namespace System.Net.Sockets.Tests
 
         #region GC Finalizer test
         // This test assumes sequential execution of tests and that it is going to be executed after other tests
-        // that used Sockets. 
+        // that used Sockets.
+        [OuterLoop] // TODO: Issue #11345
         [Fact]
         public void TestFinalizers()
         {

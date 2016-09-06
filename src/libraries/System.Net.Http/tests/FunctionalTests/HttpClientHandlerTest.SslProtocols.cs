@@ -43,6 +43,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [ConditionalFact(nameof(BackendSupportsSslConfiguration))]
         public async Task SetProtocols_AfterRequest_ThrowsException()
         {
@@ -59,6 +60,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [Theory]
         [InlineData(~SslProtocols.None)]
 #pragma warning disable 0618 // obsolete warning
@@ -75,6 +77,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [ConditionalTheory(nameof(BackendSupportsSslConfiguration))]
         [InlineData(SslProtocols.Tls, false)]
         [InlineData(SslProtocols.Tls, true)]
@@ -144,6 +147,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [ConditionalFact(nameof(BackendSupportsSslConfiguration), nameof(SslDefaultsToTls12))]
         public async Task GetAsync_NoSpecifiedProtocol_DefaultsToTls12()
         {
@@ -165,6 +169,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [ConditionalTheory(nameof(BackendSupportsSslConfiguration))]
         [InlineData(SslProtocols.Tls11, SslProtocols.Tls, typeof(IOException))]
         [InlineData(SslProtocols.Tls12, SslProtocols.Tls11, typeof(IOException))]
@@ -185,6 +190,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [ActiveIssue(8538, PlatformID.Windows)]
         [Fact]
         public async Task GetAsync_DisallowTls10_AllowTls11_AllowTls12()

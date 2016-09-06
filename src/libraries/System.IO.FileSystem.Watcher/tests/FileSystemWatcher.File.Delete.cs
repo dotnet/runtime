@@ -69,34 +69,23 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [ActiveIssue(8410, PlatformID.Linux)]
+        [OuterLoop]
         public void FileSystemWatcher_File_Delete_DeepDirectoryStructure()
         {
-            // List of created directories
-            List<TempDirectory> lst = new List<TempDirectory>();
-
-            using (var testDirectory = new TempDirectory(GetTestFilePath()))
-            using (var dir = new TempDirectory(Path.Combine(testDirectory.Path, "dir")))
+            using (var dir = new TempDirectory(GetTestFilePath()))
+            using (var deepDir = new TempDirectory(Path.Combine(dir.Path, "dir", "dir", "dir", "dir", "dir", "dir", "dir")))
             using (var watcher = new FileSystemWatcher(dir.Path, "*"))
             {
                 watcher.IncludeSubdirectories = true;
                 watcher.NotifyFilter = NotifyFilters.FileName;
 
-                // Create a deep directory structure
-                lst.Add(new TempDirectory(Path.Combine(dir.Path, "dir")));
-                for (int i = 1; i < 20; i++)
-                {
-                    string dirPath = Path.Combine(lst[i - 1].Path, String.Format("dir{0}", i));
-                    lst.Add(new TempDirectory(dirPath));
-                }
-
                 // Put a file at the very bottom and expect it to raise an event
-                string fileName = Path.Combine(lst[lst.Count - 1].Path, "file");
+                string fileName = Path.Combine(deepDir.Path, "file");
                 Action action = () => File.Delete(fileName);
                 Action cleanup = () => File.Create(fileName).Dispose();
                 cleanup();
 
-                ExpectEvent(watcher, WatcherChangeTypes.Deleted, action, cleanup, fileName);
+                ExpectEvent(watcher, WatcherChangeTypes.Deleted, action, cleanup, fileName, timeout: 10000);
             }
         }
 

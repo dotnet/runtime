@@ -304,7 +304,6 @@ namespace System.ComponentModel
             }
         }
 
-        /// <include file='doc\MemberDescriptor.uex' path='docs/doc[@for="MemberDescriptor.CreateAttributeCollection"]/*' />
         /// <summary>
         ///    <para>
         ///       Creates a collection of attributes using the

@@ -383,5 +383,12 @@ namespace System.Linq.Expressions.Tests
             Assert.Throws<InvalidOperationException>(() => Expression.Coalesce(Expression.Constant(""), Expression.Constant(""), boolNotEquivilent));
             Assert.Throws<InvalidOperationException>(() => Expression.Coalesce(Expression.Constant(0, typeof(int?)), Expression.Constant(""), boolNotEquivilent));
         }
+
+        [Fact]
+        public static void ToStringTest()
+        {
+            var e = Expression.Coalesce(Expression.Parameter(typeof(string), "a"), Expression.Parameter(typeof(string), "b"));
+            Assert.Equal("(a ?? b)", e.ToString());
+        }
     }
 }

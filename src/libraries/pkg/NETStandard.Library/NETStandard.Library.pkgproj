@@ -3,7 +3,7 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
 
   <PropertyGroup>
-    <Version>1.6.1</Version>
+    <PackageVersion>1.6.1</PackageVersion>
     <SplitDependenciesBySupport>true</SplitDependenciesBySupport>
   </PropertyGroup>
 

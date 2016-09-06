@@ -48,35 +48,23 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        [OuterLoop]
         public void FileSystemWatcher_Directory_Delete_DeepDirectoryStructure()
         {
-            // List of created directories
-            List<TempDirectory> lst = new List<TempDirectory>();
-
-            using (var testDirectory = new TempDirectory(GetTestFilePath()))
-            using (var dir = new TempDirectory(Path.Combine(testDirectory.Path, "dir")))
+            using (var dir = new TempDirectory(GetTestFilePath()))
+            using (var deepDir = new TempDirectory(Path.Combine(dir.Path, "dir", "dir", "dir", "dir", "dir", "dir", "dir")))
             using (var watcher = new FileSystemWatcher(dir.Path, "*"))
             {
                 watcher.IncludeSubdirectories = true;
                 watcher.NotifyFilter = NotifyFilters.DirectoryName;
 
-                // Priming directory
-                lst.Add(new TempDirectory(Path.Combine(dir.Path, "dir")));
+                // Put a directory at the very bottom and expect it to raise an event
+                string dirPath = Path.Combine(deepDir.Path, "leafdir");
+                Action action = () => Directory.Delete(dirPath);
+                Action cleanup = () => Directory.CreateDirectory(dirPath);
+                cleanup();
 
-                // Create a deep directory structure and expect things to work
-                for (int i = 1; i < 20; i++)
-                {
-                    // Test that the creation triggers an event correctly
-                    string dirPath = Path.Combine(lst[i - 1].Path, String.Format("dir{0}", i));
-                    Action action = () => Directory.Delete(dirPath);
-                    Action cleanup = () => Directory.CreateDirectory(dirPath);
-                    cleanup();
-
-                    ExpectEvent(watcher, WatcherChangeTypes.Deleted, action, cleanup);
-
-                    // Create the directory so subdirectories may be created from it.
-                    lst.Add(new TempDirectory(dirPath));
-                }
+                ExpectEvent(watcher, WatcherChangeTypes.Deleted, action, cleanup, dirPath, timeout: 10000);
             }
         }
 

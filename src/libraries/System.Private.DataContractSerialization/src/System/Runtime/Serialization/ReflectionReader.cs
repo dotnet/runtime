@@ -79,11 +79,6 @@ namespace System.Runtime.Serialization
                 return resultArray;
             }
 
-            if (arraySize != -1)
-            {
-                throw new NotImplementedException();
-            }
-
             object resultCollection = ReflectionCreateCollection(collectionContract);
             context.AddNewObject(resultCollection);
             context.IncrementItemCount(1);
@@ -221,32 +216,7 @@ namespace System.Runtime.Serialization
 
             if ((primitiveContract != null && primitiveContract.UnderlyingType != Globals.TypeOfObject) || nullables != 0 || type.GetTypeInfo().IsValueType)
             {
-                context.ReadAttributes(xmlReader);
-                string objectId = context.ReadIfNullOrRef(xmlReader, Globals.TypeOfString, true);
-                if (objectId != null)
-                {
-                    if (objectId.Length == 0)
-                    {
-                        objectId = context.GetObjectId();
-                        if (primitiveContract != null && primitiveContract.UnderlyingType != Globals.TypeOfObject)
-                        {
-                            value = primitiveContract.ReadXmlValue(xmlReader, context);
-                            context.AddNewObject(value);
-                        }
-                        else
-                        {
-                            value = ReflectionInternalDeserialize(xmlReader, context, null/*collectionContract*/, type, name, ns);
-                        }
-                    }
-                    else if (type.GetTypeInfo().IsValueType)
-                    {
-                        throw new SerializationException(SR.Format(SR.ValueTypeCannotHaveId, DataContract.GetClrTypeFullName(type)));
-                    }
-                }
-                else
-                {
-                    value = null;
-                }
+                value = ReadItemOfPrimitiveType(xmlReader, context, type, name, ns, primitiveContract, nullables);
             }
             else
             {
@@ -256,10 +226,62 @@ namespace System.Runtime.Serialization
             return value;
         }
 
+        private object ReadItemOfPrimitiveType(XmlReaderDelegator xmlReader, XmlObjectSerializerReadContext context, Type type, string name, string ns, PrimitiveDataContract primitiveContract, int nullables)
+        {
+            object value;
+            context.ReadAttributes(xmlReader);
+            string objectId = context.ReadIfNullOrRef(xmlReader, type, DataContract.IsTypeSerializable(type));
+            bool typeIsValueType = type.GetTypeInfo().IsValueType;
+            if (objectId != null)
+            {
+                if (objectId.Length == 0)
+                {
+                    objectId = context.GetObjectId();
+
+                    if (!string.IsNullOrEmpty(objectId) && typeIsValueType)
+                    {
+                        throw new SerializationException(SR.Format(SR.ValueTypeCannotHaveId, DataContract.GetClrTypeFullName(type)));
+                    }
+
+                    if (primitiveContract != null && primitiveContract.UnderlyingType != Globals.TypeOfObject)
+                    {
+                        value = primitiveContract.ReadXmlValue(xmlReader, context);
+                    }
+                    else
+                    {
+                        value = ReflectionInternalDeserialize(xmlReader, context, null/*collectionContract*/, type, name, ns);
+                    }
+                }
+                else
+                {
+                    if (typeIsValueType)
+                    {
+                        throw new SerializationException(SR.Format(SR.ValueTypeCannotHaveRef, DataContract.GetClrTypeFullName(type)));
+                    }
+                    else
+                    {
+                        value = context.GetExistingObject(objectId, type, name, ns);
+                    }
+                }
+            }
+            else
+            {
+                if (typeIsValueType && nullables == 0)
+                {
+                    throw new SerializationException(SR.Format(SR.ValueTypeCannotBeNull, DataContract.GetClrTypeFullName(type)));
+                }
+                else
+                {
+                    value = null;
+                }
+            }
+
+            return value;
+        }
+
         // This method is a perf optimization for collections. The original method is ReflectionReadValue.
         private CollectionReadItemDelegate GetReflectionReadValueDelegate(Type type)
         {
-            object value = null;
             int nullables = 0;
             while (type.GetTypeInfo().IsGenericType && type.GetGenericTypeDefinition() == Globals.TypeOfNullable)
             {
@@ -273,34 +295,7 @@ namespace System.Runtime.Serialization
             {
                 return (xmlReaderArg, contextArg, collectionContract, typeArg, nameArg, nsArg) =>
                 {
-                    contextArg.ReadAttributes(xmlReaderArg);
-                    string objectId = contextArg.ReadIfNullOrRef(xmlReaderArg, Globals.TypeOfString, true);
-                    if (objectId != null)
-                    {
-                        if (objectId.Length == 0)
-                        {
-                            objectId = contextArg.GetObjectId();
-                            if (hasValidPrimitiveContract)
-                            {
-                                value = primitiveContract.ReadXmlValue(xmlReaderArg, contextArg);
-                                contextArg.AddNewObject(value);
-                            }
-                            else
-                            {
-                                value = ReflectionInternalDeserialize(xmlReaderArg, contextArg, null/*collectionContract*/, typeArg, nameArg, nsArg);
-                            }
-                        }
-                        else if (typeArg.GetTypeInfo().IsValueType)
-                        {
-                            throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new SerializationException(SR.Format(SR.ValueTypeCannotHaveId, DataContract.GetClrTypeFullName(typeArg))));
-                        }
-                    }
-                    else
-                    {
-                        value = null;
-                    }
-
-                    return value;
+                    return ReadItemOfPrimitiveType(xmlReaderArg, contextArg, typeArg, nameArg, nsArg, primitiveContract, nullables);
                 };
             }
             else

@@ -12,7 +12,6 @@ using System.Xml.Schema;
 
 namespace System.Xml.Serialization
 {
-    /// <include file='doc\XmlRootAttribute.uex' path='docs/doc[@for="XmlRootAttribute"]/*' />
     /// <devdoc>
     ///    <para>[To be supplied.]</para>
     /// </devdoc>
@@ -25,7 +24,6 @@ namespace System.Xml.Serialization
         private bool _nullable = true;
         private bool _nullableSpecified;
 
-        /// <include file='doc\XmlRootAttribute.uex' path='docs/doc[@for="XmlRootAttribute.XmlRootAttribute"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -33,7 +31,6 @@ namespace System.Xml.Serialization
         {
         }
 
-        /// <include file='doc\XmlRootAttribute.uex' path='docs/doc[@for="XmlRootAttribute.XmlRootAttribute1"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -42,7 +39,6 @@ namespace System.Xml.Serialization
             _elementName = elementName;
         }
 
-        /// <include file='doc\XmlRootAttribute.uex' path='docs/doc[@for="XmlRootAttribute.ElementName"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -52,7 +48,6 @@ namespace System.Xml.Serialization
             set { _elementName = value; }
         }
 
-        /// <include file='doc\XmlRootAttribute.uex' path='docs/doc[@for="XmlRootAttribute.Namespace"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -62,7 +57,6 @@ namespace System.Xml.Serialization
             set { _ns = value; }
         }
 
-        /// <include file='doc\XmlRootAttribute.uex' path='docs/doc[@for="XmlRootAttribute.DataType"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -72,7 +66,6 @@ namespace System.Xml.Serialization
             set { _dataType = value; }
         }
 
-        /// <include file='doc\XmlRootAttribute.uex' path='docs/doc[@for="XmlRootAttribute.IsNullable"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
