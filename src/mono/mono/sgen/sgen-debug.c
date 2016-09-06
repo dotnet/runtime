@@ -445,7 +445,7 @@ verify_object_pointers_callback (GCObject *obj, size_t size, void *data)
 {
 	char *start = (char*)obj;
 	gboolean allow_missing_pinned = (gboolean) (size_t) data;
-	SgenDescriptor desc = sgen_obj_get_descriptor (obj);
+	SgenDescriptor desc = sgen_obj_get_descriptor_safe (obj);
 
 #include "sgen-scan-object.h"
 }

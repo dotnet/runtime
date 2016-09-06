@@ -1529,11 +1529,6 @@ collect_nursery (const char *reason, gboolean is_overflow, SgenGrayQueue *unpin_
 
 	gc_stats.minor_gc_count ++;
 
-	if (whole_heap_check_before_collection) {
-		sgen_clear_nursery_fragments ();
-		sgen_check_whole_heap (FALSE);
-	}
-
 	sgen_process_fin_stage_entries ();
 
 	/* pin from pinned handles */
@@ -1551,6 +1546,11 @@ collect_nursery (const char *reason, gboolean is_overflow, SgenGrayQueue *unpin_
 
 	if (remset_consistency_checks)
 		sgen_check_remset_consistency ();
+
+	if (whole_heap_check_before_collection) {
+		sgen_clear_nursery_fragments ();
+		sgen_check_whole_heap (FALSE);
+	}
 
 	TV_GETTIME (atv);
 	time_minor_pinning += TV_ELAPSED (btv, atv);
@@ -1697,7 +1697,7 @@ major_copy_or_mark_from_roots (SgenGrayQueue *gc_thread_gray_queue, size_t *old_
 	sgen_clear_nursery_fragments ();
 
 	if (whole_heap_check_before_collection)
-		sgen_check_whole_heap (mode == COPY_OR_MARK_FROM_ROOTS_FINISH_CONCURRENT);
+		sgen_check_whole_heap (TRUE);
 
 	TV_GETTIME (btv);
 	time_major_pre_collection_fragment_clear += TV_ELAPSED (atv, btv);
@@ -3259,7 +3259,7 @@ sgen_check_whole_heap_stw (void)
 {
 	sgen_stop_world (0);
 	sgen_clear_nursery_fragments ();
-	sgen_check_whole_heap (FALSE);
+	sgen_check_whole_heap (TRUE);
 	sgen_restart_world (0);
 }
 
