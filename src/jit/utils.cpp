@@ -1236,8 +1236,6 @@ void HelperCallProperties::init()
             case CORINFO_HELP_LRSH:
             case CORINFO_HELP_LRSZ:
             case CORINFO_HELP_LMUL:
-            case CORINFO_HELP_ULDIV:
-            case CORINFO_HELP_ULMOD:
             case CORINFO_HELP_LNG2DBL:
             case CORINFO_HELP_ULNG2DBL:
             case CORINFO_HELP_DBL2INT:
@@ -1264,9 +1262,12 @@ void HelperCallProperties::init()
                                     // mod -1,
             case CORINFO_HELP_MOD:  // which is not representable as a positive integer.
             case CORINFO_HELP_UMOD:
+            case CORINFO_HELP_ULMOD:
 
             case CORINFO_HELP_UDIV: // Divs throw divide-by-zero.
+            case CORINFO_HELP_DIV:
             case CORINFO_HELP_LDIV:
+            case CORINFO_HELP_ULDIV:
 
             case CORINFO_HELP_LMUL_OVF:
             case CORINFO_HELP_ULMUL_OVF:
