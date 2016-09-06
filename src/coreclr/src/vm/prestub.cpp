@@ -224,13 +224,17 @@ void DACNotifyCompilationFinished(MethodDesc *methodDesc)
 
         _ASSERTE(modulePtr);
 
+#ifndef FEATURE_GDBJIT
         // Are we listed?
         USHORT jnt = jn.Requested((TADDR) modulePtr, t);
         if (jnt & CLRDATA_METHNOTIFY_GENERATED)
-        {
+        {            
             // If so, throw an exception!
+#endif
             DACNotify::DoJITNotification(methodDesc);
+#ifndef FEATURE_GDBJIT
         }
+#endif
     }
 }
 
