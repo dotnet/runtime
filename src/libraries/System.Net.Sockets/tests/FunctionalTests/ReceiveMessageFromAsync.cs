@@ -17,6 +17,7 @@ namespace System.Net.Sockets.Tests
             handle.Set();
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [Fact]
         public void Success()
         {

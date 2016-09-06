@@ -4,19 +4,16 @@
 
 namespace System.Xml
 {
-    /// <include file='doc\XmlNodeType.uex' path='docs/doc[@for="XmlNodeType"]/*' />
     /// <devdoc>
     ///    Specifies the type of node.
     /// </devdoc>
     public enum XmlNodeType
     {
-        /// <include file='doc\XmlNodeType.uex' path='docs/doc[@for="XmlNodeType.None"]/*' />
         /// <devdoc>
         ///    For XPathNavigator, cursor is not positioned
         ///    on a node.
         /// </devdoc>
         None,
-        /// <include file='doc\XmlNodeType.uex' path='docs/doc[@for="XmlNodeType.Element"]/*' />
         /// <devdoc>
         ///    <para>
         ///       An Element.
@@ -30,7 +27,6 @@ namespace System.Xml
         ///    DocumentFragment, EntityReference, and Element nodes.
         /// </devdoc>
         Element,
-        /// <include file='doc\XmlNodeType.uex' path='docs/doc[@for="XmlNodeType.Attribute"]/*' />
         /// <devdoc>
         ///    <para>
         ///       An
@@ -46,7 +42,6 @@ namespace System.Xml
         ///    </para>
         /// </devdoc>
         Attribute,
-        /// <include file='doc\XmlNodeType.uex' path='docs/doc[@for="XmlNodeType.Text"]/*' />
         /// <devdoc>
         ///    <para>
         ///       The
@@ -59,7 +54,6 @@ namespace System.Xml
         ///    </para>
         /// </devdoc>
         Text,
-        /// <include file='doc\XmlNodeType.uex' path='docs/doc[@for="XmlNodeType.CDATA"]/*' />
         /// <devdoc>
         ///    A CDATA section.
         ///    Example XML: &lt;![CDATA[my escaped text]]&gt;
@@ -69,7 +63,6 @@ namespace System.Xml
         ///    EntityReference, and Element nodes.
         /// </devdoc>
         CDATA,
-        /// <include file='doc\XmlNodeType.uex' path='docs/doc[@for="XmlNodeType.EntityReference"]/*' />
         /// <devdoc>
         ///    <para>A reference to an entity.</para>
         ///    <para>Example XML: &amp;foo;</para>
@@ -80,7 +73,6 @@ namespace System.Xml
         ///       Element, and EntityReference nodes.</para>
         /// </devdoc>
         EntityReference,
-        /// <include file='doc\XmlNodeType.uex' path='docs/doc[@for="XmlNodeType.Entity"]/*' />
         /// <devdoc>
         ///    <para>An entity declaration.</para>
         ///    <para>Example XML: &lt;!ENTITY ...&gt;</para>
@@ -89,7 +81,6 @@ namespace System.Xml
         ///       child of the DocumentType node.</para>
         /// </devdoc>
         Entity,
-        /// <include file='doc\XmlNodeType.uex' path='docs/doc[@for="XmlNodeType.ProcessingInstruction"]/*' />
         /// <devdoc>
         ///    <para>
         ///       A processing instruction (PI).
@@ -104,7 +95,6 @@ namespace System.Xml
         ///    </para>
         /// </devdoc>
         ProcessingInstruction,
-        /// <include file='doc\XmlNodeType.uex' path='docs/doc[@for="XmlNodeType.Comment"]/*' />
         /// <devdoc>
         ///    <para>
         ///       A Comment.
@@ -119,7 +109,6 @@ namespace System.Xml
         ///    </para>
         /// </devdoc>
         Comment,
-        /// <include file='doc\XmlNodeType.uex' path='docs/doc[@for="XmlNodeType.Document"]/*' />
         /// <devdoc>
         ///    <para>
         ///       A document object, which, as the root of the document tree, provides access
@@ -132,7 +121,6 @@ namespace System.Xml
         ///    </para>
         /// </devdoc>
         Document,
-        /// <include file='doc\XmlNodeType.uex' path='docs/doc[@for="XmlNodeType.DocumentType"]/*' />
         /// <devdoc>
         ///    <para>
         ///       The document type declaration, indicated by the &lt;!DOCTYPE&gt; tag.
@@ -146,7 +134,6 @@ namespace System.Xml
         ///    </para>
         /// </devdoc>
         DocumentType,
-        /// <include file='doc\XmlNodeType.uex' path='docs/doc[@for="XmlNodeType.DocumentFragment"]/*' />
         /// <devdoc>
         ///    <para>
         ///       A document fragment.
@@ -160,7 +147,6 @@ namespace System.Xml
         ///    </para>
         /// </devdoc>
         DocumentFragment,
-        /// <include file='doc\XmlNodeType.uex' path='docs/doc[@for="XmlNodeType.Notation"]/*' />
         /// <devdoc>
         ///    <para>
         ///       A notation in the document type declaration.
@@ -174,34 +160,29 @@ namespace System.Xml
         ///    </para>
         /// </devdoc>
         Notation,
-        /// <include file='doc\XmlNodeType.uex' path='docs/doc[@for="XmlNodeType.Whitespace"]/*' />
         /// <devdoc>
         ///    <para>
         ///       Whitespace between markup.
         ///    </para>
         /// </devdoc>
         Whitespace,
-        /// <include file='doc\XmlNodeType.uex' path='docs/doc[@for="XmlNodeType.SignificantWhitespace"]/*' />
         /// <devdoc>
         ///    <para>
         ///       Whitespace between markup in a mixed content model.
         ///    </para>
         /// </devdoc>
         SignificantWhitespace,
-        /// <include file='doc\XmlNodeType.uex' path='docs/doc[@for="XmlNodeType.EndElement"]/*' />
         /// <devdoc>
         ///    <para>Returned when XmlReader gets to the end of an element.</para>
         ///    <para>Example XML: &lt;/foo&gt;</para>
         /// </devdoc>
         EndElement,
-        /// <include file='doc\XmlNodeType.uex' path='docs/doc[@for="XmlNodeType.EndEntity"]/*' />
         /// <devdoc>
         ///    <para>Returned when XmlReader gets to the end of the entity 
         ///       replacement as a result of a call to <see cref='System.Xml.XmlReader.ResolveEntity'/>
         ///       .</para>
         /// </devdoc>
         EndEntity,
-        /// <include file='doc\XmlNodeType.uex' path='docs/doc[@for="XmlNodeType.XmlDeclaration"]/*' />
         /// <devdoc>
         ///    <para>
         ///       The XML declaration node..

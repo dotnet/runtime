@@ -25,6 +25,7 @@ namespace System.Net.Sockets.Tests
             });
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [Fact]
         public void Socket_LingerState_Common_Boundaries_CorrectBehavior()
         {
@@ -41,6 +42,7 @@ namespace System.Net.Sockets.Tests
             TestLingerState_ArgumentException(sock, true, UInt16.MaxValue + 1);
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [Fact]
         [PlatformSpecific(~PlatformID.OSX)]
         public void Socket_LingerState_Upper_Boundaries_CorrectBehavior()
@@ -52,6 +54,7 @@ namespace System.Net.Sockets.Tests
             TestLingerState_Success(sock, true, UInt16.MaxValue);
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [Fact]
         [PlatformSpecific(PlatformID.OSX)]
         public void Socket_LingerState_Upper_Boundaries_CorrectBehavior_OSX()
@@ -75,6 +78,7 @@ namespace System.Net.Sockets.Tests
             });
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [Theory]
         [InlineData(false, 0)]
         [InlineData(true, 0)]

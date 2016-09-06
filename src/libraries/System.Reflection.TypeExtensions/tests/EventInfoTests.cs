@@ -162,6 +162,29 @@ namespace System.Reflection.Tests
             EventInfo eventInfo = Helpers.GetEvent(typeof(EI_Class), name);
             Assert.Equal("System.Reflection.RuntimeEventInfo", eventInfo.GetType().FullName);
         }
+
+        [Theory]
+        [InlineData("PublicEvent")]
+        [InlineData("ProtectedEvent")]
+        [InlineData("PrivateEvent")]
+        [InlineData("InternalEvent")]
+        public void DeclaringType_Module(string name)
+        {
+            EventInfo eventInfo = Helpers.GetEvent(typeof(EI_Class), name);
+            Assert.Equal(typeof(EI_Class), eventInfo.DeclaringType);
+            Assert.Equal(typeof(EI_Class).GetTypeInfo().Module, eventInfo.Module);
+        }
+
+        [Theory]
+        [InlineData("PublicEvent")]
+        [InlineData("ProtectedEvent")]
+        [InlineData("PrivateEvent")]
+        [InlineData("InternalEvent")]
+        public void Name(string name)
+        {
+            EventInfo eventInfo = Helpers.GetEvent(typeof(EI_Class), name);
+            Assert.Equal(name, eventInfo.Name);
+        }
     }
 
     public class EI_Class

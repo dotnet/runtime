@@ -8,7 +8,6 @@ using System.Xml.Schema;
 
 namespace System.Xml.Serialization
 {
-    /// <include file='doc\XmlArrayItemAttribute.uex' path='docs/doc[@for="XmlArrayItemAttribute"]/*' />
     /// <devdoc>
     ///    <para>[To be supplied.]</para>
     /// </devdoc>
@@ -24,7 +23,6 @@ namespace System.Xml.Serialization
         private XmlSchemaForm _form = XmlSchemaForm.None;
         private int _nestingLevel;
 
-        /// <include file='doc\XmlArrayItemAttribute.uex' path='docs/doc[@for="XmlArrayItemAttribute.XmlArrayItemAttribute"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -32,7 +30,6 @@ namespace System.Xml.Serialization
         {
         }
 
-        /// <include file='doc\XmlArrayItemAttribute.uex' path='docs/doc[@for="XmlArrayItemAttribute.XmlArrayItemAttribute1"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -41,7 +38,6 @@ namespace System.Xml.Serialization
             _elementName = elementName;
         }
 
-        /// <include file='doc\XmlArrayItemAttribute.uex' path='docs/doc[@for="XmlArrayItemAttribute.XmlArrayItemAttribute2"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -50,7 +46,6 @@ namespace System.Xml.Serialization
             _type = type;
         }
 
-        /// <include file='doc\XmlArrayItemAttribute.uex' path='docs/doc[@for="XmlArrayItemAttribute.XmlArrayItemAttribute3"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -60,7 +55,6 @@ namespace System.Xml.Serialization
             _type = type;
         }
 
-        /// <include file='doc\XmlArrayItemAttribute.uex' path='docs/doc[@for="XmlArrayItemAttribute.Type"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -70,7 +64,6 @@ namespace System.Xml.Serialization
             set { _type = value; }
         }
 
-        /// <include file='doc\XmlArrayItemAttribute.uex' path='docs/doc[@for="XmlArrayItemAttribute.ElementName"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -80,7 +73,6 @@ namespace System.Xml.Serialization
             set { _elementName = value; }
         }
 
-        /// <include file='doc\XmlArrayItemAttribute.uex' path='docs/doc[@for="XmlArrayItemAttribute.Namespace"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -90,14 +82,12 @@ namespace System.Xml.Serialization
             set { _ns = value; }
         }
 
-        /// <include file='doc\XmlArrayItemAttribute.uex' path='docs/doc[@for="XmlArrayItemAttribute.NestingLevel"]/*' />
         public int NestingLevel
         {
             get { return _nestingLevel; }
             set { _nestingLevel = value; }
         }
 
-        /// <include file='doc\XmlArrayItemAttribute.uex' path='docs/doc[@for="XmlArrayItemAttribute.DataType"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -107,7 +97,6 @@ namespace System.Xml.Serialization
             set { _dataType = value; }
         }
 
-        /// <include file='doc\XmlArrayItemAttribute.uex' path='docs/doc[@for="XmlArrayItemAttribute.IsNullable"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -122,7 +111,6 @@ namespace System.Xml.Serialization
             get { return _nullableSpecified; }
         }
 
-        /// <include file='doc\XmlArrayItemAttribute.uex' path='docs/doc[@for="XmlArrayItemAttribute.Form"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>

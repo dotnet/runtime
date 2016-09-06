@@ -99,7 +99,7 @@ namespace System.Net
         };
 
         // NOTE: all accesses of _domainTable must be performed with _domainTable locked.
-        private Dictionary<string, PathList> _domainTable = new Dictionary<string, PathList>();
+        private readonly Dictionary<string, PathList> _domainTable = new Dictionary<string, PathList>();
         private int _maxCookieSize = DefaultCookieLengthLimit;
         private int _maxCookies = DefaultCookieLimit;
         private int _maxCookiesPerDomain = DefaultPerDomainCookieLimit;
@@ -356,13 +356,8 @@ namespace System.Net
         // Param. 'domain' == null means to age in the whole container.
         private bool AgeCookies(string domain)
         {
-            // Border case: shrunk to zero
-            if (_maxCookies == 0 || _maxCookiesPerDomain == 0)
-            {
-                _domainTable = new Dictionary<string, PathList>();
-                _count = 0;
-                return false;
-            }
+            Debug.Assert(_maxCookies != 0);
+            Debug.Assert(_maxCookiesPerDomain != 0);
 
             int removed = 0;
             DateTime oldUsed = DateTime.MaxValue;

@@ -156,11 +156,11 @@ namespace System.Linq.Expressions
 
             if (field.IsStatic)
             {
-                if (expression != null) throw new ArgumentException(Strings.OnlyStaticFieldsHaveNullInstance, nameof(expression));
+                if (expression != null) throw Error.OnlyStaticFieldsHaveNullInstance(nameof(expression));
             }
             else
             {
-                if (expression == null) throw new ArgumentException(Strings.OnlyStaticFieldsHaveNullInstance, nameof(field));
+                if (expression == null) throw Error.OnlyStaticFieldsHaveNullInstance(nameof(field));
                 RequiresCanRead(expression, nameof(expression));
                 if (!TypeUtils.AreReferenceAssignable(field.DeclaringType, expression.Type))
                 {
@@ -304,11 +304,11 @@ namespace System.Linq.Expressions
 
             if (mi.IsStatic)
             {
-                if (expression != null) throw new ArgumentException(Strings.OnlyStaticPropertiesHaveNullInstance, nameof(expression));
+                if (expression != null) throw Error.OnlyStaticPropertiesHaveNullInstance(nameof(expression));
             }
             else
             {
-                if (expression == null) throw new ArgumentException(Strings.OnlyStaticPropertiesHaveNullInstance, nameof(property));
+                if (expression == null) throw Error.OnlyStaticPropertiesHaveNullInstance(nameof(property));
                 RequiresCanRead(expression, nameof(expression));
                 if (!TypeUtils.IsValidInstanceType(property, expression.Type))
                 {
@@ -332,7 +332,7 @@ namespace System.Linq.Expressions
             return Property(expression, GetProperty(propertyAccessor, nameof(propertyAccessor)));
         }
 
-        private static PropertyInfo GetProperty(MethodInfo mi, string paramName)
+        private static PropertyInfo GetProperty(MethodInfo mi, string paramName, int index = -1)
         {
             Type type = mi.DeclaringType;
             BindingFlags flags = BindingFlags.Public | BindingFlags.NonPublic;
@@ -349,7 +349,7 @@ namespace System.Linq.Expressions
                     return pi;
                 }
             }
-            throw Error.MethodNotPropertyAccessor(mi.DeclaringType, mi.Name, paramName);
+            throw Error.MethodNotPropertyAccessor(mi.DeclaringType, mi.Name, paramName, index);
         }
 
         private static bool CheckMethod(MethodInfo method, MethodInfo propertyMethod)

@@ -1,16 +1,16 @@
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <!-- Source of truth for dependency tooling: the commit hash of the dotnet/versions master branch as of the last auto-upgrade. -->
   <PropertyGroup>
-    <CoreFxCurrentRef>b4a6eb15a48473adef5506c606b431955409e087</CoreFxCurrentRef>
-    <CoreClrCurrentRef>b4a6eb15a48473adef5506c606b431955409e087</CoreClrCurrentRef>
-    <ExternalCurrentRef>b4a6eb15a48473adef5506c606b431955409e087</ExternalCurrentRef>
+    <CoreFxCurrentRef>9af3f57a71476e88e53a210111aa7c5217fa7d8e</CoreFxCurrentRef>
+    <CoreClrCurrentRef>6c43ba94713264be37d01321af15505e9229e508</CoreClrCurrentRef>
+    <ExternalCurrentRef>35f9fe6cd087265ea8bf9fcd47608aca2ab62efd</ExternalCurrentRef>
   </PropertyGroup>
 
   <!-- Auto-upgraded properties for each build info dependency. -->
   <PropertyGroup>
-    <CoreFxExpectedPrerelease>beta-24431-01</CoreFxExpectedPrerelease>
-    <CoreClrExpectedPrerelease>beta-24431-02</CoreClrExpectedPrerelease>
-    <ExternalExpectedPrerelease>beta-24431-00</ExternalExpectedPrerelease>
+    <CoreFxExpectedPrerelease>beta-24506-02</CoreFxExpectedPrerelease>
+    <CoreClrExpectedPrerelease>beta-24506-03</CoreClrExpectedPrerelease>
+    <ExternalExpectedPrerelease>beta-24506-00</ExternalExpectedPrerelease>
   </PropertyGroup>
 
   <!-- Full package version strings that are used in other parts of the build. -->

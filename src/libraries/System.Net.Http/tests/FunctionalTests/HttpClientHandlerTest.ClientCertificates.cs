@@ -46,6 +46,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [ConditionalFact(nameof(BackendDoesNotSupportCustomCertificateHandling))]
         public async Task Automatic_SSLBackendNotSupported_ThrowsPlatformNotSupportedException()
         {
@@ -55,6 +56,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [ConditionalFact(nameof(BackendDoesNotSupportCustomCertificateHandling))]
         public async Task Manual_SSLBackendNotSupported_ThrowsPlatformNotSupportedException()
         {
@@ -66,6 +68,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [ActiveIssue(9543, PlatformID.Windows)] // reuseClient==false fails in debug/release, reuseClient==true fails sporadically in release
         [ConditionalTheory(nameof(BackendSupportsCustomCertificateHandling))]
         [InlineData(6, false)]

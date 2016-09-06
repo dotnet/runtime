@@ -46,6 +46,8 @@
     <Compile Include="System\Xml\Serialization\Mappings.cs" />
     <Compile Include="System\Xml\Serialization\Models.cs" />
     <Compile Include="System\Xml\Serialization\NameTable.cs" />
+    <Compile Include="System\Xml\Serialization\ReflectionXmlSerializationReader.cs" />
+    <Compile Include="System\Xml\Serialization\ReflectionXmlSerializationWriter.cs" />
     <Compile Include="System\Xml\Serialization\Types.cs" />
     <Compile Include="System\Xml\Serialization\TypeCode.cs" />
     <Compile Include="System\Xml\Serialization\XmlAnyAttributeAttribute.cs" />

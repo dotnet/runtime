@@ -78,6 +78,25 @@ namespace System.Linq.Expressions.Tests
             yield return new object[] { Expression.Property(obj, typeof(PropertyAndFields), nameof(PropertyAndFields.StringProperty)), "d" };
         }
 
+        [Fact]
+        public static void BasicAssignmentExpressionTest()
+        {
+            var left = Expression.Parameter(typeof(int));
+            var right = Expression.Parameter(typeof(int));
+
+            BinaryExpression actual = Expression.Assign(left, right);
+
+            Assert.Same(left, actual.Left);
+            Assert.Same(right, actual.Right);
+            Assert.Null(actual.Conversion);
+
+            Assert.False(actual.IsLifted);
+            Assert.False(actual.IsLiftedToNull);
+
+            Assert.Equal(typeof(int), actual.Type);
+            Assert.Equal(ExpressionType.Assign, actual.NodeType);
+        }
+
         [Theory, ClassData(typeof(CompilationTypes))]
         public void SimpleAssignment(bool useInterpreter)
         {
@@ -179,6 +198,13 @@ namespace System.Linq.Expressions.Tests
         {
             ParameterExpression variable = Expression.Variable(writeOnlyExp.Type);
             Assert.Throws<ArgumentException>("right", () => Expression.Assign(variable, writeOnlyExp));
+        }
+
+        [Fact]
+        public static void ToStringTest()
+        {
+            var e = Expression.Assign(Expression.Parameter(typeof(int), "a"), Expression.Parameter(typeof(int), "b"));
+            Assert.Equal("(a = b)", e.ToString());
         }
     }
 }

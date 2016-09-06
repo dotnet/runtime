@@ -12,7 +12,6 @@ namespace System.Xml.Schema
     {
         private string _name;
 
-        /// <include file='doc\XmlSchemaType.uex' path='docs/doc[@for="XmlSchemaType.Name"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>

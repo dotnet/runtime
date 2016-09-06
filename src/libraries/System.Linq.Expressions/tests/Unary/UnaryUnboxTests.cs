@@ -21,6 +21,13 @@ namespace System.Linq.Expressions.Tests
             VerifyUnbox(null, typeof(int), true, useInterpreter);
         }
 
+        [Fact]
+        public static void ToStringTest()
+        {
+            var e = Expression.Unbox(Expression.Parameter(typeof(object), "x"), typeof(int));
+            Assert.Equal("Unbox(x)", e.ToString());
+        }
+
         #endregion
 
         #region Test verifiers

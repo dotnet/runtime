@@ -24,6 +24,7 @@ namespace System.Net.WebSockets.Client.Tests
 
         private static bool WebSocketsSupported { get { return WebSocketHelper.WebSocketsSupported; } }
 
+        [OuterLoop] // TODO: Issue #11345
         [ConditionalFact(nameof(WebSocketsSupported))]
         public void Ctor_Success()
         {
@@ -31,6 +32,7 @@ namespace System.Net.WebSockets.Client.Tests
             cws.Dispose();
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [ConditionalFact(nameof(WebSocketsSupported))]
         public void Abort_CreateAndAbort_StateIsClosed()
         {
@@ -42,6 +44,7 @@ namespace System.Net.WebSockets.Client.Tests
             }
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [ConditionalFact(nameof(WebSocketsSupported))]
         public void CloseAsync_CreateAndClose_ThrowsInvalidOperationException()
         {
@@ -54,6 +57,7 @@ namespace System.Net.WebSockets.Client.Tests
             }
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [ConditionalFact(nameof(WebSocketsSupported))]
         public void CloseAsync_CreateAndCloseOutput_ThrowsInvalidOperationExceptionWithMessage()
         {
@@ -68,6 +72,7 @@ namespace System.Net.WebSockets.Client.Tests
             }
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [ConditionalFact(nameof(WebSocketsSupported))]
         public void CloseAsync_CreateAndReceive_ThrowsInvalidOperationException()
         {
@@ -84,6 +89,7 @@ namespace System.Net.WebSockets.Client.Tests
             }
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [ConditionalFact(nameof(WebSocketsSupported))]
         public void CloseAsync_CreateAndReceive_ThrowsInvalidOperationExceptionWithMessage()
         {
@@ -101,6 +107,7 @@ namespace System.Net.WebSockets.Client.Tests
             }
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [ConditionalFact(nameof(WebSocketsSupported))]
         public void CloseAsync_CreateAndSend_ThrowsInvalidOperationException()
         {
@@ -117,6 +124,7 @@ namespace System.Net.WebSockets.Client.Tests
             }
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [ConditionalFact(nameof(WebSocketsSupported))]
         public void CloseAsync_CreateAndSend_ThrowsInvalidOperationExceptionWithMessage()
         {
@@ -134,6 +142,7 @@ namespace System.Net.WebSockets.Client.Tests
             }
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [ConditionalFact(nameof(WebSocketsSupported))]
         public void Ctor_ExpectedPropertyValues()
         {
@@ -148,6 +157,7 @@ namespace System.Net.WebSockets.Client.Tests
             }
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [ConditionalFact(nameof(WebSocketsSupported))]
         public void Abort_CreateAndDisposeAndAbort_StateIsClosedSuccess()
         {
@@ -158,6 +168,7 @@ namespace System.Net.WebSockets.Client.Tests
             Assert.Equal(WebSocketState.Closed, cws.State);
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [ConditionalFact(nameof(WebSocketsSupported))]
         public void CloseAsync_DisposeAndClose_ThrowsObjectDisposedException()
         {
@@ -170,6 +181,7 @@ namespace System.Net.WebSockets.Client.Tests
             Assert.Equal(WebSocketState.Closed, cws.State);
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [ConditionalFact(nameof(WebSocketsSupported))]
         public void CloseAsync_DisposeAndCloseOutput_ThrowsObjectDisposedExceptionWithMessage()
         {
@@ -186,6 +198,7 @@ namespace System.Net.WebSockets.Client.Tests
             Assert.Equal(WebSocketState.Closed, cws.State);
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [ConditionalFact(nameof(WebSocketsSupported))]
         public void ReceiveAsync_CreateAndDisposeAndReceive_ThrowsObjectDisposedExceptionWithMessage()
         {
@@ -205,6 +218,7 @@ namespace System.Net.WebSockets.Client.Tests
             Assert.Equal(WebSocketState.Closed, cws.State);
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [ConditionalFact(nameof(WebSocketsSupported))]
         public void SendAsync_CreateAndDisposeAndSend_ThrowsObjectDisposedExceptionWithMessage()
         {
@@ -224,6 +238,7 @@ namespace System.Net.WebSockets.Client.Tests
             Assert.Equal(WebSocketState.Closed, cws.State);
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [ConditionalFact(nameof(WebSocketsSupported))]
         public void Dispose_CreateAndDispose_ExpectedPropertyValues()
         {

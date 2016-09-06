@@ -16,6 +16,7 @@ namespace System.Net.Sockets.Tests
 
         private ManualResetEvent _waitHandle = new ManualResetEvent(false);
 
+        [OuterLoop] // TODO: Issue #11345
         [Fact]
         public void BeginSend_NegativeBytes_Throws()
         {
@@ -29,6 +30,7 @@ namespace System.Net.Sockets.Tests
             });
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [Fact]
         public void BeginSend_BytesMoreThanArrayLength_Throws()
         {
@@ -42,6 +44,7 @@ namespace System.Net.Sockets.Tests
             });
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [Fact]
         public void BeginSend_AsyncOperationCompletes_Success()
         {
@@ -54,6 +57,7 @@ namespace System.Net.Sockets.Tests
             Assert.True(_waitHandle.WaitOne(TestSettings.PassingTestTimeout), "Timed out while waiting for connection");
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [Fact]
         public void Client_Idempotent()
         {
@@ -65,6 +69,7 @@ namespace System.Net.Sockets.Tests
             }
         }
         
+        [OuterLoop] // TODO: Issue #11345
         [Fact]
         [ActiveIssue(9189, PlatformID.AnyUnix)]
         public async Task ConnectAsync_StringHost_Success()
@@ -75,6 +80,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [Fact]
         public async Task ConnectAsync_IPAddressHost_Success()
         {
@@ -84,6 +90,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [Fact]
         [ActiveIssue(9189, PlatformID.AnyUnix)]
         public void Connect_StringHost_Success()
@@ -94,6 +101,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [Fact]
         public void Connect_IPAddressHost_Success()
         {

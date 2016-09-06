@@ -23,6 +23,7 @@ namespace System.Net.Http.Functional.Tests
             _output = output;
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [Fact]
         public async Task GetStreamAsync_ReadToEnd_Success()
         {
@@ -43,6 +44,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [Fact]
         public async Task GetAsync_UseResponseHeadersReadAndCallLoadIntoBuffer_Success()
         {
@@ -61,6 +63,7 @@ namespace System.Net.Http.Functional.Tests
                 null);
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [Fact]
         public async Task GetAsync_UseResponseHeadersReadAndCopyToMemoryStream_Success()
         {
@@ -85,6 +88,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [Fact]
         public async Task ReadAsStreamAsync_Cancel_TaskIsCanceled()
         {
@@ -105,6 +109,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [Theory]
         [InlineData(LoopbackServer.TransferType.ContentLength, LoopbackServer.TransferError.ContentLengthTooLarge)]
         [InlineData(LoopbackServer.TransferType.Chunked, LoopbackServer.TransferError.MissingChunkTerminator)]
@@ -121,6 +126,7 @@ namespace System.Net.Http.Functional.Tests
             await serverTask;
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [Theory]
         [InlineData(LoopbackServer.TransferType.None, LoopbackServer.TransferError.None)]
         [InlineData(LoopbackServer.TransferType.ContentLength, LoopbackServer.TransferError.None)]

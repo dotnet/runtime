@@ -796,6 +796,7 @@ namespace System.Linq.Expressions
         public static BlockExpression Block(params Expression[] expressions)
         {
             ContractUtils.RequiresNotNull(expressions, nameof(expressions));
+            RequiresCanRead(expressions, nameof(expressions));
 
             return GetOptimizedBlockExpression(expressions);
         }
@@ -869,11 +870,18 @@ namespace System.Linq.Expressions
 
             if (variableList.Count == 0)
             {
-                return GetOptimizedBlockExpression(expressions as IReadOnlyList<Expression> ?? expressions.ToReadOnly());
-            }
+                var expressionList = expressions as IReadOnlyList<Expression> ?? expressions.ToReadOnly();
+                RequiresCanRead(expressionList, nameof(expressions));
 
-            var expressionList = expressions.ToReadOnly();
-            return BlockCore(null, variableList, expressionList);
+                return GetOptimizedBlockExpression(expressionList);
+            }
+            else
+            {
+                var expressionList = expressions.ToReadOnly();
+                RequiresCanRead(expressionList, nameof(expressions));
+
+                return BlockCore(null, variableList, expressionList);
+            }
         }
 
         /// <summary>
@@ -889,6 +897,8 @@ namespace System.Linq.Expressions
             ContractUtils.RequiresNotNull(expressions, nameof(expressions));
 
             var expressionList = expressions.ToReadOnly();
+            RequiresCanRead(expressionList, nameof(expressions));
+
             var variableList = variables.ToReadOnly();
 
             if (variableList.Count == 0 && expressionList.Count != 0)
@@ -898,8 +908,6 @@ namespace System.Linq.Expressions
                 if (expressionCount != 0)
                 {
                     var lastExpression = expressionList[expressionCount - 1];
-
-                    ContractUtils.RequiresNotNull(lastExpression, nameof(expressions));
 
                     if (lastExpression.Type == type)
                     {
@@ -913,7 +921,6 @@ namespace System.Linq.Expressions
 
         private static BlockExpression BlockCore(Type type, ReadOnlyCollection<ParameterExpression> variables, ReadOnlyCollection<Expression> expressions)
         {
-            RequiresCanRead(expressions, nameof(expressions));
             ValidateVariables(variables, nameof(variables));
 
             if (type != null)
@@ -963,17 +970,14 @@ namespace System.Linq.Expressions
                 for (int i = 0; i < count; i++)
                 {
                     ParameterExpression v = varList[i];
-                    if (v == null)
-                    {
-                        throw new ArgumentNullException(string.Format(System.Globalization.CultureInfo.CurrentCulture, "{0}[{1}]", collectionName, set.Count));
-                    }
+                    ContractUtils.RequiresNotNull(v, collectionName, i);
                     if (v.IsByRef)
                     {
-                        throw Error.VariableMustNotBeByRef(v, v.Type, $"{collectionName}[{i}]");
+                        throw Error.VariableMustNotBeByRef(v, v.Type, collectionName, i);
                     }
                     if (!set.Add(v))
                     {
-                        throw Error.DuplicateVariable(v, $"{collectionName}[{i}]");
+                        throw Error.DuplicateVariable(v, collectionName, i);
                     }
                 }
             }
@@ -981,7 +985,6 @@ namespace System.Linq.Expressions
 
         private static BlockExpression GetOptimizedBlockExpression(IReadOnlyList<Expression> expressions)
         {
-            RequiresCanRead(expressions, nameof(expressions));
             switch (expressions.Count)
             {
                 case 0: return BlockCore(typeof(void), EmptyReadOnlyCollection<ParameterExpression>.Instance, EmptyReadOnlyCollection<Expression>.Instance);
