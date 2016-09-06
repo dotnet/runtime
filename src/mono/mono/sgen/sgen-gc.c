@@ -1975,9 +1975,6 @@ major_finish_collection (SgenGrayQueue *gc_thread_gray_queue, const char *reason
 	reset_heap_boundaries ();
 	sgen_update_heap_boundaries ((mword)sgen_get_nursery_start (), (mword)sgen_get_nursery_end ());
 
-	if (whole_heap_check_before_collection)
-		sgen_check_whole_heap (FALSE);
-
 	/* walk the pin_queue, build up the fragment list of free memory, unmark
 	 * pinned objects as we go, memzero() the empty fragments so they are ready for the
 	 * next allocations.
