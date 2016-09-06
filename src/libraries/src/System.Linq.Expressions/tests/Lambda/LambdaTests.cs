@@ -201,14 +201,14 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public void NullParameter()
         {
-            Assert.Throws<ArgumentNullException>("parameters", () => Expression.Lambda<Func<int, int>>(Expression.Constant(0), default(ParameterExpression)));
-            Assert.Throws<ArgumentNullException>("parameters", () => Expression.Lambda<Func<int, int>>(Expression.Constant(0), true, default(ParameterExpression)));
-            Assert.Throws<ArgumentNullException>("parameters", () => Expression.Lambda<Func<int, int>>(Expression.Constant(0), true, Enumerable.Repeat(default(ParameterExpression), 1)));
-            Assert.Throws<ArgumentNullException>("parameters", () => Expression.Lambda<Func<int, int>>(Expression.Constant(0), "foo", Enumerable.Repeat(default(ParameterExpression), 1)));
-            Assert.Throws<ArgumentNullException>("parameters", () => Expression.Lambda(typeof(Func<int, int>), Expression.Constant(0), default(ParameterExpression)));
-            Assert.Throws<ArgumentNullException>("parameters", () => Expression.Lambda(typeof(Func<int, int>), Expression.Constant(0), true, default(ParameterExpression)));
-            Assert.Throws<ArgumentNullException>("parameters", () => Expression.Lambda(typeof(Func<int, int>), Expression.Constant(0), true, Enumerable.Repeat(default(ParameterExpression), 1)));
-            Assert.Throws<ArgumentNullException>("parameters", () => Expression.Lambda(typeof(Func<int, int>), Expression.Constant(0), "foo", Enumerable.Repeat(default(ParameterExpression), 1)));
+            Assert.Throws<ArgumentNullException>("parameters[0]", () => Expression.Lambda<Func<int, int>>(Expression.Constant(0), default(ParameterExpression)));
+            Assert.Throws<ArgumentNullException>("parameters[0]", () => Expression.Lambda<Func<int, int>>(Expression.Constant(0), true, default(ParameterExpression)));
+            Assert.Throws<ArgumentNullException>("parameters[0]", () => Expression.Lambda<Func<int, int>>(Expression.Constant(0), true, Enumerable.Repeat(default(ParameterExpression), 1)));
+            Assert.Throws<ArgumentNullException>("parameters[0]", () => Expression.Lambda<Func<int, int>>(Expression.Constant(0), "foo", Enumerable.Repeat(default(ParameterExpression), 1)));
+            Assert.Throws<ArgumentNullException>("parameters[0]", () => Expression.Lambda(typeof(Func<int, int>), Expression.Constant(0), default(ParameterExpression)));
+            Assert.Throws<ArgumentNullException>("parameters[0]", () => Expression.Lambda(typeof(Func<int, int>), Expression.Constant(0), true, default(ParameterExpression)));
+            Assert.Throws<ArgumentNullException>("parameters[0]", () => Expression.Lambda(typeof(Func<int, int>), Expression.Constant(0), true, Enumerable.Repeat(default(ParameterExpression), 1)));
+            Assert.Throws<ArgumentNullException>("parameters[0]", () => Expression.Lambda(typeof(Func<int, int>), Expression.Constant(0), "foo", Enumerable.Repeat(default(ParameterExpression), 1)));
         }
 
         [Fact]

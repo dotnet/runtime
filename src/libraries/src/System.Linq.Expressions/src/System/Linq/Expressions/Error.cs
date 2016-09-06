@@ -68,6 +68,13 @@ namespace System.Linq.Expressions
             return new ArgumentException(Strings.AccessorsCannotHaveByRefArgs, paramName);
         }
         /// <summary>
+        /// ArgumentException with message like "Accessor indexes cannot be passed ByRef."
+        /// </summary>
+        internal static Exception AccessorsCannotHaveByRefArgs(string paramName, int index)
+        {
+            return AccessorsCannotHaveByRefArgs(GetParamName(paramName, index));
+        }
+        /// <summary>
         /// ArgumentException with message like "Bounds count cannot be less than 1"
         /// </summary>
         internal static Exception BoundsCannotBeLessThanOne(string paramName)
@@ -119,6 +126,20 @@ namespace System.Linq.Expressions
             return new ArgumentException(Strings.BothAccessorsMustBeStatic, paramName);
         }
         /// <summary>
+        /// ArgumentException with message like "Static field requires null instance, non-static field requires non-null instance."
+        /// </summary>
+        internal static Exception OnlyStaticFieldsHaveNullInstance(string paramName)
+        {
+            return new ArgumentException(Strings.OnlyStaticFieldsHaveNullInstance, paramName);
+        }
+        /// <summary>
+        /// ArgumentException with message like "Static property requires null instance, non-static property requires non-null instance."
+        /// </summary>
+        internal static Exception OnlyStaticPropertiesHaveNullInstance(string paramName)
+        {
+            return new ArgumentException(Strings.OnlyStaticPropertiesHaveNullInstance, paramName);
+        }   
+        /// <summary>
         /// ArgumentException with message like "Static method requires null instance, non-static method requires non-null instance."
         /// </summary>
         internal static Exception OnlyStaticMethodsHaveNullInstance()
@@ -140,6 +161,13 @@ namespace System.Linq.Expressions
             return new ArgumentException(Strings.InvalidUnboxType, paramName);
         }
         /// <summary>
+        /// ArgumentException with message like "Expression must be writeable"
+        /// </summary>
+        internal static Exception ExpressionMustBeWriteable(string paramName)
+        {
+            return new ArgumentException(Strings.ExpressionMustBeWriteable, paramName);
+        }
+        /// <summary>
         /// ArgumentException with message like "Argument must not have a value type."
         /// </summary>
         internal static Exception ArgumentMustNotHaveValueType(string paramName)
@@ -152,6 +180,20 @@ namespace System.Linq.Expressions
         internal static Exception MustBeReducible()
         {
             return new ArgumentException(Strings.MustBeReducible);
+        }
+        /// <summary>
+        /// ArgumentException with message like "All test values must have the same type."
+        /// </summary>
+        internal static Exception AllTestValuesMustHaveSameType(string paramName)
+        {
+            return new ArgumentException(Strings.AllTestValuesMustHaveSameType, paramName);
+        }
+        /// <summary>
+        /// ArgumentException with message like "All case bodies and the default body must have the same type."
+        /// </summary>
+        internal static Exception AllCaseBodiesMustHaveSameType(string paramName)
+        {
+            return new ArgumentException(Strings.AllCaseBodiesMustHaveSameType, paramName);
         }
         /// <summary>
         /// ArgumentException with message like "Default body must be supplied if case bodies are not System.Void."
@@ -189,11 +231,25 @@ namespace System.Linq.Expressions
             return new ArgumentException(Strings.VariableMustNotBeByRef(p0, p1), paramName);
         }
         /// <summary>
+        /// ArgumentException with message like "Variable '{0}' uses unsupported type '{1}'. Reference types are not supported for variables."
+        /// </summary>
+        internal static Exception VariableMustNotBeByRef(object p0, object p1, string paramName, int index)
+        {
+            return VariableMustNotBeByRef(p0, p1, GetParamName(paramName, index));
+        }
+        /// <summary>
         /// ArgumentException with message like "Found duplicate parameter '{0}'. Each ParameterExpression in the list must be a unique object."
         /// </summary>
         internal static Exception DuplicateVariable(object p0, string paramName)
         {
             return new ArgumentException(Strings.DuplicateVariable(p0), paramName);
+        }
+        /// <summary>
+        /// ArgumentException with message like "Found duplicate parameter '{0}'. Each ParameterExpression in the list must be a unique object."
+        /// </summary>
+        internal static Exception DuplicateVariable(object p0, string paramName, int index)
+        {
+            return DuplicateVariable(p0, GetParamName(paramName, index));
         }
         /// <summary>
         /// ArgumentException with message like "Start and End must be well ordered"
@@ -329,11 +385,25 @@ namespace System.Linq.Expressions
             return new ArgumentException(Strings.ArgumentMustBeFieldInfoOrPropertyInfoOrMethod, paramName);
         }
         /// <summary>
+        /// ArgumentException with message like "Argument must be either a FieldInfo, PropertyInfo or MethodInfo"
+        /// </summary>
+        internal static Exception ArgumentMustBeFieldInfoOrPropertyInfoOrMethod(string paramName, int index)
+        {
+            return ArgumentMustBeFieldInfoOrPropertyInfoOrMethod(GetParamName(paramName, index));
+        }
+        /// <summary>
         /// ArgumentException with message like "Argument must be an instance member"
         /// </summary>
         internal static Exception ArgumentMustBeInstanceMember(string paramName)
         {
             return new ArgumentException(Strings.ArgumentMustBeInstanceMember, paramName);
+        }
+        /// <summary>
+        /// ArgumentException with message like "Argument must be an instance member"
+        /// </summary>
+        internal static Exception ArgumentMustBeInstanceMember(string paramName, int index)
+        {
+            return ArgumentMustBeInstanceMember(GetParamName(paramName, index));
         }
         /// <summary>
         /// ArgumentException with message like "Argument must be of an integer type"
@@ -343,11 +413,25 @@ namespace System.Linq.Expressions
             return new ArgumentException(Strings.ArgumentMustBeInteger, paramName);
         }
         /// <summary>
+        /// ArgumentException with message like "Argument must be of an integer type"
+        /// </summary>
+        internal static Exception ArgumentMustBeInteger(string paramName, int index)
+        {
+            return ArgumentMustBeInteger(GetParamName(paramName, index));
+        }
+        /// <summary>
         /// ArgumentException with message like "Argument for array index must be of type Int32"
         /// </summary>
         internal static Exception ArgumentMustBeArrayIndexType(string paramName)
         {
             return new ArgumentException(Strings.ArgumentMustBeArrayIndexType, paramName);
+        }
+        /// <summary>
+        /// ArgumentException with message like "Argument for array index must be of type Int32"
+        /// </summary>
+        internal static Exception ArgumentMustBeArrayIndexType(string paramName, int index)
+        {
+            return ArgumentMustBeArrayIndexType(GetParamName(paramName, index));
         }
         /// <summary>
         /// ArgumentException with message like "Argument must be single dimensional array type"
@@ -362,6 +446,13 @@ namespace System.Linq.Expressions
         internal static Exception ArgumentTypesMustMatch()
         {
             return new ArgumentException(Strings.ArgumentTypesMustMatch);
+        }
+        /// <summary>
+        /// ArgumentException with message like "Argument types do not match"
+        /// </summary>
+        internal static Exception ArgumentTypesMustMatch(string paramName)
+        {
+            return new ArgumentException(Strings.ArgumentTypesMustMatch, paramName);
         }
         /// <summary>
         /// InvalidOperationException with message like "Cannot auto initialize elements of value type through property '{0}', use assignment instead"
@@ -406,11 +497,25 @@ namespace System.Linq.Expressions
             return Dynamic.Utils.Error.ExpressionTypeDoesNotMatchConstructorParameter(p0, p1, paramName);
         }
         /// <summary>
+        /// ArgumentException with message like "Expression of type '{0}' cannot be used for constructor parameter of type '{1}'"
+        /// </summary>
+        internal static Exception ExpressionTypeDoesNotMatchConstructorParameter(object p0, object p1, string paramName, int index)
+        {
+            return Dynamic.Utils.Error.ExpressionTypeDoesNotMatchConstructorParameter(p0, p1, paramName, index);
+        }
+        /// <summary>
         /// ArgumentException with message like " Argument type '{0}' does not match the corresponding member type '{1}'"
         /// </summary>
-        internal static Exception ArgumentTypeDoesNotMatchMember(object p0, object p1)
+        internal static Exception ArgumentTypeDoesNotMatchMember(object p0, object p1, string paramName)
         {
-            return new ArgumentException(Strings.ArgumentTypeDoesNotMatchMember(p0, p1));
+            return new ArgumentException(Strings.ArgumentTypeDoesNotMatchMember(p0, p1), paramName);
+        }
+        /// <summary>
+        /// ArgumentException with message like " Argument type '{0}' does not match the corresponding member type '{1}'"
+        /// </summary>
+        internal static Exception ArgumentTypeDoesNotMatchMember(object p0, object p1, string paramName, int index)
+        {
+            return ArgumentTypeDoesNotMatchMember(p0, p1, GetParamName(paramName, index));
         }
         /// <summary>
         /// ArgumentException with message like " The member '{0}' is not declared on type '{1}' being created"
@@ -420,11 +525,18 @@ namespace System.Linq.Expressions
             return new ArgumentException(Strings.ArgumentMemberNotDeclOnType(p0, p1), paramName);
         }
         /// <summary>
+        /// ArgumentException with message like " The member '{0}' is not declared on type '{1}' being created"
+        /// </summary>
+        internal static Exception ArgumentMemberNotDeclOnType(object p0, object p1, string paramName, int index)
+        {
+            return ArgumentMemberNotDeclOnType(p0, p1, GetParamName(paramName, index));
+        }
+        /// <summary>
         /// ArgumentException with message like "Expression of type '{0}' cannot be used for parameter of type '{1}' of method '{2}'"
         /// </summary>
-        internal static Exception ExpressionTypeDoesNotMatchMethodParameter(object p0, object p1, object p2)
+        internal static Exception ExpressionTypeDoesNotMatchMethodParameter(object p0, object p1, object p2, string paramName, int index)
         {
-            return Dynamic.Utils.Error.ExpressionTypeDoesNotMatchMethodParameter(p0, p1, p2);
+            return Dynamic.Utils.Error.ExpressionTypeDoesNotMatchMethodParameter(p0, p1, p2, paramName, index);
         }
         /// <summary>
         /// ArgumentException with message like "Expression of type '{0}' cannot be used for return type '{1}'"
@@ -553,11 +665,25 @@ namespace System.Linq.Expressions
             return new ArgumentException(Strings.MethodNotPropertyAccessor(p0, p1), paramName);
         }
         /// <summary>
+        /// ArgumentException with message like "The method '{0}.{1}' is not a property accessor"
+        /// </summary>
+        internal static Exception MethodNotPropertyAccessor(object p0, object p1, string paramName, int index)
+        {
+            return MethodNotPropertyAccessor(p0, p1, GetParamName(paramName, index));
+        }
+        /// <summary>
         /// ArgumentException with message like "The property '{0}' has no 'get' accessor"
         /// </summary>
         internal static Exception PropertyDoesNotHaveGetter(object p0, string paramName)
         {
             return new ArgumentException(Strings.PropertyDoesNotHaveGetter(p0), paramName);
+        }
+        /// <summary>
+        /// ArgumentException with message like "The property '{0}' has no 'get' accessor"
+        /// </summary>
+        internal static Exception PropertyDoesNotHaveGetter(object p0, string paramName, int index)
+        {
+            return PropertyDoesNotHaveGetter(p0, GetParamName(paramName, index));
         }
         /// <summary>
         /// ArgumentException with message like "The property '{0}' has no 'set' accessor"
@@ -579,6 +705,13 @@ namespace System.Linq.Expressions
         internal static Exception NotAMemberOfType(object p0, object p1, string paramName)
         {
             return new ArgumentException(Strings.NotAMemberOfType(p0, p1), paramName);
+        }
+        /// <summary>
+        /// ArgumentException with message like "'{0}' is not a member of type '{1}'"
+        /// </summary>
+        internal static Exception NotAMemberOfType(object p0, object p1, string paramName, int index)
+        {
+            return NotAMemberOfType(p0, p1, GetParamName(paramName, index));
         }
         /// <summary>
         /// PlatformNotSupportedException with message like "The instruction '{0}' is not supported for type '{1}'"
@@ -721,13 +854,6 @@ namespace System.Linq.Expressions
         internal static Exception UnhandledConvert(object p0)
         {
             return new ArgumentException(Strings.UnhandledConvert(p0));
-        }
-        /// <summary>
-        /// ArgumentException with message like "Unhandled Expression Type: {0}"
-        /// </summary>
-        internal static Exception UnhandledExpressionType(object p0)
-        {
-            return new ArgumentException(Strings.UnhandledExpressionType(p0));
         }
         /// <summary>
         /// ArgumentException with message like "Unhandled unary: {0}"
@@ -890,6 +1016,7 @@ namespace System.Linq.Expressions
         {
             return new InvalidOperationException(Strings.ExtensionNotReduced);
         }
+#if FEATURE_COMPILE_TO_METHODBUILDER
         /// <summary>
         /// InvalidOperationException with message like "CompileToMethod cannot compile constant '{0}' because it is a non-trivial value, such as a live object. Instead, create an expression tree that can construct this value."
         /// </summary>
@@ -904,6 +1031,14 @@ namespace System.Linq.Expressions
         {
             return new NotSupportedException(Strings.CannotCompileDynamic);
         }
+        /// <summary>
+        /// ArgumentException with message like "MethodBuilder does not have a valid TypeBuilder"
+        /// </summary>
+        internal static Exception MethodBuilderDoesNotHaveTypeBuilder()
+        {
+            return new ArgumentException(Strings.MethodBuilderDoesNotHaveTypeBuilder);
+        }
+#endif
         /// <summary>
         /// InvalidOperationException with message like "Invalid lvalue for assignment: {0}."
         /// </summary>
@@ -1004,13 +1139,6 @@ namespace System.Linq.Expressions
         }
 
         /// <summary>
-        /// InvalidOperationException with message like "Dynamic operations can only be performed in homogeneous AppDomain."
-        /// </summary>
-        internal static Exception HomogeneousAppDomainRequired()
-        {
-            return new InvalidOperationException(Strings.HomogeneousAppDomainRequired);
-        }
-        /// <summary>
         /// ArgumentException with message like "Test value of type '{0}' cannot be used for the comparison method parameter of type '{1}'"
         /// </summary>
         internal static Exception TestValueTypeDoesNotMatchComparisonMethodParameter(object p0, object p1)
@@ -1024,6 +1152,8 @@ namespace System.Linq.Expressions
         {
             return new ArgumentException(Strings.SwitchValueTypeDoesNotMatchComparisonMethodParameter(p0, p1));
         }
+
+#if FEATURE_COMPILE_TO_METHODBUILDER && FEATURE_PDB_GENERATOR
         /// <summary>
         /// NotSupportedException with message like "DebugInfoGenerator created by CreatePdbGenerator can only be used with LambdaExpression.CompileToMethod."
         /// </summary>
@@ -1031,6 +1161,7 @@ namespace System.Linq.Expressions
         {
             return new NotSupportedException(Strings.PdbGeneratorNeedsExpressionCompiler);
         }
+#endif
 
         /// <summary>
         /// The exception that is thrown when the value of an argument is outside the allowable range of values as defined by the invoked method.
@@ -1077,6 +1208,16 @@ namespace System.Linq.Expressions
         internal static Exception InvalidProgram()
         {
             return new InvalidProgramException();
+        }
+
+        private static string GetParamName(string paramName, int index)
+        {
+            if (index >= 0)
+            {
+                return $"{paramName}[{index}]";
+            }
+
+            return paramName;
         }
     }
 }

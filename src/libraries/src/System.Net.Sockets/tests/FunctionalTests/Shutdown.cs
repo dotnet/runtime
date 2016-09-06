@@ -58,6 +58,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [Fact]
         public void Shutdown_TCP_CLOSED_Success()
         {

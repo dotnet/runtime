@@ -4,7 +4,6 @@
 
 namespace System.ComponentModel
 {
-    /// <include file='doc\AttributeProviderAttribute.uex' path='docs/doc[@for="AttributeProviderAttribute"]/*' />
     /// <summary>
     /// </summary>
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1813:AvoidUnsealedAttributes")]
@@ -14,7 +13,6 @@ namespace System.ComponentModel
         private readonly string _typeName;
         private readonly string _propertyName;
 
-        /// <include file='doc\AttributeProviderAttribute.uex' path='docs/doc[@for="AttributeProviderAttribute.AttributeProviderAttribute"]/*' />
         /// <summary>
         ///     Creates a new AttributeProviderAttribute object.
         /// </summary>
@@ -28,7 +26,6 @@ namespace System.ComponentModel
             _typeName = typeName;
         }
 
-        /// <include file='doc\AttributeProviderAttribute.uex' path='docs/doc[@for="AttributeProviderAttribute.AttributeProviderAttribute"]/*' />
         /// <summary>
         ///     Creates a new AttributeProviderAttribute object.
         /// </summary>
@@ -47,7 +44,6 @@ namespace System.ComponentModel
             _propertyName = propertyName;
         }
 
-        /// <include file='doc\AttributeProviderAttribute.uex' path='docs/doc[@for="AttributeProviderAttribute.AttributeProviderAttribute1"]/*' />
         /// <summary>
         ///     Creates a new AttributeProviderAttribute object.
         /// </summary>
@@ -61,7 +57,6 @@ namespace System.ComponentModel
             _typeName = type.AssemblyQualifiedName;
         }
 
-        /// <include file='doc\AttributeProviderAttribute.uex' path='docs/doc[@for="AttributeProviderAttribute.TypeName"]/*' />
         /// <summary>
         ///     The TypeName property returns the assembly qualified type name 
         ///     passed into the constructor.
@@ -74,7 +69,6 @@ namespace System.ComponentModel
             }
         }
 
-        /// <include file='doc\AttributeProviderAttribute.uex' path='docs/doc[@for="AttributeProviderAttribute.TypeName"]/*' />
         /// <summary>
         ///     The TypeName property returns the property name that will be used to query attributes from.
         /// </summary>

@@ -115,7 +115,7 @@ namespace System.IO.MemoryMappedFiles.Tests
             // on what backing store is being used.
             Assert.Throws<IOException>(() =>
             {
-                using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew(null, long.MaxValue))
+                using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew(null, (IntPtr.Size == 4) ? uint.MaxValue : long.MaxValue))
                 {
                     mmf.CreateViewAccessor().Dispose();
                 }

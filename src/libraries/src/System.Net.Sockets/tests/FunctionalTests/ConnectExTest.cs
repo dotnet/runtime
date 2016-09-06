@@ -25,6 +25,7 @@ namespace System.Net.Sockets.Tests
             complete.Set();
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [Theory]
         [InlineData(SocketImplementationType.APM)]
         [InlineData(SocketImplementationType.Async)]
@@ -76,7 +77,8 @@ namespace System.Net.Sockets.Tests
 
         #region GC Finalizer test
         // This test assumes sequential execution of tests and that it is going to be executed after other tests
-        // that used Sockets. 
+        // that used Sockets.
+        [OuterLoop] // TODO: Issue #11345
         [Fact]
         public void TestFinalizers()
         {

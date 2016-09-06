@@ -1711,7 +1711,6 @@ nameof(binaryForm));
                 const int AccessDenied = 0;
                 const int AccessAllowed = 1;
                 const int Inherited = 2;
-                const int Unknown = 3;
 
                 int currentStage = AccessDenied;
 
@@ -1723,7 +1722,7 @@ nameof(binaryForm));
 
                 for ( int i = 0; i < _acl.Count; i++ )
                 {
-                    int aceStage = Unknown;
+                    int aceStage;
 
                     GenericAce ace = _acl[i];
 
@@ -1763,11 +1762,6 @@ nameof(binaryForm));
                         }
                     }
 
-                    if ( aceStage == Unknown )
-                    {
-                        continue;
-                    }
-
                     if ( aceStage > currentStage )
                     {
                         currentStage = aceStage;
@@ -1787,7 +1781,6 @@ nameof(binaryForm));
 
                 const int Explicit = 0;
                 const int Inherited = 1;
-                const int Unknown = 2;
 
                 int currentStage = Explicit;
 
@@ -1799,7 +1792,7 @@ nameof(binaryForm));
 
                 for ( int i = 0; i < _acl.Count; i++ )
                 {
-                    int aceStage = Unknown;
+                    int aceStage;
 
                     GenericAce ace = _acl[i];
 

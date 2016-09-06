@@ -12,7 +12,6 @@ namespace System.Xml.Serialization
     using System.ComponentModel;
     using System.Collections.Generic;
 
-    /// <include file='doc\XmlAttributeOverrides.uex' path='docs/doc[@for="XmlAttributeOverrides"]/*' />
     /// <devdoc>
     ///    <para>[To be supplied.]</para>
     /// </devdoc>
@@ -20,7 +19,6 @@ namespace System.Xml.Serialization
     {
         private readonly Dictionary<Type, Dictionary<string, XmlAttributes>> _types = new Dictionary<Type, Dictionary<string, XmlAttributes>>();
 
-        /// <include file='doc\XmlAttributeOverrides.uex' path='docs/doc[@for="XmlAttributeOverrides.Add"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -29,7 +27,6 @@ namespace System.Xml.Serialization
             Add(type, string.Empty, attributes);
         }
 
-        /// <include file='doc\XmlAttributeOverrides.uex' path='docs/doc[@for="XmlAttributeOverrides.Add1"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -48,7 +45,6 @@ namespace System.Xml.Serialization
             members.Add(member, attributes);
         }
 
-        /// <include file='doc\XmlAttributeOverrides.uex' path='docs/doc[@for="XmlAttributeOverrides.this"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -60,7 +56,6 @@ namespace System.Xml.Serialization
             }
         }
 
-        /// <include file='doc\XmlAttributeOverrides.uex' path='docs/doc[@for="XmlAttributeOverrides.this1"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>

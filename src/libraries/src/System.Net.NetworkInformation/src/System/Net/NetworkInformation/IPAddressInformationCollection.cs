@@ -19,7 +19,6 @@ namespace System.Net.NetworkInformation
             _addresses.CopyTo(array, offset);
         }
 
-        /// <include file='doc\HttpListenerPrefixCollection.uex' path='docs/doc[@for="HttpListenerPrefixCollection.Count"]/*' />
         public virtual int Count
         {
             get
