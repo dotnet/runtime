@@ -1994,7 +1994,7 @@ public:
 
     unsigned gtHashValue(GenTree* tree);
 
-    unsigned gtSetListOrder(GenTree* list, bool regs);
+    unsigned gtSetListOrder(GenTree* list, bool regs, bool isListCallArgs);
 
     void gtWalkOp(GenTree** op1, GenTree** op2, GenTree* adr, bool constOnly);
 
@@ -4201,6 +4201,7 @@ public:
     void fgDebugCheckLinks(bool morphTrees = false);
     void fgDebugCheckNodeLinks(BasicBlock* block, GenTreePtr stmt);
     void fgDebugCheckFlags(GenTreePtr tree);
+    void fgDebugCheckFlagsHelper(GenTreePtr tree, unsigned treeFlags, unsigned chkFlags);
 #endif
 
 #ifdef LEGACY_BACKEND
