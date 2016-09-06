@@ -33,8 +33,9 @@ endif()
 set(ENABLE_LLDBPLUGIN ${CLR_CMAKE_PLATFORM_UNIX} CACHE BOOL "Enable building the SOS plugin for LLDB.")
 set(REQUIRE_LLDBPLUGIN ${CLR_CMAKE_PLATFORM_LINUX} CACHE BOOL "Require building the SOS plugin for LLDB.")
 
-set(WITH_LLDB_LIBS "" CACHE PATH "Path to LLDB libraries")
-set(WITH_LLDB_INCLUDES "" CACHE PATH "Path to LLDB headers")
+set(LLVM_HOST_DIR "$ENV{LLVM_HOME}")
+set(WITH_LLDB_LIBS "${LLVM_HOST_DIR}/lib" CACHE PATH "Path to LLDB libraries")
+set(WITH_LLDB_INCLUDES "${LLVM_HOST_DIR}/include" CACHE PATH "Path to LLDB headers")
 
 if(NOT ENABLE_LLDBPLUGIN)
     return()
