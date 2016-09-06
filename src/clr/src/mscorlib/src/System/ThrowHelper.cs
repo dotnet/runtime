@@ -47,6 +47,12 @@ namespace System {
                                                     Environment.GetResourceString(GetResourceName(ExceptionResource.ArgumentOutOfRange_Index)));
         }
 
+        internal static void ThrowIndexArgumentOutOfRange_NeedNonNegNumException() {
+            throw new ArgumentOutOfRangeException(
+                        GetArgumentName(ExceptionArgument.index),
+                        Environment.GetResourceString(GetResourceName(ExceptionResource.ArgumentOutOfRange_NeedNonNegNum)));
+        }
+
         internal static void ThrowWrongKeyTypeArgumentException(object key, Type targetType) {
             throw new ArgumentException(Environment.GetResourceString("Arg_WrongType", key, targetType), "key");
         }
@@ -86,8 +92,17 @@ namespace System {
                                                     Environment.GetResourceString(GetResourceName(resource)));
         }
 
+        internal static void ThrowArgumentOutOfRangeException(ExceptionArgument argument, int paramNumber, ExceptionResource resource) {
+            throw new ArgumentOutOfRangeException(GetArgumentName(argument) + "[" + paramNumber.ToString() + "]",
+                                                    Environment.GetResourceString(GetResourceName(resource)));
+        }
+
         internal static void ThrowInvalidOperationException(ExceptionResource resource) {
             throw new InvalidOperationException(Environment.GetResourceString(GetResourceName(resource)));
+        }
+
+        internal static void ThrowInvalidOperationException(ExceptionResource resource, Exception e) {
+            throw new InvalidOperationException(Environment.GetResourceString(GetResourceName(resource)), e);
         }
 
         internal static void ThrowSerializationException(ExceptionResource resource) {
@@ -96,6 +111,10 @@ namespace System {
 
         internal static void  ThrowSecurityException(ExceptionResource resource) {
             throw new System.Security.SecurityException(Environment.GetResourceString(GetResourceName(resource)));
+        }
+
+        internal static void ThrowRankException(ExceptionResource resource) {
+            throw new RankException(Environment.GetResourceString(GetResourceName(resource)));
         }
 
         internal static void ThrowNotSupportedException(ExceptionResource resource) {
@@ -178,6 +197,27 @@ namespace System {
         action,
         comparison,
         offset,
+        newSize,
+        elementType,
+        length,
+        length1,
+        length2,
+        length3,
+        lengths,
+        len,
+        lowerBounds,
+        sourceArray,
+        destinationArray,
+        sourceIndex,
+        destinationIndex,
+        indices,
+        index1,
+        index2,
+        index3,
+        other,
+        comparer,
+        endIndex,
+        keys,
 
     }
 
@@ -234,6 +274,21 @@ namespace System {
         Argument_InvalidRegistryOptionsCheck,
         Argument_InvalidRegistryViewCheck,
         InvalidOperation_NullArray,
+        Arg_MustBeType,
+        Arg_NeedAtLeast1Rank,
+        ArgumentOutOfRange_HugeArrayNotSupported,
+        Arg_RanksAndBounds,
+        Arg_RankIndices,
+        Arg_Need1DArray,
+        Arg_Need2DArray,
+        Arg_Need3DArray,
+        NotSupported_FixedSizeCollection,
+        ArgumentException_OtherNotArrayOfCorrectLength,
+        Rank_MultiDimNotSupported,
+        InvalidOperation_IComparerFailed,
+        ArgumentOutOfRange_EndIndexStartIndex,
+        Arg_LowerBoundsMustMatch,
+        Arg_BogusIComparer,
 
     }
 }
