@@ -26,6 +26,7 @@ namespace System.Reflection.Tests
         public void Properties(string name, FieldAttributes attributes, Type fieldType)
         {
             FieldInfo field = Helpers.GetField(typeof(FI_BaseClass), name);
+            Assert.Equal(name, field.Name);
             Assert.Equal(attributes, field.Attributes);
 
             Assert.Equal((attributes & FieldAttributes.FieldAccessMask) == FieldAttributes.Assembly, field.IsAssembly);
@@ -39,6 +40,8 @@ namespace System.Reflection.Tests
             Assert.Equal((attributes & FieldAttributes.Static) != 0, field.IsStatic);
 
             Assert.Equal(fieldType, field.FieldType);
+            Assert.Equal(typeof(FI_BaseClass), field.DeclaringType);
+            Assert.Equal(field.DeclaringType.GetTypeInfo().Module, field.Module);
             Assert.Equal(MemberTypes.Field, field.MemberType);
         }
 
