@@ -567,5 +567,15 @@ namespace System.Linq.Expressions.Tests
             Expression value = Expression.Property(null, typeof(Unreadable<int>), "WriteOnly");
             Assert.Throws<ArgumentException>("right", () => Expression.MultiplyChecked(Expression.Constant(1), value));
         }
+
+        [Fact]
+        public static void ToStringTest()
+        {
+            var e1 = Expression.Multiply(Expression.Parameter(typeof(int), "a"), Expression.Parameter(typeof(int), "b"));
+            Assert.Equal("(a * b)", e1.ToString());
+
+            var e2 = Expression.MultiplyChecked(Expression.Parameter(typeof(int), "a"), Expression.Parameter(typeof(int), "b"));
+            Assert.Equal("(a * b)", e2.ToString());
+        }
     }
 }

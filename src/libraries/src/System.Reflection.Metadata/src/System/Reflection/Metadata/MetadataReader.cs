@@ -16,7 +16,6 @@ namespace System.Reflection.Metadata
     /// </summary>
     public sealed partial class MetadataReader
     {
-        internal readonly MetadataStringDecoder Utf8Decoder;
         internal readonly NamespaceCache NamespaceCache;
         internal readonly MemoryBlock Block;
 
@@ -96,7 +95,7 @@ namespace System.Reflection.Metadata
             this.Block = new MemoryBlock(metadata, length);
 
             _options = options;
-            this.Utf8Decoder = utf8Decoder;
+            this.UTF8Decoder = utf8Decoder;
 
             var headerReader = new BlobReader(this.Block);
             this.ReadMetadataHeader(ref headerReader, out _versionString);
@@ -206,7 +205,7 @@ namespace System.Reflection.Metadata
             }
 
             int numberOfBytesRead;
-            versionString = memReader.GetMemoryBlockAt(0, versionStringSize).PeekUtf8NullTerminated(0, null, Utf8Decoder, out numberOfBytesRead, '\0');
+            versionString = memReader.GetMemoryBlockAt(0, versionStringSize).PeekUtf8NullTerminated(0, null, UTF8Decoder, out numberOfBytesRead, '\0');
             memReader.SkipBytes(versionStringSize);
         }
 
@@ -1020,6 +1019,11 @@ namespace System.Reflection.Metadata
         public MetadataStringComparer StringComparer => new MetadataStringComparer(this);
 
         /// <summary>
+        /// The decoder used by the reader to produce <see cref="string"/> instances from UTF8 encoded byte sequences.
+        /// </summary>
+        public MetadataStringDecoder UTF8Decoder { get; }
+
+        /// <summary>
         /// Returns true if the metadata represent an assembly.
         /// </summary>
         public bool IsAssembly => AssemblyTable.NumberOfRows == 1;
@@ -1057,14 +1061,14 @@ namespace System.Reflection.Metadata
 
         public string GetString(StringHandle handle)
         {
-            return StringHeap.GetString(handle, Utf8Decoder);
+            return StringHeap.GetString(handle, UTF8Decoder);
         }
 
         public string GetString(NamespaceDefinitionHandle handle)
         {
             if (handle.HasFullName)
             {
-                return StringHeap.GetString(handle.GetFullName(), Utf8Decoder);
+                return StringHeap.GetString(handle.GetFullName(), UTF8Decoder);
             }
 
             return NamespaceCache.GetFullName(handle);

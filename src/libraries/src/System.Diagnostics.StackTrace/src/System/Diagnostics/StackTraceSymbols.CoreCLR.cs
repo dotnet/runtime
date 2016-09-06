@@ -13,31 +13,14 @@ namespace System.Diagnostics
 {
     internal class StackTraceSymbols : IDisposable
     {
-        private sealed class OpenedReader : IDisposable
-        {
-            public readonly MetadataReaderProvider Provider;
-            public readonly MetadataReader Reader;
-
-            public OpenedReader(MetadataReaderProvider provider, MetadataReader reader)
-            {
-                Debug.Assert(provider != null);
-                Debug.Assert(reader != null);
-
-                Provider = provider;
-                Reader = reader;
-            }
-
-            public void Dispose() => Provider.Dispose();
-        }
-
-        private readonly Dictionary<IntPtr, OpenedReader> _readerCache;
+        private readonly Dictionary<IntPtr, MetadataReaderProvider> _metadataCache;
 
         /// <summary>
         /// Create an instance of this class.
         /// </summary>
         public StackTraceSymbols()
         {
-            _readerCache = new Dictionary<IntPtr, OpenedReader>();
+            _metadataCache = new Dictionary<IntPtr, MetadataReaderProvider>();
         }
 
         /// <summary>
@@ -45,12 +28,12 @@ namespace System.Diagnostics
         /// </summary>
         void IDisposable.Dispose()
         {
-            foreach (OpenedReader reader in _readerCache.Values)
+            foreach (MetadataReaderProvider provider in _metadataCache.Values)
             {
-                reader.Dispose();
+                provider.Dispose();
             }
 
-            _readerCache.Clear();
+            _metadataCache.Clear();
         }
 
         /// <summary>
@@ -74,7 +57,7 @@ namespace System.Diagnostics
             sourceLine = 0;
             sourceColumn = 0;
 
-            MetadataReader reader = GetReader(assemblyPath, loadedPeAddress, loadedPeSize, inMemoryPdbAddress, inMemoryPdbSize);
+            MetadataReader reader = TryGetReader(assemblyPath, loadedPeAddress, loadedPeSize, inMemoryPdbAddress, inMemoryPdbSize);
             if (reader != null)
             {
                 Handle handle = MetadataTokens.Handle(methodToken);
@@ -128,7 +111,7 @@ namespace System.Diagnostics
         /// <remarks>
         /// Assumes that neither PE image nor PDB loaded into memory can be unloaded or moved around.
         /// </remarks>
-        private unsafe MetadataReader GetReader(string assemblyPath, IntPtr loadedPeAddress, int loadedPeSize, IntPtr inMemoryPdbAddress, int inMemoryPdbSize)
+        private unsafe MetadataReader TryGetReader(string assemblyPath, IntPtr loadedPeAddress, int loadedPeSize, IntPtr inMemoryPdbAddress, int inMemoryPdbSize)
         {
             if ((loadedPeAddress == IntPtr.Zero || assemblyPath == null) && inMemoryPdbAddress == IntPtr.Zero)
             {
@@ -138,26 +121,28 @@ namespace System.Diagnostics
 
             IntPtr cacheKey = (inMemoryPdbAddress != IntPtr.Zero) ? inMemoryPdbAddress : loadedPeAddress;
 
-            OpenedReader openedReader;
-            if (_readerCache.TryGetValue(cacheKey, out openedReader))
+            MetadataReaderProvider provider;
+            if (_metadataCache.TryGetValue(cacheKey, out provider))
             {
-                return openedReader.Reader;
+                return provider.GetMetadataReader();
             }
 
-            openedReader = (inMemoryPdbAddress != IntPtr.Zero) ?
+            provider = (inMemoryPdbAddress != IntPtr.Zero) ?
                 TryOpenReaderForInMemoryPdb(inMemoryPdbAddress, inMemoryPdbSize) :
                 TryOpenReaderFromAssemblyFile(assemblyPath, loadedPeAddress, loadedPeSize);
 
-            if (openedReader == null)
+            if (provider == null)
             {
                 return null;
             }
 
-            _readerCache.Add(cacheKey, openedReader);
-            return openedReader.Reader;
+            _metadataCache.Add(cacheKey, provider);
+
+            // The reader has already been open, so this doesn't throw:
+            return provider.GetMetadataReader();
         }
 
-        private unsafe static OpenedReader TryOpenReaderForInMemoryPdb(IntPtr inMemoryPdbAddress, int inMemoryPdbSize)
+        private unsafe static MetadataReaderProvider TryOpenReaderForInMemoryPdb(IntPtr inMemoryPdbAddress, int inMemoryPdbSize)
         {
             Debug.Assert(inMemoryPdbAddress != IntPtr.Zero);
 
@@ -169,173 +154,58 @@ namespace System.Diagnostics
                 return null;
             }
 
-            OpenedReader result = null;
-            MetadataReaderProvider provider = null;
+            var provider = MetadataReaderProvider.FromMetadataImage((byte*)inMemoryPdbAddress, inMemoryPdbSize);
             try
             {
-                provider = MetadataReaderProvider.FromMetadataImage((byte*)inMemoryPdbAddress, inMemoryPdbSize);
-                result = new OpenedReader(provider, provider.GetMetadataReader());
+                // may throw if the metadata is invalid
+                provider.GetMetadataReader();
+                return provider;
             }
             catch (BadImageFormatException)
             {
+                provider.Dispose();
                 return null;
             }
-            finally
-            {
-                if (result == null)
-                {
-                    provider?.Dispose();
-                }
-            }
-
-            return result;
         }
 
-        private static OpenedReader TryOpenReaderFromAssemblyFile(string assemblyPath, IntPtr loadedPeAddress, int loadedPeSize)
+        private unsafe static PEReader TryGetPEReader(string assemblyPath, IntPtr loadedPeAddress, int loadedPeSize)
         {
-            Debug.Assert(assemblyPath != null);
-            Debug.Assert(loadedPeAddress != IntPtr.Zero);
+            // TODO: https://github.com/dotnet/corefx/issues/11406
+            //if (loadedPeAddress != IntPtr.Zero && loadedPeSize > 0)
+            //{
+            //    return new PEReader((byte*)loadedPeAddress, loadedPeSize, isLoadedImage: true);
+            //}
 
-            // TODO: When/if PEReader supports reading loaded PE files use loadedPeAddress and loadedPeSize instead of opening the file again.
             Stream peStream = TryOpenFile(assemblyPath);
-            if (peStream == null)
+            if (peStream != null)
             {
-                return null;
-            }
-
-            try
-            {
-                using (var peReader = new PEReader(peStream))
-                {
-                    DebugDirectoryEntry codeViewEntry, embeddedPdbEntry;
-                    ReadPortableDebugTableEntries(peReader, out codeViewEntry, out embeddedPdbEntry);
-
-                    // First try .pdb file specified in CodeView data (we prefer .pdb file on disk over embedded PDB
-                    // since embedded PDB needs decompression which is less efficient than memory-mapping the file).
-                    if (codeViewEntry.DataSize != 0)
-                    {
-                        var result = TryOpenReaderFromCodeView(peReader, codeViewEntry, assemblyPath);
-                        if (result != null)
-                        {
-                            return result;
-                        }
-                    }
-
-                    // if it failed try Embedded Portable PDB (if available):
-                    if (embeddedPdbEntry.DataSize != 0)
-                    {
-                        return TryOpenReaderFromEmbeddedPdb(peReader, embeddedPdbEntry);
-                    }
-                }
-            }
-            catch (Exception e) when (e is BadImageFormatException || e is IOException)
-            {
-                // nop
+                return new PEReader(peStream);
             }
 
             return null;
         }
 
-        private static void ReadPortableDebugTableEntries(PEReader peReader, out DebugDirectoryEntry codeViewEntry, out DebugDirectoryEntry embeddedPdbEntry)
+        private static MetadataReaderProvider TryOpenReaderFromAssemblyFile(string assemblyPath, IntPtr loadedPeAddress, int loadedPeSize)
         {
-            // See spec: https://github.com/dotnet/corefx/blob/master/src/System.Reflection.Metadata/specs/PE-COFF.md
-
-            codeViewEntry = default(DebugDirectoryEntry);
-            embeddedPdbEntry = default(DebugDirectoryEntry);
-
-            foreach (DebugDirectoryEntry entry in peReader.ReadDebugDirectory())
+            using (var peReader = TryGetPEReader(assemblyPath, loadedPeAddress, loadedPeSize))
             {
-                if (entry.Type == DebugDirectoryEntryType.CodeView)
+                if (peReader == null)
                 {
-                    const ushort PortableCodeViewVersionMagic = 0x504d;
-                    if (entry.MinorVersion != PortableCodeViewVersionMagic)
-                    {
-                        continue;
-                    }
-
-                    codeViewEntry = entry;
+                    return null;
                 }
-                else if (entry.Type == DebugDirectoryEntryType.EmbeddedPortablePdb)
-                {
-                    embeddedPdbEntry = entry;
-                }
-            }
-        }
-
-        private static OpenedReader TryOpenReaderFromCodeView(PEReader peReader, DebugDirectoryEntry codeViewEntry, string assemblyPath)
-        {
-            OpenedReader result = null;
-            MetadataReaderProvider provider = null;
-            try
-            {
-                var data = peReader.ReadCodeViewDebugDirectoryData(codeViewEntry);
 
                 string pdbPath;
-                try
+                MetadataReaderProvider provider;
+                if (peReader.TryOpenAssociatedPortablePdb(assemblyPath, TryOpenFile, out provider, out pdbPath))
                 {
-                    pdbPath = Path.Combine(Path.GetDirectoryName(assemblyPath), Path.GetFileName(data.Path));
-                }
-                catch
-                {
-                    // invalid characters in CodeView path
-                    return null;
-                }
-
-                var pdbStream = TryOpenFile(pdbPath);
-                if (pdbStream == null)
-                {
-                    return null;
-                }
-
-                provider = MetadataReaderProvider.FromPortablePdbStream(pdbStream);
-                var reader = provider.GetMetadataReader();
-
-                // Validate that the PDB matches the assembly version
-                if (data.Age == 1 && new BlobContentId(reader.DebugMetadataHeader.Id) == new BlobContentId(data.Guid, codeViewEntry.Stamp))
-                {
-                    result = new OpenedReader(provider, reader);
-                }
-            }
-            catch (Exception e) when (e is BadImageFormatException || e is IOException)
-            {
-                return null;
-            }
-            finally
-            {
-                if (result == null)
-                {
-                    provider?.Dispose();
+                    // TODO: 
+                    // Consider caching the provider in a global cache (accross stack traces) if the PDB is embedded (pdbPath == null),
+                    // as decompressing embedded PDB takes some time.
+                    return provider;
                 }
             }
 
-            return result;
-        }
-
-        private static OpenedReader TryOpenReaderFromEmbeddedPdb(PEReader peReader, DebugDirectoryEntry embeddedPdbEntry)
-        {
-            OpenedReader result = null;
-            MetadataReaderProvider provider = null;
-
-            try
-            {
-                // TODO: We might want to cache this provider globally (accross stack traces), 
-                // since decompressing embedded PDB takes some time.
-                provider = peReader.ReadEmbeddedPortablePdbDebugDirectoryData(embeddedPdbEntry);
-                result = new OpenedReader(provider, provider.GetMetadataReader());
-            }
-            catch (Exception e) when (e is BadImageFormatException || e is IOException)
-            {
-                return null;
-            }
-            finally
-            {
-                if (result == null)
-                {
-                    provider?.Dispose();
-                }
-            }
-
-            return result;
+            return null;
         }
 
         private static Stream TryOpenFile(string path)

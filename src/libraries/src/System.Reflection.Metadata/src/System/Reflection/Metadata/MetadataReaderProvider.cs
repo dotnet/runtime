@@ -274,7 +274,7 @@ namespace System.Reflection.Metadata
 
         private static bool CanReuseReader(MetadataReader reader, MetadataReaderOptions options, MetadataStringDecoder utf8DecoderOpt)
         {
-            return reader != null && reader.Options == options && ReferenceEquals(reader.Utf8Decoder, utf8DecoderOpt ?? MetadataStringDecoder.DefaultUTF8);
+            return reader != null && reader.Options == options && ReferenceEquals(reader.UTF8Decoder, utf8DecoderOpt ?? MetadataStringDecoder.DefaultUTF8);
         }
 
         /// <exception cref="IOException">IO error while reading from the underlying stream.</exception>

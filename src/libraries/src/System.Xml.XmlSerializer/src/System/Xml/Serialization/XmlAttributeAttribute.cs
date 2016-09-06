@@ -8,7 +8,6 @@ using System.Xml.Schema;
 
 namespace System.Xml.Serialization
 {
-    /// <include file='doc\XmlAttributeAttribute.uex' path='docs/doc[@for="XmlAttributeAttribute"]/*' />
     /// <devdoc>
     ///    <para>[To be supplied.]</para>
     /// </devdoc>
@@ -21,7 +20,6 @@ namespace System.Xml.Serialization
         private string _dataType;
         private XmlSchemaForm _form = XmlSchemaForm.None;
 
-        /// <include file='doc\XmlAttributeAttribute.uex' path='docs/doc[@for="XmlAttributeAttribute.XmlAttributeAttribute"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -29,7 +27,6 @@ namespace System.Xml.Serialization
         {
         }
 
-        /// <include file='doc\XmlAttributeAttribute.uex' path='docs/doc[@for="XmlAttributeAttribute.XmlAttributeAttribute1"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -38,7 +35,6 @@ namespace System.Xml.Serialization
             _attributeName = attributeName;
         }
 
-        /// <include file='doc\XmlAttributeAttribute.uex' path='docs/doc[@for="XmlAttributeAttribute.XmlAttributeAttribute2"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -47,7 +43,6 @@ namespace System.Xml.Serialization
             _type = type;
         }
 
-        /// <include file='doc\XmlAttributeAttribute.uex' path='docs/doc[@for="XmlAttributeAttribute.XmlAttributeAttribute3"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -57,7 +52,6 @@ namespace System.Xml.Serialization
             _type = type;
         }
 
-        /// <include file='doc\XmlAttributeAttribute.uex' path='docs/doc[@for="XmlAttributeAttribute.Type"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -67,7 +61,6 @@ namespace System.Xml.Serialization
             set { _type = value; }
         }
 
-        /// <include file='doc\XmlAttributeAttribute.uex' path='docs/doc[@for="XmlAttributeAttribute.AttributeName"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -77,7 +70,6 @@ namespace System.Xml.Serialization
             set { _attributeName = value; }
         }
 
-        /// <include file='doc\XmlAttributeAttribute.uex' path='docs/doc[@for="XmlAttributeAttribute.Namespace"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -87,7 +79,6 @@ namespace System.Xml.Serialization
             set { _ns = value; }
         }
 
-        /// <include file='doc\XmlAttributeAttribute.uex' path='docs/doc[@for="XmlAttributeAttribute.DataType"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -97,7 +88,6 @@ namespace System.Xml.Serialization
             set { _dataType = value; }
         }
 
-        /// <include file='doc\XmlAttributeAttribute.uex' path='docs/doc[@for="XmlAttributeAttribute.Form"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>

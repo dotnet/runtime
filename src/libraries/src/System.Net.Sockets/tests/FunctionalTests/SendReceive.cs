@@ -528,72 +528,84 @@ namespace System.Net.Sockets.Tests
             Assert.Equal(sentChecksum.Sum, receivedChecksum.Sum);
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [Fact]
         public void SendToRecvFrom_Single_Datagram_UDP_IPv6()
         {
             SendToRecvFrom_Datagram_UDP(IPAddress.IPv6Loopback, IPAddress.IPv6Loopback);
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [Fact]
         public void SendToRecvFromAPM_Single_Datagram_UDP_IPv6()
         {
             SendToRecvFromAPM_Datagram_UDP(IPAddress.IPv6Loopback, IPAddress.IPv6Loopback);
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [Fact]
         public void SendToRecvFrom_Single_Datagram_UDP_IPv4()
         {
             SendToRecvFrom_Datagram_UDP(IPAddress.Loopback, IPAddress.Loopback);
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [Fact]
         public void SendToRecvFromAPM_Single_Datagram_UDP_IPv4()
         {
             SendToRecvFromAPM_Datagram_UDP(IPAddress.Loopback, IPAddress.Loopback);
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [Fact]
         public void SendRecv_Multiple_Stream_TCP_IPv6()
         {
             SendRecv_Stream_TCP(IPAddress.IPv6Loopback, useMultipleBuffers: true);
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [Fact]
         public void SendRecvAPM_Multiple_Stream_TCP_IPv6()
         {
             SendRecvAPM_Stream_TCP(IPAddress.IPv6Loopback, useMultipleBuffers: true);
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [Fact]
         public void SendRecv_Single_Stream_TCP_IPv6()
         {
             SendRecv_Stream_TCP(IPAddress.IPv6Loopback, useMultipleBuffers: false);
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [Fact]
         public void SendRecvAPM_Single_Stream_TCP_IPv6()
         {
             SendRecvAPM_Stream_TCP(IPAddress.IPv6Loopback, useMultipleBuffers: false);
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [Fact]
         public void SendRecv_Multiple_Stream_TCP_IPv4()
         {
             SendRecv_Stream_TCP(IPAddress.Loopback, useMultipleBuffers: true);
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [Fact]
         public void SendRecvAPM_Multiple_Stream_TCP_IPv4()
         {
             SendRecvAPM_Stream_TCP(IPAddress.Loopback, useMultipleBuffers: true);
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [Fact]
         public void SendRecv_Single_Stream_TCP_IPv4()
         {
             SendRecv_Stream_TCP(IPAddress.Loopback, useMultipleBuffers: false);
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [Fact]
         public void SendRecvAPM_Single_Stream_TCP_IPv4()
         {
@@ -606,6 +618,7 @@ namespace System.Net.Sockets.Tests
             new object[] { IPAddress.Loopback, IPAddress.Loopback }
         };
 
+        [OuterLoop] // TODO: Issue #11345
         [Theory]
         [MemberData(nameof(SendToRecvFromAsync_Datagram_UDP_Socket_MemberData))]
         public void SendToRecvFromAsync_Datagram_UDP(IPAddress leftAddress, IPAddress rightAddress)
@@ -739,6 +752,7 @@ namespace System.Net.Sockets.Tests
             new object[] { IPAddress.Loopback, IPAddress.Loopback }
         };
 
+        [OuterLoop] // TODO: Issue #11345
         [Theory]
         [MemberData(nameof(SendToRecvFromAsync_Datagram_UDP_Socket_MemberData))]
         public void SendToRecvFromAsync_Datagram_UDP_UdpClient(IPAddress leftAddress, IPAddress rightAddress)
@@ -822,6 +836,7 @@ namespace System.Net.Sockets.Tests
             new object[] { IPAddress.Loopback, false },
         };
 
+        [OuterLoop] // TODO: Issue #11345
         [Theory]
         [MemberData(nameof(SendRecvAsync_Stream_TCP_MemberData))]
         public void SendRecvAsync_Stream_TCP(IPAddress listenAt, bool useMultipleBuffers)
@@ -1015,6 +1030,7 @@ namespace System.Net.Sockets.Tests
             new object[] { IPAddress.IPv6Loopback },
         };
 
+        [OuterLoop] // TODO: Issue #11345
         [Theory]
         [MemberData(nameof(SendRecvAsync_TcpListener_TcpClient_MemberData))]
         public void SendRecvAsync_TcpListener_TcpClient(IPAddress listenAt)
@@ -1093,6 +1109,7 @@ namespace System.Net.Sockets.Tests
             new object[] { IPAddress.IPv6Loopback, false },
         };
 
+        [OuterLoop] // TODO: Issue #11345
         [Theory]
         [MemberData(nameof(SendRecvPollSync_TcpListener_TcpClient_MemberData))]
         public void SendRecvPollSync_TcpListener_Socket(IPAddress listenAt, bool pollBeforeOperation)

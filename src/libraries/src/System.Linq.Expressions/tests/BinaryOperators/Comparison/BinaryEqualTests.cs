@@ -180,6 +180,20 @@ namespace System.Linq.Expressions.Tests
             }
         }
 
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckEqualityWithConstantCheck(bool useInterpreter)
+        {
+            var array = new Expression[] { Expression.Constant("bar", typeof(string)), Expression.Constant(null, typeof(string)), Expression.Default(typeof(string)) };
+            var isNull = new bool[] { false, true, true };
+            for (int i = 0; i < array.Length; i++)
+            {
+                for (int j = 0; j < array.Length; j++)
+                {
+                    VerifyEqualityWithConstantCheck(array[i], array[j], useInterpreter, isNull[i] == isNull[j]);
+                }
+            }
+        }
+
         #endregion
 
         #region Test verifiers
@@ -353,6 +367,17 @@ namespace System.Linq.Expressions.Tests
             Assert.Equal(a == b, f());
         }
 
+        private static void VerifyEqualityWithConstantCheck(Expression a, Expression b, bool useInterpreter, bool expected)
+        {
+            Expression<Func<bool>> e =
+                Expression.Lambda<Func<bool>>(
+                    Expression.Equal(a, b),
+                    Enumerable.Empty<ParameterExpression>());
+            Func<bool> f = e.Compile(useInterpreter);
+
+            Assert.Equal(expected, f());
+        }
+
         #endregion
 
         [Fact]
@@ -396,6 +421,13 @@ namespace System.Linq.Expressions.Tests
         {
             Expression value = Expression.Property(null, typeof(Unreadable<int>), "WriteOnly");
             Assert.Throws<ArgumentException>("right", () => Expression.Equal(Expression.Constant(1), value));
+        }
+
+        [Fact]
+        public static void ToStringTest()
+        {
+            var e = Expression.Equal(Expression.Parameter(typeof(int), "a"), Expression.Parameter(typeof(int), "b"));
+            Assert.Equal("(a == b)", e.ToString());
         }
     }
 }

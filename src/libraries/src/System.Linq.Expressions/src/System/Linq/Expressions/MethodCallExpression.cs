@@ -1154,14 +1154,30 @@ namespace System.Linq.Expressions
 
         private static MethodInfo FindMethod(Type type, string methodName, Type[] typeArgs, Expression[] args, BindingFlags flags)
         {
-            MemberInfo[] members = type.GetMethodsIgnoreCase(flags, methodName);
-            if (members == null || members.Length == 0)
-                throw Error.MethodDoesNotExistOnType(methodName, type);
+            int count = 0;
+            MethodInfo method = null;
 
-            MethodInfo method;
-
-            var methodInfos = members.Map(t => (MethodInfo)t);
-            int count = FindBestMethod(methodInfos, typeArgs, args, out method);
+            foreach (var mi in type.GetMethods(flags))
+            {
+                if (mi.Name.Equals(methodName, StringComparison.OrdinalIgnoreCase))
+                {
+                    MethodInfo moo = ApplyTypeArgs(mi, typeArgs);
+                    if (moo != null && IsCompatible(moo, args))
+                    {
+                        // favor public over non-public methods
+                        if (method == null || (!method.IsPublic && moo.IsPublic))
+                        {
+                            method = moo;
+                            count = 1;
+                        }
+                        // only count it as additional method if they both public or both non-public
+                        else if (method.IsPublic == moo.IsPublic)
+                        {
+                            count++;
+                        }
+                    }
+                }
+            }
 
             if (count == 0)
             {
@@ -1174,34 +1190,11 @@ namespace System.Linq.Expressions
                     throw Error.MethodWithArgsDoesNotExistOnType(methodName, type);
                 }
             }
+
             if (count > 1)
                 throw Error.MethodWithMoreThanOneMatch(methodName, type);
-            return method;
-        }
 
-        private static int FindBestMethod(IEnumerable<MethodInfo> methods, Type[] typeArgs, Expression[] args, out MethodInfo method)
-        {
-            int count = 0;
-            method = null;
-            foreach (MethodInfo mi in methods)
-            {
-                MethodInfo moo = ApplyTypeArgs(mi, typeArgs);
-                if (moo != null && IsCompatible(moo, args))
-                {
-                    // favor public over non-public methods
-                    if (method == null || (!method.IsPublic && moo.IsPublic))
-                    {
-                        method = moo;
-                        count = 1;
-                    }
-                    // only count it as additional method if they both public or both non-public
-                    else if (method.IsPublic == moo.IsPublic)
-                    {
-                        count++;
-                    }
-                }
-            }
-            return count;
+            return method;
         }
 
         private static bool IsCompatible(MethodBase m, Expression[] args)
@@ -1282,12 +1275,14 @@ namespace System.Linq.Expressions
                 throw Error.IncorrectNumberOfIndexes();
             }
 
-            foreach (Expression e in indexList)
+            for (int i = 0, n = indexList.Count; i < n; i++)
             {
-                RequiresCanRead(e, nameof(indexes));
+                Expression e = indexList[i];
+
+                RequiresCanRead(e, nameof(indexes), i);
                 if (e.Type != typeof(int))
                 {
-                    throw Error.ArgumentMustBeArrayIndexType(nameof(indexList));
+                    throw Error.ArgumentMustBeArrayIndexType(nameof(indexes), i);
                 }
             }
 

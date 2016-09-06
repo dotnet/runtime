@@ -19,7 +19,6 @@ using System.Diagnostics;
 
 namespace System.Xml
 {
-    /// <include file='doc\XmlCharType.uex' path='docs/doc[@for="XmlCharType"]/*' />
     /// <internalonly/>
     /// <devdoc>
     ///  The XmlCharType class is used for quick character type recognition

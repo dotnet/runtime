@@ -17,7 +17,6 @@ namespace System.Xml.Serialization
         Write = 0x02,
     }
 
-    /// <include file='doc\XmlMapping.uex' path='docs/doc[@for="XmlMapping"]/*' />
     ///<internalonly/>
     /// <devdoc>
     ///    <para>[To be supplied.]</para>
@@ -53,7 +52,6 @@ namespace System.Xml.Serialization
             get { return _scope; }
         }
 
-        /// <include file='doc\XmlMapping.uex' path='docs/doc[@for="XmlMapping.ElementName"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -65,7 +63,6 @@ namespace System.Xml.Serialization
             }
         }
 
-        /// <include file='doc\XmlMapping.uex' path='docs/doc[@for="XmlMapping.XsdElementName"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -77,7 +74,6 @@ namespace System.Xml.Serialization
             }
         }
 
-        /// <include file='doc\XmlMapping.uex' path='docs/doc[@for="XmlMapping.Namespace"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -110,14 +106,12 @@ namespace System.Xml.Serialization
             get { return false; }
         }
 
-        /// <include file='doc\XmlMapping.uex' path='docs/doc[@for="XmlMapping.SetKey"]/*' />
         ///<internalonly/>
         public void SetKey(string key)
         {
             SetKeyInternal(key);
         }
 
-        /// <include file='doc\XmlMapping.uex' path='docs/doc[@for="XmlMapping.SetKeyInternal"]/*' />
         ///<internalonly/>
         internal void SetKeyInternal(string key)
         {

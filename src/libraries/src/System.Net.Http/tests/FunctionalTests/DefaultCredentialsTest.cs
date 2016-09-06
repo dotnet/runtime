@@ -40,6 +40,7 @@ namespace System.Net.Http.Functional.Tests
             _output.WriteLine(s_authenticatedServer.ToString());
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [ActiveIssue(10041)]
         [ConditionalTheory(nameof(DomainJoinedTestsEnabled))]
         [InlineData(false)]
@@ -56,6 +57,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [ActiveIssue(10041)]
         [ConditionalTheory(nameof(DomainJoinedTestsEnabled))]
         [InlineData(false)]
@@ -71,6 +73,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [ActiveIssue(10041)]
         [ConditionalTheory(nameof(DomainJoinedTestsEnabled))]
         [InlineData(false)]
@@ -91,6 +94,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [ActiveIssue(10041)]
         [ConditionalTheory(nameof(DomainJoinedTestsEnabled))]
         [InlineData(false)]
@@ -111,6 +115,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [ActiveIssue(10041)]
         [ConditionalTheory(nameof(DomainJoinedTestsEnabled))]
         [InlineData(false)]
@@ -132,6 +137,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [ActiveIssue(10041)]
         [ConditionalTheory(nameof(DomainJoinedTestsEnabled))]
         [InlineData(false)]
@@ -157,6 +163,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [ActiveIssue(10041)]
         [ConditionalFact(nameof(DomainProxyTestsEnabled))]
         public async Task Proxy_UseAuthenticatedProxyWithNoCredentials_ProxyAuthenticationRequired()
@@ -171,6 +178,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [ActiveIssue(10041)]
         [ConditionalFact(nameof(DomainProxyTestsEnabled))]
         public async Task Proxy_UseAuthenticatedProxyWithDefaultCredentials_OK()
@@ -185,6 +193,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
         
+        [OuterLoop] // TODO: Issue #11345
         [ConditionalFact(nameof(DomainProxyTestsEnabled))]
         public async Task Proxy_UseAuthenticatedProxyWithWrappedDefaultCredentials_OK()
         {

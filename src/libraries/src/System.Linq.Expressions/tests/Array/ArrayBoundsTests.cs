@@ -3390,7 +3390,8 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void NullBound()
         {
-            Assert.Throws<ArgumentNullException>("bounds", () => Expression.NewArrayBounds(typeof(int), null, null));
+            Assert.Throws<ArgumentNullException>("bounds[0]", () => Expression.NewArrayBounds(typeof(int), new Expression[] { null, null }));
+            Assert.Throws<ArgumentNullException>("bounds[0]", () => Expression.NewArrayBounds(typeof(int), new List<Expression> { null, null }));
         }
 
         [Fact]

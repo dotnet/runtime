@@ -180,6 +180,20 @@ namespace System.Linq.Expressions.Tests
             }
         }
 
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckNullableEqualityWithConstantCheck(bool useInterpreter)
+        {
+            var array = new Expression[] { Expression.Constant(42, typeof(int?)), Expression.Constant(null, typeof(int?)), Expression.Default(typeof(int?)) };
+            var isNull = new bool[] { false, true, true };
+            for (int i = 0; i < array.Length; i++)
+            {
+                for (int j = 0; j < array.Length; j++)
+                {
+                    VerifyNullableEqualityWithConstantCheck(array[i], array[j], useInterpreter, isNull[i] == isNull[j]);
+                }
+            }
+        }
+
         #endregion
 
         #region Test verifiers
@@ -351,6 +365,17 @@ namespace System.Linq.Expressions.Tests
             Func<bool> f = e.Compile(useInterpreter);
 
             Assert.Equal(a == b, f());
+        }
+
+        private static void VerifyNullableEqualityWithConstantCheck(Expression a, Expression b, bool useInterpreter, bool expected)
+        {
+            Expression<Func<bool>> e =
+                Expression.Lambda<Func<bool>>(
+                    Expression.Equal(a, b),
+                    Enumerable.Empty<ParameterExpression>());
+            Func<bool> f = e.Compile(useInterpreter);
+
+            Assert.Equal(expected, f());
         }
 
         #endregion

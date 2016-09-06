@@ -1265,6 +1265,15 @@ namespace SerializationTypes
         public new List<string> ListProperty;
     }
 
+    public class DerivedClassWithSameProperty2 : DerivedClassWithSameProperty
+    {
+        [DataMember]
+        public new DateTime DateTimeProperty;
+
+        [DataMember]
+        public new List<string> ListProperty;
+    }
+
     public class EnumerableCollection : IEnumerable<DateTime>
     {
         private List<DateTime> _values = new List<DateTime>();
@@ -1295,6 +1304,12 @@ namespace SerializationTypes
             get { return _value; }
             set { _value = value; }
         }
+    }
+
+    public class TypeWithByteArrayAsXmlText
+    {
+        [XmlText(DataType = "base64Binary")]
+        public byte[] Value;
     }
 
     [DataContract(IsReference = false)]
@@ -2608,6 +2623,199 @@ namespace SerializationTypes
         [System.Xml.Serialization.XmlArrayItemAttribute("SimpleType", typeof(SimpleType[]), IsNullable = false)]
         public SimpleType[][] TwoDArrayOfSimpleType;
     }
+
+    [XmlType(TypeName = "MyXmlType")]
+    public class TypeWithStringArrayAsXmlAttribute
+    {
+        [XmlAttribute(Form = XmlSchemaForm.Qualified)]
+        public string[] XmlAttributeForms;
+    }
+
+    [XmlType(TypeName = "MyXmlType")]
+    public class TypeWithArrayLikeXmlAttributeWithFields
+    {
+        public string StringField;
+
+        [XmlAttribute(Form = XmlSchemaForm.Qualified)]
+        public string[] XmlAttributeForms;
+
+        public int IntField;
+    }
+
+    [XmlType(TypeName = "MyXmlType")]
+    public class TypeWithQNameArrayAsXmlAttribute
+    {
+        [XmlAttribute(Form = XmlSchemaForm.Qualified)]
+        public XmlQualifiedName[] XmlAttributeForms;
+    }
+
+    [XmlType(TypeName = "MyXmlType")]
+    public class TypeWithEnumArrayAsXmlAttribute
+    {
+        [XmlAttribute(Form = XmlSchemaForm.Qualified)]
+        public IntEnum[] XmlAttributeForms;
+    }
+
+    [XmlType(TypeName = "MyXmlType")]
+    public class TypeWithByteArrayAsXmlAttribute
+    {
+        [XmlAttribute(Form = XmlSchemaForm.Qualified)]
+        public byte[] XmlAttributeForms;
+    }
+
+    [XmlType(TypeName = "MyXmlType")]
+    public class TypeWithByteArrayArrayAsXmlAttribute
+    {
+        [XmlAttribute(Form = XmlSchemaForm.Qualified)]
+        public byte[][] XmlAttributeForms;
+    }
+
+    public class TypeWithPropertiesHavingDefaultValue
+    {
+        [DefaultValue("")]
+        public string EmptyStringProperty { get; set; } = "";
+
+        [DefaultValue("DefaultString")]
+        public string StringProperty { get; set; } = "DefaultString";
+
+        [DefaultValue(11)]
+        public int IntProperty { get; set; } = 11;
+
+        [DefaultValue('m')]
+        public char CharProperty { get; set; } = 'm';
+    }
+
+    public class TypeWithEnumPropertyHavingDefaultValue
+    {
+        [DefaultValue(1)]
+        public IntEnum EnumProperty { get; set; } = IntEnum.Option1;
+    }
+
+    public class TypeWithEnumFlagPropertyHavingDefaultValue
+    {
+        [DefaultValue(EnumFlags.One | EnumFlags.Four)]
+        public EnumFlags EnumProperty { get; set; } = EnumFlags.One | EnumFlags.Four;
+    }
+
+    public class TypeWithShouldSerializeMethod
+    {
+        private static readonly string DefaultFoo = "default";
+
+        public string Foo { get; set; } = DefaultFoo;
+
+        public bool ShouldSerializeFoo()
+        {
+            return Foo != DefaultFoo;
+        }
+    }
+
+    public class KnownTypesThroughConstructorWithArrayProperties
+    {
+        public object StringArrayValue;
+        public object IntArrayValue;
+    }
+
+    public class KnownTypesThroughConstructorWithValue
+    {
+        public object Value;
+    }
+
+    public class TypeWithTypesHavingCustomFormatter
+    {
+        [XmlElement(DataType = "dateTime")]
+        public DateTime DateTimeContent;
+
+        [XmlElement(DataType = "QName")]
+        public XmlQualifiedName QNameContent;
+
+        // The case where DataType = "date" is verified by Xml_TypeWithDateTimePropertyAsXmlTime.
+        [XmlElement(DataType = "date")]
+        public DateTime DateContent;
+
+        [XmlElement(DataType = "Name")]
+        public string NameContent;
+
+        [XmlElement(DataType = "NCName")]
+        public string NCNameContent;
+
+        [XmlElement(DataType = "NMTOKEN")]
+        public string NMTOKENContent;
+
+        [XmlElement(DataType = "NMTOKENS")]
+        public string NMTOKENSContent;
+
+        [XmlElement(DataType = "base64Binary")]
+        public byte[] Base64BinaryContent;
+
+        [XmlElement(DataType = "hexBinary")]
+        public byte[] HexBinaryContent;
+    }
+
+    [XmlType(TypeName = "MyXmlType")]
+    [XmlRoot]
+    public class TypeWithXmlElementsAndUnnamedXmlAny
+    {
+        [XmlElement(Type = typeof(string))]
+        [XmlElement(Type = typeof(int))]
+        [XmlAnyElement]
+        public object[] Things;
+    }
+
+    [XmlType(TypeName = "MyXmlType")]
+    [XmlRoot]
+    public class TypeWithMultiNamedXmlAnyElement
+    {
+        [XmlAnyElement(Name = "name1", Namespace = "ns1")]
+        [XmlAnyElement(Name = "name2", Namespace = "ns2")]
+        public object[] Things;
+    }
+
+    [XmlType(TypeName = "MyXmlType")]
+    [XmlRoot]
+    public class TypeWithMultiNamedXmlAnyElementAndOtherFields
+    {
+        [XmlAnyElement(Name = "name1", Namespace = "ns1")]
+        [XmlAnyElement(Name = "name2", Namespace = "ns2")]
+        public object[] Things;
+
+        public string StringField;
+
+        public int IntField;
+    }
+
+    public class TypeWithArrayPropertyHavingChoice
+    {
+        // The ManyChoices field can contain an array
+        // of choices. Each choice must be matched to
+        // an array item in the ChoiceArray field.
+        [XmlChoiceIdentifier("ChoiceArray")]
+        [XmlElement("Item", typeof(string))]
+        [XmlElement("Amount", typeof(int))]
+        public object[] ManyChoices;
+
+        // TheChoiceArray field contains the enumeration
+        // values, one for each item in the ManyChoices array.
+        [XmlIgnore]
+        public MoreChoices[] ChoiceArray;
+    }
+
+    public enum MoreChoices {
+        None,
+        Item,
+        Amount
+    }
+
+    public class TypeWithFieldsOrdered
+    {
+        [XmlElement(Order = 0)]
+        public int IntField1;
+        [XmlElement(Order = 1)]
+        public int IntField2;
+        [XmlElement(Order = 3)]
+        public string StringField1;
+        [XmlElement(Order = 2)]
+        public string StringField2;
+    }
 }
 
 namespace DuplicateTypeNamesTest.ns1
@@ -3202,3 +3410,109 @@ public class CollectionOfTypeWithNonDefaultNamcespace : List<TypeWithNonDefaultN
 
 }
 
+#region Type for Xml_ConstructorWithXmlAttributeOverrides
+
+namespace Music
+{
+    public class Orchestra
+    {
+        public Instrument[] Instruments;
+    }
+
+    public class Instrument
+    {
+        public string Name;
+    }
+
+    public class Brass : Instrument
+    {
+        public bool IsValved;
+    }
+}
+
+#endregion
+[DataContract]
+public class ObjectContainer
+{
+    [DataMember]
+    private object _data;
+
+    public ObjectContainer(object input)
+    {
+        _data = input;
+    }
+
+    public object Data
+    {
+        get { return _data; }
+    }
+}
+
+[DataContract]
+public class DTOContainer
+{
+    [DataMember]
+    public object nDTO = DateTimeOffset.MaxValue;
+}
+
+[DataContract]
+public class DTOResolver : DataContractResolver
+{
+    public override bool TryResolveType(Type dcType, Type declaredType, DataContractResolver knownTypeResolver, out XmlDictionaryString typeName, out XmlDictionaryString typeNamespace)
+    {
+        string resolvedTypeName = string.Empty;
+        string resolvedNamespace = string.Empty;
+        resolvedNamespace = "http://www.default.com";
+        switch (dcType.Name)
+        {
+            case "ObjectContainer":
+            case "DTOContainer":
+                {
+                    resolvedTypeName = dcType.Name;
+                }
+                break;
+            case "DateTimeOffset":
+                {
+                    resolvedTypeName = "DTO";
+                }
+                break;
+            default:
+                {
+                    return knownTypeResolver.TryResolveType(dcType, declaredType, null, out typeName, out typeNamespace);
+                }
+        }
+        XmlDictionary dic = new XmlDictionary();
+        typeName = dic.Add(resolvedTypeName);
+        typeNamespace = dic.Add(resolvedNamespace);
+        return true;
+    }
+
+    public override Type ResolveName(string typeName, string typeNamespace, Type declaredType, DataContractResolver knownTypeResolver)
+    {
+        switch (typeNamespace)
+        {
+            case "http://www.default.com":
+                {
+                    switch (typeName)
+                    {
+                        case "ObjectContainer":
+                            {
+                                return typeof(ObjectContainer);
+                            }
+                        case "DTOContainer":
+                            {
+                                return typeof(DTOContainer);
+                            }
+                        case "DTO":
+                            {
+                                return typeof(DateTimeOffset);
+                            }
+                        default: break;
+                    }
+                }
+                break;
+        }
+        Type result = knownTypeResolver.ResolveName(typeName, typeNamespace, declaredType, null);
+        return result;
+    }
+}
