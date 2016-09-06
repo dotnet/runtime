@@ -94,7 +94,7 @@ namespace System.Linq.Expressions.Compiler
         /// </summary>
         internal static void EmitLoadValueIndirect(this ILGenerator il, Type type)
         {
-            ContractUtils.RequiresNotNull(type, nameof(type));
+            Debug.Assert(type != null);
 
             switch (type.GetTypeCode())
             {
@@ -145,7 +145,7 @@ namespace System.Linq.Expressions.Compiler
         /// </summary>
         internal static void EmitStoreValueIndirect(this ILGenerator il, Type type)
         {
-            ContractUtils.RequiresNotNull(type, nameof(type));
+            Debug.Assert(type != null);
 
             switch (type.GetTypeCode())
             {
@@ -188,7 +188,7 @@ namespace System.Linq.Expressions.Compiler
 
         internal static void EmitLoadElement(this ILGenerator il, Type type)
         {
-            ContractUtils.RequiresNotNull(type, nameof(type));
+            Debug.Assert(type != null);
 
             if (!type.GetTypeInfo().IsValueType)
             {
@@ -244,7 +244,7 @@ namespace System.Linq.Expressions.Compiler
         /// </summary>
         internal static void EmitStoreElement(this ILGenerator il, Type type)
         {
-            ContractUtils.RequiresNotNull(type, nameof(type));
+            Debug.Assert(type != null);
 
             if (type.GetTypeInfo().IsEnum)
             {
@@ -292,7 +292,7 @@ namespace System.Linq.Expressions.Compiler
 
         internal static void EmitType(this ILGenerator il, Type type)
         {
-            ContractUtils.RequiresNotNull(type, nameof(type));
+            Debug.Assert(type != null);
 
             il.Emit(OpCodes.Ldtoken, type);
             il.Emit(OpCodes.Call, typeof(Type).GetMethod("GetTypeFromHandle"));
@@ -304,7 +304,7 @@ namespace System.Linq.Expressions.Compiler
 
         internal static void EmitFieldAddress(this ILGenerator il, FieldInfo fi)
         {
-            ContractUtils.RequiresNotNull(fi, nameof(fi));
+            Debug.Assert(fi != null);
 
             if (fi.IsStatic)
             {
@@ -318,7 +318,7 @@ namespace System.Linq.Expressions.Compiler
 
         internal static void EmitFieldGet(this ILGenerator il, FieldInfo fi)
         {
-            ContractUtils.RequiresNotNull(fi, nameof(fi));
+            Debug.Assert(fi != null);
 
             if (fi.IsStatic)
             {
@@ -332,7 +332,7 @@ namespace System.Linq.Expressions.Compiler
 
         internal static void EmitFieldSet(this ILGenerator il, FieldInfo fi)
         {
-            ContractUtils.RequiresNotNull(fi, nameof(fi));
+            Debug.Assert(fi != null);
 
             if (fi.IsStatic)
             {
@@ -347,7 +347,7 @@ namespace System.Linq.Expressions.Compiler
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1711:IdentifiersShouldNotHaveIncorrectSuffix")]
         internal static void EmitNew(this ILGenerator il, ConstructorInfo ci)
         {
-            ContractUtils.RequiresNotNull(ci, nameof(ci));
+            Debug.Assert(ci != null);
 
             if (ci.DeclaringType.GetTypeInfo().ContainsGenericParameters)
             {
@@ -360,8 +360,8 @@ namespace System.Linq.Expressions.Compiler
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1711:IdentifiersShouldNotHaveIncorrectSuffix")]
         internal static void EmitNew(this ILGenerator il, Type type, Type[] paramTypes)
         {
-            ContractUtils.RequiresNotNull(type, nameof(type));
-            ContractUtils.RequiresNotNull(paramTypes, nameof(paramTypes));
+            Debug.Assert(type != null);
+            Debug.Assert(paramTypes != null);
 
             ConstructorInfo ci = type.GetConstructor(paramTypes);
             if (ci == null) throw Error.TypeDoesNotHaveConstructorForTheSignature();
@@ -379,7 +379,8 @@ namespace System.Linq.Expressions.Compiler
 
         internal static void EmitString(this ILGenerator il, string value)
         {
-            ContractUtils.RequiresNotNull(value, nameof(value));
+            Debug.Assert(value != null);
+
             il.Emit(OpCodes.Ldstr, value);
         }
 
@@ -1056,7 +1057,7 @@ namespace System.Linq.Expressions.Compiler
         /// </summary>
         internal static void EmitArray<T>(this ILGenerator il, IList<T> items)
         {
-            ContractUtils.RequiresNotNull(items, nameof(items));
+            Debug.Assert(items != null);
 
             il.EmitInt(items.Count);
             il.Emit(OpCodes.Newarr, typeof(T));
@@ -1075,8 +1076,8 @@ namespace System.Linq.Expressions.Compiler
         /// </summary>
         internal static void EmitArray(this ILGenerator il, Type elementType, int count, Action<int> emit)
         {
-            ContractUtils.RequiresNotNull(elementType, nameof(elementType));
-            ContractUtils.RequiresNotNull(emit, nameof(emit));
+            Debug.Assert(elementType != null);
+            Debug.Assert(emit != null);
             Debug.Assert(count >= 0);
 
             il.EmitInt(count);
@@ -1099,7 +1100,7 @@ namespace System.Linq.Expressions.Compiler
         /// </summary>
         internal static void EmitArray(this ILGenerator il, Type arrayType)
         {
-            ContractUtils.RequiresNotNull(arrayType, nameof(arrayType));
+            Debug.Assert(arrayType != null);
             Debug.Assert(arrayType.IsArray);
 
             if (arrayType.IsVector())
