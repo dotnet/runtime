@@ -453,6 +453,22 @@ namespace System.Linq.Expressions.Tests
             Assert.Throws<ArgumentNullException>("type", () => Expression.New((Type)null));
         }
 
+        [Fact]
+        public static void ToStringTest()
+        {
+            var e1 = Expression.New(typeof(Bar).GetConstructor(Type.EmptyTypes));
+            Assert.Equal("new Bar()", e1.ToString());
+
+            var e2 = Expression.New(typeof(Bar).GetConstructor(new[] { typeof(int) }), Expression.Parameter(typeof(int), "foo"));
+            Assert.Equal("new Bar(foo)", e2.ToString());
+
+            var e3 = Expression.New(typeof(Bar).GetConstructor(new[] { typeof(int), typeof(int) }), Expression.Parameter(typeof(int), "foo"), Expression.Parameter(typeof(int), "qux"));
+            Assert.Equal("new Bar(foo, qux)", e3.ToString());
+
+            var e4 = Expression.New(typeof(Bar).GetConstructor(new[] { typeof(int), typeof(int) }), new[] { Expression.Parameter(typeof(int), "foo"), Expression.Parameter(typeof(int), "qux") }, new[] { typeof(Bar).GetProperty(nameof(Bar.Foo)), typeof(Bar).GetProperty(nameof(Bar.Qux)) });
+            Assert.Equal("new Bar(Foo = foo, Qux = qux)", e4.ToString());
+        }
+
         public static IEnumerable<object[]> Type_InvalidType_TestData()
         {
             yield return new object[] { typeof(void) };
@@ -512,6 +528,24 @@ namespace System.Linq.Expressions.Tests
         static class Unreachable<T>
         {
             public static T WriteOnly { set { } }
+        }
+
+        class Bar
+        {
+            public Bar()
+            {
+            }
+
+            public Bar(int foo)
+            {
+            }
+
+            public Bar(int foo, int qux)
+            {
+            }
+
+            public int Foo { get; set; }
+            public int Qux { get; set; }
         }
     }
 }

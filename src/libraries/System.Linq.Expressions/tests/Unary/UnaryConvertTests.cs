@@ -102,6 +102,18 @@ namespace System.Linq.Expressions.Tests
             }
         }
 
+        [Fact]
+        public static void ToStringTest()
+        {
+            // NB: Unlike TypeAs, the output does not include the type we're converting to
+
+            var e1 = Expression.Convert(Expression.Parameter(typeof(object), "o"), typeof(int));
+            Assert.Equal("Convert(o)", e1.ToString());
+
+            var e2 = Expression.ConvertChecked(Expression.Parameter(typeof(long), "x"), typeof(int));
+            Assert.Equal("ConvertChecked(x)", e2.ToString());
+        }
+
         private static IEnumerable<KeyValuePair<Expression, object>> ConvertBooleanToNumeric()
         {
             var boolF = Expression.Constant(false);
@@ -251,7 +263,7 @@ namespace System.Linq.Expressions.Tests
         private static IEnumerable<Expression> ConvertUnboxing()
         {
             // C# Language Specification - 4.3.2 Unboxing conversions
-            // ----------------------------------------------------
+            // ------------------------------------------------------
 
             var factories = new Func<Expression, Type, Expression>[] { Expression.Convert, Expression.ConvertChecked };
 

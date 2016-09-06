@@ -356,6 +356,61 @@ namespace System.Linq.Expressions.Tests
             CheckGenericWithSubClassAndNewRestrictionHelper<C>(useInterpreter);
         }
 
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void BoundConstantCaching1(bool useInterpreter)
+        {
+            var c = Expression.Constant(new Bar());
+
+            var e =
+                Expression.Add(
+                    Expression.Field(c, "Foo"),
+                    Expression.Subtract(
+                        Expression.Field(c, "Baz"),
+                        Expression.Field(c, "Qux")
+                    )
+                );
+
+            Assert.Equal(42, Expression.Lambda<Func<int>>(e).Compile(useInterpreter)());
+        }
+
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void BoundConstantCaching2(bool useInterpreter)
+        {
+            var b = new Bar();
+            var c1 = Expression.Constant(b);
+            var c2 = Expression.Constant(b);
+            var c3 = Expression.Constant(b);
+
+            var e =
+                Expression.Add(
+                    Expression.Field(c1, "Foo"),
+                    Expression.Subtract(
+                        Expression.Field(c2, "Baz"),
+                        Expression.Field(c3, "Qux")
+                    )
+                );
+
+            Assert.Equal(42, Expression.Lambda<Func<int>>(e).Compile(useInterpreter)());
+        }
+
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void BoundConstantCaching3(bool useInterpreter)
+        {
+            var b = new Bar() { Foo = 1 };
+
+            for (var i = 1; i <= 10; i++)
+            {
+                var e = (Expression)Expression.Constant(0);
+
+                for (var j = 1; j <= i; j++)
+                {
+                    e = Expression.Add(e, Expression.Field(Expression.Constant(b), "Foo"));
+                }
+
+                Assert.Equal(i, Expression.Lambda<Func<int>>(e).Compile(useInterpreter)());
+            }
+        }
+
         #endregion
 
         #region Generic helpers
@@ -806,6 +861,42 @@ namespace System.Linq.Expressions.Tests
         {
             Assert.Throws<ArgumentException>(() => Expression.Constant(null, typeof(List<>.Enumerator)));
             Assert.Throws<ArgumentException>(() => Expression.Constant(null, typeof(List<>).MakeGenericType(typeof(List<>))));
+        }
+
+        [Fact]
+        public static void ToStringTest()
+        {
+            var e1 = Expression.Constant(1);
+            Assert.Equal("1", e1.ToString());
+
+            var e2 = Expression.Constant("bar");
+            Assert.Equal("\"bar\"", e2.ToString());
+
+            var e3 = Expression.Constant(null, typeof(object));
+            Assert.Equal("null", e3.ToString());
+
+            var b = new Bar();
+            var e4 = Expression.Constant(b);
+            Assert.Equal($"value({b.ToString()})", e4.ToString());
+
+            var f = new Foo();
+            var e5 = Expression.Constant(f);
+            Assert.Equal(f.ToString(), e5.ToString());
+        }
+
+        class Bar
+        {
+            public int Foo = 41;
+            public int Qux = 43;
+            public int Baz = 44;
+        }
+
+        class Foo
+        {
+            public override string ToString()
+            {
+                return "Bar";
+            }
         }
     }
 }

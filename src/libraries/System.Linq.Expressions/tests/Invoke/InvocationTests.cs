@@ -92,5 +92,15 @@ namespace System.Linq.Expressions.Tests
             act();
             Assert.Equal(1, holder.Function());
         }
+
+        [Fact]
+        public static void ToStringTest()
+        {
+            var e1 = Expression.Invoke(Expression.Parameter(typeof(Action), "f"));
+            Assert.Equal("Invoke(f)", e1.ToString());
+
+            var e2 = Expression.Invoke(Expression.Parameter(typeof(Action<int>), "f"), Expression.Parameter(typeof(int), "x"));
+            Assert.Equal("Invoke(f, x)", e2.ToString());
+        }
     }
 }
