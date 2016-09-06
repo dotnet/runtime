@@ -208,12 +208,12 @@ namespace System.Net
             X509Store store = isMachineStore ? s_myMachineCertStoreEx : s_myCertStoreEx;
 
             // TODO #3862 Investigate if this can be switched to either the static or Lazy<T> patterns.
-            if (Volatile.Read(ref store) == null)
+            if (store == null)
             {
                 lock (s_syncObject)
                 {
                     store = isMachineStore ? s_myMachineCertStoreEx : s_myCertStoreEx;
-                    if (Volatile.Read(ref store) == null)
+                    if (store == null)
                     {
                         // NOTE: that if this call fails we won't keep track and the next time we enter we will try to open the store again.
                         StoreLocation storeLocation = isMachineStore ? StoreLocation.LocalMachine : StoreLocation.CurrentUser;
