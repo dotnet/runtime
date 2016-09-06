@@ -35,7 +35,7 @@ namespace System
         public ArraySegment(T[] array)
         {
             if (array == null)
-                throw new ArgumentNullException("array");
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
             Contract.EndContractBlock();
 
             _array = array;
@@ -46,13 +46,13 @@ namespace System
         public ArraySegment(T[] array, int offset, int count)
         {
             if (array == null)
-                throw new ArgumentNullException("array");
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
             if (offset < 0)
-                throw new ArgumentOutOfRangeException("offset", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.offset, ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
             if (count < 0)
-                throw new ArgumentOutOfRangeException("count", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.count, ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
             if (array.Length - offset < count)
-                throw new ArgumentException(Environment.GetResourceString("Argument_InvalidOffLen"));
+                ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_InvalidOffLen);
             Contract.EndContractBlock();
 
             _array = array;
@@ -146,9 +146,9 @@ namespace System
             get
             {
                 if (_array == null)
-                    throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_NullArray"));
+                    ThrowHelper.ThrowInvalidOperationException(ExceptionResource.InvalidOperation_NullArray);
                 if (index < 0 || index >=  _count)
-                    throw new ArgumentOutOfRangeException("index");
+                    ThrowHelper.ThrowArgumentOutOfRange_IndexException();
                 Contract.EndContractBlock();
 
                 return _array[_offset + index];
@@ -157,9 +157,9 @@ namespace System
             set
             {
                 if (_array == null)
-                    throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_NullArray"));
+                    ThrowHelper.ThrowInvalidOperationException(ExceptionResource.InvalidOperation_NullArray);
                 if (index < 0 || index >= _count)
-                    throw new ArgumentOutOfRangeException("index");
+                    ThrowHelper.ThrowArgumentOutOfRange_IndexException();
                 Contract.EndContractBlock();
 
                 _array[_offset + index] = value;
@@ -169,7 +169,7 @@ namespace System
         int IList<T>.IndexOf(T item)
         {
             if (_array == null)
-                throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_NullArray"));
+                ThrowHelper.ThrowInvalidOperationException(ExceptionResource.InvalidOperation_NullArray);
             Contract.EndContractBlock();
 
             int index = System.Array.IndexOf<T>(_array, item, _offset, _count);
@@ -182,12 +182,12 @@ namespace System
 
         void IList<T>.Insert(int index, T item)
         {
-            throw new NotSupportedException();
+            ThrowHelper.ThrowNotSupportedException();
         }
 
         void IList<T>.RemoveAt(int index)
         {
-            throw new NotSupportedException();
+            ThrowHelper.ThrowNotSupportedException();
         }
         #endregion
 
@@ -197,9 +197,9 @@ namespace System
             get
             {
                 if (_array == null)
-                    throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_NullArray"));
+                    ThrowHelper.ThrowInvalidOperationException(ExceptionResource.InvalidOperation_NullArray);
                 if (index < 0 || index >= _count)
-                    throw new ArgumentOutOfRangeException("index");
+                    ThrowHelper.ThrowArgumentOutOfRange_IndexException();
                 Contract.EndContractBlock();
 
                 return _array[_offset + index];
@@ -220,18 +220,18 @@ namespace System
 
         void ICollection<T>.Add(T item)
         {
-            throw new NotSupportedException();
+            ThrowHelper.ThrowNotSupportedException();
         }
 
         void ICollection<T>.Clear()
         {
-            throw new NotSupportedException();
+            ThrowHelper.ThrowNotSupportedException();
         }
 
         bool ICollection<T>.Contains(T item)
         {
             if (_array == null)
-                throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_NullArray"));
+                ThrowHelper.ThrowInvalidOperationException(ExceptionResource.InvalidOperation_NullArray);
             Contract.EndContractBlock();
 
             int index = System.Array.IndexOf<T>(_array, item, _offset, _count);
@@ -245,7 +245,7 @@ namespace System
         void ICollection<T>.CopyTo(T[] array, int arrayIndex)
         {
             if (_array == null)
-                throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_NullArray"));
+                ThrowHelper.ThrowInvalidOperationException(ExceptionResource.InvalidOperation_NullArray);
             Contract.EndContractBlock();
 
             System.Array.Copy(_array, _offset, array, arrayIndex, _count);
@@ -253,7 +253,8 @@ namespace System
 
         bool ICollection<T>.Remove(T item)
         {
-            throw new NotSupportedException();
+            ThrowHelper.ThrowNotSupportedException();
+            return default(bool);
         }
         #endregion
 
@@ -261,7 +262,7 @@ namespace System
         IEnumerator<T> IEnumerable<T>.GetEnumerator()
         {
             if (_array == null)
-                throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_NullArray"));
+                ThrowHelper.ThrowInvalidOperationException(ExceptionResource.InvalidOperation_NullArray);
             Contract.EndContractBlock();
 
             return new ArraySegmentEnumerator(this);
@@ -272,7 +273,7 @@ namespace System
         IEnumerator IEnumerable.GetEnumerator()
         {
             if (_array == null)
-                throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_NullArray"));
+                ThrowHelper.ThrowInvalidOperationException(ExceptionResource.InvalidOperation_NullArray);
             Contract.EndContractBlock();
 
             return new ArraySegmentEnumerator(this);
@@ -314,8 +315,8 @@ namespace System
             {
                 get
                 {
-                    if (_current < _start) throw new InvalidOperationException(Environment.GetResourceString(ResId.InvalidOperation_EnumNotStarted));
-                    if (_current >= _end) throw new InvalidOperationException(Environment.GetResourceString(ResId.InvalidOperation_EnumEnded));
+                    if (_current < _start) ThrowHelper.ThrowInvalidOperationException(ExceptionResource.InvalidOperation_EnumNotStarted);
+                    if (_current >= _end) ThrowHelper.ThrowInvalidOperationException(ExceptionResource.InvalidOperation_EnumEnded);
                     return _array[_current];
                 }
             }
