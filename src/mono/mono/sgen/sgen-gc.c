@@ -1786,13 +1786,6 @@ major_copy_or_mark_from_roots (SgenGrayQueue *gc_thread_gray_queue, size_t *old_
 	if (old_next_pin_slot)
 		*old_next_pin_slot = sgen_get_pinned_count ();
 
-	/*
-	 * We don't actually pin when starting a concurrent collection, so the remset
-	 * consistency check won't work.
-	 */
-	if (remset_consistency_checks && mode != COPY_OR_MARK_FROM_ROOTS_START_CONCURRENT)
-		sgen_check_remset_consistency ();
-
 	TV_GETTIME (btv);
 	time_major_pinning += TV_ELAPSED (atv, btv);
 	SGEN_LOG (2, "Finding pinned pointers: %zd in %lld usecs", sgen_get_pinned_count (), (long long)TV_ELAPSED (atv, btv));
