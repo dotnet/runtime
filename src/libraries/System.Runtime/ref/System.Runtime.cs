@@ -982,12 +982,14 @@ namespace System
         public Exception(string message, System.Exception innerException) { }
         protected Exception(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public virtual System.Collections.IDictionary Data { get { return default(System.Collections.IDictionary); } }
+        public new Type GetType() { return default(Type); }
         public virtual string HelpLink { get { return default(string); } set { } }
         public int HResult { get { return default(int); } protected set { } }
         public System.Exception InnerException { get { return default(System.Exception); } }
         public virtual string Message { get { return default(string); } }
         public virtual string Source { get { return default(string); } set { } }
         public virtual string StackTrace { get { return default(string); } }
+        public System.Reflection.MethodBase TargetSite { get { return default(System.Reflection.MethodBase); } } 
         public virtual System.Exception GetBaseException() { return default(System.Exception); }
         public virtual void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public override string ToString() { return default(string); }
