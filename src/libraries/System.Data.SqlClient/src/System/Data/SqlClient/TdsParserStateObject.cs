@@ -1957,7 +1957,7 @@ namespace System.Data.SqlClient
                 Debug.Assert(_longlenleft == 0);
                 if (buff == null)
                 {
-                    buff = new byte[0];
+                    buff = Array.Empty<byte>();
                 }
 
                 AssertValidState();

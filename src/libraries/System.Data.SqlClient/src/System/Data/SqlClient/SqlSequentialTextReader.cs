@@ -352,7 +352,7 @@ namespace System.Data.SqlClient
 
             if (numberOfChars == 0)
             {
-                byteBuffer = new byte[0];
+                byteBuffer = Array.Empty<byte>();
                 byteBufferUsed = 0;
             }
             else

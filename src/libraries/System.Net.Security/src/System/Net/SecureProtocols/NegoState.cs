@@ -20,7 +20,7 @@ namespace System.Net.Security
     //
     internal class NegoState
     {
-        private static readonly byte[] s_emptyMessage = new byte[0];
+        private static readonly byte[] s_emptyMessage = new byte[0]; // used in reference comparisons
         private static readonly AsyncCallback s_readCallback = new AsyncCallback(ReadCallback);
         private static readonly AsyncCallback s_writeCallback = new AsyncCallback(WriteCallback);
 

@@ -13,8 +13,6 @@ namespace System.Security.Cryptography
     {
         private const int NTE_BAD_ALGID = unchecked((int)0x80090008);
 
-        private static readonly byte[] s_empty = new byte[0];
-
         private readonly HashAlgorithmName _algorithmName;
         private HashAlgorithm _hash;
         private bool _disposed;
@@ -116,7 +114,7 @@ namespace System.Security.Cryptography
                 _hash.Initialize();
             }
 
-            _hash.TransformFinalBlock(s_empty, 0, 0);
+            _hash.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
 
             byte[] hashValue = _hash.Hash;
             _resetPending = true;

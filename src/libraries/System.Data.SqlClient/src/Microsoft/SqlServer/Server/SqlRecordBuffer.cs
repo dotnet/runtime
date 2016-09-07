@@ -372,7 +372,7 @@ namespace Microsoft.SqlServer.Server
                 if (0 == value)
                 {
                     _value._int64 = value;
-                    _object = new byte[0];
+                    _object = Array.Empty<byte>();
                     _type = StorageType.ByteArray;
                     _isNull = false;
                 }
@@ -401,7 +401,7 @@ namespace Microsoft.SqlServer.Server
                 if (0 == value)
                 {
                     _value._int64 = value;
-                    _object = new char[0];
+                    _object = Array.Empty<char>();
                     _type = StorageType.CharArray;
                     _isNull = false;
                 }

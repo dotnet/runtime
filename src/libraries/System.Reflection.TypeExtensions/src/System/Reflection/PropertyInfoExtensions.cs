@@ -39,7 +39,7 @@ namespace System.Reflection
 
             if (getMethod == null && setMethod == null)
             {
-                return Helpers.EmptyMethodArray;
+                return Array.Empty<MethodInfo>();
             }
 
             if (getMethod == null)
