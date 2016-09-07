@@ -708,10 +708,10 @@ namespace System.Diagnostics
             /// </summary>
             public TransformSpec(string transformSpec, int startIdx, int endIdx, TransformSpec next = null)
             {
+                Debug.Assert(transformSpec != null && startIdx < endIdx);
 #if DEBUG
                 string spec = transformSpec.Substring(startIdx, endIdx - startIdx);
 #endif
-                Debug.Assert(transformSpec != null && startIdx < endIdx);
                 Next = next;
 
                 // Pick off the Var=

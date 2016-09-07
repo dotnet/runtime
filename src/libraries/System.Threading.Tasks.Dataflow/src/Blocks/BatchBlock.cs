@@ -654,7 +654,7 @@ namespace System.Threading.Tasks.Dataflow
                 {
                     etwLog.TaskLaunchedForMessageHandling(
                         _owningBatch, _nonGreedyState.TaskForInputProcessing, DataflowEtwProvider.TaskLaunchedReason.ProcessingInputMessages,
-                        _messages.Count + (_nonGreedyState != null ? _nonGreedyState.PostponedMessages.Count : 0));
+                        _messages.Count + _nonGreedyState.PostponedMessages.Count);
                 }
 #endif
 

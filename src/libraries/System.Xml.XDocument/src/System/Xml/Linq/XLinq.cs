@@ -559,16 +559,8 @@ namespace System.Xml.Linq
             FlushElement();
             _element = e;
             Write(e.content);
-            bool contentWritten = _element == null;
             FlushElement();
-            if (contentWritten)
-            {
-                _writer.WriteFullEndElement();
-            }
-            else
-            {
-                _writer.WriteEndElement();
-            }
+            _writer.WriteEndElement();
             _resolver.PopScope();
         }
 

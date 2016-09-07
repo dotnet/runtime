@@ -59,10 +59,7 @@ namespace System.Net.Security
                 domain = domain.Trim();
             }
 
-            if (username != null)
-            {
-                username = username.Trim();
-            }
+            username = username.Trim();
 
             if ((username.IndexOf(At) < 0) && !string.IsNullOrEmpty(domain))
             {
