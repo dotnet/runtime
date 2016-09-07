@@ -510,10 +510,8 @@ namespace System.IO
                 Debug.Assert(charsRead < 2, "InternalReadOneChar - assuming we only got 0 or 1 char, not 2!");
                 //                Console.WriteLine("That became: " + charsRead + " characters.");
             }
-            if (charsRead == 0)
-            {
-                return -1;
-            }
+
+            Debug.Assert(charsRead != 0);
 
             return _singleChar[0];
         }

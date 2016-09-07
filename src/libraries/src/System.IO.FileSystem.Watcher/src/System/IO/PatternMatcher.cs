@@ -227,7 +227,6 @@ namespace System.IO
                 if (nameOffset < name.Length)
                 {
                     nameChar = name[nameOffset];
-                    length = 1;
                     nameOffset++;
                 }
                 else
