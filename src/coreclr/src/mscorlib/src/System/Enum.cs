@@ -334,6 +334,22 @@ namespace System
             }
         }
 
+        public static bool TryParse(Type enumType, String value, out Object result)
+        {
+            return TryParse(enumType, value, false, out result);
+        }
+
+        public static bool TryParse(Type enumType, String value, bool ignoreCase, out Object result)
+        {
+            result = null;
+            EnumResult parseResult = new EnumResult();
+            bool retValue;
+
+            if (retValue = TryParseEnum(enumType, value, ignoreCase, ref parseResult))
+                result = parseResult.parsedEnum;
+            return retValue;
+        }
+
         public static bool TryParse<TEnum>(String value, out TEnum result) where TEnum : struct
         {
             return TryParse(value, false, out result);
@@ -362,6 +378,20 @@ namespace System
             EnumResult parseResult = new EnumResult() { canThrow = true };
             if (TryParseEnum(enumType, value, ignoreCase, ref parseResult))
                 return parseResult.parsedEnum;
+            else
+                throw parseResult.GetEnumParseException();
+        }
+
+        public static TEnum Parse<TEnum>(String value)
+        {
+            return Parse<TEnum>(value, false);
+        }
+
+        public static TEnum Parse<TEnum>(String value, bool ignoreCase)
+        {
+            EnumResult parseResult = new EnumResult() { canThrow = true };
+            if (TryParseEnum(typeof(TEnum), value, ignoreCase, ref parseResult))
+                return (TEnum)parseResult.parsedEnum;
             else
                 throw parseResult.GetEnumParseException();
         }
