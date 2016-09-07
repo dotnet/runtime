@@ -972,10 +972,12 @@ namespace System.Globalization
 
             int arrayLength = cultureNames.Length;
 
+#if !FEATURE_CORECLR
             if ((types & (CultureTypes.NeutralCultures | CultureTypes.FrameworkCultures)) != 0) // add zh-CHT and zh-CHS
             {
                 arrayLength += 2;
             }
+#endif // FEATURE_CORECLR
 
             CultureInfo[] cultures = new CultureInfo[arrayLength];
 
@@ -984,12 +986,14 @@ namespace System.Globalization
                 cultures[i] = new CultureInfo(cultureNames[i]);
             }
 
+#if !FEATURE_CORECLR
             if ((types & (CultureTypes.NeutralCultures | CultureTypes.FrameworkCultures)) != 0) // add zh-CHT and zh-CHS
             {
                 Contract.Assert(arrayLength == cultureNames.Length + 2, "CultureData.nativeEnumCultureNames() Incorrect array size");
                 cultures[cultureNames.Length] = new CultureInfo("zh-CHS");
                 cultures[cultureNames.Length + 1] = new CultureInfo("zh-CHT");
             }
+#endif // FEATURE_CORECLR
 
 #pragma warning restore 618
 
