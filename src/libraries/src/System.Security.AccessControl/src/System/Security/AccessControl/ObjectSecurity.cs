@@ -12,12 +12,13 @@
 using Microsoft.Win32;
 using System;
 using System.Collections;
+using System.Diagnostics;
+using System.Diagnostics.Contracts;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security.Principal;
 using System.Threading;
-using System.Diagnostics.Contracts;
-using System.Reflection;
 
 namespace System.Security.AccessControl
 {
@@ -94,7 +95,7 @@ namespace System.Security.AccessControl
 
         private void UpdateWithNewSecurityDescriptor( RawSecurityDescriptor newOne, AccessControlSections includeSections )
         {
-            Contract.Assert( newOne != null, "Must not supply a null parameter here" );
+            Debug.Assert( newOne != null, "Must not supply a null parameter here" );
 
             if (( includeSections & AccessControlSections.Owner ) != 0 )
             {

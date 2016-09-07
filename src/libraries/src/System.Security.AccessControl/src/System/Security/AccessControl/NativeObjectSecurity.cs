@@ -12,12 +12,13 @@
 using Microsoft.Win32;
 using System;
 using System.Collections;
-using System.Security.Principal;
+using System.Diagnostics;
+using System.Diagnostics.Contracts;
+using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
+using System.Security.Principal;
 using FileNotFoundException = System.IO.FileNotFoundException;
-using System.Globalization;
-using System.Diagnostics.Contracts;
 
 namespace System.Security.AccessControl
 {
@@ -153,7 +154,7 @@ nameof(name));
                     }
                     else
                     {
-                        Contract.Assert(false, string.Format(CultureInfo.InvariantCulture, "Win32GetSecurityInfo() failed with unexpected error code {0}", error));
+                        Debug.Assert(false, string.Format(CultureInfo.InvariantCulture, "Win32GetSecurityInfo() failed with unexpected error code {0}", error));
                         exception = new InvalidOperationException(SR.Format(SR.AccessControl_UnexpectedError, error));
                     }
                 }
@@ -295,7 +296,7 @@ nameof(name));
                         }
                         else
                         {
-                            Contract.Assert(false, string.Format(CultureInfo.InvariantCulture, "Unexpected error code {0}", error));
+                            Debug.Assert(false, string.Format(CultureInfo.InvariantCulture, "Unexpected error code {0}", error));
                             exception = new InvalidOperationException(SR.Format(SR.AccessControl_UnexpectedError, error));
                         }
                     }
