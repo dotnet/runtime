@@ -29,7 +29,7 @@ Project Docs
 - [Branching Guide](project-docs/branching-guide.md)
 - [API Review Process](project-docs/api-review-process.md)
 - [Strong Name Signing](project-docs/strong-name-signing.md)
-- [Public Source Signing](project-docs/public-signing.md)
+- [Public Signing](project-docs/public-signing.md)
 - [Repo Organization](project-docs/repo-organization.md)
 - [Project NuGet Dependencies](project-docs/project-nuget-dependencies.md)
 
