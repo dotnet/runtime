@@ -1188,10 +1188,10 @@ void Compiler::compShutdown()
     FILE* fout = jitstdout;
 
 #ifdef FEATURE_JIT_METHOD_PERF
-    if (compJitTimeLogFilename != NULL)
+    if (compJitTimeLogFilename != nullptr)
     {
         FILE* jitTimeLogFile = _wfopen(compJitTimeLogFilename, W("a"));
-        if (jitTimeLogFile != NULL)
+        if (jitTimeLogFile != nullptr)
         {
             CompTimeSummaryInfo::s_compTimeSummary.Print(jitTimeLogFile);
             fclose(jitTimeLogFile);
@@ -7100,11 +7100,11 @@ void CompTimeSummaryInfo::Print(FILE* f)
         }
 
         // Show slop if it's over a certain percentage of the total
-        double pslop_pct = 100.0*m_total.m_parentPhaseEndSlop*1000.0/countsPerSec/totTime_ms;
+        double pslop_pct = 100.0 * m_total.m_parentPhaseEndSlop * 1000.0 / countsPerSec / totTime_ms;
         if (pslop_pct >= 1.0)
         {
             fprintf(f, "\n  'End phase slop' should be very small (if not, there's unattributed time): %9.3f Mcycles = %3.1f%% of total.\n\n",
-                    m_total.m_parentPhaseEndSlop/1000000.0, pslop_pct);
+                    m_total.m_parentPhaseEndSlop / 1000000.0, pslop_pct);
         }
     }
     if (m_numFilteredMethods > 0)
@@ -7140,7 +7140,7 @@ void CompTimeSummaryInfo::Print(FILE* f)
                     (phase_tot_ms * 100.0 / totTime_ms));
         }
 
-        double fslop_ms = m_filtered.m_parentPhaseEndSlop*1000.0/countsPerSec;
+        double fslop_ms = m_filtered.m_parentPhaseEndSlop * 1000.0 / countsPerSec;
         if (fslop_ms > 1.0)
         {
             fprintf(f, "\n  'End phase slop' should be very small (if not, there's unattributed time): %9.3f Mcycles.\n",
@@ -7232,23 +7232,26 @@ void JitTimer::PrintCsvHeader()
 
         // Use write mode, so we rewrite the file, and retain only the last compiled process/dll.
         // Ex: ngen install mscorlib won't print stats for "ngen" but for "mscorsvw"
-        FILE* fp = _wfopen(jitTimeLogCsv, W("w"));
-        fprintf(fp, "\"Method Name\",");
-        fprintf(fp, "\"Method Index\",");
-        fprintf(fp, "\"IL Bytes\",");
-        fprintf(fp, "\"Basic Blocks\",");
-        fprintf(fp, "\"Opt Level\",");
-        fprintf(fp, "\"Loops Cloned\",");
-
-        for (int i = 0; i < PHASE_NUMBER_OF; i++)
+        fp = _wfopen(jitTimeLogCsv, W("w"));
+        if (fp != nullptr)
         {
-            fprintf(fp, "\"%s\",", PhaseNames[i]);
+            fprintf(fp, "\"Method Name\",");
+            fprintf(fp, "\"Method Index\",");
+            fprintf(fp, "\"IL Bytes\",");
+            fprintf(fp, "\"Basic Blocks\",");
+            fprintf(fp, "\"Opt Level\",");
+            fprintf(fp, "\"Loops Cloned\",");
+
+            for (int i = 0; i < PHASE_NUMBER_OF; i++)
+            {
+                fprintf(fp, "\"%s\",", PhaseNames[i]);
+            }
+
+            InlineStrategy::DumpCsvHeader(fp);
+
+            fprintf(fp, "\"Total Cycles\",");
+            fprintf(fp, "\"CPS\"\n");
         }
-
-        InlineStrategy::DumpCsvHeader(fp);
-
-        fprintf(fp, "\"Total Cycles\",");
-        fprintf(fp, "\"CPS\"\n");
     }
     fclose(fp);
 }
