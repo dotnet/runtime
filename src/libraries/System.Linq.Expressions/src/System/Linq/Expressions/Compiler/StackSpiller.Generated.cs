@@ -8,6 +8,8 @@ namespace System.Linq.Expressions.Compiler
 {
     internal partial class StackSpiller
     {
+        private readonly StackGuard _guard = new StackGuard();
+
         /// <summary>
         /// Rewrite the expression
         /// </summary>
@@ -22,6 +24,14 @@ namespace System.Linq.Expressions.Compiler
             if (node == null)
             {
                 return new Result(RewriteAction.None, null);
+            }
+
+            // When compling deep trees, we run the risk of triggering a terminating StackOverflowException,
+            // so we use the StackGuard utility here to probe for sufficient stack and continue the work on
+            // another thread when we run out of stack space.
+            if (!_guard.TryEnterOnCurrentStack())
+            {
+                return _guard.RunOnEmptyStack((StackSpiller @this, Expression n, Stack s) => @this.RewriteExpression(n, s), this, node, stack);
             }
 
             Result result;
@@ -236,7 +246,8 @@ namespace System.Linq.Expressions.Compiler
                 case ExpressionType.RuntimeVariables:
                 case ExpressionType.Default:
                 case ExpressionType.DebugInfo:
-                    return new Result(RewriteAction.None, node);
+                    result = new Result(RewriteAction.None, node);
+                    break;
 
                 default:
                     result = RewriteExpression(node.ReduceAndCheck(), stack);

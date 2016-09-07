@@ -9,9 +9,20 @@ namespace System.Linq.Expressions.Compiler
 {
     partial class LambdaCompiler
     {
+        private readonly StackGuard _guard = new StackGuard();
+
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1505:AvoidUnmaintainableCode"), System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity")]
         private void EmitExpression(Expression node, CompilationFlags flags)
         {
+            // When compling deep trees, we run the risk of triggering a terminating StackOverflowException,
+            // so we use the StackGuard utility here to probe for sufficient stack and continue the work on
+            // another thread when we run out of stack space.
+            if (!_guard.TryEnterOnCurrentStack())
+            {
+                _guard.RunOnEmptyStack((LambdaCompiler @this, Expression n, CompilationFlags f) => @this.EmitExpression(n, f), this, node, flags);
+                return;
+            }
+
             Debug.Assert(node != null);
 
             bool emitStart = (flags & CompilationFlags.EmitExpressionStartMask) == CompilationFlags.EmitExpressionStart;
