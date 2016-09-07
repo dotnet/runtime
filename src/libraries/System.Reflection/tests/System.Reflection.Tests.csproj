@@ -19,11 +19,7 @@
     <None Include="project.json" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="AssemblyName\AssemblyName_ConstructorTests.cs" />
-    <Compile Include="AssemblyName\AssemblyName_MethodTests.cs" />
-    <Compile Include="AssemblyName\AssemblyName_ProcessorArchitectureTests.cs" />
-    <Compile Include="AssemblyName\AssemblyName_PropertyTests.cs" />
-    <Compile Include="AssemblyName\CultureName.cs" />
+    <Compile Include="AssemblyNameTests.cs" />
     <Compile Include="AssemblyTests.cs" />
     <Compile Include="Common\ReflectionTestData.cs" />
     <Compile Include="ConstructorInfoTests.cs" />
