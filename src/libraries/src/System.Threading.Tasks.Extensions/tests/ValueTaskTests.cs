@@ -320,10 +320,12 @@ namespace System.Threading.Tasks.Tests
         [InlineData(typeof(ValueTask<string>))]
         public void AsyncBuilderAttribute_ValueTaskAttributed(Type valueTaskType)
         {
-            CustomAttributeData aba = valueTaskType.GetTypeInfo().CustomAttributes.Single(
-                attr => attr.AttributeType.FullName == "System.Runtime.CompilerServices.AsyncBuilderAttribute");
-            Assert.True(aba.AttributeType.GetTypeInfo().IsNotPublic);
-            Assert.Equal(typeof(AsyncValueTaskMethodBuilder<>), aba.ConstructorArguments[0].Value);
+            CustomAttributeData cad = valueTaskType.GetTypeInfo().CustomAttributes.Single(attr => attr.AttributeType == typeof(AsyncBuilderAttribute));
+            Type builderTypeCtorArg = (Type)cad.ConstructorArguments[0].Value;
+            Assert.Equal(typeof(AsyncValueTaskMethodBuilder<>), builderTypeCtorArg);
+
+            AsyncBuilderAttribute aba = valueTaskType.GetTypeInfo().GetCustomAttribute<AsyncBuilderAttribute>();
+            Assert.Equal(builderTypeCtorArg, aba.BuilderType);
         }
 
         private sealed class TrackingSynchronizationContext : SynchronizationContext
