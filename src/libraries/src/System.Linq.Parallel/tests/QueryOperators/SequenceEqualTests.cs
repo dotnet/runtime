@@ -169,6 +169,34 @@ namespace System.Linq.Parallel.Tests
         }
 
         [Theory]
+        [ActiveIssue("Cancellation token not shared")]
+        [MemberData("SequenceEqualData", new int[] { /* Sources.OuterLoopCount */ })]
+        public static void SequenceEqual_SharedLeft_Cancellation(Labeled<ParallelQuery<int>> left, Labeled<ParallelQuery<int>> right, int count)
+        {
+            IntegerRangeSet seen = new IntegerRangeSet(0, count);
+            CancellationTokenSource cs = new CancellationTokenSource();
+
+            Assert.Throws<OperationCanceledException>(() => left.Item.WithCancellation(cs.Token)
+              .SequenceEqual(right.Item.Except(ParallelEnumerable.Range(0, count).Select(x => { cs.Cancel(); seen.Add(x); return x; }))));
+            // Canceled query means some elements should not be seen.
+            Assert.False(seen.All(x => x.Value));
+        }
+
+        [Theory]
+        [ActiveIssue("Cancellation token not shared")]
+        [MemberData("SequenceEqualData", new int[] { /* Sources.OuterLoopCount */ })]
+        public static void SequenceEqual_SharedRight_Cancellation(Labeled<ParallelQuery<int>> left, Labeled<ParallelQuery<int>> right, int count)
+        {
+            IntegerRangeSet seen = new IntegerRangeSet(0, count);
+            CancellationTokenSource cs = new CancellationTokenSource();
+
+            Assert.Throws<OperationCanceledException>(() => left.Item.Except(ParallelEnumerable.Range(0, count).Select(x => { cs.Cancel(); seen.Add(x); return x; }))
+              .SequenceEqual(right.Item.WithCancellation(cs.Token)));
+            // Canceled query means some elements should not be seen.
+            Assert.False(seen.All(x => x.Value));
+        }
+
+        [Theory]
         [MemberData(nameof(SequenceEqualData), new[] { 4 })]
         public static void SequenceEqual_AggregateException(Labeled<ParallelQuery<int>> left, Labeled<ParallelQuery<int>> right, int count)
         {
@@ -202,11 +230,8 @@ namespace System.Linq.Parallel.Tests
             ParallelQuery<int> leftQuery = left.Item;
             ParallelQuery<int> rightQuery = right.Item;
 
-            AggregateException ex = Assert.Throws<AggregateException>(() => leftQuery.SequenceEqual(new DisposeExceptionEnumerable<int>(rightQuery).AsParallel()));
-            Assert.All(ex.InnerExceptions, e => Assert.IsType<TestDisposeException>(e));
-
-            ex = Assert.Throws<AggregateException>(() => new DisposeExceptionEnumerable<int>(leftQuery).AsParallel().SequenceEqual(rightQuery));
-            Assert.All(ex.InnerExceptions, e => Assert.IsType<TestDisposeException>(e));
+            AssertThrows.Wrapped<TestDisposeException>(() => leftQuery.SequenceEqual(new DisposeExceptionEnumerable<int>(rightQuery).AsParallel()));
+            AssertThrows.Wrapped<TestDisposeException>(() => new DisposeExceptionEnumerable<int>(leftQuery).AsParallel().SequenceEqual(rightQuery));
         }
 
         private class DisposeExceptionEnumerable<T> : IEnumerable<T>
