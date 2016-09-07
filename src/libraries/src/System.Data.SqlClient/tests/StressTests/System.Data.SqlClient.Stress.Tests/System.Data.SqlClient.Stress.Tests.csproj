@@ -1,0 +1,39 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="14.0">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <ProjectGuid>{B94B8E6D-3E41-4046-B758-4A2E281F74EE}</ProjectGuid>
+    <RootNamespace>Stress.Data.SqlClient</RootNamespace>
+    <AssemblyName>System.Data.SqlClient.Stress.Tests</AssemblyName>
+    <OutputType>Library</OutputType>
+    <KeepAllProjectReferences>true</KeepAllProjectReferences>
+    <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU'" />
+  <ItemGroup>
+    <ProjectReference Include="..\System.Data.StressRunner\System.Data.StressRunner.csproj" />
+    <ProjectReference Include="..\System.Data.StressFramework\System.Data.StressFramework.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="MultiSubnetFailoverSetup.cs" />
+    <Compile Include="SqlClientStressFactory.cs" />
+    <Compile Include="SqlClientTestGroup.cs" />
+    <Compile Include="FilteredDefaultTraceListener.cs" />
+    <Compile Include="HostsFileManager.cs" />
+    <Compile Include="NetUtils.cs" />
+  </ItemGroup>
+  <!--Import the targets-->
+  <ItemGroup>
+    <None Include="project.json" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\src\System.Data.SqlClient.csproj">
+      <Name>System.Data.SqlClient</Name>
+      <OSGroup>$(InputOSGroup)</OSGroup>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>
