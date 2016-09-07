@@ -355,7 +355,7 @@ namespace System.Linq.Expressions.Tests
         public static void ToStringTest()
         {
             var e = Expression.Power(Expression.Parameter(typeof(double), "a"), Expression.Parameter(typeof(double), "b"));
-            Assert.Equal("(a ^ b)", e.ToString()); // QUIRK: Same output as ExclusiveOr, see https://github.com/dotnet/corefx/issues/11415
+            Assert.Equal("(a ** b)", e.ToString());
         }
 
         #endregion
