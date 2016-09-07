@@ -346,7 +346,7 @@ namespace System.IO
 
             Debug.Assert(str != null);
             Debug.Assert(str.CanSeek, "The underlying str is expected to support Seek, but it does not.");
-            Debug.Assert(0 <= pos && pos <= Int64.MaxValue, "Unexpected pos=" + pos + ".");
+            Debug.Assert(0 <= pos, "Unexpected pos=" + pos + ".");
 
             str.Seek(pos, SeekOrigin.Begin);
         }
@@ -419,7 +419,7 @@ namespace System.IO
 
                 Debug.Assert(str != null);
                 Debug.Assert(str.CanSeek, "The underlying str is expected to support Seek, but it does not.");
-                Debug.Assert(0 <= val && val <= Int64.MaxValue, "Unexpected val=" + val + ".");
+                Debug.Assert(0 <= val, "Unexpected val=" + val + ".");
 
                 str.SetLength(val);
             }

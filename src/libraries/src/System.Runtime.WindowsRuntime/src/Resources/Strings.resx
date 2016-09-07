@@ -312,9 +312,6 @@
   <data name="IndexOutOfRange_UMSPosition" xml:space="preserve">
     <value>Unmanaged memory stream position was beyond the capacity of the stream.</value>
   </data>
-  <data name="ArgumentOutOfRange_UnmanagedMemStreamLength" xml:space="preserve">
-    <value>UnmanagedMemoryStream length must be non-negative and less than 2^63 - 1 - baseAddress.</value>
-  </data>
   <data name="IO_SeekBeforeBegin" xml:space="preserve">
     <value>An attempt was made to move the position before the beginning of the stream.</value>
   </data>
