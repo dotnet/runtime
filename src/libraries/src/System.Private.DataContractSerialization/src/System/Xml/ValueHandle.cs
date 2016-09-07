@@ -507,8 +507,6 @@ namespace System.Xml
                     return XmlConverter.ToString(ToDateTime());
                 case ValueHandleType.Empty:
                     return string.Empty;
-                case ValueHandleType.UTF8:
-                    return GetCharsText();
                 case ValueHandleType.Unicode:
                     return GetUnicodeCharsText();
                 case ValueHandleType.EscapedUTF8:
