@@ -16,13 +16,13 @@ namespace System.Reflection.Tests
 
         private static IEnumerable<ProcessorArchitecture> ValidProcessorArchitectureValues()
         {
-            yield return ProcessorArchitecture.None;
-            yield return ProcessorArchitecture.MSIL;
-            yield return ProcessorArchitecture.X86;
-            yield return ProcessorArchitecture.IA64;
-            yield return ProcessorArchitecture.Amd64;
-            yield return ProcessorArchitecture.Arm;
+        	return (ProcessorArchitecture[])Enum.GetValues(typeof(ProcessorArchitecture));
         }
+
+        public static IEnumerable<object[]> ProcessorArchitectures_TestData()
+        {
+         	return ValidProcessorArchitectureValues().Select(arch => new object[] { arch });
+     	}
 
         public static IEnumerable<object[]> Names_TestData()
         {
@@ -221,16 +221,8 @@ namespace System.Reflection.Tests
             Assert.Equal(publicKey, assemblyName.GetPublicKey());
         }
 
-        public static IEnumerable<object[]> SetPublicKeyToken_TestData()
-        {
-            yield return new object[] { null };
-            yield return new object[] { new byte[0] };
-            yield return new object[] { new byte[16] };
-            yield return new object[] { Enumerable.Repeat((byte)'\0', 16).ToArray() };
-        }
-
         [Theory]
-        [MemberData(nameof(SetPublicKeyToken_TestData))]
+        [MemberData(nameof(SetPublicKey_TestData))]
         public void SetPublicKeyToken_GetPublicKeyToken(byte[] publicKeyToken)
         {
             AssemblyName assemblyName = new AssemblyName();
@@ -298,7 +290,7 @@ namespace System.Reflection.Tests
         {
             var assemblyName = new AssemblyName(name);
             Assert.True(assemblyName.ToString().StartsWith(name), string.Format("Assembly name {0} did not start with \"{1}\".", assemblyName, name));
-            Assert.Equal(assemblyName.ToString(), assemblyName.FullName);
+            Assert.Equal(assemblyName.FullName, assemblyName.ToString());
         }
 
         [Theory]
@@ -328,18 +320,16 @@ namespace System.Reflection.Tests
             }
         }
 
-        [Fact]
-        public void SetProcessorArchitecture_NoneArchitecture_Succeeds()
+        [Theory]
+        [MemberData(nameof(ProcessorArchitectures_TestData))]
+        public void SetProcessorArchitecture_NoneArchitecture_Succeeds(ProcessorArchitecture architecture)
         {
-            foreach (ProcessorArchitecture validArchitecture in ValidProcessorArchitectureValues())
-            {
-                var assemblyName = new AssemblyName();
+            var assemblyName = new AssemblyName();
 
-                assemblyName.ProcessorArchitecture = validArchitecture;
-                assemblyName.ProcessorArchitecture = ProcessorArchitecture.None;
+            assemblyName.ProcessorArchitecture = architecture;
+            assemblyName.ProcessorArchitecture = ProcessorArchitecture.None;
 
-                Assert.Equal(ProcessorArchitecture.None, assemblyName.ProcessorArchitecture);
-            }
+            Assert.Equal(ProcessorArchitecture.None, assemblyName.ProcessorArchitecture);
         }
 
         [Theory]
@@ -355,23 +345,13 @@ namespace System.Reflection.Tests
             Assert.Equal(expectedSerializedFullName, assemblyName.ToString());
         }
 
-        [Fact]
-        public void SetProcessorArchitecture_ValidArchitecture_Succeeds()
+        [Theory]
+        [MemberData(nameof(ProcessorArchitectures_TestData))]
+        public void SetProcessorArchitecture_ValidArchitecture_Succeeds(ProcessorArchitecture architecture)
         {
-            foreach (ProcessorArchitecture validArchitecture in ValidProcessorArchitectureValues())
-            {
-                AssemblyName assemblyName = new AssemblyName();
-                assemblyName.ProcessorArchitecture = validArchitecture;
-                Assert.Equal(validArchitecture, assemblyName.ProcessorArchitecture);
-            }
-        }
-
-        [Fact]
-        public void CheckProcessorArchitectureTestData()
-        {
-            // Make sure that we don't add values to enum without updating parser and tests.
-            ProcessorArchitecture[] enumValues = (ProcessorArchitecture[])Enum.GetValues(typeof(ProcessorArchitecture));
-            Assert.Equal(enumValues, ValidProcessorArchitectureValues());
+            AssemblyName assemblyName = new AssemblyName();
+            assemblyName.ProcessorArchitecture = architecture;
+            Assert.Equal(architecture, assemblyName.ProcessorArchitecture);
         }
     }
 }
