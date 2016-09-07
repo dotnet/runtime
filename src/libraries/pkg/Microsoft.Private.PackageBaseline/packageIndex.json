@@ -2425,8 +2425,12 @@
       }
     },
     "System.Json": {},
-    "System.Private.Xml": {},
-    "System.Private.Xml.Linq": {},
+    "System.Private.Xml": {
+        "BaselineVersion": "4.3.0"
+    },
+    "System.Private.Xml.Linq": {
+        "BaselineVersion": "4.3.0"
+    },
     "System.Security.Permissions": {
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.3.0"
