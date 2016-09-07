@@ -17899,6 +17899,13 @@ bool Compiler::IsTargetIntrinsic(CorInfoIntrinsics intrinsicId)
     switch (intrinsicId)
     {
         // Amd64 only has SSE2 instruction to directly compute sqrt/abs.
+        //
+        // TODO: Because the x86 backend only targets SSE for floating-point code,
+        //       it does not treat Sine, Cosine, or Round as intrinsics (JIT32
+        //       implemented those intrinsics as x87 instructions). If this poses
+        //       a CQ problem, it may be necessary to change the implementation of
+        //       the helper calls to decrease call overhead or switch back to the
+        //       x87 instructions. This is tracked by #7097.
         case CORINFO_INTRINSIC_Sqrt:
         case CORINFO_INTRINSIC_Abs:
             return true;
