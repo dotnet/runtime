@@ -12042,8 +12042,9 @@ GenTreePtr Compiler::gtFoldExprConst(GenTreePtr tree)
                             // constants in a target-specific function.
                             CLANG_FORMAT_COMMENT_ANCHOR;
 
-                            // Don't fold conversions of +inf/-inf to integral value as the value returned by JIT helper
-                            // doesn't match with the C compiler's cast result.
+                            // Don't fold conversions of +inf/-inf to integral value on all platforms
+                            // as the value returned by JIT helper doesn't match with the C compiler's cast result.
+                            // We want the behavior to be same with or without folding.  
                             return tree;
                         }
 
