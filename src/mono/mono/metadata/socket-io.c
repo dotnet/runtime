@@ -774,16 +774,15 @@ ves_icall_System_Net_Sockets_Socket_Accept_internal (SOCKET sock, gint32 *werror
 
 	MONO_EXIT_GC_SAFE;
 
-	mono_thread_info_uninstall_interrupt (&interrupted);
-	if (interrupted) {
-		*werror = WSAEINTR;
-		return NULL;
-	}
-
-	if (newsock == INVALID_SOCKET) {
+	if (newsock == INVALID_SOCKET)
 		*werror = WSAGetLastError ();
+
+	mono_thread_info_uninstall_interrupt (&interrupted);
+	if (interrupted)
+		*werror = WSAEINTR;
+
+	if (*werror)
 		return NULL;
-	}
 	
 	return GUINT_TO_POINTER (newsock);
 }
@@ -1336,14 +1335,12 @@ ves_icall_System_Net_Sockets_Socket_Connect_internal (SOCKET sock, MonoObject *s
 
 	MONO_EXIT_GC_SAFE;
 
-	mono_thread_info_uninstall_interrupt (&interrupted);
-	if (interrupted) {
-		*werror = WSAEINTR;
-		return;
-	}
-
 	if (ret == SOCKET_ERROR)
 		*werror = WSAGetLastError ();
+
+	mono_thread_info_uninstall_interrupt (&interrupted);
+	if (interrupted)
+		*werror = WSAEINTR;
 
 	g_free (sa);
 }
@@ -1423,10 +1420,10 @@ ves_icall_System_Net_Sockets_Socket_Disconnect_internal (SOCKET sock, MonoBoolea
 	MONO_ENTER_GC_SAFE;
 
 	if (_wapi_disconnectex != NULL) {
-		if (!_wapi_disconnectex (sock, NULL, TF_REUSE_SOCKET, 0))
+		if (!_wapi_disconnectex (sock, NULL, reuse ? TF_REUSE_SOCKET : 0, 0))
 			*werror = WSAGetLastError ();
 	} else if (_wapi_transmitfile != NULL) {
-		if (!_wapi_transmitfile (sock, NULL, 0, 0, NULL, NULL, TF_DISCONNECT | TF_REUSE_SOCKET))
+		if (!_wapi_transmitfile (sock, NULL, 0, 0, NULL, NULL, TF_DISCONNECT | (reuse ? TF_REUSE_SOCKET : 0)))
 			*werror = WSAGetLastError ();
 	} else {
 		*werror = ERROR_NOT_SUPPORTED;
@@ -1481,16 +1478,15 @@ ves_icall_System_Net_Sockets_Socket_Receive_internal (SOCKET sock, MonoArray *bu
 
 	MONO_EXIT_GC_SAFE;
 
-	mono_thread_info_uninstall_interrupt (&interrupted);
-	if (interrupted) {
-		*werror = WSAEINTR;
-		return 0;
-	}
-
-	if (ret == SOCKET_ERROR) {
+	if (ret == SOCKET_ERROR)
 		*werror = WSAGetLastError ();
+
+	mono_thread_info_uninstall_interrupt (&interrupted);
+	if (interrupted)
+		*werror = WSAEINTR;
+
+	if (*werror)
 		return 0;
-	}
 
 	return ret;
 }
@@ -1527,16 +1523,15 @@ ves_icall_System_Net_Sockets_Socket_Receive_array_internal (SOCKET sock, MonoArr
 
 	MONO_EXIT_GC_SAFE;
 
-	mono_thread_info_uninstall_interrupt (&interrupted);
-	if (interrupted) {
-		*werror = WSAEINTR;
-		return 0;
-	}
-
-	if (ret == SOCKET_ERROR) {
+	if (ret == SOCKET_ERROR)
 		*werror = WSAGetLastError ();
+
+	mono_thread_info_uninstall_interrupt (&interrupted);
+	if (interrupted)
+		*werror = WSAEINTR;
+
+	if (*werror)
 		return 0;
-	}
 
 	return recv;
 }
@@ -1588,16 +1583,16 @@ ves_icall_System_Net_Sockets_Socket_ReceiveFrom_internal (SOCKET sock, MonoArray
 
 	MONO_EXIT_GC_SAFE;
 
-	mono_thread_info_uninstall_interrupt (&interrupted);
-	if (interrupted) {
-		g_free (sa);
-		*werror = WSAEINTR;
-		return 0;
-	}
-
-	if (ret==SOCKET_ERROR) {
-		g_free (sa);
+	if (ret == SOCKET_ERROR)
 		*werror = WSAGetLastError ();
+
+	mono_thread_info_uninstall_interrupt (&interrupted);
+
+	if (interrupted)
+		*werror = WSAEINTR;
+
+	if (*werror) {
+		g_free(sa);
 		return 0;
 	}
 
@@ -1660,16 +1655,15 @@ ves_icall_System_Net_Sockets_Socket_Send_internal (SOCKET sock, MonoArray *buffe
 
 	MONO_EXIT_GC_SAFE;
 
-	mono_thread_info_uninstall_interrupt (&interrupted);
-	if (interrupted) {
-		*werror = WSAEINTR;
-		return 0;
-	}
-
-	if (ret == SOCKET_ERROR) {
+	if (ret == SOCKET_ERROR)
 		*werror = WSAGetLastError ();
+
+	mono_thread_info_uninstall_interrupt (&interrupted);
+	if (interrupted)
+		*werror = WSAEINTR;
+
+	if (*werror)
 		return 0;
-	}
 
 	return ret;
 }
@@ -1706,17 +1700,16 @@ ves_icall_System_Net_Sockets_Socket_Send_array_internal (SOCKET sock, MonoArray 
 
 	MONO_EXIT_GC_SAFE;
 
-	mono_thread_info_uninstall_interrupt (&interrupted);
-	if (interrupted) {
-		*werror = WSAEINTR;
-		return 0;
-	}
-
-	if (ret == SOCKET_ERROR) {
+	if (ret == SOCKET_ERROR)
 		*werror = WSAGetLastError ();
+
+	mono_thread_info_uninstall_interrupt (&interrupted);
+	if (interrupted)
+		*werror = WSAEINTR;
+
+	if (*werror)
 		return 0;
-	}
-	
+
 	return sent;
 }
 
@@ -1773,18 +1766,18 @@ ves_icall_System_Net_Sockets_Socket_SendTo_internal (SOCKET sock, MonoArray *buf
 
 	MONO_EXIT_GC_SAFE;
 
-	mono_thread_info_uninstall_interrupt (&interrupted);
-	if (interrupted) {
-		g_free (sa);
-		*werror = WSAEINTR;
-		return 0;
-	}
-
 	if (ret == SOCKET_ERROR)
 		*werror = WSAGetLastError ();
 
-	g_free (sa);
-	
+	mono_thread_info_uninstall_interrupt (&interrupted);
+	if (interrupted)
+		*werror = WSAEINTR;
+
+	g_free(sa);
+
+	if (*werror)
+		return 0;
+
 	return ret;
 }
 
@@ -1961,7 +1954,7 @@ ves_icall_System_Net_Sockets_Socket_GetSocketOption_obj_internal (SOCKET sock, g
 	int system_level = 0;
 	int system_name = 0;
 	int ret;
-	int val;
+	int val = 0;
 	socklen_t valsize = sizeof (val);
 	struct linger linger;
 	socklen_t lingersize = sizeof (linger);
@@ -2454,14 +2447,14 @@ ves_icall_System_Net_Sockets_Socket_Shutdown_internal (SOCKET sock, gint32 how, 
 
 	MONO_EXIT_GC_SAFE;
 
+	if (ret == SOCKET_ERROR)
+		*werror = WSAGetLastError ();
+
 	mono_thread_info_uninstall_interrupt (&interrupted);
 	if (interrupted) {
 		*werror = WSAEINTR;
-		return;
 	}
 
-	if (ret == SOCKET_ERROR)
-		*werror = WSAGetLastError ();
 }
 
 gint
