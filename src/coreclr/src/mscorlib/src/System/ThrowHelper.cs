@@ -84,6 +84,11 @@ namespace System {
             throw new ArgumentNullException(GetArgumentName(argument));
         }
 
+        internal static void ThrowArgumentNullException(ExceptionResource resource)
+        {
+            throw new ArgumentNullException(Environment.GetResourceString(GetResourceName(resource)));
+        }
+
         internal static void ThrowArgumentOutOfRangeException(ExceptionArgument argument) {
             throw new ArgumentOutOfRangeException(GetArgumentName(argument));
         }
@@ -247,6 +252,10 @@ namespace System {
         beginMethod,
         continuationOptions,
         continuationAction,
+        valueFactory,
+        addValueFactory,
+        updateValueFactory,
+        concurrencyLevel,
 
     }
 
@@ -341,6 +350,17 @@ namespace System {
         TaskCompletionSourceT_TrySetException_NullException,
         TaskCompletionSourceT_TrySetException_NoExceptions,
         InvalidOperation_WrongAsyncResultOrEndCalledMultiple,
+        ConcurrentDictionary_ConcurrencyLevelMustBePositive,
+        ConcurrentDictionary_CapacityMustNotBeNegative,
+        ConcurrentDictionary_TypeOfValueIncorrect,
+        ConcurrentDictionary_TypeOfKeyIncorrect,
+        ConcurrentDictionary_SourceContainsDuplicateKeys,
+        ConcurrentDictionary_KeyAlreadyExisted,
+        ConcurrentDictionary_ItemKeyIsNull,
+        ConcurrentDictionary_IndexIsNegative,
+        ConcurrentDictionary_ArrayNotLargeEnough,
+        ConcurrentDictionary_ArrayIncorrectType,
+        ConcurrentCollection_SyncRoot_NotSupported,
 
     }
 }
