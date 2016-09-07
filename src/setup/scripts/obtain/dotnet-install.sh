@@ -84,6 +84,10 @@ get_current_os_name() {
                     echo "opensuse.13.2"
                     return 0
                     ;;
+                "opensuse.42.1")
+                    echo "opensuse.42.1"
+                    return 0
+                    ;;
                 "rhel.7.0" | "rhel.7.1" | "rhel.7.2")
                     echo "rhel"
                     return 0
@@ -94,6 +98,10 @@ get_current_os_name() {
                     ;;
                 "ubuntu.16.04")
                     echo "ubuntu.16.04"
+                    return 0
+                    ;;
+                "ubuntu.16.10")
+                    echo "ubuntu.16.10"
                     return 0
                     ;;
             esac
