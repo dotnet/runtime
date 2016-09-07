@@ -245,19 +245,19 @@ namespace System.Linq.Expressions.Tests
         [MemberData(nameof(Method_Invalid_TestData))]
         public static void Method_Invalid(MethodInfo method, Type exceptionType)
         {
-            Verify(() => Expression.Call(null, method), exceptionType, "method");
-            Verify(() => Expression.Call(null, method, s_valid, s_valid), exceptionType, "method");
-            Verify(() => Expression.Call(null, method, s_valid, s_valid, s_valid), exceptionType, "method");
-            Verify(() => Expression.Call(null, method, new Expression[0]), exceptionType, "method");
-            Verify(() => Expression.Call(null, method, (IEnumerable<Expression>)new Expression[0]), exceptionType, "method");
+            AssertArgumentException(() => Expression.Call(null, method), exceptionType, "method");
+            AssertArgumentException(() => Expression.Call(null, method, s_valid, s_valid), exceptionType, "method");
+            AssertArgumentException(() => Expression.Call(null, method, s_valid, s_valid, s_valid), exceptionType, "method");
+            AssertArgumentException(() => Expression.Call(null, method, new Expression[0]), exceptionType, "method");
+            AssertArgumentException(() => Expression.Call(null, method, (IEnumerable<Expression>)new Expression[0]), exceptionType, "method");
 
-            Verify(() => Expression.Call(method, s_valid), exceptionType, "method");
-            Verify(() => Expression.Call(method, s_valid, s_valid), exceptionType, "method");
-            Verify(() => Expression.Call(method, s_valid, s_valid, s_valid), exceptionType, "method");
-            Verify(() => Expression.Call(method, s_valid, s_valid, s_valid, s_valid), exceptionType, "method");
-            Verify(() => Expression.Call(method, s_valid, s_valid, s_valid, s_valid, s_valid), exceptionType, "method");
-            Verify(() => Expression.Call(method, new Expression[0]), exceptionType, "method");
-            Verify(() => Expression.Call(method, (IEnumerable<Expression>)new Expression[0]), exceptionType, "method");
+            AssertArgumentException(() => Expression.Call(method, s_valid), exceptionType, "method");
+            AssertArgumentException(() => Expression.Call(method, s_valid, s_valid), exceptionType, "method");
+            AssertArgumentException(() => Expression.Call(method, s_valid, s_valid, s_valid), exceptionType, "method");
+            AssertArgumentException(() => Expression.Call(method, s_valid, s_valid, s_valid, s_valid), exceptionType, "method");
+            AssertArgumentException(() => Expression.Call(method, s_valid, s_valid, s_valid, s_valid, s_valid), exceptionType, "method");
+            AssertArgumentException(() => Expression.Call(method, new Expression[0]), exceptionType, "method");
+            AssertArgumentException(() => Expression.Call(method, (IEnumerable<Expression>)new Expression[0]), exceptionType, "method");
         }
         
         [Fact]
@@ -302,57 +302,57 @@ namespace System.Linq.Expressions.Tests
         [MemberData(nameof(InvalidArg_TestData))]
         public static void Arg0_Invalid(Expression arg, Type exceptionType)
         {
-            Verify(() => Expression.Call(s_method1, arg), exceptionType, "arg0");
-            Verify(() => Expression.Call(s_method2, arg, s_valid), exceptionType, "arg0");
-            Verify(() => Expression.Call(s_method3, arg, s_valid, s_valid), exceptionType, "arg0");
-            Verify(() => Expression.Call(s_method4, arg, s_valid, s_valid, s_valid), exceptionType, "arg0");
-            Verify(() => Expression.Call(s_method5, arg, s_valid, s_valid, s_valid, s_valid), exceptionType, "arg0");
+            AssertArgumentException(() => Expression.Call(s_method1, arg), exceptionType, "arg0");
+            AssertArgumentException(() => Expression.Call(s_method2, arg, s_valid), exceptionType, "arg0");
+            AssertArgumentException(() => Expression.Call(s_method3, arg, s_valid, s_valid), exceptionType, "arg0");
+            AssertArgumentException(() => Expression.Call(s_method4, arg, s_valid, s_valid, s_valid), exceptionType, "arg0");
+            AssertArgumentException(() => Expression.Call(s_method5, arg, s_valid, s_valid, s_valid, s_valid), exceptionType, "arg0");
 
-            Verify(() => Expression.Call(null, s_method1, arg), exceptionType, "arg0");
-            Verify(() => Expression.Call(null, s_method2, arg, s_valid), exceptionType, "arg0");
-            Verify(() => Expression.Call(null, s_method3, arg, s_valid, s_valid), exceptionType, "arg0");
+            AssertArgumentException(() => Expression.Call(null, s_method1, arg), exceptionType, "arg0");
+            AssertArgumentException(() => Expression.Call(null, s_method2, arg, s_valid), exceptionType, "arg0");
+            AssertArgumentException(() => Expression.Call(null, s_method3, arg, s_valid, s_valid), exceptionType, "arg0");
         }
 
         [Theory]
         [MemberData(nameof(InvalidArg_TestData))]
         public static void Arg1_Invalid(Expression arg, Type exceptionType)
         {
-            Verify(() => Expression.Call(s_method2, s_valid, arg), exceptionType, "arg1");
-            Verify(() => Expression.Call(s_method3, s_valid, arg, s_valid), exceptionType, "arg1");
-            Verify(() => Expression.Call(s_method4, s_valid, arg, s_valid, s_valid), exceptionType, "arg1");
-            Verify(() => Expression.Call(s_method5, s_valid, arg, s_valid, s_valid, s_valid), exceptionType, "arg1");
+            AssertArgumentException(() => Expression.Call(s_method2, s_valid, arg), exceptionType, "arg1");
+            AssertArgumentException(() => Expression.Call(s_method3, s_valid, arg, s_valid), exceptionType, "arg1");
+            AssertArgumentException(() => Expression.Call(s_method4, s_valid, arg, s_valid, s_valid), exceptionType, "arg1");
+            AssertArgumentException(() => Expression.Call(s_method5, s_valid, arg, s_valid, s_valid, s_valid), exceptionType, "arg1");
             
-            Verify(() => Expression.Call(null, s_method2, s_valid, arg), exceptionType, "arg1");
-            Verify(() => Expression.Call(null, s_method3, s_valid, arg, s_valid), exceptionType, "arg1");
+            AssertArgumentException(() => Expression.Call(null, s_method2, s_valid, arg), exceptionType, "arg1");
+            AssertArgumentException(() => Expression.Call(null, s_method3, s_valid, arg, s_valid), exceptionType, "arg1");
         }
 
         [Theory]
         [MemberData(nameof(InvalidArg_TestData))]
         public static void Arg2_Invalid(Expression arg, Type exceptionType)
         {
-            Verify(() => Expression.Call(s_method3, s_valid, s_valid, arg), exceptionType, "arg2");
-            Verify(() => Expression.Call(s_method4, s_valid, s_valid, arg, s_valid), exceptionType, "arg2");
-            Verify(() => Expression.Call(s_method5, s_valid, s_valid, arg, s_valid, s_valid), exceptionType, "arg2");
+            AssertArgumentException(() => Expression.Call(s_method3, s_valid, s_valid, arg), exceptionType, "arg2");
+            AssertArgumentException(() => Expression.Call(s_method4, s_valid, s_valid, arg, s_valid), exceptionType, "arg2");
+            AssertArgumentException(() => Expression.Call(s_method5, s_valid, s_valid, arg, s_valid, s_valid), exceptionType, "arg2");
             
-            Verify(() => Expression.Call(null, s_method3, s_valid, s_valid, arg), exceptionType, "arg2");
+            AssertArgumentException(() => Expression.Call(null, s_method3, s_valid, s_valid, arg), exceptionType, "arg2");
         }
 
         [Theory]
         [MemberData(nameof(InvalidArg_TestData))]
         public static void Arg3_Invalid(Expression arg, Type exceptionType)
         {
-            Verify(() => Expression.Call(s_method4, s_valid, s_valid, s_valid, arg), exceptionType, "arg3");
-            Verify(() => Expression.Call(s_method5, s_valid, s_valid, s_valid, arg, s_valid), exceptionType, "arg3");
+            AssertArgumentException(() => Expression.Call(s_method4, s_valid, s_valid, s_valid, arg), exceptionType, "arg3");
+            AssertArgumentException(() => Expression.Call(s_method5, s_valid, s_valid, s_valid, arg, s_valid), exceptionType, "arg3");
         }
 
         [Theory]
         [MemberData(nameof(InvalidArg_TestData))]
         public static void Arg4_Invalid(Expression arg, Type exceptionType)
         {
-            Verify(() => Expression.Call(s_method5, s_valid, s_valid, s_valid, s_valid, arg), exceptionType, "arg4");
+            AssertArgumentException(() => Expression.Call(s_method5, s_valid, s_valid, s_valid, s_valid, arg), exceptionType, "arg4");
         }
 
-        private static void Verify(Action action, Type exceptionType, string paramName)
+        private static void AssertArgumentException(Action action, Type exceptionType, string paramName)
         {
             ArgumentException ex = (ArgumentException)Assert.Throws(exceptionType, action);
             Assert.Equal(paramName, ex.ParamName);
@@ -374,26 +374,26 @@ namespace System.Linq.Expressions.Tests
                 Assert.Throws<ArgumentException>("method", () => Expression.Call(method));
                 Assert.Throws<ArgumentException>("method", () => Expression.Call(null, method));
             }
-            else if (count != 1)
+            if (count != 1)
             {
                 Assert.Throws<ArgumentException>("method", () => Expression.Call(method, arg));
                 Assert.Throws<ArgumentException>("method", () => Expression.Call(null, method, arg));
             }
-            else if (count != 2)
+            if (count != 2)
             {
                 Assert.Throws<ArgumentException>("method", () => Expression.Call(method, arg, arg));
                 Assert.Throws<ArgumentException>("method", () => Expression.Call(null, method, arg, arg));
             }
-            else if (count != 3)
+            if (count != 3)
             {
                 Assert.Throws<ArgumentException>("method", () => Expression.Call(method, arg, arg, arg));
                 Assert.Throws<ArgumentException>("method", () => Expression.Call(null, method, arg, arg, arg));
             }
-            else if (count != 4)
+            if (count != 4)
             {
                 Assert.Throws<ArgumentException>("method", () => Expression.Call(method, arg, arg, arg, arg));
             }
-            else if (count != 5)
+            if (count != 5)
             {
                 Assert.Throws<ArgumentException>("method", () => Expression.Call(method, arg, arg, arg, arg, arg));
             }
