@@ -60,9 +60,6 @@ namespace System.ComponentModel
     /// </summary>
     internal sealed class ReflectEventDescriptor : EventDescriptor
     {
-        private static readonly Type[] s_argsNone = new Type[0];
-        private static readonly object s_noDefault = new object();
-
         private Type _type;           // the delegate type for the event
         private readonly Type _componentClass; // the class of the component this info is for
 
@@ -91,7 +88,7 @@ namespace System.ComponentModel
         }
 
         public ReflectEventDescriptor(Type componentClass, EventInfo eventInfo)
-            : base(eventInfo.Name, new Attribute[0])
+            : base(eventInfo.Name, Array.Empty<Attribute>())
         {
             if (componentClass == null)
             {
