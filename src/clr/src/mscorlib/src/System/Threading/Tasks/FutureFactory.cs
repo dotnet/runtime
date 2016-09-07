@@ -688,15 +688,15 @@ namespace System.Threading.Tasks
             ref StackCrawlMark stackMark)
         {
             if (asyncResult == null)
-                throw new ArgumentNullException("asyncResult");
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.asyncResult);
 
             if (endFunction == null && endAction == null)
-                throw new ArgumentNullException("endMethod");
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.endMethod);
 
             Contract.Requires((endFunction != null) != (endAction != null), "Both endFunction and endAction were non-null");
 
             if (scheduler == null)
-                throw new ArgumentNullException("scheduler");
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.scheduler);
             Contract.EndContractBlock();
 
             TaskFactory.CheckFromAsyncOptions(creationOptions, false);
@@ -811,10 +811,10 @@ namespace System.Threading.Tasks
             object state, TaskCreationOptions creationOptions)
         {
             if (beginMethod == null)
-                throw new ArgumentNullException("beginMethod");
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.beginMethod);
 
             if (endFunction == null && endAction == null)
-                throw new ArgumentNullException("endMethod");
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.endMethod);
 
             Contract.Requires((endFunction != null) != (endAction != null), "Both endFunction and endAction were non-null");
             
@@ -948,10 +948,10 @@ namespace System.Threading.Tasks
             TArg1 arg1, object state, TaskCreationOptions creationOptions)
         {
             if (beginMethod == null)
-                throw new ArgumentNullException("beginMethod");
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.beginMethod);
 
             if (endFunction == null && endAction == null)
-                throw new ArgumentNullException("endFunction");
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.endFunction);
 
             Contract.Requires((endFunction != null) != (endAction != null), "Both endFunction and endAction were non-null");
 
@@ -1093,10 +1093,10 @@ namespace System.Threading.Tasks
             TArg1 arg1, TArg2 arg2, object state, TaskCreationOptions creationOptions)
         {
             if (beginMethod == null)
-                throw new ArgumentNullException("beginMethod");
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.beginMethod);
 
             if (endFunction == null && endAction == null)
-                throw new ArgumentNullException("endMethod");
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.endMethod);
 
             Contract.Requires((endFunction != null) != (endAction != null), "Both endFunction and endAction were non-null");
 
@@ -1245,10 +1245,10 @@ namespace System.Threading.Tasks
             TArg1 arg1, TArg2 arg2, TArg3 arg3, object state, TaskCreationOptions creationOptions)
         {
             if (beginMethod == null)
-                throw new ArgumentNullException("beginMethod");
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.beginMethod);
 
             if (endFunction == null && endAction == null)
-                throw new ArgumentNullException("endMethod");
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.endMethod);
 
             Contract.Requires((endFunction != null) != (endAction != null), "Both endFunction and endAction were non-null");
 
@@ -1387,18 +1387,18 @@ namespace System.Threading.Tasks
             internal static void CompleteFromAsyncResult(IAsyncResult asyncResult)
             {
                 // Validate argument
-                if (asyncResult == null) throw new ArgumentNullException("asyncResult");
+                if (asyncResult == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.asyncResult);
                 Contract.EndContractBlock();
 
                 var promise = asyncResult.AsyncState as FromAsyncTrimPromise<TInstance>;
-                if (promise == null) throw new ArgumentException(Environment.GetResourceString("InvalidOperation_WrongAsyncResultOrEndCalledMultiple"), "asyncResult");
+                if (promise == null) ThrowHelper.ThrowArgumentException(ExceptionResource.InvalidOperation_WrongAsyncResultOrEndCalledMultiple, ExceptionArgument.asyncResult);
 
                 // Grab the relevant state and then null it out so that the task doesn't hold onto the state unnecessarily
                 var thisRef = promise.m_thisRef;
                 var endMethod = promise.m_endMethod;
                 promise.m_thisRef = default(TInstance);
                 promise.m_endMethod = null;
-                if (endMethod == null) throw new ArgumentException(Environment.GetResourceString("InvalidOperation_WrongAsyncResultOrEndCalledMultiple"), "asyncResult");
+                if (endMethod == null) ThrowHelper.ThrowArgumentException(ExceptionResource.InvalidOperation_WrongAsyncResultOrEndCalledMultiple, ExceptionArgument.asyncResult);
 
                 // Complete the promise.  If the IAsyncResult completed synchronously,
                 // we'll instead complete the promise at the call site.
@@ -1491,7 +1491,7 @@ namespace System.Threading.Tasks
         [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var have to be marked non-inlineable            
         public Task<TResult> ContinueWhenAll(Task[] tasks, Func<Task[], TResult> continuationFunction)
         {
-            if (continuationFunction == null) throw new ArgumentNullException("continuationFunction");
+            if (continuationFunction == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.continuationFunction);
             Contract.EndContractBlock();
 
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
@@ -1522,7 +1522,7 @@ namespace System.Threading.Tasks
         [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var have to be marked non-inlineable            
         public Task<TResult> ContinueWhenAll(Task[] tasks, Func<Task[], TResult> continuationFunction, CancellationToken cancellationToken)
         {
-            if (continuationFunction == null) throw new ArgumentNullException("continuationFunction");
+            if (continuationFunction == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.continuationFunction);
             Contract.EndContractBlock();
 
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
@@ -1559,7 +1559,7 @@ namespace System.Threading.Tasks
         [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var have to be marked non-inlineable            
         public Task<TResult> ContinueWhenAll(Task[] tasks, Func<Task[], TResult> continuationFunction, TaskContinuationOptions continuationOptions)
         {
-            if (continuationFunction == null) throw new ArgumentNullException("continuationFunction");
+            if (continuationFunction == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.continuationFunction);
             Contract.EndContractBlock();
 
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
@@ -1607,7 +1607,7 @@ namespace System.Threading.Tasks
         public Task<TResult> ContinueWhenAll(Task[] tasks, Func<Task[], TResult> continuationFunction,
             CancellationToken cancellationToken, TaskContinuationOptions continuationOptions, TaskScheduler scheduler)
         {
-            if (continuationFunction == null) throw new ArgumentNullException("continuationFunction");
+            if (continuationFunction == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.continuationFunction);
             Contract.EndContractBlock();
 
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
@@ -1634,7 +1634,7 @@ namespace System.Threading.Tasks
         [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var have to be marked non-inlineable            
         public Task<TResult> ContinueWhenAll<TAntecedentResult>(Task<TAntecedentResult>[] tasks, Func<Task<TAntecedentResult>[], TResult> continuationFunction)
         {
-            if (continuationFunction == null) throw new ArgumentNullException("continuationFunction");
+            if (continuationFunction == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.continuationFunction);
             Contract.EndContractBlock();
 
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
@@ -1667,7 +1667,7 @@ namespace System.Threading.Tasks
         public Task<TResult> ContinueWhenAll<TAntecedentResult>(Task<TAntecedentResult>[] tasks, Func<Task<TAntecedentResult>[], TResult> continuationFunction,
             CancellationToken cancellationToken)
         {
-            if (continuationFunction == null) throw new ArgumentNullException("continuationFunction");
+            if (continuationFunction == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.continuationFunction);
             Contract.EndContractBlock();
 
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
@@ -1706,7 +1706,7 @@ namespace System.Threading.Tasks
         public Task<TResult> ContinueWhenAll<TAntecedentResult>(Task<TAntecedentResult>[] tasks, Func<Task<TAntecedentResult>[], TResult> continuationFunction,
             TaskContinuationOptions continuationOptions)
         {
-            if (continuationFunction == null) throw new ArgumentNullException("continuationFunction");
+            if (continuationFunction == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.continuationFunction);
             Contract.EndContractBlock();
 
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
@@ -1755,7 +1755,7 @@ namespace System.Threading.Tasks
         public Task<TResult> ContinueWhenAll<TAntecedentResult>(Task<TAntecedentResult>[] tasks, Func<Task<TAntecedentResult>[], TResult> continuationFunction,
             CancellationToken cancellationToken, TaskContinuationOptions continuationOptions, TaskScheduler scheduler)
         {
-            if (continuationFunction == null) throw new ArgumentNullException("continuationFunction");
+            if (continuationFunction == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.continuationFunction);
             Contract.EndContractBlock();
 
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
@@ -1771,10 +1771,10 @@ namespace System.Threading.Tasks
         {
             // check arguments
             TaskFactory.CheckMultiTaskContinuationOptions(continuationOptions);
-            if (tasks == null) throw new ArgumentNullException("tasks");
+            if (tasks == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.tasks);
             //ArgumentNullException of continuationFunction or continuationAction is checked by the caller
             Contract.Requires((continuationFunction != null) != (continuationAction != null), "Expected exactly one of endFunction/endAction to be non-null");
-            if (scheduler == null) throw new ArgumentNullException("scheduler");
+            if (scheduler == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.scheduler);
             Contract.EndContractBlock();
 
             // Check tasks array and make defensive copy
@@ -1818,10 +1818,10 @@ namespace System.Threading.Tasks
         {
             // check arguments
             TaskFactory.CheckMultiTaskContinuationOptions(continuationOptions);
-            if (tasks == null) throw new ArgumentNullException("tasks");
+            if (tasks == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.tasks);
             //ArgumentNullException of continuationFunction or continuationAction is checked by the caller
             Contract.Requires((continuationFunction != null) != (continuationAction != null), "Expected exactly one of endFunction/endAction to be non-null");
-            if (scheduler == null) throw new ArgumentNullException("scheduler");
+            if (scheduler == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.scheduler);
             Contract.EndContractBlock();
 
             // Check tasks array and make defensive copy
@@ -1891,7 +1891,7 @@ namespace System.Threading.Tasks
         [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var have to be marked non-inlineable            
         public Task<TResult> ContinueWhenAny(Task[] tasks, Func<Task, TResult> continuationFunction)
         {
-            if (continuationFunction == null) throw new ArgumentNullException("continuationFunction");
+            if (continuationFunction == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.continuationFunction);
             Contract.EndContractBlock();
 
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
@@ -1922,7 +1922,7 @@ namespace System.Threading.Tasks
         [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var have to be marked non-inlineable            
         public Task<TResult> ContinueWhenAny(Task[] tasks, Func<Task, TResult> continuationFunction, CancellationToken cancellationToken)
         {
-            if (continuationFunction == null) throw new ArgumentNullException("continuationFunction");
+            if (continuationFunction == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.continuationFunction);
             Contract.EndContractBlock();
 
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
@@ -1959,7 +1959,7 @@ namespace System.Threading.Tasks
         [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var have to be marked non-inlineable            
         public Task<TResult> ContinueWhenAny(Task[] tasks, Func<Task, TResult> continuationFunction, TaskContinuationOptions continuationOptions)
         {
-            if (continuationFunction == null) throw new ArgumentNullException("continuationFunction");
+            if (continuationFunction == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.continuationFunction);
             Contract.EndContractBlock();
 
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
@@ -2007,7 +2007,7 @@ namespace System.Threading.Tasks
         public Task<TResult> ContinueWhenAny(Task[] tasks, Func<Task, TResult> continuationFunction,
             CancellationToken cancellationToken, TaskContinuationOptions continuationOptions, TaskScheduler scheduler)
         {
-            if (continuationFunction == null) throw new ArgumentNullException("continuationFunction");
+            if (continuationFunction == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.continuationFunction);
             Contract.EndContractBlock();
 
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
@@ -2034,7 +2034,7 @@ namespace System.Threading.Tasks
         [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var have to be marked non-inlineable            
         public Task<TResult> ContinueWhenAny<TAntecedentResult>(Task<TAntecedentResult>[] tasks, Func<Task<TAntecedentResult>, TResult> continuationFunction)
         {
-            if (continuationFunction == null) throw new ArgumentNullException("continuationFunction");
+            if (continuationFunction == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.continuationFunction);
             Contract.EndContractBlock();
 
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
@@ -2067,7 +2067,7 @@ namespace System.Threading.Tasks
         public Task<TResult> ContinueWhenAny<TAntecedentResult>(Task<TAntecedentResult>[] tasks, Func<Task<TAntecedentResult>, TResult> continuationFunction,
             CancellationToken cancellationToken)
         {
-            if (continuationFunction == null) throw new ArgumentNullException("continuationFunction");
+            if (continuationFunction == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.continuationFunction);
             Contract.EndContractBlock();
 
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
@@ -2106,7 +2106,7 @@ namespace System.Threading.Tasks
         public Task<TResult> ContinueWhenAny<TAntecedentResult>(Task<TAntecedentResult>[] tasks, Func<Task<TAntecedentResult>, TResult> continuationFunction,
             TaskContinuationOptions continuationOptions)
         {
-            if (continuationFunction == null) throw new ArgumentNullException("continuationFunction");
+            if (continuationFunction == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.continuationFunction);
             Contract.EndContractBlock();
 
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
@@ -2155,7 +2155,7 @@ namespace System.Threading.Tasks
         public Task<TResult> ContinueWhenAny<TAntecedentResult>(Task<TAntecedentResult>[] tasks, Func<Task<TAntecedentResult>, TResult> continuationFunction,
             CancellationToken cancellationToken, TaskContinuationOptions continuationOptions, TaskScheduler scheduler)
         {
-            if (continuationFunction == null) throw new ArgumentNullException("continuationFunction");
+            if (continuationFunction == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.continuationFunction);
             Contract.EndContractBlock();
 
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
@@ -2170,12 +2170,12 @@ namespace System.Threading.Tasks
         {
             // check arguments
             TaskFactory.CheckMultiTaskContinuationOptions(continuationOptions);
-            if (tasks == null) throw new ArgumentNullException("tasks");
-            if(tasks.Length == 0) throw new ArgumentException(Environment.GetResourceString("Task_MultiTaskContinuation_EmptyTaskList"), "tasks");
+            if (tasks == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.tasks);
+            if(tasks.Length == 0) ThrowHelper.ThrowArgumentException( ExceptionResource.Task_MultiTaskContinuation_EmptyTaskList, ExceptionArgument.tasks);
 
             //ArgumentNullException of continuationFunction or continuationAction is checked by the caller
             Contract.Requires((continuationFunction != null) != (continuationAction != null), "Expected exactly one of endFunction/endAction to be non-null");
-            if (scheduler == null) throw new ArgumentNullException("scheduler");
+            if (scheduler == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.scheduler);
             Contract.EndContractBlock();
 
             // Call common ContinueWhenAny() setup logic, extract starter
@@ -2218,11 +2218,11 @@ namespace System.Threading.Tasks
         {
             // check arguments
             TaskFactory.CheckMultiTaskContinuationOptions(continuationOptions);
-            if (tasks == null) throw new ArgumentNullException("tasks");
-            if (tasks.Length == 0) throw new ArgumentException(Environment.GetResourceString("Task_MultiTaskContinuation_EmptyTaskList"), "tasks");
+            if (tasks == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.tasks);
+            if (tasks.Length == 0) ThrowHelper.ThrowArgumentException(ExceptionResource.Task_MultiTaskContinuation_EmptyTaskList, ExceptionArgument.tasks);
             //ArgumentNullException of continuationFunction or continuationAction is checked by the caller
             Contract.Requires((continuationFunction != null) != (continuationAction != null), "Expected exactly one of endFunction/endAction to be non-null");
-            if (scheduler == null) throw new ArgumentNullException("scheduler");
+            if (scheduler == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.scheduler);
             Contract.EndContractBlock();
 
             // Call common ContinueWhenAny setup logic, extract starter
