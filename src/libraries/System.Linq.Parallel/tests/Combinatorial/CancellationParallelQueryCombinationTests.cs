@@ -882,7 +882,8 @@ namespace System.Linq.Parallel.Tests
             Action canceler = () => { throw new OperationCanceledException(cs.Token); };
 
             AggregateException outer = Assert.Throws<AggregateException>(() => query(new CancellationTokenSource().Token, canceler));
-            AggregateException ae = Assert.Single<AggregateException>(outer.InnerExceptions.Cast<AggregateException>());
+            Exception inner = Assert.Single(outer.InnerExceptions);
+            AggregateException ae = Assert.IsType<AggregateException>(inner);
             Assert.All(ae.InnerExceptions, e => Assert.IsType<OperationCanceledException>(e));
         }
 
@@ -892,7 +893,8 @@ namespace System.Linq.Parallel.Tests
             Action canceler = () => { throw new OperationCanceledException(token); };
 
             AggregateException outer = Assert.Throws<AggregateException>(() => query(token, canceler));
-            AggregateException ae = Assert.Single<AggregateException>(outer.InnerExceptions.Cast<AggregateException>());
+            Exception inner = Assert.Single(outer.InnerExceptions);
+            AggregateException ae = Assert.IsType<AggregateException>(inner);
             Assert.All(ae.InnerExceptions, e => Assert.IsType<OperationCanceledException>(e));
         }
     }
