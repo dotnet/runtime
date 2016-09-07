@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 2.8.12.2)
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 set(TESTSOURCES
-  test6.c
+  test6.cpp
 )
 
 add_executable(paltest_lockfile_test6
@@ -20,7 +20,7 @@ target_link_libraries(paltest_lockfile_test6
 
 
 set(HELPERSOURCES
-  helper.c
+  helper.cpp
 )
 
 add_executable(paltest_lockfile_test6_helper

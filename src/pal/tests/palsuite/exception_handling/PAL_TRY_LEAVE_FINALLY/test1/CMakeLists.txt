@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 2.8.12.2)
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 set(SOURCES
-  PAL_TRY_LEAVE_FINALLY.c
+  PAL_TRY_LEAVE_FINALLY.cpp
 )
 
 add_executable(paltest_pal_try_leave_finally_test1

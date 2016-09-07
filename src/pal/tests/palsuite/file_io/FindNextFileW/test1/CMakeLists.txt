@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 2.8.12.2)
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 set(SOURCES
-  FindNextFileW.c
+  FindNextFileW.cpp
 )
 
 add_executable(paltest_findnextfilew_test1

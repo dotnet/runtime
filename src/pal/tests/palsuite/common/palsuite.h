@@ -135,7 +135,7 @@ inline ULONG   VAL32(ULONG x)
 
 
 
-WCHAR* convert(char * aString) 
+WCHAR* convert(const char * aString) 
 {
     int size;
     WCHAR* wideBuffer;
@@ -150,7 +150,7 @@ WCHAR* convert(char * aString)
     return wideBuffer;
 }
 
-char* convertC(WCHAR * wString) 
+char* convertC(const WCHAR * wString) 
 {
     int size;
     char * MultiBuffer = NULL;

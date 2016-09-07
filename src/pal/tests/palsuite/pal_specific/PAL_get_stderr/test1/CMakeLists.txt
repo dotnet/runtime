@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 2.8.12.2)
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 set(SOURCES
-  PAL_get_stderr.c
+  PAL_get_stderr.cpp
 )
 
 add_executable(paltest_pal_get_stderr_test1
