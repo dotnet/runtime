@@ -27,8 +27,6 @@
     <Compile Include="FieldInfoTests.cs" />
     <Compile Include="MemberInfoTests.cs" />
     <Compile Include="MethodBaseTests.cs" />
-    <Compile Include="MethodInfo\GetBaseDefinition.cs" />
-    <Compile Include="MethodInfo\MethodInfoGetGenericArguments.cs" />
     <Compile Include="Module\ModuleVersionId.cs" />
     <Compile Include="Nullable\NullableMisc.cs" />
     <Compile Include="PropertyCompat\PropertyCompat.cs" />

@@ -56,7 +56,7 @@ namespace System.Reflection.Tests
             ///// [] Reflect on this class and set up propinfo structures
             clObj = Type.GetType("System.Reflection.Tests.Co4389GetAccessors");
 
-            pInfo = clObj.GetProperty("MyPropBB", Binding_Flags.DefaultLookup);
+            pInfo = clObj.GetProperty("MyPropBB", BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
             pInfo2 = clObj.GetProperty("MyPropCC", BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
 
             Assert.Equal("MyPropBB", pInfo.Name);
