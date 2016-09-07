@@ -210,6 +210,37 @@ namespace System.IO.Compression.Tests
         {
             IsZipSameAsDir(await StreamHelpers.CreateTempCopyStream(strange(zipFile)), zfolder(zipFolder), ZipArchiveMode.Update, dontRequireExplicit, dontCheckTimes: false);
         }
+
+        /// <summary>
+        /// This test tiptoes the buffer boundaries to ensure that the size of a read buffer doesn't
+        /// cause any bytes to be left in ZLib's buffer. 
+        /// </summary>
+        [Fact]
+        public static void ZipWithLargeSparseFile()
+        {
+            string zipname = strange("largetrailingwhitespacedeflation.zip");
+            string entryname = "A/B/C/D";
+            using (FileStream stream = File.Open(zipname, FileMode.Open, FileAccess.ReadWrite))
+            using (ZipArchive archive = new ZipArchive(stream, ZipArchiveMode.Read))
+            {
+                ZipArchiveEntry entry = archive.GetEntry(entryname);
+                long size = entry.Length;
+
+                for (int bufferSize = 1; bufferSize <= size; bufferSize++)
+                {
+                    using (Stream entryStream = entry.Open())
+                    {
+                        byte[] b = new byte[bufferSize];
+                        int read = 0, count = 0;
+                        while ((read = entryStream.Read(b, 0, bufferSize)) > 0)
+                        {
+                            count += read;
+                        }
+                        Assert.Equal(size, count);
+                    }
+                }
+            }
+        }
     }
 }
 
