@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 2.8.12.2)
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 set(TESTSOURCES
-  WFSOProcessTest.c
+  WFSOProcessTest.cpp
 )
 
 add_executable(paltest_waitforsingleobject_wfsoprocesstest
@@ -20,7 +20,7 @@ target_link_libraries(paltest_waitforsingleobject_wfsoprocesstest
 
 
 set(HELPERSOURCES
-  ChildProcess.c
+  ChildProcess.cpp
 )
 
 add_executable(paltest_waitforsingleobject_wfsoprocesstest_child

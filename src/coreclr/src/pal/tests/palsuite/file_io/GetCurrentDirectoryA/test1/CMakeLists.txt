@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 2.8.12.2)
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 set(SOURCES
-  GetCurrentDirectoryA.c
+  GetCurrentDirectoryA.cpp
 )
 
 add_executable(paltest_getcurrentdirectorya_test1

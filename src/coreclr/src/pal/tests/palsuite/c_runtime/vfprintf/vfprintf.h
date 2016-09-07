@@ -14,7 +14,7 @@
 #ifndef __vfprintf_H__
 #define __vfprintf_H__
 
-int DoVfprintf(FILE *fp, char *format, ...)
+int DoVfprintf(FILE *fp, const char *format, ...)
 {
     int retVal;
     va_list arglist;
@@ -26,7 +26,7 @@ int DoVfprintf(FILE *fp, char *format, ...)
     return (retVal);
 }
 
-void DoStrTest(char *formatstr, char* param, char *checkstr)
+void DoStrTest(const char *formatstr, char* param, const char *checkstr)
 {
     FILE *fp;    
     char buf[256] = { 0 };
@@ -57,7 +57,7 @@ void DoStrTest(char *formatstr, char* param, char *checkstr)
     fclose(fp);
 }
 
-void DoWStrTest(char *formatstr, WCHAR* param, char *checkstr)
+void DoWStrTest(const char *formatstr, WCHAR* param, const char *checkstr)
 {
     FILE *fp;
     char buf[256] = { 0 };
@@ -89,8 +89,8 @@ void DoWStrTest(char *formatstr, WCHAR* param, char *checkstr)
 }
 
 
-void DoPointerTest(char *formatstr, void* param, char* paramstr, 
-                   char *checkstr1)
+void DoPointerTest(const char *formatstr, void* param, char* paramstr, 
+                   const char *checkstr1)
 {
     FILE *fp;
     char buf[256] = { 0 };
@@ -130,7 +130,7 @@ void DoPointerTest(char *formatstr, void* param, char* paramstr,
 
 
 
-void DoCountTest(char *formatstr, int param, char *checkstr)
+void DoCountTest(const char *formatstr, int param, const char *checkstr)
 {
     FILE *fp;
     char buf[512] = { 0 };
@@ -173,7 +173,7 @@ void DoCountTest(char *formatstr, int param, char *checkstr)
     }
 }
 
-void DoShortCountTest(char *formatstr, int param, char *checkstr)
+void DoShortCountTest(const char *formatstr, int param, const char *checkstr)
 {
     FILE *fp;
     char buf[512] = { 0 };
@@ -217,7 +217,7 @@ void DoShortCountTest(char *formatstr, int param, char *checkstr)
 }
 
 
-void DoCharTest(char *formatstr, char param, char *checkstr)
+void DoCharTest(const char *formatstr, char param, const char *checkstr)
 {
     FILE *fp;
     char buf[256] = { 0 };
@@ -248,7 +248,7 @@ void DoCharTest(char *formatstr, char param, char *checkstr)
     fclose(fp);
 }
 
-void DoWCharTest(char *formatstr, WCHAR param, char *checkstr)
+void DoWCharTest(const char *formatstr, WCHAR param, const char *checkstr)
 {
     FILE *fp;
     char buf[256] = { 0 };
@@ -279,7 +279,7 @@ void DoWCharTest(char *formatstr, WCHAR param, char *checkstr)
     fclose(fp);
 }
 
-void DoNumTest(char *formatstr, int value, char *checkstr)
+void DoNumTest(const char *formatstr, int value, const char *checkstr)
 {
     FILE *fp;
     char buf[256] = { 0 };
@@ -310,7 +310,7 @@ void DoNumTest(char *formatstr, int value, char *checkstr)
     fclose(fp);
 }
 
-void DoI64Test(char *formatstr, INT64 value, char *valuestr, char *checkstr1)
+void DoI64Test(const char *formatstr, INT64 value, char *valuestr, const char *checkstr1)
 {
     FILE *fp;
     char buf[256] = { 0 };
@@ -341,8 +341,8 @@ void DoI64Test(char *formatstr, INT64 value, char *valuestr, char *checkstr1)
     fclose(fp);
 }
 
-void DoDoubleTest(char *formatstr, double value, char *checkstr1,
-                  char *checkstr2)
+void DoDoubleTest(const char *formatstr, double value, const char *checkstr1,
+                  const char *checkstr2)
 {
     FILE *fp;
     char buf[256] = { 0 };
@@ -376,8 +376,8 @@ void DoDoubleTest(char *formatstr, double value, char *checkstr1,
 }
 
 
-void DoArgumentPrecTest(char *formatstr, int precision, void *param, 
-                        char *paramstr, char *checkstr1, char *checkstr2)
+void DoArgumentPrecTest(const char *formatstr, int precision, void *param, 
+                        char *paramstr, const char *checkstr1, const char *checkstr2)
 {
     FILE *fp;
     char buf[256];
@@ -418,8 +418,8 @@ void DoArgumentPrecTest(char *formatstr, int precision, void *param,
             
 }
 
-void DoArgumentPrecDoubleTest(char *formatstr, int precision, double param, 
-                              char *checkstr1, char *checkstr2)
+void DoArgumentPrecDoubleTest(const char *formatstr, int precision, double param, 
+                              const char *checkstr1, const char *checkstr2)
 {
     FILE *fp;
     char buf[256];

@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 2.8.12.2)
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 set(TESTSOURCES
-  test1.c
+  test1.cpp
 )
 
 add_executable(paltest_getexitcodeprocess_test1
@@ -20,7 +20,7 @@ target_link_libraries(paltest_getexitcodeprocess_test1
 
 
 set(HELPERSOURCES
-  childProcess.c
+  childProcess.cpp
 )
 
 add_executable(paltest_getexitcodeprocess_test1_child
