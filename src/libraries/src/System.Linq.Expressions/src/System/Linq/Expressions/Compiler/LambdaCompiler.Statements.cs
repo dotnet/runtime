@@ -8,6 +8,7 @@ using System.Dynamic.Utils;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Globalization;
+using static System.Linq.Expressions.CachedReflectionInfo;
 
 namespace System.Linq.Expressions.Compiler
 {
@@ -631,8 +632,8 @@ namespace System.Linq.Expressions.Compiler
         private bool TryEmitHashtableSwitch(SwitchExpression node, CompilationFlags flags)
         {
             // If we have a comparison other than string equality, bail
-            MethodInfo equality = typeof(string).GetMethod("op_Equality", new[] { typeof(string), typeof(string) });
-            if (!equality.IsStatic)
+            MethodInfo equality = String_op_Equality_String_String;
+            if (equality != null && !equality.IsStatic)
             {
                 equality = null;
             }
@@ -669,7 +670,7 @@ namespace System.Linq.Expressions.Compiler
             var cases = new List<SwitchCase>(node.Cases.Count);
 
             int nullCase = -1;
-            MethodInfo add = typeof(Dictionary<string, int>).GetMethod("Add", new[] { typeof(string), typeof(int) });
+            MethodInfo add = DictionaryOfStringInt32_Add_String_Int32;
             for (int i = 0, n = node.Cases.Count; i < n; i++)
             {
                 foreach (ConstantExpression t in node.Cases[i].TestValues)
@@ -698,7 +699,7 @@ namespace System.Linq.Expressions.Compiler
                     dictField,
                     Expression.ListInit(
                         Expression.New(
-                            typeof(Dictionary<string, int>).GetConstructor(new[] { typeof(int) }),
+                            DictionaryOfStringInt32_Ctor_Int32,
                             Expression.Constant(initializers.Count)
                         ),
                         initializers
