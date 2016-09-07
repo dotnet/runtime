@@ -4,7 +4,8 @@ import jobs.generation.*;
 
 def project = GithubProject
 def branch = GithubBranchName
-def projectFolder = Utilities.getFolderName(project) + '/' + Utilities.getFolderName(branch)
+def projectName = Utilities.getFolderName(project)
+def projectFolder = projectName + '/' + Utilities.getFolderName(branch)
 
 def static getOSGroup(def os) {
     def osGroupMap = ['Ubuntu':'Linux',
@@ -67,51 +68,11 @@ def static getOSGroup(def os) {
     ['Ubuntu'].each { os ->
         def osGroup = getOSGroup(os)
         def architecture = 'x64'
-        def configuration = 'Checked'
+        def configuration = 'Release'
         def newJob = job(Utilities.getFullJobName(project, "perf_${osGroup}", isPR)) {
-            parameters {
-                stringParam('CORECLR_WINDOWS_BUILD', '', 'Build number to copy CoreCLR windows test binaries from')
-                stringParam('CORECLR_BUILD', '', "Build number to copy CoreCLR ${osGroup} binaries from")
-            }
-                    
             steps {
-                // Set up the copies
-                // Coreclr build containing the tests and mscorlib
-                copyArtifacts("dotnet_coreclr/master/x64_checked_windows_nt_pri1_bld") {
-                    excludePatterns('**/testResults.xml', '**/*.ni.dll')
-                    buildSelector {
-                        buildNumber('${CORECLR_WINDOWS_BUILD}')
-                    }
-                }
-
-                // Coreclr build we are trying to test
-                copyArtifacts("dotnet_coreclr/master/checked_ubuntu") {
-                    excludePatterns('**/testResults.xml', '**/*.ni.dll')
-                    buildSelector {
-                        buildNumber('${CORECLR_BUILD}')
-                    }
-                }
-
-                def corefxFolder = Utilities.getFolderName('dotnet/corefx') + '/' + 'master'
-                        
-                // Corefx components.  We now have full stack builds on all distros we test here, so we can copy straight from CoreFX jobs.
-                def osJobName = (os == 'Ubuntu') ? 'ubuntu14.04' : os.toLowerCase()
-                copyArtifacts("${corefxFolder}/${osJobName}_release") {
-                    includePatterns('bin/build.tar.gz')
-                    buildSelector {
-                        latestSuccessful(true)
-                    }
-                }
-                        
-                // Unpack the corefx binaries
-                shell("tar -xf ./bin/build.tar.gz")
-
-                // Unzip the tests first.  Exit with 0
-                shell("unzip -q -o ./bin/tests/tests.zip -d ./bin/tests/Windows_NT.${architecture}.${configuration} || exit 0")
-                            
-                // Execute the tests                               
-                shell('./init-tools.sh')
-
+                shell("sudo bash ./tests/scripts/perf-prep.sh --branch=${projectName}")
+                shell("./init-tools.sh")
                 shell("""sudo bash ./tests/scripts/run-xunit-perf.sh \\
                 --testRootDir=\"\${WORKSPACE}/bin/tests/Windows_NT.${architecture}.${configuration}\" \\
                 --testNativeBinDir=\"\${WORKSPACE}/bin/obj/${osGroup}.${architecture}.${configuration}/tests\" \\
@@ -122,10 +83,7 @@ def static getOSGroup(def os) {
             }
         }
 
-        // Save machinedata.json to /artifact/bin/ Jenkins dir
-        def archiveSettings = new ArchivalSettings()
-        archiveSettings.addFiles('perf-*.xml')
-        Utilities.addArchival(newJob, archiveSettings)
+        Utilities.setMachineAffinity(newJob, os, 'latest-or-auto') // Just run against Linux VM’s for now.
 
         Utilities.standardJobSetup(newJob, project, isPR, "*/${branch}")
         if (isPR) {
