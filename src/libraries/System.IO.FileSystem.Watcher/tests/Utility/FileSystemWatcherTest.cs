@@ -397,7 +397,7 @@ namespace System.IO.Tests
             }
             else
             {
-                symLinkProcess.StartInfo.FileName = "ln";
+                symLinkProcess.StartInfo.FileName = "/bin/ln";
                 symLinkProcess.StartInfo.Arguments = string.Format("-s \"{0}\" \"{1}\"", Path.GetFullPath(targetPath), Path.GetFullPath(linkPath));
             }
             symLinkProcess.StartInfo.RedirectStandardOutput = true;
