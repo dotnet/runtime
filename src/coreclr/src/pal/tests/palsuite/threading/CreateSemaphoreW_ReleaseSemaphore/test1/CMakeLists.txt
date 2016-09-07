@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 2.8.12.2)
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 set(SOURCES
-  CreateSemaphore.c
+  CreateSemaphore.cpp
 )
 
 add_executable(paltest_createsemaphorew_releasesemaphore_test1

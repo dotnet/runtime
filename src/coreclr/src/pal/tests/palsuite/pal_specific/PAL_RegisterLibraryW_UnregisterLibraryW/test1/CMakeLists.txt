@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 2.8.12.2)
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 set(SOURCES
-  PAL_RegisterLibraryW_UnregisterLibraryW.c
+  PAL_RegisterLibraryW_UnregisterLibraryW.cpp
 )
 
 add_executable(paltest_pal_registerlibraryw_unregisterlibraryw_test1

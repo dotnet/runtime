@@ -160,37 +160,37 @@ set(SOURCES
   objmgr/palobjbase.cpp
   objmgr/shmobject.cpp
   objmgr/shmobjectmanager.cpp
-  safecrt/makepath_s.c
-  safecrt/memcpy_s.c
-  safecrt/memmove_s.c
-  safecrt/mbusafecrt.c
-  safecrt/safecrt_input_s.c
-  safecrt/safecrt_output_l.c
-  safecrt/safecrt_output_s.c
-  safecrt/safecrt_winput_s.c
-  safecrt/safecrt_woutput_s.c
-  safecrt/splitpath_s.c
-  safecrt/sprintf.c
-  safecrt/sscanf.c
-  safecrt/strcat_s.c
-  safecrt/strcpy_s.c
-  safecrt/strlen_s.c
-  safecrt/strncat_s.c
-  safecrt/strncpy_s.c
-  safecrt/strtok_s.c
-  safecrt/swprintf.c
-  safecrt/vsprintf.c
-  safecrt/vswprint.c
-  safecrt/wcscat_s.c
-  safecrt/wcscpy_s.c
-  safecrt/wcslen_s.c
-  safecrt/wcsncat_s.c
-  safecrt/wcsncpy_s.c
-  safecrt/wcstok_s.c
-  safecrt/wmakepath_s.c
-  safecrt/wsplitpath_s.c
-  safecrt/xtoa_s.c
-  safecrt/xtow_s.c
+  safecrt/makepath_s.cpp
+  safecrt/memcpy_s.cpp
+  safecrt/memmove_s.cpp
+  safecrt/mbusafecrt.cpp
+  safecrt/safecrt_input_s.cpp
+  safecrt/safecrt_output_l.cpp
+  safecrt/safecrt_output_s.cpp
+  safecrt/safecrt_winput_s.cpp
+  safecrt/safecrt_woutput_s.cpp
+  safecrt/splitpath_s.cpp
+  safecrt/sprintf.cpp
+  safecrt/sscanf.cpp
+  safecrt/strcat_s.cpp
+  safecrt/strcpy_s.cpp
+  safecrt/strlen_s.cpp
+  safecrt/strncat_s.cpp
+  safecrt/strncpy_s.cpp
+  safecrt/strtok_s.cpp
+  safecrt/swprintf.cpp
+  safecrt/vsprintf.cpp
+  safecrt/vswprint.cpp
+  safecrt/wcscat_s.cpp
+  safecrt/wcscpy_s.cpp
+  safecrt/wcslen_s.cpp
+  safecrt/wcsncat_s.cpp
+  safecrt/wcsncpy_s.cpp
+  safecrt/wcstok_s.cpp
+  safecrt/wmakepath_s.cpp
+  safecrt/wsplitpath_s.cpp
+  safecrt/xtoa_s.cpp
+  safecrt/xtow_s.cpp
   sharedmemory/sharedmemory.cpp
   shmemory/shmemory.cpp
   sync/cs.cpp

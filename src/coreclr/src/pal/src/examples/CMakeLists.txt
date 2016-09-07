@@ -4,7 +4,7 @@ project(palexmpl)
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 set(SOURCES
-  example1.c
+  example1.cpp
 )
 
 add_executable(palexmpl

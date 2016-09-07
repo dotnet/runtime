@@ -5,7 +5,7 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(SOURCES
   interlocked.cpp
   mtx_critsect.cpp
-  pal_composite_native_cs.c
+  pal_composite_native_cs.cpp
   resultbuffer.cpp
 )
 

@@ -26,7 +26,12 @@ else()
   message(FATAL_ERROR "Only ARM, ARM64 and AMD64 is supported")
 endif()
 
+# C++ emits errors and warnings for c-string literal fed into char* parameter
+# this is just to take care of the warnings
+add_compile_options(-Wno-writable-strings)
+
 add_compile_options(-Wno-empty-body)
 
 add_subdirectory(palsuite)
+
 

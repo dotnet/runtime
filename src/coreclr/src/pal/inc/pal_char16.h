@@ -37,7 +37,8 @@ This file is used to define the wchar_t type as a 16-bit type on Unix.
 // Set up the wchar_t type (which got preprocessed to __wchar_16_cpp__).
 // In C++11, the standard gives us char16_t, which is what we want (and matches types with u"")
 // In C, this doesn't exist, so use unsigned short.
-
+// **** WARNING: Linking C and C++ objects will break with -fstrict-aliasing with GCC/Clang
+//               due to conditional typedef
 #if !defined(_WCHAR_T_DEFINED) || !defined(_MSC_VER)
 #if defined (PLATFORM_UNIX)
 #if defined(__cplusplus)
