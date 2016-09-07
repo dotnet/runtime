@@ -215,7 +215,7 @@ namespace System.ComponentModel
                 }
                 else
                 {
-                    argTypes = new Type[0];
+                    argTypes = Array.Empty<Type>();
                 }
 
                 obj = objectType.GetTypeInfo().GetConstructor(argTypes)?.Invoke(args);
@@ -593,7 +593,7 @@ namespace System.ComponentModel
                 }
 #endif
             }
-            return new IExtenderProvider[0];
+            return Array.Empty<IExtenderProvider>();
         }
 
         /// <summary>
