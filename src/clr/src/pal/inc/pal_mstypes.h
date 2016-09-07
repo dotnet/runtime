@@ -215,6 +215,9 @@ extern "C" {
 // Defined in gnu's types.h. For non PAL_IMPLEMENTATION system
 // includes are not included, so we need to define them.
 #ifndef PAL_IMPLEMENTATION
+
+// OS X already defines these types in 64 bit
+#if !defined(_TARGET_MAC64)
 typedef __int64 int64_t;
 typedef unsigned __int64 uint64_t;
 typedef __int32 int32_t;
@@ -223,6 +226,8 @@ typedef __int16 int16_t;
 typedef unsigned __int16 uint16_t;
 typedef __int8 int8_t;
 typedef unsigned __int8 uint8_t;
+#endif
+
 #endif // PAL_IMPLEMENTATION
 
 #ifndef _MSC_VER

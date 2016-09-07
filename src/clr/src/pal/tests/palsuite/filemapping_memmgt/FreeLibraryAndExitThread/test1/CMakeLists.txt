@@ -3,8 +3,8 @@ cmake_minimum_required(VERSION 2.8.12.2)
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 set(SOURCES
-  dlltest.c
-  test1.c
+  dlltest.cpp
+  test1.cpp
 )
 
 add_executable(paltest_freelibraryandexitthread_test1

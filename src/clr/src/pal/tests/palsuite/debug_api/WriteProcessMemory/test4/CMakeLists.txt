@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 2.8.12.2)
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 set(TESTSOURCES
-  test4.c
+  test4.cpp
 )
 
 add_executable(paltest_writeprocessmemory_test4
@@ -20,7 +20,7 @@ target_link_libraries(paltest_writeprocessmemory_test4
 
 
 set(HELPERSOURCES
-  helper.c
+  helper.cpp
 )
 
 add_executable(paltest_writeprocessmemory_test4_helper

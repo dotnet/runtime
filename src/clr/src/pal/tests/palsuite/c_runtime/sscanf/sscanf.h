@@ -14,7 +14,7 @@
 #ifndef __SSCANF_H__
 #define __SSCANF_H__
 
-void DoVoidTest(char *inputstr, char *formatstr)
+void DoVoidTest(char *inputstr, const char *formatstr)
 {
     char buf[256] = { 0 };
     int i;
@@ -38,7 +38,7 @@ void DoVoidTest(char *inputstr, char *formatstr)
 
 }
 
-void DoStrTest(char *inputstr, char *formatstr, char *checkstr)
+void DoStrTest(char *inputstr, const char *formatstr, const char *checkstr)
 {
     char buf[256] = { 0 };
     int ret;
@@ -59,7 +59,7 @@ void DoStrTest(char *inputstr, char *formatstr, char *checkstr)
 
 }
 
-void DoWStrTest(char *inputstr, char *formatstr, WCHAR *checkstr)
+void DoWStrTest(char *inputstr, const char *formatstr, const WCHAR *checkstr)
 {
     WCHAR buf[256] = { 0 };
     int ret;
@@ -80,7 +80,7 @@ void DoWStrTest(char *inputstr, char *formatstr, WCHAR *checkstr)
 
 }
 
-void DoNumTest(char *inputstr, char *formatstr, int checknum)
+void DoNumTest(char *inputstr, const char *formatstr, int checknum)
 {
     int num;
     int ret;
@@ -99,7 +99,7 @@ void DoNumTest(char *inputstr, char *formatstr, int checknum)
     }
 }
 
-void DoShortNumTest(char *inputstr, char *formatstr, short checknum)
+void DoShortNumTest(char *inputstr, const char *formatstr, short checknum)
 {
     short num;
     int ret;
@@ -118,7 +118,7 @@ void DoShortNumTest(char *inputstr, char *formatstr, short checknum)
     }
 }
 
-void DoI64NumTest(char *inputstr, char *formatstr, INT64 checknum)
+void DoI64NumTest(char *inputstr, const char *formatstr, INT64 checknum)
 {
     char buf[256];
     char check[256];
@@ -141,7 +141,7 @@ void DoI64NumTest(char *inputstr, char *formatstr, INT64 checknum)
     }
 }
 
-void DoCharTest(char *inputstr, char *formatstr, char* checkchars, int numchars)
+void DoCharTest(char *inputstr, const char *formatstr, char* checkchars, int numchars)
 {
     char buf[256];
     int ret;
@@ -174,7 +174,7 @@ void DoCharTest(char *inputstr, char *formatstr, char* checkchars, int numchars)
     }
 }
 
-void DoWCharTest(char *inputstr, char *formatstr, WCHAR* checkchars, int numchars)
+void DoWCharTest(char *inputstr, const char *formatstr, WCHAR* checkchars, int numchars)
 {
     WCHAR buf[256];
     int ret;
@@ -208,7 +208,7 @@ void DoWCharTest(char *inputstr, char *formatstr, WCHAR* checkchars, int numchar
 }
 
 
-void DoFloatTest(char *inputstr, char *formatstr, float checkval)
+void DoFloatTest(char *inputstr, const char *formatstr, float checkval)
 {
     char buf[256] = { 0 };
     float val;

@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 2.8.12.2)
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 set(SOURCES
-  SetFileAttributesA.c
+  SetFileAttributesA.cpp
 )
 
 add_executable(paltest_setfileattributesa_test2

@@ -169,7 +169,6 @@ function_name() to call the system's implementation
 #define memmove DUMMY_memmove 
 #define memchr DUMMY_memchr
 #define strlen DUMMY_strlen
-#define strnlen DUMMY_strnlen
 #define stricmp DUMMY_stricmp 
 #define strstr DUMMY_strstr 
 #define strcmp DUMMY_strcmp 

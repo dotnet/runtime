@@ -1076,6 +1076,7 @@ _SAFECRT__EXTERN_C
 errno_t __cdecl _itow_s(int _Value, WCHAR *_Dst, size_t _SizeInWords, int _Radix);
 
 #if defined(__cplusplus) && _SAFECRT_USE_CPP_OVERLOADS
+extern "C++"
 template <size_t _SizeInWords>
 inline
 errno_t __cdecl _itow_s(int _Value, WCHAR (&_Dst)[_SizeInWords], int _Radix)
@@ -1104,6 +1105,7 @@ _SAFECRT__EXTERN_C
 errno_t __cdecl _i64tow_s(__int64 _Value, WCHAR *_Dst, size_t _SizeInWords, int _Radix);
 
 #if defined(__cplusplus) && _SAFECRT_USE_CPP_OVERLOADS
+extern "C++"
 template <size_t _SizeInWords>
 inline
 errno_t __cdecl _i64tow_s(__int64 _Value, WCHAR (&_Dst)[_SizeInWords], int _Radix)
@@ -1135,6 +1137,7 @@ _SAFECRT__EXTERN_C
 errno_t __cdecl getenv_s(size_t *_ReturnValue, char *_Dst, size_t _SizeInWords, const char *_Name);
 
 #if defined(__cplusplus) && _SAFECRT_USE_CPP_OVERLOADS
+extern "C++"
 template <size_t _SizeInWords>
 inline
 errno_t __cdecl getenv_s(size_t *_ReturnValue, char *_Dst, size_t _SizeInWords, const char *_Name)
@@ -1247,6 +1250,7 @@ namespace std
     typedef decltype(nullptr) nullptr_t;
 }
 
+extern "C++"
 template< class T >
 typename std::remove_reference<T>::type&& move( T&& t );
 #endif // __cplusplus
