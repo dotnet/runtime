@@ -83,7 +83,7 @@ namespace System.ComponentModel
                                          Attribute[] attributes)
         : base(name, attributes)
         {
-            Debug.WriteLine($"Creating ReflectPropertyDescriptor for {componentClass.FullName}.{name}");
+            Debug.WriteLine($"Creating ReflectPropertyDescriptor for {componentClass?.FullName}.{name}");
 
             try
             {
@@ -436,10 +436,6 @@ namespace System.ComponentModel
                     {
                         for (Type t = ComponentType.GetTypeInfo().BaseType; t != null && t != typeof(object); t = t.GetTypeInfo().BaseType)
                         {
-                            if (t == null)
-                            {
-                                break;
-                            }
 #if VERIFY_REFLECTION_CHANGE
                             BindingFlags bindingFlags = BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.Instance;
                             PropertyInfo p = t.GetProperty(name, bindingFlags, null, PropertyType, new Type[0], null);
