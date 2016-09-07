@@ -19,6 +19,10 @@
       <OSGroup>Windows_NT</OSGroup>
       <TargetGroup>netcore50aot</TargetGroup>
     </ProjectReference>
+    <ProjectReference Include="..\..\src\System.Private.Uri.csproj">
+      <OSGroup>Windows_NT</OSGroup>
+      <TargetGroup>uap101aot</TargetGroup>
+    </ProjectReference>
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />

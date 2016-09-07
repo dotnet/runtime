@@ -15,7 +15,7 @@
       <SupportedFramework>net462;netcoreapp1.0</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\ref\System.Runtime.csproj">
-      <SupportedFramework>net463;netcoreapp1.1;$(AllXamarinFrameworks)</SupportedFramework>
+      <SupportedFramework>net463;netcoreapp1.1;uap10.1;$(AllXamarinFrameworks)</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\src\System.Runtime.csproj">
       <TargetGroup>net462</TargetGroup>
