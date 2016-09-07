@@ -1103,7 +1103,7 @@ namespace System.Data.SqlClient
                 if (_data[i].IsNull)
                 {
                     // A 'null' stream
-                    return SqlXml.CreateSqlXmlReader(new MemoryStream(new byte[0], writable: false), closeInput: true);
+                    return SqlXml.CreateSqlXmlReader(new MemoryStream(Array.Empty<byte>(), writable: false), closeInput: true);
                 }
                 else
                 {
@@ -1141,7 +1141,7 @@ namespace System.Data.SqlClient
                 if (_data[i].IsNull)
                 {
                     // A 'null' stream
-                    data = new byte[0];
+                    data = Array.Empty<byte>();
                 }
                 else
                 {

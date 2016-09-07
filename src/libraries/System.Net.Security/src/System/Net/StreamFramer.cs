@@ -330,7 +330,7 @@ namespace System.Net
             else if (size == 0)
             {
                 // Empty frame.
-                return new byte[0];
+                return Array.Empty<byte>();
             }
 
             return workerResult.Buffer;

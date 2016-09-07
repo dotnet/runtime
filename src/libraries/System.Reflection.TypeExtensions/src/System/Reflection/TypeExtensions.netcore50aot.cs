@@ -75,7 +75,7 @@ namespace System.Reflection
 
             if (defaultMemberName == null)
             {
-                return Helpers.EmptyMemberArray;
+                return Array.Empty<MemberInfo>();
             }
 
             return GetMember(type, defaultMemberName);
@@ -215,7 +215,7 @@ namespace System.Reflection
                 return typeInfo.GenericTypeParameters;
             }
 
-            return Helpers.EmptyTypeArray;
+            return Array.Empty<Type>();
         }
 
         /// <summary>
