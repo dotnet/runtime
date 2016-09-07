@@ -293,6 +293,8 @@ namespace System.Linq.Expressions.Interpreter
 
         private readonly LightCompiler _parent;
 
+        private readonly StackGuard _guard = new StackGuard();
+
         private static LocalDefinition[] s_emptyLocals = Array.Empty<LocalDefinition>();
 
         public LightCompiler()
@@ -2970,6 +2972,15 @@ namespace System.Linq.Expressions.Interpreter
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity")]
         private void CompileNoLabelPush(Expression expr)
         {
+            // When compling deep trees, we run the risk of triggering a terminating StackOverflowException,
+            // so we use the StackGuard utility here to probe for sufficient stack and continue the work on
+            // another thread when we run out of stack space.
+            if (!_guard.TryEnterOnCurrentStack())
+            {
+                _guard.RunOnEmptyStack((LightCompiler @this, Expression e) => @this.CompileNoLabelPush(e), this, expr);
+                return;
+            }
+
             int startingStackDepth = _instructions.CurrentStackDepth;
             switch (expr.NodeType)
             {
