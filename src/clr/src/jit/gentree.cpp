@@ -12049,6 +12049,9 @@ GenTreePtr Compiler::gtFoldExprConst(GenTreePtr tree)
 
                         if (d1 <= -1.0 && varTypeIsUnsigned(tree->CastToType())) 
                         {
+                            // Don't fold conversions of these cases becasue the result is unspecified per ECMA spec
+                            // and the native math doing the fold doesn't match the run-time computation on all platforms.
+                            // We want the behavior to be same with or without folding.
                             return tree;
                         }
                
