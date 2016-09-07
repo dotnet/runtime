@@ -89,6 +89,7 @@ typedef struct
 	MonoThread *obj;
 	MonoObject *delegate;
 	void *start_arg;
+	MonoCoopSem registered;
 } StartInfo;
 
 typedef union {
@@ -662,9 +663,15 @@ static guint32 WINAPI start_wrapper_internal(void *data)
 	 * We don't create a local to hold start_info->obj, so hopefully it won't get pinned during a
 	 * GC stack walk.
 	 */
-	MonoInternalThread *internal = start_info->obj->internal_thread;
-	MonoObject *start_delegate = start_info->delegate;
-	MonoDomain *domain = start_info->obj->obj.vtable->domain;
+	MonoInternalThread *internal;
+	MonoObject *start_delegate;
+	MonoDomain *domain;
+
+	mono_coop_sem_wait (&start_info->registered, MONO_SEM_FLAGS_NONE);
+
+	internal = start_info->obj->internal_thread;
+	start_delegate = start_info->delegate;
+	domain = start_info->obj->obj.vtable->domain;
 
 	THREAD_DEBUG (g_message ("%s: (%"G_GSIZE_FORMAT") Start wrapper", __func__, mono_native_thread_id_get ()));
 
@@ -860,6 +867,8 @@ create_thread (MonoThread *thread, MonoInternalThread *internal, StartInfo *star
 	mono_coop_sem_init (internal->start_notify, 0);
 	internal->start_notify_refcount = 2;
 
+	mono_coop_sem_init (&start_info->registered, 0);
+
 	if (stack_size == 0)
 		stack_size = default_stacksize_for_thread (internal);
 
@@ -868,7 +877,7 @@ create_thread (MonoThread *thread, MonoInternalThread *internal, StartInfo *star
 	 */
 	tp.priority = thread->priority;
 	tp.stack_size = stack_size;
-	tp.creation_flags = CREATE_SUSPENDED;
+	tp.creation_flags = 0;
 
 	thread_handle = mono_threads_create_thread (start_wrapper, start_info, &tp, &tid);
 
@@ -877,6 +886,7 @@ create_thread (MonoThread *thread, MonoInternalThread *internal, StartInfo *star
 		mono_threads_lock ();
 		mono_g_hash_table_remove (threads_starting_up, thread);
 		mono_threads_unlock ();
+		mono_coop_sem_destroy (&start_info->registered);
 		g_free (start_info);
 		mono_error_set_execution_engine (error, "Couldn't create thread. Error 0x%x", GetLastError());
 		return FALSE;
@@ -896,10 +906,12 @@ create_thread (MonoThread *thread, MonoInternalThread *internal, StartInfo *star
 	 * launched, to avoid the main thread deadlocking while trying
 	 * to clean up a thread that will never be signalled.
 	 */
-	if (!handle_store (thread, FALSE))
+	if (!handle_store (thread, FALSE)) {
+		mono_coop_sem_destroy (&start_info->registered);
 		return FALSE;
+	}
 
-	mono_thread_info_resume (tid);
+	mono_coop_sem_post (&start_info->registered);
 
 	/*
 	 * Wait for the thread to set up its TLS data etc, so

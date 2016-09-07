@@ -221,11 +221,6 @@ typedef struct {
 	 */
 	gboolean is_async_context;
 
-	gboolean create_suspended;
-
-	/* Semaphore used to implement CREATE_SUSPENDED */
-	MonoCoopSem create_suspended_sem;
-
 	/*
 	 * Values of TLS variables for this thread.
 	 * This can be used to obtain the values of TLS variable for threads

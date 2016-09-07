@@ -766,12 +766,6 @@ static gboolean
 mono_thread_info_core_resume (MonoThreadInfo *info)
 {
 	gboolean res = FALSE;
-	if (info->create_suspended) {
-		/* Have to special case this, as the normal suspend/resume pair are racy, they don't work if he resume is received before the suspend */
-		info->create_suspended = FALSE;
-		mono_coop_sem_post (&info->create_suspended_sem);
-		return TRUE;
-	}
 
 	switch (mono_threads_transition_request_resume (info)) {
 	case ResumeError:
@@ -1142,7 +1136,6 @@ typedef struct {
 	gint32 ref;
 	MonoThreadStart start_routine;
 	gpointer start_routine_arg;
-	gboolean create_suspended;
 	gint32 priority;
 	MonoCoopSem registered;
 	MonoThreadInfo *info;
@@ -1156,10 +1149,8 @@ inner_start_thread (gpointer data)
 	MonoThreadStart start_routine;
 	gpointer start_routine_arg;
 	guint32 start_routine_res;
-	gboolean create_suspended;
 	gint32 priority;
 	gsize dummy;
-	gint res;
 
 	thread_data = (CreateThreadData*) data;
 	g_assert (thread_data);
@@ -1167,18 +1158,12 @@ inner_start_thread (gpointer data)
 	start_routine = thread_data->start_routine;
 	start_routine_arg = thread_data->start_routine_arg;
 
-	create_suspended = thread_data->create_suspended;
 	priority = thread_data->priority;
 
 	info = mono_thread_info_attach (&dummy);
 	info->runtime_thread = TRUE;
 
 	mono_threads_platform_set_priority (info, priority);
-
-	if (create_suspended) {
-		info->create_suspended = TRUE;
-		mono_coop_sem_init (&info->create_suspended_sem, 0);
-	}
 
 	thread_data->info = info;
 
@@ -1191,13 +1176,6 @@ inner_start_thread (gpointer data)
 
 	/* thread_data is not valid anymore */
 	thread_data = NULL;
-
-	if (create_suspended) {
-		res = mono_coop_sem_wait (&info->create_suspended_sem, MONO_SEM_FLAGS_NONE);
-		g_assert (res == 0);
-
-		mono_coop_sem_destroy (&info->create_suspended_sem);
-	}
 
 	/* Run the actual main function of the thread */
 	start_routine_res = start_routine (start_routine_arg);
@@ -1225,7 +1203,6 @@ mono_threads_create_thread (MonoThreadStart start, gpointer arg, MonoThreadParm 
 	thread_data->ref = 2;
 	thread_data->start_routine = start;
 	thread_data->start_routine_arg = arg;
-	thread_data->create_suspended = tp->creation_flags & CREATE_SUSPENDED;
 	thread_data->priority = tp->priority;
 	mono_coop_sem_init (&thread_data->registered, 0);
 

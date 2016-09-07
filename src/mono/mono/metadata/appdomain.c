@@ -2589,11 +2589,10 @@ mono_domain_try_unload (MonoDomain *domain, MonoObject **exc)
 	 */
 	tp.priority = MONO_THREAD_PRIORITY_NORMAL;
 	tp.stack_size = 0;
-	tp.creation_flags = CREATE_SUSPENDED;
+	tp.creation_flags = 0;
 	thread_handle = mono_threads_create_thread (unload_thread_main, thread_data, &tp, &tid);
 	if (thread_handle == NULL)
 		return;
-	mono_thread_info_resume (tid);
 
 	/* Wait for the thread */	
 	while (!thread_data->done && guarded_wait (thread_handle, INFINITE, TRUE) == WAIT_IO_COMPLETION) {
