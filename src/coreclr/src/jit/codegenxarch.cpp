@@ -1227,7 +1227,10 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
 // Generate code to get the high N bits of a N*N=2N bit multiplication result
 void CodeGen::genCodeForMulHi(GenTreeOp* treeNode)
 {
-    assert(!(treeNode->gtFlags & GTF_UNSIGNED));
+    if (treeNode->OperGet() == GT_MULHI)
+    {
+        assert(!(treeNode->gtFlags & GTF_UNSIGNED));
+    }
     assert(!treeNode->gtOverflowEx());
 
     regNumber targetReg  = treeNode->gtRegNum;
@@ -1247,7 +1250,6 @@ void CodeGen::genCodeForMulHi(GenTreeOp* treeNode)
     GenTree* rmOp  = op2;
 
     // Set rmOp to the contained memory operand (if any)
-    //
     if (op1->isContained() || (!op2->isContained() && (op2->gtRegNum == targetReg)))
     {
         regOp = op2;
@@ -1261,10 +1263,19 @@ void CodeGen::genCodeForMulHi(GenTreeOp* treeNode)
         inst_RV_RV(ins_Copy(targetType), targetReg, regOp->gtRegNum, targetType);
     }
 
-    emit->emitInsBinary(INS_imulEAX, size, treeNode, rmOp);
+    instruction ins;
+    if ((treeNode->gtFlags & GTF_UNSIGNED) == 0)
+    {
+        ins = INS_imulEAX;
+    }
+    else
+    {
+        ins = INS_mulEAX;
+    }
+    emit->emitInsBinary(ins, size, treeNode, rmOp);
 
     // Move the result to the desired register, if necessary
-    if (targetReg != REG_RDX)
+    if (treeNode->OperGet() == GT_MULHI && targetReg != REG_RDX)
     {
         inst_RV_RV(INS_mov, targetReg, REG_RDX, targetType);
     }
@@ -1395,7 +1406,7 @@ void CodeGen::genCodeForBinary(GenTree* treeNode)
     assert(oper == GT_OR || oper == GT_XOR || oper == GT_AND || oper == GT_ADD || oper == GT_SUB);
 #else  // !defined(_TARGET_64BIT_)
     assert(oper == GT_OR || oper == GT_XOR || oper == GT_AND || oper == GT_ADD_LO || oper == GT_ADD_HI ||
-           oper == GT_SUB_LO || oper == GT_SUB_HI || oper == GT_MUL_HI || oper == GT_DIV_HI || oper == GT_MOD_HI ||
+           oper == GT_SUB_LO || oper == GT_SUB_HI || oper == GT_MUL_LONG || oper == GT_DIV_HI || oper == GT_MOD_HI ||
            oper == GT_ADD || oper == GT_SUB);
 #endif // !defined(_TARGET_64BIT_)
 
@@ -2243,6 +2254,9 @@ void CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
             break;
 
         case GT_MULHI:
+#ifdef _TARGET_X86_
+        case GT_MUL_LONG:
+#endif
             genCodeForMulHi(treeNode->AsOp());
             genProduceReg(treeNode);
             break;
@@ -9203,18 +9217,29 @@ void CodeGen::genStoreLongLclVar(GenTree* treeNode)
     assert(varDsc->TypeGet() == TYP_LONG);
     assert(!varDsc->lvPromoted);
     GenTreePtr op1 = treeNode->gtOp.gtOp1;
-    noway_assert(op1->OperGet() == GT_LONG);
+    noway_assert(op1->OperGet() == GT_LONG || op1->OperGet() == GT_MUL_LONG);
     genConsumeRegs(op1);
 
-    // Definitions of register candidates will have been lowered to 2 int lclVars.
-    assert(!treeNode->InReg());
+    if (op1->OperGet() == GT_LONG)
+    {
+        // Definitions of register candidates will have been lowered to 2 int lclVars.
+        assert(!treeNode->InReg());
 
-    GenTreePtr loVal = op1->gtGetOp1();
-    GenTreePtr hiVal = op1->gtGetOp2();
-    // NYI: Contained immediates.
-    NYI_IF((loVal->gtRegNum == REG_NA) || (hiVal->gtRegNum == REG_NA), "Store of long lclVar with contained immediate");
-    emit->emitIns_R_S(ins_Store(TYP_INT), EA_4BYTE, loVal->gtRegNum, lclNum, 0);
-    emit->emitIns_R_S(ins_Store(TYP_INT), EA_4BYTE, hiVal->gtRegNum, lclNum, genTypeSize(TYP_INT));
+        GenTreePtr loVal = op1->gtGetOp1();
+        GenTreePtr hiVal = op1->gtGetOp2();
+        // NYI: Contained immediates.
+        NYI_IF((loVal->gtRegNum == REG_NA) || (hiVal->gtRegNum == REG_NA), "Store of long lclVar with contained immediate");
+        emit->emitIns_R_S(ins_Store(TYP_INT), EA_4BYTE, loVal->gtRegNum, lclNum, 0);
+        emit->emitIns_R_S(ins_Store(TYP_INT), EA_4BYTE, hiVal->gtRegNum, lclNum, genTypeSize(TYP_INT));
+    }
+    else if (op1->OperGet() == GT_MUL_LONG)
+    {
+        assert((op1->gtFlags & GTF_MUL_64RSLT) != 0);
+
+        // Stack store
+        getEmitter()->emitIns_S_R(ins_Store(TYP_INT), emitTypeSize(TYP_INT), REG_LNGRET_LO, lclNum, 0);
+        getEmitter()->emitIns_S_R(ins_Store(TYP_INT), emitTypeSize(TYP_INT), REG_LNGRET_HI, lclNum, genTypeSize(TYP_INT));
+    }
 }
 #endif // !defined(_TARGET_64BIT_)
 

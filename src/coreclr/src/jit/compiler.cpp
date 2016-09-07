@@ -8520,6 +8520,9 @@ int cTreeFlagsIR(Compiler* comp, GenTree* tree)
                 break;
 
             case GT_MUL:
+#if defined(_TARGET_X86_) && !defined(LEGACY_BACKEND)
+            case GT_MUL_LONG:
+#endif
 
                 if (tree->gtFlags & GTF_MUL_64RSLT)
                 {
