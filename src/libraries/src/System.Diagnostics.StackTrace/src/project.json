@@ -4,7 +4,7 @@
       "dependencies": {
         "Microsoft.TargetingPack.Private.CoreCLR": "1.1.0-beta-24507-02",
         "System.IO.FileSystem": "4.0.1",
-        "System.Reflection.Metadata": "1.4.1-beta-24507-01",
+        "System.Reflection.Metadata": "1.4.1-beta-24507-02",
         "System.Collections.Immutable": "1.2.0"
       },
       "imports": [
