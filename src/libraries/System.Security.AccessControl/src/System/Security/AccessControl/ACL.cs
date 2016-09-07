@@ -9,14 +9,15 @@
 **
 ===========================================================*/
 
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Diagnostics.Contracts;
+using System.Security.Principal;
+
 namespace System.Security.AccessControl
 {
-    using System;
-    using System.Collections;
-    using System.Collections.Generic;
-    using System.Security.Principal;
-    using System.Diagnostics.Contracts;
-
     public sealed class AceEnumerator : IEnumerator
     {
         #region Private Members
@@ -377,7 +378,7 @@ nameof(binaryForm));
                     // Binary length of an ace must ALWAYS be divisible by 4.
                     //
 
-                    Contract.Assert( false, "aceLength % 4 != 0" );
+                    Debug.Assert( false, "aceLength % 4 != 0" );
                     // Replacing SystemException with InvalidOperationException. This code path 
                     // indicates a bad ACE, but I don't know of a great exception to represent that. 
                     // InvalidOperation seems to be the closest, though it's definitely not exactly 
@@ -520,7 +521,7 @@ nameof(binaryForm));
                     // Binary length of an ace must ALWAYS be divisible by 4.
                     //
 
-                    Contract.Assert( false, "aceLength % 4 != 0" );
+                    Debug.Assert( false, "aceLength % 4 != 0" );
                     // Replacing SystemException with InvalidOperationException. This code path 
                     // indicates a bad ACE, but I don't know of a great exception to represent that. 
                     // InvalidOperation seems to be the closest, though it's definitely not exactly 
@@ -560,7 +561,7 @@ nameof(binaryForm));
                     // Binary length of an ace must ALWAYS be divisible by 4.
                     //
 
-                    Contract.Assert( false, "aceLength % 4 != 0" );
+                    Debug.Assert( false, "aceLength % 4 != 0" );
                     // Replacing SystemException with InvalidOperationException. This code path 
                     // indicates a bad ACE, but I don't know of a great exception to represent that. 
                     // InvalidOperation seems to be the closest, though it's definitely not exactly 
@@ -1381,7 +1382,7 @@ nameof(binaryForm));
                 // This method is called only when the access masks of the two aces are already confirmed to be exact matches
                 // therefore the second condition of case 2 is already verified
                 //
-                Contract.Assert(( ace.AccessMask & newAce.AccessMask) ==  newAce.AccessMask, "AceFlagsAreMergeable:: AccessMask of existing ace does not contain all access bits of new ace.");
+                Debug.Assert(( ace.AccessMask & newAce.AccessMask) ==  newAce.AccessMask, "AceFlagsAreMergeable:: AccessMask of existing ace does not contain all access bits of new ace.");
                 return true;
             }
 
@@ -1757,7 +1758,7 @@ nameof(binaryForm));
                             // Only allow and deny ACEs are allowed here
                             //
 
-                            Contract.Assert( false, "Audit and alarm ACEs must have been stripped by remove-meaningless logic" );
+                            Debug.Assert( false, "Audit and alarm ACEs must have been stripped by remove-meaningless logic" );
                             return false;
                         }
                     }
@@ -1803,7 +1804,7 @@ nameof(binaryForm));
                         // for fear of destabilization, so adding an assert instead
                         //
 
-                        Contract.Assert( ace != null, "How did a null ACE end up in a SACL?" );
+                        Debug.Assert( ace != null, "How did a null ACE end up in a SACL?" );
                         continue;
                     }
 
@@ -1835,7 +1836,7 @@ nameof(binaryForm));
                             // Only audit and alarm ACEs are allowed here
                             //
 
-                            Contract.Assert( false, "Allow and deny ACEs must have been stripped by remove-meaningless logic" );
+                            Debug.Assert( false, "Allow and deny ACEs must have been stripped by remove-meaningless logic" );
                             return false;
                         }
                     }

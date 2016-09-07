@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 
 namespace System.Collections
@@ -90,8 +91,8 @@ namespace System.Collections
                 j += 4;
             }
 
-            Contract.Assert(bytes.Length - j >= 0, "BitArray byteLength problem");
-            Contract.Assert(bytes.Length - j < 4, "BitArray byteLength problem #2");
+            Debug.Assert(bytes.Length - j >= 0, "BitArray byteLength problem");
+            Debug.Assert(bytes.Length - j < 4, "BitArray byteLength problem #2");
 
             switch (bytes.Length - j)
             {
@@ -479,7 +480,7 @@ namespace System.Collections
         /// <returns></returns>
         private static int GetArrayLength(int n, int div)
         {
-            Contract.Assert(div > 0, "GetArrayLength: div arg must be greater than 0");
+            Debug.Assert(div > 0, "GetArrayLength: div arg must be greater than 0");
             return n > 0 ? (((n - 1) / div) + 1) : 0;
         }
 
