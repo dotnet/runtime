@@ -1957,6 +1957,8 @@
       <Member Name="IsDefined(System.Type,System.Object)" />
       <Member Name="Parse(System.Type,System.String)" />
       <Member Name="Parse(System.Type,System.String,System.Boolean)" />
+      <Member Name="Parse&lt;TEnum&gt;(System.String)" />
+      <Member Name="Parse&lt;TEnum&gt;(System.String,System.Boolean)" />
       <Member Name="ToObject(System.Type,System.Byte)" />
       <Member Name="ToObject(System.Type,System.Int16)" />
       <Member Name="ToObject(System.Type,System.Int32)" />
@@ -1970,6 +1972,8 @@
       <Member Name="ToString(System.IFormatProvider)" />
       <Member Name="ToString(System.String)" />
       <Member Name="ToString(System.String,System.IFormatProvider)" />
+      <Member Name="TryParse(System.Type,System.String,System.Object@)" />
+      <Member Name="TryParse(System.Type,System.String,System.Boolean,System.Object@)" />
       <Member Name="TryParse&lt;TEnum&gt;(System.String,TEnum@)" />
       <Member Name="TryParse&lt;TEnum&gt;(System.String,System.Boolean,TEnum@)" />
     </Type>
