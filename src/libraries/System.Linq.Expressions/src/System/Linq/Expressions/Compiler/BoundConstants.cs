@@ -8,6 +8,7 @@ using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 using System.Dynamic.Utils;
+using static System.Linq.Expressions.CachedReflectionInfo;
 
 namespace System.Linq.Expressions.Compiler
 {
@@ -181,7 +182,7 @@ namespace System.Linq.Expressions.Compiler
 #endif
 
             lc.EmitClosureArgument();
-            lc.IL.Emit(OpCodes.Ldfld, typeof(Closure).GetField("Constants"));
+            lc.IL.Emit(OpCodes.Ldfld, Closure_Constants);
         }
 
         private void EmitConstantFromArray(LambdaCompiler lc, object value, Type type)

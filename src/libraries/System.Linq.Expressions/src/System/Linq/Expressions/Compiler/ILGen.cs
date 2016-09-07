@@ -7,7 +7,7 @@ using System.Diagnostics;
 using System.Dynamic.Utils;
 using System.Reflection;
 using System.Reflection.Emit;
-
+using static System.Linq.Expressions.CachedReflectionInfo;
 
 namespace System.Linq.Expressions.Compiler
 {
@@ -295,7 +295,7 @@ namespace System.Linq.Expressions.Compiler
             Debug.Assert(type != null);
 
             il.Emit(OpCodes.Ldtoken, type);
-            il.Emit(OpCodes.Call, typeof(Type).GetMethod("GetTypeFromHandle"));
+            il.Emit(OpCodes.Call, Type_GetTypeFromHandle);
         }
 
         #endregion
@@ -604,11 +604,11 @@ namespace System.Linq.Expressions.Compiler
                 if (dt != null && dt.GetTypeInfo().IsGenericType)
                 {
                     il.Emit(OpCodes.Ldtoken, dt);
-                    il.Emit(OpCodes.Call, typeof(MethodBase).GetMethod("GetMethodFromHandle", new Type[] { typeof(RuntimeMethodHandle), typeof(RuntimeTypeHandle) }));
+                    il.Emit(OpCodes.Call, MethodBase_GetMethodFromHandle_RuntimeMethodHandle_RuntimeTypeHandle);
                 }
                 else
                 {
-                    il.Emit(OpCodes.Call, typeof(MethodBase).GetMethod("GetMethodFromHandle", new Type[] { typeof(RuntimeMethodHandle) }));
+                    il.Emit(OpCodes.Call, MethodBase_GetMethodFromHandle_RuntimeMethodHandle);
                 }
                 if (type != typeof(MethodBase))
                 {
@@ -811,10 +811,23 @@ namespace System.Linq.Expressions.Compiler
 
                 Debug.Assert(typeFrom != typeTo);
 
-                MethodInfo method = typeof(Decimal).GetMethod("op_Implicit", new[] { typeFrom });
-                if (method == null)
+                TypeCode tc = typeFrom.GetTypeCode();
+
+                MethodInfo method = null;
+
+                switch (tc)
                 {
-                    throw Error.UnhandledConvert(typeTo);
+                    case TypeCode.Byte:   method = Decimal_op_Implicit_Byte;   break;
+                    case TypeCode.SByte:  method = Decimal_op_Implicit_SByte;  break;
+                    case TypeCode.Int16:  method = Decimal_op_Implicit_Int16;  break;
+                    case TypeCode.UInt16: method = Decimal_op_Implicit_UInt16; break;
+                    case TypeCode.Int32:  method = Decimal_op_Implicit_Int32;  break;
+                    case TypeCode.UInt32: method = Decimal_op_Implicit_UInt32; break;
+                    case TypeCode.Int64:  method = Decimal_op_Implicit_Int64;  break;
+                    case TypeCode.UInt64: method = Decimal_op_Implicit_UInt64; break;
+                    case TypeCode.Char:   method = Decimal_op_Implicit_Char;   break;
+                    default:
+                        throw Error.UnhandledConvert(typeTo);
                 }
 
                 il.Emit(OpCodes.Call, method);
@@ -1150,13 +1163,13 @@ namespace System.Linq.Expressions.Compiler
                 {
                     int intValue = Decimal.ToInt32(value);
                     il.EmitInt(intValue);
-                    il.EmitNew(typeof(Decimal).GetConstructor(new Type[] { typeof(int) }));
+                    il.EmitNew(Decimal_Ctor_Int32);
                 }
                 else if (Int64.MinValue <= value && value <= Int64.MaxValue)
                 {
                     long longValue = Decimal.ToInt64(value);
                     il.EmitLong(longValue);
-                    il.EmitNew(typeof(Decimal).GetConstructor(new Type[] { typeof(long) }));
+                    il.EmitNew(Decimal_Ctor_Int64);
                 }
                 else
                 {
@@ -1177,7 +1190,7 @@ namespace System.Linq.Expressions.Compiler
             il.EmitInt(bits[2]);
             il.EmitBoolean((bits[3] & 0x80000000) != 0);
             il.EmitByte((byte)(bits[3] >> 16));
-            il.EmitNew(typeof(decimal).GetConstructor(new Type[] { typeof(int), typeof(int), typeof(int), typeof(bool), typeof(byte) }));
+            il.EmitNew(Decimal_Ctor_Int32_Int32_Int32_Bool_Byte);
         }
 
         /// <summary>
@@ -1242,7 +1255,7 @@ namespace System.Linq.Expressions.Compiler
 
                 case TypeCode.Decimal:
                     il.Emit(OpCodes.Ldc_I4_0);
-                    il.Emit(OpCodes.Newobj, typeof(Decimal).GetConstructor(new Type[] { typeof(int) }));
+                    il.Emit(OpCodes.Newobj, Decimal_Ctor_Int32);
                     break;
 
                 default:

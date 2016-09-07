@@ -9,6 +9,7 @@ using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 using System.Dynamic.Utils;
+using static System.Linq.Expressions.CachedReflectionInfo;
 
 namespace System.Linq.Expressions.Compiler
 {
@@ -196,13 +197,13 @@ namespace System.Linq.Expressions.Compiler
                 {
                     EmitGet(NearestHoistedLocals.SelfVariable);
                     lc.EmitConstantArray(indexes.ToArray());
-                    lc.IL.Emit(OpCodes.Call, typeof(RuntimeOps).GetMethod("CreateRuntimeVariables", new[] { typeof(object[]), typeof(long[]) }));
+                    lc.IL.Emit(OpCodes.Call, RuntimeOps_CreateRuntimeVariables_ObjectArray_Int64Array);
                     return;
                 }
             }
 
             // No visible variables
-            lc.IL.Emit(OpCodes.Call, typeof(RuntimeOps).GetMethod("CreateRuntimeVariables", Type.EmptyTypes));
+            lc.IL.Emit(OpCodes.Call, RuntimeOps_CreateRuntimeVariables);
             return;
         }
 
@@ -429,7 +430,7 @@ namespace System.Linq.Expressions.Compiler
         private void EmitClosureToVariable(LambdaCompiler lc, HoistedLocals locals)
         {
             lc.EmitClosureArgument();
-            lc.IL.Emit(OpCodes.Ldfld, typeof(Closure).GetField("Locals"));
+            lc.IL.Emit(OpCodes.Ldfld, Closure_Locals);
             AddLocal(lc, locals.SelfVariable);
             EmitSet(locals.SelfVariable);
         }
