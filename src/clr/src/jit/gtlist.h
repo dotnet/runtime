@@ -116,6 +116,9 @@ GTNODE(RSZ        , ">>>"        ,0,GTK_BINOP)
 GTNODE(ROL        , "rol"        ,0,GTK_BINOP)
 GTNODE(ROR        , "ror"        ,0,GTK_BINOP)
 GTNODE(MULHI      , "mulhi"      ,1,GTK_BINOP) // returns high bits (top N bits of the 2N bit result of an NxN multiply)
+                                               // GT_MULHI is used in division by a constant (fgMorphDivByConst). We turn
+                                               // the div into a MULHI + some adjustments. In codegen, we only use the
+                                               // results of the high register, and we drop the low results.
 
 GTNODE(ASG        , "="          ,0,GTK_BINOP|GTK_ASGOP|GTK_NOTLIR)
 GTNODE(ASG_ADD    , "+="         ,0,GTK_BINOP|GTK_ASGOP|GTK_NOTLIR)
@@ -159,16 +162,23 @@ GTNODE(LEA        , "lea"        ,0,GTK_BINOP|GTK_EXOP)
 // nodes such as calls, returns and stores of long lclVars.
 GTNODE(LONG       , "gt_long"    ,0,GTK_BINOP)
 
-// The following are nodes representing the upper half of a 64-bit operation
-// that requires a carry/borrow.  However, they are all named GT_XXX_HI for
-// consistency.
+// The following are nodes representing x86 specific long operators, including
+// high operators of a 64-bit operations that requires a carry/borrow, which are
+// named GT_XXX_HI for consistency, low operators of 64-bit operations that need
+// to not be modified in phases post-decompose, and operators that return 64-bit
+// results in one instruction.
 GTNODE(ADD_LO     , "+Lo"          ,1,GTK_BINOP)
 GTNODE(ADD_HI     , "+Hi"          ,1,GTK_BINOP)
 GTNODE(SUB_LO     , "-Lo"          ,0,GTK_BINOP)
 GTNODE(SUB_HI     , "-Hi"          ,0,GTK_BINOP)
-GTNODE(MUL_HI     , "*Hi"          ,1,GTK_BINOP)
 GTNODE(DIV_HI     , "/Hi"          ,0,GTK_BINOP)
 GTNODE(MOD_HI     , "%Hi"          ,0,GTK_BINOP)
+GTNODE(MUL_LONG   , "*long"        ,1,GTK_BINOP) // A mul that returns the 2N bit result of an NxN multiply. This op
+                                                 // is used for x86 multiplies that take two ints and return a long
+                                                 // result. All other multiplies with long results are morphed into
+                                                 // helper calls. It is similar to GT_MULHI, the difference being that
+                                                 // GT_MULHI drops the lo part of the result, whereas GT_MUL_LONG keeps
+                                                 // both parts of the result.
 #endif // !defined(LEGACY_BACKEND) && !defined(_TARGET_64BIT_)
 
 #ifdef FEATURE_SIMD
