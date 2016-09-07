@@ -17895,7 +17895,7 @@ void Compiler::impMarkInlineCandidate(GenTreePtr             callNode,
 
 bool Compiler::IsTargetIntrinsic(CorInfoIntrinsics intrinsicId)
 {
-#if defined(_TARGET_AMD64_)
+#if defined(_TARGET_AMD64_) || (defined(_TARGET_X86_) && !defined(LEGACY_BACKEND))
     switch (intrinsicId)
     {
         // Amd64 only has SSE2 instruction to directly compute sqrt/abs.
