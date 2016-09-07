@@ -36,7 +36,8 @@ namespace System {
     // multiple times for different instantiation. 
     // 
 
-    using System.Runtime.CompilerServices;        
+    using Collections.Generic;
+    using System.Runtime.CompilerServices;
     using System.Runtime.Serialization;
     using System.Diagnostics.Contracts;
 
@@ -129,9 +130,19 @@ namespace System {
             throw new ObjectDisposedException(objectName, Environment.GetResourceString(GetResourceName(resource)));
         }
 
+        internal static void ThrowObjectDisposedException(ExceptionResource resource)
+        {
+            throw new ObjectDisposedException(null, Environment.GetResourceString(GetResourceName(resource)));
+        }
+
         internal static void ThrowNotSupportedException()
         {
             throw new NotSupportedException();
+        }
+
+        internal static void ThrowAggregateException(List<Exception> exceptions)
+        {
+            throw new AggregateException(exceptions);
         }
 
         // Allow nulls for reference types and Nullable<U>, but not for value types.
@@ -218,6 +229,24 @@ namespace System {
         comparer,
         endIndex,
         keys,
+        creationOptions,
+        timeout,
+        tasks,
+        scheduler,
+        continuationFunction,
+        millisecondsTimeout,
+        millisecondsDelay,
+        function,
+        exceptions,
+        exception,
+        cancellationToken,
+        delay,
+        asyncResult,
+        endMethod,
+        endFunction,
+        beginMethod,
+        continuationOptions,
+        continuationAction,
 
     }
 
@@ -289,6 +318,29 @@ namespace System {
         ArgumentOutOfRange_EndIndexStartIndex,
         Arg_LowerBoundsMustMatch,
         Arg_BogusIComparer,
+        Task_WaitMulti_NullTask,
+        Task_ThrowIfDisposed,
+        Task_Start_TaskCompleted,
+        Task_Start_Promise,
+        Task_Start_ContinuationTask,
+        Task_Start_AlreadyStarted,
+        Task_RunSynchronously_TaskCompleted,
+        Task_RunSynchronously_Continuation,
+        Task_RunSynchronously_Promise,
+        Task_RunSynchronously_AlreadyStarted,
+        Task_MultiTaskContinuation_NullTask,
+        Task_MultiTaskContinuation_EmptyTaskList,
+        Task_Dispose_NotCompleted,
+        Task_Delay_InvalidMillisecondsDelay,
+        Task_Delay_InvalidDelay,
+        Task_ctor_LRandSR,
+        Task_ContinueWith_NotOnAnything,
+        Task_ContinueWith_ESandLR,
+        TaskT_TransitionToFinal_AlreadyCompleted,
+        TaskT_ctor_SelfReplicating,
+        TaskCompletionSourceT_TrySetException_NullException,
+        TaskCompletionSourceT_TrySetException_NoExceptions,
+        InvalidOperation_WrongAsyncResultOrEndCalledMultiple,
 
     }
 }
