@@ -555,8 +555,6 @@ namespace System.Xml
                 int offsetMax = offset + count;
                 if (chars[offset] == '-')
                 {
-                    if (count == 1)
-                        return false;
                     for (int i = offset + 1; i < offsetMax; i++)
                     {
                         int digit = (chars[i] - '0');

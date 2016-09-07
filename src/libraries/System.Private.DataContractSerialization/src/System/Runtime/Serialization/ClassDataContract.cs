@@ -1121,7 +1121,7 @@ namespace System.Runtime.Serialization
                             DataMember memberContract = new DataMember(member);
 
                             memberContract.Name = DataContract.EncodeLocalName(member.Name);
-                            object[] optionalFields = null;
+                            object[] optionalFields = null; // TODO 11477: Add back optional field support
                             if (optionalFields == null || optionalFields.Length == 0)
                             {
                                 if (this.IsReference)
