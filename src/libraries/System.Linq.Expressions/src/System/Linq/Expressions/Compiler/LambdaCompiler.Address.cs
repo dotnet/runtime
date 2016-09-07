@@ -271,6 +271,11 @@ namespace System.Linq.Expressions.Compiler
                 return null;
             }
 
+            return AddressOfWriteBackCore(node); // avoids closure allocation
+        }
+
+        private WriteBack AddressOfWriteBackCore(MemberExpression node)
+        {
             // emit instance, if any
             LocalBuilder instanceLocal = null;
             Type instanceType = null;
@@ -295,16 +300,16 @@ namespace System.Linq.Expressions.Compiler
 
             // Set the property after the method call
             // don't re-evaluate anything
-            return delegate ()
+            return @this =>
             {
                 if (instanceLocal != null)
                 {
-                    _ilg.Emit(OpCodes.Ldloc, instanceLocal);
-                    FreeLocal(instanceLocal);
+                    @this._ilg.Emit(OpCodes.Ldloc, instanceLocal);
+                    @this.FreeLocal(instanceLocal);
                 }
-                _ilg.Emit(OpCodes.Ldloc, valueLocal);
-                FreeLocal(valueLocal);
-                EmitCall(instanceType, pi.GetSetMethod(true));
+                @this._ilg.Emit(OpCodes.Ldloc, valueLocal);
+                @this.FreeLocal(valueLocal);
+                @this.EmitCall(instanceLocal?.LocalType, pi.GetSetMethod(true));
             };
         }
 
@@ -315,6 +320,11 @@ namespace System.Linq.Expressions.Compiler
                 return null;
             }
 
+            return AddressOfWriteBackCore(node); // avoids closure allocation
+        }
+
+        private WriteBack AddressOfWriteBackCore(IndexExpression node)
+        {
             // emit instance, if any
             LocalBuilder instanceLocal = null;
             Type instanceType = null;
@@ -352,22 +362,22 @@ namespace System.Linq.Expressions.Compiler
 
             // Set the property after the method call
             // don't re-evaluate anything
-            return delegate ()
+            return @this =>
             {
                 if (instanceLocal != null)
                 {
-                    _ilg.Emit(OpCodes.Ldloc, instanceLocal);
-                    FreeLocal(instanceLocal);
+                    @this._ilg.Emit(OpCodes.Ldloc, instanceLocal);
+                    @this.FreeLocal(instanceLocal);
                 }
                 foreach (var arg in args)
                 {
-                    _ilg.Emit(OpCodes.Ldloc, arg);
-                    FreeLocal(arg);
+                    @this._ilg.Emit(OpCodes.Ldloc, arg);
+                    @this.FreeLocal(arg);
                 }
-                _ilg.Emit(OpCodes.Ldloc, valueLocal);
-                FreeLocal(valueLocal);
+                @this._ilg.Emit(OpCodes.Ldloc, valueLocal);
+                @this.FreeLocal(valueLocal);
 
-                EmitSetIndexCall(node, instanceType);
+                @this.EmitSetIndexCall(node, instanceLocal?.LocalType);
             };
         }
 
