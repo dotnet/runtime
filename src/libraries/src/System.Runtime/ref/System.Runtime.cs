@@ -101,9 +101,12 @@ namespace System
         public AggregateException(string message, System.Collections.Generic.IEnumerable<System.Exception> innerExceptions) { }
         public AggregateException(string message, System.Exception innerException) { }
         public AggregateException(string message, params System.Exception[] innerExceptions) { }
+        protected AggregateException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
         public System.Collections.ObjectModel.ReadOnlyCollection<System.Exception> InnerExceptions { get { return default(System.Collections.ObjectModel.ReadOnlyCollection<System.Exception>); } }
+        public override string Message { get { throw null; } }
         public System.AggregateException Flatten() { return default(System.AggregateException); }
         public override System.Exception GetBaseException() { return default(System.Exception); }
+        public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public void Handle(System.Func<System.Exception, bool> predicate) { }
         public override string ToString() { return default(string); }
     }
