@@ -21,7 +21,7 @@ namespace System.IO
             if (array.Length - offset < numBytes)
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
 
-            if (SafeFileHandle.IsClosed) throw new ObjectDisposedException(SR.ObjectDisposed_FileClosed);
+            if (IsClosed) throw new ObjectDisposedException(SR.ObjectDisposed_FileClosed);
             if (!CanRead) throw new NotSupportedException(SR.NotSupported_UnreadableStream);
 
             if (!IsAsync)
@@ -41,7 +41,7 @@ namespace System.IO
             if (array.Length - offset < numBytes)
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
 
-            if (SafeFileHandle.IsClosed) throw new ObjectDisposedException(SR.ObjectDisposed_FileClosed);
+            if (IsClosed) throw new ObjectDisposedException(SR.ObjectDisposed_FileClosed);
             if (!CanWrite) throw new NotSupportedException(SR.NotSupported_UnwritableStream);
 
             if (!IsAsync)
