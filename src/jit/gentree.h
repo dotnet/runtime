@@ -1270,7 +1270,6 @@ public:
         {
             case GT_ADD_HI:
             case GT_SUB_HI:
-            case GT_MUL_HI:
             case GT_DIV_HI:
             case GT_MOD_HI:
                 return true;
