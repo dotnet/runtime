@@ -8,6 +8,7 @@ using System.Dynamic.Utils;
 using System.Globalization;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using static System.Linq.Expressions.CachedReflectionInfo;
 
 using AstUtils = System.Linq.Expressions.Utils;
 
@@ -756,11 +757,6 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        private static bool IsNullableOrReferenceType(Type t)
-        {
-            return !t.GetTypeInfo().IsValueType || TypeUtils.IsNullableType(t);
-        }
-
         private void CompileBinaryExpression(Expression expr)
         {
             var node = (BinaryExpression)expr;
@@ -853,7 +849,7 @@ namespace System.Linq.Expressions.Interpreter
                         default:
                             BranchLabel loadDefault = _instructions.MakeLabel();
 
-                            if (IsNullableOrReferenceType(node.Left.Type))
+                            if (node.Left.Type.IsNullableOrReferenceType())
                             {
                                 _instructions.EmitLoadLocal(leftTemp.Index);
                                 _instructions.EmitLoad(null, typeof(object));
@@ -861,7 +857,7 @@ namespace System.Linq.Expressions.Interpreter
                                 _instructions.EmitBranchTrue(loadDefault);
                             }
 
-                            if (IsNullableOrReferenceType(node.Right.Type))
+                            if (node.Right.Type.IsNullableOrReferenceType())
                             {
                                 _instructions.EmitLoadLocal(rightTemp.Index);
                                 _instructions.EmitLoad(null, typeof(object));
@@ -1110,7 +1106,7 @@ namespace System.Linq.Expressions.Interpreter
 
             // use numeric conversions for both numeric types and enums
             if ((TypeUtils.IsNumericOrBool(nonNullableFrom) || nonNullableFrom.GetTypeInfo().IsEnum)
-                 && (TypeUtils.IsNumeric(nonNullableTo) || nonNullableTo.GetTypeInfo().IsEnum))
+                 && (TypeUtils.IsNumeric(nonNullableTo) || nonNullableTo.GetTypeInfo().IsEnum || nonNullableTo == typeof(decimal)))
             {
                 Type enumTypeTo = null;
 
@@ -1550,7 +1546,7 @@ namespace System.Linq.Expressions.Interpreter
                 if (switchType == TypeCode.String)
                 {
                     // If we have a comparison other than string equality, bail
-                    MethodInfo equality = typeof(string).GetMethod("op_Equality", new[] { typeof(string), typeof(string) });
+                    MethodInfo equality = String_op_Equality_String_String;
                     if (equality != null && !equality.IsStatic)
                     {
                         equality = null;
@@ -2577,6 +2573,23 @@ namespace System.Linq.Expressions.Interpreter
         {
             var node = (BinaryExpression)expr;
 
+            var hasConversion = node.Conversion != null;
+            var hasImplicitConversion = false;
+            if (!hasConversion && TypeUtils.IsNullableType(node.Left.Type))
+            {
+                // reference types don't need additional conversions (the interpreter operates on Object
+                // anyway); non-nullable value types can't occur on the left side; all that's left is
+                // nullable value types with implicit (numeric) conversions which are allowed by Coalesce
+                // factory methods
+
+                Type nnLeftType = TypeUtils.GetNonNullableType(node.Left.Type);
+                if (!TypeUtils.AreEquivalent(node.Type, nnLeftType))
+                {
+                    hasImplicitConversion = true;
+                    hasConversion = true;
+                }
+            }
+
             var leftNotNull = _instructions.MakeLabel();
             BranchLabel end = null;
 
@@ -2585,7 +2598,7 @@ namespace System.Linq.Expressions.Interpreter
             _instructions.EmitPop();
             Compile(node.Right);
 
-            if (node.Conversion != null)
+            if (hasConversion)
             {
                 // skip over conversion on RHS
                 end = _instructions.MakeLabel();
@@ -2605,7 +2618,15 @@ namespace System.Linq.Expressions.Interpreter
                 );
 
                 _locals.UndefineLocal(local, _instructions.Count);
+            }
+            else if (hasImplicitConversion)
+            {
+                Type nnLeftType = TypeUtils.GetNonNullableType(node.Left.Type);
+                CompileConvertToType(nnLeftType, node.Type, isChecked: true, isLiftedToNull: false);
+            }
 
+            if (hasConversion)
+            {
                 _instructions.MarkLabel(end);
             }
         }

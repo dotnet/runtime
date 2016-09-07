@@ -1556,5 +1556,16 @@ namespace System.Linq.Expressions.Tests
         }
 
         #endregion
+
+        #region ToString
+
+        [Fact]
+        public static void ToStringTest()
+        {
+            var e = Expression.ArrayLength(Expression.Parameter(typeof(int[]), "xs"));
+            Assert.Equal("ArrayLength(xs)", e.ToString());
+        }
+
+        #endregion
     }
 }

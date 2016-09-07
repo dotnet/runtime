@@ -11,10 +11,11 @@
 
 using Microsoft.Win32;
 using System;
+using System.Diagnostics;
+using System.Diagnostics.Contracts;
+using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Security.Principal;
-using System.Globalization;
-using System.Diagnostics.Contracts;
 
 namespace System.Security.AccessControl
 {
@@ -240,12 +241,12 @@ namespace System.Security.AccessControl
                 // Indicates that the marshaling logic in GetBinaryForm is busted
                 //
 
-                Contract.Assert(false, "binaryForm produced invalid output");
+                Debug.Assert(false, "binaryForm produced invalid output");
                 throw new InvalidOperationException();
             }
             else if (error != Interop.mincore.Errors.ERROR_SUCCESS)
             {
-                Contract.Assert(false, string.Format(CultureInfo.InvariantCulture, "Win32.ConvertSdToSddl returned {0}", error));
+                Debug.Assert(false, string.Format(CultureInfo.InvariantCulture, "Win32.ConvertSdToSddl returned {0}", error));
                 throw new InvalidOperationException();
             }
 
@@ -669,7 +670,7 @@ nameof(sddlForm));
                     }
                     else if (error != Interop.mincore.Errors.ERROR_SUCCESS)
                     {
-                        Contract.Assert(false, string.Format(CultureInfo.InvariantCulture, "Unexpected error out of Win32.ConvertStringSdToSd: {0}", error));
+                        Debug.Assert(false, string.Format(CultureInfo.InvariantCulture, "Unexpected error out of Win32.ConvertStringSdToSd: {0}", error));
                         // TODO : This should be a Win32Exception once that type is available
                         throw new Exception();
                     }

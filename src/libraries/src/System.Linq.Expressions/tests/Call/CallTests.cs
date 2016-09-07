@@ -225,5 +225,56 @@ namespace System.Linq.Expressions.Tests
             var m = new Mutable() { X = 41 };
             Assert.Equal(42, lambda(m));
         }
+
+        [Fact]
+        public static void ToStringTest()
+        {
+            // NB: Static methods are inconsistent compared to static members; the declaring type is not included
+
+            var e1 = Expression.Call(null, typeof(SomeMethods).GetMethod(nameof(SomeMethods.S0), BindingFlags.Static | BindingFlags.Public));
+            Assert.Equal("S0()", e1.ToString());
+
+            var e2 = Expression.Call(null, typeof(SomeMethods).GetMethod(nameof(SomeMethods.S1), BindingFlags.Static | BindingFlags.Public), Expression.Parameter(typeof(int), "x"));
+            Assert.Equal("S1(x)", e2.ToString());
+
+            var e3 = Expression.Call(null, typeof(SomeMethods).GetMethod(nameof(SomeMethods.S2), BindingFlags.Static | BindingFlags.Public), Expression.Parameter(typeof(int), "x"), Expression.Parameter(typeof(int), "y"));
+            Assert.Equal("S2(x, y)", e3.ToString());
+
+            var e4 = Expression.Call(Expression.Parameter(typeof(SomeMethods), "o"), typeof(SomeMethods).GetMethod(nameof(SomeMethods.I0), BindingFlags.Instance | BindingFlags.Public));
+            Assert.Equal("o.I0()", e4.ToString());
+
+            var e5 = Expression.Call(Expression.Parameter(typeof(SomeMethods), "o"), typeof(SomeMethods).GetMethod(nameof(SomeMethods.I1), BindingFlags.Instance | BindingFlags.Public), Expression.Parameter(typeof(int), "x"));
+            Assert.Equal("o.I1(x)", e5.ToString());
+
+            var e6 = Expression.Call(Expression.Parameter(typeof(SomeMethods), "o"), typeof(SomeMethods).GetMethod(nameof(SomeMethods.I2), BindingFlags.Instance | BindingFlags.Public), Expression.Parameter(typeof(int), "x"), Expression.Parameter(typeof(int), "y"));
+            Assert.Equal("o.I2(x, y)", e6.ToString());
+
+            var e7 = Expression.Call(null, typeof(ExtensionMethods).GetMethod(nameof(ExtensionMethods.E0), BindingFlags.Static | BindingFlags.Public), Expression.Parameter(typeof(int), "x"));
+            Assert.Equal("x.E0()", e7.ToString());
+
+            var e8 = Expression.Call(null, typeof(ExtensionMethods).GetMethod(nameof(ExtensionMethods.E1), BindingFlags.Static | BindingFlags.Public), Expression.Parameter(typeof(int), "x"), Expression.Parameter(typeof(int), "y"));
+            Assert.Equal("x.E1(y)", e8.ToString());
+
+            var e9 = Expression.Call(null, typeof(ExtensionMethods).GetMethod(nameof(ExtensionMethods.E2), BindingFlags.Static | BindingFlags.Public), Expression.Parameter(typeof(int), "x"), Expression.Parameter(typeof(int), "y"), Expression.Parameter(typeof(int), "z"));
+            Assert.Equal("x.E2(y, z)", e9.ToString());
+        }
+    }
+
+    class SomeMethods
+    {
+        public static void S0() {}
+        public static void S1(int x) {}
+        public static void S2(int x, int y) {}
+
+        public void I0() {}
+        public void I1(int x) {}
+        public void I2(int x, int y) {}
+    }
+
+    static class ExtensionMethods
+    {
+         public static void E0(this int x) {}
+         public static void E1(this int x, int y) {}
+         public static void E2(this int x, int y, int z) {}
     }
 }

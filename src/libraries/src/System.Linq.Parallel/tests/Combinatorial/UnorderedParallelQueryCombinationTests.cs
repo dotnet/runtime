@@ -38,13 +38,18 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(BinaryOperations))]
         public static void Concat_Unordered(Labeled<Operation> operation)
         {
-            IntegerRangeSet seen = new IntegerRangeSet(DefaultStart, DefaultSize);
-            foreach (int i in operation.Item(DefaultStart, DefaultSize / 2, DefaultSource)
-                .Concat(operation.Item(DefaultStart + DefaultSize / 2, DefaultSize / 2, DefaultSource)))
+            Action<Operation, Operation> concat = (left, right) =>
             {
-                seen.Add(i);
-            }
-            seen.AssertComplete();
+                IntegerRangeSet seen = new IntegerRangeSet(DefaultStart, DefaultSize);
+                foreach (int i in left(DefaultStart, DefaultSize / 2, DefaultSource)
+                    .Concat(right(DefaultStart + DefaultSize / 2, DefaultSize / 2, DefaultSource)))
+                {
+                    seen.Add(i);
+                }
+                seen.AssertComplete();
+            };
+            concat(operation.Item, DefaultSource);
+            concat(DefaultSource, operation.Item);
         }
 
         [Theory]
@@ -52,13 +57,17 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(BinaryOperations))]
         public static void Concat_Unordered_NotPipelined(Labeled<Operation> operation)
         {
-            IntegerRangeSet seen = new IntegerRangeSet(DefaultStart, DefaultSize);
-            Assert.All(
-                operation.Item(DefaultStart, DefaultSize / 2, DefaultSource)
-                    .Concat(operation.Item(DefaultStart + DefaultSize / 2, DefaultSize / 2, DefaultSource)).ToList(),
-                x => seen.Add(x)
-                );
-            seen.AssertComplete();
+            Action<Operation, Operation> concat = (left, right) =>
+            {
+                IntegerRangeSet seen = new IntegerRangeSet(DefaultStart, DefaultSize);
+                Assert.All(
+                    left(DefaultStart, DefaultSize / 2, DefaultSource)
+                        .Concat(right(DefaultStart + DefaultSize / 2, DefaultSize / 2, DefaultSource)).ToList(),
+                    x => seen.Add(x));
+                seen.AssertComplete();
+            };
+            concat(operation.Item, DefaultSource);
+            concat(DefaultSource, operation.Item);
         }
 
         [Theory]
@@ -114,14 +123,19 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(BinaryOperations))]
         public static void Except_Unordered(Labeled<Operation> operation)
         {
-            IntegerRangeSet seen = new IntegerRangeSet(DefaultStart, DefaultSize);
-            ParallelQuery<int> query = operation.Item(DefaultStart, DefaultSize + DefaultSize / 2, DefaultSource)
-                .Except(operation.Item(DefaultStart + DefaultSize, DefaultSize, DefaultSource));
-            foreach (int i in query)
+            Action<Operation, Operation> except = (left, right) =>
             {
-                seen.Add(i);
-            }
-            seen.AssertComplete();
+                IntegerRangeSet seen = new IntegerRangeSet(DefaultStart, DefaultSize);
+                ParallelQuery<int> query = left(DefaultStart, DefaultSize + DefaultSize / 2, DefaultSource)
+                    .Except(right(DefaultStart + DefaultSize, DefaultSize, DefaultSource));
+                foreach (int i in query)
+                {
+                    seen.Add(i);
+                }
+                seen.AssertComplete();
+            };
+            except(operation.Item, DefaultSource);
+            except(DefaultSource, operation.Item);
         }
 
         [Theory]
@@ -129,11 +143,16 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(BinaryOperations))]
         public static void Except_Unordered_NotPipelined(Labeled<Operation> operation)
         {
-            IntegerRangeSet seen = new IntegerRangeSet(DefaultStart, DefaultSize);
-            ParallelQuery<int> query = operation.Item(DefaultStart, DefaultSize + DefaultSize / 2, DefaultSource)
-                .Except(operation.Item(DefaultStart + DefaultSize, DefaultSize, DefaultSource));
-            Assert.All(query.ToList(), x => seen.Add((int)x));
-            seen.AssertComplete();
+            Action<Operation, Operation> except = (left, right) =>
+            {
+                IntegerRangeSet seen = new IntegerRangeSet(DefaultStart, DefaultSize);
+                ParallelQuery<int> query = left(DefaultStart, DefaultSize + DefaultSize / 2, DefaultSource)
+                    .Except(right(DefaultStart + DefaultSize, DefaultSize, DefaultSource));
+                Assert.All(query.ToList(), x => seen.Add((int)x));
+                seen.AssertComplete();
+            };
+            except(operation.Item, DefaultSource);
+            except(DefaultSource, operation.Item);
         }
 
         [Theory]
@@ -223,16 +242,21 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(BinaryOperations))]
         public static void GroupJoin_Unordered(Labeled<Operation> operation)
         {
-            IntegerRangeSet seenKey = new IntegerRangeSet(DefaultStart / GroupFactor, DefaultSize / GroupFactor);
-            foreach (KeyValuePair<int, IEnumerable<int>> group in operation.Item(DefaultStart / GroupFactor, DefaultSize / GroupFactor, DefaultSource)
-                .GroupJoin(operation.Item(DefaultStart, DefaultSize, DefaultSource), x => x, y => y / GroupFactor, (k, g) => new KeyValuePair<int, IEnumerable<int>>(k, g)))
+            Action<Operation, Operation> groupJoin = (left, right) =>
             {
-                Assert.True(seenKey.Add(group.Key));
-                IntegerRangeSet seenElement = new IntegerRangeSet(group.Key * GroupFactor, GroupFactor);
-                Assert.All(group.Value, x => seenElement.Add(x));
-                seenElement.AssertComplete();
-            }
-            seenKey.AssertComplete();
+                IntegerRangeSet seenKey = new IntegerRangeSet(DefaultStart / GroupFactor, DefaultSize / GroupFactor);
+                foreach (KeyValuePair<int, IEnumerable<int>> group in left(DefaultStart / GroupFactor, DefaultSize / GroupFactor, DefaultSource)
+                    .GroupJoin(right(DefaultStart, DefaultSize, DefaultSource), x => x, y => y / GroupFactor, (k, g) => new KeyValuePair<int, IEnumerable<int>>(k, g)))
+                {
+                    Assert.True(seenKey.Add(group.Key));
+                    IntegerRangeSet seenElement = new IntegerRangeSet(group.Key * GroupFactor, GroupFactor);
+                    Assert.All(group.Value, x => seenElement.Add(x));
+                    seenElement.AssertComplete();
+                }
+                seenKey.AssertComplete();
+            };
+            groupJoin(operation.Item, DefaultSource);
+            groupJoin(DefaultSource, operation.Item);
         }
 
         [Theory]
@@ -240,16 +264,21 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(BinaryOperations))]
         public static void GroupJoin_Unordered_NotPipelined(Labeled<Operation> operation)
         {
-            IntegerRangeSet seenKey = new IntegerRangeSet(DefaultStart / GroupFactor, DefaultSize / GroupFactor);
-            foreach (KeyValuePair<int, IEnumerable<int>> group in operation.Item(DefaultStart / GroupFactor, DefaultSize / GroupFactor, DefaultSource)
-                .GroupJoin(operation.Item(DefaultStart, DefaultSize, DefaultSource), x => x, y => y / GroupFactor, (k, g) => new KeyValuePair<int, IEnumerable<int>>(k, g)).ToList())
+            Action<Operation, Operation> groupJoin = (left, right) =>
             {
-                Assert.True(seenKey.Add(group.Key));
-                IntegerRangeSet seenElement = new IntegerRangeSet(group.Key * GroupFactor, GroupFactor);
-                Assert.All(group.Value, x => seenElement.Add(x));
-                seenElement.AssertComplete();
-            }
-            seenKey.AssertComplete();
+                IntegerRangeSet seenKey = new IntegerRangeSet(DefaultStart / GroupFactor, DefaultSize / GroupFactor);
+                foreach (KeyValuePair<int, IEnumerable<int>> group in left(DefaultStart / GroupFactor, DefaultSize / GroupFactor, DefaultSource)
+                    .GroupJoin(right(DefaultStart, DefaultSize, DefaultSource), x => x, y => y / GroupFactor, (k, g) => new KeyValuePair<int, IEnumerable<int>>(k, g)).ToList())
+                {
+                    Assert.True(seenKey.Add(group.Key));
+                    IntegerRangeSet seenElement = new IntegerRangeSet(group.Key * GroupFactor, GroupFactor);
+                    Assert.All(group.Value, x => seenElement.Add(x));
+                    seenElement.AssertComplete();
+                }
+                seenKey.AssertComplete();
+            };
+            groupJoin(operation.Item, DefaultSource);
+            groupJoin(DefaultSource, operation.Item);
         }
 
         [Theory]
@@ -257,14 +286,19 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(BinaryOperations))]
         public static void Intersect_Unordered(Labeled<Operation> operation)
         {
-            IntegerRangeSet seen = new IntegerRangeSet(DefaultStart, DefaultSize);
-            ParallelQuery<int> query = operation.Item(DefaultStart - DefaultSize / 2, DefaultSize + DefaultSize / 2, DefaultSource)
-                .Intersect(operation.Item(DefaultStart, DefaultSize + DefaultSize / 2, DefaultSource));
-            foreach (int i in query)
+            Action<Operation, Operation> intersect = (left, right) =>
             {
-                seen.Add(i);
-            }
-            seen.AssertComplete();
+                IntegerRangeSet seen = new IntegerRangeSet(DefaultStart, DefaultSize);
+                ParallelQuery<int> query = left(DefaultStart - DefaultSize / 2, DefaultSize + DefaultSize / 2, DefaultSource)
+                    .Intersect(right(DefaultStart, DefaultSize + DefaultSize / 2, DefaultSource));
+                foreach (int i in query)
+                {
+                    seen.Add(i);
+                }
+                seen.AssertComplete();
+            };
+            intersect(operation.Item, DefaultSource);
+            intersect(DefaultSource, operation.Item);
         }
 
         [Theory]
@@ -272,11 +306,16 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(BinaryOperations))]
         public static void Intersect_Unordered_NotPipelined(Labeled<Operation> operation)
         {
-            IntegerRangeSet seen = new IntegerRangeSet(DefaultStart, DefaultSize);
-            ParallelQuery<int> query = operation.Item(DefaultStart - DefaultSize / 2, DefaultSize + DefaultSize / 2, DefaultSource)
-                .Intersect(operation.Item(DefaultStart, DefaultSize + DefaultSize / 2, DefaultSource));
-            Assert.All(query.ToList(), x => seen.Add((int)x));
-            seen.AssertComplete();
+            Action<Operation, Operation> intersect = (left, right) =>
+            {
+                IntegerRangeSet seen = new IntegerRangeSet(DefaultStart, DefaultSize);
+                ParallelQuery<int> query = left(DefaultStart - DefaultSize / 2, DefaultSize + DefaultSize / 2, DefaultSource)
+                    .Intersect(right(DefaultStart, DefaultSize + DefaultSize / 2, DefaultSource));
+                Assert.All(query.ToList(), x => seen.Add(x));
+                seen.AssertComplete();
+            };
+            intersect(operation.Item, DefaultSource);
+            intersect(DefaultSource, operation.Item);
         }
 
         [Theory]
@@ -284,15 +323,20 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(BinaryOperations))]
         public static void Join_Unordered(Labeled<Operation> operation)
         {
-            IntegerRangeSet seen = new IntegerRangeSet(DefaultStart, DefaultSize);
-            ParallelQuery<KeyValuePair<int, int>> query = operation.Item(DefaultStart / GroupFactor, DefaultSize / GroupFactor, DefaultSource)
-                .Join(operation.Item(DefaultStart, DefaultSize, DefaultSource), x => x, y => y / GroupFactor, (x, y) => new KeyValuePair<int, int>(x, y));
-            foreach (KeyValuePair<int, int> p in query)
+            Action<Operation, Operation> join = (left, right) =>
             {
-                Assert.Equal(p.Key, p.Value / GroupFactor);
-                seen.Add(p.Value);
-            }
-            seen.AssertComplete();
+                IntegerRangeSet seen = new IntegerRangeSet(DefaultStart, DefaultSize);
+                ParallelQuery<KeyValuePair<int, int>> query = left(DefaultStart / GroupFactor, DefaultSize / GroupFactor, DefaultSource)
+                    .Join(right(DefaultStart, DefaultSize, DefaultSource), x => x, y => y / GroupFactor, (x, y) => new KeyValuePair<int, int>(x, y));
+                foreach (KeyValuePair<int, int> p in query)
+                {
+                    Assert.Equal(p.Key, p.Value / GroupFactor);
+                    seen.Add(p.Value);
+                }
+                seen.AssertComplete();
+            };
+            join(operation.Item, DefaultSource);
+            join(DefaultSource, operation.Item);
         }
 
         [Theory]
@@ -300,15 +344,20 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(BinaryUnorderedOperators))]
         public static void Join_Unordered_NotPipelined(Labeled<Operation> source, Labeled<Operation> operation)
         {
-            IntegerRangeSet seen = new IntegerRangeSet(DefaultStart, DefaultSize);
-            ParallelQuery<KeyValuePair<int, int>> query = operation.Item(DefaultStart / GroupFactor, DefaultSize / GroupFactor, source.Item)
-                .Join(operation.Item(DefaultStart, DefaultSize, source.Item), x => x, y => y / GroupFactor, (x, y) => new KeyValuePair<int, int>(x, y));
-            foreach (KeyValuePair<int, int> p in query.ToList())
+            Action<Operation, Operation> join = (left, right) =>
             {
-                Assert.Equal(p.Key, p.Value / GroupFactor);
-                seen.Add(p.Value);
-            }
-            seen.AssertComplete();
+                IntegerRangeSet seen = new IntegerRangeSet(DefaultStart, DefaultSize);
+                ParallelQuery<KeyValuePair<int, int>> query = left(DefaultStart / GroupFactor, DefaultSize / GroupFactor, DefaultSource)
+                    .Join(right(DefaultStart, DefaultSize, DefaultSource), x => x, y => y / GroupFactor, (x, y) => new KeyValuePair<int, int>(x, y));
+                foreach (KeyValuePair<int, int> p in query.ToList())
+                {
+                    Assert.Equal(p.Key, p.Value / GroupFactor);
+                    seen.Add(p.Value);
+                }
+                seen.AssertComplete();
+            };
+            join(operation.Item, DefaultSource);
+            join(DefaultSource, operation.Item);
         }
 
         [Theory]
@@ -549,6 +598,43 @@ namespace System.Linq.Parallel.Tests
         [Theory]
         [MemberData(nameof(UnaryOperations))]
         [MemberData(nameof(BinaryOperations))]
+        public static void Union_Unordered(Labeled<Operation> operation)
+        {
+            Action<Operation, Operation> union = (left, right) =>
+            {
+                IntegerRangeSet seen = new IntegerRangeSet(DefaultStart, DefaultSize);
+                ParallelQuery<int> query = left(DefaultStart, DefaultSize * 3 / 4, DefaultSource)
+                    .Union(right(DefaultStart + DefaultSize / 2, DefaultSize / 2, DefaultSource));
+                foreach (int i in query)
+                {
+                    seen.Add(i);
+                }
+                seen.AssertComplete();
+            };
+            union(operation.Item, DefaultSource);
+            union(DefaultSource, operation.Item);
+        }
+
+        [Theory]
+        [MemberData(nameof(UnaryOperations))]
+        [MemberData(nameof(BinaryOperations))]
+        public static void Union_Unordered_NotPipelined(Labeled<Operation> operation)
+        {
+            Action<Operation, Operation> union = (left, right) =>
+            {
+                IntegerRangeSet seen = new IntegerRangeSet(DefaultStart, DefaultSize);
+                ParallelQuery<int> query = left(DefaultStart, DefaultSize * 3 / 4, DefaultSource)
+                    .Union(right(DefaultStart + DefaultSize / 2, DefaultSize / 2, DefaultSource));
+                Assert.All(query.ToList(), x => seen.Add(x));
+                seen.AssertComplete();
+            };
+            union(operation.Item, DefaultSource);
+            union(DefaultSource, operation.Item);
+        }
+
+        [Theory]
+        [MemberData(nameof(UnaryOperations))]
+        [MemberData(nameof(BinaryOperations))]
         public static void Where_Unordered(Labeled<Operation> operation)
         {
             IntegerRangeSet seen = new IntegerRangeSet(DefaultStart, DefaultSize / 2);
@@ -597,14 +683,19 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(BinaryOperations))]
         public static void Zip_Unordered(Labeled<Operation> operation)
         {
-            IntegerRangeSet seen = new IntegerRangeSet(DefaultStart, DefaultSize);
-            ParallelQuery<int> query = operation.Item(DefaultStart, DefaultSize, DefaultSource)
-                .Zip(operation.Item(0, DefaultSize, DefaultSource), (x, y) => x);
-            foreach (int i in query)
-            {
-                seen.Add(i);
-            }
-            seen.AssertComplete();
+            Action<Operation, Operation> zip = (left, right) =>
+             {
+                 IntegerRangeSet seen = new IntegerRangeSet(DefaultStart, DefaultSize);
+                 ParallelQuery<int> query = left(DefaultStart, DefaultSize, DefaultSource)
+                     .Zip(right(0, DefaultSize, DefaultSource), (x, y) => x);
+                 foreach (int i in query)
+                 {
+                     seen.Add(i);
+                 }
+                 seen.AssertComplete();
+             };
+            zip(operation.Item, DefaultSource);
+            zip(DefaultSource, operation.Item);
         }
 
         [Theory]
@@ -612,11 +703,16 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(BinaryOperations))]
         public static void Zip_Unordered_NotPipelined(Labeled<Operation> operation)
         {
-            IntegerRangeSet seen = new IntegerRangeSet(DefaultStart, DefaultSize);
-            ParallelQuery<int> query = operation.Item(0, DefaultSize, DefaultSource)
-                .Zip(operation.Item(DefaultStart, DefaultSize, DefaultSource), (x, y) => y);
-            Assert.All(query.ToList(), x => seen.Add(x));
-            seen.AssertComplete();
+            Action<Operation, Operation> zip = (left, right) =>
+            {
+                IntegerRangeSet seen = new IntegerRangeSet(DefaultStart, DefaultSize);
+                ParallelQuery<int> query = left(DefaultStart, DefaultSize, DefaultSource)
+                    .Zip(right(0, DefaultSize, DefaultSource), (x, y) => x);
+                Assert.All(query.ToList(), x => seen.Add(x));
+                seen.AssertComplete();
+            };
+            zip(operation.Item, DefaultSource);
+            zip(DefaultSource, operation.Item);
         }
     }
 }

@@ -7,6 +7,7 @@ using System.Dynamic.Utils;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
+using static System.Linq.Expressions.CachedReflectionInfo;
 
 namespace System.Linq.Expressions.Compiler
 {
@@ -30,7 +31,7 @@ namespace System.Linq.Expressions.Compiler
                 // HoistedLocals is internal so emit as System.Object
                 EmitConstant(_scope.NearestHoistedLocals, typeof(object));
                 _scope.EmitGet(_scope.NearestHoistedLocals.SelfVariable);
-                _ilg.Emit(OpCodes.Call, typeof(RuntimeOps).GetMethod("Quote"));
+                _ilg.Emit(OpCodes.Call, RuntimeOps_Quote);
 
                 if (quote.Type != typeof(Expression))
                 {
@@ -129,7 +130,7 @@ namespace System.Linq.Expressions.Compiler
                             EmitUnaryOperator(op, nnOperandType, typeof(bool));
 
                             // construct result
-                            ConstructorInfo ci = resultType.GetConstructor(new Type[] { typeof(bool) });
+                            ConstructorInfo ci = resultType.GetConstructor(ArrayOfType_Bool);
                             _ilg.Emit(OpCodes.Newobj, ci);
                             _ilg.Emit(OpCodes.Stloc, loc);
 

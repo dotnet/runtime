@@ -16,12 +16,13 @@ using Microsoft.Win32;
 using Microsoft.Win32.SafeHandles;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Diagnostics.Contracts;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using System.Security.Principal;
 using System.Threading;
-using System.Runtime.Versioning;
-using System.Diagnostics.Contracts;
 using CultureInfo = System.Globalization.CultureInfo;
 using FCall = System.Security.Principal.Win32;
 using Luid = Interop.mincore.LUID;
@@ -129,7 +130,7 @@ namespace System.Security.AccessControl
                         }
                         else
                         {
-                            Contract.Assert(false, string.Format(CultureInfo.InvariantCulture, "LookupPrivilegeValue() failed with unrecognized error code {0}", error));
+                            System.Diagnostics.Debug.Assert(false, string.Format(CultureInfo.InvariantCulture, "LookupPrivilegeValue() failed with unrecognized error code {0}", error));
                             throw new InvalidOperationException();
                         }
                     }
@@ -228,7 +229,7 @@ namespace System.Security.AccessControl
                                     success = false;
                                 }
 
-                                Contract.Assert(this.isImpersonating == false, "Incorrect isImpersonating state");
+                                System.Diagnostics.Debug.Assert(this.isImpersonating == false, "Incorrect isImpersonating state");
 
                                 if (success == true)
                                 {
@@ -292,7 +293,7 @@ namespace System.Security.AccessControl
                 }
                 else if (error != 0)
                 {
-                    Contract.Assert(false, string.Format(CultureInfo.InvariantCulture, "WindowsIdentity.GetCurrentThreadToken() failed with unrecognized error code {0}", error));
+                    System.Diagnostics.Debug.Assert(false, string.Format(CultureInfo.InvariantCulture, "WindowsIdentity.GetCurrentThreadToken() failed with unrecognized error code {0}", error));
                     throw new InvalidOperationException();
                 }
             }
@@ -397,7 +398,7 @@ namespace System.Security.AccessControl
 
         ~Privilege()
         {
-            Contract.Assert(!this.needToRevert, "Must revert privileges that you alter!");
+            System.Diagnostics.Debug.Assert(!this.needToRevert, "Must revert privileges that you alter!");
 
             if (this.needToRevert)
             {
@@ -548,7 +549,7 @@ namespace System.Security.AccessControl
             }
             else if (error != 0)
             {
-                Contract.Assert(false, string.Format(CultureInfo.InvariantCulture, "AdjustTokenPrivileges() failed with unrecognized error code {0}", error));
+                System.Diagnostics.Debug.Assert(false, string.Format(CultureInfo.InvariantCulture, "AdjustTokenPrivileges() failed with unrecognized error code {0}", error));
                 throw new InvalidOperationException();
             }
         }
@@ -638,7 +639,7 @@ namespace System.Security.AccessControl
             }
             else if (error != 0)
             {
-                Contract.Assert(false, string.Format(CultureInfo.InvariantCulture, "AdjustTokenPrivileges() failed with unrecognized error code {0}", error));
+                System.Diagnostics.Debug.Assert(false, string.Format(CultureInfo.InvariantCulture, "AdjustTokenPrivileges() failed with unrecognized error code {0}", error));
                 throw new InvalidOperationException();
             }
         }

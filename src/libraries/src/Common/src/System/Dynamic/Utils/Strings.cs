@@ -82,6 +82,9 @@ namespace System.Dynamic.Utils
             }
         }
 
+        /// <summary>
+        /// A string like "Expression must be readable"
+        /// </summary>
         internal static string ExpressionMustBeReadable
         {
             get

@@ -173,5 +173,31 @@ namespace System.Linq.Expressions.Tests
             Expression value = Expression.Property(null, typeof(Unreadable<string>), "WriteOnly");
             Assert.Throws<ArgumentException>("right", () => Expression.ReferenceEqual(Expression.Constant(""), value));
         }
+
+        [Fact]
+        public void Update()
+        {
+            Expression e1 = Expression.Constant("bar");
+            Expression e2 = Expression.Constant("foo");
+            Expression e3 = Expression.Constant("qux");
+
+            var eq = Expression.ReferenceEqual(e1, e2);
+
+            Assert.Same(eq, eq.Update(e1, null, e2));
+
+            var eq1 = eq.Update(e1, null, e3);
+            Assert.Equal(ExpressionType.Equal, eq1.NodeType);
+            Assert.Same(e1, eq1.Left);
+            Assert.Same(e3, eq1.Right);
+            Assert.Null(eq1.Conversion);
+            Assert.Null(eq1.Method);
+
+            var eq2 = eq.Update(e3, null, e2);
+            Assert.Equal(ExpressionType.Equal, eq2.NodeType);
+            Assert.Same(e3, eq2.Left);
+            Assert.Same(e2, eq2.Right);
+            Assert.Null(eq2.Conversion);
+            Assert.Null(eq2.Method);
+        }
     }
 }

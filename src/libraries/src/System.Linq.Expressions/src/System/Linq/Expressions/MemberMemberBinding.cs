@@ -145,7 +145,7 @@ namespace System.Linq.Expressions
                 ContractUtils.RequiresNotNull(b, nameof(bindings));
                 if (!b.Member.DeclaringType.IsAssignableFrom(type))
                 {
-                    throw Error.NotAMemberOfType(b.Member.Name, type, $"{nameof(bindings)}[{i}]");
+                    throw Error.NotAMemberOfType(b.Member.Name, type, nameof(bindings), i);
                 }
             }
         }

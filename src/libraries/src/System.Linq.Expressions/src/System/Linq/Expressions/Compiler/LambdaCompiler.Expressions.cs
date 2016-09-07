@@ -207,8 +207,9 @@ namespace System.Linq.Expressions.Compiler
             // 3. Emit the body
             // if the inlined lambda is the last expression of the whole lambda,
             // tail call can be applied.
-            if (wb.Count != 0)
+            if (wb != null)
             {
+                Debug.Assert(wb.Count > 0);
                 flags = UpdateEmitAsTailCallFlag(flags, CompilationFlags.EmitAsNoTail);
             }
             inner.EmitLambdaBody(_scope, true, flags);
@@ -509,7 +510,7 @@ namespace System.Linq.Expressions.Compiler
             ParameterInfo[] pis = method.GetParametersCached();
             Debug.Assert(args.ArgumentCount + skipParameters == pis.Length);
 
-            var writeBacks = new List<WriteBack>();
+            List<WriteBack> writeBacks = null;
             for (int i = skipParameters, n = pis.Length; i < n; i++)
             {
                 ParameterInfo parameter = pis[i];
@@ -523,6 +524,11 @@ namespace System.Linq.Expressions.Compiler
                     WriteBack wb = EmitAddressWriteBack(argument, type);
                     if (wb != null)
                     {
+                        if (writeBacks == null)
+                        {
+                            writeBacks = new List<WriteBack>();
+                        }
+
                         writeBacks.Add(wb);
                     }
                 }
@@ -534,11 +540,14 @@ namespace System.Linq.Expressions.Compiler
             return writeBacks;
         }
 
-        private static void EmitWriteBack(IList<WriteBack> writeBacks)
+        private void EmitWriteBack(List<WriteBack> writeBacks)
         {
-            foreach (WriteBack wb in writeBacks)
+            if (writeBacks != null)
             {
-                wb();
+                foreach (WriteBack wb in writeBacks)
+                {
+                    wb(this);
+                }
             }
         }
 
@@ -565,10 +574,14 @@ namespace System.Linq.Expressions.Compiler
 
         private void EmitDynamicExpression(Expression expr)
         {
+#if FEATURE_COMPILE_TO_METHODBUILDER
             if (!(_method is DynamicMethod))
             {
                 throw Error.CannotCompileDynamic();
             }
+#else
+            Debug.Assert(_method is DynamicMethod);
+#endif
 
             var node = (IDynamicExpression)expr;
 
@@ -882,23 +895,28 @@ namespace System.Linq.Expressions.Compiler
         {
             NewArrayExpression node = (NewArrayExpression)expr;
 
+            ReadOnlyCollection<Expression> expressions = node.Expressions;
+            int n = expressions.Count;
+
             if (node.NodeType == ExpressionType.NewArrayInit)
             {
-                _ilg.EmitArray(
-                    node.Type.GetElementType(),
-                    node.Expressions.Count,
-                    delegate (int index)
-                    {
-                        EmitExpression(node.Expressions[index]);
-                    }
-                );
+                Type elementType = node.Type.GetElementType();
+
+                _ilg.EmitArray(elementType, n);
+
+                for (int i = 0; i < n; i++)
+                {
+                    _ilg.Emit(OpCodes.Dup);
+                    _ilg.EmitInt(i);
+                    EmitExpression(expressions[i]);
+                    _ilg.EmitStoreElement(elementType);
+                }
             }
             else
             {
-                ReadOnlyCollection<Expression> bounds = node.Expressions;
-                for (int i = 0; i < bounds.Count; i++)
+                for (int i = 0; i < n; i++)
                 {
-                    Expression x = bounds[i];
+                    Expression x = expressions[i];
                     EmitExpression(x);
                     _ilg.EmitConvertToType(x.Type, typeof(int), true);
                 }
@@ -917,7 +935,7 @@ namespace System.Linq.Expressions.Compiler
             throw Error.ExtensionNotReduced();
         }
 
-        #region ListInit, MemberInit
+#region ListInit, MemberInit
 
         private void EmitListInitExpression(Expression expr)
         {
@@ -1107,9 +1125,9 @@ namespace System.Linq.Expressions.Compiler
             throw Error.MemberNotFieldOrProperty(member, nameof(member));
         }
 
-        #endregion
+#endregion
 
-        #region Expression helpers
+#region Expression helpers
 
         internal static void ValidateLift(IList<ParameterExpression> variables, IList<Expression> arguments)
         {
@@ -1306,6 +1324,6 @@ namespace System.Linq.Expressions.Compiler
             }
         }
 
-        #endregion
+#endregion
     }
 }

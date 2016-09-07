@@ -448,15 +448,9 @@ namespace Internal.NativeCrypto
             {
                 safeKeyHandle.Dispose();
             }
-            if (returnType == 0)
-            {
-                return retVal;
-            }
-            else if (returnType == 1)
-            {
-                return retStr;
-            }
-            return null;
+
+            Debug.Assert(returnType == 0 || returnType == 1);
+            return returnType == 0 ? (object)retVal : retStr;
         }
 
         /// <summary>

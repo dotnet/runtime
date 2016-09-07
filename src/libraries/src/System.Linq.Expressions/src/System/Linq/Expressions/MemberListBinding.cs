@@ -122,7 +122,7 @@ namespace System.Linq.Expressions
             for (int i = 0, n = initializers.Count; i < n; i++)
             {
                 ElementInit element = initializers[i];
-                ContractUtils.RequiresNotNull(element, nameof(initializers));
+                ContractUtils.RequiresNotNull(element, nameof(initializers), i);
                 ValidateCallInstanceType(listType, element.AddMethod);
             }
         }
