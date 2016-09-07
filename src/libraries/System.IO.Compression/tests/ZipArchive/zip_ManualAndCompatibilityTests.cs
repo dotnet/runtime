@@ -11,6 +11,7 @@ namespace System.IO.Compression.Tests
     {
         [Theory]
         [InlineData("7zip.zip", "normal", false, false)]
+        [InlineData("deflate64.zip", "normal", false, false)]
         [InlineData("windows.zip", "normalWithoutEmptyDir", true, false)]
         [InlineData("dotnetzipstreaming.zip", "normal", true, true)]
         [InlineData("sharpziplib.zip", "normalWithoutEmptyDir", true, true)]
