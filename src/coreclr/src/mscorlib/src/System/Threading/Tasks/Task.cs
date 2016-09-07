@@ -345,7 +345,7 @@ namespace System.Threading.Tasks
             // Also allow RunContinuationsAsynchronously because this is the constructor called by TCS
             if ((creationOptions & ~(TaskCreationOptions.AttachedToParent | TaskCreationOptions.RunContinuationsAsynchronously)) != 0)
             {
-                throw new ArgumentOutOfRangeException("creationOptions");
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.creationOptions);
             }
 
             // Only set a parent if AttachedToParent is specified.
@@ -554,7 +554,7 @@ namespace System.Threading.Tasks
         {
             if (action == null)
             {
-                throw new ArgumentNullException("action");
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.action);
             }
             Contract.EndContractBlock();
 
@@ -596,7 +596,7 @@ namespace System.Threading.Tasks
                       TaskCreationOptions.PreferFairness |
                       TaskCreationOptions.RunContinuationsAsynchronously)) != 0)
             {
-                throw new ArgumentOutOfRangeException("creationOptions");
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.creationOptions);
             }
 
 #if DEBUG
@@ -616,7 +616,7 @@ namespace System.Threading.Tasks
             if (((creationOptions & TaskCreationOptions.LongRunning) != 0) &&
                 ((internalOptions & InternalTaskOptions.SelfReplicating) != 0))
             {
-                throw new InvalidOperationException(Environment.GetResourceString("Task_ctor_LRandSR"));
+                ThrowHelper.ThrowInvalidOperationException(ExceptionResource.Task_ctor_LRandSR);
             }
 
             // Assign options to m_stateAndOptionsFlag.
@@ -1068,28 +1068,28 @@ namespace System.Threading.Tasks
             // set m_action to null.  We would want to know if this is the reason that m_action == null.
             if (IsCompletedMethod(flags))
             {
-                throw new InvalidOperationException(Environment.GetResourceString("Task_Start_TaskCompleted"));
+                ThrowHelper.ThrowInvalidOperationException(ExceptionResource.Task_Start_TaskCompleted);
             }
 
             if (scheduler == null)
             {
-                throw new ArgumentNullException("scheduler");
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.scheduler);
             }
 
             var options = OptionsMethod(flags);
             if ((options & (TaskCreationOptions)InternalTaskOptions.PromiseTask) != 0)
             {
-                throw new InvalidOperationException(Environment.GetResourceString("Task_Start_Promise"));
+                ThrowHelper.ThrowInvalidOperationException(ExceptionResource.Task_Start_Promise);
             }
             if ((options & (TaskCreationOptions)InternalTaskOptions.ContinuationTask) != 0)
             {
-                throw new InvalidOperationException(Environment.GetResourceString("Task_Start_ContinuationTask"));
+                ThrowHelper.ThrowInvalidOperationException(ExceptionResource.Task_Start_ContinuationTask);
             }
 
             // Make sure that Task only gets started once.  Or else throw an exception.
             if (Interlocked.CompareExchange(ref m_taskScheduler, scheduler, null) != null)
             {
-                throw new InvalidOperationException(Environment.GetResourceString("Task_Start_AlreadyStarted"));
+                ThrowHelper.ThrowInvalidOperationException(ExceptionResource.Task_Start_AlreadyStarted);
             }
 
             ScheduleAndStart(true);
@@ -1151,7 +1151,7 @@ namespace System.Threading.Tasks
         {
             if (scheduler == null)
             {
-                throw new ArgumentNullException("scheduler");
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.scheduler);
             }
             Contract.EndContractBlock();
 
@@ -1173,25 +1173,25 @@ namespace System.Threading.Tasks
             var options = OptionsMethod(flags);
             if ((options & (TaskCreationOptions)InternalTaskOptions.ContinuationTask) != 0)
             {
-                throw new InvalidOperationException(Environment.GetResourceString("Task_RunSynchronously_Continuation"));
+                ThrowHelper.ThrowInvalidOperationException(ExceptionResource.Task_RunSynchronously_Continuation);
             }
 
             // Can't call this method on a promise-style task
             if ((options & (TaskCreationOptions)InternalTaskOptions.PromiseTask) != 0)
             {
-                throw new InvalidOperationException(Environment.GetResourceString("Task_RunSynchronously_Promise"));
+                ThrowHelper.ThrowInvalidOperationException(ExceptionResource.Task_RunSynchronously_Promise);
             }
 
             // Can't call this method on a task that has already completed
             if (IsCompletedMethod(flags))
             {
-                throw new InvalidOperationException(Environment.GetResourceString("Task_RunSynchronously_TaskCompleted"));
+                ThrowHelper.ThrowInvalidOperationException(ExceptionResource.Task_RunSynchronously_TaskCompleted);
             }
 
             // Make sure that Task only gets started once.  Or else throw an exception.
             if (Interlocked.CompareExchange(ref m_taskScheduler, scheduler, null) != null)
             {
-                throw new InvalidOperationException(Environment.GetResourceString("Task_RunSynchronously_AlreadyStarted"));
+                ThrowHelper.ThrowInvalidOperationException(ExceptionResource.Task_RunSynchronously_AlreadyStarted);
             }
 
             // execute only if we successfully cancel when concurrent cancel attempts are made.
@@ -1254,7 +1254,7 @@ namespace System.Threading.Tasks
             {
                 Contract.Assert((m_stateFlags & TASK_STATE_CANCELED) != 0, "Task.RunSynchronously: expected TASK_STATE_CANCELED to be set");
                 // Can't call this method on canceled task.
-                throw new InvalidOperationException(Environment.GetResourceString("Task_RunSynchronously_TaskCompleted"));
+                ThrowHelper.ThrowInvalidOperationException(ExceptionResource.Task_RunSynchronously_TaskCompleted);
             }
         }
 
@@ -1272,7 +1272,7 @@ namespace System.Threading.Tasks
             // Validate arguments.
             if (scheduler == null)
             {
-                throw new ArgumentNullException("scheduler");
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.scheduler);
             }
             Contract.EndContractBlock();
 
@@ -1575,7 +1575,7 @@ namespace System.Threading.Tasks
                 bool isDisposed = (m_stateFlags & TASK_STATE_DISPOSED) != 0;
                 if (isDisposed)
                 {
-                    throw new ObjectDisposedException(null, Environment.GetResourceString("Task_ThrowIfDisposed"));
+                    ThrowHelper.ThrowObjectDisposedException(ExceptionResource.Task_ThrowIfDisposed);
                 }
                 return CompletedEvent.WaitHandle;
             }
@@ -1835,7 +1835,7 @@ namespace System.Threading.Tasks
                 // Task must be completed to dispose
                 if (!IsCompleted)
                 {
-                    throw new InvalidOperationException(Environment.GetResourceString("Task_Dispose_NotCompleted"));
+                    ThrowHelper.ThrowInvalidOperationException(ExceptionResource.Task_Dispose_NotCompleted);
                 }
 
                 // Dispose of the underlying completion event if it exists
@@ -3047,7 +3047,7 @@ namespace System.Threading.Tasks
             long totalMilliseconds = (long)timeout.TotalMilliseconds;
             if (totalMilliseconds < -1 || totalMilliseconds > Int32.MaxValue)
             {
-                throw new ArgumentOutOfRangeException("timeout");
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.timeout);
             }
 
             return Wait((int)totalMilliseconds, default(CancellationToken));
@@ -3124,7 +3124,7 @@ namespace System.Threading.Tasks
         {
             if (millisecondsTimeout < -1)
             {
-                throw new ArgumentOutOfRangeException("millisecondsTimeout");
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.millisecondsTimeout);
             }
             Contract.EndContractBlock();
 
@@ -3879,13 +3879,13 @@ namespace System.Threading.Tasks
             // Throw on continuation with null action
             if (continuationAction == null)
             {
-                throw new ArgumentNullException("continuationAction");
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.continuationAction);
             }
 
             // Throw on continuation with null TaskScheduler
             if (scheduler == null)
             {
-                throw new ArgumentNullException("scheduler");
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.scheduler);
             }
             Contract.EndContractBlock();
 
@@ -4081,13 +4081,13 @@ namespace System.Threading.Tasks
             // Throw on continuation with null action
             if (continuationAction == null)
             {
-                throw new ArgumentNullException("continuationAction");
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.continuationAction);
             }
 
             // Throw on continuation with null TaskScheduler
             if (scheduler == null)
             {
-                throw new ArgumentNullException("scheduler");
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.scheduler);
             }
             Contract.EndContractBlock();
 
@@ -4296,13 +4296,13 @@ namespace System.Threading.Tasks
             // Throw on continuation with null function
             if (continuationFunction == null)
             {
-                throw new ArgumentNullException("continuationFunction");
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.continuationFunction);
             }
 
             // Throw on continuation with null task scheduler
             if (scheduler == null)
             {
-                throw new ArgumentNullException("scheduler");
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.scheduler);
             }
             Contract.EndContractBlock();
 
@@ -4515,13 +4515,13 @@ namespace System.Threading.Tasks
             // Throw on continuation with null function
             if (continuationFunction == null)
             {
-                throw new ArgumentNullException("continuationFunction");
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.continuationFunction);
             }
 
             // Throw on continuation with null task scheduler
             if (scheduler == null)
             {
-                throw new ArgumentNullException("scheduler");
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.scheduler);
             }
             Contract.EndContractBlock();
 
@@ -4573,7 +4573,7 @@ namespace System.Threading.Tasks
             TaskContinuationOptions illegalMask = TaskContinuationOptions.ExecuteSynchronously | TaskContinuationOptions.LongRunning;
             if ((continuationOptions & illegalMask) == illegalMask)
             {
-                throw new ArgumentOutOfRangeException("continuationOptions", Environment.GetResourceString("Task_ContinueWith_ESandLR"));
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.continuationOptions, ExceptionResource.Task_ContinueWith_ESandLR);
             }
 
             // Check that no illegal options were specified
@@ -4581,13 +4581,13 @@ namespace System.Threading.Tasks
                 ~(creationOptionsMask | NotOnAnything | 
                     TaskContinuationOptions.LazyCancellation | TaskContinuationOptions.ExecuteSynchronously)) != 0)
             {
-                throw new ArgumentOutOfRangeException("continuationOptions");
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.continuationOptions);
             }
 
             // Check that we didn't specify "not on anything"
             if ((continuationOptions & NotOnAnything) == NotOnAnything)
             {
-                throw new ArgumentOutOfRangeException("continuationOptions", Environment.GetResourceString("Task_ContinueWith_NotOnAnything"));
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.continuationOptions, ExceptionResource.Task_ContinueWith_NotOnAnything);
             }
 
             // This passes over all but LazyCancellation, which has no representation in TaskCreationOptions
@@ -4912,7 +4912,7 @@ namespace System.Threading.Tasks
             long totalMilliseconds = (long)timeout.TotalMilliseconds;
             if (totalMilliseconds < -1 || totalMilliseconds > Int32.MaxValue)
             {
-                throw new ArgumentOutOfRangeException("timeout");
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.timeout);
             }
 
             return WaitAll(tasks, (int)totalMilliseconds);
@@ -5022,11 +5022,11 @@ namespace System.Threading.Tasks
         {
             if (tasks == null)
             {
-                throw new ArgumentNullException("tasks");
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.tasks);
             }
             if (millisecondsTimeout < -1)
             {
-                throw new ArgumentOutOfRangeException("millisecondsTimeout");
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.millisecondsTimeout);
             }
             Contract.EndContractBlock();
 
@@ -5054,7 +5054,7 @@ namespace System.Threading.Tasks
 
                 if (task == null)
                 {
-                    throw new ArgumentException(Environment.GetResourceString("Task_WaitMulti_NullTask"), "tasks");
+                    ThrowHelper.ThrowArgumentException(ExceptionResource.Task_WaitMulti_NullTask, ExceptionArgument.tasks);
                 }
 
                 bool taskIsCompleted = task.IsCompleted;
@@ -5135,7 +5135,7 @@ namespace System.Threading.Tasks
                 // Now gather up and throw all of the exceptions.
                 foreach (var task in tasks) AddExceptionsForCompletedTask(ref exceptions, task);
                 Contract.Assert(exceptions != null, "Should have seen at least one exception");
-                throw new AggregateException(exceptions);
+                ThrowHelper.ThrowAggregateException(exceptions);
             }
 
             return returnValue;
@@ -5258,7 +5258,7 @@ namespace System.Threading.Tasks
             // If one or more threw exceptions, aggregate them.
             if (exceptions != null)
             {
-                throw new AggregateException(exceptions);
+                ThrowHelper.ThrowAggregateException(exceptions);
             }
         }
 
@@ -5339,7 +5339,7 @@ namespace System.Threading.Tasks
             long totalMilliseconds = (long)timeout.TotalMilliseconds;
             if (totalMilliseconds < -1 || totalMilliseconds > Int32.MaxValue)
             {
-                throw new ArgumentOutOfRangeException("timeout");
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.timeout);
             }
 
             return WaitAny(tasks, (int)totalMilliseconds);
@@ -5437,11 +5437,11 @@ namespace System.Threading.Tasks
         {
             if (tasks == null)
             {
-                throw new ArgumentNullException("tasks");
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.tasks);
             }
             if (millisecondsTimeout < -1)
             {
-                throw new ArgumentOutOfRangeException("millisecondsTimeout");
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.millisecondsTimeout);
             }
             Contract.EndContractBlock();
 
@@ -5458,7 +5458,7 @@ namespace System.Threading.Tasks
 
                 if (task == null)
                 {
-                    throw new ArgumentException(Environment.GetResourceString("Task_WaitMulti_NullTask"), "tasks");
+                    ThrowHelper.ThrowArgumentException(ExceptionResource.Task_WaitMulti_NullTask, ExceptionArgument.tasks);
                 }
 
                 if (signaledTaskIndex == -1 && task.IsCompleted)
@@ -5516,7 +5516,7 @@ namespace System.Threading.Tasks
         /// <returns>The faulted task.</returns>
         public static Task<TResult> FromException<TResult>(Exception exception)
         {
-            if (exception == null) throw new ArgumentNullException("exception");
+            if (exception == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.exception);
             Contract.EndContractBlock();
 
             var task = new Task<TResult>();
@@ -5531,7 +5531,7 @@ namespace System.Threading.Tasks
         public static Task FromCanceled(CancellationToken cancellationToken)
         {
             if (!cancellationToken.IsCancellationRequested)
-                throw new ArgumentOutOfRangeException("cancellationToken");
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.cancellationToken);
             Contract.EndContractBlock();
             return new Task(true, TaskCreationOptions.None, cancellationToken);
         }
@@ -5543,7 +5543,7 @@ namespace System.Threading.Tasks
         public static Task<TResult> FromCanceled<TResult>(CancellationToken cancellationToken)
         {
             if (!cancellationToken.IsCancellationRequested)
-                throw new ArgumentOutOfRangeException("cancellationToken");
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.cancellationToken);
             Contract.EndContractBlock();
             return new Task<TResult>(true, default(TResult), TaskCreationOptions.None, cancellationToken);
         }
@@ -5554,7 +5554,7 @@ namespace System.Threading.Tasks
         /// <returns>The canceled task.</returns>
         internal static Task<TResult> FromCancellation<TResult>(OperationCanceledException exception)
         {
-            if (exception == null) throw new ArgumentNullException("exception");
+            if (exception == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.exception);
             Contract.EndContractBlock();
 
             var task = new Task<TResult>();
@@ -5690,7 +5690,7 @@ namespace System.Threading.Tasks
         public static Task Run(Func<Task> function, CancellationToken cancellationToken)
         {
             // Check arguments
-            if (function == null) throw new ArgumentNullException("function");
+            if (function == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.function);
             Contract.EndContractBlock();
 
             if (AppContextSwitches.ThrowExceptionIfDisposedCancellationTokenSource)
@@ -5741,7 +5741,7 @@ namespace System.Threading.Tasks
         public static Task<TResult> Run<TResult>(Func<Task<TResult>> function, CancellationToken cancellationToken)
         {
             // Check arguments
-            if (function == null) throw new ArgumentNullException("function");
+            if (function == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.function);
             Contract.EndContractBlock();
 
             if (AppContextSwitches.ThrowExceptionIfDisposedCancellationTokenSource)
@@ -5806,7 +5806,7 @@ namespace System.Threading.Tasks
             long totalMilliseconds = (long)delay.TotalMilliseconds;
             if (totalMilliseconds < -1 || totalMilliseconds > Int32.MaxValue)
             {
-                throw new ArgumentOutOfRangeException("delay", Environment.GetResourceString("Task_Delay_InvalidDelay"));
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.delay, ExceptionResource.Task_Delay_InvalidDelay);
             }
 
             return Delay((int)totalMilliseconds, cancellationToken);
@@ -5850,7 +5850,7 @@ namespace System.Threading.Tasks
             // Throw on non-sensical time
             if (millisecondsDelay < -1)
             {
-                throw new ArgumentOutOfRangeException("millisecondsDelay", Environment.GetResourceString("Task_Delay_InvalidMillisecondsDelay"));
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.millisecondsDelay, ExceptionResource.Task_Delay_InvalidMillisecondsDelay);
             }
             Contract.EndContractBlock();
 
@@ -5982,18 +5982,18 @@ namespace System.Threading.Tasks
                 taskArray = new Task[taskCollection.Count];
                 foreach (var task in tasks)
                 {
-                    if (task == null) throw new ArgumentException(Environment.GetResourceString("Task_MultiTaskContinuation_NullTask"), "tasks");
+                    if (task == null) ThrowHelper.ThrowArgumentException(ExceptionResource.Task_MultiTaskContinuation_NullTask, ExceptionArgument.tasks);
                     taskArray[index++] = task;
                 }
                 return InternalWhenAll(taskArray);
             }
 
             // Do some argument checking and convert tasks to a List (and later an array).
-            if (tasks == null) throw new ArgumentNullException("tasks");
+            if (tasks == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.tasks);
             List<Task> taskList = new List<Task>();
             foreach (Task task in tasks)
             {
-                if (task == null) throw new ArgumentException(Environment.GetResourceString("Task_MultiTaskContinuation_NullTask"), "tasks");
+                if (task == null) ThrowHelper.ThrowArgumentException(ExceptionResource.Task_MultiTaskContinuation_NullTask, ExceptionArgument.tasks);
                 taskList.Add(task);
             }
 
@@ -6031,7 +6031,7 @@ namespace System.Threading.Tasks
         public static Task WhenAll(params Task[] tasks)
         {
             // Do some argument checking and make a defensive copy of the tasks array
-            if (tasks == null) throw new ArgumentNullException("tasks");
+            if (tasks == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.tasks);
             Contract.EndContractBlock();
 
             int taskCount = tasks.Length;
@@ -6041,7 +6041,7 @@ namespace System.Threading.Tasks
             for (int i = 0; i < taskCount; i++)
             {
                 Task task = tasks[i];
-                if (task == null) throw new ArgumentException(Environment.GetResourceString("Task_MultiTaskContinuation_NullTask"), "tasks");
+                if (task == null) ThrowHelper.ThrowArgumentException(ExceptionResource.Task_MultiTaskContinuation_NullTask, ExceptionArgument.tasks);
                 tasksCopy[i] = task;
             }
 
@@ -6233,18 +6233,18 @@ namespace System.Threading.Tasks
                 taskArray = new Task<TResult>[taskCollection.Count];
                 foreach (var task in tasks)
                 {
-                    if (task == null) throw new ArgumentException(Environment.GetResourceString("Task_MultiTaskContinuation_NullTask"), "tasks");
+                    if (task == null) ThrowHelper.ThrowArgumentException(ExceptionResource.Task_MultiTaskContinuation_NullTask, ExceptionArgument.tasks);
                     taskArray[index++] = task;
                 }
                 return InternalWhenAll<TResult>(taskArray);
             }
 
             // Do some argument checking and convert tasks into a List (later an array)
-            if (tasks == null) throw new ArgumentNullException("tasks");
+            if (tasks == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.tasks);
             List<Task<TResult>> taskList = new List<Task<TResult>>();
             foreach (Task<TResult> task in tasks)
             {
-                if (task == null) throw new ArgumentException(Environment.GetResourceString("Task_MultiTaskContinuation_NullTask"), "tasks");
+                if (task == null) ThrowHelper.ThrowArgumentException(ExceptionResource.Task_MultiTaskContinuation_NullTask, ExceptionArgument.tasks);
                 taskList.Add(task);
             }
 
@@ -6285,7 +6285,7 @@ namespace System.Threading.Tasks
         public static Task<TResult[]> WhenAll<TResult>(params Task<TResult>[] tasks)
         {
             // Do some argument checking and make a defensive copy of the tasks array
-            if (tasks == null) throw new ArgumentNullException("tasks");
+            if (tasks == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.tasks);
             Contract.EndContractBlock();
 
             int taskCount = tasks.Length;
@@ -6295,7 +6295,7 @@ namespace System.Threading.Tasks
             for (int i = 0; i < taskCount; i++)
             {
                 Task<TResult> task = tasks[i];
-                if (task == null) throw new ArgumentException(Environment.GetResourceString("Task_MultiTaskContinuation_NullTask"), "tasks");
+                if (task == null) ThrowHelper.ThrowArgumentException(ExceptionResource.Task_MultiTaskContinuation_NullTask, ExceptionArgument.tasks);
                 tasksCopy[i] = task;
             }
 
@@ -6457,10 +6457,10 @@ namespace System.Threading.Tasks
         /// </exception>
         public static Task<Task> WhenAny(params Task[] tasks)
         {
-            if (tasks == null) throw new ArgumentNullException("tasks");
+            if (tasks == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.tasks);
             if (tasks.Length == 0)
             {
-                throw new ArgumentException(Environment.GetResourceString("Task_MultiTaskContinuation_EmptyTaskList"), "tasks");
+                ThrowHelper.ThrowArgumentException(ExceptionResource.Task_MultiTaskContinuation_EmptyTaskList, ExceptionArgument.tasks);
             }
             Contract.EndContractBlock();
 
@@ -6471,7 +6471,7 @@ namespace System.Threading.Tasks
             for (int i = 0; i < taskCount; i++)
             {
                 Task task = tasks[i];
-                if (task == null) throw new ArgumentException(Environment.GetResourceString("Task_MultiTaskContinuation_NullTask"), "tasks");
+                if (task == null) ThrowHelper.ThrowArgumentException(ExceptionResource.Task_MultiTaskContinuation_NullTask, ExceptionArgument.tasks);
                 tasksCopy[i] = task;
             }
 
@@ -6496,7 +6496,7 @@ namespace System.Threading.Tasks
         /// </exception>
         public static Task<Task> WhenAny(IEnumerable<Task> tasks)
         {
-            if (tasks == null) throw new ArgumentNullException("tasks");
+            if (tasks == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.tasks);
             Contract.EndContractBlock();
 
             // Make a defensive copy, as the user may manipulate the tasks collection
@@ -6504,13 +6504,13 @@ namespace System.Threading.Tasks
             List<Task> taskList = new List<Task>();
             foreach (Task task in tasks)
             {
-                if (task == null) throw new ArgumentException(Environment.GetResourceString("Task_MultiTaskContinuation_NullTask"), "tasks");
+                if (task == null) ThrowHelper.ThrowArgumentException(ExceptionResource.Task_MultiTaskContinuation_NullTask, ExceptionArgument.tasks);
                 taskList.Add(task);
             }
 
             if (taskList.Count == 0)
             {
-                throw new ArgumentException(Environment.GetResourceString("Task_MultiTaskContinuation_EmptyTaskList"), "tasks");
+                ThrowHelper.ThrowArgumentException(ExceptionResource.Task_MultiTaskContinuation_EmptyTaskList, ExceptionArgument.tasks);
             }
 
             // Previously implemented CommonCWAnyLogic() can handle the rest
