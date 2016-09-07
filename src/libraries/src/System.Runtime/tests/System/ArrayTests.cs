@@ -5,6 +5,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using Xunit;
 
 namespace System.Tests
@@ -129,13 +130,12 @@ namespace System.Tests
             Assert.Equal(array.GetValue(0, 0, 0, 2), 3);
         }
 
-        public static IEnumerable<object[]> BinarySearch_NonGeneric_TestData()
+        public static IEnumerable<object[]> BinarySearch_SZArray_TestData()
         {
             string[] stringArray = new string[] { null, "aa", "bb", "bb", "cc", "dd", "ee" };
 
             yield return new object[] { stringArray, 0, 7, "bb", null, 3 };
             yield return new object[] { stringArray, 0, 7, "ee", null, 6 };
-            yield return new object[] { stringArray, 0, 7, null, null, 0 };
             
             yield return new object[] { stringArray, 3, 4, "bb", null, 3 };
             yield return new object[] { stringArray, 4, 3, "bb", null, -5 };
@@ -143,35 +143,211 @@ namespace System.Tests
 
             yield return new object[] { stringArray, 0, 7, "bb", new StringComparer(), 3 };
             yield return new object[] { stringArray, 0, 7, "ee", new StringComparer(), 6 };
-            yield return new object[] { stringArray, 0, 7, null, new StringComparer(), 0 };
             yield return new object[] { stringArray, 0, 7, "no-such-object", new StringComparer(), -8 };
+
+            yield return new object[] { new string[0], 0, 0, "", null, -1 };
+
+            // SByte
+            sbyte[] sbyteArray = new sbyte[] { sbyte.MinValue, 0, 0, sbyte.MaxValue };
+
+            yield return new object[] { sbyteArray, 0, 4, sbyte.MinValue, null, 0 };
+            yield return new object[] { sbyteArray, 0, 4, (sbyte)0, null, 1 };
+            yield return new object[] { sbyteArray, 0, 4, sbyte.MaxValue, null, 3 };
+            yield return new object[] { sbyteArray, 0, 4, (sbyte)1, null, -4 };
+
+            yield return new object[] { sbyteArray, 0, 1, sbyte.MinValue, null, 0 };
+            yield return new object[] { sbyteArray, 1, 3, sbyte.MaxValue, null, 3 };
+            yield return new object[] { sbyteArray, 1, 3, sbyte.MinValue, null, -2 };
+            yield return new object[] { sbyteArray, 1, 0, (sbyte)0, null, -2 };
+
+            yield return new object[] { new sbyte[0], 0, 0, (sbyte)0, null, -1 };
+
+            // Byte
+            byte[] byteArray = new byte[] { byte.MinValue, 5, 5, byte.MaxValue };
+
+            yield return new object[] { byteArray, 0, 4, byte.MinValue, null, 0 };
+            yield return new object[] { byteArray, 0, 4, (byte)5, null, 1 };
+            yield return new object[] { byteArray, 0, 4, byte.MaxValue, null, 3 };
+            yield return new object[] { byteArray, 0, 4, (byte)1, null, -2 };
+
+            yield return new object[] { byteArray, 0, 1, byte.MinValue, null, 0 };
+            yield return new object[] { byteArray, 1, 3, byte.MaxValue, null, 3 };
+            yield return new object[] { byteArray, 1, 3, byte.MinValue, null, -2 };
+            yield return new object[] { byteArray, 1, 0, (byte)5, null, -2 };
+
+            yield return new object[] { new byte[0], 0, 0, (byte)0, null, -1 };
+
+            // Int16
+            short[] shortArray = new short[] { short.MinValue, 0, 0, short.MaxValue };
+
+            yield return new object[] { shortArray, 0, 4, short.MinValue, null, 0 };
+            yield return new object[] { shortArray, 0, 4, (short)0, null, 1 };
+            yield return new object[] { shortArray, 0, 4, short.MaxValue, null, 3 };
+            yield return new object[] { shortArray, 0, 4, (short)1, null, -4 };
+
+            yield return new object[] { shortArray, 0, 1, short.MinValue, null, 0 };
+            yield return new object[] { shortArray, 1, 3, short.MaxValue, null, 3 };
+            yield return new object[] { shortArray, 1, 3, short.MinValue, null, -2 };
+            yield return new object[] { shortArray, 1, 0, (short)0, null, -2 };
+
+            yield return new object[] { new short[0], 0, 0, (short)0, null, -1 };
+
+            // UInt16
+            ushort[] ushortArray = new ushort[] { ushort.MinValue, 5, 5, ushort.MaxValue };
+
+            yield return new object[] { ushortArray, 0, 4, ushort.MinValue, null, 0 };
+            yield return new object[] { ushortArray, 0, 4, (ushort)5, null, 1 };
+            yield return new object[] { ushortArray, 0, 4, ushort.MaxValue, null, 3 };
+            yield return new object[] { ushortArray, 0, 4, (ushort)1, null, -2 };
+
+            yield return new object[] { ushortArray, 0, 1, ushort.MinValue, null, 0 };
+            yield return new object[] { ushortArray, 1, 3, ushort.MaxValue, null, 3 };
+            yield return new object[] { ushortArray, 1, 3, ushort.MinValue, null, -2 };
+            yield return new object[] { ushortArray, 1, 0, (ushort)5, null, -2 };
+
+            yield return new object[] { new ushort[0], 0, 0, (ushort)0, null, -1 };
+
+            // Int32
+            int[] intArray = new int[] { int.MinValue, 0, 0, int.MaxValue };
+
+            yield return new object[] { intArray, 0, 4, int.MinValue, null, 0 };
+            yield return new object[] { intArray, 0, 4, 0, null, 1 };
+            yield return new object[] { intArray, 0, 4, int.MaxValue, null, 3 };
+            yield return new object[] { intArray, 0, 4, 1, null, -4 };
+
+            yield return new object[] { intArray, 0, 1, int.MinValue, null, 0 };
+            yield return new object[] { intArray, 1, 3, int.MaxValue, null, 3 };
+            yield return new object[] { intArray, 1, 3, int.MinValue, null, -2 };
+
+            int[] intArray2 = new int[] { 1, 3, 6, 6, 8, 10, 12, 16 };
+            yield return new object[] { intArray2, 0, 8, 8, new IntegerComparer(), 4 };
+            yield return new object[] { intArray2, 0, 8, 6, new IntegerComparer(), 3 };
+            yield return new object[] { intArray2, 0, 8, 0, new IntegerComparer(), -1 };
+
+            yield return new object[] { new int[0], 0, 0, 0, null, -1 };
+
+            // UInt32
+            uint[] uintArray = new uint[] { uint.MinValue, 5, 5, uint.MaxValue };
+
+            yield return new object[] { uintArray, 0, 4, uint.MinValue, null, 0 };
+            yield return new object[] { uintArray, 0, 4, (uint)5, null, 1 };
+            yield return new object[] { uintArray, 0, 4, uint.MaxValue, null, 3 };
+            yield return new object[] { uintArray, 0, 4, (uint)1, null, -2 };
+
+            yield return new object[] { uintArray, 0, 1, uint.MinValue, null, 0 };
+            yield return new object[] { uintArray, 1, 3, uint.MaxValue, null, 3 };
+            yield return new object[] { uintArray, 1, 3, uint.MinValue, null, -2 };
+            yield return new object[] { uintArray, 1, 0, (uint)5, null, -2 };
+
+            yield return new object[] { new uint[0], 0, 0, (uint)0, null, -1 };
+
+            // Int64
+            long[] longArray = new long[] { long.MinValue, 0, 0, long.MaxValue };
+
+            yield return new object[] { longArray, 0, 4, long.MinValue, null, 0 };
+            yield return new object[] { longArray, 0, 4, (long)0, null, 1 };
+            yield return new object[] { longArray, 0, 4, long.MaxValue, null, 3 };
+            yield return new object[] { longArray, 0, 4, (long)1, null, -4 };
+
+            yield return new object[] { longArray, 0, 1, long.MinValue, null, 0 };
+            yield return new object[] { longArray, 1, 3, long.MaxValue, null, 3 };
+            yield return new object[] { longArray, 1, 3, long.MinValue, null, -2 };
+            yield return new object[] { longArray, 1, 0, (long)0, null, -2 };
+
+            yield return new object[] { new long[0], 0, 0, (long)0, null, -1 };
+
+            // UInt64
+            ulong[] ulongArray = new ulong[] { ulong.MinValue, 5, 5, ulong.MaxValue };
+
+            yield return new object[] { ulongArray, 0, 4, ulong.MinValue, null, 0 };
+            yield return new object[] { ulongArray, 0, 4, (ulong)5, null, 1 };
+            yield return new object[] { ulongArray, 0, 4, ulong.MaxValue, null, 3 };
+            yield return new object[] { ulongArray, 0, 4, (ulong)1, null, -2 };
+
+            yield return new object[] { ulongArray, 0, 1, ulong.MinValue, null, 0 };
+            yield return new object[] { ulongArray, 1, 3, ulong.MaxValue, null, 3 };
+            yield return new object[] { ulongArray, 1, 3, ulong.MinValue, null, -2 };
+            yield return new object[] { ulongArray, 1, 0, (ulong)5, null, -2 };
+
+            yield return new object[] { new ulong[0], 0, 0, (ulong)0, null, -1 };
+
+            // Char
+            char[] charArray = new char[] { char.MinValue, (char)5, (char)5, char.MaxValue };
+
+            yield return new object[] { charArray, 0, 4, char.MinValue, null, 0 };
+            yield return new object[] { charArray, 0, 4, (char)5, null, 1 };
+            yield return new object[] { charArray, 0, 4, char.MaxValue, null, 3 };
+            yield return new object[] { charArray, 0, 4, (char)1, null, -2 };
+
+            yield return new object[] { charArray, 0, 1, char.MinValue, null, 0 };
+            yield return new object[] { charArray, 1, 3, char.MaxValue, null, 3 };
+            yield return new object[] { charArray, 1, 3, char.MinValue, null, -2 };
+            yield return new object[] { charArray, 1, 0, (char)5, null, -2 };
+
+            yield return new object[] { new char[0], 0, 0, '\0', null, -1 };
+
+            // Bool
+            bool[] boolArray = new bool[] { false, false, true };
+
+            yield return new object[] { boolArray, 0, 3, false, null, 1 };
+            yield return new object[] { boolArray, 0, 3, true, null, 2 };
+            yield return new object[] { new bool[] { false }, 0, 1, true, null, -2 };
+
+            yield return new object[] { boolArray, 0, 1, false, null, 0 };
+            yield return new object[] { boolArray, 2, 1, true, null, 2 };
+            yield return new object[] { boolArray, 2, 1, false, null, -3 };
+            yield return new object[] { boolArray, 1, 0, false, null, -2 };
+
+            yield return new object[] { new bool[0], 0, 0, false, null, -1 };
+
+            // Single
+            float[] floatArray = new float[] { float.MinValue, 0, 0, float.MaxValue };
+
+            yield return new object[] { floatArray, 0, 4, float.MinValue, null, 0 };
+            yield return new object[] { floatArray, 0, 4, 0f, null, 1 };
+            yield return new object[] { floatArray, 0, 4, float.MaxValue, null, 3 };
+            yield return new object[] { floatArray, 0, 4, (float)1, null, -4 };
+
+            yield return new object[] { floatArray, 0, 1, float.MinValue, null, 0 };
+            yield return new object[] { floatArray, 1, 3, float.MaxValue, null, 3 };
+            yield return new object[] { floatArray, 1, 3, float.MinValue, null, -2 };
+            yield return new object[] { floatArray, 1, 0, 0f, null, -2 };
+
+            yield return new object[] { new float[0], 0, 0, 0f, null, -1 };
+
+            // Double
+            double[] doubleArray = new double[] { double.MinValue, 0, 0, double.MaxValue };
+
+            yield return new object[] { doubleArray, 0, 4, double.MinValue, null, 0 };
+            yield return new object[] { doubleArray, 0, 4, 0d, null, 1 };
+            yield return new object[] { doubleArray, 0, 4, double.MaxValue, null, 3 };
+            yield return new object[] { doubleArray, 0, 4, (double)1, null, -4 };
+
+            yield return new object[] { doubleArray, 0, 1, double.MinValue, null, 0 };
+            yield return new object[] { doubleArray, 1, 3, double.MaxValue, null, 3 };
+            yield return new object[] { doubleArray, 1, 3, double.MinValue, null, -2 };
+            yield return new object[] { doubleArray, 1, 0, 0d, null, -2 };
+
+            yield return new object[] { new double[0], 0, 0, 0d, null, -1 };
         }
-
-        public static IEnumerable<object[]> BinarySearch_Generic_TestData()
-        {
-            int[] intArray = new int[] { 1, 3, 6, 6, 8, 10, 12, 16 };
-
-            yield return new object[] { intArray, 0, 8, 8, null, 4 };
-            yield return new object[] { intArray, 0, 8, 6, null, 3 };
-            yield return new object[] { intArray, 0, 8, 12, null, 6 };
-
-            yield return new object[] { intArray, 0, 8, 0, null, -1 };
-            yield return new object[] { intArray, 0, 8, 99, null, ~intArray.Length };
-
-            yield return new object[] { intArray, 1, 5, 16, null, -7 };
-
-            yield return new object[] { intArray, 0, 8, 8, new IntegerComparer(), 4 };
-            yield return new object[] { intArray, 0, 8, 6, new IntegerComparer(), 3 };
-            yield return new object[] { intArray, 0, 8, 0, new IntegerComparer(), -1 };
-        }
-
+        
         [Theory]
-        [MemberData(nameof(BinarySearch_Generic_TestData))]
-        [MemberData(nameof(BinarySearch_NonGeneric_TestData))]
+        [InlineData(new sbyte[] { 0 }, 0, 1, null, null, -1)]
+        [InlineData(new byte[] { 0 }, 0, 1, null, null, -1)]
+        [InlineData(new short[] { 0 }, 0, 1, null, null, -1)]
+        [InlineData(new ushort[] { 0 }, 0, 1, null, null, -1)]
+        [InlineData(new int[] { 0 }, 0, 1, null, null, -1)]
+        [InlineData(new uint[] { 0 }, 0, 1, null, null, -1)]
+        [InlineData(new long[] { 0 }, 0, 1, null, null, -1)]
+        [InlineData(new ulong[] { 0 }, 0, 1, null, null, -1)]
+        [InlineData(new bool[] { false }, 0, 1, null, null, -1)]
+        [InlineData(new char[] { '\0' }, 0, 1, null, null, -1)]
+        [InlineData(new float[] { 0 }, 0, 1, null, null, -1)]
+        [InlineData(new double[] { 0 }, 0, 1, null, null, -1)]
         public static void BinarySearch_NonGeneric(Array array, int index, int length, object value, IComparer comparer, int expected)
         {
             bool isDefaultComparer = comparer == null || comparer == Comparer.Default;
-            if (index == 0 && length == array.Length)
+            if (index == array.GetLowerBound(0) && length == array.Length)
             {
                 if (isDefaultComparer)
                 {
@@ -192,17 +368,30 @@ namespace System.Tests
         }
 
         [Theory]
-        [MemberData(nameof(BinarySearch_Generic_TestData))]
-        public static void BinarySearch_Generic(int[] array, int index, int length, int value, IComparer<int> comparer, int expected)
+        [MemberData(nameof(BinarySearch_SZArray_TestData))]
+        public static void BinarySearch_Generic<T>(T[] array, int index, int length, T value, IComparer<T> comparer, int expected)
         {
-            bool isDefaultComparer = comparer == null || comparer == Comparer<int>.Default;
+            // Forward to the non-generic overload if we can.
+            bool isDefaultComparer = comparer == null || comparer == Comparer<T>.Default;
+            if (isDefaultComparer || comparer is IComparer)
+            {
+                // Test with an SZArray
+                BinarySearch_NonGeneric(array, index, length, value, (IComparer)comparer, expected);
+
+                // Test with an array that has a non-zero lower bound (not an SZArray)
+                const int lowerBound = 5;
+                Array nonZeroLowerBoundArray = NonZeroLowerBoundArray(array, lowerBound);
+                int lowerBoundExpected = expected < 0 ? expected - lowerBound : expected + lowerBound;
+                BinarySearch_NonGeneric(nonZeroLowerBoundArray, index + lowerBound, length, value, (IComparer)comparer, lowerBoundExpected);
+            }
+            
             if (index == 0 && length == array.Length)
             {
                 if (isDefaultComparer)
                 {
                     // Use BinarySearch<T>(T[], T)
                     Assert.Equal(expected, Array.BinarySearch(array, value));
-                    Assert.Equal(expected, Array.BinarySearch(array, value, Comparer<int>.Default));
+                    Assert.Equal(expected, Array.BinarySearch(array, value, Comparer<T>.Default));
                 }
                 // Use BinarySearch<T>(T[], T, IComparer)
                 Assert.Equal(expected, Array.BinarySearch(array, value, comparer));
@@ -217,11 +406,15 @@ namespace System.Tests
         }
 
         [Fact]
-        public static void BinarySearch_Invalid()
+        public static void BinarySearch_NullStringExists_ReturnsCorrectIndex()
         {
-            var objectArray = new object[] { new object(), new object() };
+            BinarySearch_Generic(new string[] { null, "a", "b", "c" }, 0, 4, null, null, 0);
+            BinarySearch_Generic(new string[] { null, "a", "b", "c" }, 0, 4, null, new StringComparer(), 0);
+        }
 
-            // Array is null
+        [Fact]
+        public static void BinarySearch_NullArray_ThrowsArgumentNullException()
+        {
             Assert.Throws<ArgumentNullException>("array", () => Array.BinarySearch((int[])null, ""));
             Assert.Throws<ArgumentNullException>("array", () => Array.BinarySearch(null, ""));
             Assert.Throws<ArgumentNullException>("array", () => Array.BinarySearch((int[])null, "", null));
@@ -230,51 +423,97 @@ namespace System.Tests
             Assert.Throws<ArgumentNullException>("array", () => Array.BinarySearch(null, 0, 0, ""));
             Assert.Throws<ArgumentNullException>("array", () => Array.BinarySearch((int[])null, 0, 0, "", null));
             Assert.Throws<ArgumentNullException>("array", () => Array.BinarySearch(null, 0, 0, "", null));
+        }
 
-            // Array is multidimensional
+        [Fact]
+        public static void BinarySearch_MultiDimensionalArray_ThrowsRankException()
+        {
             Assert.Throws<RankException>(() => Array.BinarySearch(new string[0, 0], ""));
             Assert.Throws<RankException>(() => Array.BinarySearch(new string[0, 0], "", null));
             Assert.Throws<RankException>(() => Array.BinarySearch(new string[0, 0], 0, 0, ""));
             Assert.Throws<RankException>(() => Array.BinarySearch(new string[0, 0], 0, 0, "", null));
+        }
 
-            // Incompatible value
-            Assert.Throws<InvalidOperationException>(() => Array.BinarySearch(new int[1], ""));
-            Assert.Throws<InvalidOperationException>(() => Array.BinarySearch(new int[1], "", null));
-            Assert.Throws<InvalidOperationException>(() => Array.BinarySearch(new int[1], 0, 1, ""));
-            Assert.Throws<InvalidOperationException>(() => Array.BinarySearch(new int[1], 0, 1, "", null));
+        public static IEnumerable<object[]> BinarySearch_TypesNotComparable_TestData()
+        {
+            // Different types
+            yield return new object[] { new int[] { 0 }, "", 0 };
 
-            // Not IComparable
-            Assert.Throws<InvalidOperationException>(() => Array.BinarySearch((Array)objectArray, new object()));
-            Assert.Throws<InvalidOperationException>(() => Array.BinarySearch(objectArray, new object()));
-            Assert.Throws<InvalidOperationException>(() => Array.BinarySearch((Array)objectArray, new object(), null));
-            Assert.Throws<InvalidOperationException>(() => Array.BinarySearch(objectArray, new object()));
-            Assert.Throws<InvalidOperationException>(() => Array.BinarySearch((Array)objectArray, 0, 1, new object()));
-            Assert.Throws<InvalidOperationException>(() => Array.BinarySearch(objectArray, new object()));
-            Assert.Throws<InvalidOperationException>(() => Array.BinarySearch((Array)objectArray, 0, 1, new object(), null));
+            // Type does not implement IComparable
+            yield return new object[] { new object[] { new object() }, new object(), new object() };
 
-            // Index < 0
+            // IntPtr and UIntPtr are not supported
+            yield return new object[] { new IntPtr[] { IntPtr.Zero }, IntPtr.Zero, IntPtr.Zero };
+            yield return new object[] { new UIntPtr[] { UIntPtr.Zero }, UIntPtr.Zero, UIntPtr.Zero };
+
+            // Conversion between primitives is not allowed
+            yield return new object[] { new sbyte[] { 0 }, 0, (sbyte)0 };
+            yield return new object[] { new char[] { '\0' }, (ushort)0, '\0' };
+        }
+
+        [Theory]
+        [MemberData(nameof(BinarySearch_TypesNotComparable_TestData))]
+        public static void BinarySearch_TypesNotIComparable_ThrowsInvalidOperationException<T>(T[] array, object value, T dummy)
+        {
+            Assert.Throws<InvalidOperationException>(() => Array.BinarySearch(array, value));
+            Assert.Throws<InvalidOperationException>(() => Array.BinarySearch(array, value, null));
+            Assert.Throws<InvalidOperationException>(() => Array.BinarySearch(array, 0, array.Length, value));
+            Assert.Throws<InvalidOperationException>(() => Array.BinarySearch(array, 0, array.Length, value, null));
+
+            if (value is T)
+            {
+                Assert.Throws<InvalidOperationException>(() => Array.BinarySearch(array, (T)value));
+                Assert.Throws<InvalidOperationException>(() => Array.BinarySearch(array, 0, array.Length, (T)value));
+                Assert.Throws<InvalidOperationException>(() => Array.BinarySearch(array, 0, array.Length, (T)value, null));
+            }
+        }
+
+        [Fact]
+        public static void BinarySearch_IndexLessThanZero_ThrowsArgumentOutOfRangeException()
+        {
             Assert.Throws<ArgumentOutOfRangeException>("index", () => Array.BinarySearch(new int[3], -1, 0, ""));
             Assert.Throws<ArgumentOutOfRangeException>("index", () => Array.BinarySearch(new string[3], -1, 0, ""));
             Assert.Throws<ArgumentOutOfRangeException>("index", () => Array.BinarySearch(new int[3], -1, 0, "", null));
             Assert.Throws<ArgumentOutOfRangeException>("index", () => Array.BinarySearch(new string[3], -1, 0, "", null));
+        }
 
-            // Length < 0
+        [Fact]
+        public static void BinarySearch_LengthLessThanZero_ThrowsArgumentOutOfRangeException()
+        {
             Assert.Throws<ArgumentOutOfRangeException>("length", () => Array.BinarySearch(new int[3], 0, -1, ""));
             Assert.Throws<ArgumentOutOfRangeException>("length", () => Array.BinarySearch(new string[3], 0, -1, ""));
             Assert.Throws<ArgumentOutOfRangeException>("length", () => Array.BinarySearch(new int[3], 0, -1, "", null));
             Assert.Throws<ArgumentOutOfRangeException>("length", () => Array.BinarySearch(new string[3], 0, -1, "", null));
+        }
 
-            // Length > array.Length
-            Assert.Throws<ArgumentException>(() => Array.BinarySearch(new int[3], 0, 4, ""));
-            Assert.Throws<ArgumentException>(() => Array.BinarySearch(new string[3], 0, 4, ""));
-            Assert.Throws<ArgumentException>(() => Array.BinarySearch(new int[3], 0, 4, "", null));
-            Assert.Throws<ArgumentException>(() => Array.BinarySearch(new string[3], 0, 4, "", null));
+        [Theory]
+        [InlineData(0, 0, 1)]
+        [InlineData(0, 1, 0)]
+        [InlineData(3, 0, 4)]
+        [InlineData(3, 1, 3)]
+        [InlineData(3, 3, 1)]
+        public static void BinarySearch_IndexPlusLengthInvalid_ThrowsArgumentException(int count, int index, int length)
+        {
+            Assert.Throws<ArgumentException>(null, () => Array.BinarySearch(new int[count], index, length, ""));
+            Assert.Throws<ArgumentException>(null, () => Array.BinarySearch(new string[count], index, length, ""));
+            Assert.Throws<ArgumentException>(null, () => Array.BinarySearch(new int[count], index, length, "", null));
+            Assert.Throws<ArgumentException>(null, () => Array.BinarySearch(new string[count], index, length, "", null));
+        }
 
-            // Index + length > array.Length
-            Assert.Throws<ArgumentException>(() => Array.BinarySearch(new int[3], 3, 1, ""));
-            Assert.Throws<ArgumentException>(() => Array.BinarySearch(new string[3], 3, 1, ""));
-            Assert.Throws<ArgumentException>(() => Array.BinarySearch(new int[3], 3, 1, "", null));
-            Assert.Throws<ArgumentException>(() => Array.BinarySearch(new string[3], 3, 1, "", null));
+
+        [Theory]
+        [InlineData(typeof(object), 0)]
+        [InlineData(typeof(object), 2)]
+        [InlineData(typeof(int), 0)]
+        [InlineData(typeof(int), 2)]
+        [InlineData(typeof(IntPtr), 0)]
+        [InlineData(typeof(IntPtr), 2)]
+        [InlineData(typeof(UIntPtr), 0)]
+        [InlineData(typeof(UIntPtr), 2)]
+        public static void BinarySearch_CountZero_ValueInvalidType_DoesNotThrow(Type elementType, int length)
+        {
+            Array array = Array.CreateInstance(elementType, length);
+            Assert.Equal(-1, Array.BinarySearch(array, 0, 0, new object()));
         }
 
         [Fact]
@@ -2077,6 +2316,18 @@ namespace System.Tests
                 Assert.Throws<RankException>(() => ils.Contains(null));
                 Assert.Throws<RankException>(() => ils.IndexOf(null));
             }
+        }
+
+        private static Array NonZeroLowerBoundArray(Array szArrayContents, int lowerBound)
+        {
+            Assert.Equal(0, szArrayContents.GetLowerBound(0));
+
+            Array array = Array.CreateInstance(szArrayContents.GetType().GetElementType(), new int[] { szArrayContents.Length }, new int[] { lowerBound });
+            for (int i = 0; i < szArrayContents.Length; i++)
+            {
+                array.SetValue(szArrayContents.GetValue(i), i + lowerBound);
+            }
+            return array;
         }
 
         public enum TestEnum
