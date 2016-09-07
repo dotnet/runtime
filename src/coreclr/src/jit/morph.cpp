@@ -2045,8 +2045,13 @@ GenTreePtr Compiler::fgMakeTmpArgNode(
             {
                 // ToDo-ARM64: Consider using:  arg->ChangeOper(GT_LCL_FLD);
                 // as that is how FEATURE_UNIX_AMD64_STRUCT_PASSING works.
+                // We will create a GT_OBJ for the argument below.
+                // This will be passed by value in two registers.
+                assert(addrNode != nullptr);
 
-                // Pass by value in two registers, using a regular GT_OBJ node, created below.
+                // Create an Obj of the temp to use it as a call argument.
+                arg = gtNewObjNode(lvaGetStruct(tmpVarNum), arg);
+
                 // TODO-1stClassStructs: We should not need to set the GTF_DONT_CSE flag here;
                 // this is only to preserve former behavior (though some CSE'ing of struct
                 // values can be pessimizing, so enabling this may require some additional tuning).
