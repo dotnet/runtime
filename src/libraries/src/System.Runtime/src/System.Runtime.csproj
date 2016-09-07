@@ -7,6 +7,8 @@
     <AssemblyVersion Condition="'$(TargetGroup)'=='net462' OR '$(TargetGroup)'=='netstandard1.5'">4.1.1.0</AssemblyVersion>
     <ContractProject Condition="'$(AssemblyVersion)'=='4.1.1.0'">../ref/4.1.0/System.Runtime.depproj</ContractProject>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
+    <PackageTargetFramework Condition="'$(TargetGroup)'==''">netstandard1.7;uap10.1</PackageTargetFramework>
+    <GenFacadesArgs Condition="'$(TargetGroup)' == 'uap101aot'">$(GenFacadesArgs) -ignoreMissingTypes</GenFacadesArgs>
     <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NuGetTargetMoniker>
     <!-- 436 is thrown because some types conflict with existing types in mscorlib -->
     <NoWarn>0436</NoWarn>
@@ -32,21 +34,24 @@
     <Compile Include="System\Collections\Generic\ISet.cs" />
     <Compile Include="System\ComponentModel\EditorBrowsableAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\StrongBox.cs" />
-    <Compile Include="System\Reflection\AssemblyNameProxy.cs" />
+    <Compile Condition="'$(TargetGroup)'!='uap101aot'" Include="System\Reflection\AssemblyNameProxy.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)'!='netcore50aot' And ('$(TargetGroup)'!='net462' AND '$(TargetGroup)'!='net463')">
+  <ItemGroup Condition="'$(TargetGroup)'!='netcore50aot' And '$(TargetGroup)'!='uap101aot' And '$(TargetGroup)'!='net462' AND '$(TargetGroup)'!='net463'">
     <Compile Include="System\ComponentModel\DefaultValueAttribute.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' != 'net462' And '$(TargetGroup)' != 'net463'">
-    <ProjectReference Include="..\..\System.Private.Uri\src\System.Private.Uri.csproj">
+  <ItemGroup >
+    <ProjectReference Include="..\..\System.Private.Uri\src\System.Private.Uri.csproj" Condition="'$(TargetGroup)' != 'net462' And '$(TargetGroup)' != 'net463' And '$(TargetGroup)' != 'uap101aot'">
       <OSGroup>Windows_NT</OSGroup>
       <UndefineProperties>%(ProjectReference.UndefineProperties);TargetGroup</UndefineProperties>
     </ProjectReference>
+    <ProjectReference Include="..\..\System.Private.Uri\src\System.Private.Uri.csproj" Condition="'$(TargetGroup)' == 'uap101aot'">
+      <OSGroup>Windows_NT</OSGroup>
+    </ProjectReference>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)'!='netcore50aot'">
+  <ItemGroup Condition="'$(TargetGroup)'!='netcore50aot' And '$(TargetGroup)'!='uap101aot'">
     <TargetingPackReference Include="mscorlib" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)'=='netcore50aot'">
+  <ItemGroup Condition="'$(TargetGroup)'=='netcore50aot' Or '$(TargetGroup)'=='uap101aot'">
     <TargetingPackReference Include="System.Private.CoreLib" />
     <TargetingPackReference Include="System.Private.Reflection" />
   </ItemGroup>

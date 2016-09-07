@@ -23,6 +23,9 @@
     <Project Include="redist\System.Runtime.depproj">
       <TargetGroup>netcore50aot</TargetGroup>
     </Project>
+    <Project Include="System.Runtime.csproj">
+      <TargetGroup>uap101aot</TargetGroup>
+    </Project>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
 </Project>
