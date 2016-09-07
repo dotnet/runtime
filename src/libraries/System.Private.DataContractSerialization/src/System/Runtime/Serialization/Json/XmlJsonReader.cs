@@ -916,10 +916,6 @@ namespace System.Runtime.Serialization.Json
                 {
                     return originalLength; // sequence fits exactly
                 }
-                if (length == 0)
-                {
-                    return originalLength; // Quota too small to read a char
-                }
             }
             return length;
         }
