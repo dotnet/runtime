@@ -322,10 +322,12 @@ namespace System.Globalization {
             get
             {
                 Contract.Assert(m_name != null, "CompareInfo.Name Expected m_name to be set");
+#if !FEATURE_CORECLR
                 if (m_name == "zh-CHT" || m_name == "zh-CHS")
                 {
                     return m_name;
                 }
+#endif // FEATURE_CORECLR
 
                 return (m_sortName);
             }
