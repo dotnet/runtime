@@ -852,7 +852,8 @@ namespace System.Text
             byte[] byteBuffer = new byte[1];
             char* charEnd = chars + charCount;
 
-            DecoderFallbackBufferHelper fallbackHelper = new DecoderFallbackBufferHelper(decoder.FallbackBuffer);
+            DecoderFallbackBufferHelper fallbackHelper = new DecoderFallbackBufferHelper(
+                decoder != null ? decoder.FallbackBuffer : DecoderFallback.CreateFallbackBuffer());
 
             // Not quite so fast loop
             while (bytes < byteEnd)

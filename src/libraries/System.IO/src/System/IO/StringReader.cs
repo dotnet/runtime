@@ -23,7 +23,7 @@ namespace System.IO
             }
 
             _s = s;
-            _length = s == null ? 0 : s.Length;
+            _length = s.Length;
         }
 
 

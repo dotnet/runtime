@@ -425,6 +425,7 @@ namespace System.IO
                 }
 
                 // Add subdirs to _searchList. Exempt ReparsePoints as appropriate
+                Debug.Assert(_searchList != null, "_searchList should not be null");
                 int initialCount = _searchList.Count;
                 do
                 {
@@ -439,7 +440,6 @@ namespace System.IO
                         // Setup search data for the sub directory and push it into the list
                         PathPair searchDataSubDir = new PathPair(tempUserPath, tempFullPath);
 
-                        Debug.Assert(_searchList != null, "_searchList should not be null");
                         _searchList.Add(searchDataSubDir);
                     }
                 } while (Interop.mincore.FindNextFile(hnd, ref data));
