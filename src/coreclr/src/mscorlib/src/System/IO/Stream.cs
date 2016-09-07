@@ -186,7 +186,7 @@ namespace System.IO {
         // Reads the bytes from the current stream and writes the bytes to
         // the destination stream until all bytes are read, starting at
         // the current position.
-        public void CopyTo(Stream destination)
+        public virtual void CopyTo(Stream destination)
         {
             int bufferSize = _DefaultCopyBufferSize;
 
