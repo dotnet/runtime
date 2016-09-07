@@ -108,10 +108,10 @@ namespace System.Linq.Expressions.Tests
             // NB: Unlike TypeAs, the output does not include the type we're converting to
 
             var e1 = Expression.Convert(Expression.Parameter(typeof(object), "o"), typeof(int));
-            Assert.Equal("Convert(o)", e1.ToString());
+            Assert.Equal("Convert(o, Int32)", e1.ToString());
 
             var e2 = Expression.ConvertChecked(Expression.Parameter(typeof(long), "x"), typeof(int));
-            Assert.Equal("ConvertChecked(x)", e2.ToString());
+            Assert.Equal("ConvertChecked(x, Int32)", e2.ToString());
         }
 
         private static IEnumerable<KeyValuePair<Expression, object>> ConvertBooleanToNumeric()

@@ -197,7 +197,7 @@ namespace System.Linq.Expressions
                     case ExpressionType.OrAssign:              op = IsBool(node) ? "||=" : "|="; break;
                     case ExpressionType.ExclusiveOr:           op = "^";                         break;
                     case ExpressionType.ExclusiveOrAssign:     op = "^=";                        break;
-                    case ExpressionType.Power:                 op = "^";                         break;
+                    case ExpressionType.Power:                 op = "**";                        break; // This was changed in CoreFx from ^ to **
                     case ExpressionType.PowerAssign:           op = "**=";                       break;
                     case ExpressionType.Coalesce:              op = "??";                        break;
                     default:
@@ -580,6 +580,10 @@ namespace System.Linq.Expressions
                 case ExpressionType.TypeAs:              Out(" As ");
                                                          Out(node.Type.Name);
                                                          Out(')');               break;
+                case ExpressionType.Convert:
+                case ExpressionType.ConvertChecked:      Out(", ");
+                                                         Out(node.Type.Name);
+                                                         Out(')');               break; // These were changed in CoreFx to add the type name
                 case ExpressionType.PostIncrementAssign: Out("++");              break;
                 case ExpressionType.PostDecrementAssign: Out("--");              break;
                 default:                                 Out(')');               break;
