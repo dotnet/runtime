@@ -174,5 +174,18 @@ namespace System.Linq.Expressions.Tests
             RuntimeVariablesExpression varExp = Expression.RuntimeVariables(Enumerable.Repeat(Expression.Variable(typeof(RuntimeVariablesTests)), 1));
             Assert.NotSame(varExp, varExp.Update(new[] { Expression.Variable(typeof(RuntimeVariablesTests)) }));
         }
+
+        [Fact]
+        public void ToStringTest()
+        {
+            var e1 = Expression.RuntimeVariables();
+            Assert.Equal("()", e1.ToString());
+
+            var e2 = Expression.RuntimeVariables(Expression.Parameter(typeof(int), "x"));
+            Assert.Equal("(x)", e2.ToString());
+
+            var e3 = Expression.RuntimeVariables(Expression.Parameter(typeof(int), "x"), Expression.Parameter(typeof(int), "y"));
+            Assert.Equal("(x, y)", e3.ToString());
+        }
     }
 }

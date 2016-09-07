@@ -9,7 +9,6 @@ using System.Dynamic.Utils;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
-using System.Threading;
 
 namespace System.Linq.Expressions.Compiler
 {
@@ -21,15 +20,17 @@ namespace System.Linq.Expressions.Compiler
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1506:AvoidExcessiveClassCoupling")]
     internal sealed partial class LambdaCompiler
     {
-        private delegate void WriteBack();
+        private delegate void WriteBack(LambdaCompiler compiler);
 
         // Information on the entire lambda tree currently being compiled
         private readonly AnalyzedTree _tree;
 
         private readonly ILGenerator _ilg;
 
+#if FEATURE_COMPILE_TO_METHODBUILDER
         // The TypeBuilder backing this method, if any
         private readonly TypeBuilder _typeBuilder;
+#endif
 
         private readonly MethodInfo _method;
 
@@ -58,7 +59,7 @@ namespace System.Linq.Expressions.Compiler
         /// </summary>
         private LambdaCompiler(AnalyzedTree tree, LambdaExpression lambda)
         {
-            Type[] parameterTypes = GetParameterTypes(lambda).AddFirst(typeof(Closure));
+            Type[] parameterTypes = GetParameterTypes(lambda, typeof(Closure));
 
             var method = new DynamicMethod(lambda.Name ?? "lambda_method", lambda.ReturnType, parameterTypes, true);
 
@@ -84,6 +85,7 @@ namespace System.Linq.Expressions.Compiler
             InitializeMethod();
         }
 
+#if FEATURE_COMPILE_TO_METHODBUILDER
         /// <summary>
         /// Creates a lambda compiler that will compile into the provided MethodBuilder
         /// </summary>
@@ -92,20 +94,16 @@ namespace System.Linq.Expressions.Compiler
             var scope = tree.Scopes[lambda];
             var hasClosureArgument = scope.NeedsClosure;
 
-            Type[] paramTypes = GetParameterTypes(lambda);
-            if (hasClosureArgument)
-            {
-                paramTypes = paramTypes.AddFirst(typeof(Closure));
-            }
+            Type[] paramTypes = GetParameterTypes(lambda, hasClosureArgument ? typeof(Closure) : null);
 
             method.SetReturnType(lambda.ReturnType);
             method.SetParameters(paramTypes);
-            var paramNames = lambda.Parameters.Map(p => p.Name);
+            var parameters = lambda.Parameters;
             // parameters are index from 1, with closure argument we need to skip the first arg
             int startIndex = hasClosureArgument ? 2 : 1;
-            for (int i = 0; i < paramNames.Length; i++)
+            for (int i = 0, n = parameters.Count; i < n; i++)
             {
-                method.DefineParameter(i + startIndex, ParameterAttributes.None, paramNames[i]);
+                method.DefineParameter(i + startIndex, ParameterAttributes.None, parameters[i].Name);
             }
 
             _tree = tree;
@@ -122,6 +120,7 @@ namespace System.Linq.Expressions.Compiler
 
             InitializeMethod();
         }
+#endif
 
         /// <summary>
         /// Creates a lambda compiler for an inlined lambda
@@ -136,7 +135,9 @@ namespace System.Linq.Expressions.Compiler
             _method = parent._method;
             _ilg = parent._ilg;
             _hasClosureArgument = parent._hasClosureArgument;
+#if FEATURE_COMPILE_TO_METHODBUILDER
             _typeBuilder = parent._typeBuilder;
+#endif
             // inlined scopes are associated with invocation, not with the lambda
             _scope = _tree.Scopes[invocation];
             _boundConstants = parent._boundConstants;
@@ -164,10 +165,12 @@ namespace System.Linq.Expressions.Compiler
             get { return _lambda.Parameters; }
         }
 
+#if FEATURE_COMPILE_TO_METHODBUILDER
         internal bool CanEmitBoundConstants
         {
             get { return _method is DynamicMethod; }
         }
+#endif
 
         #region Compiler entry points
 
@@ -190,6 +193,26 @@ namespace System.Linq.Expressions.Compiler
             // 4. Return the delegate.
             return c.CreateDelegate();
         }
+
+#if FEATURE_COMPILE_TO_METHODBUILDER
+        /// <summary>
+        /// Mutates the MethodBuilder parameter, filling in IL, parameters,
+        /// and return type.
+        /// 
+        /// (probably shouldn't be modifying parameters/return type...)
+        /// </summary>
+        internal static void Compile(LambdaExpression lambda, MethodBuilder method)
+        {
+            // 1. Bind lambda
+            AnalyzedTree tree = AnalyzeLambda(ref lambda);
+
+            // 2. Create lambda compiler
+            LambdaCompiler c = new LambdaCompiler(tree, lambda, method);
+
+            // 3. Emit
+            c.EmitLambdaBody();
+        }
+#endif
 
         #endregion
 
@@ -266,14 +289,16 @@ namespace System.Linq.Expressions.Compiler
             return _method.CreateDelegate(_lambda.Type, new Closure(_boundConstants.ToArray(), null));
         }
 
+#if FEATURE_COMPILE_TO_METHODBUILDER
         private FieldBuilder CreateStaticField(string name, Type type)
         {
             // We are emitting into someone else's type. We don't want name
             // conflicts, so choose a long name that is unlikely to conflict.
             // Naming scheme chosen here is similar to what the C# compiler
             // uses.
-            return _typeBuilder.DefineField("<ExpressionCompilerImplementationDetails>{" + Interlocked.Increment(ref s_counter) + "}" + name, type, FieldAttributes.Static | FieldAttributes.Private);
+            return _typeBuilder.DefineField("<ExpressionCompilerImplementationDetails>{" + System.Threading.Interlocked.Increment(ref s_counter) + "}" + name, type, FieldAttributes.Static | FieldAttributes.Private);
         }
+#endif
 
         /// <summary>
         /// Creates an uninitialized field suitable for private implementation details
@@ -281,14 +306,20 @@ namespace System.Linq.Expressions.Compiler
         /// </summary>
         private MemberExpression CreateLazyInitializedField<T>(string name)
         {
+#if FEATURE_COMPILE_TO_METHODBUILDER
             if (_method is DynamicMethod)
+#else
+            Debug.Assert(_method is DynamicMethod);
+#endif
             {
                 return Expression.Field(Expression.Constant(new StrongBox<T>(default(T))), "Value");
             }
+#if FEATURE_COMPILE_TO_METHODBUILDER
             else
             {
                 return Expression.Field(null, CreateStaticField(name, typeof(T)));
             }
+#endif
         }
     }
 }

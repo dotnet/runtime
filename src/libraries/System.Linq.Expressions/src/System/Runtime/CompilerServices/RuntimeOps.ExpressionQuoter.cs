@@ -9,6 +9,7 @@ using System.Dynamic.Utils;
 using System.Linq.Expressions;
 using System.Linq.Expressions.Compiler;
 using System.Reflection;
+using static System.Linq.Expressions.CachedReflectionInfo;
 
 namespace System.Runtime.CompilerServices
 {
@@ -66,9 +67,15 @@ namespace System.Runtime.CompilerServices
 
             protected internal override Expression VisitLambda<T>(Expression<T> node)
             {
-                _shadowedVars.Push(new HashSet<ParameterExpression>(node.Parameters));
+                if (node.Parameters.Count > 0)
+                {
+                    _shadowedVars.Push(new HashSet<ParameterExpression>(node.Parameters));
+                }
                 Expression b = Visit(node.Body);
-                _shadowedVars.Pop();
+                if (node.Parameters.Count > 0)
+                {
+                    _shadowedVars.Pop();
+                }
                 if (b == node.Body)
                 {
                     return node;
@@ -82,12 +89,12 @@ namespace System.Runtime.CompilerServices
                 {
                     _shadowedVars.Push(new HashSet<ParameterExpression>(node.Variables));
                 }
-                var b = Visit(node.Expressions);
+                var b = ExpressionVisitorUtils.VisitBlockExpressions(this, node);
                 if (node.Variables.Count > 0)
                 {
                     _shadowedVars.Pop();
                 }
-                if (b == node.Expressions)
+                if (b == null)
                 {
                     return node;
                 }
@@ -149,7 +156,7 @@ namespace System.Runtime.CompilerServices
 
                 // Otherwise, we need to return an object that merges them
                 return Expression.Call(
-                    typeof(RuntimeOps).GetMethod("MergeRuntimeVariables"),
+                    RuntimeOps_MergeRuntimeVariables,
                     Expression.RuntimeVariables(new TrueReadOnlyCollection<ParameterExpression>(vars.ToArray())),
                     boxesConst,
                     Expression.Constant(indexes)

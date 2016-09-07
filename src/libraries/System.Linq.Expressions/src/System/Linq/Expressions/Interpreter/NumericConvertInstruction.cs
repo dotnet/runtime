@@ -2,11 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Reflection;
-using System.Runtime.CompilerServices;
 using System.Dynamic.Utils;
 
 namespace System.Linq.Expressions.Interpreter
@@ -110,6 +105,7 @@ namespace System.Linq.Expressions.Interpreter
                         case TypeCode.UInt64: return (UInt64)obj;
                         case TypeCode.Single: return (Single)obj;
                         case TypeCode.Double: return (Double)obj;
+                        case TypeCode.Decimal: return (Decimal)obj;
                         default: throw ContractUtils.Unreachable;
                     }
                 }
@@ -132,6 +128,7 @@ namespace System.Linq.Expressions.Interpreter
                         case TypeCode.UInt64: return (UInt64)obj;
                         case TypeCode.Single: return (Single)obj;
                         case TypeCode.Double: return (Double)obj;
+                        case TypeCode.Decimal: return (Decimal)obj;
                         default: throw ContractUtils.Unreachable;
                     }
                 }
@@ -154,6 +151,7 @@ namespace System.Linq.Expressions.Interpreter
                         case TypeCode.UInt64: return (UInt64)obj;
                         case TypeCode.Single: return (Single)obj;
                         case TypeCode.Double: return (Double)obj;
+                        case TypeCode.Decimal: return (Decimal)obj;
                         default: throw ContractUtils.Unreachable;
                     }
                 }
@@ -176,6 +174,7 @@ namespace System.Linq.Expressions.Interpreter
                         case TypeCode.UInt64: return (UInt64)obj;
                         case TypeCode.Single: return (Single)obj;
                         case TypeCode.Double: return (Double)obj;
+                        case TypeCode.Decimal: return (Decimal)obj;
                         default: throw ContractUtils.Unreachable;
                     }
                 }
@@ -229,6 +228,7 @@ namespace System.Linq.Expressions.Interpreter
                         case TypeCode.UInt64: return (UInt64)obj;
                         case TypeCode.Single: return (Single)obj;
                         case TypeCode.Double: return (Double)obj;
+                        case TypeCode.Decimal: return (Decimal)obj;
                         default: throw ContractUtils.Unreachable;
                     }
                 }
@@ -251,6 +251,7 @@ namespace System.Linq.Expressions.Interpreter
                         case TypeCode.UInt64: return (UInt64)obj;
                         case TypeCode.Single: return (Single)obj;
                         case TypeCode.Double: return (Double)obj;
+                        case TypeCode.Decimal: return (Decimal)obj;
                         default: throw ContractUtils.Unreachable;
                     }
                 }
@@ -273,6 +274,7 @@ namespace System.Linq.Expressions.Interpreter
                         case TypeCode.UInt64: return (UInt64)obj;
                         case TypeCode.Single: return (Single)obj;
                         case TypeCode.Double: return (Double)obj;
+                        case TypeCode.Decimal: return (Decimal)obj;
                         default: throw ContractUtils.Unreachable;
                     }
                 }
@@ -295,6 +297,7 @@ namespace System.Linq.Expressions.Interpreter
                         case TypeCode.UInt64: return (UInt64)obj;
                         case TypeCode.Single: return (Single)obj;
                         case TypeCode.Double: return (Double)obj;
+                        case TypeCode.Decimal: return (Decimal)obj;
                         default: throw ContractUtils.Unreachable;
                     }
                 }

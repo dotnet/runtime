@@ -272,42 +272,24 @@ namespace System.Linq.Expressions
 
         private static PropertyInfo FindProperty(Type type, string propertyName, Expression[] arguments, BindingFlags flags)
         {
-            var props = type.GetProperties(flags).Where(x => x.Name.Equals(propertyName, StringComparison.CurrentCultureIgnoreCase)); ;
-            PropertyInfo[] members = new List<PropertyInfo>(props).ToArray();
-            if (members == null || members.Length == 0)
-                return null;
+            PropertyInfo property = null;
 
-            PropertyInfo pi;
-            var propertyInfos = members.Map(t => (PropertyInfo)t);
-            int count = FindBestProperty(propertyInfos, arguments, out pi);
-
-            if (count == 0)
-                return null;
-            if (count > 1)
-                throw Error.PropertyWithMoreThanOneMatch(propertyName, type);
-            return pi;
-        }
-
-        private static int FindBestProperty(IEnumerable<PropertyInfo> properties, Expression[] args, out PropertyInfo property)
-        {
-            int count = 0;
-            property = null;
-            foreach (PropertyInfo pi in properties)
+            foreach (PropertyInfo pi in type.GetProperties(flags))
             {
-                if (pi != null && IsCompatible(pi, args))
+                if (pi.Name.Equals(propertyName, StringComparison.OrdinalIgnoreCase) && IsCompatible(pi, arguments))
                 {
                     if (property == null)
                     {
                         property = pi;
-                        count = 1;
                     }
                     else
                     {
-                        count++;
+                        throw Error.PropertyWithMoreThanOneMatch(propertyName, type);
                     }
                 }
             }
-            return count;
+
+            return property;
         }
 
         private static bool IsCompatible(PropertyInfo pi, Expression[] args)
@@ -468,17 +450,17 @@ namespace System.Linq.Expressions
                 {
                     Expression arg = arguments[i];
                     ParameterInfo pi = indexes[i];
-                    RequiresCanRead(arg, nameof(arguments));
+                    RequiresCanRead(arg, nameof(arguments), i);
 
                     Type pType = pi.ParameterType;
-                    if (pType.IsByRef) throw Error.AccessorsCannotHaveByRefArgs($"{nameof(indexes)}[{i}]");
-                    TypeUtils.ValidateType(pType, $"{nameof(indexes)}[{i}]");
+                    if (pType.IsByRef) throw Error.AccessorsCannotHaveByRefArgs(nameof(indexes), i);
+                    TypeUtils.ValidateType(pType, nameof(indexes), i);
 
                     if (!TypeUtils.AreReferenceAssignable(pType, arg.Type))
                     {
                         if (!TryQuote(pType, ref arg))
                         {
-                            throw Error.ExpressionTypeDoesNotMatchMethodParameter(arg.Type, pType, method);
+                            throw Error.ExpressionTypeDoesNotMatchMethodParameter(arg.Type, pType, method, nameof(arguments), i);
                         }
                     }
                     if (newArgs == null && arg != arguments[i])

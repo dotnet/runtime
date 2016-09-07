@@ -285,5 +285,12 @@ namespace System.Linq.Expressions.Tests
             var loop = Expression.Loop(Expression.Empty(), Expression.Label(), Expression.Label());
             Assert.NotSame(loop, loop.Update(loop.BreakLabel, Expression.Label(), loop.Body));
         }
+
+        [Fact]
+        public void ToStringTest()
+        {
+            var e = Expression.Loop(Expression.Empty());
+            Assert.Equal("loop { ... }", e.ToString());
+        }
     }
 }

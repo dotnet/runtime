@@ -53,6 +53,7 @@
     <Compile Include="BinaryOperators\Arithmetic\BinaryNullableMultiplyTests.cs" />
     <Compile Include="BinaryOperators\Arithmetic\BinaryNullablePowerTests.cs" />
     <Compile Include="BinaryOperators\Arithmetic\BinaryNullableSubtractTests.cs" />
+    <Compile Include="BinaryOperators\Arithmetic\BinaryPowerTests.cs" />
     <Compile Include="BinaryOperators\Arithmetic\BinarySubtractTests.cs" />
     <Compile Include="BinaryOperators\Assignment\Assign.cs" />
     <Compile Include="BinaryOperators\Assignment\OpAssign.cs" />
@@ -63,18 +64,15 @@
     <Compile Include="BinaryOperators\Bitwise\BinaryNullableOrTests.cs" />
     <Compile Include="BinaryOperators\Bitwise\BinaryOrTests.cs" />
     <Compile Include="BinaryOperators\Coalesce\BinaryCoalesceTests.cs" />
-    <Compile Include="BinaryOperators\Comparison\BinaryEqualTests.cs" />
+    <Compile Include="BinaryOperators\Comparison\EqualNotEqualTests.cs" />
     <Compile Include="BinaryOperators\Comparison\BinaryGreaterThanOrEqualTests.cs" />
     <Compile Include="BinaryOperators\Comparison\BinaryGreaterThanTests.cs" />
     <Compile Include="BinaryOperators\Comparison\BinaryLessThanOrEqualTests.cs" />
     <Compile Include="BinaryOperators\Comparison\BinaryLessThanTests.cs" />
-    <Compile Include="BinaryOperators\Comparison\BinaryNotEqualTests.cs" />
-    <Compile Include="BinaryOperators\Comparison\BinaryNullableEqualTests.cs" />
     <Compile Include="BinaryOperators\Comparison\BinaryNullableGreaterThanOrEqualTests.cs" />
     <Compile Include="BinaryOperators\Comparison\BinaryNullableGreaterThanTests.cs" />
     <Compile Include="BinaryOperators\Comparison\BinaryNullableLessThanOrEqualTests.cs" />
     <Compile Include="BinaryOperators\Comparison\BinaryNullableLessThanTests.cs" />
-    <Compile Include="BinaryOperators\Comparison\BinaryNullableNotEqualTests.cs" />
     <Compile Include="BinaryOperators\GeneralBinaryTests.cs" />
     <Compile Include="BinaryOperators\Logical\BinaryLogicalTests.cs" />
     <Compile Include="BinaryOperators\Logical\BinaryNullableLogicalTests.cs" />

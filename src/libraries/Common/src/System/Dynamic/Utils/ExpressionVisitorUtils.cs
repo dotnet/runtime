@@ -2,17 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Diagnostics;
 using System.Linq.Expressions;
-using System.Reflection;
-using System.Runtime.CompilerServices;
-using System.Threading;
 
 namespace System.Dynamic.Utils
 {
-    internal static class ExpressionVisitorUtils
+    internal static partial class ExpressionVisitorUtils
     {
         public static Expression[] VisitArguments(ExpressionVisitor visitor, IArgumentProvider nodes)
         {

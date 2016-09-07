@@ -67,6 +67,25 @@ namespace System.Linq.Expressions.Tests
             }
         }
 
+        public static IEnumerable<object> ImplicitNumericConversionData()
+        {
+            foreach (bool useInterpreter in new bool[] { true, false })
+            {
+                yield return new object[] { new byte?[] { null, 1 }, new object[] { (byte)2, (short)3, (ushort)3, (int)4, (uint)4, (long)5, (ulong)5, (float)3.14, (double)3.14, (decimal)49.95 }, useInterpreter };
+                yield return new object[] { new sbyte?[] { null, 1 }, new object[] { (sbyte)2, (short)3, (int)4, (long)5, (float)3.14, (double)3.14, (decimal)49.95 }, useInterpreter };
+                yield return new object[] { new ushort?[] { null, 1 }, new object[] { (ushort)3, (int)4, (uint)4, (long)5, (ulong)5, (float)3.14, (double)3.14, (decimal)49.95 }, useInterpreter };
+                yield return new object[] { new short?[] { null, 1 }, new object[] { (short)3, (int)4, (long)5, (float)3.14, (double)3.14, (decimal)49.95 }, useInterpreter };
+                yield return new object[] { new uint?[] { null, 1 }, new object[] { (uint)4, (long)5, (ulong)5, (float)3.14, (double)3.14, (decimal)49.95 }, useInterpreter };
+                yield return new object[] { new int?[] { null, 1 }, new object[] { (int)4, (long)5, (float)3.14, (double)3.14, (decimal)49.95 }, useInterpreter };
+                yield return new object[] { new ulong?[] { null, 1 }, new object[] { (ulong)5, (float)3.14, (double)3.14, (decimal)49.95 }, useInterpreter };
+                yield return new object[] { new long?[] { null, 1 }, new object[] { (long)5, (float)3.14, (double)3.14, (decimal)49.95 }, useInterpreter };
+                yield return new object[] { new char?[] { null, 'a' }, new object[] { (ushort)3, (int)4, (uint)4, (long)5, (ulong)5, (float)3.14, (double)3.14, (decimal)49.95 }, useInterpreter };
+                yield return new object[] { new float?[] { null, 1F }, new object[] { (float)3.14, (double)3.14 }, useInterpreter };
+                yield return new object[] { new double?[] { null, 1D }, new object[] { (double)3.14 }, useInterpreter };
+                yield return new object[] { new decimal?[] { null, 1M }, new object[] { (decimal)49.95 }, useInterpreter };
+            }
+        }
+
         [Theory]
         [MemberData(nameof(TestData))]
         public static void Coalesce(Array array1, Array array2, bool useInterpreter)
@@ -75,9 +94,40 @@ namespace System.Linq.Expressions.Tests
             Type type2 = array2.GetType().GetElementType();
             for (int i = 0; i < array1.Length; i++)
             {
+                var value1 = array1.GetValue(i);
                 for (int j = 0; j < array2.Length; j++)
                 {
-                    VerifyCoalesce(array1.GetValue(i), type1, array2.GetValue(j), type2, useInterpreter);
+                    VerifyCoalesce(value1, type1, array2.GetValue(j), type2, useInterpreter);
+                }
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(ImplicitNumericConversionData))]
+        public static void ImplicitNumericConversions(Array array1, Array array2, bool useInterpreter)
+        {
+            Type type1 = array1.GetType().GetElementType();
+            for (int i = 0; i < array1.Length; i++)
+            {
+                var value1 = array1.GetValue(i);
+                for (int j = 0; j < array2.Length; j++)
+                {
+                    var value2 = array2.GetValue(j);
+                    var type2 = value2.GetType();
+
+                    var result = value1 != null ? value1 : value2;
+                    if (result.GetType() == typeof(char))
+                    {
+                        // ChangeType does not support conversion of char to float, double, or decimal,
+                        // although these are classified as implicit numeric conversions, so we widen
+                        // the value to Int32 first as a workaround
+
+                        result = Convert.ChangeType(result, typeof(int));
+                    }
+
+                    var expected = Convert.ChangeType(result, type2);
+
+                    VerifyCoalesce(value1, type1, value2, type2, useInterpreter, expected);
                 }
             }
         }
@@ -232,12 +282,12 @@ namespace System.Linq.Expressions.Tests
             }
         }
 
-        public static void VerifyCoalesce(object obj1, Type type1, object obj2, Type type2, bool useInterpreter)
+        public static void VerifyCoalesce(object obj1, Type type1, object obj2, Type type2, bool useInterpreter, object expected = null)
         {
             BinaryExpression expression = Expression.Coalesce(Expression.Constant(obj1, type1), Expression.Constant(obj2, type2));
             Delegate lambda = Expression.Lambda(expression).Compile(useInterpreter);
 
-            object expected = obj1 == null ? obj2 : obj1;
+            expected = expected ?? (obj1 == null ? obj2 : obj1);
             Assert.Equal(expected, lambda.DynamicInvoke());
         }
 
@@ -382,6 +432,13 @@ namespace System.Linq.Expressions.Tests
             Expression<Func<bool, string>> boolNotEquivilent = x => x.ToString();
             Assert.Throws<InvalidOperationException>(() => Expression.Coalesce(Expression.Constant(""), Expression.Constant(""), boolNotEquivilent));
             Assert.Throws<InvalidOperationException>(() => Expression.Coalesce(Expression.Constant(0, typeof(int?)), Expression.Constant(""), boolNotEquivilent));
+        }
+
+        [Fact]
+        public static void ToStringTest()
+        {
+            var e = Expression.Coalesce(Expression.Parameter(typeof(string), "a"), Expression.Parameter(typeof(string), "b"));
+            Assert.Equal("(a ?? b)", e.ToString());
         }
     }
 }

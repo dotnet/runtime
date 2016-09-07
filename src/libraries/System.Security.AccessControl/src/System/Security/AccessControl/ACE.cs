@@ -10,9 +10,10 @@
 ===========================================================*/
 
 using System;
-using System.Security.Principal;
-using System.Globalization;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
+using System.Globalization;
+using System.Security.Principal;
 
 namespace System.Security.AccessControl
 {
@@ -139,7 +140,7 @@ nameof(binaryForm),
                 // Indicates a bug in the implementation, not in user's code.
                 //
 
-                Contract.Assert(false, "Length > ushort.MaxValue");
+                Debug.Assert(false, "Length > ushort.MaxValue");
                 // Replacing SystemException with InvalidOperationException. It's not a perfect fit,
                 // but it's the best exception type available to indicate a failure because
                 // of a bug in the ACE itself.
@@ -888,7 +889,7 @@ nameof(opaque),
             {
                 if (OpaqueLength > MaxOpaqueLength)
                 {
-                    Contract.Assert(false, "OpaqueLength somehow managed to exceed MaxOpaqueLength");
+                    Debug.Assert(false, "OpaqueLength somehow managed to exceed MaxOpaqueLength");
                     // Replacing SystemException with InvalidOperationException. It's not a perfect fit,
                     // but it's the best exception type available to indicate a failure because
                     // of a bug in the ACE itself.
@@ -1203,7 +1204,7 @@ nameof(opaque),
                     // Indicates a bug in the implementation, not in user's code
                     //
 
-                    Contract.Assert(false, "Invalid ACE type");
+                    Debug.Assert(false, "Invalid ACE type");
                     // Replacing SystemException with InvalidOperationException. It's not a perfect fit,
                     // but it's the best exception type available to indicate a failure because
                     // of a bug in the ACE itself.
@@ -1644,7 +1645,7 @@ nameof(qualifier),
             {
                 if (OpaqueLength > MaxOpaqueLengthInternal)
                 {
-                    Contract.Assert(false, "OpaqueLength somehow managed to exceed MaxOpaqueLength");
+                    Debug.Assert(false, "OpaqueLength somehow managed to exceed MaxOpaqueLength");
                     // Replacing SystemException with InvalidOperationException. It's not a perfect fit,
                     // but it's the best exception type available to indicate a failure because
                     // of a bug in the ACE itself.
@@ -2208,7 +2209,7 @@ nameof(qualifier),
             {
                 if (OpaqueLength > MaxOpaqueLengthInternal)
                 {
-                    Contract.Assert(false, "OpaqueLength somehow managed to exceed MaxOpaqueLength");
+                    Debug.Assert(false, "OpaqueLength somehow managed to exceed MaxOpaqueLength");
                     // Replacing SystemException with InvalidOperationException. It's not a perfect fit,
                     // but it's the best exception type available to indicate a failure because
                     // of a bug in the ACE itself.

@@ -232,11 +232,9 @@ namespace System.Linq.Parallel.Tests
         private static void ThrowsWrapped(Action query)
         {
             AggregateException outer = Assert.Throws<AggregateException>(query);
-            Assert.All(outer.InnerExceptions, inner =>
-            {
-                Assert.IsType<AggregateException>(inner);
-                Assert.All(((AggregateException)inner).InnerExceptions, e => Assert.IsType<DeliberateTestException>(e));
-            });
+            Exception inner = Assert.Single(outer.InnerExceptions);
+            AggregateException ae = Assert.IsType<AggregateException>(inner);
+            Assert.All(ae.InnerExceptions, e => Assert.IsType<DeliberateTestException>(e));
         }
 
         [Theory]
