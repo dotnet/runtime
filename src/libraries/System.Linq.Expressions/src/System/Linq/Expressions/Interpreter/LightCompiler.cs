@@ -1481,7 +1481,7 @@ namespace System.Linq.Expressions.Interpreter
             CompileAsVoid(node.Body);
 
             // emit loop branch:
-            _instructions.EmitBranch(continueLabel.GetLabel(this), expr.Type != typeof(void), false);
+            _instructions.EmitBranch(continueLabel.GetLabel(this), node.Type != typeof(void), false);
 
             _instructions.MarkLabel(breakLabel.GetLabel(this));
 
@@ -1511,7 +1511,7 @@ namespace System.Linq.Expressions.Interpreter
                     {
                         // If there are no cases and no default then the type must be void.
                         // Assert that earlier validation caught any exceptions to that.
-                        Debug.Assert(expr.Type == typeof(void));
+                        Debug.Assert(node.Type == typeof(void));
                     }
                     return;
                 }
@@ -2415,7 +2415,7 @@ namespace System.Linq.Expressions.Interpreter
             }
             else
             {
-                Debug.Assert(expr.Type.GetTypeInfo().IsValueType);
+                Debug.Assert(node.Type.GetTypeInfo().IsValueType);
                 _instructions.EmitDefaultValue(node.Type);
             }
         }
@@ -2847,7 +2847,7 @@ namespace System.Linq.Expressions.Interpreter
 
             Compile(node.Operand);
 
-            if (expr.Type.GetTypeInfo().IsValueType && !TypeUtils.IsNullableType(expr.Type))
+            if (node.Type.GetTypeInfo().IsValueType && !TypeUtils.IsNullableType(node.Type))
             {
                 _instructions.Emit(NullCheckInstruction.Instance);
             }
@@ -2984,71 +2984,71 @@ namespace System.Linq.Expressions.Interpreter
             int startingStackDepth = _instructions.CurrentStackDepth;
             switch (expr.NodeType)
             {
-                case ExpressionType.Add: CompileBinaryExpression(expr); break;
-                case ExpressionType.AddChecked: CompileBinaryExpression(expr); break;
-                case ExpressionType.And: CompileBinaryExpression(expr); break;
+                case ExpressionType.Add:
+                case ExpressionType.AddChecked:
+                case ExpressionType.And:
+                case ExpressionType.ArrayIndex:
+                case ExpressionType.Divide:
+                case ExpressionType.Equal:
+                case ExpressionType.ExclusiveOr:
+                case ExpressionType.GreaterThan:
+                case ExpressionType.GreaterThanOrEqual:
+                case ExpressionType.LeftShift:
+                case ExpressionType.LessThan:
+                case ExpressionType.LessThanOrEqual:
+                case ExpressionType.Modulo:
+                case ExpressionType.Multiply:
+                case ExpressionType.MultiplyChecked:
+                case ExpressionType.NotEqual:
+                case ExpressionType.Or:
+                case ExpressionType.Power:
+                case ExpressionType.RightShift:
+                case ExpressionType.Subtract:
+                case ExpressionType.SubtractChecked: CompileBinaryExpression(expr); break;
                 case ExpressionType.AndAlso: CompileAndAlsoBinaryExpression(expr); break;
-                case ExpressionType.ArrayLength: CompileUnaryExpression(expr); break;
-                case ExpressionType.ArrayIndex: CompileBinaryExpression(expr); break;
-                case ExpressionType.Call: CompileMethodCallExpression(expr); break;
+                case ExpressionType.OrElse: CompileOrElseBinaryExpression(expr); break;
                 case ExpressionType.Coalesce: CompileCoalesceBinaryExpression(expr); break;
+                case ExpressionType.ArrayLength:
+                case ExpressionType.Decrement:
+                case ExpressionType.Increment:
+                case ExpressionType.IsTrue:
+                case ExpressionType.IsFalse:
+                case ExpressionType.Negate:
+                case ExpressionType.NegateChecked:
+                case ExpressionType.Not:
+                case ExpressionType.OnesComplement:
+                case ExpressionType.TypeAs:
+                case ExpressionType.UnaryPlus: CompileUnaryExpression(expr); break;
+                case ExpressionType.Convert:
+                case ExpressionType.ConvertChecked: CompileConvertUnaryExpression(expr); break;
+                case ExpressionType.Quote: CompileQuoteUnaryExpression(expr); break;
+                case ExpressionType.Throw: CompileThrowUnaryExpression(expr, expr.Type == typeof(void)); break;
+                case ExpressionType.Unbox: CompileUnboxUnaryExpression(expr); break;
+                case ExpressionType.Call: CompileMethodCallExpression(expr); break;
                 case ExpressionType.Conditional: CompileConditionalExpression(expr, expr.Type == typeof(void)); break;
                 case ExpressionType.Constant: CompileConstantExpression(expr); break;
-                case ExpressionType.Convert: CompileConvertUnaryExpression(expr); break;
-                case ExpressionType.ConvertChecked: CompileConvertUnaryExpression(expr); break;
-                case ExpressionType.Divide: CompileBinaryExpression(expr); break;
-                case ExpressionType.Equal: CompileBinaryExpression(expr); break;
-                case ExpressionType.ExclusiveOr: CompileBinaryExpression(expr); break;
-                case ExpressionType.GreaterThan: CompileBinaryExpression(expr); break;
-                case ExpressionType.GreaterThanOrEqual: CompileBinaryExpression(expr); break;
                 case ExpressionType.Invoke: CompileInvocationExpression(expr); break;
                 case ExpressionType.Lambda: CompileLambdaExpression(expr); break;
-                case ExpressionType.LeftShift: CompileBinaryExpression(expr); break;
-                case ExpressionType.LessThan: CompileBinaryExpression(expr); break;
-                case ExpressionType.LessThanOrEqual: CompileBinaryExpression(expr); break;
                 case ExpressionType.ListInit: CompileListInitExpression(expr); break;
                 case ExpressionType.MemberAccess: CompileMemberExpression(expr); break;
                 case ExpressionType.MemberInit: CompileMemberInitExpression(expr); break;
-                case ExpressionType.Modulo: CompileBinaryExpression(expr); break;
-                case ExpressionType.Multiply: CompileBinaryExpression(expr); break;
-                case ExpressionType.MultiplyChecked: CompileBinaryExpression(expr); break;
-                case ExpressionType.Negate: CompileUnaryExpression(expr); break;
-                case ExpressionType.UnaryPlus: CompileUnaryExpression(expr); break;
-                case ExpressionType.NegateChecked: CompileUnaryExpression(expr); break;
                 case ExpressionType.New: CompileNewExpression(expr); break;
-                case ExpressionType.NewArrayInit: CompileNewArrayExpression(expr); break;
+                case ExpressionType.NewArrayInit:
                 case ExpressionType.NewArrayBounds: CompileNewArrayExpression(expr); break;
-                case ExpressionType.Not: CompileUnaryExpression(expr); break;
-                case ExpressionType.NotEqual: CompileBinaryExpression(expr); break;
-                case ExpressionType.Or: CompileBinaryExpression(expr); break;
-                case ExpressionType.OrElse: CompileOrElseBinaryExpression(expr); break;
                 case ExpressionType.Parameter: CompileParameterExpression(expr); break;
-                case ExpressionType.Power: CompileBinaryExpression(expr); break;
-                case ExpressionType.Quote: CompileQuoteUnaryExpression(expr); break;
-                case ExpressionType.RightShift: CompileBinaryExpression(expr); break;
-                case ExpressionType.Subtract: CompileBinaryExpression(expr); break;
-                case ExpressionType.SubtractChecked: CompileBinaryExpression(expr); break;
-                case ExpressionType.TypeAs: CompileUnaryExpression(expr); break;
                 case ExpressionType.TypeIs: CompileTypeIsExpression(expr); break;
+                case ExpressionType.TypeEqual: CompileTypeEqualExpression(expr); break;
                 case ExpressionType.Assign: CompileAssignBinaryExpression(expr, expr.Type == typeof(void)); break;
                 case ExpressionType.Block: CompileBlockExpression(expr, expr.Type == typeof(void)); break;
                 case ExpressionType.DebugInfo: CompileDebugInfoExpression(expr); break;
-                case ExpressionType.Decrement: CompileUnaryExpression(expr); break;
                 case ExpressionType.Default: CompileDefaultExpression(expr); break;
                 case ExpressionType.Goto: CompileGotoExpression(expr); break;
-                case ExpressionType.Increment: CompileUnaryExpression(expr); break;
                 case ExpressionType.Index: CompileIndexExpression(expr); break;
                 case ExpressionType.Label: CompileLabelExpression(expr); break;
                 case ExpressionType.RuntimeVariables: CompileRuntimeVariablesExpression(expr); break;
                 case ExpressionType.Loop: CompileLoopExpression(expr); break;
                 case ExpressionType.Switch: CompileSwitchExpression(expr); break;
-                case ExpressionType.Throw: CompileThrowUnaryExpression(expr, expr.Type == typeof(void)); break;
                 case ExpressionType.Try: CompileTryExpression(expr); break;
-                case ExpressionType.Unbox: CompileUnboxUnaryExpression(expr); break;
-                case ExpressionType.TypeEqual: CompileTypeEqualExpression(expr); break;
-                case ExpressionType.OnesComplement: CompileUnaryExpression(expr); break;
-                case ExpressionType.IsTrue: CompileUnaryExpression(expr); break;
-                case ExpressionType.IsFalse: CompileUnaryExpression(expr); break;
                 default:
                     Compile(expr.ReduceAndCheck());
                     break;
