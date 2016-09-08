@@ -52,6 +52,7 @@ private:
     GenTree* DecomposeArith(LIR::Use& use);
     GenTree* DecomposeShift(LIR::Use& use);
     GenTree* DecomposeMul(LIR::Use& use);
+    GenTree* DecomposeUMod(LIR::Use& use);
 
     // Helper functions
     GenTree* FinalizeDecomposition(LIR::Use& use, GenTree* loResult, GenTree* hiResult);
