@@ -2,16 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Dynamic;
 using System.Dynamic.Utils;
 using System.Globalization;
 using System.IO;
 using System.Reflection;
-using System.Runtime.CompilerServices;
-using System.Collections.ObjectModel;
 
 namespace System.Linq.Expressions
 {
@@ -31,10 +27,10 @@ namespace System.Linq.Expressions
         private const int Tab = 4;
         private const int MaxColumn = 120;
 
-        private TextWriter _out;
+        private readonly TextWriter _out;
         private int _column;
 
-        private Stack<int> _stack = new Stack<int>();
+        private readonly Stack<int> _stack = new Stack<int>();
         private int _delta;
         private Flow _flow;
 
@@ -303,7 +299,6 @@ namespace System.Linq.Expressions
                 case '(': close = ')'; break;
                 case '{': close = '}'; break;
                 case '[': close = ']'; break;
-                case '<': close = '>'; break;
                 default: throw ContractUtils.Unreachable;
             }
 
@@ -330,7 +325,6 @@ namespace System.Linq.Expressions
                 bool parenthesizeRight = NeedsParentheses(node, node.Right);
 
                 string op;
-                bool isChecked = false;
                 Flow beforeOp = Flow.Space;
                 switch (node.NodeType)
                 {
@@ -345,20 +339,20 @@ namespace System.Linq.Expressions
                     case ExpressionType.LessThanOrEqual: op = "<="; break;
                     case ExpressionType.Add: op = "+"; break;
                     case ExpressionType.AddAssign: op = "+="; break;
-                    case ExpressionType.AddAssignChecked: op = "+="; isChecked = true; break;
-                    case ExpressionType.AddChecked: op = "+"; isChecked = true; break;
+                    case ExpressionType.AddAssignChecked: op = "#+="; break;
+                    case ExpressionType.AddChecked: op = "#+"; break;
                     case ExpressionType.Subtract: op = "-"; break;
                     case ExpressionType.SubtractAssign: op = "-="; break;
-                    case ExpressionType.SubtractAssignChecked: op = "-="; isChecked = true; break;
-                    case ExpressionType.SubtractChecked: op = "-"; isChecked = true; break;
+                    case ExpressionType.SubtractAssignChecked: op = "#-="; break;
+                    case ExpressionType.SubtractChecked: op = "#-"; break;
                     case ExpressionType.Divide: op = "/"; break;
                     case ExpressionType.DivideAssign: op = "/="; break;
                     case ExpressionType.Modulo: op = "%"; break;
                     case ExpressionType.ModuloAssign: op = "%="; break;
                     case ExpressionType.Multiply: op = "*"; break;
                     case ExpressionType.MultiplyAssign: op = "*="; break;
-                    case ExpressionType.MultiplyAssignChecked: op = "*="; isChecked = true; break;
-                    case ExpressionType.MultiplyChecked: op = "*"; isChecked = true; break;
+                    case ExpressionType.MultiplyAssignChecked: op = "#*="; break;
+                    case ExpressionType.MultiplyChecked: op = "#*"; break;
                     case ExpressionType.LeftShift: op = "<<"; break;
                     case ExpressionType.LeftShiftAssign: op = "<<="; break;
                     case ExpressionType.RightShift: op = ">>"; break;
@@ -388,15 +382,6 @@ namespace System.Linq.Expressions
                     Out(Flow.None, ")", Flow.Break);
                 }
 
-                // prepend # to the operator to represent checked op
-                if (isChecked)
-                {
-                    op = String.Format(
-                            CultureInfo.CurrentCulture,
-                            "#{0}",
-                            op
-                    );
-                }
                 Out(beforeOp, op, Flow.Space | Flow.Break);
 
                 if (parenthesizeRight)
@@ -435,8 +420,7 @@ namespace System.Linq.Expressions
         {
             Out(
                 String.Format(CultureInfo.CurrentCulture,
-                    "{0} {1}<{2}>",
-                    ".Lambda",
+                    ".Lambda {0}<{1}>",
                     GetLambdaName(node),
                     node.Type.ToString()
                 )
@@ -1224,7 +1208,7 @@ namespace System.Linq.Expressions
             if (string.IsNullOrEmpty(target.Name))
             {
                 // Create the label target name as #Label1, #Label2, etc.
-                return String.Format(CultureInfo.CurrentCulture, "#Label{0}", GetLabelTargetId(target));
+                return "#Label" + GetLabelTargetId(target);
             }
             else
             {
