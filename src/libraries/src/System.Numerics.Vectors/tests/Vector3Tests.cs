@@ -45,25 +45,26 @@ namespace System.Numerics.Tests
         public void Vector3GetHashCodeTest()
         {
             Vector3 v1 = new Vector3(2.0f, 3.0f, 3.3f);
-            Vector3 v2 = new Vector3(4.5f, 6.5f, 7.5f);
+            Vector3 v2 = new Vector3(2.0f, 3.0f, 3.3f);
             Vector3 v3 = new Vector3(2.0f, 3.0f, 3.3f);
             Vector3 v5 = new Vector3(3.0f, 2.0f, 3.3f);
-            Assert.True(v1.GetHashCode() == v1.GetHashCode());
-            Assert.False(v1.GetHashCode() == v5.GetHashCode());
-            Assert.True(v1.GetHashCode() == v3.GetHashCode());
+            Assert.Equal(v1.GetHashCode(), v1.GetHashCode());
+            Assert.Equal(v1.GetHashCode(), v2.GetHashCode());
+            Assert.NotEqual(v1.GetHashCode(), v5.GetHashCode());
+            Assert.Equal(v1.GetHashCode(), v3.GetHashCode());
             Vector3 v4 = new Vector3(0.0f, 0.0f, 0.0f);
             Vector3 v6 = new Vector3(1.0f, 0.0f, 0.0f);
             Vector3 v7 = new Vector3(0.0f, 1.0f, 0.0f);
             Vector3 v8 = new Vector3(1.0f, 1.0f, 1.0f);
             Vector3 v9 = new Vector3(1.0f, 1.0f, 0.0f);
-            Assert.False(v4.GetHashCode() == v6.GetHashCode());
-            Assert.False(v4.GetHashCode() == v7.GetHashCode());
-            Assert.False(v4.GetHashCode() == v8.GetHashCode());
-            Assert.False(v7.GetHashCode() == v6.GetHashCode());
-            Assert.False(v8.GetHashCode() == v6.GetHashCode());
-            Assert.True(v8.GetHashCode() == v7.GetHashCode());
-            Assert.False(v8.GetHashCode() == v9.GetHashCode());
-            Assert.False(v7.GetHashCode() == v9.GetHashCode());
+            Assert.NotEqual(v4.GetHashCode(), v6.GetHashCode());
+            Assert.NotEqual(v4.GetHashCode(), v7.GetHashCode());
+            Assert.NotEqual(v4.GetHashCode(), v8.GetHashCode());
+            Assert.NotEqual(v7.GetHashCode(), v6.GetHashCode());
+            Assert.NotEqual(v8.GetHashCode(), v6.GetHashCode());
+            Assert.NotEqual(v8.GetHashCode(), v7.GetHashCode());
+            Assert.NotEqual(v8.GetHashCode(), v9.GetHashCode());
+            Assert.NotEqual(v7.GetHashCode(), v9.GetHashCode());
         }
 
         [Fact]

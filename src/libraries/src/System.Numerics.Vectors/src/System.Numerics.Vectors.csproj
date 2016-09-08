@@ -27,12 +27,14 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Release|AnyCPU'" />
   <!-- Shared -->
   <ItemGroup>
+    <Compile Include="..\..\Common\src\System\Numerics\Hashing\HashHelpers.cs">
+      <Link>Common\System\Numerics\Hashing\HashHelpers.cs</Link>
+    </Compile>
     <Compile Include="System\Numerics\ConstantHelper.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
       <DependentUpon>ConstantHelper.tt</DependentUpon>
     </Compile>
-    <Compile Include="System\Numerics\HashCodeHelper.cs" />
     <Compile Include="System\Numerics\JitIntrinsicAttribute.cs" />
     <Compile Include="System\Numerics\Register.cs">
       <AutoGen>True</AutoGen>

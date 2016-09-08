@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
@@ -10,11 +10,13 @@
     <NuGetPackageImportStamp>11f13d9c</NuGetPackageImportStamp>
     <IncludePerformanceTests>true</IncludePerformanceTests>
     <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
+    <ProjectGuid>{D9906F1A-A41A-43CD-81D2-BA94CF0001C9}</ProjectGuid>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' " />
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' " />
   <ItemGroup>
+    <Compile Include="HashCodeTest.cs" />
     <Compile Include="Perf.Vector2.cs" />
     <Compile Include="Perf.Vector3.cs" />
     <Compile Include="Perf.Vector4.cs" />
@@ -40,10 +42,6 @@
     </None>
     <None Include="..\..\src\System\Numerics\GenerationConfig.ttinclude">
       <Link>GenerationConfig.ttinclude</Link>
-    </None>
-    <None Include="GenericVectorTests.tt">
-      <Generator>TextTemplatingFileGenerator</Generator>
-      <LastGenOutput>GenericVectorTests.cs</LastGenOutput>
     </None>
     <None Include="project.json" />
   </ItemGroup>
