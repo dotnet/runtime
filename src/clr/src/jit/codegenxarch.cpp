@@ -2430,6 +2430,11 @@ void CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
                 }
                 else
                 {
+                    if ((treeNode->gtNext != nullptr) && (treeNode->gtNext->OperGet() != GT_JTRUE))
+                    {
+                        NYI("Long compare/reload/jtrue sequence");
+                    }
+
                     // We generate the compare when we generate the GT_JTRUE, but we need to consume
                     // the operands now.
                     genConsumeOperands(treeNode->AsOp());
