@@ -5192,3 +5192,25 @@ mono_thread_try_resume_interruption (void)
 
 	return mono_thread_resume_interruption ();
 }
+
+/* Returns TRUE if the current thread is ready to be interrupted. */
+gboolean
+mono_threads_is_ready_to_be_interrupted (void)
+{
+	MonoInternalThread *thread;
+
+	thread = mono_thread_internal_current ();
+	LOCK_THREAD (thread);
+	if (thread->state & (MonoThreadState)(ThreadState_StopRequested | ThreadState_SuspendRequested | ThreadState_AbortRequested)) {
+		UNLOCK_THREAD (thread);
+		return FALSE;
+	}
+
+	if (thread->abort_protected_block_count || mono_get_eh_callbacks ()->mono_current_thread_has_handle_block_guard ()) {
+		UNLOCK_THREAD (thread);
+		return FALSE;
+	}
+
+	UNLOCK_THREAD (thread);
+	return TRUE;
+}
