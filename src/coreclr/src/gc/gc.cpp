@@ -1544,7 +1544,7 @@ void WaitLongerNoInstru (int i)
     }
     else if (g_TrapReturningThreads)
     {
-        GCHeap::GetGCHeap()->WaitUntilGCComplete();
+        g_theGcHeap->WaitUntilGCComplete();
     }
 }
 
@@ -1573,7 +1573,7 @@ retry:
         unsigned int i = 0;
         while (VolatileLoad(lock) >= 0)
         {
-            if ((++i & 7) && !GCHeap::IsGCInProgress())
+            if ((++i & 7) && !IsGCInProgress())
             {
                 if  (g_SystemInfo.dwNumberOfProcessors > 1)
                 {
@@ -1584,11 +1584,11 @@ retry:
 #endif //!MULTIPLE_HEAPS
                     for (int j = 0; j < spin_count; j++)
                     {
-                        if  (VolatileLoad(lock) < 0 || GCHeap::IsGCInProgress())
+                        if  (VolatileLoad(lock) < 0 || IsGCInProgress())
                             break;
                         YieldProcessor();           // indicate to the processor that we are spining
                     }
-                    if  (VolatileLoad(lock) >= 0 && !GCHeap::IsGCInProgress())
+                    if  (VolatileLoad(lock) >= 0 && !IsGCInProgress())
                     {
                         safe_switch_to_thread();
                     }
@@ -3743,9 +3743,9 @@ public:
         BOOL fSmallObjectHeapPtr = FALSE, fLargeObjectHeapPtr = FALSE;
         if (!noRangeChecks)
         {
-            fSmallObjectHeapPtr = GCHeap::GetGCHeap()->IsHeapPointer(this, TRUE);
+            fSmallObjectHeapPtr = g_theGcHeap->IsHeapPointer(this, TRUE);
             if (!fSmallObjectHeapPtr)
-                fLargeObjectHeapPtr = GCHeap::GetGCHeap()->IsHeapPointer(this);
+                fLargeObjectHeapPtr = g_theGcHeap->IsHeapPointer(this);
 
             _ASSERTE(fSmallObjectHeapPtr || fLargeObjectHeapPtr);
         }
@@ -3763,14 +3763,14 @@ public:
 
 #ifdef VERIFY_HEAP
         if (bDeep && (g_pConfig->GetHeapVerifyLevel() & EEConfig::HEAPVERIFY_GC))
-            GCHeap::GetGCHeap()->ValidateObjectMember(this);
+            g_theGcHeap->ValidateObjectMember(this);
 #endif
         if (fSmallObjectHeapPtr)
         {
 #ifdef FEATURE_BASICFREEZE
-            _ASSERTE(!GCHeap::GetGCHeap()->IsLargeObject(pMT) || GCHeap::GetGCHeap()->IsInFrozenSegment(this));
+            _ASSERTE(!g_theGcHeap->IsLargeObject(pMT) || g_theGcHeap->IsInFrozenSegment(this));
 #else
-            _ASSERTE(!GCHeap::GetGCHeap()->IsLargeObject(pMT));
+            _ASSERTE(!g_theGcHeap->IsLargeObject(pMT));
 #endif
         }
     }
@@ -4361,7 +4361,7 @@ static size_t get_valid_segment_size (BOOL large_seg=FALSE)
 
     // if seg_size is small but not 0 (0 is default if config not set)
     // then set the segment to the minimum size
-    if (!GCHeap::IsValidSegmentSize(seg_size))
+    if (!g_theGcHeap->IsValidSegmentSize(seg_size))
     {
         // if requested size is between 1 byte and 4MB, use min
         if ((seg_size >> 1) && !(seg_size >> 22))
@@ -5775,7 +5775,7 @@ void gc_heap::fix_allocation_context (alloc_context* acontext, BOOL for_gc_p,
 
 //used by the heap verification for concurrent gc.
 //it nulls out the words set by fix_allocation_context for heap_verification
-void repair_allocation (alloc_context* acontext, void*)
+void repair_allocation (gc_alloc_context* acontext, void*)
 {
     uint8_t*  point = acontext->alloc_ptr;
 
@@ -5788,7 +5788,7 @@ void repair_allocation (alloc_context* acontext, void*)
     }
 }
 
-void void_allocation (alloc_context* acontext, void*)
+void void_allocation (gc_alloc_context* acontext, void*)
 {
     uint8_t*  point = acontext->alloc_ptr;
 
@@ -5818,10 +5818,10 @@ struct fix_alloc_context_args
     void* heap;
 };
 
-void fix_alloc_context(alloc_context* acontext, void* param)
+void fix_alloc_context(gc_alloc_context* acontext, void* param)
 {
     fix_alloc_context_args* args = (fix_alloc_context_args*)param;
-    GCHeap::GetGCHeap()->FixAllocContext(acontext, FALSE, (void*)(size_t)(args->for_gc_p), args->heap);
+    g_theGcHeap->FixAllocContext(acontext, FALSE, (void*)(size_t)(args->for_gc_p), args->heap);
 }
 
 void gc_heap::fix_allocation_contexts(BOOL for_gc_p)
@@ -10384,10 +10384,10 @@ gc_heap::init_gc_heap (int  h_number)
     heap_segment_heap (lseg) = this;
 
     //initialize the alloc context heap
-    generation_alloc_context (generation_of (0))->alloc_heap = vm_heap;
+    generation_alloc_context (generation_of (0))->set_alloc_heap(vm_heap);
 
     //initialize the alloc context heap
-    generation_alloc_context (generation_of (max_generation+1))->alloc_heap = vm_heap;
+    generation_alloc_context (generation_of (max_generation+1))->set_alloc_heap(vm_heap);
 
 #endif //MULTIPLE_HEAPS
 
@@ -13080,10 +13080,10 @@ void gc_heap::balance_heaps (alloc_context* acontext)
     {
         if (acontext->alloc_count == 0)
         {
-            acontext->home_heap = GCHeap::GetHeap( heap_select::select_heap(acontext, 0) );
-            gc_heap* hp = acontext->home_heap->pGenGCHeap;
+            acontext->set_home_heap(GCHeap::GetHeap( heap_select::select_heap(acontext, 0) ));
+            gc_heap* hp = acontext->get_home_heap()->pGenGCHeap;
             dprintf (3, ("First allocation for context %Ix on heap %d\n", (size_t)acontext, (size_t)hp->heap_number));
-            acontext->alloc_heap = acontext->home_heap;
+            acontext->set_alloc_heap(acontext->get_home_heap());
             hp->alloc_context_count++;
         }
     }
@@ -13094,9 +13094,9 @@ void gc_heap::balance_heaps (alloc_context* acontext)
 
         if (heap_select::can_find_heap_fast())
         {
-            if (acontext->home_heap != NULL)
-                hint = acontext->home_heap->pGenGCHeap->heap_number;
-            if (acontext->home_heap != GCHeap::GetHeap(hint = heap_select::select_heap(acontext, hint)) || ((acontext->alloc_count & 15) == 0))
+            if (acontext->get_home_heap() != NULL)
+                hint = acontext->get_home_heap()->pGenGCHeap->heap_number;
+            if (acontext->get_home_heap() != GCHeap::GetHeap(hint = heap_select::select_heap(acontext, hint)) || ((acontext->alloc_count & 15) == 0))
             {
                 set_home_heap = TRUE;
             }
@@ -13122,7 +13122,7 @@ void gc_heap::balance_heaps (alloc_context* acontext)
             else
 */
             {
-                gc_heap* org_hp = acontext->alloc_heap->pGenGCHeap;
+                gc_heap* org_hp = acontext->get_alloc_heap()->pGenGCHeap;
 
                 dynamic_data* dd = org_hp->dynamic_data_of (0);
                 ptrdiff_t org_size = dd_new_allocation (dd);
@@ -13141,9 +13141,9 @@ try_again:
                 {
                     max_hp = org_hp;
                     max_size = org_size + delta;
-                    acontext->home_heap = GCHeap::GetHeap( heap_select::select_heap(acontext, hint) );
+                    acontext->set_home_heap(GCHeap::GetHeap( heap_select::select_heap(acontext, hint) ));
 
-                    if (org_hp == acontext->home_heap->pGenGCHeap)
+                    if (org_hp == acontext->get_home_heap()->pGenGCHeap)
                         max_size = max_size + delta;
 
                     org_alloc_context_count = org_hp->alloc_context_count;
@@ -13156,7 +13156,7 @@ try_again:
                         gc_heap* hp = GCHeap::GetHeap(i%n_heaps)->pGenGCHeap;
                         dd = hp->dynamic_data_of (0);
                         ptrdiff_t size = dd_new_allocation (dd);
-                        if (hp == acontext->home_heap->pGenGCHeap)
+                        if (hp == acontext->get_home_heap()->pGenGCHeap)
                             size = size + delta;
                         int hp_alloc_context_count = hp->alloc_context_count;
                         if (hp_alloc_context_count > 0)
@@ -13183,7 +13183,7 @@ try_again:
                 {
                     org_hp->alloc_context_count--;
                     max_hp->alloc_context_count++;
-                    acontext->alloc_heap = GCHeap::GetHeap(max_hp->heap_number);
+                    acontext->set_alloc_heap(GCHeap::GetHeap(max_hp->heap_number));
 #if !defined(FEATURE_PAL)
                     if (CPUGroupInfo::CanEnableGCCPUGroups())
                     {   //only set ideal processor when max_hp and org_hp are in the same cpu
@@ -13221,7 +13221,7 @@ try_again:
 #endif // !FEATURE_PAL
                     dprintf (3, ("Switching context %p (home heap %d) ", 
                                  acontext,
-                        acontext->home_heap->pGenGCHeap->heap_number));
+                        acontext->get_home_heap()->pGenGCHeap->heap_number));
                     dprintf (3, (" from heap %d (%Id free bytes, %d contexts) ", 
                                  org_hp->heap_number,
                                  org_size,
@@ -13239,7 +13239,7 @@ try_again:
 
 gc_heap* gc_heap::balance_heaps_loh (alloc_context* acontext, size_t /*size*/)
 {
-    gc_heap* org_hp = acontext->alloc_heap->pGenGCHeap;
+    gc_heap* org_hp = acontext->get_alloc_heap()->pGenGCHeap;
     //dprintf (1, ("LA: %Id", size));
 
     //if (size > 128*1024)
@@ -13316,7 +13316,7 @@ BOOL gc_heap::allocate_more_space(alloc_context* acontext, size_t size,
         if (alloc_generation_number == 0)
         {
             balance_heaps (acontext);
-            status = acontext->alloc_heap->pGenGCHeap->try_allocate_more_space (acontext, size, alloc_generation_number);
+            status = acontext->get_alloc_heap()->pGenGCHeap->try_allocate_more_space (acontext, size, alloc_generation_number);
         }
         else
         {
@@ -22250,7 +22250,7 @@ void gc_heap::plan_phase (int condemned_gen_number)
 #endif //TIME_GC
 
     // We may update write barrier code.  We assume here EE has been suspended if we are on a GC thread.
-    assert(GCHeap::IsGCInProgress());
+    assert(IsGCInProgress());
 
     BOOL should_expand = FALSE;
     BOOL should_compact= FALSE;
@@ -30469,7 +30469,7 @@ CObjectHeader* gc_heap::allocate_large_object (size_t jsize, int64_t& alloc_byte
     acontext.alloc_limit = 0;
     acontext.alloc_bytes = 0;
 #ifdef MULTIPLE_HEAPS
-    acontext.alloc_heap = vm_heap;
+    acontext.set_alloc_heap(vm_heap);
 #endif //MULTIPLE_HEAPS
 
 #ifdef MARK_ARRAY
@@ -31946,11 +31946,11 @@ void gc_heap::descr_card_table ()
 #endif //TRACE_GC
 }
 
-#if defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
 void gc_heap::descr_generations_to_profiler (gen_walk_fn fn, void *context)
 {
+#if defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
 #ifdef MULTIPLE_HEAPS
-    int n_heaps = GCHeap::GetGCHeap()->GetNumberOfHeaps ();
+    int n_heaps = g_theGcHeap->GetNumberOfHeaps ();
     for (int i = 0; i < n_heaps; i++)
     {
         gc_heap* hp = GCHeap::GetHeap(i)->pGenGCHeap;
@@ -32026,8 +32026,8 @@ void gc_heap::descr_generations_to_profiler (gen_walk_fn fn, void *context)
             curr_gen_number0--;
         }
     }
-}
 #endif // defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
+}
 
 #ifdef TRACE_GC
 // Note that when logging is on it can take a long time to go through the free items.
@@ -33306,8 +33306,12 @@ gc_heap::verify_heap (BOOL begin_gc_p)
 #endif //BACKGROUND_GC 
 }
 
+#endif  //VERIFY_HEAP
+
+
 void GCHeap::ValidateObjectMember (Object* obj)
 {
+#ifdef VERIFY_HEAP
     size_t s = size (obj);
     uint8_t* o = (uint8_t*)obj;
 
@@ -33325,9 +33329,8 @@ void GCHeap::ValidateObjectMember (Object* obj)
                                         }
                                     }
                                 } );
-
+#endif // VERIFY_HEAP
 }
-#endif  //VERIFY_HEAP
 
 void DestructObject (CObjectHeader* hdr)
 {
@@ -33640,12 +33643,12 @@ BOOL    GCHeap::IsEphemeral (Object* object)
     return hp->ephemeral_pointer_p (o);
 }
 
-#ifdef VERIFY_HEAP
 // Return NULL if can't find next object. When EE is not suspended,
 // the result is not accurate: if the input arg is in gen0, the function could 
 // return zeroed out memory as next object
 Object * GCHeap::NextObj (Object * object)
 {
+#ifdef VERIFY_HEAP
     uint8_t* o = (uint8_t*)object;
 
 #ifndef FEATURE_BASICFREEZE
@@ -33687,7 +33690,12 @@ Object * GCHeap::NextObj (Object * object)
     }
 
     return (Object *)nextobj;
+#else
+    return nullptr;
+#endif // VERIFY_HEAP
 }
+
+#ifdef VERIFY_HEAP
 
 #ifdef FEATURE_BASICFREEZE
 BOOL GCHeap::IsInFrozenSegment (Object * object)
@@ -33918,11 +33926,16 @@ int StressRNG(int iMaxValue)
     int randValue = (((lHoldrand = lHoldrand * 214013L + 2531011L) >> 16) & 0x7fff);
     return randValue % iMaxValue;
 }
+#endif // STRESS_HEAP
+#endif // !FEATURE_REDHAWK
 
 // free up object so that things will move and then do a GC
 //return TRUE if GC actually happens, otherwise FALSE
-BOOL GCHeap::StressHeap(alloc_context * acontext)
+BOOL GCHeap::StressHeap(gc_alloc_context * context)
 {
+#if defined(STRESS_HEAP) && !defined(FEATURE_REDHAWK)
+    alloc_context* acontext = static_cast<alloc_context*>(context);
+
     // if GC stress was dynamically disabled during this run we return FALSE
     if (!GCStressPolicy::IsEnabled())
         return FALSE;
@@ -34102,10 +34115,10 @@ BOOL GCHeap::StressHeap(alloc_context * acontext)
     }
 
     return TRUE;
+#else
+    return FALSE;
+#endif // defined(STRESS_HEAP) && !defined(FEATURE_REDHAWK)
 }
-
-#endif // STRESS_HEAP
-#endif // FEATURE_REDHAWK
 
 
 #ifdef FEATURE_PREMORTEM_FINALIZATION
@@ -34163,8 +34176,6 @@ GCHeap::Alloc( size_t size, uint32_t flags REQD_ALIGN_DCL)
 #endif //_DEBUG && !FEATURE_REDHAWK
 
     TRIGGERSGC();
-
-    assert (!GCHeap::UseAllocationContexts());
 
     Object* newAlloc = NULL;
 
@@ -34237,11 +34248,11 @@ GCHeap::Alloc( size_t size, uint32_t flags REQD_ALIGN_DCL)
     return newAlloc;
 }
 
-#ifdef FEATURE_64BIT_ALIGNMENT
 // Allocate small object with an alignment requirement of 8-bytes. Non allocation context version.
 Object *
 GCHeap::AllocAlign8( size_t size, uint32_t flags)
 {
+#ifdef FEATURE_64BIT_ALIGNMENT
     CONTRACTL {
 #ifdef FEATURE_REDHAWK
         // Under Redhawk NULL is returned on failure.
@@ -34251,8 +34262,6 @@ GCHeap::AllocAlign8( size_t size, uint32_t flags)
 #endif
         GC_TRIGGERS;
     } CONTRACTL_END;
-
-    assert (!GCHeap::UseAllocationContexts());
 
     Object* newAlloc = NULL;
 
@@ -34270,12 +34279,17 @@ GCHeap::AllocAlign8( size_t size, uint32_t flags)
     }
 
     return newAlloc;
+#else
+    assert(!"should not call GCHeap::AllocAlign8 without FEATURE_64BIT_ALIGNMENT defined!");
+    return nullptr;
+#endif  //FEATURE_64BIT_ALIGNMENT
 }
 
 // Allocate small object with an alignment requirement of 8-bytes. Allocation context version.
 Object*
-GCHeap::AllocAlign8(alloc_context* acontext, size_t size, uint32_t flags )
+GCHeap::AllocAlign8(gc_alloc_context* ctx, size_t size, uint32_t flags )
 {
+#ifdef FEATURE_64BIT_ALIGNMENT
     CONTRACTL {
 #ifdef FEATURE_REDHAWK
         // Under Redhawk NULL is returned on failure.
@@ -34286,25 +34300,32 @@ GCHeap::AllocAlign8(alloc_context* acontext, size_t size, uint32_t flags )
         GC_TRIGGERS;
     } CONTRACTL_END;
 
+    alloc_context* acontext = static_cast<alloc_context*>(ctx);
+
 #ifdef MULTIPLE_HEAPS
-    if (acontext->alloc_heap == 0)
+    if (acontext->get_alloc_heap() == 0)
     {
         AssignHeap (acontext);
-        assert (acontext->alloc_heap);
+        assert (acontext->get_alloc_heap());
     }
 
-    gc_heap* hp = acontext->alloc_heap->pGenGCHeap;
+    gc_heap* hp = acontext->get_alloc_heap()->pGenGCHeap;
 #else
     gc_heap* hp = pGenGCHeap;
 #endif //MULTIPLE_HEAPS
 
     return AllocAlign8Common(hp, acontext, size, flags);
+#else
+    assert(!"should not call GCHeap::AllocAlign8 without FEATURE_64BIT_ALIGNMENT defined!");
+    return nullptr;
+#endif  //FEATURE_64BIT_ALIGNMENT
 }
 
 // Common code used by both variants of AllocAlign8 above.
 Object*
 GCHeap::AllocAlign8Common(void* _hp, alloc_context* acontext, size_t size, uint32_t flags)
 {
+#ifdef FEATURE_64BIT_ALIGNMENT
     CONTRACTL {
 #ifdef FEATURE_REDHAWK
         // Under Redhawk NULL is returned on failure.
@@ -34424,8 +34445,11 @@ GCHeap::AllocAlign8Common(void* _hp, alloc_context* acontext, size_t size, uint3
     AllocCount++;
 #endif //TRACE_GC
     return newAlloc;
-}
+#else
+    assert(!"Should not call GCHeap::AllocAlign8Common without FEATURE_64BIT_ALIGNMENT defined!");
+    return nullptr;
 #endif // FEATURE_64BIT_ALIGNMENT
+}
 
 Object *
 GCHeap::AllocLHeap( size_t size, uint32_t flags REQD_ALIGN_DCL)
@@ -34499,7 +34523,7 @@ GCHeap::AllocLHeap( size_t size, uint32_t flags REQD_ALIGN_DCL)
 }
 
 Object*
-GCHeap::Alloc(alloc_context* acontext, size_t size, uint32_t flags REQD_ALIGN_DCL)
+GCHeap::Alloc(gc_alloc_context* context, size_t size, uint32_t flags REQD_ALIGN_DCL)
 {
     CONTRACTL {
 #ifdef FEATURE_REDHAWK
@@ -34522,6 +34546,7 @@ GCHeap::Alloc(alloc_context* acontext, size_t size, uint32_t flags REQD_ALIGN_DC
     TRIGGERSGC();
 
     Object* newAlloc = NULL;
+    alloc_context* acontext = static_cast<alloc_context*>(context);
 
 #ifdef TRACE_GC
 #ifdef COUNT_CYCLES
@@ -34534,10 +34559,10 @@ GCHeap::Alloc(alloc_context* acontext, size_t size, uint32_t flags REQD_ALIGN_DC
 #endif //TRACE_GC
 
 #ifdef MULTIPLE_HEAPS
-    if (acontext->alloc_heap == 0)
+    if (acontext->get_alloc_heap() == 0)
     {
         AssignHeap (acontext);
-        assert (acontext->alloc_heap);
+        assert (acontext->get_alloc_heap());
     }
 #endif //MULTIPLE_HEAPS
 
@@ -34546,7 +34571,7 @@ GCHeap::Alloc(alloc_context* acontext, size_t size, uint32_t flags REQD_ALIGN_DC
 #endif // FEATURE_REDHAWK
 
 #ifdef MULTIPLE_HEAPS
-    gc_heap* hp = acontext->alloc_heap->pGenGCHeap;
+    gc_heap* hp = acontext->get_alloc_heap()->pGenGCHeap;
 #else
     gc_heap* hp = pGenGCHeap;
 #ifdef _PREFAST_
@@ -34591,8 +34616,9 @@ GCHeap::Alloc(alloc_context* acontext, size_t size, uint32_t flags REQD_ALIGN_DC
 }
 
 void
-GCHeap::FixAllocContext (alloc_context* acontext, BOOL lockp, void* arg, void *heap)
+GCHeap::FixAllocContext (gc_alloc_context* context, BOOL lockp, void* arg, void *heap)
 {
+    alloc_context* acontext = static_cast<alloc_context*>(context);
 #ifdef MULTIPLE_HEAPS
 
     if (arg != 0)
@@ -35383,8 +35409,8 @@ size_t GCHeap::ApproxTotalBytesInUse(BOOL small_heap_only)
 void GCHeap::AssignHeap (alloc_context* acontext)
 {
     // Assign heap based on processor
-    acontext->alloc_heap = GetHeap(heap_select::select_heap(acontext, 0));
-    acontext->home_heap = acontext->alloc_heap;
+    acontext->set_alloc_heap(GetHeap(heap_select::select_heap(acontext, 0)));
+    acontext->set_home_heap(acontext->get_alloc_heap());
 }
 GCHeap* GCHeap::GetHeap (int n)
 {
@@ -35393,11 +35419,12 @@ GCHeap* GCHeap::GetHeap (int n)
 }
 #endif //MULTIPLE_HEAPS
 
-bool GCHeap::IsThreadUsingAllocationContextHeap(alloc_context* acontext, int thread_number)
+bool GCHeap::IsThreadUsingAllocationContextHeap(gc_alloc_context* context, int thread_number)
 {
+    alloc_context* acontext = static_cast<alloc_context*>(context);
 #ifdef MULTIPLE_HEAPS
-    return ((acontext->home_heap == GetHeap(thread_number)) ||
-            ((acontext->home_heap == 0) && (thread_number == 0)));
+    return ((acontext->get_home_heap() == GetHeap(thread_number)) ||
+            ((acontext->get_home_heap() == 0) && (thread_number == 0)));
 #else
     UNREFERENCED_PARAMETER(acontext);
     UNREFERENCED_PARAMETER(thread_number);
@@ -35427,7 +35454,8 @@ int GCHeap::GetHomeHeapNumber ()
     {
         if (pThread)
         {
-            GCHeap *hp = GCToEEInterface::GetAllocContext(pThread)->home_heap;
+            gc_alloc_context* ctx = GCToEEInterface::GetAllocContext(pThread);
+            GCHeap *hp = static_cast<alloc_context*>(ctx)->get_home_heap();
             if (hp == gc_heap::g_heaps[i]->vm_heap) return i;
         }
     }
@@ -35639,7 +35667,7 @@ size_t GCHeap::GetValidGen0MaxSize(size_t seg_size)
 {
     size_t gen0size = g_pConfig->GetGCgen0size();
 
-    if ((gen0size == 0) || !GCHeap::IsValidGen0MaxSize(gen0size))
+    if ((gen0size == 0) || !g_theGcHeap->IsValidGen0MaxSize(gen0size))
     {
 #ifdef SERVER_GC
         // performance data seems to indicate halving the size results
@@ -35869,7 +35897,7 @@ GCHeap::SetCardsAfterBulkCopy( Object **StartPoint, size_t len )
 #ifdef BACKGROUND_GC
         (!gc_heap::settings.concurrent) &&
 #endif //BACKGROUND_GC
-        (GCHeap::GetGCHeap()->WhichGeneration( (Object*) StartPoint ) == 0))
+        (g_theGcHeap->WhichGeneration( (Object*) StartPoint ) == 0))
         return;
 
     rover = StartPoint;
@@ -36374,7 +36402,7 @@ CFinalize::ScanForFinalization (promote_func* pfn, int gen, BOOL mark_only_p,
             {
                 CObjectHeader* obj = (CObjectHeader*)*i;
                 dprintf (3, ("scanning: %Ix", (size_t)obj));
-                if (!GCHeap::GetGCHeap()->IsPromoted (obj))
+                if (!g_theGcHeap->IsPromoted (obj))
                 {
                     dprintf (3, ("freacheable: %Ix", (size_t)obj));
 
@@ -36507,7 +36535,7 @@ CFinalize::UpdatePromotedGenerations (int gen, BOOL gen_0_empty_p)
             for (Object** po = startIndex;
                  po < SegQueueLimit (gen_segment(i)); po++)
             {
-                int new_gen = GCHeap::GetGCHeap()->WhichGeneration (*po);
+                int new_gen = g_theGcHeap->WhichGeneration (*po);
                 if (new_gen != i)
                 {
                     if (new_gen > i)
@@ -36567,7 +36595,7 @@ void CFinalize::CheckFinalizerObjects()
 
         for (Object **po = startIndex; po < stopIndex; po++)
         {
-            if ((int)GCHeap::GetGCHeap()->WhichGeneration (*po) < i)
+            if ((int)g_theGcHeap->WhichGeneration (*po) < i)
                 FATAL_GC_ERROR ();
             ((CObjectHeader*)*po)->Validate();
         }
@@ -36640,9 +36668,9 @@ void gc_heap::walk_heap (walk_fn fn, void* context, int gen_number, BOOL walk_la
     }
 }
 
-#if defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
 void GCHeap::WalkObject (Object* obj, walk_fn fn, void* context)
 {
+#if defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
     uint8_t* o = (uint8_t*)obj;
     if (o)
     {
@@ -36657,8 +36685,8 @@ void GCHeap::WalkObject (Object* obj, walk_fn fn, void* context)
                                     }
             );
     }
-}
 #endif //defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
+}
 
 // Go through and touch (read) each page straddled by a memory block.
 void TouchPages(void * pStart, size_t cb)

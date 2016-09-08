@@ -150,7 +150,7 @@
 #include "frames.h"
 #include "threads.h"
 #include "stackwalk.h"
-#include "gc.h"
+#include "gcheaputilities.h"
 #include "interoputil.h"
 #include "security.h"
 #include "fieldmarshaler.h"
@@ -640,7 +640,7 @@ void InitializeStartupFlags()
         g_fEnableARM = TRUE;
 #endif // !FEATURE_CORECLR
 
-    GCHeap::InitializeHeapType((flags & STARTUP_SERVER_GC) != 0);
+    InitializeHeapType((flags & STARTUP_SERVER_GC) != 0);
 
 #ifdef FEATURE_LOADER_OPTIMIZATION            
     g_dwGlobalSharePolicy = (flags&STARTUP_LOADER_OPTIMIZATION_MASK)>>1;
@@ -3719,7 +3719,8 @@ void InitializeGarbageCollector()
     g_pFreeObjectMethodTable->SetBaseSize(ObjSizeOf (ArrayBase));
     g_pFreeObjectMethodTable->SetComponentSize(1);
 
-    GCHeap *pGCHeap = GCHeap::CreateGCHeap();
+    IGCHeap *pGCHeap = InitializeGarbageCollector(nullptr);
+    g_pGCHeap = pGCHeap;
     if (!pGCHeap)
         ThrowOutOfMemory();
 
@@ -3833,7 +3834,7 @@ BOOL STDMETHODCALLTYPE EEDllMain( // TRUE on success, FALSE on error.
                 {
                     // GetThread() may be set to NULL for Win9x during shutdown.
                     Thread *pThread = GetThread();
-                    if (GCHeap::IsGCInProgress() &&
+                    if (GCHeapUtilities::IsGCInProgress() &&
                         ( (pThread && (pThread != ThreadSuspend::GetSuspensionThread() ))
                             || !g_fSuspendOnShutdown))
                     {

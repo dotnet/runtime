@@ -18,7 +18,7 @@
 #include "fieldmarshaler.h"
 #include "objecthandle.h"
 #include "siginfo.hpp"
-#include "gc.h"
+#include "gcheaputilities.h"
 #include "dllimportcallback.h"
 #include "stackwalk.h"
 #include "dbginterface.h"

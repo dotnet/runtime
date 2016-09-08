@@ -5170,7 +5170,7 @@ public:
 
         HRESULT     hr = S_OK;
 
-        if (Generation > (int) GCHeap::GetGCHeap()->GetMaxGeneration())
+        if (Generation > (int) GCHeapUtilities::GetGCHeap()->GetMaxGeneration())
             hr = E_INVALIDARG;
 
         if (SUCCEEDED(hr))
@@ -5188,7 +5188,7 @@ public:
                 EX_TRY
                 {
                     STRESS_LOG0(LF_GC, LL_INFO100, "Host triggers GC\n");
-                    hr = GCHeap::GetGCHeap()->GarbageCollect(Generation);
+                    hr = GCHeapUtilities::GetGCHeap()->GarbageCollect(Generation);
                 }
                 EX_CATCH
                 {
@@ -5354,7 +5354,7 @@ HRESULT CCLRGCManager::_SetGCSegmentSize(SIZE_T SegmentSize)
     HRESULT hr = S_OK;
 
     // Sanity check the value, it must be a power of two and big enough.
-    if (!GCHeap::IsValidSegmentSize(SegmentSize))
+    if (!GCHeapUtilities::GetGCHeap()->IsValidSegmentSize(SegmentSize))
     {
         hr = E_INVALIDARG;
     }
@@ -5380,7 +5380,7 @@ HRESULT CCLRGCManager::_SetGCMaxGen0Size(SIZE_T MaxGen0Size)
     HRESULT hr = S_OK;
 
     // Sanity check the value is at least large enough.
-    if (!GCHeap::IsValidGen0MaxSize(MaxGen0Size))
+    if (!GCHeapUtilities::GetGCHeap()->IsValidGen0MaxSize(MaxGen0Size))
     {
         hr = E_INVALIDARG;
     }
@@ -6408,7 +6408,7 @@ HRESULT CCLRDebugManager::SetConnectionTasks(
             }
 
             // Check for Finalizer thread
-            if (GCHeap::IsGCHeapInitialized() && (pThread == FinalizerThread::GetFinalizerThread()))
+            if (GCHeapUtilities::IsGCHeapInitialized() && (pThread == FinalizerThread::GetFinalizerThread()))
             {
                 // _ASSERTE(!"Host should not try to schedule user code on our Finalizer Thread");
                 IfFailGo(E_INVALIDARG);

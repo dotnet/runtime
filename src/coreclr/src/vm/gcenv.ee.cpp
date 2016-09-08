@@ -550,7 +550,7 @@ void GCToEEInterface::GcScanRoots(promote_func* fn, int condemned, int max_gen, 
     STRESS_LOG1(LF_GCROOTS, LL_INFO10, "GCScan: Promotion Phase = %d\n", sc->promotion);
 
     // In server GC, we should be competing for marking the statics
-    if (GCHeap::MarkShouldCompeteForStatics())
+    if (GCHeapUtilities::MarkShouldCompeteForStatics())
     {
         if (condemned == max_gen && sc->promotion)
         {
@@ -563,7 +563,7 @@ void GCToEEInterface::GcScanRoots(promote_func* fn, int condemned, int max_gen, 
     {
         STRESS_LOG2(LF_GC | LF_GCROOTS, LL_INFO100, "{ Starting scan of Thread %p ID = %x\n", pThread, pThread->GetThreadId());
 
-        if (GCHeap::GetGCHeap()->IsThreadUsingAllocationContextHeap(
+        if (GCHeapUtilities::GetGCHeap()->IsThreadUsingAllocationContextHeap(
             GCToEEInterface::GetAllocContext(pThread), sc->thread_number))
         {
             sc->thread_under_crawl = pThread;
@@ -693,7 +693,7 @@ void GCToEEInterface::SyncBlockCachePromotionsGranted(int max_gen)
     SyncBlockCache::GetSyncBlockCache()->GCDone(FALSE, max_gen);
 }
 
-alloc_context * GCToEEInterface::GetAllocContext(Thread * pThread)
+gc_alloc_context * GCToEEInterface::GetAllocContext(Thread * pThread)
 {
     WRAPPER_NO_CONTRACT;
     return pThread->GetAllocContext();

@@ -517,11 +517,11 @@ void UnManagedPerAppDomainTPCount::DispatchWorkItem(bool* foundWork, bool* wasNo
         firstIteration = false;
         *foundWork = true;
 
-        if (GCHeap::IsGCInProgress(TRUE))
+        if (GCHeapUtilities::IsGCInProgress(TRUE))
         {
             // GC is imminent, so wait until GC is complete before executing next request.
             // this reduces in-flight objects allocated right before GC, easing the GC's work
-            GCHeap::WaitForGCCompletion(TRUE);
+            GCHeapUtilities::WaitForGCCompletion(TRUE);
         }
 
         PREFIX_ASSUME(pWorkRequest != NULL);

@@ -19,7 +19,7 @@
 #include "security.h"
 #include "eventtrace.h"
 #include "comdatetime.h"
-#include "gc.h"
+#include "gcheaputilities.h"
 #include "interoputil.h"
 #include "gcscan.h"
 #ifdef FEATURE_REMOTING
@@ -70,7 +70,7 @@ void StubHelpers::ValidateObjectInternal(Object *pObjUNSAFE, BOOL fValidateNextO
 	// and the next object as required
 	if (fValidateNextObj)
 	{
-		Object *nextObj = GCHeap::GetGCHeap()->NextObj(pObjUNSAFE);
+		Object *nextObj = GCHeapUtilities::GetGCHeap()->NextObj(pObjUNSAFE);
 		if (nextObj != NULL)
 		{
 			// Note that the MethodTable of the object (i.e. the pointer at offset 0) can change from
@@ -162,7 +162,7 @@ void StubHelpers::ProcessByrefValidationList()
         {
             entry = s_ByrefValidationEntries[i];
 
-            Object *pObjUNSAFE = GCHeap::GetGCHeap()->GetGCHeap()->GetContainingObject(entry.pByref);
+            Object *pObjUNSAFE = GCHeapUtilities::GetGCHeap()->GetContainingObject(entry.pByref);
             ValidateObjectInternal(pObjUNSAFE, TRUE);
         }
     }
@@ -2004,7 +2004,7 @@ FCIMPL3(void, StubHelpers::ValidateObject, Object *pObjUNSAFE, MethodDesc *pMD, 
         AVInRuntimeImplOkayHolder AVOkay;
 		// don't validate the next object if a BGC is in progress.  we can race with background
 	    // sweep which could make the next object a Free object underneath us if it's dead.
-        ValidateObjectInternal(pObjUNSAFE, !(GCHeap::GetGCHeap()->IsConcurrentGCInProgress()));
+        ValidateObjectInternal(pObjUNSAFE, !(GCHeapUtilities::GetGCHeap()->IsConcurrentGCInProgress()));
     }
     EX_CATCH
     {
@@ -2031,7 +2031,7 @@ FCIMPL3(void, StubHelpers::ValidateByref, void *pByref, MethodDesc *pMD, Object 
     // perform the validation on next GC (see code:StubHelpers.ProcessByrefValidationList).
 
     // Skip byref if is not pointing inside managed heap
-    if (!GCHeap::GetGCHeap()->IsHeapPointer(pByref))
+    if (!GCHeapUtilities::GetGCHeap()->IsHeapPointer(pByref))
     {
         return;
     }
@@ -2066,7 +2066,7 @@ FCIMPL3(void, StubHelpers::ValidateByref, void *pByref, MethodDesc *pMD, Object 
     if (NumOfEntries > BYREF_VALIDATION_LIST_MAX_SIZE)
     {
         // if the list is too big, trigger GC now
-        GCHeap::GetGCHeap()->GarbageCollect(0);
+        GCHeapUtilities::GetGCHeap()->GarbageCollect(0);
     }
 
     HELPER_METHOD_FRAME_END();
