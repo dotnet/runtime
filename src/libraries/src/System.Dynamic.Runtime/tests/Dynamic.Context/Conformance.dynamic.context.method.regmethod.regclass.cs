@@ -3,17 +3,15 @@
 // See the LICENSE file in the project root for more information.
 
 using Xunit;
-
 using ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmethod.regclass.regclassregmeth.regclassregmeth;
 using System.Collections.Generic;
 using System.IO;
 using System.Collections;
 using System.Linq;
+using System;
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmethod.regclass.regclassregmeth.regclassregmeth
 {
-    using System;
-
     public class MyClass
     {
         public int Field = 0;
@@ -33,16 +31,9 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmetho
 
     public class MemberClass
     {
-        #region Instance methods
-        public bool Method_ReturnBool()
-        {
-            return false;
-        }
+        public bool Method_ReturnBool() => false;
 
-        public bool Method_ReturnBool(object o)
-        {
-            return o == null ? true : false;
-        }
+        public bool Method_ReturnBool(object o) => o == null;
 
         public bool Method_ReturnBool(out byte? p1, ref ulong? p2, out int p3)
         {
@@ -52,15 +43,9 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmetho
             return false;
         }
 
-        public bool Method_ReturnBool(params object[] o)
-        {
-            return false;
-        }
+        public bool Method_ReturnBool(params object[] o) => false;
 
-        public bool? Method_ReturnBoolNullable()
-        {
-            return (bool?)false;
-        }
+        public bool? Method_ReturnBoolNullable() => false;
 
         public bool? Method_ReturnBoolNullable(MyEnum[] p1, out decimal?[] p2, params int?[] p3)
         {
@@ -68,10 +53,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmetho
             return (bool?)true;
         }
 
-        public bool? Method_ReturnBoolNullable(params short?[] s)
-        {
-            return (bool?)false;
-        }
+        public bool? Method_ReturnBoolNullable(params short?[] s) => false;
 
         public bool? Method_ReturnBoolNullable(short? s)
         {
@@ -96,12 +78,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmetho
 
         public byte?[] Method_ReturnByteArrNullable(out MyStruct? m)
         {
-            m = new MyStruct()
-            {
-                Number = 2
-            }
-
-            ;
+            m = new MyStruct() { Number = 2 };
             byte?[] arr = new byte?[10];
             for (byte i = 0; i < 10; i++)
                 arr[i] = (byte)m.Value.Number;
@@ -114,7 +91,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmetho
             p2 = null;
             byte?[] arr = new byte?[10];
             for (byte i = 0; i < 10; i++)
-                arr[i] = (byte)2;
+                arr[i] = 2;
             return arr;
         }
 
@@ -138,15 +115,13 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmetho
         {
             byte[] arr = new byte[d.Length];
             for (byte i = 0; i < d.Length; i++)
-                arr[i] = (byte)5;
+                arr[i] = 5;
             return arr;
         }
 
         public byte[] Method_ReturnByteArr(out short?[] p1, ref bool?[] p2, ref MyEnum p3)
         {
-            p1 = new short?[2];
-            p1[0] = 1;
-            p1[1] = null;
+            p1 = new short?[] { 1, null };
             p2[0] = null;
             p3 = MyEnum.Third;
             byte[] arr = new byte[2];
@@ -163,15 +138,9 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmetho
             return arr2;
         }
 
-        public char Method_ReturnChar(MyStruct m)
-        {
-            return 's';
-        }
+        public char Method_ReturnChar(MyStruct m) => 's';
 
-        public char Method_ReturnChar(params MyStruct[] m)
-        {
-            return 'b';
-        }
+        public char Method_ReturnChar(params MyStruct[] m) => 'b';
 
         public char Method_ReturnChar(ref MyStruct m)
         {
@@ -185,53 +154,28 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmetho
             return 'c';
         }
 
-        public char? Method_ReturnCharNullable()
-        {
-            return (char?)'a';
-        }
+        public char? Method_ReturnCharNullable() => 'a';
 
         public char? Method_ReturnCharNullable(decimal[] p1, ref object p2, ref char p3)
         {
-            p2 = new MyClass()
-            {
-                Field = 3
-            }
-
-            ;
+            p2 = new MyClass() { Field = 3 };
             p3 = 'b';
             return p3;
         }
 
-        public char? Method_ReturnCharNullable(MyClass m)
-        {
-            return (char?)m.ToString()[0];
-        }
+        public char? Method_ReturnCharNullable(MyClass m) => m.ToString()[0];
 
         public char? Method_ReturnCharNullable(out MyClass m)
         {
-            m = new MyClass()
-            {
-                Field = 5
-            }
-
-            ;
-            return (char?)m.ToString()[0];
+            m = new MyClass() { Field = 5 };
+            return m.ToString()[0];
         }
 
-        public char? Method_ReturnCharNullable(params MyClass[] m)
-        {
-            return (char?)'z';
-        }
+        public char? Method_ReturnCharNullable(params MyClass[] m) => 'z';
 
-        public decimal Method_ReturnDecimal()
-        {
-            return 1M;
-        }
+        public decimal Method_ReturnDecimal() => 1M;
 
-        public decimal Method_ReturnDecimal(int? i)
-        {
-            return (decimal)i;
-        }
+        public decimal Method_ReturnDecimal(int? i) => (decimal)i;
 
         public decimal Method_ReturnDecimal(out ulong p1, ref MyEnum p2, params char?[] p3)
         {
@@ -240,25 +184,13 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmetho
             return (decimal)1;
         }
 
-        public decimal Method_ReturnDecimal(params int?[] i)
-        {
-            return 1M;
-        }
+        public decimal Method_ReturnDecimal(params int?[] i) => 1M;
 
-        public decimal? Method_ReturnDecimalNullable()
-        {
-            return (decimal?)1M;
-        }
+        public decimal? Method_ReturnDecimalNullable() => 1M;
 
-        public decimal? Method_ReturnDecimalNullable(int i)
-        {
-            return (decimal?)i;
-        }
+        public decimal? Method_ReturnDecimalNullable(int i) => i;
 
-        public decimal? Method_ReturnDecimalNullable(params int[] i)
-        {
-            return (decimal?)1M;
-        }
+        public decimal? Method_ReturnDecimalNullable(params int[] i) => 1M;
 
         public decimal? Method_ReturnDecimalNullable(ref int? p1, ref short? p2, out MyStruct[] p3)
         {
@@ -268,16 +200,9 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmetho
             return 3m;
         }
 
-        public dynamic Method_ReturnDynamic()
-        {
-            int x = 3;
-            return x;
-        }
+        public dynamic Method_ReturnDynamic() => 3;
 
-        public dynamic Method_ReturnDynamic(ref int x)
-        {
-            return x;
-        }
+        public dynamic Method_ReturnDynamic(ref int x) => x;
 
         public dynamic Method_ReturnDynamic(out float x)
         {
@@ -285,153 +210,65 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmetho
             return x;
         }
 
-        public dynamic Method_ReturnDynamic(params dynamic[] d)
-        {
-            return d.Length;
-        }
+        public dynamic Method_ReturnDynamic(params dynamic[] d) => d.Length;
 
-        public dynamic Method_ReturnDynamic(dynamic d, int x, ref dynamic e)
-        {
-            return x;
-        }
+        public dynamic Method_ReturnDynamic(dynamic d, int x, ref dynamic e) => x;
 
-        public float Method_ReturnFloat()
-        {
-            return 3.4534f;
-        }
+        public float Method_ReturnFloat() => 3.4534f;
 
-        public float Method_ReturnFloat(int x)
-        {
-            return (float)x;
-        }
+        public float Method_ReturnFloat(int x) => x;
 
-        public float Method_ReturnFloat(params float[] p1)
-        {
-            return p1[0];
-        }
+        public float Method_ReturnFloat(params float[] p1) => p1[0];
 
         public float Method_ReturnFloat(ref float p1, out float p2, params float[] p3)
         {
             p1 = 0.000003f;
             p2 = 2342424;
-            return (float)p3.Length;
+            return p3.Length;
         }
 
-        public float? Method_ReturnFloatNullable()
-        {
-            return 3.4534f;
-        }
+        public float? Method_ReturnFloatNullable() => 3.4534f;
 
-        public float? Method_ReturnFloatNullable(int x)
-        {
-            return (float?)x;
-        }
+        public float? Method_ReturnFloatNullable(int x) => x;
 
-        public float? Method_ReturnFloatNullable(params float[] p1)
-        {
-            return p1[0];
-        }
+        public float? Method_ReturnFloatNullable(params float[] p1) => p1[0];
 
         public float? Method_ReturnFloatNullable(ref float? p1, out float p2, params float?[] p3)
         {
             p1 = 0.000003f;
             p2 = 2342424;
-            return (float)p3.Length;
+            return p3.Length;
         }
 
-        public float?[] Method_ReturnFloatArrNullable()
-        {
-            return new float?[]
-            {
-            3.4534f
-            }
+        public float?[] Method_ReturnFloatArrNullable() => new float?[] { 3.4534f };
 
-            ;
-        }
+        public float?[] Method_ReturnFloatArrNullable(int x) => new float?[] { x };
 
-        public float?[] Method_ReturnFloatArrNullable(int x)
-        {
-            return new float?[]
-            {
-            x
-            }
-
-            ;
-        }
-
-        public float?[] Method_ReturnFloatArrNullable(params float[] p1)
-        {
-            return new float?[]
-            {
-            p1[0]
-            }
-
-            ;
-        }
+        public float?[] Method_ReturnFloatArrNullable(params float[] p1) => new float?[] { p1[0] };
 
         public float?[] Method_ReturnFloatArrNullable(ref float p1, out float p2, params float[] p3)
         {
             p1 = 0.000003f;
             p2 = 2342424;
-            return new float?[]
-            {
-            p3.Length
-            }
-
-            ;
+            return new float?[] { p3.Length };
         }
 
-        public float[] Method_ReturnFloatArr()
-        {
-            return new float[]
-            {
-            3.4534f
-            }
+        public float[] Method_ReturnFloatArr() => new float[] { 3.4534f };
 
-            ;
-        }
+        public float[] Method_ReturnFloatArr(int x) => new float[] { x };
 
-        public float[] Method_ReturnFloatArr(int x)
-        {
-            return new float[]
-            {
-            x
-            }
-
-            ;
-        }
-
-        public float[] Method_ReturnFloatArr(params float[] p1)
-        {
-            return new float[]
-            {
-            p1[0]
-            }
-
-            ;
-        }
+        public float[] Method_ReturnFloatArr(params float[] p1) => new float[] { p1[0] };
 
         public float[] Method_ReturnFloatArr(ref float p1, out float p2, params float[] p3)
         {
             p1 = 0.000003f;
             p2 = 2342424;
-            return new float[]
-            {
-            p3.Length
-            }
-
-            ;
+            return new float[] { p3.Length };
         }
 
-        public int Method_ReturnInt(decimal[] p1, char[] p2, byte p3)
-        {
-            return 5;
-        }
+        public int Method_ReturnInt(decimal[] p1, char[] p2, byte p3) => 5;
 
-        public int Method_ReturnInt(params string[] s)
-        {
-            return 1;
-        }
+        public int Method_ReturnInt(params string[] s) => 1;
 
         public int Method_ReturnInt(ref string s)
         {
@@ -439,37 +276,20 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmetho
             return s.Length;
         }
 
-        public int Method_ReturnInt(string s)
-        {
-            return s.Length;
-        }
+        public int Method_ReturnInt(string s) => s.Length;
 
-        public int? Method_ReturnIntNullable()
-        {
-            return (int?)1;
-        }
+        public int? Method_ReturnIntNullable() => 1;
 
-        public int? Method_ReturnIntNullable(bool b)
-        {
-            return null;
-        }
+        public int? Method_ReturnIntNullable(bool b) => null;
 
         public int? Method_ReturnIntNullable(out MyClass p1, ref decimal p2, char p3)
         {
-            p1 = new MyClass()
-            {
-                Field = 3
-            }
-
-            ;
+            p1 = new MyClass() { Field = 3 };
             p2 = 3m;
             return p3;
         }
 
-        public int? Method_ReturnIntNullable(params bool[] b)
-        {
-            return (int?)1;
-        }
+        public int? Method_ReturnIntNullable(params bool[] b) => 1;
 
         public int? Method_ReturnIntNullable(ref bool b)
         {
@@ -477,43 +297,24 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmetho
             return b == true ? (int?)1 : null;
         }
 
-        public MyClass Method_ReturnMyClass()
-        {
-            MyClass m = new MyClass();
-            m.Field = 1;
-            return m;
-        }
+        public MyClass Method_ReturnMyClass() => new MyClass() { Field = 1 };
 
         public MyClass Method_ReturnMyClass(out int? p1, short? p2, out byte p3)
         {
             p1 = 2;
             p3 = 3;
-            MyClass m = new MyClass();
-            m.Field = (int)p2;
-            return m;
+            return new MyClass { Field = (int)p2 }; ;
         }
 
         public MyClass Method_ReturnMyClass(out ulong l)
         {
             l = 3;
-            MyClass m = new MyClass();
-            m.Field = (int)l;
-            return m;
+            return  new MyClass { Field = (int)l }; ;
         }
 
-        public MyClass Method_ReturnMyClass(params MyStruct[] arr)
-        {
-            MyClass m = new MyClass();
-            m.Field = 1;
-            return m;
-        }
+        public MyClass Method_ReturnMyClass(params MyStruct[] arr) => new MyClass { Field = 1 };
 
-        public MyClass Method_ReturnMyClass(ulong l)
-        {
-            MyClass m = new MyClass();
-            m.Field = (int)l;
-            return m;
-        }
+        public MyClass Method_ReturnMyClass(ulong l) => new MyClass { Field = (int)l };
 
         public MyClass Method_ReturnMyClass_Throw()
         {
@@ -535,165 +336,68 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmetho
             throw new ArithmeticException("Test exception");
         }
 
-        public MyEnum Method_ReturnMyEnum()
-        {
-            MyEnum m = MyEnum.First;
-            return m;
-        }
+        public MyEnum Method_ReturnMyEnum() => MyEnum.First;
 
         public MyEnum Method_ReturnMyEnum(out bool[] p1, int[] p2, out bool? p3)
         {
-            p1 = new bool[2];
-            p1[0] = true;
-            p1[1] = false;
+            p1 = new bool[] { true, false };
             p3 = null;
-            MyEnum m = new MyEnum();
-            m = MyEnum.First;
-            return m;
+            return MyEnum.First;
         }
 
-        public MyEnum Method_ReturnMyEnum(params short[] s)
-        {
-            MyEnum m = MyEnum.Second;
-            return m;
-        }
+        public MyEnum Method_ReturnMyEnum(params short[] s) => MyEnum.Second;
 
-        public MyEnum Method_ReturnMyEnum(short s)
-        {
-            MyEnum m = new MyEnum();
-            m = (MyEnum)s;
-            return m;
-        }
+        public MyEnum Method_ReturnMyEnum(short s) => (MyEnum)s;
 
-        public MyEnum? Method_ReturnMyEnumNullable()
-        {
-            MyEnum m = new MyEnum();
-            m = MyEnum.First;
-            return m;
-        }
+        public MyEnum? Method_ReturnMyEnumNullable() => MyEnum.First;
 
-        public MyEnum? Method_ReturnMyEnumNullable(int[] arr)
-        {
-            MyEnum m = MyEnum.Second;
-            return m;
-        }
+        public MyEnum? Method_ReturnMyEnumNullable(int[] arr) => MyEnum.Second;
 
-        public MyEnum? Method_ReturnMyEnumNullable(params MyClass[] d)
-        {
-            MyEnum m = new MyEnum();
-            m = MyEnum.Third;
-            return m;
-        }
+        public MyEnum? Method_ReturnMyEnumNullable(params MyClass[] d) => MyEnum.Third;
 
         public MyEnum? Method_ReturnMyEnumNullable(ref bool[] p1, bool p2, out short[] p3)
         {
             p1 = new bool[2];
             p3 = new short[3];
-            MyEnum m = new MyEnum();
-            m = MyEnum.First;
-            return m;
+            return MyEnum.First;
         }
 
-        public MyStruct Method_ReturnMyStruct()
-        {
-            MyStruct m = new MyStruct();
-            m.Number = 3;
-            return m;
-        }
+        public MyStruct Method_ReturnMyStruct() => new MyStruct() { Number = 3 };
 
-        public MyStruct Method_ReturnMyStruct(params string[] s)
-        {
-            MyStruct m = new MyStruct();
-            m.Number = 3;
-            return m;
-        }
+        public MyStruct Method_ReturnMyStruct(params string[] s) => new MyStruct() { Number = 3 };
 
         public MyStruct Method_ReturnMyStruct(short p1, out bool p2, params MyClass[] p3)
         {
             p2 = false;
-            MyStruct m = new MyStruct();
-            m.Number = p3.Length;
-            return m;
+            return new MyStruct() { Number = p3.Length };
         }
 
-        public MyStruct Method_ReturnMyStruct(string s)
-        {
-            MyStruct m = new MyStruct();
-            m.Number = s.Length;
-            return m;
-        }
+        public MyStruct Method_ReturnMyStruct(string s) => new MyStruct() { Number = s.Length };
 
-        public MyStruct? Method_ReturnMyStructNullable()
-        {
-            MyStruct? m = new MyStruct()
-            {
-                Number = 3
-            }
+        public MyStruct? Method_ReturnMyStructNullable() => new MyStruct() { Number = 3 };
 
-            ;
-            return m;
-        }
-
-        public MyStruct? Method_ReturnMyStructNullable(object o)
-        {
-            MyStruct? m = new MyStruct()
-            {
-                Number = 3
-            }
-
-            ;
-            return m;
-        }
+        public MyStruct? Method_ReturnMyStructNullable(object o) => new MyStruct() { Number = 3 };
 
         public MyStruct? Method_ReturnMyStructNullable(out byte? p1, out string[] p2, params ulong[] p3)
         {
             p1 = 3;
             p2 = new string[3];
-            MyStruct? m = new MyStruct()
-            {
-                Number = p3.Length
-            }
-
-            ;
-            return m;
+            return new MyStruct() { Number = p3.Length };
         }
 
-        public MyStruct? Method_ReturnMyStructNullable(params object[] o)
-        {
-            MyStruct? m = new MyStruct()
-            {
-                Number = o.Length
-            }
+        public MyStruct? Method_ReturnMyStructNullable(params object[] o) => new MyStruct() { Number = o.Length };
 
-            ;
-            return m;
-        }
+        public object Method_ReturnObject() => null;
 
-        public object Method_ReturnObject()
-        {
-            return null;
-        }
-
-        public object Method_ReturnObject(byte?[] arr)
-        {
-            return null;
-        }
+        public object Method_ReturnObject(byte?[] arr) => null;
 
         public object Method_ReturnObject(MyEnum[] p1, int p2, ref char?[] p3)
         {
-            p3 = new char?[]
-            {
-            'a', 'b'
-            }
-
-            ;
+            p3 = new char?[] { 'a', 'b' };
             return null;
         }
 
-        public object Method_ReturnObject(params bool?[] b)
-        {
-            return null;
-        }
+        public object Method_ReturnObject(params bool?[] b) => null;
 
         public short Method_ReturnShort_Throw()
         {
@@ -747,20 +451,11 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmetho
             throw new ArgumentException("Test message", nameof(d));
         }
 
-        public sbyte Method_ReturnSbyte(int x, dynamic d, short s, decimal dd, MyClass c, float f, short? ss)
-        {
-            return 1;
-        }
+        public sbyte Method_ReturnSbyte(int x, dynamic d, short s, decimal dd, MyClass c, float f, short? ss) => 1;
 
-        public string Method_ReturnString()
-        {
-            return "string";
-        }
+        public string Method_ReturnString() => "string";
 
-        public string Method_ReturnString(char c)
-        {
-            return c.ToString();
-        }
+        public string Method_ReturnString(char c) => c.ToString();
 
         public string Method_ReturnString(out ulong?[] p1, out byte[] p2, out int?[] p3)
         {
@@ -770,10 +465,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmetho
             return "c";
         }
 
-        public string Method_ReturnString(params char[] c)
-        {
-            return "string";
-        }
+        public string Method_ReturnString(params char[] c) => "string";
 
         public string[] Method_ReturnStringArr()
         {
@@ -810,12 +502,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmetho
 
         public string[] Method_ReturnStringArr(short?[] p1, ref MyStruct p2, out MyStruct[] p3)
         {
-            p2 = new MyStruct()
-            {
-                Number = 3
-            }
-
-            ;
+            p2 = new MyStruct() { Number = 3 };
             p3 = new MyStruct[2];
             p3[0].Number = 1;
             p3[1].Number = 2;
@@ -825,15 +512,9 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmetho
             return arr;
         }
 
-        public ulong Method_ReturnUlong()
-        {
-            return 1L;
-        }
+        public ulong Method_ReturnUlong() => 1L;
 
-        public ulong Method_ReturnUlong(MyClass m)
-        {
-            return (ulong)m.ToString().Length;
-        }
+        public ulong Method_ReturnUlong(MyClass m) => (ulong)m.ToString().Length;
 
         public ulong Method_ReturnUlong(out MyClass m)
         {
@@ -841,28 +522,17 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmetho
             return (ulong)m.ToString().Length;
         }
 
-        public ulong Method_ReturnUlong(params MyClass[] m)
-        {
-            return 1L;
-        }
+        public ulong Method_ReturnUlong(params MyClass[] m) => 1L;
 
         public ulong Method_ReturnUlong(ref ulong?[] p1, out MyStruct p2, ref byte?[] p3)
         {
             p1[0] = 3;
-            p2 = new MyStruct()
-            {
-                Number = 3
-            }
-
-            ;
+            p2 = new MyStruct() { Number = 3 };
             p3[0] = 1;
             return 1;
         }
 
-        public ulong? Method_ReturnUlongNullable()
-        {
-            return (ulong?)1L;
-        }
+        public ulong? Method_ReturnUlongNullable() => 1L;
 
         public ulong? Method_ReturnUlongNullable(long c)
         {
@@ -877,25 +547,13 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmetho
             return 1L;
         }
 
-        public ulong? Method_ReturnUlongNullable(params char?[] c)
-        {
-            return (ulong?)1L;
-        }
+        public ulong? Method_ReturnUlongNullable(params char?[] c) => 1L;
 
-        public void Method_ReturnVoid()
-        {
-            return;
-        }
+        public void Method_ReturnVoid() { }
 
-        public void Method_ReturnVoid(MyStruct[] arr)
-        {
-            return;
-        }
+        public void Method_ReturnVoid(MyStruct[] arr) { }
 
-        public void Method_ReturnVoid(params ulong[] l)
-        {
-            return;
-        }
+        public void Method_ReturnVoid(params ulong[] l) { }
 
         public void Method_ReturnVoid(ref object[] p1, out bool?[] p2, ref MyClass[] p3)
         {
@@ -905,14 +563,8 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmetho
             p2[0] = false;
             return;
         }
-
-        #endregion
-        #region Static methods
-        public static bool StaticMethod_ReturnBool()
-        {
-            return false;
-        }
-        #endregion
+        
+        public static bool StaticMethod_ReturnBool() => false;
     }
 }
 
