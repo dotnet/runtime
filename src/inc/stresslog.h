@@ -683,7 +683,7 @@ public:
     static const char* gcRootPromoteMsg()
     {
         STATIC_CONTRACT_LEAF;
-        return "    GCHeap::Promote: Promote GC Root *%p = %p MT = %pT\n";
+        return "    IGCHeap::Promote: Promote GC Root *%p = %p MT = %pT\n";
     }
 
     static const char* gcPlugMoveMsg()

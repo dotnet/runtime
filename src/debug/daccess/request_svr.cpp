@@ -256,7 +256,7 @@ ClrDataAccess::EnumSvrGlobalMemoryRegions(CLRDataEnumMemoryFlags flags)
         // enumerating the generations from max (which is normally gen2) to max+1 gives you
         // the segment list for all the normal segements plus the large heap segment (max+1)
         // this is the convention in the GC so it is repeated here
-        for (ULONG i = GCHeap::GetMaxGeneration(); i <= GCHeap::GetMaxGeneration()+1; i++)
+        for (ULONG i = GCHeapUtilities::GetMaxGeneration(); i <= GCHeapUtilities::GetMaxGeneration()+1; i++)
         {
             __DPtr<SVR::heap_segment> seg = dac_cast<TADDR>(pHeap->generation_table[i].start_segment);
             while (seg)
@@ -271,7 +271,7 @@ ClrDataAccess::EnumSvrGlobalMemoryRegions(CLRDataEnumMemoryFlags flags)
 
 DWORD DacGetNumHeaps()
 {
-    if (GCHeap::IsServerHeap())
+    if (GCHeapUtilities::IsServerHeap())
         return (DWORD)SVR::gc_heap::n_heaps;
         
     // workstation gc

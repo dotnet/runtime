@@ -431,19 +431,19 @@ ETW::SamplingLog::EtwStackWalkStatus ETW::SamplingLog::SaveCurrentStack(int skip
 
 VOID ETW::GCLog::GCSettingsEvent()
 {
-    if (GCHeap::IsGCHeapInitialized())
+    if (GCHeapUtilities::IsGCHeapInitialized())
     {
         if (ETW_TRACING_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_Context, 
                                                  GCSettings))
         {
             ETW::GCLog::ETW_GC_INFO Info;
 
-            Info.GCSettings.ServerGC = GCHeap::IsServerHeap ();
-            Info.GCSettings.SegmentSize = GCHeap::GetGCHeap()->GetValidSegmentSize (FALSE);
-            Info.GCSettings.LargeObjectSegmentSize = GCHeap::GetGCHeap()->GetValidSegmentSize (TRUE);
+            Info.GCSettings.ServerGC = GCHeapUtilities::IsServerHeap ();
+            Info.GCSettings.SegmentSize = GCHeapUtilities::GetGCHeap()->GetValidSegmentSize (FALSE);
+            Info.GCSettings.LargeObjectSegmentSize = GCHeapUtilities::GetGCHeap()->GetValidSegmentSize (TRUE);
             FireEtwGCSettings_V1(Info.GCSettings.SegmentSize, Info.GCSettings.LargeObjectSegmentSize, Info.GCSettings.ServerGC, GetClrInstanceId());
         }  
-        GCHeap::GetGCHeap()->TraceGCSegments();
+        GCHeapUtilities::GetGCHeap()->TraceGCSegments();
     }
 };
 
@@ -892,7 +892,7 @@ VOID ETW::GCLog::FireGcStartAndGenerationRanges(ETW_GC_INFO * pGcInfo)
         // GCStart, then retrieve it
         LONGLONG l64ClientSequenceNumberToLog = 0;
         if ((s_l64LastClientSequenceNumber != 0) &&
-            (pGcInfo->GCStart.Depth == GCHeap::GetMaxGeneration()) &&
+            (pGcInfo->GCStart.Depth == GCHeapUtilities::GetGCHeap()->GetMaxGeneration()) &&
             (pGcInfo->GCStart.Reason == ETW_GC_INFO::GC_INDUCED))
         {
             l64ClientSequenceNumberToLog = InterlockedExchange64(&s_l64LastClientSequenceNumber, 0);
@@ -901,7 +901,7 @@ VOID ETW::GCLog::FireGcStartAndGenerationRanges(ETW_GC_INFO * pGcInfo)
         FireEtwGCStart_V2(pGcInfo->GCStart.Count, pGcInfo->GCStart.Depth, pGcInfo->GCStart.Reason, pGcInfo->GCStart.Type, GetClrInstanceId(), l64ClientSequenceNumberToLog);
 
         // Fire an event per range per generation
-        GCHeap *hp = GCHeap::GetGCHeap();
+        IGCHeap *hp = GCHeapUtilities::GetGCHeap();
         hp->DescrGenerationsToProfiler(FireSingleGenerationRangeEvent, NULL /* context */);
     }
 }
@@ -928,7 +928,7 @@ VOID ETW::GCLog::FireGcEndAndGenerationRanges(ULONG Count, ULONG Depth)
         CLR_GC_KEYWORD))
     {
         // Fire an event per range per generation
-        GCHeap *hp = GCHeap::GetGCHeap();
+        IGCHeap *hp = GCHeapUtilities::GetGCHeap();
         hp->DescrGenerationsToProfiler(FireSingleGenerationRangeEvent, NULL /* context */);
 
         // GCEnd
@@ -938,7 +938,7 @@ VOID ETW::GCLog::FireGcEndAndGenerationRanges(ULONG Count, ULONG Depth)
  
 //---------------------------------------------------------------------------------------
 //
-// Callback made by GC when we call GCHeap::DescrGenerationsToProfiler().  This is
+// Callback made by GC when we call GCHeapUtilities::DescrGenerationsToProfiler().  This is
 // called once per range per generation, and results in a single ETW event per range per
 // generation.
 //
@@ -1033,7 +1033,7 @@ HRESULT ETW::GCLog::ForceGCForDiagnostics()
         
         ForcedGCHolder forcedGCHolder;
         
-        hr = GCHeap::GetGCHeap()->GarbageCollect(
+        hr = GCHeapUtilities::GetGCHeap()->GarbageCollect(
             -1,     // all generations should be collected
             FALSE,  // low_memory_p
             collection_blocking);
