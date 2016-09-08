@@ -4913,7 +4913,7 @@ create_profiler (const char *args, const char *filename, GPtrArray *filters)
 		prof->gzfile = gzdopen (fileno (prof->file), "wb");
 #endif
 #if USE_PERF_EVENTS
-	if (sample_type && !do_mono_sample)
+	if (sample_type && sample_freq && !do_mono_sample)
 		need_helper_thread = setup_perf_event ();
 	if (!perf_data) {
 		/* FIXME: warn if different freq or sample type */
@@ -5384,7 +5384,7 @@ mono_profiler_startup (const char *desc)
 	if (do_coverage)
 		mono_profiler_install_coverage_filter (coverage_filter);
 
-	if (do_mono_sample && sample_type == SAMPLE_CYCLES && !only_counters) {
+	if (do_mono_sample && sample_type == SAMPLE_CYCLES && sample_freq && !only_counters) {
 		events |= MONO_PROFILE_STATISTICAL;
 		mono_profiler_set_statistical_mode (sampling_mode, sample_freq);
 		mono_profiler_install_statistical (mono_sample_hit);
