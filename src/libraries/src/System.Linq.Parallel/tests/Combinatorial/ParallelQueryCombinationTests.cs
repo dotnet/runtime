@@ -1396,7 +1396,7 @@ namespace System.Linq.Parallel.Tests
                 }
                 Assert.Equal(DefaultStart + DefaultSize, seen);
             };
-            union(operation.Item, DefaultSource);
+            union(operation.Item, LabeledDefaultSource.AsOrdered().Item);
             union(LabeledDefaultSource.AsOrdered().Item, operation.Item);
         }
 
@@ -1413,7 +1413,7 @@ namespace System.Linq.Parallel.Tests
                 Assert.All(query.ToList(), x => Assert.Equal(seen++, x));
                 Assert.Equal(DefaultStart + DefaultSize, seen);
             };
-            union(operation.Item, DefaultSource);
+            union(operation.Item, LabeledDefaultSource.AsOrdered().Item);
             union(LabeledDefaultSource.AsOrdered().Item, operation.Item);
         }
 
