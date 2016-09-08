@@ -30,6 +30,7 @@
 #include "fptrstubs.h"
 #include "ilstubcache.h"
 #include "testhookmgr.h"
+#include "gcheaputilities.h"
 #ifdef FEATURE_VERSIONING
 #include "../binder/inc/applicationcontext.hpp"
 #endif // FEATURE_VERSIONING
@@ -1295,7 +1296,7 @@ public:
     {
         WRAPPER_NO_CONTRACT;
         OBJECTHANDLE h = ::CreateSizedRefHandle(
-            m_hHandleTableBucket->pTable[GCHeap::IsServerHeap() ? (m_dwSizedRefHandles % m_iNumberOfProcessors) : GetCurrentThreadHomeHeapNumber()], 
+            m_hHandleTableBucket->pTable[GCHeapUtilities::IsServerHeap() ? (m_dwSizedRefHandles % m_iNumberOfProcessors) : GetCurrentThreadHomeHeapNumber()], 
             object);
         InterlockedIncrement((LONG*)&m_dwSizedRefHandles);
         return h;
@@ -4533,8 +4534,8 @@ public:
         if (m_UnloadIsAsync)
         {
             pDomain->AddRef();
-            int iGCRefPoint=GCHeap::GetGCHeap()->CollectionCount(GCHeap::GetGCHeap()->GetMaxGeneration());
-            if (GCHeap::GetGCHeap()->IsGCInProgress())
+            int iGCRefPoint=GCHeapUtilities::GetGCHeap()->CollectionCount(GCHeapUtilities::GetGCHeap()->GetMaxGeneration());
+            if (GCHeapUtilities::IsGCInProgress())
                 iGCRefPoint++;
             pDomain->SetGCRefPoint(iGCRefPoint);
         }
@@ -4554,8 +4555,8 @@ public:
         pAllocator->m_pLoaderAllocatorDestroyNext=m_pDelayedUnloadListOfLoaderAllocators;
         m_pDelayedUnloadListOfLoaderAllocators=pAllocator;
 
-        int iGCRefPoint=GCHeap::GetGCHeap()->CollectionCount(GCHeap::GetGCHeap()->GetMaxGeneration());
-        if (GCHeap::GetGCHeap()->IsGCInProgress())
+        int iGCRefPoint=GCHeapUtilities::GetGCHeap()->CollectionCount(GCHeapUtilities::GetGCHeap()->GetMaxGeneration());
+        if (GCHeapUtilities::IsGCInProgress())
             iGCRefPoint++;
         pAllocator->SetGCRefPoint(iGCRefPoint);
     }

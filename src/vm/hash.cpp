@@ -547,8 +547,8 @@ UPTR HashMap::LookupValue(UPTR key, UPTR value)
 
     // BROKEN: This is called for the RCWCache on the GC thread
     // Also called by AppDomain::FindCachedAssembly to resolve AssemblyRef -- this is used by stack walking on the GC thread.
-    // See comments in GCHeap::RestartEE (above the call to SyncClean::CleanUp) for reason to enter COOP mode.
-    // However, if the current thread is the GC thread, we know we're not going to call GCHeap::RestartEE
+    // See comments in GCHeapUtilities::RestartEE (above the call to SyncClean::CleanUp) for reason to enter COOP mode.
+    // However, if the current thread is the GC thread, we know we're not going to call GCHeapUtilities::RestartEE
     // while accessing the HashMap, so it's safe to proceed.
     // (m_fAsyncMode && !IsGCThread() is the condition for entering COOP mode.  I.e., enable COOP GC only if
     // the HashMap is in async mode and this is not a GC thread.)

@@ -73,7 +73,7 @@ void SyncClean::CleanUp ()
     // Only GC thread can call this.
     _ASSERTE (g_fProcessDetach || 
               IsGCSpecialThread() ||
-              (GCHeap::IsGCInProgress()  && GetThread() == ThreadSuspend::GetSuspensionThread()));
+              (GCHeapUtilities::IsGCInProgress()  && GetThread() == ThreadSuspend::GetSuspensionThread()));
     if (m_HashMap)
     {
         Bucket * pTempBucket = FastInterlockExchangePointer(m_HashMap.GetPointer(), NULL);

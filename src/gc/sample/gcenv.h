@@ -64,6 +64,9 @@
 
 #define LOG(x)
 
+#define SVAL_IMPL_INIT(type, cls, var, init) \
+    type cls::var = init
+
 //
 // Thread
 //

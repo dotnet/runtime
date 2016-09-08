@@ -130,7 +130,7 @@ BOOL __SwitchToThread(DWORD, DWORD)
 // Globals and misc other
 //
 
-GPTR_IMPL(GCHeap,g_pGCHeap);
+GPTR_IMPL(IGCHeap,g_pGCHeap);
 
 BOOL g_fEEOtherStartup=FALSE;
 BOOL g_fEEComActivatedStartup=FALSE;
@@ -138,7 +138,7 @@ BOOL g_fEEComActivatedStartup=FALSE;
 GVAL_IMPL_INIT(DWORD, g_fHostConfig, 0);
 
 #ifdef FEATURE_SVR_GC
-SVAL_IMPL_INIT(uint32_t,GCHeap,gcHeapType,GCHeap::GC_HEAP_WKS);
+SVAL_IMPL_INIT(uint32_t,IGCHeap,gcHeapType,IGCHeap::GC_HEAP_WKS);
 #endif
 
 void UpdateGCSettingFromHost()

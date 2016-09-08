@@ -20,7 +20,7 @@
 #include "cgensys.h"
 #include "comutilnative.h"
 #include "siginfo.hpp"
-#include "gc.h"
+#include "gcheaputilities.h"
 #include "eedbginterfaceimpl.h" //so we can clearexception in RealCOMPlusThrow
 #include "perfcounters.h"
 #include "dllimportcallback.h"

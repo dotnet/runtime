@@ -1372,7 +1372,7 @@ void SyncBlockCache::GCWeakPtrScan(HANDLESCANPROC scanProc, uintptr_t lp1, uintp
        STRESS_LOG0 (LF_GC | LF_SYNC, LL_INFO100, "GCWeakPtrScan starting\n");
 #endif
 
-   if (GCHeap::GetGCHeap()->GetCondemnedGeneration() < GCHeap::GetGCHeap()->GetMaxGeneration())
+   if (GCHeapUtilities::GetGCHeap()->GetCondemnedGeneration() < GCHeapUtilities::GetGCHeap()->GetMaxGeneration())
    {
 #ifdef VERIFY_HEAP
         //for VSW 294550: we saw stale obeject reference in SyncBlkCache, so we want to make sure the card 
@@ -1416,7 +1416,7 @@ void SyncBlockCache::GCWeakPtrScan(HANDLESCANPROC scanProc, uintptr_t lp1, uintp
                                 Object* o = SyncTableEntry::GetSyncTableEntry()[nb].m_Object;
                                 if (o && !((size_t)o & 1))
                                 {
-                                    if (GCHeap::GetGCHeap()->IsEphemeral (o))
+                                    if (GCHeapUtilities::GetGCHeap()->IsEphemeral (o))
                                     {
                                         clear_card = FALSE;
 
@@ -1615,8 +1615,8 @@ void SyncBlockCache::GCDone(BOOL demoting, int max_gen)
     CONTRACTL_END;
 
     if (demoting && 
-        (GCHeap::GetGCHeap()->GetCondemnedGeneration() == 
-         GCHeap::GetGCHeap()->GetMaxGeneration()))
+        (GCHeapUtilities::GetGCHeap()->GetCondemnedGeneration() == 
+         GCHeapUtilities::GetGCHeap()->GetMaxGeneration()))
     {
         //scan the bitmap
         size_t dw = 0;
@@ -1643,7 +1643,7 @@ void SyncBlockCache::GCDone(BOOL demoting, int max_gen)
                                 Object* o = SyncTableEntry::GetSyncTableEntry()[nb].m_Object;
                                 if (o && !((size_t)o & 1))
                                 {
-                                    if (GCHeap::GetGCHeap()->WhichGeneration (o) < (unsigned int)max_gen)
+                                    if (GCHeapUtilities::GetGCHeap()->WhichGeneration (o) < (unsigned int)max_gen)
                                     {
                                         SetCard (card);
                                         break;
@@ -1713,7 +1713,7 @@ void SyncBlockCache::VerifySyncTableEntry()
             
             DWORD idx = o->GetHeader()->GetHeaderSyncBlockIndex();
             _ASSERTE(idx == nb || ((0 == idx) && (loop == max_iterations)));
-            _ASSERTE(!GCHeap::GetGCHeap()->IsEphemeral(o) || CardSetP(CardOf(nb)));
+            _ASSERTE(!GCHeapUtilities::GetGCHeap()->IsEphemeral(o) || CardSetP(CardOf(nb)));
         }
     }
 }
@@ -2498,10 +2498,10 @@ BOOL ObjHeader::Validate (BOOL bVerifySyncBlkIndex)
     //BIT_SBLK_GC_RESERVE (0x20000000) is only set during GC. But for frozen object, we don't clean the bit
     if (bits & BIT_SBLK_GC_RESERVE)
     {
-        if (!GCHeap::GetGCHeap()->IsGCInProgress () && !GCHeap::GetGCHeap()->IsConcurrentGCInProgress ())
+        if (!GCHeapUtilities::IsGCInProgress () && !GCHeapUtilities::GetGCHeap()->IsConcurrentGCInProgress ())
         {
 #ifdef FEATURE_BASICFREEZE
-            ASSERT_AND_CHECK (GCHeap::GetGCHeap()->IsInFrozenSegment(obj));
+            ASSERT_AND_CHECK (GCHeapUtilities::GetGCHeap()->IsInFrozenSegment(obj));
 #else //FEATURE_BASICFREEZE
             _ASSERTE(!"Reserve bit not cleared");
             return FALSE;

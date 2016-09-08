@@ -27,7 +27,7 @@
 #include "log.h"
 #include "fieldmarshaler.h"
 #include "cgensys.h"
-#include "gc.h"
+#include "gcheaputilities.h"
 #include "security.h"
 #include "dbginterface.h"
 #include "objecthandle.h"
