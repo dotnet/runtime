@@ -21,6 +21,7 @@
     "System.Text.Encoding.Extensions": "4.3.0-beta-devapi-24508-03",
     "System.Text.RegularExpressions": "4.3.0-beta-devapi-24508-03",
     "System.Threading.Tasks": "4.3.0-beta-devapi-24508-03",
+    "System.Threading.Overlapped": "4.3.0-beta-devapi-24508-03",
     "test-runtime": {
       "target": "project",
       "exclude": "compile"

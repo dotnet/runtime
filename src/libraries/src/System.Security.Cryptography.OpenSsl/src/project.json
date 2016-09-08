@@ -33,7 +33,8 @@
         "System.Runtime.Numerics": "4.3.0-beta-devapi-24508-03",
         "System.Security.Cryptography.Encoding": "4.3.0-beta-devapi-24508-03",
         "System.Security.Cryptography.Primitives": "4.3.0-beta-devapi-24508-03",
-        "System.Text.Encoding": "4.3.0-beta-devapi-24508-03"
+        "System.Text.Encoding": "4.3.0-beta-devapi-24508-03",
+        "System.Threading.Tasks": "4.3.0-beta-devapi-24508-03"
       },
       "imports": [
         "dotnet5.8"
