@@ -225,10 +225,10 @@ ASMCONSTANTS_C_ASSERT(UnmanagedToManagedFrame__m_pvDatum == offsetof(UnmanagedTo
 
 #ifndef CROSSGEN_COMPILE
 #define               Thread__m_alloc_context__alloc_limit   0x44
-ASMCONSTANTS_C_ASSERT(Thread__m_alloc_context__alloc_limit == offsetof(Thread, m_alloc_context) + offsetof(alloc_context, alloc_limit));
+ASMCONSTANTS_C_ASSERT(Thread__m_alloc_context__alloc_limit == offsetof(Thread, m_alloc_context) + offsetof(gc_alloc_context, alloc_limit));
 
 #define               Thread__m_alloc_context__alloc_ptr   0x40
-ASMCONSTANTS_C_ASSERT(Thread__m_alloc_context__alloc_ptr == offsetof(Thread, m_alloc_context) + offsetof(alloc_context, alloc_ptr));
+ASMCONSTANTS_C_ASSERT(Thread__m_alloc_context__alloc_ptr == offsetof(Thread, m_alloc_context) + offsetof(gc_alloc_context, alloc_ptr));
 #endif // CROSSGEN_COMPILE
 
 #define               Thread__m_fPreemptiveGCDisabled   0x08

@@ -725,7 +725,7 @@ ClrDataAccess::GetHeapAllocData(unsigned int count, struct DacpGenerationAllocDa
 
     SOSDacEnter();
 #if defined(FEATURE_SVR_GC)
-    if (GCHeap::IsServerHeap())
+    if (GCHeapUtilities::IsServerHeap())
     {
         hr = GetServerAllocData(count, data, pNeeded);
     }
@@ -2809,7 +2809,7 @@ ClrDataAccess::GetGCHeapDetails(CLRDATA_ADDRESS heap, struct DacpGcHeapDetails *
     SOSDacEnter();
 
     // doesn't make sense to call this on WKS mode
-    if (!GCHeap::IsServerHeap())
+    if (!GCHeapUtilities::IsServerHeap())
         hr = E_INVALIDARG;
     else
 #ifdef FEATURE_SVR_GC
@@ -2884,7 +2884,7 @@ ClrDataAccess::GetHeapSegmentData(CLRDATA_ADDRESS seg, struct DacpHeapSegmentDat
 
     SOSDacEnter();
 
-    if (GCHeap::IsServerHeap())
+    if (GCHeapUtilities::IsServerHeap())
     {
 #if !defined(FEATURE_SVR_GC)
         _ASSERTE(0);
@@ -2924,7 +2924,7 @@ ClrDataAccess::GetGCHeapList(unsigned int count, CLRDATA_ADDRESS heaps[], unsign
     SOSDacEnter();
 
     // make sure we called this in appropriate circumstances (i.e., we have multiple heaps)
-    if (GCHeap::IsServerHeap())
+    if (GCHeapUtilities::IsServerHeap())
     {
 #if !defined(FEATURE_SVR_GC)
         _ASSERTE(0);
@@ -2960,45 +2960,53 @@ ClrDataAccess::GetGCHeapData(struct DacpGcHeapData *gcheapData)
 
     SOSDacEnter();
 
-    // Now get the heap type. The first data member of the GCHeap class is the GC_HEAP_TYPE, which has 
-    // three possible values:
-    //       GC_HEAP_INVALID = 0,
-    //       GC_HEAP_WKS     = 1,
-    //       GC_HEAP_SVR     = 2
-
-    TADDR gcHeapLocation = g_pGCHeap.GetAddrRaw (); // get the starting address of the global GCHeap instance
-    size_t gcHeapValue = 0;                         // this will hold the heap type
+    size_t gcHeapValue = 0;
     ULONG32 returned = 0;
+    TADDR gcHeapTypeLocation = m_globalBase + g_dacGlobals.IGCHeap__gcHeapType;
 
     // @todo Microsoft: we should probably be capturing the HRESULT from ReadVirtual. We could 
     // provide a more informative error message. E_FAIL is a wretchedly vague thing to return. 
-    hr = m_pTarget->ReadVirtual(gcHeapLocation, (PBYTE)&gcHeapValue, sizeof(gcHeapValue), &returned);
+    hr = m_pTarget->ReadVirtual(gcHeapTypeLocation, (PBYTE)&gcHeapValue, sizeof(gcHeapValue), &returned);
+    if (!SUCCEEDED(hr)) 
+    {
+        goto cleanup;
+    }
+
+    // GC_HEAP_TYPE has three possible values:
+    //       GC_HEAP_INVALID = 0,
+    //       GC_HEAP_WKS     = 1,
+    //       GC_HEAP_SVR     = 2
+    // If we get something other than that, we probably read the wrong location.
+    _ASSERTE(gcHeapValue >= 0 && gcHeapValue <= 2);
 
     //@todo Microsoft: We have an enumerated type, we probably should use the symbolic name
     // we have GC_HEAP_INVALID if gcHeapValue == 0, so we're done
     if (SUCCEEDED(hr) && ((returned != sizeof(gcHeapValue)) || (gcHeapValue == 0)))
-        hr = E_FAIL;
-
-    if (SUCCEEDED(hr))
     {
-        // Now we can get other important information about the heap
-        gcheapData->g_max_generation = GCHeap::GetMaxGeneration();
-        gcheapData->bServerMode = GCHeap::IsServerHeap();
-        gcheapData->bGcStructuresValid = GCScan::GetGcRuntimeStructuresValid();
-        if (GCHeap::IsServerHeap())
-        {
-#if !defined (FEATURE_SVR_GC)
-            _ASSERTE(0);
-            gcheapData->HeapCount = 1;
-#else // !defined (FEATURE_SVR_GC)
-            gcheapData->HeapCount = GCHeapCount();
-#endif // !defined (FEATURE_SVR_GC)
-        }
-        else
-        {
-            gcheapData->HeapCount = 1;
-        }
+        hr = E_FAIL;
+        goto cleanup;
     }
+
+    // Now we can get other important information about the heap
+    gcheapData->g_max_generation = GCHeapUtilities::GetMaxGeneration();
+    gcheapData->bServerMode = GCHeapUtilities::IsServerHeap();
+    gcheapData->bGcStructuresValid = GCScan::GetGcRuntimeStructuresValid();
+    if (GCHeapUtilities::IsServerHeap())
+    {
+#if !defined (FEATURE_SVR_GC)
+        _ASSERTE(0);
+        gcheapData->HeapCount = 1;
+#else // !defined (FEATURE_SVR_GC)
+        gcheapData->HeapCount = GCHeapCount();
+#endif // !defined (FEATURE_SVR_GC)
+    }
+    else
+    {
+        gcheapData->HeapCount = 1;
+    }
+
+cleanup:
+    ;
 
     SOSDacLeave();
     return hr;
@@ -3014,7 +3022,7 @@ ClrDataAccess::GetOOMStaticData(struct DacpOomData *oomData)
 
     memset(oomData, 0, sizeof(DacpOomData));
 
-    if (!GCHeap::IsServerHeap())
+    if (!GCHeapUtilities::IsServerHeap())
     {
         oom_history* pOOMInfo = &(WKS::gc_heap::oom_info);
         oomData->reason = pOOMInfo->reason;
@@ -3043,7 +3051,7 @@ ClrDataAccess::GetOOMData(CLRDATA_ADDRESS oomAddr, struct DacpOomData *data)
     SOSDacEnter();
     memset(data, 0, sizeof(DacpOomData));
 
-    if (!GCHeap::IsServerHeap())
+    if (!GCHeapUtilities::IsServerHeap())
         hr = E_FAIL; // doesn't make sense to call this on WKS mode
     
 #ifdef FEATURE_SVR_GC
@@ -3090,7 +3098,7 @@ ClrDataAccess::GetGCInterestingInfoStaticData(struct DacpGCInterestingInfoData *
     SOSDacEnter();
     memset(data, 0, sizeof(DacpGCInterestingInfoData));
 
-    if (!GCHeap::IsServerHeap())
+    if (!GCHeapUtilities::IsServerHeap())
     {
         for (int i = 0; i < NUM_GC_DATA_POINTS; i++)
             data->interestingDataPoints[i] = WKS::interesting_data_per_heap[i];
@@ -3123,7 +3131,7 @@ ClrDataAccess::GetGCInterestingInfoData(CLRDATA_ADDRESS interestingInfoAddr, str
     SOSDacEnter();
     memset(data, 0, sizeof(DacpGCInterestingInfoData));
 
-    if (!GCHeap::IsServerHeap())
+    if (!GCHeapUtilities::IsServerHeap())
         hr = E_FAIL; // doesn't make sense to call this on WKS mode
     
 #ifdef FEATURE_SVR_GC
@@ -3149,7 +3157,7 @@ ClrDataAccess::GetHeapAnalyzeData(CLRDATA_ADDRESS addr, struct  DacpGcHeapAnalyz
 
     SOSDacEnter();
 
-    if (!GCHeap::IsServerHeap())
+    if (!GCHeapUtilities::IsServerHeap())
         hr = E_FAIL; // doesn't make sense to call this on WKS mode
 
 #ifdef FEATURE_SVR_GC
@@ -3856,7 +3864,7 @@ ClrDataAccess::EnumWksGlobalMemoryRegions(CLRDataEnumMemoryFlags flags)
             // enumerating the generations from max (which is normally gen2) to max+1 gives you
             // the segment list for all the normal segements plus the large heap segment (max+1)
             // this is the convention in the GC so it is repeated here
-            for (ULONG i = GCHeap::GetMaxGeneration(); i <= GCHeap::GetMaxGeneration()+1; i++)
+            for (ULONG i = GCHeapUtilities::GetMaxGeneration(); i <= GCHeapUtilities::GetMaxGeneration()+1; i++)
             {
                 __DPtr<WKS::heap_segment> seg = dac_cast<TADDR>(WKS::generation_table[i].start_segment);
                 while (seg)

@@ -695,7 +695,7 @@ BOOL isDelegateCall(BYTE *interiorPtr)
 {
     LIMITED_METHOD_CONTRACT;
 
-    if (GCHeap::GetGCHeap()->IsHeapPointer((void*)interiorPtr))
+    if (GCHeapUtilities::GetGCHeap()->IsHeapPointer((void*)interiorPtr))
     {
         Object *delegate = (Object*)(interiorPtr - DelegateObject::GetOffsetOfMethodPtrAux());
         VALIDATEOBJECTREF(ObjectToOBJECTREF(delegate));

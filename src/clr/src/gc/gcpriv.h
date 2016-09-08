@@ -2547,9 +2547,9 @@ protected:
     PER_HEAP
     void descr_generations (BOOL begin_gc_p);
 
-#if defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
     PER_HEAP_ISOLATED
     void descr_generations_to_profiler (gen_walk_fn fn, void *context);
+#if defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
     PER_HEAP
     void record_survived_for_profiler(int condemned_gen_number, uint8_t * first_condemned_address);
     PER_HEAP
@@ -2978,7 +2978,7 @@ protected:
     PER_HEAP
     VOLATILE(int) alloc_context_count;
 #else //MULTIPLE_HEAPS
-#define vm_heap ((GCHeap*) g_pGCHeap)
+#define vm_heap ((GCHeap*) g_theGcHeap)
 #define heap_number (0)
 #endif //MULTIPLE_HEAPS
 

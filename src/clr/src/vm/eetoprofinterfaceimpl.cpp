@@ -2294,7 +2294,7 @@ HRESULT EEToProfInterfaceImpl::SetEventMask(DWORD dwEventMask, DWORD dwEventMask
             // in this function
             if (g_profControlBlock.curProfStatus.Get() == kProfStatusInitializingForAttachLoad)
             {
-                if (GCHeap::GetGCHeap()->IsConcurrentGCEnabled())
+                if (GCHeapUtilities::GetGCHeap()->IsConcurrentGCEnabled())
                 {
                     // We only allow turning off concurrent GC in the profiler attach thread inside
                     // InitializeForAttach, otherwise we would be vulnerable to weird races such as 
@@ -2316,7 +2316,7 @@ HRESULT EEToProfInterfaceImpl::SetEventMask(DWORD dwEventMask, DWORD dwEventMask
                 // Fail if concurrent GC is enabled
                 // This should only happen for attach profilers if user didn't turn on COR_PRF_MONITOR_GC 
                 // at attach time
-                if (GCHeap::GetGCHeap()->IsConcurrentGCEnabled())
+                if (GCHeapUtilities::GetGCHeap()->IsConcurrentGCEnabled())
                 {
                     return CORPROF_E_CONCURRENT_GC_NOT_PROFILABLE;
                 }        
@@ -2384,7 +2384,7 @@ HRESULT EEToProfInterfaceImpl::SetEventMask(DWORD dwEventMask, DWORD dwEventMask
     if (fNeedToTurnOffConcurrentGC)
     {
         // Turn off concurrent GC if it is on so that user can walk the heap safely in GC callbacks
-        GCHeap * pGCHeap = GCHeap::GetGCHeap();
+        IGCHeap * pGCHeap = GCHeapUtilities::GetGCHeap();
         
         LOG((LF_CORPROF, LL_INFO10, "**PROF: Turning off concurrent GC at attach.\n"));
         
@@ -5609,7 +5609,7 @@ HRESULT EEToProfInterfaceImpl::MovedReferences(GCReferencesData *pData)
         LL_INFO10000, 
         "**PROF: MovedReferences.\n"));
 
-    _ASSERTE(!GCHeap::GetGCHeap()->IsConcurrentGCEnabled());
+    _ASSERTE(!GCHeapUtilities::GetGCHeap()->IsConcurrentGCEnabled());
     
     if (pData->curIdx == 0)
     {
@@ -5805,7 +5805,7 @@ HRESULT EEToProfInterfaceImpl::ObjectReference(ObjectID objId,
         LL_INFO100000, 
         "**PROF: ObjectReferences.\n"));
 
-    _ASSERTE(!GCHeap::GetGCHeap()->IsConcurrentGCEnabled());
+    _ASSERTE(!GCHeapUtilities::GetGCHeap()->IsConcurrentGCEnabled());
     
     {                
         // All callbacks are really NOTHROW, but that's enforced partially by the profiler,
@@ -5844,7 +5844,7 @@ HRESULT EEToProfInterfaceImpl::FinalizeableObjectQueued(BOOL isCritical, ObjectI
                                 LL_INFO100, 
                                 "**PROF: Notifying profiler of finalizeable object.\n"));
 
-    _ASSERTE(!GCHeap::GetGCHeap()->IsConcurrentGCEnabled());
+    _ASSERTE(!GCHeapUtilities::GetGCHeap()->IsConcurrentGCEnabled());
     
     {                
         // All callbacks are really NOTHROW, but that's enforced partially by the profiler,
@@ -5883,7 +5883,7 @@ HRESULT EEToProfInterfaceImpl::RootReferences2(GCReferencesData *pData)
         LL_INFO10000, 
         "**PROF: RootReferences2.\n"));
 
-    _ASSERTE(!GCHeap::GetGCHeap()->IsConcurrentGCEnabled());
+    _ASSERTE(!GCHeapUtilities::GetGCHeap()->IsConcurrentGCEnabled());
     
     HRESULT hr = S_OK;
 
@@ -5948,7 +5948,7 @@ HRESULT EEToProfInterfaceImpl::ConditionalWeakTableElementReferences(GCReference
         LL_INFO10000, 
         "**PROF: ConditionalWeakTableElementReferences.\n"));
 
-    _ASSERTE(!GCHeap::GetGCHeap()->IsConcurrentGCEnabled());
+    _ASSERTE(!GCHeapUtilities::GetGCHeap()->IsConcurrentGCEnabled());
     
     HRESULT hr = S_OK;
 
@@ -6082,7 +6082,7 @@ HRESULT EEToProfInterfaceImpl::GarbageCollectionStarted(int cGenerations, BOOL g
         LL_INFO10000, 
         "**PROF: GarbageCollectionStarted.\n"));
 
-    _ASSERTE(!GCHeap::GetGCHeap()->IsConcurrentGCEnabled());
+    _ASSERTE(!GCHeapUtilities::GetGCHeap()->IsConcurrentGCEnabled());
     
     {            
         // All callbacks are really NOTHROW, but that's enforced partially by the profiler,
@@ -6120,7 +6120,7 @@ HRESULT EEToProfInterfaceImpl::GarbageCollectionFinished()
         LL_INFO10000, 
         "**PROF: GarbageCollectionFinished.\n"));
 
-    _ASSERTE(!GCHeap::GetGCHeap()->IsConcurrentGCEnabled());
+    _ASSERTE(!GCHeapUtilities::GetGCHeap()->IsConcurrentGCEnabled());
     
     {        
         // All callbacks are really NOTHROW, but that's enforced partially by the profiler,

@@ -16,7 +16,7 @@
 #include "threads.h"
 #include "eetwain.h"
 #include "eeconfig.h"
-#include "gc.h"
+#include "gcheaputilities.h"
 #include "corhost.h"
 #include "threads.h"
 #include "fieldmarshaler.h"
@@ -51,11 +51,11 @@
             orObject = (ArrayBase *) OBJECTREFToObject(objref);
 
 
-inline alloc_context* GetThreadAllocContext()
+inline gc_alloc_context* GetThreadAllocContext()
 {
     WRAPPER_NO_CONTRACT;
 
-    assert(GCHeap::UseAllocationContexts());
+    assert(GCHeapUtilities::UseAllocationContexts());
 
     return & GetThread()->m_alloc_context;
 }
@@ -102,10 +102,10 @@ inline Object* Alloc(size_t size, BOOL bFinalize, BOOL bContainsPointers )
     // We don't want to throw an SO during the GC, so make sure we have plenty
     // of stack before calling in.
     INTERIOR_STACK_PROBE_FOR(GetThread(), static_cast<unsigned>(DEFAULT_ENTRY_PROBE_AMOUNT * 1.5));
-    if (GCHeap::UseAllocationContexts())
-        retVal = GCHeap::GetGCHeap()->Alloc(GetThreadAllocContext(), size, flags);
+    if (GCHeapUtilities::UseAllocationContexts())
+        retVal = GCHeapUtilities::GetGCHeap()->Alloc(GetThreadAllocContext(), size, flags);
     else
-        retVal = GCHeap::GetGCHeap()->Alloc(size, flags);
+        retVal = GCHeapUtilities::GetGCHeap()->Alloc(size, flags);
     END_INTERIOR_STACK_PROBE;
     return retVal;
 }
@@ -130,10 +130,10 @@ inline Object* AllocAlign8(size_t size, BOOL bFinalize, BOOL bContainsPointers, 
     // We don't want to throw an SO during the GC, so make sure we have plenty
     // of stack before calling in.
     INTERIOR_STACK_PROBE_FOR(GetThread(), static_cast<unsigned>(DEFAULT_ENTRY_PROBE_AMOUNT * 1.5));
-    if (GCHeap::UseAllocationContexts())
-        retVal = GCHeap::GetGCHeap()->AllocAlign8(GetThreadAllocContext(), size, flags);
+    if (GCHeapUtilities::UseAllocationContexts())
+        retVal = GCHeapUtilities::GetGCHeap()->AllocAlign8(GetThreadAllocContext(), size, flags);
     else
-        retVal = GCHeap::GetGCHeap()->AllocAlign8(size, flags);
+        retVal = GCHeapUtilities::GetGCHeap()->AllocAlign8(size, flags);
 
     END_INTERIOR_STACK_PROBE;
     return retVal;
@@ -173,7 +173,7 @@ inline Object* AllocLHeap(size_t size, BOOL bFinalize, BOOL bContainsPointers )
     // We don't want to throw an SO during the GC, so make sure we have plenty
     // of stack before calling in.
     INTERIOR_STACK_PROBE_FOR(GetThread(), static_cast<unsigned>(DEFAULT_ENTRY_PROBE_AMOUNT * 1.5));
-    retVal = GCHeap::GetGCHeap()->AllocLHeap(size, flags);
+    retVal = GCHeapUtilities::GetGCHeap()->AllocLHeap(size, flags);
     END_INTERIOR_STACK_PROBE;
     return retVal;
 }
@@ -427,7 +427,7 @@ OBJECTREF AllocateArrayEx(TypeHandle arrayType, INT32 *pArgs, DWORD dwNumArgs, B
     if (bAllocateInLargeHeap || 
         (totalSize >= LARGE_OBJECT_SIZE))
     {
-        GCHeap::GetGCHeap()->PublishObject((BYTE*)orArray);
+        GCHeapUtilities::GetGCHeap()->PublishObject((BYTE*)orArray);
     }
 
 #ifdef  _LOGALLOC
@@ -651,7 +651,7 @@ OBJECTREF   FastAllocatePrimitiveArray(MethodTable* pMT, DWORD cElements, BOOL b
 
     if (bPublish)
     {
-        GCHeap::GetGCHeap()->PublishObject((BYTE*)orObject);
+        GCHeapUtilities::GetGCHeap()->PublishObject((BYTE*)orObject);
     }
 
     // Notify the profiler of the allocation
@@ -860,7 +860,7 @@ STRINGREF SlowAllocateString( DWORD cchStringLength )
 
     if (ObjectSize >= LARGE_OBJECT_SIZE)
     {
-        GCHeap::GetGCHeap()->PublishObject((BYTE*)orObject);
+        GCHeapUtilities::GetGCHeap()->PublishObject((BYTE*)orObject);
     }
 
     // Notify the profiler of the allocation
@@ -1000,7 +1000,7 @@ OBJECTREF AllocateObject(MethodTable *pMT
         if ((baseSize >= LARGE_OBJECT_SIZE))
         {
             orObject->SetMethodTableForLargeObject(pMT);
-            GCHeap::GetGCHeap()->PublishObject((BYTE*)orObject);
+            GCHeapUtilities::GetGCHeap()->PublishObject((BYTE*)orObject);
         }
         else
         {
@@ -1234,7 +1234,7 @@ extern "C" HCIMPL2_RAW(VOID, JIT_WriteBarrier, Object **dst, Object *ref)
     *dst = ref;
 
     // If the store above succeeded, "dst" should be in the heap.
-   assert(GCHeap::GetGCHeap()->IsHeapPointer((void*)dst));
+   assert(GCHeapUtilities::GetGCHeap()->IsHeapPointer((void*)dst));
 
 #ifdef WRITE_BARRIER_CHECK
     updateGCShadow(dst, ref);     // support debugging write barrier
@@ -1280,7 +1280,7 @@ extern "C" HCIMPL2_RAW(VOID, JIT_WriteBarrierEnsureNonHeapTarget, Object **dst, 
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_NOTRIGGER;
 
-    assert(!GCHeap::GetGCHeap()->IsHeapPointer((void*)dst));
+    assert(!GCHeapUtilities::GetGCHeap()->IsHeapPointer((void*)dst));
 
     // no HELPER_METHOD_FRAME because we are MODE_COOPERATIVE, GC_NOTRIGGER
     

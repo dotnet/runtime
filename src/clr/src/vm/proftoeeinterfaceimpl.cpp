@@ -754,7 +754,7 @@ struct GenerationTable
 
 //---------------------------------------------------------------------------------------
 //
-// This is a callback used by the GC when we call GCHeap::DescrGenerationsToProfiler
+// This is a callback used by the GC when we call GCHeapUtilities::DescrGenerationsToProfiler
 // (from UpdateGenerationBounds() below).  The GC gives us generation information through
 // this callback, which we use to update the GenerationDesc in the corresponding
 // GenerationTable
@@ -874,7 +874,7 @@ void __stdcall UpdateGenerationBounds()
 #endif
         // fill in the values by calling back into the gc, which will report
         // the ranges by calling GenWalkFunc for each one
-        GCHeap *hp = GCHeap::GetGCHeap();
+        IGCHeap *hp = GCHeapUtilities::GetGCHeap();
         hp->DescrGenerationsToProfiler(GenWalkFunc, newGenerationTable);
 
         // remember the old table and plug in the new one
@@ -1018,7 +1018,7 @@ ClassID SafeGetClassIDFromObject(Object * pObj)
 
 //---------------------------------------------------------------------------------------
 //
-// Callback of type walk_fn used by GCHeap::WalkObject.  Keeps a count of each
+// Callback of type walk_fn used by GCHeapUtilities::WalkObject.  Keeps a count of each
 // object reference found.
 //
 // Arguments:
@@ -1040,7 +1040,7 @@ BOOL CountContainedObjectRef(Object * pBO, void * context)
 
 //---------------------------------------------------------------------------------------
 //
-// Callback of type walk_fn used by GCHeap::WalkObject.  Stores each object reference
+// Callback of type walk_fn used by GCHeapUtilities::WalkObject.  Stores each object reference
 // encountered into an array.
 //
 // Arguments:
@@ -1113,7 +1113,7 @@ BOOL HeapWalkHelper(Object * pBO, void * pvContext)
     if (pMT->ContainsPointersOrCollectible())
     {
         // First round through calculates the number of object refs for this class
-        GCHeap::GetGCHeap()->WalkObject(pBO, &CountContainedObjectRef, (void *)&cNumRefs);
+        GCHeapUtilities::GetGCHeap()->WalkObject(pBO, &CountContainedObjectRef, (void *)&cNumRefs);
 
         if (cNumRefs > 0)
         {
@@ -1138,7 +1138,7 @@ BOOL HeapWalkHelper(Object * pBO, void * pvContext)
 
             // Second round saves off all of the ref values
             OBJECTREF * pCurObjRef = arrObjRef;
-            GCHeap::GetGCHeap()->WalkObject(pBO, &SaveContainedObjectRef, (void *)&pCurObjRef);
+            GCHeapUtilities::GetGCHeap()->WalkObject(pBO, &SaveContainedObjectRef, (void *)&pCurObjRef);
         }
     }
 
@@ -9461,7 +9461,7 @@ FCIMPL2(void, ProfilingFCallHelper::FC_RemotingClientSendingMessage, GUID *pId, 
     // it is a value class declared on the stack and so GC doesn't
     // know about it.
 
-    _ASSERTE (!GCHeap::GetGCHeap()->IsHeapPointer(pId));     // should be on the stack, not in the heap
+    _ASSERTE (!GCHeapUtilities::GetGCHeap()->IsHeapPointer(pId));     // should be on the stack, not in the heap
     HELPER_METHOD_FRAME_BEGIN_NOPOLL();
 
     {

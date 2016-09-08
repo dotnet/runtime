@@ -390,7 +390,7 @@ bool WriteBarrierManager::NeedDifferentWriteBarrier(bool bReqUpperBoundsCheck, W
             }
 #endif
 
-            writeBarrierType = GCHeap::IsServerHeap() ? WRITE_BARRIER_SVR64 : WRITE_BARRIER_PREGROW64;
+            writeBarrierType = GCHeapUtilities::IsServerHeap() ? WRITE_BARRIER_SVR64 : WRITE_BARRIER_PREGROW64;
             continue;
 
         case WRITE_BARRIER_PREGROW64:

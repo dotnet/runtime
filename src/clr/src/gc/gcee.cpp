@@ -148,7 +148,7 @@ void GCHeap::UpdatePostGCCounters()
     // if a max gen garbage collection was performed, resync the GC Handle counter; 
     // if threads are currently suspended, we do not need to obtain a lock on each handle table
     if (condemned_gen == max_generation)
-        total_num_gc_handles = HndCountAllHandles(!GCHeap::IsGCInProgress());
+        total_num_gc_handles = HndCountAllHandles(!IsGCInProgress());
 #endif //FEATURE_REDHAWK
 
     // per generation calculation.
@@ -782,7 +782,7 @@ void gc_heap::background_gc_wait_lh (alloc_wait_reason awr)
 
 
 /******************************************************************************/
-::GCHeap* CreateGCHeap() {
+IGCHeapInternal* CreateGCHeap() {
     return new(nothrow) GCHeap();   // we return wks or svr 
 }
 
@@ -823,12 +823,12 @@ void GCHeap::TraceGCSegments()
 #endif // FEATURE_EVENT_TRACE
 }
 
-#if defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
 void GCHeap::DescrGenerationsToProfiler (gen_walk_fn fn, void *context)
 {
+#if defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
     pGenGCHeap->descr_generations_to_profiler(fn, context);
-}
 #endif // defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
+}
 
 #ifdef FEATURE_BASICFREEZE
 segment_handle GCHeap::RegisterFrozenSegment(segment_info *pseginfo)

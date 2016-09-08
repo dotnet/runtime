@@ -249,7 +249,7 @@ void CMessage::GetObjectFromStack(OBJECTREF* ppDest, PVOID val, const CorElement
 
         _ASSERTE(ty.GetMethodTable()->IsValueType() || ty.GetMethodTable()->IsEnum());
 
-        _ASSERTE(!GCHeap::GetGCHeap()->IsHeapPointer((BYTE *) ppDest) ||
+        _ASSERTE(!GCHeapUtilities::GetGCHeap()->IsHeapPointer((BYTE *) ppDest) ||
              !"(pDest) can not point to GC Heap");
         MethodTable* pMT = ty.GetMethodTable();
 

@@ -1413,7 +1413,7 @@ void ProfilingAPIUtility::TerminateProfiling()
         {
             // We know for sure GC has been fully initialized as we've turned off concurrent GC before
             _ASSERTE(IsGarbageCollectorFullyInitialized());
-            GCHeap::GetGCHeap()->TemporaryEnableConcurrentGC();
+            GCHeapUtilities::GetGCHeap()->TemporaryEnableConcurrentGC();
             g_profControlBlock.fConcurrentGCDisabledForAttach = FALSE;
         }
 
