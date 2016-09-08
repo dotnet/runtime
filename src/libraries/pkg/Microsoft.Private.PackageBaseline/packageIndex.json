@@ -11,43 +11,7 @@
         "4.0.1.0": "4.0.1"
       }
     },
-    "Microsoft.NETCore": {
-      "StableVersions": [
-        "5.0.0",
-        "5.0.1",
-        "5.0.2"
-      ]
-    },
     "Microsoft.NETCore.Platforms": {
-      "StableVersions": [
-        "1.0.0",
-        "1.0.1"
-      ]
-    },
-    "Microsoft.NETCore.Portable.Compatibility": {
-      "StableVersions": [
-        "1.0.1",
-        "1.0.0",
-        "1.0.2"
-      ],
-      "AssemblyVersionInPackageVersion": {
-        "4.0.0.0": "1.0.0"
-      }
-    },
-    "Microsoft.NETCore.Runtime": {
-      "StableVersions": [
-        "1.0.0",
-        "1.0.1"
-      ]
-    },
-    "Microsoft.NETCore.Runtime.CoreCLR": {
-      "StableVersions": [
-        "1.0.1",
-        "1.0.2",
-        "1.0.3"
-      ]
-    },
-    "Microsoft.NETCore.Runtime.Native": {
       "StableVersions": [
         "1.0.0",
         "1.0.1"
@@ -58,35 +22,6 @@
         "1.0.0",
         "1.0.1",
         "1.0.2"
-      ]
-    },
-    "Microsoft.NETCore.Targets.NETFramework": {
-      "StableVersions": [
-        "4.6.0"
-      ]
-    },
-    "Microsoft.NETCore.Targets.UniversalWindowsPlatform": {
-      "StableVersions": [
-        "5.0.0"
-      ]
-    },
-    "Microsoft.NETCore.TestHost": {
-      "StableVersions": [
-        "1.0.0"
-      ]
-    },
-    "Microsoft.NETCore.UniversalWindowsPlatform": {
-      "StableVersions": [
-        "5.0.0",
-        "5.1.0",
-        "5.2.0",
-        "5.2.1",
-        "5.2.2"
-      ]
-    },
-    "Microsoft.NETCore.Windows.ApiSets": {
-      "StableVersions": [
-        "1.0.1"
       ]
     },
     "Microsoft.VisualBasic": {
@@ -307,7 +242,6 @@
         "4.0.1"
       ]
     },
-    "runtime.debian.8-x64.Microsoft.NETCore.TestHost": {},
     "runtime.debian.8-x64.runtime.native.System": {
       "StableVersions": [
         "1.0.1"
@@ -333,7 +267,6 @@
         "1.0.1"
       ]
     },
-    "runtime.fedora.23-x64.Microsoft.NETCore.TestHost": {},
     "runtime.fedora.23-x64.runtime.native.System": {
       "StableVersions": [
         "1.0.1"
@@ -395,7 +328,6 @@
       ],
       "BaselineVersion": "4.3.0"
     },
-    "runtime.opensuse.13.2-x64.Microsoft.NETCore.TestHost": {},
     "runtime.opensuse.13.2-x64.runtime.native.System": {
       "StableVersions": [
         "1.0.1"
@@ -421,7 +353,6 @@
         "1.0.1"
       ]
     },
-    "runtime.osx.10.10-x64.Microsoft.NETCore.TestHost": {},
     "runtime.osx.10.10-x64.runtime.native.System": {
       "StableVersions": [
         "1.0.1"
@@ -447,7 +378,6 @@
         "1.0.1"
       ]
     },
-    "runtime.rhel.7-x64.Microsoft.NETCore.TestHost": {},
     "runtime.rhel.7-x64.runtime.native.System": {
       "StableVersions": [
         "1.0.1"
@@ -473,7 +403,6 @@
         "1.0.1"
       ]
     },
-    "runtime.ubuntu.14.04-x64.Microsoft.NETCore.TestHost": {},
     "runtime.ubuntu.14.04-x64.runtime.native.System": {
       "StableVersions": [
         "1.0.1"
@@ -499,7 +428,6 @@
         "1.0.1"
       ]
     },
-    "runtime.ubuntu.16.04-x64.Microsoft.NETCore.TestHost": {},
     "runtime.ubuntu.16.04-x64.runtime.native.System": {
       "StableVersions": [
         "1.0.1"
@@ -605,22 +533,6 @@
         "4.0.1"
       ]
     },
-    "runtime.win7-x64.Microsoft.NETCore.Runtime.CoreCLR": {
-      "StableVersions": [
-        "1.0.1",
-        "1.0.2"
-      ]
-    },
-    "runtime.win7-x64.Microsoft.NETCore.TestHost": {
-      "StableVersions": [
-        "1.0.0"
-      ]
-    },
-    "runtime.win7-x64.Microsoft.NETCore.Windows.ApiSets": {
-      "StableVersions": [
-        "1.0.1"
-      ]
-    },
     "runtime.win7-x64.runtime.native.System.Data.SqlClient.sni": {
       "StableVersions": [
         "4.0.1"
@@ -629,22 +541,6 @@
     "runtime.win7-x64.runtime.native.System.IO.Compression": {
       "StableVersions": [
         "4.0.1"
-      ]
-    },
-    "runtime.win7-x86.Microsoft.NETCore.Runtime.CoreCLR": {
-      "StableVersions": [
-        "1.0.1",
-        "1.0.2"
-      ]
-    },
-    "runtime.win7-x86.Microsoft.NETCore.TestHost": {
-      "StableVersions": [
-        "1.0.0"
-      ]
-    },
-    "runtime.win7-x86.Microsoft.NETCore.Windows.ApiSets": {
-      "StableVersions": [
-        "1.0.1"
       ]
     },
     "runtime.win7-x86.runtime.native.System.Data.SqlClient.sni": {
@@ -1182,7 +1078,7 @@
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.1.0.0": "4.1.0",
-        "4.1.1.0": "4.3.0",
+        "4.1.1.0": "4.3.0"
       }
     },
     "System.Linq.Expressions": {
@@ -1417,17 +1313,6 @@
         "4.1.0"
       ],
       "BaselineVersion": "4.3.0"
-    },
-    "System.Private.Networking": {
-      "StableVersions": [
-        "4.0.0"
-      ]
-    },
-    "System.Private.ServiceModel": {
-      "StableVersions": [
-        "4.0.0",
-        "4.1.0"
-      ]
     },
     "System.Private.Uri": {
       "StableVersions": [
@@ -1920,64 +1805,6 @@
         "4.0.1.0": "4.3.0"
       }
     },
-    "System.ServiceModel.Duplex": {
-      "StableVersions": [
-        "4.0.0",
-        "4.0.1"
-      ],
-      "AssemblyVersionInPackageVersion": {
-        "4.0.1.0": "4.0.1",
-        "4.0.0.0": "4.0.0"
-      }
-    },
-    "System.ServiceModel.Http": {
-      "StableVersions": [
-        "4.0.10",
-        "4.1.0",
-        "3.9.0",
-        "4.0.0"
-      ],
-      "AssemblyVersionInPackageVersion": {
-        "4.1.0.0": "4.1.0",
-        "3.9.0.0": "3.9.0",
-        "4.0.0.0": "4.0.0",
-        "4.0.10.0": "4.0.10"
-      }
-    },
-    "System.ServiceModel.NetTcp": {
-      "StableVersions": [
-        "4.0.0",
-        "4.1.0"
-      ],
-      "AssemblyVersionInPackageVersion": {
-        "4.1.0.0": "4.1.0",
-        "4.0.0.0": "4.0.0"
-      }
-    },
-    "System.ServiceModel.Primitives": {
-      "StableVersions": [
-        "4.0.0",
-        "4.1.0",
-        "3.9.0"
-      ],
-      "AssemblyVersionInPackageVersion": {
-        "4.1.0.0": "4.1.0",
-        "3.9.0.0": "3.9.0",
-        "4.0.0.0": "4.0.0"
-      }
-    },
-    "System.ServiceModel.Security": {
-      "StableVersions": [
-        "4.0.0",
-        "4.0.1",
-        "3.9.0"
-      ],
-      "AssemblyVersionInPackageVersion": {
-        "4.0.1.0": "4.0.1",
-        "3.9.0.0": "3.9.0",
-        "4.0.0.0": "4.0.0"
-      }
-    },
     "System.ServiceProcess.ServiceController": {
       "StableVersions": [
         "4.1.0"
@@ -2251,54 +2078,6 @@
       }
     },
     "Microsoft.Private.PackageBaseline": {},
-    "Microsoft.NETCore.ConsoleHost": {},
-    "Microsoft.NETCore.Runtime.CoreCLR-arm": {
-      "StableVersions": [
-        "1.0.0"
-      ]
-    },
-    "Microsoft.NETCore.Runtime.CoreCLR-x64": {
-      "StableVersions": [
-        "1.0.0"
-      ]
-    },
-    "Microsoft.NETCore.Runtime.CoreCLR-x86": {
-      "StableVersions": [
-        "1.0.0"
-      ]
-    },
-    "Microsoft.NETCore.Targets.DNXCore": {
-      "StableVersions": [
-        "4.9.0"
-      ]
-    },
-    "Microsoft.NETCore.Windows.ApiSets-x64": {
-      "StableVersions": [
-        "1.0.0"
-      ]
-    },
-    "Microsoft.NETCore.Windows.ApiSets-x86": {
-      "StableVersions": [
-        "1.0.0"
-      ]
-    },
-    "runtime.any.System.Private.DataContractSerialization": {
-      "StableVersions": [
-        "4.1.0"
-      ]
-    },
-    "runtime.aot.System.Private.DataContractSerialization": {
-      "StableVersions": [
-        "4.1.0"
-      ]
-    },
-    "runtime.debian.8-x64.Microsoft.NETCore.ConsoleHost": {},
-    "runtime.fedora.23-x64.Microsoft.NETCore.ConsoleHost": {},
-    "runtime.opensuse.13.2-x64.Microsoft.NETCore.ConsoleHost": {},
-    "runtime.osx.10.10-x64.Microsoft.NETCore.ConsoleHost": {},
-    "runtime.rhel.7-x64.Microsoft.NETCore.ConsoleHost": {},
-    "runtime.ubuntu.14.04-x64.Microsoft.NETCore.ConsoleHost": {},
-    "runtime.ubuntu.16.04-x64.Microsoft.NETCore.ConsoleHost": {},
     "runtime.win10-arm-aot.runtime.native.System.IO.Compression": {
       "StableVersions": [
         "4.0.1"
@@ -2307,29 +2086,6 @@
     "runtime.win10-x64-aot.runtime.native.System.IO.Compression": {
       "StableVersions": [
         "4.0.1"
-      ]
-    },
-    "runtime.win7-x64.Microsoft.NETCore.ConsoleHost": {},
-    "runtime.win7-x86.Microsoft.NETCore.ConsoleHost": {},
-    "runtime.win8-arm.Microsoft.NETCore.Runtime.CoreCLR": {
-      "StableVersions": [
-        "1.0.1",
-        "1.0.2"
-      ]
-    },
-    "System.IO.Compression.clrcompression-arm": {
-      "StableVersions": [
-        "4.0.0"
-      ]
-    },
-    "System.IO.Compression.clrcompression-x64": {
-      "StableVersions": [
-        "4.0.0"
-      ]
-    },
-    "System.IO.Compression.clrcompression-x86": {
-      "StableVersions": [
-        "4.0.0"
       ]
     },
     "System.Composition.AttributedModel": {
@@ -2358,11 +2114,6 @@
       }
     },
     "System.Composition": {},
-    "System.Diagnostics.Debug.SymbolReader": {
-      "AssemblyVersionInPackageVersion": {
-        "1.0.0.0": "4.3.0"
-      }
-    },
     "System.IO.Pipes.AccessControl": {
       "AssemblyVersionInPackageVersion": {
         "4.0.1.0": "4.3.0"
