@@ -382,12 +382,12 @@ namespace System
                 throw parseResult.GetEnumParseException();
         }
 
-        public static TEnum Parse<TEnum>(String value)
+        public static TEnum Parse<TEnum>(String value) where TEnum : struct
         {
             return Parse<TEnum>(value, false);
         }
 
-        public static TEnum Parse<TEnum>(String value, bool ignoreCase)
+        public static TEnum Parse<TEnum>(String value, bool ignoreCase) where TEnum : struct
         {
             EnumResult parseResult = new EnumResult() { canThrow = true };
             if (TryParseEnum(typeof(TEnum), value, ignoreCase, ref parseResult))
