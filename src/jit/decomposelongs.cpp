@@ -248,7 +248,7 @@ GenTree* DecomposeLongs::DecomposeNode(GenTree* tree)
             break;
 
         case GT_UMOD:
-            NYI("Arithmetic binary operators on TYP_LONG - GT_UMOD");
+            nextNode = DecomposeUMod(use);
             break;
 
         case GT_LSH:
@@ -1027,6 +1027,70 @@ GenTree* DecomposeLongs::DecomposeMul(LIR::Use& use)
     tree->gtOper = GT_MUL_LONG;
 
     return StoreNodeToVar(use);
+}
+
+//------------------------------------------------------------------------
+// DecomposeUMod: Decompose GT_UMOD. The only GT_UMODs that make it to decompose
+// are guaranteed to be an unsigned long mod with op2 which is a cast to long from
+// a constant int whose value is between 2 and 0x3fffffff. All other GT_UMODs are
+// morphed into helper calls. These GT_UMODs will actually return an int value in
+// RDX. In decompose, we make the lo operation a TYP_INT GT_UMOD, with op2 as the
+// original lo half and op1 as a GT_LONG. We make the hi part 0,  so we end up with:
+//
+// GT_UMOD[TYP_INT] ( GT_LONG [TYP_LONG] (loOp1, hiOp1), loOp2 [TYP_INT] )
+//
+// With the expectation that we will generate:
+//
+// EDX = hiOp1
+// EAX = loOp1
+// reg = loOp2
+// idiv reg
+// EDX is the remainder, and result of GT_UMOD
+// mov hiReg = 0
+//
+// Arguments:
+//    use - the LIR::Use object for the def that needs to be decomposed.
+//
+// Return Value:
+//    The next node to process.
+//
+GenTree* DecomposeLongs::DecomposeUMod(LIR::Use& use)
+{
+    assert(use.IsInitialized());
+
+    GenTree*   tree = use.Def();
+    genTreeOps oper = tree->OperGet();
+
+    assert(oper == GT_UMOD);
+
+    GenTree* op1 = tree->gtGetOp1();
+    GenTree* op2 = tree->gtGetOp2();
+    assert(op1->OperGet() == GT_LONG);
+    assert(op2->OperGet() == GT_LONG);
+
+    GenTree* loOp2 = op2->gtGetOp1();
+    GenTree* hiOp2 = op2->gtGetOp2();
+
+    assert(loOp2->OperGet() == GT_CNS_INT);
+    assert(hiOp2->OperGet() == GT_CNS_INT);
+    assert((loOp2->gtIntCon.gtIconVal >= 2) && (loOp2->gtIntCon.gtIconVal <= 0x3fffffff));
+    assert(hiOp2->gtIntCon.gtIconVal == 0);
+
+    // Get rid of op2's hi part. We don't need it.
+    Range().Remove(hiOp2);
+    Range().Remove(op2);
+
+    // Lo part is the GT_UMOD
+    GenTree* loResult = tree;
+    loResult->gtOp.gtOp2 = loOp2;
+    loResult->gtType = TYP_INT;
+
+    // Set the high part to 0
+    GenTree* hiResult = m_compiler->gtNewZeroConNode(TYP_INT);
+
+    Range().InsertAfter(loResult, hiResult);
+
+    return FinalizeDecomposition(use, loResult, hiResult);
 }
 
 //------------------------------------------------------------------------
