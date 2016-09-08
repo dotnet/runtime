@@ -10,9 +10,10 @@
     "System.Runtime.Extensions": "4.3.0-beta-devapi-24508-03",
     "System.Text.RegularExpressions": "4.3.0-beta-devapi-24508-03",
     "System.Threading.Tasks": "4.3.0-beta-devapi-24508-03",
-    "System.Security.AccessControl": "4.0.0",
-    "System.Security.Cryptography.Primitives": "4.0.0",
-    "System.Security.Cryptography.X509Certificates": "4.1.0",
+    "System.Security.AccessControl": "4.3.0-beta-devapi-24508-03",
+    "System.Security.Cryptography.Primitives": "4.3.0-beta-devapi-24508-03",
+    "System.Security.Cryptography.X509Certificates": "4.3.0-beta-devapi-24508-03",
+    "System.Reflection": "4.3.0-beta-devapi-24508-03",
     "test-runtime": {
       "target": "project",
       "exclude": "compile"

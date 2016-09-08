@@ -8,9 +8,11 @@
     "System.Runtime": "4.3.0-beta-devapi-24508-03",
     "System.Runtime.Extensions": "4.3.0-beta-devapi-24508-03",
     "System.Runtime.Serialization.Formatters": "4.3.0-beta-devapi-24508-03",
+    "System.Reflection": "4.3.0-beta-devapi-24508-03",
     "System.Threading": "4.3.0-beta-devapi-24508-03",
     "System.Threading.Thread": "4.3.0-beta-devapi-24508-03",
     "System.Threading.ThreadPool": "4.3.0-beta-devapi-24508-03",
+    "System.Threading.Tasks": "4.3.0-beta-devapi-24508-03",
     "System.Xml.XPath": "4.3.0-beta-devapi-24508-03",
     "System.Diagnostics.Process": "4.3.0-beta-devapi-24508-03",
     "test-runtime": {
