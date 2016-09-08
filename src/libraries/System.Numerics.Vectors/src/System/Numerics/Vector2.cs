@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Globalization;
+using System.Numerics.Hashing;
 using System.Runtime.CompilerServices;
 using System.Text;
 
@@ -40,7 +41,7 @@ namespace System.Numerics
         public override int GetHashCode()
         {
             int hash = this.X.GetHashCode();
-            hash = HashCodeHelper.CombineHashCodes(hash, this.Y.GetHashCode());
+            hash = HashHelpers.Combine(hash, this.Y.GetHashCode());
             return hash;
         }
 
