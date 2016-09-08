@@ -15,7 +15,7 @@
 
   <!-- Full package version strings that are used in other parts of the build. -->
   <PropertyGroup>
-    <AppXRunnerVersion>1.0.3-prerelease-00807-03</AppXRunnerVersion>
+    <AppXRunnerVersion>1.0.3-prerelease-00808-02</AppXRunnerVersion>
   </PropertyGroup>
 
   <!-- Package dependency verification/auto-upgrade configuration. -->
