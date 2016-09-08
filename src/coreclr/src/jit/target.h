@@ -2277,6 +2277,9 @@ inline regNumber regNextOfType(regNumber reg, var_types type)
 
 inline bool isRegPairType(int /* s/b "var_types" */ type)
 {
+#if !CPU_LONG_USES_REGPAIR
+    return false;
+#else
 #ifdef _TARGET_64BIT_
     return false;
 #elif CPU_HAS_FP_SUPPORT
@@ -2284,6 +2287,7 @@ inline bool isRegPairType(int /* s/b "var_types" */ type)
 #else
     return type == TYP_LONG || type == TYP_DOUBLE;
 #endif
+#endif // CPU_LONG_USES_REGPAIR
 }
 
 inline bool isFloatRegType(int /* s/b "var_types" */ type)
