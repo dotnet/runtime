@@ -7,10 +7,11 @@ using System.Collections.Generic;
 using System.Xml.Serialization;
 using Xunit;
 
-
 public static partial class XmlSerializerTests
 {
     [Fact]
+    // XmlTypeMapping is not included in System.Xml.XmlSerializer 4.0.0.0 facade in GAC
+    [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
     public static void Xml_FromMappings()
     {
         var types = new[] { typeof(Guid), typeof(List<string>) };
@@ -26,6 +27,8 @@ public static partial class XmlSerializerTests
     }
 
     [Fact]
+    // XmlTypeMapping is not included in System.Xml.XmlSerializer 4.0.0.0 facade in GAC
+    [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
     public static void Xml_ConstructorWithTypeMapping()
     {
         XmlTypeMapping mapping = null;
