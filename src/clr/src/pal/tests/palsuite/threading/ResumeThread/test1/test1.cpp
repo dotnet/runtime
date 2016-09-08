@@ -38,7 +38,7 @@ BOOL ResumeThreadTest()
     LPSECURITY_ATTRIBUTES lpThreadAttributes = NULL;
     DWORD dwStackSize = 0; 
     LPTHREAD_START_ROUTINE lpStartAddress =  &ResumeThreadTestThread;
-    LPVOID lpParameter = lpStartAddress;
+    LPVOID lpParameter = (LPVOID)lpStartAddress;
     DWORD dwCreationFlags = CREATE_SUSPENDED;
     DWORD dwThreadId = 0;
 
