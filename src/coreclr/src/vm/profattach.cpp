@@ -806,7 +806,7 @@ void ProfilingAPIAttachDetach::InitializeAttachThreadingMode()
     // Environment variable trumps all, so check it first
     DWORD dwAlwaysOn = g_pConfig->GetConfigDWORD_DontUse_(
         CLRConfig::EXTERNAL_AttachThreadAlwaysOn,
-        GCHeap::IsServerHeap() ? 1 : 0);      // Default depends on GC server mode
+        GCHeapUtilities::IsServerHeap() ? 1 : 0);      // Default depends on GC server mode
 
     if (dwAlwaysOn == 0)
     {

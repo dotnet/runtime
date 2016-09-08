@@ -755,7 +755,7 @@ void HndLogSetEvent(OBJECTHANDLE handle, _UNCHECKED_OBJECTREF value)
         uint32_t hndType = HandleFetchType(handle);
         ADIndex appDomainIndex = HndGetHandleADIndex(handle);   
         AppDomain* pAppDomain = SystemDomain::GetAppDomainAtIndex(appDomainIndex);
-        uint32_t generation = value != 0 ? GCHeap::GetGCHeap()->WhichGeneration(value) : 0;
+        uint32_t generation = value != 0 ? g_theGcHeap->WhichGeneration(value) : 0;
         FireEtwSetGCHandle((void*) handle, value, hndType, generation, (int64_t) pAppDomain, GetClrInstanceId());
         FireEtwPrvSetGCHandle((void*) handle, value, hndType, generation, (int64_t) pAppDomain, GetClrInstanceId());
 
@@ -774,14 +774,14 @@ void HndLogSetEvent(OBJECTHANDLE handle, _UNCHECKED_OBJECTREF value)
                     for (size_t i = 0; i < num; i ++)
                     {
                         value = ppObj[i];
-                        uint32_t generation = value != 0 ? GCHeap::GetGCHeap()->WhichGeneration(value) : 0;
+                        uint32_t generation = value != 0 ? g_theGcHeap->WhichGeneration(value) : 0;
                         FireEtwSetGCHandle(overlapped, value, HNDTYPE_PINNED, generation, (int64_t) pAppDomain, GetClrInstanceId());
                     }
                 }
                 else
                 {
                     value = OBJECTREF_TO_UNCHECKED_OBJECTREF(overlapped->m_userObject);
-                    uint32_t generation = value != 0 ? GCHeap::GetGCHeap()->WhichGeneration(value) : 0;
+                    uint32_t generation = value != 0 ? g_theGcHeap->WhichGeneration(value) : 0;
                     FireEtwSetGCHandle(overlapped, value, HNDTYPE_PINNED, generation, (int64_t) pAppDomain, GetClrInstanceId());
                 }
             }
@@ -838,7 +838,7 @@ void HndWriteBarrier(OBJECTHANDLE handle, OBJECTREF objref)
     if (*pClumpAge != 0) // Perf optimization: if clumpAge is 0, nothing more to do
     {
         // find out generation
-        int generation = GCHeap::GetGCHeap()->WhichGeneration(value);
+        int generation = g_theGcHeap->WhichGeneration(value);
         uint32_t uType = HandleFetchType(handle);
 
 #ifndef FEATURE_REDHAWK

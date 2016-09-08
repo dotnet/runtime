@@ -3212,7 +3212,7 @@ FaultReportResult DoFaultReport(            // Was Watson attempted, successful?
             // thread under Coop mode, this will let the new generated DoFaultReportCallBack 
             // thread trigger a deadlock. So in this case, we should directly abort the fault 
             // report to avoid the deadlock.
-            ((IsGCThread() || pThread->PreemptiveGCDisabled()) && GCHeap::IsGCInProgress()) ||
+            ((IsGCThread() || pThread->PreemptiveGCDisabled()) && GCHeapUtilities::IsGCInProgress()) ||
              FAILED(g_pDebugInterface->RequestFavor(DoFaultReportFavorWorker, pData)))
         {
             // If we can't initialize the debugger helper thread or we are running on the debugger helper

@@ -1234,8 +1234,8 @@ void checkAndUpdateReg(DWORD& origVal, DWORD curVal, bool gcHappened) {
     // the validation infrastructure has got a bug.
 
     _ASSERTE(gcHappened);    // If the register values are different, a GC must have happened
-    _ASSERTE(GCHeap::GetGCHeap()->IsHeapPointer((BYTE*) size_t(origVal)));    // And the pointers involved are on the GCHeap
-    _ASSERTE(GCHeap::GetGCHeap()->IsHeapPointer((BYTE*) size_t(curVal)));
+    _ASSERTE(GCHeapUtilities::GetGCHeap()->IsHeapPointer((BYTE*) size_t(origVal)));    // And the pointers involved are on the GCHeap
+    _ASSERTE(GCHeapUtilities::GetGCHeap()->IsHeapPointer((BYTE*) size_t(curVal)));
     origVal = curVal;       // this is now the best estimate of what should be returned. 
 }
 
@@ -1478,7 +1478,7 @@ void DoGcStress (PCONTEXT regs, MethodDesc *pMD)
             if (gcCover->callerThread == 0) {
                 if (FastInterlockCompareExchangePointer(&gcCover->callerThread, pThread, 0) == 0) {
                     gcCover->callerRegs = *regs;
-                    gcCover->gcCount = GCHeap::GetGCHeap()->GetGcCount();
+                    gcCover->gcCount = GCHeapUtilities::GetGCHeap()->GetGcCount();
                     bShouldUpdateProlog = false;
                 }
             }    
@@ -1564,13 +1564,13 @@ void DoGcStress (PCONTEXT regs, MethodDesc *pMD)
             // instruction in the epilog  (TODO: fix it for the first instr Case)
             
             _ASSERTE(pThread->PreemptiveGCDisabled());    // Epilogs should be in cooperative mode, no GC can happen right now. 
-            bool gcHappened = gcCover->gcCount != GCHeap::GetGCHeap()->GetGcCount();
+            bool gcHappened = gcCover->gcCount != GCHeapUtilities::GetGCHeap()->GetGcCount();
             checkAndUpdateReg(gcCover->callerRegs.Edi, *regDisp.pEdi, gcHappened);
             checkAndUpdateReg(gcCover->callerRegs.Esi, *regDisp.pEsi, gcHappened);
             checkAndUpdateReg(gcCover->callerRegs.Ebx, *regDisp.pEbx, gcHappened);
             checkAndUpdateReg(gcCover->callerRegs.Ebp, *regDisp.pEbp, gcHappened);
             
-            gcCover->gcCount = GCHeap::GetGCHeap()->GetGcCount();
+            gcCover->gcCount = GCHeapUtilities::GetGCHeap()->GetGcCount();
 
         }        
         return;
@@ -1777,7 +1777,7 @@ void DoGcStress (PCONTEXT regs, MethodDesc *pMD)
     // Do the actual stress work
     //
 
-    if (!GCHeap::GetGCHeap()->StressHeap())
+    if (!GCHeapUtilities::GetGCHeap()->StressHeap())
         UpdateGCStressInstructionWithoutGC ();
 
     // Must flush instruction cache before returning as instruction has been modified.

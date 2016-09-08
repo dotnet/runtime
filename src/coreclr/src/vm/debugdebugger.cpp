@@ -22,7 +22,7 @@
 #include "frames.h"
 #include "vars.hpp"
 #include "field.h"
-#include "gc.h"
+#include "gcheaputilities.h"
 #include "jitinterface.h"
 #include "debugdebugger.h"
 #include "dbginterface.h"

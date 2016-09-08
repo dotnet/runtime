@@ -68,7 +68,7 @@ Object * AllocateObject(MethodTable * pMT)
     }
     else
     {
-        pObject = GCHeap::GetGCHeap()->Alloc(acontext, size, 0);
+        pObject = g_theGcHeap->Alloc(acontext, size, 0);
         if (pObject == NULL)
             return NULL;
     }
@@ -137,7 +137,7 @@ int __cdecl main(int argc, char* argv[])
     //
     // Initialize GC heap
     //
-    GCHeap *pGCHeap = GCHeap::CreateGCHeap();
+    IGCHeap *pGCHeap = InitializeGarbageCollector(nullptr);
     if (!pGCHeap)
         return -1;
 

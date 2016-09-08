@@ -81,7 +81,7 @@ typedef unsigned short wchar_t;
 
 class ClassLoader;
 class LoaderHeap;
-class GCHeap;
+class IGCHeap;
 class Object;
 class StringObject;
 class TransparentProxyObject;
