@@ -111,13 +111,7 @@ void DecomposeLongs::DecomposeRangeHelper()
     GenTree* node = Range().FirstNonPhiNode();
     while (node != nullptr)
     {
-        LIR::Use use;
-        if (!Range().TryGetUse(node, &use))
-        {
-            use = LIR::Use::GetDummyUse(Range(), node);
-        }
-
-        node = DecomposeNode(use);
+        node = DecomposeNode(node);
     }
 
     assert(Range().CheckLIR(m_compiler));
@@ -132,10 +126,8 @@ void DecomposeLongs::DecomposeRangeHelper()
 // Return Value:
 //    The next node to process.
 //
-GenTree* DecomposeLongs::DecomposeNode(LIR::Use& use)
+GenTree* DecomposeLongs::DecomposeNode(GenTree* tree)
 {
-    GenTree* tree = use.Def();
-
     // Handle the case where we are implicitly using the lower half of a long lclVar.
     if ((tree->TypeGet() == TYP_INT) && tree->OperIsLocal())
     {
@@ -171,14 +163,15 @@ GenTree* DecomposeLongs::DecomposeNode(LIR::Use& use)
     }
 #endif // DEBUG
 
+    LIR::Use use;
+    if (!Range().TryGetUse(tree, &use))
+    {
+        use = LIR::Use::GetDummyUse(Range(), tree);
+    }
+
     GenTree* nextNode = nullptr;
     switch (tree->OperGet())
     {
-        case GT_PHI:
-        case GT_PHI_ARG:
-            nextNode = tree->gtNext;
-            break;
-
         case GT_LCL_VAR:
             nextNode = DecomposeLclVar(use);
             break;
