@@ -383,27 +383,29 @@ int ProcessOneArg(__in __nullterminated char* szArg, __out char** ppszObjFileNam
         }
         else if ((_stricmp(szOpt, "met") == 0)&&g_fTDC)
         {
-            if(g_fTDC)
+#ifdef FEATURE_CORECLR
+            printf("Warning: 'METADATA' option is ignored for ildasm on CoreCLR.\n");
+#else
+
+            char *pStr = EqualOrColon(szArg);
+            g_fDumpMetaInfo = TRUE;
+            if(pStr)
             {
-                char *pStr = EqualOrColon(szArg);
-                g_fDumpMetaInfo = TRUE;
-                if(pStr)
-                {
-                    char szOptn[64];
-                    strncpy_s(szOptn, 64, pStr+1,10);
-                    szOptn[3] = 0; // recognize metainfo specifier by first 3 chars
-                    if     (_stricmp(szOptn, "hex") == 0) g_ulMetaInfoFilter |= MDInfo::dumpMoreHex;
-                    else if(_stricmp(szOptn, "csv") == 0) g_ulMetaInfoFilter |= MDInfo::dumpCSV;
-                    else if(_stricmp(szOptn, "mdh") == 0) g_ulMetaInfoFilter |= MDInfo::dumpHeader;
-                    else if(_stricmp(szOptn, "raw") == 0) g_ulMetaInfoFilter |= MDInfo::dumpRaw;
-                    else if(_stricmp(szOptn, "hea") == 0) g_ulMetaInfoFilter |= MDInfo::dumpRawHeaps;
-                    else if(_stricmp(szOptn, "sch") == 0) g_ulMetaInfoFilter |= MDInfo::dumpSchema;
-                    else if(_stricmp(szOptn, "unr") == 0) g_ulMetaInfoFilter |= MDInfo::dumpUnsat;
-                    else if(_stricmp(szOptn, "val") == 0) g_ulMetaInfoFilter |= MDInfo::dumpValidate;
-                    else if(_stricmp(szOptn, "sta") == 0) g_ulMetaInfoFilter |= MDInfo::dumpStats;
-                    else return -1;
-                }
+                char szOptn[64];
+                strncpy_s(szOptn, 64, pStr+1,10);
+                szOptn[3] = 0; // recognize metainfo specifier by first 3 chars
+                if     (_stricmp(szOptn, "hex") == 0) g_ulMetaInfoFilter |= MDInfo::dumpMoreHex;
+                else if(_stricmp(szOptn, "csv") == 0) g_ulMetaInfoFilter |= MDInfo::dumpCSV;
+                else if(_stricmp(szOptn, "mdh") == 0) g_ulMetaInfoFilter |= MDInfo::dumpHeader;
+                else if(_stricmp(szOptn, "raw") == 0) g_ulMetaInfoFilter |= MDInfo::dumpRaw;
+                else if(_stricmp(szOptn, "hea") == 0) g_ulMetaInfoFilter |= MDInfo::dumpRawHeaps;
+                else if(_stricmp(szOptn, "sch") == 0) g_ulMetaInfoFilter |= MDInfo::dumpSchema;
+                else if(_stricmp(szOptn, "unr") == 0) g_ulMetaInfoFilter |= MDInfo::dumpUnsat;
+                else if(_stricmp(szOptn, "val") == 0) g_ulMetaInfoFilter |= MDInfo::dumpValidate;
+                else if(_stricmp(szOptn, "sta") == 0) g_ulMetaInfoFilter |= MDInfo::dumpStats;
+                else return -1;
             }
+#endif // FEATURE_CORECLR
         }
         else if (_stricmp(szOpt, "obj") == 0)
         {
