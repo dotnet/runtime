@@ -21,7 +21,7 @@ namespace System.IO.Compression.Tests
         [InlineData("unicode.zip", "unicode")]
         public static async Task UpdateReadNormal(string zipFile, string zipFolder)
         {
-            IsZipSameAsDir(await StreamHelpers.CreateTempCopyStream(zfile(zipFile)), zfolder(zipFolder), ZipArchiveMode.Update, false, false);
+            IsZipSameAsDir(await StreamHelpers.CreateTempCopyStream(zfile(zipFile)), zfolder(zipFolder), ZipArchiveMode.Update, requireExplicit: true, checkTimes: true);
         }
 
         [Fact]
@@ -50,7 +50,7 @@ namespace System.IO.Compression.Tests
         {
             var zs = new LocalMemoryStream();
             await CreateFromDir(zfolder(zipFolder), zs, ZipArchiveMode.Update);
-            IsZipSameAsDir(zs.Clone(), zfolder(zipFolder), ZipArchiveMode.Read, false, false);
+            IsZipSameAsDir(zs.Clone(), zfolder(zipFolder), ZipArchiveMode.Read, requireExplicit: true, checkTimes: true);
         }
 
         [Theory]
@@ -131,7 +131,7 @@ namespace System.IO.Compression.Tests
                 orig.Delete();
             }
 
-            IsZipSameAsDir(testArchive, zmodified("deleteMove"), ZipArchiveMode.Read, false, false);
+            IsZipSameAsDir(testArchive, zmodified("deleteMove"), ZipArchiveMode.Read, requireExplicit: true, checkTimes: true);
 
         }
         [Fact]
@@ -155,7 +155,7 @@ namespace System.IO.Compression.Tests
                 e.LastWriteTime = file.LastModifiedDate;
             }
 
-            IsZipSameAsDir(testArchive, zmodified("append"), ZipArchiveMode.Read, false, false);
+            IsZipSameAsDir(testArchive, zmodified("append"), ZipArchiveMode.Read, requireExplicit: true, checkTimes: true);
 
         }
         [Fact]
@@ -182,7 +182,7 @@ namespace System.IO.Compression.Tests
                 }
             }
 
-            IsZipSameAsDir(testArchive, zmodified("overwrite"), ZipArchiveMode.Read, false, false);
+            IsZipSameAsDir(testArchive, zmodified("overwrite"), ZipArchiveMode.Read, requireExplicit: true, checkTimes: true);
         }
 
         [Fact]
@@ -196,7 +196,7 @@ namespace System.IO.Compression.Tests
                 await updateArchive(archive, zmodified(Path.Combine("addFile", "added.txt")), "added.txt");
             }
 
-            IsZipSameAsDir(testArchive, zmodified ("addFile"), ZipArchiveMode.Read, false, false);
+            IsZipSameAsDir(testArchive, zmodified ("addFile"), ZipArchiveMode.Read, requireExplicit: true, checkTimes: true);
         }
 
         [Fact]
@@ -212,7 +212,7 @@ namespace System.IO.Compression.Tests
                 await updateArchive(archive, zmodified(Path.Combine("addFile", "added.txt")), "added.txt");
             }
 
-            IsZipSameAsDir(testArchive, zmodified("addFile"), ZipArchiveMode.Read, false, false);
+            IsZipSameAsDir(testArchive, zmodified("addFile"), ZipArchiveMode.Read, requireExplicit: true, checkTimes: true);
         }
 
         [Fact]
@@ -228,7 +228,7 @@ namespace System.IO.Compression.Tests
                 var x = archive.Entries;
             }
 
-            IsZipSameAsDir(testArchive, zmodified("addFile"), ZipArchiveMode.Read, false, false);
+            IsZipSameAsDir(testArchive, zmodified("addFile"), ZipArchiveMode.Read, requireExplicit: true, checkTimes: true);
         }
 
         private static async Task updateArchive(ZipArchive archive, String installFile, String entryName)

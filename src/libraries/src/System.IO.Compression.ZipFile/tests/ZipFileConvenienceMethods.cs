@@ -21,7 +21,7 @@ namespace System.IO.Compression.Tests
             string noBaseDir = GetTestFilePath();
             ZipFile.CreateFromDirectory(folderName, noBaseDir);
 
-            await IsZipSameAsDirAsync(noBaseDir, folderName, ZipArchiveMode.Read, true, true);
+            await IsZipSameAsDirAsync(noBaseDir, folderName, ZipArchiveMode.Read, requireExplicit: false, checkTimes: false);
         }
 
         [Fact]
@@ -122,7 +122,7 @@ namespace System.IO.Compression.Tests
                         archive.CreateEntryFromFile(sourceFilePath, entryName, CompressionLevel.Fastest);
                     Assert.NotNull(e);
                 }
-                await IsZipSameAsDirAsync(testArchive.Path, zmodified("addFile"), ZipArchiveMode.Read, true, true);
+                await IsZipSameAsDirAsync(testArchive.Path, zmodified("addFile"), ZipArchiveMode.Read, requireExplicit: false, checkTimes: false);
             }
         }
 

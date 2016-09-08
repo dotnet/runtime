@@ -10,26 +10,26 @@ namespace System.IO.Compression.Tests
     public class zip_ManualAndCompatabilityTests : ZipFileTestBase
     {
         [Theory]
-        [InlineData("7zip.zip", "normal", false, false)]
-        [InlineData("deflate64.zip", "normal", false, false)]
-        [InlineData("windows.zip", "normalWithoutEmptyDir", true, false)]
-        [InlineData("dotnetzipstreaming.zip", "normal", true, true)]
-        [InlineData("sharpziplib.zip", "normalWithoutEmptyDir", true, true)]
-        [InlineData("xceedstreaming.zip", "normal", true, true)]
-        public static async Task CompatibilityTests(string zipFile, string zipFolder, bool dontRequireExplicit, bool dontCheckTimes)
+        [InlineData("7zip.zip", "normal", true, true)]
+        [InlineData("deflate64.zip", "normal", true, true)]
+        [InlineData("windows.zip", "normalWithoutEmptyDir", false, true)]
+        [InlineData("dotnetzipstreaming.zip", "normal", false, false)]
+        [InlineData("sharpziplib.zip", "normalWithoutEmptyDir", false, false)]
+        [InlineData("xceedstreaming.zip", "normal", false, false)]
+        public static async Task CompatibilityTests(string zipFile, string zipFolder, bool requireExplicit, bool checkTimes)
         {
-            IsZipSameAsDir(await StreamHelpers.CreateTempCopyStream(compat(zipFile)), zfolder(zipFolder), ZipArchiveMode.Update, dontRequireExplicit, dontCheckTimes);
+            IsZipSameAsDir(await StreamHelpers.CreateTempCopyStream(compat(zipFile)), zfolder(zipFolder), ZipArchiveMode.Update, requireExplicit, checkTimes);
         }
 
         [Theory]
-        [InlineData("excel.xlsx", "excel", true, true)]
-        [InlineData("powerpoint.pptx", "powerpoint", true, true)]
-        [InlineData("word.docx", "word", true, true)]
-        [InlineData("silverlight.xap", "silverlight", true, true)]
-        [InlineData("packaging.package", "packaging", true, true)]
-        public static async Task CompatibilityTestsMsFiles(string withTrailing, string withoutTrailing, bool dontRequireExplicit, bool dontCheckTimes)
+        [InlineData("excel.xlsx", "excel", false, false)]
+        [InlineData("powerpoint.pptx", "powerpoint", false, false)]
+        [InlineData("word.docx", "word", false, false)]
+        [InlineData("silverlight.xap", "silverlight", false, false)]
+        [InlineData("packaging.package", "packaging", false, false)]
+        public static async Task CompatibilityTestsMsFiles(string withTrailing, string withoutTrailing, bool requireExplicit, bool checkTimes)
         {
-            IsZipSameAsDir(await StreamHelpers.CreateTempCopyStream(compat(withTrailing)), compat(withoutTrailing), ZipArchiveMode.Update, dontRequireExplicit, dontCheckTimes);
+            IsZipSameAsDir(await StreamHelpers.CreateTempCopyStream(compat(withTrailing)), compat(withoutTrailing), ZipArchiveMode.Update, requireExplicit, checkTimes);
         }
 
         /// <summary>
