@@ -190,7 +190,6 @@ void Compiler::optEarlyProp()
             // Walk the stmt tree in linear order to rewrite any array length reference with a
             // constant array length.
             bool isRewritten    = false;
-            bool bbHasNullCheck = (block->bbFlags & BBF_HAS_NULLCHECK) != 0;
             for (GenTreePtr tree = stmt->gtStmt.gtStmtList; tree != nullptr; tree = tree->gtNext)
             {
                 if (optEarlyPropRewriteTree(tree))
@@ -510,6 +509,11 @@ void Compiler::optFoldNullCheck(GenTreePtr tree)
     //                           indir
     //                             |
     //                             x
+
+    if ((compCurBB->bbFlags & BBF_HAS_NULLCHECK) == 0)
+    {
+        return;
+    }
 
     assert(tree->OperGet() == GT_IND);
     if (tree->gtGetOp1()->OperGet() == GT_LCL_VAR)
