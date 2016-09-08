@@ -64,6 +64,7 @@ private:
     // Call Lowering
     // ------------------------------
     void LowerCall(GenTree* call);
+    void LowerCompare(GenTree* tree);
     void LowerJmpMethod(GenTree* jmp);
     void LowerRet(GenTree* ret);
     GenTree* LowerDelegateInvoke(GenTreeCall* call);
