@@ -273,8 +273,8 @@ namespace System.Collections.Tests
         {
             ICollection bitArray = new BitArray(10);
             Assert.Throws<ArgumentNullException>("array", () => bitArray.CopyTo(null, 0));
-            Assert.Throws<ArgumentException>("array", () => bitArray.CopyTo(new long[10], 0));
-            Assert.Throws<ArgumentException>("array", () => bitArray.CopyTo(new int[10, 10], 0));
+            Assert.Throws<ArgumentException>(() => bitArray.CopyTo(new long[10], 0));
+            Assert.Throws<ArgumentException>(() => bitArray.CopyTo(new int[10, 10], 0));
         }
 
         [Theory]
