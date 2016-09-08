@@ -246,6 +246,67 @@ namespace System.Tests
             }
         }
 
+        // The commented out folders aren't set on all systems.
+        [Theory]
+        [InlineData(Environment.SpecialFolder.ApplicationData)]
+        [InlineData(Environment.SpecialFolder.CommonApplicationData)]
+        [InlineData(Environment.SpecialFolder.LocalApplicationData)]
+        [InlineData(Environment.SpecialFolder.Cookies)]
+        [InlineData(Environment.SpecialFolder.Desktop)]
+        [InlineData(Environment.SpecialFolder.Favorites)]
+        [InlineData(Environment.SpecialFolder.History)]
+        [InlineData(Environment.SpecialFolder.InternetCache)]
+        [InlineData(Environment.SpecialFolder.Programs)]
+        // [InlineData(Environment.SpecialFolder.MyComputer)]
+        [InlineData(Environment.SpecialFolder.MyMusic)]
+        [InlineData(Environment.SpecialFolder.MyPictures)]
+        [InlineData(Environment.SpecialFolder.MyVideos)]
+        [InlineData(Environment.SpecialFolder.Recent)]
+        [InlineData(Environment.SpecialFolder.SendTo)]
+        [InlineData(Environment.SpecialFolder.StartMenu)]
+        [InlineData(Environment.SpecialFolder.Startup)]
+        [InlineData(Environment.SpecialFolder.System)]
+        [InlineData(Environment.SpecialFolder.Templates)]
+        [InlineData(Environment.SpecialFolder.DesktopDirectory)]
+        [InlineData(Environment.SpecialFolder.Personal)]
+        [InlineData(Environment.SpecialFolder.ProgramFiles)]
+        [InlineData(Environment.SpecialFolder.CommonProgramFiles)]
+        [InlineData(Environment.SpecialFolder.AdminTools)]
+        [InlineData(Environment.SpecialFolder.CDBurning)]
+        [InlineData(Environment.SpecialFolder.CommonAdminTools)]
+        [InlineData(Environment.SpecialFolder.CommonDocuments)]
+        [InlineData(Environment.SpecialFolder.CommonMusic)]
+        // [InlineData(Environment.SpecialFolder.CommonOemLinks)]
+        [InlineData(Environment.SpecialFolder.CommonPictures)]
+        [InlineData(Environment.SpecialFolder.CommonStartMenu)]
+        [InlineData(Environment.SpecialFolder.CommonPrograms)]
+        [InlineData(Environment.SpecialFolder.CommonStartup)]
+        [InlineData(Environment.SpecialFolder.CommonDesktopDirectory)]
+        [InlineData(Environment.SpecialFolder.CommonTemplates)]
+        [InlineData(Environment.SpecialFolder.CommonVideos)]
+        [InlineData(Environment.SpecialFolder.Fonts)]
+        [InlineData(Environment.SpecialFolder.NetworkShortcuts)]
+        // [InlineData(Environment.SpecialFolder.PrinterShortcuts)]
+        [InlineData(Environment.SpecialFolder.UserProfile)]
+        [InlineData(Environment.SpecialFolder.CommonProgramFilesX86)]
+        [InlineData(Environment.SpecialFolder.ProgramFilesX86)]
+        [InlineData(Environment.SpecialFolder.Resources)]
+        // [InlineData(Environment.SpecialFolder.LocalizedResources)]
+        [InlineData(Environment.SpecialFolder.SystemX86)]
+        [InlineData(Environment.SpecialFolder.Windows)]
+        [PlatformSpecific(Xunit.PlatformID.Windows)]
+        public unsafe void GetFolderPath_Windows(Environment.SpecialFolder folder)
+        {
+            string knownFolder = Environment.GetFolderPath(folder);
+            Assert.NotEmpty(knownFolder);
+
+            // Call the older folder API to compare our results.
+            char* buffer = stackalloc char[260];
+            SHGetFolderPathW(IntPtr.Zero, (int)folder, IntPtr.Zero, 0, buffer);
+            string folderPath = new string(buffer);
+            Assert.Equal(folderPath, knownFolder);
+        }
+
         [Fact]
         [PlatformSpecific(Xunit.PlatformID.AnyUnix)]
         public void GetLogicalDrives_Unix_AtLeastOneIsRoot()
@@ -278,5 +339,13 @@ namespace System.Tests
 
         [DllImport("api-ms-win-core-file-l1-1-0.dll", SetLastError = true)]
         internal static extern int GetLogicalDrives();
+
+        [DllImport("shell32.dll", SetLastError = false, BestFitMapping = false, ExactSpelling = true)]
+        internal unsafe static extern int SHGetFolderPathW(
+            IntPtr hwndOwner,
+            int nFolder,
+            IntPtr hToken,
+            uint dwFlags,
+            char* pszPath);
     }
 }

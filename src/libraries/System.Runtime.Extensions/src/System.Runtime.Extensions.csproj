@@ -155,7 +155,7 @@
     </Compile>
   </ItemGroup>
   <!-- WINDOWS: CoreCLR -->
-  <ItemGroup Condition=" '$(TargetsWindows)' == 'true' And '$(CoreClrOrCorRt)' == 'true'">
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true' and '$(CoreClrOrCorRt)' == 'true'">
     <Compile Include="System\Environment.Win32.cs" />
     <Compile Include="System\IO\Path.Win32.cs" />
     <Compile Include="$(CommonPath)\Interop\Windows\BCrypt\Interop.BCryptGenRandom.cs">
@@ -188,8 +188,9 @@
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.LookupAccountNameW.cs">
       <Link>Common\Interop\Windows\mincore\Interop.LookupAccountNameW.cs</Link>
     </Compile>
-  </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsWindows)' == 'true' And '$(CoreClrOrCorRt)' == 'true'">
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.SHGetKnownFolderPath.cs">
+      <Link>Common\Interop\Windows\mincore\Interop.SHGetKnownFolderPath.cs</Link>
+    </Compile>
     <!-- Microsoft.Win32.Registry, needed for some Environment env var support -->
     <Compile Include="..\..\Microsoft.Win32.Registry\src\Microsoft\Win32\Registry.cs">
       <Link>Microsoft.Win32.Registry\src\Microsoft\Win32\Registry.cs</Link>
