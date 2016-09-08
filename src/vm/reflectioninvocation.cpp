@@ -2637,7 +2637,6 @@ FCIMPL0(void, ReflectionInvocation::EnsureSufficientExecutionStack)
 }
 FCIMPLEND
 
-#ifdef FEATURE_CORECLR
 // As with EnsureSufficientExecutionStack, this method checks and returns whether there is 
 // sufficient stack to execute the average Framework method, but rather than throwing,
 // it simply returns a Boolean: true for sufficient stack space, otherwise false.
@@ -2654,7 +2653,6 @@ FCIMPL0(FC_BOOL_RET, ReflectionInvocation::TryEnsureSufficientExecutionStack)
 	FC_RETURN_BOOL(current >= limit);
 }
 FCIMPLEND
-#endif // FEATURE_CORECLR
 
 struct ECWGCFContext
 {

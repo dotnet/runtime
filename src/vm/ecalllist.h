@@ -1843,9 +1843,7 @@ FCFuncStart(gCompilerFuncs)
     FCFuncElement("GetHashCode", ObjectNative::GetHashCode)
     FCFuncElement("Equals", ObjectNative::Equals)
     FCFuncElement("EnsureSufficientExecutionStack", ReflectionInvocation::EnsureSufficientExecutionStack)
-#ifdef FEATURE_CORECLR
     FCFuncElement("TryEnsureSufficientExecutionStack", ReflectionInvocation::TryEnsureSufficientExecutionStack)
-#endif // FEATURE_CORECLR
 FCFuncEnd()
 
 FCFuncStart(gContextSynchronizationFuncs)
