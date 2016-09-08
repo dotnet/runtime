@@ -386,18 +386,9 @@ echo "CORE_ROOT dir = $CORE_ROOT"
 
 DO_SETUP=TRUE
 
-dir $testNativeBinDir/../../../../..
-echo 'dir $testNativeBinDir/../../../../..'
-dir $testNativeBinDir/../../../../../packages
-echo 'dir $testNativeBinDir/../../../../../packages'
-dir $testNativeBinDir/../../../../../packages/Microsoft.DotNet.xunit.performance.runner.cli
-echo 'dir $testNativeBinDir/../../../../../packages/Microsoft.DotNet.xunit.performance.runner.cli'
-dir $testNativeBinDir/../../../../../packages/Microsoft.DotNet.xunit.performance.runner.cli/1.0.0-alpha-build0035
-echo 'dir $testNativeBinDir/../../../../../packages/Microsoft.DotNet.xunit.performance.runner.cli/1.0.0-alpha-build0035'
-
 if [ ${DO_SETUP} == "TRUE" ]; then
-cp  $testNativeBinDir/../../../../../packages/Microsoft.DotNet.xunit.performance.runner.cli/1.0.0-alpha-build0035/lib/netstandard1.3/Microsoft.DotNet.xunit.performance.runner.cli.dll .
-cp  $testNativeBinDir/../../../../../packages/Microsoft.DotNet.xunit.performance.run.core/1.0.0-alpha-build0035/lib/dotnet/*.dll .
+cp  $testNativeBinDir/../../../../../packages/Microsoft.DotNet.xunit.performance.runner.cli/1.0.0-alpha-build0040/lib/netstandard1.3/Microsoft.DotNet.xunit.performance.runner.cli.dll .
+cp  $testNativeBinDir/../../../../../packages/Microsoft.DotNet.xunit.performance.run.core/1.0.0-alpha-build0040/lib/dotnet/*.dll .
 fi
 
 # Run coreclr performance tests
@@ -414,5 +405,7 @@ cp $testcase .
 
 chmod u+x ./corerun
 ./corerun Microsoft.DotNet.xunit.performance.runner.cli.dll $test -runner xunit.console.netcore.exe -runnerhost ./corerun -verbose -runid perf-$testname
-
 done
+
+mkdir ../../../../../sandbox
+cp *.xml ../../../../../sandbox
