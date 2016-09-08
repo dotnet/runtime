@@ -188,7 +188,6 @@ namespace System.Runtime.CompilerServices {
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         public static extern void EnsureSufficientExecutionStack();
 
-#if FEATURE_CORECLR
         // This method ensures that there is sufficient stack to execute the average Framework function.
         // If there is not enough stack, then it return false.
         // Note: this method is not part of the CER support, and is not to be confused with ProbeForSufficientStack
@@ -196,8 +195,7 @@ namespace System.Runtime.CompilerServices {
         [System.Security.SecuritySafeCritical]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
-        internal static extern bool TryEnsureSufficientExecutionStack();
-#endif
+        public static extern bool TryEnsureSufficientExecutionStack();
 
         [System.Security.SecurityCritical]  // auto-generated_required
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
