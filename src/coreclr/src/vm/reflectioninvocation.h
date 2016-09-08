@@ -56,10 +56,8 @@ public:
 #endif // !FEATURE_CORECLR
     static FCDECL1(void, PrepareContractedDelegate, Object* delegateUNSAFE);
     static FCDECL0(void, ProbeForSufficientStack);    
-	static FCDECL0(void, EnsureSufficientExecutionStack);
-#ifdef FEATURE_CORECLR // currently only used from mscorlib in FEATURE_CORECLR
-	static FCDECL0(FC_BOOL_RET, TryEnsureSufficientExecutionStack);
-#endif // FEATURE_CORECLR
+    static FCDECL0(void, EnsureSufficientExecutionStack);
+    static FCDECL0(FC_BOOL_RET, TryEnsureSufficientExecutionStack);
     static FCDECL3(void, ExecuteCodeWithGuaranteedCleanup, Object* pCodeDelegateUNSAFE, Object* pBackoutDelegateUNSAFE, Object* pUserDataUNSAFE);
 
     // TypedReference functions, should go somewhere else
