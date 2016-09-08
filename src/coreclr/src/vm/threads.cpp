@@ -18,7 +18,7 @@
 #include "excep.h"
 #include "comsynchronizable.h"
 #include "log.h"
-#include "gc.h"
+#include "gcheaputilities.h"
 #include "mscoree.h"
 #include "dbginterface.h"
 #include "corprof.h"                // profiling
@@ -3889,14 +3889,14 @@ void Thread::OnThreadTerminate(BOOL holdingLock)
 #endif
     }
 
-    if  (GCHeap::IsGCHeapInitialized())
+    if  (GCHeapUtilities::IsGCHeapInitialized())
     {
         // Guaranteed to NOT be a shutdown case, because we tear down the heap before
         // we tear down any threads during shutdown.
         if (ThisThreadID == CurrentThreadID)
         {
             GCX_COOP();
-            GCHeap::GetGCHeap()->FixAllocContext(&m_alloc_context, FALSE, NULL, NULL);
+            GCHeapUtilities::GetGCHeap()->FixAllocContext(&m_alloc_context, FALSE, NULL, NULL);
             m_alloc_context.init();
         }
     }
@@ -3957,11 +3957,11 @@ void Thread::OnThreadTerminate(BOOL holdingLock)
 #endif
         }
 
-        if  (GCHeap::IsGCHeapInitialized() && ThisThreadID != CurrentThreadID)
+        if  (GCHeapUtilities::IsGCHeapInitialized() && ThisThreadID != CurrentThreadID)
         {
             // We must be holding the ThreadStore lock in order to clean up alloc context.
             // We should never call FixAllocContext during GC.
-            GCHeap::GetGCHeap()->FixAllocContext(&m_alloc_context, FALSE, NULL, NULL);
+            GCHeapUtilities::GetGCHeap()->FixAllocContext(&m_alloc_context, FALSE, NULL, NULL);
             m_alloc_context.init();
         }
 
@@ -9846,7 +9846,7 @@ void Thread::DoExtraWorkForFinalizer()
         Thread::CleanupDetachedThreads();
     }
     
-    if(ExecutionManager::IsCacheCleanupRequired() && GCHeap::GetGCHeap()->GetCondemnedGeneration()>=1)
+    if(ExecutionManager::IsCacheCleanupRequired() && GCHeapUtilities::GetGCHeap()->GetCondemnedGeneration()>=1)
     {
         ExecutionManager::ClearCaches();
     }
@@ -11186,7 +11186,7 @@ void Thread::SetHasPromotedBytes ()
 
     m_fPromoted = TRUE;
 
-    _ASSERTE(GCHeap::IsGCInProgress()  && IsGCThread ());
+    _ASSERTE(GCHeapUtilities::IsGCInProgress()  && IsGCThread ());
 
     if (!m_fPreemptiveGCDisabled)
     {

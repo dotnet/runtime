@@ -36,29 +36,10 @@ inline void checkGCWriteBarrier() {}
 
 void GCProfileWalkHeap();
 
-class GCHeap;
 class gc_heap;
 class CFinalize;
 
-// TODO : it would be easier to make this an ORed value
-enum gc_reason
-{
-    reason_alloc_soh = 0,
-    reason_induced = 1,
-    reason_lowmemory = 2,
-    reason_empty = 3,
-    reason_alloc_loh = 4,
-    reason_oos_soh = 5,
-    reason_oos_loh = 6,
-    reason_induced_noforce = 7, // it's an induced GC and doesn't have to be blocking.
-    reason_gcstress = 8,        // this turns into reason_induced & gc_mechanisms.stress_induced = true
-    reason_lowmemory_blocking = 9,
-    reason_induced_compacting = 10,
-    reason_lowmemory_host = 11,
-    reason_max
-};
-
-class GCHeap : public ::GCHeap
+class GCHeap : public IGCHeapInternal
 {
 protected:
 
@@ -111,17 +92,15 @@ public:
 
     //flags can be GC_ALLOC_CONTAINS_REF GC_ALLOC_FINALIZE
     Object*  Alloc (size_t size, uint32_t flags);
-#ifdef FEATURE_64BIT_ALIGNMENT
     Object*  AllocAlign8 (size_t size, uint32_t flags);
-    Object*  AllocAlign8 (alloc_context* acontext, size_t size, uint32_t flags);
+    Object*  AllocAlign8 (gc_alloc_context* acontext, size_t size, uint32_t flags);
 private:
     Object*  AllocAlign8Common (void* hp, alloc_context* acontext, size_t size, uint32_t flags);
 public:
-#endif // FEATURE_64BIT_ALIGNMENT
     Object*  AllocLHeap (size_t size, uint32_t flags);
-    Object* Alloc (alloc_context* acontext, size_t size, uint32_t flags);
+    Object* Alloc (gc_alloc_context* acontext, size_t size, uint32_t flags);
 
-    void FixAllocContext (alloc_context* acontext,
+    void FixAllocContext (gc_alloc_context* acontext,
                                             BOOL lockp, void* arg, void *heap);
 
     Object* GetContainingObject(void *pInteriorPtr);
@@ -132,7 +111,7 @@ public:
 #endif //MULTIPLE_HEAPS
 
     int GetHomeHeapNumber ();
-    bool IsThreadUsingAllocationContextHeap(alloc_context* acontext, int thread_number);
+    bool IsThreadUsingAllocationContextHeap(gc_alloc_context* acontext, int thread_number);
     int GetNumberOfHeaps ();
     void HideAllocContext(alloc_context*);
     void RevealAllocContext(alloc_context*);
@@ -176,9 +155,7 @@ public:
     BOOL    IsEphemeral (Object* object);
     BOOL    IsHeapPointer (void* object, BOOL small_heap_only = FALSE);
     
-#ifdef VERIFY_HEAP
     void    ValidateObjectMember (Object *obj);
-#endif //_DEBUG
 
     PER_HEAP    size_t  ApproxTotalBytesInUse(BOOL small_heap_only = FALSE);
     PER_HEAP    size_t  ApproxFreeBytes();
@@ -199,8 +176,6 @@ public:
 
     int StartNoGCRegion(uint64_t totalSize, BOOL lohSizeKnown, uint64_t lohSize, BOOL disallowFullBlockingGC);
     int EndNoGCRegion();
-
-    PER_HEAP_ISOLATED     unsigned GetMaxGeneration();
  
     unsigned GetGcCount();
 
@@ -224,9 +199,7 @@ public:
     BOOL ShouldRestartFinalizerWatchDog();
 
     void SetCardsAfterBulkCopy( Object**, size_t);
-#if defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
     void WalkObject (Object* obj, walk_fn fn, void* context);
-#endif // defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
 
 public:	// FIX 
 
@@ -281,11 +254,12 @@ private:
         // the condition here may have to change as well.
         return g_TrapReturningThreads == 0;
     }
-#ifndef FEATURE_REDHAWK // Redhawk forces relocation a different way
-#ifdef STRESS_HEAP 
 public:
     //return TRUE if GC actually happens, otherwise FALSE
-    BOOL    StressHeap(alloc_context * acontext = 0);
+    BOOL    StressHeap(gc_alloc_context * acontext = 0);
+
+#ifndef FEATURE_REDHAWK // Redhawk forces relocation a different way
+#ifdef STRESS_HEAP 
 protected:
 
     // only used in BACKGROUND_GC, but the symbol is not defined yet...
@@ -300,17 +274,13 @@ protected:
 #endif  // STRESS_HEAP 
 #endif // FEATURE_REDHAWK
 
-#if defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
     virtual void DescrGenerationsToProfiler (gen_walk_fn fn, void *context);
-#endif // defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
 
-#ifdef VERIFY_HEAP
 public:
     Object * NextObj (Object * object);
-#ifdef FEATURE_BASICFREEZE
+#if defined (FEATURE_BASICFREEZE) && defined (VERIFY_HEAP)
     BOOL IsInFrozenSegment (Object * object);
-#endif //FEATURE_BASICFREEZE
-#endif //VERIFY_HEAP     
+#endif // defined (FEATURE_BASICFREEZE) && defined (VERIFY_HEAP)
 };
 
 #endif  // GCIMPL_H_

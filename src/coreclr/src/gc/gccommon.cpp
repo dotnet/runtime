@@ -15,10 +15,12 @@
 #include "gc.h"
 
 #ifdef FEATURE_SVR_GC
-SVAL_IMPL_INIT(uint32_t,GCHeap,gcHeapType,GCHeap::GC_HEAP_INVALID);
+SVAL_IMPL_INIT(uint32_t,IGCHeap,gcHeapType,IGCHeap::GC_HEAP_INVALID);
 #endif // FEATURE_SVR_GC
 
-GPTR_IMPL(GCHeap,g_pGCHeap);
+SVAL_IMPL_INIT(uint32_t,IGCHeap,maxGeneration,2);
+
+IGCHeapInternal* g_theGcHeap;
 
 /* global versions of the card table and brick table */ 
 GPTR_IMPL(uint32_t,g_card_table);
@@ -110,6 +112,43 @@ void record_changed_seg (uint8_t* start, uint8_t* end,
     {
         saved_changed_segs_count = 0;
     }
+}
+
+// The runtime needs to know whether we're using workstation or server GC 
+// long before the GCHeap is created.
+void InitializeHeapType(bool bServerHeap)
+{
+    LIMITED_METHOD_CONTRACT;
+#ifdef FEATURE_SVR_GC
+    IGCHeap::gcHeapType = bServerHeap ? IGCHeap::GC_HEAP_SVR : IGCHeap::GC_HEAP_WKS;
+#ifdef WRITE_BARRIER_CHECK
+    if (IGCHeap::gcHeapType == IGCHeap::GC_HEAP_SVR)
+    {
+        g_GCShadow = 0;
+        g_GCShadowEnd = 0;
+    }
+#endif // WRITE_BARRIER_CHECK
+#else // FEATURE_SVR_GC
+    UNREFERENCED_PARAMETER(bServerHeap);
+    CONSISTENCY_CHECK(bServerHeap == false);
+#endif // FEATURE_SVR_GC
+}
+
+IGCHeap* InitializeGarbageCollector(IGCToCLR* clrToGC)
+{
+    LIMITED_METHOD_CONTRACT;
+    UNREFERENCED_PARAMETER(clrToGC);
+
+    IGCHeapInternal* heap;
+#ifdef FEATURE_SVR_GC
+    assert(IGCHeap::gcHeapType != IGCHeap::GC_HEAP_INVALID);
+    heap = IGCHeap::gcHeapType == IGCHeap::GC_HEAP_SVR ? SVR::CreateGCHeap() : WKS::CreateGCHeap();
+#else
+    heap = WKS::CreateGCHeap();
+#endif
+
+    g_theGcHeap = heap;
+    return heap;
 }
 
 #endif // !DACCESS_COMPILE

@@ -2650,7 +2650,7 @@ void InitJITHelpers1()
         ))
     {
 
-        _ASSERTE(GCHeap::UseAllocationContexts());
+        _ASSERTE(GCHeapUtilities::UseAllocationContexts());
         // If the TLS for Thread is low enough use the super-fast helpers
         if (gThreadTLSIndex < TLS_MINIMUM_AVAILABLE)
         {
