@@ -20302,21 +20302,55 @@ void                Compiler::fgDebugCheckFlags(GenTreePtr tree)
             }
             break;
 
+        case GT_LIST:
+            if ((op2 != nullptr) && op2->IsList())
+            {
+                ArrayStack<GenTree *> stack(this);
+                while ((tree->gtGetOp2() != nullptr) && tree->gtGetOp2()->IsList())
+                {
+                    stack.Push(tree);
+                    tree = tree->gtGetOp2();
+                }
+
+                fgDebugCheckFlags(tree);
+
+                while (stack.Height() > 0)
+                {
+                    tree = stack.Pop();
+                    assert((tree->gtFlags & GTF_REVERSE_OPS) == 0);
+                    fgDebugCheckFlags(tree->gtOp.gtOp1);
+                    chkFlags |= (tree->gtOp.gtOp1->gtFlags & GTF_ALL_EFFECT);
+                    chkFlags |= (tree->gtGetOp2()->gtFlags & GTF_ALL_EFFECT);
+                    fgDebugCheckFlagsHelper(tree, (tree->gtFlags & GTF_ALL_EFFECT), chkFlags);
+                }
+
+                return;
+            }
+            break;
+
         default:
             break;
         }
 
         /* Recursively check the subtrees */
 
-        if (op1) { fgDebugCheckFlags(op1);
-}
-        if (op2) { fgDebugCheckFlags(op2);
-}
+        if (op1)
+        {
+            fgDebugCheckFlags(op1);
+        }
+        if (op2)
+        {
+            fgDebugCheckFlags(op2);
+        }
 
-        if (op1) { chkFlags   |= (op1->gtFlags & GTF_ALL_EFFECT);
-}
-        if (op2) { chkFlags   |= (op2->gtFlags & GTF_ALL_EFFECT);
-}
+        if (op1) 
+        {
+            chkFlags   |= (op1->gtFlags & GTF_ALL_EFFECT);
+        }
+        if (op2)
+        {
+            chkFlags   |= (op2->gtFlags & GTF_ALL_EFFECT);
+        }
 
         // We reuse the value of GTF_REVERSE_OPS for a GT_IND-specific flag,
         // so exempt that (unary) operator.
@@ -20378,131 +20412,150 @@ void                Compiler::fgDebugCheckFlags(GenTreePtr tree)
 
     /* See what kind of a special operator we have here */
 
-    else { switch  (tree->OperGet())
-    {
-    case GT_CALL:
+    else 
+    { 
+        switch  (tree->OperGet())
+        {
+        case GT_CALL:
 
-        GenTreePtr      args;
-        GenTreePtr      argx;
-        GenTreeCall*    call;
+            GenTreePtr      args;
+            GenTreePtr      argx;
+            GenTreeCall*    call;
         
-        call = tree->AsCall();
+            call = tree->AsCall();
 
-        chkFlags |= GTF_CALL;
+            chkFlags |= GTF_CALL;
 
-        if ((treeFlags & GTF_EXCEPT) && !(chkFlags & GTF_EXCEPT))
-        {
-            switch (eeGetHelperNum(tree->gtCall.gtCallMethHnd))
+            if ((treeFlags & GTF_EXCEPT) && !(chkFlags & GTF_EXCEPT))
             {
-                // Is this a helper call that can throw an exception ?
-            case CORINFO_HELP_LDIV:
-            case CORINFO_HELP_LMOD:
-            case CORINFO_HELP_METHOD_ACCESS_CHECK:
-            case CORINFO_HELP_FIELD_ACCESS_CHECK:
-            case CORINFO_HELP_CLASS_ACCESS_CHECK:
-            case CORINFO_HELP_DELEGATE_SECURITY_CHECK:
-                chkFlags |= GTF_EXCEPT;
-                break;
-            default:
-                break;
+                switch (eeGetHelperNum(tree->gtCall.gtCallMethHnd))
+                {
+                    // Is this a helper call that can throw an exception ?
+                case CORINFO_HELP_LDIV:
+                case CORINFO_HELP_LMOD:
+                case CORINFO_HELP_METHOD_ACCESS_CHECK:
+                case CORINFO_HELP_FIELD_ACCESS_CHECK:
+                case CORINFO_HELP_CLASS_ACCESS_CHECK:
+                case CORINFO_HELP_DELEGATE_SECURITY_CHECK:
+                    chkFlags |= GTF_EXCEPT;
+                    break;
+                default:
+                    break;
+                }
             }
-        }
 
-        if (call->gtCallObjp)
-        {
-            fgDebugCheckFlags(call->gtCallObjp);
-            chkFlags |= (call->gtCallObjp->gtFlags & GTF_SIDE_EFFECT);
-
-            if (call->gtCallObjp->gtFlags & GTF_ASG)
+            if (call->gtCallObjp)
             {
-                treeFlags |= GTF_ASG;
+                fgDebugCheckFlags(call->gtCallObjp);
+                chkFlags |= (call->gtCallObjp->gtFlags & GTF_SIDE_EFFECT);
+
+                if (call->gtCallObjp->gtFlags & GTF_ASG)
+                {
+                    treeFlags |= GTF_ASG;
+                }
             }
-        }
 
-        for (args = call->gtCallArgs; args; args = args->gtOp.gtOp2)
-        {
-            argx = args->gtOp.gtOp1;
-            fgDebugCheckFlags(argx);
-
-            chkFlags |= (argx->gtFlags & GTF_SIDE_EFFECT);
-
-            if (argx->gtFlags & GTF_ASG)
+            for (args = call->gtCallArgs; args; args = args->gtOp.gtOp2)
             {
-                treeFlags |= GTF_ASG;
+                argx = args->gtOp.gtOp1;
+                fgDebugCheckFlags(argx);
+
+                chkFlags |= (argx->gtFlags & GTF_SIDE_EFFECT);
+
+                if (argx->gtFlags & GTF_ASG)
+                {
+                    treeFlags |= GTF_ASG;
+                }
             }
-        }
 
-        for (args = call->gtCallLateArgs; args; args = args->gtOp.gtOp2)
-        {
-            argx = args->gtOp.gtOp1;
-            fgDebugCheckFlags(argx);
-
-            chkFlags |= (argx->gtFlags & GTF_SIDE_EFFECT);
-
-            if (argx->gtFlags & GTF_ASG)
+            for (args = call->gtCallLateArgs; args; args = args->gtOp.gtOp2)
             {
-                treeFlags |= GTF_ASG;
+                argx = args->gtOp.gtOp1;
+                fgDebugCheckFlags(argx);
+
+                chkFlags |= (argx->gtFlags & GTF_SIDE_EFFECT);
+
+                if (argx->gtFlags & GTF_ASG)
+                {
+                    treeFlags |= GTF_ASG;
+                }
             }
-        }
 
-        if ((call->gtCallType == CT_INDIRECT) && (call->gtCallCookie != nullptr))
-        {
-            fgDebugCheckFlags(call->gtCallCookie);
-            chkFlags |= (call->gtCallCookie->gtFlags & GTF_SIDE_EFFECT);
-        }
-
-        if (call->gtCallType == CT_INDIRECT)
-        {
-            fgDebugCheckFlags(call->gtCallAddr);
-            chkFlags |= (call->gtCallAddr->gtFlags & GTF_SIDE_EFFECT);
-        }
-
-        if (call->IsUnmanaged() &&
-            (call->gtCallMoreFlags & GTF_CALL_M_UNMGD_THISCALL))
-        {
-            if (call->gtCallArgs->gtOp.gtOp1->OperGet() == GT_NOP)
+            if ((call->gtCallType == CT_INDIRECT) && (call->gtCallCookie != nullptr))
             {
-                noway_assert(call->gtCallLateArgs->gtOp.gtOp1->TypeGet() == TYP_I_IMPL ||
-                             call->gtCallLateArgs->gtOp.gtOp1->TypeGet() == TYP_BYREF);
+                fgDebugCheckFlags(call->gtCallCookie);
+                chkFlags |= (call->gtCallCookie->gtFlags & GTF_SIDE_EFFECT);
             }
-            else
+
+            if (call->gtCallType == CT_INDIRECT)
             {
-                noway_assert(call->gtCallArgs->gtOp.gtOp1->TypeGet() == TYP_I_IMPL ||
-                             call->gtCallArgs->gtOp.gtOp1->TypeGet() == TYP_BYREF);
+                fgDebugCheckFlags(call->gtCallAddr);
+                chkFlags |= (call->gtCallAddr->gtFlags & GTF_SIDE_EFFECT);
             }
+
+            if (call->IsUnmanaged() &&
+                (call->gtCallMoreFlags & GTF_CALL_M_UNMGD_THISCALL))
+            {
+                if (call->gtCallArgs->gtOp.gtOp1->OperGet() == GT_NOP)
+                {
+                    noway_assert(call->gtCallLateArgs->gtOp.gtOp1->TypeGet() == TYP_I_IMPL ||
+                                 call->gtCallLateArgs->gtOp.gtOp1->TypeGet() == TYP_BYREF);
+                }
+                else
+                {
+                    noway_assert(call->gtCallArgs->gtOp.gtOp1->TypeGet() == TYP_I_IMPL ||
+                                 call->gtCallArgs->gtOp.gtOp1->TypeGet() == TYP_BYREF);
+                }
+            }
+            break;
+
+        case GT_ARR_ELEM:
+
+            GenTreePtr      arrObj;
+            unsigned        dim;
+
+            arrObj = tree->gtArrElem.gtArrObj;
+            fgDebugCheckFlags(arrObj);
+            chkFlags   |= (arrObj->gtFlags & GTF_ALL_EFFECT);
+
+            for (dim = 0; dim < tree->gtArrElem.gtArrRank; dim++)
+            {
+                fgDebugCheckFlags(tree->gtArrElem.gtArrInds[dim]);
+                chkFlags |= tree->gtArrElem.gtArrInds[dim]->gtFlags & GTF_ALL_EFFECT;
+            }
+            break;
+
+        case GT_ARR_OFFSET:
+            fgDebugCheckFlags(tree->gtArrOffs.gtOffset);
+            chkFlags   |= (tree->gtArrOffs.gtOffset->gtFlags & GTF_ALL_EFFECT);
+            fgDebugCheckFlags(tree->gtArrOffs.gtIndex);
+            chkFlags   |= (tree->gtArrOffs.gtIndex->gtFlags & GTF_ALL_EFFECT);
+            fgDebugCheckFlags(tree->gtArrOffs.gtArrObj);
+            chkFlags   |= (tree->gtArrOffs.gtArrObj->gtFlags & GTF_ALL_EFFECT);
+            break;
+
+        default:
+            break;
         }
-        break;
-
-    case GT_ARR_ELEM:
-
-        GenTreePtr      arrObj;
-        unsigned        dim;
-
-        arrObj = tree->gtArrElem.gtArrObj;
-        fgDebugCheckFlags(arrObj);
-        chkFlags   |= (arrObj->gtFlags & GTF_ALL_EFFECT);
-
-        for (dim = 0; dim < tree->gtArrElem.gtArrRank; dim++)
-        {
-            fgDebugCheckFlags(tree->gtArrElem.gtArrInds[dim]);
-            chkFlags |= tree->gtArrElem.gtArrInds[dim]->gtFlags & GTF_ALL_EFFECT;
-        }
-        break;
-
-    case GT_ARR_OFFSET:
-        fgDebugCheckFlags(tree->gtArrOffs.gtOffset);
-        chkFlags   |= (tree->gtArrOffs.gtOffset->gtFlags & GTF_ALL_EFFECT);
-        fgDebugCheckFlags(tree->gtArrOffs.gtIndex);
-        chkFlags   |= (tree->gtArrOffs.gtIndex->gtFlags & GTF_ALL_EFFECT);
-        fgDebugCheckFlags(tree->gtArrOffs.gtArrObj);
-        chkFlags   |= (tree->gtArrOffs.gtArrObj->gtFlags & GTF_ALL_EFFECT);
-        break;
-
-    default:
-        break;
     }
+
+    fgDebugCheckFlagsHelper(tree, treeFlags, chkFlags);
 }
 
+//------------------------------------------------------------------------------
+// fgDebugCheckFlagsHelper : Check if all bits that are set in chkFlags are also set in treeFlags.
+//
+//
+// Arguments:
+//    tree  - Tree whose flags are being checked
+//    treeFlags - Actual flags on the tree
+//    chkFlags - Expected flags
+//
+// Note:
+//    Checking that all bits that are set in treeFlags are also set in chkFlags is currently disabled.
+
+void  Compiler::fgDebugCheckFlagsHelper(GenTreePtr tree, unsigned treeFlags, unsigned chkFlags)
+{
     if (chkFlags & ~treeFlags)
     {
         // Print the tree so we can see it in the log.
@@ -20524,12 +20577,12 @@ void                Compiler::fgDebugCheckFlags(GenTreePtr tree)
 #if 0
         // TODO-Cleanup:
         /* The tree has extra flags set. However, this will happen if we
-           replace a subtree with something, but don't clear the flags up
-           the tree. Can't flag this unless we start clearing flags above.
+        replace a subtree with something, but don't clear the flags up
+        the tree. Can't flag this unless we start clearing flags above.
 
-           Note: we need this working for GTF_CALL and CSEs, so I'm enabling
-           it for calls.
-           */
+        Note: we need this working for GTF_CALL and CSEs, so I'm enabling
+        it for calls.
+        */
         if (tree->OperGet() != GT_CALL && (treeFlags & GTF_CALL) && !(chkFlags & GTF_CALL))
         {
             // Print the tree so we can see it in the log.
@@ -20545,9 +20598,9 @@ void                Compiler::fgDebugCheckFlags(GenTreePtr tree)
             GenTree::gtDispFlags(treeFlags & ~chkFlags, GTF_DEBUG_NONE);
             printf("\n");
             gtDispTree(tree);
-        }
-#endif // 0
     }
+#endif // 0
+}
 }
 
 // DEBUG routine to check correctness of the internal gtNext, gtPrev threading of a statement.
