@@ -81,7 +81,7 @@
     </StaticDependency>
 
     <StaticDependency Include="Microsoft.xunit.netcore.extensions;Microsoft.DotNet.BuildTools.TestSuite">
-      <Version>1.0.0-prerelease-00731-01</Version>
+      <Version>1.0.0-prerelease-00807-03</Version>
     </StaticDependency>
 
     <!--
