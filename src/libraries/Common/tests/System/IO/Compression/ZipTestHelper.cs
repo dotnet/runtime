@@ -137,13 +137,13 @@ namespace System.IO.Compression.Tests
             await IsZipSameAsDirAsync(archiveFile, directory, mode, false, false);
         }
 
-        public static async Task IsZipSameAsDirAsync(String archiveFile, String directory, ZipArchiveMode mode, bool dontRequireExplicit, bool dontCheckTimes)
+        public static async Task IsZipSameAsDirAsync(String archiveFile, String directory, ZipArchiveMode mode, bool requireExplicit, bool checkTimes)
         {
             var s = await StreamHelpers.CreateTempCopyStream(archiveFile);
-            IsZipSameAsDir(s, directory, mode, dontRequireExplicit, dontCheckTimes);
+            IsZipSameAsDir(s, directory, mode, requireExplicit, checkTimes);
         }
 
-        public static void IsZipSameAsDir(Stream archiveFile, String directory, ZipArchiveMode mode, Boolean dontRequireExplicit, Boolean dontCheckTimes)
+        public static void IsZipSameAsDir(Stream archiveFile, String directory, ZipArchiveMode mode, bool requireExplicit, bool checkTimes)
         {
             int count = 0;
 
@@ -175,7 +175,7 @@ namespace System.IO.Compression.Tests
                             Assert.Equal(file.CRC, crc);
                         }
 
-                        if (!dontCheckTimes)
+                        if (checkTimes)
                         {
                             const int zipTimestampResolution = 2; // Zip follows the FAT timestamp resolution of two seconds for file records
                             DateTime lower = file.LastModifiedDate.AddSeconds(-zipTimestampResolution);
@@ -197,12 +197,12 @@ namespace System.IO.Compression.Tests
                                 f => f.IsFile &&
                                      (f.FullName.StartsWith(entryName, StringComparison.OrdinalIgnoreCase) ||
                                       f.FullName.StartsWith(entryNameOtherSlash, StringComparison.OrdinalIgnoreCase)));
-                            if (!dontRequireExplicit || isEmtpy)
+                            if (requireExplicit || isEmtpy)
                             {
                                 Assert.Contains("emptydir", entryName);
                             }
 
-                            if ((dontRequireExplicit && !isEmtpy) || entryName.Contains("emptydir"))
+                            if ((!requireExplicit && !isEmtpy) || entryName.Contains("emptydir"))
                                 count--; //discount this entry
                         }
                         else

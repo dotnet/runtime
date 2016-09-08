@@ -201,14 +201,14 @@ namespace System.IO.Compression.Tests
         }
 
         [Theory]
-        [InlineData("extradata/extraDataLHandCDentryAndArchiveComments.zip", "verysmall", false)]
-        [InlineData("extradata/extraDataThenZip64.zip", "verysmall", false)]
-        [InlineData("extradata/zip64ThenExtraData.zip", "verysmall", false)]
-        [InlineData("dataDescriptor.zip", "normalWithoutBinary", true)]
-        [InlineData("filenameTimeAndSizesDifferentInLH.zip", "verysmall", true)]
-        public static async Task StrangeFiles(string zipFile, string zipFolder, bool dontRequireExplicit)
+        [InlineData("extradata/extraDataLHandCDentryAndArchiveComments.zip", "verysmall", true)]
+        [InlineData("extradata/extraDataThenZip64.zip", "verysmall", true)]
+        [InlineData("extradata/zip64ThenExtraData.zip", "verysmall", true)]
+        [InlineData("dataDescriptor.zip", "normalWithoutBinary", false)]
+        [InlineData("filenameTimeAndSizesDifferentInLH.zip", "verysmall", false)]
+        public static async Task StrangeFiles(string zipFile, string zipFolder, bool requireExplicit)
         {
-            IsZipSameAsDir(await StreamHelpers.CreateTempCopyStream(strange(zipFile)), zfolder(zipFolder), ZipArchiveMode.Update, dontRequireExplicit, dontCheckTimes: false);
+            IsZipSameAsDir(await StreamHelpers.CreateTempCopyStream(strange(zipFile)), zfolder(zipFolder), ZipArchiveMode.Update, requireExplicit, checkTimes: true);
         }
 
         /// <summary>
