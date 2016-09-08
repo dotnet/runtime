@@ -151,6 +151,7 @@
       <Member Name="SetSwitch(System.String,System.Boolean)" />
       <Member Name="TryGetSwitch(System.String,System.Boolean@)" />
       <Member Name="GetData(System.String)" />
+      <Member MemberType="Event" Name="UnhandledException" />
     </Type>
     <Type Name="System.ApplicationException">
       <Member Name="#ctor" />
