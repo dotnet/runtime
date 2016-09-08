@@ -6316,6 +6316,7 @@
     <Type Name="System.Runtime.CompilerServices.RuntimeHelpers">
       <Member Name="GetUninitializedObject(System.Type)" />
       <Member Name="EnsureSufficientExecutionStack" />
+      <Member Name="TryEnsureSufficientExecutionStack" />
       <Member Name="get_OffsetToStringData" />
       <Member Name="GetObjectValue(System.Object)" />
       <Member Name="InitializeArray(System.Array,System.RuntimeFieldHandle)" />
