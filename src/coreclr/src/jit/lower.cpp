@@ -149,6 +149,15 @@ GenTree* Lowering::LowerNode(GenTree* node)
             LowerCall(node);
             break;
 
+        case GT_LT:
+        case GT_LE:
+        case GT_GT:
+        case GT_GE:
+        case GT_EQ:
+        case GT_NE:
+            LowerCompare(node);
+            break;
+
         case GT_JMP:
             LowerJmpMethod(node);
             break;
@@ -1861,6 +1870,150 @@ GenTree* Lowering::LowerTailCallViaHelper(GenTreeCall* call, GenTree* callTarget
     }
 
     return result;
+}
+
+void Lowering::LowerCompare(GenTree* cmp)
+{
+#ifndef _TARGET_64BIT_
+    if (cmp->gtGetOp1()->TypeGet() != TYP_LONG)
+    {
+        return;
+    }
+
+    LIR::Use cmpUse;
+    
+    if (!BlockRange().TryGetUse(cmp, &cmpUse) || cmpUse.User()->OperGet() != GT_JTRUE)
+    {
+        return;
+    }
+
+    GenTree* src1   = cmp->gtGetOp1();
+    GenTree* src2   = cmp->gtGetOp2();
+    unsigned weight = m_block->getBBWeight(comp);
+
+    LIR::Use loSrc1(BlockRange(), &(src1->gtOp.gtOp1), src1);
+    LIR::Use hiSrc1(BlockRange(), &(src1->gtOp.gtOp2), src1);
+    LIR::Use loSrc2(BlockRange(), &(src2->gtOp.gtOp1), src2);
+    LIR::Use hiSrc2(BlockRange(), &(src2->gtOp.gtOp2), src2);
+
+    if (loSrc1.Def()->OperGet() != GT_CNS_INT && loSrc1.Def()->OperGet() != GT_LCL_VAR)
+    {
+        loSrc1.ReplaceWithLclVar(comp, weight);
+    }
+    
+    if (hiSrc1.Def()->OperGet() != GT_CNS_INT && hiSrc1.Def()->OperGet() != GT_LCL_VAR)
+    {
+        hiSrc1.ReplaceWithLclVar(comp, weight);
+    }
+    
+    if (loSrc2.Def()->OperGet() != GT_CNS_INT && loSrc2.Def()->OperGet() != GT_LCL_VAR)
+    {
+        loSrc2.ReplaceWithLclVar(comp, weight);
+    }
+    
+    if (hiSrc2.Def()->OperGet() != GT_CNS_INT && hiSrc2.Def()->OperGet() != GT_LCL_VAR)
+    {
+        hiSrc2.ReplaceWithLclVar(comp, weight);
+    }
+
+    BasicBlock* jumpDest = m_block->bbJumpDest;
+    BasicBlock* nextDest = m_block->bbNext;
+    BasicBlock* newBlock = comp->fgSplitBlockAtEnd(m_block);
+
+    cmp->gtType     = TYP_INT;
+    cmp->gtOp.gtOp1 = hiSrc1.Def();
+    cmp->gtOp.gtOp2 = hiSrc2.Def();
+
+    if (cmp->OperGet() == GT_EQ || cmp->OperGet() == GT_NE)
+    {
+        BlockRange().Remove(loSrc1.Def());
+        BlockRange().Remove(loSrc2.Def());
+        GenTree* loCmp = comp->gtNewOperNode(cmp->OperGet(), TYP_INT, loSrc1.Def(), loSrc2.Def());
+        loCmp->gtFlags = cmp->gtFlags;
+        GenTree* loJcc = comp->gtNewOperNode(GT_JTRUE, TYP_VOID, loCmp);
+        LIR::AsRange(newBlock).InsertAfter(nullptr, loSrc1.Def(), loSrc2.Def(), loCmp, loJcc);
+
+        m_block->bbJumpKind = BBJ_COND;
+
+        if (cmp->OperGet() == GT_EQ)
+        {
+            cmp->gtOper         = GT_NE;
+            m_block->bbJumpDest = nextDest;
+            nextDest->bbFlags |= BBF_JMP_TARGET;
+            comp->fgAddRefPred(nextDest, m_block);
+        }
+        else
+        {
+            m_block->bbJumpDest = jumpDest;
+            comp->fgAddRefPred(jumpDest, m_block);
+        }
+
+        assert(newBlock->bbJumpKind == BBJ_COND);
+        assert(newBlock->bbJumpDest == jumpDest);
+    }
+    else
+    {
+        genTreeOps hiCmpOper;
+        genTreeOps loCmpOper;
+        
+        switch (cmp->OperGet())
+        {
+        case GT_LT:
+            cmp->gtOper = GT_GT;
+            hiCmpOper   = GT_LT;
+            loCmpOper   = GT_LT;
+            break;
+        case GT_LE:
+            cmp->gtOper = GT_GT;
+            hiCmpOper   = GT_LT;
+            loCmpOper   = GT_LE;
+            break;
+        case GT_GT:
+            cmp->gtOper = GT_LT;
+            hiCmpOper   = GT_GT;
+            loCmpOper   = GT_GT;
+            break;
+        case GT_GE:
+            cmp->gtOper = GT_LT;
+            hiCmpOper   = GT_GT;
+            loCmpOper   = GT_GE;
+            break;
+        default:
+            unreached();
+        }
+
+        BasicBlock* newBlock2 = comp->fgSplitBlockAtEnd(newBlock);
+
+        GenTree* hiSrc1Def = comp->gtClone(hiSrc1.Def());
+        GenTree* hiSrc2Def = comp->gtClone(hiSrc2.Def());
+        GenTree* hiCmp = comp->gtNewOperNode(hiCmpOper, TYP_INT, hiSrc1Def, hiSrc2Def);
+        hiCmp->gtFlags = cmp->gtFlags;
+        GenTree* hiJcc = comp->gtNewOperNode(GT_JTRUE, TYP_VOID, hiCmp);
+        LIR::AsRange(newBlock).InsertAfter(nullptr, hiSrc1Def, hiSrc2Def, hiCmp, hiJcc);
+
+        BlockRange().Remove(loSrc1.Def());
+        BlockRange().Remove(loSrc2.Def());
+        GenTree* loCmp = comp->gtNewOperNode(loCmpOper, TYP_INT, loSrc1.Def(), loSrc2.Def());
+        loCmp->gtFlags = cmp->gtFlags | GTF_UNSIGNED;
+        GenTree* loJcc = comp->gtNewOperNode(GT_JTRUE, TYP_VOID, loCmp);
+        LIR::AsRange(newBlock2).InsertAfter(nullptr, loSrc1.Def(), loSrc2.Def(), loCmp, loJcc);
+
+        m_block->bbJumpKind = BBJ_COND;
+        m_block->bbJumpDest = nextDest;
+        nextDest->bbFlags |= BBF_JMP_TARGET;
+        comp->fgAddRefPred(nextDest, m_block);
+
+        newBlock->bbJumpKind = BBJ_COND;
+        newBlock->bbJumpDest = jumpDest;
+        comp->fgAddRefPred(jumpDest, newBlock);
+
+        assert(newBlock2->bbJumpKind == BBJ_COND);
+        assert(newBlock2->bbJumpDest == jumpDest);
+    }
+
+    BlockRange().Remove(src1);
+    BlockRange().Remove(src2);
+#endif
 }
 
 // Lower "jmp <method>" tail call to insert PInvoke method epilog if required.
