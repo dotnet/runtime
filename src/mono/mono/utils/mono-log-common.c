@@ -132,7 +132,7 @@ mono_log_write_logfile (const char *log_domain, GLogLevelFlags level, mono_bool 
 
 	fflush(logFile);
 
-	if (level == G_LOG_FLAG_FATAL)
+	if (level & G_LOG_LEVEL_ERROR)
 		abort();
 }
 
