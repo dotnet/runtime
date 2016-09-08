@@ -36,7 +36,7 @@ private:
 
     // Driver functions
     void DecomposeRangeHelper();
-    GenTree* DecomposeNode(LIR::Use& use);
+    GenTree* DecomposeNode(GenTree* tree);
 
     // Per-node type decompose cases
     GenTree* DecomposeLclVar(LIR::Use& use);
