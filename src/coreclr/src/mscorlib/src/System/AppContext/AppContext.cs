@@ -49,6 +49,21 @@ namespace System
             return AppDomain.CurrentDomain.GetData(name);
         }
 
+        public static event UnhandledExceptionEventHandler UnhandledException
+        {
+            [System.Security.SecurityCritical]
+            add
+            {
+                AppDomain.CurrentDomain.UnhandledException += value;
+            }
+
+            [System.Security.SecurityCritical]
+            remove
+            {
+                AppDomain.CurrentDomain.UnhandledException -= value;
+            }
+        }
+
         #region Switch APIs
         static AppContext()
         {
