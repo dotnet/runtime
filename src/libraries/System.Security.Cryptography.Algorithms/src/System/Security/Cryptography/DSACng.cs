@@ -44,6 +44,7 @@ namespace System.Security.Cryptography
 
             private byte[] ExportKeyBlob(bool includePrivateParameters)
             {
+                // Use generic blob type for multiple version support
                 string blobType = includePrivateParameters ?
                     Interop.BCrypt.KeyBlobType.BCRYPT_PRIVATE_KEY_BLOB :
                     Interop.BCrypt.KeyBlobType.BCRYPT_PUBLIC_KEY_BLOB;
@@ -56,7 +57,7 @@ namespace System.Security.Cryptography
 
             private void ImportKeyBlob(byte[] rsaBlob, bool includePrivate)
             {
-                // Generic blob types used here
+                // Use generic blob type for multiple version support
                 string blobType = includePrivate ?
                     Interop.BCrypt.KeyBlobType.BCRYPT_PRIVATE_KEY_BLOB :
                     Interop.BCrypt.KeyBlobType.BCRYPT_PUBLIC_KEY_BLOB;

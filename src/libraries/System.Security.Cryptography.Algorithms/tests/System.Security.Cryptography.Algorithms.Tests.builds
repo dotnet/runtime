@@ -2,7 +2,6 @@
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
-    <!-- todo: use default values for TargetGroup and TestTFMs once changed to current release -->
     <Project Include="System.Security.Cryptography.Algorithms.Tests.csproj">
       <TargetGroup>netstandard1.6</TargetGroup>
       <TestTFMs>netcoreapp1.0</TestTFMs>
@@ -26,4 +25,3 @@
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
 </Project>
-

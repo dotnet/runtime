@@ -49,25 +49,6 @@ namespace System.Security.Cryptography
             }
 
             /// <summary>
-            /// Create an ECDsaOpenSsl from an existing <see cref="IntPtr"/> whose value is an
-            /// existing OpenSSL <c>EC_KEY*</c>.
-            /// </summary>
-            /// <remarks>
-            /// This method will increase the reference count of the <c>EC_KEY*</c>, the caller should
-            /// continue to manage the lifetime of their reference.
-            /// </remarks>
-            /// <param name="handle">A pointer to an OpenSSL <c>EC_KEY*</c></param>
-            /// <exception cref="ArgumentException"><paramref name="handle" /> is invalid</exception>
-            public ECDsaOpenSsl(IntPtr handle)
-            {
-                if (handle == IntPtr.Zero)
-                    throw new ArgumentException(SR.Cryptography_OpenInvalidHandle, nameof(handle));
-
-                SafeEcKeyHandle ecKeyHandle = SafeEcKeyHandle.DuplicateHandle(handle);
-                SetKey(ecKeyHandle);
-            }
-
-            /// <summary>
             /// Set the KeySize without validating against LegalKeySizes.
             /// </summary>
             /// <param name="newKeySize">The value to set the KeySize to.</param>
@@ -252,7 +233,7 @@ namespace System.Security.Cryptography
                 // with the already loaded key.
                 ForceSetKeySize(Interop.Crypto.EcKeyGetSize(newKey));
 
-                _key = new Lazy<SafeEcKeyHandle>(() => newKey);
+                _key = new Lazy<SafeEcKeyHandle>(() => newKey, isThreadSafe: true);
 
                 // Have Lazy<T> consider the key to be loaded
                 var dummy = _key.Value;
