@@ -23,7 +23,7 @@
 #include "security.h"
 #include "securitymeta.h"
 #include "dllimport.h"
-#include "gc.h"
+#include "gcheaputilities.h"
 #include "comdelegate.h"
 #include "jitperf.h" // to track jit perf
 #include "corprof.h"
@@ -2858,7 +2858,7 @@ HCIMPL1(Object*, JIT_NewS_MP_FastPortable, CORINFO_CLASS_HANDLE typeHnd_)
 
     do
     {
-        _ASSERTE(GCHeap::UseAllocationContexts());
+        _ASSERTE(GCHeapUtilities::UseAllocationContexts());
 
         // This is typically the only call in the fast path. Making the call early seems to be better, as it allows the compiler
         // to use volatile registers for intermediate values. This reduces the number of push/pop instructions and eliminates
@@ -2872,7 +2872,7 @@ HCIMPL1(Object*, JIT_NewS_MP_FastPortable, CORINFO_CLASS_HANDLE typeHnd_)
         SIZE_T size = methodTable->GetBaseSize();
         _ASSERTE(size % DATA_ALIGNMENT == 0);
 
-        alloc_context *allocContext = thread->GetAllocContext();
+        gc_alloc_context *allocContext = thread->GetAllocContext();
         BYTE *allocPtr = allocContext->alloc_ptr;
         _ASSERTE(allocPtr <= allocContext->alloc_limit);
         if (size > static_cast<SIZE_T>(allocContext->alloc_limit - allocPtr))
@@ -2997,7 +2997,7 @@ HCIMPL1(StringObject*, AllocateString_MP_FastPortable, DWORD stringLength)
 
     do
     {
-        _ASSERTE(GCHeap::UseAllocationContexts());
+        _ASSERTE(GCHeapUtilities::UseAllocationContexts());
 
         // Instead of doing elaborate overflow checks, we just limit the number of elements. This will avoid all overflow
         // problems, as well as making sure big string objects are correctly allocated in the big object heap.
@@ -3021,7 +3021,7 @@ HCIMPL1(StringObject*, AllocateString_MP_FastPortable, DWORD stringLength)
         _ASSERTE(alignedTotalSize >= totalSize);
         totalSize = alignedTotalSize;
 
-        alloc_context *allocContext = thread->GetAllocContext();
+        gc_alloc_context *allocContext = thread->GetAllocContext();
         BYTE *allocPtr = allocContext->alloc_ptr;
         _ASSERTE(allocPtr <= allocContext->alloc_limit);
         if (totalSize > static_cast<SIZE_T>(allocContext->alloc_limit - allocPtr))
@@ -3161,7 +3161,7 @@ HCIMPL2(Object*, JIT_NewArr1VC_MP_FastPortable, CORINFO_CLASS_HANDLE arrayTypeHn
 
     do
     {
-        _ASSERTE(GCHeap::UseAllocationContexts());
+        _ASSERTE(GCHeapUtilities::UseAllocationContexts());
 
         // Do a conservative check here.  This is to avoid overflow while doing the calculations.  We don't
         // have to worry about "large" objects, since the allocation quantum is never big enough for
@@ -3198,7 +3198,7 @@ HCIMPL2(Object*, JIT_NewArr1VC_MP_FastPortable, CORINFO_CLASS_HANDLE arrayTypeHn
         _ASSERTE(alignedTotalSize >= totalSize);
         totalSize = alignedTotalSize;
 
-        alloc_context *allocContext = thread->GetAllocContext();
+        gc_alloc_context *allocContext = thread->GetAllocContext();
         BYTE *allocPtr = allocContext->alloc_ptr;
         _ASSERTE(allocPtr <= allocContext->alloc_limit);
         if (totalSize > static_cast<SIZE_T>(allocContext->alloc_limit - allocPtr))
@@ -3238,7 +3238,7 @@ HCIMPL2(Object*, JIT_NewArr1OBJ_MP_FastPortable, CORINFO_CLASS_HANDLE arrayTypeH
 
     do
     {
-        _ASSERTE(GCHeap::UseAllocationContexts());
+        _ASSERTE(GCHeapUtilities::UseAllocationContexts());
 
         // Make sure that the total size cannot reach LARGE_OBJECT_SIZE, which also allows us to avoid overflow checks. The
         // "256" slack is to cover the array header size and round-up, using a constant value here out of laziness.
@@ -3266,7 +3266,7 @@ HCIMPL2(Object*, JIT_NewArr1OBJ_MP_FastPortable, CORINFO_CLASS_HANDLE arrayTypeH
 
         _ASSERTE(ALIGN_UP(totalSize, DATA_ALIGNMENT) == totalSize);
 
-        alloc_context *allocContext = thread->GetAllocContext();
+        gc_alloc_context *allocContext = thread->GetAllocContext();
         BYTE *allocPtr = allocContext->alloc_ptr;
         _ASSERTE(allocPtr <= allocContext->alloc_limit);
         if (totalSize > static_cast<SIZE_T>(allocContext->alloc_limit - allocPtr))
@@ -6431,7 +6431,7 @@ HCIMPL0(VOID, JIT_StressGC)
     bool fSkipGC = false;
 
     if (!fSkipGC)
-        GCHeap::GetGCHeap()->GarbageCollect();
+        GCHeapUtilities::GetGCHeap()->GarbageCollect();
 
 // <TODO>@TODO: the following ifdef is in error, but if corrected the
 // compiler complains about the *__ms->pRetAddr() saying machine state

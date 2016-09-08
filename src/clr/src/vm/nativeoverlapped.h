@@ -62,7 +62,7 @@ public:
         STATIC_CONTRACT_SO_TOLERANT;
         
         _ASSERTE (nativeOverlapped != NULL);
-        _ASSERTE (GCHeap::GetGCHeap()->IsHeapPointer((BYTE *) nativeOverlapped));
+        _ASSERTE (GCHeapUtilities::GetGCHeap()->IsHeapPointer((BYTE *) nativeOverlapped));
         
         return (OverlappedDataObject*)((BYTE*)nativeOverlapped - offsetof(OverlappedDataObject, Internal));
     }

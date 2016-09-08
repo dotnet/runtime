@@ -627,7 +627,7 @@ void CrstBase::PreEnter()
                           || (pThread != NULL && pThread->PreemptiveGCDisabled())
                            // If GC heap has not been initialized yet, there is no need to synchronize with GC.
                            // This check is mainly for code called from EEStartup.
-                          || (pThread == NULL && !GCHeap::IsGCHeapInitialized()) );
+                          || (pThread == NULL && !GCHeapUtilities::IsGCHeapInitialized()) );
     }
     
     if ((pThread != NULL) && 
@@ -910,7 +910,7 @@ BOOL CrstBase::IsSafeToTake()
     _ASSERTE(pThread == NULL ||
              (pThread->PreemptiveGCDisabled() == ((m_dwFlags & CRST_UNSAFE_COOPGC) != 0)) ||
              ((m_dwFlags & (CRST_UNSAFE_ANYMODE | CRST_GC_NOTRIGGER_WHEN_TAKEN)) != 0) ||
-             (GCHeap::IsGCInProgress() && pThread == ThreadSuspend::GetSuspensionThread()));
+             (GCHeapUtilities::IsGCInProgress() && pThread == ThreadSuspend::GetSuspensionThread()));
     END_GETTHREAD_ALLOWED;
 
     if (m_holderthreadid.IsCurrentThread())

@@ -27,7 +27,7 @@
 #include "security.h"
 #include "securitymeta.h"
 #include "dllimport.h"
-#include "gc.h"
+#include "gcheaputilities.h"
 #include "comdelegate.h"
 #include "jitperf.h" // to track jit perf
 #include "corprof.h"

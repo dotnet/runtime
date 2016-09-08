@@ -129,10 +129,10 @@ STDMETHODIMP CLRServicesImpl::GarbageCollect(DWORD dwFlags)
     {
         GCX_COOP_THREAD_EXISTS(GET_THREAD());
         if (dwFlags & GC_FOR_APPX_SUSPEND) {
-            GCHeap::GetGCHeap()->GarbageCollect(2, TRUE, collection_blocking | collection_optimized);
+            GCHeapUtilities::GetGCHeap()->GarbageCollect(2, TRUE, collection_blocking | collection_optimized);
         }
         else
-            GCHeap::GetGCHeap()->GarbageCollect();
+            GCHeapUtilities::GetGCHeap()->GarbageCollect();
     }
     END_EXTERNAL_ENTRYPOINT;
     return hr;
