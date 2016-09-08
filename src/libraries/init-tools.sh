@@ -15,6 +15,55 @@ __PROJECT_JSON_FILE=$__PROJECT_JSON_PATH/project.json
 __PROJECT_JSON_CONTENTS="{ \"dependencies\": { \"Microsoft.DotNet.BuildTools\": \"$__BUILD_TOOLS_PACKAGE_VERSION\" }, \"frameworks\": { \"netcoreapp1.0\": { } } }"
 __INIT_TOOLS_DONE_MARKER=$__PROJECT_JSON_PATH/done
 
+# Extended version of platform detection logic from dotnet/cli/scripts/obtain/dotnet-install.sh 16692fc
+get_current_linux_name() {
+    # Detect Distro
+    if [ "$(cat /etc/*-release | grep -cim1 ubuntu)" -eq 1 ]; then
+        if [ "$(cat /etc/*-release | grep -cim1 16.04)" -eq 1 ]; then
+            echo "ubuntu.16.04"
+            return 0
+        fi
+        if [ "$(cat /etc/*-release | grep -cim1 16.10)" -eq 1 ]; then
+            echo "ubuntu.16.10"
+            return 0
+        fi
+
+        echo "ubuntu"
+        return 0
+    elif [ "$(cat /etc/*-release | grep -cim1 centos)" -eq 1 ]; then
+        echo "centos"
+        return 0
+    elif [ "$(cat /etc/*-release | grep -cim1 rhel)" -eq 1 ]; then
+        echo "rhel"
+        return 0
+    elif [ "$(cat /etc/*-release | grep -cim1 debian)" -eq 1 ]; then
+        echo "debian"
+        return 0
+    elif [ "$(cat /etc/*-release | grep -cim1 fedora)" -eq 1 ]; then
+        if [ "$(cat /etc/*-release | grep -cim1 23)" -eq 1 ]; then
+            echo "fedora.23"
+            return 0
+        fi
+        if [ "$(cat /etc/*-release | grep -cim1 24)" -eq 1 ]; then
+            echo "fedora.24"
+            return 0
+        fi
+    elif [ "$(cat /etc/*-release | grep -cim1 opensuse)" -eq 1 ]; then
+        if [ "$(cat /etc/*-release | grep -cim1 13.2)" -eq 1 ]; then
+            echo "opensuse.13.2"
+            return 0
+        fi
+        if [ "$(cat /etc/*-release | grep -cim1 42.1)" -eq 1 ]; then
+            echo "opensuse.42.1"
+            return 0
+        fi
+    fi
+
+    # Cannot determine Linux distribution, assuming Ubuntu 14.04.
+    echo "ubuntu"
+    return 0
+}
+
 if [ -z "$__DOTNET_PKG" ]; then
 OSName=$(uname -s)
     case $OSName in
@@ -25,19 +74,8 @@ OSName=$(uname -s)
             ;;
 
         Linux)
+            __DOTNET_PKG="dotnet-dev-$(get_current_linux_name)-x64"
             OS=Linux
-            if [ ! -e /etc/os-release ]; then
-                echo "Cannot determine Linux distribution, asuming Ubuntu 14.04."
-                __DOTNET_PKG=dotnet-dev-ubuntu.14.04-x64
-            else
-                source /etc/os-release
-                if [[ "$ID" == "ubuntu" && "$VERSION_ID" != "14.04" && "$VERSION_ID" != "16.04" && "$VERSION_ID" != "16.10" ]]; then
-                    echo "Unsupported Ubuntu version, falling back to Ubuntu 14.04."
-                    __DOTNET_PKG=dotnet-dev-ubuntu.14.04-x64
-                else
-                    __DOTNET_PKG="dotnet-dev-$ID.$VERSION_ID-x64"
-                fi
-            fi
             ;;
 
         *)
@@ -52,7 +90,7 @@ if [ ! -e $__INIT_TOOLS_DONE_MARKER ]; then
     echo "Running: $__scriptpath/init-tools.sh" > $__init_tools_log
     if [ ! -e $__DOTNET_PATH ]; then
         echo "Installing dotnet cli..."
-        __DOTNET_LOCATION="https://dotnetcli.blob.core.windows.net/dotnet/preview/Binaries/${__DOTNET_TOOLS_VERSION}/${__DOTNET_PKG}.${__DOTNET_TOOLS_VERSION}.tar.gz"
+        __DOTNET_LOCATION="https://dotnetcli.blob.core.windows.net/dotnet/Sdk/${__DOTNET_TOOLS_VERSION}/${__DOTNET_PKG}.${__DOTNET_TOOLS_VERSION}.tar.gz"
         # curl has HTTPS CA trust-issues less often than wget, so lets try that first.
         echo "Installing '${__DOTNET_LOCATION}' to '$__DOTNET_PATH/dotnet.tar'" >> $__init_tools_log
         which curl > /dev/null 2> /dev/null
