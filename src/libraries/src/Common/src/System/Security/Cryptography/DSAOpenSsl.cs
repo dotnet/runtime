@@ -119,11 +119,7 @@ namespace System.Security.Cryptography
                     throw Interop.Crypto.CreateOpenSslCryptographicException();
                 }
 
-                _key = new Lazy<SafeDsaHandle>(() => key);
-
-                // Use ForceSet instead of the property setter to ensure that LegalKeySizes doesn't interfere
-                // with the already loaded key.
-                ForceSetKeySize(BitsPerByte * Interop.Crypto.DsaKeySize(key));
+                SetKey(key);
             }
 
             protected override void Dispose(bool disposing)
@@ -201,9 +197,9 @@ namespace System.Security.Cryptography
                 }
 
                 Debug.Assert(
-                    signatureSize == signature.Length,
+                    signatureSize <= signature.Length,
                     "DSA_sign reported an unexpected signature size",
-                    "DSA_sign reported signatureSize was {0}, when {1} was expected",
+                    "DSA_sign reported signatureSize was {0}, when <= {1} was expected",
                     signatureSize,
                     signature.Length);
 
@@ -231,6 +227,18 @@ namespace System.Security.Cryptography
                 byte[] openSslFormat = OpenSslAsymmetricAlgorithmCore.ConvertIeee1363ToDer(signature);
 
                 return Interop.Crypto.DsaVerify(key, hash, hash.Length, openSslFormat, openSslFormat.Length);
+            }
+
+            private void SetKey(SafeDsaHandle newKey)
+            {
+                // Use ForceSet instead of the property setter to ensure that LegalKeySizes doesn't interfere
+                // with the already loaded key.
+                ForceSetKeySize(BitsPerByte * Interop.Crypto.DsaKeySize(newKey));
+
+                _key = new Lazy<SafeDsaHandle>(() => newKey, isThreadSafe:true);
+
+                // Have Lazy<T> consider the key to be loaded
+                var dummy = _key.Value;
             }
 
             private static KeySizes[] s_legalKeySizes = new KeySizes[] { new KeySizes(minSize: 512, maxSize: 3072, skipSize: 64) };

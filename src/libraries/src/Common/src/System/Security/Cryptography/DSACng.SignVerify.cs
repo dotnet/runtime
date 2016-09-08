@@ -22,10 +22,13 @@ namespace System.Security.Cryptography
                     throw new ArgumentNullException(nameof(hash));
 
                 hash = AdjustHashSizeIfNecessary(hash);
-                unsafe
+                using (SafeNCryptKeyHandle keyHandle = GetDuplicatedKeyHandle())
                 {
-                    byte[] signature = CngCommon.SignHash(_keyHandle, hash, AsymmetricPaddingMode.None, null, hash.Length * 2);
-                    return signature;
+                    unsafe
+                    {
+                        byte[] signature = CngCommon.SignHash(keyHandle, hash, AsymmetricPaddingMode.None, null, hash.Length * 2);
+                        return signature;
+                    }
                 }
             }
 
@@ -39,10 +42,13 @@ namespace System.Security.Cryptography
 
                 hash = AdjustHashSizeIfNecessary(hash);
 
-                unsafe
+                using (SafeNCryptKeyHandle keyHandle = GetDuplicatedKeyHandle())
                 {
-                    bool verified = CngCommon.VerifyHash(_keyHandle, hash, signature, AsymmetricPaddingMode.None, null);
-                    return verified;
+                    unsafe
+                    {
+                        bool verified = CngCommon.VerifyHash(keyHandle, hash, signature, AsymmetricPaddingMode.None, null);
+                        return verified;
+                    }
                 }
             }
 

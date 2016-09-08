@@ -9,7 +9,9 @@
     <OutputType>Library</OutputType>
     <AssemblyName>System.Security.Cryptography.OpenSsl</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <NuGetTargetMoniker>.NETStandard,Version=v1.6</NuGetTargetMoniker>
+    <AssemblyVersion Condition="'$(TargetGroup)'=='netstandard1.6'">4.0.0.0</AssemblyVersion>
+    <ContractProject Condition="'$(AssemblyVersion)' == '4.0.0.0'">..\ref\4.0\System.Security.Cryptography.OpenSsl.depproj</ContractProject>
+    <NuGetTargetMoniker Condition="'$(NuGetTargetMoniker)' == ''">.NETStandard,Version=v1.7</NuGetTargetMoniker>
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetsWindows)' == 'true'">
     <GeneratePlatformNotSupportedAssembly>true</GeneratePlatformNotSupportedAssembly>
@@ -20,6 +22,13 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Release|AnyCPU'" />
+  <!-- Temporary till we publish Algorithms updated package -->
+  <ItemGroup Condition="'$(TargetGroup)'=='' OR '$(TargetGroup)'=='netstandard1.7'">
+    <ProjectReference Include="..\..\System.Security.Cryptography.Algorithms\pkg\System.Security.Cryptography.Algorithms.pkgproj">
+      <Project>{81A05E2E-E3AE-4246-B4E6-DD5F31FB71F9}</Project>
+      <Name>System.Security.Cryptography.Algorithms</Name>
+    </ProjectReference>
+  </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
     <Compile Include="System\Security\Cryptography\ECDsaOpenSsl.cs" />
     <Compile Include="System\Security\Cryptography\RSAOpenSsl.cs" />
@@ -95,6 +104,21 @@
     </Compile>
     <Compile Include="$(CommonPath)\System\Security\Cryptography\RSAOpenSsl.cs">
       <Link>Common\System\Security\Cryptography\RSAOpenSsl.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsUnix)' == 'true' AND ('$(TargetGroup)'=='' OR '$(TargetGroup)'=='netstandard1.7')">
+    <Compile Include="System\Security\Cryptography\DSAOpenSsl.cs" />
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.EvpPkey.Dsa.cs">
+      <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.EvpPkey.Dsa.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.Dsa.cs">
+      <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.Dsa.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeDsaHandle.Unix.cs">
+      <Link>Common\Microsoft\Win32\SafeHandles\SafeDsaHandle.Unix.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\DSAOpenSsl.cs">
+      <Link>Common\System\Security\Cryptography\DSAOpenSsl.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>

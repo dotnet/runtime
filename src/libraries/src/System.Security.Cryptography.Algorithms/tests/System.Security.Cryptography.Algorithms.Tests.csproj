@@ -11,14 +11,8 @@
     <OutputType>Library</OutputType>
     <AssemblyName>System.Security.Cryptography.Algorithms.Tests</AssemblyName>
     <RootNamespace>System.Security.Cryptography.Algorithms.Tests</RootNamespace>
-    <NugetTargetMoniker Condition="'$(TargetGroup)'=='netstandard1.7' AND '$(NugetTargetMoniker)'==''">.NETStandard,Version=v1.7</NugetTargetMoniker>
     <NugetTargetMoniker Condition="'$(NugetTargetMoniker)'==''">.NETStandard,Version=v1.6</NugetTargetMoniker>
   </PropertyGroup>
-  <ItemGroup Condition="'$(TargetGroup)'=='netstandard1.7'">
-    <TestNugetTargetMoniker Include="$(NugetTargetMoniker)">
-      <Folder>netcoreapp1.1</Folder>
-    </TestNugetTargetMoniker>
-  </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\pkg\System.Security.Cryptography.Algorithms.pkgproj">
       <Project>{81A05E2E-E3AE-4246-B4E6-DD5F31FB71F9}</Project>
@@ -52,23 +46,6 @@
     </Compile>
     <Compile Include="$(CommonTestPath)\System\Security\Cryptography\AlgorithmImplementations\AES\AesFactory.cs">
       <Link>CommonTest\AlgorithmImplementations\AES\AesFactory.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonTestPath)\System\Security\Cryptography\AlgorithmImplementations\DSA\DSAFactory.cs" Condition="'$(TargetGroup)'=='netstandard1.7'">
-      <Link>CommonTest\System\Security\Cryptography\AlgorithmImplementations\DSA\DSAFactory.cs</Link>
-    </Compile>
-    <!-- Disabling these tests since they are failing in netcoreapp1.1 runs. Issue: https://github.com/dotnet/corefx/issues/11315
-    <Compile Include="$(CommonTestPath)\System\Security\Cryptography\AlgorithmImplementations\DSA\DSAImportExport.cs" Condition="'$(TargetGroup)'=='netstandard1.7'">
-      <Link>CommonTest\System\Security\Cryptography\AlgorithmImplementations\DSA\DSAImportExport.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonTestPath)\System\Security\Cryptography\AlgorithmImplementations\DSA\DSAKeyGeneration.cs" Condition="'$(TargetGroup)'=='netstandard1.7'">
-      <Link>CommonTest\System\Security\Cryptography\AlgorithmImplementations\DSA\DSAKeyGeneration.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonTestPath)\System\Security\Cryptography\AlgorithmImplementations\DSA\DSASignVerify.cs" Condition="'$(TargetGroup)'=='netstandard1.7'">
-      <Link>CommonTest\System\Security\Cryptography\AlgorithmImplementations\DSA\DSASignVerify.cs</Link>
-    </Compile>
-    -->
-    <Compile Include="$(CommonTestPath)\System\Security\Cryptography\AlgorithmImplementations\DSA\DSATestData.cs" Condition="'$(TargetGroup)'=='netstandard1.7'">
-      <Link>CommonTest\System\Security\Cryptography\AlgorithmImplementations\DSA\DSATestData.cs</Link>
     </Compile>
     <Compile Include="$(CommonTestPath)\System\Security\Cryptography\AlgorithmImplementations\EC\CurveDef.cs">
       <Link>CommonTest\System\Security\Cryptography\AlgorithmImplementations\EC\CurveDef.cs</Link>
@@ -122,7 +99,6 @@
       <Link>CommonTest\System\RandomDataGenerator.cs</Link>
     </Compile>
     <Compile Include="AesProvider.cs" />
-    <Compile Include="DefaultDSAProvider.cs" Condition="'$(TargetGroup)'=='netstandard1.7'" />
     <Compile Include="DefaultECDsaProvider.cs" />
     <Compile Include="DefaultRSAProvider.cs" />
     <Compile Include="HashAlgorithmTest.cs" />
@@ -153,17 +129,29 @@
       <Link>CommonTest\System\Security\Cryptography\CryptoUtils.cs</Link>
     </Compile>
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)'=='netstandard1.7'">
+    <Compile Include="DefaultDSAProvider.cs"/>
+    <Compile Include="$(CommonTestPath)\System\Security\Cryptography\AlgorithmImplementations\DSA\DSAFactory.cs">
+      <Link>CommonTest\System\Security\Cryptography\AlgorithmImplementations\DSA\DSAFactory.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Security\Cryptography\AlgorithmImplementations\DSA\DSAImportExport.cs">
+      <Link>CommonTest\System\Security\Cryptography\AlgorithmImplementations\DSA\DSAImportExport.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Security\Cryptography\AlgorithmImplementations\DSA\DSAKeyGeneration.cs">
+      <Link>CommonTest\System\Security\Cryptography\AlgorithmImplementations\DSA\DSAKeyGeneration.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Security\Cryptography\AlgorithmImplementations\DSA\DSASignVerify.cs">
+      <Link>CommonTest\System\Security\Cryptography\AlgorithmImplementations\DSA\DSASignVerify.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Security\Cryptography\AlgorithmImplementations\DSA\DSATestData.cs">
+      <Link>CommonTest\System\Security\Cryptography\AlgorithmImplementations\DSA\DSATestData.cs</Link>
+    </Compile>
+  </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Common\Interop\Unix\" />
   </ItemGroup>
-  <!-- ToDo: Remove this target once the infrastructure for testing in netcoreapp1.1 is ready -->
-  <Target Name="RemoveUnwantedTestMonikers" Condition="'$(TargetGroup)'=='netstandard1.7'" BeforeTargets="CopyTestToTestDirectory">
-    <ItemGroup>
-      <TestNugetTargetMoniker Remove=".NETCoreApp,Version=v1.1" />
-    </ItemGroup>
-  </Target>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

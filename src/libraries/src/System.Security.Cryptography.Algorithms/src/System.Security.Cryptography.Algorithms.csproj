@@ -30,6 +30,9 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Release|AnyCPU'" />
+  <ItemGroup Condition="'$(TargetGroup)'=='netstandard1.6'">
+    <AdditionalFiles Include="$(ToolsDir)PinvokeAnalyzer_OneCoreApis.txt" />
+  </ItemGroup>
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">
     <Compile Include="Internal\Cryptography\TripleDesImplementation.cs" />
     <Compile Include="System\Security\Cryptography\Aes.cs" />

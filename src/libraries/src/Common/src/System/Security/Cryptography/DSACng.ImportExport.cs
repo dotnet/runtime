@@ -115,7 +115,7 @@ namespace System.Security.Cryptography
 
                         Interop.BCrypt.Emit(blob, ref offset, parameters.Q);
 
-                        Debug.Assert(offset == sizeof(BCRYPT_DSA_KEY_BLOB), "offset == sizeof(BCRYPT_DSA_KEY_BLOB)");
+                        Debug.Assert(offset == sizeof(BCRYPT_DSA_KEY_BLOB), $"Expected offset = sizeof(BCRYPT_DSA_KEY_BLOB), got {offset} != {sizeof(BCRYPT_DSA_KEY_BLOB)}");
 
                         Interop.BCrypt.Emit(blob, ref offset, parameters.P);
                         Interop.BCrypt.Emit(blob, ref offset, parameters.G);
@@ -125,8 +125,7 @@ namespace System.Security.Cryptography
                             Interop.BCrypt.Emit(blob, ref offset, parameters.X);
                         }
 
-                        // We better have computed the right allocation size above!
-                        Debug.Assert(offset == blobSize, "offset == blobSize");
+                        Debug.Assert(offset == blobSize, $"Expected offset = blobSize, got {offset} != {blobSize}");
                     }
                 }
             }
@@ -195,25 +194,25 @@ namespace System.Security.Cryptography
 
                         if (parameters.Seed != null)
                         {
+                            Interop.BCrypt.EmitBigEndian(blob, ref offset, parameters.Counter);
+                            Debug.Assert(offset == sizeof(BCRYPT_DSA_KEY_BLOB_V2), $"Expected offset = sizeof(BCRYPT_DSA_KEY_BLOB_V2), got {offset} != {sizeof(BCRYPT_DSA_KEY_BLOB_V2)}");
                             pBcryptBlob->cbSeedLength = parameters.Seed.Length;
                             pBcryptBlob->cbGroupSize = parameters.Q.Length;
-                            Interop.BCrypt.EmitBigEndian(blob, ref offset, parameters.Counter);
                             Interop.BCrypt.Emit(blob, ref offset, parameters.Seed);
                         }
                         else
                         {
                             // If Seed is not present, back fill both counter and seed with 0xff. Do not use parameters.Counter as CNG is more strict than CAPI and will reject
                             // anything other than 0xffffffff. That could complicate efforts to switch usage of DSACryptoServiceProvider to DSACng.
+                            Interop.BCrypt.EmitByte(blob, ref offset, 0xff, sizeof(int));
+                            Debug.Assert(offset == sizeof(BCRYPT_DSA_KEY_BLOB_V2), $"Expected offset = sizeof(BCRYPT_DSA_KEY_BLOB_V2), got {offset} != {sizeof(BCRYPT_DSA_KEY_BLOB_V2)}");
                             int defaultSeedLength = parameters.Q.Length;
                             pBcryptBlob->cbSeedLength = defaultSeedLength;
                             pBcryptBlob->cbGroupSize = parameters.Q.Length;
-                            Interop.BCrypt.EmitByte(blob, ref offset, 0xff, defaultSeedLength + sizeof(int));
+                            Interop.BCrypt.EmitByte(blob, ref offset, 0xff, defaultSeedLength);
                         }
 
                         Interop.BCrypt.Emit(blob, ref offset, parameters.Q);
-
-                        Debug.Assert(offset == sizeof(BCRYPT_DSA_KEY_BLOB), "offset == sizeof(BCRYPT_DSA_KEY_BLOB)");
-
                         Interop.BCrypt.Emit(blob, ref offset, parameters.P);
                         Interop.BCrypt.Emit(blob, ref offset, parameters.G);
                         Interop.BCrypt.Emit(blob, ref offset, parameters.Y);
@@ -223,7 +222,7 @@ namespace System.Security.Cryptography
                             Interop.BCrypt.Emit(blob, ref offset, parameters.X);
                         }
 
-                        Debug.Assert(offset == blobSize, "offset == blobSize");
+                        Debug.Assert(offset == blobSize, $"Expected offset = blobSize, got {offset} != {blobSize}");
                     }
                 }
             }
@@ -266,9 +265,7 @@ namespace System.Security.Cryptography
                             dsaParams.Seed = Interop.BCrypt.Consume(dsaBlob, ref offset, Sha1HashOutputSize);
                             dsaParams.Q = Interop.BCrypt.Consume(dsaBlob, ref offset, Sha1HashOutputSize);
 
-                            // We better have computed the right allocation size above!
-                            Debug.Assert(offset == sizeof(BCRYPT_DSA_KEY_BLOB), "offset == sizeof(BCRYPT_DSA_KEY_BLOB)");
-
+                            Debug.Assert(offset == sizeof(BCRYPT_DSA_KEY_BLOB), $"Expected offset = sizeof(BCRYPT_DSA_KEY_BLOB), got {offset} != {sizeof(BCRYPT_DSA_KEY_BLOB)}");
                             dsaParams.P = Interop.BCrypt.Consume(dsaBlob, ref offset, pBcryptBlob->cbKey);
                             dsaParams.G = Interop.BCrypt.Consume(dsaBlob, ref offset, pBcryptBlob->cbKey);
                             dsaParams.Y = Interop.BCrypt.Consume(dsaBlob, ref offset, pBcryptBlob->cbKey);
@@ -300,8 +297,7 @@ namespace System.Security.Cryptography
                             // Read out a BCRYPT_DSA_KEY_BLOB_V2 structure.
                             dsaParams.Counter = FromBigEndian(Interop.BCrypt.Consume(dsaBlob, ref offset, 4));
 
-                            // We better have computed the right allocation size above!
-                            Debug.Assert(offset == sizeof(BCRYPT_DSA_KEY_BLOB_V2), "offset == sizeof(BCRYPT_DSA_KEY_BLOB_V2)");
+                            Debug.Assert(offset == sizeof(BCRYPT_DSA_KEY_BLOB_V2), $"Expected offset = sizeof(BCRYPT_DSA_KEY_BLOB_V2), got {offset} != {sizeof(BCRYPT_DSA_KEY_BLOB_V2)}");
 
                             dsaParams.Seed = Interop.BCrypt.Consume(dsaBlob, ref offset, pBcryptBlob->cbSeedLength);
                             dsaParams.Q = Interop.BCrypt.Consume(dsaBlob, ref offset, pBcryptBlob->cbGroupSize);
@@ -321,7 +317,7 @@ namespace System.Security.Cryptography
                             dsaParams.Seed = null;
                         }
 
-                        Debug.Assert(offset == 0, "offset == 0");
+                        Debug.Assert(offset == dsaBlob.Length, $"Expected offset = dsaBlob.Length, got {offset} != {dsaBlob.Length}");
 
                         return dsaParams;
                     }

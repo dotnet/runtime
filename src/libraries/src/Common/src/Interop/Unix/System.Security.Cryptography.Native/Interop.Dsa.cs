@@ -30,7 +30,7 @@ internal static partial class Interop
         private static extern int DsaSizeSignature(SafeDsaHandle dsa);
 
         /// <summary>
-        /// Return the size of the DER-encoded key in bytes.
+        /// Return the maximum size of the DER-encoded key in bytes.
         /// </summary>
         internal static int DsaEncodedSignatureSize(SafeDsaHandle dsa)
         {
@@ -61,11 +61,8 @@ internal static partial class Interop
         {
             int keySize = DsaSizeP(dsa);
 
-            // Assume an even multiple of 8 bytes (OpenSsl makes this assumption as well) in case
-            // there were some leading zero bytes truncated due to BIGNUM semantics.
-            // This minimizes the change the key size is wrong due to leading zero bits; there is only
-            // a 2^64 chance that the key has 64 leading zero bits and thus the keysize will be wrong.
-            keySize = (keySize + 7) / 8 * 8 * 8;
+            // Assume an even multiple of 8 bytes \ 64 bits (OpenSsl also makes the same assumption)
+            keySize = (keySize + 7) / 8 * 8;
             return keySize;
         }
 

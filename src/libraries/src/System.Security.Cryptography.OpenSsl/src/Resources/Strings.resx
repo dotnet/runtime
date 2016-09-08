@@ -135,6 +135,27 @@
   <data name="Cryptography_CurveNotSupported" xml:space="preserve">
     <value>The specified curve '{0}' or its parameters are not valid for this platform.</value>
   </data>
+  <data name="Cryptography_InvalidDsaParameters_MissingFields" xml:space="preserve">
+    <value>The specified DSA parameters are not valid; P, Q, G and Y are all required.</value>
+  </data>
+  <data name="Cryptography_InvalidDsaParameters_MismatchedPGY" xml:space="preserve">
+    <value>The specified DSA parameters are not valid; P, G and Y must be the same length (the key size).</value>
+  </data>
+  <data name="Cryptography_InvalidDsaParameters_MismatchedQX" xml:space="preserve">
+    <value>The specified DSA parameters are not valid; Q and X (if present) must be the same length.</value>
+  </data>
+  <data name="Cryptography_InvalidDsaParameters_MismatchedPJ" xml:space="preserve">
+    <value>The specified DSA parameters are not valid; J (if present) must be shorter than P.</value>
+  </data>
+  <data name="Cryptography_InvalidDsaParameters_SeedRestriction_ShortKey" xml:space="preserve">
+    <value>The specified DSA parameters are not valid; Seed, if present, must be 20 bytes long for keys shorter than 1024 bits.</value>
+  </data>
+  <data name="Cryptography_InvalidDsaParameters_QRestriction_ShortKey" xml:space="preserve">
+    <value>The specified DSA parameters are not valid; Q must be 20 bytes long for keys shorter than 1024 bits.</value>
+  </data>
+  <data name="Cryptography_InvalidDsaParameters_QRestriction_LargeKey" xml:space="preserve">
+    <value>The specified DSA parameters are not valid; Q's length must be one of 20, 32 or 64 bytes.</value>
+  </data>
   <data name="Cryptography_InvalidKeySize" xml:space="preserve">
     <value>Specified key is not a valid size for this algorithm.</value>
   </data>

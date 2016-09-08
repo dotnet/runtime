@@ -126,6 +126,9 @@
   <data name="ArgumentNull_Buffer" xml:space="preserve">
     <value>Buffer cannot be null.</value>
   </data>
+  <data name="Cryptography_ArgDSARequiresDSAKey" xml:space="preserve">
+    <value>Keys used with the DSACng algorithm must have an algorithm group of DSA.</value>
+  </data>
   <data name="Cryptography_ArgECDHKeySizeMismatch" xml:space="preserve">
     <value>The keys from both parties must be the same size to generate a secret agreement.</value>
   </data>
@@ -138,7 +141,7 @@
   <data name="Cryptography_ArgExpectedECDiffieHellmanCngPublicKey" xml:space="preserve">
     <value>DeriveKeyMaterial requires an ECDiffieHellmanCngPublicKey.</value>
   </data>
-  <data name="Cryptography_ArgRSAaRequiresRSAKey" xml:space="preserve">
+  <data name="Cryptography_ArgRSARequiresRSAKey" xml:space="preserve">
     <value>Keys used with the RSACng algorithm must have an algorithm group of RSA.</value>
   </data>
   <data name="Cryptography_CngKeyWrongAlgorithm" xml:space="preserve">
@@ -158,6 +161,27 @@
   </data>
   <data name="Cryptography_InvalidCipherMode" xml:space="preserve">
     <value>Specified cipher mode is not valid for this algorithm.</value>
+  </data>
+  <data name="Cryptography_InvalidDsaParameters_MissingFields" xml:space="preserve">
+    <value>The specified DSA parameters are not valid; P, Q, G and Y are all required.</value>
+  </data>
+  <data name="Cryptography_InvalidDsaParameters_MismatchedPGY" xml:space="preserve">
+    <value>The specified DSA parameters are not valid; P, G and Y must be the same length (the key size).</value>
+  </data>
+  <data name="Cryptography_InvalidDsaParameters_MismatchedQX" xml:space="preserve">
+    <value>The specified DSA parameters are not valid; Q and X (if present) must be the same length.</value>
+  </data>
+  <data name="Cryptography_InvalidDsaParameters_MismatchedPJ" xml:space="preserve">
+    <value>The specified DSA parameters are not valid; J (if present) must be shorter than P.</value>
+  </data>
+  <data name="Cryptography_InvalidDsaParameters_SeedRestriction_ShortKey" xml:space="preserve">
+    <value>The specified DSA parameters are not valid; Seed, if present, must be 20 bytes long for keys shorter than 1024 bits.</value>
+  </data>
+  <data name="Cryptography_InvalidDsaParameters_QRestriction_ShortKey" xml:space="preserve">
+    <value>The specified DSA parameters are not valid; Q must be 20 bytes long for keys shorter than 1024 bits.</value>
+  </data>
+  <data name="Cryptography_InvalidDsaParameters_QRestriction_LargeKey" xml:space="preserve">
+    <value>The specified DSA parameters are not valid; Q's length must be one of 20, 32 or 64 bytes.</value>
   </data>
   <data name="Cryptography_CurveNotSupported" xml:space="preserve">
     <value>The specified curve '{0}' or its parameters are not valid for this platform.</value>
