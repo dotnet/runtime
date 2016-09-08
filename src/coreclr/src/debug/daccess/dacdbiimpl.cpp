@@ -6517,7 +6517,7 @@ HRESULT DacHeapWalker::Init(CORDB_ADDRESS start, CORDB_ADDRESS end)
             if (thread == NULL)
                 continue;
 
-            alloc_context *ctx = thread->GetAllocContext();
+            gc_alloc_context *ctx = thread->GetAllocContext();
             if (ctx == NULL)
                 continue;
 
@@ -6533,7 +6533,7 @@ HRESULT DacHeapWalker::Init(CORDB_ADDRESS start, CORDB_ADDRESS end)
     }
 
 #ifdef FEATURE_SVR_GC
-    HRESULT hr = GCHeap::IsServerHeap() ? InitHeapDataSvr(mHeaps, mHeapCount) : InitHeapDataWks(mHeaps, mHeapCount);
+    HRESULT hr = GCHeapUtilities::IsServerHeap() ? InitHeapDataSvr(mHeaps, mHeapCount) : InitHeapDataWks(mHeaps, mHeapCount);
 #else
     HRESULT hr = InitHeapDataWks(mHeaps, mHeapCount);
 #endif
@@ -6777,7 +6777,7 @@ HRESULT DacDbiInterfaceImpl::GetHeapSegments(OUT DacDbiArrayList<COR_SEGMENT> *p
     HeapData *heaps = 0;
     
 #ifdef FEATURE_SVR_GC
-    HRESULT hr = GCHeap::IsServerHeap() ? DacHeapWalker::InitHeapDataSvr(heaps, heapCount) : DacHeapWalker::InitHeapDataWks(heaps, heapCount);
+    HRESULT hr = GCHeapUtilities::IsServerHeap() ? DacHeapWalker::InitHeapDataSvr(heaps, heapCount) : DacHeapWalker::InitHeapDataWks(heaps, heapCount);
 #else
     HRESULT hr = DacHeapWalker::InitHeapDataWks(heaps, heapCount);
 #endif
@@ -7171,7 +7171,7 @@ void DacDbiInterfaceImpl::GetGCHeapInformation(COR_HEAPINFO * pHeapInfo)
     pHeapInfo->areGCStructuresValid = GCScan::GetGcRuntimeStructuresValid();
     
 #ifdef FEATURE_SVR_GC
-    if (GCHeap::IsServerHeap())
+    if (GCHeapUtilities::IsServerHeap())
     {
         pHeapInfo->gcType = CorDebugServerGC;
         pHeapInfo->numHeaps = DacGetNumHeaps();

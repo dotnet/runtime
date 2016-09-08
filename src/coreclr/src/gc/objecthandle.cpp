@@ -95,7 +95,7 @@ void CALLBACK PromoteRefCounted(_UNCHECKED_OBJECTREF *pObjRef, uintptr_t *pExtra
     Object *pOldObj = pObj;
 #endif
 
-    if (!HndIsNullOrDestroyedHandle(pObj) && !GCHeap::GetGCHeap()->IsPromoted(pObj))
+    if (!HndIsNullOrDestroyedHandle(pObj) && !g_theGcHeap->IsPromoted(pObj))
     {
         if (GCToEEInterface::RefCountedHandleCallbacks(pObj))
         {
@@ -186,9 +186,9 @@ void CALLBACK PromoteDependentHandle(_UNCHECKED_OBJECTREF *pObjRef, uintptr_t *p
     ScanContext *sc = (ScanContext*)lp1;
     DhContext *pDhContext = Ref_GetDependentHandleContext(sc);
 
-    if (*pObjRef && GCHeap::GetGCHeap()->IsPromoted(*pPrimaryRef))
+    if (*pObjRef && g_theGcHeap->IsPromoted(*pPrimaryRef))
     {
-        if (!GCHeap::GetGCHeap()->IsPromoted(*pSecondaryRef))
+        if (!g_theGcHeap->IsPromoted(*pSecondaryRef))
         {
             LOG((LF_GC|LF_ENC, LL_INFO10000, "\tPromoting secondary " LOG_OBJECT_CLASS(*pSecondaryRef)));
             _ASSERTE(lp2);
@@ -221,7 +221,7 @@ void CALLBACK ClearDependentHandle(_UNCHECKED_OBJECTREF *pObjRef, uintptr_t *pEx
     LOG((LF_GC|LF_ENC, LL_INFO1000, LOG_HANDLE_OBJECT_CLASS("\tPrimary:\t", pPrimaryRef, "to ", *pPrimaryRef)));
     LOG((LF_GC|LF_ENC, LL_INFO1000, LOG_HANDLE_OBJECT_CLASS("\tSecondary\t", pSecondaryRef, "to ", *pSecondaryRef)));
 
-    if (!GCHeap::GetGCHeap()->IsPromoted(*pPrimaryRef))
+    if (!g_theGcHeap->IsPromoted(*pPrimaryRef))
     {
         LOG((LF_GC|LF_ENC, LL_INFO1000, "\tunreachable ", LOG_OBJECT_CLASS(*pPrimaryRef)));
         LOG((LF_GC|LF_ENC, LL_INFO1000, "\tunreachable ", LOG_OBJECT_CLASS(*pSecondaryRef)));
@@ -230,7 +230,7 @@ void CALLBACK ClearDependentHandle(_UNCHECKED_OBJECTREF *pObjRef, uintptr_t *pEx
     }
     else
     {
-        _ASSERTE(GCHeap::GetGCHeap()->IsPromoted(*pSecondaryRef));
+        _ASSERTE(g_theGcHeap->IsPromoted(*pSecondaryRef));
         LOG((LF_GC|LF_ENC, LL_INFO10000, "\tPrimary is reachable " LOG_OBJECT_CLASS(*pPrimaryRef)));
         LOG((LF_GC|LF_ENC, LL_INFO10000, "\tSecondary is reachable " LOG_OBJECT_CLASS(*pSecondaryRef)));
     }
@@ -330,7 +330,7 @@ void CALLBACK CheckPromoted(_UNCHECKED_OBJECTREF *pObjRef, uintptr_t *pExtraInfo
     LOG((LF_GC, LL_INFO100000, LOG_HANDLE_OBJECT_CLASS("Checking referent of Weak-", pObjRef, "to ", *pObjRef)));
 
     Object **ppRef = (Object **)pObjRef;
-    if (!GCHeap::GetGCHeap()->IsPromoted(*ppRef))
+    if (!g_theGcHeap->IsPromoted(*ppRef))
     {
         LOG((LF_GC, LL_INFO100, LOG_HANDLE_OBJECT_CLASS("Severing Weak-", pObjRef, "to unreachable ", *pObjRef)));
 
@@ -355,9 +355,9 @@ void CALLBACK CalculateSizedRefSize(_UNCHECKED_OBJECTREF *pObjRef, uintptr_t *pE
     ScanContext* sc = (ScanContext *)lp1;
     promote_func* callback = (promote_func*) lp2;
 
-    size_t sizeBegin = GCHeap::GetGCHeap()->GetPromotedBytes(sc->thread_number);
+    size_t sizeBegin = g_theGcHeap->GetPromotedBytes(sc->thread_number);
     callback(ppSizedRef, (ScanContext *)lp1, 0);
-    size_t sizeEnd = GCHeap::GetGCHeap()->GetPromotedBytes(sc->thread_number);
+    size_t sizeEnd = g_theGcHeap->GetPromotedBytes(sc->thread_number);
     *pSize = sizeEnd - sizeBegin;
 }
 
@@ -583,10 +583,10 @@ int getNumberOfSlots()
 {
     WRAPPER_NO_CONTRACT;
 
-    // when Ref_Initialize called, GCHeap::GetNumberOfHeaps() is still 0, so use #procs as a workaround
+    // when Ref_Initialize called, IGCHeap::GetNumberOfHeaps() is still 0, so use #procs as a workaround
     // it is legal since even if later #heaps < #procs we create handles by thread home heap
     // and just have extra unused slots in HandleTableBuckets, which does not take a lot of space
-    if (!GCHeap::IsServerHeap())
+    if (!IsServerHeap())
         return 1;
 
 #ifdef FEATURE_REDHAWK
@@ -874,7 +874,7 @@ int getSlotNumber(ScanContext* sc)
 {
     WRAPPER_NO_CONTRACT;
 
-    return (GCHeap::IsServerHeap() ? sc->thread_number : 0);
+    return (IsServerHeap() ? sc->thread_number : 0);
 }
 
 // <TODO> - reexpress as complete only like hndtable does now!!! -fmh</REVISIT_TODO>
@@ -1152,7 +1152,7 @@ void Ref_TraceNormalRoots(uint32_t condemned, uint32_t maxgen, ScanContext* sc, 
     // promote objects pointed to by strong handles
     // during ephemeral GCs we also want to promote the ones pointed to by sizedref handles.
     uint32_t types[2] = {HNDTYPE_STRONG, HNDTYPE_SIZEDREF};
-    uint32_t uTypeCount = (((condemned >= maxgen) && !GCHeap::GetGCHeap()->IsConcurrentGCInProgress()) ? 1 : _countof(types));
+    uint32_t uTypeCount = (((condemned >= maxgen) && !g_theGcHeap->IsConcurrentGCInProgress()) ? 1 : _countof(types));
     uint32_t flags = (sc->concurrent) ? HNDGCF_ASYNC : HNDGCF_NORMAL;
 
     HandleTableMap *walk = &g_HandleTableMap;
@@ -1454,7 +1454,7 @@ void ScanSizedRefByAD(uint32_t maxgen, HANDLESCANPROC scanProc, ScanContext* sc,
     HandleTableMap *walk = &g_HandleTableMap;
     uint32_t type = HNDTYPE_SIZEDREF;
     int uCPUindex = getSlotNumber(sc);
-    int n_slots = GCHeap::GetGCHeap()->GetNumberOfHeaps();
+    int n_slots = g_theGcHeap->GetNumberOfHeaps();
 
     while (walk)
     {
@@ -1574,11 +1574,11 @@ void Ref_UpdatePointers(uint32_t condemned, uint32_t maxgen, ScanContext* sc, Re
     // @TODO cwb: wait for compelling performance measurements.</REVISIT_TODO>
     BOOL bDo = TRUE;
 
-    if (GCHeap::IsServerHeap()) 
+    if (IsServerHeap()) 
     {
         bDo = (Interlocked::Increment(&uCount) == 1);
-        Interlocked::CompareExchange (&uCount, 0, GCHeap::GetGCHeap()->GetNumberOfHeaps());
-        _ASSERTE (uCount <= GCHeap::GetGCHeap()->GetNumberOfHeaps());
+        Interlocked::CompareExchange (&uCount, 0, g_theGcHeap->GetNumberOfHeaps());
+        _ASSERTE (uCount <= g_theGcHeap->GetNumberOfHeaps());
     }
 
     if (bDo)   
@@ -1906,9 +1906,9 @@ int GetCurrentThreadHomeHeapNumber()
 {
     WRAPPER_NO_CONTRACT;
 
-    if (!GCHeap::IsGCHeapInitialized())
+    if (g_theGcHeap == nullptr)
         return 0;
-    return GCHeap::GetGCHeap()->GetHomeHeapNumber();
+    return g_theGcHeap->GetHomeHeapNumber();
 }
 
 bool HandleTableBucket::Contains(OBJECTHANDLE handle)
@@ -1921,7 +1921,7 @@ bool HandleTableBucket::Contains(OBJECTHANDLE handle)
     }
     
     HHANDLETABLE hTable = HndGetHandleTable(handle);
-    for (int uCPUindex=0; uCPUindex < GCHeap::GetGCHeap()->GetNumberOfHeaps(); uCPUindex++)
+    for (int uCPUindex=0; uCPUindex < g_theGcHeap->GetNumberOfHeaps(); uCPUindex++)
     {
         if (hTable == this->pTable[uCPUindex]) 
         {

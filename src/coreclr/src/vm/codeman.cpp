@@ -3397,7 +3397,7 @@ void ExecutionManager::CleanupCodeHeaps()
     }
     CONTRACTL_END;
 
-    _ASSERTE (g_fProcessDetach || (GCHeap::IsGCInProgress()  && ::IsGCThread()));
+    _ASSERTE (g_fProcessDetach || (GCHeapUtilities::IsGCInProgress()  && ::IsGCThread()));
 
     GetEEJitManager()->CleanupCodeHeaps();
 }
@@ -3411,7 +3411,7 @@ void EEJitManager::CleanupCodeHeaps()
     }
     CONTRACTL_END;
 
-    _ASSERTE (g_fProcessDetach || (GCHeap::IsGCInProgress() && ::IsGCThread()));
+    _ASSERTE (g_fProcessDetach || (GCHeapUtilities::IsGCInProgress() && ::IsGCThread()));
 
     CrstHolder ch(&m_CodeHeapCritSec);
 
@@ -4451,7 +4451,7 @@ RangeSection* ExecutionManager::GetRangeSection(TADDR addr)
     // Unless we are on an MP system with many cpus
     // where this sort of caching actually diminishes scaling during server GC
     // due to many processors writing to a common location
-    if (g_SystemInfo.dwNumberOfProcessors < 4 || !GCHeap::IsServerHeap() || !GCHeap::IsGCInProgress())
+    if (g_SystemInfo.dwNumberOfProcessors < 4 || !GCHeapUtilities::IsServerHeap() || !GCHeapUtilities::IsGCInProgress())
         pHead->pLastUsed = pLast;
 #endif
 

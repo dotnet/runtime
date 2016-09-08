@@ -142,7 +142,7 @@
 #include "regdisp.h"
 #include "mscoree.h"
 #include "appdomainstack.h"
-#include "gc.h"
+#include "gcheaputilities.h"
 #include "gcinfotypes.h"
 #include <clrhost.h>
 
@@ -1739,9 +1739,9 @@ public:
 
     // on MP systems, each thread has its own allocation chunk so we can avoid
     // lock prefixes and expensive MP cache snooping stuff
-    alloc_context        m_alloc_context;
+    gc_alloc_context        m_alloc_context;
 
-    inline alloc_context *GetAllocContext() { LIMITED_METHOD_CONTRACT; return &m_alloc_context; }
+    inline gc_alloc_context *GetAllocContext() { LIMITED_METHOD_CONTRACT; return &m_alloc_context; }
 
     // This is the type handle of the first object in the alloc context at the time 
     // we fire the AllocationTick event. It's only for tooling purpose.
@@ -4884,7 +4884,7 @@ private:
 private:
     // When we create an object, or create an OBJECTREF, or create an Interior Pointer, or enter EE from managed
     // code, we will set this flag.
-    // Inside GCHeap::StressHeap, we only do GC if this flag is TRUE.  Then we reset it to zero.
+    // Inside GCHeapUtilities::StressHeap, we only do GC if this flag is TRUE.  Then we reset it to zero.
     BOOL m_fStressHeapCount;
 public:
     void EnableStressHeap()

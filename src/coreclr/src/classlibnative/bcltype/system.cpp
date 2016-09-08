@@ -673,7 +673,7 @@ FCIMPL0(FC_BOOL_RET, SystemNative::IsServerGC)
 {
     FCALL_CONTRACT;
 
-    FC_RETURN_BOOL(GCHeap::IsServerHeap());
+    FC_RETURN_BOOL(GCHeapUtilities::IsServerHeap());
 }
 FCIMPLEND
 

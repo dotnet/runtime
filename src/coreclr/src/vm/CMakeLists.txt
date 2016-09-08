@@ -70,6 +70,7 @@ set(VM_SOURCES_DAC_AND_WKS_COMMON
     formattype.cpp
     fptrstubs.cpp
     frames.cpp
+    gcheaputilities.cpp
     genericdict.cpp
     generics.cpp
     hash.cpp
