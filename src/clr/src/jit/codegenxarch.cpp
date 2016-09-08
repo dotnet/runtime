@@ -2460,23 +2460,11 @@ void CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
             // X86 Long comparison
             else if (varTypeIsLong(op1Type))
             {
-                // When not materializing the result in a register, the compare logic is generated
-                // when we generate the GT_JTRUE.
-                if (treeNode->gtRegNum != REG_NA)
-                {
-                    genCompareLong(treeNode);
-                }
-                else
-                {
-                    if ((treeNode->gtNext != nullptr) && (treeNode->gtNext->OperGet() != GT_JTRUE))
-                    {
-                        NYI("Long compare/reload/jtrue sequence");
-                    }
-
-                    // We generate the compare when we generate the GT_JTRUE, but we need to consume
-                    // the operands now.
-                    genConsumeOperands(treeNode->AsOp());
-                }
+#ifdef DEBUG
+                LIR::Use use;
+                assert((treeNode->gtRegNum != REG_NA) || !LIR::AsRange(compiler->compCurBB).TryGetUse(treeNode, &use));
+#endif
+                genCompareLong(treeNode);
             }
 #endif // !defined(_TARGET_64BIT_)
             else
@@ -2497,7 +2485,7 @@ void CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
             // For long compares, we emit special logic
             if (varTypeIsLong(cmp->gtGetOp1()))
             {
-                genJTrueLong(cmp);
+                unreached();
             }
             else
 #endif
@@ -7034,8 +7022,6 @@ void CodeGen::genCompareLong(GenTreePtr treeNode)
 
     genConsumeOperands(tree);
 
-    assert(targetReg != REG_NA);
-
     GenTreePtr loOp1 = op1->gtGetOp1();
     GenTreePtr hiOp1 = op1->gtGetOp2();
     GenTreePtr loOp2 = op2->gtGetOp1();
@@ -7048,6 +7034,12 @@ void CodeGen::genCompareLong(GenTreePtr treeNode)
 
     // Emit the compare instruction
     getEmitter()->emitInsBinary(ins, cmpAttr, hiOp1, hiOp2);
+
+    // If the result is not being materialized in a register, we're done.
+    if (targetReg == REG_NA)
+    {
+        return;
+    }
 
     // Generate the first jump for the high compare
     CompareKind compareKind = ((tree->gtFlags & GTF_UNSIGNED) != 0) ? CK_UNSIGNED : CK_SIGNED;
@@ -7118,152 +7110,6 @@ void CodeGen::genCompareLong(GenTreePtr treeNode)
         inst_RV_RV(ins_Move_Extend(TYP_UBYTE, true), targetReg, targetReg, TYP_UBYTE, emitTypeSize(TYP_UBYTE));
         genProduceReg(tree);
     }
-}
-
-//------------------------------------------------------------------------
-// genJTrueLong: Generate code for comparing two longs on x86 for the case where the result
-// is not manifested in a register.
-//
-// Arguments:
-//    treeNode - the compare tree
-//
-// Return Value:
-//    None.
-// Comments:
-// For long compares, we need to compare the high parts of operands first, then the low parts.
-// We only have to do the low compare if the high parts of the operands are equal.
-//
-// In the case where the result of a rel-op is not realized in a register, we generate:
-//
-//    Opcode            x86 equivalent          Comment
-//    ------            --------------          -------
-//
-//    GT_LT; unsigned   cmp hiOp1,hiOp2
-//                      jb  trueLabel
-//                      ja  falseLabel
-//                      cmp loOp1,loOp2
-//                      jb  trueLabel
-//                      falseLabel:
-//
-//    GT_LE; unsigned   cmp hiOp1,hiOp2
-//                      jb  trueLabel
-//                      ja  falseLabel
-//                      cmp loOp1,loOp2
-//                      jbe trueLabel
-//                      falseLabel:
-//
-//    GT_GT; unsigned   cmp hiOp1,hiOp2
-//                      ja  trueLabel
-//                      jb  falseLabel
-//                      cmp loOp1,loOp2
-//                      ja  trueLabel
-//                      falseLabel:
-//
-//    GT_GE; unsigned   cmp hiOp1,hiOp2
-//                      ja  trueLabel
-//                      jb  falseLabel
-//                      cmp loOp1,loOp2
-//                      jae trueLabel
-//                      falseLabel:
-//
-//    GT_LT; signed     cmp hiOp1,hiOp2
-//                      jl  trueLabel
-//                      jg  falseLabel
-//                      cmp loOp1,loOp2
-//                      jb  trueLabel
-//                      falseLabel:
-//
-//    GT_LE; signed     cmp hiOp1,hiOp2
-//                      jl  trueLabel
-//                      jg  falseLabel
-//                      cmp loOp1,loOp2
-//                      jbe trueLabel
-//                      falseLabel:
-//
-//    GT_GT; signed     cmp hiOp1,hiOp2
-//                      jg  trueLabel
-//                      jl  falseLabel
-//                      cmp loOp1,loOp2
-//                      ja  trueLabel
-//                      falseLabel:
-//
-//    GT_GE; signed     cmp hiOp1,hiOp2
-//                      jg  trueLabel
-//                      jl  falseLabel
-//                      cmp loOp1,loOp2
-//                      jae trueLabel
-//                      falseLabel:
-//
-//    GT_EQ;            cmp hiOp1,hiOp2
-//                      jne falseLabel
-//                      cmp loOp1,loOp2
-//                      je  trueLabel
-//                      falseLabel:
-//
-//    GT_NE;            cmp hiOp1,hiOp2
-//                      jne labelTrue
-//                      cmp loOp1,loOp2
-//                      jne trueLabel
-//                      falseLabel:
-//
-// TODO-X86-CQ: Check if hi or lo parts of op2 are 0 and change the compare to a test.
-void CodeGen::genJTrueLong(GenTreePtr treeNode)
-{
-    assert(treeNode->OperIsCompare());
-
-    GenTreeOp* tree = treeNode->AsOp();
-    GenTreePtr op1  = tree->gtOp1;
-    GenTreePtr op2  = tree->gtOp2;
-
-    assert(varTypeIsLong(op1->TypeGet()));
-    assert(varTypeIsLong(op2->TypeGet()));
-
-    regNumber targetReg = treeNode->gtRegNum;
-
-    assert(targetReg == REG_NA);
-
-    GenTreePtr loOp1 = op1->gtGetOp1();
-    GenTreePtr hiOp1 = op1->gtGetOp2();
-    GenTreePtr loOp2 = op2->gtGetOp1();
-    GenTreePtr hiOp2 = op2->gtGetOp2();
-
-    // Emit the compare instruction
-    getEmitter()->emitInsBinary(INS_cmp, EA_4BYTE, hiOp1, hiOp2);
-
-    // Generate the first jump for the high compare
-    CompareKind compareKind = ((tree->gtFlags & GTF_UNSIGNED) != 0) ? CK_UNSIGNED : CK_SIGNED;
-
-    // TODO-X86-CQ: If the next block is a BBJ_ALWAYS, we can set falseLabel = compiler->compCurBB->bbNext->bbJumpDest.
-    BasicBlock* falseLabel = genCreateTempLabel();
-
-    emitJumpKind jumpKindHi[2];
-
-    // Generate the jumps for the high compare
-    genJumpKindsForTreeLongHi(tree, jumpKindHi);
-
-    BasicBlock* trueLabel = compiler->compCurBB->bbJumpDest;
-
-    if (jumpKindHi[0] != EJ_NONE)
-    {
-        inst_JMP(jumpKindHi[0], trueLabel);
-    }
-
-    if (jumpKindHi[1] != EJ_NONE)
-    {
-        inst_JMP(jumpKindHi[1], falseLabel);
-    }
-
-    // The low jump must be unsigned
-    emitJumpKind jumpKindLo = genJumpKindForOper(tree->gtOper, CK_UNSIGNED);
-
-    // Emit the comparison and the jump to the trueLabel
-    getEmitter()->emitInsBinary(INS_cmp, EA_4BYTE, loOp1, loOp2);
-
-    inst_JMP(jumpKindLo, trueLabel);
-
-    // Generate falseLabel, which is the false path. We will jump here if the high compare is false
-    // or fall through if the low compare is false.
-    genDefineTempLabel(falseLabel);
 }
 #endif //! defined(_TARGET_64BIT_)
 
