@@ -99,7 +99,7 @@
         "System.Text.Encoding.CodePages": "4.0.1",
         "System.Xml.XmlSerializer": "4.0.11",
         "System.Console": "4.3.0-beta-24507-02",
-        "microsoft.xunit.runner.uwp": "1.0.3-prerelease-00807-03",
+        "microsoft.xunit.runner.uwp": "1.0.3-prerelease-00808-02",
         "Microsoft.DotNet.TestILC": {
           "version": "1.4.24208-prerelease",
           "include": "contentFiles"
