@@ -48,7 +48,7 @@ HRESULT CorGCHost::_SetGCSegmentSize(SIZE_T SegmentSize)
     HRESULT hr = S_OK;
 
     // Sanity check the value, it must be a power of two and big enough.
-    if (!GCHeapUtilities::IsValidSegmentSize(SegmentSize))
+    if (!GCHeapUtilities::GetGCHeap()->IsValidSegmentSize(SegmentSize))
     {
         hr = E_INVALIDARG;
     }
@@ -74,7 +74,7 @@ HRESULT CorGCHost::_SetGCMaxGen0Size(SIZE_T MaxGen0Size)
     HRESULT hr = S_OK;
 
     // Sanity check the value is at least large enough.
-    if (!GCHeapUtilities::IsValidGen0MaxSize(MaxGen0Size))
+    if (!GCHeapUtilities::GetGCHeap()->IsValidGen0MaxSize(MaxGen0Size))
     {
         hr = E_INVALIDARG;
     }

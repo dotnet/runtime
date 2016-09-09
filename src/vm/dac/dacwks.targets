@@ -40,6 +40,7 @@
         <CppCompile Include="$(ClrSrcDirectory)\vm\fptrstubs.cpp" />
         <CppCompile Include="$(ClrSrcDirectory)\vm\frames.cpp" />
         <CppCompile Include="$(ClrSrcDirectory)\vm\GCDecode.cpp" />
+        <CppCompile Include="$(ClrSrcDirectory)\vm\gcheaputilities.cpp" />
         <CppCompile Include="$(ClrSrcDirectory)\vm\genericdict.cpp" />
         <CppCompile Include="$(ClrSrcDirectory)\vm\generics.cpp" />
         <CppCompile Include="$(ClrSrcDirectory)\vm\hash.cpp" />
