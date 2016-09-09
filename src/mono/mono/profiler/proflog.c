@@ -3197,14 +3197,11 @@ counters_emit (MonoProfiler *profiler)
 			LEB128_SIZE /* index */
 		;
 
-		len += 1;
+		len++;
 	}
 
-	if (!len) {
-		mono_os_mutex_unlock (&counters_mutex);
-		return;
-	}
-
+	if (!len)
+		goto done;
 
 	ENTER_LOG (&counter_descriptors_ctr, logbuffer, size);
 
@@ -3230,6 +3227,7 @@ counters_emit (MonoProfiler *profiler)
 
 	EXIT_LOG;
 
+done:
 	mono_os_mutex_unlock (&counters_mutex);
 }
 
@@ -3399,7 +3397,7 @@ perfcounters_emit (MonoProfiler *profiler)
 			LEB128_SIZE /* index */
 		;
 
-		len += 1;
+		len++;
 	}
 
 	if (!len)
@@ -3465,6 +3463,7 @@ static void
 perfcounters_sample (MonoProfiler *profiler, uint64_t timestamp)
 {
 	PerfCounterAgent *pcagent;
+	int len = 0;
 	int size;
 
 	if (!counters_initialized)
@@ -3493,7 +3492,12 @@ perfcounters_sample (MonoProfiler *profiler, uint64_t timestamp)
 			BYTE_SIZE /* type */ +
 			LEB128_SIZE /* value */
 		;
+
+		len++;
 	}
+
+	if (!len)
+		goto done;
 
 	size +=
 		LEB128_SIZE /* stop marker */
@@ -3517,6 +3521,7 @@ perfcounters_sample (MonoProfiler *profiler, uint64_t timestamp)
 
 	EXIT_LOG;
 
+done:
 	mono_os_mutex_unlock (&counters_mutex);
 }
 
