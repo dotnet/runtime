@@ -99,10 +99,6 @@
       <Project>{1e689c1b-690c-4799-bde9-6e7990585894}</Project>
       <Name>System.Runtime.Extensions.CoreCLR</Name>
     </ProjectReference>
-    <ProjectReference Include="..\..\System.Runtime\pkg\System.Runtime.pkgproj">
-    </ProjectReference>
-    <ProjectReference Include="..\..\System.Text.Encoding\pkg\System.Text.Encoding.pkgproj">
-    </ProjectReference>
     <ProjectReference Include="..\..\System.Private.Uri\pkg\System.Private.Uri.pkgproj">
     </ProjectReference>
     <ProjectReference Include="$(CommonTestPath)\System\Diagnostics\RemoteExecutorConsoleApp\RemoteExecutorConsoleApp.csproj">
@@ -113,12 +109,6 @@
       <Project>{9F312D76-9AF1-4E90-B3B0-815A1EC6C346}</Project>
       <Name>VoidMainWithExitCodeApp</Name>
     </ProjectReference>
-    <!-- ToDo: Remove this P2P reference once new packages are produced and updated -->
-    <ProjectReference Include="..\..\System.Threading.Tasks\pkg\System.Threading.Tasks.pkgproj" />
-    <!-- ToDo: Remove this P2P reference once new packages are produced and updated -->
-    <ProjectReference Include="..\..\System.Reflection\pkg\System.Reflection.pkgproj" />
-    <!-- ToDo: Remove this P2P reference once new packages are produced and updated -->
-    <ProjectReference Include="..\..\System.Reflection.Extensions\pkg\System.Reflection.Extensions.pkgproj" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

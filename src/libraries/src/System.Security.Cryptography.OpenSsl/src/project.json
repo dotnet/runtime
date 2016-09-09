@@ -31,6 +31,7 @@
         "System.Runtime.Extensions": "4.3.0-beta-devapi-24509-01",
         "System.Runtime.InteropServices": "4.3.0-beta-devapi-24509-01",
         "System.Runtime.Numerics": "4.3.0-beta-devapi-24509-01",
+        "System.Security.Cryptography.Algorithms": "4.3.0-beta-devapi-24509-01",
         "System.Security.Cryptography.Encoding": "4.3.0-beta-devapi-24509-01",
         "System.Security.Cryptography.Primitives": "4.3.0-beta-devapi-24509-01",
         "System.Text.Encoding": "4.3.0-beta-devapi-24509-01",

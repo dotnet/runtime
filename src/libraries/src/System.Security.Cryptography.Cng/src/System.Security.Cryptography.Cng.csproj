@@ -280,12 +280,5 @@
     <TargetingPackReference Include="mscorlib" />
     <TargetingPackReference Include="System.Core" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)'=='' OR '$(TargetGroup)'=='netstandard1.7'">
-    <!-- Temporary till we publish Algorithms updated package -->
-    <ProjectReference Include="..\..\System.Security.Cryptography.Algorithms\pkg\System.Security.Cryptography.Algorithms.pkgproj">
-    <Project>{81A05E2E-E3AE-4246-B4E6-DD5F31FB71F9}</Project>
-    <Name>System.Security.Cryptography.Algorithms</Name>
-  </ProjectReference>
-  </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

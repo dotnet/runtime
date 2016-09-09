@@ -3,20 +3,24 @@
     "netstandard1.7": {
       "dependencies": {
         "Microsoft.NETCore.Platforms": "1.0.1",
-        "System.Collections": "4.0.10",
-        "System.Collections.NonGeneric": "4.0.0",
-        "System.Collections.Concurrent": "4.0.0",
-        "System.Diagnostics.Debug": "4.0.10",
-        "System.Reflection": "4.1.0",
-        "System.Reflection.Extensions": "4.0.0",
-        "System.Reflection.TypeExtensions": "4.1.0",
-        "System.Resources.ResourceManager": "4.0.0",
-        "System.Runtime": "4.0.20",
-        "System.Runtime.Extensions": "4.0.10",
+        "System.Collections": "4.3.0-beta-devapi-24509-01",
+        "System.Collections.NonGeneric": "4.3.0-beta-devapi-24509-01",
+        "System.Collections.Concurrent": "4.3.0-beta-devapi-24509-01",
+        "System.Diagnostics.Debug": "4.3.0-beta-devapi-24509-01",
+        "System.Reflection": "4.3.0-beta-devapi-24509-01",
+        "System.IO": "4.3.0-beta-devapi-24509-01",
+        "System.Reflection": "4.3.0-beta-devapi-24509-01",
+        "System.Reflection.Extensions": "4.3.0-beta-devapi-24509-01",
+        "System.Reflection.TypeExtensions": "4.3.0-beta-devapi-24509-01",
+        "System.Resources.ResourceManager": "4.3.0-beta-devapi-24509-01",
+        "System.Runtime": "4.3.0-beta-devapi-24509-01",
+        "System.Runtime.Extensions": "4.3.0-beta-devapi-24509-01",
         "System.Runtime.Serialization.Primitives": "4.3.0-beta-devapi-24509-01",
         "System.Globalization": "4.3.0-beta-devapi-24509-01",
-        "System.Text.Encoding.Extensions": "4.0.10",
-        "System.Threading": "4.0.10"
+        "System.Text.Encoding.Extensions": "4.3.0-beta-devapi-24509-01",
+        "System.Text.Encoding": "4.3.0-beta-devapi-24509-01",
+        "System.Threading": "4.3.0-beta-devapi-24509-01",
+        "System.Threading.Tasks": "4.3.0-beta-devapi-24509-01"
       },
       "imports": [
         "dotnet5.8"

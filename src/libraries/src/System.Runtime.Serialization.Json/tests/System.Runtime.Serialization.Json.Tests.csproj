@@ -30,10 +30,6 @@
       <Name>System.Private.DataContractSerialization</Name>
       <KeepProjectReference>true</KeepProjectReference>
     </ProjectReference>
-    <ProjectReference Include="..\..\System.Xml.XmlSerializer\pkg\System.Xml.XmlSerializer.pkgproj">
-      <Project>{D62A6082-5229-4845-8BE9-75753E08C65A}</Project>
-      <Name>System.Xml.XmlSerializer</Name>
-    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />
