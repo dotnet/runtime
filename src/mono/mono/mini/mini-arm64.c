@@ -839,6 +839,7 @@ emit_thunk (guint8 *code, gconstpointer target)
 	arm_ldrx_lit (code, ARMREG_IP0, code + 8);
 	arm_brx (code, ARMREG_IP0);
 	*(guint64*)code = (guint64)target;
+	code += sizeof (guint64);
 
 	mono_arch_flush_icache (p, code - p);
 	return code;
