@@ -5305,8 +5305,16 @@ mono_profiler_startup (const char *desc)
 	}
 	if (allocs_enabled)
 		events |= MONO_PROFILE_ALLOCATIONS;
-	if (only_coverage)
-		events = MONO_PROFILE_ENTER_LEAVE | MONO_PROFILE_INS_COVERAGE;
+
+	// Only activate the bare minimum events the profiler needs to function.
+	if (only_coverage) {
+		if (!do_coverage) {
+			fprintf (stderr, "The onlycoverage option is only valid when paired with the coverage option\n");
+			exit (1);
+		}
+
+		events = MONO_PROFILE_GC | MONO_PROFILE_THREADS | MONO_PROFILE_ENTER_LEAVE | MONO_PROFILE_INS_COVERAGE;
+	}
 
 	utils_init (fast_time);
 
