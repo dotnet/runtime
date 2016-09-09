@@ -184,6 +184,7 @@ enum {
 	MONITOR_STATUS_NOT_RUNNING,
 };
 
+static MonoNativeThreadId monitor_tid;
 static gint32 monitor_status = MONITOR_STATUS_NOT_RUNNING;
 
 static ThreadPool* threadpool;
@@ -326,6 +327,8 @@ initialize (void)
 
 static void worker_kill (ThreadPoolWorkingThread *thread);
 
+static void monitor_kill (void);
+
 static void
 cleanup (void)
 {
@@ -335,8 +338,7 @@ cleanup (void)
 	 * cleaning up only if the runtime is shutting down */
 	g_assert (mono_runtime_is_shutting_down ());
 
-	while (monitor_status != MONITOR_STATUS_NOT_RUNNING)
-		mono_thread_info_sleep (1, NULL);
+	monitor_kill ();
 
 	mono_coop_mutex_lock (&threadpool->active_threads_lock);
 
@@ -902,11 +904,11 @@ monitor_sufficient_delay_since_last_dequeue (void)
 
 static void hill_climbing_force_change (gint16 new_thread_count, ThreadPoolHeuristicStateTransition transition);
 
-static void
-monitor_thread (void)
+static gsize WINAPI
+monitor_thread (gpointer unused G_GNUC_UNUSED)
 {
-	MonoInternalThread *current_thread = mono_thread_internal_current ();
 	guint i;
+	gboolean alerted;
 
 	mono_cpu_usage (threadpool->cpu_usage_state);
 
@@ -924,28 +926,22 @@ monitor_thread (void)
 
 		do {
 			gint64 ts;
-			gboolean alerted = FALSE;
 
-			if (mono_runtime_is_shutting_down ())
-				break;
+			alerted = FALSE;
 
 			ts = mono_msec_ticks ();
 			if (mono_thread_info_sleep (interval_left, &alerted) == 0)
 				break;
-			interval_left -= mono_msec_ticks () - ts;
 
-			mono_gc_set_skip_thread (FALSE);
-			if ((current_thread->state & (ThreadState_StopRequested | ThreadState_SuspendRequested)) != 0)
-				mono_thread_interruption_checkpoint ();
-			mono_gc_set_skip_thread (TRUE);
-		} while (interval_left > 0 && ++awake < 10);
+			interval_left -= mono_msec_ticks () - ts;
+		} while (!alerted && interval_left > 0 && ++awake < 10);
 
 		mono_gc_set_skip_thread (FALSE);
 
-		if (threadpool->suspended)
+		if (mono_runtime_is_shutting_down ())
 			continue;
 
-		if (mono_runtime_is_shutting_down ())
+		if (threadpool->suspended)
 			continue;
 
 		mono_coop_mutex_lock (&threadpool->domains_lock);
@@ -992,12 +988,13 @@ monitor_thread (void)
 	} while (monitor_should_keep_running ());
 
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_THREADPOOL, "[%p] monitor thread, finished", mono_native_thread_id_get ());
+
+	return 0;
 }
 
 static void
 monitor_ensure_running (void)
 {
-	MonoError error;
 	for (;;) {
 		switch (monitor_status) {
 		case MONITOR_STATUS_REQUESTED:
@@ -1009,16 +1006,53 @@ monitor_ensure_running (void)
 			if (mono_runtime_is_shutting_down ())
 				return;
 			if (InterlockedCompareExchange (&monitor_status, MONITOR_STATUS_REQUESTED, MONITOR_STATUS_NOT_RUNNING) == MONITOR_STATUS_NOT_RUNNING) {
-				if (!mono_thread_create_internal (mono_get_root_domain (), monitor_thread, NULL, TRUE, SMALL_STACK, &error)) {
-					monitor_status = MONITOR_STATUS_NOT_RUNNING;
-					mono_error_cleanup (&error);
+				MonoThreadParm tp;
+				gpointer handle;
+
+				tp.priority = MONO_THREAD_PRIORITY_NORMAL;
+				tp.stack_size = SMALL_STACK;
+				tp.creation_flags = 0;
+				handle = mono_threads_create_thread (monitor_thread, NULL, &tp, &monitor_tid);
+				if (!handle) {
+					mono_atomic_store_release (&monitor_status, MONITOR_STATUS_NOT_RUNNING);
+					g_warning ("%s: failed to create monitor thread", __func__);
+					return;
 				}
+
+				mono_threads_close_thread_handle (handle);
 				return;
 			}
 			break;
 		default: g_assert_not_reached ();
 		}
 	}
+}
+
+static void
+monitor_kill (void)
+{
+	MonoThreadHazardPointers *hp;
+	MonoThreadInfo *info;
+	MonoThreadInfoInterruptToken *token;
+
+	if (!monitor_tid)
+		return;
+
+	hp = mono_hazard_pointer_get ();
+
+	info = mono_thread_info_lookup (monitor_tid);
+
+	if (!info)
+		goto cleanup;
+
+	token = mono_thread_info_prepare_interrupt (info);
+	mono_thread_info_finish_interrupt (token);
+
+	while (monitor_status != MONITOR_STATUS_NOT_RUNNING)
+		mono_thread_info_sleep (1, NULL);
+
+cleanup:
+	mono_hazard_pointer_clear (hp, 1);
 }
 
 static void
