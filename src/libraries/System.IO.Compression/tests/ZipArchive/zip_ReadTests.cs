@@ -38,7 +38,7 @@ namespace System.IO.Compression.Tests
             using (var stream = await StreamHelpers.CreateTempCopyStream(zfile(zipFile)))
             {
                 Stream wrapped = new WrappedStream(stream, true, false, false, null);
-                IsZipSameAsDir(wrapped, zfolder(zipFolder), ZipArchiveMode.Read, false, false);
+                IsZipSameAsDir(wrapped, zfolder(zipFolder), ZipArchiveMode.Read, requireExplicit: true, checkTimes: true);
                 Assert.False(wrapped.CanRead, "Wrapped stream should be closed at this point"); //check that it was closed
             }
         }
