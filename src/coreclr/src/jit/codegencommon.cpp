@@ -646,6 +646,8 @@ regMaskTP Compiler::compHelperCallKillSet(CorInfoHelpFunc helper)
             return RBM_RSI | RBM_RDI | RBM_CALLEE_TRASH;
 #elif defined(_TARGET_ARM64_)
             return RBM_CALLEE_TRASH_NOGC;
+#elif defined(_TARGET_X86_)
+            return RBM_ESI | RBM_EDI | RBM_ECX;
 #else
             NYI("Model kill set for CORINFO_HELP_ASSIGN_BYREF on target arch");
             return RBM_CALLEE_TRASH;

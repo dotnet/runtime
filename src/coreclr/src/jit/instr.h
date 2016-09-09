@@ -56,6 +56,18 @@ DECLARE_TYPED_ENUM(instruction,unsigned)
 }
 END_DECLARE_TYPED_ENUM(instruction,unsigned)
 
+#if defined(_TARGET_XARCH_)
+#if defined(_TARGET_X86_)
+#define INS_r_movs_ptr INS_r_movsd
+#define INS_movs_ptr INS_movsd
+#elif defined(_TARGET_AMD64_)
+#define INS_r_movs_ptr INS_r_movsq
+#define INS_movs_ptr INS_movsq
+#else
+#error Unsupported xarch target
+#endif
+#endif
+
 /*****************************************************************************/
 
 enum insUpdateModes
