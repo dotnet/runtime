@@ -271,7 +271,7 @@ typedef struct {
 #define HEADER_LENGTH 11
 
 #define MAJOR_VERSION 2
-#define MINOR_VERSION 42
+#define MINOR_VERSION 43
 
 typedef enum {
 	CMD_SET_VM = 1,
@@ -8627,6 +8627,12 @@ method_commands_internal (int command, MonoMethod *method, MonoDomain *domain, g
 
 		locals = mono_debug_lookup_locals (method);
 		if (!locals) {
+			if (CHECK_PROTOCOL_VERSION (2, 43)) {
+				/* Scopes */
+				buffer_add_int (buf, 1);
+				buffer_add_int (buf, 0);
+				buffer_add_int (buf, header->code_size);
+			}
 			buffer_add_int (buf, header->num_locals);
 			/* Types */
 			for (i = 0; i < header->num_locals; ++i) {
@@ -8644,6 +8650,17 @@ method_commands_internal (int command, MonoMethod *method, MonoDomain *domain, g
 				buffer_add_int (buf, header->code_size);
 			}
 		} else {
+			if (CHECK_PROTOCOL_VERSION (2, 43)) {
+				/* Scopes */
+				buffer_add_int (buf, locals->num_blocks);
+				int last_start = 0;
+				for (i = 0; i < locals->num_blocks; ++i) {
+					buffer_add_int (buf, locals->code_blocks [i].start_offset - last_start);
+					buffer_add_int (buf, locals->code_blocks [i].end_offset - locals->code_blocks [i].start_offset);
+					last_start = locals->code_blocks [i].start_offset;
+				}
+			}
+
 			num_locals = locals->num_locals;
 			buffer_add_int (buf, num_locals);
 
