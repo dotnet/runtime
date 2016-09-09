@@ -636,7 +636,6 @@ struct _MonoProfiler {
 	char *args;
 	uint64_t startup_time;
 	int pipe_output;
-	int last_gc_gen_started;
 	int command_port;
 	int server_socket;
 	int pipes [2];
@@ -1353,30 +1352,11 @@ static unsigned int hs_mode_gc = 0;
 static unsigned int hs_mode_ondemand = 0;
 static unsigned int gc_count = 0;
 static uint64_t last_hs_time = 0;
+static gboolean do_heap_walk = FALSE;
 
 static void
 heap_walk (MonoProfiler *profiler)
 {
-	if (!do_heap_shot)
-		return;
-
-	gboolean do_walk = 0;
-	uint64_t now = current_time ();
-
-	if (hs_mode_ms && (now - last_hs_time) / 1000000 >= hs_mode_ms)
-		do_walk = TRUE;
-	else if (hs_mode_gc && (gc_count % hs_mode_gc) == 0)
-		do_walk = TRUE;
-	else if (hs_mode_ondemand)
-		do_walk = heapshot_requested;
-	else if (!hs_mode_ms && !hs_mode_gc && profiler->last_gc_gen_started == mono_gc_max_generation ())
-		do_walk = TRUE;
-
-	if (!do_walk)
-		return;
-
-	heapshot_requested = 0;
-
 	ENTER_LOG (&heap_starts_ctr, logbuffer,
 		EVENT_SIZE /* event */
 	);
@@ -1394,8 +1374,6 @@ heap_walk (MonoProfiler *profiler)
 	emit_event (logbuffer, TYPE_HEAP_END | TYPE_HEAP);
 
 	EXIT_LOG;
-
-	last_hs_time = now;
 }
 
 static void
@@ -1442,11 +1420,19 @@ gc_event (MonoProfiler *profiler, MonoGCEvent ev, int generation)
 
 	switch (ev) {
 	case MONO_GC_EVENT_START:
-		/* to deal with nested gen1 after gen0 started */
-		profiler->last_gc_gen_started = generation;
-
 		if (generation == mono_gc_max_generation ())
 			gc_count++;
+
+		uint64_t now = current_time ();
+
+		if (hs_mode_ms && (now - last_hs_time) / 1000 * 1000 >= hs_mode_ms)
+			do_heap_walk = TRUE;
+		else if (hs_mode_gc && !(gc_count % hs_mode_gc))
+			do_heap_walk = TRUE;
+		else if (hs_mode_ondemand)
+			do_heap_walk = heapshot_requested;
+		else if (!hs_mode_ms && !hs_mode_gc && generation == mono_gc_max_generation ())
+			do_heap_walk = TRUE;
 		break;
 	case MONO_GC_EVENT_PRE_STOP_WORLD_LOCKED:
 		/*
@@ -1466,7 +1452,13 @@ gc_event (MonoProfiler *profiler, MonoGCEvent ev, int generation)
 		sync_point (profiler, SYNC_POINT_WORLD_STOP);
 		break;
 	case MONO_GC_EVENT_PRE_START_WORLD:
-		heap_walk (profiler);
+		if (do_heap_shot && do_heap_walk) {
+			heap_walk (profiler);
+
+			do_heap_walk = FALSE;
+			heapshot_requested = 0;
+			last_hs_time = current_time ();
+		}
 		break;
 	case MONO_GC_EVENT_POST_START_WORLD_UNLOCKED:
 		/*
@@ -5205,11 +5197,6 @@ mono_profiler_startup (const char *desc)
 			events &= ~MONO_PROFILE_ENTER_LEAVE;
 			nocalls = 1;
 			set_sample_mode (val, 1);
-			continue;
-		}
-		if ((opt = match_option (p, "hsmode", &val)) != p) {
-			fprintf (stderr, "The hsmode profiler option is obsolete, use heapshot=MODE.\n");
-			set_hsmode (val, 0);
 			continue;
 		}
 		if ((opt = match_option (p, "zip", NULL)) != p) {
