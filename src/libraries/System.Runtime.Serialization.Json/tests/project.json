@@ -18,6 +18,7 @@
     "System.Xml.ReaderWriter": "4.3.0-beta-devapi-24509-01",
     "System.Xml.XDocument": "4.3.0-beta-devapi-24509-01",
     "System.Xml.XmlDocument": "4.3.0-beta-devapi-24509-01",
+    "System.Xml.XmlSerializer": "4.3.0-beta-devapi-24509-01",
     "test-runtime": {
       "target": "project",
       "exclude": "compile"

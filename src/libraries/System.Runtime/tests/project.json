@@ -7,6 +7,7 @@
     "System.Linq.Expressions": "4.3.0-beta-devapi-24509-01",
     "System.ObjectModel": "4.3.0-beta-devapi-24509-01",
     "System.Reflection": "4.3.0-beta-devapi-24509-01",
+    "System.Reflection.Primitives": "4.3.0-beta-devapi-24509-01",
     "System.Reflection.Emit": "4.3.0-beta-devapi-24509-01",
     "System.Runtime.Extensions": "4.3.0-beta-devapi-24509-01",
     "System.Runtime.InteropServices": "4.3.0-beta-devapi-24509-01",
