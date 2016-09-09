@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
@@ -15,94 +17,93 @@ namespace System.IO.Compression.Tests
         [Fact]
         public async Task CreateFromDirectoryNormal()
         {
-            await TestCreateDirectory(zfolder("normal"), true);
-        }
-
-        [Fact]
-        [Trait(XunitConstants.Category, XunitConstants.IgnoreForCI)] // Jenkins fails with unicode characters [JENKINS-12610]
-        public async Task CreateFromDirectoryUnicodel()
-        {
-            await TestCreateDirectory(zfolder("unicode"), true);
-        }
-
-        private async Task TestCreateDirectory(string folderName, Boolean testWithBaseDir)
-        {
+            string folderName = zfolder("normal");
             string noBaseDir = GetTestFilePath();
             ZipFile.CreateFromDirectory(folderName, noBaseDir);
 
-            await IsZipSameAsDirAsync(noBaseDir, folderName, ZipArchiveMode.Read, true, true);
-
-            if (testWithBaseDir)
-            {
-                string withBaseDir = GetTestFilePath();
-                ZipFile.CreateFromDirectory(folderName, withBaseDir, CompressionLevel.Optimal, true);
-                SameExceptForBaseDir(noBaseDir, withBaseDir, folderName);
-            }
+            await IsZipSameAsDirAsync(noBaseDir, folderName, ZipArchiveMode.Read, requireExplicit: false, checkTimes: false);
         }
 
-        private static void SameExceptForBaseDir(string zipNoBaseDir, string zipBaseDir, string baseDir)
+        [Fact]
+        public void CreateFromDirectory_IncludeBaseDirectory()
         {
-            //b has the base dir
-            using (ZipArchive a = ZipFile.Open(zipNoBaseDir, ZipArchiveMode.Read),
-                              b = ZipFile.Open(zipBaseDir, ZipArchiveMode.Read))
+            string folderName = zfolder("normal");
+            string withBaseDir = GetTestFilePath();
+            ZipFile.CreateFromDirectory(folderName, withBaseDir, CompressionLevel.Optimal, true);
+
+            IEnumerable<string> expected = Directory.EnumerateFiles(zfolder("normal"), "*", SearchOption.AllDirectories);
+            using (ZipArchive actual_withbasedir = ZipFile.Open(withBaseDir, ZipArchiveMode.Read))
             {
-                var aCount = a.Entries.Count;
-                var bCount = b.Entries.Count;
-                Assert.Equal(aCount, bCount);
-
-                int bIdx = 0;
-                foreach (ZipArchiveEntry aEntry in a.Entries)
+                foreach (ZipArchiveEntry actualEntry in actual_withbasedir.Entries)
                 {
-                    ZipArchiveEntry bEntry = b.Entries[bIdx++];
-
-                    Assert.Equal(Path.GetFileName(baseDir) + "/" + aEntry.FullName, bEntry.FullName);
-                    Assert.Equal(aEntry.Name, bEntry.Name);
-                    Assert.Equal(aEntry.Length, bEntry.Length);
-                    Assert.Equal(aEntry.CompressedLength, bEntry.CompressedLength);
-                    using (Stream aStream = aEntry.Open(), bStream = bEntry.Open())
+                    string expectedFile = expected.Single(i => Path.GetFileName(i).Equals(actualEntry.Name));
+                    Assert.True(actualEntry.FullName.StartsWith("normal"));
+                    Assert.Equal(new FileInfo(expectedFile).Length, actualEntry.Length);
+                    using (Stream expectedStream = File.OpenRead(expectedFile))
+                    using (Stream actualStream = actualEntry.Open())
                     {
-                        StreamsEqual(aStream, bStream);
+                        StreamsEqual(expectedStream, actualStream);
                     }
                 }
             }
         }
 
         [Fact]
-        public void ExtractToDirectoryNormal()
+        public void CreateFromDirectoryUnicode()
         {
-            TestExtract(zfile("normal.zip"), zfolder("normal"));
-            TestExtract(zfile("empty.zip"), zfolder("empty"));
-            TestExtract(zfile("explicitdir1.zip"), zfolder("explicitdir"));
-            TestExtract(zfile("explicitdir2.zip"), zfolder("explicitdir"));
-            TestExtract(zfile("appended.zip"), zfolder("small"));
-            TestExtract(zfile("prepended.zip"), zfolder("small"));
-            TestExtract(zfile("noexplicitdir.zip"), zfolder("explicitdir"));
+            string folderName = zfolder("unicode");
+            string noBaseDir = GetTestFilePath();
+            ZipFile.CreateFromDirectory(folderName, noBaseDir);
+
+            using (ZipArchive archive = ZipFile.OpenRead(noBaseDir))
+            {
+                IEnumerable<string> actual = archive.Entries.Select(entry => entry.Name);
+                IEnumerable<string> expected = Directory.EnumerateFileSystemEntries(zfolder("unicode"), "*", SearchOption.AllDirectories).ToList();
+                Assert.True(Enumerable.SequenceEqual(expected.Select(i => Path.GetFileName(i)), actual.Select(i => i)));
+            }
         }
 
-        [Fact]
-        [Trait(XunitConstants.Category, XunitConstants.IgnoreForCI)] // Jenkins fails with unicode characters [JENKINS-12610]
-        public void ExtractToDirectoryUnicode()
+        [Theory]
+        [InlineData("normal.zip", "normal")]
+        [InlineData("empty.zip", "empty")]
+        [InlineData("explicitdir1.zip", "explicitdir")]
+        [InlineData("explicitdir2.zip", "explicitdir")]
+        [InlineData("appended.zip", "small")]
+        [InlineData("prepended.zip", "small")]
+        [InlineData("noexplicitdir.zip", "explicitdir")]
+        public void ExtractToDirectoryNormal(string file, string folder)
         {
-            TestExtract(zfile("unicode.zip"), zfolder("unicode"));
-        }
-
-        private void TestExtract(string zipFileName, string folderName)
-        {
+            string zipFileName = zfile(file);
+            string folderName = zfolder(folder);
             using (var tempFolder = new TempDirectory(GetTestFilePath()))
             {
                 ZipFile.ExtractToDirectory(zipFileName, tempFolder.Path);
                 DirsEqual(tempFolder.Path, folderName);
-
-                Assert.Throws<ArgumentNullException>(() => ZipFile.ExtractToDirectory(null, tempFolder.Path));
             }
         }
 
-        #region "Extension Methods"
+        [Fact]
+        public void ExtractToDirectoryNull()
+        {
+            Assert.Throws<ArgumentNullException>("sourceArchiveFileName", () => ZipFile.ExtractToDirectory(null, GetTestFilePath()));
+        }
+
+        [Fact]
+        public void ExtractToDirectoryUnicode()
+        {
+            string zipFileName = zfile("unicode.zip");
+            string folderName = zfolder("unicode");
+            using (var tempFolder = new TempDirectory(GetTestFilePath()))
+            {
+                ZipFile.ExtractToDirectory(zipFileName, tempFolder.Path);
+                DirFileNamesEqual(tempFolder.Path, folderName);
+            }
+        }
 
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        public async Task CreateEntryFromFileTest(bool withCompressionLevel)
+        public async Task CreateEntryFromFileExtension(bool withCompressionLevel)
         {
             //add file
             using (TempFile testArchive = CreateTempCopyFile(zfile("normal.zip"), GetTestFilePath()))
@@ -121,12 +122,12 @@ namespace System.IO.Compression.Tests
                         archive.CreateEntryFromFile(sourceFilePath, entryName, CompressionLevel.Fastest);
                     Assert.NotNull(e);
                 }
-                await IsZipSameAsDirAsync(testArchive.Path, zmodified("addFile"), ZipArchiveMode.Read, true, true);
+                await IsZipSameAsDirAsync(testArchive.Path, zmodified("addFile"), ZipArchiveMode.Read, requireExplicit: false, checkTimes: false);
             }
         }
 
         [Fact]
-        public void ExtractToFileTest()
+        public void ExtractToFileExtension()
         {
             using (ZipArchive archive = ZipFile.Open(zfile("normal.zip"), ZipArchiveMode.Read))
             {
@@ -160,7 +161,7 @@ namespace System.IO.Compression.Tests
         }
 
         [Fact]
-        public void ExtractToDirectoryTest()
+        public void ExtractToDirectoryExtension()
         {
             using (ZipArchive archive = ZipFile.Open(zfile("normal.zip"), ZipArchiveMode.Read))
             {
@@ -174,15 +175,13 @@ namespace System.IO.Compression.Tests
         }
 
         [Fact]
-        [Trait(XunitConstants.Category, XunitConstants.IgnoreForCI)] // Jenkins fails with unicode characters [JENKINS-12610]
-        public void ExtractToDirectoryTest_Unicode()
+        public void ExtractToDirectoryExtension_Unicode()
         {
             using (ZipArchive archive = ZipFile.OpenRead(zfile("unicode.zip")))
             {
                 string tempFolder = GetTestFilePath();
                 archive.ExtractToDirectory(tempFolder);
-
-                DirsEqual(tempFolder, zfolder("unicode"));
+                DirFileNamesEqual(tempFolder, zfolder("unicode"));
             }
         }
 
@@ -224,7 +223,5 @@ namespace System.IO.Compression.Tests
                 }
             }
         }
-
-        #endregion
     }
 }
