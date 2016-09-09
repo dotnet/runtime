@@ -19810,14 +19810,31 @@ Compiler::fgWalkResult      Compiler::fgStress64RsltMulCB(GenTreePtr* pTree, fgW
     
     if (tree->gtOper != GT_MUL || tree->gtType != TYP_INT || (tree->gtOverflow())) {
         return WALK_CONTINUE;
-}
+    }
+
+#ifdef DEBUG
+    if (pComp->verbose)
+    {
+        printf("STRESS_64RSLT_MUL before:\n");              
+        pComp->gtDispTree(tree);
+    }
+#endif // DEBUG
 
     // To ensure optNarrowTree() doesn't fold back to the original tree.
+    tree->gtOp.gtOp1 = pComp->gtNewCastNode(TYP_LONG, tree->gtOp.gtOp1, TYP_LONG);
     tree->gtOp.gtOp1 = pComp->gtNewOperNode(GT_NOP, TYP_LONG, tree->gtOp.gtOp1); 
     tree->gtOp.gtOp1 = pComp->gtNewCastNode(TYP_LONG, tree->gtOp.gtOp1, TYP_LONG);
-    tree->gtOp.gtOp2 = pComp->gtNewCastNode(TYP_LONG, tree->gtOp.gtOp2,  TYP_LONG);
+    tree->gtOp.gtOp2 = pComp->gtNewCastNode(TYP_LONG, tree->gtOp.gtOp2, TYP_LONG);
     tree->gtType = TYP_LONG;
     *pTree = pComp->gtNewCastNode(TYP_INT, tree, TYP_INT);
+
+#ifdef DEBUG
+    if (pComp->verbose)
+    {
+        printf("STRESS_64RSLT_MUL after:\n");              
+        pComp->gtDispTree(*pTree);
+    }
+#endif // DEBUG
 
     return WALK_SKIP_SUBTREES;
 }
@@ -19826,7 +19843,7 @@ void                Compiler::fgStress64RsltMul()
 {
     if (!compStressCompile(STRESS_64RSLT_MUL, 20)) {
         return;
-}
+    }
 
     fgWalkAllTreesPre(fgStress64RsltMulCB, (void*)this);
 }
