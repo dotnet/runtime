@@ -34,6 +34,9 @@
     <ProjectReference Include="ubuntu.16.04\Microsoft.NETCore.DotNetHost.pkgproj">
       <Platform>amd64</Platform>
     </ProjectReference>
+    <ProjectReference Include="ubuntu.16.10\Microsoft.NETCore.DotNetHost.pkgproj">
+      <Platform>amd64</Platform>
+    </ProjectReference>
     <ProjectReference Include="fedora.23\Microsoft.NETCore.DotNetHost.pkgproj">
       <Platform>amd64</Platform>
     </ProjectReference>
@@ -41,6 +44,9 @@
       <Platform>amd64</Platform>
     </ProjectReference>
     <ProjectReference Include="opensuse.13.2\Microsoft.NETCore.DotNetHost.pkgproj">
+      <Platform>amd64</Platform>
+    </ProjectReference>
+    <ProjectReference Include="opensuse.42.1\Microsoft.NETCore.DotNetHost.pkgproj">
       <Platform>amd64</Platform>
     </ProjectReference>
   </ItemGroup>
