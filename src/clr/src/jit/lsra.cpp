@@ -384,7 +384,36 @@ regMaskTP LinearScan::stressLimitRegs(RefPosition* refPosition, regMaskTP mask)
             case LSRA_LIMIT_CALLER:
                 if ((mask & RBM_CALLEE_TRASH) != RBM_NONE)
                 {
-                    mask &= RBM_CALLEE_TRASH;
+                    regMaskTP newMask = mask & RBM_CALLEE_TRASH;
+#ifdef _TARGET_X86_
+                    // On x86 we need to ensure that there are minimum
+                    // 2 registers in the mask because we could have the
+                    // following case:
+                    //
+                    // t0 = GT_SUB(v02, v01)
+                    // v01 = GT_DIV(v02, t0)
+                    //
+                    // Say v02 was allocated edx and v01 was allocated ecx.
+                    // Candidates of Def position of GT_SUB = { ecx, ebx, esi, edi }
+                    // Candidates & RBM_CALLEE_TRASH = { ecx }
+                    // But ecx cannot be allocated to Def position of GT_SUB
+                    // since v01 is marked as delayRegFree. Because targetReg of
+                    // non-commutative opers like GT_SUB cannot be the same as
+                    // op2's reg on xarch.
+                    //
+                    // On x86 alone this needs to be ensured because GT_DIV
+                    // kills two callee trash registers (eax and edx) and op2
+                    // of GT_SUB could take ecx leaving no registers for 
+                    // allocation.  On targets like amd64 this is not an issue
+                    // because there are more callee trash registers leaving
+                    // aside { eax, edx, ecx }
+                    if (genCountBits(newMask) >= 2)
+                    {
+                        mask = newMask;
+                    }
+#else // !_TARGET_X86_
+                    mask = newMask;
+#endif // !_TARGET_X86_
                 }
                 break;
             case LSRA_LIMIT_SMALL_SET:
