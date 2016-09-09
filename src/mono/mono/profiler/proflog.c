@@ -3106,6 +3106,9 @@ static mono_mutex_t counters_mutex;
 static void
 counters_add_agent (MonoCounter *counter)
 {
+	if (in_shutdown)
+		return;
+
 	MonoCounterAgent *agent, *item;
 
 	mono_os_mutex_lock (&counters_mutex);
@@ -4179,6 +4182,22 @@ log_shutdown (MonoProfiler *prof)
 		char c = 1;
 		ign_res (write (prof->pipes [1], &c, 1));
 		pthread_join (prof->helper_thread, &res);
+	}
+
+	mono_os_mutex_destroy (&counters_mutex);
+
+	MonoCounterAgent *mc_next;
+
+	for (MonoCounterAgent *cur = counters; cur; cur = mc_next) {
+		mc_next = cur->next;
+		g_free (cur);
+	}
+
+	PerfCounterAgent *pc_next;
+
+	for (PerfCounterAgent *cur = perfcounters; cur; cur = pc_next) {
+		pc_next = cur->next;
+		g_free (cur);
 	}
 #endif
 #if USE_PERF_EVENTS
