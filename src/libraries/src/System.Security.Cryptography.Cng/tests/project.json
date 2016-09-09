@@ -10,6 +10,7 @@
     "System.Runtime.Extensions": "4.3.0-beta-devapi-24509-01",
     "System.Runtime.InteropServices.RuntimeInformation": "4.3.0-beta-devapi-24509-01",
     "System.Runtime.Numerics": "4.3.0-beta-devapi-24509-01",
+    "System.Security.Cryptography.Algorithms": "4.3.0-beta-devapi-24509-01",
     "System.Security.Cryptography.Encoding": "4.3.0-beta-devapi-24509-01",
     "System.Security.Cryptography.Primitives": "4.3.0-beta-devapi-24509-01",
     "System.Security.Principal.Windows": "4.3.0-beta-devapi-24509-01",

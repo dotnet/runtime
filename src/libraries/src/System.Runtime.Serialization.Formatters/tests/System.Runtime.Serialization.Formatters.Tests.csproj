@@ -49,19 +49,6 @@
     <None Include="project.json" />
   </ItemGroup>
   <ItemGroup>
-    <!-- ToDo: Remove this P2P reference once new packages are produced and updated -->
-    <ProjectReference Include="..\..\System.IO\pkg\System.IO.pkgproj" />
-    <!-- ToDo: Remove this P2P reference once new packages are produced and updated -->
-    <ProjectReference Include="..\..\System.Reflection\pkg\System.Reflection.pkgproj" />
-    <!-- ToDo: Remove this P2P reference once new packages are produced and updated -->
-    <ProjectReference Include="..\..\System.Threading.Tasks\pkg\System.Threading.Tasks.pkgproj" />
-    <!-- ToDo: Remove this P2P reference once new packages are produced and updated -->
-    <ProjectReference Include="..\..\System.Reflection.Extensions\pkg\System.Reflection.Extensions.pkgproj" />
-
-    <ProjectReference Include="..\..\System.Runtime\pkg\System.Runtime.pkgproj" />
-    <ProjectReference Include="..\..\System.Text.Encoding\pkg\System.Text.Encoding.pkgproj" />
-    <ProjectReference Include="..\..\System.Runtime.Serialization.Primitives\pkg\System.Runtime.Serialization.Primitives.pkgproj" />
-
     <ProjectReference Include="$(CommonTestPath)\System\Diagnostics\RemoteExecutorConsoleApp\RemoteExecutorConsoleApp.csproj">
       <Project>{69e46a6f-9966-45a5-8945-2559fe337827}</Project>
       <Name>RemoteExecutorConsoleApp</Name>
