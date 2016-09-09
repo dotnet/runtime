@@ -42,8 +42,6 @@ mono_sre_generic_param_table_entry_free (GenericParamTableEntry *entry)
 	g_free (entry);
 }
 
-
-
 static GENERATE_GET_CLASS_WITH_CACHE (marshal_as_attribute, System.Runtime.InteropServices, MarshalAsAttribute);
 
 #ifndef DISABLE_REFLECTION_EMIT
@@ -74,8 +72,6 @@ static gboolean is_sr_mono_field (MonoClass *klass);
 static guint32 mono_image_get_methodspec_token (MonoDynamicImage *assembly, MonoMethod *method);
 static guint32 mono_image_get_inflated_method_token (MonoDynamicImage *assembly, MonoMethod *m);
 static MonoMethod * inflate_method (MonoReflectionType *type, MonoObject *obj, MonoError *error);
-
-static guint32 create_typespec (MonoDynamicImage *assembly, MonoType *type);
 
 #define mono_type_array_get_and_resolve(array, index, error) mono_reflection_type_get_handle ((MonoReflectionType*)mono_array_get (array, gpointer, index), error)
 
@@ -201,27 +197,9 @@ string_heap_insert (MonoDynamicStream *sh, const char *str)
 }
 
 static guint32
-string_heap_insert_mstring (MonoDynamicStream *sh, MonoString *str, MonoError *error)
-{
-	return mono_dynstream_insert_mstring (sh, str, error);
-}
-
-static guint32
 mono_image_add_stream_data (MonoDynamicStream *stream, const char *data, guint32 len)
 {
 	return mono_dynstream_add_data (stream, data, len);
-}
-
-static guint32
-mono_image_add_stream_zero (MonoDynamicStream *stream, guint32 len)
-{
-	return mono_dynstream_add_zero (stream, len);
-}
-
-static void
-stream_data_align (MonoDynamicStream *stream)
-{
-	mono_dynstream_data_align (stream);
 }
 
 /*
@@ -278,56 +256,6 @@ swap_with_size (char *dest, const char* val, int len, int nelem) {
 	memcpy (dest, val, len * nelem);
 #endif
 }
-
-#ifndef DISABLE_REFLECTION_EMIT
-static MonoClass *
-default_class_from_mono_type (MonoType *type)
-{
-	MONO_REQ_GC_NEUTRAL_MODE;
-
-	switch (type->type) {
-	case MONO_TYPE_OBJECT:
-		return mono_defaults.object_class;
-	case MONO_TYPE_VOID:
-		return mono_defaults.void_class;
-	case MONO_TYPE_BOOLEAN:
-		return mono_defaults.boolean_class;
-	case MONO_TYPE_CHAR:
-		return mono_defaults.char_class;
-	case MONO_TYPE_I1:
-		return mono_defaults.sbyte_class;
-	case MONO_TYPE_U1:
-		return mono_defaults.byte_class;
-	case MONO_TYPE_I2:
-		return mono_defaults.int16_class;
-	case MONO_TYPE_U2:
-		return mono_defaults.uint16_class;
-	case MONO_TYPE_I4:
-		return mono_defaults.int32_class;
-	case MONO_TYPE_U4:
-		return mono_defaults.uint32_class;
-	case MONO_TYPE_I:
-		return mono_defaults.int_class;
-	case MONO_TYPE_U:
-		return mono_defaults.uint_class;
-	case MONO_TYPE_I8:
-		return mono_defaults.int64_class;
-	case MONO_TYPE_U8:
-		return mono_defaults.uint64_class;
-	case MONO_TYPE_R4:
-		return mono_defaults.single_class;
-	case MONO_TYPE_R8:
-		return mono_defaults.double_class;
-	case MONO_TYPE_STRING:
-		return mono_defaults.string_class;
-	default:
-		g_warning ("default_class_from_mono_type: implement me 0x%02x\n", type->type);
-		g_assert_not_reached ();
-	}
-	
-	return NULL;
-}
-#endif
 
 guint32
 mono_reflection_method_count_clauses (MonoReflectionILGen *ilgen)
@@ -3562,53 +3490,6 @@ methodbuilder_to_mono_method (MonoClass *klass, MonoReflectionMethodBuilder* mb,
 		mb->ilgen = NULL;
 	}
 	return mb->mhandle;
-}
-
-static MonoClassField*
-fieldbuilder_to_mono_class_field (MonoClass *klass, MonoReflectionFieldBuilder* fb, MonoError *error)
-{
-	MonoClassField *field;
-	MonoType *custom;
-
-	mono_error_init (error);
-
-	field = g_new0 (MonoClassField, 1);
-
-	field->name = mono_string_to_utf8_image (klass->image, fb->name, error);
-	mono_error_assert_ok (error);
-	if (fb->attrs || fb->modreq || fb->modopt) {
-		MonoType *type = mono_reflection_type_get_handle ((MonoReflectionType*)fb->type, error);
-		if (!is_ok (error)) {
-			g_free (field);
-			return NULL;
-		}
-		field->type = mono_metadata_type_dup (NULL, type);
-		field->type->attrs = fb->attrs;
-
-		g_assert (image_is_dynamic (klass->image));
-		custom = add_custom_modifiers ((MonoDynamicImage*)klass->image, field->type, fb->modreq, fb->modopt, error);
-		g_free (field->type);
-		if (!is_ok (error)) {
-			g_free (field);
-			return NULL;
-		}
-		field->type = mono_metadata_type_dup (klass->image, custom);
-		g_free (custom);
-	} else {
-		field->type = mono_reflection_type_get_handle ((MonoReflectionType*)fb->type, error);
-		if (!is_ok (error)) {
-			g_free (field);
-			return NULL;
-		}
-	}
-	if (fb->offset != -1)
-		field->offset = fb->offset;
-	field->parent = klass;
-	mono_save_custom_attrs (klass->image, field, fb->cattrs);
-
-	// FIXME: Can't store fb->def_value/RVA, is it needed for field_on_insts ?
-
-	return field;
 }
 #endif
 
