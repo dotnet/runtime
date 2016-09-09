@@ -13,7 +13,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
   <ItemGroup>
-    <Compile Include="System\Runtime\CompilerServices\AsyncBuilderAttribute.cs" />
+    <Compile Include="System\Runtime\CompilerServices\AsyncMethodBuilderAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\AsyncValueTaskMethodBuilder.cs" />
     <Compile Include="System\Runtime\CompilerServices\ConfiguredValueTaskAwaitable.cs" />
     <Compile Include="System\Runtime\CompilerServices\ValueTaskAwaiter.cs" />

@@ -48,7 +48,7 @@ namespace System.Threading.Tasks
     /// a <see cref="Task"/>-returning method completes synchronously and successfully.
     /// </para>
     /// </remarks>
-    [AsyncBuilder(typeof(AsyncValueTaskMethodBuilder<>))]
+    [AsyncMethodBuilder(typeof(AsyncValueTaskMethodBuilder<>))]
     [StructLayout(LayoutKind.Auto)]
     public struct ValueTask<TResult> : IEquatable<ValueTask<TResult>>
     {
