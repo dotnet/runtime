@@ -4154,7 +4154,8 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			 * can work around that by doing a volatile load + cond branch from
 			 * localloc-ed memory.
 			 */
-			//set_failure (ctx, "basic block too long");
+			if (!cfg->llvm_only)
+				set_failure (ctx, "basic block too long");
 			cbb = gen_bb (ctx, "CONT_LONG_BB");
 			LLVMBuildBr (ctx->builder, cbb);
 			ctx->builder = builder = create_builder (ctx);
