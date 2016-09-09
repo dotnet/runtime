@@ -2960,8 +2960,13 @@ ClrDataAccess::GetGCHeapData(struct DacpGcHeapData *gcheapData)
 
     SOSDacEnter();
 
+    // for server GC-capable builds only, we need to check and see if IGCHeap::gcHeapType
+    // is GC_HEAP_INVALID, in which case we fail.
+    // IGCHeap::gcHeapType doesn't exist on non-server-GC capable builds.'
+#ifdef FEATURE_SVR_GC
     size_t gcHeapValue = 0;
     ULONG32 returned = 0;
+
     TADDR gcHeapTypeLocation = m_globalBase + g_dacGlobals.IGCHeap__gcHeapType;
 
     // @todo Microsoft: we should probably be capturing the HRESULT from ReadVirtual. We could 
@@ -2986,6 +2991,7 @@ ClrDataAccess::GetGCHeapData(struct DacpGcHeapData *gcheapData)
         hr = E_FAIL;
         goto cleanup;
     }
+#endif
 
     // Now we can get other important information about the heap
     gcheapData->g_max_generation = GCHeapUtilities::GetMaxGeneration();
@@ -3005,8 +3011,10 @@ ClrDataAccess::GetGCHeapData(struct DacpGcHeapData *gcheapData)
         gcheapData->HeapCount = 1;
     }
 
+#ifdef FEATURE_SVR_GC
 cleanup:
     ;
+#endif
 
     SOSDacLeave();
     return hr;
