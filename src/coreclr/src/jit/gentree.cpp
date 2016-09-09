@@ -15789,23 +15789,19 @@ bool GenTree::IsFieldAddr(Compiler* comp, GenTreePtr* pObj, GenTreePtr* pStatic,
             baseAddr  = gtOp.gtOp1;
         }
     }
-    // Check if "this" has a zero-offset annotation.
-    else if (comp->GetZeroOffsetFieldMap()->Lookup(this, &newFldSeq))
-    {
-        baseAddr = this;
-        mustBeStatic = true;
-    }
-    else if (OperGet() == GT_CNS_INT && gtIntCon.gtFieldSeq != nullptr)
-    {
-        // Address is a literal constant; must be a static field.
-        newFldSeq = gtIntCon.gtFieldSeq;
-        baseAddr = this;
-        mustBeStatic = true;
-    }
     else
     {
-        // This is not a field address.
-        return false;
+        // Check if "this" has a zero-offset annotation.
+        if (!comp->GetZeroOffsetFieldMap()->Lookup(this, &newFldSeq))
+        {
+            // If not, this is not a field address.
+            return false;
+        }
+        else
+        {
+            baseAddr     = this;
+            mustBeStatic = true;
+        }
     }
 
     // If not we don't have a field seq, it's not a field address.
