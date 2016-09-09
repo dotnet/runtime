@@ -229,8 +229,8 @@ internal static class IOInputs
 
     public static IEnumerable<string> GetPathsLongerThanMaxLongPath(string rootPath, bool useExtendedSyntax = false)
     {
-        yield return GetLongPath(rootPath, MaxExtendedPath + 1 - (useExtendedSyntax ? 0 : ExtendedPrefix.Length), useExtendedSyntax);
-        yield return GetLongPath(rootPath, MaxExtendedPath + 2 - (useExtendedSyntax ? 0 : ExtendedPrefix.Length), useExtendedSyntax);
+        yield return GetLongPath(rootPath, MaxExtendedPath + 1, useExtendedSyntax);
+        yield return GetLongPath(rootPath, MaxExtendedPath + 2, useExtendedSyntax);
     }
 
     private static string GetLongPath(string rootPath, int characterCount, bool extended = false)
