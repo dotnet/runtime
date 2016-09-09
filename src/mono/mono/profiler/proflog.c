@@ -5123,7 +5123,6 @@ mono_profiler_startup (const char *desc)
 	int fast_time = 0;
 	int calls_enabled = 0;
 	int allocs_enabled = 0;
-	int only_counters = 0;
 	int only_coverage = 0;
 	int events = MONO_PROFILE_GC|MONO_PROFILE_ALLOCATIONS|
 		MONO_PROFILE_GC_MOVES|MONO_PROFILE_CLASS_EVENTS|MONO_PROFILE_THREADS|
@@ -5254,10 +5253,6 @@ mono_profiler_startup (const char *desc)
 			do_counters = 1;
 			continue;
 		}
-		if ((opt = match_option (p, "countersonly", NULL)) != p) {
-			only_counters = 1;
-			continue;
-		}
 		if ((opt = match_option (p, "coverage", NULL)) != p) {
 			do_coverage = 1;
 			events |= MONO_PROFILE_ENTER_LEAVE;
@@ -5310,8 +5305,6 @@ mono_profiler_startup (const char *desc)
 	}
 	if (allocs_enabled)
 		events |= MONO_PROFILE_ALLOCATIONS;
-	if (only_counters)
-		events = 0;
 	if (only_coverage)
 		events = MONO_PROFILE_ENTER_LEAVE | MONO_PROFILE_INS_COVERAGE;
 
@@ -5352,7 +5345,7 @@ mono_profiler_startup (const char *desc)
 	if (do_coverage)
 		mono_profiler_install_coverage_filter (coverage_filter);
 
-	if (do_mono_sample && sample_type == SAMPLE_CYCLES && sample_freq && !only_counters) {
+	if (do_mono_sample && sample_type == SAMPLE_CYCLES && sample_freq) {
 		events |= MONO_PROFILE_STATISTICAL;
 		mono_profiler_set_statistical_mode (sampling_mode, sample_freq);
 		mono_profiler_install_statistical (mono_sample_hit);
