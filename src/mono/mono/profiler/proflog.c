@@ -1128,8 +1128,6 @@ remove_thread (MonoProfiler *prof, MonoProfilerThread *thread, gboolean from_cal
 	MonoThreadHazardPointers *hp = mono_hazard_pointer_get ();
 
 	if (mono_lls_remove (&profiler_thread_list, hp, &thread->node)) {
-		LogBuffer *buffer = thread->buffer;
-
 		/*
 		 * No need to take the buffer lock here as no other threads can
 		 * be accessing this buffer anymore.
@@ -1144,15 +1142,15 @@ remove_thread (MonoProfiler *prof, MonoProfilerThread *thread, gboolean from_cal
 
 			InterlockedIncrement (&thread_ends_ctr);
 
-			buffer = ensure_logbuf_inner (buffer,
+			thread->buffer = ensure_logbuf_inner (thread->buffer,
 				EVENT_SIZE /* event */ +
 				BYTE_SIZE /* type */ +
 				LEB128_SIZE /* tid */
 			);
 
-			emit_event (buffer, TYPE_END_UNLOAD | TYPE_METADATA);
-			emit_byte (buffer, TYPE_THREAD);
-			emit_ptr (buffer, (void *) thread->node.key);
+			emit_event (thread->buffer, TYPE_END_UNLOAD | TYPE_METADATA);
+			emit_byte (thread->buffer, TYPE_THREAD);
+			emit_ptr (thread->buffer, (void *) thread->node.key);
 		}
 
 		send_buffer (prof, thread);
