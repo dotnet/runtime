@@ -53,11 +53,18 @@ namespace System.IO
 
         internal static char[] GetInvalidPathChars() => new char[]
         {
-            '\"', '<', '>', '|', '\0',
+            '|', '\0',
             (char)1, (char)2, (char)3, (char)4, (char)5, (char)6, (char)7, (char)8, (char)9, (char)10,
             (char)11, (char)12, (char)13, (char)14, (char)15, (char)16, (char)17, (char)18, (char)19, (char)20,
             (char)21, (char)22, (char)23, (char)24, (char)25, (char)26, (char)27, (char)28, (char)29, (char)30,
             (char)31
+        };
+
+        // [MS - FSA] 2.1.4.4 Algorithm for Determining if a FileName Is in an Expression
+        // https://msdn.microsoft.com/en-us/library/ff469270.aspx
+        private static readonly char[] s_wildcardChars =
+        {
+            '\"', '<', '>', '*', '?'
         };
 
         /// <summary>
@@ -74,30 +81,8 @@ namespace System.IO
         internal static bool IsPathTooLong(string fullPath)
         {
             // We'll never know precisely what will fail as paths get changed internally in Windows and
-            // may grow to exceed MaxExtendedPath. We'll only try to catch ones we know will absolutely
-            // fail.
-
-            if (fullPath.Length < MaxLongPath - UncExtendedPathPrefix.Length)
-            {
-                // We won't push it over MaxLongPath
-                return false;
-            }
-
-            // We need to check if we have a prefix to account for one being implicitly added.
-            if (IsDevice(fullPath))
-            {
-                // We won't add any length to make the path extended
-                return fullPath.Length >= MaxLongPath;
-            }
-
-            if (fullPath.StartsWith(UncPathPrefix, StringComparison.Ordinal))
-            {
-                // If we have a UNC we'll need to stick \\?\UNC in front
-                return fullPath.Length + UncExtendedPrefixToInsert.Length >= MaxLongPath;
-            }
-
-            // Otherwise we need to insert \\?\
-            return fullPath.Length + ExtendedPathPrefix.Length >= MaxLongPath;
+            // may grow to exceed MaxLongPath.
+            return fullPath.Length >= MaxLongPath;
         }
 
         /// <summary>
@@ -202,18 +187,9 @@ namespace System.IO
             {
                 char c = path[i];
 
-                if (c <= '\u001f')
+                if (c <= '\u001f' || c == '|')
                 {
                     return true;
-                }
-
-                switch (c)
-                {
-                    case '"':
-                    case '<':
-                    case '>':
-                    case '|':
-                        return true;
                 }
             }
 
@@ -221,21 +197,15 @@ namespace System.IO
         }
 
         /// <summary>
-        /// Check for ? and *.
+        /// Check for known wildcard characters. '*' and '?' are the most common ones.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal unsafe static bool HasWildCardCharacters(string path)
         {
-            // Question mark is part of extended syntax so we have to skip if we're extended
-            int startIndex = PathInternal.IsExtended(path) ? ExtendedPathPrefix.Length : 0;
+            // Question mark is part of dos device syntax so we have to skip if we are
+            int startIndex = PathInternal.IsDevice(path) ? ExtendedPathPrefix.Length : 0;
 
-            char currentChar;
-            for (int i = startIndex; i < path.Length; i++)
-            {
-                currentChar = path[i];
-                if (currentChar == '*' || currentChar == '?') return true;
-            }
-            return false;
+            return path.IndexOfAny(s_wildcardChars, startIndex) >= 0;
         }
 
         /// <summary>
@@ -338,7 +308,10 @@ namespace System.IO
             // is the drive, colon, slash format- i.e. C:\
             return !((path.Length >= 3)
                 && (path[1] == Path.VolumeSeparatorChar)
-                && IsDirectorySeparator(path[2]));
+                && IsDirectorySeparator(path[2])
+                // To match old behavior we'll check the drive character for validity as the path is technically
+                // not qualified if you don't have a valid drive. "=:\" is the "=" file's default data stream.
+                && IsValidDriveChar(path[0]));
         }
 
         /// <summary>

@@ -48,6 +48,15 @@ namespace System.IO.Tests
 
             // Any path is multiple element
             yield return Path.Combine("abc", Path.Combine("def", "ghi"));
+
+            // Wildcard characters
+            yield return "*";
+            yield return "?";
+
+            // Obscure wildcard characters
+            yield return "\"";
+            yield return "<";
+            yield return ">";
         }
 
         public static IEnumerable<object[]> Combine_CommonCases_TestData()
@@ -135,10 +144,6 @@ namespace System.IO.Tests
         public static void ContainsInvalidCharWithoutRootedAfterArgumentNull_Windows()
         {
             //any path contains invalid character without rooted after (AE)
-            CommonCasesException<ArgumentException>("ab\"cd");
-            CommonCasesException<ArgumentException>("ab\"cd");
-            CommonCasesException<ArgumentException>("ab<cd");
-            CommonCasesException<ArgumentException>("ab>cd");
             CommonCasesException<ArgumentException>("ab|cd");
             CommonCasesException<ArgumentException>("ab\bcd");
             CommonCasesException<ArgumentException>("ab\0cd");
@@ -157,9 +162,6 @@ namespace System.IO.Tests
         public static void ContainsInvalidCharWithRootedAfterArgumentNull_Windows()
         {
             //any path contains invalid character with rooted after (AE)
-            CommonCasesException<ArgumentException>("ab\"cd", s_separator + "abc");
-            CommonCasesException<ArgumentException>("ab<cd", s_separator + "abc");
-            CommonCasesException<ArgumentException>("ab>cd", s_separator + "abc");
             CommonCasesException<ArgumentException>("ab|cd", s_separator + "abc");
             CommonCasesException<ArgumentException>("ab\bcd", s_separator + "abc");
             CommonCasesException<ArgumentException>("ab\tcd", s_separator + "abc");
