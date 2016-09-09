@@ -13,6 +13,7 @@
     <ProjectGuid>{CDF0ACB5-1361-4E48-8ECB-22E8022F5F01}</ProjectGuid>
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)'=='net46' Or '$(TargetGroup)'=='net463'">true</IsPartialFacadeAssembly>
     <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NuGetTargetMoniker>
+    <PackageTargetFramework Condition="'$(TargetGroup)'==''">netstandard1.7;uap10.1</PackageTargetFramework>    
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
@@ -40,14 +41,10 @@
     <Compile Include="System\Runtime\Serialization\SerializationException.cs" />
     <Compile Include="System\Runtime\Serialization\StreamingContext.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)'==''">
+  <ItemGroup Condition="'$(TargetGroup)'=='' Or '$(TargetGroup)'=='uap101aot'">
     <Compile Include="System\Runtime\Serialization\InvalidDataContractException.Serialization.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)'==''">
-    <!-- ToDo: Remove this dependency once System.Runtime is published. -->
-    <ProjectReference Include="..\..\System.Runtime\pkg\System.Runtime.pkgproj">
-      <Name>System.Runtime</Name>
-    </ProjectReference>
+  <ItemGroup Condition="'$(TargetGroup)'=='' Or '$(TargetGroup)'=='uap101aot'">
     <Compile Include="System.Runtime.Serialization.Primitives.TypeForwards.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)'=='net46' Or '$(TargetGroup)'=='net463'">
