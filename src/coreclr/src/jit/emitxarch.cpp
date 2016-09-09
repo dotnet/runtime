@@ -2499,8 +2499,9 @@ void emitter::emitHandleMemOp(GenTreeIndir* indir, instrDesc* id, insFormat fmt,
         // Absolute addresses marked as contained should fit within the base of addr mode.
         assert(memBase->AsIntConCommon()->FitsInAddrBase(emitComp));
 
-        // Either not generating relocatable code or addr must be an icon handle
-        assert(!emitComp->opts.compReloc || memBase->IsIconHandle());
+        // Either not generating relocatable code, or addr must be an icon handle, or the
+        // constant is zero (which we won't generate a relocation for).
+        assert(!emitComp->opts.compReloc || memBase->IsIconHandle() || memBase->IsIntegralConst(0));
 
         if (memBase->AsIntConCommon()->AddrNeedsReloc(emitComp))
         {
