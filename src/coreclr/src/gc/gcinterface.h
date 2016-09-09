@@ -149,6 +149,9 @@ public:
     // Gets a valid segment size.
     virtual size_t GetValidSegmentSize(BOOL large_seg = FALSE) = 0;
 
+    // Sets the limit for reserved virtual memory.
+    virtual void SetReservedVMLimit(size_t vmlimit) = 0;
+
     /*
     ===========================================================================
     Concurrent GC routines. These are used in various places in the VM
