@@ -1575,6 +1575,17 @@ void Lowering::TreeNodeInfoInitBlockStore(GenTreeBlk* blkNode)
                     blkNode->gtLsraInfo.setInternalCandidates(l, l->internalFloatRegCandidates());
                 }
                 blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindUnroll;
+
+#ifdef _TARGET_X86_
+                if ((size & 1) != 0)
+                {
+                    // On x86, you can't address the lower byte of ESI, EDI, ESP, or EBP when doing
+                    // a "mov byte ptr [dest], val". If the fill size is odd, we will try to do this
+                    // when unrolling, so only allow byteable registers as the source value. (We could
+                    // consider just using BlkOpKindRepInstr instead.)
+                    sourceRegMask = RBM_BYTE_REGS;
+                }
+#endif // _TARGET_X86_
             }
             else
             {
