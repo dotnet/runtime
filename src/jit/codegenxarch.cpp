@@ -3972,7 +3972,7 @@ void CodeGen::genClearStackVec3ArgUpperBits()
 
 // Generate code for CpObj nodes wich copy structs that have interleaved
 // GC pointers.
-// This will generate a sequence of movsq instructions for the cases of non-gc members
+// This will generate a sequence of movs{d,q} instructions for the cases of non-gc members
 // and calls to the BY_REF_ASSIGN helper otherwise.
 void CodeGen::genCodeForCpObj(GenTreeObj* cpObjNode)
 {
@@ -4009,7 +4009,7 @@ void CodeGen::genCodeForCpObj(GenTreeObj* cpObjNode)
     bool dstOnStack = dstAddr->OperIsLocalAddr();
 
 #ifdef DEBUG
-    bool isRepMovsqUsed = false;
+    bool isRepMovsPtrUsed = false;
 
     assert(!dstAddr->isContained());
 
@@ -4066,14 +4066,14 @@ void CodeGen::genCodeForCpObj(GenTreeObj* cpObjNode)
         {
 #ifdef DEBUG
             // If the destination of the CpObj is on the stack
-            // make sure we allocated RCX to emit rep movsq.
+            // make sure we allocated RCX to emit rep movs{d,q}.
             regNumber tmpReg = genRegNumFromMask(cpObjNode->gtRsvdRegs & RBM_ALLINT);
             assert(tmpReg == REG_RCX);
-            isRepMovsqUsed = true;
+            isRepMovsPtrUsed = true;
 #endif // DEBUG
 
             getEmitter()->emitIns_R_I(INS_mov, EA_4BYTE, REG_RCX, slots);
-            instGen(INS_r_movsq);
+            instGen(INS_r_movs_ptr);
         }
         else
         {
@@ -4081,7 +4081,7 @@ void CodeGen::genCodeForCpObj(GenTreeObj* cpObjNode)
             // emit a rep movsq instruction.
             while (slots > 0)
             {
-                instGen(INS_movsq);
+                instGen(INS_movs_ptr);
                 slots--;
             }
         }
@@ -4097,7 +4097,7 @@ void CodeGen::genCodeForCpObj(GenTreeObj* cpObjNode)
             switch (gcPtrs[i])
             {
                 case TYPE_GC_NONE:
-                    // Let's see if we can use rep movsq instead of a sequence of movsq instructions
+                    // Let's see if we can use rep movs{d,q} instead of a sequence of movs{d,q} instructions
                     // to save cycles and code size.
                     {
                         unsigned nonGcSlotCount = 0;
@@ -4109,12 +4109,12 @@ void CodeGen::genCodeForCpObj(GenTreeObj* cpObjNode)
                         } while (i < slots && gcPtrs[i] == TYPE_GC_NONE);
 
                         // If we have a very small contiguous non-gc region, it's better just to
-                        // emit a sequence of movsq instructions
+                        // emit a sequence of movs{d,q} instructions
                         if (nonGcSlotCount < CPOBJ_NONGC_SLOTS_LIMIT)
                         {
                             while (nonGcSlotCount > 0)
                             {
-                                instGen(INS_movsq);
+                                instGen(INS_movs_ptr);
                                 nonGcSlotCount--;
                             }
                         }
@@ -4122,13 +4122,13 @@ void CodeGen::genCodeForCpObj(GenTreeObj* cpObjNode)
                         {
 #ifdef DEBUG
                             // Otherwise, we can save code-size and improve CQ by emitting
-                            // rep movsq
+                            // rep movs{d,q}
                             regNumber tmpReg = genRegNumFromMask(cpObjNode->gtRsvdRegs & RBM_ALLINT);
                             assert(tmpReg == REG_RCX);
-                            isRepMovsqUsed = true;
+                            isRepMovsPtrUsed = true;
 #endif // DEBUG
                             getEmitter()->emitIns_R_I(INS_mov, EA_4BYTE, REG_RCX, nonGcSlotCount);
-                            instGen(INS_r_movsq);
+                            instGen(INS_r_movs_ptr);
                         }
                     }
                     break;
@@ -8816,7 +8816,7 @@ void CodeGen::genPutStructArgStk(GenTreePtr treeNode, unsigned baseVarNum)
             switch (gcPtrs[i])
             {
                 case TYPE_GC_NONE:
-                    // Let's see if we can use rep movsq instead of a sequence of movsq instructions
+                    // Let's see if we can use rep movs{d,q} instead of a sequence of movs{d,q} instructions
                     // to save cycles and code size.
                     {
                         unsigned nonGcSlotCount = 0;
@@ -8828,13 +8828,13 @@ void CodeGen::genPutStructArgStk(GenTreePtr treeNode, unsigned baseVarNum)
                         } while (i < slots && gcPtrs[i] == TYPE_GC_NONE);
 
                         // If we have a very small contiguous non-gc region, it's better just to
-                        // emit a sequence of movsq instructions
+                        // emit a sequence of movs{d,q} instructions
                         if (nonGcSlotCount < CPOBJ_NONGC_SLOTS_LIMIT)
                         {
                             copiedSlots += nonGcSlotCount;
                             while (nonGcSlotCount > 0)
                             {
-                                instGen(INS_movsq);
+                                instGen(INS_movs_ptr);
                                 nonGcSlotCount--;
                             }
                         }
@@ -8842,7 +8842,7 @@ void CodeGen::genPutStructArgStk(GenTreePtr treeNode, unsigned baseVarNum)
                         {
                             getEmitter()->emitIns_R_I(INS_mov, EA_4BYTE, REG_RCX, nonGcSlotCount);
                             copiedSlots += nonGcSlotCount;
-                            instGen(INS_r_movsq);
+                            instGen(INS_r_movs_ptr);
                         }
                     }
                     break;
@@ -8851,10 +8851,10 @@ void CodeGen::genPutStructArgStk(GenTreePtr treeNode, unsigned baseVarNum)
                 case TYPE_GC_BYREF: // Is an interior pointer - promote it but don't scan it
                 {
                     // We have a GC (byref or ref) pointer
-                    // TODO-Amd64-Unix: Here a better solution (for code size and CQ) would be to use movsq instruction,
+                    // TODO-Amd64-Unix: Here a better solution (for code size and CQ) would be to use movs{d,q} instruction,
                     // but the logic for emitting a GC info record is not available (it is internal for the emitter
                     // only.) See emitGCVarLiveUpd function. If we could call it separately, we could do
-                    // instGen(INS_movsq); and emission of gc info.
+                    // instGen(INS_movs{d,q}); and emission of gc info.
 
                     var_types memType;
                     if (gcPtrs[i] == TYPE_GC_REF)
