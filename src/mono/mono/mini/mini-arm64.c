@@ -1795,7 +1795,7 @@ mono_arch_flush_icache (guint8 *code, gint size)
 
 	addr = (guint64) code & ~(guint64) (dsize - 1);
 	for (; addr < end; addr += dsize)
-		asm volatile("dc cvau, %0" : : "r" (addr) : "memory");
+		asm volatile("dc civac, %0" : : "r" (addr) : "memory");
 	asm volatile("dsb ish" : : : "memory");
 
 	addr = (guint64) code & ~(guint64) (isize - 1);
