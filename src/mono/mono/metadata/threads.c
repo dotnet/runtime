@@ -48,6 +48,7 @@
 
 #include <mono/metadata/gc-internals.h>
 #include <mono/metadata/reflection-internals.h>
+#include <mono/metadata/abi-details.h>
 
 #ifdef HAVE_SIGNAL_H
 #include <signal.h>
@@ -965,12 +966,6 @@ mono_thread_create_internal (MonoDomain *domain, gpointer func, gpointer arg, gb
 
 	res = create_thread (thread, internal, NULL, (MonoThreadStart) func, arg, threadpool_thread, stack_size, error);
 	return_val_if_nok (error, NULL);
-
-	/* Check that the managed and unmanaged layout of MonoInternalThread matches */
-#ifndef MONO_CROSS_COMPILE
-	if (mono_check_corlib_version () == NULL)
-		g_assert (((char*)&internal->unused2 - (char*)internal) == mono_defaults.internal_thread_class->fields [mono_defaults.internal_thread_class->field.count - 1].offset);
-#endif
 
 	return internal;
 }
@@ -2898,6 +2893,9 @@ void mono_thread_init (MonoThreadStartCB start_cb,
 	 * anything up.
 	 */
 	GetCurrentProcess ();
+
+	/* Check that the managed and unmanaged layout of MonoInternalThread matches */
+	g_assert (MONO_STRUCT_OFFSET (MonoInternalThread, last) == mono_field_get_offset (mono_class_get_field_from_name (mono_defaults.internal_thread_class, "last")));
 }
 
 void mono_thread_cleanup (void)

@@ -92,6 +92,7 @@ DECL_OFFSET(MonoDelegate, extra_arg)
 DECL_OFFSET(MonoInternalThread, tid)
 DECL_OFFSET(MonoInternalThread, small_id)
 DECL_OFFSET(MonoInternalThread, static_data)
+DECL_OFFSET(MonoInternalThread, last)
 
 DECL_OFFSET(MonoMulticastDelegate, delegates)
 

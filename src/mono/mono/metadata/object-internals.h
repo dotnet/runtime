@@ -388,6 +388,12 @@ struct _MonoInternalThread {
 	 */
 	gsize unused1;
 	gsize unused2;
+
+	/* This is used only to check that we are in sync between the representation
+	 * of MonoInternalThread in native and InternalThread in managed
+	 *
+	 * DO NOT RENAME! DO NOT ADD FIELDS AFTER! */
+	gpointer last;
 };
 
 struct _MonoThread {
