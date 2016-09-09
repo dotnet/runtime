@@ -107,6 +107,7 @@
     <CppCompile Include="$(VmSourcesDir)\gcenv.os.cpp" />
     <CppCompile Include="$(VmSourcesDir)\gchelpers.cpp" />
     <CppCompile Include="$(VmSourcesDir)\gchost.cpp" />
+    <CppCompile Include="$(VmSourcesDir)\gcheaputilities.cpp" />
     <CppCompile Include="$(VmSourcesDir)\genericdict.cpp" />
     <CppCompile Include="$(VmSourcesDir)\generics.cpp" />
     <CppCompile Include="$(VmSourcesDir)\genmeth.cpp" />

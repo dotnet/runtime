@@ -11616,7 +11616,7 @@ HRESULT Thread::GetMemStats (COR_GC_THREAD_STATS *pStats)
     CONTRACTL_END;
 
     // Get the allocation context which contains this counter in it.
-    alloc_context *p = &m_alloc_context;
+    gc_alloc_context *p = &m_alloc_context;
     pStats->PerThreadAllocation = p->alloc_bytes + p->alloc_bytes_loh;
     if (GetHasPromotedBytes())
         pStats->Flags = COR_GC_THREAD_HAS_PROMOTED_BYTES;
