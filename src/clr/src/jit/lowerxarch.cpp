@@ -497,6 +497,10 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
         case GT_RSZ:
         case GT_ROL:
         case GT_ROR:
+#ifdef _TARGET_X86_
+        case GT_LSH_HI:
+        case GT_RSH_LO:
+#endif
             TreeNodeInfoInitShiftRotate(tree);
             break;
 
@@ -1034,6 +1038,31 @@ void Lowering::TreeNodeInfoInitShiftRotate(GenTree* tree)
     // the number of bits to shift is not a constant.
     GenTreePtr shiftBy = tree->gtOp.gtOp2;
     GenTreePtr source  = tree->gtOp.gtOp1;
+
+#ifdef _TARGET_X86_
+    // The first operand of a GT_LSH_HI and GT_RSH_LO oper is a GT_LONG so that
+    // we can have a three operand form. Increment the srcCount.
+    if (tree->OperGet() == GT_LSH_HI || tree->OperGet() == GT_RSH_LO)
+    {
+        assert(source->OperGet() == GT_LONG);
+
+        info->srcCount++;
+
+        if (tree->OperGet() == GT_LSH_HI)
+        {
+            GenTreePtr sourceLo = source->gtOp.gtOp1;
+            sourceLo->gtLsraInfo.isDelayFree = true;
+        }
+        else
+        {
+            GenTreePtr sourceHi = source->gtOp.gtOp2;
+            sourceHi->gtLsraInfo.isDelayFree = true;
+        }
+
+        source->gtLsraInfo.hasDelayFreeSrc = true;
+        info->hasDelayFreeSrc = true;
+    }
+#endif
 
     // x64 can encode 8 bits of shift and it will use 5 or 6. (the others are masked off)
     // We will allow whatever can be encoded - hope you know what you are doing.
