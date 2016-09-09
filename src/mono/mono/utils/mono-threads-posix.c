@@ -52,11 +52,6 @@ mono_threads_platform_register (MonoThreadInfo *info)
 	if (thread_handle == INVALID_HANDLE_VALUE)
 		g_error ("%s: failed to create handle", __func__);
 
-	/* We need to keep the handle alive, as long as the corresponding managed
-	 * thread object is alive. The handle is going to be unref when calling
-	 * the finalizer on the MonoThreadInternal object */
-	mono_w32handle_ref (thread_handle);
-
 	g_assert (!info->handle);
 	info->handle = thread_handle;
 }
@@ -139,6 +134,14 @@ mono_threads_get_max_stack_size (void)
 	if (lim.rlim_max > (rlim_t)INT_MAX)
 		return INT_MAX;
 	return (int)lim.rlim_max;
+}
+
+gpointer
+mono_threads_platform_duplicate_handle (MonoThreadInfo *info)
+{
+	g_assert (info->handle);
+	mono_w32handle_ref (info->handle);
+	return info->handle;
 }
 
 HANDLE

@@ -2599,10 +2599,13 @@ mono_domain_try_unload (MonoDomain *domain, MonoObject **exc)
 		if (mono_thread_internal_has_appdomain_ref (mono_thread_internal_current (), domain) && (mono_thread_interruption_requested ())) {
 			/* The unload thread tries to abort us */
 			/* The icall wrapper will execute the abort */
+			mono_threads_close_thread_handle (thread_handle);
 			unload_data_unref (thread_data);
 			return;
 		}
 	}
+
+	mono_threads_close_thread_handle (thread_handle);
 
 	if (thread_data->failure_reason) {
 		/* Roll back the state change */

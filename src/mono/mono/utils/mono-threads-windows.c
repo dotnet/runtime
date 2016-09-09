@@ -253,6 +253,17 @@ mono_threads_get_max_stack_size (void)
 	return INT_MAX;
 }
 
+gpointer
+mono_threads_platform_duplicate_handle (MonoThreadInfo *info)
+{
+	HANDLE thread_handle;
+
+	g_assert (info->handle);
+	DuplicateHandle (GetCurrentProcess (), info->handle, GetCurrentProcess (), &thread_handle, THREAD_ALL_ACCESS, TRUE, 0);
+
+	return thread_handle;
+}
+
 HANDLE
 mono_threads_platform_open_thread_handle (HANDLE handle, MonoNativeThreadId tid)
 {

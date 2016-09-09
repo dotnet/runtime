@@ -595,7 +595,7 @@ mono_thread_attach_internal (MonoThread *thread, gboolean force_attach, gboolean
 	info = mono_thread_info_current ();
 
 	internal = thread->internal_thread;
-	internal->handle = mono_thread_info_get_handle (info);
+	internal->handle = mono_thread_info_duplicate_handle (info);
 	internal->tid = MONO_NATIVE_THREAD_ID_TO_UINT (mono_native_thread_id_get ());
 	internal->thread_info = info;
 	internal->small_id = info->small_id;
@@ -909,6 +909,8 @@ create_thread (MonoThread *thread, MonoInternalThread *internal, MonoObject *sta
 	 */
 
 	mono_coop_sem_wait (&start_info->registered, MONO_SEM_FLAGS_NONE);
+
+	mono_threads_close_thread_handle (thread_handle);
 
 	THREAD_DEBUG (g_message ("%s: (%"G_GSIZE_FORMAT") Done launching thread %p (%"G_GSIZE_FORMAT")", __func__, mono_native_thread_id_get (), internal, (gsize)internal->tid));
 

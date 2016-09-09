@@ -1138,7 +1138,7 @@ typedef struct {
 	gpointer start_routine_arg;
 	gint32 priority;
 	MonoCoopSem registered;
-	MonoThreadInfo *info;
+	gpointer handle;
 } CreateThreadData;
 
 static gsize WINAPI
@@ -1165,7 +1165,7 @@ inner_start_thread (gpointer data)
 
 	mono_threads_platform_set_priority (info, priority);
 
-	thread_data->info = info;
+	thread_data->handle = mono_thread_info_duplicate_handle (info);
 
 	mono_coop_sem_post (&thread_data->registered);
 
@@ -1195,7 +1195,6 @@ HANDLE
 mono_threads_create_thread (MonoThreadStart start, gpointer arg, MonoThreadParm *tp, MonoNativeThreadId *out_tid)
 {
 	CreateThreadData *thread_data;
-	MonoThreadInfo *info;
 	gint res;
 	gpointer ret;
 
@@ -1217,10 +1216,7 @@ mono_threads_create_thread (MonoThreadStart start, gpointer arg, MonoThreadParm 
 	res = mono_coop_sem_wait (&thread_data->registered, MONO_SEM_FLAGS_NONE);
 	g_assert (res == 0);
 
-	info = thread_data->info;
-	g_assert (info);
-
-	ret = info->handle;
+	ret = thread_data->handle;
 	g_assert (ret);
 
 done:
@@ -1666,10 +1662,10 @@ mono_thread_info_set_exited (THREAD_INFO_TYPE *info)
 }
 
 gpointer
-mono_thread_info_get_handle (THREAD_INFO_TYPE *info)
+mono_thread_info_duplicate_handle (MonoThreadInfo *info)
 {
-	g_assert (info->handle);
-	return info->handle;
+	g_assert (mono_thread_info_is_current (info));
+	return mono_threads_platform_duplicate_handle (info);
 }
 
 void

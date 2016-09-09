@@ -551,6 +551,7 @@ void mono_threads_platform_own_mutex (THREAD_INFO_TYPE *info, gpointer mutex_han
 void mono_threads_platform_disown_mutex (THREAD_INFO_TYPE *info, gpointer mutex_handle);
 MonoThreadPriority mono_threads_platform_get_priority (THREAD_INFO_TYPE *info);
 void mono_threads_platform_set_priority (THREAD_INFO_TYPE *info, MonoThreadPriority priority);
+gpointer mono_threads_platform_duplicate_handle (THREAD_INFO_TYPE *info);
 
 void mono_threads_coop_begin_global_suspend (void);
 void mono_threads_coop_end_global_suspend (void);
@@ -666,7 +667,7 @@ gboolean
 mono_thread_info_is_current (THREAD_INFO_TYPE *info);
 
 gpointer
-mono_thread_info_get_handle (THREAD_INFO_TYPE *info);
+mono_thread_info_duplicate_handle (THREAD_INFO_TYPE *info);
 
 void
 mono_thread_info_describe (THREAD_INFO_TYPE *info, GString *text);

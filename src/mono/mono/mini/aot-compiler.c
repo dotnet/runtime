@@ -9816,6 +9816,7 @@ compile_methods (MonoAotCompile *acfg)
 
 		for (i = 0; i < threads->len; ++i) {
 			WaitForSingleObjectEx (g_ptr_array_index (threads, i), INFINITE, FALSE);
+			mono_threads_close_thread_handle (g_ptr_array_index (threads, i));
 		}
 	} else {
 		methods_len = 0;
