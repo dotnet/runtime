@@ -2056,8 +2056,6 @@ static int moved_objects_idx = 0;
 void
 mono_sgen_register_moved_object (void *obj, void *destination)
 {
-	g_assert (mono_profiler_events & MONO_PROFILE_GC_MOVES);
-
 	if (moved_objects_idx == MOVED_OBJECTS_NUM) {
 		mono_profiler_gc_moves (moved_objects, moved_objects_idx);
 		moved_objects_idx = 0;
