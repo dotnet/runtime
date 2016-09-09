@@ -134,22 +134,61 @@ static gboolean debug_coverage = FALSE;
 static MonoProfileSamplingMode sampling_mode = MONO_PROFILER_STAT_MODE_PROCESS;
 static int max_allocated_sample_hits;
 
-static gint32 sample_hits;
-static gint32 sample_flushes;
-static gint32 sample_allocations;
-static gint32 buffer_allocations;
-static gint32 thread_starts;
-static gint32 thread_ends;
-static gint32 domain_loads;
-static gint32 domain_unloads;
-static gint32 context_loads;
-static gint32 context_unloads;
-static gint32 assembly_loads;
-static gint32 assembly_unloads;
-static gint32 image_loads;
-static gint32 image_unloads;
-static gint32 class_loads;
-static gint32 class_unloads;
+// Statistics for internal profiler data structures.
+static gint32 sample_allocations_ctr,
+              buffer_allocations_ctr;
+
+// Statistics for profiler events.
+static gint32 sync_points_ctr,
+              heap_objects_ctr,
+              heap_starts_ctr,
+              heap_ends_ctr,
+              heap_roots_ctr,
+              gc_events_ctr,
+              gc_resizes_ctr,
+              gc_allocs_ctr,
+              gc_moves_ctr,
+              gc_handle_creations_ctr,
+              gc_handle_deletions_ctr,
+              finalize_begins_ctr,
+              finalize_ends_ctr,
+              finalize_object_begins_ctr,
+              finalize_object_ends_ctr,
+              image_loads_ctr,
+              image_unloads_ctr,
+              assembly_loads_ctr,
+              assembly_unloads_ctr,
+              class_loads_ctr,
+              class_unloads_ctr,
+              method_entries_ctr,
+              method_exits_ctr,
+              method_exception_exits_ctr,
+              method_jits_ctr,
+              code_buffers_ctr,
+              exception_throws_ctr,
+              exception_clauses_ctr,
+              monitor_contentions_ctr,
+              monitor_acquisitions_ctr,
+              monitor_failures_ctr,
+              thread_starts_ctr,
+              thread_ends_ctr,
+              thread_names_ctr,
+              domain_loads_ctr,
+              domain_unloads_ctr,
+              domain_names_ctr,
+              context_loads_ctr,
+              context_unloads_ctr,
+              sample_ubins_ctr,
+              sample_usyms_ctr,
+              sample_hits_ctr,
+              counter_descriptors_ctr,
+              counter_samples_ctr,
+              perfcounter_descriptors_ctr,
+              perfcounter_samples_ctr,
+              coverage_methods_ctr,
+              coverage_statements_ctr,
+              coverage_classes_ctr,
+              coverage_assemblies_ctr;
 
 static MonoLinkedListSet profiler_thread_list;
 
@@ -492,10 +531,12 @@ ign_res (int G_GNUC_UNUSED unused, ...)
  * FALSE, then don't use these macros.
  */
 
-#define ENTER_LOG \
+#define ENTER_LOG(COUNTER, BUFFER, SIZE) \
 	do { \
 		buffer_lock (); \
-		g_assert (!PROF_TLS_GET ()->busy++ && "Why are we trying to write a new event while already writing one?")
+		g_assert (!PROF_TLS_GET ()->busy++ && "Why are we trying to write a new event while already writing one?"); \
+		InterlockedIncrement ((COUNTER)); \
+		LogBuffer *BUFFER = ensure_logbuf_unsafe ((SIZE))
 
 #define EXIT_LOG \
 		PROF_TLS_GET ()->busy--; \
@@ -678,7 +719,7 @@ create_buffer (void)
 {
 	LogBuffer* buf = (LogBuffer *)alloc_buffer (BUFFER_SIZE);
 
-	InterlockedIncrement (&buffer_allocations);
+	InterlockedIncrement (&buffer_allocations_ctr);
 
 	buf->size = BUFFER_SIZE;
 	buf->time_base = current_time ();
@@ -778,26 +819,6 @@ ensure_logbuf_unsafe (int bytes)
 	thread->buffer = new_;
 
 	return new_;
-}
-
-/*
- * Any calls to this function should be wrapped in the ENTER_LOG and
- * EXIT_LOG macros to prevent the returned pointer from leaking
- * outside of the critical region created by the calls to buffer_lock ()
- * and buffer_unlock () that those macros insert. If the pointer leaks,
- * it can and will lead to crashes as the GC or helper thread may
- * invalidate the pointer at any time.
- *
- * Note: If you're calling from a thread that called init_thread () with
- * add_to_lls = FALSE, you should use ensure_logbuf_unsafe () and omit
- * the macros.
- */
-static LogBuffer*
-ensure_logbuf (int bytes)
-{
-	g_assert (PROF_TLS_GET ()->busy && "Why are we trying to expand our buffer without the busy flag set?");
-
-	return ensure_logbuf_unsafe (bytes);
 }
 
 static void
@@ -1121,6 +1142,8 @@ remove_thread (MonoProfiler *prof, MonoProfilerThread *thread, gboolean from_cal
 			 * threads. We need to synthesize a thread end event.
 			 */
 
+			InterlockedIncrement (&thread_ends_ctr);
+
 			buffer = ensure_logbuf_inner (buffer,
 				EVENT_SIZE /* event */ +
 				BYTE_SIZE /* type */ +
@@ -1260,9 +1283,7 @@ sync_point_mark (MonoProfiler *prof, MonoProfilerSyncPointType type)
 {
 	g_assert (InterlockedReadPointer (&buffer_rwlock_exclusive) == (gpointer) thread_id () && "Why don't we hold the exclusive lock?");
 
-	ENTER_LOG;
-
-	LogBuffer *logbuffer = ensure_logbuf (
+	ENTER_LOG (&sync_points_ctr, logbuffer,
 		EVENT_SIZE /* event */ +
 		LEB128_SIZE /* type */
 	);
@@ -1301,9 +1322,7 @@ gc_reference (MonoObject *obj, MonoClass *klass, uintptr_t size, uintptr_t num, 
 	size += 7;
 	size &= ~7;
 
-	ENTER_LOG;
-
-	LogBuffer *logbuffer = ensure_logbuf (
+	ENTER_LOG (&heap_objects_ctr, logbuffer,
 		EVENT_SIZE /* event */ +
 		LEB128_SIZE /* obj */ +
 		LEB128_SIZE /* klass */ +
@@ -1363,9 +1382,7 @@ heap_walk (MonoProfiler *profiler)
 
 	heapshot_requested = 0;
 
-	ENTER_LOG;
-
-	LogBuffer *logbuffer = ensure_logbuf (
+	ENTER_LOG (&heap_starts_ctr, logbuffer,
 		EVENT_SIZE /* event */
 	);
 
@@ -1375,13 +1392,9 @@ heap_walk (MonoProfiler *profiler)
 
 	mono_gc_walk_heap (0, gc_reference, NULL);
 
-	ENTER_LOG;
-
-	LogBuffer *logbuffer = ensure_logbuf (
+	ENTER_LOG (&heap_ends_ctr, logbuffer,
 		EVENT_SIZE /* event */
 	);
-
-	now = current_time ();
 
 	emit_event (logbuffer, TYPE_HEAP_END | TYPE_HEAP);
 
@@ -1391,11 +1404,36 @@ heap_walk (MonoProfiler *profiler)
 }
 
 static void
+gc_roots (MonoProfiler *prof, int num, void **objects, int *root_types, uintptr_t *extra_info)
+{
+	ENTER_LOG (&heap_roots_ctr, logbuffer,
+		EVENT_SIZE /* event */ +
+		LEB128_SIZE /* num */ +
+		LEB128_SIZE /* collections */ +
+		num * (
+			LEB128_SIZE /* object */ +
+			LEB128_SIZE /* root type */ +
+			LEB128_SIZE /* extra info */
+		)
+	);
+
+	emit_event (logbuffer, TYPE_HEAP_ROOT | TYPE_HEAP);
+	emit_value (logbuffer, num);
+	emit_value (logbuffer, mono_gc_collection_count (mono_gc_max_generation ()));
+
+	for (int i = 0; i < num; ++i) {
+		emit_obj (logbuffer, objects [i]);
+		emit_byte (logbuffer, root_types [i]);
+		emit_value (logbuffer, extra_info [i]);
+	}
+
+	EXIT_LOG;
+}
+
+static void
 gc_event (MonoProfiler *profiler, MonoGCEvent ev, int generation)
 {
-	ENTER_LOG;
-
-	LogBuffer *logbuffer = ensure_logbuf (
+	ENTER_LOG (&gc_events_ctr, logbuffer,
 		EVENT_SIZE /* event */ +
 		BYTE_SIZE /* gc event */ +
 		BYTE_SIZE /* generation */
@@ -1458,9 +1496,7 @@ gc_event (MonoProfiler *profiler, MonoGCEvent ev, int generation)
 static void
 gc_resize (MonoProfiler *profiler, int64_t new_size)
 {
-	ENTER_LOG;
-
-	LogBuffer *logbuffer = ensure_logbuf (
+	ENTER_LOG (&gc_resizes_ctr, logbuffer,
 		EVENT_SIZE /* event */ +
 		LEB128_SIZE /* new size */
 	);
@@ -1539,9 +1575,7 @@ gc_alloc (MonoProfiler *prof, MonoObject *obj, MonoClass *klass)
 	if (do_bt)
 		collect_bt (&data);
 
-	ENTER_LOG;
-
-	LogBuffer *logbuffer = ensure_logbuf (
+	ENTER_LOG (&gc_allocs_ctr, logbuffer,
 		EVENT_SIZE /* event */ +
 		LEB128_SIZE /* klass */ +
 		LEB128_SIZE /* obj */ +
@@ -1572,9 +1606,7 @@ gc_alloc (MonoProfiler *prof, MonoObject *obj, MonoClass *klass)
 static void
 gc_moves (MonoProfiler *prof, void **objects, int num)
 {
-	ENTER_LOG;
-
-	LogBuffer *logbuffer = ensure_logbuf (
+	ENTER_LOG (&gc_moves_ctr, logbuffer,
 		EVENT_SIZE /* event */ +
 		LEB128_SIZE /* num */ +
 		num * (
@@ -1592,35 +1624,6 @@ gc_moves (MonoProfiler *prof, void **objects, int num)
 }
 
 static void
-gc_roots (MonoProfiler *prof, int num, void **objects, int *root_types, uintptr_t *extra_info)
-{
-	ENTER_LOG;
-
-	LogBuffer *logbuffer = ensure_logbuf (
-		EVENT_SIZE /* event */ +
-		LEB128_SIZE /* num */ +
-		LEB128_SIZE /* collections */ +
-		num * (
-			LEB128_SIZE /* object */ +
-			LEB128_SIZE /* root type */ +
-			LEB128_SIZE /* extra info */
-		)
-	);
-
-	emit_event (logbuffer, TYPE_HEAP_ROOT | TYPE_HEAP);
-	emit_value (logbuffer, num);
-	emit_value (logbuffer, mono_gc_collection_count (mono_gc_max_generation ()));
-
-	for (int i = 0; i < num; ++i) {
-		emit_obj (logbuffer, objects [i]);
-		emit_byte (logbuffer, root_types [i]);
-		emit_value (logbuffer, extra_info [i]);
-	}
-
-	EXIT_LOG;
-}
-
-static void
 gc_handle (MonoProfiler *prof, int op, int type, uintptr_t handle, MonoObject *obj)
 {
 	int do_bt = nocalls && InterlockedRead (&runtime_inited) && !notraces;
@@ -1629,9 +1632,9 @@ gc_handle (MonoProfiler *prof, int op, int type, uintptr_t handle, MonoObject *o
 	if (do_bt)
 		collect_bt (&data);
 
-	ENTER_LOG;
+	gint32 *ctr = op == MONO_PROFILER_GC_HANDLE_CREATED ? &gc_handle_creations_ctr : &gc_handle_deletions_ctr;
 
-	LogBuffer *logbuffer = ensure_logbuf (
+	ENTER_LOG (ctr, logbuffer,
 		EVENT_SIZE /* event */ +
 		LEB128_SIZE /* type */ +
 		LEB128_SIZE /* handle */ +
@@ -1670,9 +1673,7 @@ gc_handle (MonoProfiler *prof, int op, int type, uintptr_t handle, MonoObject *o
 static void
 finalize_begin (MonoProfiler *prof)
 {
-	ENTER_LOG;
-
-	LogBuffer *buf = ensure_logbuf (
+	ENTER_LOG (&finalize_begins_ctr, buf,
 		EVENT_SIZE /* event */
 	);
 
@@ -1686,9 +1687,7 @@ finalize_begin (MonoProfiler *prof)
 static void
 finalize_end (MonoProfiler *prof)
 {
-	ENTER_LOG;
-
-	LogBuffer *buf = ensure_logbuf (
+	ENTER_LOG (&finalize_ends_ctr, buf,
 		EVENT_SIZE /* event */
 	);
 
@@ -1702,9 +1701,7 @@ finalize_end (MonoProfiler *prof)
 static void
 finalize_object_begin (MonoProfiler *prof, MonoObject *obj)
 {
-	ENTER_LOG;
-
-	LogBuffer *buf = ensure_logbuf (
+	ENTER_LOG (&finalize_object_begins_ctr, buf,
 		EVENT_SIZE /* event */ +
 		LEB128_SIZE /* obj */
 	);
@@ -1720,9 +1717,7 @@ finalize_object_begin (MonoProfiler *prof, MonoObject *obj)
 static void
 finalize_object_end (MonoProfiler *prof, MonoObject *obj)
 {
-	ENTER_LOG;
-
-	LogBuffer *buf = ensure_logbuf (
+	ENTER_LOG (&finalize_object_ends_ctr, buf,
 		EVENT_SIZE /* event */ +
 		LEB128_SIZE /* obj */
 	);
@@ -1780,9 +1775,7 @@ image_loaded (MonoProfiler *prof, MonoImage *image, int result)
 	const char *name = mono_image_get_filename (image);
 	int nlen = strlen (name) + 1;
 
-	ENTER_LOG;
-
-	LogBuffer *logbuffer = ensure_logbuf (
+	ENTER_LOG (&image_loads_ctr, logbuffer,
 		EVENT_SIZE /* event */ +
 		BYTE_SIZE /* type */ +
 		LEB128_SIZE /* image */ +
@@ -1800,8 +1793,6 @@ image_loaded (MonoProfiler *prof, MonoImage *image, int result)
 	send_if_needed (prof);
 
 	process_requests (prof);
-
-	InterlockedIncrement (&image_loads);
 }
 
 static void
@@ -1810,9 +1801,7 @@ image_unloaded (MonoProfiler *prof, MonoImage *image)
 	const char *name = mono_image_get_filename (image);
 	int nlen = strlen (name) + 1;
 
-	ENTER_LOG;
-
-	LogBuffer *logbuffer = ensure_logbuf (
+	ENTER_LOG (&image_unloads_ctr, logbuffer,
 		EVENT_SIZE /* event */ +
 		BYTE_SIZE /* type */ +
 		LEB128_SIZE /* image */ +
@@ -1830,8 +1819,6 @@ image_unloaded (MonoProfiler *prof, MonoImage *image)
 	send_if_needed (prof);
 
 	process_requests (prof);
-
-	InterlockedIncrement (&image_unloads);
 }
 
 static void
@@ -1843,9 +1830,7 @@ assembly_loaded (MonoProfiler *prof, MonoAssembly *assembly, int result)
 	char *name = mono_stringify_assembly_name (mono_assembly_get_name (assembly));
 	int nlen = strlen (name) + 1;
 
-	ENTER_LOG;
-
-	LogBuffer *logbuffer = ensure_logbuf (
+	ENTER_LOG (&assembly_loads_ctr, logbuffer,
 		EVENT_SIZE /* event */ +
 		BYTE_SIZE /* type */ +
 		LEB128_SIZE /* assembly */ +
@@ -1865,8 +1850,6 @@ assembly_loaded (MonoProfiler *prof, MonoAssembly *assembly, int result)
 	send_if_needed (prof);
 
 	process_requests (prof);
-
-	InterlockedIncrement (&assembly_loads);
 }
 
 static void
@@ -1875,9 +1858,7 @@ assembly_unloaded (MonoProfiler *prof, MonoAssembly *assembly)
 	char *name = mono_stringify_assembly_name (mono_assembly_get_name (assembly));
 	int nlen = strlen (name) + 1;
 
-	ENTER_LOG;
-
-	LogBuffer *logbuffer = ensure_logbuf (
+	ENTER_LOG (&assembly_unloads_ctr, logbuffer,
 		EVENT_SIZE /* event */ +
 		BYTE_SIZE /* type */ +
 		LEB128_SIZE /* assembly */ +
@@ -1897,8 +1878,6 @@ assembly_unloaded (MonoProfiler *prof, MonoAssembly *assembly)
 	send_if_needed (prof);
 
 	process_requests (prof);
-
-	InterlockedIncrement (&assembly_unloads);
 }
 
 static void
@@ -1917,9 +1896,7 @@ class_loaded (MonoProfiler *prof, MonoClass *klass, int result)
 	int nlen = strlen (name) + 1;
 	MonoImage *image = mono_class_get_image (klass);
 
-	ENTER_LOG;
-
-	LogBuffer *logbuffer = ensure_logbuf (
+	ENTER_LOG (&class_loads_ctr, logbuffer,
 		EVENT_SIZE /* event */ +
 		BYTE_SIZE /* type */ +
 		LEB128_SIZE /* klass */ +
@@ -1944,8 +1921,6 @@ class_loaded (MonoProfiler *prof, MonoClass *klass, int result)
 	send_if_needed (prof);
 
 	process_requests (prof);
-
-	InterlockedIncrement (&class_loads);
 }
 
 static void
@@ -1961,9 +1936,7 @@ class_unloaded (MonoProfiler *prof, MonoClass *klass)
 	int nlen = strlen (name) + 1;
 	MonoImage *image = mono_class_get_image (klass);
 
-	ENTER_LOG;
-
-	LogBuffer *logbuffer = ensure_logbuf (
+	ENTER_LOG (&class_unloads_ctr, logbuffer,
 		EVENT_SIZE /* event */ +
 		BYTE_SIZE /* type */ +
 		LEB128_SIZE /* klass */ +
@@ -1988,8 +1961,6 @@ class_unloaded (MonoProfiler *prof, MonoClass *klass)
 	send_if_needed (prof);
 
 	process_requests (prof);
-
-	InterlockedIncrement (&class_unloads);
 }
 
 #ifndef DISABLE_HELPER_THREAD
@@ -2004,9 +1975,7 @@ method_enter (MonoProfiler *prof, MonoMethod *method)
 #endif /* DISABLE_HELPER_THREAD */
 
 	if (PROF_TLS_GET ()->call_depth++ <= max_call_depth) {
-		ENTER_LOG;
-
-		LogBuffer *logbuffer = ensure_logbuf (
+		ENTER_LOG (&method_entries_ctr, logbuffer,
 			EVENT_SIZE /* event */ +
 			LEB128_SIZE /* method */
 		);
@@ -2026,9 +1995,7 @@ static void
 method_leave (MonoProfiler *prof, MonoMethod *method)
 {
 	if (--PROF_TLS_GET ()->call_depth <= max_call_depth) {
-		ENTER_LOG;
-
-		LogBuffer *logbuffer = ensure_logbuf (
+		ENTER_LOG (&method_exits_ctr, logbuffer,
 			EVENT_SIZE /* event */ +
 			LEB128_SIZE /* method */
 		);
@@ -2048,9 +2015,7 @@ static void
 method_exc_leave (MonoProfiler *prof, MonoMethod *method)
 {
 	if (!nocalls && --PROF_TLS_GET ()->call_depth <= max_call_depth) {
-		ENTER_LOG;
-
-		LogBuffer *logbuffer = ensure_logbuf (
+		ENTER_LOG (&method_exception_exits_ctr, logbuffer,
 			EVENT_SIZE /* event */ +
 			LEB128_SIZE /* method */
 		);
@@ -2091,9 +2056,7 @@ code_buffer_new (MonoProfiler *prof, void *buffer, int size, MonoProfilerCodeBuf
 		nlen = 0;
 	}
 
-	ENTER_LOG;
-
-	LogBuffer *logbuffer = ensure_logbuf (
+	ENTER_LOG (&code_buffers_ctr, logbuffer,
 		EVENT_SIZE /* event */ +
 		BYTE_SIZE /* type */ +
 		LEB128_SIZE /* buffer */ +
@@ -2127,9 +2090,7 @@ throw_exc (MonoProfiler *prof, MonoObject *object)
 	if (do_bt)
 		collect_bt (&data);
 
-	ENTER_LOG;
-
-	LogBuffer *logbuffer = ensure_logbuf (
+	ENTER_LOG (&exception_throws_ctr, logbuffer,
 		EVENT_SIZE /* event */ +
 		LEB128_SIZE /* object */ +
 		(do_bt ? (
@@ -2154,9 +2115,7 @@ throw_exc (MonoProfiler *prof, MonoObject *object)
 static void
 clause_exc (MonoProfiler *prof, MonoMethod *method, int clause_type, int clause_num)
 {
-	ENTER_LOG;
-
-	LogBuffer *logbuffer = ensure_logbuf (
+	ENTER_LOG (&exception_clauses_ctr, logbuffer,
 		EVENT_SIZE /* event */ +
 		BYTE_SIZE /* clause type */ +
 		LEB128_SIZE /* clause num */ +
@@ -2182,9 +2141,24 @@ monitor_event (MonoProfiler *profiler, MonoObject *object, MonoProfilerMonitorEv
 	if (do_bt)
 		collect_bt (&data);
 
-	ENTER_LOG;
+	gint32 *ctr;
 
-	LogBuffer *logbuffer = ensure_logbuf (
+	switch (event) {
+	case MONO_PROFILER_MONITOR_CONTENTION:
+		ctr = &monitor_contentions_ctr;
+		break;
+	case MONO_PROFILER_MONITOR_DONE:
+		ctr = &monitor_acquisitions_ctr;
+		break;
+	case MONO_PROFILER_MONITOR_FAIL:
+		ctr = &monitor_failures_ctr;
+		break;
+	default:
+		g_assert_not_reached ();
+		break;
+	}
+
+	ENTER_LOG (ctr, logbuffer,
 		EVENT_SIZE /* event */ +
 		LEB128_SIZE /* object */ +
 		(do_bt ? (
@@ -2211,9 +2185,7 @@ thread_start (MonoProfiler *prof, uintptr_t tid)
 {
 	init_thread (TRUE);
 
-	ENTER_LOG;
-
-	LogBuffer *logbuffer = ensure_logbuf (
+	ENTER_LOG (&thread_starts_ctr, logbuffer,
 		EVENT_SIZE /* event */ +
 		BYTE_SIZE /* type */ +
 		LEB128_SIZE /* tid */
@@ -2228,16 +2200,12 @@ thread_start (MonoProfiler *prof, uintptr_t tid)
 	send_if_needed (prof);
 
 	process_requests (prof);
-
-	InterlockedIncrement (&thread_starts);
 }
 
 static void
 thread_end (MonoProfiler *prof, uintptr_t tid)
 {
-	ENTER_LOG;
-
-	LogBuffer *logbuffer = ensure_logbuf (
+	ENTER_LOG (&thread_ends_ctr, logbuffer,
 		EVENT_SIZE /* event */ +
 		BYTE_SIZE /* type */ +
 		LEB128_SIZE /* tid */
@@ -2252,8 +2220,31 @@ thread_end (MonoProfiler *prof, uintptr_t tid)
 	// Don't process requests as the thread is detached from the runtime.
 
 	remove_thread (prof, PROF_TLS_GET (), TRUE);
+}
 
-	InterlockedIncrement (&thread_ends);
+static void
+thread_name (MonoProfiler *prof, uintptr_t tid, const char *name)
+{
+	int len = strlen (name) + 1;
+
+	ENTER_LOG (&thread_names_ctr, logbuffer,
+		EVENT_SIZE /* event */ +
+		BYTE_SIZE /* type */ +
+		LEB128_SIZE /* tid */ +
+		len /* name */
+	);
+
+	emit_event (logbuffer, TYPE_METADATA);
+	emit_byte (logbuffer, TYPE_THREAD);
+	emit_ptr (logbuffer, (void*)tid);
+	memcpy (logbuffer->cursor, name, len);
+	logbuffer->cursor += len;
+
+	EXIT_LOG;
+
+	send_if_needed (prof);
+
+	process_requests (prof);
 }
 
 static void
@@ -2262,9 +2253,7 @@ domain_loaded (MonoProfiler *prof, MonoDomain *domain, int result)
 	if (result != MONO_PROFILE_OK)
 		return;
 
-	ENTER_LOG;
-
-	LogBuffer *logbuffer = ensure_logbuf (
+	ENTER_LOG (&domain_loads_ctr, logbuffer,
 		EVENT_SIZE /* event */ +
 		BYTE_SIZE /* type */ +
 		LEB128_SIZE /* domain id */
@@ -2279,16 +2268,12 @@ domain_loaded (MonoProfiler *prof, MonoDomain *domain, int result)
 	send_if_needed (prof);
 
 	process_requests (prof);
-
-	InterlockedIncrement (&domain_loads);
 }
 
 static void
 domain_unloaded (MonoProfiler *prof, MonoDomain *domain)
 {
-	ENTER_LOG;
-
-	LogBuffer *logbuffer = ensure_logbuf (
+	ENTER_LOG (&domain_unloads_ctr, logbuffer,
 		EVENT_SIZE /* event */ +
 		BYTE_SIZE /* type */ +
 		LEB128_SIZE /* domain id */
@@ -2303,8 +2288,6 @@ domain_unloaded (MonoProfiler *prof, MonoDomain *domain)
 	send_if_needed (prof);
 
 	process_requests (prof);
-
-	InterlockedIncrement (&domain_unloads);
 }
 
 static void
@@ -2312,9 +2295,7 @@ domain_name (MonoProfiler *prof, MonoDomain *domain, const char *name)
 {
 	int nlen = strlen (name) + 1;
 
-	ENTER_LOG;
-
-	LogBuffer *logbuffer = ensure_logbuf (
+	ENTER_LOG (&domain_names_ctr, logbuffer,
 		EVENT_SIZE /* event */ +
 		BYTE_SIZE /* type */ +
 		LEB128_SIZE /* domain id */ +
@@ -2337,9 +2318,7 @@ domain_name (MonoProfiler *prof, MonoDomain *domain, const char *name)
 static void
 context_loaded (MonoProfiler *prof, MonoAppContext *context)
 {
-	ENTER_LOG;
-
-	LogBuffer *logbuffer = ensure_logbuf (
+	ENTER_LOG (&context_loads_ctr, logbuffer,
 		EVENT_SIZE /* event */ +
 		BYTE_SIZE /* type */ +
 		LEB128_SIZE /* context id */ +
@@ -2356,16 +2335,12 @@ context_loaded (MonoProfiler *prof, MonoAppContext *context)
 	send_if_needed (prof);
 
 	process_requests (prof);
-
-	InterlockedIncrement (&context_loads);
 }
 
 static void
 context_unloaded (MonoProfiler *prof, MonoAppContext *context)
 {
-	ENTER_LOG;
-
-	LogBuffer *logbuffer = ensure_logbuf (
+	ENTER_LOG (&context_unloads_ctr, logbuffer,
 		EVENT_SIZE /* event */ +
 		BYTE_SIZE /* type */ +
 		LEB128_SIZE /* context id */ +
@@ -2376,35 +2351,6 @@ context_unloaded (MonoProfiler *prof, MonoAppContext *context)
 	emit_byte (logbuffer, TYPE_CONTEXT);
 	emit_ptr (logbuffer, (void*)(uintptr_t) mono_context_get_id (context));
 	emit_ptr (logbuffer, (void*)(uintptr_t) mono_context_get_domain_id (context));
-
-	EXIT_LOG;
-
-	send_if_needed (prof);
-
-	process_requests (prof);
-
-	InterlockedIncrement (&context_unloads);
-}
-
-static void
-thread_name (MonoProfiler *prof, uintptr_t tid, const char *name)
-{
-	int len = strlen (name) + 1;
-
-	ENTER_LOG;
-
-	LogBuffer *logbuffer = ensure_logbuf (
-		EVENT_SIZE /* event */ +
-		BYTE_SIZE /* type */ +
-		LEB128_SIZE /* tid */ +
-		len /* name */
-	);
-
-	emit_event (logbuffer, TYPE_METADATA);
-	emit_byte (logbuffer, TYPE_THREAD);
-	emit_ptr (logbuffer, (void*)tid);
-	memcpy (logbuffer->cursor, name, len);
-	logbuffer->cursor += len;
 
 	EXIT_LOG;
 
@@ -2460,8 +2406,6 @@ enqueue_sample_hit (gpointer p)
 	mono_lock_free_queue_node_unpoison (&sample->node);
 	mono_lock_free_queue_enqueue (&sample->prof->dumper_queue, &sample->node);
 	mono_os_sem_post (&sample->prof->dumper_queue_sem);
-
-	InterlockedIncrement (&sample_flushes);
 }
 
 static void
@@ -2478,8 +2422,6 @@ mono_sample_hit (MonoProfiler *profiler, unsigned char *ip, void *context)
 	if (in_shutdown)
 		return;
 
-	InterlockedIncrement (&sample_hits);
-
 	SampleHit *sample = (SampleHit *) mono_lock_free_queue_dequeue (&profiler->sample_reuse_queue);
 
 	if (!sample) {
@@ -2487,14 +2429,14 @@ mono_sample_hit (MonoProfiler *profiler, unsigned char *ip, void *context)
 		 * If we're out of reusable sample events and we're not allowed to
 		 * allocate more, we have no choice but to drop the event.
 		 */
-		if (InterlockedRead (&sample_allocations) >= max_allocated_sample_hits)
+		if (InterlockedRead (&sample_allocations_ctr) >= max_allocated_sample_hits)
 			return;
 
 		sample = mono_lock_free_alloc (&profiler->sample_allocator);
 		sample->prof = profiler;
 		mono_lock_free_queue_node_init (&sample->node, TRUE);
 
-		InterlockedIncrement (&sample_allocations);
+		InterlockedIncrement (&sample_allocations_ctr);
 	}
 
 	sample->count = 0;
@@ -2576,9 +2518,7 @@ dump_ubin (const char *filename, uintptr_t load_addr, uint64_t offset, uintptr_t
 {
 	int len = strlen (filename) + 1;
 
-	ENTER_LOG;
-
-	LogBuffer *logbuffer = ensure_logbuf (
+	ENTER_LOG (&sample_ubins_ctr, logbuffer,
 		EVENT_SIZE /* event */ +
 		LEB128_SIZE /* load address */ +
 		LEB128_SIZE /* offset */ +
@@ -2602,9 +2542,7 @@ dump_usym (const char *name, uintptr_t value, uintptr_t size)
 {
 	int len = strlen (name) + 1;
 
-	ENTER_LOG;
-
-	LogBuffer *logbuffer = ensure_logbuf (
+	ENTER_LOG (&sample_usyms_ctr, logbuffer,
 		EVENT_SIZE /* event */ +
 		LEB128_SIZE /* value */ +
 		LEB128_SIZE /* size */ +
@@ -3013,9 +2951,7 @@ dump_perf_hits (MonoProfiler *prof, void *buf, int size)
 		printf ("sample: %d, size: %d, ip: %p (%s), timestamp: %llu, nframes: %llu\n",
 			s->h.type, s->h.size, ip, symbol_for (ip), s->timestamp, s->nframes);*/
 
-		ENTER_LOG;
-
-		LogBuffer *logbuffer = ensure_logbuf (
+		ENTER_LOG (&sample_hits_ctr, logbuffer,
 			EVENT_SIZE /* event */ +
 			BYTE_SIZE /* type */ +
 			LEB128_SIZE /* tid */ +
@@ -3271,9 +3207,8 @@ counters_emit (MonoProfiler *profiler)
 		return;
 	}
 
-	ENTER_LOG;
 
-	LogBuffer *logbuffer = ensure_logbuf (size);
+	ENTER_LOG (&counter_descriptors_ctr, logbuffer, size);
 
 	emit_event (logbuffer, TYPE_SAMPLE_COUNTERS_DESC | TYPE_SAMPLE);
 	emit_value (logbuffer, len);
@@ -3336,9 +3271,7 @@ counters_sample (MonoProfiler *profiler, uint64_t timestamp)
 		LEB128_SIZE /* stop marker */
 	;
 
-	ENTER_LOG;
-
-	LogBuffer *logbuffer = ensure_logbuf (size);
+	ENTER_LOG (&counter_samples_ctr, logbuffer, size);
 
 	emit_event_time (logbuffer, TYPE_SAMPLE_COUNTERS | TYPE_SAMPLE, timestamp);
 
@@ -3474,9 +3407,7 @@ perfcounters_emit (MonoProfiler *profiler)
 	if (!len)
 		return;
 
-	ENTER_LOG;
-
-	LogBuffer *logbuffer = ensure_logbuf (size);
+	ENTER_LOG (&perfcounter_descriptors_ctr, logbuffer, size);
 
 	emit_event (logbuffer, TYPE_SAMPLE_COUNTERS_DESC | TYPE_SAMPLE);
 	emit_value (logbuffer, len);
@@ -3570,9 +3501,7 @@ perfcounters_sample (MonoProfiler *profiler, uint64_t timestamp)
 		LEB128_SIZE /* stop marker */
 	;
 
-	ENTER_LOG;
-
-	LogBuffer *logbuffer = ensure_logbuf (size);
+	ENTER_LOG (&perfcounter_samples_ctr, logbuffer, size);
 
 	emit_event_time (logbuffer, TYPE_SAMPLE_COUNTERS | TYPE_SAMPLE, timestamp);
 
@@ -3737,9 +3666,7 @@ build_method_buffer (gpointer key, gpointer value, gpointer userdata)
 	sig = sig ? sig : "";
 	method_name = method_name ? method_name : "";
 
-	ENTER_LOG;
-
-	LogBuffer *logbuffer = ensure_logbuf (
+	ENTER_LOG (&coverage_methods_ctr, logbuffer,
 		EVENT_SIZE /* event */ +
 		strlen (image_name) + 1 /* image name */ +
 		strlen (class_name) + 1 /* class name */ +
@@ -3769,9 +3696,7 @@ build_method_buffer (gpointer key, gpointer value, gpointer userdata)
 	for (i = 0; i < coverage_data->len; i++) {
 		CoverageEntry *entry = (CoverageEntry *)coverage_data->pdata[i];
 
-		ENTER_LOG;
-
-		LogBuffer *logbuffer = ensure_logbuf (
+		ENTER_LOG (&coverage_statements_ctr, logbuffer,
 			EVENT_SIZE /* event */ +
 			LEB128_SIZE /* method id */ +
 			LEB128_SIZE /* offset */ +
@@ -3838,9 +3763,7 @@ build_class_buffer (gpointer key, gpointer value, gpointer userdata)
 	/* We don't handle partial covered yet */
 	partially_covered = 0;
 
-	ENTER_LOG;
-
-	LogBuffer *logbuffer = ensure_logbuf (
+	ENTER_LOG (&coverage_classes_ctr, logbuffer,
 		EVENT_SIZE /* event */ +
 		strlen (assembly_name) + 1 /* assembly name */ +
 		strlen (class_name) + 1 /* class name */ +
@@ -3898,9 +3821,7 @@ build_assembly_buffer (gpointer key, gpointer value, gpointer userdata)
 
 	get_coverage_for_image (image, &number_of_methods, &fully_covered, &partially_covered);
 
-	ENTER_LOG;
-
-	LogBuffer *logbuffer = ensure_logbuf (
+	ENTER_LOG (&coverage_assemblies_ctr, logbuffer,
 		EVENT_SIZE /* event */ +
 		strlen (name) + 1 /* name */ +
 		strlen (guid) + 1 /* guid */ +
@@ -4641,6 +4562,8 @@ handle_writer_queue_entry (MonoProfiler *prof)
 			void *cstart = info->ji ? mono_jit_info_get_code_start (info->ji) : NULL;
 			int csize = info->ji ? mono_jit_info_get_code_size (info->ji) : 0;
 
+			InterlockedIncrement (&method_jits_ctr);
+
 			buf = ensure_logbuf_unsafe (
 				EVENT_SIZE /* event */ +
 				LEB128_SIZE /* method */ +
@@ -4748,6 +4671,8 @@ handle_dumper_queue_entry (MonoProfiler *prof)
 			}
 		}
 
+		InterlockedIncrement (&sample_hits_ctr);
+
 		LogBuffer *logbuffer = ensure_logbuf_unsafe (
 			EVENT_SIZE /* event */ +
 			BYTE_SIZE /* type */ +
@@ -4824,6 +4749,12 @@ start_dumper_thread (MonoProfiler* prof)
 }
 
 static void
+register_counter (const char *name, gint32 *counter)
+{
+	mono_counters_register (name, MONO_COUNTER_UINT | MONO_COUNTER_PROFILER | MONO_COUNTER_MONOTONIC, counter);
+}
+
+static void
 runtime_initialized (MonoProfiler *profiler)
 {
 	InterlockedWrite (&runtime_inited, 1);
@@ -4838,22 +4769,59 @@ runtime_initialized (MonoProfiler *profiler)
 	start_writer_thread (profiler);
 	start_dumper_thread (profiler);
 
-	mono_counters_register ("Sample hits", MONO_COUNTER_UINT | MONO_COUNTER_PROFILER | MONO_COUNTER_MONOTONIC, &sample_hits);
-	mono_counters_register ("Sample flushes", MONO_COUNTER_UINT | MONO_COUNTER_PROFILER | MONO_COUNTER_MONOTONIC, &sample_flushes);
-	mono_counters_register ("Sample events allocated", MONO_COUNTER_UINT | MONO_COUNTER_PROFILER | MONO_COUNTER_MONOTONIC, &sample_allocations);
-	mono_counters_register ("Log buffers allocated", MONO_COUNTER_UINT | MONO_COUNTER_PROFILER | MONO_COUNTER_MONOTONIC, &buffer_allocations);
-	mono_counters_register ("Thread start events", MONO_COUNTER_UINT | MONO_COUNTER_PROFILER | MONO_COUNTER_MONOTONIC, &thread_starts);
-	mono_counters_register ("Thread stop events", MONO_COUNTER_UINT | MONO_COUNTER_PROFILER | MONO_COUNTER_MONOTONIC, &thread_ends);
-	mono_counters_register ("Domain load events", MONO_COUNTER_UINT | MONO_COUNTER_PROFILER | MONO_COUNTER_MONOTONIC, &domain_loads);
-	mono_counters_register ("Domain unload events", MONO_COUNTER_UINT | MONO_COUNTER_PROFILER | MONO_COUNTER_MONOTONIC, &domain_unloads);
-	mono_counters_register ("Context load events", MONO_COUNTER_UINT | MONO_COUNTER_PROFILER | MONO_COUNTER_MONOTONIC, &context_loads);
-	mono_counters_register ("Context unload events", MONO_COUNTER_UINT | MONO_COUNTER_PROFILER | MONO_COUNTER_MONOTONIC, &context_unloads);
-	mono_counters_register ("Assembly load events", MONO_COUNTER_UINT | MONO_COUNTER_PROFILER | MONO_COUNTER_MONOTONIC, &assembly_loads);
-	mono_counters_register ("Assembly unload events", MONO_COUNTER_UINT | MONO_COUNTER_PROFILER | MONO_COUNTER_MONOTONIC, &assembly_unloads);
-	mono_counters_register ("Image load events", MONO_COUNTER_UINT | MONO_COUNTER_PROFILER | MONO_COUNTER_MONOTONIC, &image_loads);
-	mono_counters_register ("Image unload events", MONO_COUNTER_UINT | MONO_COUNTER_PROFILER | MONO_COUNTER_MONOTONIC, &image_unloads);
-	mono_counters_register ("Class load events", MONO_COUNTER_UINT | MONO_COUNTER_PROFILER | MONO_COUNTER_MONOTONIC, &class_loads);
-	mono_counters_register ("Class unload events", MONO_COUNTER_UINT | MONO_COUNTER_PROFILER | MONO_COUNTER_MONOTONIC, &class_unloads);
+	register_counter ("Sample events allocated", &sample_allocations_ctr);
+	register_counter ("Log buffers allocated", &buffer_allocations_ctr);
+
+	register_counter ("Event: Sync points", &sync_points_ctr);
+	register_counter ("Event: Heap objects", &heap_objects_ctr);
+	register_counter ("Event: Heap starts", &heap_starts_ctr);
+	register_counter ("Event: Heap ends", &heap_ends_ctr);
+	register_counter ("Event: Heap roots", &heap_roots_ctr);
+	register_counter ("Event: GC events", &gc_events_ctr);
+	register_counter ("Event: GC resizes", &gc_resizes_ctr);
+	register_counter ("Event: GC allocations", &gc_allocs_ctr);
+	register_counter ("Event: GC moves", &gc_moves_ctr);
+	register_counter ("Event: GC handle creations", &gc_handle_creations_ctr);
+	register_counter ("Event: GC handle deletions", &gc_handle_deletions_ctr);
+	register_counter ("Event: GC finalize starts", &finalize_begins_ctr);
+	register_counter ("Event: GC finalize ends", &finalize_ends_ctr);
+	register_counter ("Event: GC finalize object starts", &finalize_object_begins_ctr);
+	register_counter ("Event: GC finalize object ends", &finalize_object_ends_ctr);
+	register_counter ("Event: Image loads", &image_loads_ctr);
+	register_counter ("Event: Image unloads", &image_unloads_ctr);
+	register_counter ("Event: Assembly loads", &assembly_loads_ctr);
+	register_counter ("Event: Assembly unloads", &assembly_unloads_ctr);
+	register_counter ("Event: Class loads", &class_loads_ctr);
+	register_counter ("Event: Class unloads", &class_unloads_ctr);
+	register_counter ("Event: Method entries", &method_entries_ctr);
+	register_counter ("Event: Method exits", &method_exits_ctr);
+	register_counter ("Event: Method exception leaves", &method_exception_exits_ctr);
+	register_counter ("Event: Method JITs", &method_jits_ctr);
+	register_counter ("Event: Code buffers", &code_buffers_ctr);
+	register_counter ("Event: Exception throws", &exception_throws_ctr);
+	register_counter ("Event: Exception clauses", &exception_clauses_ctr);
+	register_counter ("Event: Monitor contentions", &monitor_contentions_ctr);
+	register_counter ("Event: Monitor acquisitions", &monitor_acquisitions_ctr);
+	register_counter ("Event: Monitor failures", &monitor_failures_ctr);
+	register_counter ("Event: Thread starts", &thread_starts_ctr);
+	register_counter ("Event: Thread ends", &thread_ends_ctr);
+	register_counter ("Event: Thread names", &thread_names_ctr);
+	register_counter ("Event: Domain loads", &domain_loads_ctr);
+	register_counter ("Event: Domain unloads", &domain_unloads_ctr);
+	register_counter ("Event: Domain names", &domain_names_ctr);
+	register_counter ("Event: Context loads", &context_loads_ctr);
+	register_counter ("Event: Context unloads", &context_unloads_ctr);
+	register_counter ("Event: Sample binaries", &sample_ubins_ctr);
+	register_counter ("Event: Sample symbols", &sample_usyms_ctr);
+	register_counter ("Event: Sample hits", &sample_hits_ctr);
+	register_counter ("Event: Counter descriptors", &counter_descriptors_ctr);
+	register_counter ("Event: Counter samples", &counter_samples_ctr);
+	register_counter ("Event: Performance counter descriptors", &perfcounter_descriptors_ctr);
+	register_counter ("Event: Performance counter samples", &perfcounter_samples_ctr);
+	register_counter ("Event: Coverage methods", &coverage_methods_ctr);
+	register_counter ("Event: Coverage statements", &coverage_statements_ctr);
+	register_counter ("Event: Coverage classes", &coverage_classes_ctr);
+	register_counter ("Event: Coverage assemblies", &coverage_assemblies_ctr);
 
 #ifndef DISABLE_HELPER_THREAD
 	counters_init (profiler);
