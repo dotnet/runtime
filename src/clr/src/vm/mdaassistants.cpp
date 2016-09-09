@@ -868,7 +868,7 @@ LPVOID MdaInvalidOverlappedToPinvoke::CheckOverlappedPointer(UINT index, LPVOID 
 
         {
             GCX_COOP();
-            GCHeap *pHeap = GCHeapUtilities::GetGCHeap();
+            IGCHeap *pHeap = GCHeapUtilities::GetGCHeap();
             fHeapPointer = pHeap->IsHeapPointer(pOverlapped);
         }
 
