@@ -47,7 +47,7 @@ public class FinalizeTimeout
 
     private class BlockingFinalizerOnShutdown
     {
-        public volatile static bool finalizerCompletedOnce = false;
+        public static bool finalizerCompletedOnce = false;
         public bool isLastObject = false;
 
         ~BlockingFinalizerOnShutdown()
