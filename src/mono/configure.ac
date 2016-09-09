@@ -1162,20 +1162,6 @@ AC_COMPILE_IFELSE([
    AC_MSG_RESULT(no)
 ])
 
-AC_MSG_CHECKING(for deprecated __attribute__)
-AC_TRY_COMPILE([
-     int doit (void) __attribute__ ((deprecated));
-     int doit (void) { return 0; }
-], [
-	return 0;
-], [
-   have_deprecated=yes
-   AC_MSG_RESULT(yes)
-], [
-   have_deprecated=no
-   AC_MSG_RESULT(no)
-])
-
 dnl
 dnl Boehm GC configuration
 dnl

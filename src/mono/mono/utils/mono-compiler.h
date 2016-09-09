@@ -275,12 +275,6 @@ typedef SSIZE_T ssize_t;
 #define MONO_LLVM_INTERNAL 
 #endif
 
-#if HAVE_DEPRECATED
-#define MONO_DEPRECATED __attribute__ ((deprecated))
-#else
-#define MONO_DEPRECATED 
-#endif
-
 #ifdef __GNUC__
 #define MONO_ALWAYS_INLINE __attribute__((always_inline))
 #elif defined(_MSC_VER)
