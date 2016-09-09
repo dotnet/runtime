@@ -54,11 +54,11 @@
  *                    - column: The column on the line
  */
 #include <config.h>
-#include "utils.c"
 #include "proflog.h"
 #include <string.h>
 #include <assert.h>
 #include <stdio.h>
+#include <time.h>
 #if !defined(__APPLE__) && !defined(__FreeBSD__)
 #include <malloc.h>
 #endif
@@ -1970,6 +1970,54 @@ get_root_name (int rtype)
 	case MONO_PROFILE_GC_ROOT_MISC: return "misc";
 	default: return "unknown";
 	}
+}
+
+static uint64_t
+decode_uleb128 (uint8_t *buf, uint8_t **endbuf)
+{
+	uint64_t res = 0;
+	int shift = 0;
+
+	while (1) {
+		uint8_t b = *buf++;
+		res |= (((uint64_t) (b & 0x7f)) << shift);
+
+		if (!(b & 0x80))
+			break;
+
+		shift += 7;
+	}
+
+	*endbuf = buf;
+
+	return res;
+}
+
+static intptr_t
+decode_sleb128 (uint8_t *buf, uint8_t **endbuf)
+{
+	uint8_t *p = buf;
+	intptr_t res = 0;
+	int shift = 0;
+
+	while (1) {
+		uint8_t b = *p;
+		p++;
+
+		res = res | (((intptr_t) (b & 0x7f)) << shift);
+		shift += 7;
+
+		if (!(b & 0x80)) {
+			if (shift < sizeof (intptr_t) * 8 && (b & 0x40))
+				res |= - ((intptr_t) 1 << shift);
+
+			break;
+		}
+	}
+
+	*endbuf = p;
+
+	return res;
 }
 
 static MethodDesc**

@@ -48,6 +48,13 @@
 #endif
 #include <fcntl.h>
 #include <errno.h>
+#include <time.h>
+#ifdef HAVE_SYS_TIME_H
+#include <sys/time.h>
+#endif
+#if defined(__APPLE__)
+#include <mach/mach_time.h>
+#endif
 #if defined(HOST_WIN32) || defined(DISABLE_SOCKETS)
 #define DISABLE_HELPER_THREAD 1
 #endif
@@ -82,7 +89,6 @@
 #include <sys/stat.h>
 #endif
 
-#include "utils.c"
 #include "proflog.h"
 
 #if defined (HAVE_SYS_ZLIB)
@@ -524,6 +530,82 @@ ign_res (int G_GNUC_UNUSED unused, ...)
 {
 }
 
+static uintptr_t
+thread_id (void)
+{
+	return (uintptr_t) mono_native_thread_id_get ();
+}
+
+static uintptr_t
+process_id (void)
+{
+#ifdef HOST_WIN32
+	return (uintptr_t) GetCurrentProcessId ();
+#else
+	return (uintptr_t) getpid ();
+#endif
+}
+
+#ifdef __APPLE__
+static mach_timebase_info_data_t timebase_info;
+#elif defined (HOST_WIN32)
+static LARGE_INTEGER pcounter_freq;
+#endif
+
+#define TICKS_PER_SEC 1000000000LL
+
+static uint64_t
+current_time (void)
+{
+#ifdef __APPLE__
+	uint64_t time = mach_absolute_time ();
+
+	time *= timebase_info.numer;
+	time /= timebase_info.denom;
+
+	return time;
+#elif defined (HOST_WIN32)
+	LARGE_INTEGER value;
+
+	QueryPerformanceCounter (&value);
+
+	return value.QuadPart * TICKS_PER_SEC / pcounter_freq.QuadPart;
+#elif defined (CLOCK_MONOTONIC)
+	struct timespec tspec;
+
+	clock_gettime (CLOCK_MONOTONIC, &tspec);
+
+	return ((uint64_t) tspec.tv_sec * TICKS_PER_SEC + tspec.tv_nsec);
+#else
+	struct timeval tv;
+
+	gettimeofday (&tv, NULL);
+
+	return ((uint64_t) tv.tv_sec * TICKS_PER_SEC + tv.tv_usec * 1000);
+#endif
+}
+
+static int timer_overhead;
+
+static void
+init_time (void)
+{
+#ifdef __APPLE__
+	mach_timebase_info (&timebase_info);
+#elif defined (HOST_WIN32)
+	QueryPerformanceFrequency (&pcounter_freq);
+#endif
+
+	uint64_t time_start = current_time ();
+
+	for (int i = 0; i < 256; ++i)
+		current_time ();
+
+	uint64_t time_end = current_time ();
+
+	timer_overhead = (time_end - time_start) / 256;
+}
+
 /*
  * These macros create a scope to avoid leaking the buffer returned
  * from ensure_logbuf () as it may have been invalidated by a GC
@@ -713,10 +795,22 @@ pstrdup (const char *s)
 	return p;
 }
 
+static void *
+alloc_buffer (int size)
+{
+	return mono_valloc (NULL, size, MONO_MMAP_READ | MONO_MMAP_WRITE | MONO_MMAP_ANON | MONO_MMAP_PRIVATE, MONO_MEM_ACCOUNT_PROFILER);
+}
+
+static void
+free_buffer (void *buf, int size)
+{
+	mono_vfree (buf, size, MONO_MEM_ACCOUNT_PROFILER);
+}
+
 static LogBuffer*
 create_buffer (void)
 {
-	LogBuffer* buf = (LogBuffer *)alloc_buffer (BUFFER_SIZE);
+	LogBuffer* buf = (LogBuffer *) alloc_buffer (BUFFER_SIZE);
 
 	InterlockedIncrement (&buffer_allocations_ctr);
 
@@ -725,6 +819,7 @@ create_buffer (void)
 	buf->last_time = buf->time_base;
 	buf->buf_end = (unsigned char*)buf + buf->size;
 	buf->cursor = buf->buf;
+
 	return buf;
 }
 
@@ -818,6 +913,58 @@ ensure_logbuf_unsafe (int bytes)
 	thread->buffer = new_;
 
 	return new_;
+}
+
+static void
+encode_uleb128 (uint64_t value, uint8_t *buf, uint8_t **endbuf)
+{
+	uint8_t *p = buf;
+
+	do {
+		uint8_t b = value & 0x7f;
+		value >>= 7;
+
+		if (value != 0) /* more bytes to come */
+			b |= 0x80;
+
+		*p ++ = b;
+	} while (value);
+
+	*endbuf = p;
+}
+
+static void
+encode_sleb128 (intptr_t value, uint8_t *buf, uint8_t **endbuf)
+{
+	int more = 1;
+	int negative = (value < 0);
+	unsigned int size = sizeof (intptr_t) * 8;
+	uint8_t byte;
+	uint8_t *p = buf;
+
+	while (more) {
+		byte = value & 0x7f;
+		value >>= 7;
+
+		/* the following is unnecessary if the
+		 * implementation of >>= uses an arithmetic rather
+		 * than logical shift for a signed left operand
+		 */
+		if (negative)
+			/* sign extend */
+			value |= - ((intptr_t) 1 <<(size - 7));
+
+		/* sign bit of byte is second high order bit (0x40) */
+		if ((value == 0 && !(byte & 0x40)) ||
+		    (value == -1 && (byte & 0x40)))
+			more = 0;
+		else
+			byte |= 0x80;
+
+		*p ++= byte;
+	}
+
+	*endbuf = p;
 }
 
 static void
@@ -1087,7 +1234,7 @@ dump_header (MonoProfiler *profiler)
 	*p++ = LOG_DATA_VERSION;
 	*p++ = sizeof (void *);
 	p = write_int64 (p, ((uint64_t) time (NULL)) * 1000);
-	p = write_int32 (p, get_timer_overhead ());
+	p = write_int32 (p, timer_overhead);
 	p = write_int32 (p, 0); /* flags */
 	p = write_int32 (p, process_id ());
 	p = write_int16 (p, profiler->command_port);
@@ -4946,7 +5093,6 @@ usage (int do_exit)
 	printf ("\tsample[=TYPE]        use statistical sampling mode (by default cycles/100)\n");
 	printf ("\t                     TYPE: cycles,instr,cacherefs,cachemiss,branches,branchmiss\n");
 	printf ("\t                     TYPE can be followed by /FREQUENCY\n");
-	printf ("\ttime=fast            use a faster (but more inaccurate) timer\n");
 	printf ("\tmaxframes=NUM        collect up to NUM stack frames\n");
 	printf ("\tcalldepth=NUM        ignore method events for call chain depth bigger than NUM\n");
 	printf ("\toutput=FILENAME      write the data to file FILENAME (-FILENAME to overwrite)\n");
@@ -5112,7 +5258,6 @@ mono_profiler_startup (const char *desc)
 	char *filename = NULL;
 	const char *p;
 	const char *opt;
-	int fast_time = 0;
 	int calls_enabled = 0;
 	int allocs_enabled = 0;
 	int only_coverage = 0;
@@ -5159,11 +5304,7 @@ mono_profiler_startup (const char *desc)
 			continue;
 		}
 		if ((opt = match_option (p, "time", &val)) != p) {
-			if (strcmp (val, "fast") == 0)
-				fast_time = 1;
-			else if (strcmp (val, "null") == 0)
-				fast_time = 2;
-			else
+			if (strcmp (val, "fast") && strcmp (val, "null"))
 				usage (1);
 			g_free (val);
 			continue;
@@ -5303,7 +5444,7 @@ mono_profiler_startup (const char *desc)
 		events = MONO_PROFILE_GC | MONO_PROFILE_THREADS | MONO_PROFILE_ENTER_LEAVE | MONO_PROFILE_INS_COVERAGE;
 	}
 
-	utils_init (fast_time);
+	init_time ();
 
 	PROF_TLS_INIT ();
 

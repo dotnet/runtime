@@ -110,6 +110,7 @@ testlog: $(PLOG_TESTS)
 
 check-local: $(check_targets)
 
-EXTRA_DIST=utils.c utils.h proflog.h \
-	$(PLOG_TESTS_SRC) ptestrunner.pl \
+EXTRA_DIST=proflog.h \
+	$(PLOG_TESTS_SRC) \
+	ptestrunner.pl \
 	$(suppression_DATA)
