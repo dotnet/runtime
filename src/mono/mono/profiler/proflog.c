@@ -1212,9 +1212,6 @@ process_requests (MonoProfiler *profiler)
 		mono_gc_collect (mono_gc_max_generation ());
 }
 
-static void counters_init (MonoProfiler *profiler);
-static void counters_sample (MonoProfiler *profiler, uint64_t timestamp);
-
 static void
 safe_send (MonoProfiler *profiler)
 {
@@ -3103,7 +3100,6 @@ typedef struct MonoCounterAgent {
 } MonoCounterAgent;
 
 static MonoCounterAgent* counters;
-static gboolean counters_initialized = FALSE;
 static int counters_index = 1;
 static mono_mutex_t counters_mutex;
 
@@ -3111,9 +3107,6 @@ static void
 counters_add_agent (MonoCounter *counter)
 {
 	MonoCounterAgent *agent, *item;
-
-	if (!counters_initialized)
-		return;
 
 	mono_os_mutex_lock (&counters_mutex);
 
@@ -3124,8 +3117,7 @@ counters_add_agent (MonoCounter *counter)
 				g_free (agent->value);
 				agent->value = NULL;
 			}
-			mono_os_mutex_unlock (&counters_mutex);
-			return;
+			goto done;
 		}
 	}
 
@@ -3146,6 +3138,7 @@ counters_add_agent (MonoCounter *counter)
 		item->next = agent;
 	}
 
+done:
 	mono_os_mutex_unlock (&counters_mutex);
 }
 
@@ -3159,11 +3152,7 @@ counters_init_foreach_callback (MonoCounter *counter, gpointer data)
 static void
 counters_init (MonoProfiler *profiler)
 {
-	assert (!counters_initialized);
-
 	mono_os_mutex_init (&counters_mutex);
-
-	counters_initialized = TRUE;
 
 	mono_counters_on_register (&counters_add_agent);
 	mono_counters_foreach (counters_init_foreach_callback, NULL);
@@ -3178,9 +3167,6 @@ counters_emit (MonoProfiler *profiler)
 		EVENT_SIZE /* event */ +
 		LEB128_SIZE /* len */
 	;
-
-	if (!counters_initialized)
-		return;
 
 	mono_os_mutex_lock (&counters_mutex);
 
@@ -3240,9 +3226,6 @@ counters_sample (MonoProfiler *profiler, uint64_t timestamp)
 	int buffer_size;
 	void *buffer;
 	int size;
-
-	if (!counters_initialized)
-		return;
 
 	counters_emit (profiler);
 
@@ -3465,9 +3448,6 @@ perfcounters_sample (MonoProfiler *profiler, uint64_t timestamp)
 	PerfCounterAgent *pcagent;
 	int len = 0;
 	int size;
-
-	if (!counters_initialized)
-		return;
 
 	mono_os_mutex_lock (&counters_mutex);
 
@@ -4762,13 +4742,6 @@ runtime_initialized (MonoProfiler *profiler)
 {
 	InterlockedWrite (&runtime_inited, 1);
 
-#ifndef DISABLE_HELPER_THREAD
-	if (hs_mode_ondemand || need_helper_thread) {
-		if (!start_helper_thread (profiler))
-			profiler->command_port = 0;
-	}
-#endif
-
 	start_writer_thread (profiler);
 	start_dumper_thread (profiler);
 
@@ -4828,8 +4801,13 @@ runtime_initialized (MonoProfiler *profiler)
 
 #ifndef DISABLE_HELPER_THREAD
 	counters_init (profiler);
-	counters_sample (profiler, 0);
+
+	if (hs_mode_ondemand || need_helper_thread) {
+		if (!start_helper_thread (profiler))
+			profiler->command_port = 0;
+	}
 #endif
+
 	/* ensure the main thread data and startup are available soon */
 	safe_send (profiler);
 }
