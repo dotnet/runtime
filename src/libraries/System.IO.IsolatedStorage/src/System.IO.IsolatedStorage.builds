@@ -6,9 +6,11 @@
     <Project Include="System.IO.IsolatedStorage.csproj">
       <TargetGroup>net463</TargetGroup>
     </Project>
+    <!-- Dependent assemblies doesn't support uap10.1 yet, so for now we will use the ns1.7 asset instead. Issue: https://github.com/dotnet/corefx/issues/11551
     <Project Include="System.IO.IsolatedStorage.csproj">
       <TargetGroup>uap101</TargetGroup>
     </Project>
+    -->
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
 </Project>
