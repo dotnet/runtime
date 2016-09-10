@@ -626,12 +626,13 @@ namespace System
         Unspecified = 0,
         Utc = 1,
     }
-    public partial struct DateTimeOffset : System.IComparable, System.IComparable<System.DateTimeOffset>, System.IEquatable<System.DateTimeOffset>, System.IFormattable
+    public partial struct DateTimeOffset : System.IComparable, System.IComparable<System.DateTimeOffset>, System.IEquatable<System.DateTimeOffset>, System.IFormattable, System.Runtime.Serialization.IDeserializationCallback, System.Runtime.Serialization.ISerializable
     {
         public static readonly System.DateTimeOffset MaxValue;
         public static readonly System.DateTimeOffset MinValue;
         public DateTimeOffset(System.DateTime dateTime) { throw new System.NotImplementedException(); }
         public DateTimeOffset(System.DateTime dateTime, System.TimeSpan offset) { throw new System.NotImplementedException(); }
+        public DateTimeOffset(int year, int month, int day, int hour, int minute, int second, int millisecond, System.Globalization.Calendar calendar, System.TimeSpan offset) { throw null;}
         public DateTimeOffset(int year, int month, int day, int hour, int minute, int second, int millisecond, System.TimeSpan offset) { throw new System.NotImplementedException(); }
         public DateTimeOffset(int year, int month, int day, int hour, int minute, int second, System.TimeSpan offset) { throw new System.NotImplementedException(); }
         public DateTimeOffset(long ticks, System.TimeSpan offset) { throw new System.NotImplementedException(); }
@@ -692,6 +693,9 @@ namespace System
         public System.TimeSpan Subtract(System.DateTimeOffset value) { return default(System.TimeSpan); }
         public System.DateTimeOffset Subtract(System.TimeSpan value) { return default(System.DateTimeOffset); }
         int System.IComparable.CompareTo(object obj) { return default(int); }
+        void System.Runtime.Serialization.IDeserializationCallback.OnDeserialization(object sender) { }
+        [System.Security.SecurityCriticalAttribute]
+        void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public long ToFileTime() { return default(long); }
         public System.DateTimeOffset ToLocalTime() { return default(System.DateTimeOffset); }
         public System.DateTimeOffset ToOffset(System.TimeSpan offset) { return default(System.DateTimeOffset); }
