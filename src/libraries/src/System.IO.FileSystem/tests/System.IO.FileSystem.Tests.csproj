@@ -56,6 +56,7 @@
     <Compile Include="FileStream\Name.cs" />
     <Compile Include="FileStream\CanWrite.cs" />
     <Compile Include="FileStream\CanRead.cs" />
+    <Compile Include="FileStream\CopyToAsync.cs" />
     <Compile Include="FileStream\Buffering_regression.cs" />
     <Compile Include="FileStream\Flush.cs" />
     <Compile Include="FileStream\Dispose.cs" />
