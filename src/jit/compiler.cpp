@@ -1188,14 +1188,14 @@ void Compiler::compShutdown()
     FILE* fout = jitstdout;
 
 #ifdef FEATURE_JIT_METHOD_PERF
-    if (compJitTimeLogFilename != NULL)
+    if (compJitTimeLogFilename != nullptr)
     {
-        // I assume that this will return NULL if it fails for some reason, and
-        // that...
         FILE* jitTimeLogFile = _wfopen(compJitTimeLogFilename, W("a"));
-        // ...Print will return silently with a NULL argument.
-        CompTimeSummaryInfo::s_compTimeSummary.Print(jitTimeLogFile);
-        fclose(jitTimeLogFile);
+        if (jitTimeLogFile != nullptr)
+        {
+            CompTimeSummaryInfo::s_compTimeSummary.Print(jitTimeLogFile);
+            fclose(jitTimeLogFile);
+        }
     }
 #endif // FEATURE_JIT_METHOD_PERF
 
@@ -1502,6 +1502,7 @@ void Compiler::compDisplayStaticSizes(FILE* fout)
     fprintf(fout, "Small tree node size        = %3u\n", TREE_NODE_SZ_SMALL);
 #endif // SMALL_TREE_NODES
     fprintf(fout, "Large tree node size        = %3u\n", TREE_NODE_SZ_LARGE);
+    fprintf(fout, "\n");
     fprintf(fout, "Size of GenTree             = %3u\n", sizeof(GenTree));
     fprintf(fout, "Size of GenTreeUnOp         = %3u\n", sizeof(GenTreeUnOp));
     fprintf(fout, "Size of GenTreeOp           = %3u\n", sizeof(GenTreeOp));
@@ -1544,6 +1545,17 @@ void Compiler::compDisplayStaticSizes(FILE* fout)
     fprintf(fout, "Size of GenTreeLabel        = %3u\n", sizeof(GenTreeLabel));
     fprintf(fout, "Size of GenTreePhiArg       = %3u\n", sizeof(GenTreePhiArg));
     fprintf(fout, "Size of GenTreePutArgStk    = %3u\n", sizeof(GenTreePutArgStk));
+    fprintf(fout, "Size of GenTreeCopyOrReload = %3u\n", sizeof(GenTreeCopyOrReload));
+    fprintf(fout, "Size of GenTreeAllocObj     = %3u\n", sizeof(GenTreeAllocObj));
+    fprintf(fout, "Size of GenTreeBlkOp        = %3u\n", sizeof(GenTreeBlkOp));
+    fprintf(fout, "Size of GenTreeCpBlk        = %3u\n", sizeof(GenTreeCpBlk));
+    fprintf(fout, "Size of GenTreeCpObj        = %3u\n", sizeof(GenTreeCpObj));
+    fprintf(fout, "Size of GenTreeArrIndex     = %3u\n", sizeof(GenTreeArrIndex));
+    fprintf(fout, "Size of GenTreeArrOffs      = %3u\n", sizeof(GenTreeArrOffs));
+    fprintf(fout, "Size of GenTreeInitBlk      = %3u\n", sizeof(GenTreeInitBlk));
+#ifdef FEATURE_SIMD
+    fprintf(fout, "Size of GenTreeSIMD         = %3u\n", sizeof(GenTreeSIMD));
+#endif
     fprintf(fout, "\n");
 #endif // MEASURE_NODE_SIZE
 
@@ -3828,14 +3840,14 @@ void Compiler::compSetOptimizationLevel()
     unsigned methHash = info.compMethodHash();
     char* lostr = getenv("opthashlo");
     unsigned methHashLo = 0;
-    if (lostr != NULL) 
+    if (lostr != NULL)
     {
         sscanf_s(lostr, "%x", &methHashLo);
         // methHashLo = (unsigned(atoi(lostr)) << 2);  // So we don't have to use negative numbers.
     }
     char* histr = getenv("opthashhi");
     unsigned methHashHi = UINT32_MAX;
-    if (histr != NULL) 
+    if (histr != NULL)
     {
         sscanf_s(histr, "%x", &methHashHi);
         // methHashHi = (unsigned(atoi(histr)) << 2);  // So we don't have to use negative numbers.
@@ -6954,7 +6966,7 @@ CritSecObject       CompTimeSummaryInfo::s_compTimeSummaryLock;
 CompTimeSummaryInfo CompTimeSummaryInfo::s_compTimeSummary;
 #endif // FEATURE_JIT_METHOD_PERF
 
-#if defined(FEATURE_JIT_METHOD_PERF) || DUMP_FLOWGRAPHS
+#if defined(FEATURE_JIT_METHOD_PERF) || DUMP_FLOWGRAPHS || defined(FEATURE_TRACELOGGING)
 const char* PhaseNames[] = {
 #define CompPhaseNameMacro(enum_nm, string_nm, short_nm, hasChildren, parent) string_nm,
 #include "compphases.h"
@@ -7086,8 +7098,14 @@ void CompTimeSummaryInfo::Print(FILE* f)
                     ((double)m_total.m_cyclesByPhase[i]) / 1000000.0, phase_tot_ms, (phase_tot_ms * 100.0 / totTime_ms),
                     phase_max_ms);
         }
-        fprintf(f, "\n  'End phase slop' should be very small (if not, there's unattributed time): %9.3f Mcycles.\n",
-                m_total.m_parentPhaseEndSlop);
+
+        // Show slop if it's over a certain percentage of the total
+        double pslop_pct = 100.0 * m_total.m_parentPhaseEndSlop * 1000.0 / countsPerSec / totTime_ms;
+        if (pslop_pct >= 1.0)
+        {
+            fprintf(f, "\n  'End phase slop' should be very small (if not, there's unattributed time): %9.3f Mcycles = %3.1f%% of total.\n\n",
+                    m_total.m_parentPhaseEndSlop / 1000000.0, pslop_pct);
+        }
     }
     if (m_numFilteredMethods > 0)
     {
@@ -7121,8 +7139,13 @@ void CompTimeSummaryInfo::Print(FILE* f)
                     ((double)m_filtered.m_cyclesByPhase[i]) / 1000000.0, phase_tot_ms,
                     (phase_tot_ms * 100.0 / totTime_ms));
         }
-        fprintf(f, "\n  'End phase slop' should be very small (if not, there's unattributed time): %9.3f Mcycles.\n",
+
+        double fslop_ms = m_filtered.m_parentPhaseEndSlop * 1000.0 / countsPerSec;
+        if (fslop_ms > 1.0)
+        {
+            fprintf(f, "\n  'End phase slop' should be very small (if not, there's unattributed time): %9.3f Mcycles.\n",
                 m_filtered.m_parentPhaseEndSlop);
+        }
     }
 }
 
@@ -7209,23 +7232,26 @@ void JitTimer::PrintCsvHeader()
 
         // Use write mode, so we rewrite the file, and retain only the last compiled process/dll.
         // Ex: ngen install mscorlib won't print stats for "ngen" but for "mscorsvw"
-        FILE* fp = _wfopen(jitTimeLogCsv, W("w"));
-        fprintf(fp, "\"Method Name\",");
-        fprintf(fp, "\"Method Index\",");
-        fprintf(fp, "\"IL Bytes\",");
-        fprintf(fp, "\"Basic Blocks\",");
-        fprintf(fp, "\"Opt Level\",");
-        fprintf(fp, "\"Loops Cloned\",");
-
-        for (int i = 0; i < PHASE_NUMBER_OF; i++)
+        fp = _wfopen(jitTimeLogCsv, W("w"));
+        if (fp != nullptr)
         {
-            fprintf(fp, "\"%s\",", PhaseNames[i]);
+            fprintf(fp, "\"Method Name\",");
+            fprintf(fp, "\"Method Index\",");
+            fprintf(fp, "\"IL Bytes\",");
+            fprintf(fp, "\"Basic Blocks\",");
+            fprintf(fp, "\"Opt Level\",");
+            fprintf(fp, "\"Loops Cloned\",");
+
+            for (int i = 0; i < PHASE_NUMBER_OF; i++)
+            {
+                fprintf(fp, "\"%s\",", PhaseNames[i]);
+            }
+
+            InlineStrategy::DumpCsvHeader(fp);
+
+            fprintf(fp, "\"Total Cycles\",");
+            fprintf(fp, "\"CPS\"\n");
         }
-
-        InlineStrategy::DumpCsvHeader(fp);
-
-        fprintf(fp, "\"Total Cycles\",");
-        fprintf(fp, "\"CPS\"\n");
     }
     fclose(fp);
 }
@@ -7331,6 +7357,8 @@ void Compiler::MemStats::PrintByKind(FILE* f)
 void Compiler::AggregateMemStats::Print(FILE* f)
 {
     fprintf(f, "For %9u methods:\n", nMethods);
+    if (nMethods == 0)
+        return;
     fprintf(f, "  count:       %12u (avg %7u per method)\n", allocCnt, allocCnt / nMethods);
     fprintf(f, "  alloc size : %12llu (avg %7llu per method)\n", allocSz, allocSz / nMethods);
     fprintf(f, "  max alloc  : %12llu\n", allocSzMax);

@@ -466,15 +466,15 @@ typedef ptrdiff_t ssize_t;
 #define MEASURE_PTRTAB_SIZE 0 // Collect stats about GC pointer table allocations.
 #define EMITTER_STATS 0       // Collect stats on the emitter.
 
-#define VERBOSE_SIZES 0  // Always display GC info sizes. If set, DISPLAY_SIZES must also be set.
-#define VERBOSE_VERIFY 0 // Dump additional information when verifying code. Useful to debug verification bugs.
+#define VERBOSE_SIZES 0       // Always display GC info sizes. If set, DISPLAY_SIZES must also be set.
+#define VERBOSE_VERIFY 0      // Dump additional information when verifying code. Useful to debug verification bugs.
 
 #ifdef DEBUG
-#define MEASURE_MEM_ALLOC 1 // Collect memory allocation stats.
-#define LOOP_HOIST_STATS 1  // Collect loop hoisting stats.
+#define MEASURE_MEM_ALLOC 1   // Collect memory allocation stats.
+#define LOOP_HOIST_STATS 1    // Collect loop hoisting stats.
 #else
-#define MEASURE_MEM_ALLOC 0 // You can set this to 1 to get memory stats in retail, as well
-#define LOOP_HOIST_STATS 0  // You can set this to 1 to get loop hoist stats in retail, as well
+#define MEASURE_MEM_ALLOC 0   // You can set this to 1 to get memory stats in retail, as well
+#define LOOP_HOIST_STATS 0    // You can set this to 1 to get loop hoist stats in retail, as well
 #endif
 
 /*****************************************************************************/
