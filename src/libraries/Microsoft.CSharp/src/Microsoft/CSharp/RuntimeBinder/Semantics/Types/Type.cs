@@ -446,9 +446,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         // and returns the result.
         public CType GetNakedType(bool fStripNub)
         {
-            if (this == null)
-                return null;
-
             for (CType type = this; ;)
             {
                 switch (type.GetTypeKind())
@@ -488,8 +485,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         public CType StripNubs()
         {
-            if (this == null)
-                return null;
             CType type;
             for (type = this; type.IsNullableType(); type = type.AsNullableType().GetUnderlyingType())
                 ;
@@ -498,8 +493,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         public CType StripNubs(out int pcnub)
         {
             pcnub = 0;
-            if (this == null)
-                return null;
             CType type;
             for (type = this; type.IsNullableType(); type = type.AsNullableType().GetUnderlyingType())
                 (pcnub)++;
@@ -599,8 +592,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
         public bool isPredefType(PredefinedType pt)
         {
-            if (this == null)
-                return false;
             if (this.IsAggregateType())
                 return this.AsAggregateType().getAggregate().IsPredefined() && this.AsAggregateType().getAggregate().GetPredefType() == pt;
             return (this.IsVoidType() && pt == PredefinedType.PT_VOID);
@@ -627,9 +618,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         public bool isStaticClass()
         {
-            if (this == null)
-                return false;
-
             AggregateSymbol agg = this.GetNakedAgg(false);
             if (agg == null)
                 return false;
