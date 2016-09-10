@@ -946,8 +946,8 @@ public:
 
 #define GTF_ARRLEN_ARR_IDX 0x80000000 // GT_ARR_LENGTH -- Length which feeds into an array index expression
 
-#define GTF_LIST_AGGREGATE 0x80000000 // GT_LIST -- Indicates that this list should be treated as an
-                                      //            anonymous aggregate value (e.g. a multi-value argument).
+#define GTF_FIELD_LIST_HEAD 0x80000000 // GT_FIELD_LIST -- Indicates that this is the first field in a list of
+                                       //                  struct fields constituting a single call argument.
 
 //----------------------------------------------------------------
 
@@ -1015,9 +1015,9 @@ public:
             return gtType != TYP_VOID;
         }
 
-        if (gtOper == GT_LIST)
+        if (gtOper == GT_FIELD_LIST)
         {
-            return (gtFlags & GTF_LIST_AGGREGATE) != 0;
+            return (gtFlags & GTF_FIELD_LIST_HEAD) != 0;
         }
 
         return true;
@@ -1037,14 +1037,14 @@ public:
                 return IsNothingNode();
 
             case GT_ARGPLACE:
-                // ARGPLACE nodes may not be present in a block's LIR sequence, but they may
+            case GT_LIST:
+                // ARGPLACE and LIST nodes may not be present in a block's LIR sequence, but they may
                 // be present as children of an LIR node.
                 return (gtNext == nullptr) && (gtPrev == nullptr);
 
-            case GT_LIST:
-                // LIST nodes may only be present in an LIR sequence if they represent aggregates.
-                // They are always allowed, however, as children of an LIR node.
-                return ((gtFlags & GTF_LIST_AGGREGATE) != 0) || ((gtNext == nullptr) && (gtPrev == nullptr));
+            case GT_FIELD_LIST:
+                // Only the head of the FIELD_LIST is present in the block's LIR sequence.
+                return (((gtFlags & GTF_FIELD_LIST_HEAD) != 0) || ((gtNext == nullptr) && (gtPrev == nullptr)));
 
             case GT_ADDR:
             {
@@ -1426,9 +1426,9 @@ public:
         return OperIsSIMD(gtOper);
     }
 
-    bool OperIsAggregate()
+    bool OperIsFieldListHead()
     {
-        return (gtOper == GT_LIST) && ((gtFlags & GTF_LIST_AGGREGATE) != 0);
+        return (gtOper == GT_FIELD_LIST) && ((gtFlags & GTF_FIELD_LIST_HEAD) != 0);
     }
 
     bool OperIsConditionalJump() const
@@ -1468,6 +1468,7 @@ public:
         switch (gtOper)
         {
             case GT_LIST:
+            case GT_FIELD_LIST:
             case GT_INTRINSIC:
             case GT_LEA:
 #ifdef FEATURE_SIMD
@@ -1480,7 +1481,7 @@ public:
     }
 
     static inline bool RequiresNonNullOp2(genTreeOps oper);
-    bool IsListForMultiRegArg();
+    bool IsValidCallArgument();
 #endif // DEBUG
 
     inline bool IsFPZero();
@@ -1488,9 +1489,34 @@ public:
 
     inline bool IsBoxedValue();
 
-    bool IsList() const
+    static bool OperIsList(genTreeOps gtOper)
     {
         return gtOper == GT_LIST;
+    }
+
+    bool OperIsList() const
+    {
+        return OperIsList(gtOper);
+    }
+
+    static bool OperIsFieldList(genTreeOps gtOper)
+    {
+        return gtOper == GT_FIELD_LIST;
+    }
+
+    bool OperIsFieldList() const
+    {
+        return OperIsFieldList(gtOper);
+    }
+
+    static bool OperIsAnyList(genTreeOps gtOper)
+    {
+        return OperIsList(gtOper) || OperIsFieldList(gtOper);
+    }
+
+    bool OperIsAnyList() const
+    {
+        return OperIsAnyList(gtOper); 
     }
 
     inline GenTreePtr MoveNext();
@@ -1956,7 +1982,7 @@ class GenTreeUseEdgeIterator final
 #ifdef FEATURE_SIMD
     void MoveToNextSIMDUseEdge();
 #endif
-    void MoveToNextAggregateUseEdge();
+    void MoveToNextFieldUseEdge();
 
 public:
     GenTreeUseEdgeIterator();
@@ -2654,18 +2680,13 @@ struct GenTreeField : public GenTree
 // method names for the arguments.
 struct GenTreeArgList : public GenTreeOp
 {
-    bool IsAggregate() const
-    {
-        return (gtFlags & GTF_LIST_AGGREGATE) != 0;
-    }
-
     GenTreePtr& Current()
     {
         return gtOp1;
     }
     GenTreeArgList*& Rest()
     {
-        assert(gtOp2 == nullptr || gtOp2->OperGet() == GT_LIST);
+        assert(gtOp2 == nullptr || gtOp2->OperIsAnyList());
         return *reinterpret_cast<GenTreeArgList**>(&gtOp2);
     }
 
@@ -2679,20 +2700,68 @@ struct GenTreeArgList : public GenTreeOp
     {
     }
 
-    GenTreeArgList(GenTreePtr arg, GenTreeArgList* rest) : GenTreeOp(GT_LIST, TYP_VOID, arg, rest)
+    GenTreeArgList(GenTreePtr arg, GenTreeArgList* rest) : GenTreeArgList(GT_LIST, arg, rest)
     {
-        // With structs passed in multiple args we could have an arg
-        // GT_LIST containing a list of LCL_FLDs, see IsListForMultiRegArg()
-        //
-        assert((arg != nullptr) && ((!arg->IsList()) || (arg->IsListForMultiRegArg())));
+    }
+
+    GenTreeArgList(genTreeOps oper, GenTreePtr arg, GenTreeArgList* rest) : GenTreeOp(oper, TYP_VOID, arg, rest)
+    {
+        assert(OperIsAnyList(oper));
+        assert((arg != nullptr) && arg->IsValidCallArgument());
         gtFlags |= arg->gtFlags & GTF_ALL_EFFECT;
         if (rest != nullptr)
         {
             gtFlags |= rest->gtFlags & GTF_ALL_EFFECT;
         }
     }
+};
 
-    GenTreeArgList* Prepend(Compiler* compiler, GenTree* element);
+// Represents a list of fields constituting a struct, when it is passed as an argument.
+// The first field of the struct is marked with the GTF_FIELD_LIST_HEAD flag, and
+// in LIR form it is the only member of the list that is threaded into the execution
+// order.
+// It differs from the GenTreeArgList in a couple of ways:
+// - The entire list represents a single argument.
+// - It contains additional fields to provide the offset and type of the field.
+//
+struct GenTreeFieldList : public GenTreeArgList
+{
+    unsigned  gtFieldOffset;
+    var_types gtFieldType;
+
+    bool IsFieldListHead() const
+    {
+        return (gtFlags & GTF_FIELD_LIST_HEAD) != 0;
+    }
+
+#if DEBUGGABLE_GENTREE
+    GenTreeFieldList() : GenTreeArgList()
+    {
+    }
+#endif
+
+    GenTreeFieldList*& Rest()
+    {
+        assert(gtOp2 == nullptr || gtOp2->OperGet() == GT_FIELD_LIST);
+        return *reinterpret_cast<GenTreeFieldList**>(&gtOp2);
+    }
+
+    GenTreeFieldList(GenTreePtr arg, unsigned fieldOffset, var_types fieldType, GenTreeFieldList* prevList)
+        : GenTreeArgList(GT_FIELD_LIST, arg, nullptr)
+    {
+        // While GT_FIELD_LIST can be in a GT_LIST, GT_FIELD_LISTs cannot be nested or have GT_LISTs.
+        assert(!arg->OperIsAnyList());
+        gtFieldOffset = fieldOffset;
+        gtFieldType = fieldType;
+        if (prevList == nullptr)
+        {
+            gtFlags |= GTF_FIELD_LIST_HEAD;
+        }
+        else
+        {
+            prevList->gtOp2 = this;
+        }
+    }
 };
 
 // There was quite a bit of confusion in the code base about which of gtOp1 and gtOp2 was the
@@ -3385,8 +3454,11 @@ struct GenTreeCall final : public GenTree
 
     void ReplaceCallOperand(GenTree** operandUseEdge, GenTree* replacement);
 
+    bool AreArgsComplete() const;
+
     GenTreeCall(var_types type) : GenTree(GT_CALL, type)
     {
+        fgArgInfo = nullptr;
     }
 #if DEBUGGABLE_GENTREE
     GenTreeCall() : GenTree()
@@ -4375,20 +4447,20 @@ struct GenTreePutArgStk : public GenTreeUnOp
 
     GenTreePutArgStk(genTreeOps oper,
                      var_types  type,
-                     unsigned slotNum FEATURE_UNIX_AMD64_STRUCT_PASSING_ONLY_ARG(unsigned numSlots)
-                         FEATURE_UNIX_AMD64_STRUCT_PASSING_ONLY_ARG(bool isStruct),
+                     unsigned slotNum PUT_STRUCT_ARG_STK_ONLY_ARG(unsigned numSlots)
+                         PUT_STRUCT_ARG_STK_ONLY_ARG(bool isStruct),
                      bool _putInIncomingArgArea = false DEBUGARG(GenTreePtr callNode = nullptr)
                          DEBUGARG(bool largeNode = false))
         : GenTreeUnOp(oper, type DEBUGARG(largeNode))
         , gtSlotNum(slotNum)
         , putInIncomingArgArea(_putInIncomingArgArea)
-#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+#ifdef FEATURE_PUT_STRUCT_ARG_STK
         , gtPutArgStkKind(PutArgStkKindInvalid)
         , gtNumSlots(numSlots)
         , gtIsStruct(isStruct)
         , gtNumberReferenceSlots(0)
         , gtGcPtrs(nullptr)
-#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
+#endif // FEATURE_PUT_STRUCT_ARG_STK
     {
 #ifdef DEBUG
         gtCall = callNode;
@@ -4398,20 +4470,20 @@ struct GenTreePutArgStk : public GenTreeUnOp
     GenTreePutArgStk(genTreeOps oper,
                      var_types  type,
                      GenTreePtr op1,
-                     unsigned slotNum FEATURE_UNIX_AMD64_STRUCT_PASSING_ONLY_ARG(unsigned numSlots)
-                         FEATURE_UNIX_AMD64_STRUCT_PASSING_ONLY_ARG(bool isStruct),
+                     unsigned slotNum PUT_STRUCT_ARG_STK_ONLY_ARG(unsigned numSlots)
+                         PUT_STRUCT_ARG_STK_ONLY_ARG(bool isStruct),
                      bool _putInIncomingArgArea = false DEBUGARG(GenTreePtr callNode = nullptr)
                          DEBUGARG(bool largeNode = false))
         : GenTreeUnOp(oper, type, op1 DEBUGARG(largeNode))
         , gtSlotNum(slotNum)
         , putInIncomingArgArea(_putInIncomingArgArea)
-#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+#ifdef FEATURE_PUT_STRUCT_ARG_STK
         , gtPutArgStkKind(PutArgStkKindInvalid)
         , gtNumSlots(numSlots)
         , gtIsStruct(isStruct)
         , gtNumberReferenceSlots(0)
         , gtGcPtrs(nullptr)
-#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
+#endif // FEATURE_PUT_STRUCT_ARG_STK
     {
 #ifdef DEBUG
         gtCall = callNode;
@@ -4422,18 +4494,18 @@ struct GenTreePutArgStk : public GenTreeUnOp
 
     GenTreePutArgStk(genTreeOps oper,
                      var_types  type,
-                     unsigned slotNum FEATURE_UNIX_AMD64_STRUCT_PASSING_ONLY_ARG(unsigned numSlots)
-                         FEATURE_UNIX_AMD64_STRUCT_PASSING_ONLY_ARG(bool isStruct) DEBUGARG(GenTreePtr callNode = NULL)
+                     unsigned slotNum PUT_STRUCT_ARG_STK_ONLY_ARG(unsigned numSlots)
+                         PUT_STRUCT_ARG_STK_ONLY_ARG(bool isStruct) DEBUGARG(GenTreePtr callNode = NULL)
                              DEBUGARG(bool largeNode = false))
         : GenTreeUnOp(oper, type DEBUGARG(largeNode))
         , gtSlotNum(slotNum)
-#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+#ifdef FEATURE_PUT_STRUCT_ARG_STK
         , gtPutArgStkKind(PutArgStkKindInvalid)
         , gtNumSlots(numSlots)
         , gtIsStruct(isStruct)
         , gtNumberReferenceSlots(0)
         , gtGcPtrs(nullptr)
-#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
+#endif // FEATURE_PUT_STRUCT_ARG_STK
     {
 #ifdef DEBUG
         gtCall = callNode;
@@ -4443,18 +4515,18 @@ struct GenTreePutArgStk : public GenTreeUnOp
     GenTreePutArgStk(genTreeOps oper,
                      var_types  type,
                      GenTreePtr op1,
-                     unsigned slotNum FEATURE_UNIX_AMD64_STRUCT_PASSING_ONLY_ARG(unsigned numSlots)
-                         FEATURE_UNIX_AMD64_STRUCT_PASSING_ONLY_ARG(bool isStruct) DEBUGARG(GenTreePtr callNode = NULL)
+                     unsigned slotNum PUT_STRUCT_ARG_STK_ONLY_ARG(unsigned numSlots)
+                         PUT_STRUCT_ARG_STK_ONLY_ARG(bool isStruct) DEBUGARG(GenTreePtr callNode = NULL)
                              DEBUGARG(bool largeNode = false))
         : GenTreeUnOp(oper, type, op1 DEBUGARG(largeNode))
         , gtSlotNum(slotNum)
-#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+#ifdef FEATURE_PUT_STRUCT_ARG_STK
         , gtPutArgStkKind(PutArgStkKindInvalid)
         , gtNumSlots(numSlots)
         , gtIsStruct(isStruct)
         , gtNumberReferenceSlots(0)
         , gtGcPtrs(nullptr)
-#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
+#endif // FEATURE_PUT_STRUCT_ARG_STK
     {
 #ifdef DEBUG
         gtCall = callNode;
@@ -4467,14 +4539,14 @@ struct GenTreePutArgStk : public GenTreeUnOp
         return gtSlotNum * TARGET_POINTER_SIZE;
     }
 
-#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+#ifdef FEATURE_PUT_STRUCT_ARG_STK
     unsigned getArgSize()
     {
         return gtNumSlots * TARGET_POINTER_SIZE;
     }
-#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
+#endif // FEATURE_PUT_STRUCT_ARG_STK
 
-#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+#ifdef FEATURE_PUT_STRUCT_ARG_STK
     //------------------------------------------------------------------------
     // setGcPointers: Sets the number of references and the layout of the struct object returned by the VM.
     //
@@ -4496,15 +4568,17 @@ struct GenTreePutArgStk : public GenTreeUnOp
         gtNumberReferenceSlots = numPointers;
         gtGcPtrs               = pointers;
     }
-#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
+#endif // FEATURE_PUT_STRUCT_ARG_STK
 
 #ifdef DEBUG
     GenTreePtr gtCall; // the call node to which this argument belongs
 #endif
 
-#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+#ifdef FEATURE_PUT_STRUCT_ARG_STK
     // Instruction selection: during codegen time, what code sequence we will be using
     // to encode this operation.
+    // TODO-Throughput: The following information should be obtained from the child
+    // block node.
 
     enum PutArgStkKind : __int8{
         PutArgStkKindInvalid, PutArgStkKindRepInstr, PutArgStkKindUnroll,
@@ -4516,7 +4590,7 @@ struct GenTreePutArgStk : public GenTreeUnOp
     bool     gtIsStruct;             // This stack arg is a struct.
     unsigned gtNumberReferenceSlots; // Number of reference slots.
     BYTE*    gtGcPtrs;               // gcPointers
-#endif                               // FEATURE_UNIX_AMD64_STRUCT_PASSING
+#endif                               // FEATURE_PUT_STRUCT_ARG_STK
 
 #if DEBUGGABLE_GENTREE
     GenTreePutArgStk() : GenTreeUnOp()
@@ -4801,26 +4875,14 @@ inline bool GenTree::IsBoxedValue()
 
 inline GenTreePtr GenTree::MoveNext()
 {
-    assert(IsList());
+    assert(OperIsAnyList());
     return gtOp.gtOp2;
 }
 
 #ifdef DEBUG
 //------------------------------------------------------------------------
-// IsListForMultiRegArg: Given an GenTree node that represents an argument
-//                       enforce (or don't enforce) the following invariant.
-//
-// For LEGACY_BACKEND or architectures that don't support MultiReg args
-// we don't allow a GT_LIST at all.
-//
-// Currently for AMD64 UNIX we allow a limited case where a GT_LIST is
-// allowed but every element must be a GT_LCL_FLD.
-//
-// For the future targets that allow for Multireg args (and this includes
-//  the current ARM64 target) we allow a GT_LIST of arbitrary nodes, these
-//  would typically start out as GT_LCL_VARs or GT_LCL_FLDS or GT_INDs,
-//  but could be changed into constants or GT_COMMA trees by the later
-//  optimization phases.
+// IsValidCallArgument: Given an GenTree node that represents an argument
+//                      enforce (or don't enforce) the following invariant.
 //
 // Arguments:
 //    instance method for a GenTree node
@@ -4829,18 +4891,29 @@ inline GenTreePtr GenTree::MoveNext()
 //    true:      the GenTree node is accepted as a valid argument
 //    false:     the GenTree node is not accepted as a valid argumeny
 //
-inline bool GenTree::IsListForMultiRegArg()
+// Notes:
+//    For targets that don't support arguments as a list of fields, we do not support GT_FIELD_LIST.
+//
+//    Currently for AMD64 UNIX we allow a limited case where a GT_FIELD_LIST is
+//    allowed but every element must be a GT_LCL_FLD.
+//
+//    For the future targets that allow for Multireg args (and this includes the current ARM64 target),
+//    or that allow for passing promoted structs, we allow a GT_FIELD_LIST of arbitrary nodes.
+//    These would typically start out as GT_LCL_VARs or GT_LCL_FLDS or GT_INDs,
+//    but could be changed into constants or GT_COMMA trees by the later
+//    optimization phases.
+
+inline bool GenTree::IsValidCallArgument()
 {
-    if (!IsList())
+    if (OperIsList())
     {
-        // We don't have a GT_LIST, so just return true.
-        return true;
+        // GT_FIELD_LIST is the only list allowed.
+        return false;
     }
-    else // We do have a GT_LIST
+    if (OperIsFieldList())
     {
 #if defined(LEGACY_BACKEND) || !FEATURE_MULTIREG_ARGS
-
-        // Not allowed to have a GT_LIST for an argument
+        // Not allowed to have a GT_FIELD_LIST for an argument
         // unless we have a RyuJIT backend and FEATURE_MULTIREG_ARGS
 
         return false;
@@ -4848,7 +4921,7 @@ inline bool GenTree::IsListForMultiRegArg()
 #else // we have RyuJIT backend and FEATURE_MULTIREG_ARGS
 
 #ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
-        // For UNIX ABI we currently only allow a GT_LIST of GT_LCL_FLDs nodes
+        // For UNIX ABI we currently only allow a GT_FIELD_LIST of GT_LCL_FLDs nodes
         GenTree* gtListPtr = this;
         while (gtListPtr != nullptr)
         {
@@ -4866,25 +4939,27 @@ inline bool GenTree::IsListForMultiRegArg()
         }
 #endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
 
-        // Note that for non-UNIX ABI the GT_LIST may contain any node
+        // Note that for non-UNIX ABI the GT_FIELD_LIST may contain any node
         //
-        // We allow this GT_LIST as an argument
+        // We allow this GT_FIELD_LIST as an argument
         return true;
 
-#endif // RyuJIT backend and FEATURE_MULTIREG_ARGS
+#endif // FEATURE_MULTIREG_ARGS
     }
+    // We don't have either kind of list, so it satisfies the invariant.
+    return true;
 }
 #endif // DEBUG
 
 inline GenTreePtr GenTree::Current()
 {
-    assert(IsList());
+    assert(OperIsAnyList());
     return gtOp.gtOp1;
 }
 
 inline GenTreePtr* GenTree::pCurrent()
 {
-    assert(IsList());
+    assert(OperIsAnyList());
     return &(gtOp.gtOp1);
 }
 

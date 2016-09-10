@@ -259,6 +259,15 @@ struct CLRConfig
 #define FEATURE_UNIX_AMD64_STRUCT_PASSING_ONLY(x)
 #endif // defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
 
+#if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)|| (defined(_TARGET_X86_) && !defined(LEGACY_BACKEND))
+#define FEATURE_PUT_STRUCT_ARG_STK 1
+#define PUT_STRUCT_ARG_STK_ONLY_ARG(x) , x
+#define PUT_STRUCT_ARG_STK_ONLY(x) x
+#else // !(defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)|| (defined(_TARGET_X86_) && !defined(LEGACY_BACKEND)))
+#define PUT_STRUCT_ARG_STK_ONLY_ARG(x)
+#define PUT_STRUCT_ARG_STK_ONLY(x)
+#endif // !(defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)|| (defined(_TARGET_X86_) && !defined(LEGACY_BACKEND)))
+
 #if defined(UNIX_AMD64_ABI)
 #define UNIX_AMD64_ABI_ONLY_ARG(x) , x
 #define UNIX_AMD64_ABI_ONLY(x) x

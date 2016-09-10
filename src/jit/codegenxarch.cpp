@@ -292,9 +292,9 @@ void CodeGen::genEmitGSCookieCheck(bool pushReg)
 #endif // !_TARGET_X86_
     }
 
-    regMaskTP   byrefPushedRegs = RBM_NONE;
-    regMaskTP   norefPushedRegs = RBM_NONE;
-    regMaskTP   pushedRegs      = RBM_NONE;
+    regMaskTP byrefPushedRegs = RBM_NONE;
+    regMaskTP norefPushedRegs = RBM_NONE;
+    regMaskTP pushedRegs      = RBM_NONE;
 
     if (compiler->gsGlobalSecurityCookieAddr == nullptr)
     {
@@ -1315,9 +1315,9 @@ void CodeGen::genCodeForDivMod(GenTreeOp* treeNode)
     emitter*   emit       = getEmitter();
 
 #ifdef _TARGET_X86_
-    bool dividendIsLong = varTypeIsLong(dividend->TypeGet());
-    GenTree* dividendLo = nullptr;
-    GenTree* dividendHi = nullptr;
+    bool     dividendIsLong = varTypeIsLong(dividend->TypeGet());
+    GenTree* dividendLo     = nullptr;
+    GenTree* dividendHi     = nullptr;
 
     if (dividendIsLong)
     {
@@ -1386,17 +1386,17 @@ void CodeGen::genCodeForDivMod(GenTreeOp* treeNode)
         }
         else
 #endif
-        if (dividend->gtRegNum != REG_RAX)
+            if (dividend->gtRegNum != REG_RAX)
         {
             // dividend must be in RAX
             inst_RV_RV(INS_mov, REG_RAX, dividend->gtRegNum, targetType);
         }
 
-        // zero or sign extend rax to rdx
 #ifdef _TARGET_X86_
         if (!dividendIsLong)
 #endif
         {
+            // zero or sign extend rax to rdx
             if (oper == GT_UMOD || oper == GT_UDIV)
             {
                 instGen_Set_Reg_To_Zero(EA_PTRSIZE, REG_EDX);
@@ -2567,8 +2567,8 @@ void CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
 
             assert(compiler->compCurBB->bbJumpKind == BBJ_COND);
 
-            CompareKind compareKind = ((jcc->gtFlags & GTF_UNSIGNED) != 0) ? CK_UNSIGNED : CK_SIGNED;
-            emitJumpKind jumpKind   = genJumpKindForOper(jcc->gtCondition, compareKind);
+            CompareKind  compareKind = ((jcc->gtFlags & GTF_UNSIGNED) != 0) ? CK_UNSIGNED : CK_SIGNED;
+            emitJumpKind jumpKind    = genJumpKindForOper(jcc->gtCondition, compareKind);
 
             inst_JMP(jumpKind, compiler->compCurBB->bbJumpDest);
         }
@@ -2660,6 +2660,7 @@ void CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
         break;
 
         case GT_LIST:
+        case GT_FIELD_LIST:
         case GT_ARGPLACE:
             // Nothing to do
             break;
@@ -3848,21 +3849,145 @@ void CodeGen::genCodeForCpBlkRepMovs(GenTreeBlk* cpBlkNode)
     instGen(INS_r_movsb);
 }
 
-#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+#ifdef FEATURE_PUT_STRUCT_ARG_STK
+//------------------------------------------------------------------------
+// CodeGen::genMove8IfNeeded: Conditionally move 8 bytes of a struct to the argument area
+//
+// Arguments:
+//    size       - The size of bytes remaining to be moved
+//    longTmpReg - The tmp register to be used for the long value
+//    srcAddr    - The address of the source struct
+//    offset     - The current offset being copied
+//
+// Return Value:
+//    Returns the number of bytes moved (8 or 0).
+//
+// Notes:
+//    This is used in the PutArgStkKindUnroll case, to move any bytes that are
+//    not an even multiple of 16.
+//    On x86, longTmpReg must be an xmm reg; on x64 it must be an integer register.
+//    This is checked by genStoreRegToStackArg.
+//
+int CodeGen::genMove8IfNeeded(unsigned size, regNumber longTmpReg, GenTree* srcAddr, unsigned offset)
+{
+#ifdef _TARGET_X86_
+    instruction longMovIns = INS_movq;
+#else  // !_TARGET_X86_
+    instruction longMovIns = INS_mov;
+#endif // !_TARGET_X86_
+    if ((size & 8) != 0)
+    {
+        genCodeForLoadOffset(longMovIns, EA_8BYTE, longTmpReg, srcAddr, offset);
+        genStoreRegToStackArg(TYP_LONG, longTmpReg, offset);
+        return 8;
+    }
+    return 0;
+}
+
+//------------------------------------------------------------------------
+// CodeGen::genMove4IfNeeded: Conditionally move 4 bytes of a struct to the argument area
+//
+// Arguments:
+//    size      - The size of bytes remaining to be moved
+//    intTmpReg - The tmp register to be used for the long value
+//    srcAddr   - The address of the source struct
+//    offset    - The current offset being copied
+//
+// Return Value:
+//    Returns the number of bytes moved (4 or 0).
+//
+// Notes:
+//    This is used in the PutArgStkKindUnroll case, to move any bytes that are
+//    not an even multiple of 16.
+//    intTmpReg must be an integer register.
+//    This is checked by genStoreRegToStackArg.
+//
+int CodeGen::genMove4IfNeeded(unsigned size, regNumber intTmpReg, GenTree* srcAddr, unsigned offset)
+{
+    if ((size & 4) != 0)
+    {
+        genCodeForLoadOffset(INS_mov, EA_4BYTE, intTmpReg, srcAddr, offset);
+        genStoreRegToStackArg(TYP_INT, intTmpReg, offset);
+        return 4;
+    }
+    return 0;
+}
+
+//------------------------------------------------------------------------
+// CodeGen::genMove2IfNeeded: Conditionally move 2 bytes of a struct to the argument area
+//
+// Arguments:
+//    size      - The size of bytes remaining to be moved
+//    intTmpReg - The tmp register to be used for the long value
+//    srcAddr   - The address of the source struct
+//    offset    - The current offset being copied
+//
+// Return Value:
+//    Returns the number of bytes moved (2 or 0).
+//
+// Notes:
+//    This is used in the PutArgStkKindUnroll case, to move any bytes that are
+//    not an even multiple of 16.
+//    intTmpReg must be an integer register.
+//    This is checked by genStoreRegToStackArg.
+//
+int CodeGen::genMove2IfNeeded(unsigned size, regNumber intTmpReg, GenTree* srcAddr, unsigned offset)
+{
+    if ((size & 2) != 0)
+    {
+        genCodeForLoadOffset(INS_mov, EA_2BYTE, intTmpReg, srcAddr, offset);
+        genStoreRegToStackArg(TYP_SHORT, intTmpReg, offset);
+        return 2;
+    }
+    return 0;
+}
+
+//------------------------------------------------------------------------
+// CodeGen::genMove1IfNeeded: Conditionally move 1 byte of a struct to the argument area
+//
+// Arguments:
+//    size      - The size of bytes remaining to be moved
+//    intTmpReg - The tmp register to be used for the long value
+//    srcAddr   - The address of the source struct
+//    offset    - The current offset being copied
+//
+// Return Value:
+//    Returns the number of bytes moved (1 or 0).
+//
+// Notes:
+//    This is used in the PutArgStkKindUnroll case, to move any bytes that are
+//    not an even multiple of 16.
+//    intTmpReg must be an integer register.
+//    This is checked by genStoreRegToStackArg.
+//
+int CodeGen::genMove1IfNeeded(unsigned size, regNumber intTmpReg, GenTree* srcAddr, unsigned offset)
+{
+
+    if ((size & 1) != 0)
+    {
+        genCodeForLoadOffset(INS_mov, EA_1BYTE, intTmpReg, srcAddr, offset);
+        genStoreRegToStackArg(TYP_BYTE, intTmpReg, offset);
+        return 1;
+    }
+    return 0;
+}
 
 //---------------------------------------------------------------------------------------------------------------//
 // genStructPutArgUnroll: Generates code for passing a struct arg on stack by value using loop unrolling.
 //
 // Arguments:
 //     putArgNode  - the PutArgStk tree.
-//     baseVarNum  - the base var number, relative to which the by-val struct will be copied on the stack.
+//
+// Notes:
+//     m_stkArgVarNum must be set to the base var number, relative to which the by-val struct will be copied to the
+//     stack.
 //
 // TODO-Amd64-Unix: Try to share code with copyblk.
 //      Need refactoring of copyblk before it could be used for putarg_stk.
 //      The difference for now is that a putarg_stk contains its children, while cpyblk does not.
 //      This creates differences in code. After some significant refactoring it could be reused.
 //
-void CodeGen::genStructPutArgUnroll(GenTreePutArgStk* putArgNode, unsigned baseVarNum)
+void CodeGen::genStructPutArgUnroll(GenTreePutArgStk* putArgNode)
 {
     // We will never call this method for SIMD types, which are stored directly
     // in genPutStructArgStk().
@@ -3889,14 +4014,40 @@ void CodeGen::genStructPutArgUnroll(GenTreePutArgStk* putArgNode, unsigned baseV
 
     unsigned offset = 0;
 
+    regNumber xmmTmpReg  = REG_NA;
+    regNumber intTmpReg  = REG_NA;
+    regNumber longTmpReg = REG_NA;
+#ifdef _TARGET_X86_
+    if (size >= 8)
+    {
+        xmmTmpReg  = genRegNumFromMask(putArgNode->gtRsvdRegs & RBM_ALLFLOAT);
+        longTmpReg = xmmTmpReg;
+    }
+    if ((size & 0x7) != 0)
+    {
+        intTmpReg = genRegNumFromMask(putArgNode->gtRsvdRegs & RBM_ALLINT);
+    }
+#else  // !_TARGET_X86_
+    if (size >= XMM_REGSIZE_BYTES)
+    {
+        xmmTmpReg = genRegNumFromMask(putArgNode->gtRsvdRegs & RBM_ALLFLOAT);
+    }
+    if ((size & 0xf) != 0)
+    {
+        intTmpReg  = genRegNumFromMask(putArgNode->gtRsvdRegs & RBM_ALLINT);
+        longTmpReg = intTmpReg;
+    }
+#endif // !_TARGET_X86_
+
     // If the size of this struct is larger than 16 bytes
     // let's use SSE2 to be able to do 16 byte at a time
     // loads and stores.
     if (size >= XMM_REGSIZE_BYTES)
     {
+#ifdef _TARGET_X86_
+        assert(!m_pushStkArg);
+#endif // _TARGET_X86_
         assert(putArgNode->gtRsvdRegs != RBM_NONE);
-        regNumber xmmReg = genRegNumFromMask(putArgNode->gtRsvdRegs & RBM_ALLFLOAT);
-        assert(genIsValidFloatReg(xmmReg));
         size_t slots = size / XMM_REGSIZE_BYTES;
 
         assert(putArgNode->gtGetOp1()->isContained());
@@ -3908,11 +4059,10 @@ void CodeGen::genStructPutArgUnroll(GenTreePutArgStk* putArgNode, unsigned baseV
         while (slots-- > 0)
         {
             // Load
-            genCodeForLoadOffset(INS_movdqu, EA_8BYTE, xmmReg, src->gtGetOp1(),
-                                 offset); // Load the address of the child of the Obj node.
+            genCodeForLoadOffset(INS_movdqu, EA_8BYTE, xmmTmpReg, src->gtGetOp1(), offset);
 
             // Store
-            emit->emitIns_S_R(INS_movdqu, EA_8BYTE, xmmReg, baseVarNum, putArgOffset + offset);
+            genStoreRegToStackArg(TYP_STRUCT, xmmTmpReg, offset);
 
             offset += XMM_REGSIZE_BYTES;
         }
@@ -3921,41 +4071,29 @@ void CodeGen::genStructPutArgUnroll(GenTreePutArgStk* putArgNode, unsigned baseV
     // Fill the remainder (15 bytes or less) if there's one.
     if ((size & 0xf) != 0)
     {
-        // Grab the integer temp register to emit the remaining loads and stores.
-        regNumber tmpReg = genRegNumFromMask(putArgNode->gtRsvdRegs & RBM_ALLINT);
-        assert(genIsValidIntReg(tmpReg));
-
-        if ((size & 8) != 0)
+#ifdef _TARGET_X86_
+        if (m_pushStkArg)
         {
-            genCodeForLoadOffset(INS_mov, EA_8BYTE, tmpReg, src->gtOp.gtOp1, offset);
-
-            emit->emitIns_S_R(INS_mov, EA_8BYTE, tmpReg, baseVarNum, putArgOffset + offset);
-
-            offset += 8;
+            // This case is currently supported only for the case where the total size is
+            // less than XMM_REGSIZE_BYTES. We need to push the remaining chunks in reverse
+            // order. However, morph has ensured that we have a struct that is an even
+            // multiple of TARGET_POINTER_SIZE, so we don't need to worry about alignment.
+            assert(((size & 0xc) == size) && (offset == 0));
+            // If we have a 4 byte chunk, load it from either offset 0 or 8, depending on
+            // whether we've got an 8 byte chunk, and then push it on the stack.
+            unsigned pushedBytes = genMove4IfNeeded(size, intTmpReg, src->gtOp.gtOp1, size & 0x8);
+            // Now if we have an 8 byte chunk, load it from offset 0 (it's the first chunk)
+            // and push it on the stack.
+            pushedBytes += genMove8IfNeeded(size, longTmpReg, src->gtOp.gtOp1, 0);
         }
-
-        if ((size & 4) != 0)
+        else
+#endif // _TARGET_X86_
         {
-            genCodeForLoadOffset(INS_mov, EA_4BYTE, tmpReg, src->gtOp.gtOp1, offset);
-
-            emit->emitIns_S_R(INS_mov, EA_4BYTE, tmpReg, baseVarNum, putArgOffset + offset);
-
-            offset += 4;
-        }
-
-        if ((size & 2) != 0)
-        {
-            genCodeForLoadOffset(INS_mov, EA_2BYTE, tmpReg, src->gtOp.gtOp1, offset);
-
-            emit->emitIns_S_R(INS_mov, EA_2BYTE, tmpReg, baseVarNum, putArgOffset + offset);
-
-            offset += 2;
-        }
-
-        if ((size & 1) != 0)
-        {
-            genCodeForLoadOffset(INS_mov, EA_1BYTE, tmpReg, src->gtOp.gtOp1, offset);
-            emit->emitIns_S_R(INS_mov, EA_1BYTE, tmpReg, baseVarNum, putArgOffset + offset);
+            offset += genMove8IfNeeded(size, longTmpReg, src->gtOp.gtOp1, offset);
+            offset += genMove4IfNeeded(size, intTmpReg, src->gtOp.gtOp1, offset);
+            offset += genMove2IfNeeded(size, intTmpReg, src->gtOp.gtOp1, offset);
+            offset += genMove1IfNeeded(size, intTmpReg, src->gtOp.gtOp1, offset);
+            assert(offset == size);
         }
     }
 }
@@ -3965,17 +4103,16 @@ void CodeGen::genStructPutArgUnroll(GenTreePutArgStk* putArgNode, unsigned baseV
 //
 // Arguments:
 //     putArgNode  - the PutArgStk tree.
-//     baseVarNum  - the base var number, relative to which the by-val struct bits will go.
 //
 // Preconditions:
 //     The size argument of the PutArgStk (for structs) is a constant and is between
 //     CPBLK_UNROLL_LIMIT and CPBLK_MOVS_LIMIT bytes.
+//     m_stkArgVarNum must be set to the base var number, relative to which the by-val struct bits will go.
 //
-void CodeGen::genStructPutArgRepMovs(GenTreePutArgStk* putArgNode, unsigned baseVarNum)
+void CodeGen::genStructPutArgRepMovs(GenTreePutArgStk* putArgNode)
 {
     assert(putArgNode->TypeGet() == TYP_STRUCT);
     assert(putArgNode->getArgSize() > CPBLK_UNROLL_LIMIT);
-    assert(baseVarNum != BAD_VAR_NUM);
 
     // Make sure we got the arguments of the cpblk operation in the right registers
     GenTreePtr dstAddr = putArgNode;
@@ -3985,7 +4122,7 @@ void CodeGen::genStructPutArgRepMovs(GenTreePutArgStk* putArgNode, unsigned base
     assert(putArgNode->gtRsvdRegs == (RBM_RDI | RBM_RCX | RBM_RSI));
     assert(srcAddr->isContained());
 
-    genConsumePutStructArgStk(putArgNode, REG_RDI, REG_RSI, REG_RCX, baseVarNum);
+    genConsumePutStructArgStk(putArgNode, REG_RDI, REG_RSI, REG_RCX);
     instGen(INS_r_movsb);
 }
 
@@ -4037,11 +4174,12 @@ void CodeGen::genClearStackVec3ArgUpperBits()
     }
 }
 #endif // FEATURE_SIMD
-#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
+#endif // FEATURE_PUT_STRUCT_ARG_STK
 
 // Generate code for CpObj nodes wich copy structs that have interleaved
 // GC pointers.
-// This will generate a sequence of movs{d,q} instructions for the cases of non-gc members
+// This will generate a sequence of movsp instructions for the cases of non-gc members.
+// Note that movsp is an alias for movsd on x86 and movsq on x64.
 // and calls to the BY_REF_ASSIGN helper otherwise.
 void CodeGen::genCodeForCpObj(GenTreeObj* cpObjNode)
 {
@@ -4078,7 +4216,7 @@ void CodeGen::genCodeForCpObj(GenTreeObj* cpObjNode)
     bool dstOnStack = dstAddr->OperIsLocalAddr();
 
 #ifdef DEBUG
-    bool isRepMovsPtrUsed = false;
+    bool isRepMovspUsed = false;
 
     assert(!dstAddr->isContained());
 
@@ -4086,8 +4224,8 @@ void CodeGen::genCodeForCpObj(GenTreeObj* cpObjNode)
     // with CpObj, so this requires special logic.
     assert(cpObjNode->gtGcPtrCount > 0);
 
-    // MovSq instruction is used for copying non-gcref fields and it needs
-    // src = RSI and dst = RDI.
+    // MovSp (alias for movsq on x64 and movsd on x86) instruction is used for copying non-gcref fields
+    // and it needs src = RSI and dst = RDI.
     // Either these registers must not contain lclVars, or they must be dying or marked for spill.
     // This is because these registers are incremented as we go through the struct.
     GenTree* actualSrcAddr    = srcAddr->gtSkipReloadOrCopy();
@@ -4134,23 +4272,23 @@ void CodeGen::genCodeForCpObj(GenTreeObj* cpObjNode)
         if (slots >= CPOBJ_NONGC_SLOTS_LIMIT)
         {
 #ifdef DEBUG
-            // If the destination of the CpObj is on the stack
-            // make sure we allocated RCX to emit rep movs{d,q}.
+            // If the destination of the CpObj is on the stack, make sure we allocated
+            // RCX to emit the movsp (alias for movsd or movsq for 32 and 64 bits respectively).
             regNumber tmpReg = genRegNumFromMask(cpObjNode->gtRsvdRegs & RBM_ALLINT);
             assert(tmpReg == REG_RCX);
-            isRepMovsPtrUsed = true;
+            isRepMovspUsed = true;
 #endif // DEBUG
 
             getEmitter()->emitIns_R_I(INS_mov, EA_4BYTE, REG_RCX, slots);
-            instGen(INS_r_movs_ptr);
+            instGen(INS_r_movsp);
         }
         else
         {
-            // For small structs, it's better to emit a sequence of movsq than to
-            // emit a rep movsq instruction.
+            // For small structs, it's better to emit a sequence of movsp than to
+            // emit a rep movsp instruction.
             while (slots > 0)
             {
-                instGen(INS_movs_ptr);
+                instGen(INS_movsp);
                 slots--;
             }
         }
@@ -4166,7 +4304,7 @@ void CodeGen::genCodeForCpObj(GenTreeObj* cpObjNode)
             switch (gcPtrs[i])
             {
                 case TYPE_GC_NONE:
-                    // Let's see if we can use rep movs{d,q} instead of a sequence of movs{d,q} instructions
+                    // Let's see if we can use rep movsp instead of a sequence of movsp instructions
                     // to save cycles and code size.
                     {
                         unsigned nonGcSlotCount = 0;
@@ -4178,12 +4316,12 @@ void CodeGen::genCodeForCpObj(GenTreeObj* cpObjNode)
                         } while (i < slots && gcPtrs[i] == TYPE_GC_NONE);
 
                         // If we have a very small contiguous non-gc region, it's better just to
-                        // emit a sequence of movs{d,q} instructions
+                        // emit a sequence of movsp instructions
                         if (nonGcSlotCount < CPOBJ_NONGC_SLOTS_LIMIT)
                         {
                             while (nonGcSlotCount > 0)
                             {
-                                instGen(INS_movs_ptr);
+                                instGen(INS_movsp);
                                 nonGcSlotCount--;
                             }
                         }
@@ -4191,13 +4329,13 @@ void CodeGen::genCodeForCpObj(GenTreeObj* cpObjNode)
                         {
 #ifdef DEBUG
                             // Otherwise, we can save code-size and improve CQ by emitting
-                            // rep movs{d,q}
+                            // rep movsp
                             regNumber tmpReg = genRegNumFromMask(cpObjNode->gtRsvdRegs & RBM_ALLINT);
                             assert(tmpReg == REG_RCX);
-                            isRepMovsPtrUsed = true;
+                            isRepMovspUsed = true;
 #endif // DEBUG
                             getEmitter()->emitIns_R_I(INS_mov, EA_4BYTE, REG_RCX, nonGcSlotCount);
-                            instGen(INS_r_movs_ptr);
+                            instGen(INS_r_movsp);
                         }
                     }
                     break;
@@ -4748,7 +4886,7 @@ void CodeGen::genCodeForShift(GenTreePtr tree)
     regNumber  operandReg = operand->gtRegNum;
 
     GenTreePtr shiftBy = tree->gtGetOp2();
-    
+
     if (shiftBy->isContainedIntOrIImmed())
     {
         // First, move the operand to the destination register and
@@ -5390,7 +5528,7 @@ void CodeGen::genConsumeOperands(GenTreeOp* tree)
     }
 }
 
-#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+#if FEATURE_PUT_STRUCT_ARG_STK
 //------------------------------------------------------------------------
 // genConsumePutStructArgStk: Do liveness update for the operands of a PutArgStk node.
 //                      Also loads in the right register the addresses of the
@@ -5401,22 +5539,24 @@ void CodeGen::genConsumeOperands(GenTreeOp* tree)
 //    dstReg     - the dstReg for the rep move operation.
 //    srcReg     - the srcReg for the rep move operation.
 //    sizeReg    - the sizeReg for the rep move operation.
-//    baseVarNum - the varnum for the local used for placing the "by-value" args on the stack.
 //
 // Return Value:
 //    None.
 //
-// Note: sizeReg can be REG_NA when this function is used to consume the dstReg and srcReg
-//           for copying on the stack a struct with references.
-//       The source address/offset is determined from the address on the GT_OBJ node, while
-//       the destination address is the address contained in 'baseVarNum' plus the offset
-//       provided in the 'putArgNode'.
+// Notes:
+//    sizeReg can be REG_NA when this function is used to consume the dstReg and srcReg
+//    for copying on the stack a struct with references.
+//    The source address/offset is determined from the address on the GT_OBJ node, while
+//    the destination address is the address contained in 'm_stkArgVarNum' plus the offset
+//    provided in the 'putArgNode'.
+//    m_stkArgVarNum must be set to  the varnum for the local used for placing the "by-value" args on the stack.
 
-void CodeGen::genConsumePutStructArgStk(
-    GenTreePutArgStk* putArgNode, regNumber dstReg, regNumber srcReg, regNumber sizeReg, unsigned baseVarNum)
+void CodeGen::genConsumePutStructArgStk(GenTreePutArgStk* putArgNode,
+                                        regNumber         dstReg,
+                                        regNumber         srcReg,
+                                        regNumber         sizeReg)
 {
     assert(varTypeIsStruct(putArgNode));
-    assert(baseVarNum != BAD_VAR_NUM);
 
     // The putArgNode children are always contained. We should not consume any registers.
     assert(putArgNode->gtGetOp1()->isContained());
@@ -5441,13 +5581,21 @@ void CodeGen::genConsumePutStructArgStk(
 
     // If the op1 is already in the dstReg - nothing to do.
     // Otherwise load the op1 (GT_ADDR) into the dstReg to copy the struct on the stack by value.
+    CLANG_FORMAT_COMMENT_ANCHOR;
+
+#ifdef _TARGET_X86_
+    assert(dstReg != REG_SPBASE);
+    inst_RV_RV(INS_mov, dstReg, REG_SPBASE);
+#else  // !_TARGET_X86_
     if (dstAddr->gtRegNum != dstReg)
     {
         // Generate LEA instruction to load the stack of the outgoing var + SlotNum offset (or the incoming arg area
         // for tail calls) in RDI.
         // Destination is always local (on the stack) - use EA_PTRSIZE.
-        getEmitter()->emitIns_R_S(INS_lea, EA_PTRSIZE, dstReg, baseVarNum, putArgNode->getArgOffset());
+        assert(m_stkArgVarNum != BAD_VAR_NUM);
+        getEmitter()->emitIns_R_S(INS_lea, EA_PTRSIZE, dstReg, m_stkArgVarNum, putArgNode->getArgOffset());
     }
+#endif // !_TARGET_X86_
 
     if (srcAddr->gtRegNum != srcReg)
     {
@@ -5476,10 +5624,10 @@ void CodeGen::genConsumePutStructArgStk(
 
     if (sizeReg != REG_NA)
     {
-        inst_RV_IV(INS_mov, sizeReg, size, EA_8BYTE);
+        inst_RV_IV(INS_mov, sizeReg, size, EA_PTRSIZE);
     }
 }
-#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
+#endif // FEATURE_PUT_STRUCT_ARG_STK
 
 //------------------------------------------------------------------------
 // genConsumeBlockSize: Ensure that the block size is in the given register
@@ -6102,7 +6250,7 @@ void CodeGen::genCallInstruction(GenTreePtr node)
     // Consume all the arg regs
     for (GenTreePtr list = call->gtCallLateArgs; list; list = list->MoveNext())
     {
-        assert(list->IsList());
+        assert(list->OperIsList());
 
         GenTreePtr argNode = list->Current();
 
@@ -6116,13 +6264,13 @@ void CodeGen::genCallInstruction(GenTreePtr node)
 
 #ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
         // Deal with multi register passed struct args.
-        if (argNode->OperGet() == GT_LIST)
+        if (argNode->OperGet() == GT_FIELD_LIST)
         {
-            GenTreeArgList* argListPtr   = argNode->AsArgList();
-            unsigned        iterationNum = 0;
-            for (; argListPtr != nullptr; argListPtr = argListPtr->Rest(), iterationNum++)
+            GenTreeFieldList* fieldListPtr = argNode->AsFieldList();
+            unsigned          iterationNum = 0;
+            for (; fieldListPtr != nullptr; fieldListPtr = fieldListPtr->Rest(), iterationNum++)
             {
-                GenTreePtr putArgRegNode = argListPtr->gtOp.gtOp1;
+                GenTreePtr putArgRegNode = fieldListPtr->gtOp.gtOp1;
                 assert(putArgRegNode->gtOper == GT_PUTARG_REG);
                 regNumber argReg = REG_NA;
 
@@ -6192,18 +6340,30 @@ void CodeGen::genCallInstruction(GenTreePtr node)
             {
                 assert((arg->gtGetOp1()->OperGet() == GT_PUTARG_STK) && (arg->gtGetOp2()->OperGet() == GT_PUTARG_STK));
             }
+            if ((arg->OperGet() == GT_PUTARG_STK) && (arg->gtGetOp1()->OperGet() == GT_FIELD_LIST))
+            {
+                fgArgTabEntryPtr curArgTabEntry = compiler->gtArgEntryByNode(call, arg);
+                assert(curArgTabEntry);
+                stackArgBytes += curArgTabEntry->numSlots * TARGET_POINTER_SIZE;
+            }
+            else
 #endif // defined(_TARGET_X86_)
 
-#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
-            if (genActualType(arg->TypeGet()) == TYP_STRUCT)
+#ifdef FEATURE_PUT_STRUCT_ARG_STK
+                if (genActualType(arg->TypeGet()) == TYP_STRUCT)
             {
                 assert(arg->OperGet() == GT_PUTARG_STK);
 
-                GenTreeObj* obj = arg->gtGetOp1()->AsObj();
-                stackArgBytes   = compiler->info.compCompHnd->getClassSize(obj->gtClass);
+                GenTreeObj* obj      = arg->gtGetOp1()->AsObj();
+                unsigned    argBytes = (unsigned)roundUp(obj->gtBlkSize, TARGET_POINTER_SIZE);
+#ifdef DEBUG
+                fgArgTabEntryPtr curArgTabEntry = compiler->gtArgEntryByNode(call, arg);
+                assert((curArgTabEntry->numSlots * TARGET_POINTER_SIZE) == argBytes);
+#endif // DEBUG
+                stackArgBytes += argBytes;
             }
             else
-#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
+#endif // FEATURE_PUT_STRUCT_ARG_STK
 
                 stackArgBytes += genTypeSize(genActualType(arg->TypeGet()));
         }
@@ -6358,14 +6518,14 @@ void CodeGen::genCallInstruction(GenTreePtr node)
 
             getEmitter()->emitIns_Nop(3);
             getEmitter()->emitIns_Call(emitter::EmitCallType(emitter::EC_INDIR_ARD), methHnd,
-                                       INDEBUG_LDISASM_COMMA(sigInfo) nullptr, argSizeForEmitter, retSize
-                                       MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize),
+                                       INDEBUG_LDISASM_COMMA(sigInfo) nullptr, argSizeForEmitter,
+                                       retSize MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize),
                                        gcInfo.gcVarPtrSetCur, gcInfo.gcRegGCrefSetCur, gcInfo.gcRegByrefSetCur,
                                        ilOffset, REG_VIRTUAL_STUB_TARGET, REG_NA, 1, 0);
         }
         else
 #endif
-        if (target->isContainedIndir())
+            if (target->isContainedIndir())
         {
             if (target->AsIndir()->HasBase() && target->AsIndir()->Base()->isContainedIntOrIImmed())
             {
@@ -7407,7 +7567,9 @@ void CodeGen::genCompareInt(GenTreePtr treeNode)
     emitAttr    cmpAttr;
 
     regNumber targetReg = treeNode->gtRegNum;
-    assert(!op1->isContainedIntOrIImmed()); // We no longer support swapping op1 and op2 to generate cmp reg, imm
+    // TODO-CQ: We should be able to support swapping op1 and op2 to generate cmp reg, imm.
+    // https://github.com/dotnet/coreclr/issues/7270
+    assert(!op1->isContainedIntOrIImmed()); // We no longer support
     assert(!varTypeIsFloating(op2Type));
 
 #ifdef _TARGET_X86_
@@ -7657,7 +7819,7 @@ void CodeGen::genLongToIntCast(GenTree* cast)
         // Generate an overflow check for [u]long to [u]int casts:
         //
         // long  -> int  - check if the upper 33 bits are all 0 or all 1
-        // 
+        //
         // ulong -> int  - check if the upper 33 bits are all 0
         //
         // long  -> uint - check if the upper 32 bits are all 0
@@ -7666,7 +7828,7 @@ void CodeGen::genLongToIntCast(GenTree* cast)
 
         if ((srcType == TYP_LONG) && (dstType == TYP_INT))
         {
-            BasicBlock* allOne = genCreateTempLabel();
+            BasicBlock* allOne  = genCreateTempLabel();
             BasicBlock* success = genCreateTempLabel();
 
             inst_RV_RV(INS_test, loSrcReg, loSrcReg, TYP_INT, EA_4BYTE);
@@ -7694,7 +7856,7 @@ void CodeGen::genLongToIntCast(GenTree* cast)
             genJumpToThrowHlpBlk(EJ_jne, SCK_OVERFLOW);
         }
     }
-    
+
     if (dstReg != loSrcReg)
     {
         inst_RV_RV(INS_mov, dstReg, loSrcReg, TYP_INT, EA_4BYTE);
@@ -7738,11 +7900,11 @@ void CodeGen::genIntToIntCast(GenTreePtr treeNode)
     }
 #endif // !defined(_TARGET_64BIT_)
 
-    regNumber  targetReg     = treeNode->gtRegNum;
-    regNumber  sourceReg     = castOp->gtRegNum;
-    var_types  dstType       = treeNode->CastToType();
-    bool       isUnsignedDst = varTypeIsUnsigned(dstType);
-    bool       isUnsignedSrc = varTypeIsUnsigned(srcType);
+    regNumber targetReg     = treeNode->gtRegNum;
+    regNumber sourceReg     = castOp->gtRegNum;
+    var_types dstType       = treeNode->CastToType();
+    bool      isUnsignedDst = varTypeIsUnsigned(dstType);
+    bool      isUnsignedSrc = varTypeIsUnsigned(srcType);
 
     // if necessary, force the srcType to unsigned when the GT_UNSIGNED flag is set
     if (!isUnsignedSrc && (treeNode->gtFlags & GTF_UNSIGNED) != 0)
@@ -8766,7 +8928,7 @@ unsigned CodeGen::getBaseVarForPutArgStk(GenTreePtr treeNode)
 #if FEATURE_FIXED_OUT_ARGS
         baseVarNum = compiler->lvaOutgoingArgSpaceVar;
 #else  // !FEATURE_FIXED_OUT_ARGS
-        NYI_X86("Stack args for x86/RyuJIT");
+        assert(!"No BaseVarForPutArgStk on x86");
         baseVarNum = BAD_VAR_NUM;
 #endif // !FEATURE_FIXED_OUT_ARGS
     }
@@ -8775,7 +8937,7 @@ unsigned CodeGen::getBaseVarForPutArgStk(GenTreePtr treeNode)
 }
 
 //--------------------------------------------------------------------- //
-// genPutStructArgStk - generate code for passing an arg on the stack.
+// genPutArgStk - generate code for passing an arg on the stack.
 //
 // Arguments
 //    treeNode      - the GT_PUTARG_STK node
@@ -8788,7 +8950,24 @@ void CodeGen::genPutArgStk(GenTreePtr treeNode)
 {
     var_types targetType = treeNode->TypeGet();
 #ifdef _TARGET_X86_
-    noway_assert(targetType != TYP_STRUCT);
+    if (varTypeIsStruct(targetType))
+    {
+        // If this is less than 16 bytes, and has no gc refs, then we will push the args.
+        // Otherwise, we will decrement sp and do regular stores.
+        if ((treeNode->AsPutArgStk()->getArgSize() < 16) && (treeNode->AsPutArgStk()->gtNumberReferenceSlots == 0))
+        {
+            m_pushStkArg = true;
+        }
+        else
+        {
+            inst_RV_IV(INS_sub, REG_SPBASE, treeNode->AsPutArgStk()->getArgSize(), EA_PTRSIZE);
+            m_pushStkArg = false;
+            genStackLevel += treeNode->AsPutArgStk()->getArgSize();
+        }
+        m_stkArgOffset = 0;
+        genPutStructArgStk(treeNode->AsPutArgStk());
+        return;
+    }
 
     // The following logic is applicable for x86 arch.
     assert(!varTypeIsFloating(targetType) || (targetType == treeNode->gtGetOp1()->TypeGet()));
@@ -8812,6 +8991,34 @@ void CodeGen::genPutArgStk(GenTreePtr treeNode)
         else
         {
             inst_IV(INS_push, data->gtIntCon.gtIconVal);
+        }
+    }
+    else if (data->OperGet() == GT_FIELD_LIST)
+    {
+        GenTreeFieldList* fieldList = data->AsFieldList();
+        // TODO-X86-CQ: If there are no gaps or padding in the layout, we can use a series of pushes.
+        // For now, always make space for the struct, and store each field at its offset.
+
+        unsigned structSize = treeNode->AsPutArgStk()->getArgSize();
+        m_pushStkArg        = false;
+        inst_RV_IV(INS_sub, REG_SPBASE, structSize, EA_PTRSIZE);
+        genStackLevel += structSize;
+        for (; fieldList != nullptr; fieldList = fieldList->Rest())
+        {
+            GenTree* fieldNode = fieldList->Current();
+            // TODO-X86-CQ: If this is not a register candidate, or is not in a register,
+            // make it contained.
+            genConsumeReg(fieldNode);
+            // Note that the argReg may not be the lcl->gtRegNum, if it has been copied
+            // or reloaded to a different register.
+            regNumber argReg    = fieldNode->gtRegNum;
+            unsigned  offset    = fieldList->gtFieldOffset;
+            var_types fieldType = fieldList->gtFieldType;
+            if (varTypeIsLong(fieldType))
+            {
+                NYI_X86("Long field of promoted struct arg");
+            }
+            genStoreRegToStackArg(fieldType, argReg, offset);
         }
     }
     else if (data->isContained())
@@ -8840,7 +9047,10 @@ void CodeGen::genPutArgStk(GenTreePtr treeNode)
 
         if (varTypeIsStruct(targetType))
         {
-            genPutStructArgStk(treeNode, baseVarNum);
+            m_stkArgVarNum = baseVarNum;
+            m_stkArgOffset = treeNode->AsPutArgStk()->getArgOffset();
+            genPutStructArgStk(treeNode->AsPutArgStk());
+            m_stkArgVarNum = BAD_VAR_NUM;
             return;
         }
 #endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
@@ -8876,7 +9086,90 @@ void CodeGen::genPutArgStk(GenTreePtr treeNode)
 #endif // !_TARGET_X86_
 }
 
-#if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+#if defined(FEATURE_PUT_STRUCT_ARG_STK)
+// genStoreRegToStackArg: Store a register value into the stack argument area
+//
+// Arguments:
+//    type   - the type of value to be stored
+//    reg    - the register containing the value
+//    offset - the offset from the base (see Assumptions below)
+//
+// Notes:
+//    A type of TYP_STRUCT instructs this method to store a 16-byte chunk
+//    at the given offset (i.e. not the full struct).
+//
+// Assumptions:
+//    The caller must set the context appropriately before calling this method:
+//    - On x64, m_stkArgVarNum must be set according to whether this is a regular or tail call.
+//    - On x86, the caller must set m_pushStkArg if this method should push the argument.
+//      Otherwise, the argument is stored at the given offset from sp.
+//
+// TODO: In the below code the load and store instructions are for 16 bytes, but the
+//          type is EA_8BYTE. The movdqa/u are 16 byte instructions, so it works, but
+//          this probably needs to be changed.
+//
+void CodeGen::genStoreRegToStackArg(var_types type, regNumber srcReg, unsigned offset)
+{
+    assert(srcReg != REG_NA);
+    instruction ins;
+    emitAttr    attr;
+    unsigned    size;
+    if (type == TYP_STRUCT)
+    {
+        ins = INS_movdqu;
+        // This should be changed!
+        attr = EA_8BYTE;
+        size = 16;
+    }
+    else
+    {
+#ifdef FEATURE_SIMD
+        if (varTypeIsSIMD(type))
+        {
+            assert(genIsValidFloatReg(srcReg));
+            ins = ins_Store(type);
+        }
+        else
+#endif // FEATURE_SIMD
+#ifdef _TARGET_X86_
+            if (type == TYP_LONG)
+        {
+            assert(genIsValidFloatReg(srcReg));
+            ins = INS_movq;
+        }
+        else
+#endif // _TARGET_X86_
+        {
+            assert((varTypeIsFloating(type) && genIsValidFloatReg(srcReg)) ||
+                   (varTypeIsIntegralOrI(type) && genIsValidIntReg(srcReg)));
+            ins = ins_Store(type);
+        }
+        attr = emitTypeSize(type);
+        size = genTypeSize(type);
+    }
+#ifdef _TARGET_X86_
+    if (m_pushStkArg)
+    {
+        if (varTypeIsIntegralOrI(type) && type != TYP_LONG)
+        {
+            inst_RV(INS_push, srcReg, type);
+        }
+        else
+        {
+            inst_RV_IV(INS_sub, REG_SPBASE, size, EA_PTRSIZE);
+            getEmitter()->emitIns_AR_R(ins, attr, srcReg, REG_SPBASE, 0);
+        }
+        genStackLevel += size;
+    }
+    else
+    {
+        getEmitter()->emitIns_AR_R(ins, attr, srcReg, REG_SPBASE, offset);
+    }
+#else  // !_TARGET_X86_
+    assert(m_stkArgVarNum != BAD_VAR_NUM);
+    getEmitter()->emitIns_S_R(ins, attr, srcReg, m_stkArgVarNum, m_stkArgOffset + offset);
+#endif // !_TARGET_X86_
+}
 
 //---------------------------------------------------------------------
 // genPutStructArgStk - generate code for copying a struct arg on the stack by value.
@@ -8885,41 +9178,37 @@ void CodeGen::genPutArgStk(GenTreePtr treeNode)
 //
 // Arguments
 //    treeNode      - the GT_PUTARG_STK node
-//    baseVarNum    - the variable number relative to which to put the argument on the stack.
-//                    For tail calls this is the baseVarNum = 0.
-//                    For non tail calls this is the outgoingArgSpace.
 //
-// Return value:
-//    None
-//
-void CodeGen::genPutStructArgStk(GenTreePtr treeNode, unsigned baseVarNum)
-{
-    assert(treeNode->OperGet() == GT_PUTARG_STK);
-    assert(baseVarNum != BAD_VAR_NUM);
+// Notes:
+//    In the case of fixed out args, the caller must have set m_stkArgVarNum to the variable number
+//    corresponding to the argument area (where we will put the argument on the stack).
+//    For tail calls this is the baseVarNum = 0.
+//    For non tail calls this is the outgoingArgSpace.
 
-    var_types targetType = treeNode->TypeGet();
+//
+void CodeGen::genPutStructArgStk(GenTreePutArgStk* putArgStk)
+{
+    var_types targetType = putArgStk->TypeGet();
 
     if (varTypeIsSIMD(targetType))
     {
-        regNumber srcReg = genConsumeReg(treeNode->gtGetOp1());
+        regNumber srcReg = genConsumeReg(putArgStk->gtGetOp1());
         assert((srcReg != REG_NA) && (genIsValidFloatReg(srcReg)));
-        getEmitter()->emitIns_S_R(ins_Store(targetType), emitTypeSize(targetType), srcReg, baseVarNum,
-                                  treeNode->AsPutArgStk()->getArgOffset());
+        genStoreRegToStackArg(targetType, srcReg, 0);
         return;
     }
 
     assert(targetType == TYP_STRUCT);
 
-    GenTreePutArgStk* putArgStk = treeNode->AsPutArgStk();
     if (putArgStk->gtNumberReferenceSlots == 0)
     {
         switch (putArgStk->gtPutArgStkKind)
         {
             case GenTreePutArgStk::PutArgStkKindRepInstr:
-                genStructPutArgRepMovs(putArgStk, baseVarNum);
+                genStructPutArgRepMovs(putArgStk);
                 break;
             case GenTreePutArgStk::PutArgStkKindUnroll:
-                genStructPutArgUnroll(putArgStk, baseVarNum);
+                genStructPutArgUnroll(putArgStk);
                 break;
             default:
                 unreached();
@@ -8931,7 +9220,7 @@ void CodeGen::genPutStructArgStk(GenTreePtr treeNode, unsigned baseVarNum)
 
         // Consume these registers.
         // They may now contain gc pointers (depending on their type; gcMarkRegPtrVal will "do the right thing").
-        genConsumePutStructArgStk(putArgStk, REG_RDI, REG_RSI, REG_NA, baseVarNum);
+        genConsumePutStructArgStk(putArgStk, REG_RDI, REG_RSI, REG_NA);
         GenTreePtr dstAddr = putArgStk;
         GenTreePtr src     = putArgStk->gtOp.gtOp1;
         assert(src->OperGet() == GT_OBJ);
@@ -8950,8 +9239,8 @@ void CodeGen::genPutStructArgStk(GenTreePtr treeNode, unsigned baseVarNum)
             switch (gcPtrs[i])
             {
                 case TYPE_GC_NONE:
-                    // Let's see if we can use rep movs{d,q} instead of a sequence of movs{d,q} instructions
-                    // to save cycles and code size.
+                    // Let's see if we can use rep movsp (alias for movsd or movsq for 32 and 64 bits respectively)
+                    // instead of a sequence of movsp instructions to save cycles and code size.
                     {
                         unsigned nonGcSlotCount = 0;
 
@@ -8962,13 +9251,13 @@ void CodeGen::genPutStructArgStk(GenTreePtr treeNode, unsigned baseVarNum)
                         } while (i < slots && gcPtrs[i] == TYPE_GC_NONE);
 
                         // If we have a very small contiguous non-gc region, it's better just to
-                        // emit a sequence of movs{d,q} instructions
+                        // emit a sequence of movsp instructions
                         if (nonGcSlotCount < CPOBJ_NONGC_SLOTS_LIMIT)
                         {
                             copiedSlots += nonGcSlotCount;
                             while (nonGcSlotCount > 0)
                             {
-                                instGen(INS_movs_ptr);
+                                instGen(INS_movsp);
                                 nonGcSlotCount--;
                             }
                         }
@@ -8976,7 +9265,7 @@ void CodeGen::genPutStructArgStk(GenTreePtr treeNode, unsigned baseVarNum)
                         {
                             getEmitter()->emitIns_R_I(INS_mov, EA_4BYTE, REG_RCX, nonGcSlotCount);
                             copiedSlots += nonGcSlotCount;
-                            instGen(INS_r_movs_ptr);
+                            instGen(INS_r_movsp);
                         }
                     }
                     break;
@@ -8985,10 +9274,10 @@ void CodeGen::genPutStructArgStk(GenTreePtr treeNode, unsigned baseVarNum)
                 case TYPE_GC_BYREF: // Is an interior pointer - promote it but don't scan it
                 {
                     // We have a GC (byref or ref) pointer
-                    // TODO-Amd64-Unix: Here a better solution (for code size and CQ) would be to use movs{d,q} instruction,
+                    // TODO-Amd64-Unix: Here a better solution (for code size and CQ) would be to use movsp instruction,
                     // but the logic for emitting a GC info record is not available (it is internal for the emitter
                     // only.) See emitGCVarLiveUpd function. If we could call it separately, we could do
-                    // instGen(INS_movs{d,q}); and emission of gc info.
+                    // instGen(INS_movsp); and emission of gc info.
 
                     var_types memType;
                     if (gcPtrs[i] == TYPE_GC_REF)
@@ -9002,8 +9291,7 @@ void CodeGen::genPutStructArgStk(GenTreePtr treeNode, unsigned baseVarNum)
                     }
 
                     getEmitter()->emitIns_R_AR(ins_Load(memType), emitTypeSize(memType), REG_RCX, REG_RSI, 0);
-                    getEmitter()->emitIns_S_R(ins_Store(memType), emitTypeSize(memType), REG_RCX, baseVarNum,
-                                              ((copiedSlots + putArgStk->gtSlotNum) * TARGET_POINTER_SIZE));
+                    genStoreRegToStackArg(memType, REG_RCX, copiedSlots * TARGET_POINTER_SIZE);
 
                     // Source for the copy operation.
                     // If a LocalAddr, use EA_PTRSIZE - copy from stack.
@@ -9029,7 +9317,7 @@ void CodeGen::genPutStructArgStk(GenTreePtr treeNode, unsigned baseVarNum)
         assert(gcPtrCount == 0);
     }
 }
-#endif // defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+#endif // defined(FEATURE_PUT_STRUCT_ARG_STK)
 
 /*****************************************************************************
  *
@@ -9367,7 +9655,8 @@ void CodeGen::genStoreLongLclVar(GenTree* treeNode)
         GenTreePtr loVal = op1->gtGetOp1();
         GenTreePtr hiVal = op1->gtGetOp2();
         // NYI: Contained immediates.
-        NYI_IF((loVal->gtRegNum == REG_NA) || (hiVal->gtRegNum == REG_NA), "Store of long lclVar with contained immediate");
+        NYI_IF((loVal->gtRegNum == REG_NA) || (hiVal->gtRegNum == REG_NA),
+               "Store of long lclVar with contained immediate");
         emit->emitIns_R_S(ins_Store(TYP_INT), EA_4BYTE, loVal->gtRegNum, lclNum, 0);
         emit->emitIns_R_S(ins_Store(TYP_INT), EA_4BYTE, hiVal->gtRegNum, lclNum, genTypeSize(TYP_INT));
     }
@@ -9377,7 +9666,8 @@ void CodeGen::genStoreLongLclVar(GenTree* treeNode)
 
         // Stack store
         getEmitter()->emitIns_S_R(ins_Store(TYP_INT), emitTypeSize(TYP_INT), REG_LNGRET_LO, lclNum, 0);
-        getEmitter()->emitIns_S_R(ins_Store(TYP_INT), emitTypeSize(TYP_INT), REG_LNGRET_HI, lclNum, genTypeSize(TYP_INT));
+        getEmitter()->emitIns_S_R(ins_Store(TYP_INT), emitTypeSize(TYP_INT), REG_LNGRET_HI, lclNum,
+                                  genTypeSize(TYP_INT));
     }
 }
 #endif // !defined(_TARGET_64BIT_)
