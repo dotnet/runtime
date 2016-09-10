@@ -3313,7 +3313,7 @@ static int ComputeOperandDstCount(GenTree* operand)
                operand->OperIsCompare());
         return 0;
     }
-    else if (!operand->OperIsAggregate() && (operand->OperIsStore() || operand->TypeGet() == TYP_VOID))
+    else if (!operand->OperIsFieldListHead() && (operand->OperIsStore() || operand->TypeGet() == TYP_VOID))
     {
         // Stores and void-typed operands may be encountered when processing call nodes, which contain
         // pointers to argument setup stores.
@@ -3321,7 +3321,7 @@ static int ComputeOperandDstCount(GenTree* operand)
     }
     else
     {
-        // If an aggregate or non-void-typed operand is not an unsued value and does not have source registers,
+        // If a field list or non-void-typed operand is not an unused value and does not have source registers,
         // that argument is contained within its parent and produces `sum(operand_dst_count)` registers.
         int dstCount = 0;
         for (GenTree* op : operand->Operands())
@@ -3368,9 +3368,11 @@ void LinearScan::buildRefPositionsForNode(GenTree*                  tree,
     assert(!isRegPairType(tree->TypeGet()));
 #endif // _TARGET_ARM_
 
-    // The LIR traversal doesn't visit non-aggregate GT_LIST or GT_ARGPLACE nodes
+    // The LIR traversal doesn't visit GT_LIST or GT_ARGPLACE nodes
     assert(tree->OperGet() != GT_ARGPLACE);
-    assert((tree->OperGet() != GT_LIST) || tree->AsArgList()->IsAggregate());
+    assert(tree->OperGet() != GT_LIST);
+    // The LIR traversal visits only the first node in a GT_FIELD_LIST.
+    assert((tree->OperGet() != GT_FIELD_LIST) || tree->AsFieldList()->IsFieldListHead());
 
     // These nodes are eliminated by the Rationalizer.
     if (tree->OperGet() == GT_CLS_VAR)
@@ -3959,7 +3961,7 @@ void LinearScan::buildRefPositionsForNode(GenTree*                  tree,
 #endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
 
     bool isContainedNode =
-        !noAdd && consume == 0 && produce == 0 && (tree->OperIsAggregate() || (tree->TypeGet() != TYP_VOID && !tree->OperIsStore()));
+        !noAdd && consume == 0 && produce == 0 && (tree->OperIsFieldListHead() || ((tree->TypeGet() != TYP_VOID) && !tree->OperIsStore()));
     if (isContainedNode)
     {
         // Contained nodes map to the concatenated lists of their operands.

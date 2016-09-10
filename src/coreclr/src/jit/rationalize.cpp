@@ -614,21 +614,21 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, ArrayStack<G
     const bool isLateArg = (node->gtFlags & GTF_LATE_ARG) != 0;
 #endif
 
-    // First, remove any preceeding GT_LIST nodes, which are not otherwise visited by the tree walk.
+    // First, remove any preceeding list nodes, which are not otherwise visited by the tree walk.
     //
-    // NOTE: GT_LIST nodes that are used as aggregates, by block ops, and by phi nodes will in fact be visited.
+    // NOTE: GT_FIELD_LIST head nodes, and GT_LIST nodes used by phi nodes will in fact be visited.
     for (GenTree* prev = node->gtPrev;
-        prev != nullptr && prev->OperGet() == GT_LIST && !(prev->AsArgList()->IsAggregate());
+        prev != nullptr && prev->OperIsAnyList() && !(prev->OperIsFieldListHead());
         prev = node->gtPrev)
     {
         BlockRange().Remove(prev);
     }
 
     // In addition, remove the current node if it is a GT_LIST node that is not an aggregate.
-    if (node->OperGet() == GT_LIST)
+    if (node->OperIsAnyList())
     {
         GenTreeArgList* list = node->AsArgList();
-        if (!list->IsAggregate())
+        if (!list->OperIsFieldListHead())
         {
             BlockRange().Remove(list);
         }

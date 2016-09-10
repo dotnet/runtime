@@ -1164,7 +1164,13 @@ struct fgArgTabEntry
     regNumber otherRegNum; // The (second) register to use when passing this argument.
 
     SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR structDesc;
-#endif // defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+#elif defined(_TARGET_X86_)
+    __declspec(property(get = getIsStruct)) bool isStruct;
+    bool getIsStruct()
+    {
+        return varTypeIsStruct(node);
+    }
+#endif // _TARGET_X86_
 
 #ifdef _TARGET_ARM_
     void SetIsHfaRegArg(bool hfaRegArg)
@@ -1292,6 +1298,10 @@ public:
     bool HasStackArgs()
     {
         return hasStackArgs;
+    }
+    bool AreArgsComplete() const
+    {
+        return argsComplete;
     }
 };
 
@@ -1938,8 +1948,6 @@ public:
     GenTreeArgList* gtNewArgList(GenTreePtr op);
     GenTreeArgList* gtNewArgList(GenTreePtr op1, GenTreePtr op2);
     GenTreeArgList* gtNewArgList(GenTreePtr op1, GenTreePtr op2, GenTreePtr op3);
-
-    GenTreeArgList* gtNewAggregate(GenTree* element);
 
     static fgArgTabEntryPtr gtArgEntryByArgNum(GenTreePtr call, unsigned argNum);
     static fgArgTabEntryPtr gtArgEntryByNode(GenTreePtr call, GenTreePtr node);
@@ -4434,16 +4442,11 @@ private:
     // for sufficiently small offsets, we can rely on OS page protection to implicitly null-check addresses that we
     // know will be dereferenced.  To know that reliance on implicit null checking is sound, we must further know that
     // all offsets between the top-level indirection and the bottom are constant, and that their sum is sufficiently
-    // small; hence the other fields of MorphAddrContext.  Finally, the odd structure of GT_COPYBLK, in which the second
-    // argument is a GT_LIST, requires us to "tell" that List node that its parent is a GT_COPYBLK, so it "knows" that
-    // each of its arguments should be evaluated in MACK_Ind contexts.  (This would not be true for GT_LIST nodes
-    // representing method call argument lists.)
+    // small; hence the other fields of MorphAddrContext.
     enum MorphAddrContextKind
     {
         MACK_Ind,
         MACK_Addr,
-        MACK_CopyBlock, // This is necessary so we know we have to start a new "Ind" context for each of the
-                        // addresses in the arg list.
     };
     struct MorphAddrContext
     {
