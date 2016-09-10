@@ -18028,9 +18028,13 @@ void Compiler::fgSetTreeSeqFinish(GenTreePtr tree, bool isLIR)
 {
     // If we are sequencing a node that does not appear in LIR,
     // do not add it to the list.
-    if (isLIR && (((tree->OperGet() == GT_LIST) && !tree->AsArgList()->IsAggregate()) || tree->OperGet() == GT_ARGPLACE))
+    if (isLIR)
     {
-        return;
+        if ((tree->OperGet() == GT_LIST) || (tree->OperGet() == GT_ARGPLACE) ||
+            (tree->OperGet() == GT_FIELD_LIST && !tree->AsFieldList()->IsFieldListHead()))
+        {
+            return;
+        }
     }
 
     /* Append to the node list */
@@ -20328,10 +20332,11 @@ void                Compiler::fgDebugCheckFlags(GenTreePtr tree)
             break;
 
         case GT_LIST:
-            if ((op2 != nullptr) && op2->IsList())
+        case GT_FIELD_LIST:
+            if ((op2 != nullptr) && op2->OperIsAnyList())
             {
                 ArrayStack<GenTree *> stack(this);
-                while ((tree->gtGetOp2() != nullptr) && tree->gtGetOp2()->IsList())
+                while ((tree->gtGetOp2() != nullptr) && tree->gtGetOp2()->OperIsAnyList())
                 {
                     stack.Push(tree);
                     tree = tree->gtGetOp2();

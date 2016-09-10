@@ -241,6 +241,7 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
             break;
 
         case GT_LIST:
+        case GT_FIELD_LIST:
         case GT_ARGPLACE:
         case GT_NO_OP:
         case GT_START_NONGC:
@@ -553,10 +554,7 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
         }
         break;
 
-#ifdef _TARGET_X86_
-        case GT_OBJ:
-            NYI_X86("GT_OBJ");
-#elif !defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+#if !defined(FEATURE_PUT_STRUCT_ARG_STK)
         case GT_OBJ:
 #endif
         case GT_BLK:
@@ -567,11 +565,11 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
             info->dstCount = 0;
             break;
 
-#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+#ifdef FEATURE_PUT_STRUCT_ARG_STK
         case GT_PUTARG_STK:
             TreeNodeInfoInitPutArgStk(tree);
             break;
-#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
+#endif // FEATURE_PUT_STRUCT_ARG_STK
 
         case GT_STORE_BLK:
         case GT_STORE_OBJ:
@@ -1250,7 +1248,7 @@ void Lowering::TreeNodeInfoInitCall(GenTreeCall* call)
     // First, count reg args
     for (GenTreePtr list = call->gtCallLateArgs; list; list = list->MoveNext())
     {
-        assert(list->IsList());
+        assert(list->OperIsList());
 
         GenTreePtr argNode = list->Current();
 
@@ -1265,7 +1263,7 @@ void Lowering::TreeNodeInfoInitCall(GenTreeCall* call)
             argNode->gtLsraInfo.srcCount = 1;
             argNode->gtLsraInfo.dstCount = 0;
 
-#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+#ifdef FEATURE_PUT_STRUCT_ARG_STK
             // If the node is TYP_STRUCT and it is put on stack with
             // putarg_stk operation, we consume and produce no registers.
             // In this case the embedded Obj node should not produce
@@ -1277,7 +1275,7 @@ void Lowering::TreeNodeInfoInitCall(GenTreeCall* call)
                 argNode->gtOp.gtOp1->gtLsraInfo.dstCount = 0;
                 argNode->gtLsraInfo.srcCount             = 0;
             }
-#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
+#endif // FEATURE_PUT_STRUCT_ARG_STK
             continue;
         }
 
@@ -1307,7 +1305,7 @@ void Lowering::TreeNodeInfoInitCall(GenTreeCall* call)
 
         // If the struct arg is wrapped in CPYBLK the type of the param will be TYP_VOID.
         // Use the curArgTabEntry's isStruct to get whether the param is a struct.
-        if (varTypeIsStruct(argNode) FEATURE_UNIX_AMD64_STRUCT_PASSING_ONLY(|| curArgTabEntry->isStruct))
+        if (varTypeIsStruct(argNode) PUT_STRUCT_ARG_STK_ONLY(|| curArgTabEntry->isStruct))
         {
             unsigned   originalSize = 0;
             LclVarDsc* varDsc       = nullptr;
@@ -1329,16 +1327,16 @@ void Lowering::TreeNodeInfoInitCall(GenTreeCall* call)
             {
                 originalSize = genTypeSize(argNode->gtType);
             }
-            else if (argNode->gtOper == GT_LIST)
+            else if (argNode->gtOper == GT_FIELD_LIST)
             {
                 originalSize = 0;
 
                 // There could be up to 2 PUTARG_REGs in the list
-                GenTreeArgList* argListPtr   = argNode->AsArgList();
-                unsigned        iterationNum = 0;
-                for (; argListPtr; argListPtr = argListPtr->Rest())
+                GenTreeFieldList* fieldListPtr = argNode->AsFieldList();
+                unsigned        iterationNum   = 0;
+                for (; fieldListPtr; fieldListPtr = fieldListPtr->Rest())
                 {
-                    GenTreePtr putArgRegNode = argListPtr->gtOp.gtOp1;
+                    GenTreePtr putArgRegNode = fieldListPtr->Current();
                     assert(putArgRegNode->gtOper == GT_PUTARG_REG);
 
                     if (iterationNum == 0)
@@ -1895,7 +1893,7 @@ void Lowering::TreeNodeInfoInitBlockStore(GenTreeBlk* blkNode)
     }
 }
 
-#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+#ifdef FEATURE_PUT_STRUCT_ARG_STK
 //------------------------------------------------------------------------
 // TreeNodeInfoInitPutArgStk: Set the NodeInfo for a GT_PUTARG_STK.
 //
@@ -1909,6 +1907,28 @@ void Lowering::TreeNodeInfoInitPutArgStk(GenTree* tree)
 {
     TreeNodeInfo* info = &(tree->gtLsraInfo);
     LinearScan*   l    = m_lsra;
+
+#ifdef _TARGET_X86_
+    if (tree->gtOp.gtOp1->gtOper == GT_FIELD_LIST)
+    {
+        GenTreeFieldList* fieldListPtr   = tree->gtOp.gtOp1->AsFieldList();
+        for (; fieldListPtr; fieldListPtr = fieldListPtr->Rest())
+        {
+            GenTree* fieldNode = fieldListPtr->Current();
+            if (fieldNode->OperGet() == GT_LONG)
+            {
+                NYI_X86("Promoted long field of TYP_STRUCT");
+            }
+            if (varTypeIsByte(fieldNode))
+            {
+                fieldNode->gtLsraInfo.setSrcCandidates(l, l->allRegs(TYP_INT) & ~RBM_NON_BYTE_REGS);
+            }
+            info->srcCount++;
+        }
+        info->dstCount = 0;
+        return;
+    }
+#endif // _TARGET_X86_
 
     if (tree->TypeGet() != TYP_STRUCT)
     {
@@ -1983,10 +2003,14 @@ void Lowering::TreeNodeInfoInitPutArgStk(GenTree* tree)
             info->setInternalCandidates(l, regMask);
         }
 
+#ifdef _TARGET_X86_
+        if (size >= 8)
+#else // !_TARGET_X86_
         if (size >= XMM_REGSIZE_BYTES)
+#endif // !_TARGET_X86_
         {
-            // If we have a buffer larger than XMM_REGSIZE_BYTES,
-            // reserve an XMM register to use it for a
+            // If we have a buffer larger than or equal to XMM_REGSIZE_BYTES on x64/ux,
+            // or larger than or equal to 8 bytes on x86, reserve an XMM register to use it for a
             // series of 16-byte loads and stores.
             info->internalFloatCount = 1;
             info->addInternalCandidates(l, l->internalFloatRegCandidates());
@@ -2022,7 +2046,7 @@ void Lowering::TreeNodeInfoInitPutArgStk(GenTree* tree)
         info->srcCount -= 1;
     }
 }
-#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
+#endif // FEATURE_PUT_STRUCT_ARG_STK
 
 //------------------------------------------------------------------------
 // TreeNodeInfoInitLclHeap: Set the NodeInfo for a GT_LCLHEAP.
@@ -3331,6 +3355,13 @@ void Lowering::TreeNodeInfoInitCmp(GenTreePtr tree)
         else if (op1->isMemoryOp() && IsSafeToContainMem(tree, op1))
         {
             MakeSrcContained(tree, op1);
+        }
+        else if (op1->IsCnsIntOrI())
+        {
+			// TODO-CQ: We should be able to support swapping op1 and op2 to generate cmp reg, imm,
+			// but there is currently an assert in CodeGen::genCompareInt().
+			// https://github.com/dotnet/coreclr/issues/7270
+            SetRegOptional(op2);
         }
         else
         {
