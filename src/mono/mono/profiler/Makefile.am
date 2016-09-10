@@ -73,10 +73,10 @@ libmono_profiler_iomap_la_LDFLAGS = $(prof_ldflags)
 libmono_profiler_iomap_static_la_SOURCES = mono-profiler-iomap.c
 libmono_profiler_iomap_static_la_LDFLAGS = -static
 
-libmono_profiler_log_la_SOURCES = proflog.c
+libmono_profiler_log_la_SOURCES = mono-profiler-log.c
 libmono_profiler_log_la_LIBADD = $(monodir)/mono/mini/$(LIBMONO_LA) $(GLIB_LIBS) $(Z_LIBS)
 libmono_profiler_log_la_LDFLAGS = $(prof_ldflags)
-libmono_profiler_log_static_la_SOURCES = proflog.c
+libmono_profiler_log_static_la_SOURCES = mono-profiler-log.c
 libmono_profiler_log_static_la_LDFLAGS = -static
 
 if HAVE_VTUNE
@@ -110,7 +110,7 @@ testlog: $(PLOG_TESTS)
 
 check-local: $(check_targets)
 
-EXTRA_DIST=proflog.h \
+EXTRA_DIST=mono-profiler-log.h \
 	$(PLOG_TESTS_SRC) \
 	ptestrunner.pl \
 	$(suppression_DATA)

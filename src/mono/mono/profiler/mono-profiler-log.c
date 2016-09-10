@@ -1,5 +1,5 @@
 /*
- * proflog.c: mono log profiler
+ * mono-profiler-log.c: mono log profiler
  *
  * Authors:
  *   Paolo Molaro (lupus@ximian.com)
@@ -89,7 +89,7 @@
 #include <sys/stat.h>
 #endif
 
-#include "proflog.h"
+#include "mono-profiler-log.h"
 
 #if defined (HAVE_SYS_ZLIB)
 #include <zlib.h>
@@ -262,7 +262,7 @@ static MonoLinkedListSet profiler_thread_list;
  * [time diff: uleb128] nanoseconds since last timing
  * [data]*
  * The data that follows depends on type and the extended info.
- * Type is one of the enum values in proflog.h: TYPE_ALLOC, TYPE_GC,
+ * Type is one of the enum values in mono-profiler-log.h: TYPE_ALLOC, TYPE_GC,
  * TYPE_METADATA, TYPE_METHOD, TYPE_EXCEPTION, TYPE_MONITOR, TYPE_HEAP.
  * The extended info bits are interpreted based on type, see
  * each individual event description below.
@@ -4539,7 +4539,7 @@ helper_thread (void* arg)
 			if (errno == EINTR)
 				continue;
 
-			g_warning ("Error in proflog server: %s", strerror (errno));
+			g_warning ("Error in mono-profiler-log server: %s", strerror (errno));
 			return NULL;
 		}
 
