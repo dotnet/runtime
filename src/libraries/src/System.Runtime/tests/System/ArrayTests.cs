@@ -500,7 +500,6 @@ namespace System.Tests
             Assert.Throws<ArgumentException>(null, () => Array.BinarySearch(new string[count], index, length, "", null));
         }
 
-
         [Theory]
         [InlineData(typeof(object), 0)]
         [InlineData(typeof(object), 2)]
@@ -597,13 +596,13 @@ namespace System.Tests
         [Fact]
         public static void Clear_Struct_WithReferenceAndValueTypeFields_Array()
         {
-            var array = new G[]
+            var array = new NonGenericStruct[]
             {
-            new G { x = 1, s = "Hello", z = 2 },
-            new G { x = 2, s = "Hello", z = 3 },
-            new G { x = 3, s = "Hello", z = 4 },
-            new G { x = 4, s = "Hello", z = 5 },
-            new G { x = 5, s = "Hello", z = 6 }
+            new NonGenericStruct { x = 1, s = "Hello", z = 2 },
+            new NonGenericStruct { x = 2, s = "Hello", z = 3 },
+            new NonGenericStruct { x = 3, s = "Hello", z = 4 },
+            new NonGenericStruct { x = 4, s = "Hello", z = 5 },
+            new NonGenericStruct { x = 5, s = "Hello", z = 6 }
             };
 
             Array.Clear(array, 0, 5);
@@ -614,13 +613,13 @@ namespace System.Tests
                 Assert.Equal(0, array[i].z);
             }
 
-            array = new G[]
+            array = new NonGenericStruct[]
             {
-            new G { x = 1, s = "Hello", z = 2 },
-            new G { x = 2, s = "Hello", z = 3 },
-            new G { x = 3, s = "Hello", z = 4 },
-            new G { x = 4, s = "Hello", z = 5 },
-            new G { x = 5, s = "Hello", z = 6 }
+            new NonGenericStruct { x = 1, s = "Hello", z = 2 },
+            new NonGenericStruct { x = 2, s = "Hello", z = 3 },
+            new NonGenericStruct { x = 3, s = "Hello", z = 4 },
+            new NonGenericStruct { x = 4, s = "Hello", z = 5 },
+            new NonGenericStruct { x = 5, s = "Hello", z = 6 }
             };
 
             Array.Clear(array, 2, 3);
@@ -693,16 +692,16 @@ namespace System.Tests
         [Fact]
         public static void ConstrainedCopy_Struct_WithReferenceAndValueTypeFields_Array()
         {
-            var src = new G[]
+            var src = new NonGenericStruct[]
             {
-            new G { x = 1, s = "Hello1", z = 2 },
-            new G { x = 2, s = "Hello2", z = 3 },
-            new G { x = 3, s = "Hello3", z = 4 },
-            new G { x = 4, s = "Hello4", z = 5 },
-            new G { x = 5, s = "Hello5", z = 6 }
+            new NonGenericStruct { x = 1, s = "Hello1", z = 2 },
+            new NonGenericStruct { x = 2, s = "Hello2", z = 3 },
+            new NonGenericStruct { x = 3, s = "Hello3", z = 4 },
+            new NonGenericStruct { x = 4, s = "Hello4", z = 5 },
+            new NonGenericStruct { x = 5, s = "Hello5", z = 6 }
             };
 
-            var dst = new G[5];
+            var dst = new NonGenericStruct[5];
             Array.ConstrainedCopy(src, 0, dst, 0, 5);
             for (int i = 0; i < dst.Length; i++)
             {
@@ -781,161 +780,554 @@ namespace System.Tests
             yield return new object[] { new IEquatable<int>[] { 0, new NotInt32(), 2, 3, 4, new NotInt32(), 6, 7, 8, 9 }, 2, new int[] { 0xcc, 0xcc, 0xcc, 0xcc, 0xcc, 0xcc, 0xcc, 0xcc, 0xcc, 0xcc }, 5, 3, new int[] { 0xcc, 0xcc, 0xcc, 0xcc, 0xcc, 2, 3, 4, 0xcc, 0xcc } };
 
             yield return new object[] { new object[] { 0, 1, 2, 3, null, 5, 6, 7, 8, 9 }, 2, new int?[] { 0xcc, 0xcc, 0xcc, 0xcc, 0xcc, 0xcc, 0xcc, 0xcc, 0xcc, 0xcc }, 5, 3, new int?[] { 0xcc, 0xcc, 0xcc, 0xcc, 0xcc, 2, 3, null, 0xcc, 0xcc } };
+
+            // Struct[] -> object[]
+            NonGenericStruct[] structArray1 = CreateStructArray();
+            yield return new object[] { structArray1, 0, new object[5], 0, 5, structArray1.Select(g => (object)g).ToArray() };
+
+            // Struct[] -> Struct[]
+            yield return new object[] { structArray1, 0, new NonGenericStruct[5], 0, 5, structArray1 };
+
+            // Struct[] overlaps
+            NonGenericStruct[] structArray2 = CreateStructArray();
+            NonGenericStruct[] overlappingStructArrayExpected = new NonGenericStruct[]
+            {
+                new NonGenericStruct { x = 1, s = "Hello1", z = 2 },
+                new NonGenericStruct { x = 2, s = "Hello2", z = 3 },
+                new NonGenericStruct { x = 2, s = "Hello2", z = 3 },
+                new NonGenericStruct { x = 3, s = "Hello3", z = 4 },
+                new NonGenericStruct { x = 4, s = "Hello4", z = 5 }
+            };
+            yield return new object[] { structArray2, 1, structArray2, 2, 3, overlappingStructArrayExpected };
+
+            // Array -> SZArray
+            Array lowerBoundArray1 = Array.CreateInstance(typeof(int), new int[] { 1 }, new int[] { 1 });
+            lowerBoundArray1.SetValue(2, lowerBoundArray1.GetLowerBound(0));
+            yield return new object[] { lowerBoundArray1, lowerBoundArray1.GetLowerBound(0), new int[1], 0, 1, new int[] { 2 } };
+
+            // SZArray -> Array
+            Array lowerBoundArray2 = Array.CreateInstance(typeof(int), new int[] { 1 }, new int[] { 1 });
+            yield return new object[] { new int[] { 2 }, 0, lowerBoundArray2, lowerBoundArray2.GetLowerBound(0), 1, lowerBoundArray1 };
+
+            // int[,] -> int[,]
+            int[,] intRank2Array = new int[,] { { 1, 2, 3 }, { 4, 5, 6 } };
+            yield return new object[] { intRank2Array, 0, new int[2, 3], 0, 6, intRank2Array };
+            yield return new object[] { intRank2Array, 0, new int[3, 2], 0, 6, new int[,] { { 1, 2 }, { 3, 4 }, { 5, 6 } } };
+            yield return new object[] { intRank2Array, 1, new int[2, 3], 2, 3, new int[,] { { 0, 0, 2 }, { 3, 4, 0 } } };
+
+            // int[,] -> long[,]
+            yield return new object[] { intRank2Array, 0, new long[2, 3], 0, 6, new long[,] { { 1, 2, 3 }, { 4, 5, 6 } } };
+
+            // int[,] -> object[,]
+            yield return new object[] { intRank2Array, 0, new object[2, 3], 0, 6, new object[,] { { 1, 2 }, { 3, 4 }, { 5, 6 } } };
+            yield return new object[] { intRank2Array, 0, new object[3, 2], 0, 6, new object[,] { { 1, 2 }, { 3, 4 }, { 5, 6 } } };
+            yield return new object[] { intRank2Array, 1, new object[2, 3], 2, 3, new object[,] { { null, null, 2 }, { 3, 4, null } } };
+
+            // object[,] -> int[,]
+            object[,] objectRank2Array = new object[,] { { 1, 2, 3 }, { 4, 5, 6 } };
+            yield return new object[] { objectRank2Array, 0, new int[2, 3], 0, 6, intRank2Array };
+            yield return new object[] { objectRank2Array, 0, new int[3, 2], 0, 6, new int[,] { { 1, 2 }, { 3, 4 }, { 5, 6 } } };
+            yield return new object[] { objectRank2Array, 1, new int[2, 3], 2, 3, new int[,] { { 0, 0, 2 }, { 3, 4, 0 } } };
+
+            // object[,] -> object[,]
+            yield return new object[] { objectRank2Array, 0, new object[2, 3], 0, 6, objectRank2Array };
+            yield return new object[] { objectRank2Array, 0, new object[3, 2], 0, 6, new object[,] { { 1, 2 }, { 3, 4 }, { 5, 6 } } };
+            yield return new object[] { objectRank2Array, 1, new object[2, 3], 2, 3, new object[,] { { null, null, 2 }, { 3, 4, null } } };
+        }
+
+        public static IEnumerable<object[]> Copy_SZArray_TestData()
+        {
+            // Int64[] -> Int64[]
+            yield return new object[] { new long[] { 1, 2, 3 }, 0, new long[3], 0, 3, new long[] { 1, 2, 3 } };
+            yield return new object[] { new long[] { 1, 2, 3 }, 1, new long[] { 1, 2, 3, 4, 5 }, 2, 2, new long[] { 1, 2, 2, 3, 5 } };
+            
+            // UInt64[] -> UInt64[]
+            yield return new object[] { new ulong[] { 1, 2, 3 }, 0, new ulong[3], 0, 3, new ulong[] { 1, 2, 3 } };
+            yield return new object[] { new ulong[] { 1, 2, 3 }, 1, new ulong[] { 1, 2, 3, 4, 5 }, 2, 2, new ulong[] { 1, 2, 2, 3, 5 } };
+
+            // UInt32[] -> UInt32[]
+            yield return new object[] { new uint[] { 1, 2, 3 }, 0, new uint[3], 0, 3, new uint[] { 1, 2, 3 } };
+            yield return new object[] { new uint[] { 1, 2, 3 }, 1, new uint[] { 1, 2, 3, 4, 5 }, 2, 2, new uint[] { 1, 2, 2, 3, 5 } };
+
+            // Int32[] -> Int32[]
+            yield return new object[] { new int[] { 1, 2, 3 }, 0, new int[3], 0, 3, new int[] { 1, 2, 3 } };
+            yield return new object[] { new int[] { 1, 2, 3 }, 1, new int[] { 1, 2, 3, 4, 5 }, 2, 2, new int[] { 1, 2, 2, 3, 5 } };
+
+            // Int16[] -> Int16[]
+            yield return new object[] { new short[] { 1, 2, 3 }, 0, new short[3], 0, 3, new short[] { 1, 2, 3 } };
+            yield return new object[] { new short[] { 1, 2, 3 }, 1, new short[] { 1, 2, 3, 4, 5 }, 2, 2, new short[] { 1, 2, 2, 3, 5 } };
+
+            // UInt16[] -> UInt16[]
+            yield return new object[] { new ushort[] { 1, 2, 3 }, 0, new ushort[3], 0, 3, new ushort[] { 1, 2, 3 } };
+            yield return new object[] { new ushort[] { 1, 2, 3 }, 1, new ushort[] { 1, 2, 3, 4, 5 }, 2, 2, new ushort[] { 1, 2, 2, 3, 5 } };
+
+            // SByte[] -> SByte[]
+            yield return new object[] { new sbyte[] { 1, 2, 3 }, 0, new sbyte[3], 0, 3, new sbyte[] { 1, 2, 3 } };
+            yield return new object[] { new sbyte[] { 1, 2, 3 }, 1, new sbyte[] { 1, 2, 3, 4, 5 }, 2, 2, new sbyte[] { 1, 2, 2, 3, 5 } };
+
+            // Byte[] -> Byte[]
+            yield return new object[] { new byte[] { 1, 2, 3 }, 0, new byte[3], 0, 3, new byte[] { 1, 2, 3 } };
+            yield return new object[] { new byte[] { 1, 2, 3 }, 1, new byte[] { 1, 2, 3, 4, 5 }, 2, 2, new byte[] { 1, 2, 2, 3, 5 } };
+
+            // Char[] -> Char[]
+            yield return new object[] { new char[] { '1', '2', '3' }, 0, new char[3], 0, 3, new char[] { '1', '2', '3' } };
+            yield return new object[] { new char[] { '1', '2', '3' }, 1, new char[] { '1', '2', '3', '4', '5' }, 2, 2, new char[] { '1', '2', '2', '3', '5' } };
+            
+            // Bool[] -> Bool[]
+            yield return new object[] { new bool[] { false, true, false }, 0, new bool[3], 0, 3, new bool[] { false, true, false } };
+            yield return new object[] { new bool[] { false, true, false }, 1, new bool[] { false, true, false, true, false }, 2, 2, new bool[] { false, true, true, false, false } };
+
+            // Single[] -> Single[]
+            yield return new object[] { new float[] { 1, 2.2f, 3 }, 0, new float[3], 0, 3, new float[] { 1, 2.2f, 3 } };
+            yield return new object[] { new float[] { 1, 2.2f, 3 }, 1, new float[] { 1, 2, 3.3f, 4, 5 }, 2, 2, new float[] { 1, 2, 2.2f, 3, 5 } };
+            
+            // Double[] -> Double[]
+            yield return new object[] { new double[] { 1, 2.2, 3 }, 0, new double[3], 0, 3, new double[] { 1, 2.2, 3 } };
+            yield return new object[] { new double[] { 1, 2.2, 3 }, 1, new double[] { 1, 2, 3.3, 4, 5 }, 2, 2, new double[] { 1, 2, 2.2, 3, 5 } };
+            
+            // IntPtr[] -> IntPtr[]
+            yield return new object[] { new IntPtr[] { (IntPtr)1, (IntPtr)2, (IntPtr)3 }, 0, new IntPtr[3], 0, 3, new IntPtr[] { (IntPtr)1, (IntPtr)2, (IntPtr)3 } };
+            yield return new object[] { new IntPtr[] { (IntPtr)1, (IntPtr)2, (IntPtr)3 }, 1, new IntPtr[] { (IntPtr)1, (IntPtr)2, (IntPtr)3, (IntPtr)4, (IntPtr)5 }, 2, 2, new IntPtr[] { (IntPtr)1, (IntPtr)2, (IntPtr)2, (IntPtr)3, (IntPtr)5 } };
+
+            // UIntPtr[] -> UIntPtr[]
+            yield return new object[] { new UIntPtr[] { (UIntPtr)1, (UIntPtr)2, (UIntPtr)3 }, 0, new UIntPtr[3], 0, 3, new UIntPtr[] { (UIntPtr)1, (UIntPtr)2, (UIntPtr)3 } };
+            yield return new object[] { new UIntPtr[] { (UIntPtr)1, (UIntPtr)2, (UIntPtr)3 }, 1, new UIntPtr[] { (UIntPtr)1, (UIntPtr)2, (UIntPtr)3, (UIntPtr)4, (UIntPtr)5 }, 2, 2, new UIntPtr[] { (UIntPtr)1, (UIntPtr)2, (UIntPtr)2, (UIntPtr)3, (UIntPtr)5 } };
+
+            // String[] -> String[]
+            yield return new object[] { new string[] { "1", "2", "3" }, 0, new string[3], 0, 3, new string[] { "1", "2", "3" } };
+            yield return new object[] { new string[] { "1", "2", "3" }, 1, new string[] { "1", "2", "3", "4", "5" }, 2, 2, new string[] { "1", "2", "2", "3", "5" } };
+
+            // IntEnum[] conversions
+            yield return new object[] { new Int32Enum[] { (Int32Enum)1, (Int32Enum)2, (Int32Enum)3 }, 0, new Int32Enum[3], 0, 3, new Int32Enum[] { (Int32Enum)1, (Int32Enum)2, (Int32Enum)3 } };
+            yield return new object[] { new Int32Enum[] { (Int32Enum)1, (Int32Enum)2, (Int32Enum)3 }, 1, new Int32Enum[] { (Int32Enum)1, (Int32Enum)2, (Int32Enum)3, (Int32Enum)4, (Int32Enum)5 }, 2, 2, new Int32Enum[] { (Int32Enum)1, (Int32Enum)2, (Int32Enum)2, (Int32Enum)3, (Int32Enum)5 } };
+            yield return new object[] { new Int32Enum[] { (Int32Enum)1 }, 0, new int[1], 0, 1, new int[] { 1 } };
+        }
+        
+        public static IEnumerable<object[]> Copy_PrimitiveWidening_TestData()
+        {
+            // Int64[] -> primitive[]
+            yield return new object[] { new long[] { 1, 2, 3 }, 0, new float[3], 0, 3, new float[] { 1, 2, 3 } };
+            yield return new object[] { new long[] { 1, 2, 3 }, 0, new double[3], 0, 3, new double[] { 1, 2, 3 } };
+
+            // UInt64[] -> primitive[]
+            yield return new object[] { new ulong[] { 1, 2, 3 }, 0, new float[3], 0, 3, new float[] { 1, 2, 3 } };
+            yield return new object[] { new ulong[] { 1, 2, 3 }, 0, new double[3], 0, 3, new double[] { 1, 2, 3 } };
+
+            // Int32[] -> primitive[]
+            yield return new object[] { new int[] { 1, 2, 3 }, 0, new long[3], 0, 3, new long[] { 1, 2, 3 } };
+            yield return new object[] { new int[] { 1, 2, 3 }, 0, new float[3], 0, 3, new float[] { 1, 2, 3 } };
+            yield return new object[] { new int[] { 1, 2, 3 }, 0, new double[3], 0, 3, new double[] { 1, 2, 3 } };
+
+            // UInt32[] -> primitive[]
+            yield return new object[] { new uint[] { 1, 2, 3 }, 0, new long[3], 0, 3, new long[] { 1, 2, 3 } };
+            yield return new object[] { new uint[] { 1, 2, 3 }, 0, new ulong[3], 0, 3, new ulong[] { 1, 2, 3 } };
+            yield return new object[] { new uint[] { 1, 2, 3 }, 0, new float[3], 0, 3, new float[] { 1, 2, 3 } };
+            yield return new object[] { new uint[] { 1, 2, 3 }, 0, new double[3], 0, 3, new double[] { 1, 2, 3 } };
+
+            // Int16[] -> primitive[]
+            yield return new object[] { new short[] { 1, 2, 3 }, 0, new long[3], 0, 3, new long[] { 1, 2, 3 } };
+            yield return new object[] { new short[] { 1, 2, 3 }, 0, new int[3], 0, 3, new int[] { 1, 2, 3 } };
+            yield return new object[] { new short[] { 1, 2, 3 }, 0, new float[3], 0, 3, new float[] { 1, 2, 3 } };
+            yield return new object[] { new short[] { 1, 2, 3 }, 0, new double[3], 0, 3, new double[] { 1, 2, 3 } };
+            
+            // UInt16[] -> primitive[]
+            yield return new object[] { new ushort[] { 1, 2, 3 }, 0, new long[3], 0, 3, new long[] { 1, 2, 3 } };
+            yield return new object[] { new ushort[] { 1, 2, 3 }, 0, new ulong[3], 0, 3, new ulong[] { 1, 2, 3 } };
+            yield return new object[] { new ushort[] { 1, 2, 3 }, 0, new int[3], 0, 3, new int[] { 1, 2, 3 } };
+            yield return new object[] { new ushort[] { 1, 2, 3 }, 0, new uint[3], 0, 3, new uint[] { 1, 2, 3 } };
+            yield return new object[] { new ushort[] { 1, 2, 3 }, 0, new char[3], 0, 3, new char[] { (char)1, (char)2, (char)3 } };
+            yield return new object[] { new ushort[] { 1, 2, 3 }, 0, new float[3], 0, 3, new float[] { 1, 2, 3 } };
+            yield return new object[] { new ushort[] { 1, 2, 3 }, 0, new double[3], 0, 3, new double[] { 1, 2, 3 } };
+
+            // SByte[] -> primitive[]
+            yield return new object[] { new sbyte[] { 1, 2, 3 }, 0, new long[3], 0, 3, new long[] { 1, 2, 3 } };
+            yield return new object[] { new sbyte[] { 1, 2, 3 }, 0, new int[3], 0, 3, new int[] { 1, 2, 3 } };
+            yield return new object[] { new sbyte[] { 1, 2, 3 }, 0, new short[3], 0, 3, new short[] { 1, 2, 3 } };
+            yield return new object[] { new sbyte[] { 1, 2, 3 }, 0, new float[3], 0, 3, new float[] { 1, 2, 3 } };
+            yield return new object[] { new sbyte[] { 1, 2, 3 }, 0, new double[3], 0, 3, new double[] { 1, 2, 3 } };
+
+            // Byte[] -> primitive[]
+            yield return new object[] { new byte[] { 1, 2, 3 }, 0, new long[3], 0, 3, new long[] { 1, 2, 3 } };
+            yield return new object[] { new byte[] { 1, 2, 3 }, 0, new ulong[3], 0, 3, new ulong[] { 1, 2, 3 } };
+            yield return new object[] { new byte[] { 1, 2, 3 }, 0, new int[3], 0, 3, new int[] { 1, 2, 3 } };
+            yield return new object[] { new byte[] { 1, 2, 3 }, 0, new uint[3], 0, 3, new uint[] { 1, 2, 3 } };
+            yield return new object[] { new byte[] { 1, 2, 3 }, 0, new short[3], 0, 3, new short[] { 1, 2, 3 } };
+            yield return new object[] { new byte[] { 1, 2, 3 }, 0, new ushort[3], 0, 3, new ushort[] { 1, 2, 3 } };
+            yield return new object[] { new byte[] { 1, 2, 3 }, 0, new char[3], 0, 3, new char[] { (char)1, (char)2, (char)3 } };
+            yield return new object[] { new byte[] { 1, 2, 3 }, 0, new float[3], 0, 3, new float[] { 1, 2, 3 } };
+            yield return new object[] { new byte[] { 1, 2, 3 }, 0, new double[3], 0, 3, new double[] { 1, 2, 3 } };
+
+            // Char[] -> primitive[]
+            yield return new object[] { new char[] { (char)1, (char)2, (char)3 }, 0, new long[3], 0, 3, new long[] { 1, 2, 3 } };
+            yield return new object[] { new char[] { (char)1, (char)2, (char)3 }, 0, new ulong[3], 0, 3, new ulong[] { 1, 2, 3 } };
+            yield return new object[] { new char[] { (char)1, (char)2, (char)3 }, 0, new int[3], 0, 3, new int[] { 1, 2, 3 } };
+            yield return new object[] { new char[] { (char)1, (char)2, (char)3 }, 0, new uint[3], 0, 3, new uint[] { 1, 2, 3 } };
+            yield return new object[] { new char[] { (char)1, (char)2, (char)3 }, 0, new ushort[3], 0, 3, new ushort[] { 1, 2, 3 } };
+            yield return new object[] { new char[] { (char)1, (char)2, (char)3 }, 0, new float[3], 0, 3, new float[] { 1, 2, 3 } };
+            yield return new object[] { new char[] { (char)1, (char)2, (char)3 }, 0, new double[3], 0, 3, new double[] { 1, 2, 3 } };
+
+            // Single[] -> primitive[]
+            yield return new object[] { new float[] { 1, 2.2f, 3 }, 0, new double[3], 0, 3, new double[] { 1, 2.2f, 3 } };
+        }
+
+        public static IEnumerable<object[]> Copy_UnreliableConversion_CanPerform_TestData()
+        {
+            // Interface1[] -> InterfaceImplementingInterface1[] works when all values are null
+            yield return new object[] { new NonGenericInterface1[1], 0, new NonGenericInterfaceWithNonGenericInterface1[1], 0, 1, new NonGenericInterfaceWithNonGenericInterface1[1] };
+
+            // Interface1[] -> Interface2[] works when values are all null
+            yield return new object[] { new NonGenericInterface1[1], 0, new NonGenericInterface2[1], 0, 1, new NonGenericInterface2[1] };
+
+            // Interface1[] -> Interface2[] works when values all implement Interface2
+            ClassWithNonGenericInterface1_2 twoInterfacesClass = new ClassWithNonGenericInterface1_2();
+            yield return new object[] { new NonGenericInterface1[] { twoInterfacesClass }, 0, new NonGenericInterface2[1], 0, 1, new NonGenericInterface2[] { twoInterfacesClass } };
+
+            StructWithNonGenericInterface1_2 twoInterfacesStruct = new StructWithNonGenericInterface1_2();
+            yield return new object[] { new NonGenericInterface1[] { twoInterfacesStruct }, 0, new NonGenericInterface2[1], 0, 1, new NonGenericInterface2[] { twoInterfacesStruct } };
+
+            // Interface1[] -> Any[] works when values are all null
+            yield return new object[] { new NonGenericInterface1[1], 0, new ClassWithNonGenericInterface1[1], 0, 1, new ClassWithNonGenericInterface1[1] };
+
+            // Interface1[] -> Any[] works when values are all Any
+            ClassWithNonGenericInterface1 oneInterfaceClass = new ClassWithNonGenericInterface1();
+            yield return new object[] { new NonGenericInterface1[] { oneInterfaceClass }, 0, new ClassWithNonGenericInterface1[1], 0, 1, new ClassWithNonGenericInterface1[] { oneInterfaceClass } };
+
+            StructWithNonGenericInterface1 oneInterfaceStruct = new StructWithNonGenericInterface1();
+            yield return new object[] { new NonGenericInterface1[] { oneInterfaceStruct }, 0, new StructWithNonGenericInterface1[1], 0, 1, new StructWithNonGenericInterface1[] { oneInterfaceStruct } };
+
+            // ReferenceType[] -> InterfaceNotImplementedByReferenceType[] works when values are all null
+            yield return new object[] { new ClassWithNonGenericInterface1[1], 0, new NonGenericInterface2[1], 0, 1, new NonGenericInterface2[1] };
+        }
+
+        [Theory]
+        [MemberData(nameof(Copy_SZArray_TestData))]
+        [MemberData(nameof(Copy_PrimitiveWidening_TestData))]
+        [MemberData(nameof(Copy_UnreliableConversion_CanPerform_TestData))]
+        public static void Copy_SZArray(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length, Array expected)
+        {
+            // Basic: forward SZArray
+            Copy(sourceArray, sourceIndex, destinationArray, destinationIndex, length, expected);
+
+            // Advanced: convert SZArray to an array with non-zero lower bound
+            const int LowerBound = 5;
+            Copy(NonZeroLowerBoundArray(sourceArray, LowerBound), sourceIndex + LowerBound, NonZeroLowerBoundArray(destinationArray, LowerBound), destinationIndex + LowerBound, length, NonZeroLowerBoundArray(expected, LowerBound));
         }
 
         [Theory]
         [MemberData(nameof(Copy_TestData))]
         public static void Copy(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length, Array expected)
         {
-            if (sourceIndex == 0 && destinationIndex == 0)
+            bool overlaps = sourceArray == destinationArray;
+            if (sourceIndex == sourceArray.GetLowerBound(0) && destinationIndex == destinationArray.GetLowerBound(0))
             {
                 // Use Copy(Array, Array, int)
-                Array testArray = (Array)sourceArray.Clone();
-                Array.Copy(sourceArray, destinationArray, length);
-                Assert.Equal(expected, destinationArray);
+                Array sourceArrayClone1 = (Array)sourceArray.Clone();
+                Array destinationArrayClone1 = overlaps ? sourceArrayClone1 : (Array)destinationArray.Clone();
+                Array.Copy(sourceArrayClone1, destinationArrayClone1, length);
+                Assert.Equal(expected, destinationArrayClone1);
             }
             // Use Copy(Array, int, Array, int, int)
-            Array.Copy(sourceArray, sourceIndex, destinationArray, destinationIndex, length);
-            Assert.Equal(expected, destinationArray);
+            Array sourceArrayClone2 = (Array)sourceArray.Clone();
+            Array destinationArrayClone2 = overlaps ? sourceArrayClone2 : (Array)destinationArray.Clone();
+            Array.Copy(sourceArrayClone2, sourceIndex, destinationArrayClone2, destinationIndex, length);
+            Assert.Equal(expected, destinationArrayClone2);
         }
 
         [Fact]
-        public static void Copy_ValueTypeArray_ToObjectArray()
+        public static void Copy_NullSourceArray_ThrowsArgumentNullException()
         {
-            var src = new G[]
-            {
-            new G { x = 1, s = "Hello1", z = 2 },
-            new G { x = 2, s = "Hello2", z = 3 },
-            new G { x = 3, s = "Hello3", z = 4 },
-            new G { x = 4, s = "Hello4", z = 5 },
-            new G { x = 5, s = "Hello5", z = 6 }
-            };
+            Assert.Throws<ArgumentNullException>("sourceArray", () => Array.Copy(null, new string[10], 0));
+            Assert.Throws<ArgumentNullException>("source", () => Array.Copy(null, 0, new string[10], 0, 0));
+        }
 
-            var dst = new object[5];
-            Array.Copy(src, 0, dst, 0, 5);
-            for (int i = 0; i < dst.Length; i++)
+        [Fact]
+        public static void Copy_NullDestinationArray_ThrowsArgumentNullException()
+        {
+            Assert.Throws<ArgumentNullException>("destinationArray", () => Array.Copy(new string[10], null, 0));
+            Assert.Throws<ArgumentNullException>("dest", () => Array.Copy(new string[10], 0, null, 0, 0));
+        }
+
+        [Fact]
+        public static void Copy_SourceAndDestinationArrayHaveDifferentRanks_ThrowsRankException()
+        {
+            Assert.Throws<RankException>(() => Array.Copy(new string[10, 10], new string[10], 0));
+            Assert.Throws<RankException>(() => Array.Copy(new string[10, 10], 0, new string[10], 0, 0));
+        }
+
+        public static IEnumerable<object[]> Copy_SourceAndDestinationNeverConvertible_TestData()
+        {
+            yield return new object[] { new string[1], new int[1] };
+            yield return new object[] { new int[1], new string[1] };
+            yield return new object[] { new int[1], new IEnumerable<int>[1] };
+
+            // Invalid jagged array
+            yield return new object[] { new int[1][], new int[1][,] };
+            yield return new object[] { new int[1][,], new int[1][] };
+            yield return new object[] { new int[1][], new string[1][] };
+            yield return new object[] { new string[1][], new int[1][] };
+
+            // Can't primitive widen arrays
+            yield return new object[] { new char[1][], new ushort[1][] };
+            yield return new object[] { new ushort[1][], new char[1][] };
+
+            // Can't primitive widen Int64
+            yield return new object[] { new long[1], new ulong[1] };
+            yield return new object[] { new long[1], new int[1] };
+            yield return new object[] { new long[1], new uint[1] };
+            yield return new object[] { new long[1], new short[1] };
+            yield return new object[] { new long[1], new ushort[1] };
+            yield return new object[] { new long[1], new sbyte[1] };
+            yield return new object[] { new long[1], new byte[1] };
+            yield return new object[] { new long[1], new char[1] };
+            yield return new object[] { new long[1], new bool[1] };
+            yield return new object[] { new long[1], new IntPtr[1] };
+            yield return new object[] { new long[1], new UIntPtr[1] };
+
+            // Can't primitive widen UInt64
+            yield return new object[] { new ulong[1], new long[1] };
+            yield return new object[] { new ulong[1], new int[1] };
+            yield return new object[] { new ulong[1], new uint[1] };
+            yield return new object[] { new ulong[1], new short[1] };
+            yield return new object[] { new ulong[1], new ushort[1] };
+            yield return new object[] { new ulong[1], new sbyte[1] };
+            yield return new object[] { new ulong[1], new byte[1] };
+            yield return new object[] { new ulong[1], new char[1] };
+            yield return new object[] { new ulong[1], new bool[1] };
+            yield return new object[] { new ulong[1], new IntPtr[1] };
+            yield return new object[] { new ulong[1], new UIntPtr[1] };
+
+            // Can't primitive widen Int32
+            yield return new object[] { new int[1], new ulong[1] };
+            yield return new object[] { new int[1], new uint[1] };
+            yield return new object[] { new int[1], new short[1] };
+            yield return new object[] { new int[1], new ushort[1] };
+            yield return new object[] { new int[1], new sbyte[1] };
+            yield return new object[] { new int[1], new byte[1] };
+            yield return new object[] { new int[1], new char[1] };
+            yield return new object[] { new int[1], new bool[1] };
+            yield return new object[] { new int[1], new IntPtr[1] };
+            yield return new object[] { new int[1], new UIntPtr[1] };
+
+            // Can't primitive widen UInt32
+            yield return new object[] { new uint[1], new short[1] };
+            yield return new object[] { new uint[1], new ushort[1] };
+            yield return new object[] { new uint[1], new sbyte[1] };
+            yield return new object[] { new uint[1], new byte[1] };
+            yield return new object[] { new uint[1], new char[1] };
+            yield return new object[] { new uint[1], new bool[1] };
+            yield return new object[] { new uint[1], new IntPtr[1] };
+            yield return new object[] { new uint[1], new UIntPtr[1] };
+
+            // Can't primitive widen Int16
+            yield return new object[] { new short[1], new ulong[1] };
+            yield return new object[] { new short[1], new ushort[1] };
+            yield return new object[] { new short[1], new ushort[1] };
+            yield return new object[] { new short[1], new sbyte[1] };
+            yield return new object[] { new short[1], new byte[1] };
+            yield return new object[] { new short[1], new char[1] };
+            yield return new object[] { new short[1], new bool[1] };
+            yield return new object[] { new short[1], new IntPtr[1] };
+            yield return new object[] { new short[1], new UIntPtr[1] };
+
+            // Can't primitive widen UInt16
+            yield return new object[] { new ushort[1], new sbyte[1] };
+            yield return new object[] { new ushort[1], new byte[1] };
+            yield return new object[] { new ushort[1], new bool[1] };
+            yield return new object[] { new ushort[1], new IntPtr[1] };
+            yield return new object[] { new ushort[1], new UIntPtr[1] };
+
+            // Can't primitive widen SByte
+            yield return new object[] { new sbyte[1], new ulong[1] };
+            yield return new object[] { new sbyte[1], new uint[1] };
+            yield return new object[] { new sbyte[1], new ushort[1] };
+            yield return new object[] { new sbyte[1], new byte[1] };
+            yield return new object[] { new sbyte[1], new char[1] };
+            yield return new object[] { new sbyte[1], new bool[1] };
+            yield return new object[] { new sbyte[1], new IntPtr[1] };
+            yield return new object[] { new sbyte[1], new UIntPtr[1] };
+
+            // Can't primitive widen Byte
+            yield return new object[] { new byte[1], new sbyte[1] };
+            yield return new object[] { new byte[1], new bool[1] };
+            yield return new object[] { new byte[1], new IntPtr[1] };
+            yield return new object[] { new byte[1], new UIntPtr[1] };
+
+            // Can't primitive widen Bool
+            yield return new object[] { new bool[1], new long[1] };
+            yield return new object[] { new bool[1], new ulong[1] };
+            yield return new object[] { new bool[1], new int[1] };
+            yield return new object[] { new bool[1], new uint[1] };
+            yield return new object[] { new bool[1], new short[1] };
+            yield return new object[] { new bool[1], new ushort[1] };
+            yield return new object[] { new bool[1], new sbyte[1] };
+            yield return new object[] { new bool[1], new byte[1] };
+            yield return new object[] { new bool[1], new char[1] };
+            yield return new object[] { new bool[1], new float[1] };
+            yield return new object[] { new bool[1], new double[1] };
+            yield return new object[] { new bool[1], new IntPtr[1] };
+            yield return new object[] { new bool[1], new UIntPtr[1] };
+
+            // Can't primitive widen Single
+            yield return new object[] { new float[1], new long[1] };
+            yield return new object[] { new float[1], new ulong[1] };
+            yield return new object[] { new float[1], new int[1] };
+            yield return new object[] { new float[1], new uint[1] };
+            yield return new object[] { new float[1], new short[1] };
+            yield return new object[] { new float[1], new ushort[1] };
+            yield return new object[] { new float[1], new sbyte[1] };
+            yield return new object[] { new float[1], new byte[1] };
+            yield return new object[] { new float[1], new char[1] };
+            yield return new object[] { new float[1], new bool[1] };
+            yield return new object[] { new float[1], new IntPtr[1] };
+            yield return new object[] { new float[1], new UIntPtr[1] };
+
+            // Can't primitive widen Double
+            yield return new object[] { new double[1], new long[1] };
+            yield return new object[] { new double[1], new ulong[1] };
+            yield return new object[] { new double[1], new int[1] };
+            yield return new object[] { new double[1], new uint[1] };
+            yield return new object[] { new double[1], new short[1] };
+            yield return new object[] { new double[1], new ushort[1] };
+            yield return new object[] { new double[1], new sbyte[1] };
+            yield return new object[] { new double[1], new byte[1] };
+            yield return new object[] { new double[1], new char[1] };
+            yield return new object[] { new double[1], new bool[1] };
+            yield return new object[] { new double[1], new float[1] };
+            yield return new object[] { new double[1], new IntPtr[1] };
+            yield return new object[] { new double[1], new UIntPtr[1] };
+
+            // Can't primitive widen IntPtr
+            yield return new object[] { new IntPtr[1], new long[1] };
+            yield return new object[] { new IntPtr[1], new ulong[1] };
+            yield return new object[] { new IntPtr[1], new int[1] };
+            yield return new object[] { new IntPtr[1], new uint[1] };
+            yield return new object[] { new IntPtr[1], new short[1] };
+            yield return new object[] { new IntPtr[1], new ushort[1] };
+            yield return new object[] { new IntPtr[1], new sbyte[1] };
+            yield return new object[] { new IntPtr[1], new byte[1] };
+            yield return new object[] { new IntPtr[1], new char[1] };
+            yield return new object[] { new IntPtr[1], new bool[1] };
+            yield return new object[] { new IntPtr[1], new float[1] };
+            yield return new object[] { new IntPtr[1], new double[1] };
+            yield return new object[] { new IntPtr[1], new UIntPtr[1] };
+
+            // Can't primitive widen UIntPtr
+            yield return new object[] { new UIntPtr[1], new long[1] };
+            yield return new object[] { new UIntPtr[1], new ulong[1] };
+            yield return new object[] { new UIntPtr[1], new int[1] };
+            yield return new object[] { new UIntPtr[1], new uint[1] };
+            yield return new object[] { new UIntPtr[1], new short[1] };
+            yield return new object[] { new UIntPtr[1], new ushort[1] };
+            yield return new object[] { new UIntPtr[1], new sbyte[1] };
+            yield return new object[] { new UIntPtr[1], new byte[1] };
+            yield return new object[] { new UIntPtr[1], new char[1] };
+            yield return new object[] { new UIntPtr[1], new bool[1] };
+            yield return new object[] { new UIntPtr[1], new float[1] };
+            yield return new object[] { new UIntPtr[1], new double[1] };
+            yield return new object[] { new UIntPtr[1], new IntPtr[1] };
+
+            // Interface[] -> Any[] only works if Any implements Interface
+            yield return new object[] { new NonGenericInterface2[1], new StructWithNonGenericInterface1[1] };
+
+            // ValueType[] -> InterfaceNotImplementedByValueType[] never works
+            yield return new object[] { new StructWithNonGenericInterface1[1], new NonGenericInterface2[1] };
+
+            // Can't get Enum from its underlying type
+            yield return new object[] { new int[1], new Int32Enum[1] };
+
+            // Can't primitive widen Enum
+            yield return new object[] { new Int32Enum[1], new long[1] };
+            yield return new object[] { new Int32Enum[1], new Int64Enum[1] };
+        }
+
+        [Theory]
+        [MemberData(nameof(Copy_SourceAndDestinationNeverConvertible_TestData))]
+        public static void Copy_SourceAndDestinationNeverConvertible_ThrowsArrayTypeMismatchException(Array sourceArray, Array destinationArray)
+        {
+            Assert.Throws<ArrayTypeMismatchException>(() => Array.Copy(sourceArray, destinationArray, 0));
+            Assert.Throws<ArrayTypeMismatchException>(() => Array.Copy(sourceArray, sourceArray.GetLowerBound(0), destinationArray, destinationArray.GetLowerBound(0), 0));
+        }
+
+        [Fact]
+        public static unsafe void Copy_PointerArrayToNonPointerArray_ThrowsArrayTypeMismatchException()
+        {
+            Copy_SourceAndDestinationNeverConvertible_ThrowsArrayTypeMismatchException(new int[1], new int*[1]);
+            Copy_SourceAndDestinationNeverConvertible_ThrowsArrayTypeMismatchException(new int*[1], new int[1]);
+        }
+
+        public static IEnumerable<object[]> Copy_UnreliableCoversion_CantPerform_TestData()
+        {
+            yield return new object[] { new object[] { "1" }, new int[1] };
+
+            IEquatable<int>[] interfaceArray1 = new IEquatable<int>[10] { 0, 0, 0, 0, new NotInt32(), 0, 0, 0, 0, 0 };
+            yield return new object[] { interfaceArray1, new int[10]};
+
+            IEquatable<int>[] interfaceArray2 = new IEquatable<int>[10] { 0, 0, 0, 0, new NotInt32(), 0, 0, 0, 0, 0 };
+            yield return new object[] { interfaceArray2, new int[10] };
+
+            // Interface1[] -> Interface2[] when an Interface1 can't be assigned to Interface2
+            yield return new object[] { new NonGenericInterface1[] { new StructWithNonGenericInterface1() }, new NonGenericInterface2[1] };
+            yield return new object[] { new NonGenericInterface1[] { new StructWithNonGenericInterface1() }, new NonGenericInterface2[1] };
+            yield return new object[] { new NonGenericInterface1[] { new ClassWithNonGenericInterface1() }, new NonGenericInterfaceWithNonGenericInterface1[1] };
+            yield return new object[] { new NonGenericInterface1[] { new StructWithNonGenericInterface1() }, new NonGenericInterfaceWithNonGenericInterface1[1] };
+
+            // Interface1[] -> ValueType[] when an Interface1 is null
+            yield return new object[] { new NonGenericInterface1[1], new StructWithNonGenericInterface1[1] };
+
+            // Interface1[] -> ValueType[] when an Interface1 can't be assigned to ValueType
+            yield return new object[] { new NonGenericInterface1[] { new ClassWithNonGenericInterface1() }, new StructWithNonGenericInterface1[1] };
+        }
+
+        [Theory]
+        [MemberData(nameof(Copy_UnreliableCoversion_CantPerform_TestData))]
+        public static void Copy_UnreliableConverson_CantPerform_ThrowsInvalidCastException(Array sourceArray, Array destinationArray)
+        {
+            int length = Math.Min(sourceArray.Length, destinationArray.Length);
+            Assert.Throws<InvalidCastException>(() => Array.Copy(sourceArray, destinationArray, length));
+            Assert.Throws<InvalidCastException>(() => Array.Copy(sourceArray, sourceArray.GetLowerBound(0), destinationArray, destinationArray.GetLowerBound(0), length));
+        }
+
+        [Fact]
+        public static void Copy_NegativeLength_ThrowsArgumentOutOfRangeException()
+        {
+            Assert.Throws<ArgumentOutOfRangeException>("length", () => Array.Copy(new string[10], new string[10], -1));
+            Assert.Throws<ArgumentOutOfRangeException>("length", () => Array.Copy(new string[10], 0, new string[10], 0, -1));
+        }
+
+        [Theory]
+        [InlineData(8, 0, 10, 0, 9)]
+        [InlineData(8, 8, 10, 0, 1)]
+        [InlineData(8, 9, 10, 0, 0)]
+        [InlineData(10, 0, 8, 0, 9)]
+        [InlineData(10, 0, 8, 8, 1)]
+        [InlineData(10, 0, 8, 9, 0)]
+        public static void Copy_IndexPlusLengthGreaterThanArrayLength_ThrowsArgumentException(int sourceCount, int sourceIndex, int destinationCount, int destinationIndex, int count)
+        {
+            if (sourceIndex == 0 && destinationIndex == 0)
             {
-                Assert.True(dst[i] is G);
-                G g = (G)dst[i];
-                Assert.Equal(src[i].x, g.x);
-                Assert.Equal(src[i].s, g.s);
-                Assert.Equal(src[i].z, g.z);
+                Assert.Throws<ArgumentException>("", () => Array.Copy(new string[sourceCount], new string[destinationCount], count));
             }
+            Assert.Throws<ArgumentException>("", () => Array.Copy(new string[sourceCount], sourceIndex, new string[destinationCount], destinationIndex, count));
         }
 
         [Fact]
-        public static void Copy_Struct_WithReferenceAndValueTypeFields_Array()
+        public static void Copy_StartIndexNegative_ThrowsArgumentOutOfRangeException()
         {
-            var src = new G[]
-            {
-            new G { x = 1, s = "Hello1", z = 2 },
-            new G { x = 2, s = "Hello2", z = 3 },
-            new G { x = 3, s = "Hello3", z = 4 },
-            new G { x = 4, s = "Hello4", z = 5 },
-            new G { x = 5, s = "Hello5", z = 6 }
-            };
-
-            var dst = new G[5];
-            Array.Copy(src, 0, dst, 0, 5);
-            for (int i = 0; i < dst.Length; i++)
-            {
-                Assert.Equal(src[i].x, dst[i].x);
-                Assert.Equal(src[i].s, dst[i].s);
-                Assert.Equal(src[i].z, dst[i].z);
-            }
-
-            // With overlap
-            Array.Copy(src, 1, src, 2, 3);
-            Assert.Equal(1, src[0].x);
-            Assert.Equal("Hello1", src[0].s);
-            Assert.Equal(2, src[0].z);
-
-            Assert.Equal(2, src[1].x);
-            Assert.Equal("Hello2", src[1].s);
-            Assert.Equal(3, src[1].z);
-
-            Assert.Equal(2, src[2].x);
-            Assert.Equal("Hello2", src[2].s);
-            Assert.Equal(3, src[2].z);
-
-            Assert.Equal(3, src[3].x);
-            Assert.Equal("Hello3", src[3].s);
-            Assert.Equal(4, src[3].z);
-
-            Assert.Equal(4, src[4].x);
-            Assert.Equal("Hello4", src[4].s);
-            Assert.Equal(5, src[4].z);
+            Assert.Throws<ArgumentOutOfRangeException>("srcIndex", () => Array.Copy(new string[10], -1, new string[10], 0, 0));
         }
 
         [Fact]
-        public static void Copy_Invalid()
+        public static void Copy_DestinationIndexNegative_ThrowsArgumentOutOfRangeException()
         {
-            Assert.Throws<ArrayTypeMismatchException>(() => Array.Copy(new int[10], 0, new IEnumerable<int>[10], 0, 10)); // Different array types
-            Assert.Throws<ArrayTypeMismatchException>(() => Array.Copy(new string[10], 0, new int[10], 0, 10)); // Different array types
-
-            Assert.Throws<InvalidCastException>(() =>
-            {
-                IEquatable<int>[] sourceArray = new IEquatable<int>[10];
-                sourceArray[4] = new NotInt32();
-                int[] destinationArray = new int[10];
-            // Legacy: Note that the cast checks are done during copying, so some elements in the destination
-            // array may already have been overwritten.
-            Array.Copy(sourceArray, 2, destinationArray, 5, 3);
-            });
-
-            Assert.Throws<InvalidCastException>(() =>
-            {
-                IEquatable<int>[] sourceArray = new IEquatable<int>[10];
-                sourceArray[4] = null;
-                int[] destinationArray = new int[10];
-            // Legacy: Note that the cast checks are done during copying, so some elements in the destination
-            // array may already have been overwritten.
-            Array.Copy(sourceArray, 2, destinationArray, 5, 3);
-            });
-        }
-
-        [Fact]
-        public static void Copy_Array_Array_Int_Invalid()
-        {
-            Assert.Throws<ArgumentNullException>("sourceArray", () => Array.Copy(null, new string[10], 0)); // Source array is null
-            Assert.Throws<ArgumentNullException>("destinationArray", () => Array.Copy(new string[10], null, 0)); // Destination array is null
-
-            Assert.Throws<RankException>(() => Array.Copy(new string[10, 10], new string[10], 0)); // Source and destination arrays have different ranks
-            Assert.Throws<ArrayTypeMismatchException>(() => Array.Copy(new string[10], new int[10], 0)); // Source and destination arrays hold different types
-            Assert.Throws<InvalidCastException>(() => Array.Copy(new object[] { "1" }, new int[1], 1)); // Source and destination arrays hold uncovertible types
-
-            Assert.Throws<ArgumentOutOfRangeException>("length", () => Array.Copy(new string[10], new string[10], -1)); // Length < 0
-            Assert.Throws<ArgumentException>("", () => Array.Copy(new string[8], new string[10], 9)); // Length > sourceArray.Length
-            Assert.Throws<ArgumentException>("", () => Array.Copy(new string[10], new string[8], 9)); // Length > destinationArray.Length
-        }
-
-        [Fact]
-        public static void Copy_Array_Int_Array_Int_Int_Invalid()
-        {
-            Assert.Throws<ArgumentNullException>("source", () => Array.Copy(null, 0, new string[10], 0, 0)); // Source array is null
-            Assert.Throws<ArgumentNullException>("dest", () => Array.Copy(new string[10], 0, null, 0, 0)); // Destination array is null            
-
-            Assert.Throws<RankException>(() => Array.Copy(new string[10, 10], 0, new string[10], 0, 0)); // Source and destination arrays have different ranks
-            Assert.Throws<ArrayTypeMismatchException>(() => Array.Copy(new string[10], 0, new int[10], 0, 0)); // Source and destination arrays hold different types
-            Assert.Throws<InvalidCastException>(() => Array.Copy(new object[] { "1" }, 0, new int[1], 0, 1)); // Source and destination arrays hold uncovertible types
-
-            Assert.Throws<ArgumentOutOfRangeException>("srcIndex", () => Array.Copy(new string[10], -1, new string[10], 0, 0)); // Start index < 0
-            Assert.Throws<ArgumentException>("", () => Array.Copy(new string[8], 9, new string[10], 0, 0)); // Start index + length > sourceArray.Length
-            Assert.Throws<ArgumentException>("", () => Array.Copy(new string[8], 8, new string[10], 0, 1)); // Start index + length> sourceArray.Length
-
-            Assert.Throws<ArgumentOutOfRangeException>("dstIndex", () => Array.Copy(new string[10], 0, new string[10], -1, 0)); // Destination index < 0
-            Assert.Throws<ArgumentException>("", () => Array.Copy(new string[10], 0, new string[8], 9, 0)); // Destination index > destinationArray.Length
-            Assert.Throws<ArgumentException>("", () => Array.Copy(new string[10], 0, new string[8], 8, 1)); // Destination index > destinationArray.Length
-
-            Assert.Throws<ArgumentOutOfRangeException>("length", () => Array.Copy(new string[10], 0, new string[10], 0, -1)); // Length < 0
+            Assert.Throws<ArgumentOutOfRangeException>("dstIndex", () => Array.Copy(new string[10], 0, new string[10], -1, 0));
         }
 
         public static IEnumerable<object[]> CopyTo_TestData()
         {
-            yield return new object[] { new B1[10], new D1[10], 0, new D1[10] };
-            yield return new object[] { new D1[10], new B1[10], 0, new B1[10] };
-            yield return new object[] { new B1[10], new I1[10], 0, new I1[10] };
-            yield return new object[] { new I1[10], new B1[10], 0, new B1[10] };
+            yield return new object[] { new NonGenericClass1[10], new NonGenericSubClass1[10], 0, new NonGenericSubClass1[10] };
+            yield return new object[] { new NonGenericSubClass1[10], new NonGenericClass1[10], 0, new NonGenericClass1[10] };
+            yield return new object[] { new NonGenericClass1[10], new NonGenericInterface1[10], 0, new NonGenericInterface1[10] };
+            yield return new object[] { new NonGenericInterface1[10], new NonGenericClass1[10], 0, new NonGenericClass1[10] };
 
             yield return new object[] { new int[] { 0, 1, 2, 3 }, new int[4], 0, new int[] { 0, 1, 2, 3 } };
             yield return new object[] { new int[] { 0, 1, 2, 3 }, new int[7], 2, new int[] { 0, 0, 0, 1, 2, 3, 0 } };
@@ -958,10 +1350,10 @@ namespace System.Tests
             Assert.Throws<ArgumentException>(null, () => new int[3].CopyTo(new int[10, 10], 0)); // Destination array is multidimensional
 
             Assert.Throws<ArrayTypeMismatchException>(() => new int[3].CopyTo(new string[10], 0)); // Source and destination types are incompatible
-            Assert.Throws<ArrayTypeMismatchException>(() => new B1[10].CopyTo(new B2[10], 0));// Source and destination types hold uncovertible types
+            Assert.Throws<ArrayTypeMismatchException>(() => new NonGenericClass1[10].CopyTo(new NonGenericClass2[10], 0));// Source and destination types hold uncovertible types
 
             Assert.Throws<InvalidCastException>(() => new object[] { "1" }.CopyTo(new int[1], 0)); // Source and destination types hold uncovertible types
-            Assert.Throws<InvalidCastException>(() => new B1[] { new B1() }.CopyTo(new I1[1], 0));// Source and destination types hold uncovertible types
+            Assert.Throws<InvalidCastException>(() => new NonGenericClass1[] { new NonGenericClass1() }.CopyTo(new NonGenericInterface1[1], 0));// Source and destination types hold uncovertible types
 
             Assert.Throws<ArgumentOutOfRangeException>("dstIndex", () => new int[3].CopyTo(new int[10], -1)); // Index < 0
             Assert.Throws<ArgumentException>("", () => new int[3].CopyTo(new int[10], 10)); // Index > destination.Length
@@ -993,15 +1385,15 @@ namespace System.Tests
                 new object[] { typeof(int*), null },
 
                 // Classes, structs, interfaces, enums
-                new object[] { typeof(NonGenericClass), default(NonGenericClass) },
+                new object[] { typeof(NonGenericClass1), default(NonGenericClass1) },
                 new object[] { typeof(GenericClass<int>), default(GenericClass<int>) },
                 new object[] { typeof(NonGenericStruct), default(NonGenericStruct) },
                 new object[] { typeof(GenericStruct<int>), default(GenericStruct<int>) },
-                new object[] { typeof(NonGenericInterface), default(NonGenericInterface) },
+                new object[] { typeof(NonGenericInterface1), default(NonGenericInterface1) },
                 new object[] { typeof(GenericInterface<int>), default(GenericInterface<int>) },
                 new object[] { typeof(AbstractClass), default(AbstractClass) },
                 new object[] { typeof(StaticClass), default(StaticClass) },
-                new object[] { typeof(SimpleEnum), default(SimpleEnum) }
+                new object[] { typeof(Int32Enum), default(Int32Enum) }
             };
         }
 
@@ -1338,9 +1730,9 @@ namespace System.Tests
             var stringArrayNoNulls = new string[] { "Hello", "Hello", "Goodbye", "Goodbye" };
             yield return new object[] { stringArrayNoNulls, null, 0, 4, -1 };
 
-            var enumArray = new TestEnum[] { TestEnum.Case1, TestEnum.Case2, TestEnum.Case1 };
-            yield return new object[] { enumArray, TestEnum.Case1, 0, 3, 0 };
-            yield return new object[] { enumArray, TestEnum.Case3, 0, 3, -1 };
+            var enumArray = new Int32Enum[] { Int32Enum.Case1, Int32Enum.Case2, Int32Enum.Case1 };
+            yield return new object[] { enumArray, Int32Enum.Case1, 0, 3, 0 };
+            yield return new object[] { enumArray, Int32Enum.Case3, 0, 3, -1 };
 
             var nullableArray = new int?[] { 0, null, 10 };
             yield return new object[] { nullableArray, null, 0, 3, 1 };
@@ -1449,9 +1841,9 @@ namespace System.Tests
             var stringArrayNoNulls = new string[] { "Hello", "Hello", "Goodbye", "Goodbye" };
             yield return new object[] { stringArrayNoNulls, null, 3, 4, -1 };
 
-            var enumArray = new TestEnum[] { TestEnum.Case1, TestEnum.Case2, TestEnum.Case1 };
-            yield return new object[] { enumArray, TestEnum.Case1, 2, 3, 2 };
-            yield return new object[] { enumArray, TestEnum.Case3, 2, 3, -1 };
+            var enumArray = new Int32Enum[] { Int32Enum.Case1, Int32Enum.Case2, Int32Enum.Case1 };
+            yield return new object[] { enumArray, Int32Enum.Case1, 2, 3, 2 };
+            yield return new object[] { enumArray, Int32Enum.Case3, 2, 3, -1 };
 
             var nullableArray = new int?[] { 0, null, 10, 10, 0 };
             yield return new object[] { nullableArray, null, 4, 5, 1 };
@@ -1678,9 +2070,9 @@ namespace System.Tests
             yield return new object[] { new string[] { "1", "2", "3", "4", "5" }, 5, 0, new string[] { "1", "2", "3", "4", "5" } };
 
             // TestEnum[] can be cast to int[]
-            var enumArray = new TestEnum[] { TestEnum.Case1, TestEnum.Case2, TestEnum.Case3, TestEnum.Case1 };
-            yield return new object[] { enumArray, 0, 4, new TestEnum[] { TestEnum.Case1, TestEnum.Case3, TestEnum.Case2, TestEnum.Case1 } };
-            yield return new object[] { enumArray, 2, 2, new TestEnum[] { TestEnum.Case1, TestEnum.Case2, TestEnum.Case1, TestEnum.Case3 } };
+            var enumArray = new Int32Enum[] { Int32Enum.Case1, Int32Enum.Case2, Int32Enum.Case3, Int32Enum.Case1 };
+            yield return new object[] { enumArray, 0, 4, new Int32Enum[] { Int32Enum.Case1, Int32Enum.Case3, Int32Enum.Case2, Int32Enum.Case1 } };
+            yield return new object[] { enumArray, 2, 2, new Int32Enum[] { Int32Enum.Case1, Int32Enum.Case2, Int32Enum.Case1, Int32Enum.Case3 } };
             yield return new object[] { enumArray, 0, 0, enumArray};
             yield return new object[] { enumArray, 4, 0, enumArray};
 
@@ -2208,10 +2600,10 @@ namespace System.Tests
         public static void SetValue_Casting()
         {
             // Null -> default(null)
-            var arr1 = new S[3];
-            arr1[1].X = 0x22222222;
+            var arr1 = new NonGenericStruct[3];
+            arr1[1].x = 0x22222222;
             arr1.SetValue(null, new int[] { 1 });
-            Assert.Equal(0, arr1[1].X);
+            Assert.Equal(0, arr1[1].x);
 
             // T -> Nullable<T>
             var arr2 = new int?[3];
@@ -2234,7 +2626,7 @@ namespace System.Tests
 
             // Widening from enum to primitive
             var arr5 = new int[3];
-            arr5.SetValue(E1.MinusTwo, new int[] { 1 });
+            arr5.SetValue(SByteEnum.MinusTwo, new int[] { 1 });
             Assert.Equal(-2, arr5[1]);
         }
 
@@ -2242,7 +2634,7 @@ namespace System.Tests
         public static void SetValue_Casting_Invalid()
         {
             // Unlike most of the other reflection apis, converting or widening a primitive to an enum is NOT allowed.
-            var arr1 = new E1[3];
+            var arr1 = new SByteEnum[3];
             Assert.Throws<InvalidCastException>(() => arr1.SetValue((sbyte)1, new int[] { 1 }));
 
             // Primitive widening must be value-preserving
@@ -2442,14 +2834,19 @@ namespace System.Tests
             return length;
         }
 
-        public enum TestEnum
+        private static NonGenericStruct[] CreateStructArray()
         {
-            Case1,
-            Case2,
-            Case3
+            return new NonGenericStruct[]
+            {
+                new NonGenericStruct { x = 1, s = "Hello1", z = 2 },
+                new NonGenericStruct { x = 2, s = "Hello2", z = 3 },
+                new NonGenericStruct { x = 3, s = "Hello3", z = 4 },
+                new NonGenericStruct { x = 4, s = "Hello4", z = 5 },
+                new NonGenericStruct { x = 5, s = "Hello5", z = 6 }
+            };
         }
 
-        private struct G
+        private struct NonGenericStruct
         {
             public int x;
             public string s;
@@ -2547,14 +2944,9 @@ namespace System.Tests
             public int Compare(object x, object y) => Compare((ComparableRefType)x, (ComparableRefType)y);
         }
 
-        private enum E1 : sbyte
+        private enum SByteEnum : sbyte
         {
             MinusTwo = -2
-        }
-
-        private struct S
-        {
-            public int X;
         }
 
         private class NotInt32 : IEquatable<int>
@@ -2564,24 +2956,39 @@ namespace System.Tests
                 throw new NotImplementedException();
             }
         }
+        
+        public class NonGenericClass1 { }
+        public class NonGenericClass2 { }
 
-        private class B1 { }
-        private class D1 : B1 { }
-        private class B2 { }
-        private class D2 : B2 { }
-        private interface I1 { }
-        private interface I2 { }
+        public class NonGenericSubClass2 : NonGenericClass2 { }
+        public class NonGenericSubClass1 : NonGenericClass1 { }
 
-        public class NonGenericClass { }
         public class GenericClass<T> { }
-        public struct NonGenericStruct { }
         public struct GenericStruct<T> { }
-        public interface NonGenericInterface { }
+
+        public interface NonGenericInterface1 { }
+        public interface NonGenericInterface2 { }
         public interface GenericInterface<T> { }
+
+        public struct StructWithNonGenericInterface1 : NonGenericInterface1 { }
+        public struct StructWithNonGenericInterface1_2 : NonGenericInterface1, NonGenericInterface2 { }
+
+        public class ClassWithNonGenericInterface1 : NonGenericInterface1 { }
+        public class ClassWithNonGenericInterface1_2 : NonGenericInterface1, NonGenericInterface2 { }
+
+        public interface NonGenericInterfaceWithNonGenericInterface1 : NonGenericInterface1 { }
+        public class ClassWithNonGenericInterfaceWithNonGenericInterface1 : NonGenericInterfaceWithNonGenericInterface1 { }
 
         public abstract class AbstractClass { }
         public static class StaticClass { }
-
-        public enum SimpleEnum { }
+            
+        public enum Int32Enum
+        {
+            Case1,
+            Case2,
+            Case3
+        }
+        public enum Int64Enum : long { }
     }
 }
+
