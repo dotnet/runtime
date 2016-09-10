@@ -19,7 +19,7 @@ namespace System.IO.Tests
             Assert.False(testDir.Exists);
         }
 
-        [Fact]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/1008
         public void NameChange()
         {
             //NOTE: MoveTo adds a trailing slash to the path of the DirectoryInfo

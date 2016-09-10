@@ -76,6 +76,9 @@
     <Compile Include="$(CommonPath)\System\IO\RowConfigReader.cs">
       <Link>Common\System\IO\RowConfigReader.cs</Link>
     </Compile>
+    <Compile Include="$(CommonTestPath)\System\PlatformDetection.cs">
+      <Link>Common\tests\System\PlatformDetection.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\System.Net.NameResolution\pkg\System.Net.NameResolution.pkgproj">

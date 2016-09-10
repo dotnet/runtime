@@ -510,7 +510,7 @@ namespace System.Net.Sockets.Tests
             DualModeConnectAsync_IPEndPointToHost_Helper(IPAddress.IPv6Loopback, IPAddress.IPv6Loopback, false);
         }
 
-        [Fact]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/982
         public void ConnectAsyncV4IPEndPointToV6Host_Fails()
         {
             Assert.Throws<SocketException>(() =>
@@ -519,7 +519,7 @@ namespace System.Net.Sockets.Tests
            });
         }
 
-        [Fact]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/982
         public void ConnectAsyncV6IPEndPointToV4Host_Fails()
         {
             Assert.Throws<SocketException>(() =>
@@ -620,8 +620,7 @@ namespace System.Net.Sockets.Tests
     [Trait("IPv6", "true")]
     public class DualModeBind : DualModeBase
     {
-        [Fact] // Base case
-        // "The system detected an invalid pointer address in attempting to use a pointer argument in a call"
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/982
         public void Socket_BindV4IPEndPoint_Throws()
         {
             Assert.Throws<SocketException>(() =>
@@ -672,8 +671,7 @@ namespace System.Net.Sockets.Tests
             });
         }
 
-        [Fact]
-        // "An invalid argument was supplied"
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/982
         public void Socket_EnableDualModeAfterV4Bind_Throws()
         {
             using (Socket serverSocket = new Socket(SocketType.Stream, ProtocolType.Tcp))
@@ -1011,8 +1009,7 @@ namespace System.Net.Sockets.Tests
     {
         #region SendTo Sync IPEndPoint
 
-        [Fact] // Base case
-        // "The system detected an invalid pointer address in attempting to use a pointer argument in a call"
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/982
         public void Socket_SendToV4IPEndPointToV4Host_Throws()
         {
             Socket socket = new Socket(SocketType.Dgram, ProtocolType.Udp);
@@ -1106,8 +1103,7 @@ namespace System.Net.Sockets.Tests
     {
         #region SendTo Begin/End
 
-        [Fact] // Base case
-        // "The system detected an invalid pointer address in attempting to use a pointer argument in a call"
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/982
         public void Socket_BeginSendToV4IPEndPointToV4Host_Throws()
         {
             Socket socket = new Socket(SocketType.Dgram, ProtocolType.Udp);
@@ -1205,7 +1201,7 @@ namespace System.Net.Sockets.Tests
     {
         #region SendTo Async/Event
 
-        [Fact] // Base case
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/982
         public void Socket_SendToAsyncV4IPEndPointToV4Host_Throws()
         {
             Socket socket = new Socket(AddressFamily.InterNetworkV6, SocketType.Dgram, ProtocolType.Udp);
@@ -1422,7 +1418,7 @@ namespace System.Net.Sockets.Tests
         //       with the socket's address family fail. We've decided that this is
         //       an acceptable difference due to the extra state that would otherwise
         //       be necessary to emulate the Winsock behavior.
-        [Fact]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/982
         [PlatformSpecific(PlatformID.Linux)]
         public void ReceiveFromV4BoundToSpecificV6_NotReceived_Linux()
         {
@@ -1562,7 +1558,7 @@ namespace System.Net.Sockets.Tests
         //       with the socket's address family fail. We've decided that this is
         //       an acceptable difference due to the extra state that would otherwise
         //       be necessary to emulate the Winsock behavior.
-        [Fact]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/982
         [PlatformSpecific(PlatformID.Linux)]
         public void BeginReceiveFromV4BoundToSpecificV6_NotReceived_Linux()
         {
@@ -1861,49 +1857,49 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [Fact] // Base case
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/987
         [PlatformSpecific(~PlatformID.OSX)]
         public void ReceiveMessageFromV4BoundToSpecificMappedV4_Success()
         {
             ReceiveMessageFrom_Helper(IPAddress.Loopback.MapToIPv6(), IPAddress.Loopback);
         }
 
-        [Fact] // Base case
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/987
         [PlatformSpecific(~PlatformID.OSX)]
         public void ReceiveMessageFromV4BoundToAnyMappedV4_Success()
         {
             ReceiveMessageFrom_Helper(IPAddress.Any.MapToIPv6(), IPAddress.Loopback);
         }
 
-        [Fact]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/987
         [PlatformSpecific(~PlatformID.OSX)]
         public void ReceiveMessageFromV4BoundToSpecificV4_Success()
         {
             ReceiveMessageFrom_Helper(IPAddress.Loopback, IPAddress.Loopback);
         }
 
-        [Fact]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/987
         [PlatformSpecific(~PlatformID.OSX)]
         public void ReceiveMessageFromV4BoundToAnyV4_Success()
         {
             ReceiveMessageFrom_Helper(IPAddress.Any, IPAddress.Loopback);
         }
 
-        [Fact]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/987
         [PlatformSpecific(~PlatformID.OSX)]
         public void ReceiveMessageFromV6BoundToSpecificV6_Success()
         {
             ReceiveMessageFrom_Helper(IPAddress.IPv6Loopback, IPAddress.IPv6Loopback);
         }
 
-        [Fact]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/987
         [PlatformSpecific(~PlatformID.OSX)]
         public void ReceiveMessageFromV6BoundToAnyV6_Success()
         {
             ReceiveMessageFrom_Helper(IPAddress.IPv6Any, IPAddress.IPv6Loopback);
         }
 
-        [Fact]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/987
         [PlatformSpecific(~PlatformID.OSX)]
         public void ReceiveMessageFromV6BoundToSpecificV4_NotReceived()
         {
@@ -1930,7 +1926,7 @@ namespace System.Net.Sockets.Tests
         //       with the socket's address family fail. We've decided that this is
         //       an acceptable difference due to the extra state that would otherwise
         //       be necessary to emulate the Winsock behavior.
-        [Fact]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/987
         [PlatformSpecific(PlatformID.Linux)]
         public void ReceiveMessageFromV4BoundToSpecificV6_NotReceived_Linux()
         {
@@ -1940,7 +1936,7 @@ namespace System.Net.Sockets.Tests
             });
         }
 
-        [Fact]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/987
         [PlatformSpecific(~PlatformID.OSX)]
         public void ReceiveMessageFromV6BoundToAnyV4_NotReceived()
         {
@@ -1950,7 +1946,7 @@ namespace System.Net.Sockets.Tests
             });
         }
 
-        [Fact]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/987
         [PlatformSpecific(~PlatformID.OSX)]
         public void ReceiveMessageFromV4BoundToAnyV6_Success()
         {
@@ -2016,7 +2012,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [Fact] // Base case
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/987
         // "The supplied EndPoint of AddressFamily InterNetwork is not valid for this Socket, use InterNetworkV6 instead."
         public void Socket_BeginReceiveMessageFromV4IPEndPointFromV4Client_Throws()
         {
@@ -2032,7 +2028,7 @@ namespace System.Net.Sockets.Tests
             });
         }
 
-        [Fact] // Base case
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/987
         [PlatformSpecific(~PlatformID.OSX)]
         // "The parameter remoteEP must not be of type DnsEndPoint."
         public void Socket_BeginReceiveMessageFromDnsEndPoint_Throws()
@@ -2050,49 +2046,49 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [Fact] // Base case
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/987
         [PlatformSpecific(~PlatformID.OSX)]
         public void BeginReceiveMessageFromV4BoundToSpecificMappedV4_Success()
         {
             BeginReceiveMessageFrom_Helper(IPAddress.Loopback.MapToIPv6(), IPAddress.Loopback);
         }
 
-        [Fact] // Base case
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/987
         [PlatformSpecific(~PlatformID.OSX)]
         public void BeginReceiveMessageFromV4BoundToAnyMappedV4_Success()
         {
             BeginReceiveMessageFrom_Helper(IPAddress.Any.MapToIPv6(), IPAddress.Loopback);
         }
 
-        [Fact]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/987
         [PlatformSpecific(~PlatformID.OSX)]
         public void BeginReceiveMessageFromV4BoundToSpecificV4_Success()
         {
             BeginReceiveMessageFrom_Helper(IPAddress.Loopback, IPAddress.Loopback);
         }
 
-        [Fact]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/987
         [PlatformSpecific(~PlatformID.OSX)]
         public void BeginReceiveMessageFromV4BoundToAnyV4_Success()
         {
             BeginReceiveMessageFrom_Helper(IPAddress.Any, IPAddress.Loopback);
         }
 
-        [Fact]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/987
         [PlatformSpecific(~PlatformID.OSX)]
         public void BeginReceiveMessageFromV6BoundToSpecificV6_Success()
         {
             BeginReceiveMessageFrom_Helper(IPAddress.IPv6Loopback, IPAddress.IPv6Loopback);
         }
 
-        [Fact]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/987
         [PlatformSpecific(~PlatformID.OSX)]
         public void BeginReceiveMessageFromV6BoundToAnyV6_Success()
         {
             BeginReceiveMessageFrom_Helper(IPAddress.IPv6Any, IPAddress.IPv6Loopback);
         }
 
-        [Fact]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/987
         [PlatformSpecific(~PlatformID.OSX)]
         public void BeginReceiveMessageFromV6BoundToSpecificV4_NotReceived()
         {
@@ -2119,7 +2115,7 @@ namespace System.Net.Sockets.Tests
         //       with the socket's address family fail. We've decided that this is
         //       an acceptable difference due to the extra state that would otherwise
         //       be necessary to emulate the Winsock behavior.
-        [Fact]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/987
         [PlatformSpecific(PlatformID.Linux)]
         public void BeginReceiveMessageFromV4BoundToSpecificV6_NotReceived_Linux()
         {
@@ -2129,7 +2125,7 @@ namespace System.Net.Sockets.Tests
             });
         }
 
-        [Fact]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/987
         [PlatformSpecific(~PlatformID.OSX)]
         public void BeginReceiveMessageFromV6BoundToAnyV4_NotReceived()
         {
@@ -2139,7 +2135,7 @@ namespace System.Net.Sockets.Tests
             });
         }
 
-        [Fact]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/987
         [PlatformSpecific(~PlatformID.OSX)]
         public void BeginReceiveMessageFromV4BoundToAnyV6_Success()
         {
@@ -2186,7 +2182,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [Fact] // Base case
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/987
         // "The supplied EndPoint of AddressFamily InterNetwork is not valid for this Socket, use InterNetworkV6 instead."
         public void Socket_ReceiveMessageFromAsyncV4IPEndPointFromV4Client_Throws()
         {
@@ -2203,7 +2199,7 @@ namespace System.Net.Sockets.Tests
             });
         }
 
-        [Fact] // Base case
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/987
         [PlatformSpecific(~PlatformID.OSX)]
         // "The parameter remoteEP must not be of type DnsEndPoint."
         public void Socket_ReceiveMessageFromAsyncDnsEndPoint_Throws()
@@ -2223,49 +2219,49 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [Fact] // Base case
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/987
         [PlatformSpecific(~PlatformID.OSX)]
         public void ReceiveMessageFromAsyncV4BoundToSpecificMappedV4_Success()
         {
             ReceiveMessageFromAsync_Helper(IPAddress.Loopback.MapToIPv6(), IPAddress.Loopback);
         }
 
-        [Fact] // Base case
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/987
         [PlatformSpecific(~PlatformID.OSX)]
         public void ReceiveMessageFromAsyncV4BoundToAnyMappedV4_Success()
         {
             ReceiveMessageFromAsync_Helper(IPAddress.Any.MapToIPv6(), IPAddress.Loopback);
         }
 
-        [Fact]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/987
         [PlatformSpecific(~PlatformID.OSX)]
         public void ReceiveMessageFromAsyncV4BoundToSpecificV4_Success()
         {
             ReceiveMessageFromAsync_Helper(IPAddress.Loopback, IPAddress.Loopback);
         }
 
-        [Fact]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/987
         [PlatformSpecific(~PlatformID.OSX)]
         public void ReceiveMessageFromAsyncV4BoundToAnyV4_Success()
         {
             ReceiveMessageFromAsync_Helper(IPAddress.Any, IPAddress.Loopback);
         }
 
-        [Fact]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/987
         [PlatformSpecific(~PlatformID.OSX)]
         public void ReceiveMessageFromAsyncV6BoundToSpecificV6_Success()
         {
             ReceiveMessageFromAsync_Helper(IPAddress.IPv6Loopback, IPAddress.IPv6Loopback);
         }
 
-        [Fact]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/987
         [PlatformSpecific(~PlatformID.OSX)]
         public void ReceiveMessageFromAsyncV6BoundToAnyV6_Success()
         {
             ReceiveMessageFromAsync_Helper(IPAddress.IPv6Any, IPAddress.IPv6Loopback);
         }
 
-        [Fact]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/987
         [PlatformSpecific(~PlatformID.OSX)]
         public void ReceiveMessageFromAsyncV6BoundToSpecificV4_NotReceived()
         {
@@ -2292,7 +2288,7 @@ namespace System.Net.Sockets.Tests
         //       with the socket's address family fail. We've decided that this is
         //       an acceptable difference due to the extra state that would otherwise
         //       be necessary to emulate the Winsock behavior.
-        [Fact]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/987
         [PlatformSpecific(PlatformID.Linux)]
         public void ReceiveMessageFromAsyncV4BoundToSpecificV6_NotReceived_Linux()
         {
@@ -2302,7 +2298,7 @@ namespace System.Net.Sockets.Tests
             });
         }
 
-        [Fact]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/987
         [PlatformSpecific(~PlatformID.OSX)]
         public void ReceiveMessageFromAsyncV6BoundToAnyV4_NotReceived()
         {
@@ -2312,7 +2308,7 @@ namespace System.Net.Sockets.Tests
             });
         }
 
-        [Fact]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/987
         [PlatformSpecific(~PlatformID.OSX)]
         public void ReceiveMessageFromAsyncV4BoundToAnyV6_Success()
         {

@@ -10,7 +10,7 @@ namespace System.Linq.Expressions.Tests
     {
         #region Test methods
 
-        [Fact]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/513
         public static void CheckNullableByteDivideTest()
         {
             byte?[] array = { 0, 1, byte.MaxValue, null };
@@ -23,7 +23,7 @@ namespace System.Linq.Expressions.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/513
         public static void CheckNullableSByteDivideTest()
         {
             sbyte?[] array = { 0, 1, -1, sbyte.MinValue, sbyte.MaxValue, null };
@@ -36,7 +36,8 @@ namespace System.Linq.Expressions.Tests
             }
         }
 
-        [Theory, ClassData(typeof(CompilationTypes))]
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/513
+        [ClassData(typeof(CompilationTypes))]
         public static void CheckNullableUShortDivideTest(bool useInterpreter)
         {
             ushort?[] array = { 0, 1, ushort.MaxValue, null };
@@ -49,7 +50,8 @@ namespace System.Linq.Expressions.Tests
             }
         }
 
-        [Theory, ClassData(typeof(CompilationTypes))]
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/513
+        [ClassData(typeof(CompilationTypes))]
         public static void CheckNullableShortDivideTest(bool useInterpreter)
         {
             short?[] array = { 0, 1, -1, short.MinValue, short.MaxValue, null };
@@ -62,7 +64,8 @@ namespace System.Linq.Expressions.Tests
             }
         }
 
-        [Theory, ClassData(typeof(CompilationTypes))]
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/513
+        [ClassData(typeof(CompilationTypes))]
         public static void CheckNullableUIntDivideTest(bool useInterpreter)
         {
             uint?[] array = { 0, 1, uint.MaxValue, null };
@@ -75,7 +78,8 @@ namespace System.Linq.Expressions.Tests
             }
         }
 
-        [Theory, ClassData(typeof(CompilationTypes))]
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/513
+        [ClassData(typeof(CompilationTypes))]
         public static void CheckNullableIntDivideTest(bool useInterpreter)
         {
             int?[] array = { 0, 1, -1, int.MinValue, int.MaxValue, null };
@@ -88,7 +92,8 @@ namespace System.Linq.Expressions.Tests
             }
         }
 
-        [Theory, ClassData(typeof(CompilationTypes))]
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/513
+        [ClassData(typeof(CompilationTypes))]
         public static void CheckNullableULongDivideTest(bool useInterpreter)
         {
             ulong?[] array = { 0, 1, ulong.MaxValue, null };
@@ -101,7 +106,8 @@ namespace System.Linq.Expressions.Tests
             }
         }
 
-        [Theory, ClassData(typeof(CompilationTypes))]
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/513
+        [ClassData(typeof(CompilationTypes))]
         public static void CheckNullableLongDivideTest(bool useInterpreter)
         {
             long?[] array = { 0, 1, -1, long.MinValue, long.MaxValue, null };
@@ -153,7 +159,7 @@ namespace System.Linq.Expressions.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/513
         public static void CheckNullableCharDivideTest()
         {
             char?[] array = { '\0', '\b', 'A', '\uffff', null };

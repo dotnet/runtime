@@ -10,7 +10,7 @@ namespace System.IO.Tests
 {
     public class Directory_Delete_Tests : FileSystemWatcherTest
     {
-        [Fact]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/216
         public void FileSystemWatcher_Directory_Delete()
         {
             using (var testDirectory = new TempDirectory(GetTestFilePath()))
@@ -27,7 +27,7 @@ namespace System.IO.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/216
         public void FileSystemWatcher_Directory_Delete_InNestedDirectory()
         {
             using (var dir = new TempDirectory(GetTestFilePath()))
@@ -47,7 +47,7 @@ namespace System.IO.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/216
         [OuterLoop]
         public void FileSystemWatcher_Directory_Delete_DeepDirectoryStructure()
         {
@@ -68,7 +68,7 @@ namespace System.IO.Tests
             }
         }
 
-        [ConditionalFact(nameof(CanCreateSymbolicLinks))]
+        [ConditionalFact(nameof(CanCreateSymbolicLinks), nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/216
         public void FileSystemWatcher_Directory_Delete_SymLink()
         {
             using (var testDirectory = new TempDirectory(GetTestFilePath()))

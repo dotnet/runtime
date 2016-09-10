@@ -146,7 +146,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [PlatformSpecific(~PlatformID.OSX)] // typical OSX install has very low max open file descriptors value
-        [Fact]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/989
         public void Select_Error_OneReadyAtATime()
         {
             const int Errors = 90; // value larger than the internal value in SocketPal.Unix that swaps between stack and heap allocation

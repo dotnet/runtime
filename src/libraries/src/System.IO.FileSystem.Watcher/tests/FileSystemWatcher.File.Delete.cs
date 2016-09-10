@@ -10,7 +10,7 @@ namespace System.IO.Tests
 {
     public class File_Delete_Tests : FileSystemWatcherTest
     {
-        [Fact]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/216
         public void FileSystemWatcher_File_Delete()
         {
             using (var testDirectory = new TempDirectory(GetTestFilePath()))
@@ -27,7 +27,7 @@ namespace System.IO.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/216
         public void FileSystemWatcher_File_Delete_ForcedRestart()
         {
             using (var testDirectory = new TempDirectory(GetTestFilePath()))
@@ -48,7 +48,7 @@ namespace System.IO.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/216
         public void FileSystemWatcher_File_Delete_InNestedDirectory()
         {
             using (var dir = new TempDirectory(GetTestFilePath()))
@@ -68,7 +68,7 @@ namespace System.IO.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/216
         [OuterLoop]
         public void FileSystemWatcher_File_Delete_DeepDirectoryStructure()
         {
@@ -89,7 +89,7 @@ namespace System.IO.Tests
             }
         }
 
-        [ConditionalFact(nameof(CanCreateSymbolicLinks))]
+        [ConditionalFact(nameof(CanCreateSymbolicLinks), nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/216
         public void FileSystemWatcher_File_Delete_SymLink()
         {
             using (var testDirectory = new TempDirectory(GetTestFilePath()))

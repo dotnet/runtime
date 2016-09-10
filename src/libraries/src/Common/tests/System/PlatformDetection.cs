@@ -23,6 +23,32 @@ namespace System
 
         public static int WindowsVersion { get; } = GetWindowsVersion();
 
+        private static Lazy<bool> m_isWindowsSubsystemForLinux = new Lazy<bool>(GetIsWindowsSubsystemForLinux);
+
+        public static bool IsWindowsSubsystemForLinux => m_isWindowsSubsystemForLinux.Value;
+        public static bool IsNotWindowsSubsystemForLinux => !IsWindowsSubsystemForLinux;
+
+        private static bool GetIsWindowsSubsystemForLinux()
+        {
+            // https://github.com/Microsoft/BashOnWindows/issues/423#issuecomment-221627364
+
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            {
+                const string versionFile = "/proc/version";
+                if (File.Exists(versionFile))
+                {
+                    var s = File.ReadAllText(versionFile);
+
+                    if (s.Contains("Microsoft") || s.Contains("WSL"))
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
         public static bool IsDebian8 { get; } = IsDistroAndVersion("debian", "8");
         public static bool IsUbuntu1510 { get; } = IsDistroAndVersion("ubuntu", "15.10");
         public static bool IsUbuntu1604 { get; } = IsDistroAndVersion("ubuntu", "16.04");

@@ -34,7 +34,7 @@ namespace System.Linq.Tests
             Assert.Throws<ArgumentNullException>("predicate", () => Enumerable.Range(0, 20).SkipWhile((Func<int, bool>)null));
         }
 
-        [Fact]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/513
         public void SkipWhilePassesPredicateExceptionWhenEnumerated()
         {
             var source = Enumerable.Range(-2, 5).SkipWhile(i => 1 / i <= 0);

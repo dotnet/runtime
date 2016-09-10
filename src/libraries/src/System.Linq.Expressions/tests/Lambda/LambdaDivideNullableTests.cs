@@ -50,7 +50,8 @@ namespace System.Linq.Expressions.Tests
             }
         }
 
-        [Theory, ClassData(typeof(CompilationTypes))]
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/513
+        [ClassData(typeof(CompilationTypes))]
         public static void LambdaDivideNullableIntTest(bool useInterpreter)
         {
             int?[] values = new int?[] { null, 0, 1, -1, int.MinValue, int.MaxValue };
@@ -63,7 +64,8 @@ namespace System.Linq.Expressions.Tests
             }
         }
 
-        [Theory, ClassData(typeof(CompilationTypes))]
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/513
+        [ClassData(typeof(CompilationTypes))]
         public static void LambdaDivideNullableLongTest(bool useInterpreter)
         {
             long?[] values = new long?[] { null, 0, 1, -1, long.MinValue, long.MaxValue };
@@ -76,7 +78,8 @@ namespace System.Linq.Expressions.Tests
             }
         }
 
-        [Theory, ClassData(typeof(CompilationTypes))]
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/513
+        [ClassData(typeof(CompilationTypes))]
         public static void LambdaDivideNullableShortTest(bool useInterpreter)
         {
             short?[] values = new short?[] { null, 0, 1, -1, short.MinValue, short.MaxValue };
@@ -89,7 +92,8 @@ namespace System.Linq.Expressions.Tests
             }
         }
 
-        [Theory, ClassData(typeof(CompilationTypes))]
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/513
+        [ClassData(typeof(CompilationTypes))]
         public static void LambdaDivideNullableUIntTest(bool useInterpreter)
         {
             uint?[] values = new uint?[] { null, 0, 1, uint.MaxValue };
@@ -102,7 +106,8 @@ namespace System.Linq.Expressions.Tests
             }
         }
 
-        [Theory, ClassData(typeof(CompilationTypes))]
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/513
+        [ClassData(typeof(CompilationTypes))]
         public static void LambdaDivideNullableULongTest(bool useInterpreter)
         {
             ulong?[] values = new ulong?[] { null, 0, 1, ulong.MaxValue };
@@ -115,7 +120,8 @@ namespace System.Linq.Expressions.Tests
             }
         }
 
-        [Theory, ClassData(typeof(CompilationTypes))]
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/513
+        [ClassData(typeof(CompilationTypes))]
         public static void LambdaDivideNullableUShortTest(bool useInterpreter)
         {
             ushort?[] values = new ushort?[] { null, 0, 1, ushort.MaxValue };

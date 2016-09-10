@@ -59,7 +59,7 @@ namespace System.IO.FileSystem.DriveInfoTests
             Assert.Equal(invalidDriveName, invalidDrive.VolumeLabel);   // VolumeLabel is equivalent to Name on Unix
         }
 
-        [Fact]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/dotnet/corefx/issues/11570
         [PlatformSpecific(PlatformID.AnyUnix)]
         public void PropertiesOfValidDrive()
         {

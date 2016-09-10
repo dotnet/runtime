@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using Xunit;
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.returnType.covariant.indexer001.indexer001
@@ -3421,7 +3422,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.returnType.
 
     public class Test
     {
-        [Fact]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/513
         public static void DynamicCSharpRunTest()
         {
             Assert.Equal(0, MainMethod(null));

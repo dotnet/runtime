@@ -24,7 +24,7 @@ namespace System.IO.Tests
 
         #region UniversalTests
 
-        [Fact]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/1008
         public void DirectoryPathUpdatesOnMove()
         {
             //NOTE: MoveTo adds a trailing separator character to the FullName of a DirectoryInfo

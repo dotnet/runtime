@@ -79,7 +79,7 @@ namespace System.IO.Pipes.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/1012
         [PlatformSpecific(PlatformID.Linux)]
         public static void Linux_BufferSizeRoundtrips()
         {

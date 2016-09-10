@@ -78,6 +78,9 @@
     <Compile Include="BigInteger\subtract.cs" />
     <Compile Include="BigInteger\ToByteArray.cs" />
     <Compile Include="ComplexTests.cs" />
+    <Compile Include="$(CommonTestPath)\System\PlatformDetection.cs">
+      <Link>Common\System\PlatformDetection.cs</Link>
+    </Compile>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

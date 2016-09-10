@@ -8,7 +8,7 @@ namespace System.Net.NetworkInformation.Tests
 {
     public class NetworkChangeTest
     {
-        [Fact]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/308
         public void NetworkAddressChanged_AddRemove_Success()
         {
             NetworkAddressChangedEventHandler handler = NetworkChange_NetworkAddressChanged;
