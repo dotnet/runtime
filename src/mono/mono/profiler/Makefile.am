@@ -88,7 +88,7 @@ libmono_profiler_vtune_static_la_SOURCES = mono-profiler-vtune.c
 libmono_profiler_vtune_static_la_LDFLAGS = -static
 endif
 
-mprof_report_SOURCES = decode.c
+mprof_report_SOURCES = mprof-report.c
 mprof_report_LDADD = $(Z_LIBS) $(GLIB_LIBS) $(LIBICONV)
 
 PLOG_TESTS_SRC=test-alloc.cs test-busy.cs test-monitor.cs test-excleave.cs \

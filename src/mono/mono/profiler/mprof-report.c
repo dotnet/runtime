@@ -1,5 +1,5 @@
 /*
- * decode.c: mprof-report program source: decode and analyze the log profiler data
+ * mprof-report.c: mprof-report program source: decode and analyze the log profiler data
  *
  * Authors:
  *   Paolo Molaro (lupus@ximian.com)
