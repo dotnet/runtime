@@ -250,6 +250,7 @@ namespace System.IO.Tests
             Assert.Throws<ArgumentException>(() => GetEntries(TestDirectory, @".." + Path.DirectorySeparatorChar));
         }
 
+        [ActiveIssue(11584)]
         [Fact]
         [PlatformSpecific(PlatformID.Windows)]
         public void WindowsSearchPatternInvalid()
