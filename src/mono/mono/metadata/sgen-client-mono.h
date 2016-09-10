@@ -84,6 +84,7 @@ extern void mono_sgen_init_stw (void);
 
 enum {
 	INTERNAL_MEM_EPHEMERON_LINK = INTERNAL_MEM_FIRST_CLIENT,
+	INTERNAL_MEM_MOVED_OBJECT,
 	INTERNAL_MEM_MAX
 };
 

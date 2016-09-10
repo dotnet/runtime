@@ -16,6 +16,7 @@
 #include "sgen/sgen-client.h"
 #include "sgen/sgen-cardtable.h"
 #include "sgen/sgen-pinning.h"
+#include "sgen/sgen-thread-pool.h"
 #include "metadata/marshal.h"
 #include "metadata/method-builder.h"
 #include "metadata/abi-details.h"
@@ -2053,20 +2054,45 @@ sgen_client_collecting_major_3 (SgenPointerQueue *fin_ready_queue, SgenPointerQu
 static void *moved_objects [MOVED_OBJECTS_NUM];
 static int moved_objects_idx = 0;
 
+static SgenPointerQueue moved_objects_queue = SGEN_POINTER_QUEUE_INIT (INTERNAL_MEM_MOVED_OBJECT);
+
 void
 mono_sgen_register_moved_object (void *obj, void *destination)
 {
-	if (moved_objects_idx == MOVED_OBJECTS_NUM) {
-		mono_profiler_gc_moves (moved_objects, moved_objects_idx);
-		moved_objects_idx = 0;
+	/*
+	 * This function can be called from SGen's worker threads. We want to try
+	 * and avoid exposing those threads to the profiler API, so queue up move
+	 * events and send them later when the main GC thread calls
+	 * mono_sgen_gc_event_moves ().
+	 *
+	 * TODO: Once SGen has multiple worker threads, we need to switch to a
+	 * lock-free data structure for the queue as multiple threads will be
+	 * adding to it at the same time.
+	 */
+	if (sgen_thread_pool_is_thread_pool_thread (mono_native_thread_id_get ())) {
+		sgen_pointer_queue_add (&moved_objects_queue, obj);
+		sgen_pointer_queue_add (&moved_objects_queue, destination);
+	} else {
+		if (moved_objects_idx == MOVED_OBJECTS_NUM) {
+			mono_profiler_gc_moves (moved_objects, moved_objects_idx);
+			moved_objects_idx = 0;
+		}
+
+		moved_objects [moved_objects_idx++] = obj;
+		moved_objects [moved_objects_idx++] = destination;
 	}
-	moved_objects [moved_objects_idx++] = obj;
-	moved_objects [moved_objects_idx++] = destination;
 }
 
 void
 mono_sgen_gc_event_moves (void)
 {
+	while (!sgen_pointer_queue_is_empty (&moved_objects_queue)) {
+		void *dst = sgen_pointer_queue_pop (&moved_objects_queue);
+		void *src = sgen_pointer_queue_pop (&moved_objects_queue);
+
+		mono_sgen_register_moved_object (src, dst);
+	}
+
 	if (moved_objects_idx) {
 		mono_profiler_gc_moves (moved_objects, moved_objects_idx);
 		moved_objects_idx = 0;
@@ -2773,6 +2799,7 @@ sgen_client_description_for_internal_mem_type (int type)
 {
 	switch (type) {
 	case INTERNAL_MEM_EPHEMERON_LINK: return "ephemeron-link";
+	case INTERNAL_MEM_MOVED_OBJECT: return "moved-object";
 	default:
 		return NULL;
 	}
@@ -2987,6 +3014,9 @@ void
 mono_gc_base_cleanup (void)
 {
 	sgen_thread_pool_shutdown ();
+
+	// We should have consumed any outstanding moves.
+	g_assert (sgen_pointer_queue_is_empty (&moved_objects_queue));
 }
 
 gboolean
