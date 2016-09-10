@@ -103,6 +103,10 @@ CodeGen::CodeGen(Compiler* theCompiler) : CodeGenInterface(theCompiler)
     u8ToDblBitmask = nullptr;
 #endif // defined(_TARGET_XARCH_) && !FEATURE_STACK_FP_X87
 
+#if defined(FEATURE_PUT_STRUCT_ARG_STK) && !defined(_TARGET_X86_)
+	m_stkArgVarNum = BAD_VAR_NUM;
+#endif
+
     regTracker.rsTrackInit(compiler, &regSet);
     gcInfo.regSet        = &regSet;
     m_cgEmitter          = new (compiler->getAllocator()) emitter();
