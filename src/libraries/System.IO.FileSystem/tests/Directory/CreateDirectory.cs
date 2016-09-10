@@ -468,8 +468,18 @@ namespace System.IO.Tests
         [PlatformSpecific(PlatformID.AnyUnix)]
         public void DriveLetter_Unix()
         {
-            // On Unix, there's no special casing for drive letters, which are valid file names
-            var driveLetter = Create("C:");
+            // On Unix, there's no special casing for drive letters.  These may or may not be valid names, depending
+            // on the file system underlying the current directory.  Unix file systems typically allow these, but,
+            // for example, these names are not allowed if running on a file system mounted from a Windows machine.
+            DirectoryInfo driveLetter;
+            try
+            {
+                driveLetter = Create("C:");
+            }
+            catch (IOException)
+            {
+                return;
+            }
             var current = Create(".");
             Assert.Equal("C:", driveLetter.Name);
             Assert.Equal(Path.Combine(current.FullName, "C:"), driveLetter.FullName);

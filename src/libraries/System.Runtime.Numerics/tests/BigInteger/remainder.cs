@@ -47,7 +47,7 @@ namespace System.Numerics.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/513
         public static void RunRemainderNegative()
         {
             byte[] tempByteArray1 = new byte[0];

@@ -36,7 +36,8 @@ namespace System.Linq.Expressions.Tests
             }
         }
 
-        [Theory, ClassData(typeof(CompilationTypes))]
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/513
+        [ClassData(typeof(CompilationTypes))]
         public static void CheckNullableUShortModuloTest(bool useInterpreter)
         {
             ushort?[] array = { 0, 1, ushort.MaxValue, null };
@@ -49,7 +50,8 @@ namespace System.Linq.Expressions.Tests
             }
         }
 
-        [Theory, ClassData(typeof(CompilationTypes))]
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/513
+        [ClassData(typeof(CompilationTypes))]
         public static void CheckNullableShortModuloTest(bool useInterpreter)
         {
             short?[] array = { 0, 1, -1, short.MinValue, short.MaxValue, null };
@@ -62,7 +64,8 @@ namespace System.Linq.Expressions.Tests
             }
         }
 
-        [Theory, ClassData(typeof(CompilationTypes))]
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/513
+        [ClassData(typeof(CompilationTypes))]
         public static void CheckNullableUIntModuloTest(bool useInterpreter)
         {
             uint?[] array = { 0, 1, uint.MaxValue, null };
@@ -75,7 +78,8 @@ namespace System.Linq.Expressions.Tests
             }
         }
 
-        [Theory, ClassData(typeof(CompilationTypes))]
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/513
+        [ClassData(typeof(CompilationTypes))]
         public static void CheckNullableIntModuloTest(bool useInterpreter)
         {
             int?[] array = { 0, 1, -1, int.MinValue, int.MaxValue, null };
@@ -88,7 +92,8 @@ namespace System.Linq.Expressions.Tests
             }
         }
 
-        [Theory, ClassData(typeof(CompilationTypes))]
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/513
+        [ClassData(typeof(CompilationTypes))]
         public static void CheckNullableULongModuloTest(bool useInterpreter)
         {
             ulong?[] array = { 0, 1, ulong.MaxValue, null };
@@ -101,7 +106,8 @@ namespace System.Linq.Expressions.Tests
             }
         }
 
-        [Theory, ClassData(typeof(CompilationTypes))]
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/513
+        [ClassData(typeof(CompilationTypes))]
         public static void CheckNullableLongModuloTest(bool useInterpreter)
         {
             long?[] array = { 0, 1, -1, long.MinValue, long.MaxValue, null };

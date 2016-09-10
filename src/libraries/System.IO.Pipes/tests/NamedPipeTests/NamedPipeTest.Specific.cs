@@ -210,7 +210,7 @@ namespace System.IO.Pipes.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/1011
         [PlatformSpecific(PlatformID.AnyUnix)]
         public async Task Unix_GetImpersonationUserName_Succeed()
         {

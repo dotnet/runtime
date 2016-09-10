@@ -59,7 +59,7 @@ namespace System.Net.NetworkInformation.Tests
             Assert.Throws<ArgumentException>("buffer", () => { p.SendPingAsync(TestSettings.LocalHost, 1, new byte[65501]); });
         }
 
-        [Fact]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/561
         public async Task SendPingAsyncWithIPAddress()
         {
             IPAddress localIpAddress = await TestSettings.GetLocalIPAddress();
@@ -73,7 +73,7 @@ namespace System.Net.NetworkInformation.Tests
                 });
         }
 
-        [Fact]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/561
         public async Task SendPingAsyncWithIPAddress_AddressAsString()
         {
             IPAddress localIpAddress = await TestSettings.GetLocalIPAddress();
@@ -87,7 +87,7 @@ namespace System.Net.NetworkInformation.Tests
                 });
         }
 
-        [Fact]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/561
         public async Task SendPingAsyncWithIPAddressAndTimeout()
         {
             IPAddress localIpAddress = await TestSettings.GetLocalIPAddress();
@@ -120,7 +120,7 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [PlatformSpecific(PlatformID.AnyUnix)]
-        [Fact]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/561
         public async Task SendPingAsyncWithIPAddressAndTimeoutAndBuffer_Unix()
         {
             byte[] buffer = TestSettings.PayloadAsBytes;
@@ -165,7 +165,7 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [PlatformSpecific(PlatformID.AnyUnix)]
-        [Fact]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/561
         public async Task SendPingAsyncWithIPAddressAndTimeoutAndBufferAndPingOptions_Unix()
         {
             IPAddress localIpAddress = await TestSettings.GetLocalIPAddress();
@@ -190,7 +190,7 @@ namespace System.Net.NetworkInformation.Tests
                 });
         }
 
-        [Fact]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/561
         public async Task SendPingAsyncWithHost()
         {
             IPAddress localIpAddress = await TestSettings.GetLocalIPAddress();
@@ -204,7 +204,7 @@ namespace System.Net.NetworkInformation.Tests
                 });
         }
 
-        [Fact]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/561
         public async Task SendPingAsyncWithHostAndTimeout()
         {
             IPAddress localIpAddress = await TestSettings.GetLocalIPAddress();
@@ -237,7 +237,7 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [PlatformSpecific(PlatformID.AnyUnix)]
-        [Fact]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/561
         public async Task SendPingAsyncWithHostAndTimeoutAndBuffer_Unix()
         {
             IPAddress localIpAddress = await TestSettings.GetLocalIPAddress();
@@ -281,7 +281,7 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [PlatformSpecific(PlatformID.AnyUnix)]
-        [Fact]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/561
         public async Task SendPingAsyncWithHostAndTimeoutAndBufferAndPingOptions_Unix()
         {
             IPAddress localIpAddress = await TestSettings.GetLocalIPAddress();
@@ -306,7 +306,7 @@ namespace System.Net.NetworkInformation.Tests
                 });
         }
 
-        [Fact]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/561
         public static async Task SendPings_ReuseInstance_Hostname()
         {
             IPAddress localIpAddress = await TestSettings.GetLocalIPAddress();

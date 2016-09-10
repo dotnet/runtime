@@ -21,6 +21,9 @@
   <ItemGroup>
     <Compile Include="DriveInfo.Unix.Tests.cs" />
     <Compile Include="DriveInfo.Windows.Tests.cs" />
+    <Compile Include="$(CommonTestPath)\System\PlatformDetection.cs">
+      <Link>Common\System\PlatformDetection.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />

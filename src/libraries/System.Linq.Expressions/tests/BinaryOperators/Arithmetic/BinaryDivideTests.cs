@@ -11,7 +11,7 @@ namespace System.Linq.Expressions.Tests
     {
         #region Test methods
 
-        [Fact]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/513
         public static void CheckByteDivideTest()
         {
             byte[] array = new byte[] { 0, 1, byte.MaxValue };
@@ -24,7 +24,7 @@ namespace System.Linq.Expressions.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/513
         public static void CheckSByteDivideTest()
         {
             sbyte[] array = new sbyte[] { 0, 1, -1, sbyte.MinValue, sbyte.MaxValue };
@@ -37,7 +37,8 @@ namespace System.Linq.Expressions.Tests
             }
         }
 
-        [Theory, ClassData(typeof(CompilationTypes))]
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/513
+        [ClassData(typeof(CompilationTypes))]
         public static void CheckUShortDivideTest(bool useInterpreter)
         {
             ushort[] array = new ushort[] { 0, 1, ushort.MaxValue };
@@ -50,7 +51,8 @@ namespace System.Linq.Expressions.Tests
             }
         }
 
-        [Theory, ClassData(typeof(CompilationTypes))]
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/513
+        [ClassData(typeof(CompilationTypes))]
         public static void CheckShortDivideTest(bool useInterpreter)
         {
             short[] array = new short[] { 0, 1, -1, short.MinValue, short.MaxValue };
@@ -63,7 +65,8 @@ namespace System.Linq.Expressions.Tests
             }
         }
 
-        [Theory, ClassData(typeof(CompilationTypes))]
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/513
+        [ClassData(typeof(CompilationTypes))]
         public static void CheckUIntDivideTest(bool useInterpreter)
         {
             uint[] array = new uint[] { 0, 1, uint.MaxValue };
@@ -76,7 +79,8 @@ namespace System.Linq.Expressions.Tests
             }
         }
 
-        [Theory, ClassData(typeof(CompilationTypes))]
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/513
+        [ClassData(typeof(CompilationTypes))]
         public static void CheckIntDivideTest(bool useInterpreter)
         {
             int[] array = new int[] { 0, 1, -1, int.MinValue, int.MaxValue };
@@ -89,7 +93,8 @@ namespace System.Linq.Expressions.Tests
             }
         }
 
-        [Theory, ClassData(typeof(CompilationTypes))]
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/513
+        [ClassData(typeof(CompilationTypes))]
         public static void CheckULongDivideTest(bool useInterpreter)
         {
             ulong[] array = new ulong[] { 0, 1, ulong.MaxValue };
@@ -102,7 +107,8 @@ namespace System.Linq.Expressions.Tests
             }
         }
 
-        [Theory, ClassData(typeof(CompilationTypes))]
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/513
+        [ClassData(typeof(CompilationTypes))]
         public static void CheckLongDivideTest(bool useInterpreter)
         {
             long[] array = new long[] { 0, 1, -1, long.MinValue, long.MaxValue };
@@ -154,7 +160,7 @@ namespace System.Linq.Expressions.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/513
         public static void CheckCharDivideTest()
         {
             char[] array = new char[] { '\0', '\b', 'A', '\uffff' };

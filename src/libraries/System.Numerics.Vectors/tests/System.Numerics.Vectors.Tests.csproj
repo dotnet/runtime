@@ -39,6 +39,9 @@
     <Compile Include="Matrix4x4Tests.cs" />
     <Compile Include="PlaneTests.cs" />
     <Compile Include="QuaternionTests.cs" />
+    <Compile Include="$(CommonTestPath)\System\PlatformDetection.cs">
+      <Link>Common\System\PlatformDetection.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <Service Include="{508349B6-6B84-4DF5-91F0-309BEEBAD82D}" />
