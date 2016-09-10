@@ -31,12 +31,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             if (ats == null)
             {
-                if (aggNullable == null)
-                {
-                    typeManager.ReportMissingPredefTypeError(errorContext, PredefinedType.PT_G_OPTIONAL);
-                    return null;
-                }
-
                 CType typePar = GetUnderlyingType();
                 CType[] typeParArray = new CType[] { typePar };
                 TypeArray ta = symmgr.AllocParams(1, typeParArray);

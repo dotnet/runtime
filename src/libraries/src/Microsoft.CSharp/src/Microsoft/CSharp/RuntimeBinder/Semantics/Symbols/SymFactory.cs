@@ -134,8 +134,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         public PropertySymbol CreateProperty(Name name, ParentSymbol parent, AggregateDeclaration declaration)
         {
             PropertySymbol sym = newBasicSym(SYMKIND.SK_PropertySymbol, name, parent).AsPropertySymbol();
-            sym.declaration = declaration;
             Debug.Assert(sym != null);
+            sym.declaration = declaration;
             return (sym);
         }
 
