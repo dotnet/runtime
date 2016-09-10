@@ -237,9 +237,8 @@ const char* GenTree::OpName(genTreeOps op)
 /*****************************************************************************
  *
  *  When 'SMALL_TREE_NODES' is enabled, we allocate tree nodes in 2 different
- *  sizes: 'GTF_DEBUG_NODE_SMALL' for most nodes and 'GTF_DEBUG_NODE_LARGE' for
- *  the few nodes (such as calls and statement list nodes) that have more fields
- *  and take up a lot more space.
+ *  sizes: 'TREE_NODE_SZ_SMALL' for most nodes and 'TREE_NODE_SZ_LARGE' for the
+ *  few nodes (such as calls) that have more fields and take up a lot more space.
  */
 
 #if SMALL_TREE_NODES
@@ -16469,7 +16468,7 @@ bool GenTree::isCommutativeSIMDIntrinsic()
 //---------------------------------------------------------------------------------------
 // GenTreeArgList::Prepend:
 //    Prepends an element to a GT_LIST.
-// 
+//
 // Arguments:
 //    compiler - The compiler context.
 //    element  - The element to prepend.
