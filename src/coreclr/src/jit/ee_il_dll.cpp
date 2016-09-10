@@ -1378,7 +1378,7 @@ bool Compiler::eeRunWithErrorTrapImp(void (*function)(void*), void* param)
  *                      Utility functions
  */
 
-#if defined(DEBUG) || defined(FEATURE_JIT_METHOD_PERF) || defined(FEATURE_SIMD)
+#if defined(DEBUG) || defined(FEATURE_JIT_METHOD_PERF) || defined(FEATURE_SIMD) || defined(FEATURE_TRACELOGGING)
 
 /*****************************************************************************/
 
