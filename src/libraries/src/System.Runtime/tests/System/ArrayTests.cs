@@ -665,95 +665,6 @@ namespace System.Tests
             Assert.NotSame(clone, array);
         }
 
-        public static IEnumerable<object[]> ConstrainedCopy_TestData()
-        {
-            yield return new object[] { new string[] { "Red", "Green", null, "Blue" }, 0, new string[] { "X", "X", "X", "X" }, 0, 4, new string[] { "Red", "Green", null, "Blue" } };
-
-            string[] stringArray = new string[] { "Red", "Green", null, "Blue" };
-            yield return new object[] { stringArray, 1, stringArray, 2, 2, new string[] { "Red", "Green", "Green", null } };
-
-            yield return new object[] { new int[] { 0x12345678, 0x22334455, 0x778899aa }, 0, new int[3], 0, 3, new int[] { 0x12345678, 0x22334455, 0x778899aa } };
-
-            int[] intArray1 = new int[] { 0x12345678, 0x22334455, 0x778899aa, 0x55443322, 0x33445566 };
-            yield return new object[] { intArray1, 3, intArray1, 2, 2, new int[] { 0x12345678, 0x22334455, 0x55443322, 0x33445566, 0x33445566 } };
-
-            int[] intArray2 = new int[] { 0x12345678, 0x22334455, 0x778899aa, 0x55443322, 0x33445566 };
-            yield return new object[] { intArray2, 2, intArray2, 3, 2, new int[] { 0x12345678, 0x22334455, 0x778899aa, 0x778899aa, 0x55443322 } };
-        }
-
-        [Theory]
-        [MemberData(nameof(ConstrainedCopy_TestData))]
-        public static void ConstrainedCopy(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length, Array expected)
-        {
-            Array.ConstrainedCopy(sourceArray, sourceIndex, destinationArray, destinationIndex, length);
-            Assert.Equal(expected, destinationArray);
-        }
-
-        [Fact]
-        public static void ConstrainedCopy_Struct_WithReferenceAndValueTypeFields_Array()
-        {
-            var src = new NonGenericStruct[]
-            {
-            new NonGenericStruct { x = 1, s = "Hello1", z = 2 },
-            new NonGenericStruct { x = 2, s = "Hello2", z = 3 },
-            new NonGenericStruct { x = 3, s = "Hello3", z = 4 },
-            new NonGenericStruct { x = 4, s = "Hello4", z = 5 },
-            new NonGenericStruct { x = 5, s = "Hello5", z = 6 }
-            };
-
-            var dst = new NonGenericStruct[5];
-            Array.ConstrainedCopy(src, 0, dst, 0, 5);
-            for (int i = 0; i < dst.Length; i++)
-            {
-                Assert.Equal(src[i].x, dst[i].x);
-                Assert.Equal(src[i].s, dst[i].s);
-                Assert.Equal(src[i].z, dst[i].z);
-            }
-
-            // With overlap
-            Array.ConstrainedCopy(src, 1, src, 2, 3);
-            Assert.Equal(1, src[0].x);
-            Assert.Equal("Hello1", src[0].s);
-            Assert.Equal(2, src[0].z);
-
-            Assert.Equal(2, src[1].x);
-            Assert.Equal("Hello2", src[1].s);
-            Assert.Equal(3, src[1].z);
-
-            Assert.Equal(2, src[2].x);
-            Assert.Equal("Hello2", src[2].s);
-            Assert.Equal(3, src[2].z);
-
-            Assert.Equal(3, src[3].x);
-            Assert.Equal("Hello3", src[3].s);
-            Assert.Equal(4, src[3].z);
-
-            Assert.Equal(4, src[4].x);
-            Assert.Equal("Hello4", src[4].s);
-            Assert.Equal(5, src[4].z);
-        }
-
-        [Fact]
-        public static void ConstrainedCopy_Invalid()
-        {
-            Assert.Throws<ArgumentNullException>("source", () => Array.ConstrainedCopy(null, 0, new string[10], 0, 0)); // Source array is null
-            Assert.Throws<ArgumentNullException>("dest", () => Array.ConstrainedCopy(new string[10], 0, null, 0, 0)); // Destination array is null
-
-            Assert.Throws<RankException>(() => Array.ConstrainedCopy(new string[10, 10], 0, new string[10], 0, 0)); // Source and destination arrays have different ranks
-            Assert.Throws<ArrayTypeMismatchException>(() => Array.ConstrainedCopy(new string[10], 0, new int[10], 0, 0)); // Source and destination arrays hold different types
-
-            Assert.Throws<ArgumentOutOfRangeException>("srcIndex", () => Array.ConstrainedCopy(new string[10], -1, new string[10], 0, 0)); // Start index < 0
-            Assert.Throws<ArgumentException>("", () => Array.ConstrainedCopy(new string[10], 11, new string[10], 0, 0)); // Start index + length > sourceArray.Length
-            Assert.Throws<ArgumentException>("", () => Array.ConstrainedCopy(new string[10], 10, new string[10], 0, 1)); // Start index + length> sourceArray.Length
-
-            Assert.Throws<ArgumentOutOfRangeException>("dstIndex", () => Array.ConstrainedCopy(new string[10], 0, new string[10], -1, 0)); // Destination index < 0
-
-            Assert.Throws<ArgumentException>("", () => Array.ConstrainedCopy(new string[10], 0, new string[8], 9, 0)); // Destination index > destinationArray.Length
-            Assert.Throws<ArgumentException>("", () => Array.ConstrainedCopy(new string[10], 0, new string[8], 8, 1));
-
-            Assert.Throws<ArgumentOutOfRangeException>("length", () => Array.ConstrainedCopy(new string[10], 0, new string[10], 0, -1)); // Length < 0
-        }
-
         public static IEnumerable<object[]> Copy_Array_Reliable_TestData()
         {
             // Array -> SZArray
@@ -1041,11 +952,23 @@ namespace System.Tests
             Assert.Equal(expected, destinationArrayClone2);
         }
 
+        [Theory]
+        [MemberData(nameof(Copy_SZArray_Reliable_TestData))]
+        [MemberData(nameof(Copy_Array_Reliable_TestData))]
+        public static void ConstrainedCopy(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length, Array expected)
+        {
+            Array sourceArrayClone = (Array)sourceArray.Clone();
+            Array destinationArrayClone = sourceArray == destinationArray ? sourceArrayClone : (Array)destinationArray.Clone();
+            Array.ConstrainedCopy(sourceArrayClone, sourceIndex, destinationArrayClone, destinationIndex, length);
+            Assert.Equal(expected, destinationArrayClone);
+        }
+
         [Fact]
         public static void Copy_NullSourceArray_ThrowsArgumentNullException()
         {
             Assert.Throws<ArgumentNullException>("sourceArray", () => Array.Copy(null, new string[10], 0));
             Assert.Throws<ArgumentNullException>("source", () => Array.Copy(null, 0, new string[10], 0, 0));
+            Assert.Throws<ArgumentNullException>("source", () => Array.ConstrainedCopy(null, 0, new string[10], 0, 0));
         }
 
         [Fact]
@@ -1053,6 +976,7 @@ namespace System.Tests
         {
             Assert.Throws<ArgumentNullException>("destinationArray", () => Array.Copy(new string[10], null, 0));
             Assert.Throws<ArgumentNullException>("dest", () => Array.Copy(new string[10], 0, null, 0, 0));
+            Assert.Throws<ArgumentNullException>("dest", () => Array.ConstrainedCopy(new string[10], 0, null, 0, 0));
         }
 
         [Fact]
@@ -1060,6 +984,7 @@ namespace System.Tests
         {
             Assert.Throws<RankException>(() => Array.Copy(new string[10, 10], new string[10], 0));
             Assert.Throws<RankException>(() => Array.Copy(new string[10, 10], 0, new string[10], 0, 0));
+            Assert.Throws<RankException>(() => Array.ConstrainedCopy(new string[10, 10], 0, new string[10], 0, 0));
         }
 
         public static IEnumerable<object[]> Copy_SourceAndDestinationNeverConvertible_TestData()
@@ -1295,11 +1220,29 @@ namespace System.Tests
             Assert.Throws<InvalidCastException>(() => Array.Copy(sourceArray, sourceArray.GetLowerBound(0), destinationArray, destinationArray.GetLowerBound(0), length));
         }
 
+        [Theory]
+        [MemberData(nameof(Copy_UnreliableCoversion_CantPerform_TestData))]
+        public static void ConstrainedCopy_UnreliableConversion_CantPerform_ThrowsArrayTypeMismatchException(Array sourceArray, Array destinationArray)
+        {
+            int length = Math.Min(sourceArray.Length, destinationArray.Length);
+            ConstrainedCopy_UnreliableConversion_ThrowsArrayTypeMismatchException(sourceArray, sourceArray.GetLowerBound(0), destinationArray, destinationArray.GetLowerBound(0), length, null);
+        }
+
+        [Theory]
+        [MemberData(nameof(Copy_SZArray_PrimitiveWidening_TestData))]
+        [MemberData(nameof(Copy_SZArray_UnreliableConversion_CanPerform_TestData))]
+        [MemberData(nameof(Copy_Array_UnreliableConversion_CanPerform_TestData))]
+        public static void ConstrainedCopy_UnreliableConversion_ThrowsArrayTypeMismatchException(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length, Array _)
+        {
+            Assert.Throws<ArrayTypeMismatchException>(() => Array.ConstrainedCopy(sourceArray, sourceIndex, destinationArray, destinationIndex, length));
+        }
+
         [Fact]
         public static void Copy_NegativeLength_ThrowsArgumentOutOfRangeException()
         {
             Assert.Throws<ArgumentOutOfRangeException>("length", () => Array.Copy(new string[10], new string[10], -1));
             Assert.Throws<ArgumentOutOfRangeException>("length", () => Array.Copy(new string[10], 0, new string[10], 0, -1));
+            Assert.Throws<ArgumentOutOfRangeException>("length", () => Array.ConstrainedCopy(new string[10], 0, new string[10], 0, -1));
         }
 
         [Theory]
@@ -1316,18 +1259,21 @@ namespace System.Tests
                 Assert.Throws<ArgumentException>("", () => Array.Copy(new string[sourceCount], new string[destinationCount], count));
             }
             Assert.Throws<ArgumentException>("", () => Array.Copy(new string[sourceCount], sourceIndex, new string[destinationCount], destinationIndex, count));
+            Assert.Throws<ArgumentException>("", () => Array.ConstrainedCopy(new string[sourceCount], sourceIndex, new string[destinationCount], destinationIndex, count));
         }
 
         [Fact]
         public static void Copy_StartIndexNegative_ThrowsArgumentOutOfRangeException()
         {
             Assert.Throws<ArgumentOutOfRangeException>("srcIndex", () => Array.Copy(new string[10], -1, new string[10], 0, 0));
+            Assert.Throws<ArgumentOutOfRangeException>("srcIndex", () => Array.ConstrainedCopy(new string[10], -1, new string[10], 0, 0));
         }
 
         [Fact]
         public static void Copy_DestinationIndexNegative_ThrowsArgumentOutOfRangeException()
         {
             Assert.Throws<ArgumentOutOfRangeException>("dstIndex", () => Array.Copy(new string[10], 0, new string[10], -1, 0));
+            Assert.Throws<ArgumentOutOfRangeException>("dstIndex", () => Array.ConstrainedCopy(new string[10], 0, new string[10], -1, 0));
         }
 
         public static IEnumerable<object[]> CopyTo_TestData()
