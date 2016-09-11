@@ -5,11 +5,52 @@
 using System.Collections.Generic;
 using Xunit;
 
-namespace System.ComponentModel.DataAnnotations
+namespace System.ComponentModel.DataAnnotations.Tests
 {
-    public class EnumDataTypeAttributeTests
+    public class EnumDataTypeAttributeTests : ValidationAttributeTestBase
     {
-        private static readonly ValidationContext s_testValidationContext = new ValidationContext(new object());
+        protected override IEnumerable<TestCase> ValidValues()
+        {
+            yield return new TestCase(new EnumDataTypeAttribute(typeof(NonFlagsEnumType)), null);
+            yield return new TestCase(new EnumDataTypeAttribute(typeof(NonFlagsEnumType)), "");
+            yield return new TestCase(new EnumDataTypeAttribute(typeof(NonFlagsEnumType)), NonFlagsEnumType.A);
+            yield return new TestCase(new EnumDataTypeAttribute(typeof(NonFlagsEnumType)), 10);
+            yield return new TestCase(new EnumDataTypeAttribute(typeof(NonFlagsEnumType)), 100);
+            yield return new TestCase(new EnumDataTypeAttribute(typeof(FlagsEnumType)), FlagsEnumType.X);
+            yield return new TestCase(new EnumDataTypeAttribute(typeof(FlagsEnumType)), FlagsEnumType.X | FlagsEnumType.Y);
+            yield return new TestCase(new EnumDataTypeAttribute(typeof(FlagsEnumType)), 5);
+            yield return new TestCase(new EnumDataTypeAttribute(typeof(FlagsEnumType)), 7);
+            yield return new TestCase(new EnumDataTypeAttribute(typeof(NonFlagsEnumType)), "A");
+            yield return new TestCase(new EnumDataTypeAttribute(typeof(NonFlagsEnumType)), "B");
+            yield return new TestCase(new EnumDataTypeAttribute(typeof(NonFlagsEnumType)), "C");
+            yield return new TestCase(new EnumDataTypeAttribute(typeof(NonFlagsEnumType)), "0");
+            yield return new TestCase(new EnumDataTypeAttribute(typeof(NonFlagsEnumType)), "10");
+            yield return new TestCase(new EnumDataTypeAttribute(typeof(NonFlagsEnumType)), "100");
+            yield return new TestCase(new EnumDataTypeAttribute(typeof(FlagsEnumType)), "X");
+            yield return new TestCase(new EnumDataTypeAttribute(typeof(FlagsEnumType)), "X, Y");
+            yield return new TestCase(new EnumDataTypeAttribute(typeof(FlagsEnumType)), "X, Y, Z");
+            yield return new TestCase(new EnumDataTypeAttribute(typeof(FlagsEnumType)), "1");
+            yield return new TestCase(new EnumDataTypeAttribute(typeof(FlagsEnumType)), "5");
+            yield return new TestCase(new EnumDataTypeAttribute(typeof(FlagsEnumType)), "7");
+        }
+
+        protected override IEnumerable<TestCase> InvalidValues()
+        {
+            yield return new TestCase(new EnumDataTypeAttribute(typeof(NonFlagsEnumType)), FlagsEnumType.X);
+            yield return new TestCase(new EnumDataTypeAttribute(typeof(NonFlagsEnumType)), new object());
+            yield return new TestCase(new EnumDataTypeAttribute(typeof(NonFlagsEnumType)), true);
+            yield return new TestCase(new EnumDataTypeAttribute(typeof(NonFlagsEnumType)), 1.1f);
+            yield return new TestCase(new EnumDataTypeAttribute(typeof(NonFlagsEnumType)), 123.456m);
+            yield return new TestCase(new EnumDataTypeAttribute(typeof(NonFlagsEnumType)), '0');
+            yield return new TestCase(new EnumDataTypeAttribute(typeof(NonFlagsEnumType)), "NoSuchValue");
+            yield return new TestCase(new EnumDataTypeAttribute(typeof(NonFlagsEnumType)), "42");
+
+            yield return new TestCase(new EnumDataTypeAttribute(typeof(FlagsEnumType)), 0);
+            yield return new TestCase(new EnumDataTypeAttribute(typeof(FlagsEnumType)), 8);
+            yield return new TestCase(new EnumDataTypeAttribute(typeof(FlagsEnumType)), "NoSuchValue");
+            yield return new TestCase(new EnumDataTypeAttribute(typeof(FlagsEnumType)), "0");
+            yield return new TestCase(new EnumDataTypeAttribute(typeof(FlagsEnumType)), "8");
+        }
 
         [Theory]
         [InlineData(null)]
@@ -26,34 +67,6 @@ namespace System.ComponentModel.DataAnnotations
         }
 
         [Theory]
-        [InlineData(typeof(NonFlagsEnumType), null)]
-        [InlineData(typeof(NonFlagsEnumType), "")]
-        [InlineData(typeof(NonFlagsEnumType), NonFlagsEnumType.A)]
-        [InlineData(typeof(NonFlagsEnumType), 10)]
-        [InlineData(typeof(NonFlagsEnumType), 100)]
-        [InlineData(typeof(FlagsEnumType), FlagsEnumType.X)]
-        [InlineData(typeof(FlagsEnumType), FlagsEnumType.X | FlagsEnumType.Y)]
-        [InlineData(typeof(FlagsEnumType), 5)]
-        [InlineData(typeof(FlagsEnumType), 7)]
-        [InlineData(typeof(NonFlagsEnumType), "A")]
-        [InlineData(typeof(NonFlagsEnumType), "B")]
-        [InlineData(typeof(NonFlagsEnumType), "C")]
-        [InlineData(typeof(NonFlagsEnumType), "0")]
-        [InlineData(typeof(NonFlagsEnumType), "10")]
-        [InlineData(typeof(NonFlagsEnumType), "100")]
-        [InlineData(typeof(FlagsEnumType), "X")]
-        [InlineData(typeof(FlagsEnumType), "X, Y")]
-        [InlineData(typeof(FlagsEnumType), "X, Y, Z")]
-        [InlineData(typeof(FlagsEnumType), "1")]
-        [InlineData(typeof(FlagsEnumType), "5")]
-        [InlineData(typeof(FlagsEnumType), "7")]
-        public static void Validate_Valid_DoesNotThrow(Type enumType, object value)
-        {
-            var attribute = new EnumDataTypeAttribute(enumType);
-            attribute.Validate(value, s_testValidationContext);
-        }
-
-        [Theory]
         [InlineData(null)]
         [InlineData(typeof(string))]
         [InlineData(typeof(NonFlagsEnumType?))]
@@ -61,37 +74,9 @@ namespace System.ComponentModel.DataAnnotations
         public static void Validate_InvalidEnumType_ThrowsInvalidOperationException(Type enumType)
         {
             var attribute = new EnumDataTypeAttribute(enumType);
-            Assert.Throws<InvalidOperationException>(() => attribute.Validate("AnyValue", s_testValidationContext));
+            Assert.Throws<InvalidOperationException>(() => attribute.Validate("AnyValue", new ValidationContext(new object())));
         }
-
-        public static IEnumerable<object[]> Validate_Invalid_TestData()
-        {
-            yield return new object[] { typeof(NonFlagsEnumType), FlagsEnumType.X };
-            yield return new object[] { typeof(NonFlagsEnumType), new object() };
-            yield return new object[] { typeof(NonFlagsEnumType), true };
-            yield return new object[] { typeof(NonFlagsEnumType), 1.1f };
-            yield return new object[] { typeof(NonFlagsEnumType), 123.456d };
-            yield return new object[] { typeof(NonFlagsEnumType), 123.456m };
-            yield return new object[] { typeof(NonFlagsEnumType), '0' };
-            yield return new object[] { typeof(NonFlagsEnumType), 42 };
-            yield return new object[] { typeof(NonFlagsEnumType), "NoSuchValue" };
-            yield return new object[] { typeof(NonFlagsEnumType), "42" };
-
-            yield return new object[] { typeof(FlagsEnumType), 0 };
-            yield return new object[] { typeof(FlagsEnumType), 8 };
-            yield return new object[] { typeof(FlagsEnumType), "NoSuchValue" };
-            yield return new object[] { typeof(FlagsEnumType), "0" };
-            yield return new object[] { typeof(FlagsEnumType), "8" };
-        }
-
-        [Theory]
-        [MemberData(nameof(Validate_Invalid_TestData))]
-        public static void Validate_Invalid_ThrowsValidationException(Type enumType, object value)
-        {
-            var attribute = new EnumDataTypeAttribute(enumType);
-            Assert.Throws<ValidationException>(() => attribute.Validate(value, s_testValidationContext));
-        }
-
+        
         private enum NonFlagsEnumType
         {
             A = 0,
