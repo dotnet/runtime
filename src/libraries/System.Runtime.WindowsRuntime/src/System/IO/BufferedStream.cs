@@ -745,7 +745,6 @@ namespace System.IO
                                                             Task semaphoreLockTask, bool useApmPattern) {
 
         // Same conditions validated with exceptions in ReadAsync:
-        // (These should be Debug.Assert(..) but that method had some issues in async methods; using Assert(..) for now.)
         Debug.Assert(array != null);
         Debug.Assert(offset >= 0);
         Debug.Assert(count >= 0);
