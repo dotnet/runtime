@@ -1,7 +1,7 @@
 {
   "dependencies": {
-    "System.Runtime": "4.3.0-beta-devapi-24510-01",
-    "System.Globalization": "4.3.0-beta-devapi-24510-01"
+    "System.Runtime": "4.3.0-beta-devapi-24511-01",
+    "System.Globalization": "4.3.0-beta-devapi-24511-01"
   },
   "frameworks": {
     "netstandard1.7": {
