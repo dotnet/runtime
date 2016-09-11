@@ -606,3 +606,45 @@ MembersMustExist : Member 'System.Security.VerificationException..ctor(System.Ru
 MembersMustExist : Member 'System.AggregateException..ctor(System.Runtime.Serialization.SerializationInfo, System.Runtime.Serialization.StreamingContext)' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.DateTimeOffset' does not implement interface 'System.Runtime.Serialization.IDeserializationCallback' in the implementation but it does in the contract.
 MembersMustExist : Member 'System.DateTimeOffset..ctor(System.Int32, System.Int32, System.Int32, System.Int32, System.Int32, System.Int32, System.Int32, System.Globalization.Calendar, System.TimeSpan)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Globalization.Calendar.AlgorithmType.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Globalization.CompareInfo.GetCompareInfo(System.Int32, System.Reflection.Assembly)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Globalization.CompareInfo.GetCompareInfo(System.String, System.Reflection.Assembly)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Globalization.CultureInfo.ClearCachedData()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Globalization.EastAsianLunisolarCalendar.AlgorithmType.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Globalization.GregorianCalendar.AlgorithmType.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Globalization.HebrewCalendar.AlgorithmType.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Globalization.HijriCalendar.AlgorithmType.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Globalization.JapaneseCalendar.AlgorithmType.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Globalization.JulianCalendar.AlgorithmType.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Globalization.KoreanCalendar.AlgorithmType.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Globalization.PersianCalendar.AlgorithmType.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Globalization.ThaiBuddhistCalendar.AlgorithmType.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Globalization.TaiwanCalendar.AlgorithmType.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Globalization.UmAlQuraCalendar.AlgorithmType.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Text.Decoder.Convert(System.Byte*, System.Int32, System.Char*, System.Int32, System.Boolean, System.Int32, System.Int32, System.Boolean)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Text.Decoder.GetCharCount(System.Byte*, System.Int32, System.Boolean)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Text.Encoding.BodyName.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Text.Encoding.Default.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Text.Encoding.HeaderName.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Text.Encoding.WindowsCodePage.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Text.Encoding.IsMailNewsSave.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Text.Encoding.IsMailNewsDisplay.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Text.Encoding.IsBrowserSave.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Text.Encoding.IsAlwaysNormalized(System.Text.NormalizationForm)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Text.Encoding.HeaderName.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Text.Encoding.GetEncodings()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Text.Decoder.GetChars(System.Byte*, System.Int32, System.Char*, System.Int32, System.Boolean)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Text.Encoder.Convert(System.Char*, System.Int32, System.Byte*, System.Int32, System.Boolean, System.Int32, System.Int32, System.Boolean)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Text.Encoder.GetBytes(System.Char*, System.Int32, System.Byte*, System.Int32, System.Boolean)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Text.Encoding.IsAlwaysNormalized()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Text.Encoding.IsBrowserDisplay.get()' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Text.EncodingInfo' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Text.NormalizationForm' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.String.Compare(System.String, System.Int32, System.String, System.Int32, System.Int32, System.Boolean, System.Globalization.CultureInfo)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.String.Compare(System.String, System.Int32, System.String, System.Int32, System.Int32, System.Globalization.CultureInfo, System.Globalization.CompareOptions)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.String.Compare(System.String, System.String, System.Boolean, System.Globalization.CultureInfo)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.String.Compare(System.String, System.String, System.Globalization.CultureInfo, System.Globalization.CompareOptions)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.String.EndsWith(System.String, System.Boolean, System.Globalization.CultureInfo)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.String.StartsWith(System.String, System.Boolean, System.Globalization.CultureInfo)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.String.ToLower(System.Globalization.CultureInfo)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.String.ToUpper(System.Globalization.CultureInfo)' does not exist in the implementation but it does exist in the contract.
