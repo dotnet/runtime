@@ -4,7 +4,7 @@
 
 using Xunit;
 
-namespace System.ComponentModel.DataAnnotations
+namespace System.ComponentModel.DataAnnotations.Tests
 {
     public class AssociationAttributeTests
     {

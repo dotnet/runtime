@@ -6,10 +6,25 @@ using System.Collections.Generic;
 using System.Reflection;
 using Xunit;
 
-namespace System.ComponentModel.DataAnnotations
+namespace System.ComponentModel.DataAnnotations.Tests
 {
-    public class CompareAttributeTests
+    public class CompareAttributeTests : ValidationAttributeTestBase
     {
+        protected override IEnumerable<TestCase> ValidValues() => new TestCase[]
+        {
+            new TestCase(new CompareAttribute("CompareProperty"), "test", new ValidationContext(new CompareObject("test"))),
+            new TestCase(new DerivedCompareAttribute("CompareProperty"), "a", new ValidationContext(new CompareObject("b")))
+        };
+
+        private static ValidationContext s_context = new ValidationContext(new CompareObject("a")) { DisplayName = "CurrentProperty" };
+        protected override IEnumerable<TestCase> InvalidValues() => new TestCase[]
+        {
+            new TestCase(new CompareAttribute(nameof(CompareObject.CompareProperty)), "b", s_context),
+            new TestCase(new CompareAttribute(nameof(CompareObject.ComparePropertyWithDisplayName)), "b", s_context),
+            new TestCase(new CompareAttribute("NoSuchProperty"), "b", s_context),
+            new TestCase(new CompareAttribute(nameof(CompareObject.CompareProperty)), "b", new ValidationContext(new CompareObjectSubClass("a")))
+        };
+
         [Fact]
         public static void Constructor_NullOtherProperty_ThrowsArgumentNullException()
         {
@@ -26,45 +41,19 @@ namespace System.ComponentModel.DataAnnotations
 
             Assert.True(attribute.RequiresValidationContext);
         }
+        
+        [Fact]
+        public static void Validate_Indexer_ThrowsTargetParameterCountException()
+        {
+            CompareAttribute attribute = new CompareAttribute("Item");
+            Assert.Throws<TargetParameterCountException>(() => attribute.Validate("b", s_context));
+        }
 
         [Fact]
-        public static void Validate_EqualObjects_DoesNotThrow()
+        public static void Validate_SetOnlyProperty_ThrowsArgumentException()
         {
-            var otherObject = new CompareObject("test");
-            var currentObject = new CompareObject("test");
-            var testContext = new ValidationContext(otherObject, null, null);
-
-            var attribute = new CompareAttribute("CompareProperty");
-            attribute.Validate(currentObject.CompareProperty, testContext);
-        }
-        
-        public static IEnumerable<object[]> Invalid_TestData()
-        {
-            ValidationContext context = new ValidationContext(new CompareObject("a")) { DisplayName = "CurrentProperty" };
-
-            yield return new object[] { nameof(CompareObject.CompareProperty), context, nameof(CompareObject.CompareProperty), typeof(ValidationException) };
-            yield return new object[] { nameof(CompareObject.ComparePropertyWithDisplayName), context, "CustomDisplayName", typeof(ValidationException) };
-            yield return new object[] { "UnknownPropertyName", context, null, typeof(ValidationException) };
-
-            ValidationContext subClassContext = new ValidationContext(new CompareObjectSubClass("a"));
-            yield return new object[] { nameof(CompareObject.CompareProperty), subClassContext, "CompareProperty", typeof(ValidationException) };
-
-            yield return new object[] { "Item", context, null, typeof(TargetParameterCountException) };
-            yield return new object[] { nameof(CompareObject.SetOnlyProperty), context, null, typeof(ArgumentException) };
-        }
-
-        [Theory]
-        [MemberData(nameof(Invalid_TestData))]
-        public static void Validate_Invalid_Throws(string otherProperty, ValidationContext context, string otherPropertyDisplayName, Type exceptionType)
-        {
-            var attribute = new CompareAttribute(otherProperty);
-            
-            Assert.Throws(exceptionType, () => attribute.Validate("b", context));
-            Assert.Equal(otherPropertyDisplayName, attribute.OtherPropertyDisplayName);
-
-            // Make sure that we can run Validate twice
-            Assert.Throws(exceptionType, () => attribute.Validate("b", context));
-            Assert.Equal(otherPropertyDisplayName, attribute.OtherPropertyDisplayName);
+            CompareAttribute attribute = new CompareAttribute(nameof(CompareObject.SetOnlyProperty));
+            Assert.Throws<ArgumentException>(null, () => attribute.Validate("b", s_context));
         }
 
         [Fact]
@@ -80,17 +69,6 @@ namespace System.ComponentModel.DataAnnotations
             string newErrorMessage = attribute.FormatErrorMessage("name");
             Assert.NotEqual(oldErrorMessage, newErrorMessage);
             Assert.True(newErrorMessage.Contains("CustomDisplayName"));
-        }
-
-        [Fact]
-        public static void Validate_CustomDerivedClass_DoesNotThrow()
-        {
-            var otherObject = new CompareObject("a");
-            var currentObject = new CompareObject("b");
-            var testContext = new ValidationContext(otherObject, null, null);
-
-            var attribute = new DerivedCompareAttribute("CompareProperty");
-            attribute.Validate(currentObject.CompareProperty, testContext);
         }
         
         private class DerivedCompareAttribute : CompareAttribute
