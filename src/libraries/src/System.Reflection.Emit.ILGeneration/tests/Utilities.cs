@@ -10,7 +10,7 @@ namespace System.Reflection.Emit.Tests
         internal TestConstructor(bool b) { }
     }
 
-    public class CustomAttributeBuilderTest : Attribute
+    public class TestAttribute : Attribute
     {
         public string TestString
         {
@@ -39,21 +39,24 @@ namespace System.Reflection.Emit.Tests
         public string GetString;
         public int GetInt;
 
-        public CustomAttributeBuilderTest() { }
+        public TestAttribute() { }
 
-        public CustomAttributeBuilderTest(string getOnlyString, int getOnlyInt32)
+        public TestAttribute(string getOnlyString, int getOnlyInt32)
         {
             GetString = getOnlyString;
             GetInt = getOnlyInt32;
         }
 
-        public CustomAttributeBuilderTest(string testString, int testInt32, string getOnlyString, int getOnlyInt32)
+        public TestAttribute(string testString, int testInt32, string getOnlyString, int getOnlyInt32)
         {
             TestStringField = testString;
             TestInt = testInt32;
             GetString = getOnlyString;
             GetInt = getOnlyInt32;
         }
+
+        public static FieldInfo[] AllFields => Helpers.GetFields(nameof(TestInt), nameof(TestStringField), nameof(GetString), nameof(GetInt));
+        public static PropertyInfo[] AllProperties => Helpers.GetProperties(nameof(TestInt32), nameof(TestString), nameof(GetOnlyString), nameof(GetOnlyInt32));
     }
 
     public static class Helpers
@@ -65,7 +68,7 @@ namespace System.Reflection.Emit.Tests
             for (int i = 0; i < fieldNames.Length; i++)
             {
                 string name = fieldNames[i];
-                fields[i] = name == null ? null : typeof(CustomAttributeBuilderTest).GetField(name, Flags);
+                fields[i] = name == null ? null : typeof(TestAttribute).GetField(name, Flags);
             }
             return fields;
         }
@@ -77,7 +80,7 @@ namespace System.Reflection.Emit.Tests
             for (int i = 0; i < propertyNames.Length; i++)
             {
                 string name = propertyNames[i];
-                properties[i] = name == null ? null : typeof(CustomAttributeBuilderTest).GetProperty(name, Flags);
+                properties[i] = name == null ? null : typeof(TestAttribute).GetProperty(name, Flags);
             }
             return properties;
         }

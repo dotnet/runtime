@@ -9,16 +9,6 @@ namespace System.Reflection.Emit.Tests
 {
     public class CustomAttributeBuilderCtor1
     {
-        [Theory]
-        [InlineData(new Type[] { typeof(string) }, new object[] { "TestString" })]
-        [InlineData(new Type[0], new object[0])]
-        [InlineData(new Type[] { typeof(string), typeof(bool) }, new object[] { "TestString", true })]
-        public void ConstructorInfo_ObjectArray(Type[] paramTypes, object[] paramValues)
-        {
-            ConstructorInfo constructor = typeof(ObsoleteAttribute).GetConstructor(paramTypes);
-            CustomAttributeBuilder attribute = new CustomAttributeBuilder(constructor, paramValues);
-        }
-
         [Fact]
         public void ConstructorInfo_ObjectArray_StaticCtor_ThrowsArgumentException()
         {
