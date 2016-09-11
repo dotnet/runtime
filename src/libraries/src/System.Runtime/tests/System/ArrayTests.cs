@@ -785,6 +785,9 @@ namespace System.Tests
                 new NonGenericStruct { x = 4, s = "Hello4", z = 5 }
             };
             yield return new object[] { structArray2, 1, structArray2, 2, 3, overlappingStructArrayExpected };
+
+            // SubClass[] -> BaseClass[]
+            yield return new object[] { new NonGenericSubClass1[10], 0, new NonGenericClass1[10], 0, 10, new NonGenericClass1[10] };
         }
         
         public static IEnumerable<object[]> Copy_SZArray_PrimitiveWidening_TestData()
@@ -882,12 +885,12 @@ namespace System.Tests
             // ReferenceType[] -> InterfaceNotImplementedByReferenceType[] works when values are all null
             yield return new object[] { new ClassWithNonGenericInterface1[1], 0, new NonGenericInterface2[1], 0, 1, new NonGenericInterface2[1] };
 
-            // Value type array to reference type array
+            // ValueType[] -> ReferenceType[]
             yield return new object[] { new int[] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 }, 2, new object[10], 5, 3, new object[] { null, null, null, null, null, 2, 3, 4, null, null } };
             yield return new object[] { new int[] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 }, 2, new IEquatable<int>[10], 5, 3, new IEquatable<int>[] { null, null, null, null, null, 2, 3, 4, null, null } };
             yield return new object[] { new int?[] { 0, 1, 2, default(int?), 4, 5, 6, 7, 8, 9 }, 2, new object[10], 5, 3, new object[] { null, null, null, null, null, 2, null, 4, null, null } };
 
-            // Reference type array to value type array
+            // ReferenceType[] -> ValueType[]
             yield return new object[] { new object[] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 }, 2, new int[] { 0xcc, 0xcc, 0xcc, 0xcc, 0xcc, 0xcc, 0xcc, 0xcc, 0xcc, 0xcc }, 5, 3, new int[] { 0xcc, 0xcc, 0xcc, 0xcc, 0xcc, 2, 3, 4, 0xcc, 0xcc } };
             yield return new object[] { new IEquatable<int>[] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 }, 2, new int[] { 0xcc, 0xcc, 0xcc, 0xcc, 0xcc, 0xcc, 0xcc, 0xcc, 0xcc, 0xcc }, 5, 3, new int[] { 0xcc, 0xcc, 0xcc, 0xcc, 0xcc, 2, 3, 4, 0xcc, 0xcc } };
             yield return new object[] { new IEquatable<int>[] { 0, new NotInt32(), 2, 3, 4, new NotInt32(), 6, 7, 8, 9 }, 2, new int[] { 0xcc, 0xcc, 0xcc, 0xcc, 0xcc, 0xcc, 0xcc, 0xcc, 0xcc, 0xcc }, 5, 3, new int[] { 0xcc, 0xcc, 0xcc, 0xcc, 0xcc, 2, 3, 4, 0xcc, 0xcc } };
@@ -897,6 +900,15 @@ namespace System.Tests
             // Struct[] -> object[]
             NonGenericStruct[] structArray1 = CreateStructArray();
             yield return new object[] { structArray1, 0, new object[5], 0, 5, structArray1.Select(g => (object)g).ToArray() };
+
+            // BaseClass[] -> SubClass[]
+            yield return new object[] { new NonGenericClass1[10], 0, new NonGenericSubClass1[10], 0, 10, new NonGenericSubClass1[10] };
+
+            // Class[] -> Interface[]
+            yield return new object[] { new NonGenericClass1[10], 0, new NonGenericInterface1[10], 0, 10, new NonGenericInterface1[10] };
+
+            // Interface[] -> Class[]
+            yield return new object[] { new NonGenericInterface1[10], 0, new NonGenericClass1[10], 0, 10, new NonGenericClass1[10] };
         }
 
         public static IEnumerable<object[]> Copy_Array_UnreliableConversion_CanPerform_TestData()
@@ -929,6 +941,15 @@ namespace System.Tests
             // Advanced: convert SZArray to an array with non-zero lower bound
             const int LowerBound = 5;
             Copy(NonZeroLowerBoundArray(sourceArray, LowerBound), sourceIndex + LowerBound, NonZeroLowerBoundArray(destinationArray, LowerBound), destinationIndex + LowerBound, length, NonZeroLowerBoundArray(expected, LowerBound));
+
+            if (sourceIndex == 0 && length == sourceArray.Length)
+            {
+                // CopyTo(Array, int)
+                Array sourceClone = (Array)sourceArray.Clone();
+                Array destinationArrayClone = sourceArray == destinationArray ? sourceClone : (Array)destinationArray.Clone();
+                sourceClone.CopyTo(destinationArrayClone, destinationIndex);
+                Assert.Equal(expected, destinationArrayClone);
+            }
         }
 
         [Theory]
@@ -977,6 +998,8 @@ namespace System.Tests
             Assert.Throws<ArgumentNullException>("destinationArray", () => Array.Copy(new string[10], null, 0));
             Assert.Throws<ArgumentNullException>("dest", () => Array.Copy(new string[10], 0, null, 0, 0));
             Assert.Throws<ArgumentNullException>("dest", () => Array.ConstrainedCopy(new string[10], 0, null, 0, 0));
+
+            Assert.Throws<ArgumentNullException>("dest", () => new string[10].CopyTo(null, 0));
         }
 
         [Fact]
@@ -1179,6 +1202,7 @@ namespace System.Tests
         {
             Assert.Throws<ArrayTypeMismatchException>(() => Array.Copy(sourceArray, destinationArray, 0));
             Assert.Throws<ArrayTypeMismatchException>(() => Array.Copy(sourceArray, sourceArray.GetLowerBound(0), destinationArray, destinationArray.GetLowerBound(0), 0));
+            Assert.Throws<ArrayTypeMismatchException>(() => sourceArray.CopyTo(destinationArray, destinationArray.GetLowerBound(0)));
         }
 
         [Fact]
@@ -1218,6 +1242,11 @@ namespace System.Tests
             int length = Math.Min(sourceArray.Length, destinationArray.Length);
             Assert.Throws<InvalidCastException>(() => Array.Copy(sourceArray, destinationArray, length));
             Assert.Throws<InvalidCastException>(() => Array.Copy(sourceArray, sourceArray.GetLowerBound(0), destinationArray, destinationArray.GetLowerBound(0), length));
+
+            Assert.Throws<InvalidCastException>(() => sourceArray.CopyTo(destinationArray, destinationArray.GetLowerBound(0)));
+
+            // No exception is thrown if length == 0, as conversion error checking occurs during, not before copying
+            Array.Copy(sourceArray, sourceArray.GetLowerBound(0), destinationArray, destinationArray.GetLowerBound(0), 0);
         }
 
         [Theory]
@@ -1274,42 +1303,25 @@ namespace System.Tests
         {
             Assert.Throws<ArgumentOutOfRangeException>("dstIndex", () => Array.Copy(new string[10], 0, new string[10], -1, 0));
             Assert.Throws<ArgumentOutOfRangeException>("dstIndex", () => Array.ConstrainedCopy(new string[10], 0, new string[10], -1, 0));
-        }
 
-        public static IEnumerable<object[]> CopyTo_TestData()
-        {
-            yield return new object[] { new NonGenericClass1[10], new NonGenericSubClass1[10], 0, new NonGenericSubClass1[10] };
-            yield return new object[] { new NonGenericSubClass1[10], new NonGenericClass1[10], 0, new NonGenericClass1[10] };
-            yield return new object[] { new NonGenericClass1[10], new NonGenericInterface1[10], 0, new NonGenericInterface1[10] };
-            yield return new object[] { new NonGenericInterface1[10], new NonGenericClass1[10], 0, new NonGenericClass1[10] };
-
-            yield return new object[] { new int[] { 0, 1, 2, 3 }, new int[4], 0, new int[] { 0, 1, 2, 3 } };
-            yield return new object[] { new int[] { 0, 1, 2, 3 }, new int[7], 2, new int[] { 0, 0, 0, 1, 2, 3, 0 } };
-        }
-
-        [Theory]
-        [MemberData(nameof(CopyTo_TestData))]
-        public static void CopyTo(Array source, Array destination, int index, Array expected)
-        {
-            source.CopyTo(destination, index);
-            Assert.Equal(expected, destination);
+            Assert.Throws<ArgumentOutOfRangeException>("dstIndex", () => new string[10].CopyTo(new string[10], -1));
         }
 
         [Fact]
-        public static void CopyTo_Invalid()
+        public static void CopyTo_SourceMultiDimensional_ThrowsRankException()
         {
-            Assert.Throws<RankException>(() => new int[3, 3].CopyTo(new int[3], 0)); // Source is multidimensional
+            Assert.Throws<RankException>(() => new int[3, 3].CopyTo(new int[3], 0));
+        }
 
-            Assert.Throws<ArgumentNullException>("dest", () => new int[3].CopyTo(null, 0)); // Destination is null
-            Assert.Throws<ArgumentException>(null, () => new int[3].CopyTo(new int[10, 10], 0)); // Destination array is multidimensional
+        [Fact]
+        public static void CopyTo_DestinationMultiDimensional_ThrowsArgumentException()
+        {
+            Assert.Throws<ArgumentException>(null, () => new int[3].CopyTo(new int[10, 10], 0));
+        }
 
-            Assert.Throws<ArrayTypeMismatchException>(() => new int[3].CopyTo(new string[10], 0)); // Source and destination types are incompatible
-            Assert.Throws<ArrayTypeMismatchException>(() => new NonGenericClass1[10].CopyTo(new NonGenericClass2[10], 0));// Source and destination types hold uncovertible types
-
-            Assert.Throws<InvalidCastException>(() => new object[] { "1" }.CopyTo(new int[1], 0)); // Source and destination types hold uncovertible types
-            Assert.Throws<InvalidCastException>(() => new NonGenericClass1[] { new NonGenericClass1() }.CopyTo(new NonGenericInterface1[1], 0));// Source and destination types hold uncovertible types
-
-            Assert.Throws<ArgumentOutOfRangeException>("dstIndex", () => new int[3].CopyTo(new int[10], -1)); // Index < 0
+        [Fact]
+        public static void CopyTo_IndexInvalid_ThrowsArgumentException()
+        {
             Assert.Throws<ArgumentException>("", () => new int[3].CopyTo(new int[10], 10)); // Index > destination.Length
         }
 
