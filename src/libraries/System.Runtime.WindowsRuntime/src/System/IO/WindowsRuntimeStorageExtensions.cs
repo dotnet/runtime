@@ -38,7 +38,7 @@ namespace System.IO
 
         private static async Task<Stream> OpenStreamForReadAsyncCore(this IStorageFile windowsRuntimeFile)
         {
-            Contract.Requires(windowsRuntimeFile != null);
+            Debug.Assert(windowsRuntimeFile != null);
             Contract.Ensures(Contract.Result<Task<Stream>>() != null);
             Contract.EndContractBlock();
 
@@ -73,8 +73,8 @@ namespace System.IO
 
         private static async Task<Stream> OpenStreamForWriteAsyncCore(this IStorageFile windowsRuntimeFile, Int64 offset)
         {
-            Contract.Requires(windowsRuntimeFile != null);
-            Contract.Requires(offset >= 0);
+            Debug.Assert(windowsRuntimeFile != null);
+            Debug.Assert(offset >= 0);
             Contract.Ensures(Contract.Result<Task<Stream>>() != null);
             Contract.EndContractBlock();
 
@@ -120,8 +120,8 @@ namespace System.IO
 
         private static async Task<Stream> OpenStreamForReadAsyncCore(this IStorageFolder rootDirectory, String relativePath)
         {
-            Contract.Requires(rootDirectory != null);
-            Contract.Requires(!String.IsNullOrWhiteSpace(relativePath));
+            Debug.Assert(rootDirectory != null);
+            Debug.Assert(!String.IsNullOrWhiteSpace(relativePath));
             Contract.Ensures(Contract.Result<Task<Stream>>() != null);
             Contract.EndContractBlock();
 
@@ -165,10 +165,10 @@ namespace System.IO
         private static async Task<Stream> OpenStreamForWriteAsyncCore(this IStorageFolder rootDirectory, String relativePath,
                                                                       CreationCollisionOption creationCollisionOption)
         {
-            Contract.Requires(rootDirectory != null);
-            Contract.Requires(!String.IsNullOrWhiteSpace(relativePath));
+            Debug.Assert(rootDirectory != null);
+            Debug.Assert(!String.IsNullOrWhiteSpace(relativePath));
 
-            Contract.Requires(creationCollisionOption == CreationCollisionOption.FailIfExists
+            Debug.Assert(creationCollisionOption == CreationCollisionOption.FailIfExists
                                     || creationCollisionOption == CreationCollisionOption.GenerateUniqueName
                                     || creationCollisionOption == CreationCollisionOption.OpenIfExists
                                     || creationCollisionOption == CreationCollisionOption.ReplaceExisting,

@@ -14,7 +14,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Security;
@@ -76,9 +75,9 @@ namespace System.Threading.Tasks.Dataflow.Internal
         internal SpscTargetCore(
             ITargetBlock<TInput> owningTarget, Action<TInput> action, ExecutionDataflowBlockOptions dataflowBlockOptions)
         {
-            Contract.Requires(owningTarget != null, "Expected non-null owningTarget");
-            Contract.Requires(action != null, "Expected non-null action");
-            Contract.Requires(dataflowBlockOptions != null, "Expected non-null dataflowBlockOptions");
+            Debug.Assert(owningTarget != null, "Expected non-null owningTarget");
+            Debug.Assert(action != null, "Expected non-null action");
+            Debug.Assert(dataflowBlockOptions != null, "Expected non-null dataflowBlockOptions");
 
             _owningTarget = owningTarget;
             _action = action;

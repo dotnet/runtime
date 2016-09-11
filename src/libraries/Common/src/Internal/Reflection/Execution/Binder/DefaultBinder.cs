@@ -6,7 +6,6 @@
 
 using System;
 using System.Reflection;
-using System.Diagnostics.Contracts;
 
 namespace Internal.Reflection.Core.Execution.Binder
 {

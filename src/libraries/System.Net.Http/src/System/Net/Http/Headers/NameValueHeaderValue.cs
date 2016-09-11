@@ -4,7 +4,6 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Text;
 
 namespace System.Net.Http.Headers
@@ -53,7 +52,7 @@ namespace System.Net.Http.Headers
 
         protected NameValueHeaderValue(NameValueHeaderValue source)
         {
-            Contract.Requires(source != null);
+            Debug.Assert(source != null);
 
             _name = source._name;
             _value = source._value;
@@ -202,9 +201,9 @@ namespace System.Net.Http.Headers
         internal static int GetNameValueLength(string input, int startIndex,
             Func<NameValueHeaderValue> nameValueCreator, out NameValueHeaderValue parsedValue)
         {
-            Contract.Requires(input != null);
-            Contract.Requires(startIndex >= 0);
-            Contract.Requires(nameValueCreator != null);
+            Debug.Assert(input != null);
+            Debug.Assert(startIndex >= 0);
+            Debug.Assert(nameValueCreator != null);
 
             parsedValue = null;
 
@@ -261,8 +260,8 @@ namespace System.Net.Http.Headers
         internal static int GetNameValueListLength(string input, int startIndex, char delimiter,
             ObjectCollection<NameValueHeaderValue> nameValueCollection)
         {
-            Contract.Requires(nameValueCollection != null);
-            Contract.Requires(startIndex >= 0);
+            Debug.Assert(nameValueCollection != null);
+            Debug.Assert(startIndex >= 0);
 
             if ((string.IsNullOrEmpty(input)) || (startIndex >= input.Length))
             {
@@ -299,7 +298,7 @@ namespace System.Net.Http.Headers
 
         internal static NameValueHeaderValue Find(ObjectCollection<NameValueHeaderValue> values, string name)
         {
-            Contract.Requires((name != null) && (name.Length > 0));
+            Debug.Assert((name != null) && (name.Length > 0));
 
             if ((values == null) || (values.Count == 0))
             {
@@ -318,7 +317,7 @@ namespace System.Net.Http.Headers
 
         internal static int GetValueLength(string input, int startIndex)
         {
-            Contract.Requires(input != null);
+            Debug.Assert(input != null);
 
             if (startIndex >= input.Length)
             {

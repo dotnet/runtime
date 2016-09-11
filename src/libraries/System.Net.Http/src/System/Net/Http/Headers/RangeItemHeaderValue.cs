@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Globalization;
 
@@ -48,7 +49,7 @@ namespace System.Net.Http.Headers
 
         private RangeItemHeaderValue(RangeItemHeaderValue source)
         {
-            Contract.Requires(source != null);
+            Debug.Assert(source != null);
 
             _from = source._from;
             _to = source._to;
@@ -97,8 +98,8 @@ namespace System.Net.Http.Headers
         internal static int GetRangeItemListLength(string input, int startIndex,
             ICollection<RangeItemHeaderValue> rangeCollection)
         {
-            Contract.Requires(rangeCollection != null);
-            Contract.Requires(startIndex >= 0);
+            Debug.Assert(rangeCollection != null);
+            Debug.Assert(startIndex >= 0);
             Contract.Ensures((Contract.Result<int>() == 0) || (rangeCollection.Count > 0),
                 "If we can parse the string, then we expect to have at least one range item.");
 
@@ -148,7 +149,7 @@ namespace System.Net.Http.Headers
 
         internal static int GetRangeItemLength(string input, int startIndex, out RangeItemHeaderValue parsedValue)
         {
-            Contract.Requires(startIndex >= 0);
+            Debug.Assert(startIndex >= 0);
 
             // This parser parses number ranges: e.g. '1-2', '1-', '-2'.
 

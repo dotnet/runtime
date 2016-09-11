@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 
 namespace System.Net.Http.Headers
 {
@@ -45,7 +44,7 @@ namespace System.Net.Http.Headers
 
         private AuthenticationHeaderValue(AuthenticationHeaderValue source)
         {
-            Contract.Requires(source != null);
+            Debug.Assert(source != null);
 
             _scheme = source._scheme;
             _parameter = source._parameter;
@@ -120,7 +119,7 @@ namespace System.Net.Http.Headers
 
         internal static int GetAuthenticationLength(string input, int startIndex, out object parsedValue)
         {
-            Contract.Requires(startIndex >= 0);
+            Debug.Assert(startIndex >= 0);
 
             parsedValue = null;
 
@@ -227,7 +226,7 @@ namespace System.Net.Http.Headers
 
         private static bool TryGetParametersEndIndex(string input, ref int parseEndIndex, ref int parameterEndIndex)
         {
-            Contract.Requires(parseEndIndex < input.Length, "Expected string to have at least 1 char");
+            Debug.Assert(parseEndIndex < input.Length, "Expected string to have at least 1 char");
             Debug.Assert(input[parseEndIndex] == ',');
 
             int current = parseEndIndex;

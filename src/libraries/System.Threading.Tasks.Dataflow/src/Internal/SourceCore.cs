@@ -108,9 +108,9 @@ namespace System.Threading.Tasks.Dataflow.Internal
             Action<ISourceBlock<TOutput>, int> itemsRemovedAction = null,
             Func<ISourceBlock<TOutput>, TOutput, IList<TOutput>, int> itemCountingFunc = null)
         {
-            Contract.Requires(owningSource != null, "Core must be associated with a source.");
-            Contract.Requires(dataflowBlockOptions != null, "Options must be provided to configure the core.");
-            Contract.Requires(completeAction != null, "Action to invoke on completion is required.");
+            Debug.Assert(owningSource != null, "Core must be associated with a source.");
+            Debug.Assert(dataflowBlockOptions != null, "Options must be provided to configure the core.");
+            Debug.Assert(completeAction != null, "Action to invoke on completion is required.");
 
             // Store the args
             _owningSource = owningSource;
@@ -409,7 +409,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
         /// <param name="items">The list of items to be wrapped in messages to be added.</param>
         internal void AddMessages(IEnumerable<TOutput> items)
         {
-            Contract.Requires(items != null, "Items list must be valid.");
+            Debug.Assert(items != null, "Items list must be valid.");
 
             // This method must not take the OutgoingLock, as it will likely be called in situations
             // where an IncomingLock is held.
@@ -459,8 +459,8 @@ namespace System.Threading.Tasks.Dataflow.Internal
         /// <param name="exception">The exception to add</param>
         internal void AddException(Exception exception)
         {
-            Contract.Requires(exception != null, "Valid exception must be provided to be added.");
-            Contract.Requires(!Completion.IsCompleted || Completion.IsFaulted, "The block must either not be completed or be faulted if we're still storing exceptions.");
+            Debug.Assert(exception != null, "Valid exception must be provided to be added.");
+            Debug.Assert(!Completion.IsCompleted || Completion.IsFaulted, "The block must either not be completed or be faulted if we're still storing exceptions.");
             lock (ValueLock)
             {
                 Common.AddException(ref _exceptions, exception);
@@ -471,8 +471,8 @@ namespace System.Threading.Tasks.Dataflow.Internal
         /// <param name="exceptions">The exceptions to add</param>
         internal void AddExceptions(List<Exception> exceptions)
         {
-            Contract.Requires(exceptions != null, "Valid exceptions must be provided to be added.");
-            Contract.Requires(!Completion.IsCompleted || Completion.IsFaulted, "The block must either not be completed or be faulted if we're still storing exceptions.");
+            Debug.Assert(exceptions != null, "Valid exceptions must be provided to be added.");
+            Debug.Assert(!Completion.IsCompleted || Completion.IsFaulted, "The block must either not be completed or be faulted if we're still storing exceptions.");
             lock (ValueLock)
             {
                 foreach (Exception exception in exceptions)
@@ -486,8 +486,8 @@ namespace System.Threading.Tasks.Dataflow.Internal
         /// <param name="aggregateException">The exception to add</param>
         internal void AddAndUnwrapAggregateException(AggregateException aggregateException)
         {
-            Contract.Requires(aggregateException != null && aggregateException.InnerExceptions.Count > 0, "Aggregate must be valid and contain inner exceptions to unwrap.");
-            Contract.Requires(!Completion.IsCompleted || Completion.IsFaulted, "The block must either not be completed or be faulted if we're still storing exceptions.");
+            Debug.Assert(aggregateException != null && aggregateException.InnerExceptions.Count > 0, "Aggregate must be valid and contain inner exceptions to unwrap.");
+            Debug.Assert(!Completion.IsCompleted || Completion.IsFaulted, "The block must either not be completed or be faulted if we're still storing exceptions.");
             lock (ValueLock)
             {
                 Common.AddException(ref _exceptions, aggregateException, unwrapInnerExceptions: true);
@@ -670,7 +670,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
             DataflowMessageHeader header, TOutput message, ITargetBlock<TOutput> target,
             out bool messageWasAccepted)
         {
-            Contract.Requires(target != null, "Valid target to offer to is required.");
+            Debug.Assert(target != null, "Valid target to offer to is required.");
             Common.ContractAssertMonitorStatus(OutgoingLock, held: true);
             Common.ContractAssertMonitorStatus(ValueLock, held: false);
 
@@ -915,7 +915,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
         /// </summary>
         private void CompleteBlockIfPossible_Slow()
         {
-            Contract.Requires(
+            Debug.Assert(
                 _decliningPermanently && _taskForOutputProcessing == null && _nextMessageReservedFor == null,
                 "The block must be declining permanently, there must be no reservations, and there must be no processing tasks");
             Common.ContractAssertMonitorStatus(OutgoingLock, held: true);

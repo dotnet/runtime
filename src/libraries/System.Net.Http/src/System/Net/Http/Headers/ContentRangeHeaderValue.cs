@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Diagnostics.Contracts;
+using System.Diagnostics;
 using System.Globalization;
 using System.Text;
 
@@ -110,7 +110,7 @@ namespace System.Net.Http.Headers
 
         private ContentRangeHeaderValue(ContentRangeHeaderValue source)
         {
-            Contract.Requires(source != null);
+            Debug.Assert(source != null);
 
             _from = source._from;
             _to = source._to;
@@ -199,7 +199,7 @@ namespace System.Net.Http.Headers
 
         internal static int GetContentRangeLength(string input, int startIndex, out object parsedValue)
         {
-            Contract.Requires(startIndex >= 0);
+            Debug.Assert(startIndex >= 0);
 
             parsedValue = null;
 

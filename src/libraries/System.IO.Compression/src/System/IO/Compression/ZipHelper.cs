@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 
 namespace System.IO.Compression
 {
@@ -92,7 +91,7 @@ namespace System.IO.Compression
         internal static UInt32 DateTimeToDosTime(DateTime dateTime)
         {
             // DateTime must be Convertible to DosTime:
-            Contract.Requires(ValidZipDate_YearMin <= dateTime.Year && dateTime.Year <= ValidZipDate_YearMax);
+            Debug.Assert(ValidZipDate_YearMin <= dateTime.Year && dateTime.Year <= ValidZipDate_YearMax);
 
             int ret = ((dateTime.Year - ValidZipDate_YearMin) & 0x7F);
             ret = (ret << 4) + dateTime.Month;

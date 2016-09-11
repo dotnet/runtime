@@ -241,7 +241,7 @@ namespace System.Threading.Tasks.Dataflow
             /// <param name="batchedJoinBlock">The batched join being viewed.</param>
             public DebugView(BatchedJoinBlock<T1, T2> batchedJoinBlock)
             {
-                Contract.Requires(batchedJoinBlock != null, "Need a block with which to construct the debug view.");
+                Debug.Assert(batchedJoinBlock != null, "Need a block with which to construct the debug view.");
                 _batchedJoinBlock = batchedJoinBlock;
                 _sourceDebuggingInformation = batchedJoinBlock._source.GetDebuggingInformation();
             }
@@ -511,7 +511,7 @@ namespace System.Threading.Tasks.Dataflow
             /// <param name="batchedJoinBlock">The batched join being viewed.</param>
             public DebugView(BatchedJoinBlock<T1, T2, T3> batchedJoinBlock)
             {
-                Contract.Requires(batchedJoinBlock != null, "Need a block with which to construct the debug view.");
+                Debug.Assert(batchedJoinBlock != null, "Need a block with which to construct the debug view.");
                 _sourceDebuggingInformation = batchedJoinBlock._source.GetDebuggingInformation();
                 _batchedJoinBlock = batchedJoinBlock;
             }
@@ -569,7 +569,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
         /// <param name="sharedResources">The shared resources used by all targets associated with this batched join.</param>
         internal BatchedJoinBlockTarget(BatchedJoinBlockTargetSharedResources sharedResources)
         {
-            Contract.Requires(sharedResources != null, "Targets require a shared resources through which to communicate.");
+            Debug.Assert(sharedResources != null, "Targets require a shared resources through which to communicate.");
 
             // Store the shared resources, and register with it to let it know there's 
             // another target. This is done in a non-thread-safe manner and must be done 
@@ -681,7 +681,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
             /// <param name="batchedJoinBlockTarget">The batched join target being viewed.</param>
             public DebugView(BatchedJoinBlockTarget<T> batchedJoinBlockTarget)
             {
-                Contract.Requires(batchedJoinBlockTarget != null, "Need a block with which to construct the debug view.");
+                Debug.Assert(batchedJoinBlockTarget != null, "Need a block with which to construct the debug view.");
                 _batchedJoinBlockTarget = batchedJoinBlockTarget;
             }
 

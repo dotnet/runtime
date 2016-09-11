@@ -14,7 +14,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Diagnostics.Contracts;
 using System.Security;
 using System.Collections;
 using System.Runtime.ExceptionServices;
@@ -49,7 +48,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
         [Conditional("DEBUG")]
         internal static void ContractAssertMonitorStatus(object syncObj, bool held)
         {
-            Contract.Requires(syncObj != null, "The monitor object to check must be provided.");
+            Debug.Assert(syncObj != null, "The monitor object to check must be provided.");
             Debug.Assert(Monitor.IsEntered(syncObj) == held, "The locking scheme was not correctly followed.");
         }
 
@@ -72,7 +71,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
         internal static bool TryKeepAliveUntil<TStateIn, TStateOut>(KeepAlivePredicate<TStateIn, TStateOut> predicate,
                                                                     TStateIn stateIn, out TStateOut stateOut)
         {
-            Contract.Requires(predicate != null, "Non-null predicate to execute is required.");
+            Debug.Assert(predicate != null, "Non-null predicate to execute is required.");
             const int ITERATION_LIMIT = 16;
 
             for (int c = ITERATION_LIMIT; c > 0; c--)
@@ -106,7 +105,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
         /// <returns>An ID for the dataflow block.</returns>
         internal static int GetBlockId(IDataflowBlock block)
         {
-            Contract.Requires(block != null, "Block required to extract an Id.");
+            Debug.Assert(block != null, "Block required to extract an Id.");
             const int NOTASKID = 0; // tasks don't have 0 as ids
             Task t = Common.GetPotentiallyNotSupportedCompletionTask(block);
             return t != null ? t.Id : NOTASKID;
@@ -124,8 +123,8 @@ namespace System.Threading.Tasks.Dataflow.Internal
         internal static string GetNameForDebugger(
             IDataflowBlock block, DataflowBlockOptions options = null)
         {
-            Contract.Requires(block != null, "Should only be used with valid objects being displayed in the debugger.");
-            Contract.Requires(options == null || options.NameFormat != null, "If options are provided, NameFormat must be valid.");
+            Debug.Assert(block != null, "Should only be used with valid objects being displayed in the debugger.");
+            Debug.Assert(options == null || options.NameFormat != null, "If options are provided, NameFormat must be valid.");
 
             if (block == null) return string.Empty;
 
@@ -156,7 +155,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
         /// <returns>true if this exception represents a cooperative cancellation acknowledgment; otherwise, false.</returns>
         internal static bool IsCooperativeCancellation(Exception exception)
         {
-            Contract.Requires(exception != null, "An exception to check for cancellation must be provided.");
+            Debug.Assert(exception != null, "An exception to check for cancellation must be provided.");
             return exception is OperationCanceledException;
             // Note that the behavior of this method does not exactly match that of Parallel.*, PLINQ, and Task.Factory.StartNew,
             // in that it's more liberal and treats any OCE as acknowledgment of cancellation; in contrast, the other
@@ -182,8 +181,8 @@ namespace System.Threading.Tasks.Dataflow.Internal
         internal static void WireCancellationToComplete(
             CancellationToken cancellationToken, Task completionTask, Action<object> completeAction, object completeState)
         {
-            Contract.Requires(completionTask != null, "A task to wire up for completion is needed.");
-            Contract.Requires(completeAction != null, "An action to invoke upon cancellation is required.");
+            Debug.Assert(completionTask != null, "A task to wire up for completion is needed.");
+            Debug.Assert(completeAction != null, "An action to invoke upon cancellation is required.");
 
             // If a cancellation request has already occurred, just invoke the declining action synchronously.
             // CancellationToken would do this anyway but we can short-circuit it further and avoid a bunch of unnecessary checks.
@@ -208,7 +207,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
         [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
         internal static Exception InitializeStackTrace(Exception exception)
         {
-            Contract.Requires(exception != null && exception.StackTrace == null,
+            Debug.Assert(exception != null && exception.StackTrace == null,
                 "A valid but uninitialized exception should be provided.");
             try { throw exception; }
             catch { return exception; }
@@ -225,7 +224,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
         [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
         internal static void StoreDataflowMessageValueIntoExceptionData<T>(Exception exc, T messageValue, bool targetInnerExceptions = false)
         {
-            Contract.Requires(exc != null, "The exception into which data should be stored must be provided.");
+            Debug.Assert(exc != null, "The exception into which data should be stored must be provided.");
 
             // Get the string value to store
             string strValue = messageValue as string;
@@ -270,9 +269,9 @@ namespace System.Threading.Tasks.Dataflow.Internal
         [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
         private static void StoreStringIntoExceptionData(Exception exception, string key, string value)
         {
-            Contract.Requires(exception != null, "An exception is needed to store the data into.");
-            Contract.Requires(key != null, "A key into the exception's data collection is needed.");
-            Contract.Requires(value != null, "The value to store must be provided.");
+            Debug.Assert(exception != null, "An exception is needed to store the data into.");
+            Debug.Assert(key != null, "A key into the exception's data collection is needed.");
+            Debug.Assert(value != null, "The value to store must be provided.");
             try
             {
                 IDictionary data = exception.Data;
@@ -309,8 +308,8 @@ namespace System.Threading.Tasks.Dataflow.Internal
         /// <remarks>This method is not thread-safe, in that it manipulates <paramref name="list"/> without any synchronization.</remarks>
         internal static void AddException(ref List<Exception> list, Exception exception, bool unwrapInnerExceptions = false)
         {
-            Contract.Requires(exception != null, "An exception to add is required.");
-            Contract.Requires(!unwrapInnerExceptions || exception.InnerException != null,
+            Debug.Assert(exception != null, "An exception to add is required.");
+            Debug.Assert(!unwrapInnerExceptions || exception.InnerException != null,
                 "If unwrapping is requested, an inner exception is required.");
 
             // Make sure the list of exceptions is initialized (lazily).
@@ -371,7 +370,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
         [SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope")]
         internal static Task<TResult> CreateTaskFromCancellation<TResult>(CancellationToken cancellationToken)
         {
-            Contract.Requires(cancellationToken.IsCancellationRequested,
+            Debug.Assert(cancellationToken.IsCancellationRequested,
                 "The task will only be immediately canceled if the token has cancellation requested already.");
             var t = new Task<TResult>(CachedGenericDelegates<TResult>.DefaultTResultFunc, cancellationToken);
             Debug.Assert(t.IsCanceled, "Task's constructor should cancel the task synchronously in the ctor.");
@@ -383,7 +382,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
         /// <returns>The completion task, or null if the block's completion task is not implemented or supported.</returns>
         internal static Task GetPotentiallyNotSupportedCompletionTask(IDataflowBlock block)
         {
-            Contract.Requires(block != null, "We need a block from which to retrieve a cancellation task.");
+            Debug.Assert(block != null, "We need a block from which to retrieve a cancellation task.");
             try
             {
                 return block.Completion;
@@ -404,9 +403,9 @@ namespace System.Threading.Tasks.Dataflow.Internal
         /// <returns>An IDisposable that will unregister the target block from the registry while holding the outgoing lock.</returns>
         internal static IDisposable CreateUnlinker<TOutput>(object outgoingLock, TargetRegistry<TOutput> targetRegistry, ITargetBlock<TOutput> targetBlock)
         {
-            Contract.Requires(outgoingLock != null, "Monitor object needed to protect the operation.");
-            Contract.Requires(targetRegistry != null, "Registry from which to remove is required.");
-            Contract.Requires(targetBlock != null, "Target block to unlink is required.");
+            Debug.Assert(outgoingLock != null, "Monitor object needed to protect the operation.");
+            Debug.Assert(targetRegistry != null, "Registry from which to remove is required.");
+            Debug.Assert(targetBlock != null, "Target block to unlink is required.");
             return Disposables.Create(CachedGenericDelegates<TOutput>.CreateUnlinkerShimAction,
                 outgoingLock, targetRegistry, targetBlock);
         }
@@ -451,8 +450,8 @@ namespace System.Threading.Tasks.Dataflow.Internal
         /// <returns>null on success, an exception reference on scheduling error. In the latter case, the task reference is nulled out.</returns>
         internal static Exception StartTaskSafe(Task task, TaskScheduler scheduler)
         {
-            Contract.Requires(task != null, "Task to start is required.");
-            Contract.Requires(scheduler != null, "Scheduler on which to start the task is required.");
+            Debug.Assert(task != null, "Task to start is required.");
+            Debug.Assert(scheduler != null, "Scheduler on which to start the task is required.");
 
             if (scheduler == TaskScheduler.Default)
             {
@@ -471,8 +470,8 @@ namespace System.Threading.Tasks.Dataflow.Internal
         [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
         private static Exception StartTaskSafeCore(Task task, TaskScheduler scheduler)
         {
-            Contract.Requires(task != null, "Task to start is needed.");
-            Contract.Requires(scheduler != null, "Scheduler on which to start the task is required.");
+            Debug.Assert(task != null, "Task to start is needed.");
+            Debug.Assert(scheduler != null, "Scheduler on which to start the task is required.");
 
             Exception schedulingException = null;
 
@@ -501,8 +500,8 @@ namespace System.Threading.Tasks.Dataflow.Internal
                                     QueuedMap<ISourceBlock<T>, DataflowMessageHeader> postponedMessages,
                                     ref List<Exception> exceptions)
         {
-            Contract.Requires(target != null, "There must be a subject target.");
-            Contract.Requires(postponedMessages != null, "The stacked map of postponed messages must exist.");
+            Debug.Assert(target != null, "There must be a subject target.");
+            Debug.Assert(postponedMessages != null, "The stacked map of postponed messages must exist.");
 
             // Note that we don't synchronize on lockObject for postponedMessages here, 
             // because no one should be adding to it at this time.  We do a bit of 
@@ -548,8 +547,8 @@ namespace System.Threading.Tasks.Dataflow.Internal
         /// <param name="exceptionHandler">Handler for exceptions from the target. May be null which would propagate the exception to the caller.</param>
         internal static void PropagateCompletion(Task sourceCompletionTask, IDataflowBlock target, Action<Exception> exceptionHandler)
         {
-            Contract.Requires(sourceCompletionTask != null, "sourceCompletionTask may not be null.");
-            Contract.Requires(target != null, "The target where completion is to be propagated may not be null.");
+            Debug.Assert(sourceCompletionTask != null, "sourceCompletionTask may not be null.");
+            Debug.Assert(target != null, "The target where completion is to be propagated may not be null.");
             Debug.Assert(sourceCompletionTask.IsCompleted, "sourceCompletionTask must be completed in order to propagate its completion.");
 
             AggregateException exception = sourceCompletionTask.IsFaulted ? sourceCompletionTask.Exception : null;
@@ -571,8 +570,8 @@ namespace System.Threading.Tasks.Dataflow.Internal
         /// </summary>
         private static void PropagateCompletionAsContinuation(Task sourceCompletionTask, IDataflowBlock target)
         {
-            Contract.Requires(sourceCompletionTask != null, "sourceCompletionTask may not be null.");
-            Contract.Requires(target != null, "The target where completion is to be propagated may not be null.");
+            Debug.Assert(sourceCompletionTask != null, "sourceCompletionTask may not be null.");
+            Debug.Assert(target != null, "The target where completion is to be propagated may not be null.");
             sourceCompletionTask.ContinueWith((task, state) => Common.PropagateCompletion(task, (IDataflowBlock)state, AsyncExceptionHandler),
                 target, CancellationToken.None, Common.GetContinuationOptions(), TaskScheduler.Default);
         }
@@ -582,8 +581,8 @@ namespace System.Threading.Tasks.Dataflow.Internal
         /// </summary>
         internal static void PropagateCompletionOnceCompleted(Task sourceCompletionTask, IDataflowBlock target)
         {
-            Contract.Requires(sourceCompletionTask != null, "sourceCompletionTask may not be null.");
-            Contract.Requires(target != null, "The target where completion is to be propagated may not be null.");
+            Debug.Assert(sourceCompletionTask != null, "sourceCompletionTask may not be null.");
+            Debug.Assert(target != null, "The target where completion is to be propagated may not be null.");
 
             // If sourceCompletionTask is completed, propagate completion synchronously.
             // Otherwise hook up a continuation.
@@ -628,7 +627,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
         /// <param name="boundedCapacity">The positive bounded capacity.</param>
         internal BoundingState(int boundedCapacity)
         {
-            Contract.Requires(boundedCapacity > 0, "Bounded is only supported with positive values.");
+            Debug.Assert(boundedCapacity > 0, "Bounded is only supported with positive values.");
             BoundedCapacity = boundedCapacity;
         }
 

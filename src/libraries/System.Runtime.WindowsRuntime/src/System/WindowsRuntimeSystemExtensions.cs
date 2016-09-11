@@ -33,7 +33,7 @@ namespace System
 
         private static void ConcatenateCancelTokens(CancellationToken source, CancellationTokenSource sink, Task concatenationLifetime)
         {
-            Contract.Requires(sink != null);
+            Debug.Assert(sink != null);
 
             CancellationTokenRegistration ctReg = source.Register((state) => { ((CancellationTokenSource)state).Cancel(); },
                                                                   sink);

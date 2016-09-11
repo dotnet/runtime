@@ -127,8 +127,8 @@ namespace System.Threading.Tasks
         /// <param name="taskProvider">The task generator to use for creating the task.</param>
         internal TaskToAsyncInfoAdapter(Delegate taskProvider)
         {
-            Contract.Requires(taskProvider != null);
-            Contract.Requires((null != (taskProvider as Func<Task>))
+            Debug.Assert(taskProvider != null);
+            Debug.Assert((null != (taskProvider as Func<Task>))
                             || (null != (taskProvider as Func<CancellationToken, Task>))
                             || (null != (taskProvider as Func<IProgress<TProgressInfo>, Task>))
                             || (null != (taskProvider as Func<CancellationToken, IProgress<TProgressInfo>, Task>)));
@@ -455,8 +455,8 @@ namespace System.Threading.Tasks
         // This is a separate method from IProgress<TProgressInfo>.Report to avoid alocating the closure if it is not used.
         private void OnProgressInvokerCrossContext(TProgressHandler handler, TProgressInfo progressInfo)
         {
-            Contract.Requires(handler != null);
-            Contract.Requires(_startingContext != null);
+            Debug.Assert(handler != null);
+            Debug.Assert(_startingContext != null);
 
             _startingContext.Post((tupleObject) =>
             {

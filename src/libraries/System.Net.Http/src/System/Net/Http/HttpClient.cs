@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.IO;
 using System.Net.Http.Headers;
 using System.Threading;
@@ -535,7 +534,7 @@ namespace System.Net.Http
 
         private void SetTimeout(CancellationTokenSource cancellationTokenSource)
         {
-            Contract.Requires(cancellationTokenSource != null);
+            Debug.Assert(cancellationTokenSource != null);
 
             if (_timeout != s_infiniteTimeout)
             {
@@ -546,7 +545,7 @@ namespace System.Net.Http
         private void LogSendError(HttpRequestMessage request, CancellationTokenSource cancellationTokenSource,
             string method, Exception e)
         {
-            Contract.Requires(request != null);
+            Debug.Assert(request != null);
 
             if (cancellationTokenSource.IsCancellationRequested)
             {

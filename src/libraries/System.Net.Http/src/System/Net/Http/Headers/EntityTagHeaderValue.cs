@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 
 namespace System.Net.Http.Headers
 {
@@ -64,7 +63,7 @@ namespace System.Net.Http.Headers
 
         private EntityTagHeaderValue(EntityTagHeaderValue source)
         {
-            Contract.Requires(source != null);
+            Debug.Assert(source != null);
 
             _tag = source._tag;
             _isWeak = source._isWeak;
@@ -125,7 +124,7 @@ namespace System.Net.Http.Headers
 
         internal static int GetEntityTagLength(string input, int startIndex, out EntityTagHeaderValue parsedValue)
         {
-            Contract.Requires(startIndex >= 0);
+            Debug.Assert(startIndex >= 0);
 
             parsedValue = null;
 

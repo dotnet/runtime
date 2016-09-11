@@ -115,8 +115,8 @@ namespace System.Threading.Tasks.Dataflow
         [SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope")]
         private void CompleteBlockAsync(IList<Exception> exceptions)
         {
-            Contract.Requires(_decliningPermanently, "We may get here only after we have started to decline permanently.");
-            Contract.Requires(_completionReserved, "We may get here only after we have reserved completion.");
+            Debug.Assert(_decliningPermanently, "We may get here only after we have started to decline permanently.");
+            Debug.Assert(_completionReserved, "We may get here only after we have reserved completion.");
             Common.ContractAssertMonitorStatus(ValueLock, held: false);
 
             // If there is no exceptions list, we offer the message around, and then complete.
@@ -176,7 +176,7 @@ namespace System.Threading.Tasks.Dataflow
             // has not been initialized yet and we may have to complete normally, because that would defeat the 
             // sole purpose of the TCS being lazily initialized.
 
-            Contract.Requires(_lazyCompletionTaskSource == null || !_lazyCompletionTaskSource.Task.IsCompleted, "The task completion source must not be completed. This must be the only thread that ever completes the block.");
+            Debug.Assert(_lazyCompletionTaskSource == null || !_lazyCompletionTaskSource.Task.IsCompleted, "The task completion source must not be completed. This must be the only thread that ever completes the block.");
 
             // Save the linked list of targets so that it could be traversed later to propagate completion
             TargetRegistry<T>.LinkedTargetInfo linkedTargets = _targetRegistry.ClearEntryPoints();
@@ -230,7 +230,7 @@ namespace System.Threading.Tasks.Dataflow
 
         private void CompleteCore(Exception exception, bool storeExceptionEvenIfAlreadyCompleting)
         {
-            Contract.Requires(exception != null || !storeExceptionEvenIfAlreadyCompleting,
+            Debug.Assert(exception != null || !storeExceptionEvenIfAlreadyCompleting,
                             "When storeExceptionEvenIfAlreadyCompleting is set to true, an exception must be provided.");
             Contract.EndContractBlock();
 
@@ -546,7 +546,7 @@ namespace System.Threading.Tasks.Dataflow
             /// <param name="writeOnceBlock">The WriteOnceBlock to view.</param>
             public DebugView(WriteOnceBlock<T> writeOnceBlock)
             {
-                Contract.Requires(writeOnceBlock != null, "Need a block with which to construct the debug view.");
+                Debug.Assert(writeOnceBlock != null, "Need a block with which to construct the debug view.");
                 _writeOnceBlock = writeOnceBlock;
             }
 

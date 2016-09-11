@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Text;
 
 namespace System.Net.Http.Headers
@@ -72,7 +71,7 @@ namespace System.Net.Http.Headers
 
         private ViaHeaderValue(ViaHeaderValue source)
         {
-            Contract.Requires(source != null);
+            Debug.Assert(source != null);
 
             _protocolName = source._protocolName;
             _protocolVersion = source._protocolVersion;
@@ -160,7 +159,7 @@ namespace System.Net.Http.Headers
 
         internal static int GetViaLength(string input, int startIndex, out object parsedValue)
         {
-            Contract.Requires(startIndex >= 0);
+            Debug.Assert(startIndex >= 0);
 
             parsedValue = null;
 

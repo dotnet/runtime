@@ -50,7 +50,7 @@ namespace System.Threading.Tasks
         /// <param name="cancellationToken">The token used to request cancellation of the asynchronous operation.</param>
         internal void RegisterForCancellation(IAsyncInfo asyncInfo)
         {
-            Contract.Requires(asyncInfo != null);
+            Debug.Assert(asyncInfo != null);
 
             try
             {

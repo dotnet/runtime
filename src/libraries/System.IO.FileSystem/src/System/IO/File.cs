@@ -106,10 +106,10 @@ namespace System.IO
         [System.Security.SecuritySafeCritical]
         internal static String InternalCopy(String sourceFileName, String destFileName, bool overwrite)
         {
-            Contract.Requires(sourceFileName != null);
-            Contract.Requires(destFileName != null);
-            Contract.Requires(sourceFileName.Length > 0);
-            Contract.Requires(destFileName.Length > 0);
+            Debug.Assert(sourceFileName != null);
+            Debug.Assert(destFileName != null);
+            Debug.Assert(sourceFileName.Length > 0);
+            Debug.Assert(destFileName.Length > 0);
 
             String fullSourceFileName = Path.GetFullPath(sourceFileName);
             String fullDestFileName = Path.GetFullPath(destFileName);
@@ -379,9 +379,9 @@ namespace System.IO
         [System.Security.SecurityCritical]
         private static String InternalReadAllText(String path, Encoding encoding)
         {
-            Contract.Requires(path != null);
-            Contract.Requires(encoding != null);
-            Contract.Requires(path.Length > 0);
+            Debug.Assert(path != null);
+            Debug.Assert(encoding != null);
+            Debug.Assert(path.Length > 0);
 
             Stream stream = FileStream.InternalOpen(path, useAsync: false);
 
@@ -418,9 +418,9 @@ namespace System.IO
         [System.Security.SecurityCritical]
         private static void InternalWriteAllText(String path, String contents, Encoding encoding)
         {
-            Contract.Requires(path != null);
-            Contract.Requires(encoding != null);
-            Contract.Requires(path.Length > 0);
+            Debug.Assert(path != null);
+            Debug.Assert(encoding != null);
+            Debug.Assert(path.Length > 0);
 
             Stream stream = FileStream.InternalCreate(path, useAsync: false);
 
@@ -476,9 +476,9 @@ namespace System.IO
         [System.Security.SecurityCritical]
         private static void InternalWriteAllBytes(String path, byte[] bytes)
         {
-            Contract.Requires(path != null);
-            Contract.Requires(path.Length != 0);
-            Contract.Requires(bytes != null);
+            Debug.Assert(path != null);
+            Debug.Assert(path.Length != 0);
+            Debug.Assert(bytes != null);
 
             using (FileStream fs = FileStream.InternalCreate(path, useAsync: false))
             {
@@ -511,9 +511,9 @@ namespace System.IO
 
         private static String[] InternalReadAllLines(String path, Encoding encoding)
         {
-            Contract.Requires(path != null);
-            Contract.Requires(encoding != null);
-            Contract.Requires(path.Length != 0);
+            Debug.Assert(path != null);
+            Debug.Assert(encoding != null);
+            Debug.Assert(path.Length != 0);
 
             String line;
             List<String> lines = new List<String>();
@@ -585,8 +585,8 @@ namespace System.IO
 
         private static void InternalWriteAllLines(TextWriter writer, IEnumerable<String> contents)
         {
-            Contract.Requires(writer != null);
-            Contract.Requires(contents != null);
+            Debug.Assert(writer != null);
+            Debug.Assert(contents != null);
 
             using (writer)
             {
@@ -624,9 +624,9 @@ namespace System.IO
 
         private static void InternalAppendAllText(String path, String contents, Encoding encoding)
         {
-            Contract.Requires(path != null);
-            Contract.Requires(encoding != null);
-            Contract.Requires(path.Length > 0);
+            Debug.Assert(path != null);
+            Debug.Assert(encoding != null);
+            Debug.Assert(path.Length > 0);
 
             Stream stream = FileStream.InternalAppend(path, useAsync: false);
 

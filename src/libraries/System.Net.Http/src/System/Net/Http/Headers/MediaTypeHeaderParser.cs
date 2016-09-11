@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Diagnostics.Contracts;
+using System.Diagnostics;
 
 namespace System.Net.Http.Headers
 {
@@ -21,7 +21,7 @@ namespace System.Net.Http.Headers
         private MediaTypeHeaderParser(bool supportsMultipleValues, Func<MediaTypeHeaderValue> mediaTypeCreator)
             : base(supportsMultipleValues)
         {
-            Contract.Requires(mediaTypeCreator != null);
+            Debug.Assert(mediaTypeCreator != null);
 
             _supportsMultipleValues = supportsMultipleValues;
             _mediaTypeCreator = mediaTypeCreator;

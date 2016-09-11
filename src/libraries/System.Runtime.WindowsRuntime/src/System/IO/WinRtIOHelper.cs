@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Diagnostics.Contracts;
+using System.Diagnostics;
 using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices.WindowsRuntime;
 using System.Runtime.InteropServices;
@@ -24,7 +24,7 @@ namespace System.IO
             // We will return a captured ExceptionDispatchInfo such that we can invoke .Throw() close to where
             // nativeException was caught - this will result in the most readable call stack.
 
-            Contract.Requires(nativeException != null);
+            Debug.Assert(nativeException != null);
 
             if (!(nativeException.GetType().Equals(typeof(Exception)) /*|| nativeException is ExternalException */))
                 return ExceptionDispatchInfo.Capture(nativeException);
@@ -42,8 +42,8 @@ namespace System.IO
         {
             // Results buffer may be different from user specified buffer. If so - copy data to the user.
 
-            Contract.Requires(userBuffer != null);
-            Contract.Requires(resultBuffer != null);
+            Debug.Assert(userBuffer != null);
+            Debug.Assert(resultBuffer != null);
 
             if (resultBuffer.IsSameData(userBuffer))
                 return;
