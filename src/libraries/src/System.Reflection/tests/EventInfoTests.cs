@@ -39,7 +39,7 @@ namespace System.Reflection.Tests
             Assert.NotNull(eventInfo.GetAddMethod(true));
 
             MethodInfo addMethod = eventInfo.AddMethod;
-            Assert.Equal(eventInfo.GetAddMethod(true), addMethod);
+            Assert.Equal(addMethod, eventInfo.GetAddMethod(true));
             if (addMethod != null)
             {
                 Assert.Equal("add_" + name, addMethod.Name);
@@ -59,7 +59,7 @@ namespace System.Reflection.Tests
             Assert.NotNull(eventInfo.GetRemoveMethod(true));
 
             MethodInfo removeMethod = eventInfo.RemoveMethod;
-            Assert.Equal(eventInfo.GetRemoveMethod(true), removeMethod);
+            Assert.Equal(removeMethod, eventInfo.GetRemoveMethod(true));
             if (removeMethod != null)
             {
                 Assert.Equal("remove_" + name, removeMethod.Name);
@@ -164,6 +164,13 @@ namespace System.Reflection.Tests
         {
             EventInfo eventInfo = GetEventInfo(type, name);
             Assert.Equal(EventAttributes.None, eventInfo.Attributes);
+        }
+
+        [Theory]
+        [MemberData(nameof(Events_TestData))]
+        public void IsSpecialName_NormalEvent_ReturnsFalse(Type type, string name)
+        {
+            EventInfo eventInfo = GetEventInfo(type, name);
             Assert.False(eventInfo.IsSpecialName);
         }
 
