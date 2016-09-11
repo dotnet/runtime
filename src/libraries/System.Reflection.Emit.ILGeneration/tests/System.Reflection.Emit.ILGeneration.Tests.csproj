@@ -48,6 +48,7 @@
     <Compile Include="SignatureHelper\SignatureHelperGetPropertySigHelper.cs" />
     <Compile Include="SignatureHelper\SignatureHelperGetSignature.cs" />
     <Compile Include="SignatureHelper\SignatureHelperToString.cs" />
+    <Compile Include="CustomAttributeBuilderTests.cs" />
     <Compile Include="Utilities.cs" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
