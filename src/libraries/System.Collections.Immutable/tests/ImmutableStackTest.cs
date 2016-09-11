@@ -4,7 +4,6 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Linq;
 using Xunit;
 
@@ -27,7 +26,7 @@ namespace System.Collections.Immutable.Tests
 
         private ImmutableStack<T> InitStackHelper<T>(params T[] values)
         {
-            Contract.Requires(values != null);
+            Assert.NotNull(values);
 
             var result = ImmutableStack<T>.Empty;
             foreach (var value in values)
@@ -52,8 +51,8 @@ namespace System.Collections.Immutable.Tests
 
         private void PopTestHelper<T>(params T[] values)
         {
-            Contract.Requires(values != null);
-            Contract.Requires(values.Length > 0);
+            Assert.NotNull(values);
+            Assert.InRange(values.Length, 1, int.MaxValue);
 
             var full = this.InitStackHelper(values);
             var currentStack = full;
@@ -74,8 +73,8 @@ namespace System.Collections.Immutable.Tests
 
         private void PeekTestHelper<T>(params T[] values)
         {
-            Contract.Requires(values != null);
-            Contract.Requires(values.Length > 0);
+            Assert.NotNull(values);
+            Assert.InRange(values.Length, 1, int.MaxValue);
 
             var current = this.InitStackHelper(values);
             for (int i = values.Length - 1; i >= 0; i--)
