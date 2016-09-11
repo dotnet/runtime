@@ -23,9 +23,7 @@
     <Compile Include="AssemblyTests.cs" />
     <Compile Include="Common\ReflectionTestData.cs" />
     <Compile Include="ConstructorInfoTests.cs" />
-    <Compile Include="EventInfo\EventInfo_Members.cs" />
-    <Compile Include="EventInfo\EventInfo_MethodTests.cs" />
-    <Compile Include="EventInfo\EventInfo_PropertyTests.cs" />
+    <Compile Include="EventInfoTests.cs" />
     <Compile Include="FieldInfo\FieldInfo_ConstantTests.cs" />
     <Compile Include="FieldInfo\FieldInfo_CustomAttributeTests.cs" />
     <Compile Include="FieldInfo\FieldInfo_MethodTests.cs" />
