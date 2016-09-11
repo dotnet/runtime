@@ -360,8 +360,17 @@ GenTreePtr Compiler::fgMorphCast(GenTreePtr tree)
             oper = gtNewCastNode(TYP_LONG, oper, TYP_LONG);
             oper->gtFlags |= (tree->gtFlags & (GTF_OVERFLOW | GTF_EXCEPT | GTF_UNSIGNED));
             tree->gtFlags &= ~GTF_UNSIGNED;
+#ifndef LEGACY_BACKEND
+            return fgMorphCastIntoHelper(tree, CORINFO_HELP_LNG2DBL, oper);
+#endif
         }
     }
+#ifndef LEGACY_BACKEND
+    else if (((tree->gtFlags & GTF_UNSIGNED) == 0) && (srcType == TYP_LONG) && varTypeIsFloating(dstType))
+    {
+        return fgMorphCastIntoHelper(tree, CORINFO_HELP_LNG2DBL, oper);
+    }
+#endif
 #endif //_TARGET_XARCH_
     else if (varTypeIsGC(srcType) != varTypeIsGC(dstType))
     {
