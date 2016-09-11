@@ -4,7 +4,6 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Reflection;
 using System.Text;
@@ -102,9 +101,7 @@ namespace System.Collections.Immutable.Tests
         /// <returns>An array of doubles.</returns>
         protected double[] GenerateDummyFillData(int length = 1000)
         {
-            Contract.Requires(length >= 0);
-            Contract.Ensures(Contract.Result<double[]>() != null);
-            Contract.Ensures(Contract.Result<double[]>().Length == length);
+            Assert.InRange(length, 0, int.MaxValue);
 
             int seed = unchecked((int)DateTime.Now.Ticks);
 
@@ -123,6 +120,9 @@ namespace System.Collections.Immutable.Tests
                 while (!ensureUniqueness.Add(input));
                 inputs[i] = input;
             }
+
+            Assert.NotNull(inputs);
+            Assert.Equal(length, inputs.Length);
 
             return inputs;
         }
@@ -187,7 +187,7 @@ namespace System.Collections.Immutable.Tests
 
             internal DeferredToString(Func<string> generator)
             {
-                Contract.Requires(generator != null);
+                Debug.Assert(generator != null);
                 _generator = generator;
             }
 

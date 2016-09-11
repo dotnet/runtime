@@ -4,7 +4,6 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Linq;
 using Xunit;
 
@@ -14,7 +13,7 @@ namespace System.Collections.Immutable.Tests
     {
         private void EnqueueDequeueTestHelper<T>(params T[] items)
         {
-            Contract.Requires(items != null);
+            Assert.NotNull(items);
 
             var queue = ImmutableQueue<T>.Empty;
             int i = 0;
