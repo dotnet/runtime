@@ -1289,6 +1289,8 @@ namespace System {
 #if FEATURE_CORECLR
         [System.Security.SecurityCritical] // auto-generated
 #endif
+        // NoInlining causes the caller and callee to not be inlined in mscorlib as it is an assumption of StackCrawlMark use
+        [MethodImpl(MethodImplOptions.NoInlining)]
         internal static String GetResourceStringLocal(String key) {
             if (m_resHelper == null)
                 InitResourceHelper();
@@ -1297,7 +1299,6 @@ namespace System {
         }
 
         [System.Security.SecuritySafeCritical]  // auto-generated
-        [MethodImpl(MethodImplOptions.NoInlining)]
         internal static String GetResourceString(String key) {
 #if FEATURE_CORECLR
             return GetResourceStringLocal(key);
@@ -1312,52 +1313,56 @@ namespace System {
         // Using the params object[] overload works against this since the
         // initialization of the array is done inline in the caller at the IL
         // level. So we have overloads that simply wrap the params one, and
-        // are tagged as NoInlining. That way they do not bloat either the
-        // IL or the generated asm.
+        // the methods they call through to are tagged as NoInlining. 
+        // In mscorlib NoInlining causes the caller and callee to not be inlined
+        // as it is an assumption of StackCrawlMark use so it is not added 
+        // directly to these methods, but to the ones they call.
+        // That way they do not bloat either the IL or the generated asm.
 
-        [MethodImpl(MethodImplOptions.NoInlining)]
         internal static string GetResourceString(string key, object val0)
         {
-            return GetResourceString(key, new object[] { val0 });
+            return GetResourceStringFormatted(key, new object[] { val0 });
         }
 
-        [MethodImpl(MethodImplOptions.NoInlining)]
         internal static string GetResourceString(string key, object val0, object val1)
         {
-            return GetResourceString(key, new object[] { val0, val1 });
+            return GetResourceStringFormatted(key, new object[] { val0, val1 });
         }
 
-        [MethodImpl(MethodImplOptions.NoInlining)]
         internal static string GetResourceString(string key, object val0, object val1, object val2)
         {
-            return GetResourceString(key, new object[] { val0, val1, val2 });
+            return GetResourceStringFormatted(key, new object[] { val0, val1, val2 });
         }
 
-        [MethodImpl(MethodImplOptions.NoInlining)]
         internal static string GetResourceString(string key, object val0, object val1, object val2, object val3)
         {
-            return GetResourceString(key, new object[] { val0, val1, val2, val3 });
+            return GetResourceStringFormatted(key, new object[] { val0, val1, val2, val3 });
         }
 
-        [MethodImpl(MethodImplOptions.NoInlining)]
         internal static string GetResourceString(string key, object val0, object val1, object val2, object val3, object val4)
         {
-            return GetResourceString(key, new object[] { val0, val1, val2, val3, val4 });
+            return GetResourceStringFormatted(key, new object[] { val0, val1, val2, val3, val4 });
         }
 
-        [MethodImpl(MethodImplOptions.NoInlining)]
         internal static string GetResourceString(string key, object val0, object val1, object val2, object val3, object val4, object val5)
         {
-            return GetResourceString(key, new object[] { val0, val1, val2, val3, val4, val5 });
+            return GetResourceStringFormatted(key, new object[] { val0, val1, val2, val3, val4, val5 });
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
-        internal static String GetResourceString(String key, params Object[] values) {
-            String s = GetResourceString(key);
-            return String.Format(CultureInfo.CurrentCulture, s, values);
+        internal static String GetResourceString(string key, params object[] values)
+        {
+            return GetResourceStringFormatted(key, values);
         }
 
-        //The following two internal methods are not used anywhere within the framework,
+        // NoInlining causes the caller and callee to not be inlined in mscorlib as it is an assumption of StackCrawlMark use
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static String GetResourceStringFormatted(string key, params object[] values)
+        {
+            string rs = GetResourceString(key);
+            return String.Format(CultureInfo.CurrentCulture, rs, values);
+        }
+
+        // The following two internal methods are not used anywhere within the framework,
         // but are being kept around as external platforms built on top of us have taken 
         // dependency by using private reflection on them for getting system resource strings 
         private static String GetRuntimeResourceString(String key) {
@@ -1365,7 +1370,7 @@ namespace System {
         }
 
         private static String GetRuntimeResourceString(String key, params Object[] values) {
-            return GetResourceString(key,values);
+            return GetResourceStringFormatted(key,values);
         }
 
         public static bool Is64BitProcess {
