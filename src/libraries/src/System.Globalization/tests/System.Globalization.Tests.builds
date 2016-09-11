@@ -4,6 +4,10 @@
   <ItemGroup>
     <Project Include="System.Globalization.Tests.csproj"/>
     <Project Include="System.Globalization.Tests.csproj">
+      <TargetGroup>netstandard1.7</TargetGroup>
+      <TestTFMs>netcoreapp1.1</TestTFMs>
+    </Project>    
+    <Project Include="System.Globalization.Tests.csproj">
       <TestTFMs>net46</TestTFMs>
       <OSGroup>Windows_NT</OSGroup>
     </Project>
