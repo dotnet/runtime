@@ -26,7 +26,7 @@ namespace System.Reflection.Tests
         public void GetTypes()
         {
             Assembly executingAssembly = GetType().GetTypeInfo().Assembly;
-            Assert.True(executingAssembly.GetTypes().Length >= 200);
+            Assert.True(executingAssembly.GetTypes().Length >= 175);
         }
     }
 }
