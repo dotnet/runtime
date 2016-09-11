@@ -14,7 +14,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Diagnostics.Contracts;
 using System.Linq;
 
 namespace System.Threading.Tasks.Dataflow.Internal
@@ -36,8 +35,8 @@ namespace System.Threading.Tasks.Dataflow.Internal
             /// <param name="linkOptions">The link options.</param>
             internal LinkedTargetInfo(ITargetBlock<T> target, DataflowLinkOptions linkOptions)
             {
-                Contract.Requires(target != null, "The target that is supposed to be linked must not be null.");
-                Contract.Requires(linkOptions != null, "The linkOptions must not be null.");
+                Debug.Assert(target != null, "The target that is supposed to be linked must not be null.");
+                Debug.Assert(linkOptions != null, "The linkOptions must not be null.");
 
                 Target = target;
                 PropagateCompletion = linkOptions.PropagateCompletion;
@@ -73,7 +72,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
         /// <summary>Initializes the registry.</summary>
         internal TargetRegistry(ISourceBlock<T> owningSource)
         {
-            Contract.Requires(owningSource != null, "The TargetRegistry instance must be owned by a source block.");
+            Debug.Assert(owningSource != null, "The TargetRegistry instance must be owned by a source block.");
 
             _owningSource = owningSource;
             _targetInformation = new Dictionary<ITargetBlock<T>, LinkedTargetInfo>();
@@ -84,8 +83,8 @@ namespace System.Threading.Tasks.Dataflow.Internal
         /// <param name="linkOptions">The link options.</param>
         internal void Add(ref ITargetBlock<T> target, DataflowLinkOptions linkOptions)
         {
-            Contract.Requires(target != null, "The target that is supposed to be linked must not be null.");
-            Contract.Requires(linkOptions != null, "The link options must not be null.");
+            Debug.Assert(target != null, "The target that is supposed to be linked must not be null.");
+            Debug.Assert(linkOptions != null, "The link options must not be null.");
 
             LinkedTargetInfo targetInfo;
 
@@ -124,7 +123,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
         /// </param>
         internal void Remove(ITargetBlock<T> target, bool onlyIfReachedMaxMessages = false)
         {
-            Contract.Requires(target != null, "Target to remove is required.");
+            Debug.Assert(target != null, "Target to remove is required.");
 
             // If we are implicitly unlinking and there is nothing to be unlinked implicitly, bail
             Debug.Assert(_linksWithRemainingMessages >= 0, "_linksWithRemainingMessages must be non-negative at any time.");
@@ -141,7 +140,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
         /// </param>
         private void Remove_Slow(ITargetBlock<T> target, bool onlyIfReachedMaxMessages)
         {
-            Contract.Requires(target != null, "Target to remove is required.");
+            Debug.Assert(target != null, "Target to remove is required.");
 
             // Make sure we've intended to go the slow route
             Debug.Assert(_linksWithRemainingMessages >= 0, "_linksWithRemainingMessages must be non-negative at any time.");
@@ -219,7 +218,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
         /// <param name="append">Whether to append or to prepend the node.</param>
         internal void AddToList(LinkedTargetInfo node, bool append)
         {
-            Contract.Requires(node != null, "Requires a node to be added.");
+            Debug.Assert(node != null, "Requires a node to be added.");
 
             // If the list is empty, assign the ends to point to the new node and we are done
             if (_firstTarget == null && _lastTarget == null)
@@ -255,7 +254,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
         /// <param name="node">The node to be removed.</param>
         internal void RemoveFromList(LinkedTargetInfo node)
         {
-            Contract.Requires(node != null, "Node to remove is required.");
+            Debug.Assert(node != null, "Node to remove is required.");
             Debug.Assert(_firstTarget != null && _lastTarget != null, "Both first and last node must be non-null before RemoveFromList.");
 
             LinkedTargetInfo previous = node.Previous;
@@ -317,8 +316,8 @@ namespace System.Threading.Tasks.Dataflow.Internal
             /// <param name="target">The target to which messages should be forwarded.</param>
             internal NopLinkPropagator(ISourceBlock<T> owningSource, ITargetBlock<T> target)
             {
-                Contract.Requires(owningSource != null, "Propagator must be associated with a source.");
-                Contract.Requires(target != null, "Target to propagate to is required.");
+                Debug.Assert(owningSource != null, "Propagator must be associated with a source.");
+                Debug.Assert(target != null, "Target to propagate to is required.");
 
                 // Store the arguments
                 _owningSource = owningSource;
@@ -387,7 +386,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
                 /// <param name="passthrough">The passthrough to view.</param>
                 public DebugView(NopLinkPropagator passthrough)
                 {
-                    Contract.Requires(passthrough != null, "Need a propagator with which to construct the debug view.");
+                    Debug.Assert(passthrough != null, "Need a propagator with which to construct the debug view.");
                     _passthrough = passthrough;
                 }
 
@@ -407,7 +406,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
             /// <param name="registry">The target registry.</param>
             public DebugView(TargetRegistry<T> registry)
             {
-                Contract.Requires(registry != null, "Need a registry with which to construct the debug view.");
+                Debug.Assert(registry != null, "Need a registry with which to construct the debug view.");
                 _registry = registry;
             }
 

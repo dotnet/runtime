@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
+using System.Diagnostics;
 
 namespace System.Net.Http.Headers
 {
@@ -36,7 +36,7 @@ namespace System.Net.Http.Headers
 
         protected TransferCodingHeaderValue(TransferCodingHeaderValue source)
         {
-            Contract.Requires(source != null);
+            Debug.Assert(source != null);
 
             _value = source._value;
 
@@ -79,8 +79,8 @@ namespace System.Net.Http.Headers
         internal static int GetTransferCodingLength(string input, int startIndex,
             Func<TransferCodingHeaderValue> transferCodingCreator, out TransferCodingHeaderValue parsedValue)
         {
-            Contract.Requires(transferCodingCreator != null);
-            Contract.Requires(startIndex >= 0);
+            Debug.Assert(transferCodingCreator != null);
+            Debug.Assert(startIndex >= 0);
 
             parsedValue = null;
 

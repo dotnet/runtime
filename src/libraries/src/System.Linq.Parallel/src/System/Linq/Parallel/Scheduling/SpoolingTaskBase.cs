@@ -10,7 +10,6 @@
 
 using System.Collections.Generic;
 using System.Threading;
-using System.Diagnostics.Contracts;
 
 namespace System.Linq.Parallel
 {

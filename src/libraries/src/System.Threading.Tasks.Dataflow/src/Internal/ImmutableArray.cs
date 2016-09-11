@@ -12,7 +12,6 @@
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
 using System.Diagnostics;
 
 namespace System.Threading.Tasks.Dataflow.Internal
@@ -38,7 +37,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
         /// <param name="elements">The element array to use for this array's data.</param>
         private ImmutableArray(T[] elements)
         {
-            Contract.Requires(elements != null, "Requires an array to wrap.");
+            Debug.Assert(elements != null, "Requires an array to wrap.");
             _array = elements;
         }
 

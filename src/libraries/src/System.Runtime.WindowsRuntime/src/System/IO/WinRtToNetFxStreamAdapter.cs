@@ -60,12 +60,12 @@ namespace System.IO
 
         private WinRtToNetFxStreamAdapter(Object winRtStream, bool canRead, bool canWrite, bool canSeek)
         {
-            Contract.Requires(winRtStream != null);
-            Contract.Requires(winRtStream is IInputStream || winRtStream is IOutputStream || winRtStream is IRandomAccessStream);
+            Debug.Assert(winRtStream != null);
+            Debug.Assert(winRtStream is IInputStream || winRtStream is IOutputStream || winRtStream is IRandomAccessStream);
 
-            Contract.Requires((canSeek && (winRtStream is IRandomAccessStream)) || (!canSeek && !(winRtStream is IRandomAccessStream)));
+            Debug.Assert((canSeek && (winRtStream is IRandomAccessStream)) || (!canSeek && !(winRtStream is IRandomAccessStream)));
 
-            Contract.Requires((canRead && (winRtStream is IInputStream))
+            Debug.Assert((canRead && (winRtStream is IInputStream))
                                  ||
                                (!canRead && (
                                     !(winRtStream is IInputStream)
@@ -74,7 +74,7 @@ namespace System.IO
                                ))
                              );
 
-            Contract.Requires((canWrite && (winRtStream is IOutputStream))
+            Debug.Assert((canWrite && (winRtStream is IOutputStream))
                                  ||
                                (!canWrite && (
                                     !(winRtStream is IOutputStream)
@@ -814,11 +814,11 @@ namespace System.IO
 
         private async Task<Int32> ReadAsyncInternal(Byte[] buffer, Int32 offset, Int32 count, CancellationToken cancellationToken)
         {
-            Contract.Requires(buffer != null);
-            Contract.Requires(offset >= 0);
-            Contract.Requires(count >= 0);
-            Contract.Requires(buffer.Length - offset >= count);
-            Contract.Requires(_canRead);
+            Debug.Assert(buffer != null);
+            Debug.Assert(offset >= 0);
+            Debug.Assert(count >= 0);
+            Debug.Assert(buffer.Length - offset >= count);
+            Debug.Assert(_canRead);
 
             IInputStream wrtStr = EnsureNotDisposed<IInputStream>();
 

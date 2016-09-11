@@ -1562,10 +1562,10 @@ namespace System.IO
         [System.Security.SecurityCritical]  // auto-generated
         private unsafe int ReadFileNative(SafeFileHandle handle, byte[] bytes, int offset, int count, NativeOverlapped* overlapped, out int errorCode)
         {
-            Contract.Requires(handle != null, "handle != null");
-            Contract.Requires(offset >= 0, "offset >= 0");
-            Contract.Requires(count >= 0, "count >= 0");
-            Contract.Requires(bytes != null, "bytes != null");
+            Debug.Assert(handle != null, "handle != null");
+            Debug.Assert(offset >= 0, "offset >= 0");
+            Debug.Assert(count >= 0, "count >= 0");
+            Debug.Assert(bytes != null, "bytes != null");
             // Don't corrupt memory when multiple threads are erroneously writing
             // to this stream simultaneously.
             if (bytes.Length - offset < count)
@@ -1607,10 +1607,10 @@ namespace System.IO
         [System.Security.SecurityCritical]  // auto-generated
         private unsafe int WriteFileNative(SafeFileHandle handle, byte[] bytes, int offset, int count, NativeOverlapped* overlapped, out int errorCode)
         {
-            Contract.Requires(handle != null, "handle != null");
-            Contract.Requires(offset >= 0, "offset >= 0");
-            Contract.Requires(count >= 0, "count >= 0");
-            Contract.Requires(bytes != null, "bytes != null");
+            Debug.Assert(handle != null, "handle != null");
+            Debug.Assert(offset >= 0, "offset >= 0");
+            Debug.Assert(count >= 0, "count >= 0");
+            Debug.Assert(bytes != null, "bytes != null");
             // Don't corrupt memory when multiple threads are erroneously writing
             // to this stream simultaneously.  (the OS is reading from
             // the array we pass to WriteFile, but if we read beyond the end and

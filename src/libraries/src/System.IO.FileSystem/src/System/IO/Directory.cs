@@ -12,6 +12,7 @@ using System.Text;
 using System.Runtime.InteropServices;
 using System.Globalization;
 using System.Runtime.Versioning;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Threading;
 
@@ -206,9 +207,9 @@ namespace System.IO
         // given search pattern (i.e. "*.txt") and search option
         private static String[] InternalGetFiles(String path, String searchPattern, SearchOption searchOption)
         {
-            Contract.Requires(path != null);
-            Contract.Requires(searchPattern != null);
-            Contract.Requires(searchOption == SearchOption.AllDirectories || searchOption == SearchOption.TopDirectoryOnly);
+            Debug.Assert(path != null);
+            Debug.Assert(searchPattern != null);
+            Debug.Assert(searchOption == SearchOption.AllDirectories || searchOption == SearchOption.TopDirectoryOnly);
 
             return InternalGetFileDirectoryNames(path, path, searchPattern, true, false, searchOption);
         }
@@ -258,9 +259,9 @@ namespace System.IO
         // given search criteria (i.e. "*.txt").
         private static String[] InternalGetDirectories(String path, String searchPattern, SearchOption searchOption)
         {
-            Contract.Requires(path != null);
-            Contract.Requires(searchPattern != null);
-            Contract.Requires(searchOption == SearchOption.AllDirectories || searchOption == SearchOption.TopDirectoryOnly);
+            Debug.Assert(path != null);
+            Debug.Assert(searchPattern != null);
+            Debug.Assert(searchOption == SearchOption.AllDirectories || searchOption == SearchOption.TopDirectoryOnly);
             Contract.Ensures(Contract.Result<String[]>() != null);
 
             return InternalGetFileDirectoryNames(path, path, searchPattern, false, true, searchOption);
@@ -309,9 +310,9 @@ namespace System.IO
 
         private static String[] InternalGetFileSystemEntries(String path, String searchPattern, SearchOption searchOption)
         {
-            Contract.Requires(path != null);
-            Contract.Requires(searchPattern != null);
-            Contract.Requires(searchOption == SearchOption.AllDirectories || searchOption == SearchOption.TopDirectoryOnly);
+            Debug.Assert(path != null);
+            Debug.Assert(searchPattern != null);
+            Debug.Assert(searchOption == SearchOption.AllDirectories || searchOption == SearchOption.TopDirectoryOnly);
 
             return InternalGetFileDirectoryNames(path, path, searchPattern, true, true, searchOption);
         }
@@ -323,10 +324,10 @@ namespace System.IO
         // their parent folders (it will avoid duplicate permission checks)
         internal static String[] InternalGetFileDirectoryNames(String path, String userPathOriginal, String searchPattern, bool includeFiles, bool includeDirs, SearchOption searchOption)
         {
-            Contract.Requires(path != null);
-            Contract.Requires(userPathOriginal != null);
-            Contract.Requires(searchPattern != null);
-            Contract.Requires(searchOption == SearchOption.AllDirectories || searchOption == SearchOption.TopDirectoryOnly);
+            Debug.Assert(path != null);
+            Debug.Assert(userPathOriginal != null);
+            Debug.Assert(searchPattern != null);
+            Debug.Assert(searchOption == SearchOption.AllDirectories || searchOption == SearchOption.TopDirectoryOnly);
 
             IEnumerable<String> enumerable = FileSystem.Current.EnumeratePaths(path, searchPattern, searchOption,
                 (includeFiles ? SearchTarget.Files : 0) | (includeDirs ? SearchTarget.Directories : 0));
@@ -368,9 +369,9 @@ namespace System.IO
 
         private static IEnumerable<String> InternalEnumerateDirectories(String path, String searchPattern, SearchOption searchOption)
         {
-            Contract.Requires(path != null);
-            Contract.Requires(searchPattern != null);
-            Contract.Requires(searchOption == SearchOption.AllDirectories || searchOption == SearchOption.TopDirectoryOnly);
+            Debug.Assert(path != null);
+            Debug.Assert(searchPattern != null);
+            Debug.Assert(searchOption == SearchOption.AllDirectories || searchOption == SearchOption.TopDirectoryOnly);
 
             return EnumerateFileSystemNames(path, searchPattern, searchOption, false, true);
         }
@@ -413,9 +414,9 @@ namespace System.IO
 
         private static IEnumerable<String> InternalEnumerateFiles(String path, String searchPattern, SearchOption searchOption)
         {
-            Contract.Requires(path != null);
-            Contract.Requires(searchPattern != null);
-            Contract.Requires(searchOption == SearchOption.AllDirectories || searchOption == SearchOption.TopDirectoryOnly);
+            Debug.Assert(path != null);
+            Debug.Assert(searchPattern != null);
+            Debug.Assert(searchOption == SearchOption.AllDirectories || searchOption == SearchOption.TopDirectoryOnly);
             Contract.Ensures(Contract.Result<IEnumerable<String>>() != null);
 
             return EnumerateFileSystemNames(path, searchPattern, searchOption, true, false);
@@ -459,9 +460,9 @@ namespace System.IO
 
         private static IEnumerable<String> InternalEnumerateFileSystemEntries(String path, String searchPattern, SearchOption searchOption)
         {
-            Contract.Requires(path != null);
-            Contract.Requires(searchPattern != null);
-            Contract.Requires(searchOption == SearchOption.AllDirectories || searchOption == SearchOption.TopDirectoryOnly);
+            Debug.Assert(path != null);
+            Debug.Assert(searchPattern != null);
+            Debug.Assert(searchOption == SearchOption.AllDirectories || searchOption == SearchOption.TopDirectoryOnly);
             Contract.Ensures(Contract.Result<IEnumerable<String>>() != null);
 
             return EnumerateFileSystemNames(path, searchPattern, searchOption, true, true);
@@ -470,9 +471,9 @@ namespace System.IO
         private static IEnumerable<String> EnumerateFileSystemNames(String path, String searchPattern, SearchOption searchOption,
                                                             bool includeFiles, bool includeDirs)
         {
-            Contract.Requires(path != null);
-            Contract.Requires(searchPattern != null);
-            Contract.Requires(searchOption == SearchOption.AllDirectories || searchOption == SearchOption.TopDirectoryOnly);
+            Debug.Assert(path != null);
+            Debug.Assert(searchPattern != null);
+            Debug.Assert(searchOption == SearchOption.AllDirectories || searchOption == SearchOption.TopDirectoryOnly);
             Contract.Ensures(Contract.Result<IEnumerable<String>>() != null);
 
             return FileSystem.Current.EnumeratePaths(path, searchPattern, searchOption,

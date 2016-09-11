@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Diagnostics.Contracts;
+using System.Diagnostics;
 
 namespace System.IO
 {
@@ -86,7 +86,7 @@ namespace System.IO
 
         internal static string NormalizeSearchPattern(string searchPattern)
         {
-            Contract.Requires(searchPattern != null);
+            Debug.Assert(searchPattern != null);
 
             // Win32 normalization trims only U+0020.
             string tempSearchPattern = searchPattern.TrimEnd(PathHelpers.TrimEndChars);
@@ -103,8 +103,8 @@ namespace System.IO
 
         internal static string GetFullSearchString(string fullPath, string searchPattern)
         {
-            Contract.Requires(fullPath != null);
-            Contract.Requires(searchPattern != null);
+            Debug.Assert(fullPath != null);
+            Debug.Assert(searchPattern != null);
 
             ThrowIfEmptyOrRootedPath(searchPattern);
             string tempStr = Path.Combine(fullPath, searchPattern);

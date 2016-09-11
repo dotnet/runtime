@@ -115,9 +115,9 @@ namespace System.Threading.Tasks.Dataflow
             /// <param name="predicate">The predicate to run for each message.</param>
             internal FilteredLinkPropagator(ISourceBlock<T> source, ITargetBlock<T> target, Predicate<T> predicate)
             {
-                Contract.Requires(source != null, "Filtered link requires a source to filter on.");
-                Contract.Requires(target != null, "Filtered link requires a target to filter to.");
-                Contract.Requires(predicate != null, "Filtered link requires a predicate to filter with.");
+                Debug.Assert(source != null, "Filtered link requires a source to filter on.");
+                Debug.Assert(target != null, "Filtered link requires a target to filter to.");
+                Debug.Assert(predicate != null, "Filtered link requires a predicate to filter with.");
 
                 // Store the arguments
                 _source = source;
@@ -130,7 +130,7 @@ namespace System.Threading.Tasks.Dataflow
             /// <returns>true if the item passed the filter; otherwise, false.</returns>
             private bool RunPredicate(T item)
             {
-                Contract.Requires(_userProvidedPredicate != null, "User-provided predicate is required.");
+                Debug.Assert(_userProvidedPredicate != null, "User-provided predicate is required.");
 
                 return _userProvidedPredicate(item); // avoid state object allocation if execution context isn't needed
             }
@@ -150,7 +150,7 @@ namespace System.Threading.Tasks.Dataflow
                 /// <param name="predicate">The predicate function.</param>
                 internal PredicateContextState(T input, Predicate<T> predicate)
                 {
-                    Contract.Requires(predicate != null, "A predicate with which to filter is required.");
+                    Debug.Assert(predicate != null, "A predicate with which to filter is required.");
                     this.Input = input;
                     this.Predicate = predicate;
                 }
@@ -158,7 +158,7 @@ namespace System.Threading.Tasks.Dataflow
                 /// <summary>Runs the predicate function over the input and stores the result into the output.</summary>
                 internal void Run()
                 {
-                    Contract.Requires(Predicate != null, "Non-null predicate required");
+                    Debug.Assert(Predicate != null, "Non-null predicate required");
                     Output = Predicate(Input);
                 }
             }
@@ -248,7 +248,7 @@ namespace System.Threading.Tasks.Dataflow
                 /// <param name="filter">The filter to view.</param>
                 public DebugView(FilteredLinkPropagator<T> filter)
                 {
-                    Contract.Requires(filter != null, "Need a filter with which to construct the debug view.");
+                    Debug.Assert(filter != null, "Need a filter with which to construct the debug view.");
                     _filter = filter;
                 }
 
@@ -430,7 +430,7 @@ namespace System.Threading.Tasks.Dataflow
             /// <param name="cancellationToken">The cancellation token with which to cancel the send.</param>
             internal SendAsyncSource(ITargetBlock<TOutput> target, TOutput messageValue, CancellationToken cancellationToken)
             {
-                Contract.Requires(target != null, "A valid target to send to is required.");
+                Debug.Assert(target != null, "A valid target to send to is required.");
                 _target = target;
                 _messageValue = messageValue;
 
@@ -531,7 +531,7 @@ namespace System.Threading.Tasks.Dataflow
             [SuppressMessage("Microsoft.Usage", "CA1816:CallGCSuppressFinalizeCorrectly")]
             private void RunCompletionAction(Action<object> completionAction, object completionActionState, bool runAsync)
             {
-                Contract.Requires(completionAction != null, "Completion action to run is required.");
+                Debug.Assert(completionAction != null, "Completion action to run is required.");
 
                 // Suppress finalization.  Finalization is only required if the target drops a reference
                 // to the source before the source has completed, and here we're completing the source.
@@ -785,7 +785,7 @@ namespace System.Threading.Tasks.Dataflow
                 /// <param name="source">The source to view.</param>
                 public DebugView(SendAsyncSource<TOutput> source)
                 {
-                    Contract.Requires(source != null, "Need a source with which to construct the debug view.");
+                    Debug.Assert(source != null, "Need a source with which to construct the debug view.");
                     _source = source;
                 }
 
@@ -1022,7 +1022,7 @@ namespace System.Threading.Tasks.Dataflow
         private static Task<TOutput> ReceiveCore<TOutput>(
             this ISourceBlock<TOutput> source, bool attemptTryReceive, TimeSpan timeout, CancellationToken cancellationToken)
         {
-            Contract.Requires(source != null, "Need a source from which to receive.");
+            Debug.Assert(source != null, "Need a source from which to receive.");
 
             // If cancellation has been requested, we're done before we've even started, cancel this receive.
             if (cancellationToken.IsCancellationRequested)
@@ -1665,8 +1665,8 @@ namespace System.Threading.Tasks.Dataflow
 
             public EncapsulatingPropagator(ITargetBlock<TInput> target, ISourceBlock<TOutput> source)
             {
-                Contract.Requires(target != null, "The target should never be null; this should be checked by all internal usage.");
-                Contract.Requires(source != null, "The source should never be null; this should be checked by all internal usage.");
+                Debug.Assert(target != null, "The target should never be null; this should be checked by all internal usage.");
+                Debug.Assert(source != null, "The source should never be null; this should be checked by all internal usage.");
                 _target = target;
                 _source = source;
             }
@@ -1765,7 +1765,7 @@ namespace System.Threading.Tasks.Dataflow
                 /// <param name="propagator">The propagator being debugged.</param>
                 public DebugView(EncapsulatingPropagator<TInput, TOutput> propagator)
                 {
-                    Contract.Requires(propagator != null, "Need a block with which to construct the debug view.");
+                    Debug.Assert(propagator != null, "Need a block with which to construct the debug view.");
                     _propagator = propagator;
                 }
 
@@ -1974,10 +1974,10 @@ namespace System.Threading.Tasks.Dataflow
             ISourceBlock<T3> source3, Action<T3> action3,
             DataflowBlockOptions dataflowBlockOptions)
         {
-            Contract.Requires(source1 != null && action1 != null, "The first source and action should not be null.");
-            Contract.Requires(source2 != null && action2 != null, "The second source and action should not be null.");
-            Contract.Requires((source3 == null) == (action3 == null), "The third action should be null iff the third source is null.");
-            Contract.Requires(dataflowBlockOptions != null, "Options are required.");
+            Debug.Assert(source1 != null && action1 != null, "The first source and action should not be null.");
+            Debug.Assert(source2 != null && action2 != null, "The second source and action should not be null.");
+            Debug.Assert((source3 == null) == (action3 == null), "The third action should be null iff the third source is null.");
+            Debug.Assert(dataflowBlockOptions != null, "Options are required.");
             bool hasThirdSource = source3 != null; // In the future, if we want higher arities on Choose, we can simply add more such checks on additional arguments
 
             // Early cancellation check and bail out
@@ -2021,10 +2021,10 @@ namespace System.Threading.Tasks.Dataflow
             out Task<int> task)
         {
             // Validate arguments
-            Contract.Requires(source != null, "Expected a non-null source");
-            Contract.Requires(action != null, "Expected a non-null action");
-            Contract.Requires(branchId >= 0, "Expected a valid branch ID (> 0)");
-            Contract.Requires(scheduler != null, "Expected a non-null scheduler");
+            Debug.Assert(source != null, "Expected a non-null source");
+            Debug.Assert(action != null, "Expected a non-null action");
+            Debug.Assert(branchId >= 0, "Expected a valid branch ID (> 0)");
+            Debug.Assert(scheduler != null, "Expected a non-null scheduler");
 
             // Try to receive from the source.  If we can't, bail.
             T result;
@@ -2061,10 +2061,10 @@ namespace System.Threading.Tasks.Dataflow
             ISourceBlock<T3> source3, Action<T3> action3,
             DataflowBlockOptions dataflowBlockOptions)
         {
-            Contract.Requires(source1 != null && action1 != null, "The first source and action should not be null.");
-            Contract.Requires(source2 != null && action2 != null, "The second source and action should not be null.");
-            Contract.Requires((source3 == null) == (action3 == null), "The third action should be null iff the third source is null.");
-            Contract.Requires(dataflowBlockOptions != null, "Options are required.");
+            Debug.Assert(source1 != null && action1 != null, "The first source and action should not be null.");
+            Debug.Assert(source2 != null && action2 != null, "The second source and action should not be null.");
+            Debug.Assert((source3 == null) == (action3 == null), "The third action should be null iff the third source is null.");
+            Debug.Assert(dataflowBlockOptions != null, "Options are required.");
 
             bool hasThirdSource = source3 != null; // In the future, if we want higher arities on Choose, we can simply add more such checks on additional arguments
 
@@ -2237,7 +2237,7 @@ namespace System.Threading.Tasks.Dataflow
             /// <param name="cancellationToken">The cancellation token used to cancel this target.</param>
             internal ChooseTarget(StrongBox<Task> completed, CancellationToken cancellationToken)
             {
-                Contract.Requires(completed != null, "Requires a shared target to complete.");
+                Debug.Assert(completed != null, "Requires a shared target to complete.");
                 _completed = completed;
 
                 // Handle async cancellation by canceling the target without storing it into _completed.
@@ -2342,7 +2342,7 @@ namespace System.Threading.Tasks.Dataflow
             /// <returns>The observable.</returns>
             internal static IObservable<TOutput> From(ISourceBlock<TOutput> source)
             {
-                Contract.Requires(source != null, "Requires a source for which to retrieve the observable.");
+                Debug.Assert(source != null, "Requires a source for which to retrieve the observable.");
                 return _table.GetValue(source, s => new SourceObservable<TOutput>(s));
             }
 
@@ -2360,7 +2360,7 @@ namespace System.Threading.Tasks.Dataflow
             /// <param name="source">The source to wrap.</param>
             internal SourceObservable(ISourceBlock<TOutput> source)
             {
-                Contract.Requires(source != null, "The observable requires a source to wrap.");
+                Debug.Assert(source != null, "The observable requires a source to wrap.");
                 _source = source;
                 _observersState = new ObserversState(this);
             }
@@ -2432,7 +2432,7 @@ namespace System.Threading.Tasks.Dataflow
             /// <param name="observer">The observer being unsubscribed.</param>
             private void Unsubscribe(IObserver<TOutput> observer)
             {
-                Contract.Requires(observer != null, "Expected an observer.");
+                Debug.Assert(observer != null, "Expected an observer.");
                 Common.ContractAssertMonitorStatus(_SubscriptionLock, held: false);
 
                 lock (_SubscriptionLock)
@@ -2503,7 +2503,7 @@ namespace System.Threading.Tasks.Dataflow
                 /// <param name="observable">The target being debugged.</param>
                 public DebugView(SourceObservable<TOutput> observable)
                 {
-                    Contract.Requires(observable != null, "Need a block with which to construct the debug view.");
+                    Debug.Assert(observable != null, "Need a block with which to construct the debug view.");
                     _observable = observable;
                 }
 
@@ -2539,7 +2539,7 @@ namespace System.Threading.Tasks.Dataflow
                 /// <param name="observable">The owning observable.</param>
                 internal ObserversState(SourceObservable<TOutput> observable)
                 {
-                    Contract.Requires(observable != null, "Observe state must be mapped to a source observable.");
+                    Debug.Assert(observable != null, "Observe state must be mapped to a source observable.");
 
                     // Set up the target block
                     Observable = observable;
@@ -2638,7 +2638,7 @@ namespace System.Threading.Tasks.Dataflow
                 [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
                 private void NotifyObserversOfCompletion(Exception targetException = null)
                 {
-                    Contract.Requires(Target.Completion.IsCompleted, "The target must have already completed in order to notify of completion.");
+                    Debug.Assert(Target.Completion.IsCompleted, "The target must have already completed in order to notify of completion.");
                     Common.ContractAssertMonitorStatus(Observable._SubscriptionLock, held: false);
 
                     // Send completion notification to all observers.
@@ -2707,7 +2707,7 @@ namespace System.Threading.Tasks.Dataflow
             /// <param name="target">The target to wrap.</param>
             internal TargetObserver(ITargetBlock<TInput> target)
             {
-                Contract.Requires(target != null, "A target to observe is required.");
+                Debug.Assert(target != null, "A target to observe is required.");
                 _target = target;
             }
 

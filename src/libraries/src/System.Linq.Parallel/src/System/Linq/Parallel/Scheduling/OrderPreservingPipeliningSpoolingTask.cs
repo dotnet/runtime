@@ -15,7 +15,7 @@ using System.Linq.Parallel;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Diagnostics.Contracts;
+using System.Diagnostics;
 
 namespace System.Linq.Parallel
 {
@@ -64,13 +64,13 @@ namespace System.Linq.Parallel
             bool autoBuffered)
             : base(partitionIndex, taskGroupState)
         {
-            Contract.Requires(partition != null);
-            Contract.Requires(taskGroupState != null);
-            Contract.Requires(consumerWaiting != null);
-            Contract.Requires(producerWaiting != null && producerWaiting.Length == consumerWaiting.Length);
-            Contract.Requires(producerDone != null && producerDone.Length == consumerWaiting.Length);
-            Contract.Requires(buffers != null && buffers.Length == consumerWaiting.Length);
-            Contract.Requires(partitionIndex >= 0 && partitionIndex < consumerWaiting.Length);
+            Debug.Assert(partition != null);
+            Debug.Assert(taskGroupState != null);
+            Debug.Assert(consumerWaiting != null);
+            Debug.Assert(producerWaiting != null && producerWaiting.Length == consumerWaiting.Length);
+            Debug.Assert(producerDone != null && producerDone.Length == consumerWaiting.Length);
+            Debug.Assert(buffers != null && buffers.Length == consumerWaiting.Length);
+            Debug.Assert(partitionIndex >= 0 && partitionIndex < consumerWaiting.Length);
 
             _partition = partition;
             _taskGroupState = taskGroupState;
@@ -151,11 +151,11 @@ namespace System.Linq.Parallel
             Queue<Pair<TKey, TOutput>>[] buffers, object[] bufferLocks,
             TaskScheduler taskScheduler, bool autoBuffered)
         {
-            Contract.Requires(groupState != null);
-            Contract.Requires(partitions != null);
-            Contract.Requires(producerDone != null && producerDone.Length == partitions.PartitionCount);
-            Contract.Requires(buffers != null && buffers.Length == partitions.PartitionCount);
-            Contract.Requires(bufferLocks != null);
+            Debug.Assert(groupState != null);
+            Debug.Assert(partitions != null);
+            Debug.Assert(producerDone != null && producerDone.Length == partitions.PartitionCount);
+            Debug.Assert(buffers != null && buffers.Length == partitions.PartitionCount);
+            Debug.Assert(bufferLocks != null);
 
             int degreeOfParallelism = partitions.PartitionCount;
 

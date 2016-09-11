@@ -28,7 +28,7 @@ namespace System.Net.Http.Headers
 
         internal static void SetQuality(ObjectCollection<NameValueHeaderValue> parameters, double? value)
         {
-            Contract.Requires(parameters != null);
+            Debug.Assert(parameters != null);
 
             NameValueHeaderValue qualityParameter = NameValueHeaderValue.Find(parameters, qualityName);
             if (value.HasValue)
@@ -65,7 +65,7 @@ namespace System.Net.Http.Headers
 
         internal static double? GetQuality(ObjectCollection<NameValueHeaderValue> parameters)
         {
-            Contract.Requires(parameters != null);
+            Debug.Assert(parameters != null);
 
             NameValueHeaderValue qualityParameter = NameValueHeaderValue.Find(parameters, qualityName);
             if (qualityParameter != null)
@@ -196,8 +196,8 @@ namespace System.Net.Http.Headers
         internal static int GetNextNonEmptyOrWhitespaceIndex(string input, int startIndex, bool skipEmptyValues,
             out bool separatorFound)
         {
-            Contract.Requires(input != null);
-            Contract.Requires(startIndex <= input.Length); // it's OK if index == value.Length.
+            Debug.Assert(input != null);
+            Debug.Assert(startIndex <= input.Length); // it's OK if index == value.Length.
 
             separatorFound = false;
             int current = startIndex + HttpRuleParser.GetWhitespaceLength(input, startIndex);
@@ -227,7 +227,7 @@ namespace System.Net.Http.Headers
 
         internal static DateTimeOffset? GetDateTimeOffsetValue(string headerName, HttpHeaders store)
         {
-            Contract.Requires(store != null);
+            Debug.Assert(store != null);
 
             object storedValue = store.GetParsedValues(headerName);
             if (storedValue != null)
@@ -239,7 +239,7 @@ namespace System.Net.Http.Headers
 
         internal static TimeSpan? GetTimeSpanValue(string headerName, HttpHeaders store)
         {
-            Contract.Requires(store != null);
+            Debug.Assert(store != null);
 
             object storedValue = store.GetParsedValues(headerName);
             if (storedValue != null)

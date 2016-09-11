@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
+using System.Diagnostics;
 
 namespace System.Net.Http.Headers
 {
@@ -191,14 +191,14 @@ namespace System.Net.Http.Headers
 
         internal HttpGeneralHeaders(HttpHeaders parent)
         {
-            Contract.Requires(parent != null);
+            Debug.Assert(parent != null);
 
             _parent = parent;
         }
 
         internal static void AddParsers(Dictionary<string, HttpHeaderParser> parserStore)
         {
-            Contract.Requires(parserStore != null);
+            Debug.Assert(parserStore != null);
 
             parserStore.Add(HttpKnownHeaderNames.CacheControl, CacheControlHeaderParser.Parser);
             parserStore.Add(HttpKnownHeaderNames.Connection, GenericHeaderParser.TokenListParser);
@@ -213,7 +213,7 @@ namespace System.Net.Http.Headers
 
         internal static void AddKnownHeaders(HashSet<string> headerSet)
         {
-            Contract.Requires(headerSet != null);
+            Debug.Assert(headerSet != null);
 
             headerSet.Add(HttpKnownHeaderNames.CacheControl);
             headerSet.Add(HttpKnownHeaderNames.Connection);

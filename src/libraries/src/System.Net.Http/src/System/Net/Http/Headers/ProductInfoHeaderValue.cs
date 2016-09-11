@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Diagnostics.Contracts;
+using System.Diagnostics;
 
 namespace System.Net.Http.Headers
 {
@@ -44,7 +44,7 @@ namespace System.Net.Http.Headers
 
         private ProductInfoHeaderValue(ProductInfoHeaderValue source)
         {
-            Contract.Requires(source != null);
+            Debug.Assert(source != null);
 
             _product = source._product;
             _comment = source._comment;
@@ -126,7 +126,7 @@ namespace System.Net.Http.Headers
 
         internal static int GetProductInfoLength(string input, int startIndex, out ProductInfoHeaderValue parsedValue)
         {
-            Contract.Requires(startIndex >= 0);
+            Debug.Assert(startIndex >= 0);
 
             parsedValue = null;
 

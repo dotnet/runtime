@@ -121,7 +121,7 @@ namespace System.IO
 
         private void EnsureCanSeek()
         {
-            Contract.Requires(_stream != null);
+            Debug.Assert(_stream != null);
 
             if (!_stream.CanSeek)
                 __Error.SeekNotSupported();
@@ -130,7 +130,7 @@ namespace System.IO
 
         private void EnsureCanRead()
         {
-            Contract.Requires(_stream != null);
+            Debug.Assert(_stream != null);
 
             if (!_stream.CanRead)
                 __Error.ReadNotSupported();
@@ -139,7 +139,7 @@ namespace System.IO
 
         private void EnsureCanWrite()
         {
-            Contract.Requires(_stream != null);
+            Debug.Assert(_stream != null);
 
             if (!_stream.CanWrite)
                 __Error.WriteNotSupported();
@@ -745,7 +745,7 @@ namespace System.IO
                                                             Task semaphoreLockTask, bool useApmPattern) {
 
         // Same conditions validated with exceptions in ReadAsync:
-        // (These should be Contract.Requires(..) but that method had some issues in async methods; using Assert(..) for now.)
+        // (These should be Debug.Assert(..) but that method had some issues in async methods; using Assert(..) for now.)
         Debug.Assert(array != null);
         Debug.Assert(offset >= 0);
         Debug.Assert(count >= 0);
@@ -1170,8 +1170,6 @@ namespace System.IO
                                                         CancellationToken cancellationToken,
                                                         Task semaphoreLockTask, bool useApmPattern)
         {
-
-            // (These should be Contract.Requires(..) but that method had some issues in async methods; using Assert(..) for now.)
             Debug.Assert(array != null);
             Debug.Assert(offset >= 0);
             Debug.Assert(count >= 0);

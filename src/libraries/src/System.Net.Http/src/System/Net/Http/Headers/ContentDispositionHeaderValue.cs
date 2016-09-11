@@ -4,7 +4,6 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Globalization;
 using System.Text;
 
@@ -142,7 +141,7 @@ namespace System.Net.Http.Headers
 
         protected ContentDispositionHeaderValue(ContentDispositionHeaderValue source)
         {
-            Contract.Requires(source != null);
+            Debug.Assert(source != null);
 
             _dispositionType = source._dispositionType;
 
@@ -222,7 +221,7 @@ namespace System.Net.Http.Headers
 
         internal static int GetDispositionTypeLength(string input, int startIndex, out object parsedValue)
         {
-            Contract.Requires(startIndex >= 0);
+            Debug.Assert(startIndex >= 0);
 
             parsedValue = null;
 
@@ -268,7 +267,7 @@ namespace System.Net.Http.Headers
 
         private static int GetDispositionTypeExpressionLength(string input, int startIndex, out string dispositionType)
         {
-            Contract.Requires((input != null) && (input.Length > 0) && (startIndex < input.Length));
+            Debug.Assert((input != null) && (input.Length > 0) && (startIndex < input.Length));
 
             // This method just parses the disposition type string, it does not parse parameters.
             dispositionType = null;

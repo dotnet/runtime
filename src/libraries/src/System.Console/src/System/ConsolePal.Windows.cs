@@ -1172,9 +1172,9 @@ namespace System
 
             private unsafe static int ReadFileNative(IntPtr hFile, byte[] bytes, int offset, int count, bool isPipe, out int bytesRead, bool useFileAPIs)
             {
-                Contract.Requires(offset >= 0, "offset >= 0");
-                Contract.Requires(count >= 0, "count >= 0");
-                Contract.Requires(bytes != null, "bytes != null");
+                Debug.Assert(offset >= 0, "offset >= 0");
+                Debug.Assert(count >= 0, "count >= 0");
+                Debug.Assert(bytes != null, "bytes != null");
                 // Don't corrupt memory when multiple threads are erroneously writing
                 // to this stream simultaneously.
                 if (bytes.Length - offset < count)
@@ -1217,10 +1217,10 @@ namespace System
 
             private static unsafe int WriteFileNative(IntPtr hFile, byte[] bytes, int offset, int count, bool useFileAPIs)
             {
-                Contract.Requires(offset >= 0, "offset >= 0");
-                Contract.Requires(count >= 0, "count >= 0");
-                Contract.Requires(bytes != null, "bytes != null");
-                Contract.Requires(bytes.Length >= offset + count, "bytes.Length >= offset + count");
+                Debug.Assert(offset >= 0, "offset >= 0");
+                Debug.Assert(count >= 0, "count >= 0");
+                Debug.Assert(bytes != null, "bytes != null");
+                Debug.Assert(bytes.Length >= offset + count, "bytes.Length >= offset + count");
 
                 // You can't use the fixed statement on an array of length 0.
                 if (bytes.Length == 0)

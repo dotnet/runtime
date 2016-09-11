@@ -13,7 +13,6 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Linq;
 
 namespace System.Threading.Tasks.Dataflow.Internal
@@ -28,7 +27,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
         /// <param name="enumerable">The enumerable being debugged.</param>
         public EnumerableDebugView(IEnumerable<KeyValuePair<TKey, TValue>> enumerable)
         {
-            Contract.Requires(enumerable != null, "Expected a non-null enumerable.");
+            Debug.Assert(enumerable != null, "Expected a non-null enumerable.");
             _enumerable = enumerable;
         }
 
@@ -47,7 +46,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
         /// <param name="enumerable">The enumerable being debugged.</param>
         public EnumerableDebugView(IEnumerable<T> enumerable)
         {
-            Contract.Requires(enumerable != null, "Expected a non-null enumerable.");
+            Debug.Assert(enumerable != null, "Expected a non-null enumerable.");
             _enumerable = enumerable;
         }
 

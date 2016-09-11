@@ -118,7 +118,7 @@ namespace System.IO
 
         private static StreamReadOperationOptimization DetermineStreamReadOptimization(Stream stream)
         {
-            Contract.Requires(stream != null);
+            Debug.Assert(stream != null);
 
             if (CanApplyReadMemoryStreamOptimization(stream))
                 return StreamReadOperationOptimization.MemoryStream;
@@ -140,8 +140,8 @@ namespace System.IO
 
         private NetFxToWinRtStreamAdapter(Stream stream, StreamReadOperationOptimization readOptimization)
         {
-            Contract.Requires(stream != null);
-            Contract.Requires(stream.CanRead || stream.CanWrite || stream.CanSeek);
+            Debug.Assert(stream != null);
+            Debug.Assert(stream.CanRead || stream.CanWrite || stream.CanSeek);
             Contract.EndContractBlock();
 
             Debug.Assert(!stream.CanRead || (stream.CanRead && this is IInputStream));

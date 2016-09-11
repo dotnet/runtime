@@ -2298,7 +2298,6 @@ namespace System.Collections.Generic
         // used for set checking operations (using enumerables) that rely on counting
         private static int log2(int value)
         {
-            //Contract.Requires(value>0)
             int c = 0;
             while (value > 0)
             {

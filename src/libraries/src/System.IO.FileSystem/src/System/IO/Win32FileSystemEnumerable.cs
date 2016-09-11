@@ -4,7 +4,6 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Runtime.InteropServices;
 using System.Security;
 
@@ -21,9 +20,9 @@ namespace System.IO
         internal static IEnumerable<string> CreateFileNameIterator(string path, string originalUserPath, string searchPattern,
                                                                     bool includeFiles, bool includeDirs, SearchOption searchOption)
         {
-            Contract.Requires(path != null);
-            Contract.Requires(originalUserPath != null);
-            Contract.Requires(searchPattern != null);
+            Debug.Assert(path != null);
+            Debug.Assert(originalUserPath != null);
+            Debug.Assert(searchPattern != null);
 
             SearchResultHandler<string> handler;
 
@@ -46,27 +45,27 @@ namespace System.IO
 
         internal static IEnumerable<FileInfo> CreateFileInfoIterator(string path, string originalUserPath, string searchPattern, SearchOption searchOption)
         {
-            Contract.Requires(path != null);
-            Contract.Requires(originalUserPath != null);
-            Contract.Requires(searchPattern != null);
+            Debug.Assert(path != null);
+            Debug.Assert(originalUserPath != null);
+            Debug.Assert(searchPattern != null);
 
             return new Win32FileSystemEnumerableIterator<FileInfo>(path, originalUserPath, searchPattern, searchOption, SearchResultHandler.FileInfo);
         }
 
         internal static IEnumerable<DirectoryInfo> CreateDirectoryInfoIterator(string path, string originalUserPath, string searchPattern, SearchOption searchOption)
         {
-            Contract.Requires(path != null);
-            Contract.Requires(originalUserPath != null);
-            Contract.Requires(searchPattern != null);
+            Debug.Assert(path != null);
+            Debug.Assert(originalUserPath != null);
+            Debug.Assert(searchPattern != null);
 
             return new Win32FileSystemEnumerableIterator<DirectoryInfo>(path, originalUserPath, searchPattern, searchOption, SearchResultHandler.DirectoryInfo);
         }
 
         internal static IEnumerable<FileSystemInfo> CreateFileSystemInfoIterator(string path, string originalUserPath, string searchPattern, SearchOption searchOption)
         {
-            Contract.Requires(path != null);
-            Contract.Requires(originalUserPath != null);
-            Contract.Requires(searchPattern != null);
+            Debug.Assert(path != null);
+            Debug.Assert(originalUserPath != null);
+            Debug.Assert(searchPattern != null);
 
             return new Win32FileSystemEnumerableIterator<FileSystemInfo>(path, originalUserPath, searchPattern, searchOption, SearchResultHandler.FileSystemInfo);
         }
@@ -117,11 +116,11 @@ namespace System.IO
         [SecuritySafeCritical]
         internal Win32FileSystemEnumerableIterator(string path, string originalUserPath, string searchPattern, SearchOption searchOption, SearchResultHandler<TSource> resultHandler)
         {
-            Contract.Requires(path != null);
-            Contract.Requires(originalUserPath != null);
-            Contract.Requires(searchPattern != null);
-            Contract.Requires(searchOption == SearchOption.AllDirectories || searchOption == SearchOption.TopDirectoryOnly);
-            Contract.Requires(resultHandler != null);
+            Debug.Assert(path != null);
+            Debug.Assert(originalUserPath != null);
+            Debug.Assert(searchPattern != null);
+            Debug.Assert(searchOption == SearchOption.AllDirectories || searchOption == SearchOption.TopDirectoryOnly);
+            Debug.Assert(resultHandler != null);
 
             _oldMode = Interop.mincore.SetErrorMode(Interop.mincore.SEM_FAILCRITICALERRORS);
 
@@ -387,7 +386,7 @@ namespace System.IO
         [SecurityCritical]
         private bool IsResultIncluded(ref Interop.mincore.WIN32_FIND_DATA findData, out TSource result)
         {
-            Contract.Requires(findData.cFileName.Length != 0 && !Path.IsPathRooted(findData.cFileName),
+            Debug.Assert(findData.cFileName.Length != 0 && !Path.IsPathRooted(findData.cFileName),
                 "Expected file system enumeration to not have empty file/directory name and not have rooted name");
 
             return _resultHandler.IsResultIncluded(_searchData.FullPath, _searchData.UserPath, ref findData, out result);
@@ -461,9 +460,9 @@ namespace System.IO
 
         private static string GetNormalizedSearchCriteria(string fullSearchString, string fullPathMod)
         {
-            Contract.Requires(fullSearchString != null);
-            Contract.Requires(fullPathMod != null);
-            Contract.Requires(fullSearchString.Length >= fullPathMod.Length);
+            Debug.Assert(fullSearchString != null);
+            Debug.Assert(fullPathMod != null);
+            Debug.Assert(fullSearchString.Length >= fullPathMod.Length);
 
             string searchCriteria = null;
             char lastChar = fullPathMod[fullPathMod.Length - 1];

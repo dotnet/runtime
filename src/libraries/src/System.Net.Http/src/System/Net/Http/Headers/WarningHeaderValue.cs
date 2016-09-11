@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Globalization;
 using System.Text;
 
@@ -65,7 +64,7 @@ namespace System.Net.Http.Headers
 
         private WarningHeaderValue(WarningHeaderValue source)
         {
-            Contract.Requires(source != null);
+            Debug.Assert(source != null);
 
             _code = source._code;
             _agent = source._agent;
@@ -158,7 +157,7 @@ namespace System.Net.Http.Headers
 
         internal static int GetWarningLength(string input, int startIndex, out object parsedValue)
         {
-            Contract.Requires(startIndex >= 0);
+            Debug.Assert(startIndex >= 0);
 
             parsedValue = null;
 

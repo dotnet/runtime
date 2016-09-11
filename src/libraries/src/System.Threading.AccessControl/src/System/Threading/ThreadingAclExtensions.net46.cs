@@ -4,7 +4,6 @@
 
 using System;
 using System.Security.AccessControl;
-using System.Diagnostics.Contracts;
 
 namespace System.Threading
 {

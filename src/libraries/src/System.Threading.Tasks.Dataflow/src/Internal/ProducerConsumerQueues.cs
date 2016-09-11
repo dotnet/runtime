@@ -31,7 +31,6 @@ using System.Threading.Tasks.Dataflow.Internal.Collections;
 #endif
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Runtime.InteropServices;
 
 namespace System.Threading.Tasks
@@ -179,7 +178,7 @@ namespace System.Threading.Tasks
         /// <param name="segment">The segment in which to first attempt to store the item.</param>
         private void EnqueueSlow(T item, ref Segment segment)
         {
-            Contract.Requires(segment != null, "Expected a non-null segment.");
+            Debug.Assert(segment != null, "Expected a non-null segment.");
 
             if (segment._state._firstCopy != segment._state._first)
             {
@@ -235,8 +234,8 @@ namespace System.Threading.Tasks
         /// <returns>true if an item could be dequeued; otherwise, false.</returns>
         private bool TryDequeueSlow(ref Segment segment, ref T[] array, out T result)
         {
-            Contract.Requires(segment != null, "Expected a non-null segment.");
-            Contract.Requires(array != null, "Expected a non-null item array.");
+            Debug.Assert(segment != null, "Expected a non-null segment.");
+            Debug.Assert(array != null, "Expected a non-null item array.");
 
             if (segment._state._last != segment._state._lastCopy)
             {
@@ -293,8 +292,8 @@ namespace System.Threading.Tasks
         /// <returns>true if an item could be peeked; otherwise, false.</returns>
         private bool TryPeekSlow(ref Segment segment, ref T[] array, out T result)
         {
-            Contract.Requires(segment != null, "Expected a non-null segment.");
-            Contract.Requires(array != null, "Expected a non-null item array.");
+            Debug.Assert(segment != null, "Expected a non-null segment.");
+            Debug.Assert(array != null, "Expected a non-null item array.");
 
             if (segment._state._last != segment._state._lastCopy)
             {
@@ -359,8 +358,8 @@ namespace System.Threading.Tasks
         /// <returns>true if an item could be dequeued; otherwise, false.</returns>
         private bool TryDequeueIfSlow(Predicate<T> predicate, ref Segment segment, ref T[] array, out T result)
         {
-            Contract.Requires(segment != null, "Expected a non-null segment.");
-            Contract.Requires(array != null, "Expected a non-null item array.");
+            Debug.Assert(segment != null, "Expected a non-null segment.");
+            Debug.Assert(array != null, "Expected a non-null item array.");
 
             if (segment._state._last != segment._state._lastCopy)
             {
@@ -485,7 +484,7 @@ namespace System.Threading.Tasks
             /// <param name="size">The size to use for this segment.</param>
             internal Segment(int size)
             {
-                Contract.Requires((size & (size - 1)) == 0, "Size must be a power of 2");
+                Debug.Assert((size & (size - 1)) == 0, "Size must be a power of 2");
                 _array = new T[size];
             }
         }
@@ -524,7 +523,7 @@ namespace System.Threading.Tasks
             /// <param name="queue">The queue being debugged.</param>
             public SingleProducerSingleConsumerQueue_DebugView(SingleProducerSingleConsumerQueue<T> queue)
             {
-                Contract.Requires(queue != null, "Expected a non-null queue.");
+                Debug.Assert(queue != null, "Expected a non-null queue.");
                 _queue = queue;
             }
 

@@ -9,7 +9,6 @@ using Microsoft.Win32;
 using System.Text;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
-using System.Diagnostics.Contracts;
 
 namespace System.IO
 {

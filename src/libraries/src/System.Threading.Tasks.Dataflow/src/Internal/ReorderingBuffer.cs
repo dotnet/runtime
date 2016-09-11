@@ -15,7 +15,6 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Linq;
 
 namespace System.Threading.Tasks.Dataflow.Internal
@@ -57,8 +56,8 @@ namespace System.Threading.Tasks.Dataflow.Internal
         internal ReorderingBuffer(object owningSource, Action<object, TOutput> outputAction)
         {
             // Validate and store internal arguments
-            Contract.Requires(owningSource != null, "Buffer must be associated with a source.");
-            Contract.Requires(outputAction != null, "Action required for when items are to be released.");
+            Debug.Assert(owningSource != null, "Buffer must be associated with a source.");
+            Debug.Assert(outputAction != null, "Action required for when items are to be released.");
             _owningSource = owningSource;
             _outputAction = outputAction;
         }
@@ -69,7 +68,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
         /// <param name="itemIsValid">Specifies whether the item is valid (true) or just a placeholder (false).</param>
         internal void AddItem(long id, TOutput item, bool itemIsValid)
         {
-            Contract.Requires(id != Common.INVALID_REORDERING_ID, "This ID should never have been handed out.");
+            Debug.Assert(id != Common.INVALID_REORDERING_ID, "This ID should never have been handed out.");
             Common.ContractAssertMonitorStatus(ValueLock, held: false);
 
             // This may be called concurrently, so protect the buffer...
@@ -107,7 +106,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
         /// </returns>
         internal bool? AddItemIfNextAndTrusted(long id, TOutput item, bool isTrusted)
         {
-            Contract.Requires(id != Common.INVALID_REORDERING_ID, "This ID should never have been handed out.");
+            Debug.Assert(id != Common.INVALID_REORDERING_ID, "This ID should never have been handed out.");
             Common.ContractAssertMonitorStatus(ValueLock, held: false);
 
             lock (ValueLock)
@@ -172,7 +171,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
             /// <param name="buffer">The buffer being debugged.</param>
             public DebugView(ReorderingBuffer<TOutput> buffer)
             {
-                Contract.Requires(buffer != null, "Need a buffer with which to construct the debug view.");
+                Debug.Assert(buffer != null, "Need a buffer with which to construct the debug view.");
                 _buffer = buffer;
             }
 

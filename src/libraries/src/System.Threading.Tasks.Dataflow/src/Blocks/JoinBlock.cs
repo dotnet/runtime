@@ -217,7 +217,7 @@ namespace System.Threading.Tasks.Dataflow
             /// <param name="joinBlock">The JoinBlock being viewed.</param>
             public DebugView(JoinBlock<T1, T2> joinBlock)
             {
-                Contract.Requires(joinBlock != null, "Need a block with which to construct the debug view.");
+                Debug.Assert(joinBlock != null, "Need a block with which to construct the debug view.");
                 _joinBlock = joinBlock;
                 _sourceDebuggingInformation = joinBlock._source.GetDebuggingInformation();
             }
@@ -455,7 +455,7 @@ namespace System.Threading.Tasks.Dataflow
             /// <param name="joinBlock">The JoinBlock being viewed.</param>
             public DebugView(JoinBlock<T1, T2, T3> joinBlock)
             {
-                Contract.Requires(joinBlock != null, "Need a block with which to construct the debug view.");
+                Debug.Assert(joinBlock != null, "Need a block with which to construct the debug view.");
                 _joinBlock = joinBlock;
                 _sourceDebuggingInformation = joinBlock._source.GetDebuggingInformation();
             }
@@ -528,7 +528,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
         /// <param name="sharedResources">The shared resources used by all targets associated with this join.</param>
         internal JoinBlockTarget(JoinBlockTargetSharedResources sharedResources)
         {
-            Contract.Requires(sharedResources != null, "Targets need shared resources through which to communicate.");
+            Debug.Assert(sharedResources != null, "Targets need shared resources through which to communicate.");
 
             // Store arguments and initialize configuration
             GroupingDataflowBlockOptions dbo = sharedResources._dataflowBlockOptions;
@@ -995,7 +995,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
             /// <param name="joinBlockTarget">The join being viewed.</param>
             public DebugView(JoinBlockTarget<T> joinBlockTarget)
             {
-                Contract.Requires(joinBlockTarget != null, "Need a target with which to construct the debug view.");
+                Debug.Assert(joinBlockTarget != null, "Need a target with which to construct the debug view.");
                 _joinBlockTarget = joinBlockTarget;
             }
 
@@ -1062,11 +1062,11 @@ namespace System.Threading.Tasks.Dataflow.Internal
             Action joinFilledAction, Action<Exception> exceptionAction,
             GroupingDataflowBlockOptions dataflowBlockOptions)
         {
-            Contract.Requires(ownerJoin != null, "Resources must be associated with a join.");
-            Contract.Requires(targets != null, "Resources must be shared between multiple targets.");
-            Contract.Requires(joinFilledAction != null, "An action to invoke when a join is created must be provided.");
-            Contract.Requires(exceptionAction != null, "An action to invoke for faults must be provided.");
-            Contract.Requires(dataflowBlockOptions != null, "Options must be provided to configure the resources.");
+            Debug.Assert(ownerJoin != null, "Resources must be associated with a join.");
+            Debug.Assert(targets != null, "Resources must be shared between multiple targets.");
+            Debug.Assert(joinFilledAction != null, "An action to invoke when a join is created must be provided.");
+            Debug.Assert(exceptionAction != null, "An action to invoke for faults must be provided.");
+            Debug.Assert(dataflowBlockOptions != null, "Options must be provided to configure the resources.");
 
             // Store arguments
             _ownerJoin = ownerJoin;
@@ -1296,7 +1296,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
         /// </summary>
         private void ProcessAsyncIfNecessary_Slow(bool isReplacementReplica)
         {
-            Contract.Requires(JoinNeedsProcessing, "There must be a join that needs processing.");
+            Debug.Assert(JoinNeedsProcessing, "There must be a join that needs processing.");
             Common.ContractAssertMonitorStatus(IncomingLock, held: true);
 
             // Create task and store into _taskForInputProcessing prior to scheduling the task
@@ -1380,7 +1380,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
         [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
         private void ProcessMessagesLoopCore()
         {
-            Contract.Requires(!_dataflowBlockOptions.Greedy || _boundingState != null, "This only makes sense in non-greedy or bounding mode");
+            Debug.Assert(!_dataflowBlockOptions.Greedy || _boundingState != null, "This only makes sense in non-greedy or bounding mode");
             Common.ContractAssertMonitorStatus(IncomingLock, held: false);
             try
             {
@@ -1446,7 +1446,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
         /// <param name="numItemsRemoved">The number of items removed.</param>
         internal void OnItemsRemoved(int numItemsRemoved)
         {
-            Contract.Requires(numItemsRemoved > 0, "Number of items removed needs to be positive.");
+            Debug.Assert(numItemsRemoved > 0, "Number of items removed needs to be positive.");
             Common.ContractAssertMonitorStatus(IncomingLock, held: false);
 
             // If we're bounding, we need to know when an item is removed so that we
