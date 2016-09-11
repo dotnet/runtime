@@ -4,68 +4,62 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using Xunit;
 
 namespace System.Linq.Tests
 {
     public class ConcatTests : EnumerableTests
     {
-        [Fact]
-        public void SameResultsRepeatCallsIntQuery()
+        private static List<Func<IEnumerable<T>, IEnumerable<T>>> IdentityTransforms<T>()
         {
-            var q1 = from x1 in new int?[] { 2, 3, null, 2, null, 4, 5 }
-                     select x1;
-            var q2 = from x2 in new int?[] { 1, 9, null, 4 }
-                     select x2;
-
-            Assert.Equal(q1.Concat(q2), q1.Concat(q2));
+            // All of these transforms should take an enumerable and produce
+            // another enumerable with the same contents.
+            return new List<Func<IEnumerable<T>, IEnumerable<T>>>
+            {
+                e => e,
+                e => e.ToArray(),
+                e => e.ToList(),
+                e => e.Select(i => i),
+                e => e.Concat(Array.Empty<T>()),
+                e => ForceNotCollection(e),
+                e => e.Concat(ForceNotCollection(Array.Empty<T>()))
+            };
         }
 
-        [Fact]
-        public void SameResultsRepeatCallsStringQuery()
+        [Theory]
+        [InlineData(new int[] { 2, 3, 2, 4, 5 }, new int[] { 1, 9, 4 })]
+        public void SameResultsWithQueryAndRepeatCalls(IEnumerable<int> first, IEnumerable<int> second)
         {
-            var q1 = from x1 in new[] { "AAA", String.Empty, "q", "C", "#", "!@#$%^", "0987654321", "Calling Twice" }
-                     select x1;
-            var q2 = from x2 in new[] { "!@#$%^", "C", "AAA", "", "Calling Twice", "SoS" }
-                     select x2;
-
-            Assert.Equal(q1.Concat(q2), q1.Concat(q2));
+            // workaround: xUnit type inference doesn't work if the input type is not T (like IEnumerable<T>)
+            SameResultsWithQueryAndRepeatCallsWorker(first, second);
         }
 
-        [Fact]
-        public void BothEmpty()
+        [Theory]
+        [InlineData(new[] { "AAA", "", "q", "C", "#", "!@#$%^", "0987654321", "Calling Twice" }, new[] { "!@#$%^", "C", "AAA", "", "Calling Twice", "SoS" })]
+        public void SameResultsWithQueryAndRepeatCalls(IEnumerable<string> first, IEnumerable<string> second)
         {
-            int[] first = { };
-            int[] second = { };
-            Assert.Empty(first.Concat(second));
+            // workaround: xUnit type inference doesn't work if the input type is not T (like IEnumerable<T>)
+            SameResultsWithQueryAndRepeatCallsWorker(first, second);
         }
 
-        [Fact]
-        public void EmptyAndNonEmpty()
+        private static void SameResultsWithQueryAndRepeatCallsWorker<T>(IEnumerable<T> first, IEnumerable<T> second)
         {
-            int[] first = { };
-            int[] second = { 2, 6, 4, 6, 2 };
+            first = from item in first select item;
+            second = from item in second select item;
 
-            Assert.Equal(second, first.Concat(second));
+            VerifyEqualsWorker(first.Concat(second), first.Concat(second));
+            VerifyEqualsWorker(second.Concat(first), second.Concat(first));
         }
 
-        [Fact]
-        public void NonEmptyAndEmpty()
+        [Theory]
+        [InlineData(new int[] { }, new int[] { }, new int[] { })] // Both inputs are empty
+        [InlineData(new int[] { }, new int[] { 2, 6, 4, 6, 2 }, new int[] { 2, 6, 4, 6, 2 })] // One is empty
+        [InlineData(new int[] { 2, 3, 5, 9 }, new int[] { 8, 10 }, new int[] { 2, 3, 5, 9, 8, 10 })] // Neither side is empty
+        public void PossiblyEmptyInputs(IEnumerable<int> first, IEnumerable<int> second, IEnumerable<int> expected)
         {
-            int[] first = { 2, 6, 4, 6, 2 };
-            int[] second = { };
-
-            Assert.Equal(first, first.Concat(second));
-        }
-
-        [Fact]
-        public void NonEmptyAndNonEmpty()
-        {
-            int?[] first = { 2, null, 3, 5, 9 };
-            int?[] second = { null, 8, 10 };
-            int?[] expected = { 2, null, 3, 5, 9, null, 8, 10 };
-
-            Assert.Equal(expected, first.Concat(second));
+            VerifyEqualsWorker(expected, first.Concat(second));
+            VerifyEqualsWorker(expected.Skip(first.Count()).Concat(expected.Take(first.Count())), second.Concat(first)); // Swap the inputs around
         }
 
         [Fact]
@@ -81,6 +75,7 @@ namespace System.Linq.Tests
         public void FirstNull()
         {
             Assert.Throws<ArgumentNullException>("first", () => ((IEnumerable<int>)null).Concat(Enumerable.Range(0, 0)));
+            Assert.Throws<ArgumentNullException>("first", () => ((IEnumerable<int>)null).Concat(null)); // If both inputs are null, throw for "first" first
         }
 
         [Fact]
@@ -89,90 +84,52 @@ namespace System.Linq.Tests
             Assert.Throws<ArgumentNullException>("second", () => Enumerable.Range(0, 0).Concat(null));
         }
 
-        [Fact]
-        public void TwoEnumerableSources()
+        [Theory]
+        [MemberData(nameof(ArraySourcesData))]
+        [MemberData(nameof(SelectArraySourcesData))]
+        [MemberData(nameof(EnumerableSourcesData))]
+        [MemberData(nameof(NonCollectionSourcesData))]
+        [MemberData(nameof(ListSourcesData))]
+        [MemberData(nameof(ConcatOfConcatsData))]
+        [MemberData(nameof(ConcatWithSelfData))]
+        [MemberData(nameof(ChainedCollectionConcatData))]
+        public void VerifyEquals(IEnumerable<int> expected, IEnumerable<int> actual)
         {
-            VerifyEquals(
-                Enumerable.Range(0, 7),
-                Enumerable.Range(0, 3).Concat(Enumerable.Range(3, 4)));
+            // workaround: xUnit type inference doesn't work if the input type is not T (like IEnumerable<T>)
+            VerifyEqualsWorker(expected, actual);
         }
 
-        [Fact]
-        public void TwoArraySources()
+        private static void VerifyEqualsWorker<T>(IEnumerable<T> expected, IEnumerable<T> actual)
         {
-            VerifyEquals(
-                Enumerable.Range(0, 7),
-                Enumerable.Range(0, 3).ToArray().Concat(Enumerable.Range(3, 4).ToArray()));
+            // Returns a list of functions that, when applied to enumerable, should return
+            // another one that has equivalent contents.
+            var identityTransforms = IdentityTransforms<T>();
+            
+            // We run the transforms N^2 times, by testing all transforms
+            // of expected against all transforms of actual.
+            foreach (var outTransform in identityTransforms)
+            {
+                foreach (var inTransform in identityTransforms)
+                {
+                    Assert.Equal(outTransform(expected), inTransform(actual));
+                }
+            }
         }
 
-        [Fact]
-        public void TwoArraySelectSources()
-        {
-            VerifyEquals(
-                Enumerable.Range(0, 7),
-                Enumerable.Range(0, 3).ToArray().Select(i => i).Concat(Enumerable.Range(3, 4).ToArray().Select(i => i)));
-        }
+        public static IEnumerable<object[]> ArraySourcesData() => GenerateSourcesData(outerTransform: e => e.ToArray());
 
-        [Fact]
-        public void TwoNonCollectionSources()
-        {
-            VerifyEquals(
-                Enumerable.Range(0, 7),
-                NumberRangeGuaranteedNotCollectionType(0, 3).Concat(NumberRangeGuaranteedNotCollectionType(3, 4).ToArray().Select(i => i)));
-        }
+        public static IEnumerable<object[]> SelectArraySourcesData() => GenerateSourcesData(outerTransform: e => e.Select(i => i).ToArray());
 
-        [Fact]
-        public void ThreeEnumerableSources()
-        {
-            VerifyEquals(
-                Enumerable.Range(0, 12),
-                Enumerable.Range(0, 3).Concat(Enumerable.Range(3, 4)).Concat(Enumerable.Range(7, 5)));
-        }
+        public static IEnumerable<object[]> EnumerableSourcesData() => GenerateSourcesData();
 
-        [Fact]
-        public void FourEnumerableSources()
-        {
-            VerifyEquals(
-                Enumerable.Range(0, 18),
-                Enumerable.Range(0, 3).Concat(Enumerable.Range(3, 4)).Concat(Enumerable.Range(7, 5)).Concat(Enumerable.Range(12, 6)));
-        }
+        public static IEnumerable<object[]> NonCollectionSourcesData() => GenerateSourcesData(outerTransform: e => ForceNotCollection(e));
 
-        [Fact]
-        public void FiveEnumerableSources()
-        {
-            VerifyEquals(
-                Enumerable.Range(0, 25),
-                Enumerable.Range(0, 3).Concat(Enumerable.Range(3, 4)).Concat(Enumerable.Range(7, 5)).Concat(Enumerable.Range(12, 6)).Concat(Enumerable.Range(18, 7)));
-        }
+        public static IEnumerable<object[]> ListSourcesData() => GenerateSourcesData(outerTransform: e => e.ToList());
 
-        [Fact]
-        public void FiveNonCollectionSources()
+        public static IEnumerable<object[]> ConcatOfConcatsData()
         {
-            VerifyEquals(
-                Enumerable.Range(0, 25),
-                NumberRangeGuaranteedNotCollectionType(0, 3)
-                .Concat(NumberRangeGuaranteedNotCollectionType(3, 4))
-                .Concat(NumberRangeGuaranteedNotCollectionType(7, 5))
-                .Concat(NumberRangeGuaranteedNotCollectionType(12, 6))
-                .Concat(NumberRangeGuaranteedNotCollectionType(18, 7)));
-        }
-
-        [Fact]
-        public void FiveListSources()
-        {
-            VerifyEquals(
-                Enumerable.Range(0, 25),
-                Enumerable.Range(0, 3).ToList()
-                          .Concat(Enumerable.Range(3, 4).ToList())
-                          .Concat(Enumerable.Range(7, 5).ToList())
-                          .Concat(Enumerable.Range(12, 6).ToList())
-                          .Concat(Enumerable.Range(18, 7).ToList()));
-        }
-
-        [Fact]
-        public void ConcatOfConcats()
-        {
-            VerifyEquals(
+            yield return new object[]
+            {
                 Enumerable.Range(0, 20),
                 Enumerable.Concat(
                     Enumerable.Concat(
@@ -180,51 +137,75 @@ namespace System.Linq.Tests
                         Enumerable.Range(4, 6)),
                     Enumerable.Concat(
                         Enumerable.Range(10, 3),
-                        Enumerable.Range(13, 7))));
+                        Enumerable.Range(13, 7)))
+            };
         }
 
-        [Fact]
-        public void ConcatWithSelf()
+        public static IEnumerable<object[]> ConcatWithSelfData()
         {
             IEnumerable<int> source = Enumerable.Repeat(1, 4).Concat(Enumerable.Repeat(1, 5));
             source = source.Concat(source);
-            VerifyEquals(Enumerable.Repeat(1, 18), source);
+
+            yield return new object[] { Enumerable.Repeat(1, 18), source };
         }
 
-        private void VerifyEquals(IEnumerable<int> expected, IEnumerable<int> actual)
+        public static IEnumerable<object[]> ChainedCollectionConcatData() => GenerateSourcesData(innerTransform: e => e.ToList());
+
+        private static IEnumerable<object[]> GenerateSourcesData(
+            Func<IEnumerable<int>, IEnumerable<int>> outerTransform = null,
+            Func<IEnumerable<int>, IEnumerable<int>> innerTransform = null)
         {
-            Assert.Equal(expected, actual);
-            Assert.Equal(expected, actual.ToArray());
-            Assert.Equal(expected, actual.ToList());
-            Assert.Equal(expected, actual.Select(i => i).ToArray());
-            Assert.Equal(expected, actual.Where(i => true).ToArray());
-            Assert.Equal(expected, actual.OrderBy(i => i));
-            Assert.Equal(expected, Enumerable.Empty<int>().Concat(actual));
-            Assert.Equal(expected.Count(), actual.Count());
+            outerTransform = outerTransform ?? (e => e);
+            innerTransform = innerTransform ?? (e => e);
+
+            for (int i = 0; i <= 6; i++)
+            {
+                var expected = Enumerable.Range(0, i * 3);
+                var actual = Enumerable.Empty<int>();
+                for (int j = 0; j < i; j++)
+                {
+                    actual = outerTransform(actual.Concat(innerTransform(Enumerable.Range(j * 3, 3))));
+                }
+
+                yield return new object[] { expected, actual };
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(ManyConcatsData))]
+        public void ManyConcats(IEnumerable<IEnumerable<int>> sources, IEnumerable<int> expected)
+        {
+            foreach (var transform in IdentityTransforms<int>())
+            {
+                IEnumerable<int> concatee = Enumerable.Empty<int>();
+                foreach (var source in sources)
+                {
+                    concatee = concatee.Concat(transform(source));
+                }
+
+                Assert.Equal(sources.Sum(s => s.Count()), concatee.Count());
+                VerifyEqualsWorker(sources.SelectMany(s => s), concatee);
+            }
+        }
+
+        public static IEnumerable<object[]> ManyConcatsData()
+        {
+            yield return new object[] { Enumerable.Repeat(Enumerable.Empty<int>(), 256), Enumerable.Empty<int>() };
+            yield return new object[] { Enumerable.Repeat(Enumerable.Repeat(6, 1), 256), Enumerable.Repeat(6, 256) };
+            // Make sure Concat doesn't accidentally swap around the sources, e.g. [3, 4], [1, 2] should not become [1..4]
+            yield return new object[] { Enumerable.Range(0, 500).Select(i => Enumerable.Repeat(i, 1)).Reverse(), Enumerable.Range(0, 500).Reverse() };
         }
 
         [Fact]
-        public void ManyEmptyConcats()
+        public void CountOfConcatIteratorShouldThrowExceptionOnIntegerOverflow()
         {
-            IEnumerable<int> source = Enumerable.Empty<int>();
-            for (int i = 0; i < 256; i++)
-            {
-                source = source.Concat(Enumerable.Empty<int>());
-            }
-            Assert.Equal(0, source.Count());
-            Assert.Equal(Enumerable.Empty<int>(), source);
-        }
+            var supposedlyLargeCollection = new DelegateBasedCollection<int> { CountWorker = () => int.MaxValue };
+            var tinyCollection = new DelegateBasedCollection<int> { CountWorker = () => 1 };
 
-        [Fact]
-        public void ManyNonEmptyConcats()
-        {
-            IEnumerable<int> source = Enumerable.Empty<int>();
-            for (int i = 0; i < 256; i++)
-            {
-                source = source.Concat(Enumerable.Repeat(i, 1));
-            }
-            Assert.Equal(256, source.Count());
-            Assert.Equal(Enumerable.Range(0, 256), source);
+            // We need to use checked arithmetic summing up the collections' counts.
+            Assert.Throws<OverflowException>(() => supposedlyLargeCollection.Concat(tinyCollection).Count());
+            Assert.Throws<OverflowException>(() => tinyCollection.Concat(tinyCollection).Concat(supposedlyLargeCollection).Count());
+            Assert.Throws<OverflowException>(() => tinyCollection.Concat(tinyCollection).Concat(tinyCollection).Concat(supposedlyLargeCollection).Count());
         }
     }
 }
