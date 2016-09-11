@@ -1328,14 +1328,9 @@ mono_thread_info_sleep (guint32 ms, gboolean *alerted)
 
 		mono_thread_info_yield ();
 
-		if (!alerted)
-			return 0;
-
 		info = mono_thread_info_current ();
-		if (mono_thread_info_is_interrupt_state (info)) {
-			*alerted = TRUE;
+		if (info && mono_thread_info_is_interrupt_state (info))
 			return WAIT_IO_COMPLETION;
-		}
 
 		return 0;
 	}
