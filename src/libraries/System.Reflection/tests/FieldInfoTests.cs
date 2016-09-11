@@ -275,13 +275,13 @@ namespace System.Reflection.Tests
         [Fact]
         public void SetValue_MixedArrayTypes_CommonBaseClass()
         {
-            A[] ATypeWithMixedAB = new A[] { new A(), new B() };
-            A[] ATypeWithAllA = new A[] { new A(), new A() };
-            A[] ATypeWithAllB = new A[] { new B(), new B() };
-            B[] BTypeWithAllB = new B[] { new B(), new B() };
-            A[] BTypeWithAllB_Contra = new B[] { new B(), new B() };
+            FI_BaseClass[] ATypeWithMixedAB = new FI_BaseClass[] { new FI_BaseClass(), new FI_SubClass() };
+            FI_BaseClass[] ATypeWithAllA = new FI_BaseClass[] { new FI_BaseClass(), new FI_BaseClass() };
+            FI_BaseClass[] ATypeWithAllB = new FI_BaseClass[] { new FI_SubClass(), new FI_SubClass() };
+            FI_SubClass[] BTypeWithAllB = new FI_SubClass[] { new FI_SubClass(), new FI_SubClass() };
+            FI_BaseClass[] BTypeWithAllB_Contra = new FI_SubClass[] { new FI_SubClass(), new FI_SubClass() };
 
-            Type type = typeof(ArrayAsField);
+            Type type = typeof(FI_FieldArray);
             object obj = Activator.CreateInstance(type);
             FieldInfo fieldInfo = GetField(type, "aArray");
 
@@ -304,13 +304,13 @@ namespace System.Reflection.Tests
         [Fact]
         public void SetValue_MixedArrayTypes_SubClass()
         {
-            A[] ATypeWithMixedAB = new A[] { new A(), new B() };
-            A[] ATypeWithAllA = new A[] { new A(), new A() };
-            A[] ATypeWithAllB = new A[] { new B(), new B() };
-            B[] BTypeWithAllB = new B[] { new B(), new B() };
-            A[] BTypeWithAllB_Contra = new B[] { new B(), new B() };
+            FI_BaseClass[] ATypeWithMixedAB = new FI_BaseClass[] { new FI_BaseClass(), new FI_SubClass() };
+            FI_BaseClass[] ATypeWithAllA = new FI_BaseClass[] { new FI_BaseClass(), new FI_BaseClass() };
+            FI_BaseClass[] ATypeWithAllB = new FI_BaseClass[] { new FI_SubClass(), new FI_SubClass() };
+            FI_SubClass[] BTypeWithAllB = new FI_SubClass[] { new FI_SubClass(), new FI_SubClass() };
+            FI_BaseClass[] BTypeWithAllB_Contra = new FI_SubClass[] { new FI_SubClass(), new FI_SubClass() };
 
-            Type type = typeof(ArrayAsField);
+            Type type = typeof(FI_FieldArray);
             object obj = Activator.CreateInstance(type);
             FieldInfo fieldInfo = GetField(type, "bArray");
 
@@ -328,11 +328,11 @@ namespace System.Reflection.Tests
         [Fact]
         public void SetValue_MixedArrayTypes_Interface()
         {
-            Type type = typeof(ArrayAsField);
+            Type type = typeof(FI_FieldArray);
             object obj = Activator.CreateInstance(type);
             FieldInfo fieldInfo = GetField(type, "iArray");
 
-            I[] mixedMN = new I[] { new M(), new N() };
+            FI_Interface[] mixedMN = new FI_Interface[] { new FI_ClassWithInterface1(), new FI_ClassWithInterface2() };
             fieldInfo.SetValue(obj, mixedMN);
             Assert.Equal(mixedMN, fieldInfo.GetValue(obj));
         }
@@ -340,7 +340,7 @@ namespace System.Reflection.Tests
         [Fact]
         public void SetValue_MixedArrayTypes_IntByte()
         {
-            Type type = typeof(ArrayAsField);
+            Type type = typeof(FI_FieldArray);
             object obj = Activator.CreateInstance(type);
             FieldInfo fieldInfo = GetField(type, "intArray");
 
@@ -354,15 +354,15 @@ namespace System.Reflection.Tests
         [Fact]
         public void SetValue_MixedArrayTypes_ObjectArray()
         {
-            Type type = typeof(ArrayAsField);
+            Type type = typeof(FI_FieldArray);
             object obj = Activator.CreateInstance(type);
             FieldInfo fieldInfo = GetField(type, "objectArray");
 
-            I[] mixedMN = new I[] { new M(), new N() };
+            FI_Interface[] mixedMN = new FI_Interface[] { new FI_ClassWithInterface1(), new FI_ClassWithInterface2() };
             fieldInfo.SetValue(obj, mixedMN);
             Assert.Equal(mixedMN, fieldInfo.GetValue(obj));
 
-            A[] BTypeWithAllB_Contra = new B[] { new B(), new B() };
+            FI_BaseClass[] BTypeWithAllB_Contra = new FI_SubClass[] { new FI_SubClass(), new FI_SubClass() };
             fieldInfo.SetValue(obj, BTypeWithAllB_Contra);
             Assert.Equal(BTypeWithAllB_Contra, fieldInfo.GetValue(obj));
 
@@ -372,7 +372,7 @@ namespace System.Reflection.Tests
 
         public static IEnumerable<object[]> FieldInfoRTGenericTests_TestData()
         {
-            foreach (Type genericType in new Type[] { typeof(PublicFieldGeneric<>), typeof(StaticFieldGeneric<>) })
+            foreach (Type genericType in new Type[] { typeof(FI_GenericClassField<>), typeof(FI_StaticGenericField<>) })
             {
                 yield return new object[] { genericType, typeof(int), "genparamField", 0, -300 };
                 yield return new object[] { genericType, typeof(int), "dependField", null, g_int };
@@ -389,21 +389,21 @@ namespace System.Reflection.Tests
                 yield return new object[] { genericType, typeof(object), "gparrayField", null, gpa_object };
                 yield return new object[] { genericType, typeof(object), "arrayField", null, ga_object };
 
-                yield return new object[] { genericType, typeof(FieldInfoGeneric<object>), "genparamField", null, g_object };
-                yield return new object[] { genericType, typeof(FieldInfoGeneric<object>), "dependField", null, g_g_object };
-                yield return new object[] { genericType, typeof(FieldInfoGeneric<object>), "gparrayField", null, gpa_g_object };
-                yield return new object[] { genericType, typeof(FieldInfoGeneric<object>), "arrayField", null, ga_g_object };
+                yield return new object[] { genericType, typeof(FI_GenericClass<object>), "genparamField", null, g_object };
+                yield return new object[] { genericType, typeof(FI_GenericClass<object>), "dependField", null, g_g_object };
+                yield return new object[] { genericType, typeof(FI_GenericClass<object>), "gparrayField", null, gpa_g_object };
+                yield return new object[] { genericType, typeof(FI_GenericClass<object>), "arrayField", null, ga_g_object };
             }
 
-            yield return new object[] { typeof(PublicFieldGeneric<>), typeof(int), nameof(PublicFieldGeneric<int>.selfField), null, pfg_int };
-            yield return new object[] { typeof(PublicFieldGeneric<>), typeof(string), nameof(PublicFieldGeneric<int>.selfField), null, pfg_string };
-            yield return new object[] { typeof(PublicFieldGeneric<>), typeof(object), nameof(PublicFieldGeneric<int>.selfField), null, pfg_object };
-            yield return new object[] { typeof(PublicFieldGeneric<>), typeof(FieldInfoGeneric<object>), nameof(PublicFieldGeneric<int>.selfField), null, pfg_g_object };
+            yield return new object[] { typeof(FI_GenericClassField<>), typeof(int), nameof(FI_GenericClassField<int>.selfField), null, pfg_int };
+            yield return new object[] { typeof(FI_GenericClassField<>), typeof(string), nameof(FI_GenericClassField<int>.selfField), null, pfg_string };
+            yield return new object[] { typeof(FI_GenericClassField<>), typeof(object), nameof(FI_GenericClassField<int>.selfField), null, pfg_object };
+            yield return new object[] { typeof(FI_GenericClassField<>), typeof(FI_GenericClass<object>), nameof(FI_GenericClassField<int>.selfField), null, pfg_g_object };
 
-            yield return new object[] { typeof(StaticFieldGeneric<>), typeof(int), nameof(PublicFieldGeneric<int>.selfField), null, sfg_int };
-            yield return new object[] { typeof(StaticFieldGeneric<>), typeof(string), nameof(PublicFieldGeneric<int>.selfField), null, sfg_string };
-            yield return new object[] { typeof(StaticFieldGeneric<>), typeof(object), nameof(PublicFieldGeneric<int>.selfField), null, sfg_object };
-            yield return new object[] { typeof(StaticFieldGeneric<>), typeof(FieldInfoGeneric<object>), nameof(PublicFieldGeneric<int>.selfField), null, sfg_g_object };
+            yield return new object[] { typeof(FI_StaticGenericField<>), typeof(int), nameof(FI_GenericClassField<int>.selfField), null, sfg_int };
+            yield return new object[] { typeof(FI_StaticGenericField<>), typeof(string), nameof(FI_GenericClassField<int>.selfField), null, sfg_string };
+            yield return new object[] { typeof(FI_StaticGenericField<>), typeof(object), nameof(FI_GenericClassField<int>.selfField), null, sfg_object };
+            yield return new object[] { typeof(FI_StaticGenericField<>), typeof(FI_GenericClass<object>), nameof(FI_GenericClassField<int>.selfField), null, sfg_g_object };
         }
 
         [Theory]
@@ -461,66 +461,66 @@ namespace System.Reflection.Tests
         public static object s_assemblyField4 = null; // With public keyword
         internal static object s_assemblyField5 = null; // With internal keyword
 
-        public static FieldInfoGeneric<int> g_int = new FieldInfoGeneric<int>();
-        public static PublicFieldGeneric<int> pfg_int = new PublicFieldGeneric<int>();
-        public static StaticFieldGeneric<int> sfg_int = new StaticFieldGeneric<int>();
+        public static FI_GenericClass<int> g_int = new FI_GenericClass<int>();
+        public static FI_GenericClassField<int> pfg_int = new FI_GenericClassField<int>();
+        public static FI_StaticGenericField<int> sfg_int = new FI_StaticGenericField<int>();
         public static int[] gpa_int = new int[] { 300, 400 };
-        public static FieldInfoGeneric<int>[] ga_int = new FieldInfoGeneric<int>[] { g_int };
+        public static FI_GenericClass<int>[] ga_int = new FI_GenericClass<int>[] { g_int };
 
-        public static FieldInfoGeneric<string> g_string = new FieldInfoGeneric<string>();
-        public static PublicFieldGeneric<string> pfg_string = new PublicFieldGeneric<string>();
-        public static StaticFieldGeneric<string> sfg_string = new StaticFieldGeneric<string>();
+        public static FI_GenericClass<string> g_string = new FI_GenericClass<string>();
+        public static FI_GenericClassField<string> pfg_string = new FI_GenericClassField<string>();
+        public static FI_StaticGenericField<string> sfg_string = new FI_StaticGenericField<string>();
         public static string[] gpa_string = new string[] { "forget", "about this" };
-        public static FieldInfoGeneric<string>[] ga_string = new FieldInfoGeneric<string>[] { g_string, g_string };
+        public static FI_GenericClass<string>[] ga_string = new FI_GenericClass<string>[] { g_string, g_string };
 
-        public static FieldInfoGeneric<object> g_object = new FieldInfoGeneric<object>();
-        public static PublicFieldGeneric<object> pfg_object = new PublicFieldGeneric<object>();
-        public static StaticFieldGeneric<object> sfg_object = new StaticFieldGeneric<object>();
+        public static FI_GenericClass<object> g_object = new FI_GenericClass<object>();
+        public static FI_GenericClassField<object> pfg_object = new FI_GenericClassField<object>();
+        public static FI_StaticGenericField<object> sfg_object = new FI_StaticGenericField<object>();
         public static object[] gpa_object = new object[] { "world", 300, g_object };
-        public static FieldInfoGeneric<object>[] ga_object = new FieldInfoGeneric<object>[] { g_object, g_object, g_object };
+        public static FI_GenericClass<object>[] ga_object = new FI_GenericClass<object>[] { g_object, g_object, g_object };
 
-        public static FieldInfoGeneric<FieldInfoGeneric<object>> g_g_object = new FieldInfoGeneric<FieldInfoGeneric<object>>();
-        public static PublicFieldGeneric<FieldInfoGeneric<object>> pfg_g_object = new PublicFieldGeneric<FieldInfoGeneric<object>>();
-        public static StaticFieldGeneric<FieldInfoGeneric<object>> sfg_g_object = new StaticFieldGeneric<FieldInfoGeneric<object>>();
-        public static FieldInfoGeneric<object>[] gpa_g_object = new FieldInfoGeneric<object>[] { g_object, g_object };
-        public static FieldInfoGeneric<FieldInfoGeneric<object>>[] ga_g_object = new FieldInfoGeneric<FieldInfoGeneric<object>>[] { g_g_object, g_g_object, g_g_object, g_g_object };
-    }
+        public static FI_GenericClass<FI_GenericClass<object>> g_g_object = new FI_GenericClass<FI_GenericClass<object>>();
+        public static FI_GenericClassField<FI_GenericClass<object>> pfg_g_object = new FI_GenericClassField<FI_GenericClass<object>>();
+        public static FI_StaticGenericField<FI_GenericClass<object>> sfg_g_object = new FI_StaticGenericField<FI_GenericClass<object>>();
+        public static FI_GenericClass<object>[] gpa_g_object = new FI_GenericClass<object>[] { g_object, g_object };
+        public static FI_GenericClass<FI_GenericClass<object>>[] ga_g_object = new FI_GenericClass<FI_GenericClass<object>>[] { g_g_object, g_g_object, g_g_object, g_g_object };
 
-    public class A { }
-    public class B : A { }
+        public class FI_BaseClass { }
+        public class FI_SubClass : FI_BaseClass { }
 
-    public interface I { }
-    public class M : I { }
-    public class N : I { }
+        public interface FI_Interface { }
+        public class FI_ClassWithInterface1 : FI_Interface { }
+        public class FI_ClassWithInterface2 : FI_Interface { }
 
-    public class ArrayAsField
-    {
-        public A[] aArray;
-        public B[] bArray;
+        public class FI_FieldArray
+        {
+            public FI_BaseClass[] aArray;
+            public FI_SubClass[] bArray;
 
-        public I[] iArray;
+            public FI_Interface[] iArray;
 
-        public int[] intArray;
-        public object[] objectArray;
-    }
+            public int[] intArray;
+            public object[] objectArray;
+        }
 
-    public class FieldInfoGeneric<T> { public FieldInfoGeneric() { } }
+        public class FI_GenericClass<T> { public FI_GenericClass() { } }
 
-    public class PublicFieldGeneric<T>
-    {
-        public T genparamField;
-        public T[] gparrayField;
-        public FieldInfoGeneric<T> dependField;
-        public FieldInfoGeneric<T>[] arrayField;
-        public PublicFieldGeneric<T> selfField;
-    }
+        public class FI_GenericClassField<T>
+        {
+            public T genparamField;
+            public T[] gparrayField;
+            public FI_GenericClass<T> dependField;
+            public FI_GenericClass<T>[] arrayField;
+            public FI_GenericClassField<T> selfField;
+        }
 
-    public class StaticFieldGeneric<T>
-    {
-        public static T genparamField;
-        public static T[] gparrayField;
-        public static FieldInfoGeneric<T> dependField;
-        public static FieldInfoGeneric<T>[] arrayField;
-        public static StaticFieldGeneric<T> selfField;
+        public class FI_StaticGenericField<T>
+        {
+            public static T genparamField;
+            public static T[] gparrayField;
+            public static FI_GenericClass<T> dependField;
+            public static FI_GenericClass<T>[] arrayField;
+            public static FI_StaticGenericField<T> selfField;
+        }
     }
 }
