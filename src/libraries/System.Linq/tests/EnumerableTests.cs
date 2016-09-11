@@ -232,5 +232,41 @@ namespace System.Linq.Tests
             public string name { get; set; }
             public int?[] total { get; set; }
         }
+
+        protected class DelegateBasedCollection<T> : ICollection<T>
+        {
+            public Func<int> CountWorker { get; set; }
+            public Func<bool> IsReadOnlyWorker { get; set; }
+            public Action<T> AddWorker { get; set; }
+            public Action ClearWorker { get; set; }
+            public Func<T, bool> ContainsWorker { get; set; }
+            public Func<T, bool> RemoveWorker { get; set; }
+            public Action<T[], int> CopyToWorker { get; set; }
+            public Func<IEnumerator<T>> GetEnumeratorWorker { get; set; }
+            public Func<IEnumerator> NonGenericGetEnumeratorWorker { get; set; }
+
+            public DelegateBasedCollection()
+            {
+                CountWorker = () => 0;
+                IsReadOnlyWorker = () => false;
+                AddWorker = item => { };
+                ClearWorker = () => { };
+                ContainsWorker = item => false;
+                RemoveWorker = item => false;
+                CopyToWorker = (array, arrayIndex) => { };
+                GetEnumeratorWorker = () => Enumerable.Empty<T>().GetEnumerator();
+                NonGenericGetEnumeratorWorker = () => GetEnumeratorWorker();
+            }
+
+            public int Count => CountWorker();
+            public bool IsReadOnly => IsReadOnlyWorker();
+            public void Add(T item) => AddWorker(item);
+            public void Clear() => ClearWorker();
+            public bool Contains(T item) => ContainsWorker(item);
+            public bool Remove(T item) => RemoveWorker(item);
+            public void CopyTo(T[] array, int arrayIndex) => CopyToWorker(array, arrayIndex);
+            public IEnumerator<T> GetEnumerator() => GetEnumeratorWorker();
+            IEnumerator IEnumerable.GetEnumerator() => NonGenericGetEnumeratorWorker();
+        }
     }
 }
