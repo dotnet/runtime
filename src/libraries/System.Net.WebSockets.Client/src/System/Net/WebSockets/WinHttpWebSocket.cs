@@ -312,7 +312,7 @@ namespace System.Net.WebSockets
                         if (_operation.PendingWriteOperation == false)
                         {
                             _operation.PendingWriteOperation = true;
-                            _operation.TcsSend = new TaskCompletionSource<bool>();
+                            _operation.TcsSend = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
 
                             uint ret = Interop.WinHttp.WinHttpWebSocketSend(
                                 _operation.WebSocketHandle,
@@ -403,7 +403,8 @@ namespace System.Net.WebSockets
                     {
                         _operation.CheckValidState(s_validReceiveStates);
 
-                        _operation.TcsReceive = new TaskCompletionSource<bool>();
+                        // Prevent continuations from running on the same thread as the callback to prevent re-entrance deadlocks
+                        _operation.TcsReceive = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
                         _operation.PendingReadOperation = true;
 
                         uint bytesRead = 0;
