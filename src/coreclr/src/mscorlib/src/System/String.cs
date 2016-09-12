@@ -851,14 +851,12 @@ namespace System {
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal extern bool TryGetTrailByte(out byte data);
 
-#if !FEATURE_CORECLR
         public CharEnumerator GetEnumerator() {
             Contract.Ensures(Contract.Result<CharEnumerator>() != null);
             Contract.EndContractBlock();
             BCLDebug.Perf(false, "Avoid using String's CharEnumerator until C# special cases foreach on String - use the indexed property on String instead.");
             return new CharEnumerator(this);
         }
-#endif // !FEATURE_CORECLR
 
         IEnumerator<char> IEnumerable<char>.GetEnumerator() {
             Contract.Ensures(Contract.Result<IEnumerator<char>>() != null);
