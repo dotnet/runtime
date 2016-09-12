@@ -37,8 +37,7 @@ popd
 rm -rf $__project_dir/bin
 
 # build to produce nupkgs
-__corerun="$__project_dir/Tools/corerun"
-__msbuild="$__project_dir/Tools/MSBuild.exe"
+__msbuild="$__project_dir/Tools/msbuild.sh"
 
 __targets_param=
 if [ "$(uname -s)" == "Darwin" ]; then
@@ -50,6 +49,6 @@ fi
 
 __common_parameters="/p:$__targets_param /p:DistroRid=$__distro_rid /verbosity:minimal"
 
-$__corerun $__msbuild $__project_dir/projects/packages.builds $__common_parameters || exit 1
+$__msbuild $__project_dir/projects/packages.builds $__common_parameters || exit 1
 
 exit 0
