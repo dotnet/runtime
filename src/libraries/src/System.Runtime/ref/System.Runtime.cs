@@ -1734,6 +1734,10 @@ namespace System
         public static int Compare(string strA, int indexA, string strB, int indexB, int length, System.StringComparison comparisonType) { return default(int); }
         public static int Compare(string strA, string strB) { return default(int); }
         public static int Compare(string strA, string strB, bool ignoreCase) { return default(int); }
+        public static int Compare(System.String strA, System.String strB, bool ignoreCase, System.Globalization.CultureInfo culture) { return default(int); }
+        public static int Compare(System.String strA, System.String strB, System.Globalization.CultureInfo culture, System.Globalization.CompareOptions options) { return default(int); }
+        public static int Compare(System.String strA, int indexA, System.String strB, int indexB, int length, bool ignoreCase, System.Globalization.CultureInfo culture) { return default(int); }
+        public static int Compare(System.String strA, int indexA, System.String strB, int indexB, int length, System.Globalization.CultureInfo culture, System.Globalization.CompareOptions options) { return default(int); }
         public static int Compare(string strA, string strB, System.StringComparison comparisonType) { return default(int); }
         public static int CompareOrdinal(string strA, int indexA, string strB, int indexB, int length) { return default(int); }
         public static int CompareOrdinal(string strA, string strB) { return default(int); }
@@ -1751,6 +1755,7 @@ namespace System
         public bool Contains(string value) { return default(bool); }
         public void CopyTo(int sourceIndex, char[] destination, int destinationIndex, int count) { }
         public bool EndsWith(string value) { return default(bool); }
+        public bool EndsWith(System.String value, bool ignoreCase, System.Globalization.CultureInfo culture) { return default(bool); }
         public bool EndsWith(string value, System.StringComparison comparisonType) { return default(bool); }
         public override bool Equals(object obj) { return default(bool); }
         public bool Equals(string value) { return default(bool); }
@@ -1815,6 +1820,7 @@ namespace System
         public string[] Split(string[] separator, int count, System.StringSplitOptions options) { return default(string[]); }
         public string[] Split(string[] separator, System.StringSplitOptions options) { return default(string[]); }
         public bool StartsWith(string value) { return default(bool); }
+        public bool StartsWith(System.String value, bool ignoreCase, System.Globalization.CultureInfo culture) { return default(bool); }
         public bool StartsWith(string value, System.StringComparison comparisonType) { return default(bool); }
         public string Substring(int startIndex) { return default(string); }
         public string Substring(int startIndex, int length) { return default(string); }
@@ -1841,9 +1847,11 @@ namespace System
         public char[] ToCharArray() { return default(char[]); }
         public char[] ToCharArray(int startIndex, int length) { return default(char[]); }
         public string ToLower() { return default(string); }
+        public System.String ToLower(System.Globalization.CultureInfo culture) { return default(string); }
         public string ToLowerInvariant() { return default(string); }
         public override string ToString() { return default(string); }
         public string ToUpper() { return default(string); }
+        public System.String ToUpper(System.Globalization.CultureInfo culture) { return default(string); }
         public string ToUpperInvariant() { return default(string); }
         public string Trim() { return default(string); }
         public string Trim(params char[] trimChars) { return default(string); }
@@ -3167,10 +3175,12 @@ namespace System.Diagnostics
 }
 namespace System.Globalization
 {
-    public abstract partial class Calendar
+    public abstract partial class Calendar : System.ICloneable
     {
         public const int CurrentEra = 0;
         protected Calendar() { }
+        public virtual System.Globalization.CalendarAlgorithmType AlgorithmType { get { return default(System.Globalization.CalendarAlgorithmType); } }
+        protected virtual int DaysInYearBeforeMinSupportedYear { get { return default(int); } }
         public abstract int[] Eras { get; }
         public bool IsReadOnly { get { return default(bool); } }
         public virtual System.DateTime MaxSupportedDateTime { get { return default(System.DateTime); } }
@@ -3230,8 +3240,10 @@ namespace System.Globalization
     }
     public partial class ChineseLunisolarCalendar : System.Globalization.EastAsianLunisolarCalendar
     {
+        public const int ChineseEra = 1;
         public ChineseLunisolarCalendar() { }
         public override int[] Eras { get { return default(int[]); } }
+        protected override int DaysInYearBeforeMinSupportedYear { get { return default(int); } }
         public override System.DateTime MaxSupportedDateTime { get { return default(System.DateTime); } }
         public override System.DateTime MinSupportedDateTime { get { return default(System.DateTime); } }
         public override int GetEra(System.DateTime time) { return default(int); }
@@ -3239,6 +3251,7 @@ namespace System.Globalization
     public abstract partial class EastAsianLunisolarCalendar : System.Globalization.Calendar
     {
         internal EastAsianLunisolarCalendar() { }
+        public override System.Globalization.CalendarAlgorithmType AlgorithmType { get { return default(System.Globalization.CalendarAlgorithmType); } }
         public override int TwoDigitYearMax { get { return default(int); } set { } }
         public override System.DateTime AddMonths(System.DateTime time, int months) { return default(System.DateTime); }
         public override System.DateTime AddYears(System.DateTime time, int years) { return default(System.DateTime); }
@@ -3262,8 +3275,10 @@ namespace System.Globalization
     }
     public partial class GregorianCalendar : System.Globalization.Calendar
     {
+        public const int ADEra = 1;
         public GregorianCalendar() { }
         public GregorianCalendar(System.Globalization.GregorianCalendarTypes type) { }
+        public override System.Globalization.CalendarAlgorithmType AlgorithmType { get { return default(System.Globalization.CalendarAlgorithmType); } }
         public virtual System.Globalization.GregorianCalendarTypes CalendarType { get { return default(System.Globalization.GregorianCalendarTypes); } set { } }
         public override int[] Eras { get { return default(int[]); } }
         public override System.DateTime MaxSupportedDateTime { get { return default(System.DateTime); } }
@@ -3300,6 +3315,7 @@ namespace System.Globalization
     {
         public static readonly int HebrewEra;
         public HebrewCalendar() { }
+        public override System.Globalization.CalendarAlgorithmType AlgorithmType { get { return default(System.Globalization.CalendarAlgorithmType); } }
         public override int[] Eras { get { return default(int[]); } }
         public override System.DateTime MaxSupportedDateTime { get { return default(System.DateTime); } }
         public override System.DateTime MinSupportedDateTime { get { return default(System.DateTime); } }
@@ -3326,6 +3342,8 @@ namespace System.Globalization
     {
         public static readonly int HijriEra;
         public HijriCalendar() { }
+        public override System.Globalization.CalendarAlgorithmType AlgorithmType { get { return default(System.Globalization.CalendarAlgorithmType); } }
+        protected override int DaysInYearBeforeMinSupportedYear { get { return default(int); } }
         public override int[] Eras { get { return default(int[]); } }
         public int HijriAdjustment { get { return default(int); } set { } }
         public override System.DateTime MaxSupportedDateTime { get { return default(System.DateTime); } }
@@ -3352,6 +3370,7 @@ namespace System.Globalization
     public partial class JapaneseCalendar : System.Globalization.Calendar
     {
         public JapaneseCalendar() { }
+        public override System.Globalization.CalendarAlgorithmType AlgorithmType { get { return default(System.Globalization.CalendarAlgorithmType); } }
         public override int[] Eras { get { return default(int[]); } }
         public override System.DateTime MaxSupportedDateTime { get { return default(System.DateTime); } }
         public override System.DateTime MinSupportedDateTime { get { return default(System.DateTime); } }
@@ -3377,7 +3396,9 @@ namespace System.Globalization
     }
     public partial class JapaneseLunisolarCalendar : System.Globalization.EastAsianLunisolarCalendar
     {
+        public const int JapaneseEra = 1;
         public JapaneseLunisolarCalendar() { }
+        protected override int DaysInYearBeforeMinSupportedYear { get { return default(int); } }
         public override int[] Eras { get { return default(int[]); } }
         public override System.DateTime MaxSupportedDateTime { get { return default(System.DateTime); } }
         public override System.DateTime MinSupportedDateTime { get { return default(System.DateTime); } }
@@ -3385,7 +3406,9 @@ namespace System.Globalization
     }
     public partial class JulianCalendar : System.Globalization.Calendar
     {
+        public static readonly int JulianEra;
         public JulianCalendar() { }
+        public override System.Globalization.CalendarAlgorithmType AlgorithmType { get { return default(System.Globalization.CalendarAlgorithmType); } }
         public override int[] Eras { get { return default(int[]); } }
         public override System.DateTime MaxSupportedDateTime { get { return default(System.DateTime); } }
         public override System.DateTime MinSupportedDateTime { get { return default(System.DateTime); } }
@@ -3410,7 +3433,9 @@ namespace System.Globalization
     }
     public partial class KoreanCalendar : System.Globalization.Calendar
     {
+        public const int KoreanEra = 1;
         public KoreanCalendar() { }
+        public override System.Globalization.CalendarAlgorithmType AlgorithmType { get { return default(System.Globalization.CalendarAlgorithmType); } }
         public override int[] Eras { get { return default(int[]); } }
         public override System.DateTime MaxSupportedDateTime { get { return default(System.DateTime); } }
         public override System.DateTime MinSupportedDateTime { get { return default(System.DateTime); } }
@@ -3436,7 +3461,9 @@ namespace System.Globalization
     }
     public partial class KoreanLunisolarCalendar : System.Globalization.EastAsianLunisolarCalendar
     {
+        public const int GregorianEra = 1;
         public KoreanLunisolarCalendar() { }
+        protected override int DaysInYearBeforeMinSupportedYear { get { return default(int); } }
         public override int[] Eras { get { return default(int[]); } }
         public override System.DateTime MaxSupportedDateTime { get { return default(System.DateTime); } }
         public override System.DateTime MinSupportedDateTime { get { return default(System.DateTime); } }
@@ -3444,7 +3471,9 @@ namespace System.Globalization
     }
     public partial class PersianCalendar : System.Globalization.Calendar
     {
+        public static readonly int PersianEra;
         public PersianCalendar() { }
+        public override System.Globalization.CalendarAlgorithmType AlgorithmType { get { return default(System.Globalization.CalendarAlgorithmType); } }
         public override int[] Eras { get { return default(int[]); } }
         public override System.DateTime MaxSupportedDateTime { get { return default(System.DateTime); } }
         public override System.DateTime MinSupportedDateTime { get { return default(System.DateTime); } }
@@ -3470,6 +3499,7 @@ namespace System.Globalization
     public partial class TaiwanCalendar : System.Globalization.Calendar
     {
         public TaiwanCalendar() { }
+        public override System.Globalization.CalendarAlgorithmType AlgorithmType { get { return default(System.Globalization.CalendarAlgorithmType); } }
         public override int[] Eras { get { return default(int[]); } }
         public override System.DateTime MaxSupportedDateTime { get { return default(System.DateTime); } }
         public override System.DateTime MinSupportedDateTime { get { return default(System.DateTime); } }
@@ -3496,6 +3526,7 @@ namespace System.Globalization
     public partial class TaiwanLunisolarCalendar : System.Globalization.EastAsianLunisolarCalendar
     {
         public TaiwanLunisolarCalendar() { }
+        protected override int DaysInYearBeforeMinSupportedYear { get { return default(int); } }
         public override int[] Eras { get { return default(int[]); } }
         public override System.DateTime MaxSupportedDateTime { get { return default(System.DateTime); } }
         public override System.DateTime MinSupportedDateTime { get { return default(System.DateTime); } }
@@ -3503,7 +3534,9 @@ namespace System.Globalization
     }
     public partial class ThaiBuddhistCalendar : System.Globalization.Calendar
     {
+        public const int ThaiBuddhistEra = 1;
         public ThaiBuddhistCalendar() { }
+        public override System.Globalization.CalendarAlgorithmType AlgorithmType { get { return default(System.Globalization.CalendarAlgorithmType); } }
         public override int[] Eras { get { return default(int[]); } }
         public override System.DateTime MaxSupportedDateTime { get { return default(System.DateTime); } }
         public override System.DateTime MinSupportedDateTime { get { return default(System.DateTime); } }
@@ -3531,6 +3564,8 @@ namespace System.Globalization
     {
         public const int UmAlQuraEra = 1;
         public UmAlQuraCalendar() { }
+        public override System.Globalization.CalendarAlgorithmType AlgorithmType { get { return default(System.Globalization.CalendarAlgorithmType); } }
+        protected override int DaysInYearBeforeMinSupportedYear { get { return default(int); } }
         public override int[] Eras { get { return default(int[]); } }
         public override System.DateTime MaxSupportedDateTime { get { return default(System.DateTime); } }
         public override System.DateTime MinSupportedDateTime { get { return default(System.DateTime); } }
@@ -3632,9 +3667,8 @@ namespace System.Globalization
         public override bool Equals(object value) { return default(bool); }
         public static System.Globalization.CompareInfo GetCompareInfo(int culture) { return default(System.Globalization.CompareInfo); }
         public static System.Globalization.CompareInfo GetCompareInfo(string name) { return default(System.Globalization.CompareInfo); }
-        // Temproray disable the API's depends on System.Reflection.Assembly till we get it defined in System.Runtime
-//        public static System.Globalization.CompareInfo GetCompareInfo(int culture, System.Reflection.Assembly assembly) { return default(System.Globalization.CompareInfo); }
-//        public static System.Globalization.CompareInfo GetCompareInfo(string name, System.Reflection.Assembly assembly) { return default(System.Globalization.CompareInfo); }
+        public static System.Globalization.CompareInfo GetCompareInfo(int culture, System.Reflection.Assembly assembly) { return default(System.Globalization.CompareInfo); }
+        public static System.Globalization.CompareInfo GetCompareInfo(string name, System.Reflection.Assembly assembly) { return default(System.Globalization.CompareInfo); }
         public override int GetHashCode() { return default(int); }
         public virtual int GetHashCode(string source, System.Globalization.CompareOptions options) { return default(int); }
         public virtual System.Globalization.SortKey GetSortKey(string source) { return default(System.Globalization.SortKey); }
@@ -3672,7 +3706,7 @@ namespace System.Globalization
         void System.Runtime.Serialization.IDeserializationCallback.OnDeserialization(object sender) { }
         public override string ToString() { return default(string); }
     }
-    public sealed partial class DateTimeFormatInfo : System.IFormatProvider
+    public sealed partial class DateTimeFormatInfo : System.ICloneable, System.IFormatProvider
     {
         public DateTimeFormatInfo() { }
         public string[] AbbreviatedDayNames { get { return default(string[]); } set { } }
@@ -3732,7 +3766,7 @@ namespace System.Globalization
         NativeNational = 2,
         None = 1,
     }
-    public sealed partial class NumberFormatInfo : System.IFormatProvider
+    public sealed partial class NumberFormatInfo : System.ICloneable, System.IFormatProvider
     {
         public NumberFormatInfo() { }
         public int CurrencyDecimalDigits { get { return default(int); } set { } }
@@ -3794,7 +3828,7 @@ namespace System.Globalization
         public virtual char ToUpper(char c) { return default(char); }
         public virtual string ToUpper(string str) { return default(string); }
     }
-    public partial class CultureInfo : System.IFormatProvider
+    public partial class CultureInfo : System.ICloneable, System.IFormatProvider
     {
         public CultureInfo(int culture) { }
         public CultureInfo(int culture, bool useUserOverride) { }
@@ -3824,6 +3858,7 @@ namespace System.Globalization
         public virtual string ThreeLetterWindowsLanguageName { get { return default(string); } }
         public virtual string TwoLetterISOLanguageName { get { return default(string); } }
         public bool UseUserOverride { get { throw null; } }
+        public void ClearCachedData() { }
         public virtual object Clone() { return default(object); }
         public static System.Globalization.CultureInfo CreateSpecificCulture(string name) { return default(System.Globalization.CultureInfo); }
         public override bool Equals(object value) { return default(bool); }
@@ -5721,9 +5756,15 @@ namespace System.Text
         protected Decoder() { }
         public System.Text.DecoderFallback Fallback { get { return default(System.Text.DecoderFallback); } set { } }
         public System.Text.DecoderFallbackBuffer FallbackBuffer { get { return default(System.Text.DecoderFallbackBuffer); } }
+        [System.CLSCompliantAttribute(false)]
+        public unsafe virtual void Convert(byte* bytes, int byteCount, char* chars, int charCount, bool flush, out int bytesUsed, out int charsUsed, out bool completed) { bytesUsed = default(int); charsUsed = default(int); completed = default(bool); }
         public virtual void Convert(byte[] bytes, int byteIndex, int byteCount, char[] chars, int charIndex, int charCount, bool flush, out int bytesUsed, out int charsUsed, out bool completed) { bytesUsed = default(int); charsUsed = default(int); completed = default(bool); }
+        [System.CLSCompliantAttribute(false)]
+        public unsafe virtual int GetCharCount(byte* bytes, int count, bool flush) { return default(int); }
         public abstract int GetCharCount(byte[] bytes, int index, int count);
         public virtual int GetCharCount(byte[] bytes, int index, int count, bool flush) { return default(int); }
+        [System.CLSCompliantAttribute(false)]
+        public unsafe virtual int GetChars(byte* bytes, int byteCount, char* chars, int charCount, bool flush) { return default(int); }
         public abstract int GetChars(byte[] bytes, int byteIndex, int byteCount, char[] chars, int charIndex);
         public virtual int GetChars(byte[] bytes, int byteIndex, int byteCount, char[] chars, int charIndex, bool flush) { return default(int); }
         public virtual void Reset() { }
@@ -5735,6 +5776,14 @@ namespace System.Text
         public override System.Text.DecoderFallbackBuffer CreateFallbackBuffer() { return default(System.Text.DecoderFallbackBuffer); }
         public override bool Equals(object value) { return default(bool); }
         public override int GetHashCode() { return default(int); }
+    }
+    public sealed partial class DecoderExceptionFallbackBuffer : System.Text.DecoderFallbackBuffer
+    {
+        public DecoderExceptionFallbackBuffer() { }
+        public override int Remaining { get { return default(int); } }
+        public override bool Fallback(byte[] bytesUnknown, int index) { return default(bool); }
+        public override char GetNextChar() { return default(char); }
+        public override bool MovePrevious() { return default(bool); }
     }
     public abstract partial class DecoderFallback
     {
@@ -5777,8 +5826,14 @@ namespace System.Text
         protected Encoder() { }
         public System.Text.EncoderFallback Fallback { get { return default(System.Text.EncoderFallback); } set { } }
         public System.Text.EncoderFallbackBuffer FallbackBuffer { get { return default(System.Text.EncoderFallbackBuffer); } }
+        [System.CLSCompliantAttribute(false)]
+        public unsafe virtual void Convert(char* chars, int charCount, byte* bytes, int byteCount, bool flush, out int charsUsed, out int bytesUsed, out bool completed) { charsUsed = default(int); bytesUsed = default(int); completed = default(bool); }
         public virtual void Convert(char[] chars, int charIndex, int charCount, byte[] bytes, int byteIndex, int byteCount, bool flush, out int charsUsed, out int bytesUsed, out bool completed) { charsUsed = default(int); bytesUsed = default(int); completed = default(bool); }
+        [System.CLSCompliantAttribute(false)]
+        public unsafe virtual int GetByteCount(char* chars, int count, bool flush) { return default(int); }
         public abstract int GetByteCount(char[] chars, int index, int count, bool flush);
+        [System.CLSCompliantAttribute(false)]
+        public unsafe virtual int GetBytes(char* chars, int charCount, byte* bytes, int byteCount, bool flush) { return default(int); }
         public abstract int GetBytes(char[] chars, int charIndex, int charCount, byte[] bytes, int byteIndex, bool flush);
         public virtual void Reset() { }
     }
@@ -5789,6 +5844,15 @@ namespace System.Text
         public override System.Text.EncoderFallbackBuffer CreateFallbackBuffer() { return default(System.Text.EncoderFallbackBuffer); }
         public override bool Equals(object value) { return default(bool); }
         public override int GetHashCode() { return default(int); }
+    }
+    public sealed partial class EncoderExceptionFallbackBuffer : System.Text.EncoderFallbackBuffer
+    {
+        public EncoderExceptionFallbackBuffer() { }
+        public override int Remaining { get { return default(int); } }
+        public override bool Fallback(char charUnknownHigh, char charUnknownLow, int index) { return default(bool); }
+        public override bool Fallback(char charUnknown, int index) { return default(bool); }
+        public override char GetNextChar() { return default(char); }
+        public override bool MovePrevious() { return default(bool); }
     }
     public abstract partial class EncoderFallback
     {
@@ -5829,23 +5893,44 @@ namespace System.Text
         public override bool Equals(object value) { return default(bool); }
         public override int GetHashCode() { return default(int); }
     }
-    public abstract partial class Encoding
+    public sealed partial class EncoderReplacementFallbackBuffer : System.Text.EncoderFallbackBuffer
+    {
+        public EncoderReplacementFallbackBuffer(System.Text.EncoderReplacementFallback fallback) { }
+        public override int Remaining { get { return default(int); } }
+        public override bool Fallback(char charUnknownHigh, char charUnknownLow, int index) { return default(bool); }
+        public override bool Fallback(char charUnknown, int index) { return default(bool); }
+        public override char GetNextChar() { return default(char); }
+        public override bool MovePrevious() { return default(bool); }
+        [System.Security.SecuritySafeCriticalAttribute]
+        public override void Reset() { }
+    }
+    public abstract partial class Encoding : System.ICloneable
     {
         protected Encoding() { }
         protected Encoding(int codePage) { }
         protected Encoding(int codePage, System.Text.EncoderFallback encoderFallback, System.Text.DecoderFallback decoderFallback) { }
         public static System.Text.Encoding ASCII { get { return default(System.Text.Encoding); } }
         public static System.Text.Encoding BigEndianUnicode { get { return default(System.Text.Encoding); } }
+        public virtual string BodyName { get { return default(string); } }
         public virtual int CodePage { get { return default(int); } }
-        public System.Text.DecoderFallback DecoderFallback { get { return default(System.Text.DecoderFallback); } }
-        public System.Text.EncoderFallback EncoderFallback { get { return default(System.Text.EncoderFallback); } }
+        public System.Text.DecoderFallback DecoderFallback { get { return default(System.Text.DecoderFallback); } set { } }
+        public static System.Text.Encoding Default { get { return default(System.Text.Encoding); } }
+        public System.Text.EncoderFallback EncoderFallback { get { return default(System.Text.EncoderFallback); } set { } }
         public virtual string EncodingName { get { return default(string); } }
+        public virtual string HeaderName { get { return default(string); } }
+        public virtual bool IsBrowserDisplay { get { return default(bool); } }
+        public virtual bool IsBrowserSave { get { return default(bool); } }
+        public virtual bool IsMailNewsDisplay { get { return default(bool); } }
+        public virtual bool IsMailNewsSave { get { return default(bool); } }
+        [System.Runtime.InteropServices.ComVisibleAttribute(false)]
+        public bool IsReadOnly { get { return default(bool); } }
         public virtual bool IsSingleByte { get { return default(bool); } }
         public static System.Text.Encoding Unicode { get { return default(System.Text.Encoding); } }
         public static System.Text.Encoding UTF32 { get { return default(System.Text.Encoding); } }
         public static System.Text.Encoding UTF7 { get { return default(System.Text.Encoding); } }
         public static System.Text.Encoding UTF8 { get { return default(System.Text.Encoding); } }
         public virtual string WebName { get { return default(string); } }
+        public virtual int WindowsCodePage { get { return default(int); } }
         public virtual object Clone() { return default(object); }
         public static byte[] Convert(System.Text.Encoding srcEncoding, System.Text.Encoding dstEncoding, byte[] bytes) { return default(byte[]); }
         public static byte[] Convert(System.Text.Encoding srcEncoding, System.Text.Encoding dstEncoding, byte[] bytes, int index, int count) { return default(byte[]); }
@@ -5881,6 +5966,7 @@ namespace System.Text
         public static System.Text.Encoding GetEncoding(int codepage, System.Text.EncoderFallback encoderFallback, System.Text.DecoderFallback decoderFallback) { return default(System.Text.Encoding); }
         public static System.Text.Encoding GetEncoding(string name) { return default(System.Text.Encoding); }
         public static System.Text.Encoding GetEncoding(string name, System.Text.EncoderFallback encoderFallback, System.Text.DecoderFallback decoderFallback) { return default(System.Text.Encoding); }
+        public static System.Text.EncodingInfo[] GetEncodings() { return default(System.Text.EncodingInfo[]); }
         public override int GetHashCode() { return default(int); }
         public abstract int GetMaxByteCount(int charCount);
         public abstract int GetMaxCharCount(int byteCount);
@@ -5890,8 +5976,22 @@ namespace System.Text
         public unsafe string GetString(byte* bytes, int byteCount) { return default(string); }
         public virtual string GetString(byte[] bytes) { return default(string); }
         public virtual string GetString(byte[] bytes, int index, int count) { return default(string); }
+        [System.Runtime.InteropServices.ComVisibleAttribute(false)]
+        public bool IsAlwaysNormalized() { return default(bool); }
+        [System.Runtime.InteropServices.ComVisibleAttribute(false)]
+        public virtual bool IsAlwaysNormalized(System.Text.NormalizationForm form) { return default(bool); }
         [System.Security.SecurityCriticalAttribute]
         public static void RegisterProvider(System.Text.EncodingProvider provider) { }
+    }
+    public sealed partial class EncodingInfo
+    {
+        internal EncodingInfo() { }
+        public int CodePage { get { return default(int); } }
+        public string DisplayName { get { return default(string); } }
+        public string Name { get { return default(string); } }
+        public override bool Equals(object value) { return default(bool); }
+        public System.Text.Encoding GetEncoding() { return default(System.Text.Encoding); }
+        public override int GetHashCode() { return default(int); }
     }
     public abstract partial class EncodingProvider
     {
@@ -5900,6 +6000,14 @@ namespace System.Text
         public virtual System.Text.Encoding GetEncoding(int codepage, System.Text.EncoderFallback encoderFallback, System.Text.DecoderFallback decoderFallback) { return default(System.Text.Encoding); }
         public abstract System.Text.Encoding GetEncoding(string name);
         public virtual System.Text.Encoding GetEncoding(string name, System.Text.EncoderFallback encoderFallback, System.Text.DecoderFallback decoderFallback) { return default(System.Text.Encoding); }
+    }
+    [System.Runtime.InteropServices.ComVisibleAttribute(true)]
+    public enum NormalizationForm
+    {
+        FormC = 1,
+        FormD = 2,
+        FormKC = 5,
+        FormKD = 6,
     }
 }
 namespace System.Threading
