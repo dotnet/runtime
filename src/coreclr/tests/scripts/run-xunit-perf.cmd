@@ -28,8 +28,8 @@ pushd sandbox
 @rem stage stuff we need
 
 @rem xunit and perf
-xcopy /sy %CORECLR_REPO%\packages\Microsoft.DotNet.xunit.performance.runner.Windows\1.0.0-alpha-build0035\tools\* . > %RUNLOG%
-xcopy /sy %CORECLR_REPO%\packages\Microsoft.DotNet.xunit.performance.analysis\1.0.0-alpha-build0035\tools\* . > %RUNLOG%
+xcopy /sy %CORECLR_REPO%\packages\Microsoft.DotNet.xunit.performance.runner.Windows\1.0.0-alpha-build0040\tools\* . > %RUNLOG%
+xcopy /sy %CORECLR_REPO%\packages\Microsoft.DotNet.xunit.performance.analysis\1.0.0-alpha-build0040\tools\* . > %RUNLOG%
 xcopy /sy %CORECLR_REPO%\packages\xunit.console.netcore\1.0.2-prerelease-00101\runtimes\any\native\* . > %RUNLOG%
 xcopy /sy %CORECLR_REPO%\bin\tests\Windows_NT.x64.Release\Tests\Core_Root\* . > %RUNLOG%
 
