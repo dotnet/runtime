@@ -4508,7 +4508,7 @@ helper_thread (void* arg)
 	mono_threads_attach_tools_thread ();
 	mono_native_thread_set_name (mono_native_thread_id_get (), "Profiler helper");
 
-	init_thread (FALSE);
+	MonoProfilerThread *thread = init_thread (FALSE);
 
 	//fprintf (stderr, "Server listening\n");
 	command_socket = -1;
@@ -4617,6 +4617,8 @@ helper_thread (void* arg)
 			continue;
 		//fprintf (stderr, "Accepted connection\n");
 	}
+
+	deinit_thread (thread);
 
 	mono_thread_info_detach ();
 
