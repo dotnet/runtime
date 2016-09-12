@@ -1378,52 +1378,48 @@ process_requests (MonoProfiler *profiler)
 		mono_gc_collect (mono_gc_max_generation ());
 }
 
+// Avoid calling this directly. Use the functions below.
 static void
-safe_send (MonoProfiler *profiler)
+safe_send (MonoProfiler *profiler, gboolean if_needed, gboolean threadless)
 {
-	/* We need the runtime initialized so that we have threads and hazard
-	 * pointers available. Otherwise, the lock free queue will not work and
-	 * there won't be a thread to process the data.
-	 *
-	 * While the runtime isn't initialized, we just accumulate data in the
-	 * thread local buffer list.
-	 */
-	if (!InterlockedRead (&runtime_inited))
-		return;
-
 	MonoProfilerThread *thread = PROF_TLS_GET ();
 
 	buffer_lock ();
 
-	send_buffer (profiler, thread);
-	init_buffer_state (thread);
+	if (!if_needed || (if_needed && thread->buffer->next)) {
+		if (threadless)
+			for (LogBuffer *iter = thread->buffer; iter; iter = iter->next)
+				iter->thread_id = 0;
+
+		send_buffer (profiler, thread);
+		init_buffer_state (thread);
+	}
 
 	buffer_unlock ();
 }
 
 static void
-send_if_needed (MonoProfiler *prof)
+send_log (MonoProfiler *prof)
 {
-	if (PROF_TLS_GET ()->buffer->next)
-		safe_send (prof);
+	safe_send (prof, FALSE, FALSE);
 }
 
 static void
-safe_send_threadless (MonoProfiler *prof)
+send_log_if_needed (MonoProfiler *prof)
 {
-	LogBuffer *buf = PROF_TLS_GET ()->buffer;
-
-	for (LogBuffer *iter = buf; iter; iter = iter->next)
-		iter->thread_id = 0;
-
-	safe_send (prof);
+	safe_send (prof, TRUE, FALSE);
 }
 
 static void
-send_if_needed_threadless (MonoProfiler *prof)
+send_log_threadless (MonoProfiler *prof)
 {
-	if (PROF_TLS_GET ()->buffer->next)
-		safe_send_threadless (prof);
+	safe_send (prof, FALSE, TRUE);
+}
+
+static void
+send_log_if_needed_threadless (MonoProfiler *prof)
+{
+	safe_send (prof, TRUE, TRUE);
 }
 
 // Assumes that the exclusive lock is held.
@@ -1456,11 +1452,12 @@ sync_point_mark (MonoProfiler *prof, MonoProfilerSyncPointType type)
 
 	switch (type) {
 	case SYNC_POINT_PERIODIC:
-		safe_send_threadless (prof);
+		// This is done from the helper thread.
+		send_log_threadless (prof);
 		break;
 	case SYNC_POINT_WORLD_STOP:
 	case SYNC_POINT_WORLD_START:
-		safe_send (prof);
+		send_log (prof);
 		break;
 	default:
 		g_assert_not_reached ();
@@ -1752,7 +1749,7 @@ gc_alloc (MonoProfiler *prof, MonoObject *obj, MonoClass *klass)
 
 	EXIT_LOG;
 
-	send_if_needed (prof);
+	send_log_if_needed (prof);
 
 	process_requests (prof);
 }
@@ -1944,7 +1941,7 @@ image_loaded (MonoProfiler *prof, MonoImage *image, int result)
 
 	EXIT_LOG;
 
-	send_if_needed (prof);
+	send_log_if_needed (prof);
 
 	process_requests (prof);
 }
@@ -1970,7 +1967,7 @@ image_unloaded (MonoProfiler *prof, MonoImage *image)
 
 	EXIT_LOG;
 
-	send_if_needed (prof);
+	send_log_if_needed (prof);
 
 	process_requests (prof);
 }
@@ -2001,7 +1998,7 @@ assembly_loaded (MonoProfiler *prof, MonoAssembly *assembly, int result)
 
 	mono_free (name);
 
-	send_if_needed (prof);
+	send_log_if_needed (prof);
 
 	process_requests (prof);
 }
@@ -2029,7 +2026,7 @@ assembly_unloaded (MonoProfiler *prof, MonoAssembly *assembly)
 
 	mono_free (name);
 
-	send_if_needed (prof);
+	send_log_if_needed (prof);
 
 	process_requests (prof);
 }
@@ -2072,7 +2069,7 @@ class_loaded (MonoProfiler *prof, MonoClass *klass, int result)
 	else
 		g_free (name);
 
-	send_if_needed (prof);
+	send_log_if_needed (prof);
 
 	process_requests (prof);
 }
@@ -2112,7 +2109,7 @@ class_unloaded (MonoProfiler *prof, MonoClass *klass)
 	else
 		g_free (name);
 
-	send_if_needed (prof);
+	send_log_if_needed (prof);
 
 	process_requests (prof);
 }
@@ -2140,7 +2137,7 @@ method_enter (MonoProfiler *prof, MonoMethod *method)
 		EXIT_LOG;
 	}
 
-	send_if_needed (prof);
+	send_log_if_needed (prof);
 
 	process_requests (prof);
 }
@@ -2160,7 +2157,7 @@ method_leave (MonoProfiler *prof, MonoMethod *method)
 		EXIT_LOG;
 	}
 
-	send_if_needed (prof);
+	send_log_if_needed (prof);
 
 	process_requests (prof);
 }
@@ -2180,7 +2177,7 @@ method_exc_leave (MonoProfiler *prof, MonoMethod *method)
 		EXIT_LOG;
 	}
 
-	send_if_needed (prof);
+	send_log_if_needed (prof);
 
 	process_requests (prof);
 }
@@ -2351,7 +2348,7 @@ thread_start (MonoProfiler *prof, uintptr_t tid)
 
 	EXIT_LOG;
 
-	send_if_needed (prof);
+	send_log_if_needed (prof);
 
 	process_requests (prof);
 }
@@ -2396,7 +2393,7 @@ thread_name (MonoProfiler *prof, uintptr_t tid, const char *name)
 
 	EXIT_LOG;
 
-	send_if_needed (prof);
+	send_log_if_needed (prof);
 
 	process_requests (prof);
 }
@@ -2419,7 +2416,7 @@ domain_loaded (MonoProfiler *prof, MonoDomain *domain, int result)
 
 	EXIT_LOG;
 
-	send_if_needed (prof);
+	send_log_if_needed (prof);
 
 	process_requests (prof);
 }
@@ -2439,7 +2436,7 @@ domain_unloaded (MonoProfiler *prof, MonoDomain *domain)
 
 	EXIT_LOG;
 
-	send_if_needed (prof);
+	send_log_if_needed (prof);
 
 	process_requests (prof);
 }
@@ -2464,7 +2461,7 @@ domain_name (MonoProfiler *prof, MonoDomain *domain, const char *name)
 
 	EXIT_LOG;
 
-	send_if_needed (prof);
+	send_log_if_needed (prof);
 
 	process_requests (prof);
 }
@@ -2486,7 +2483,7 @@ context_loaded (MonoProfiler *prof, MonoAppContext *context)
 
 	EXIT_LOG;
 
-	send_if_needed (prof);
+	send_log_if_needed (prof);
 
 	process_requests (prof);
 }
@@ -2508,7 +2505,7 @@ context_unloaded (MonoProfiler *prof, MonoAppContext *context)
 
 	EXIT_LOG;
 
-	send_if_needed (prof);
+	send_log_if_needed (prof);
 
 	process_requests (prof);
 }
@@ -3836,7 +3833,7 @@ build_method_buffer (gpointer key, gpointer value, gpointer userdata)
 
 	EXIT_LOG;
 
-	send_if_needed (prof);
+	send_log_if_needed (prof);
 
 	for (i = 0; i < coverage_data->len; i++) {
 		CoverageEntry *entry = (CoverageEntry *)coverage_data->pdata[i];
@@ -3859,7 +3856,7 @@ build_method_buffer (gpointer key, gpointer value, gpointer userdata)
 
 		EXIT_LOG;
 
-		send_if_needed (prof);
+		send_log_if_needed (prof);
 	}
 
 	method_id++;
@@ -3926,7 +3923,7 @@ build_class_buffer (gpointer key, gpointer value, gpointer userdata)
 
 	EXIT_LOG;
 
-	send_if_needed (prof);
+	send_log_if_needed (prof);
 
 	g_free (class_name);
 }
@@ -3986,7 +3983,7 @@ build_assembly_buffer (gpointer key, gpointer value, gpointer userdata)
 
 	EXIT_LOG;
 
-	send_if_needed (prof);
+	send_log_if_needed (prof);
 }
 
 static void
@@ -4579,7 +4576,7 @@ helper_thread (void* arg)
 				}
 			}
 #endif
-			safe_send_threadless (prof);
+			send_log_threadless (prof);
 			return NULL;
 		}
 #if USE_PERF_EVENTS
@@ -4590,7 +4587,7 @@ helper_thread (void* arg)
 					continue;
 				if (FD_ISSET (perf_data [i].perf_fd, &rfds)) {
 					read_perf_mmap (prof, i);
-					send_if_needed_threadless (prof);
+					send_log_if_needed_threadless (prof);
 				}
 			}
 		}
@@ -4869,7 +4866,7 @@ handle_dumper_queue_entry (MonoProfiler *prof)
 
 		dump_unmanaged_coderefs (prof);
 
-		send_if_needed_threadless (prof);
+		send_log_if_needed_threadless (prof);
 	}
 
 	return FALSE;
@@ -4893,7 +4890,7 @@ dumper_thread (void *arg)
 	/* Drain any remaining entries on shutdown. */
 	while (handle_dumper_queue_entry (prof));
 
-	safe_send_threadless (prof);
+	send_log_threadless (prof);
 	deinit_thread (thread);
 
 	mono_thread_info_detach ();
@@ -4987,7 +4984,7 @@ runtime_initialized (MonoProfiler *profiler)
 #endif
 
 	/* ensure the main thread data and startup are available soon */
-	safe_send (profiler);
+	send_log (profiler);
 }
 
 static MonoProfiler*
