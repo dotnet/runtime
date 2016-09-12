@@ -481,11 +481,6 @@ typedef struct {
 	gboolean busy;
 } MonoProfilerThread;
 
-static inline void
-ign_res (int G_GNUC_UNUSED unused, ...)
-{
-}
-
 static uintptr_t
 thread_id (void)
 {
@@ -2379,14 +2374,6 @@ mono_sample_hit (MonoProfiler *profiler, unsigned char *ip, void *context)
 	sample->tid = thread_id ();
 	sample->ip = ip;
 
-	if (do_debug) {
-		int len;
-		char buf [256];
-		snprintf (buf, sizeof (buf), "hit at %p in thread %p after %llu ms\n", ip, (void *) sample->tid, (unsigned long long int) ((sample->time - profiler->startup_time) / 10000 / 100));
-		len = strlen (buf);
-		ign_res (write (2, buf, len));
-	}
-
 	mono_thread_hazardous_try_free (sample, enqueue_sample_hit);
 }
 
@@ -4105,7 +4092,12 @@ log_shutdown (MonoProfiler *prof)
 	dump_coverage (prof);
 
 	char c = 1;
-	ign_res (write (prof->pipes [1], &c, 1));
+
+	if (write (prof->pipes [1], &c, 1) != 1) {
+		fprintf (stderr, "Could not write to pipe: %s\n", strerror (errno));
+		exit (1);
+	}
+
 	pthread_join (prof->helper_thread, &res);
 
 	mono_os_mutex_destroy (&counters_mutex);
