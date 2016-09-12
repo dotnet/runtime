@@ -35,6 +35,7 @@
     },
 
     "debian_ignored_dependencies" : [
+        "liblldb-3.5",
         "liblldb-3.6"
     ]
 }
