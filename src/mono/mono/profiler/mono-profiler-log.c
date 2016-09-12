@@ -942,29 +942,26 @@ emit_byte (LogBuffer *logbuffer, int value)
 {
 	logbuffer->cursor [0] = value;
 	logbuffer->cursor++;
-	g_assert (logbuffer->cursor <= logbuffer->buf_end);
+
+	g_assert (logbuffer->cursor <= logbuffer->buf_end && "Why are we writing past the buffer end?");
 }
 
 static void
 emit_value (LogBuffer *logbuffer, int value)
 {
 	encode_uleb128 (value, logbuffer->cursor, &logbuffer->cursor);
-	g_assert (logbuffer->cursor <= logbuffer->buf_end);
+
+	g_assert (logbuffer->cursor <= logbuffer->buf_end && "Why are we writing past the buffer end?");
 }
 
 static void
 emit_time (LogBuffer *logbuffer, uint64_t value)
 {
 	uint64_t tdiff = value - logbuffer->last_time;
-	//if (value < logbuffer->last_time)
-	//	printf ("time went backwards\n");
-	//if (tdiff > 1000000)
-	//	printf ("large time offset: %llu\n", tdiff);
 	encode_uleb128 (tdiff, logbuffer->cursor, &logbuffer->cursor);
-	/*if (tdiff != decode_uleb128 (p, &p))
-		printf ("incorrect encoding: %llu\n", tdiff);*/
 	logbuffer->last_time = value;
-	g_assert (logbuffer->cursor <= logbuffer->buf_end);
+
+	g_assert (logbuffer->cursor <= logbuffer->buf_end && "Why are we writing past the buffer end?");
 }
 
 static void
@@ -984,35 +981,41 @@ static void
 emit_svalue (LogBuffer *logbuffer, int64_t value)
 {
 	encode_sleb128 (value, logbuffer->cursor, &logbuffer->cursor);
-	g_assert (logbuffer->cursor <= logbuffer->buf_end);
+
+	g_assert (logbuffer->cursor <= logbuffer->buf_end && "Why are we writing past the buffer end?");
 }
 
 static void
 emit_uvalue (LogBuffer *logbuffer, uint64_t value)
 {
 	encode_uleb128 (value, logbuffer->cursor, &logbuffer->cursor);
-	g_assert (logbuffer->cursor <= logbuffer->buf_end);
+
+	g_assert (logbuffer->cursor <= logbuffer->buf_end && "Why are we writing past the buffer end?");
 }
 
 static void
 emit_ptr (LogBuffer *logbuffer, void *ptr)
 {
 	if (!logbuffer->ptr_base)
-		logbuffer->ptr_base = (uintptr_t)ptr;
-	emit_svalue (logbuffer, (intptr_t)ptr - logbuffer->ptr_base);
-	g_assert (logbuffer->cursor <= logbuffer->buf_end);
+		logbuffer->ptr_base = (uintptr_t) ptr;
+
+	emit_svalue (logbuffer, (intptr_t) ptr - logbuffer->ptr_base);
+
+	g_assert (logbuffer->cursor <= logbuffer->buf_end && "Why are we writing past the buffer end?");
 }
 
 static void
 emit_method_inner (LogBuffer *logbuffer, void *method)
 {
 	if (!logbuffer->method_base) {
-		logbuffer->method_base = (intptr_t)method;
-		logbuffer->last_method = (intptr_t)method;
+		logbuffer->method_base = (intptr_t) method;
+		logbuffer->last_method = (intptr_t) method;
 	}
-	encode_sleb128 ((intptr_t)((char*)method - (char*)logbuffer->last_method), logbuffer->cursor, &logbuffer->cursor);
-	logbuffer->last_method = (intptr_t)method;
-	g_assert (logbuffer->cursor <= logbuffer->buf_end);
+
+	encode_sleb128 ((intptr_t) ((char *) method - (char *) logbuffer->last_method), logbuffer->cursor, &logbuffer->cursor);
+	logbuffer->last_method = (intptr_t) method;
+
+	g_assert (logbuffer->cursor <= logbuffer->buf_end && "Why are we writing past the buffer end?");
 }
 
 static void
@@ -1042,9 +1045,11 @@ static void
 emit_obj (LogBuffer *logbuffer, void *ptr)
 {
 	if (!logbuffer->obj_base)
-		logbuffer->obj_base = (uintptr_t)ptr >> 3;
-	emit_svalue (logbuffer, ((uintptr_t)ptr >> 3) - logbuffer->obj_base);
-	g_assert (logbuffer->cursor <= logbuffer->buf_end);
+		logbuffer->obj_base = (uintptr_t) ptr >> 3;
+
+	emit_svalue (logbuffer, ((uintptr_t) ptr >> 3) - logbuffer->obj_base);
+
+	g_assert (logbuffer->cursor <= logbuffer->buf_end && "Why are we writing past the buffer end?");
 }
 
 static void
@@ -4042,7 +4047,7 @@ init_suppressed_assemblies (void)
 static void
 coverage_init (MonoProfiler *prof)
 {
-	g_assert (!coverage_initialized);
+	g_assert (!coverage_initialized && "Why are we initializing coverage twice?");
 
 	COVERAGE_DEBUG(fprintf (stderr, "Coverage initialized\n");)
 
