@@ -1031,6 +1031,246 @@ namespace System.Dynamic.Runtime.Tests
             Assert.True(b);
             Assert.Equal(5, myclass.Field);
         }
+
+
+        // ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmethod.regclass.regclass036.regclass036
+        [Fact]
+        public static void CalledFrom_PlusOperator()
+        {
+            ulong p1 = 0;
+            MyEnum p2 = MyEnum.Second;
+            dynamic mc = new MemberClass();
+            Test t1 = new Test() { _field = (decimal)mc.Method_ReturnDecimal(out p1, ref p2, null, 'a') };
+            Test t2 = new Test() { _field = (decimal)mc.Method_ReturnDecimal(null, null, 0) };
+            Test t3 = t1 + t2;
+            Assert.Equal((ulong)2, p1);
+            Assert.Equal(MyEnum.Third, p2);
+            Assert.Equal(1M, t1._field);
+            Assert.Equal(1M, t2._field);
+            Assert.Equal(2M, t3._field);
+        }
+
+        private decimal _field;
+
+        public static Test operator +(Test t1, Test t2)
+        {
+            return new Test() { _field = t1._field + t2._field };
+        }
+
+        // ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmethod.regclass.regclass037.regclass037
+        [Fact]
+        public static void CalledFrom_StaticMethodBody5()
+        {
+            MyClass myclass0 = new MyClass() { Field = 0 };
+            dynamic myclass1 = new MyClass() { Field = 1 };
+            MyClass myclass2 = new MyClass() { Field = 2 };
+            dynamic mc = new MemberClass();
+            string s = ((object)mc.Method_ReturnCharNullable(new MyClass[] { myclass0, (MyClass)myclass1, myclass2 })).ToString();
+
+            Assert.Equal("z", s);
+        }
+
+        // ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmethod.regclass.regclass038.regclass038
+        [Fact]
+        public static void CalledFrom_ModuloOperator()
+        {
+            dynamic mc = new MemberClass();
+            Test t1 = new Test() { _fieldModulo = (decimal?)mc.Method_ReturnDecimalNullable() };
+            Test t2 = new Test() { _fieldModulo = (decimal?)mc.Method_ReturnDecimal(1, -1, 0) };
+            Test t3 = t1 % t2;
+
+            Assert.Equal(1M, t1._fieldModulo);
+            Assert.Equal(1M, t2._fieldModulo);
+            Assert.Equal(0M, t3._fieldModulo);
+        }
+
+        private decimal? _fieldModulo;
+
+        public static Test operator %(Test t1, Test t2)
+        {
+            return new Test() { _fieldModulo = t1._fieldModulo % t2._fieldModulo };
+        }
+
+        // ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmethod.regclass.regclass039.regclass039
+        [Fact]
+        public static void CalledFrom_StaticMethodBody6()
+        {
+            int? p1 = 10;
+            short? p2 = 20;
+            MyStruct[] p3 = new MyStruct[1];
+            dynamic mc = new MemberClass();
+            decimal s = (decimal)mc.Method_ReturnDecimalNullable(ref p1, ref p2, out p3);
+            Assert.Null(p1);
+            Assert.Null(p2);
+            Assert.Equal(2, p3.Length);
+            Assert.Equal(3M, s);
+        }
+
+        // ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmethod.regclass.regclass040.regclass040
+        [Fact]
+        public static void CalledFrom_ObjectInitializer_InsideCollectionInitializer()
+        {
+            int myInt = 345;
+            dynamic mc = new MemberClass();
+            List<Test> list = new List<Test>() { new Test() { _floatField = (float)mc.Method_ReturnFloat() }, new Test() { _floatField = (float)mc.Method_ReturnFloat(myInt) } };
+
+            Assert.Equal(2, list.Count);
+            Assert.Equal(3.4534f, list[0]._floatField);
+            Assert.Equal(345f, list[1]._floatField);
+        }
+
+        private float _floatField;
+
+        // ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmethod.regclass.regclass041.regclass041
+        [Fact]
+        public static void CalledFrom_StaticPropertySetBody()
+        {
+            MyProp1 = 10f;
+            Assert.Equal(10f, MyProp1);
+        }
+
+        private static float s_field;
+        public static float MyProp1
+        {
+            get { return s_field; }
+            set
+            {
+                float myFloat = 3f;
+                dynamic mc = new MemberClass();
+                s_field = (float)mc.Method_ReturnFloat(value, myFloat, 34.5f);
+            }
+        }
+
+        // ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmethod.regclass.regclass042.regclass042
+        [Fact]
+        public static void CalledFrom_StaticGetPropertyBody()
+        {
+            float result = MyProp2;
+            Assert.Equal(3, result);
+            Assert.Equal(0.000003f, s_p1);
+            Assert.Equal(2342424, s_p2);
+        }
+
+        private static float s_p1;
+        private static float s_p2;
+        public static float MyProp2
+        {
+            get
+            {
+                float myFloat = 3f;
+                dynamic mc = new MemberClass();
+                return (float)mc.Method_ReturnFloat(ref s_p1, out s_p2, s_p1, s_p2, myFloat);
+            }
+            set { }
+        }
+
+        // ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmethod.regclass.regclass043.regclass043
+        [Fact]
+        public static void CalledFrom_LockBlock()
+        {
+            dynamic mc = new MemberClass();
+            int input = int.MinValue;
+            float? result;
+            lock (mc.Method_ReturnFloatNullable())
+            {
+                result = (float?)mc.Method_ReturnFloatNullable(input);
+            }
+            Assert.Equal(int.MinValue, result.Value);
+        }
+
+        // ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmethod.regclass.regclass044.regclass044
+        [Fact]
+        public static void CalledFrom_ForLoopBody()
+        {
+            float[] array1 = new float[] { 1f, 24.333f, 3.44f };
+            float?[] array2 = new float?[3];
+            for (int i = 0; i < array1.Length; i++)
+            {
+                dynamic dy = new MemberClass();
+                array2[i] = dy.Method_ReturnFloatNullable(array1[i], array1[0], array1[1], array1[2]);
+            }
+
+            Assert.Equal(array1[0], array2[0]);
+            Assert.Equal(array1[1], array2[1]);
+            Assert.Equal(array1[2], array2[2]);
+        }
+
+        // ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmethod.regclass.regclass045.regclass045
+        [Fact]
+        public static void CalledFrom_DynamicVariableNamedDynamic()
+        {
+            float? p1 = null;
+            float p2 = 1.234f;
+            float? myFloat = null;
+            dynamic dynamic = new MemberClass();
+            float? result = (float?)dynamic.Method_ReturnFloatNullable(ref p1, out p2, p1, p2, myFloat);
+            Assert.Equal(3f, result);
+            Assert.Equal(0.000003f, p1);
+            Assert.Equal(2342424, p2);
+        }
+
+        // ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmethod.regclass.regclass046.regclass046
+        [Fact]
+        public static void CalledFrom_ForeachExpression()
+        {
+            dynamic mc = new MemberClass();
+            List<float?> list = new List<float?>();
+            foreach (var f in (float?[])mc.Method_ReturnFloatArrNullable())
+            {
+                list.Add(f);
+            }
+            Assert.Equal(new List<float?> { 3.4534f }, list);
+        }
+
+        // ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmethod.regclass.regclass047.regclass047
+        [Fact]
+        public static void CalledFrom_GreaterThanOrEqualToOperator()
+        {
+            dynamic mc = new MemberClass();
+            int intValue = 10;
+            float floatValue = 9.9f;
+            bool result = ((float?[])mc.Method_ReturnFloatArrNullable(intValue))[0] >= ((float?[])mc.Method_ReturnFloatArrNullable(floatValue, intValue))[0];
+            Assert.True(result);
+        }
+
+        // ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmethod.regclass.regclass048.regclass048
+        [Fact]
+        public static void CalledFrom_StaticMethodBody7()
+        {
+            float p1 = 1f;
+            float p2 = 2f;
+            float myFloat = 0.111f;
+            dynamic dynamic = new MemberClass();
+            float?[] result = (float?[])dynamic.Method_ReturnFloatArrNullable(ref p1, out p2, p2, myFloat);
+            Assert.Equal(new float?[] { 2 }, result);
+            Assert.Equal(0.000003f, p1);
+            Assert.Equal(2342424, p2);
+        }
+
+        // ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmethod.regclass.regclass049.regclass049
+        [Fact]
+        public static void CalledFrom_GenericStaticMethodBody()
+        {
+            TestMethod<int, Test>();
+        }
+
+        private static void TestMethod<U, V>()
+        {
+            dynamic dy = new MemberClass();
+            float[] result = (float[])dy.Method_ReturnFloatArr();
+            Assert.Equal(new float[] { 3.4534f }, result);
+        }
+
+        // ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmethod.regclass.regclass05.regclass050
+        [Fact]
+        public static void CalledFrom_DoWhileExpression()
+        {
+            dynamic dy = new MemberClass();
+            int value = 0;
+            do { }
+            while (((float[])dy.Method_ReturnFloatArr(value++))[0] < 10);
+            Assert.Equal(11, value);
+        }
     }
 
     public static class Extension
@@ -1077,674 +1317,6 @@ namespace System.Dynamic.Runtime.Tests
         public static byte[] s_field = (byte[])s_mc.Method_ReturnByteArr(out s_p1, ref s_p2, ref s_p3);
         static ClassWithStaticConstructor() { }
     }
-}
-namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmethod.regclass.regclass036.regclass036
-{
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmethod.regclass.regclassregmeth.regclassregmeth;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmethod.regclass.regclass036.regclass036;
-    // <Title> Tests regular class regular method used in + operator</Title>
-    // <Description>
-    // </Description>
-    // <RelatedBugs></RelatedBugs>
-    //<Expects Status=success></Expects>
-    // <Code>
-    using System;
-
-    public class Test
-    {
-        private decimal _field;
-
-
-        public static void DynamicCSharpRunTest()
-        {
-            Assert.Equal(0, MainMethod());
-        }
-
-        public static int MainMethod()
-        {
-            ulong p1 = 0;
-            MyEnum p2 = MyEnum.Second;
-            dynamic mc = new MemberClass();
-            Test t1 = new Test()
-            {
-                _field = (decimal)mc.Method_ReturnDecimal(out p1, ref p2, null, 'a')
-            }
-
-            ;
-            Test t2 = new Test()
-            {
-                _field = (decimal)mc.Method_ReturnDecimal(null, null, 0)
-            }
-
-            ;
-            Test t3 = t1 + t2;
-            if (p1 != 2 || p2 != MyEnum.Third || t1._field != 1M || t2._field != 1M || t3._field != 2M)
-                return 1;
-            return 0;
-        }
-
-        public static Test operator +(Test t1, Test t2)
-        {
-            return new Test()
-            {
-                _field = t1._field + t2._field
-            }
-
-            ;
-        }
-    }
-    //</Code>
-}
-
-
-
-namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmethod.regclass.regclass037.regclass037
-{
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmethod.regclass.regclassregmeth.regclassregmeth;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmethod.regclass.regclass037.regclass037;
-    // <Title> Tests regular class regular method used in static method body.</Title>
-    // <Description>
-    // </Description>
-    // <RelatedBugs></RelatedBugs>
-    //<Expects Status=success></Expects>
-    // <Code>
-    using System;
-
-    public class Test
-    {
-        [Fact]
-        public static void DynamicCSharpRunTest()
-        {
-            Assert.Equal(0, MainMethod());
-        }
-
-        public static int MainMethod()
-        {
-            MyClass myclass0 = new MyClass()
-            {
-                Field = 0
-            }
-
-            ;
-            dynamic myclass1 = new MyClass()
-            {
-                Field = 1
-            }
-
-            ;
-            MyClass myclass2 = new MyClass()
-            {
-                Field = 2
-            }
-
-            ;
-            dynamic mc = new MemberClass();
-            string s = ((object)mc.Method_ReturnCharNullable(new MyClass[]
-            {
-            myclass0, (MyClass)myclass1, myclass2
-            }
-
-            )).ToString();
-            if (s == "z")
-                return 0;
-            return 1;
-        }
-    }
-    //</Code>
-}
-
-
-
-namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmethod.regclass.regclass038.regclass038
-{
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmethod.regclass.regclassregmeth.regclassregmeth;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmethod.regclass.regclass038.regclass038;
-    // <Title> Tests regular class regular method used in % operator.</Title>
-    // <Description>
-    // </Description>
-    // <RelatedBugs></RelatedBugs>
-    //<Expects Status=success></Expects>
-    // <Code>
-    using System;
-
-    public class Test
-    {
-        private decimal? _field;
-        [Fact]
-        public static void DynamicCSharpRunTest()
-        {
-            Assert.Equal(0, MainMethod());
-        }
-
-        public static int MainMethod()
-        {
-            dynamic mc = new MemberClass();
-            Test t1 = new Test()
-            {
-                _field = (decimal?)mc.Method_ReturnDecimalNullable()
-            }
-
-            ;
-            Test t2 = new Test()
-            {
-                _field = (decimal?)mc.Method_ReturnDecimal(1, -1, 0)
-            }
-
-            ;
-            Test t3 = t1 % t2;
-            if (t1._field != 1M || t2._field != 1M || t3._field != 0M)
-                return 1;
-            return 0;
-        }
-
-        public static Test operator %(Test t1, Test t2)
-        {
-            return new Test()
-            {
-                _field = t1._field % t2._field
-            }
-
-            ;
-        }
-    }
-    //</Code>
-}
-
-
-
-namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmethod.regclass.regclass039.regclass039
-{
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmethod.regclass.regclassregmeth.regclassregmeth;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmethod.regclass.regclass039.regclass039;
-    // <Title> Tests regular class regular method used in static method body.</Title>
-    // <Description>
-    // </Description>
-    // <RelatedBugs></RelatedBugs>
-    //<Expects Status=success></Expects>
-    // <Code>
-    using System;
-
-    public class Test
-    {
-
-        public static void DynamicCSharpRunTest()
-        {
-            Assert.Equal(0, MainMethod());
-        }
-
-        public static int MainMethod()
-        {
-            int? p1 = 10;
-            short? p2 = 20;
-            MyStruct[] p3 = new MyStruct[1];
-            dynamic mc = new MemberClass();
-            decimal s = (decimal)mc.Method_ReturnDecimalNullable(ref p1, ref p2, out p3);
-            if (p1 != null || p2 != null || p3.Length != 2 || s != 3M)
-                return 1;
-            return 0;
-        }
-    }
-    //</Code>
-}
-
-
-
-namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmethod.regclass.regclass040.regclass040
-{
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmethod.regclass.regclassregmeth.regclassregmeth;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmethod.regclass.regclass040.regclass040;
-    // <Title> Tests regular class regular method used in object initializer inside a collection initializer.</Title>
-    // <Description>
-    // </Description>
-    // <RelatedBugs></RelatedBugs>
-    //<Expects Status=success></Expects>
-    // <Code>
-    using System;
-    using System.Collections.Generic;
-
-    public class Test
-    {
-        private float _field;
-        [Fact]
-        public static void DynamicCSharpRunTest()
-        {
-            Assert.Equal(0, MainMethod());
-        }
-
-        public static int MainMethod()
-        {
-            int myInt = 345;
-            dynamic mc = new MemberClass();
-            List<Test> list = new List<Test>()
-            {
-            new Test()
-            {
-            _field = (float)mc.Method_ReturnFloat()}
-
-            , new Test()
-            {
-            _field = (float)mc.Method_ReturnFloat(myInt)}
-            }
-
-            ;
-            if (list.Count == 2 && list[0]._field == 3.4534f && list[1]._field == 345f)
-                return 0;
-            return 1;
-        }
-    }
-    //</Code>
-}
-
-
-
-namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmethod.regclass.regclass041.regclass041
-{
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmethod.regclass.regclassregmeth.regclassregmeth;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmethod.regclass.regclass041.regclass041;
-    // <Title> Tests regular class regular method used in static property-set body.</Title>
-    // <Description>
-    // </Description>
-    // <RelatedBugs></RelatedBugs>
-    //<Expects Status=success></Expects>
-    // <Code>
-    using System;
-
-    public class Test
-    {
-        private static float s_field;
-        [Fact]
-        public static void DynamicCSharpRunTest()
-        {
-            Assert.Equal(0, MainMethod());
-        }
-
-        public static int MainMethod()
-        {
-            Test.MyProp = 10f;
-            if (Test.MyProp != 10f)
-                return 1;
-            return 0;
-        }
-
-        public static float MyProp
-        {
-            get
-            {
-                return s_field;
-            }
-
-            set
-            {
-                float myFloat = 3f;
-                dynamic mc = new MemberClass();
-                s_field = (float)mc.Method_ReturnFloat(value, myFloat, 34.5f);
-            }
-        }
-    }
-    //</Code>
-}
-
-
-
-namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmethod.regclass.regclass042.regclass042
-{
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmethod.regclass.regclassregmeth.regclassregmeth;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmethod.regclass.regclass042.regclass042;
-    // <Title> Tests regular class regular method used in static property-get body.</Title>
-    // <Description>
-    // </Description>
-    // <RelatedBugs></RelatedBugs>
-    //<Expects Status=success></Expects>
-    // <Code>
-    using System;
-
-    public class Test
-    {
-        private static float s_p1;
-        private static float s_p2;
-
-
-        public static void DynamicCSharpRunTest()
-        {
-            Assert.Equal(0, MainMethod());
-        }
-
-        public static int MainMethod()
-        {
-            float result = Test.MyProp;
-            if (result == 3 && s_p1 == 0.000003f && s_p2 == 2342424)
-                return 0;
-            return 1;
-        }
-
-        public static float MyProp
-        {
-            get
-            {
-                float myFloat = 3f;
-                dynamic mc = new MemberClass();
-                return (float)mc.Method_ReturnFloat(ref s_p1, out s_p2, s_p1, s_p2, myFloat);
-            }
-
-            set
-            {
-            }
-        }
-    }
-    //</Code>
-}
-
-
-
-namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmethod.regclass.regclass043.regclass043
-{
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmethod.regclass.regclassregmeth.regclassregmeth;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmethod.regclass.regclass043.regclass043;
-    // <Title> Tests regular class regular method used in lock block.</Title>
-    // <Description>
-    // </Description>
-    // <RelatedBugs></RelatedBugs>
-    //<Expects Status=success></Expects>
-    // <Code>
-    using System;
-
-    public class Test
-    {
-        [Fact]
-        public static void DynamicCSharpRunTest()
-        {
-            Assert.Equal(0, MainMethod());
-        }
-
-        public static int MainMethod()
-        {
-            dynamic mc = new MemberClass();
-            int input = int.MinValue;
-            float? result;
-            lock (mc.Method_ReturnFloatNullable())
-            {
-                result = (float?)mc.Method_ReturnFloatNullable(input);
-            }
-
-            if (result.Value == int.MinValue)
-                return 0;
-            return 1;
-        }
-    }
-    //</Code>
-}
-
-
-
-namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmethod.regclass.regclass044.regclass044
-{
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmethod.regclass.regclassregmeth.regclassregmeth;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmethod.regclass.regclass044.regclass044;
-    // <Title> Tests regular class regular method used in the for loop body.</Title>
-    // <Description>
-    // </Description>
-    // <RelatedBugs></RelatedBugs>
-    //<Expects Status=success></Expects>
-    // <Code>
-    using System;
-
-    public class Test
-    {
-        [Fact]
-        public static void DynamicCSharpRunTest()
-        {
-            Assert.Equal(0, MainMethod());
-        }
-
-        public static int MainMethod()
-        {
-            float[] array1 = new float[]
-            {
-            1f, 24.333f, 3.44f
-            }
-
-            ;
-            float?[] array2 = new float?[3];
-            for (int i = 0; i < array1.Length; i++)
-            {
-                dynamic dy = new MemberClass();
-                array2[i] = dy.Method_ReturnFloatNullable(array1[i], array1[0], array1[1], array1[2]);
-            }
-
-            if (array1[0] == array2[0] && array1[1] == array2[1] && array1[2] == array2[2])
-                return 0;
-            return 1;
-        }
-    }
-    //</Code>
-}
-
-
-
-namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmethod.regclass.regclass045.regclass045
-{
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmethod.regclass.regclassregmeth.regclassregmeth;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmethod.regclass.regclass045.regclass045;
-    // <Title> Tests regular class regular method used in variable named dynamic.</Title>
-    // <Description>
-    // </Description>
-    // <RelatedBugs></RelatedBugs>
-    //<Expects Status=success></Expects>
-    // <Code>
-    using System;
-
-    public class Test
-    {
-
-        public static void DynamicCSharpRunTest()
-        {
-            Assert.Equal(0, MainMethod());
-        }
-
-        public static int MainMethod()
-        {
-            float? p1 = null;
-            float p2 = 1.234f;
-            float? myFloat = null;
-            dynamic dynamic = new MemberClass();
-            float? result = (float?)dynamic.Method_ReturnFloatNullable(ref p1, out p2, p1, p2, myFloat);
-            if (result == 3f && p1 == 0.000003f && p2 == 2342424)
-                return 0;
-            return 1;
-        }
-    }
-    //</Code>
-}
-
-
-
-namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmethod.regclass.regclass046.regclass046
-{
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmethod.regclass.regclassregmeth.regclassregmeth;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmethod.regclass.regclass046.regclass046;
-    // <Title> Tests regular class regular method used in foreach expression.</Title>
-    // <Description>
-    // </Description>
-    // <RelatedBugs></RelatedBugs>
-    //<Expects Status=success></Expects>
-    // <Code>
-    using System;
-    using System.Collections.Generic;
-
-    public class Test
-    {
-        [Fact]
-        public static void DynamicCSharpRunTest()
-        {
-            Assert.Equal(0, MainMethod());
-        }
-
-        public static int MainMethod()
-        {
-            dynamic mc = new MemberClass();
-            List<float?> list = new List<float?>();
-            foreach (var f in (float?[])mc.Method_ReturnFloatArrNullable())
-            {
-                list.Add(f);
-            }
-
-            if (list.Count == 1 && list[0] == 3.4534f)
-                return 0;
-            return 1;
-        }
-    }
-    //</Code>
-}
-
-
-
-namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmethod.regclass.regclass047.regclass047
-{
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmethod.regclass.regclassregmeth.regclassregmeth;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmethod.regclass.regclass047.regclass047;
-    // <Title> Tests regular class regular method used in >= operator.</Title>
-    // <Description>
-    // </Description>
-    // <RelatedBugs></RelatedBugs>
-    //<Expects Status=success></Expects>
-    // <Code>
-    using System;
-
-    public class Test
-    {
-        [Fact]
-        public static void DynamicCSharpRunTest()
-        {
-            Assert.Equal(0, MainMethod());
-        }
-
-        public static int MainMethod()
-        {
-            dynamic mc = new MemberClass();
-            int intValue = 10;
-            float floatValue = 9.9f;
-            bool result = ((float?[])mc.Method_ReturnFloatArrNullable(intValue))[0] >= ((float?[])mc.Method_ReturnFloatArrNullable(floatValue, intValue))[0];
-            if (result)
-                return 0;
-            return 1;
-        }
-    }
-    //</Code>
-}
-
-
-
-namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmethod.regclass.regclass048.regclass048
-{
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmethod.regclass.regclassregmeth.regclassregmeth;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmethod.regclass.regclass048.regclass048;
-    // <Title> Tests regular class regular method used in static method body.</Title>
-    // <Description>
-    // </Description>
-    // <RelatedBugs></RelatedBugs>
-    //<Expects Status=success></Expects>
-    // <Code>
-    using System;
-
-    public class Test
-    {
-
-        public static void DynamicCSharpRunTest()
-        {
-            Assert.Equal(0, MainMethod());
-        }
-
-        public static int MainMethod()
-        {
-            float p1 = 1f;
-            float p2 = 2f;
-            float myFloat = 0.111f;
-            dynamic dynamic = new MemberClass();
-            float?[] result = (float?[])dynamic.Method_ReturnFloatArrNullable(ref p1, out p2, p2, myFloat);
-            if (result.Length == 1 && result[0] == 2 && p1 == 0.000003f && p2 == 2342424)
-                return 0;
-            return 1;
-        }
-    }
-    //</Code>
-}
-
-
-
-namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmethod.regclass.regclass049.regclass049
-{
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmethod.regclass.regclassregmeth.regclassregmeth;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmethod.regclass.regclass049.regclass049;
-    // <Title> Tests regular class regular method used in static generic method body.</Title>
-    // <Description>
-    // </Description>
-    // <RelatedBugs></RelatedBugs>
-    //<Expects Status=success></Expects>
-    // <Code>
-    using System;
-
-    public class Test
-    {
-        [Fact]
-        public static void DynamicCSharpRunTest()
-        {
-            Assert.Equal(0, MainMethod());
-        }
-
-        public static int MainMethod()
-        {
-            return Test.TestMethod<int, Test>();
-        }
-
-        private static int TestMethod<U, V>()
-        {
-            dynamic dy = new MemberClass();
-            float[] result = (float[])dy.Method_ReturnFloatArr();
-            if (result.Length == 1 && result[0] == 3.4534f)
-                return 0;
-            return 1;
-        }
-    }
-    //</Code>
-}
-
-
-
-namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmethod.regclass.regclass050.regclass050
-{
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmethod.regclass.regclassregmeth.regclassregmeth;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmethod.regclass.regclass050.regclass050;
-    // <Title> Tests regular class regular method used in do/while expression.</Title>
-    // <Description>
-    // </Description>
-    // <RelatedBugs></RelatedBugs>
-    //<Expects Status=success></Expects>
-    // <Code>
-    using System;
-
-    public class Test
-    {
-        [Fact]
-        public static void DynamicCSharpRunTest()
-        {
-            Assert.Equal(0, MainMethod());
-        }
-
-        public static int MainMethod()
-        {
-            dynamic dy = new MemberClass();
-            int value = 0;
-            do
-            {
-                ;
-            }
-            while (((float[])dy.Method_ReturnFloatArr(value++))[0] < 10);
-            if (value == 11)
-                return 0;
-            return 1;
-        }
-    }
-    //</Code>
 }
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmethod.regclass.regclass051.regclass051
