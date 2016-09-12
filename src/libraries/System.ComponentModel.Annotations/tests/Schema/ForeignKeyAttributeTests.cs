@@ -2,25 +2,27 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using Xunit;
 
-namespace System.ComponentModel.DataAnnotations.Schema
+namespace System.ComponentModel.DataAnnotations.Schema.Tests
 {
     public class ForeignKeyAttributeTests
     {
-        [Fact]
-        public static void Name_can_be_got_and_set()
+        [Theory]
+        [InlineData("Old Mother Dismass")]
+        public static void Ctor_String(string name)
         {
-            Assert.Equal("Old Mother Dismass", new ForeignKeyAttribute("Old Mother Dismass").Name);
+            ForeignKeyAttribute attribute = new ForeignKeyAttribute(name);
+            Assert.Equal(name, attribute.Name);
         }
 
-        [Fact]
-        public static void Name_cannot_be_set_to_null_or_whitespace()
+        [Theory]
+        [InlineData(null)]
+        [InlineData("")]
+        [InlineData(" \t\r\n")]
+        public static void Ctor_String_NullOrWhitespaceName_ThrowsArgumentException(string name)
         {
-            Assert.Throws<ArgumentException>(() => new ForeignKeyAttribute(null));
-            Assert.Throws<ArgumentException>(() => new ForeignKeyAttribute(string.Empty));
-            Assert.Throws<ArgumentException>(() => new ForeignKeyAttribute(" \t\r\n"));
+            Assert.Throws<ArgumentException>(null, () => new ForeignKeyAttribute(name));
         }
     }
 }
