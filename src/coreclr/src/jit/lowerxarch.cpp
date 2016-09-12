@@ -1095,6 +1095,12 @@ void Lowering::TreeNodeInfoInitCall(GenTreeCall* call)
         assert(ctrlExpr == nullptr);
         assert(call->gtCallAddr != nullptr);
         ctrlExpr = call->gtCallAddr;
+
+#ifdef _TARGET_X86_
+        // Fast tail calls aren't currently supported on x86, but if they ever are, the code
+        // below that handles indirect VSD calls will need to be fixed.
+        assert(!call->IsFastTailCall() || ((call->gtFlags & GTF_CALL_VIRT_KIND_MASK) != GTF_CALL_VIRT_STUB));
+#endif // _TARGET_X86_
     }
 
     // set reg requirements on call target represented as control sequence.
@@ -1110,6 +1116,23 @@ void Lowering::TreeNodeInfoInitCall(GenTreeCall* call)
         // computed into a register.
         if (!call->IsFastTailCall())
         {
+#ifdef _TARGET_X86_
+            // On x86, we need to generate a very specific pattern for indirect VSD calls:
+            //
+            //    3-byte nop
+            //    call dword ptr [eax]
+            //
+            // Where EAX is also used as an argument to the stub dispatch helper. Make
+            // sure that the call target address is computed into EAX in this case.
+            if (((call->gtFlags & GTF_CALL_VIRT_KIND_MASK) == GTF_CALL_VIRT_STUB) && (call->gtCallType == CT_INDIRECT))
+            {
+                assert(ctrlExpr->isIndir());
+
+                ctrlExpr->gtGetOp1()->gtLsraInfo.setDstCandidates(l, RBM_EAX);
+                MakeSrcContained(call, ctrlExpr);
+            }
+            else
+#endif // _TARGET_X86_
             if (ctrlExpr->isIndir())
             {
                 MakeSrcContained(call, ctrlExpr);

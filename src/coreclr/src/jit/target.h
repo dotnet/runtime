@@ -585,6 +585,10 @@ typedef unsigned short regPairNoSmall; // arm: need 12 bits
   #define RBM_CALLEE_TRASH_NOGC    RBM_EDX
 #endif // NOGC_WRITE_BARRIERS
 
+  // GenericPInvokeCalliHelper unmanaged target parameter
+  #define REG_PINVOKE_TARGET_PARAM REG_EAX
+  #define RBM_PINVOKE_TARGET_PARAM RBM_EAX
+
   // IL stub's secret parameter (CORJIT_FLG_PUBLISH_SECRET_PARAM)
   #define REG_SECRET_STUB_PARAM    REG_EAX
   #define RBM_SECRET_STUB_PARAM    RBM_EAX
