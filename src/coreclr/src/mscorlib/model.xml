@@ -7039,16 +7039,16 @@
       <Member Name="CompareOrdinal(System.String,System.String)" />
       <Member Name="CompareTo(System.Object)" />
       <Member Name="CompareTo(System.String)" />
+      <Member Name="Concat(System.Collections.Generic.IEnumerable&lt;System.String&gt;)" />
       <Member Name="Concat(System.Object)" />
       <Member Name="Concat(System.Object,System.Object)" />
       <Member Name="Concat(System.Object,System.Object,System.Object)" />
       <Member Name="Concat(System.Object[])" />
-      <Member Name="Concat&lt;T&gt;(System.Collections.Generic.IEnumerable&lt;T&gt;)" />
-      <Member Name="Concat(System.Collections.Generic.IEnumerable&lt;System.String&gt;)" />
       <Member Name="Concat(System.String,System.String)" />
       <Member Name="Concat(System.String,System.String,System.String)" />
       <Member Name="Concat(System.String,System.String,System.String,System.String)" />
       <Member Name="Concat(System.String[])" />
+      <Member Name="Concat&lt;T&gt;(System.Collections.Generic.IEnumerable&lt;T&gt;)" />
       <Member Name="Contains(System.String)" />
       <Member Name="Copy(System.String)" />
       <Member Name="CopyTo(System.Int32,System.Char[],System.Int32,System.Int32)" />
@@ -7070,6 +7070,7 @@
       <Member Name="Format(System.String,System.Object[])" />
       <Member Name="get_Chars(System.Int32)" />
       <Member Name="get_Length" />
+      <Member Name="GetEnumerator" />
       <Member Name="GetHashCode" />
       <Member Name="GetTypeCode" />
       <Member Name="IndexOf(System.Char)" />
@@ -7153,6 +7154,7 @@
       <Member Name="TrimStart(System.Char[])" />
       <Member MemberType="Property" Name="Chars(System.Int32)" />
       <Member MemberType="Property" Name="Length" />
+      <Member Status="ImplRoot" Name="System.Collections.IEnumerable.GetEnumerator" />
       <Member Status="ImplRoot" Name="System.Collections.Generic.IEnumerable&lt;System.Char&gt;.GetEnumerator" />
       <Member Status="ImplRoot" Name="CtorCharArray(System.Char[])" />
       <Member Status="ImplRoot" Name="CtorCharArrayStartLength(System.Char[],System.Int32,System.Int32)" />
