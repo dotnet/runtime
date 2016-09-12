@@ -15,6 +15,7 @@
 class deps_json_t
 {
     typedef web::json::value json_value;
+    typedef web::json::object json_object;
     struct vec_t { std::vector<pal::string_t> vec; };
     struct assets_t { std::array<vec_t, deps_entry_t::asset_types::count> by_type; };
     struct deps_assets_t { std::unordered_map<pal::string_t, assets_t> libs; };
@@ -79,6 +80,8 @@ private:
         const json_value& json,
         const std::function<bool(const pal::string_t&)>& library_exists_fn,
         const std::function<const std::vector<pal::string_t>&(const pal::string_t&, int, bool*)>& get_rel_paths_by_asset_type_fn);
+
+    pal::string_t get_optional_path(const json_object& properties, const pal::string_t& key) const;
 
     bool perform_rid_fallback(rid_specific_assets_t* portable_assets, const rid_fallback_graph_t& rid_fallback_graph);
 

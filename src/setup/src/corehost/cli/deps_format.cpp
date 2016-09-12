@@ -25,6 +25,27 @@ const deps_entry_t& deps_json_t::try_ni(const deps_entry_t& entry) const
     return entry;
 }
 
+pal::string_t deps_json_t::get_optional_path(
+    const json_object& properties,
+    const pal::string_t& key) const
+{
+    pal::string_t path;
+
+    const auto& iter = properties.find(key);
+
+    if (iter != properties.end())
+    {
+        path = iter->second.as_string();
+
+        if (_X('/') != DIR_SEPARATOR)
+        {
+            replace_char(&path, _X('/'), DIR_SEPARATOR);
+        }
+    }
+
+    return path;
+}
+
 void deps_json_t::reconcile_libraries_with_targets(
     const json_value& json,
     const std::function<bool(const pal::string_t&)>& library_exists_fn,
@@ -46,6 +67,9 @@ void deps_json_t::reconcile_libraries_with_targets(
         const pal::string_t& hash = properties.at(_X("sha512")).as_string();
         bool serviceable = properties.at(_X("serviceable")).as_bool();
 
+        pal::string_t library_path = get_optional_path(properties, _X("path"));
+        pal::string_t library_hash_path = get_optional_path(properties, _X("hashPath"));
+
         for (int i = 0; i < deps_entry_t::s_known_asset_types.size(); ++i)
         {
             bool rid_specific = false;
@@ -63,8 +87,10 @@ void deps_json_t::reconcile_libraries_with_targets(
                 size_t pos = library.first.find(_X("/"));
                 entry.library_name = library.first.substr(0, pos);
                 entry.library_version = library.first.substr(pos + 1);
-                entry.library_type = pal::to_lower(library.second.at(_X("type")).as_string());
+                entry.library_type = pal::to_lower(properties.at(_X("type")).as_string());
                 entry.library_hash = hash;
+                entry.library_path = library_path;
+                entry.library_hash_path = library_hash_path;
                 entry.asset_name = asset_name;
                 entry.asset_type = (deps_entry_t::asset_types) i;
                 entry.relative_path = rel_path;
