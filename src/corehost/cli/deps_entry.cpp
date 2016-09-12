@@ -118,8 +118,16 @@ bool deps_entry_t::to_full_path(const pal::string_t& base, pal::string_t* str) c
     }
 
     pal::string_t new_base = base;
-    append_path(&new_base, library_name.c_str());
-    append_path(&new_base, library_version.c_str());
+
+    if (library_path.empty())
+    {
+        append_path(&new_base, library_name.c_str());
+        append_path(&new_base, library_version.c_str());
+    }
+    else
+    {
+        append_path(&new_base, library_path.c_str());
+    }
 
     return to_rel_path(new_base, str);
 }
@@ -164,24 +172,49 @@ bool deps_entry_t::to_hash_matched_path(const pal::string_t& base, pal::string_t
         trace::verbose(_X("Invalid hash %s value for deps file entry: %s"), library_hash.c_str(), library_name.c_str());
         return false;
     }
+    
+    // Build the relative hash path (what is added to the package directory path).
+    pal::string_t relative_hash_path;
+    if (library_hash_path.empty())
+    {
+        // Reserve approx 8 char_t's for the algorithm name.
+        relative_hash_path.reserve(library_name.length() + 1 + library_version.length() + 16);
+        relative_hash_path.append(library_name);
+        relative_hash_path.append(_X("."));
+        relative_hash_path.append(library_version);
+        relative_hash_path.append(_X(".nupkg."));
+        relative_hash_path.append(library_hash.substr(0, pos));
+    }
+    else
+    {
+        relative_hash_path.assign(library_hash_path);
+    }
 
-    // Build the nupkg file name. Just reserve approx 8 char_t's for the algorithm name.
-    pal::string_t nupkg_filename;
-    nupkg_filename.reserve(library_name.length() + 1 + library_version.length() + 16);
-    nupkg_filename.append(library_name);
-    nupkg_filename.append(_X("."));
-    nupkg_filename.append(library_version);
-    nupkg_filename.append(_X(".nupkg."));
-    nupkg_filename.append(library_hash.substr(0, pos));
-
-    // Build the hash file path str.
+    // Build the directory that contains the hash file.
     pal::string_t hash_file;
-    hash_file.reserve(base.length() + library_name.length() + library_version.length() + nupkg_filename.length() + 3);
-    hash_file.assign(base);
-    append_path(&hash_file, library_name.c_str());
-    append_path(&hash_file, library_version.c_str());
-    append_path(&hash_file, nupkg_filename.c_str());
+    if (library_path.empty())
+    {
+        hash_file.reserve(base.length() + 1 +
+            library_name.length() + 1 + library_version.length() + 1 +
+            relative_hash_path.length());
+        hash_file.assign(base);
 
+        append_path(&hash_file, library_name.c_str());
+        append_path(&hash_file, library_version.c_str());
+    }
+    else
+    {
+        hash_file.reserve(base.length() + 1 +
+            library_path.length() + 1 +
+            relative_hash_path.length());
+        hash_file.assign(base);
+
+        append_path(&hash_file, library_path.c_str());
+    }
+
+    // Append the relative path to the hash file.
+    append_path(&hash_file, relative_hash_path.c_str());
+    
     // Read the contents of the hash file.
     pal::ifstream_t fstream(hash_file);
     if (!fstream.good())
