@@ -2,24 +2,28 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using Xunit;
 
-namespace System.ComponentModel.DataAnnotations.Schema
+namespace System.ComponentModel.DataAnnotations.Schema.Tests
 {
     public class DatabaseGeneratedAttributeTests
     {
-        [Fact]
-        public static void DatabaseGeneratedOption_can_be_got_and_set()
+        [Theory]
+        [InlineData(DatabaseGeneratedOption.None)]
+        [InlineData(DatabaseGeneratedOption.Identity)]
+        [InlineData(DatabaseGeneratedOption.Computed)]
+        public static void Ctor_DatabaseGeneratedOption(DatabaseGeneratedOption databaseGeneratedOption)
         {
-            Assert.Equal(
-                DatabaseGeneratedOption.Computed, new DatabaseGeneratedAttribute(DatabaseGeneratedOption.Computed).DatabaseGeneratedOption);
+            DatabaseGeneratedAttribute attribute = new DatabaseGeneratedAttribute(databaseGeneratedOption);
+            Assert.Equal(databaseGeneratedOption, attribute.DatabaseGeneratedOption);
         }
 
-        [Fact]
-        public static void DatabaseGeneratedOption_cannot_be_set_to_a_value_not_in_the_enum()
+        [Theory]
+        [InlineData((DatabaseGeneratedOption)(-1))]
+        [InlineData((DatabaseGeneratedOption)10)]
+        public static void Ctor_DatabaseGeneratedOption_UndefinedOption_ThrowsArgumentOutOfRangeException(DatabaseGeneratedOption databaseGeneratedOption)
         {
-            Assert.Throws<ArgumentOutOfRangeException>(() => new DatabaseGeneratedAttribute((DatabaseGeneratedOption)10));
+            Assert.Throws<ArgumentOutOfRangeException>("databaseGeneratedOption", () => new DatabaseGeneratedAttribute(databaseGeneratedOption));
         }
     }
 }
