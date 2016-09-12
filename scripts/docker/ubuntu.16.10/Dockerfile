@@ -26,7 +26,7 @@ RUN apt-get update && \
         libssl1.0.0 \
         zlib1g \
         libuuid1 \
-        liblldb-3.6 && \
+        liblldb-3.5 && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
