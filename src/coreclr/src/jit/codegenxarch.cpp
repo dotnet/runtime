@@ -6252,6 +6252,51 @@ void CodeGen::genCallInstruction(GenTreePtr node)
 
     if (target != nullptr)
     {
+#ifdef _TARGET_X86_
+        if (((call->gtFlags & GTF_CALL_VIRT_KIND_MASK) == GTF_CALL_VIRT_STUB) && (call->gtCallType == CT_INDIRECT))
+        {
+            // On x86, we need to generate a very specific pattern for indirect VSD calls:
+            //
+            //    3-byte nop
+            //    call dword ptr [eax]
+            //
+            // Where EAX is also used as an argument to the stub dispatch helper. Make
+            // sure that the call target address is computed into EAX in this case.
+
+            assert(target->isContainedIndir());
+
+            // Disable random NOP emission
+            getEmitter()->emitDisableRandomNops();
+
+            GenTreeIndir* indir = target->AsIndir();
+            assert(indir->Addr() == indir->Base());
+            assert(indir->HasBase());
+            assert(!indir->HasIndex());
+            assert(indir->Scale() == 1);
+            assert(indir->Offset() == 0);
+
+            GenTree* base = indir->Base();
+            genConsumeReg(base);
+
+            if (base->gtRegNum != REG_EAX)
+            {
+                inst_RV_RV(INS_mov, REG_EAX, base->gtRegNum, TYP_I_IMPL);
+            }
+
+            getEmitter()->emitIns_Nop(3);
+
+            getEmitter()->emitIns_Call(emitter::EmitCallType(emitter::EC_INDIR_ARD), methHnd,
+                                       INDEBUG_LDISASM_COMMA(sigInfo) nullptr, argSizeForEmitter, retSize
+                                       MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize),
+                                       gcInfo.gcVarPtrSetCur, gcInfo.gcRegGCrefSetCur, gcInfo.gcRegByrefSetCur,
+                                       ilOffset, REG_EAX, REG_NA, indir->Scale(), indir->Offset());
+
+            // Re-enable random NOP emission
+            getEmitter()->emitEnableRandomNops();
+        }
+        else
+#endif
+
         if (target->isContainedIndir())
         {
             if (target->AsIndir()->HasBase() && target->AsIndir()->Base()->isContainedIntOrIImmed())

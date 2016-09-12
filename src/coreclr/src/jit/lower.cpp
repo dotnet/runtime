@@ -3140,14 +3140,10 @@ GenTree* Lowering::LowerVirtualStubCall(GenTreeCall* call)
     }
 #endif
 
-    // TODO-Cleanup: Disable emitting random NOPs
-
     // This is code to set up an indirect call to a stub address computed
     // via dictionary lookup.
     if (call->gtCallType == CT_INDIRECT)
     {
-        NYI_X86("Virtual Stub dispatched call lowering via dictionary lookup");
-
         // The importer decided we needed a stub call via a computed
         // stub dispatch address, i.e. an address which came from a dictionary lookup.
         //   - The dictionary lookup produces an indirected address, suitable for call
