@@ -1349,7 +1349,10 @@ DEFINE_METHOD(JIT_HELPERS,          GET_BYREF,              GetByRef, NoSig)
 DEFINE_METHOD(JIT_HELPERS,          SET_BYREF,              SetByRef, NoSig)
 DEFINE_METHOD(JIT_HELPERS,          ADD_BYREF,              AddByRef, NoSig)
 DEFINE_METHOD(JIT_HELPERS,          BYREF_EQUALS,           ByRefEquals, NoSig)
+DEFINE_METHOD(JIT_HELPERS,          BYREF_LESSTHAN,         ByRefLessThan, NoSig)
 DEFINE_METHOD(JIT_HELPERS,          GET_ARRAY_DATA,         GetArrayData, NoSig)
+DEFINE_METHOD(JIT_HELPERS,          SIZEOF,                 SizeOf, NoSig)
+DEFINE_METHOD(JIT_HELPERS,          CONTAINSREFERENCES,     ContainsReferences, NoSig)
 #endif
 
 DEFINE_CLASS(INTERLOCKED,           Threading,              Interlocked)
