@@ -27,7 +27,7 @@ bool pal::touch_file(const pal::string_t& path)
     HANDLE hnd = ::CreateFileW(path.c_str(), 0, 0, NULL, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, NULL);
     if (hnd == INVALID_HANDLE_VALUE)
     {
-        trace::verbose(_X("Failed to leave breadcrumb"), HRESULT_FROM_WIN32(GetLastError()));
+        trace::verbose(_X("Failed to leave breadcrumb, HRESULT: 0x%X"), HRESULT_FROM_WIN32(GetLastError()));
         return false;
     }
     ::CloseHandle(hnd);
