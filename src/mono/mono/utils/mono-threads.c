@@ -1284,7 +1284,7 @@ sleep_interruptable (guint32 ms, gboolean *alerted)
 	*alerted = FALSE;
 
 	if (ms != INFINITE)
-		end = mono_100ns_ticks () + (ms * 1000 * 10);
+		end = mono_msec_ticks() + ms;
 
 	mono_lazy_initialize (&sleep_init, sleep_initialize);
 
@@ -1292,8 +1292,8 @@ sleep_interruptable (guint32 ms, gboolean *alerted)
 
 	for (;;) {
 		if (ms != INFINITE) {
-			now = mono_100ns_ticks ();
-			if (now > end)
+			now = mono_msec_ticks();
+			if (now >= end)
 				break;
 		}
 
@@ -1304,7 +1304,7 @@ sleep_interruptable (guint32 ms, gboolean *alerted)
 		}
 
 		if (ms != INFINITE)
-			mono_coop_cond_timedwait (&sleep_cond, &sleep_mutex, (end - now) / 10 / 1000);
+			mono_coop_cond_timedwait (&sleep_cond, &sleep_mutex, end - now);
 		else
 			mono_coop_cond_wait (&sleep_cond, &sleep_mutex);
 
