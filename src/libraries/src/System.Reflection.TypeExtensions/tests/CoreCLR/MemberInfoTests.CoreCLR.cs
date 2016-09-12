@@ -3,11 +3,11 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
-using System.Reflection.Emit;
 using System.Linq;
+using System.Reflection.Emit;
 using Xunit;
 
-namespace System.Reflection.TypeExtensions.Tests
+namespace System.Reflection.Tests
 {
     public class MetadataTokenTests
     {
@@ -24,21 +24,13 @@ namespace System.Reflection.TypeExtensions.Tests
             new object[] { typeof(MetadataTokenTests).GetProperties()[0], 0x17 },
             new object[] { typeof(MetadataTokenTests).GetEvents()[0], 0x14 },
             new object[] { typeof(MetadataTokenTests).GetFields()[0], 0x04 },
+            new object[] { typeof(Test<>).GetGenericArguments()[0].GetTypeInfo(), 0x2A }
         };
-
-        [Fact]
-        public void SuccessImpliesNonNilWithCorrectTable_GenericArgument()
-        {
-            // This should just be another entry in MembersWithExpectedTableIndex above
-            // but that's blocked by https://github.com/xunit/xunit/issues/634
-            SuccessImpliesNonNilWithCorrectTable(typeof(Test<>).GetGenericArguments()[0].GetTypeInfo(), 0x2A);
-        }
 
         [Theory]
         [MemberData(nameof(MembersWithExpectedTableIndex))]
         public void SuccessImpliesNonNilWithCorrectTable(MemberInfo member, int expectedTableIndex)
         {
-
             Assert.True(member.HasMetadataToken());
             int token = member.GetMetadataToken();
             Assert.Equal(expectedTableIndex, TableIndex(token));
@@ -46,7 +38,7 @@ namespace System.Reflection.TypeExtensions.Tests
         }
 
         [Fact]
-        public static void NoTokenForUnbakedRefEmit()
+        public static void UnbakedReflectionEmitType_HasNoMetadataToken()
         {
             AssemblyBuilder assembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("dynamic"), AssemblyBuilderAccess.Run);
             ModuleBuilder module = assembly.DefineDynamicModule("dynamic.dll");
@@ -56,14 +48,7 @@ namespace System.Reflection.TypeExtensions.Tests
             Assert.Throws<InvalidOperationException>(() => method.GetMetadataToken());
         }
 
-        private static int TableIndex(int token)
-        {
-            return token >> 24;
-        }
-
-        private static int RowIndex(int token)
-        {
-            return token & 0x00FFFFFF;
-        }
+        private static int TableIndex(int token) => token >> 24;
+        private static int RowIndex(int token) => token & 0x00FFFFFF;
     }
 }
