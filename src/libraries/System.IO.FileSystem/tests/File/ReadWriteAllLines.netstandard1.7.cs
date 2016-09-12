@@ -10,13 +10,13 @@ using Xunit;
 
 namespace System.IO.Tests
 {
-    public class File_ReadWriteAllLines_Enumerable : FileSystemTest
+    public class File_ReadWriteAllLines_StringArray : FileSystemTest
     {
         #region Utilities
 
         protected virtual void Write(string path, string[] content)
         {
-            File.WriteAllLines(path, (IEnumerable<string>)content);
+            File.WriteAllLines(path, content);
         }
 
         protected virtual string[] Read(string path)
@@ -148,11 +148,11 @@ namespace System.IO.Tests
         #endregion
     }
 
-    public class File_ReadWriteAllLines_Enumerable_Encoded : File_ReadWriteAllLines_Enumerable
+    public class File_ReadWriteAllLines_StringArray_Encoded : File_ReadWriteAllLines_StringArray
     {
         protected override void Write(string path, string[] content)
         {
-            File.WriteAllLines(path, (IEnumerable<string>)content, new UTF8Encoding(false));
+            File.WriteAllLines(path, content, new UTF8Encoding(false));
         }
 
         protected override string[] Read(string path)
@@ -164,37 +164,8 @@ namespace System.IO.Tests
         public void NullEncoding()
         {
             string path = GetTestFilePath();
-            Assert.Throws<ArgumentNullException>(() => File.WriteAllLines(path, (IEnumerable<string>)new string[] { "Text" }, null));
+            Assert.Throws<ArgumentNullException>(() => File.WriteAllLines(path, new string[] { "Text" }, null));
             Assert.Throws<ArgumentNullException>(() => File.ReadAllLines(path, null));
-        }
-    }
-
-    public class File_ReadLines : File_ReadWriteAllLines_Enumerable
-    {
-        protected override string[] Read(string path)
-        {
-            return File.ReadLines(path).ToArray();
-        }
-    }
-
-    public class File_ReadLines_Encoded : File_ReadWriteAllLines_Enumerable
-    {
-        protected override void Write(string path, string[] content)
-        {
-            File.WriteAllLines(path, (IEnumerable<string>)content, new UTF8Encoding(false));
-        }
-
-        protected override string[] Read(string path)
-        {
-            return File.ReadLines(path, new UTF8Encoding(false)).ToArray();
-        }
-
-        [Fact]
-        public void NullEncoding()
-        {
-            string path = GetTestFilePath();
-            Assert.Throws<ArgumentNullException>(() => File.WriteAllLines(path, (IEnumerable<string>)new string[] { "Text" }, null));
-            Assert.Throws<ArgumentNullException>(() => File.ReadLines(path, null));
         }
     }
 }
