@@ -122,7 +122,8 @@ namespace Microsoft.DotNet.Host.Build
                         "debian.x64.version",
                         "centos.x64.version",
                         "fedora.23.x64.version",
-                        "opensuse.13.2.x64.version"
+                        "opensuse.13.2.x64.version",
+                        "opensuse.42.1.x64.version"
                     };
                     
                     PublishCoreHostPackagesToFeed();
@@ -184,7 +185,8 @@ namespace Microsoft.DotNet.Host.Build
                  { "sharedfx_Debian_x64", false },
                  { "sharedfx_CentOS_x64", false },
                  { "sharedfx_Fedora_23_x64", false },
-                 { "sharedfx_openSUSE_13_2_x64", false }
+                 { "sharedfx_openSUSE_13_2_x64", false },
+                 { "sharedfx_openSUSE_42_1_x64", false }
              };
 
             List<string> blobs = new List<string>(AzurePublisherTool.ListBlobs($"{Channel}/Binaries/{SharedFrameworkNugetVersion}/"));
