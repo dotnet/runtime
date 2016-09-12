@@ -8018,7 +8018,8 @@ void CodeGen::genIntToFloatCast(GenTreePtr treeNode)
     assert(!varTypeIsFloating(srcType) && varTypeIsFloating(dstType));
 
 #if !defined(_TARGET_64BIT_)
-    NYI_IF(varTypeIsLong(srcType), "Conversion from long to float");
+    // We expect morph to replace long to float/double casts with helper calls
+    noway_assert(!varTypeIsLong(srcType));
 #endif // !defined(_TARGET_64BIT_)
 
     // Since xarch emitter doesn't handle reporting gc-info correctly while casting away gc-ness we
