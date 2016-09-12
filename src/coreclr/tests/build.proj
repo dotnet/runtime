@@ -38,6 +38,7 @@
   <!-- Create a collection of all project.json files for dependency updates. -->
   <ItemGroup>
     <ProjectJsonFiles Include="$(SourceDir)**\project.json" />
+    <ProjectJsonFiles Include="$(ProjectDir)scripts\**\project.json" />
   </ItemGroup>
 
   <Target Name="UpdatePackageDependencyVersion">

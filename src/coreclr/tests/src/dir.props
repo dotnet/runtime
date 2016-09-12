@@ -35,6 +35,7 @@
       <PropertyGroup>
         <TargetsWindows>true</TargetsWindows>
         <TestNugetRuntimeId>win7-x64</TestNugetRuntimeId>
+        <DefaultTestTFM>net45</DefaultTestTFM>
       </PropertyGroup>
     </When>
     <When Condition="'$(OSGroup)'=='Linux'">
@@ -67,6 +68,14 @@
 
   <PropertyGroup>
     <TargetsUnknownUnix Condition="'$(TargetsUnix)' == 'true' AND '$(OSGroup)' != 'FreeBSD' AND '$(OSGroup)' != 'Linux' AND '$(OSGroup)' != 'OSX'">true</TargetsUnknownUnix>
+  </PropertyGroup>
+
+  <!-- Default Test platform to deploy the netstandard compiled tests to -->
+  <PropertyGroup>
+    <!-- we default TestTFM and FilterToTestTFM to netcoreapp1.0 if they are not explicity defined -->
+    <DefaultTestTFM Condition="'$(DefaultTestTFM)'==''">netcoreapp1.0</DefaultTestTFM>
+    <TestTFM Condition="'$(TestTFM)'==''">$(DefaultTestTFM)</TestTFM>
+    <FilterToTestTFM Condition="'$(FilterToTestTFM)'==''">$(DefaultTestTFM)</FilterToTestTFM>
   </PropertyGroup>
 
   <!-- Set default ZapRequire level (used only when CrossGen is enabled) -->
