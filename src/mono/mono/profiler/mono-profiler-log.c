@@ -1337,24 +1337,26 @@ dump_buffer (MonoProfiler *profiler, LogBuffer *buf)
 	if (buf->next)
 		dump_buffer (profiler, buf->next);
 
-	p = write_int32 (p, BUF_ID);
-	p = write_int32 (p, buf->cursor - buf->buf);
-	p = write_int64 (p, buf->time_base);
-	p = write_int64 (p, buf->ptr_base);
-	p = write_int64 (p, buf->obj_base);
-	p = write_int64 (p, buf->thread_id);
-	p = write_int64 (p, buf->method_base);
+	if (buf->cursor - buf->buf) {
+		p = write_int32 (p, BUF_ID);
+		p = write_int32 (p, buf->cursor - buf->buf);
+		p = write_int64 (p, buf->time_base);
+		p = write_int64 (p, buf->ptr_base);
+		p = write_int64 (p, buf->obj_base);
+		p = write_int64 (p, buf->thread_id);
+		p = write_int64 (p, buf->method_base);
 
 #if defined (HAVE_SYS_ZLIB)
-	if (profiler->gzfile) {
-		gzwrite (profiler->gzfile, hbuf, p - hbuf);
-		gzwrite (profiler->gzfile, buf->buf, buf->cursor - buf->buf);
-	} else
+		if (profiler->gzfile) {
+			gzwrite (profiler->gzfile, hbuf, p - hbuf);
+			gzwrite (profiler->gzfile, buf->buf, buf->cursor - buf->buf);
+		} else
 #endif
-	{
-		fwrite (hbuf, p - hbuf, 1, profiler->file);
-		fwrite (buf->buf, buf->cursor - buf->buf, 1, profiler->file);
-		fflush (profiler->file);
+		{
+			fwrite (hbuf, p - hbuf, 1, profiler->file);
+			fwrite (buf->buf, buf->cursor - buf->buf, 1, profiler->file);
+			fflush (profiler->file);
+		}
 	}
 
 	free_buffer (buf, buf->size);
