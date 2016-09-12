@@ -7,7 +7,7 @@ using Xunit;
 
 namespace System.IO.Tests
 {
-    public static class PathCombineTests
+    public static partial class PathTests
     {
         private static readonly char s_separator = Path.DirectorySeparatorChar;
 
@@ -104,8 +104,9 @@ namespace System.IO.Tests
                     Assert.Equal(expected, Path.Combine(paths[0], paths[1], paths[2]));
                     break;
 
-                default:
-                    // Nothing to do: everything else is pushed into an array
+                case 4:
+                    // Combine(string, string, string, string)
+                    Assert.Equal(expected, Path.Combine(paths[0], paths[1], paths[2], paths[3]));
                     break;
             }
         }

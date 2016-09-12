@@ -9,7 +9,7 @@ using Xunit;
 
 namespace System.IO.Tests
 {
-    public static class PathTests
+    public static partial class PathTests
     {
         [Theory]
         [InlineData(null, null, null)]
