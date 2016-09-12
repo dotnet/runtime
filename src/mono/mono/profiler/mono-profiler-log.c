@@ -988,14 +988,14 @@ emit_byte (LogBuffer *logbuffer, int value)
 {
 	logbuffer->cursor [0] = value;
 	logbuffer->cursor++;
-	assert (logbuffer->cursor <= logbuffer->buf_end);
+	g_assert (logbuffer->cursor <= logbuffer->buf_end);
 }
 
 static void
 emit_value (LogBuffer *logbuffer, int value)
 {
 	encode_uleb128 (value, logbuffer->cursor, &logbuffer->cursor);
-	assert (logbuffer->cursor <= logbuffer->buf_end);
+	g_assert (logbuffer->cursor <= logbuffer->buf_end);
 }
 
 static void
@@ -1010,7 +1010,7 @@ emit_time (LogBuffer *logbuffer, uint64_t value)
 	/*if (tdiff != decode_uleb128 (p, &p))
 		printf ("incorrect encoding: %llu\n", tdiff);*/
 	logbuffer->last_time = value;
-	assert (logbuffer->cursor <= logbuffer->buf_end);
+	g_assert (logbuffer->cursor <= logbuffer->buf_end);
 }
 
 static void
@@ -1030,14 +1030,14 @@ static void
 emit_svalue (LogBuffer *logbuffer, int64_t value)
 {
 	encode_sleb128 (value, logbuffer->cursor, &logbuffer->cursor);
-	assert (logbuffer->cursor <= logbuffer->buf_end);
+	g_assert (logbuffer->cursor <= logbuffer->buf_end);
 }
 
 static void
 emit_uvalue (LogBuffer *logbuffer, uint64_t value)
 {
 	encode_uleb128 (value, logbuffer->cursor, &logbuffer->cursor);
-	assert (logbuffer->cursor <= logbuffer->buf_end);
+	g_assert (logbuffer->cursor <= logbuffer->buf_end);
 }
 
 static void
@@ -1046,7 +1046,7 @@ emit_ptr (LogBuffer *logbuffer, void *ptr)
 	if (!logbuffer->ptr_base)
 		logbuffer->ptr_base = (uintptr_t)ptr;
 	emit_svalue (logbuffer, (intptr_t)ptr - logbuffer->ptr_base);
-	assert (logbuffer->cursor <= logbuffer->buf_end);
+	g_assert (logbuffer->cursor <= logbuffer->buf_end);
 }
 
 static void
@@ -1058,7 +1058,7 @@ emit_method_inner (LogBuffer *logbuffer, void *method)
 	}
 	encode_sleb128 ((intptr_t)((char*)method - (char*)logbuffer->last_method), logbuffer->cursor, &logbuffer->cursor);
 	logbuffer->last_method = (intptr_t)method;
-	assert (logbuffer->cursor <= logbuffer->buf_end);
+	g_assert (logbuffer->cursor <= logbuffer->buf_end);
 }
 
 /*
@@ -1145,7 +1145,7 @@ emit_obj (LogBuffer *logbuffer, void *ptr)
 	if (!logbuffer->obj_base)
 		logbuffer->obj_base = (uintptr_t)ptr >> 3;
 	emit_svalue (logbuffer, ((uintptr_t)ptr >> 3) - logbuffer->obj_base);
-	assert (logbuffer->cursor <= logbuffer->buf_end);
+	g_assert (logbuffer->cursor <= logbuffer->buf_end);
 }
 
 static void
@@ -3358,7 +3358,7 @@ counters_sample (MonoProfiler *profiler, uint64_t timestamp)
 			}
 			break;
 		default:
-			assert (0);
+			g_assert_not_reached ();
 		}
 
 		if (type == MONO_COUNTER_STRING && size > agent->value_size) {
@@ -4151,7 +4151,7 @@ init_suppressed_assemblies (void)
 static void
 coverage_init (MonoProfiler *prof)
 {
-	assert (!coverage_initialized);
+	g_assert (!coverage_initialized);
 
 	COVERAGE_DEBUG(fprintf (stderr, "Coverage initialized\n");)
 
