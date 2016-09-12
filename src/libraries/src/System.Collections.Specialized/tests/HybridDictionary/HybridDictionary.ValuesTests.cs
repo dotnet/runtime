@@ -45,6 +45,7 @@ namespace System.Collections.Specialized.Tests
         protected override IEnumerable<ModifyEnumerable> ModifyEnumerables => new List<ModifyEnumerable>();
 
         [Theory]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Netcoreapp1_0, "dotnet/corefx#11566")]
         [MemberData(nameof(ValidCollectionSizes))]
         public override void ICollection_NonGeneric_CopyTo_NonZeroLowerBound(int count)
         {
@@ -63,6 +64,7 @@ namespace System.Collections.Specialized.Tests
         }
 
         [Theory]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Netcoreapp1_0, "dotnet/corefx#11566")]
         [MemberData(nameof(ValidCollectionSizes))]
         public override void ICollection_NonGeneric_CopyTo_IndexEqualToArrayCount_ThrowsArgumentException(int count)
         {
@@ -75,6 +77,7 @@ namespace System.Collections.Specialized.Tests
         }
 
         [Theory]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Netcoreapp1_0, "dotnet/corefx#11566")]
         [MemberData(nameof(ValidCollectionSizes))]
         public override void ICollection_NonGeneric_CopyTo_NotEnoughSpaceInOffsettedArray_ThrowsArgumentException(int count)
         {
@@ -87,6 +90,7 @@ namespace System.Collections.Specialized.Tests
         }
 
         [Theory]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Netcoreapp1_0, "dotnet/corefx#11566")]
         [MemberData(nameof(ValidCollectionSizes))]
         public override void ICollection_NonGeneric_CopyTo_IndexLargerThanArrayCount_ThrowsAnyArgumentException(int count)
         {
