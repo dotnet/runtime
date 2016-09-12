@@ -513,7 +513,7 @@ HCIMPL1_V(double, JIT_ULng2Dbl, UINT64 val)
 HCIMPLEND
 
 /*********************************************************************/
-// needed for ARM
+// needed for ARM and RyuJIT-x86
 HCIMPL1_V(double, JIT_Lng2Dbl, INT64 val)
 {
     FCALL_CONTRACT;
