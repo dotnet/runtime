@@ -4468,6 +4468,12 @@ extern "C"
 
         BOOLEAN bIsRundownTraceHandle = (context->RegistrationHandle==Microsoft_Windows_DotNETRuntimeRundownHandle);
 
+		// TypeSystemLog needs a notification when certain keywords are modified, so
+		// give it a hook here.
+		if (g_fEEStarted && !g_fEEShutDown && bIsPublicTraceHandle)
+		{
+			ETW::TypeSystemLog::OnKeywordsChanged();
+		}
 
         // A manifest based provider can be enabled to multiple event tracing sessions
         // As long as there is atleast 1 enabled session, IsEnabled will be TRUE
@@ -4478,13 +4484,6 @@ extern "C"
              (ControlCode == EVENT_CONTROL_CODE_CAPTURE_STATE));
         if(bEnabled)
         {
-            // TypeSystemLog needs a notification when certain keywords are modified, so
-            // give it a hook here.
-            if (g_fEEStarted && !g_fEEShutDown && bIsPublicTraceHandle)
-            {
-                ETW::TypeSystemLog::OnKeywordsChanged();
-            }
-
             if (bIsPrivateTraceHandle)
             {
                 ETW::GCLog::GCSettingsEvent();
