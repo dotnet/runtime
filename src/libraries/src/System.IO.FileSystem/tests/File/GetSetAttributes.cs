@@ -4,6 +4,7 @@
 
 using System.Runtime.InteropServices;
 using Xunit;
+using XunitPlatformID = Xunit.PlatformID;
 
 namespace System.IO.Tests
 {
@@ -46,7 +47,7 @@ namespace System.IO.Tests
         [Theory]
         [InlineData(FileAttributes.ReadOnly)]
         [InlineData(FileAttributes.Normal)]
-        [PlatformSpecific(PlatformID.AnyUnix)]
+        [PlatformSpecific(XunitPlatformID.AnyUnix)]
         public void UnixAttributeSetting(FileAttributes attr)
         {
             var path = GetTestFilePath();
@@ -64,7 +65,7 @@ namespace System.IO.Tests
         [InlineData(FileAttributes.Normal)]
         [InlineData(FileAttributes.Temporary)]
         [InlineData(FileAttributes.ReadOnly | FileAttributes.Hidden)]
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(XunitPlatformID.Windows)]
         public void WindowsAttributeSetting(FileAttributes attr)
         {
             var path = GetTestFilePath();
@@ -80,7 +81,7 @@ namespace System.IO.Tests
         [InlineData(FileAttributes.ReparsePoint)]
         [InlineData(FileAttributes.Compressed)]
         [InlineData(FileAttributes.Encrypted)]
-        [PlatformSpecific(PlatformID.AnyUnix)]
+        [PlatformSpecific(XunitPlatformID.AnyUnix)]
         public void UnixInvalidAttributes(FileAttributes attr)
         {
             var path = GetTestFilePath();
@@ -95,7 +96,7 @@ namespace System.IO.Tests
         [InlineData(FileAttributes.SparseFile)]
         [InlineData(FileAttributes.ReparsePoint)]
         [InlineData(FileAttributes.Compressed)]
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(XunitPlatformID.Windows)]
         public void WindowsInvalidAttributes(FileAttributes attr)
         {
             var path = GetTestFilePath();

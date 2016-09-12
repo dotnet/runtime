@@ -4,8 +4,11 @@
   <PropertyGroup>
     <AssemblyName>System.IO</AssemblyName>
     <ProjectGuid>{07390899-C8F6-4e83-A3A9-6867B8CB46A0}</ProjectGuid>
+    <AssemblyVersion Condition="'$(TargetGroup)' == 'net462' Or '$(TargetGroup)' == 'netstandard1.6' Or '$(TargetGroup)'=='netstandard13aot'">4.1.0.0</AssemblyVersion>
+    <ContractProject Condition="'$(AssemblyVersion)' == '4.1.0.0'">..\ref\4.1\System.IO.depproj</ContractProject>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
-    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.5</NuGetTargetMoniker>
+    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NuGetTargetMoniker>
+    <PackageTargetFramework Condition="'$(TargetGroup)' == ''">netstandard1.7;uap10.1</PackageTargetFramework>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the options -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
@@ -16,47 +19,57 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcore50aot_Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard13aot_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard13aot_Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(TargetGroup)' == 'net462'">
+  <PropertyGroup Condition="'$(TargetGroup)' == 'net462' or '$(TargetGroup)' == 'net463'">
     <ResourcesSourceOutputDirectory>None</ResourcesSourceOutputDirectory>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(TargetGroup)' == 'netcore50aot'  or '$(TargetGroup)' == 'netstandard13aot'">
+  <PropertyGroup Condition="'$(TargetGroup)' == 'netcore50aot'  or '$(TargetGroup)' == 'uap101aot' or '$(TargetGroup)' == 'netstandard13aot'">
     <SkipCommonResourcesIncludes>true</SkipCommonResourcesIncludes>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <ExcludeAssemblyInfoPartialFile>true</ExcludeAssemblyInfoPartialFile>
     <StringResourcesPath>Resources/Strings.netcore50aot.resx</StringResourcesPath>
   </PropertyGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == ''">
+  <ItemGroup Condition="'$(TargetGroup)' == '' Or '$(TargetGroup)'=='netstandard1.6'">
     <ProjectReference Include="..\..\System.Diagnostics.Debug\src\System.Diagnostics.Debug.csproj">
       <Project>{E7E8DE8A-9EC1-46A8-A6EE-727DB32DBEB8}</Project>
       <Name>System.Diagnostics.Debug</Name>
       <OSGroup>$(InputOSGroup)</OSGroup>
+      <UndefineProperties>%(ProjectReference.UndefineProperties);TargetGroup</UndefineProperties>
     </ProjectReference>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' != 'net462'">
+  <ItemGroup Condition="'$(TargetGroup)' != 'net462' and '$(TargetGroup)' != 'net463'">
     <Compile Include="System\IO\BufferedStream.cs" />
     <Compile Include="System\IO\InvalidDataException.cs" />
+    <Compile Include="$(CommonPath)\System\Threading\Tasks\TaskToApm.cs">
+      <Link>Common\System\Threading\Tasks\TaskToApm.cs</Link>
+    </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netcore50aot' or '$(TargetGroup)' == 'netstandard13aot'">
+  <ItemGroup Condition="'$(TargetGroup)' == 'netcore50aot' or '$(TargetGroup)' == 'uap101aot' or '$(TargetGroup)' == 'netstandard13aot'">
     <Compile Include="System\IO\BinaryReader.cs" />
     <Compile Include="System\IO\BinaryWriter.cs" />
     <Compile Include="System\IO\EndOfStreamException.cs" />
     <Compile Include="System\IO\MemoryStream.cs" />
-    <Compile Include="System\IO\SeekOrigin.cs" />
-    <Compile Include="System\IO\Stream.cs" />
     <Compile Include="System\IO\StreamReader.cs" />
     <Compile Include="System\IO\StreamWriter.cs" />
     <Compile Include="System\IO\StringReader.cs" />
     <Compile Include="System\IO\StringWriter.cs" />
     <Compile Include="System\IO\TextReader.cs" />
     <Compile Include="System\IO\TextWriter.cs" />
-    <!-- Common -->
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetGroup)' == 'netcore50aot' or '$(TargetGroup)' == 'netstandard13aot'">
+    <Compile Include="System\IO\Stream.cs" />
+    <Compile Include="System\IO\SeekOrigin.cs" />
+  </ItemGroup>
+  
+  <!-- Common -->
+  <ItemGroup Condition="'$(TargetGroup)' == 'netcore50aot' or '$(TargetGroup)' == 'uap101aot' or '$(TargetGroup)' == 'netstandard13aot'">
     <Compile Include="$(CommonPath)\System\HResults.cs">
       <Link>Common\System\HResults.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\IO\StringBuilderCache.cs">
       <Link>Common\System\IO\StringBuilderCache.cs</Link>
     </Compile>
-    <Compile Include="$(Commonpath)\System\SR.Core.cs" Condition="'$(TargetGroup)' == 'netcore50aot'">
+    <Compile Include="$(Commonpath)\System\SR.Core.cs" Condition="'$(TargetGroup)' == 'netcore50aot' or '$(TargetGroup)' == 'uap101aot'">
       <Link>Common\System\SR.Core.cs</Link>
     </Compile>
     <Compile Include="$(Commonpath)\System\SR.CoreRT.cs" Condition="'$(TargetGroup)' == 'netstandard13aot'">
@@ -67,7 +80,11 @@
     <TargetingPackReference Include="System.Private.CoreLib.WinRTInterop" />
     <TargetingPackReference Include="System.Private.Interop" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'net462'">
+  <ItemGroup Condition="'$(TargetGroup)' == 'uap101aot'">
+    <TargetingPackReference Include="System.Private.Interop" />
+    <TargetingPackReference Include="System.Private.CoreLib" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'net462' or '$(TargetGroup)' == 'net463'">
     <TargetingPackReference Include="mscorlib" />
     <TargetingPackReference Include="System" />
   </ItemGroup>

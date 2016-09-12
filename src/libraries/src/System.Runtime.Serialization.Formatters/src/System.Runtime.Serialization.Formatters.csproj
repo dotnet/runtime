@@ -4,24 +4,63 @@
   <PropertyGroup>
     <ProjectGuid>{CA488507-3B6E-4494-B7BE-7B4EEEB2C4D1}</ProjectGuid>
     <AssemblyName>System.Runtime.Serialization.Formatters</AssemblyName>
-    <!-- rev'ed to 4.0.1.0 even though 4.0.0.0 never shipped so that we can drop pre-release down to beta -->
     <RootNamespace>System.Runtime.Serialization.Formatters</RootNamespace>
-    <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'net46'">true</IsPartialFacadeAssembly>
-    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.4</NuGetTargetMoniker>
+    <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'net463'">true</IsPartialFacadeAssembly>
+    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NuGetTargetMoniker>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' " />
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' " />
   <ItemGroup Condition="'$(TargetGroup)' == ''">
-    <Compile Include="System\NonSerializedAttribute.cs" />
-    <Compile Include="System\SerializableAttribute.cs" />
-    <Compile Include="System\Runtime\Serialization\IDeserializationCallback.cs" />
-    <Compile Include="System\Runtime\Serialization\IFormatterConverter.cs" />
-    <Compile Include="System\Runtime\Serialization\ISerializable.cs" />
-    <Compile Include="System\Runtime\Serialization\SerializationInfo.cs" />
-    <Compile Include="System\Runtime\Serialization\SerializationInfoEnumerator.cs" />
+    <Compile Include="System.Runtime.Serialization.Formatters.TypeForwards.cs" />
+    <Compile Include="System\TemporaryStubs.cs" />
+    <Compile Include="System\Runtime\Serialization\DeserializationEventHandler.cs" />
+    <Compile Include="System\Runtime\Serialization\Formatter.cs" />
+    <Compile Include="System\Runtime\Serialization\FormatterConverter.cs" />
+    <Compile Include="System\Runtime\Serialization\FormatterServices.cs" />
+    <Compile Include="System\Runtime\Serialization\IFormatter.cs" />
+    <Compile Include="System\Runtime\Serialization\ISerializationSurrogate.cs" />
+    <Compile Include="System\Runtime\Serialization\ISurrogateSelector.cs" />
+    <Compile Include="System\Runtime\Serialization\MemberHolder.cs" />
+    <Compile Include="System\Runtime\Serialization\ObjectIDGenerator.cs" />
+    <Compile Include="System\Runtime\Serialization\ObjectManager.cs" />
+    <Compile Include="System\Runtime\Serialization\SafeSerializationEventArgs.cs" />
+    <Compile Include="System\Runtime\Serialization\SerializationBinder.cs" />
+    <Compile Include="System\Runtime\Serialization\SerializationEventsCache.cs" />
+    <Compile Include="System\Runtime\Serialization\SerializationObjectManager.cs" />
+    <Compile Include="System\Runtime\Serialization\SurrogateSelector.cs" />
+    <Compile Include="System\Runtime\Serialization\ValueTypeFixupInfo.cs" />
+    <Compile Include="System\Runtime\Serialization\Formatters\CommonEnums.cs" />
+    <Compile Include="System\Runtime\Serialization\Formatters\IFieldInfo.cs" />
+    <Compile Include="System\Runtime\Serialization\Formatters\Binary\BinaryArray.cs" />
+    <Compile Include="System\Runtime\Serialization\Formatters\Binary\BinaryAssembly.cs" />
+    <Compile Include="System\Runtime\Serialization\Formatters\Binary\BinaryAssemblyInfo.cs" />
+    <Compile Include="System\Runtime\Serialization\Formatters\Binary\BinaryTypeConverter.cs" />
+    <Compile Include="System\Runtime\Serialization\Formatters\Binary\BinaryCrossAppDomainAssembly.cs" />
+    <Compile Include="System\Runtime\Serialization\Formatters\Binary\BinaryCrossAppDomainMap.cs" />
+    <Compile Include="System\Runtime\Serialization\Formatters\Binary\BinaryCrossAppDomainString.cs" />
+    <Compile Include="System\Runtime\Serialization\Formatters\Binary\BinaryObject.cs" />
+    <Compile Include="System\Runtime\Serialization\Formatters\Binary\BinaryObjectString.cs" />
+    <Compile Include="System\Runtime\Serialization\Formatters\Binary\BinaryObjectWithMap.cs" />
+    <Compile Include="System\Runtime\Serialization\Formatters\Binary\BinaryObjectWithMapTyped.cs" />
+    <Compile Include="System\Runtime\Serialization\Formatters\Binary\IStreamable.cs" />
+    <Compile Include="System\Runtime\Serialization\Formatters\Binary\MemberPrimitiveTyped.cs" />
+    <Compile Include="System\Runtime\Serialization\Formatters\Binary\MemberPrimitiveUntyped.cs" />
+    <Compile Include="System\Runtime\Serialization\Formatters\Binary\MemberReference.cs" />
+    <Compile Include="System\Runtime\Serialization\Formatters\Binary\MessageEnd.cs" />
+    <Compile Include="System\Runtime\Serialization\Formatters\Binary\ObjectMap.cs" />
+    <Compile Include="System\Runtime\Serialization\Formatters\Binary\ObjectNull.cs" />
+    <Compile Include="System\Runtime\Serialization\Formatters\Binary\SerializationHeaderRecord.cs" />
+    <Compile Include="System\Runtime\Serialization\Formatters\Binary\ObjectProgress.cs" />
+    <Compile Include="System\Runtime\Serialization\Formatters\Binary\Converter.cs" />
+    <Compile Include="System\Runtime\Serialization\Formatters\Binary\BinaryEnums.cs" />
+    <Compile Include="System\Runtime\Serialization\Formatters\Binary\BinaryFormatter.cs" />
+    <Compile Include="System\Runtime\Serialization\Formatters\Binary\BinaryFormatterWriter.cs" />
+    <Compile Include="System\Runtime\Serialization\Formatters\Binary\BinaryObjectInfo.cs" />
+    <Compile Include="System\Runtime\Serialization\Formatters\Binary\BinaryObjectReader.cs" />
+    <Compile Include="System\Runtime\Serialization\Formatters\Binary\BinaryObjectWriter.cs" />
+    <Compile Include="System\Runtime\Serialization\Formatters\Binary\BinaryParser.cs" />
+    <Compile Include="System\Runtime\Serialization\Formatters\Binary\BinaryUtilClasses.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />

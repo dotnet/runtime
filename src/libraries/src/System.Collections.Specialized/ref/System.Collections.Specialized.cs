@@ -87,12 +87,13 @@ namespace System.Collections.Specialized
         public void Remove(object key) { }
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { return default(System.Collections.IEnumerator); }
     }
-    public abstract partial class NameObjectCollectionBase : System.Collections.ICollection, System.Collections.IEnumerable
+    public abstract partial class NameObjectCollectionBase : System.Collections.ICollection, System.Collections.IEnumerable, System.Runtime.Serialization.ISerializable, System.Runtime.Serialization.IDeserializationCallback
     {
         protected NameObjectCollectionBase() { }
         protected NameObjectCollectionBase(System.Collections.IEqualityComparer equalityComparer) { }
         protected NameObjectCollectionBase(int capacity) { }
         protected NameObjectCollectionBase(int capacity, System.Collections.IEqualityComparer equalityComparer) { }
+        protected NameObjectCollectionBase(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public virtual int Count { get { return default(int); } }
         protected bool IsReadOnly { get { return default(bool); } set { } }
         public virtual System.Collections.Specialized.NameObjectCollectionBase.KeysCollection Keys { get { return default(System.Collections.Specialized.NameObjectCollectionBase.KeysCollection); } }
@@ -112,6 +113,8 @@ namespace System.Collections.Specialized
         protected void BaseSet(int index, object value) { }
         protected void BaseSet(string name, object value) { }
         public virtual System.Collections.IEnumerator GetEnumerator() { return default(System.Collections.IEnumerator); }
+        public virtual void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
+        public virtual void OnDeserialization(object sender) { }
         void System.Collections.ICollection.CopyTo(System.Array array, int index) { }
         public partial class KeysCollection : System.Collections.ICollection, System.Collections.IEnumerable
         {
@@ -150,12 +153,13 @@ namespace System.Collections.Specialized
         public virtual void Remove(string name) { }
         public virtual void Set(string name, string value) { }
     }
-    public partial class OrderedDictionary : System.Collections.ICollection, System.Collections.IDictionary, System.Collections.IEnumerable, System.Collections.Specialized.IOrderedDictionary
+    public partial class OrderedDictionary : System.Collections.ICollection, System.Collections.IDictionary, System.Collections.IEnumerable, System.Collections.Specialized.IOrderedDictionary, System.Runtime.Serialization.ISerializable, System.Runtime.Serialization.IDeserializationCallback
     {
         public OrderedDictionary() { }
         public OrderedDictionary(System.Collections.IEqualityComparer comparer) { }
         public OrderedDictionary(int capacity) { }
         public OrderedDictionary(int capacity, System.Collections.IEqualityComparer comparer) { }
+        protected OrderedDictionary(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public int Count { get { return default(int); } }
         public bool IsReadOnly { get { return default(bool); } }
         public object this[int index] { get { return default(object); } set { } }
@@ -171,7 +175,9 @@ namespace System.Collections.Specialized
         public bool Contains(object key) { return default(bool); }
         public void CopyTo(System.Array array, int index) { }
         public virtual System.Collections.IDictionaryEnumerator GetEnumerator() { return default(System.Collections.IDictionaryEnumerator); }
+        public virtual void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public void Insert(int index, object key, object value) { }
+        void System.Runtime.Serialization.IDeserializationCallback.OnDeserialization(object sender) { }
         public void Remove(object key) { }
         public void RemoveAt(int index) { }
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { return default(System.Collections.IEnumerator); }

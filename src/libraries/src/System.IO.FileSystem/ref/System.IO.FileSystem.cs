@@ -50,6 +50,7 @@ namespace System.IO
         public static System.DateTime GetLastAccessTimeUtc(string path) { return default(System.DateTime); }
         public static System.DateTime GetLastWriteTime(string path) { return default(System.DateTime); }
         public static System.DateTime GetLastWriteTimeUtc(string path) { return default(System.DateTime); }
+        public static string[] GetLogicalDrives() { return default(string[]); }
         public static System.IO.DirectoryInfo GetParent(string path) { return default(System.IO.DirectoryInfo); }
         public static void Move(string sourceDirName, string destDirName) { }
         public static void SetCreationTime(string path, System.DateTime creationTime) { }
@@ -202,11 +203,15 @@ namespace System.IO
         public override System.Threading.Tasks.Task FlushAsync(System.Threading.CancellationToken cancellationToken) { return default(System.Threading.Tasks.Task); }
         public override int Read(byte[] array, int offset, int count) { array = default(byte[]); return default(int); }
         public override System.Threading.Tasks.Task<int> ReadAsync(byte[] buffer, int offset, int count, System.Threading.CancellationToken cancellationToken) { return default(System.Threading.Tasks.Task<int>); }
+        public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback callback, object state) { return default(IAsyncResult); }
+        public override int EndRead(IAsyncResult asyncResult) { return default(int); }
         public override int ReadByte() { return default(int); }
         public override long Seek(long offset, System.IO.SeekOrigin origin) { return default(long); }
         public override void SetLength(long value) { }
         public override void Write(byte[] array, int offset, int count) { }
         public override System.Threading.Tasks.Task WriteAsync(byte[] buffer, int offset, int count, System.Threading.CancellationToken cancellationToken) { return default(System.Threading.Tasks.Task); }
+        public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback callback, object state) { return default(IAsyncResult); }
+        public override void EndWrite(IAsyncResult asyncResult) { }
         public override void WriteByte(byte value) { }
     }
     public abstract partial class FileSystemInfo

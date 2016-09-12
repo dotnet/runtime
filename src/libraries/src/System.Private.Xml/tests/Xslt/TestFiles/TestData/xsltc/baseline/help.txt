@@ -1,0 +1,30 @@
+Microsoft (R) XSLT Compiler version 4.0.20914
+[Microsoft (R) .NET Framework version 4.0.20914]
+Copyright (C) Microsoft Corporation. All rights reserved.
+
+xsltc [options] [/class:<name>] <source file> [[/class:<name>] <source file>...]
+
+                      XSLT Compiler Options
+
+                        - OUTPUT FILES -
+/out:<file>             Specify name of binary output file (default: name of the first source file)
+/version:<version>      Specify an assembly version
+/delaysign[+|-]         Delay-sign the assembly using only the public portion of the strong name key
+/keyfile:<file>         Specify a strong name key file
+/keycontainer:<string>  Specify a strong name key container
+/platform:<string>      Limit which platforms this code can run on: x86, Itanium, x64, or anycpu, which is the default
+
+                        - RESOURCES -
+/win32res:<file>        Specify a Win32 resource file (.res)
+
+                        - CODE GENERATION -
+/class:<name>           Specify name of the class for compiled stylesheet (short form: /c)
+/debug[+|-]             Emit debugging information
+/debug:{full|pdbonly}   Specify debugging type ('full' is default and enables attaching a debugger)
+/settings:<list>        Specify security settings in the format (dtd|document|script)[+|-],...
+                        Dtd enables DTDs in stylesheets, document enables document() function, script enables <msxsl:script> element
+
+                        - MISCELLANEOUS -
+@<file>                 Insert command-line settings from a text file
+/help                   Display this usage message (short form: /?)
+/nologo                 Suppress compiler copyright message

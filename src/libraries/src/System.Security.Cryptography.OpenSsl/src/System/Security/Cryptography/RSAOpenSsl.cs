@@ -33,7 +33,7 @@ namespace System.Security.Cryptography
             // Use ForceSet instead of the property setter to ensure that LegalKeySizes doesn't interfere
             // with the already loaded key.
             ForceSetKeySize(BitsPerByte * Interop.Crypto.RsaSize(rsaHandle));
-            _key = new Lazy<SafeRsaHandle>(() => rsaHandle);
+            _key = new Lazy<SafeRsaHandle>(() => rsaHandle, isThreadSafe: true);
         }
 
         /// <summary>
@@ -58,13 +58,14 @@ namespace System.Security.Cryptography
 
             if (rsa.IsInvalid)
             {
+                rsa.Dispose();
                 throw Interop.Crypto.CreateOpenSslCryptographicException();
             }
 
             // Use ForceSet instead of the property setter to ensure that LegalKeySizes doesn't interfere
             // with the already loaded key.
             ForceSetKeySize(BitsPerByte * Interop.Crypto.RsaSize(rsa));
-            _key = new Lazy<SafeRsaHandle>(() => rsa);
+            _key = new Lazy<SafeRsaHandle>(() => rsa, isThreadSafe: true);
         }
 
         /// <summary>

@@ -2,7 +2,7 @@
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
-    <Project Include="System.Security.Cryptography.Algorithms.csproj">
+	<Project Include="System.Security.Cryptography.Algorithms.csproj">
       <OSGroup>Unix</OSGroup>
     </Project>
     <Project Include="System.Security.Cryptography.Algorithms.csproj">
@@ -10,6 +10,10 @@
     </Project>
     <Project Include="System.Security.Cryptography.Algorithms.csproj">
       <OSGroup>Windows_NT</OSGroup>
+    </Project>
+    <Project Include="System.Security.Cryptography.Algorithms.csproj">
+      <OSGroup>Windows_NT</OSGroup>
+      <TargetGroup>netstandard1.6</TargetGroup>	
     </Project>
     <Project Include="System.Security.Cryptography.Algorithms.csproj">
       <OSGroup>Windows_NT</OSGroup>
@@ -30,4 +34,3 @@
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
 </Project>
-

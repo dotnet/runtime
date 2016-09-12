@@ -3,12 +3,25 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <OutputType>Library</OutputType>
-    <NuGetTargetMoniker>.NETStandard,Version=v1.4</NuGetTargetMoniker>
+    <NuGetTargetMoniker>.NETStandard,Version=v1.7</NuGetTargetMoniker>
+    <ProjectGuid>{27225772-FE8B-49D7-8E58-29242D536130}</ProjectGuid>
+    <PackageTargetFramework>netstandard1.7;uap10.1</PackageTargetFramework>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <OutputPath>bin\Release\</OutputPath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)' == 'Windows_Debug'">
+    <OutputPath>bin\Windows_Debug\</OutputPath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)' == 'Windows_Release'">
+    <OutputPath>bin\Windows_Release\</OutputPath>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.IO.IsolatedStorage.cs" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="4.0\project.json" />
+    <None Include="4.0\System.IO.IsolatedStorage.depproj" />
     <None Include="project.json" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />

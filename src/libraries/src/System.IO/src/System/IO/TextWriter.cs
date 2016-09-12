@@ -51,6 +51,12 @@ namespace System.IO
             }
         }
 
+        public virtual void Close()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
         protected virtual void Dispose(bool disposing)
         {
         }

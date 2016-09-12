@@ -9,7 +9,7 @@ using Xunit;
 
 namespace System.Tests
 {
-    public static class EnumTests
+    public static partial class EnumTests
     {
         [Theory]
         [InlineData("Red", false, SimpleEnum.Red)]
@@ -758,6 +758,53 @@ namespace System.Tests
         }
 
         [Theory]
+        // Byte
+        [InlineData(typeof(ByteEnum), byte.MaxValue, ByteEnum.Max)]
+        [InlineData(typeof(ByteEnum), (byte)1, ByteEnum.One)]
+        [InlineData(typeof(ByteEnum), (byte)11, (ByteEnum)11)]
+
+        // SByte
+        [InlineData(typeof(SByteEnum), sbyte.MinValue, SByteEnum.Min)]
+        [InlineData(typeof(SByteEnum), (sbyte)2, SByteEnum.Two)]
+        [InlineData(typeof(SByteEnum), (sbyte)22, (SByteEnum)22)]
+
+        // UInt16
+        [InlineData(typeof(UInt16Enum), ushort.MaxValue, UInt16Enum.Max)]
+        [InlineData(typeof(UInt16Enum), (ushort)1, UInt16Enum.One)]
+        [InlineData(typeof(UInt16Enum), (ushort)33, (UInt16Enum)33)]
+
+        // Int16
+        [InlineData(typeof(Int16Enum), short.MinValue, Int16Enum.Min)]
+        [InlineData(typeof(Int16Enum), (short)2, Int16Enum.Two)]
+        [InlineData(typeof(Int16Enum), (short)44, (Int16Enum)44)]
+
+        // UInt32
+        [InlineData(typeof(UInt32Enum), uint.MaxValue, UInt32Enum.Max)]
+        [InlineData(typeof(UInt32Enum), (uint)1, UInt32Enum.One)]
+        [InlineData(typeof(UInt32Enum), (uint)55, (UInt32Enum)55)]
+
+        // Int32
+        [InlineData(typeof(Int32Enum), int.MinValue, Int32Enum.Min)]
+        [InlineData(typeof(Int32Enum), 2, Int32Enum.Two)]
+        [InlineData(typeof(Int32Enum), 66, (Int32Enum)66)]
+
+        // UInt64
+        [InlineData(typeof(UInt64Enum), ulong.MaxValue, UInt64Enum.Max)]
+        [InlineData(typeof(UInt64Enum), (ulong)1, UInt64Enum.One)]
+        [InlineData(typeof(UInt64Enum), (ulong)77, (UInt64Enum)77)]
+
+        // Int64
+        [InlineData(typeof(Int64Enum), long.MinValue, Int64Enum.Min)]
+        [InlineData(typeof(Int64Enum), (long)2, Int64Enum.Two)]
+        [InlineData(typeof(Int64Enum), (long)88, (Int64Enum)88)]
+        public static void ToObject(Type type, object value, Enum expected)
+        {
+            var typedValue = Convert.ChangeType(value, value.GetType());
+            var enumObject = Enum.ToObject(type, typedValue);
+            Assert.Equal(expected, enumObject);
+        }
+
+        [Theory]
         // Format: "D"
         [InlineData(ByteEnum.Min, "D", "0")]
         [InlineData(ByteEnum.One, "D", "1")]
@@ -910,9 +957,11 @@ namespace System.Tests
         {
             if (format.ToUpperInvariant() == "G")
             {
+                string nullString = null;
+
                 Assert.Equal(expected, e.ToString());
                 Assert.Equal(expected, e.ToString(""));
-                Assert.Equal(expected, e.ToString(null));
+                Assert.Equal(expected, e.ToString(nullString));
             }
             // Format string is non-case-sensitive
             Assert.Equal(expected, e.ToString(format));

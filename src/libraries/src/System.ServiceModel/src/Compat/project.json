@@ -1,0 +1,17 @@
+{
+  "dependencies": {
+    "System.Runtime": "4.3.0-beta-devapi-24512-01",
+    "System.ServiceModel.Duplex": "4.0.2-beta-24318-01",
+    "System.ServiceModel.Http": "4.1.1-beta-24318-01",
+    "System.ServiceModel.NetTcp": "4.1.1-beta-24318-01",
+    "System.ServiceModel.Primitives": "4.1.1-beta-24318-01",
+    "System.ServiceModel.Security": "4.0.2-beta-24318-01",
+    "System.Runtime.Serialization.Primitives": "4.3.0-beta-devapi-24512-01",
+    "System.Runtime.Serialization.Xml": "4.3.0-beta-devapi-24512-01"
+  },
+  "frameworks": {
+    "netstandard1.6": {
+      "imports": "dnxcore50"
+    }
+  }
+}

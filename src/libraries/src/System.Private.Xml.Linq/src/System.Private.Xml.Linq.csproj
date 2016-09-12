@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <ProjectGuid>{BAC347A3-9841-44FC-B1E3-2344D1152C23}</ProjectGuid>
+    <AssemblyName>System.Private.Xml.Linq</AssemblyName>
+    <AssemblyVersion>4.0.0.0</AssemblyVersion>
+    <RootNamespace>System.Xml</RootNamespace>
+    <DefineConstants>$(DefineConstants);SILVERLIGHT</DefineConstants>
+    <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'net46'">true</IsPartialFacadeAssembly>
+    <ResourcesSourceOutputDirectory Condition="'$(TargetGroup)' == 'net46'">None</ResourcesSourceOutputDirectory>
+    <PackageTargetFramework Condition="'$(PackageTargetFramework)' == ''">netstandard1.3</PackageTargetFramework>
+    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.3</NuGetTargetMoniker>
+  </PropertyGroup>
+  <!-- Default configurations to help VS understand the configurations -->
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Release|AnyCPU'" />
+  <ItemGroup Condition="'$(TargetGroup)' != 'net46'">
+    <ProjectReference Include="..\..\System.Private.Xml\src\System.Private.Xml.csproj" />
+    <Compile Include="$(CommonPath)\System\Collections\Generic\EnumerableHelpers.cs">
+      <Link>System\Collections\Generic\EnumerableHelpers.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\IO\StringBuilderCache.cs">
+      <Link>System\StringBuilderCache.cs</Link>
+    </Compile>
+    <Compile Include="System\Xml\Linq\BaseUriAnnotation.cs" />
+    <Compile Include="System\Xml\Linq\Extensions.cs" />
+    <Compile Include="System\Xml\Linq\LineInfoAnnotation.cs" />
+    <Compile Include="System\Xml\Linq\LineInfoEndElementAnnotation.cs" />
+    <Compile Include="System\Xml\Linq\XAttribute.cs" />
+    <Compile Include="System\Xml\Linq\XCData.cs" />
+    <Compile Include="System\Xml\Linq\XComment.cs" />
+    <Compile Include="System\Xml\Linq\XContainer.cs" />
+    <Compile Include="System\Xml\Linq\XDeclaration.cs" />
+    <Compile Include="System\Xml\Linq\XDocument.cs" />
+    <Compile Include="System\Xml\Linq\XDocumentType.cs" />
+    <Compile Include="System\Xml\Linq\XElement.cs" />
+    <Compile Include="System\Xml\Linq\XHashtable.cs" />
+    <Compile Include="System\Xml\Linq\XHelper.cs" />
+    <Compile Include="System\Xml\Linq\XLinq.cs" />
+    <Compile Include="System\Xml\Linq\XName.cs" />
+    <Compile Include="System\Xml\Linq\XNamespace.cs" />
+    <Compile Include="System\Xml\Linq\XNode.cs" />
+    <Compile Include="System\Xml\Linq\XNodeBuilder.cs" />
+    <Compile Include="System\Xml\Linq\XNodeDocumentOrderComparer.cs" />
+    <Compile Include="System\Xml\Linq\XNodeEqualityComparer.cs" />
+    <Compile Include="System\Xml\Linq\XNodeReader.cs" />
+    <Compile Include="System\Xml\Linq\XObject.cs" />
+    <Compile Include="System\Xml\Linq\XObjectChangeAnnotation.cs" />
+    <Compile Include="System\Xml\Linq\XObjectChangeEventArgs.cs" />
+    <Compile Include="System\Xml\Linq\XProcessingInstruction.cs" />
+    <Compile Include="System\Xml\Linq\XStreamingElement.cs" />
+    <Compile Include="System\Xml\Linq\XText.cs" />
+    <Compile Include="System\Xml\Schema\XNodeValidator.cs" />
+    <Compile Include="System\Xml\XPath\XAttributeExtensions.cs" />
+    <Compile Include="System\Xml\XPath\XDocumentExtensions.cs" />
+    <Compile Include="System\Xml\XPath\XNodeNavigator.cs" />
+    <Compile Include="System\Xml\XPath\XObjectExtensions.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' != 'net46'">
+    <EmbeddedResource Include="$(MsBuildThisFileDirectory)Resources\$(AssemblyName).rd.xml" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'net46'">
+    <TargetingPackReference Include="mscorlib" />
+    <TargetingPackReference Include="System.Xml.Linq" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="project.json" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>

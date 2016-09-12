@@ -1,0 +1,2 @@
+#Compat issues with assembly System.Globalization (https://github.com/dotnet/corefx/issues/11035) :
+CannotRemoveBaseTypeOrInterface : Type 'System.Globalization.CultureNotFoundException' does not implement interface 'System.Runtime.Serialization.ISerializable' in the implementation but it does in the contract.

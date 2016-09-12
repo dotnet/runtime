@@ -6,11 +6,20 @@
 #include "pal_runtimeinformation.h"
 #include "pal_types.h"
 #include <stdio.h>
+#include <string.h>
 #include <sys/utsname.h>
 
 extern "C" const char* SystemNative_GetUnixName()
 {
     return PAL_UNIX_NAME;
+}
+
+extern "C" char* SystemNative_GetUnixRelease()
+{
+    struct utsname _utsname;
+    return uname(&_utsname) != -1 ?
+        strdup(_utsname.release) :
+        nullptr;
 }
 
 extern "C" int32_t SystemNative_GetUnixVersion(char* version, int* capacity)

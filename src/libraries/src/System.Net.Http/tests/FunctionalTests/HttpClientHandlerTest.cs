@@ -1529,6 +1529,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop] // TODO: Issue #11345
+        [ActiveIssue(10702)]
         [Theory, MemberData(nameof(HttpMethodsThatDontAllowContent))]
         public async Task SendAsync_SendRequestUsingNoBodyMethodToEchoServerWithContent_NoBodySent(
             string method,

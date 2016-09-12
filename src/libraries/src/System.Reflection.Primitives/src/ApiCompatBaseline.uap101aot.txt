@@ -1,0 +1,12 @@
+MembersMustExist : Member 'System.Reflection.EventAttributes System.Reflection.EventAttributes.ReservedMask' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Reflection.FieldAttributes System.Reflection.FieldAttributes.ReservedMask' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Reflection.MethodAttributes System.Reflection.MethodAttributes.ReservedMask' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Reflection.MethodImplAttributes System.Reflection.MethodImplAttributes.MaxMethodImplVal' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Reflection.ParameterAttributes System.Reflection.ParameterAttributes.Reserved3' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Reflection.ParameterAttributes System.Reflection.ParameterAttributes.Reserved4' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Reflection.ParameterAttributes System.Reflection.ParameterAttributes.ReservedMask' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Reflection.PropertyAttributes System.Reflection.PropertyAttributes.Reserved2' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Reflection.PropertyAttributes System.Reflection.PropertyAttributes.Reserved3' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Reflection.PropertyAttributes System.Reflection.PropertyAttributes.Reserved4' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Reflection.PropertyAttributes System.Reflection.PropertyAttributes.ReservedMask' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Reflection.TypeAttributes System.Reflection.TypeAttributes.ReservedMask' does not exist in the implementation but it does exist in the contract.

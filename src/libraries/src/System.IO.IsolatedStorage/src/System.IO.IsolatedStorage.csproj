@@ -1,26 +1,51 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
   <PropertyGroup>
-    <Configuration Condition="'$(Configuration)'==''">netcore50_Debug</Configuration>
+    <Configuration Condition="'$(Configuration)'=='' and '$(TargetGroup)' == ''"></Configuration>
   </PropertyGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <AssemblyName>System.IO.IsolatedStorage</AssemblyName>
     <ProjectGuid>{FAF5D1E4-BA43-4663-8429-C069066D75CB}</ProjectGuid>
-    <EnableWinRT>true</EnableWinRT>
+    <EnableWinRT Condition="'$(TargetGroup)' == 'uap101'">true</EnableWinRT>
+    <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'net463'">true</IsPartialFacadeAssembly>
+    <ResourcesSourceOutputDirectory Condition="'$(TargetGroup)' == 'net463'">None</ResourcesSourceOutputDirectory>
+    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NuGetTargetMoniker>
+    <PackageTargetFramework Condition="'$(TargetGroup)'==''">netstandard1.7;uap10.1</PackageTargetFramework>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the options -->
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcore50_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcore50_Release|AnyCPU'" />
-  <ItemGroup>
-    <ProjectReference Include="$(SourceDir)/mscorlib.WinRT-Facade/mscorlib.WinRT-Facade.csproj" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap101_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap101_Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Release|AnyCPU'" />
+  <ItemGroup Condition="'$(EnableWinRT)' == 'true'">
+    <ProjectReference Include="$(SourceDir)mscorlib.WinRT-Facade\mscorlib.WinRT-Facade.csproj" />
     <TargetingPackReference Include="Windows" />
   </ItemGroup>
-  <ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' != 'net463'">
     <Compile Include="System\IO\IsolatedStorage\IsolatedStorageException.cs" />
     <Compile Include="System\IO\IsolatedStorage\IsolatedStorageFile.cs" />
     <Compile Include="System\IO\IsolatedStorage\IsolatedStorageFileStream.cs" />
     <Compile Include="System\IO\IsolatedStorage\IsolatedStorageSecurityState.cs" />
+    <Compile Include="System\IO\IsolatedStorage\IsolatedStorage.cs" />
+    <Compile Include="System\IO\IsolatedStorage\IsolatedStorageScope.cs" />
+    <Compile Include="System\IO\IsolatedStorage\IsolatedStorageSecurityOptions.cs" />
+    <Compile Include="System\IO\IsolatedStorage\Helper.cs" />
+    <Compile Include="System\IO\IsolatedStorage\INormalizeForIsolatedStorage.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == ''">
+    <Compile Include="System\IO\IsolatedStorage\IsolatedStorageException.Serialization.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' != 'net463' and '$(EnableWinRT)' != 'true'">
+    <Compile Include="System\IO\IsolatedStorage\Helper.Win32.Unix.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' != 'net463' and '$(EnableWinRT)' == 'true'">
+    <Compile Include="System\IO\IsolatedStorage\Helper.WinRT.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'net463'">
+    <TargetingPackReference Include="mscorlib" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

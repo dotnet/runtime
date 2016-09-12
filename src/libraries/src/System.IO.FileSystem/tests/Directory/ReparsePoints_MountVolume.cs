@@ -20,7 +20,7 @@ public class Directory_ReparsePoints_MountVolume
 
     [Fact]
     [ActiveIssue(1221)]
-    [PlatformSpecific(PlatformID.Windows)] // testing mounting volumes and reparse points
+    [PlatformSpecific(Xunit.PlatformID.Windows)] // testing mounting volumes and reparse points
     public static void runTest()
     {
         try

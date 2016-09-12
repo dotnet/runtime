@@ -32,7 +32,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(Xunit.PlatformID.Windows)]
         public void UNCShares()
         {
             string root = Path.GetPathRoot(Directory.GetCurrentDirectory());

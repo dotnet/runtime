@@ -8,9 +8,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\System.Text.Encoding.csproj" />
-    <ProjectReference Include="..\..\src\System.Text.Encoding.csproj">
-      <TargetGroup>netcore50</TargetGroup>
-    </ProjectReference>
 
     <!-- AOT implementation comes from AOT package -->
     <File Include="$(PlaceholderFile)">

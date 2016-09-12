@@ -1,0 +1,45 @@
+<?xml version='1.0'?>
+<FishResidents>
+  <fish family="wrasse" Food="omnivore">
+    <name>Dragon Wrasse</name>
+	<color>Burgandy/White</color>
+    <acquired>9/12/00</acquired>
+	<community>yes</community>
+  </fish>
+  <fish family="trigger" Food="carnivore">
+    <name>Humu Humu</name>
+	<color>White/Blue/Yellow</color>
+    <acquired>4/12/00</acquired>
+	<community>no</community>
+  </fish>
+
+  <fish family="boxfish" Food="omnivore">
+    <name>Cubicus</name>
+	<color>Yellow</color>
+    <acquired>9/12/00</acquired>
+	<community>yes</community>
+	<notes>Fish has poisonous skin and excretes poison when dead, dying, or frightened</notes>
+  </fish>
+
+ <fish family="lionfish" Food="carnivore">
+    <name>Black Volitan</name>
+	<color>Dark Brown/black</color>
+    <acquired>6/21/00</acquired>
+	<community>yes</community>
+	<notes>Fins are fish are poisonous. Contact local paramedic if stung</notes>
+  </fish>
+
+  <fish family="tang" Food="herbivore">
+    <name>Purple Red Sea Tang</name>
+	<color>Purple/White</color>
+    <acquired>5/5/00</acquired>
+	<community>yes</community>
+  </fish>
+
+  <fish family="eel" Food="carnivore">
+    <name>Snowflake Moray</name>
+	<color>White/Brown</color>
+    <acquired>11/17/99</acquired>
+	<community>yes</community>
+  </fish>
+</FishResidents>

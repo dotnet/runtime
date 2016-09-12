@@ -40,6 +40,7 @@ namespace System.Collections
         }
     }
 
+    [Serializable]
     internal sealed class StructuralEqualityComparer : IEqualityComparer
     {
         public new bool Equals(object x, object y)
@@ -81,6 +82,7 @@ namespace System.Collections
         }
     }
 
+    [Serializable]
     internal sealed class StructuralComparer : IComparer
     {
         public int Compare(object x, object y)

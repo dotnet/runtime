@@ -18,6 +18,7 @@ namespace System.Collections.Generic
     // 
     [DebuggerTypeProxy(typeof(ICollectionDebugView<>))]
     [DebuggerDisplay("Count = {Count}")]
+    [Serializable]
     public class List<T> : IList<T>, System.Collections.IList, IReadOnlyList<T>
     {
         private const int _defaultCapacity = 4;
@@ -26,6 +27,7 @@ namespace System.Collections.Generic
         [ContractPublicPropertyName("Count")]
         private int _size;
         private int _version;
+        [NonSerialized]
         private object _syncRoot;
 
         static readonly T[] _emptyArray = new T[0];
@@ -353,6 +355,22 @@ namespace System.Collections.Generic
                 return Contains((T)item);
             }
             return false;
+        }
+ 
+        public List<TOutput> ConvertAll<TOutput>(Converter<T,TOutput> converter) 
+        {
+            if( converter == null)
+            {
+                throw new ArgumentNullException(nameof(converter));
+            }
+            Contract.EndContractBlock();
+ 
+            List<TOutput> list = new List<TOutput>(_size);
+            for (int i = 0; i< _size; i++) {
+                list._items[i] = converter(_items[i]);
+            }
+            list._size = _size;
+            return list;
         }
 
         // Copies this List into array, which must be of a 
@@ -1143,6 +1161,7 @@ namespace System.Collections.Generic
             return true;
         }
 
+        [Serializable]
         public struct Enumerator : IEnumerator<T>, System.Collections.IEnumerator
         {
             private List<T> list;

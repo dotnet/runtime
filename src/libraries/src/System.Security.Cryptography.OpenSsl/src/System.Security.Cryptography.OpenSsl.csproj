@@ -9,7 +9,9 @@
     <OutputType>Library</OutputType>
     <AssemblyName>System.Security.Cryptography.OpenSsl</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <NuGetTargetMoniker>.NETStandard,Version=v1.6</NuGetTargetMoniker>
+    <AssemblyVersion Condition="'$(TargetGroup)'=='netstandard1.6'">4.0.0.0</AssemblyVersion>
+    <ContractProject Condition="'$(AssemblyVersion)' == '4.0.0.0'">..\ref\4.0\System.Security.Cryptography.OpenSsl.depproj</ContractProject>
+    <NuGetTargetMoniker Condition="'$(NuGetTargetMoniker)' == ''">.NETStandard,Version=v1.7</NuGetTargetMoniker>
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetsWindows)' == 'true'">
     <GeneratePlatformNotSupportedAssembly>true</GeneratePlatformNotSupportedAssembly>
@@ -95,6 +97,21 @@
     </Compile>
     <Compile Include="$(CommonPath)\System\Security\Cryptography\RSAOpenSsl.cs">
       <Link>Common\System\Security\Cryptography\RSAOpenSsl.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsUnix)' == 'true' AND ('$(TargetGroup)'=='' OR '$(TargetGroup)'=='netstandard1.7')">
+    <Compile Include="System\Security\Cryptography\DSAOpenSsl.cs" />
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.EvpPkey.Dsa.cs">
+      <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.EvpPkey.Dsa.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.Dsa.cs">
+      <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.Dsa.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeDsaHandle.Unix.cs">
+      <Link>Common\Microsoft\Win32\SafeHandles\SafeDsaHandle.Unix.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\DSAOpenSsl.cs">
+      <Link>Common\System\Security\Cryptography\DSAOpenSsl.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>

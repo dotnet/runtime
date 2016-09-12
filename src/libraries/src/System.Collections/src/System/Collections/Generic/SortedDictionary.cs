@@ -4,15 +4,18 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.Serialization;
 
 namespace System.Collections.Generic
 {
     [DebuggerTypeProxy(typeof(IDictionaryDebugView<,>))]
     [DebuggerDisplay("Count = {Count}")]
+    [Serializable]
     public class SortedDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDictionary, IReadOnlyDictionary<TKey, TValue>
     {
+        [NonSerialized]
         private KeyCollection _keys;
-
+        [NonSerialized]
         private ValueCollection _values;
 
         private TreeSet<KeyValuePair<TKey, TValue>> _set;
@@ -551,6 +554,7 @@ namespace System.Collections.Generic
 
         [DebuggerTypeProxy(typeof(DictionaryKeyCollectionDebugView<,>))]
         [DebuggerDisplay("Count = {Count}")]
+        [Serializable]
         public sealed class KeyCollection : ICollection<TKey>, ICollection, IReadOnlyCollection<TKey>
         {
             private SortedDictionary<TKey, TValue> _dictionary;
@@ -735,6 +739,7 @@ namespace System.Collections.Generic
 
         [DebuggerTypeProxy(typeof(DictionaryValueCollectionDebugView<,>))]
         [DebuggerDisplay("Count = {Count}")]
+        [Serializable]
         public sealed class ValueCollection : ICollection<TValue>, ICollection, IReadOnlyCollection<TValue>
         {
             private SortedDictionary<TKey, TValue> _dictionary;
@@ -917,6 +922,7 @@ namespace System.Collections.Generic
             }
         }
 
+        [Serializable]
         internal sealed class KeyValuePairComparer : Comparer<KeyValuePair<TKey, TValue>>
         {
             internal IComparer<TKey> keyComparer;
@@ -950,6 +956,7 @@ namespace System.Collections.Generic
     /// The only thing that makes it different from SortedSet is that it throws on duplicates
     /// </summary>
     /// <typeparam name="T"></typeparam>
+    [Serializable]
     internal sealed class TreeSet<T> : SortedSet<T>
     {
         public TreeSet()
@@ -961,6 +968,8 @@ namespace System.Collections.Generic
         public TreeSet(ICollection<T> collection) : base(collection) { }
 
         public TreeSet(ICollection<T> collection, IComparer<T> comparer) : base(collection, comparer) { }
+
+        public TreeSet(SerializationInfo siInfo, StreamingContext context) : base(siInfo, context) { }
 
         internal override bool AddIfNotPresent(T item)
         {

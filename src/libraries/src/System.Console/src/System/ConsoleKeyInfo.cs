@@ -4,6 +4,7 @@
 
 namespace System
 {
+    [Serializable]
     public struct ConsoleKeyInfo
     {
         private readonly char _keyChar;

@@ -2,11 +2,11 @@
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
-    <ProjectReference Include="..\ref\4.0.0\System.Text.Encoding.depproj">
-      <SupportedFramework>net45;netcore45;wp8;wpa81</SupportedFramework>
-    </ProjectReference>
     <ProjectReference Include="..\ref\System.Text.Encoding.csproj">
-      <SupportedFramework>net46;netcore50;netcoreapp1.0;$(AllXamarinFrameworks)</SupportedFramework>
+      <SupportedFramework>netcoreapp1.1;net463;$(AllXamarinFrameworks)</SupportedFramework>
+    </ProjectReference>
+    <ProjectReference Include="..\src\System.Text.Encoding.csproj">
+      <TargetGroup>net463</TargetGroup>
     </ProjectReference>
     <ProjectReference Include="any\System.Text.Encoding.pkgproj" />
     <ProjectReference Include="aot\System.Text.Encoding.pkgproj" />

@@ -1,0 +1,50 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <MinimumVisualStudioVersion>11.0</MinimumVisualStudioVersion>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>System.Security.Permissions.Tests</RootNamespace>
+    <AssemblyName>System.Security.Permissions.Tests</AssemblyName>
+    <NugetTargetMoniker>.NETStandard,Version=v1.7</NugetTargetMoniker>
+    <TestTFM>netcoreapp1.1</TestTFM>
+    <ProjectGuid>{492EC54D-D2C4-4B3F-AC1F-646B3F7EBB02}</ProjectGuid>
+    <NugetTargetMoniker Condition="'$(NugetTargetMoniker)'==''">.NETStandard,Version=v1.7</NugetTargetMoniker>
+  </PropertyGroup>
+  <ItemGroup>
+    <TestNugetTargetMoniker Include="$(NugetTargetMoniker)">
+      <Folder>netcoreapp1.1</Folder>
+    </TestNugetTargetMoniker>
+  </ItemGroup>
+  <!-- Default configurations to help VS understand the configurations -->
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\pkg\System.Security.Permissions.pkgproj">
+      <Name>System.Security.Permissions</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="project.json" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="ApplicationTrustTests.cs" />
+    <Compile Include="CodeConnectAccessTests.cs" />
+    <Compile Include="EvidenceTests.cs" />
+    <Compile Include="CodeGroupTests.cs" />
+    <Compile Include="MembershipConditionTests.cs" />
+    <Compile Include="EvidenceBaseTests.cs" />
+    <Compile Include="PolicyTests.cs" />
+    <Compile Include="TrustManagerContextTests.cs" />
+    <Compile Include="PermissionSetTests.cs" />
+    <Compile Include="PermissionTests.cs" />
+    <Compile Include="HostSecurityManagerTests.cs" />
+    <Compile Include="HostProtectionTests.cs" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>

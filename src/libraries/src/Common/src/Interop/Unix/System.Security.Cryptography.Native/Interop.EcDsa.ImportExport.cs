@@ -132,7 +132,7 @@ internal static partial class Interop
                 using (d_bn = new SafeBignumHandle(d_bn_not_owned, false))
                 {
                     // Match Windows semantics where qx, qy, and d have same length
-                    int cbKey = GetMax(new[] { qx_cb, qy_cb, d_cb });
+                    int cbKey = GetMax(qx_cb, qy_cb, d_cb);
 
                     parameters.Q = new ECPoint
                     {
@@ -229,7 +229,7 @@ internal static partial class Interop
                     }
 
                     // Match Windows semantics where order and d have same length
-                    int cbSubgroupOrder = GetMax(new[] { order_cb, d_cb });
+                    int cbSubgroupOrder = GetMax(order_cb, d_cb);
 
                     // Copy values to ECParameters
                     ECParameters parameters = new ECParameters();
@@ -290,6 +290,24 @@ internal static partial class Interop
             }
 
             return max;
+        }
+
+        /// <summary>
+        /// Return the maximum value in the array; assumes non-negative values.
+        /// </summary>
+        private static int GetMax(int value1, int value2)
+        {
+            Debug.Assert(value1 >= 0);
+            Debug.Assert(value2 >= 0);
+            return (value1 > value2 ? value1 : value2);
+        }
+
+        /// <summary>
+        /// Return the maximum value in the array; assumes non-negative values.
+        /// </summary>
+        private static int GetMax(int value1, int value2, int value3)
+        {
+            return GetMax(GetMax(value1, value2), value3);
         }
     }
 }

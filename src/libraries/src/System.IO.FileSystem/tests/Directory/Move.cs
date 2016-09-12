@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using Xunit;
+using XunitPlatformID = Xunit.PlatformID;
 
 namespace System.IO.Tests
 {
@@ -144,7 +145,7 @@ namespace System.IO.Tests
         #region PlatformSpecific
 
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(XunitPlatformID.Windows)]
         public void Path_With_Longer_Than_MaxDirectory_Succeeds()
         {
             string testDir = GetTestFilePath();
@@ -169,7 +170,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(XunitPlatformID.Windows)]
         public void WindowsWildCharacterPath()
         {
             Assert.Throws<ArgumentException>(() => Move("*", GetTestFilePath()));
@@ -179,7 +180,7 @@ namespace System.IO.Tests
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/1008
-        [PlatformSpecific(PlatformID.AnyUnix)]
+        [PlatformSpecific(XunitPlatformID.AnyUnix)]
         public void UnixWildCharacterPath()
         {
             // Wildcards are allowed in paths for Unix move commands as literals as well as functional wildcards,
@@ -205,7 +206,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(XunitPlatformID.Windows)]
         public void WindowsWhitespacePath()
         {
             DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
@@ -219,7 +220,7 @@ namespace System.IO.Tests
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/1008
-        [PlatformSpecific(PlatformID.AnyUnix)]
+        [PlatformSpecific(XunitPlatformID.AnyUnix)]
         public void UnixWhitespacePath()
         {
             DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
@@ -234,7 +235,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(XunitPlatformID.Windows)]
         public void WindowsExistingDirectory()
         {
             DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
@@ -249,7 +250,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(XunitPlatformID.Windows)]
         public void BetweenDriveLabels()
         {
             DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
@@ -261,7 +262,7 @@ namespace System.IO.Tests
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/1008
-        [PlatformSpecific(PlatformID.AnyUnix)]
+        [PlatformSpecific(XunitPlatformID.AnyUnix)]
         public void UnixExistingDirectory()
         {
             // Moving to an-empty directory is supported on Unix, but moving to a non-empty directory is not

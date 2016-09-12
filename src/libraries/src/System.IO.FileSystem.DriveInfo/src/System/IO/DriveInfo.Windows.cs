@@ -151,35 +151,11 @@ namespace System.IO
 
         public static DriveInfo[] GetDrives()
         {
-            int drives = Interop.mincore.GetLogicalDrives();
-            if (drives == 0)
-                throw Win32Marshal.GetExceptionForLastWin32Error();
-
-            // GetLogicalDrives returns a bitmask starting from 
-            // position 0 "A" indicating whether a drive is present.
-            // Loop over each bit, creating a DriveInfo for each one
-            // that is set.
-
-            uint d = (uint)drives;
-            int count = 0;
-            while (d != 0)
+            string[] drives = DriveInfoInternal.GetLogicalDrives();
+            DriveInfo[] result = new DriveInfo[drives.Length];
+            for (int i = 0; i < drives.Length; i++)
             {
-                if (((int)d & 1) != 0) count++;
-                d >>= 1;
-            }
-
-            DriveInfo[] result = new DriveInfo[count];
-            char[] root = new char[] { 'A', ':', '\\' };
-            d = (uint)drives;
-            count = 0;
-            while (d != 0)
-            {
-                if (((int)d & 1) != 0)
-                {
-                    result[count++] = new DriveInfo(new String(root));
-                }
-                d >>= 1;
-                root[0]++;
+                result[i] = new DriveInfo(drives[i]);
             }
             return result;
         }

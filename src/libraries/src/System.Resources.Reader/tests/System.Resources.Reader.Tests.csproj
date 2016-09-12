@@ -24,9 +24,6 @@
     <ProjectReference Include="..\pkg\System.Resources.Reader.pkgproj">
       <Name>System.Resources.Reder</Name>
     </ProjectReference>
-    <ProjectReference Include="..\..\System.Resources.Writer\pkg\System.Resources.Writer.pkgproj">
-      <Name>System.Resources.Writer</Name>
-    </ProjectReference>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

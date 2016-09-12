@@ -36,7 +36,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        public static void ReadEmtpyString() {
+        public static void ReadEmptyString() {
             StringReader sr = new StringReader(string.Empty);
             Assert.Equal(-1, sr.Read());
 
@@ -70,7 +70,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        public static void ReadPsudoRandomString()
+        public static void ReadPseudoRandomString()
         {
             string str1 = string.Empty;
             Random r = new Random(-55);
@@ -84,12 +84,8 @@ namespace System.IO.Tests
             }
         }
 
-
-
-
-
         [Fact]
-        public static void PeedEmtpyString()
+        public static void PeekEmptyString()
         {
             StringReader sr = new StringReader(string.Empty);
             Assert.Equal(-1, sr.Peek());
@@ -111,7 +107,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        public static void PeekPsudoRandomString()
+        public static void PeekPseudoRandomString()
         {
             string str1 = string.Empty;
             Random r = new Random(-55);
@@ -148,7 +144,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        public static void ReadToEndPsuedoRandom() {
+        public static void ReadToEndPseudoRandom() {
             // [] Try with large random strings
             //-----------------------------------------------------------
             string str1 = string.Empty;
@@ -158,6 +154,31 @@ namespace System.IO.Tests
 
             StringReader sr = new StringReader(str1);
             Assert.Equal(str1, sr.ReadToEnd());
+        }
+
+#if netstandard17
+        [Fact]
+        public static void Closed_DisposedExceptions()
+        {
+            StringReader sr = new StringReader("abcdefg");
+            sr.Close();
+            ValidateDisposedExceptions(sr);
+        }
+#endif //netstandard17
+
+        [Fact]
+        public static void Disposed_DisposedExceptions()
+        {
+            StringReader sr = new StringReader("abcdefg");
+            sr.Dispose();
+            ValidateDisposedExceptions(sr);
+        }
+
+        private static void ValidateDisposedExceptions(StringReader sr)
+        {
+            Assert.Throws<ObjectDisposedException>(() => { sr.Peek(); });
+            Assert.Throws<ObjectDisposedException>(() => { sr.Read(); });
+            Assert.Throws<ObjectDisposedException>(() => { sr.Read(new char[10], 0 , 1); });
         }
     }
 }

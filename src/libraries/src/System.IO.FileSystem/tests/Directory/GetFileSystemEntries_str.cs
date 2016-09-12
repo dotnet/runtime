@@ -4,6 +4,7 @@
 
 using System.Diagnostics;
 using Xunit;
+using XunitPlatformID = Xunit.PlatformID;
 
 namespace System.IO.Tests
 {
@@ -182,7 +183,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(XunitPlatformID.Windows)]
         public void WindowsInvalidCharsPath()
         {
             Assert.All(WindowsInvalidUnixValid, invalid =>
@@ -190,7 +191,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.AnyUnix)]
+        [PlatformSpecific(XunitPlatformID.AnyUnix)]
         public void UnixValidCharsFilePath()
         {
             if (TestFiles)
@@ -206,7 +207,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.AnyUnix)]
+        [PlatformSpecific(XunitPlatformID.AnyUnix)]
         public void UnixValidCharsDirectoryPath()
         {
             if (TestDirectories)

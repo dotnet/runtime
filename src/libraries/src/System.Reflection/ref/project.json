@@ -1,13 +1,11 @@
 {
   "dependencies": {
-    "System.Runtime": "4.0.20",
-    "System.IO": "4.0.0",
-    "System.Reflection.Primitives": "4.0.0"
+    "System.Runtime": "4.3.0-beta-devapi-24512-01"
   },
   "frameworks": {
-    "netstandard1.5": {
+    "netstandard1.7": {
       "imports": [
-        "dotnet5.6"
+        "dotnet5.8"
       ]
     }
   }

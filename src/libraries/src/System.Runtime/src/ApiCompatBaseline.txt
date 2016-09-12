@@ -1,0 +1,4 @@
+MembersMustExist : Member 'System.Type.IsSecurityCritical.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Type.IsSecuritySafeCritical.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Type.IsSecurityTransparent.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Reflection.Pointer..ctor()' does not exist in the implementation but it does exist in the contract.

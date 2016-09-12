@@ -8,14 +8,16 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <AssemblyName>System.Security.Cryptography.Cng</AssemblyName>
     <ProjectGuid>{4C1BD451-6A99-45E7-9339-79C77C42EE9E}</ProjectGuid>
-    <AssemblyVersion Condition="'$(TargetGroup)'=='net46'">4.0.0.0</AssemblyVersion>
-    <AssemblyVersion Condition="'$(TargetGroup)'=='net461'">4.1.0.0</AssemblyVersion>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <AssemblyVersion Condition="'$(TargetGroup)'=='net46'">4.0.0.0</AssemblyVersion>
     <ContractProject Condition="'$(AssemblyVersion)' == '4.0.0.0'">..\ref\4.0\System.Security.Cryptography.Cng.depproj</ContractProject>
+    <AssemblyVersion Condition="'$(TargetGroup)'=='net461'">4.1.0.0</AssemblyVersion>
     <ContractProject Condition="'$(AssemblyVersion)' == '4.1.0.0'">..\ref\4.1\System.Security.Cryptography.Cng.depproj</ContractProject>
+    <AssemblyVersion Condition="'$(TargetGroup)'=='netstandard1.6'">4.2.0.0</AssemblyVersion>
+    <ContractProject Condition="'$(AssemblyVersion)' == '4.2.0.0'">..\ref\4.2\System.Security.Cryptography.Cng.depproj</ContractProject>
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'net46' OR '$(TargetGroup)' == 'net461' OR '$(TargetGroup)' == 'net463'">true</IsPartialFacadeAssembly>
     <ResourcesSourceOutputDirectory Condition="'$(IsPartialFacadeAssembly)' == 'true'">None</ResourcesSourceOutputDirectory>
-    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.6</NuGetTargetMoniker>
+    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NuGetTargetMoniker>
     <GeneratePlatformNotSupportedAssembly Condition="'$(TargetsUnix)' == 'true'">true</GeneratePlatformNotSupportedAssembly>
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetGroup)' == 'netcore50'">
@@ -248,7 +250,7 @@
       <Link>Common\System\Security\Cryptography\RSACng.SignVerify.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true' AND '$(TargetGroup)' == ''">
+  <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true' AND '$(TargetsWindows)' == 'true' AND '$(TargetGroup)' != 'netcore50'">
     <Compile Include="$(CommonPath)\System\Security\Cryptography\ECCng.ImportExport.cs">
       <Link>Common\System\Security\Cryptography\ECCng.ImportExport.cs</Link>
     </Compile>
@@ -256,6 +258,23 @@
       <Link>Common\System\Security\Cryptography\ECDsaCng.ImportExport.cs</Link>
     </Compile>
     <Compile Include="System\Security\Cryptography\ECCng.ImportExport.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true' AND '$(TargetsWindows)' == 'true' AND ('$(TargetGroup)'=='' OR '$(TargetGroup)'=='netstandard1.7')">
+    <Compile Include="System\Security\Cryptography\DSACng.cs" />
+    <Compile Include="System\Security\Cryptography\DSACng.ImportExport.cs" />
+    <Compile Include="System\Security\Cryptography\DSACng.Key.cs" />
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\DSACng.cs">
+      <Link>Common\System\Security\Cryptography\DSACng.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\DSACng.ImportExport.cs">
+      <Link>Common\System\Security\Cryptography\DSACng.ImportExport.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\DSACng.SignVerify.cs">
+      <Link>Common\System\Security\Cryptography\DSACng.SignVerify.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true' AND '$(TargetsWindows)' == 'true'">
+    <AdditionalFiles Include="$(ToolsDir)PinvokeAnalyzer_OneCoreApis.txt" />
   </ItemGroup>
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' == 'true'">
     <TargetingPackReference Include="mscorlib" />

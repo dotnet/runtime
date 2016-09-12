@@ -1,0 +1,15 @@
+;==++==
+;
+;   Copyright (c) Microsoft Corporation.  All rights reserved.
+;
+;==--==
+
+; NOTE: do not use \", use ' instead
+; NOTE: Use # or ; for comments
+
+; These are the managed resources for System.Xml.Utils.dll in Silverlight.  See
+; ResourceManager documentation and the ResGen tool.
+
+Xml_UnsupportedClass=Object type is not supported.
+Xml_CannotResolveUrl=Cannot resolve '{0}'.
+

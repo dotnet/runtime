@@ -3,13 +3,25 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
     <Project Include="System.Security.Cryptography.Algorithms.Tests.csproj">
+      <TargetGroup>netstandard1.6</TargetGroup>
+      <TestTFMs>netcoreapp1.0</TestTFMs>
       <OSGroup>Unix</OSGroup>
     </Project>
     <Project Include="System.Security.Cryptography.Algorithms.Tests.csproj">
+      <TargetGroup>netstandard1.7</TargetGroup>
+      <TestTFMs>netcoreapp1.1</TestTFMs>
+      <OSGroup>Unix</OSGroup>
+    </Project>
+    <Project Include="System.Security.Cryptography.Algorithms.Tests.csproj">
+      <TargetGroup>netstandard1.6</TargetGroup>
       <TestTFMs>netcoreapp1.0;net463</TestTFMs>
+      <OSGroup>Windows_NT</OSGroup>
+    </Project>
+    <Project Include="System.Security.Cryptography.Algorithms.Tests.csproj">
+      <TargetGroup>netstandard1.7</TargetGroup>
+      <TestTFMs>netcoreapp1.1</TestTFMs>
       <OSGroup>Windows_NT</OSGroup>
     </Project>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
 </Project>
-
