@@ -25,6 +25,8 @@ struct deps_entry_t
     pal::string_t library_name;
     pal::string_t library_version;
     pal::string_t library_hash;
+    pal::string_t library_path;
+    pal::string_t library_hash_path;
     asset_types asset_type;
     pal::string_t asset_name;
     pal::string_t relative_path;
