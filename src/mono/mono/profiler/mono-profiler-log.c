@@ -11,97 +11,56 @@
  */
 
 #include <config.h>
-#include "../mini/jit.h"
-#include "../metadata/metadata-internals.h"
-#include <mono/metadata/profiler.h>
-#include <mono/metadata/threads.h>
+#include <mono/metadata/assembly.h>
 #include <mono/metadata/debug-helpers.h>
+#include "../metadata/metadata-internals.h"
 #include <mono/metadata/mono-config.h>
 #include <mono/metadata/mono-gc.h>
 #include <mono/metadata/mono-perfcounters.h>
-#include <mono/metadata/appdomain.h>
-#include <mono/metadata/assembly.h>
-#include <mono/metadata/tokentype.h>
-#include <mono/metadata/tabledefs.h>
+#include <mono/metadata/profiler.h>
 #include <mono/utils/atomic.h>
-#include <mono/utils/mono-membar.h>
-#include <mono/utils/mono-mmap.h>
-#include <mono/utils/mono-counters.h>
-#include <mono/utils/mono-os-mutex.h>
-#include <mono/utils/mono-os-semaphore.h>
-#include <mono/utils/mono-conc-hashtable.h>
-#include <mono/utils/mono-linked-list-set.h>
+#include <mono/utils/hazard-pointer.h>
 #include <mono/utils/lock-free-alloc.h>
 #include <mono/utils/lock-free-queue.h>
-#include <mono/utils/hazard-pointer.h>
+#include <mono/utils/mono-conc-hashtable.h>
+#include <mono/utils/mono-counters.h>
+#include <mono/utils/mono-linked-list-set.h>
+#include <mono/utils/mono-membar.h>
+#include <mono/utils/mono-mmap.h>
+#include <mono/utils/mono-os-mutex.h>
+#include <mono/utils/mono-os-semaphore.h>
 #include <mono/utils/mono-threads.h>
 #include <mono/utils/mono-threads-api.h>
-#include <stdlib.h>
-#include <string.h>
-#include <assert.h>
-#include <glib.h>
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif
-#ifdef HAVE_SCHED_GETAFFINITY
-#include <sched.h>
-#endif
-#include <fcntl.h>
-#include <errno.h>
-#include <time.h>
-#ifdef HAVE_SYS_TIME_H
-#include <sys/time.h>
-#endif
-#if defined(__APPLE__)
-#include <mach/mach_time.h>
-#endif
+#include "mono-profiler-log.h"
 
-#ifndef _GNU_SOURCE
-#define _GNU_SOURCE
-#endif
 #ifdef HAVE_DLFCN_H
 #include <dlfcn.h>
-#endif
-#ifdef HAVE_EXECINFO_H
-#include <execinfo.h>
 #endif
 #ifdef HAVE_LINK_H
 #include <link.h>
 #endif
-
-#include <sys/types.h>
-#include <sys/socket.h>
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
+#if defined(__APPLE__)
+#include <mach/mach_time.h>
+#endif
 #include <netinet/in.h>
-#include <sys/select.h>
-
-#ifdef HOST_WIN32
-#include <windows.h>
-#else
-#include <pthread.h>
+#ifdef HAVE_SYS_MMAN_H
+#include <sys/mman.h>
 #endif
-
-#ifdef HAVE_SYS_STAT_H
-#include <sys/stat.h>
-#endif
-
-#include "mono-profiler-log.h"
-
+#include <sys/socket.h>
 #if defined (HAVE_SYS_ZLIB)
 #include <zlib.h>
 #endif
 
-#if defined(__linux__)
+#if defined(__linux__) && defined (ENABLE_PERF_EVENTS)
 
-#include <unistd.h>
-#include <sys/syscall.h>
-
-#ifdef ENABLE_PERF_EVENTS
 #include <linux/perf_event.h>
 
 #define USE_PERF_EVENTS 1
 
 static int read_perf_mmap (MonoProfiler* prof, int cpu);
-#endif
 
 #endif
 
