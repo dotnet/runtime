@@ -19,10 +19,6 @@
     <None Include="project.json" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="CustomAttributeBuilder\CustomAttributeBuilderCtor1.cs" />
-    <Compile Include="CustomAttributeBuilder\CustomAttributeBuilderCtor2.cs" />
-    <Compile Include="CustomAttributeBuilder\CustomAttributeBuilderCtor3.cs" />
-    <Compile Include="CustomAttributeBuilder\CustomAttributeBuilderCtor4.cs" />
     <Compile Include="ILGenerator\DeclareLocalTests.cs" />
     <Compile Include="ILGenerator\DefineLabelTests.cs" />
     <Compile Include="ILGenerator\Emit1Tests.cs" />
