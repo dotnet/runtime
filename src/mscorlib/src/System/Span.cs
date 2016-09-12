@@ -25,10 +25,14 @@ namespace System
         /// Creates a new span over the entirety of the target array.
         /// </summary>
         /// <param name="array">The target array.</param>
+        /// <exception cref="System.ArgumentNullException">Thrown when <paramref name="array"/> is a null
+        /// reference (Nothing in Visual Basic).</exception>
+        /// <exception cref="System.ArrayTypeMismatchException">Thrown when <paramref name="array"/> is covariant.</exception>
         public Span(T[] array)
         {
-            if (default(T) == null) // Arrays of valuetypes are never covariant
-            {
+            if (array == null)
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
+            if (default(T) == null) { // Arrays of valuetypes are never covariant
                 if (array.GetType() != typeof(T[]))
                     ThrowHelper.ThrowArrayTypeMismatchException();
             }
@@ -44,16 +48,22 @@ namespace System
         /// <param name="array">The target array.</param>
         /// <param name="start">The index at which to begin the span.</param>
         /// <param name="length">The number of items in the span.</param>
+        /// <exception cref="System.ArgumentNullException">Thrown when <paramref name="array"/> is a null
+        /// reference (Nothing in Visual Basic).</exception>
+        /// <exception cref="System.ArrayTypeMismatchException">Thrown when <paramref name="array"/> is covariant.</exception>
+        /// <exception cref="System.ArgumentOutOfRangeException">
+        /// Thrown when the specified <paramref name="start"/> or end index is not in range (&lt;0 or &gt;&eq;Length).
+        /// </exception>
         public Span(T[] array, int start, int length)
         {
-            if ((uint)start >= (uint)array.Length || (uint)length > (uint)(array.Length - start))
-                ThrowHelper.ThrowArgumentOutOfRangeException();
-
-            if (default(T) == null) // Arrays of valuetypes are never covariant
-            {
+            if (array == null)
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
+            if (default(T) == null) { // Arrays of valuetypes are never covariant
                 if (array.GetType() != typeof(T[]))
                     ThrowHelper.ThrowArrayTypeMismatchException();
             }
+            if ((uint)start >= (uint)array.Length || (uint)length > (uint)(array.Length - start))
+                ThrowHelper.ThrowArgumentOutOfRangeException();
 
             JitHelpers.SetByRef(out _rawPointer, ref JitHelpers.AddByRef(ref JitHelpers.GetArrayData(array), start));
             _length = length;
@@ -66,11 +76,21 @@ namespace System
         /// But if this creation is correct, then all subsequent uses are correct.
         /// </summary>
         /// <param name="ptr">An unmanaged pointer to memory.</param>
-        /// <param name="length">The number of T elements the memory contains.</param>
+        /// <param name="length">The number of <typeparamref name="T"/> elements the memory contains.</param>
+        /// <exception cref="System.ArgumentException">
+        /// Thrown when <typeparamref name="T"/> is reference type or contains pointers and hence can not be stored in unmanaged memory.
+        /// </exception>
+        /// <exception cref="System.ArgumentOutOfRangeException">
+        /// Thrown when the specified <paramref name="length"/> is negative.
+        /// </exception>
         [CLSCompliant(false)]
         public unsafe Span(void* ptr, int length)
         {
-            System.Diagnostics.Contracts.Contract.Requires(length >= 0);
+            if (JitHelpers.ContainsReferences<T>())
+                ThrowHelper.ThrowInvalidTypeForUnmanagedMemory(typeof(T));
+            if (length < 0)
+                ThrowHelper.ThrowArgumentOutOfRangeException();
+
             _rawPointer = (IntPtr)ptr;
             _length = length;
         }
@@ -84,15 +104,20 @@ namespace System
             _length = length;
         }
 
-        public int Length
+        public static implicit operator Span<T>(T[] array)
         {
-            get
-            {
-                return _length;
-            }
+            return new Span<T>(array);
         }
 
-        public static Span<T> Empty { get { return default(Span<T>); } }
+        public int Length
+        {
+            get { return _length; }
+        }
+
+        public static Span<T> Empty
+        {
+            get { return default(Span<T>); }
+        }
 
         public bool IsEmpty
         {
@@ -102,21 +127,23 @@ namespace System
         /// <summary>
         /// Fetches the element at the specified index.
         /// </summary>
-        /// <exception cref="System.ArgumentOutOfRangeException">
-        /// Thrown when the specified index is not in range (&lt;0 or &gt;&eq;_length).
+        /// <exception cref="System.IndexOutOfRangeException">
+        /// Thrown when the specified <paramref name="index"/> is not in range (&lt;0 or &gt;&eq;Length).
         /// </exception>
         public T this[int index]
         {
             get
             {
                 if ((uint)index >= (uint)_length)
-                    throw new IndexOutOfRangeException();
+                    ThrowHelper.ThrowIndexOutOfRangeException();
+
                 return JitHelpers.AddByRef(ref JitHelpers.GetByRef<T>(ref _rawPointer), index);
             }
             set
             {
                 if ((uint)index >= (uint)_length)
-                    throw new IndexOutOfRangeException();
+                    ThrowHelper.ThrowIndexOutOfRangeException();
+
                 JitHelpers.AddByRef(ref JitHelpers.GetByRef<T>(ref _rawPointer), index) = value;
             }
         }
@@ -126,26 +153,35 @@ namespace System
         /// allocates, so should generally be avoided, however is sometimes
         /// necessary to bridge the gap with APIs written in terms of arrays.
         /// </summary>
-        public T[] CreateArray()
+        public T[] ToArray()
         {
-            var src = JitHelpers.GetByRef<T>(ref _rawPointer);
-            var dest = new T[_length];
-            // TODO: Specialize to use a fast memcpy
-            for (int i = 0; i < dest.Length; i++)
-                dest[i] = JitHelpers.AddByRef(ref src, i); 
-            return dest;
+            var destination = new T[_length];
+            TryCopyTo(destination);
+            return destination;
         }
 
         /// <summary>
+        /// Forms a slice out of the given span, beginning at 'start'.
+        /// </summary>
+        /// <param name="start">The index at which to begin this slice.</param>
+        /// <exception cref="System.ArgumentOutOfRangeException">
+        /// Thrown when the specified <paramref name="start"/> index is not in range (&lt;0 or &gt;Length).
+        /// </exception>
+        public Span<T> Slice(int start)
+        {
+            if ((uint)start > (uint)_length)
+                ThrowHelper.ThrowArgumentOutOfRangeException();
+
+            return new Span<T>(ref JitHelpers.AddByRef(ref JitHelpers.GetByRef<T>(ref _rawPointer), start), Length - start);
+        }
 
         /// <summary>
-        /// Forms a slice out of the given span, beginning at 'start', and
-        /// ending at 'end' (exclusive).
+        /// Forms a slice out of the given span, beginning at 'start', of given length
         /// </summary>
         /// <param name="start">The index at which to begin this slice.</param>
         /// <param name="end">The index at which to end this slice (exclusive).</param>
         /// <exception cref="System.ArgumentOutOfRangeException">
-        /// Thrown when the specified start or end index is not in range (&lt;0 or &gt;&eq;_length).
+        /// Thrown when the specified <paramref name="start"/> or end index is not in range (&lt;0 or &gt;&eq;Length).
         /// </exception>
         public Span<T> Slice(int start, int length)
         {
@@ -163,6 +199,75 @@ namespace System
         {
             return (_length == other._length) &&
                 (_length == 0 || JitHelpers.ByRefEquals(ref JitHelpers.GetByRef<T>(ref _rawPointer), ref JitHelpers.GetByRef<T>(ref other._rawPointer)));
+        }
+
+        /// <summary>
+        /// Copies the contents of this span into destination span. The destination
+        /// must be at least as big as the source, and may be bigger.
+        /// </summary>
+        /// <param name="destination">The span to copy items into.</param>
+        public bool TryCopyTo(Span<T> destination)
+        {
+            if (Length > destination.Length)
+                return false;
+
+            SpanHelper.CopyTo<T>(ref destination._rawPointer, ref _rawPointer, Length);
+            return true;
+        }
+
+        /// <exception cref="System.ArgumentOutOfRangeException">
+        /// Thrown when the specified <paramref name="values"/>'s Length is longer than source span's Length.
+        /// </exception>
+        public void Set(ReadOnlySpan<T> values)
+        {
+            if ((uint)values._length > (uint)_length)
+                ThrowHelper.ThrowArgumentOutOfRangeException();
+
+            SpanHelper.CopyTo<T>(ref _rawPointer, ref values._rawPointer, values.Length);
+        }
+    }
+
+    internal static class SpanHelper
+    {
+        internal static void CopyTo<T>(ref IntPtr destination, ref IntPtr source, int elementsCount)
+        {
+            if (elementsCount == 0)
+                return;
+
+            ref T dest = ref JitHelpers.GetByRef<T>(ref destination);
+            ref T src = ref JitHelpers.GetByRef<T>(ref source);
+            if (JitHelpers.ByRefEquals(ref dest, ref src))
+                return;
+
+            if (!JitHelpers.ContainsReferences<T>())
+            {
+                unsafe
+                {
+                    Memmove<T>((byte*)destination, (byte*)source, elementsCount);
+                }
+            }
+            else
+            {
+                if (JitHelpers.ByRefLessThan(ref dest, ref src)) // copy forward
+                {
+                    for (int i = 0; i < elementsCount; i++)
+                        JitHelpers.AddByRef(ref dest, i) = JitHelpers.AddByRef(ref src, i);
+                }
+                else // copy backward to avoid overlapping issues
+                {
+                    for (int i = elementsCount - 1; i >= 0; i--)
+                        JitHelpers.AddByRef(ref dest, i) = JitHelpers.AddByRef(ref src, i);
+                }
+            }
+        }
+
+        private static unsafe void Memmove<T>(byte* destination, byte* source, int elementsCount)
+        {
+#if BIT64
+            Buffer.Memmove(destination, source, (ulong)elementsCount * (ulong)JitHelpers.SizeOf<T>());
+#else
+            Buffer.Memmove(destination, source, elementsCount * (uint)JitHelpers.SizeOf<T>());
+#endif
         }
     }
 }

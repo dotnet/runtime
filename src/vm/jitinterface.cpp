@@ -6969,6 +6969,17 @@ bool getILIntrinsicImplementation(MethodDesc * ftn,
         methInfo->options = (CorInfoOptions)0;
         return true;
     }
+    else if (tk == MscorlibBinder::GetMethod(METHOD__JIT_HELPERS__BYREF_LESSTHAN)->GetMemberDef())
+    {
+        // Compare the two arguments
+        static const BYTE ilcode[] = { CEE_LDARG_0, CEE_LDARG_1, CEE_PREFIX1, (BYTE)CEE_CLT, CEE_RET };
+        methInfo->ILCode = const_cast<BYTE*>(ilcode);
+        methInfo->ILCodeSize = sizeof(ilcode);
+        methInfo->maxStack = 2;
+        methInfo->EHcount = 0;
+        methInfo->options = (CorInfoOptions)0;
+        return true;
+    }
     else if (tk == MscorlibBinder::GetMethod(METHOD__JIT_HELPERS__GET_ARRAY_DATA)->GetMemberDef())
     {
         mdToken tokArrayPinningHelper = MscorlibBinder::GetField(FIELD__ARRAY_PINNING_HELPER__M_ARRAY_DATA)->GetMemberDef();
@@ -6984,6 +6995,51 @@ bool getILIntrinsicImplementation(MethodDesc * ftn,
 
         methInfo->ILCode = const_cast<BYTE*>(ilcode);
         methInfo->ILCodeSize = sizeof(ilcode);
+        methInfo->maxStack = 1;
+        methInfo->EHcount = 0;
+        methInfo->options = (CorInfoOptions)0;
+        return true;
+    }
+    else if (tk == MscorlibBinder::GetMethod(METHOD__JIT_HELPERS__SIZEOF)->GetMemberDef())
+    {
+        _ASSERTE(ftn->HasMethodInstantiation());
+        Instantiation inst = ftn->GetMethodInstantiation();
+
+        _ASSERTE(ftn->GetNumGenericMethodArgs() == 1);
+        mdToken tokGenericArg = FindGenericMethodArgTypeSpec(MscorlibBinder::GetModule()->GetMDImport());
+
+        static const BYTE ilcode[] = { CEE_PREFIX1, (BYTE)CEE_SIZEOF, (BYTE)(tokGenericArg), (BYTE)(tokGenericArg >> 8), (BYTE)(tokGenericArg >> 16), (BYTE)(tokGenericArg >> 24),
+                                       CEE_RET }; 
+
+        methInfo->ILCode = const_cast<BYTE*>(ilcode);
+        methInfo->ILCodeSize = sizeof(ilcode);
+        methInfo->maxStack = 1;
+        methInfo->EHcount = 0;
+        methInfo->options = (CorInfoOptions)0;
+        return true;
+    }
+    else if (tk == MscorlibBinder::GetMethod(METHOD__JIT_HELPERS__CONTAINSREFERENCES)->GetMemberDef())
+    {
+        _ASSERTE(ftn->HasMethodInstantiation());
+        Instantiation inst = ftn->GetMethodInstantiation();
+
+        _ASSERTE(ftn->GetNumGenericMethodArgs() == 1);
+        TypeHandle typeHandle = inst[0];
+        MethodTable * methodTable = typeHandle.GetMethodTable();
+
+        static const BYTE returnTrue[] = { CEE_LDC_I4_1, CEE_RET };
+        static const BYTE returnFalse[] = { CEE_LDC_I4_0, CEE_RET };
+
+        if (!methodTable->IsValueType() || methodTable->ContainsPointers())
+        {
+            methInfo->ILCode = const_cast<BYTE*>(returnTrue);
+        }
+        else
+        {
+            methInfo->ILCode = const_cast<BYTE*>(returnFalse);
+        }
+
+        methInfo->ILCodeSize = sizeof(returnTrue);
         methInfo->maxStack = 1;
         methInfo->EHcount = 0;
         methInfo->options = (CorInfoOptions)0;
