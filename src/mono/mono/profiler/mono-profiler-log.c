@@ -55,9 +55,6 @@
 #if defined(__APPLE__)
 #include <mach/mach_time.h>
 #endif
-#if defined(HOST_WIN32) || defined(DISABLE_SOCKETS)
-#define DISABLE_HELPER_THREAD 1
-#endif
 
 #ifndef _GNU_SOURCE
 #define _GNU_SOURCE
@@ -72,12 +69,10 @@
 #include <link.h>
 #endif
 
-#ifndef DISABLE_HELPER_THREAD
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <sys/select.h>
-#endif
 
 #ifdef HOST_WIN32
 #include <windows.h>
@@ -126,7 +121,6 @@ static int do_report = 0;
 static int do_heap_shot = 0;
 static int max_call_depth = 100;
 static volatile int runtime_inited = 0;
-static int need_helper_thread = 0;
 static int command_port = 0;
 static int heapshot_requested = 0;
 static int sample_type = 0;
@@ -2054,16 +2048,12 @@ class_unloaded (MonoProfiler *prof, MonoClass *klass)
 		g_free (name);
 }
 
-#ifndef DISABLE_HELPER_THREAD
 static void process_method_enter_coverage (MonoProfiler *prof, MonoMethod *method);
-#endif /* DISABLE_HELPER_THREAD */
 
 static void
 method_enter (MonoProfiler *prof, MonoMethod *method)
 {
-#ifndef DISABLE_HELPER_THREAD
 	process_method_enter_coverage (prof, method);
-#endif /* DISABLE_HELPER_THREAD */
 
 	if (PROF_TLS_GET ()->call_depth++ <= max_call_depth) {
 		ENTER_LOG (&method_entries_ctr, logbuffer,
@@ -3133,8 +3123,6 @@ setup_perf_event (void)
 
 #endif /* USE_PERF_EVENTS */
 
-#ifndef DISABLE_HELPER_THREAD
-
 typedef struct MonoCounterAgent {
 	MonoCounter *counter;
 	// MonoCounterAgent specific data :
@@ -4160,12 +4148,9 @@ init_suppressed_assemblies (void)
 	fclose (sa_file);
 }
 
-#endif /* DISABLE_HELPER_THREAD */
-
 static void
 coverage_init (MonoProfiler *prof)
 {
-#ifndef DISABLE_HELPER_THREAD
 	assert (!coverage_initialized);
 
 	COVERAGE_DEBUG(fprintf (stderr, "Coverage initialized\n");)
@@ -4180,7 +4165,6 @@ coverage_init (MonoProfiler *prof)
 	init_suppressed_assemblies ();
 
 	coverage_initialized = TRUE;
-#endif /* DISABLE_HELPER_THREAD */
 }
 
 static void
@@ -4211,16 +4195,14 @@ log_shutdown (MonoProfiler *prof)
 	void *res;
 
 	in_shutdown = 1;
-#ifndef DISABLE_HELPER_THREAD
+
 	counters_and_perfcounters_sample (prof);
 
 	dump_coverage (prof);
 
-	if (prof->command_port) {
-		char c = 1;
-		ign_res (write (prof->pipes [1], &c, 1));
-		pthread_join (prof->helper_thread, &res);
-	}
+	char c = 1;
+	ign_res (write (prof->pipes [1], &c, 1));
+	pthread_join (prof->helper_thread, &res);
 
 	mono_os_mutex_destroy (&counters_mutex);
 
@@ -4237,7 +4219,7 @@ log_shutdown (MonoProfiler *prof)
 		pc_next = cur->next;
 		g_free (cur);
 	}
-#endif
+
 #if USE_PERF_EVENTS
 	if (perf_data) {
 		int i;
@@ -4377,8 +4359,6 @@ new_filename (const char* filename)
 //this is exposed by the JIT, but it's not meant to be a supported API for now.
 extern void mono_threads_attach_tools_thread (void);
 
-#ifndef DISABLE_HELPER_THREAD
-
 static void*
 helper_thread (void* arg)
 {
@@ -4505,49 +4485,58 @@ helper_thread (void* arg)
 	return NULL;
 }
 
-static int
+static void
 start_helper_thread (MonoProfiler* prof)
 {
-	struct sockaddr_in server_address;
-	int r;
-	socklen_t slen;
-	if (pipe (prof->pipes) < 0) {
-		fprintf (stderr, "Cannot create pipe\n");
-		return 0;
+	if (pipe (prof->pipes) == -1) {
+		fprintf (stderr, "Cannot create pipe: %s\n", strerror (errno));
+		exit (1);
 	}
+
 	prof->server_socket = socket (PF_INET, SOCK_STREAM, 0);
-	if (prof->server_socket < 0) {
-		fprintf (stderr, "Cannot create server socket\n");
-		return 0;
+
+	if (prof->server_socket == -1) {
+		fprintf (stderr, "Cannot create server socket: %s\n", strerror (errno));
+		exit (1);
 	}
+
+	struct sockaddr_in server_address;
+
 	memset (&server_address, 0, sizeof (server_address));
 	server_address.sin_family = AF_INET;
 	server_address.sin_addr.s_addr = INADDR_ANY;
 	server_address.sin_port = htons (prof->command_port);
-	if (bind (prof->server_socket, (struct sockaddr *) &server_address, sizeof (server_address)) < 0) {
-		fprintf (stderr, "Cannot bind server socket, port: %d: %s\n", prof->command_port, strerror (errno));
+
+	if (bind (prof->server_socket, (struct sockaddr *) &server_address, sizeof (server_address)) == -1) {
+		fprintf (stderr, "Cannot bind server socket on port %d: %s\n", prof->command_port, strerror (errno));
 		close (prof->server_socket);
-		return 0;
-	}
-	if (listen (prof->server_socket, 1) < 0) {
-		fprintf (stderr, "Cannot listen server socket\n");
-		close (prof->server_socket);
-		return 0;
-	}
-	slen = sizeof (server_address);
-	if (getsockname (prof->server_socket, (struct sockaddr *)&server_address, &slen) == 0) {
-		prof->command_port = ntohs (server_address.sin_port);
-		/*fprintf (stderr, "Assigned server port: %d\n", prof->command_port);*/
+		exit (1);
 	}
 
-	r = pthread_create (&prof->helper_thread, NULL, helper_thread, prof);
-	if (r) {
+	if (listen (prof->server_socket, 1) == -1) {
+		fprintf (stderr, "Cannot listen on server socket: %s\n", strerror (errno));
 		close (prof->server_socket);
-		return 0;
+		exit (1);
 	}
-	return 1;
+
+	socklen_t slen = sizeof (server_address);
+
+	if (getsockname (prof->server_socket, (struct sockaddr *)&server_address, &slen)) {
+		fprintf (stderr, "Could not get assigned port: %s\n", strerror (errno));
+		close (prof->server_socket);
+		exit (1);
+	}
+
+	prof->command_port = ntohs (server_address.sin_port);
+
+	int r;
+
+	if ((r = pthread_create (&prof->helper_thread, NULL, helper_thread, prof))) {
+		fprintf (stderr, "Could not start helper thread: %s\n", strerror (r));
+		close (prof->server_socket);
+		exit (1);
+	}
 }
-#endif
 
 static void
 free_writer_entry (gpointer p)
@@ -4674,12 +4663,17 @@ writer_thread (void *arg)
 	return NULL;
 }
 
-static int
+static void
 start_writer_thread (MonoProfiler* prof)
 {
 	InterlockedWrite (&prof->run_writer_thread, 1);
 
-	return !pthread_create (&prof->writer_thread, NULL, writer_thread, prof);
+	int r;
+
+	if ((r = pthread_create (&prof->writer_thread, NULL, writer_thread, prof))) {
+		fprintf (stderr, "Could not start writer thread: %s\n", strerror (r));
+		exit (1);
+	}
 }
 
 static void
@@ -4780,12 +4774,17 @@ dumper_thread (void *arg)
 	return NULL;
 }
 
-static int
+static void
 start_dumper_thread (MonoProfiler* prof)
 {
 	InterlockedWrite (&prof->run_dumper_thread, 1);
 
-	return !pthread_create (&prof->dumper_thread, NULL, dumper_thread, prof);
+	int r;
+
+	if ((r = pthread_create (&prof->dumper_thread, NULL, dumper_thread, prof))) {
+		fprintf (stderr, "Could not start dumper thread: %s\n", strerror (r));
+		exit (1);
+	}
 }
 
 static void
@@ -4856,17 +4855,9 @@ runtime_initialized (MonoProfiler *profiler)
 	register_counter ("Event: Coverage classes", &coverage_classes_ctr);
 	register_counter ("Event: Coverage assemblies", &coverage_assemblies_ctr);
 
-#ifndef DISABLE_HELPER_THREAD
 	counters_init (profiler);
 
-	if (hs_mode_ondemand || need_helper_thread) {
-		if (!start_helper_thread (profiler))
-			profiler->command_port = 0;
-	}
-#endif
-
-	/* ensure the main thread data and startup are available soon */
-	send_log_unsafe (profiler, TRUE, FALSE);
+	start_helper_thread (profiler);
 }
 
 static MonoProfiler*
@@ -4914,24 +4905,20 @@ create_profiler (const char *args, const char *filename, GPtrArray *filters)
 		fprintf (stderr, "Cannot create profiler output: %s\n", nf);
 		exit (1);
 	}
+
 #if defined (HAVE_SYS_ZLIB)
 	if (use_zip)
 		prof->gzfile = gzdopen (fileno (prof->file), "wb");
 #endif
+
 #if USE_PERF_EVENTS
-	if (sample_type && sample_freq && !do_mono_sample)
-		need_helper_thread = setup_perf_event ();
+	setup_perf_event ();
+
 	if (!perf_data) {
 		/* FIXME: warn if different freq or sample type */
 		do_mono_sample = 1;
 	}
 #endif
-	if (do_mono_sample) {
-		need_helper_thread = 1;
-	}
-	if (do_counters && !need_helper_thread) {
-		need_helper_thread = 1;
-	}
 
 	/*
 	 * If you hit this assert while increasing MAX_FRAMES, you need to increase
@@ -4944,15 +4931,6 @@ create_profiler (const char *args, const char *filename, GPtrArray *filters)
 	mono_lock_free_allocator_init_allocator (&prof->sample_allocator, &prof->sample_size_class, MONO_MEM_ACCOUNT_PROFILER);
 
 	mono_lock_free_queue_init (&prof->sample_reuse_queue);
-
-#ifdef DISABLE_HELPER_THREAD
-	if (hs_mode_ondemand)
-		fprintf (stderr, "Ondemand heapshot unavailable on this arch.\n");
-
-	if (do_coverage)
-		fprintf (stderr, "Coverage unavailable on this arch.\n");
-
-#endif
 
 	g_assert (sizeof (WriterQueueEntry) * 2 < LOCK_FREE_ALLOC_SB_USABLE_SIZE (WRITER_ENTRY_BLOCK_SIZE));
 
