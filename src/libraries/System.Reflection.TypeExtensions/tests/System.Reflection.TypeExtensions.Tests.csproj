@@ -30,17 +30,6 @@
     <Compile Include="Module\ModuleVersionId.cs" />
     <Compile Include="Nullable\NullableMisc.cs" />
     <Compile Include="PropertyCompat\PropertyCompat.cs" />
-    <Compile Include="Type\GetDefaultMembers.cs" />
-    <Compile Include="Type\GetEvents.cs" />
-    <Compile Include="Type\GetFields.cs" />
-    <Compile Include="Type\GetInterfaces.cs" />
-    <Compile Include="Type\GetMember.cs" />
-    <Compile Include="Type\GetMembers.cs" />
-    <Compile Include="Type\GetMethods.cs" />
-    <Compile Include="Type\GetProperties.cs" />
-    <Compile Include="Type\GetProperty.cs" />
-    <Compile Include="Type\IsAssignableFrom.cs" />
-    <Compile Include="Type\TypeInfoAPIs.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />
