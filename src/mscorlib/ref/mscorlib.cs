@@ -3182,6 +3182,7 @@ namespace System
         public static System.String Format(System.String format, object arg0, object arg1) { throw null; }
         public static System.String Format(System.String format, object arg0, object arg1, object arg2) { throw null; }
         public static System.String Format(System.String format, params object[] args) { throw null; }
+        public System.CharEnumerator GetEnumerator() { throw null; }
         [System.Security.SecuritySafeCriticalAttribute]
         public override int GetHashCode() { throw null; }
         public System.TypeCode GetTypeCode() { throw null; }
@@ -3254,12 +3255,24 @@ namespace System
         [System.Security.SecuritySafeCriticalAttribute]
         public System.String Replace(char oldChar, char newChar) { throw null; }
         public System.String Replace(System.String oldValue, System.String newValue) { throw null; }
+        [System.Runtime.InteropServices.ComVisibleAttribute(false)]
+        public string[] Split(char separator) { throw null; }
+        [System.Runtime.InteropServices.ComVisibleAttribute(false)]
+        public string[] Split(char separator, int count, System.StringSplitOptions options) { throw null; }
+        [System.Runtime.InteropServices.ComVisibleAttribute(false)]
+        public string[] Split(char separator, System.StringSplitOptions options) { throw null; }
         public string[] Split(params char[] separator) { throw null; }
         public string[] Split(char[] separator, int count) { throw null; }
         [System.Runtime.InteropServices.ComVisibleAttribute(false)]
         public string[] Split(char[] separator, int count, System.StringSplitOptions options) { throw null; }
         [System.Runtime.InteropServices.ComVisibleAttribute(false)]
         public string[] Split(char[] separator, System.StringSplitOptions options) { throw null; }
+        [System.Runtime.InteropServices.ComVisibleAttribute(false)]
+        public string[] Split(System.String separator) { throw null; }
+        [System.Runtime.InteropServices.ComVisibleAttribute(false)]
+        public string[] Split(System.String separator, int count, System.StringSplitOptions options) { throw null; }
+        [System.Runtime.InteropServices.ComVisibleAttribute(false)]
+        public string[] Split(System.String separator, System.StringSplitOptions options) { throw null; }
         [System.Runtime.InteropServices.ComVisibleAttribute(false)]
         public string[] Split(string[] separator, int count, System.StringSplitOptions options) { throw null; }
         [System.Runtime.InteropServices.ComVisibleAttribute(false)]
