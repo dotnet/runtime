@@ -26,7 +26,7 @@ namespace System.Security.Cryptography
                 throw new ArgumentNullException(nameof(key));
 
             if (key.AlgorithmGroup != CngAlgorithmGroup.Rsa)
-                throw new ArgumentException(SR.Cryptography_ArgRSAaRequiresRSAKey, nameof(key));
+                throw new ArgumentException(SR.Cryptography_ArgRSARequiresRSAKey, nameof(key));
 
             Key = CngAlgorithmCore.Duplicate(key);
         }

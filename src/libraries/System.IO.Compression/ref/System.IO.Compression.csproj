@@ -2,9 +2,9 @@
 <Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <UseECMAKey Condition="'$(UseECMAKey)' == ''">true</UseECMAKey>
+    <UseECMAKey>true</UseECMAKey>
     <OutputType>Library</OutputType>
-    <NuGetTargetMoniker>.NETStandard,Version=v1.3</NuGetTargetMoniker>
+    <NuGetTargetMoniker>.NETStandard,Version=v1.7</NuGetTargetMoniker>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.IO.Compression.cs" />

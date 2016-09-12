@@ -9,8 +9,11 @@
     <ProjectReference Include="..\ref\4.1\System.Security.Cryptography.Cng.depproj">
       <SupportedFramework>net461;netcore50</SupportedFramework>
     </ProjectReference>
+    <ProjectReference Include="..\ref\4.2\System.Security.Cryptography.Cng.depproj">
+      <SupportedFramework>netcoreapp1.0</SupportedFramework>
+    </ProjectReference>
     <ProjectReference Include="..\ref\System.Security.Cryptography.Cng.csproj">
-      <SupportedFramework>net463;netcoreapp1.0</SupportedFramework>
+      <SupportedFramework>net463;netcoreapp1.1</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\src\System.Security.Cryptography.Cng.builds" />
   </ItemGroup>

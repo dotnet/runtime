@@ -11,7 +11,7 @@ using Xunit;
 
 namespace System.Tests
 {
-    public static class TimeZoneInfoTests
+    public static partial class TimeZoneInfoTests
     {
         private static readonly bool s_isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
         private static readonly bool s_isOSX = RuntimeInformation.IsOSPlatform(OSPlatform.OSX);
@@ -101,7 +101,7 @@ namespace System.Tests
             {
                 tripoli = TimeZoneInfo.FindSystemTimeZoneById(s_strLibya);
             }
-            catch (Exception /* TimeZoneNotFoundException */ )
+            catch (Exception /* TimeZoneNotFoundException in netstandard1.7 test*/ )
             {
                 // Libya time zone not found
                 Console.WriteLine("Warning: Libya time zone is not exist in this machine");
@@ -138,10 +138,7 @@ namespace System.Tests
 
             VerifyConvertException<ArgumentNullException>(time1, null);
 
-            //
-            // We catch Exception here instead of TimeZoneNotFoundException because TimeZoneNotFoundException is not exposed 
-            // in .NET Core
-            //
+            // We catch TimeZoneNotFoundException in then netstandard1.7 tests
 
             VerifyConvertException<Exception>(time1, string.Empty);
             VerifyConvertException<Exception>(time1, "    ");
@@ -1671,7 +1668,7 @@ namespace System.Tests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.AnyUnix)]
+        [PlatformSpecific(Xunit.PlatformID.AnyUnix)]
         public static void IsDaylightSavingTime_CatamarcaMultiYearDaylightSavings()
         {
             // America/Catamarca had DST from
@@ -1694,7 +1691,7 @@ namespace System.Tests
         }
 
         [Theory]
-        [PlatformSpecific(PlatformID.AnyUnix)]
+        [PlatformSpecific(Xunit.PlatformID.AnyUnix)]
         [InlineData("1940-02-24T23:59:59.0000000Z", false, "0:00:00")]
         [InlineData("1940-02-25T00:00:00.0000000Z", true, "1:00:00")]
         [InlineData("1940-11-20T00:00:00.0000000Z", true, "1:00:00")]
@@ -1718,7 +1715,7 @@ namespace System.Tests
         }
 
         [Theory]
-        [PlatformSpecific(PlatformID.AnyUnix)]
+        [PlatformSpecific(Xunit.PlatformID.AnyUnix)]
         // in 1996 Europe/Lisbon changed from standard time to DST without changing the UTC offset
         [InlineData("1995-09-30T17:00:00.0000000Z", false, "1:00:00")]
         [InlineData("1996-03-31T00:59:59.0000000Z", false, "1:00:00")]
@@ -1835,7 +1832,7 @@ namespace System.Tests
         /// See https://github.com/dotnet/coreclr/issues/2185
         /// </summary>
         [Fact]
-        [PlatformSpecific(PlatformID.AnyUnix)]
+        [PlatformSpecific(Xunit.PlatformID.AnyUnix)]
         public static void DaylightTransitionsExactTime_Johannesburg()
         {
             DateTimeOffset transition = new DateTimeOffset(1943, 3, 20, 23, 0, 0, TimeSpan.Zero);

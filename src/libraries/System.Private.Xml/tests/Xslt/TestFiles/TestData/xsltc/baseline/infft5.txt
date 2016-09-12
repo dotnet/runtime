@@ -1,0 +1,1 @@
+/out:out.dll some text /allwrong

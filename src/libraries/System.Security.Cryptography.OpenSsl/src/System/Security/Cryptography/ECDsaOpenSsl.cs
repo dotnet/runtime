@@ -26,9 +26,31 @@ namespace System.Security.Cryptography
             // If ecKey is valid it has already been up-ref'd, so we can just use this handle as-is.
             SafeEcKeyHandle key = Interop.Crypto.EvpPkeyGetEcKey(pkeyHandle);
             if (key.IsInvalid)
+            {
+                key.Dispose();
                 throw Interop.Crypto.CreateOpenSslCryptographicException();
+            }
 
             SetKey(key);
+        }
+
+        /// <summary>
+        /// Create an ECDsaOpenSsl from an existing <see cref="IntPtr"/> whose value is an
+        /// existing OpenSSL <c>EC_KEY*</c>.
+        /// </summary>
+        /// <remarks>
+        /// This method will increase the reference count of the <c>EC_KEY*</c>, the caller should
+        /// continue to manage the lifetime of their reference.
+        /// </remarks>
+        /// <param name="handle">A pointer to an OpenSSL <c>EC_KEY*</c></param>
+        /// <exception cref="ArgumentException"><paramref name="handle" /> is invalid</exception>
+        public ECDsaOpenSsl(IntPtr handle)
+        {
+            if (handle == IntPtr.Zero)
+                throw new ArgumentException(SR.Cryptography_OpenInvalidHandle, nameof(handle));
+
+            SafeEcKeyHandle ecKeyHandle = SafeEcKeyHandle.DuplicateHandle(handle);
+            SetKey(ecKeyHandle);
         }
 
         /// <summary>

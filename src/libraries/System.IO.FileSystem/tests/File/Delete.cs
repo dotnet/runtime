@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using Xunit;
+using XunitPlatformID = Xunit.PlatformID;
 
 namespace System.IO.Tests
 {
@@ -108,21 +109,21 @@ namespace System.IO.Tests
         #region PlatformSpecific
 
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(XunitPlatformID.Windows)]
         public void Windows_NonExistentPath_Throws_DirectoryNotFoundException()
         {
             Assert.Throws<DirectoryNotFoundException>(() => Delete(Path.Combine(TestDirectory, GetTestFileName(), "C")));
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.AnyUnix)]
+        [PlatformSpecific(XunitPlatformID.AnyUnix)]
         public void Unix_NonExistentPath_Nop()
         {
             Delete(Path.Combine(TestDirectory, GetTestFileName(), "C"));
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(XunitPlatformID.Windows)]
         public void Windows_File_Already_Open_Throws_IOException()
         {
             string path = GetTestFilePath();
@@ -133,7 +134,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.AnyUnix)]
+        [PlatformSpecific(XunitPlatformID.AnyUnix)]
         public void Unix_File_Already_Open_Allowed()
         {
             string path = GetTestFilePath();
@@ -146,7 +147,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(XunitPlatformID.Windows)]
         public void WindowsDeleteReadOnlyFile()
         {
             string path = GetTestFilePath();
@@ -158,7 +159,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.AnyUnix)]
+        [PlatformSpecific(XunitPlatformID.AnyUnix)]
         public void UnixDeleteReadOnlyFile()
         {
             FileInfo testFile = Create(GetTestFilePath());

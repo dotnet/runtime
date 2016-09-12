@@ -84,7 +84,7 @@ namespace System.IO.Tests
             ms = CreateStream();
             sw = new StreamWriter(ms);
             sw.Dispose();
-            Assert.False( ms.CanWrite, "ERROR: After closing a StreamWriter with the default value for leaveOpen, MemoryStream's CanWrite property was true!");
+            Assert.False(ms.CanWrite, "ERROR: After closing a StreamWriter with the default value for leaveOpen, MemoryStream's CanWrite property was true!");
         }
 
         [Fact]

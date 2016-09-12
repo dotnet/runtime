@@ -6,8 +6,8 @@
     <AssemblyName>System.Xml.XmlDocument</AssemblyName>
     <RootNamespace>System.Xml.XmlDocument</RootNamespace>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'net46'">true</IsPartialFacadeAssembly>
-    <ResourcesSourceOutputDirectory Condition="'$(TargetGroup)' == 'net46'">None</ResourcesSourceOutputDirectory>
+    <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
+    <ResourcesSourceOutputDirectory>None</ResourcesSourceOutputDirectory>
     <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.3</NuGetTargetMoniker>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
@@ -16,85 +16,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Release|AnyCPU'" />
   <ItemGroup Condition="'$(TargetGroup)' != 'net46'">
-    <Compile Include="$(CommonPath)\System\IO\StringBuilderCache.cs">
-      <Link>Common\System\IO\StringBuilderCache.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Xml\Ref.cs">
-      <Link>Common\System\Xml\Ref.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Xml\SecureStringHasher.cs">
-      <Link>Common\System\Xml\SecureStringHasher.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Xml\XmlTextWriter.cs">
-      <Link>Common\System\Xml\XmlTextWriter.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Xml\Base64Encoder.cs">
-      <Link>Common\System\Xml\Base64Encoder.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Xml\XmlTextWriterBase64Encoder.cs">
-      <Link>Common\System\Xml\XmlTextWriterBase64Encoder.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Xml\BinHexEncoder.cs">
-      <Link>Common\System\Xml\BinHexEncoder.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Xml\XmlConvertEx.cs">
-      <Link>Common\System\Xml\XmlConvertEx.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Xml\ExceptionType.cs">
-      <Link>Common\System\Xml\ExceptionType.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Xml\XmlConst.cs">
-      <Link>Common\System\Xml\XmlConst.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Xml\XmlCharType.cs">
-      <Link>Common\System\Xml\XmlCharType.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Xml\ValidateNames.cs">
-      <Link>Common\System\Xml\ValidateNames.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Xml\XmlParsingHelper.cs">
-      <Link>Common\System\Xml\XmlParsingHelper.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Xml\XmlNameHelper.cs">
-      <Link>Common\System\Xml\XmlNameHelper.cs</Link>
-    </Compile>
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' != 'net46'">
-    <Compile Include="System\Xml\Dom\DomNameTable.cs" />
-    <Compile Include="System\Xml\Dom\XmlAttribute.cs" />
-    <Compile Include="System\Xml\Dom\XmlAttributeCollection.cs" />
-    <Compile Include="System\Xml\Dom\XmlCDATASection.cs" />
-    <Compile Include="System\Xml\Dom\XmlCharacterData.cs" />
-    <Compile Include="System\Xml\Dom\XmlChildEnumerator.cs" />
-    <Compile Include="System\Xml\Dom\XmlChildNodes.cs" />
-    <Compile Include="System\Xml\Dom\XmlComment.cs" />
-    <Compile Include="System\Xml\Dom\XmlDeclaration.cs" />
-    <Compile Include="System\Xml\Dom\XmlDocument.cs" />
-    <Compile Include="System\Xml\Dom\XmlDocumentFragment.cs" />
-    <Compile Include="System\Xml\Dom\XmlDocumentType.cs" />
-    <Compile Include="System\Xml\Dom\XmlDomTextWriter.cs" />
-    <Compile Include="System\Xml\Dom\XmlElement.cs" />
-    <Compile Include="System\Xml\Dom\XmlElementList.cs" />
-    <Compile Include="System\Xml\Dom\XmlEntity.cs" />
-    <Compile Include="System\Xml\Dom\XmlEntityReference.cs" />
-    <Compile Include="System\Xml\Dom\XmlEventChangedAction.cs" />
-    <Compile Include="System\Xml\Dom\XmlImplementation.cs" />
-    <Compile Include="System\Xml\Dom\XmlLinkedNode.cs" />
-    <Compile Include="System\Xml\Dom\XmlLoader.cs" />
-    <Compile Include="System\Xml\Dom\XmlName.cs" />
-    <Compile Include="System\Xml\Dom\XmlNamedNodeMap.cs" />
-    <Compile Include="System\Xml\Dom\XmlNamedNodeMap.SmallXmlNodeList.cs" />
-    <Compile Include="System\Xml\Dom\XmlNode.cs" />
-    <Compile Include="System\Xml\Dom\XmlNodeChangedEventArgs.cs" />
-    <Compile Include="System\Xml\Dom\XmlNodeChangedEventHandler.cs" />
-    <Compile Include="System\Xml\Dom\XmlNodeList.cs" />
-    <Compile Include="System\Xml\Dom\XmlProcessingInstruction.cs" />
-    <Compile Include="System\Xml\Dom\XmlSignificantWhitespace.cs" />
-    <Compile Include="System\Xml\Dom\XmlText.cs" />
-    <Compile Include="System\Xml\Dom\XmlUnspecifiedAttribute.cs" />
-    <Compile Include="System\Xml\Dom\XmlWhitespace.cs" />
-    <Compile Include="System\Xml\EmptyEnumerator.cs" />
-    <Compile Include="System\Xml\XmlTextEncoder.cs" />
+    <ProjectReference Include="..\..\System.Private.Xml\src\System.Private.Xml.csproj" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'net46'">
     <TargetingPackReference Include="mscorlib" />

@@ -12,6 +12,7 @@ internal static partial class Interop
         {
             _SC_CLK_TCK = 1,
             _SC_PAGESIZE = 2,
+            _SC_NPROCESSORS_ONLN = 3,
         }
 
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_SysConf", SetLastError = true)]

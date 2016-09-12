@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <Configuration Condition="'$(Configuration)'==''">Windows_Debug</Configuration>
@@ -11,14 +11,14 @@
     <OutputType>Library</OutputType>
     <AssemblyName>System.Security.Cryptography.Algorithms.Tests</AssemblyName>
     <RootNamespace>System.Security.Cryptography.Algorithms.Tests</RootNamespace>
-    <NugetTargetMoniker>.NETStandard,Version=v1.6</NugetTargetMoniker>
+    <NugetTargetMoniker Condition="'$(NugetTargetMoniker)'==''">.NETStandard,Version=v1.6</NugetTargetMoniker>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\pkg\System.Security.Cryptography.Algorithms.pkgproj">
       <Project>{81A05E2E-E3AE-4246-B4E6-DD5F31FB71F9}</Project>
       <Name>System.Security.Cryptography.Algorithms</Name>
     </ProjectReference>
-  </ItemGroup>
+  </ItemGroup>  
   <ItemGroup>
     <Compile Include="$(CommonTestPath)\System\PlatformDetection.cs">
       <Link>CommonTest\System\PlatformDetection.cs</Link>
@@ -29,7 +29,8 @@
     <Compile Include="$(CommonTestPath)\System\Security\Cryptography\AlgorithmImplementations\AES\AesCipherTests.Data.cs">
       <Link>CommonTest\AlgorithmImplementations\AES\AesCipherTests.Data.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\System\Security\Cryptography\AlgorithmImplementations\AES\AesCipherTests.cs">
+    <!-- Excluding these tests for netcoreapp1.1 due to Issue: https://github.com/dotnet/corefx/issues/11549 -->
+    <Compile Condition="'$(TargetGroup)'!='netstandard1.7'" Include="$(CommonTestPath)\System\Security\Cryptography\AlgorithmImplementations\AES\AesCipherTests.cs">
       <Link>CommonTest\AlgorithmImplementations\AES\AesCipherTests.cs</Link>
     </Compile>
     <Compile Include="$(CommonTestPath)\System\Security\Cryptography\AlgorithmImplementations\AES\AesContractTests.cs">
@@ -127,6 +128,24 @@
     </Compile>
     <Compile Include="$(CommonTestPath)\System\Security\Cryptography\CryptoUtils.cs">
       <Link>CommonTest\System\Security\Cryptography\CryptoUtils.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)'=='netstandard1.7'">
+    <Compile Include="DefaultDSAProvider.cs"/>
+    <Compile Include="$(CommonTestPath)\System\Security\Cryptography\AlgorithmImplementations\DSA\DSAFactory.cs">
+      <Link>CommonTest\System\Security\Cryptography\AlgorithmImplementations\DSA\DSAFactory.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Security\Cryptography\AlgorithmImplementations\DSA\DSAImportExport.cs">
+      <Link>CommonTest\System\Security\Cryptography\AlgorithmImplementations\DSA\DSAImportExport.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Security\Cryptography\AlgorithmImplementations\DSA\DSAKeyGeneration.cs">
+      <Link>CommonTest\System\Security\Cryptography\AlgorithmImplementations\DSA\DSAKeyGeneration.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Security\Cryptography\AlgorithmImplementations\DSA\DSASignVerify.cs">
+      <Link>CommonTest\System\Security\Cryptography\AlgorithmImplementations\DSA\DSASignVerify.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Security\Cryptography\AlgorithmImplementations\DSA\DSATestData.cs">
+      <Link>CommonTest\System\Security\Cryptography\AlgorithmImplementations\DSA\DSATestData.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>

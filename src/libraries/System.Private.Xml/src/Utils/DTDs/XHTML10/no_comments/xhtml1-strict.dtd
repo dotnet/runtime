@@ -1,0 +1,978 @@
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!ENTITY % HTMLlat1 PUBLIC
+   "-//W3C//ENTITIES Latin 1 for XHTML//EN"
+   "xhtml-lat1.ent">
+%HTMLlat1;
+
+<!ENTITY % HTMLsymbol PUBLIC
+   "-//W3C//ENTITIES Symbols for XHTML//EN"
+   "xhtml-symbol.ent">
+%HTMLsymbol;
+
+<!ENTITY % HTMLspecial PUBLIC
+   "-//W3C//ENTITIES Special for XHTML//EN"
+   "xhtml-special.ent">
+%HTMLspecial;
+
+
+
+<!ENTITY % ContentType "CDATA">
+
+
+<!ENTITY % ContentTypes "CDATA">
+
+
+<!ENTITY % Charset "CDATA">
+
+
+<!ENTITY % Charsets "CDATA">
+
+
+<!ENTITY % LanguageCode "NMTOKEN">
+
+
+<!ENTITY % Character "CDATA">
+
+
+<!ENTITY % Number "CDATA">
+
+
+<!ENTITY % LinkTypes "CDATA">
+
+
+<!ENTITY % MediaDesc "CDATA">
+
+
+<!ENTITY % URI "CDATA">
+
+
+<!ENTITY % UriList "CDATA">
+
+
+<!ENTITY % Datetime "CDATA">
+
+
+<!ENTITY % Script "CDATA">
+
+
+<!ENTITY % StyleSheet "CDATA">
+
+
+<!ENTITY % Text "CDATA">
+
+
+<!ENTITY % Length "CDATA">
+
+
+<!ENTITY % MultiLength "CDATA">
+
+
+<!ENTITY % Pixels "CDATA">
+
+
+
+
+<!ENTITY % Shape "(rect|circle|poly|default)">
+
+<!ENTITY % Coords "CDATA">
+
+
+
+
+
+
+
+
+
+
+<!ENTITY % coreattrs
+ "id          ID             #IMPLIED
+  class       CDATA          #IMPLIED
+  style       %StyleSheet;   #IMPLIED
+  title       %Text;         #IMPLIED"
+  >
+
+
+
+
+
+
+<!ENTITY % i18n
+ "lang        %LanguageCode; #IMPLIED
+  xml:lang    %LanguageCode; #IMPLIED
+  dir         (ltr|rtl)      #IMPLIED"
+  >
+
+
+
+
+
+
+
+
+
+
+
+
+<!ENTITY % events
+ "onclick     %Script;       #IMPLIED
+  ondblclick  %Script;       #IMPLIED
+  onmousedown %Script;       #IMPLIED
+  onmouseup   %Script;       #IMPLIED
+  onmouseover %Script;       #IMPLIED
+  onmousemove %Script;       #IMPLIED
+  onmouseout  %Script;       #IMPLIED
+  onkeypress  %Script;       #IMPLIED
+  onkeydown   %Script;       #IMPLIED
+  onkeyup     %Script;       #IMPLIED"
+  >
+
+
+
+
+
+
+
+<!ENTITY % focus
+ "accesskey   %Character;    #IMPLIED
+  tabindex    %Number;       #IMPLIED
+  onfocus     %Script;       #IMPLIED
+  onblur      %Script;       #IMPLIED"
+  >
+
+<!ENTITY % attrs "%coreattrs; %i18n; %events;">
+
+
+
+<!ENTITY % special.pre
+   "br | span | bdo | map">
+
+
+<!ENTITY % special
+   "%special.pre; | object | img ">
+
+<!ENTITY % fontstyle "tt | i | b | big | small ">
+
+<!ENTITY % phrase "em | strong | dfn | code | q |
+                   samp | kbd | var | cite | abbr | acronym | sub | sup ">
+
+<!ENTITY % inline.forms "input | select | textarea | label | button">
+
+
+<!ENTITY % misc.inline "ins | del | script">
+
+
+<!ENTITY % misc "noscript | %misc.inline;">
+
+<!ENTITY % inline "a | %special; | %fontstyle; | %phrase; | %inline.forms;">
+
+
+<!ENTITY % Inline "(#PCDATA | %inline; | %misc.inline;)*">
+
+
+
+<!ENTITY % heading "h1|h2|h3|h4|h5|h6">
+<!ENTITY % lists "ul | ol | dl">
+<!ENTITY % blocktext "pre | hr | blockquote | address">
+
+<!ENTITY % block
+     "p | %heading; | div | %lists; | %blocktext; | fieldset | table">
+
+<!ENTITY % Block "(%block; | form | %misc;)*">
+
+
+<!ENTITY % Flow "(#PCDATA | %block; | form | %inline; | %misc;)*">
+
+
+
+
+
+<!ENTITY % a.content
+   "(#PCDATA | %special; | %fontstyle; | %phrase; | %inline.forms; | %misc.inline;)*">
+
+
+
+<!ENTITY % pre.content
+   "(#PCDATA | a | %fontstyle; | %phrase; | %special.pre; | %misc.inline;
+      | %inline.forms;)*">
+
+
+
+<!ENTITY % form.content "(%block; | %misc;)*">
+
+
+
+<!ENTITY % button.content
+   "(#PCDATA | p | %heading; | div | %lists; | %blocktext; |
+    table | %special; | %fontstyle; | %phrase; | %misc;)*">
+
+
+
+
+
+<!ELEMENT html (head, body)>
+<!ATTLIST html
+  %i18n;
+  id          ID             #IMPLIED
+  xmlns       %URI;          #FIXED 'http://www.w3.org/1999/xhtml'
+  >
+
+
+
+<!ENTITY % head.misc "(script|style|meta|link|object)*">
+
+
+
+
+<!ELEMENT head (%head.misc;,
+     ((title, %head.misc;, (base, %head.misc;)?) |
+      (base, %head.misc;, (title, %head.misc;))))>
+
+<!ATTLIST head
+  %i18n;
+  id          ID             #IMPLIED
+  profile     %URI;          #IMPLIED
+  >
+
+
+
+
+
+<!ELEMENT title (#PCDATA)>
+<!ATTLIST title 
+  %i18n;
+  id          ID             #IMPLIED
+  >
+
+
+
+<!ELEMENT base EMPTY>
+<!ATTLIST base
+  href        %URI;          #REQUIRED
+  id          ID             #IMPLIED
+  >
+
+
+<!ELEMENT meta EMPTY>
+<!ATTLIST meta
+  %i18n;
+  id          ID             #IMPLIED
+  http-equiv  CDATA          #IMPLIED
+  name        CDATA          #IMPLIED
+  content     CDATA          #REQUIRED
+  scheme      CDATA          #IMPLIED
+  >
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!ELEMENT link EMPTY>
+<!ATTLIST link
+  %attrs;
+  charset     %Charset;      #IMPLIED
+  href        %URI;          #IMPLIED
+  hreflang    %LanguageCode; #IMPLIED
+  type        %ContentType;  #IMPLIED
+  rel         %LinkTypes;    #IMPLIED
+  rev         %LinkTypes;    #IMPLIED
+  media       %MediaDesc;    #IMPLIED
+  >
+
+
+<!ELEMENT style (#PCDATA)>
+<!ATTLIST style
+  %i18n;
+  id          ID             #IMPLIED
+  type        %ContentType;  #REQUIRED
+  media       %MediaDesc;    #IMPLIED
+  title       %Text;         #IMPLIED
+  xml:space   (preserve)     #FIXED 'preserve'
+  >
+
+
+<!ELEMENT script (#PCDATA)>
+<!ATTLIST script
+  id          ID             #IMPLIED
+  charset     %Charset;      #IMPLIED
+  type        %ContentType;  #REQUIRED
+  src         %URI;          #IMPLIED
+  defer       (defer)        #IMPLIED
+  xml:space   (preserve)     #FIXED 'preserve'
+  >
+
+
+
+<!ELEMENT noscript %Block;>
+<!ATTLIST noscript
+  %attrs;
+  >
+
+
+
+<!ELEMENT body %Block;>
+<!ATTLIST body
+  %attrs;
+  onload          %Script;   #IMPLIED
+  onunload        %Script;   #IMPLIED
+  >
+
+<!ELEMENT div %Flow;>
+<!ATTLIST div
+  %attrs;
+  >
+
+
+
+<!ELEMENT p %Inline;>
+<!ATTLIST p
+  %attrs;
+  >
+
+
+
+
+
+
+
+
+<!ELEMENT h1  %Inline;>
+<!ATTLIST h1
+   %attrs;
+   >
+
+<!ELEMENT h2 %Inline;>
+<!ATTLIST h2
+   %attrs;
+   >
+
+<!ELEMENT h3 %Inline;>
+<!ATTLIST h3
+   %attrs;
+   >
+
+<!ELEMENT h4 %Inline;>
+<!ATTLIST h4
+   %attrs;
+   >
+
+<!ELEMENT h5 %Inline;>
+<!ATTLIST h5
+   %attrs;
+   >
+
+<!ELEMENT h6 %Inline;>
+<!ATTLIST h6
+   %attrs;
+   >
+
+
+
+
+
+<!ELEMENT ul (li)+>
+<!ATTLIST ul
+  %attrs;
+  >
+
+
+
+<!ELEMENT ol (li)+>
+<!ATTLIST ol
+  %attrs;
+  >
+
+
+
+<!ELEMENT li %Flow;>
+<!ATTLIST li
+  %attrs;
+  >
+
+
+
+<!ELEMENT dl (dt|dd)+>
+<!ATTLIST dl
+  %attrs;
+  >
+
+<!ELEMENT dt %Inline;>
+<!ATTLIST dt
+  %attrs;
+  >
+
+<!ELEMENT dd %Flow;>
+<!ATTLIST dd
+  %attrs;
+  >
+
+
+
+
+
+<!ELEMENT address %Inline;>
+<!ATTLIST address
+  %attrs;
+  >
+
+
+
+<!ELEMENT hr EMPTY>
+<!ATTLIST hr
+  %attrs;
+  >
+
+
+
+
+
+<!ELEMENT pre %pre.content;>
+<!ATTLIST pre
+  %attrs;
+  xml:space (preserve) #FIXED 'preserve'
+  >
+
+
+
+<!ELEMENT blockquote %Block;>
+<!ATTLIST blockquote
+  %attrs;
+  cite        %URI;          #IMPLIED
+  >
+
+
+
+
+
+
+
+
+<!ELEMENT ins %Flow;>
+<!ATTLIST ins
+  %attrs;
+  cite        %URI;          #IMPLIED
+  datetime    %Datetime;     #IMPLIED
+  >
+
+<!ELEMENT del %Flow;>
+<!ATTLIST del
+  %attrs;
+  cite        %URI;          #IMPLIED
+  datetime    %Datetime;     #IMPLIED
+  >
+
+
+
+
+
+<!ELEMENT a %a.content;>
+<!ATTLIST a
+  %attrs;
+  %focus;
+  charset     %Charset;      #IMPLIED
+  type        %ContentType;  #IMPLIED
+  name        NMTOKEN        #IMPLIED
+  href        %URI;          #IMPLIED
+  hreflang    %LanguageCode; #IMPLIED
+  rel         %LinkTypes;    #IMPLIED
+  rev         %LinkTypes;    #IMPLIED
+  shape       %Shape;        "rect"
+  coords      %Coords;       #IMPLIED
+  >
+
+
+
+<!ELEMENT span %Inline;>
+<!ATTLIST span
+  %attrs;
+  >
+
+<!ELEMENT bdo %Inline;>
+<!ATTLIST bdo
+  %coreattrs;
+  %events;
+  lang        %LanguageCode; #IMPLIED
+  xml:lang    %LanguageCode; #IMPLIED
+  dir         (ltr|rtl)      #REQUIRED
+  >
+
+<!ELEMENT br EMPTY>
+<!ATTLIST br
+  %coreattrs;
+  >
+
+<!ELEMENT em %Inline;>
+<!ATTLIST em %attrs;>
+
+<!ELEMENT strong %Inline;>
+<!ATTLIST strong %attrs;>
+
+<!ELEMENT dfn %Inline;>
+<!ATTLIST dfn %attrs;>
+
+<!ELEMENT code %Inline;>
+<!ATTLIST code %attrs;>
+
+<!ELEMENT samp %Inline;>
+<!ATTLIST samp %attrs;>
+
+<!ELEMENT kbd %Inline;>
+<!ATTLIST kbd %attrs;>
+
+<!ELEMENT var %Inline;>
+<!ATTLIST var %attrs;>
+
+<!ELEMENT cite %Inline;>
+<!ATTLIST cite %attrs;>
+
+<!ELEMENT abbr %Inline;>
+<!ATTLIST abbr %attrs;>
+
+<!ELEMENT acronym %Inline;>
+<!ATTLIST acronym %attrs;>
+
+<!ELEMENT q %Inline;>
+<!ATTLIST q
+  %attrs;
+  cite        %URI;          #IMPLIED
+  >
+
+<!ELEMENT sub %Inline;>
+<!ATTLIST sub %attrs;>
+
+<!ELEMENT sup %Inline;>
+<!ATTLIST sup %attrs;>
+
+<!ELEMENT tt %Inline;>
+<!ATTLIST tt %attrs;>
+
+<!ELEMENT i %Inline;>
+<!ATTLIST i %attrs;>
+
+<!ELEMENT b %Inline;>
+<!ATTLIST b %attrs;>
+
+<!ELEMENT big %Inline;>
+<!ATTLIST big %attrs;>
+
+<!ELEMENT small %Inline;>
+<!ATTLIST small %attrs;>
+
+
+
+
+
+
+
+
+
+<!ELEMENT object (#PCDATA | param | %block; | form | %inline; | %misc;)*>
+<!ATTLIST object
+  %attrs;
+  declare     (declare)      #IMPLIED
+  classid     %URI;          #IMPLIED
+  codebase    %URI;          #IMPLIED
+  data        %URI;          #IMPLIED
+  type        %ContentType;  #IMPLIED
+  codetype    %ContentType;  #IMPLIED
+  archive     %UriList;      #IMPLIED
+  standby     %Text;         #IMPLIED
+  height      %Length;       #IMPLIED
+  width       %Length;       #IMPLIED
+  usemap      %URI;          #IMPLIED
+  name        NMTOKEN        #IMPLIED
+  tabindex    %Number;       #IMPLIED
+  >
+
+
+
+
+
+
+
+<!ELEMENT param EMPTY>
+<!ATTLIST param
+  id          ID             #IMPLIED
+  name        CDATA          #IMPLIED
+  value       CDATA          #IMPLIED
+  valuetype   (data|ref|object) "data"
+  type        %ContentType;  #IMPLIED
+  >
+
+
+
+
+
+
+
+
+
+
+
+
+<!ELEMENT img EMPTY>
+<!ATTLIST img
+  %attrs;
+  src         %URI;          #REQUIRED
+  alt         %Text;         #REQUIRED
+  longdesc    %URI;          #IMPLIED
+  height      %Length;       #IMPLIED
+  width       %Length;       #IMPLIED
+  usemap      %URI;          #IMPLIED
+  ismap       (ismap)        #IMPLIED
+  >
+
+
+
+
+
+
+
+
+
+<!ELEMENT map ((%block; | form | %misc;)+ | area+)>
+<!ATTLIST map
+  %i18n;
+  %events;
+  id          ID             #REQUIRED
+  class       CDATA          #IMPLIED
+  style       %StyleSheet;   #IMPLIED
+  title       %Text;         #IMPLIED
+  name        NMTOKEN        #IMPLIED
+  >
+
+<!ELEMENT area EMPTY>
+<!ATTLIST area
+  %attrs;
+  %focus;
+  shape       %Shape;        "rect"
+  coords      %Coords;       #IMPLIED
+  href        %URI;          #IMPLIED
+  nohref      (nohref)       #IMPLIED
+  alt         %Text;         #REQUIRED
+  >
+
+
+<!ELEMENT form %form.content;>
+
+<!ATTLIST form
+  %attrs;
+  action      %URI;          #REQUIRED
+  method      (get|post)     "get"
+  enctype     %ContentType;  "application/x-www-form-urlencoded"
+  onsubmit    %Script;       #IMPLIED
+  onreset     %Script;       #IMPLIED
+  accept      %ContentTypes; #IMPLIED
+  accept-charset %Charsets;  #IMPLIED
+  >
+
+
+
+
+
+<!ELEMENT label %Inline;>
+<!ATTLIST label
+  %attrs;
+  for         IDREF          #IMPLIED
+  accesskey   %Character;    #IMPLIED
+  onfocus     %Script;       #IMPLIED
+  onblur      %Script;       #IMPLIED
+  >
+
+<!ENTITY % InputType
+  "(text | password | checkbox |
+    radio | submit | reset |
+    file | hidden | image | button)"
+   >
+
+
+
+<!ELEMENT input EMPTY>
+<!ATTLIST input
+  %attrs;
+  %focus;
+  type        %InputType;    "text"
+  name        CDATA          #IMPLIED
+  value       CDATA          #IMPLIED
+  checked     (checked)      #IMPLIED
+  disabled    (disabled)     #IMPLIED
+  readonly    (readonly)     #IMPLIED
+  size        CDATA          #IMPLIED
+  maxlength   %Number;       #IMPLIED
+  src         %URI;          #IMPLIED
+  alt         CDATA          #IMPLIED
+  usemap      %URI;          #IMPLIED
+  onselect    %Script;       #IMPLIED
+  onchange    %Script;       #IMPLIED
+  accept      %ContentTypes; #IMPLIED
+  >
+
+<!ELEMENT select (optgroup|option)+>
+<!ATTLIST select
+  %attrs;
+  name        CDATA          #IMPLIED
+  size        %Number;       #IMPLIED
+  multiple    (multiple)     #IMPLIED
+  disabled    (disabled)     #IMPLIED
+  tabindex    %Number;       #IMPLIED
+  onfocus     %Script;       #IMPLIED
+  onblur      %Script;       #IMPLIED
+  onchange    %Script;       #IMPLIED
+  >
+
+<!ELEMENT optgroup (option)+>
+<!ATTLIST optgroup
+  %attrs;
+  disabled    (disabled)     #IMPLIED
+  label       %Text;         #REQUIRED
+  >
+
+<!ELEMENT option (#PCDATA)>
+<!ATTLIST option
+  %attrs;
+  selected    (selected)     #IMPLIED
+  disabled    (disabled)     #IMPLIED
+  label       %Text;         #IMPLIED
+  value       CDATA          #IMPLIED
+  >
+
+<!ELEMENT textarea (#PCDATA)>
+<!ATTLIST textarea
+  %attrs;
+  %focus;
+  name        CDATA          #IMPLIED
+  rows        %Number;       #REQUIRED
+  cols        %Number;       #REQUIRED
+  disabled    (disabled)     #IMPLIED
+  readonly    (readonly)     #IMPLIED
+  onselect    %Script;       #IMPLIED
+  onchange    %Script;       #IMPLIED
+  >
+
+
+
+
+
+
+<!ELEMENT fieldset (#PCDATA | legend | %block; | form | %inline; | %misc;)*>
+<!ATTLIST fieldset
+  %attrs;
+  >
+
+<!ELEMENT legend %Inline;>
+<!ATTLIST legend
+  %attrs;
+  accesskey   %Character;    #IMPLIED
+  >
+
+
+
+ 
+<!ELEMENT button %button.content;>
+<!ATTLIST button
+  %attrs;
+  %focus;
+  name        CDATA          #IMPLIED
+  value       CDATA          #IMPLIED
+  type        (button|submit|reset) "submit"
+  disabled    (disabled)     #IMPLIED
+  >
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!ENTITY % TFrame "(void|above|below|hsides|lhs|rhs|vsides|box|border)">
+
+
+
+
+
+
+
+
+<!ENTITY % TRules "(none | groups | rows | cols | all)">
+  
+
+
+
+
+
+<!ENTITY % cellhalign
+  "align      (left|center|right|justify|char) #IMPLIED
+   char       %Character;    #IMPLIED
+   charoff    %Length;       #IMPLIED"
+  >
+
+
+<!ENTITY % cellvalign
+  "valign     (top|middle|bottom|baseline) #IMPLIED"
+  >
+
+<!ELEMENT table
+     (caption?, (col*|colgroup*), thead?, tfoot?, (tbody+|tr+))>
+<!ELEMENT caption  %Inline;>
+<!ELEMENT thead    (tr)+>
+<!ELEMENT tfoot    (tr)+>
+<!ELEMENT tbody    (tr)+>
+<!ELEMENT colgroup (col)*>
+<!ELEMENT col      EMPTY>
+<!ELEMENT tr       (th|td)+>
+<!ELEMENT th       %Flow;>
+<!ELEMENT td       %Flow;>
+
+<!ATTLIST table
+  %attrs;
+  summary     %Text;         #IMPLIED
+  width       %Length;       #IMPLIED
+  border      %Pixels;       #IMPLIED
+  frame       %TFrame;       #IMPLIED
+  rules       %TRules;       #IMPLIED
+  cellspacing %Length;       #IMPLIED
+  cellpadding %Length;       #IMPLIED
+  >
+
+<!ATTLIST caption
+  %attrs;
+  >
+
+
+
+
+
+<!ATTLIST colgroup
+  %attrs;
+  span        %Number;       "1"
+  width       %MultiLength;  #IMPLIED
+  %cellhalign;
+  %cellvalign;
+  >
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!ATTLIST col
+  %attrs;
+  span        %Number;       "1"
+  width       %MultiLength;  #IMPLIED
+  %cellhalign;
+  %cellvalign;
+  >
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!ATTLIST thead
+  %attrs;
+  %cellhalign;
+  %cellvalign;
+  >
+
+<!ATTLIST tfoot
+  %attrs;
+  %cellhalign;
+  %cellvalign;
+  >
+
+<!ATTLIST tbody
+  %attrs;
+  %cellhalign;
+  %cellvalign;
+  >
+
+<!ATTLIST tr
+  %attrs;
+  %cellhalign;
+  %cellvalign;
+  >
+
+
+
+<!ENTITY % Scope "(row|col|rowgroup|colgroup)">
+
+
+
+<!ATTLIST th
+  %attrs;
+  abbr        %Text;         #IMPLIED
+  axis        CDATA          #IMPLIED
+  headers     IDREFS         #IMPLIED
+  scope       %Scope;        #IMPLIED
+  rowspan     %Number;       "1"
+  colspan     %Number;       "1"
+  %cellhalign;
+  %cellvalign;
+  >
+
+<!ATTLIST td
+  %attrs;
+  abbr        %Text;         #IMPLIED
+  axis        CDATA          #IMPLIED
+  headers     IDREFS         #IMPLIED
+  scope       %Scope;        #IMPLIED
+  rowspan     %Number;       "1"
+  colspan     %Number;       "1"
+  %cellhalign;
+  %cellvalign;
+  >
+

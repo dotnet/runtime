@@ -8,8 +8,14 @@
     <OutputType>Library</OutputType>
     <AssemblyName>System.Globalization.Calendars.Tests</AssemblyName>
     <RootNamespace>System.Globalization.Calendars.Tests</RootNamespace>
-    <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
+    <NugetTargetMoniker Condition="'$(TargetGroup)'=='netstandard1.7' AND '$(NugetTargetMoniker)'==''">.NETStandard,Version=v1.7</NugetTargetMoniker>
+    <NugetTargetMoniker Condition="'$(NugetTargetMoniker)'==''">.NETStandard,Version=v1.3</NugetTargetMoniker>
   </PropertyGroup>
+  <ItemGroup Condition="'$(TargetGroup)'=='netstandard1.7'">
+    <TestNugetTargetMoniker Include="$(NugetTargetMoniker)">
+      <Folder>netcoreapp1.1</Folder>
+    </TestNugetTargetMoniker>
+  </ItemGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
@@ -121,6 +127,11 @@
       <Link>Common\System\PlatformDetection.cs</Link>
     </Compile>
   </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard1.7'">
+    <Compile Include="Misc\Calendars.netstandard1.7.cs" />
+  </ItemGroup>
+
   <ItemGroup>
     <None Include="project.json" />
   </ItemGroup>
@@ -140,6 +151,10 @@
       <OutputItemType>Content</OutputItemType>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Targets>Build;DebugSymbolsProjectOutputGroup</Targets>
+    </ProjectReference>
+    <!-- ToDo: Remove this reference to the live package of System.Globalization once prerelease gets updated again -->
+    <ProjectReference Include="..\..\System.Runtime\pkg\System.Runtime.pkgproj">
+      <Name>System.Runtime</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />

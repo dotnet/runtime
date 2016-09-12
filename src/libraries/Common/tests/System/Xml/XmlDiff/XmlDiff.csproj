@@ -26,10 +26,7 @@
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\ModuleCore\ModuleCore.csproj">
-      <Project>{3cf0cc76-4ce0-460a-ba37-657cfed39ab0}</Project>
-      <Name>ModuleCore</Name>
-    </ProjectReference>
+    <ProjectReference Include="..\ModuleCore\ModuleCore.csproj" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />

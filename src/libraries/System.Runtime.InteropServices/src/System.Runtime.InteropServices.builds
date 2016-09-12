@@ -10,15 +10,6 @@
     <Project Include="System.Runtime.InteropServices.csproj">
       <TargetGroup>netcore50aot</TargetGroup>
     </Project> -->
-    <Project Include="redist\System.Runtime.InteropServices.depproj">
-      <TargetGroup>netcore50</TargetGroup>
-    </Project>
-    <Project Include="redist\System.Runtime.InteropServices.depproj">
-      <TargetGroup>netcore50aot</TargetGroup>
-    </Project>
-    <Project Include="redist\System.Runtime.InteropServices.depproj">
-      <TargetGroup>net462</TargetGroup>
-    </Project>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
 </Project>

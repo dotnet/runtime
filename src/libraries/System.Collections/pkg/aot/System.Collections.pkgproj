@@ -7,11 +7,5 @@
     <PreventImplementationReference>true</PreventImplementationReference>
   </PropertyGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\..\src\redist\System.Collections.depproj">
-      <TargetGroup>netcore50aot</TargetGroup>
-    </ProjectReference>
-  </ItemGroup>
-
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

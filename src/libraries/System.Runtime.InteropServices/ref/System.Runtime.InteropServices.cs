@@ -8,6 +8,7 @@
 // Types moved down into System.Runtime.Handles
 [assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Runtime.InteropServices.CriticalHandle))]
 [assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Runtime.InteropServices.SafeHandle))]
+[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Reflection.Missing))]
 
 namespace System
 {
@@ -22,14 +23,6 @@ namespace System
         public DllNotFoundException() { }
         public DllNotFoundException(string message) { }
         public DllNotFoundException(string message, System.Exception inner) { }
-    }
-}
-namespace System.Reflection
-{
-    public sealed partial class Missing
-    {
-        internal Missing() { }
-        public static readonly System.Reflection.Missing Value;
     }
 }
 namespace System.Runtime.InteropServices
@@ -101,6 +94,13 @@ namespace System.Runtime.InteropServices
         public override string Name { get { return default(string); } }
         public override void AddEventHandler(object target, System.Delegate handler) { }
         public override void RemoveEventHandler(object target, System.Delegate handler) { }
+        public override bool IsDefined(Type attributeType, bool inherit)  { return default(bool); }
+        public override object[] GetCustomAttributes(bool inherit) { return default(object[]); }
+        public override System.Type ReflectedType { get { return default(System.Type); } }
+        public override System.Reflection.MethodInfo GetRemoveMethod(bool nonPublic) { return default(System.Reflection.MethodInfo); }
+        public override object[] GetCustomAttributes(Type attributeType, bool inherit) { return default(object[]); }
+        public override System.Reflection.MethodInfo GetRaiseMethod(bool nonPublic) { return default(System.Reflection.MethodInfo); }
+        public override System.Reflection.MethodInfo GetAddMethod(bool nonPublic) { return default(System.Reflection.MethodInfo); }
     }
     [System.AttributeUsageAttribute((System.AttributeTargets)(4), Inherited = false)]
     public sealed partial class ComDefaultInterfaceAttribute : System.Attribute

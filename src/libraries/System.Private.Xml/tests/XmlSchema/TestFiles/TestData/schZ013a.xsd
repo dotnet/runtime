@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<xs:schema targetNamespace="uri:temp-uri" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns="uri:temp-uri" xmlns:cust="urn:custom-namespace">
+
+<xs:import namespace="urn:custom-namespace" schemaLocation="schZ013b.xsd"/>
+
+<xs:redefine schemaLocation="schZ013c.xsd">
+  <xs:complexType name="pname">
+    <xs:complexContent>
+      <xs:restriction base="pname">
+	  <xs:sequence>
+    		<xs:element name="firstname" type="xs:string"/>
+    		<xs:element name="lastname" type="xs:string"/>
+		<xs:element ref="cust:comment"/>
+	  </xs:sequence>
+      </xs:restriction>
+    </xs:complexContent>
+  </xs:complexType>
+</xs:redefine>
+
+
+
+<xs:element name="author" type="pname"/></xs:schema>

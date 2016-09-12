@@ -6,6 +6,7 @@ using System;
 using System.IO;
 using System.Runtime.InteropServices;
 using Xunit;
+using XunitPlatformID = Xunit.PlatformID;
 
 namespace System.IO.Tests
 {
@@ -85,7 +86,7 @@ namespace System.IO.Tests
             }
         }
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)] // file sharing restriction limitations on Unix
+        [PlatformSpecific(XunitPlatformID.Windows)] // file sharing restriction limitations on Unix
         public void FileShareDeleteExistingMultipleClients()
         {
             // create the file
@@ -119,7 +120,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)] // file sharing restriction limitations on Unix
+        [PlatformSpecific(XunitPlatformID.Windows)] // file sharing restriction limitations on Unix
         public void FileShareWithoutDeleteThrows()
         {
             string fileName = GetTestFilePath();

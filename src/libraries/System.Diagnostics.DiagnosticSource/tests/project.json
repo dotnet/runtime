@@ -1,21 +1,21 @@
 {
   "dependencies": {
-    "Microsoft.NETCore.Platforms": "1.0.2-beta-24512-01",
-    "System.Collections": "4.3.0-beta-24512-01",
-    "System.Diagnostics.Debug": "4.3.0-beta-24512-01",
-    "System.Diagnostics.Tracing": "4.3.0-beta-24512-01",
-    "System.Linq.Expressions": "4.3.0-beta-24512-01",
-    "System.ObjectModel": "4.3.0-beta-24512-01",
-    "System.Runtime": "4.3.0-beta-24512-01",
-    "System.Runtime.Extensions": "4.3.0-beta-24512-01",
-    "System.Text.RegularExpressions": "4.3.0-beta-24512-01",
-    "System.Threading.Tasks": "4.3.0-beta-24512-01",
+    "Microsoft.NETCore.Platforms": "4.3.0-beta-devapi-24512-01",
+    "System.Collections": "4.3.0-beta-devapi-24512-01",
+    "System.Diagnostics.Debug": "4.3.0-beta-devapi-24512-01",
+    "System.Diagnostics.Tracing": "4.3.0-beta-devapi-24512-01",
+    "System.Linq.Expressions": "4.3.0-beta-devapi-24512-01",
+    "System.ObjectModel": "4.3.0-beta-devapi-24512-01",
+    "System.Runtime": "4.3.0-beta-devapi-24512-01",
+    "System.Runtime.Extensions": "4.3.0-beta-devapi-24512-01",
+    "System.Text.RegularExpressions": "4.3.0-beta-devapi-24512-01",
+    "System.Threading.Tasks": "4.3.0-beta-devapi-24512-01",
     "test-runtime": {
       "target": "project",
       "exclude": "compile"
     },
-    "Microsoft.xunit.netcore.extensions": "1.0.0-prerelease-00807-03",
-    "Microsoft.DotNet.BuildTools.TestSuite": "1.0.0-prerelease-00807-03"
+    "Microsoft.xunit.netcore.extensions": "1.0.0-prerelease-00731-01",
+    "Microsoft.DotNet.BuildTools.TestSuite": "1.0.0-prerelease-00731-01"
   },
   "frameworks": {
     "netstandard1.3": {}

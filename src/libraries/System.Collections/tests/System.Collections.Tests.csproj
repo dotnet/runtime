@@ -8,8 +8,20 @@
     <OutputType>Library</OutputType>
     <AssemblyName>System.Collections.Tests</AssemblyName>
     <RootNamespace>System.Collections.Tests</RootNamespace>
-    <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
+    <DefineConstants Condition="'$(TargetGroup)'=='netstandard1.7'">$(DefineConstants);netstandard17</DefineConstants>
+    <NugetTargetMoniker Condition="'$(NugetTargetMoniker)'==''">.NETStandard,Version=v1.3</NugetTargetMoniker>
+    <!--
+        Until we get first class support for NS1.7 and Netcoreapp1.1
+        we need to hard code $(TestTFM) and $(TestNugetTargetMoniker)
+        in the project file.
+      -->
+    <TestTFM Condition="'$(TargetGroup)'=='netstandard1.7'">netcoreapp1.1</TestTFM>
   </PropertyGroup>
+  <ItemGroup Condition="'$(TargetGroup)'=='netstandard1.7'">
+    <TestNugetTargetMoniker Include="$(NugetTargetMoniker)">
+      <Folder>netcoreapp1.1</Folder>
+    </TestNugetTargetMoniker>
+  </ItemGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
   </PropertyGroup>
@@ -18,19 +30,6 @@
   <ItemGroup>
     <!-- Compile tests against the contract, but copy our local-built implementation for testing -->
     <ProjectReference Include="..\pkg\System.Collections.pkgproj">
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-      <OutputItemType>Content</OutputItemType>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <Targets>Build;DebugSymbolsProjectOutputGroup</Targets>
-      <OSGroup>$(InputOSGroup)</OSGroup>
-    </ProjectReference>
-    <ProjectReference Include="..\..\System.Runtime\pkg\System.Runtime.pkgproj">
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-      <OutputItemType>Content</OutputItemType>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <Targets>Build;DebugSymbolsProjectOutputGroup</Targets>
-    </ProjectReference>
-    <ProjectReference Include="..\..\System.Diagnostics.Debug\pkg\System.Diagnostics.Debug.pkgproj">
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
       <OutputItemType>Content</OutputItemType>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
@@ -133,6 +132,7 @@
     <Compile Include="Generic\List\List.Generic.Tests.AddRange.cs" />
     <Compile Include="Generic\List\List.Generic.Tests.BinarySearch.cs" />
     <Compile Include="Generic\List\List.Generic.Tests.Constructor.cs" />
+    <Compile Include="Generic\List\List.Generic.Tests.ConvertAll.cs" Condition="'$(TargetGroup)'=='netstandard1.7'" />
     <Compile Include="Generic\List\List.Generic.Tests.Find.cs" />
     <Compile Include="Generic\List\List.Generic.Tests.Remove.cs" />
     <Compile Include="Generic\List\List.Generic.Tests.Sort.cs" />
@@ -159,8 +159,27 @@
       <Link>Common\System\Diagnostics\DebuggerAttributes.cs</Link>
     </Compile>
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)'!='netstandard1.7'">
+    <Compile Include="$(CommonPath)\System\SerializableAttribute.cs">
+      <Link>Common\System\SerializableAttribute.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)'=='netstandard1.7'">
+    <Compile Include="$(CommonTestPath)\System\Collections\IEnumerable.NonGeneric.Serialization.Tests.cs" >
+      <Link>Common\System\Collections\IEnumerable.NonGeneric.Serialization.Tests.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Collections\IEnumerable.Generic.Serialization.Tests.cs" >
+      <Link>Common\System\Collections\IEnumerable.Generic.Serialization.Tests.cs</Link>
+    </Compile>
+  </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />
   </ItemGroup>
+  <!-- ToDo: Remove this target once the infrastructure for testing in netcoreapp1.1 is ready -->
+  <Target Name="RemoveUnwantedTestMonikers" Condition="'$(TargetGroup)'=='netstandard1.7'" BeforeTargets="CopyTestToTestDirectory">
+    <ItemGroup>
+      <TestNugetTargetMoniker Remove=".NETCoreApp,Version=v1.1" />
+    </ItemGroup>
+  </Target>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

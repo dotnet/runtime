@@ -1,13 +1,16 @@
 {
   "dependencies": {
+    "System.Collections.NonGeneric": "4.0.0",
+    "System.IO": "4.0.10",
+    "System.Reflection": "4.1.0",
     "System.Runtime": "4.0.20",
     "System.Runtime.Extensions": "4.0.10",
     "System.Runtime.Serialization.Primitives": "4.1.1"
   },
   "frameworks": {
-    "netstandard1.3": {
+    "netstandard1.7": {
       "imports": [
-        "dotnet5.4"
+        "dotnet5.8"
       ]
     }
   }

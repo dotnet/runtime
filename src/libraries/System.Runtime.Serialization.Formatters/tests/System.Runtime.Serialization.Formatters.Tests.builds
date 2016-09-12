@@ -2,9 +2,11 @@
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
-    <Project Include="System.Runtime.Serialization.Formatters.Tests.csproj"/>
     <Project Include="System.Runtime.Serialization.Formatters.Tests.csproj">
-      <TestTFMs>netcore50;net46</TestTFMs>
+    	<TestTFMs>netcoreapp1.1</TestTFMs>
+    </Project>
+    <Project Include="System.Runtime.Serialization.Formatters.Tests.csproj">
+      <TestTFMs>net463</TestTFMs>
       <OSGroup>Windows_NT</OSGroup>
     </Project>
   </ItemGroup>

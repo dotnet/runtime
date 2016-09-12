@@ -8,8 +8,20 @@
     <OutputType>Library</OutputType>
     <AssemblyName>System.Collections.Concurrent.Tests</AssemblyName>
     <RootNamespace>System.Collections.Concurrent.Tests</RootNamespace>
-    <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
+    <DefineConstants Condition="'$(TargetGroup)'=='netstandard1.7'">$(DefineConstants);netstandard17</DefineConstants>
+    <NugetTargetMoniker Condition="'$(NugetTargetMoniker)'==''">.NETStandard,Version=v1.3</NugetTargetMoniker>
+    <!-- 
+        Until we get first class support for NS1.7 and Netcoreapp1.1 
+        we need to hard code $(TestTFM) and $(TestNugetTargetMoniker) 
+        in the project file. 
+      --> 
+    <TestTFM Condition="'$(TargetGroup)'=='netstandard1.7'">netcoreapp1.1</TestTFM> 
   </PropertyGroup>
+  <ItemGroup Condition="'$(TargetGroup)'=='netstandard1.7'">
+    <TestNugetTargetMoniker Include="$(NugetTargetMoniker)">
+      <Folder>netcoreapp1.1</Folder>
+    </TestNugetTargetMoniker>
+  </ItemGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
   </PropertyGroup>
@@ -84,6 +96,19 @@
       <Link>Common\System\Diagnostics\DebuggerAttributes.cs</Link>
     </Compile>
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)'!='netstandard1.7'">
+    <Compile Include="$(CommonPath)\System\SerializableAttribute.cs">
+      <Link>Common\System\SerializableAttribute.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)'=='netstandard1.7'">
+    <Compile Include="$(CommonTestPath)\System\Collections\IEnumerable.NonGeneric.Serialization.Tests.cs" >
+      <Link>Common\System\Collections\IEnumerable.NonGeneric.Serialization.Tests.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Collections\IEnumerable.Generic.Serialization.Tests.cs" >
+      <Link>Common\System\Collections\IEnumerable.Generic.Serialization.Tests.cs</Link>
+    </Compile>
+  </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\pkg\System.Collections.Concurrent.pkgproj">
       <Project>{96AA2060-C846-4E56-9509-E8CB9C114C8F}</Project>
@@ -93,5 +118,11 @@
   <ItemGroup>
     <None Include="project.json" />
   </ItemGroup>
+  <!-- ToDo: Remove this target once the infrastructure for testing in netcoreapp1.1 is ready -->
+  <Target Name="RemoveUnwantedTestMonikers" Condition="'$(TargetGroup)'=='netstandard1.7'" BeforeTargets="CopyTestToTestDirectory">
+    <ItemGroup>
+      <TestNugetTargetMoniker Remove=".NETCoreApp,Version=v1.1" />
+    </ItemGroup>
+  </Target>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

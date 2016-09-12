@@ -9,7 +9,10 @@
  *
  */
 
+#pragma warning disable 618 // obsolete types, namely IHashCodeProvider
+
 using System.Globalization;
+using System.Runtime.Serialization;
 
 namespace System.Collections.Specialized
 {
@@ -18,8 +21,19 @@ namespace System.Collections.Specialized
     ///    and <see cref='System.Object' qualify='true'/> values that can be accessed either with the hash code of
     ///    the key or with the index.</para>
     /// </devdoc>
-    public abstract class NameObjectCollectionBase : ICollection
+    [Serializable]
+    public abstract class NameObjectCollectionBase : ICollection, ISerializable, IDeserializationCallback
     {
+        // const names used for serialization
+        private const String ReadOnlyName = "ReadOnly";
+        private const String CountName = "Count";
+        private const String ComparerName = "Comparer";
+        private const String HashCodeProviderName = "HashProvider";
+        private const String KeysName = "Keys";
+        private const String ValuesName = "Values";
+        private const String KeyComparerName = "KeyComparer";
+        private const String VersionName = "Version";
+
         private bool _readOnly = false;
         private ArrayList _entriesArray;
         private IEqualityComparer _keyComparer;
@@ -27,6 +41,8 @@ namespace System.Collections.Specialized
         private volatile NameObjectEntry _nullKeyEntry;
         private KeysCollection _keys;
         private int _version;
+        private SerializationInfo _serializationInfo;
+        [NonSerialized]
         private Object _syncRoot;
 
         private static readonly StringComparer s_defaultComparer = CultureInfo.InvariantCulture.CompareInfo.GetStringComparer(CompareOptions.IgnoreCase);
@@ -59,6 +75,150 @@ namespace System.Collections.Specialized
         {
             _keyComparer = s_defaultComparer;
             Reset(capacity);
+        }
+
+        protected NameObjectCollectionBase(SerializationInfo info, StreamingContext context)
+        {
+            _serializationInfo = info;
+        }
+
+        public virtual void GetObjectData(SerializationInfo info, StreamingContext context)
+        {
+            if (info == null)
+            {
+                throw new ArgumentNullException(nameof(info));
+            }
+
+            info.AddValue(ReadOnlyName, _readOnly);
+
+            // Maintain backward serialization compatibility if new APIs are not used.
+            if (_keyComparer == s_defaultComparer)
+            {
+                info.AddValue(HashCodeProviderName, CaseInsensitiveHashCodeProvider.DefaultInvariant, typeof(IHashCodeProvider));
+                info.AddValue(ComparerName, CaseInsensitiveComparer.DefaultInvariant, typeof(IComparer));
+            }
+            else if (_keyComparer == null)
+            {
+                info.AddValue(HashCodeProviderName, null, typeof(IHashCodeProvider));
+                info.AddValue(ComparerName, null, typeof(IComparer));
+            }
+            else if (_keyComparer is CompatibleComparer)
+            {
+                CompatibleComparer c = (CompatibleComparer)_keyComparer;
+                info.AddValue(HashCodeProviderName, c.HashCodeProvider, typeof(IHashCodeProvider));
+                info.AddValue(ComparerName, c.Comparer, typeof(IComparer));
+            }
+            else
+            {
+                info.AddValue(KeyComparerName, _keyComparer, typeof(IEqualityComparer));
+            }
+
+            int count = _entriesArray.Count;
+            info.AddValue(CountName, count);
+
+            string[] keys = new string[count];
+            object[] values = new object[count];
+
+            for (int i = 0; i < count; i++)
+            {
+                NameObjectEntry entry = (NameObjectEntry)_entriesArray[i];
+                keys[i] = entry.Key;
+                values[i] = entry.Value;
+            }
+
+            info.AddValue(KeysName, keys, typeof(String[]));
+            info.AddValue(ValuesName, values, typeof(Object[]));
+            info.AddValue(VersionName, _version);
+        }
+
+        public virtual void OnDeserialization(object sender)
+        {
+            if (_keyComparer != null)
+            {
+                //Somebody had a dependency on this and fixed us up before the ObjectManager got to it.
+                return;
+            }
+
+            if (_serializationInfo == null)
+            {
+                throw new SerializationException();
+            }
+
+            SerializationInfo info = _serializationInfo;
+            _serializationInfo = null;
+
+            bool readOnly = false;
+            int count = 0;
+            string[] keys = null;
+            object[] values = null;
+            IHashCodeProvider hashProvider = null;
+            IComparer comparer = null;
+            bool hasVersion = false;
+            int serializedVersion = 0;
+
+            SerializationInfoEnumerator enumerator = info.GetEnumerator();
+            while (enumerator.MoveNext())
+            {
+                switch (enumerator.Name)
+                {
+                    case ReadOnlyName:
+                        readOnly = info.GetBoolean(ReadOnlyName); ;
+                        break;
+                    case HashCodeProviderName:
+                        hashProvider = (IHashCodeProvider)info.GetValue(HashCodeProviderName, typeof(IHashCodeProvider)); ;
+                        break;
+                    case ComparerName:
+                        comparer = (IComparer)info.GetValue(ComparerName, typeof(IComparer));
+                        break;
+                    case KeyComparerName:
+                        _keyComparer = (IEqualityComparer)info.GetValue(KeyComparerName, typeof(IEqualityComparer));
+                        break;
+                    case CountName:
+                        count = info.GetInt32(CountName);
+                        break;
+                    case KeysName:
+                        keys = (String[])info.GetValue(KeysName, typeof(String[]));
+                        break;
+                    case ValuesName:
+                        values = (Object[])info.GetValue(ValuesName, typeof(Object[]));
+                        break;
+                    case VersionName:
+                        hasVersion = true;
+                        serializedVersion = info.GetInt32(VersionName);
+                        break;
+                }
+            }
+
+            if (_keyComparer == null)
+            {
+                if (comparer == null || hashProvider == null)
+                {
+                    throw new SerializationException();
+                }
+                else
+                {
+                    // create a new key comparer for V1 Object    
+                    _keyComparer = new CompatibleComparer(hashProvider, comparer);
+                }
+            }
+
+            if (keys == null || values == null)
+            {
+                throw new SerializationException();
+            }
+
+            Reset(count);
+
+            for (int i = 0; i < count; i++)
+            {
+                BaseAdd(keys[i], values[i]);
+            }
+
+            _readOnly = readOnly;  // after collection populated
+            if (hasVersion)
+            {
+                _version = serializedVersion;
+            }
         }
 
         //
@@ -464,6 +624,7 @@ namespace System.Collections.Specialized
         // Enumerator over keys of NameObjectCollection
         //
 
+        [Serializable]
         internal class NameObjectKeysEnumerator : IEnumerator
         {
             private int _pos;
@@ -524,6 +685,7 @@ namespace System.Collections.Specialized
         /// <devdoc>
         /// <para>Represents a collection of the <see cref='System.String' qualify='true'/> keys of a collection.</para>
         /// </devdoc>
+        [Serializable]
         public class KeysCollection : ICollection
         {
             private NameObjectCollectionBase _coll;

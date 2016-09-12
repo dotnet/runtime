@@ -9,6 +9,7 @@
     <RootNamespace>Microsoft.Win32.Registry</RootNamespace>
     <AssemblyName>Microsoft.Win32.Registry</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <DefineConstants>$(DefineConstants);REGISTRY_ASSEMBLY</DefineConstants>
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'net46'">true</IsPartialFacadeAssembly>
     <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.3</NuGetTargetMoniker>
   </PropertyGroup>

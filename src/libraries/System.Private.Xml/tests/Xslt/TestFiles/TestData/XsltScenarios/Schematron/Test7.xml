@@ -1,0 +1,6 @@
+<!--ex:person cannot have any child other than ex:Name and ex:Gender-->
+<ex:Person Title="Mr" xmlns:ex="http://www.topologi.com/example">
+    <ex:Name>Eddie</ex:Name>
+    <ex:Gender>Male</ex:Gender>
+    <ex:foo/>	
+</ex:Person>

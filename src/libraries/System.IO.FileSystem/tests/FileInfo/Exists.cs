@@ -83,7 +83,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.AnyUnix)]
+        [PlatformSpecific(Xunit.PlatformID.AnyUnix)]
         public void TrueForNonRegularFile()
         {
             string fileName = GetTestFilePath();

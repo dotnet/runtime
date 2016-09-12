@@ -1,0 +1,20 @@
+{
+  "dependencies": {
+    "System.Collections.NonGeneric": "4.3.0-beta-devapi-24512-01",
+    "System.Reflection": "4.3.0-beta-devapi-24512-01",
+    "System.Runtime.Extensions": "4.3.0-beta-devapi-24512-01",
+    "System.Runtime": "4.3.0-beta-devapi-24512-01",
+    "System.Security.AccessControl": "4.3.0-beta-devapi-24512-01",
+    "System.Security.Cryptography.Primitives": "4.3.0-beta-devapi-24512-01",
+    "System.Security.Cryptography.X509Certificates": "4.3.0-beta-devapi-24512-01",
+    "System.Security.Principal": "4.3.0-beta-devapi-24512-01",
+    "System.Threading": "4.3.0-beta-devapi-24512-01"
+  },
+  "frameworks": {
+    "netstandard1.7": {
+      "imports": [
+        "dotnet5.4"
+      ]
+    }
+  }
+}

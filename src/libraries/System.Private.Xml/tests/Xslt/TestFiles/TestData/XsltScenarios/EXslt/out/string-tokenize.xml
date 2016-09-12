@@ -1,0 +1,23 @@
+<out>
+  <test1>
+    <token>2001</token>
+    <token>06</token>
+    <token>03</token>
+    <token>11</token>
+    <token>40</token>
+    <token>23</token>
+  </test1>
+  <test2>
+    <token>date</token>
+    <token>math</token>
+    <token>str</token>
+  </test2>
+  <test3>
+    <token>f</token>
+    <token>o</token>
+    <token>o</token>
+  </test3>
+  <test4>
+    <token></token>
+  </test4>
+</out>

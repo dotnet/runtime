@@ -1,9 +1,9 @@
 {
   "dependencies": {},
   "frameworks": {
-    "netstandard1.5": {
+    "netstandard1.7": {
       "imports": [
-        "dotnet5.6"
+        "dotnet5.8"
       ]
     }
   }

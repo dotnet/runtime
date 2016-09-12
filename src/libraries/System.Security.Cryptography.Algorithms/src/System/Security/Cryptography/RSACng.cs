@@ -47,7 +47,7 @@ namespace System.Security.Cryptography
             {
                 string blobType = includePrivateParameters ?
                     Interop.BCrypt.KeyBlobType.BCRYPT_RSAFULLPRIVATE_BLOB :
-                    Interop.BCrypt.KeyBlobType.BCRYPT_PUBLIC_KEY_BLOB;
+                    Interop.BCrypt.KeyBlobType.BCRYPT_RSAPUBLIC_KEY_BLOB;
 
                 using (SafeNCryptKeyHandle keyHandle = GetDuplicatedKeyHandle())
                 {
@@ -59,7 +59,7 @@ namespace System.Security.Cryptography
             {
                 string blobType = includePrivate ?
                     Interop.BCrypt.KeyBlobType.BCRYPT_RSAPRIVATE_BLOB :
-                    Interop.BCrypt.KeyBlobType.BCRYPT_PUBLIC_KEY_BLOB;
+                    Interop.BCrypt.KeyBlobType.BCRYPT_RSAPUBLIC_KEY_BLOB;
 
                 SafeNCryptKeyHandle keyHandle = CngKeyLite.ImportKeyBlob(blobType, rsaBlob);
 

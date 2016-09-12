@@ -4,7 +4,12 @@
 
 namespace Microsoft.Win32
 {
-    public enum RegistryValueKind
+#if REGISTRY_ASSEMBLY
+    public
+#else
+    internal
+#endif
+    enum RegistryValueKind
     {
         String = Interop.mincore.RegistryValues.REG_SZ,
         ExpandString = Interop.mincore.RegistryValues.REG_EXPAND_SZ,

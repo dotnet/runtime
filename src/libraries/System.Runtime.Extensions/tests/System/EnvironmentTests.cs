@@ -1,0 +1,282 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
+using System.Collections;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
+using System.Linq;
+using System.Runtime.InteropServices;
+using System.Threading;
+using System.Threading.Tasks;
+using Xunit;
+using Xunit.NetCore.Extensions;
+
+namespace System.Tests
+{
+    public class EnvironmentTests : RemoteExecutorTestBase
+    {
+        [Fact]
+        public void CurrentDirectory_Null_Path_Throws_ArgumentNullException()
+        {
+            Assert.Throws<ArgumentNullException>("value", () => Environment.CurrentDirectory = null);
+        }
+
+        [Fact]
+        public void CurrentDirectory_Empty_Path_Throws_ArgumentException()
+        {
+            Assert.Throws<ArgumentException>("value", () => Environment.CurrentDirectory = string.Empty);
+        }
+
+        [Fact]
+        public void CurrentDirectory_SetToNonExistentDirectory_ThrowsDirectoryNotFoundException()
+        {
+            Assert.Throws<DirectoryNotFoundException>(() => Environment.CurrentDirectory = GetTestFilePath());
+        }
+
+        [Fact]
+        public void CurrentDirectory_SetToValidOtherDirectory()
+        {
+            RemoteInvoke(() =>
+            {
+                Environment.CurrentDirectory = TestDirectory;
+                Assert.Equal(Directory.GetCurrentDirectory(), Environment.CurrentDirectory);
+
+                if (!RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+                {
+                    // On OSX, the temp directory /tmp/ is a symlink to /private/tmp, so setting the current
+                    // directory to a symlinked path will result in GetCurrentDirectory returning the absolute
+                    // path that followed the symlink.
+                    Assert.Equal(TestDirectory, Directory.GetCurrentDirectory());
+                }
+
+                return SuccessExitCode;
+            }).Dispose();
+        }
+
+        [Fact]
+        public void CurrentManagedThreadId_Idempotent()
+        {
+            Assert.Equal(Environment.CurrentManagedThreadId, Environment.CurrentManagedThreadId);
+        }
+
+        [Fact]
+        public void CurrentManagedThreadId_DifferentForActiveThreads()
+        {
+            var ids = new HashSet<int>();
+            Barrier b = new Barrier(10);
+            Task.WaitAll((from i in Enumerable.Range(0, b.ParticipantCount)
+                          select Task.Factory.StartNew(() =>
+                          {
+                              b.SignalAndWait();
+                              lock (ids) ids.Add(Environment.CurrentManagedThreadId);
+                              b.SignalAndWait();
+                          }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default)).ToArray());
+            Assert.Equal(b.ParticipantCount, ids.Count);
+        }
+
+        [Fact]
+        public void HasShutdownStarted_FalseWhileExecuting()
+        {
+            Assert.False(Environment.HasShutdownStarted);
+        }
+
+        [Fact]
+        public void Is64BitProcess_MatchesIntPtrSize()
+        {
+            Assert.Equal(IntPtr.Size == 8, Environment.Is64BitProcess);
+        }
+
+        [Fact]
+        public void Is64BitOperatingSystem_TrueIf64BitProcess()
+        {
+            if (Environment.Is64BitProcess)
+            {
+                Assert.True(Environment.Is64BitOperatingSystem);
+            }
+        }
+
+        [Fact]
+        [PlatformSpecific(Xunit.PlatformID.AnyUnix)]
+        public void Is64BitOperatingSystem_Unix_TrueIff64BitProcess()
+        {
+            Assert.Equal(Environment.Is64BitProcess, Environment.Is64BitOperatingSystem);
+        }
+
+        [Fact]
+        public void OSVersion_Idempotent()
+        {
+            Assert.Same(Environment.OSVersion, Environment.OSVersion);
+        }
+
+        [Fact]
+        public void OSVersion_MatchesPlatform()
+        {
+            PlatformID id = Environment.OSVersion.Platform;
+            Assert.Equal(
+                RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? PlatformID.Win32NT : PlatformID.Unix,
+                id);
+        }
+
+        [Fact]
+        public void OSVersion_ValidVersion()
+        {
+            Version version = Environment.OSVersion.Version;
+            string versionString = Environment.OSVersion.VersionString;
+
+            Assert.False(string.IsNullOrWhiteSpace(versionString), "Expected non-empty version string");
+            Assert.True(version.Major > 0);
+
+            Assert.Contains(version.ToString(2), versionString);
+            Assert.Contains(RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "Windows" : "Unix", versionString);
+        }
+
+        [Fact]
+        public void SystemPageSize_Valid()
+        {
+            int pageSize = Environment.SystemPageSize;
+            Assert.Equal(pageSize, Environment.SystemPageSize);
+
+            Assert.True(pageSize > 0, "Expected positive page size");
+            Assert.True((pageSize & (pageSize - 1)) == 0, "Expected power-of-2 page size");
+        }
+
+        [Fact]
+        public void UserInteractive_True()
+        {
+            Assert.True(Environment.UserInteractive);
+        }
+
+        [Fact]
+        public void UserName_Valid()
+        {
+            Assert.False(string.IsNullOrWhiteSpace(Environment.UserName));
+        }
+
+        [Fact]
+        public void UserDomainName_Valid()
+        {
+            Assert.False(string.IsNullOrWhiteSpace(Environment.UserDomainName));
+        }
+
+        [Fact]
+        [PlatformSpecific(Xunit.PlatformID.AnyUnix)]
+        public void UserDomainName_Unix_MatchesMachineName()
+        {
+            Assert.Equal(Environment.MachineName, Environment.UserDomainName);
+        }
+
+        [Fact]
+        public void Version_MatchesFixedVersion()
+        {
+            Assert.Equal(new Version(4, 0, 30319, 42000), Environment.Version);
+        }
+
+        [Fact]
+        public void WorkingSet_Valid()
+        {
+            Assert.True(Environment.WorkingSet > 0, "Expected positive WorkingSet value");
+        }
+
+        [Trait(XunitConstants.Category, XunitConstants.IgnoreForCI)] // fail fast crashes the process
+        [OuterLoop]
+        [Fact]
+        public void FailFast_ExpectFailureExitCode()
+        {
+            using (Process p = RemoteInvoke(() => { Environment.FailFast("message"); return SuccessExitCode; }).Process)
+            {
+                p.WaitForExit();
+                Assert.NotEqual(SuccessExitCode, p.ExitCode);
+            }
+
+            using (Process p = RemoteInvoke(() => { Environment.FailFast("message", new Exception("uh oh")); return SuccessExitCode; }).Process)
+            {
+                p.WaitForExit();
+                Assert.NotEqual(SuccessExitCode, p.ExitCode);
+            }
+        }
+
+        [Fact]
+        [PlatformSpecific(Xunit.PlatformID.AnyUnix)]
+        public void GetFolderPath_Unix_PersonalIsHomeAndUserProfile()
+        {
+            Assert.Equal(Environment.GetEnvironmentVariable("HOME"), Environment.GetFolderPath(Environment.SpecialFolder.Personal));
+            Assert.Equal(Environment.GetEnvironmentVariable("HOME"), Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments));
+            Assert.Equal(Environment.GetEnvironmentVariable("HOME"), Environment.GetFolderPath(Environment.SpecialFolder.UserProfile));
+        }
+
+        [Theory]
+        [PlatformSpecific(Xunit.PlatformID.AnyUnix)]
+        [InlineData(Environment.SpecialFolder.UserProfile, Environment.SpecialFolderOption.None)]
+        [InlineData(Environment.SpecialFolder.Personal, Environment.SpecialFolderOption.None)]
+        [InlineData(Environment.SpecialFolder.MyDocuments, Environment.SpecialFolderOption.None)]
+        [InlineData(Environment.SpecialFolder.CommonApplicationData, Environment.SpecialFolderOption.None)]
+        [InlineData(Environment.SpecialFolder.CommonTemplates, Environment.SpecialFolderOption.DoNotVerify)]
+        [InlineData(Environment.SpecialFolder.ApplicationData, Environment.SpecialFolderOption.DoNotVerify)]
+        [InlineData(Environment.SpecialFolder.LocalApplicationData, Environment.SpecialFolderOption.None)]
+        [InlineData(Environment.SpecialFolder.Desktop, Environment.SpecialFolderOption.DoNotVerify)]
+        [InlineData(Environment.SpecialFolder.DesktopDirectory, Environment.SpecialFolderOption.DoNotVerify)]
+        [InlineData(Environment.SpecialFolder.Templates, Environment.SpecialFolderOption.DoNotVerify)]
+        [InlineData(Environment.SpecialFolder.MyVideos, Environment.SpecialFolderOption.DoNotVerify)]
+        [InlineData(Environment.SpecialFolder.MyMusic, Environment.SpecialFolderOption.DoNotVerify)]
+        [InlineData(Environment.SpecialFolder.MyPictures, Environment.SpecialFolderOption.DoNotVerify)]
+        [InlineData(Environment.SpecialFolder.Fonts, Environment.SpecialFolderOption.DoNotVerify)]
+        public void GetFolderPath_Unix_NonEmptyFolderPaths(Environment.SpecialFolder folder, Environment.SpecialFolderOption option)
+        {
+            Assert.NotEmpty(Environment.GetFolderPath(folder, option));
+            if (option == Environment.SpecialFolderOption.None)
+            {
+                Assert.NotEmpty(Environment.GetFolderPath(folder));
+            }
+        }
+
+        [Theory]
+        [PlatformSpecific(Xunit.PlatformID.OSX)]
+        [InlineData(Environment.SpecialFolder.Favorites, Environment.SpecialFolderOption.DoNotVerify)]
+        [InlineData(Environment.SpecialFolder.InternetCache, Environment.SpecialFolderOption.DoNotVerify)]
+        [InlineData(Environment.SpecialFolder.ProgramFiles, Environment.SpecialFolderOption.None)]
+        [InlineData(Environment.SpecialFolder.System, Environment.SpecialFolderOption.None)]
+        public void GetFolderPath_OSX_NonEmptyFolderPaths(Environment.SpecialFolder folder, Environment.SpecialFolderOption option)
+        {
+            Assert.NotEmpty(Environment.GetFolderPath(folder, option));
+            if (option == Environment.SpecialFolderOption.None)
+            {
+                Assert.NotEmpty(Environment.GetFolderPath(folder));
+            }
+        }
+
+        [Fact]
+        [PlatformSpecific(Xunit.PlatformID.AnyUnix)]
+        public void GetLogicalDrives_Unix_AtLeastOneIsRoot()
+        {
+            string[] drives = Environment.GetLogicalDrives();
+            Assert.NotNull(drives);
+            Assert.True(drives.Length > 0, "Expected at least one drive");
+            Assert.All(drives, d => Assert.NotNull(d));
+            Assert.Contains(drives, d => d == "/");
+        }
+
+        [Fact]
+        [PlatformSpecific(Xunit.PlatformID.Windows)]
+        public void GetLogicalDrives_Windows_MatchesExpectedLetters()
+        {
+            string[] drives = Environment.GetLogicalDrives();
+
+            uint mask = (uint)GetLogicalDrives();
+            var bits = new BitArray(new[] { (int)mask });
+
+            Assert.Equal(bits.Cast<bool>().Count(b => b), drives.Length);
+            for (int bit = 0, d = 0; bit < bits.Length; bit++)
+            {
+                if (bits[bit])
+                {
+                    Assert.Contains((char)('A' + bit), drives[d++]);
+                }
+            }
+        }
+
+        [DllImport("api-ms-win-core-file-l1-1-0.dll", SetLastError = true)]
+        internal static extern int GetLogicalDrives();
+    }
+}

@@ -5,8 +5,14 @@
     <ProjectReference Include="..\ref\4.0.0\System.Globalization.depproj">
       <SupportedFramework>net45;netcore45;wp8;wpa81</SupportedFramework>
     </ProjectReference>
+    <ProjectReference Include="..\ref\4.0.10\System.Globalization.depproj">
+      <SupportedFramework>net46;netcore50;netcoreapp1.0</SupportedFramework>
+    </ProjectReference>
     <ProjectReference Include="..\ref\System.Globalization.csproj">
-      <SupportedFramework>net46;netcore50;netcoreapp1.0;$(AllXamarinFrameworks)</SupportedFramework>
+      <SupportedFramework>net463;netcoreapp1.1;$(AllXamarinFrameworks)</SupportedFramework>
+    </ProjectReference>
+    <ProjectReference Include="..\src\System.Globalization.csproj">
+      <TargetGroup>net463</TargetGroup>
     </ProjectReference>
     <ProjectReference Include="any\System.Globalization.pkgproj" />
     <ProjectReference Include="aot\System.Globalization.pkgproj" />

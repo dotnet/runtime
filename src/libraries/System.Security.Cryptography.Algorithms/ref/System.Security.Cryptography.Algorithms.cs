@@ -23,6 +23,35 @@ namespace System.Security.Cryptography
         public abstract byte[] GetBytes(int cb);
         public abstract void Reset();
     }
+    public abstract partial class DSA : System.Security.Cryptography.AsymmetricAlgorithm
+    {
+        protected DSA() { }
+        public static System.Security.Cryptography.DSA Create() { return default(System.Security.Cryptography.DSA); }
+        public abstract byte[] CreateSignature(byte[] hash);
+        public abstract System.Security.Cryptography.DSAParameters ExportParameters(bool includePrivateParameters);
+        protected virtual byte[] HashData(byte[] data, int offset, int count, System.Security.Cryptography.HashAlgorithmName hashAlgorithm) { return default(byte[]); }
+        protected virtual byte[] HashData(System.IO.Stream data, System.Security.Cryptography.HashAlgorithmName hashAlgorithm) { return default(byte[]); }
+        public abstract void ImportParameters(System.Security.Cryptography.DSAParameters parameters);
+        public virtual byte[] SignData(byte[] data, int offset, int count, System.Security.Cryptography.HashAlgorithmName hashAlgorithm) { return default(byte[]); }
+        public byte[] SignData(byte[] data, System.Security.Cryptography.HashAlgorithmName hashAlgorithm) { return default(byte[]); }
+        public virtual byte[] SignData(System.IO.Stream data, System.Security.Cryptography.HashAlgorithmName hashAlgorithm) { return default(byte[]); }
+        public bool VerifyData(byte[] data, byte[] signature, System.Security.Cryptography.HashAlgorithmName hashAlgorithm) { return default(bool); }
+        public virtual bool VerifyData(byte[] data, int offset, int count, byte[] signature, System.Security.Cryptography.HashAlgorithmName hashAlgorithm) { return default(bool); }
+        public virtual bool VerifyData(System.IO.Stream data, byte[] signature, System.Security.Cryptography.HashAlgorithmName hashAlgorithm) { return default(bool); }
+        public abstract bool VerifySignature(byte[] hash, byte[] signature);
+    }
+    [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
+    public partial struct DSAParameters
+    {
+        public int Counter;
+        public byte[] G;
+        public byte[] J;
+        public byte[] P;
+        public byte[] Q;
+        public byte[] Seed;
+        public byte[] X;
+        public byte[] Y;
+    }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
     public partial struct ECCurve
     {
@@ -205,7 +234,7 @@ namespace System.Security.Cryptography
     public abstract partial class RSA : System.Security.Cryptography.AsymmetricAlgorithm
     {
         protected RSA() { }
-        public static RSA Create() { return default(RSA); }
+        public static System.Security.Cryptography.RSA Create() { return default(System.Security.Cryptography.RSA); }
         public abstract byte[] Decrypt(byte[] data, System.Security.Cryptography.RSAEncryptionPadding padding);
         public abstract byte[] Encrypt(byte[] data, System.Security.Cryptography.RSAEncryptionPadding padding);
         public abstract System.Security.Cryptography.RSAParameters ExportParameters(bool includePrivateParameters);

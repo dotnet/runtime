@@ -1,0 +1,7 @@
+Microsoft (R) XSLT Compiler version 2.0.51103
+for Microsoft (R) Windows (R) 2005 Framework version 2.0.50727
+Copyright (C) Microsoft Corporation 2006. All right reserved.
+
+error : Source file 'some' could not be found.
+error : Source file 'text' could not be found.
+fatal error : Unrecognized option: '/allwrong'.

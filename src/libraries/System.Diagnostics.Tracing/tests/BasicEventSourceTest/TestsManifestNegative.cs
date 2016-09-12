@@ -31,7 +31,9 @@ namespace BasicEventSourceTests
         private static string GetResourceStringFromReflection(string key)
         {
             BindingFlags flags = BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
-            MethodInfo getResource = typeof(Environment).GetMethods(flags).Where(x => x.Name == "GetResourceString" && x.GetParameters().Count() == 1).First();
+            MethodInfo getResource =
+                typeof(Environment).GetMethods(flags).Where(x => x.Name == "GetResourceString" && x.GetParameters().Count() == 1).FirstOrDefault() ??
+                typeof(object).GetTypeInfo().Assembly.GetType("System.Environment").GetMethods(flags).Where(x => x.Name == "GetResourceString" && x.GetParameters().Count() == 1).First();
             object resource = getResource.Invoke(null, new object[] { key });
 
             return (string)resource;
