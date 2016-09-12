@@ -35,6 +35,8 @@
 #include "mono-mmap-internals.h"
 #include "mono-proclib.h"
 #include <mono/utils/mono-threads.h>
+#include <mono/utils/atomic.h>
+#include <mono/utils/mono-counters.h>
 
 
 #define BEGIN_CRITICAL_SECTION do { \
@@ -84,6 +86,54 @@ aligned_address (char *mem, size_t size, size_t alignment)
 	return aligned;
 }
 
+static volatile size_t allocation_count [MONO_MEM_ACCOUNT_MAX];
+
+static void
+account_mem (MonoMemAccountType type, ssize_t size)
+{
+#if SIZEOF_VOID_P == 4
+	InterlockedAdd ((volatile gint32*)&allocation_count [type], (gint32)size);
+#else
+	InterlockedAdd64 ((volatile gint64*)&allocation_count [type], (gint64)size);
+#endif
+}
+
+const char*
+mono_mem_account_type_name (MonoMemAccountType type)
+{
+	static const char *names[] = {
+		"code",
+		"hazard pointers",
+		"domain",
+		"SGen internal",
+		"SGen nursery",
+		"SGen LOS",
+		"SGen mark&sweep",
+		"SGen card table",
+		"SGen shadow card table",
+		"SGen debugging",
+		"SGen binary protocol",
+		"exceptions",
+		"profiler",
+		"other"
+	};
+
+	return names [type];
+}
+
+void
+mono_mem_account_register_counters (void)
+{
+	for (int i = 0; i < MONO_MEM_ACCOUNT_MAX; ++i) {
+		const char *prefix = "Valloc ";
+		const char *name = mono_mem_account_type_name (i);
+		char descr [128];
+		g_assert (strlen (prefix) + strlen (name) < sizeof (descr));
+		sprintf (descr, "%s%s", prefix, name);
+		mono_counters_register (descr, MONO_COUNTER_WORD | MONO_COUNTER_RUNTIME | MONO_COUNTER_BYTES | MONO_COUNTER_VARIABLE, (void*)&allocation_count [i]);
+	}
+}
+
 #ifdef HOST_WIN32
 
 int
@@ -118,7 +168,7 @@ prot_from_flags (int flags)
 }
 
 void*
-mono_valloc (void *addr, size_t length, int flags)
+mono_valloc (void *addr, size_t length, int flags, MonoMemAccountType type)
 {
 	void *ptr;
 	int mflags = MEM_RESERVE|MEM_COMMIT;
@@ -126,11 +176,14 @@ mono_valloc (void *addr, size_t length, int flags)
 	/* translate the flags */
 
 	ptr = VirtualAlloc (addr, length, mflags, prot);
+
+	account_mem (type, (ssize_t)length);
+
 	return ptr;
 }
 
 void*
-mono_valloc_aligned (size_t length, size_t alignment, int flags)
+mono_valloc_aligned (size_t length, size_t alignment, int flags, MonoMemAccountType type)
 {
 	int prot = prot_from_flags (flags);
 	char *mem = VirtualAlloc (NULL, length + alignment, MEM_RESERVE, prot);
@@ -144,13 +197,15 @@ mono_valloc_aligned (size_t length, size_t alignment, int flags)
 	aligned = VirtualAlloc (aligned, length, MEM_COMMIT, prot);
 	g_assert (aligned);
 
+	account_mem (type, (ssize_t)length);
+
 	return aligned;
 }
 
 #define HAVE_VALLOC_ALIGNED
 
 int
-mono_vfree (void *addr, size_t length)
+mono_vfree (void *addr, size_t length, MonoMemAccountType type)
 {
 	MEMORY_BASIC_INFORMATION mbi;
 	SIZE_T query_result = VirtualQuery (addr, &mbi, sizeof (mbi));
@@ -161,6 +216,8 @@ mono_vfree (void *addr, size_t length)
 	res = VirtualFree (mbi.AllocationBase, 0, MEM_RELEASE);
 
 	g_assert (res);
+
+	account_mem (type, -(ssize_t)length);
 
 	return 0;
 }
@@ -307,7 +364,7 @@ prot_from_flags (int flags)
  * Returns: NULL on failure, the address of the memory area otherwise
  */
 void*
-mono_valloc (void *addr, size_t length, int flags)
+mono_valloc (void *addr, size_t length, int flags, MonoMemAccountType type)
 {
 	void *ptr;
 	int mflags = 0;
@@ -334,6 +391,9 @@ mono_valloc (void *addr, size_t length, int flags)
 
 	if (ptr == MAP_FAILED)
 		return NULL;
+
+	account_mem (type, (ssize_t)length);
+
 	return ptr;
 }
 
@@ -347,12 +407,15 @@ mono_valloc (void *addr, size_t length, int flags)
  * Returns: 0 on success.
  */
 int
-mono_vfree (void *addr, size_t length)
+mono_vfree (void *addr, size_t length, MonoMemAccountType type)
 {
 	int res;
 	BEGIN_CRITICAL_SECTION;
 	res = munmap (addr, length);
 	END_CRITICAL_SECTION;
+
+	account_mem (type, -(ssize_t)length);
+
 	return res;
 }
 
@@ -482,13 +545,13 @@ mono_pagesize (void)
 }
 
 void*
-mono_valloc (void *addr, size_t length, int flags)
+mono_valloc (void *addr, size_t length, int flags, MonoMemAccountType type)
 {
-	return malloc (length);
+	return g_malloc (length);
 }
 
 void*
-mono_valloc_aligned (size_t length, size_t alignment, int flags)
+mono_valloc_aligned (size_t size, size_t alignment, int flags, MonoMemAccountType type)
 {
 	g_assert_not_reached ();
 }
@@ -496,9 +559,9 @@ mono_valloc_aligned (size_t length, size_t alignment, int flags)
 #define HAVE_VALLOC_ALIGNED
 
 int
-mono_vfree (void *addr, size_t length)
+mono_vfree (void *addr, size_t length, MonoMemAccountType type)
 {
-	free (addr);
+	g_free (addr);
 	return 0;
 }
 
@@ -747,10 +810,10 @@ mono_shared_area_instances (void **array, int count)
 
 #ifndef HAVE_VALLOC_ALIGNED
 void*
-mono_valloc_aligned (size_t size, size_t alignment, int flags)
+mono_valloc_aligned (size_t size, size_t alignment, int flags, MonoMemAccountType type)
 {
 	/* Allocate twice the memory to be able to put the block on an aligned address */
-	char *mem = (char *) mono_valloc (NULL, size + alignment, flags);
+	char *mem = (char *) mono_valloc (NULL, size + alignment, flags, type);
 	char *aligned;
 
 	if (!mem)
@@ -759,9 +822,9 @@ mono_valloc_aligned (size_t size, size_t alignment, int flags)
 	aligned = aligned_address (mem, size, alignment);
 
 	if (aligned > mem)
-		mono_vfree (mem, aligned - mem);
+		mono_vfree (mem, aligned - mem, type);
 	if (aligned + size < mem + size + alignment)
-		mono_vfree (aligned + size, (mem + size + alignment) - (aligned + size));
+		mono_vfree (aligned + size, (mem + size + alignment) - (aligned + size), type);
 
 	return aligned;
 }

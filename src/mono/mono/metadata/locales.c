@@ -434,7 +434,7 @@ get_darwin_locale (void)
 					len += bytes_converted + 1;
 				}
 
-				darwin_locale = (char *) malloc (len + 1);
+				darwin_locale = (char *) g_malloc (len + 1);
 				CFStringGetBytes (locale_language, CFRangeMake (0, CFStringGetLength (locale_language)), kCFStringEncodingMacRoman, 0, FALSE, (UInt8 *) darwin_locale, len, &bytes_converted);
 
 				darwin_locale[bytes_converted] = '-';
@@ -454,9 +454,9 @@ get_darwin_locale (void)
 
 			if (locale_cfstr) {
 				len = CFStringGetMaximumSizeForEncoding (CFStringGetLength (locale_cfstr), kCFStringEncodingMacRoman) + 1;
-				darwin_locale = (char *) malloc (len);
+				darwin_locale = (char *) g_malloc (len);
 				if (!CFStringGetCString (locale_cfstr, darwin_locale, len, kCFStringEncodingMacRoman)) {
-					free (darwin_locale);
+					g_free (darwin_locale);
 					CFRelease (locale);
 					darwin_locale = NULL;
 					return NULL;

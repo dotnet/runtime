@@ -26,7 +26,7 @@
 #include <pthread.h>
 #include <sched.h>
 #endif
-
+#include <glib.h>
 
 #ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
@@ -61,7 +61,7 @@ typedef struct {
 
 #ifdef HOST_WIN32
 static int tls_data;
-#define DECL_TLS_DATA TlsData *tls; tls = (TlsData *) TlsGetValue (tls_data); if (tls == NULL) { tls = (TlsData *) calloc (sizeof (TlsData), 1); TlsSetValue (tls_data, tls); }
+#define DECL_TLS_DATA TlsData *tls; tls = (TlsData *) TlsGetValue (tls_data); if (tls == NULL) { tls = (TlsData *) g_calloc (sizeof (TlsData), 1); TlsSetValue (tls_data, tls); }
 #define TLS_INIT(x) x = TlsAlloc()
 #elif HAVE_KW_THREAD
 static __thread TlsData tls_data;
@@ -69,7 +69,7 @@ static __thread TlsData tls_data;
 #define TLS_INIT(x)
 #else
 static pthread_key_t tls_data;
-#define DECL_TLS_DATA TlsData *tls; tls = (TlsData *) pthread_getspecific (tls_data); if (tls == NULL) { tls = (TlsData *) calloc (sizeof (TlsData), 1); pthread_setspecific (tls_data, tls); }
+#define DECL_TLS_DATA TlsData *tls; tls = (TlsData *) pthread_getspecific (tls_data); if (tls == NULL) { tls = (TlsData *) g_calloc (sizeof (TlsData), 1); pthread_setspecific (tls_data, tls); }
 #define TLS_INIT(x) pthread_key_create(&x, NULL)
 #endif
 

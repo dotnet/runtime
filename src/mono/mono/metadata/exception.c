@@ -991,7 +991,7 @@ mono_exception_get_native_backtrace (MonoException *exc)
 		}
 	}
 
-	free (messages);
+	g_free (messages);
 	return g_string_free (text, FALSE);
 #else
 	return g_strdup ("");

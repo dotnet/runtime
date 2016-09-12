@@ -633,7 +633,7 @@ add_class (intptr_t klass, const char *name)
 	/* we resolved an unknown class (unless we had the code unloaded) */
 	if (cd) {
 		/*printf ("resolved unknown: %s\n", name);*/
-		free (cd->name);
+		g_free (cd->name);
 		cd->name = pstrdup (name);
 		return cd;
 	}
@@ -699,7 +699,7 @@ add_method (intptr_t method, const char *name, intptr_t code, int len)
 		cd->code = code;
 		cd->len = len;
 		/*printf ("resolved unknown: %s\n", name);*/
-		free (cd->name);
+		g_free (cd->name);
 		cd->name = pstrdup (name);
 		return cd;
 	}
@@ -1099,7 +1099,7 @@ add_heap_class_rev (HeapClassDesc *from, HeapClassDesc *to)
 				add_rev_class_hashed (n, to->rev_hash_size, to->rev_hash [i].klass, to->rev_hash [i].count);
 		}
 		if (to->rev_hash)
-			free (to->rev_hash);
+			g_free (to->rev_hash);
 		to->rev_hash = n;
 	}
 	to->rev_count += add_rev_class_hashed (to->rev_hash, to->rev_hash_size, from, 1);
@@ -1217,7 +1217,7 @@ add_heap_shot_class (HeapShot *hs, ClassDesc *klass, uint64_t size)
 				add_heap_hashed (n, &res, hs->hash_size, hs->class_hash [i]->klass, hs->class_hash [i]->total_size, hs->class_hash [i]->count);
 		}
 		if (hs->class_hash)
-			free (hs->class_hash);
+			g_free (hs->class_hash);
 		hs->class_hash = n;
 	}
 	res = NULL;
@@ -1269,7 +1269,7 @@ heap_shot_obj_add_refs (HeapShot *hs, uintptr_t objaddr, uintptr_t num, uintptr_
 		HeapObjectDesc* ho = alloc_heap_obj (objaddr, hash [i]->hklass, hash [i]->num_refs + num);
 		*ref_offset = hash [i]->num_refs;
 		memcpy (ho->refs, hash [i]->refs, hash [i]->num_refs * sizeof (uintptr_t));
-		free (hash [i]);
+		g_free (hash [i]);
 		hash [i] = ho;
 		return ho;
 	}
@@ -1319,7 +1319,7 @@ add_heap_shot_obj (HeapShot *hs, HeapObjectDesc *obj)
 				add_heap_hashed_obj (n, hs->objects_hash_size, hs->objects_hash [i]);
 		}
 		if (hs->objects_hash)
-			free (hs->objects_hash);
+			g_free (hs->objects_hash);
 		hs->objects_hash = n;
 	}
 	hs->objects_count += add_heap_hashed_obj (hs->objects_hash, hs->objects_hash_size, obj);
@@ -1413,7 +1413,7 @@ heap_shot_mark_objects (HeapShot *hs)
 		}
 	}
 	fprintf (outfile, "Total unmarked: %zd/%zd\n", num_unmarked, hs->objects_count);
-	free (marks);
+	g_free (marks);
 }
 
 static void
@@ -1423,10 +1423,10 @@ heap_shot_free_objects (HeapShot *hs)
 	for (i = 0; i < hs->objects_hash_size; ++i) {
 		HeapObjectDesc *ho = hs->objects_hash [i];
 		if (ho)
-			free (ho);
+			g_free (ho);
 	}
 	if (hs->objects_hash)
-		free (hs->objects_hash);
+		g_free (hs->objects_hash);
 	hs->objects_hash = NULL;
 	hs->objects_hash_size = 0;
 	hs->objects_count = 0;
@@ -1726,7 +1726,7 @@ add_trace_bt (BackTrace *bt, TraceDesc *trace, uint64_t value)
 				add_trace_hashed (n, trace->size, trace->traces [i].bt, trace->traces [i].count);
 		}
 		if (trace->traces)
-			free (trace->traces);
+			g_free (trace->traces);
 		trace->traces = n;
 	}
 	trace->count += add_trace_hashed (trace->traces, trace->size, bt, value);
@@ -2371,7 +2371,7 @@ decode_buffer (ProfContext *ctx)
 				if (debug)
 					fprintf (outfile, "handle (%s) %u created for object %p\n", get_handle_name (htype), handle, (void*)OBJ_ADDR (objdiff));
 				if (frames != sframes)
-					free (frames);
+					g_free (frames);
 			} else if (subtype == TYPE_GC_HANDLE_DESTROYED || subtype == TYPE_GC_HANDLE_DESTROYED_BT) {
 				int has_bt = subtype == TYPE_GC_HANDLE_DESTROYED_BT;
 				int num_bt = 0;
@@ -2402,7 +2402,7 @@ decode_buffer (ProfContext *ctx)
 				if (debug)
 					fprintf (outfile, "handle (%s) %u destroyed\n", get_handle_name (htype), handle);
 				if (frames != sframes)
-					free (frames);
+					g_free (frames);
 			} else if (subtype == TYPE_GC_FINALIZE_START) {
 				// TODO: Generate a finalizer report based on these events.
 				if (debug)
@@ -2543,7 +2543,7 @@ decode_buffer (ProfContext *ctx)
 					tracked_creation (OBJ_ADDR (objdiff), cd, len, bt, time_base);
 			}
 			if (frames != sframes)
-				free (frames);
+				g_free (frames);
 			break;
 		}
 		case TYPE_METHOD: {
@@ -2666,9 +2666,9 @@ decode_buffer (ProfContext *ctx)
 						hs->roots_extra = thread->roots_extra;
 						hs->roots_types = thread->roots_types;
 					} else {
-						free (thread->roots);
-						free (thread->roots_extra);
-						free (thread->roots_types);
+						g_free (thread->roots);
+						g_free (thread->roots_extra);
+						g_free (thread->roots_types);
 					}
 					thread->num_roots = 0;
 					thread->size_roots = 0;
@@ -2753,7 +2753,7 @@ decode_buffer (ProfContext *ctx)
 			if (debug)
 				fprintf (outfile, "monitor %s for object %p\n", monitor_ev_name (event), (void*)OBJ_ADDR (objdiff));
 			if (frames != sframes)
-				free (frames);
+				g_free (frames);
 			break;
 		}
 		case TYPE_EXCEPTION: {
@@ -2799,7 +2799,7 @@ decode_buffer (ProfContext *ctx)
 						add_trace_thread (thread, &exc_traces, 1);
 				}
 				if (frames != sframes)
-					free (frames);
+					g_free (frames);
 				if (debug)
 					fprintf (outfile, "throw %p\n", (void*)OBJ_ADDR (objdiff));
 			}
@@ -3698,9 +3698,9 @@ heap_shot_summary (HeapShot *hs, int hs_num, HeapShot *last_hs)
 		if (cd->root_references)
 			fprintf (outfile, "\t\t%zd root references (%zd pinning)\n", cd->root_references, cd->pinned_references);
 		dump_rev_claases (rev_sorted, cd->rev_count);
-		free (rev_sorted);
+		g_free (rev_sorted);
 	}
-	free (sorted);
+	g_free (sorted);
 }
 
 static int
@@ -4216,7 +4216,7 @@ main (int argc, char *argv[])
 			*top++ = 0;
 			from_secs = atof (val);
 			to_secs = atof (top);
-			free (val);
+			g_free (val);
 			if (from_secs > to_secs) {
 				usage ();
 				return 1;

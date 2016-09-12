@@ -109,7 +109,7 @@ method_jit_result (MonoProfiler *prof, MonoMethod *method, MonoJitInfo* jinfo, i
 				sourceLoc = mono_debug_lookup_source_location (method, dmji->line_numbers[i].native_offset, mono_domain_get());
 				if (sourceLoc == NULL)
 				{
-					free(vtuneMethod.line_number_table);
+					g_free (vtuneMethod.line_number_table);
 					vtuneMethod.line_number_table = NULL;
 					vtuneMethod.line_number_size = 0;
 					break;
@@ -126,9 +126,9 @@ method_jit_result (MonoProfiler *prof, MonoMethod *method, MonoJitInfo* jinfo, i
 		iJIT_NotifyEvent(iJVM_EVENT_TYPE_METHOD_LOAD_FINISHED, &vtuneMethod);
 
 		if (vtuneMethod.source_file_name != NULL)
-			free(vtuneMethod.source_file_name);
+			g_free (vtuneMethod.source_file_name);
 		if (vtuneMethod.line_number_table != NULL)
-			free(vtuneMethod.line_number_table);
+			g_free (vtuneMethod.line_number_table);
 	
 		g_free (signature);
 		g_free (name);

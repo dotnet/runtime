@@ -166,7 +166,7 @@ register_internal (const char *name, int type, void *addr, int size)
 		}
 	}
 
-	counter = (MonoCounter *) malloc (sizeof (MonoCounter));
+	counter = (MonoCounter *) g_malloc (sizeof (MonoCounter));
 	if (!counter) {
 		mono_os_mutex_unlock (&counters_mutex);
 		return;
@@ -648,8 +648,8 @@ mono_counters_cleanup (void)
 	while (counter) {
 		MonoCounter *tmp = counter;
 		counter = counter->next;
-		free ((void*)tmp->name);
-		free (tmp);
+		g_free ((void*)tmp->name);
+		g_free (tmp);
 	}
 
 	mono_os_mutex_unlock (&counters_mutex);

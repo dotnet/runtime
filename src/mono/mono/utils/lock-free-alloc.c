@@ -138,8 +138,8 @@ alloc_sb (Descriptor *desc)
 		pagesize = mono_pagesize ();
 
 	sb_header = desc->block_size == pagesize ?
-		mono_valloc (NULL, desc->block_size, prot_flags_for_activate (TRUE)) :
-		mono_valloc_aligned (desc->block_size, desc->block_size, prot_flags_for_activate (TRUE));
+		mono_valloc (NULL, desc->block_size, prot_flags_for_activate (TRUE), desc->heap->account_type) :
+		mono_valloc_aligned (desc->block_size, desc->block_size, prot_flags_for_activate (TRUE), desc->heap->account_type);
 
 	g_assert (sb_header == sb_header_for_addr (sb_header, desc->block_size));
 
@@ -150,11 +150,11 @@ alloc_sb (Descriptor *desc)
 }
 
 static void
-free_sb (gpointer sb, size_t block_size)
+free_sb (gpointer sb, size_t block_size, MonoMemAccountType type)
 {
 	gpointer sb_header = sb_header_for_addr (sb, block_size);
 	g_assert ((char*)sb_header + LOCK_FREE_ALLOC_SB_HEADER_SIZE == sb);
-	mono_vfree (sb_header, block_size);
+	mono_vfree (sb_header, block_size, type);
 	//g_print ("free sb %p\n", sb_header);
 }
 
@@ -162,7 +162,7 @@ free_sb (gpointer sb, size_t block_size)
 static Descriptor * volatile desc_avail;
 
 static Descriptor*
-desc_alloc (void)
+desc_alloc (MonoMemAccountType type)
 {
 	MonoThreadHazardPointers *hp = mono_hazard_pointer_get ();
 	Descriptor *desc;
@@ -179,7 +179,7 @@ desc_alloc (void)
 			Descriptor *d;
 			int i;
 
-			desc = (Descriptor *) mono_valloc (NULL, desc_size * NUM_DESC_BATCH, prot_flags_for_activate (TRUE));
+			desc = (Descriptor *) mono_valloc (NULL, desc_size * NUM_DESC_BATCH, prot_flags_for_activate (TRUE), type);
 
 			/* Organize into linked list. */
 			d = desc;
@@ -195,7 +195,7 @@ desc_alloc (void)
 			success = (InterlockedCompareExchangePointer ((gpointer * volatile)&desc_avail, desc->next, NULL) == NULL);
 
 			if (!success)
-				mono_vfree (desc, desc_size * NUM_DESC_BATCH);
+				mono_vfree (desc, desc_size * NUM_DESC_BATCH, type);
 		}
 
 		mono_hazard_pointer_clear (hp, 1);
@@ -232,27 +232,27 @@ desc_retire (Descriptor *desc)
 	g_assert (desc->anchor.data.state == STATE_EMPTY);
 	g_assert (desc->in_use);
 	desc->in_use = FALSE;
-	free_sb (desc->sb, desc->block_size);
+	free_sb (desc->sb, desc->block_size, desc->heap->account_type);
 	mono_thread_hazardous_try_free (desc, desc_enqueue_avail);
 }
 #else
 MonoLockFreeQueue available_descs;
 
 static Descriptor*
-desc_alloc (void)
+desc_alloc (MonoMemAccountType type)
 {
 	Descriptor *desc = (Descriptor*)mono_lock_free_queue_dequeue (&available_descs);
 
 	if (desc)
 		return desc;
 
-	return calloc (1, sizeof (Descriptor));
+	return g_calloc (1, sizeof (Descriptor));
 }
 
 static void
 desc_retire (Descriptor *desc)
 {
-	free_sb (desc->sb, desc->block_size);
+	free_sb (desc->sb, desc->block_size, desc->heap->account_type);
 	mono_lock_free_queue_enqueue (&available_descs, &desc->node);
 }
 #endif
@@ -390,7 +390,7 @@ static gpointer
 alloc_from_new_sb (MonoLockFreeAllocator *heap)
 {
 	unsigned int slot_size, block_size, count, i;
-	Descriptor *desc = desc_alloc ();
+	Descriptor *desc = desc_alloc (heap->account_type);
 
 	slot_size = desc->slot_size = heap->sc->slot_size;
 	block_size = desc->block_size = heap->sc->block_size;
@@ -611,8 +611,9 @@ mono_lock_free_allocator_init_size_class (MonoLockFreeAllocSizeClass *sc, unsign
 }
 
 void
-mono_lock_free_allocator_init_allocator (MonoLockFreeAllocator *heap, MonoLockFreeAllocSizeClass *sc)
+mono_lock_free_allocator_init_allocator (MonoLockFreeAllocator *heap, MonoLockFreeAllocSizeClass *sc, MonoMemAccountType account_type)
 {
 	heap->sc = sc;
 	heap->active = NULL;
+	heap->account_type = account_type;
 }
