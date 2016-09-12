@@ -877,7 +877,25 @@ retry_contended:
 #endif
 	thread = mono_thread_internal_current ();
 
-	mono_thread_set_state (thread, ThreadState_WaitSleepJoin);
+	/*
+	 * If we allow interruption, we check the test state for an abort request before going into sleep.
+	 * This is a workaround to the fact that Thread.Abort does non-sticky interruption of semaphores.
+	 *
+	 * Semaphores don't support the sticky interruption with mono_thread_info_install_interrupt.
+	 *
+	 * A better fix would be to switch to wait with something that allows sticky interrupts together
+	 * with wrapping it with abort_protected_block_count for the non-alertable cases.
+	 * And somehow make this whole dance atomic and not crazy expensive. Good luck.
+	 *
+	 */
+	if (allow_interruption) {
+		if (!mono_thread_test_and_set_state (thread, (MonoThreadState)(ThreadState_StopRequested | ThreadState_AbortRequested), ThreadState_WaitSleepJoin)) {
+			wait_ret = MONO_SEM_TIMEDWAIT_RET_ALERTED;
+			goto done_waiting;
+		}
+	} else {
+		mono_thread_set_state (thread, ThreadState_WaitSleepJoin);
+	}
 
 	/*
 	 * We pass ALERTABLE instead of allow_interruption since we have to check for the
@@ -886,7 +904,8 @@ retry_contended:
 	wait_ret = mono_coop_sem_timedwait (mon->entry_sem, waitms, MONO_SEM_FLAGS_ALERTABLE);
 
 	mono_thread_clr_state (thread, ThreadState_WaitSleepJoin);
-	
+
+done_waiting:
 #ifndef DISABLE_PERFCOUNTERS
 	mono_perfcounters->thread_queue_len--;
 #endif
@@ -996,11 +1015,35 @@ mono_monitor_try_enter_internal (MonoObject *obj, guint32 ms, gboolean allow_int
 gboolean 
 mono_monitor_enter (MonoObject *obj)
 {
+	gint32 res;
+	gboolean allow_interruption = TRUE;
 	if (G_UNLIKELY (!obj)) {
 		mono_set_pending_exception (mono_get_exception_argument_null ("obj"));
 		return FALSE;
 	}
-	return mono_monitor_try_enter_internal (obj, INFINITE, FALSE) == 1;
+
+	/*
+	 * An inquisitive mind could ask what's the deal with this loop.
+	 * It exists to deal with interrupting a monitor enter that happened within an abort-protected block, like a .cctor.
+	 *
+	 * The thread will be set with a pending abort and the wait might even be interrupted. Either way, once we call mono_thread_interruption_checkpoint,
+	 * it will return NULL meaning we can't be aborted right now. Once that happens we switch to non-alertable.
+	 */
+	do {
+		res = mono_monitor_try_enter_internal (obj, INFINITE, allow_interruption);
+		/*This means we got interrupted during the wait and didn't got the monitor.*/
+		if (res == -1) {
+			MonoException *exc = mono_thread_interruption_checkpoint ();
+			if (exc) {
+				mono_set_pending_exception (exc);
+				return FALSE;
+			} else {
+				//we detected a pending interruption but it turned out to be a false positive, we ignore it from now on (this feels like a hack, right?, threads.c should give us less confusing directions)
+				allow_interruption = FALSE;
+			}
+		}
+	} while (res == -1);
+	return TRUE;
 }
 
 gboolean 
@@ -1083,18 +1126,22 @@ void
 ves_icall_System_Threading_Monitor_Monitor_try_enter_with_atomic_var (MonoObject *obj, guint32 ms, char *lockTaken)
 {
 	gint32 res;
+	gboolean allow_interruption = TRUE;
 	if (G_UNLIKELY (!obj)) {
 		mono_set_pending_exception (mono_get_exception_argument_null ("obj"));
 		return;
 	}
 	do {
-		res = mono_monitor_try_enter_internal (obj, ms, TRUE);
+		res = mono_monitor_try_enter_internal (obj, ms, allow_interruption);
 		/*This means we got interrupted during the wait and didn't got the monitor.*/
 		if (res == -1) {
 			MonoException *exc = mono_thread_interruption_checkpoint ();
 			if (exc) {
 				mono_set_pending_exception (exc);
 				return;
+			} else {
+				//we detected a pending interruption but it turned out to be a false positive, we ignore it from now on (this feels like a hack, right?, threads.c should give us less confusing directions)
+				allow_interruption = FALSE;
 			}
 		}
 	} while (res == -1);

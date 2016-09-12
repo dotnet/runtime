@@ -4643,6 +4643,29 @@ mono_thread_set_state (MonoInternalThread *thread, MonoThreadState state)
 	UNLOCK_THREAD (thread);
 }
 
+/**
+ * mono_thread_test_and_set_state:
+ *
+ * Test if current state of @thread include @test. If it does not, OR @set into the state.
+ *
+ * Returns TRUE is @set was OR'd in.
+ */
+gboolean
+mono_thread_test_and_set_state (MonoInternalThread *thread, MonoThreadState test, MonoThreadState set)
+{
+	LOCK_THREAD (thread);
+
+	if ((thread->state & test) != 0) {
+		UNLOCK_THREAD (thread);
+		return FALSE;
+	}
+
+	thread->state |= set;
+	UNLOCK_THREAD (thread);
+
+	return TRUE;
+}
+
 void
 mono_thread_clr_state (MonoInternalThread *thread, MonoThreadState state)
 {
@@ -5168,4 +5191,26 @@ mono_thread_try_resume_interruption (void)
 		return NULL;
 
 	return mono_thread_resume_interruption ();
+}
+
+/* Returns TRUE if the current thread is ready to be interrupted. */
+gboolean
+mono_threads_is_ready_to_be_interrupted (void)
+{
+	MonoInternalThread *thread;
+
+	thread = mono_thread_internal_current ();
+	LOCK_THREAD (thread);
+	if (thread->state & (MonoThreadState)(ThreadState_StopRequested | ThreadState_SuspendRequested | ThreadState_AbortRequested)) {
+		UNLOCK_THREAD (thread);
+		return FALSE;
+	}
+
+	if (thread->abort_protected_block_count || mono_get_eh_callbacks ()->mono_current_thread_has_handle_block_guard ()) {
+		UNLOCK_THREAD (thread);
+		return FALSE;
+	}
+
+	UNLOCK_THREAD (thread);
+	return TRUE;
 }
