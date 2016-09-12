@@ -1061,65 +1061,10 @@ emit_method_inner (LogBuffer *logbuffer, void *method)
 	g_assert (logbuffer->cursor <= logbuffer->buf_end);
 }
 
-/*
-typedef struct {
-	MonoMethod *method;
-	MonoJitInfo *found;
-} MethodSearch;
-
-static void
-find_method (MonoDomain *domain, void *user_data)
-{
-	MethodSearch *search = user_data;
-
-	if (search->found)
-		return;
-
-	MonoJitInfo *ji = mono_get_jit_info_from_method (domain, search->method);
-
-	// It could be AOT'd, so we need to get it from the AOT runtime's cache.
-	if (!ji) {
-		void *ip = mono_aot_get_method (domain, search->method);
-
-		// Avoid a slow path in mono_jit_info_table_find ().
-		if (ip)
-			ji = mono_jit_info_table_find (domain, ip);
-	}
-
-	if (ji)
-		search->found = ji;
-}
-*/
-
 static void
 register_method_local (MonoProfiler *prof, MonoMethod *method, MonoJitInfo *ji)
 {
 	if (!mono_conc_hashtable_lookup (prof->method_table, method)) {
-		/*
-		 * FIXME: In some cases, we crash while looking up JIT info for AOT'd methods.
-		 * This usually happens for static constructors. This code is disabled for now
-		 * as we don't need this info for anything critical.
-		 *
-		 * https://bugzilla.xamarin.com/show_bug.cgi?id=35171
-		 */
-		/*
-		if (!ji) {
-			MethodSearch search = { method, NULL };
-
-			mono_domain_foreach (find_method, &search);
-
-			ji = search.found;
-		}
-		*/
-
-		/*
-		 * FIXME: We can't always find JIT info for a generic shared method, especially
-		 * if we obtained the MonoMethod during an async stack walk. For now, we deal
-		 * with this by giving the generic shared method name and dummy code start/size
-		 * information (i.e. zeroes).
-		 */
-		//g_assert (ji);
-
 		MethodInfo *info = (MethodInfo *) malloc (sizeof (MethodInfo));
 
 		info->method = method;
