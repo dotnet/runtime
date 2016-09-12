@@ -3814,8 +3814,7 @@ coverage_filter (MonoProfiler *prof, MonoMethod *method)
 	MonoLockFreeQueue *image_methods, *class_methods;
 	MonoLockFreeQueueNode *node;
 
-	if (!coverage_initialized)
-		return FALSE;
+	g_assert (coverage_initialized && "Why are we being asked for coverage filter info when we're not doing coverage?");
 
 	COVERAGE_DEBUG(fprintf (stderr, "Coverage filter for %s\n", mono_method_get_name (method));)
 
