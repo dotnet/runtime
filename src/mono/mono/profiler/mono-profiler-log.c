@@ -2017,6 +2017,8 @@ method_jitted (MonoProfiler *prof, MonoMethod *method, MonoJitInfo *ji, int resu
 		return;
 
 	register_method_local (method, ji);
+
+	process_requests ();
 }
 
 static void
