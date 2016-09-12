@@ -7043,7 +7043,6 @@
       <Member Name="Concat(System.Object)" />
       <Member Name="Concat(System.Object,System.Object)" />
       <Member Name="Concat(System.Object,System.Object,System.Object)" />
-      <Member Name="Concat(System.Object,System.Object,System.Object,System.Object,__arglist)" />
       <Member Name="Concat(System.Object[])" />
       <Member Name="Concat(System.String,System.String)" />
       <Member Name="Concat(System.String,System.String,System.String)" />
