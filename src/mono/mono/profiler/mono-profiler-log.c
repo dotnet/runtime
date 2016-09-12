@@ -465,6 +465,9 @@ struct _LogBuffer {
 typedef struct {
 	MonoLinkedListSetNode node;
 
+	// Convenience pointer to the profiler structure.
+	MonoProfiler *profiler;
+
 	// Was this thread added to the LLS?
 	gboolean attached;
 
@@ -479,6 +482,9 @@ typedef struct {
 
 	// Indicates whether this thread is currently writing to its `buffer`.
 	gboolean busy;
+
+	// Has this thread written a thread end event to `buffer`?
+	gboolean ended;
 } MonoProfilerThread;
 
 static uintptr_t
@@ -806,7 +812,7 @@ clear_hazard_pointers (MonoThreadHazardPointers *hp)
 }
 
 static MonoProfilerThread *
-init_thread (gboolean add_to_lls)
+init_thread (MonoProfiler *prof, gboolean add_to_lls)
 {
 	MonoProfilerThread *thread = PROF_TLS_GET ();
 
@@ -826,9 +832,11 @@ init_thread (gboolean add_to_lls)
 
 	thread = malloc (sizeof (MonoProfilerThread));
 	thread->node.key = thread_id ();
+	thread->profiler = prof;
 	thread->attached = add_to_lls;
 	thread->call_depth = 0;
 	thread->busy = 0;
+	thread->ended = FALSE;
 
 	init_buffer_state (thread);
 
@@ -1195,45 +1203,44 @@ send_buffer (MonoProfiler *prof, MonoProfilerThread *thread)
 }
 
 static void
-remove_thread (MonoProfiler *prof, MonoProfilerThread *thread, gboolean from_callback)
+free_thread (gpointer p)
+{
+	MonoProfilerThread *thread = p;
+
+	if (!thread->ended) {
+		/*
+		 * The thread is being cleaned up by the main thread during
+		 * shutdown. This typically happens for internal runtime
+		 * threads. We need to synthesize a thread end event.
+		 */
+
+		InterlockedIncrement (&thread_ends_ctr);
+
+		thread->buffer = ensure_logbuf_inner (thread->buffer,
+			EVENT_SIZE /* event */ +
+			BYTE_SIZE /* type */ +
+			LEB128_SIZE /* tid */
+		);
+
+		emit_event (thread->buffer, TYPE_END_UNLOAD | TYPE_METADATA);
+		emit_byte (thread->buffer, TYPE_THREAD);
+		emit_ptr (thread->buffer, (void *) thread->node.key);
+	}
+
+	send_buffer (thread->profiler, thread);
+
+	free (thread);
+}
+
+static void
+remove_thread (MonoProfilerThread *thread)
 {
 	MonoThreadHazardPointers *hp = mono_hazard_pointer_get ();
 
-	if (mono_lls_remove (&profiler_thread_list, hp, &thread->node)) {
-		/*
-		 * No need to take the buffer lock here as no other threads can
-		 * be accessing this buffer anymore.
-		 */
-
-		if (!from_callback) {
-			/*
-			 * The thread is being cleaned up by the main thread during
-			 * shutdown. This typically happens for internal runtime
-			 * threads. We need to synthesize a thread end event.
-			 */
-
-			InterlockedIncrement (&thread_ends_ctr);
-
-			thread->buffer = ensure_logbuf_inner (thread->buffer,
-				EVENT_SIZE /* event */ +
-				BYTE_SIZE /* type */ +
-				LEB128_SIZE /* tid */
-			);
-
-			emit_event (thread->buffer, TYPE_END_UNLOAD | TYPE_METADATA);
-			emit_byte (thread->buffer, TYPE_THREAD);
-			emit_ptr (thread->buffer, (void *) thread->node.key);
-		}
-
-		send_buffer (prof, thread);
-
-		mono_thread_hazardous_try_free (thread, free);
-	}
+	if (mono_lls_remove (&profiler_thread_list, hp, &thread->node))
+		mono_thread_hazardous_try_free (thread, free_thread);
 
 	clear_hazard_pointers (hp);
-
-	if (from_callback)
-		PROF_TLS_SET (NULL);
 }
 
 static void
@@ -1590,7 +1597,7 @@ emit_bt (MonoProfiler *prof, LogBuffer *logbuffer, FrameData *data)
 static void
 gc_alloc (MonoProfiler *prof, MonoObject *obj, MonoClass *klass)
 {
-	init_thread (TRUE);
+	init_thread (prof, TRUE);
 
 	int do_bt = (nocalls && InterlockedRead (&runtime_inited) && !notraces) ? TYPE_ALLOC_BT : 0;
 	FrameData data;
@@ -2146,7 +2153,7 @@ monitor_event (MonoProfiler *profiler, MonoObject *object, MonoProfilerMonitorEv
 static void
 thread_start (MonoProfiler *prof, uintptr_t tid)
 {
-	init_thread (TRUE);
+	init_thread (prof, TRUE);
 
 	ENTER_LOG (&thread_starts_ctr, logbuffer,
 		EVENT_SIZE /* event */ +
@@ -2176,7 +2183,12 @@ thread_end (MonoProfiler *prof, uintptr_t tid)
 
 	EXIT_LOG_EXPLICIT (prof, FALSE, FALSE);
 
-	remove_thread (prof, PROF_TLS_GET (), TRUE);
+	MonoProfilerThread *thread = PROF_TLS_GET ();
+
+	thread->ended = TRUE;
+	remove_thread (thread);
+
+	PROF_TLS_SET (NULL);
 }
 
 static void
@@ -4135,9 +4147,15 @@ log_shutdown (MonoProfiler *prof)
 	 */
 	while (profiler_thread_list.head) {
 		MONO_LLS_FOREACH_SAFE (&profiler_thread_list, MonoProfilerThread, thread) {
-			remove_thread (prof, thread, FALSE);
+			remove_thread (thread);
 		} MONO_LLS_FOREACH_SAFE_END
 	}
+
+	/*
+	 * Ensure that all threads have been freed, so that we don't miss any
+	 * buffers when we shut down the writer thread below.
+	 */
+	mono_thread_hazardous_try_free_all ();
 
 	InterlockedWrite (&prof->run_dumper_thread, 0);
 	mono_os_sem_post (&prof->dumper_queue_sem);
@@ -4149,14 +4167,19 @@ log_shutdown (MonoProfiler *prof)
 	pthread_join (prof->writer_thread, &res);
 	mono_os_sem_destroy (&prof->writer_queue_sem);
 
+	/*
+	 * Free all writer queue entries, and ensure that all sample hits will be
+	 * added to the sample reuse queue.
+	 */
+	mono_thread_hazardous_try_free_all ();
+
 	cleanup_reusable_samples (prof);
 
 	/*
-	 * Pump the entire hazard free queue to make sure that anything we allocated
-	 * in the profiler will be freed. If we don't do this, the runtime could get
-	 * around to freeing some items after the profiler has been unloaded, which
-	 * would mean calling into functions in the profiler library, leading to a
-	 * crash.
+	 * Finally, make sure that all sample hits are freed. This should cover all
+	 * hazardous data from the profiler. We can now be sure that the runtime
+	 * won't later invoke free functions in the profiler library after it has
+	 * been unloaded.
 	 */
 	mono_thread_hazardous_try_free_all ();
 
@@ -4267,7 +4290,7 @@ helper_thread (void* arg)
 	mono_threads_attach_tools_thread ();
 	mono_native_thread_set_name (mono_native_thread_id_get (), "Profiler helper");
 
-	MonoProfilerThread *thread = init_thread (FALSE);
+	MonoProfilerThread *thread = init_thread (prof, FALSE);
 
 	//fprintf (stderr, "Server listening\n");
 	command_socket = -1;
@@ -4542,7 +4565,7 @@ writer_thread (void *arg)
 
 	dump_header (prof);
 
-	MonoProfilerThread *thread = init_thread (FALSE);
+	MonoProfilerThread *thread = init_thread (prof, FALSE);
 
 	while (InterlockedRead (&prof->run_writer_thread)) {
 		mono_os_sem_wait (&prof->writer_queue_sem, MONO_SEM_FLAGS_NONE);
@@ -4653,7 +4676,7 @@ dumper_thread (void *arg)
 	mono_threads_attach_tools_thread ();
 	mono_native_thread_set_name (mono_native_thread_id_get (), "Profiler dumper");
 
-	MonoProfilerThread *thread = init_thread (FALSE);
+	MonoProfilerThread *thread = init_thread (prof, FALSE);
 
 	while (InterlockedRead (&prof->run_dumper_thread)) {
 		mono_os_sem_wait (&prof->dumper_queue_sem, MONO_SEM_FLAGS_NONE);
@@ -5230,7 +5253,7 @@ mono_profiler_startup (const char *desc)
 
 	mono_lls_init (&profiler_thread_list, NULL);
 
-	init_thread (TRUE);
+	init_thread (prof, TRUE);
 
 	mono_profiler_install (prof, log_shutdown);
 	mono_profiler_install_gc (gc_event, gc_resize);
