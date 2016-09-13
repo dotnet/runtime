@@ -5117,6 +5117,7 @@ mono_profiler_startup (const char *desc)
 		}
 		if ((opt = match_option (p, "noalloc", NULL)) != p) {
 			events &= ~MONO_PROFILE_ALLOCATIONS;
+			events &= ~MONO_PROFILE_GC_MOVES;
 			continue;
 		}
 		if ((opt = match_option (p, "time", &val)) != p) {
@@ -5143,6 +5144,7 @@ mono_profiler_startup (const char *desc)
 		}
 		if ((opt = match_option (p, "heapshot", &val)) != p) {
 			events &= ~MONO_PROFILE_ALLOCATIONS;
+			events &= ~MONO_PROFILE_GC_MOVES;
 			events &= ~MONO_PROFILE_ENTER_LEAVE;
 			nocalls = 1;
 			do_heap_shot = 1;
@@ -5151,6 +5153,7 @@ mono_profiler_startup (const char *desc)
 		}
 		if ((opt = match_option (p, "sample", &val)) != p) {
 			events &= ~MONO_PROFILE_ALLOCATIONS;
+			events &= ~MONO_PROFILE_GC_MOVES;
 			events &= ~MONO_PROFILE_ENTER_LEAVE;
 			nocalls = 1;
 			set_sample_mode (val, 1);
@@ -5243,12 +5246,16 @@ mono_profiler_startup (const char *desc)
 			exit (0);
 		}
 	}
+
 	if (calls_enabled) {
 		events |= MONO_PROFILE_ENTER_LEAVE;
 		nocalls = 0;
 	}
-	if (allocs_enabled)
+
+	if (allocs_enabled) {
 		events |= MONO_PROFILE_ALLOCATIONS;
+		events |= MONO_PROFILE_GC_MOVES;
+	}
 
 	// Only activate the bare minimum events the profiler needs to function.
 	if (only_coverage) {
