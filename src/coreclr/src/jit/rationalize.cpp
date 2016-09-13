@@ -16,44 +16,6 @@ struct SplitData
     Rationalizer* thisPhase;
 };
 
-//------------------------------------------------------------------------------
-// isNodeCallArg - given a context (stack of parent nodes), determine if the TOS is an arg to a call
-//------------------------------------------------------------------------------
-
-GenTree* isNodeCallArg(ArrayStack<GenTree*>* parentStack)
-{
-    for (int i = 1; // 0 is current node, so start at 1
-         i < parentStack->Height(); i++)
-    {
-        GenTree* node = parentStack->Index(i);
-        switch (node->OperGet())
-        {
-            case GT_LIST:
-            case GT_ARGPLACE:
-                break;
-            case GT_NOP:
-                // Currently there's an issue when the rationalizer performs
-                // the fixup of a call argument: the case is when we remove an
-                // inserted NOP as a parent of a call introduced by fgMorph;
-                // when then the rationalizer removes it, the tree stack in the
-                // walk is not consistent with the node it was just deleted, so the
-                // solution is just to go 1 level deeper.
-                // TODO-Cleanup: This has to be fixed in a proper way: make the rationalizer
-                // correctly modify the evaluation stack when removing treenodes.
-                if (node->gtOp.gtOp1->gtOper == GT_CALL)
-                {
-                    return node->gtOp.gtOp1;
-                }
-                break;
-            case GT_CALL:
-                return node;
-            default:
-                return nullptr;
-        }
-    }
-    return nullptr;
-}
-
 // return op that is the store equivalent of the given load opcode
 genTreeOps storeForm(genTreeOps loadForm)
 {
@@ -107,54 +69,6 @@ void copyFlags(GenTree* dst, GenTree* src, unsigned mask)
 {
     dst->gtFlags &= ~mask;
     dst->gtFlags |= (src->gtFlags & mask);
-}
-
-// call args have other pointers to them which must be fixed up if
-// they are replaced
-void Compiler::fgFixupIfCallArg(ArrayStack<GenTree*>* parentStack, GenTree* oldChild, GenTree* newChild)
-{
-    GenTree* parentCall = isNodeCallArg(parentStack);
-    if (!parentCall)
-    {
-        return;
-    }
-
-    // we have replaced an arg, so update pointers in argtable
-    fgFixupArgTabEntryPtr(parentCall, oldChild, newChild);
-}
-
-//------------------------------------------------------------------------
-// fgFixupArgTabEntryPtr: Fixup the fgArgTabEntryPtr of parentCall after
-//                        replacing oldArg with newArg
-//
-// Arguments:
-//    parentCall - a pointer to the parent call node
-//    oldArg     - the original argument node
-//    newArg     - the replacement argument node
-//
-
-void Compiler::fgFixupArgTabEntryPtr(GenTreePtr parentCall, GenTreePtr oldArg, GenTreePtr newArg)
-{
-    assert(parentCall != nullptr);
-    assert(oldArg != nullptr);
-    assert(newArg != nullptr);
-
-    JITDUMP("parent call was :\n");
-    DISPNODE(parentCall);
-
-    JITDUMP("old child was :\n");
-    DISPNODE(oldArg);
-
-    if (oldArg->gtFlags & GTF_LATE_ARG)
-    {
-        newArg->gtFlags |= GTF_LATE_ARG;
-    }
-    else
-    {
-        fgArgTabEntryPtr fp = Compiler::gtArgEntryByNode(parentCall, oldArg);
-        assert(fp->node == oldArg);
-        fp->node = newArg;
-    }
 }
 
 // Rewrite a SIMD indirection as GT_IND(GT_LEA(obj.op1)), or as a simple
@@ -248,7 +162,16 @@ void Rationalizer::RewriteNodeAsCall(GenTree**             use,
 #endif
 
     // Replace "tree" with "call"
-    *use = call;
+    if (data->parentStack->Height() > 1)
+    {
+        data->parentStack->Index(1)->ReplaceOperand(use, call);
+    }
+    else
+    {
+        // If there's no parent, the tree being replaced is the root of the
+        // statement (and no special handling is necessary).
+        *use = call;
+    }
 
     // Rebuild the evaluation order.
     comp->gtSetStmtInfo(root);
@@ -277,8 +200,6 @@ void Rationalizer::RewriteNodeAsCall(GenTree**             use,
         treeLastNode->gtNext = treeNextNode;
         treeNextNode->gtPrev = treeLastNode;
     }
-
-    comp->fgFixupIfCallArg(data->parentStack, tree, call);
 
     // Propagate flags of "call" to its parents.
     // 0 is current node, so start at 1
@@ -945,7 +866,7 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, ArrayStack<G
         BlockRange().Remove(node);
     }
 
-    assert(isLateArg == ((node->gtFlags & GTF_LATE_ARG) != 0));
+    assert(isLateArg == ((use.Def()->gtFlags & GTF_LATE_ARG) != 0));
 
     return Compiler::WALK_CONTINUE;
 }
