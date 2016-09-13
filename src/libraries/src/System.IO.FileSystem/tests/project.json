@@ -2,6 +2,7 @@
   "dependencies": {
     "Microsoft.NETCore.Platforms": "4.3.0-beta-devapi-24512-01",
     "System.Collections": "4.3.0-beta-devapi-24512-01",
+    "System.Buffers": "4.3.0-beta-devapi-24512-01",
     "System.Console": "4.3.0-beta-devapi-24512-01",
     "System.Diagnostics.Debug": "4.3.0-beta-devapi-24512-01",
     "System.Diagnostics.Process": "4.3.0-beta-devapi-24512-01",

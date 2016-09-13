@@ -60,7 +60,7 @@
     <Compile Include="$(CommonPath)\System\IO\PathInternal.cs">
       <Link>Common\System\IO\PathInternal.cs</Link>
     </Compile>
-    <Compile Condition="'$(AssemblyVersion)'!='4.1.2.0'" Include="$(CommonPath)\System\Threading\Tasks\TaskToApm.cs">
+    <Compile Include="$(CommonPath)\System\Threading\Tasks\TaskToApm.cs">
        <Link>Common\System\Threading\Tasks\TaskToApm.cs</Link>
      </Compile>
   </ItemGroup>

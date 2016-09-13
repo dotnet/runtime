@@ -416,7 +416,7 @@
     <Compile Include="System\Xml\Serialization\Models.cs" />
     <Compile Include="System\Xml\Serialization\NameTable.cs" />
     <!-- Temporarily removing since after the merge from dev/api there is some work required on these files
-         in order to have them compile again. Issue tracking this is: 
+         in order to have them compile again. Issue tracking this is: https://github.com/dotnet/corefx/issues/11686
     <Compile Include="System\Xml\Serialization\ReflectionXmlSerializationReader.cs" />
     <Compile Include="System\Xml\Serialization\ReflectionXmlSerializationWriter.cs" />
     -->
