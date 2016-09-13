@@ -13,6 +13,7 @@ namespace System.ComponentModel.DataAnnotations.Tests
         {
             yield return new TestCase(new RequiredAttribute(), "SomeString");
             yield return new TestCase(new RequiredAttribute() { AllowEmptyStrings = true }, string.Empty);
+            yield return new TestCase(new RequiredAttribute() { AllowEmptyStrings = true }, " \t \r \n ");
             yield return new TestCase(new RequiredAttribute(), new object());
         }
 
@@ -20,9 +21,8 @@ namespace System.ComponentModel.DataAnnotations.Tests
         {
             yield return new TestCase(new RequiredAttribute(), null);
             yield return new TestCase(new RequiredAttribute() { AllowEmptyStrings = false }, string.Empty);
+            yield return new TestCase(new RequiredAttribute() { AllowEmptyStrings = false }, " \t \r \n ");
         }
-
-        private static readonly ValidationContext s_testValidationContext = new ValidationContext(new object());
 
         [Fact]
         public static void AllowEmptyStrings_GetSet_ReturnsExpectected()
