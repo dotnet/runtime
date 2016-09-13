@@ -79,7 +79,7 @@ void mono_handle_stack_free (HandleStack *handlestack);
 MonoRawHandle mono_stack_mark_pop_value (MonoThreadInfo *info, HandleStackMark *stackmark, MonoRawHandle value);
 void mono_stack_mark_record_size (MonoThreadInfo *info, HandleStackMark *stackmark, const char *func_name);
 
-static void
+static inline void
 mono_stack_mark_init (MonoThreadInfo *info, HandleStackMark *stackmark)
 {
 	HandleStack *handles = (HandleStack *)info->handle_stack;
@@ -87,7 +87,7 @@ mono_stack_mark_init (MonoThreadInfo *info, HandleStackMark *stackmark)
 	stackmark->chunk = handles->top;
 }
 
-static void
+static inline void
 mono_stack_mark_pop (MonoThreadInfo *info, HandleStackMark *stackmark)
 {
 	HandleStack *handles = (HandleStack *)info->handle_stack;

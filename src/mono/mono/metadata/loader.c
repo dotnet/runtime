@@ -2224,7 +2224,7 @@ mono_stack_walk_async_safe (MonoStackWalkAsyncSafe func, void *initial_sig_conte
 	AsyncStackWalkUserData ud = { func, user_data };
 
 	mono_sigctx_to_monoctx (initial_sig_context, &ctx);
-	mono_get_eh_callbacks ()->mono_walk_stack_with_ctx (async_stack_walk_adapter, NULL, MONO_UNWIND_SIGNAL_SAFE, &ud);
+	mono_get_eh_callbacks ()->mono_walk_stack_with_ctx (async_stack_walk_adapter, &ctx, MONO_UNWIND_SIGNAL_SAFE, &ud);
 }
 
 static gboolean
