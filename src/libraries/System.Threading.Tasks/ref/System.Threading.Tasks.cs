@@ -120,6 +120,7 @@ namespace System.Threading.Tasks
         public TaskCanceledException(string message) { }
         public TaskCanceledException(string message, System.Exception innerException) { }
         public TaskCanceledException(System.Threading.Tasks.Task task) { }
+        protected TaskCanceledException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public System.Threading.Tasks.Task Task { get { return default(System.Threading.Tasks.Task); } }
     }
     public partial class TaskCompletionSource<TResult>
@@ -150,5 +151,6 @@ namespace System.Threading.Tasks
         public TaskSchedulerException(System.Exception innerException) { }
         public TaskSchedulerException(string message) { }
         public TaskSchedulerException(string message, System.Exception innerException) { }
+        protected TaskSchedulerException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
     }
 }

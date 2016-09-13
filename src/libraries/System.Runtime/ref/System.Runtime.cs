@@ -5,6 +5,28 @@
 // Changes to this file must follow the http://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
+namespace Microsoft.Win32.SafeHandles
+{
+    [System.Security.SecurityCriticalAttribute]
+    public abstract partial class SafeHandleMinusOneIsInvalid : System.Runtime.InteropServices.SafeHandle
+    {
+        protected SafeHandleMinusOneIsInvalid(bool ownsHandle) : base(System.IntPtr.Zero, ownsHandle) { }
+        public override bool IsInvalid { [System.Security.SecurityCriticalAttribute]get { return default(bool); } }
+    }
+    [System.Security.SecurityCriticalAttribute]
+    public abstract partial class SafeHandleZeroOrMinusOneIsInvalid : System.Runtime.InteropServices.SafeHandle
+    {
+        protected SafeHandleZeroOrMinusOneIsInvalid(bool ownsHandle) : base(System.IntPtr.Zero, ownsHandle) { }
+        public override bool IsInvalid { [System.Security.SecurityCriticalAttribute]get { return default(bool); } }
+    }
+    [System.Security.SecurityCriticalAttribute]
+    public sealed partial class SafeWaitHandle : Microsoft.Win32.SafeHandles.SafeHandleZeroOrMinusOneIsInvalid
+    {
+        public SafeWaitHandle(System.IntPtr existingHandle, bool ownsHandle) : base(ownsHandle) { }
+        [System.Security.SecurityCriticalAttribute]
+        protected override bool ReleaseHandle() { return default(bool); }
+    }
+}
 
 namespace System
 {
@@ -2774,6 +2796,17 @@ namespace System
     }
 }
 
+namespace System.Runtime.ConstrainedExecution
+{
+    [System.Runtime.InteropServices.ComVisibleAttribute(true)]
+    public abstract partial class CriticalFinalizerObject
+    {
+        [System.Security.SecuritySafeCriticalAttribute]
+        protected CriticalFinalizerObject() { }
+        ~CriticalFinalizerObject() { }
+    }
+}
+
 namespace System.Runtime.InteropServices
 {
     public partial class ExternalException : System.SystemException
@@ -2784,6 +2817,30 @@ namespace System.Runtime.InteropServices
         public ExternalException(string message, int errorCode) { }
         protected ExternalException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public virtual int ErrorCode { get; }
+    }
+    [System.Security.SecurityCriticalAttribute]
+    public abstract partial class SafeHandle : System.Runtime.ConstrainedExecution.CriticalFinalizerObject, System.IDisposable
+    {
+        protected System.IntPtr handle;
+        protected SafeHandle(System.IntPtr invalidHandleValue, bool ownsHandle) { }
+        public bool IsClosed { get { return default(bool); } }
+        public abstract bool IsInvalid { get; }
+        [System.Security.SecurityCriticalAttribute]
+        public void Close() { }
+        [System.Security.SecurityCriticalAttribute]
+        public void DangerousAddRef(ref bool success) { }
+        public System.IntPtr DangerousGetHandle() { return default(System.IntPtr); }
+        [System.Security.SecurityCriticalAttribute]
+        public void DangerousRelease() { }
+        [System.Security.SecuritySafeCriticalAttribute]
+        public void Dispose() { }
+        [System.Security.SecurityCriticalAttribute]
+        protected virtual void Dispose(bool disposing) { }
+        ~SafeHandle() { }
+        protected abstract bool ReleaseHandle();
+        protected void SetHandle(System.IntPtr handle) { }
+        [System.Security.SecurityCriticalAttribute]
+        public void SetHandleAsInvalid() { }
     }
 }
 
@@ -6057,22 +6114,35 @@ namespace System.Threading
         protected static readonly System.IntPtr InvalidHandle;
         public const int WaitTimeout = 258;
         protected WaitHandle() { }
+        public virtual void Close() { }
         public void Dispose() { }
         protected virtual void Dispose(bool explicitDisposing) { }
+        [System.ObsoleteAttribute("Use the SafeWaitHandle property instead.")]
+        public virtual System.IntPtr Handle { [System.Security.SecuritySafeCriticalAttribute]get { return default(System.IntPtr); } [System.Security.SecurityCriticalAttribute]set { } }
+        public Microsoft.Win32.SafeHandles.SafeWaitHandle SafeWaitHandle { [System.Security.SecurityCriticalAttribute]get { return default(Microsoft.Win32.SafeHandles.SafeWaitHandle); } [System.Security.SecurityCriticalAttribute]set { } }
+        public static bool SignalAndWait(System.Threading.WaitHandle toSignal, System.Threading.WaitHandle toWaitOn) { return default(bool); }
+        public static bool SignalAndWait(System.Threading.WaitHandle toSignal, System.Threading.WaitHandle toWaitOn, int millisecondsTimeout, bool exitContext) { return default(bool); }
+        public static bool SignalAndWait(System.Threading.WaitHandle toSignal, System.Threading.WaitHandle toWaitOn, System.TimeSpan timeout, bool exitContext) { return default(bool); }
         public static bool WaitAll(System.Threading.WaitHandle[] waitHandles) { return default(bool); }
         public static bool WaitAll(System.Threading.WaitHandle[] waitHandles, int millisecondsTimeout) { return default(bool); }
+        public static bool WaitAll(System.Threading.WaitHandle[] waitHandles, int millisecondsTimeout, bool exitContext) { return default(bool); }
         public static bool WaitAll(System.Threading.WaitHandle[] waitHandles, System.TimeSpan timeout) { return default(bool); }
+        public static bool WaitAll(System.Threading.WaitHandle[] waitHandles, System.TimeSpan timeout, bool exitContext) { return default(bool); }
         public static int WaitAny(System.Threading.WaitHandle[] waitHandles) { return default(int); }
         public static int WaitAny(System.Threading.WaitHandle[] waitHandles, int millisecondsTimeout) { return default(int); }
+        public static int WaitAny(System.Threading.WaitHandle[] waitHandles, int millisecondsTimeout, bool exitContext) { return default(int); }
         public static int WaitAny(System.Threading.WaitHandle[] waitHandles, System.TimeSpan timeout) { return default(int); }
+        public static int WaitAny(System.Threading.WaitHandle[] waitHandles, System.TimeSpan timeout, bool exitContext) { return default(int); }
         public virtual bool WaitOne() { return default(bool); }
         public virtual bool WaitOne(int millisecondsTimeout) { return default(bool); }
+        public virtual bool WaitOne(int millisecondsTimeout, bool exitContext) { return default(bool); }
         public virtual bool WaitOne(System.TimeSpan timeout) { return default(bool); }
+        public virtual bool WaitOne(System.TimeSpan timeout, bool exitContext) { return default(bool); }
     }
 }
 namespace System.Threading.Tasks
 {
-    public partial class Task : System.IAsyncResult
+    public partial class Task : System.IAsyncResult, System.IDisposable
     {
         public Task(System.Action action) { }
         public Task(System.Action action, System.Threading.CancellationToken cancellationToken) { }
@@ -6120,6 +6190,8 @@ namespace System.Threading.Tasks
         public static System.Threading.Tasks.Task Delay(int millisecondsDelay, System.Threading.CancellationToken cancellationToken) { return default(System.Threading.Tasks.Task); }
         public static System.Threading.Tasks.Task Delay(System.TimeSpan delay) { return default(System.Threading.Tasks.Task); }
         public static System.Threading.Tasks.Task Delay(System.TimeSpan delay, System.Threading.CancellationToken cancellationToken) { return default(System.Threading.Tasks.Task); }
+        public void Dispose() { }
+        protected virtual void Dispose(bool disposing) { }
         public static System.Threading.Tasks.Task FromCanceled(System.Threading.CancellationToken cancellationToken) { return default(System.Threading.Tasks.Task); }
         public static System.Threading.Tasks.Task<TResult> FromCanceled<TResult>(System.Threading.CancellationToken cancellationToken) { return default(System.Threading.Tasks.Task<TResult>); }
         public static System.Threading.Tasks.Task FromException(System.Exception exception) { return default(System.Threading.Tasks.Task); }
