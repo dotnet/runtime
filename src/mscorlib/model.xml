@@ -286,6 +286,8 @@
       <Member Name="Resize&lt;T&gt;(T[]@,System.Int32)" />
       <Member Name="Reverse(System.Array)" />
       <Member Name="Reverse(System.Array,System.Int32,System.Int32)" />
+      <Member Name="Reverse&lt;T&gt;(T[])" />
+      <Member Name="Reverse&lt;T&gt;(T[],System.Int32,System.Int32)" />
       <Member Name="SetValue(System.Object,System.Int32)" />
       <Member Name="SetValue(System.Object,System.Int32,System.Int32)" />
       <Member Name="SetValue(System.Object,System.Int32,System.Int32,System.Int32)" />
