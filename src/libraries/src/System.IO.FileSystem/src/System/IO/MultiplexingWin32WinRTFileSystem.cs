@@ -28,6 +28,11 @@ namespace System.IO
             Select(sourceFullPath, destFullPath).CopyFile(sourceFullPath, destFullPath, overwrite);
         }
 
+        public override void ReplaceFile(string sourceFullPath, string destFullPath, string destBackupFullPath, bool ignoreMetadataErrors)
+        {
+            Select(sourceFullPath, destFullPath, destBackupFullPath).ReplaceFile(sourceFullPath, destFullPath, destBackupFullPath, ignoreMetadataErrors);
+        }
+
         public override void CreateDirectory(string fullPath)
         {
             Select(fullPath, isCreate: true).CreateDirectory(fullPath);
@@ -147,6 +152,14 @@ namespace System.IO
         private FileSystem Select(string sourceFullPath, string destFullPath)
         {
             return (ShouldUseWinRT(sourceFullPath, isCreate: false) || ShouldUseWinRT(destFullPath, isCreate: true)) ? _winRTFileSystem : _win32FileSystem;
+        }
+
+        private FileSystem Select(string sourceFullPath, string destFullPath, string destFullBackupPath)
+        {
+            return 
+                (ShouldUseWinRT(sourceFullPath, isCreate: false) || ShouldUseWinRT(destFullPath, isCreate: true) || ShouldUseWinRT(destFullBackupPath, isCreate: true)) ?
+                _winRTFileSystem :
+                _win32FileSystem;
         }
 
         public override string[] GetLogicalDrives()

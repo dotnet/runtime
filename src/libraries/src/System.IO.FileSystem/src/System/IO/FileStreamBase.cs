@@ -28,5 +28,7 @@ namespace System.IO
         internal abstract bool IsClosed { get; }
 
         public abstract void Flush(bool flushToDisk);
+        public abstract void Lock(long position, long length);
+        public abstract void Unlock(long position, long length);
     }
 }

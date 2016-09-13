@@ -61,7 +61,7 @@ namespace System.IO.Tests
         }
     }
 
-    public class File_AppendAllLines : File_ReadWriteAllLines
+    public class File_AppendAllLines : File_ReadWriteAllLines_Enumerable
     {
         protected override void Write(string path, string[] content)
         {
