@@ -2,75 +2,66 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using Xunit;
 
-namespace System.ComponentModel.DataAnnotations
+namespace System.ComponentModel.DataAnnotations.Tests
 {
-    public class StringLengthAttributeTests
+    public class StringLengthAttributeTests : ValidationAttributeTestBase
     {
-        private static readonly ValidationContext s_testValidationContext = new ValidationContext(new object());
-
-        [Fact]
-        public static void Can_construct_and_get_MaximumLength_and_default_MinimumLength()
+        protected override IEnumerable<TestCase> ValidValues()
         {
-            var attribute = new StringLengthAttribute(42);
-            Assert.Equal(42, attribute.MaximumLength);
+            yield return new TestCase(new StringLengthAttribute(12), null);
+            yield return new TestCase(new StringLengthAttribute(12), string.Empty);
+            yield return new TestCase(new StringLengthAttribute(12), "Valid string");
+            yield return new TestCase(new StringLengthAttribute(12) { MinimumLength = 5 }, "Valid");
+            yield return new TestCase(new StringLengthAttribute(12) { MinimumLength = 5 }, "Valid string");
+        }
+
+        protected override IEnumerable<TestCase> InvalidValues()
+        {
+            yield return new TestCase(new StringLengthAttribute(12), "Invalid string");
+            yield return new TestCase(new StringLengthAttribute(12) {MinimumLength = 8 }, "Invalid");
+        }
+
+        [Theory]
+        [InlineData(42)]
+        [InlineData(-1)]
+        public static void Ctor_Int(int maximumLength)
+        {
+            var attribute = new StringLengthAttribute(maximumLength);
+            Assert.Equal(maximumLength, attribute.MaximumLength);
             Assert.Equal(0, attribute.MinimumLength);
         }
 
-        [Fact]
-        public static void Can_set_and_get_MinimumLength()
+        [Theory]
+        [InlineData(29)]
+        public static void MinimumLength_GetSet_RetunsExpected(int newValue)
         {
             var attribute = new StringLengthAttribute(42);
-            attribute.MinimumLength = 29;
-            Assert.Equal(29, attribute.MinimumLength);
+            attribute.MinimumLength = newValue;
+            Assert.Equal(newValue, attribute.MinimumLength);
         }
 
         [Fact]
-        public static void Validation_throws_InvalidOperationException_for_maximum_less_than_zero()
+        public static void Validate_NegativeMaximumLength_ThrowsInvalidOperationException()
         {
             var attribute = new StringLengthAttribute(-1);
-            Assert.Equal(-1, attribute.MaximumLength);
-            Assert.Throws<InvalidOperationException>(
-                () => attribute.Validate("Does not matter - MaximumLength < 0", s_testValidationContext));
+            Assert.Throws<InvalidOperationException>(() => attribute.Validate("Any", new ValidationContext(new object())));
         }
 
         [Fact]
-        public static void ValidationThrowsIf_minimum_is_greater_than_maximum()
+        public static void Validate_MinimumLengthGreaterThanMaximumLength_ThrowsInvalidOperationException()
+        {
+            var attribute = new StringLengthAttribute(42) { MinimumLength = 43 };
+            Assert.Throws<InvalidOperationException>(() => attribute.Validate("Any", new ValidationContext(new object())));
+        }
+
+        [Fact]
+        public static void Validate_ValueNotString_ThrowsInvalidCastException()
         {
             var attribute = new StringLengthAttribute(42);
-            attribute.MinimumLength = 43;
-            Assert.Throws<InvalidOperationException>(
-                () => attribute.Validate("Does not matter - MinimumLength > MaximumLength", s_testValidationContext));
-        }
-
-        [Fact]
-        public static void ValidationThrowsIf_value_passed_is_non_null_non_string()
-        {
-            var attribute = new StringLengthAttribute(42);
-            Assert.Throws<InvalidCastException>(() => attribute.Validate(new object(), s_testValidationContext));
-        }
-
-        [Fact]
-        public static void Validation_successful_for_valid_strings()
-        {
-            var attribute = new StringLengthAttribute(12);
-            AssertEx.DoesNotThrow(() => attribute.Validate(null, s_testValidationContext)); // null is valid
-            AssertEx.DoesNotThrow(() => attribute.Validate(string.Empty, s_testValidationContext));
-            AssertEx.DoesNotThrow(() => attribute.Validate("Valid string", s_testValidationContext));
-
-            attribute.MinimumLength = 5;
-            AssertEx.DoesNotThrow(() => attribute.Validate("Valid", s_testValidationContext));
-            AssertEx.DoesNotThrow(() => attribute.Validate("Valid string", s_testValidationContext));
-        }
-
-        [Fact]
-        public static void Validation_throws_ValidationException_for_invalid_strings()
-        {
-            var attribute = new StringLengthAttribute(12);
-            Assert.Throws<ValidationException>(() => attribute.Validate("Invalid string", s_testValidationContext)); // string too long
-            attribute.MinimumLength = 8;
-            Assert.Throws<ValidationException>(() => attribute.Validate("Invalid", s_testValidationContext)); // string too short
+            Assert.Throws<InvalidCastException>(() => attribute.Validate(new object(), new ValidationContext(new object())));
         }
     }
 }

@@ -53,7 +53,7 @@ namespace System.ComponentModel.DataAnnotations.Tests
             yield return new TestCase(GetAttribute(nameof(CustomValidator.CorrectValidationMethodOneArgDateTime)), new IConvertibleImplementor());
         }
 
-        public override bool RespectsErrorMessage => false;
+        protected override bool RespectsErrorMessage => false;
 
         private static CustomValidationAttribute GetAttribute(string name) => new CustomValidationAttribute(typeof(CustomValidator), name);
 

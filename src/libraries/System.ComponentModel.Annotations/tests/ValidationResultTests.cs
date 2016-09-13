@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Xunit;
 
-namespace System.ComponentModel.DataAnnotations
+namespace System.ComponentModel.DataAnnotations.Tests
 {
     public class ValidationResultTests
     {
@@ -29,14 +29,14 @@ namespace System.ComponentModel.DataAnnotations
         public static void MemberNames_are_empty_for_one_arg_constructor()
         {
             var validationResult = new ValidationResult("SomeErrorMessage");
-            AssertEx.Empty(validationResult.MemberNames);
+            Assert.Empty(validationResult.MemberNames);
         }
 
         [Fact]
         public static void MemberNames_can_be_set_through_two_args_constructor()
         {
             var validationResult = new ValidationResult("SomeErrorMessage", null);
-            AssertEx.Empty(validationResult.MemberNames);
+            Assert.Empty(validationResult.MemberNames);
 
             var memberNames = new List<string>() { "firstMember", "secondMember" };
             validationResult = new ValidationResult("SomeErrorMessage", memberNames);

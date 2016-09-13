@@ -13,8 +13,8 @@ namespace System.ComponentModel.DataAnnotations.Tests
         protected abstract IEnumerable<TestCase> ValidValues();
         protected abstract IEnumerable<TestCase> InvalidValues();
 
-        public virtual bool RespectsErrorMessage => true;
-        public Type InvalidErrorMessage_Type => RespectsErrorMessage ? typeof(InvalidOperationException) : typeof(ValidationException);
+        protected virtual bool RespectsErrorMessage => true;
+        private Type InvalidErrorMessage_Type => RespectsErrorMessage ? typeof(InvalidOperationException) : typeof(ValidationException);
 
         [Fact]
         public void Validate_Valid()

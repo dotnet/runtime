@@ -2,11 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
 using Xunit;
 
-namespace System.ComponentModel.DataAnnotations
+namespace System.ComponentModel.DataAnnotations.Tests
 {
     public class ValidationContextTests
     {
@@ -21,27 +20,27 @@ namespace System.ComponentModel.DataAnnotations
         public static void Constructor_creates_new_instance_for_one_arg_constructor()
         {
             var testDataAnnotationsDerived = new TestClass();
-            AssertEx.DoesNotThrow(() => new ValidationContext(testDataAnnotationsDerived));
+            new ValidationContext(testDataAnnotationsDerived);
         }
 
         [Fact]
         public static void Constructor_creates_new_instance_for_two_arg_constructor()
         {
             var testDataAnnotationsDerived = new TestClass();
-            AssertEx.DoesNotThrow(() => new ValidationContext(testDataAnnotationsDerived, null));
+            new ValidationContext(testDataAnnotationsDerived, null);
             var items = new Dictionary<object, object>();
-            AssertEx.DoesNotThrow(() => new ValidationContext(testDataAnnotationsDerived, items));
+            new ValidationContext(testDataAnnotationsDerived, items);
         }
 
         [Fact]
         public static void Constructor_creates_new_instance_for_three_arg_constructor()
         {
             var testDataAnnotationsDerived = new TestClass();
-            AssertEx.DoesNotThrow(() => new ValidationContext(testDataAnnotationsDerived, null, null));
+            new ValidationContext(testDataAnnotationsDerived, null, null);
             var items = new Dictionary<object, object>();
-            AssertEx.DoesNotThrow(() => new ValidationContext(testDataAnnotationsDerived, null, items));
+            new ValidationContext(testDataAnnotationsDerived, null, items);
             var serviceProvider = new TestServiceProvider();
-            AssertEx.DoesNotThrow(() => new ValidationContext(testDataAnnotationsDerived, serviceProvider, items));
+            new ValidationContext(testDataAnnotationsDerived, serviceProvider, items);
         }
 
         [Fact]

@@ -2,78 +2,72 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
+using System.Text.RegularExpressions;
 using Xunit;
 
-namespace System.ComponentModel.DataAnnotations
+namespace System.ComponentModel.DataAnnotations.Tests
 {
-    public class RegularExpressionAttributeTests
+    public class RegularExpressionAttributeTests : ValidationAttributeTestBase
     {
-        private static readonly ValidationContext s_testValidationContext = new ValidationContext(new object());
+        protected override IEnumerable<TestCase> ValidValues()
+        {
+            yield return new TestCase(new RegularExpressionAttribute("SomePattern"), null);
+            yield return new TestCase(new RegularExpressionAttribute("SomePattern"), string.Empty);
+            yield return new TestCase(new RegularExpressionAttribute("defghi") { MatchTimeoutInMilliseconds = 5000 }, "defghi");
+            yield return new TestCase(new RegularExpressionAttribute("[^a]+\\.[^z]+") { MatchTimeoutInMilliseconds = 10000 }, "bcdefghijklmnopqrstuvwxyz.abcdefghijklmnopqrstuvwxy");
+        }
 
-        [Fact]
-        public static void Can_construct_and_get_pattern()
+        protected override IEnumerable<TestCase> InvalidValues()
+        {
+            yield return new TestCase(new RegularExpressionAttribute("defghi"), "zyxwvu");
+            yield return new TestCase(new RegularExpressionAttribute("defghi"), "defghijkl");
+            yield return new TestCase(new RegularExpressionAttribute("defghi"), "abcdefghi");
+            yield return new TestCase(new RegularExpressionAttribute("defghi"), "abcdefghijkl");
+            yield return new TestCase(new RegularExpressionAttribute("[^a]+\\.[^z]+") { MatchTimeoutInMilliseconds = 10000 } , "aaaaa");
+            yield return new TestCase(new RegularExpressionAttribute("[^a]+\\.[^z]+") { MatchTimeoutInMilliseconds = 10000 }, "zzzzz");
+            yield return new TestCase(new RegularExpressionAttribute("[^a]+\\.[^z]+") { MatchTimeoutInMilliseconds = 10000 }, "b.z");
+            yield return new TestCase(new RegularExpressionAttribute("[^a]+\\.[^z]+") { MatchTimeoutInMilliseconds = 10000 }, "a.y");
+        }
+
+        [Theory]
+        [InlineData("SomePattern")]
+        public static void Ctor_String(string pattern)
+        {
+            var attribute = new RegularExpressionAttribute(pattern);
+            Assert.Equal(pattern, attribute.Pattern);
+        }
+
+        [Theory]
+        [InlineData(12345)]
+        public static void MatchTimeoutInMilliseconds_GetSet_ReturnsExpected(int newValue)
         {
             var attribute = new RegularExpressionAttribute("SomePattern");
-            Assert.Equal("SomePattern", attribute.Pattern);
+            attribute.MatchTimeoutInMilliseconds = newValue;
+            Assert.Equal(newValue, attribute.MatchTimeoutInMilliseconds);
+        }
+
+        [Theory]
+        [InlineData(null)]
+        [InlineData("")]
+        public static void Validate_InvalidPattern_ThrowsInvalidOperationException(string pattern)
+        {
+            var attribute = new RegularExpressionAttribute(pattern);
+            Assert.Throws<InvalidOperationException>(() => attribute.Validate("Any", new ValidationContext(new object())));
         }
 
         [Fact]
-        public static void Can_set_and_get_MatchTimeout()
+        public static void Validate_ZeroMatchTimeoutInMilliseconds_ThrowsArgumentOutOfRangeException()
         {
-            var attribute = new RegularExpressionAttribute("SomePattern");
-            attribute.MatchTimeoutInMilliseconds = 12345;
-            Assert.Equal(12345, attribute.MatchTimeoutInMilliseconds);
+            RegularExpressionAttribute attribute = new RegularExpressionAttribute("[^a]+\\.[^z]+") { MatchTimeoutInMilliseconds = 0 };
+            Assert.Throws<ArgumentOutOfRangeException>("matchTimeout", () => attribute.Validate("a", new ValidationContext(new object())));
         }
 
         [Fact]
-        public static void Validation_throws_InvalidOperationException_for_null_or_empty_pattern()
+        public static void Validate_MatchingTimesOut_ThrowsRegexMatchTimeoutException()
         {
-            var attribute = new RegularExpressionAttribute(null);
-            Assert.Null(attribute.Pattern);
-            Assert.Throws<InvalidOperationException>(
-                () => attribute.Validate("Does not matter - Pattern is null", s_testValidationContext));
-
-            attribute = new RegularExpressionAttribute(string.Empty);
-            AssertEx.Empty(attribute.Pattern);
-            Assert.Throws<InvalidOperationException>(
-                () => attribute.Validate("Does not matter - Pattern is empty", s_testValidationContext));
-        }
-
-        [Fact]
-        public static void Validate_successful_for_null_or_empty_value()
-        {
-            var attribute = new RegularExpressionAttribute("SomePattern");
-            AssertEx.DoesNotThrow(() => attribute.Validate(null, s_testValidationContext)); // Null is valid
-            AssertEx.DoesNotThrow(() => attribute.Validate(string.Empty, s_testValidationContext)); // Empty string is valid
-        }
-
-        [Fact]
-        public static void Validate_successful_for_value_matching_pattern()
-        {
-            var attribute = new RegularExpressionAttribute("defghi");
-            attribute.MatchTimeoutInMilliseconds = 5000; // note: timeout is just a number much larger than we expect the test to take
-            AssertEx.DoesNotThrow(() => attribute.Validate("defghi", s_testValidationContext));
-
-            attribute = new RegularExpressionAttribute("[^a]+\\.[^z]+");
-            attribute.MatchTimeoutInMilliseconds = 10000; // note: timeout is just a number much larger than we expect the test to take
-            AssertEx.DoesNotThrow(() => attribute.Validate("bcdefghijklmnopqrstuvwxyz.abcdefghijklmnopqrstuvwxy", s_testValidationContext));
-        }
-
-        [Fact]
-        public static void Validate_throws_for_values_which_do_not_match_pattern()
-        {
-            var attribute = new RegularExpressionAttribute("defghi");
-            Assert.Throws<ValidationException>(() => attribute.Validate("zyxwvu", s_testValidationContext)); // pattern does not match
-            Assert.Throws<ValidationException>(() => attribute.Validate("defghijkl", s_testValidationContext)); // pattern only matches beginning of value
-            Assert.Throws<ValidationException>(() => attribute.Validate("abcdefghi", s_testValidationContext)); // pattern only matches end of value
-            Assert.Throws<ValidationException>(() => attribute.Validate("abcdefghijkl", s_testValidationContext)); // pattern only matches part of value
-
-            attribute = new RegularExpressionAttribute("[^a]+\\.[^z]+");
-            attribute.MatchTimeoutInMilliseconds = 10000; // note: timeout is just a number much larger than we expect the test to take
-            Assert.Throws<ValidationException>(() => attribute.Validate("aaaaa", s_testValidationContext));
-            Assert.Throws<ValidationException>(() => attribute.Validate("zzzzz", s_testValidationContext));
-            Assert.Throws<ValidationException>(() => attribute.Validate("b.z", s_testValidationContext));
-            Assert.Throws<ValidationException>(() => attribute.Validate("a.y", s_testValidationContext));
+            RegularExpressionAttribute attribute = new RegularExpressionAttribute("(a+)+$") { MatchTimeoutInMilliseconds = 1 };
+            Assert.Throws<RegexMatchTimeoutException>(() => attribute.Validate("aaaaaaaaaaaaaaaaaaaaaaaaaaaa>", new ValidationContext(new object())));
         }
     }
 }

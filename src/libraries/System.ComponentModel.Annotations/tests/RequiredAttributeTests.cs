@@ -2,16 +2,30 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using Xunit;
 
-namespace System.ComponentModel.DataAnnotations
+namespace System.ComponentModel.DataAnnotations.Tests
 {
-    public class RequiredAttributeTests
+    public class RequiredAttributeTests : ValidationAttributeTestBase
     {
+        protected override IEnumerable<TestCase> ValidValues()
+        {
+            yield return new TestCase(new RequiredAttribute(), "SomeString");
+            yield return new TestCase(new RequiredAttribute() { AllowEmptyStrings = true }, string.Empty);
+            yield return new TestCase(new RequiredAttribute(), new object());
+        }
+
+        protected override IEnumerable<TestCase> InvalidValues()
+        {
+            yield return new TestCase(new RequiredAttribute(), null);
+            yield return new TestCase(new RequiredAttribute() { AllowEmptyStrings = false }, string.Empty);
+        }
+
         private static readonly ValidationContext s_testValidationContext = new ValidationContext(new object());
 
         [Fact]
-        public static void Can_get_and_set_AllowEmptyStrings()
+        public static void AllowEmptyStrings_GetSet_ReturnsExpectected()
         {
             var attribute = new RequiredAttribute();
             Assert.False(attribute.AllowEmptyStrings);
@@ -19,43 +33,6 @@ namespace System.ComponentModel.DataAnnotations
             Assert.True(attribute.AllowEmptyStrings);
             attribute.AllowEmptyStrings = false;
             Assert.False(attribute.AllowEmptyStrings);
-        }
-
-        [Fact]
-        public static void Validation_throws_ValidationException_for_null_value()
-        {
-            var attribute = new RequiredAttribute();
-            Assert.Throws<ValidationException>(() => attribute.Validate(null, s_testValidationContext));
-        }
-
-        [Fact]
-        public static void Validation_throws_ValidationException_for_empty_string_if_AllowEmptyStrings_is_false()
-        {
-            var attribute = new RequiredAttribute();
-            attribute.AllowEmptyStrings = false;
-            Assert.Throws<ValidationException>(() => attribute.Validate(string.Empty, s_testValidationContext));
-        }
-
-        [Fact]
-        public static void Validate_successful_for_non_empty_string_if_AllowEmptyStrings_is_false()
-        {
-            var attribute = new RequiredAttribute();
-            AssertEx.DoesNotThrow(() => attribute.Validate("SomeString", s_testValidationContext));
-        }
-
-        [Fact]
-        public static void Validate_successful_for_empty_string_if_AllowEmptyStrings_is_true()
-        {
-            var attribute = new RequiredAttribute();
-            attribute.AllowEmptyStrings = true;
-            AssertEx.DoesNotThrow(() => attribute.Validate(string.Empty, s_testValidationContext));
-        }
-
-        [Fact]
-        public static void Validate_successful_for_non_string_object()
-        {
-            var attribute = new RequiredAttribute();
-            AssertEx.DoesNotThrow(() => attribute.Validate(new object(), s_testValidationContext));
         }
     }
 }
