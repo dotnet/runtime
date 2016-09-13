@@ -2,12 +2,6 @@
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
-    <ProjectReference Include="..\ref\4.0.0\System.IO.Compression.depproj">
-      <SupportedFramework>net45;netcore45;wpa81</SupportedFramework>
-    </ProjectReference>
-    <ProjectReference Include="..\ref\4.1.0\System.IO.Compression.depproj">
-      <SupportedFramework>net46;netcore50;netcoreapp1.0</SupportedFramework>
-    </ProjectReference>
     <ProjectReference Include="..\ref\System.IO.Compression.csproj">
       <SupportedFramework>netcoreapp1.1;net463;$(AllXamarinFrameworks)</SupportedFramework>
     </ProjectReference>

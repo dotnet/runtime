@@ -16,7 +16,7 @@
     "Microsoft.DotNet.xunit.performance.analysis.cli": "1.0.0-alpha-build0039",
     "Microsoft.DotNet.xunit.performance.runner.cli": "1.0.0-alpha-build0039",
     "Microsoft.DotNet.xunit.performance.runner.Windows": "1.0.0-alpha-build0039",
-    "Microsoft.DotNet.BuildTools.TestSuite": "1.0.0-prerelease-00731-01",
+    "Microsoft.DotNet.BuildTools.TestSuite": "1.0.0-prerelease-00807-03",
     "xunit.console.netcore": "1.0.3-prerelease-00607-01"
   },
   "frameworks": {
@@ -101,7 +101,7 @@
         "System.Xml.XmlSerializer": "4.0.11",
         "Microsoft.NETCore.UniversalWindowsPlatform": "5.2.1-beta-000547-00",
         "System.Console": "4.3.0-beta-devapi-24512-01",
-        "microsoft.xunit.runner.uwp": "1.0.3-prerelease-00614-01",
+        "microsoft.xunit.runner.uwp": "1.0.3-prerelease-00808-02",
         "Microsoft.DotNet.TestILC": {
           "version": "1.4.24208-prerelease",
           "include": "contentFiles"

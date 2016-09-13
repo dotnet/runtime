@@ -9,17 +9,6 @@
       <OSGroup>Windows_NT</OSGroup>
     </Project>
     <Project Include="System.IO.Compression.csproj">
-      <OSGroup>Unix</OSGroup>
-      <TargetGroup>netstandard1.3</TargetGroup>
-    </Project>
-    <Project Include="System.IO.Compression.csproj">
-      <OSGroup>Windows_NT</OSGroup>
-      <TargetGroup>netstandard1.3</TargetGroup>
-    </Project>
-    <Project Include="System.IO.Compression.csproj">
-      <TargetGroup>net46</TargetGroup>
-    </Project>
-    <Project Include="System.IO.Compression.csproj">
       <TargetGroup>net463</TargetGroup>
     </Project>
   </ItemGroup>

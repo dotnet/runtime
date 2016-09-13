@@ -51,7 +51,7 @@
     <None Include="project.json" />
   </ItemGroup>
   <ItemGroup>
-    <SupplementalTestData Include="$(PackagesDir)System.IO.Compression.TestData\1.0.4-prerelease\content\**\*.*">
+    <SupplementalTestData Include="$(PackagesDir)System.IO.Compression.TestData\1.0.3-prerelease\content\**\*.*">
       <Link>%(RecursiveDir)%(Filename)%(Extension)</Link>
     </SupplementalTestData>
   </ItemGroup>
