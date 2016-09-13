@@ -6968,10 +6968,7 @@ void LinearScan::allocateRegisters()
             }
             else
             {
-                // This must be a localVar or a single-reg fixed use or a tree temp with conflicting def & use.
-
-                assert(currentInterval && (currentInterval->isLocalVar || currentRefPosition->isFixedRegRef ||
-                                           currentInterval->hasConflictingDefUse));
+                assert(currentInterval != nullptr);
 
                 // It's already in a register, but not one we need.
                 // If it is a fixed use that is not marked "delayRegFree", there is already a FixedReg to ensure that
