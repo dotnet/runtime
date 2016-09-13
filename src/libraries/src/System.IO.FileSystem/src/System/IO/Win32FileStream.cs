@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Buffers;
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Runtime.InteropServices;
@@ -1775,13 +1776,13 @@ namespace System.IO
                 readAwaitable._position = _pos;
             }
 
-            // Create the buffer to use for the copy operation, as the base CopyToAsync does. We don't try to use
+            // Get the buffer to use for the copy operation, as the base CopyToAsync does. We don't try to use
             // _buffer here, even if it's not null, as concurrent operations are allowed, and another operation may
             // actually be using the buffer already. Plus, it'll be rare for _buffer to be non-null, as typically
             // CopyToAsync is used as the only operation performed on the stream, and the buffer is lazily initialized.
             // Further, typically the CopyToAsync buffer size will be larger than that used by the FileStream, such that
-            // we'd likely be unable to use it anyway.  A better option than using _buffer would be a future pooling solution.
-            byte[] copyBuffer = new byte[bufferSize];
+            // we'd likely be unable to use it anyway.  Instead, we rent the buffer from a pool.
+            byte[] copyBuffer = ArrayPool<byte>.Shared.Rent(bufferSize);
 
             // Allocate an Overlapped we can use repeatedly for all operations
             var awaitableOverlapped = new PreAllocatedOverlapped(AsyncCopyToAwaitable.s_callback, readAwaitable, copyBuffer);
@@ -1914,6 +1915,7 @@ namespace System.IO
                 // Cleanup from the whole copy operation
                 cancellationReg.Dispose();
                 awaitableOverlapped.Dispose();
+                ArrayPool<byte>.Shared.Return(copyBuffer, clearArray: true);
 
                 // Make sure the stream's current position reflects where we ended up
                 if (!_handle.IsClosed && _parent.CanSeek)
