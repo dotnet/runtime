@@ -199,16 +199,16 @@
             <Issue>3392</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\divrem\div\u8div_cs_do\u8div_cs_do.cmd">
-            <Issue>needs triage</Issue>
+            <Issue>2413</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\divrem\div\u8div_cs_ro\u8div_cs_ro.cmd">
-            <Issue>needs triage</Issue>
+            <Issue>2413</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\divrem\rem\u8rem_cs_do\u8rem_cs_do.cmd">
-            <Issue>needs triage</Issue>
+            <Issue>2412</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\divrem\rem\u8rem_cs_ro\u8rem_cs_ro.cmd">
-            <Issue>needs triage</Issue>
+            <Issue>2412</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\tailcall_v4\smallFrame\smallFrame.cmd">
             <Issue>tail. call pop ret is only supported on amd64</Issue>
@@ -223,13 +223,13 @@
             <Issue>needs triage</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)\JIT\opt\Tailcall\TailcallVerifyWithPrefix\TailcallVerifyWithPrefix.cmd">
-            <Issue>x86 JIT doesn't support implicit tail call optimization or tail. call pop ret sequence</Issue>
+            <Issue>2420. x86 JIT doesn't support implicit tail call optimization or tail. call pop ret sequence</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)\JIT\Performance\CodeQuality\Roslyn\CscBench\CscBench.cmd">
             <Issue>6844</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\Dev11\External\dev11_239804\ShowLocallocAlignment\ShowLocallocAlignment.cmd">
-            <Issue>needs triage</Issue>
+            <Issue>7163</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)\managed\Compilation\Compilation\Compilation.cmd">
             <Issue>needs triage</Issue>
