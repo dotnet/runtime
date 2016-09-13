@@ -7651,8 +7651,6 @@ public:
 
 #ifdef DEBUG
 
-    static bool s_dspMemStats; // Display per-phase memory statistics for every function
-
     template <typename T>
     T dspPtr(T p)
     {
@@ -7760,8 +7758,8 @@ public:
     codeOptimize compCodeOpt()
     {
 #if 0
-        // Switching between size & speed has measurable throughput impact 
-        // (3.5% on NGen mscorlib when measured). It used to be enabled for 
+        // Switching between size & speed has measurable throughput impact
+        // (3.5% on NGen mscorlib when measured). It used to be enabled for
         // DEBUG, but should generate identical code between CHK & RET builds,
         // so that's not acceptable.
         // TODO-Throughput: Figure out what to do about size vs. speed & throughput.
@@ -8073,6 +8071,9 @@ public:
     ArenaAllocator* compGetAllocator();
 
 #if MEASURE_MEM_ALLOC
+
+    static bool s_dspMemStats; // Display per-phase memory statistics for every function
+
     struct MemStats
     {
         unsigned allocCnt;                 // # of allocs
