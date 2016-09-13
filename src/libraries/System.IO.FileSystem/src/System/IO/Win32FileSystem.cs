@@ -45,6 +45,20 @@ namespace System.IO
             }
         }
 
+        public override void ReplaceFile(string sourceFullPath, string destFullPath, string destBackupFullPath, bool ignoreMetadataErrors)
+        {
+            int flags = Interop.mincore.REPLACEFILE_WRITE_THROUGH;
+            if (ignoreMetadataErrors)
+            {
+                flags |= Interop.mincore.REPLACEFILE_IGNORE_MERGE_ERRORS;
+            }
+
+            if (!Interop.mincore.ReplaceFile(destFullPath, sourceFullPath, destBackupFullPath, flags, IntPtr.Zero, IntPtr.Zero))
+            {
+                throw Win32Marshal.GetExceptionForWin32Error(Marshal.GetLastWin32Error());
+            }
+        }
+
         [System.Security.SecuritySafeCritical]
         public override void CreateDirectory(string fullPath)
         {
