@@ -61,6 +61,10 @@ for i in "$@"
             __UbuntuCodeName=wily
         fi
         ;;
+        jessie)
+        __UbuntuCodeName=jessie
+        __UbuntuRepo="http://ftp.debian.org/debian/"
+        ;;
         *)
         __UnprocessedBuildArgs="$__UnprocessedBuildArgs $i"
         ;;
