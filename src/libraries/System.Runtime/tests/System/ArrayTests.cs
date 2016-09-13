@@ -1450,7 +1450,6 @@ namespace System.Tests
         [Fact]
         public static void CreateInstance_LengthsNull_ThrowsArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>("lengths", () => Array.CreateInstance(typeof(int), null));
             Assert.Throws<ArgumentNullException>("lengths", () => Array.CreateInstance(typeof(int), null, new int[1]));
         }
 

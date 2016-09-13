@@ -20,7 +20,7 @@ namespace System.Xml.Serialization
 
         private XmlMapping _mapping;
 
-        public ReflectionXmlSerializationReader(XmlMapping mapping, XmlReader xmlReader, object events, string encodingStyle)
+        public ReflectionXmlSerializationReader(XmlMapping mapping, XmlReader xmlReader, XmlDeserializationEvents events, string encodingStyle)
         {
             Init(xmlReader, events, encodingStyle, tempAssembly: null);
             _mapping = mapping;

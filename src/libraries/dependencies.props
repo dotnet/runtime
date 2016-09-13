@@ -89,14 +89,6 @@
       <Version>1.0.0-prerelease-00807-03</Version>
     </StaticDependency>
 
-    <!--
-      The NETNative targeting pack is in the projectn-tfs build-info, but auto-upgrade isn't wanted.
-      Verify it at a static version rather than referencing the build-info.
-    -->
-    <StaticDependency Include="Microsoft.TargetingPack.Private.NETNative">
-      <Version>1.0.1-beta-24430-00</Version>
-    </StaticDependency>
-
     <DependencyBuildInfo Include="@(StaticDependency)">
       <PackageId>%(Identity)</PackageId>
       <UpdateStableVersions>true</UpdateStableVersions>
