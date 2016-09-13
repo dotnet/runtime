@@ -10071,6 +10071,7 @@ namespace System.Runtime.CompilerServices
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)][System.Security.SecuritySafeCriticalAttribute]
         public static void InitializeArray(System.Array array, System.RuntimeFieldHandle fldHandle) { }
         public static void RunClassConstructor(System.RuntimeTypeHandle type) { }
+        public static void RunModuleConstructor(System.ModuleHandle module) { }
     }
     [System.AttributeUsageAttribute((System.AttributeTargets)(972))]
     public sealed partial class SpecialNameAttribute : System.Attribute
