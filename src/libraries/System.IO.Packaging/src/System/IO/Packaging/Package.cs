@@ -146,7 +146,7 @@ namespace System.IO.Packaging
         /// <exception cref="IOException">If package to be created should have readwrite/write access and underlying stream is read only</exception>
         public static Package Open(Stream stream)
         {
-            return Open(stream, s_defaultStreamMode);
+            return Open(stream, s_defaultStreamMode, s_defaultStreamAccess);
         }
 
         /// <summary>
@@ -1176,6 +1176,7 @@ namespace System.IO.Packaging
         private static readonly FileShare s_defaultFileShare = FileShare.None;
 
         private static readonly FileMode s_defaultStreamMode = FileMode.Open;
+        private static readonly FileAccess s_defaultStreamAccess = FileAccess.Read;
 
         private FileAccess _openFileAccess;
         private FileMode _openFileMode;
