@@ -1690,33 +1690,16 @@ namespace System.IO
 
         public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
         {
-            // Validate arguments as would the base implementation
-            if (destination == null)
+            // If we're in sync mode, just use the shared CopyToAsync implementation that does
+            // typical read/write looping.  We also need to take this path if this is a derived
+            // instance from FileStream, as a derived type could have overridden ReadAsync, in which
+            // case our custom CopyToAsync implementation isn't necessarily correct.
+            if (!_isAsync || _parent.GetType() != typeof(FileStream))
             {
-                throw new ArgumentNullException(nameof(destination));
+                return StreamHelpers.ArrayPoolCopyToAsync(_parent, destination, bufferSize, cancellationToken);
             }
-            if (bufferSize <= 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(bufferSize), SR.ArgumentOutOfRange_NeedPosNum);
-            }
-            bool parentCanRead = _parent.CanRead;
-            if (!parentCanRead && !_parent.CanWrite)
-            {
-                throw new ObjectDisposedException(null, SR.ObjectDisposed_StreamClosed);
-            }
-            bool destinationCanWrite = destination.CanWrite;
-            if (!destination.CanRead && !destinationCanWrite)
-            {
-                throw new ObjectDisposedException(nameof(destination), SR.ObjectDisposed_StreamClosed);
-            }
-            if (!parentCanRead)
-            {
-                throw new NotSupportedException(SR.NotSupported_UnreadableStream);
-            }
-            if (!destinationCanWrite)
-            {
-                throw new NotSupportedException(SR.NotSupported_UnwritableStream);
-            }
+
+            StreamHelpers.ValidateCopyToAsyncArgs(_parent, destination, bufferSize);
 
             // Bail early for cancellation if cancellation has been requested
             if (cancellationToken.IsCancellationRequested)
@@ -1732,9 +1715,7 @@ namespace System.IO
 
             // Do the async copy, with differing implementations based on whether the FileStream was opened as async or sync
             Debug.Assert((_readPos == 0 && _readLen == 0 && _writePos >= 0) || (_writePos == 0 && _readPos <= _readLen), "We're either reading or writing, but not both.");
-            return _isAsync ?
-                AsyncModeCopyToAsync(destination, bufferSize, cancellationToken) :
-                base.CopyToAsync(destination, bufferSize, cancellationToken);
+            return AsyncModeCopyToAsync(destination, bufferSize, cancellationToken);
         }
 
         private async Task AsyncModeCopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)

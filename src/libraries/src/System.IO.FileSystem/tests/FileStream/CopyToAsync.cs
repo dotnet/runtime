@@ -37,6 +37,12 @@ namespace System.IO.Tests
             {
                 Assert.Throws<NotSupportedException>(() => { fs.CopyToAsync(new MemoryStream()); });
             }
+            using (FileStream src = new FileStream(GetTestFilePath(), FileMode.Create, FileAccess.ReadWrite, FileShare.None, 0x100, useAsync))
+            using (FileStream dst = new FileStream(GetTestFilePath(), FileMode.Create, FileAccess.ReadWrite, FileShare.None, 0x100, useAsync))
+            {
+                dst.Dispose();
+                Assert.Throws<ObjectDisposedException>(() => { src.CopyToAsync(dst); });
+            }
         }
 
         [Theory]
@@ -254,6 +260,42 @@ namespace System.IO.Tests
                     cts.Cancel();
                     await Assert.ThrowsAsync<OperationCanceledException>(() => clientTask);
                 }
+            }
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task DerivedFileStream_ReadAsyncInvoked(bool useAsync)
+        {
+            var expectedData = new byte[100];
+            new Random(42).NextBytes(expectedData);
+
+            string srcPath = GetTestFilePath();
+            File.WriteAllBytes(srcPath, expectedData);
+
+            bool readAsyncInvoked = false;
+            using (var fs = new FileStreamThatOverridesReadAsync(srcPath, useAsync, () => readAsyncInvoked = true))
+            {
+                await fs.CopyToAsync(new MemoryStream());
+                Assert.True(readAsyncInvoked);
+            }
+        }
+
+        private class FileStreamThatOverridesReadAsync : FileStream
+        {
+            private readonly Action _readAsyncInvoked;
+
+            internal FileStreamThatOverridesReadAsync(string path, bool useAsync, Action readAsyncInvoked) : 
+                base(path, FileMode.Open, FileAccess.Read, FileShare.Read, 0x1000, useAsync)
+            {
+                _readAsyncInvoked = readAsyncInvoked;
+            }
+
+            public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+            {
+                _readAsyncInvoked();
+                return base.ReadAsync(buffer, offset, count, cancellationToken);
             }
         }
 
