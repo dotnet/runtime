@@ -1688,20 +1688,43 @@ namespace System.IO
         public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
         {
             // Validate arguments as would the base implementation
-            if (destination == null) throw new ArgumentNullException(nameof(destination));
-            if (bufferSize <= 0) throw new ArgumentOutOfRangeException(nameof(bufferSize), SR.ArgumentOutOfRange_NeedPosNum);
+            if (destination == null)
+            {
+                throw new ArgumentNullException(nameof(destination));
+            }
+            if (bufferSize <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(bufferSize), SR.ArgumentOutOfRange_NeedPosNum);
+            }
             bool parentCanRead = _parent.CanRead;
-            if (!parentCanRead && !_parent.CanWrite) throw new ObjectDisposedException(null, SR.ObjectDisposed_StreamClosed);
+            if (!parentCanRead && !_parent.CanWrite)
+            {
+                throw new ObjectDisposedException(null, SR.ObjectDisposed_StreamClosed);
+            }
             bool destinationCanWrite = destination.CanWrite;
-            if (!destination.CanRead && !destinationCanWrite) throw new ObjectDisposedException(nameof(destination), SR.ObjectDisposed_StreamClosed);
-            if (!parentCanRead) throw new NotSupportedException(SR.NotSupported_UnreadableStream);
-            if (!destinationCanWrite) throw new NotSupportedException(SR.NotSupported_UnwritableStream);
-            if (_handle.IsClosed) throw Error.GetFileNotOpen();
+            if (!destination.CanRead && !destinationCanWrite)
+            {
+                throw new ObjectDisposedException(nameof(destination), SR.ObjectDisposed_StreamClosed);
+            }
+            if (!parentCanRead)
+            {
+                throw new NotSupportedException(SR.NotSupported_UnreadableStream);
+            }
+            if (!destinationCanWrite)
+            {
+                throw new NotSupportedException(SR.NotSupported_UnwritableStream);
+            }
 
             // Bail early for cancellation if cancellation has been requested
             if (cancellationToken.IsCancellationRequested)
             {
                 return Task.FromCanceled<int>(cancellationToken);
+            }
+
+            // Fail if the file was closed
+            if (_handle.IsClosed)
+            {
+                throw Error.GetFileNotOpen();
             }
 
             // Do the async copy, with differing implementations based on whether the FileStream was opened as async or sync
@@ -1745,7 +1768,10 @@ namespace System.IO
             bool canSeek = _parent.CanSeek;
             if (canSeek)
             {
-                if (_exposedHandle) VerifyOSHandlePosition();
+                if (_exposedHandle)
+                {
+                    VerifyOSHandlePosition();
+                }
                 readAwaitable._position = _pos;
             }
 
