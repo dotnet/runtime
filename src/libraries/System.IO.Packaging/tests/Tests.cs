@@ -1949,6 +1949,17 @@ namespace System.IO.Packaging.Tests
         }
 
         [Fact]
+        public void PackageOpenStream_VerifyDefaultAccess()
+        {
+            var docName = "plain.docx";
+            using (Package package = Package.Open(File.OpenRead(docName)))
+            {
+                var partCount = package.GetParts().Count();
+                Assert.Equal(10, partCount);
+            }
+        }
+
+        [Fact]
         public void T011_PackageOpen()
         {
             var docName = "plain.docx";
