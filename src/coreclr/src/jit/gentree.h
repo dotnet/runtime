@@ -1511,6 +1511,8 @@ public:
     // Get the parent of this node, and optionally capture the pointer to the child so that it can be modified.
     GenTreePtr gtGetParent(GenTreePtr** parentChildPtrPtr);
 
+    void ReplaceOperand(GenTree** useEdge, GenTree* replacement);
+
     inline GenTreePtr gtEffectiveVal(bool commaOnly = false);
 
     // Return the child of this node if it is a GT_RELOAD or GT_COPY; otherwise simply return the node itself
@@ -3360,6 +3362,8 @@ struct GenTreeCall final : public GenTree
     }
 
     bool IsHelperCall(Compiler* compiler, unsigned helper) const;
+
+    void ReplaceCallOperand(GenTree** operandUseEdge, GenTree* replacement);
 
     GenTreeCall(var_types type) : GenTree(GT_CALL, type)
     {
