@@ -291,4 +291,7 @@
   <data name="UnknownError_Num" xml:space="preserve">
     <value>Unknown error '{0}'.</value>
   </data>
+  <data name="ObjectDisposed_StreamClosed" xml:space="preserve">
+    <value>Cannot access a closed Stream.</value>
+  </data>
 </root>
