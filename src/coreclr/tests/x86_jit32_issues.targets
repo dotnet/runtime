@@ -320,7 +320,7 @@
             <Issue>5286</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\Dev11\External\dev11_239804\ShowLocallocAlignment\ShowLocallocAlignment.cmd">
-            <Issue>needs triage</Issue>
+            <Issue>7163</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\JitBlue\GitHub_4044\GitHub_4044\GitHub_4044.cmd">
             <Issue>needs triage</Issue>
