@@ -1740,6 +1740,44 @@ bool GenTreeCall::IsHelperCall(Compiler* compiler, unsigned helper) const
     return IsHelperCall(compiler->eeFindHelper(helper));
 }
 
+//------------------------------------------------------------------------
+// GenTreeCall::ReplaceCallOperand:
+//    Replaces a given operand to a call node and updates the call
+//    argument table if necessary.
+//
+// Arguments:
+//    useEdge - the use edge that points to the operand to be replaced.
+//    replacement - the replacement node.
+//
+void GenTreeCall::ReplaceCallOperand(GenTree** useEdge, GenTree* replacement)
+{
+    assert(useEdge != nullptr);
+    assert(replacement != nullptr);
+    assert(TryGetUse(*useEdge, &useEdge));
+
+    GenTree* originalOperand = *useEdge;
+    *useEdge = replacement;
+
+    const bool isArgument = (replacement != gtControlExpr) &&
+        ((gtCallType != CT_INDIRECT) || ((replacement != gtCallCookie) && (replacement != gtCallAddr)));
+
+    if (isArgument)
+    {
+        if ((originalOperand->gtFlags & GTF_LATE_ARG) != 0)
+        {
+            replacement->gtFlags |= GTF_LATE_ARG;
+        }
+        else
+        {
+            assert((replacement->gtFlags & GTF_LATE_ARG) == 0);
+
+            fgArgTabEntryPtr fp = Compiler::gtArgEntryByNode(this, originalOperand);
+            assert(fp->node == originalOperand);
+            fp->node = replacement;
+        }
+    }
+}
+
 /*****************************************************************************
  *
  *  Returns non-zero if the two trees are identical.
@@ -6003,6 +6041,9 @@ GenTreePtr* GenTree::gtGetChildPointer(GenTreePtr parent)
 
 bool GenTree::TryGetUse(GenTree* def, GenTree*** use)
 {
+    assert(def != nullptr);
+    assert(use != nullptr);
+
     for (GenTree** useEdge : UseEdges())
     {
         if (*useEdge == def)
@@ -6013,6 +6054,32 @@ bool GenTree::TryGetUse(GenTree* def, GenTree*** use)
     }
 
     return false;
+}
+
+//------------------------------------------------------------------------
+// GenTree::ReplaceOperand:
+//    Replace a given operand to this node with a new operand. If the
+//    current node is a call node, this will also udpate the call
+//    argument table if necessary.
+//
+// Arguments:
+//    useEdge - the use edge that points to the operand to be replaced.
+//    replacement - the replacement node.
+//
+void GenTree::ReplaceOperand(GenTree** useEdge, GenTree* replacement)
+{
+    assert(useEdge != nullptr);
+    assert(replacement != nullptr);
+    assert(TryGetUse(*useEdge, &useEdge));
+
+    if (OperGet() == GT_CALL)
+    {
+        AsCall()->ReplaceCallOperand(useEdge, replacement);
+    }
+    else
+    {
+        *useEdge = replacement;
+    }
 }
 
 //------------------------------------------------------------------------
@@ -8101,12 +8168,31 @@ GenTreePtr Compiler::gtReplaceTree(GenTreePtr stmt, GenTreePtr tree, GenTreePtr 
     {
         assert(treeParent != nullptr);
 
+        // Check to see if the node to be replaced is a call argument and if so,
+        // set `treeParent` to the call node.
+        GenTree* cursor = treeParent;
+        while ((cursor != nullptr) && (cursor->OperGet() == GT_LIST))
+        {
+            cursor = cursor->gtNext;
+        }
+
+        if ((cursor != nullptr) && (cursor->OperGet() == GT_CALL))
+        {
+            treeParent = cursor;
+        }
+
+#ifdef DEBUG
+        GenTree** useEdge;
+        assert(treeParent->TryGetUse(tree, &useEdge));
+        assert(useEdge == treePtr);
+#endif // DEBUG
+
         GenTreePtr treeFirstNode = fgGetFirstNode(tree);
         GenTreePtr treeLastNode  = tree;
         GenTreePtr treePrevNode  = treeFirstNode->gtPrev;
         GenTreePtr treeNextNode  = treeLastNode->gtNext;
 
-        *treePtr = replacementTree;
+        treeParent->ReplaceOperand(treePtr, replacementTree);
 
         // Build the linear order for "replacementTree".
         fgSetTreeSeq(replacementTree, treePrevNode);
@@ -8132,48 +8218,6 @@ GenTreePtr Compiler::gtReplaceTree(GenTreePtr stmt, GenTreePtr tree, GenTreePtr 
             treeLastNode->gtNext = treeNextNode;
             treeNextNode->gtPrev = treeLastNode;
         }
-
-        bool       needFixupCallArg = false;
-        GenTreePtr node             = treeParent;
-
-        // If we have replaced an arg, then update pointers in argtable.
-        do
-        {
-            // Look for the first enclosing callsite
-            switch (node->OperGet())
-            {
-                case GT_LIST:
-                case GT_ARGPLACE:
-                    // "tree" is likely an argument of a call.
-                    needFixupCallArg = true;
-                    break;
-
-                case GT_CALL:
-                    if (needFixupCallArg)
-                    {
-                        // We have replaced an arg, so update pointers in argtable.
-                        fgFixupArgTabEntryPtr(node, tree, replacementTree);
-                        needFixupCallArg = false;
-                    }
-                    break;
-
-                default:
-                    // "tree" is unlikely an argument of a call.
-                    needFixupCallArg = false;
-                    break;
-            }
-
-            if (needFixupCallArg)
-            {
-                // Keep tracking to update the first enclosing call.
-                node = node->gtGetParent(nullptr);
-            }
-            else
-            {
-                // Stop tracking.
-                node = nullptr;
-            }
-        } while (node != nullptr);
 
         // Propagate side-effect flags of "replacementTree" to its parents if needed.
         gtUpdateSideEffects(treeParent, tree->gtFlags, replacementTree->gtFlags);

@@ -4381,13 +4381,6 @@ private:
     GenTree* fgInsertCommaFormTemp(GenTree** ppTree, CORINFO_CLASS_HANDLE structType = nullptr);
     GenTree* fgMakeMultiUse(GenTree** ppTree);
 
-    //                  After replacing oldChild with newChild, fixup the fgArgTabEntryPtr
-    //                  if it happens to be an argument to a call.
-    void fgFixupIfCallArg(ArrayStack<GenTree*>* parentStack, GenTree* oldChild, GenTree* newChild);
-
-public:
-    void fgFixupArgTabEntryPtr(GenTreePtr parentCall, GenTreePtr oldArg, GenTreePtr newArg);
-
 private:
     //                  Recognize a bitwise rotation pattern and convert into a GT_ROL or a GT_ROR node.
     GenTreePtr fgRecognizeAndMorphBitwiseRotation(GenTreePtr tree);
