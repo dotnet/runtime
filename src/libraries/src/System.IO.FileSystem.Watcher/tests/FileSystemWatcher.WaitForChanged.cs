@@ -9,7 +9,6 @@ namespace System.IO.Tests
 {
     public partial class WaitForChangedTests : FileSystemWatcherTest
     {
-        private const int SuccessTimeoutMilliseconds = 10000;
         private const int BetweenOperationsDelayMilliseconds = 100;
 
         [Fact]
@@ -126,7 +125,7 @@ namespace System.IO.Tests
         }
 
         [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/216
-        [OuterLoop]
+        [OuterLoop("This test has a longer than average timeout and may fail intermittently")]
         [InlineData(WatcherChangeTypes.Created)]
         [InlineData(WatcherChangeTypes.Deleted)]
         public void CreatedDeleted_Success(WatcherChangeTypes changeType)
@@ -134,7 +133,7 @@ namespace System.IO.Tests
             using (var testDirectory = new TempDirectory(GetTestFilePath()))
             using (var fsw = new FileSystemWatcher(testDirectory.Path))
             {
-                Task<WaitForChangedResult> t = Task.Run(() => fsw.WaitForChanged(changeType, SuccessTimeoutMilliseconds));
+                Task<WaitForChangedResult> t = Task.Run(() => fsw.WaitForChanged(changeType, LongWaitTimeout));
                 while (!t.IsCompleted)
                 {
                     string path = Path.Combine(testDirectory.Path, Path.GetRandomFileName());
@@ -155,7 +154,7 @@ namespace System.IO.Tests
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/216
-        [OuterLoop]
+        [OuterLoop("This test has a longer than average timeout and may fail intermittently")]
         public void Changed_Success()
         {
             using (var testDirectory = new TempDirectory(GetTestFilePath()))
@@ -164,7 +163,7 @@ namespace System.IO.Tests
                 string name = Path.Combine(testDirectory.Path, Path.GetRandomFileName());
                 File.Create(name).Dispose();
 
-                Task<WaitForChangedResult> t = Task.Run(() => fsw.WaitForChanged(WatcherChangeTypes.Changed, SuccessTimeoutMilliseconds));
+                Task<WaitForChangedResult> t = Task.Run(() => fsw.WaitForChanged(WatcherChangeTypes.Changed, LongWaitTimeout));
                 while (!t.IsCompleted)
                 {
                     File.AppendAllText(name, "text");
@@ -180,14 +179,14 @@ namespace System.IO.Tests
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/216
-        [OuterLoop]
+        [OuterLoop("This test has a longer than average timeout and may fail intermittently")]
         public void Renamed_Success()
         {
             using (var testDirectory = new TempDirectory(GetTestFilePath()))
             using (var fsw = new FileSystemWatcher(testDirectory.Path))
             {
                 Task<WaitForChangedResult> t = Task.Run(() =>
-                    fsw.WaitForChanged(WatcherChangeTypes.Renamed | WatcherChangeTypes.Created, SuccessTimeoutMilliseconds)); // on some OSes, the renamed might come through as Deleted/Created
+                    fsw.WaitForChanged(WatcherChangeTypes.Renamed | WatcherChangeTypes.Created, LongWaitTimeout)); // on some OSes, the renamed might come through as Deleted/Created
 
                 string name = Path.Combine(testDirectory.Path, Path.GetRandomFileName());
                 File.Create(name).Dispose();

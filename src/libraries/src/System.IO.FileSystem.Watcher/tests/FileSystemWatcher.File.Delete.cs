@@ -69,7 +69,7 @@ namespace System.IO.Tests
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/216
-        [OuterLoop]
+        [OuterLoop("This test has a longer than average timeout and may fail intermittently")]
         public void FileSystemWatcher_File_Delete_DeepDirectoryStructure()
         {
             using (var dir = new TempDirectory(GetTestFilePath()))
@@ -85,7 +85,7 @@ namespace System.IO.Tests
                 Action cleanup = () => File.Create(fileName).Dispose();
                 cleanup();
 
-                ExpectEvent(watcher, WatcherChangeTypes.Deleted, action, cleanup, fileName, timeout: 10000);
+                ExpectEvent(watcher, WatcherChangeTypes.Deleted, action, cleanup, fileName, LongWaitTimeout);
             }
         }
 
