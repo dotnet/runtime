@@ -2,16 +2,75 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using Xunit;
 
-namespace System.ComponentModel.DataAnnotations
+namespace System.ComponentModel.DataAnnotations.Tests
 {
-    public class RangeAttributeTests
+    public class RangeAttributeTests : ValidationAttributeTestBase
     {
-        private static readonly ValidationContext s_testValidationContext = new ValidationContext(new object());
+        protected override IEnumerable<TestCase> ValidValues()
+        {
+            RangeAttribute intRange = new RangeAttribute(1, 3);
+            yield return new TestCase(intRange, null);
+            yield return new TestCase(intRange, string.Empty);
+            yield return new TestCase(intRange, 1);
+            yield return new TestCase(intRange, 2);
+            yield return new TestCase(intRange, 3);
+
+            RangeAttribute doubleRange = new RangeAttribute(1.0, 3.0);
+            yield return new TestCase(doubleRange, null);
+            yield return new TestCase(doubleRange, string.Empty);
+            yield return new TestCase(doubleRange, 1.0);
+            yield return new TestCase(doubleRange, 2.0);
+            yield return new TestCase(doubleRange, 3.0);
+
+            RangeAttribute stringIntRange = new RangeAttribute(typeof(int), "1", "3");
+            yield return new TestCase(stringIntRange, null);
+            yield return new TestCase(stringIntRange, string.Empty);
+            yield return new TestCase(stringIntRange, 1);
+            yield return new TestCase(stringIntRange, "1");
+            yield return new TestCase(stringIntRange, 2);
+            yield return new TestCase(stringIntRange, "2");
+            yield return new TestCase(stringIntRange, 3);
+            yield return new TestCase(stringIntRange, "3");
+            
+            RangeAttribute stringDoubleRange = new RangeAttribute(typeof(double), (1.0).ToString("F1"), (3.0).ToString("F1"));
+            yield return new TestCase(stringDoubleRange, null);
+            yield return new TestCase(stringDoubleRange, string.Empty);
+            yield return new TestCase(stringDoubleRange, 1.0);
+            yield return new TestCase(stringDoubleRange, (1.0).ToString("F1"));
+            yield return new TestCase(stringDoubleRange, 2.0);
+            yield return new TestCase(stringDoubleRange, (2.0).ToString("F1"));
+            yield return new TestCase(stringDoubleRange, 3.0);
+            yield return new TestCase(stringDoubleRange, (3.0).ToString("F1"));
+        }
+
+        protected override IEnumerable<TestCase> InvalidValues()
+        {
+            RangeAttribute intRange = new RangeAttribute(1, 3);
+            yield return new TestCase(intRange, 0);
+            yield return new TestCase(intRange, 4);
+
+            RangeAttribute doubleRange = new RangeAttribute(1.0, 3.0);
+            yield return new TestCase(doubleRange, 0.9999999);
+            yield return new TestCase(doubleRange, 3.0000001);
+
+            RangeAttribute stringIntRange = new RangeAttribute(typeof(int), "1", "3");
+            yield return new TestCase(stringIntRange, 0);
+            yield return new TestCase(stringIntRange, "0");
+            yield return new TestCase(stringIntRange, 4);
+            yield return new TestCase(stringIntRange, "4");
+
+            RangeAttribute stringDoubleRange = new RangeAttribute(typeof(double), (1.0).ToString("F1"), (3.0).ToString("F1"));
+            yield return new TestCase(stringDoubleRange, 0.9999999);
+            yield return new TestCase(stringDoubleRange, (0.9999999).ToString());
+            yield return new TestCase(stringDoubleRange, 3.0000001);
+            yield return new TestCase(stringDoubleRange, (3.0000001).ToString());
+        }
 
         [Fact]
-        public static void Can_construct_and_get_minimum_and_maximum_for_int_constructor()
+        public static void Ctor_Int_Int()
         {
             var attribute = new RangeAttribute(1, 3);
             Assert.Equal(1, attribute.Minimum);
@@ -20,7 +79,7 @@ namespace System.ComponentModel.DataAnnotations
         }
 
         [Fact]
-        public static void Can_construct_and_get_minimum_and_maximum_for_double_constructor()
+        public static void Ctor_Double_Double()
         {
             var attribute = new RangeAttribute(1.0, 3.0);
             Assert.Equal(1.0, attribute.Minimum);
@@ -28,182 +87,56 @@ namespace System.ComponentModel.DataAnnotations
             Assert.Equal(typeof(double), attribute.OperandType);
         }
 
-        [Fact]
-        public static void Can_construct_and_get_minimum_and_maximum_for_type_with_strings_constructor()
+        [Theory]
+        [InlineData(null)]
+        [InlineData(typeof(object))]
+        public static void Ctor_Type_String_String(Type type)
         {
-            var attribute = new RangeAttribute(null, "SomeMinimum", "SomeMaximum");
+            var attribute = new RangeAttribute(type, "SomeMinimum", "SomeMaximum");
             Assert.Equal("SomeMinimum", attribute.Minimum);
             Assert.Equal("SomeMaximum", attribute.Maximum);
-            Assert.Equal(null, attribute.OperandType);
+            Assert.Equal(type, attribute.OperandType);
         }
 
-        [Fact]
-        public static void Can_validate_valid_values_for_int_constructor()
+        [Theory]
+        [InlineData(null)]
+        [InlineData(typeof(object))]
+        public static void Validate_InvalidOperandType_ThrowsInvalidOperationException(Type type)
         {
-            var attribute = new RangeAttribute(1, 3);
-            AssertEx.DoesNotThrow(() => attribute.Validate(null, s_testValidationContext)); // null is valid
-            AssertEx.DoesNotThrow(() => attribute.Validate(string.Empty, s_testValidationContext)); // empty string is valid
-            AssertEx.DoesNotThrow(() => attribute.Validate(1, s_testValidationContext));
-            AssertEx.DoesNotThrow(() => attribute.Validate(2, s_testValidationContext));
-            AssertEx.DoesNotThrow(() => attribute.Validate(3, s_testValidationContext));
+            var attribute = new RangeAttribute(type, "someMinimum", "someMaximum");
+            Assert.Throws<InvalidOperationException>(() => attribute.Validate("Any", new ValidationContext(new object())));
         }
 
         [Fact]
-        public static void Can_validate_invalid_values_for_int_constructor()
-        {
-            var attribute = new RangeAttribute(1, 3);
-            Assert.Throws<ValidationException>(() => attribute.Validate(0, s_testValidationContext));
-            Assert.Throws<ValidationException>(() => attribute.Validate(4, s_testValidationContext));
-        }
-
-        [Fact]
-        public static void Can_validate_valid_values_for_double_constructor()
-        {
-            var attribute = new RangeAttribute(1.0, 3.0);
-            AssertEx.DoesNotThrow(() => attribute.Validate(null, s_testValidationContext)); // null is valid
-            AssertEx.DoesNotThrow(() => attribute.Validate(string.Empty, s_testValidationContext)); // empty string is valid
-            AssertEx.DoesNotThrow(() => attribute.Validate(1.0, s_testValidationContext));
-            AssertEx.DoesNotThrow(() => attribute.Validate(2.0, s_testValidationContext));
-            AssertEx.DoesNotThrow(() => attribute.Validate(3.0, s_testValidationContext));
-        }
-
-        [Fact]
-        public static void Can_validate_invalid_values_for_double_constructor()
-        {
-            var attribute = new RangeAttribute(1.0, 3.0);
-            Assert.Throws<ValidationException>(() => attribute.Validate(0.9999999, s_testValidationContext));
-            Assert.Throws<ValidationException>(() => attribute.Validate(3.0000001, s_testValidationContext));
-        }
-
-        [Fact]
-        public static void Can_validate_valid_values_for_integers_using_type_and_strings_constructor()
-        {
-            var attribute = new RangeAttribute(typeof(int), "1", "3");
-            AssertEx.DoesNotThrow(() => attribute.Validate(null, s_testValidationContext)); // null is valid
-            AssertEx.DoesNotThrow(() => attribute.Validate(string.Empty, s_testValidationContext)); // empty string is valid
-            AssertEx.DoesNotThrow(() => attribute.Validate(1, s_testValidationContext));
-            AssertEx.DoesNotThrow(() => attribute.Validate("1", s_testValidationContext));
-            AssertEx.DoesNotThrow(() => attribute.Validate(2, s_testValidationContext));
-            AssertEx.DoesNotThrow(() => attribute.Validate("2", s_testValidationContext));
-            AssertEx.DoesNotThrow(() => attribute.Validate(3, s_testValidationContext));
-            AssertEx.DoesNotThrow(() => attribute.Validate("3", s_testValidationContext));
-        }
-
-        [Fact]
-        public static void Can_validate_invalid_values_for_integers_using_type_and_strings_constructor()
-        {
-            var attribute = new RangeAttribute(typeof(int), "1", "3");
-            Assert.Throws<ValidationException>(() => attribute.Validate(0, s_testValidationContext));
-            Assert.Throws<ValidationException>(() => attribute.Validate("0", s_testValidationContext));
-            Assert.Throws<ValidationException>(() => attribute.Validate(4, s_testValidationContext));
-            Assert.Throws<ValidationException>(() => attribute.Validate("4", s_testValidationContext));
-        }
-
-        [Fact]
-        public static void Can_validate_valid_values_for_doubles_using_type_and_strings_constructor()
-        {
-            var attribute = new RangeAttribute(typeof(double), (1.0).ToString("F1"), (3.0).ToString("F1"));
-            AssertEx.DoesNotThrow(() => attribute.Validate(null, s_testValidationContext)); // null is valid
-            AssertEx.DoesNotThrow(() => attribute.Validate(string.Empty, s_testValidationContext)); // empty string is valid
-            AssertEx.DoesNotThrow(() => attribute.Validate(1.0, s_testValidationContext));
-            AssertEx.DoesNotThrow(() => attribute.Validate((1.0).ToString("F1"), s_testValidationContext));
-            AssertEx.DoesNotThrow(() => attribute.Validate(2.0, s_testValidationContext));
-            AssertEx.DoesNotThrow(() => attribute.Validate((2.0).ToString("F1"), s_testValidationContext));
-            AssertEx.DoesNotThrow(() => attribute.Validate(3.0, s_testValidationContext));
-            AssertEx.DoesNotThrow(() => attribute.Validate((3.0).ToString("F1"), s_testValidationContext));
-        }
-
-        [Fact]
-        public static void Can_validate_invalid_values_for_doubles_using_type_and_strings_constructor()
-        {
-            var attribute = new RangeAttribute(typeof(double), (1.0).ToString("F1"), (3.0).ToString("F1"));
-            Assert.Throws<ValidationException>(() => attribute.Validate(0.9999999, s_testValidationContext));
-            Assert.Throws<ValidationException>(() => attribute.Validate((0.9999999).ToString(), s_testValidationContext));
-            Assert.Throws<ValidationException>(() => attribute.Validate(3.0000001, s_testValidationContext));
-            Assert.Throws<ValidationException>(() => attribute.Validate((3.0000001).ToString(), s_testValidationContext));
-        }
-
-        [Fact]
-        public static void Validation_throws_InvalidOperationException_for_null_OperandType()
-        {
-            var attribute = new RangeAttribute(null, "someMinimum", "someMaximum");
-            Assert.Null(attribute.OperandType);
-            Assert.Throws<InvalidOperationException>(
-                () => attribute.Validate("Does not matter - OperandType is null", s_testValidationContext));
-        }
-
-        [Fact]
-        public static void Validation_throws_InvalidOperationException_for_OperandType_which_is_not_assignable_from_IComparable()
-        {
-            var attribute = new RangeAttribute(typeof(InvalidOperandType), "someMinimum", "someMaximum");
-            Assert.Equal(typeof(InvalidOperandType), attribute.OperandType);
-            Assert.Throws<InvalidOperationException>(
-                () => attribute.Validate("Does not matter - OperandType is not assignable from IComparable", s_testValidationContext));
-        }
-
-        [Fact]
-        public static void Validation_throws_InvalidOperationException_if_minimum_is_greater_than_maximum()
+        public static void Validate_MinimumGreaterThanMaximum_ThrowsInvalidOperationException()
         {
             var attribute = new RangeAttribute(3, 1);
-            Assert.Throws<InvalidOperationException>(
-                () => attribute.Validate("Does not matter - minimum > maximum", s_testValidationContext));
+            Assert.Throws<InvalidOperationException>(() => attribute.Validate("Any", new ValidationContext(new object())));
 
             attribute = new RangeAttribute(3.0, 1.0);
-            Assert.Throws<InvalidOperationException>(
-                () => attribute.Validate("Does not matter - minimum > maximum", s_testValidationContext));
+            Assert.Throws<InvalidOperationException>(() => attribute.Validate("Any", new ValidationContext(new object())));
 
             attribute = new RangeAttribute(typeof(int), "3", "1");
-            Assert.Throws<InvalidOperationException>(
-                () => attribute.Validate("Does not matter - minimum > maximum", s_testValidationContext));
+            Assert.Throws<InvalidOperationException>(() => attribute.Validate("Any", new ValidationContext(new object())));
 
             attribute = new RangeAttribute(typeof(double), (3.0).ToString("F1"), (1.0).ToString("F1"));
-            Assert.Throws<InvalidOperationException>(
-                () => attribute.Validate("Does not matter - minimum > maximum", s_testValidationContext));
+            Assert.Throws<InvalidOperationException>(() => attribute.Validate("Any", new ValidationContext(new object())));
 
             attribute = new RangeAttribute(typeof(string), "z", "a");
-            Assert.Throws<InvalidOperationException>(
-                () => attribute.Validate("Does not matter - minimum > maximum", s_testValidationContext));
+            Assert.Throws<InvalidOperationException>(() => attribute.Validate("Any", new ValidationContext(new object())));
         }
 
-        [Fact]
-        public static void Validation_throws_FormatException_if_min_and_max_values_cannot_be_converted_to_DateTime_OperandType()
+        [Theory]
+        [InlineData(typeof(DateTime), "Cannot Convert", "2014-03-19")]
+        [InlineData(typeof(DateTime), "2014-03-19", "Cannot Convert")]
+        [InlineData(typeof(int), "Cannot Convert", "3")]
+        [InlineData(typeof(int), "1", "Cannot Convert")]
+        [InlineData(typeof(double), "Cannot Convert", "3")]
+        [InlineData(typeof(double), "1", "Cannot Convert")]
+        public static void Validate_MinimumOrMaximumCantBeConvertedToType_ThrowsFormatException(Type type, string minimum, string maximum)
         {
-            var attribute = new RangeAttribute(typeof(DateTime), "Cannot Convert", "2014-03-19");
-            Assert.Throws<FormatException>(
-                () => attribute.Validate("Does not matter - cannot convert minimum to DateTime", s_testValidationContext));
-
-            attribute = new RangeAttribute(typeof(DateTime), "2014-03-19", "Cannot Convert");
-            Assert.Throws<FormatException>(
-                () => attribute.Validate("Does not matter - cannot convert maximum to DateTime", s_testValidationContext));
-        }
-
-        [Fact]
-        public static void Validation_throws_Exception_if_min_and_max_values_cannot_be_converted_to_int_OperandType()
-        {
-            var attribute = new RangeAttribute(typeof(int), "Cannot Convert", "3");
-            Assert.Throws<FormatException>(
-                () => attribute.Validate("Does not matter - cannot convert minimum to int", s_testValidationContext));
-
-            attribute = new RangeAttribute(typeof(int), "1", "Cannot Convert");
-            Assert.Throws<FormatException>(
-                () => attribute.Validate("Does not matter - cannot convert maximum to int", s_testValidationContext));
-        }
-
-        [Fact]
-        public static void Validation_throws_Exception_if_min_and_max_values_cannot_be_converted_to_double_OperandType()
-        {
-            var attribute = new RangeAttribute(typeof(double), "Cannot Convert", (3.0).ToString("F1"));
-            Assert.Throws<FormatException>(
-                () => attribute.Validate("Does not matter - cannot convert minimum to double", s_testValidationContext));
-
-            attribute = new RangeAttribute(typeof(double), (1.0).ToString("F1"), "Cannot Convert");
-            Assert.Throws<FormatException>(
-                () => attribute.Validate("Does not matter - cannot convert maximum to double", s_testValidationContext));
-        }
-
-        public class InvalidOperandType // does not implement IComparable
-        {
-            public InvalidOperandType(string message) { }
+            RangeAttribute attribute = new RangeAttribute(type, minimum, maximum);
+            Assert.Throws<FormatException>(() => attribute.Validate("Any", new ValidationContext(new object())));
         }
     }
 }

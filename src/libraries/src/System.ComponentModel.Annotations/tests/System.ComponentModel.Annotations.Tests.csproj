@@ -17,7 +17,6 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="ValidationAttributeTestBase.cs" />
-    <Compile Include="AssertEx.cs" />
     <Compile Include="AssociationAttributeTests.cs" />
     <Compile Include="CompareAttributeTests.cs" />
     <Compile Include="CreditCardAttributeTests.cs" />

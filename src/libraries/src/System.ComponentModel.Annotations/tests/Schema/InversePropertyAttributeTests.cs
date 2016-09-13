@@ -2,25 +2,27 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using Xunit;
 
-namespace System.ComponentModel.DataAnnotations.Schema
+namespace System.ComponentModel.DataAnnotations.Schema.Tests
 {
     public class InversePropertyAttributeTests
     {
-        [Fact]
-        public static void Property_can_be_got_and_set()
+        [Theory]
+        [InlineData("Gammer Brevis")]
+        public static void Ctor_String(string property)
         {
-            Assert.Equal("Gammer Brevis", new InversePropertyAttribute("Gammer Brevis").Property);
+            InversePropertyAttribute attribute = new InversePropertyAttribute(property);
+            Assert.Equal(property, attribute.Property);
         }
 
-        [Fact]
-        public static void Property_cannot_be_set_to_null_or_whitespace()
+        [Theory]
+        [InlineData(null)]
+        [InlineData("")]
+        [InlineData(" \t\r\n")]
+        public static void Ctor_String_NullOrWhitespaceProperty_ThrowsArgumentException(string property)
         {
-            Assert.Throws<ArgumentException>(() => new InversePropertyAttribute(null));
-            Assert.Throws<ArgumentException>(() => new InversePropertyAttribute(string.Empty));
-            Assert.Throws<ArgumentException>(() => new InversePropertyAttribute(" \t\r\n"));
+            Assert.Throws<ArgumentException>(null, () => new InversePropertyAttribute(property));
         }
     }
 }
