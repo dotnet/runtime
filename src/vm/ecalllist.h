@@ -1829,8 +1829,8 @@ FCFuncStart(gCompilerFuncs)
     FCFuncElement("GetObjectValue", ObjectNative::GetObjectValue)
     FCIntrinsic("InitializeArray", ArrayNative::InitializeArray, CORINFO_INTRINSIC_InitializeArray)
     FCFuncElement("_RunClassConstructor", ReflectionInvocation::RunClassConstructor)
-#ifndef FEATURE_CORECLR
     FCFuncElement("_RunModuleConstructor", ReflectionInvocation::RunModuleConstructor)
+#ifndef FEATURE_CORECLR
     FCFuncElement("_PrepareMethod", ReflectionInvocation::PrepareMethod)
 #endif // !FEATURE_CORECLR
     QCFuncElement("_CompileMethod", ReflectionInvocation::CompileMethod)
