@@ -27,15 +27,17 @@ def static getOSGroup(def os) {
 
 [true, false].each { isPR ->
     ['Windows_NT'].each { os ->
+        def architecture = 'x64'
+        def configuration = 'Release'
         def newJob = job(Utilities.getFullJobName(project, "perf_${os}", isPR)) {
             // Set the label.
             label('performance')
             steps {
                     // Batch
                     batchFile("C:\\tools\\nuget install Microsoft.BenchView.JSONFormat -Source http://benchviewtestfeed.azurewebsites.net/nuget -OutputDirectory C:\\tools -Prerelease")
-                    batchFile("python C:\\tools\\Microsoft.BenchView.JSONFormat.0.1.0-pre008\\tools\\machinedata.py")
-                    batchFile("set __TestIntermediateDir=int&&build.cmd release x64")
-                    batchFile("tests\\runtest.cmd release x64")
+                    batchFile("python C:\\tools\\Microsoft.BenchView.JSONFormat.0.1.0-pre010\\tools\\machinedata.py")
+                    batchFile("set __TestIntermediateDir=int&&build.cmd release ${architecture}")
+                    batchFile("tests\\runtest.cmd release ${architecture}")
                     batchFile("tests\\scripts\\run-xunit-perf.cmd")
             }
         }
@@ -69,23 +71,40 @@ def static getOSGroup(def os) {
         def osGroup = getOSGroup(os)
         def architecture = 'x64'
         def configuration = 'Release'
-        def newJob = job(Utilities.getFullJobName(project, "perf_${osGroup}", isPR)) {
+        def newJob = job(Utilities.getFullJobName(project, "perf_${os}", isPR)) {
             steps {
                 shell("sudo bash ./tests/scripts/perf-prep.sh --branch=${projectName}")
-                shell("./init-tools.sh")
+                shell("sudo ./init-tools.sh")
                 shell("""sudo bash ./tests/scripts/run-xunit-perf.sh \\
                 --testRootDir=\"\${WORKSPACE}/bin/tests/Windows_NT.${architecture}.${configuration}\" \\
                 --testNativeBinDir=\"\${WORKSPACE}/bin/obj/${osGroup}.${architecture}.${configuration}/tests\" \\
                 --coreClrBinDir=\"\${WORKSPACE}/bin/Product/${osGroup}.${architecture}.${configuration}\" \\
                 --mscorlibDir=\"\${WORKSPACE}/bin/Product/${osGroup}.${architecture}.${configuration}\" \\
-                --coreFxBinDir=\"\${WORKSPACE}/bin/${osGroup}.AnyCPU.Release;\${WORKSPACE}/bin/Unix.AnyCPU.Release;\${WORKSPACE}/bin/AnyOS.AnyCPU.Release\" \\
-                --coreFxNativeBinDir=\"\${WORKSPACE}/bin/${osGroup}.${architecture}.Release\"""")
+                --coreFxBinDir=\"\${WORKSPACE}/bin/${osGroup}.AnyCPU.${configuration};\${WORKSPACE}/bin/Unix.AnyCPU.${configuration};\${WORKSPACE}/bin/AnyOS.AnyCPU.${configuration}\" \\
+                --coreFxNativeBinDir=\"\${WORKSPACE}/bin/${osGroup}.${architecture}.${configuration}\"""")
             }
         }
 
         Utilities.setMachineAffinity(newJob, os, 'latest-or-auto') // Just run against Linux VM’s for now.
 
+        // Save machinedata.json to /artifact/bin/ Jenkins dir
+        def archiveSettings = new ArchivalSettings()
+        archiveSettings.addFiles('sandbox/perf-*.xml')
+        archiveSettings.addFiles('machinedata.json')
+        Utilities.addArchival(newJob, archiveSettings)
+
         Utilities.standardJobSetup(newJob, project, isPR, "*/${branch}")
+
+        // For perf, we need to keep the run results longer
+        newJob.with {
+            // Enable the log rotator
+            logRotator {
+                artifactDaysToKeep(7)
+                daysToKeep(300)
+                artifactNumToKeep(25)
+                numToKeep(1000)
+            }
+        }
         if (isPR) {
             TriggerBuilder builder = TriggerBuilder.triggerOnPullRequest()
             builder.setGithubContext("${os} Perf Tests")
