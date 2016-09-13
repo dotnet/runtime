@@ -173,22 +173,6 @@ namespace System.Threading.Tasks.Tests
         }
 
         [Fact]
-        public static void RunContinueWithOnDisposedTaskTest()
-        {
-            Task t1 = Task.Factory.StartNew(delegate { });
-            t1.Wait();
-            //t1.Dispose();
-            try
-            {
-                Task t2 = t1.ContinueWith((completedTask) => { });
-            }
-            catch (Exception)
-            {
-                Assert.True(false, string.Format("RunContinueWithOnDisposedTaskTest> FAILED!  should NOT have seen an exception."));
-            }
-        }
-
-        [Fact]
         public static void RunContinueWithParamsTest_Cancellation()
         {
             //

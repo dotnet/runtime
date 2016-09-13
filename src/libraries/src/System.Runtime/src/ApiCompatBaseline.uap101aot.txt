@@ -648,3 +648,25 @@ MembersMustExist : Member 'System.String.EndsWith(System.String, System.Boolean,
 MembersMustExist : Member 'System.String.StartsWith(System.String, System.Boolean, System.Globalization.CultureInfo)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.String.ToLower(System.Globalization.CultureInfo)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.String.ToUpper(System.Globalization.CultureInfo)' does not exist in the implementation but it does exist in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'Microsoft.Win32.SafeHandles.SafeHandleMinusOneIsInvalid' does not inherit from base type 'System.Runtime.ConstrainedExecution.CriticalFinalizerObject' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'Microsoft.Win32.SafeHandles.SafeHandleZeroOrMinusOneIsInvalid' does not inherit from base type 'System.Runtime.ConstrainedExecution.CriticalFinalizerObject' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'Microsoft.Win32.SafeHandles.SafeWaitHandle' does not inherit from base type 'System.Runtime.ConstrainedExecution.CriticalFinalizerObject' in the implementation but it does in the contract.
+TypesMustExist : Type 'System.Runtime.ConstrainedExecution.CriticalFinalizerObject' does not exist in the implementation but it does exist in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Runtime.InteropServices.SafeHandle' does not inherit from base type 'System.Runtime.ConstrainedExecution.CriticalFinalizerObject' in the implementation but it does in the contract.
+MembersMustExist : Member 'System.Runtime.InteropServices.SafeHandle.Close()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Threading.WaitHandle.Close()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Threading.WaitHandle.Handle.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Threading.WaitHandle.Handle.set(System.IntPtr)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Threading.WaitHandle.SignalAndWait(System.Threading.WaitHandle, System.Threading.WaitHandle)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Threading.WaitHandle.SignalAndWait(System.Threading.WaitHandle, System.Threading.WaitHandle, System.Int32, System.Boolean)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Threading.WaitHandle.SignalAndWait(System.Threading.WaitHandle, System.Threading.WaitHandle, System.TimeSpan, System.Boolean)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Threading.WaitHandle.WaitAll(System.Threading.WaitHandle[], System.Int32, System.Boolean)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Threading.WaitHandle.WaitAll(System.Threading.WaitHandle[], System.TimeSpan, System.Boolean)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Threading.WaitHandle.WaitAny(System.Threading.WaitHandle[], System.Int32, System.Boolean)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Threading.WaitHandle.WaitAny(System.Threading.WaitHandle[], System.TimeSpan, System.Boolean)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Threading.WaitHandle.WaitOne(System.Int32, System.Boolean)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Threading.WaitHandle.WaitOne(System.TimeSpan, System.Boolean)' does not exist in the implementation but it does exist in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Threading.Tasks.Task' does not implement interface 'System.IDisposable' in the implementation but it does in the contract.
+MembersMustExist : Member 'System.Threading.Tasks.Task.Dispose()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Threading.Tasks.Task.Dispose(System.Boolean)' does not exist in the implementation but it does exist in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Threading.Tasks.Task<TResult>' does not implement interface 'System.IDisposable' in the implementation but it does in the contract.
