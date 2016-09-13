@@ -2202,8 +2202,26 @@ void Lowering::TreeNodeInfoInitModDiv(GenTree* tree)
         info->setDstCandidates(l, RBM_RAX);
     }
 
-    // If possible would like to have op1 in RAX to avoid a register move
-    op1->gtLsraInfo.setSrcCandidates(l, RBM_RAX);
+#ifdef _TARGET_X86_
+    if (op1->OperGet() == GT_LONG)
+    {
+        // To avoid reg move would like to have op1's low part in RAX and high part in RDX.
+        GenTree* loVal = op1->gtGetOp1();
+        GenTree* hiVal = op1->gtGetOp2();
+        
+        // Src count is actually 3, so increment.
+        assert(op2->IsCnsIntOrI());
+        info->srcCount++;
+
+        loVal->gtLsraInfo.setSrcCandidates(l, RBM_EAX);
+        hiVal->gtLsraInfo.setSrcCandidates(l, RBM_EDX);
+    }
+    else
+#endif
+    {
+        // If possible would like to have op1 in RAX to avoid a register move
+        op1->gtLsraInfo.setSrcCandidates(l, RBM_RAX);
+    }
 
     // divisor can be an r/m, but the memory indirection must be of the same size as the divide
     if (op2->isMemoryOp() && (op2->TypeGet() == tree->TypeGet()))

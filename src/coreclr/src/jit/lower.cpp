@@ -3220,8 +3220,13 @@ void Lowering::LowerUnsignedDivOrMod(GenTree* node)
     assert((node->OperGet() == GT_UDIV) || (node->OperGet() == GT_UMOD));
 
     GenTree* divisor = node->gtGetOp2();
+    GenTree* dividend = node->gtGetOp1();
 
-    if (divisor->IsCnsIntOrI())
+    if (divisor->IsCnsIntOrI()
+#ifdef _TARGET_X86_
+            && (dividend->OperGet() != GT_LONG)
+#endif
+            )
     {
         size_t divisorValue = static_cast<size_t>(divisor->gtIntCon.IconValue());
 
