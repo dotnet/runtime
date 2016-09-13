@@ -49,6 +49,17 @@ def static getOSGroup(def os) {
         Utilities.addArchival(newJob, archiveSettings)
 
         Utilities.standardJobSetup(newJob, project, isPR, "*/${branch}")
+
+        // For perf, we need to keep the run results longer
+        newJob.with {
+            // Enable the log rotator
+            logRotator {
+                artifactDaysToKeep(7)
+                daysToKeep(300)
+                artifactNumToKeep(25)
+                numToKeep(1000)
+            }
+        }
         if (isPR) {
             TriggerBuilder builder = TriggerBuilder.triggerOnPullRequest()
             builder.setGithubContext("${os} Perf Tests")
