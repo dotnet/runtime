@@ -40,6 +40,9 @@
 #include <mono/metadata/mono-config.h>
 #include <mono/metadata/threads-types.h>
 #include <mono/metadata/runtime.h>
+#include <mono/metadata/w32mutex.h>
+#include <mono/metadata/w32semaphore.h>
+#include <mono/metadata/w32event.h>
 #include <metadata/threads.h>
 #include <metadata/profiler-private.h>
 #include <mono/metadata/coree.h>
@@ -526,8 +529,13 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 
 #ifndef HOST_WIN32
 	mono_w32handle_init ();
+	mono_w32handle_namespace_init ();
 	wapi_init ();
 #endif
+
+	mono_w32mutex_init ();
+	mono_w32semaphore_init ();
+	mono_w32event_init ();
 
 #ifndef DISABLE_PERFCOUNTERS
 	mono_perfcounters_init ();

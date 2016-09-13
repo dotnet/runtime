@@ -26,6 +26,9 @@
     <ClCompile Include="..\mono\metadata\class.c" />
     <ClCompile Include="..\mono\metadata\cominterop.c" />
     <ClCompile Include="..\mono\metadata\console-win32.c" />
+    <ClCompile Include="..\mono\metadata\w32mutex-win32.c" />
+    <ClCompile Include="..\mono\metadata\w32semaphore-win32.c" />
+    <ClCompile Include="..\mono\metadata\w32event-win32.c" />
     <ClCompile Include="..\mono\metadata\coree.c" />
     <ClCompile Include="..\mono\metadata\custom-attrs.c" />
     <ClCompile Include="..\mono\metadata\debug-helpers.c" />

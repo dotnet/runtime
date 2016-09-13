@@ -45,6 +45,7 @@
 #include <mono/utils/mono-threads-coop.h>
 #include <mono/utils/mono-error-internals.h>
 #include <mono/utils/w32handle.h>
+#include <mono/metadata/w32event.h>
 
 #include <mono/metadata/gc-internals.h>
 #include <mono/metadata/reflection-internals.h>
@@ -1822,123 +1823,6 @@ ves_icall_System_Threading_WaitHandle_SignalAndWait_Internal (HANDLE toSignal, H
 	return map_native_wait_result_to_managed (ret);
 }
 
-HANDLE ves_icall_System_Threading_Mutex_CreateMutex_internal (MonoBoolean owned, MonoString *name, MonoBoolean *created)
-{ 
-	HANDLE mutex;
-	
-	*created = TRUE;
-	
-	if (name == NULL) {
-		mutex = CreateMutex (NULL, owned, NULL);
-	} else {
-		mutex = CreateMutex (NULL, owned, mono_string_chars (name));
-		
-		if (GetLastError () == ERROR_ALREADY_EXISTS) {
-			*created = FALSE;
-		}
-	}
-
-	return(mutex);
-}                                                                   
-
-MonoBoolean ves_icall_System_Threading_Mutex_ReleaseMutex_internal (HANDLE handle ) { 
-	return(ReleaseMutex (handle));
-}
-
-HANDLE ves_icall_System_Threading_Mutex_OpenMutex_internal (MonoString *name,
-							    gint32 rights,
-							    gint32 *error)
-{
-	HANDLE ret;
-	
-	*error = ERROR_SUCCESS;
-	
-	ret = OpenMutex (rights, FALSE, mono_string_chars (name));
-	if (ret == NULL) {
-		*error = GetLastError ();
-	}
-	
-	return(ret);
-}
-
-
-HANDLE ves_icall_System_Threading_Semaphore_CreateSemaphore_internal (gint32 initialCount, gint32 maximumCount, MonoString *name, gint32 *error)
-{ 
-	HANDLE sem;
-	
-	if (name == NULL) {
-		sem = CreateSemaphore (NULL, initialCount, maximumCount, NULL);
-	} else {
-		sem = CreateSemaphore (NULL, initialCount, maximumCount,
-				       mono_string_chars (name));
-	}
-
-	*error = GetLastError ();
-
-	return(sem);
-}                                                                   
-
-MonoBoolean ves_icall_System_Threading_Semaphore_ReleaseSemaphore_internal (HANDLE handle, gint32 releaseCount, gint32 *prevcount)
-{ 
-	return ReleaseSemaphore (handle, releaseCount, prevcount);
-}
-
-HANDLE ves_icall_System_Threading_Semaphore_OpenSemaphore_internal (MonoString *name, gint32 rights, gint32 *error)
-{
-	HANDLE sem;
-
-	sem = OpenSemaphore (rights, FALSE, mono_string_chars (name));
-
-	*error = GetLastError ();
-
-	return(sem);
-}
-
-HANDLE ves_icall_System_Threading_Events_CreateEvent_internal (MonoBoolean manual, MonoBoolean initial, MonoString *name, gint32 *error)
-{
-	HANDLE event;
-
-	if (name == NULL) {
-		event = CreateEvent (NULL, manual, initial, NULL);
-	} else {
-		event = CreateEvent (NULL, manual, initial,
-				     mono_string_chars (name));
-	}
-
-	*error = GetLastError ();
-
-	return(event);
-}
-
-gboolean ves_icall_System_Threading_Events_SetEvent_internal (HANDLE handle) {
-	return (SetEvent(handle));
-}
-
-gboolean ves_icall_System_Threading_Events_ResetEvent_internal (HANDLE handle) {
-	return (ResetEvent(handle));
-}
-
-void
-ves_icall_System_Threading_Events_CloseEvent_internal (HANDLE handle) {
-	CloseHandle (handle);
-}
-
-HANDLE ves_icall_System_Threading_Events_OpenEvent_internal (MonoString *name,
-							     gint32 rights,
-							     gint32 *error)
-{
-	HANDLE ret;
-	
-	ret = OpenEvent (rights, FALSE, mono_string_chars (name));
-	if (ret == NULL) {
-		*error = GetLastError ();
-	} else {
-		*error = ERROR_SUCCESS;
-	}
-
-	return(ret);
-}
-
 gint32 ves_icall_System_Threading_Interlocked_Increment_Int (gint32 *location)
 {
 	return InterlockedIncrement (location);
@@ -2183,7 +2067,7 @@ ves_icall_System_Threading_Thread_ClrState (MonoInternalThread* this_obj, guint3
 		 * be notified, since it has to rebuild the list of threads to
 		 * wait for.
 		 */
-		SetEvent (background_change_event);
+		mono_w32event_set (background_change_event);
 	}
 }
 
@@ -2197,7 +2081,7 @@ ves_icall_System_Threading_Thread_SetState (MonoInternalThread* this_obj, guint3
 		 * be notified, since it has to rebuild the list of threads to
 		 * wait for.
 		 */
-		SetEvent (background_change_event);
+		mono_w32event_set (background_change_event);
 	}
 }
 
@@ -2948,7 +2832,7 @@ void mono_thread_init (MonoThreadStartCB start_cb,
 	mono_os_mutex_init_recursive(&interlocked_mutex);
 	mono_os_mutex_init_recursive(&joinable_threads_mutex);
 	
-	background_change_event = CreateEvent (NULL, TRUE, FALSE, NULL);
+	background_change_event = mono_w32event_create (TRUE, FALSE);
 	g_assert(background_change_event != NULL);
 	
 	mono_init_static_data_info (&thread_static_info);
@@ -3263,7 +3147,7 @@ mono_threads_set_shutting_down (void)
 		 * interrupt the main thread if it is waiting for all
 		 * the other threads.
 		 */
-		SetEvent (background_change_event);
+		mono_w32event_set (background_change_event);
 		
 		mono_threads_unlock ();
 	}
@@ -3296,7 +3180,7 @@ void mono_thread_manage (void)
 		THREAD_DEBUG (g_message ("%s: There are %d threads to join", __func__, mono_g_hash_table_size (threads));
 			mono_g_hash_table_foreach (threads, print_tids, NULL));
 	
-		ResetEvent (background_change_event);
+		mono_w32event_reset (background_change_event);
 		wait->num=0;
 		/*We must zero all InternalThread pointers to avoid making the GC unhappy.*/
 		memset (wait->threads, 0, MONO_W32HANDLE_MAXIMUM_WAIT_OBJECTS * SIZEOF_VOID_P);

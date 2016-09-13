@@ -33,6 +33,7 @@
 #include <mono/metadata/object-internals.h>
 #include <mono/metadata/threadpool-ms.h>
 #include <mono/metadata/threadpool-ms-io.h>
+#include <mono/metadata/w32event.h>
 #include <mono/utils/atomic.h>
 #include <mono/utils/mono-compiler.h>
 #include <mono/utils/mono-complex.h>
@@ -1426,7 +1427,7 @@ mono_threadpool_ms_end_invoke (MonoAsyncResult *ares, MonoArray **out_args, Mono
 		if (ares->handle) {
 			wait_event = mono_wait_handle_get_handle ((MonoWaitHandle*) ares->handle);
 		} else {
-			wait_event = CreateEvent (NULL, TRUE, FALSE, NULL);
+			wait_event = mono_w32event_create (TRUE, FALSE);
 			g_assert(wait_event);
 			MonoWaitHandle *wait_handle = mono_wait_handle_new (mono_object_domain (ares), wait_event, error);
 			if (!is_ok (error)) {

@@ -41,6 +41,7 @@
 #include <mono/metadata/gc-internals.h>
 #include <mono/metadata/verify-internals.h>
 #include <mono/metadata/reflection-internals.h>
+#include <mono/metadata/w32event.h>
 #include <mono/utils/strenc.h>
 #include <mono/utils/mono-counters.h>
 #include <mono/utils/mono-error-internals.h>
@@ -7568,7 +7569,7 @@ ves_icall_System_Runtime_Remoting_Messaging_AsyncResult_Invoke (MonoAsyncResult 
 		mono_monitor_exit ((MonoObject*) ares);
 
 		if (wait_event != NULL)
-			SetEvent (wait_event);
+			mono_w32event_set (wait_event);
 
 		mono_error_init (&error); //the else branch would leave it in an undefined state
 		if (ac->cb_method)

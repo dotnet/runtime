@@ -18,6 +18,7 @@
 #include <mono/utils/mono-threads-posix-signals.h>
 #include <mono/utils/mono-coop-semaphore.h>
 #include <mono/metadata/gc-internals.h>
+#include <mono/metadata/w32mutex-utils.h>
 #include <mono/utils/w32handle.h>
 
 #include <errno.h>
@@ -291,7 +292,6 @@ mono_threads_platform_set_exited (MonoThreadInfo *info)
 {
 	gpointer mutex_handle;
 	int i, thr_ret;
-	pid_t pid;
 	pthread_t tid;
 
 	g_assert (info->handle);
@@ -301,12 +301,11 @@ mono_threads_platform_set_exited (MonoThreadInfo *info)
 	if (mono_w32handle_get_type (info->handle) == MONO_W32HANDLE_UNUSED)
 		g_error ("%s: handle %p thread %p has already exited, it's handle type is 'unused'", __func__, info->handle, mono_thread_info_get_tid (info));
 
-	pid = wapi_getpid ();
 	tid = pthread_self ();
 
 	for (i = 0; i < info->owned_mutexes->len; i++) {
 		mutex_handle = g_ptr_array_index (info->owned_mutexes, i);
-		wapi_mutex_abandon (mutex_handle, pid, tid);
+		mono_w32mutex_abandon (mutex_handle, tid);
 		mono_thread_info_disown_mutex (info, mutex_handle);
 	}
 
