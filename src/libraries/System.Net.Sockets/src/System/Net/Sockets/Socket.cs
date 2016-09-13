@@ -2313,7 +2313,7 @@ namespace System.Net.Sockets
         // Return Value:
         // 
         //    IAsyncResult - Async result used to retrieve result
-        internal IAsyncResult BeginConnect(EndPoint remoteEP, AsyncCallback callback, object state)
+        public IAsyncResult BeginConnect(EndPoint remoteEP, AsyncCallback callback, object state)
         {
             // Validate input parameters.
             if (s_loggingEnabled)
@@ -2375,7 +2375,7 @@ namespace System.Net.Sockets
             return asyncResult;
         }
 
-        internal IAsyncResult BeginConnect(string host, int port, AsyncCallback requestCallback, object state)
+        public IAsyncResult BeginConnect(string host, int port, AsyncCallback requestCallback, object state)
         {
             if (s_loggingEnabled)
             {
@@ -2449,7 +2449,7 @@ namespace System.Net.Sockets
             }
         }
 
-        internal IAsyncResult BeginConnect(IPAddress address, int port, AsyncCallback requestCallback, object state)
+        public IAsyncResult BeginConnect(IPAddress address, int port, AsyncCallback requestCallback, object state)
         {
             if (s_loggingEnabled)
             {
@@ -2481,7 +2481,7 @@ namespace System.Net.Sockets
             return result;
         }
 
-        internal IAsyncResult BeginConnect(IPAddress[] addresses, int port, AsyncCallback requestCallback, object state)
+        public IAsyncResult BeginConnect(IPAddress[] addresses, int port, AsyncCallback requestCallback, object state)
         {
             if (s_loggingEnabled)
             {
@@ -2547,7 +2547,7 @@ namespace System.Net.Sockets
         // Return Value:
         // 
         //    int - Return code from async Connect, 0 for success, SocketError.NotConnected otherwise
-        internal void EndConnect(IAsyncResult asyncResult)
+        public void EndConnect(IAsyncResult asyncResult)
         {
             if (s_loggingEnabled)
             {
@@ -2655,7 +2655,7 @@ namespace System.Net.Sockets
         // Return Value:
         // 
         //    IAsyncResult - Async result used to retrieve result
-        internal IAsyncResult BeginSend(byte[] buffer, int offset, int size, SocketFlags socketFlags, AsyncCallback callback, object state)
+        public IAsyncResult BeginSend(byte[] buffer, int offset, int size, SocketFlags socketFlags, AsyncCallback callback, object state)
         {
             SocketError errorCode;
             IAsyncResult result = BeginSend(buffer, offset, size, socketFlags, out errorCode, callback, state);
@@ -2666,7 +2666,7 @@ namespace System.Net.Sockets
             return result;
         }
 
-        internal IAsyncResult BeginSend(byte[] buffer, int offset, int size, SocketFlags socketFlags, out SocketError errorCode, AsyncCallback callback, object state)
+        public IAsyncResult BeginSend(byte[] buffer, int offset, int size, SocketFlags socketFlags, out SocketError errorCode, AsyncCallback callback, object state)
         {
             if (s_loggingEnabled)
             {
@@ -2787,7 +2787,7 @@ namespace System.Net.Sockets
             return errorCode;
         }
 
-        internal IAsyncResult BeginSend(IList<ArraySegment<byte>> buffers, SocketFlags socketFlags, AsyncCallback callback, object state)
+        public IAsyncResult BeginSend(IList<ArraySegment<byte>> buffers, SocketFlags socketFlags, AsyncCallback callback, object state)
         {
             SocketError errorCode;
             IAsyncResult result = BeginSend(buffers, socketFlags, out errorCode, callback, state);
@@ -2798,7 +2798,7 @@ namespace System.Net.Sockets
             return result;
         }
 
-        internal IAsyncResult BeginSend(IList<ArraySegment<byte>> buffers, SocketFlags socketFlags, out SocketError errorCode, AsyncCallback callback, object state)
+        public IAsyncResult BeginSend(IList<ArraySegment<byte>> buffers, SocketFlags socketFlags, out SocketError errorCode, AsyncCallback callback, object state)
         {
             if (s_loggingEnabled)
             {
@@ -2897,7 +2897,7 @@ namespace System.Net.Sockets
         // Return Value:
         // 
         //    int - Number of bytes transferred
-        internal int EndSend(IAsyncResult asyncResult)
+        public int EndSend(IAsyncResult asyncResult)
         {
             SocketError errorCode;
             int bytesTransferred = EndSend(asyncResult, out errorCode);
@@ -2908,7 +2908,7 @@ namespace System.Net.Sockets
             return bytesTransferred;
         }
 
-        internal int EndSend(IAsyncResult asyncResult, out SocketError errorCode)
+        public int EndSend(IAsyncResult asyncResult, out SocketError errorCode)
         {
             if (s_loggingEnabled)
             {
@@ -2995,7 +2995,7 @@ namespace System.Net.Sockets
         // Return Value:
         // 
         //    IAsyncResult - Async result used to retrieve result
-        internal IAsyncResult BeginSendTo(byte[] buffer, int offset, int size, SocketFlags socketFlags, EndPoint remoteEP, AsyncCallback callback, object state)
+        public IAsyncResult BeginSendTo(byte[] buffer, int offset, int size, SocketFlags socketFlags, EndPoint remoteEP, AsyncCallback callback, object state)
         {
             if (s_loggingEnabled)
             {
@@ -3114,7 +3114,7 @@ namespace System.Net.Sockets
         // Return Value:
         // 
         //    int - Number of bytes transferred
-        internal int EndSendTo(IAsyncResult asyncResult)
+        public int EndSendTo(IAsyncResult asyncResult)
         {
             if (s_loggingEnabled)
             {
@@ -3202,7 +3202,7 @@ namespace System.Net.Sockets
         // Return Value:
         // 
         //    IAsyncResult - Async result used to retrieve result
-        internal IAsyncResult BeginReceive(byte[] buffer, int offset, int size, SocketFlags socketFlags, AsyncCallback callback, object state)
+        public IAsyncResult BeginReceive(byte[] buffer, int offset, int size, SocketFlags socketFlags, AsyncCallback callback, object state)
         {
             SocketError errorCode;
             IAsyncResult result = BeginReceive(buffer, offset, size, socketFlags, out errorCode, callback, state);
@@ -3213,7 +3213,7 @@ namespace System.Net.Sockets
             return result;
         }
 
-        internal IAsyncResult BeginReceive(byte[] buffer, int offset, int size, SocketFlags socketFlags, out SocketError errorCode, AsyncCallback callback, object state)
+        public IAsyncResult BeginReceive(byte[] buffer, int offset, int size, SocketFlags socketFlags, out SocketError errorCode, AsyncCallback callback, object state)
         {
             if (s_loggingEnabled)
             {
@@ -3343,7 +3343,7 @@ namespace System.Net.Sockets
             return errorCode;
         }
 
-        internal IAsyncResult BeginReceive(IList<ArraySegment<byte>> buffers, SocketFlags socketFlags, AsyncCallback callback, object state)
+        public IAsyncResult BeginReceive(IList<ArraySegment<byte>> buffers, SocketFlags socketFlags, AsyncCallback callback, object state)
         {
             SocketError errorCode;
             IAsyncResult result = BeginReceive(buffers, socketFlags, out errorCode, callback, state);
@@ -3354,7 +3354,7 @@ namespace System.Net.Sockets
             return result;
         }
 
-        internal IAsyncResult BeginReceive(IList<ArraySegment<byte>> buffers, SocketFlags socketFlags, out SocketError errorCode, AsyncCallback callback, object state)
+        public IAsyncResult BeginReceive(IList<ArraySegment<byte>> buffers, SocketFlags socketFlags, out SocketError errorCode, AsyncCallback callback, object state)
         {
             if (s_loggingEnabled)
             {
@@ -3465,7 +3465,7 @@ namespace System.Net.Sockets
         // Return Value:
         // 
         //    int - Number of bytes transferred
-        internal int EndReceive(IAsyncResult asyncResult)
+        public int EndReceive(IAsyncResult asyncResult)
         {
             SocketError errorCode;
             int bytesTransferred = EndReceive(asyncResult, out errorCode);
@@ -3476,7 +3476,7 @@ namespace System.Net.Sockets
             return bytesTransferred;
         }
 
-        internal int EndReceive(IAsyncResult asyncResult, out SocketError errorCode)
+        public int EndReceive(IAsyncResult asyncResult, out SocketError errorCode)
         {
             if (s_loggingEnabled)
             {
@@ -3549,7 +3549,7 @@ namespace System.Net.Sockets
             return bytesTransferred;
         }
 
-        internal IAsyncResult BeginReceiveMessageFrom(byte[] buffer, int offset, int size, SocketFlags socketFlags, ref EndPoint remoteEP, AsyncCallback callback, object state)
+        public IAsyncResult BeginReceiveMessageFrom(byte[] buffer, int offset, int size, SocketFlags socketFlags, ref EndPoint remoteEP, AsyncCallback callback, object state)
         {
             if (s_loggingEnabled)
             {
@@ -3694,7 +3694,7 @@ namespace System.Net.Sockets
             return asyncResult;
         }
 
-        internal int EndReceiveMessageFrom(IAsyncResult asyncResult, ref SocketFlags socketFlags, ref EndPoint endPoint, out IPPacketInformation ipPacketInformation)
+        public int EndReceiveMessageFrom(IAsyncResult asyncResult, ref SocketFlags socketFlags, ref EndPoint endPoint, out IPPacketInformation ipPacketInformation)
         {
             if (s_loggingEnabled)
             {
@@ -3810,7 +3810,7 @@ namespace System.Net.Sockets
         // Return Value:
         // 
         //    IAsyncResult - Async result used to retrieve result
-        internal IAsyncResult BeginReceiveFrom(byte[] buffer, int offset, int size, SocketFlags socketFlags, ref EndPoint remoteEP, AsyncCallback callback, object state)
+        public IAsyncResult BeginReceiveFrom(byte[] buffer, int offset, int size, SocketFlags socketFlags, ref EndPoint remoteEP, AsyncCallback callback, object state)
         {
             if (s_loggingEnabled)
             {
@@ -3956,7 +3956,7 @@ namespace System.Net.Sockets
         // Return Value:
         // 
         //    int - Number of bytes transferred
-        internal int EndReceiveFrom(IAsyncResult asyncResult, ref EndPoint endPoint)
+        public int EndReceiveFrom(IAsyncResult asyncResult, ref EndPoint endPoint)
         {
             if (s_loggingEnabled)
             {
@@ -4064,7 +4064,7 @@ namespace System.Net.Sockets
         // Return Value:
         // 
         //    IAsyncResult - Async result used to retrieve resultant new socket
-        internal IAsyncResult BeginAccept(AsyncCallback callback, object state)
+        public IAsyncResult BeginAccept(AsyncCallback callback, object state)
         {
             if (!_isDisconnected)
             {
@@ -4080,13 +4080,13 @@ namespace System.Net.Sockets
             throw new ObjectDisposedException(this.GetType().FullName);
         }
 
-        internal IAsyncResult BeginAccept(int receiveSize, AsyncCallback callback, object state)
+        public IAsyncResult BeginAccept(int receiveSize, AsyncCallback callback, object state)
         {
             return BeginAccept(null, receiveSize, callback, state);
         }
 
         // This is the truly async version that uses AcceptEx.
-        internal IAsyncResult BeginAccept(Socket acceptSocket, int receiveSize, AsyncCallback callback, object state)
+        public IAsyncResult BeginAccept(Socket acceptSocket, int receiveSize, AsyncCallback callback, object state)
         {
             if (s_loggingEnabled)
             {
@@ -4176,7 +4176,7 @@ namespace System.Net.Sockets
         // Return Value:
         // 
         //    Socket - a valid socket if successful
-        internal Socket EndAccept(IAsyncResult asyncResult)
+        public Socket EndAccept(IAsyncResult asyncResult)
         {
             int bytesTransferred;
             byte[] buffer;
