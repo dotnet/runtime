@@ -1316,8 +1316,8 @@ void CodeGen::genCodeForDivMod(GenTreeOp* treeNode)
 
 #ifdef _TARGET_X86_
     bool dividendIsLong = varTypeIsLong(dividend->TypeGet());
-    GenTree* dividendLo;
-    GenTree* dividendHi;
+    GenTree* dividendLo = nullptr;
+    GenTree* dividendHi = nullptr;
 
     if (dividendIsLong)
     {
