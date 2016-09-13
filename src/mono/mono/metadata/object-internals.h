@@ -380,6 +380,7 @@ struct _MonoInternalThread {
 	gsize    flags;
 	gpointer thread_pinning_ref;
 	gsize abort_protected_block_count;
+	gint32 priority;
 	/* 
 	 * These fields are used to avoid having to increment corlib versions
 	 * when a new field is added to this structure.
@@ -401,7 +402,6 @@ struct _MonoThread {
 	struct _MonoInternalThread *internal_thread;
 	MonoObject *start_obj;
 	MonoException *pending_exception;
-	gint32 priority;
 };
 
 typedef struct {

@@ -1149,7 +1149,6 @@ inner_start_thread (gpointer data)
 	MonoThreadStart start_routine;
 	gpointer start_routine_arg;
 	guint32 start_routine_res;
-	gint32 priority;
 	gsize dummy;
 
 	thread_data = (CreateThreadData*) data;
@@ -1158,12 +1157,8 @@ inner_start_thread (gpointer data)
 	start_routine = thread_data->start_routine;
 	start_routine_arg = thread_data->start_routine_arg;
 
-	priority = thread_data->priority;
-
 	info = mono_thread_info_attach (&dummy);
 	info->runtime_thread = TRUE;
-
-	mono_threads_platform_set_priority (info, priority);
 
 	thread_data->handle = mono_thread_info_duplicate_handle (info);
 
@@ -1192,7 +1187,7 @@ inner_start_thread (gpointer data)
  * Returns: a windows or io-layer handle for the thread.
  */
 HANDLE
-mono_threads_create_thread (MonoThreadStart start, gpointer arg, MonoThreadParm *tp, MonoNativeThreadId *out_tid)
+mono_threads_create_thread (MonoThreadStart start, gpointer arg, gsize stack_size, MonoNativeThreadId *out_tid)
 {
 	CreateThreadData *thread_data;
 	gint res;
@@ -1202,10 +1197,9 @@ mono_threads_create_thread (MonoThreadStart start, gpointer arg, MonoThreadParm 
 	thread_data->ref = 2;
 	thread_data->start_routine = start;
 	thread_data->start_routine_arg = arg;
-	thread_data->priority = tp->priority;
 	mono_coop_sem_init (&thread_data->registered, 0);
 
-	res = mono_threads_platform_create_thread (inner_start_thread, (gpointer) thread_data, tp->stack_size, out_tid);
+	res = mono_threads_platform_create_thread (inner_start_thread, (gpointer) thread_data, stack_size, out_tid);
 	if (res != 0) {
 		/* ref is not going to be decremented in inner_start_thread */
 		InterlockedDecrement (&thread_data->ref);
@@ -1684,16 +1678,4 @@ void
 mono_thread_info_disown_mutex (MonoThreadInfo *info, gpointer mutex_handle)
 {
 	mono_threads_platform_disown_mutex (info, mutex_handle);
-}
-
-MonoThreadPriority
-mono_thread_info_get_priority (MonoThreadInfo *info)
-{
-	return mono_threads_platform_get_priority (info);
-}
-
-void
-mono_thread_info_set_priority (MonoThreadInfo *info, MonoThreadPriority priority)
-{
-	mono_threads_platform_set_priority (info, priority);
 }

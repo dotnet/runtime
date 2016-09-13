@@ -9775,7 +9775,6 @@ compile_methods (MonoAotCompile *acfg)
 		HANDLE handle;
 		gpointer *user_data;
 		MonoMethod **methods;
-		MonoThreadParm tp;
 
 		methods_len = acfg->methods->len;
 
@@ -9806,10 +9805,7 @@ compile_methods (MonoAotCompile *acfg)
 			user_data [1] = acfg;
 			user_data [2] = frag;
 			
-			tp.priority = MONO_THREAD_PRIORITY_NORMAL;
-			tp.stack_size = 0;
-			tp.creation_flags = 0;
-			handle = mono_threads_create_thread (compile_thread_main, (gpointer) user_data, &tp, NULL);
+			handle = mono_threads_create_thread (compile_thread_main, (gpointer) user_data, 0, NULL);
 			g_ptr_array_add (threads, handle);
 		}
 		g_free (methods);

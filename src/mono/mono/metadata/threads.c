@@ -549,7 +549,6 @@ new_thread_with_internal (MonoDomain *domain, MonoInternalThread *internal)
 	MonoThread *thread;
 
 	thread = create_thread_object (domain);
-	thread->priority = MONO_THREAD_PRIORITY_NORMAL;
 
 	MONO_OBJECT_SETREF (thread, internal_thread, internal);
 
@@ -578,7 +577,82 @@ create_internal_thread (void)
 		MONO_GC_REGISTER_ROOT_PINNING (thread->thread_pinning_ref, MONO_ROOT_SOURCE_THREADING, "thread pinning reference");
 	}
 
+	thread->priority = MONO_THREAD_PRIORITY_NORMAL;
+
 	return thread;
+}
+
+static void
+mono_thread_internal_set_priority (MonoInternalThread *internal, MonoThreadPriority priority)
+{
+	g_assert (internal);
+	g_assert (internal->handle);
+
+	g_assert (priority >= MONO_THREAD_PRIORITY_LOWEST);
+	g_assert (priority <= MONO_THREAD_PRIORITY_HIGHEST);
+	g_assert (MONO_THREAD_PRIORITY_LOWEST < MONO_THREAD_PRIORITY_HIGHEST);
+
+#ifdef HOST_WIN32
+	BOOL res;
+
+	res = SetThreadPriority (internal->handle, priority - 2);
+	if (!res)
+		g_error ("%s: SetThreadPriority failed, error %d", __func__, GetLastError ());
+#else /* HOST_WIN32 */
+	pthread_t tid;
+	int policy;
+	struct sched_param param;
+	gint res;
+
+	tid = thread_get_tid (internal);
+
+	res = pthread_getschedparam (tid, &policy, &param);
+	if (res != 0)
+		g_error ("%s: pthread_getschedparam failed, error: \"%s\" (%d)", __func__, g_strerror (res), res);
+
+#ifdef _POSIX_PRIORITY_SCHEDULING
+	int max, min;
+
+	/* Necessary to get valid priority range */
+
+	min = sched_get_priority_min (policy);
+	max = sched_get_priority_max (policy);
+
+	if (max > 0 && min >= 0 && max > min) {
+		double srange, drange, sposition, dposition;
+		srange = MONO_THREAD_PRIORITY_HIGHEST - MONO_THREAD_PRIORITY_LOWEST;
+		drange = max - min;
+		sposition = priority - MONO_THREAD_PRIORITY_LOWEST;
+		dposition = (sposition / srange) * drange;
+		param.sched_priority = (int)(dposition + min);
+	} else
+#endif
+	{
+		switch (policy) {
+		case SCHED_FIFO:
+		case SCHED_RR:
+			param.sched_priority = 50;
+			break;
+#ifdef SCHED_BATCH
+		case SCHED_BATCH:
+#endif
+		case SCHED_OTHER:
+			param.sched_priority = 0;
+			break;
+		default:
+			g_error ("%s: unknown policy %d", __func__, policy);
+		}
+	}
+
+	res = pthread_setschedparam (tid, policy, &param);
+	if (res != 0) {
+		if (res == EPERM) {
+			g_warning ("%s: pthread_setschedparam failed, error: \"%s\" (%d)", __func__, g_strerror (res), res);
+			return;
+		}
+		g_error ("%s: pthread_setschedparam failed, error: \"%s\" (%d)", __func__, g_strerror (res), res);
+	}
+#endif /* HOST_WIN32 */
 }
 
 static void 
@@ -706,6 +780,8 @@ static guint32 WINAPI start_wrapper_internal(StartInfo *start_info, gsize *stack
 
 		return 0;
 	}
+
+	mono_thread_internal_set_priority (internal, internal->priority);
 
 	tid = internal->tid;
 
@@ -837,7 +913,6 @@ create_thread (MonoThread *thread, MonoInternalThread *internal, MonoObject *sta
 	StartInfo *start_info = NULL;
 	HANDLE thread_handle;
 	MonoNativeThreadId tid;
-	MonoThreadParm tp;
 	gboolean ret;
 
 	if (start_delegate)
@@ -882,11 +957,7 @@ create_thread (MonoThread *thread, MonoInternalThread *internal, MonoObject *sta
 	if (stack_size == 0)
 		stack_size = default_stacksize_for_thread (internal);
 
-	tp.priority = thread->priority;
-	tp.stack_size = stack_size;
-	tp.creation_flags = 0;
-
-	thread_handle = mono_threads_create_thread (start_wrapper, start_info, &tp, &tid);
+	thread_handle = mono_threads_create_thread (start_wrapper, start_info, stack_size, &tid);
 
 	if (thread_handle == NULL) {
 		/* The thread couldn't be created, so set an exception */
@@ -958,14 +1029,17 @@ mono_thread_create_internal (MonoDomain *domain, gpointer func, gpointer arg, gb
 	mono_error_init (error);
 
 	thread = create_thread_object (domain);
-	thread->priority = MONO_THREAD_PRIORITY_NORMAL;
 
 	internal = create_internal_thread ();
 
 	MONO_OBJECT_SETREF (thread, internal_thread, internal);
 
+	LOCK_THREAD (internal);
+
 	res = create_thread (thread, internal, NULL, (MonoThreadStart) func, arg, threadpool_thread, stack_size, error);
 	return_val_if_nok (error, NULL);
+
+	UNLOCK_THREAD (internal);
 
 	return internal;
 }
@@ -1405,11 +1479,9 @@ ves_icall_System_Threading_Thread_GetPriority (MonoThread *this_obj)
 	MonoInternalThread *internal = this_obj->internal_thread;
 
 	LOCK_THREAD (internal);
-	if (internal->handle != NULL)
-		priority = mono_thread_info_get_priority ((MonoThreadInfo*) internal->thread_info);
-	else
-		priority = this_obj->priority;
+	priority = internal->priority;
 	UNLOCK_THREAD (internal);
+
 	return priority;
 }
 
@@ -1426,9 +1498,9 @@ ves_icall_System_Threading_Thread_SetPriority (MonoThread *this_obj, int priorit
 	MonoInternalThread *internal = this_obj->internal_thread;
 
 	LOCK_THREAD (internal);
-	this_obj->priority = priority;
+	internal->priority = priority;
 	if (internal->handle != NULL)
-		mono_thread_info_set_priority ((MonoThreadInfo*) internal->thread_info, this_obj->priority);
+		mono_thread_internal_set_priority (internal, priority);
 	UNLOCK_THREAD (internal);
 }
 

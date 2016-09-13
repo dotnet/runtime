@@ -475,17 +475,12 @@ transport_send (int fd, guint8 *data, int len)
 static void
 transport_start_receive (void)
 {
-	MonoThreadParm tp;
-
 	transport_connect ();
 
 	if (!listen_fd)
 		return;
 
-	tp.priority = MONO_THREAD_PRIORITY_NORMAL;
-	tp.stack_size = 0;
-	tp.creation_flags = 0;
-	receiver_thread_handle = mono_threads_create_thread (receiver_thread, NULL, &tp, NULL);
+	receiver_thread_handle = mono_threads_create_thread (receiver_thread, NULL, 0, NULL);
 	g_assert (receiver_thread_handle);
 }
 

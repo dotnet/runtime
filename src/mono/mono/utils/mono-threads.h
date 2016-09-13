@@ -245,7 +245,6 @@ typedef struct {
 #if defined(_POSIX_VERSION) || defined(__native_client__)
 	/* This is the data that was stored in the w32 handle */
 	GPtrArray *owned_mutexes;
-	gint32 priority;
 #endif
 } MonoThreadInfo;
 
@@ -284,23 +283,6 @@ typedef enum {
 } SuspendThreadResult;
 
 typedef SuspendThreadResult (*MonoSuspendThreadCallback) (THREAD_INFO_TYPE *info, gpointer user_data);
-
-/*
- * Parameters to pass for thread creation
- */
-typedef struct {
-	int priority;
-	guint32 creation_flags;	
-	guint32 stack_size;		
-} MonoThreadParm;
-
-typedef enum {
-	MONO_THREAD_PRIORITY_LOWEST       = 0,
-	MONO_THREAD_PRIORITY_BELOW_NORMAL = 1,
-	MONO_THREAD_PRIORITY_NORMAL       = 2,
-	MONO_THREAD_PRIORITY_ABOVE_NORMAL = 3,
-	MONO_THREAD_PRIORITY_HIGHEST      = 4,
-} MonoThreadPriority;
 
 static inline gboolean
 mono_threads_filter_tools_threads (THREAD_INFO_TYPE *info)
@@ -466,7 +448,7 @@ gboolean
 mono_thread_info_is_live (THREAD_INFO_TYPE *info);
 
 HANDLE
-mono_threads_create_thread (MonoThreadStart start, gpointer arg, MonoThreadParm *tp, MonoNativeThreadId *out_tid);
+mono_threads_create_thread (MonoThreadStart start, gpointer arg, gsize stack_size, MonoNativeThreadId *out_tid);
 
 int
 mono_threads_get_max_stack_size (void);
@@ -549,8 +531,6 @@ void mono_threads_platform_set_exited (THREAD_INFO_TYPE *info);
 void mono_threads_platform_describe (THREAD_INFO_TYPE *info, GString *text);
 void mono_threads_platform_own_mutex (THREAD_INFO_TYPE *info, gpointer mutex_handle);
 void mono_threads_platform_disown_mutex (THREAD_INFO_TYPE *info, gpointer mutex_handle);
-MonoThreadPriority mono_threads_platform_get_priority (THREAD_INFO_TYPE *info);
-void mono_threads_platform_set_priority (THREAD_INFO_TYPE *info, MonoThreadPriority priority);
 gpointer mono_threads_platform_duplicate_handle (THREAD_INFO_TYPE *info);
 
 void mono_threads_coop_begin_global_suspend (void);
@@ -677,11 +657,5 @@ mono_thread_info_own_mutex (THREAD_INFO_TYPE *info, gpointer mutex_handle);
 
 void
 mono_thread_info_disown_mutex (THREAD_INFO_TYPE *info, gpointer mutex_handle);
-
-MonoThreadPriority
-mono_thread_info_get_priority (THREAD_INFO_TYPE *info);
-
-void
-mono_thread_info_set_priority (THREAD_INFO_TYPE *info, MonoThreadPriority priority);
 
 #endif /* __MONO_THREADS_H__ */

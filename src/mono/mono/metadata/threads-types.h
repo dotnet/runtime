@@ -42,6 +42,14 @@ typedef enum {
 	ThreadApartmentState_Unknown = 0x00000002
 } MonoThreadApartmentState;
 
+typedef enum {
+	MONO_THREAD_PRIORITY_LOWEST       = 0,
+	MONO_THREAD_PRIORITY_BELOW_NORMAL = 1,
+	MONO_THREAD_PRIORITY_NORMAL       = 2,
+	MONO_THREAD_PRIORITY_ABOVE_NORMAL = 3,
+	MONO_THREAD_PRIORITY_HIGHEST      = 4,
+} MonoThreadPriority;
+
 #define SPECIAL_STATIC_NONE 0
 #define SPECIAL_STATIC_THREAD 1
 #define SPECIAL_STATIC_CONTEXT 2
