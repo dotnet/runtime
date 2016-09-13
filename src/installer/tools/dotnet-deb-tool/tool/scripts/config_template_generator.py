@@ -69,10 +69,12 @@ def generate_rules(config_data, template_dir):
     override_text = ""
 
     if ignored_dependency_packages != None:
-        override_text = "override_dh_shlibdeps:\n\tdh_shlibdeps --dpkg-shlibdeps-params="
+        override_text = "override_dh_shlibdeps:\n\tdh_shlibdeps --dpkg-shlibdeps-params=\""
 
         for package in ignored_dependency_packages:
             override_text += "-x{0} ".format(package)
+
+        override_text += "\""
 
     return template.format(overrides=override_text)
 
