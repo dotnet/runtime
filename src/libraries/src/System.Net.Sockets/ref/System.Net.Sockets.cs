@@ -187,6 +187,8 @@ namespace System.Net.Sockets
         public bool AcceptAsync(System.Net.Sockets.SocketAsyncEventArgs e) { return default(bool); }
         public void Bind(System.Net.EndPoint localEP) { }
         public static void CancelConnectAsync(System.Net.Sockets.SocketAsyncEventArgs e) { }
+        public void Close() { }
+        public void Close(int timeout) { }
         public void Connect(System.Net.EndPoint remoteEP) { }
         public void Connect(System.Net.IPAddress address, int port) { }
         public void Connect(System.Net.IPAddress[] addresses, int port) { }
