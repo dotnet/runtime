@@ -231,6 +231,8 @@ void CodeGen::genEmitGSCookieCheck(bool pushReg)
     }
 
     regNumber regGSCheck;
+    regMaskTP regMaskGSCheck = RBM_NONE;
+
     if (!pushReg)
     {
         // Non-tail call: we can use any callee trash register that is not
@@ -251,8 +253,11 @@ void CodeGen::genEmitGSCookieCheck(bool pushReg)
     else
     {
 #ifdef _TARGET_X86_
-        NYI_X86("Tail calls from methods that need GS check");
-        regGSCheck = REG_NA;
+        // It doesn't matter which register we pick, since we're going to save and restore it
+        // around the check.
+        // TODO-CQ: Can we optimize the choice of register to avoid doing the push/pop sometimes?
+        regGSCheck     = REG_EAX;
+        regMaskGSCheck = RBM_EAX;
 #else  // !_TARGET_X86_
         // Tail calls from methods that need GS check:  We need to preserve registers while
         // emitting GS cookie check for a tail prefixed call or a jmp. To emit GS cookie
@@ -287,8 +292,13 @@ void CodeGen::genEmitGSCookieCheck(bool pushReg)
 #endif // !_TARGET_X86_
     }
 
+    regMaskTP   byrefPushedRegs = RBM_NONE;
+    regMaskTP   norefPushedRegs = RBM_NONE;
+    regMaskTP   pushedRegs      = RBM_NONE;
+
     if (compiler->gsGlobalSecurityCookieAddr == nullptr)
     {
+#if defined(_TARGET_AMD64_)
         // If GS cookie value fits within 32-bits we can use 'cmp mem64, imm32'.
         // Otherwise, load the value into a reg and use 'cmp mem64, reg64'.
         if ((int)compiler->gsGlobalSecurityCookieVal != (ssize_t)compiler->gsGlobalSecurityCookieVal)
@@ -297,7 +307,9 @@ void CodeGen::genEmitGSCookieCheck(bool pushReg)
             getEmitter()->emitIns_S_R(INS_cmp, EA_PTRSIZE, regGSCheck, compiler->lvaGSSecurityCookie, 0);
         }
         else
+#endif // defined(_TARGET_AMD64_)
         {
+            assert((int)compiler->gsGlobalSecurityCookieVal == (ssize_t)compiler->gsGlobalSecurityCookieVal);
             getEmitter()->emitIns_S_I(INS_cmp, EA_PTRSIZE, compiler->lvaGSSecurityCookie, 0,
                                       (int)compiler->gsGlobalSecurityCookieVal);
         }
@@ -305,6 +317,9 @@ void CodeGen::genEmitGSCookieCheck(bool pushReg)
     else
     {
         // Ngen case - GS cookie value needs to be accessed through an indirection.
+
+        pushedRegs = genPushRegs(regMaskGSCheck, &byrefPushedRegs, &norefPushedRegs);
+
         instGen_Set_Reg_To_Imm(EA_HANDLE_CNS_RELOC, regGSCheck, (ssize_t)compiler->gsGlobalSecurityCookieAddr);
         getEmitter()->emitIns_R_AR(ins_Load(TYP_I_IMPL), EA_PTRSIZE, regGSCheck, regGSCheck, 0);
         getEmitter()->emitIns_S_R(INS_cmp, EA_PTRSIZE, regGSCheck, compiler->lvaGSSecurityCookie, 0);
@@ -315,6 +330,8 @@ void CodeGen::genEmitGSCookieCheck(bool pushReg)
     inst_JMP(jmpEqual, gsCheckBlk);
     genEmitHelperCall(CORINFO_HELP_FAIL_FAST, 0, EA_UNKNOWN);
     genDefineTempLabel(gsCheckBlk);
+
+    genPopRegs(pushedRegs, byrefPushedRegs, norefPushedRegs);
 }
 
 /*****************************************************************************
@@ -6221,6 +6238,14 @@ void CodeGen::genCallInstruction(GenTreePtr node)
     }
 
 #endif // defined(_TARGET_X86_)
+
+    if (call->IsTailCallViaHelper())
+    {
+        if (compiler->getNeedsGSSecurityCookie())
+        {
+            genEmitGSCookieCheck(true);
+        }
+    }
 
     if (target != nullptr)
     {

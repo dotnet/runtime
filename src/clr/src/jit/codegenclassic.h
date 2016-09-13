@@ -63,10 +63,6 @@ void genPInvokeCallEpilog(LclVarDsc* varDsc, regMaskTP retVal);
 
 regNumber genLclHeap(GenTreePtr size);
 
-void genSinglePush();
-
-void genSinglePop();
-
 void genDyingVars(VARSET_VALARG_TP beforeSet, VARSET_VALARG_TP afterSet);
 
 bool genContainsVarDeath(GenTreePtr from, GenTreePtr to, unsigned varNum);
@@ -286,9 +282,6 @@ void genCodeForTreeFlt(GenTreePtr tree, regMaskTP needReg = RBM_ALLFLOAT, regMas
 void genCodeForJumpTable(GenTreePtr tree);
 void genCodeForSwitchTable(GenTreePtr tree);
 void genCodeForSwitch(GenTreePtr tree);
-
-regMaskTP genPushRegs(regMaskTP regs, regMaskTP* byrefRegs, regMaskTP* noRefRegs);
-void genPopRegs(regMaskTP regs, regMaskTP byrefRegs, regMaskTP noRefRegs);
 
 size_t genPushArgList(GenTreePtr call);
 
