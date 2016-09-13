@@ -235,18 +235,6 @@ GenTree* DecomposeLongs::DecomposeNode(GenTree* tree)
             nextNode = DecomposeMul(use);
             break;
 
-        case GT_DIV:
-            NYI("Arithmetic binary operators on TYP_LONG - GT_DIV");
-            break;
-
-        case GT_MOD:
-            NYI("Arithmetic binary operators on TYP_LONG - GT_MOD");
-            break;
-
-        case GT_UDIV:
-            NYI("Arithmetic binary operators on TYP_LONG - GT_UDIV");
-            break;
-
         case GT_UMOD:
             nextNode = DecomposeUMod(use);
             break;
@@ -255,15 +243,6 @@ GenTree* DecomposeLongs::DecomposeNode(GenTree* tree)
         case GT_RSH:
         case GT_RSZ:
             nextNode = DecomposeShift(use);
-            break;
-
-        case GT_ROL:
-        case GT_ROR:
-            NYI("Arithmetic binary operators on TYP_LONG - ROTATE");
-            break;
-
-        case GT_MULHI:
-            NYI("Arithmetic binary operators on TYP_LONG - MULHI");
             break;
 
         case GT_LOCKADD:
