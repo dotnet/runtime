@@ -176,9 +176,10 @@ namespace System.IO {
             Contract.Requires(destination.CanWrite);
 
             byte[] buffer = new byte[bufferSize];
-            int bytesRead;
-            while ((bytesRead = await ReadAsync(buffer, 0, buffer.Length, cancellationToken).ConfigureAwait(false)) != 0)
+            while (true)
             {
+                int bytesRead = await ReadAsync(buffer, 0, buffer.Length, cancellationToken).ConfigureAwait(false);
+                if (bytesRead == 0) break;
                 await destination.WriteAsync(buffer, 0, bytesRead, cancellationToken).ConfigureAwait(false);
             }
         }
