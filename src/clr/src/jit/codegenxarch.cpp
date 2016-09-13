@@ -2008,13 +2008,6 @@ void CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
             break;
 
         case GT_CAST:
-#if !defined(_TARGET_64BIT_)
-            // We will NYI in DecomposeNode() if we are cast TO a long type, but we do not
-            // yet support casting FROM a long type either, and that's simpler to catch
-            // here.
-            NYI_IF(varTypeIsLong(treeNode->gtOp.gtOp1), "Casts from TYP_LONG");
-#endif // !defined(_TARGET_64BIT_)
-
             if (varTypeIsFloating(targetType) && varTypeIsFloating(treeNode->gtOp.gtOp1))
             {
                 // Casts float/double <--> double/float
@@ -7580,6 +7573,93 @@ void CodeGen::genSetRegToCond(regNumber dstReg, GenTreePtr tree)
     }
 }
 
+#if !defined(_TARGET_64BIT_)
+//------------------------------------------------------------------------
+// genIntToIntCast: Generate code for long to int casts on x86.
+//
+// Arguments:
+//    cast - The GT_CAST node
+//
+// Return Value:
+//    None.
+//
+// Assumptions:
+//    The cast node and its sources (via GT_LONG) must have been assigned registers.
+//    The destination cannot be a floating point type or a small integer type.
+//
+void CodeGen::genLongToIntCast(GenTree* cast)
+{
+    assert(cast->OperGet() == GT_CAST);
+
+    GenTree* src = cast->gtGetOp1();
+    noway_assert(src->OperGet() == GT_LONG);
+
+    genConsumeRegs(src);
+
+    var_types srcType  = ((cast->gtFlags & GTF_UNSIGNED) != 0) ? TYP_ULONG : TYP_LONG;
+    var_types dstType  = cast->CastToType();
+    regNumber loSrcReg = src->gtGetOp1()->gtRegNum;
+    regNumber hiSrcReg = src->gtGetOp2()->gtRegNum;
+    regNumber dstReg   = cast->gtRegNum;
+
+    assert((dstType == TYP_INT) || (dstType == TYP_UINT));
+    assert(genIsValidIntReg(loSrcReg));
+    assert(genIsValidIntReg(hiSrcReg));
+    assert(genIsValidIntReg(dstReg));
+
+    if (cast->gtOverflow())
+    {
+        //
+        // Generate an overflow check for [u]long to [u]int casts:
+        //
+        // long  -> int  - check if the upper 33 bits are all 0 or all 1
+        // 
+        // ulong -> int  - check if the upper 33 bits are all 0
+        //
+        // long  -> uint - check if the upper 32 bits are all 0
+        // ulong -> uint - check if the upper 32 bits are all 0
+        //
+
+        if ((srcType == TYP_LONG) && (dstType == TYP_INT))
+        {
+            BasicBlock* allOne = genCreateTempLabel();
+            BasicBlock* success = genCreateTempLabel();
+
+            inst_RV_RV(INS_test, loSrcReg, loSrcReg, TYP_INT, EA_4BYTE);
+            inst_JMP(EJ_js, allOne);
+
+            inst_RV_RV(INS_test, hiSrcReg, hiSrcReg, TYP_INT, EA_4BYTE);
+            genJumpToThrowHlpBlk(EJ_jne, SCK_OVERFLOW);
+            inst_JMP(EJ_jmp, success);
+
+            genDefineTempLabel(allOne);
+            inst_RV_IV(INS_cmp, hiSrcReg, -1, EA_4BYTE);
+            genJumpToThrowHlpBlk(EJ_jne, SCK_OVERFLOW);
+
+            genDefineTempLabel(success);
+        }
+        else
+        {
+            if ((srcType == TYP_ULONG) && (dstType == TYP_INT))
+            {
+                inst_RV_RV(INS_test, loSrcReg, loSrcReg, TYP_INT, EA_4BYTE);
+                genJumpToThrowHlpBlk(EJ_js, SCK_OVERFLOW);
+            }
+
+            inst_RV_RV(INS_test, hiSrcReg, hiSrcReg, TYP_INT, EA_4BYTE);
+            genJumpToThrowHlpBlk(EJ_jne, SCK_OVERFLOW);
+        }
+    }
+    
+    if (dstReg != loSrcReg)
+    {
+        inst_RV_RV(INS_mov, dstReg, loSrcReg, TYP_INT, EA_4BYTE);
+    }
+
+    genProduceReg(cast);
+}
+#endif
+
 //------------------------------------------------------------------------
 // genIntToIntCast: Generate code for an integer cast
 //    This method handles integer overflow checking casts
@@ -7603,12 +7683,21 @@ void CodeGen::genIntToIntCast(GenTreePtr treeNode)
 {
     assert(treeNode->OperGet() == GT_CAST);
 
-    GenTreePtr castOp        = treeNode->gtCast.CastOp();
+    GenTreePtr castOp  = treeNode->gtCast.CastOp();
+    var_types  srcType = genActualType(castOp->TypeGet());
+
+#if !defined(_TARGET_64BIT_)
+    if (varTypeIsLong(srcType))
+    {
+        genLongToIntCast(treeNode);
+        return;
+    }
+#endif // !defined(_TARGET_64BIT_)
+
     regNumber  targetReg     = treeNode->gtRegNum;
     regNumber  sourceReg     = castOp->gtRegNum;
     var_types  dstType       = treeNode->CastToType();
     bool       isUnsignedDst = varTypeIsUnsigned(dstType);
-    var_types  srcType       = genActualType(castOp->TypeGet());
     bool       isUnsignedSrc = varTypeIsUnsigned(srcType);
 
     // if necessary, force the srcType to unsigned when the GT_UNSIGNED flag is set
