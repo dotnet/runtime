@@ -494,6 +494,11 @@ protected:
 //
 //-------------------------------------------------------------------------
 
+    void genSinglePush();
+    void genSinglePop();
+    regMaskTP genPushRegs(regMaskTP regs, regMaskTP* byrefRegs, regMaskTP* noRefRegs);
+    void genPopRegs(regMaskTP regs, regMaskTP byrefRegs, regMaskTP noRefRegs);
+
 /*****************************************************************************/
 #ifdef DEBUGGING_SUPPORT
 /*****************************************************************************/

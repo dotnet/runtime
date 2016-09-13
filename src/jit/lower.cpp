@@ -1719,7 +1719,10 @@ GenTree* Lowering::LowerTailCallViaHelper(GenTreeCall* call, GenTree* callTarget
     assert(!comp->opts.compNeedSecurityCheck);               // tail call from methods that need security check
     assert(!call->IsUnmanaged());                            // tail calls to unamanaged methods
     assert(!comp->compLocallocUsed);                         // tail call from methods that also do localloc
+
+#ifdef _TARGET_AMD64_
     assert(!comp->getNeedsGSSecurityCookie());               // jit64 compat: tail calls from methods that need GS check
+#endif // _TARGET_AMD64_
 
     // We expect to see a call that meets the following conditions
     assert(call->IsTailCallViaHelper());
