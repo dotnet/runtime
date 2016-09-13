@@ -1,9 +1,9 @@
 {
   "dependencies": {
-    "System.Reflection": "4.3.0-beta-devapi-24512-01",
-    "System.Reflection.Primitives": "4.3.0-beta-devapi-24512-01",
-    "System.Runtime": "4.3.0-beta-devapi-24512-01",
-    "System.Runtime.Handles": "4.3.0-beta-devapi-24512-01"
+    "System.Reflection": "4.3.0-beta-devapi-24513-01",
+    "System.Reflection.Primitives": "4.3.0-beta-devapi-24513-01",
+    "System.Runtime": "4.3.0-beta-devapi-24513-01",
+    "System.Runtime.Handles": "4.3.0-beta-devapi-24513-01"
   },
   "frameworks": {
     "netstandard1.7": {
