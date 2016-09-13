@@ -544,7 +544,7 @@ namespace System.IO.Tests
 
         [Fact]
         [PlatformSpecific(PlatformID.Linux)]
-        [OuterLoop]
+        [OuterLoop("This test has high system resource demands and may cause failures in other concurrent tests")]
         public void FileSystemWatcher_CreateManyConcurrentInstances()
         {
             int maxUserInstances = int.Parse(File.ReadAllText("/proc/sys/fs/inotify/max_user_instances"));
@@ -575,7 +575,7 @@ namespace System.IO.Tests
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/216
         [PlatformSpecific(PlatformID.Linux)]
-        [OuterLoop]
+        [OuterLoop("This test has high system resource demands and may cause failures in other concurrent tests")]
         public void FileSystemWatcher_CreateManyConcurrentWatches()
         {
             int maxUserWatches = int.Parse(File.ReadAllText("/proc/sys/fs/inotify/max_user_watches"));
