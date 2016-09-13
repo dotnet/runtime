@@ -4278,48 +4278,71 @@ new_filename (const char* filename)
 	return res;
 }
 
-static void*
-helper_thread (void* arg)
+static void
+add_to_fd_set (fd_set *set, int fd, int *max_fd)
 {
-	MonoProfiler* prof = (MonoProfiler *)arg;
-	int command_socket;
-	int len;
-	char buf [64];
+	/*
+	 * This should only trigger for the basic FDs (server socket, pipe, perf
+	 * events) at startup if for some mysterious reason they're too large. In
+	 * this case, the profiler really can't function, and we're better off
+	 * printing an error and exiting.
+	 */
+	if (fd >= FD_SETSIZE) {
+		fprintf (stderr, "File descriptor is out of bounds for fd_set: %d\n", fd);
+		exit (1);
+	}
+
+	FD_SET (fd, set);
+
+	if (*max_fd < fd)
+		*max_fd = fd;
+}
+
+static void *
+helper_thread (void *arg)
+{
+	MonoProfiler *prof = (MonoProfiler *) arg;
 
 	mono_threads_attach_tools_thread ();
 	mono_native_thread_set_name (mono_native_thread_id_get (), "Profiler helper");
 
 	MonoProfilerThread *thread = init_thread (prof, FALSE);
 
-	//fprintf (stderr, "Server listening\n");
-	command_socket = -1;
+	GArray *command_sockets = g_array_new (FALSE, FALSE, sizeof (int));
+
 	while (1) {
 		fd_set rfds;
-		struct timeval tv;
 		int max_fd = -1;
+
 		FD_ZERO (&rfds);
-		FD_SET (prof->server_socket, &rfds);
-		max_fd = prof->server_socket;
-		FD_SET (prof->pipes [0], &rfds);
-		if (max_fd < prof->pipes [0])
-			max_fd = prof->pipes [0];
-		if (command_socket >= 0) {
-			FD_SET (command_socket, &rfds);
-			if (max_fd < command_socket)
-				max_fd = command_socket;
-		}
+
+		add_to_fd_set (&rfds, prof->server_socket, &max_fd);
+		add_to_fd_set (&rfds, prof->pipes [0], &max_fd);
+
+		for (gint i = 0; i < command_sockets->len; i++)
+			add_to_fd_set (&rfds, g_array_index (command_sockets, int, i), &max_fd);
+
 #if USE_PERF_EVENTS
 		if (perf_data) {
-			int i;
-			for ( i = 0; i < num_perf; ++i) {
+			for (int i = 0; i < num_perf; ++i) {
 				if (perf_data [i].perf_fd < 0)
 					continue;
-				FD_SET (perf_data [i].perf_fd, &rfds);
-				if (max_fd < perf_data [i].perf_fd)
-					max_fd = perf_data [i].perf_fd;
+
+				add_to_fd_set (&rfds, perf_data [i].perf_fd, &max_fd);
 			}
 		}
 #endif
+
+		struct timeval tv = { .tv_sec = 1, .tv_usec = 0 };
+
+		// Sleep for 1sec or until a file descriptor has data.
+		if (select (max_fd + 1, &rfds, NULL, NULL, &tv) == -1) {
+			if (errno == EINTR)
+				continue;
+
+			fprintf (stderr, "Error in mono-profiler-log server: %s", strerror (errno));
+			exit (1);
+		}
 
 		counters_and_perfcounters_sample (prof);
 
@@ -4329,76 +4352,71 @@ helper_thread (void* arg)
 
 		buffer_unlock_excl ();
 
-		tv.tv_sec = 1;
-		tv.tv_usec = 0;
-		len = select (max_fd + 1, &rfds, NULL, NULL, &tv);
+#if USE_PERF_EVENTS
+		if (perf_data) {
+			for (int i = 0; i < num_perf; ++i) {
+				if (perf_data [i].perf_fd < 0 || !FD_ISSET (perf_data [i].perf_fd, &rfds))
+					continue;
 
-		if (len < 0) {
-			if (errno == EINTR)
-				continue;
-
-			g_warning ("Error in mono-profiler-log server: %s", strerror (errno));
-			return NULL;
+				read_perf_mmap (prof, i);
+			}
 		}
+#endif
 
+		// Are we shutting down?
 		if (FD_ISSET (prof->pipes [0], &rfds)) {
 			char c;
 			read (prof->pipes [0], &c, 1);
-			if (do_debug)
-				fprintf (stderr, "helper shutdown\n");
-
-#if USE_PERF_EVENTS
-			if (perf_data) {
-				int i;
-				for ( i = 0; i < num_perf; ++i) {
-					if (perf_data [i].perf_fd < 0)
-						continue;
-					if (FD_ISSET (perf_data [i].perf_fd, &rfds))
-						read_perf_mmap (prof, i);
-				}
-			}
-#endif
-
-			send_log_unsafe (FALSE, FALSE);
-			return NULL;
+			break;
 		}
-#if USE_PERF_EVENTS
-		if (perf_data) {
-			int i;
-			for ( i = 0; i < num_perf; ++i) {
-				if (perf_data [i].perf_fd < 0)
-					continue;
-				if (FD_ISSET (perf_data [i].perf_fd, &rfds))
-					read_perf_mmap (prof, i);
-			}
-		}
-#endif
-		if (command_socket >= 0 && FD_ISSET (command_socket, &rfds)) {
-			len = read (command_socket, buf, sizeof (buf) - 1);
-			if (len < 0)
+
+		for (gint i = 0; i < command_sockets->len; i++) {
+			int fd = g_array_index (command_sockets, int, i);
+
+			if (!FD_ISSET (fd, &rfds))
 				continue;
-			if (len == 0) {
-				close (command_socket);
-				command_socket = -1;
+
+			char buf [64];
+			int len = read (fd, buf, sizeof (buf) - 1);
+
+			if (len == -1)
+				continue;
+
+			if (!len) {
+				// The other end disconnected.
+				g_array_remove_index (command_sockets, i);
+				close (fd);
+
 				continue;
 			}
+
 			buf [len] = 0;
-			if (strcmp (buf, "heapshot\n") == 0 && hs_mode_ondemand) {
+
+			if (!strcmp (buf, "heapshot\n") && hs_mode_ondemand) {
 				// Rely on the finalization callbacks invoking process_requests ().
 				heapshot_requested = 1;
 				mono_gc_finalize_notify ();
 			}
-			continue;
 		}
-		if (!FD_ISSET (prof->server_socket, &rfds)) {
-			continue;
+
+		if (FD_ISSET (prof->server_socket, &rfds)) {
+			int fd = accept (prof->server_socket, NULL, NULL);
+
+			if (fd != -1) {
+				if (fd >= FD_SETSIZE)
+					close (fd);
+				else
+					g_array_append_val (command_sockets, fd);
+			}
 		}
-		command_socket = accept (prof->server_socket, NULL, NULL);
-		if (command_socket < 0)
-			continue;
-		//fprintf (stderr, "Accepted connection\n");
 	}
 
+	for (gint i = 0; i < command_sockets->len; i++)
+		close (g_array_index (command_sockets, int, i));
+
+	g_array_free (command_sockets, TRUE);
+
+	send_log_unsafe (FALSE, FALSE);
 	deinit_thread (thread);
 
 	mono_thread_info_detach ();
@@ -4442,7 +4460,7 @@ start_helper_thread (MonoProfiler* prof)
 
 	socklen_t slen = sizeof (server_address);
 
-	if (getsockname (prof->server_socket, (struct sockaddr *)&server_address, &slen)) {
+	if (getsockname (prof->server_socket, (struct sockaddr *) &server_address, &slen)) {
 		fprintf (stderr, "Could not get assigned port: %s\n", strerror (errno));
 		close (prof->server_socket);
 		exit (1);
