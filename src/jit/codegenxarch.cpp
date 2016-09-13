@@ -1281,7 +1281,11 @@ void CodeGen::genCodeForMulHi(GenTreeOp* treeNode)
     }
 }
 
-// generate code for a DIV or MOD operation
+//------------------------------------------------------------------------
+// genCodeForDivMod: Generate code for a DIV or MOD operation.
+//
+// Arguments:
+//    treeNode - the node to generate the code for
 //
 void CodeGen::genCodeForDivMod(GenTreeOp* treeNode)
 {
@@ -1293,8 +1297,27 @@ void CodeGen::genCodeForDivMod(GenTreeOp* treeNode)
     var_types  targetType = treeNode->TypeGet();
     emitter*   emit       = getEmitter();
 
-    // dividend is not contained.
-    assert(!dividend->isContained());
+#ifdef _TARGET_X86_
+    bool dividendIsLong = varTypeIsLong(dividend->TypeGet());
+    GenTree* dividendLo;
+    GenTree* dividendHi;
+
+    if (dividendIsLong)
+    {
+        // If dividend is a GT_LONG, the we need to make sure its lo and hi parts are not contained.
+        dividendLo = dividend->gtGetOp1();
+        dividendHi = dividend->gtGetOp2();
+
+        assert(!dividendLo->isContained());
+        assert(!dividendHi->isContained());
+        assert(divisor->IsCnsIntOrI());
+    }
+    else
+#endif
+    {
+        // dividend is not contained.
+        assert(!dividend->isContained());
+    }
 
     genConsumeOperands(treeNode->AsOp());
     if (varTypeIsFloating(targetType))
@@ -1329,22 +1352,44 @@ void CodeGen::genCodeForDivMod(GenTreeOp* treeNode)
     }
     else
     {
-        // dividend must be in RAX
+#ifdef _TARGET_X86_
+        if (dividendIsLong)
+        {
+            assert(dividendLo != nullptr && dividendHi != nullptr);
+
+            // dividendLo must be in RAX; dividendHi must be in RDX
+            if (dividendLo->gtRegNum != REG_EAX)
+            {
+                inst_RV_RV(INS_mov, REG_EAX, dividendLo->gtRegNum, targetType);
+            }
+            if (dividendHi->gtRegNum != REG_EDX)
+            {
+                inst_RV_RV(INS_mov, REG_EDX, dividendHi->gtRegNum, targetType);
+            }
+        }
+        else
+#endif
         if (dividend->gtRegNum != REG_RAX)
         {
+            // dividend must be in RAX
             inst_RV_RV(INS_mov, REG_RAX, dividend->gtRegNum, targetType);
         }
 
         // zero or sign extend rax to rdx
-        if (oper == GT_UMOD || oper == GT_UDIV)
+#ifdef _TARGET_X86_
+        if (!dividendIsLong)
+#endif
         {
-            instGen_Set_Reg_To_Zero(EA_PTRSIZE, REG_EDX);
-        }
-        else
-        {
-            emit->emitIns(INS_cdq, size);
-            // the cdq instruction writes RDX, So clear the gcInfo for RDX
-            gcInfo.gcMarkRegSetNpt(RBM_RDX);
+            if (oper == GT_UMOD || oper == GT_UDIV)
+            {
+                instGen_Set_Reg_To_Zero(EA_PTRSIZE, REG_EDX);
+            }
+            else
+            {
+                emit->emitIns(INS_cdq, size);
+                // the cdq instruction writes RDX, So clear the gcInfo for RDX
+                gcInfo.gcMarkRegSetNpt(RBM_RDX);
+            }
         }
 
         // Perform the 'targetType' (64-bit or 32-bit) divide instruction
