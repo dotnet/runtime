@@ -42,5 +42,35 @@ namespace System.ComponentModel.DataAnnotations.Tests
             validationResult = new ValidationResult("SomeErrorMessage", memberNames);
             Assert.True(memberNames.SequenceEqual(validationResult.MemberNames));
         }
+
+        [Theory]
+        [InlineData(null, "System.ComponentModel.DataAnnotations.ValidationResult")]
+        [InlineData("", "")]
+        [InlineData("ErrorMessage", "ErrorMessage")]
+        public void ToString_ReturnsExpected(string errorMessage, string expected)
+        {
+            ValidationResult validationResult = new ValidationResult(errorMessage);
+            Assert.Equal(expected, validationResult.ToString());
+        }
+
+        [Fact]
+        public void Ctor_ValidationResult_ReturnsClone()
+        {
+            ValidationResult validationResult = new ValidationResult("ErrorMessage", new string[] { "Member1", "Member2" });
+            ValidationResultSubClass createdValidationResult = new ValidationResultSubClass(validationResult);
+            Assert.Equal(validationResult.ErrorMessage, createdValidationResult.ErrorMessage);
+            Assert.Equal(validationResult.MemberNames, createdValidationResult.MemberNames);
+        }
+
+        [Fact]
+        public void Ctor_ValidationResult_NullValidationResult_ThrowsArgumentNullException()
+        {
+            Assert.Throws<ArgumentNullException>("validationResult", () => new ValidationResultSubClass(null));
+        }
+
+        public class ValidationResultSubClass : ValidationResult
+        {
+            public ValidationResultSubClass(ValidationResult validationResult) : base(validationResult) { }
+        }
     }
 }

@@ -23,6 +23,13 @@ namespace System.ComponentModel.DataAnnotations.Tests
             yield return new TestCase(new PhoneAttribute(), "425-555-1212 ext 123");
             yield return new TestCase(new PhoneAttribute(), "425-555-1212 ext.123");
             yield return new TestCase(new PhoneAttribute(), "425-555-1212 ext. 123");
+            yield return new TestCase(new PhoneAttribute(), "1");
+            yield return new TestCase(new PhoneAttribute(), "+4+2+5+-+5+5+5+-+1+2++1+2++");
+            yield return new TestCase(new PhoneAttribute(), "425-555-1212    ");
+            yield return new TestCase(new PhoneAttribute(), " \r \n 1  \t ");
+            yield return new TestCase(new PhoneAttribute(), "1-.()");
+            yield return new TestCase(new PhoneAttribute(), "(425555-1212");
+            yield return new TestCase(new PhoneAttribute(), ")425555-1212");
         }
 
         protected override IEnumerable<TestCase> InvalidValues()
@@ -37,6 +44,8 @@ namespace System.ComponentModel.DataAnnotations.Tests
             yield return new TestCase(new PhoneAttribute(), "425-555-1212 x abc");
             yield return new TestCase(new PhoneAttribute(), "425-555-1212 ext def");
             yield return new TestCase(new PhoneAttribute(), "425-555-1212 ext. xyz");
+            yield return new TestCase(new PhoneAttribute(), "-.()");
+            yield return new TestCase(new PhoneAttribute(), "ext.123 1");
         }
         
         [Fact]
