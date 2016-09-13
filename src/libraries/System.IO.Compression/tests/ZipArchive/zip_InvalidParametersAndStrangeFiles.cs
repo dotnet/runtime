@@ -216,6 +216,7 @@ namespace System.IO.Compression.Tests
         /// cause any bytes to be left in ZLib's buffer. 
         /// </summary>
         [Fact]
+        [ActiveIssue(11685)]
         public static void ZipWithLargeSparseFile()
         {
             string zipname = strange("largetrailingwhitespacedeflation.zip");

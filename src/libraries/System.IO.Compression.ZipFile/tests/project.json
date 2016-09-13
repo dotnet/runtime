@@ -7,7 +7,7 @@
     "System.Diagnostics.Debug": "4.3.0-beta-devapi-24512-01",
     "System.IO": "4.3.0-beta-devapi-24512-01",
     "System.IO.Compression": "4.3.0-beta-devapi-24512-01",
-    "System.IO.Compression.TestData": "1.0.1-prerelease",
+    "System.IO.Compression.TestData": "1.0.4-prerelease",
     "System.IO.FileSystem": "4.3.0-beta-devapi-24512-01",
     "System.IO.FileSystem.Primitives": "4.3.0-beta-devapi-24512-01",
     "System.Linq": "4.3.0-beta-devapi-24512-01",

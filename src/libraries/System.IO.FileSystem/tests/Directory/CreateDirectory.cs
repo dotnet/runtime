@@ -248,6 +248,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        [ActiveIssue(11687)]
         [PlatformSpecific(XunitPlatformID.Windows)]
         public void DirectoryLongerThanMaxLongPath_ThrowsPathTooLongException()
         {
