@@ -783,7 +783,7 @@ mono_runtime_shutdown_stat_profiler (void)
 	}
 #endif
 
-	pthread_join (sampling_thread, NULL);
+	mono_native_thread_join (sampling_thread);
 
 	/*
 	 * We can't safely remove the signal handler because we have no guarantee

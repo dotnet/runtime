@@ -540,6 +540,9 @@ mono_native_thread_create (MonoNativeThreadId *tid, gpointer func, gpointer arg)
 MONO_API void
 mono_native_thread_set_name (MonoNativeThreadId tid, const char *name);
 
+MONO_API gboolean
+mono_native_thread_join (MonoNativeThreadId tid);
+
 /*Mach specific internals */
 void mono_threads_init_dead_letter (void);
 void mono_threads_install_dead_letter (void);
