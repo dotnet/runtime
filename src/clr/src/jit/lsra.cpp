@@ -8529,7 +8529,7 @@ void LinearScan::insertMove(
             noway_assert(!blockRange.IsEmpty());
 
             GenTree* branch = blockRange.LastNode();
-            assert(branch->OperGet() == GT_JTRUE || branch->OperGet() == GT_SWITCH_TABLE ||
+            assert(branch->OperIsConditionalJump() || branch->OperGet() == GT_SWITCH_TABLE ||
                    branch->OperGet() == GT_SWITCH);
 
             blockRange.InsertBefore(branch, std::move(treeRange));
@@ -8600,7 +8600,7 @@ void LinearScan::insertSwap(
             noway_assert(!blockRange.IsEmpty());
 
             GenTree* branch = blockRange.LastNode();
-            assert(branch->OperGet() == GT_JTRUE || branch->OperGet() == GT_SWITCH_TABLE ||
+            assert(branch->OperIsConditionalJump() || branch->OperGet() == GT_SWITCH_TABLE ||
                    branch->OperGet() == GT_SWITCH);
 
             blockRange.InsertBefore(branch, std::move(swapRange));

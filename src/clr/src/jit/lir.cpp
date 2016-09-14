@@ -1617,7 +1617,7 @@ void LIR::InsertBeforeTerminator(BasicBlock* block, LIR::Range&& range)
         switch (block->bbJumpKind)
         {
         case BBJ_COND:
-            assert(insertionPoint->OperGet() == GT_JTRUE);
+            assert(insertionPoint->OperIsConditionalJump());
             break;
 
         case BBJ_SWITCH:
