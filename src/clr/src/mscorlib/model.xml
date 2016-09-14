@@ -6326,10 +6326,23 @@
       <Member Name="GetHashCode(System.Object)" />
       <Member Name="RunClassConstructor(System.RuntimeTypeHandle)" />
       <Member Name="RunModuleConstructor(System.ModuleHandle)" />
+      <Member Name="ExecuteCodeWithGuaranteedCleanup(System.Runtime.CompilerServices.RuntimeHelpers+TryCode,System.Runtime.CompilerServices.RuntimeHelpers+CleanupCode,System.Object)" />
       <Member MemberType="Property" Name="OffsetToStringData" />
       <Member Status="ImplRoot" Name="ExecuteBackoutCodeHelper(System.Object,System.Object,System.Boolean)" />
       <Member Status="ImplRoot" Name="PrepareConstrainedRegionsNoOP" />
       <Member Status="ImplRoot" Name="PrepareConstrainedRegions" />
+    </Type>
+    <Type Name="System.Runtime.CompilerServices.RuntimeHelpers+CleanupCode">
+      <Member Name="#ctor(System.Object,System.IntPtr)" />
+      <Member Name="BeginInvoke(System.Object,System.Boolean,System.AsyncCallback,System.Object)" />
+      <Member Name="EndInvoke(System.IAsyncResult)" />
+      <Member Name="Invoke(System.Object,System.Boolean)" />
+    </Type>
+    <Type Name="System.Runtime.CompilerServices.RuntimeHelpers+TryCode">
+      <Member Name="#ctor(System.Object,System.IntPtr)" />
+      <Member Name="BeginInvoke(System.Object,System.AsyncCallback,System.Object)" />
+      <Member Name="EndInvoke(System.IAsyncResult)" />
+      <Member Name="Invoke(System.Object)" />
     </Type>
     <Type Name="System.Runtime.CompilerServices.ConditionalWeakTable&lt;TKey,TValue&gt;">
       <Member Name="#ctor" />
