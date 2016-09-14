@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.Reflection;
+using System.Threading;
 using Xunit;
 
 namespace System.Linq.Expressions.Tests
@@ -483,6 +484,175 @@ namespace System.Linq.Expressions.Tests
             lambda = (Expression<Func<int>>)Expression.Lambda(typeof(Func<int>), Expression.Constant(3), Enumerable.Empty<ParameterExpression>());
             lambda = lambda.Update(Expression.Constant(4), lambda.Parameters);
             Assert.False(lambda.TailCall);
+        }
+
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public void CurriedFunctions(bool useInterpreter)
+        {
+            Expression<Func<int, Func<int>>> f1 = x => () => x;
+            var d1 = f1.Compile(useInterpreter);
+            var c1 = d1(42);
+            Assert.Equal(42, c1());
+            Assert.Equal(42, c1());
+
+            Expression<Func<int, Func<int, int>>> f2 = x => y => x - y;
+            var d2 = f2.Compile(useInterpreter);
+            var c2 = d2(42);
+            Assert.Equal(41, c2(1));
+            Assert.Equal(40, c2(2));
+
+            Expression<Func<int, Func<int, Func<int, int>>>> f3 = x => y => z => x * y - z;
+            var d3 = f3.Compile(useInterpreter);
+            var c3 = d3(2);
+            var c31 = c3(21);
+            Assert.Equal(41, c31(1));
+            Assert.Equal(40, c31(2));
+            var c32 = c3(22);
+            Assert.Equal(41, c32(3));
+            Assert.Equal(40, c32(4));
+        }
+
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public void CurriedFunctionsReadWrite(bool useInterpreter)
+        {
+            // Generate code like:
+            //
+            // val => () =>
+            // {
+            //     sum = 0;
+            //
+            //     val = 1;
+            //     sum += val;
+            //     ...
+            //     val = n;
+            //     sum += val;
+            //
+            //     return sum;
+            // }
+            //
+            // This introduces repeated reads and writes for a hoisted local, which may be subject
+            // to optimizations for closure storage access.
+            //
+            for (var i = 0; i < 10; i++)
+            {
+                var val = Expression.Parameter(typeof(int));
+                var sum = Expression.Parameter(typeof(int));
+
+                var addExprs = new List<Expression>();
+
+                for (var j = 1; j <= i; j++)
+                {
+                    addExprs.Add(Expression.Assign(val, Expression.Constant(j)));
+                    addExprs.Add(Expression.AddAssign(sum, val));
+                }
+
+                var adds = Expression.Block(addExprs);
+                var body = Expression.Block(new[] { sum }, Expression.Assign(sum, Expression.Constant(0)), adds, sum);
+
+                var e = Expression.Lambda<Func<int, Func<int>>>(Expression.Lambda<Func<int>>(body), val);
+                var f = e.Compile(useInterpreter);
+
+                Assert.Equal(i * (i + 1) / 2, f(i)());
+            }
+        }
+
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public void CurriedFunctionsUsingRef(bool useInterpreter)
+        {
+            Expression<Func<int, Func<int>>> f1 = x => () => x * Add(ref x, 1);
+            var d1 = f1.Compile(useInterpreter);
+            Assert.Equal(3 * 4, d1(3)());
+
+            Expression<Func<int, Func<int>>> f2 = x => () => x * Add(ref x, 1) * Add(ref x, 2);
+            var d2 = f2.Compile(useInterpreter);
+            Assert.Equal(3 * 4 * 6, d2(3)());
+
+            Expression<Func<int, Func<int>>> f3 = x => () => x * Add(ref x, 1) * Add(ref x, 2) * x;
+            var d3 = f3.Compile(useInterpreter);
+            Assert.Equal(3 * 4 * 6 * 6, d3(3)());
+        }
+
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public void CurriedFunctionsReadWriteThroughRef(bool useInterpreter)
+        {
+            // Generate code like:
+            //
+            // val => () =>
+            // {
+            //     sum = 0;
+            //
+            //     val = 1;
+            //     Add(ref sum, val);
+            //     ...
+            //     val = n;
+            //     Add(ref sum, val);
+            //
+            //     return sum;
+            // }
+            //
+            // This introduces repeated reads and writes for a hoisted local, which may be subject
+            // to optimizations for closure storage access.
+            //
+
+            var add = typeof(LambdaTests).GetMethod(nameof(LambdaTests.Add), BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
+
+            for (var i = 0; i < 10; i++)
+            {
+                var val = Expression.Parameter(typeof(int));
+                var sum = Expression.Parameter(typeof(int));
+
+                var addExprs = new List<Expression>();
+
+                for (var j = 1; j <= i; j++)
+                {
+                    addExprs.Add(Expression.Assign(val, Expression.Constant(j)));
+                    addExprs.Add(Expression.Call(add, sum, val));
+                }
+
+                var adds = Expression.Block(addExprs);
+                var body = Expression.Block(new[] { sum }, Expression.Assign(sum, Expression.Constant(0)), adds, sum);
+
+                var e = Expression.Lambda<Func<int, Func<int>>>(Expression.Lambda<Func<int>>(body), val);
+                var f = e.Compile(useInterpreter);
+
+                Assert.Equal(i * (i + 1) / 2, f(i)());
+            }
+        }
+
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public void CurriedFunctionsVariableCaptureSemantics(bool useInterpreter)
+        {
+            var x = Expression.Parameter(typeof(int));
+            var f = Expression.Parameter(typeof(Func<int>));
+
+            var e =
+                Expression.Lambda<Func<Func<int>>>(
+                    Expression.Block(
+                        new[] { f, x },
+                        Expression.Assign(x, Expression.Constant(-1)),
+                        Expression.Assign(
+                            f,
+                            Expression.Lambda<Func<int>>(
+                                Expression.MultiplyAssign(x, Expression.Constant(2))
+                            )
+                        ),
+                        Expression.Assign(x, Expression.Constant(20)),
+                        Expression.AddAssign(x, Expression.Constant(1)),
+                        f
+                    )
+                );
+
+            var d = e.Compile(useInterpreter);
+
+            var i = d();
+
+            Assert.Equal(42, i());
+            Assert.Equal(84, i());
+        }
+
+        private static int Add(ref int var, int val)
+        {
+            return var += val;
         }
     }
 }
