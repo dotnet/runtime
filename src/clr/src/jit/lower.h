@@ -190,6 +190,7 @@ private:
     void TreeNodeInfoInitReturn(GenTree* tree);
     void TreeNodeInfoInitShiftRotate(GenTree* tree);
     void TreeNodeInfoInitCall(GenTreeCall* call);
+    void TreeNodeInfoInitCmp(GenTreePtr tree);
     void TreeNodeInfoInitStructArg(GenTreePtr structArg);
     void TreeNodeInfoInitBlockStore(GenTreeBlk* blkNode);
     void TreeNodeInfoInitLogicalOp(GenTree* tree);
@@ -225,8 +226,6 @@ private:
 #if defined(_TARGET_XARCH_)
     void SetMulOpCounts(GenTreePtr tree);
 #endif // defined(_TARGET_XARCH_)
-
-    void LowerCmp(GenTreePtr tree);
 
 #if !CPU_LOAD_STORE_ARCH
     bool IsBinOpInRMWStoreInd(GenTreePtr tree);
