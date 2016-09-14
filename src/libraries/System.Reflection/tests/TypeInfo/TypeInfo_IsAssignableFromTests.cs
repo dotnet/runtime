@@ -19,7 +19,7 @@ namespace System.Reflection.Tests
         [Fact]
         public static void TestIsAssignable1()
         {
-            VerifyIsAssignableFrom("B&null", typeof(B).GetTypeInfo(), null, false);
+            VerifyIsAssignableFrom("B&null", typeof(ClassWithIterfaces).GetTypeInfo(), null, false);
         }
 
         // Verify IsAssignableFrom for List and Arrays
@@ -29,11 +29,11 @@ namespace System.Reflection.Tests
             VerifyIsAssignableFrom("ListArray", typeof(IList<object>).GetTypeInfo(), typeof(object[]).GetTypeInfo(), true);
             VerifyIsAssignableFrom("ArrayList", typeof(object[]).GetTypeInfo(), typeof(IList<object>).GetTypeInfo(), false);
 
-            VerifyIsAssignableFrom("B&D", typeof(B).GetTypeInfo(), typeof(D).GetTypeInfo(), true);
-            VerifyIsAssignableFrom("B[]&D[]", typeof(B[]).GetTypeInfo(), typeof(D[]).GetTypeInfo(), true);
-            VerifyIsAssignableFrom("IList<object>&B[]", typeof(IList<object>).GetTypeInfo(), typeof(B[]).GetTypeInfo(), true);
-            VerifyIsAssignableFrom("IList<B>*B[]", typeof(IList<B>).GetTypeInfo(), typeof(B[]).GetTypeInfo(), true);
-            VerifyIsAssignableFrom("IList<B>&D[]", typeof(IList<B>).GetTypeInfo(), typeof(D[]).GetTypeInfo(), true);
+            VerifyIsAssignableFrom("B&D", typeof(ClassWithIterfaces).GetTypeInfo(), typeof(D).GetTypeInfo(), true);
+            VerifyIsAssignableFrom("B[]&D[]", typeof(ClassWithIterfaces[]).GetTypeInfo(), typeof(D[]).GetTypeInfo(), true);
+            VerifyIsAssignableFrom("IList<object>&B[]", typeof(IList<object>).GetTypeInfo(), typeof(ClassWithIterfaces[]).GetTypeInfo(), true);
+            VerifyIsAssignableFrom("IList<B>*B[]", typeof(IList<ClassWithIterfaces>).GetTypeInfo(), typeof(ClassWithIterfaces[]).GetTypeInfo(), true);
+            VerifyIsAssignableFrom("IList<B>&D[]", typeof(IList<ClassWithIterfaces>).GetTypeInfo(), typeof(D[]).GetTypeInfo(), true);
             VerifyIsAssignableFrom("IList<D> & D[]", typeof(IList<D>).GetTypeInfo(), typeof(D[]).GetTypeInfo(), true);
         }
 
@@ -56,7 +56,7 @@ namespace System.Reflection.Tests
         public static void TestIsAssignable4()
         {
             VerifyIsAssignableFrom("I2 I2", typeof(I2).GetTypeInfo(), typeof(I2).GetTypeInfo(), true);
-            VerifyIsAssignableFrom("I2 B", typeof(I2).GetTypeInfo(), typeof(B).GetTypeInfo(), true);
+            VerifyIsAssignableFrom("I2 B", typeof(I2).GetTypeInfo(), typeof(ClassWithIterfaces).GetTypeInfo(), true);
             VerifyIsAssignableFrom("I2 D", typeof(I2).GetTypeInfo(), typeof(D).GetTypeInfo(), true);
             VerifyIsAssignableFrom("I2 Gen<>", typeof(I2).GetTypeInfo(), typeof(Gen<>).GetTypeInfo(), true);
             VerifyIsAssignableFrom("I2 Gen<string>", typeof(I2).GetTypeInfo(), typeof(Gen<string>).GetTypeInfo(), true);
@@ -107,8 +107,8 @@ namespace System.Reflection.Tests
 
     public struct S : I1 { }
 
-    public class B : I1, I2 { }
-    public class D : B { }
+    public class ClassWithIterfaces : I1, I2 { }
+    public class D : ClassWithIterfaces { }
     public class Gen<T> : D { }
 
     public class I<T> { }
