@@ -7312,7 +7312,7 @@ VOID * GetHijackAddr(Thread *pThread, EECodeInfo *codeInfo)
 #ifdef _TARGET_X86_
     if (returnKind == RT_Float)
     {
-        return reinterpret_cast<VOID *>(OnHijackTripThread);
+        return reinterpret_cast<VOID *>(OnHijackFPTripThread);
     }
 #endif // _TARGET_X86_
 
