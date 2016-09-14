@@ -10,18 +10,6 @@ namespace System.Linq.Expressions.Tests
 {
     public static class CallTests
     {
-        private interface IBar
-        {
-            int Bar();
-        }
-
-        private struct S : IBar
-        {
-            public int X;
-
-            public int Bar() => X;
-        }
-
         private struct Mutable
         {
             private int x;
@@ -239,13 +227,49 @@ namespace System.Linq.Expressions.Tests
 
         [Theory]
         [ClassData(typeof(CompilationTypes))]
-        public static void CallInterface(bool useInterpreter)
+        public static void Call_InstanceNullInside_ThrowsNullReferenceExceptionOnInvocation(bool useInterpreter)
         {
-            var p = Expression.Parameter(typeof(S));
-            var body = Expression.Call(p, typeof(IBar).GetMethod("Bar"));
-            var lambda = Expression.Lambda<Func<S, int>>(body, p).Compile(useInterpreter);
+            Expression call = Expression.Call(Expression.Constant(null, typeof(NonGenericClass)), typeof(NonGenericClass).GetMethod(nameof(NonGenericClass.InstanceMethod)));
+            Action compiledDelegate = Expression.Lambda<Action>(call).Compile(useInterpreter);
+            TargetInvocationException exception = Assert.Throws<TargetInvocationException>(() => compiledDelegate.DynamicInvoke());
+            Assert.IsType<NullReferenceException>(exception.InnerException);
+        }
 
-            Assert.Equal(42, lambda(new S() { X = 42 }));
+        public static IEnumerable<object[]> Call_NoParameters_TestData()
+        {
+            // Basic
+            yield return new object[] { Expression.Constant(new ClassWithInterface1()), typeof(ClassWithInterface1).GetMethod(nameof(ClassWithInterface1.Method)), 2 };
+            yield return new object[] { Expression.Constant(new StructWithInterface1()), typeof(StructWithInterface1).GetMethod(nameof(StructWithInterface1.Method)), 2 };
+
+            // Object method
+            yield return new object[] { Expression.Constant(new ClassWithInterface1()), typeof(object).GetMethod(nameof(object.GetType)), typeof(ClassWithInterface1) };
+            yield return new object[] { Expression.Constant(new StructWithInterface1()), typeof(object).GetMethod(nameof(object.GetType)), typeof(StructWithInterface1) };
+            yield return new object[] { Expression.Constant(Int32Enum.A), typeof(object).GetMethod(nameof(object.GetType)), typeof(Int32Enum) };
+
+            // ValueType method from struct
+            yield return new object[] { Expression.Constant(new StructWithInterface1()), typeof(ValueType).GetMethod(nameof(ValueType.ToString)), new StructWithInterface1().ToString() };
+
+            // Enum method from enum
+            yield return new object[] { Expression.Constant(Int32Enum.A), typeof(Enum).GetMethod(nameof(Enum.ToString), new Type[0]), "A" };
+
+            // Interface method
+            yield return new object[] { Expression.Constant(new ClassWithInterface1()), typeof(Interface1).GetMethod(nameof(Interface1.InterfaceMethod)), 1 };
+            yield return new object[] { Expression.Constant(new StructWithInterface1()), typeof(Interface1).GetMethod(nameof(Interface1.InterfaceMethod)), 1 };
+            yield return new object[] { Expression.Constant(new ClassWithCompoundInterface()), typeof(Interface1).GetMethod(nameof(Interface1.InterfaceMethod)), 1 };
+            yield return new object[] { Expression.Constant(new StructWithCompoundInterface()), typeof(Interface1).GetMethod(nameof(Interface1.InterfaceMethod)), 1 };
+
+            // Interface method, interface type
+            yield return new object[] { Expression.Constant(new ClassWithInterface1(), typeof(Interface1)), typeof(Interface1).GetMethod(nameof(Interface1.InterfaceMethod)), 1 };
+            yield return new object[] { Expression.Constant(new StructWithInterface1(), typeof(Interface1)), typeof(Interface1).GetMethod(nameof(Interface1.InterfaceMethod)), 1 };
+        }
+
+        [Theory]
+        [PerCompilationType(nameof(Call_NoParameters_TestData))]
+        public static void Call_NoParameters(Expression instance, MethodInfo method, object expected, bool useInterpreter)
+        {
+            Expression call = Expression.Call(instance, method);
+            Delegate compiledDelegate = Expression.Lambda(call).Compile(useInterpreter);
+            Assert.Equal(expected, compiledDelegate.DynamicInvoke());
         }
 
         private static Expression s_valid => Expression.Constant(5);
@@ -266,7 +290,7 @@ namespace System.Linq.Expressions.Tests
 
         [Theory]
         [MemberData(nameof(Method_Invalid_TestData))]
-        public static void Method_Invalid(MethodInfo method, Type exceptionType)
+        public static void Method_Invalid_ThrowsArgumentException(MethodInfo method, Type exceptionType)
         {
             AssertArgumentException(() => Expression.Call(null, method), exceptionType, "method");
             AssertArgumentException(() => Expression.Call(null, method, s_valid, s_valid), exceptionType, "method");
@@ -282,7 +306,29 @@ namespace System.Linq.Expressions.Tests
             AssertArgumentException(() => Expression.Call(method, new Expression[0]), exceptionType, "method");
             AssertArgumentException(() => Expression.Call(method, (IEnumerable<Expression>)new Expression[0]), exceptionType, "method");
         }
-        
+
+        public static IEnumerable<object[]> Method_DoesntBelongToInstance_TestData()
+        {
+            // Different declaring type
+            yield return new object[] { Expression.Constant(new ClassWithInterface1()), typeof(OtherClassWithInterface1).GetMethod(nameof(Interface1.InterfaceMethod)) };
+            yield return new object[] { Expression.Constant(new StructWithInterface1()), typeof(OtherStructWithInterface1).GetMethod(nameof(Interface1.InterfaceMethod)) };
+
+            // Different interface
+            yield return new object[] { Expression.Constant(new ClassWithInterface1()), typeof(Interface2).GetMethod(nameof(Interface2.InterfaceMethod)) };
+            yield return new object[] { Expression.Constant(new StructWithInterface1()), typeof(Interface2).GetMethod(nameof(Interface2.InterfaceMethod)) };
+
+            // Custom type
+            yield return new object[] { Expression.Constant(new ClassWithInterface1(), typeof(object)), typeof(ClassWithInterface1).GetMethod(nameof(ClassWithInterface1.Method)) };
+            yield return new object[] { Expression.Constant(new StructWithInterface1(), typeof(object)), typeof(ClassWithInterface1).GetMethod(nameof(ClassWithInterface1.Method)) };
+        }
+
+        [Theory]
+        [MemberData(nameof(Method_DoesntBelongToInstance_TestData))]
+        public static void Method_DoesntBelongToInstance_ThrowsArgumentException(Expression instance, MethodInfo method)
+        {
+            Assert.Throws<ArgumentException>(null, () => Expression.Call(instance, method));
+        }
+
         [Fact]
         public static void InstanceMethod_NullInstance_ThrowsArgumentException()
         {
@@ -344,7 +390,7 @@ namespace System.Linq.Expressions.Tests
             AssertArgumentException(() => Expression.Call(s_method3, s_valid, arg, s_valid), exceptionType, "arg1");
             AssertArgumentException(() => Expression.Call(s_method4, s_valid, arg, s_valid, s_valid), exceptionType, "arg1");
             AssertArgumentException(() => Expression.Call(s_method5, s_valid, arg, s_valid, s_valid, s_valid), exceptionType, "arg1");
-            
+
             AssertArgumentException(() => Expression.Call(null, s_method2, s_valid, arg), exceptionType, "arg1");
             AssertArgumentException(() => Expression.Call(null, s_method3, s_valid, arg, s_valid), exceptionType, "arg1");
         }
@@ -356,7 +402,7 @@ namespace System.Linq.Expressions.Tests
             AssertArgumentException(() => Expression.Call(s_method3, s_valid, s_valid, arg), exceptionType, "arg2");
             AssertArgumentException(() => Expression.Call(s_method4, s_valid, s_valid, arg, s_valid), exceptionType, "arg2");
             AssertArgumentException(() => Expression.Call(s_method5, s_valid, s_valid, arg, s_valid, s_valid), exceptionType, "arg2");
-            
+
             AssertArgumentException(() => Expression.Call(null, s_method3, s_valid, s_valid, arg), exceptionType, "arg2");
         }
 
@@ -574,23 +620,67 @@ namespace System.Linq.Expressions.Tests
             public void InstanceMethod1(int i1) { }
             public static void StaticMethod1(int i1) { }
         }
+
+        public interface Interface1
+        {
+            int InterfaceMethod();
+        }
+
+        public interface Interface2
+        {
+            int InterfaceMethod();
+        }
+
+        public interface CompoundInterface : Interface1 { }
+
+        public class ClassWithInterface1 : Interface1
+        {
+            public int InterfaceMethod() => 1;
+            public int Method() => 2;
+        }
+
+        public class OtherClassWithInterface1 : Interface1
+        {
+            public int InterfaceMethod() => 1;
+        }
+
+        public struct StructWithInterface1 : Interface1
+        {
+            public int InterfaceMethod() => 1;
+            public int Method() => 2;
+        }
+
+        public struct OtherStructWithInterface1 : Interface1
+        {
+            public int InterfaceMethod() => 1;
+        }
+
+        public class ClassWithCompoundInterface : CompoundInterface
+        {
+            public int InterfaceMethod() => 1;
+        }
+
+        public struct StructWithCompoundInterface : CompoundInterface
+        {
+            public int InterfaceMethod() => 1;
+        }
     }
 
     class SomeMethods
     {
-        public static void S0() {}
-        public static void S1(int x) {}
-        public static void S2(int x, int y) {}
+        public static void S0() { }
+        public static void S1(int x) { }
+        public static void S2(int x, int y) { }
 
-        public void I0() {}
-        public void I1(int x) {}
-        public void I2(int x, int y) {}
+        public void I0() { }
+        public void I1(int x) { }
+        public void I2(int x, int y) { }
     }
-    
+
     static class ExtensionMethods
     {
-         public static void E0(this int x) {}
-         public static void E1(this int x, int y) {}
-         public static void E2(this int x, int y, int z) {}
+        public static void E0(this int x) { }
+        public static void E1(this int x, int y) { }
+        public static void E2(this int x, int y, int z) { }
     }
 }
