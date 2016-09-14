@@ -53,7 +53,6 @@ void genCompareInt(GenTreePtr treeNode);
 
 #if !defined(_TARGET_64BIT_)
 void genCompareLong(GenTreePtr treeNode);
-void genJTrueLong(GenTreePtr treeNode);
 #endif
 
 #ifdef FEATURE_SIMD

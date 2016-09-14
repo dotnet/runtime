@@ -4072,7 +4072,7 @@ public:
 
     void fgUnreachableBlock(BasicBlock* block);
 
-    void fgRemoveJTrue(BasicBlock* block);
+    void fgRemoveConditionalJump(BasicBlock* block);
 
     BasicBlock* fgLastBBInMainFunction();
 

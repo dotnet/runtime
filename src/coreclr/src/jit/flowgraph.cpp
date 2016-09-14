@@ -9339,6 +9339,7 @@ inline bool OperIsControlFlow(genTreeOps oper)
     switch (oper)
     {
         case GT_JTRUE:
+        case GT_JCC:
         case GT_SWITCH:
         case GT_LABEL:
 
@@ -10019,10 +10020,10 @@ void Compiler::fgUnreachableBlock(BasicBlock* block)
 
 /*****************************************************************************************************
  *
- *  Function called to remove or morph a GT_JTRUE statement when we jump to the same
+ *  Function called to remove or morph a jump when we jump to the same
  *  block when both the condition is true or false.
  */
-void Compiler::fgRemoveJTrue(BasicBlock* block)
+void Compiler::fgRemoveConditionalJump(BasicBlock* block)
 {
     noway_assert(block->bbJumpKind == BBJ_COND && block->bbJumpDest == block->bbNext);
     assert(compRationalIRForm == block->IsLIR());
@@ -10053,7 +10054,7 @@ void Compiler::fgRemoveJTrue(BasicBlock* block)
         LIR::Range& blockRange = LIR::AsRange(block);
 
         GenTree* test = blockRange.LastNode();
-        assert(test->OperGet() == GT_JTRUE);
+        assert(test->OperIsConditionalJump());
 
         bool               isClosed;
         unsigned           sideEffects;
@@ -10109,7 +10110,7 @@ void Compiler::fgRemoveJTrue(BasicBlock* block)
         {
             test->gtStmtExpr = sideEffList;
 
-            fgMorphBlockStmt(block, test DEBUGARG("fgRemoveJTrue"));
+            fgMorphBlockStmt(block, test DEBUGARG("fgRemoveConditionalJump"));
         }
     }
 }
@@ -10545,7 +10546,7 @@ void Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
                         // Make sure we are replacing "block" with "succBlock" in predBlock->bbJumpDest.
                         noway_assert(predBlock->bbJumpDest == block);
                         predBlock->bbJumpDest = succBlock;
-                        fgRemoveJTrue(predBlock);
+                        fgRemoveConditionalJump(predBlock);
                         break;
                     }
 
@@ -10605,7 +10606,7 @@ void Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
                 /* Check for branch to next block */
                 if (bPrev->bbJumpDest == bPrev->bbNext)
                 {
-                    fgRemoveJTrue(bPrev);
+                    fgRemoveConditionalJump(bPrev);
                 }
                 break;
 
@@ -13793,7 +13794,7 @@ bool Compiler::fgOptimizeBranchToNext(BasicBlock* block, BasicBlock* bNext, Basi
         {
             LIR::Range& blockRange = LIR::AsRange(block);
             GenTree*    jmp        = blockRange.LastNode();
-            assert(jmp->OperGet() == GT_JTRUE);
+            assert(jmp->OperIsConditionalJump());
 
             bool               isClosed;
             unsigned           sideEffects;
@@ -15879,11 +15880,18 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication)
                         /* Reverse the jump condition */
 
                         GenTree* test = block->lastNode();
-                        noway_assert(test->gtOper == GT_JTRUE);
+                        noway_assert(test->OperIsConditionalJump());
 
-                        GenTree* cond = gtReverseCond(test->gtOp.gtOp1);
-                        assert(cond == test->gtOp.gtOp1); // Ensure `gtReverseCond` did not create a new node.
-                        test->gtOp.gtOp1 = cond;
+                        if (test->OperGet() == GT_JTRUE)
+                        {
+                            GenTree* cond = gtReverseCond(test->gtOp.gtOp1);
+                            assert(cond == test->gtOp.gtOp1); // Ensure `gtReverseCond` did not create a new node.
+                            test->gtOp.gtOp1 = cond;
+                        }
+                        else
+                        {
+                            gtReverseCond(test);
+                        }
 
                         // Optimize the Conditional JUMP to go to the new target
                         block->bbJumpDest = bNext->bbJumpDest;
@@ -19937,11 +19945,11 @@ void                Compiler::fgDebugCheckBBlist(bool checkBBNum  /* = false */,
 
         // If the block is a BBJ_COND, a BBJ_SWITCH or a
         // lowered GT_SWITCH_TABLE node then make sure it
-        // ends with a GT_JTRUE or a GT_SWITCH
+        // ends with a conditional jump or a GT_SWITCH
 
         if (block->bbJumpKind == BBJ_COND)
         {
-            noway_assert(block->lastNode()->gtNext == nullptr && block->lastNode()->gtOper == GT_JTRUE);
+            noway_assert(block->lastNode()->gtNext == nullptr && block->lastNode()->OperIsConditionalJump());
         }
         else if (block->bbJumpKind == BBJ_SWITCH)
         {
