@@ -2121,9 +2121,11 @@ STRINGREF __stdcall StringObject::StringInitCharHelper(LPCSTR pszSource, int len
     if (!pszSource || length == 0) {
         return StringObject::GetEmptyString();
     }
+#ifndef FEATURE_PAL
     else if ((size_t)pszSource < 64000) {
         COMPlusThrow(kArgumentException, W("Arg_MustBeStringPtrNotAtom"));
     }    
+#endif // FEATURE_PAL
 
     // Make sure we can read from the pointer.
     // This is better than try to read from the pointer and catch the access violation exceptions.
