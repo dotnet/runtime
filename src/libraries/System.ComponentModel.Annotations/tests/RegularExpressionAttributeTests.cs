@@ -13,9 +13,13 @@ namespace System.ComponentModel.DataAnnotations.Tests
         protected override IEnumerable<TestCase> ValidValues()
         {
             yield return new TestCase(new RegularExpressionAttribute("SomePattern"), null);
-            yield return new TestCase(new RegularExpressionAttribute("SomePattern"), string.Empty);
+            yield return new TestCase(new RegularExpressionAttribute("SomePattern") { MatchTimeoutInMilliseconds = -1 }, string.Empty);
             yield return new TestCase(new RegularExpressionAttribute("defghi") { MatchTimeoutInMilliseconds = 5000 }, "defghi");
             yield return new TestCase(new RegularExpressionAttribute("[^a]+\\.[^z]+") { MatchTimeoutInMilliseconds = 10000 }, "bcdefghijklmnopqrstuvwxyz.abcdefghijklmnopqrstuvwxy");
+
+            yield return new TestCase(new RegularExpressionAttribute("abc"), new ClassWithValidToString());
+            yield return new TestCase(new RegularExpressionAttribute("1"), 1);
+            yield return new TestCase(new RegularExpressionAttribute("abc"), new IFormattableImplementor());
         }
 
         protected override IEnumerable<TestCase> InvalidValues()
@@ -28,10 +32,15 @@ namespace System.ComponentModel.DataAnnotations.Tests
             yield return new TestCase(new RegularExpressionAttribute("[^a]+\\.[^z]+") { MatchTimeoutInMilliseconds = 10000 }, "zzzzz");
             yield return new TestCase(new RegularExpressionAttribute("[^a]+\\.[^z]+") { MatchTimeoutInMilliseconds = 10000 }, "b.z");
             yield return new TestCase(new RegularExpressionAttribute("[^a]+\\.[^z]+") { MatchTimeoutInMilliseconds = 10000 }, "a.y");
+
+            yield return new TestCase(new RegularExpressionAttribute("def"), new ClassWithValidToString());
+            yield return new TestCase(new RegularExpressionAttribute("2"), 1);
+            yield return new TestCase(new RegularExpressionAttribute("def"), new IFormattableImplementor());
         }
 
         [Theory]
         [InlineData("SomePattern")]
+        [InlineData("foo(?<1bar)")]
         public static void Ctor_String(string pattern)
         {
             var attribute = new RegularExpressionAttribute(pattern);
@@ -40,6 +49,7 @@ namespace System.ComponentModel.DataAnnotations.Tests
 
         [Theory]
         [InlineData(12345)]
+        [InlineData(-1)]
         public static void MatchTimeoutInMilliseconds_GetSet_ReturnsExpected(int newValue)
         {
             var attribute = new RegularExpressionAttribute("SomePattern");
@@ -56,8 +66,10 @@ namespace System.ComponentModel.DataAnnotations.Tests
             Assert.Throws<InvalidOperationException>(() => attribute.Validate("Any", new ValidationContext(new object())));
         }
 
-        [Fact]
-        public static void Validate_ZeroMatchTimeoutInMilliseconds_ThrowsArgumentOutOfRangeException()
+        [Theory]
+        [InlineData(0)]
+        [InlineData(-2)]
+        public static void Validate_InvalidMatchTimeoutInMilliseconds_ThrowsArgumentOutOfRangeException(int timeout)
         {
             RegularExpressionAttribute attribute = new RegularExpressionAttribute("[^a]+\\.[^z]+") { MatchTimeoutInMilliseconds = 0 };
             Assert.Throws<ArgumentOutOfRangeException>("matchTimeout", () => attribute.Validate("a", new ValidationContext(new object())));
@@ -68,6 +80,18 @@ namespace System.ComponentModel.DataAnnotations.Tests
         {
             RegularExpressionAttribute attribute = new RegularExpressionAttribute("(a+)+$") { MatchTimeoutInMilliseconds = 1 };
             Assert.Throws<RegexMatchTimeoutException>(() => attribute.Validate("aaaaaaaaaaaaaaaaaaaaaaaaaaaa>", new ValidationContext(new object())));
+        }
+
+        [Fact]
+        public static void Validate_InvalidPattern_ThrowsArgumentException()
+        {
+            RegularExpressionAttribute attribute = new RegularExpressionAttribute("foo(?<1bar)");
+            Assert.Throws<ArgumentException>(null, () => attribute.Validate("Any", new ValidationContext(new object())));
+        }
+        
+        public class ClassWithValidToString
+        {
+            public override string ToString() => "abc";
         }
     }
 }

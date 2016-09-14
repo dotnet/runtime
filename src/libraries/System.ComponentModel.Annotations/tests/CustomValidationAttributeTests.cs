@@ -50,7 +50,7 @@ namespace System.ComponentModel.DataAnnotations.Tests
             yield return new TestCase(GetAttribute(nameof(CustomValidator.CorrectValidationMethodOneArgDateTime)), "abcdef");
 
             // Implements IConvertible (throws NotSupportedException - is caught)
-            yield return new TestCase(GetAttribute(nameof(CustomValidator.CorrectValidationMethodOneArgDateTime)), new IConvertibleImplementor());
+            yield return new TestCase(GetAttribute(nameof(CustomValidator.CorrectValidationMethodOneArgInt)), new IConvertibleImplementor() { IntThrow = new NotSupportedException() });
         }
 
         protected override bool RespectsErrorMessage => false;
@@ -118,13 +118,12 @@ namespace System.ComponentModel.DataAnnotations.Tests
             CustomValidationAttribute attribute = new CustomValidationAttribute(validatorType, method);
             Assert.Throws<InvalidOperationException>(() => attribute.FormatErrorMessage("name"));
         }
-        
-        // Implements IConvertible (throws custom ArithmeticException - is not caught)
+
         [Fact]
         public static void Validate_IConvertibleThrowsCustomException_IsNotCaught()
         {
-            CustomValidationAttribute attribute = GetAttribute(nameof(CustomValidator.CorrectValidationMethodOneArgDecimal));
-            Assert.Throws<ArithmeticException>(() => attribute.Validate(new IConvertibleImplementor(), s_testValidationContext));
+            CustomValidationAttribute attribute = GetAttribute(nameof(CustomValidator.CorrectValidationMethodOneArgInt));
+            Assert.Throws<ArithmeticException>(() => attribute.Validate(new IConvertibleImplementor() { IntThrow = new ArithmeticException() }, s_testValidationContext));
         }
 
         [Fact]
@@ -204,7 +203,7 @@ namespace System.ComponentModel.DataAnnotations.Tests
             }
 
             public static ValidationResult CorrectValidationMethodOneArgDateTime(DateTime dateTime) => ValidationResult.Success;
-            public static ValidationResult CorrectValidationMethodOneArgDecimal(decimal d) => ValidationResult.Success;
+            public static ValidationResult CorrectValidationMethodOneArgInt(int i) => ValidationResult.Success;
         }
 
         public class TestClass
@@ -221,37 +220,5 @@ namespace System.ComponentModel.DataAnnotations.Tests
         {
             public string Value { get; set; }
         }
-
-        public class IConvertibleImplementor : IConvertible
-        {
-            public TypeCode GetTypeCode() => TypeCode.Empty;
-
-            public bool ToBoolean(IFormatProvider provider) => true;
-            public byte ToByte(IFormatProvider provider) => 0;
-            public char ToChar(IFormatProvider provider) => '\0';
-            public DateTime ToDateTime(IFormatProvider provider)
-            {
-                throw new NotSupportedException();
-            }
-
-            public decimal ToDecimal(IFormatProvider provider)
-            {
-                throw new ArithmeticException();
-            }
-
-            public double ToDouble(IFormatProvider provider) => 0;
-            public short ToInt16(IFormatProvider provider) => 0;
-            public int ToInt32(IFormatProvider provider) => 0;
-            public long ToInt64(IFormatProvider provider) => 0;
-            public sbyte ToSByte(IFormatProvider provider) => 0;
-            public float ToSingle(IFormatProvider provider) => 0;
-
-            public string ToString(IFormatProvider provider) => "";
-            public object ToType(Type conversionType, IFormatProvider provider) => null;
-
-            public ushort ToUInt16(IFormatProvider provider) => 0;
-            public uint ToUInt32(IFormatProvider provider) => 0;
-            public ulong ToUInt64(IFormatProvider provider) => 0;
-        }
-        }
+    }
 }

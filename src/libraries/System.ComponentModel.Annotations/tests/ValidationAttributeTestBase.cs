@@ -34,14 +34,25 @@ namespace System.ComponentModel.DataAnnotations.Tests
             {
                 attribute.Validate(value, validationContext);
                 Assert.Equal(ValidationResult.Success, attribute.GetValidationResult(value, validationContext));
+
+                // Run the validation twice, in case attributes cache anything
+                attribute.Validate(value, validationContext);
+                Assert.Equal(ValidationResult.Success, attribute.GetValidationResult(value, validationContext));
             }
             else
             {
                 Assert.Throws<ValidationException>(() => attribute.Validate(value, validationContext));
                 Assert.NotNull(attribute.GetValidationResult(value, validationContext));
+
+                // Run the validation twice, in case attributes cache anything
+                Assert.Throws<ValidationException>(() => attribute.Validate(value, validationContext));
+                Assert.NotNull(attribute.GetValidationResult(value, validationContext));
             }
             if (!attribute.RequiresValidationContext)
             {
+                Assert.Equal(isValid, attribute.IsValid(value));
+
+                // Run the validation twice, in case attributes cache anything
                 Assert.Equal(isValid, attribute.IsValid(value));
             }
         }
@@ -57,6 +68,10 @@ namespace System.ComponentModel.DataAnnotations.Tests
             ErrorMessageSet_ErrorMessageResourceNameSet(InvalidValues().First());
             ErrorMessageResourceNameSet_ErrorMessageResourceTypeNotSet(InvalidValues().First());
             ErrorMessageResourceNameNotSet_ErrorMessageResourceTypeSet(InvalidValues().First());
+            ErrorMessageResourceNameSet_ErrorMessageResourceTypeSet_NoSuchProperty(InvalidValues().First());
+            ErrorMessageResourceNameSet_ErrorMessageResourceTypeSet_InstanceProperty(InvalidValues().First());
+            ErrorMessageResourceNameSet_ErrorMessageResourceTypeSet_PrivateProperty(InvalidValues().First());
+            ErrorMessageResourceNameSet_ErrorMessageResourceTypeSet_NonStringProperty(InvalidValues().First());
         }
 
         [Fact]
@@ -97,7 +112,35 @@ namespace System.ComponentModel.DataAnnotations.Tests
             test.Attribute.ErrorMessageResourceType = typeof(ErrorMessageResources);
             Assert.Throws(InvalidErrorMessage_Type, () => test.Attribute.Validate(test.Value, test.ValidationContext));
         }
-        
+
+        private void ErrorMessageResourceNameSet_ErrorMessageResourceTypeSet_NoSuchProperty(TestCase test)
+        {
+            test.Attribute.ErrorMessageResourceName = "NoSuchProperty";
+            test.Attribute.ErrorMessageResourceType = typeof(ErrorMessageResources);
+            Assert.Throws(InvalidErrorMessage_Type, () => test.Attribute.Validate(test.Value, test.ValidationContext));
+        }
+
+        private void ErrorMessageResourceNameSet_ErrorMessageResourceTypeSet_InstanceProperty(TestCase test)
+        {
+            test.Attribute.ErrorMessageResourceName = nameof(ErrorMessageResources.InstanceProperty);
+            test.Attribute.ErrorMessageResourceType = typeof(ErrorMessageResources);
+            Assert.Throws(InvalidErrorMessage_Type, () => test.Attribute.Validate(test.Value, test.ValidationContext));
+        }
+
+        private void ErrorMessageResourceNameSet_ErrorMessageResourceTypeSet_PrivateProperty(TestCase test)
+        {
+            test.Attribute.ErrorMessageResourceName = "PrivateProperty";
+            test.Attribute.ErrorMessageResourceType = typeof(ErrorMessageResources);
+            Assert.Throws(InvalidErrorMessage_Type, () => test.Attribute.Validate(test.Value, test.ValidationContext));
+        }
+
+        private void ErrorMessageResourceNameSet_ErrorMessageResourceTypeSet_NonStringProperty(TestCase test)
+        {
+            test.Attribute.ErrorMessageResourceName = nameof(ErrorMessageResources.BoolProperty);
+            test.Attribute.ErrorMessageResourceType = typeof(ErrorMessageResources);
+            Assert.Throws(InvalidErrorMessage_Type, () => test.Attribute.Validate(test.Value, test.ValidationContext));
+        }
+
         private void ErrorMessageSet_ReturnsOverridenValue(TestCase test)
         {
             test.Attribute.ErrorMessage = "SomeErrorMessage";
@@ -113,7 +156,7 @@ namespace System.ComponentModel.DataAnnotations.Tests
         
         private void ErrorMessageSetFromResource_ReturnsExpectedValue(TestCase test)
         {
-            test.Attribute.ErrorMessageResourceName = "InternalErrorMessageTestProperty";
+            test.Attribute.ErrorMessageResourceName = nameof(ErrorMessageResources.InternalErrorMessageTestProperty);
             test.Attribute.ErrorMessageResourceType = typeof(ErrorMessageResources);
 
             var validationResult = test.Attribute.GetValidationResult(test.Value, test.ValidationContext);
@@ -133,5 +176,56 @@ namespace System.ComponentModel.DataAnnotations.Tests
                 ValidationContext = validationContext ?? new ValidationContext(new object());
             }
         }
+    }
+
+    public class IConvertibleImplementor : IConvertible
+    {
+        public Exception DoubleThrow { get; set; }
+        public Exception IntThrow { get; set; }
+
+        public TypeCode GetTypeCode() => TypeCode.Empty;
+
+        public bool ToBoolean(IFormatProvider provider) => true;
+        public byte ToByte(IFormatProvider provider) => 0;
+        public char ToChar(IFormatProvider provider) => '\0';
+        public DateTime ToDateTime(IFormatProvider provider) => DateTime.Now;
+
+        public decimal ToDecimal(IFormatProvider provider) => 1m;
+
+        public double ToDouble(IFormatProvider provider)
+        {
+            if (DoubleThrow != null)
+            {
+                throw DoubleThrow;
+            }
+            return 0;
+        }
+
+        public short ToInt16(IFormatProvider provider) => 0;
+
+        public int ToInt32(IFormatProvider provider)
+        {
+            if (IntThrow != null)
+            {
+                throw IntThrow;
+            }
+            return 0;
+        }
+
+        public long ToInt64(IFormatProvider provider) => 0;
+        public sbyte ToSByte(IFormatProvider provider) => 0;
+        public float ToSingle(IFormatProvider provider) => 0;
+
+        public string ToString(IFormatProvider provider) => "";
+        public object ToType(Type conversionType, IFormatProvider provider) => null;
+
+        public ushort ToUInt16(IFormatProvider provider) => 0;
+        public uint ToUInt32(IFormatProvider provider) => 0;
+        public ulong ToUInt64(IFormatProvider provider) => 0;
+    }
+
+    public class IFormattableImplementor : IFormattable
+    {
+        public string ToString(string format, IFormatProvider formatProvider) => "abc";
     }
 }
