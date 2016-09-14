@@ -147,4 +147,7 @@
   <data name="net_WebSockets_InvalidState_Generic" xml:space="preserve">
     <value>The WebSocket instance cannot be used for communication because it has been transitioned into an invalid state.</value>
   </data>
+  <data name="net_WebSockets_ArgumentOutOfRange_TooSmall" xml:space="preserve">
+    <value>The argument must be a value greater than {0}.</value>
+  </data>
 </root>

@@ -1,6 +1,11 @@
 {
   "dependencies": {
+    "Microsoft.Win32.Primitives": "4.0.0",
+    "System.Collections.Specialized": "4.0.0",
+    "System.IO":  "4.0.0",
+    "System.Net.Primitives": "4.0.0",
     "System.Runtime": "4.0.0",
+    "System.Security.Principal": "4.0.0",
     "System.Threading.Tasks": "4.0.0"
   },
   "frameworks": {

@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Linq;
-
+using System.Runtime.InteropServices;
 using Xunit;
 
 namespace System.Net.WebSockets.Tests
@@ -30,6 +30,15 @@ namespace System.Net.WebSockets.Tests
 
         public static object[][] UnrelatedErrorData =
             ErrorData.SelectMany(wse => NativeErrorData.Select(ne => new object[] { wse[0], ne[0], ne[2] })).ToArray();
+
+        [Fact]
+        public void ConstructorTests_DefaultConstructor_MatchesLastError()
+        {
+            int error = Marshal.GetLastWin32Error();
+            var exc = new WebSocketException();
+            Assert.Equal(error, exc.NativeErrorCode);
+            Assert.Equal(error, exc.ErrorCode);
+        }
 
         [Theory, MemberData(nameof(ErrorData))]
         public void ConstructorTests_WebSocketError_Success(WebSocketError error)

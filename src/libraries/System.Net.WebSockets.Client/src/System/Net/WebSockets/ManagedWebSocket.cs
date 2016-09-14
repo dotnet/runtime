@@ -30,14 +30,14 @@ namespace System.Net.WebSockets
         /// <param name="stream">The connected Stream.</param>
         /// <param name="isServer">true if this is the server-side of the connection; false if this is the client-side of the connection.</param>
         /// <param name="subprotocol">The agreed upon subprotocol for the connection.</param>
-        /// <param name="keepAliveIntervalSeconds">The interval to use for keep-alive pings.</param>
+        /// <param name="keepAliveInterval">The interval to use for keep-alive pings.</param>
         /// <param name="receiveBufferSize">The buffer size to use for received data.</param>
+        /// <param name="receiveBuffer">Optional buffer to use for receives.</param>
         /// <returns>The created <see cref="ManagedWebSocket"/> instance.</returns>
         public static ManagedWebSocket CreateFromConnectedStream(
-            Stream stream, bool isServer, string subprotocol,
-            int keepAliveIntervalSeconds = 30, int receiveBufferSize = 0x1000)
+            Stream stream, bool isServer, string subprotocol, TimeSpan keepAliveInterval, int receiveBufferSize, ArraySegment<byte>? receiveBuffer = null)
         {
-            return new ManagedWebSocket(stream, isServer, subprotocol, TimeSpan.FromSeconds(keepAliveIntervalSeconds), receiveBufferSize);
+            return new ManagedWebSocket(stream, isServer, subprotocol, keepAliveInterval, receiveBufferSize, receiveBuffer);
         }
 
         /// <summary>Per-thread cached 4-byte mask byte array.</summary>
@@ -168,7 +168,8 @@ namespace System.Net.WebSockets
         /// <param name="subprotocol">The agreed upon subprotocol for the connection.</param>
         /// <param name="keepAliveInterval">The interval to use for keep-alive pings.</param>
         /// <param name="receiveBufferSize">The buffer size to use for received data.</param>
-        private ManagedWebSocket(Stream stream, bool isServer, string subprotocol, TimeSpan keepAliveInterval, int receiveBufferSize)
+        /// <param name="receiveBuffer">Optional buffer to use for receives</param>
+        private ManagedWebSocket(Stream stream, bool isServer, string subprotocol, TimeSpan keepAliveInterval, int receiveBufferSize, ArraySegment<byte>? receiveBuffer)
         {
             Debug.Assert(StateUpdateLock != null, $"Expected {nameof(StateUpdateLock)} to be non-null");
             Debug.Assert(ReceiveAsyncLock != null, $"Expected {nameof(ReceiveAsyncLock)} to be non-null");
@@ -183,7 +184,19 @@ namespace System.Net.WebSockets
             _stream = stream;
             _isServer = isServer;
             _subprotocol = subprotocol;
-            _receiveBuffer = new byte[Math.Max(receiveBufferSize, MaxMessageHeaderLength)];
+
+            // If we were provided with a buffer to use, use it, as long as it's big enough for our needs, and for simplicity
+            // as long as we're not supposed to use only a portion of it.  If it doesn't meet our criteria, just create a new one.
+            if (receiveBuffer.HasValue &&
+                receiveBuffer.Value.Offset == 0 && receiveBuffer.Value.Count == receiveBuffer.Value.Array.Length &&
+                receiveBuffer.Value.Count >= MaxMessageHeaderLength)
+            {
+                _receiveBuffer = receiveBuffer.Value.Array;
+            }
+            else
+            {
+                _receiveBuffer = new byte[Math.Max(receiveBufferSize, MaxMessageHeaderLength)];
+            }
 
             // Set up the abort source so that if it's triggered, we transition the instance appropriately.
             _abortSource.Token.Register(s =>
