@@ -6213,6 +6213,21 @@
       <Member Name="get_Value" />
       <Member MemberType="Property" Name="Value" />
     </Type>
+    <Type Name="System.Runtime.CompilerServices.DefaultDependencyAttribute">
+      <Member Name="#ctor(System.Runtime.CompilerServices.LoadHint)" />
+      <Member Name="get_LoadHint" />
+      <Member MemberType="Property" Name="LoadHint" />
+    </Type>
+    <Type Name="System.Runtime.CompilerServices.DependencyAttribute">
+      <Member Name="#ctor(System.String,System.Runtime.CompilerServices.LoadHint)" />
+      <Member Name="get_DependentAssembly" />
+      <Member Name="get_LoadHint" />
+      <Member MemberType="Property" Name="DependentAssembly" />
+      <Member MemberType="Property" Name="LoadHint" />
+    </Type>
+    <Type Name="System.Runtime.CompilerServices.DiscardableAttribute">
+      <Member Name="#ctor" />
+    </Type>
     <Type Name="System.Runtime.CompilerServices.DisablePrivateReflectionAttribute">
       <Member Name="#ctor" />
     </Type>
@@ -6329,8 +6344,13 @@
       <Member Name="ExecuteCodeWithGuaranteedCleanup(System.Runtime.CompilerServices.RuntimeHelpers+TryCode,System.Runtime.CompilerServices.RuntimeHelpers+CleanupCode,System.Object)" />
       <Member MemberType="Property" Name="OffsetToStringData" />
       <Member Status="ImplRoot" Name="ExecuteBackoutCodeHelper(System.Object,System.Object,System.Boolean)" />
-      <Member Status="ImplRoot" Name="PrepareConstrainedRegionsNoOP" />
-      <Member Status="ImplRoot" Name="PrepareConstrainedRegions" />
+      <Member Name="PrepareConstrainedRegions" />
+      <Member Name="PrepareConstrainedRegionsNoOP" />
+      <Member Name="PrepareContractedDelegate(System.Delegate)" />
+      <Member Name="PrepareDelegate(System.Delegate)" />
+      <Member Name="PrepareMethod(System.RuntimeMethodHandle)" />
+      <Member Name="PrepareMethod(System.RuntimeMethodHandle,System.RuntimeTypeHandle[])" />
+      <Member Name="ProbeForSufficientStack" />
     </Type>
     <Type Name="System.Runtime.CompilerServices.RuntimeHelpers+CleanupCode">
       <Member Name="#ctor(System.Object,System.IntPtr)" />
@@ -8835,6 +8855,9 @@
     <Type Name="System.Runtime.CompilerServices.CompilerGeneratedAttribute">
       <Member Name="#ctor" />
     </Type>
+    <Type Name="System.Runtime.CompilerServices.CompilerGlobalScopeAttribute">
+      <Member Name="#ctor" />
+    </Type>
 <!-- SMOSIER ADDED API ROOTS FOR our build process -->
     <Type Name="System.Runtime.InteropServices.ComVisibleAttribute">
       <Member Name="#ctor(System.Boolean)" />
@@ -9871,8 +9894,14 @@
       <Member Name="ResolveToken(System.Int32,System.IntPtr@,System.IntPtr@,System.IntPtr@)" /> <!-- EE -->
       <Member Name="ResolveSignature(System.Int32,System.Int32)" /> <!-- EE -->
     </Type>
-    <Type Status="ImplRoot" Name="System.Runtime.CompilerServices.RuntimeWrappedException">
+    <Type Name="System.Runtime.CompilerServices.RuntimeWrappedException">
       <Member Name="#ctor(System.Object)" /> <!-- EE -->
+      <Member Name="get_WrappedException" />
+      <Member Name="GetObjectData(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
+      <Member MemberType="Property" Name="WrappedException" />
+    </Type>
+    <Type Name="System.Runtime.CompilerServices.StringFreezingAttribute">
+      <Member Name="#ctor" />
     </Type>
     <Type Status="ImplRoot" Name="System.Runtime.CompilerServices.TypeDependencyAttribute">
       <Member Name="#ctor(System.String)" />
@@ -9887,7 +9916,13 @@
       <Member Name="op_Equality(System.Runtime.InteropServices.ArrayWithOffset,System.Runtime.InteropServices.ArrayWithOffset)" />
       <Member Name="op_Inequality(System.Runtime.InteropServices.ArrayWithOffset,System.Runtime.InteropServices.ArrayWithOffset)" />
     </Type>
-    <Type Status="ImplRoot" Name="System.Runtime.ConstrainedExecution.ReliabilityContractAttribute" />
+     <Type Name="System.Runtime.ConstrainedExecution.ReliabilityContractAttribute">
+      <Member Name="#ctor(System.Runtime.ConstrainedExecution.Consistency,System.Runtime.ConstrainedExecution.Cer)" />
+      <Member Name="get_Cer" />
+      <Member Name="get_ConsistencyGuarantee" />
+      <Member MemberType="Property" Name="Cer" />
+      <Member MemberType="Property" Name="ConsistencyGuarantee" />
+    </Type>
     <Type Status="ImplRoot" Name="System.Runtime.ConstrainedExecution.PrePrepareMethodAttribute" />
     <Type Name="System.Runtime.ConstrainedExecution.CriticalFinalizerObject">
       <Member Name="#ctor"/>
