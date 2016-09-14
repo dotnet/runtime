@@ -6,6 +6,9 @@
     <Project Include="System.Reflection.Extensions.csproj">
       <TargetGroup>net463</TargetGroup>
     </Project>
+    <Project Include="System.Reflection.Extensions.csproj">
+      <TargetGroup>uap101aot</TargetGroup>
+    </Project>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
 </Project>
