@@ -4,8 +4,9 @@
 #define BUF_ID 0x4D504C01
 #define LOG_HEADER_ID 0x4D505A01
 #define LOG_VERSION_MAJOR 1
-#define LOG_VERSION_MINOR 0
+#define LOG_VERSION_MINOR 1
 #define LOG_DATA_VERSION 13
+
 /*
  * Changes in major/minor versions:
  * version 1.0: removed sysid field from header
