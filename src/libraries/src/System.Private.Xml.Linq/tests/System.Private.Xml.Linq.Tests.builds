@@ -3,7 +3,7 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
     <Project Include="axes\System.Xml.Linq.Axes.Tests.csproj" >
-      <TestTFMs>netcore50;net46</TestTFMs>
+      <TestTFMs>net46</TestTFMs>
       <OSGroup>Windows_NT</OSGroup>
     </Project>
     <Project Include="events\System.Xml.Linq.Events.Tests.csproj" >
