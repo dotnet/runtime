@@ -205,6 +205,7 @@ namespace System.Security.Principal
         public virtual bool IsSystem { get { return default(bool); } }
         public override string Name { get { return default(string); } }
         public System.Security.Principal.SecurityIdentifier Owner { get { return default(System.Security.Principal.SecurityIdentifier); } }
+        public virtual IntPtr Token { get { return default(System.IntPtr); } }
         public System.Security.Principal.SecurityIdentifier User { get { return default(System.Security.Principal.SecurityIdentifier); } }
         public override System.Security.Claims.ClaimsIdentity Clone() { return default(System.Security.Claims.ClaimsIdentity); }
         public void Dispose() { }
