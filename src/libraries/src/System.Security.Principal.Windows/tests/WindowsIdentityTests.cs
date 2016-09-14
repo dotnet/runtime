@@ -63,13 +63,8 @@ public class WindowsIdentityTests
     [Fact]
     public static void GetTokenHandle()
     {
-        IntPtr logonToken = WindowsIdentity.GetCurrent().Token;
-        WindowsIdentity winId = new WindowsIdentity(logonToken);
-
-        Assert.NotNull(winId);
-        Assert.Equal(winId.Token, logonToken);
-
-        CheckDispose(winId);
+        WindowsIdentity id = WindowsIdentity.GetCurrent();
+        Assert.Equal(id.AccessToken.DangerousGetHandle(), id.Token);
     }
 
     private static void CheckDispose(WindowsIdentity identity, bool anonymous = false)
