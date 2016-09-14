@@ -124,7 +124,7 @@ namespace System.IO.Tests
             }
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/216
+        [Theory]
         [OuterLoop("This test has a longer than average timeout and may fail intermittently")]
         [InlineData(WatcherChangeTypes.Created)]
         [InlineData(WatcherChangeTypes.Deleted)]
@@ -153,7 +153,7 @@ namespace System.IO.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/216
+        [Fact]
         [OuterLoop("This test has a longer than average timeout and may fail intermittently")]
         public void Changed_Success()
         {
@@ -178,7 +178,7 @@ namespace System.IO.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/216
+        [Fact]
         [OuterLoop("This test has a longer than average timeout and may fail intermittently")]
         public void Renamed_Success()
         {
