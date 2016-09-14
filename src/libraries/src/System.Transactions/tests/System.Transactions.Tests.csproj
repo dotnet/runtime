@@ -1,0 +1,44 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{62E2AD5F-C8D0-45FB-B6A5-AED2C77F198C}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AssemblyName>System.Transactions.Tests</AssemblyName>
+    <!--
+        Until we get first class support for NS1.7 and Netcoreapp1.1
+        we need to hard code $(TestTFM) and $(TestNugetTargetMoniker)
+        in the project file.
+      -->
+      <NugetTargetMoniker>.NETStandard,Version=v1.7</NugetTargetMoniker>
+      <TestTFM>netcoreapp1.1</TestTFM>
+    </PropertyGroup>
+  <ItemGroup>
+    <TestNugetTargetMoniker Include="$(NugetTargetMoniker)">
+      <Folder>netcoreapp1.1</Folder>
+    </TestNugetTargetMoniker>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="NonMsdtcPromoterTests.cs" />
+    <Compile Include="AsyncTransactionScopeTests.cs" />
+    <Compile Include="IntResourceManager.cs" />
+    <Compile Include="TransactionScopeTest.cs" />
+    <Compile Include="AsyncTest.cs" />
+    <Compile Include="EnlistTest.cs" />
+    <Compile Include="CloneTxTests.cs" />
+    <Compile Include="LTMEnlistmentTests.cs" />
+    <Compile Include="HelperFunctions.cs" />
+    <Compile Include="TestEnlistments.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\pkg\System.Transactions.pkgproj">
+      <Name>System.Transactions</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="project.json" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>

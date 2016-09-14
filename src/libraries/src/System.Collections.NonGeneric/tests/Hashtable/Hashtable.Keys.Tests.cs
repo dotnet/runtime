@@ -13,8 +13,8 @@ namespace System.Collections.Tests
         protected override Type ICollection_NonGeneric_CopyTo_ArrayOfEnumType_ThrowType => typeof(InvalidCastException);
         protected override Type ICollection_NonGeneric_CopyTo_ArrayOfIncorrectReferenceType_ThrowType => typeof(InvalidCastException);
         protected override Type ICollection_NonGeneric_CopyTo_ArrayOfIncorrectValueType_ThrowType => typeof(InvalidCastException);
-
         protected override bool IsReadOnly => true;
+        protected override EnumerableOrder Order => EnumerableOrder.Unspecified;
 
         protected override bool Enumerator_Current_UndefinedOperation_Throws => true;
         protected override IEnumerable<ModifyEnumerable> ModifyEnumerables => new List<ModifyEnumerable>();

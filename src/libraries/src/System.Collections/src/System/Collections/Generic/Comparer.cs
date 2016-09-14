@@ -7,6 +7,7 @@ using System.Collections;
 
 namespace System.Collections.Generic
 {
+    [Serializable]
     public abstract class Comparer<T> : IComparer, IComparer<T>
     {
         protected Comparer()
@@ -68,7 +69,7 @@ namespace System.Collections.Generic
         private static Comparer<T> _default;
     }
 
-
+    [Serializable]
     internal class DefaultComparer<T> : Comparer<T>
     {
         public override int Compare(T x, T y)
@@ -113,6 +114,7 @@ namespace System.Collections.Generic
         }
     }
 
+    [Serializable]
     internal class ComparisonComparer<T> : Comparer<T>
     {
         private readonly Comparison<T> _comparison;
@@ -128,6 +130,7 @@ namespace System.Collections.Generic
         }
     }
 
+    [Serializable]
     internal class Int32Comparer : Comparer<Int32>
     {
         public override int Compare(int x, int y)

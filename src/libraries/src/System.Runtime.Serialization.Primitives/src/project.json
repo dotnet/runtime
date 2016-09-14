@@ -10,6 +10,16 @@
         "dotnet5.4"
       ]
     },
+    "netstandard1.7": {
+      "dependencies": {
+        "System.Runtime": "4.3.0-beta-devapi-24512-01",
+        "System.Resources.ResourceManager": "4.0.0",
+        "System.Threading.Tasks": "4.0.10"
+      },
+      "imports": [
+        "dotnet5.8"
+      ]
+    },
     "netcore50": {
       "dependencies": {
         "Microsoft.NETCore.Platforms": "1.0.1",
@@ -22,6 +32,17 @@
     "net46": {
       "dependencies": {
         "Microsoft.TargetingPack.NETFramework.v4.6": "1.0.1"
+      }
+    },
+    "net463": {
+      "dependencies": {
+        "Microsoft.TargetingPack.NETFramework.v4.6": "1.0.1"
+      }
+    },
+    "uap10.1": {
+      "dependencies": {
+        "System.Runtime": "4.3.0-beta-devapi-24512-01",
+        "System.Resources.ResourceManager": "4.0.0"
       }
     }
   }

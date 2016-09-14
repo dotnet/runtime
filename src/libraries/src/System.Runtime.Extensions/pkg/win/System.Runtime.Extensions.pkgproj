@@ -11,6 +11,10 @@
     <ProjectReference Include="..\..\src\System.Runtime.Extensions.csproj">
       <OSGroup>Windows_NT</OSGroup>
     </ProjectReference>
+    <ProjectReference Include="..\..\src\System.Runtime.Extensions.csproj">
+      <OSGroup>Windows_NT</OSGroup>
+      <TargetGroup>netstandard1.5</TargetGroup>
+    </ProjectReference>
     <ProjectReference Include="..\..\src\redist\System.Runtime.Extensions.depproj">
       <OSGroup>Windows_NT</OSGroup>
       <TargetGroup>netcore50</TargetGroup>

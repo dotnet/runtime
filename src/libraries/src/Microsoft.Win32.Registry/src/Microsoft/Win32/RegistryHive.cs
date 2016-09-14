@@ -7,7 +7,12 @@ namespace Microsoft.Win32
     /**
      * Registry hive values.  Useful only for GetRemoteBaseKey
      */
-    public enum RegistryHive
+#if REGISTRY_ASSEMBLY
+    public
+#else
+    internal
+#endif
+    enum RegistryHive
     {
         ClassesRoot = unchecked((int)0x80000000),
         CurrentUser = unchecked((int)0x80000001),

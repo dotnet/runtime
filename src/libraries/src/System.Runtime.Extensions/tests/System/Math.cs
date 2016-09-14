@@ -6,7 +6,7 @@ using Xunit;
 
 namespace System.Tests
 {
-    public static class MathTests
+    public static partial class MathTests
     {
         [Fact]
         public static void Cos()

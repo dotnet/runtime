@@ -9,6 +9,7 @@ namespace System.Collections.Tests
     #region Comparers and Equatables
 
     // Use parity only as a hashcode so as to have many collisions.
+    [Serializable]
     public class BadIntEqualityComparer : IEqualityComparer<int>
     {
         public bool Equals(int x, int y)
@@ -32,6 +33,7 @@ namespace System.Collections.Tests
         }
     }
 
+    [Serializable]
     public class EquatableBackwardsOrder : IEquatable<EquatableBackwardsOrder>, IComparable<EquatableBackwardsOrder>, IComparable
     {
         private int _value;
@@ -44,6 +46,14 @@ namespace System.Collections.Tests
         public int CompareTo(EquatableBackwardsOrder other) //backwards from the usual integer ordering
         {
             return other._value - _value;
+        }
+
+        public override int GetHashCode() => _value;
+
+        public override bool Equals(object obj)
+        {
+            EquatableBackwardsOrder other = obj as EquatableBackwardsOrder;
+            return other != null && Equals(other);
         }
 
         public bool Equals(EquatableBackwardsOrder other)
@@ -59,6 +69,7 @@ namespace System.Collections.Tests
         }
     }
 
+    [Serializable]
     public class Comparer_SameAsDefaultComparer : IEqualityComparer<int>, IComparer<int>
     {
         public int Compare(int x, int y)
@@ -77,6 +88,7 @@ namespace System.Collections.Tests
         }
     }
 
+    [Serializable]
     public class Comparer_HashCodeAlwaysReturnsZero : IEqualityComparer<int>, IComparer<int>
     {
         public int Compare(int x, int y)
@@ -95,6 +107,7 @@ namespace System.Collections.Tests
         }
     }
 
+    [Serializable]
     public class Comparer_ModOfInt : IEqualityComparer<int>, IComparer<int>
     {
         private int _mod;
@@ -125,6 +138,7 @@ namespace System.Collections.Tests
         }
     }
 
+    [Serializable]
     public class Comparer_AbsOfInt : IEqualityComparer<int>, IComparer<int>
     {
         public int Compare(int x, int y)
@@ -147,6 +161,7 @@ namespace System.Collections.Tests
 
     #region TestClasses
 
+    [Serializable]
     public struct SimpleInt : IStructuralComparable, IStructuralEquatable, IComparable, IComparable<SimpleInt>
     {
         private int _val;
@@ -194,6 +209,7 @@ namespace System.Collections.Tests
         }
     }
 
+    [Serializable]
     public class WrapStructural_Int : IEqualityComparer<int>, IComparer<int>
     {
         public int Compare(int x, int y)
@@ -212,6 +228,7 @@ namespace System.Collections.Tests
         }
     }
 
+    [Serializable]
     public class WrapStructural_SimpleInt : IEqualityComparer<SimpleInt>, IComparer<SimpleInt>
     {
         public int Compare(SimpleInt x, SimpleInt y)

@@ -538,6 +538,14 @@ namespace System.Tests
             Assert.Equal(6, array.GetValue(1, 2));
             array.SetValue(42, 1, 2);
             Assert.Equal(42, array.GetValue(1, 2));
+
+            array = Array.CreateInstance(typeof(int), 2, 3, 4);
+            array.SetValue(42, 1, 2, 3);
+            Assert.Equal(42, array.GetValue(1, 2, 3));
+
+            array = Array.CreateInstance(typeof(int), 2, 3, 4, 5);
+            array.SetValue(42, 1, 2, 3, 4);
+            Assert.Equal(42, array.GetValue(1, 2, 3, 4));
         }
 
         [Fact]
@@ -547,7 +555,7 @@ namespace System.Tests
             Assert.Throws<IndexOutOfRangeException>(() => new int[10].GetValue(10)); // Index >= array.Length
             Assert.Throws<ArgumentException>(null, () => new int[10, 10].GetValue(0)); // Array is multidimensional
 
-            Assert.Throws<ArgumentNullException>("indices", () => new int[10].GetValue(null)); // Indices is null
+            Assert.Throws<ArgumentNullException>("indices", () => new int[10].GetValue((int[])null)); // Indices is null
             Assert.Throws<ArgumentException>(null, () => new int[10, 10].GetValue(new int[] { 1, 2, 3 })); // Indices.Length > array.Rank
 
             Assert.Throws<IndexOutOfRangeException>(() => new int[8, 10].GetValue(new int[] { -1, 2 })); // Indices[0] < 0
@@ -1442,7 +1450,6 @@ namespace System.Tests
         [Fact]
         public static void CreateInstance_LengthsNull_ThrowsArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>("lengths", () => Array.CreateInstance(typeof(int), null));
             Assert.Throws<ArgumentNullException>("lengths", () => Array.CreateInstance(typeof(int), null, new int[1]));
         }
 
@@ -2622,7 +2629,7 @@ namespace System.Tests
             Assert.Throws<IndexOutOfRangeException>(() => new int[10].SetValue(1, 10)); // Index >= array.Length
             Assert.Throws<ArgumentException>(null, () => new int[10, 10].SetValue(1, 0)); // Array is multidimensional
 
-            Assert.Throws<ArgumentNullException>("indices", () => new int[10].SetValue(1, null)); // Indices is null
+            Assert.Throws<ArgumentNullException>("indices", () => new int[10].SetValue(1, (int[])null)); // Indices is null
             Assert.Throws<ArgumentException>(null, () => new int[10, 10].SetValue(1, new int[] { 1, 2, 3 })); // Indices.Length > array.Length
 
             Assert.Throws<IndexOutOfRangeException>(() => new int[8, 10].SetValue(1, new int[] { -1, 2 })); // Indices[0] < 0
@@ -2631,7 +2638,7 @@ namespace System.Tests
             Assert.Throws<IndexOutOfRangeException>(() => new int[10, 8].SetValue(1, new int[] { 1, -1 })); // Indices[1] < 0
             Assert.Throws<IndexOutOfRangeException>(() => new int[10, 8].SetValue(1, new int[] { 1, 9 })); // Indices[1] > array.GetLength(1)
         }
-
+            
         public static IEnumerable<object[]> TrueForAll_TestData()
         {
             yield return new object[] { new int[] { 1, 2, 3, 4, 5 }, (Predicate<int>)(i => i > 0), true };

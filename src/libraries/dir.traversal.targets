@@ -39,7 +39,7 @@
         <UndefineProperties Condition="'%(Project.OSGroup)'==''">%(Project.UndefineProperties);OSGroup</UndefineProperties>
       </Project>
       <Project>
-        <UndefineProperties Condition="'%(Project.Extension)'!='.builds' and '%(Project.Extension)'!='.proj'">%(Project.UndefineProperties);FilterToOSGroup;FilterToTestTFM;DefaultBuildAllTarget;SerializeProjects;BuildAllOSGroups</UndefineProperties>
+        <UndefineProperties Condition="'%(Project.Extension)'!='.builds' and '%(Project.Extension)'!='.proj'">%(Project.UndefineProperties);TestTFMs;FilterToOSGroup;FilterToTestTFM;DefaultBuildAllTarget;SerializeProjects;BuildAllOSGroups</UndefineProperties>
       </Project>
     </ItemGroup>
 
@@ -148,25 +148,33 @@
       </Project>
 
       <!-- for projects not defining TestTFM in .builds files, we assume the TestTFM is the default which is netcoreapp1.0 -->
-      <ProjectsToTest Include="@(Project)" Condition="'%(Project.Extension)'=='.csproj' And '$(FilterToTestTFM)' == 'netcoreapp1.0' And '%(Project.TestTFMs)' == ''" />
       <ProjectsToTest Include="@(Project)" Condition="'%(Project.Extension)'=='.csproj' And '$(FilterToTestTFM)' == 'netcoreapp1.1' And '%(Project.TestTFMs)' == ''" />
 
       <!-- include the projects have TestTFM value match FilterToTestTFM -->
       <ProjectsToTest Include="@(Project)" Condition="'%(Project.Extension)'=='.csproj' And $([System.String]::new('%(Project.TestTFMs)').Contains(';$(FilterToTestTFM);'))" /> 
 
-      <!-- For net461 we include projects with TestTFM values net46-->
-      <ProjectsToTest Include="@(Project)" Condition="'%(Project.Extension)'=='.csproj' And '$(FilterToTestTFM)' == 'net461' And $([System.String]::new('%(Project.TestTFMs)').Contains(';net46;'))" /> 
-      <!-- For net462 we include projects with TestTFM values net46, net461 -->
-      <ProjectsToTest Include="@(Project)" Condition="'%(Project.Extension)'=='.csproj' And '$(FilterToTestTFM)' == 'net462' And $([System.String]::new('%(Project.TestTFMs)').Contains(';net46;'))" /> 
-      <ProjectsToTest Include="@(Project)" Condition="'%(Project.Extension)'=='.csproj' And '$(FilterToTestTFM)' == 'net462' And $([System.String]::new('%(Project.TestTFMs)').Contains(';net461;'))" /> 
-      <!-- For net463 we include projects with TestTFM values net46, net461, net462 -->
-      <ProjectsToTest Include="@(Project)" Condition="'%(Project.Extension)'=='.csproj' And '$(FilterToTestTFM)' == 'net463' And $([System.String]::new('%(Project.TestTFMs)').Contains(';net46;'))" /> 
-      <ProjectsToTest Include="@(Project)" Condition="'%(Project.Extension)'=='.csproj' And '$(FilterToTestTFM)' == 'net463' And $([System.String]::new('%(Project.TestTFMs)').Contains(';net461;'))" /> 
-      <ProjectsToTest Include="@(Project)" Condition="'%(Project.Extension)'=='.csproj' And '$(FilterToTestTFM)' == 'net463' And $([System.String]::new('%(Project.TestTFMs)').Contains(';net462;'))" />
+      <!-- For netcoreapp1.1 we include projects with TestTFM values of netcoreapp1.0 -->
+      <ProjectsToTest Include="@(Project)" Condition="'%(Project.Extension)'=='.csproj' And '$(FilterToTestTFM)' == 'netcoreapp1.1' And $([System.String]::new('%(Project.TestTFMs)').Contains(';netcoreapp1.0;'))" /> 
+
+      <!-- For net46 we include projects with TestTFM values net461 and net462 and net463-->
+      <ProjectsToTest Include="@(Project)" Condition="'%(Project.Extension)'=='.csproj' And '$(FilterToTestTFM)' == 'net46' And $([System.String]::new('%(Project.TestTFMs)').Contains(';net461;'))" /> 
+      <ProjectsToTest Include="@(Project)" Condition="'%(Project.Extension)'=='.csproj' And '$(FilterToTestTFM)' == 'net46' And $([System.String]::new('%(Project.TestTFMs)').Contains(';net462;'))" /> 
+      <ProjectsToTest Include="@(Project)" Condition="'%(Project.Extension)'=='.csproj' And '$(FilterToTestTFM)' == 'net46' And $([System.String]::new('%(Project.TestTFMs)').Contains(';net463;'))" /> 
+      <!-- For net461 we include projects with TestTFM values net462 and net463 -->
+      <ProjectsToTest Include="@(Project)" Condition="'%(Project.Extension)'=='.csproj' And '$(FilterToTestTFM)' == 'net461' And $([System.String]::new('%(Project.TestTFMs)').Contains(';net462;'))" /> 
+      <ProjectsToTest Include="@(Project)" Condition="'%(Project.Extension)'=='.csproj' And '$(FilterToTestTFM)' == 'net461' And $([System.String]::new('%(Project.TestTFMs)').Contains(';net463;'))" /> 
+      <!-- For net462 we include projects with TestTFM values net463 -->
+      <ProjectsToTest Include="@(Project)" Condition="'%(Project.Extension)'=='.csproj' And '$(FilterToTestTFM)' == 'net462' And $([System.String]::new('%(Project.TestTFMs)').Contains(';net463;'))" /> 
 
       <ProjectsToTest>
        <AdditionalProperties Condition="'%(ProjectsToTest.TestTFMs)'!=''">TestTFMs=%(ProjectsToTest.TestTFMs);%(ProjectsToTest.AdditionalProperties)</AdditionalProperties>
-       <AdditionalProperties>TestTFM=$(FilterToTestTFM);%(ProjectsToTest.AdditionalProperties)</AdditionalProperties>
+      </ProjectsToTest>
+      <ProjectsToTest>
+        <!-- When TestTFMs is not set, and FilterToTestTFM is netcoreapp1.1 -->
+       <AdditionalProperties Condition="('%(ProjectsToTest.TestTFMs)'=='' Or $([System.String]::new('%(Project.TestTFMs)').Contains(';netcoreapp1.0;'))) And '$(FilterToTestTFM)'=='netcoreapp1.1'">TestTFM=netcoreapp1.0;%(ProjectsToTest.AdditionalProperties)</AdditionalProperties>
+      </ProjectsToTest>
+      <ProjectsToTest>
+        <AdditionalProperties Condition="('%(ProjectsToTest.TestTFMs)'=='' Or $([System.String]::new('%(Project.TestTFMs)').Contains(';netcoreapp1.0;'))) And '$(FilterToTestTFM)'!='netcoreapp1.1'">TestTFM=$(FilterToTestTFM);%(ProjectsToTest.AdditionalProperties)</AdditionalProperties>
       </ProjectsToTest>
       <ProjectsToTest>
         <FilterToTestTFM>$(FilterToTestTFM)</FilterToTestTFM>

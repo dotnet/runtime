@@ -4,14 +4,9 @@
   <PropertyGroup>
     <AssemblyName>System.Xml.XmlSerializer</AssemblyName>
     <RootNamespace>System.Xml.XmlSerializer</RootNamespace>
-    <NoWarn>649;414</NoWarn>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <FileAlignment>512</FileAlignment>
-    <DebugSymbols>true</DebugSymbols>
     <ProjectGuid>{D62A6082-5229-4845-8BE9-75753E08C65A}</ProjectGuid>
-    <DefineConstants Condition="'$(TargetGroup)' == 'netcore50aot'">$(DefineConstants);NET_NATIVE</DefineConstants>
-    <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'net46'">true</IsPartialFacadeAssembly>
-    <ResourcesSourceOutputDirectory Condition="'$(TargetGroup)' == 'net46'">None</ResourcesSourceOutputDirectory>
+    <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
+    <ResourcesSourceOutputDirectory>None</ResourcesSourceOutputDirectory>
     <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.3</NuGetTargetMoniker>
   </PropertyGroup>
   <!-- netcore50 project.json fork is shared for both netcore50 and netcore50aot. This redirects netcore50aot. -->
@@ -28,66 +23,9 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Release|AnyCPU'" />
   <ItemGroup Condition="'$(TargetGroup)' != 'net46'">
-    <Compile Include="System.Xml.XmlSerializer.Forwards.cs" />
-    <Compile Include="System\Xml\XmlReservedNs.cs" />
-    <Compile Include="System\Xml\BinHexEncoder.cs" />
-    <Compile Include="System\Xml\BinHexDecoder.cs" />
-    <Compile Include="System\Xml\XmlCharType.cs" />
-    <Compile Include="System\Xml\schema\XmlSchemaType.cs" />
-    <Compile Include="System\Xml\schema\XmlSchemaSet.cs" />
-    <Compile Include="System\Xml\schema\XmlSchemaObject.cs" />
-    <Compile Include="System\Xml\Extensions\ExtensionMethods.cs" />
-    <Compile Include="System\CodeDom\Compiler\CodeDomProvider.cs" />
-    <Compile Include="System\CodeDom\Compiler\CodeGenerator.cs" />
-    <Compile Include="System\Xml\Serialization\CodeIdentifier.cs" />
-    <Compile Include="System\Xml\Serialization\CodeIdentifiers.cs" />
-    <Compile Include="System\Xml\Serialization\Compilation.cs" />
-    <Compile Include="System\Xml\Serialization\Globals.cs" />
-    <Compile Include="System\Xml\Serialization\Mappings.cs" />
-    <Compile Include="System\Xml\Serialization\Models.cs" />
-    <Compile Include="System\Xml\Serialization\NameTable.cs" />
-    <Compile Include="System\Xml\Serialization\ReflectionXmlSerializationReader.cs" />
-    <Compile Include="System\Xml\Serialization\ReflectionXmlSerializationWriter.cs" />
-    <Compile Include="System\Xml\Serialization\Types.cs" />
-    <Compile Include="System\Xml\Serialization\TypeCode.cs" />
-    <Compile Include="System\Xml\Serialization\XmlAnyAttributeAttribute.cs" />
-    <Compile Include="System\Xml\Serialization\XmlAttributeAttribute.cs" />
-    <Compile Include="System\Xml\Serialization\XmlAnyElementAttribute.cs" />
-    <Compile Include="System\Xml\Serialization\XmlAnyElementAttributes.cs" />
-    <Compile Include="System\Xml\Serialization\XmlArrayAttribute.cs" />
-    <Compile Include="System\Xml\Serialization\XmlArrayItemAttribute.cs" />
-    <Compile Include="System\Xml\Serialization\XmlArrayItemAttributes.cs" />
-    <Compile Include="System\Xml\Serialization\XmlAttributeOverrides.cs" />
-    <Compile Include="System\Xml\Serialization\XmlAttributes.cs" />
-    <Compile Include="System\Xml\Serialization\XmlChoiceIdentifierAttribute.cs" />
-    <Compile Include="System\Xml\Serialization\XmlCustomFormatter.cs" />
-    <Compile Include="System\Xml\Serialization\XmlElementAttribute.cs" />
-    <Compile Include="System\Xml\Serialization\XmlElementAttributes.cs" />
-    <Compile Include="System\Xml\Serialization\XmlEnumAttribute.cs" />
-    <Compile Include="System\Xml\Serialization\XmlIgnoreAttribute.cs" />
-    <Compile Include="System\Xml\Serialization\XmlIncludeAttribute.cs" />
-    <Compile Include="System\Xml\Serialization\XmlMapping.cs" />
-    <Compile Include="System\Xml\Serialization\XmlMemberMapping.cs" />
-    <Compile Include="System\Xml\Serialization\XmlMembersMapping.cs" />
-    <Compile Include="System\Xml\Serialization\XmlNamespaceDeclarationsAttribute.cs" />
-    <Compile Include="System\Xml\Serialization\XmlReflectionImporter.cs" />
-    <Compile Include="System\Xml\Serialization\XmlReflectionMember.cs" />
-    <Compile Include="System\Xml\Serialization\XmlRootAttribute.cs" />
-    <Compile Include="System\Xml\Serialization\XmlSerializationGeneratedCode.cs" />
-    <Compile Include="System\Xml\Serialization\XmlSerializationReader.cs" />
-    <Compile Include="System\Xml\Serialization\XmlSerializationWriter.cs" />
-    <Compile Include="System\Xml\Serialization\XmlSerializer.cs" />
-    <Compile Include="System\Xml\Serialization\XmlSerializerNamespaces.cs" />
-    <Compile Include="System\Xml\Serialization\XmlTextAttribute.cs" />
-    <Compile Include="System\Xml\Serialization\XmlTypeAttribute.cs" />
-    <Compile Include="System\Xml\Serialization\XmlTypeMapping.cs" />
-    <Compile Include="System\Xml\Serialization\PrimitiveXmlSerializers.cs" />
-    <Compile Include="System\Xml\Serialization\CodeGenerator.cs" />
-    <Compile Include="System\Xml\Serialization\XmlSerializationILGen.cs" />
-    <Compile Include="System\Xml\Serialization\XmlSerializationReaderILGen.cs" />
-    <Compile Include="System\Xml\Serialization\XmlSerializationWriterILGen.cs" />
-    <Compile Include="System\Xml\Serialization\SourceInfo.cs" />
-    <Compile Include="System\Xml\Serialization\XmlSchema.cs" />
+    <ProjectReference Include="..\..\System.Xml.ReaderWriter\src\System.Xml.ReaderWriter.csproj" />
+    <ProjectReference Include="..\..\System.Xml.XmlDocument\src\System.Xml.XmlDocument.csproj" />
+    <ProjectReference Include="..\..\System.Private.Xml\src\System.Private.Xml.csproj" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'netcore50aot'">
     <EmbeddedResource Include="$(MsBuildThisFileDirectory)Resources\$(AssemblyName).rd.xml" />

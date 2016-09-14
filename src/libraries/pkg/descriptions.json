@@ -767,6 +767,16 @@
         ]
     },
     {
+        "Name": "System.Json",
+        "Description": "Provides standards-based support for the serialization of JavaScript Object Notation (JSON).",
+        "CommonTypes": [
+            "System.Json.JsonArray",
+            "System.Json.JsonObject",
+            "System.Json.JsonPrimitive",
+            "System.Json.JsonValue"
+        ]
+    },
+    {
         "Name": "System.Linq",
         "Description": "Provides classes and interfaces that supports queries that use Language-Integrated Query (LINQ).",
         "CommonTypes": [
@@ -1454,6 +1464,11 @@
         ]
     },
     {
+        "Name": "System.Security.Permissions",
+        "Description": "Provides types supporting Code Access Security (CAS).",
+        "CommonTypes": [ ]
+    },
+    {
         "Name": "System.Security.Principal",
         "Description": "Provides the base interfaces for principal and identity objects that represents the security context under which code is running.",
         "CommonTypes": [
@@ -1724,6 +1739,14 @@
             "System.Threading.TimerCallback"
         ]
     },
+	{
+        "Name": "System.Transactions",
+        "Description": "Provides classes that allow you to write your own transactional application and resource manager.",
+        "CommonTypes": [
+            "System.Transactions.Transaction",
+            "System.Transactions.TransactionScope"
+        ]
+    },
     {
         "Name": "System.ValueTuple",
         "Description": "Provides the System.ValueTuple structs, which implement the underlying types for C# 7 tuples.",
@@ -1740,8 +1763,23 @@
         ]
     },
     {
+        "Name": "System.Private.Xml",
+        "Description": "Provides a fast, non-cached, forward-only way to read and write Extensible Markup Language (XML) data.",
+        "CommonTypes": [
+            "System.Xml.XmlNodeType",
+            "System.Xml.XmlException",
+            "System.Xml.XmlReader",
+            "System.Xml.XmlWriter",
+            "System.Xml.IXmlLineInfo",
+            "System.Xml.XmlNameTable",
+            "System.Xml.IXmlNamespaceResolver",
+            "System.Xml.XmlNamespaceManager",
+            "System.Xml.XmlQualifiedName"
+        ]
+    },
+    {
         "Name": "System.Xml.ReaderWriter",
-        "Description": "Provides provides a fast, non-cached, forward-only way to read and write Extensible Markup Language (XML) data.",
+        "Description": "Provides a fast, non-cached, forward-only way to read and write Extensible Markup Language (XML) data.",
         "CommonTypes": [
             "System.Xml.XmlNodeType",
             "System.Xml.XmlException",
@@ -1756,6 +1794,22 @@
     },
     {
         "Name": "System.Xml.XDocument",
+        "Description": "Provides the classes for Language-Integrated Query (LINQ) to Extensible Markup Language (XML). LINQ to XML is an in-memory XML programming interface that enables you to modify XML documents efficiently and easily.",
+        "CommonTypes": [
+            "System.Xml.Linq.XElement",
+            "System.Xml.Linq.XAttribute",
+            "System.Xml.Linq.XDocument",
+            "System.Xml.Linq.XText",
+            "System.Xml.Linq.XNode",
+            "System.Xml.Linq.XContainer",
+            "System.Xml.Linq.XComment",
+            "System.Xml.Linq.XObject",
+            "System.Xml.Linq.XProcessingInstruction",
+            "System.Xml.Linq.XDocumentType"
+        ]
+    },
+    {
+        "Name": "System.Private.Xml.Linq",
         "Description": "Provides the classes for Language-Integrated Query (LINQ) to Extensible Markup Language (XML). LINQ to XML is an in-memory XML programming interface that enables you to modify XML documents efficiently and easily.",
         "CommonTypes": [
             "System.Xml.Linq.XElement",

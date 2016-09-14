@@ -8,7 +8,7 @@ using Xunit;
 
 namespace System.Tests
 {
-    public class VersionTests
+    public partial class VersionTests
     {
         [Theory]
         [MemberData(nameof(Parse_Valid_TestData))]

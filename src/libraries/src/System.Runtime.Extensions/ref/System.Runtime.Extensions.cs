@@ -8,6 +8,13 @@
 
 namespace System
 {
+    [Flags]
+    public enum Base64FormattingOptions
+    {
+        None = 0,
+        InsertLineBreaks = 1
+    }
+
     public static partial class BitConverter
     {
         public static readonly bool IsLittleEndian;
@@ -45,6 +52,58 @@ namespace System
     }
     public static partial class Convert
     {
+        public static readonly object DBNull;
+        public static object ChangeType(object value, TypeCode typeCode) { return default(object); }
+        public static bool IsDBNull(object value) { return default(bool); }
+        public static int ToBase64CharArray(byte[] inArray, int offsetIn, int length, char[] outArray, int offsetOut, Base64FormattingOptions options) { return default(int); }
+        public static string ToBase64String(byte[] inArray, Base64FormattingOptions options) { return default(string); }
+        public static string ToBase64String(byte[] inArray, int offset, int length, Base64FormattingOptions options) { return default(string); }
+        public static bool ToBoolean(char value) { return default(bool); }
+        public static bool ToBoolean(DateTime value) { return default(bool); }
+        public static byte ToByte(DateTime value) { return default(byte); }
+        public static char ToChar(bool value) { return default(char); }
+        public static char ToChar(char value) { return default(char); }
+        public static char ToChar(DateTime value) { return default(char); }
+        public static char ToChar(decimal value) { return default(char); }
+        public static char ToChar(double value) { return default(char); }
+        public static char ToChar(float value) { return default(char); }
+        public static DateTime ToDateTime(bool value) { return default(DateTime); }
+        public static DateTime ToDateTime(byte value) { return default(DateTime); }
+        public static DateTime ToDateTime(char value) { return default(DateTime); }
+        public static DateTime ToDateTime(DateTime value) { return default(DateTime); }
+        public static DateTime ToDateTime(decimal value) { return default(DateTime); }
+        public static DateTime ToDateTime(double value) { return default(DateTime); }
+        public static DateTime ToDateTime(short value) { return default(DateTime); }
+        public static DateTime ToDateTime(int value) { return default(DateTime); }
+        public static DateTime ToDateTime(long value) { return default(DateTime); }
+        [System.CLSCompliant(false)]
+        public static DateTime ToDateTime(sbyte value) { return default(DateTime); }
+        public static DateTime ToDateTime(float value) { return default(DateTime); }
+        [System.CLSCompliant(false)]
+        public static DateTime ToDateTime(ushort value) { return default(DateTime); }
+        [System.CLSCompliant(false)]
+        public static DateTime ToDateTime(uint value) { return default(DateTime); }
+        [System.CLSCompliant(false)]
+        public static DateTime ToDateTime(ulong value) { return default(DateTime); }
+        public static decimal ToDecimal(char value) { return default(decimal); }
+        public static decimal ToDecimal(DateTime value) { return default(decimal); }
+        public static double ToDouble(char value) { return default(double); }
+        public static double ToDouble(DateTime value) { return default(double); }
+        public static short ToInt16(DateTime value) { return default(short); }
+        public static int ToInt32(DateTime value) { return default(int); }
+        public static long ToInt64(DateTime value) { return default(long); }
+        [System.CLSCompliant(false)]
+        public static sbyte ToSByte(DateTime value) { return default(sbyte); }
+        public static float ToSingle(char value) { return default(float); }
+        public static float ToSingle(DateTime value) { return default(float); }
+        public static string ToString(string value) { return default(string); }
+        public static string ToString(string value, IFormatProvider provider) { return default(string); }
+        [System.CLSCompliant(false)]
+        public static ushort ToUInt16(DateTime value) { return default(ushort); }
+        [System.CLSCompliant(false)]
+        public static uint ToUInt32(DateTime value) { return default(uint); }
+        [System.CLSCompliant(false)]
+        public static ulong ToUInt64(DateTime value) { return default(ulong); }
         public static object ChangeType(object value, System.Type conversionType) { return default(object); }
         public static object ChangeType(object value, System.Type conversionType, System.IFormatProvider provider) { return default(object); }
         public static object ChangeType(object value, System.TypeCode typeCode, System.IFormatProvider provider) { return default(object); }
@@ -431,23 +490,103 @@ namespace System
     }
     public static partial class Environment
     {
+        public static string CommandLine { get { return default(string); } }
+        public static string CurrentDirectory { get { return default(string); } set { } }
         public static int CurrentManagedThreadId { get { return default(int); } }
+        public static int ExitCode { get { return default(int); } set { } }
         public static bool HasShutdownStarted { get { return default(bool); } }
+        public static bool Is64BitProcess { get { return default(bool); } }
+        public static bool Is64BitOperatingSystem { get { return default(bool); } }
         public static string MachineName { get { return default(string); } }
         public static string NewLine { get { return default(string); } }
+        public static System.OperatingSystem OSVersion { get { return default(System.OperatingSystem); } }
         public static int ProcessorCount { get { return default(int); } }
         public static string StackTrace { get { return default(string); } }
+        public static int SystemPageSize { get { return default(int); } }
         public static int TickCount { get { return default(int); } }
+        public static bool UserInteractive { get { return default(bool); } }
+        public static string UserName { get { return default(string); } }
+        public static string UserDomainName { get { return default(string); } }
+        public static System.Version Version { get { return default(System.Version); } }
+        public static long WorkingSet { get { return default(long); } }
         public static string ExpandEnvironmentVariables(string name) { return default(string); }
         public static void Exit(int exitCode) {}
         [System.Security.SecurityCriticalAttribute]
         public static void FailFast(string message) { }
         [System.Security.SecurityCriticalAttribute]
         public static void FailFast(string message, System.Exception exception) { }
-        public static string GetEnvironmentVariable(string variable) { return default(string); }
-        public static System.Collections.IDictionary GetEnvironmentVariables() { return default(System.Collections.IDictionary); }
-        public static void SetEnvironmentVariable(string variable, string value) { }
         public static string[] GetCommandLineArgs() { return default(string[]); }
+        public static string GetEnvironmentVariable(string variable) { return default(string); }
+        public static string GetEnvironmentVariable(string variable, System.EnvironmentVariableTarget target) { return default(string); }
+        public static System.Collections.IDictionary GetEnvironmentVariables() { return default(System.Collections.IDictionary); }
+        public static System.Collections.IDictionary GetEnvironmentVariables(System.EnvironmentVariableTarget target) { return default(System.Collections.IDictionary); }
+        public static string GetFolderPath(System.Environment.SpecialFolder folder) { return default(string); }
+        public static string GetFolderPath(System.Environment.SpecialFolder folder, System.Environment.SpecialFolderOption option) { return default(string); }
+        public static string[] GetLogicalDrives() { return default(string[]); }
+        public static void SetEnvironmentVariable(string variable, string value) { }
+        public static void SetEnvironmentVariable(string variable, string value, System.EnvironmentVariableTarget target) { }
+        public enum SpecialFolder
+        {
+            ApplicationData = 0x001a,
+            CommonApplicationData = 0x0023,
+            LocalApplicationData = 0x001c,
+            Cookies = 0x0021,
+            Desktop = 0x0000,
+            Favorites = 0x0006,
+            History = 0x0022,
+            InternetCache = 0x0020,
+            Programs = 0x0002,
+            MyComputer = 0x0011,
+            MyMusic = 0x000d,
+            MyPictures = 0x0027,
+            MyVideos = 0x000e,
+            Recent = 0x0008,
+            SendTo = 0x0009,
+            StartMenu = 0x000b,
+            Startup = 0x0007,
+            System = 0x0025,
+            Templates = 0x0015,
+            DesktopDirectory = 0x0010,
+            Personal = 0x0005,
+            MyDocuments = 0x0005,
+            ProgramFiles = 0x0026,
+            CommonProgramFiles = 0x002b,
+            AdminTools = 0x0030,
+            CDBurning = 0x003b,
+            CommonAdminTools = 0x002f,
+            CommonDocuments = 0x002e,
+            CommonMusic = 0x0035,
+            CommonOemLinks = 0x003a,
+            CommonPictures = 0x0036,
+            CommonStartMenu = 0x0016,
+            CommonPrograms = 0X0017,
+            CommonStartup = 0x0018,
+            CommonDesktopDirectory = 0x0019,
+            CommonTemplates = 0x002d,
+            CommonVideos = 0x0037,
+            Fonts = 0x0014,
+            NetworkShortcuts = 0x0013,
+            PrinterShortcuts = 0x001b,
+            UserProfile = 0x0028,
+            CommonProgramFilesX86 = 0x002c,
+            ProgramFilesX86 = 0x002a,
+            Resources = 0x0038,
+            LocalizedResources = 0x0039,
+            SystemX86 = 0x0029,
+            Windows = 0x0024,
+        }
+        public enum SpecialFolderOption
+        {
+            None = 0,
+            Create = 0x8000,
+            DoNotVerify = 0x4000,
+        }
+    }
+    public enum EnvironmentVariableTarget
+    {
+        Process = 0,
+        User = 1,
+        Machine = 2,
     }
     public static partial class Math
     {
@@ -463,10 +602,13 @@ namespace System
         public static double Asin(double d) { return default(double); }
         public static double Atan(double d) { return default(double); }
         public static double Atan2(double y, double x) { return default(double); }
+        public static long BigMul(int a, int b) { return default(long); }
         public static decimal Ceiling(decimal d) { return default(decimal); }
         public static double Ceiling(double a) { return default(double); }
         public static double Cos(double d) { return default(double); }
         public static double Cosh(double value) { return default(double); }
+        public static int DivRem(int a, int b, out int result) { result = default(int); return default(int); }
+        public static long DivRem(long a, long b, out long result) { result = default(long); return default(long); }
         public static double Exp(double d) { return default(double); }
         public static decimal Floor(decimal d) { return default(decimal); }
         public static double Floor(double d) { return default(double); }
@@ -529,10 +671,26 @@ namespace System
         public static decimal Truncate(decimal d) { return default(decimal); }
         public static double Truncate(double d) { return default(double); }
     }
-    public enum MidpointRounding
+    public sealed class OperatingSystem
     {
-        AwayFromZero = 1,
-        ToEven = 0,
+        private OperatingSystem() { }
+        public OperatingSystem(System.PlatformID platform, System.Version version) { }
+        public System.PlatformID Platform { get { return default(System.PlatformID); } }
+        public string ServicePack { get { return default(string); } }
+        public System.Version Version { get { return default(System.Version); } }
+        public object Clone() { return default(object); }
+        public override string ToString() { return default(string); }
+        public string VersionString { get { return default(string); } }
+    }
+    public enum PlatformID
+    {
+        Win32S = 0,
+        Win32Windows = 1,
+        Win32NT = 2,
+        WinCE = 3,
+        Unix = 4,
+        Xbox = 5,
+        MacOSX = 6
     }
     public partial class Progress<T> : System.IProgress<T>
     {
@@ -615,11 +773,13 @@ namespace System.IO
     {
         public static readonly char AltDirectorySeparatorChar;
         public static readonly char DirectorySeparatorChar;
+        public static readonly char[] InvalidPathChars;
         public static readonly char PathSeparator;
         public static readonly char VolumeSeparatorChar;
         public static string ChangeExtension(string path, string extension) { return default(string); }
         public static string Combine(string path1, string path2) { return default(string); }
         public static string Combine(string path1, string path2, string path3) { return default(string); }
+        public static string Combine(string path1, string path2, string path3, string path4) { return default(string); }
         public static string Combine(params string[] paths) { return default(string); }
         public static string GetDirectoryName(string path) { return default(string); }
         public static string GetExtension(string path) { return default(string); }

@@ -4,28 +4,18 @@
   <PropertyGroup>
     <AssemblyName>System.Reflection.Primitives</AssemblyName>
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)'!='netcore50'">true</IsPartialFacadeAssembly>
-    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.3</NuGetTargetMoniker>
+    <NuGetTargetMoniker Condition="'$(NuGetTargetMoniker)' == ''">.NETStandard,Version=v1.7</NuGetTargetMoniker>
+    <PackageTargetFramework Condition="'$(TargetGroup)'==''">netstandard1.7;uap10.1</PackageTargetFramework>
   </PropertyGroup>
   <!-- Help VS understand available configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcore50_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcore50_Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Release|AnyCPU'" />
-  <ItemGroup Condition="'$(TargetGroup)'!='netcore50'">
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Release|AnyCPU'" />
+  <ItemGroup Condition="'$(TargetGroup)' != 'uap101aot'">
     <TargetingPackReference Include="mscorlib" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)'=='netcore50'">
-    <Compile Include="System\Reflection\CallingConventions.cs" />
-    <Compile Include="System\Reflection\EventAttributes.cs" />
-    <Compile Include="System\Reflection\FieldAttributes.cs" />
-    <Compile Include="System\Reflection\GenericParameterAttributes.cs" />
-    <Compile Include="System\Reflection\MethodAttributes.cs" />
-    <Compile Include="System\Reflection\MethodImplAttributes.cs" />
-    <Compile Include="System\Reflection\ParameterAttributes.cs" />
-    <Compile Include="System\Reflection\PropertyAttributes.cs" />
-    <Compile Include="System\Reflection\TypeAttributes.cs" />
+  <ItemGroup Condition="'$(TargetGroup)'=='uap101aot'">
     <Compile Include="System\Reflection\Emit\FlowControl.cs" />
     <Compile Include="System\Reflection\Emit\Opcode.cs" />
     <Compile Include="System\Reflection\Emit\OpCodes.cs" />
@@ -33,6 +23,9 @@
     <Compile Include="System\Reflection\Emit\OperandType.cs" />
     <Compile Include="System\Reflection\Emit\PackingSize.cs" />
     <Compile Include="System\Reflection\Emit\StackBehaviour.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)'=='uap101aot'">
+    <TargetingPackReference Include="System.Private.CoreLib" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />

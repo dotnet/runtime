@@ -148,6 +148,12 @@ namespace System.IO
             _closable = !shouldLeaveOpen;
         }
 
+        public override void Close()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
         protected override void Dispose(bool disposing)
         {
             try
@@ -181,7 +187,7 @@ namespace System.IO
                         // cleaning up internal resources, hence the finally block.  
                         if (disposing)
                         {
-                            _stream.Dispose();
+                            _stream.Close();
                         }
                     }
                     finally

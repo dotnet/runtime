@@ -1,0 +1,8 @@
+﻿<out>
+  <test1>                
+Max order: 999.99</test1>
+  <test2>                
+Max order: NaN</test2>
+  <test3>                
+Max order: NaN</test3>
+</out>

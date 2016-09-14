@@ -149,6 +149,12 @@ namespace System.IO
             return (ShouldUseWinRT(sourceFullPath, isCreate: false) || ShouldUseWinRT(destFullPath, isCreate: true)) ? _winRTFileSystem : _win32FileSystem;
         }
 
+        public override string[] GetLogicalDrives()
+        {
+            // This API is always blocked on WinRT, don't use Win32
+            return _winRTFileSystem.GetLogicalDrives();
+        }
+
         private static bool ShouldUseWinRT(string fullPath, bool isCreate)
         {
             // The purpose of this method is to determine if we can access a path

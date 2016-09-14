@@ -596,7 +596,8 @@
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.0.10.0": "4.0.10",
-        "4.0.11.0": "4.0.11"
+        "4.0.11.0": "4.0.11",
+        "4.1.0.0": "4.3.0"
       }
     },
     "System.Collections.Concurrent": {
@@ -635,7 +636,7 @@
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.0.1.0": "4.0.1",
-        "4.0.2.0": "4.3.0"
+        "4.1.0.0": "4.3.0"
       }
     },
     "System.Collections.Specialized": {
@@ -647,7 +648,7 @@
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.0.1.0": "4.0.1",
-        "4.0.2.0": "4.3.0"
+        "4.1.0.0": "4.3.0"
       }
     },
     "System.ComponentModel": {
@@ -719,7 +720,8 @@
       "BaselineVersion": "4.0.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
-        "4.0.1.0": "4.3.0"
+        "4.0.1.0": "4.3.0",
+        "4.1.0.0": "4.3.0"
       }
     },
     "System.Data.Common": {
@@ -894,7 +896,8 @@
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.0.10.0": "4.0.10",
-        "4.0.11.0": "4.0.11"
+        "4.0.11.0": "4.0.11",
+        "4.1.0.0": "4.3.0"
       }
     },
     "System.Globalization.Calendars": {
@@ -906,7 +909,7 @@
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.0.1.0": "4.0.1",
-        "4.0.2.0": "4.3.0"
+        "4.1.0.0": "4.3.0"
       }
     },
     "System.Globalization.Extensions": {
@@ -932,7 +935,7 @@
         "4.0.0.0": "4.0.0",
         "4.0.10.0": "4.0.10",
         "4.1.0.0": "4.1.0",
-        "4.1.1.0": "4.3.0"
+        "4.2.0.0": "4.3.0"
       }
     },
     "System.IO.Compression": {
@@ -945,8 +948,8 @@
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.1.0.0": "4.1.0",
-        "4.1.2.0": "4.3.0",
-        "4.1.1.0": "4.1.1"
+        "4.1.1.0": "4.1.1",
+        "4.2.0.0": "4.3.0"
       }
     },
     "System.IO.Compression.ZipFile": {
@@ -970,7 +973,8 @@
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.0.1.0": "4.0.1",
-        "4.0.2.0": "4.3.0"
+        "4.0.2.0": "4.3.0",
+        "4.1.0.0": "4.3.0"
       }
     },
     "System.IO.FileSystem.AccessControl": {
@@ -1023,8 +1027,8 @@
       "BaselineVersion": "4.0.1",
       "AssemblyVersionInPackageVersion": {
         "4.0.1.0": "4.0.1",
-        "4.0.2.0": "4.3.0",
-        "4.0.0.0": "4.0.0"
+        "4.0.0.0": "4.0.0",
+        "4.1.0.0": "4.3.0"
       }
     },
     "System.IO.MemoryMappedFiles": {
@@ -1092,7 +1096,7 @@
         "4.0.0.0": "4.0.0",
         "4.0.10.0": "4.0.10",
         "4.1.0.0": "4.1.0",
-        "4.1.1.0": "4.3.0"
+        "4.2.0.0": "4.3.0"
       }
     },
     "System.Linq.Parallel": {
@@ -1332,7 +1336,7 @@
         "4.0.0.0": "4.0.0",
         "4.0.10.0": "4.0.10",
         "4.1.0.0": "4.1.0",
-        "4.1.1.0": "4.3.0"
+        "4.2.0.0": "4.3.0"
       }
     },
     "System.Reflection.Context": {
@@ -1398,7 +1402,8 @@
       "BaselineVersion": "4.0.1",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
-        "4.0.1.0": "4.0.1"
+        "4.0.1.0": "4.0.1",
+        "4.1.0.0": "4.3.0"
       }
     },
     "System.Reflection.Metadata": {
@@ -1425,7 +1430,8 @@
       "BaselineVersion": "4.0.1",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
-        "4.0.1.0": "4.0.1"
+        "4.0.1.0": "4.0.1",
+        "4.1.0.0": "4.3.0"
       }
     },
     "System.Reflection.TypeExtensions": {
@@ -1484,7 +1490,8 @@
         "4.0.10.0": "4.0.10",
         "4.0.20.0": "4.0.20",
         "4.1.0.0": "4.1.0",
-        "4.1.1.0": "4.3.0"
+        "4.1.1.0": "4.3.0",
+        "4.2.0.0": "4.3.0"
       }
     },
     "System.Runtime.CompilerServices.Unsafe": {
@@ -1517,7 +1524,8 @@
         "4.0.0.0": "4.0.0",
         "4.0.10.0": "4.0.10",
         "4.1.0.0": "4.1.0",
-        "4.1.1.0": "4.3.0"
+        "4.1.1.0": "4.3.0",
+        "4.2.0.0": "4.3.0"
       }
     },
     "System.Runtime.Handles": {
@@ -1612,9 +1620,9 @@
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.1.1.0": "4.1.1",
-        "4.1.2.0": "4.3.0",
         "4.0.10.0": "4.0.10",
-        "4.1.0.0": "4.1.0"
+        "4.1.0.0": "4.1.0",
+        "4.2.0.0": "4.3.0"
       }
     },
     "System.Runtime.Serialization.Xml": {
@@ -1690,7 +1698,7 @@
         "4.0.0.0": "4.2.0",
         "4.1.0.0": "4.2.0",
         "4.2.0.0": "4.2.0",
-        "4.2.1.0": "4.3.0"
+        "4.3.0.0": "4.3.0"
       }
     },
     "System.Security.Cryptography.Cng": {
@@ -1702,7 +1710,7 @@
         "4.0.0.0": "4.2.0",
         "4.1.0.0": "4.2.0",
         "4.2.0.0": "4.2.0",
-        "4.2.1.0": "4.3.0"
+        "4.3.0.0": "4.3.0"
       }
     },
     "System.Security.Cryptography.Csp": {
@@ -1732,7 +1740,7 @@
       "BaselineVersion": "4.0.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
-        "4.0.1.0": "4.3.0"
+        "4.1.0.0": "4.3.0"
       }
     },
     "System.Security.Cryptography.Pkcs": {
@@ -1825,7 +1833,8 @@
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.0.10.0": "4.0.10",
-        "4.0.11.0": "4.0.11"
+        "4.0.11.0": "4.0.11",
+        "4.1.0.0": "4.3.0"
       }
     },
     "System.Text.Encoding.CodePages": {
@@ -1922,7 +1931,8 @@
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.0.10.0": "4.0.10",
-        "4.0.11.0": "4.0.11"
+        "4.0.11.0": "4.0.11",
+        "4.1.0.0": "4.3.0"
       }
     },
     "System.Threading.Tasks.Dataflow": {
@@ -2130,7 +2140,20 @@
       }
     },
     "runtime.native.System.Security.Cryptography.Apple": {},
-    "runtime.native.System.Security.Cryptography.OpenSsl": {}
+    "runtime.native.System.Security.Cryptography.OpenSsl": {},
+    "System.Json": {},
+    "System.Private.Xml": {},
+    "System.Private.Xml.Linq": {},
+    "System.Security.Permissions": {
+      "AssemblyVersionInPackageVersion": {
+        "4.0.0.0": "4.3.0"
+      }
+    },
+    "System.Transactions": {
+      "AssemblyVersionInPackageVersion": {
+        "4.0.0.0": "4.3.0"
+      }
+    }
   },
   "ModulesToPackages": {
     "System.Native": "runtime.native.System",

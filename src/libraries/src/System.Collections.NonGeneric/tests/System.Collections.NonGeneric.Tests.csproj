@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
@@ -8,8 +8,20 @@
     <RootNamespace>System.Collections.NonGeneric.Tests</RootNamespace>
     <AssemblyName>System.Collections.NonGeneric.Tests</AssemblyName>
     <ProjectGuid>{EE95AE39-845A-42D3-86D0-8065DBE56612}</ProjectGuid>
-    <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
+    <DefineConstants Condition="'$(TargetGroup)'=='netstandard1.7'">$(DefineConstants);netstandard17</DefineConstants>
+    <NugetTargetMoniker Condition="'$(NugetTargetMoniker)'==''">.NETStandard,Version=v1.3</NugetTargetMoniker>
+    <!-- 
+        Until we get first class support for NS1.7 and Netcoreapp1.1 
+        we need to hard code $(TestTFM) and $(TestNugetTargetMoniker) 
+        in the project file. 
+      -->
+    <TestTFM Condition="'$(TargetGroup)'=='netstandard1.7'">netcoreapp1.1</TestTFM>
   </PropertyGroup>
+  <ItemGroup Condition="'$(TargetGroup)'=='netstandard1.7'">
+    <TestNugetTargetMoniker Include="$(NugetTargetMoniker)">
+      <Folder>netcoreapp1.1</Folder>
+    </TestNugetTargetMoniker>
+  </ItemGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
   </PropertyGroup>
@@ -37,6 +49,7 @@
     </Compile>
     <Compile Include="ArrayListTests.cs" />
     <Compile Include="ArrayList\ArrayList.IList.Tests.cs" />
+    <Compile Include="CaseInsensitiveHashCodeProviderTests.cs" Condition="'$(TargetGroup)'=='netstandard1.7'" />
     <Compile Include="Hashtable\Hashtable.Values.Tests.cs" />
     <Compile Include="Hashtable\Hashtable.Keys.Tests.cs" />
     <Compile Include="Hashtable\Hashtable.IDictionary.Tests.cs" />
@@ -55,6 +68,16 @@
       <Link>Common\System\Diagnostics\DebuggerAttributes.cs</Link>
     </Compile>
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)'!='netstandard1.7'">
+    <Compile Include="$(CommonPath)\System\SerializableAttribute.cs">
+      <Link>Common\System\SerializableAttribute.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)'=='netstandard1.7'">
+    <Compile Include="$(CommonTestPath)\System\Collections\IEnumerable.NonGeneric.Serialization.Tests.cs" >
+      <Link>Common\System\Collections\IEnumerable.NonGeneric.Serialization.Tests.cs</Link>
+    </Compile>
+  </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\pkg\System.Collections.NonGeneric.pkgproj">
       <Name>System.Collections.NonGeneric</Name>
@@ -63,5 +86,11 @@
   <ItemGroup>
     <None Include="project.json" />
   </ItemGroup>
+  <!-- ToDo: Remove this target once the infrastructure for testing in netcoreapp1.1 is ready -->
+  <Target Name="RemoveUnwantedTestMonikers" Condition="'$(TargetGroup)'=='netstandard1.7'" BeforeTargets="CopyTestToTestDirectory">
+    <ItemGroup>
+      <TestNugetTargetMoniker Remove=".NETCoreApp,Version=v1.1" />
+    </ItemGroup>
+  </Target>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

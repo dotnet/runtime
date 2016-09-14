@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
@@ -10,8 +10,14 @@
     <AssemblyName>System.Runtime.Tests</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NoWarn>1718</NoWarn>
-    <NugetTargetMoniker>.NETStandard,Version=v1.5</NugetTargetMoniker>
+    <NugetTargetMoniker Condition="'$(TargetGroup)'=='netstandard1.7' AND '$(NugetTargetMoniker)'==''">.NETStandard,Version=v1.7</NugetTargetMoniker>
+    <NugetTargetMoniker Condition="'$(NugetTargetMoniker)'==''">.NETStandard,Version=v1.5</NugetTargetMoniker>
   </PropertyGroup>
+  <ItemGroup Condition="'$(TargetGroup)'=='netstandard1.7'">
+    <TestNugetTargetMoniker Include="$(NugetTargetMoniker)">
+      <Folder>netcoreapp1.1</Folder>
+    </TestNugetTargetMoniker>
+  </ItemGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
   </PropertyGroup>
@@ -47,6 +53,7 @@
     <Compile Include="System\IntPtrTests.cs" />
     <Compile Include="System\IO\DirectoryNotFoundExceptionTests.cs" />
     <Compile Include="System\IO\DirectoryNotFoundException.InteropTests.cs" />
+    <Compile Include="System\IO\EndOfStreamExceptionTests.cs" />    
     <Compile Include="System\IO\Exceptions.HResults.cs" />
     <Compile Include="System\IO\Exceptions.Utility.cs" />
     <Compile Include="System\IO\FileLoadExceptionTests.cs" />
@@ -60,7 +67,7 @@
     <Compile Include="System\MissingMethodExceptionTests.cs" />
     <Compile Include="System\MulticastDelegateTests.cs" />
     <Compile Include="System\NullableTests.cs" />
-    <Compile Include="System\ExceptionTests.cs" />
+    <Compile Include="System\NullReferenceExceptionTests.cs" />
     <Compile Include="System\ObjectTests.cs" />
     <Compile Include="System\Runtime\CompilerServices\ConditionalWeakTableTests.cs" />
     <Compile Include="System\Runtime\CompilerServices\StrongBoxTests.cs" />
@@ -88,6 +95,27 @@
     <Compile Include="$(CommonTestPath)\System\RandomDataGenerator.cs">
       <Link>Common\System\RandomDataGenerator.cs</Link>
     </Compile>
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard1.7'">
+    <Compile Include="ArrayTests.netstandard1.7.cs" />
+    <Compile Include="CompareToTests.cs" />
+    <Compile Include="System\DateTimeOffsetTests.netstandard1.7.cs" />
+    <Compile Include="DecimalTests.netstandard1.7.cs" />
+    <Compile Include="EnumTests.netstandard1.7.cs" />
+    <Compile Include="GetTypeCodeTests.cs" />
+    <Compile Include="TimeZoneInfoTests.netstandard1.7.cs" />
+    <Compile Include="TimeZoneNotFoundExceptionTests.netstandard1.7.cs" />
+    <Compile Include="VersionTests.netstandard1.7.cs" />
+    <Compile Include="System\AccessViolationExceptionTests.cs" />
+    <Compile Include="System\ExternalExceptionTests.cs" />
+    <Compile Include="System\ApplicationExceptionTests.cs" />
+    <Compile Include="System\EntryPointNotFoundExceptionTests.cs" />
+    <Compile Include="System\ExceptionTests.cs" />
+    <Compile Include="System\ExecutionEngineExceptionTests.cs" />
+    <Compile Include="System\NotFiniteNumberExceptionTests.cs" />
+    <Compile Include="System\StackOverflowExceptionTests.cs" />
+    <Compile Include="System\SystemExceptionTests.cs" />
+    <Compile Include="System\StringTests.netstandard1.7.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />

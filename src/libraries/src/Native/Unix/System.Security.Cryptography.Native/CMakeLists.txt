@@ -23,12 +23,14 @@ set(NATIVECRYPTO_SOURCES
     pal_asn1_print.cpp
     pal_bignum.cpp
     pal_bio.cpp
+    pal_dsa.cpp
     pal_ecdsa.cpp
     pal_ecc_import_export.cpp
     pal_eckey.cpp
     pal_err.cpp
     pal_evp.cpp
     pal_evp_pkey.cpp
+    pal_evp_pkey_dsa.cpp
     pal_evp_pkey_eckey.cpp
     pal_evp_pkey_rsa.cpp
     pal_evp_cipher.cpp

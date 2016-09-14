@@ -17,6 +17,7 @@ using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Runtime;
 using System.Runtime.CompilerServices;
+using System.Runtime.Serialization;
 using System.Threading;
 
 namespace System.Collections
@@ -79,5 +80,11 @@ namespace System.Collections
 
         // This is the maximum prime smaller than Array.MaxArrayLength
         public const int MaxPrimeArrayLength = 0x7FEFFFFD;
+
+        private static ConditionalWeakTable<object, SerializationInfo> s_serializationInfoTable;
+
+        internal static ConditionalWeakTable<object, SerializationInfo> SerializationInfoTable => LazyInitializer.EnsureInitialized(ref s_serializationInfoTable);
+
+        internal static object GetEqualityComparerForSerialization(object comparer) => comparer;
     }
 }

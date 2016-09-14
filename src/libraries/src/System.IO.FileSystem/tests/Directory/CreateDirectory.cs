@@ -4,6 +4,7 @@
 
 using System.Linq;
 using Xunit;
+using XunitPlatformID = Xunit.PlatformID;
 
 namespace System.IO.Tests
 {
@@ -131,7 +132,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(XunitPlatformID.Windows)]
         public void ValidExtendedPathWithTrailingSlash()
         {
             DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
@@ -224,7 +225,7 @@ namespace System.IO.Tests
         #region PlatformSpecific
 
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(XunitPlatformID.Windows)]
         public void PathWithInvalidColons_ThrowsNotSupportedException()
         {
             var paths = IOInputs.GetPathsWithInvalidColons();
@@ -235,7 +236,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(XunitPlatformID.Windows)]
         public void DirectoryLongerThanMaxPath_Succeeds()
         {
             var paths = IOInputs.GetPathsLongerThanMaxPath(GetTestFilePath());
@@ -247,7 +248,8 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)]
+        [ActiveIssue(11687)]
+        [PlatformSpecific(XunitPlatformID.Windows)]
         public void DirectoryLongerThanMaxLongPath_ThrowsPathTooLongException()
         {
             var paths = IOInputs.GetPathsLongerThanMaxLongPath(GetTestFilePath());
@@ -258,7 +260,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(XunitPlatformID.Windows)]
         public void DirectoryLongerThanMaxLongPathWithExtendedSyntax_ThrowsPathTooLongException()
         {
             var paths = IOInputs.GetPathsLongerThanMaxLongPath(GetTestFilePath(), useExtendedSyntax: true);
@@ -270,7 +272,7 @@ namespace System.IO.Tests
 
 
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(XunitPlatformID.Windows)]
         public void ExtendedDirectoryLongerThanLegacyMaxPath_Succeeds()
         {
             var paths = IOInputs.GetPathsLongerThanMaxPath(GetTestFilePath(), useExtendedSyntax: true);
@@ -281,7 +283,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(XunitPlatformID.Windows)]
         public void DirectoryLongerThanMaxDirectoryAsPath_Succeeds()
         {
             var paths = IOInputs.GetPathsLongerThanMaxDirectory(GetTestFilePath());
@@ -293,7 +295,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.AnyUnix)]
+        [PlatformSpecific(XunitPlatformID.AnyUnix)]
         public void UnixPathLongerThan256_Allowed()
         {
             DirectoryInfo testDir = Create(GetTestFilePath());
@@ -304,7 +306,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.AnyUnix)]
+        [PlatformSpecific(XunitPlatformID.AnyUnix)]
         public void UnixPathWithDeeplyNestedDirectories()
         {
             DirectoryInfo parent = Create(GetTestFilePath());
@@ -316,7 +318,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(XunitPlatformID.Windows)]
         public void WindowsWhiteSpaceAsPath_ThrowsArgumentException()
         {
             var paths = IOInputs.GetWhiteSpace();
@@ -327,7 +329,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.AnyUnix)]
+        [PlatformSpecific(XunitPlatformID.AnyUnix)]
         public void UnixWhiteSpaceAsPath_Allowed()
         {
             var paths = IOInputs.GetWhiteSpace();
@@ -339,7 +341,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(XunitPlatformID.Windows)]
         public void WindowsTrailingWhiteSpace()
         {
             // Windows will remove all non-significant whitespace in a path
@@ -357,7 +359,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(XunitPlatformID.Windows)]
         public void WindowsExtendedSyntaxWhiteSpace()
         {
             var paths = IOInputs.GetSimpleWhiteSpace();
@@ -373,7 +375,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.AnyUnix)]
+        [PlatformSpecific(XunitPlatformID.AnyUnix)]
         public void UnixNonSignificantTrailingWhiteSpace()
         {
             // Unix treats trailing/prename whitespace as significant and a part of the name.
@@ -391,7 +393,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)] // alternate data streams
+        [PlatformSpecific(XunitPlatformID.Windows)] // alternate data streams
         public void PathWithAlternateDataStreams_ThrowsNotSupportedException()
         {
             var paths = IOInputs.GetPathsWithAlternativeDataStreams();
@@ -402,7 +404,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)] // device name prefixes
+        [PlatformSpecific(XunitPlatformID.Windows)] // device name prefixes
         public void PathWithReservedDeviceNameAsPath_ThrowsDirectoryNotFoundException()
         {   // Throws DirectoryNotFoundException, when the behavior really should be an invalid path
             var paths = IOInputs.GetPathsWithReservedDeviceNames();
@@ -413,7 +415,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)] // device name prefixes
+        [PlatformSpecific(XunitPlatformID.Windows)] // device name prefixes
         public void PathWithReservedDeviceNameAsExtendedPath()
         {
             var paths = IOInputs.GetReservedDeviceNames();
@@ -427,7 +429,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)] // UNC shares
+        [PlatformSpecific(XunitPlatformID.Windows)] // UNC shares
         public void UncPathWithoutShareNameAsPath_ThrowsArgumentException()
         {
             var paths = IOInputs.GetUncPathsWithoutShareName();
@@ -438,14 +440,14 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)] // UNC shares
+        [PlatformSpecific(XunitPlatformID.Windows)] // UNC shares
         public void UNCPathWithOnlySlashes()
         {
             Assert.Throws<ArgumentException>(() => Create("//"));
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)] // drive labels
+        [PlatformSpecific(XunitPlatformID.Windows)] // drive labels
         public void CDriveCase()
         {
             DirectoryInfo dir = Create("c:\\");
@@ -454,7 +456,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(XunitPlatformID.Windows)]
         public void DriveLetter_Windows()
         {
             // On Windows, DirectoryInfo will replace "<DriveLetter>:" with "."
@@ -465,7 +467,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.AnyUnix)]
+        [PlatformSpecific(XunitPlatformID.AnyUnix)]
         public void DriveLetter_Unix()
         {
             // On Unix, there's no special casing for drive letters.  These may or may not be valid names, depending
@@ -494,7 +496,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)] // testing drive labels
+        [PlatformSpecific(XunitPlatformID.Windows)] // testing drive labels
         public void NonExistentDriveAsPath_ThrowsDirectoryNotFoundException()
         {
             Assert.Throws<DirectoryNotFoundException>(() =>
@@ -504,7 +506,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)] // testing drive labels
+        [PlatformSpecific(XunitPlatformID.Windows)] // testing drive labels
         public void SubdirectoryOnNonExistentDriveAsPath_ThrowsDirectoryNotFoundException()
         {
             Assert.Throws<DirectoryNotFoundException>(() =>
@@ -515,7 +517,7 @@ namespace System.IO.Tests
 
         [Fact]
         [ActiveIssue(1221)]
-        [PlatformSpecific(PlatformID.Windows)] // testing drive labels
+        [PlatformSpecific(XunitPlatformID.Windows)] // testing drive labels
         public void NotReadyDriveAsPath_ThrowsDirectoryNotFoundException()
         {   // Behavior is suspect, should really have thrown IOException similar to the SubDirectory case
             var drive = IOServices.GetNotReadyDrive();
@@ -532,7 +534,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)] // testing drive labels
+        [PlatformSpecific(XunitPlatformID.Windows)] // testing drive labels
         [ActiveIssue(1221)]
         public void SubdirectoryOnNotReadyDriveAsPath_ThrowsIOException()
         {

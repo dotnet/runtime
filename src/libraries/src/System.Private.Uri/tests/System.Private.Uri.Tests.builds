@@ -16,6 +16,16 @@
       <TestTFMs>netcore50;netcoreapp1.0;net46</TestTFMs>
       <OSGroup>Windows_NT</OSGroup>
     </Project>
+    <Project Include="ExtendedFunctionalTests\System.Private.Uri.ExtendedFunctional.Tests.csproj">
+      <TargetGroup>netstandard1.7</TargetGroup>
+      <TestTFMs>netcoreapp1.1</TestTFMs>
+      <OSGroup>Unix</OSGroup>
+    </Project>
+    <Project Include="ExtendedFunctionalTests\System.Private.Uri.ExtendedFunctional.Tests.csproj">
+      <TargetGroup>netstandard1.7</TargetGroup>
+      <TestTFMs>netcoreapp1.1</TestTFMs>
+      <OSGroup>Windows_NT</OSGroup>
+    </Project>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
 </Project>

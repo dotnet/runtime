@@ -1,22 +1,44 @@
 {
-  "dependencies": {
-    "Microsoft.NETCore.Platforms": "1.0.1",
-    "System.Collections": "4.0.0",
-    "System.Diagnostics.Contracts": "4.0.0",
-    "System.Diagnostics.Debug": "4.0.10",
-    "System.IO": "4.1.0",
-    "System.Resources.ResourceManager": "4.0.0",
-    "System.Runtime": "4.1.0",
-    "System.Runtime.InteropServices": "4.0.20",
-    "System.Runtime.Numerics": "4.0.0",
-    "System.Security.Cryptography.Algorithms": "4.2.0",
-    "System.Security.Cryptography.Encoding": "4.0.0",
-    "System.Text.Encoding": "4.0.10"
-  },
   "frameworks": {
     "netstandard1.6": {
+      "dependencies": {
+        "Microsoft.NETCore.Platforms": "1.0.1",
+        "System.Collections": "4.0.0",
+        "System.Diagnostics.Contracts": "4.0.0",
+        "System.Diagnostics.Debug": "4.0.10",
+        "System.IO": "4.1.0",
+        "System.Resources.ResourceManager": "4.0.0",
+        "System.Runtime": "4.1.0",
+        "System.Runtime.InteropServices": "4.0.20",
+        "System.Runtime.Numerics": "4.0.0",
+        "System.Security.Cryptography.Algorithms": "4.2.0",
+        "System.Security.Cryptography.Encoding": "4.0.0",
+        "System.Text.Encoding": "4.0.10"
+      },
       "imports": [
         "dotnet5.5"
+      ]
+    },
+    "netstandard1.7": {
+      "dependencies": {
+        "Microsoft.NETCore.Platforms": "4.3.0-beta-devapi-24512-01",
+        "System.Collections": "4.3.0-beta-devapi-24512-01",
+        "System.Diagnostics.Contracts": "4.3.0-beta-devapi-24512-01",
+        "System.Diagnostics.Debug": "4.3.0-beta-devapi-24512-01",
+        "System.IO": "4.3.0-beta-devapi-24512-01",
+        "System.Resources.ResourceManager": "4.3.0-beta-devapi-24512-01",
+        "System.Runtime": "4.3.0-beta-devapi-24512-01",
+        "System.Runtime.Extensions": "4.3.0-beta-devapi-24512-01",
+        "System.Runtime.InteropServices": "4.3.0-beta-devapi-24512-01",
+        "System.Runtime.Numerics": "4.3.0-beta-devapi-24512-01",
+        "System.Security.Cryptography.Algorithms": "4.3.0-beta-devapi-24512-01",
+        "System.Security.Cryptography.Encoding": "4.3.0-beta-devapi-24512-01",
+        "System.Security.Cryptography.Primitives": "4.3.0-beta-devapi-24512-01",
+        "System.Text.Encoding": "4.3.0-beta-devapi-24512-01",
+        "System.Threading.Tasks": "4.3.0-beta-devapi-24512-01"
+      },
+      "imports": [
+        "dotnet5.8"
       ]
     }
   }

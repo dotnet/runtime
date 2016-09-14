@@ -9,7 +9,7 @@ using Xunit;
 
 namespace System.IO.Tests
 {
-    public static class PathTests
+    public static partial class PathTests
     {
         [Theory]
         [InlineData(null, null, null)]
@@ -55,7 +55,7 @@ namespace System.IO.Tests
         [InlineData(@"..\..\files.txt", @"..\..")]
         [InlineData(@"C:\", null)]
         [InlineData(@"C:", null)]
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(Xunit.PlatformID.Windows)]
         public static void GetDirectoryName_Windows(string path, string expected)
         {
             Assert.Equal(expected, Path.GetDirectoryName(path));
@@ -68,7 +68,7 @@ namespace System.IO.Tests
         [InlineData(@"dir/baz/bar", @"dir/baz")]
         [InlineData(@"../../files.txt", @"../..")]
         [InlineData(@"/", null)]
-        [PlatformSpecific(PlatformID.AnyUnix)]
+        [PlatformSpecific(Xunit.PlatformID.AnyUnix)]
         public static void GetDirectoryName_Unix(string path, string expected)
         {
             Assert.Equal(expected, Path.GetDirectoryName(path));
@@ -82,7 +82,7 @@ namespace System.IO.Tests
             Assert.Equal(null, Path.GetDirectoryName(Path.GetPathRoot(curDir)));
         }
 
-        [PlatformSpecific(PlatformID.AnyUnix)]
+        [PlatformSpecific(Xunit.PlatformID.AnyUnix)]
         [Fact]
         public static void GetDirectoryName_ControlCharacters_Unix()
         {
@@ -110,7 +110,7 @@ namespace System.IO.Tests
             Assert.Equal(!string.IsNullOrEmpty(expected), Path.HasExtension(path));
         }
 
-        [PlatformSpecific(PlatformID.AnyUnix)]
+        [PlatformSpecific(Xunit.PlatformID.AnyUnix)]
         [Theory]
         [InlineData("file.e xe", ".e xe")]
         [InlineData("file. ", ". ")]
@@ -143,7 +143,7 @@ namespace System.IO.Tests
             Assert.Equal(expected, Path.GetFileName(path));
         }
 
-        [PlatformSpecific(PlatformID.AnyUnix)]
+        [PlatformSpecific(Xunit.PlatformID.AnyUnix)]
         [Fact]
         public static void GetFileName_Unix()
         {
@@ -185,7 +185,7 @@ namespace System.IO.Tests
             Assert.False(Path.IsPathRooted("file.exe"));
         }
 
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(Xunit.PlatformID.Windows)]
         [Theory]
         [InlineData(@"\\test\unc\path\to\something", @"\\test\unc")]
         [InlineData(@"\\a\b\c\d\e", @"\\a\b")]
@@ -203,7 +203,7 @@ namespace System.IO.Tests
             Assert.Equal(expected, Path.GetPathRoot(value));
         }
 
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(Xunit.PlatformID.Windows)]
         [Theory]
         [InlineData(@"C:", @"C:")]
         [InlineData(@"C:\", @"C:\")]
@@ -218,7 +218,7 @@ namespace System.IO.Tests
             Assert.Equal(expected, Path.GetPathRoot(value));
         }
 
-        [PlatformSpecific(PlatformID.AnyUnix)]
+        [PlatformSpecific(Xunit.PlatformID.AnyUnix)]
         [Fact]
         public static void GetPathRoot_Unix()
         {
@@ -304,7 +304,7 @@ namespace System.IO.Tests
             Assert.True(Directory.Exists(tmpPath));
         }
 
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(Xunit.PlatformID.Windows)]
         [Theory]
         [InlineData(@"C:\Users\someuser\AppData\Local\Temp\", @"C:\Users\someuser\AppData\Local\Temp")]
         [InlineData(@"C:\Users\someuser\AppData\Local\Temp\", @"C:\Users\someuser\AppData\Local\Temp\")]
@@ -316,7 +316,7 @@ namespace System.IO.Tests
             GetTempPath_SetEnvVar("TMP", expected, newTempPath);
         }
 
-        [PlatformSpecific(PlatformID.AnyUnix)]
+        [PlatformSpecific(Xunit.PlatformID.AnyUnix)]
         [Theory]
         [InlineData("/tmp/", "/tmp")]
         [InlineData("/tmp/", "/tmp/")]
@@ -413,7 +413,7 @@ namespace System.IO.Tests
             Assert.Equal(expected, Path.GetFullPath(path));
         }
 
-        [PlatformSpecific(PlatformID.AnyUnix)]
+        [PlatformSpecific(Xunit.PlatformID.AnyUnix)]
         [Fact]
         public static void GetFullPath_Unix_Whitespace()
         {
@@ -423,7 +423,7 @@ namespace System.IO.Tests
             Assert.Equal(Path.Combine(curDir, "\r\n"), Path.GetFullPath("\r\n"));
         }
 
-        [PlatformSpecific(PlatformID.AnyUnix)]
+        [PlatformSpecific(Xunit.PlatformID.AnyUnix)]
         [Theory]
         [InlineData("http://www.microsoft.com")]
         [InlineData("file://somefile")]
@@ -435,7 +435,7 @@ namespace System.IO.Tests
                 Path.GetFullPath(uriAsFileName));
         }
 
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(Xunit.PlatformID.Windows)]
         [Fact]
         public static void GetFullPath_Windows_NormalizedLongPathTooLong()
         {
@@ -452,7 +452,7 @@ namespace System.IO.Tests
             Assert.NotNull(Path.GetFullPath(longPath.ToString()));
         }
 
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(Xunit.PlatformID.Windows)]
         [Fact]
         public static void GetFullPath_Windows_AlternateDataStreamsNotSupported()
         {
@@ -461,7 +461,7 @@ namespace System.IO.Tests
             Assert.Throws<NotSupportedException>(() => Path.GetFullPath(@"C:\some\bad:path"));
         }
 
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(Xunit.PlatformID.Windows)]
         [Fact]
         public static void GetFullPath_Windows_URIFormatNotSupported()
         {
@@ -470,7 +470,7 @@ namespace System.IO.Tests
             Assert.Throws<NotSupportedException>(() => Path.GetFullPath("file://www.microsoft.com"));
         }
 
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(Xunit.PlatformID.Windows)]
         [Theory]
         [InlineData(@"bad::$DATA")]
         [InlineData(@"C  :")]
@@ -481,7 +481,7 @@ namespace System.IO.Tests
             Assert.Throws<NotSupportedException>(() => Path.GetFullPath(path));
         }
 
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(Xunit.PlatformID.Windows)]
         [Theory]
         [InlineData(@"C:...")]
         [InlineData(@"C:...\somedir")]
@@ -495,7 +495,7 @@ namespace System.IO.Tests
             Path.GetFullPath(path);
         }
 
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(Xunit.PlatformID.Windows)]
         [Fact]
         public static void GetFullPath_Windows_MaxPathNotTooLong()
         {
@@ -503,14 +503,14 @@ namespace System.IO.Tests
             Path.GetFullPath(@"C:\" + new string('a', 255) + @"\");
         }
 
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(Xunit.PlatformID.Windows)]
         [Fact]
         public static void GetFullPath_Windows_PathTooLong()
         {
             Assert.Throws<PathTooLongException>(() => Path.GetFullPath(@"C:\" + new string('a', short.MaxValue) + @"\"));
         }
 
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(Xunit.PlatformID.Windows)]
         [Theory]
         [InlineData(@"C:\", @"C:\")]
         [InlineData(@"C:\.", @"C:\")]
@@ -523,7 +523,7 @@ namespace System.IO.Tests
             Assert.Equal(Path.GetFullPath(path), expected);
         }
 
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(Xunit.PlatformID.Windows)]
         [Fact]
         public static void GetFullPath_Windows_StrangeButLegalPaths()
         {
@@ -542,7 +542,7 @@ namespace System.IO.Tests
                 Path.GetFullPath(curDir + Path.DirectorySeparatorChar + ".. " + Path.DirectorySeparatorChar));
         }
 
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(Xunit.PlatformID.Windows)]
         [Theory]
         [InlineData(@"\\?\C:\ ")]
         [InlineData(@"\\?\C:\ \ ")]
@@ -599,7 +599,7 @@ namespace System.IO.Tests
             }
         }
 
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(Xunit.PlatformID.Windows)]
         [Theory]
         [InlineData(@"\\server\share", @"\\server\share")]
         [InlineData(@"\\server\share", @" \\server\share")]
@@ -619,7 +619,7 @@ namespace System.IO.Tests
             Assert.Equal(expected, Path.GetFullPath(input));
         }
 
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(Xunit.PlatformID.Windows)]
         [Theory]
         [InlineData(@"\\")]
         [InlineData(@"\\server")]
@@ -631,7 +631,7 @@ namespace System.IO.Tests
             Assert.Throws<ArgumentException>(() => Path.GetFullPath(invalidPath));
         }
 
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(Xunit.PlatformID.Windows)]
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public static void GetFullPath_Windows_83Paths()
         {
@@ -676,7 +676,7 @@ namespace System.IO.Tests
             }
         }
 
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(Xunit.PlatformID.Windows)]
         [Theory]
         [InlineData('*')]
         [InlineData('?')]

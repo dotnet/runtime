@@ -15,4 +15,20 @@
   <Target Name="Rebuild" DependsOnTargets="Clean;Build" />
   <Target Name="DumpTargets" />
 
+  <Target Name="CopyContractsToCompatFolder" AfterTargets="Build">
+    <ItemGroup>
+      <AllCompatAssemblies Include="$(BaseOutputPath)/**/Compat/*.dll" />
+      <AllCompatAssemblies>
+        <IsRefAssembly  Condition="$([System.String]::Copy('%(AllCompatAssemblies.FullPath)').Contains('/ref/')) OR
+                                   $([System.String]::Copy('%(AllCompatAssemblies.FullPath)').Contains('\ref\'))">true</IsRefAssembly>
+        <IsIntermediateAssembly Condition="$([System.String]::Copy('%(AllCompatAssemblies.FullPath)').Contains('/obj/')) OR
+                                   $([System.String]::Copy('%(AllCompatAssemblies.FullPath)').Contains('\obj\'))">true</IsIntermediateAssembly>
+      </AllCompatAssemblies>
+      <AllCompatAssemblies Remove="@(AllCompatAssemblies)" Condition="'%(AllCompatAssemblies.IsIntermediateAssembly)'=='true'" />
+    </ItemGroup>
+
+    <Copy SourceFiles="@(AllCompatAssemblies)" Condition="'%(AllCompatAssemblies.IsRefAssembly)'=='true'" DestinationFolder="$(BaseOutputPath)/Compat/ref" />
+    <Copy SourceFiles="@(AllCompatAssemblies)" Condition="'%(AllCompatAssemblies.IsRefAssembly)'!='true'" DestinationFolder="$(BaseOutputPath)/Compat/facades" />
+  </Target>
+
 </Project>

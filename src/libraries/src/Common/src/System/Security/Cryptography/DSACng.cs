@@ -1,0 +1,77 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
+using System.IO;
+using Internal.Cryptography;
+using static Interop.NCrypt;
+
+namespace System.Security.Cryptography
+{
+#if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
+    internal static partial class DSAImplementation
+    {
+#endif
+        public sealed partial class DSACng : DSA
+        {
+            /// <summary>
+            ///     Create a DSACng algorithm with a random 2048 bit key pair.
+            /// </summary>
+            public DSACng()
+                : this(keySize: 2048)
+            {
+            }
+
+            /// <summary>
+            ///     Creates a new DSACng object that will use a randomly generated key of the specified size.
+            ///     Valid key sizes range from 512 to 3072 bits, in increments of 64. It's suggested that a
+            ///     minimum size of 2048 bits be used for all keys.
+            /// </summary>
+            /// <param name="keySize">Size of the key to generate, in bits.</param>
+            /// <exception cref="CryptographicException">if <paramref name="keySize" /> is not valid</exception>
+            public DSACng(int keySize)
+            {
+                LegalKeySizesValue = s_legalKeySizes;
+                KeySize = keySize;
+            }
+
+            public override KeySizes[] LegalKeySizes
+            {
+                get
+                {
+                    return base.LegalKeySizes;
+                }
+            }
+
+            // Need to override since base methods throw a "override me" exception: makes SignData/VerifyData function.
+            protected override byte[] HashData(byte[] data, int offset, int count, HashAlgorithmName hashAlgorithm)
+            {
+                return CngCommon.HashData(data, offset, count, hashAlgorithm);
+            }
+
+            protected override byte[] HashData(Stream data, HashAlgorithmName hashAlgorithm)
+            {
+                return CngCommon.HashData(data, hashAlgorithm);
+            }
+
+            private void ForceSetKeySize(int newKeySize)
+            {
+                // Our LegalKeySizes value stores the values that we encoded as being the correct
+                // legal key size limitations for this algorithm, as documented on MSDN.
+                //
+                // But on a new OS version we might not question if our limit is accurate, or MSDN
+                // could have been inaccurate to start with.
+                //
+                // Since the key is already loaded, we know that Windows thought it to be valid;
+                // therefore we should set KeySizeValue directly to bypass the LegalKeySizes conformance
+                // check.
+                //
+                KeySizeValue = newKeySize;
+            }
+
+            private static KeySizes[] s_legalKeySizes = new KeySizes[] { new KeySizes(minSize: 512, maxSize: 3072, skipSize: 64) };
+        }
+#if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
+    }
+#endif
+}

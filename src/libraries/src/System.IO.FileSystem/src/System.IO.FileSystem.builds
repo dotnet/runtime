@@ -9,7 +9,18 @@
       <OSGroup>Windows_NT</OSGroup>
     </Project>
     <Project Include="System.IO.FileSystem.csproj">
+      <OSGroup>Unix</OSGroup>
+      <TargetGroup>netstandard1.3</TargetGroup>
+    </Project>
+    <Project Include="System.IO.FileSystem.csproj">
+      <OSGroup>Windows_NT</OSGroup>
+      <TargetGroup>netstandard1.3</TargetGroup>
+    </Project>
+    <Project Include="System.IO.FileSystem.csproj">
       <TargetGroup>net46</TargetGroup>
+    </Project>
+    <Project Include="System.IO.FileSystem.csproj">
+      <TargetGroup>net463</TargetGroup>
     </Project>
     <Project Include="System.IO.FileSystem.csproj">
       <OSGroup>Windows_NT</OSGroup>

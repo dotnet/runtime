@@ -2,51 +2,47 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Security;
-using Windows.Storage;
-
 namespace System.IO.IsolatedStorage
 {
-    [SecurityCritical]
-    internal class IsolatedStorageSecurityState
+    public class IsolatedStorageSecurityState
     {
-        private string _rootUserDirectory;
-
-        internal static string GetRootUserDirectory()
-        {
-            IsolatedStorageSecurityState state = new IsolatedStorageSecurityState();
-            state.EnsureState();
-            return state.RootUserDirectory;
-        }
-
-        [SecurityCritical]
-        private IsolatedStorageSecurityState()
-        {
-        }
-
-        private String RootUserDirectory
+        public IsolatedStorageSecurityOptions Options
         {
             get
             {
-                return _rootUserDirectory;
-            }
-            set
-            {
-                _rootUserDirectory = value;
+                return IsolatedStorageSecurityOptions.IncreaseQuotaForApplication;
             }
         }
 
-        [SecurityCritical]
-        private void EnsureState()
+        public long Quota
         {
-            try
+            get
             {
-                RootUserDirectory = ApplicationData.Current.LocalFolder.Path;
+                return long.MaxValue;
             }
-            catch (Exception)
+            set
             {
-                throw new IsolatedStorageException(SR.IsolatedStorage_Operation);
+                throw new PlatformNotSupportedException();
             }
+        }
+
+        public long UsedSize
+        {
+            get
+            {
+                return default(long);
+            }
+        }
+
+        public bool IsStateAvailable()
+        {
+            // We only have one state
+            return true;
+        }
+
+        public virtual void EnsureState()
+        {
+            // Nothing to do
         }
     }
 }

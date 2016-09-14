@@ -3516,3 +3516,20 @@ public class DTOResolver : DataContractResolver
         return result;
     }
 }
+
+public class Animal
+{
+    public int Age;
+    public string Name;
+}
+
+public class Dog : Animal
+{
+    public DogBreed Breed;
+}
+
+public enum DogBreed
+{
+    GermanShepherd,
+    LabradorRetriever
+}

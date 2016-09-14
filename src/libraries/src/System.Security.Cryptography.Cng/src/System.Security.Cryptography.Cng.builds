@@ -6,6 +6,10 @@
       <OSGroup>Windows_NT</OSGroup>
     </Project>
     <Project Include="System.Security.Cryptography.Cng.csproj">
+      <OSGroup>Windows_NT</OSGroup>
+      <TargetGroup>netstandard1.6</TargetGroup>
+    </Project>
+    <Project Include="System.Security.Cryptography.Cng.csproj">
       <OSGroup>Unix</OSGroup>
     </Project>
     <Project Include="System.Security.Cryptography.Cng.csproj">
@@ -27,4 +31,3 @@
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
 </Project>
-

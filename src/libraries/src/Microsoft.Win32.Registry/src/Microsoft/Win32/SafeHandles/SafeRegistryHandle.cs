@@ -7,7 +7,12 @@ using System.Runtime.InteropServices;
 
 namespace Microsoft.Win32.SafeHandles
 {
-    public sealed partial class SafeRegistryHandle : SafeHandle
+#if REGISTRY_ASSEMBLY
+    public
+#else
+    internal
+#endif
+    sealed partial class SafeRegistryHandle : SafeHandle
     {
         internal SafeRegistryHandle() : base(IntPtr.Zero, true) { }
 
