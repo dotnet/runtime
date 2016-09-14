@@ -617,6 +617,33 @@ namespace System.Linq.Expressions.Tests
             Assert.Equal("case (0, \"A\"): ...", sc.ToString());
         }
 
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public void SwitchOnString(bool useInterpreter)
+        {
+            var values = new string[] { "foobar", "foo", "bar", "baz", "qux", "quux", "corge", "grault", "garply", "waldo", "fred", "plugh", "xyzzy", "thud" };
+
+            for (var i = 1; i <= values.Length; i++)
+            {
+                var cases = values.Take(i).Select((s, j) => Expression.SwitchCase(Expression.Constant(j), Expression.Constant(values[j]))).ToArray();
+                var value = Expression.Parameter(typeof(string));
+                var e = Expression.Lambda<Func<string, int>>(Expression.Switch(value, Expression.Constant(-1), cases), value);
+                var f = e.Compile(useInterpreter);
+
+                var k = 0;
+                foreach (var str in values.Take(i))
+                {
+                    Assert.Equal(k, f(str));
+                    k++;
+                }
+
+                foreach (var str in values.Skip(i).Concat(new[] { default(string), "whatever", "FOO" }))
+                {
+                    Assert.Equal(-1, f(str));
+                    k++;
+                }
+            }
+        }
+
         [Fact]
         public void ToStringTest()
         {
