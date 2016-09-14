@@ -9,7 +9,7 @@ namespace System.ComponentModel.DataAnnotations.Tests
 {
     public class FilterUIHintAttributeTests
     {
-#pragma warning disable 618
+#pragma warning disable 618 // FilterUIHintAttribute is marked as Obsolete
         public static IEnumerable<object[]> Ctor_TestData()
         {
             yield return new object[] { "abc", null, new object[0], new Dictionary<string, object>() };
