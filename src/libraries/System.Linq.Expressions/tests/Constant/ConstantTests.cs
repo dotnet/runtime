@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Reflection;
 using Xunit;
 
 namespace System.Linq.Expressions.Tests
@@ -59,7 +60,7 @@ namespace System.Linq.Expressions.Tests
         [Theory, ClassData(typeof(CompilationTypes))]
         public static void CheckDecimalConstantTest(bool useInterpreter)
         {
-            foreach (decimal value in new decimal[] { decimal.Zero, decimal.One, decimal.MinusOne, decimal.MinValue, decimal.MaxValue })
+            foreach (decimal value in new decimal[] { decimal.Zero, decimal.One, decimal.MinusOne, decimal.MinValue, decimal.MaxValue, int.MinValue, int.MaxValue, int.MinValue - 1L, int.MaxValue + 1L, long.MinValue, long.MaxValue })
             {
                 VerifyDecimalConstant(value, useInterpreter);
             }
@@ -273,6 +274,32 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckTypeConstantTest(bool useInterpreter)
+        {
+            foreach (Type value in new Type[] { null, typeof(int), typeof(Func<string>) })
+            {
+                VerifyTypeConstant(value, useInterpreter);
+            }
+        }
+
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckMethodInfoConstantTest(bool useInterpreter)
+        {
+            foreach (MethodInfo value in new MethodInfo[]
+            {
+                null,
+                typeof(SomePublicMethodsForLdToken).GetMethod(nameof(SomePublicMethodsForLdToken.Bar), BindingFlags.Public | BindingFlags.Static),
+                typeof(SomePublicMethodsForLdToken).GetMethod(nameof(SomePublicMethodsForLdToken.Qux), BindingFlags.Public | BindingFlags.Static),
+                typeof(SomePublicMethodsForLdToken).GetMethod(nameof(SomePublicMethodsForLdToken.Qux), BindingFlags.Public | BindingFlags.Static).MakeGenericMethod(typeof(int)),
+                typeof(List<>).GetMethod(nameof(List<int>.Add)),
+                typeof(List<int>).GetMethod(nameof(List<int>.Add)),
+            })
+            {
+                VerifyMethodInfoConstant(value, useInterpreter);
+            }
+        }
+
+        [Theory, ClassData(typeof(CompilationTypes))]
         public static void CheckGenericWithStructRestrictionWithEnumConstantTest(bool useInterpreter)
         {
             CheckGenericWithStructRestrictionConstantHelper<E>(useInterpreter);
@@ -405,6 +432,28 @@ namespace System.Linq.Expressions.Tests
                 for (var j = 1; j <= i; j++)
                 {
                     e = Expression.Add(e, Expression.Field(Expression.Constant(b), "Foo"));
+                }
+
+                Assert.Equal(i, Expression.Lambda<Func<int>>(e).Compile(useInterpreter)());
+            }
+        }
+
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void BoundConstantCaching4(bool useInterpreter)
+        {
+            var bs = new[]
+            {
+                new Bar() { Foo = 1 },
+                new Bar() { Foo = 1 },
+            };
+
+            for (var i = 1; i <= 10; i++)
+            {
+                var e = (Expression)Expression.Constant(0);
+
+                for (var j = 1; j <= i; j++)
+                {
+                    e = Expression.Add(e, Expression.Field(Expression.Constant(bs[j % 2]), "Foo"));
                 }
 
                 Assert.Equal(i, Expression.Lambda<Func<int>>(e).Compile(useInterpreter)());
@@ -757,6 +806,26 @@ namespace System.Linq.Expressions.Tests
             Assert.Equal(value, f());
         }
 
+        private static void VerifyTypeConstant(Type value, bool useInterpreter)
+        {
+            Expression<Func<Type>> e =
+                Expression.Lambda<Func<Type>>(
+                    Expression.Constant(value, typeof(Type)),
+                    Enumerable.Empty<ParameterExpression>());
+            Func<Type> f = e.Compile(useInterpreter);
+            Assert.Equal(value, f());
+        }
+
+        private static void VerifyMethodInfoConstant(MethodInfo value, bool useInterpreter)
+        {
+            Expression<Func<MethodInfo>> e =
+                Expression.Lambda<Func<MethodInfo>>(
+                    Expression.Constant(value, typeof(MethodInfo)),
+                    Enumerable.Empty<ParameterExpression>());
+            Func<MethodInfo> f = e.Compile(useInterpreter);
+            Assert.Equal(value, f());
+        }
+
         private static void VerifyGenericWithStructRestriction<Ts>(Ts value, bool useInterpreter) where Ts : struct
         {
             Expression<Func<Ts>> e =
@@ -898,5 +967,12 @@ namespace System.Linq.Expressions.Tests
                 return "Bar";
             }
         }
+    }
+
+    // NB: Should be public in order for ILGen to emit ldtoken
+    public class SomePublicMethodsForLdToken
+    {
+        public static void Bar() { }
+        public static void Qux<T>() { }
     }
 }
