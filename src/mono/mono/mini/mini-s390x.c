@@ -237,7 +237,7 @@ if (ins->inst_target_bb->native_offset) { 					\
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
 
 /*
- * imt thunking size values
+ * imt trampoline size values
  */
 #define CMP_SIZE 	24
 #define LOADCON_SIZE	20
@@ -6662,16 +6662,16 @@ mono_arch_get_delegate_virtual_invoke_impl (MonoMethodSignature *sig, MonoMethod
 
 /*------------------------------------------------------------------*/
 /*                                                                  */
-/* Name		- mono_arch_build_imt_thunk.                        */
+/* Name		- mono_arch_build_imt_trampoline.                       */
 /*                                                                  */
 /* Function	- 						    */
 /*		                               			    */
 /*------------------------------------------------------------------*/
 
 gpointer
-mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, 
-			   MonoIMTCheckItem **imt_entries, int count,
-			   gpointer fail_tramp)
+mono_arch_build_imt_trampoline (MonoVTable *vtable, MonoDomain *domain, 
+								MonoIMTCheckItem **imt_entries, int count,
+								gpointer fail_tramp)
 {
 	int i;
 	int size = 0;
@@ -6710,7 +6710,7 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain,
 	}
 
 	if (fail_tramp)
-		code = mono_method_alloc_generic_virtual_thunk (domain, size);
+		code = mono_method_alloc_generic_virtual_trampoline (domain, size);
 	else
 		code = mono_domain_code_reserve (domain, size);
 
@@ -6793,11 +6793,11 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain,
 	mono_profiler_code_buffer_new (start, code - start, MONO_PROFILER_CODE_BUFFER_IMT_TRAMPOLINE, NULL);
 
 	if (!fail_tramp) 
-		mono_stats.imt_thunks_size += (code - start);
+		mono_stats.imt_trampolines_size += (code - start);
 
 	g_assert (code - start <= size);
 
-	snprintf(trampName, sizeof(trampName), "%d_imt_thunk_trampoline", domain->domain_id);
+	snprintf(trampName, sizeof(trampName), "%d_imt_trampoline", domain->domain_id);
 	mono_tramp_info_register (mono_tramp_info_create (trampName, start, code - start, NULL, NULL), domain);
 
 	return (start);

@@ -7989,7 +7989,7 @@ imt_branch_distance (MonoIMTCheckItem **imt_entries, int start, int target)
  * LOCKING: called with the domain lock held
  */
 gpointer
-mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckItem **imt_entries, int count,
+mono_arch_build_imt_trampoline (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckItem **imt_entries, int count,
 	gpointer fail_tramp)
 {
 	int i;
@@ -8043,7 +8043,7 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 		size += item->chunk_size;
 	}
 	if (fail_tramp)
-		code = (guint8 *)mono_method_alloc_generic_virtual_thunk (domain, size);
+		code = (guint8 *)mono_method_alloc_generic_virtual_trampoline (domain, size);
 	else
 		code = (guint8 *)mono_domain_code_reserve (domain, size);
 	start = code;
@@ -8134,7 +8134,7 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 	}
 
 	if (!fail_tramp)
-		mono_stats.imt_thunks_size += code - start;
+		mono_stats.imt_trampolines_size += code - start;
 	g_assert (code - start <= size);
 
 	mono_profiler_code_buffer_new (start, code - start, MONO_PROFILER_CODE_BUFFER_IMT_TRAMPOLINE, NULL);

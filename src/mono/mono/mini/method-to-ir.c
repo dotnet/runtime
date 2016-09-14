@@ -154,8 +154,7 @@ emit_llvmonly_virtual_call (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSig
 /* helper methods signatures */
 static MonoMethodSignature *helper_sig_domain_get;
 static MonoMethodSignature *helper_sig_rgctx_lazy_fetch_trampoline;
-static MonoMethodSignature *helper_sig_llvmonly_imt_thunk;
-
+static MonoMethodSignature *helper_sig_llvmonly_imt_trampoline;
 
 /* type loading helpers */
 static GENERATE_GET_CLASS_WITH_CACHE (runtime_helpers, System.Runtime.CompilerServices, RuntimeHelpers)
@@ -364,7 +363,7 @@ mono_create_helper_signatures (void)
 {
 	helper_sig_domain_get = mono_create_icall_signature ("ptr");
 	helper_sig_rgctx_lazy_fetch_trampoline = mono_create_icall_signature ("ptr ptr");
-	helper_sig_llvmonly_imt_thunk = mono_create_icall_signature ("ptr ptr ptr");
+	helper_sig_llvmonly_imt_trampoline = mono_create_icall_signature ("ptr ptr ptr");
 }
 
 static MONO_NEVER_INLINE void
@@ -7809,7 +7808,7 @@ emit_llvmonly_virtual_call (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSig
 		icall_args [0] = thunk_arg_ins;
 		icall_args [1] = emit_get_rgctx_method (cfg, context_used,
 												cmethod, MONO_RGCTX_INFO_METHOD);
-		ftndesc_ins = mono_emit_calli (cfg, helper_sig_llvmonly_imt_thunk, icall_args, thunk_addr_ins, NULL, NULL);
+		ftndesc_ins = mono_emit_calli (cfg, helper_sig_llvmonly_imt_trampoline, icall_args, thunk_addr_ins, NULL, NULL);
 
 		return emit_llvmonly_calli (cfg, fsig, sp, ftndesc_ins);
 	}
@@ -7852,7 +7851,7 @@ emit_llvmonly_virtual_call (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSig
 		icall_args [0] = thunk_arg_ins;
 		icall_args [1] = emit_get_rgctx_method (cfg, context_used,
 												cmethod, MONO_RGCTX_INFO_METHOD);
-		ftndesc_ins = mono_emit_calli (cfg, helper_sig_llvmonly_imt_thunk, icall_args, thunk_addr_ins, NULL, NULL);
+		ftndesc_ins = mono_emit_calli (cfg, helper_sig_llvmonly_imt_trampoline, icall_args, thunk_addr_ins, NULL, NULL);
 		ftndesc_ins->dreg = ftndesc_reg;
 		/*
 		 * Unlike normal iface calls, these imt thunks can return NULL, i.e. when they are passed an instantiation
@@ -9629,7 +9628,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				if (cfg->gsharedvt && mini_is_gsharedvt_signature (fsig))
 					GSHAREDVT_FAILURE (*ip);
 
-				if (cfg->backend->have_generalized_imt_thunk && cfg->backend->gshared_supported && cmethod->wrapper_type == MONO_WRAPPER_NONE) {
+				if (cfg->backend->have_generalized_imt_trampoline && cfg->backend->gshared_supported && cmethod->wrapper_type == MONO_WRAPPER_NONE) {
 					g_assert (!imt_arg);
 					if (!context_used)
 						g_assert (cmethod->is_inflated);

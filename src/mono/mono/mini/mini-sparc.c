@@ -2256,8 +2256,8 @@ mono_sparc_is_virtual_call (guint32 *code)
  * LOCKING: called with the domain lock held
  */
 gpointer
-mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckItem **imt_entries, int count,
-	gpointer fail_tramp)
+mono_arch_build_imt_trampoline (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckItem **imt_entries, int count,
+								gpointer fail_tramp)
 {
 	int i;
 	int size = 0;
@@ -2285,7 +2285,7 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 		size += item->chunk_size;
 	}
 	if (fail_tramp)
-		code = mono_method_alloc_generic_virtual_thunk (domain, size * 4);
+		code = mono_method_alloc_generic_virtual_trampoline (domain, size * 4);
 	else
 		code = mono_domain_code_reserve (domain, size * 4);
 	start = code;
@@ -2352,7 +2352,7 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 
 	mono_arch_flush_icache ((guint8*)start, (code - start) * 4);
 
-	mono_stats.imt_thunks_size += (code - start) * 4;
+	mono_stats.imt_trampolines_size += (code - start) * 4;
 	g_assert (code - start <= size);
 
 	mono_tramp_info_register (mono_tramp_info_create (NULL, start, code - start, NULL, NULL), domain);

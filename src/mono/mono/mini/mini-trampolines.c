@@ -564,7 +564,7 @@ common_call_trampoline (mgreg_t *regs, guint8 *code, MonoMethod *m, MonoVTable *
 			vtable_slot = mini_resolve_imt_method (vt, vtable_slot, imt_method, &impl_method, &addr, &need_rgctx_tramp, &variant_iface, error);
 			return_val_if_nok (error, NULL);
 
-			/* This is the vcall slot which gets called through the IMT thunk */
+			/* This is the vcall slot which gets called through the IMT trampoline */
 			vtable_slot_to_patch = vtable_slot;
 
 			if (addr) {

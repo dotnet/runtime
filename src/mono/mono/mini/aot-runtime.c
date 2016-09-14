@@ -2151,7 +2151,7 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 	amodule->mono_eh_frame = (guint8 *)info->mono_eh_frame;
 	amodule->trampolines [MONO_AOT_TRAMP_SPECIFIC] = (guint8 *)info->specific_trampolines;
 	amodule->trampolines [MONO_AOT_TRAMP_STATIC_RGCTX] = (guint8 *)info->static_rgctx_trampolines;
-	amodule->trampolines [MONO_AOT_TRAMP_IMT_THUNK] = (guint8 *)info->imt_thunks;
+	amodule->trampolines [MONO_AOT_TRAMP_IMT] = (guint8 *)info->imt_trampolines;
 	amodule->trampolines [MONO_AOT_TRAMP_GSHAREDVT_ARG] = (guint8 *)info->gsharedvt_arg_trampolines;
 
 	if (!strcmp (assembly->aname.name, "mscorlib"))
@@ -5186,7 +5186,7 @@ read_page_trampoline_uwinfo (MonoTrampInfo *info, int tramp_type, gboolean is_ge
 		sprintf (symbol_name, "specific_trampolines_page_%s_p", is_generic ? "gen" : "sp");
 	else if (tramp_type == MONO_AOT_TRAMP_STATIC_RGCTX)
 		sprintf (symbol_name, "rgctx_trampolines_page_%s_p", is_generic ? "gen" : "sp");
-	else if (tramp_type == MONO_AOT_TRAMP_IMT_THUNK)
+	else if (tramp_type == MONO_AOT_TRAMP_IMT)
 		sprintf (symbol_name, "imt_trampolines_page_%s_p", is_generic ? "gen" : "sp");
 	else if (tramp_type == MONO_AOT_TRAMP_GSHAREDVT_ARG)
 		sprintf (symbol_name, "gsharedvt_trampolines_page_%s_p", is_generic ? "gen" : "sp");
@@ -5234,7 +5234,7 @@ get_new_trampoline_from_page (int tramp_type)
 		tpage = load_function (amodule, "specific_trampolines_page");
 	else if (tramp_type == MONO_AOT_TRAMP_STATIC_RGCTX)
 		tpage = load_function (amodule, "rgctx_trampolines_page");
-	else if (tramp_type == MONO_AOT_TRAMP_IMT_THUNK)
+	else if (tramp_type == MONO_AOT_TRAMP_IMT)
 		tpage = load_function (amodule, "imt_trampolines_page");
 	else if (tramp_type == MONO_AOT_TRAMP_GSHAREDVT_ARG)
 		tpage = load_function (amodule, "gsharedvt_arg_trampolines_page");
@@ -5362,7 +5362,7 @@ get_new_imt_trampoline_from_page (gpointer arg)
 	void *code;
 	gpointer *data;
 
-	code = get_new_trampoline_from_page (MONO_AOT_TRAMP_IMT_THUNK);
+	code = get_new_trampoline_from_page (MONO_AOT_TRAMP_IMT);
 
 	data = (gpointer*)((char*)code - MONO_AOT_TRAMP_PAGE_SIZE);
 	data [0] = arg;
@@ -5615,13 +5615,13 @@ mono_aot_get_lazy_fetch_trampoline (guint32 slot)
 }
 
 static void
-no_imt_thunk (void)
+no_imt_trampoline (void)
 {
-       g_assert_not_reached ();
+	g_assert_not_reached ();
 }
 
 gpointer
-mono_aot_get_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckItem **imt_entries, int count, gpointer fail_tramp)
+mono_aot_get_imt_trampoline (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckItem **imt_entries, int count, gpointer fail_tramp)
 {
 	guint32 got_offset;
 	gpointer code;
@@ -5630,7 +5630,7 @@ mono_aot_get_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckItem
 	MonoAotModule *amodule;
 
 	if (mono_llvm_only)
-		return no_imt_thunk;
+		return no_imt_trampoline;
 
 	real_count = 0;
 	for (i = 0; i < count; ++i) {
@@ -5667,7 +5667,7 @@ mono_aot_get_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckItem
 	if (USE_PAGE_TRAMPOLINES) {
 		code = get_new_imt_trampoline_from_page (buf);
 	} else {
-		code = get_numerous_trampoline (MONO_AOT_TRAMP_IMT_THUNK, 1, &amodule, &got_offset, NULL);
+		code = get_numerous_trampoline (MONO_AOT_TRAMP_IMT, 1, &amodule, &got_offset, NULL);
 
 		amodule->got [got_offset] = buf;
 	}
@@ -5948,7 +5948,7 @@ mono_aot_get_lazy_fetch_trampoline (guint32 slot)
 }
 
 gpointer
-mono_aot_get_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckItem **imt_entries, int count, gpointer fail_tramp)
+mono_aot_get_imt_trampoline (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckItem **imt_entries, int count, gpointer fail_tramp)
 {
 	g_assert_not_reached ();
 	return NULL;

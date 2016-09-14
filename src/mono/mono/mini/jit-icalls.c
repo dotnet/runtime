@@ -1715,7 +1715,7 @@ mono_resolve_generic_virtual_call (MonoVTable *vt, int slot, MonoMethod *generic
 
 	/*
 	 * This wastes memory but the memory usage is bounded since
-	 * mono_method_add_generic_virtual_invocation () eventually builds an imt thunk for
+	 * mono_method_add_generic_virtual_invocation () eventually builds an imt trampoline for
 	 * this vtable slot so we are not called any more for this instantiation.
 	 */
 	MonoFtnDesc *ftndesc = mini_create_llvmonly_ftndesc (mono_domain_get (), addr, arg);
@@ -1765,7 +1765,7 @@ mono_resolve_generic_virtual_iface_call (MonoVTable *vt, int imt_slot, MonoMetho
 
 	/*
 	 * This wastes memory but the memory usage is bounded since
-	 * mono_method_add_generic_virtual_invocation () eventually builds an imt thunk for
+	 * mono_method_add_generic_virtual_invocation () eventually builds an imt trampoline for
 	 * this vtable slot so we are not called any more for this instantiation.
 	 */
 	MonoFtnDesc *ftndesc = mini_create_llvmonly_ftndesc (mono_domain_get (), addr, arg);

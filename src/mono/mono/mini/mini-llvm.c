@@ -8611,7 +8611,7 @@ emit_aot_file_info (MonoLLVMModule *module)
 	if (info->trampoline_size [0]) {
 		fields [tindex ++] = AddJitGlobal (module, eltype, "specific_trampolines");
 		fields [tindex ++] = AddJitGlobal (module, eltype, "static_rgctx_trampolines");
-		fields [tindex ++] = AddJitGlobal (module, eltype, "imt_thunks");
+		fields [tindex ++] = AddJitGlobal (module, eltype, "imt_trampolines");
 		fields [tindex ++] = AddJitGlobal (module, eltype, "gsharedvt_arg_trampolines");
 	} else {
 		fields [tindex ++] = LLVMConstNull (eltype);

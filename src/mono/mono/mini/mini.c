@@ -3136,8 +3136,8 @@ init_backend (MonoBackend *backend)
 #ifdef MONO_ARCH_HAVE_OBJC_GET_SELECTOR
 	backend->have_objc_get_selector = 1;
 #endif
-#ifdef MONO_ARCH_HAVE_GENERALIZED_IMT_THUNK
-	backend->have_generalized_imt_thunk = 1;
+#ifdef MONO_ARCH_HAVE_GENERALIZED_IMT_TRAMPOLINE
+	backend->have_generalized_imt_trampoline = 1;
 #endif
 #ifdef MONO_ARCH_GSHARED_SUPPORTED
 	backend->gshared_supported = 1;

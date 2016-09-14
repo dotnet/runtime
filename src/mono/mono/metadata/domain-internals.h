@@ -385,7 +385,7 @@ struct _MonoDomain {
 	GHashTable	   *generic_virtual_cases;
 	MonoThunkFreeList **thunk_free_lists;
 
-	GHashTable     *generic_virtual_thunks;
+	GHashTable     *generic_virtual_trampolines;
 
 	/* Information maintained by the JIT engine */
 	gpointer runtime_info;

@@ -109,6 +109,6 @@ unw_dyn_region_info_t* mono_ia64_create_unwind_region (Ia64CodegenState *code);
 
 #define MONO_ARCH_HAVE_INVALIDATE_METHOD 1
 #define MONO_ARCH_HAVE_SAVE_UNWIND_INFO 1
-#define MONO_ARCH_HAVE_GENERALIZED_IMT_THUNK 1
+#define MONO_ARCH_HAVE_GENERALIZED_IMT_TRAMPOLINE 1
 
 #endif /* __MONO_MINI_IA64_H__ */  

@@ -179,7 +179,7 @@ enum {
 typedef enum {
 	MONO_AOT_TRAMP_SPECIFIC = 0,
 	MONO_AOT_TRAMP_STATIC_RGCTX = 1,
-	MONO_AOT_TRAMP_IMT_THUNK = 2,
+	MONO_AOT_TRAMP_IMT = 2,
 	MONO_AOT_TRAMP_GSHAREDVT_ARG = 3,
 	MONO_AOT_TRAMP_NUM = 4
 } MonoAotTrampoline;
@@ -254,7 +254,7 @@ typedef struct MonoAotFileInfo
 	/* Blocks of various kinds of trampolines */
 	gpointer specific_trampolines;
 	gpointer static_rgctx_trampolines;
-	gpointer imt_thunks;
+	gpointer imt_trampolines;
 	gpointer gsharedvt_arg_trampolines;
 	/* In static mode, points to a table of global symbols for trampolines etc */
 	gpointer globals;
@@ -1484,7 +1484,7 @@ typedef struct {
 	guint            emulate_div : 1;
 	guint            emulate_long_shift_opts : 1;
 	guint            have_objc_get_selector : 1;
-	guint            have_generalized_imt_thunk : 1;
+	guint            have_generalized_imt_trampoline : 1;
 	guint            have_tls_get : 1;
 	guint            have_tls_get_reg : 1;
 	guint            have_liverange_ops: 1;
@@ -2501,7 +2501,7 @@ gpointer mono_aot_get_trampoline_full       (const char *name, MonoTrampInfo **o
 gpointer mono_aot_get_unbox_trampoline      (MonoMethod *method);
 gpointer mono_aot_get_lazy_fetch_trampoline (guint32 slot);
 gpointer mono_aot_get_static_rgctx_trampoline (gpointer ctx, gpointer addr);
-gpointer mono_aot_get_imt_thunk             (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckItem **imt_entries, int count, gpointer fail_tramp);
+gpointer mono_aot_get_imt_trampoline        (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckItem **imt_entries, int count, gpointer fail_tramp);
 gpointer mono_aot_get_gsharedvt_arg_trampoline(gpointer arg, gpointer addr);
 guint8*  mono_aot_get_unwind_info           (MonoJitInfo *ji, guint32 *unwind_info_len);
 guint32  mono_aot_method_hash               (MonoMethod *method);
@@ -2790,7 +2790,7 @@ gpointer mono_arch_get_delegate_virtual_invoke_impl (MonoMethodSignature *sig, M
 gpointer mono_arch_create_specific_trampoline   (gpointer arg1, MonoTrampolineType tramp_type, MonoDomain *domain, guint32 *code_len);
 MonoMethod* mono_arch_find_imt_method           (mgreg_t *regs, guint8 *code);
 MonoVTable* mono_arch_find_static_call_vtable   (mgreg_t *regs, guint8 *code);
-gpointer    mono_arch_build_imt_thunk           (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckItem **imt_entries, int count, gpointer fail_tramp);
+gpointer    mono_arch_build_imt_trampoline      (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckItem **imt_entries, int count, gpointer fail_tramp);
 void    mono_arch_notify_pending_exc            (MonoThreadInfo *info);
 guint8* mono_arch_get_call_target               (guint8 *code);
 guint32 mono_arch_get_plt_info_offset           (guint8 *plt_entry, mgreg_t *regs, guint8 *code);

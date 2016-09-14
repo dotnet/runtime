@@ -771,7 +771,7 @@ typedef struct {
 	size_t imt_slots_with_collisions;
 	size_t imt_max_collisions_in_slot;
 	size_t imt_method_count_when_max_collisions;
-	size_t imt_thunks_size;
+	size_t imt_trampolines_size;
 	size_t jit_info_table_insert_count;
 	size_t jit_info_table_remove_count;
 	size_t jit_info_table_lookup_count;

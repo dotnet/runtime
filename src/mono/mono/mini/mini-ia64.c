@@ -4532,8 +4532,8 @@ mono_arch_free_jit_tls_data (MonoJitTlsData *tls)
  * LOCKING: called with the domain lock held
  */
 gpointer
-mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckItem **imt_entries, int count,
-	gpointer fail_tramp)
+mono_arch_build_imt_trampoline (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckItem **imt_entries, int count,
+								gpointer fail_tramp)
 {
 	int i;
 	int size = 0;
@@ -4613,7 +4613,7 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 
 	size = code.buf - buf;
 	if (fail_tramp) {
-		start = mono_method_alloc_generic_virtual_thunk (domain, size + 16);
+		start = mono_method_alloc_generic_virtual_trampoline (domain, size + 16);
 		start = (gpointer)ALIGN_TO (start, 16);
 	} else {
 		start = mono_domain_code_reserve (domain, size);
