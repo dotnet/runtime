@@ -15,61 +15,50 @@ namespace System.Net.Security.Tests
     {
         [Theory]
         [ClassData(typeof(SslProtocolSupport.UnsupportedSslProtocolsTestData))]
-        public async Task SslStream_AuthenticateAsClient_NotSupported_Fails(SslProtocols protocol)
+        public void SslStream_AuthenticateAsClientAsync_NotSupported_Fails(SslProtocols protocol)
         {
             SslStream stream = new SslStream(new FakeStream());
-            await Assert.ThrowsAsync<NotSupportedException>(
-                () => stream.AuthenticateAsClientAsync("host", null, protocol, false));
+            Assert.Throws<NotSupportedException>(() => { stream.AuthenticateAsClientAsync("host", null, protocol, false); });
         }
 
         [Theory]
         [ClassData(typeof(SslProtocolSupport.SupportedSslProtocolsTestData))]
-        public async Task SslStream_AuthenticateAsClient_Supported_Success(SslProtocols protocol)
+        public async Task SslStream_AuthenticateAsClientAsync_Supported_Success(SslProtocols protocol)
         {
             SslStream stream = new SslStream(new FakeStream());
             await stream.AuthenticateAsClientAsync("host", null, protocol, false);
         }
 
         [Fact]
-        public async Task SslStream_AuthenticateAsClient_Invalid_Fails()
+        public void SslStream_AuthenticateAsClientAsync_Invalid_Fails()
         {
             SslStream stream = new SslStream(new FakeStream());
-            await Assert.ThrowsAsync<NotSupportedException>(
-                () => stream.AuthenticateAsClientAsync("host", null, (SslProtocols)4096, false));
+            Assert.Throws<NotSupportedException>(() => { stream.AuthenticateAsClientAsync("host", null, (SslProtocols)4096, false); });
         }
 
         [Fact]
-        public async Task SslStream_AuthenticateAsClient_AllUnsuported_Fails()
+        public void SslStream_AuthenticateAsClientAsync_AllUnsuported_Fails()
         {
             SslStream stream = new SslStream(new FakeStream());
-            await Assert.ThrowsAsync<NotSupportedException>(
-                () => stream.AuthenticateAsClientAsync(
-                    "host",
-                    null,
-                    SslProtocolSupport.UnsupportedSslProtocols,
-                    false));
+            Assert.Throws<NotSupportedException>(() => { stream.AuthenticateAsClientAsync("host", null, SslProtocolSupport.UnsupportedSslProtocols, false); });
         }
 
         [Fact]
-        public async Task SslStream_AuthenticateAsClient_AllSupported_Success()
+        public async Task SslStream_AuthenticateAsClientAsync_AllSupported_Success()
         {
             SslStream stream = new SslStream(new FakeStream());
-            await stream.AuthenticateAsClientAsync(
-                "host",
-                null,
-                SslProtocolSupport.SupportedSslProtocols,
-                false);
+            await stream.AuthenticateAsClientAsync("host", null, SslProtocolSupport.SupportedSslProtocols, false);
         }
 
         [Fact]
-        public async Task SslStream_AuthenticateAsClient_None_Success()
+        public async Task SslStream_AuthenticateAsClientAsync_None_Success()
         {
             SslStream stream = new SslStream(new FakeStream());
             await stream.AuthenticateAsClientAsync("host", null, SslProtocols.None, false);
         }
 
         [Fact]
-        public async Task SslStream_AuthenticateAsClient_Default_Success()
+        public async Task SslStream_AuthenticateAsClientAsync_Default_Success()
         {
             SslStream stream = new SslStream(new FakeStream());
             await stream.AuthenticateAsClientAsync("host", null, SslProtocolSupport.DefaultSslProtocols, false);
@@ -149,4 +138,3 @@ namespace System.Net.Security.Tests
         }
     }
 }
-
