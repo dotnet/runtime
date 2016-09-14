@@ -72,7 +72,7 @@ namespace System.ComponentModel.DataAnnotations
 
         #region Internal Properties
         /// <summary>
-        /// Sets and the default error message string.
+        /// Sets the default error message string.
         /// This message will be used if the user has not set <see cref="ErrorMessage"/>
         /// or the <see cref="ErrorMessageResourceType"/> and <see cref="ErrorMessageResourceName"/> pair.
         /// This property was added after the public contract for DataAnnotations was created.
@@ -126,7 +126,7 @@ namespace System.ComponentModel.DataAnnotations
         #region Public Properties
 
         /// <summary>
-        ///     Gets or sets and explicit error message string.
+        ///     Gets or sets the explicit error message string.
         /// </summary>
         /// <value>
         ///     This property is intended to be used for non-localizable error messages.  Use

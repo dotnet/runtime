@@ -214,7 +214,10 @@ nameof(propertyName));
                 {
                     lock (_syncRoot)
                     {
-                        _propertyStoreItems = CreatePropertyStoreItems();
+                        if (_propertyStoreItems == null)
+                        {
+                            _propertyStoreItems = CreatePropertyStoreItems();
+                        }
                     }
                 }
 
