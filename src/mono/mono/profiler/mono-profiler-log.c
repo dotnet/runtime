@@ -677,11 +677,9 @@ struct _MonoProfiler {
 	int command_port;
 	int server_socket;
 	int pipes [2];
-#ifndef HOST_WIN32
-	pthread_t helper_thread;
-	pthread_t writer_thread;
-	pthread_t dumper_thread;
-#endif
+	MonoNativeThreadId helper_thread;
+	MonoNativeThreadId writer_thread;
+	MonoNativeThreadId dumper_thread;
 	volatile gint32 run_writer_thread;
 	MonoLockFreeAllocSizeClass writer_entry_size_class;
 	MonoLockFreeAllocator writer_entry_allocator;
@@ -3878,9 +3876,7 @@ log_shutdown (MonoProfiler *prof)
 		exit (1);
 	}
 
-	void *res;
-
-	pthread_join (prof->helper_thread, &res);
+	mono_native_thread_join (prof->helper_thread);
 
 	mono_os_mutex_destroy (&counters_mutex);
 
@@ -3917,12 +3913,12 @@ log_shutdown (MonoProfiler *prof)
 
 	InterlockedWrite (&prof->run_dumper_thread, 0);
 	mono_os_sem_post (&prof->dumper_queue_sem);
-	pthread_join (prof->dumper_thread, &res);
+	mono_native_thread_join (prof->dumper_thread);
 	mono_os_sem_destroy (&prof->dumper_queue_sem);
 
 	InterlockedWrite (&prof->run_writer_thread, 0);
 	mono_os_sem_post (&prof->writer_queue_sem);
-	pthread_join (prof->writer_thread, &res);
+	mono_native_thread_join (prof->writer_thread);
 	mono_os_sem_destroy (&prof->writer_queue_sem);
 
 	/*
@@ -4205,10 +4201,8 @@ start_helper_thread (MonoProfiler* prof)
 
 	prof->command_port = ntohs (server_address.sin_port);
 
-	int r;
-
-	if ((r = pthread_create (&prof->helper_thread, NULL, helper_thread, prof))) {
-		fprintf (stderr, "Could not start helper thread: %s\n", strerror (r));
+	if (!mono_native_thread_create (&prof->helper_thread, helper_thread, prof)) {
+		fprintf (stderr, "Could not start helper thread\n");
 		close (prof->server_socket);
 		exit (1);
 	}
@@ -4344,10 +4338,8 @@ start_writer_thread (MonoProfiler* prof)
 {
 	InterlockedWrite (&prof->run_writer_thread, 1);
 
-	int r;
-
-	if ((r = pthread_create (&prof->writer_thread, NULL, writer_thread, prof))) {
-		fprintf (stderr, "Could not start writer thread: %s\n", strerror (r));
+	if (!mono_native_thread_create (&prof->writer_thread, writer_thread, prof)) {
+		fprintf (stderr, "Could not start writer thread\n");
 		exit (1);
 	}
 }
@@ -4455,10 +4447,8 @@ start_dumper_thread (MonoProfiler* prof)
 {
 	InterlockedWrite (&prof->run_dumper_thread, 1);
 
-	int r;
-
-	if ((r = pthread_create (&prof->dumper_thread, NULL, dumper_thread, prof))) {
-		fprintf (stderr, "Could not start dumper thread: %s\n", strerror (r));
+	if (!mono_native_thread_create (&prof->dumper_thread, dumper_thread, prof)) {
+		fprintf (stderr, "Could not start dumper thread\n");
 		exit (1);
 	}
 }
