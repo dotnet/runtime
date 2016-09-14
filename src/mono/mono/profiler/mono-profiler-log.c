@@ -63,18 +63,19 @@
 /* Size in bytes of the event prefix (ID + time). */
 #define EVENT_SIZE (BYTE_SIZE + LEB128_SIZE)
 
+static volatile gint32 runtime_inited;
+static volatile gint32 in_shutdown;
+
 static int nocalls = 0;
 static int notraces = 0;
 static int use_zip = 0;
 static int do_report = 0;
 static int do_heap_shot = 0;
 static int max_call_depth = 100;
-static volatile int runtime_inited = 0;
 static int command_port = 0;
 static int heapshot_requested = 0;
 static int sample_freq = 0;
 static int do_mono_sample = 0;
-static int in_shutdown = 0;
 static int do_debug = 0;
 static int do_counters = 0;
 static int do_coverage = 0;
@@ -2353,7 +2354,7 @@ mono_sample_hit (MonoProfiler *profiler, unsigned char *ip, void *context)
 	 * invoking runtime functions, which is not async-signal-safe.
 	 */
 
-	if (in_shutdown)
+	if (InterlockedRead (&in_shutdown))
 		return;
 
 	SampleHit *sample = (SampleHit *) mono_lock_free_queue_dequeue (&profiler->sample_reuse_queue);
@@ -2815,7 +2816,7 @@ static mono_mutex_t counters_mutex;
 static void
 counters_add_agent (MonoCounter *counter)
 {
-	if (in_shutdown)
+	if (InterlockedRead (&in_shutdown))
 		return;
 
 	MonoCounterAgent *agent, *item;
@@ -3864,9 +3865,7 @@ cleanup_reusable_samples (MonoProfiler *prof)
 static void
 log_shutdown (MonoProfiler *prof)
 {
-	void *res;
-
-	in_shutdown = 1;
+	InterlockedWrite (&in_shutdown, 1);
 
 	counters_and_perfcounters_sample (prof);
 
@@ -3878,6 +3877,8 @@ log_shutdown (MonoProfiler *prof)
 		fprintf (stderr, "Could not write to pipe: %s\n", strerror (errno));
 		exit (1);
 	}
+
+	void *res;
 
 	pthread_join (prof->helper_thread, &res);
 
