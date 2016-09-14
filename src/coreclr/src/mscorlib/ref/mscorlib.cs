@@ -9821,6 +9821,12 @@ namespace System.Runtime.CompilerServices
     {
         public CompilerGeneratedAttribute() { }
     }
+    [System.AttributeUsageAttribute((System.AttributeTargets)(4))]
+    [System.Runtime.InteropServices.ComVisibleAttribute(true)]
+    public partial class CompilerGlobalScopeAttribute : System.Attribute
+    {
+        public CompilerGlobalScopeAttribute() { }
+    }
     public static partial class CompilerMarshalOverride
     {
     }
@@ -9902,10 +9908,28 @@ namespace System.Runtime.CompilerServices
         public DecimalConstantAttribute(byte scale, byte sign, uint hi, uint mid, uint low) { }
         public decimal Value { get { throw null; } }
     }
+    [System.AttributeUsageAttribute((System.AttributeTargets)(1))]
+    public sealed partial class DefaultDependencyAttribute : System.Attribute
+    {
+        public DefaultDependencyAttribute(System.Runtime.CompilerServices.LoadHint loadHintArgument) { }
+        public System.Runtime.CompilerServices.LoadHint LoadHint { get { return default(System.Runtime.CompilerServices.LoadHint); } }
+    }
+    [System.AttributeUsageAttribute((System.AttributeTargets)(1), AllowMultiple=true)]
+    public sealed partial class DependencyAttribute : System.Attribute
+    {
+        public DependencyAttribute(string dependentAssemblyArgument, System.Runtime.CompilerServices.LoadHint loadHintArgument) { }
+        public string DependentAssembly { get { return default(string); } }
+        public System.Runtime.CompilerServices.LoadHint LoadHint { get { return default(System.Runtime.CompilerServices.LoadHint); } }
+    }
     [System.AttributeUsageAttribute((System.AttributeTargets)(1), AllowMultiple=false, Inherited=false)]
     public sealed partial class DisablePrivateReflectionAttribute : System.Attribute
     {
         public DisablePrivateReflectionAttribute() { }
+    }
+    [System.Runtime.InteropServices.ComVisibleAttribute(true)]
+    public partial class DiscardableAttribute : System.Attribute
+    {
+        public DiscardableAttribute() { }
     }
     [System.AttributeUsageAttribute((System.AttributeTargets)(69))]
     public sealed partial class ExtensionAttribute : System.Attribute
@@ -10000,6 +10024,11 @@ namespace System.Runtime.CompilerServices
     {
         public IteratorStateMachineAttribute(System.Type stateMachineType) : base (default(System.Type)) { }
     }
+    public enum LoadHint {
+        Always = 1,
+        Default = 0,
+        Sometimes = 2,
+    }
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public enum MethodCodeType
     {
@@ -10078,11 +10107,40 @@ namespace System.Runtime.CompilerServices
         public delegate void CleanupCode(object userData, bool exceptionThrown);
         [System.Security.SecurityCriticalAttribute]
         public delegate void TryCode(object userData);
+        [System.Runtime.ConstrainedExecution.ReliabilityContractAttribute((System.Runtime.ConstrainedExecution.Consistency)(3), (System.Runtime.ConstrainedExecution.Cer)(1))]
+        [System.Security.SecurityCriticalAttribute]
+        public static void PrepareConstrainedRegions() { }
+        [System.Runtime.ConstrainedExecution.ReliabilityContractAttribute((System.Runtime.ConstrainedExecution.Consistency)(3), (System.Runtime.ConstrainedExecution.Cer)(1))]
+        [System.Security.SecurityCriticalAttribute]
+        public static void PrepareConstrainedRegionsNoOP() { }
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)][System.Security.SecurityCriticalAttribute]
+        public static void PrepareContractedDelegate(System.Delegate d) { }
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)][System.Security.SecurityCriticalAttribute]
+        public static void PrepareDelegate(System.Delegate d) { }
+        [System.Security.SecurityCriticalAttribute]
+        public static void PrepareMethod(System.RuntimeMethodHandle method) { }
+        [System.Security.SecurityCriticalAttribute]
+        public static void PrepareMethod(System.RuntimeMethodHandle method, System.RuntimeTypeHandle[] instantiation) { }
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)][System.Runtime.ConstrainedExecution.ReliabilityContractAttribute((System.Runtime.ConstrainedExecution.Consistency)(3), (System.Runtime.ConstrainedExecution.Cer)(1))]
+        [System.Security.SecurityCriticalAttribute]
+        public static void ProbeForSufficientStack() { }
+    }
+    public sealed partial class RuntimeWrappedException : System.Exception
+    {
+        internal RuntimeWrappedException() { }
+        public object WrappedException { get { return default(object); } }
+        [System.Security.SecurityCriticalAttribute]
+        public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
     }
     [System.AttributeUsageAttribute((System.AttributeTargets)(972))]
     public sealed partial class SpecialNameAttribute : System.Attribute
     {
         public SpecialNameAttribute() { }
+    }
+    [System.AttributeUsageAttribute((System.AttributeTargets)(1), Inherited=false)]
+    public sealed partial class StringFreezingAttribute : System.Attribute
+    {
+        public StringFreezingAttribute() { }
     }
     [System.AttributeUsageAttribute((System.AttributeTargets)(64), Inherited=false, AllowMultiple=false)]
     public partial class StateMachineAttribute : System.Attribute
@@ -10156,6 +10214,27 @@ namespace System.Runtime.ConstrainedExecution
         [System.Security.SecuritySafeCriticalAttribute]
         protected CriticalFinalizerObject() { }
         ~CriticalFinalizerObject() { }
+    }
+
+    public enum Cer
+    {
+        MayFail = 1,
+        None = 0,
+        Success = 2,
+    }
+    public enum Consistency
+    {
+        MayCorruptAppDomain = 1,
+        MayCorruptInstance = 2,
+        MayCorruptProcess = 0,
+        WillNotCorruptState = 3,
+    }
+    [System.AttributeUsageAttribute((System.AttributeTargets)(1133), Inherited=false)]
+    internal sealed partial class ReliabilityContractAttribute : System.Attribute 
+    {
+        public ReliabilityContractAttribute(System.Runtime.ConstrainedExecution.Consistency consistencyGuarantee, System.Runtime.ConstrainedExecution.Cer cer) { }
+        public System.Runtime.ConstrainedExecution.Cer Cer { get { return default(System.Runtime.ConstrainedExecution.Cer); } }
+        public System.Runtime.ConstrainedExecution.Consistency ConsistencyGuarantee { get { return default(System.Runtime.ConstrainedExecution.Consistency); } }
     }
 }
 namespace System.Runtime.ExceptionServices
