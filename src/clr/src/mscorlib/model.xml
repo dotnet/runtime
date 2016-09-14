@@ -7123,14 +7123,12 @@
       <Member Name="Remove(System.Int32,System.Int32)" />
       <Member Name="Replace(System.Char,System.Char)" />
       <Member Name="Replace(System.String,System.String)" />
-      <Member Name="Split(System.Char)" />
       <Member Name="Split(System.Char,System.Int32,System.StringSplitOptions)" />
       <Member Name="Split(System.Char,System.StringSplitOptions)"/>
       <Member Name="Split(System.Char[])" />
       <Member Name="Split(System.Char[],System.Int32)" />
       <Member Name="Split(System.Char[],System.Int32,System.StringSplitOptions)" />
       <Member Name="Split(System.Char[],System.StringSplitOptions)"/>
-      <Member Name="Split(System.String)" />
       <Member Name="Split(System.String,System.Int32,System.StringSplitOptions)" />
       <Member Name="Split(System.String,System.StringSplitOptions)"/>
       <Member Name="Split(System.String[],System.Int32,System.StringSplitOptions)" />
