@@ -948,7 +948,9 @@ namespace System.Tests
 
             // Advanced: convert SZArray to an array with non-zero lower bound
             const int LowerBound = 5;
-            Copy(NonZeroLowerBoundArray(sourceArray, LowerBound), sourceIndex + LowerBound, NonZeroLowerBoundArray(destinationArray, LowerBound), destinationIndex + LowerBound, length, NonZeroLowerBoundArray(expected, LowerBound));
+            Array nonZeroSourceArray = NonZeroLowerBoundArray(sourceArray, LowerBound);
+            Array nonZeroDestinationArray = sourceArray == destinationArray ? nonZeroSourceArray : NonZeroLowerBoundArray(destinationArray, LowerBound);
+            Copy(nonZeroSourceArray, sourceIndex + LowerBound, nonZeroDestinationArray, destinationIndex + LowerBound, length, NonZeroLowerBoundArray(expected, LowerBound));
 
             if (sourceIndex == 0 && length == sourceArray.Length)
             {
@@ -2030,11 +2032,89 @@ namespace System.Tests
 
         public static IEnumerable<object[]> Reverse_TestData()
         {
-            // int[] is a primitive type
+            // SByte
+            yield return new object[] { new sbyte[] { 1, 2, 3, 4, 5 }, 0, 5, new sbyte[] { 5, 4, 3, 2, 1 } };
+            yield return new object[] { new sbyte[] { 1, 2, 3, 4, 5 }, 2, 3, new sbyte[] { 1, 2, 5, 4, 3 } };
+            yield return new object[] { new sbyte[] { 1, 2, 3, 4, 5 }, 0, 0, new sbyte[] { 1, 2, 3, 4, 5 } };
+            yield return new object[] { new sbyte[] { 1, 2, 3, 4, 5 }, 5, 0, new sbyte[] { 1, 2, 3, 4, 5 } };
+
+            // Byte
+            yield return new object[] { new byte[] { 1, 2, 3, 4, 5 }, 0, 5, new byte[] { 5, 4, 3, 2, 1 } };
+            yield return new object[] { new byte[] { 1, 2, 3, 4, 5 }, 2, 3, new byte[] { 1, 2, 5, 4, 3 } };
+            yield return new object[] { new byte[] { 1, 2, 3, 4, 5 }, 0, 0, new byte[] { 1, 2, 3, 4, 5 } };
+            yield return new object[] { new byte[] { 1, 2, 3, 4, 5 }, 5, 0, new byte[] { 1, 2, 3, 4, 5 } };
+
+            // Int16
+            yield return new object[] { new short[] { 1, 2, 3, 4, 5 }, 0, 5, new short[] { 5, 4, 3, 2, 1 } };
+            yield return new object[] { new short[] { 1, 2, 3, 4, 5 }, 2, 3, new short[] { 1, 2, 5, 4, 3 } };
+            yield return new object[] { new short[] { 1, 2, 3, 4, 5 }, 0, 0, new short[] { 1, 2, 3, 4, 5 } };
+            yield return new object[] { new short[] { 1, 2, 3, 4, 5 }, 5, 0, new short[] { 1, 2, 3, 4, 5 } };
+
+            // UInt16
+            yield return new object[] { new ushort[] { 1, 2, 3, 4, 5 }, 0, 5, new ushort[] { 5, 4, 3, 2, 1 } };
+            yield return new object[] { new ushort[] { 1, 2, 3, 4, 5 }, 2, 3, new ushort[] { 1, 2, 5, 4, 3 } };
+            yield return new object[] { new ushort[] { 1, 2, 3, 4, 5 }, 0, 0, new ushort[] { 1, 2, 3, 4, 5 } };
+            yield return new object[] { new ushort[] { 1, 2, 3, 4, 5 }, 5, 0, new ushort[] { 1, 2, 3, 4, 5 } };
+
+            // Int32
             yield return new object[] { new int[] { 1, 2, 3, 4, 5 }, 0, 5, new int[] { 5, 4, 3, 2, 1 } };
             yield return new object[] { new int[] { 1, 2, 3, 4, 5 }, 2, 3, new int[] { 1, 2, 5, 4, 3 } };
             yield return new object[] { new int[] { 1, 2, 3, 4, 5 }, 0, 0, new int[] { 1, 2, 3, 4, 5 } };
             yield return new object[] { new int[] { 1, 2, 3, 4, 5 }, 5, 0, new int[] { 1, 2, 3, 4, 5 } };
+
+            // UInt32
+            yield return new object[] { new uint[] { 1, 2, 3, 4, 5 }, 0, 5, new uint[] { 5, 4, 3, 2, 1 } };
+            yield return new object[] { new uint[] { 1, 2, 3, 4, 5 }, 2, 3, new uint[] { 1, 2, 5, 4, 3 } };
+            yield return new object[] { new uint[] { 1, 2, 3, 4, 5 }, 0, 0, new uint[] { 1, 2, 3, 4, 5 } };
+            yield return new object[] { new uint[] { 1, 2, 3, 4, 5 }, 5, 0, new uint[] { 1, 2, 3, 4, 5 } };
+
+            // Int64
+            yield return new object[] { new long[] { 1, 2, 3, 4, 5 }, 0, 5, new long[] { 5, 4, 3, 2, 1 } };
+            yield return new object[] { new long[] { 1, 2, 3, 4, 5 }, 2, 3, new long[] { 1, 2, 5, 4, 3 } };
+            yield return new object[] { new long[] { 1, 2, 3, 4, 5 }, 0, 0, new long[] { 1, 2, 3, 4, 5 } };
+            yield return new object[] { new long[] { 1, 2, 3, 4, 5 }, 5, 0, new long[] { 1, 2, 3, 4, 5 } };
+
+            // UInt64
+            yield return new object[] { new ulong[] { 1, 2, 3, 4, 5 }, 0, 5, new ulong[] { 5, 4, 3, 2, 1 } };
+            yield return new object[] { new ulong[] { 1, 2, 3, 4, 5 }, 2, 3, new ulong[] { 1, 2, 5, 4, 3 } };
+            yield return new object[] { new ulong[] { 1, 2, 3, 4, 5 }, 0, 0, new ulong[] { 1, 2, 3, 4, 5 } };
+            yield return new object[] { new ulong[] { 1, 2, 3, 4, 5 }, 5, 0, new ulong[] { 1, 2, 3, 4, 5 } };
+
+            // Char
+            yield return new object[] { new char[] { '1', '2', '3', '4', '5' }, 0, 5, new char[] { '5', '4', '3', '2', '1' } };
+            yield return new object[] { new char[] { '1', '2', '3', '4', '5' }, 2, 3, new char[] { '1', '2', '5', '4', '3' } };
+            yield return new object[] { new char[] { '1', '2', '3', '4', '5' }, 0, 0, new char[] { '1', '2', '3', '4', '5' } };
+            yield return new object[] { new char[] { '1', '2', '3', '4', '5' }, 5, 0, new char[] { '1', '2', '3', '4', '5' } };
+
+            // Bool
+            yield return new object[] { new bool[] { false, false, true, true, false }, 0, 5, new bool[] { false, true, true, false, false } };
+            yield return new object[] { new bool[] { false, false, true, true, false }, 2, 3, new bool[] { false, false, false, true, true } };
+            yield return new object[] { new bool[] { false, false, true, true, false }, 0, 0, new bool[] { false, false, true, true, false } };
+            yield return new object[] { new bool[] { false, false, true, true, false }, 5, 0, new bool[] { false, false, true, true, false } };
+
+            // Single
+            yield return new object[] { new float[] { 1, 2, 3, 4, 5 }, 0, 5, new float[] { 5, 4, 3, 2, 1 } };
+            yield return new object[] { new float[] { 1, 2, 3, 4, 5 }, 2, 3, new float[] { 1, 2, 5, 4, 3 } };
+            yield return new object[] { new float[] { 1, 2, 3, 4, 5 }, 0, 0, new float[] { 1, 2, 3, 4, 5 } };
+            yield return new object[] { new float[] { 1, 2, 3, 4, 5 }, 5, 0, new float[] { 1, 2, 3, 4, 5 } };
+
+            // Double
+            yield return new object[] { new double[] { 1, 2, 3, 4, 5 }, 0, 5, new double[] { 5, 4, 3, 2, 1 } };
+            yield return new object[] { new double[] { 1, 2, 3, 4, 5 }, 2, 3, new double[] { 1, 2, 5, 4, 3 } };
+            yield return new object[] { new double[] { 1, 2, 3, 4, 5 }, 0, 0, new double[] { 1, 2, 3, 4, 5 } };
+            yield return new object[] { new double[] { 1, 2, 3, 4, 5 }, 5, 0, new double[] { 1, 2, 3, 4, 5 } };
+
+            // IntPtr
+            yield return new object[] { new IntPtr[] { (IntPtr)1, (IntPtr)2, (IntPtr)3, (IntPtr)4, (IntPtr)5 }, 0, 5, new IntPtr[] { (IntPtr)5, (IntPtr)4, (IntPtr)3, (IntPtr)2, (IntPtr)1 } };
+            yield return new object[] { new IntPtr[] { (IntPtr)1, (IntPtr)2, (IntPtr)3, (IntPtr)4, (IntPtr)5 }, 2, 3, new IntPtr[] { (IntPtr)1, (IntPtr)2, (IntPtr)5, (IntPtr)4, (IntPtr)3 } };
+            yield return new object[] { new IntPtr[] { (IntPtr)1, (IntPtr)2, (IntPtr)3, (IntPtr)4, (IntPtr)5 }, 0, 0, new IntPtr[] { (IntPtr)1, (IntPtr)2, (IntPtr)3, (IntPtr)4, (IntPtr)5 } };
+            yield return new object[] { new IntPtr[] { (IntPtr)1, (IntPtr)2, (IntPtr)3, (IntPtr)4, (IntPtr)5 }, 5, 0, new IntPtr[] { (IntPtr)1, (IntPtr)2, (IntPtr)3, (IntPtr)4, (IntPtr)5 } };
+
+            // UIntPtr
+            yield return new object[] { new UIntPtr[] { (UIntPtr)1, (UIntPtr)2, (UIntPtr)3, (UIntPtr)4, (UIntPtr)5 }, 0, 5, new UIntPtr[] { (UIntPtr)5, (UIntPtr)4, (UIntPtr)3, (UIntPtr)2, (UIntPtr)1 } };
+            yield return new object[] { new UIntPtr[] { (UIntPtr)1, (UIntPtr)2, (UIntPtr)3, (UIntPtr)4, (UIntPtr)5 }, 2, 3, new UIntPtr[] { (UIntPtr)1, (UIntPtr)2, (UIntPtr)5, (UIntPtr)4, (UIntPtr)3 } };
+            yield return new object[] { new UIntPtr[] { (UIntPtr)1, (UIntPtr)2, (UIntPtr)3, (UIntPtr)4, (UIntPtr)5 }, 0, 0, new UIntPtr[] { (UIntPtr)1, (UIntPtr)2, (UIntPtr)3, (UIntPtr)4, (UIntPtr)5 } };
+            yield return new object[] { new UIntPtr[] { (UIntPtr)1, (UIntPtr)2, (UIntPtr)3, (UIntPtr)4, (UIntPtr)5 }, 5, 0, new UIntPtr[] { (UIntPtr)1, (UIntPtr)2, (UIntPtr)3, (UIntPtr)4, (UIntPtr)5 } };
 
             // string[] can be cast to object[]
             yield return new object[] { new string[] { "1", "2", "3", "4", "5" }, 0, 5, new string[] { "5", "4", "3", "2", "1" } };
@@ -2058,6 +2138,16 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(Reverse_TestData))]
+        public static void Reverse_SZArray(Array array, int index, int length, Array expected)
+        {
+            // Basic: forward SZArray
+            Reverse(array, index, length, expected);
+
+            // Advanced: convert SZArray to an array with non-zero lower bound
+            const int LowerBound = 5;
+            Reverse(NonZeroLowerBoundArray(array, LowerBound), index + LowerBound, length, NonZeroLowerBoundArray(expected, LowerBound));
+        }
+
         public static void Reverse(Array array, int index, int length, Array expected)
         {
             if (index == 0 && length == array.Length)
@@ -2073,27 +2163,42 @@ namespace System.Tests
         }
 
         [Fact]
-        public static void Reverse_Invalid()
+        public static void Reverse_NullArray_ThrowsArgumentNullException()
         {
-            // Array is null
             Assert.Throws<ArgumentNullException>("array", () => Array.Reverse(null));
             Assert.Throws<ArgumentNullException>("array", () => Array.Reverse(null, 0, 0));
+        }
 
-            // Array is multidimensional
+        [Fact]
+        public static void Reverse_MultidimensionalArray_ThrowsRankException()
+        {
             Assert.Throws<RankException>(() => Array.Reverse(new int[10, 10]));
             Assert.Throws<RankException>(() => Array.Reverse(new int[10, 10], 0, 0));
+        }
 
-            // Index < 0
-            Assert.Throws<ArgumentOutOfRangeException>("index", () => Array.Reverse(new int[10], -1, 10));
+        [Theory]
+        [InlineData(0)]
+        [InlineData(-1)]
+        [InlineData(1)]
+        public static void Reverse_IndexLessThanLowerBound_ThrowsArgumentOutOfRangeException(int lowerBound)
+        {
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => Array.Reverse(NonZeroLowerBoundArray(new int[0], lowerBound), lowerBound - 1, 0));
+        }
 
-            // Length < 0
+        [Fact]
+        public static void Reverse_NegativeLength_ThrowsArgumentOutOfRangeException()
+        {
             Assert.Throws<ArgumentOutOfRangeException>("length", () => Array.Reverse(new int[10], 0, -1));
+        }
 
-            // Index + length > array.Length
-            Assert.Throws<ArgumentException>(() => Array.Reverse(new int[10], 11, 0));
-            Assert.Throws<ArgumentException>(() => Array.Reverse(new int[10], 10, 1));
-            Assert.Throws<ArgumentException>(() => Array.Reverse(new int[10], 9, 2));
-            Assert.Throws<ArgumentException>(() => Array.Reverse(new int[10], 0, 11));
+        [Theory]
+        [InlineData(11, 0)]
+        [InlineData(10, 1)]
+        [InlineData(9, 2)]
+        [InlineData(0, 11)]
+        public static void Reverse_InvalidIndexPlusLength_ThrowsArgumentException(int index, int length)
+        {
+            Assert.Throws<ArgumentException>(null, () => Array.Reverse(new int[10], index, length));
         }
 
         [Fact]
