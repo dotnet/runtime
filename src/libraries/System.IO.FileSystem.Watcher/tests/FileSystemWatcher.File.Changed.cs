@@ -9,7 +9,7 @@ namespace System.IO.Tests
 {
     public class File_Changed_Tests : FileSystemWatcherTest
     {
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/216
+        [Fact]
         public void FileSystemWatcher_File_Changed_LastWrite()
         {
             using (var testDirectory = new TempDirectory(GetTestFilePath()))
@@ -23,7 +23,7 @@ namespace System.IO.Tests
             }
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/216
+        [Theory]
         [InlineData(false)]
         [InlineData(true)]
         public void FileSystemWatcher_File_Changed_Nested(bool includeSubdirectories)
@@ -46,7 +46,7 @@ namespace System.IO.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/216
+        [Fact]
         public void FileSystemWatcher_File_Changed_DataModification()
         {
             using (var testDirectory = new TempDirectory(GetTestFilePath()))
@@ -65,7 +65,7 @@ namespace System.IO.Tests
             }
         }
 
-        [ConditionalFact(nameof(CanCreateSymbolicLinks), nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/216
+        [ConditionalFact(nameof(CanCreateSymbolicLinks))]
         public void FileSystemWatcher_File_Changed_SymLink()
         {
             using (var testDirectory = new TempDirectory(GetTestFilePath()))
