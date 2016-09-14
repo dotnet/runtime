@@ -3,13 +3,9 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
     <ProjectReference Include="..\ref\System.Reflection.Extensions.csproj">
-      <SupportedFramework>net463;netcoreapp1.1;$(AllXamarinFrameworks)</SupportedFramework>
+      <SupportedFramework>net463;netcoreapp1.1;uap10.1;$(AllXamarinFrameworks)</SupportedFramework>
     </ProjectReference>
-    <ProjectReference Include="..\src\System.Reflection.Extensions.csproj">
-      <TargetGroup>net463</TargetGroup>
-    </ProjectReference>
-    <ProjectReference Include="any\System.Reflection.Extensions.pkgproj" />
-    <ProjectReference Include="aot\System.Reflection.Extensions.pkgproj" />
+    <ProjectReference Include="..\src\System.Reflection.Extensions.builds" />
     <InboxOnTargetFramework Include="MonoAndroid10" />
     <InboxOnTargetFramework Include="MonoTouch10" />
     <InboxOnTargetFramework Include="net45" />
@@ -21,6 +17,14 @@
     <InboxOnTargetFramework Include="xamarinmac20" />
     <InboxOnTargetFramework Include="xamarintvos10" />
     <InboxOnTargetFramework Include="xamarinwatchos10" />
+    <HarvestAdditionalPackages Include="runtime.any.System.Reflection.Extensions">
+      <ExcludePaths>runtimes/aot/lib/netcore50;ref/netstandard</ExcludePaths>
+      <Version>4.0.1</Version>
+    </HarvestAdditionalPackages>
+    <HarvestAdditionalPackages Include="runtime.aot.System.Reflection.Extensions">
+      <ExcludePaths>ref/netstandard</ExcludePaths>
+      <Version>4.0.0</Version>
+    </HarvestAdditionalPackages>    
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
