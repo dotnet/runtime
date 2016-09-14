@@ -89,6 +89,10 @@ mono_w32handle_namespace_search_handle_callback (gpointer handle, gpointer data,
 		} else {
 			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: handle %p matches name and type",
 				__func__, handle);
+
+			/* we do not want the handle to be destroyed before we return it  */
+			mono_w32handle_ref (handle);
+
 			search_data->ret = handle;
 		}
 

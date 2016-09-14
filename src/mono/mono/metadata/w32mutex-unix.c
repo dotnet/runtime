@@ -282,8 +282,7 @@ static gpointer namedmutex_create (gboolean owned, const gunichar2 *name)
 		/* Not an error, but this is how the caller is informed that the mutex wasn't freshly created */
 		SetLastError (ERROR_ALREADY_EXISTS);
 
-		/* this is used as creating a new handle */
-		mono_w32handle_ref (handle);
+		/* mono_w32handle_namespace_search_handle already adds a ref to the handle */
 	} else {
 		/* A new named mutex */
 		MonoW32HandleNamedMutex namedmutex_handle;

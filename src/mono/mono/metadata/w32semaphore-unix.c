@@ -200,8 +200,7 @@ namedsem_create (gint32 initial, gint32 max, const gunichar2 *name)
 		/* Not an error, but this is how the caller is informed that the semaphore wasn't freshly created */
 		SetLastError (ERROR_ALREADY_EXISTS);
 
-		/* this is used as creating a new handle */
-		mono_w32handle_ref (handle);
+		/* mono_w32handle_namespace_search_handle already adds a ref to the handle */
 	} else {
 		/* A new named semaphore */
 		MonoW32HandleNamedSemaphore namedsem_handle;
