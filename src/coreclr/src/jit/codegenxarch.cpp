@@ -2461,6 +2461,13 @@ void CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
             else if (varTypeIsLong(op1Type))
             {
 #ifdef DEBUG
+                // The result of an unlowered long compare on a 32-bit target must either be
+                // a) materialized into a register, or
+                // b) unused.
+                //
+                // A long compare that has a result that is used but not materialized into a register should
+                // have been handled by Lowering::LowerCompare.
+
                 LIR::Use use;
                 assert((treeNode->gtRegNum != REG_NA) || !LIR::AsRange(compiler->compCurBB).TryGetUse(treeNode, &use));
 #endif
@@ -5230,7 +5237,7 @@ void CodeGen::genConsumeRegs(GenTree* tree)
         }
         else if (tree->OperGet() == GT_AND)
         {
-            // This is the special contained GT_AND that we created in Lowering::LowerCmp()
+            // This is the special contained GT_AND that we created in Lowering::TreeNodeInfoInitCmp()
             // Now we need to consume the operands of the GT_AND node.
             genConsumeOperands(tree->AsOp());
         }
@@ -7303,7 +7310,7 @@ void CodeGen::genCompareInt(GenTreePtr treeNode)
     {
         // Do we have a short compare against a constant in op2?
         //
-        // We checked for this case in LowerCmp() and if we can perform a small
+        // We checked for this case in TreeNodeInfoInitCmp() and if we can perform a small
         // compare immediate we labeled this compare with a GTF_RELOP_SMALL
         // and for unsigned small non-equality compares the GTF_UNSIGNED flag.
         //
@@ -7358,7 +7365,7 @@ void CodeGen::genCompareInt(GenTreePtr treeNode)
         if (op1->isContained())
         {
             // op1 can be a contained memory op
-            // or the special contained GT_AND that we created in Lowering::LowerCmp()
+            // or the special contained GT_AND that we created in Lowering::TreeNodeInfoInitCmp()
             //
             if ((op1->OperGet() == GT_AND))
             {

@@ -19945,7 +19945,7 @@ void                Compiler::fgDebugCheckBBlist(bool checkBBNum  /* = false */,
 
         // If the block is a BBJ_COND, a BBJ_SWITCH or a
         // lowered GT_SWITCH_TABLE node then make sure it
-        // ends with a jump or a GT_SWITCH
+        // ends with a conditional jump or a GT_SWITCH
 
         if (block->bbJumpKind == BBJ_COND)
         {
