@@ -2793,7 +2793,14 @@ mono_cpu_count (void)
 		return info.dwNumberOfProcessors;
 	}
 #endif
-	/* FIXME: warn */
+
+	static gboolean warned;
+
+	if (!warned) {
+		g_warning ("Don't know how to determine CPU count on this platform; assuming 1");
+		warned = TRUE;
+	}
+
 	return 1;
 }
 
