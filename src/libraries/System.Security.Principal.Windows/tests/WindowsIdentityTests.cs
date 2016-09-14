@@ -60,6 +60,13 @@ public class WindowsIdentityTests
         CheckDispose(cloneWinId);        
     }
 
+    [Fact]
+    public static void GetTokenHandle()
+    {
+        WindowsIdentity id = WindowsIdentity.GetCurrent();
+        Assert.Equal(id.AccessToken.DangerousGetHandle(), id.Token);
+    }
+
     private static void CheckDispose(WindowsIdentity identity, bool anonymous = false)
     {
         Assert.False(identity.AccessToken.IsClosed);
