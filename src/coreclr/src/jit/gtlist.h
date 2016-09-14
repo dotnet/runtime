@@ -190,6 +190,7 @@ GTNODE(SIMD       , "simd"       ,0,GTK_BINOP|GTK_EXOP)   // SIMD functions/oper
 //-----------------------------------------------------------------------------
 
 GTNODE(JTRUE      , "jmpTrue"    ,0,GTK_UNOP|GTK_NOVALUE)
+GTNODE(JCC        , "jcc"        ,0,GTK_LEAF|GTK_NOVALUE)
 
 GTNODE(LIST       , "<list>"     ,0,GTK_BINOP)
 
