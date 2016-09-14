@@ -380,6 +380,9 @@ private:
 public:
     void gcUpdateForRegVarMove(regMaskTP srcMask, regMaskTP dstMask, LclVarDsc* varDsc);
 #endif // !LEGACY_BACKEND
+
+private:
+    ReturnKind getReturnKind();
 };
 
 inline unsigned char encodeUnsigned(BYTE* dest, unsigned value)

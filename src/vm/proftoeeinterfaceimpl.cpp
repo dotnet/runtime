@@ -7081,12 +7081,13 @@ Loop:
 
             // GC info will assist us in determining whether this is a non-EBP frame and
             // info about pushed arguments.
-            PTR_VOID gcInfo = codeInfo.GetGCInfo();
+            GCInfoToken gcInfoToken = codeInfo.GetGCInfoToken();
+            PTR_VOID gcInfo = gcInfoToken.Info;
             InfoHdr header;
             unsigned uiMethodSizeDummy;
             PTR_CBYTE table = PTR_CBYTE(gcInfo);
             table += decodeUnsigned(table, &uiMethodSizeDummy);
-            table = decodeHeader(table, &header);
+            table = decodeHeader(table, gcInfoToken.Version, &header);
 
             // Ok, GCInfo, can we do a simple EBP walk or what?
 
