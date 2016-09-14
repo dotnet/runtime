@@ -66,6 +66,7 @@
 static volatile gint32 runtime_inited;
 static volatile gint32 in_shutdown;
 
+static gboolean no_counters;
 static int nocalls = 0;
 static int notraces = 0;
 static int use_zip = 0;
@@ -77,7 +78,6 @@ static int heapshot_requested = 0;
 static int sample_freq = 0;
 static int do_mono_sample = 0;
 static int do_debug = 0;
-static int do_counters = 0;
 static int do_coverage = 0;
 static gboolean debug_coverage = FALSE;
 static MonoProfileSamplingMode sampling_mode = MONO_PROFILER_STAT_MODE_PROCESS;
@@ -3870,7 +3870,8 @@ log_shutdown (MonoProfiler *prof)
 {
 	InterlockedWrite (&in_shutdown, 1);
 
-	counters_and_perfcounters_sample (prof);
+	if (!no_counters)
+		counters_and_perfcounters_sample (prof);
 
 	dump_coverage (prof);
 
@@ -4093,7 +4094,8 @@ helper_thread (void *arg)
 			exit (1);
 		}
 
-		counters_and_perfcounters_sample (prof);
+		if (!no_counters)
+			counters_and_perfcounters_sample (prof);
 
 		buffer_lock_excl ();
 
@@ -4824,7 +4826,12 @@ mono_profiler_startup (const char *desc)
 			events &= ~MONO_PROFILE_GC_MOVES;
 			continue;
 		}
+		if ((opt = match_option (p, "nocounters", NULL)) != p) {
+			no_counters = TRUE;
+			continue;
+		}
 		if ((opt = match_option (p, "time", &val)) != p) {
+			// For backwards compatibility.
 			if (strcmp (val, "fast") && strcmp (val, "null"))
 				usage (1);
 			g_free (val);
@@ -4901,7 +4908,7 @@ mono_profiler_startup (const char *desc)
 			continue;
 		}
 		if ((opt = match_option (p, "counters", NULL)) != p) {
-			do_counters = 1;
+			// For backwards compatibility.
 			continue;
 		}
 		if ((opt = match_option (p, "coverage", NULL)) != p) {
@@ -4968,6 +4975,7 @@ mono_profiler_startup (const char *desc)
 			exit (1);
 		}
 
+		no_counters = TRUE;
 		events = MONO_PROFILE_GC | MONO_PROFILE_THREADS | MONO_PROFILE_ENTER_LEAVE | MONO_PROFILE_INS_COVERAGE;
 	}
 
