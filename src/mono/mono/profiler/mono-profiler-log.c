@@ -54,16 +54,6 @@
 #include <zlib.h>
 #endif
 
-#if defined(__linux__) && defined (ENABLE_PERF_EVENTS)
-
-#include <linux/perf_event.h>
-
-#define USE_PERF_EVENTS 1
-
-static int read_perf_mmap (MonoProfiler* prof, int cpu);
-
-#endif
-
 #define BUFFER_SIZE (4096 * 16)
 
 /* Worst-case size in bytes of a 64-bit value encoded with LEB128. */
@@ -82,7 +72,6 @@ static int max_call_depth = 100;
 static volatile int runtime_inited = 0;
 static int command_port = 0;
 static int heapshot_requested = 0;
-static int sample_type = 0;
 static int sample_freq = 0;
 static int do_mono_sample = 0;
 static int in_shutdown = 0;
@@ -349,7 +338,6 @@ static MonoLinkedListSet profiler_thread_list;
  * type: TYPE_SAMPLE
  * exinfo: one of TYPE_SAMPLE_HIT, TYPE_SAMPLE_USYM, TYPE_SAMPLE_UBIN, TYPE_SAMPLE_COUNTERS_DESC, TYPE_SAMPLE_COUNTERS
  * if exinfo == TYPE_SAMPLE_HIT
- * 	[sample_type: byte] type of sample (SAMPLE_*)
  * 	[thread: sleb128] thread id as difference from ptr_base
  * 	[count: uleb128] number of following instruction addresses
  * 	[ip: sleb128]* instruction pointer as difference from ptr_base
@@ -2810,228 +2798,6 @@ mono_cpu_count (void)
 	return 1;
 }
 
-#if USE_PERF_EVENTS
-
-typedef struct {
-	int perf_fd;
-	unsigned int prev_pos;
-	void *mmap_base;
-	struct perf_event_mmap_page *page_desc;
-} PerfData ;
-
-static PerfData *perf_data = NULL;
-static int num_perf;
-#define PERF_PAGES_SHIFT 4
-static int num_pages = 1 << PERF_PAGES_SHIFT;
-static unsigned int mmap_mask;
-
-typedef struct {
-	struct perf_event_header h;
-	uint64_t ip;
-	uint32_t pid;
-	uint32_t tid;
-	uint64_t timestamp;
-	uint64_t period;
-	uint64_t nframes;
-} PSample;
-
-static int
-perf_event_syscall (struct perf_event_attr *attr, pid_t pid, int cpu, int group_fd, unsigned long flags)
-{
-	attr->size = PERF_ATTR_SIZE_VER0;
-	//printf ("perf attr size: %d\n", attr->size);
-#if defined(__x86_64__)
-	return syscall(/*__NR_perf_event_open*/ 298, attr, pid, cpu, group_fd, flags);
-#elif defined(__i386__)
-	return syscall(/*__NR_perf_event_open*/ 336, attr, pid, cpu, group_fd, flags);
-#elif defined(__arm__) || defined (__aarch64__)
-	return syscall(/*__NR_perf_event_open*/ 364, attr, pid, cpu, group_fd, flags);
-#else
-	return -1;
-#endif
-}
-
-static int
-setup_perf_map (PerfData *perf)
-{
-	perf->mmap_base = mmap (NULL, (num_pages + 1) * getpagesize (), PROT_READ|PROT_WRITE, MAP_SHARED, perf->perf_fd, 0);
-	if (perf->mmap_base == MAP_FAILED) {
-		if (do_debug)
-			printf ("failed mmap\n");
-		return 0;
-	}
-	perf->page_desc = perf->mmap_base;
-	if (do_debug)
-		printf ("mmap version: %d\n", perf->page_desc->version);
-	return 1;
-}
-
-static void
-dump_perf_hits (MonoProfiler *prof, void *buf, int size)
-{
-	int count = 1;
-	int mbt_count = 0;
-	void *end = (char*)buf + size;
-	int samples = 0;
-	int pid = getpid ();
-
-	while (buf < end) {
-		PSample *s = buf;
-		if (s->h.size == 0)
-			break;
-		if (pid != s->pid) {
-			if (do_debug)
-				printf ("event for different pid: %d\n", s->pid);
-			buf = (char*)buf + s->h.size;
-			continue;
-		}
-		/*ip = (void*)s->ip;
-		printf ("sample: %d, size: %d, ip: %p (%s), timestamp: %llu, nframes: %llu\n",
-			s->h.type, s->h.size, ip, symbol_for (ip), s->timestamp, s->nframes);*/
-
-		InterlockedIncrement (&sample_hits_ctr);
-
-		ENTER_LOG (&sample_hits_ctr, logbuffer,
-			EVENT_SIZE /* event */ +
-			BYTE_SIZE /* type */ +
-			LEB128_SIZE /* tid */ +
-			LEB128_SIZE /* count */ +
-			count * (
-				LEB128_SIZE /* ip */
-			) +
-			LEB128_SIZE /* managed count */ +
-			mbt_count * (
-				LEB128_SIZE /* method */
-			)
-		);
-
-		emit_event (logbuffer, TYPE_SAMPLE | TYPE_SAMPLE_HIT);
-		emit_byte (logbuffer, sample_type);
-		/*
-		 * No useful thread ID to write here, since throughout the
-		 * profiler we use pthread_self () but the ID we get from
-		 * perf is the kernel's thread ID.
-		 */
-		emit_ptr (logbuffer, 0);
-		emit_value (logbuffer, count);
-		emit_ptr (logbuffer, (void*)(uintptr_t)s->ip);
-		/* no support here yet for the managed backtrace */
-		emit_uvalue (logbuffer, mbt_count);
-
-		EXIT_LOG_EXPLICIT (TRUE, FALSE);
-
-		add_code_pointer (s->ip);
-		buf = (char*)buf + s->h.size;
-		samples++;
-	}
-	if (do_debug)
-		printf ("dumped %d samples\n", samples);
-	dump_unmanaged_coderefs (prof);
-}
-
-/* read events from the ring buffer */
-static int
-read_perf_mmap (MonoProfiler* prof, int cpu)
-{
-	PerfData *perf = perf_data + cpu;
-	unsigned char *buf;
-	unsigned char *data = (unsigned char*)perf->mmap_base + getpagesize ();
-	unsigned int head = perf->page_desc->data_head;
-	int diff, size;
-	unsigned int old;
-
-	mono_memory_read_barrier ();
-
-	old = perf->prev_pos;
-	diff = head - old;
-	if (diff < 0) {
-		if (do_debug)
-			printf ("lost mmap events: old: %d, head: %d\n", old, head);
-		old = head;
-	}
-	size = head - old;
-	if ((old & mmap_mask) + size != (head & mmap_mask)) {
-		buf = data + (old & mmap_mask);
-		size = mmap_mask + 1 - (old & mmap_mask);
-		old += size;
-		/* size bytes at buf */
-		if (do_debug)
-			printf ("found1 bytes of events: %d\n", size);
-		dump_perf_hits (prof, buf, size);
-	}
-	buf = data + (old & mmap_mask);
-	size = head - old;
-	/* size bytes at buf */
-	if (do_debug)
-		printf ("found bytes of events: %d\n", size);
-	dump_perf_hits (prof, buf, size);
-	old += size;
-	perf->prev_pos = old;
-	perf->page_desc->data_tail = old;
-	return 0;
-}
-
-static int
-setup_perf_event_for_cpu (PerfData *perf, int cpu)
-{
-	struct perf_event_attr attr;
-	memset (&attr, 0, sizeof (attr));
-	attr.type = PERF_TYPE_HARDWARE;
-	switch (sample_type) {
-	case SAMPLE_CYCLES: attr.config = PERF_COUNT_HW_CPU_CYCLES; break;
-	case SAMPLE_INSTRUCTIONS: attr.config = PERF_COUNT_HW_INSTRUCTIONS; break;
-	case SAMPLE_CACHE_MISSES: attr.config = PERF_COUNT_HW_CACHE_MISSES; break;
-	case SAMPLE_CACHE_REFS: attr.config = PERF_COUNT_HW_CACHE_REFERENCES; break;
-	case SAMPLE_BRANCHES: attr.config = PERF_COUNT_HW_BRANCH_INSTRUCTIONS; break;
-	case SAMPLE_BRANCH_MISSES: attr.config = PERF_COUNT_HW_BRANCH_MISSES; break;
-	default: attr.config = PERF_COUNT_HW_CPU_CYCLES; break;
-	}
-	attr.sample_type = PERF_SAMPLE_IP | PERF_SAMPLE_TID | PERF_SAMPLE_PERIOD | PERF_SAMPLE_TIME;
-//	attr.sample_type |= PERF_SAMPLE_CALLCHAIN;
-	attr.read_format = PERF_FORMAT_TOTAL_TIME_ENABLED | PERF_FORMAT_TOTAL_TIME_RUNNING | PERF_FORMAT_ID;
-	attr.inherit = 1;
-	attr.freq = 1;
-	attr.sample_freq = sample_freq;
-
-	perf->perf_fd = perf_event_syscall (&attr, getpid (), cpu, -1, 0);
-	if (do_debug)
-		printf ("perf fd: %d, freq: %d, event: %llu\n", perf->perf_fd, sample_freq, attr.config);
-	if (perf->perf_fd < 0) {
-		if (perf->perf_fd == -EPERM) {
-			fprintf (stderr, "Perf syscall denied, do \"echo 1 > /proc/sys/kernel/perf_event_paranoid\" as root to enable.\n");
-		} else {
-			if (do_debug)
-				perror ("open perf event");
-		}
-		return 0;
-	}
-	if (!setup_perf_map (perf)) {
-		close (perf->perf_fd);
-		perf->perf_fd = -1;
-		return 0;
-	}
-	return 1;
-}
-
-static int
-setup_perf_event (void)
-{
-	int i, count = 0;
-	mmap_mask = num_pages * getpagesize () - 1;
-	num_perf = mono_cpu_count ();
-	perf_data = g_calloc (num_perf, sizeof (PerfData));
-	for (i = 0; i < num_perf; ++i) {
-		count += setup_perf_event_for_cpu (perf_data + i, i);
-	}
-	if (count)
-		return 1;
-	g_free (perf_data);
-	perf_data = NULL;
-	return 0;
-}
-
-#endif /* USE_PERF_EVENTS */
-
 typedef struct MonoCounterAgent {
 	MonoCounter *counter;
 	// MonoCounterAgent specific data :
@@ -4131,14 +3897,6 @@ log_shutdown (MonoProfiler *prof)
 		g_free (cur);
 	}
 
-#if USE_PERF_EVENTS
-	if (perf_data) {
-		int i;
-		for (i = 0; i < num_perf; ++i)
-			read_perf_mmap (prof, i);
-	}
-#endif
-
 	/*
 	 * Ensure that we empty the LLS completely, even if some nodes are
 	 * not immediately removed upon calling mono_lls_remove (), by
@@ -4282,10 +4040,10 @@ static void
 add_to_fd_set (fd_set *set, int fd, int *max_fd)
 {
 	/*
-	 * This should only trigger for the basic FDs (server socket, pipe, perf
-	 * events) at startup if for some mysterious reason they're too large. In
-	 * this case, the profiler really can't function, and we're better off
-	 * printing an error and exiting.
+	 * This should only trigger for the basic FDs (server socket, pipes) at
+	 * startup if for some mysterious reason they're too large. In this case,
+	 * the profiler really can't function, and we're better off printing an
+	 * error and exiting.
 	 */
 	if (fd >= FD_SETSIZE) {
 		fprintf (stderr, "File descriptor is out of bounds for fd_set: %d\n", fd);
@@ -4322,17 +4080,6 @@ helper_thread (void *arg)
 		for (gint i = 0; i < command_sockets->len; i++)
 			add_to_fd_set (&rfds, g_array_index (command_sockets, int, i), &max_fd);
 
-#if USE_PERF_EVENTS
-		if (perf_data) {
-			for (int i = 0; i < num_perf; ++i) {
-				if (perf_data [i].perf_fd < 0)
-					continue;
-
-				add_to_fd_set (&rfds, perf_data [i].perf_fd, &max_fd);
-			}
-		}
-#endif
-
 		struct timeval tv = { .tv_sec = 1, .tv_usec = 0 };
 
 		// Sleep for 1sec or until a file descriptor has data.
@@ -4351,17 +4098,6 @@ helper_thread (void *arg)
 		sync_point (SYNC_POINT_PERIODIC);
 
 		buffer_unlock_excl ();
-
-#if USE_PERF_EVENTS
-		if (perf_data) {
-			for (int i = 0; i < num_perf; ++i) {
-				if (perf_data [i].perf_fd < 0 || !FD_ISSET (perf_data [i].perf_fd, &rfds))
-					continue;
-
-				read_perf_mmap (prof, i);
-			}
-		}
-#endif
 
 		// Are we shutting down?
 		if (FD_ISSET (prof->pipes [0], &rfds)) {
@@ -4661,7 +4397,7 @@ handle_dumper_queue_entry (MonoProfiler *prof)
 		);
 
 		emit_event_time (logbuffer, TYPE_SAMPLE | TYPE_SAMPLE_HIT, sample->time);
-		emit_byte (logbuffer, sample_type);
+		emit_byte (logbuffer, SAMPLE_CYCLES);
 		emit_ptr (logbuffer, (void *) sample->tid);
 		emit_value (logbuffer, 1);
 
@@ -4850,15 +4586,6 @@ create_profiler (const char *args, const char *filename, GPtrArray *filters)
 		prof->gzfile = gzdopen (fileno (prof->file), "wb");
 #endif
 
-#if USE_PERF_EVENTS
-	setup_perf_event ();
-
-	if (!perf_data) {
-		/* FIXME: warn if different freq or sample type */
-		do_mono_sample = 1;
-	}
-#endif
-
 	/*
 	 * If you hit this assert while increasing MAX_FRAMES, you need to increase
 	 * SAMPLE_BLOCK_SIZE as well.
@@ -4963,62 +4690,43 @@ match_option (const char* p, const char *opt, char **rval)
 	return p;
 }
 
-typedef struct {
-	const char *name;
-	int sample_mode;
-} SampleMode;
-
-static const SampleMode sample_modes [] = {
-	{"cycles", SAMPLE_CYCLES},
-	{"instr", SAMPLE_INSTRUCTIONS},
-	{"cachemiss", SAMPLE_CACHE_MISSES},
-	{"cacherefs", SAMPLE_CACHE_REFS},
-	{"branches", SAMPLE_BRANCHES},
-	{"branchmiss", SAMPLE_BRANCH_MISSES},
-	{NULL, 0}
-};
-
 static void
-set_sample_mode (char* val, int allow_empty)
+set_sample_freq (char *val)
 {
-	char *end;
-	char *maybe_freq = NULL;
-	unsigned int count;
-	const SampleMode *smode = sample_modes;
-#ifndef USE_PERF_EVENTS
 	do_mono_sample = 1;
-#endif
-	if (allow_empty && !val) {
-		sample_type = SAMPLE_CYCLES;
-		sample_freq = 100;
+	sample_freq = 100;
+
+	if (!val)
 		return;
-	}
-	if (strcmp (val, "mono") == 0) {
-		do_mono_sample = 1;
-		sample_type = SAMPLE_CYCLES;
-		g_free (val);
-		return;
-	}
-	for (smode = sample_modes; smode->name; smode++) {
-		int l = strlen (smode->name);
-		if (strncmp (val, smode->name, l) == 0) {
-			sample_type = smode->sample_mode;
-			maybe_freq = val + l;
-			break;
-		}
-	}
-	if (!smode->name)
-		usage (1);
-	if (*maybe_freq == '/') {
-		count = strtoul (maybe_freq + 1, &end, 10);
-		if (maybe_freq + 1 == end)
+
+	char *p = val;
+
+	// Is it only the frequency (new option style)?
+	if (isdigit (*p))
+		goto parse;
+
+	// Skip the sample type for backwards compatibility.
+	while (isalpha (*p))
+		p++;
+
+	// Skip the forward slash only if we got a sample type.
+	if (p != val && *p == '/') {
+		p++;
+
+		char *end;
+
+	parse:
+		sample_freq = strtoul (p, &end, 10);
+
+		if (p == end)
 			usage (1);
-		sample_freq = count;
-	} else if (*maybe_freq != 0) {
-		usage (1);
-	} else {
-		sample_freq = 100;
+
+		p = end;
 	}
+
+	if (*p)
+		usage (1);
+
 	g_free (val);
 }
 
@@ -5156,7 +4864,7 @@ mono_profiler_startup (const char *desc)
 			events &= ~MONO_PROFILE_GC_MOVES;
 			events &= ~MONO_PROFILE_ENTER_LEAVE;
 			nocalls = 1;
-			set_sample_mode (val, 1);
+			set_sample_freq (val);
 			continue;
 		}
 		if ((opt = match_option (p, "zip", NULL)) != p) {
@@ -5304,7 +5012,7 @@ mono_profiler_startup (const char *desc)
 	if (do_coverage)
 		mono_profiler_install_coverage_filter (coverage_filter);
 
-	if (do_mono_sample && sample_type == SAMPLE_CYCLES && sample_freq) {
+	if (do_mono_sample && sample_freq) {
 		events |= MONO_PROFILE_STATISTICAL;
 		mono_profiler_set_statistical_mode (sampling_mode, sample_freq);
 		mono_profiler_install_statistical (mono_sample_hit);
