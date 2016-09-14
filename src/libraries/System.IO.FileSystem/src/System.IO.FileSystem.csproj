@@ -77,6 +77,9 @@
     <Compile Include="$(CommonPath)\System\Threading\Tasks\TaskToApm.cs">
       <Link>Common\System\Threading\Tasks\TaskToApm.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\IO\StreamHelpers.cs">
+      <Link>Common\System\IO\StreamHelpers.cs</Link>
+    </Compile>
   </ItemGroup>
   <!-- .NET Standard 1.7 -->
   <ItemGroup Condition="'$(PackageTargetFramework)' == 'netstandard1.7' and '$(TargetGroup)' != 'net46' and '$(TargetGroup)' != 'net463'" >

@@ -193,6 +193,12 @@ namespace System.IO.Compression
             return _deflateStream.FlushAsync(cancellationToken);
         }
 
+        public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
+        {
+            CheckDeflateStream();
+            return _deflateStream.CopyToAsync(destination, bufferSize, cancellationToken);
+        }
+
         private void CheckDeflateStream()
         {
             if (_deflateStream == null)

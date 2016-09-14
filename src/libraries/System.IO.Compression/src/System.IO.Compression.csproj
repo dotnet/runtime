@@ -74,6 +74,9 @@
     <Compile Include="System\IO\Compression\DeflateZLib\Inflater.cs" />
     <Compile Include="System\IO\Compression\DeflateZLib\ZLibException.cs" />
     <Compile Include="System\IO\Compression\DeflateZLib\ZLibNative.cs" />
+    <Compile Include="$(CommonPath)\System\IO\StreamHelpers.cs">
+      <Link>Common\System\IO\StreamHelpers.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == '' ">
     <Compile Include="System\IO\Compression\ZLibException.Serialization.cs" />

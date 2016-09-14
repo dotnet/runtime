@@ -204,4 +204,7 @@
   <data name="Arg_BadDecimal" xml:space="preserve">
     <value>Read an invalid decimal value from the buffer.</value>
   </data>
+  <data name="ObjectDisposed_StreamClosed" xml:space="preserve">
+    <value>Cannot access a closed Stream.</value>
+  </data>
 </root>
