@@ -1892,28 +1892,16 @@ void Lowering::LowerCompare(GenTree* cmp)
     unsigned weight = m_block->getBBWeight(comp);
 
     LIR::Use loSrc1(BlockRange(), &(src1->gtOp.gtOp1), src1);
-    LIR::Use hiSrc1(BlockRange(), &(src1->gtOp.gtOp2), src1);
     LIR::Use loSrc2(BlockRange(), &(src2->gtOp.gtOp1), src2);
-    LIR::Use hiSrc2(BlockRange(), &(src2->gtOp.gtOp2), src2);
 
     if (loSrc1.Def()->OperGet() != GT_CNS_INT && loSrc1.Def()->OperGet() != GT_LCL_VAR)
     {
         loSrc1.ReplaceWithLclVar(comp, weight);
     }
     
-    if (hiSrc1.Def()->OperGet() != GT_CNS_INT && hiSrc1.Def()->OperGet() != GT_LCL_VAR)
-    {
-        hiSrc1.ReplaceWithLclVar(comp, weight);
-    }
-    
     if (loSrc2.Def()->OperGet() != GT_CNS_INT && loSrc2.Def()->OperGet() != GT_LCL_VAR)
     {
         loSrc2.ReplaceWithLclVar(comp, weight);
-    }
-    
-    if (hiSrc2.Def()->OperGet() != GT_CNS_INT && hiSrc2.Def()->OperGet() != GT_LCL_VAR)
-    {
-        hiSrc2.ReplaceWithLclVar(comp, weight);
     }
 
     BasicBlock* jumpDest = m_block->bbJumpDest;
@@ -1921,8 +1909,8 @@ void Lowering::LowerCompare(GenTree* cmp)
     BasicBlock* newBlock = comp->fgSplitBlockAtEnd(m_block);
 
     cmp->gtType     = TYP_INT;
-    cmp->gtOp.gtOp1 = hiSrc1.Def();
-    cmp->gtOp.gtOp2 = hiSrc2.Def();
+    cmp->gtOp.gtOp1 = src1->gtOp.gtOp2;
+    cmp->gtOp.gtOp2 = src2->gtOp.gtOp2;
 
     if (cmp->OperGet() == GT_EQ || cmp->OperGet() == GT_NE)
     {
@@ -1930,8 +1918,8 @@ void Lowering::LowerCompare(GenTree* cmp)
         BlockRange().Remove(loSrc2.Def());
         GenTree* loCmp = comp->gtNewOperNode(cmp->OperGet(), TYP_INT, loSrc1.Def(), loSrc2.Def());
         loCmp->gtFlags = cmp->gtFlags;
-        GenTree* loJcc = comp->gtNewOperNode(GT_JTRUE, TYP_VOID, loCmp);
-        LIR::AsRange(newBlock).InsertAfter(nullptr, loSrc1.Def(), loSrc2.Def(), loCmp, loJcc);
+        GenTree* loJtrue = comp->gtNewOperNode(GT_JTRUE, TYP_VOID, loCmp);
+        LIR::AsRange(newBlock).InsertAfter(nullptr, loSrc1.Def(), loSrc2.Def(), loCmp, loJtrue);
 
         m_block->bbJumpKind = BBJ_COND;
 
@@ -1984,19 +1972,16 @@ void Lowering::LowerCompare(GenTree* cmp)
 
         BasicBlock* newBlock2 = comp->fgSplitBlockAtEnd(newBlock);
 
-        GenTree* hiSrc1Def = comp->gtClone(hiSrc1.Def());
-        GenTree* hiSrc2Def = comp->gtClone(hiSrc2.Def());
-        GenTree* hiCmp = comp->gtNewOperNode(hiCmpOper, TYP_INT, hiSrc1Def, hiSrc2Def);
-        hiCmp->gtFlags = cmp->gtFlags;
-        GenTree* hiJcc = comp->gtNewOperNode(GT_JTRUE, TYP_VOID, hiCmp);
-        LIR::AsRange(newBlock).InsertAfter(nullptr, hiSrc1Def, hiSrc2Def, hiCmp, hiJcc);
+        GenTree* hiJcc = new (comp, GT_JCC) GenTreeJumpCC(hiCmpOper);
+        hiJcc->gtFlags = cmp->gtFlags;
+        LIR::AsRange(newBlock).InsertAfter(nullptr, hiJcc);
 
         BlockRange().Remove(loSrc1.Def());
         BlockRange().Remove(loSrc2.Def());
         GenTree* loCmp = comp->gtNewOperNode(loCmpOper, TYP_INT, loSrc1.Def(), loSrc2.Def());
         loCmp->gtFlags = cmp->gtFlags | GTF_UNSIGNED;
-        GenTree* loJcc = comp->gtNewOperNode(GT_JTRUE, TYP_VOID, loCmp);
-        LIR::AsRange(newBlock2).InsertAfter(nullptr, loSrc1.Def(), loSrc2.Def(), loCmp, loJcc);
+        GenTree* loJtrue = comp->gtNewOperNode(GT_JTRUE, TYP_VOID, loCmp);
+        LIR::AsRange(newBlock2).InsertAfter(nullptr, loSrc1.Def(), loSrc2.Def(), loCmp, loJtrue);
 
         m_block->bbJumpKind = BBJ_COND;
         m_block->bbJumpDest = nextDest;
