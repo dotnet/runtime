@@ -931,6 +931,8 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, ArrayStack<G
 #endif // FEATURE_SIMD
 
         default:
+            // JCC nodes should not be present in HIR.
+            assert(node->OperGet() != GT_JCC);
             break;
     }
 
