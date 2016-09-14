@@ -4,7 +4,7 @@ usage()
 {
     echo "Usage: $0 [BuildArch] [UbuntuCodeName]"
     echo "BuildArch can be: arm, arm-softfp, arm64"
-    echo "UbuntuCodeName - optional, Code name for Ubuntu, can be: trusty(default), vivid, wily. If BuildArch is arm-softfp, UbuntuCodeName is ignored."
+    echo "UbuntuCodeName - optional, Code name for Ubuntu, can be: trusty(default), vivid, wily, xenial. If BuildArch is arm-softfp, UbuntuCodeName is ignored."
 
     exit 1
 }
@@ -59,6 +59,11 @@ for i in "$@"
         wily)
         if [ "$__UbuntuCodeName" != "jessie" ]; then
             __UbuntuCodeName=wily
+        fi
+        ;;
+        xenial)
+        if [ "$__UbuntuCodeName" != "jessie" ]; then
+            __UbuntuCodeName=xenial
         fi
         ;;
         jessie)
