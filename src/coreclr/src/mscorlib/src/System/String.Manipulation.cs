@@ -944,19 +944,13 @@ namespace System
         }
 
         [ComVisible(false)]
-        public String[] Split(char separator) {
-            Contract.Ensures(Contract.Result<String[]>() != null);
-            return SplitInternal(separator, Int32.MaxValue, StringSplitOptions.None);
-        }
-
-        [ComVisible(false)]
-        public String[] Split(char separator, StringSplitOptions options) {
+        public String[] Split(char separator, StringSplitOptions options = StringSplitOptions.None) {
             Contract.Ensures(Contract.Result<String[]>() != null);
             return SplitInternal(separator, Int32.MaxValue, options);
         }
 
         [ComVisible(false)]
-        public String[] Split(char separator, int count, StringSplitOptions options) {
+        public String[] Split(char separator, int count, StringSplitOptions options = StringSplitOptions.None) {
             Contract.Ensures(Contract.Result<String[]>() != null);
             return SplitInternal(separator, count, options);
         }
@@ -1075,19 +1069,13 @@ namespace System
         }
 
         [ComVisible(false)]
-        public String[] Split(String separator) {
-            Contract.Ensures(Contract.Result<String[]>() != null);
-            return SplitInternal(separator ?? String.Empty, null, Int32.MaxValue, StringSplitOptions.None);
-        }
-
-        [ComVisible(false)]
-        public String[] Split(String separator, StringSplitOptions options) {
+        public String[] Split(String separator, StringSplitOptions options = StringSplitOptions.None) {
             Contract.Ensures(Contract.Result<String[]>() != null);
             return SplitInternal(separator ?? String.Empty, null, Int32.MaxValue, options);
         }
 
         [ComVisible(false)]
-        public String[] Split(String separator, Int32 count, StringSplitOptions options) {
+        public String[] Split(String separator, Int32 count, StringSplitOptions options = StringSplitOptions.None) {
             Contract.Ensures(Contract.Result<String[]>() != null);
             return SplitInternal(separator ?? String.Empty, null, count, options);
         }
