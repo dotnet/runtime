@@ -3171,6 +3171,11 @@ GenTreePtr Compiler::gtReverseCond(GenTree* tree)
             tree->gtFlags ^= GTF_RELOP_NAN_UN;
         }
     }
+    else if (tree->OperGet() == GT_JCC)
+    {
+        GenTreeJumpCC* jcc = tree->AsJumpCC();
+        jcc->gtCondition = GenTree::ReverseRelop(jcc->gtCondition);
+    }
     else
     {
         tree = gtNewOperNode(GT_NOT, TYP_INT, tree);
@@ -10763,6 +10768,10 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
             }
             break;
 
+        case GT_JCC:
+            printf(" cond=%s", GenTree::NodeName(tree->AsJumpCC()->gtCondition));
+            break;
+
         default:
             assert(!"don't know how to display tree leaf node");
     }
@@ -15381,6 +15390,7 @@ bool GenTree::isContained() const
     {
         case GT_STOREIND:
         case GT_JTRUE:
+        case GT_JCC:
         case GT_RETURN:
         case GT_RETFILT:
         case GT_STORE_LCL_FLD:

@@ -1428,6 +1428,11 @@ public:
         return (gtOper == GT_LIST) && ((gtFlags & GTF_LIST_AGGREGATE) != 0);
     }
 
+    bool OperIsConditionalJump() const
+    {
+        return (gtOper == GT_JTRUE) || (gtOper == GT_JCC);
+    }
+
     // Requires that "op" is an op= operator.  Returns
     // the corresponding "op".
     static genTreeOps OpAsgToOper(genTreeOps op);
@@ -4638,6 +4643,26 @@ struct GenTreeAllocObj final : public GenTreeUnOp
     {
     }
 #endif
+};
+
+
+struct GenTreeJumpCC final : public GenTree
+{
+    genTreeOps gtCondition; // any relop
+
+    GenTreeJumpCC(genTreeOps condition)
+        : GenTree(GT_JCC, TYP_VOID DEBUGARG(/*largeNode*/ FALSE))
+        , gtCondition(condition)
+    {
+        assert(OperIsCompare(condition));
+    }
+
+#if DEBUGGABLE_GENTREE
+    GenTreeJumpCC()
+        : GenTree()
+    {
+    }
+#endif // DEBUGGABLE_GENTREE
 };
 
 //------------------------------------------------------------------------
