@@ -1428,7 +1428,7 @@ public:
         return (gtOper == GT_LIST) && ((gtFlags & GTF_LIST_AGGREGATE) != 0);
     }
 
-    bool OperIsConditionalJump()
+    bool OperIsConditionalJump() const
     {
         return (gtOper == GT_JTRUE) || (gtOper == GT_JCC);
     }
