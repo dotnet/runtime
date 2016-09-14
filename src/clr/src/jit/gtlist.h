@@ -189,7 +189,11 @@ GTNODE(SIMD       , "simd"       ,0,GTK_BINOP|GTK_EXOP)   // SIMD functions/oper
 //  Other nodes that look like unary/binary operators:
 //-----------------------------------------------------------------------------
 
+// The following are both conditional branches. GT_JTRUE has a single operand that computes a condition. GT_JCC
+// implicitly reads the condition bits from a previous operation. The latter is allowed only in the LIR form
+// used in the RyuJIT backend.
 GTNODE(JTRUE      , "jmpTrue"    ,0,GTK_UNOP|GTK_NOVALUE)
+GTNODE(JCC        , "jcc"        ,0,GTK_LEAF|GTK_NOVALUE)
 
 GTNODE(LIST       , "<list>"     ,0,GTK_BINOP)
 
