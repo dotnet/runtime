@@ -537,7 +537,7 @@ namespace System.Tests
         {
             DateTimeOffset start = DateTimeOffset.UtcNow;
             Assert.True(
-                SpinWait.SpinUntil(() => DateTimeOffset.UtcNow > start, TimeSpan.FromSeconds(2)),
+                SpinWait.SpinUntil(() => DateTimeOffset.UtcNow > start, TimeSpan.FromSeconds(30)),
                 "Expected UtcNow to changes");
         }
 
