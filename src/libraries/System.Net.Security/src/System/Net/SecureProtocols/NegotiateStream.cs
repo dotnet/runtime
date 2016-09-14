@@ -48,28 +48,28 @@ namespace System.Net.Security
 #endif
         }
 
-        private IAsyncResult BeginAuthenticateAsClient(AsyncCallback asyncCallback, object asyncState)
+        public IAsyncResult BeginAuthenticateAsClient(AsyncCallback asyncCallback, object asyncState)
         {
             return BeginAuthenticateAsClient((NetworkCredential)CredentialCache.DefaultCredentials, null, string.Empty,
                                            ProtectionLevel.EncryptAndSign, TokenImpersonationLevel.Identification,
                                            asyncCallback, asyncState);
         }
 
-        private IAsyncResult BeginAuthenticateAsClient(NetworkCredential credential, string targetName, AsyncCallback asyncCallback, object asyncState)
+        public IAsyncResult BeginAuthenticateAsClient(NetworkCredential credential, string targetName, AsyncCallback asyncCallback, object asyncState)
         {
             return BeginAuthenticateAsClient(credential, null, targetName,
                                            ProtectionLevel.EncryptAndSign, TokenImpersonationLevel.Identification,
                                            asyncCallback, asyncState);
         }
 
-        private IAsyncResult BeginAuthenticateAsClient(NetworkCredential credential, ChannelBinding binding, string targetName, AsyncCallback asyncCallback, object asyncState)
+        public IAsyncResult BeginAuthenticateAsClient(NetworkCredential credential, ChannelBinding binding, string targetName, AsyncCallback asyncCallback, object asyncState)
         {
             return BeginAuthenticateAsClient(credential, binding, targetName,
                                              ProtectionLevel.EncryptAndSign, TokenImpersonationLevel.Identification,
                                              asyncCallback, asyncState);
         }
 
-        private IAsyncResult BeginAuthenticateAsClient(
+        public IAsyncResult BeginAuthenticateAsClient(
             NetworkCredential credential,
             string targetName,
             ProtectionLevel requiredProtectionLevel,
@@ -82,7 +82,7 @@ namespace System.Net.Security
                                              asyncCallback, asyncState);
         }
 
-        private IAsyncResult BeginAuthenticateAsClient(
+        public IAsyncResult BeginAuthenticateAsClient(
             NetworkCredential credential,
             ChannelBinding binding,
             string targetName,
@@ -106,7 +106,7 @@ namespace System.Net.Security
 #endif
         }
 
-        private void EndAuthenticateAsClient(IAsyncResult asyncResult)
+        public void EndAuthenticateAsClient(IAsyncResult asyncResult)
         {
 #if DEBUG
             using (GlobalLog.SetThreadKind(ThreadKinds.User))
@@ -118,17 +118,17 @@ namespace System.Net.Security
 #endif
         }
 
-        private IAsyncResult BeginAuthenticateAsServer(AsyncCallback asyncCallback, object asyncState)
+        public IAsyncResult BeginAuthenticateAsServer(AsyncCallback asyncCallback, object asyncState)
         {
             return BeginAuthenticateAsServer((NetworkCredential)CredentialCache.DefaultCredentials, null, ProtectionLevel.EncryptAndSign, TokenImpersonationLevel.Identification, asyncCallback, asyncState);
         }
 
-        private IAsyncResult BeginAuthenticateAsServer(ExtendedProtectionPolicy policy, AsyncCallback asyncCallback, object asyncState)
+        public IAsyncResult BeginAuthenticateAsServer(ExtendedProtectionPolicy policy, AsyncCallback asyncCallback, object asyncState)
         {
             return BeginAuthenticateAsServer((NetworkCredential)CredentialCache.DefaultCredentials, policy, ProtectionLevel.EncryptAndSign, TokenImpersonationLevel.Identification, asyncCallback, asyncState);
         }
 
-        private IAsyncResult BeginAuthenticateAsServer(
+        public IAsyncResult BeginAuthenticateAsServer(
             NetworkCredential credential,
             ProtectionLevel requiredProtectionLevel,
             TokenImpersonationLevel requiredImpersonationLevel,
@@ -138,7 +138,7 @@ namespace System.Net.Security
             return BeginAuthenticateAsServer(credential, null, requiredProtectionLevel, requiredImpersonationLevel, asyncCallback, asyncState);
         }
 
-        private IAsyncResult BeginAuthenticateAsServer(
+        public IAsyncResult BeginAuthenticateAsServer(
             NetworkCredential credential,
             ExtendedProtectionPolicy policy,
             ProtectionLevel requiredProtectionLevel,
@@ -161,13 +161,48 @@ namespace System.Net.Security
 #endif
         }
         //
-        private void EndAuthenticateAsServer(IAsyncResult asyncResult)
+        public void EndAuthenticateAsServer(IAsyncResult asyncResult)
         {
 #if DEBUG
             using (GlobalLog.SetThreadKind(ThreadKinds.User))
             {
 #endif
                 _negoState.EndProcessAuthentication(asyncResult);
+#if DEBUG
+            }
+#endif
+        }
+
+        public virtual void AuthenticateAsClient()
+        {
+            AuthenticateAsClient((NetworkCredential)CredentialCache.DefaultCredentials, null, string.Empty, ProtectionLevel.EncryptAndSign, TokenImpersonationLevel.Identification);
+        }
+
+        public virtual void AuthenticateAsClient(NetworkCredential credential, string targetName)
+        {
+            AuthenticateAsClient(credential, null, targetName, ProtectionLevel.EncryptAndSign, TokenImpersonationLevel.Identification);
+        }
+
+        public virtual void AuthenticateAsClient(NetworkCredential credential, ChannelBinding binding, string targetName)
+        {
+            AuthenticateAsClient(credential, binding, targetName, ProtectionLevel.EncryptAndSign, TokenImpersonationLevel.Identification);
+        }
+
+        public virtual void AuthenticateAsClient(
+            NetworkCredential credential, string targetName, ProtectionLevel requiredProtectionLevel, TokenImpersonationLevel allowedImpersonationLevel)
+        {
+            AuthenticateAsClient(credential, null, targetName, requiredProtectionLevel, allowedImpersonationLevel);
+        }
+        
+        public virtual void AuthenticateAsClient(
+            NetworkCredential credential, ChannelBinding binding, string targetName, ProtectionLevel requiredProtectionLevel, TokenImpersonationLevel allowedImpersonationLevel)
+        {
+#if DEBUG
+            using (GlobalLog.SetThreadKind(ThreadKinds.User | ThreadKinds.Sync))
+            {
+#endif
+                _negoState.ValidateCreateContext(_package, false, credential, targetName, binding, requiredProtectionLevel, allowedImpersonationLevel);
+                _negoState.ProcessAuthentication(null);
 #if DEBUG
             }
 #endif
