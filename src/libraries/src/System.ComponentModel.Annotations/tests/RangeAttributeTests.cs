@@ -17,6 +17,7 @@ namespace System.ComponentModel.DataAnnotations.Tests
             yield return new TestCase(intRange, 1);
             yield return new TestCase(intRange, 2);
             yield return new TestCase(intRange, 3);
+            yield return new TestCase(new RangeAttribute(1, 1), 1);
 
             RangeAttribute doubleRange = new RangeAttribute(1.0, 3.0);
             yield return new TestCase(doubleRange, null);
@@ -24,6 +25,7 @@ namespace System.ComponentModel.DataAnnotations.Tests
             yield return new TestCase(doubleRange, 1.0);
             yield return new TestCase(doubleRange, 2.0);
             yield return new TestCase(doubleRange, 3.0);
+            yield return new TestCase(new RangeAttribute(1.0, 1.0), 1);
 
             RangeAttribute stringIntRange = new RangeAttribute(typeof(int), "1", "3");
             yield return new TestCase(stringIntRange, null);
@@ -51,22 +53,38 @@ namespace System.ComponentModel.DataAnnotations.Tests
             RangeAttribute intRange = new RangeAttribute(1, 3);
             yield return new TestCase(intRange, 0);
             yield return new TestCase(intRange, 4);
+            yield return new TestCase(intRange, "abc");
+            yield return new TestCase(intRange, new object());
+            // Implements IConvertible (throws NotSupportedException - is caught)
+            yield return new TestCase(intRange, new IConvertibleImplementor() { IntThrow = new NotSupportedException() });
 
             RangeAttribute doubleRange = new RangeAttribute(1.0, 3.0);
             yield return new TestCase(doubleRange, 0.9999999);
             yield return new TestCase(doubleRange, 3.0000001);
+            yield return new TestCase(doubleRange, "abc");
+            yield return new TestCase(doubleRange, new object());
+            // Implements IConvertible (throws NotSupportedException - is caught)
+            yield return new TestCase(doubleRange, new IConvertibleImplementor() { DoubleThrow = new NotSupportedException() });
 
             RangeAttribute stringIntRange = new RangeAttribute(typeof(int), "1", "3");
             yield return new TestCase(stringIntRange, 0);
             yield return new TestCase(stringIntRange, "0");
             yield return new TestCase(stringIntRange, 4);
             yield return new TestCase(stringIntRange, "4");
+            yield return new TestCase(stringIntRange, "abc");
+            yield return new TestCase(stringIntRange, new object());
+            // Implements IConvertible (throws NotSupportedException - is caught)
+            yield return new TestCase(stringIntRange, new IConvertibleImplementor() { IntThrow = new NotSupportedException() });
 
             RangeAttribute stringDoubleRange = new RangeAttribute(typeof(double), (1.0).ToString("F1"), (3.0).ToString("F1"));
             yield return new TestCase(stringDoubleRange, 0.9999999);
             yield return new TestCase(stringDoubleRange, (0.9999999).ToString());
             yield return new TestCase(stringDoubleRange, 3.0000001);
             yield return new TestCase(stringDoubleRange, (3.0000001).ToString());
+            yield return new TestCase(stringDoubleRange, "abc");
+            yield return new TestCase(stringDoubleRange, new object());
+            // Implements IConvertible (throws NotSupportedException - is caught)
+            yield return new TestCase(stringDoubleRange, new IConvertibleImplementor() { DoubleThrow = new NotSupportedException() });
         }
 
         [Fact]
@@ -127,6 +145,15 @@ namespace System.ComponentModel.DataAnnotations.Tests
         }
 
         [Theory]
+        [InlineData(null, "3")]
+        [InlineData("3", null)]
+        public static void Validate_MinimumOrMaximumNull_ThrowsInvalidOperationException(string minimum, string maximum)
+        {
+            RangeAttribute attribute = new RangeAttribute(typeof(int), minimum, maximum);
+            Assert.Throws<InvalidOperationException>(() => attribute.Validate("Any", new ValidationContext(new object())));
+        }
+
+        [Theory]
         [InlineData(typeof(DateTime), "Cannot Convert", "2014-03-19")]
         [InlineData(typeof(DateTime), "2014-03-19", "Cannot Convert")]
         [InlineData(typeof(int), "Cannot Convert", "3")]
@@ -137,6 +164,24 @@ namespace System.ComponentModel.DataAnnotations.Tests
         {
             RangeAttribute attribute = new RangeAttribute(type, minimum, maximum);
             Assert.Throws<FormatException>(() => attribute.Validate("Any", new ValidationContext(new object())));
+        }
+
+        [Theory]
+        [InlineData(typeof(int), "1", "2", "2147483648")]
+        [InlineData(typeof(int), "1", "2", "-2147483649")]
+        [InlineData(typeof(double), "1.0", "2.0", "2E+308")]
+        [InlineData(typeof(double), "1.0", "2.0", "-2E+308")]
+        public static void Validate_ConversionOverflows_ThrowsOverflowException(Type type, string minimum, string maximum, object value)
+        {
+            RangeAttribute attribute = new RangeAttribute(type, minimum, maximum);
+            Assert.Throws<OverflowException>(() => attribute.Validate(value, new ValidationContext(new object())));
+        }
+
+        [Fact]
+        public static void Validate_IConvertibleThrowsCustomException_IsNotCaught()
+        {
+            RangeAttribute attribute = new RangeAttribute(typeof(int), "1", "1");
+            Assert.Throws<ArithmeticException>(() => attribute.Validate(new IConvertibleImplementor() { IntThrow = new ArithmeticException() }, new ValidationContext(new object())));
         }
     }
 }

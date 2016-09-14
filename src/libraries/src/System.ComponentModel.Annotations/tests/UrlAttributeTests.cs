@@ -21,6 +21,7 @@ namespace System.ComponentModel.DataAnnotations.Tests
         {
             yield return new TestCase(new UrlAttribute(), "file:///foo.bar");
             yield return new TestCase(new UrlAttribute(), "foo.png");
+            yield return new TestCase(new UrlAttribute(), new object());
         }
 
         [Fact]

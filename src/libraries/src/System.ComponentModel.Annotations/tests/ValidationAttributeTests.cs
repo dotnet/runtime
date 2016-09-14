@@ -286,6 +286,13 @@ namespace System.ComponentModel.DataAnnotations.Tests
             Assert.Throws<ArgumentNullException>(() => attribute.GetValidationResult("Does not matter", validationContext: null));
         }
 
+        [Fact]
+        public static void Validate_NullValidationContext_ThrowsArgumentNullException()
+        {
+            ValidationAttributeOverrideBothIsValids attribute = new ValidationAttributeOverrideBothIsValids();
+            Assert.Throws<ArgumentNullException>("validationContext", () => attribute.Validate("Any", validationContext: null));
+        }
+
         // GetValidationResult_successful_if_One_Arg_IsValid_validates_successfully
         [Fact]
         public static void TestOneArgsIsValidValidatesSuccessfully()
@@ -326,6 +333,22 @@ namespace System.ComponentModel.DataAnnotations.Tests
             var validationResult = attribute.GetValidationResult(toBeTested, validationContext);
             Assert.NotNull(validationResult); // validationResult == null would be success
                                               // cannot check error message - not defined on ret builds
+        }
+
+        [Fact]
+        public void GetValidationResult_NullErrorMessage_ProvidesErrorMessage()
+        {
+            ValidationAttributeAlwaysInvalidNullErrorMessage attribute = new ValidationAttributeAlwaysInvalidNullErrorMessage();
+            ValidationResult validationResult = attribute.GetValidationResult("abc", new ValidationContext(new object()));
+            Assert.NotEmpty(validationResult.ErrorMessage);
+        }
+
+        [Fact]
+        public void GetValidationResult_EmptyErrorMessage_ProvidesErrorMessage()
+        {
+            ValidationAttributeAlwaysInvalidEmptyErrorMessage attribute = new ValidationAttributeAlwaysInvalidEmptyErrorMessage();
+            ValidationResult validationResult = attribute.GetValidationResult("abc", new ValidationContext(new object()));
+            Assert.NotEmpty(validationResult.ErrorMessage);
         }
 
         public class ValidationAttributeNoOverrides : ValidationAttribute
@@ -379,6 +402,16 @@ namespace System.ComponentModel.DataAnnotations.Tests
             }
         }
 
+        public class ValidationAttributeAlwaysInvalidNullErrorMessage : ValidationAttribute
+        {
+            protected override ValidationResult IsValid(object value, ValidationContext validationContext) => new ValidationResult(null);
+        }
+
+        public class ValidationAttributeAlwaysInvalidEmptyErrorMessage : ValidationAttribute
+        {
+            protected override ValidationResult IsValid(object value, ValidationContext validationContext) => new ValidationResult(string.Empty);
+        }
+
         public class ToBeTested
         {
             public string PropertyToBeTested
@@ -388,11 +421,16 @@ namespace System.ComponentModel.DataAnnotations.Tests
         }
     }
 
-    internal static class ErrorMessageResources
+    internal class ErrorMessageResources
     {
         internal static string InternalErrorMessageTestProperty
         {
             get { return "Error Message from ErrorMessageResources.InternalErrorMessageTestProperty"; }
         }
+
+        internal string InstanceProperty => "";
+        private static string PrivateProperty => "";
+        internal string SetOnlyProperty { set { } }
+        internal static bool BoolProperty => false;
     }
 }
