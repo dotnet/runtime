@@ -10,6 +10,18 @@ namespace System.Linq.Expressions.Tests
 {
     public static class CallTests
     {
+        private interface IBar
+        {
+            int Bar();
+        }
+
+        private struct S : IBar
+        {
+            public int X;
+
+            public int Bar() => X;
+        }
+
         private struct Mutable
         {
             private int x;
@@ -223,6 +235,17 @@ namespace System.Linq.Expressions.Tests
 
             var m = new Mutable() { X = 41 };
             Assert.Equal(42, lambda(m));
+        }
+
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void CallInterface(bool useInterpreter)
+        {
+            var p = Expression.Parameter(typeof(S));
+            var body = Expression.Call(p, typeof(IBar).GetMethod("Bar"));
+            var lambda = Expression.Lambda<Func<S, int>>(body, p).Compile(useInterpreter);
+
+            Assert.Equal(42, lambda(new S() { X = 42 }));
         }
 
         private static Expression s_valid => Expression.Constant(5);
