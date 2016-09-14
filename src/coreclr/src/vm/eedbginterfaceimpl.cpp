@@ -501,9 +501,9 @@ BOOL EEDbgInterfaceImpl::IsInPrologOrEpilog(const BYTE *address,
 
     if (codeInfo.IsValid())
     {
-        LPVOID methodInfo = codeInfo.GetGCInfo();
+        GCInfoToken gcInfoToken = codeInfo.GetGCInfoToken();
 
-        if (codeInfo.GetCodeManager()->IsInPrologOrEpilog(codeInfo.GetRelOffset(), methodInfo, prologSize))
+        if (codeInfo.GetCodeManager()->IsInPrologOrEpilog(codeInfo.GetRelOffset(), gcInfoToken, prologSize))
         {
             return TRUE;
         }
