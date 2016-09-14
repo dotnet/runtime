@@ -948,7 +948,9 @@ namespace System.Tests
 
             // Advanced: convert SZArray to an array with non-zero lower bound
             const int LowerBound = 5;
-            Copy(NonZeroLowerBoundArray(sourceArray, LowerBound), sourceIndex + LowerBound, NonZeroLowerBoundArray(destinationArray, LowerBound), destinationIndex + LowerBound, length, NonZeroLowerBoundArray(expected, LowerBound));
+            Array nonZeroSourceArray = NonZeroLowerBoundArray(sourceArray, LowerBound);
+            Array nonZeroDestinationArray = sourceArray == destinationArray ? nonZeroSourceArray : NonZeroLowerBoundArray(destinationArray, LowerBound);
+            Copy(nonZeroSourceArray, sourceIndex + LowerBound, nonZeroDestinationArray, destinationIndex + LowerBound, length, NonZeroLowerBoundArray(expected, LowerBound));
 
             if (sourceIndex == 0 && length == sourceArray.Length)
             {
