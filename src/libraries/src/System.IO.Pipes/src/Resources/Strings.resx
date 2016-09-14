@@ -279,4 +279,7 @@
   <data name="PlatformNotSupproted_InvalidNameChars" xml:space="preserve">
     <value>The name of a pipe on this platform must only include characters valid in file names.</value>
   </data>
+  <data name="ObjectDisposed_StreamClosed" xml:space="preserve">
+    <value>Cannot access a closed Stream.</value>
+  </data>
 </root>
