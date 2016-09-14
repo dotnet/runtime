@@ -2978,17 +2978,15 @@ counters_sample (MonoProfiler *profiler, uint64_t timestamp)
 		counter = agent->counter;
 
 		size = mono_counter_get_size (counter);
-		if (size < 0) {
-			continue; // FIXME error
-		} else if (size > buffer_size) {
+
+		if (size > buffer_size) {
 			buffer_size = size;
 			buffer = g_realloc (buffer, buffer_size);
 		}
 
 		memset (buffer, 0, buffer_size);
 
-		if (mono_counters_sample (counter, buffer, size) < 0)
-			continue; // FIXME error
+		g_assert (mono_counters_sample (counter, buffer, size));
 
 		type = mono_counter_get_type (counter);
 
