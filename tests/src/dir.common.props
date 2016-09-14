@@ -58,11 +58,6 @@
     <TestRuntimeProjectLockJson>$(TestRuntimeProjectJsonDir)\project.lock.json</TestRuntimeProjectLockJson>
   </PropertyGroup>
 
-  <!-- Default priority building values. -->
-  <PropertyGroup>
-    <CLRTestKind Condition="'$(CLRTestKind)' == ' '">BuildAndRun</CLRTestKind>
-    <CLRTestPriority Condition="'$(CLRTestPriority)' == ''">0</CLRTestPriority>
-  </PropertyGroup>
 
 </Project>
 
