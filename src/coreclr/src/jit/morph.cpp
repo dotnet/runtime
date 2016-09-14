@@ -14248,10 +14248,10 @@ GenTreePtr Compiler::fgRecognizeAndMorphBitwiseRotation(GenTreePtr tree)
 #ifndef _TARGET_64BIT_
                             if (!shiftIndexWithoutAdd->IsCnsIntOrI() && (rotatedValueBitSize == 64))
                             {
-                                // TODO: we need to handle variable-sized long shifts specially on x86.
+                                // TODO-X86-CQ: we need to handle variable-sized long shifts specially on x86.
                                 // GT_LSH, GT_RSH, and GT_RSZ have helpers for this case. We may need
                                 // to add helpers for GT_ROL and GT_ROR.
-                                NYI("Rotation of a long value by variable amount");
+                                return tree;
                             }
 #endif
 
