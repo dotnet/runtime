@@ -60,12 +60,13 @@ const char *        CalleeSavedRegName(unsigned reg)
 
 /*****************************************************************************/
 
-unsigned            GCDump::DumpInfoHdr (PTR_CBYTE      table,
+unsigned            GCDump::DumpInfoHdr (PTR_CBYTE      gcInfoBlock,
                                          InfoHdr*       header,
                                          unsigned *     methodSize,
                                          bool           verifyGCTables)
 {
     unsigned        count;
+    PTR_CBYTE       table       = gcInfoBlock;
     PTR_CBYTE       tableStart  = table;
     PTR_CBYTE       bp          = table;
 
@@ -76,7 +77,7 @@ unsigned            GCDump::DumpInfoHdr (PTR_CBYTE      table,
 
     table += decodeUnsigned(table, methodSize);
 
-    table = decodeHeader(table, header);
+    table = decodeHeader(table, gcInfoVersion, header);
 
     BOOL hasArgTabOffset = FALSE;
     if (header->untrackedCnt == HAS_UNTRACKED)
@@ -105,6 +106,12 @@ unsigned            GCDump::DumpInfoHdr (PTR_CBYTE      table,
         header->syncStartOffset = count;
         table += decodeUnsigned(table, &count);
         header->syncEndOffset = count;
+    }
+
+    if (header->revPInvokeOffset == HAS_REV_PINVOKE_FRAME_OFFSET)
+    {
+        table += decodeUnsigned(table, &count);
+        header->revPInvokeOffset = count;
     }
 
     //
@@ -931,12 +938,12 @@ DONE_REGTAB:
 
 /*****************************************************************************/
 
-void                GCDump::DumpPtrsInFrame(PTR_CBYTE   infoBlock,
+void                GCDump::DumpPtrsInFrame(PTR_CBYTE   gcInfoBlock,
                                             PTR_CBYTE   codeBlock,
                                             unsigned    offs,
                                             bool        verifyGCTables)
 {
-    PTR_CBYTE       table = infoBlock;
+    PTR_CBYTE       table = gcInfoBlock;
 
     size_t          methodSize;
     size_t          stackSize;
@@ -963,7 +970,7 @@ void                GCDump::DumpPtrsInFrame(PTR_CBYTE   infoBlock,
     // Typically only uses one-byte to store everything.
     //
     InfoHdr header;
-    table = decodeHeader(table, &header);
+    table = decodeHeader(table, gcInfoVersion, &header);
     
     if (header.untrackedCnt == HAS_UNTRACKED)
     {
@@ -993,6 +1000,13 @@ void                GCDump::DumpPtrsInFrame(PTR_CBYTE   infoBlock,
         table += decodeUnsigned(table, &offset);
         header.syncEndOffset = offset;
         _ASSERTE(offset != INVALID_SYNC_OFFSET);
+    }
+    if (header.revPInvokeOffset == HAS_REV_PINVOKE_FRAME_OFFSET)
+    {
+        unsigned offset;
+        table += decodeUnsigned(table, &offset);
+        header.revPInvokeOffset = offset;
+        _ASSERTE(offset != INVALID_REV_PINVOKE_OFFSET);
     }
 
     prologSize = header.prologSize;

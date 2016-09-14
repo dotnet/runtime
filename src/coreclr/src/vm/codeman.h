@@ -1801,7 +1801,7 @@ public:
     ULONG       GetFixedStackSize()
     {
         WRAPPER_NO_CONTRACT;
-        return GetCodeManager()->GetFrameSize(GetGCInfo());
+        return GetCodeManager()->GetFrameSize(GetGCInfoToken());
     }
 #endif // WIN64EXCEPTIONS
 

@@ -125,7 +125,7 @@ inline bool SafeToReportGenericParamContext(CrawlFrame* pCF)
 #ifndef USE_GC_INFO_DECODER
 
     ICodeManager * pEECM = pCF->GetCodeManager();
-    if (pEECM != NULL && pEECM->IsInPrologOrEpilog(pCF->GetRelOffset(), pCF->GetGCInfo(), NULL))
+    if (pEECM != NULL && pEECM->IsInPrologOrEpilog(pCF->GetRelOffset(), pCF->GetGCInfoToken(), NULL))
     {
         return false;
     }
