@@ -1,46 +1,66 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
-    <Configuration Condition="'$(Configuration)'=='' AND '$(TargetGroup)' == ''">Windows_Debug</Configuration>
+    <Configuration Condition="'$(Configuration)'=='' AND ('$(TargetGroup)' == '' Or '$(TargetGroup)' == 'netstandard1.5')">Windows_Debug</Configuration>
   </PropertyGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <ProjectGuid>{845D2B72-D8A4-42E5-9BE9-17639EC4FC1A}</ProjectGuid>
     <AssemblyName>System.Runtime.Extensions</AssemblyName>
+    <AssemblyVersion Condition="'$(TargetGroup)'=='netstandard1.5' Or '$(TargetGroup)'=='net462' Or '$(TargetGroup)'=='netcore50' Or '$(TargetGroup)'=='netcore50aot' Or '$(TargetGroup)'=='netstandard15aot'">4.1.1.0</AssemblyVersion>
+    <ContractProject Condition="'$(AssemblyVersion)'=='4.1.1.0'">../ref/4.1.0/System.Runtime.Extensions.depproj</ContractProject>
     <OutputType>Library</OutputType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <!-- System.IO.Path conflicts between type in partial facade and in mscorlib -->
     <NoWarn>0436</NoWarn>
-    <NuGetTargetMoniker Condition="'$(NuGetTargetMoniker)' == ''">.NETStandard,Version=v1.5</NuGetTargetMoniker>
-    <CoreClrOrCorRt Condition="'$(TargetGroup)' == '' Or '$(TargetGroup)' == 'netstandard15aot'">true</CoreClrOrCorRt>
+    <NuGetTargetMoniker Condition="'$(NuGetTargetMoniker)' == ''">.NETStandard,Version=v1.7</NuGetTargetMoniker>
+    <CoreClrOrCorRt Condition="'$(TargetGroup)' == '' Or '$(TargetGroup)' == 'netstandard1.5' Or '$(TargetGroup)' == 'netstandard15aot'">true</CoreClrOrCorRt>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_netstandard1.5_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_netstandard1.5_Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_netstandard1.5_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_netstandard1.5_Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net462_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net462_Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_netcore50aot_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_netcore50aot_Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_netstandard15aot_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_netstandard15aot_Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_netstandard15aot_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_netstandard15aot_Release|AnyCPU'" />
+  <ItemGroup Condition="'$(TargetGroup)'=='netstandard1.5'">
+    <AdditionalFiles Include="$(ToolsDir)PinvokeAnalyzer_OneCoreApis.txt" />
+  </ItemGroup>
   <PropertyGroup Condition="'$(TargetGroup)' == 'netcore50aot' Or '$(TargetGroup)' == 'netstandard15aot'">
     <SkipCommonResourcesIncludes>true</SkipCommonResourcesIncludes>
     <ExcludeAssemblyInfoPartialFile>true</ExcludeAssemblyInfoPartialFile>
   </PropertyGroup>
   <!-- Shared CoreCLR and .NET Native -->
-  <ItemGroup Condition="'$(TargetGroup)' != 'net462'">
+  <ItemGroup Condition="'$(TargetGroup)' != 'net462' And '$(TargetGroup)' != 'net463'">
     <Compile Include="System\BitConverter.cs" />
     <Compile Include="System\Diagnostics\Stopwatch.cs" />
+    <Compile Include="System\Environment.cs" />
+    <Compile Include="System\Environment.SpecialFolder.cs" />
+    <Compile Include="System\Environment.SpecialFolderOption.cs" />
+    <Compile Include="System\EnvironmentVariableTarget.cs" />
+    <Compile Include="System\OperatingSystem.cs" />
+    <Compile Include="System\PlatformID.cs" />
     <Compile Include="System\IO\Path.cs" />
     <Compile Include="System\Net\WebUtility.cs" />
     <Compile Include="System\Runtime\Versioning\FrameworkName.cs" />
     <Compile Include="$(CommonPath)\System\Collections\Generic\LowLevelDictionary.cs">
       <Link>Common\System\Collections\Generic\LowLevelDictionary.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Collections\Generic\LowLevelDictionary.IDictionary.cs">
+      <Link>Common\System\Collections\Generic\LowLevelDictionary.IDictionary.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\IO\StringBuilderCache.cs">
       <Link>Common\System\IO\StringBuilderCache.cs</Link>
@@ -62,10 +82,14 @@
     </Compile>
   </ItemGroup>
   <!-- WINDOWS: Shared CoreCLR and .NET Native -->
-  <ItemGroup Condition=" '$(TargetsWindows)' == 'true' And '$(TargetGroup)' != 'net462'">
+  <ItemGroup Condition=" '$(TargetsWindows)' == 'true' And '$(TargetGroup)' != 'net462' And '$(TargetGroup)' != 'net463'">
+    <Compile Include="System\Environment.Windows.cs" />
     <Compile Include="System\Diagnostics\Stopwatch.Windows.cs" />
     <Compile Include="System\IO\Path.Windows.cs" />
     <Compile Include="System\IO\PathHelper.Windows.cs" />
+    <Compile Include="$(CommonPath)\System\IO\DriveInfoInternal.Win32.cs">
+      <Link>Common\System\IO\DriveInfoInternal.Win32.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\System\IO\Win32Marshal.cs">
       <Link>Common\System\IO\Win32Marshal.cs</Link>
     </Compile>
@@ -78,8 +102,23 @@
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.FormatMessage.cs">
       <Link>Common\Interop\Windows\mincore\Interop.FormatMessage.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetCurrentDirectory.cs">
+      <Link>Common\Interop\Windows\mincore\Interop.GetCurrentDirectory.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetFullPathNameW.cs">
       <Link>Common\Interop\Windows\mincore\Interop.GetFullPathNameW.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetLogicalDrive.cs">
+      <Link>Common\Interop\Windows\Interop.GetLogicalDrive.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetLongPathName.cs">
+      <Link>Common\Interop\Windows\mincore\Interop.GetLongPathName.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetLongPathNameW.cs">
+      <Link>Common\Interop\Windows\mincore\Interop.GetLongPathNameW.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetSystemInfo.cs">
+      <Link>Common\Interop\Windows\mincore\Interop.GetSystemInfo.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetTempFileNameW.cs">
       <Link>Common\Interop\Windows\mincore\Interop.GetTempFileNameW.cs</Link>
@@ -87,14 +126,23 @@
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetTempPathW.cs">
       <Link>Common\Interop\Windows\mincore\Interop.GetTempPathW.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetLongPathNameW.cs">
-      <Link>Common\Interop\Windows\mincore\Interop.GetLongPathNameW.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetVersionExW.cs">
+      <Link>Common\Interop\Windows\mincore\Interop.GetVersionExW.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.MaxLengths.cs">
+      <Link>Common\Interop\Windows\mincore\Interop.MaxLengths.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.QueryPerformanceCounter.cs">
       <Link>Common\Interop\Windows\mincore\Interop.QueryPerformanceCounter.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.QueryPerformanceFrequency.cs">
       <Link>Common\Interop\Windows\mincore\Interop.QueryPerformanceFrequency.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.SetCurrentDirectory.cs">
+      <Link>Common\Interop\Windows\mincore\Interop.SetCurrentDirectory.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.SYSTEM_INFO.cs">
+      <Link>Common\Interop\Windows\mincore\Interop.SYSTEM_INFO.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\IO\PathInternal.Windows.cs">
       <Link>Common\System\IO\PathInternal.Windows.cs</Link>
@@ -105,6 +153,7 @@
   </ItemGroup>
   <!-- WINDOWS: CoreCLR -->
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true' And '$(CoreClrOrCorRt)' == 'true'">
+    <Compile Include="System\Environment.Win32.cs" />
     <Compile Include="System\IO\Path.Win32.cs" />
     <Compile Include="$(CommonPath)\Interop\Windows\BCrypt\Interop.BCryptGenRandom.cs">
       <Link>Common\Interop\Windows\BCrypt\Interop.BCryptGenRandom.cs</Link>
@@ -112,9 +161,117 @@
     <Compile Include="$(CommonPath)\Interop\Windows\BCrypt\Interop.NTSTATUS.cs">
       <Link>Common\Interop\Windows\BCrypt\Interop.NTSTATUS.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.EnvironmentVariables.cs">
+      <Link>Common\Interop\Windows\mincore\Interop.EnvironmentVariables.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetComputerName.cs">
+      <Link>Common\Interop\Windows\mincore\Interop.GetComputerNameW.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetCurrentProcess_IntPtr.cs">
+      <Link>Common\Interop\Windows\mincore\Interop.GetCurrentProcess_IntPtr.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetLogicalProcessorInformationEx.cs">
+      <Link>Common\Interop\Windows\mincore\Interop.GetLogicalProcessorInformationEx.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetSystemDirectoryW.cs">
+      <Link>Common\Interop\Windows\mincore\Interop.GetSystemDirectoryW.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetUserNameExW.cs">
+      <Link>Common\Interop\Windows\mincore\Interop.GetUserNameExW.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.IsWow64Process_IntPtr.cs">
+      <Link>Common\Interop\Windows\mincore\Interop.IsWow64Process_IntPtr.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.LookupAccountNameW.cs">
+      <Link>Common\Interop\Windows\mincore\Interop.LookupAccountNameW.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup Condition=" '$(TargetsWindows)' == 'true' And '$(CoreClrOrCorRt)' == 'true'"> <!-- Microsoft.Win32.Registry, needed for some Environment env var support -->
+    <Compile Include="..\..\Microsoft.Win32.Registry\src\Microsoft\Win32\Registry.cs">
+      <Link>Microsoft.Win32.Registry\src\Microsoft\Win32\Registry.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Microsoft.Win32.Registry\src\Microsoft\Win32\RegistryKey.cs">
+      <Link>Microsoft.Win32.Registry\src\Microsoft\Win32\RegistryKey.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Microsoft.Win32.Registry\src\Microsoft\Win32\RegistryHive.cs">
+      <Link>Microsoft.Win32.Registry\src\Microsoft\Win32\RegistryHive.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Microsoft.Win32.Registry\src\Microsoft\Win32\RegistryOptions.cs">
+      <Link>Microsoft.Win32.Registry\src\Microsoft\Win32\RegistryOptions.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Microsoft.Win32.Registry\src\Microsoft\Win32\RegistryValueKind.cs">
+      <Link>Microsoft.Win32.Registry\src\Microsoft\Win32\RegistryValueKind.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Microsoft.Win32.Registry\src\Microsoft\Win32\RegistryValueOptions.cs">
+      <Link>Microsoft.Win32.Registry\src\Microsoft\Win32\RegistryValueOptions.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Microsoft.Win32.Registry\src\Microsoft\Win32\RegistryView.cs">
+      <Link>Microsoft.Win32.Registry\src\Microsoft\Win32\RegistryView.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Microsoft.Win32.Registry\src\Microsoft\Win32\RegistryKey.Windows.cs">
+      <Link>Microsoft.Win32.Registry\src\Microsoft\Win32\Registry.Windows.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Microsoft.Win32.Registry\src\Microsoft\Win32\SafeHandles\SafeRegistryHandle.cs">
+      <Link>Microsoft.Win32.Registry\src\Microsoft\Win32\SafeHandles\SafeRegistryHandle.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Microsoft.Win32.Registry\src\Microsoft\Win32\SafeHandles\SafeRegistryHandle.Windows.cs">
+      <Link>Microsoft.Win32.Registry\src\Microsoft\Win32\SafeHandles\SafeRegistryHandle.Windows.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Microsoft.Win32.Registry\src\Microsoft\Win32\ThrowHelper.cs">
+      <Link>Microsoft.Win32.Registry\src\Microsoft\Win32\ThrowHelper.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Microsoft.Win32.Registry\src\System\Security\AccessControl\RegistryRights.cs">
+      <Link>Microsoft.Win32.Registry\src\Microsoft\Win32\RegistryRights.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.RegCloseKey.cs">
+      <Link>Common\Interop\Windows\mincore\Interop.RegCloseKey.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.RegConnectRegistry.cs">
+      <Link>Common\Interop\Windows\mincore\Interop.RegConnectRegistry.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.RegCreateKeyEx.cs">
+      <Link>Common\Interop\Windows\mincore\Interop.RegCreateKeyEx.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.RegDeleteKeyEx.cs">
+      <Link>Common\Interop\Windows\mincore\Interop.RegDeleteKeyEx.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.RegDeleteValue.cs">
+      <Link>Common\Interop\Windows\mincore\Interop.RegDeleteValue.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.RegEnumKeyEx.cs">
+      <Link>Common\Interop\Windows\mincore\Interop.RegEnumKeyEx.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.RegEnumValue.cs">
+      <Link>Common\Interop\Windows\mincore\Interop.RegEnumValue.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.RegFlushKey.cs">
+      <Link>Common\Interop\Windows\mincore\Interop.RegFlushKey.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.RegOpenKeyEx.cs">
+      <Link>Common\Interop\Windows\mincore\Interop.RegOpenKeyEx.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.RegQueryInfoKey.cs">
+      <Link>Common\Interop\Windows\mincore\Interop.RegQueryInfoKey.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.RegQueryValueEx.cs">
+      <Link>Common\Interop\Windows\mincore\Interop.RegQueryValueEx.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.RegSetValueEx.cs">
+      <Link>Common\Interop\Windows\mincore\Interop.RegSetValueEx.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.RegistryOptions.cs">
+      <Link>Common\Interop\Windows\mincore\Interop.RegistryOptions.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Interop.BOOL.cs">
+      <Link>Common\Interop\Windows\mincore\Interop.BOOL.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.SECURITY_ATTRIBUTES.cs">
+      <Link>Common\Interop\Windows\mincore\Interop.SECURITY_ATTRIBUTES.cs</Link>
+    </Compile>
   </ItemGroup>
   <!-- UNIX: CoreCLR -->
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
+    <Compile Include="System\Environment.Unix.cs" />
     <Compile Include="System\Diagnostics\Stopwatch.Unix.cs" />
     <Compile Include="System\IO\Path.Unix.cs" />
     <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs">
@@ -126,20 +283,50 @@
     <Compile Include="$(CommonPath)\Interop\Unix\Interop.IOErrors.cs">
       <Link>Common\Interop\Unix\Interop.IOErrors.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Access.cs">
+      <Link>Common\Interop\Unix\System.Native\Interop.Access.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.ChDir.cs">
+      <Link>Common\Interop\Unix\System.Native\Interop.ChDir.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Close.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.Close.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetCwd.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.GetCwd.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetEnviron.cs">
+      <Link>Common\Interop\Unix\System.Native\Interop.GetEnviron.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetEUid.cs">
+      <Link>Common\Interop\Unix\System.Native\Interop.GetEUid.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetHostName.cs">
+      <Link>Common\Interop\Unix\System.Native\Interop.GetHostName.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetTimestamp.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.GetTimestamp.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetPwUid.cs">
+      <Link>Common\Interop\Unix\System.Native\Interop.GetPwUid.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetUnixName.cs">
+      <Link>Common\Interop\Unix\System.Native\Interop.GetUnixName.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetUnixRelease.cs">
+      <Link>Common\Interop\Unix\System.Native\Interop.GetUnixRelease.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.MksTemps.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.MksTemps.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.MountPoints.cs">
+      <Link>Common\Interop\Unix\System.Native\Interop.MountPoints.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.PathConf.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.PathConf.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.SysConf.cs">
+      <Link>Common\Interop\Unix\System.Native\Interop.SysConf.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.Initialization.cs">
       <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.Initialization.cs</Link>
@@ -150,9 +337,16 @@
     <Compile Include="$(CommonPath)\System\IO\PathInternal.Unix.cs">
       <Link>Common\System\IO\PathInternal.Unix.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\IO\PersistedFiles.Unix.cs">
+      <Link>Common\System\IO\PersistedFiles.Unix.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\IO\PersistedFiles.Names.Unix.cs">
+      <Link>Common\System\IO\PersistedFiles.Unix.cs</Link>
+    </Compile>
   </ItemGroup>
   <!-- WINDOWS: .NET Native -->
   <ItemGroup Condition="'$(TargetGroup)' == 'netcore50aot' Or '$(TargetGroup)' == 'netstandard15aot'">
+    <Compile Include="System\Environment.WinRT.cs" Condition="'$(TargetGroup)' == 'netcore50aot' And '$(TargetsWindows)'=='true'" />
     <Compile Include="System\Random.cs" />
     <Compile Include="System\Net\Configuration\UnicodeDecodingConformance.cs" />
     <Compile Include="System\Net\Configuration\UnicodeEncodingConformance.cs" />
@@ -161,11 +355,15 @@
     <Compile Include="$(CommonPath)\System\SR.Core.cs" Condition="'$(TargetGroup)' == 'netcore50aot' And '$(TargetsWindows)'=='true'" />
     <Compile Include="$(CommonPath)\System\SR.CoreRT.cs" Condition="'$(TargetGroup)' == 'netstandard15aot' Or '$(TargetsUnix)'=='true'" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == ''">
-    <ProjectReference Include="..\..\System.Private.Uri\src\System.Private.Uri.csproj" />
-    <ProjectReference Include="..\..\System.Diagnostics.Debug\src\System.Diagnostics.Debug.csproj" />
+  <ItemGroup Condition="'$(TargetGroup)' == '' Or '$(TargetGroup)' == 'netstandard1.5'">
+    <ProjectReference Include="..\..\System.Private.Uri\src\System.Private.Uri.csproj">
+      <UndefineProperties>%(ProjectReference.UndefineProperties);TargetGroup</UndefineProperties>
+    </ProjectReference>
+    <ProjectReference Include="..\..\System.Diagnostics.Debug\src\System.Diagnostics.Debug.csproj">
+      <UndefineProperties>%(ProjectReference.UndefineProperties);TargetGroup</UndefineProperties>
+    </ProjectReference>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'net462'">
+  <ItemGroup Condition="'$(TargetGroup)' == 'net462' Or '$(TargetGroup)' == 'net463'">
     <TargetingPackReference Include="mscorlib" />
     <TargetingPackReference Include="System" />
   </ItemGroup>
@@ -173,6 +371,7 @@
     <TargetingPackReference Include="System.Private.CoreLib" />
     <TargetingPackReference Include="System.Private.CoreLib.InteropServices" />
     <TargetingPackReference Include="System.Private.Interop" />
+    <TargetingPackReference Include="System.Private.Reflection" /> <!-- can remove once we remove the Environment reflection workaround -->
     <TargetingPackReference Include="System.Private.Threading" />
     <ProjectReference Include="$(SourceDir)/mscorlib.WinRT-Facade/mscorlib.WinRT-Facade.csproj" Condition="'$(TargetGroup)' == 'netcore50aot'" />
     <ProjectReference Include="..\..\System.Runtime\src\redist\System.Runtime.depproj">

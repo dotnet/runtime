@@ -603,6 +603,8 @@ namespace System.IO
             }
         }
 
+        internal override bool IsClosed => _handle.IsClosed;
+
         [System.Security.SecuritySafeCritical]  // auto-generated
         public override void SetLength(long value)
         {

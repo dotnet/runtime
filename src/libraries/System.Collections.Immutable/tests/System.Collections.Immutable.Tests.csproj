@@ -101,6 +101,9 @@
     <Compile Include="$(CommonTestPath)\System\Collections\TestingTypes.cs">
       <Link>Common\System\Collections\TestingTypes.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\SerializableAttribute.cs">
+      <Link>Common\System\SerializableAttribute.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <None Include="ClassDiagram1.cd" />

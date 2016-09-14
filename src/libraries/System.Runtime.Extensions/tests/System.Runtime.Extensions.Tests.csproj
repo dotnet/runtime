@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <Configuration Condition="'$(Configuration)'==''">Windows_Debug</Configuration>
@@ -12,23 +12,32 @@
     <RootNamespace>System.Runtime.Extensions.Tests</RootNamespace>
     <AssemblyName>System.Runtime.Extensions.Tests</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <NugetTargetMoniker>.NETStandard,Version=v1.5</NugetTargetMoniker>
+    <DefineConstants Condition="'$(TargetGroup)'=='netstandard1.7'">$(DefineConstants);netstandard17</DefineConstants>
+    <NugetTargetMoniker Condition="'$(NugetTargetMoniker)'==''">.NETStandard,Version=v1.5</NugetTargetMoniker>
   </PropertyGroup>
+  <ItemGroup Condition="'$(TargetGroup)'=='netstandard1.7'">
+    <TestNugetTargetMoniker Include="$(NugetTargetMoniker)">
+      <Folder>netcoreapp1.1</Folder>
+    </TestNugetTargetMoniker>
+  </ItemGroup>
   <!-- Default configurations to help VS understand the configurations -->
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' " />
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' " />
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'netstandard1.7_Debug|AnyCPU' " />
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'netstandard1.7_Release|AnyCPU' " />
   <ItemGroup>
     <Compile Include="System\Diagnostics\Stopwatch.cs" />
+    <Compile Include="System\EnvironmentTests.cs" Condition="'$(TargetGroup)'=='netstandard1.7'" />
     <Compile Include="System\Environment.MachineName.cs" />
     <Compile Include="System\IO\Path.Combine.cs" />
+    <Compile Include="System\IO\PathTests.netstandard1.7.cs" Condition="'$(TargetGroup)'=='netstandard1.7'" />
     <Compile Include="System\Runtime\Versioning\FrameworkName.cs" />
     <Compile Include="System\IO\PathTests.cs" />
     <Compile Include="System\Net\WebUtility.cs" />
     <Compile Include="System\BitConverter.cs" />
     <Compile Include="System\Convert.BoxedObjectCheck.cs" />
     <Compile Include="System\Convert.FromBase64.cs" />
+    <Compile Include="System\Convert.netstandard1.7.cs" Condition="'$(TargetGroup)'=='netstandard1.7'" />
     <Compile Include="System\Convert.TestBase.cs" />
     <Compile Include="System\Convert.ToBase64CharArray.cs" />
     <Compile Include="System\Convert.ToBase64String.cs" />
@@ -81,6 +90,7 @@
     <Compile Include="$(CommonTestPath)\System\PlatformDetection.cs">
       <Link>Common\System\PlatformDetection.cs</Link>
     </Compile>
+    <Compile Condition="'$(TargetGroup)'=='netstandard1.7'" Include="System\Math.netstandard1.7.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />
@@ -92,11 +102,13 @@
     </ProjectReference>
     <ProjectReference Include="..\..\System.Private.Uri\pkg\System.Private.Uri.pkgproj">
     </ProjectReference>
-    <ProjectReference Include="..\..\System.Diagnostics.Debug\pkg\System.Diagnostics.Debug.pkgproj">
-    </ProjectReference>
     <ProjectReference Include="$(CommonTestPath)\System\Diagnostics\RemoteExecutorConsoleApp\RemoteExecutorConsoleApp.csproj">
       <Project>{69e46a6f-9966-45a5-8945-2559fe337827}</Project>
       <Name>RemoteExecutorConsoleApp</Name>
+    </ProjectReference>
+    <ProjectReference Include="VoidMainWithExitCodeApp\VoidMainWithExitCodeApp.csproj">
+      <Project>{9F312D76-9AF1-4E90-B3B0-815A1EC6C346}</Project>
+      <Name>VoidMainWithExitCodeApp</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />

@@ -13,68 +13,13 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="$(CommonPath)\System\Xml\Schema\XmlUntypedConverter.cs">
-      <Link>Common\System\Xml\Schema\XmlUntypedConverter.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Xml\Schema\XsdDateTime.cs">
-      <Link>Common\System\Xml\Schema\XsdDateTime.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Xml\Base64Encoder.cs">
-      <Link>Common\System\Xml\Base64Encoder.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Xml\Bits.cs">
-      <Link>Common\System\Xml\Bits.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Xml\Ref.cs">
-      <Link>Common\System\Xml\Ref.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Xml\XmlRawWriter.cs">
-      <Link>Common\System\Xml\XmlRawWriter.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Xml\SecureStringHasher.cs">
-      <Link>Common\System\Xml\SecureStringHasher.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Xml\XmlRawWriterBase64Encoder.cs">
-      <Link>Common\System\Xml\XmlRawWriterBase64Encoder.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Xml\ValidateNames.cs">
-      <Link>Common\System\Xml\ValidateNames.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Xml\XmlCharType.cs">
-      <Link>Common\System\Xml\XmlCharType.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Xml\XmlStandalone.cs">
-      <Link>Common\System\Xml\XmlStandalone.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Xml\XmlConvertEx.cs">
-      <Link>Common\System\Xml\XmlConvertEx.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Xml\ExceptionType.cs">
-      <Link>Common\System\Xml\ExceptionType.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Xml\XPathNavigatorEx.cs">
-      <Link>Common\System\Xml\XPathNavigatorEx.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Xml\XmlParsingHelper.cs">
-      <Link>Common\System\Xml\XmlParsingHelper.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Xml\XmlAttributeCollectionEx.cs">
-      <Link>Common\System\Xml\XmlAttributeCollectionEx.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Xml\XmlConst.cs">
-      <Link>Common\System\Xml\XmlConst.cs</Link>
-    </Compile>
+    <ProjectReference Include="..\..\System.Private.Xml\src\System.Private.Xml.csproj" />
+    <ProjectReference Include="..\..\System.Xml.XPath\src\System.Xml.XPath.csproj" />
+    <ProjectReference Include="..\..\System.Xml.ReaderWriter\src\System.Xml.ReaderWriter.csproj" />
+    <ProjectReference Include="..\..\System.Xml.XmlDocument\src\System.Xml.XmlDocument.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="System\Xml\XmlAttributeEx.cs" />
-    <Compile Include="System\Xml\XmlDocumentEx.cs" />
-    <Compile Include="System\Xml\XmlNodeEx.cs" />
-    <Compile Include="System\Xml\XmlWellformedWriter.cs" />
-    <Compile Include="System\Xml\XmlWellformedWriterHelpers.cs" />
-    <Compile Include="System\Xml\DocumentXmlWriter.cs" />
-    <Compile Include="System\Xml\DocumentXPathNavigator.cs" />
     <Compile Include="System\Xml\XmlDocumentXPathExtensions.cs" />
-    <Compile Include="System\Xml\XPathNodeList.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(CommonPath)\System\NotImplemented.cs">

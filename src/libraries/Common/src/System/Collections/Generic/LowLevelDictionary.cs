@@ -21,7 +21,7 @@ namespace System.Collections.Generic
     ** behavior.)
     ** 
     ===========================================================*/
-    internal class LowLevelDictionary<TKey, TValue>
+    internal partial class LowLevelDictionary<TKey, TValue>
     {
         private const int DefaultSize = 17;
 
@@ -63,7 +63,7 @@ namespace System.Collections.Generic
                 Entry entry = Find(key);
                 if (entry == null)
                     throw new KeyNotFoundException();
-                return entry.m_value;
+                return entry._value;
             }
             set
             {
@@ -73,7 +73,7 @@ namespace System.Collections.Generic
                 _version++;
                 Entry entry = Find(key);
                 if (entry != null)
-                    entry.m_value = value;
+                    entry._value = value;
                 else
                     UncheckedAdd(key, value);
             }
@@ -87,7 +87,7 @@ namespace System.Collections.Generic
             Entry entry = Find(key);
             if (entry != null)
             {
-                value = entry.m_value;
+                value = entry._value;
                 return true;
             }
             return false;
@@ -120,15 +120,15 @@ namespace System.Collections.Generic
             Entry entry = _buckets[bucket];
             while (entry != null)
             {
-                if (_comparer.Equals(key, entry.m_key))
+                if (_comparer.Equals(key, entry._key))
                 {
                     if (prev == null)
                     {
-                        _buckets[bucket] = entry.m_next;
+                        _buckets[bucket] = entry._next;
                     }
                     else
                     {
-                        prev.m_next = entry.m_next;
+                        prev._next = entry._next;
                     }
                     _version++;
                     _numEntries--;
@@ -136,7 +136,7 @@ namespace System.Collections.Generic
                 }
 
                 prev = entry;
-                entry = entry.m_next;
+                entry = entry._next;
             }
             return false;
         }
@@ -145,7 +145,7 @@ namespace System.Collections.Generic
         {
             Entry entry = Find(key);
             if (entry != null)
-                return entry.m_value;
+                return entry._value;
             UncheckedAdd(key, value);
             return value;
         }
@@ -156,10 +156,10 @@ namespace System.Collections.Generic
             Entry entry = _buckets[bucket];
             while (entry != null)
             {
-                if (_comparer.Equals(key, entry.m_key))
+                if (_comparer.Equals(key, entry._key))
                     return entry;
 
-                entry = entry.m_next;
+                entry = entry._next;
             }
             return null;
         }
@@ -167,11 +167,11 @@ namespace System.Collections.Generic
         private Entry UncheckedAdd(TKey key, TValue value)
         {
             Entry entry = new Entry();
-            entry.m_key = key;
-            entry.m_value = value;
+            entry._key = key;
+            entry._value = value;
 
             int bucket = GetBucket(key);
-            entry.m_next = _buckets[bucket];
+            entry._next = _buckets[bucket];
             _buckets[bucket] = entry;
 
             _numEntries++;
@@ -193,10 +193,10 @@ namespace System.Collections.Generic
                     Entry entry = _buckets[i];
                     while (entry != null)
                     {
-                        Entry nextEntry = entry.m_next;
+                        Entry nextEntry = entry._next;
 
-                        int bucket = GetBucket(entry.m_key, newNumBuckets);
-                        entry.m_next = newBuckets[bucket];
+                        int bucket = GetBucket(entry._key, newNumBuckets);
+                        entry._next = newBuckets[bucket];
                         newBuckets[bucket] = entry;
 
                         entry = nextEntry;
@@ -219,9 +219,9 @@ namespace System.Collections.Generic
 
         private sealed class Entry
         {
-            public TKey m_key;
-            public TValue m_value;
-            public Entry m_next;
+            public TKey _key;
+            public TValue _value;
+            public Entry _next;
         }
 
         private Entry[] _buckets;
@@ -262,7 +262,7 @@ namespace System.Collections.Generic
                     while (entry != null)
                     {
                         entries[dst++] = entry;
-                        entry = entry.m_next;
+                        entry = entry._next;
                     }
                 }
                 _entries = entries;
@@ -278,7 +278,7 @@ namespace System.Collections.Generic
                     if (_curPosition == -1 || _curPosition == _entries.Length)
                         throw new InvalidOperationException("InvalidOperation_EnumOpCantHappen");
                     Entry entry = _entries[_curPosition];
-                    return new KeyValuePair<TKey, TValue>(entry.m_key, entry.m_value);
+                    return new KeyValuePair<TKey, TValue>(entry._key, entry._value);
                 }
             }
 

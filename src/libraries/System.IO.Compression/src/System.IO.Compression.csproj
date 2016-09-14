@@ -6,21 +6,30 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <AssemblyName>System.IO.Compression</AssemblyName>
+    <AssemblyVersion Condition="'$(TargetGroup)'=='netstandard1.3' OR '$(TargetGroup)'=='net46'">4.1.2.0</AssemblyVersion>
+    <ContractProject Condition="'$(AssemblyVersion)'=='4.1.2.0'">../ref/4.1.0/System.IO.Compression.depproj</ContractProject>
     <OutputType>Library</OutputType>
     <ProjectGuid>{5471BFE8-8071-466F-838E-5ADAA779E742}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <UseECMAKey Condition="'$(UseECMAKey)'==''">true</UseECMAKey>
-    <DefineConstants Condition="'$(TargetGroup)' != 'net46'">$(DefineConstants);FEATURE_ZLIB</DefineConstants>
-    <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'net46'">true</IsPartialFacadeAssembly>
-    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.3</NuGetTargetMoniker>
+    <UseECMAKey>true</UseECMAKey>
+    <DefineConstants Condition="'$(TargetGroup)' != 'net46' And '$(TargetGroup)' != 'net463'">$(DefineConstants);FEATURE_ZLIB</DefineConstants>
+    <DefineConstants Condition="'$(AssemblyVersion)'!='4.1.2.0'">$(DefineConstants);netstandard17</DefineConstants>
+    <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'net46' Or '$(TargetGroup)' == 'net463'">true</IsPartialFacadeAssembly>
+    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NuGetTargetMoniker>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the options -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_netstandard1.3_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_netstandard1.3_Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_netstandard1.3_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_netstandard1.3_Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Release|AnyCPU'" />
   <!-- Files shared between net46 and core -->
   <ItemGroup>
     <Compile Include="$(SharedOpenSourcePath)System\IO\Compression\Crc32Helper.cs" />
@@ -51,9 +60,12 @@
     <Compile Include="$(CommonPath)\System\IO\PathInternal.cs">
       <Link>Common\System\IO\PathInternal.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\Threading\Tasks\TaskToApm.cs">
+       <Link>Common\System\Threading\Tasks\TaskToApm.cs</Link>
+     </Compile>
   </ItemGroup>
   <!-- Files exclusive to Core -->
-  <ItemGroup Condition="'$(TargetGroup)' != 'net46'">
+  <ItemGroup Condition="'$(TargetGroup)' != 'net46' And '$(TargetGroup)' != 'net463'">
     <Compile Include="System\IO\Compression\CompressionLevel.cs" />
     <Compile Include="System\IO\Compression\CompressionMode.cs" />
     <Compile Include="System\IO\Compression\GZipStream.cs" />
@@ -63,6 +75,9 @@
     <Compile Include="System\IO\Compression\DeflateZLib\ZLibException.cs" />
     <Compile Include="System\IO\Compression\DeflateZLib\ZLibNative.cs" />
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == '' ">
+    <Compile Include="System\IO\Compression\ZLibException.Serialization.cs" />
+  </ItemGroup>
   <!-- Windows specific files common to both net46 and Core -->
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true'">
     <Compile Include="System\IO\Compression\ZipArchiveEntry.Windows.cs" />
@@ -71,7 +86,7 @@
     </Compile>
   </ItemGroup>
   <!-- Windows specific files exclusive to Core -->
-  <ItemGroup Condition=" '$(TargetsWindows)' == 'true' And '$(TargetGroup)' != 'net46'">
+  <ItemGroup Condition=" '$(TargetsWindows)' == 'true' And '$(TargetGroup)' != 'net46' And '$(TargetGroup)' != 'net463'">
     <Compile Include="System\IO\Compression\DeflateZLib\ZLibNative.Windows.cs" />
     <Compile Include="Interop\Interop.zlib.Windows.cs" />
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
@@ -94,7 +109,7 @@
     </Compile>
   </ItemGroup>
   <!-- Files exclusive to net46 -->
-  <ItemGroup Condition="'$(TargetGroup)' == 'net46'">
+  <ItemGroup Condition="'$(TargetGroup)' == 'net46' Or '$(TargetGroup)' == 'net463'">
     <Compile Include="AssemblyInfo.cs" />
     <TargetingPackReference Include="mscorlib" />
     <TargetingPackReference Include="System" />

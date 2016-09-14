@@ -57,15 +57,19 @@ namespace System.Tests
             switch (args.Length)
             {
                 case 1:
-                    RemoteInvoke((arg) => { return CheckCommandLineArgs(new string[] { arg }); }, args[0]);
+                    RemoteInvoke((arg) => CheckCommandLineArgs(new string[] { arg }), args[0]);
                     break;
 
                 case 2:
-                    RemoteInvoke((arg1, arg2) => { return CheckCommandLineArgs(new string[] { arg1, arg2 }); }, args[0], args[1]);
+                    RemoteInvoke((arg1, arg2) => CheckCommandLineArgs(new string[] { arg1, arg2 }), args[0], args[1]);
                     break;
 
                 case 3:
-                    RemoteInvoke((arg1, arg2, arg3) => { return CheckCommandLineArgs(new string[] { arg1, arg2, arg3 }); }, args[0], args[1], args[2]);
+                    RemoteInvoke((arg1, arg2, arg3) => CheckCommandLineArgs(new string[] { arg1, arg2, arg3 }), args[0], args[1], args[2]);
+                    break;
+
+                default:
+                    Assert.True(false, "Unexpected number of args passed to test");
                     break;
             }
 
@@ -73,12 +77,10 @@ namespace System.Tests
 
         public static int CheckCommandLineArgs(string[] args)
         {
-
             string[] cmdLineArgs = Environment.GetCommandLineArgs();
 
             Assert.InRange(cmdLineArgs.Length, 4, int.MaxValue); /*AppName, AssemblyName, TypeName, MethodName*/
             Assert.True(cmdLineArgs[0].Contains(TestConsoleApp)); /*The host returns the fullName*/
-
 
             Type t = typeof(GetCommandLineArgs);
             MethodInfo mi = t.GetMethod("CheckCommandLineArgs");

@@ -1,14 +1,15 @@
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <!-- Source of truth for dependency tooling: the commit hash of the dotnet/versions master branch as of the last auto-upgrade. -->
   <PropertyGroup>
-    <CoreFxCurrentRef>8ef1d08ccf278b0f4adcec19693fd7977035cae3</CoreFxCurrentRef>
+    <CoreFxCurrentRef>ccb12b07354f701b6a76b19003ea28efd76ccc5b</CoreFxCurrentRef>
     <CoreClrCurrentRef>8ef1d08ccf278b0f4adcec19693fd7977035cae3</CoreClrCurrentRef>
     <ExternalCurrentRef>cdb8679634e573847e20c1eae0fa3918f5daf1e6</ExternalCurrentRef>
+    <ProjectNTfsCurrentRef>ccb12b07354f701b6a76b19003ea28efd76ccc5b</ProjectNTfsCurrentRef>
   </PropertyGroup>
 
   <!-- Auto-upgraded properties for each build info dependency. -->
   <PropertyGroup>
-    <CoreFxExpectedPrerelease>beta-24512-01</CoreFxExpectedPrerelease>
+    <CoreFxExpectedPrerelease>beta-devapi-24512-01</CoreFxExpectedPrerelease>
     <CoreClrExpectedPrerelease>beta-24512-03</CoreClrExpectedPrerelease>
     <ExternalExpectedPrerelease>beta-24509-00</ExternalExpectedPrerelease>
   </PropertyGroup>
@@ -27,7 +28,7 @@
 
   <ItemGroup>
     <RemoteDependencyBuildInfo Include="CoreFx">
-      <BuildInfoPath>$(BaseDotNetBuildInfo)corefx/$(DependencyBranch)</BuildInfoPath>
+      <BuildInfoPath>$(BaseDotNetBuildInfo)corefx/dev/api</BuildInfoPath>
       <CurrentRef>$(CoreFxCurrentRef)</CurrentRef>
     </RemoteDependencyBuildInfo>
     <RemoteDependencyBuildInfo Include="CoreClr">
@@ -37,6 +38,10 @@
     <RemoteDependencyBuildInfo Include="External">
       <BuildInfoPath>$(BaseDotNetBuildInfo)projectk-tfs/$(DependencyBranch)</BuildInfoPath>
       <CurrentRef>$(ExternalCurrentRef)</CurrentRef>
+    </RemoteDependencyBuildInfo>
+    <RemoteDependencyBuildInfo Include="ProjectNTfs">
+      <BuildInfoPath>$(BaseDotNetBuildInfo)projectn-tfs/$(DependencyBranch)</BuildInfoPath>
+      <CurrentRef>$(ProjectNTfsCurrentRef)</CurrentRef>
     </RemoteDependencyBuildInfo>
 
     <DependencyBuildInfo Include="@(RemoteDependencyBuildInfo)">
@@ -82,14 +87,6 @@
 
     <StaticDependency Include="Microsoft.xunit.netcore.extensions;Microsoft.DotNet.BuildTools.TestSuite">
       <Version>1.0.0-prerelease-00807-03</Version>
-    </StaticDependency>
-
-    <!--
-      The NETNative targeting pack is in the projectn-tfs build-info, but auto-upgrade isn't wanted.
-      Verify it at a static version rather than referencing the build-info.
-    -->
-    <StaticDependency Include="Microsoft.TargetingPack.Private.NETNative">
-      <Version>1.0.1-beta-24430-00</Version>
     </StaticDependency>
 
     <DependencyBuildInfo Include="@(StaticDependency)">

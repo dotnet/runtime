@@ -13,17 +13,35 @@
     <TargetFrameworkMonikers Include="netstandard1.5" />
     <TargetFrameworkMonikers Include="netstandard1.6" />
     <TargetFrameworkMonikers Include="netstandard1.7" />
-    <TargetFrameworkMonikers Include="netcoreapp1.0">
+    <TargetFrameworkMonikers Include="netcoreapp1.1">
       <RID>win7-x64</RID>
       <AdditionalBinaryPath>
-        $(PackagesDir)/runtime.win7-x64.Microsoft.NETCore.Runtime.CoreCLR/1.0.4-$(CoreClrExpectedPrerelease)/runtimes/win7-x64/lib/netstandard1.0;
+        $(PackagesDir)/runtime.win7-x64.Microsoft.NETCore.Runtime.CoreCLR/1.1.0-$(CoreClrExpectedPrerelease)/runtimes/win7-x64/lib/netstandard1.0;
         $(PackagesDir)/runtime.win7.System.Private.Uri\4.0.3-$(CoreFxExpectedPrerelease)\runtimes\win\lib\netstandard1.0;
         $(PackagesDir)/System.Private.DataContractSerialization\4.1.2-$(CoreFxExpectedPrerelease)\lib\netstandard1.3;
+        $(PackagesDir)/System.Private.Xml\4.0.0-$(CoreFxExpectedPrerelease)\lib\netstandard1.3;
+        $(PackagesDir)/System.Private.Xml.Linq\4.0.0-$(CoreFxExpectedPrerelease)\lib\netstandard1.3;
       </AdditionalBinaryPath>
     </TargetFrameworkMonikers>
     <TargetFrameworkMonikers Include="uap10.0">
       <RID>win10-x64-aot</RID>
-      <AdditionalBinaryPath>$(PackagesDir)/Microsoft.TargetingPack.Private.NETNative/1.0.1-$(ExternalExpectedPrerelease)/lib/netcore50</AdditionalBinaryPath>
+      <AdditionalBinaryPath>
+        $(PackagesDir)/Microsoft.TargetingPack.Private.NETNative/1.0.1-beta-24415-00/lib/netcore50;
+        $(PackagesDir)/runtime.win7.System.Private.Uri\4.0.3-$(CoreFxExpectedPrerelease)\runtimes\aot\lib\netcore50;
+        $(PackagesDir)/System.Private.DataContractSerialization\4.1.2-$(CoreFxExpectedPrerelease)\runtimes\aot\lib\netcore50;
+        $(PackagesDir)/System.Private.Xml\4.0.0-$(CoreFxExpectedPrerelease)\lib\netstandard1.3;
+        $(PackagesDir)/System.Private.Xml.Linq\4.0.0-$(CoreFxExpectedPrerelease)\lib\netstandard1.3;
+      </AdditionalBinaryPath>
+    </TargetFrameworkMonikers>
+    <TargetFrameworkMonikers Include="uap10.1">
+      <RID>win10-x64-aot</RID>
+      <AdditionalBinaryPath>
+        $(PackagesDir)/Microsoft.TargetingPack.Private.NETNative/1.1.0-beta-24410-00/lib/uap10.1;
+        $(PackagesDir)/runtime.win7.System.Private.Uri\4.0.3-$(CoreFxExpectedPrerelease)\runtimes\aot\lib\netcore50;
+        $(PackagesDir)/System.Private.DataContractSerialization\4.1.2-$(CoreFxExpectedPrerelease)\runtimes\aot\lib\netcore50;
+        $(PackagesDir)/System.Private.Xml\4.0.0-$(CoreFxExpectedPrerelease)\lib\netstandard1.3;
+        $(PackagesDir)/System.Private.Xml.Linq\4.0.0-$(CoreFxExpectedPrerelease)\lib\netstandard1.3;
+      </AdditionalBinaryPath>
     </TargetFrameworkMonikers>
   </ItemGroup>
 
@@ -44,12 +62,16 @@
       <TargetFrameworkMoniker>%(TargetFrameworkMonikers.Identity)</TargetFrameworkMoniker>
       <TargetRuntime>%(TargetFrameworkMonikers.RID)</TargetRuntime>
       <AdditionalBinaryPath>%(TargetFrameworkMonikers.AdditionalBinaryPath)</AdditionalBinaryPath>
-      <RelOutputPath>ref/$(TargetFrameworkMoniker)</RelOutputPath>
-      <RelOutputPath Condition="'$(TargetRuntime)' != ''">runtime/$(TargetFrameworkMoniker).$(TargetRuntime)</RelOutputPath>
+      <RefRelOutputPath>ref/$(TargetFrameworkMoniker)</RefRelOutputPath>
+      <RuntimeRelOutputPath>runtime/$(TargetFrameworkMoniker).$(TargetRuntime)</RuntimeRelOutputPath>
     </PropertyGroup>
 
     <ItemGroup>
-      <PackageReports Include="$(PackageOutputPath)reports/*.json" />
+      <!-- IsolatedStorage is not be supported on netstandard -->
+      <ReportsToExclude Condition="$(TargetFrameworkMoniker.StartsWith('netstandard'))" Include="$(PackageOutputPath)reports/System.IO.IsolatedStorage.json" />
+      <ReportsToExclude Include="$(PackageOutputPath)reports/System.Diagnostics.Debug.SymbolReader.json" />
+
+      <PackageReports Include="$(PackageOutputPath)reports/*.json" Exclude="@(ReportsToExclude)" />
       <AdditionalBinaryPaths Include="$(AdditionalBinaryPath)" />
     </ItemGroup>
 
@@ -70,15 +92,14 @@
     <Error Text="Additional Directory %(AdditionalBinaryPaths.Identity) doesn't exist"
       Condition="'%(AdditionalBinaryPaths.Identity)' != '' and !Exists('%(AdditionalBinaryPaths.Identity)')" />
 
-    <ItemGroup>
-      <AssetsToCopy Condition="'$(TargetRuntime)' == ''" Include="@(_CompileAssets)" />
-      <AssetsToCopy Condition="'$(TargetRuntime)' != ''" Include="@(_RuntimeAssets)" />
-      <AssetsToCopy Include="@(AdditionalBinaryAssets)" />
-    </ItemGroup>
+    <Copy
+      Condition="'$(TargetRuntime)' != ''"
+      SourceFiles="@(_RuntimeAssets);@(AdditionalBinaryAssets)"
+      DestinationFolder="$(LayoutBasePath)/$(RuntimeRelOutputPath)" />
 
     <Copy
-      SourceFiles="@(AssetsToCopy)"
-      DestinationFolder="$(LayoutBasePath)/$(RelOutputPath)" />
+      SourceFiles="@(_CompileAssets)"
+      DestinationFolder="$(LayoutBasePath)/$(RefRelOutputPath)" />
 
   </Target>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />

@@ -1,12 +1,12 @@
 {
   "dependencies": {
-    "System.IO.Compression": "4.3.0-beta-24512-01",
-    "System.Runtime.InteropServices.RuntimeInformation": "4.3.0-beta-24512-01",
+    "System.IO.Compression": "4.3.0-beta-devapi-24512-01",
+    "System.Runtime.InteropServices.RuntimeInformation": "4.3.0-beta-devapi-24512-01",
     "coveralls.io": "1.4",
     "OpenCover": "4.6.519",
     "ReportGenerator": "2.4.3",
-    "Microsoft.DotNet.xunit.performance.analysis": "1.0.0-alpha-build0040",
-    "Microsoft.DotNet.xunit.performance.runner.Windows": "1.0.0-alpha-build0040",
+    "Microsoft.DotNet.xunit.performance.analysis": "1.0.0-alpha-build0039",
+    "Microsoft.DotNet.xunit.performance.runner.Windows": "1.0.0-alpha-build0039",
     "xunit": "2.1.0",
     "xunit.runner.utility": "2.1.0",
     "xunit.runner.console": "2.1.0"

@@ -1,0 +1,8 @@
+{
+  "dependencies": {
+    "System.Security.Cryptography.Cng": "4.2.0"
+  },
+  "frameworks": {
+    "netstandard1.6": {}
+  }
+}

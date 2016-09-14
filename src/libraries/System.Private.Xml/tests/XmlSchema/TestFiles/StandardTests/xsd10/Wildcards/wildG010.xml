@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<a:foo 
+xmlns:a="http://xsdtesting" 
+xmlns:x="http://www.w3.org/1999/xhtml"
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+xsi:schemaLocation="http://xsdtesting wildG010.xsd">
+	
+	<bar>test</bar>
+	<x:foo>test</x:foo>
+	<bar>test</bar>
+	<x:foo>test</x:foo>
+	<bar>test</bar>
+	<x:foo>test</x:foo>
+	<bar>test</bar>
+	<x:foo>test</x:foo>
+	<bar>test</bar>
+	<x:foo>test</x:foo>
+
+
+</a:foo>

@@ -8,7 +8,12 @@ using System.Diagnostics;
 namespace Microsoft.Win32
 {
     /// <summary>Registry encapsulation. Contains members representing all top level system keys.</summary>
-    public static class Registry
+#if REGISTRY_ASSEMBLY
+    public
+#else
+    internal
+#endif
+    static class Registry
     {
         /// <summary>Current User Key. This key should be used as the root for all user specific settings.</summary>
         public static readonly RegistryKey CurrentUser = RegistryKey.OpenBaseKey(RegistryHive.CurrentUser, RegistryView.Default);

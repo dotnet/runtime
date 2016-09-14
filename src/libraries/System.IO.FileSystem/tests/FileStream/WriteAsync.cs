@@ -364,7 +364,10 @@ namespace System.IO.Tests
 
             byte[] actualData = File.ReadAllBytes(path);
             Assert.Equal(expectedData.Length, actualData.Length);
-            Assert.Equal<byte>(expectedData, actualData);
+            if (useAsync)
+            {
+                Assert.Equal<byte>(expectedData, actualData);
+            }
         }
 
         [Theory]

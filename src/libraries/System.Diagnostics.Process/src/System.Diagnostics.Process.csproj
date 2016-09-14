@@ -60,8 +60,8 @@
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.PERF_INFO.cs">
       <Link>Common\Interop\Windows\Interop.PERF_INFO.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.IsWow64Process.cs">
-      <Link>Common\Interop\Windows\Interop.IsWow64Process.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.IsWow64Process_SafeProcessHandle.cs">
+      <Link>Common\Interop\Windows\Interop.IsWow64Process_SafeProcessHandle.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetExitCodeProcess.cs">
       <Link>Common\Interop\Windows\Interop.GetExitCodeProcess.cs</Link>

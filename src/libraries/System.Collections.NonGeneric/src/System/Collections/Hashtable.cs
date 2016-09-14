@@ -14,6 +14,8 @@
 
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
+using System.Runtime.CompilerServices;
+using System.Runtime.Serialization;
 using System.Threading;
 
 namespace System.Collections
@@ -54,7 +56,8 @@ namespace System.Collections
     //
     [DebuggerTypeProxy(typeof(System.Collections.Hashtable.HashtableDebugView))]
     [DebuggerDisplay("Count = {Count}")]
-    public class Hashtable : IDictionary
+    [Serializable]
+    public class Hashtable : IDictionary, ISerializable, IDeserializationCallback
     {
         /*
           This Hashtable uses double hashing.  There are hashsize buckets in the 
@@ -110,6 +113,15 @@ namespace System.Collections
         internal const Int32 HashPrime = 101;
         private const Int32 InitialSize = 3;
 
+        private const String LoadFactorName = "LoadFactor";
+        private const String VersionName = "Version";
+        private const String ComparerName = "Comparer";
+        private const String HashCodeProviderName = "HashCodeProvider";
+        private const String HashSizeName = "HashSize";  // Must save buckets.Length
+        private const String KeysName = "Keys";
+        private const String ValuesName = "Values";
+        private const String KeyComparerName = "KeyComparer";
+
         // Deleted entries have their key set to buckets
 
         // The hash table data.
@@ -140,6 +152,79 @@ namespace System.Collections
 
         private IEqualityComparer _keycomparer;
         private Object _syncRoot;
+
+        [Obsolete("Please use EqualityComparer property.")]
+        protected IHashCodeProvider hcp
+        {
+            get
+            {
+                if (_keycomparer is CompatibleComparer)
+                {
+                    return ((CompatibleComparer)_keycomparer).HashCodeProvider;
+                }
+                else if (_keycomparer == null)
+                {
+                    return null;
+                }
+                else
+                {
+                    throw new ArgumentException(SR.Arg_CannotMixComparisonInfrastructure);
+                }
+            }
+            set
+            {
+                if (_keycomparer is CompatibleComparer)
+                {
+                    CompatibleComparer keyComparer = (CompatibleComparer)_keycomparer;
+                    _keycomparer = new CompatibleComparer(value, keyComparer.Comparer);
+                }
+                else if (_keycomparer == null)
+                {
+                    _keycomparer = new CompatibleComparer(value, (IComparer)null);
+                }
+                else
+                {
+                    throw new ArgumentException(SR.Arg_CannotMixComparisonInfrastructure);
+                }
+            }
+        }
+
+        [Obsolete("Please use KeyComparer properties.")]
+        protected IComparer comparer
+        {
+            get
+            {
+                if (_keycomparer is CompatibleComparer)
+                {
+                    return ((CompatibleComparer)_keycomparer).Comparer;
+                }
+                else if (_keycomparer == null)
+                {
+                    return null;
+                }
+                else
+                {
+                    throw new ArgumentException(SR.Arg_CannotMixComparisonInfrastructure);
+                }
+            }
+            set
+            {
+                if (_keycomparer is CompatibleComparer)
+                {
+                    CompatibleComparer keyComparer = (CompatibleComparer)_keycomparer;
+                    _keycomparer = new CompatibleComparer(keyComparer.HashCodeProvider, value);
+                }
+                else if (_keycomparer == null)
+                {
+                    _keycomparer = new CompatibleComparer((IHashCodeProvider)null, value);
+                }
+                else
+                {
+                    throw new ArgumentException(SR.Arg_CannotMixComparisonInfrastructure);
+                }
+            }
+        }
+
 
         protected IEqualityComparer EqualityComparer
         {
@@ -213,7 +298,19 @@ namespace System.Collections
             _keycomparer = equalityComparer;
         }
 
+        [Obsolete("Please use Hashtable(IEqualityComparer) instead.")]
+        public Hashtable(IHashCodeProvider hcp, IComparer comparer)
+            : this(0, 1.0f, hcp, comparer)
+        {
+        }
+
         public Hashtable(IEqualityComparer equalityComparer) : this(0, 1.0f, equalityComparer)
+        {
+        }
+
+        [Obsolete("Please use Hashtable(int, IEqualityComparer) instead.")]
+        public Hashtable(int capacity, IHashCodeProvider hcp, IComparer comparer)
+            : this(capacity, 1.0f, hcp, comparer)
         {
         }
 
@@ -237,9 +334,37 @@ namespace System.Collections
         {
         }
 
+        [Obsolete("Please use Hashtable(IDictionary, IEqualityComparer) instead.")]
+        public Hashtable(IDictionary d, IHashCodeProvider hcp, IComparer comparer)
+            : this(d, 1.0f, hcp, comparer)
+        {
+        }
+
         public Hashtable(IDictionary d, IEqualityComparer equalityComparer)
             : this(d, 1.0f, equalityComparer)
         {
+        }
+
+        [Obsolete("Please use Hashtable(int, float, IEqualityComparer) instead.")]
+        public Hashtable(int capacity, float loadFactor, IHashCodeProvider hcp, IComparer comparer)
+            : this(capacity, loadFactor)
+        {
+            if (hcp != null || comparer != null)
+            {
+                _keycomparer = new CompatibleComparer(hcp, comparer);
+            }
+        }
+
+        [Obsolete("Please use Hashtable(IDictionary, float, IEqualityComparer) instead.")]
+        public Hashtable(IDictionary d, float loadFactor, IHashCodeProvider hcp, IComparer comparer)
+            : this((d != null ? d.Count : 0), loadFactor, hcp, comparer)
+        {
+            if (d == null)
+                throw new ArgumentNullException(nameof(d), SR.ArgumentNull_Dictionary);
+            Contract.EndContractBlock();
+
+            IDictionaryEnumerator e = d.GetEnumerator();
+            while (e.MoveNext()) Add(e.Key, e.Value);
         }
 
         public Hashtable(IDictionary d, float loadFactor, IEqualityComparer equalityComparer)
@@ -251,6 +376,14 @@ namespace System.Collections
 
             IDictionaryEnumerator e = d.GetEnumerator();
             while (e.MoveNext()) Add(e.Key, e.Value);
+        }
+
+        protected Hashtable(SerializationInfo info, StreamingContext context)
+        {
+            //We can't do anything with the keys and values until the entire graph has been deserialized
+            //and we have a reasonable estimate that GetHashCode is not going to fail.  For the time being,
+            //we'll just cache this.  The graph is not valid until OnDeserialization has been called.
+            HashHelpers.SerializationInfoTable.Add(this, info);
         }
 
         // ?InitHash? is basically an implementation of classic DoubleHashing (see http://en.wikipedia.org/wiki/Double_hashing)  
@@ -1006,8 +1139,166 @@ namespace System.Collections
             return new SyncHashtable(table);
         }
 
+        public virtual void GetObjectData(SerializationInfo info, StreamingContext context)
+        {
+            if (info == null)
+            {
+                throw new ArgumentNullException(nameof(info));
+            }
+            Contract.EndContractBlock();
+            // This is imperfect - it only works well if all other writes are
+            // also using our synchronized wrapper.  But it's still a good idea.
+            lock (SyncRoot)
+            {
+                // This method hasn't been fully tweaked to be safe for a concurrent writer.
+                int oldVersion = _version;
+                info.AddValue(LoadFactorName, _loadFactor);
+                info.AddValue(VersionName, _version);
+
+                //
+                // We need to maintain serialization compatibility with Everett and RTM.
+                // If the comparer is null or a compatible comparer, serialize Hashtable
+                // in a format that can be deserialized on Everett and RTM.            
+                //
+                // Also, if the Hashtable is using randomized hashing, serialize the old
+                // view of the _keycomparer so perevious frameworks don't see the new types
+#pragma warning disable 618
+                IEqualityComparer keyComparerForSerilization = _keycomparer;
+
+                if (keyComparerForSerilization == null)
+                {
+                    info.AddValue(ComparerName, null, typeof(IComparer));
+                    info.AddValue(HashCodeProviderName, null, typeof(IHashCodeProvider));
+                }
+                else if (keyComparerForSerilization is CompatibleComparer)
+                {
+                    CompatibleComparer c = keyComparerForSerilization as CompatibleComparer;
+                    info.AddValue(ComparerName, c.Comparer, typeof(IComparer));
+                    info.AddValue(HashCodeProviderName, c.HashCodeProvider, typeof(IHashCodeProvider));
+                }
+                else
+                {
+                    info.AddValue(KeyComparerName, keyComparerForSerilization, typeof(IEqualityComparer));
+                }
+#pragma warning restore 618
+
+                info.AddValue(HashSizeName, _buckets.Length); //This is the length of the bucket array.
+                Object[] serKeys = new Object[_count];
+                Object[] serValues = new Object[_count];
+                CopyKeys(serKeys, 0);
+                CopyValues(serValues, 0);
+                info.AddValue(KeysName, serKeys, typeof(Object[]));
+                info.AddValue(ValuesName, serValues, typeof(Object[]));
+
+                // Explicitly check to see if anyone changed the Hashtable while we 
+                // were serializing it.  That's a race in their code.
+                if (_version != oldVersion)
+                {
+                    throw new InvalidOperationException(SR.InvalidOperation_EnumFailedVersion);
+                }
+            }
+        }
+
+        //
+        // DeserializationEvent Listener 
+        //
+        public virtual void OnDeserialization(Object sender)
+        {
+            if (_buckets != null)
+            {
+                // Somebody had a dependency on this hashtable and fixed us up before the ObjectManager got to it.
+                return;
+            }
+
+            SerializationInfo siInfo;
+            HashHelpers.SerializationInfoTable.TryGetValue(this, out siInfo);
+
+            if (siInfo == null)
+            {
+                throw new SerializationException(SR.Serialization_InvalidOnDeser);
+            }
+
+            int hashsize = 0;
+            IComparer c = null;
+
+#pragma warning disable 618
+            IHashCodeProvider hcp = null;
+#pragma warning restore 618
+
+            Object[] serKeys = null;
+            Object[] serValues = null;
+
+            SerializationInfoEnumerator enumerator = siInfo.GetEnumerator();
+
+            while (enumerator.MoveNext())
+            {
+                switch (enumerator.Name)
+                {
+                    case LoadFactorName:
+                        _loadFactor = siInfo.GetSingle(LoadFactorName);
+                        break;
+                    case HashSizeName:
+                        hashsize = siInfo.GetInt32(HashSizeName);
+                        break;
+                    case KeyComparerName:
+                        _keycomparer = (IEqualityComparer)siInfo.GetValue(KeyComparerName, typeof(IEqualityComparer));
+                        break;
+                    case ComparerName:
+                        c = (IComparer)siInfo.GetValue(ComparerName, typeof(IComparer));
+                        break;
+                    case HashCodeProviderName:
+#pragma warning disable 618
+                        hcp = (IHashCodeProvider)siInfo.GetValue(HashCodeProviderName, typeof(IHashCodeProvider));
+#pragma warning restore 618
+                        break;
+                    case KeysName:
+                        serKeys = (Object[])siInfo.GetValue(KeysName, typeof(Object[]));
+                        break;
+                    case ValuesName:
+                        serValues = (Object[])siInfo.GetValue(ValuesName, typeof(Object[]));
+                        break;
+                }
+            }
+
+            _loadsize = (int)(_loadFactor * hashsize);
+
+            // V1 object doesn't has _keycomparer field.
+            if ((_keycomparer == null) && ((c != null) || (hcp != null)))
+            {
+                _keycomparer = new CompatibleComparer(hcp, c);
+            }
+
+            _buckets = new bucket[hashsize];
+
+            if (serKeys == null)
+            {
+                throw new SerializationException(SR.Serialization_MissingKeys);
+            }
+            if (serValues == null)
+            {
+                throw new SerializationException(SR.Serialization_MissingValues);
+            }
+            if (serKeys.Length != serValues.Length)
+            {
+                throw new SerializationException(SR.Serialization_KeyValueDifferentSizes);
+            }
+            for (int i = 0; i < serKeys.Length; i++)
+            {
+                if (serKeys[i] == null)
+                {
+                    throw new SerializationException(SR.Serialization_NullKey);
+                }
+                Insert(serKeys[i], serValues[i], true);
+            }
+
+            _version = siInfo.GetInt32(VersionName);
+
+            HashHelpers.SerializationInfoTable.Remove(this);
+        }
+
         // Implements a Collection for the keys of a hashtable. An instance of this
         // class is created by the GetKeys method of a hashtable.
+        [Serializable]
         private class KeyCollection : ICollection
         {
             private Hashtable _hashtable;
@@ -1054,6 +1345,7 @@ namespace System.Collections
 
         // Implements a Collection for the values of a hashtable. An instance of
         // this class is created by the GetValues method of a hashtable.
+        [Serializable]
         private class ValueCollection : ICollection
         {
             private Hashtable _hashtable;
@@ -1099,6 +1391,7 @@ namespace System.Collections
         }
 
         // Synchronized wrapper for hashtable
+        [Serializable]
         private class SyncHashtable : Hashtable, IEnumerable
         {
             protected Hashtable _table;
@@ -1106,6 +1399,31 @@ namespace System.Collections
             internal SyncHashtable(Hashtable table) : base(false)
             {
                 _table = table;
+            }
+
+            internal SyncHashtable(SerializationInfo info, StreamingContext context) : base(info, context)
+            {
+                _table = (Hashtable)info.GetValue("ParentTable", typeof(Hashtable));
+                if (_table == null)
+                {
+                    throw new SerializationException(SR.Serialization_InsufficientState);
+                }
+            }
+
+            public override void GetObjectData(SerializationInfo info, StreamingContext context)
+            {
+                if (info == null)
+                {
+                    throw new ArgumentNullException(nameof(info));
+                }
+                Contract.EndContractBlock();
+
+                // Our serialization code hasn't been fully tweaked to be safe 
+                // for a concurrent writer.
+                lock (_table.SyncRoot)
+                {
+                    info.AddValue("ParentTable", _table, typeof(Hashtable));
+                }
             }
 
             public override int Count
@@ -1243,6 +1561,13 @@ namespace System.Collections
                 }
             }
 
+            public override void OnDeserialization(Object sender)
+            {
+                // Does nothing.  We have to implement this because our parent HT implements it,
+                // but it doesn't do anything meaningful.  The real work will be done when we
+                // call OnDeserialization on our parent table.
+            }
+
             internal override KeyValuePairs[] ToKeyValuePairsArray()
             {
                 return _table.ToKeyValuePairsArray();
@@ -1253,6 +1578,7 @@ namespace System.Collections
         // Implements an enumerator for a hashtable. The enumerator uses the
         // internal version number of the hashtable to ensure that no modifications
         // are made to the hashtable while an enumeration is in progress.
+        [Serializable]
         private class HashtableEnumerator : IDictionaryEnumerator
         {
             private Hashtable _hashtable;
@@ -1455,6 +1781,9 @@ namespace System.Collections
 
         // This is the maximum prime smaller than Array.MaxArrayLength
         public const int MaxPrimeArrayLength = 0x7FEFFFFD;
+
+        private static ConditionalWeakTable<object, SerializationInfo> s_serializationInfoTable;
+        public static ConditionalWeakTable<object, SerializationInfo> SerializationInfoTable => LazyInitializer.EnsureInitialized(ref s_serializationInfoTable);
 
 #if FEATURE_RANDOMIZED_STRING_HASHING
         public static bool IsWellKnownEqualityComparer(object comparer)

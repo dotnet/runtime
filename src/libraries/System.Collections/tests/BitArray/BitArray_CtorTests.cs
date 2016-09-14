@@ -223,5 +223,19 @@ namespace System.Collections.Tests
         {
             Assert.Throws<ArgumentNullException>("bytes", () => new BitArray((byte[])null));
         }
+
+#if netstandard17
+        [Fact]
+        public static void Ctor_Simple_Method_Tests()
+        {
+            int length = 0;
+            BitArray bitArray = new BitArray(length);
+
+            Assert.NotNull(bitArray.SyncRoot);
+            Assert.False(bitArray.IsSynchronized);
+            Assert.False(bitArray.IsReadOnly);
+            Assert.Equal(bitArray, bitArray.Clone());
+        }
+#endif //netstandard17
     }
 }

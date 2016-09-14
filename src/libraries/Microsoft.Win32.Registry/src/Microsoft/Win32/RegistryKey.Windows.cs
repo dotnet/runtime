@@ -55,7 +55,12 @@ using System.Security.AccessControl;
 
 namespace Microsoft.Win32
 {
-    public sealed partial class RegistryKey : IDisposable
+#if REGISTRY_ASSEMBLY
+    public
+#else
+    internal
+#endif
+    sealed partial class RegistryKey : IDisposable
     {
         private void ClosePerfDataKey()
         {
@@ -628,7 +633,9 @@ namespace Microsoft.Win32
                             Array.Resize(ref blob, blob.Length + 1);
                         }
 
-                        var strings = new List<string>();
+                        string[] strings = Array.Empty<string>();
+                        int stringsCount = 0;
+
                         int cur = 0;
                         int len = blob.Length;
 
@@ -640,29 +647,42 @@ namespace Microsoft.Win32
                                 nextNull++;
                             }
 
+                            string toAdd = null;
                             if (nextNull < len)
                             {
                                 Debug.Assert(blob[nextNull] == (char)0, "blob[nextNull] should be 0");
                                 if (nextNull - cur > 0)
                                 {
-                                    strings.Add(new string(blob, cur, nextNull - cur));
+                                    toAdd = new string(blob, cur, nextNull - cur);
                                 }
                                 else
                                 {
                                     // we found an empty string.  But if we're at the end of the data, 
                                     // it's just the extra null terminator. 
                                     if (nextNull != len - 1)
-                                        strings.Add(string.Empty);
+                                    {
+                                        toAdd = string.Empty;
+                                    }
                                 }
                             }
                             else
                             {
-                                strings.Add(new string(blob, cur, len - cur));
+                                toAdd = new string(blob, cur, len - cur);
                             }
                             cur = nextNull + 1;
+
+                            if (toAdd != null)
+                            {
+                                if (strings.Length == stringsCount)
+                                {
+                                    Array.Resize(ref strings, stringsCount > 0 ? stringsCount * 2 : 4);
+                                }
+                                strings[stringsCount++] = toAdd;
+                            }
                         }
 
-                        data = strings.ToArray();
+                        Array.Resize(ref strings, stringsCount);
+                        data = strings;
                     }
                     break;
                 case Interop.mincore.RegistryValues.REG_LINK:

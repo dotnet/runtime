@@ -11,8 +11,9 @@
     <DefineConstants>$(DefineConstants);INTERNAL_GLOBALIZATION_EXTENSIONS</DefineConstants>
     <!-- Suppress warnings for type conflicts between SafeFileHandle in partial facade and mscorlib -->
     <NoWarn>0436</NoWarn>
-    <SkipCommonResourcesIncludes Condition="'$(TargetGroup)'=='netcore50aot' Or '$(TargetGroup)'=='netstandard13aot'">true</SkipCommonResourcesIncludes>
+    <SkipCommonResourcesIncludes Condition="'$(TargetGroup)'=='netcore50aot' Or '$(TargetGroup)'=='netstandard13aot' Or '$(TargetGroup)'=='uap101aot'">true</SkipCommonResourcesIncludes>
     <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.0</NuGetTargetMoniker>
+    <PackageTargetFramework Condition="'$(TargetGroup)'==''">netstandard1.0;uap10.1</PackageTargetFramework>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Debug|AnyCPU'" />
@@ -26,7 +27,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_netstandard13aot_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_netstandard13aot_Release|AnyCPU'" />
   <ItemGroup>
-    <Compile Include="$(CommonPath)\System\Diagnostics\Debug.cs" Condition="'$(TargetGroup)'!='netcore50aot' And '$(TargetGroup)'!='netstandard13aot'">
+    <Compile Include="$(CommonPath)\System\Diagnostics\Debug.cs" Condition="'$(TargetGroup)'!='netcore50aot' And '$(TargetGroup)'!='netstandard13aot' And '$(TargetGroup)'!='uap101aot'">
       <Link>Common\System\Diagnostics\Debug.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Collections\Generic\LowLevelDictionary.cs">
@@ -75,7 +76,7 @@
     <Compile Include="$(CommonPath)\System\Globalization\IdnMapping.Windows.cs">
       <Link>Common\System\Globalization\IdnMapping.Windows.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Diagnostics\Debug.Windows.cs" Condition="'$(TargetGroup)'!='netcore50aot' And '$(TargetGroup)'!='netstandard13aot'">
+    <Compile Include="$(CommonPath)\System\Diagnostics\Debug.Windows.cs" Condition="'$(TargetGroup)'!='netcore50aot' And '$(TargetGroup)'!='netstandard13aot' And '$(TargetGroup)'!='uap101aot'">
       <Link>Common\System\Diagnostics\Debug.Windows.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.SetLastError.cs">
@@ -95,7 +96,7 @@
     <Compile Include="$(CommonPath)\System\Globalization\IdnMapping.Unix.cs">
       <Link>Common\System\Globalization\IdnMapping.Unix.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Diagnostics\Debug.Unix.cs" Condition="'$(TargetGroup)'!='netcore50aot' And '$(TargetGroup)'!='netstandard13aot'">
+    <Compile Include="$(CommonPath)\System\Diagnostics\Debug.Unix.cs" Condition="'$(TargetGroup)'!='netcore50aot' And '$(TargetGroup)'!='netstandard13aot' And '$(TargetGroup)'!='uap101aot'">
       <Link>Common\System\Diagnostics\Debug.Unix.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs">
@@ -144,10 +145,10 @@
       <Link>Common\Microsoft\Win32\SafeHandles\SafeFileHandle.Unix.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)'=='netcore50aot' Or '$(TargetGroup)'=='netstandard13aot'">
+  <ItemGroup Condition="'$(TargetGroup)'=='netcore50aot' Or '$(TargetGroup)'=='netstandard13aot' Or '$(TargetGroup)'=='uap101aot'">
     <TargetingPackReference Include="System.Private.CoreLib" />
     <EmbeddedResource Include="Resources\$(AssemblyName).rd.xml" />
-    <Compile Include="$(CommonPath)\System\SR.Core.cs" Condition="'$(TargetGroup)'=='netcore50aot'">
+    <Compile Include="$(CommonPath)\System\SR.Core.cs" Condition="'$(TargetGroup)'=='netcore50aot' Or '$(TargetGroup)'=='uap101aot'">
       <Link>Common\System\SR.Core.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\SR.CoreRT.cs" Condition="'$(TargetGroup)'=='netstandard13aot'">

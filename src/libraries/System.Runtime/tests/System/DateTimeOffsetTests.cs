@@ -9,7 +9,7 @@ using Xunit;
 
 namespace System.Tests
 {
-    public static class DateTimeOffsetTests
+    public static partial class DateTimeOffsetTests
     {
         [Fact]
         public static void MaxValue()

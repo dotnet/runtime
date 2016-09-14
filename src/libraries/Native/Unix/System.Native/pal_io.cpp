@@ -777,6 +777,8 @@ extern "C" int64_t SystemNative_SysConf(SysConfName name)
             return sysconf(_SC_CLK_TCK);
         case PAL_SC_PAGESIZE:
             return sysconf(_SC_PAGESIZE);
+        case PAL_SC_NPROCESSORS_ONLN:
+            return sysconf(_SC_NPROCESSORS_ONLN);
     }
 
     assert(false && "Unknown SysConfName");

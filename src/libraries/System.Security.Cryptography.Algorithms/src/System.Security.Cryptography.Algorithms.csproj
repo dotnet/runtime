@@ -11,14 +11,16 @@
     <OutputType>Library</OutputType>
     <AssemblyName>System.Security.Cryptography.Algorithms</AssemblyName>
     <AssemblyVersion Condition="'$(TargetGroup)'=='net46'">4.0.0.0</AssemblyVersion>
+    <ContractProject Condition="'$(AssemblyVersion)' == '4.0.0.0'">..\ref\4.0\System.Security.Cryptography.Algorithms.depproj</ContractProject>
     <AssemblyVersion Condition="'$(TargetGroup)'=='net461' or '$(TargetGroup)' == 'netcore50'">4.1.0.0</AssemblyVersion>
+    <ContractProject Condition="'$(AssemblyVersion)' == '4.1.0.0'">..\ref\4.1\System.Security.Cryptography.Algorithms.depproj</ContractProject>
+    <AssemblyVersion Condition="'$(TargetGroup)' == 'netstandard1.6'">4.2.0.0</AssemblyVersion>
+    <ContractProject Condition="'$(AssemblyVersion)' == '4.2.0.0'">..\ref\4.2\System.Security.Cryptography.Algorithms.depproj</ContractProject>
+    <IsPartialFacadeAssembly Condition="'$(TargetGroup)'=='net46' OR '$(TargetGroup)'=='net461' OR '$(TargetGroup)'=='net463'">true</IsPartialFacadeAssembly>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants>INTERNAL_ASYMMETRIC_IMPLEMENTATIONS</DefineConstants>
-    <ContractProject Condition="'$(AssemblyVersion)' == '4.0.0.0'">..\ref\4.0\System.Security.Cryptography.Algorithms.depproj</ContractProject>
-    <ContractProject Condition="'$(AssemblyVersion)' == '4.1.0.0'">..\ref\4.1\System.Security.Cryptography.Algorithms.depproj</ContractProject>
-    <IsPartialFacadeAssembly Condition="'$(TargetGroup)'=='net46' OR '$(TargetGroup)'=='net461' OR '$(TargetGroup)'=='net463'">true</IsPartialFacadeAssembly>
-    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.6</NuGetTargetMoniker>
-    <GenFacadesArgs Condition="'$(TargetGroup)'=='net463'">$(GenFacadesArgs) -ignoreMissingTypes</GenFacadesArgs>
+    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NuGetTargetMoniker>
+    <GenFacadesArgs Condition="'$(TargetGroup)'=='net463' OR '$(TargetGroup)'=='netstandard1.6' OR '$(TargetGroup)'=='netstandard1.7'">$(GenFacadesArgs) -ignoreMissingTypes</GenFacadesArgs>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'OSX_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'OSX_Release|AnyCPU'" />
@@ -28,11 +30,15 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Release|AnyCPU'" />
+  <ItemGroup Condition="'$(TargetGroup)'=='netstandard1.6'">
+    <AdditionalFiles Include="$(ToolsDir)PinvokeAnalyzer_OneCoreApis.txt" />
+  </ItemGroup>
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">
     <Compile Include="Internal\Cryptography\TripleDesImplementation.cs" />
     <Compile Include="System\Security\Cryptography\Aes.cs" />
     <Compile Include="System\Security\Cryptography\DeriveBytes.cs" />
-    <None Include="System\Security\Cryptography\DSAParameters.cs" />
+    <Compile Include="System\Security\Cryptography\DSA.cs" />
+    <Compile Include="System\Security\Cryptography\DSAParameters.cs" />
     <Compile Include="System\Security\Cryptography\ECCurve.cs" />
     <Compile Include="System\Security\Cryptography\ECCurve.ECCurveType.cs" />
     <Compile Include="System\Security\Cryptography\ECCurve.NamedCurves.cs" />
@@ -81,6 +87,7 @@
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true' AND '$(IsPartialFacadeAssembly)' != 'true' ">
     <Compile Include="System\Security\Cryptography\CngKeyLite.cs" />
+    <Compile Include="System\Security\Cryptography\DSACng.cs" />
     <Compile Include="System\Security\Cryptography\ECDsaCng.cs" />
     <Compile Include="System\Security\Cryptography\ECDsaCng.Key.cs" />
     <Compile Include="System\Security\Cryptography\RNGCryptoServiceProvider.Windows.cs" />
@@ -205,6 +212,15 @@
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.FormatMessage.cs">
       <Link>Internal\Windows\mincore\Interop.FormatMessage.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\DSACng.cs">
+      <Link>Common\System\Security\Cryptography\DSACng.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\DSACng.ImportExport.cs">
+      <Link>Common\System\Security\Cryptography\DSACng.ImportExport.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\DSACng.SignVerify.cs">
+      <Link>Common\System\Security\Cryptography\DSACng.SignVerify.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\System\Security\Cryptography\ECCng.HashAlgorithm.cs">
       <Link>Common\System\Security\Cryptography\ECCng.HashAlgorithm.cs</Link>
     </Compile>
@@ -309,6 +325,9 @@
     <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.EcDsa.cs">
       <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.EcDsa.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.Dsa.cs">
+      <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.Dsa.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.EcDsa.ImportExport.cs">
       <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.EcDsa.ImportExport.cs</Link>
     </Compile>
@@ -333,6 +352,9 @@
     <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeBignumHandle.Unix.cs">
       <Link>Common\Microsoft\Win32\SafeHandles\SafeBignumHandle.Unix.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeDsaHandle.Unix.cs">
+      <Link>Common\Microsoft\Win32\SafeHandles\SafeDsaHandle.Unix.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeInteriorHandle.cs">
       <Link>Common\Microsoft\Win32\SafeHandles\SafeInteriorHandle.cs</Link>
     </Compile>
@@ -348,6 +370,9 @@
     <Compile Include="$(CommonPath)\System\Security\Cryptography\DerSequenceReader.cs">
       <Link>Common\System\Security\Cryptography\DerSequenceReader.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\DSAOpenSsl.cs">
+      <Link>Common\System\Security\Cryptography\DSAOpenSsl.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\System\Security\Cryptography\ECDsaOpenSsl.cs">
       <Link>Common\System\Security\Cryptography\ECDsaOpenSsl.cs</Link>
     </Compile>
@@ -356,6 +381,14 @@
     </Compile>
     <Compile Include="$(CommonPath)\System\Security\Cryptography\RSAOpenSsl.cs">
       <Link>Common\System\Security\Cryptography\RSAOpenSsl.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' != '' And '$(IsPartialFacadeAssembly)' != 'true'">
+    <Compile Include="$(CommonPath)\System\SerializableAttribute.cs">
+      <Link>Common\System\SerializableAttribute.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\NonSerializedAttribute.cs">
+      <Link>Common\System\NonSerializedAttribute.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)'=='true'">

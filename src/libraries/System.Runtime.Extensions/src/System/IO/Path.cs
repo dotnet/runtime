@@ -18,6 +18,9 @@ namespace System.IO
         // as the alternate separator on Windows, so same definition is used for both.
         public static readonly char AltDirectorySeparatorChar = '/';
 
+        [Obsolete("Please use GetInvalidPathChars or GetInvalidFileNameChars instead.")]
+        public static readonly char[] InvalidPathChars = GetInvalidPathChars();
+
         // Changes the extension of a file path. The path parameter
         // specifies a file path, and the extension parameter
         // specifies a file extension (with a leading period, such as
@@ -209,6 +212,20 @@ namespace System.IO
             return CombineNoChecks(path1, path2, path3);
         }
 
+        public static string Combine(string path1, string path2, string path3, string path4)
+        {
+            if (path1 == null || path2 == null || path3 == null || path4 == null)
+                throw new ArgumentNullException((path1 == null) ? "path1" : (path2 == null) ? "path2" : (path3 == null) ? "path3" : "path4");
+            Contract.EndContractBlock();
+
+            PathInternal.CheckInvalidPathChars(path1);
+            PathInternal.CheckInvalidPathChars(path2);
+            PathInternal.CheckInvalidPathChars(path3);
+            PathInternal.CheckInvalidPathChars(path4);
+
+            return CombineNoChecks(path1, path2, path3, path4);
+        }
+
         public static string Combine(params string[] paths)
         {
             if (paths == null)
@@ -336,6 +353,63 @@ namespace System.IO
                   .Append(path2)
                   .Append(DirectorySeparatorChar)
                   .Append(path3);
+                return StringBuilderCache.GetStringAndRelease(sb);
+            }
+        }
+
+        private static string CombineNoChecks(string path1, string path2, string path3, string path4)
+        {
+            if (path1.Length == 0)
+                return CombineNoChecks(path2, path3, path4);
+            if (path2.Length == 0)
+                return CombineNoChecks(path1, path3, path4);
+            if (path3.Length == 0)
+                return CombineNoChecks(path1, path2, path4);
+            if (path4.Length == 0)
+                return CombineNoChecks(path1, path2, path3);
+
+            if (IsPathRooted(path4))
+                return path4;
+            if (IsPathRooted(path3))
+                return CombineNoChecks(path3, path4);
+            if (IsPathRooted(path2))
+                return CombineNoChecks(path2, path3, path4);
+
+            bool hasSep1 = PathInternal.IsDirectoryOrVolumeSeparator(path1[path1.Length - 1]);
+            bool hasSep2 = PathInternal.IsDirectoryOrVolumeSeparator(path2[path2.Length - 1]);
+            bool hasSep3 = PathInternal.IsDirectoryOrVolumeSeparator(path3[path3.Length - 1]);
+
+            if (hasSep1 && hasSep2 && hasSep3)
+            {
+                // Use string.Concat overload that takes four strings
+                return path1 + path2 + path3 + path4;
+            }
+            else
+            {
+                // string.Concat only has string-based overloads up to four arguments; after that requires allocating
+                // a params string[].  Instead, try to use a cached StringBuilder.
+                StringBuilder sb = StringBuilderCache.Acquire(path1.Length + path2.Length + path3.Length + path4.Length + 3);
+
+                sb.Append(path1);
+                if (!hasSep1)
+                {
+                    sb.Append(DirectorySeparatorChar);
+                }
+
+                sb.Append(path2);
+                if (!hasSep2)
+                {
+                    sb.Append(DirectorySeparatorChar);
+                }
+
+                sb.Append(path3);
+                if (!hasSep3)
+                {
+                    sb.Append(DirectorySeparatorChar);
+                }
+
+                sb.Append(path4);
+
                 return StringBuilderCache.GetStringAndRelease(sb);
             }
         }

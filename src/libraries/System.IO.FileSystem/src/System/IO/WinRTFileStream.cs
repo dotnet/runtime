@@ -41,6 +41,7 @@ namespace System.IO
         public override bool IsAsync { get { return true; } }
         public override string Name { get { return _file.Name; } }
         public override Microsoft.Win32.SafeHandles.SafeFileHandle SafeFileHandle { get { return s_invalidHandle; } }
+        internal override bool IsClosed => false;
 
         public override void Flush(bool flushToDisk)
         {

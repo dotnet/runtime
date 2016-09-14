@@ -150,4 +150,13 @@
   <data name="OrderedDictionary_ReadOnly" xml:space="preserve">
     <value>The OrderedDictionary is read-only and cannot be modified.</value>
   </data>
+  <data name="Argument_ImplementIComparable" xml:space="preserve">
+    <value>At least one object must implement IComparable.</value>
+  </data>
+  <data name="OrderedDictionary_SerializationMismatch" xml:space="preserve">
+    <value>There was an error deserializing the OrderedDictionary.  The ArrayList does not contain DictionaryEntries.</value>
+  </data>
+  <data name="Serialization_InvalidOnDeser" xml:space="preserve">
+    <value>OnDeserialization method was called while the object was not being deserialized.</value>
+  </data>
 </root>

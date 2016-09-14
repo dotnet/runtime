@@ -1,0 +1,4 @@
+<xs:schema xmlns:xml="http://www.w3.org/XML/1998/namespace" targetNamespace="http://www.w3.org/XML/1998/namespace" xmlns:xs="http://www.w3.org/2001/XMLSchema">			
+  <xs:attribute name="base" type="xs:short" />		
+
+</xs:schema>

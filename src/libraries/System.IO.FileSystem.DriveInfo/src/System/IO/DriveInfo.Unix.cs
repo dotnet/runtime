@@ -11,8 +11,8 @@ namespace System.IO
     {
         public static DriveInfo[] GetDrives()
         {
-            List<string> mountPoints = Interop.Sys.GetAllMountPoints();
-            DriveInfo[] info = new DriveInfo[mountPoints.Count];
+            string[] mountPoints = Interop.Sys.GetAllMountPoints();
+            DriveInfo[] info = new DriveInfo[mountPoints.Length];
             for (int i = 0; i < info.Length; i++)
             {
                 info[i] = new DriveInfo(mountPoints[i]);

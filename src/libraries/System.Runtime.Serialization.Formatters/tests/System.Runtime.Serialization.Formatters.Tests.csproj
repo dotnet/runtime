@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
@@ -8,18 +8,51 @@
     <OutputType>Library</OutputType>
     <AssemblyName>System.Runtime.Serialization.Formatters.Tests</AssemblyName>
     <RootNamespace>System.Runtime.Serialization.Formatters.Tests</RootNamespace>
-    <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
+    <IncludePerformanceTests>true</IncludePerformanceTests>
+    <!--
+      Until we get first class support for NS1.7 and Netcoreapp1.1
+      we need to hard code $(TestTFM) and $(TestNugetTargetMoniker)
+      in the project file.
+    -->
+    <TestTFM>netcoreapp1.1</TestTFM>
+    <NugetTargetMoniker>.NETStandard,Version=v1.7</NugetTargetMoniker>
   </PropertyGroup>
+  <ItemGroup>
+    <TestNugetTargetMoniker Include="$(NugetTargetMoniker)">
+      <Folder>netcoreapp1.1</Folder>
+    </TestNugetTargetMoniker>
+  </ItemGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
   <ItemGroup>
-    <Compile Include="BasicTests.cs" />
+    <Compile Include="BinaryFormatterTests.cs" />
+    <Compile Include="OptionalFieldAttributeTests.cs" />
+    <Compile Include="FormatterConverterTests.cs" />
+    <Compile Include="FormatterServicesTests.cs" />
+    <Compile Include="FormatterTests.cs" />
+    <Compile Include="SerializationBinderTests.cs" />
+    <Compile Include="SerializationInfoTests.cs" />
+    <Compile Include="SerializationTypes.cs" />
+    <Compile Include="SurrogateSelectorTests.cs" />
+    <Compile Include="$(CommonTestPath)\System\Diagnostics\RemoteExecutorTestBase.cs">
+      <Link>Common\System\Diagnostics\RemoteExecutorTestBase.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\IO\FileCleanupTestBase.cs">
+      <Link>Common\System\IO\FileCleanupTestBase.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs">
+      <Link>Common\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="$(CommonTestPath)\System\Diagnostics\RemoteExecutorConsoleApp\RemoteExecutorConsoleApp.csproj">
+      <Project>{69e46a6f-9966-45a5-8945-2559fe337827}</Project>
+      <Name>RemoteExecutorConsoleApp</Name>
+    </ProjectReference>
     <ProjectReference Include="..\pkg\System.Runtime.Serialization.Formatters.pkgproj">
       <Project>{ca488507-3b6e-4494-b7be-7b4eeeb2c4d1}</Project>
       <Name>System.Runtime.Serialization.Formatters</Name>

@@ -72,6 +72,9 @@
     <Compile Include="$(CommonPath)\System\IO\Win32Marshal.cs">
       <Link>Common\System\IO\Win32Marshal.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\IO\DriveInfoInternal.Win32.cs">
+      <Link>Common\System\IO\DriveInfoInternal.Win32.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\System\IO\PathInternal.Windows.cs">
       <Link>Common\System\IO\PathInternal.Windows.cs</Link>
     </Compile>
@@ -95,6 +98,9 @@
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.MountPoints.cs">
       <Link>Common\Interop\Unix\Interop.MountPoints.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.MountPoints.FormatInfo.cs">
+      <Link>Common\Interop\Unix\Interop.MountPoints.FormatInfo.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'net46'">

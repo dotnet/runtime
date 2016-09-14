@@ -2,9 +2,15 @@
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
+    <Project Include="System.IO.IsolatedStorage.csproj" />
     <Project Include="System.IO.IsolatedStorage.csproj">
-      <TargetGroup>netcore50</TargetGroup>
+      <TargetGroup>net463</TargetGroup>
     </Project>
+    <!-- Dependent assemblies doesn't support uap10.1 yet, so for now we will use the ns1.7 asset instead. Issue: https://github.com/dotnet/corefx/issues/11551
+    <Project Include="System.IO.IsolatedStorage.csproj">
+      <TargetGroup>uap101</TargetGroup>
+    </Project>
+    -->
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
 </Project>

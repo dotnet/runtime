@@ -153,6 +153,12 @@
   <data name="IsolatedStorage_Init" xml:space="preserve">
     <value>Initialization failed.</value>
   </data>
+  <data name="IsolatedStorage_QuotaIsUndefined" xml:space="preserve">
+    <value>{0} is not defined for this store. An operation was performed that requires access to {0}. Stores obtained using enumeration APIs do not have a well-defined {0}, since partial evidence is used to open the store.</value>
+  </data>
+  <data name="IsolatedStorage_NotValidOnDesktop" xml:space="preserve">
+    <value>The Site scope is currently not supported.</value>
+  </data>
   <data name="Argument_EmptyPath" xml:space="preserve">
     <value>Empty path name is not legal.</value>
   </data>
@@ -209,5 +215,47 @@
   </data>
   <data name="UnknownError_Num" xml:space="preserve">
     <value>Unknown error '{0}'.</value>
+  </data>
+  <data name="IsolatedStorage_ApplicationMissingIdentity" xml:space="preserve">
+    <value>Unable to determine application identity of the caller.</value>
+  </data>
+  <data name="IsolatedStorage_ApplicationNoEvidence" xml:space="preserve">
+    <value>Unable to determine identity of application.</value>
+  </data>
+  <data name="IsolatedStorage_ApplicationUndefined" xml:space="preserve">
+    <value>Application cannot be determined on an Assembly or Domain store.</value>
+  </data>
+  <data name="IsolatedStorage_AssemblyMissingIdentity" xml:space="preserve">
+    <value>Unable to determine assembly of the caller.</value>
+  </data>
+  <data name="IsolatedStorage_AssemblyNoEvidence" xml:space="preserve">
+    <value>Unable to determine identity of assembly.</value>
+  </data>
+  <data name="IsolatedStorage_AssemblyUndefined" xml:space="preserve">
+    <value>Assembly cannot be determined for an Application store.</value>
+  </data>
+  <data name="IsolatedStorage_CurrentSizeUndefined" xml:space="preserve">
+    <value>Current size cannot be determined for this store.</value>
+  </data>
+  <data name="IsolatedStorage_DeleteDirectories" xml:space="preserve">
+    <value>Unable to delete; directory or files in the directory could be in use.</value>
+  </data>
+  <data name="IsolatedStorage_DomainMissingIdentity" xml:space="preserve">
+    <value>Unable to determine domain of the caller.</value>
+  </data>
+  <data name="IsolatedStorage_DomainNoEvidence" xml:space="preserve">
+    <value>Unable to determine the identity of domain.</value>
+  </data>
+  <data name="IsolatedStorage_DomainUndefined" xml:space="preserve">
+    <value>Domain cannot be determined on an Assembly or Application store.</value>
+  </data>
+  <data name="IsolatedStorage_OnlyIncreaseUserApplicationStore" xml:space="preserve">
+    <value>Increasing the quota of this scope is not supported.  Only the user application scope’s quota can be increased.</value>
+  </data>
+  <data name="IsolatedStorage_Scope_Invalid" xml:space="preserve">
+    <value>Invalid scope.</value>
+  </data>
+  <data name="IsolatedStorage_Scope_U_R_M" xml:space="preserve">
+    <value>Invalid scope, expected User, User|Roaming or Machine.</value>
   </data>
 </root>

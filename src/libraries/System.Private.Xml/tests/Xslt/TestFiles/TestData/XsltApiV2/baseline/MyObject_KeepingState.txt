@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<result xmlns:myObj="urn:my-object">
+	<A>27</A>
+	<B>23</B>
+	<C>23</C>
+	<D>23</D>
+	<E>37</E>
+	<F>Hello </F>
+	<G>Hello World </G>
+	<H>-13</H>
+</result>

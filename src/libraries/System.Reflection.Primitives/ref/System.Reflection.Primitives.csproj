@@ -2,12 +2,14 @@
 <Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <AssemblyVersion>4.0.0.0</AssemblyVersion>
     <OutputType>Library</OutputType>
-    <NuGetTargetMoniker>.NETStandard,Version=v1.0</NuGetTargetMoniker>
+    <NuGetTargetMoniker>.NETStandard,Version=v1.7</NuGetTargetMoniker>
+    <PackageTargetFramework>netstandard1.7;uap10.1</PackageTargetFramework>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Reflection.Primitives.cs" />
+    <!-- ToDo: Remove this P2P reference once new packages are produced and updated -->
+    <ProjectReference Include="..\..\System.Runtime\ref\System.Runtime.csproj" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />

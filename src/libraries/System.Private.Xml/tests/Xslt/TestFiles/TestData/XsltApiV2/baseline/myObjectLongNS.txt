@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<result xmlns:myObj="http://www.microsoft.com/this/is/a/very/long/namespace/uri/to/do/the/api/testing/for/xslt/0123456789/0123456789/0123456789/0123456789/0123456789/0123456789/0123456789/0123456789/0123456789/0123456789/0123456789/0123456789/0123456789/0123456789/0123456789/0123456789/0123456789/0123456789/">
+<func1>1.Test1</func1>
+
+<func2>2.Test2</func2>
+<func3>3.Test3</func3>
+</result>

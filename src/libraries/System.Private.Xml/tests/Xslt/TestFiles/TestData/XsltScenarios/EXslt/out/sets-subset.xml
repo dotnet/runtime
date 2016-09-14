@@ -1,0 +1,10 @@
+﻿<out>
+  <test1>
+Set of Spanish cities is a subset of all cities, right? 
+            true
+Set of all cities is a subset of Spanish cities, right? 
+            false</test1>
+  <test2>false</test2>
+  <test3>true</test3>
+  <test4>true</test4>
+</out>

@@ -1,0 +1,12 @@
+{
+  "dependencies": {
+    "Microsoft.NETCore.Platforms": "4.3.0-beta-devapi-24512-01",
+    "System.Runtime": "4.3.0-beta-devapi-24512-01",
+    "System.Runtime.Extensions": "4.3.0-beta-devapi-24512-01",
+    "System.Reflection": "4.3.0-beta-devapi-24512-01",
+    "System.Threading.Thread": "4.3.0-beta-devapi-24512-01"
+  },
+  "frameworks": {
+    "netstandard1.3": {}
+  }
+}
