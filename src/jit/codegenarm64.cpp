@@ -5147,7 +5147,7 @@ void CodeGen::genConsumeRegs(GenTree* tree)
         }
         else if (tree->OperGet() == GT_AND)
         {
-            // This is the special contained GT_AND that we created in Lowering::LowerCmp()
+            // This is the special contained GT_AND that we created in Lowering::TreeNodeInfoInitCmp()
             // Now we need to consume the operands of the GT_AND node.
             genConsumeOperands(tree->AsOp());
         }
