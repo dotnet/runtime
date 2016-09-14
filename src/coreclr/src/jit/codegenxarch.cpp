@@ -2531,6 +2531,19 @@ void CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
         }
         break;
 
+        case GT_JCC:
+        {
+            GenTreeJumpCC* jcc = treeNode->AsJumpCC();
+
+            assert(compiler->compCurBB->bbJumpKind == BBJ_COND);
+
+            CompareKind compareKind = ((jcc->gtFlags & GTF_UNSIGNED) != 0) ? CK_UNSIGNED : CK_SIGNED;
+            emitJumpKind jumpKind   = genJumpKindForOper(jcc->gtCondition, compareKind);
+
+            inst_JMP(jumpKind, compiler->compCurBB->bbJumpDest);
+        }
+        break;
+
         case GT_RETURNTRAP:
         {
             // this is nothing but a conditional call to CORINFO_HELP_STOP_FOR_GC

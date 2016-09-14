@@ -323,6 +323,11 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
             l->clearDstCount(tree->gtOp.gtOp1);
             break;
 
+        case GT_JCC:
+            info->srcCount = 0;
+            info->dstCount = 0;
+            break;
+
         case GT_JMP:
             info->srcCount = 0;
             info->dstCount = 0;
