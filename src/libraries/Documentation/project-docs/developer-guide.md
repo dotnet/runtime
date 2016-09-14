@@ -69,7 +69,7 @@ The native component should be buildable on any system.
 build-native -debug -buildArch=x64
 ```
 
-- The following example shows the argument `--`. Everything that is after it is not going to be processed and it is going to be passed as it is.
+- The following example shows the argument `--`. Everything that is after it is not going to be processed, and will be passed as-is.
 ```
 build-native -debug -buildArch=arm -- cross verbose
 ```
@@ -78,10 +78,10 @@ For more information about extra parameters take a look at the scripts `build-na
 
 ##Build Managed
 Since the managed build uses the .NET Core CLI (which the build will download), managed components can only be built on a subset of distros.
-There are some additional pre-requesties from the CLI which need to be installed. Both libicu and
+There are some additional prerequisites from the CLI which need to be installed. Both libicu and
 libunwind are used by CoreCLR to execute managed code, so they must be
 installed. Since CoreFX does not actually link against these packages, runtime
-versions are sufficent.  We also require curl to be present, which we use to
+versions are sufficient.  We also require curl to be present, which we use to
 download the .NET Core CLI.
 
 **Examples**
@@ -96,12 +96,12 @@ build-managed -debug -buildArch=x64
 build-managed -debug -buildArch=x64 -os=Linux
 ```
 
-- Building only the managed libraries with /flp:v=diag. It doesn't restore packages, builds tests or builds packages.
+- Building only the managed libraries with /flp:v=diag. It doesn't restore packages, build tests or build packages.
 ```
 build-managed -binaries -verbose
 ```
 
-- Building the managed libraries and the tests but don't run the tests.
+- Building the managed libraries and the tests but not running tests.
 ```
 build-managed -skiptests
 ```
@@ -126,7 +126,7 @@ src\System.Diagnostics.DiagnosticSource\tests and typing `msbuild System.Diagnos
 There is also a pkg directory for each project, and if you go into it and type `msbuild`, it will build the DLL (if needed)
 and then also build the NuGet package for it. The NuGet package ends up in the bin\packages directory.
 
-**Note:** If building in a non-Windows, call `./Tools/msbuild.sh` instead of just `msbuild`.
+**Note:** If building in a non-Windows environment, call `./Tools/msbuild.sh` instead of just `msbuild`.
 
 ### Building other OSes
 
@@ -140,7 +140,7 @@ One can build in Debug or Release mode from the root by doing `build -release` o
 
 ### Building other Architectures
 
-One can build 32 or 64 bit binaries or for any architecture by specifying in the root `build -buildArch=[value]` or in a project `/p:Platform=[value]` after the `msbuild` command.
+One can build 32- or 64-bit binaries or for any architecture by specifying in the root `build -buildArch=[value]` or in a project `/p:Platform=[value]` after the `msbuild` command.
 
 
 ### Tests
@@ -152,7 +152,7 @@ We use the OSS testing framework [xunit](http://xunit.github.io/).
 By default, the core tests are run as part of `build.cmd` or `build.sh`. If the product binaries are already available, you could do `build-tests` which will build and run the tests.
 If the tests are already built and you only want to run them, invoke `run-tests`.
 
-For more information about cross platform testing, please take a look [here](https://github.com/dotnet/corefx/blob/master/Documentation/building/cross-platform-testing.md).
+For more information about cross-platform testing, please take a look [here](https://github.com/dotnet/corefx/blob/master/Documentation/building/cross-platform-testing.md).
 
 You can also run the tests for an individual project by building it individually, e.g.:
 
@@ -165,7 +165,7 @@ It is possible to pass parameters to the underlying xunit runner via the `XunitO
 ```cmd
 msbuild /t:Test "/p:XunitOptions=-class Test.ClassUnderTests"
 ```
-**Note:** If building in a non-Windows, call `./Tools/msbuild.sh` instead of just `msbuild`.
+**Note:** If building in a non-Windows environment, call `./Tools/msbuild.sh` instead of just `msbuild`.
 
 There may be multiple projects in some directories so you may need to specify the path to a specific test project to get it to build and run the tests.
 
@@ -193,37 +193,37 @@ Use this attribute on test methods to specify that this test may only be run on 
        - `nonlinuxtests`: for tests that don't run on Linux
        - `nonosxtests`: for tests that don't run on OS X
 
-To run Linux specific tests on a Linux box, use the following commandline,
+To run Linux-specific tests on a Linux box, use the following command line:
 ```sh
 xunit.console.netcore.exe *.dll -notrait category=nonlinuxtests
 ```
 
 _**`ActiveIssue(int issue, Xunit.PlatformID platforms)`:**_
-Use this attribute over tests methods, to skip failing tests only on the specific platforms, if no platforms is specified, then the test is skipped on all platforms. This attribute returns the 'failing' category, so to run all acceptable tests on Linux that are not failing, use the following commandline,
+Use this attribute over test methods, to skip failing tests only on the specific platforms, if no platforms are specified, then the test is skipped on all platforms. This attribute returns the 'failing' category, so to run all acceptable tests on Linux that are not failing, use the following commandline,
 ```sh
 xunit.console.netcore.exe *.dll -notrait category=failing -notrait category=nonlinuxtests
 ```
 
-And to run all Linux-compatible tests that are failing,
+And to run all Linux-compatible tests that are failing:
 ```sh
 xunit.console.netcore.exe *.dll -trait category=failing -notrait category=nonlinuxtests
 ```
 
 _**A few common examples with the above attributes:**_
 
-- Run all tests acceptable on Windows
+- Run all tests acceptable on Windows:
 ```cmd
 xunit.console.netcore.exe *.dll -notrait category=nonwindowstests
 ```
-- Run all inner loop tests acceptable on Linux
+- Run all inner loop tests acceptable on Linux:
 ```sh
 xunit.console.netcore.exe *.dll -notrait category=nonlinuxtests -notrait category=OuterLoop
 ```
-- Run all outer loop tests acceptable on OS X that are not currently associated with active issues
+- Run all outer loop tests acceptable on OS X that are not currently associated with active issues:
 ```sh
 xunit.console.netcore.exe *.dll -notrait category=nonosxtests -trait category=OuterLoop -notrait category=failing
 ```
-- Run all tests acceptable on Linux that are currently associated with active issues
+- Run all tests acceptable on Linux that are currently associated with active issues:
 ```sh
 xunit.console.netcore.exe *.dll -notrait category=nonlinuxtests -trait category=failing
 ```
@@ -246,5 +246,23 @@ If coverage succeeds, the code coverage report will be generated automatically a
 
 Code coverage reports from the continuous integration system are available from the links on the front page of the corefx repo.
 
+### Building tests with .NET Native (Windows only)
+
+.NET Native is a technology that allows compiling IL applications down into a native executable and minimal set of native DLLs, containing all needed functionality from the .NET Framework in native format.  For CoreFX tests, .NET Native support in CoreFX is relatively early, but supported.  
+
+```cmd
+// To run a single project with the .NET Native toolchain, set the appropriate build flags:
+cd src\Microsoft.CSharp\tests
+msbuild /t:BuildAndTest /p:TestTFM=netcore50aot  /p:TestNugetRuntimeId=win10-x64-aot /p:UseDotNetNativeToolchain=true
+```
+If native compilation succeeds, the test will build and run as a native executable named "xunit.console.netcore.exe" in a folder named "native" in the test execution folder.  Note many tests in CoreFX are not ready to run though native compilation yet.
+
+A slight variation on these arguments will allow you to build and run against netcore50, the managed version of the UWP Framework subset, used when debugging UWP applications in Visual Studio:
+```cmd
+// To run a single project with the .NET Native toolchain, set the appropriate build flags:
+cd src\Microsoft.CSharp\tests
+msbuild /t:BuildAndTest /p:TestTFM=netcore50  /p:TestNugetRuntimeId=win10-x64
+```
+In this case, your test will get executed within the context of a wrapper UWP application, targeting the Managed netcore50.
 
 The CoreFX build and test suite is a work in progress, as are the [building and testing instructions](../README.md). The .NET Core team and the community are improving Linux and OS X support on a daily basis and are adding more tests for all platforms. See [CoreFX Issues](https://github.com/dotnet/corefx/issues) to find out about specific work items or report issues.
