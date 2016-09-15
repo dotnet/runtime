@@ -801,9 +801,7 @@ namespace System.Collections.Generic
                     }
                     else
                     {
-                        T[] itemsToInsert = new T[count];
-                        c.CopyTo(itemsToInsert, 0);
-                        Array.Copy(itemsToInsert, 0, _items, index, count);
+                        c.CopyTo(_items, index);
                     }
                     _size += count;
                 }
