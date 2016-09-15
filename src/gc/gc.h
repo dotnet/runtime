@@ -25,19 +25,6 @@ typedef void enum_func (Object*);
 // callback functions for heap walkers
 typedef void object_callback_func(void * pvContext, void * pvDataLoc);
 
-// stub type to abstract a heap segment
-struct gc_heap_segment_stub;
-typedef gc_heap_segment_stub *segment_handle;
-
-struct segment_info
-{
-    void * pvMem; // base of the allocation, not the first object (must add ibFirstObject)
-    size_t ibFirstObject;   // offset to the base of the first object in the segment
-    size_t ibAllocated; // limit of allocated memory in the segment (>= firstobject)
-    size_t ibCommit; // limit of committed memory in the segment (>= alllocated)
-    size_t ibReserved; // limit of reserved memory in the segment (>= commit)
-};
-
 /*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
 /* If you modify failure_get_memory and         */
 /* oom_reason be sure to make the corresponding */
@@ -261,14 +248,6 @@ public:
         return mt->GetBaseSize() >= LARGE_OBJECT_SIZE;
     }
 
-public:
-
-#ifdef FEATURE_BASICFREEZE
-    // frozen segment management functions
-    virtual segment_handle RegisterFrozenSegment(segment_info *pseginfo) = 0;
-    virtual void UnregisterFrozenSegment(segment_handle seg) = 0;
-#endif //FEATURE_BASICFREEZE
-
 protected: 
 public:
 #if defined(FEATURE_BASICFREEZE) && defined(VERIFY_HEAP)
@@ -291,14 +270,14 @@ extern MethodTable  *pWeakReferenceOfTCanonMT;
 extern void FinalizeWeakReference(Object * obj);
 
 // The single GC heap instance, shared with the VM.
-extern IGCHeapInternal* g_theGcHeap;
+extern IGCHeapInternal* g_theGCHeap;
 
 #ifndef DACCESS_COMPILE
 inline BOOL IsGCInProgress(bool bConsiderGCStart = FALSE)
 {
     WRAPPER_NO_CONTRACT;
 
-    return g_theGcHeap != nullptr ? g_theGcHeap->IsGCInProgressHelper(bConsiderGCStart) : false;
+    return g_theGCHeap != nullptr ? g_theGCHeap->IsGCInProgressHelper(bConsiderGCStart) : false;
 }
 #endif // DACCESS_COMPILE
 

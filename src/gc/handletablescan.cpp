@@ -818,7 +818,7 @@ void BlockResetAgeMapForBlocksWorker(uint32_t *pdwGen, uint32_t dwClumpMask, Sca
             {
                 if (!HndIsNullOrDestroyedHandle(*pValue))
                 {
-                    int thisAge = g_theGcHeap->WhichGeneration(*pValue);
+                    int thisAge = g_theGCHeap->WhichGeneration(*pValue);
                     if (minAge > thisAge)
                         minAge = thisAge;
 
@@ -830,7 +830,7 @@ void BlockResetAgeMapForBlocksWorker(uint32_t *pdwGen, uint32_t dwClumpMask, Sca
                         if (pOverlapped->m_userObject != NULL)
                         {
                             Object * pUserObject = OBJECTREFToObject(pOverlapped->m_userObject);
-                            thisAge = g_theGcHeap->WhichGeneration(pUserObject);
+                            thisAge = g_theGCHeap->WhichGeneration(pUserObject);
                             if (minAge > thisAge)
                                 minAge = thisAge;
                             if (pOverlapped->m_isArray)
@@ -840,7 +840,7 @@ void BlockResetAgeMapForBlocksWorker(uint32_t *pdwGen, uint32_t dwClumpMask, Sca
                                 size_t num = pUserArrayObject->GetNumComponents();
                                 for (size_t i = 0; i < num; i ++)
                                 {
-                                     thisAge = g_theGcHeap->WhichGeneration(pObj[i]);
+                                     thisAge = g_theGCHeap->WhichGeneration(pObj[i]);
                                      if (minAge > thisAge)
                                          minAge = thisAge;
                                  }                                    
@@ -925,10 +925,10 @@ static void VerifyObjectAndAge(_UNCHECKED_OBJECTREF *pValue, _UNCHECKED_OBJECTRE
     UNREFERENCED_PARAMETER(pValue);
     VerifyObject(from, obj);
 
-    int thisAge = g_theGcHeap->WhichGeneration(obj);
+    int thisAge = g_theGCHeap->WhichGeneration(obj);
 
     //debugging code
-    //if (minAge > thisAge && thisAge < g_theGcHeap->GetMaxGeneration())
+    //if (minAge > thisAge && thisAge < g_theGCHeap->GetMaxGeneration())
     //{
     //    if ((*pValue) == obj)
     //        printf("Handle (age %u) %p -> %p (age %u)", minAge, pValue, obj, thisAge);
@@ -946,7 +946,7 @@ static void VerifyObjectAndAge(_UNCHECKED_OBJECTREF *pValue, _UNCHECKED_OBJECTRE
     //    }
     //}
 
-    if (minAge >= GEN_MAX_AGE || (minAge > thisAge && thisAge < static_cast<int>(g_theGcHeap->GetMaxGeneration())))
+    if (minAge >= GEN_MAX_AGE || (minAge > thisAge && thisAge < static_cast<int>(g_theGCHeap->GetMaxGeneration())))
     {
         _ASSERTE(!"Fatal Error in HandleTable.");
         EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);

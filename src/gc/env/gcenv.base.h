@@ -447,7 +447,7 @@ extern bool g_fFinalizerRunOnShutDown;
 // Locks
 //
 
-struct alloc_context;
+struct gc_alloc_context;
 class Thread;
 
 Thread * GetThread();

@@ -1544,7 +1544,7 @@ void WaitLongerNoInstru (int i)
     }
     else if (g_TrapReturningThreads)
     {
-        g_theGcHeap->WaitUntilGCComplete();
+        g_theGCHeap->WaitUntilGCComplete();
     }
 }
 
@@ -3743,9 +3743,9 @@ public:
         BOOL fSmallObjectHeapPtr = FALSE, fLargeObjectHeapPtr = FALSE;
         if (!noRangeChecks)
         {
-            fSmallObjectHeapPtr = g_theGcHeap->IsHeapPointer(this, TRUE);
+            fSmallObjectHeapPtr = g_theGCHeap->IsHeapPointer(this, TRUE);
             if (!fSmallObjectHeapPtr)
-                fLargeObjectHeapPtr = g_theGcHeap->IsHeapPointer(this);
+                fLargeObjectHeapPtr = g_theGCHeap->IsHeapPointer(this);
 
             _ASSERTE(fSmallObjectHeapPtr || fLargeObjectHeapPtr);
         }
@@ -3763,14 +3763,14 @@ public:
 
 #ifdef VERIFY_HEAP
         if (bDeep && (g_pConfig->GetHeapVerifyLevel() & EEConfig::HEAPVERIFY_GC))
-            g_theGcHeap->ValidateObjectMember(this);
+            g_theGCHeap->ValidateObjectMember(this);
 #endif
         if (fSmallObjectHeapPtr)
         {
 #ifdef FEATURE_BASICFREEZE
-            _ASSERTE(!g_theGcHeap->IsLargeObject(pMT) || g_theGcHeap->IsInFrozenSegment(this));
+            _ASSERTE(!g_theGCHeap->IsLargeObject(pMT) || g_theGCHeap->IsInFrozenSegment(this));
 #else
-            _ASSERTE(!g_theGcHeap->IsLargeObject(pMT));
+            _ASSERTE(!g_theGCHeap->IsLargeObject(pMT));
 #endif
         }
     }
@@ -4361,7 +4361,7 @@ static size_t get_valid_segment_size (BOOL large_seg=FALSE)
 
     // if seg_size is small but not 0 (0 is default if config not set)
     // then set the segment to the minimum size
-    if (!g_theGcHeap->IsValidSegmentSize(seg_size))
+    if (!g_theGCHeap->IsValidSegmentSize(seg_size))
     {
         // if requested size is between 1 byte and 4MB, use min
         if ((seg_size >> 1) && !(seg_size >> 22))
@@ -5821,7 +5821,7 @@ struct fix_alloc_context_args
 void fix_alloc_context(gc_alloc_context* acontext, void* param)
 {
     fix_alloc_context_args* args = (fix_alloc_context_args*)param;
-    g_theGcHeap->FixAllocContext(acontext, FALSE, (void*)(size_t)(args->for_gc_p), args->heap);
+    g_theGCHeap->FixAllocContext(acontext, FALSE, (void*)(size_t)(args->for_gc_p), args->heap);
 }
 
 void gc_heap::fix_allocation_contexts(BOOL for_gc_p)
@@ -31950,7 +31950,7 @@ void gc_heap::descr_generations_to_profiler (gen_walk_fn fn, void *context)
 {
 #if defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
 #ifdef MULTIPLE_HEAPS
-    int n_heaps = g_theGcHeap->GetNumberOfHeaps ();
+    int n_heaps = g_theGCHeap->GetNumberOfHeaps ();
     for (int i = 0; i < n_heaps; i++)
     {
         gc_heap* hp = GCHeap::GetHeap(i)->pGenGCHeap;
@@ -34116,6 +34116,7 @@ BOOL GCHeap::StressHeap(gc_alloc_context * context)
 
     return TRUE;
 #else
+    UNREFERENCED_PARAMETER(context);
     return FALSE;
 #endif // defined(STRESS_HEAP) && !defined(FEATURE_REDHAWK)
 }
@@ -34280,6 +34281,8 @@ GCHeap::AllocAlign8( size_t size, uint32_t flags)
 
     return newAlloc;
 #else
+    UNREFERENCED_PARAMETER(size);
+    UNREFERENCED_PARAMETER(flags);
     assert(!"should not call GCHeap::AllocAlign8 without FEATURE_64BIT_ALIGNMENT defined!");
     return nullptr;
 #endif  //FEATURE_64BIT_ALIGNMENT
@@ -34316,6 +34319,9 @@ GCHeap::AllocAlign8(gc_alloc_context* ctx, size_t size, uint32_t flags )
 
     return AllocAlign8Common(hp, acontext, size, flags);
 #else
+    UNREFERENCED_PARAMETER(ctx);
+    UNREFERENCED_PARAMETER(size);
+    UNREFERENCED_PARAMETER(flags);
     assert(!"should not call GCHeap::AllocAlign8 without FEATURE_64BIT_ALIGNMENT defined!");
     return nullptr;
 #endif  //FEATURE_64BIT_ALIGNMENT
@@ -34446,6 +34452,10 @@ GCHeap::AllocAlign8Common(void* _hp, alloc_context* acontext, size_t size, uint3
 #endif //TRACE_GC
     return newAlloc;
 #else
+    UNREFERENCED_PARAMETER(_hp);
+    UNREFERENCED_PARAMETER(acontext);
+    UNREFERENCED_PARAMETER(size);
+    UNREFERENCED_PARAMETER(flags);
     assert(!"Should not call GCHeap::AllocAlign8Common without FEATURE_64BIT_ALIGNMENT defined!");
     return nullptr;
 #endif // FEATURE_64BIT_ALIGNMENT
@@ -35667,7 +35677,7 @@ size_t GCHeap::GetValidGen0MaxSize(size_t seg_size)
 {
     size_t gen0size = g_pConfig->GetGCgen0size();
 
-    if ((gen0size == 0) || !g_theGcHeap->IsValidGen0MaxSize(gen0size))
+    if ((gen0size == 0) || !g_theGCHeap->IsValidGen0MaxSize(gen0size))
     {
 #ifdef SERVER_GC
         // performance data seems to indicate halving the size results
@@ -35897,7 +35907,7 @@ GCHeap::SetCardsAfterBulkCopy( Object **StartPoint, size_t len )
 #ifdef BACKGROUND_GC
         (!gc_heap::settings.concurrent) &&
 #endif //BACKGROUND_GC
-        (g_theGcHeap->WhichGeneration( (Object*) StartPoint ) == 0))
+        (g_theGCHeap->WhichGeneration( (Object*) StartPoint ) == 0))
         return;
 
     rover = StartPoint;
@@ -36402,7 +36412,7 @@ CFinalize::ScanForFinalization (promote_func* pfn, int gen, BOOL mark_only_p,
             {
                 CObjectHeader* obj = (CObjectHeader*)*i;
                 dprintf (3, ("scanning: %Ix", (size_t)obj));
-                if (!g_theGcHeap->IsPromoted (obj))
+                if (!g_theGCHeap->IsPromoted (obj))
                 {
                     dprintf (3, ("freacheable: %Ix", (size_t)obj));
 
@@ -36535,7 +36545,7 @@ CFinalize::UpdatePromotedGenerations (int gen, BOOL gen_0_empty_p)
             for (Object** po = startIndex;
                  po < SegQueueLimit (gen_segment(i)); po++)
             {
-                int new_gen = g_theGcHeap->WhichGeneration (*po);
+                int new_gen = g_theGCHeap->WhichGeneration (*po);
                 if (new_gen != i)
                 {
                     if (new_gen > i)
@@ -36595,7 +36605,7 @@ void CFinalize::CheckFinalizerObjects()
 
         for (Object **po = startIndex; po < stopIndex; po++)
         {
-            if ((int)g_theGcHeap->WhichGeneration (*po) < i)
+            if ((int)g_theGCHeap->WhichGeneration (*po) < i)
                 FATAL_GC_ERROR ();
             ((CObjectHeader*)*po)->Validate();
         }
