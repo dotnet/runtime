@@ -504,6 +504,8 @@ private:
     {
         return (LsraStressLimitRegs)(lsraStressMask & LSRA_LIMIT_MASK);
     }
+
+    regMaskTP getConstrainedRegMask(regMaskTP regMaskActual, regMaskTP regMaskConstrain, unsigned minRegCount);
     regMaskTP stressLimitRegs(RefPosition* refPosition, regMaskTP mask);
 
     // This controls the heuristics used to select registers
@@ -769,11 +771,22 @@ private:
     regMaskTP getDefCandidates(GenTree* tree);
     var_types getDefType(GenTree* tree);
 
-    RefPosition* defineNewInternalTemp(GenTree* tree, RegisterType regType, LsraLocation currentLoc, regMaskTP regMask);
+    RefPosition* defineNewInternalTemp(GenTree* tree, 
+                                       RegisterType regType, 
+                                       LsraLocation currentLoc, 
+                                       regMaskTP regMask
+                                       DEBUGARG(unsigned minRegCandidateCount));
 
-    int buildInternalRegisterDefsForNode(GenTree* tree, LsraLocation currentLoc, RefPosition* defs[]);
+    int buildInternalRegisterDefsForNode(GenTree* tree, 
+                                         LsraLocation currentLoc, 
+                                         RefPosition* defs[]
+                                         DEBUGARG(unsigned minRegCandidateCount));
 
-    void buildInternalRegisterUsesForNode(GenTree* tree, LsraLocation currentLoc, RefPosition* defs[], int total);
+    void buildInternalRegisterUsesForNode(GenTree* tree, 
+                                          LsraLocation currentLoc, 
+                                          RefPosition* defs[], 
+                                          int total
+                                          DEBUGARG(unsigned minRegCandidateCount));
 
     void resolveLocalRef(BasicBlock* block, GenTreePtr treeNode, RefPosition* currentRefPosition);
 
@@ -824,7 +837,8 @@ private:
                                 RefType      theRefType,
                                 GenTree*     theTreeNode,
                                 regMaskTP    mask,
-                                unsigned     multiRegIdx = 0);
+                                unsigned     multiRegIdx = 0
+                                DEBUGARG(unsigned minRegCandidateCount = 1));
 
     RefPosition* newRefPosition(
         regNumber reg, LsraLocation theLocation, RefType theRefType, GenTree* theTreeNode, regMaskTP mask);
@@ -1381,7 +1395,8 @@ public:
         , isLocalDefUse(false)
         , delayRegFree(false)
         , outOfOrder(false)
-#ifdef DEBUG
+#ifdef DEBUG        
+        , minRegCandidateCount(1)
         , rpNum(0)
 #endif
     {
@@ -1555,9 +1570,15 @@ public:
     }
 
 #ifdef DEBUG
-    unsigned rpNum; // The unique RefPosition number, equal to its index in the refPositions list. Only used for
-                    // debugging dumps.
-#endif              // DEBUG
+    // Minimum number registers that needs to be ensured while
+    // constraining candidates for this ref position under
+    // LSRA stress. 
+    unsigned minRegCandidateCount;
+
+    // The unique RefPosition number, equal to its index in the
+    // refPositions list. Only used for debugging dumps.
+    unsigned rpNum; 
+#endif  // DEBUG
 
     bool isIntervalRef()
     {
