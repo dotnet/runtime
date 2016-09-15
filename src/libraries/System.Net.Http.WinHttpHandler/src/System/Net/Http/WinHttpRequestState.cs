@@ -49,10 +49,13 @@ namespace System.Net.Http
 
         public void Pin()
         {
+            if (!_operationHandle.IsAllocated)
+            {
 #if DEBUG
-            Interlocked.Increment(ref s_dbg_pin);
+                Interlocked.Increment(ref s_dbg_pin);
 #endif
-            _operationHandle = GCHandle.Alloc(this);
+                _operationHandle = GCHandle.Alloc(this);
+            }
         }
 
         public static WinHttpRequestState FromIntPtr(IntPtr gcHandle)
