@@ -98,7 +98,7 @@ namespace System.Runtime.CompilerServices
                 {
                     return node;
                 }
-                return Expression.Block(node.Variables, b);
+                return node.Rewrite(node.Variables, b);
             }
 
             protected override CatchBlock VisitCatchBlock(CatchBlock node)

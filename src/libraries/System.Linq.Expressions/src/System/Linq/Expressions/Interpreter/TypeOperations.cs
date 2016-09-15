@@ -2453,9 +2453,15 @@ namespace System.Linq.Expressions.Interpreter
 
             protected internal override Expression VisitLambda<T>(Expression<T> node)
             {
-                _shadowedVars.Push(new HashSet<ParameterExpression>(node.Parameters));
+                if (node.Parameters.Count > 0)
+                {
+                    _shadowedVars.Push(new HashSet<ParameterExpression>(node.Parameters));
+                }
                 Expression b = Visit(node.Body);
-                _shadowedVars.Pop();
+                if (node.Parameters.Count > 0)
+                {
+                    _shadowedVars.Pop();
+                }
                 if (b == node.Body)
                 {
                     return node;
@@ -2469,16 +2475,16 @@ namespace System.Linq.Expressions.Interpreter
                 {
                     _shadowedVars.Push(new HashSet<ParameterExpression>(node.Variables));
                 }
-                var b = Visit(node.Expressions);
+                var b = ExpressionVisitorUtils.VisitBlockExpressions(this, node);
                 if (node.Variables.Count > 0)
                 {
                     _shadowedVars.Pop();
                 }
-                if (b == node.Expressions)
+                if (b == null)
                 {
                     return node;
                 }
-                return Expression.Block(node.Variables, b);
+                return node.Rewrite(node.Variables, b);
             }
 
             protected override CatchBlock VisitCatchBlock(CatchBlock node)
