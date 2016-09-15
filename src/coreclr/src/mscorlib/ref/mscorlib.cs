@@ -10024,6 +10024,13 @@ namespace System.Runtime.CompilerServices
     {
         public IteratorStateMachineAttribute(System.Type stateMachineType) : base (default(System.Type)) { }
     }
+    [System.AttributeUsageAttribute((System.AttributeTargets)(2304), Inherited=false)]
+    [System.Runtime.InteropServices.ComVisibleAttribute(true)]
+    public sealed partial class IUnknownConstantAttribute : System.Runtime.CompilerServices.CustomConstantAttribute 
+    {
+        public IUnknownConstantAttribute() { }
+        public override object Value { get { return default(object); } }
+    }
     public enum LoadHint {
         Always = 1,
         Default = 0,
