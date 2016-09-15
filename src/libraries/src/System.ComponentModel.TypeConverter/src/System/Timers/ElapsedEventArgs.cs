@@ -6,7 +6,7 @@ namespace System.Timers
 {
     public class ElapsedEventArgs : EventArgs
     {
-        private DateTime _signalTime;
+        private readonly DateTime _signalTime;
 
         internal ElapsedEventArgs(long fileTime)
         {

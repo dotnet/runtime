@@ -137,7 +137,8 @@ namespace System.Timers
 
                             int i = (int)Math.Ceiling(_interval);
                             _cookie = new object();
-                            _timer = new Threading.Timer(_callback, _cookie, i, _autoReset ? i : Timeout.Infinite);
+                            _timer = new Threading.Timer(_callback, _cookie, Timeout.Infinite, Timeout.Infinite);
+                            _timer.Change(i, _autoReset ? i : Timeout.Infinite);
                         }
                         else
                         {
@@ -206,16 +207,15 @@ namespace System.Timers
         /// <internalonly/>
         public override ISite Site
         {
+            get
+            {
+                return base.Site;
+            }
             set
             {
                 base.Site = value;
                 if (DesignMode)
                     _enabled = true;
-            }
-
-            get
-            {
-                return base.Site;
             }
         }
 

@@ -30,14 +30,14 @@ namespace System.Timers.Tests
         {
             CountdownEvent cde = new CountdownEvent(1);
             int result = 0;
-            _timer = new TestTimer(100);
+            _timer = new TestTimer(1);
 
             // Test defaults.
-            Assert.Equal(100, _timer.Interval);
+            Assert.Equal(1, _timer.Interval);
             Assert.True(_timer.AutoReset);
 
             _timer.AutoReset = false;
-            _timer.Elapsed += (sender, e) => { cde.Signal();  result = ++result; };
+            _timer.Elapsed += (sender, e) => { result = ++result; cde.Signal(); };
             _timer.Start();
 
             Assert.True(_timer.Enabled);
