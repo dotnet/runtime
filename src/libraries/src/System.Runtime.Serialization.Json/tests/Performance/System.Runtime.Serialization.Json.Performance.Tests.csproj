@@ -7,6 +7,7 @@
     <RootNamespace>System.Runtime.Serialization.Json.Performance.Tests</RootNamespace>
     <AssemblyName>System.Runtime.Serialization.Json.Performance.Tests</AssemblyName>
     <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
+    <KeepAllProjectReferences>true</KeepAllProjectReferences>
   </PropertyGroup>
   <PropertyGroup Condition="'$(UseContractReferences)' == 'true'" >
     <ProjectJson>ContractReferences/project.json</ProjectJson>
