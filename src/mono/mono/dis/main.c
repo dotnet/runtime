@@ -32,6 +32,7 @@
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/appdomain.h>
 #include <mono/utils/bsearch.h>
+#include <mono/utils/mono-counters.h>
 
 static void     setup_filter          (MonoImage *image);
 static gboolean should_include_type   (int idx);
@@ -1963,9 +1964,16 @@ usage (void)
 	exit (1);
 }
 
+static void
+thread_state_init (MonoThreadUnwindState *ctx)
+{
+}
+
 int
 main (int argc, char *argv [])
 {
+	MonoThreadInfoRuntimeCallbacks ticallbacks;
+
 	GList *input_files = NULL, *l;
 	int i, j;
 
@@ -2015,6 +2023,15 @@ main (int argc, char *argv [])
 
 	if (input_files == NULL)
 		usage ();
+
+	CHECKED_MONO_INIT ();
+	mono_counters_init ();
+	memset (&ticallbacks, 0, sizeof (ticallbacks));
+	ticallbacks.thread_state_init = thread_state_init;
+#ifndef HOST_WIN32
+	mono_w32handle_init ();
+#endif
+	mono_threads_runtime_init (&ticallbacks);
 
 	mono_install_assembly_load_hook (monodis_assembly_load_hook, NULL);
 	mono_install_assembly_search_hook (monodis_assembly_search_hook, NULL);
