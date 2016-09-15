@@ -13,9 +13,14 @@ namespace System.Net.Http
     // Forwards all calls to an inner stream except where overridden in a derived class.
     internal abstract class DelegatingStream : Stream
     {
-        private Stream _innerStream;
+        private readonly Stream _innerStream;
 
         #region Properties
+
+        protected Stream BaseStream
+        {
+            get { return _innerStream; }
+        }
 
         public override bool CanRead
         {

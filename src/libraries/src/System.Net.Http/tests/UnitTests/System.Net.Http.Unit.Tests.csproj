@@ -59,29 +59,29 @@
     <Compile Include="..\..\src\Internal\ICloneable.cs">
       <Link>ProductionCode\Internal\ICloneable.cs</Link>
     </Compile>
-    <Compile Include="..\..\src\Internal\MailAddress.cs">
-      <Link>ProductionCode\Internal\MailAddress.cs</Link>
+    <Compile Include="$(CommonPath)\System\Net\Mail\MailAddress.cs">
+      <Link>ProductionCode\Common\src\System\Net\Mail\MailAddress.cs</Link>
     </Compile>
-    <Compile Include="..\..\src\Internal\Mail\DomainLiteralReader.cs">
-      <Link>ProductionCode\Internal\DomainLiteralReader.cs</Link>
+    <Compile Include="$(CommonPath)\System\Net\Mail\DomainLiteralReader.cs">
+      <Link>ProductionCode\Common\src\System\Net\Mail\DomainLiteralReader.cs</Link>
     </Compile>
-    <Compile Include="..\..\src\Internal\Mail\DotAtomReader.cs">
-      <Link>ProductionCode\Internal\DotAtomReader.cs</Link>
+    <Compile Include="$(CommonPath)\System\Net\Mail\DotAtomReader.cs">
+      <Link>ProductionCode\Common\src\System\Net\Mail\DotAtomReader.cs</Link>
     </Compile>
-    <Compile Include="..\..\src\Internal\Mail\MailAddressParser.cs">
-      <Link>ProductionCode\Internal\MailAddressParser.cs</Link>
+    <Compile Include="$(CommonPath)\System\Net\Mail\MailAddressParser.cs">
+      <Link>ProductionCode\Common\src\System\Net\Mail\MailAddressParser.cs</Link>
     </Compile>
-    <Compile Include="..\..\src\Internal\Mail\MailBnfHelper.cs">
-      <Link>ProductionCode\Internal\MailBnfHelper.cs</Link>
+    <Compile Include="$(CommonPath)\System\Net\Mail\MailBnfHelper.cs">
+      <Link>ProductionCode\Common\src\System\Net\Mail\MailBnfHelper.cs</Link>
     </Compile>
-    <Compile Include="..\..\src\Internal\Mail\QuotedPairReader.cs">
-      <Link>ProductionCode\Internal\QuotedPairReader.cs</Link>
+    <Compile Include="$(CommonPath)\System\Net\Mail\QuotedPairReader.cs">
+      <Link>ProductionCode\Common\src\System\Net\Mail\QuotedPairReader.cs</Link>
     </Compile>
-    <Compile Include="..\..\src\Internal\Mail\QuotedStringFormatReader.cs">
-      <Link>ProductionCode\Internal\QuotedStringFormatReader.cs</Link>
+    <Compile Include="$(CommonPath)\System\Net\Mail\QuotedStringFormatReader.cs">
+      <Link>ProductionCode\Common\src\System\Net\Mail\QuotedStringFormatReader.cs</Link>
     </Compile>
-    <Compile Include="..\..\src\Internal\Mail\WhitespaceReader.cs">
-      <Link>ProductionCode\Internal\WhitespaceReader.cs</Link>
+    <Compile Include="$(CommonPath)\System\Net\Mail\WhitespaceReader.cs">
+      <Link>ProductionCode\Common\src\System\Net\Mail\WhitespaceReader.cs</Link>
     </Compile>
     <Compile Include="..\..\src\Internal\UriHelper.cs">
       <Link>ProductionCode\Internal\UriHelper.cs</Link>
@@ -98,8 +98,8 @@
     <Compile Include="..\..\src\System\Net\Http\DelegatingHandler.cs">
       <Link>ProductionCode\System\Net\Http\DelegatingHandler.cs</Link>
     </Compile>
-    <Compile Include="..\..\src\System\Net\Http\DelegatingStream.cs">
-      <Link>ProductionCode\System\Net\Http\DelegatingStream.cs</Link>
+    <Compile Include="$(CommonPath)\System\IO\DelegatingStream.cs">
+      <Link>ProductionCode\System\IO\DelegatingStream.cs</Link>
     </Compile>
     <Compile Include="..\..\src\System\Net\Http\FormUrlEncodedContent.cs">
       <Link>ProductionCode\System\Net\Http\FormUrlEncodedContent.cs</Link>
