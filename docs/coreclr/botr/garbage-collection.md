@@ -2,7 +2,7 @@ Garbage Collection Design
 =========================
 Author: Maoni Stephens ([@maoni0](https://github.com/maoni0)) - 2015
 
-Note: See the The Garbage Collection Handbook referenced in the resources section at the end of this document to learn more about garbage collection topics.
+Note: See _The Garbage Collection Handbook_ (referenced in the resources section at the end of this document) to learn more about garbage collection topics.
 
 Component Architecture
 ======================
