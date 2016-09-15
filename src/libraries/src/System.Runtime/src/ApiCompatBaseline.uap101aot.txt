@@ -648,3 +648,19 @@ MembersMustExist : Member 'System.String.EndsWith(System.String, System.Boolean,
 MembersMustExist : Member 'System.String.StartsWith(System.String, System.Boolean, System.Globalization.CultureInfo)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.String.ToLower(System.Globalization.CultureInfo)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.String.ToUpper(System.Globalization.CultureInfo)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Char.GetUnicodeCategory(System.Char)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Char.GetUnicodeCategory(System.String, System.Int32)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Char.ToUpper(System.Char, System.Globalization.CultureInfo)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.String..ctor(System.SByte*)' does not exist in the implementation but it does exist in the contract. 
+MembersMustExist : Member 'System.String..ctor(System.SByte*, System.Int32, System.Int32)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.String..ctor(System.SByte*, System.Int32, System.Int32, System.Text.Encoding)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.String.Copy(System.String)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.String.GetEnumerator()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.String.Intern(System.String)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.String.IsInterned(System.String)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.String.IsNormalized()' does not exist in the implementation but it does exist in the contract. 
+MembersMustExist : Member 'System.String.IsNormalized(System.Text.NormalizationForm)' does not exist in the implementation but it does exist in the contract. 
+MembersMustExist : Member 'System.String.Normalize()' does not exist in the implementation but it does exist in the contract. 
+MembersMustExist : Member 'System.String.Normalize(System.Text.NormalizationForm)' does not exist in the implementation but it does exist in the contract. 
+MembersMustExist : Member 'System.Char.ToLower(System.Char, System.Globalization.CultureInfo)' does not exist in the implementation but it does exist in the contract. 
+TypesMustExist : Type 'System.CharEnumerator' does not exist in the implementation but it does exist in the contract.
