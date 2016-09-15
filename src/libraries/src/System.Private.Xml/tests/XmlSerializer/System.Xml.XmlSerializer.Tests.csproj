@@ -17,6 +17,7 @@
       -->
       <NugetTargetMoniker>.NETStandard,Version=v1.7</NugetTargetMoniker>
       <TestTFM>netcoreapp1.1</TestTFM>
+      <KeepAllProjectReferences>true</KeepAllProjectReferences>
     </PropertyGroup>
   <ItemGroup>
     <TestNugetTargetMoniker Include="$(NugetTargetMoniker)">
