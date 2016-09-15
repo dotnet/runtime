@@ -25,7 +25,12 @@ namespace System.Net.NetworkInformation
                 Task<PingReply> t = RawSocketPermissions.CanUseRawSockets(address.AddressFamily) ?
                     SendIcmpEchoRequestOverRawSocket(address, buffer, timeout, options) :
                     SendWithPingUtility(address, buffer, timeout, options);
-                return await t.ConfigureAwait(false);
+                PingReply reply = await t.ConfigureAwait(false);
+                if (_canceled)
+                {
+                    throw new OperationCanceledException();
+                }
+                return reply;
             }
             finally
             {
