@@ -9,7 +9,7 @@ namespace System.IO.Tests
 {
     public class Directory_Create_Tests : FileSystemWatcherTest
     {
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/216
+        [Fact]
         public void FileSystemWatcher_Directory_Create()
         {
             using (var testDirectory = new TempDirectory(GetTestFilePath()))
@@ -25,7 +25,7 @@ namespace System.IO.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/216
+        [Fact]
         public void FileSystemWatcher_Directory_Create_InNestedDirectory()
         {
             using (var dir = new TempDirectory(GetTestFilePath()))
@@ -44,7 +44,7 @@ namespace System.IO.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/216
+        [Fact]
         [OuterLoop("This test has a longer than average timeout and may fail intermittently")]
         public void FileSystemWatcher_Directory_Create_DeepDirectoryStructure()
         {
@@ -64,7 +64,7 @@ namespace System.IO.Tests
             }
         }
 
-        [ConditionalFact(nameof(CanCreateSymbolicLinks), nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/216
+        [ConditionalFact(nameof(CanCreateSymbolicLinks))]
         public void FileSystemWatcher_Directory_Create_SymLink()
         {
             using (var testDirectory = new TempDirectory(GetTestFilePath()))

@@ -15,14 +15,14 @@ namespace System.IO.Tests
             FileMove_SameDirectory(WatcherChangeTypes.Renamed);
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/216
+        [Fact]
         [PlatformSpecific(PlatformID.AnyUnix)]
         public void Unix_File_Move_To_Same_Directory()
         {
             FileMove_SameDirectory(WatcherChangeTypes.Created | WatcherChangeTypes.Deleted);
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/216
+        [Fact]
         public void File_Move_From_Watched_To_Unwatched()
         {
             FileMove_FromWatchedToUnwatched(WatcherChangeTypes.Deleted);
@@ -42,14 +42,14 @@ namespace System.IO.Tests
             FileMove_DifferentWatchedDirectory(WatcherChangeTypes.Changed);
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/216
+        [Fact]
         [PlatformSpecific(PlatformID.Linux)]
         public void Linux_File_Move_To_Different_Watched_Directory()
         {
             FileMove_DifferentWatchedDirectory(0);
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/216
+        [Fact]
         public void File_Move_From_Unwatched_To_Watched()
         {
             FileMove_FromUnwatchedToWatched(WatcherChangeTypes.Created);
@@ -64,7 +64,7 @@ namespace System.IO.Tests
             FileMove_NestedDirectory(includeSubdirectories ? WatcherChangeTypes.Renamed : 0, includeSubdirectories);
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/216
+        [Theory]
         [InlineData(false)]
         [InlineData(true)]
         [PlatformSpecific(PlatformID.AnyUnix)]
@@ -80,7 +80,7 @@ namespace System.IO.Tests
             FileMove_WithNotifyFilter(WatcherChangeTypes.Renamed);
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/216
+        [Fact]
         [PlatformSpecific(PlatformID.AnyUnix)]
         public void Unix_File_Move_With_Set_NotifyFilter()
         {
