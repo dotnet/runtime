@@ -1006,17 +1006,13 @@ namespace System
             return SplitInternal(pSeparators, /*separatorsLength*/ 1, count, options);
         }
 
-        [ComVisible(false)]
         [System.Security.SecuritySafeCritical]
-        internal String[] SplitInternal(char[] separator, int count, StringSplitOptions options)
+        private unsafe String[] SplitInternal(char[] separator, int count, StringSplitOptions options)
         {
-            unsafe
+            fixed (char* pSeparators = separator)
             {
-                fixed (char* pSeparators = separator)
-                {
-                    int separatorsLength = separator == null ? 0 : separator.Length;
-                    return SplitInternal(pSeparators, separatorsLength, count, options);
-                }
+                int separatorsLength = separator == null ? 0 : separator.Length;
+                return SplitInternal(pSeparators, separatorsLength, count, options);
             }
         }
 
@@ -1060,11 +1056,11 @@ namespace System
 
             if(omitEmptyEntries) 
             {
-                return InternalSplitOmitEmptyEntries(sepList, null, 1, numReplaces, count);
+                return SplitOmitEmptyEntries(sepList, null, 1, numReplaces, count);
             }
             else 
             {
-                return InternalSplitKeepEmptyEntries(sepList, null, 1, numReplaces, count);
+                return SplitKeepEmptyEntries(sepList, null, 1, numReplaces, count);
             }            
         }
 
@@ -1122,12 +1118,8 @@ namespace System
 #endif
             }
 
-            if (count == 1) {
+            if (count == 1 || (singleSeparator && separator.Length == 0)) {
                 return new String[] { this };
-            }
-
-            if (singleSeparator && separator.Length == 0) {
-                return new[] { this };
             }
 
             int[] sepList = new int[Length];
@@ -1152,10 +1144,10 @@ namespace System
             }
             
             if (omitEmptyEntries) {
-                return InternalSplitOmitEmptyEntries(sepList, lengthList, defaultLength, numReplaces, count);
+                return SplitOmitEmptyEntries(sepList, lengthList, defaultLength, numReplaces, count);
             }
             else {
-                return InternalSplitKeepEmptyEntries(sepList, lengthList, defaultLength, numReplaces, count);
+                return SplitKeepEmptyEntries(sepList, lengthList, defaultLength, numReplaces, count);
             }
         }                        
         
@@ -1164,7 +1156,7 @@ namespace System
         //     the original string will be returned regardless of the count. 
         //
 
-        private String[] InternalSplitKeepEmptyEntries(Int32[] sepList, Int32[] lengthList, Int32 defaultLength, Int32 numReplaces, int count) {
+        private String[] SplitKeepEmptyEntries(Int32[] sepList, Int32[] lengthList, Int32 defaultLength, Int32 numReplaces, int count) {
             Contract.Requires(numReplaces >= 0);
             Contract.Requires(count >= 2);
             Contract.Ensures(Contract.Result<String[]>() != null);
@@ -1200,7 +1192,7 @@ namespace System
 
         
         // This function will not keep the Empty String 
-        private String[] InternalSplitOmitEmptyEntries(Int32[] sepList, Int32[] lengthList, Int32 defaultLength, Int32 numReplaces, int count) {
+        private String[] SplitOmitEmptyEntries(Int32[] sepList, Int32[] lengthList, Int32 defaultLength, Int32 numReplaces, int count) {
             Contract.Requires(numReplaces >= 0);
             Contract.Requires(count >= 2);
             Contract.Ensures(Contract.Result<String[]>() != null);
