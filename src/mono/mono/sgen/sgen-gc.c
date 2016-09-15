@@ -1169,7 +1169,6 @@ finish_gray_stack (int generation, ScanCopyContext ctx)
 
 	g_assert (sgen_gray_object_queue_is_empty (queue));
 
-	sgen_gray_object_queue_trim_free_list (queue);
 	binary_protocol_finish_gray_stack_end (sgen_timestamp (), generation);
 }
 
