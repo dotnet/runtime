@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Net.Sockets;
 using System.Threading;
@@ -16,8 +17,11 @@ namespace System.Net.NetworkInformation
         private const int MaxBufferSize = 65500;       // Artificial constraint due to win32 api limitations.
         private const int MaxUdpPacket = 0xFFFF + 256; // Marshal.SizeOf(typeof(Icmp6EchoReply)) * 2 + ip header info;
 
+        private readonly ManualResetEventSlim _lockObject = new ManualResetEventSlim(initialState: true); // doubles as the ability to wait on the current operation
+        private SendOrPostCallback _onPingCompletedDelegate;
         private bool _disposeRequested = false;
         private byte[] _defaultSendBuffer = null;
+        private bool _canceled;
 
         // Thread safety:
         private const int Free = 0;
@@ -49,21 +53,38 @@ namespace System.Net.NetworkInformation
                 throw new ObjectDisposedException(GetType().FullName);
             }
 
-            int currentStatus = Interlocked.CompareExchange(ref _status, InProgress, Free);
+            int currentStatus;
+            lock (_lockObject)
+            {
+                currentStatus = _status;
+                if (currentStatus == Free)
+                {
+                    _canceled = false;
+                    _status = InProgress;
+                    _lockObject.Reset();
+                    return;
+                }
+            }
+
             if (currentStatus == InProgress)
             {
                 throw new InvalidOperationException(SR.net_inasync);
             }
-            else if (currentStatus == Disposed)
+            else
             {
+                Debug.Assert(currentStatus == Disposed, $"Expected currentStatus == Disposed, got {currentStatus}");
                 throw new ObjectDisposedException(GetType().FullName);
             }
         }
 
         private void Finish()
         {
-            Debug.Assert(_status == InProgress, "Invalid status: " + _status);
-            _status = Free;
+            lock (_lockObject)
+            {
+                Debug.Assert(_status == InProgress, $"Invalid status: {_status}");
+                _status = Free;
+                _lockObject.Set();
+            }
 
             if (_disposeRequested)
             {
@@ -76,10 +97,14 @@ namespace System.Net.NetworkInformation
         {
             _disposeRequested = true;
 
-            if (Interlocked.CompareExchange(ref _status, Disposed, Free) != Free)
+            lock (_lockObject)
             {
-                // Already disposed, or Finish will call Dispose again once Free.
-                return;
+                if (_status != Free)
+                {
+                    // Already disposed, or Finish will call Dispose again once Free.
+                    return;
+                }
+                _status = Disposed;
             }
 
             InternalDisposeCore();
@@ -98,6 +123,104 @@ namespace System.Net.NetworkInformation
                 // Only on explicit dispose.  Otherwise, the GC can cleanup everything else.
                 InternalDispose();
             }
+        }
+
+        public event PingCompletedEventHandler PingCompleted;
+
+        protected void OnPingCompleted(PingCompletedEventArgs e)
+        {
+            PingCompleted?.Invoke(this, e);
+        }
+
+        public PingReply Send(string hostNameOrAddress)
+        {
+            return Send(hostNameOrAddress, DefaultTimeout, DefaultSendBuffer);
+        }
+
+        public PingReply Send(string hostNameOrAddress, int timeout)
+        {
+            return Send(hostNameOrAddress, timeout, DefaultSendBuffer);
+        }
+
+        public PingReply Send(IPAddress address)
+        {
+            return Send(address, DefaultTimeout, DefaultSendBuffer);
+        }
+
+        public PingReply Send(IPAddress address, int timeout)
+        {
+            return Send(address, timeout, DefaultSendBuffer);
+        }
+
+        public PingReply Send(string hostNameOrAddress, int timeout, byte[] buffer)
+        {
+            return Send(hostNameOrAddress, timeout, buffer, null);
+        }
+
+        public PingReply Send(IPAddress address, int timeout, byte[] buffer)
+        {
+            return Send(address, timeout, buffer, null);
+        }
+
+        public PingReply Send(string hostNameOrAddress, int timeout, byte[] buffer, PingOptions options)
+        {
+            return SendPingAsync(hostNameOrAddress, timeout, buffer, options).GetAwaiter().GetResult();
+        }
+
+        public PingReply Send(IPAddress address, int timeout, byte[] buffer, PingOptions options)
+        {
+            return SendPingAsync(address, timeout, buffer, options).GetAwaiter().GetResult();
+        }
+
+        public void SendAsync(string hostNameOrAddress, object userToken)
+        {
+            SendAsync(hostNameOrAddress, DefaultTimeout, DefaultSendBuffer, userToken);
+        }
+
+        public void SendAsync(string hostNameOrAddress, int timeout, object userToken)
+        {
+            SendAsync(hostNameOrAddress, timeout, DefaultSendBuffer, userToken);
+        }
+
+        public void SendAsync(IPAddress address, object userToken)
+        {
+            SendAsync(address, DefaultTimeout, DefaultSendBuffer, userToken);
+        }
+
+        public void SendAsync(IPAddress address, int timeout, object userToken)
+        {
+            SendAsync(address, timeout, DefaultSendBuffer, userToken);
+        }
+
+        public void SendAsync(string hostNameOrAddress, int timeout, byte[] buffer, object userToken)
+        {
+            SendAsync(hostNameOrAddress, timeout, buffer, null, userToken);
+        }
+
+        public void SendAsync(IPAddress address, int timeout, byte[] buffer, object userToken)
+        {
+            SendAsync(address, timeout, buffer, null, userToken);
+        }
+
+        public void SendAsync(string hostNameOrAddress, int timeout, byte[] buffer, PingOptions options, object userToken)
+        {
+            TranslateTaskToEap(userToken, SendPingAsync(hostNameOrAddress, timeout, buffer, options));
+        }
+
+        public void SendAsync(IPAddress address, int timeout, byte[] buffer, PingOptions options, object userToken)
+        {
+            TranslateTaskToEap(userToken, SendPingAsync(address, timeout, buffer, options));
+        }
+
+        private void TranslateTaskToEap(object userToken, Task<PingReply> pingTask)
+        {
+            pingTask.ContinueWith((t, state) =>
+            {
+                var asyncOp = (AsyncOperation)state;
+                var e = new PingCompletedEventArgs(t.Status == TaskStatus.RanToCompletion ? t.Result : null, t.Exception, t.IsCanceled, asyncOp.UserSuppliedState);
+                SendOrPostCallback callback = _onPingCompletedDelegate ?? (_onPingCompletedDelegate = new SendOrPostCallback(o => { OnPingCompleted((PingCompletedEventArgs)o); }));
+                asyncOp.PostOperationCompleted(callback, e);
+            }, AsyncOperationManager.CreateOperation(userToken), CancellationToken.None, TaskContinuationOptions.DenyChildAttach, TaskScheduler.Default);
         }
 
         public Task<PingReply> SendPingAsync(IPAddress address)
@@ -210,16 +333,42 @@ namespace System.Net.NetworkInformation
             return GetAddressAndSendAsync(hostNameOrAddress, timeout, buffer, options);
         }
 
+        public void SendAsyncCancel()
+        {
+            lock (_lockObject)
+            {
+                if (!_lockObject.IsSet)
+                {
+                    // As in the .NET Framework, this doesn't actually cancel an in-progress operation.  It just marks it such that
+                    // when the operation completes, it's flagged as canceled.
+                    _canceled = true;
+                }
+            }
+
+            // As in the .NET Framework, synchronously wait for the in-flight operation to complete.
+            // If there isn't one in flight, this event will already be set.
+            _lockObject.Wait();
+        }
+
         private async Task<PingReply> GetAddressAndSendAsync(string hostNameOrAddress, int timeout, byte[] buffer, PingOptions options)
         {
+            bool requiresFinish = true;
             try
             {
                 IPAddress[] addresses = await Dns.GetHostAddressesAsync(hostNameOrAddress).ConfigureAwait(false);
-                return await SendPingAsyncCore(addresses[0], buffer, timeout, options).ConfigureAwait(false);
+                Task<PingReply> pingReplyTask = SendPingAsyncCore(addresses[0], buffer, timeout, options);
+                requiresFinish = false;
+                return await pingReplyTask.ConfigureAwait(false);
             }
             catch (Exception e)
             {
-                Finish();
+                // SendPingAsyncCore will call Finish before completing the Task.  If SendPingAsyncCore isn't invoked
+                // because an exception is thrown first, or if it throws out an exception synchronously, then
+                // we need to invoke Finish; otherwise, it has the responsibility to invoke Finish.
+                if (requiresFinish)
+                {
+                    Finish();
+                }
                 throw new PingException(SR.net_ping, e);
             }
         }

@@ -18,7 +18,6 @@ namespace System.Net.NetworkInformation
         private static readonly object s_socketInitializationLock = new object();
         private static bool s_socketInitialized;
 
-        private readonly object _lockObject = new object();
         private int _sendSize = 0;  // Needed to determine what the reply size is for ipv6 in callback.
         private bool _ipv6 = false;
         private ManualResetEvent _pingEvent;
@@ -196,11 +195,14 @@ namespace System.Net.NetworkInformation
 
             PingReply reply = null;
             Exception error = null;
+            bool canceled = false;
 
             try
             {
                 lock (_lockObject)
                 {
+                    canceled = _canceled;
+
                     // Parse reply buffer.
                     SafeLocalAllocHandle buffer = _replyBuffer;
 
@@ -230,7 +232,11 @@ namespace System.Net.NetworkInformation
             }
 
             // Once we've called Finish, complete the task
-            if (reply != null)
+            if (canceled)
+            {
+                tcs.SetCanceled();
+            }
+            else if (reply != null)
             {
                 tcs.SetResult(reply);
             }
