@@ -59,7 +59,7 @@ namespace System.Timers
                 throw new ArgumentException(SR.Format(SR.InvalidParameter, "interval", interval));
             }
 
-            interval = (int)roundedInterval;
+            _interval = (int)roundedInterval;
         }
         
         /// <summary>
@@ -149,7 +149,6 @@ namespace System.Timers
             }
         }
 
-
         private void UpdateTimer()
         {
             int i = (int)Math.Ceiling(_interval);
@@ -168,7 +167,6 @@ namespace System.Timers
             {
                 return _interval;
             }
-
             set
             {
                 if (value <= 0)
