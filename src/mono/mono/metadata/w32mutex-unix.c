@@ -29,9 +29,11 @@ struct MonoW32HandleNamedMutex {
 };
 
 static gboolean
-mutex_handle_own (gpointer handle, MonoW32HandleType type)
+mutex_handle_own (gpointer handle, MonoW32HandleType type, guint32 *statuscode)
 {
 	MonoW32HandleMutex *mutex_handle;
+
+	*statuscode = WAIT_OBJECT_0;
 
 	if (!mono_w32handle_lookup (handle, type, (gpointer *)&mutex_handle)) {
 		g_warning ("%s: error looking up %s handle %p", __func__, mono_w32handle_ops_typename (type), handle);
@@ -80,9 +82,9 @@ static void mutex_signal(gpointer handle)
 	ves_icall_System_Threading_Mutex_ReleaseMutex_internal (handle);
 }
 
-static gboolean mutex_own (gpointer handle)
+static gboolean mutex_own (gpointer handle, guint32 *statuscode)
 {
-	return mutex_handle_own (handle, MONO_W32HANDLE_MUTEX);
+	return mutex_handle_own (handle, MONO_W32HANDLE_MUTEX, statuscode);
 }
 
 static gboolean mutex_is_owned (gpointer handle)
@@ -97,9 +99,9 @@ static void namedmutex_signal (gpointer handle)
 }
 
 /* NB, always called with the shared handle lock held */
-static gboolean namedmutex_own (gpointer handle)
+static gboolean namedmutex_own (gpointer handle, guint32 *statuscode)
 {
-	return mutex_handle_own (handle, MONO_W32HANDLE_NAMEDMUTEX);
+	return mutex_handle_own (handle, MONO_W32HANDLE_NAMEDMUTEX, statuscode);
 }
 
 static gboolean namedmutex_is_owned (gpointer handle)
@@ -223,6 +225,7 @@ static gpointer mutex_handle_create (MonoW32HandleMutex *mutex_handle, MonoW32Ha
 {
 	gpointer handle;
 	int thr_ret;
+	guint32 statuscode;
 
 	mutex_handle->tid = 0;
 	mutex_handle->recursion = 0;
@@ -239,7 +242,7 @@ static gpointer mutex_handle_create (MonoW32HandleMutex *mutex_handle, MonoW32Ha
 	g_assert (thr_ret == 0);
 
 	if (owned)
-		mutex_handle_own (handle, type);
+		mutex_handle_own (handle, type, &statuscode);
 	else
 		mono_w32handle_set_signal_state (handle, TRUE, FALSE);
 

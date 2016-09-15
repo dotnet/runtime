@@ -42,6 +42,8 @@ guint32 WaitForSingleObjectEx(gpointer handle, guint32 timeout, gboolean alertab
 	ret = mono_w32handle_wait_one (handle, timeout, alertable);
 	if (ret == MONO_W32HANDLE_WAIT_RET_SUCCESS_0)
 		return WAIT_OBJECT_0;
+	else if (ret == MONO_W32HANDLE_WAIT_RET_ABANDONED_0)
+		return WAIT_ABANDONED_0;
 	else if (ret == MONO_W32HANDLE_WAIT_RET_ALERTED)
 		return WAIT_IO_COMPLETION;
 	else if (ret == MONO_W32HANDLE_WAIT_RET_TIMEOUT)
@@ -96,6 +98,8 @@ guint32 SignalObjectAndWait(gpointer signal_handle, gpointer wait,
 	ret = mono_w32handle_signal_and_wait (signal_handle, wait, timeout, alertable);
 	if (ret == MONO_W32HANDLE_WAIT_RET_SUCCESS_0)
 		return WAIT_OBJECT_0;
+	else if (ret == MONO_W32HANDLE_WAIT_RET_ABANDONED_0)
+		return WAIT_ABANDONED_0;
 	else if (ret == MONO_W32HANDLE_WAIT_RET_ALERTED)
 		return WAIT_IO_COMPLETION;
 	else if (ret == MONO_W32HANDLE_WAIT_RET_TIMEOUT)
@@ -143,8 +147,10 @@ guint32 WaitForMultipleObjectsEx(guint32 numobjects, gpointer *handles,
 	MonoW32HandleWaitRet ret;
 
 	ret = mono_w32handle_wait_multiple (handles, numobjects, waitall, timeout, alertable);
-	if (ret >= MONO_W32HANDLE_WAIT_RET_SUCCESS_0)
+	if (ret >= MONO_W32HANDLE_WAIT_RET_SUCCESS_0 && ret <= MONO_W32HANDLE_WAIT_RET_SUCCESS_0 + numobjects - 1)
 		return WAIT_OBJECT_0 + (ret - MONO_W32HANDLE_WAIT_RET_SUCCESS_0);
+	else if (ret >= MONO_W32HANDLE_WAIT_RET_ABANDONED_0 && ret <= MONO_W32HANDLE_WAIT_RET_ABANDONED_0 + numobjects - 1)
+		return WAIT_ABANDONED_0 + (ret - MONO_W32HANDLE_WAIT_RET_ABANDONED_0);
 	else if (ret == MONO_W32HANDLE_WAIT_RET_ALERTED)
 		return WAIT_IO_COMPLETION;
 	else if (ret == MONO_W32HANDLE_WAIT_RET_TIMEOUT)

@@ -39,8 +39,10 @@ typedef struct
 	/* Called by WaitForSingleObject and WaitForMultipleObjects,
 	 * with the handle locked (shared handles aren't locked.)
 	 * Returns TRUE if ownership was established, false otherwise.
+	 * If TRUE, *statuscode contains a status code such as
+	 * WAIT_OBJECT_0 or WAIT_ABANDONED_0.
 	 */
-	gboolean (*own_handle)(gpointer handle);
+	gboolean (*own_handle)(gpointer handle, guint32 *statuscode);
 
 	/* Called by WaitForSingleObject and WaitForMultipleObjects, if the
 	 * handle in question is "ownable" (ie mutexes), to see if the current
@@ -129,7 +131,7 @@ void
 mono_w32handle_ops_signal (gpointer handle);
 
 gboolean
-mono_w32handle_ops_own (gpointer handle);
+mono_w32handle_ops_own (gpointer handle, guint32 *statuscode);
 
 gboolean
 mono_w32handle_ops_isowned (gpointer handle);
@@ -165,10 +167,11 @@ int
 mono_w32handle_unlock_handle (gpointer handle);
 
 typedef enum {
-	MONO_W32HANDLE_WAIT_RET_SUCCESS_0 =  0,
-	MONO_W32HANDLE_WAIT_RET_ALERTED   = -1,
-	MONO_W32HANDLE_WAIT_RET_TIMEOUT   = -2,
-	MONO_W32HANDLE_WAIT_RET_FAILED    = -3,
+	MONO_W32HANDLE_WAIT_RET_SUCCESS_0   =  0,
+	MONO_W32HANDLE_WAIT_RET_ABANDONED_0 =  MONO_W32HANDLE_WAIT_RET_SUCCESS_0 + MONO_W32HANDLE_MAXIMUM_WAIT_OBJECTS,
+	MONO_W32HANDLE_WAIT_RET_ALERTED     = -1,
+	MONO_W32HANDLE_WAIT_RET_TIMEOUT     = -2,
+	MONO_W32HANDLE_WAIT_RET_FAILED      = -3,
 } MonoW32HandleWaitRet;
 
 MonoW32HandleWaitRet
