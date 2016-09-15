@@ -9,6 +9,7 @@
     <AssemblyName>System.Xml.Xsl.XslTransformApi.Tests</AssemblyName>
     <RootNamespace>System.Xml.Tests</RootNamespace>
     <NuGetTargetMoniker>.NETStandard,Version=v1.3</NuGetTargetMoniker>
+    <KeepAllProjectReferences>true</KeepAllProjectReferences>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
