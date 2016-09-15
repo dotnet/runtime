@@ -1316,7 +1316,10 @@
         "4.0.0",
         "4.1.0"
       ],
-      "BaselineVersion": "4.3.0"
+      "BaselineVersion": "4.3.0",
+      "AssemblyVersionInPackageVersion": {
+        "4.1.2.0": "4.3.0"
+      }
     },
     "System.Private.Uri": {
       "StableVersions": [
@@ -2141,9 +2144,21 @@
     },
     "runtime.native.System.Security.Cryptography.Apple": {},
     "runtime.native.System.Security.Cryptography.OpenSsl": {},
-    "System.Json": {},
-    "System.Private.Xml": {},
-    "System.Private.Xml.Linq": {},
+    "System.Json": {
+      "AssemblyVersionInPackageVersion": {
+        "4.0.0.0": "4.3.0"
+      }
+    },
+    "System.Private.Xml": {
+      "AssemblyVersionInPackageVersion": {
+        "4.0.0.0": "4.3.0"
+      }
+    },
+    "System.Private.Xml.Linq": {
+      "AssemblyVersionInPackageVersion": {
+        "4.0.0.0": "4.3.0"
+      }
+    },
     "System.Security.Permissions": {
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.3.0"
