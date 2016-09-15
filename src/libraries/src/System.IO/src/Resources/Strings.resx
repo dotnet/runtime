@@ -135,7 +135,7 @@
   <data name="Argument_InvalidOffLen" xml:space="preserve">
     <value>Offset and length were out of bounds for the array or count is greater than the number of elements from index to the end of the source collection.</value>
   </data>
-    <data name="NotSupported_UnseekableStream" xml:space="preserve">
+  <data name="NotSupported_UnseekableStream" xml:space="preserve">
     <value>Stream does not support seeking.</value>
   </data>
   <data name="NotSupported_UnreadableStream" xml:space="preserve">
