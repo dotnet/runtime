@@ -1665,6 +1665,7 @@ mono_method_add_generic_virtual_invocation (MonoDomain *domain, MonoVTable *vtab
 
 	static gboolean inited = FALSE;
 	static int num_added = 0;
+	static int num_freed = 0;
 
 	GenericVirtualCase *gvc, *list;
 	MonoImtBuilderEntry *entries;
@@ -1674,6 +1675,12 @@ mono_method_add_generic_virtual_invocation (MonoDomain *domain, MonoVTable *vtab
 	mono_domain_lock (domain);
 	if (!domain->generic_virtual_cases)
 		domain->generic_virtual_cases = g_hash_table_new (mono_aligned_addr_hash, NULL);
+
+	if (!inited) {
+		mono_counters_register ("Generic virtual cases", MONO_COUNTER_GENERICS | MONO_COUNTER_INT, &num_added);
+		mono_counters_register ("Freed IMT trampolines", MONO_COUNTER_GENERICS | MONO_COUNTER_INT, &num_freed);
+		inited = TRUE;
+	}
 
 	/* Check whether the case was already added */
 	list = (GenericVirtualCase *)g_hash_table_lookup (domain->generic_virtual_cases, vtable_slot);
@@ -1694,14 +1701,11 @@ mono_method_add_generic_virtual_invocation (MonoDomain *domain, MonoVTable *vtab
 
 		g_hash_table_insert (domain->generic_virtual_cases, vtable_slot, gvc);
 
-		if (!inited) {
-			mono_counters_register ("Generic virtual cases", MONO_COUNTER_GENERICS | MONO_COUNTER_INT, &num_added);
-			inited = TRUE;
-		}
 		num_added++;
 	}
 
 	if (++gvc->count == THUNK_THRESHOLD) {
+		gpointer *old_thunk = (void **)*vtable_slot;
 		gpointer vtable_trampoline = NULL;
 		gpointer imt_trampoline = NULL;
 
@@ -1731,6 +1735,9 @@ mono_method_add_generic_virtual_invocation (MonoDomain *domain, MonoVTable *vtab
 			for (i = 0; i < sorted->len; ++i)
 				g_free (g_ptr_array_index (sorted, i));
 			g_ptr_array_free (sorted, TRUE);
+
+			if (old_thunk != vtable_trampoline && old_thunk != imt_trampoline)
+				num_freed ++;
 		}
 	}
 
