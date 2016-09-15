@@ -1390,11 +1390,12 @@ namespace System.Diagnostics.Tracing
                 }
                 else
                 {
-                    List<object> arg = new List<object>();
-                    arg.Add(msg);
                     EventWrittenEventArgs eventCallbackArgs = new EventWrittenEventArgs(this);
                     eventCallbackArgs.EventId = 0;
-                    eventCallbackArgs.Payload = new ReadOnlyCollection<object>(arg);
+                    eventCallbackArgs.Message = msg;
+                    eventCallbackArgs.Payload = new ReadOnlyCollection<object>(new List<object>() { msg });
+                    eventCallbackArgs.PayloadNames = new ReadOnlyCollection<string>(new List<string> { "message" });
+                    eventCallbackArgs.EventName = "EventSourceMessage";
                     listener.OnEventWritten(eventCallbackArgs);
                 }
             }
