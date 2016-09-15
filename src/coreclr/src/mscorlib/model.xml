@@ -6305,6 +6305,11 @@
       <Member Name="#ctor" />
     </Type>
     <Type Name="System.Runtime.CompilerServices.IsVolatile" />  <!-- for MC++ -->
+    <Type Name="System.Runtime.CompilerServices.IUnknownConstantAttribute">
+      <Member Name="#ctor" />
+      <Member Name="get_Value" />
+      <Member MemberType="Property" Name="Value" />
+    </Type>
     <Type Name="System.Runtime.CompilerServices.MethodCodeType">
       <Member MemberType="Field" Name="IL" />
       <Member MemberType="Field" Name="Native" />
