@@ -76,16 +76,14 @@ mono_os_mutex_init_recursive (mono_mutex_t *mutex)
 		g_error ("%s: pthread_mutexattr_destroy failed with \"%s\" (%d)", __func__, g_strerror (res), res);
 }
 
-static inline int
+static inline void
 mono_os_mutex_destroy (mono_mutex_t *mutex)
 {
 	int res;
 
 	res = pthread_mutex_destroy (mutex);
-	if (G_UNLIKELY (res != 0 && res != EBUSY))
+	if (G_UNLIKELY (res != 0))
 		g_error ("%s: pthread_mutex_destroy failed with \"%s\" (%d)", __func__, g_strerror (res), res);
-
-	return res != 0 ? -1 : 0;
 }
 
 static inline void
@@ -130,16 +128,14 @@ mono_os_cond_init (mono_cond_t *cond)
 		g_error ("%s: pthread_cond_init failed with \"%s\" (%d)", __func__, g_strerror (res), res);
 }
 
-static inline int
+static inline void
 mono_os_cond_destroy (mono_cond_t *cond)
 {
 	int res;
 
 	res = pthread_cond_destroy (cond);
-	if (G_UNLIKELY (res != 0 && res != EBUSY))
+	if (G_UNLIKELY (res != 0))
 		g_error ("%s: pthread_cond_destroy failed with \"%s\" (%d)", __func__, g_strerror (res), res);
-
-	return res != 0 ? -1 : 0;
 }
 
 static inline void
@@ -296,11 +292,10 @@ mono_os_mutex_init_recursive (mono_mutex_t *mutex)
 		g_error ("%s: InitializeCriticalSectionEx failed with error %d", __func__, GetLastError ());
 }
 
-static inline int
+static inline void
 mono_os_mutex_destroy (mono_mutex_t *mutex)
 {
 	DeleteCriticalSection (mutex);
-	return 0;
 }
 
 static inline void
@@ -327,11 +322,10 @@ mono_os_cond_init (mono_cond_t *cond)
 	InitializeConditionVariable (cond);
 }
 
-static inline int
+static inline void
 mono_os_cond_destroy (mono_cond_t *cond)
 {
 	/* Beauty of win32 API: do not destroy it */
-	return 0;
 }
 
 static inline void

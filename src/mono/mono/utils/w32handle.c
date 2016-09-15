@@ -322,8 +322,6 @@ mono_w32handle_init (void)
 	initialized = TRUE;
 }
 
-static void mono_w32handle_unref_full (gpointer handle, gboolean ignore_private_busy_handles);
-
 void
 mono_w32handle_cleanup (void)
 {
@@ -345,7 +343,7 @@ mono_w32handle_cleanup (void)
 			gpointer handle = GINT_TO_POINTER (i*HANDLE_PER_SLOT+j);
 
 			for(k = handle_data->ref; k > 0; k--) {
-				mono_w32handle_unref_full (handle, TRUE);
+				mono_w32handle_unref (handle);
 			}
 		}
 	}
@@ -566,7 +564,7 @@ mono_w32handle_foreach (gboolean (*on_each)(gpointer handle, gpointer data, gpoi
 			handle = GUINT_TO_POINTER (i * HANDLE_PER_SLOT + k);
 
 			if (!mono_w32handle_ref_core (handle, handle_data)) {
-				/* we are racing with mono_w32handle_unref_full:
+				/* we are racing with mono_w32handle_unref:
 				 *  the handle ref has been decremented, but it
 				 *  hasn't yet been destroyed. */
 				continue;
@@ -682,7 +680,7 @@ void mono_w32handle_ref (gpointer handle)
 	MonoW32HandleBase *handle_data;
 
 	if (!mono_w32handle_lookup_data (handle, &handle_data)) {
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_W32HANDLE, "%s: Attempting to ref invalid private handle %p", __func__, handle);
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_W32HANDLE, "%s: failed to ref handle %p, unknown handle", __func__, handle);
 		return;
 	}
 
@@ -693,21 +691,21 @@ void mono_w32handle_ref (gpointer handle)
 static void (*_wapi_handle_ops_get_close_func (MonoW32HandleType type))(gpointer, gpointer);
 
 /* The handle must not be locked on entry to this function */
-static void mono_w32handle_unref_full (gpointer handle, gboolean ignore_private_busy_handles)
+void
+mono_w32handle_unref (gpointer handle)
 {
 	MonoW32HandleBase *handle_data;
-	gboolean destroy = FALSE, early_exit = FALSE;
-	int thr_ret;
+	gboolean destroy;
 
 	if (!mono_w32handle_lookup_data (handle, &handle_data)) {
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_W32HANDLE, "%s: Attempting to unref invalid private handle %p",
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_W32HANDLE, "%s: failed to unref handle %p, unknown handle",
 			__func__, handle);
 		return;
 	}
 
 	destroy = mono_w32handle_unref_core (handle, handle_data, 1);
 
-	if(destroy==TRUE) {
+	if (destroy) {
 		/* Need to copy the handle info, reset the slot in the
 		 * array, and _only then_ call the close function to
 		 * avoid race conditions (eg file descriptors being
@@ -723,34 +721,14 @@ static void mono_w32handle_unref_full (gpointer handle, gboolean ignore_private_
 
 		mono_os_mutex_lock (&scan_mutex);
 
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_W32HANDLE, "%s: Destroying handle %p", __func__, handle);
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_W32HANDLE, "%s: destroy %s handle %p", __func__, mono_w32handle_ops_typename (type), handle);
 
-		/* Destroy the mutex and cond var.  We hope nobody
-		 * tried to grab them between the handle unlock and
-		 * now, but pthreads doesn't have a
-		 * "unlock_and_destroy" atomic function.
-		 */
-		thr_ret = mono_os_mutex_destroy (&handle_data->signal_mutex);
-		/*WARNING gross hack to make cleanup not crash when exiting without the whole runtime teardown.*/
-		if (thr_ret == EBUSY && ignore_private_busy_handles) {
-			early_exit = TRUE;
-		} else {
-			if (thr_ret != 0)
-				g_error ("Error destroying handle %p mutex due to %d\n", handle, thr_ret);
-
-			thr_ret = mono_os_cond_destroy (&handle_data->signal_cond);
-			if (thr_ret == EBUSY && ignore_private_busy_handles)
-				early_exit = TRUE;
-			else if (thr_ret != 0)
-				g_error ("Error destroying handle %p cond var due to %d\n", handle, thr_ret);
-		}
+		mono_os_mutex_destroy (&handle_data->signal_mutex);
+		mono_os_cond_destroy (&handle_data->signal_cond);
 
 		memset (handle_data, 0, sizeof (MonoW32HandleBase));
 
 		mono_os_mutex_unlock (&scan_mutex);
-
-		if (early_exit)
-			return;
 
 		close_func = _wapi_handle_ops_get_close_func (type);
 		if (close_func != NULL) {
@@ -759,11 +737,6 @@ static void mono_w32handle_unref_full (gpointer handle, gboolean ignore_private_
 
 		g_free (handle_specific);
 	}
-}
-
-void mono_w32handle_unref (gpointer handle)
-{
-	mono_w32handle_unref_full (handle, FALSE);
 }
 
 void

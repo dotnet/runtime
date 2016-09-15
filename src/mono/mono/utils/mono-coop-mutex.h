@@ -35,10 +35,10 @@ mono_coop_mutex_init_recursive (MonoCoopMutex *mutex)
 	mono_os_mutex_init_recursive (&mutex->m);
 }
 
-static inline gint
+static inline void
 mono_coop_mutex_destroy (MonoCoopMutex *mutex)
 {
-	return mono_os_mutex_destroy (&mutex->m);
+	mono_os_mutex_destroy (&mutex->m);
 }
 
 static inline void
@@ -73,10 +73,10 @@ mono_coop_cond_init (MonoCoopCond *cond)
 	mono_os_cond_init (&cond->c);
 }
 
-static inline gint
+static inline void
 mono_coop_cond_destroy (MonoCoopCond *cond)
 {
-	return mono_os_cond_destroy (&cond->c);
+	mono_os_cond_destroy (&cond->c);
 }
 
 static inline void
