@@ -1191,23 +1191,6 @@ mono_assembly_load_reference (MonoImage *image, int index)
 				   aname.major, aname.minor, aname.build, aname.revision,
 				   strlen ((char*)aname.public_key_token) == 0 ? "(none)" : (char*)aname.public_key_token, extra_msg);
 		g_free (extra_msg);
-
-	} else if (!image->assembly->ref_only) {
-		MonoError error;
-		if (mono_assembly_get_reference_assembly_attribute (reference, &error)) {
-			mono_trace (G_LOG_LEVEL_WARNING, MONO_TRACE_ASSEMBLY, "The following reference assembly assembly referenced from %s was not loaded.  Reference assemblies should not be loaded for execution.  They can only be loaded in the Reflection-only loader context:\n"
-				    "     Assembly:   %s    (assemblyref_index=%d)\n"
-				    "     Version:    %d.%d.%d.%d\n"
-				    "     Public Key: %s\n",
-				    image->name, aname.name, index,
-				    aname.major, aname.minor, aname.build, aname.revision,
-				    strlen ((char*)aname.public_key_token) == 0 ? "(none)" : (char*)aname.public_key_token);
-			reference = NULL; /* don't load reference assemblies for execution */
-		}
-		if (!is_ok (&error)) {
-			reference = NULL;
-			mono_error_cleanup (&error);
-		}
 	}
 
 	mono_assemblies_lock ();
