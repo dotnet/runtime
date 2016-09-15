@@ -1030,6 +1030,51 @@ namespace System.Net.Sockets
             }
         }
 
+        public void Close()
+        {
+            if (s_loggingEnabled)
+            {
+                NetEventSource.Enter(NetEventSource.ComponentType.Socket, this, nameof(Close), null);
+            }
+            if (GlobalLog.IsEnabled)
+            {
+                GlobalLog.Print("Socket#" + LoggingHash.HashString(this) + "::Close() timeout = " + _closeTimeout);
+            }
+
+            Dispose();
+
+            if (s_loggingEnabled)
+            {
+                NetEventSource.Exit(NetEventSource.ComponentType.Socket, this, nameof(Close), null);
+            }
+        }
+
+        public void Close(int timeout)
+        {
+            if (s_loggingEnabled)
+            {
+                NetEventSource.Enter(NetEventSource.ComponentType.Socket, this, nameof(Close), timeout);
+            }
+            if (timeout < -1)
+            {
+                throw new ArgumentOutOfRangeException(nameof(timeout));
+            }
+
+            _closeTimeout = timeout;
+
+            if (GlobalLog.IsEnabled)
+            {
+                GlobalLog.Print("Socket#" + LoggingHash.HashString(this) + "::Close() timeout = " + _closeTimeout);
+            }
+
+            Dispose();
+
+            if (s_loggingEnabled)
+            {
+                NetEventSource.Exit(NetEventSource.ComponentType.Socket, this, nameof(Close), timeout);
+            }
+        }
+
         // Places a socket in a listening state.
         public void Listen(int backlog)
         {
