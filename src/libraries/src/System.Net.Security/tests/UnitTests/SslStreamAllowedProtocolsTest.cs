@@ -5,148 +5,136 @@
 using System.IO;
 using System.Net.Test.Common;
 using System.Security.Authentication;
+using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
 
 using Xunit;
 
 namespace System.Net.Security.Tests
 {
-    public class SslStreamAllowedProtocolsTest
+    public abstract class SslStreamAllowedProtocolsTest
     {
+        protected abstract void AuthenticateAsClient(
+            SslStream stream, bool waitForCompletion,
+            string targetHost, X509CertificateCollection clientCertificates, SslProtocols enabledSslProtocols, bool checkCertificateRevocation);
+
         [Theory]
         [ClassData(typeof(SslProtocolSupport.UnsupportedSslProtocolsTestData))]
-        public async Task SslStream_AuthenticateAsClient_NotSupported_Fails(SslProtocols protocol)
+        public void SslStream_AuthenticateAsClientAsync_NotSupported_Fails(SslProtocols protocol)
         {
-            SslStream stream = new SslStream(new FakeStream());
-            await Assert.ThrowsAsync<NotSupportedException>(
-                () => stream.AuthenticateAsClientAsync("host", null, protocol, false));
+            SslStream stream = new SslStream(new NotImplementedStream());
+            Assert.Throws<NotSupportedException>(() => AuthenticateAsClient(stream, false, "host", null, protocol, false));
         }
 
         [Theory]
         [ClassData(typeof(SslProtocolSupport.SupportedSslProtocolsTestData))]
-        public async Task SslStream_AuthenticateAsClient_Supported_Success(SslProtocols protocol)
+        public void SslStream_AuthenticateAsClientAsync_Supported_Success(SslProtocols protocol)
         {
-            SslStream stream = new SslStream(new FakeStream());
-            await stream.AuthenticateAsClientAsync("host", null, protocol, false);
+            SslStream stream = new SslStream(new NotImplementedStream());
+            AuthenticateAsClient(stream, true, "host", null, protocol, false);
+        }
+
+        [Theory]
+        [ClassData(typeof(SslProtocolSupport.SupportedSslProtocolsTestData))]
+        public void SslStream_AuthenticateAsClient_Supported_Success(SslProtocols protocol)
+        {
+            SslStream stream = new SslStream(new NotImplementedStream());
+            AuthenticateAsClient(stream, true, "host", null, protocol, false);
         }
 
         [Fact]
-        public async Task SslStream_AuthenticateAsClient_Invalid_Fails()
+        public void SslStream_AuthenticateAsClientAsync_Invalid_Fails()
         {
-            SslStream stream = new SslStream(new FakeStream());
-            await Assert.ThrowsAsync<NotSupportedException>(
-                () => stream.AuthenticateAsClientAsync("host", null, (SslProtocols)4096, false));
+            SslStream stream = new SslStream(new NotImplementedStream());
+            Assert.Throws<NotSupportedException>(() => AuthenticateAsClient(stream, false, "host", null, (SslProtocols)4096, false));
         }
 
         [Fact]
-        public async Task SslStream_AuthenticateAsClient_AllUnsuported_Fails()
+        public void SslStream_AuthenticateAsClient_Invalid_Fails()
         {
-            SslStream stream = new SslStream(new FakeStream());
-            await Assert.ThrowsAsync<NotSupportedException>(
-                () => stream.AuthenticateAsClientAsync(
-                    "host",
-                    null,
-                    SslProtocolSupport.UnsupportedSslProtocols,
-                    false));
+            SslStream stream = new SslStream(new NotImplementedStream());
+            Assert.Throws<NotSupportedException>(() => AuthenticateAsClient(stream, false, "host", null, (SslProtocols)4096, false));
         }
 
         [Fact]
-        public async Task SslStream_AuthenticateAsClient_AllSupported_Success()
+        public void SslStream_AuthenticateAsClientAsync_AllUnsuported_Fails()
         {
-            SslStream stream = new SslStream(new FakeStream());
-            await stream.AuthenticateAsClientAsync(
-                "host",
-                null,
-                SslProtocolSupport.SupportedSslProtocols,
-                false);
+            SslStream stream = new SslStream(new NotImplementedStream());
+            Assert.Throws<NotSupportedException>(() => AuthenticateAsClient(stream, false, "host", null, SslProtocolSupport.UnsupportedSslProtocols, false));
         }
 
         [Fact]
-        public async Task SslStream_AuthenticateAsClient_None_Success()
+        public void SslStream_AuthenticateAsClientAsync_AllSupported_Success()
         {
-            SslStream stream = new SslStream(new FakeStream());
-            await stream.AuthenticateAsClientAsync("host", null, SslProtocols.None, false);
+            SslStream stream = new SslStream(new NotImplementedStream());
+            AuthenticateAsClient(stream, true, "host", null, SslProtocolSupport.SupportedSslProtocols, false);
         }
 
         [Fact]
-        public async Task SslStream_AuthenticateAsClient_Default_Success()
+        public void SslStream_AuthenticateAsClientAsync_None_Success()
         {
-            SslStream stream = new SslStream(new FakeStream());
-            await stream.AuthenticateAsClientAsync("host", null, SslProtocolSupport.DefaultSslProtocols, false);
+            SslStream stream = new SslStream(new NotImplementedStream());
+            AuthenticateAsClient(stream, true, "host", null, SslProtocols.None, false);
         }
 
-        private class FakeStream : Stream
+        [Fact]
+        public void SslStream_AuthenticateAsClientAsync_Default_Success()
         {
-            public override bool CanRead
+            SslStream stream = new SslStream(new NotImplementedStream());
+            AuthenticateAsClient(stream, true, "host", null, SslProtocolSupport.DefaultSslProtocols, false);
+        }
+
+
+        public sealed class SslStreamAllowedProtocolsTest_Async : SslStreamAllowedProtocolsTest
+        {
+            protected override void AuthenticateAsClient(
+                SslStream stream, bool waitForCompletion,
+                string targetHost, X509CertificateCollection clientCertificates, SslProtocols enabledSslProtocols, bool checkCertificateRevocation)
             {
-                get
+                Task t = stream.AuthenticateAsClientAsync(targetHost, clientCertificates, enabledSslProtocols, checkCertificateRevocation);
+                if (waitForCompletion)
                 {
-                    throw new NotImplementedException();
+                    t.GetAwaiter().GetResult();
                 }
             }
+        }
 
-            public override bool CanSeek
+        public sealed class SslStreamAllowedProtocolsTest_BeginEnd : SslStreamAllowedProtocolsTest
+        {
+            protected override void AuthenticateAsClient(
+                SslStream stream, bool waitForCompletion,
+                string targetHost, X509CertificateCollection clientCertificates, SslProtocols enabledSslProtocols, bool checkCertificateRevocation)
             {
-                get
+                IAsyncResult iar = stream.BeginAuthenticateAsClient(targetHost, clientCertificates, enabledSslProtocols, checkCertificateRevocation, null, null);
+                if (waitForCompletion)
                 {
-                    throw new NotImplementedException();
+                    stream.EndAuthenticateAsClient(iar);
                 }
             }
+        }
 
-            public override bool CanWrite
+        public sealed class SslStreamAllowedProtocolsTest_Sync : SslStreamAllowedProtocolsTest
+        {
+            protected override void AuthenticateAsClient(
+                SslStream stream, bool waitForCompletion,
+                string targetHost, X509CertificateCollection clientCertificates, SslProtocols enabledSslProtocols, bool checkCertificateRevocation)
             {
-                get
-                {
-                    throw new NotImplementedException();
-                }
+                stream.AuthenticateAsClient(targetHost, clientCertificates, enabledSslProtocols, checkCertificateRevocation);
             }
+        }
 
-            public override long Length
-            {
-                get
-                {
-                    throw new NotImplementedException();
-                }
-            }
-
-            public override long Position
-            {
-                get
-                {
-                    throw new NotImplementedException();
-                }
-
-                set
-                {
-                    throw new NotImplementedException();
-                }
-            }
-
-            public override void Flush()
-            {
-                throw new NotImplementedException();
-            }
-
-            public override int Read(byte[] buffer, int offset, int count)
-            {
-                throw new NotImplementedException();
-            }
-
-            public override long Seek(long offset, SeekOrigin origin)
-            {
-                throw new NotImplementedException();
-            }
-
-            public override void SetLength(long value)
-            {
-                throw new NotImplementedException();
-            }
-
-            public override void Write(byte[] buffer, int offset, int count)
-            {
-                throw new NotImplementedException();
-            }
+        private sealed class NotImplementedStream : Stream
+        {
+            public override bool CanRead { get { throw new NotImplementedException(); } }
+            public override bool CanSeek { get { throw new NotImplementedException(); } }
+            public override bool CanWrite { get { throw new NotImplementedException(); } }
+            public override long Length { get { throw new NotImplementedException(); } }
+            public override long Position { get { throw new NotImplementedException(); } set { throw new NotImplementedException(); } }
+            public override void Flush() { throw new NotImplementedException(); }
+            public override int Read(byte[] buffer, int offset, int count) { throw new NotImplementedException(); }
+            public override long Seek(long offset, SeekOrigin origin) { throw new NotImplementedException(); }
+            public override void SetLength(long value) { throw new NotImplementedException(); }
+            public override void Write(byte[] buffer, int offset, int count) { throw new NotImplementedException(); }
         }
     }
 }
-
