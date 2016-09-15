@@ -34,6 +34,19 @@ public:
     }
 };
 
+// stub type to abstract a heap segment
+struct gc_heap_segment_stub;
+typedef gc_heap_segment_stub *segment_handle;
+
+struct segment_info
+{
+    void * pvMem; // base of the allocation, not the first object (must add ibFirstObject)
+    size_t ibFirstObject;   // offset to the base of the first object in the segment
+    size_t ibAllocated; // limit of allocated memory in the segment (>= firstobject)
+    size_t ibCommit; // limit of committed memory in the segment (>= alllocated)
+    size_t ibReserved; // limit of reserved memory in the segment (>= commit)
+};
+
 #ifdef PROFILING_SUPPORTED
 #define GC_PROFILING       //Turn on profiling
 #endif // PROFILING_SUPPORTED
@@ -324,9 +337,11 @@ public:
     virtual void SetGCInProgress(BOOL fInProgress) = 0;
 
     /*
+    ============================================================================
     Add/RemoveMemoryPressure support routines. These are on the interface
     for now, but we should move Add/RemoveMemoryPressure from the VM to the GC.
     When that occurs, these three routines can be removed from the interface.
+    ============================================================================
     */
 
     // Get the timestamp corresponding to the last GC that occured for the
@@ -415,6 +430,19 @@ public:
 
     // Returns TRUE if GC actually happens, otherwise FALSE
     virtual BOOL StressHeap(gc_alloc_context* acontext = 0) = 0;
+
+    /*
+    ===========================================================================
+    Routines to register read only segments for frozen objects. 
+    Only valid if FEATURE_BASICFREEZE is defined.
+    ===========================================================================
+    */
+
+    // Registers a frozen segment with the GC.
+    virtual segment_handle RegisterFrozenSegment(segment_info *pseginfo) = 0;
+
+    // Unregisters a frozen segment.
+    virtual void UnregisterFrozenSegment(segment_handle seg) = 0;
 
     IGCHeap() {}
     virtual ~IGCHeap() {}

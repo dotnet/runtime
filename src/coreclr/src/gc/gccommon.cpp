@@ -20,7 +20,7 @@ SVAL_IMPL_INIT(uint32_t,IGCHeap,gcHeapType,IGCHeap::GC_HEAP_INVALID);
 
 SVAL_IMPL_INIT(uint32_t,IGCHeap,maxGeneration,2);
 
-IGCHeapInternal* g_theGcHeap;
+IGCHeapInternal* g_theGCHeap;
 
 /* global versions of the card table and brick table */ 
 GPTR_IMPL(uint32_t,g_card_table);
@@ -147,7 +147,7 @@ IGCHeap* InitializeGarbageCollector(IGCToCLR* clrToGC)
     heap = WKS::CreateGCHeap();
 #endif
 
-    g_theGcHeap = heap;
+    g_theGCHeap = heap;
     return heap;
 }
 
