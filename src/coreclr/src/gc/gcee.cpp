@@ -830,9 +830,9 @@ void GCHeap::DescrGenerationsToProfiler (gen_walk_fn fn, void *context)
 #endif // defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
 }
 
-#ifdef FEATURE_BASICFREEZE
 segment_handle GCHeap::RegisterFrozenSegment(segment_info *pseginfo)
 {
+#ifdef FEATURE_BASICFREEZE
     heap_segment * seg = new (nothrow) heap_segment;
     if (!seg)
     {
@@ -863,10 +863,15 @@ segment_handle GCHeap::RegisterFrozenSegment(segment_info *pseginfo)
     }
 
     return reinterpret_cast< segment_handle >(seg);
+#else
+    assert(!"Should not call GCHeap::RegisterFrozenSegment without FEATURE_BASICFREEZE defined!");
+    return NULL;
+#endif // FEATURE_BASICFREEZE
 }
 
 void GCHeap::UnregisterFrozenSegment(segment_handle seg)
 {
+#ifdef FEATURE_BASICFREEZE
 #if defined (MULTIPLE_HEAPS) && !defined (ISOLATED_HEAPS)
     gc_heap* heap = gc_heap::g_heaps[0];
 #else
@@ -874,8 +879,10 @@ void GCHeap::UnregisterFrozenSegment(segment_handle seg)
 #endif //MULTIPLE_HEAPS && !ISOLATED_HEAPS
 
     heap->remove_ro_segment(reinterpret_cast<heap_segment*>(seg));
-}
+#else
+    assert(!"Should not call GCHeap::UnregisterFrozenSegment without FEATURE_BASICFREEZE defined!");
 #endif // FEATURE_BASICFREEZE
+}
 
 
 #endif // !DACCESS_COMPILE
