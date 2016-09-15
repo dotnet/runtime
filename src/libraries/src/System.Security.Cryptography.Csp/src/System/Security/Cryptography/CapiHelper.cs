@@ -2,8 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using Internal.Cryptography;
+using Microsoft.Win32.SafeHandles;
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.IO;
@@ -11,13 +12,7 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
-using System.Threading;
-
-using Internal.Cryptography;
-using Microsoft.Win32.SafeHandles;
-
 using static Interop.Crypt32;
-
 using Libraries = Interop.Libraries;
 
 namespace Internal.NativeCrypto
@@ -27,35 +22,6 @@ namespace Internal.NativeCrypto
     /// </summary>
     internal static partial class CapiHelper
     {
-        /// <summary>
-        /// / Check to see if a better CSP than the one requested is available
-        /// DSS providers are supersets of each other in the following order:
-        ///    1. MS_ENH_DSS_DH_PROV
-        ///    2. MS_DEF_DSS_DH_PROV
-        ///
-        /// This will return the best provider which is a superset of wszProvider,
-        /// or NULL if there is no upgrade available on the machine.
-        /// </summary>
-        /// <param name="dwProvType">provider type</param>
-        /// <param name="wszProvider">provider name</param>
-        /// <returns>Returns upgrade CSP name</returns>
-        public static string UpgradeDSS(int dwProvType, string wszProvider)
-        {
-            string wszUpgrade = null;
-            if (string.Equals(wszProvider, MS_DEF_DSS_DH_PROV, StringComparison.Ordinal))
-            {
-                SafeProvHandle safeProvHandle;
-                // If this is the base DSS/DH provider, see if we can use the enhanced provider instead.
-                if (S_OK == AcquireCryptContext(out safeProvHandle, null, MS_ENH_DSS_DH_PROV, dwProvType,
-                                        (uint)CryptAcquireContextFlags.CRYPT_VERIFYCONTEXT))
-                {
-                    wszUpgrade = MS_ENH_DSS_DH_PROV;
-                }
-                safeProvHandle.Dispose();
-            }
-            return wszUpgrade;
-        }
-
         /// <summary>
         /// Check to see if a better CSP than the one requested is available
         /// RSA providers are supersets of each other in the following order:
@@ -627,7 +593,7 @@ namespace Internal.NativeCrypto
             if (userParameters == null)
             {
                 parameters = new CspParameters(keyType == CspAlgorithmType.Dss ?
-                                                (int)ProviderType.PROV_DSS_DH : DefaultRsaProviderType,
+                                                DefaultDssProviderType : DefaultRsaProviderType,
                                                 null, null, defaultFlags);
             }
             else
@@ -1273,8 +1239,8 @@ namespace Internal.NativeCrypto
                         break;
 
                     case CALG_DSS_SIGN:
-                        throw new PlatformNotSupportedException();
-
+                        ReverseDsaSignature(signature, cbSignature);
+                        break;
                     default:
                         throw new InvalidOperationException();
                 }
@@ -1295,7 +1261,9 @@ namespace Internal.NativeCrypto
                     break;
 
                 case CALG_DSS_SIGN:
-                    throw new PlatformNotSupportedException();
+                    signature = signature.CloneByteArray();
+                    ReverseDsaSignature(signature, signature.Length);
+                    break;
 
                 default:
                     throw new InvalidOperationException();

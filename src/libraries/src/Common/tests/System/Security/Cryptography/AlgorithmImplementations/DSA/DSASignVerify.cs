@@ -41,7 +41,7 @@ namespace System.Security.Cryptography.Dsa.Tests
             SignAndVerify(DSATestData.HelloBytes, "SHA1", DSATestData.GetDSA1024Params(), 40);
         }
 
-        [Fact]
+        [ConditionalFact(nameof(SupportsFips186_3))]
         public static void SignAndVerifyDataExplicit2048()
         {
             SignAndVerify(DSATestData.HelloBytes, "SHA256", DSATestData.GetDSA2048Params(), 64);
@@ -106,6 +106,14 @@ namespace System.Security.Cryptography.Dsa.Tests
                 Assert.Equal(expectedSignatureLength, signature.Length);
                 bool signatureMatched = dsa.VerifyData(data, signature, new HashAlgorithmName(hashAlgorithmName));
                 Assert.True(signatureMatched);
+            }
+        }
+
+        static internal bool SupportsFips186_3
+        {
+            get
+            {
+                return DSAFactory.SupportsFips186_3;
             }
         }
     }

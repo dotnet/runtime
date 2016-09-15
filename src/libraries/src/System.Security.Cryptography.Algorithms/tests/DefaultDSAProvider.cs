@@ -17,6 +17,14 @@ namespace System.Security.Cryptography.Dsa.Tests
             dsa.KeySize = keySize;
             return dsa;
         }
+
+        public bool SupportsFips186_3
+        {
+            get
+            {
+                return true;
+            }
+        }
     }
 
     public partial class DSAFactory
