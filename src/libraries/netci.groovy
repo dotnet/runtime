@@ -15,12 +15,14 @@ def projectFolder = Utilities.getFolderName(project) + '/' + Utilities.getFolder
 // Map of osName -> osGroup.
 def osGroupMap = ['Ubuntu14.04':'Linux',
                   'Ubuntu16.04':'Linux',
+                  'Ubuntu16.10':'Linux',
                   'Debian8.4':'Linux',
                   'Fedora23':'Linux',
                   'OSX':'OSX',
                   'Windows_NT':'Windows_NT',
                   'CentOS7.1': 'Linux',
                   'OpenSUSE13.2': 'Linux',
+                  'OpenSUSE42.1': 'Linux',
                   'RHEL7.2': 'Linux',
                   'LinuxARMEmulator': 'Linux']
 
@@ -28,10 +30,12 @@ def osGroupMap = ['Ubuntu14.04':'Linux',
 def targetNugetRuntimeMap = ['OSX' : 'osx.10.10-x64',
                              'Ubuntu14.04' : 'ubuntu.14.04-x64',
                              'Ubuntu16.04' : 'ubuntu.16.04-x64',
+                             'Ubuntu16.10' : 'ubuntu.16.10-x64',
                              'Fedora23' : 'fedora.23-x64',
                              'Debian8.4' : 'debian.8-x64',
                              'CentOS7.1' : 'centos.7-x64',
                              'OpenSUSE13.2' : 'opensuse.13.2-x64',
+                             'OpenSUSE42.1' : 'opensuse.42.1-x64',
                              'RHEL7.2': 'rhel.7-x64']
 
 def osShortName = ['Windows 10': 'win10',
@@ -41,9 +45,11 @@ def osShortName = ['Windows 10': 'win10',
                    'OSX' : 'osx',
                    'Windows Nano 2016' : 'winnano16',
                    'Ubuntu16.04' : 'ubuntu16.04',
+                   'Ubuntu16.10' : 'ubuntu16.10',
                    'CentOS7.1' : 'centos7.1',
                    'Debian8.4' : 'debian8.4',
                    'OpenSUSE13.2' : 'opensuse13.2',
+                   'OpenSUSE42.1' : 'opensuse42.1',
                    'Fedora23' : 'fedora23',
                    'RHEL7.2' : 'rhel7.2']
 
@@ -207,7 +213,7 @@ def osShortName = ['Windows 10': 'win10',
 // Define outerloop testing for OSes that can build and run.  Run locally on each machine.
 // **************************
 [true, false].each { isPR ->
-    ['Windows 10', 'Windows 7', 'Windows_NT', 'Ubuntu14.04', 'Ubuntu16.04', 'CentOS7.1', 'OpenSUSE13.2', 'RHEL7.2', 'Fedora23', 'Debian8.4', 'OSX'].each { osName ->
+    ['Windows 10', 'Windows 7', 'Windows_NT', 'Ubuntu14.04', 'Ubuntu16.04', 'Ubuntu16.10', 'CentOS7.1', 'OpenSUSE13.2', 'OpenSUSE42.1', 'RHEL7.2', 'Fedora23', 'Debian8.4', 'OSX'].each { osName ->
         ['Debug', 'Release'].each { configurationGroup ->
 
             def newJobName = "outerloop_${osShortName[osName]}_${configurationGroup.toLowerCase()}"
@@ -342,7 +348,7 @@ def osShortName = ['Windows 10': 'win10',
 // **************************
 [true, false].each { isPR ->
     ['Debug', 'Release'].each { configurationGroup ->
-        ['Windows_NT', 'Ubuntu14.04', 'Ubuntu16.04', 'Debian8.4', 'CentOS7.1', 'OpenSUSE13.2', 'Fedora23', 'RHEL7.2', 'OSX'].each { osName ->
+        ['Windows_NT', 'Ubuntu14.04', 'Ubuntu16.04', 'Ubuntu16.10', 'Debian8.4', 'CentOS7.1', 'OpenSUSE13.2', 'OpenSUSE42.1', 'Fedora23', 'RHEL7.2', 'OSX'].each { osName ->
             def osGroup = osGroupMap[osName]
             def newJobName = "${osName.toLowerCase()}_${configurationGroup.toLowerCase()}"
 
