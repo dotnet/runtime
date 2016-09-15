@@ -909,14 +909,8 @@ function coreclr_code_coverage {
 }
 
 function check_cpu_architecture {
-    # Use uname to determine what the CPU is.
-    local CPUName=$(uname -p)
+    local CPUName=$(uname -m)
     local __arch=
-
-    # Some Linux platforms report unknown for platform, but the arch for machine.
-    if [ "$CPUName" == "unknown" ]; then
-        CPUName=$(uname -m)
-    fi
 
     case $CPUName in
         i686)
@@ -941,6 +935,7 @@ function check_cpu_architecture {
 }
 
 ARCH=$(check_cpu_architecture)
+echo "Running on  CPU- $ARCH"
 
 # Exit code constants
 readonly EXIT_CODE_SUCCESS=0       # Script ran normally.
