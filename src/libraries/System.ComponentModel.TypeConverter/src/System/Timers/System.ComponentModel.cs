@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-// Stub to unblock explosing System.Timers
+// Stub to unblock explosing System.Timers Issue dotnet/corefx#11774
 
 namespace System.ComponentModel.Design
 {
