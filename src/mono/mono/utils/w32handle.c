@@ -1209,7 +1209,7 @@ mono_w32handle_wait_one (gpointer handle, guint32 timeout, gboolean alertable)
 			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_W32HANDLE, "%s: handle %p already owned",
 				__func__, handle);
 
-			ret = MONO_W32HANDLE_WAIT_RET_SUCCESS_0;
+			ret = statuscode == WAIT_ABANDONED_0 ? MONO_W32HANDLE_WAIT_RET_ABANDONED_0 : MONO_W32HANDLE_WAIT_RET_SUCCESS_0;
 			goto done;
 		}
 	}
@@ -1224,7 +1224,7 @@ mono_w32handle_wait_one (gpointer handle, guint32 timeout, gboolean alertable)
 			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_W32HANDLE, "%s: handle %p signalled",
 				__func__, handle);
 
-			ret = MONO_W32HANDLE_WAIT_RET_SUCCESS_0;
+			ret = statuscode == WAIT_ABANDONED_0 ? MONO_W32HANDLE_WAIT_RET_ABANDONED_0 : MONO_W32HANDLE_WAIT_RET_SUCCESS_0;
 			goto done;
 		}
 
@@ -1270,7 +1270,7 @@ mono_w32handle_wait_multiple (gpointer *handles, gsize nhandles, gboolean waital
 	gint i, thr_ret;
 	gint64 start;
 	gpointer handles_sorted [MONO_W32HANDLE_MAXIMUM_WAIT_OBJECTS];
-	guint32 statuscode = 0;
+	guint32 statuscodes [MONO_W32HANDLE_MAXIMUM_WAIT_OBJECTS] = {0};
 
 	if (nhandles == 0)
 		return MONO_W32HANDLE_WAIT_RET_FAILED;
@@ -1353,13 +1353,19 @@ mono_w32handle_wait_multiple (gpointer *handles, gsize nhandles, gboolean waital
 
 		if (signalled) {
 			for (i = 0; i < nhandles; i++)
-				own_if_signalled (handles [i], &statuscode);
+				own_if_signalled (handles [i], &statuscodes [i]);
 		}
 
 		mono_w32handle_unlock_handles (handles, nhandles);
 
 		if (signalled) {
 			ret = MONO_W32HANDLE_WAIT_RET_SUCCESS_0 + lowest;
+			for (i = lowest; i < nhandles; i++) {
+				if (statuscodes [i] == WAIT_ABANDONED_0) {
+					ret = MONO_W32HANDLE_WAIT_RET_ABANDONED_0 + lowest;
+					break;
+				}
+			}
 			goto done;
 		}
 
@@ -1470,7 +1476,7 @@ mono_w32handle_signal_and_wait (gpointer signal_handle, gpointer wait_handle, gu
 			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_W32HANDLE, "%s: handle %p already owned",
 				__func__, wait_handle);
 
-			ret = MONO_W32HANDLE_WAIT_RET_SUCCESS_0;
+			ret = statuscode == WAIT_ABANDONED_0 ? MONO_W32HANDLE_WAIT_RET_ABANDONED_0 : MONO_W32HANDLE_WAIT_RET_SUCCESS_0;
 			goto done;
 		}
 	}
@@ -1485,7 +1491,7 @@ mono_w32handle_signal_and_wait (gpointer signal_handle, gpointer wait_handle, gu
 			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_W32HANDLE, "%s: handle %p signalled",
 				__func__, wait_handle);
 
-			ret = MONO_W32HANDLE_WAIT_RET_SUCCESS_0;
+			ret = statuscode == WAIT_ABANDONED_0 ? MONO_W32HANDLE_WAIT_RET_ABANDONED_0 : MONO_W32HANDLE_WAIT_RET_SUCCESS_0;
 			goto done;
 		}
 

@@ -21,6 +21,7 @@
 typedef struct {
 	MonoNativeThreadId tid;
 	guint32 recursion;
+	gboolean abandoned;
 } MonoW32HandleMutex;
 
 struct MonoW32HandleNamedMutex {
@@ -47,6 +48,11 @@ mutex_handle_own (gpointer handle, MonoW32HandleType type, guint32 *statuscode)
 
 	mutex_handle->tid = pthread_self ();
 	mutex_handle->recursion++;
+	if (mutex_handle->abandoned) {
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: mutex handle %p was abandoned", __func__, handle);
+		mutex_handle->abandoned = FALSE;
+		*statuscode = WAIT_ABANDONED_0;
+	}
 
 	mono_w32handle_set_signal_state (handle, FALSE, FALSE);
 
@@ -229,6 +235,7 @@ static gpointer mutex_handle_create (MonoW32HandleMutex *mutex_handle, MonoW32Ha
 
 	mutex_handle->tid = 0;
 	mutex_handle->recursion = 0;
+	mutex_handle->abandoned = FALSE;
 
 	handle = mono_w32handle_new (type, mutex_handle);
 	if (handle == INVALID_HANDLE_VALUE) {
@@ -365,7 +372,10 @@ ves_icall_System_Threading_Mutex_ReleaseMutex_internal (gpointer handle)
 
 	tid = pthread_self ();
 
-	if (!pthread_equal (mutex_handle->tid, tid)) {
+	if (mutex_handle->abandoned) {
+		// The Win32 ReleaseMutex() function returns TRUE for abandoned mutexes
+		ret = TRUE;
+	} else if (!pthread_equal (mutex_handle->tid, tid)) {
 		ret = FALSE;
 
 		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: we don't own %s handle %p (owned by %ld, me %ld)",
@@ -461,6 +471,7 @@ mono_w32mutex_abandon (gpointer handle, MonoNativeThreadId tid)
 	if (pthread_equal (mutex_handle->tid, tid)) {
 		mutex_handle->recursion = 0;
 		mutex_handle->tid = 0;
+		mutex_handle->abandoned = TRUE;
 
 		mono_w32handle_set_signal_state (handle, TRUE, FALSE);
 
