@@ -4,29 +4,29 @@
 
 namespace System.Security.Cryptography.Dsa.Tests
 {
-    public class DSAOpenSslProvider : IDSAProvider
+    public class DSACryptoServiceProviderProvider : IDSAProvider
     {
         public DSA Create()
         {
-            return new DSAOpenSsl();
+            return new DSACryptoServiceProvider();
         }
 
         public DSA Create(int keySize)
         {
-            return new DSAOpenSsl(keySize);
+            return new DSACryptoServiceProvider(keySize);
         }
 
         public bool SupportsFips186_3
         {
             get
             {
-                return true;
+                return false;
             }
         }
     }
 
     public partial class DSAFactory
     {
-        private static readonly IDSAProvider s_provider = new DSAOpenSslProvider();
+        private static readonly IDSAProvider s_provider = new DSACryptoServiceProviderProvider();
     }
 }
