@@ -2091,8 +2091,6 @@ bool Compiler::impSpillStackEntry(unsigned level,
     guard.Init(&impNestedStackSpill, bAssertOnRecursion);
 #endif
 
-    assert(!fgGlobalMorph); // use impInlineSpillStackEntry() during inlining
-
     GenTreePtr tree = verCurrentState.esStack[level].val;
 
     /* Allocate a temp if we haven't been asked to use a particular one */
@@ -2187,8 +2185,6 @@ void Compiler::impSpillStackEnsure(bool spillLeaves)
 
 void Compiler::impSpillEvalStack()
 {
-    assert(!fgGlobalMorph); // use impInlineSpillEvalStack() during inlining
-
     for (unsigned level = 0; level < verCurrentState.esStackDepth; level++)
     {
         impSpillStackEntry(level, BAD_VAR_NUM DEBUGARG(false) DEBUGARG("impSpillEvalStack"));
@@ -2326,8 +2322,6 @@ Compiler::fgWalkResult Compiler::impFindValueClasses(GenTreePtr* pTree, fgWalkDa
 
 void Compiler::impSpillLclRefs(ssize_t lclNum)
 {
-    assert(!fgGlobalMorph); // use impInlineSpillLclRefs() during inlining
-
     /* Before we make any appends to the tree list we must spill the
      * "special" side effects (GTF_ORDER_SIDEEFF) - GT_CATCH_ARG */
 
