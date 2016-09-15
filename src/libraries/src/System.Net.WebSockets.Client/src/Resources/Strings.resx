@@ -186,4 +186,7 @@
   <data name="net_securityprotocolnotsupported" xml:space="preserve">
     <value>The requested security protocol is not supported.</value>
   </data>
+  <data name="net_WebSockets_ArgumentOutOfRange_TooBig" xml:space="preserve">
+    <value>The value of the '{0}' parameter ({1}) must be less than or equal to {2}.</value>
+  </data>
 </root>
