@@ -441,6 +441,8 @@ namespace System
         public override int GetHashCode() { return default(int); }
         public static double GetNumericValue(char c) { return default(double); }
         public static double GetNumericValue(string s, int index) { return default(double); }
+        public static System.Globalization.UnicodeCategory GetUnicodeCategory(char c) { return default(System.Globalization.UnicodeCategory); }
+        public static System.Globalization.UnicodeCategory GetUnicodeCategory(string s, int index) { return default(System.Globalization.UnicodeCategory); }
         public static bool IsControl(char c) { return default(bool); }
         public static bool IsControl(string s, int index) { return default(bool); }
         public static bool IsDigit(char c) { return default(bool); }
@@ -491,12 +493,24 @@ namespace System
         uint System.IConvertible.ToUInt32(System.IFormatProvider provider) { return default(uint); }
         ulong System.IConvertible.ToUInt64(System.IFormatProvider provider) { return default(ulong); }
         public static char ToLower(char c) { return default(char); }
+        public static char ToLower(char c, System.Globalization.CultureInfo culture) { return default(char); }
         public static char ToLowerInvariant(char c) { return default(char); }
         public override string ToString() { return default(string); }
         public static string ToString(char c) { return default(string); }
         public static char ToUpper(char c) { return default(char); }
+        public static char ToUpper(char c, System.Globalization.CultureInfo culture) { return default(char); }
         public static char ToUpperInvariant(char c) { return default(char); }
         public static bool TryParse(string s, out char result) { result = default(char); return default(bool); }
+    }
+    public sealed partial class CharEnumerator : System.Collections.Generic.IEnumerator<char>, System.Collections.IEnumerator, System.ICloneable, System.IDisposable 
+    {
+        internal CharEnumerator() { }
+        public char Current { get { return default(char); } }
+        object System.Collections.IEnumerator.Current { get { return default(object); } }
+        public object Clone() { return default(object); }
+        public void Dispose() { }
+        public bool MoveNext() { return default(bool); }
+        public void Reset() { }
     }
     [System.AttributeUsageAttribute((System.AttributeTargets)(32767), Inherited = true, AllowMultiple = false)]
     public sealed partial class CLSCompliantAttribute : System.Attribute
@@ -1727,10 +1741,18 @@ namespace System
         public String(char c, int count) { }
         public String(char[] value) { }
         public String(char[] value, int startIndex, int length) { }
+        [System.CLSCompliantAttribute(false)]
+        public unsafe String(sbyte* value) { }
+        [System.CLSCompliantAttribute(false)]
+        public unsafe String(sbyte* value, int startIndex, int length) { }
+        [System.CLSCompliantAttribute(false)]
+        public unsafe String(sbyte* value, int startIndex, int length, System.Text.Encoding enc) { }
         [System.Runtime.CompilerServices.IndexerName("Chars")]
         public char this[int index] { get { return default(char); } }
         public int Length { get { return default(int); } }
+        public object Clone() { throw null; }
         public static int Compare(string strA, int indexA, string strB, int indexB, int length) { return default(int); }
+        public static int Compare(System.String strA, int indexA, System.String strB, int indexB, int length, bool ignoreCase) { throw null; }
         public static int Compare(string strA, int indexA, string strB, int indexB, int length, System.StringComparison comparisonType) { return default(int); }
         public static int Compare(string strA, string strB) { return default(int); }
         public static int Compare(string strA, string strB, bool ignoreCase) { return default(int); }
@@ -1753,6 +1775,7 @@ namespace System
         public static string Concat(params string[] values) { return default(string); }
         public static string Concat<T>(System.Collections.Generic.IEnumerable<T> values) { return default(string); }
         public bool Contains(string value) { return default(bool); }
+        public static System.String Copy(System.String str) { throw null; }
         public void CopyTo(int sourceIndex, char[] destination, int destinationIndex, int count) { }
         public bool EndsWith(string value) { return default(bool); }
         public bool EndsWith(System.String value, bool ignoreCase, System.Globalization.CultureInfo culture) { return default(bool); }
@@ -1770,6 +1793,8 @@ namespace System
         public static string Format(string format, object arg0, object arg1) { return default(string); }
         public static string Format(string format, object arg0, object arg1, object arg2) { return default(string); }
         public static string Format(string format, params object[] args) { return default(string); }
+        // tracking issue #10216.
+        // public System.CharEnumerator GetEnumerator() { return default(System.CharEnumerator); }
         public override int GetHashCode() { return default(int); }
         public int IndexOf(char value) { return default(int); }
         public int IndexOf(char value, int startIndex) { return default(int); }
@@ -1784,6 +1809,10 @@ namespace System
         public int IndexOfAny(char[] anyOf, int startIndex) { return default(int); }
         public int IndexOfAny(char[] anyOf, int startIndex, int count) { return default(int); }
         public string Insert(int startIndex, string value) { return default(string); }
+        public static string Intern(string str) { return default(string); }
+        public static string IsInterned(string str) { return default(string); }
+        public bool IsNormalized() { return default(bool); }
+        public bool IsNormalized(System.Text.NormalizationForm normalizationForm) { return default(bool); }
         public static bool IsNullOrEmpty(string value) { return default(bool); }
         public static bool IsNullOrWhiteSpace(string value) { return default(bool); }
         public static string Join(string separator, System.Collections.Generic.IEnumerable<string> values) { return default(string); }
@@ -1803,6 +1832,8 @@ namespace System
         public int LastIndexOfAny(char[] anyOf) { return default(int); }
         public int LastIndexOfAny(char[] anyOf, int startIndex) { return default(int); }
         public int LastIndexOfAny(char[] anyOf, int startIndex, int count) { return default(int); }
+        public string Normalize() { return default(string); }
+        public string Normalize(System.Text.NormalizationForm normalizationForm) { return default(string); }
         public static bool operator ==(string a, string b) { return default(bool); }
         public static bool operator !=(string a, string b) { return default(bool); }
         public string PadLeft(int totalWidth) { return default(string); }
