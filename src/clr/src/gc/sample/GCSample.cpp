@@ -68,7 +68,7 @@ Object * AllocateObject(MethodTable * pMT)
     }
     else
     {
-        pObject = g_theGcHeap->Alloc(acontext, size, 0);
+        pObject = g_theGCHeap->Alloc(acontext, size, 0);
         if (pObject == NULL)
             return NULL;
     }
