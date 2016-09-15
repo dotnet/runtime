@@ -17011,18 +17011,10 @@ void Compiler::impInlineRecordArgInfo(InlineInfo*   pInlineInfo,
 #endif // FEATURE_SIMD
     }
 
-    if (curArgVal->gtFlags & GTF_ORDER_SIDEEFF)
-    {
-        // Right now impInlineSpillLclRefs and impInlineSpillGlobEffects don't take
-        // into account special side effects, so we disallow them during inlining.
-        inlineResult->NoteFatal(InlineObservation::CALLSITE_ARG_HAS_SIDE_EFFECT);
-        return;
-    }
-
-    if (curArgVal->gtFlags & GTF_GLOB_EFFECT)
+    if (curArgVal->gtFlags & GTF_ALL_EFFECT)
     {
         inlCurArgInfo->argHasGlobRef = (curArgVal->gtFlags & GTF_GLOB_REF) != 0;
-        inlCurArgInfo->argHasSideEff = (curArgVal->gtFlags & GTF_SIDE_EFFECT) != 0;
+        inlCurArgInfo->argHasSideEff = (curArgVal->gtFlags & (GTF_ALL_EFFECT & ~GTF_GLOB_REF)) != 0;
     }
 
     if (curArgVal->gtOper == GT_LCL_VAR)
