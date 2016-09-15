@@ -32,6 +32,7 @@
     </Compile>
     <Compile Include="AbortTest.cs" />
     <Compile Include="CancelTest.cs" />
+    <Compile Include="ClientWebSocketOptionsTests.cs" />
     <Compile Include="ClientWebSocketTestBase.cs" />
     <Compile Include="ClientWebSocketUnitTest.cs" />
     <Compile Include="CloseTest.cs" />

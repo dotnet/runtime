@@ -16,6 +16,7 @@
   <ItemGroup Condition="'$(TargetGroup)' != 'net46'">
     <Compile Include="System\Net\WebSockets\WebSocket.cs" />
     <Compile Include="System\Net\WebSockets\WebSocketCloseStatus.cs" />
+    <Compile Include="System\Net\WebSockets\WebSocketContext.cs" />
     <Compile Include="System\Net\WebSockets\WebSocketError.cs" />
     <Compile Include="System\Net\WebSockets\WebSocketException.cs" />
     <Compile Include="System\Net\WebSockets\WebSocketMessageType.cs" />

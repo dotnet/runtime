@@ -1258,7 +1258,7 @@
       "BaselineVersion": "4.0.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
-        "4.0.1.0": "4.3.0"
+        "4.1.0.0": "4.3.0"
       }
     },
     "System.Net.WebSockets.Client": {
@@ -1268,7 +1268,7 @@
       "BaselineVersion": "4.0.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
-        "4.0.1.0": "4.3.0"
+        "4.1.0.0": "4.3.0"
       }
     },
     "System.Numerics.Vectors": {

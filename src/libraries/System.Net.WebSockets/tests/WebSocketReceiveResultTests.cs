@@ -20,12 +20,24 @@ namespace System.Net.WebSockets.Tests
         [Theory, MemberData(nameof(ConstructorData))]
         public void ConstructorTest_Success(int count, WebSocketMessageType messageType, bool endOfMessage, WebSocketCloseStatus? closeStatus, string closeStatusDescription)
         {
-            var wsrr = new WebSocketReceiveResult(count, messageType, endOfMessage, closeStatus, closeStatusDescription);
-            Assert.Equal(wsrr.Count, count);
-            Assert.Equal(wsrr.MessageType, messageType);
-            Assert.Equal(wsrr.EndOfMessage, endOfMessage);
-            Assert.Equal(wsrr.CloseStatus, closeStatus);
-            Assert.Equal(wsrr.CloseStatusDescription, closeStatusDescription);
+            WebSocketReceiveResult wsrr;
+
+            if (closeStatus == null && closeStatusDescription == null)
+            {
+                wsrr = new WebSocketReceiveResult(count, messageType, endOfMessage);
+                Assert.Equal(count, wsrr.Count);
+                Assert.Equal(messageType, wsrr.MessageType);
+                Assert.Equal(endOfMessage, wsrr.EndOfMessage);
+                Assert.Equal(null, wsrr.CloseStatus);
+                Assert.Equal(null, wsrr.CloseStatusDescription);
+            }
+
+            wsrr = new WebSocketReceiveResult(count, messageType, endOfMessage, closeStatus, closeStatusDescription);
+            Assert.Equal(count, wsrr.Count);
+            Assert.Equal(messageType, wsrr.MessageType);
+            Assert.Equal(endOfMessage, wsrr.EndOfMessage);
+            Assert.Equal(closeStatus, wsrr.CloseStatus);
+            Assert.Equal(closeStatusDescription, wsrr.CloseStatusDescription);
         }
 
         [Fact]

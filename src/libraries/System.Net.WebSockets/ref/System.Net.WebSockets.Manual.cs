@@ -7,9 +7,9 @@
 
 namespace System.Net.WebSockets
 {
-    public sealed partial class WebSocketException : Exception
+    public sealed partial class WebSocketException : System.ComponentModel.Win32Exception
     {
-        // Following property was added after removing the Win32Exception base class.
+        // Following property was added after removing the Win32Exception base class (which was then added back).
         public int ErrorCode { get { return default(int); } }
     }
 }
