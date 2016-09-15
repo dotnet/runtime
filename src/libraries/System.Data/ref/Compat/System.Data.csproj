@@ -7,6 +7,7 @@
     <PackageTargetFramework>net46</PackageTargetFramework>
     <NuGetTargetMoniker>.NETFramework,Version=v4.6</NuGetTargetMoniker>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <NoWarn>CA3077;$(NoWarn)</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Data.cs" />
