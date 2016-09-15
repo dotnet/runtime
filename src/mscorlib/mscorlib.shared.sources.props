@@ -63,7 +63,7 @@
     <CompilerServicesSources Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\TaskAwaiter.cs" />
     <CompilerServicesSources Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\YieldAwaitable.cs" />
     <CompilerServicesSources Condition="'$(FeatureCominterop)' == 'true'" Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\IDispatchConstantAttribute.cs" />
-    <CompilerServicesSources Condition="'$(FeatureCominterop)' == 'true'" Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\IUnknownConstantAttribute.cs" />
+    <CompilerServicesSources Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\IUnknownConstantAttribute.cs" />
   </ItemGroup>
   <ItemGroup>
     <ReliabilitySources Include="$(BclSourcesRoot)\System\Runtime\Reliability\CriticalFinalizerObject.cs" />
