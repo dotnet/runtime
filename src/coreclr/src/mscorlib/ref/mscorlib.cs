@@ -3255,12 +3255,20 @@ namespace System
         [System.Security.SecuritySafeCriticalAttribute]
         public System.String Replace(char oldChar, char newChar) { throw null; }
         public System.String Replace(System.String oldValue, System.String newValue) { throw null; }
+        [System.Runtime.InteropServices.ComVisibleAttribute(false)]
+        public string[] Split(char separator, int count, System.StringSplitOptions options = (System.StringSplitOptions)(0)) { throw null; }
+        [System.Runtime.InteropServices.ComVisibleAttribute(false)]
+        public string[] Split(char separator, System.StringSplitOptions options = (System.StringSplitOptions)(0)) { throw null; }
         public string[] Split(params char[] separator) { throw null; }
         public string[] Split(char[] separator, int count) { throw null; }
         [System.Runtime.InteropServices.ComVisibleAttribute(false)]
         public string[] Split(char[] separator, int count, System.StringSplitOptions options) { throw null; }
         [System.Runtime.InteropServices.ComVisibleAttribute(false)]
         public string[] Split(char[] separator, System.StringSplitOptions options) { throw null; }
+        [System.Runtime.InteropServices.ComVisibleAttribute(false)]
+        public string[] Split(System.String separator, int count, System.StringSplitOptions options = (System.StringSplitOptions)(0)) { throw null; }
+        [System.Runtime.InteropServices.ComVisibleAttribute(false)]
+        public string[] Split(System.String separator, System.StringSplitOptions options = (System.StringSplitOptions)(0)) { throw null; }
         [System.Runtime.InteropServices.ComVisibleAttribute(false)]
         public string[] Split(string[] separator, int count, System.StringSplitOptions options) { throw null; }
         [System.Runtime.InteropServices.ComVisibleAttribute(false)]
