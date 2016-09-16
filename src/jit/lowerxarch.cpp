@@ -3102,7 +3102,7 @@ void Lowering::TreeNodeInfoInitCmp(GenTreePtr tree)
                             // so that we can generate a test instruction.
 
                             // Reverse the equality comparison
-                            tree->gtOper = (tree->gtOper == GT_EQ) ? GT_NE : GT_EQ;
+                            tree->SetOperRaw((tree->gtOper == GT_EQ) ? GT_NE : GT_EQ);
 
                             // Change the relOp2CnsVal to zero
                             relOp2CnsVal = 0;
