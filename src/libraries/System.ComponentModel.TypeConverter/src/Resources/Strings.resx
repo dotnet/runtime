@@ -192,4 +192,25 @@
   <data name="TypeDescriptorSameAssociation" xml:space="preserve">
     <value>Cannot create an association when the primary and secondary objects are the same.</value>
   </data>
+  <data name="InvalidParameter" xml:space="preserve">
+    <value>Invalid value '{1}' for parameter '{0}'.</value>
+  </data>
+  <data name="TimerAutoReset" xml:space="preserve">
+    <value>Indicates whether the timer will be restarted when it is enabled.</value>
+  </data>
+  <data name="TimerEnabled" xml:space="preserve">
+    <value>Indicates whether the timer is enabled to fire events at a defined interval.</value>
+  </data>
+  <data name="TimerInterval" xml:space="preserve">
+    <value>The number of milliseconds between timer events.</value>
+  </data>
+  <data name="TimerIntervalElapsed" xml:space="preserve">
+    <value>Occurs when the Interval has elapsed.</value>
+  </data>
+  <data name="TimerInvalidInterval" xml:space="preserve">
+    <value>'{0}' is not a valid value for 'Interval'. 'Interval' must be greater than {1}.</value>
+  </data>
+  <data name="TimerSynchronizingObject" xml:space="preserve">
+    <value>The object used to marshal the event handler calls issued when an interval has elapsed.</value>
+  </data>
 </root>
