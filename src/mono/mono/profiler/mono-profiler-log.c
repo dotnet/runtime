@@ -572,7 +572,7 @@ init_time (void)
 		g_assert (!thread__->busy && "Why are we trying to write a new event while already writing one?"); \
 		thread__->busy = TRUE; \
 		InterlockedIncrement ((COUNTER)); \
-		LogBuffer *BUFFER = ensure_logbuf_unsafe ((SIZE))
+		LogBuffer *BUFFER = ensure_logbuf_unsafe (thread__, (SIZE))
 
 #define EXIT_LOG_EXPLICIT(SEND, REQUESTS) \
 		thread__->busy = FALSE; \
@@ -767,7 +767,7 @@ free_buffer (void *buf, int size)
 }
 
 static LogBuffer*
-create_buffer (void)
+create_buffer (uintptr_t tid)
 {
 	LogBuffer* buf = (LogBuffer *) alloc_buffer (BUFFER_SIZE);
 
@@ -776,8 +776,9 @@ create_buffer (void)
 	buf->size = BUFFER_SIZE;
 	buf->time_base = current_time ();
 	buf->last_time = buf->time_base;
-	buf->buf_end = (unsigned char*)buf + buf->size;
+	buf->buf_end = (unsigned char *) buf + buf->size;
 	buf->cursor = buf->buf;
+	buf->thread_id = tid;
 
 	return buf;
 }
@@ -791,7 +792,7 @@ create_buffer (void)
 static void
 init_buffer_state (MonoProfilerThread *thread)
 {
-	thread->buffer = create_buffer ();
+	thread->buffer = create_buffer (thread->node.key);
 	thread->methods = NULL;
 }
 
@@ -857,29 +858,17 @@ deinit_thread (MonoProfilerThread *thread)
 	PROF_TLS_SET (NULL);
 }
 
+// Only valid if init_thread () was called with add_to_lls = FALSE.
 static LogBuffer *
-ensure_logbuf_inner (LogBuffer *old, int bytes)
+ensure_logbuf_unsafe (MonoProfilerThread *thread, int bytes)
 {
+	LogBuffer *old = thread->buffer;
+
 	if (old && old->cursor + bytes + 100 < old->buf_end)
 		return old;
 
-	LogBuffer *new_ = create_buffer ();
+	LogBuffer *new_ = create_buffer (thread->node.key);
 	new_->next = old;
-
-	return new_;
-}
-
-// Only valid if init_thread () was called with add_to_lls = FALSE.
-static LogBuffer *
-ensure_logbuf_unsafe (int bytes)
-{
-	MonoProfilerThread *thread = PROF_TLS_GET ();
-	LogBuffer *old = thread->buffer;
-	LogBuffer *new_ = ensure_logbuf_inner (old, bytes);
-
-	if (new_ == old)
-		return old; // Still enough space.
-
 	thread->buffer = new_;
 
 	return new_;
@@ -1209,15 +1198,15 @@ free_thread (gpointer p)
 
 		InterlockedIncrement (&thread_ends_ctr);
 
-		thread->buffer = ensure_logbuf_inner (thread->buffer,
+		LogBuffer *buf = ensure_logbuf_unsafe (thread,
 			EVENT_SIZE /* event */ +
 			BYTE_SIZE /* type */ +
 			LEB128_SIZE /* tid */
 		);
 
-		emit_event (thread->buffer, TYPE_END_UNLOAD | TYPE_METADATA);
-		emit_byte (thread->buffer, TYPE_THREAD);
-		emit_ptr (thread->buffer, (void *) thread->node.key);
+		emit_event (buf, TYPE_END_UNLOAD | TYPE_METADATA);
+		emit_byte (buf, TYPE_THREAD);
+		emit_ptr (buf, (void *) thread->node.key);
 	}
 
 	send_buffer (thread);
