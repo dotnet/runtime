@@ -599,17 +599,29 @@ namespace System.Reflection.Emit
 
         public override bool IsSecurityCritical
         {
+#if FEATURE_CORECLR
+            get { return true; }
+#else
             get { throw new NotSupportedException(Environment.GetResourceString("NotSupported_DynamicModule")); }
+#endif
         }
 
         public override bool IsSecuritySafeCritical
         {
+#if FEATURE_CORECLR
+            get { return false; }
+#else
             get { throw new NotSupportedException(Environment.GetResourceString("NotSupported_DynamicModule")); }
+#endif
         }
 
         public override bool IsSecurityTransparent
         {
+#if FEATURE_CORECLR
+            get { return false; }
+#else
             get { throw new NotSupportedException(Environment.GetResourceString("NotSupported_DynamicModule")); }
+#endif
         }
         #endregion
 

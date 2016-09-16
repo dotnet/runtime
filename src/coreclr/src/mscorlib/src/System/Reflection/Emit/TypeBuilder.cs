@@ -1363,6 +1363,9 @@ namespace System.Reflection.Emit {
 
         public override bool IsSecurityCritical
         {
+#if FEATURE_CORECLR
+            get { return true; }
+#else
             get
             {
                 if (!IsCreated())
@@ -1371,10 +1374,14 @@ namespace System.Reflection.Emit {
 
                 return m_bakedRuntimeType.IsSecurityCritical;
             }
+#endif
         }
 
         public override bool IsSecuritySafeCritical
         {
+#if FEATURE_CORECLR
+            get { return false; }
+#else
             get
             {
                 if (!IsCreated())
@@ -1383,10 +1390,14 @@ namespace System.Reflection.Emit {
 
                 return m_bakedRuntimeType.IsSecuritySafeCritical;
             }
+#endif
         }
 
         public override bool IsSecurityTransparent
         {
+#if FEATURE_CORECLR
+            get { return false; }
+#else
             get
             {
                 if (!IsCreated())
@@ -1395,6 +1406,7 @@ namespace System.Reflection.Emit {
 
                 return m_bakedRuntimeType.IsSecurityTransparent;
             }
+#endif
         }
 
         [System.Runtime.InteropServices.ComVisible(true)]
