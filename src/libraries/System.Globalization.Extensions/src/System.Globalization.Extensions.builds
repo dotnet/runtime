@@ -9,7 +9,7 @@
       <OSGroup>Windows_NT</OSGroup>
     </Project>
     <Project Include="System.Globalization.Extensions.csproj">
-      <TargetGroup>net46</TargetGroup>
+      <TargetGroup>net463</TargetGroup>
       <OSGroup>Windows_NT</OSGroup>
     </Project>
   </ItemGroup>
