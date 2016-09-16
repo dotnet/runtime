@@ -312,6 +312,14 @@ namespace System.Net.Sockets
             }
         }
 
+        public IntPtr Handle
+        {
+            get
+            {
+                return _handle.DangerousGetHandle();
+            }
+        }
+
         internal SafeCloseSocket SafeHandle
         {
             get
