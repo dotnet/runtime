@@ -35,6 +35,7 @@
     <Compile Include="System\Net\Mime\MultiAsyncResult.cs" />
     <Compile Include="System\Net\Mime\TrackingStringDictionary.cs" />
     <Compile Include="System\Net\Mime\TrackingValidationObjectDictionary.cs" />
+    <Compile Include="System\Net\Mail\MailHeaderID.cs" />
     <Compile Include="System\Net\Mail\MailHeaderInfo.cs" />
     <Compile Include="System\Net\Mail\BufferBuilder.cs" />
     <Compile Include="$(CommonPath)\System\IO\DelegatingStream.cs">
@@ -67,9 +68,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="System\Net\Mail\MailHeaderID.cs" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
