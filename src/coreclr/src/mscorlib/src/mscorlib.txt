@@ -632,7 +632,7 @@ Argument_UnrecognizedLoaderOptimization = Unrecognized LOADER_OPTIMIZATION prope
 ArgumentException_NotAllCustomSortingFuncsDefined = Implementations of all the NLS functions must be provided.
 ArgumentException_MinSortingVersion = The runtime does not support a version of "{0}" less than {1}.
 #if FEATURE_SPAN_OF_T
-Argument_InvalidTypeForUnmanagedMemory = '{0}' is reference type or contains pointers and hence can not be stored in unmanaged memory.
+Argument_InvalidTypeWithPointersNotSupported = Cannot use type '{0}'. Only value types without pointers are supported.
 #endif // FEATURE_SPAN_OF_T
 
 
