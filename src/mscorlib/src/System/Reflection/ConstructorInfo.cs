@@ -664,17 +664,29 @@ namespace System.Reflection
 
         public override bool IsSecurityCritical
         {
+#if FEATURE_CORECLR
+            get { return true; }
+#else
             get { return RuntimeMethodHandle.IsSecurityCritical(this); }
+#endif
         }
 
         public override bool IsSecuritySafeCritical
         {
+#if FEATURE_CORECLR
+            get { return false; }
+#else
             get { return RuntimeMethodHandle.IsSecuritySafeCritical(this); }
+#endif
         }
 
         public override bool IsSecurityTransparent
         {
+#if FEATURE_CORECLR
+            get { return false; }
+#else
             get { return RuntimeMethodHandle.IsSecurityTransparent(this); }
+#endif
         }
 
         public override bool ContainsGenericParameters
