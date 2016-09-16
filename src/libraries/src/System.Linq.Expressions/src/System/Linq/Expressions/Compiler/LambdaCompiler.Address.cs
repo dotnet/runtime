@@ -123,7 +123,7 @@ namespace System.Linq.Expressions.Compiler
                 Type objectType = null;
                 if (node.Expression != null)
                 {
-                    EmitInstance(node.Expression, objectType = node.Expression.Type);
+                    EmitInstance(node.Expression, out objectType);
                 }
                 EmitMemberAddress(node.Member, objectType);
             }
@@ -281,7 +281,7 @@ namespace System.Linq.Expressions.Compiler
             Type instanceType = null;
             if (node.Expression != null)
             {
-                EmitInstance(node.Expression, instanceType = node.Expression.Type);
+                EmitInstance(node.Expression, out instanceType);
 
                 // store in local
                 _ilg.Emit(OpCodes.Dup);
@@ -330,7 +330,7 @@ namespace System.Linq.Expressions.Compiler
             Type instanceType = null;
             if (node.Object != null)
             {
-                EmitInstance(node.Object, instanceType = node.Object.Type);
+                EmitInstance(node.Object, out instanceType);
 
                 // store in local
                 _ilg.Emit(OpCodes.Dup);
