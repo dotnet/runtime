@@ -14,6 +14,7 @@ namespace System.Globalization.Tests
         [InlineData("\u00C4\u00C7", NormalizationForm.FormD, false)]
         [InlineData("A\u0308C\u0327", NormalizationForm.FormC, false)]
         [InlineData("A\u0308C\u0327", NormalizationForm.FormD, true)]
+        [ActiveIssue(11803, Xunit.PlatformID.AnyUnix)]
         public void IsNormalized(string value, NormalizationForm normalizationForm, bool expected)
         {
             if (normalizationForm == NormalizationForm.FormC)
@@ -24,6 +25,7 @@ namespace System.Globalization.Tests
         }
 
         [Fact]
+        [ActiveIssue(11803, Xunit.PlatformID.AnyUnix)]
         public void IsNormalized_Invalid()
         {
             Assert.Throws<ArgumentException>(() => "\uFB01".IsNormalized((NormalizationForm)10));
@@ -53,6 +55,7 @@ namespace System.Globalization.Tests
         [InlineData("\u1E9b\u0323", NormalizationForm.FormD, "\u017f\u0323\u0307")]
         [InlineData("\u1E9b\u0323", NormalizationForm.FormKC, "\u1E69")]
         [InlineData("\u1E9b\u0323", NormalizationForm.FormKD, "\u0073\u0323\u0307")]
+        [ActiveIssue(11803, Xunit.PlatformID.AnyUnix)]
         public void Normalize(string value, NormalizationForm normalizationForm, string expected)
         {
             if (normalizationForm == NormalizationForm.FormC)
@@ -63,6 +66,7 @@ namespace System.Globalization.Tests
         }
 
         [Fact]
+        [ActiveIssue(11803, Xunit.PlatformID.AnyUnix)]
         public void Normalize_Invalid()
         {
             Assert.Throws<ArgumentException>(() => "\uFB01".Normalize((NormalizationForm)7));
