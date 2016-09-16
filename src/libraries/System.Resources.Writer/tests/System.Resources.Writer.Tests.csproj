@@ -17,7 +17,6 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="ResourceWriterUnitTest.cs" />
-    <None Include="project.json" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\System.Resources.ResourceManager\pkg\System.Resources.ResourceManager.pkgproj">

@@ -26,9 +26,6 @@
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="project.json" />
-  </ItemGroup>
-  <ItemGroup>
     <ProjectReference Include="..\XDocument.Common\XDocument.Common.csproj">
       <Project>{52666206-b6c9-49fa-a1d7-d0a0c68807b0}</Project>
       <Name>XDocument.Common</Name>

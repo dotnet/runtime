@@ -6,6 +6,7 @@
     <RootNamespace>System.Runtime.Loader.DefaultContext.Tests</RootNamespace>
     <AssemblyName>System.Runtime.Loader.DefaultContext.Tests</AssemblyName>
     <ProjectGuid>{701CB3BC-00DC-435D-BDE4-C5FC29A708A8}</ProjectGuid>
+    <NugetTargetMoniker>.NETStandard,Version=v1.6</NugetTargetMoniker>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="DefaultLoadContextTest.cs" />

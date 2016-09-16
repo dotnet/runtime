@@ -108,7 +108,6 @@
   <ItemGroup>
     <None Include="ClassDiagram1.cd" />
     <Compile Include="ImmutableArray\ImmutableArray.Generic.Tests.cs" />
-    <None Include="project.json" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\pkg\System.Collections.Immutable.pkgproj">

@@ -20,9 +20,6 @@
     <Compile Include="TestTypes.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="project.json" />
-  </ItemGroup>
-  <ItemGroup>
     <ProjectReference Include="..\pkg\System.Reflection.DispatchProxy.pkgproj">
       <Project>{1e689c1b-690c-4799-bde9-6e7990585894}</Project>
       <Name>System.Reflection.DispatchProxy</Name>

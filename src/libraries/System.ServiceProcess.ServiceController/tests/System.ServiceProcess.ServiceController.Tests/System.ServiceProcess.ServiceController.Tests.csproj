@@ -18,9 +18,6 @@
     <Compile Include="ServiceControllerTests.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="project.json" />
-  </ItemGroup>
-  <ItemGroup>
     <ProjectReference Include="..\..\pkg\System.ServiceProcess.ServiceController.pkgproj">
       <Project>{f4821cb6-91a3-4546-bc4f-e00dbfbdaa05}</Project>
       <Name>System.ServiceProcess.ServiceController</Name>
