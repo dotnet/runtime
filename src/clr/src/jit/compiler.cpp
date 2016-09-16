@@ -1186,6 +1186,10 @@ void Compiler::compShutdown()
     }
 #endif
 
+#if NODEBASH_STATS
+    GenTree::ReportOperBashing(jitstdout);
+#endif
+
     // Where should we write our statistics output?
     FILE* fout = jitstdout;
 
@@ -1519,6 +1523,7 @@ void Compiler::compDisplayStaticSizes(FILE* fout)
     fprintf(fout, "Size of GenTreeLclFld       = %3u\n", sizeof(GenTreeLclFld));
     fprintf(fout, "Size of GenTreeRegVar       = %3u\n", sizeof(GenTreeRegVar));
     fprintf(fout, "Size of GenTreeCast         = %3u\n", sizeof(GenTreeCast));
+    fprintf(fout, "Size of GenTreeJumpCC       = %3u\n", sizeof(GenTreeJumpCC));
     fprintf(fout, "Size of GenTreeBox          = %3u\n", sizeof(GenTreeBox));
     fprintf(fout, "Size of GenTreeField        = %3u\n", sizeof(GenTreeField));
     fprintf(fout, "Size of GenTreeArgList      = %3u\n", sizeof(GenTreeArgList));
@@ -1545,12 +1550,10 @@ void Compiler::compDisplayStaticSizes(FILE* fout)
     fprintf(fout, "Size of GenTreePutArgStk    = %3u\n", sizeof(GenTreePutArgStk));
     fprintf(fout, "Size of GenTreeCopyOrReload = %3u\n", sizeof(GenTreeCopyOrReload));
     fprintf(fout, "Size of GenTreeAllocObj     = %3u\n", sizeof(GenTreeAllocObj));
-    fprintf(fout, "Size of GenTreeBlkOp        = %3u\n", sizeof(GenTreeBlkOp));
-    fprintf(fout, "Size of GenTreeCpBlk        = %3u\n", sizeof(GenTreeCpBlk));
-    fprintf(fout, "Size of GenTreeCpObj        = %3u\n", sizeof(GenTreeCpObj));
+    fprintf(fout, "Size of GenTreeBlk          = %3u\n", sizeof(GenTreeBlk));
+    fprintf(fout, "Size of GenTreeDynBlk       = %3u\n", sizeof(GenTreeDynBlk));
     fprintf(fout, "Size of GenTreeArrIndex     = %3u\n", sizeof(GenTreeArrIndex));
     fprintf(fout, "Size of GenTreeArrOffs      = %3u\n", sizeof(GenTreeArrOffs));
-    fprintf(fout, "Size of GenTreeInitBlk      = %3u\n", sizeof(GenTreeInitBlk));
 #ifdef FEATURE_SIMD
     fprintf(fout, "Size of GenTreeSIMD         = %3u\n", sizeof(GenTreeSIMD));
 #endif
@@ -10149,11 +10152,6 @@ void cNodeIR(Compiler* comp, GenTree* tree)
                 chars += printf(" ");
                 chars += cLeafIR(comp, tree);
             }
-            break;
-
-        case GT_STORE_CLS_VAR:
-
-            chars += printf(" ???");
             break;
 
         case GT_LEA:

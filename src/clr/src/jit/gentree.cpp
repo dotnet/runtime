@@ -21,7 +21,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 /*****************************************************************************/
 
 const unsigned short GenTree::gtOperKindTable[] = {
-#define GTNODE(en, sn, cm, ok) ok + GTK_COMMUTE *cm,
+#define GTNODE(en, sn, st, cm, ok) ok + GTK_COMMUTE *cm,
 #include "gtlist.h"
 };
 
@@ -209,7 +209,7 @@ static void printIndent(IndentStack* indentStack)
 }
 
 static const char* nodeNames[] = {
-#define GTNODE(en, sn, cm, ok) sn,
+#define GTNODE(en, sn, st, cm, ok) sn,
 #include "gtlist.h"
 };
 
@@ -220,8 +220,12 @@ const char* GenTree::NodeName(genTreeOps op)
     return nodeNames[op];
 }
 
+#endif
+
+#if defined(DEBUG) || NODEBASH_STATS
+
 static const char* opNames[] = {
-#define GTNODE(en, sn, cm, ok) #en,
+#define GTNODE(en, sn, st, cm, ok) #en,
 #include "gtlist.h"
 };
 
@@ -247,6 +251,16 @@ const char* GenTree::OpName(genTreeOps op)
 /* static */
 unsigned char GenTree::s_gtNodeSizes[GT_COUNT + 1];
 
+#if NODEBASH_STATS
+
+unsigned char GenTree::s_gtTrueSizes[GT_COUNT+1]
+{
+    #define GTNODE(en, sn, st, cm, ok) sizeof(st),
+    #include "gtlist.h"
+};
+
+#endif//NODEBASH_STATS
+
 /* static */
 void GenTree::InitNodeSize()
 {
@@ -264,12 +278,13 @@ void GenTree::InitNodeSize()
     // Now set all of the appropriate entries to 'large'
     CLANG_FORMAT_COMMENT_ANCHOR;
 
+    // clang-format off
 #if defined(FEATURE_HFA) || defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
     // On ARM32, ARM64 and System V for struct returning
     // there is code that does GT_ASG-tree.CopyObj call.
     // CopyObj is a large node and the GT_ASG is small, which triggers an exception.
-    GenTree::s_gtNodeSizes[GT_ASG]    = TREE_NODE_SZ_LARGE;
-    GenTree::s_gtNodeSizes[GT_RETURN] = TREE_NODE_SZ_LARGE;
+    GenTree::s_gtNodeSizes[GT_ASG]              = TREE_NODE_SZ_LARGE;
+    GenTree::s_gtNodeSizes[GT_RETURN]           = TREE_NODE_SZ_LARGE;
 #endif // defined(FEATURE_HFA) || defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
 
     GenTree::s_gtNodeSizes[GT_CALL]             = TREE_NODE_SZ_LARGE;
@@ -281,29 +296,29 @@ void GenTree::InitNodeSize()
 #ifdef FEATURE_SIMD
     GenTree::s_gtNodeSizes[GT_SIMD_CHK] = TREE_NODE_SZ_LARGE;
 #endif // FEATURE_SIMD
-    GenTree::s_gtNodeSizes[GT_ARR_ELEM]      = TREE_NODE_SZ_LARGE;
-    GenTree::s_gtNodeSizes[GT_ARR_INDEX]     = TREE_NODE_SZ_LARGE;
-    GenTree::s_gtNodeSizes[GT_ARR_OFFSET]    = TREE_NODE_SZ_LARGE;
-    GenTree::s_gtNodeSizes[GT_RET_EXPR]      = TREE_NODE_SZ_LARGE;
-    GenTree::s_gtNodeSizes[GT_OBJ]           = TREE_NODE_SZ_LARGE;
-    GenTree::s_gtNodeSizes[GT_FIELD]         = TREE_NODE_SZ_LARGE;
-    GenTree::s_gtNodeSizes[GT_STMT]          = TREE_NODE_SZ_LARGE;
-    GenTree::s_gtNodeSizes[GT_CMPXCHG]       = TREE_NODE_SZ_LARGE;
-    GenTree::s_gtNodeSizes[GT_QMARK]         = TREE_NODE_SZ_LARGE;
-    GenTree::s_gtNodeSizes[GT_LEA]           = TREE_NODE_SZ_LARGE;
-    GenTree::s_gtNodeSizes[GT_STORE_OBJ]     = TREE_NODE_SZ_LARGE;
-    GenTree::s_gtNodeSizes[GT_DYN_BLK]       = TREE_NODE_SZ_LARGE;
-    GenTree::s_gtNodeSizes[GT_STORE_DYN_BLK] = TREE_NODE_SZ_LARGE;
-    GenTree::s_gtNodeSizes[GT_INTRINSIC]     = TREE_NODE_SZ_LARGE;
-    GenTree::s_gtNodeSizes[GT_ALLOCOBJ]      = TREE_NODE_SZ_LARGE;
+    GenTree::s_gtNodeSizes[GT_ARR_ELEM]         = TREE_NODE_SZ_LARGE;
+    GenTree::s_gtNodeSizes[GT_ARR_INDEX]        = TREE_NODE_SZ_LARGE;
+    GenTree::s_gtNodeSizes[GT_ARR_OFFSET]       = TREE_NODE_SZ_LARGE;
+    GenTree::s_gtNodeSizes[GT_RET_EXPR]         = TREE_NODE_SZ_LARGE;
+    GenTree::s_gtNodeSizes[GT_OBJ]              = TREE_NODE_SZ_LARGE;
+    GenTree::s_gtNodeSizes[GT_FIELD]            = TREE_NODE_SZ_LARGE;
+    GenTree::s_gtNodeSizes[GT_STMT]             = TREE_NODE_SZ_LARGE;
+    GenTree::s_gtNodeSizes[GT_CMPXCHG]          = TREE_NODE_SZ_LARGE;
+    GenTree::s_gtNodeSizes[GT_QMARK]            = TREE_NODE_SZ_LARGE;
+    GenTree::s_gtNodeSizes[GT_LEA]              = TREE_NODE_SZ_LARGE;
+    GenTree::s_gtNodeSizes[GT_STORE_OBJ]        = TREE_NODE_SZ_LARGE;
+    GenTree::s_gtNodeSizes[GT_DYN_BLK]          = TREE_NODE_SZ_LARGE;
+    GenTree::s_gtNodeSizes[GT_STORE_DYN_BLK]    = TREE_NODE_SZ_LARGE;
+    GenTree::s_gtNodeSizes[GT_INTRINSIC]        = TREE_NODE_SZ_LARGE;
+    GenTree::s_gtNodeSizes[GT_ALLOCOBJ]         = TREE_NODE_SZ_LARGE;
 #if USE_HELPERS_FOR_INT_DIV
-    GenTree::s_gtNodeSizes[GT_DIV]  = TREE_NODE_SZ_LARGE;
-    GenTree::s_gtNodeSizes[GT_UDIV] = TREE_NODE_SZ_LARGE;
-    GenTree::s_gtNodeSizes[GT_MOD]  = TREE_NODE_SZ_LARGE;
-    GenTree::s_gtNodeSizes[GT_UMOD] = TREE_NODE_SZ_LARGE;
+    GenTree::s_gtNodeSizes[GT_DIV]              = TREE_NODE_SZ_LARGE;
+    GenTree::s_gtNodeSizes[GT_UDIV]             = TREE_NODE_SZ_LARGE;
+    GenTree::s_gtNodeSizes[GT_MOD]              = TREE_NODE_SZ_LARGE;
+    GenTree::s_gtNodeSizes[GT_UMOD]             = TREE_NODE_SZ_LARGE;
 #endif
 #ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
-    GenTree::s_gtNodeSizes[GT_PUTARG_STK] = TREE_NODE_SZ_LARGE;
+    GenTree::s_gtNodeSizes[GT_PUTARG_STK]       = TREE_NODE_SZ_LARGE;
 #endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
 
     assert(GenTree::s_gtNodeSizes[GT_RETURN] == GenTree::s_gtNodeSizes[GT_ASG]);
@@ -313,60 +328,62 @@ void GenTree::InitNodeSize()
     assert(sizeof(GenTreeLclFld) <= GenTree::s_gtNodeSizes[GT_LCL_FLD]);
     assert(sizeof(GenTreeLclVar) <= GenTree::s_gtNodeSizes[GT_LCL_VAR]);
 
-    static_assert_no_msg(sizeof(GenTree) <= TREE_NODE_SZ_SMALL);
-    static_assert_no_msg(sizeof(GenTreeUnOp) <= TREE_NODE_SZ_SMALL);
-    static_assert_no_msg(sizeof(GenTreeOp) <= TREE_NODE_SZ_SMALL);
-    static_assert_no_msg(sizeof(GenTreeVal) <= TREE_NODE_SZ_SMALL);
+    static_assert_no_msg(sizeof(GenTree)             <= TREE_NODE_SZ_SMALL);
+    static_assert_no_msg(sizeof(GenTreeUnOp)         <= TREE_NODE_SZ_SMALL);
+    static_assert_no_msg(sizeof(GenTreeOp)           <= TREE_NODE_SZ_SMALL);
+    static_assert_no_msg(sizeof(GenTreeVal)          <= TREE_NODE_SZ_SMALL);
     static_assert_no_msg(sizeof(GenTreeIntConCommon) <= TREE_NODE_SZ_SMALL);
-    static_assert_no_msg(sizeof(GenTreePhysReg) <= TREE_NODE_SZ_SMALL);
+    static_assert_no_msg(sizeof(GenTreePhysReg)      <= TREE_NODE_SZ_SMALL);
 #ifndef LEGACY_BACKEND
-    static_assert_no_msg(sizeof(GenTreeJumpTable) <= TREE_NODE_SZ_SMALL);
+    static_assert_no_msg(sizeof(GenTreeJumpTable)    <= TREE_NODE_SZ_SMALL);
 #endif // !LEGACY_BACKEND
-    static_assert_no_msg(sizeof(GenTreeIntCon) <= TREE_NODE_SZ_SMALL);
-    static_assert_no_msg(sizeof(GenTreeLngCon) <= TREE_NODE_SZ_SMALL);
-    static_assert_no_msg(sizeof(GenTreeDblCon) <= TREE_NODE_SZ_SMALL);
-    static_assert_no_msg(sizeof(GenTreeStrCon) <= TREE_NODE_SZ_SMALL);
+    static_assert_no_msg(sizeof(GenTreeIntCon)       <= TREE_NODE_SZ_SMALL);
+    static_assert_no_msg(sizeof(GenTreeLngCon)       <= TREE_NODE_SZ_SMALL);
+    static_assert_no_msg(sizeof(GenTreeDblCon)       <= TREE_NODE_SZ_SMALL);
+    static_assert_no_msg(sizeof(GenTreeStrCon)       <= TREE_NODE_SZ_SMALL);
     static_assert_no_msg(sizeof(GenTreeLclVarCommon) <= TREE_NODE_SZ_SMALL);
-    static_assert_no_msg(sizeof(GenTreeLclVar) <= TREE_NODE_SZ_SMALL);
-    static_assert_no_msg(sizeof(GenTreeLclFld) <= TREE_NODE_SZ_SMALL);
-    static_assert_no_msg(sizeof(GenTreeRegVar) <= TREE_NODE_SZ_SMALL);
-    static_assert_no_msg(sizeof(GenTreeCast) <= TREE_NODE_SZ_LARGE);  // *** large node
-    static_assert_no_msg(sizeof(GenTreeBox) <= TREE_NODE_SZ_LARGE);   // *** large node
-    static_assert_no_msg(sizeof(GenTreeField) <= TREE_NODE_SZ_LARGE); // *** large node
-    static_assert_no_msg(sizeof(GenTreeArgList) <= TREE_NODE_SZ_SMALL);
-    static_assert_no_msg(sizeof(GenTreeColon) <= TREE_NODE_SZ_SMALL);
-    static_assert_no_msg(sizeof(GenTreeCall) <= TREE_NODE_SZ_LARGE);      // *** large node
-    static_assert_no_msg(sizeof(GenTreeCmpXchg) <= TREE_NODE_SZ_LARGE);   // *** large node
-    static_assert_no_msg(sizeof(GenTreeFptrVal) <= TREE_NODE_SZ_LARGE);   // *** large node
-    static_assert_no_msg(sizeof(GenTreeQmark) <= TREE_NODE_SZ_LARGE);     // *** large node
-    static_assert_no_msg(sizeof(GenTreeIntrinsic) <= TREE_NODE_SZ_LARGE); // *** large node
-    static_assert_no_msg(sizeof(GenTreeIndex) <= TREE_NODE_SZ_LARGE);     // *** large node
-    static_assert_no_msg(sizeof(GenTreeArrLen) <= TREE_NODE_SZ_LARGE);    // *** large node
-    static_assert_no_msg(sizeof(GenTreeBoundsChk) <= TREE_NODE_SZ_LARGE); // *** large node
-    static_assert_no_msg(sizeof(GenTreeArrElem) <= TREE_NODE_SZ_LARGE);   // *** large node
-    static_assert_no_msg(sizeof(GenTreeArrIndex) <= TREE_NODE_SZ_LARGE);  // *** large node
-    static_assert_no_msg(sizeof(GenTreeArrOffs) <= TREE_NODE_SZ_LARGE);   // *** large node
-    static_assert_no_msg(sizeof(GenTreeIndir) <= TREE_NODE_SZ_SMALL);
-    static_assert_no_msg(sizeof(GenTreeStoreInd) <= TREE_NODE_SZ_SMALL);
-    static_assert_no_msg(sizeof(GenTreeAddrMode) <= TREE_NODE_SZ_SMALL);
-    static_assert_no_msg(sizeof(GenTreeObj) <= TREE_NODE_SZ_LARGE); // *** large node
-    static_assert_no_msg(sizeof(GenTreeBlk) <= TREE_NODE_SZ_SMALL);
-    static_assert_no_msg(sizeof(GenTreeRetExpr) <= TREE_NODE_SZ_LARGE); // *** large node
-    static_assert_no_msg(sizeof(GenTreeStmt) <= TREE_NODE_SZ_LARGE);    // *** large node
-    static_assert_no_msg(sizeof(GenTreeClsVar) <= TREE_NODE_SZ_SMALL);
-    static_assert_no_msg(sizeof(GenTreeArgPlace) <= TREE_NODE_SZ_SMALL);
-    static_assert_no_msg(sizeof(GenTreeLabel) <= TREE_NODE_SZ_SMALL);
-    static_assert_no_msg(sizeof(GenTreePhiArg) <= TREE_NODE_SZ_SMALL);
-    static_assert_no_msg(sizeof(GenTreeAllocObj) <= TREE_NODE_SZ_LARGE); // *** large node
+    static_assert_no_msg(sizeof(GenTreeLclVar)       <= TREE_NODE_SZ_SMALL);
+    static_assert_no_msg(sizeof(GenTreeLclFld)       <= TREE_NODE_SZ_SMALL);
+    static_assert_no_msg(sizeof(GenTreeRegVar)       <= TREE_NODE_SZ_SMALL);
+    static_assert_no_msg(sizeof(GenTreeJumpCC)       <= TREE_NODE_SZ_SMALL);
+    static_assert_no_msg(sizeof(GenTreeCast)         <= TREE_NODE_SZ_LARGE); // *** large node
+    static_assert_no_msg(sizeof(GenTreeBox)          <= TREE_NODE_SZ_LARGE); // *** large node
+    static_assert_no_msg(sizeof(GenTreeField)        <= TREE_NODE_SZ_LARGE); // *** large node
+    static_assert_no_msg(sizeof(GenTreeArgList)      <= TREE_NODE_SZ_SMALL);
+    static_assert_no_msg(sizeof(GenTreeColon)        <= TREE_NODE_SZ_SMALL);
+    static_assert_no_msg(sizeof(GenTreeCall)         <= TREE_NODE_SZ_LARGE); // *** large node
+    static_assert_no_msg(sizeof(GenTreeCmpXchg)      <= TREE_NODE_SZ_LARGE); // *** large node
+    static_assert_no_msg(sizeof(GenTreeFptrVal)      <= TREE_NODE_SZ_LARGE); // *** large node
+    static_assert_no_msg(sizeof(GenTreeQmark)        <= TREE_NODE_SZ_LARGE); // *** large node
+    static_assert_no_msg(sizeof(GenTreeIntrinsic)    <= TREE_NODE_SZ_LARGE); // *** large node
+    static_assert_no_msg(sizeof(GenTreeIndex)        <= TREE_NODE_SZ_LARGE); // *** large node
+    static_assert_no_msg(sizeof(GenTreeArrLen)       <= TREE_NODE_SZ_LARGE); // *** large node
+    static_assert_no_msg(sizeof(GenTreeBoundsChk)    <= TREE_NODE_SZ_LARGE); // *** large node
+    static_assert_no_msg(sizeof(GenTreeArrElem)      <= TREE_NODE_SZ_LARGE); // *** large node
+    static_assert_no_msg(sizeof(GenTreeArrIndex)     <= TREE_NODE_SZ_LARGE); // *** large node
+    static_assert_no_msg(sizeof(GenTreeArrOffs)      <= TREE_NODE_SZ_LARGE); // *** large node
+    static_assert_no_msg(sizeof(GenTreeIndir)        <= TREE_NODE_SZ_SMALL);
+    static_assert_no_msg(sizeof(GenTreeStoreInd)     <= TREE_NODE_SZ_SMALL);
+    static_assert_no_msg(sizeof(GenTreeAddrMode)     <= TREE_NODE_SZ_SMALL);
+    static_assert_no_msg(sizeof(GenTreeObj)          <= TREE_NODE_SZ_LARGE); // *** large node
+    static_assert_no_msg(sizeof(GenTreeBlk)          <= TREE_NODE_SZ_SMALL);
+    static_assert_no_msg(sizeof(GenTreeRetExpr)      <= TREE_NODE_SZ_LARGE); // *** large node
+    static_assert_no_msg(sizeof(GenTreeStmt)         <= TREE_NODE_SZ_LARGE); // *** large node
+    static_assert_no_msg(sizeof(GenTreeClsVar)       <= TREE_NODE_SZ_SMALL);
+    static_assert_no_msg(sizeof(GenTreeArgPlace)     <= TREE_NODE_SZ_SMALL);
+    static_assert_no_msg(sizeof(GenTreeLabel)        <= TREE_NODE_SZ_SMALL);
+    static_assert_no_msg(sizeof(GenTreePhiArg)       <= TREE_NODE_SZ_SMALL);
+    static_assert_no_msg(sizeof(GenTreeAllocObj)     <= TREE_NODE_SZ_LARGE); // *** large node
 #ifndef FEATURE_UNIX_AMD64_STRUCT_PASSING
-    static_assert_no_msg(sizeof(GenTreePutArgStk) <= TREE_NODE_SZ_SMALL);
+    static_assert_no_msg(sizeof(GenTreePutArgStk)    <= TREE_NODE_SZ_SMALL);
 #else  // FEATURE_UNIX_AMD64_STRUCT_PASSING
-    static_assert_no_msg(sizeof(GenTreePutArgStk) <= TREE_NODE_SZ_LARGE);
+    static_assert_no_msg(sizeof(GenTreePutArgStk)    <= TREE_NODE_SZ_LARGE);
 #endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
 
 #ifdef FEATURE_SIMD
-    static_assert_no_msg(sizeof(GenTreeSIMD) <= TREE_NODE_SZ_SMALL);
+    static_assert_no_msg(sizeof(GenTreeSIMD)         <= TREE_NODE_SZ_SMALL);
 #endif // FEATURE_SIMD
+    // clang-format on
 }
 
 size_t GenTree::GetNodeSize() const
@@ -392,6 +409,88 @@ bool GenTree::IsNodeProperlySized() const
     return GenTree::s_gtNodeSizes[gtOper] <= size;
 }
 #endif
+
+/*****************************************************************************
+ *
+ *  When 'NODEBASH_STATS' is enabled in "jit.h" we record all instances of
+ *  an existing GenTree node having its operator changed. This can be useful
+ *  for two (related) things - to see what is being bashed (and what isn't),
+ *  and to verify that the existing choices for what nodes are marked 'large'
+ *  are reasonable (to minimize "wasted" space).
+ *
+ *  And yes, the hash function / logic is simplistic, but it is conflict-free
+ *  and transparent for what we need.
+ */
+
+#if NODEBASH_STATS
+
+#define BASH_HASH_SIZE 211
+
+inline hashme(genTreeOps op1, genTreeOps op2) { return ((op1 * 104729) ^ (op2 * 56569)) % BASH_HASH_SIZE; }
+
+struct BashHashDsc
+{
+    unsigned __int32    bhFullHash; // the hash value (unique for all old->new pairs)
+    unsigned __int32    bhCount;    // the same old->new bashings seen so far
+    unsigned __int8     bhOperOld;  // original gtOper
+    unsigned __int8     bhOperNew;  // new      gtOper
+};
+
+static  BashHashDsc BashHash[BASH_HASH_SIZE];
+
+void                GenTree::RecordOperBashing(genTreeOps operOld, genTreeOps operNew)
+{
+    unsigned        hash = hashme(operOld, operNew);
+    BashHashDsc    *desc = BashHash + hash;
+
+    if (desc->bhFullHash != hash)
+    {
+        noway_assert(desc->bhCount == 0);   // if this ever fires, need fix the hash fn
+        desc->bhFullHash = hash;
+    }
+
+    desc->bhCount   += 1;
+    desc->bhOperOld  = operOld;
+    desc->bhOperNew  = operNew;
+}
+
+void                GenTree::ReportOperBashing(FILE *f)
+{
+    unsigned        total = 0;
+
+    fflush(f);
+
+    fprintf(f, "\n");
+    fprintf(f, "Bashed gtOper stats:\n");
+    fprintf(f, "\n");
+    fprintf(f, "    Old operator        New operator     #bytes old->new      Count\n");
+    fprintf(f, "    ---------------------------------------------------------------\n");
+
+    for (unsigned h = 0; h < BASH_HASH_SIZE; h++)
+    {
+        unsigned        count = BashHash[h].bhCount;
+        if (count == 0)
+            continue;
+
+        unsigned        opOld = BashHash[h].bhOperOld;
+        unsigned        opNew = BashHash[h].bhOperNew;
+
+        fprintf(f, "    GT_%-13s -> GT_%-13s [size: %3u->%3u] %c %7u\n", OpName((genTreeOps)opOld),
+                                                                         OpName((genTreeOps)opNew),
+                                                                         s_gtTrueSizes[opOld],
+                                                                         s_gtTrueSizes[opNew],
+                                                                         (s_gtTrueSizes[opOld] < s_gtTrueSizes[opNew]) ? 'X' : ' ',
+                                                                         count);
+        total += count;
+    }
+    fprintf(f, "\n");
+    fprintf(f, "Total bashings: %u\n", total);
+    fprintf(f, "\n");
+
+    fflush(f);
+}
+
+#endif// NODEBASH_STATS
 
 #else // SMALL_TREE_NODES
 
@@ -7175,7 +7274,7 @@ void GenTreeIntCon::FixupInitBlkValue(var_types asgType)
     }
 }
 
-// 
+//
 //------------------------------------------------------------------------
 // gtBlockOpInit: Initializes a BlkOp GenTree
 //
@@ -7184,7 +7283,7 @@ void GenTreeIntCon::FixupInitBlkValue(var_types asgType)
 //    dst        - the target (destination) we want to either initialize or copy to.
 //    src        - the init value for InitBlk or the source struct for CpBlk/CpObj.
 //    isVolatile - specifies whether this node is a volatile memory operation.
-// 
+//
 // Assumptions:
 //    'result' is an assignment that is newly constructed.
 //    If 'dst' is TYP_STRUCT, then it must be a block node or lclVar.
@@ -8494,7 +8593,8 @@ bool GenTree::gtRequestSetFlags()
 /*****************************************************************************/
 void GenTree::CopyTo(class Compiler* comp, const GenTree& gt)
 {
-    gtOper         = gt.gtOper;
+    SetOperRaw(gt.OperGet());
+
     gtType         = gt.gtType;
     gtAssertionNum = gt.gtAssertionNum;
 
@@ -12620,18 +12720,18 @@ GenTreePtr Compiler::gtFoldExprConst(GenTreePtr tree)
 
                             // Don't fold conversions of +inf/-inf to integral value on all platforms
                             // as the value returned by JIT helper doesn't match with the C compiler's cast result.
-                            // We want the behavior to be same with or without folding.  
+                            // We want the behavior to be same with or without folding.
                             return tree;
                         }
 
-                        if (d1 <= -1.0 && varTypeIsUnsigned(tree->CastToType())) 
+                        if (d1 <= -1.0 && varTypeIsUnsigned(tree->CastToType()))
                         {
                             // Don't fold conversions of these cases becasue the result is unspecified per ECMA spec
                             // and the native math doing the fold doesn't match the run-time computation on all platforms.
                             // We want the behavior to be same with or without folding.
                             return tree;
                         }
-               
+
                         switch (tree->CastToType())
                         {
                             case TYP_BYTE:
@@ -14181,7 +14281,7 @@ void Compiler::gtExtractSideEffList(GenTreePtr  expr,
         // effect of this instruction, change it into a GT_LOCKADD node (the add only)
         if (oper == GT_XADD)
         {
-            expr->gtOper = GT_LOCKADD;
+            expr->SetOperRaw(GT_LOCKADD);
             expr->gtType = TYP_VOID;
         }
 

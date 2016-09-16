@@ -68,7 +68,7 @@ enum SpecialCodeKind
 
 DECLARE_TYPED_ENUM(genTreeOps, BYTE)
 {
-#define GTNODE(en, sn, cm, ok) GT_##en,
+#define GTNODE(en, sn, st, cm, ok) GT_##en,
 #include "gtlist.h"
 
     GT_COUNT,
@@ -1394,8 +1394,7 @@ public:
     static bool OperIsStore(genTreeOps gtOper)
     {
         return (gtOper == GT_STOREIND || gtOper == GT_STORE_LCL_VAR || gtOper == GT_STORE_LCL_FLD ||
-                gtOper == GT_STORE_CLS_VAR || gtOper == GT_STORE_BLK || gtOper == GT_STORE_OBJ ||
-                gtOper == GT_STORE_DYN_BLK);
+                gtOper == GT_STORE_BLK || gtOper == GT_STORE_OBJ || gtOper == GT_STORE_DYN_BLK);
     }
 
     static bool OperIsAtomicOp(genTreeOps gtOper)
@@ -1541,6 +1540,10 @@ public:
 public:
 #if SMALL_TREE_NODES
     static unsigned char s_gtNodeSizes[];
+#if NODEBASH_STATS
+    static unsigned char s_gtTrueSizes[];
+    static const char*   s_gtNodeRawNames[];
+#endif
 #endif
 
     static void InitNodeSize();
@@ -1559,16 +1562,16 @@ public:
 
     static bool Compare(GenTreePtr op1, GenTreePtr op2, bool swapOK = false);
 
-//---------------------------------------------------------------------
-#ifdef DEBUG
     //---------------------------------------------------------------------
 
+#if defined(DEBUG)
     static const char* NodeName(genTreeOps op);
-
-    static const char* OpName(genTreeOps op);
-
-//---------------------------------------------------------------------
 #endif
+
+#if defined(DEBUG) || NODEBASH_STATS
+    static const char* OpName(genTreeOps op);
+#endif
+
     //---------------------------------------------------------------------
 
     bool IsNothingNode() const;
@@ -1588,6 +1591,7 @@ public:
     // set gtOper and only keep GTF_COMMON_MASK flags
     void ChangeOper(genTreeOps oper, ValueNumberUpdate vnUpdate = CLEAR_VN);
     void ChangeOperUnchecked(genTreeOps oper);
+    void SetOperRaw(genTreeOps oper);
 
     void ChangeType(var_types newType)
     {
@@ -1601,6 +1605,16 @@ public:
             node->gtType = newType;
         }
     }
+
+#if SMALL_TREE_NODES
+#if NODEBASH_STATS
+    static void RecordOperBashing(genTreeOps operOld, genTreeOps operNew);
+    static void ReportOperBashing(FILE *fp);
+#else
+    static void RecordOperBashing(genTreeOps operOld, genTreeOps operNew) { /* do nothing */ }
+    static void ReportOperBashing(FILE *fp)                               { /* do nothing */ }
+#endif
+#endif
 
     bool IsLocal() const
     {
