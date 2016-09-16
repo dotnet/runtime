@@ -2849,9 +2849,6 @@ void mono_thread_init (MonoThreadStartCB start_cb,
 	 * anything up.
 	 */
 	GetCurrentProcess ();
-
-	/* Check that the managed and unmanaged layout of MonoInternalThread matches */
-	g_assert (MONO_STRUCT_OFFSET (MonoInternalThread, last) == mono_field_get_offset (mono_class_get_field_from_name (mono_defaults.internal_thread_class, "last")));
 }
 
 void mono_thread_cleanup (void)

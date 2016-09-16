@@ -343,8 +343,14 @@ mono_check_corlib_version (void)
 	int version = mono_get_corlib_version ();
 	if (version != MONO_CORLIB_VERSION)
 		return g_strdup_printf ("expected corlib version %d, found %d.", MONO_CORLIB_VERSION, version);
-	else
-		return NULL;
+
+	/* Check that the managed and unmanaged layout of MonoInternalThread matches */
+	guint32 native_offset = (guint32) MONO_STRUCT_OFFSET (MonoInternalThread, last);
+	guint32 managed_offset = mono_field_get_offset (mono_class_get_field_from_name (mono_defaults.internal_thread_class, "last"));
+	if (native_offset != managed_offset)
+		return g_strdup_printf ("expected InternalThread.last field offset %u, found %u. See InternalThread.last comment", native_offset, managed_offset);
+
+	return NULL;
 }
 
 /**
