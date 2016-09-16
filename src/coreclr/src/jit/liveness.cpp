@@ -2548,10 +2548,10 @@ bool Compiler::fgRemoveDeadStore(
             switch (asgNode->gtOper)
             {
                 case GT_ASG_ADD:
-                    asgNode->gtOper = GT_ADD;
+                    asgNode->SetOperRaw(GT_ADD);
                     break;
                 case GT_ASG_SUB:
-                    asgNode->gtOper = GT_SUB;
+                    asgNode->SetOperRaw(GT_SUB);
                     break;
                 default:
                     // Only add and sub allowed, we don't have ASG_MUL and ASG_DIV for ints, and

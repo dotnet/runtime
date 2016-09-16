@@ -953,7 +953,7 @@ GenTree* DecomposeLongs::DecomposeShift(LIR::Use& use)
 
     call = m_compiler->fgMorphArgs(callNode);
     Range().InsertAfter(tree, LIR::SeqTree(m_compiler, call));
-    
+
     Range().Remove(tree);
     use.ReplaceWith(m_compiler, call);
     return call;
@@ -1003,7 +1003,7 @@ GenTree* DecomposeLongs::DecomposeMul(LIR::Use& use)
     // Get rid of the hi ops. We don't need them.
     tree->gtOp.gtOp1 = loOp1;
     tree->gtOp.gtOp2 = loOp2;
-    tree->gtOper = GT_MUL_LONG;
+    tree->SetOperRaw(GT_MUL_LONG);
 
     return StoreNodeToVar(use);
 }
