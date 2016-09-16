@@ -11,7 +11,7 @@ namespace System.Net.Mime.Tests
     {
         [Theory]
         [InlineData("some test header to base64 encode")]
-        [InlineData("some test header to base64 å øî asdféå encode")]
+        [InlineData("some test h\xE9ader to base64asdf\xE9\xE5")]
         public void Base64Stream_WithBasicAsciiString_ShouldEncodeAndDecode(string testHeader)
         {
             var s = new Base64Stream(new Base64WriteStateInfo());

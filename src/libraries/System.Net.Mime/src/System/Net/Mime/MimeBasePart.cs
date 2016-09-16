@@ -10,7 +10,8 @@ namespace System.Net.Mime
 {
     internal class MimeBasePart
     {
-        internal const string DefaultCharSet = "utf-8";//"iso-8859-1";
+        internal const string DefaultCharSet = "utf-8";
+        private static readonly char[] s_decodeEncodingSplitChars = new char[] { '?', '\r', '\n' };
 
         protected ContentType _contentType;
         protected ContentDisposition _contentDisposition;
@@ -28,8 +29,6 @@ namespace System.Net.Mime
         //used when the length of the header name itself is known (i.e. Subject : )
         internal static string EncodeHeaderValue(string value, Encoding encoding, bool base64Encoding, int headerLength)
         {
-            var newString = new StringBuilder();
-
             //no need to encode if it's pure ascii
             if (IsAscii(value, false))
             {
@@ -38,7 +37,7 @@ namespace System.Net.Mime
 
             if (encoding == null)
             {
-                encoding = Encoding.GetEncoding(MimeBasePart.DefaultCharSet);
+                encoding = Encoding.GetEncoding(DefaultCharSet);
             }
 
             EncodedStreamFactory factory = new EncodedStreamFactory();
@@ -50,10 +49,11 @@ namespace System.Net.Mime
         }
 
         private static readonly char[] s_headerValueSplitChars = new char[] { '\r', '\n', ' ' };
+        private static readonly char[] s_questionMarkSplitChars = new char[] { '?' };
 
         internal static string DecodeHeaderValue(string value)
         {
-            if (value == null || value.Length == 0)
+            if (string.IsNullOrEmpty(value))
             {
                 return string.Empty;
             }
@@ -71,7 +71,7 @@ namespace System.Net.Mime
                 //the third is the unicode encoding type, and the fourth is encoded message itself.  '?' is not valid inside of
                 //an encoded string other than as a separator for these five parts.
                 //If this check fails, the string is either not encoded or cannot be decoded by this method
-                string[] subStrings = foldedSubString.Split('?');
+                string[] subStrings = foldedSubString.Split(s_questionMarkSplitChars);
                 if ((subStrings.Length != 5 || subStrings[0] != "=" || subStrings[4] != "="))
                 {
                     return value;
@@ -99,12 +99,12 @@ namespace System.Net.Mime
         // "=?utf-8?B?RmlsZU5hbWVf55CG0Y3Qq9C60I5jw4TRicKq0YIM0Y1hSsSeTNCy0Klh?=\r\n =?utf-8?B??=";
         internal static Encoding DecodeEncoding(string value)
         {
-            if (value == null || value.Length == 0)
+            if (string.IsNullOrEmpty(value))
             {
                 return null;
             }
 
-            string[] subStrings = value.Split('?', '\r', '\n');
+            string[] subStrings = value.Split(s_decodeEncodingSplitChars);
             if ((subStrings.Length < 5 || subStrings[0] != "=" || subStrings[4] != "="))
             {
                 return null;

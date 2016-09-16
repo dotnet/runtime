@@ -21,15 +21,15 @@ namespace System.Net
 
         // even though validators may exist, we should not initialize this initially since by default it is empty
         // and it may never be populated with values if the user does not set them
-        private readonly IDictionary<string, ValidateAndParseValue> _validators;
-        private IDictionary<string, object> _internalObjects = null;
+        private readonly Dictionary<string, ValidateAndParseValue> _validators;
+        private Dictionary<string, object> _internalObjects = null;
 
         #endregion
 
         #region Constructors
 
         // it is valid for validators to be null.  this means that no validation should be performed
-        internal TrackingValidationObjectDictionary(IDictionary<string, ValidateAndParseValue> validators)
+        internal TrackingValidationObjectDictionary(Dictionary<string, ValidateAndParseValue> validators)
         {
             IsChanged = false;
             _validators = validators;
@@ -56,10 +56,11 @@ namespace System.Net
             // in addition, a key with an empty value is not valid so we do not persist those either
             if (!string.IsNullOrEmpty(value))
             {
-                if (_validators != null && _validators.ContainsKey(key))
+                ValidateAndParseValue foundEntry;
+                if (_validators != null && _validators.TryGetValue(key, out foundEntry))
                 {
                     // run the validator for this key; it will throw if the value is invalid
-                    object valueToAdd = _validators[key](value);
+                    object valueToAdd = foundEntry(value);
 
                     // now that the value is valid, ensure that internalObjects exists since we have to 
                     // add to it
@@ -118,9 +119,10 @@ namespace System.Net
         internal object InternalGet(string key)
         {
             // internalObjects will throw if the key is not found so we must check it
-            if (_internalObjects != null && _internalObjects.ContainsKey(key))
+            object foundObject;
+            if (_internalObjects != null && _internalObjects.TryGetValue(key, out foundObject))
             {
-                return _internalObjects[key];
+                return foundObject;
             }
             else
             {
@@ -185,7 +187,7 @@ namespace System.Net
 
         public override void Remove(string key)
         {
-            if (_internalObjects != null && _internalObjects.ContainsKey(key))
+            if (_internalObjects != null)
             {
                 _internalObjects.Remove(key);
             }

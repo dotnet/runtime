@@ -62,7 +62,7 @@ namespace System.Net
             _writeState = new Base64WriteStateInfo();
         }
 
-        internal Base64Stream(Base64WriteStateInfo writeStateInfo) : base(new MemoryStream()) // TODO: added this... what should this be?
+        internal Base64Stream(Base64WriteStateInfo writeStateInfo) : base(new MemoryStream())
         {
             _lineLength = writeStateInfo.MaxLineLength;
             _writeState = writeStateInfo;
@@ -189,10 +189,8 @@ namespace System.Net
                     source++;
                 }
 
-                count = (int)(dest - start);
+                return (int)(dest - start);
             }
-
-            return count;
         }
 
         public int EncodeBytes(byte[] buffer, int offset, int count) =>

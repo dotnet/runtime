@@ -194,7 +194,7 @@ namespace System.Net.Mime
             MailHeaderID id = MailHeaderInfo.GetID(name);
 
             // TODO https://github.com/dotnet/corefx/issues/11747: Uncomment once we can use NormalizationForm
-            //value = value.Normalize(Text.NormalizationForm.FormC);// TODO: Uncomment once we can use NormalizationForm
+            //value = value.Normalize(Text.NormalizationForm.FormC);
 
             if (id == MailHeaderID.ContentType && _part != null)
             {

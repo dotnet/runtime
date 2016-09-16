@@ -253,7 +253,7 @@ namespace System.Net.Mime
         {
             return rparam == null ?
                 false :
-                string.Compare(ToString(), rparam.ToString(), StringComparison.OrdinalIgnoreCase) == 0;
+                string.Equals(ToString(), rparam.ToString(), StringComparison.OrdinalIgnoreCase);
         }
 
         public override int GetHashCode() => ToString().ToLowerInvariant().GetHashCode();
