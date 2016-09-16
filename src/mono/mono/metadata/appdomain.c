@@ -58,6 +58,7 @@
 #include <mono/metadata/tokentype.h>
 #include <mono/metadata/profiler-private.h>
 #include <mono/metadata/reflection-internals.h>
+#include <mono/metadata/abi-details.h>
 #include <mono/utils/mono-uri.h>
 #include <mono/utils/mono-logger-internals.h>
 #include <mono/utils/mono-path.h>
