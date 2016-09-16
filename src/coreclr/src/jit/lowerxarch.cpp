@@ -1099,7 +1099,7 @@ void Lowering::TreeNodeInfoInitCall(GenTreeCall* call)
 #ifdef _TARGET_X86_
         // Fast tail calls aren't currently supported on x86, but if they ever are, the code
         // below that handles indirect VSD calls will need to be fixed.
-        assert(!call->IsFastTailCall() || ((call->gtFlags & GTF_CALL_VIRT_KIND_MASK) != GTF_CALL_VIRT_STUB));
+        assert(!call->IsFastTailCall() || !call->IsVirtualStub());
 #endif // _TARGET_X86_
     }
 
@@ -1124,11 +1124,11 @@ void Lowering::TreeNodeInfoInitCall(GenTreeCall* call)
             //
             // Where EAX is also used as an argument to the stub dispatch helper. Make
             // sure that the call target address is computed into EAX in this case.
-            if (((call->gtFlags & GTF_CALL_VIRT_KIND_MASK) == GTF_CALL_VIRT_STUB) && (call->gtCallType == CT_INDIRECT))
+            if (call->IsVirtualStub() && (call->gtCallType == CT_INDIRECT))
             {
                 assert(ctrlExpr->isIndir());
 
-                ctrlExpr->gtGetOp1()->gtLsraInfo.setDstCandidates(l, RBM_EAX);
+                ctrlExpr->gtGetOp1()->gtLsraInfo.setSrcCandidates(l, REG_VIRTUAL_STUB_TARGET);
                 MakeSrcContained(call, ctrlExpr);
             }
             else

@@ -6253,7 +6253,7 @@ void CodeGen::genCallInstruction(GenTreePtr node)
     if (target != nullptr)
     {
 #ifdef _TARGET_X86_
-        if (((call->gtFlags & GTF_CALL_VIRT_KIND_MASK) == GTF_CALL_VIRT_STUB) && (call->gtCallType == CT_INDIRECT))
+        if (call->IsVirtualStub() && (call->gtCallType == CT_INDIRECT))
         {
             // On x86, we need to generate a very specific pattern for indirect VSD calls:
             //
@@ -6263,40 +6263,29 @@ void CodeGen::genCallInstruction(GenTreePtr node)
             // Where EAX is also used as an argument to the stub dispatch helper. Make
             // sure that the call target address is computed into EAX in this case.
 
+            assert(REG_VIRTUAL_STUB_PARAM == REG_VIRTUAL_STUB_TARGET);
+
             assert(target->isContainedIndir());
+            assert(target->OperGet() == GT_IND);
 
-            // Disable random NOP emission
-            getEmitter()->emitDisableRandomNops();
+            GenTree* addr = target->AsIndir()->Addr();
+            assert(!addr->isContained());
 
-            GenTreeIndir* indir = target->AsIndir();
-            assert(indir->Addr() == indir->Base());
-            assert(indir->HasBase());
-            assert(!indir->HasIndex());
-            assert(indir->Scale() == 1);
-            assert(indir->Offset() == 0);
-
-            GenTree* base = indir->Base();
-            genConsumeReg(base);
-
-            if (base->gtRegNum != REG_EAX)
+            genConsumeReg(addr);
+            if (addr->gtRegNum != REG_VIRTUAL_STUB_TARGET)
             {
-                inst_RV_RV(INS_mov, REG_EAX, base->gtRegNum, TYP_I_IMPL);
+                inst_RV_RV(INS_mov, REG_VIRTUAL_STUB_TARGET, addr->gtRegNum, TYP_I_IMPL);
             }
 
             getEmitter()->emitIns_Nop(3);
-
             getEmitter()->emitIns_Call(emitter::EmitCallType(emitter::EC_INDIR_ARD), methHnd,
                                        INDEBUG_LDISASM_COMMA(sigInfo) nullptr, argSizeForEmitter, retSize
                                        MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize),
                                        gcInfo.gcVarPtrSetCur, gcInfo.gcRegGCrefSetCur, gcInfo.gcRegByrefSetCur,
-                                       ilOffset, REG_EAX, REG_NA, indir->Scale(), indir->Offset());
-
-            // Re-enable random NOP emission
-            getEmitter()->emitEnableRandomNops();
+                                       ilOffset, REG_VIRTUAL_STUB_TARGET, REG_NA, 1, 0);
         }
         else
 #endif
-
         if (target->isContainedIndir())
         {
             if (target->AsIndir()->HasBase() && target->AsIndir()->Base()->isContainedIntOrIImmed())

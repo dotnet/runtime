@@ -598,6 +598,9 @@ typedef unsigned short regPairNoSmall; // arm: need 12 bits
   #define RBM_VIRTUAL_STUB_PARAM   RBM_EAX
   #define PREDICT_REG_VIRTUAL_STUB_PARAM  PREDICT_REG_EAX
 
+  // VSD target address register
+  #define REG_VIRTUAL_STUB_TARGET  REG_EAX
+
   // Registers used by PInvoke frame setup
   #define REG_PINVOKE_FRAME        REG_EDI      // EDI is p/invoke "Frame" pointer argument to CORINFO_HELP_INIT_PINVOKE_FRAME helper
   #define RBM_PINVOKE_FRAME        RBM_EDI
