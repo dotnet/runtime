@@ -179,6 +179,16 @@ GTNODE(MUL_LONG         , "*long"        ,GenTreeOp          ,1,GTK_BINOP) // A 
                                                                            // helper calls. It is similar to GT_MULHI, the difference being that
                                                                            // GT_MULHI drops the lo part of the result, whereas GT_MUL_LONG keeps
                                                                            // both parts of the result.
+
+// The following are nodes that specify shifts that take a GT_LONG op1. The GT_LONG
+// contains the hi and lo parts of three operand shift form where one op will be
+// shifted into the other op as part of the operation (LSH_HI will shift
+// the high bits of the lo operand into the high operand as it shifts left. RSH_LO
+// will shift the lo bits of the high operand into the lo operand). LSH_HI
+// represents the high operation of a 64-bit left shift by a constant int, and
+// RSH_LO represents the lo operation of a 64-bit right shift by a constant int.
+GTNODE(LSH_HI           , "<<Hi"         ,GenTreeOp          ,0,GTK_BINOP)
+GTNODE(RSH_LO           , ">>Lo"         ,GenTreeOp          ,0,GTK_BINOP)
 #endif // !defined(LEGACY_BACKEND) && !defined(_TARGET_64BIT_)
 
 #ifdef FEATURE_SIMD
