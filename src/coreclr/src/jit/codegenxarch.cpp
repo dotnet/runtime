@@ -2069,6 +2069,17 @@ void CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
             // genCodeForShift() calls genProduceReg()
             break;
 
+#if !defined(_TARGET_64BIT_)
+        case GT_LSH_HI:
+        case GT_RSH_LO:
+            // TODO-X86-CQ: This only handles the case where the operand being shifted is in a register. We don't
+            // need sourceHi to be always in reg in case of GT_LSH_HI (because it could be moved from memory to
+            // targetReg if sourceHi is a contained mem-op). Similarly for GT_RSH_LO, sourceLo could be marked as
+            // contained memory-op. Even if not a memory-op, we could mark it as reg-optional.
+            genCodeForShiftLong(treeNode);
+            break;
+#endif
+
         case GT_CAST:
             if (varTypeIsFloating(targetType) && varTypeIsFloating(treeNode->gtOp.gtOp1))
             {
@@ -4694,6 +4705,12 @@ instruction CodeGen::genGetInsForOper(genTreeOps oper, var_types type)
         case GT_SUB_HI:
             ins = INS_sbb;
             break;
+        case GT_LSH_HI:
+            ins = INS_shld;
+            break;
+        case GT_RSH_LO:
+            ins = INS_shrd;
+            break;
 #endif // !defined(_TARGET_64BIT_)
         default:
             unreached();
@@ -4731,6 +4748,7 @@ void CodeGen::genCodeForShift(GenTreePtr tree)
     regNumber  operandReg = operand->gtRegNum;
 
     GenTreePtr shiftBy = tree->gtGetOp2();
+    
     if (shiftBy->isContainedIntOrIImmed())
     {
         // First, move the operand to the destination register and
@@ -4768,6 +4786,67 @@ void CodeGen::genCodeForShift(GenTreePtr tree)
 
     genProduceReg(tree);
 }
+
+#ifdef _TARGET_X86_
+//------------------------------------------------------------------------
+// genCodeForShiftLong: Generates the code sequence for a GenTree node that
+// represents a three operand bit shift or rotate operation (<<Hi, >>Lo).
+//
+// Arguments:
+//    tree - the bit shift node (that specifies the type of bit shift to perform).
+//
+// Assumptions:
+//    a) All GenTrees are register allocated.
+//    b) The shift-by-amount in tree->gtOp.gtOp2 is a contained constant
+//
+void CodeGen::genCodeForShiftLong(GenTreePtr tree)
+{
+    // Only the non-RMW case here.
+    genTreeOps oper = tree->OperGet();
+    assert(oper == GT_LSH_HI || oper == GT_RSH_LO);
+
+    GenTree* operand = tree->gtOp.gtOp1;
+    assert(operand->OperGet() == GT_LONG);
+    assert(!operand->gtOp.gtOp1->isContained());
+    assert(!operand->gtOp.gtOp2->isContained());
+
+    GenTree* operandLo = operand->gtGetOp1();
+    GenTree* operandHi = operand->gtGetOp2();
+
+    regNumber regLo = operandLo->gtRegNum;
+    regNumber regHi = operandHi->gtRegNum;
+
+    genConsumeOperands(tree->AsOp());
+
+    var_types   targetType = tree->TypeGet();
+    instruction ins        = genGetInsForOper(oper, targetType);
+
+    GenTreePtr shiftBy = tree->gtGetOp2();
+
+    assert(shiftBy->isContainedIntOrIImmed());
+
+    unsigned int count = shiftBy->AsIntConCommon()->IconValue();
+
+    regNumber regResult = (oper == GT_LSH_HI) ? regHi : regLo;
+
+    if (regResult != tree->gtRegNum)
+    {
+        inst_RV_RV(INS_mov, tree->gtRegNum, regResult, targetType);
+    }
+
+    if (oper == GT_LSH_HI)
+    {
+        inst_RV_RV_IV(ins, emitTypeSize(targetType), tree->gtRegNum, regLo, count);
+    }
+    else
+    {
+        assert(oper == GT_RSH_LO);
+        inst_RV_RV_IV(ins, emitTypeSize(targetType), tree->gtRegNum, regHi, count);
+    }
+
+    genProduceReg(tree);
+}
+#endif
 
 //------------------------------------------------------------------------
 // genCodeForShiftRMW: Generates the code sequence for a GT_STOREIND GenTree node that

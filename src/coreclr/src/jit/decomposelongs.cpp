@@ -280,23 +280,22 @@ GenTree* DecomposeLongs::DecomposeNode(GenTree* tree)
 // Arguments:
 //    use - the LIR::Use object for the def that needs to be decomposed.
 //    loResult - the decomposed low part
-//    hiResult - the decomposed high part. This must follow loResult in the linear order,
-//               as the new GT_LONG node will be inserted immediately after it.
+//    hiResult - the decomposed high part
+//    insertResultAfter - the node that the GT_LONG should be inserted after
 //
 // Return Value:
 //    The next node to process.
 //
-GenTree* DecomposeLongs::FinalizeDecomposition(LIR::Use& use, GenTree* loResult, GenTree* hiResult)
+GenTree* DecomposeLongs::FinalizeDecomposition(LIR::Use& use, GenTree* loResult, GenTree* hiResult, GenTree* insertResultAfter)
 {
     assert(use.IsInitialized());
     assert(loResult != nullptr);
     assert(hiResult != nullptr);
     assert(Range().Contains(loResult));
     assert(Range().Contains(hiResult));
-    assert(loResult->Precedes(hiResult));
 
     GenTree* gtLong = new (m_compiler, GT_LONG) GenTreeOp(GT_LONG, TYP_LONG, loResult, hiResult);
-    Range().InsertAfter(hiResult, gtLong);
+    Range().InsertAfter(insertResultAfter, gtLong);
 
     use.ReplaceWith(m_compiler, gtLong);
 
@@ -352,7 +351,7 @@ GenTree* DecomposeLongs::DecomposeLclVar(LIR::Use& use)
     m_compiler->lvaIncRefCnts(loResult);
     m_compiler->lvaIncRefCnts(hiResult);
 
-    return FinalizeDecomposition(use, loResult, hiResult);
+    return FinalizeDecomposition(use, loResult, hiResult, hiResult);
 }
 
 //------------------------------------------------------------------------
@@ -376,7 +375,7 @@ GenTree* DecomposeLongs::DecomposeLclFld(LIR::Use& use)
     GenTree* hiResult = m_compiler->gtNewLclFldNode(loResult->gtLclNum, TYP_INT, loResult->gtLclOffs + 4);
     Range().InsertAfter(loResult, hiResult);
 
-    return FinalizeDecomposition(use, loResult, hiResult);
+    return FinalizeDecomposition(use, loResult, hiResult, hiResult);
 }
 
 //------------------------------------------------------------------------
@@ -564,7 +563,7 @@ GenTree* DecomposeLongs::DecomposeCast(LIR::Use& use)
         NYI("Unimplemented cast decomposition");
     }
 
-    return FinalizeDecomposition(use, loResult, hiResult);
+    return FinalizeDecomposition(use, loResult, hiResult, hiResult);
 }
 
 //------------------------------------------------------------------------
@@ -591,7 +590,7 @@ GenTree* DecomposeLongs::DecomposeCnsLng(LIR::Use& use)
     GenTree* hiResult = new (m_compiler, GT_CNS_INT) GenTreeIntCon(TYP_INT, hiVal);
     Range().InsertAfter(loResult, hiResult);
 
-    return FinalizeDecomposition(use, loResult, hiResult);
+    return FinalizeDecomposition(use, loResult, hiResult, hiResult);
 }
 
 //------------------------------------------------------------------------
@@ -740,7 +739,7 @@ GenTree* DecomposeLongs::DecomposeInd(LIR::Use& use)
 
     Range().InsertAfter(indLow, addrBaseHigh, addrHigh, indHigh);
 
-    return FinalizeDecomposition(use, indLow, indHigh);
+    return FinalizeDecomposition(use, indLow, indHigh, indHigh);
 }
 
 //------------------------------------------------------------------------
@@ -772,7 +771,7 @@ GenTree* DecomposeLongs::DecomposeNot(LIR::Use& use)
     GenTree* hiResult = new (m_compiler, GT_NOT) GenTreeOp(GT_NOT, TYP_INT, hiOp1, nullptr);
     Range().InsertAfter(loResult, hiResult);
 
-    return FinalizeDecomposition(use, loResult, hiResult);
+    return FinalizeDecomposition(use, loResult, hiResult, hiResult);
 }
 
 //------------------------------------------------------------------------
@@ -817,7 +816,7 @@ GenTree* DecomposeLongs::DecomposeNeg(LIR::Use& use)
 
     Range().InsertAfter(loResult, zero, hiAdjust, hiResult);
 
-    return FinalizeDecomposition(use, loResult, hiResult);
+    return FinalizeDecomposition(use, loResult, hiResult, hiResult);
 }
 
 //------------------------------------------------------------------------
@@ -878,14 +877,19 @@ GenTree* DecomposeLongs::DecomposeArith(LIR::Use& use)
         }
     }
 
-    return FinalizeDecomposition(use, loResult, hiResult);
+    return FinalizeDecomposition(use, loResult, hiResult, hiResult);
 }
 
 //------------------------------------------------------------------------
-// DecomposeShift: Decompose GT_LSH, GT_RSH, GT_RSZ. For shift nodes, we need to use
-// the shift helper functions, so we here convert the shift into a helper call by
-// pulling its arguments out of linear order and making them the args to a call, then
-// replacing the original node with the new call.
+// DecomposeShift: Decompose GT_LSH, GT_RSH, GT_RSZ. For shift nodes being shifted
+// by a constant int, we can inspect the shift amount and decompose to the appropriate
+// node types, generating a shl/shld pattern for GT_LSH, a shrd/shr pattern for GT_RSZ,
+// and a shrd/sar pattern for GT_SHR for most shift amounts. Shifting by 0, >= 32 and
+// >= 64 are special cased to produce better code patterns.
+//
+// For all other shift nodes, we need to use the shift helper functions, so we here convert
+// the shift into a helper call by pulling its arguments out of linear order and making
+// them the args to a call, then replacing the original node with the new call.
 //
 // Arguments:
 //    use - the LIR::Use object for the def that needs to be decomposed.
@@ -899,64 +903,339 @@ GenTree* DecomposeLongs::DecomposeShift(LIR::Use& use)
 
     GenTree* tree   = use.Def();
     GenTree* gtLong = tree->gtGetOp1();
+    GenTree* oldShiftByOp = tree->gtGetOp2();
+
     genTreeOps oper = tree->OperGet();
+    genTreeOps shiftByOper = oldShiftByOp->OperGet();
 
     assert((oper == GT_LSH) || (oper == GT_RSH) || (oper == GT_RSZ));
 
-    LIR::Use loOp1Use(Range(), &gtLong->gtOp.gtOp1, gtLong);
-    loOp1Use.ReplaceWithLclVar(m_compiler, m_blockWeight);
+    unsigned loOp1LclNum;
+    unsigned hiOp1LclNum;
 
-    LIR::Use hiOp1Use(Range(), &gtLong->gtOp.gtOp2, gtLong);
-    hiOp1Use.ReplaceWithLclVar(m_compiler, m_blockWeight);
+    if (gtLong->gtOp.gtOp1->OperGet() != GT_LCL_VAR)
+    {
+        LIR::Use loOp1Use(Range(), &gtLong->gtOp.gtOp1, gtLong);
+        loOp1LclNum = loOp1Use.ReplaceWithLclVar(m_compiler, m_blockWeight);
+    }
+    else
+    {
+        loOp1LclNum = gtLong->gtOp.gtOp1->AsLclVarCommon()->gtLclNum;
+    }
 
-    LIR::Use shiftWidthUse(Range(), &tree->gtOp.gtOp2, tree);
-    shiftWidthUse.ReplaceWithLclVar(m_compiler, m_blockWeight);
+    if (gtLong->gtOp.gtOp2->OperGet() != GT_LCL_VAR)
+    {
+        LIR::Use hiOp1Use(Range(), &gtLong->gtOp.gtOp2, gtLong);
+        hiOp1LclNum = hiOp1Use.ReplaceWithLclVar(m_compiler, m_blockWeight);
+    }
+    else
+    {
+        hiOp1LclNum = gtLong->gtOp.gtOp2->AsLclVarCommon()->gtLclNum;
+    }
 
     GenTree* loOp1 = gtLong->gtGetOp1();
     GenTree* hiOp1 = gtLong->gtGetOp2();
-
-    GenTree* shiftWidthOp = tree->gtGetOp2();
 
     Range().Remove(gtLong);
     Range().Remove(loOp1);
     Range().Remove(hiOp1);
 
-    Range().Remove(shiftWidthOp);
-
-    // TODO-X86-CQ: If the shift operand is a GT_CNS_INT, we should pipe the instructions through to codegen
-    // and generate the shift instructions ourselves there, rather than replacing it with a helper call.
-
-    unsigned helper;
-
-    switch (oper)
+    // If we are shifting by a constant int, we do not want to use a helper, instead, we decompose.
+    if (shiftByOper == GT_CNS_INT)
     {
-        case GT_LSH:
-            helper = CORINFO_HELP_LLSH;
+        unsigned int count = oldShiftByOp->gtIntCon.gtIconVal;
+        Range().Remove(oldShiftByOp);
+
+        GenTree* loResult;
+        GenTree* hiResult;
+
+        GenTree* insertAfter;
+
+        switch (oper)
+        {
+            case GT_LSH:
+            {
+                if (count == 0)
+                {
+                    // Do nothing.
+                    loResult = loOp1;
+                    hiResult = hiOp1;
+
+                    Range().InsertBefore(tree, loResult, hiResult);
+
+                    insertAfter = hiResult;
+                }
+                else if (count < 32)
+                {
+                    // Hi is a GT_LSH_HI, lo is a GT_LSH. Will produce:
+                    // reg1 = lo
+                    // shl lo, shift
+                    // shld hi, reg1, shift
+
+                    GenTree* shiftByHi = m_compiler->gtNewIconNode(count, TYP_INT);
+                    GenTree* shiftByLo = m_compiler->gtNewIconNode(count, TYP_INT);
+
+                    loResult = m_compiler->gtNewOperNode(GT_LSH, TYP_INT, loOp1, shiftByLo);
+
+                    // Create a GT_LONG that contains loCopy and hiOp1. This will be used in codegen to
+                    // generate the shld instruction
+                    GenTree* loCopy  = m_compiler->gtNewLclvNode(loOp1LclNum, TYP_INT);
+                    GenTree* hiOp = new (m_compiler, GT_LONG) GenTreeOp(GT_LONG, TYP_LONG, loCopy, hiOp1);
+                    hiResult      = m_compiler->gtNewOperNode(GT_LSH_HI, TYP_INT, hiOp, shiftByHi);
+
+                    m_compiler->lvaIncRefCnts(loCopy);
+
+                    Range().InsertBefore(tree, loCopy, hiOp1, hiOp);
+                    Range().InsertBefore(tree, shiftByHi, hiResult);
+                    Range().InsertBefore(tree, loOp1, shiftByLo, loResult);
+
+                    insertAfter = loResult;
+                }
+                else
+                {
+                    assert(count >= 32);
+
+                    // Zero out loResult (shift of >= 32 bits shifts all lo bits to hiResult)
+                    loResult = m_compiler->gtNewZeroConNode(TYP_INT);
+                    Range().InsertBefore(tree, loResult);
+
+                    if (count < 64)
+                    {
+                        if (count == 32)
+                        {
+                            // Move loOp1 into hiResult (shift of 32 bits is just a mov of lo to hi)
+                            hiResult = loOp1;
+                            Range().InsertBefore(tree, hiResult);
+                        }
+                        else
+                        {
+                            assert(count > 32 && count < 64);
+
+                            // Move loOp1 into hiResult, do a GT_LSH with count - 32.
+                            GenTree* shiftBy = m_compiler->gtNewIconNode(count - 32, TYP_INT);
+                            hiResult         = m_compiler->gtNewOperNode(oper, TYP_INT, loOp1, shiftBy);
+                            Range().InsertBefore(tree, loOp1, shiftBy, hiResult);
+                        }
+                    }
+                    else
+                    {
+                        assert(count >= 64);
+
+                        // Zero out hi (shift of >= 64 bits moves all the bits out of the two registers)
+                        hiResult = m_compiler->gtNewZeroConNode(TYP_INT);
+                        Range().InsertBefore(tree, hiResult);
+                    }
+
+                    insertAfter = hiResult;
+                }
+            }
             break;
-        case GT_RSH:
-            helper = CORINFO_HELP_LRSH;
+            case GT_RSZ:
+            {
+                if (count == 0)
+                {
+                    // Do nothing.
+                    loResult = loOp1;
+                    hiResult = hiOp1;
+                    Range().InsertBefore(tree, loResult, hiResult);
+                }
+                else if (count < 32)
+                {
+                    // Hi is a GT_RSZ, lo is a GT_RSH_LO. Will produce:
+                    // reg1 = hi
+                    // shrd lo, reg1, shift
+                    // shr hi, shift
+
+                    GenTree* shiftByHi = m_compiler->gtNewIconNode(count, TYP_INT);
+                    GenTree* shiftByLo = m_compiler->gtNewIconNode(count, TYP_INT);
+                    GenTree* hiCopy    = m_compiler->gtNewLclvNode(hiOp1LclNum, TYP_INT);
+                    m_compiler->lvaIncRefCnts(hiCopy);
+
+                    hiResult = m_compiler->gtNewOperNode(GT_RSZ, TYP_INT, hiOp1, shiftByHi);
+
+                    // Create a GT_LONG that contains loOp1 and hiCopy. This will be used in codegen to
+                    // generate the shrd instruction
+                    GenTree* loOp = new (m_compiler, GT_LONG) GenTreeOp(GT_LONG, TYP_LONG, loOp1, hiCopy);
+                    loResult      = m_compiler->gtNewOperNode(GT_RSH_LO, TYP_INT, loOp, shiftByLo);
+
+                    Range().InsertBefore(tree, loOp1, hiCopy, loOp);
+                    Range().InsertBefore(tree, shiftByLo, loResult);
+                    Range().InsertBefore(tree, hiOp1, shiftByHi, hiResult);
+                }
+                else
+                {
+                    assert(count >= 32);
+                    if (count < 64)
+                    {
+                        if (count == 32)
+                        {
+                            // Move hiOp1 into loResult.
+                            loResult = hiOp1;
+                            Range().InsertBefore(tree, loResult);
+                        }
+                        else
+                        {
+                            assert(count > 32 && count < 64);
+
+                            // Move hiOp1 into loResult, do a GT_RSZ with count - 32.
+                            GenTree* shiftBy = m_compiler->gtNewIconNode(count - 32, TYP_INT);
+                            loResult         = m_compiler->gtNewOperNode(oper, TYP_INT, hiOp1, shiftBy);
+                            Range().InsertBefore(tree, hiOp1, shiftBy, loResult);
+                        }
+                    }
+                    else
+                    {
+                        assert(count >= 64);
+
+                        // Zero out lo
+                        loResult = m_compiler->gtNewZeroConNode(TYP_INT);
+                        Range().InsertBefore(tree, loResult);
+                    }
+
+                    // Zero out hi
+                    hiResult = m_compiler->gtNewZeroConNode(TYP_INT);
+                    Range().InsertBefore(tree, hiResult);
+                }
+
+                insertAfter = hiResult;
+            }
             break;
-        case GT_RSZ:
-            helper = CORINFO_HELP_LRSZ;
+            case GT_RSH:
+            {
+                if (count == 0)
+                {
+                    // Do nothing.
+                    loResult = loOp1;
+                    hiResult = hiOp1;
+                    Range().InsertBefore(tree, loResult, hiResult);
+                }
+                else if (count < 32)
+                {
+                    // Hi is a GT_RSH, lo is a GT_RSH_LO. Will produce:
+                    // reg1 = hi
+                    // shrd lo, reg1, shift
+                    // sar hi, shift
+
+                    GenTree* shiftByHi = m_compiler->gtNewIconNode(count, TYP_INT);
+                    GenTree* shiftByLo = m_compiler->gtNewIconNode(count, TYP_INT);
+                    GenTree* hiCopy    = m_compiler->gtNewLclvNode(hiOp1LclNum, TYP_INT);
+                    m_compiler->lvaIncRefCnts(hiCopy);
+
+                    hiResult = m_compiler->gtNewOperNode(GT_RSH, TYP_INT, hiOp1, shiftByHi);
+
+                    // Create a GT_LONG that contains loOp1 and hiCopy. This will be used in codegen to
+                    // generate the shrd instruction
+                    GenTree* loOp = new (m_compiler, GT_LONG) GenTreeOp(GT_LONG, TYP_LONG, loOp1, hiCopy);
+                    loResult      = m_compiler->gtNewOperNode(GT_RSH_LO, TYP_INT, loOp, shiftByLo);
+
+                    Range().InsertBefore(tree, loOp1, hiCopy, loOp);
+                    Range().InsertBefore(tree, shiftByLo, loResult);
+                    Range().InsertBefore(tree, shiftByHi, hiOp1, hiResult);
+                }
+                else
+                {
+                    assert(count >= 32);
+                    if (count < 64)
+                    {
+                        if (count == 32)
+                        {
+                            // Move hiOp1 into loResult.
+                            loResult = hiOp1;
+                            Range().InsertBefore(tree, loResult);
+                        }
+                        else
+                        {
+                            assert(count > 32 && count < 64);
+
+                            // Move hiOp1 into loResult, do a GT_RSH with count - 32.
+                            GenTree* shiftBy = m_compiler->gtNewIconNode(count - 32, TYP_INT);
+                            loResult         = m_compiler->gtNewOperNode(oper, TYP_INT, hiOp1, shiftBy);
+                            Range().InsertBefore(tree, hiOp1, shiftBy, loResult);
+                        }
+
+                        // Propagate sign bit in hiResult
+                        GenTree* shiftBy = m_compiler->gtNewIconNode(31, TYP_INT);
+                        GenTree* hiCopy  = m_compiler->gtNewLclvNode(hiOp1LclNum, TYP_INT);
+                        hiResult         = m_compiler->gtNewOperNode(GT_RSH, TYP_INT, hiCopy, shiftBy);
+                        Range().InsertBefore(tree, shiftBy, hiCopy, hiResult);
+
+                        m_compiler->lvaIncRefCnts(hiCopy);
+                    }
+                    else
+                    {
+                        assert(count >= 64);
+
+                        // Propagate sign bit in loResult
+                        GenTree* hiCopy    = m_compiler->gtNewLclvNode(hiOp1LclNum, TYP_INT);
+                        GenTree* loShiftBy = m_compiler->gtNewIconNode(31, TYP_INT);
+                        loResult           = m_compiler->gtNewOperNode(GT_RSH, TYP_INT, hiCopy, loShiftBy);
+                        Range().InsertBefore(tree, hiCopy, loShiftBy, loResult);
+
+                        // Propagate sign bit in hiResult
+                        GenTree* shiftBy = m_compiler->gtNewIconNode(31, TYP_INT);
+                        hiResult         = m_compiler->gtNewOperNode(GT_RSH, TYP_INT, hiOp1, shiftBy);
+                        Range().InsertBefore(tree, shiftBy, hiOp1, hiResult);
+
+                        m_compiler->lvaIncRefCnts(hiCopy);
+                    }
+                }
+
+                insertAfter = hiResult;
+            }
             break;
-        default:
-            unreached();
+            default:
+                unreached();
+        }
+
+        // Remove tree from Range
+        Range().Remove(tree);
+
+        return FinalizeDecomposition(use, loResult, hiResult, insertAfter);
     }
+    else
+    {
+        GenTree* shiftByOp = oldShiftByOp;
+        if (shiftByOp->OperGet() != GT_LCL_VAR)
+        {
+            LIR::Use shiftByUse(Range(), &tree->gtOp.gtOp2, tree);
+            shiftByUse.ReplaceWithLclVar(m_compiler, m_blockWeight);
+            shiftByOp = tree->gtGetOp2();
+        }
 
-    GenTreeArgList* argList = m_compiler->gtNewArgList(loOp1, hiOp1, shiftWidthOp);
+        Range().Remove(shiftByOp);
 
-    GenTree* call = m_compiler->gtNewHelperCallNode(helper, TYP_LONG, 0, argList);
+        unsigned helper;
 
-    GenTreeCall*    callNode    = call->AsCall();
-    ReturnTypeDesc* retTypeDesc = callNode->GetReturnTypeDesc();
-    retTypeDesc->InitializeLongReturnType(m_compiler);
+        switch (oper)
+        {
+            case GT_LSH:
+                helper = CORINFO_HELP_LLSH;
+                break;
+            case GT_RSH:
+                helper = CORINFO_HELP_LRSH;
+                break;
+            case GT_RSZ:
+                helper = CORINFO_HELP_LRSZ;
+                break;
+            default:
+                unreached();
+        }
 
-    call = m_compiler->fgMorphArgs(callNode);
-    Range().InsertAfter(tree, LIR::SeqTree(m_compiler, call));
+        GenTreeArgList* argList = m_compiler->gtNewArgList(loOp1, hiOp1, shiftByOp);
 
-    Range().Remove(tree);
-    use.ReplaceWith(m_compiler, call);
-    return call;
+        GenTree* call = m_compiler->gtNewHelperCallNode(helper, TYP_LONG, 0, argList);
+
+        GenTreeCall*    callNode    = call->AsCall();
+        ReturnTypeDesc* retTypeDesc = callNode->GetReturnTypeDesc();
+        retTypeDesc->InitializeLongReturnType(m_compiler);
+
+        call = m_compiler->fgMorphArgs(callNode);
+        Range().InsertAfter(tree, LIR::SeqTree(m_compiler, call));
+
+        Range().Remove(tree);
+        use.ReplaceWith(m_compiler, call);
+        return call;
+    }
 }
 
 //------------------------------------------------------------------------
@@ -1069,7 +1348,7 @@ GenTree* DecomposeLongs::DecomposeUMod(LIR::Use& use)
 
     Range().InsertAfter(loResult, hiResult);
 
-    return FinalizeDecomposition(use, loResult, hiResult);
+    return FinalizeDecomposition(use, loResult, hiResult, hiResult);
 }
 
 //------------------------------------------------------------------------
