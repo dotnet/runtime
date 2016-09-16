@@ -5,7 +5,6 @@
 // Changes to this file must follow the http://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
-
 namespace System.ComponentModel
 {
     public partial class ArrayConverter : System.ComponentModel.CollectionConverter
@@ -645,6 +644,41 @@ namespace System.ComponentModel
     public partial class UInt64Converter : System.ComponentModel.BaseNumberConverter
     {
         public UInt64Converter() { }
+    }
+}
+
+namespace System.Timers
+{
+    public partial class Timer : System.ComponentModel.Component, System.ComponentModel.ISupportInitialize
+    {
+        public Timer() { }
+        public Timer(double interval) { }
+        public void BeginInit() { }
+        public void Close() { }
+        protected override void Dispose(bool disposing) { }
+        public void EndInit() { }
+        public void Start() { }
+        public void Stop() { }
+        public bool AutoReset { get { return default(bool); } set { } }
+        public bool Enabled { get { return default(bool); } set { } }
+        public double Interval { get { return default(double); } set { } }
+        public override System.ComponentModel.ISite Site { get { return default(System.ComponentModel.ISite); } set { } }
+        public System.ComponentModel.ISynchronizeInvoke SynchronizingObject { get { return default(System.ComponentModel.ISynchronizeInvoke); } set { } }
+        public event ElapsedEventHandler Elapsed { add { } remove { } }
+    }
+
+    public partial class TimersDescriptionAttribute : System.ComponentModel.DescriptionAttribute
+    {
+        public TimersDescriptionAttribute(string description) { }
+        public override string Description { get { return default(string); } }
+    }
+
+    public delegate void ElapsedEventHandler(object sender, ElapsedEventArgs e);
+
+    public partial class ElapsedEventArgs : EventArgs
+    {
+        internal ElapsedEventArgs(long fileTime) { }
+        public DateTime SignalTime { get { return default(DateTime); } }
     }
 }
 
