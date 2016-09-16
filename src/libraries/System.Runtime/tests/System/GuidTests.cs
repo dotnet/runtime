@@ -8,7 +8,7 @@ using Xunit;
 
 namespace System.Tests
 {
-    public static class GuidTests
+    public static partial class GuidTests
     {
         private static readonly Guid s_testGuid = new Guid("a8a110d5-fc49-43c5-bf46-802db8f843ff");
         private static readonly Guid s_fullGuid = new Guid(uint.MaxValue, ushort.MaxValue, ushort.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue);

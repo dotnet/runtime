@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Globalization;
 using Xunit;
 
 namespace System.Tests
@@ -23,5 +24,22 @@ namespace System.Tests
         {
             Assert.Equal(expected, e.GetTypeCode());
         }
+
+#pragma warning disable 618
+        [Fact]
+        public static void ToString_FormatProvider()
+        {
+            // FormatProvider parameter is ignored
+            Assert.Equal("Blue", SimpleEnum.Blue.ToString(CultureInfo.CurrentCulture));
+        }
+
+        [Theory]
+        [MemberData(nameof(ToString_Format_TestData))]
+        public static void ToString_FormatProvider2(Enum e, string format, string expected)
+        {
+            // FormatProvider parameter is ignored
+            Assert.Equal(expected, e.ToString(format, CultureInfo.CurrentCulture));
+        }
+#pragma warning restore 618        
     }
 }

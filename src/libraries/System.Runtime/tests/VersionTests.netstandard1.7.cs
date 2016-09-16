@@ -17,5 +17,12 @@ namespace System.Tests
             Assert.Equal(0, version.Major);
             Assert.Equal(0, version.Minor);
         }
+
+        [Theory]
+        [MemberData(nameof(CompareTo_TestData))]
+        public static void CompareTo_Object(Version version1, Version version2, int expectedSign)
+        {
+            Assert.Equal(expectedSign, Math.Sign(version1.CompareTo(version2)));
+        }
     }
 }
