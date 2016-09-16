@@ -125,7 +125,7 @@ if [ ! -e $__INIT_TOOLS_DONE_MARKER ]; then
     fi
 
     echo "Updating CLI NuGet Frameworks map..."
-    cp -u $__TOOLRUNTIME_DIR/NuGet.Frameworks.dll $__TOOLRUNTIME_DIR/dotnetcli/sdk/$__DOTNET_TOOLS_VERSION >> $__init_tools_log
+    cp $__TOOLRUNTIME_DIR/NuGet.Frameworks.dll $__TOOLRUNTIME_DIR/dotnetcli/sdk/$__DOTNET_TOOLS_VERSION >> $__init_tools_log
     if [ "$?" != "0" ]; then
         echo "ERROR: An error occured when updating Nuget for CLI . Please check '$__init_tools_log' for more details."1>&2
         exit 1
