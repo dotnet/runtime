@@ -635,9 +635,8 @@ BYTE FASTCALL encodeHeaderNext(const InfoHdr& header, InfoHdr* state, BYTE &code
         goto DO_RETURN;
     }
 
-    if (state->returnKind != header.returnKind)
+    if (GCInfoEncodesReturnKind() && (state->returnKind != header.returnKind))
     {
-        _ASSERTE(GCInfoEncodesReturnKind());
         state->returnKind = header.returnKind;
         codeSet = 2; // Two byte encoding
         encoding = header.returnKind;
@@ -685,9 +684,8 @@ BYTE FASTCALL encodeHeaderNext(const InfoHdr& header, InfoHdr* state, BYTE &code
         }
     }
 
-    if (state->revPInvokeOffset != header.revPInvokeOffset)
+    if (GCInfoEncodesRevPInvokeFrame() && (state->revPInvokeOffset != header.revPInvokeOffset))
     {
-        _ASSERTE(GCInfoEncodesRevPInvokeFrame());
         assert(state->revPInvokeOffset == INVALID_REV_PINVOKE_OFFSET || state->revPInvokeOffset == HAS_REV_PINVOKE_FRAME_OFFSET);
 
         if (state->revPInvokeOffset == INVALID_REV_PINVOKE_OFFSET)
@@ -1298,13 +1296,17 @@ size_t GCInfo::gcInfoBlockHdrSave(
     header->genericsContext = compiler->lvaReportParamTypeArg();
     header->genericsContextIsMethodDesc =
         header->genericsContext && (compiler->info.compMethodInfo->options & (CORINFO_GENERICS_CTXT_FROM_METHODDESC));
+
+    if (GCInfoEncodesReturnKind()) 
+    {
+        ReturnKind returnKind = getReturnKind();
+        _ASSERTE(IsValidReturnKind(returnKind) && "Return Kind must be valid");
+        _ASSERTE(!IsStructReturnKind(returnKind) && "Struct Return Kinds Unexpected for JIT32");
+        _ASSERTE((returnKind < SET_RET_KIND_MAX) && "ReturnKind has no legal encoding");
+        header->returnKind = returnKind;
+    }
+
     header->gsCookieOffset = INVALID_GS_COOKIE_OFFSET;
-
-    ReturnKind returnKind = getReturnKind();
-    _ASSERTE(IsValidReturnKind(returnKind) && "Return Kind must be valid");
-    _ASSERTE(!IsStructReturnKind(returnKind) && "Struct Return Kinds Unexpected for JIT32");
-    header->returnKind = returnKind;
-
     if (compiler->getNeedsGSSecurityCookie())
     {
         assert(compiler->lvaGSSecurityCookie != BAD_VAR_NUM);
@@ -1329,6 +1331,7 @@ size_t GCInfo::gcInfoBlockHdrSave(
         // synchronized methods can't have more than 1 epilog
         assert(header->epilogCount <= 1);
     }
+
     header->revPInvokeOffset = INVALID_REV_PINVOKE_OFFSET;
 
     assert((compiler->compArgSize & 0x3) == 0);
