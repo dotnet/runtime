@@ -190,12 +190,9 @@ void LIR::Use::ReplaceWith(Compiler* compiler, GenTree* replacement)
     assert(IsDummyUse() || m_range->Contains(m_user));
     assert(m_range->Contains(replacement));
 
-    GenTree* replacedNode = *m_edge;
-
-    *m_edge = replacement;
-    if (!IsDummyUse() && m_user->IsCall())
+    if (!IsDummyUse())
     {
-        compiler->fgFixupArgTabEntryPtr(m_user, replacedNode, replacement);
+        m_user->ReplaceOperand(m_edge, replacement);
     }
 }
 

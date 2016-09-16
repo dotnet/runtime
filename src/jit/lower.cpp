@@ -3314,9 +3314,9 @@ GenTree* Lowering::TryCreateAddrMode(LIR::Use&& use, bool isIndir)
         {
             // We can have an indirection on the rhs of a block copy (it is the source
             // object). This is not a "regular" indirection.
-            // (Note that the parent check could be costly.)
-            GenTree* parent = indir->gtGetParent(nullptr);
-            if ((parent != nullptr) && parent->OperIsIndir())
+            // (Note that the user check could be costly.)
+            LIR::Use indirUse;
+            if (BlockRange().TryGetUse(indir, &indirUse) && indirUse.User()->OperIsIndir())
             {
                 isIndir = false;
             }
