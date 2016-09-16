@@ -12,9 +12,6 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
   <ItemGroup>
-    <None Include="project.json" />
-  </ItemGroup>
-  <ItemGroup>
     <Compile Include="MissingManifestResourceExceptionTests.cs" />
     <Compile Include="NeutralResourcesLanguageAttributeTests.cs" />
     <Compile Include="ResourceManagerTests.cs" />

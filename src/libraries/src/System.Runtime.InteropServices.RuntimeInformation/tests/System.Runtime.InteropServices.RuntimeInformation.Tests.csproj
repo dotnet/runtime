@@ -21,9 +21,6 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
   </PropertyGroup>
   <ItemGroup>
-    <None Include="project.json" />
-  </ItemGroup>
-  <ItemGroup>
     <ProjectReference Include="..\pkg\System.Runtime.InteropServices.RuntimeInformation.pkgproj">
       <Project>{F9DF2357-81B4-4317-908E-512DA9395583}</Project>
       <Name>System.Runtime.InteropServices.RuntimeInformation</Name>

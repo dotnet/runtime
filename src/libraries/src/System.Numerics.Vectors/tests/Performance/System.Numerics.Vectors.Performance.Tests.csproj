@@ -43,7 +43,6 @@
     <None Include="..\..\src\System\Numerics\GenerationConfig.ttinclude">
       <Link>GenerationConfig.ttinclude</Link>
     </None>
-    <None Include="project.json" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

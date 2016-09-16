@@ -15,9 +15,6 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
   <ItemGroup>
-    <None Include="project.json" />
-  </ItemGroup>
-  <ItemGroup>
     <ProjectReference Include="..\pkg\System.IO.Compression.pkgproj">
       <Project>{5471BFE8-8071-466f-838E-5ADAA779E742}</Project>
       <Name>System.IO.Compression</Name>

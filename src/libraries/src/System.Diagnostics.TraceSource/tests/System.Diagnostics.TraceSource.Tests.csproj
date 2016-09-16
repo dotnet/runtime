@@ -40,9 +40,6 @@
     <Compile Include="CorrelationManagerTests.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="project.json" />
-  </ItemGroup>
-  <ItemGroup>
     <ProjectReference Include="..\pkg\System.Diagnostics.TraceSource.pkgproj">
       <Project>{5380420C-EB1D-4C53-9CFC-916578C18334}</Project>
       <Name>System.Diagnostics.TraceSource</Name>

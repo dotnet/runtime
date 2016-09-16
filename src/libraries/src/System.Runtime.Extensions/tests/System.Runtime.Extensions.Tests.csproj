@@ -111,9 +111,6 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="project.json" />
-  </ItemGroup>
-  <ItemGroup>
     <ProjectReference Include="..\..\System.Runtime\pkg\System.Runtime.pkgproj" />
     <ProjectReference Include="..\..\System.Diagnostics.Debug\pkg\System.Diagnostics.Debug.pkgproj" />
     <ProjectReference Include="..\pkg\System.Runtime.Extensions.pkgproj">
