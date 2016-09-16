@@ -19,6 +19,13 @@ struct ValueTypeWithPointers
     public ValueTypeWithPointers(object reference) { Reference = reference; }
 }
 
+struct SevenBytesStruct
+{
+#pragma warning disable 0169
+    byte b1, b2, b3, b4, b5, b6, b7;
+#pragma warning restore 0169
+}
+
 class My
 {
     static int Sum(Span<int> span)
@@ -59,6 +66,14 @@ class My
         Test(CanCopyOverlappingSlicesOfValueTypeWithPointers, "CanCopyOverlappingSlicesOfValueTypeWithPointers", ref failedTestsCount);
         Test(CanCopyOverlappingSlicesOfReferenceTypes, "CanCopyOverlappingSlicesOfReferenceTypes", ref failedTestsCount);
 
+        Test(MustNotCastSpanOfValueTypesWithPointers, "MustNotCastSpanOfValueTypesWithPointers", ref failedTestsCount);
+        Test(IntArraySpanCastedToByteArraySpanHasSameBytesAsOriginalArray, "IntArraySpanCastedToByteArraySpanHasSameBytesAsOriginalArray", ref failedTestsCount);
+        Test(ByteArraySpanCastedToIntArraySpanHasSameBytesAsOriginalArray, "ByteArraySpanCastedToIntArraySpanHasSameBytesAsOriginalArray", ref failedTestsCount);
+        Test(SourceTypeLargerThanTargetOneCorrectlyCalcsTargetsLength, "SourceTypeLargerThanTargetOneCorrectlyCalcsTargetsLength", ref failedTestsCount);
+        Test(WhenSourceDoesntFitIntoTargetLengthIsZero, "WhenSourceDoesntFitIntoTargetLengthIsZero", ref failedTestsCount);
+        Test(WhenSourceFitsIntoTargetOnceLengthIsOne, "WhenSourceFitsIntoTargetOnceLengthIsOne", ref failedTestsCount);
+        Test(WhenSourceTypeLargerThaTargetAndOverflowsInt32ThrowsException, "WhenSourceTypeLargerThaTargetAndOverflowsInt32ThrowsException", ref failedTestsCount);
+
         Console.WriteLine(string.Format("{0} tests has failed", failedTestsCount));
         Environment.Exit(failedTestsCount);
     }
@@ -96,7 +111,7 @@ class My
         }
         catch (System.ArgumentException ex)
         {
-            AssertTrue(ex.Message == "'ValueTypeWithPointers' is reference type or contains pointers and hence can not be stored in unmanaged memory.",
+            AssertTrue(ex.Message == "Cannot use type 'ValueTypeWithPointers'. Only value types without pointers are supported.",
                 "Exception message is incorrect");
         }
 
@@ -107,7 +122,7 @@ class My
         }
         catch (System.ArgumentException ex)
         {
-            AssertTrue(ex.Message == "'ReferenceType' is reference type or contains pointers and hence can not be stored in unmanaged memory.",
+            AssertTrue(ex.Message == "Cannot use type 'ReferenceType'. Only value types without pointers are supported.",
                 "Exception message is incorrect");
         }
     }
@@ -470,6 +485,129 @@ class My
         AssertTrue(firstAndSecondElements[0].Value == 1, "firstAndSecondElements[0] should get replaced by 1");
     }
 
+    static void MustNotCastSpanOfValueTypesWithPointers()
+    {
+        var spanOfValueTypeWithPointers = new Span<ValueTypeWithPointers>(new[] { new ValueTypeWithPointers(new object()) });
+
+        try
+        {
+            var impossible = spanOfValueTypeWithPointers.AsBytes();
+            AssertTrue(false, "Expected exception for wrong type not thrown");
+        }
+        catch (System.ArgumentException ex)
+        {
+            AssertTrue(ex.Message == "Cannot use type 'ValueTypeWithPointers'. Only value types without pointers are supported.",
+                "Exception message is incorrect");
+        }
+
+        try
+        {
+            var impossible = spanOfValueTypeWithPointers.NonPortableCast<ValueTypeWithPointers, byte>();
+            AssertTrue(false, "Expected exception for wrong type not thrown");
+        }
+        catch (System.ArgumentException ex)
+        {
+            AssertTrue(ex.Message == "Cannot use type 'ValueTypeWithPointers'. Only value types without pointers are supported.",
+                "Exception message is incorrect");
+        }
+
+        var spanOfBytes = new Span<byte>(new byte[10]);
+        try
+        {
+            var impossible = spanOfBytes.NonPortableCast<byte, ValueTypeWithPointers>();
+            AssertTrue(false, "Expected exception for wrong type not thrown");
+        }
+        catch (System.ArgumentException ex)
+        {
+            AssertTrue(ex.Message == "Cannot use type 'ValueTypeWithPointers'. Only value types without pointers are supported.",
+                "Exception message is incorrect");
+        }
+    }
+
+    static void IntArraySpanCastedToByteArraySpanHasSameBytesAsOriginalArray()
+    {
+        var ints = new int[100000];
+        Random r = new Random(42324232);
+        for (int i = 0; i < ints.Length; i++) { ints[i] = r.Next(); }
+        var bytes = new Span<int>(ints).AsBytes();
+        AssertEqual(bytes.Length, ints.Length * sizeof(int));
+        for (int i = 0; i < ints.Length; i++)
+        {
+            AssertEqual(bytes[i * 4], (ints[i] & 0xff));
+            AssertEqual(bytes[i * 4 + 1], (ints[i] >> 8 & 0xff));
+            AssertEqual(bytes[i * 4 + 2], (ints[i] >> 16 & 0xff));
+            AssertEqual(bytes[i * 4 + 3], (ints[i] >> 24 & 0xff));
+        }
+    }
+
+    static void ByteArraySpanCastedToIntArraySpanHasSameBytesAsOriginalArray()
+    {
+        var bytes = new byte[100000];
+        Random r = new Random(541345);
+        for (int i = 0; i < bytes.Length; i++) { bytes[i] = (byte)r.Next(256); }
+        var ints = new Span<byte>(bytes).NonPortableCast<byte, int>();
+        AssertEqual(ints.Length, bytes.Length / sizeof(int));
+        for (int i = 0; i < ints.Length; i++)
+        {
+            AssertEqual(BitConverter.ToInt32(bytes, i * 4), ints[i]);
+        }
+    }
+
+    static void SourceTypeLargerThanTargetOneCorrectlyCalcsTargetsLength()
+    {
+        for (int sourceLength = 0; sourceLength <= 4; sourceLength++)
+        {
+            var sourceSlice = new Span<SevenBytesStruct>(new SevenBytesStruct[sourceLength]);
+
+            var targetSlice = sourceSlice.NonPortableCast<SevenBytesStruct, short>();
+
+            AssertEqual((sourceLength * 7) / sizeof(short), targetSlice.Length);
+        }
+    }
+
+    static void WhenSourceDoesntFitIntoTargetLengthIsZero()
+    {
+        for (int sourceLength = 0; sourceLength <= 3; sourceLength++)
+        {
+            var sourceSlice = new Span<short>(new short[sourceLength]);
+
+            var targetSlice = sourceSlice.NonPortableCast<short, SevenBytesStruct>();
+
+            AssertEqual(0, targetSlice.Length);
+        }
+    }
+
+    static void WhenSourceFitsIntoTargetOnceLengthIsOne()
+    {
+        foreach (var sourceLength in new int[] { 4, 6 })
+        {
+            var sourceSlice = new Span<short>(new short[sourceLength]);
+
+            var targetSlice = sourceSlice.NonPortableCast<short, SevenBytesStruct>();
+
+            AssertEqual(1, targetSlice.Length);
+        }
+    }
+
+    static void WhenSourceTypeLargerThaTargetAndOverflowsInt32ThrowsException()
+    {
+        unsafe
+        {
+            byte dummy;
+            int sourceLength = 620000000;
+            var sourceSlice = new Span<SevenBytesStruct>(&dummy, sourceLength);
+
+            try
+            {
+                var targetSlice = sourceSlice.NonPortableCast<SevenBytesStruct, short>();
+                AssertTrue(false, "Expected exception for overflow not thrown");
+            }
+            catch (System.OverflowException)
+            {
+            }
+        }
+    }
+
     static void Test(Action test, string testName, ref int failedTestsCount)
     {
         try
@@ -495,6 +633,15 @@ class My
         if (condition == false)
         {
             throw new Exception(errorMessage);
+        }
+    }
+
+    static void AssertEqual<T>(T left, T right)
+        where T : IEquatable<T>
+    {
+        if (left.Equals(right) == false)
+        {
+            throw new Exception(string.Format("Values were not equal! {0} and {1}", left, right));
         }
     }
 }

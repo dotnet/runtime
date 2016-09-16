@@ -78,7 +78,7 @@ namespace System
         /// <param name="ptr">An unmanaged pointer to memory.</param>
         /// <param name="length">The number of <typeparamref name="T"/> elements the memory contains.</param>
         /// <exception cref="System.ArgumentException">
-        /// Thrown when <typeparamref name="T"/> is reference type or contains pointers and hence can not be stored in unmanaged memory.
+        /// Thrown when <typeparamref name="T"/> is reference type or contains pointers and hence cannot be stored in unmanaged memory.
         /// </exception>
         /// <exception cref="System.ArgumentOutOfRangeException">
         /// Thrown when the specified <paramref name="length"/> is negative.
@@ -87,7 +87,7 @@ namespace System
         public unsafe Span(void* ptr, int length)
         {
             if (JitHelpers.ContainsReferences<T>())
-                ThrowHelper.ThrowInvalidTypeForUnmanagedMemory(typeof(T));
+                ThrowHelper.ThrowInvalidTypeWithPointersNotSupported(typeof(T));
             if (length < 0)
                 ThrowHelper.ThrowArgumentOutOfRangeException();
 
@@ -98,7 +98,7 @@ namespace System
         /// <summary>
         /// An internal helper for creating spans. Not for public use.
         /// </summary>
-        private Span(ref T ptr, int length)
+        internal Span(ref T ptr, int length)
         {
             JitHelpers.SetByRef(out _rawPointer, ref ptr);
             _length = length;
@@ -224,6 +224,97 @@ namespace System
                 ThrowHelper.ThrowArgumentOutOfRangeException();
 
             SpanHelper.CopyTo<T>(ref _rawPointer, ref values._rawPointer, values.Length);
+        }
+    }
+
+    public static class SpanExtensions
+    {
+        /// <summary>
+        /// Casts a Span of one primitive type <typeparamref name="T"/> to Span of bytes.
+        /// That type may not contain pointers. This is checked at runtime in order to preserve type safety.
+        /// </summary>
+        /// <param name="source">The source slice, of type <typeparamref name="T"/>.</param>
+        /// <exception cref="System.ArgumentException">
+        /// Thrown when <typeparamref name="T"/> contains pointers.
+        /// </exception>
+        public static Span<byte> AsBytes<T>(this Span<T> source)
+            where T : struct
+        {
+            if (JitHelpers.ContainsReferences<T>())
+                ThrowHelper.ThrowInvalidTypeWithPointersNotSupported(typeof(T));
+
+            return new Span<byte>(
+                ref JitHelpers.GetByRef<byte>(ref source._rawPointer),
+                checked((int)(source._length * JitHelpers.SizeOf<T>())));
+        }
+
+        /// <summary>
+        /// Casts a ReadOnlySpan of one primitive type <typeparamref name="T"/> to ReadOnlySpan of bytes.
+        /// That type may not contain pointers. This is checked at runtime in order to preserve type safety.
+        /// </summary>
+        /// <param name="source">The source slice, of type <typeparamref name="T"/>.</param>
+        /// <exception cref="System.ArgumentException">
+        /// Thrown when <typeparamref name="T"/> contains pointers.
+        /// </exception>
+        public static ReadOnlySpan<byte> AsBytes<T>(this ReadOnlySpan<T> source)
+            where T : struct
+        {
+            if (JitHelpers.ContainsReferences<T>())
+                ThrowHelper.ThrowInvalidTypeWithPointersNotSupported(typeof(T));
+
+            return new ReadOnlySpan<byte>(
+                ref JitHelpers.GetByRef<byte>(ref source._rawPointer),
+                checked((int)(source._length * JitHelpers.SizeOf<T>())));
+        }
+
+        /// <summary>
+        /// Casts a Span of one primitive type <typeparamref name="TFrom"/> to another primitive type <typeparamref name="TTo"/>.
+        /// These types may not contain pointers. This is checked at runtime in order to preserve type safety.
+        /// </summary>
+        /// <remarks>
+        /// Supported only for platforms that support misaligned memory access.
+        /// </remarks>
+        /// <param name="source">The source slice, of type <typeparamref name="TFrom"/>.</param>
+        /// <exception cref="System.ArgumentException">
+        /// Thrown when <typeparamref name="TFrom"/> or <typeparamref name="TTo"/> contains pointers.
+        /// </exception>
+        public static unsafe Span<TTo> NonPortableCast<TFrom, TTo>(this Span<TFrom> source)
+            where TFrom : struct
+            where TTo : struct
+        {
+            if (JitHelpers.ContainsReferences<TFrom>())
+                ThrowHelper.ThrowInvalidTypeWithPointersNotSupported(typeof(TFrom));
+            if (JitHelpers.ContainsReferences<TTo>())
+                ThrowHelper.ThrowInvalidTypeWithPointersNotSupported(typeof(TTo));
+
+            return new Span<TTo>(
+                ref JitHelpers.GetByRef<TTo>(ref source._rawPointer),
+                checked((int)(source._length * JitHelpers.SizeOf<TFrom>() / JitHelpers.SizeOf<TTo>())));
+        }
+
+        /// <summary>
+        /// Casts a ReadOnlySpan of one primitive type <typeparamref name="TFrom"/> to another primitive type <typeparamref name="TTo"/>.
+        /// These types may not contain pointers. This is checked at runtime in order to preserve type safety.
+        /// </summary>
+        /// <remarks>
+        /// Supported only for platforms that support misaligned memory access.
+        /// </remarks>
+        /// <param name="source">The source slice, of type <typeparamref name="TFrom"/>.</param>
+        /// <exception cref="System.ArgumentException">
+        /// Thrown when <typeparamref name="TFrom"/> or <typeparamref name="TTo"/> contains pointers.
+        /// </exception>
+        public static unsafe ReadOnlySpan<TTo> NonPortableCast<TFrom, TTo>(this ReadOnlySpan<TFrom> source)
+            where TFrom : struct
+            where TTo : struct
+        {
+            if (JitHelpers.ContainsReferences<TFrom>())
+                ThrowHelper.ThrowInvalidTypeWithPointersNotSupported(typeof(TFrom));
+            if (JitHelpers.ContainsReferences<TTo>())
+                ThrowHelper.ThrowInvalidTypeWithPointersNotSupported(typeof(TTo));
+
+            return new ReadOnlySpan<TTo>(
+                ref JitHelpers.GetByRef<TTo>(ref source._rawPointer),
+                checked((int)(source._length * JitHelpers.SizeOf<TFrom>() / JitHelpers.SizeOf<TTo>())));
         }
     }
 
