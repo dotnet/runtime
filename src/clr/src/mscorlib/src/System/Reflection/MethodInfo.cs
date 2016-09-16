@@ -558,19 +558,31 @@ namespace System.Reflection
 
         public override bool IsSecurityCritical 
         {
-            get { return RuntimeMethodHandle.IsSecurityCritical(this); } 
+#if FEATURE_CORECLR
+            get { return true; }
+#else
+            get { return RuntimeMethodHandle.IsSecurityCritical(this); }
+#endif
         }
         public override bool IsSecuritySafeCritical
         {
+#if FEATURE_CORECLR
+            get { return false; }
+#else
             get { return RuntimeMethodHandle.IsSecuritySafeCritical(this); }
+#endif
         }
         public override bool IsSecurityTransparent
         {
+#if FEATURE_CORECLR
+            get { return false; }
+#else
             get { return RuntimeMethodHandle.IsSecurityTransparent(this); }
+#endif
         }
-        #endregion
+#endregion
 
-        #region MethodBase Overrides
+#region MethodBase Overrides
         [System.Security.SecuritySafeCritical]  // auto-generated
         internal override ParameterInfo[] GetParametersNoCopy()
         {
@@ -642,9 +654,9 @@ namespace System.Reflection
                 mb.m_methodBase = this;
             return mb;
         }        
-        #endregion
+#endregion
 
-        #region Invocation Logic(On MemberBase)
+#region Invocation Logic(On MemberBase)
         private void CheckConsistency(Object target) 
         {
             // only test instance methods
@@ -706,7 +718,7 @@ namespace System.Reflection
         {
             object[] arguments = InvokeArgumentsCheck(obj, invokeAttr, binder, parameters, culture);
 
-            #region Security Check
+#region Security Check
             INVOCATION_FLAGS invocationFlags = InvocationFlags;
 
 #if FEATURE_APPX
@@ -729,7 +741,7 @@ namespace System.Reflection
                     RuntimeMethodHandle.PerformSecurityCheck(obj, this, m_declaringType, (uint)m_invocationFlags);
             }
 #endif // !FEATURE_CORECLR
-            #endregion
+#endregion
 
             return UnsafeInvokeInternal(obj, parameters, arguments);
         }
@@ -793,9 +805,9 @@ namespace System.Reflection
                 return null;
         }
 
-        #endregion
+#endregion
 
-        #region MethodInfo Overrides
+#region MethodInfo Overrides
         public override Type ReturnType 
         { 
             get { return Signature.ReturnType; } 
@@ -905,9 +917,9 @@ namespace System.Reflection
             return d;
         }
 
-        #endregion
+#endregion
 
-        #region Generics
+#region Generics
         [System.Security.SecuritySafeCritical]  // auto-generated
         public override MethodInfo MakeGenericMethod(params Type[] methodInstantiation)
         {
@@ -1017,9 +1029,9 @@ namespace System.Reflection
                 return false;
             } 
         }
-        #endregion
+#endregion
 
-        #region ISerializable Implementation
+#region ISerializable Implementation
         [System.Security.SecurityCritical]  // auto-generated
         public void GetObjectData(SerializationInfo info, StreamingContext context)
         {
@@ -1044,9 +1056,9 @@ namespace System.Reflection
         {
             return ReturnType.FormatTypeName(true) + " " + FormatNameAndSig(true);
         }
-        #endregion
+#endregion
 
-        #region Legacy Internal
+#region Legacy Internal
         internal static MethodBase InternalGetCurrentMethod(ref StackCrawlMark stackMark)
         {
             IRuntimeMethodInfo method = RuntimeMethodHandle.GetCurrentMethod(ref stackMark);
@@ -1056,6 +1068,6 @@ namespace System.Reflection
             
             return RuntimeType.GetMethodBase(method);
         }
-        #endregion
+#endregion
     }
 }

@@ -7337,6 +7337,8 @@ namespace System.Reflection
         public System.Reflection.ProcessorArchitecture ProcessorArchitecture { get { throw null; } set { } }
         public System.Version Version { get { throw null; } set { } }
         public object Clone() { throw null; }
+        [System.Security.SecuritySafeCriticalAttribute]
+        public static System.Reflection.AssemblyName GetAssemblyName(System.String assemblyFile) { throw null; }
         public byte[] GetPublicKey() { throw null; }
         [System.Security.SecuritySafeCriticalAttribute]
         public byte[] GetPublicKeyToken() { throw null; }
@@ -7346,6 +7348,8 @@ namespace System.Reflection
         [System.Security.SecurityCriticalAttribute]
         public void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { throw null; }
         public void OnDeserialization(Object sender) { throw null; }
+        [System.Security.SecuritySafeCriticalAttribute]
+        public static bool ReferenceMatchesDefinition(System.Reflection.AssemblyName reference, System.Reflection.AssemblyName definition) { throw null; }
     }
     [System.FlagsAttribute]
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
@@ -7868,6 +7872,8 @@ namespace System.Reflection
         public bool IsSpecialName { get { throw null; } }
         public bool IsStatic { get { throw null; } }
         public bool IsVirtual { get { throw null; } }
+        public virtual bool IsSecurityCritical { get { throw null; } }
+        public virtual bool IsSecurityTransparent { get { throw null; } }
         public abstract System.RuntimeMethodHandle MethodHandle { get; }
         public virtual System.Reflection.MethodImplAttributes MethodImplementationFlags { get { throw null; } }
         public override bool Equals(object obj) { throw null; }
