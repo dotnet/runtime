@@ -11,11 +11,6 @@
     <NugetTargetMoniker Condition="'$(NugetTargetMoniker)'==''">.NETStandard,Version=v1.5</NugetTargetMoniker>
     <DefineConstants>$(DefineConstants);FUNCTIONAL_TESTS</DefineConstants>
   </PropertyGroup>
-  <ItemGroup Condition="'$(TargetGroup)'=='netstandard1.7'">
-    <TestNugetTargetMoniker Include="$(NugetTargetMoniker)">
-      <Folder>netcoreapp1.1</Folder>
-    </TestNugetTargetMoniker>
-  </ItemGroup>
   <PropertyGroup>
     <DebugEngines>{2E36F1D4-B23C-435D-AB41-18E608940038}</DebugEngines>
   </PropertyGroup>
