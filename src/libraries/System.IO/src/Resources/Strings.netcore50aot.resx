@@ -222,4 +222,7 @@
   <data name="NotSupported_CannotWriteToBufferedStreamIfReadBufferCannotBeFlushed" xml:space="preserve">
     <value>Cannot write to a BufferedStream while the read buffer is not empty if the underlying stream is not seekable. Ensure that the stream underlying this BufferedStream can seek or avoid interleaving read and write operations on this BufferedStream.</value>
   </data>
+  <data name="UnauthorizedAccess_MemStreamBuffer" xml:space="preserve">
+    <value>MemoryStream's internal buffer cannot be accessed.</value>
+  </data>
 </root>
