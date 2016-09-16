@@ -13,9 +13,9 @@ namespace System.Linq.Expressions.Compiler
     {
         private abstract class BindingRewriter
         {
-            protected MemberBinding _binding;
+            protected readonly MemberBinding _binding;
+            protected readonly StackSpiller _spiller;
             protected RewriteAction _action;
-            protected StackSpiller _spiller;
 
             internal BindingRewriter(MemberBinding binding, StackSpiller spiller)
             {
@@ -79,7 +79,7 @@ namespace System.Linq.Expressions.Compiler
                         {
                             newBindings[i] = _bindingRewriters[i].AsBinding();
                         }
-                        return Expression.MemberBind(_binding.Member, new TrueReadOnlyCollection<MemberBinding>(newBindings));
+                        return new MemberMemberBinding(_binding.Member, new TrueReadOnlyCollection<MemberBinding>(newBindings));
                 }
                 throw ContractUtils.Unreachable;
             }
@@ -92,11 +92,11 @@ namespace System.Linq.Expressions.Compiler
                 }
                 RequireNotRefInstance(target);
 
-                MemberExpression member = Expression.MakeMemberAccess(target, _binding.Member);
-                ParameterExpression memberTemp = _spiller.MakeTemp(member.Type);
+                Expression member = MemberExpression.Make(target, _binding.Member);
+                Expression memberTemp = _spiller.MakeTemp(member.Type);
 
                 Expression[] block = new Expression[_bindings.Count + 2];
-                block[0] = Expression.Assign(memberTemp, member);
+                block[0] = new AssignBinaryExpression(memberTemp, member);
 
                 for (int i = 0; i < _bindings.Count; i++)
                 {
@@ -109,12 +109,12 @@ namespace System.Linq.Expressions.Compiler
                 {
                     block[_bindings.Count + 1] = Expression.Block(
                         typeof(void),
-                        Expression.Assign(Expression.MakeMemberAccess(target, _binding.Member), memberTemp)
+                        new AssignBinaryExpression(MemberExpression.Make(target, _binding.Member), memberTemp)
                     );
                 }
                 else
                 {
-                    block[_bindings.Count + 1] = Expression.Empty();
+                    block[_bindings.Count + 1] = Utils.Empty();
                 }
                 return MakeBlock(block);
             }
@@ -160,10 +160,10 @@ namespace System.Linq.Expressions.Compiler
                             }
                             else
                             {
-                                newInits[i] = Expression.ElementInit(_inits[i].AddMethod, cr[0, -1]);
+                                newInits[i] = new ElementInit(_inits[i].AddMethod, new TrueReadOnlyCollection<Expression>(cr[0, -1]));
                             }
                         }
-                        return Expression.ListBind(_binding.Member, new TrueReadOnlyCollection<ElementInit>(newInits));
+                        return new MemberListBinding(_binding.Member, new TrueReadOnlyCollection<ElementInit>(newInits));
                 }
                 throw ContractUtils.Unreachable;
             }
@@ -176,16 +176,16 @@ namespace System.Linq.Expressions.Compiler
                 }
                 RequireNotRefInstance(target);
 
-                MemberExpression member = Expression.MakeMemberAccess(target, _binding.Member);
-                ParameterExpression memberTemp = _spiller.MakeTemp(member.Type);
+                Expression member = MemberExpression.Make(target, _binding.Member);
+                Expression memberTemp = _spiller.MakeTemp(member.Type);
 
                 Expression[] block = new Expression[_inits.Count + 2];
-                block[0] = Expression.Assign(memberTemp, member);
+                block[0] = new AssignBinaryExpression(memberTemp, member);
 
                 for (int i = 0; i < _inits.Count; i++)
                 {
                     ChildRewriter cr = _childRewriters[i];
-                    Result add = cr.Finish(Expression.Call(memberTemp, _inits[i].AddMethod, cr[0, -1]));
+                    Result add = cr.Finish(new InstanceMethodCallExpressionN(_inits[i].AddMethod, memberTemp, cr[0, -1]));
                     block[i + 1] = add.Node;
                 }
 
@@ -194,12 +194,12 @@ namespace System.Linq.Expressions.Compiler
                 {
                     block[_inits.Count + 1] = Expression.Block(
                         typeof(void),
-                        Expression.Assign(Expression.MakeMemberAccess(target, _binding.Member), memberTemp)
+                        new AssignBinaryExpression(MemberExpression.Make(target, _binding.Member), memberTemp)
                     );
                 }
                 else
                 {
-                    block[_inits.Count + 1] = Expression.Empty();
+                    block[_inits.Count + 1] = Utils.Empty();
                 }
                 return MakeBlock(block);
             }
@@ -224,7 +224,7 @@ namespace System.Linq.Expressions.Compiler
                     case RewriteAction.None:
                         return _binding;
                     case RewriteAction.Copy:
-                        return Expression.Bind(_binding.Member, _rhs);
+                        return new MemberAssignment(_binding.Member, _rhs);
                 }
                 throw ContractUtils.Unreachable;
             }
@@ -233,13 +233,13 @@ namespace System.Linq.Expressions.Compiler
             {
                 RequireNotRefInstance(target);
 
-                MemberExpression member = Expression.MakeMemberAccess(target, _binding.Member);
-                ParameterExpression memberTemp = _spiller.MakeTemp(member.Type);
+                Expression member = MemberExpression.Make(target, _binding.Member);
+                Expression memberTemp = _spiller.MakeTemp(member.Type);
 
                 return MakeBlock(
-                    Expression.Assign(memberTemp, _rhs),
-                    Expression.Assign(member, memberTemp),
-                    Expression.Empty()
+                    new AssignBinaryExpression(memberTemp, _rhs),
+                    new AssignBinaryExpression(member, memberTemp),
+                    Utils.Empty()
                 );
             }
         }

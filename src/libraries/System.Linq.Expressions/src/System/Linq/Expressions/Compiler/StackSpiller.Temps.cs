@@ -56,7 +56,7 @@ namespace System.Linq.Expressions.Compiler
                     }
                 }
                 // Not on the free-list, create a brand new one.
-                temp = Expression.Variable(type, "$temp$" + _temp++);
+                temp = ParameterExpression.Make(type, "$temp$" + _temp++, isByRef: false);
                 _temps.Add(temp);
                 return UseTemp(temp);
             }
@@ -162,7 +162,7 @@ namespace System.Linq.Expressions.Compiler
                 _expressions[_expressionsCount++] = exp.Node;
             }
 
-            internal void Add(IList<Expression> expressions)
+            internal void Add(ReadOnlyCollection<Expression> expressions)
             {
                 for (int i = 0, count = expressions.Count; i < count; i++)
                 {
