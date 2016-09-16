@@ -119,6 +119,15 @@ namespace System.Net.Sockets
             }
         }
 
+        public Socket(SocketInformation socketInformation)
+        {
+            //
+            // This constructor works in conjunction with DuplicateAndClose, which is not supported.
+            // See comments in DuplicateAndClose.
+            //
+            throw new PlatformNotSupportedException(SR.net_sockets_duplicateandclose_notsupported);
+        }
+
         // Called by the class to create a socket to accept an incoming request.
         private Socket(SafeCloseSocket fd)
         {
@@ -366,6 +375,24 @@ namespace System.Net.Sockets
 
                 // The native call succeeded, update the user's desired state.
                 _willBlock = current;
+            }
+        }
+
+        public bool UseOnlyOverlappedIO
+        {
+            get
+            {
+                return false;
+            }
+            set
+            {
+                //
+                // This implementation does not support non-IOCP-based async I/O on Windows, and this concept is 
+                // not even meaningful on other platforms.  This option is really only functionally meaningful
+                // if the user calls DuplicateAndClose.  Since we also don't support DuplicateAndClose,
+                // we can safely ignore the caller's choice here, rather than breaking compat further with something
+                // like PlatformNotSupportedException.
+                //
             }
         }
 
@@ -2362,6 +2389,17 @@ namespace System.Net.Sockets
         {
             return (_socketType == SocketType.Stream) &&
                 (_rightEndPoint != null || remoteEP.GetType() == typeof(IPEndPoint));
+        }
+
+        public SocketInformation DuplicateAndClose(int targetProcessId)
+        {
+            //
+            // On Windows, we cannot duplicate a socket that is bound to an IOCP.  In this implementation, we *only*
+            // support IOCPs, so this will not work.  
+            //
+            // On Unix, duplication of a socket into an arbitrary process is not supported at all.
+            //
+            throw new PlatformNotSupportedException(SR.net_sockets_duplicateandclose_notsupported);
         }
 
         internal IAsyncResult UnsafeBeginConnect(EndPoint remoteEP, AsyncCallback callback, object state, bool flowContext = false)

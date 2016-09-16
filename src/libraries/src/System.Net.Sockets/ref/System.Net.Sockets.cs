@@ -160,6 +160,7 @@ namespace System.Net.Sockets
     {
         public Socket(System.Net.Sockets.AddressFamily addressFamily, System.Net.Sockets.SocketType socketType, System.Net.Sockets.ProtocolType protocolType) { }
         public Socket(System.Net.Sockets.SocketType socketType, System.Net.Sockets.ProtocolType protocolType) { }
+        public Socket(SocketInformation socketInformation) { }
         public System.Net.Sockets.AddressFamily AddressFamily { get { return default(System.Net.Sockets.AddressFamily); } }
         public int Available { get { return default(int); } }
         public bool Blocking { get { return default(bool); } set { } }
@@ -184,6 +185,7 @@ namespace System.Net.Sockets
         public int SendTimeout { get { return default(int); } set { } }
         public System.Net.Sockets.SocketType SocketType { get { return default(System.Net.Sockets.SocketType); } }
         public short Ttl { get { return default(short); } set { } }
+        public bool UseOnlyOverlappedIO { get { return default(bool); } set { } }
         public System.Net.Sockets.Socket Accept() { return default(System.Net.Sockets.Socket); }
         public bool AcceptAsync(System.Net.Sockets.SocketAsyncEventArgs e) { return default(bool); }
         public IAsyncResult BeginAccept(AsyncCallback callback, object state) { return default(IAsyncResult); }
@@ -217,6 +219,7 @@ namespace System.Net.Sockets
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
         ~Socket() { }
+        public SocketInformation DuplicateAndClose(int targetProcessId) { return default(SocketInformation); }
         public Socket EndAccept(IAsyncResult asyncResult) { return default(Socket); }
         public void EndConnect(IAsyncResult asyncResult) { }
         public int EndReceive(IAsyncResult asyncResult) { return default(int); }
@@ -322,6 +325,19 @@ namespace System.Net.Sockets
         Partial = 32768,
         Peek = 2,
         Truncated = 256,
+    }
+    public struct SocketInformation
+    {
+        public SocketInformationOptions Options { get { return default(SocketInformationOptions); } set { } }
+        public byte[] ProtocolInformation { get { return default(byte[]); } set { } }
+    }
+    [Flags]
+    public enum SocketInformationOptions
+    {
+        NonBlocking = 1,
+        Connected = 2,
+        Listening = 4,
+        UseOnlyOverlappedIO = 8,
     }
     public enum SocketOptionLevel
     {
