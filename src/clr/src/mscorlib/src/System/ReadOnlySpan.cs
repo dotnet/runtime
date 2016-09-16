@@ -68,7 +68,7 @@ namespace System
         /// <param name="ptr">An unmanaged pointer to memory.</param>
         /// <param name="length">The number of <typeparamref name="T"/> elements the memory contains.</param>
         /// <exception cref="System.ArgumentException">
-        /// Thrown when <typeparamref name="T"/> is reference type or contains pointers and hence can not be stored in unmanaged memory.
+        /// Thrown when <typeparamref name="T"/> is reference type or contains pointers and hence cannot be stored in unmanaged memory.
         /// </exception>
         /// <exception cref="System.ArgumentOutOfRangeException">
         /// Thrown when the specified <paramref name="length"/> is negative.
@@ -77,7 +77,7 @@ namespace System
         public unsafe ReadOnlySpan(void* ptr, int length)
         {
             if (JitHelpers.ContainsReferences<T>())
-                ThrowHelper.ThrowInvalidTypeForUnmanagedMemory(typeof(T));
+                ThrowHelper.ThrowInvalidTypeWithPointersNotSupported(typeof(T));
             if (length < 0)
                 ThrowHelper.ThrowArgumentOutOfRangeException();
 
@@ -88,7 +88,7 @@ namespace System
         /// <summary>
         /// An internal helper for creating spans. Not for public use.
         /// </summary>
-        private ReadOnlySpan(ref T ptr, int length)
+        internal ReadOnlySpan(ref T ptr, int length)
         {
             JitHelpers.SetByRef(out _rawPointer, ref ptr);
             _length = length;

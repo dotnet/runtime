@@ -635,7 +635,7 @@ Argument_NativeOverlappedWrongBoundHandle = 'overlapped' was not allocated by th
 Argument_NativeOverlappedAlreadyFree = 'overlapped' has already been freed.
 Argument_AlreadyBoundOrSyncHandle = 'handle' has already been bound to the thread pool, or was not opened for asynchronous I/O.
 #if FEATURE_SPAN_OF_T
-Argument_InvalidTypeForUnmanagedMemory = '{0}' is reference type or contains pointers and hence can not be stored in unmanaged memory.
+Argument_InvalidTypeWithPointersNotSupported = Cannot use type '{0}'. Only value types without pointers are supported.
 #endif // FEATURE_SPAN_OF_T
 
 ;

@@ -48,8 +48,8 @@ namespace System {
             throw new ArrayTypeMismatchException();
         }
 
-        internal static void ThrowInvalidTypeForUnmanagedMemory(Type targetType) {
-            throw new ArgumentException(Environment.GetResourceString("Argument_InvalidTypeForUnmanagedMemory", targetType));
+        internal static void ThrowInvalidTypeWithPointersNotSupported(Type targetType) {
+            throw new ArgumentException(Environment.GetResourceString("Argument_InvalidTypeWithPointersNotSupported", targetType));
         }
 
         internal static void ThrowIndexOutOfRangeException() {
