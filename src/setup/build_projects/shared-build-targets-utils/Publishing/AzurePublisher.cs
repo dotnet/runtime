@@ -123,7 +123,7 @@ namespace Microsoft.DotNet.Cli.Build
                 try
                 {
                     CloudBlockBlob cloudBlob = _blobContainer.GetBlockBlobReference(blob);
-                    System.Threading.Tasks.Task<string> task = cloudBlob.AcquireLeaseAsync(TimeSpan.FromMinutes(1), null);
+                    System.Threading.Tasks.Task<string> task = cloudBlob.AcquireLeaseAsync(TimeSpan.FromMinutes(5), null);
                     task.Wait();
                     return task.Result;
                 }
