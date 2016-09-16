@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
@@ -22,6 +22,7 @@
     <Compile Include="BufferedStream\BufferedStreamTests.cs" />
     <Compile Include="InvalidDataException\InvalidDataExceptionTests.cs" />
     <Compile Include="MemoryStream\MemoryStream.ConstructorTests.cs" />
+    <Compile Include="MemoryStream\MemoryStream.GetBufferTests.cs" Condition="'$(TargetGroup)'=='netstandard1.7'" />
     <Compile Include="MemoryStream\MemoryStream.TryGetBufferTests.cs" />
     <Compile Include="MemoryStream\MemoryStreamTests.cs" />
     <Compile Include="StreamReader\StreamReader.CtorTests.cs" />
