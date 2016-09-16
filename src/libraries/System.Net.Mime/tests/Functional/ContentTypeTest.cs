@@ -6,7 +6,7 @@ using Xunit;
 
 namespace System.Net.Mime.Tests
 {
-    public class ContentTypeTests
+    public class ContentTypeTest
     {
         [Fact]
         public static void DefaultCtor_ExpectedDefaultPropertyValues()
