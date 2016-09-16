@@ -11,12 +11,12 @@ namespace System.Net.Mime.Tests
     {
         [Theory]
         [InlineData("some test header")]
-        [InlineData("some test header that is really long some test header that is really long some test header that is really long some test header that is really long some test header that is really long")]
+        [InlineData("some test header that is really long some test header that is really long some test header that is really long some test header that is really long some test header")]
         public void EncodeHeader_WithNoUnicode_ShouldNotEncode(string testHeader)
         {
             string result = MimeBasePart.EncodeHeaderValue(testHeader, Encoding.UTF8, true);
-            Assert.False(result.StartsWith("=?utf-8?B?"));
-            Assert.False(result.EndsWith("?="));
+            Assert.StartsWith("some test", result, StringComparison.Ordinal);
+            Assert.EndsWith("header", result, StringComparison.Ordinal);
 
             foreach (char c in result)
             {
@@ -27,13 +27,13 @@ namespace System.Net.Mime.Tests
         }
 
         [Theory]
-        [InlineData("some test héader to base64asdféå", 1)]
-        [InlineData("some test header to base64 å øî asdféencode that contains some unicodeasdféå and is really really long and stuff ", 3)]
+        [InlineData("some test h\xE9ader to base64asdf\xE9\xE5", 1)]
+        [InlineData("some test header to base64 \xE5 \xF8\xEE asdf\xE9encode that contains some unicodeasdf\xE9\xE5 and is really really long and stuff ", 3)]
         public void EncoderAndDecoder_ShouldEncodeAndDecode(string testHeader, int expectedFoldedCount)
         {
             string result = MimeBasePart.EncodeHeaderValue(testHeader, Encoding.UTF8, true);
-            Assert.True(result.StartsWith("=?utf-8?B?"));
-            Assert.True(result.EndsWith("?="));
+            Assert.StartsWith("=?utf-8?B?", result, StringComparison.Ordinal);
+            Assert.EndsWith("?=", result, StringComparison.Ordinal);
 
             string[] foldedHeaders = result.Split('\r');
             Assert.Equal(expectedFoldedCount, foldedHeaders.Length);
@@ -47,7 +47,7 @@ namespace System.Net.Mime.Tests
 
         [Theory]
         [InlineData("some test header to base64", 1)]
-        [InlineData("some test header to base64asdf éå encode that contains some unicode å øî asdféå and is really really long and stuff ", 3)]
+        [InlineData("some test header to base64asdf \xE9\xE5 encode that contains some unicode \xE5 \xF8\xEE asdf\xE9\xE5 and is really really long and stuff ", 3)]
         public void EncoderAndDecoder_WithQEncodedString_AndNoUnicode_AndShortHeader_ShouldEncodeAndDecode(
             string testHeader, int expectedFoldedCount)
         {

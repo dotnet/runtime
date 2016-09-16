@@ -68,7 +68,7 @@ namespace System.Net.Mime
 
         internal readonly static char[] s_allowedWhiteSpaceChars = new char[] { ' ', '\t' };
 
-        internal static readonly IDictionary<string, TimeSpan> s_timeZoneOffsetLookup = InitializeShortHandLookups();
+        internal static readonly Dictionary<string, TimeSpan> s_timeZoneOffsetLookup = InitializeShortHandLookups();
 
         // a TimeSpan must be between these two values in order for it to be within the range allowed 
         // by RFC 2822
@@ -81,7 +81,7 @@ namespace System.Net.Mime
 
         #region static initializers
 
-        internal static IDictionary<string, TimeSpan> InitializeShortHandLookups()
+        internal static Dictionary<string, TimeSpan> InitializeShortHandLookups()
         {
             var tempTimeZoneOffsetLookup = new Dictionary<string, TimeSpan>();
 
@@ -196,7 +196,7 @@ namespace System.Net.Mime
                 throw new FormatException(SR.MailDateInvalidFormat);
             }
 
-            positive = offset.StartsWith("+");
+            positive = offset.StartsWith("+", StringComparison.Ordinal);
 
             // TryParse will parse in base 10 by default.  do not allow any styles of input beyond the default
             // which is numeric values only
@@ -312,13 +312,11 @@ namespace System.Net.Mime
         // if it returns false then the time zone is unknown and so timeZone must be ignored
         internal bool TryParseTimeZoneString(string timeZoneString, out TimeSpan timeZone)
         {
-            // initialize default
-            timeZone = TimeSpan.Zero;
-
             // see if the zone is the special unspecified case, a numeric offset, or a shorthand string
             if (timeZoneString == UnknownTimeZoneDefaultOffset)
             {
                 // The inputed time zone is the special value "unknown", -0000
+                timeZone = TimeSpan.Zero;
                 return false;
             }
             else if ((timeZoneString[0] == '+' || timeZoneString[0] == '-'))
@@ -343,7 +341,6 @@ namespace System.Net.Mime
                 }
 
                 timeZone = new TimeSpan(hours, minutes, 0);
-
                 return true;
             }
             else
@@ -352,15 +349,8 @@ namespace System.Net.Mime
                 ValidateTimeZoneShortHandValue(timeZoneString);
 
                 // check if the shorthand value has a semantically equivalent offset
-                if (s_timeZoneOffsetLookup.ContainsKey(timeZoneString))
-                {
-                    timeZone = s_timeZoneOffsetLookup[timeZoneString];
-                    return true;
-                }
+                return s_timeZoneOffsetLookup.TryGetValue(timeZoneString, out timeZone);
             }
-
-            // default time zone is the unspecified zone: -0000
-            return false;
         }
 
         internal TimeSpan ValidateAndGetSanitizedTimeSpan(TimeSpan span)

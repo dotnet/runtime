@@ -47,8 +47,7 @@ namespace System.Net.Mime
         private ReadStateInfo _readState;
         private WriteStateInfoBase _writeState;
 
-        internal QEncodedStream(WriteStateInfoBase wsi) :
-            base(new MemoryStream()) // TODO: what should this be?!?!!
+        internal QEncodedStream(WriteStateInfoBase wsi) : base(new MemoryStream())
         {
             _writeState = wsi;
         }
@@ -197,10 +196,8 @@ namespace System.Net.Mime
                     }
                 }
                 EndWhile:
-                count = (int)(dest - start);
+                return (int)(dest - start);
             }
-
-            return count;
         }
 
         public int EncodeBytes(byte[] buffer, int offset, int count)

@@ -29,13 +29,6 @@ namespace System.Net.Mime.Tests
         private const string InvalidDateStringWithInvalidTimeZone = "Sun, 17 May 2009 15:34:07 7M-Gte";
 
         [Fact]
-        public void SmtpDateTime_WithUnspecifiedDateTimeKind_ShouldRespectUnspecifiedKind()
-        {
-            var smtpDt = new SmtpDateTime(new DateTime(2009, 5, 17, 15, 34, 07, DateTimeKind.Unspecified));
-            Assert.Equal(smtpDt.TimeZone, "-0000");
-        }
-
-        [Fact]
         public void SmtpDateTime_WithInvalidTimeZone_ShouldParseDateCorrectly()
         {
             var smtpDt = new SmtpDateTime(DateTime.Now);
@@ -70,9 +63,8 @@ namespace System.Net.Mime.Tests
             DateTime date = new DateTime(2008, 1, 1, 12, 00, 00, DateTimeKind.Unspecified);
             var smtpDt = new SmtpDateTime(date);
 
-            Assert.Equal(UnspecifiedTimeZone, smtpDt.TimeZone);
             Assert.Equal(date, smtpDt.Date);
-            Assert.Equal<DateTimeKind>(DateTimeKind.Unspecified, smtpDt.Date.Kind);
+            Assert.Equal(DateTimeKind.Unspecified, smtpDt.Date.Kind);
         }
 
         [Fact]

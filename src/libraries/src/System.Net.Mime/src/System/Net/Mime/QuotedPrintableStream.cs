@@ -219,10 +219,8 @@ namespace System.Net.Mime
                     }
                 }
                 EndWhile:
-                count = (int)(dest - start);
+                return (int)(dest - start);
             }
-
-            return count;
         }
 
         public int EncodeBytes(byte[] buffer, int offset, int count)

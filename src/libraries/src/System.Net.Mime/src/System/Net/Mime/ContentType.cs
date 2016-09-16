@@ -226,7 +226,7 @@ namespace System.Net.Mime
         }
 
         public override bool Equals(object rparam) =>
-            rparam == null ? false : string.Compare(ToString(), rparam.ToString(), StringComparison.OrdinalIgnoreCase) == 0;
+            rparam == null ? false : string.Equals(ToString(), rparam.ToString(), StringComparison.OrdinalIgnoreCase);
 
         public override int GetHashCode() => ToString().ToLowerInvariant().GetHashCode();
 
