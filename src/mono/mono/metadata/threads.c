@@ -1760,19 +1760,9 @@ gint32 ves_icall_System_Threading_WaitHandle_WaitAny_internal(MonoArray *mono_ha
 	THREAD_WAIT_DEBUG (g_message ("%s: (%"G_GSIZE_FORMAT") returning %d", __func__, mono_native_thread_id_get (), ret));
 
 	mono_error_set_pending_exception (&error);
-	/*
-	 * These need to be here.  See MSDN dos on WaitForMultipleObjects.
-	 */
-	if (ret >= WAIT_OBJECT_0 && ret <= WAIT_OBJECT_0 + numhandles - 1) {
-		return map_native_wait_result_to_managed (ret - WAIT_OBJECT_0);
-	}
-	else if (ret >= WAIT_ABANDONED_0 && ret <= WAIT_ABANDONED_0 + numhandles - 1) {
-		return map_native_wait_result_to_managed (ret - WAIT_ABANDONED_0);
-	}
-	else {
-		/* WAIT_FAILED in waithandle.cs is different from WAIT_FAILED in Win32 API */
-		return map_native_wait_result_to_managed (ret);
-	}
+
+	/* WAIT_FAILED in waithandle.cs is different from WAIT_FAILED in Win32 API */
+	return map_native_wait_result_to_managed (ret);
 }
 
 gint32 ves_icall_System_Threading_WaitHandle_WaitOne_internal(HANDLE handle, gint32 ms)

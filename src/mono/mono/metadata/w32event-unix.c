@@ -24,10 +24,12 @@ struct MonoW32HandleNamedEvent {
 	MonoW32HandleNamespace sharedns;
 };
 
-static gboolean event_handle_own (gpointer handle, MonoW32HandleType type)
+static gboolean event_handle_own (gpointer handle, MonoW32HandleType type, guint32 *statuscode)
 {
 	MonoW32HandleEvent *event_handle;
 	gboolean ok;
+
+	*statuscode = WAIT_OBJECT_0;
 
 	ok = mono_w32handle_lookup (handle, type, (gpointer *)&event_handle);
 	if (!ok) {
@@ -55,9 +57,9 @@ static void event_signal(gpointer handle)
 	ves_icall_System_Threading_Events_SetEvent_internal (handle);
 }
 
-static gboolean event_own (gpointer handle)
+static gboolean event_own (gpointer handle, guint32 *statuscode)
 {
-	return event_handle_own (handle, MONO_W32HANDLE_EVENT);
+	return event_handle_own (handle, MONO_W32HANDLE_EVENT, statuscode);
 }
 
 static void namedevent_signal (gpointer handle)
@@ -66,9 +68,9 @@ static void namedevent_signal (gpointer handle)
 }
 
 /* NB, always called with the shared handle lock held */
-static gboolean namedevent_own (gpointer handle)
+static gboolean namedevent_own (gpointer handle, guint32 *statuscode)
 {
-	return event_handle_own (handle, MONO_W32HANDLE_NAMEDEVENT);
+	return event_handle_own (handle, MONO_W32HANDLE_NAMEDEVENT, statuscode);
 }
 
 static void event_details (gpointer data)

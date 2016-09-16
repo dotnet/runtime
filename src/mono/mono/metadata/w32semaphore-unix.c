@@ -24,9 +24,11 @@ struct MonoW32HandleNamedSemaphore {
 	MonoW32HandleNamespace sharedns;
 };
 
-static gboolean sem_handle_own (gpointer handle, MonoW32HandleType type)
+static gboolean sem_handle_own (gpointer handle, MonoW32HandleType type, guint32 *statuscode)
 {
 	MonoW32HandleSemaphore *sem_handle;
+
+	*statuscode = WAIT_OBJECT_0;
 
 	if (!mono_w32handle_lookup (handle, type, (gpointer *)&sem_handle)) {
 		g_warning ("%s: error looking up %s handle %p",
@@ -50,9 +52,9 @@ static void sema_signal(gpointer handle)
 	ves_icall_System_Threading_Semaphore_ReleaseSemaphore_internal(handle, 1, NULL);
 }
 
-static gboolean sema_own (gpointer handle)
+static gboolean sema_own (gpointer handle, guint32 *statuscode)
 {
-	return sem_handle_own (handle, MONO_W32HANDLE_SEM);
+	return sem_handle_own (handle, MONO_W32HANDLE_SEM, statuscode);
 }
 
 static void namedsema_signal (gpointer handle)
@@ -61,9 +63,9 @@ static void namedsema_signal (gpointer handle)
 }
 
 /* NB, always called with the shared handle lock held */
-static gboolean namedsema_own (gpointer handle)
+static gboolean namedsema_own (gpointer handle, guint32 *statuscode)
 {
-	return sem_handle_own (handle, MONO_W32HANDLE_NAMEDSEM);
+	return sem_handle_own (handle, MONO_W32HANDLE_NAMEDSEM, statuscode);
 }
 
 static void sema_details (gpointer data)
