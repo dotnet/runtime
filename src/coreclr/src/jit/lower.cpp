@@ -2857,7 +2857,7 @@ void Lowering::InsertPInvokeCallEpilog(GenTreeCall* call)
         // First argument is the address of the frame variable.
         GenTree* frameAddr =
             new (comp, GT_LCL_VAR) GenTreeLclVar(GT_LCL_VAR, TYP_BYREF, comp->lvaInlinedPInvokeFrameVar, BAD_IL_OFFSET);
-        frameAddr->gtOper = GT_LCL_VAR_ADDR;
+        frameAddr->SetOperRaw(GT_LCL_VAR_ADDR);
 
         // Insert call to CORINFO_HELP_JIT_PINVOKE_END
         GenTree* helperCall =

@@ -465,6 +465,7 @@ typedef ptrdiff_t ssize_t;
 #define MEASURE_NODE_SIZE 0   // Collect stats about GenTree node allocations.
 #define MEASURE_PTRTAB_SIZE 0 // Collect stats about GC pointer table allocations.
 #define EMITTER_STATS 0       // Collect stats on the emitter.
+#define NODEBASH_STATS 0      // Collect stats on changed gtOper values in GenTree's.
 
 #define VERBOSE_SIZES 0       // Always display GC info sizes. If set, DISPLAY_SIZES must also be set.
 #define VERBOSE_VERIFY 0      // Dump additional information when verifying code. Useful to debug verification bugs.
