@@ -116,6 +116,104 @@ namespace System.Linq.Expressions.Tests
             VerifyEmitConstantsToIL((DateTime?)DateTime.Now, 1);
         }
 
+        [Fact]
+        public static void VerifyIL_Simple()
+        {
+            Expression<Func<int>> f = () => Math.Abs(42);
+
+            f.VerifyIL(
+                @".method int32 ::lambda_method(class [System.Linq.Expressions]System.Runtime.CompilerServices.Closure)
+                  {
+                    .maxstack 1
+
+                    IL_0000: ldc.i4.s   42
+                    IL_0002: call       int32 class [System.Private.CoreLib]System.Math::Abs(int32)
+                    IL_0007: ret        
+                  }");
+        }
+
+        [Fact]
+        public static void VerifyIL_Exceptions()
+        {
+            ParameterExpression x = Expression.Parameter(typeof(int), "x");
+            Expression<Func<int, int>> f =
+                Expression.Lambda<Func<int, int>>(
+                    Expression.TryCatchFinally(
+                        Expression.Call(
+                            typeof(Math).GetMethod(nameof(Math.Abs), new[] { typeof(int) }),
+                            Expression.Divide(
+                                Expression.Constant(42),
+                                x
+                            )
+                        ),
+                        Expression.Empty(),
+                        Expression.Catch(
+                            typeof(DivideByZeroException),
+                            Expression.Constant(-1)
+                        )
+                    ),
+                    x
+                );
+
+            f.VerifyIL(
+                @".method int32 ::lambda_method(class [System.Linq.Expressions]System.Runtime.CompilerServices.Closure,int32)
+                  {
+                    .maxstack 4
+                    .locals init (
+                      [0] int32
+                    )
+
+                    .try
+                    {
+                      .try
+                      {
+                        IL_0000: ldc.i4.s   42
+                        IL_0002: ldarg.1    
+                        IL_0003: div        
+                        IL_0004: call       int32 class [System.Private.CoreLib]System.Math::Abs(int32)
+                        IL_0009: stloc.0    
+                        IL_000a: leave      IL_0017
+                      }
+                      catch (class [System.Private.CoreLib]System.DivideByZeroException)
+                      {
+                        IL_000f: pop        
+                        IL_0010: ldc.i4.m1  
+                        IL_0011: stloc.0    
+                        IL_0012: leave      IL_0017
+                      }
+                      IL_0017: leave      IL_001d
+                    }
+                    finally
+                    {
+                      IL_001c: endfinally 
+                    }
+                    IL_001d: ldloc.0    
+                    IL_001e: ret        
+                  }");
+        }
+
+        public static void VerifyIL(this LambdaExpression expression, string expected)
+        {
+            var actual = expression.GetIL();
+
+            var nExpected = Normalize(expected);
+            var nActual = Normalize(actual);
+
+            Assert.Equal(nExpected, nActual);
+        }
+
+        private static string Normalize(string s)
+        {
+            var lines =
+                s
+                .Replace("\r\n", "\n")
+                .Split(new[] { '\n' })
+                .Select(line => line.Trim())
+                .Where(line => line != "" && !line.StartsWith("//"));
+
+            return string.Join("\n", lines);
+        }
+
         private static void VerifyEmitConstantsToIL<T>(T value)
         {
             VerifyEmitConstantsToIL<T>(value, 0);
