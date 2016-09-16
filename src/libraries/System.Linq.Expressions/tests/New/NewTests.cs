@@ -303,7 +303,7 @@ namespace System.Linq.Expressions.Tests
             Assert.Throws<ArgumentException>("constructor", () => Expression.New(constructor, (IEnumerable<Expression>)new Expression[0]));
 
             Assert.Throws<ArgumentException>("constructor", () => Expression.New(constructor, new Expression[0], new MemberInfo[0]));
-            Assert.Throws<ArgumentException>("constructor", () => Expression.New(constructor, new Expression[0], new MemberInfo[0]));
+            Assert.Throws<ArgumentException>("constructor", () => Expression.New(constructor, new Expression[0], (IEnumerable<MemberInfo>)new MemberInfo[0]));
         }
 
         public static IEnumerable<object[]> ConstructorAndArguments_DifferentLengths_TestData()
