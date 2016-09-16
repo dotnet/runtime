@@ -168,6 +168,7 @@ namespace System.Net.Sockets
         public bool DualMode { get { return default(bool); } set { } }
         public bool EnableBroadcast { get { return default(bool); } set { } }
         public bool ExclusiveAddressUse { get { return default(bool); } set { } }
+        public IntPtr Handle { get { return default(IntPtr); } }
         public bool IsBound { get { return default(bool); } }
         public System.Net.Sockets.LingerOption LingerState { get { return default(System.Net.Sockets.LingerOption); } set { } }
         public System.Net.EndPoint LocalEndPoint { get { return default(System.Net.EndPoint); } }
