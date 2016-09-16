@@ -4099,6 +4099,7 @@
       <Member Name="get_Name" />
       <Member Name="get_ProcessorArchitecture" />
       <Member Name="get_Version" />
+      <Member Name="GetAssemblyName(System.String)" />
       <Member Name="GetPublicKey" />
       <Member Name="GetPublicKeyToken" />
       <Member Name="set_CultureInfo(System.Globalization.CultureInfo)" />
@@ -4115,6 +4116,7 @@
       <Member Name="ToString" />
       <Member Name="GetObjectData(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
       <Member Name="OnDeserialization(System.Object)" />
+      <Member Name="ReferenceMatchesDefinition(System.Reflection.AssemblyName,System.Reflection.AssemblyName)" />
       <Member Name="#ctor(System.String)" />
       <Member MemberType="Property" Name="CodeBase" />
       <Member MemberType="Property" Name="CultureInfo" />
@@ -5547,6 +5549,9 @@
       <Member MemberType="Property" Name="IsPinvokeImpl" />
       <Member MemberType="Property" Name="IsPrivate" />
       <Member MemberType="Property" Name="IsPublic" />
+      <Member MemberType="Property" Name="IsSecurityCritical" />
+      <Member MemberType="Property" Name="IsSecuritySafeCritical" />
+      <Member MemberType="Property" Name="IsSecurityTransparent" />
       <Member MemberType="Property" Name="IsSpecialName" />
       <Member MemberType="Property" Name="IsStatic" />
       <Member MemberType="Property" Name="MemberType" />
@@ -5680,6 +5685,8 @@
       <Member Name="get_IsSpecialName" />
       <Member Name="get_IsStatic" />
       <Member Name="get_IsVirtual" />
+      <Member Name="get_IsSecurityCritical" />
+      <Member Name="get_IsSecurityTransparent" />
       <Member Name="get_MethodHandle" />
       <Member Name="get_MethodImplementationFlags" />
       <Member Name="GetGenericArguments" />
@@ -5713,6 +5720,8 @@
       <Member MemberType="Property" Name="IsSpecialName" />
       <Member MemberType="Property" Name="IsStatic" />
       <Member MemberType="Property" Name="IsVirtual" />
+      <Member MemberType="Property" Name="IsSecurityCritical" />
+      <Member MemberType="Property" Name="IsSecurityTransparent" />
       <Member MemberType="Property" Name="MethodHandle" />
       <Member MemberType="Property" Name="MethodImplementationFlags" />
       <Member Name="GetCurrentMethod" />

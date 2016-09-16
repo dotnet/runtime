@@ -636,6 +636,9 @@ namespace System.Reflection.Emit
 
         public override bool IsSecurityCritical
         {
+#if FEATURE_CORECLR
+            get { return true; }
+#else
             [SecuritySafeCritical]
             get
             {
@@ -658,10 +661,14 @@ namespace System.Reflection.Emit
                     return assembly.IsAllSecurityCritical();
                 }
             }
+#endif
         }
 
         public override bool IsSecuritySafeCritical
         {
+#if FEATURE_CORECLR
+            get { return false; }
+#else
             [SecuritySafeCritical]
             get
             {
@@ -684,10 +691,14 @@ namespace System.Reflection.Emit
                     return assembly.IsAllSecuritySafeCritical();
                 }
             }
+#endif
         }
 
         public override bool IsSecurityTransparent
         {
+#if FEATURE_CORECLR
+            get { return false; }
+#else
             [SecuritySafeCritical]
             get
             {
@@ -710,6 +721,7 @@ namespace System.Reflection.Emit
                     return !assembly.IsAllSecurityCritical();
                 }
             }
+#endif
         }
 
         [System.Security.SecuritySafeCritical]  // auto-generated
