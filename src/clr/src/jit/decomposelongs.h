@@ -55,7 +55,7 @@ private:
     GenTree* DecomposeUMod(LIR::Use& use);
 
     // Helper functions
-    GenTree* FinalizeDecomposition(LIR::Use& use, GenTree* loResult, GenTree* hiResult);
+    GenTree* FinalizeDecomposition(LIR::Use& use, GenTree* loResult, GenTree* hiResult, GenTree* insertResultAfter);
 
     GenTree* StoreNodeToVar(LIR::Use& use);
     static genTreeOps GetHiOper(genTreeOps oper);
