@@ -2814,7 +2814,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
             assert(arg2 != nullptr);
             nonStandardArgs.Add(arg2, REG_LNGARG_HI);
         }
-#else // defined(_TARGET_X86_)
+#else // !defined(_TARGET_X86_)
         // TODO-X86-CQ: Currently RyuJIT/x86 passes args on the stack, so this is not needed.
         // If/when we change that, the following code needs to be changed to correctly support the (TBD) managed calling
         // convention for x86/SSE.
@@ -2880,7 +2880,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
             nonStandardArgs.Add(arg, REG_VIRTUAL_STUB_PARAM);
         }
         else
-#endif // !defined(_TARGET_X86_)
+#endif // defined(_TARGET_X86_)
         if (call->gtCallType == CT_INDIRECT && call->gtCallCookie)
         {
             assert(!call->IsUnmanaged());
@@ -2893,10 +2893,12 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
             numArgs++;
 
             // x86 passes the cookie on the stack.
+            CLANG_FORMAT_COMMENT_ANCHOR;
+
 #if !defined(_TARGET_X86_)
             // put cookie into R11
             nonStandardArgs.Add(arg, REG_PINVOKE_COOKIE_PARAM);
-#endif
+#endif // !defined(_TARGET_X86_)
 
             // put destination into R10/EAX
             arg              = gtClone(call->gtCallAddr, true);
