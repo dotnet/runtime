@@ -90,7 +90,7 @@ namespace System.Linq
             return x => selector2(selector1(x));
         }
 
-        internal sealed class SelectEnumerableIterator<TSource, TResult> : Iterator<TResult>
+        internal sealed class SelectEnumerableIterator<TSource, TResult> : Iterator<TResult>, IIListProvider<TResult>
         {
             private readonly IEnumerable<TSource> _source;
             private readonly Func<TSource, TResult> _selector;
@@ -146,6 +146,12 @@ namespace System.Linq
             {
                 return new SelectEnumerableIterator<TSource, TResult2>(_source, CombineSelectors(_selector, selector));
             }
+
+            public TResult[] ToArray() => EnumerableHelpers.ToArray(this);
+
+            public List<TResult> ToList() => new List<TResult>(this);
+
+            public int GetCount(bool onlyIfCheap) => onlyIfCheap ? -1 : _source.Count();
         }
 
         internal sealed class SelectArrayIterator<TSource, TResult> : Iterator<TResult>, IPartition<TResult>
