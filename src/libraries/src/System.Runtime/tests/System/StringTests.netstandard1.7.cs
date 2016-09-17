@@ -223,6 +223,31 @@ namespace System.Tests
             normalized = s.Normalize(NormalizationForm.FormKD);
             Assert.True(normalized.IsNormalized(NormalizationForm.FormKD), "Expected to have the normalized string with FormKD");
         }
-        
+
+        [Fact]
+        [ActiveIssue(11617, Xunit.PlatformID.AnyUnix)]
+        public static unsafe void GetEnumeratorTest()
+        {
+            string s = "This is some string to enumerate its characters using String.GetEnumerator";
+            CharEnumerator chEnum = s.GetEnumerator();
+
+            int calculatedLength = 0;
+            while (chEnum.MoveNext())
+            {
+                calculatedLength++;
+            }
+
+            Assert.Equal(s.Length, calculatedLength);
+            chEnum.Reset();
+
+            // enumerate twice in same time
+            foreach (char c in s)
+            {
+                Assert.True(chEnum.MoveNext(), "expect to have characters to enumerate in the string");
+                Assert.Equal(c, chEnum.Current); 
+            }
+
+            Assert.False(chEnum.MoveNext(), "expect to not having any characters to enumerate");
+        }
     }
 }

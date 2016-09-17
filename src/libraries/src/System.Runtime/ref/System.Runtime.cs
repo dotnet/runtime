@@ -1793,8 +1793,7 @@ namespace System
         public static string Format(string format, object arg0, object arg1) { return default(string); }
         public static string Format(string format, object arg0, object arg1, object arg2) { return default(string); }
         public static string Format(string format, params object[] args) { return default(string); }
-        // tracking issue #10216.
-        // public System.CharEnumerator GetEnumerator() { return default(System.CharEnumerator); }
+        public System.CharEnumerator GetEnumerator() { return default(System.CharEnumerator); }
         public override int GetHashCode() { return default(int); }
         public int IndexOf(char value) { return default(int); }
         public int IndexOf(char value, int startIndex) { return default(int); }

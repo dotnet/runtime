@@ -716,10 +716,15 @@ namespace System
         protected StringComparer() { }
         public static System.StringComparer CurrentCulture { get { return default(System.StringComparer); } }
         public static System.StringComparer CurrentCultureIgnoreCase { get { return default(System.StringComparer); } }
+        public static System.StringComparer InvariantCulture { get { throw null; } }
+        public static System.StringComparer InvariantCultureIgnoreCase { get { throw null; } }
         public static System.StringComparer Ordinal { get { return default(System.StringComparer); } }
         public static System.StringComparer OrdinalIgnoreCase { get { return default(System.StringComparer); } }
         public abstract int Compare(string x, string y);
+        public static System.StringComparer Create(System.Globalization.CultureInfo culture, bool ignoreCase) { return default(System.StringComparer); }
+        public new bool Equals(object x, object y) { return default(bool); }
         public abstract bool Equals(string x, string y);
+        public int GetHashCode(object obj) { return default(int); }
         public abstract int GetHashCode(string obj);
         int System.Collections.IComparer.Compare(object x, object y) { return default(int); }
         bool System.Collections.IEqualityComparer.Equals(object x, object y) { return default(bool); }
