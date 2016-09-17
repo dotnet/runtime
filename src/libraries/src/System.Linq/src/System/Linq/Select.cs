@@ -169,7 +169,7 @@ namespace System.Linq
 
             public override bool MoveNext()
             {
-                if (_state == 0 | _state > _source.Length)
+                if (_state == 0 | _state == _source.Length + 1)
                 {
                     Dispose();
                     return false;
