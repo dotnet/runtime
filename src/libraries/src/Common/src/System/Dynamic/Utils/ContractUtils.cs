@@ -74,7 +74,7 @@ namespace System.Dynamic.Utils
             Debug.Assert(arrayName != null);
             RequiresNotNull(array, arrayName);
 
-            for (int i = 0; i < array.Count; i++)
+            for (int i = 0, n = array.Count; i < n; i++)
             {
                 if (array[i] == null)
                 {

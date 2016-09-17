@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Dynamic.Utils;
 using System.Globalization;
@@ -2666,16 +2667,17 @@ namespace System.Linq.Expressions.Interpreter
             CompileListInit(initializers);
         }
 
-        private void CompileListInit(IList<ElementInit> initializers)
+        private void CompileListInit(ReadOnlyCollection<ElementInit> initializers)
         {
             for (int i = 0; i < initializers.Count; i++)
             {
+                ElementInit initializer = initializers[i];
                 _instructions.EmitDup();
-                foreach (var arg in initializers[i].Arguments)
+                foreach (var arg in initializer.Arguments)
                 {
                     Compile(arg);
                 }
-                var add = initializers[i].AddMethod;
+                var add = initializer.AddMethod;
                 _instructions.EmitCall(add);
                 if (add.ReturnType != typeof(void))
                     _instructions.EmitPop();
@@ -2690,7 +2692,7 @@ namespace System.Linq.Expressions.Interpreter
             CompileMemberInit(node.Bindings);
         }
 
-        private void CompileMemberInit(Collections.ObjectModel.ReadOnlyCollection<MemberBinding> bindings)
+        private void CompileMemberInit(ReadOnlyCollection<MemberBinding> bindings)
         {
             foreach (var binding in bindings)
             {

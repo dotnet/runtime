@@ -296,7 +296,7 @@ namespace System.Linq.Expressions
         {
             Debug.Assert(items != null);
             // this is called a lot, avoid allocating an enumerator if we can...
-            for (int i = 0; i < items.Count; i++)
+            for (int i = 0, n = items.Count; i < n; i++)
             {
                 RequiresCanRead(items[i], paramName, i);
             }
