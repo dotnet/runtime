@@ -3156,6 +3156,8 @@ GenTree* Lowering::LowerVirtualStubCall(GenTreeCall* call)
         // All we have to do here is add an indirection to generate the actual call target.
 
         GenTree* ind = Ind(call->gtCallAddr);
+        ind->gtFlags |= GTF_IND_VSD_TGT;
+
         BlockRange().InsertAfter(call->gtCallAddr, ind);
         call->gtCallAddr = ind;
     }
@@ -3194,7 +3196,9 @@ GenTree* Lowering::LowerVirtualStubCall(GenTreeCall* call)
 #ifndef _TARGET_X86_
             // on x64 we must materialize the target using specific registers.
             addr->gtRegNum  = REG_VIRTUAL_STUB_PARAM;
+
             indir->gtRegNum = REG_JUMP_THUNK_PARAM;
+            indir->gtFlags |= GTF_IND_VSD_TGT;
 #endif
             result = indir;
         }

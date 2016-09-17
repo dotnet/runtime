@@ -1128,7 +1128,7 @@ void Lowering::TreeNodeInfoInitCall(GenTreeCall* call)
             {
                 assert(ctrlExpr->isIndir());
 
-                ctrlExpr->gtGetOp1()->gtLsraInfo.setSrcCandidates(l, REG_VIRTUAL_STUB_TARGET);
+                ctrlExpr->gtGetOp1()->gtLsraInfo.setSrcCandidates(l, RBM_VIRTUAL_STUB_TARGET);
                 MakeSrcContained(call, ctrlExpr);
             }
             else
@@ -2752,7 +2752,6 @@ void Lowering::SetIndirAddrOpCounts(GenTreePtr indirTree)
     GenTreePtr index = nullptr;
     unsigned   mul, cns;
     bool       rev;
-    bool       modifiedSources = false;
 
 #ifdef FEATURE_SIMD
     // If indirTree is of TYP_SIMD12, don't mark addr as contained
@@ -2783,16 +2782,22 @@ void Lowering::SetIndirAddrOpCounts(GenTreePtr indirTree)
     }
 #endif // FEATURE_SIMD
 
-    // These nodes go into an addr mode:
-    // - GT_CLS_VAR_ADDR turns into a constant.
-    // - GT_LCL_VAR_ADDR is a stack addr mode.
-    if ((addr->OperGet() == GT_CLS_VAR_ADDR) || (addr->OperGet() == GT_LCL_VAR_ADDR))
+    if ((indirTree->gtFlags & GTF_IND_VSD_TGT) != 0)
     {
+        // The address of an indirection that is marked as the target of a VSD call must
+        // be computed into a register. Skip any further processing that might otherwise
+        // make it contained.
+    }
+    else if ((addr->OperGet() == GT_CLS_VAR_ADDR) || (addr->OperGet() == GT_LCL_VAR_ADDR))
+    {
+        // These nodes go into an addr mode:
+        // - GT_CLS_VAR_ADDR turns into a constant.
+        // - GT_LCL_VAR_ADDR is a stack addr mode.
+
         // make this contained, it turns into a constant that goes into an addr mode
         MakeSrcContained(indirTree, addr);
     }
-    else if (addr->IsCnsIntOrI() && addr->AsIntConCommon()->FitsInAddrBase(comp) &&
-             addr->gtLsraInfo.getDstCandidates(m_lsra) != RBM_VIRTUAL_STUB_PARAM)
+    else if (addr->IsCnsIntOrI() && addr->AsIntConCommon()->FitsInAddrBase(comp))
     {
         // Amd64:
         // We can mark any pc-relative 32-bit addr as containable, except for a direct VSD call address.
@@ -2814,17 +2819,10 @@ void Lowering::SetIndirAddrOpCounts(GenTreePtr indirTree)
     }
     else if (addr->OperGet() == GT_LEA)
     {
-        GenTreeAddrMode* lea = addr->AsAddrMode();
-        base                 = lea->Base();
-        index                = lea->Index();
-
-        m_lsra->clearOperandCounts(addr);
-        // The srcCount is decremented because addr is now "contained",
-        // then we account for the base and index below, if they are non-null.
-        info->srcCount--;
+        MakeSrcContained(indirTree, addr);
     }
     else if (comp->codeGen->genCreateAddrMode(addr, -1, true, 0, &rev, &base, &index, &mul, &cns, true /*nogen*/) &&
-             !(modifiedSources = AreSourcesPossiblyModified(indirTree, base, index)))
+             !AreSourcesPossiblyModified(indirTree, base, index))
     {
         // An addressing mode will be constructed that may cause some
         // nodes to not need a register, and cause others' lifetimes to be extended
@@ -2891,7 +2889,16 @@ void Lowering::SetIndirAddrOpCounts(GenTreePtr indirTree)
             }
         }
         assert(foundBase && foundIndex);
-        info->srcCount--; // it gets incremented below.
+
+        if (base != nullptr)
+        {
+            MakeSrcContained(indirTree, base);
+        }
+
+        if (index != nullptr)
+        {
+            MakeSrcContained(indirTree, index);
+        }
     }
     else if (addr->gtOper == GT_ARR_ELEM)
     {
@@ -2903,22 +2910,6 @@ void Lowering::SetIndirAddrOpCounts(GenTreePtr indirTree)
         info->srcCount++;
         assert(addr->gtLsraInfo.srcCount >= 2);
         addr->gtLsraInfo.srcCount -= 1;
-    }
-    else
-    {
-        // it is nothing but a plain indir
-        info->srcCount--; // base gets added in below
-        base = addr;
-    }
-
-    if (base != nullptr)
-    {
-        info->srcCount++;
-    }
-
-    if (index != nullptr && !modifiedSources)
-    {
-        info->srcCount++;
     }
 }
 
