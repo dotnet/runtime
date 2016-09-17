@@ -119,8 +119,10 @@ namespace System.Linq.Expressions.Interpreter
                 var cookieEnumerator = (debugCookies != null ? debugCookies : new KeyValuePair<int, object>[0]).GetEnumerator();
                 var hasCookie = cookieEnumerator.MoveNext();
 
-                for (int i = 0; i < instructions.Count; i++)
+                for (int i = 0, n = instructions.Count; i < n; i++)
                 {
+                    Instruction instruction = instructions[i];
+
                     object cookie = null;
                     while (hasCookie && cookieEnumerator.Current.Key == i)
                     {
@@ -128,10 +130,10 @@ namespace System.Linq.Expressions.Interpreter
                         hasCookie = cookieEnumerator.MoveNext();
                     }
 
-                    int stackDiff = instructions[i].StackBalance;
-                    int contDiff = instructions[i].ContinuationsBalance;
-                    string name = instructions[i].ToDebugString(i, cookie, labelIndexer, objects);
-                    result.Add(new InstructionView(instructions[i], name, i, stackDepth, continuationsDepth));
+                    int stackDiff = instruction.StackBalance;
+                    int contDiff = instruction.ContinuationsBalance;
+                    string name = instruction.ToDebugString(i, cookie, labelIndexer, objects);
+                    result.Add(new InstructionView(instruction, name, i, stackDepth, continuationsDepth));
 
                     index++;
                     stackDepth += stackDiff;
