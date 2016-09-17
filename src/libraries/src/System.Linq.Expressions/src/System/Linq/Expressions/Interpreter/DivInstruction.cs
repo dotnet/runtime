@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Diagnostics;
 using System.Dynamic.Utils;
 using System.Reflection;
@@ -13,16 +12,11 @@ namespace System.Linq.Expressions.Interpreter
     {
         private static Instruction s_int16, s_int32, s_int64, s_UInt16, s_UInt32, s_UInt64, s_single, s_double;
 
-        public override int ConsumedStack { get { return 2; } }
-        public override int ProducedStack { get { return 1; } }
-        public override string InstructionName
-        {
-            get { return "Div"; }
-        }
+        public override int ConsumedStack => 2;
+        public override int ProducedStack => 1;
+        public override string InstructionName => "Div";
 
-        private DivInstruction()
-        {
-        }
+        private DivInstruction() { }
 
         internal sealed class DivInt32 : DivInstruction
         {
@@ -200,16 +194,11 @@ namespace System.Linq.Expressions.Interpreter
     {
         private static Instruction s_int16, s_int32, s_int64, s_UInt16, s_UInt32, s_UInt64, s_single, s_double;
 
-        public override int ConsumedStack { get { return 2; } }
-        public override int ProducedStack { get { return 1; } }
-        public override string InstructionName
-        {
-            get { return "Modulo"; }
-        }
+        public override int ConsumedStack => 2;
+        public override int ProducedStack => 1;
+        public override string InstructionName => "Modulo";
 
-        private ModuloInstruction()
-        {
-        }
+        private ModuloInstruction() { }
 
         internal sealed class ModuloInt32 : ModuloInstruction
         {

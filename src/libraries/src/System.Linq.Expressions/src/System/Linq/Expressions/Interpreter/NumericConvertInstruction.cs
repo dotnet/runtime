@@ -46,22 +46,16 @@ namespace System.Linq.Expressions.Interpreter
 
         protected abstract object Convert(object obj);
 
-        public override string InstructionName
-        {
-            get { return "NumericConvert"; }
-        }
-        public override int ConsumedStack { get { return 1; } }
-        public override int ProducedStack { get { return 1; } }
+        public override string InstructionName => "NumericConvert";
+        public override int ConsumedStack => 1;
+        public override int ProducedStack => 1;
 
-        public override string ToString()
-        {
-            return InstructionName + "(" + _from + "->" + _to + ")";
-        }
+        public override string ToString() => InstructionName + "(" + _from + "->" + _to + ")";
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1034:NestedTypesShouldNotBeVisible")]
         internal sealed class Unchecked : NumericConvertInstruction
         {
-            public override string InstructionName { get { return "UncheckedConvert"; } }
+            public override string InstructionName => "UncheckedConvert";
 
             public Unchecked(TypeCode from, TypeCode to, bool isLiftedToNull)
                 : base(from, to, isLiftedToNull)
@@ -184,7 +178,7 @@ namespace System.Linq.Expressions.Interpreter
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1034:NestedTypesShouldNotBeVisible")]
         internal sealed class Checked : NumericConvertInstruction
         {
-            public override string InstructionName { get { return "CheckedConvert"; } }
+            public override string InstructionName => "CheckedConvert";
 
             public Checked(TypeCode from, TypeCode to, bool isLiftedToNull)
                 : base(from, to, isLiftedToNull)
