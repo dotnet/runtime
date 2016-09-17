@@ -270,6 +270,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
                 restoreArgs.Add("-f");
                 restoreArgs.Add(fallbackSource);
             }
+            restoreArgs.Add("--disable-parallel");
 
             _sdkDotnet.Restore(restoreArgs.ToArray())
                 .WorkingDirectory(_testProject.ProjectDirectory)
