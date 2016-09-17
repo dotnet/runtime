@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Dynamic.Utils;
@@ -20,12 +19,10 @@ namespace System.Linq.Expressions.Interpreter
             _creator = delegateCreator;
         }
 
-        public override int ConsumedStack { get { return _creator.Interpreter.ClosureSize; } }
-        public override int ProducedStack { get { return 1; } }
-        public override string InstructionName
-        {
-            get { return "CreateDelegate"; }
-        }
+        public override int ConsumedStack => _creator.Interpreter.ClosureSize;
+        public override int ProducedStack => 1;
+        public override string InstructionName => "CreateDelegate";
+
         public override int Run(InterpretedFrame frame)
         {
             IStrongBox[] closure;
@@ -59,12 +56,11 @@ namespace System.Linq.Expressions.Interpreter
             _constructor = constructor;
             _argumentCount = argumentCount;
         }
-        public override int ConsumedStack { get { return _argumentCount; } }
-        public override int ProducedStack { get { return 1; } }
-        public override string InstructionName
-        {
-            get { return "New"; }
-        }
+
+        public override int ConsumedStack => _argumentCount;
+        public override int ProducedStack => 1;
+        public override string InstructionName => "New";
+
         public override int Run(InterpretedFrame frame)
         {
             int first = frame.StackIndex - _argumentCount;
@@ -107,10 +103,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        public override string ToString()
-        {
-            return "New " + _constructor.DeclaringType.Name + "(" + _constructor + ")";
-        }
+        public override string ToString() => "New " + _constructor.DeclaringType.Name + "(" + _constructor + ")";
     }
 
     internal partial class ByRefNewInstruction : NewInstruction
@@ -123,10 +116,8 @@ namespace System.Linq.Expressions.Interpreter
             _byrefArgs = byrefArgs;
         }
 
-        public override string InstructionName
-        {
-            get { return "ByRefNew"; }
-        }
+        public override string InstructionName => "ByRefNew";
+        
         public sealed override int Run(InterpretedFrame frame)
         {
             int first = frame.StackIndex - _argumentCount;
@@ -172,12 +163,10 @@ namespace System.Linq.Expressions.Interpreter
             _type = type;
         }
 
-        public override int ConsumedStack { get { return 0; } }
-        public override int ProducedStack { get { return 1; } }
-        public override string InstructionName
-        {
-            get { return "DefaultValue"; }
-        }
+        public override int ConsumedStack => 0;
+        public override int ProducedStack => 1;
+        public override string InstructionName => "DefaultValue";
+        
         public override int Run(InterpretedFrame frame)
         {
             object value = _type.GetTypeInfo().IsValueType ? Activator.CreateInstance(_type) : null;
@@ -185,10 +174,7 @@ namespace System.Linq.Expressions.Interpreter
             return +1;
         }
 
-        public override string ToString()
-        {
-            return "New " + _type;
-        }
+        public override string ToString() => "New " + _type;
     }
 
     internal sealed class TypeIsInstruction : Instruction
@@ -200,22 +186,17 @@ namespace System.Linq.Expressions.Interpreter
             _type = type;
         }
 
-        public override int ConsumedStack { get { return 1; } }
-        public override int ProducedStack { get { return 1; } }
-        public override string InstructionName
-        {
-            get { return "TypeIs"; }
-        }
+        public override int ConsumedStack => 1;
+        public override int ProducedStack => 1;
+        public override string InstructionName => "TypeIs";
+        
         public override int Run(InterpretedFrame frame)
         {
             frame.Push(ScriptingRuntimeHelpers.BooleanToObject(_type.IsInstanceOfType(frame.Pop())));
             return +1;
         }
 
-        public override string ToString()
-        {
-            return "TypeIs " + _type.ToString();
-        }
+        public override string ToString() => "TypeIs " + _type.ToString();
     }
 
     internal sealed class TypeAsInstruction : Instruction
@@ -227,12 +208,10 @@ namespace System.Linq.Expressions.Interpreter
             _type = type;
         }
 
-        public override int ConsumedStack { get { return 1; } }
-        public override int ProducedStack { get { return 1; } }
-        public override string InstructionName
-        {
-            get { return "TypeAs"; }
-        }
+        public override int ConsumedStack => 1;
+        public override int ProducedStack => 1;
+        public override string InstructionName => "TypeAs";
+        
         public override int Run(InterpretedFrame frame)
         {
             object value = frame.Pop();
@@ -247,25 +226,18 @@ namespace System.Linq.Expressions.Interpreter
             return +1;
         }
 
-        public override string ToString()
-        {
-            return "TypeAs " + _type.ToString();
-        }
+        public override string ToString() => "TypeAs " + _type.ToString();
     }
 
     internal sealed class TypeEqualsInstruction : Instruction
     {
         public static readonly TypeEqualsInstruction Instance = new TypeEqualsInstruction();
 
-        public override int ConsumedStack { get { return 2; } }
-        public override int ProducedStack { get { return 1; } }
-        public override string InstructionName
-        {
-            get { return "TypeEquals"; }
-        }
-        private TypeEqualsInstruction()
-        {
-        }
+        public override int ConsumedStack => 2;
+        public override int ProducedStack => 1;
+        public override string InstructionName => "TypeEquals";
+
+        private TypeEqualsInstruction() { }
 
         public override int Run(InterpretedFrame frame)
         {
@@ -280,15 +252,11 @@ namespace System.Linq.Expressions.Interpreter
     {
         public static readonly NullableTypeEqualsInstruction Instance = new NullableTypeEqualsInstruction();
 
-        public override int ConsumedStack { get { return 2; } }
-        public override int ProducedStack { get { return 1; } }
-        public override string InstructionName
-        {
-            get { return "NullableTypeEquals"; }
-        }
-        private NullableTypeEqualsInstruction()
-        {
-        }
+        public override int ConsumedStack => 2;
+        public override int ProducedStack => 1;
+        public override string InstructionName => "NullableTypeEquals";
+
+        private NullableTypeEqualsInstruction() { }
 
         public override int Run(InterpretedFrame frame)
         {
@@ -303,15 +271,11 @@ namespace System.Linq.Expressions.Interpreter
     {
         public static readonly ArrayLengthInstruction Instance = new ArrayLengthInstruction();
 
-        public override int ConsumedStack { get { return 1; } }
-        public override int ProducedStack { get { return 1; } }
-        public override string InstructionName
-        {
-            get { return "ArrayLength"; }
-        }
-        private ArrayLengthInstruction()
-        {
-        }
+        public override int ConsumedStack => 1;
+        public override int ProducedStack => 1;
+        public override string InstructionName => "ArrayLength";
+        
+        private ArrayLengthInstruction() { }
 
         public override int Run(InterpretedFrame frame)
         {
@@ -325,15 +289,11 @@ namespace System.Linq.Expressions.Interpreter
     {
         private static Instruction s_int16, s_int32, s_int64, s_single, s_double;
 
-        public override int ConsumedStack { get { return 1; } }
-        public override int ProducedStack { get { return 1; } }
-        public override string InstructionName
-        {
-            get { return "Negate"; }
-        }
-        private NegateInstruction()
-        {
-        }
+        public override int ConsumedStack => 1;
+        public override int ProducedStack => 1;
+        public override string InstructionName => "Negate";
+        
+        private NegateInstruction() { }
 
         internal sealed class NegateInt32 : NegateInstruction
         {
@@ -441,15 +401,11 @@ namespace System.Linq.Expressions.Interpreter
     {
         private static Instruction s_int16, s_int32, s_int64, s_single, s_double;
 
-        public override int ConsumedStack { get { return 1; } }
-        public override int ProducedStack { get { return 1; } }
-        public override string InstructionName
-        {
-            get { return "NegateChecked"; }
-        }
-        private NegateCheckedInstruction()
-        {
-        }
+        public override int ConsumedStack => 1;
+        public override int ProducedStack => 1;
+        public override string InstructionName => "NegateChecked";
+        
+        private NegateCheckedInstruction() { }
 
         internal sealed class NegateCheckedInt32 : NegateCheckedInstruction
         {
@@ -555,15 +511,11 @@ namespace System.Linq.Expressions.Interpreter
     {
         private static Instruction s_byte, s_sbyte, s_int16, s_int32, s_int64, s_UInt16, s_UInt32, s_UInt64;
 
-        public override int ConsumedStack { get { return 1; } }
-        public override int ProducedStack { get { return 1; } }
-        public override string InstructionName
-        {
-            get { return "OnesComplement"; }
-        }
-        private OnesComplementInstruction()
-        {
-        }
+        public override int ConsumedStack => 1;
+        public override int ProducedStack => 1;
+        public override string InstructionName => "OnesComplement";
+
+        private OnesComplementInstruction() { }
 
         internal sealed class OnesComplementInt32 : OnesComplementInstruction
         {
@@ -725,15 +677,11 @@ namespace System.Linq.Expressions.Interpreter
     {
         private static Instruction s_int16, s_int32, s_int64, s_UInt16, s_UInt32, s_UInt64, s_single, s_double;
 
-        public override int ConsumedStack { get { return 1; } }
-        public override int ProducedStack { get { return 1; } }
-        public override string InstructionName
-        {
-            get { return "Increment"; }
-        }
-        private IncrementInstruction()
-        {
-        }
+        public override int ConsumedStack => 1;
+        public override int ProducedStack => 1;
+        public override string InstructionName => "Increment";
+        
+        private IncrementInstruction() { }
 
         internal sealed class IncrementInt32 : IncrementInstruction
         {
@@ -895,15 +843,11 @@ namespace System.Linq.Expressions.Interpreter
     {
         private static Instruction s_int16, s_int32, s_int64, s_UInt16, s_UInt32, s_UInt64, s_single, s_double;
 
-        public override int ConsumedStack { get { return 1; } }
-        public override int ProducedStack { get { return 1; } }
-        public override string InstructionName
-        {
-            get { return "Decrement"; }
-        }
-        private DecrementInstruction()
-        {
-        }
+        public override int ConsumedStack => 1;
+        public override int ProducedStack => 1;
+        public override string InstructionName => "Decrement";
+
+        private DecrementInstruction() { }
 
         internal sealed class DecrementInt32 : DecrementInstruction
         {
@@ -1066,15 +1010,11 @@ namespace System.Linq.Expressions.Interpreter
     {
         private static Instruction s_SByte, s_int16, s_int32, s_int64, s_byte, s_UInt16, s_UInt32, s_UInt64;
 
-        public override int ConsumedStack { get { return 2; } }
-        public override int ProducedStack { get { return 1; } }
-        public override string InstructionName
-        {
-            get { return "LeftShift"; }
-        }
-        private LeftShiftInstruction()
-        {
-        }
+        public override int ConsumedStack => 2;
+        public override int ProducedStack => 1;
+        public override string InstructionName => "LeftShift";
+        
+        private LeftShiftInstruction() { }
 
         internal sealed class LeftShiftSByte : LeftShiftInstruction
         {
@@ -1246,15 +1186,11 @@ namespace System.Linq.Expressions.Interpreter
     {
         private static Instruction s_SByte, s_int16, s_int32, s_int64, s_byte, s_UInt16, s_UInt32, s_UInt64;
 
-        public override int ConsumedStack { get { return 2; } }
-        public override int ProducedStack { get { return 1; } }
-        public override string InstructionName
-        {
-            get { return "RightShift"; }
-        }
-        private RightShiftInstruction()
-        {
-        }
+        public override int ConsumedStack => 2;
+        public override int ProducedStack => 1;
+        public override string InstructionName => "RightShift";
+        
+        private RightShiftInstruction() { }
 
         internal sealed class RightShiftSByte : RightShiftInstruction
         {
@@ -1426,15 +1362,11 @@ namespace System.Linq.Expressions.Interpreter
     {
         private static Instruction s_SByte, s_int16, s_int32, s_int64, s_byte, s_UInt16, s_UInt32, s_UInt64, s_bool;
 
-        public override int ConsumedStack { get { return 2; } }
-        public override int ProducedStack { get { return 1; } }
-        public override string InstructionName
-        {
-            get { return "ExclusiveOr"; }
-        }
-        private ExclusiveOrInstruction()
-        {
-        }
+        public override int ConsumedStack => 2;
+        public override int ProducedStack => 1;
+        public override string InstructionName => "ExclusiveOr";
+        
+        private ExclusiveOrInstruction() { }
 
         internal sealed class ExclusiveOrSByte : ExclusiveOrInstruction
         {
@@ -1612,15 +1544,11 @@ namespace System.Linq.Expressions.Interpreter
     {
         private static Instruction s_SByte, s_int16, s_int32, s_int64, s_byte, s_UInt16, s_UInt32, s_UInt64, s_bool;
 
-        public override int ConsumedStack { get { return 2; } }
-        public override int ProducedStack { get { return 1; } }
-        public override string InstructionName
-        {
-            get { return "Or"; }
-        }
-        private OrInstruction()
-        {
-        }
+        public override int ConsumedStack => 2;
+        public override int ProducedStack => 1;
+        public override string InstructionName => "Or";
+        
+        private OrInstruction() { }
 
         internal sealed class OrSByte : OrInstruction
         {
@@ -1805,15 +1733,11 @@ namespace System.Linq.Expressions.Interpreter
     {
         private static Instruction s_SByte, s_int16, s_int32, s_int64, s_byte, s_UInt16, s_UInt32, s_UInt64, s_bool;
 
-        public override int ConsumedStack { get { return 2; } }
-        public override int ProducedStack { get { return 1; } }
-        public override string InstructionName
-        {
-            get { return "And"; }
-        }
-        private AndInstruction()
-        {
-        }
+        public override int ConsumedStack => 2;
+        public override int ProducedStack => 1;
+        public override string InstructionName => "And";
+        
+        private AndInstruction() { }
 
         internal sealed class AndSByte : AndInstruction
         {
@@ -1998,15 +1922,11 @@ namespace System.Linq.Expressions.Interpreter
     {
         private static NullableMethodCallInstruction s_hasValue, s_value, s_equals, s_getHashCode, s_getValueOrDefault1, s_toString;
 
-        public override int ConsumedStack { get { return 1; } }
-        public override int ProducedStack { get { return 1; } }
-        public override string InstructionName
-        {
-            get { return "NullableMethod"; }
-        }
-        private NullableMethodCallInstruction()
-        {
-        }
+        public override int ConsumedStack => 1;
+        public override int ProducedStack => 1;
+        public override string InstructionName => "NullableMethod";
+
+        private NullableMethodCallInstruction() { }
 
         private class HasValue : NullableMethodCallInstruction
         {
@@ -2053,7 +1973,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private class GetValueOrDefault1 : NullableMethodCallInstruction
         {
-            public override int ConsumedStack { get { return 2; } }
+            public override int ConsumedStack => 2;
 
             public override int Run(InterpretedFrame frame)
             {
@@ -2073,7 +1993,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private class EqualsClass : NullableMethodCallInstruction
         {
-            public override int ConsumedStack { get { return 2; } }
+            public override int ConsumedStack => 2;
 
             public override int Run(InterpretedFrame frame)
             {
@@ -2163,12 +2083,9 @@ namespace System.Linq.Expressions.Interpreter
     {
         private static CastInstruction s_boolean, s_byte, s_char, s_dateTime, s_decimal, s_double, s_int16, s_int32, s_int64, s_SByte, s_single, s_string, s_UInt16, s_UInt32, s_UInt64;
 
-        public override int ConsumedStack { get { return 1; } }
-        public override int ProducedStack { get { return 1; } }
-        public override string InstructionName
-        {
-            get { return "Cast"; }
-        }
+        public override int ConsumedStack => 1;
+        public override int ProducedStack => 1;
+        public override string InstructionName => "Cast";
 
         private class CastInstructionT<T> : CastInstruction
         {
@@ -2411,12 +2328,9 @@ namespace System.Linq.Expressions.Interpreter
             _hoistedVariables = hoistedVariables;
         }
 
-        public override int ConsumedStack { get { return 0; } }
-        public override int ProducedStack { get { return 1; } }
-        public override string InstructionName
-        {
-            get { return "Quote"; }
-        }
+        public override int ConsumedStack => 0;
+        public override int ProducedStack => 1;
+        public override string InstructionName => "Quote";
 
         public override int Run(InterpretedFrame frame)
         {
@@ -2590,10 +2504,7 @@ namespace System.Linq.Expressions.Interpreter
                     _boxes = boxes;
                 }
 
-                int IRuntimeVariables.Count
-                {
-                    get { return _boxes.Length; }
-                }
+                int IRuntimeVariables.Count => _boxes.Length;
 
                 object IRuntimeVariables.this[int index]
                 {
@@ -2628,10 +2539,7 @@ namespace System.Linq.Expressions.Interpreter
                     _indexes = indexes;
                 }
 
-                public int Count
-                {
-                    get { return _indexes.Length; }
-                }
+                public int Count => _indexes.Length;
 
                 public object this[int index]
                 {
