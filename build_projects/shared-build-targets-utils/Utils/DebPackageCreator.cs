@@ -153,8 +153,8 @@ namespace Microsoft.DotNet.Cli.Build
             File.WriteAllText(projectJsonFile, GetDotnetDebProjectJsonContents());
 
             Command restore = _dotnetDebToolPackageSource == null 
-                ? _dotnet.Restore()
-                : _dotnet.Restore("-f", $"{_dotnetDebToolPackageSource}");
+                ? _dotnet.Restore("--disable-parallel")
+                : _dotnet.Restore("-f", $"{_dotnetDebToolPackageSource}", "--disable-parallel");
 
             restore
                 .WorkingDirectory(Path.GetDirectoryName(projectJsonFile))
