@@ -150,7 +150,6 @@ namespace System.Linq
         {
             private readonly TSource[] _source;
             private readonly Func<TSource, TResult> _selector;
-            private int _index;
 
             public SelectArrayIterator(TSource[] source, Func<TSource, TResult> selector)
             {
@@ -167,14 +166,15 @@ namespace System.Linq
 
             public override bool MoveNext()
             {
-                if (_state == 1 && _index < _source.Length)
+                if (_state == 0 | _state > _source.Length)
                 {
-                    _current = _selector(_source[_index++]);
-                    return true;
+                    Dispose();
+                    return false;
                 }
 
-                Dispose();
-                return false;
+                int index = _state++ - 1;
+                _current = _selector(_source[index]);
+                return true;
             }
 
             public override IEnumerable<TResult2> Select<TResult2>(Func<TResult, TResult2> selector)
