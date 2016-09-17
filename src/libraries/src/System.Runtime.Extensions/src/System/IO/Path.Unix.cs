@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace System.IO
@@ -204,6 +205,29 @@ namespace System.IO
         }
 
         private static unsafe void GetCryptoRandomBytes(byte* bytes, int byteCount)
+        {
+            if (Environment.IsMac)
+            {
+                GetCryptoRandomBytesApple(bytes, byteCount);
+            }
+            else
+            {
+                GetCryptoRandomBytesOpenSsl(bytes, byteCount);
+            }
+        }
+
+        private static unsafe void GetCryptoRandomBytesApple(byte* bytes, int byteCount)
+        {
+            Debug.Assert(bytes != null);
+            Debug.Assert(byteCount >= 0);
+
+            if (Interop.CommonCrypto.CCRandomGenerateBytes(bytes, byteCount) != 0)
+            {
+                throw new InvalidOperationException(SR.InvalidOperation_Cryptography);
+            }
+        }
+
+        private static unsafe void GetCryptoRandomBytesOpenSsl(byte* bytes, int byteCount)
         {
             Debug.Assert(bytes != null);
             Debug.Assert(byteCount >= 0);

@@ -274,6 +274,12 @@
     <Compile Include="System\Environment.Unix.cs" />
     <Compile Include="System\Diagnostics\Stopwatch.Unix.cs" />
     <Compile Include="System\IO\Path.Unix.cs" />
+    <Compile Include="$(CommonPath)\Interop\OSX\Interop.Libraries.cs">
+      <Link>Common\Interop\OSX\Interop.Libraries.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\OSX\Interop.CommonCrypto.cs">
+      <Link>Common\Interop\OSX\Interop.CommonCrypto.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs">
       <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>
     </Compile>
