@@ -114,7 +114,7 @@ namespace System.Linq.Expressions.Compiler
                 }
                 else
                 {
-                    block[_bindings.Count + 1] = Expression.Empty();
+                    block[_bindings.Count + 1] = Utils.Empty();
                 }
                 return MakeBlock(block);
             }
@@ -199,7 +199,7 @@ namespace System.Linq.Expressions.Compiler
                 }
                 else
                 {
-                    block[_inits.Count + 1] = Expression.Empty();
+                    block[_inits.Count + 1] = Utils.Empty();
                 }
                 return MakeBlock(block);
             }
@@ -239,7 +239,7 @@ namespace System.Linq.Expressions.Compiler
                 return MakeBlock(
                     Expression.Assign(memberTemp, _rhs),
                     Expression.Assign(member, memberTemp),
-                    Expression.Empty()
+                    Utils.Empty()
                 );
             }
         }

@@ -739,7 +739,7 @@ namespace System.Linq.Expressions.Compiler
                     Expression.Assign(switchIndex, Expression.Constant(nullCase)),
                     Expression.IfThenElse(
                         Expression.Call(dictInit, "TryGetValue", null, switchValue, switchIndex),
-                        Expression.Empty(),
+                        Utils.Empty(),
                         Expression.Assign(switchIndex, Expression.Constant(-1))
                     )
                 ),
