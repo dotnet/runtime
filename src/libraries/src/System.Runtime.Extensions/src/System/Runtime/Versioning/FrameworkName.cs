@@ -126,24 +126,7 @@ namespace System.Runtime.Versioning
             }
 
             _identifier = identifier;
-
-            // Ensure we call the correct Version constructor to clone the Version
-            if (version.Revision < 0)
-            {
-                if (version.Build < 0)
-                {
-                    _version = new Version(version.Major, version.Minor);
-                }
-                else
-                {
-                    _version = new Version(version.Major, version.Minor, version.Build);
-                }
-            }
-            else
-            {
-                _version = new Version(version.Major, version.Minor, version.Build, version.Revision);
-            }
-
+            _version = version;
             _profile = (profile == null) ? string.Empty : profile.Trim();
         }
 
