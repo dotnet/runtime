@@ -1082,17 +1082,18 @@ namespace System.Linq.Expressions.Compiler
 
         #region Arrays
 
+#if FEATURE_COMPILE_TO_METHODBUILDER
         /// <summary>
-        /// Emits an array of constant values provided in the given list.
+        /// Emits an array of constant values provided in the given array.
         /// The array is strongly typed.
         /// </summary>
-        internal static void EmitArray<T>(this ILGenerator il, IList<T> items)
+        internal static void EmitArray<T>(this ILGenerator il, T[] items)
         {
             Debug.Assert(items != null);
 
-            il.EmitInt(items.Count);
+            il.EmitInt(items.Length);
             il.Emit(OpCodes.Newarr, typeof(T));
-            for (int i = 0; i < items.Count; i++)
+            for (int i = 0; i < items.Length; i++)
             {
                 il.Emit(OpCodes.Dup);
                 il.EmitInt(i);
@@ -1100,6 +1101,7 @@ namespace System.Linq.Expressions.Compiler
                 il.EmitStoreElement(typeof(T));
             }
         }
+#endif
 
         /// <summary>
         /// Emits an array of values of count size.
