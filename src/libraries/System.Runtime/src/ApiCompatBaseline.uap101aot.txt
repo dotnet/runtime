@@ -378,4 +378,5 @@ MembersMustExist : Member 'System.Text.Encoding.IsMailNewsSave.get()' does not e
 MembersMustExist : Member 'System.Text.Encoding.WindowsCodePage.get()' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Text.EncodingInfo' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Text.NormalizationForm' does not exist in the implementation but it does exist in the contract.
-Total Issues: 379
+MembersMustExist : Member 'System.String.GetEnumerator()' does not exist in the implementation but it does exist in the contract.
+Total Issues: 380

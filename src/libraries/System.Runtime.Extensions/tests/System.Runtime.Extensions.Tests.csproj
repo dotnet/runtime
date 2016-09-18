@@ -25,19 +25,23 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' " />
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'netstandard1.7_Debug|AnyCPU' " />
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'netstandard1.7_Release|AnyCPU' " />
+  <ItemGroup Condition="'$(TargetGroup)'=='netstandard1.7'">
+    <Compile Include="System\Convert.netstandard1.7.cs" />
+    <Compile Include="System\EnvironmentTests.cs" />
+    <Compile Include="System\IO\PathTests.netstandard1.7.cs" />
+    <Compile Include="System\Math.netstandard1.7.cs" />
+    <Compile Include="System\StringComparer.netstandard1.7.cs" />
+  </ItemGroup>
   <ItemGroup>
     <Compile Include="System\Diagnostics\Stopwatch.cs" />
-    <Compile Include="System\EnvironmentTests.cs" Condition="'$(TargetGroup)'=='netstandard1.7'" />
     <Compile Include="System\Environment.MachineName.cs" />
     <Compile Include="System\IO\Path.Combine.cs" />
-    <Compile Include="System\IO\PathTests.netstandard1.7.cs" Condition="'$(TargetGroup)'=='netstandard1.7'" />
     <Compile Include="System\Runtime\Versioning\FrameworkName.cs" />
     <Compile Include="System\IO\PathTests.cs" />
     <Compile Include="System\Net\WebUtility.cs" />
     <Compile Include="System\BitConverter.cs" />
     <Compile Include="System\Convert.BoxedObjectCheck.cs" />
     <Compile Include="System\Convert.FromBase64.cs" />
-    <Compile Include="System\Convert.netstandard1.7.cs" Condition="'$(TargetGroup)'=='netstandard1.7'" />
     <Compile Include="System\Convert.TestBase.cs" />
     <Compile Include="System\Convert.ToBase64CharArray.cs" />
     <Compile Include="System\Convert.ToBase64String.cs" />
@@ -90,7 +94,6 @@
     <Compile Include="$(CommonTestPath)\System\PlatformDetection.cs">
       <Link>Common\System\PlatformDetection.cs</Link>
     </Compile>
-    <Compile Condition="'$(TargetGroup)'=='netstandard1.7'" Include="System\Math.netstandard1.7.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />
