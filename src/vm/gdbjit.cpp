@@ -531,6 +531,8 @@ void NotifyGdb::MethodCompiled(MethodDesc* MethodDescPtr)
 
     memcpy(elfFile.MemPtr + offset, sectHeaders.MemPtr, sectHeaders.MemSize);
 
+    elfFile.MemPtr.SuppressRelease();
+
 #ifdef GDBJIT_DUMPELF
     DumpElf(methodName, elfFile);
 #endif    
