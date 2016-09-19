@@ -12,7 +12,7 @@
     },
     "netstandard1.7": {
       "dependencies": {
-        "System.Runtime": "4.3.0-beta-devapi-24512-01",
+        "System.Runtime": "4.3.0-beta-24516-03",
         "System.Resources.ResourceManager": "4.0.0",
         "System.Threading.Tasks": "4.0.10"
       },
@@ -41,7 +41,7 @@
     },
     "uap10.1": {
       "dependencies": {
-        "System.Runtime": "4.3.0-beta-devapi-24512-01",
+        "System.Runtime": "4.3.0-beta-24516-03",
         "System.Resources.ResourceManager": "4.0.0"
       }
     }

@@ -214,7 +214,12 @@ namespace System.IO
             return true;
         }
 
-        // -------------- PERF: Internal functions for fast direct access of MemoryStream buffer (cf. BinaryReader for usage) ---------------
+        public virtual byte[] GetBuffer()
+        {
+            if (!_exposable)
+                throw new UnauthorizedAccessException(SR.UnauthorizedAccess_MemStreamBuffer);
+            return _buffer;
+        }
 
         // PERF: Internal sibling of GetBuffer, always returns a buffer (cf. GetBuffer())
         internal byte[] InternalGetBuffer()

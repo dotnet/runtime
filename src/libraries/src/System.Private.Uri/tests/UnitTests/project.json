@@ -1,9 +1,9 @@
 {
   "dependencies": {
-    "Microsoft.NETCore.Platforms": "4.3.0-beta-devapi-24512-01",
-    "System.ObjectModel": "4.3.0-beta-devapi-24512-01",
-    "System.Resources.ResourceManager": "4.3.0-beta-devapi-24512-01",
-    "System.Text.Encoding": "4.3.0-beta-devapi-24512-01",
+    "Microsoft.NETCore.Platforms": "1.0.2-beta-24516-03",
+    "System.ObjectModel": "4.3.0-beta-24516-03",
+    "System.Resources.ResourceManager": "4.3.0-beta-24516-03",
+    "System.Text.Encoding": "4.3.0-beta-24516-03",
     "test-runtime": {
       "target": "project",
       "exclude": "compile"

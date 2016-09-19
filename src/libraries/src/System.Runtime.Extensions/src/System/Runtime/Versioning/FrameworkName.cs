@@ -2,33 +2,26 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Diagnostics;
-using System.Globalization;
-using System.Text;
 
 namespace System.Runtime.Versioning
 {
     public sealed class FrameworkName : IEquatable<FrameworkName>
     {
-        // ---- SECTION:  members supporting exposed properties -------------*
-        #region members supporting exposed properties
-        private readonly String _identifier = null;
-        private readonly Version _version = null;
-        private readonly String _profile = null;
-        private String _fullName = null;
+        private readonly string _identifier;
+        private readonly Version _version;
+        private readonly string _profile;
+        private string _fullName;
 
-        private const Char c_componentSeparator = ',';
-        private const Char c_keyValueSeparator = '=';
-        private const Char c_versionValuePrefix = 'v';
-        private const String c_versionKey = "Version";
-        private const String c_profileKey = "Profile";
-        #endregion members supporting exposed properties
+        private const char ComponentSeparator = ',';
+        private const char KeyValueSeparator = '=';
+        private const char VersionValuePrefix = 'v';
+        private const string VersionKey = "Version";
+        private const string ProfileKey = "Profile";
 
+        private static readonly char[] s_componentSplitSeparator = { ComponentSeparator };
 
-        // ---- SECTION: public properties --------------*
-        #region public properties
-        public String Identifier
+        public string Identifier
         {
             get
             {
@@ -46,7 +39,7 @@ namespace System.Runtime.Versioning
             }
         }
 
-        public String Profile
+        public string Profile
         {
             get
             {
@@ -55,7 +48,7 @@ namespace System.Runtime.Versioning
             }
         }
 
-        public String FullName
+        public string FullName
         {
             get
             {
@@ -65,16 +58,16 @@ namespace System.Runtime.Versioning
                     {
                         _fullName =
                             Identifier +
-                            c_componentSeparator + c_versionKey + c_keyValueSeparator + c_versionValuePrefix +
+                            ComponentSeparator + VersionKey + KeyValueSeparator + VersionValuePrefix +
                             Version.ToString();
                     }
                     else
                     {
                         _fullName =
                             Identifier +
-                            c_componentSeparator + c_versionKey + c_keyValueSeparator + c_versionValuePrefix +
+                            ComponentSeparator + VersionKey + KeyValueSeparator + VersionValuePrefix +
                             Version.ToString() +
-                            c_componentSeparator + c_profileKey + c_keyValueSeparator +
+                            ComponentSeparator + ProfileKey + KeyValueSeparator +
                             Profile;
                     }
                 }
@@ -82,20 +75,15 @@ namespace System.Runtime.Versioning
                 return _fullName;
             }
         }
-        #endregion public properties
 
-
-        // ---- SECTION: public instance methods --------------*
-        #region public instance methods
-
-        public override Boolean Equals(Object obj)
+        public override bool Equals(object obj)
         {
             return Equals(obj as FrameworkName);
         }
 
-        public Boolean Equals(FrameworkName other)
+        public bool Equals(FrameworkName other)
         {
-            if (Object.ReferenceEquals(other, null))
+            if (object.ReferenceEquals(other, null))
             {
                 return false;
             }
@@ -105,26 +93,22 @@ namespace System.Runtime.Versioning
                 Profile == other.Profile;
         }
 
-        public override Int32 GetHashCode()
+        public override int GetHashCode()
         {
             return Identifier.GetHashCode() ^ Version.GetHashCode() ^ Profile.GetHashCode();
         }
 
-        public override String ToString()
+        public override string ToString()
         {
             return FullName;
         }
-        #endregion public instance methods
 
-
-        // -------- SECTION: constructors -----------------*
-        #region constructors
-
-        public FrameworkName(String identifier, Version version)
+        public FrameworkName(string identifier, Version version)
             : this(identifier, version, null)
-        { }
+        {
+        }
 
-        public FrameworkName(String identifier, Version version, String profile)
+        public FrameworkName(string identifier, Version version, string profile)
         {
             if (identifier == null)
             {
@@ -142,32 +126,15 @@ namespace System.Runtime.Versioning
             }
 
             _identifier = identifier;
-
-            // Ensure we call the correct Version constructor to clone the Version
-            if (version.Revision < 0)
-            {
-                if (version.Build < 0)
-                {
-                    _version = new Version(version.Major, version.Minor);
-                }
-                else
-                {
-                    _version = new Version(version.Major, version.Minor, version.Build);
-                }
-            }
-            else
-            {
-                _version = new Version(version.Major, version.Minor, version.Build, version.Revision);
-            }
-
-            _profile = (profile == null) ? String.Empty : profile.Trim();
+            _version = version;
+            _profile = (profile == null) ? string.Empty : profile.Trim();
         }
 
         // Parses strings in the following format: "<identifier>, Version=[v|V]<version>, Profile=<profile>"
         //  - The identifier and version is required, profile is optional
         //  - Only three components are allowed.
         //  - The version string must be in the System.Version format; an optional "v" or "V" prefix is allowed
-        public FrameworkName(String frameworkName)
+        public FrameworkName(string frameworkName)
         {
             if (frameworkName == null)
             {
@@ -178,7 +145,7 @@ namespace System.Runtime.Versioning
                 throw new ArgumentException(SR.Format(SR.net_emptystringcall, nameof(frameworkName)), nameof(frameworkName));
             }
 
-            string[] components = frameworkName.Split(c_componentSeparator);
+            string[] components = frameworkName.Split(s_componentSplitSeparator);
 
             // Identifier and Version are required, Profile is optional.
             if (components.Length < 2 || components.Length > 3)
@@ -197,18 +164,18 @@ namespace System.Runtime.Versioning
             }
 
             bool versionFound = false;
-            _profile = String.Empty;
+            _profile = string.Empty;
 
-            // 
+            //
             // The required "Version" and optional "Profile" component can be in any order
             //
             for (int i = 1; i < components.Length; i++)
             {
                 // Get the key/value pair separated by '='
                 string component = components[i];
-                int separatorIndex = component.IndexOf(c_keyValueSeparator);
+                int separatorIndex = component.IndexOf(KeyValueSeparator);
 
-                if (separatorIndex == -1 || separatorIndex != component.LastIndexOf(c_keyValueSeparator))
+                if (separatorIndex == -1 || separatorIndex != component.LastIndexOf(KeyValueSeparator))
                 {
                     throw new ArgumentException(SR.Argument_FrameworkNameInvalid, nameof(frameworkName));
                 }
@@ -220,12 +187,12 @@ namespace System.Runtime.Versioning
                 //
                 // 2) Parse the required "Version" key value
                 //
-                if (key.Equals(c_versionKey, StringComparison.OrdinalIgnoreCase))
+                if (key.Equals(VersionKey, StringComparison.OrdinalIgnoreCase))
                 {
                     versionFound = true;
 
                     // Allow the version to include a 'v' or 'V' prefix...
-                    if (value.Length > 0 && (value[0] == c_versionValuePrefix || value[0] == 'V'))
+                    if (value.Length > 0 && (value[0] == VersionValuePrefix || value[0] == 'V'))
                     {
                         value = value.Substring(1);
                     }
@@ -241,9 +208,9 @@ namespace System.Runtime.Versioning
                 //
                 // 3) Parse the optional "Profile" key value
                 //
-                else if (key.Equals(c_profileKey, StringComparison.OrdinalIgnoreCase))
+                else if (key.Equals(ProfileKey, StringComparison.OrdinalIgnoreCase))
                 {
-                    if (!String.IsNullOrEmpty(value))
+                    if (!string.IsNullOrEmpty(value))
                     {
                         _profile = value;
                     }
@@ -259,24 +226,19 @@ namespace System.Runtime.Versioning
                 throw new ArgumentException(SR.Argument_FrameworkNameMissingVersion, nameof(frameworkName));
             }
         }
-        #endregion constructors
 
-
-        // -------- SECTION: public static methods -----------------*
-        #region public static methods
-        public static Boolean operator ==(FrameworkName left, FrameworkName right)
+        public static bool operator ==(FrameworkName left, FrameworkName right)
         {
-            if (Object.ReferenceEquals(left, null))
+            if (object.ReferenceEquals(left, null))
             {
-                return Object.ReferenceEquals(right, null);
+                return object.ReferenceEquals(right, null);
             }
             return left.Equals(right);
         }
 
-        public static Boolean operator !=(FrameworkName left, FrameworkName right)
+        public static bool operator !=(FrameworkName left, FrameworkName right)
         {
             return !(left == right);
         }
-        #endregion public static methods
     }
 }

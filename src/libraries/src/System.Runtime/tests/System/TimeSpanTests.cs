@@ -9,7 +9,7 @@ using Xunit;
 
 namespace System.Tests
 {
-    public static class TimeSpanTests
+    public static partial class TimeSpanTests
     {
         [Fact]
         public static void MaxValue()

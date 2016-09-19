@@ -285,4 +285,7 @@
   <data name="net_sockets_accept_receive_notsupported" xml:space="preserve">
     <value>This platform does not support receiving data with Socket.AcceptAsync.  Instead, make a separate call to Socket.ReceiveAsync.</value>
   </data>
+  <data name="net_sockets_duplicateandclose_notsupported" xml:space="preserve">
+    <value>This platform does not support Socket.DuplicateAndClose.  Instead, create a new socket.</value>
+  </data>
 </root>

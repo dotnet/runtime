@@ -1690,10 +1690,135 @@ namespace System.Tests
             foreach (object obj in emptyArray) { }
         }
 
-        public static IEnumerable<object[]> IndexOf_NonGeneric_TestData()
+        public static IEnumerable<object[]> IndexOf_SZArray_TestData()
         {
+            // SByte
+            yield return new object[] { new sbyte[] { 1, 2, 3, 3 }, (sbyte)1, 0, 4, 0 };
+            yield return new object[] { new sbyte[] { 1, 2, 3, 3 }, (sbyte)3, 0, 4, 2 };
+            yield return new object[] { new sbyte[] { 1, 2, 3, 3 }, (sbyte)2, 1, 2, 1 };
+            yield return new object[] { new sbyte[] { 1, 2, 3, 3 }, (sbyte)1, 1, 2, -1 };
+            yield return new object[] { new sbyte[] { 1, 2, 3, 3 }, (sbyte)1, 4, 0, -1 };
+            yield return new object[] { new sbyte[] { 1, 2, 3, 3 }, (sbyte)1, 0, 0, -1 };
+            yield return new object[] { new sbyte[0], (sbyte)1, 0, 0, -1 };
+
+            // Byte
+            yield return new object[] { new byte[] { 1, 2, 3, 3 }, (byte)1, 0, 4, 0 };
+            yield return new object[] { new byte[] { 1, 2, 3, 3 }, (byte)3, 0, 4, 2 };
+            yield return new object[] { new byte[] { 1, 2, 3, 3 }, (byte)2, 1, 2, 1 };
+            yield return new object[] { new byte[] { 1, 2, 3, 3 }, (byte)1, 1, 2, -1 };
+            yield return new object[] { new byte[] { 1, 2, 3, 3 }, (byte)1, 4, 0, -1 };
+            yield return new object[] { new byte[] { 1, 2, 3, 3 }, (byte)1, 0, 0, -1 };
+            yield return new object[] { new byte[0], (byte)1, 0, 0, -1 };
+
+            // Int16
+            yield return new object[] { new short[] { 1, 2, 3, 3 }, (short)1, 0, 4, 0 };
+            yield return new object[] { new short[] { 1, 2, 3, 3 }, (short)3, 0, 4, 2 };
+            yield return new object[] { new short[] { 1, 2, 3, 3 }, (short)2, 1, 2, 1 };
+            yield return new object[] { new short[] { 1, 2, 3, 3 }, (short)1, 1, 2, -1 };
+            yield return new object[] { new short[] { 1, 2, 3, 3 }, (short)1, 4, 0, -1 };
+            yield return new object[] { new short[] { 1, 2, 3, 3 }, (short)1, 0, 0, -1 };
+            yield return new object[] { new short[0], (short)1, 0, 0, -1 };
+
+            // UInt16
+            yield return new object[] { new ushort[] { 1, 2, 3, 3 }, (ushort)1, 0, 4, 0 };
+            yield return new object[] { new ushort[] { 1, 2, 3, 3 }, (ushort)3, 0, 4, 2 };
+            yield return new object[] { new ushort[] { 1, 2, 3, 3 }, (ushort)2, 1, 2, 1 };
+            yield return new object[] { new ushort[] { 1, 2, 3, 3 }, (ushort)1, 1, 2, -1 };
+            yield return new object[] { new ushort[] { 1, 2, 3, 3 }, (ushort)1, 4, 0, -1 };
+            yield return new object[] { new ushort[] { 1, 2, 3, 3 }, (ushort)1, 0, 0, -1 };
+            yield return new object[] { new ushort[0], (ushort)1, 0, 0, -1 };
+
+            // Int32
+            var intArray = new int[] { 7, 7, 8, 8, 9, 9 };
+            yield return new object[] { intArray, 8, 0, 6, 2 };
+            yield return new object[] { intArray, 8, 3, 3, 3 };
+            yield return new object[] { intArray, 8, 4, 2, -1 };
+            yield return new object[] { intArray, 9, 2, 2, -1 };
+            yield return new object[] { intArray, 9, 2, 3, 4 };
+            yield return new object[] { intArray, 10, 0, 6, -1 };
+
+            // UInt32
+            yield return new object[] { new uint[] { 1, 2, 3, 3 }, (uint)1, 0, 4, 0 };
+            yield return new object[] { new uint[] { 1, 2, 3, 3 }, (uint)3, 0, 4, 2 };
+            yield return new object[] { new uint[] { 1, 2, 3, 3 }, (uint)2, 1, 2, 1 };
+            yield return new object[] { new uint[] { 1, 2, 3, 3 }, (uint)1, 1, 2, -1 };
+            yield return new object[] { new uint[] { 1, 2, 3, 3 }, (uint)1, 4, 0, -1 };
+            yield return new object[] { new uint[] { 1, 2, 3, 3 }, (uint)1, 0, 0, -1 };
+            yield return new object[] { new uint[0], (uint)1, 0, 0, -1 };
+
+            // Int64
+            yield return new object[] { new long[] { 1, 2, 3, 3 }, (long)1, 0, 4, 0 };
+            yield return new object[] { new long[] { 1, 2, 3, 3 }, (long)3, 0, 4, 2 };
+            yield return new object[] { new long[] { 1, 2, 3, 3 }, (long)2, 1, 2, 1 };
+            yield return new object[] { new long[] { 1, 2, 3, 3 }, (long)1, 1, 2, -1 };
+            yield return new object[] { new long[] { 1, 2, 3, 3 }, (long)1, 4, 0, -1 };
+            yield return new object[] { new long[] { 1, 2, 3, 3 }, (long)1, 0, 0, -1 };
+            yield return new object[] { new long[0], (long)1, 0, 0, -1 };
+
+            // UInt64
+            yield return new object[] { new ulong[] { 1, 2, 3, 3 }, (ulong)1, 0, 4, 0 };
+            yield return new object[] { new ulong[] { 1, 2, 3, 3 }, (ulong)3, 0, 4, 2 };
+            yield return new object[] { new ulong[] { 1, 2, 3, 3 }, (ulong)2, 1, 2, 1 };
+            yield return new object[] { new ulong[] { 1, 2, 3, 3 }, (ulong)1, 1, 2, -1 };
+            yield return new object[] { new ulong[] { 1, 2, 3, 3 }, (ulong)1, 4, 0, -1 };
+            yield return new object[] { new ulong[] { 1, 2, 3, 3 }, (ulong)1, 0, 0, -1 };
+            yield return new object[] { new ulong[0], (ulong)1, 0, 0, -1 };
+
+            // Char
+            yield return new object[] { new char[] { (char)1, (char)2, (char)3, (char)3 }, (char)1, 0, 4, 0 };
+            yield return new object[] { new char[] { (char)1, (char)2, (char)3, (char)3 }, (char)3, 0, 4, 2 };
+            yield return new object[] { new char[] { (char)1, (char)2, (char)3, (char)3 }, (char)2, 1, 2, 1 };
+            yield return new object[] { new char[] { (char)1, (char)2, (char)3, (char)3 }, (char)1, 1, 2, -1 };
+            yield return new object[] { new char[] { (char)1, (char)2, (char)3, (char)3 }, (char)1, 4, 0, -1 };
+            yield return new object[] { new char[] { (char)1, (char)2, (char)3, (char)3 }, (char)1, 0, 0, -1 };
+            yield return new object[] { new char[0], (char)1, 0, 0, -1 };
+
+            // Bool
+            yield return new object[] { new bool[] { true, false, false, true }, true, 0, 4, 0 };
+            yield return new object[] { new bool[] { true, false, false, true }, false, 1, 2, 1 };
+            yield return new object[] { new bool[] { true, false, false, true }, true, 1, 1, -1 };
+            yield return new object[] { new bool[] { true, false, false, true }, true, 4, 0, -1 };
+            yield return new object[] { new bool[] { true, false, false, true }, true, 0, 0, -1 };
+            yield return new object[] { new bool[0], true, 0, 0, -1 };
+
+            // Single
+            yield return new object[] { new float[] { 1, 2, 3, 3 }, (float)1, 0, 4, 0 };
+            yield return new object[] { new float[] { 1, 2, 3, 3 }, (float)3, 0, 4, 2 };
+            yield return new object[] { new float[] { 1, 2, 3, 3 }, (float)2, 1, 2, 1 };
+            yield return new object[] { new float[] { 1, 2, 3, 3 }, (float)1, 1, 2, -1 };
+            yield return new object[] { new float[] { 1, 2, 3, 3 }, (float)1, 4, 0, -1 };
+            yield return new object[] { new float[] { 1, 2, 3, 3 }, (float)1, 0, 0, -1 };
+            yield return new object[] { new float[0], (float)1, 0, 0, -1 };
+
+            // Double
+            yield return new object[] { new double[] { 1, 2, 3, 3 }, (double)1, 0, 4, 0 };
+            yield return new object[] { new double[] { 1, 2, 3, 3 }, (double)3, 0, 4, 2 };
+            yield return new object[] { new double[] { 1, 2, 3, 3 }, (double)2, 1, 2, 1 };
+            yield return new object[] { new double[] { 1, 2, 3, 3 }, (double)1, 1, 2, -1 };
+            yield return new object[] { new double[] { 1, 2, 3, 3 }, (double)1, 4, 0, -1 };
+            yield return new object[] { new double[] { 1, 2, 3, 3 }, (double)1, 0, 0, -1 };
+            yield return new object[] { new double[0], (double)1, 0, 0, -1 };
+
+            // IntPtr
+            yield return new object[] { new IntPtr[] { (IntPtr)1, (IntPtr)2, (IntPtr)3, (IntPtr)3 }, (IntPtr)1, 0, 4, 0 };
+            yield return new object[] { new IntPtr[] { (IntPtr)1, (IntPtr)2, (IntPtr)3, (IntPtr)3 }, (IntPtr)3, 0, 4, 2 };
+            yield return new object[] { new IntPtr[] { (IntPtr)1, (IntPtr)2, (IntPtr)3, (IntPtr)3 }, (IntPtr)2, 1, 2, 1 };
+            yield return new object[] { new IntPtr[] { (IntPtr)1, (IntPtr)2, (IntPtr)3, (IntPtr)3 }, (IntPtr)1, 1, 2, -1 };
+            yield return new object[] { new IntPtr[] { (IntPtr)1, (IntPtr)2, (IntPtr)3, (IntPtr)3 }, (IntPtr)1, 4, 0, -1 };
+            yield return new object[] { new IntPtr[] { (IntPtr)1, (IntPtr)2, (IntPtr)3, (IntPtr)3 }, (IntPtr)1, 0, 0, -1 };
+            yield return new object[] { new IntPtr[0], (IntPtr)1, 0, 0, -1 };
+
+            // UIntPtr
+            yield return new object[] { new UIntPtr[] { (UIntPtr)1, (UIntPtr)2, (UIntPtr)3, (UIntPtr)3 }, (UIntPtr)1, 0, 4, 0 };
+            yield return new object[] { new UIntPtr[] { (UIntPtr)1, (UIntPtr)2, (UIntPtr)3, (UIntPtr)3 }, (UIntPtr)3, 0, 4, 2 };
+            yield return new object[] { new UIntPtr[] { (UIntPtr)1, (UIntPtr)2, (UIntPtr)3, (UIntPtr)3 }, (UIntPtr)2, 1, 2, 1 };
+            yield return new object[] { new UIntPtr[] { (UIntPtr)1, (UIntPtr)2, (UIntPtr)3, (UIntPtr)3 }, (UIntPtr)1, 1, 2, -1 };
+            yield return new object[] { new UIntPtr[] { (UIntPtr)1, (UIntPtr)2, (UIntPtr)3, (UIntPtr)3 }, (UIntPtr)1, 4, 0, -1 };
+            yield return new object[] { new UIntPtr[] { (UIntPtr)1, (UIntPtr)2, (UIntPtr)3, (UIntPtr)3 }, (UIntPtr)1, 0, 0, -1 };
+            yield return new object[] { new UIntPtr[0], (UIntPtr)1, 0, 0, -1 };
+
+            // String
             var stringArray = new string[] { null, null, "Hello", "Hello", "Goodbye", "Goodbye", null, null };
-            yield return new object[] { stringArray, null, 0, 8, 0 };
             yield return new object[] { stringArray, "Hello", 0, 8, 2 };
             yield return new object[] { stringArray, "Goodbye", 0, 8, 4 };
             yield return new object[] { stringArray, "Nowhere", 0, 8, -1 };
@@ -1702,96 +1827,222 @@ namespace System.Tests
             yield return new object[] { stringArray, "Goodbye", 2, 3, 4 };
             yield return new object[] { stringArray, "Goodbye", 2, 2, -1 };
 
-            var stringArrayNoNulls = new string[] { "Hello", "Hello", "Goodbye", "Goodbye" };
-            yield return new object[] { stringArrayNoNulls, null, 0, 4, -1 };
+            // Int32Enum
+            yield return new object[] { new Int32Enum[] { Int32Enum.Case1, Int32Enum.Case2, Int32Enum.Case1 }, Int32Enum.Case1, 0, 3, 0 };
+            yield return new object[] { new Int32Enum[] { Int32Enum.Case1, Int32Enum.Case2, Int32Enum.Case1 }, Int32Enum.Case3, 0, 3, -1 };
 
-            var enumArray = new Int32Enum[] { Int32Enum.Case1, Int32Enum.Case2, Int32Enum.Case1 };
-            yield return new object[] { enumArray, Int32Enum.Case1, 0, 3, 0 };
-            yield return new object[] { enumArray, Int32Enum.Case3, 0, 3, -1 };
+            // Int64Enum
+            yield return new object[] { new Int64Enum[] { (Int64Enum)1, (Int64Enum)2, (Int64Enum)1 }, (Int64Enum)1, 0, 3, 0 };
+            yield return new object[] { new Int64Enum[] { (Int64Enum)1, (Int64Enum)2, (Int64Enum)1 }, (Int64Enum)3, 0, 3, -1 };
 
+            // Class
+            NonGenericClass1 classObject = new NonGenericClass1();
+            yield return new object[] { new NonGenericClass1[] { classObject, new NonGenericClass1() }, classObject, 0, 2, 0 };
+            yield return new object[] { new NonGenericClass1[] { classObject, new NonGenericClass1() }, new NonGenericClass1(), 0, 2, -1 };
+            yield return new object[] { new NonGenericClass1[] { classObject, new NonGenericClass1() }, classObject, 2, 0, -1 };
+            yield return new object[] { new NonGenericClass1[] { classObject, new NonGenericClass1() }, classObject, 0, 0, -1 };
+
+            // Struct
+            NonGenericStruct structObject = new NonGenericStruct();
+            yield return new object[] { new NonGenericStruct[] { structObject, new NonGenericStruct() }, structObject, 0, 2, 0 };
+            yield return new object[] { new NonGenericStruct[] { structObject, new NonGenericStruct() }, new NonGenericStruct(), 0, 2, 0 };
+            yield return new object[] { new NonGenericStruct[] { structObject, new NonGenericStruct() }, structObject, 2, 0, -1 };
+            yield return new object[] { new NonGenericStruct[] { structObject, new NonGenericStruct() }, structObject, 0, 0, -1 };
+
+            // Interface
+            ClassWithNonGenericInterface1 interfaceObject = new ClassWithNonGenericInterface1();
+            yield return new object[] { new NonGenericInterface1[] { interfaceObject, new ClassWithNonGenericInterface1() }, interfaceObject, 0, 2, 0 };
+            yield return new object[] { new NonGenericInterface1[] { interfaceObject, new ClassWithNonGenericInterface1() }, new ClassWithNonGenericInterface1(), 0, 2, -1 };
+            yield return new object[] { new NonGenericInterface1[] { interfaceObject, new ClassWithNonGenericInterface1() }, interfaceObject, 2, 0, -1 };
+            yield return new object[] { new NonGenericInterface1[] { interfaceObject, new ClassWithNonGenericInterface1() }, interfaceObject, 0, 0, -1 };
+
+            // Object
+            yield return new object[] { new object[] { new EqualsOverrider { Value = 1 } }, null, 0, 1, -1 };
+            yield return new object[] { new object[] { new EqualsOverrider { Value = 1 } }, new EqualsOverrider { Value = 1 }, 0, 1, 0 };
+            yield return new object[] { new object[] { new EqualsOverrider { Value = 1 } }, new EqualsOverrider { Value = 2 }, 0, 1, -1 };
+            yield return new object[] { new object[1], null, 0, 1, 0 };
+            yield return new object[] { new object[2], null, 2, 0, -1 };
+            yield return new object[] { new object[2], null, 0, 0, -1 };
+        }
+
+        public static IEnumerable<object[]> IndexOf_Array_TestData()
+        {
+            // SByte
+            yield return new object[] { new sbyte[] { 1, 2 }, (byte)1, 0, 2, -1 };
+            yield return new object[] { new sbyte[] { 1, 2 }, new object(), 0, 2, -1 };
+            yield return new object[] { new sbyte[] { 1, 2 }, null, 0, 2, -1 };
+
+            // Byte
+            yield return new object[] { new byte[] { 1, 2 }, (sbyte)1, 0, 2, -1 };
+            yield return new object[] { new byte[] { 1, 2 }, new object(), 0, 2, -1 };
+            yield return new object[] { new byte[] { 1, 2 }, null, 0, 2, -1 };
+
+            // Int16
+            yield return new object[] { new short[] { 1, 2 }, (ushort)1, 0, 2, -1 };
+            yield return new object[] { new short[] { 1, 2 }, new object(), 0, 2, -1 };
+            yield return new object[] { new short[] { 1, 2 }, null, 0, 2, -1 };
+
+            // UInt16
+            yield return new object[] { new ushort[] { 1, 2 }, (short)1, 0, 2, -1 };
+            yield return new object[] { new ushort[] { 1, 2 }, new object(), 0, 2, -1 };
+            yield return new object[] { new ushort[] { 1, 2 }, null, 0, 2, -1 };
+
+            // Int32
+            yield return new object[] { new int[] { 1, 2 }, (uint)1, 0, 2, -1 };
+            yield return new object[] { new int[] { 1, 2 }, new object(), 0, 2, -1 };
+            yield return new object[] { new int[] { 1, 2 }, null, 0, 2, -1 };
+
+            // UInt32
+            yield return new object[] { new uint[] { 1, 2 }, 1, 0, 2, -1 };
+            yield return new object[] { new uint[] { 1, 2 }, new object(), 0, 2, -1 };
+            yield return new object[] { new uint[] { 1, 2 }, null, 0, 2, -1 };
+
+            // Int64
+            yield return new object[] { new long[] { 1, 2 }, (ulong)1, 0, 2, -1 };
+            yield return new object[] { new long[] { 1, 2 }, new object(), 0, 2, -1 };
+            yield return new object[] { new long[] { 1, 2 }, null, 0, 2, -1 };
+
+            // UInt64
+            yield return new object[] { new ulong[] { 1, 2 }, (long)1, 0, 2, -1 };
+            yield return new object[] { new ulong[] { 1, 2 }, new object(), 0, 2, -1 };
+            yield return new object[] { new ulong[] { 1, 2 }, null, 0, 2, -1 };
+
+            // Char
+            yield return new object[] { new char[] { (char)1, (char)2 }, (ushort)1, 0, 2, -1 };
+            yield return new object[] { new char[] { (char)1, (char)2 }, new object(), 0, 2, -1 };
+            yield return new object[] { new char[] { (char)1, (char)2 }, null, 0, 2, -1 };
+
+            // Bool
+            yield return new object[] { new bool[] { true, false }, (char)0, 0, 2, -1 };
+            yield return new object[] { new bool[] { true, false }, new object(), 0, 2, -1 };
+            yield return new object[] { new bool[] { true, false }, null, 0, 2, -1 };
+
+            // Single
+            yield return new object[] { new float[] { 1, 2 }, (double)1, 0, 2, -1 };
+            yield return new object[] { new float[] { 1, 2 }, new object(), 0, 2, -1 };
+            yield return new object[] { new float[] { 1, 2 }, null, 0, 2, -1 };
+
+            // Double
+            yield return new object[] { new double[] { 1, 2 }, (float)1, 0, 2, -1 };
+            yield return new object[] { new double[] { 1, 2 }, new object(), 0, 2, -1 };
+            yield return new object[] { new double[] { 1, 2 }, null, 0, 2, -1 };
+
+            // IntPtr
+            yield return new object[] { new IntPtr[] { (IntPtr)1, (IntPtr)2 }, (UIntPtr)1, 0, 2, -1 };
+            yield return new object[] { new IntPtr[] { (IntPtr)1, (IntPtr)2 }, new object(), 0, 2, -1 };
+            yield return new object[] { new IntPtr[] { (IntPtr)1, (IntPtr)2 }, null, 0, 2, -1 };
+
+            // UIntPtr
+            yield return new object[] { new UIntPtr[] { (UIntPtr)1, (UIntPtr)2 }, (IntPtr)1, 0, 2, -1 };
+            yield return new object[] { new UIntPtr[] { (UIntPtr)1, (UIntPtr)2 }, new object(), 0, 2, -1 };
+            yield return new object[] { new UIntPtr[] { (UIntPtr)1, (UIntPtr)2 }, null, 0, 2, -1 };
+
+            // String
+            yield return new object[] { new string[] { "Hello", "Hello", "Goodbyte", "Goodbye" }, new object(), 0, 4, -1 };
+
+            // Nullable
             var nullableArray = new int?[] { 0, null, 10 };
             yield return new object[] { nullableArray, null, 0, 3, 1 };
             yield return new object[] { nullableArray, 10, 0, 3, 2 };
             yield return new object[] { nullableArray, 100, 0, 3, -1 };
         }
 
-        public static IEnumerable<object[]> IndexOf_Generic_TestData()
-        {
-            var intArray = new int[] { 7, 7, 8, 8, 9, 9 };
-            yield return new object[] { intArray, 8, 0, 6, 2 };
-            yield return new object[] { intArray, 8, 3, 3, 3 };
-            yield return new object[] { intArray, 8, 4, 2, -1 };
-            yield return new object[] { intArray, 9, 2, 2, -1 };
-            yield return new object[] { intArray, 9, 2, 3, 4 };
-            yield return new object[] { intArray, 10, 0, 6, -1 };
-        }
-
         [Theory]
-        [MemberData(nameof(IndexOf_NonGeneric_TestData))]
-        [MemberData(nameof(IndexOf_Generic_TestData))]
-        public static void IndexOf_NonGeneric(Array array, object value, int startIndex, int count, int expected)
+        [MemberData(nameof(IndexOf_SZArray_TestData))]
+        public static void IndexOf_SZArray<T>(T[] array, T value, int startIndex, int count, int expected)
         {
             if (startIndex + count == array.Length)
             {
-                // Use IndexOf(Array, object) or IndexOf(Array, object, int)
                 if (startIndex == 0)
                 {
-                    // Use IndexOf(Array, object)
+                    // Use IndexOf<T>(T[])
                     Assert.Equal(expected, Array.IndexOf(array, value));
+                    IList<T> iList = array;
+                    Assert.Equal(expected, iList.IndexOf(value));
+                    Assert.Equal(expected >= startIndex, iList.Contains(value));
                 }
-                // Use IndexOf(Array, object, int)
+                // Use IndexOf<T>(T[], int)
                 Assert.Equal(expected, Array.IndexOf(array, value, startIndex));
             }
-            // Use IndexOf(Array, object, int, int)
+            // Use IndexOf<T>(T[], int, int)
             Assert.Equal(expected, Array.IndexOf(array, value, startIndex, count));
+
+            // Basic: forward SZArray
+            IndexOf_Array(array, value, startIndex, count, expected);
+
+            // Advanced: convert SZArray to an array with non-zero lower bound
+            const int LowerBound = 5;
+            Array nonZeroLowerBoundArray = NonZeroLowerBoundArray(array, LowerBound);
+            IndexOf_Array(nonZeroLowerBoundArray, value, startIndex + LowerBound, count, expected + LowerBound);
         }
 
         [Theory]
-        [MemberData(nameof(IndexOf_Generic_TestData))]
-        public static void IndexOf_Generic(int[] array, int value, int startIndex, int count, int expected)
+        [MemberData(nameof(IndexOf_Array_TestData))]
+        public static void IndexOf_Array(Array array, object value, int startIndex, int count, int expected) 
         {
-            if (startIndex + count == array.Length)
+            if (startIndex + count == array.GetLowerBound(0) + array.Length)
             {
-                // Use IndexOf<T>(T[], T) or IndexOf(T[], T, int)
-                if (startIndex == 0)
+                if (startIndex == array.GetLowerBound(0))
                 {
-                    // Use IndexOf<T>(T[], T)
+                    // Use IndexOf(Array)
                     Assert.Equal(expected, Array.IndexOf(array, value));
+                    IList iList = array;
+                    Assert.Equal(expected, iList.IndexOf(value));
+                    Assert.Equal(expected >= startIndex, iList.Contains(value));
                 }
-                // Use IndexOf<T>(T[], T, int)
+                // Use IndexOf(Array, int)
                 Assert.Equal(expected, Array.IndexOf(array, value, startIndex));
             }
-            // Use IndexOf<T>(T[], T, int, int)
+            // Use IndexOf(Array, int, int)
             Assert.Equal(expected, Array.IndexOf(array, value, startIndex, count));
         }
 
         [Fact]
-        public static void IndexOf_Invalid()
+        public static void IndexOf_SZArray_NonInferrableEntries()
         {
-            var intArray = new int[] { 1, 2, 3 };
-            var stringArray = new string[] { "a", "b", "c" };
+            // Workaround: Move these values to IndexOf_SZArray_TestData if/ when https://github.com/xunit/xunit/pull/965 is available
+            IndexOf_SZArray(new string[] { "Hello", "Hello", "Goodbyte", "Goodbye" }, null, 0, 4, -1);
+        }
 
-            // Array is null
+        [Fact]
+        public static void IndexOf_NullArray_ThrowsArgumentNullException()
+        {
             Assert.Throws<ArgumentNullException>("array", () => Array.IndexOf((int[])null, ""));
             Assert.Throws<ArgumentNullException>("array", () => Array.IndexOf((int[])null, "", 0));
             Assert.Throws<ArgumentNullException>("array", () => Array.IndexOf((int[])null, "", 0, 0));
             Assert.Throws<ArgumentNullException>("array", () => Array.IndexOf(null, ""));
             Assert.Throws<ArgumentNullException>("array", () => Array.IndexOf(null, "", 0));
             Assert.Throws<ArgumentNullException>("array", () => Array.IndexOf(null, "", 0, 0));
+        }
 
-            // Start index < 0
-            Assert.Throws<ArgumentOutOfRangeException>("startIndex", () => Array.IndexOf(intArray, "", -1));
-            Assert.Throws<ArgumentOutOfRangeException>("startIndex", () => Array.IndexOf(intArray, "", -1));
-            Assert.Throws<ArgumentOutOfRangeException>("startIndex", () => Array.IndexOf(stringArray, "", -1));
-            Assert.Throws<ArgumentOutOfRangeException>("startIndex", () => Array.IndexOf(stringArray, "", -1, 0));
+        [Fact]
+        public static void IndexOf_MultimensionalArray_ThrowsRankException()
+        {
+            Assert.Throws<RankException>(() => Array.IndexOf(new string[0, 0], ""));
+            Assert.Throws<RankException>(() => Array.IndexOf(new string[0, 0], "", 0));
+            Assert.Throws<RankException>(() => Array.IndexOf(new string[0, 0], "", 0, 0));
+        }
 
-            // Count < 0
-            Assert.Throws<ArgumentOutOfRangeException>("count", () => Array.IndexOf(intArray, "", 0, -1));
-            Assert.Throws<ArgumentOutOfRangeException>("count", () => Array.IndexOf(stringArray, "", 0, -1));
+        [Theory]
+        [InlineData(-1)]
+        [InlineData(1)]
+        public static void IndexOf_InvalidStartIndex_ThrowsArgumentOutOfRangeException(int startIndex)
+        {
+            Assert.Throws<ArgumentOutOfRangeException>("startIndex", () => Array.IndexOf(new int[0], "", startIndex));
+            Assert.Throws<ArgumentOutOfRangeException>("startIndex", () => Array.IndexOf(new int[0], "", startIndex, 0));
+            Assert.Throws<ArgumentOutOfRangeException>("startIndex", () => Array.IndexOf(new string[0], "", startIndex));
+            Assert.Throws<ArgumentOutOfRangeException>("startIndex", () => Array.IndexOf(new string[0], "", startIndex, 0));
+        }
 
-            // Start index + count > array.Length
-            Assert.Throws<ArgumentOutOfRangeException>("count", () => Array.IndexOf(intArray, "", intArray.Length, 1));
-            Assert.Throws<ArgumentOutOfRangeException>("count", () => Array.IndexOf(stringArray, "", stringArray.Length, 1));
+        [Theory]
+        [InlineData(0, 0, -1)]
+        [InlineData(0, 0, 1)]
+        [InlineData(2, 0, 3)]
+        [InlineData(2, 2, 1)]
+        public static void IndexOf_InvalidCount_ThrowsArgumentOutOfRangeException(int length, int startIndex, int count)
+        {
+            Assert.Throws<ArgumentOutOfRangeException>("count", () => Array.IndexOf(new int[length], "", startIndex, count));
+            Assert.Throws<ArgumentOutOfRangeException>("count", () => Array.IndexOf(new string[length], "", startIndex, count));
         }
 
         [Fact]
@@ -2150,15 +2401,16 @@ namespace System.Tests
 
         public static void Reverse(Array array, int index, int length, Array expected)
         {
-            if (index == 0 && length == array.Length)
+            if (index == array.GetLowerBound(0) && length == array.Length)
             {
                 // Use Reverse(Array)
-                Array testArray = (Array)array.Clone();
-                Array.Reverse(testArray);
-                Assert.Equal(expected, testArray);
+                Array arrayClone1 = (Array)array.Clone();
+                Array.Reverse(arrayClone1);
+                Assert.Equal(expected, arrayClone1);
             }
             // Use Reverse(Array, int, int)
-            Array.Reverse(array, index, length);
+            Array arrayClone2 = (Array)array.Clone();
+            Array.Reverse(arrayClone2, index, length);
             Assert.Equal(expected, expected);
         }
 
@@ -3034,7 +3286,14 @@ namespace System.Tests
                 throw new NotImplementedException();
             }
         }
-        
+
+        public class EqualsOverrider
+        {
+            public int Value { get; set; }
+            public override bool Equals(object other) => other is EqualsOverrider && ((EqualsOverrider)other).Value == Value;
+            public override int GetHashCode() => Value;
+        }
+
         public class NonGenericClass1 { }
         public class NonGenericClass2 { }
 

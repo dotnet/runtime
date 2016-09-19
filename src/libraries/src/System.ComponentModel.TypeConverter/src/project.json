@@ -1,6 +1,6 @@
 {
   "frameworks": {
-    "netstandard1.5": {
+    "netstandard1.7": {
       "dependencies": {
         "System.Collections": "4.0.0",
         "System.Collections.NonGeneric": "4.0.0",
@@ -18,41 +18,17 @@
         "System.Resources.ResourceManager": "4.0.0",
         "System.Runtime": "4.0.20",
         "System.Runtime.Extensions": "4.0.0",
-        "System.Threading": "4.0.10"
+        "System.Security.Permissions": "4.3.0-beta-24516-03",
+        "System.Threading": "4.0.10",
+        "System.Threading.Timer": "4.0.0"
       },
       "imports": [
-        "dotnet5.6"
+        "dotnet5.8"
       ]
     },
-    "netstandard1.0": {
+    "net463": {
       "dependencies": {
-        "System.Collections": "4.0.0",
-        "System.ComponentModel": "4.0.0",
-        "System.ComponentModel.Primitives": "4.1.0",
-        "System.Diagnostics.Contracts": "4.0.0",
-        "System.Diagnostics.Debug": "4.0.0",
-        "System.Diagnostics.Tools": "4.0.0",
-        "System.Globalization": "4.0.0",
-        "System.Reflection": "4.0.0",
-        "System.Reflection.Extensions": "4.0.0",
-        "System.Reflection.Primitives": "4.0.0",
-        "System.Resources.ResourceManager": "4.0.0",
-        "System.Runtime": "4.0.0",
-        "System.Runtime.Extensions": "4.0.0",
-        "System.Threading": "4.0.0"
-      },
-      "imports": [
-        "dotnet5.1"
-      ]
-    },
-    "net462": {
-      "dependencies": {
-        "Microsoft.TargetingPack.NETFramework.v4.6.2": "1.0.1"
-      }
-    },
-    "net45": {
-      "dependencies": {
-        "Microsoft.TargetingPack.NETFramework.v4.5": "1.0.1"
+        "Microsoft.TargetingPack.NETFramework.v4.6": "1.0.1"
       }
     }
   }

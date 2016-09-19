@@ -12,8 +12,8 @@
     <AssemblyName>System.Globalization.Extensions</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <ProjectGuid>{2B96AA10-84C0-4927-8611-8D2474B990E8}</ProjectGuid>
-    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.3</NuGetTargetMoniker>
-    <IsPartialFacadeAssembly Condition="'$(TargetGroup)'=='net46'">true</IsPartialFacadeAssembly>
+    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NuGetTargetMoniker>
+    <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
   </PropertyGroup>
   <!-- Help VS understand available configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Debug|AnyCPU'" />
@@ -54,9 +54,6 @@
     <Compile Include="$(CommonPath)\System\Globalization\IdnMapping.cs">
       <Link>Common\System\Globalization\IdnMapping.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Text\NormalizationForm.cs">
-      <Link>Common\System\Text\NormalizationForm.cs</Link>
-    </Compile>
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true' AND '$(TargetGroup)'=='' ">
     <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs">
@@ -75,7 +72,7 @@
       <Link>Common\System\StringNormalizationExtensions.Unix.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)'=='net46'">
+  <ItemGroup Condition="'$(TargetGroup)'=='net463'">
     <TargetingPackReference Include="mscorlib" />
     <TargetingPackReference Include="System" />
   </ItemGroup>

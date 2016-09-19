@@ -11,7 +11,7 @@
     <RootNamespace>System.Globalization.Extensions.Tests</RootNamespace>
     <AssemblyName>System.Globalization.Extensions.Tests</AssemblyName>
     <ProjectGuid>{BC439554-4AB4-4C94-8E28-C00EDE4FD1C7}</ProjectGuid>
-    <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
+    <NugetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.3</NugetTargetMoniker>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' " />

@@ -149,5 +149,10 @@ namespace System.Linq.Expressions
         public  static MethodInfo   Decimal_op_Implicit_Char =>
                                   s_Decimal_op_Implicit_Char ?? 
                                  (s_Decimal_op_Implicit_Char = typeof(decimal).GetMethod("op_Implicit", new[] { typeof(char) }));
+
+        private static MethodInfo s_Math_Pow_Double_Double;
+        public  static MethodInfo   Math_Pow_Double_Double =>
+                                  s_Math_Pow_Double_Double ??
+                                 (s_Math_Pow_Double_Double = typeof(Math).GetMethod(nameof(Math.Pow), new[] { typeof(double), typeof(double) }));
     }
 }
