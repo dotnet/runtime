@@ -92,12 +92,11 @@ PTR_CBYTE FASTCALL decodeHeader(PTR_CBYTE table, UINT32 version, InfoHdr* header
 
     BYTE nextByte = *table++;
     BYTE encoding = nextByte & 0x7f;
-    const BYTE maskHaveMoreBytesBit = MORE_BYTES_TO_FOLLOW - 1;
     GetInfoHdr(encoding, header);
     while (nextByte & MORE_BYTES_TO_FOLLOW)
     {
         nextByte = *table++;
-        encoding = nextByte & maskHaveMoreBytesBit;
+        encoding = nextByte & ADJ_ENCODING_MAX;
         // encoding here always corresponds to codes in InfoHdrAdjust set
 
         if (encoding < NEXT_FOUR_START)
@@ -199,7 +198,7 @@ PTR_CBYTE FASTCALL decodeHeader(PTR_CBYTE table, UINT32 version, InfoHdr* header
             case NEXT_OPCODE:
                 _ASSERTE((nextByte & MORE_BYTES_TO_FOLLOW) && "Must have another code");
                 nextByte = *table++;
-                encoding = nextByte & maskHaveMoreBytesBit;
+                encoding = nextByte & ADJ_ENCODING_MAX;
                 // encoding here always corresponds to codes in InfoHdrAdjust2 set
 
                 if (encoding < SET_RET_KIND_MAX)
