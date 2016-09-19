@@ -39,8 +39,7 @@
     <Compile Include="$(CommonTestPath)\System\Security\Cryptography\AlgorithmImplementations\AES\AesCipherTests.Data.cs">
       <Link>CommonTest\AlgorithmImplementations\AES\AesCipherTests.Data.cs</Link>
     </Compile>
-    <!-- Excluding these tests for netcoreapp1.1 due to Issue: https://github.com/dotnet/corefx/issues/11549 -->
-    <Compile Condition="'$(TargetGroup)'!='netstandard1.7'" Include="$(CommonTestPath)\System\Security\Cryptography\AlgorithmImplementations\AES\AesCipherTests.cs">
+    <Compile Include="$(CommonTestPath)\System\Security\Cryptography\AlgorithmImplementations\AES\AesCipherTests.cs">
       <Link>CommonTest\AlgorithmImplementations\AES\AesCipherTests.cs</Link>
     </Compile>
     <Compile Include="$(CommonTestPath)\System\Security\Cryptography\AlgorithmImplementations\AES\AesContractTests.cs">

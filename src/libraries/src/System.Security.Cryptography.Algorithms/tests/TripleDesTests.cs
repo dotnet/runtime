@@ -16,8 +16,6 @@ namespace System.Security.Cryptography.Encryption.TripleDes.Tests
     public static partial class TripleDesTests
     {
         [Fact]
-        //Skipping test on netcoreapp1.1 due to issue: https://github.com/dotnet/corefx/issues/11549
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Netcoreapp1_1)]
         public static void DesDefaultCtor()
         {
             using (TripleDES tdes = new TripleDESMinimal())
@@ -52,8 +50,6 @@ namespace System.Security.Cryptography.Encryption.TripleDes.Tests
         }
 
         [Fact]
-        //Skipping test on netcoreapp1.1 due to issue: https://github.com/dotnet/corefx/issues/11549
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Netcoreapp1_1)]
         public static void TripleDesCreate()
         {
             byte[] inputBytes = Encoding.ASCII.GetBytes("This is a secret message and is a sentence that is longer than a block, it ensures that multi-block functions work.");
