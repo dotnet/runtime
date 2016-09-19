@@ -585,6 +585,10 @@ typedef unsigned short regPairNoSmall; // arm: need 12 bits
   #define RBM_CALLEE_TRASH_NOGC    RBM_EDX
 #endif // NOGC_WRITE_BARRIERS
 
+  // GenericPInvokeCalliHelper unmanaged target parameter
+  #define REG_PINVOKE_TARGET_PARAM REG_EAX
+  #define RBM_PINVOKE_TARGET_PARAM RBM_EAX
+
   // IL stub's secret parameter (CORJIT_FLG_PUBLISH_SECRET_PARAM)
   #define REG_SECRET_STUB_PARAM    REG_EAX
   #define RBM_SECRET_STUB_PARAM    RBM_EAX
@@ -593,6 +597,10 @@ typedef unsigned short regPairNoSmall; // arm: need 12 bits
   #define REG_VIRTUAL_STUB_PARAM   REG_EAX
   #define RBM_VIRTUAL_STUB_PARAM   RBM_EAX
   #define PREDICT_REG_VIRTUAL_STUB_PARAM  PREDICT_REG_EAX
+
+  // VSD target address register
+  #define REG_VIRTUAL_STUB_TARGET  REG_EAX
+  #define RBM_VIRTUAL_STUB_TARGET  RBM_EAX
 
   // Registers used by PInvoke frame setup
   #define REG_PINVOKE_FRAME        REG_EDI      // EDI is p/invoke "Frame" pointer argument to CORINFO_HELP_INIT_PINVOKE_FRAME helper
