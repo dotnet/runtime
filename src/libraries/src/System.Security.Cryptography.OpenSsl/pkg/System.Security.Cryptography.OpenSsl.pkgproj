@@ -2,9 +2,6 @@
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
-    <ProjectReference Include="..\ref\4.0\System.Security.Cryptography.OpenSsl.depproj">
-      <SupportedFramework>netcoreapp1.0</SupportedFramework>
-    </ProjectReference>
     <ProjectReference Include="..\ref\System.Security.Cryptography.OpenSsl.csproj">
       <SupportedFramework>net463;netcoreapp1.1;$(AllXamarinFrameworks)</SupportedFramework>
     </ProjectReference>

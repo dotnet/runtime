@@ -7,6 +7,24 @@
 
 namespace System.Security.Cryptography
 {
+    public sealed partial class DSAOpenSsl : System.Security.Cryptography.DSA
+    {
+        public DSAOpenSsl() { }
+        public DSAOpenSsl(int keySize) { }
+        public DSAOpenSsl(System.IntPtr handle) { }
+        public DSAOpenSsl(System.Security.Cryptography.DSAParameters parameters) { }
+        public DSAOpenSsl(System.Security.Cryptography.SafeEvpPKeyHandle pkeyHandle) { }
+        public override int KeySize { set { } }
+        public override System.Security.Cryptography.KeySizes[] LegalKeySizes { get { return default(System.Security.Cryptography.KeySizes[]); } }
+        public override byte[] CreateSignature(byte[] hash) { return default(byte[]); }
+        protected override void Dispose(bool disposing) { }
+        public System.Security.Cryptography.SafeEvpPKeyHandle DuplicateKeyHandle() { return default(System.Security.Cryptography.SafeEvpPKeyHandle); }
+        public override System.Security.Cryptography.DSAParameters ExportParameters(bool includePrivateParameters) { return default(System.Security.Cryptography.DSAParameters); }
+        protected override byte[] HashData(byte[] data, int offset, int count, System.Security.Cryptography.HashAlgorithmName hashAlgorithm) { return default(byte[]); }
+        protected override byte[] HashData(System.IO.Stream data, System.Security.Cryptography.HashAlgorithmName hashAlgorithm) { return default(byte[]); }
+        public override void ImportParameters(System.Security.Cryptography.DSAParameters parameters) { }
+        public override bool VerifySignature(byte[] hash, byte[] signature) { return default(bool); }
+    }
     public sealed partial class ECDsaOpenSsl : System.Security.Cryptography.ECDsa
     {
         public ECDsaOpenSsl() { }
