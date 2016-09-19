@@ -194,6 +194,10 @@ void LIR::Use::ReplaceWith(Compiler* compiler, GenTree* replacement)
     {
         m_user->ReplaceOperand(m_edge, replacement);
     }
+    else
+    {
+        *m_edge = replacement;
+    }
 }
 
 //------------------------------------------------------------------------

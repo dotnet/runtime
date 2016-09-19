@@ -2789,7 +2789,8 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
         // *********** END NOTE *********
         CLANG_FORMAT_COMMENT_ANCHOR;
 
-#if !defined(LEGACY_BACKEND) && defined(_TARGET_X86_)
+#if !defined(LEGACY_BACKEND)
+#if defined(_TARGET_X86_)
         // The x86 CORINFO_HELP_INIT_PINVOKE_FRAME helper has a custom calling convention. Set the argument registers
         // correctly here.
         if (call->IsHelperCall(this, CORINFO_HELP_INIT_PINVOKE_FRAME))
@@ -2813,9 +2814,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
             assert(arg2 != nullptr);
             nonStandardArgs.Add(arg2, REG_LNGARG_HI);
         }
-#endif // !defined(LEGACY_BACKEND) && defined(_TARGET_X86_)
-
-#if !defined(LEGACY_BACKEND) && !defined(_TARGET_X86_)
+#else // !defined(_TARGET_X86_)
         // TODO-X86-CQ: Currently RyuJIT/x86 passes args on the stack, so this is not needed.
         // If/when we change that, the following code needs to be changed to correctly support the (TBD) managed calling
         // convention for x86/SSE.
@@ -2880,11 +2879,12 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
 
             nonStandardArgs.Add(arg, REG_VIRTUAL_STUB_PARAM);
         }
-        else if (call->gtCallType == CT_INDIRECT && call->gtCallCookie)
+        else
+#endif // defined(_TARGET_X86_)
+        if (call->gtCallType == CT_INDIRECT && call->gtCallCookie)
         {
             assert(!call->IsUnmanaged());
 
-            // put cookie into R11
             GenTree* arg = call->gtCallCookie;
             noway_assert(arg != nullptr);
             call->gtCallCookie = nullptr;
@@ -2892,9 +2892,15 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
             call->gtCallArgs = gtNewListNode(arg, call->gtCallArgs);
             numArgs++;
 
-            nonStandardArgs.Add(arg, REG_PINVOKE_COOKIE_PARAM);
+            // x86 passes the cookie on the stack.
+            CLANG_FORMAT_COMMENT_ANCHOR;
 
-            // put destination into R10
+#if !defined(_TARGET_X86_)
+            // put cookie into R11
+            nonStandardArgs.Add(arg, REG_PINVOKE_COOKIE_PARAM);
+#endif // !defined(_TARGET_X86_)
+
+            // put destination into R10/EAX
             arg              = gtClone(call->gtCallAddr, true);
             call->gtCallArgs = gtNewListNode(arg, call->gtCallArgs);
             numArgs++;
@@ -2905,7 +2911,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
             call->gtCallType    = CT_HELPER;
             call->gtCallMethHnd = eeFindHelper(CORINFO_HELP_PINVOKE_CALLI);
         }
-#endif // !defined(LEGACY_BACKEND) && !defined(_TARGET_X86_)
+#endif // !defined(LEGACY_BACKEND)
 
         // Allocate the fgArgInfo for the call node;
         //
