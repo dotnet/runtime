@@ -8476,6 +8476,7 @@
       <Member Name="GetTypeFromCLSID(System.Guid,System.String)" />
       <Member Name="GetTypeFromCLSID(System.Guid,System.String,System.Boolean)" />
       <Member Name="GetTypeFromHandle(System.RuntimeTypeHandle)" />
+      <Member Status="ImplRoot" Name="GetTypeFromHandleUnsafe(System.IntPtr)" /> <!-- Used by System.Linq.Expressions tests -->
       <Member Name="GetTypeFromProgID(System.String)" />
       <Member Name="GetTypeFromProgID(System.String,System.Boolean)" />
       <Member Name="GetTypeFromProgID(System.String,System.String)" />
