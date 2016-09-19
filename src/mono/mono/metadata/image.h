@@ -3,6 +3,7 @@
 
 #include <stdio.h>
 #include <mono/utils/mono-publib.h>
+#include <mono/utils/mono-error.h>
 
 MONO_BEGIN_DECLS
 
@@ -50,9 +51,9 @@ MONO_API int           mono_image_ensure_section_idx (MonoImage *image,
 
 MONO_API uint32_t       mono_image_get_entry_point    (MonoImage *image);
 MONO_API const char   *mono_image_get_resource       (MonoImage *image, uint32_t offset, uint32_t *size);
-MONO_API MonoImage*    mono_image_load_file_for_image (MonoImage *image, int fileidx);
+MONO_RT_EXTERNAL_ONLY MONO_API MonoImage*    mono_image_load_file_for_image (MonoImage *image, int fileidx);
 
-MONO_API MonoImage*    mono_image_load_module (MonoImage *image, int idx);
+MONO_RT_EXTERNAL_ONLY MONO_API MonoImage*    mono_image_load_module (MonoImage *image, int idx);
 
 MONO_API const char*   mono_image_get_name       (MonoImage *image);
 MONO_API const char*   mono_image_get_filename   (MonoImage *image);

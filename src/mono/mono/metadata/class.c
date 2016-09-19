@@ -18,7 +18,9 @@
 #include <string.h>
 #include <stdlib.h>
 #include <mono/metadata/image.h>
+#include <mono/metadata/image-internals.h>
 #include <mono/metadata/assembly.h>
+#include <mono/metadata/assembly-internals.h>
 #include <mono/metadata/metadata.h>
 #include <mono/metadata/metadata-internals.h>
 #include <mono/metadata/profiler-private.h>
@@ -216,7 +218,7 @@ mono_class_from_typeref_checked (MonoImage *image, guint32 type_token, MonoError
 		goto done;
 
 	case MONO_RESOLUTION_SCOPE_MODULEREF:
-		module = mono_image_load_module (image, idx);
+		module = mono_image_load_module_checked (image, idx, error);
 		if (module)
 			res = mono_class_from_name_checked (module, nspace, name, error);
 		goto done;
@@ -7814,7 +7816,7 @@ search_modules (MonoImage *image, const char *name_space, const char *name, Mono
 		if (cols [MONO_FILE_FLAGS] == FILE_CONTAINS_NO_METADATA)
 			continue;
 
-		file_image = mono_image_load_file_for_image (image, i + 1);
+		file_image = mono_image_load_file_for_image_checked (image, i + 1, error);
 		if (file_image) {
 			klass = mono_class_from_name_checked (file_image, name_space, name, error);
 			if (klass || !is_ok (error))
@@ -7910,7 +7912,7 @@ mono_class_from_name_checked_aux (MonoImage *image, const char* name_space, cons
 
 		impl = cols [MONO_EXP_TYPE_IMPLEMENTATION];
 		if ((impl & MONO_IMPLEMENTATION_MASK) == MONO_IMPLEMENTATION_FILE) {
-			loaded_image = mono_assembly_load_module (image->assembly, impl >> MONO_IMPLEMENTATION_BITS);
+			loaded_image = mono_assembly_load_module_checked (image->assembly, impl >> MONO_IMPLEMENTATION_BITS, error);
 			if (!loaded_image)
 				return NULL;
 			klass = mono_class_from_name_checked_aux (loaded_image, name_space, name, visited_images, error);

@@ -1,6 +1,7 @@
 #ifndef _MONONET_METADATA_ASSEMBLY_H_ 
 #define _MONONET_METADATA_ASSEMBLY_H_
 
+#include <mono/utils/mono-error.h>
 #include <mono/metadata/image.h>
 
 MONO_BEGIN_DECLS
@@ -32,7 +33,7 @@ MONO_API MonoAssembly* mono_assembly_loaded_full (MonoAssemblyName *aname, mono_
 MONO_API void          mono_assembly_get_assemblyref (MonoImage *image, int index, MonoAssemblyName *aname);
 MONO_API void          mono_assembly_load_reference (MonoImage *image, int index);
 MONO_API void          mono_assembly_load_references (MonoImage *image, MonoImageOpenStatus *status);
-MONO_API MonoImage*    mono_assembly_load_module (MonoAssembly *assembly, uint32_t idx);
+MONO_RT_EXTERNAL_ONLY MONO_API MonoImage*    mono_assembly_load_module (MonoAssembly *assembly, uint32_t idx);
 MONO_API void          mono_assembly_close      (MonoAssembly *assembly);
 MONO_API void          mono_assembly_setrootdir (const char *root_dir);
 MONO_API MONO_CONST_RETURN char *mono_assembly_getrootdir (void);

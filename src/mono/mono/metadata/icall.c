@@ -43,7 +43,9 @@
 #include <mono/metadata/threadpool-ms-io.h>
 #include <mono/metadata/monitor.h>
 #include <mono/metadata/reflection.h>
+#include <mono/metadata/image-internals.h>
 #include <mono/metadata/assembly.h>
+#include <mono/metadata/assembly-internals.h>
 #include <mono/metadata/tabledefs.h>
 #include <mono/metadata/exception.h>
 #include <mono/metadata/exception-internals.h>
@@ -4827,8 +4829,8 @@ ves_icall_System_Reflection_Assembly_GetManifestResourceInternal (MonoReflection
 		g_assert ((impl & MONO_IMPLEMENTATION_MASK) == MONO_IMPLEMENTATION_FILE);
 		file_idx = impl >> MONO_IMPLEMENTATION_BITS;
 
-		module = mono_image_load_file_for_image (assembly->assembly->image, file_idx);
-		if (!module)
+		module = mono_image_load_file_for_image_checked (assembly->assembly->image, file_idx, &error);
+		if (mono_error_set_pending_exception (&error) || !module)
 			return NULL;
 	}
 	else
@@ -5028,7 +5030,9 @@ ves_icall_System_Reflection_Assembly_GetModulesInternal (MonoReflectionAssembly 
 			mono_array_setref (res, j, rm);
 		}
 		else {
-			MonoImage *m = mono_image_load_file_for_image (image, i + 1);
+			MonoImage *m = mono_image_load_file_for_image_checked (image, i + 1, &error);
+			if (mono_error_set_pending_exception (&error))
+				return NULL;
 			if (!m) {
 				MonoString *fname = mono_string_new (mono_domain_get (), mono_metadata_string_heap (image, cols [MONO_FILE_NAME]));
 				mono_set_pending_exception (mono_get_exception_file_not_found2 (NULL, fname));
@@ -5552,7 +5556,9 @@ ves_icall_System_Reflection_Assembly_GetTypes (MonoReflectionAssembly *assembly,
 	/* Append data from all modules in the assembly */
 	for (i = 0; i < table->rows; ++i) {
 		if (!(mono_metadata_decode_row_col (table, i, MONO_FILE_FLAGS) & FILE_CONTAINS_NO_METADATA)) {
-			MonoImage *loaded_image = mono_assembly_load_module (image->assembly, i + 1);
+			MonoImage *loaded_image = mono_assembly_load_module_checked (image->assembly, i + 1, &error);
+			if (mono_error_set_pending_exception (&error))
+				return NULL;
 			if (loaded_image) {
 				MonoArray *ex2;
 				MonoArray *res2;
