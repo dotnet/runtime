@@ -6331,6 +6331,40 @@ void CodeGen::genCallInstruction(GenTreePtr node)
 
     if (target != nullptr)
     {
+#ifdef _TARGET_X86_
+        if (call->IsVirtualStub() && (call->gtCallType == CT_INDIRECT))
+        {
+            // On x86, we need to generate a very specific pattern for indirect VSD calls:
+            //
+            //    3-byte nop
+            //    call dword ptr [eax]
+            //
+            // Where EAX is also used as an argument to the stub dispatch helper. Make
+            // sure that the call target address is computed into EAX in this case.
+
+            assert(REG_VIRTUAL_STUB_PARAM == REG_VIRTUAL_STUB_TARGET);
+
+            assert(target->isContainedIndir());
+            assert(target->OperGet() == GT_IND);
+
+            GenTree* addr = target->AsIndir()->Addr();
+            assert(!addr->isContained());
+
+            genConsumeReg(addr);
+            if (addr->gtRegNum != REG_VIRTUAL_STUB_TARGET)
+            {
+                inst_RV_RV(INS_mov, REG_VIRTUAL_STUB_TARGET, addr->gtRegNum, TYP_I_IMPL);
+            }
+
+            getEmitter()->emitIns_Nop(3);
+            getEmitter()->emitIns_Call(emitter::EmitCallType(emitter::EC_INDIR_ARD), methHnd,
+                                       INDEBUG_LDISASM_COMMA(sigInfo) nullptr, argSizeForEmitter, retSize
+                                       MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize),
+                                       gcInfo.gcVarPtrSetCur, gcInfo.gcRegGCrefSetCur, gcInfo.gcRegByrefSetCur,
+                                       ilOffset, REG_VIRTUAL_STUB_TARGET, REG_NA, 1, 0);
+        }
+        else
+#endif
         if (target->isContainedIndir())
         {
             if (target->AsIndir()->HasBase() && target->AsIndir()->Base()->isContainedIntOrIImmed())
