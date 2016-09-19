@@ -142,6 +142,7 @@ namespace System.IO
         public override void EndWrite(System.IAsyncResult asyncResult) { return; }
         public override void Flush() { }
         public override System.Threading.Tasks.Task FlushAsync(System.Threading.CancellationToken cancellationToken) { return default(System.Threading.Tasks.Task); }
+        public virtual byte[] GetBuffer() { return default(byte[]); }
         public override int Read(byte[] buffer, int offset, int count) { buffer = default(byte[]); return default(int); }
         public override System.Threading.Tasks.Task<int> ReadAsync(byte[] buffer, int offset, int count, System.Threading.CancellationToken cancellationToken) { return default(System.Threading.Tasks.Task<int>); }
         public override int ReadByte() { return default(int); }

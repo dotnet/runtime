@@ -963,14 +963,10 @@ namespace System
         long System.IConvertible.ToInt64(System.IFormatProvider provider) { return default(long); }
         sbyte System.IConvertible.ToSByte(System.IFormatProvider provider) { return default(sbyte); }
         float System.IConvertible.ToSingle(System.IFormatProvider provider) { return default(float); }
-        [System.ObsoleteAttribute("The provider argument is not used. Please use ToString().")]
-        string System.IConvertible.ToString(System.IFormatProvider provider) { return default(string); }
         object System.IConvertible.ToType(System.Type type, System.IFormatProvider provider) { return default(object); }
         ushort System.IConvertible.ToUInt16(System.IFormatProvider provider) { return default(ushort); }
         uint System.IConvertible.ToUInt32(System.IFormatProvider provider) { return default(uint); }
         ulong System.IConvertible.ToUInt64(System.IFormatProvider provider) { return default(ulong); }
-        [System.ObsoleteAttribute("The provider argument is not used. Please use ToString(String).")]
-        string System.IFormattable.ToString(string format, System.IFormatProvider provider) { return default(string); }
         public static object ToObject(System.Type enumType, object value) { return default(object); }
         public static object ToObject(System.Type enumType, int value) { return default(object); }
         public static object ToObject(System.Type enumType, long value) { return default(object); }
@@ -986,6 +982,10 @@ namespace System
         public static object ToObject(System.Type enumType, ushort value) { return default(object); }
         public override string ToString() { return default(string); }
         public string ToString(string format) { return default(string); }
+        [System.ObsoleteAttribute("The provider argument is not used. Please use ToString().")]
+        public string ToString(System.IFormatProvider provider) { return default(string); }        
+        [System.ObsoleteAttribute("The provider argument is not used. Please use ToString(String).")]
+        public string ToString(string format, System.IFormatProvider provider) { return default(string); }
         public static bool TryParse<TEnum>(string value, out TEnum result) where TEnum : struct { result = default(TEnum); return default(bool); }
         public static bool TryParse<TEnum>(string value, bool ignoreCase, out TEnum result) where TEnum : struct { result = default(TEnum); return default(bool); }
     }
@@ -1098,6 +1098,7 @@ namespace System
         public Guid(string g) { throw new System.NotImplementedException(); }
         [System.CLSCompliantAttribute(false)]
         public Guid(uint a, ushort b, ushort c, byte d, byte e, byte f, byte g, byte h, byte i, byte j, byte k) { throw new System.NotImplementedException(); }
+        public int CompareTo(object value) { return default(int); }
         public int CompareTo(System.Guid value) { return default(int); }
         public bool Equals(System.Guid g) { return default(bool); }
         public override bool Equals(object o) { return default(bool); }
@@ -1107,11 +1108,10 @@ namespace System
         public static bool operator !=(System.Guid a, System.Guid b) { return default(bool); }
         public static System.Guid Parse(string input) { return default(System.Guid); }
         public static System.Guid ParseExact(string input, string format) { return default(System.Guid); }
-        int System.IComparable.CompareTo(object value) { return default(int); }
-        string System.IFormattable.ToString(string format, System.IFormatProvider provider) { return default(string); }
         public byte[] ToByteArray() { return default(byte[]); }
         public override string ToString() { return default(string); }
         public string ToString(string format) { return default(string); }
+        public string ToString(string format, System.IFormatProvider provider) { return default(string); }
         public static bool TryParse(string input, out System.Guid result) { result = default(System.Guid); return default(bool); }
         public static bool TryParseExact(string input, string format, out System.Guid result) { result = default(System.Guid); return default(bool); }
     }
@@ -1793,8 +1793,7 @@ namespace System
         public static string Format(string format, object arg0, object arg1) { return default(string); }
         public static string Format(string format, object arg0, object arg1, object arg2) { return default(string); }
         public static string Format(string format, params object[] args) { return default(string); }
-        // tracking issue #10216.
-        // public System.CharEnumerator GetEnumerator() { return default(System.CharEnumerator); }
+        public System.CharEnumerator GetEnumerator() { return default(System.CharEnumerator); }
         public override int GetHashCode() { return default(int); }
         public int IndexOf(char value) { return default(int); }
         public int IndexOf(char value, int startIndex) { return default(int); }
@@ -1944,6 +1943,7 @@ namespace System
         public double TotalSeconds { get { return default(double); } }
         public System.TimeSpan Add(System.TimeSpan ts) { return default(System.TimeSpan); }
         public static int Compare(System.TimeSpan t1, System.TimeSpan t2) { return default(int); }
+        public int CompareTo(object value) { return default(int); }
         public int CompareTo(System.TimeSpan value) { return default(int); }
         public System.TimeSpan Duration() { return default(System.TimeSpan); }
         public override bool Equals(object value) { return default(bool); }
@@ -1974,7 +1974,6 @@ namespace System
         public static System.TimeSpan ParseExact(string input, string[] formats, System.IFormatProvider formatProvider) { return default(System.TimeSpan); }
         public static System.TimeSpan ParseExact(string input, string[] formats, System.IFormatProvider formatProvider, System.Globalization.TimeSpanStyles styles) { return default(System.TimeSpan); }
         public System.TimeSpan Subtract(System.TimeSpan ts) { return default(System.TimeSpan); }
-        int System.IComparable.CompareTo(object value) { return default(int); }
         public override string ToString() { return default(string); }
         public string ToString(string format) { return default(string); }
         public string ToString(string format, System.IFormatProvider formatProvider) { return default(string); }
@@ -2763,6 +2762,7 @@ namespace System
         public int Minor { get { return default(int); } }
         public short MinorRevision { get { return default(short); } }
         public int Revision { get { return default(int); } }
+        public int CompareTo(object version) { return default(int); }
         public int CompareTo(System.Version value) { return default(int); }
         public override bool Equals(object obj) { return default(bool); }
         public bool Equals(System.Version obj) { return default(bool); }
@@ -2774,7 +2774,6 @@ namespace System
         public static bool operator <(System.Version v1, System.Version v2) { return default(bool); }
         public static bool operator <=(System.Version v1, System.Version v2) { return default(bool); }
         public static System.Version Parse(string input) { return default(System.Version); }
-        int System.IComparable.CompareTo(object version) { return default(int); }
         public override string ToString() { return default(string); }
         public string ToString(int fieldCount) { return default(string); }
         public static bool TryParse(string input, out System.Version result) { result = default(System.Version); return default(bool); }

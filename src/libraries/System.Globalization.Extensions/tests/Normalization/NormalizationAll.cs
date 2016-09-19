@@ -23,6 +23,7 @@ namespace System.Globalization.Tests
         }
         
         [Fact]
+        [ActiveIssue(11803, Xunit.PlatformID.AnyUnix)]
         public void Normalize()
         {
             // Windows 8 test data came from http://www.unicode.org/Public/UCD/latest/ucd/NormalizationTest.txt 

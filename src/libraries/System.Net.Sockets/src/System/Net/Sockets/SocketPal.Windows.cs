@@ -291,7 +291,7 @@ namespace System.Net.Sockets
         public static unsafe SocketError Receive(SafeCloseSocket handle, byte[] buffer, int offset, int size, SocketFlags socketFlags, out int bytesTransferred)
         {
             int bytesReceived;
-            if (buffer.Length == 0)
+            if (buffer?.Length == 0)
             {
                 bytesReceived = Interop.Winsock.recv(handle.DangerousGetHandle(), null, 0, socketFlags);
             }

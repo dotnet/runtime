@@ -15,8 +15,10 @@
     <Compile Include="AcceptAsync.cs" />
     <Compile Include="AgnosticListenerTest.cs" />
     <Compile Include="ArgumentValidationTests.cs" />
+    <Compile Include="Handle.cs" />
     <Compile Include="ConnectAsync.cs" />
     <Compile Include="ConnectExTest.cs" />
+    <Compile Include="Close.cs" />
     <Compile Include="CreateSocketTests.cs" />
     <Compile Include="DisposedSocketTests.cs" />
     <Compile Include="DnsEndPointTest.cs" />
@@ -39,7 +41,6 @@
     <Compile Include="SocketOptionNameTest.cs" />
     <Compile Include="UdpClientTest.cs" />
     <Compile Include="UnixDomainSocketTest.cs" />
-    
     <!-- Common Sockets files -->
     <Compile Include="$(CommonTestPath)\System\Net\Configuration.cs">
       <Link>SocketCommon\Configuration.cs</Link>

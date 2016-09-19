@@ -160,6 +160,7 @@ namespace System.Net.Sockets
     {
         public Socket(System.Net.Sockets.AddressFamily addressFamily, System.Net.Sockets.SocketType socketType, System.Net.Sockets.ProtocolType protocolType) { }
         public Socket(System.Net.Sockets.SocketType socketType, System.Net.Sockets.ProtocolType protocolType) { }
+        public Socket(SocketInformation socketInformation) { }
         public System.Net.Sockets.AddressFamily AddressFamily { get { return default(System.Net.Sockets.AddressFamily); } }
         public int Available { get { return default(int); } }
         public bool Blocking { get { return default(bool); } set { } }
@@ -168,6 +169,7 @@ namespace System.Net.Sockets
         public bool DualMode { get { return default(bool); } set { } }
         public bool EnableBroadcast { get { return default(bool); } set { } }
         public bool ExclusiveAddressUse { get { return default(bool); } set { } }
+        public IntPtr Handle { get { return default(IntPtr); } }
         public bool IsBound { get { return default(bool); } }
         public System.Net.Sockets.LingerOption LingerState { get { return default(System.Net.Sockets.LingerOption); } set { } }
         public System.Net.EndPoint LocalEndPoint { get { return default(System.Net.EndPoint); } }
@@ -183,10 +185,31 @@ namespace System.Net.Sockets
         public int SendTimeout { get { return default(int); } set { } }
         public System.Net.Sockets.SocketType SocketType { get { return default(System.Net.Sockets.SocketType); } }
         public short Ttl { get { return default(short); } set { } }
+        public bool UseOnlyOverlappedIO { get { return default(bool); } set { } }
         public System.Net.Sockets.Socket Accept() { return default(System.Net.Sockets.Socket); }
         public bool AcceptAsync(System.Net.Sockets.SocketAsyncEventArgs e) { return default(bool); }
+        public IAsyncResult BeginAccept(AsyncCallback callback, object state) { return default(IAsyncResult); }
+        public IAsyncResult BeginAccept(int receiveSize, AsyncCallback callback, object state) { return default(IAsyncResult); }
+        public IAsyncResult BeginAccept(Socket acceptSocket, int receiveSize, AsyncCallback callback, object state) { return default(IAsyncResult); }
+        public IAsyncResult BeginConnect(string host, int port, AsyncCallback requestCallback, object state) { return default(IAsyncResult); }
+        public IAsyncResult BeginConnect(IPAddress address, int port, AsyncCallback requestCallback, object state) { return default(IAsyncResult); }
+        public IAsyncResult BeginConnect(IPAddress[] addresses, int port, AsyncCallback requestCallback, object state) { return default(IAsyncResult); }
+        public IAsyncResult BeginConnect(EndPoint remoteEP, AsyncCallback callback, object state) { return default(IAsyncResult); }
+        public IAsyncResult BeginReceive(byte[] buffer, int offset, int size, SocketFlags socketFlags, AsyncCallback callback, object state) { return default(IAsyncResult); }
+        public IAsyncResult BeginReceive(byte[] buffer, int offset, int size, SocketFlags socketFlags, out SocketError errorCode, AsyncCallback callback, object state) { errorCode = default(SocketError); return default(IAsyncResult); }
+        public IAsyncResult BeginReceive(Collections.Generic.IList<ArraySegment<byte>> buffers, SocketFlags socketFlags, AsyncCallback callback, object state) { return default(IAsyncResult); }
+        public IAsyncResult BeginReceive(Collections.Generic.IList<ArraySegment<byte>> buffers, SocketFlags socketFlags, out SocketError errorCode, AsyncCallback callback, object state) { errorCode = default(SocketError); return default(IAsyncResult); }
+        public IAsyncResult BeginReceiveFrom(byte[] buffer, int offset, int size, SocketFlags socketFlags, ref EndPoint remoteEP, AsyncCallback callback, object state) { return default(IAsyncResult); }
+        public IAsyncResult BeginReceiveMessageFrom(byte[] buffer, int offset, int size, SocketFlags socketFlags, ref EndPoint remoteEP, AsyncCallback callback, object state) { return default(IAsyncResult); }
+        public IAsyncResult BeginSend(byte[] buffer, int offset, int size, SocketFlags socketFlags, AsyncCallback callback, object state) { return default(IAsyncResult); }
+        public IAsyncResult BeginSend(byte[] buffer, int offset, int size, SocketFlags socketFlags, out SocketError errorCode, AsyncCallback callback, object state) { errorCode = default(SocketError); return default(IAsyncResult); }
+        public IAsyncResult BeginSend(Collections.Generic.IList<ArraySegment<byte>> buffers, SocketFlags socketFlags, AsyncCallback callback, object state) { return default(IAsyncResult); }
+        public IAsyncResult BeginSend(Collections.Generic.IList<ArraySegment<byte>> buffers, SocketFlags socketFlags, out SocketError errorCode, AsyncCallback callback, object state) { errorCode = default(SocketError); return default(IAsyncResult); }
+        public IAsyncResult BeginSendTo(byte[] buffer, int offset, int size, SocketFlags socketFlags, EndPoint remoteEP, AsyncCallback callback, object state) { return default(IAsyncResult); }
         public void Bind(System.Net.EndPoint localEP) { }
         public static void CancelConnectAsync(System.Net.Sockets.SocketAsyncEventArgs e) { }
+        public void Close() { }
+        public void Close(int timeout) { }
         public void Connect(System.Net.EndPoint remoteEP) { }
         public void Connect(System.Net.IPAddress address, int port) { }
         public void Connect(System.Net.IPAddress[] addresses, int port) { }
@@ -196,6 +219,16 @@ namespace System.Net.Sockets
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
         ~Socket() { }
+        public SocketInformation DuplicateAndClose(int targetProcessId) { return default(SocketInformation); }
+        public Socket EndAccept(IAsyncResult asyncResult) { return default(Socket); }
+        public void EndConnect(IAsyncResult asyncResult) { }
+        public int EndReceive(IAsyncResult asyncResult) { return default(int); }
+        public int EndReceive(IAsyncResult asyncResult, out SocketError errorCode) { errorCode = default(SocketError); return default(int); }
+        public int EndReceiveFrom(IAsyncResult asyncResult, ref EndPoint endPoint) { return default(int); }
+        public int EndReceiveMessageFrom(IAsyncResult asyncResult, ref SocketFlags socketFlags, ref EndPoint endPoint, out IPPacketInformation ipPacketInformation) { return default(int); }
+        public int EndSend(IAsyncResult asyncResult) { return default(int); }
+        public int EndSend(IAsyncResult asyncResult, out SocketError errorCode) { errorCode = default(SocketError); return default(int); }
+        public int EndSendTo(IAsyncResult asyncResult) { return default(int); }
         public object GetSocketOption(System.Net.Sockets.SocketOptionLevel optionLevel, System.Net.Sockets.SocketOptionName optionName) { return default(object); }
         public void GetSocketOption(System.Net.Sockets.SocketOptionLevel optionLevel, System.Net.Sockets.SocketOptionName optionName, byte[] optionValue) { }
         public byte[] GetSocketOption(System.Net.Sockets.SocketOptionLevel optionLevel, System.Net.Sockets.SocketOptionName optionName, int optionLength) { return default(byte[]); }
@@ -292,6 +325,19 @@ namespace System.Net.Sockets
         Partial = 32768,
         Peek = 2,
         Truncated = 256,
+    }
+    public struct SocketInformation
+    {
+        public SocketInformationOptions Options { get { return default(SocketInformationOptions); } set { } }
+        public byte[] ProtocolInformation { get { return default(byte[]); } set { } }
+    }
+    [Flags]
+    public enum SocketInformationOptions
+    {
+        NonBlocking = 1,
+        Connected = 2,
+        Listening = 4,
+        UseOnlyOverlappedIO = 8,
     }
     public enum SocketOptionLevel
     {

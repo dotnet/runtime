@@ -125,14 +125,14 @@ namespace System.Reflection.Emit.Tests
         }
     }
 
-    internal class IDSubClass : IDClass
+    public class IDSubClass : IDClass
     {
         public IDSubClass(int id) : base(id) { }
         public IDSubClass() : base() { }
     }
 
-    internal delegate int IDClassDelegate(IDClass owner, int id);
-    internal delegate IDClass InvalidRetType(int id);
-    internal delegate int WrongParamNumber(int id, int m);
-    internal delegate int InvalidParamType(IDClass owner);
+    public delegate int IDClassDelegate(IDClass owner, int id);
+    public delegate IDClass InvalidRetType(int id);
+    public delegate int WrongParamNumber(int id, int m);
+    public delegate int InvalidParamType(IDClass owner);
 }

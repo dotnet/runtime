@@ -1,8 +1,8 @@
 {
   "dependencies": {
-    "Microsoft.NETCore.Platforms": "4.3.0-beta-devapi-24512-01",
-    "System.Runtime": "4.3.0-beta-devapi-24512-01",
-    "System.Runtime.Extensions": "4.3.0-beta-devapi-24512-01",
+    "Microsoft.NETCore.Platforms": "1.0.2-beta-24516-03",
+    "System.Runtime": "4.3.0-beta-24516-03",
+    "System.Runtime.Extensions": "4.3.0-beta-24516-03",
     "System.Net.Primitives": {
       "version": "4.0.11",
       "exclude": "compile"

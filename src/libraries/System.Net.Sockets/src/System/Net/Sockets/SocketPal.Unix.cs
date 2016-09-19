@@ -78,7 +78,7 @@ namespace System.Net.Sockets
             fixed (byte* b = buffer)
             {
                 var iov = new Interop.Sys.IOVector {
-                    Base = &b[offset],
+                    Base = (b == null) ? null : &b[offset],
                     Count = (UIntPtr)count
                 };
 
@@ -484,13 +484,14 @@ namespace System.Net.Sockets
             {
                 Interop.Error errno;
                 int received;
-                if (buffer != null)
+                if (buffers != null)
                 {
-                    received = Receive(socket, flags, buffer, offset, count, socketAddress, ref socketAddressLen, out receivedFlags, out errno);
+                    Debug.Assert(buffer == null);
+                    received = Receive(socket, flags, buffers, socketAddress, ref socketAddressLen, out receivedFlags, out errno);
                 }
                 else
                 {
-                    received = Receive(socket, flags, buffers, socketAddress, ref socketAddressLen, out receivedFlags, out errno);
+                    received = Receive(socket, flags, buffer, offset, count, socketAddress, ref socketAddressLen, out receivedFlags, out errno);
                 }
 
                 if (received != -1)

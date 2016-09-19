@@ -5,10 +5,8 @@
     <ProjectGuid>{AF3EBF3B-526A-4B51-9F3D-62B0113CD01F}</ProjectGuid>
     <RootNamespace>System.ComponentModel.TypeConverter</RootNamespace>
     <AssemblyName>System.ComponentModel.TypeConverter</AssemblyName>
-    <AssemblyVersion Condition="'$(TargetGroup)' == 'netstandard1.0' OR '$(TargetGroup)'=='net45'">4.0.0.0</AssemblyVersion>
-    <ContractProject Condition="'$(TargetGroup)' == 'netstandard1.0' OR '$(TargetGroup)'=='net45'">..\ref\4.0\$(AssemblyName).depproj</ContractProject>
-    <IsPartialFacadeAssembly Condition="'$(TargetGroup)'=='net45' OR '$(TargetGroup)'=='net462'">true</IsPartialFacadeAssembly>
-    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.5</NuGetTargetMoniker>
+    <IsPartialFacadeAssembly Condition="'$(TargetGroup)'=='net463'">true</IsPartialFacadeAssembly>
+    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NuGetTargetMoniker>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
@@ -55,6 +53,11 @@
     <Compile Include="System\ComponentModel\UriTypeConverter.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)'==''">
+    <Compile Include="System\Timers\ElapsedEventArgs.cs" />
+    <Compile Include="System\Timers\ElapsedEventHandler.cs" />
+    <Compile Include="System\Timers\System.ComponentModel.cs" />
+    <Compile Include="System\Timers\Timer.cs" />
+    <Compile Include="System\Timers\TimersDescriptionAttribute.cs" />
     <Compile Include="System\ComponentModel\AttributeCollection.cs" />
     <Compile Include="System\ComponentModel\AttributeProviderAttribute.cs" />
     <Compile Include="System\ComponentModel\CancelEventHandler.cs" />
@@ -98,7 +101,7 @@
   <ItemGroup Condition="'$(TargetGroup)'==''">
     <EmbeddedResource Include="$(MsBuildThisFileDirectory)Resources\$(AssemblyName).rd.xml" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)'=='net45' OR '$(TargetGroup)'=='net462'">
+  <ItemGroup Condition="'$(TargetGroup)'=='net463'">
     <TargetingPackReference Include="mscorlib" />
     <TargetingPackReference Include="System" />
   </ItemGroup>
