@@ -11,7 +11,9 @@ using System.Linq;
 using System.Text;
 using System.Xml;
 using System.Xml.Linq;
+#if !NET_NATIVE
 using System.Xml.Schema;
+#endif
 using System.Xml.Serialization;
 using Xunit;
 
@@ -1840,6 +1842,7 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
         return simpleType2D;
     }
 
+#if !NET_NATIVE
     [Fact]
     public static void XmlSchemaTest()
     {
@@ -1886,6 +1889,7 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
         Assert.Equal(dog1.Age, dog2.Age);
         Assert.Equal(dog1.Breed, dog2.Breed);
     }
+#endif
 
     private static T SerializeAndDeserialize<T>(T value, string baseline, Func<XmlSerializer> serializerFactory = null,
         bool skipStringCompare = false, XmlSerializerNamespaces xns = null)
