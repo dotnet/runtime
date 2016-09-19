@@ -3219,3 +3219,14 @@ public enum DogBreed
     GermanShepherd,
     LabradorRetriever
 }
+
+public class Group
+{
+    public string GroupName;
+    public Vehicle GroupVehicle;
+}
+
+public class Vehicle
+{
+    public string LicenseNumber;
+}
