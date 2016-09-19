@@ -4308,11 +4308,13 @@ namespace System.Reflection
         public System.Reflection.ProcessorArchitecture ProcessorArchitecture { get { return default(System.Reflection.ProcessorArchitecture); } set { } }
         public System.Version Version { get { return default(System.Version); } set { } }
         public object Clone() { return default(object); }
+        public static System.Reflection.AssemblyName GetAssemblyName(System.String assemblyFile) { return default(System.Reflection.AssemblyName); }
         public byte[] GetPublicKey() { return default(byte[]); }
         public byte[] GetPublicKeyToken() { return default(byte[]); }
         public void SetPublicKey(byte[] publicKey) { }
         public void SetPublicKeyToken(byte[] publicKeyToken) { }
         public override string ToString() { return default(string); }
+        static public bool ReferenceMatchesDefinition(System.Reflection.AssemblyName reference, System.Reflection.AssemblyName definition) { return default(bool); }
         [System.Security.SecurityCriticalAttribute]
         public void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { return; }
         public void OnDeserialization(Object sender) { return; }
@@ -4329,6 +4331,7 @@ namespace System.Reflection
     public class AssemblyNameProxy : System.MarshalByRefObject
     {
         public AssemblyNameProxy() { }
+        public System.Reflection.AssemblyName GetAssemblyName(System.String assemblyFile) { return default(System.Reflection.AssemblyName); }
     }
     [System.AttributeUsageAttribute((System.AttributeTargets)(1), Inherited = false)]
     public sealed partial class AssemblyProductAttribute : System.Attribute
@@ -4784,6 +4787,8 @@ namespace System.Reflection
         public bool IsSpecialName { get { return default(bool); } }
         public bool IsStatic { get { return default(bool); } }
         public bool IsVirtual { get { return default(bool); } }
+        public virtual bool IsSecurityCritical { get { return default(bool); } }
+        public virtual bool IsSecurityTransparent { get { return default(bool); } }
         public abstract System.RuntimeMethodHandle MethodHandle { get; }
         public virtual System.Reflection.MethodImplAttributes MethodImplementationFlags { get { return default(System.Reflection.MethodImplAttributes); } }
         public override bool Equals(object obj) { return default(bool); }
