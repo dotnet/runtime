@@ -244,6 +244,24 @@ namespace System.Net.Sockets
             CheckPinNoBuffer();
         }
 
+        internal SocketError DoOperationDisconnect(Socket socket, SafeCloseSocket handle)
+        {
+            PrepareIOCPOperation();
+
+            SocketError socketError = SocketError.Success;
+
+            if (!socket.DisconnectEx(
+                    handle,
+                    _ptrNativeOverlapped,
+                    (int)(DisconnectReuseSocket ? TransmitFileOptions.ReuseSocket : 0),
+                    0))
+            {
+                socketError = (SocketError)Marshal.GetLastWin32Error();
+            }
+
+            return socketError;
+        }
+
         private void InnerStartOperationReceive()
         {
             // WWSARecv uses a WSABuffer array describing buffers of data to send.

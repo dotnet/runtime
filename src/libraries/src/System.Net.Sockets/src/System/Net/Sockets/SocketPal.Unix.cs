@@ -706,11 +706,6 @@ namespace System.Net.Sockets
             }
         }
 
-        public static SocketError Disconnect(Socket socket, SafeCloseSocket handle, bool reuseSocket)
-        {
-            throw new PlatformNotSupportedException();
-        }
-
         public static SocketError Send(SafeCloseSocket handle, IList<ArraySegment<byte>> buffers, SocketFlags socketFlags, out int bytesTransferred)
         {
             var bufferList = buffers;
@@ -1321,6 +1316,16 @@ namespace System.Net.Sockets
             byte[] socketAddressBuffer = new byte[socketAddressSize];
 
             return handle.AsyncContext.AcceptAsync(socketAddressBuffer, socketAddressSize, asyncResult.CompletionCallback);
+        }
+
+        internal static SocketError DisconnectAsync(Socket socket, SafeCloseSocket handle, bool reuseSocket, DisconnectOverlappedAsyncResult asyncResult)
+        {
+            throw new PlatformNotSupportedException(SR.net_sockets_disconnect_notsupported);
+        }
+
+        internal static SocketError Disconnect(Socket socket, SafeCloseSocket handle, bool reuseSocket)
+        {
+            throw new PlatformNotSupportedException(SR.net_sockets_disconnect_notsupported);
         }
     }
 }
