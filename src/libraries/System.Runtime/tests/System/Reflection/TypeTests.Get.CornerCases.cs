@@ -11,7 +11,8 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using Xunit;
 
-#pragma warning disable 0649
+#pragma warning disable 0649  // field is never assigned to
+#pragma warning disable 0067  // event is never used
 
 namespace System.Reflection.Tests
 {
@@ -338,4 +339,102 @@ namespace System.Reflection.Tests
         {
         }
     }
+
+    public static class TypeTests_AmbiguityResolution_NoParameterBinding
+{
+    [Fact]
+    public static void EventsThrowAlways()
+    {
+        BindingFlags bf = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.IgnoreCase;
+        Type t = typeof(Derived);
+
+        Assert.Throws<AmbiguousMatchException>(() => t.GetEvent("myevent", bf));
+    }
+
+    [Fact]
+    public static void NestedTypesThrowAlways()
+    {
+        BindingFlags bf = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.IgnoreCase;
+        Type t = typeof(Derived);
+
+        Assert.Throws<AmbiguousMatchException>(() => t.GetNestedType("myinner", bf));
+    }
+
+    [Fact]
+    public static void PropertiesThrowAlways()
+    {
+        BindingFlags bf = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.IgnoreCase;
+        Type t = typeof(Derived);
+
+        Assert.Throws<AmbiguousMatchException>(() => t.GetProperty("myprop", bf));
+    }
+
+    [Fact]
+    public static void FieldsThrowIfDeclaringTypeIsSame()
+    {
+        BindingFlags bf = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.IgnoreCase;
+        Type t = typeof(Derived);
+
+        // Fields return the most derived match.
+        FieldInfo f = t.GetField("myfield", bf);
+        Assert.Equal(f.Name, "MyField");
+
+        // Unless two of them are both the most derived match...
+        Assert.Throws<AmbiguousMatchException>(() => t.GetField("myfield2", bf));
+    }
+
+    [Fact]
+    public static void MethodsThrowIfDeclaringTypeIsSameAndSigIsDifferent()
+    {
+        BindingFlags bf = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.IgnoreCase;
+        Type t = typeof(Derived);
+
+        // Methods return the most derived match, provided all their signatures are the same.
+        MethodInfo m1 = t.GetMethod("mymethod1", bf);
+        Assert.Equal(m1.Name, "MyMethod1");
+        MethodInfo m2 = t.GetMethod("mymethod2", bf);
+        Assert.Equal(m2.Name, "MyMethod2");
+
+        // Unless two of them are both the most derived match...
+        Assert.Throws<AmbiguousMatchException>(() => t.GetMethod("mymethod3", bf));
+
+        // or they have different sigs.
+        Assert.Throws<AmbiguousMatchException>(() => t.GetMethod("mymethod4", bf));
+    }
+
+    private class Base
+    {
+        public event Action myevent;
+        public int myprop { get; }
+
+        public int myfield;
+
+        public void mymethod1(int x) { }
+        public static void mymethod2(int x, int y) { }
+
+        public void mymethod4(int x) { }
+    }
+
+    private class Derived : Base
+    {
+        public event Action MyEvent;
+
+        public class myinner { }
+        public class MyInner { }
+        public int MyProp { get; }
+
+        public int MyField;
+
+        public int MyField2;
+        public int myfield2;
+
+        public void MyMethod1(int x) { }
+        public void MyMethod2(int x, int y) { }
+
+        public static void mymethod3(int x, int y, double z) { }
+        public void MyMethod3(int x, int y, double z) { }
+
+        public void mymethod4(string x) { }
+    }
+}
 }
