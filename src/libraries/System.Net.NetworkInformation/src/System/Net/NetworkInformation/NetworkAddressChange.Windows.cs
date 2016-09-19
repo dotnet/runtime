@@ -12,6 +12,9 @@ namespace System.Net.NetworkInformation
 {
     public class NetworkChange
     {
+        //introduced for supporting design-time loading of System.Windows.dll
+        public static void RegisterNetworkChange(NetworkChange nc) { }
+
         public static event NetworkAvailabilityChangedEventHandler NetworkAvailabilityChanged
         {
             add

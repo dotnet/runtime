@@ -17,6 +17,9 @@ namespace System.Net.NetworkInformation
         private static readonly object s_lockObj = new object();
         private static readonly Interop.Sys.NetworkChangeEvent s_networkChangeCallback = ProcessEvent;
 
+        //introduced for supporting design-time loading of System.Windows.dll
+        public static void RegisterNetworkChange(NetworkChange nc) { }
+
         public static event NetworkAddressChangedEventHandler NetworkAddressChanged
         {
             add
@@ -48,6 +51,12 @@ namespace System.Net.NetworkInformation
                     }
                 }
             }
+        }
+
+        public static event NetworkAvailabilityChangedEventHandler NetworkAvailabilityChanged
+        {
+            add { throw new NotImplementedException(); }
+            remove { throw new NotImplementedException(); }
         }
 
         private static void CreateSocket()
