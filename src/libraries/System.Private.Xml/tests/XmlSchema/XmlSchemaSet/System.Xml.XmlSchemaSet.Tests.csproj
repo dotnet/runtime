@@ -60,7 +60,6 @@
   <ItemGroup>
     <ProjectReference Include="..\..\..\src\System.Private.Xml.csproj" />
     <ProjectReference Include="..\..\..\..\System.Xml.ReaderWriter\src\System.Xml.ReaderWriter.csproj" />
-    <ProjectReference Include="..\..\..\..\Microsoft.Win32.Registry\pkg\Microsoft.Win32.Registry.pkgproj" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />
