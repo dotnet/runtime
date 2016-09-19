@@ -53,6 +53,7 @@ namespace System.Reflection.Tests
             MethodBase mbase = typeof(MethodBaseTests).GetMethod("MyOtherMethod", BindingFlags.Static | BindingFlags.Public);
             MethodBody mb = mbase.GetMethodBody();
             Assert.True(mb.InitLocals);  // local variables are initialized
+#if DEBUG
             Assert.Equal(2, mb.MaxStackSize);
             Assert.Equal(3, mb.LocalVariables.Count);
 
@@ -62,6 +63,16 @@ namespace System.Reflection.Tests
                 if(lvi.LocalIndex == 1) { Assert.Equal(typeof(string), lvi.LocalType); }
                 if(lvi.LocalIndex == 2) { Assert.Equal(typeof(bool), lvi.LocalType); }
             }
+#else
+            Assert.Equal(1, mb.MaxStackSize);
+            Assert.Equal(2, mb.LocalVariables.Count);
+
+            foreach(LocalVariableInfo lvi in mb.LocalVariables)
+            {
+                if(lvi.LocalIndex == 0) { Assert.Equal(typeof(int), lvi.LocalType); }
+                if(lvi.LocalIndex == 1) { Assert.Equal(typeof(string), lvi.LocalType); }
+            }
+#endif
         }
 
         public static MethodBase MyFakeGenericMethod<T>() 
