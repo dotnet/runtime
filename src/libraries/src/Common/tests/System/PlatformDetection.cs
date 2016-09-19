@@ -52,6 +52,7 @@ namespace System
         public static bool IsDebian8 { get; } = IsDistroAndVersion("debian", "8");
         public static bool IsUbuntu1510 { get; } = IsDistroAndVersion("ubuntu", "15.10");
         public static bool IsUbuntu1604 { get; } = IsDistroAndVersion("ubuntu", "16.04");
+        public static bool IsUbuntu1610 { get; } = IsDistroAndVersion("ubuntu", "16.10");
         public static bool IsFedora23 { get; } = IsDistroAndVersion("fedora", "23");
 
         private static bool IsDistroAndVersion(string distroId, string versionId)
