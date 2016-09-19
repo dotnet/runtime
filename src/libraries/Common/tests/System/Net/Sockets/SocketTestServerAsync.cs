@@ -37,6 +37,7 @@ namespace System.Net.Sockets.Tests
         private object _listenSocketLock = new object();
 
         protected sealed override int Port { get { return ((IPEndPoint)_listenSocket.LocalEndPoint).Port; } }
+        public sealed override EndPoint EndPoint { get { return _listenSocket.LocalEndPoint; } }
 
         public SocketTestServerAsync(int numConnections, int receiveBufferSize, EndPoint localEndPoint, ProtocolType protocolType = ProtocolType.Tcp)
         {
