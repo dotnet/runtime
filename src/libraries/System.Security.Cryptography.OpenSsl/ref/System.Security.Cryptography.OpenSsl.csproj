@@ -6,10 +6,6 @@
     <NuGetTargetMoniker>.NETStandard,Version=v1.7</NuGetTargetMoniker>
   </PropertyGroup>
   <ItemGroup>
-    <!-- Temporary till we publish Algorithms updated package -->
-    <ProjectReference Include="..\..\System.Security.Cryptography.Algorithms\ref\System.Security.Cryptography.Algorithms.csproj" />
-  </ItemGroup>
-  <ItemGroup>
     <Compile Include="System.Security.Cryptography.OpenSsl.cs" />
   </ItemGroup>
   <ItemGroup>

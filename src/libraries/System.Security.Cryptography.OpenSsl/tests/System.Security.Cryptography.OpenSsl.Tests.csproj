@@ -10,7 +10,6 @@
     <OutputType>Library</OutputType>
     <AssemblyName>System.Security.Cryptography.OpenSsl.Tests</AssemblyName>
     <RootNamespace>System.Security.Cryptography.OpenSsl.Tests</RootNamespace>
-    <NugetTargetMoniker Condition="'$(TargetGroup)'=='netstandard1.7' AND '$(NugetTargetMoniker)'==''">.NETStandard,Version=v1.7</NugetTargetMoniker>
     <NugetTargetMoniker Condition="'$(NugetTargetMoniker)'==''">.NETStandard,Version=v1.6</NugetTargetMoniker>
     <KeepAllProjectReferences>true</KeepAllProjectReferences>
   </PropertyGroup>
@@ -76,7 +75,7 @@
     <Compile Include="EcDsaOpenSslProvider.cs" />
     <Compile Include="RsaOpenSslTests.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)'=='' OR '$(TargetGroup)'=='netstandard1.7'">
+  <ItemGroup Condition="'$(TargetGroup)'=='netstandard1.7'">
     <Compile Include="DsaOpenSslProvider.cs" />
     <Compile Include="DsaOpenSslTests.cs" />
     <Compile Include="$(CommonTestPath)\System\Security\Cryptography\AlgorithmImplementations\DSA\DSAFactory.cs">
@@ -99,7 +98,7 @@
     <None Include="project.json" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\src\System.Security.Cryptography.OpenSsl.csproj">
+    <ProjectReference Include="..\pkg\System.Security.Cryptography.OpenSsl.pkgproj">
       <Project>{78452f3e-ba91-47e7-bb0f-02e8a5c116c4}</Project>
       <Name>System.Security.Cryptography.OpenSsl</Name>
     </ProjectReference>

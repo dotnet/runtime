@@ -10,17 +10,11 @@
     <ProjectGuid>{81A05E2E-E3AE-4246-B4E6-DD5F31FB71F9}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AssemblyName>System.Security.Cryptography.Algorithms</AssemblyName>
-    <AssemblyVersion Condition="'$(TargetGroup)'=='net46'">4.0.0.0</AssemblyVersion>
-    <ContractProject Condition="'$(AssemblyVersion)' == '4.0.0.0'">..\ref\4.0\System.Security.Cryptography.Algorithms.depproj</ContractProject>
-    <AssemblyVersion Condition="'$(TargetGroup)'=='net461' or '$(TargetGroup)' == 'netcore50'">4.1.0.0</AssemblyVersion>
-    <ContractProject Condition="'$(AssemblyVersion)' == '4.1.0.0'">..\ref\4.1\System.Security.Cryptography.Algorithms.depproj</ContractProject>
-    <AssemblyVersion Condition="'$(TargetGroup)' == 'netstandard1.6'">4.2.0.0</AssemblyVersion>
-    <ContractProject Condition="'$(AssemblyVersion)' == '4.2.0.0'">..\ref\4.2\System.Security.Cryptography.Algorithms.depproj</ContractProject>
-    <IsPartialFacadeAssembly Condition="'$(TargetGroup)'=='net46' OR '$(TargetGroup)'=='net461' OR '$(TargetGroup)'=='net463'">true</IsPartialFacadeAssembly>
+    <IsPartialFacadeAssembly Condition="'$(TargetGroup)'=='net463'">true</IsPartialFacadeAssembly>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants>INTERNAL_ASYMMETRIC_IMPLEMENTATIONS</DefineConstants>
     <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NuGetTargetMoniker>
-    <GenFacadesArgs Condition="'$(TargetGroup)'=='net463' OR '$(TargetGroup)'=='netstandard1.6' OR '$(TargetGroup)'=='netstandard1.7'">$(GenFacadesArgs) -ignoreMissingTypes</GenFacadesArgs>
+    <GenFacadesArgs Condition="'$(TargetGroup)'=='net463'">$(GenFacadesArgs) -ignoreMissingTypes</GenFacadesArgs>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'OSX_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'OSX_Release|AnyCPU'" />
@@ -28,11 +22,6 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Release|AnyCPU'" />
-  <ItemGroup Condition="'$(TargetGroup)'=='netstandard1.6'">
-    <AdditionalFiles Include="$(ToolsDir)PinvokeAnalyzer_OneCoreApis.txt" />
-  </ItemGroup>
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">
     <Compile Include="Internal\Cryptography\TripleDesImplementation.cs" />
     <Compile Include="System\Security\Cryptography\Aes.cs" />

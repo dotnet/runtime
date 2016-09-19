@@ -22,54 +22,6 @@
         "dotnet5.8"
       ]
     },
-    "netstandard1.6": {
-      "dependencies": {
-        "System.Collections": "4.0.0",
-        "System.Diagnostics.Contracts": "4.0.0",
-        "System.Diagnostics.Debug": "4.0.10",
-        "System.Diagnostics.Tools": "4.0.0",
-        "System.IO": "4.0.10",
-        "System.Resources.ResourceManager": "4.0.0",
-        "System.Runtime": "4.0.20",
-        "System.Runtime.Extensions": "4.0.0",
-        "System.Runtime.InteropServices": "4.0.20",
-        "System.Runtime.Numerics": "4.0.0",
-        "System.Security.Cryptography.Primitives": "4.0.0",
-        "System.Security.Cryptography.Encoding": "4.0.0",
-        "System.Text.Encoding.Extensions": "4.0.0"
-      },
-      "imports": [
-        "dotnet5.5"
-      ]
-    },
-    "netcore50": {
-      "dependencies": {
-        "Microsoft.NETCore.Platforms": "1.0.1",
-        "System.Collections": "4.0.0",
-        "System.Diagnostics.Contracts": "4.0.0",
-        "System.Diagnostics.Debug": "4.0.10",
-        "System.Diagnostics.Tools": "4.0.0",
-        "System.IO": "4.0.10",
-        "System.Resources.ResourceManager": "4.0.0",
-        "System.Runtime": "4.0.20",
-        "System.Runtime.Extensions": "4.0.0",
-        "System.Runtime.InteropServices": "4.0.20",
-        "System.Runtime.Numerics": "4.0.0",
-        "System.Security.Cryptography.Primitives": "4.0.0",
-        "System.Security.Cryptography.Encoding": "4.0.0",
-        "System.Text.Encoding.Extensions": "4.0.0"
-      }
-    },
-    "net46": {
-      "dependencies": {
-        "Microsoft.TargetingPack.NETFramework.v4.6": "1.0.1"
-      }
-    },
-    "net461": {
-      "dependencies": {
-        "Microsoft.TargetingPack.NETFramework.v4.6.1": "1.0.1"
-      }
-    },
     "net463": {
       "dependencies": {
         "Microsoft.TargetingPack.NETFramework.v4.6.2": "1.0.1"

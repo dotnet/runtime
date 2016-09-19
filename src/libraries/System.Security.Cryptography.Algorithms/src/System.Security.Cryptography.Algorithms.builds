@@ -11,22 +11,6 @@
     <Project Include="System.Security.Cryptography.Algorithms.csproj">
       <OSGroup>Windows_NT</OSGroup>
     </Project>
-    <Project Include="System.Security.Cryptography.Algorithms.csproj">
-      <OSGroup>Windows_NT</OSGroup>
-      <TargetGroup>netstandard1.6</TargetGroup>	
-    </Project>
-    <Project Include="System.Security.Cryptography.Algorithms.csproj">
-      <OSGroup>Windows_NT</OSGroup>
-      <TargetGroup>netcore50</TargetGroup>
-    </Project>
-    <Project Include="System.Security.Cryptography.Algorithms.csproj">
-      <OSGroup>Windows_NT</OSGroup>
-      <TargetGroup>net46</TargetGroup>
-    </Project>
-    <Project Include="System.Security.Cryptography.Algorithms.csproj">
-      <OSGroup>Windows_NT</OSGroup>
-      <TargetGroup>net461</TargetGroup>
-    </Project>
     <Project Include="System.Security.Cryptography.Algorithms.csproj">  
       <OSGroup>Windows_NT</OSGroup>  
       <TargetGroup>net463</TargetGroup>  

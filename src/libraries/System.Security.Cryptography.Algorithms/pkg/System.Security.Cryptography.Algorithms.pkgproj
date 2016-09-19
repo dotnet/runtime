@@ -2,15 +2,6 @@
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
-    <ProjectReference Include="..\ref\4.0\System.Security.Cryptography.Algorithms.depproj">
-      <SupportedFramework>net46</SupportedFramework>
-    </ProjectReference>
-    <ProjectReference Include="..\ref\4.1\System.Security.Cryptography.Algorithms.depproj">
-      <SupportedFramework>net461;netcore50</SupportedFramework>
-    </ProjectReference>
-    <ProjectReference Include="..\ref\4.2\System.Security.Cryptography.Algorithms.depproj">
-      <SupportedFramework>netcoreapp1.0</SupportedFramework>
-    </ProjectReference>
     <ProjectReference Include="..\ref\System.Security.Cryptography.Algorithms.csproj">
       <SupportedFramework>net463;netcoreapp1.1;$(AllXamarinFrameworks)</SupportedFramework>
     </ProjectReference>

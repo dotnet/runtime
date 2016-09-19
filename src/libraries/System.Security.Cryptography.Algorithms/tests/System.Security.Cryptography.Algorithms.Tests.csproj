@@ -5,7 +5,6 @@
   </PropertyGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <CLRTestKind>BuildAndRun</CLRTestKind>
     <ProjectGuid>{508A7D81-6462-459C-9F8F-B58FCCCFC8E7}</ProjectGuid>
     <OutputType>Library</OutputType>
@@ -40,6 +39,12 @@
     </Compile>
     <Compile Include="$(CommonTestPath)\System\Security\Cryptography\AlgorithmImplementations\AES\AesModeTests.cs">
       <Link>CommonTest\AlgorithmImplementations\AES\AesModeTests.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Security\Cryptography\ByteUtils.cs">
+      <Link>CommonTest\System\Security\Cryptography\ByteUtils.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Security\Cryptography\CryptoUtils.cs">
+      <Link>CommonTest\System\Security\Cryptography\CryptoUtils.cs</Link>
     </Compile>
     <Compile Include="$(CommonTestPath)\System\Security\Cryptography\AlgorithmImplementations\AES\DecryptorReusability.cs">
       <Link>CommonTest\AlgorithmImplementations\AES\DecryptorReusability.cs</Link>
@@ -122,12 +127,6 @@
     <Compile Include="Sha512Tests.cs" />
     <Compile Include="TripleDesProvider.cs" />
     <Compile Include="TripleDesTests.cs" />
-    <Compile Include="$(CommonTestPath)\System\Security\Cryptography\ByteUtils.cs">
-      <Link>CommonTest\System\Security\Cryptography\ByteUtils.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonTestPath)\System\Security\Cryptography\CryptoUtils.cs">
-      <Link>CommonTest\System\Security\Cryptography\CryptoUtils.cs</Link>
-    </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)'=='netstandard1.7'">
     <Compile Include="DefaultDSAProvider.cs"/>
