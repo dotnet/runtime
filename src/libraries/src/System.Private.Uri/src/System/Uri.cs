@@ -3290,6 +3290,12 @@ namespace System
                         _string = _syntax.SchemeName + SchemeDelimiter;
                     }
                 }
+                
+                // If host is absent, uri is abnormal and relative as in RFC 3986 section 5.4.2
+                if (_info.Offset.Host == _info.Offset.Path)
+                {
+                    _string = _syntax.SchemeName + ":";
+                }
 
                 _info.Offset.Path = (ushort)_string.Length;
                 idx = _info.Offset.Path;
