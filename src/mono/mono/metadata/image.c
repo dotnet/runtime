@@ -685,7 +685,6 @@ mono_image_load_module (MonoImage *image, int idx)
 			module_ref = g_build_filename (base_dir, name, NULL);
 			image->modules [idx - 1] = mono_image_open_full (module_ref, &status, refonly);
 			if (image->modules [idx - 1]) {
-				mono_image_addref (image->modules [idx - 1]);
 				image->modules [idx - 1]->assembly = image->assembly;
 #ifdef HOST_WIN32
 				if (image->modules [idx - 1]->is_module_handle)
@@ -1653,6 +1652,17 @@ mono_wrapper_caches_free (MonoWrapperCaches *cache)
 	free_hash (cache->thunk_invoke_cache);
 }
 
+static void
+mono_image_close_except_pools_all (MonoImage**images, int image_count)
+{
+	for (int i = 0; i < image_count; ++i) {
+		if (images [i]) {
+			if (!mono_image_close_except_pools (images [i]))
+				images [i] = NULL;
+		}
+	}
+}
+
 /*
  * Returns whether mono_image_close_finish() must be called as well.
  * We must unload images in two steps because clearing the domain in
@@ -1773,7 +1783,6 @@ mono_image_close_except_pools (MonoImage *image)
 		g_free (image->name);
 		g_free (image->guid);
 		g_free (image->version);
-		g_free (image->files);
 	}
 
 	if (image->method_cache)
@@ -1852,12 +1861,8 @@ mono_image_close_except_pools (MonoImage *image)
 		g_free (image->image_info);
 	}
 
-	for (i = 0; i < image->module_count; ++i) {
-		if (image->modules [i]) {
-			if (!mono_image_close_except_pools (image->modules [i]))
-				image->modules [i] = NULL;
-		}
-	}
+	mono_image_close_except_pools_all (image->files, image->file_count);
+	mono_image_close_except_pools_all (image->modules, image->module_count);
 	if (image->modules_loaded)
 		g_free (image->modules_loaded);
 
@@ -1876,6 +1881,17 @@ mono_image_close_except_pools (MonoImage *image)
 	return TRUE;
 }
 
+static void
+mono_image_close_all (MonoImage**images, int image_count)
+{
+	for (int i = 0; i < image_count; ++i) {
+		if (images [i])
+			mono_image_close_finish (images [i]);
+	}
+	if (images)
+		g_free (images);
+}
+
 void
 mono_image_close_finish (MonoImage *image)
 {
@@ -1891,12 +1907,8 @@ mono_image_close_finish (MonoImage *image)
 		image->references = NULL;
 	}
 
-	for (i = 0; i < image->module_count; ++i) {
-		if (image->modules [i])
-			mono_image_close_finish (image->modules [i]);
-	}
-	if (image->modules)
-		g_free (image->modules);
+	mono_image_close_all (image->files, image->file_count);
+	mono_image_close_all (image->modules, image->module_count);
 
 #ifndef DISABLE_PERFCOUNTERS
 	mono_perfcounters->loader_bytes -= mono_mempool_get_allocated (image->mempool);
@@ -2195,8 +2207,10 @@ mono_image_load_file_for_image (MonoImage *image, int fileidx)
 				res->modules [i]->assembly = image->assembly;
 		}
 
-		if (!image->files)
+		if (!image->files) {
 			image->files = g_new0 (MonoImage*, t->rows);
+			image->file_count = t->rows;
+		}
 		image->files [fileidx - 1] = res;
 		mono_image_unlock (image);
 		/* vtable fixup can't happen with the image lock held */
