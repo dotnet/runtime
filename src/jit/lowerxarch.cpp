@@ -2831,7 +2831,16 @@ void Lowering::SetIndirAddrOpCounts(GenTreePtr indirTree)
         assert(base != addr);
         m_lsra->clearOperandCounts(addr);
 
-        GenTreePtr arrLength = nullptr;
+        const bool hasBase   = base != nullptr;
+        const bool hasIndex  = index != nullptr;
+        assert(hasBase || hasIndex); // At least one of a base or an index must be present.
+
+        // If the addressing mode has both a base and an index, bump its source count by one. If it only has one or the
+        // other, its source count is already correct (due to the source for the address itself).
+        if (hasBase && hasIndex)
+        {
+            info->srcCount++;
+        }
 
         // Traverse the computation below GT_IND to find the operands
         // for the addressing mode, marking the various constants and
@@ -2841,14 +2850,13 @@ void Lowering::SetIndirAddrOpCounts(GenTreePtr indirTree)
         // up of simple arithmetic operators, and the code generator
         // only traverses one leg of each node.
 
-        bool       foundBase  = (base == nullptr);
-        bool       foundIndex = (index == nullptr);
-        GenTreePtr nextChild  = nullptr;
-        for (GenTreePtr child = addr; child != nullptr && !child->OperIsLeaf(); child = nextChild)
+        bool foundBase  = !hasBase;
+        bool foundIndex = !hasIndex;
+        for (GenTree* child = addr, *nextChild = nullptr; child != nullptr && !child->OperIsLeaf(); child = nextChild)
         {
-            nextChild      = nullptr;
-            GenTreePtr op1 = child->gtOp.gtOp1;
-            GenTreePtr op2 = (child->OperIsBinary()) ? child->gtOp.gtOp2 : nullptr;
+            nextChild    = nullptr;
+            GenTree* op1 = child->gtOp.gtOp1;
+            GenTree* op2 = (child->OperIsBinary()) ? child->gtOp.gtOp2 : nullptr;
 
             if (op1 == base)
             {
@@ -2889,16 +2897,6 @@ void Lowering::SetIndirAddrOpCounts(GenTreePtr indirTree)
             }
         }
         assert(foundBase && foundIndex);
-
-        if (base != nullptr)
-        {
-            MakeSrcContained(indirTree, base);
-        }
-
-        if (index != nullptr)
-        {
-            MakeSrcContained(indirTree, index);
-        }
     }
     else if (addr->gtOper == GT_ARR_ELEM)
     {
