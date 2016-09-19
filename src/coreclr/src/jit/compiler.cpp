@@ -1220,6 +1220,63 @@ void Compiler::compShutdown()
     }
 #endif // COUNT_RANGECHECKS
 
+#if COUNT_AST_OPERS
+
+    // Add up all the counts so that we can show percentages of total
+    unsigned gtc = 0;
+    for (unsigned op = 0; op < GT_COUNT; op++)
+        gtc += GenTree::s_gtNodeCounts[op];
+
+    if (gtc > 0)
+    {
+        unsigned rem_total = gtc;
+        unsigned rem_large = 0;
+        unsigned rem_small = 0;
+
+        unsigned tot_large = 0;
+        unsigned tot_small = 0;
+
+        fprintf(fout, "\nGenTree operator counts (approximate):\n\n");
+
+        for (unsigned op = 0; op < GT_COUNT; op++)
+        {
+            unsigned siz = GenTree::s_gtTrueSizes[op];
+            unsigned cnt = GenTree::s_gtNodeCounts[op];
+            double   pct = 100.0 * cnt / gtc;
+
+            if (siz > TREE_NODE_SZ_SMALL)
+                tot_large += cnt;
+            else
+                tot_small += cnt;
+
+            // Let's not show anything below a threshold
+            if (pct >= 0.5)
+            {
+                fprintf(fout, "    GT_%-17s   %7u (%4.1lf%%) %3u bytes each\n",
+                              GenTree::OpName((genTreeOps)op), cnt, pct, siz);
+                rem_total -= cnt;
+            }
+            else
+            {
+                if (siz > TREE_NODE_SZ_SMALL)
+                    rem_large += cnt;
+                else
+                    rem_small += cnt;
+            }
+        }
+        if (rem_total > 0)
+        {
+            fprintf(fout, "    All other GT_xxx ...   %7u (%4.1lf%%) ... %4.1lf%% small + %4.1lf%% large\n",
+                          rem_total, 100.0 * rem_total / gtc, 100.0 * rem_small / gtc, 100.0 * rem_large / gtc);
+        }
+        fprintf(fout, "    -----------------------------------------------------\n");
+        fprintf(fout, "    Total    .......   %11u --ALL-- ... %4.1lf%% small + %4.1lf%% large\n",
+                      gtc, 100.0 * tot_small / gtc, 100.0 * tot_large / gtc);
+        fprintf(fout, "\n");
+    }
+
+#endif//COUNT_AST_OPERS
+
 #if DISPLAY_SIZES
 
     if (grossVMsize && grossNCsize)
