@@ -20,18 +20,18 @@ namespace System.Reflection.Tests
             Assert.Equal(2, mb.MaxStackSize);
             Assert.Equal(5, mb.LocalVariables.Count);
 
-            foreach(LocalVariableInfo lvi in mb.LocalVariables)
+            foreach (LocalVariableInfo lvi in mb.LocalVariables)
             {
-                if(lvi.LocalIndex == 0) { Assert.Equal(typeof(int), lvi.LocalType); }
-                if(lvi.LocalIndex == 1) { Assert.Equal(typeof(string), lvi.LocalType); }
-                if(lvi.LocalIndex == 2) { Assert.Equal(typeof(bool), lvi.LocalType); }
-                if(lvi.LocalIndex == 3) { Assert.Equal(typeof(bool), lvi.LocalType); }
-                if(lvi.LocalIndex == 4) { Assert.Equal(typeof(Exception), lvi.LocalType); }
+                if (lvi.LocalIndex == 0) { Assert.Equal(typeof(int), lvi.LocalType); }
+                if (lvi.LocalIndex == 1) { Assert.Equal(typeof(string), lvi.LocalType); }
+                if (lvi.LocalIndex == 2) { Assert.Equal(typeof(bool), lvi.LocalType); }
+                if (lvi.LocalIndex == 3) { Assert.Equal(typeof(bool), lvi.LocalType); }
+                if (lvi.LocalIndex == 4) { Assert.Equal(typeof(Exception), lvi.LocalType); }
             }
 
             foreach (ExceptionHandlingClause ehc in mb.ExceptionHandlingClauses)
             {
-                if(ehc.Flags != ExceptionHandlingClauseOptions.Finally && ehc.Flags != ExceptionHandlingClauseOptions.Filter)
+                if (ehc.Flags != ExceptionHandlingClauseOptions.Finally && ehc.Flags != ExceptionHandlingClauseOptions.Filter)
                 {
                     Assert.Equal(typeof(Exception), ehc.CatchType);
                     Assert.Equal(19, ehc.HandlerLength);

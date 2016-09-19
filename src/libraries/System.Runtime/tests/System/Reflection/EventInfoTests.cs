@@ -44,7 +44,7 @@ namespace System.Reflection.Tests
         }
     }
 
-#pragma warning disable 0067
+#pragma warning disable 0067  // the event was declared but never used
     // Metadata for Reflection
     public class BaseClass
     {
