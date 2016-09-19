@@ -11,7 +11,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <EnableWinRT Condition="'$(TargetGroup)' == 'netcore50'">true</EnableWinRT>
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'net46'">true</IsPartialFacadeAssembly>
-    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.3</NuGetTargetMoniker>
+    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NuGetTargetMoniker>
   </PropertyGroup>
   <PropertyGroup Condition="'$(EnableWinRT)' != 'true'">
     <DefineConstants>$(DefineConstants);FEATURE_CORECLR</DefineConstants>
@@ -43,6 +43,7 @@
     <Compile Include="System\Net\NetworkInformation\IPInterfaceProperties.cs" />
     <Compile Include="System\Net\NetworkInformation\IPInterfaceStatistics.cs" />
     <Compile Include="System\Net\NetworkInformation\IPv4InterfaceProperties.cs" />
+    <Compile Include="System\Net\NetworkInformation\Ipv4InterfaceStatistics.cs" />
     <Compile Include="System\Net\NetworkInformation\IPv6InterfaceProperties.cs" />
     <Compile Include="System\Net\NetworkInformation\MulticastIPAddressInformation.cs" />
     <Compile Include="System\Net\NetworkInformation\MulticastIPAddressInformationCollection.cs" />
@@ -118,6 +119,7 @@
     <Compile Include="System\Net\NetworkInformation\SystemIPInterfaceProperties.cs" />
     <Compile Include="System\Net\NetworkInformation\SystemIPInterfaceStatistics.cs" />
     <Compile Include="System\Net\NetworkInformation\SystemIPv4InterfaceProperties.cs" />
+    <Compile Include="System\Net\NetworkInformation\SystemIPv4InterfaceStatistics.cs" />
     <Compile Include="System\Net\NetworkInformation\SystemIPv6InterfaceProperties.cs" />
     <Compile Include="System\Net\NetworkInformation\SystemMulticastIPAddressInformation.cs" />
     <Compile Include="System\Net\NetworkInformation\SystemNetworkInterface.cs" />
@@ -324,6 +326,7 @@
     <Compile Include="System\Net\NetworkInformation\NetworkInterfacePal.Linux.cs" />
     <Compile Include="System\Net\NetworkInformation\LinuxNetworkInterface.cs" />
     <Compile Include="System\Net\NetworkInformation\LinuxIPv4InterfaceProperties.cs" />
+    <Compile Include="System\Net\NetworkInformation\LinuxIPv4InterfaceStatistics.cs" />
     <Compile Include="System\Net\NetworkInformation\LinuxIPv6InterfaceProperties.cs" />
     <Compile Include="System\Net\NetworkInformation\StringParsingHelpers.Addresses.cs" />
     <Compile Include="System\Net\NetworkInformation\StringParsingHelpers.Connections.cs" />
@@ -351,6 +354,7 @@
     <Compile Include="System\Net\NetworkInformation\OsxIPv4GlobalStatistics.cs" />
     <Compile Include="System\Net\NetworkInformation\OsxIpInterfaceStatistics.cs" />
     <Compile Include="System\Net\NetworkInformation\OsxIPv4InterfaceProperties.cs" />
+    <Compile Include="System\Net\NetworkInformation\OsxIPv4InterfaceStatistics.cs" />
     <Compile Include="System\Net\NetworkInformation\OsxIPv6InterfaceProperties.cs" />
     <Compile Include="System\Net\NetworkInformation\OsxIpInterfaceProperties.cs" />
     <Compile Include="System\Net\NetworkInformation\OsxNetworkInterface.cs" />

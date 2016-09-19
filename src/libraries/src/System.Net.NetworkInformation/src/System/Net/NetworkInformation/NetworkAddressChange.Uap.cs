@@ -6,9 +6,18 @@ using RTConnectivity = Windows.Networking.Connectivity;
 
 namespace System.Net.NetworkInformation
 {
-    public static class NetworkChange
+    public class NetworkChange
     {
+        //introduced for supporting design-time loading of System.Windows.dll
+        public static void RegisterNetworkChange(NetworkChange nc) { }
+
         public static event NetworkAddressChangedEventHandler NetworkAddressChanged;
+
+        public static event NetworkAvailabilityChangedEventHandler NetworkAvailabilityChanged
+        {
+            add { throw new NotImplementedException(); }
+            remove { throw new NotImplementedException(); }
+        }
 
         static NetworkChange()
         {

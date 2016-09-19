@@ -43,6 +43,9 @@ namespace System.Net.NetworkInformation
         private static readonly AutoResetEvent s_runLoopStartedEvent = new AutoResetEvent(false);
         private static readonly AutoResetEvent s_runLoopEndedEvent = new AutoResetEvent(false);
 
+        //introduced for supporting design-time loading of System.Windows.dll
+        public static void RegisterNetworkChange(NetworkChange nc) { }
+
         public static event NetworkAddressChangedEventHandler NetworkAddressChanged
         {
             add
@@ -70,6 +73,12 @@ namespace System.Net.NetworkInformation
                     }
                 }
             }
+        }
+
+        public static event NetworkAvailabilityChangedEventHandler NetworkAvailabilityChanged
+        {
+            add { throw new NotImplementedException(); }
+            remove { throw new NotImplementedException(); }
         }
 
         private static unsafe void CreateAndStartRunLoop()

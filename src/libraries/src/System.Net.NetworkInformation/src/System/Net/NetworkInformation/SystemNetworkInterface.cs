@@ -185,6 +185,11 @@ namespace System.Net.NetworkInformation
             return _interfaceProperties;
         }
 
+        public override IPv4InterfaceStatistics GetIPv4Statistics()
+        {
+            return new SystemIPv4InterfaceStatistics(_index);
+        }
+
         public override IPInterfaceStatistics GetIPStatistics()
         {
             return new SystemIPInterfaceStatistics(_index);

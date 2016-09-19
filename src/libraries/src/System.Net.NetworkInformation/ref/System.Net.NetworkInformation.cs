@@ -130,6 +130,8 @@ namespace System.Net.NetworkInformation
         public abstract string HostName { get; }
         public abstract bool IsWinsProxy { get; }
         public abstract System.Net.NetworkInformation.NetBiosNodeType NodeType { get; }
+        public virtual System.IAsyncResult BeginGetUnicastAddresses(System.AsyncCallback callback, object state) { throw null; }
+        public virtual System.Net.NetworkInformation.UnicastIPAddressInformationCollection EndGetUnicastAddresses(System.IAsyncResult asyncResult) { throw null; }
         public abstract System.Net.NetworkInformation.TcpConnectionInformation[] GetActiveTcpConnections();
         public abstract System.Net.IPEndPoint[] GetActiveTcpListeners();
         public abstract System.Net.IPEndPoint[] GetActiveUdpListeners();
@@ -142,6 +144,7 @@ namespace System.Net.NetworkInformation
         public abstract System.Net.NetworkInformation.TcpStatistics GetTcpIPv6Statistics();
         public abstract System.Net.NetworkInformation.UdpStatistics GetUdpIPv4Statistics();
         public abstract System.Net.NetworkInformation.UdpStatistics GetUdpIPv6Statistics();
+        public virtual System.Net.NetworkInformation.UnicastIPAddressInformationCollection GetUnicastAddresses() { throw null; }
         public virtual System.Threading.Tasks.Task<System.Net.NetworkInformation.UnicastIPAddressInformationCollection> GetUnicastAddressesAsync() { return default(System.Threading.Tasks.Task<System.Net.NetworkInformation.UnicastIPAddressInformationCollection>); }
     }
     public abstract partial class IPGlobalStatistics
@@ -189,6 +192,22 @@ namespace System.Net.NetworkInformation
     public abstract partial class IPInterfaceStatistics
     {
         protected IPInterfaceStatistics() { }
+        public abstract long BytesReceived { get; }
+        public abstract long BytesSent { get; }
+        public abstract long IncomingPacketsDiscarded { get; }
+        public abstract long IncomingPacketsWithErrors { get; }
+        public abstract long IncomingUnknownProtocolPackets { get; }
+        public abstract long NonUnicastPacketsReceived { get; }
+        public abstract long NonUnicastPacketsSent { get; }
+        public abstract long OutgoingPacketsDiscarded { get; }
+        public abstract long OutgoingPacketsWithErrors { get; }
+        public abstract long OutputQueueLength { get; }
+        public abstract long UnicastPacketsReceived { get; }
+        public abstract long UnicastPacketsSent { get; }
+    }
+    public abstract partial class IPv4InterfaceStatistics
+    {
+        protected IPv4InterfaceStatistics() { }
         public abstract long BytesReceived { get; }
         public abstract long BytesSent { get; }
         public abstract long IncomingPacketsDiscarded { get; }
@@ -253,9 +272,22 @@ namespace System.Net.NetworkInformation
         Unknown = 0,
     }
     public delegate void NetworkAddressChangedEventHandler(object sender, System.EventArgs e);
-    public static partial class NetworkChange
+    public delegate void NetworkAvailabilityChangedEventHandler(object sender, System.Net.NetworkInformation.NetworkAvailabilityEventArgs e);
+    public partial class NetworkAvailabilityEventArgs : System.EventArgs
     {
+        internal NetworkAvailabilityEventArgs() { }
+        public bool IsAvailable { get { throw null; } }
+    }
+    public partial class NetworkChange
+    {
+        [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
+        [System.ObsoleteAttribute("This API supports the .NET Framework infrastructure and is not intended to be used directly from your code.", true)]
+        public NetworkChange() { }
         public static event System.Net.NetworkInformation.NetworkAddressChangedEventHandler NetworkAddressChanged { add { } remove { } }
+        public static event System.Net.NetworkInformation.NetworkAvailabilityChangedEventHandler NetworkAvailabilityChanged { add { } remove { } }
+        [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
+        [System.ObsoleteAttribute("This API supports the .NET Framework infrastructure and is not intended to be used directly from your code.", true)]
+        public static void RegisterNetworkChange(System.Net.NetworkInformation.NetworkChange nc) { }
     }
     public partial class NetworkInformationException : System.Exception
     {
@@ -278,6 +310,7 @@ namespace System.Net.NetworkInformation
         public static System.Net.NetworkInformation.NetworkInterface[] GetAllNetworkInterfaces() { return default(System.Net.NetworkInformation.NetworkInterface[]); }
         public virtual System.Net.NetworkInformation.IPInterfaceProperties GetIPProperties() { return default(System.Net.NetworkInformation.IPInterfaceProperties); }
         public virtual System.Net.NetworkInformation.IPInterfaceStatistics GetIPStatistics() { return default(System.Net.NetworkInformation.IPInterfaceStatistics); }
+        public virtual System.Net.NetworkInformation.IPv4InterfaceStatistics GetIPv4Statistics() { throw null; }
         public static bool GetIsNetworkAvailable() { return default(bool); }
         public virtual System.Net.NetworkInformation.PhysicalAddress GetPhysicalAddress() { return default(System.Net.NetworkInformation.PhysicalAddress); }
         public virtual bool Supports(System.Net.NetworkInformation.NetworkInterfaceComponent networkInterfaceComponent) { return default(bool); }

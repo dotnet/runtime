@@ -125,6 +125,11 @@ namespace System.Net.NetworkInformation
             return new LinuxIPInterfaceStatistics(_name);
         }
 
+        public override IPv4InterfaceStatistics GetIPv4Statistics()
+        {
+            return new LinuxIPv4InterfaceStatistics(_name);
+        }
+
         public override OperationalStatus OperationalStatus { get { return _operationalStatus; } }
 
         public override long Speed
