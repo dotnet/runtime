@@ -10,10 +10,8 @@ using TestTimer = System.Timers.Timer;
 
 namespace System.Timers.Tests
 {
-    public class TimerTests : IDisposable
+    public class TimerTests
     {
-        private TestTimer _timer;
-
         [Theory]
         [InlineData(0)]
         [InlineData(-0.5D)]
@@ -22,39 +20,55 @@ namespace System.Timers.Tests
         [InlineData(double.MaxValue)]
         public void NegativeTests(double interval)
         {
-            Assert.Throws<ArgumentException>(() => { _timer = new TestTimer(interval); });
+            Assert.Throws<ArgumentException>(null, () => new TestTimer(interval));
+        }
+
+        [Fact]
+        public void Ctor_PropertiesMatchExpectedDefaults()
+        {
+            using (var timer = new TestTimer(42))
+            {
+                Assert.Equal(42, timer.Interval);
+                Assert.True(timer.AutoReset, "Expected AutoReset to be true");
+                Assert.False(timer.Enabled, "Expected Enabled to be false");
+
+                Assert.Null(timer.SynchronizingObject);
+                Assert.Null(timer.Site);
+            }
         }
 
         [Fact]
         public void TestTimerStartAutoReset()
         {
-            CountdownEvent cde = new CountdownEvent(1);
-            int result = 0;
-            _timer = new TestTimer(1);
+            using (var timer = new TestTimer(1))
+            {
+                var mres = new ManualResetEventSlim();
+                int count = 0;
+                int target = 1;
 
-            // Test defaults.
-            Assert.Equal(1, _timer.Interval);
-            Assert.True(_timer.AutoReset);
+                timer.AutoReset = false;
+                timer.Elapsed += (sender, e) =>
+                {
+                    if (Interlocked.Increment(ref count) == target)
+                    {
+                        mres.Set();
+                    }
+                };
+                timer.Start();
 
-            _timer.AutoReset = false;
-            _timer.Elapsed += (sender, e) => { result = ++result; cde.Signal(); };
-            _timer.Start();
+                mres.Wait();
+                Assert.False(timer.Enabled, "Auto-reset timer should not be enabled after elapsed");
+                Assert.Equal(1, count);
 
-            Assert.True(_timer.Enabled);
-            cde.Wait();
+                count = 0;
+                target = 10;
+                mres.Reset();
+                timer.AutoReset = true;
+                mres.Wait();
 
-            // Only elapsed once.
-            Assert.Equal(1, result);
-
-            cde = new CountdownEvent(10);
-            _timer.AutoReset = true;
-
-            cde.Wait();
-            cde.Dispose();
-
-            _timer.Stop();
-            // Atleast elapsed 10 times.
-            Assert.True(result >= 10);
+                timer.Stop();
+                Assert.InRange(count, target, int.MaxValue);
+            }
         }
 
         [Theory]
@@ -62,17 +76,12 @@ namespace System.Timers.Tests
         [InlineData(0.5D)]
         public void TestInterval(double interval)
         {
-            _timer = new TestTimer(interval);
-            Assert.Equal(Math.Ceiling(interval), _timer.Interval);
-
-            _timer.Interval = interval;
-            Assert.Equal(interval, _timer.Interval);
-        }
-
-        public void Dispose()
-        {
-            if (_timer != null)
-                _timer.Close();
+            using (var timer = new TestTimer(interval))
+            {
+                Assert.Equal(Math.Ceiling(interval), timer.Interval);
+                timer.Interval = interval;
+                Assert.Equal(interval, timer.Interval);
+            }
         }
     }
 }
