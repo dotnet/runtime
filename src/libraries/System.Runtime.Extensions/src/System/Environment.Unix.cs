@@ -38,7 +38,7 @@ namespace System
             }
             return results;
         });
-        private static readonly bool IsMac = Interop.Sys.GetUnixName() == "OSX";
+        internal static readonly bool IsMac = Interop.Sys.GetUnixName() == "OSX";
         private static Func<string, IEnumerable<string>> s_fileReadLines;
         private static Action<string> s_directoryCreateDirectory;
 
