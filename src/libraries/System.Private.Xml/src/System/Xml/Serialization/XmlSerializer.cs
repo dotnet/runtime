@@ -116,7 +116,9 @@ namespace System.Xml.Serialization
     public class XmlSerializer
     {
         private TempAssembly _tempAssembly;
+#pragma warning disable 0414
         private bool _typedSerializer;
+#pragma warning restore 0414
         private Type _primitiveType;
         private XmlMapping _mapping;
         private XmlDeserializationEvents _events = new XmlDeserializationEvents();
