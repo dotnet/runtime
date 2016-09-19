@@ -6969,9 +6969,43 @@
     </Type>
     <Type Name="System.Security.SecurityException">
       <Member Name="#ctor" />
+      <Member Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
       <Member Name="#ctor(System.String)" />
       <Member Name="#ctor(System.String,System.Exception)" />
-      <Member Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
+      <Member Name="#ctor(System.String,System.Type)" />
+      <Member Name="#ctor(System.String,System.Type,System.String)" />
+      <Member Name="get_Demanded" />
+      <Member Name="get_DenySetInstance" />
+      <Member Name="get_FailedAssemblyInfo" />
+      <Member Name="get_GrantedSet" />
+      <Member Name="get_Method" />
+      <Member Name="get_PermissionState" />
+      <Member Name="get_PermissionType" />
+      <Member Name="get_PermitOnlySetInstance" />
+      <Member Name="get_RefusedSet" />
+      <Member Name="get_Url" />
+      <Member Name="GetObjectData(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
+      <Member Name="set_Demanded(System.Object)" />
+      <Member Name="set_DenySetInstance(System.Object)" />
+      <Member Name="set_FailedAssemblyInfo(System.Reflection.AssemblyName)" />
+      <Member Name="set_GrantedSet(System.String)" />
+      <Member Name="set_Method(System.Reflection.MethodInfo)" />
+      <Member Name="set_PermissionState(System.String)" />
+      <Member Name="set_PermissionType(System.Type)" />
+      <Member Name="set_PermitOnlySetInstance(System.Object)" />
+      <Member Name="set_RefusedSet(System.String)" />
+      <Member Name="set_Url(System.String)" />
+      <Member Name="ToString" />
+      <Member MemberType="Property" Name="Demanded" />
+      <Member MemberType="Property" Name="DenySetInstance" />
+      <Member MemberType="Property" Name="FailedAssemblyInfo" />
+      <Member MemberType="Property" Name="GrantedSet" />
+      <Member MemberType="Property" Name="Method" />
+      <Member MemberType="Property" Name="PermissionState" />
+      <Member MemberType="Property" Name="PermissionType" />
+      <Member MemberType="Property" Name="PermitOnlySetInstance" />
+      <Member MemberType="Property" Name="RefusedSet" />
+      <Member MemberType="Property" Name="Url" />
     </Type>
     <Type Name="System.Security.SecurityState">
       <Member Name="#ctor" />
