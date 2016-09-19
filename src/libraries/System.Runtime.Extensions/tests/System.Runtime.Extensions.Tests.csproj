@@ -15,6 +15,7 @@
     <DefineConstants Condition="'$(TargetGroup)'=='netstandard1.7'">$(DefineConstants);netstandard17</DefineConstants>
     <NugetTargetMoniker Condition="'$(NugetTargetMoniker)'==''">.NETStandard,Version=v1.5</NugetTargetMoniker>
   </PropertyGroup>
+  <!-- Folder logic needs moved into common targets: https://github.com/dotnet/corefx/issues/11468 -->
   <ItemGroup Condition="'$(TargetGroup)'=='netstandard1.7'">
     <TestNugetTargetMoniker Include="$(NugetTargetMoniker)">
       <Folder>ns1.7-netcoreapp1.1</Folder>
