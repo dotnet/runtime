@@ -4888,6 +4888,7 @@ namespace System.Diagnostics
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public sealed partial class Debugger
     {
+        public static readonly string DefaultCategory;   
         [System.ObsoleteAttribute("Do not create instances of the Debugger class.  Call the static methods directly on this type instead", true)]
         public Debugger() { }
         public static bool IsAttached { [System.Security.SecuritySafeCriticalAttribute][System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)]get { throw null; } }
