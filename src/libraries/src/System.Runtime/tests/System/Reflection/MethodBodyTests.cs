@@ -6,11 +6,13 @@ using System;
 using System.Reflection;
 using Xunit;
 
+#pragma warning disable 0219  // field is never used
+
 namespace System.Reflection.Tests
 {
     public static class MethodBodyTests
     {
-        //[Fact]
+        [Fact]
         public static void Test_MethodBody_ExceptionHandlingClause()
         {
             MethodInfo mi = typeof(MethodBodyTests).GetMethod("MethodBodyExample");
@@ -47,10 +49,8 @@ namespace System.Reflection.Tests
     
         public static void MethodBodyExample(object arg)
         {
-#pragma warning disable 0219
             int var1 = 2;
             string var2 = "I am a string";
-#pragma warning restore 0219
 
             try
             {

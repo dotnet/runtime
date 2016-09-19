@@ -6,6 +6,8 @@ using System;
 using System.Reflection;
 using Xunit;
 
+#pragma warning disable 0219  // field is never used
+
 namespace System.Reflection.Tests
 {
     public static class MethodBaseTests
@@ -45,7 +47,7 @@ namespace System.Reflection.Tests
             Assert.NotEqual(expected, mb1 != mb2);
         }
 
-        //[Fact]
+        [Fact]
         public static void TestMethodBody()
         {
             MethodBase mbase = typeof(MethodBaseTests).GetMethod("MyOtherMethod", BindingFlags.Static | BindingFlags.Public);
@@ -78,7 +80,6 @@ namespace System.Reflection.Tests
             return x+1;
         }
 
-#pragma warning disable 0219
         public static void MyOtherMethod(object arg)
         {
             int var1 = 2;
@@ -89,6 +90,5 @@ namespace System.Reflection.Tests
                 throw new ArgumentNullException("Input arg cannot be null.");
             }
         }
-#pragma warning restore 0219
     }
 }
