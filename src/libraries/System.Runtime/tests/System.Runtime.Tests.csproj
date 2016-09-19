@@ -113,6 +113,29 @@
     <Compile Include="TimeZoneInfoTests.netstandard1.7.cs" />
     <Compile Include="TimeZoneNotFoundExceptionTests.netstandard1.7.cs" />
     <Compile Include="VersionTests.netstandard1.7.cs" />
+    <Compile Include="System\Reflection\AssemblyTests.cs" />
+    <Compile Include="System\Reflection\AssemblyNameTests.cs" />
+    <Compile Include="System\Reflection\ConstructorInfoTests.cs" />
+    <Compile Include="System\Reflection\CustomAttributeDataTests.cs" />
+    <Compile Include="System\Reflection\CustomAttribute_Named_Typed_ArgumentTests.cs" />
+    <Compile Include="System\Reflection\EventInfoTests.cs" />
+    <Compile Include="System\Reflection\FieldInfoTests.cs" />
+    <Compile Include="System\Reflection\MemberInfoTests.cs" />
+    <Compile Include="System\Reflection\MethodBaseTests.cs" />
+    <Compile Include="System\Reflection\MethodBodyTests.cs" />
+    <Compile Include="System\Reflection\MethodInfoTests.cs" />
+    <Compile Include="System\Reflection\ParameterInfoTests.cs" />
+    <Compile Include="System\Reflection\PropertyInfoTests.cs" />
+    <Compile Include="System\Reflection\TypeTests.Get.CornerCases.cs" />
+    <Compile Include="System\Reflection\TypeTests.GetInterface.cs" />
+    <Compile Include="System\Reflection\TypeTests.GetMember.cs" />
+    <Compile Include="System\Reflection\CustomAttributesTestData.cs" />
+    <EmbeddedResource Include="System\Reflection\EmbeddedImage.png" >
+      <LogicalName>System.Reflection.Tests.EmbeddedImage.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="System\Reflection\EmbeddedTextFile.txt" >
+      <LogicalName>System.Reflection.Tests.EmbeddedTextFile.txt</LogicalName>
+    </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />
