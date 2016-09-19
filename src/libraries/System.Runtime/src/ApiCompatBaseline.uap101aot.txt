@@ -379,4 +379,8 @@ MembersMustExist : Member 'System.Text.Encoding.WindowsCodePage.get()' does not 
 TypesMustExist : Type 'System.Text.EncodingInfo' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Text.NormalizationForm' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.String.GetEnumerator()' does not exist in the implementation but it does exist in the contract.
-Total Issues: 380
+MembersMustExist : Member 'System.Reflection.AssemblyName.GetAssemblyName(System.String)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Reflection.AssemblyName.ReferenceMatchesDefinition(System.Reflection.AssemblyName, System.Reflection.AssemblyName)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Reflection.MethodBase.IsSecurityCritical.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Reflection.MethodBase.IsSecurityTransparent.get()' does not exist in the implementation but it does exist in the contract.
+Total Issues: 384
