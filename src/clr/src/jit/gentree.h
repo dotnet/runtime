@@ -1540,11 +1540,13 @@ public:
 public:
 #if SMALL_TREE_NODES
     static unsigned char s_gtNodeSizes[];
-#if NODEBASH_STATS
+#if NODEBASH_STATS || COUNT_AST_OPERS
     static unsigned char s_gtTrueSizes[];
-    static const char*   s_gtNodeRawNames[];
 #endif
+#if COUNT_AST_OPERS
+    static LONG s_gtNodeCounts[];
 #endif
+#endif // SMALL_TREE_NODES
 
     static void InitNodeSize();
 
@@ -1568,7 +1570,7 @@ public:
     static const char* NodeName(genTreeOps op);
 #endif
 
-#if defined(DEBUG) || NODEBASH_STATS
+#if defined(DEBUG) || NODEBASH_STATS || COUNT_AST_OPERS
     static const char* OpName(genTreeOps op);
 #endif
 

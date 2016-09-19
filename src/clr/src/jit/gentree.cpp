@@ -222,7 +222,7 @@ const char* GenTree::NodeName(genTreeOps op)
 
 #endif
 
-#if defined(DEBUG) || NODEBASH_STATS
+#if defined(DEBUG) || NODEBASH_STATS || COUNT_AST_OPERS
 
 static const char* opNames[] = {
 #define GTNODE(en, sn, st, cm, ok) #en,
@@ -251,7 +251,7 @@ const char* GenTree::OpName(genTreeOps op)
 /* static */
 unsigned char GenTree::s_gtNodeSizes[GT_COUNT + 1];
 
-#if NODEBASH_STATS
+#if NODEBASH_STATS || COUNT_AST_OPERS
 
 unsigned char GenTree::s_gtTrueSizes[GT_COUNT+1]
 {
@@ -259,7 +259,11 @@ unsigned char GenTree::s_gtTrueSizes[GT_COUNT+1]
     #include "gtlist.h"
 };
 
-#endif//NODEBASH_STATS
+#endif // NODEBASH_STATS || COUNT_AST_OPERS
+
+#if COUNT_AST_OPERS
+LONG GenTree::s_gtNodeCounts[GT_COUNT+1] = {0};
+#endif // COUNT_AST_OPERS
 
 /* static */
 void GenTree::InitNodeSize()
