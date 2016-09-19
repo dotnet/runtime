@@ -97,7 +97,7 @@ sgen_workers_ensure_awake (void)
 }
 
 static void
-worker_try_finish (void)
+worker_try_finish (WorkerData *data)
 {
 	State old_state;
 
@@ -115,6 +115,8 @@ worker_try_finish (void)
 	} while (!set_state (old_state, STATE_NOT_WORKING));
 
 	binary_protocol_worker_finish (sgen_timestamp (), forced_stop);
+
+	sgen_gray_object_queue_trim_free_list (&data->private_gray_queue);
 }
 
 void
@@ -226,7 +228,7 @@ marker_idle_func (void *data_untyped)
 			sgen_thread_pool_job_enqueue (job);
 			preclean_job = NULL;
 		} else {
-			worker_try_finish ();
+			worker_try_finish (data);
 		}
 	}
 }

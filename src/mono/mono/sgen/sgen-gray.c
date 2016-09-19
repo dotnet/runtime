@@ -49,8 +49,6 @@ sgen_gray_object_alloc_queue_section (SgenGrayQueue *queue)
 {
 	GrayQueueSection *section;
 
-	HEAVY_STAT (stat_gray_queue_section_alloc ++);
-
 	if (queue->alloc_prepare_func)
 		queue->alloc_prepare_func (queue);
 
@@ -60,6 +58,8 @@ sgen_gray_object_alloc_queue_section (SgenGrayQueue *queue)
 		queue->free_list = section->next;
 		STATE_TRANSITION (section, GRAY_QUEUE_SECTION_STATE_FREE_LIST, GRAY_QUEUE_SECTION_STATE_FLOATING);
 	} else {
+		HEAVY_STAT (stat_gray_queue_section_alloc ++);
+
 		/* Allocate a new section */
 		section = (GrayQueueSection *)sgen_alloc_internal (INTERNAL_MEM_GRAY_QUEUE);
 		STATE_SET (section, GRAY_QUEUE_SECTION_STATE_FLOATING);
