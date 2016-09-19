@@ -1833,6 +1833,7 @@
       <Member MemberType="Field" Name="value__" />
     </Type>
     <Type Name="System.Diagnostics.Debugger">
+      <Member MemberType="Field" Name="DefaultCategory" />
       <Member Name="#ctor" />
       <Member Name="Break" />
       <Member Name="get_IsAttached" />
