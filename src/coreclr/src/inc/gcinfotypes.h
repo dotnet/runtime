@@ -378,6 +378,8 @@ enum infoHdrAdjustConstants {
     SET_EPILOGCNT_MAX = 4,
     SET_UNTRACKED_MAX = 3,
     SET_RET_KIND_MAX = 4,   // 2 bits for ReturnKind
+    ADJ_ENCODING_MAX = 0x7f, // Maximum valid encoding in a byte
+                             // Also used to mask off next bit from each encoding byte.
     MORE_BYTES_TO_FOLLOW = 0x80 // If the High-bit of a header or adjustment byte 
                                // is set, then there are more adjustments to follow.
 };
