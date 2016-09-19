@@ -870,6 +870,10 @@ inline GenTree::GenTree(genTreeOps oper, var_types type DEBUGARG(bool largeNode)
 #endif
 #endif
 
+#if COUNT_AST_OPERS
+    InterlockedIncrement(&s_gtNodeCounts[oper]);
+#endif
+
 #ifdef DEBUG
     gtSeqNum = 0;
     gtTreeID = JitTls::GetCompiler()->compGenTreeID++;
