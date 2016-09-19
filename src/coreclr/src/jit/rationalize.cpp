@@ -662,6 +662,11 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, ArrayStack<G
             RewriteAddress(use);
             break;
 
+        case GT_IND:
+            // Clear the `GTF_IND_ASG_LHS` flag, which overlaps with `GTF_IND_VSD_TGT`.
+            node->gtFlags &= ~GTF_IND_ASG_LHS;
+            break;
+
         case GT_NOP:
             // fgMorph sometimes inserts NOP nodes between defs and uses
             // supposedly 'to prevent constant folding'. In this case, remove the
