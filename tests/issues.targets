@@ -239,12 +239,6 @@
     <!-- The following x86 failures only occur with RyuJIT/x86 -->
 
     <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(BuildArch)' == 'x86'">
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\eh\basics\loopEH\loopEH.cmd">
-            <Issue>6778</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\int64\superlong\_il_relsuperlong\_il_relsuperlong.cmd">
-            <Issue>6778</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)\GC\Scenarios\DoublinkList\dlstack\*">
             <Issue>6553</Issue>
         </ExcludeList>

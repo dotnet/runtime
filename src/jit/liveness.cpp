@@ -1133,7 +1133,7 @@ void Compiler::fgExtendDbgLifetimes()
 
 #if !defined(_TARGET_64BIT_) && !defined(LEGACY_BACKEND)
                     DecomposeLongs::DecomposeRange(this, blockWeight, initRange);
-#endif
+#endif // !defined(_TARGET_64BIT_) && !defined(LEGACY_BACKEND)
 
                     // Naively inserting the initializer at the end of the block may add code after the block's
                     // terminator, in which case the inserted code will never be executed (and the IR for the
