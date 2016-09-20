@@ -51,6 +51,7 @@
     <Compile Include="FileInfo\Open.cs" />
     <Compile Include="FileStream\FlushAsync.cs" />
     <Compile Include="FileStream\Pipes.cs" />
+    <Compile Include="FileStream\Handle.cs" Condition="'$(TargetGroup)'=='netstandard1.7'" />
     <Compile Include="FileStream\SafeFileHandle.cs" />
     <Compile Include="FileStream\IsAsync.cs" />
     <Compile Include="FileStream\CanTimeout.cs" />
@@ -71,6 +72,7 @@
     <Compile Include="FileStream\ReadByte.cs" />
     <Compile Include="FileStream\SetLength.cs" />
     <Compile Include="FileStream\Length.cs" />
+    <Compile Include="FileStream\LockUnlock.cs" Condition="'$(TargetGroup)'=='netstandard1.7'" />
     <Compile Include="FileStream\Position.cs" />
     <Compile Include="FileStream\Seek.cs" />
     <Compile Include="FileStream\ctor_sfh_fa_buffer_async.cs" />
@@ -86,10 +88,13 @@
     <Compile Include="FileStream\ctor_str_fm_fa.cs" />
     <Compile Include="FileStream\ctor_str_fm.cs" />
     <Compile Include="File\Append.cs" />
+    <Compile Include="File\EncryptDecrypt.cs" Condition="'$(TargetGroup)'=='netstandard1.7'" />
+    <Compile Include="File\Replace.cs" Condition="'$(TargetGroup)'=='netstandard1.7'" />
     <Compile Include="File\Create.cs" />
     <Compile Include="File\Delete.cs" />
     <Compile Include="File\GetSetAttributes.cs" />
     <Compile Include="File\Move.cs" />
+    <Compile Include="File\ReadWriteAllLines.netstandard1.7.cs" Condition="'$(TargetGroup)'=='netstandard1.7'" />
     <Compile Include="File\ReadWriteAllText.cs" />
     <Compile Include="File\ReadWriteAllLines.cs" />
     <Compile Include="UnseekableFileStream.cs" />

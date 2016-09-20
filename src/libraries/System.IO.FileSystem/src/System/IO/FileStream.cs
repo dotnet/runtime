@@ -129,11 +129,33 @@ namespace System.IO
         public virtual bool IsAsync { get { return this._innerStream.IsAsync; } }
         public string Name { get { return this._innerStream.Name; } }
         public virtual Microsoft.Win32.SafeHandles.SafeFileHandle SafeFileHandle { get { return this._innerStream.SafeFileHandle; } }
+        public virtual IntPtr Handle { get { return SafeFileHandle.DangerousGetHandle(); } }
 
         public virtual void Flush(bool flushToDisk)
         {
             this._innerStream.Flush(flushToDisk);
         }
+
+        public virtual void Lock(long position, long length)
+        {
+            if (position < 0 || length < 0)
+            {
+                throw new ArgumentOutOfRangeException(position < 0 ? nameof(position) : nameof(length), SR.ArgumentOutOfRange_NeedNonNegNum);
+            }
+
+            _innerStream.Lock(position, length);
+        }
+
+        public virtual void Unlock(long position, long length)
+        {
+            if (position < 0 || length < 0)
+            {
+                throw new ArgumentOutOfRangeException(position < 0 ? nameof(position) : nameof(length), SR.ArgumentOutOfRange_NeedNonNegNum);
+            }
+
+            _innerStream.Unlock(position, length);
+        }
+
         #endregion
 
         #region Stream members

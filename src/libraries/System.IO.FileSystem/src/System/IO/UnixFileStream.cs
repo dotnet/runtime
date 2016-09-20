@@ -1196,6 +1196,24 @@ namespace System.IO
             }
         }
 
+        /// <summary>Prevents other processes from reading from or writing to the FileStream.</summary>
+        /// <param name="position">The beginning of the range to lock.</param>
+        /// <param name="length">The range to be locked.</param>
+        public override void Lock(long position, long length)
+        {
+            // TODO #5964: Implement this with fcntl and F_SETLK in System.Native
+            throw new PlatformNotSupportedException();
+        }
+
+        /// <summary>Allows access by other processes to all or part of a file that was previously locked.</summary>
+        /// <param name="position">The beginning of the range to unlock.</param>
+        /// <param name="length">The range to be unlocked.</param>
+        public override void Unlock(long position, long length)
+        {
+            // TODO #5964: Implement this with fcntl and F_SETLK in System.Native
+            throw new PlatformNotSupportedException();
+        }
+
         /// <summary>
         /// Asynchronously reads the bytes from the current stream and writes them to another
         /// stream, using a specified buffer size.

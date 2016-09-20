@@ -3,13 +3,17 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <OutputType>Library</OutputType>
-    <NuGetTargetMoniker>.NETStandard,Version=v1.6</NuGetTargetMoniker>
+    <NuGetTargetMoniker>.NETStandard,Version=v1.7</NuGetTargetMoniker>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="System.AppContext.cs" />
+    <Compile Include="System.AppContext.Forwards.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- Temporary till we publish System.Runtime updated package -->
+    <ProjectReference Include="..\..\System.Runtime\ref\System.Runtime.csproj" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

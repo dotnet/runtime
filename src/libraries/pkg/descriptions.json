@@ -1763,6 +1763,13 @@
         ]
     },
     {
+        "Name": "System.Web.HttpUtility",
+        "Description": "Provides the System.Web.HttpUtility class for encoding and decoding various web formats.",
+        "CommonTypes": [
+            "System.Web.HttpUtility"
+        ]
+    },
+    {
         "Name": "System.Private.Xml",
         "Description": "Provides a fast, non-cached, forward-only way to read and write Extensible Markup Language (XML) data.",
         "CommonTypes": [
