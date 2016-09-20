@@ -13,11 +13,22 @@ namespace System.Net.NetworkInformation
     public class NetworkChange
     {
         private static NetworkAddressChangedEventHandler s_addressChangedSubscribers;
+        private static NetworkAvailabilityChangedEventHandler s_availabilityChangedSubscribers;
         private static volatile int s_socket = 0;
         private static readonly object s_lockObj = new object();
+        private static readonly object s_availabilityLock = new object();
         private static readonly Interop.Sys.NetworkChangeEvent s_networkChangeCallback = ProcessEvent;
 
-        //introduced for supporting design-time loading of System.Windows.dll
+        // The "leniency" window for NetworkAvailabilityChanged socket events.
+        // All socket events received within this duration will be coalesced into a
+        // single event. Generally, many route changed events are fired in succession,
+        // and we are not interested in all of them, just the fact that network availability
+        // has potentially changed as a result.
+        private const int AvailabilityTimerWindowMilliseconds = 150;
+        private static Timer s_availabilityTimer;
+        private static bool s_availabilityHasChanged;
+
+        // Introduced for supporting design-time loading of System.Windows.dll
         public static void RegisterNetworkChange(NetworkChange nc) { }
 
         public static event NetworkAddressChangedEventHandler NetworkAddressChanged
@@ -38,14 +49,14 @@ namespace System.Net.NetworkInformation
             {
                 lock (s_lockObj)
                 {
-                    if (s_addressChangedSubscribers == null)
+                    if (s_addressChangedSubscribers == null && s_availabilityChangedSubscribers == null)
                     {
-                        Debug.Assert(s_socket == 0, "s_socket != 0, but there are no subscribers to NetworkAddressChanged.");
+                        Debug.Assert(s_socket == 0, "s_socket != 0, but there are no subscribers to NetworkAddressChanged or NetworkAvailabilityChanged.");
                         return;
                     }
 
                     s_addressChangedSubscribers -= value;
-                    if (s_addressChangedSubscribers == null)
+                    if (s_addressChangedSubscribers == null && s_availabilityChangedSubscribers == null)
                     {
                         CloseSocket();
                     }
@@ -55,9 +66,46 @@ namespace System.Net.NetworkInformation
 
         public static event NetworkAvailabilityChangedEventHandler NetworkAvailabilityChanged
         {
-            add { throw new NotImplementedException(); }
-            remove { throw new NotImplementedException(); }
+            add
+            {
+                lock (s_lockObj)
+                {
+                    if (s_socket == 0)
+                    {
+                        CreateSocket();
+                    }
+                    if (s_availabilityTimer == null)
+                    {
+                        s_availabilityTimer = new Timer(OnAvailabilityTimerFired, null, -1, -1);
+                    }
+
+                    s_availabilityChangedSubscribers += value;
+                }
+            }
+            remove
+            {
+                lock (s_lockObj)
+                {
+                    if (s_addressChangedSubscribers == null && s_availabilityChangedSubscribers == null)
+                    {
+                        Debug.Assert(s_socket == 0, "s_socket != 0, but there are no subscribers to NetworkAddressChanged or NetworkAvailabilityChanged.");
+                        return;
+                    }
+
+                    s_availabilityChangedSubscribers -= value;
+                    if (s_availabilityChangedSubscribers == null)
+                    {
+                        s_availabilityTimer.Dispose();
+                        s_availabilityTimer = null;
+                        if (s_addressChangedSubscribers == null)
+                        {
+                            CloseSocket();
+                        }
+                    }
+                }
+            }
         }
+
 
         private static void CreateSocket()
         {
@@ -122,6 +170,38 @@ namespace System.Net.NetworkInformation
                         handler(null, EventArgs.Empty);
                     }
                     break;
+                case Interop.Sys.NetworkChangeKind.AvailabilityChanged:
+                    lock (s_availabilityLock)
+                    {
+                        if (!s_availabilityHasChanged)
+                        {
+                            s_availabilityTimer.Change(AvailabilityTimerWindowMilliseconds, -1);
+                        }
+
+                        s_availabilityHasChanged = true;
+                    }
+                    break;
+            }
+        }
+
+        private static void OnAvailabilityTimerFired(object state)
+        {
+            bool changed;
+            lock (s_availabilityLock)
+            {
+                changed = s_availabilityHasChanged;
+                s_availabilityHasChanged = false;
+            }
+
+            if (changed)
+            {
+                NetworkAvailabilityChangedEventHandler availabilityChangedHandler = s_availabilityChangedSubscribers;
+                if (availabilityChangedHandler != null)
+                {
+                    bool isNetworkAvailable = NetworkInterface.GetIsNetworkAvailable();
+                    availabilityChangedHandler(null, new NetworkAvailabilityEventArgs(isNetworkAvailable));
+                }
+
             }
         }
     }
