@@ -715,7 +715,7 @@ void Lowering::ReplaceArgWithPutArgOrCopy(GenTree** argSlot, GenTree* putArgOrCo
 //
 // Notes:
 //    For System V systems with native struct passing (i.e. FEATURE_UNIX_AMD64_STRUCT_PASSING defined)
-//    this method allocates a single GT_PUTARG_REG for 1 eightbyte structs and a GT_LIST of two GT_PUTARG_REGs
+//    this method allocates a single GT_PUTARG_REG for 1 eightbyte structs and a GT_FIELD_LIST of two GT_PUTARG_REGs
 //    for two eightbyte structs.
 //
 //    For STK passed structs the method generates GT_PUTARG_STK tree. For System V systems with native struct passing
@@ -776,8 +776,8 @@ GenTreePtr Lowering::NewPutArg(GenTreeCall* call, GenTreePtr arg, fgArgTabEntryP
             //    In this case a new tree is created that is GT_PUTARG_REG
             //    with a op1 the original argument.
             // 2. The struct is contained in 2 eightbytes:
-            //    in this case the arg comes as a GT_LIST of two GT_LCL_FLDs - the two eightbytes of the struct.
-            //    The code creates a GT_PUTARG_REG node for each GT_LCL_FLD in the GT_LIST
+            //    in this case the arg comes as a GT_FIELD_LIST of two GT_LCL_FLDs - the two eightbytes of the struct.
+            //    The code creates a GT_PUTARG_REG node for each GT_LCL_FLD in the GT_FIELD_LIST
             //    and splices it in the list with the corresponding original GT_LCL_FLD tree as op1.
 
             assert(info->structDesc.eightByteCount != 0);
@@ -849,25 +849,25 @@ GenTreePtr Lowering::NewPutArg(GenTreeCall* call, GenTreePtr arg, fgArgTabEntryP
                 //
                 // clang-format on
 
-                assert(arg->OperGet() == GT_LIST);
+                assert(arg->OperGet() == GT_FIELD_LIST);
 
-                GenTreeArgList* argListPtr = arg->AsArgList();
-                assert(argListPtr->IsAggregate());
+                GenTreeFieldList* fieldListPtr = arg->AsFieldList();
+                assert(fieldListPtr->IsFieldListHead());
 
-                for (unsigned ctr = 0; argListPtr != nullptr; argListPtr = argListPtr->Rest(), ctr++)
+                for (unsigned ctr = 0; fieldListPtr != nullptr; fieldListPtr = fieldListPtr->Rest(), ctr++)
                 {
                     // Create a new GT_PUTARG_REG node with op1 the original GT_LCL_FLD.
                     GenTreePtr newOper = comp->gtNewOperNode(
                         GT_PUTARG_REG,
                         comp->GetTypeFromClassificationAndSizes(info->structDesc.eightByteClassifications[ctr],
                                                                 info->structDesc.eightByteSizes[ctr]),
-                        argListPtr->gtOp.gtOp1);
+                        fieldListPtr->gtOp.gtOp1);
 
-                    // Splice in the new GT_PUTARG_REG node in the GT_LIST
-                    ReplaceArgWithPutArgOrCopy(&argListPtr->gtOp.gtOp1, newOper);
+                    // Splice in the new GT_PUTARG_REG node in the GT_FIELD_LIST
+                    ReplaceArgWithPutArgOrCopy(&fieldListPtr->gtOp.gtOp1, newOper);
                 }
 
-                // Just return arg. The GT_LIST is not replaced.
+                // Just return arg. The GT_FIELD_LIST is not replaced.
                 // Nothing more to do.
                 return arg;
             }
@@ -880,26 +880,26 @@ GenTreePtr Lowering::NewPutArg(GenTreeCall* call, GenTreePtr arg, fgArgTabEntryP
         else
 #else // not defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
 #if FEATURE_MULTIREG_ARGS
-        if ((info->numRegs > 1) && (arg->OperGet() == GT_LIST))
+        if ((info->numRegs > 1) && (arg->OperGet() == GT_FIELD_LIST))
         {
-            assert(arg->OperGet() == GT_LIST);
+            assert(arg->OperGet() == GT_FIELD_LIST);
 
-            GenTreeArgList* argListPtr = arg->AsArgList();
-            assert(argListPtr->IsAggregate());
+            GenTreeFieldList* fieldListPtr = arg->AsFieldList();
+            assert(fieldListPtr->IsFieldListHead());
 
-            for (unsigned ctr = 0; argListPtr != nullptr; argListPtr = argListPtr->Rest(), ctr++)
+            for (unsigned ctr = 0; fieldListPtr != nullptr; fieldListPtr = fieldListPtr->Rest(), ctr++)
             {
-                GenTreePtr curOp  = argListPtr->gtOp.gtOp1;
+                GenTreePtr curOp  = fieldListPtr->gtOp.gtOp1;
                 var_types  curTyp = curOp->TypeGet();
 
                 // Create a new GT_PUTARG_REG node with op1
                 GenTreePtr newOper = comp->gtNewOperNode(GT_PUTARG_REG, curTyp, curOp);
 
-                // Splice in the new GT_PUTARG_REG node in the GT_LIST
-                ReplaceArgWithPutArgOrCopy(&argListPtr->gtOp.gtOp1, newOper);
+                // Splice in the new GT_PUTARG_REG node in the GT_FIELD_LIST
+                ReplaceArgWithPutArgOrCopy(&fieldListPtr->gtOp.gtOp1, newOper);
             }
 
-            // Just return arg. The GT_LIST is not replaced.
+            // Just return arg. The GT_FIELD_LIST is not replaced.
             // Nothing more to do.
             return arg;
         }
@@ -916,23 +916,23 @@ GenTreePtr Lowering::NewPutArg(GenTreeCall* call, GenTreePtr arg, fgArgTabEntryP
         // This provides the info to put this argument in in-coming arg area slot
         // instead of in out-going arg area slot.
 
-        FEATURE_UNIX_AMD64_STRUCT_PASSING_ONLY(assert(info->isStruct == varTypeIsStruct(type))); // Make sure state is
+        PUT_STRUCT_ARG_STK_ONLY(assert(info->isStruct == varTypeIsStruct(type))); // Make sure state is
                                                                                                  // correct
 
 #if FEATURE_FASTTAILCALL
         putArg = new (comp, GT_PUTARG_STK)
             GenTreePutArgStk(GT_PUTARG_STK, type, arg,
-                             info->slotNum FEATURE_UNIX_AMD64_STRUCT_PASSING_ONLY_ARG(info->numSlots)
-                                 FEATURE_UNIX_AMD64_STRUCT_PASSING_ONLY_ARG(info->isStruct),
+                             info->slotNum PUT_STRUCT_ARG_STK_ONLY_ARG(info->numSlots)
+                                 PUT_STRUCT_ARG_STK_ONLY_ARG(info->isStruct),
                              call->IsFastTailCall() DEBUGARG(call));
 #else
         putArg = new (comp, GT_PUTARG_STK)
             GenTreePutArgStk(GT_PUTARG_STK, type, arg,
-                             info->slotNum FEATURE_UNIX_AMD64_STRUCT_PASSING_ONLY_ARG(info->numSlots)
-                                 FEATURE_UNIX_AMD64_STRUCT_PASSING_ONLY_ARG(info->isStruct) DEBUGARG(call));
+                             info->slotNum PUT_STRUCT_ARG_STK_ONLY_ARG(info->numSlots)
+                                 PUT_STRUCT_ARG_STK_ONLY_ARG(info->isStruct) DEBUGARG(call));
 #endif
 
-#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+#ifdef FEATURE_PUT_STRUCT_ARG_STK
         // If the ArgTabEntry indicates that this arg is a struct
         // get and store the number of slots that are references.
         // This is later used in the codegen for PUT_ARG_STK implementation
@@ -958,7 +958,7 @@ GenTreePtr Lowering::NewPutArg(GenTreeCall* call, GenTreePtr arg, fgArgTabEntryP
 
             putArg->AsPutArgStk()->setGcPointers(numRefs, gcLayout);
         }
-#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
+#endif // FEATURE_PUT_STRUCT_ARG_STK
     }
 
     if (arg->InReg())
@@ -1091,7 +1091,7 @@ void Lowering::LowerArg(GenTreeCall* call, GenTreePtr* ppArg)
         putArg = NewPutArg(call, arg, info, type);
 
         // In the case of register passable struct (in one or two registers)
-        // the NewPutArg returns a new node (GT_PUTARG_REG or a GT_LIST with two GT_PUTARG_REGs.)
+        // the NewPutArg returns a new node (GT_PUTARG_REG or a GT_FIELD_LIST with two GT_PUTARG_REGs.)
         // If an extra node is returned, splice it in the right place in the tree.
         if (arg != putArg)
         {
@@ -4053,10 +4053,10 @@ void Lowering::CheckCallArg(GenTree* arg)
             break;
 #endif
 
-        case GT_LIST:
+        case GT_FIELD_LIST:
             {
-                GenTreeArgList* list = arg->AsArgList();
-                assert(list->IsAggregate());
+                GenTreeFieldList* list = arg->AsFieldList();
+                assert(list->IsFieldListHead());
 
                 for (; list != nullptr; list = list->Rest())
                 {
