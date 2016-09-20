@@ -4,7 +4,7 @@
     "System.Text.Encoding": "4.0.10"
   },
   "frameworks": {
-    "netstandard1.3": {
+    "netstandard1.7": {
       "imports": [
         "dotnet5.4"
       ]

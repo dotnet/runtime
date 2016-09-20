@@ -9,7 +9,7 @@
     <AssemblyName>System.Text.Encoding.Tests</AssemblyName>
     <RootNamespace>System.Text.Encoding.Tests</RootNamespace>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
+    <NugetTargetMoniker Condition="'$(TargetGroup)'==''">.NETStandard,Version=v1.3</NugetTargetMoniker>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -78,6 +78,20 @@
     <Compile Include="UTF8Encoding\UTF8EncodingGetMaxCharCount.cs" />
     <Compile Include="UTF8Encoding\UTF8EncodingTests.cs" />
     <Compile Include="$(CommonTestPath)\System\RandomDataGenerator.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard1.7'">
+    <Compile Include="Encoding\Encoding.netstandard1.7.cs" />
+    <Compile Include="UnicodeEncoding\UnicodeEncoding.netstandard1.7.cs" />
+    <Compile Include="Decoder\Decoder.netstandard1.7.cs" />
+    <Compile Include="Encoder\Encoder.netstandard1.7.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\System.Text.Encoding.Extensions\pkg\System.Text.Encoding.Extensions.pkgproj">
+      <Name>System.Text.Encoding.Extensions</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\System.Runtime\pkg\System.Runtime.pkgproj">
+      <Name>System.Runtime</Name>
+    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />
