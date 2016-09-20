@@ -1423,6 +1423,7 @@ void CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
             break;
 
         case GT_LIST:
+        case GT_FIELD_LIST:
         case GT_ARGPLACE:
             // Nothing to do
             break;
