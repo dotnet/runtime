@@ -3397,6 +3397,7 @@ void CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
         break;
 
         case GT_LIST:
+        case GT_FIELD_LIST:
         case GT_ARGPLACE:
             // Nothing to do
             break;
@@ -5321,7 +5322,7 @@ void CodeGen::genCallInstruction(GenTreePtr node)
     // Consume all the arg regs
     for (GenTreePtr list = call->gtCallLateArgs; list; list = list->MoveNext())
     {
-        assert(list->IsList());
+        assert(list->OperIsList());
 
         GenTreePtr argNode = list->Current();
 
@@ -6785,23 +6786,23 @@ void CodeGen::genPutArgStk(GenTreePtr treeNode)
     {
         assert(source->isContained()); // We expect that this node was marked as contained in LowerArm64
 
-        if (source->OperGet() == GT_LIST)
+        if (source->OperGet() == GT_FIELD_LIST)
         {
             // Deal with the multi register passed struct args.
-            GenTreeArgList* argListPtr = source->AsArgList();
+            GenTreeFieldList* fieldListPtr = source->AsFieldList();
 
-            // Evaluate each of the GT_LIST items into their register
+            // Evaluate each of the GT_FIELD_LIST items into their register
             // and store their register into the outgoing argument area
-            for (; argListPtr != nullptr; argListPtr = argListPtr->Rest())
+            for (; fieldListPtr != nullptr; fieldListPtr = fieldListPtr->Rest())
             {
-                GenTreePtr nextArgNode = argListPtr->gtOp.gtOp1;
+                GenTreePtr nextArgNode = fieldListPtr->gtOp.gtOp1;
                 genConsumeReg(nextArgNode);
 
                 regNumber reg  = nextArgNode->gtRegNum;
                 var_types type = nextArgNode->TypeGet();
                 emitAttr  attr = emitTypeSize(type);
 
-                // Emit store instructions to store the registers produced by the GT_LIST into the outgoing argument
+                // Emit store instructions to store the registers produced by the GT_FIELD_LIST into the outgoing argument
                 // area
                 emit->emitIns_S_R(ins_Store(type), attr, reg, varNumOut, argOffsetOut);
                 argOffsetOut += EA_SIZE_IN_BYTES(attr);

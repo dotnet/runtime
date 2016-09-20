@@ -3534,7 +3534,7 @@ GenTreePtr Compiler::impIntrinsic(CORINFO_CLASS_HANDLE  clsHnd,
 
                 // Get native TypeHandle argument to old helper
                 op1 = op1->gtCall.gtCallArgs;
-                assert(op1->IsList());
+                assert(op1->OperIsList());
                 assert(op1->gtOp.gtOp2 == nullptr);
                 op1     = op1->gtOp.gtOp1;
                 retNode = op1;
