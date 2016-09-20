@@ -5,6 +5,8 @@
 #ifndef _JITCONFIG_H_
 #define _JITCONFIG_H_
 
+#include "switches.h"
+
 struct CORINFO_SIG_INFO;
 class ICorJitHost;
 
