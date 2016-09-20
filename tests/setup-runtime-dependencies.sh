@@ -87,6 +87,10 @@ fi
 
 # This script must be located in coreclr/tests.
 scriptDir=$(cd "$(dirname "$0")"; pwd -P)
+
+echo "Running init-tools.sh"
+$scriptDir/../init-tools.sh
+
 dotnetToolsDir=$scriptDir/../Tools
 dotnetCmd=${dotnetToolsDir}/dotnetcli/dotnet
 packageDir=${scriptDir}/../packages

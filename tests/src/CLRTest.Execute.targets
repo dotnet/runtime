@@ -105,6 +105,7 @@ This file contains the logic for providing Execution Script generation.
     <BatchScriptSnippetGen></BatchScriptSnippetGen>
   </PropertyGroup>
  
+  <Import Project="CLRTest.Jit.targets" />
   <Import Project="CLRTest.CrossGen.targets" />
   <Import Project="CLRTest.GC.targets" />
   <Import Project="CLRTest.Execute.*.targets" />
