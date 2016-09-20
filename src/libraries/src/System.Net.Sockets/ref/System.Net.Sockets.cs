@@ -184,6 +184,10 @@ namespace System.Net.Sockets
         public int SendBufferSize { get { return default(int); } set { } }
         public int SendTimeout { get { return default(int); } set { } }
         public System.Net.Sockets.SocketType SocketType { get { return default(System.Net.Sockets.SocketType); } }
+        [Obsolete("SupportsIPv4 is obsoleted for this type, please use OSSupportsIPv4 instead. http://go.microsoft.com/fwlink/?linkid=14202")]
+        public static bool SupportsIPv4 { get { return default(bool); } }
+        [Obsolete("SupportsIPv6 is obsoleted for this type, please use OSSupportsIPv6 instead. http://go.microsoft.com/fwlink/?linkid=14202")]
+        public static bool SupportsIPv6 { get { return default(bool); } }
         public short Ttl { get { return default(short); } set { } }
         public bool UseOnlyOverlappedIO { get { return default(bool); } set { } }
         public System.Net.Sockets.Socket Accept() { return default(System.Net.Sockets.Socket); }
