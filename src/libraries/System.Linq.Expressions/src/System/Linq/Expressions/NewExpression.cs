@@ -183,6 +183,8 @@ namespace System.Linq.Expressions
         public static NewExpression New(ConstructorInfo constructor, IEnumerable<Expression> arguments, IEnumerable<MemberInfo> members)
         {
             ContractUtils.RequiresNotNull(constructor, nameof(constructor));
+            ContractUtils.RequiresNotNull(constructor.DeclaringType, nameof(constructor) + "." + nameof(constructor.DeclaringType));
+            TypeUtils.ValidateType(constructor.DeclaringType, nameof(constructor));
             ValidateConstructor(constructor, nameof(constructor));
             var memberList = members.ToReadOnly();
             var argList = arguments.ToReadOnly();
