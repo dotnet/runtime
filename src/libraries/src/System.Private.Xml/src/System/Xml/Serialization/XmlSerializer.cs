@@ -279,7 +279,7 @@ namespace System.Xml.Serialization
             {
                 this.innerSerializer = contract.GetSerializer(type);
             }
-			else if (ReflectionMethodEnabled)
+            else if (ReflectionMethodEnabled)
             {
                 var importer = new XmlReflectionImporter(defaultNamespace);
                 _mapping = importer.ImportTypeMapping(type, null, defaultNamespace);
@@ -730,7 +730,7 @@ namespace System.Xml.Serialization
 
             return serializers;
 #else
-			XmlSerializerImplementation contract = null;
+            XmlSerializerImplementation contract = null;
             Assembly assembly = type == null ? null : TempAssembly.LoadGeneratedAssembly(type, null, out contract);
             TempAssembly tempAssembly = null;
             if (assembly == null)
