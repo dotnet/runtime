@@ -493,7 +493,7 @@ CONFIG_DWORD_INFO_EX(INTERNAL_JitNoStructPromotion, W("JitNoStructPromotion"), 0
 CONFIG_DWORD_INFO_EX(INTERNAL_JitNoUnroll, W("JitNoUnroll"), 0, "", CLRConfig::REGUTIL_default)
 CONFIG_DWORD_INFO_EX(INTERNAL_JitNoMemoryBarriers, W("JitNoMemoryBarriers"), 0, "If 1, don't generate memory barriers", CLRConfig::REGUTIL_default)
 #ifdef FEATURE_ENABLE_NO_RANGE_CHECKS
-RETAIL_CONFIG_DWORD_INFO(PRIVATE_JitNoRangeChks, W("JitNoRngChks"), 0, "If 1, don't generate range checks")
+RETAIL_CONFIG_DWORD_INFO_EX(PRIVATE_JitNoRangeChks, W("JitNoRngChks"), 0, "If 1, don't generate range checks", CLRConfig::REGUTIL_default)
 #endif
 RETAIL_CONFIG_DWORD_INFO_DIRECT_ACCESS(EXTERNAL_JitOptimizeType, W("JitOptimizeType"), "")
 CONFIG_DWORD_INFO_EX(INTERNAL_JitOrder, W("JitOrder"), 0, "", CLRConfig::REGUTIL_default)
