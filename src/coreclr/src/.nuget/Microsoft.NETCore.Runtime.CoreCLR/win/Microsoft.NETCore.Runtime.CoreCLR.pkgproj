@@ -1,11 +1,35 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+
   <PropertyGroup>
     <Version>1.1.0</Version>
     <PackageTargetRuntime>$(MinOSForArch)-$(PackagePlatform)</PackageTargetRuntime>
     <SkipPackageFileCheck>true</SkipPackageFileCheck>
+    <LongNamePlatform>$(PackagePlatform)</LongNamePlatform>
+    <LongNamePlatform Condition="'$(LongNamePlatform)'=='x64'">amd64</LongNamePlatform>
+    <CrossTargetPlatform>$(CrossTargetComponentFolder)</CrossTargetPlatform>
+    <CrossTargetPlatform Condition="'$(CrossTargetPlatform)'=='x64'">amd64</CrossTargetPlatform>
+    <LongNameSuffix>_$(LongNamePlatform)_$(LongNamePlatform)_$(MajorVersion).$(MinorVersion).$(BuildNumberMajor).0$(BuildNumberMinor)</LongNameSuffix>
+    <CrossTargetLongNameSuffix>_$(CrossTargetPlatform)_$(LongNamePlatform)_$(MajorVersion).$(MinorVersion).$(BuildNumberMajor).0$(BuildNumberMinor)</CrossTargetLongNameSuffix>
   </PropertyGroup>
+
+  <ItemGroup>
+    <LongNameFiles Include="mscordaccore.dll"/>
+    <LongNameFiles Include="sos.dll"/>
+  </ItemGroup>
+
+  <Target Name="CopyLongNamedBinaries" BeforeTargets="CreatePackage">
+    <Copy
+      SourceFiles="@(LongNameFiles -> '$(BinDir)%(Identity)')"
+      DestinationFiles="@(LongNameFiles -> '$(BinDir)%(FileName)$(LongNameSuffix)%(Extension)')">
+    </Copy>
+    <Copy Condition="'$(HasCrossTargetComponents)' == 'true'"
+      SourceFiles="@(LongNameFiles -> '$(BinDir)$(CrossTargetComponentFolder)\%(Identity)')"
+      DestinationFiles="@(LongNameFiles -> '$(BinDir)$(CrossTargetComponentFolder)\%(FileName)$(CrossTargetLongNameSuffix)%(Extension)')">
+    </Copy>
+  </Target>
+
   <ItemGroup>
     <ArchitectureSpecificNativeFileAndSymbol Include="$(BinDir)clretwrc.dll" />
     <ArchitectureSpecificNativeFileAndSymbol Include="$(BinDir)coreclr.dll" />
@@ -27,7 +51,7 @@
     <CrossArchitectureSpecificToolFile Include="$(BinDir)$(CrossTargetComponentFolder)\sos.dll" />
     <ArchitectureSpecificNativeFile Include="@(ArchitectureSpecificNativeFileAndSymbol)" />
     <File Include="@(ArchitectureSpecificNativeFile)">
-      <TargetPath>runtimes/$(PackageTargetRuntime)/native</TargetPath>
+      <TargetPath>runtimes\$(PackageTargetRuntime)\native</TargetPath> 
     </File>
     <!-- Using lib/netstandard1.0 here.  There is no TFM for this since it is a runtime itself. -->
     <File Include="@(ArchitectureSpecificLibFile)">
@@ -54,9 +78,16 @@
     <ArchitectureSpecificNativeSymbol Include="@(ArchitectureSpecificNativeFileAndSymbol -> '%(RelativeDir)PDB\%(FileName).pdb')" />
     <ArchitectureSpecificNativeSymbol Include="@(ArchitectureSpecificLibFile -> '%(RelativeDir)PDB\%(FileName).pdb')" />
     <ArchitectureSpecificNativeSymbol Include="@(ArchitectureSpecificToolFile -> '%(RelativeDir)PDB\%(FileName).pdb')" />
-    <CrossArchitectureSpecificNativeSymbol Condition="'$(HasCrossTargetComponents)' == 'true'" Include="@(CrossArchitectureSpecificToolFile -> '%(RelativeDir)PDB\%(FileName).pdb')" />
+    <ArchitectureSpecificNativeSymbol Include="@(LongNameFiles -> '$(BinDir)%(FileName)$(LongNameSuffix)%(Extension)')" />
+    <AdditionalLibPackageExcludes Include="@(LongNameFiles -> 'runtimes\$(PackageTargetRuntime)\native\%(FileName)$(LongNameSuffix)%(Extension)')" />
+    <CrossArchitectureSpecificNativeSymbol Condition="'$(HasCrossTargetComponents)' == 'true'" 
+                                           Include="@(CrossArchitectureSpecificToolFile -> '%(RelativeDir)PDB\%(FileName).pdb')" />
+    <CrossArchitectureSpecificNativeSymbol Condition="'$(HasCrossTargetComponents)' == 'true'" 
+                                           Include="@(LongNameFiles -> '$(BinDir)$(CrossTargetComponentFolder)\%(FileName)$(CrossTargetLongNameSuffix)%(Extension)')" />
+    <AdditionalLibPackageExcludes Condition="'$(HasCrossTargetComponents)' == 'true'" 
+                                  Include="@(LongNameFiles -> 'runtimes\$(PackageTargetRuntime)\native\%(FileName)$(CrossTargetLongNameSuffix)%(Extension)')" />
     <File Include="@(ArchitectureSpecificNativeSymbol)">
-      <TargetPath>runtimes/$(PackageTargetRuntime)/native</TargetPath>
+      <TargetPath>runtimes\$(PackageTargetRuntime)\native</TargetPath> 
       <IsSymbolFile>true</IsSymbolFile>
     </File>
     <File Condition="'$(HasCrossTargetComponents)' == 'true'" Include="@(CrossArchitectureSpecificNativeSymbol)">
@@ -64,5 +95,6 @@
       <IsSymbolFile>true</IsSymbolFile>
     </File>
   </ItemGroup>
+
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
