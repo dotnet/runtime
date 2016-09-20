@@ -302,16 +302,8 @@ namespace System.Linq.Expressions.Tests
             Assert.Throws<ArgumentException>("constructor", () => Expression.New(constructor, new Expression[0]));
             Assert.Throws<ArgumentException>("constructor", () => Expression.New(constructor, (IEnumerable<Expression>)new Expression[0]));
 
-        }
-
-        [Fact]
-        public static void ConstructorDeclaringType_GenericTypeDefintion_Works()
-        {
-            // Should probably throw an ArgumentException, similar to other overloads
-            ConstructorInfo constructor = typeof(GenericClass<>).GetConstructor(new Type[0]);
-
-            Expression.New(constructor, new Expression[0], new MemberInfo[0]);
-            Expression.New(constructor, new Expression[0], new MemberInfo[0]);
+            Assert.Throws<ArgumentException>("constructor", () => Expression.New(constructor, new Expression[0], new MemberInfo[0]));
+            Assert.Throws<ArgumentException>("constructor", () => Expression.New(constructor, new Expression[0], (IEnumerable<MemberInfo>)new MemberInfo[0]));
         }
 
         public static IEnumerable<object[]> ConstructorAndArguments_DifferentLengths_TestData()
