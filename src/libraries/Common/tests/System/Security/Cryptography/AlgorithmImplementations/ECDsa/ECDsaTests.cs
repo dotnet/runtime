@@ -10,7 +10,7 @@ using Xunit;
 
 namespace System.Security.Cryptography.EcDsa.Tests
 {
-    public class ECDsaTests : ECDsaTestsBase
+    public partial class ECDsaTests : ECDsaTestsBase
     {
         [Fact]
         public void KeySizeProp()
