@@ -1047,4 +1047,16 @@
   <data name="SNI_PN9" xml:space="preserve">
     <value>SQL Network Interfaces</value>
   </data>
+  <data name="AZURESQL_GenericEndpoint" xml:space="preserve">
+    <value>.database.windows.net</value>
+  </data>
+  <data name="AZURESQL_GermanEndpoint" xml:space="preserve">
+    <value>.database.cloudapi.de</value>
+  </data>
+  <data name="AZURESQL_UsGovEndpoint" xml:space="preserve">
+    <value>.database.usgovcloudapi.net</value>
+  </data>
+  <data name="AZURESQL_ChinaEndpoint" xml:space="preserve">
+    <value>.database.chinacloudapi.cn</value>
+  </data>
 </root>
