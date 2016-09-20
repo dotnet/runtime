@@ -44,6 +44,9 @@
     <ExcludeAssemblyInfoPartialFile>true</ExcludeAssemblyInfoPartialFile>
   </PropertyGroup>
   <!-- Shared CoreCLR and .NET Native -->
+  <ItemGroup Condition="'$(TargetGroup)' == ''">
+    <Compile Include="System\AppDomain.cs" />
+  </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' != 'net462' And '$(TargetGroup)' != 'net463'">
     <Compile Include="System\BitConverter.cs" />
     <Compile Include="System\Diagnostics\Stopwatch.cs" />

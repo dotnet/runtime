@@ -235,21 +235,6 @@ namespace System.Threading.Tasks.Tests
                    () => tcs.SetException(new Exception("some other exception")));
                 Assert.Throws<InvalidOperationException>(
                    () => tcs.SetException(new[] { new Exception("some other exception") }));
-
-                //
-                // Test that disposed task TCS.Task throws ODE on [Try]SetXYZ() after being Disposed
-                // It used to, but now it should throw InvalidOperationException, since the task has already completed
-                //
-                //@TODO VERIFY this one.. tests might not pass.
-                //tcs.Task.Dispose();
-
-                Assert.Throws<InvalidOperationException>(
-                    () => { tcs.SetResult(10); });
-                Assert.Throws<InvalidOperationException>(
-                    () => { tcs.SetCanceled(); });
-                Exception fake = new Exception("blah!");
-                Assert.Throws<InvalidOperationException>(
-                    () => { tcs.SetException(fake); });
             }
         }
 

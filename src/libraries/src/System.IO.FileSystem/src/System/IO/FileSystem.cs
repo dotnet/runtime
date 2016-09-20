@@ -18,6 +18,7 @@ namespace System.IO
 
         // File
         public abstract void CopyFile(string sourceFullPath, string destFullPath, bool overwrite);
+        public abstract void ReplaceFile(string sourceFullPath, string destFullPath, string destBackupFullPath, bool ignoreMetadataErrors);
         public abstract void DeleteFile(string fullPath);
         public abstract bool FileExists(string fullPath);
         public abstract FileStreamBase Open(string fullPath, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options, FileStream parent);

@@ -6,16 +6,6 @@
 // ------------------------------------------------------------------------------
 
 
-namespace Microsoft.Win32.SafeHandles
-{
-    [System.Security.SecurityCriticalAttribute]
-    public sealed partial class SafeWaitHandle : System.Runtime.InteropServices.SafeHandle
-    {
-        public SafeWaitHandle(System.IntPtr existingHandle, bool ownsHandle) : base(default(System.IntPtr), default(bool)) { }
-        [System.Security.SecurityCriticalAttribute]
-        protected override bool ReleaseHandle() { return default(bool); }
-    }
-}
 namespace System.IO
 {
     public enum HandleInheritability
@@ -39,27 +29,6 @@ namespace System.Runtime.InteropServices
         protected virtual void Dispose(bool disposing) { }
         protected abstract bool ReleaseHandle();
         protected void SetHandle(System.IntPtr handle) { }
-        public void SetHandleAsInvalid() { }
-    }
-    [System.Security.SecurityCriticalAttribute]
-    public abstract partial class SafeHandle : System.IDisposable
-    {
-        protected System.IntPtr handle;
-        protected SafeHandle(System.IntPtr invalidHandleValue, bool ownsHandle) { }
-        public bool IsClosed { get { return default(bool); } }
-        public abstract bool IsInvalid { get; }
-        [System.Security.SecurityCriticalAttribute]
-        public void DangerousAddRef(ref bool success) { }
-        public System.IntPtr DangerousGetHandle() { return default(System.IntPtr); }
-        [System.Security.SecurityCriticalAttribute]
-        public void DangerousRelease() { }
-        [System.Security.SecuritySafeCriticalAttribute]
-        public void Dispose() { }
-        [System.Security.SecurityCriticalAttribute]
-        protected virtual void Dispose(bool disposing) { }
-        protected abstract bool ReleaseHandle();
-        protected void SetHandle(System.IntPtr handle) { }
-        [System.Security.SecurityCriticalAttribute]
         public void SetHandleAsInvalid() { }
     }
 }

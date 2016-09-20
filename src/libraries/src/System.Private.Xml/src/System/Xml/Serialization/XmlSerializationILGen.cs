@@ -597,4 +597,3 @@ namespace System.Xml.Serialization
     }
 }
 #endif
-

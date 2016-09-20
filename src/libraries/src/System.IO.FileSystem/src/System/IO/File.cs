@@ -551,6 +551,11 @@ namespace System.IO
             return ReadLinesIterator.CreateIterator(path, encoding);
         }
 
+        public static void WriteAllLines(String path, String[] contents)
+        {
+            WriteAllLines(path, (IEnumerable<String>)contents);
+        }
+
         public static void WriteAllLines(String path, IEnumerable<String> contents)
         {
             if (path == null)
@@ -564,6 +569,11 @@ namespace System.IO
             Stream stream = FileStream.InternalCreate(path, useAsync: false);
 
             InternalWriteAllLines(new StreamWriter(stream, UTF8NoBOM), contents);
+        }
+
+        public static void WriteAllLines(String path, String[] contents, Encoding encoding)
+        {
+            WriteAllLines(path, (IEnumerable<String>)contents, encoding);
         }
 
         public static void WriteAllLines(String path, IEnumerable<String> contents, Encoding encoding)
@@ -666,6 +676,25 @@ namespace System.IO
             InternalWriteAllLines(new StreamWriter(stream, encoding), contents);
         }
 
+        public static void Replace(String sourceFileName, String destinationFileName, String destinationBackupFileName)
+        {
+            Replace(sourceFileName, destinationFileName, destinationBackupFileName, ignoreMetadataErrors: false);
+        }
+
+        public static void Replace(String sourceFileName, String destinationFileName, String destinationBackupFileName, bool ignoreMetadataErrors)
+        {
+            if (sourceFileName == null)
+                throw new ArgumentNullException(nameof(sourceFileName));
+            if (destinationFileName == null)
+                throw new ArgumentNullException(nameof(destinationFileName));
+
+            FileSystem.Current.ReplaceFile(
+                Path.GetFullPath(sourceFileName), 
+                Path.GetFullPath(destinationFileName),
+                destinationBackupFileName != null ? Path.GetFullPath(destinationBackupFileName) : null,
+                ignoreMetadataErrors);
+        }
+
         // Moves a specified file to a new location and potentially a new file name.
         // This method does work across volumes.
         //
@@ -696,6 +725,32 @@ namespace System.IO
             }
 
             FileSystem.Current.MoveFile(fullSourceFileName, fullDestFileName);
+        }
+
+        public static void Encrypt(String path)
+        {
+            if (path == null)
+                throw new ArgumentNullException(nameof(path));
+
+            // TODO: Not supported on Unix or in WinRt, and the EncryptFile API isn't currently
+            // available in OneCore.  For now, we just throw PNSE everywhere.  When the API is
+            // available, we can put this into the FileSystem abstraction and implement it
+            // properly for Win32.
+
+            throw new PlatformNotSupportedException();
+        }
+
+        public static void Decrypt(String path)
+        {
+            if (path == null)
+                throw new ArgumentNullException(nameof(path));
+
+            // TODO: Not supported on Unix or in WinRt, and the EncryptFile API isn't currently
+            // available in OneCore.  For now, we just throw PNSE everywhere.  When the API is
+            // available, we can put this into the FileSystem abstraction and implement it
+            // properly for Win32.
+
+            throw new PlatformNotSupportedException();
         }
 
         private static volatile Encoding _UTF8NoBOM;
