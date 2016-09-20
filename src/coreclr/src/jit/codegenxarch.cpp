@@ -9654,11 +9654,13 @@ void CodeGen::genStoreLongLclVar(GenTree* treeNode)
 
         GenTreePtr loVal = op1->gtGetOp1();
         GenTreePtr hiVal = op1->gtGetOp2();
+
         // NYI: Contained immediates.
         NYI_IF((loVal->gtRegNum == REG_NA) || (hiVal->gtRegNum == REG_NA),
                "Store of long lclVar with contained immediate");
-        emit->emitIns_R_S(ins_Store(TYP_INT), EA_4BYTE, loVal->gtRegNum, lclNum, 0);
-        emit->emitIns_R_S(ins_Store(TYP_INT), EA_4BYTE, hiVal->gtRegNum, lclNum, genTypeSize(TYP_INT));
+
+        emit->emitIns_S_R(ins_Store(TYP_INT), EA_4BYTE, loVal->gtRegNum, lclNum, 0);
+        emit->emitIns_S_R(ins_Store(TYP_INT), EA_4BYTE, hiVal->gtRegNum, lclNum, genTypeSize(TYP_INT));
     }
     else if (op1->OperGet() == GT_MUL_LONG)
     {
