@@ -12,6 +12,7 @@ namespace System.Net.Sockets.Tests
         private const int DefaultReceiveBufferSize = 1024;
 
         protected abstract int Port { get; }
+        public abstract EndPoint EndPoint { get; }
 
         public static SocketTestServer SocketTestServerFactory(SocketImplementationType type, EndPoint endpoint, ProtocolType protocolType = ProtocolType.Tcp)
         {

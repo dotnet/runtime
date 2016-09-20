@@ -71,6 +71,22 @@ namespace System.Net.Sockets
                 out remoteSocketAddressLength);
         }
 
+        internal bool DisconnectEx(SafeCloseSocket socketHandle, SafeHandle overlapped, int flags, int reserved)
+        {
+            EnsureDynamicWinsockMethods();
+            DisconnectExDelegate disconnectEx = _dynamicWinsockMethods.GetDelegate<DisconnectExDelegate>(socketHandle);
+
+            return disconnectEx(socketHandle, overlapped, flags, reserved);
+        }
+
+        internal bool DisconnectExBlocking(SafeCloseSocket socketHandle, IntPtr overlapped, int flags, int reserved)
+        {
+            EnsureDynamicWinsockMethods();
+            DisconnectExDelegateBlocking disconnectEx_Blocking = _dynamicWinsockMethods.GetDelegate<DisconnectExDelegateBlocking>(socketHandle);
+
+            return disconnectEx_Blocking(socketHandle, overlapped, flags, reserved);
+        }
+
         internal bool ConnectEx(SafeCloseSocket socketHandle,
             IntPtr socketAddress,
             int socketAddressSize,

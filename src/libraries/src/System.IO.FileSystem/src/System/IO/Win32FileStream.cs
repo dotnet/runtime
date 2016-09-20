@@ -1766,6 +1766,7 @@ namespace System.IO
             // Further, typically the CopyToAsync buffer size will be larger than that used by the FileStream, such that
             // we'd likely be unable to use it anyway.  Instead, we rent the buffer from a pool.
             byte[] copyBuffer = ArrayPool<byte>.Shared.Rent(bufferSize);
+            bufferSize = 0; // repurpose bufferSize to be the high water mark for the buffer, to avoid an extra field in the state machine
 
             // Allocate an Overlapped we can use repeatedly for all operations
             var awaitableOverlapped = new PreAllocatedOverlapped(AsyncCopyToAwaitable.s_callback, readAwaitable, copyBuffer);
@@ -1861,14 +1862,23 @@ namespace System.IO
                         }
 
                         // Successful operation.  If we got zero bytes, we're done: exit the read/write loop.
-                        // Otherwise, update the read position for next time accordingly.
-                        if (readAwaitable._numBytes == 0)
+                        int numBytesRead = (int)readAwaitable._numBytes;
+                        if (numBytesRead == 0)
                         {
                             break;
                         }
-                        else if (canSeek)
+
+                        // Otherwise, update the read position for next time accordingly.
+                        if (canSeek)
                         {
-                            readAwaitable._position += (int)readAwaitable._numBytes;
+                            readAwaitable._position += numBytesRead;
+                        }
+
+                        // (and keep track of the maximum number of bytes in the buffer we used, to avoid excessive and unnecessary
+                        // clearing of the buffer before we return it to the pool)
+                        if (numBytesRead > bufferSize)
+                        {
+                            bufferSize = numBytesRead;
                         }
                     }
                     finally
@@ -1898,7 +1908,9 @@ namespace System.IO
                 // Cleanup from the whole copy operation
                 cancellationReg.Dispose();
                 awaitableOverlapped.Dispose();
-                ArrayPool<byte>.Shared.Return(copyBuffer, clearArray: true);
+
+                Array.Clear(copyBuffer, 0, bufferSize);
+                ArrayPool<byte>.Shared.Return(copyBuffer, clearArray: false);
 
                 // Make sure the stream's current position reflects where we ended up
                 if (!_handle.IsClosed && _parent.CanSeek)

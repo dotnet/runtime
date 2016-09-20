@@ -195,6 +195,7 @@ namespace System.Net.Sockets
         public IAsyncResult BeginConnect(IPAddress address, int port, AsyncCallback requestCallback, object state) { return default(IAsyncResult); }
         public IAsyncResult BeginConnect(IPAddress[] addresses, int port, AsyncCallback requestCallback, object state) { return default(IAsyncResult); }
         public IAsyncResult BeginConnect(EndPoint remoteEP, AsyncCallback callback, object state) { return default(IAsyncResult); }
+        public IAsyncResult BeginDisconnect(bool reuseSocket, AsyncCallback callback, object state) { return default(IAsyncResult); }
         public IAsyncResult BeginReceive(byte[] buffer, int offset, int size, SocketFlags socketFlags, AsyncCallback callback, object state) { return default(IAsyncResult); }
         public IAsyncResult BeginReceive(byte[] buffer, int offset, int size, SocketFlags socketFlags, out SocketError errorCode, AsyncCallback callback, object state) { errorCode = default(SocketError); return default(IAsyncResult); }
         public IAsyncResult BeginReceive(Collections.Generic.IList<ArraySegment<byte>> buffers, SocketFlags socketFlags, AsyncCallback callback, object state) { return default(IAsyncResult); }
@@ -219,9 +220,12 @@ namespace System.Net.Sockets
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
         ~Socket() { }
+        public void Disconnect(bool reuseSocket) { }
+        public bool DisconnectAsync(SocketAsyncEventArgs e) { return default(bool); }
         public SocketInformation DuplicateAndClose(int targetProcessId) { return default(SocketInformation); }
         public Socket EndAccept(IAsyncResult asyncResult) { return default(Socket); }
         public void EndConnect(IAsyncResult asyncResult) { }
+        public void EndDisconnect(IAsyncResult asyncResult) { }
         public int EndReceive(IAsyncResult asyncResult) { return default(int); }
         public int EndReceive(IAsyncResult asyncResult, out SocketError errorCode) { errorCode = default(SocketError); return default(int); }
         public int EndReceiveFrom(IAsyncResult asyncResult, ref EndPoint endPoint) { return default(int); }
@@ -284,6 +288,7 @@ namespace System.Net.Sockets
         public System.Exception ConnectByNameError { get { return default(System.Exception); } }
         public System.Net.Sockets.Socket ConnectSocket { get { return default(System.Net.Sockets.Socket); } }
         public int Count { get { return default(int); } }
+        public bool DisconnectReuseSocket { get { return default(bool); } set { } }
         public System.Net.Sockets.SocketAsyncOperation LastOperation { get { return default(System.Net.Sockets.SocketAsyncOperation); } }
         public int Offset { get { return default(int); } }
         public System.Net.Sockets.IPPacketInformation ReceiveMessageFromPacketInfo { get { return default(System.Net.Sockets.IPPacketInformation); } }

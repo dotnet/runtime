@@ -808,6 +808,9 @@ namespace System.IO
         public static string GetTempPath() { return default(string); }
         public static bool HasExtension(string path) { return default(bool); }
         public static bool IsPathRooted(string path) { return default(bool); }
+#if netcoreapp11
+        public static string GetRelativePath(string relativeTo, string path) { return default(string); }
+#endif
     }
 }
 namespace System.Net

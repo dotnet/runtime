@@ -939,5 +939,32 @@ namespace System.Net.Sockets
         {
             // Dual-mode sockets support received packet info on Windows.
         }
+
+        internal static SocketError DisconnectAsync(Socket socket, SafeCloseSocket handle, bool reuseSocket, DisconnectOverlappedAsyncResult asyncResult)
+        {
+            asyncResult.SetUnmanagedStructures(null);
+
+            // This can throw ObjectDisposedException
+            SocketError errorCode = SocketError.Success;
+            if (!socket.DisconnectEx(handle, asyncResult.OverlappedHandle, (int)(reuseSocket ? TransmitFileOptions.ReuseSocket : 0), 0))
+            {
+                errorCode = GetLastSocketError();
+            }
+
+            return errorCode;
+        }
+
+        internal static SocketError Disconnect(Socket socket, SafeCloseSocket handle, bool reuseSocket)
+        {
+            SocketError errorCode = SocketError.Success;
+
+            // This can throw ObjectDisposedException (handle, and retrieving the delegate).
+            if (!socket.DisconnectExBlocking(handle, IntPtr.Zero, (int)(reuseSocket ? TransmitFileOptions.ReuseSocket : 0), 0))
+            {
+                errorCode = (SocketError)Marshal.GetLastWin32Error();
+            }
+
+            return errorCode;
+        }
     }
 }

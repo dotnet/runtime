@@ -9,6 +9,14 @@
       <TestTFMs>netcoreapp1.0;net462</TestTFMs>
       <OSGroup>Windows_NT</OSGroup>
     </Project>
+<!--
+    Can't reliably test multiple target groups against the same TestTFM (at least in parallel).
+    Need to hunt down colliding usages of TestTFM, such as _TestDependencyListRoot in tests.targets.
+
+    For now we'll keep the netcoreapp1.1 TargetGroup active as it is the superset.
+
+    See https://github.com/dotnet/corefx/issues/11468
+
     <Project Include="System.Runtime.Extensions.Tests.csproj">
       <TargetGroup>netstandard1.7</TargetGroup>
       <TestTFMs>netcoreapp1.1</TestTFMs>
@@ -18,6 +26,17 @@
       <TargetGroup>netstandard1.7</TargetGroup>
       <TestTFMs>netcoreapp1.1</TestTFMs>
       <OSGroup>Windows_NT</OSGroup>
+    </Project>
+-->
+    <Project Include="System.Runtime.Extensions.Tests.csproj">
+      <TargetGroup>netcoreapp1.1</TargetGroup>
+      <TestTFMs>netcoreapp1.1</TestTFMs>
+      <OSGroup>Windows_NT</OSGroup>
+    </Project>
+    <Project Include="System.Runtime.Extensions.Tests.csproj">
+      <TargetGroup>netcoreapp1.1</TargetGroup>
+      <TestTFMs>netcoreapp1.1</TestTFMs>
+      <OSGroup>Unix</OSGroup>
     </Project>
     <Project Include="Performance\System.Runtime.Extensions.Performance.Tests.csproj"/>
   </ItemGroup>

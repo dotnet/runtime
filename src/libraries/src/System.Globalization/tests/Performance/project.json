@@ -2,7 +2,7 @@
   "dependencies": {
     "Microsoft.xunit.netcore.extensions": "1.0.0-prerelease-00807-03",
     "Microsoft.DotNet.BuildTools.TestSuite": "1.0.0-prerelease-00807-03",
-    "Microsoft.DotNet.xunit.performance": "1.0.0-alpha-build0039",
+    "Microsoft.DotNet.xunit.performance": "1.0.0-alpha-build0040",
     "Microsoft.NETCore.Platforms": "1.0.2-beta-24516-03",
     "System.Diagnostics.Process": "4.3.0-beta-24516-03",
     "System.Globalization": "4.3.0-beta-24516-03",

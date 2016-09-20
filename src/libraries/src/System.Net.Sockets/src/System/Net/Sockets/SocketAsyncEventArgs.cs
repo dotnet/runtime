@@ -36,6 +36,9 @@ namespace System.Net.Sockets
         private event EventHandler<SocketAsyncEventArgs> _completed;
         private bool _completedChanged;
 
+        // DisconnectReuseSocket propery variables.
+        private bool _disconnectReuseSocket;
+
         // LastOperation property variables.
         private SocketAsyncOperation _completedOperation;
 
@@ -166,6 +169,13 @@ namespace System.Net.Sockets
             {
                 handler(e._currentSocket, e);
             }
+        }
+
+        // DisconnectResuseSocket property.
+        public bool DisconnectReuseSocket
+        {
+            get { return _disconnectReuseSocket; }
+            set { _disconnectReuseSocket = value; }
         }
 
         public SocketAsyncOperation LastOperation
@@ -501,6 +511,14 @@ namespace System.Net.Sockets
                 }
             }
         }
+
+        internal void StartOperationDisconnect()
+        {
+            // Remember the operation type.
+            _completedOperation = SocketAsyncOperation.Disconnect;
+            InnerStartOperationDisconnect();
+        }
+
         internal void StartOperationReceive()
         {
             // Remember the operation type.

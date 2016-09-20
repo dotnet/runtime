@@ -49,11 +49,6 @@ namespace Microsoft.Win32.RegistryTests
             const int maxValueNameLength = 255;
             Assert.Throws<ArgumentException>(() => TestRegistryKey.CreateSubKey(new string('a', maxValueNameLength + 1)));
 
-            //According to msdn documentation max nesting level exceeds is 510 but actual is 508
-            const int maxNestedLevel = 508;
-            string exceedsNestedSubkeyName = string.Join(@"\", Enumerable.Repeat("a", maxNestedLevel));
-            Assert.Throws<IOException>(() => TestRegistryKey.CreateSubKey(exceedsNestedSubkeyName, true));
-
             // Should throw if RegistryKey is readonly
             const string name = "FooBar";
             TestRegistryKey.SetValue(name, 42);
@@ -72,6 +67,16 @@ namespace Microsoft.Win32.RegistryTests
                 TestRegistryKey.Dispose();
                 TestRegistryKey.CreateSubKey(TestRegistryKeyName, true);
             });
+        }
+
+        [ActiveIssue(10546)]
+        [Fact]
+        public void NegativeTest_DeeplyNestedKey()
+        {
+            //According to msdn documentation max nesting level exceeds is 510 but actual is 508
+            const int maxNestedLevel = 508;
+            string exceedsNestedSubkeyName = string.Join(@"\", Enumerable.Repeat("a", maxNestedLevel));
+            Assert.Throws<IOException>(() => TestRegistryKey.CreateSubKey(exceedsNestedSubkeyName, true));
         }
 
         [Fact]

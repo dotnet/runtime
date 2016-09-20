@@ -15,6 +15,7 @@
     <Compile Include="AcceptAsync.cs" />
     <Compile Include="AgnosticListenerTest.cs" />
     <Compile Include="ArgumentValidationTests.cs" />
+    <Compile Include="DisconnectTest.cs" />
     <Compile Include="Handle.cs" />
     <Compile Include="ConnectAsync.cs" />
     <Compile Include="ConnectExTest.cs" />
