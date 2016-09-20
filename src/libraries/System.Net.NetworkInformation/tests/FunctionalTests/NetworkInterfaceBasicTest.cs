@@ -71,7 +71,7 @@ namespace System.Net.NetworkInformation.Tests
                 try
                 {
                     _log.WriteLine("Speed: " + nic.Speed);
-                    Assert.InRange(nic.Speed, 0, long.MaxValue);
+                    Assert.InRange(nic.Speed, -1, long.MaxValue);
                 }
                 // We cannot guarantee this works on all devices.
                 catch (PlatformNotSupportedException pnse)
