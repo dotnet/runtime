@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <MinimumVisualStudioVersion>11.0</MinimumVisualStudioVersion>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
+    <TestSourceFolder>$(MSBuildThisFileDirectory)\</TestSourceFolder>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(TestSourceFolder)Utils.cs" />
+    <Compile Include="$(TestSourceFolder)SerializationTypes.cs" />
+    <Compile Include="$(TestSourceFolder)SerializationTypes.CoreCLR.cs" />
+    <Compile Include="$(TestSourceFolder)DataContractSerializer.cs" />
+    <Compile Include="$(TestSourceFolder)DataContractSerializer.CoreCLR.cs" />
+    <Compile Include="$(TestSourceFolder)DataContractSerializerStressTests.cs" />
+    <Compile Include="$(TestSourceFolder)DataContractSerializerTestData.cs" />
+    <Compile Include="$(TestSourceFolder)MyResolver.cs" />
+    <Compile Include="$(TestSourceFolder)XmlDictionaryReaderTests.cs" />
+    <Compile Include="$(TestSourceFolder)XmlDictionaryWriterTest.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestSourceFolder)..\..\System.Private.DataContractSerialization\src\System.Private.DataContractSerialization.csproj">
+      <Project>{6B4C1660-D158-4820-BE1C-D7A29CEBEC9B}</Project>
+      <Name>System.Private.DataContractSerialization</Name>
+      <KeepProjectReference>true</KeepProjectReference>
+    </ProjectReference>
+    <ProjectReference Include="$(TestSourceFolder)..\..\System.Runtime.Serialization.Primitives\pkg\System.Runtime.Serialization.Primitives.pkgproj">
+      <Project>{CDF0ACB5-1361-4E48-8ECB-22E8022F5F01}</Project>
+      <Name>System.Runtime.Serialization.Primitives</Name>
+    </ProjectReference>
+    <ProjectReference Include="$(TestSourceFolder)..\..\System.Xml.XmlSerializer\pkg\System.Xml.XmlSerializer.pkgproj">
+      <Project>{D62A6082-5229-4845-8BE9-75753E08C65A}</Project>
+      <Name>System.Xml.XmlSerializer</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="$(TestSourceFolder)project.json" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>
