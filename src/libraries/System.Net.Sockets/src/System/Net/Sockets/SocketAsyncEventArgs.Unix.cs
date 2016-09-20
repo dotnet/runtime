@@ -90,9 +90,14 @@ namespace System.Net.Sockets
             return handle.AsyncContext.ConnectAsync(_socketAddress.Buffer, _socketAddress.Size, ConnectCompletionCallback);
         }
 
+        internal SocketError DoOperationDisconnect(Socket socket, SafeCloseSocket handle)
+        {
+            throw new PlatformNotSupportedException(SR.net_sockets_disconnect_notsupported);
+        }
+
         private void InnerStartOperationDisconnect()
         {
-            throw new PlatformNotSupportedException();
+            throw new PlatformNotSupportedException(SR.net_sockets_disconnect_notsupported);
         }
 
         private Action<int, byte[], int, SocketFlags, SocketError> TransferCompletionCallback =>

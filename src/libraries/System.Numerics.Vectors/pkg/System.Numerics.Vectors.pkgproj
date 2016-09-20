@@ -8,6 +8,9 @@
   <ItemGroup>
     <ProjectReference Include="..\ref\System.Numerics.Vectors.csproj">
       <SupportedFramework>net45;netcore45;wp8;wpa81;netcoreapp1.0;$(AllXamarinFrameworks)</SupportedFramework>
+      <!-- Make sure this doesn't get stripped during harvesting.
+           We have an implementation that will work on desktop, thus needs a unique assembly version -->
+      <Preserve>true</Preserve>
     </ProjectReference>
     <ProjectReference Include="..\src\System.Numerics.Vectors.builds" />
   </ItemGroup>

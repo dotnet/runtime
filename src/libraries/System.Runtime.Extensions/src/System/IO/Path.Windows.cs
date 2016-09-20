@@ -146,5 +146,8 @@ namespace System.IO
             int pathRoot = PathInternal.GetRootLength(path);
             return pathRoot <= 0 ? string.Empty : path.Substring(0, pathRoot);
         }
+
+        /// <summary>Gets whether the system is case-sensitive.</summary>
+        internal static bool IsCaseSensitive { get { return false; } }
     }
 }

@@ -192,4 +192,19 @@ public class PathInternal_Windows_Tests
     {
         Assert.Equal(expected, PathInternal.FindFileNameIndex(path));
     }
+
+    [Theory,
+        InlineData(@"", @"", StringComparison.OrdinalIgnoreCase, true)
+        InlineData(@"", @"", StringComparison.Ordinal, true)
+        InlineData(@"A", @"a", StringComparison.OrdinalIgnoreCase, true)
+        InlineData(@"A", @"a", StringComparison.Ordinal, true)
+        InlineData(@"C:\", @"c:\", StringComparison.OrdinalIgnoreCase, true)
+        InlineData(@"C:\", @"c:\", StringComparison.Ordinal, false)
+        ]
+    [PlatformSpecific(PlatformID.Windows)]
+    public void AreRootsEqual(string first, string second, StringComparison comparisonType, bool expected)
+    {
+        Assert.Equal(expected, PathInternal.AreRootsEqual(first, second, comparisonType));
+    }
+
 }

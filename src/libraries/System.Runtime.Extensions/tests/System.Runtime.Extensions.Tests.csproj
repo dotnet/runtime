@@ -15,17 +15,33 @@
     <DefineConstants Condition="'$(TargetGroup)'=='netstandard1.7'">$(DefineConstants);netstandard17</DefineConstants>
     <NugetTargetMoniker Condition="'$(NugetTargetMoniker)'==''">.NETStandard,Version=v1.5</NugetTargetMoniker>
   </PropertyGroup>
+  <!-- Folder logic needs moved into common targets: https://github.com/dotnet/corefx/issues/11468 -->
+  <ItemGroup Condition="'$(TargetGroup)'=='netstandard1.7'">
+    <TestNugetTargetMoniker Include="$(NugetTargetMoniker)">
+      <Folder>ns1.7-netcoreapp1.1</Folder>
+    </TestNugetTargetMoniker>
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)'=='netcoreapp1.1'">
+    <TestNugetTargetMoniker Include="$(NugetTargetMoniker)">
+      <Folder>netcoreapp1.1</Folder>
+    </TestNugetTargetMoniker>
+  </ItemGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' " />
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' " />
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'netstandard1.7_Debug|AnyCPU' " />
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'netstandard1.7_Release|AnyCPU' " />
-  <ItemGroup Condition="'$(TargetGroup)'=='netstandard1.7'">
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'netcoreapp1.1_Debug|AnyCPU' " />
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'netcoreapp1.1_Release|AnyCPU' " />
+  <ItemGroup Condition="'$(TargetGroup)'=='netstandard1.7' or '$(TargetGroup)'=='netcoreapp1.1'">
+    <Compile Include="System\IO\PathTests.netstandard1.7.cs" />
     <Compile Include="System\Convert.netstandard1.7.cs" />
     <Compile Include="System\EnvironmentTests.cs" />
-    <Compile Include="System\IO\PathTests.netstandard1.7.cs" />
     <Compile Include="System\Math.netstandard1.7.cs" />
     <Compile Include="System\StringComparer.netstandard1.7.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)'=='netcoreapp1.1'">
+    <Compile Include="System\IO\Path.GetRelativePath.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="System\AppDomainTests.cs" Condition="'$(TargetGroup)'=='netstandard1.7'" />
@@ -95,6 +111,7 @@
     <None Include="project.json" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\System.Runtime\pkg\System.Runtime.pkgproj" />
     <ProjectReference Include="..\pkg\System.Runtime.Extensions.pkgproj">
       <Project>{1e689c1b-690c-4799-bde9-6e7990585894}</Project>
       <Name>System.Runtime.Extensions.CoreCLR</Name>

@@ -2581,6 +2581,127 @@ namespace System.Net.Sockets
             return result;
         }
 
+        public IAsyncResult BeginDisconnect(bool reuseSocket, AsyncCallback callback, object state)
+        {
+            if (s_loggingEnabled)
+            {
+                NetEventSource.Enter(NetEventSource.ComponentType.Socket, this, nameof(BeginDisconnect), null);
+            }
+
+            if (CleanedUp)
+            {
+                throw new ObjectDisposedException(this.GetType().FullName);
+            }
+
+            // Start context-flowing op.  No need to lock - we don't use the context till the callback.
+            DisconnectOverlappedAsyncResult asyncResult = new DisconnectOverlappedAsyncResult(this, state, callback);
+            asyncResult.StartPostingAsyncOp(false);
+
+            // Post the disconnect.
+            DoBeginDisconnect(reuseSocket, asyncResult);
+
+            // Finish flowing (or call the callback), and return.
+            asyncResult.FinishPostingAsyncOp();
+            return asyncResult;
+        }
+
+        private void DoBeginDisconnect(bool reuseSocket, DisconnectOverlappedAsyncResult asyncResult)
+        {
+            if (GlobalLog.IsEnabled)
+            {
+                GlobalLog.Print("Socket#" + LoggingHash.HashString(this) + "::DoBeginDisconnect() ");
+            }
+
+
+            SocketError errorCode = SocketError.Success;
+
+            errorCode = SocketPal.DisconnectAsync(this, _handle, reuseSocket, asyncResult);
+
+            if (errorCode == SocketError.Success)
+            {
+                SetToDisconnected();
+                _remoteEndPoint = null;
+            }
+
+            if (GlobalLog.IsEnabled)
+            {
+                GlobalLog.Print("Socket#" + LoggingHash.HashString(this) + "::DoBeginDisconnect() UnsafeNclNativeMethods.OSSOCK.DisConnectEx returns:" + errorCode.ToString());
+            }
+
+            // if the asynchronous native call fails synchronously
+            // we'll throw a SocketException
+            errorCode = asyncResult.CheckAsyncCallOverlappedResult(errorCode);
+
+            if (errorCode != SocketError.Success)
+            {
+                // update our internal state after this socket error and throw
+                SocketException socketException = new SocketException((int)errorCode);
+                UpdateStatusAfterSocketError(socketException);
+                if (s_loggingEnabled)
+                {
+                    NetEventSource.Exception(NetEventSource.ComponentType.Socket, this, nameof(BeginDisconnect), socketException);
+                }
+                throw socketException;
+            }
+
+            if (GlobalLog.IsEnabled)
+            {
+                GlobalLog.Print("Socket#" + LoggingHash.HashString(this) + "::DoBeginDisconnect() returning AsyncResult:" + LoggingHash.HashString(asyncResult));
+            }
+            if (s_loggingEnabled)
+            {
+                NetEventSource.Exit(NetEventSource.ComponentType.Socket, this, nameof(BeginDisconnect), asyncResult);
+            }
+        }
+
+        public void Disconnect(bool reuseSocket)
+        {
+            if (s_loggingEnabled)
+            {
+                NetEventSource.Enter(NetEventSource.ComponentType.Socket, this, nameof(Disconnect), null);
+            }
+
+            if (CleanedUp)
+            {
+                throw new ObjectDisposedException(this.GetType().FullName);
+            }
+
+            if (GlobalLog.IsEnabled)
+            {
+                GlobalLog.Print("Socket#" + LoggingHash.HashString(this) + "::Disconnect() ");
+            }
+
+            SocketError errorCode = SocketError.Success;
+
+            // This can throw ObjectDisposedException (handle, and retrieving the delegate).
+            errorCode = SocketPal.Disconnect(this, _handle, reuseSocket);
+
+            if (GlobalLog.IsEnabled)
+            {
+                GlobalLog.Print("Socket#" + LoggingHash.HashString(this) + "::Disconnect() UnsafeNclNativeMethods.OSSOCK.DisConnectEx returns:" + errorCode.ToString());
+            }
+
+            if (errorCode != SocketError.Success)
+            {
+                // update our internal state after this socket error and throw
+                SocketException socketException = new SocketException((int)errorCode);
+                UpdateStatusAfterSocketError(socketException);
+                if (s_loggingEnabled)
+                {
+                    NetEventSource.Exception(NetEventSource.ComponentType.Socket, this, nameof(Disconnect), socketException);
+                }
+                throw socketException;
+            }
+
+            SetToDisconnected();
+            _remoteEndPoint = null;
+
+            if (s_loggingEnabled)
+            {
+                NetEventSource.Exit(NetEventSource.ComponentType.Socket, this, nameof(Disconnect), null);
+            }
+        }
+
         // Routine Description:
         // 
         //    EndConnect - Called after receiving callback from BeginConnect,
@@ -2682,6 +2803,74 @@ namespace System.Net.Sockets
                 SocketsEventSource.Connected(this, LocalEndPoint, RemoteEndPoint);
                 NetEventSource.Exit(NetEventSource.ComponentType.Socket, this, nameof(EndConnect), "");
             }
+        }
+
+        public void EndDisconnect(IAsyncResult asyncResult)
+        {
+
+            if (s_loggingEnabled)
+            {
+                NetEventSource.Enter(NetEventSource.ComponentType.Socket, this, nameof(EndDisconnect), asyncResult);
+            }
+
+            if (CleanedUp)
+            {
+                throw new ObjectDisposedException(this.GetType().FullName);
+            }
+
+#if FEATURE_PAL
+            throw new PlatformNotSupportedException(SR.GetString(SR.WinNTRequired));
+#endif // FEATURE_PAL
+
+            if (asyncResult == null)
+            {
+                throw new ArgumentNullException("asyncResult");
+            }
+
+
+            //get async result and check for errors
+            LazyAsyncResult castedAsyncResult = asyncResult as LazyAsyncResult;
+            if (castedAsyncResult == null || castedAsyncResult.AsyncObject != this)
+            {
+                throw new ArgumentException(SR.net_io_invalidasyncresult, nameof(asyncResult));
+            }
+            if (castedAsyncResult.EndCalled)
+            {
+                throw new InvalidOperationException(SR.Format(SR.net_io_invalidendcall, nameof(EndDisconnect)));
+            }
+
+            //wait for completion if it hasn't occured
+            castedAsyncResult.InternalWaitForCompletion();
+            castedAsyncResult.EndCalled = true;
+
+            if (GlobalLog.IsEnabled)
+            {
+                GlobalLog.Print("Socket#" + LoggingHash.HashString(this) + "::EndDisconnect()");
+            }
+
+            //
+            // if the asynchronous native call failed asynchronously
+            // we'll throw a SocketException
+            //
+            if ((SocketError)castedAsyncResult.ErrorCode != SocketError.Success)
+            {
+                //
+                // update our internal state after this socket error and throw
+                //
+                SocketException socketException = new SocketException(castedAsyncResult.ErrorCode);
+                UpdateStatusAfterSocketError(socketException);
+                if (s_loggingEnabled)
+                {
+                    NetEventSource.Exception(NetEventSource.ComponentType.Socket, this, nameof(EndDisconnect), socketException);
+                }
+                throw socketException;
+            }
+
+            if (s_loggingEnabled)
+            {
+                NetEventSource.Exit(NetEventSource.ComponentType.Socket, this, nameof(EndDisconnect), null);
+            }
+            return;
         }
 
         // Routine Description:
@@ -4632,6 +4821,57 @@ namespace System.Net.Sockets
                 throw new ArgumentNullException(nameof(e));
             }
             e.CancelConnectAsync();
+        }
+
+        public bool DisconnectAsync(SocketAsyncEventArgs e)
+        {
+
+            bool retval;
+
+            if (s_loggingEnabled)
+            {
+                NetEventSource.Enter(NetEventSource.ComponentType.Socket, this, nameof(DisconnectAsync), "");
+            }
+
+            // Throw if socket disposed
+            if (CleanedUp)
+            {
+                throw new ObjectDisposedException(GetType().FullName);
+            }
+
+            // Prepare for the native call.
+            e.StartOperationCommon(this);
+            e.StartOperationDisconnect();
+
+            SocketError socketError = SocketError.Success;
+            try
+            {
+                socketError = e.DoOperationDisconnect(this, _handle);
+            }
+            catch (Exception ex)
+            {
+                // clear in-use on event arg object 
+                e.Complete();
+                throw ex;
+            }
+
+            // Handle completion when completion port is not posted.
+            if (socketError != SocketError.Success && socketError != SocketError.IOPending)
+            {
+                e.FinishOperationSyncFailure(socketError, 0, SocketFlags.None);
+                retval = false;
+            }
+            else
+            {
+                retval = true;
+            }
+
+            if (s_loggingEnabled)
+            {
+                NetEventSource.Exit(NetEventSource.ComponentType.Socket, this, nameof(DisconnectAsync), retval);
+            }
+
+            return retval;
         }
 
         public bool ReceiveAsync(SocketAsyncEventArgs e)

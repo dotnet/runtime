@@ -861,6 +861,16 @@
         ]
     },
     {
+        "Name": "System.Net.Mime",
+        "Description": "Provides types that are used to represent Multipurpose Internet Mail Exchange (MIME) headers.",
+        "CommonTypes": [
+            "System.Net.Mime.ContentDisposition",
+            "System.Net.Mime.ContentType",
+            "System.Net.Mime.DispositionTypeNames",
+            "System.Net.Mime.MediaTypeNames"
+        ]
+    },
+    {
         "Name": "System.Net.NameResolution",
         "Description": "Provides the System.Net.Dns class, which enables developers to perform simple domain name resolution.",
         "CommonTypes": [
