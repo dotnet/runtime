@@ -216,14 +216,6 @@ namespace System.Net.Tests
             yield return new object[] { CharRange('\u2066', '\u2069') }; // BIDI isolate
 
             yield return new object[] { "\uFEFF" }; // BOM
-
-            // Astral plane private use chars
-            yield return new object[] { CharRange(0xF0000, 0xFFFFD) };
-            yield return new object[] { CharRange(0x100000, 0x10FFFD) };
-            // Astral plane non-chars
-            yield return new object[] { "\U0001FFFE" };
-            yield return new object[] { "\U0001FFFF" };
-            yield return new object[] { CharRange(0x2FFFE, 0x10FFFF) };
         }
 
         // UrlEncode + UrlDecode
@@ -263,7 +255,25 @@ namespace System.Net.Tests
             string encoded = WebUtility.UrlEncode(value);
             Assert.Equal(value, WebUtility.UrlDecode(encoded));
         }
-        
+
+        [Fact]
+        public static void UrlEncodeDecode_Roundtrip_AstralPlanes()
+        {
+            // These were separated out of the UrlEncodeDecode_Roundtrip_SharedTestData member data
+            // due to the CharRange calls resulting in giant (several megabyte) strings.  Since these
+            // values become part of the test names, they're resulting in gigantic logs.  To avoid that,
+            // they've been separated out of the theory.
+
+            // Astral plane private use chars
+            UrlEncodeDecode_Roundtrip(CharRange(0xF0000, 0xFFFFD));
+            UrlEncodeDecode_Roundtrip(CharRange(0x100000, 0x10FFFD));
+
+            // Astral plane non-chars
+            UrlEncodeDecode_Roundtrip(CharRange(0x2FFFE, 0x10FFFF));
+            UrlEncodeDecode_Roundtrip("\U0001FFFE");
+            UrlEncodeDecode_Roundtrip("\U0001FFFF");
+        }
+
         // UrlEncode + DecodeToBytes
 
         public static IEnumerable<object[]> UrlDecodeToBytes_TestData()
@@ -362,7 +372,25 @@ namespace System.Net.Tests
             byte[] encoded = WebUtility.UrlEncodeToBytes(input, 0, input.Length);
             Assert.Equal(input, WebUtility.UrlDecodeToBytes(encoded, 0, encoded.Length));
         }
-        
+
+        [Fact]
+        public static void UrlEncodeDecodeToBytes_Roundtrip_AstralPlanes()
+        {
+            // These were separated out of the UrlEncodeDecode_Roundtrip_SharedTestData member data
+            // due to the CharRange calls resulting in giant (several megabyte) strings.  Since these
+            // values become part of the test names, they're resulting in gigantic logs.  To avoid that,
+            // they've been separated out of the theory.
+
+            // Astral plane private use chars
+            UrlEncodeDecodeToBytes_Roundtrip(CharRange(0xF0000, 0xFFFFD));
+            UrlEncodeDecodeToBytes_Roundtrip(CharRange(0x100000, 0x10FFFD));
+
+            // Astral plane non-chars
+            UrlEncodeDecodeToBytes_Roundtrip(CharRange(0x2FFFE, 0x10FFFF));
+            UrlEncodeDecodeToBytes_Roundtrip("\U0001FFFE");
+            UrlEncodeDecodeToBytes_Roundtrip("\U0001FFFF");
+        }
+
         [Theory]
         [InlineData("FooBarQuux", 3, 7, "BarQuux")]
         public static void UrlEncodeToBytes_ExcludeIrrelevantData(string value, int offset, int count, string expected)
