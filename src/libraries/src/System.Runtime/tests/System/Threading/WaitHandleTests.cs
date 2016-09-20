@@ -8,7 +8,7 @@ using Xunit;
 
 namespace System.Threading.Tests
 {
-    public static class WaitHandleTests
+    public static partial class WaitHandleTests
     {
         [Fact]
         public static void WaitOne()
@@ -98,6 +98,36 @@ namespace System.Threading.Tests
         public static void WaitTimeout()
         {
             Assert.Equal(WaitHandle.WaitTimeout, WaitHandle.WaitAny(new[] { new ManualResetEvent(false) }, 0));
+        }
+
+        [Fact]
+        public static void Dispose()
+        {
+            var wh = new ManualResetEvent(false);
+            wh.Dispose();
+            Assert.Throws<ObjectDisposedException>(() => wh.WaitOne(0));
+        }
+
+        [Fact]
+        public static void DisposeVirtual_ThroughDispose()
+        {
+            var wh = new TestWaitHandle();
+            wh.Dispose();
+            Assert.True(wh.WasExplicitlyDisposed);
+        }
+
+        private partial class TestWaitHandle : WaitHandle
+        {
+            public bool WasExplicitlyDisposed { get; private set; } = false;
+
+            protected override void Dispose(bool explicitDisposing)
+            {
+                if (explicitDisposing)
+                {
+                    WasExplicitlyDisposed = true;
+                }
+                base.Dispose(explicitDisposing);
+            }
         }
     }
 }

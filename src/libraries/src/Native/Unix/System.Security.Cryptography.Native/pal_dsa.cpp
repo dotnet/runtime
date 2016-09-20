@@ -126,7 +126,10 @@ extern "C" int32_t CryptoNative_GetDsaParameters(
     *q = dsa->q; *qLength = BN_num_bytes(*q);
     *g = dsa->g; *gLength = BN_num_bytes(*g);
     *y = dsa->pub_key; *yLength = BN_num_bytes(*y);
-    *x = dsa->priv_key; *xLength = BN_num_bytes(*x);
+
+    // dsa->priv_key is optional
+    *x = dsa->priv_key;
+    *xLength = (*x == nullptr) ? 0 : BN_num_bytes(*x);
 
     return 1;
 }
