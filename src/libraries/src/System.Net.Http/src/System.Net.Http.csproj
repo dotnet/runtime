@@ -39,7 +39,6 @@
     <Compile Include="System\Net\Http\ByteArrayContent.cs" />
     <Compile Include="System\Net\Http\ClientCertificateOption.cs" />
     <Compile Include="System\Net\Http\DelegatingHandler.cs" />
-    <Compile Include="System\Net\Http\DelegatingStream.cs" />
     <Compile Include="System\Net\Http\FormUrlEncodedContent.cs" />
     <Compile Include="System\Net\Http\HttpClient.cs" />
     <Compile Include="System\Net\Http\HttpCompletionOption.cs" />
@@ -100,9 +99,33 @@
     <Compile Include="System\Net\Http\Headers\UriHeaderParser.cs" />
     <Compile Include="System\Net\Http\Headers\ViaHeaderValue.cs" />
     <Compile Include="System\Net\Http\Headers\WarningHeaderValue.cs" />
-    <!-- TODO #5715: Must be moved to the Common/System/Net folder -->
-    <Compile Include="Internal\Mail\DotAtomReader.cs" />
-    <Compile Include="Internal\Mail\WhitespaceReader.cs" />
+    <Compile Include="$(CommonPath)\System\Net\Mail\MailAddress.cs">
+      <Link>Common\System\Net\Mail\MailAddress.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Mail\DomainLiteralReader.cs">
+      <Link>Common\System\Net\Mail\DomainLiteralReader.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Mail\MailAddressParser.cs">
+      <Link>Common\System\Net\Mail\MailAddressParser.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Mail\MailBnfHelper.cs">
+      <Link>Common\System\Net\Mail\MailBnfHelper.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Mail\QuotedPairReader.cs">
+      <Link>Common\System\Net\Mail\QuotedPairReader.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Mail\QuotedStringFormatReader.cs">
+      <Link>Common\System\Net\Mail\QuotedStringFormatReader.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Mail\DotAtomReader.cs">
+      <Link>Common\System\Net\Mail\DotAtomReader.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Mail\WhitespaceReader.cs">
+      <Link>Common\System\Net\Mail\WhitespaceReader.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\IO\DelegatingStream.cs">
+      <Link>Common\System\IO\DelegatingStream.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\System\Net\Logging\LoggingHash.cs">
       <Link>Common\System\Net\Logging\LoggingHash.cs</Link>
     </Compile>
@@ -119,12 +142,6 @@
   <ItemGroup Condition=" '$(TargetsWindows)' != 'true' Or '$(TargetGroup)' != 'net46' ">
     <!-- TODO #5715: Must be moved to the Common/System/Net folder -->
     <Compile Include="Internal\ICloneable.cs" />
-    <Compile Include="Internal\MailAddress.cs" />
-    <Compile Include="Internal\Mail\DomainLiteralReader.cs" />
-    <Compile Include="Internal\Mail\MailAddressParser.cs" />
-    <Compile Include="Internal\Mail\MailBnfHelper.cs" />
-    <Compile Include="Internal\Mail\QuotedPairReader.cs" />
-    <Compile Include="Internal\Mail\QuotedStringFormatReader.cs" />
   </ItemGroup>
   <PropertyGroup Condition=" '$(TargetsWindows)' == 'true' And '$(TargetGroup)' == '' ">
     <DefineConstants>$(DefineConstants);HTTP_DLL</DefineConstants>
