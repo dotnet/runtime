@@ -20,6 +20,9 @@ namespace Microsoft.DotNet.Cli.Build
         private static readonly string s_dotnetBlobRootUrl = "https://dotnetcli.blob.core.windows.net/dotnet/";
         private static readonly string s_dotnetBlobContainerName = "dotnet";
 
+        private Task _leaseRenewalTask = null;
+        private CancellationTokenSource _cancellationTokenSource = null;
+
         private string _connectionString { get; set; }
         private CloudBlobContainer _blobContainer { get; set; }
 
@@ -123,9 +126,18 @@ namespace Microsoft.DotNet.Cli.Build
                 try
                 {
                     CloudBlockBlob cloudBlob = _blobContainer.GetBlockBlobReference(blob);
-                    System.Threading.Tasks.Task<string> task = cloudBlob.AcquireLeaseAsync(TimeSpan.FromMinutes(5), null);
+                    System.Threading.Tasks.Task<string> task = cloudBlob.AcquireLeaseAsync(TimeSpan.FromMinutes(1), null);
                     task.Wait();
-                    return task.Result;
+
+                    string leaseID = task.Result;
+
+                    // Create a cancelabble task that will auto-renew the lease until the lease is released
+                     _cancellationTokenSource = new CancellationTokenSource();
+                     _leaseRenewalTask = Task.Run(() => 
+                        { AutoRenewLease(this, blob, leaseID); },
+                        _cancellationTokenSource.Token);
+
+                    return leaseID;
                 }
                 catch (Exception e)
                 {
@@ -134,11 +146,70 @@ namespace Microsoft.DotNet.Cli.Build
                 }
             }
 
+            ResetLeaseRenewalTaskState();
+
             throw new Exception($"Unable to acquire lease on {blob}");
+        }
+
+        private void ResetLeaseRenewalTaskState()
+        {
+            // Cancel the lease renewal task if it was created
+            if (_leaseRenewalTask != null)
+            {
+                _cancellationTokenSource.Cancel();
+
+                // Block until the task ends. It can throw if we cancelled it before it completed.
+                try
+                {
+                    _leaseRenewalTask.Wait();
+                }
+                catch(Exception)
+                {
+                    // Ignore the caught exception as it will be expected.
+                }
+
+                _leaseRenewalTask = null;
+            }
+        }
+
+        private static void AutoRenewLease(AzurePublisher instance, string blob, string leaseId)
+        {
+            // We will renew the lease every 45 seconds
+            TimeSpan maxWait = TimeSpan.FromSeconds(45);
+            TimeSpan delay = TimeSpan.FromMilliseconds(500);
+            TimeSpan waitFor = maxWait;
+
+            CancellationToken token = instance._cancellationTokenSource.Token;
+            while (true)
+            {
+                // If the task has been requested to be cancelled, then do so.
+                token.ThrowIfCancellationRequested();
+
+                try
+                {
+                    CloudBlockBlob cloudBlob = instance._blobContainer.GetBlockBlobReference(blob);
+                    AccessCondition ac = new AccessCondition() { LeaseId = leaseId };
+                    cloudBlob.RenewLeaseAsync(ac).Wait();
+                    waitFor = maxWait;
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine($"Retrying lease renewal on {blob}, {e.Message}");
+                    waitFor = delay;
+                }
+
+                // If the task has been requested to be cancelled, then do so.
+                token.ThrowIfCancellationRequested();
+
+                Thread.Sleep(waitFor);
+            }
         }
 
         public void ReleaseLeaseOnBlob(string blob, string leaseId)
         {
+            // Cancel the lease renewal task since we are about to release the lease.
+            ResetLeaseRenewalTaskState();
+
             CloudBlockBlob cloudBlob = _blobContainer.GetBlockBlobReference(blob);
             AccessCondition ac = new AccessCondition() { LeaseId = leaseId };
             cloudBlob.ReleaseLeaseAsync(ac).Wait();
