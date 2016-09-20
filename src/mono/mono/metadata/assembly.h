@@ -36,6 +36,7 @@ MONO_API MonoImage*    mono_assembly_load_module (MonoAssembly *assembly, uint32
 MONO_API void          mono_assembly_close      (MonoAssembly *assembly);
 MONO_API void          mono_assembly_setrootdir (const char *root_dir);
 MONO_API MONO_CONST_RETURN char *mono_assembly_getrootdir (void);
+MONO_API MONO_CONST_RETURN char *mono_native_getrootdir (void);
 MONO_API void	      mono_assembly_foreach    (MonoFunc func, void* user_data);
 MONO_API void          mono_assembly_set_main   (MonoAssembly *assembly);
 MONO_API MonoAssembly *mono_assembly_get_main   (void);

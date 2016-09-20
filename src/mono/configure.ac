@@ -66,7 +66,11 @@ AC_SUBST(libmono_cflags)
 AC_SUBST(libmono_ldflags)
 
 # Variable to have relocatable .pc files (lib, or lib64)
-reloc_libdir=`basename ${libdir}`
+# realpath isn't always available, and requires that all but the tip of the provided
+# path exists. Fall back to the old behaviour, but realpath allows depth >1
+# e.g. Debian puts Mono in /usr/bin and libs in /usr/lib/x86_64-linux-gnu/ which is
+# too deep for the old method to work
+reloc_libdir=`realpath --relative-to=${prefix} ${libdir} 2> /dev/null || basename ${libdir}`
 AC_SUBST(reloc_libdir)
 
 # Set to yes if Unix sockets cannot be created in an anonymous namespace

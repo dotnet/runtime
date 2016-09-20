@@ -41,3 +41,13 @@ mono_config_get_bin_dir (void)
 #endif
 }
 
+const char*
+mono_config_get_reloc_lib_dir (void)
+{
+#ifdef MONO_RELOC_LIBDIR
+	return MONO_RELOC_LIBDIR;
+#else
+	return NULL;
+#endif
+}
+

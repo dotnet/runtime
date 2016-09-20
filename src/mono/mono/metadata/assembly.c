@@ -558,6 +558,21 @@ mono_assembly_getrootdir (void)
 }
 
 /**
+ * mono_native_getrootdir:
+ * 
+ * Obtains the root directory used for looking up native libs (.so, .dylib).
+ *
+ * Returns: a string with the directory, this string should be freed by
+ * the caller.
+ */
+G_CONST_RETURN gchar *
+mono_native_getrootdir (void)
+{
+	gchar* fullpath = g_build_path (G_DIR_SEPARATOR_S, mono_assembly_getrootdir (), mono_config_get_reloc_lib_dir(), NULL);
+	return fullpath;
+}
+
+/**
  * mono_set_dirs:
  * @assembly_dir: the base directory for assemblies
  * @config_dir: the base directory for configuration files
