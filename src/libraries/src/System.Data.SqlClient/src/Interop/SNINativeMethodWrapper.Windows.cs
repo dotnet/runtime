@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Data.Common;
 using System.Data.SqlClient;
 using System.Runtime.InteropServices;
 
@@ -326,6 +327,10 @@ namespace System.Data.SqlClient
                 clientConsumerInfo.fSynchronousConnection = fSync;
                 clientConsumerInfo.timeout = timeout;
                 clientConsumerInfo.fParallel = fParallel;
+
+                clientConsumerInfo.transparentNetworkResolution = TransparentNetworkResolutionMode.DisabledMode;
+                clientConsumerInfo.totalTimeout = SniOpenTimeOut;
+                clientConsumerInfo.isAzureSqlServerEndpoint = ADP.IsAzureSqlServerEndpoint(constring);
 
                 if (spnBuffer != null)
                 {
