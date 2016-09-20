@@ -673,6 +673,8 @@ mono_image_load_module_checked (MonoImage *image, int idx, MonoError *error)
 	GList *list_iter, *valid_modules = NULL;
 	MonoImageOpenStatus status;
 
+	mono_error_init (error);
+
 	if ((image->module_count == 0) || (idx > image->module_count || idx <= 0))
 		return NULL;
 	if (image->modules_loaded [idx - 1])
@@ -709,10 +711,7 @@ mono_image_load_module_checked (MonoImage *image, int idx, MonoError *error)
 		if (valid) {
 			module_ref = g_build_filename (base_dir, name, NULL);
 			MonoImage *moduleImage = mono_image_open_full (module_ref, &status, refonly);
-			if (image->modules [idx - 1]) {
-				g_assert(!image->modules [idx - 1]->assembly || image->modules [idx - 1]->assembly == image->assembly);
-				image->modules [idx - 1]->assembly = image->assembly;
-
+			if (moduleImage) {
 				if (!assign_assembly_parent_for_netmodule (moduleImage, image, error)) {
 					mono_image_close (moduleImage);
 					g_free (module_ref);
@@ -745,10 +744,8 @@ MonoImage*
 mono_image_load_module (MonoImage *image, int idx)
 {
 	MonoError error;
-	mono_error_init (&error);
 	MonoImage *result = mono_image_load_module_checked (image, idx, &error);
 	mono_error_assert_ok (&error);
-	mono_error_cleanup (&error);
 	return result;
 }
 
@@ -2223,6 +2220,8 @@ mono_image_load_file_for_image_checked (MonoImage *image, int fileidx, MonoError
 	const char *fname;
 	guint32 fname_id;
 
+	mono_error_init (error);
+
 	if (fileidx < 1 || fileidx > t->rows)
 		return NULL;
 
@@ -2284,10 +2283,8 @@ MonoImage*
 mono_image_load_file_for_image (MonoImage *image, int fileidx)
 {
 	MonoError error;
-	mono_error_init (&error);
 	MonoImage *result = mono_image_load_file_for_image_checked (image, fileidx, &error);
 	mono_error_assert_ok (&error);
-	mono_error_cleanup (&error);
 	return result;
 }
 
