@@ -1,9 +1,9 @@
 {
   "dependencies": {
-    "System.Runtime": "4.3.0-beta-24516-03",
-    "System.IO": "4.3.0-beta-24516-03",
-    "System.Text.Encoding": "4.3.0-beta-24516-03",
-    "System.Threading.Tasks": "4.3.0-beta-24516-03"
+    "System.Runtime": "4.3.0-beta-24520-06",
+    "System.IO": "4.3.0-beta-24520-06",
+    "System.Text.Encoding": "4.3.0-beta-24520-06",
+    "System.Threading.Tasks": "4.3.0-beta-24520-06"
   },
   "frameworks": {
     "netstandard1.7": {

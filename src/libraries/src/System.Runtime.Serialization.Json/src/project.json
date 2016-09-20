@@ -13,12 +13,12 @@
         "System.Data.Common": "4.1.0",
         "System.Console": "4.0.0",
         "System.ComponentModel.TypeConverter": "4.0.0",
-        "Microsoft.Win32.Registry": "4.3.0-beta-24516-03",
+        "Microsoft.Win32.Registry": "4.3.0-beta-24520-06",
         "System.Reflection": "4.0.10",
         "System.Reflection.TypeExtensions": "4.0.0",
-        "System.Xml.ReaderWriter": "4.3.0-beta-24516-03",
-        "System.Xml.XmlDocument": "4.3.0-beta-24516-03",
-        "System.Threading.Tasks.Extensions": "4.3.0-beta-24516-03"
+        "System.Xml.ReaderWriter": "4.3.0-beta-24520-06",
+        "System.Xml.XmlDocument": "4.3.0-beta-24520-06",
+        "System.Threading.Tasks.Extensions": "4.3.0-beta-24520-06"
       },
       "imports": [
         "dotnet5.4"
