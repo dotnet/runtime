@@ -1,18 +1,5 @@
 #!/usr/bin/env bash
 
-initDistroName()
-{
-    if [ "$1" == "Linux" ]; then
-        if [ ! -e /etc/os-release ]; then
-            echo "WARNING: Can not determine runtime id for current distro."
-            export __DistroRid=""
-        else
-            source /etc/os-release
-            export __DistroRid="$ID.$VERSION_ID-x64"
-        fi
-    fi
-}
-
 __scriptpath=$(cd "$(dirname "$0")"; pwd -P)
 
 # CI_SPECIFIC - On CI machines, $HOME may not be set. In such a case, create a subfolder and set the variable to set.
@@ -29,53 +16,86 @@ __PACKAGES_DIR=$__scriptpath/packages
 __TOOLRUNTIME_DIR=$__scriptpath/Tools
 __DOTNET_PATH=$__TOOLRUNTIME_DIR/dotnetcli
 __DOTNET_CMD=$__DOTNET_PATH/dotnet
-if [ -z "$__BUILDTOOLS_SOURCE" ]; then __BUILDTOOLS_SOURCE=https://www.myget.org/F/dotnet-buildtools/; fi
+if [ -z "$__BUILDTOOLS_SOURCE" ]; then __BUILDTOOLS_SOURCE=https://dotnet.myget.org/F/dotnet-buildtools/api/v3/index.json; fi
 __BUILD_TOOLS_PACKAGE_VERSION=$(cat $__scriptpath/BuildToolsVersion.txt)
 __DOTNET_TOOLS_VERSION=$(cat $__scriptpath/DotnetCLIVersion.txt)
 __BUILD_TOOLS_PATH=$__PACKAGES_DIR/Microsoft.DotNet.BuildTools/$__BUILD_TOOLS_PACKAGE_VERSION/lib
 __PROJECT_JSON_PATH=$__TOOLRUNTIME_DIR/$__BUILD_TOOLS_PACKAGE_VERSION
 __PROJECT_JSON_FILE=$__PROJECT_JSON_PATH/project.json
 __PROJECT_JSON_CONTENTS="{ \"dependencies\": { \"Microsoft.DotNet.BuildTools\": \"$__BUILD_TOOLS_PACKAGE_VERSION\" }, \"frameworks\": { \"dnxcore50\": { } } }"
-__DistroRid=""
 
-OSName=$(uname -s)
-case $OSName in
-    Darwin)
-        OS=OSX
-        __DOTNET_PKG=dotnet-dev-osx-x64
-        ;;
-
-    Linux)
-        OS=Linux
-
-        if [ ! -e /etc/os-release ]; then
-            echo "Cannot determine Linux distribution, asuming Ubuntu 14.04."
-            __DOTNET_PKG=dotnet-dev-ubuntu.14.04-x64
-        else
-            source /etc/os-release
-            __DOTNET_PKG="dotnet-dev-$ID.$VERSION_ID-x64"
+# Extended version of platform detection logic from dotnet/cli/scripts/obtain/dotnet-install.sh 16692fc
+get_current_linux_name() {
+    # Detect Distro
+    if [ "$(cat /etc/*-release | grep -cim1 ubuntu)" -eq 1 ]; then
+        if [ "$(cat /etc/*-release | grep -cim1 16.04)" -eq 1 ]; then
+            echo "ubuntu.16.04"
+            return 0
         fi
-        ;;
+        if [ "$(cat /etc/*-release | grep -cim1 16.10)" -eq 1 ]; then
+            echo "ubuntu.16.10"
+            return 0
+        fi
 
-    *)
-        echo "Unsupported OS $OSName detected. Downloading ubuntu-x64 tools"
-        OS=Linux
-        __DOTNET_PKG=dotnet-dev-ubuntu.14.04-x64
-        ;;
-esac
+        echo "ubuntu"
+        return 0
+    elif [ "$(cat /etc/*-release | grep -cim1 centos)" -eq 1 ]; then
+        echo "centos"
+        return 0
+    elif [ "$(cat /etc/*-release | grep -cim1 rhel)" -eq 1 ]; then
+        echo "rhel"
+        return 0
+    elif [ "$(cat /etc/*-release | grep -cim1 debian)" -eq 1 ]; then
+        echo "debian"
+        return 0
+    elif [ "$(cat /etc/*-release | grep -cim1 fedora)" -eq 1 ]; then
+        if [ "$(cat /etc/*-release | grep -cim1 23)" -eq 1 ]; then
+            echo "fedora.23"
+            return 0
+        fi
+        if [ "$(cat /etc/*-release | grep -cim1 24)" -eq 1 ]; then
+            echo "fedora.24"
+            return 0
+        fi
+    elif [ "$(cat /etc/*-release | grep -cim1 opensuse)" -eq 1 ]; then
+        if [ "$(cat /etc/*-release | grep -cim1 13.2)" -eq 1 ]; then
+            echo "opensuse.13.2"
+            return 0
+        fi
+        if [ "$(cat /etc/*-release | grep -cim1 42.1)" -eq 1 ]; then
+            echo "opensuse.42.1"
+            return 0
+        fi
+    fi
 
-# Initialize Linux Distribution name and .NET CLI package name.
+    # Cannot determine Linux distribution, assuming Ubuntu 14.04.
+    echo "ubuntu"
+    return 0
+}
 
-initDistroName $OS
+if [ -z "$__DOTNET_PKG" ]; then
+OSName=$(uname -s)
+    case $OSName in
+        Darwin)
+            OS=OSX
+            __DOTNET_PKG=dotnet-dev-osx-x64
+            ulimit -n 2048
+            ;;
 
-# Work around mac build issue 
-if [ "$OS" == "OSX" ]; then
-  echo Raising file open limit - otherwise Mac build may fail
-  echo ulimit -n 2048
-  ulimit -n 2048
+        Linux)
+            __DOTNET_PKG="dotnet-dev-$(get_current_linux_name)-x64"
+            OS=Linux
+            ;;
+
+        *)
+            echo "Unsupported OS '$OSName' detected. Downloading ubuntu-x64 tools."
+            OS=Linux
+            __DOTNET_PKG=dotnet-dev-ubuntu-x64
+            ;;
+  esac
 fi
 
-__CLIDownloadURL=https://dotnetcli.blob.core.windows.net/dotnet/preview/Binaries/${__DOTNET_TOOLS_VERSION}/${__DOTNET_PKG}.${__DOTNET_TOOLS_VERSION}.tar.gz
+__CLIDownloadURL=https://dotnetcli.blob.core.windows.net/dotnet/Sdk/${__DOTNET_TOOLS_VERSION}/${__DOTNET_PKG}.${__DOTNET_TOOLS_VERSION}.tar.gz
 echo ".NET CLI will be downloaded from $__CLIDownloadURL"
 echo "Locating $__PROJECT_JSON_FILE to see if we already downloaded .NET CLI tools..." 
 
