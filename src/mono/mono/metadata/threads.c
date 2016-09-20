@@ -3384,7 +3384,7 @@ get_thread_dump (MonoThreadInfo *info, gpointer ud)
 #if 0
 /* This no longer works with remote unwinding */
 	g_string_append_printf (text, " tid=0x%p this=0x%p ", (gpointer)(gsize)thread->tid, thread);
-	mono_thread_info_describe (info, text);
+	mono_thread_internal_describe (thread, text);
 	g_string_append (text, "\n");
 #endif
 
@@ -5157,4 +5157,28 @@ mono_threads_is_ready_to_be_interrupted (void)
 
 	UNLOCK_THREAD (thread);
 	return TRUE;
+}
+
+void
+mono_thread_internal_describe (MonoInternalThread *internal, GString *text)
+{
+	MonoThreadInfo *info;
+
+	g_string_append_printf (text, ", thread handle : %p", internal->handle);
+
+	info = (MonoThreadInfo*) internal->thread_info;
+	if (!info)
+		return;
+
+	g_string_append (text, ", state : ");
+	mono_thread_info_describe_interrupt_token (info, text);
+
+	if (info->owned_mutexes) {
+		int i;
+
+		g_string_append (text, ", owns : [");
+		for (i = 0; i < info->owned_mutexes->len; i++)
+			g_string_append_printf (text, i == 0 ? "%p" : ", %p", g_ptr_array_index (info->owned_mutexes, i));
+		g_string_append (text, "]");
+	}
 }

@@ -263,4 +263,7 @@ MonoException* mono_thread_try_resume_interruption (void);
 gboolean
 mono_thread_internal_current_is_attached (void);
 
+void
+mono_thread_internal_describe (MonoInternalThread *internal, GString *str);
+
 #endif /* _MONO_METADATA_THREADS_TYPES_H_ */

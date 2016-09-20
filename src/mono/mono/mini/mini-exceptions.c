@@ -2504,7 +2504,7 @@ mono_print_thread_dump_internal (void *sigctx, MonoContext *start_ctx)
 		g_string_append (text, "\n\"<unnamed thread>\"");
 
 	g_string_append_printf (text, " tid=0x%p this=0x%p ", (gpointer)(gsize)thread->tid, thread);
-	mono_thread_info_describe ((MonoThreadInfo*) thread->thread_info, text);
+	mono_thread_internal_describe (thread, text);
 	g_string_append (text, "\n");
 
 #ifdef MONO_ARCH_HAVE_SIGCTX_TO_MONOCTX

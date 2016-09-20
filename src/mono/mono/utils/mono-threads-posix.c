@@ -326,21 +326,6 @@ mono_threads_platform_set_exited (MonoThreadInfo *info)
 }
 
 void
-mono_threads_platform_describe (MonoThreadInfo *info, GString *text)
-{
-	int i;
-
-	g_string_append_printf (text, "thread handle %p state : ", info->handle);
-
-	mono_thread_info_describe_interrupt_token (info, text);
-
-	g_string_append_printf (text, ", owns (");
-	for (i = 0; i < info->owned_mutexes->len; i++)
-		g_string_append_printf (text, i > 0 ? ", %p" : "%p", g_ptr_array_index (info->owned_mutexes, i));
-	g_string_append_printf (text, ")");
-}
-
-void
 mono_threads_platform_own_mutex (MonoThreadInfo *info, gpointer mutex_handle)
 {
 	mono_w32handle_ref (mutex_handle);
