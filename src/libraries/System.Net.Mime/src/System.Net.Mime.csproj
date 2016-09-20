@@ -1,0 +1,73 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <ProjectGuid>{53D09AF4-0C13-4197-B8AD-9746F0374E88}</ProjectGuid>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <IsPartialFacadeAssembly Condition="'$(TargetGroup)'=='net463'">true</IsPartialFacadeAssembly>
+    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NuGetTargetMoniker>
+  </PropertyGroup>
+  <!-- Default configurations to help VS understand the options -->
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard1.3_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard1.3_Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Release|AnyCPU'" />
+  <ItemGroup Condition="'$(TargetGroup)' != 'net463'">
+    <Compile Include="System\Net\Mime\Base64Stream.cs" />
+    <Compile Include="System\Net\Mime\MimePart.cs" />
+    <Compile Include="System\Net\Mime\Base64WriteStateInfo.cs" />
+    <Compile Include="System\Net\Mime\QuotedPrintableStream.cs" />
+    <Compile Include="System\Net\Mime\CloseableStream.cs" />
+    <Compile Include="System\Net\Mime\EightBitStream.cs" />
+    <Compile Include="System\Net\Mime\EncodedStreamFactory.cs" />
+    <Compile Include="System\Net\Mime\IEncodableStream.cs" />
+    <Compile Include="System\Net\Mime\QEncodedStream.cs" />
+    <Compile Include="System\Net\Mime\WriteStateInfoBase.cs" />
+    <Compile Include="System\Net\Mime\BaseWriter.cs" />
+    <Compile Include="System\Net\Mime\TransferEncoding.cs" />
+    <Compile Include="System\Net\Mime\ContentDisposition.cs" />
+    <Compile Include="System\Net\Mime\ContentType.cs" />
+    <Compile Include="System\Net\Mime\DispositionTypeNames.cs" />
+    <Compile Include="System\Net\Mime\HeaderCollection.cs" />
+    <Compile Include="System\Net\Mime\MediaTypeNames.cs" />
+    <Compile Include="System\Net\Mime\MimeBasePart.cs" />
+    <Compile Include="System\Net\Mime\SmtpDateTime.cs" />
+    <Compile Include="System\Net\Mime\MultiAsyncResult.cs" />
+    <Compile Include="System\Net\Mime\TrackingStringDictionary.cs" />
+    <Compile Include="System\Net\Mime\TrackingValidationObjectDictionary.cs" />
+    <Compile Include="System\Net\Mail\MailHeaderID.cs" />
+    <Compile Include="System\Net\Mail\MailHeaderInfo.cs" />
+    <Compile Include="System\Net\Mail\BufferBuilder.cs" />
+    <Compile Include="$(CommonPath)\System\IO\DelegatingStream.cs">
+      <Link>Common\System\IO\DelegatingStream.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\InternalException.cs">
+      <Link>Common\System\Net\InternalException.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\LazyAsyncResult.cs">
+      <Link>Common\System\Net\LazyAsyncResult.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Mail\MailBnfHelper.cs">
+      <Link>Common\System\Net\Mail\MailBnfHelper.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Logging\LoggingHash.cs">
+      <Link>Common\System\Net\Logging\LoggingHash.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Logging\GlobalLog.cs">
+      <Link>Common\System\Net\Logging\GlobalLog.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Logging\EventSourceLogging.cs">
+      <Link>Common\System\Net\Logging\EventSourceLogging.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Shims\DBNull.cs">
+      <Link>Common\System\Net\Shims\DBNull.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'net463'">
+    <TargetingPackReference Include="System" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="project.json" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>

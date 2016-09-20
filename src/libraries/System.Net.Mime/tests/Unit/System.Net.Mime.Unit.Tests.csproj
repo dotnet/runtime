@@ -1,0 +1,138 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <StringResourcesPath>../../src/Resources/Strings.resx</StringResourcesPath>
+    <!--
+      Until we get first class support for NS1.7 and Netcoreapp1.1
+      we need to hard code $(TestTFM) and $(TestNugetTargetMoniker)
+      in the project file.
+    -->
+    <TestTFM>netcoreapp1.1</TestTFM>
+    <NugetTargetMoniker>.NETStandard,Version=v1.7</NugetTargetMoniker>
+    <ProjectGuid>{2525E37E-0EC1-4374-92FD-D2752BEED978}</ProjectGuid>
+  </PropertyGroup>
+  <ItemGroup>
+    <TestNugetTargetMoniker Include="$(NugetTargetMoniker)">
+      <Folder>netcoreapp1.1</Folder>
+    </TestNugetTargetMoniker>
+  </ItemGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'netstandard1.7_Debug|AnyCPU' " />
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'netstandard1.7_Release|AnyCPU' " />
+  <ItemGroup>
+    <Compile Include="Base64EncodingTest.cs" />
+    <Compile Include="ByteEncodingTest.cs" />
+    <Compile Include="EightBitStreamTest.cs" />
+    <Compile Include="EncodedStreamFactoryTest.cs" />
+    <Compile Include="QuotedPrintableStreamTest.cs" />
+    <Compile Include="SmtpDateTimeTest.cs" />
+    <Compile Include="WriteStateInfoTest.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="..\..\src\System\Net\Mime\Base64Stream.cs">
+      <Link>ProductionCode\Base64Stream.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\Mime\MimePart.cs">
+      <Link>ProductionCode\MimePart.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\Mime\Base64WriteStateInfo.cs">
+      <Link>ProductionCode\Base64WriteStateInfo.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\Mime\QuotedPrintableStream.cs">
+      <Link>ProductionCode\QuotedPrintableStream.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\Mime\CloseableStream.cs">
+      <Link>ProductionCode\CloseableStream.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\Mime\EightBitStream.cs">
+      <Link>ProductionCode\EightBitStream.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\Mime\EncodedStreamFactory.cs">
+      <Link>ProductionCode\EncodedStreamFactory.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\Mime\IEncodableStream.cs">
+      <Link>ProductionCode\IEncodableStream.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\Mime\QEncodedStream.cs">
+      <Link>ProductionCode\QEncodedStream.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\Mime\WriteStateInfoBase.cs">
+      <Link>ProductionCode\WriteStateInfoBase.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\Mime\BaseWriter.cs">
+      <Link>ProductionCode\BaseWriter.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\Mime\TransferEncoding.cs">
+      <Link>ProductionCode\TransferEncoding.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\Mime\ContentDisposition.cs">
+      <Link>ProductionCode\ContentDisposition.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\Mime\ContentType.cs">
+      <Link>ProductionCode\ContentType.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\Mime\DispositionTypeNames.cs">
+      <Link>ProductionCode\DispositionTypeNames.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\Mime\HeaderCollection.cs">
+      <Link>ProductionCode\HeaderCollection.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\Mime\MediaTypeNames.cs">
+      <Link>ProductionCode\MediaTypeNames.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\Mime\MimeBasePart.cs">
+      <Link>ProductionCode\MimeBasePart.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\Mime\SmtpDateTime.cs">
+      <Link>ProductionCode\SmtpDateTime.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\Mime\MultiAsyncResult.cs">
+      <Link>ProductionCode\MultiAsyncResult.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\Mime\TrackingStringDictionary.cs">
+      <Link>ProductionCode\TrackingStringDictionary.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\Mime\TrackingValidationObjectDictionary.cs">
+      <Link>ProductionCode\TrackingValidationObjectDictionary.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\Mail\MailHeaderID.cs">
+      <Link>ProductionCode\MailHeaderID.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\Mail\MailHeaderInfo.cs">
+      <Link>ProductionCode\MailHeaderInfo.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\Mail\BufferBuilder.cs">
+      <Link>ProductionCode\BufferBuilder.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\IO\DelegatingStream.cs">
+      <Link>ProductionCode\Common\System\IO\DelegatingStream.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\InternalException.cs">
+      <Link>ProductionCode\Common\System\Net\InternalException.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\LazyAsyncResult.cs">
+      <Link>ProductionCode\Common\System\Net\LazyAsyncResult.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Mail\MailBnfHelper.cs">
+      <Link>ProductionCode\Common\System\Net\Mail\MailBnfHelper.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Logging\LoggingHash.cs">
+      <Link>ProductionCode\Common\System\Net\Logging\LoggingHash.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Logging\GlobalLog.cs">
+      <Link>ProductionCode\Common\System\Net\Logging\GlobalLog.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Logging\EventSourceLogging.cs">
+      <Link>ProductionCode\Common\System\Net\Logging\EventSourceLogging.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Shims\DBNull.cs">
+      <Link>ProductionCode\Common\System\Net\Shims\DBNull.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="project.json" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>
