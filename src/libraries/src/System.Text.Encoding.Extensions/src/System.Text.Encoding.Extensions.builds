@@ -3,15 +3,8 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
     <Project Include="System.Text.Encoding.Extensions.csproj" />
-    <!-- Net46 facade is currently inbox for 4.0
     <Project Include="System.Text.Encoding.Extensions.csproj">
-      <TargetGroup>net46</TargetGroup>
-    </Project> -->
-    <Project Include="System.Text.Encoding.Extensions.csproj">
-      <TargetGroup>netcore50</TargetGroup>
-    </Project>
-    <Project Include="System.Text.Encoding.Extensions.csproj">
-      <TargetGroup>netcore50aot</TargetGroup>
+      <TargetGroup>net463</TargetGroup>
     </Project>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
