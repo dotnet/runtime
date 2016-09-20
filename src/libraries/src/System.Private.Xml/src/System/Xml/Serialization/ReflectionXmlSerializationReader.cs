@@ -717,7 +717,7 @@ namespace System.Xml.Serialization
 
             if (mapping.IsFlags)
             {
-                Dictionary<string, long> table = WriteHashtable(mapping, mapping.TypeDesc.Name);
+                Hashtable table = WriteHashtable(mapping, mapping.TypeDesc.Name);
                 return Enum.ToObject(mapping.TypeDesc.Type, ToEnum(source, table, mapping.TypeDesc.Name));
             }
             else
@@ -726,9 +726,9 @@ namespace System.Xml.Serialization
             }
         }
 
-        private Dictionary<string, long> WriteHashtable(EnumMapping mapping, string name)
+        private Hashtable WriteHashtable(EnumMapping mapping, string name)
         {
-            var h = new Dictionary<string, long>();
+            var h = new Hashtable();
 
             ConstantMapping[] constants = mapping.Constants;
 

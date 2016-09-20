@@ -415,11 +415,8 @@
     <Compile Include="System\Xml\Serialization\Mappings.cs" />
     <Compile Include="System\Xml\Serialization\Models.cs" />
     <Compile Include="System\Xml\Serialization\NameTable.cs" />
-    <!-- Temporarily removing since after the merge from dev/api there is some work required on these files
-         in order to have them compile again. Issue tracking this is: https://github.com/dotnet/corefx/issues/11686
     <Compile Include="System\Xml\Serialization\ReflectionXmlSerializationReader.cs" />
     <Compile Include="System\Xml\Serialization\ReflectionXmlSerializationWriter.cs" />
-    -->
     <Compile Include="System\Xml\Serialization\SchemaImporter.cs" />
     <Compile Include="System\Xml\Serialization\SchemaObjectWriter.cs" />
     <Compile Include="System\Xml\Serialization\SoapAttributeAttribute.cs" />
