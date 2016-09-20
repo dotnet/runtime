@@ -2301,7 +2301,7 @@ sgen_thread_detach (SgenThreadInfo *p)
 	 * so we assume that if the domain is still registered, we can detach
 	 * the thread
 	 */
-	if (mono_domain_get ())
+	if (mono_thread_internal_current_is_attached ())
 		mono_thread_detach_internal (mono_thread_internal_current ());
 }
 

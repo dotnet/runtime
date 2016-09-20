@@ -874,19 +874,9 @@ static guint32 WINAPI start_wrapper_internal(StartInfo *start_info, gsize *stack
 	 * for the current thead */
 	mono_thread_cleanup_apartment_state ();
 
-	thread_cleanup (internal);
+	mono_thread_detach_internal (internal);
 
 	internal->tid = 0;
-
-	/* Remove the reference to the thread object in the TLS data,
-	 * so the thread object can be finalized.  This won't be
-	 * reached if the thread threw an uncaught exception, so those
-	 * thread handles will stay referenced :-( (This is due to
-	 * missing support for scanning thread-specific data in the
-	 * Boehm GC - the io-layer keeps a GC-visible hash of pointers
-	 * to TLS data.)
-	 */
-	SET_CURRENT_OBJECT (NULL);
 
 	return(0);
 }
@@ -1075,7 +1065,7 @@ mono_thread_attach_full (MonoDomain *domain, gboolean force_attach)
 	MonoNativeThreadId tid;
 	gsize stack_ptr;
 
-	if ((internal = mono_thread_internal_current ())) {
+	if (mono_thread_internal_current_is_attached ()) {
 		if (domain != mono_domain_get ())
 			mono_domain_set (domain, TRUE);
 		/* Already attached */
@@ -1168,6 +1158,18 @@ mono_thread_detach_if_exiting (void)
 	return FALSE;
 }
 
+gboolean
+mono_thread_internal_current_is_attached (void)
+{
+	MonoInternalThread *internal;
+
+	internal = GET_CURRENT_OBJECT ();
+	if (!internal)
+		return FALSE;
+
+	return TRUE;
+}
+
 void
 mono_thread_exit (void)
 {
@@ -1175,13 +1177,12 @@ mono_thread_exit (void)
 
 	THREAD_DEBUG (g_message ("%s: mono_thread_exit for %p (%"G_GSIZE_FORMAT")", __func__, thread, (gsize)thread->tid));
 
-	thread_cleanup (thread);
-	SET_CURRENT_OBJECT (NULL);
-	mono_domain_unset ();
+	mono_thread_detach_internal (thread);
 
 	/* we could add a callback here for embedders to use. */
 	if (mono_thread_get_main () && (thread == mono_thread_get_main ()->internal_thread))
 		exit (mono_environment_exitcode_get ());
+
 	mono_thread_info_exit ();
 }
 
@@ -3122,8 +3123,8 @@ mono_threads_set_shutting_down (void)
 			UNLOCK_THREAD (current_thread);
 		}
 
-		/*since we're killing the thread, unset the current domain.*/
-		mono_domain_unset ();
+		/*since we're killing the thread, detach it.*/
+		mono_thread_detach_internal (current_thread);
 
 		/* Wake up other threads potentially waiting for us */
 		mono_thread_info_exit ();
