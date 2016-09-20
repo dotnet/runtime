@@ -71,6 +71,7 @@ namespace System.IO
         private static async Task ArrayPoolCopyToAsyncCore(Stream source, Stream destination, int bufferSize, CancellationToken cancellationToken)
         {
             byte[] buffer = ArrayPool<byte>.Shared.Rent(bufferSize);
+            bufferSize = 0; // reuse same field for high water mark to avoid needing another field in the state machine
             try
             {
                 while (true)
@@ -80,12 +81,17 @@ namespace System.IO
                     {
                         break;
                     }
+                    if (bytesRead > bufferSize)
+                    {
+                        bufferSize = bytesRead;
+                    }
                     await destination.WriteAsync(buffer, 0, bytesRead, cancellationToken).ConfigureAwait(false);
                 }
             }
             finally
             {
-                ArrayPool<byte>.Shared.Return(buffer, clearArray: true);
+                Array.Clear(buffer, 0, bufferSize); // clear only the most we used
+                ArrayPool<byte>.Shared.Return(buffer, clearArray: false);
             }
         }
     }
