@@ -32,7 +32,8 @@
   },
   "frameworks": {
     "netstandard1.5": {},
-    "netstandard1.7": {}
+    "netstandard1.7": {},
+    "netcoreapp1.1": {}
   },
   "supports": {
     "coreFx.Test.netcoreapp1.0": {},
