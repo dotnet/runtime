@@ -194,7 +194,16 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
 
         case GT_STORE_LCL_FLD:
         case GT_STORE_LCL_VAR:
-            info->srcCount = 1;
+#ifdef _TARGET_X86_
+            if (tree->gtGetOp1()->OperGet() == GT_LONG)
+            {
+                info->srcCount = 2;
+            }
+            else
+#endif // _TARGET_X86_
+            {
+                info->srcCount = 1;
+            }
             info->dstCount = 0;
             LowerStoreLoc(tree->AsLclVarCommon());
             break;

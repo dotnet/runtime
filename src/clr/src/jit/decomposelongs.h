@@ -42,6 +42,7 @@ private:
     GenTree* DecomposeLclVar(LIR::Use& use);
     GenTree* DecomposeLclFld(LIR::Use& use);
     GenTree* DecomposeStoreLclVar(LIR::Use& use);
+    GenTree* DecomposeStoreLclFld(LIR::Use& use);
     GenTree* DecomposeCast(LIR::Use& use);
     GenTree* DecomposeCnsLng(LIR::Use& use);
     GenTree* DecomposeCall(LIR::Use& use);
