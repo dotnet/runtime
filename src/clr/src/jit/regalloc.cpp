@@ -4525,7 +4525,7 @@ regMaskTP Compiler::rpPredictTreeRegUse(GenTreePtr   tree,
                 curArgMask = RBM_NONE; // Set of argument registers that are going to be setup by this arg
                 tmpMask    = RBM_NONE; // Set of additional temp registers that are need only to setup the current arg
 
-                assert(list->IsList());
+                assert(list->OperIsList());
 
                 args = list->Current();
                 list = list->Rest();
