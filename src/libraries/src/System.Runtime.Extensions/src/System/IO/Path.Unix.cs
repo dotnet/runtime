@@ -21,6 +21,8 @@ namespace System.IO
         private static readonly int MaxPath = Interop.Sys.MaxPath;
         private static readonly int MaxLongPath = MaxPath;
 
+        private static readonly bool s_isMac = Interop.Sys.GetUnixName() == "OSX";
+
         // Expands the given path to a fully qualified path. 
         public static string GetFullPath(string path)
         {
@@ -237,5 +239,8 @@ namespace System.IO
                 throw new InvalidOperationException(SR.InvalidOperation_Cryptography);
             }
         }
+
+        /// <summary>Gets whether the system is case-sensitive.</summary>
+        internal static bool IsCaseSensitive { get { return !s_isMac; } }
     }
 }
