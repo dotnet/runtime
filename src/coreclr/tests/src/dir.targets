@@ -1,8 +1,23 @@
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <!-- Default priority building values. -->
+  <PropertyGroup>
+    <CLRTestKind Condition="'$(CLRTestKind)' == '' and '$(OutputType)' == 'Library'">SharedLibrary</CLRTestKind>
+    <CLRTestKind Condition="'$(CLRTestKind)' == ''">BuildAndRun</CLRTestKind>
+    <CLRTestPriority Condition="'$(CLRTestPriority)' == ''">0</CLRTestPriority>
+  </PropertyGroup>
+
   <!-- All CLRTests need to be of a certain "kind". These kinds are enumerated below.
   By default all tests are BuildAndRun. This means that the build system will Build them
   and construct a run-batch-script for them. -->
   <Choose>
+    <When Condition=" '$(CLRTestKind)'=='SharedLibrary'">
+      <PropertyGroup>
+        <_CLRTestCompilesSource>true</_CLRTestCompilesSource>
+        <_CLRTestNeedsToRun>false</_CLRTestNeedsToRun>
+        <GenerateRunScript>false</GenerateRunScript>
+        <_CLRTestBuildsExecutable>false</_CLRTestBuildsExecutable>
+      </PropertyGroup>
+    </When>
     <When Condition=" '$(CLRTestKind)'=='BuildAndRun' ">
       <PropertyGroup>
         <GenerateRunScript>true</GenerateRunScript>
@@ -26,14 +41,6 @@
         <_CLRTestBuildsExecutable>false</_CLRTestBuildsExecutable>
         <_CLRTestNeedsToRun>true</_CLRTestNeedsToRun>
         <_CLRTestCompilesSource>false</_CLRTestCompilesSource>
-      </PropertyGroup>
-    </When>
-    <When Condition=" '$(CLRTestKind)'=='SharedLibrary' Or '$(OutputType)' == 'Library' ">
-      <PropertyGroup>
-        <_CLRTestCompilesSource>true</_CLRTestCompilesSource>
-        <_CLRTestNeedsToRun>false</_CLRTestNeedsToRun>
-        <GenerateRunScript>false</GenerateRunScript>
-        <_CLRTestBuildsExecutable>false</_CLRTestBuildsExecutable>
       </PropertyGroup>
     </When>
   </Choose>
