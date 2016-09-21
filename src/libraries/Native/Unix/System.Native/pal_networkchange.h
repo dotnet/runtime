@@ -14,7 +14,7 @@ enum class NetworkChangeKind : int32_t
     AddressRemoved = 1,
     LinkAdded = 2,
     LinkRemoved = 3,
-    AvailabilityChanged =4,
+    AvailabilityChanged = 4,
 };
 
 typedef void (*NetworkChangeEvent)(int32_t sock, NetworkChangeKind notificationKind);
