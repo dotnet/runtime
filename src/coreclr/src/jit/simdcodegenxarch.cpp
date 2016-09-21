@@ -1282,24 +1282,9 @@ void CodeGen::genSIMDIntrinsicDotProduct(GenTreeSIMD* simdNode)
     if ((compiler->getSIMDInstructionSet() == InstructionSet_SSE2) || (simdEvalType == TYP_SIMD32))
     {
         assert(simdNode->gtRsvdRegs != RBM_NONE);
-        assert(genCountBits(simdNode->gtRsvdRegs) == 2);
+        assert(genCountBits(simdNode->gtRsvdRegs) == 1);
 
-        regMaskTP tmpRegsMask = simdNode->gtRsvdRegs;
-        regMaskTP tmpReg1Mask = genFindLowestBit(tmpRegsMask);
-        tmpRegsMask &= ~tmpReg1Mask;
-        regNumber tmpReg1 = genRegNumFromMask(tmpReg1Mask);
-        regNumber tmpReg2 = genRegNumFromMask(tmpRegsMask);
-
-        // Choose any register different from targetReg as tmpReg
-        if (tmpReg1 != targetReg)
-        {
-            tmpReg = tmpReg1;
-        }
-        else
-        {
-            assert(targetReg != tmpReg2);
-            tmpReg = tmpReg2;
-        }
+        tmpReg = genRegNumFromMask(simdNode->gtRsvdRegs);
         assert(tmpReg != REG_NA);
         assert(tmpReg != targetReg);
     }
@@ -1838,26 +1823,9 @@ void CodeGen::genLoadIndTypeSIMD12(GenTree* treeNode)
 
     // Need an addtional Xmm register to read upper 4 bytes, which is different from targetReg
     assert(treeNode->gtRsvdRegs != RBM_NONE);
-    assert(genCountBits(treeNode->gtRsvdRegs) == 2);
+    assert(genCountBits(treeNode->gtRsvdRegs) == 1);
 
-    regNumber tmpReg      = REG_NA;
-    regMaskTP tmpRegsMask = treeNode->gtRsvdRegs;
-    regMaskTP tmpReg1Mask = genFindLowestBit(tmpRegsMask);
-    tmpRegsMask &= ~tmpReg1Mask;
-    regNumber tmpReg1 = genRegNumFromMask(tmpReg1Mask);
-    regNumber tmpReg2 = genRegNumFromMask(tmpRegsMask);
-
-    // Choose any register different from targetReg as tmpReg
-    if (tmpReg1 != targetReg)
-    {
-        tmpReg = tmpReg1;
-    }
-    else
-    {
-        assert(targetReg != tmpReg2);
-        tmpReg = tmpReg2;
-    }
-    assert(tmpReg != REG_NA);
+    regNumber tmpReg = genRegNumFromMask(treeNode->gtRsvdRegs);
     assert(tmpReg != targetReg);
 
     // Load upper 4 bytes in tmpReg
@@ -1930,28 +1898,12 @@ void CodeGen::genLoadLclFldTypeSIMD12(GenTree* treeNode)
     unsigned  varNum    = treeNode->gtLclVarCommon.gtLclNum;
     assert(varNum < compiler->lvaCount);
 
-    // Need an addtional Xmm register to read upper 4 bytes
+    // Need an addtional Xmm register that is different from
+    // targetReg to read upper 4 bytes.
     assert(treeNode->gtRsvdRegs != RBM_NONE);
-    assert(genCountBits(treeNode->gtRsvdRegs) == 2);
+    assert(genCountBits(treeNode->gtRsvdRegs) == 1);
 
-    regNumber tmpReg      = REG_NA;
-    regMaskTP tmpRegsMask = treeNode->gtRsvdRegs;
-    regMaskTP tmpReg1Mask = genFindLowestBit(tmpRegsMask);
-    tmpRegsMask &= ~tmpReg1Mask;
-    regNumber tmpReg1 = genRegNumFromMask(tmpReg1Mask);
-    regNumber tmpReg2 = genRegNumFromMask(tmpRegsMask);
-
-    // Choose any register different from targetReg as tmpReg
-    if (tmpReg1 != targetReg)
-    {
-        tmpReg = tmpReg1;
-    }
-    else
-    {
-        assert(targetReg != tmpReg2);
-        tmpReg = tmpReg2;
-    }
-    assert(tmpReg != REG_NA);
+    regNumber tmpReg = genRegNumFromMask(treeNode->gtRsvdRegs);
     assert(tmpReg != targetReg);
 
     // Read upper 4 bytes to tmpReg
