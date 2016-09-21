@@ -1,16 +1,7 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
-    <ProjectReference Include="..\ref\4.0.0\System.Diagnostics.Tracing.depproj">
-      <SupportedFramework>net45;netcore45</SupportedFramework>
-    </ProjectReference>
-    <ProjectReference Include="..\ref\4.0.10\System.Diagnostics.Tracing.depproj">
-      <SupportedFramework>net451;netcore451;wpa81</SupportedFramework>
-    </ProjectReference>
-    <ProjectReference Include="..\ref\4.0.20\System.Diagnostics.Tracing.depproj">
-      <SupportedFramework>net46;netcore50</SupportedFramework>
-    </ProjectReference>
     <ProjectReference Include="..\ref\System.Diagnostics.Tracing.csproj">
       <SupportedFramework>net462;netcoreapp1.0;$(AllXamarinFrameworks)</SupportedFramework>
     </ProjectReference>
