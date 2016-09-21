@@ -946,6 +946,13 @@
         ]
     },
     {
+        "Name": "System.Net.WebClient",
+        "Description": "Provides the System.Net.WebClient class, which supports sending data to and receiving data from a resource identified by a URI.",
+        "CommonTypes": [
+            "System.Net.WebClient"
+        ]
+    },
+    {
         "Name": "System.Net.WebHeaderCollection",
         "Description": "Contains types that represent HTTP request and response headers. This library is used with classes such as System.Net.HttpWebRequest and System.Net.HttpWebResponse and allows developers to query/edit header names/values.",
         "CommonTypes": [
