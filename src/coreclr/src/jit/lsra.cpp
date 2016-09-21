@@ -9488,10 +9488,12 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
                     useSwap = true;
                 }
 #else // !_TARGET_XARCH_
+
                 else
                 {
                     tempReg = tempRegInt;
                 }
+
 #endif // !_TARGET_XARCH_
                 if (useSwap || tempReg == REG_NA)
                 {
