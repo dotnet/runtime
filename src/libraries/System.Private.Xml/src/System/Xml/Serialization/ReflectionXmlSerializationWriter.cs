@@ -23,7 +23,7 @@ namespace System.Xml.Serialization
 
         public ReflectionXmlSerializationWriter(XmlMapping xmlMapping, XmlWriter xmlWriter, XmlSerializerNamespaces namespaces, string encodingStyle, string id)
         {
-            Init(xmlWriter, namespaces, encodingStyle, id);
+            Init(xmlWriter, namespaces, encodingStyle, id, null);
 
             if (!xmlMapping.IsWriteable || !xmlMapping.GenerateSerializer)
             {
