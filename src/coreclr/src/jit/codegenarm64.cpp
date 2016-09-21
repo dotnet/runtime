@@ -5333,7 +5333,7 @@ void CodeGen::genCallInstruction(GenTreePtr node)
             continue;
 
         // Deal with multi register passed struct args.
-        if (argNode->OperGet() == GT_LIST)
+        if (argNode->OperGet() == GT_FIELD_LIST)
         {
             GenTreeArgList* argListPtr   = argNode->AsArgList();
             unsigned        iterationNum = 0;
@@ -6760,7 +6760,7 @@ void CodeGen::genPutArgStk(GenTreePtr treeNode)
         varNumOut    = compiler->lvaOutgoingArgSpaceVar;
         argOffsetMax = compiler->lvaOutgoingArgSpaceSize;
     }
-    bool isStruct = (targetType == TYP_STRUCT) || (source->OperGet() == GT_LIST);
+    bool isStruct = (targetType == TYP_STRUCT) || (source->OperGet() == GT_FIELD_LIST);
 
     if (!isStruct) // a normal non-Struct argument
     {
