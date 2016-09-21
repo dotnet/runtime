@@ -254,6 +254,19 @@ namespace System.Net.Http
                     ref certHandleSize))
                 {
                     int lastError = Marshal.GetLastWin32Error();
+                    WinHttpTraceHelper.Trace(
+                        "OnRequestSendingRequest: Error getting WINHTTP_OPTION_SERVER_CERT_CONTEXT, {0}",
+                        lastError);
+
+                    if (lastError == Interop.WinHttp.ERROR_WINHTTP_INCORRECT_HANDLE_STATE)
+                    {
+                        // Not yet an SSL/TLS connection. This occurs while connecting thru a proxy where the
+                        // CONNECT verb hasn't yet been processed due to the proxy requiring authentication.
+                        // We need to ignore this notification. Another notification will be sent once the final
+                        // connection thru the proxy is completed.
+                        return;
+                    }
+
                     throw WinHttpException.CreateExceptionUsingError(lastError);
                 }
                 
