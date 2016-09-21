@@ -75,8 +75,8 @@ bool emitter::IsThreeOperandBinaryAVXInstruction(instruction ins)
             ins == INS_maxss || ins == INS_maxsd || ins == INS_andnps || ins == INS_andnpd || ins == INS_paddb ||
             ins == INS_paddw || ins == INS_paddd || ins == INS_paddq || ins == INS_psubb || ins == INS_psubw ||
             ins == INS_psubd || ins == INS_psubq || ins == INS_pmuludq || ins == INS_pxor || ins == INS_pmaxub ||
-            ins == INS_pminub || ins == INS_pmaxsw || ins == INS_pminsw || ins == INS_insertps || ins == INS_vinsertf128 ||
-            ins == INS_punpckldq
+            ins == INS_pminub || ins == INS_pmaxsw || ins == INS_pminsw || ins == INS_insertps ||
+            ins == INS_vinsertf128 || ins == INS_punpckldq
 
             );
 }

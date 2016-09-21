@@ -259,7 +259,7 @@ struct CLRConfig
 #define FEATURE_UNIX_AMD64_STRUCT_PASSING_ONLY(x)
 #endif // defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
 
-#if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)|| (defined(_TARGET_X86_) && !defined(LEGACY_BACKEND))
+#if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING) || (defined(_TARGET_X86_) && !defined(LEGACY_BACKEND))
 #define FEATURE_PUT_STRUCT_ARG_STK 1
 #define PUT_STRUCT_ARG_STK_ONLY_ARG(x) , x
 #define PUT_STRUCT_ARG_STK_ONLY(x) x
@@ -477,15 +477,15 @@ typedef ptrdiff_t ssize_t;
 #define NODEBASH_STATS 0      // Collect stats on changed gtOper values in GenTree's.
 #define COUNT_AST_OPERS 0     // Display use counts for GenTree operators.
 
-#define VERBOSE_SIZES 0       // Always display GC info sizes. If set, DISPLAY_SIZES must also be set.
-#define VERBOSE_VERIFY 0      // Dump additional information when verifying code. Useful to debug verification bugs.
+#define VERBOSE_SIZES 0  // Always display GC info sizes. If set, DISPLAY_SIZES must also be set.
+#define VERBOSE_VERIFY 0 // Dump additional information when verifying code. Useful to debug verification bugs.
 
 #ifdef DEBUG
-#define MEASURE_MEM_ALLOC 1   // Collect memory allocation stats.
-#define LOOP_HOIST_STATS 1    // Collect loop hoisting stats.
+#define MEASURE_MEM_ALLOC 1 // Collect memory allocation stats.
+#define LOOP_HOIST_STATS 1  // Collect loop hoisting stats.
 #else
-#define MEASURE_MEM_ALLOC 0   // You can set this to 1 to get memory stats in retail, as well
-#define LOOP_HOIST_STATS 0    // You can set this to 1 to get loop hoist stats in retail, as well
+#define MEASURE_MEM_ALLOC 0 // You can set this to 1 to get memory stats in retail, as well
+#define LOOP_HOIST_STATS 0  // You can set this to 1 to get loop hoist stats in retail, as well
 #endif
 
 /*****************************************************************************/

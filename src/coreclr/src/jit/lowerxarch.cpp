@@ -1048,17 +1048,17 @@ void Lowering::TreeNodeInfoInitShiftRotate(GenTree* tree)
 
         if (tree->OperGet() == GT_LSH_HI)
         {
-            GenTreePtr sourceLo = source->gtOp.gtOp1;
+            GenTreePtr sourceLo              = source->gtOp.gtOp1;
             sourceLo->gtLsraInfo.isDelayFree = true;
         }
         else
         {
-            GenTreePtr sourceHi = source->gtOp.gtOp2;
+            GenTreePtr sourceHi              = source->gtOp.gtOp2;
             sourceHi->gtLsraInfo.isDelayFree = true;
         }
 
         source->gtLsraInfo.hasDelayFreeSrc = true;
-        info->hasDelayFreeSrc = true;
+        info->hasDelayFreeSrc              = true;
     }
 #endif
 
@@ -1160,7 +1160,7 @@ void Lowering::TreeNodeInfoInitCall(GenTreeCall* call)
             }
             else
 #endif // _TARGET_X86_
-            if (ctrlExpr->isIndir())
+                if (ctrlExpr->isIndir())
             {
                 MakeSrcContained(call, ctrlExpr);
             }
@@ -1333,7 +1333,7 @@ void Lowering::TreeNodeInfoInitCall(GenTreeCall* call)
 
                 // There could be up to 2 PUTARG_REGs in the list
                 GenTreeFieldList* fieldListPtr = argNode->AsFieldList();
-                unsigned        iterationNum   = 0;
+                unsigned          iterationNum = 0;
                 for (; fieldListPtr; fieldListPtr = fieldListPtr->Rest())
                 {
                     GenTreePtr putArgRegNode = fieldListPtr->Current();
@@ -1911,7 +1911,7 @@ void Lowering::TreeNodeInfoInitPutArgStk(GenTree* tree)
 #ifdef _TARGET_X86_
     if (tree->gtOp.gtOp1->gtOper == GT_FIELD_LIST)
     {
-        GenTreeFieldList* fieldListPtr   = tree->gtOp.gtOp1->AsFieldList();
+        GenTreeFieldList* fieldListPtr = tree->gtOp.gtOp1->AsFieldList();
         for (; fieldListPtr; fieldListPtr = fieldListPtr->Rest())
         {
             GenTree* fieldNode = fieldListPtr->Current();
@@ -2005,7 +2005,7 @@ void Lowering::TreeNodeInfoInitPutArgStk(GenTree* tree)
 
 #ifdef _TARGET_X86_
         if (size >= 8)
-#else // !_TARGET_X86_
+#else  // !_TARGET_X86_
         if (size >= XMM_REGSIZE_BYTES)
 #endif // !_TARGET_X86_
         {
@@ -2289,7 +2289,7 @@ void Lowering::TreeNodeInfoInitModDiv(GenTree* tree)
         // To avoid reg move would like to have op1's low part in RAX and high part in RDX.
         GenTree* loVal = op1->gtGetOp1();
         GenTree* hiVal = op1->gtGetOp2();
-        
+
         // Src count is actually 3, so increment.
         assert(op2->IsCnsIntOrI());
         info->srcCount++;
@@ -2884,8 +2884,8 @@ void Lowering::SetIndirAddrOpCounts(GenTreePtr indirTree)
         assert(base != addr);
         m_lsra->clearOperandCounts(addr);
 
-        const bool hasBase   = base != nullptr;
-        const bool hasIndex  = index != nullptr;
+        const bool hasBase  = base != nullptr;
+        const bool hasIndex = index != nullptr;
         assert(hasBase || hasIndex); // At least one of a base or an index must be present.
 
         // If the addressing mode has both a base and an index, bump its source count by one. If it only has one or the
@@ -2905,7 +2905,7 @@ void Lowering::SetIndirAddrOpCounts(GenTreePtr indirTree)
 
         bool foundBase  = !hasBase;
         bool foundIndex = !hasIndex;
-        for (GenTree* child = addr, *nextChild = nullptr; child != nullptr && !child->OperIsLeaf(); child = nextChild)
+        for (GenTree *child = addr, *nextChild = nullptr; child != nullptr && !child->OperIsLeaf(); child = nextChild)
         {
             nextChild    = nullptr;
             GenTree* op1 = child->gtOp.gtOp1;
@@ -3330,8 +3330,9 @@ void Lowering::TreeNodeInfoInitCmp(GenTreePtr tree)
 #ifdef DEBUG
                         if (comp->verbose)
                         {
-                            printf("TreeNodeInfoInitCmp: Removing a GT_CAST to TYP_UBYTE and changing castOp1->gtType to "
-                                   "TYP_UBYTE\n");
+                            printf(
+                                "TreeNodeInfoInitCmp: Removing a GT_CAST to TYP_UBYTE and changing castOp1->gtType to "
+                                "TYP_UBYTE\n");
                             comp->gtDispTreeRange(BlockRange(), tree);
                         }
 #endif
@@ -3358,9 +3359,9 @@ void Lowering::TreeNodeInfoInitCmp(GenTreePtr tree)
         }
         else if (op1->IsCnsIntOrI())
         {
-			// TODO-CQ: We should be able to support swapping op1 and op2 to generate cmp reg, imm,
-			// but there is currently an assert in CodeGen::genCompareInt().
-			// https://github.com/dotnet/coreclr/issues/7270
+            // TODO-CQ: We should be able to support swapping op1 and op2 to generate cmp reg, imm,
+            // but there is currently an assert in CodeGen::genCompareInt().
+            // https://github.com/dotnet/coreclr/issues/7270
             SetRegOptional(op2);
         }
         else
@@ -3893,14 +3894,14 @@ void Lowering::SetMulOpCounts(GenTreePtr tree)
     GenTreeIntConCommon* imm                    = nullptr;
     GenTreePtr           other                  = nullptr;
 
-    // There are three forms of x86 multiply:
-    // one-op form:     RDX:RAX = RAX * r/m
-    // two-op form:     reg *= r/m
-    // three-op form:   reg = r/m * imm
+// There are three forms of x86 multiply:
+// one-op form:     RDX:RAX = RAX * r/m
+// two-op form:     reg *= r/m
+// three-op form:   reg = r/m * imm
 
-    // This special widening 32x32->64 MUL is not used on x64
+// This special widening 32x32->64 MUL is not used on x64
 #if defined(_TARGET_X86_)
-    if(tree->OperGet() != GT_MUL_LONG)
+    if (tree->OperGet() != GT_MUL_LONG)
 #endif
     {
         assert((tree->gtFlags & GTF_MUL_64RSLT) == 0);
@@ -3924,9 +3925,9 @@ void Lowering::SetMulOpCounts(GenTreePtr tree)
     }
     else if (tree->gtOper == GT_MULHI
 #if defined(_TARGET_X86_)
-            || tree->OperGet() == GT_MUL_LONG
+             || tree->OperGet() == GT_MUL_LONG
 #endif
-            )
+             )
     {
         // have to use the encoding:RDX:RAX = RAX * rm
         info->setDstCandidates(m_lsra, RBM_RAX);

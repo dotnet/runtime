@@ -849,7 +849,8 @@ void CodeGen::genCodeForBBlist()
     if (compiler->verbose)
     {
         printf("\n# ");
-        printf("compCycleEstimate = %6d, compSizeEstimate = %5d ", compiler->compCycleEstimate, compiler->compSizeEstimate);
+        printf("compCycleEstimate = %6d, compSizeEstimate = %5d ", compiler->compCycleEstimate,
+               compiler->compSizeEstimate);
         printf("%s\n", compiler->info.compFullName);
     }
 #endif

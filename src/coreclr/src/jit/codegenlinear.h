@@ -226,7 +226,7 @@ bool genIsRegCandidateLocal(GenTreePtr tree)
 #ifdef FEATURE_PUT_STRUCT_ARG_STK
 #ifdef _TARGET_X86_
 bool m_pushStkArg;
-#else // !_TARGET_X86_
+#else  // !_TARGET_X86_
 unsigned m_stkArgVarNum;
 #endif // !_TARGET_X86_
 unsigned m_stkArgOffset;

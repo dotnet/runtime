@@ -3853,7 +3853,7 @@ public:
     //
     var_types getReturnTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
                                      structPassingKind*   wbPassStruct = nullptr,
-                                     unsigned             structSize = 0);
+                                     unsigned             structSize   = 0);
 
 #ifdef DEBUG
     // Print a representation of "vnp" or "vn" on standard output.
