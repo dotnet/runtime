@@ -2208,12 +2208,9 @@ sgen_client_thread_register (SgenThreadInfo* info, void *stack_bottom_fallback)
 	info->client_info.signal = 0;
 #endif
 
-	/* On win32, stack_start_limit should be 0, since the stack can grow dynamically */
 	mono_thread_info_get_stack_bounds (&staddr, &stsize);
 	if (staddr) {
-#ifndef HOST_WIN32
 		info->client_info.stack_start_limit = staddr;
-#endif
 		info->client_info.stack_end = staddr + stsize;
 	} else {
 		gsize stack_bottom = (gsize)stack_bottom_fallback;
