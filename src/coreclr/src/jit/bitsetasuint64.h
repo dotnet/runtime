@@ -167,7 +167,7 @@ public:
     {
         IAllocator* alloc          = BitSetTraits::GetDebugOnlyAllocator(env);
         const int   CharsForUINT64 = sizeof(UINT64) * 2;
-        char*       res            = NULL;
+        char*       res            = nullptr;
         const int   AllocSize      = CharsForUINT64 + 4;
         res                        = (char*)alloc->Alloc(AllocSize);
         UINT64   bits              = bs;

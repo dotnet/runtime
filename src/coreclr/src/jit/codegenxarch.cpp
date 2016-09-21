@@ -3601,7 +3601,7 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* initBlkNode)
         offset += 4;
         emit->emitIns_AR_R(INS_mov, EA_4BYTE, valReg, dstAddr->gtRegNum, offset);
         offset += 4;
-#else  // !_TARGET_X86_
+#else // !_TARGET_X86_
         emit->emitIns_AR_R(INS_mov, EA_8BYTE, valReg, dstAddr->gtRegNum, offset);
         offset += 8;
 #endif // !_TARGET_X86_
@@ -4136,7 +4136,9 @@ void CodeGen::genClearStackVec3ArgUpperBits()
 {
 #ifdef DEBUG
     if (verbose)
+    {
         printf("*************** In genClearStackVec3ArgUpperBits()\n");
+    }
 #endif
 
     assert(compiler->compGeneratingProlog);
@@ -6363,9 +6365,11 @@ void CodeGen::genCallInstruction(GenTreePtr node)
                 stackArgBytes += argBytes;
             }
             else
+            {
 #endif // FEATURE_PUT_STRUCT_ARG_STK
 
                 stackArgBytes += genTypeSize(genActualType(arg->TypeGet()));
+            }
         }
         args = args->gtOp.gtOp2;
     }

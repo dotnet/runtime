@@ -7932,7 +7932,7 @@ public:
         // Such method's compRetNativeType is TYP_STRUCT without a hidden RetBufArg
         return varTypeIsStruct(info.compRetNativeType) && (info.compRetBuffArg == BAD_VAR_NUM);
 #endif // TARGET_XXX
-#else // not FEATURE_MULTIREG_RET
+#else  // not FEATURE_MULTIREG_RET
         // For this architecture there are no multireg returns
         return false;
 #endif // FEATURE_MULTIREG_RET
