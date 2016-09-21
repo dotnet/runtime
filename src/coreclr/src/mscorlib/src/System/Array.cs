@@ -1987,6 +1987,7 @@ namespace System {
 #endif
             }
 
+#if !FEATURE_CORECLR
             private void DepthLimitedQuickSort(int left, int right, int depthLimit)
             {
                 // Can use the much faster jit helpers for array access.
@@ -2084,6 +2085,7 @@ namespace System {
                     }
                 } while (left < right);
             }
+#endif
 
             private void IntrospectiveSort(int left, int length)
             {
@@ -2306,6 +2308,7 @@ namespace System {
 #endif
             }
 
+#if !FEATURE_CORECLR
             private void DepthLimitedQuickSort(int left, int right, int depthLimit)
             {
                 // Must use slow Array accessors (GetValue & SetValue)
@@ -2401,6 +2404,7 @@ namespace System {
                     }
                 } while (left < right);
             }
+#endif
 
             private void IntrospectiveSort(int left, int length)
             {
