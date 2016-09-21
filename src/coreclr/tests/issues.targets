@@ -234,6 +234,9 @@
         <ExcludeList Include="$(XunitTestBinBase)\managed\Compilation\Compilation\Compilation.cmd">
             <Issue>needs triage</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\JitBlue\DevDiv_255294\DevDiv_255294\DevDiv_255294.cmd">
+            <Issue>The test is too large for x86 and causes OutOfMemory exception.</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <!-- The following x86 failures only occur with RyuJIT/x86 -->
