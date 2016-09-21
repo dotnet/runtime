@@ -8,7 +8,6 @@ using System.Xml.Serialization;
 
 namespace System.Xml.Schema
 {
-    /// <include file='doc\XmlSchemaType.uex' path='docs/doc[@for="XmlSchemaType"]/*' />
     /// <devdoc>
     ///    <para>[To be supplied.]</para>
     /// </devdoc>
@@ -27,7 +26,6 @@ namespace System.Xml.Schema
         //compiled information
         private XmlSchemaContentType _contentType;
 
-        /// <include file='doc\XmlSchemaType.uex' path='docs/doc[@for="XmlSchemaType.GetXsdSimpleType"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -40,7 +38,6 @@ namespace System.Xml.Schema
             return DatatypeImplementation.GetSimpleTypeFromXsdType(qualifiedName);
         }
 
-        /// <include file='doc\XmlSchemaType.uex' path='docs/doc[@for="XmlSchemaType.GetXsdSimpleType"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -49,7 +46,6 @@ namespace System.Xml.Schema
             return DatatypeImplementation.GetSimpleTypeFromTypeCode(typeCode);
         }
 
-        /// <include file='doc\XmlSchemaType.uex' path='docs/doc[@for="XmlSchemaType.GetXsdComplexType"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -62,7 +58,6 @@ namespace System.Xml.Schema
             return null;
         }
 
-        /// <include file='doc\XmlSchemaType.uex' path='docs/doc[@for="XmlSchemaType.GetXsdComplexType"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -83,7 +78,6 @@ namespace System.Xml.Schema
             return null;
         }
 
-        /// <include file='doc\XmlSchemaType.uex' path='docs/doc[@for="XmlSchemaType.Name"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -94,7 +88,6 @@ namespace System.Xml.Schema
             set { _name = value; }
         }
 
-        /// <include file='doc\XmlSchemaType.uex' path='docs/doc[@for="XmlSchemaType.Final"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -105,7 +98,6 @@ namespace System.Xml.Schema
             set { _final = value; }
         }
 
-        /// <include file='doc\XmlSchemaType.uex' path='docs/doc[@for="XmlSchemaType.QualifiedName"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -115,7 +107,6 @@ namespace System.Xml.Schema
             get { return _qname; }
         }
 
-        /// <include file='doc\XmlSchemaType.uex' path='docs/doc[@for="XmlSchemaType.FinalResolved"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -125,7 +116,6 @@ namespace System.Xml.Schema
             get { return _finalResolved; }
         }
 
-        /// <include file='doc\XmlSchemaType.uex' path='docs/doc[@for="XmlSchemaType.BaseSchemaType"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -146,7 +136,6 @@ namespace System.Xml.Schema
             }
         }
 
-        /// <include file='doc\XmlSchemaType.uex' path='docs/doc[@for="XmlSchemaType.BaseSchemaType"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -156,7 +145,6 @@ namespace System.Xml.Schema
             get { return _baseSchemaType; }
         }
 
-        /// <include file='doc\XmlSchemaType.uex' path='docs/doc[@for="XmlSchemaType.DerivedBy"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -166,7 +154,6 @@ namespace System.Xml.Schema
             get { return _derivedBy; }
         }
 
-        /// <include file='doc\XmlSchemaType.uex' path='docs/doc[@for="XmlSchemaType.Datatype"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -176,7 +163,6 @@ namespace System.Xml.Schema
             get { return _datatype; }
         }
 
-        /// <include file='doc\XmlSchemaType.uex' path='docs/doc[@for="XmlSchemaType.IsMixed"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
