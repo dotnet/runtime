@@ -429,7 +429,7 @@ struct GenTree
         noway_assert(FitsIn<unsigned char>(level));
         gtFPlvl = (unsigned char)level;
     }
-#else  // FEATURE_STACK_FP_X87
+#else // FEATURE_STACK_FP_X87
     void gtCopyFPlvl(GenTree* other)
     {
     }
@@ -4937,7 +4937,9 @@ inline bool GenTree::IsValidCallArgument()
             // ToDo: fix UNIX_AMD64 so that we do not generate this kind of a List
             //  Note the list as currently created is malformed, as the last entry is a nullptr
             if (gtListPtr->Current() == nullptr)
+            {
                 break;
+            }
 
             // Only a list of GT_LCL_FLDs is allowed
             if (gtListPtr->Current()->OperGet() != GT_LCL_FLD)
