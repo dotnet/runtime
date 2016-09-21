@@ -21,7 +21,7 @@ sgen_resume_thread (SgenThreadInfo *info)
 
 	CloseHandle (handle);
 
-	return result != (DWORD)-1;
+	return result != (DWORD)-1 && result > 0;
 }
 
 gboolean
