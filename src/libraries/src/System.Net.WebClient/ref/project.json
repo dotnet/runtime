@@ -1,0 +1,21 @@
+{
+  "dependencies": {
+    "System.Collections.Specialized": "4.0.0",
+    "System.ComponentModel": "4.0.0",
+    "System.ComponentModel.EventBasedAsync": "4.0.0",
+    "System.IO": "4.0.0",
+    "System.Net.Primitives": "4.0.10",
+    "System.Net.Requests": "4.0.11",
+    "System.Net.WebHeaderCollection": "4.0.0",
+    "System.Runtime": "4.0.0",
+    "System.Text.Encoding": "4.0.0",
+    "System.Threading.Tasks": "4.0.0"
+  },
+  "frameworks": {
+    "netstandard1.7": {
+      "imports": [
+        "dotnet5.8"
+      ]
+    }
+  }
+}
