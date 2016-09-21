@@ -1742,8 +1742,8 @@ private:
     BYTE* emitCurIGfreeEndp; // one byte past the last available byte in buffer
     BYTE* emitCurIGfreeBase; // first byte address
 
-    unsigned emitCurIGinsCnt; // # of collected instr's in buffer
-    unsigned emitCurIGsize;   // estimated code size of current group in bytes
+    unsigned       emitCurIGinsCnt;   // # of collected instr's in buffer
+    unsigned       emitCurIGsize;     // estimated code size of current group in bytes
     UNATIVE_OFFSET emitCurCodeOffset; // current code offset within group
     UNATIVE_OFFSET emitTotalCodeSize; // bytes of code in entire method
 

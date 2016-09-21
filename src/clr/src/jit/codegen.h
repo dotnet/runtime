@@ -48,7 +48,6 @@ public:
                                    unsigned* cnsPtr,
                                    bool      nogen = false);
 
-
 private:
 #if defined(_TARGET_XARCH_) && !FEATURE_STACK_FP_X87
     // Bit masks used in negating a float or double number.
@@ -488,14 +487,14 @@ protected:
     void genAmd64EmitterUnitTests();
 #endif
 
-//-------------------------------------------------------------------------
-//
-// End prolog/epilog generation
-//
-//-------------------------------------------------------------------------
+    //-------------------------------------------------------------------------
+    //
+    // End prolog/epilog generation
+    //
+    //-------------------------------------------------------------------------
 
-    void genSinglePush();
-    void genSinglePop();
+    void      genSinglePush();
+    void      genSinglePop();
     regMaskTP genPushRegs(regMaskTP regs, regMaskTP* byrefRegs, regMaskTP* noRefRegs);
     void genPopRegs(regMaskTP regs, regMaskTP byrefRegs, regMaskTP noRefRegs);
 

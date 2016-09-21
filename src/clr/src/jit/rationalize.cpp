@@ -617,9 +617,8 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, ArrayStack<G
     // First, remove any preceeding list nodes, which are not otherwise visited by the tree walk.
     //
     // NOTE: GT_FIELD_LIST head nodes, and GT_LIST nodes used by phi nodes will in fact be visited.
-    for (GenTree* prev = node->gtPrev;
-        prev != nullptr && prev->OperIsAnyList() && !(prev->OperIsFieldListHead());
-        prev = node->gtPrev)
+    for (GenTree* prev = node->gtPrev; prev != nullptr && prev->OperIsAnyList() && !(prev->OperIsFieldListHead());
+         prev          = node->gtPrev)
     {
         BlockRange().Remove(prev);
     }

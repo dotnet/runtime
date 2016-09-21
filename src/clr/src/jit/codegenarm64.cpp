@@ -6802,8 +6802,8 @@ void CodeGen::genPutArgStk(GenTreePtr treeNode)
                 var_types type = nextArgNode->TypeGet();
                 emitAttr  attr = emitTypeSize(type);
 
-                // Emit store instructions to store the registers produced by the GT_FIELD_LIST into the outgoing argument
-                // area
+                // Emit store instructions to store the registers produced by the GT_FIELD_LIST into the outgoing
+                // argument area
                 emit->emitIns_S_R(ins_Store(type), attr, reg, varNumOut, argOffsetOut);
                 argOffsetOut += EA_SIZE_IN_BYTES(attr);
                 assert(argOffsetOut <= argOffsetMax); // We can't write beyound the outgoing area area
