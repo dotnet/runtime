@@ -667,7 +667,6 @@ GenTreeStmt* BasicBlock::lastStmt()
     return result->AsStmt();
 }
 
-
 //------------------------------------------------------------------------
 // BasicBlock::firstNode: Returns the first node in the block.
 //

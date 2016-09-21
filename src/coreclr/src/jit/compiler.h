@@ -3853,7 +3853,7 @@ public:
     //
     var_types getReturnTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
                                      structPassingKind*   wbPassStruct = nullptr,
-                                     unsigned             structSize = 0);
+                                     unsigned             structSize   = 0);
 
 #ifdef DEBUG
     // Print a representation of "vnp" or "vn" on standard output.
@@ -7932,9 +7932,12 @@ public:
         // Such method's compRetNativeType is TYP_STRUCT without a hidden RetBufArg
         return varTypeIsStruct(info.compRetNativeType) && (info.compRetBuffArg == BAD_VAR_NUM);
 #endif // TARGET_XXX
+
 #else // not FEATURE_MULTIREG_RET
+
         // For this architecture there are no multireg returns
         return false;
+
 #endif // FEATURE_MULTIREG_RET
     }
 

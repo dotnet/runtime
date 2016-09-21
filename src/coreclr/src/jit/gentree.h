@@ -429,13 +429,15 @@ struct GenTree
         noway_assert(FitsIn<unsigned char>(level));
         gtFPlvl = (unsigned char)level;
     }
-#else  // FEATURE_STACK_FP_X87
+#else // FEATURE_STACK_FP_X87
+
     void gtCopyFPlvl(GenTree* other)
     {
     }
     void gtSetFPlvl(unsigned level)
     {
     }
+
 #endif // FEATURE_STACK_FP_X87
 
     //
@@ -1516,7 +1518,7 @@ public:
 
     bool OperIsAnyList() const
     {
-        return OperIsAnyList(gtOper); 
+        return OperIsAnyList(gtOper);
     }
 
     inline GenTreePtr MoveNext();
@@ -1594,7 +1596,7 @@ public:
 
     static bool Compare(GenTreePtr op1, GenTreePtr op2, bool swapOK = false);
 
-    //---------------------------------------------------------------------
+//---------------------------------------------------------------------
 
 #if defined(DEBUG)
     static const char* NodeName(genTreeOps op);
@@ -1645,10 +1647,14 @@ public:
 #if SMALL_TREE_NODES
 #if NODEBASH_STATS
     static void RecordOperBashing(genTreeOps operOld, genTreeOps operNew);
-    static void ReportOperBashing(FILE *fp);
+    static void ReportOperBashing(FILE* fp);
 #else
-    static void RecordOperBashing(genTreeOps operOld, genTreeOps operNew) { /* do nothing */ }
-    static void ReportOperBashing(FILE *fp)                               { /* do nothing */ }
+    static void RecordOperBashing(genTreeOps operOld, genTreeOps operNew)
+    { /* do nothing */
+    }
+    static void ReportOperBashing(FILE* fp)
+    { /* do nothing */
+    }
 #endif
 #endif
 
@@ -2760,7 +2766,7 @@ struct GenTreeFieldList : public GenTreeArgList
         // While GT_FIELD_LIST can be in a GT_LIST, GT_FIELD_LISTs cannot be nested or have GT_LISTs.
         assert(!arg->OperIsAnyList());
         gtFieldOffset = fieldOffset;
-        gtFieldType = fieldType;
+        gtFieldType   = fieldType;
         if (prevList == nullptr)
         {
             gtFlags |= GTF_FIELD_LIST_HEAD;
@@ -4751,21 +4757,18 @@ struct GenTreeAllocObj final : public GenTreeUnOp
 #endif
 };
 
-
 struct GenTreeJumpCC final : public GenTree
 {
     genTreeOps gtCondition; // any relop
 
     GenTreeJumpCC(genTreeOps condition)
-        : GenTree(GT_JCC, TYP_VOID DEBUGARG(/*largeNode*/ FALSE))
-        , gtCondition(condition)
+        : GenTree(GT_JCC, TYP_VOID DEBUGARG(/*largeNode*/ FALSE)), gtCondition(condition)
     {
         assert(OperIsCompare(condition));
     }
 
 #if DEBUGGABLE_GENTREE
-    GenTreeJumpCC()
-        : GenTree()
+    GenTreeJumpCC() : GenTree()
     {
     }
 #endif // DEBUGGABLE_GENTREE
@@ -4936,7 +4939,9 @@ inline bool GenTree::IsValidCallArgument()
             // ToDo: fix UNIX_AMD64 so that we do not generate this kind of a List
             //  Note the list as currently created is malformed, as the last entry is a nullptr
             if (gtListPtr->Current() == nullptr)
+            {
                 break;
+            }
 
             // Only a list of GT_LCL_FLDs is allowed
             if (gtListPtr->Current()->OperGet() != GT_LCL_FLD)

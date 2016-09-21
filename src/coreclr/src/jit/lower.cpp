@@ -238,7 +238,7 @@ GenTree* Lowering::LowerNode(GenTree* node)
 #if FEATURE_MULTIREG_RET
                 GenTree* src = node->gtGetOp1();
                 assert((src->OperGet() == GT_CALL) && src->AsCall()->HasMultiRegRetVal());
-#else // !FEATURE_MULTIREG_RET
+#else  // !FEATURE_MULTIREG_RET
                 assert(!"Unexpected struct local store in Lowering");
 #endif // !FEATURE_MULTIREG_RET
             }
@@ -917,19 +917,17 @@ GenTreePtr Lowering::NewPutArg(GenTreeCall* call, GenTreePtr arg, fgArgTabEntryP
         // instead of in out-going arg area slot.
 
         PUT_STRUCT_ARG_STK_ONLY(assert(info->isStruct == varTypeIsStruct(type))); // Make sure state is
-                                                                                                 // correct
+                                                                                  // correct
 
 #if FEATURE_FASTTAILCALL
         putArg = new (comp, GT_PUTARG_STK)
-            GenTreePutArgStk(GT_PUTARG_STK, type, arg,
-                             info->slotNum PUT_STRUCT_ARG_STK_ONLY_ARG(info->numSlots)
-                                 PUT_STRUCT_ARG_STK_ONLY_ARG(info->isStruct),
+            GenTreePutArgStk(GT_PUTARG_STK, type, arg, info->slotNum PUT_STRUCT_ARG_STK_ONLY_ARG(info->numSlots)
+                                                           PUT_STRUCT_ARG_STK_ONLY_ARG(info->isStruct),
                              call->IsFastTailCall() DEBUGARG(call));
 #else
         putArg = new (comp, GT_PUTARG_STK)
-            GenTreePutArgStk(GT_PUTARG_STK, type, arg,
-                             info->slotNum PUT_STRUCT_ARG_STK_ONLY_ARG(info->numSlots)
-                                 PUT_STRUCT_ARG_STK_ONLY_ARG(info->isStruct) DEBUGARG(call));
+            GenTreePutArgStk(GT_PUTARG_STK, type, arg, info->slotNum PUT_STRUCT_ARG_STK_ONLY_ARG(info->numSlots)
+                                                           PUT_STRUCT_ARG_STK_ONLY_ARG(info->isStruct) DEBUGARG(call));
 #endif
 
 #ifdef FEATURE_PUT_STRUCT_ARG_STK
@@ -1730,8 +1728,8 @@ GenTree* Lowering::LowerTailCallViaHelper(GenTreeCall* call, GenTree* callTarget
     assert(!comp->compLocallocUsed);                         // tail call from methods that also do localloc
 
 #ifdef _TARGET_AMD64_
-    assert(!comp->getNeedsGSSecurityCookie());               // jit64 compat: tail calls from methods that need GS check
-#endif // _TARGET_AMD64_
+    assert(!comp->getNeedsGSSecurityCookie()); // jit64 compat: tail calls from methods that need GS check
+#endif                                         // _TARGET_AMD64_
 
     // We expect to see a call that meets the following conditions
     assert(call->IsTailCallViaHelper());
@@ -1950,7 +1948,7 @@ void Lowering::LowerCompare(GenTree* cmp)
     }
 
     LIR::Use cmpUse;
-    
+
     if (!BlockRange().TryGetUse(cmp, &cmpUse) || cmpUse.User()->OperGet() != GT_JTRUE)
     {
         return;
@@ -1967,7 +1965,7 @@ void Lowering::LowerCompare(GenTree* cmp)
     {
         loSrc1.ReplaceWithLclVar(comp, weight);
     }
-    
+
     if (loSrc2.Def()->OperGet() != GT_CNS_INT && loSrc2.Def()->OperGet() != GT_LCL_VAR)
     {
         loSrc2.ReplaceWithLclVar(comp, weight);
@@ -2007,8 +2005,8 @@ void Lowering::LowerCompare(GenTree* cmp)
 
         BlockRange().Remove(loSrc1.Def());
         BlockRange().Remove(loSrc2.Def());
-        GenTree* loCmp = comp->gtNewOperNode(cmp->OperGet(), TYP_INT, loSrc1.Def(), loSrc2.Def());
-        loCmp->gtFlags = cmp->gtFlags;
+        GenTree* loCmp   = comp->gtNewOperNode(cmp->OperGet(), TYP_INT, loSrc1.Def(), loSrc2.Def());
+        loCmp->gtFlags   = cmp->gtFlags;
         GenTree* loJtrue = comp->gtNewOperNode(GT_JTRUE, TYP_VOID, loCmp);
         LIR::AsRange(newBlock).InsertAfter(nullptr, loSrc1.Def(), loSrc2.Def(), loCmp, loJtrue);
 
@@ -2065,31 +2063,31 @@ void Lowering::LowerCompare(GenTree* cmp)
 
         genTreeOps hiCmpOper;
         genTreeOps loCmpOper;
-        
+
         switch (cmp->OperGet())
         {
-        case GT_LT:
-            cmp->gtOper = GT_GT;
-            hiCmpOper   = GT_LT;
-            loCmpOper   = GT_LT;
-            break;
-        case GT_LE:
-            cmp->gtOper = GT_GT;
-            hiCmpOper   = GT_LT;
-            loCmpOper   = GT_LE;
-            break;
-        case GT_GT:
-            cmp->gtOper = GT_LT;
-            hiCmpOper   = GT_GT;
-            loCmpOper   = GT_GT;
-            break;
-        case GT_GE:
-            cmp->gtOper = GT_LT;
-            hiCmpOper   = GT_GT;
-            loCmpOper   = GT_GE;
-            break;
-        default:
-            unreached();
+            case GT_LT:
+                cmp->gtOper = GT_GT;
+                hiCmpOper   = GT_LT;
+                loCmpOper   = GT_LT;
+                break;
+            case GT_LE:
+                cmp->gtOper = GT_GT;
+                hiCmpOper   = GT_LT;
+                loCmpOper   = GT_LE;
+                break;
+            case GT_GT:
+                cmp->gtOper = GT_LT;
+                hiCmpOper   = GT_GT;
+                loCmpOper   = GT_GT;
+                break;
+            case GT_GE:
+                cmp->gtOper = GT_LT;
+                hiCmpOper   = GT_GT;
+                loCmpOper   = GT_GE;
+                break;
+            default:
+                unreached();
         }
 
         BasicBlock* newBlock2 = comp->fgSplitBlockAtEnd(newBlock);
@@ -2100,8 +2098,8 @@ void Lowering::LowerCompare(GenTree* cmp)
 
         BlockRange().Remove(loSrc1.Def());
         BlockRange().Remove(loSrc2.Def());
-        GenTree* loCmp = comp->gtNewOperNode(loCmpOper, TYP_INT, loSrc1.Def(), loSrc2.Def());
-        loCmp->gtFlags = cmp->gtFlags | GTF_UNSIGNED;
+        GenTree* loCmp   = comp->gtNewOperNode(loCmpOper, TYP_INT, loSrc1.Def(), loSrc2.Def());
+        loCmp->gtFlags   = cmp->gtFlags | GTF_UNSIGNED;
         GenTree* loJtrue = comp->gtNewOperNode(GT_JTRUE, TYP_VOID, loCmp);
         LIR::AsRange(newBlock2).InsertAfter(nullptr, loSrc1.Def(), loSrc2.Def(), loCmp, loJtrue);
 
@@ -3195,7 +3193,7 @@ GenTree* Lowering::LowerVirtualStubCall(GenTreeCall* call)
 // So we don't use a register.
 #ifndef _TARGET_X86_
             // on x64 we must materialize the target using specific registers.
-            addr->gtRegNum  = REG_VIRTUAL_STUB_PARAM;
+            addr->gtRegNum = REG_VIRTUAL_STUB_PARAM;
 
             indir->gtRegNum = REG_JUMP_THUNK_PARAM;
             indir->gtFlags |= GTF_IND_VSD_TGT;
@@ -3479,12 +3477,12 @@ void Lowering::LowerUnsignedDivOrMod(GenTree* node)
 {
     assert((node->OperGet() == GT_UDIV) || (node->OperGet() == GT_UMOD));
 
-    GenTree* divisor = node->gtGetOp2();
+    GenTree* divisor  = node->gtGetOp2();
     GenTree* dividend = node->gtGetOp1();
 
     if (divisor->IsCnsIntOrI()
 #ifdef _TARGET_X86_
-            && (dividend->OperGet() != GT_LONG)
+        && (dividend->OperGet() != GT_LONG)
 #endif
             )
     {
@@ -4054,16 +4052,16 @@ void Lowering::CheckCallArg(GenTree* arg)
 #endif
 
         case GT_FIELD_LIST:
-            {
-                GenTreeFieldList* list = arg->AsFieldList();
-                assert(list->IsFieldListHead());
+        {
+            GenTreeFieldList* list = arg->AsFieldList();
+            assert(list->IsFieldListHead());
 
-                for (; list != nullptr; list = list->Rest())
-                {
-                    assert(list->Current()->OperIsPutArg());
-                }
+            for (; list != nullptr; list = list->Rest())
+            {
+                assert(list->Current()->OperIsPutArg());
             }
-            break;
+        }
+        break;
 
         default:
             assert(arg->OperIsPutArg());
