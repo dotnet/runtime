@@ -2985,8 +2985,8 @@ void Compiler::fgRemovePreds()
 {
     C_ASSERT(offsetof(BasicBlock, bbPreds) ==
              offsetof(BasicBlock, bbCheapPreds)); // bbPreds and bbCheapPreds are at the same place in a union,
-    C_ASSERT(sizeof(((BasicBlock*)0)->bbPreds) ==
-             sizeof(((BasicBlock*)0)->bbCheapPreds)); // and are the same size. So, this function removes both.
+    C_ASSERT(sizeof(((BasicBlock*)nullptr)->bbPreds) ==
+             sizeof(((BasicBlock*)nullptr)->bbCheapPreds)); // and are the same size. So, this function removes both.
 
     for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
     {
@@ -21223,14 +21223,14 @@ GenTreePtr Compiler::fgAssignStructInlineeToVar(GenTreePtr child, CORINFO_CLASS_
     // an inlinee that is made of commas. If the inlinee is not a call, then
     // we use a copy block to do the assignment.
     GenTreePtr src = child;
-    GenTreePtr lastComma = NULL;
+    GenTreePtr lastComma = nullptr;
     while (src->gtOper == GT_COMMA)
     {
         lastComma = src;
         src = src->gtOp.gtOp2;
     }
 
-    GenTreePtr newInlinee = NULL;
+    GenTreePtr newInlinee = nullptr;
     if (src->gtOper == GT_CALL)
     {
         // If inlinee was just a call, new inlinee is v05 = call()

@@ -104,7 +104,7 @@ CodeGen::CodeGen(Compiler* theCompiler) : CodeGenInterface(theCompiler)
 #endif // defined(_TARGET_XARCH_) && !FEATURE_STACK_FP_X87
 
 #if defined(FEATURE_PUT_STRUCT_ARG_STK) && !defined(_TARGET_X86_)
-	m_stkArgVarNum = BAD_VAR_NUM;
+    m_stkArgVarNum = BAD_VAR_NUM;
 #endif
 
     regTracker.rsTrackInit(compiler, &regSet);
@@ -7577,9 +7577,9 @@ void CodeGen::genProfilingLeaveCallback(unsigned helper /*= CORINFO_HELP_PROF_FC
     bool     r0Trashed;
     emitAttr attr = EA_UNKNOWN;
 
-    if (compiler->info.compRetType == TYP_VOID ||
-        (!compiler->info.compIsVarArgs && !compiler->opts.compUseSoftFP && (varTypeIsFloating(compiler->info.compRetType) ||
-                                           compiler->IsHfa(compiler->info.compMethodInfo->args.retTypeClass))))
+    if (compiler->info.compRetType == TYP_VOID || (!compiler->info.compIsVarArgs && !compiler->opts.compUseSoftFP &&
+                                                   (varTypeIsFloating(compiler->info.compRetType) ||
+                                                    compiler->IsHfa(compiler->info.compMethodInfo->args.retTypeClass))))
     {
         r0Trashed = false;
     }
@@ -10893,7 +10893,9 @@ regMaskTP CodeGen::genPushRegs(regMaskTP regs, regMaskTP* byrefRegs, regMaskTP* 
     *noRefRegs = RBM_NONE;
 
     if (regs == RBM_NONE)
+    {
         return RBM_NONE;
+    }
 
 #if FEATURE_FIXED_OUT_ARGS
 
@@ -10961,7 +10963,9 @@ regMaskTP CodeGen::genPushRegs(regMaskTP regs, regMaskTP* byrefRegs, regMaskTP* 
 void CodeGen::genPopRegs(regMaskTP regs, regMaskTP byrefRegs, regMaskTP noRefRegs)
 {
     if (regs == RBM_NONE)
+    {
         return;
+    }
 
 #if FEATURE_FIXED_OUT_ARGS
 

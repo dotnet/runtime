@@ -804,7 +804,7 @@ void* GenTree::operator new(size_t sz, Compiler* comp, genTreeOps oper)
 #if SMALL_TREE_NODES
     size_t size = GenTree::s_gtNodeSizes[oper];
 #else
-    size_t size  = TREE_NODE_SZ_LARGE;
+    size_t     size  = TREE_NODE_SZ_LARGE;
 #endif
 
 #if MEASURE_NODE_SIZE
@@ -4385,8 +4385,10 @@ inline bool Compiler::lvaIsGCTracked(const LclVarDsc* varDsc)
 inline void Compiler::EndPhase(Phases phase)
 {
 #if defined(FEATURE_JIT_METHOD_PERF)
-    if (pCompJitTimer != NULL)
+    if (pCompJitTimer != nullptr)
+    {
         pCompJitTimer->EndPhase(phase);
+    }
 #endif
 #if DUMP_FLOWGRAPHS
     fgDumpFlowGraph(phase);

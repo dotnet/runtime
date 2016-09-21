@@ -1113,7 +1113,7 @@ void Compiler::fgExtendDbgLifetimes()
                 // Create initialization node
                 if (!block->IsLIR())
                 {
-                    GenTree* varNode = gtNewLclvNode(varNum, type);
+                    GenTree* varNode  = gtNewLclvNode(varNum, type);
                     GenTree* initNode = gtNewAssignNode(varNode, zero);
 
                     // Create a statement for the initializer, sequence it, and append it to the current BB.
@@ -1124,7 +1124,8 @@ void Compiler::fgExtendDbgLifetimes()
                 }
                 else
                 {
-                    GenTree* store = new (this, GT_STORE_LCL_VAR) GenTreeLclVar(GT_STORE_LCL_VAR, type, varNum, BAD_IL_OFFSET);
+                    GenTree* store =
+                        new (this, GT_STORE_LCL_VAR) GenTreeLclVar(GT_STORE_LCL_VAR, type, varNum, BAD_IL_OFFSET);
                     store->gtOp.gtOp1 = zero;
                     store->gtFlags |= (GTF_VAR_DEF | GTF_ASG);
 

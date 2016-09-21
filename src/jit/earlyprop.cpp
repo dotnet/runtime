@@ -189,7 +189,7 @@ void Compiler::optEarlyProp()
 
             // Walk the stmt tree in linear order to rewrite any array length reference with a
             // constant array length.
-            bool isRewritten    = false;
+            bool isRewritten = false;
             for (GenTreePtr tree = stmt->gtStmt.gtStmtList; tree != nullptr; tree = tree->gtNext)
             {
                 if (optEarlyPropRewriteTree(tree))
