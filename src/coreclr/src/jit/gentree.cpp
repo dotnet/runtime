@@ -222,7 +222,7 @@ const char* GenTree::NodeName(genTreeOps op)
 
 #endif
 
-#if defined(DEBUG) || NODEBASH_STATS || COUNT_AST_OPERS
+#if defined(DEBUG) || NODEBASH_STATS || MEASURE_NODE_SIZE || COUNT_AST_OPERS
 
 static const char* opNames[] = {
 #define GTNODE(en, sn, st, cm, ok) #en,
@@ -234,6 +234,22 @@ const char* GenTree::OpName(genTreeOps op)
     assert((unsigned)op < sizeof(opNames) / sizeof(opNames[0]));
 
     return opNames[op];
+}
+
+#endif
+
+#if MEASURE_NODE_SIZE && SMALL_TREE_NODES
+
+static const char* opStructNames[] = {
+    #define GTNODE(en, sn, st, cm, ok) #st,
+    #include "gtlist.h"
+};
+
+const char* GenTree::OpStructName(genTreeOps op)
+{
+    assert((unsigned)op < sizeof(opStructNames) / sizeof(opStructNames[0]));
+
+    return opStructNames[op];
 }
 
 #endif
@@ -251,7 +267,7 @@ const char* GenTree::OpName(genTreeOps op)
 /* static */
 unsigned char GenTree::s_gtNodeSizes[GT_COUNT + 1];
 
-#if NODEBASH_STATS || COUNT_AST_OPERS
+#if NODEBASH_STATS || MEASURE_NODE_SIZE || COUNT_AST_OPERS
 
 unsigned char GenTree::s_gtTrueSizes[GT_COUNT+1]
 {
@@ -259,7 +275,7 @@ unsigned char GenTree::s_gtTrueSizes[GT_COUNT+1]
     #include "gtlist.h"
 };
 
-#endif // NODEBASH_STATS || COUNT_AST_OPERS
+#endif // NODEBASH_STATS || MEASURE_NODE_SIZE || COUNT_AST_OPERS
 
 #if COUNT_AST_OPERS
 LONG GenTree::s_gtNodeCounts[GT_COUNT+1] = {0};
@@ -512,6 +528,75 @@ bool GenTree::IsNodeProperlySized() const
 
 #endif // SMALL_TREE_NODES
 
+/*****************************************************************************/
+
+#if MEASURE_NODE_SIZE
+
+void GenTree::DumpNodeSizes(FILE* fp)
+{
+    // Dump the sizes of the various GenTree flavors
+
+#if SMALL_TREE_NODES
+    fprintf(fp, "Small tree node size = %3u bytes\n", TREE_NODE_SZ_SMALL);
+#endif
+    fprintf(fp, "Large tree node size = %3u bytes\n", TREE_NODE_SZ_LARGE);
+    fprintf(fp, "\n");
+
+#if SMALL_TREE_NODES
+
+    // Verify that node sizes are set kosherly and dump sizes
+    for (unsigned op = GT_NONE+1; op < GT_COUNT; op++)
+    {
+        unsigned    needSize = s_gtTrueSizes[op];
+        unsigned    nodeSize = s_gtNodeSizes[op];
+
+        const char* structNm = OpStructName((genTreeOps)op);
+        const char* operName =       OpName((genTreeOps)op);
+
+        bool        repeated = false;
+
+        // Have we seen this struct flavor before?
+        for (unsigned mop = GT_NONE+1; mop < op; mop++)
+        {
+            if (strcmp(structNm, OpStructName((genTreeOps)mop)) == 0)
+            {
+                repeated = true;
+                break;
+            }
+        }
+
+        // Don't repeat the same GenTree flavor unless we have an error
+        if (!repeated || needSize > nodeSize)
+        {
+            unsigned    sizeChar = '?';
+
+            if      (nodeSize == TREE_NODE_SZ_SMALL)
+                sizeChar = 'S';
+            else if (nodeSize == TREE_NODE_SZ_LARGE)
+                sizeChar = 'L';
+
+            fprintf(fp, "GT_%-16s ... %-19s = %3u bytes (%c)", operName,
+                                                               structNm,
+                                                               needSize,
+                                                               sizeChar);
+            if (needSize > nodeSize)
+            {
+                fprintf(fp, " -- ERROR -- allocation is only %u bytes!", nodeSize);
+            }
+            else if (needSize <= TREE_NODE_SZ_SMALL && nodeSize == TREE_NODE_SZ_LARGE)
+            {
+                fprintf(fp, " ... could be small");
+            }
+
+            fprintf(fp, "\n");
+        }
+    }
+
+#endif
+
+}
+
+#endif // MEASURE_NODE_SIZE
 /*****************************************************************************/
 
 // make sure these get instantiated, because it's not in a header file
@@ -15559,7 +15644,9 @@ bool GenTree::isContained() const
         case GT_STORE_OBJ:
         case GT_STORE_DYN_BLK:
         case GT_SWITCH:
+#ifndef LEGACY_BACKEND
         case GT_JMPTABLE:
+#endif
         case GT_SWITCH_TABLE:
         case GT_SWAP:
         case GT_LCLHEAP:

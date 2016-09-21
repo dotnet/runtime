@@ -247,7 +247,9 @@ GTNODE(PHI_ARG          , "phiArg"       ,GenTreePhiArg      ,0,GTK_LEAF|GTK_LOC
 //  Nodes used by Lower to generate a closer CPU representation of other nodes
 //-----------------------------------------------------------------------------
 
+#ifndef LEGACY_BACKEND
 GTNODE(JMPTABLE         , "jumpTable"    ,GenTreeJumpTable   ,0, GTK_LEAF)              // Generates the jump table for switches
+#endif
 GTNODE(SWITCH_TABLE     , "tableSwitch"  ,GenTreeOp          ,0, GTK_BINOP|GTK_NOVALUE) // Jump Table based switch construct
 
 //-----------------------------------------------------------------------------
