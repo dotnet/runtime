@@ -8270,7 +8270,7 @@ void LinearScan::resolveRegisters()
             {
                 JITDUMP(" internal");
                 GenTreePtr indNode = nullptr;
-                if (treeNode->OperIsIndir())
+                if (treeNode->OperGet() == GT_IND)
                 {
                     indNode = treeNode;
                     JITDUMP(" allocated at GT_IND");
