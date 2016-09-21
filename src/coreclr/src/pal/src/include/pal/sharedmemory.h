@@ -182,6 +182,10 @@ public:
     virtual void Close(bool isAbruptShutdown, bool releaseSharedData)
     {
     }
+
+    virtual ~SharedMemoryProcessDataBase()
+    {
+    }
 };
 
 class SharedMemoryProcessDataHeader
