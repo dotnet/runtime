@@ -382,7 +382,6 @@ HRESULT CEECompileInfo::LoadAssemblyByPath(
 
     Assembly * pAssembly;
     HRESULT    hrProcessLibraryBitnessMismatch = S_OK;
-    bool       verifyingImageIsAssembly = false;
 
     // We don't want to do a LoadFrom, since they do not work with ngen. Instead,
     // read the metadata from the file and do a bind based on that.
@@ -416,9 +415,6 @@ HRESULT CEECompileInfo::LoadAssemblyByPath(
                 fExplicitBindToNativeImage ? MDInternalImport_NoCache : MDInternalImport_Default);
         }
 
-#if defined(FEATURE_WINDOWSPHONE)
-        verifyingImageIsAssembly = true;
-#endif // FEATURE_WINDOWSPHONE
         if (fExplicitBindToNativeImage && !pImage->HasReadyToRunHeader())
         {
             pImage->VerifyIsNIAssembly();
@@ -427,8 +423,6 @@ HRESULT CEECompileInfo::LoadAssemblyByPath(
         {
             pImage->VerifyIsAssembly();
         }
-        
-        verifyingImageIsAssembly = false;
 
         // Check to make sure the bitness of the assembly matches the bitness of the process
         // we will be loading it into and store the result.  If a COR_IMAGE_ERROR gets thrown
@@ -552,11 +546,7 @@ HRESULT CEECompileInfo::LoadAssemblyByPath(
     }
     EX_CATCH_HRESULT(hr);
     
-    if (verifyingImageIsAssembly && hr != S_OK)
-    {
-        hr = NGEN_E_FILE_NOT_ASSEMBLY;
-    }
-    else if ( hrProcessLibraryBitnessMismatch != S_OK && ( hr == COR_E_BADIMAGEFORMAT || hr == HRESULT_FROM_WIN32(ERROR_BAD_EXE_FORMAT) ) )
+    if ( hrProcessLibraryBitnessMismatch != S_OK && ( hr == COR_E_BADIMAGEFORMAT || hr == HRESULT_FROM_WIN32(ERROR_BAD_EXE_FORMAT) ) )
     {
         hr = hrProcessLibraryBitnessMismatch;
     }
