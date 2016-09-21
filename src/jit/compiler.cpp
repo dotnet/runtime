@@ -1252,8 +1252,8 @@ void Compiler::compShutdown()
             // Let's not show anything below a threshold
             if (pct >= 0.5)
             {
-                fprintf(fout, "    GT_%-17s   %7u (%4.1lf%%) %3u bytes each\n",
-                              GenTree::OpName((genTreeOps)op), cnt, pct, siz);
+                fprintf(fout, "    GT_%-17s   %7u (%4.1lf%%) %3u bytes each\n", GenTree::OpName((genTreeOps)op), cnt,
+                        pct, siz);
                 rem_total -= cnt;
             }
             else
@@ -1266,16 +1266,16 @@ void Compiler::compShutdown()
         }
         if (rem_total > 0)
         {
-            fprintf(fout, "    All other GT_xxx ...   %7u (%4.1lf%%) ... %4.1lf%% small + %4.1lf%% large\n",
-                          rem_total, 100.0 * rem_total / gtc, 100.0 * rem_small / gtc, 100.0 * rem_large / gtc);
+            fprintf(fout, "    All other GT_xxx ...   %7u (%4.1lf%%) ... %4.1lf%% small + %4.1lf%% large\n", rem_total,
+                    100.0 * rem_total / gtc, 100.0 * rem_small / gtc, 100.0 * rem_large / gtc);
         }
         fprintf(fout, "    -----------------------------------------------------\n");
-        fprintf(fout, "    Total    .......   %11u --ALL-- ... %4.1lf%% small + %4.1lf%% large\n",
-                      gtc, 100.0 * tot_small / gtc, 100.0 * tot_large / gtc);
+        fprintf(fout, "    Total    .......   %11u --ALL-- ... %4.1lf%% small + %4.1lf%% large\n", gtc,
+                100.0 * tot_small / gtc, 100.0 * tot_large / gtc);
         fprintf(fout, "\n");
     }
 
-#endif//COUNT_AST_OPERS
+#endif // COUNT_AST_OPERS
 
 #if DISPLAY_SIZES
 
@@ -4503,7 +4503,9 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, CORJIT_F
 
 #ifdef FEATURE_JIT_METHOD_PERF
     if (pCompJitTimer)
+    {
         pCompJitTimer->Terminate(this, CompTimeSummaryInfo::s_compTimeSummary);
+    }
 #endif
 
     RecordStateAtEndOfCompilation();
@@ -4676,13 +4678,13 @@ int Compiler::compCompile(CORINFO_METHOD_HANDLE methodHnd,
 
         checkedForJitTimeLog = true;
     }
-    if ((Compiler::compJitTimeLogFilename != NULL) || (JitTimeLogCsv() != NULL))
+    if ((Compiler::compJitTimeLogFilename != nullptr) || (JitTimeLogCsv() != nullptr))
     {
         pCompJitTimer = JitTimer::Create(this, methodInfo->ILCodeSize);
     }
     else
     {
-        pCompJitTimer = NULL;
+        pCompJitTimer = nullptr;
     }
 #endif // FEATURE_JIT_METHOD_PERF
 
@@ -6963,7 +6965,9 @@ bool CompTimeSummaryInfo::IncludedInFilteredData(CompTimeInfo& info)
 void CompTimeSummaryInfo::AddInfo(CompTimeInfo& info)
 {
     if (info.m_timerFailure)
+    {
         return; // Don't update if there was a failure.
+    }
 
     CritSecHolder timeLock(s_compTimeSummaryLock);
     m_numMethods++;
@@ -7000,12 +7004,14 @@ void CompTimeSummaryInfo::AddInfo(CompTimeInfo& info)
 }
 
 // Static
-LPCWSTR Compiler::compJitTimeLogFilename = NULL;
+LPCWSTR Compiler::compJitTimeLogFilename = nullptr;
 
 void CompTimeSummaryInfo::Print(FILE* f)
 {
-    if (f == NULL)
+    if (f == nullptr)
+    {
         return;
+    }
     // Otherwise...
     double countsPerSec = CycleTimer::CyclesPerSecond();
     if (countsPerSec == 0.0)
@@ -7054,7 +7060,8 @@ void CompTimeSummaryInfo::Print(FILE* f)
         double pslop_pct = 100.0 * m_total.m_parentPhaseEndSlop * 1000.0 / countsPerSec / totTime_ms;
         if (pslop_pct >= 1.0)
         {
-            fprintf(f, "\n  'End phase slop' should be very small (if not, there's unattributed time): %9.3f Mcycles = %3.1f%% of total.\n\n",
+            fprintf(f, "\n  'End phase slop' should be very small (if not, there's unattributed time): %9.3f Mcycles = "
+                       "%3.1f%% of total.\n\n",
                     m_total.m_parentPhaseEndSlop / 1000000.0, pslop_pct);
         }
     }
@@ -7094,8 +7101,9 @@ void CompTimeSummaryInfo::Print(FILE* f)
         double fslop_ms = m_filtered.m_parentPhaseEndSlop * 1000.0 / countsPerSec;
         if (fslop_ms > 1.0)
         {
-            fprintf(f, "\n  'End phase slop' should be very small (if not, there's unattributed time): %9.3f Mcycles.\n",
-                m_filtered.m_parentPhaseEndSlop);
+            fprintf(f,
+                    "\n  'End phase slop' should be very small (if not, there's unattributed time): %9.3f Mcycles.\n",
+                    m_filtered.m_parentPhaseEndSlop);
         }
     }
 }
@@ -7169,7 +7177,7 @@ LPCWSTR Compiler::JitTimeLogCsv()
 void JitTimer::PrintCsvHeader()
 {
     LPCWSTR jitTimeLogCsv = Compiler::JitTimeLogCsv();
-    if (jitTimeLogCsv == NULL)
+    if (jitTimeLogCsv == nullptr)
     {
         return;
     }
@@ -7212,7 +7220,7 @@ extern ICorJitHost* g_jitHost;
 void JitTimer::PrintCsvMethodStats(Compiler* comp)
 {
     LPCWSTR jitTimeLogCsv = Compiler::JitTimeLogCsv();
-    if (jitTimeLogCsv == NULL)
+    if (jitTimeLogCsv == nullptr)
     {
         return;
     }
@@ -7242,7 +7250,9 @@ void JitTimer::PrintCsvMethodStats(Compiler* comp)
     for (int i = 0; i < PHASE_NUMBER_OF; i++)
     {
         if (!PhaseHasChildren[i])
+        {
             totCycles += m_info.m_cyclesByPhase[i];
+        }
         fprintf(fp, "%I64u,", m_info.m_cyclesByPhase[i]);
     }
 
@@ -7261,7 +7271,9 @@ void JitTimer::Terminate(Compiler* comp, CompTimeSummaryInfo& sum)
     for (int i = 0; i < PHASE_NUMBER_OF; i++)
     {
         if (!PhaseHasChildren[i])
+        {
             totCycles2 += m_info.m_cyclesByPhase[i];
+        }
     }
     // We include m_parentPhaseEndSlop in the next phase's time also (we probably shouldn't)
     // totCycles2 += m_info.m_parentPhaseEndSlop;
@@ -7309,7 +7321,9 @@ void Compiler::AggregateMemStats::Print(FILE* f)
 {
     fprintf(f, "For %9u methods:\n", nMethods);
     if (nMethods == 0)
+    {
         return;
+    }
     fprintf(f, "  count:       %12u (avg %7u per method)\n", allocCnt, allocCnt / nMethods);
     fprintf(f, "  alloc size : %12llu (avg %7llu per method)\n", allocSz, allocSz / nMethods);
     fprintf(f, "  max alloc  : %12llu\n", allocSzMax);

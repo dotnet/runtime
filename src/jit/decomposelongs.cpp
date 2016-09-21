@@ -65,7 +65,7 @@ void DecomposeLongs::DecomposeBlock(BasicBlock* block)
     assert(block->isEmpty() || block->IsLIR());
 
     m_blockWeight = block->getBBWeight(m_compiler);
-    m_range = &LIR::AsRange(block);
+    m_range       = &LIR::AsRange(block);
     DecomposeRangeHelper();
 }
 
@@ -90,7 +90,7 @@ void DecomposeLongs::DecomposeRange(Compiler* compiler, unsigned blockWeight, LI
 
     DecomposeLongs decomposer(compiler);
     decomposer.m_blockWeight = blockWeight;
-    decomposer.m_range = &range;
+    decomposer.m_range       = &range;
 
     decomposer.DecomposeRangeHelper();
 }
@@ -286,7 +286,10 @@ GenTree* DecomposeLongs::DecomposeNode(GenTree* tree)
 // Return Value:
 //    The next node to process.
 //
-GenTree* DecomposeLongs::FinalizeDecomposition(LIR::Use& use, GenTree* loResult, GenTree* hiResult, GenTree* insertResultAfter)
+GenTree* DecomposeLongs::FinalizeDecomposition(LIR::Use& use,
+                                               GenTree*  loResult,
+                                               GenTree*  hiResult,
+                                               GenTree*  insertResultAfter)
 {
     assert(use.IsInitialized());
     assert(loResult != nullptr);
@@ -395,7 +398,7 @@ GenTree* DecomposeLongs::DecomposeStoreLclVar(LIR::Use& use)
     GenTree* tree = use.Def();
     GenTree* rhs  = tree->gtGetOp1();
     if ((rhs->OperGet() == GT_PHI) || (rhs->OperGet() == GT_CALL) ||
-            ((rhs->OperGet() == GT_MUL_LONG) && (rhs->gtFlags & GTF_MUL_64RSLT) != 0))
+        ((rhs->OperGet() == GT_MUL_LONG) && (rhs->gtFlags & GTF_MUL_64RSLT) != 0))
     {
         // GT_CALLs are not decomposed, so will not be converted to GT_LONG
         // GT_STORE_LCL_VAR = GT_CALL are handled in genMultiRegCallStoreToLocal
@@ -640,7 +643,7 @@ GenTree* DecomposeLongs::DecomposeStoreInd(LIR::Use& use)
     //      + --*  t155   long
     //      *  storeIndir long
 
-    GenTree* gtLong      = tree->gtOp.gtOp2;
+    GenTree* gtLong = tree->gtOp.gtOp2;
 
     // Save address to a temp. It is used in storeIndLow and storeIndHigh trees.
     LIR::Use address(Range(), &tree->gtOp.gtOp1, tree);
@@ -901,11 +904,11 @@ GenTree* DecomposeLongs::DecomposeShift(LIR::Use& use)
 {
     assert(use.IsInitialized());
 
-    GenTree* tree   = use.Def();
-    GenTree* gtLong = tree->gtGetOp1();
+    GenTree* tree         = use.Def();
+    GenTree* gtLong       = tree->gtGetOp1();
     GenTree* oldShiftByOp = tree->gtGetOp2();
 
-    genTreeOps oper = tree->OperGet();
+    genTreeOps oper        = tree->OperGet();
     genTreeOps shiftByOper = oldShiftByOp->OperGet();
 
     assert((oper == GT_LSH) || (oper == GT_RSH) || (oper == GT_RSZ));
@@ -979,9 +982,9 @@ GenTree* DecomposeLongs::DecomposeShift(LIR::Use& use)
 
                     // Create a GT_LONG that contains loCopy and hiOp1. This will be used in codegen to
                     // generate the shld instruction
-                    GenTree* loCopy  = m_compiler->gtNewLclvNode(loOp1LclNum, TYP_INT);
-                    GenTree* hiOp = new (m_compiler, GT_LONG) GenTreeOp(GT_LONG, TYP_LONG, loCopy, hiOp1);
-                    hiResult      = m_compiler->gtNewOperNode(GT_LSH_HI, TYP_INT, hiOp, shiftByHi);
+                    GenTree* loCopy = m_compiler->gtNewLclvNode(loOp1LclNum, TYP_INT);
+                    GenTree* hiOp   = new (m_compiler, GT_LONG) GenTreeOp(GT_LONG, TYP_LONG, loCopy, hiOp1);
+                    hiResult        = m_compiler->gtNewOperNode(GT_LSH_HI, TYP_INT, hiOp, shiftByHi);
 
                     m_compiler->lvaIncRefCnts(loCopy);
 
@@ -1339,9 +1342,9 @@ GenTree* DecomposeLongs::DecomposeUMod(LIR::Use& use)
     Range().Remove(op2);
 
     // Lo part is the GT_UMOD
-    GenTree* loResult = tree;
+    GenTree* loResult    = tree;
     loResult->gtOp.gtOp2 = loOp2;
-    loResult->gtType = TYP_INT;
+    loResult->gtType     = TYP_INT;
 
     // Set the high part to 0
     GenTree* hiResult = m_compiler->gtNewZeroConNode(TYP_INT);

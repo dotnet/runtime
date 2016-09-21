@@ -3701,18 +3701,18 @@ GenTreePtr Compiler::optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions, const
     assert(tree->gtOper == GT_ARR_BOUNDS_CHECK);
 
 #ifdef FEATURE_ENABLE_NO_RANGE_CHECKS
-	if (JitConfig.JitNoRangeChks())
-	{
+    if (JitConfig.JitNoRangeChks())
+    {
 #ifdef DEBUG
-		if (verbose)
-		{
-			printf("\nFlagging check redundant due to JitNoRangeChks in BB%02u:\n", compCurBB->bbNum);
-			gtDispTree(tree, nullptr, nullptr, true);
-		}
+        if (verbose)
+        {
+            printf("\nFlagging check redundant due to JitNoRangeChks in BB%02u:\n", compCurBB->bbNum);
+            gtDispTree(tree, nullptr, nullptr, true);
+        }
 #endif // DEBUG
-		tree->gtFlags |= GTF_ARR_BOUND_INBND;
-		return nullptr;
-	}
+        tree->gtFlags |= GTF_ARR_BOUND_INBND;
+        return nullptr;
+    }
 #endif // FEATURE_ENABLE_NO_RANGE_CHECKS
 
     BitVecOps::Iter iter(apTraits, assertions);

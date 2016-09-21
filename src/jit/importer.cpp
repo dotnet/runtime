@@ -1777,15 +1777,19 @@ GenTreePtr Compiler::impReadyToRunLookupToTree(CORINFO_CONST_LOOKUP* pLookup,
                                                unsigned              handleFlags,
                                                void*                 compileTimeHandle)
 {
-    CORINFO_GENERIC_HANDLE handle       = 0;
-    void*                  pIndirection = 0;
+    CORINFO_GENERIC_HANDLE handle       = nullptr;
+    void*                  pIndirection = nullptr;
     assert(pLookup->accessType != IAT_PPVALUE);
 
     if (pLookup->accessType == IAT_VALUE)
+    {
         handle = pLookup->handle;
+    }
     else if (pLookup->accessType == IAT_PVALUE)
+    {
         pIndirection = pLookup->addr;
-    return gtNewIconEmbHndNode(handle, pIndirection, handleFlags, 0, 0, compileTimeHandle);
+    }
+    return gtNewIconEmbHndNode(handle, pIndirection, handleFlags, 0, nullptr, compileTimeHandle);
 }
 
 GenTreePtr Compiler::impReadyToRunHelperToTree(
@@ -1798,7 +1802,9 @@ GenTreePtr Compiler::impReadyToRunHelperToTree(
     CORINFO_CONST_LOOKUP lookup;
 #if COR_JIT_EE_VERSION > 460
     if (!info.compCompHnd->getReadyToRunHelper(pResolvedToken, pGenericLookupKind, helper, &lookup))
-        return NULL;
+    {
+        return nullptr;
+    }
 #else
     info.compCompHnd->getReadyToRunHelper(pResolvedToken, helper, &lookup);
 #endif
@@ -1828,7 +1834,9 @@ GenTreePtr Compiler::impMethodPointer(CORINFO_RESOLVED_TOKEN* pResolvedToken, CO
                 *op1->gtFptrVal.gtLdftnResolvedToken = *pResolvedToken;
             }
             else
+            {
                 op1->gtFptrVal.gtEntryPoint.addr = nullptr;
+            }
 #endif
             break;
 
@@ -5001,7 +5009,7 @@ void Compiler::impImportAndPushBox(CORINFO_RESOLVED_TOKEN* pResolvedToken)
         if (opts.IsReadyToRun())
         {
             op1                   = impReadyToRunHelperToTree(pResolvedToken, CORINFO_HELP_READYTORUN_NEW, TYP_REF);
-            usingReadyToRunHelper = (op1 != NULL);
+            usingReadyToRunHelper = (op1 != nullptr);
         }
 
         if (!usingReadyToRunHelper)
@@ -7035,7 +7043,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                 {
                     instParam =
                         impReadyToRunLookupToTree(&callInfo->instParamLookup, GTF_ICON_CLASS_HDL, exactClassHandle);
-                    if (instParam == NULL)
+                    if (instParam == nullptr)
                     {
                         return callRetTyp;
                     }
@@ -12403,7 +12411,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         if (opts.IsReadyToRun())
                         {
                             op1 = impReadyToRunHelperToTree(&resolvedToken, CORINFO_HELP_READYTORUN_NEW, TYP_REF);
-                            usingReadyToRunHelper = (op1 != NULL);
+                            usingReadyToRunHelper = (op1 != nullptr);
                         }
 
                         if (!usingReadyToRunHelper)
@@ -12832,7 +12840,9 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
 #ifdef FEATURE_READYTORUN_COMPILER
                         if (fieldInfo.fieldAccessor == CORINFO_FIELD_INSTANCE_WITH_BASE)
+                        {
                             op1->gtField.gtFieldLookup = fieldInfo.fieldLookup;
+                        }
 #endif
 
                         op1->gtFlags |= (obj->gtFlags & GTF_GLOB_EFFECT);
@@ -13138,7 +13148,9 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
 #ifdef FEATURE_READYTORUN_COMPILER
                         if (fieldInfo.fieldAccessor == CORINFO_FIELD_INSTANCE_WITH_BASE)
+                        {
                             op1->gtField.gtFieldLookup = fieldInfo.fieldLookup;
+                        }
 #endif
 
                         op1->gtFlags |= (obj->gtFlags & GTF_GLOB_EFFECT);
@@ -13380,7 +13392,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 {
                     op1 = impReadyToRunHelperToTree(&resolvedToken, CORINFO_HELP_READYTORUN_NEWARR_1, TYP_REF,
                                                     gtNewArgList(op2));
-                    usingReadyToRunHelper = (op1 != NULL);
+                    usingReadyToRunHelper = (op1 != nullptr);
 
                     if (!usingReadyToRunHelper)
                     {
@@ -13392,9 +13404,11 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         // Reason: performance (today, we'll always use the slow helper for the R2R generics case)
 
                         // Need to restore array classes before creating array objects on the heap
-                        op1 = impTokenToHandle(&resolvedToken, NULL, TRUE /*mustRestoreHandle*/);
-                        if (op1 == NULL) // compDonotInline()
+                        op1 = impTokenToHandle(&resolvedToken, nullptr, TRUE /*mustRestoreHandle*/);
+                        if (op1 == nullptr)
+                        { // compDonotInline()
                             return;
+                        }
                     }
                 }
 
@@ -13502,7 +13516,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     GenTreePtr opLookup =
                         impReadyToRunHelperToTree(&resolvedToken, CORINFO_HELP_READYTORUN_ISINSTANCEOF, TYP_REF,
                                                   gtNewArgList(op1));
-                    usingReadyToRunHelper = (opLookup != NULL);
+                    usingReadyToRunHelper = (opLookup != nullptr);
                     op1                   = (usingReadyToRunHelper ? opLookup : op1);
 
                     if (!usingReadyToRunHelper)
@@ -13514,9 +13528,11 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         //      3) Perform the 'is instance' check on the input object
                         // Reason: performance (today, we'll always use the slow helper for the R2R generics case)
 
-                        op2 = impTokenToHandle(&resolvedToken, NULL, FALSE);
-                        if (op2 == NULL) // compDonotInline()
+                        op2 = impTokenToHandle(&resolvedToken, nullptr, FALSE);
+                        if (op2 == nullptr)
+                        { // compDonotInline()
                             return;
+                        }
                     }
                 }
 
@@ -14030,7 +14046,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 {
                     GenTreePtr opLookup = impReadyToRunHelperToTree(&resolvedToken, CORINFO_HELP_READYTORUN_CHKCAST,
                                                                     TYP_REF, gtNewArgList(op1));
-                    usingReadyToRunHelper = (opLookup != NULL);
+                    usingReadyToRunHelper = (opLookup != nullptr);
                     op1                   = (usingReadyToRunHelper ? opLookup : op1);
 
                     if (!usingReadyToRunHelper)
@@ -14042,9 +14058,11 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         //      3) Check the object on the stack for the type-cast
                         // Reason: performance (today, we'll always use the slow helper for the R2R generics case)
 
-                        op2 = impTokenToHandle(&resolvedToken, NULL, FALSE);
-                        if (op2 == NULL) // compDonotInline()
+                        op2 = impTokenToHandle(&resolvedToken, nullptr, FALSE);
+                        if (op2 == nullptr)
+                        { // compDonotInline()
                             return;
+                        }
                     }
                 }
 

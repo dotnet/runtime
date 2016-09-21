@@ -1306,9 +1306,9 @@ void Lowering::TreeNodeInfoInitBlockStore(GenTreeBlk* blkNode)
     {
         // CopyObj or CopyBlk
         // Sources are src and dest and size if not constant.
-        unsigned   size              = blkNode->gtBlkSize;
-        GenTreePtr source            = blkNode->Data();
-        GenTree*   srcAddr           = nullptr;
+        unsigned   size    = blkNode->gtBlkSize;
+        GenTreePtr source  = blkNode->Data();
+        GenTree*   srcAddr = nullptr;
 
         if (source->gtOper == GT_IND)
         {

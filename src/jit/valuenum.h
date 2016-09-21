@@ -450,7 +450,7 @@ public:
 
     // Get a new, unique value number for an expression that we're not equating to some function,
     // which is the value of a tree in the given block.
-    ValueNum VNForExpr(BasicBlock *block, var_types typ = TYP_UNKNOWN);
+    ValueNum VNForExpr(BasicBlock* block, var_types typ = TYP_UNKNOWN);
 
 // This controls extra tracing of the "evaluation" of "VNF_MapSelect" functions.
 #define FEATURE_VN_TRACE_APPLY_SELECTORS 1
@@ -485,13 +485,11 @@ public:
 
     ValueNumPair VNPairApplySelectors(ValueNumPair map, FieldSeqNode* fieldSeq, var_types indType);
 
-    ValueNumPair VNPairApplySelectorsAssign(ValueNumPair  map,
-                                            FieldSeqNode* fieldSeq,
-                                            ValueNumPair  rhs,
-                                            var_types     indType,
-                                            BasicBlock*   block)
+    ValueNumPair VNPairApplySelectorsAssign(
+        ValueNumPair map, FieldSeqNode* fieldSeq, ValueNumPair rhs, var_types indType, BasicBlock* block)
     {
-        return ValueNumPair(VNApplySelectorsAssign(VNK_Liberal, map.GetLiberal(), fieldSeq, rhs.GetLiberal(), indType, block),
+        return ValueNumPair(VNApplySelectorsAssign(VNK_Liberal, map.GetLiberal(), fieldSeq, rhs.GetLiberal(), indType,
+                                                   block),
                             VNApplySelectorsAssign(VNK_Conservative, map.GetConservative(), fieldSeq,
                                                    rhs.GetConservative(), indType, block));
     }
@@ -883,9 +881,14 @@ private:
         ChunkExtraAttribs      m_attribs;
         BasicBlock::loopNumber m_loopNum;
 
-        // Initialize a chunk, starting at "*baseVN", for the given "typ", "attribs", and "loopNum" (using "alloc" for allocations).
+        // Initialize a chunk, starting at "*baseVN", for the given "typ", "attribs", and "loopNum" (using "alloc" for
+        // allocations).
         // (Increments "*baseVN" by ChunkSize.)
-        Chunk(IAllocator* alloc, ValueNum* baseVN, var_types typ, ChunkExtraAttribs attribs, BasicBlock::loopNumber loopNum);
+        Chunk(IAllocator*            alloc,
+              ValueNum*              baseVN,
+              var_types              typ,
+              ChunkExtraAttribs      attribs,
+              BasicBlock::loopNumber loopNum);
 
         // Requires that "m_numUsed < ChunkSize."  Returns the offset of the allocated VN within the chunk; the
         // actual VN is this added to the "m_baseVN" of the chunk.
