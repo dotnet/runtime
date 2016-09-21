@@ -1661,15 +1661,3 @@ mono_thread_info_duplicate_handle (MonoThreadInfo *info)
 	g_assert (mono_thread_info_is_current (info));
 	return mono_threads_platform_duplicate_handle (info);
 }
-
-void
-mono_thread_info_own_mutex (MonoThreadInfo *info, gpointer mutex_handle)
-{
-	mono_threads_platform_own_mutex (info, mutex_handle);
-}
-
-void
-mono_thread_info_disown_mutex (MonoThreadInfo *info, gpointer mutex_handle)
-{
-	mono_threads_platform_disown_mutex (info, mutex_handle);
-}

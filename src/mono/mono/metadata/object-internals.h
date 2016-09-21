@@ -381,6 +381,7 @@ struct _MonoInternalThread {
 	gpointer thread_pinning_ref;
 	gsize abort_protected_block_count;
 	gint32 priority;
+	GPtrArray *owned_mutexes;
 	/* 
 	 * These fields are used to avoid having to increment corlib versions
 	 * when a new field is added to this structure.

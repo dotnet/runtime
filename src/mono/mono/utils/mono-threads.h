@@ -241,9 +241,6 @@ typedef struct {
 
 	/* Stack mark for targets that explicitly require one */
 	gpointer stack_mark;
-
-	/* FIXME: move to MonoInternalThread */
-	GPtrArray *owned_mutexes;
 } MonoThreadInfo;
 
 typedef struct {
@@ -526,8 +523,6 @@ void mono_threads_platform_exit (int exit_code);
 HANDLE mono_threads_platform_open_thread_handle (HANDLE handle, MonoNativeThreadId tid);
 void mono_threads_platform_close_thread_handle (HANDLE handle);
 void mono_threads_platform_set_exited (THREAD_INFO_TYPE *info);
-void mono_threads_platform_own_mutex (THREAD_INFO_TYPE *info, gpointer mutex_handle);
-void mono_threads_platform_disown_mutex (THREAD_INFO_TYPE *info, gpointer mutex_handle);
 gpointer mono_threads_platform_duplicate_handle (THREAD_INFO_TYPE *info);
 
 void mono_threads_coop_begin_global_suspend (void);
@@ -645,11 +640,5 @@ mono_thread_info_is_current (THREAD_INFO_TYPE *info);
 
 gpointer
 mono_thread_info_duplicate_handle (THREAD_INFO_TYPE *info);
-
-void
-mono_thread_info_own_mutex (THREAD_INFO_TYPE *info, gpointer mutex_handle);
-
-void
-mono_thread_info_disown_mutex (THREAD_INFO_TYPE *info, gpointer mutex_handle);
 
 #endif /* __MONO_THREADS_H__ */

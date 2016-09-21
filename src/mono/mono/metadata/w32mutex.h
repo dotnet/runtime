@@ -25,4 +25,9 @@ typedef struct MonoW32HandleNamedMutex MonoW32HandleNamedMutex;
 MonoW32HandleNamespace*
 mono_w32mutex_get_namespace (MonoW32HandleNamedMutex *mutex);
 
+#ifndef HOST_WIN32
+void
+mono_w32mutex_abandon (void);
+#endif
+
 #endif /* _MONO_METADATA_W32MUTEX_H_ */

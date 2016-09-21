@@ -8,12 +8,12 @@
  */
 
 #include "w32mutex.h"
-#include "w32mutex-utils.h"
 
 #include <pthread.h>
 
 #include "w32handle-namespace.h"
 #include "mono/io-layer/io-layer.h"
+#include "mono/metadata/object-internals.h"
 #include "mono/utils/mono-logger-internals.h"
 #include "mono/utils/mono-threads.h"
 #include "mono/utils/w32handle.h"
@@ -29,6 +29,35 @@ struct MonoW32HandleNamedMutex {
 	MonoW32HandleNamespace sharedns;
 };
 
+static void
+thread_own_mutex (MonoInternalThread *internal, gpointer handle)
+{
+	mono_w32handle_ref (handle);
+
+	/* if we are not on the current thread, there is a
+	 * race condition when allocating internal->owned_mutexes */
+	g_assert (mono_thread_internal_is_current (internal));
+
+	if (!internal->owned_mutexes)
+		internal->owned_mutexes = g_ptr_array_new ();
+
+	g_ptr_array_add (internal->owned_mutexes, handle);
+}
+
+static void
+thread_disown_mutex (MonoInternalThread *internal, gpointer handle)
+{
+	gboolean removed;
+
+	g_assert (mono_thread_internal_is_current (internal));
+
+	g_assert (internal->owned_mutexes);
+	removed = g_ptr_array_remove (internal->owned_mutexes, handle);
+	g_assert (removed);
+
+	mono_w32handle_unref (handle);
+}
+
 static gboolean
 mutex_handle_own (gpointer handle, MonoW32HandleType type, guint32 *statuscode)
 {
@@ -41,15 +70,20 @@ mutex_handle_own (gpointer handle, MonoW32HandleType type, guint32 *statuscode)
 		return FALSE;
 	}
 
-	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: owning %s handle %p, tid %p, recursion %u",
-		__func__, mono_w32handle_ops_typename (type), handle, (gpointer) mutex_handle->tid, mutex_handle->recursion);
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: owning %s handle %p, before: [tid: %p, recursion: %d], after: [tid: %p, recursion: %d], abandoned: %s",
+		__func__, mono_w32handle_ops_typename (type), handle, (gpointer) mutex_handle->tid, mutex_handle->recursion, (gpointer) pthread_self (), mutex_handle->recursion + 1, mutex_handle->abandoned ? "true" : "false");
 
-	mono_thread_info_own_mutex (mono_thread_info_current (), handle);
+	if (mutex_handle->recursion != 0) {
+		g_assert (pthread_equal (pthread_self (), mutex_handle->tid));
+		mutex_handle->recursion++;
+	} else {
+		mutex_handle->tid = pthread_self ();
+		mutex_handle->recursion = 1;
 
-	mutex_handle->tid = pthread_self ();
-	mutex_handle->recursion++;
+		thread_own_mutex (mono_thread_internal_current (), handle);
+	}
+
 	if (mutex_handle->abandoned) {
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: mutex handle %p was abandoned", __func__, handle);
 		mutex_handle->abandoned = FALSE;
 		*statuscode = WAIT_ABANDONED_0;
 	}
@@ -77,8 +111,8 @@ mutex_handle_is_owned (gpointer handle, MonoW32HandleType type)
 			__func__, mono_w32handle_ops_typename (type), handle, (gpointer) pthread_self ());
 		return TRUE;
 	} else {
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: %s handle %p not owned by %p, but locked %d times by %p",
-			__func__, mono_w32handle_ops_typename (type), handle, (gpointer) pthread_self (), mutex_handle->recursion, (gpointer) mutex_handle->tid);
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: %s handle %p not owned by %p, tid: %p recursion: %d",
+			__func__, mono_w32handle_ops_typename (type), handle, (gpointer) pthread_self (), (gpointer) mutex_handle->tid, mutex_handle->recursion);
 		return FALSE;
 	}
 }
@@ -363,8 +397,8 @@ ves_icall_System_Threading_Mutex_ReleaseMutex_internal (gpointer handle)
 		return FALSE;
 	}
 
-	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: releasing %s handle %p",
-		__func__, mono_w32handle_ops_typename (type), handle);
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: releasing %s handle %p, tid: %p recursion: %d",
+		__func__, mono_w32handle_ops_typename (type), handle, (gpointer) mutex_handle->tid, mutex_handle->recursion);
 
 	thr_ret = mono_w32handle_lock_handle (handle);
 	g_assert (thr_ret == 0);
@@ -386,10 +420,10 @@ ves_icall_System_Threading_Mutex_ReleaseMutex_internal (gpointer handle)
 		mutex_handle->recursion--;
 
 		if (mutex_handle->recursion == 0) {
-			mono_thread_info_disown_mutex (mono_thread_info_current (), handle);
+			thread_disown_mutex (mono_thread_internal_current (), handle);
 
-			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: unlocking %s handle %p",
-				__func__, mono_w32handle_ops_typename (type), handle);
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: unlocking %s handle %p, tid: %p recusion : %d",
+				__func__, mono_w32handle_ops_typename (type), handle, (gpointer) mutex_handle->tid, mutex_handle->recursion);
 
 			mutex_handle->tid = 0;
 			mono_w32handle_set_signal_state (handle, TRUE, FALSE);
@@ -441,45 +475,69 @@ cleanup:
 }
 
 void
-mono_w32mutex_abandon (gpointer handle, MonoNativeThreadId tid)
+mono_w32mutex_abandon (void)
 {
-	MonoW32HandleType type;
-	MonoW32HandleMutex *mutex_handle;
-	int thr_ret;
+	MonoInternalThread *internal;
 
-	switch (type = mono_w32handle_get_type (handle)) {
-	case MONO_W32HANDLE_MUTEX:
-	case MONO_W32HANDLE_NAMEDMUTEX:
-		break;
-	default:
-		g_assert_not_reached ();
-	}
+	g_assert (mono_thread_internal_current_is_attached ());
 
-	if (!mono_w32handle_lookup (handle, type, (gpointer *)&mutex_handle)) {
-		g_warning ("%s: error looking up %s handle %p",
-			__func__, mono_w32handle_ops_typename (type), handle);
+	internal = mono_thread_internal_current ();
+	g_assert (internal);
+
+	if (!internal->owned_mutexes)
 		return;
-	}
 
-	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: abandon %s handle %p",
-		__func__, mono_w32handle_ops_typename (type), handle);
+	while (internal->owned_mutexes->len) {
+		MonoW32HandleType type;
+		MonoW32HandleMutex *mutex_handle;
+		MonoNativeThreadId tid;
+		gpointer handle;
+		int thr_ret;
 
-	thr_ret = mono_w32handle_lock_handle (handle);
-	g_assert (thr_ret == 0);
+		handle = g_ptr_array_index (internal->owned_mutexes, 0);
 
-	if (pthread_equal (mutex_handle->tid, tid)) {
+		switch (type = mono_w32handle_get_type (handle)) {
+		case MONO_W32HANDLE_MUTEX:
+		case MONO_W32HANDLE_NAMEDMUTEX:
+			break;
+		default:
+			g_assert_not_reached ();
+		}
+
+		if (!mono_w32handle_lookup (handle, type, (gpointer *)&mutex_handle)) {
+			g_error ("%s: error looking up %s handle %p",
+				__func__, mono_w32handle_ops_typename (type), handle);
+		}
+
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: abandoning %s handle %p",
+			__func__, mono_w32handle_ops_typename (type), handle);
+
+		tid = MONO_UINT_TO_NATIVE_THREAD_ID (internal->tid);
+
+		if (!pthread_equal (mutex_handle->tid, tid))
+			g_error ("%s: trying to release mutex %p acquired by thread %p from thread %p",
+				__func__, handle, (gpointer) mutex_handle->tid, (gpointer) tid);
+
+		thr_ret = mono_w32handle_lock_handle (handle);
+		g_assert (thr_ret == 0);
+
 		mutex_handle->recursion = 0;
 		mutex_handle->tid = 0;
 		mutex_handle->abandoned = TRUE;
 
 		mono_w32handle_set_signal_state (handle, TRUE, FALSE);
 
+		thread_disown_mutex (internal, handle);
+
 		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: abandoned %s handle %p",
 			__func__, mono_w32handle_ops_typename (type), handle);
+
+		thr_ret = mono_w32handle_unlock_handle (handle);
+		g_assert (thr_ret == 0);
 	}
 
-	thr_ret = mono_w32handle_unlock_handle (handle);
-	g_assert (thr_ret == 0);
+	g_ptr_array_free (internal->owned_mutexes, TRUE);
+	internal->owned_mutexes = NULL;
 }
 
 MonoW32HandleNamespace*

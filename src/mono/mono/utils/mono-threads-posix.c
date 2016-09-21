@@ -18,7 +18,6 @@
 #include <mono/utils/mono-threads-posix-signals.h>
 #include <mono/utils/mono-coop-semaphore.h>
 #include <mono/metadata/gc-internals.h>
-#include <mono/metadata/w32mutex-utils.h>
 #include <mono/utils/w32handle.h>
 
 #include <errno.h>
@@ -45,8 +44,6 @@ void
 mono_threads_platform_register (MonoThreadInfo *info)
 {
 	gpointer thread_handle;
-
-	info->owned_mutexes = g_ptr_array_new ();
 
 	thread_handle = mono_w32handle_new (MONO_W32HANDLE_THREAD, NULL);
 	if (thread_handle == INVALID_HANDLE_VALUE)
@@ -290,26 +287,13 @@ mono_native_thread_set_name (MonoNativeThreadId tid, const char *name)
 void
 mono_threads_platform_set_exited (MonoThreadInfo *info)
 {
-	gpointer mutex_handle;
-	int i, thr_ret;
-	pthread_t tid;
+	int thr_ret;
 
 	g_assert (info->handle);
-
 	if (mono_w32handle_issignalled (info->handle))
 		g_error ("%s: handle %p thread %p has already exited, it's handle is signalled", __func__, info->handle, mono_thread_info_get_tid (info));
 	if (mono_w32handle_get_type (info->handle) == MONO_W32HANDLE_UNUSED)
 		g_error ("%s: handle %p thread %p has already exited, it's handle type is 'unused'", __func__, info->handle, mono_thread_info_get_tid (info));
-
-	tid = pthread_self ();
-
-	for (i = 0; i < info->owned_mutexes->len; i++) {
-		mutex_handle = g_ptr_array_index (info->owned_mutexes, i);
-		mono_w32mutex_abandon (mutex_handle, tid);
-		mono_thread_info_disown_mutex (info, mutex_handle);
-	}
-
-	g_ptr_array_free (info->owned_mutexes, TRUE);
 
 	thr_ret = mono_w32handle_lock_handle (info->handle);
 	g_assert (thr_ret == 0);
@@ -323,22 +307,6 @@ mono_threads_platform_set_exited (MonoThreadInfo *info)
 	mono_w32handle_unref (info->handle);
 
 	info->handle = NULL;
-}
-
-void
-mono_threads_platform_own_mutex (MonoThreadInfo *info, gpointer mutex_handle)
-{
-	mono_w32handle_ref (mutex_handle);
-
-	g_ptr_array_add (info->owned_mutexes, mutex_handle);
-}
-
-void
-mono_threads_platform_disown_mutex (MonoThreadInfo *info, gpointer mutex_handle)
-{
-	mono_w32handle_unref (mutex_handle);
-
-	g_ptr_array_remove (info->owned_mutexes, mutex_handle);
 }
 
 static const gchar* thread_typename (void)

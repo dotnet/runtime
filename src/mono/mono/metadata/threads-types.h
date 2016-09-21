@@ -266,4 +266,7 @@ mono_thread_internal_current_is_attached (void);
 void
 mono_thread_internal_describe (MonoInternalThread *internal, GString *str);
 
+gboolean
+mono_thread_internal_is_current (MonoInternalThread *internal);
+
 #endif /* _MONO_METADATA_THREADS_TYPES_H_ */

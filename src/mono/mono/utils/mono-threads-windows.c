@@ -318,18 +318,6 @@ mono_threads_platform_set_exited (MonoThreadInfo *info)
 }
 
 void
-mono_threads_platform_own_mutex (MonoThreadInfo *info, gpointer mutex_handle)
-{
-	g_assert_not_reached ();
-}
-
-void
-mono_threads_platform_disown_mutex (MonoThreadInfo *info, gpointer mutex_handle)
-{
-	g_assert_not_reached ();
-}
-
-void
 mono_threads_platform_init (void)
 {
 }

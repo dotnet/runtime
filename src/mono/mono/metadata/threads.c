@@ -46,6 +46,7 @@
 #include <mono/utils/mono-error-internals.h>
 #include <mono/utils/w32handle.h>
 #include <mono/metadata/w32event.h>
+#include <mono/metadata/w32mutex.h>
 
 #include <mono/metadata/gc-internals.h>
 #include <mono/metadata/reflection-internals.h>
@@ -1116,6 +1117,10 @@ mono_thread_detach_internal (MonoInternalThread *thread)
 	g_return_if_fail (thread != NULL);
 
 	THREAD_DEBUG (g_message ("%s: mono_thread_detach for %p (%"G_GSIZE_FORMAT")", __func__, thread, (gsize)thread->tid));
+
+#ifndef HOST_WIN32
+	mono_w32mutex_abandon ();
+#endif
 
 	thread_cleanup (thread);
 
@@ -5162,23 +5167,26 @@ mono_threads_is_ready_to_be_interrupted (void)
 void
 mono_thread_internal_describe (MonoInternalThread *internal, GString *text)
 {
-	MonoThreadInfo *info;
-
 	g_string_append_printf (text, ", thread handle : %p", internal->handle);
 
-	info = (MonoThreadInfo*) internal->thread_info;
-	if (!info)
-		return;
+	if (internal->thread_info) {
+		g_string_append (text, ", state : ");
+		mono_thread_info_describe_interrupt_token ((MonoThreadInfo*) internal->thread_info, text);
+	}
 
-	g_string_append (text, ", state : ");
-	mono_thread_info_describe_interrupt_token (info, text);
-
-	if (info->owned_mutexes) {
+	if (internal->owned_mutexes) {
 		int i;
 
 		g_string_append (text, ", owns : [");
-		for (i = 0; i < info->owned_mutexes->len; i++)
-			g_string_append_printf (text, i == 0 ? "%p" : ", %p", g_ptr_array_index (info->owned_mutexes, i));
+		for (i = 0; i < internal->owned_mutexes->len; i++)
+			g_string_append_printf (text, i == 0 ? "%p" : ", %p", g_ptr_array_index (internal->owned_mutexes, i));
 		g_string_append (text, "]");
 	}
+}
+
+gboolean
+mono_thread_internal_is_current (MonoInternalThread *internal)
+{
+	g_assert (internal);
+	return mono_native_thread_id_equals (mono_native_thread_id_get (), MONO_UINT_TO_NATIVE_THREAD_ID (internal->tid));
 }
