@@ -9487,7 +9487,7 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
                 {
                     useSwap = true;
                 }
-#else  // !_TARGET_XARCH_
+#else // !_TARGET_XARCH_
                 else
                 {
                     tempReg = tempRegInt;

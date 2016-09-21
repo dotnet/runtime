@@ -253,7 +253,7 @@ public:
 
 private:
     bool m_cgDoubleAlign;
-#else  // !DOUBLE_ALIGN
+#else // !DOUBLE_ALIGN
 public:
     bool doubleAlignOrFramePointerUsed() const
     {
