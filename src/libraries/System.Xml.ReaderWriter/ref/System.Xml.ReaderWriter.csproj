@@ -4,6 +4,7 @@
   <PropertyGroup>
     <OutputType>Library</OutputType>
     <NuGetTargetMoniker>.NETStandard,Version=v1.3</NuGetTargetMoniker>
+    <PackageTargetFramework>netstandard1.3;netcore50</PackageTargetFramework>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Xml.ReaderWriter.cs" />
