@@ -95,6 +95,7 @@
   <PropertyGroup Condition="'$(BuildTestsAgainstPackages)' == 'true'">
     <GeneratedProjectJsonDir>$(ObjDir)generated</GeneratedProjectJsonDir>
     <BuildTestsAgainstPackagesIdentityRegex>$(CoreFxVersionsIdentityRegex)</BuildTestsAgainstPackagesIdentityRegex>
+    <SkipVerifyPackageVersions>true</SkipVerifyPackageVersions>
   </PropertyGroup>
 
   <!-- list of directories to perform batch restore -->
@@ -127,6 +128,7 @@
   <ItemGroup>
     <ProjectJsonFiles Include="$(SourceDir)**/project.json" />
     <ProjectJsonFiles Include="$(MSBuildThisFileDirectory)pkg/**/project.json" />
+    <ProjectJsonFiles Condition="'$(BuildTestsAgainstPackages)' == 'true'" Include="$(GeneratedProjectJsonDir)/**/project.json" />
   </ItemGroup>
 
   <PropertyGroup Condition="'$(BuildAllProjects)'=='true'">
