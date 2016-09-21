@@ -11,7 +11,7 @@ using Xunit.Abstractions;
 
 namespace System.Net.NetworkInformation.Tests
 {
-    public partial class NetworkInterfaceBasicTest
+    public class NetworkInterfaceBasicTest
     {
         private readonly ITestOutputHelper _log;
 

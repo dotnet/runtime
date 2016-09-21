@@ -22,7 +22,7 @@ namespace System.Net.NetworkInformation.Tests
             NetworkAddressChangedEventHandler handler = NetworkChange_NetworkAddressChanged;
             NetworkChange.NetworkAddressChanged -= handler;
         }
-        
+
         private void NetworkChange_NetworkAddressChanged(object sender, EventArgs e)
         {
             throw new NotImplementedException();
