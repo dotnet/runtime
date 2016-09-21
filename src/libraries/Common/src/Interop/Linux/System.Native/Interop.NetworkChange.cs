@@ -16,7 +16,7 @@ internal static partial class Interop
             AddressRemoved = 1,
             LinkAdded = 2,
             LinkRemoved = 3,
-            AvailabilityChanged
+            AvailabilityChanged = 4
         }
 
         public delegate void NetworkChangeEvent(int socket, NetworkChangeKind kind);
