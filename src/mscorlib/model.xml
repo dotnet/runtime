@@ -12325,11 +12325,16 @@
       <Member Name="Equals(System.ReadOnlySpan&lt;T&gt;)" />
       <Member Name="TryCopyTo(System.Span&lt;T&gt;)" />
     </Type>
-    <Type Name="System.SpanExtensions">
+    <Type Name="System.SpanExtensions" Condition="FEATURE_SPAN_OF_T">
       <Member Name="AsBytes&lt;T&gt;(System.Span&lt;T&gt;)" />
       <Member Name="AsBytes&lt;T&gt;(System.ReadOnlySpan&lt;T&gt;)" />
       <Member Name="NonPortableCast&lt;TFrom,TTo&gt;(System.Span&lt;TFrom&gt;)" />
       <Member Name="NonPortableCast&lt;TFrom,TTo&gt;(System.ReadOnlySpan&lt;TFrom&gt;)" />
+    </Type>
+    <Type Name="System.ReadOnlySpanExtensions" Condition="FEATURE_SPAN_OF_T">
+      <Member Name="Slice(System.String)" />
+      <Member Name="Slice(System.String,System.Int32)" />
+      <Member Name="Slice(System.String,System.Int32,System.Int32)" />
     </Type>
   </Assembly>
 </ThinModel>
