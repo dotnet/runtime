@@ -30,7 +30,6 @@ namespace System.Xml.Serialization
         }
     }
 
-    /// <include file='doc\CodeIdentifiers.uex' path='docs/doc[@for="CodeIdentifiers"]/*' />
     ///<internalonly/>
     /// <devdoc>
     ///    <para>[To be supplied.]</para>
@@ -63,14 +62,12 @@ namespace System.Xml.Serialization
             _list = new ArrayList();
         }
 
-        /// <include file='doc\CodeIdentifiers.uex' path='docs/doc[@for="CodeIdentifiers.Clear"]/*' />
         public void Clear()
         {
             _identifiers.Clear();
             _list.Clear();
         }
 
-        /// <include file='doc\CodeIdentifiers.uex' path='docs/doc[@for="CodeIdentifiers.UseCamelCasing"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -80,7 +77,6 @@ namespace System.Xml.Serialization
             set { _camelCase = value; }
         }
 
-        /// <include file='doc\CodeIdentifiers.uex' path='docs/doc[@for="CodeIdentifiers.MakeRightCase"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -92,7 +88,6 @@ namespace System.Xml.Serialization
                 return CodeIdentifier.MakePascal(identifier);
         }
 
-        /// <include file='doc\CodeIdentifiers.uex' path='docs/doc[@for="CodeIdentifiers.MakeUnique"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -118,7 +113,6 @@ namespace System.Xml.Serialization
             return identifier;
         }
 
-        /// <include file='doc\CodeIdentifiers.uex' path='docs/doc[@for="CodeIdentifiers.AddReserved"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -127,7 +121,6 @@ namespace System.Xml.Serialization
             _reservedIdentifiers.Add(identifier, identifier);
         }
 
-        /// <include file='doc\CodeIdentifiers.uex' path='docs/doc[@for="CodeIdentifiers.RemoveReserved"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -136,7 +129,6 @@ namespace System.Xml.Serialization
             _reservedIdentifiers.Remove(identifier);
         }
 
-        /// <include file='doc\CodeIdentifiers.uex' path='docs/doc[@for="CodeIdentifiers.AddUnique"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -147,7 +139,6 @@ namespace System.Xml.Serialization
             return identifier;
         }
 
-        /// <include file='doc\CodeIdentifiers.uex' path='docs/doc[@for="CodeIdentifiers.IsInUse"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -156,7 +147,6 @@ namespace System.Xml.Serialization
             return _identifiers.Contains(identifier) || _reservedIdentifiers.Contains(identifier);
         }
 
-        /// <include file='doc\CodeIdentifiers.uex' path='docs/doc[@for="CodeIdentifiers.Add"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -166,7 +156,6 @@ namespace System.Xml.Serialization
             _list.Add(value);
         }
 
-        /// <include file='doc\CodeIdentifiers.uex' path='docs/doc[@for="CodeIdentifiers.Remove"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -176,7 +165,6 @@ namespace System.Xml.Serialization
             _identifiers.Remove(identifier);
         }
 
-        /// <include file='doc\CodeIdentifiers.uex' path='docs/doc[@for="CodeIdentifiers.ToArray"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>

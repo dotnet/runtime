@@ -9,13 +9,11 @@ namespace System.Xml.Serialization
     using System.Collections;
     using System.ComponentModel;
 
-    /// <include file='doc\XmlElementAttributes.uex' path='docs/doc[@for="XmlElementAttributes"]/*' />
     /// <devdoc>
     ///    <para>[To be supplied.]</para>
     /// </devdoc>
     public class XmlElementAttributes : CollectionBase
     {
-        /// <include file='doc\XmlElementAttributes.uex' path='docs/doc[@for="XmlElementAttributes.this"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -25,7 +23,6 @@ namespace System.Xml.Serialization
             set { List[index] = value; }
         }
 
-        /// <include file='doc\XmlElementAttributes.uex' path='docs/doc[@for="XmlElementAttributes.Add"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -34,7 +31,6 @@ namespace System.Xml.Serialization
             return List.Add(attribute);
         }
 
-        /// <include file='doc\XmlElementAttributes.uex' path='docs/doc[@for="XmlElementAttributes.Insert"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -43,7 +39,6 @@ namespace System.Xml.Serialization
             List.Insert(index, attribute);
         }
 
-        /// <include file='doc\XmlElementAttributes.uex' path='docs/doc[@for="XmlElementAttributes.IndexOf"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -52,7 +47,6 @@ namespace System.Xml.Serialization
             return List.IndexOf(attribute);
         }
 
-        /// <include file='doc\XmlElementAttributes.uex' path='docs/doc[@for="XmlElementAttributes.Contains"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -61,7 +55,6 @@ namespace System.Xml.Serialization
             return List.Contains(attribute);
         }
 
-        /// <include file='doc\XmlElementAttributes.uex' path='docs/doc[@for="XmlElementAttributes.Remove"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -70,7 +63,6 @@ namespace System.Xml.Serialization
             List.Remove(attribute);
         }
 
-        /// <include file='doc\XmlElementAttributes.uex' path='docs/doc[@for="XmlElementAttributes.CopyTo"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
