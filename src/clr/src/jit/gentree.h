@@ -1570,7 +1570,7 @@ public:
 public:
 #if SMALL_TREE_NODES
     static unsigned char s_gtNodeSizes[];
-#if NODEBASH_STATS || COUNT_AST_OPERS
+#if NODEBASH_STATS || MEASURE_NODE_SIZE || COUNT_AST_OPERS
     static unsigned char s_gtTrueSizes[];
 #endif
 #if COUNT_AST_OPERS
@@ -1600,8 +1600,12 @@ public:
     static const char* NodeName(genTreeOps op);
 #endif
 
-#if defined(DEBUG) || NODEBASH_STATS || COUNT_AST_OPERS
+#if defined(DEBUG) || NODEBASH_STATS || MEASURE_NODE_SIZE || COUNT_AST_OPERS
     static const char* OpName(genTreeOps op);
+#endif
+
+#if MEASURE_NODE_SIZE && SMALL_TREE_NODES
+    static const char* OpStructName(genTreeOps op);
 #endif
 
     //---------------------------------------------------------------------
@@ -1916,6 +1920,10 @@ public:
         assert(OperIsConst());
         gtFlags &= ~GTF_REUSE_REG_VAL;
     }
+
+#if MEASURE_NODE_SIZE
+    static void DumpNodeSizes(FILE* fp);
+#endif
 
 #ifdef DEBUG
 

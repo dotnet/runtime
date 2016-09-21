@@ -13490,6 +13490,7 @@ bool Compiler::fgOptimizeSwitchBranches(BasicBlock* block)
         GenTree* switchVal = switchTree->gtOp.gtOp1;
         noway_assert(genActualTypeIsIntOrI(switchVal->TypeGet()));
 
+#ifndef LEGACY_BACKEND
         // If we are in LIR, remove the jump table from the block.
         if (block->IsLIR())
         {
@@ -13497,6 +13498,7 @@ bool Compiler::fgOptimizeSwitchBranches(BasicBlock* block)
             assert(jumpTable->OperGet() == GT_JMPTABLE);
             blockRange->Remove(jumpTable);
         }
+#endif
 
         // Change the GT_SWITCH(switchVal) into GT_JTRUE(GT_EQ(switchVal==0)).
         // Also mark the node as GTF_DONT_CSE as further down JIT is not capable of handling it.
@@ -18371,7 +18373,7 @@ void Compiler::fgSetBlockOrder(BasicBlock* block)
 //
 //    For the (usual) case of GT_BLK or GT_OBJ, the size is always "evaluated" (i.e.
 //    instantiated into a register) last. In those cases, the GTF_REVERSE_OPS flag
-//    on the assignment works as usual.          
+//    on the assignment works as usual.
 //    In order to preserve previous possible orderings, the order for evaluating
 //    the size of a GT_DYN_BLK node is controlled by its gtEvalSizeFirst flag. If
 //    that is set, the size is evaluated first, and then the src and dst are evaluated
@@ -18980,7 +18982,7 @@ bool               Compiler::fgDumpFlowGraph(Phases phase)
     {
         createDotFile = true;
     }
-            
+
     FILE*   fgxFile   = fgOpenFlowGraphFile(&dontClose, phase, createDotFile ? W("dot") : W("fgx"));
 
     if (fgxFile == nullptr)
@@ -19061,7 +19063,7 @@ bool               Compiler::fgDumpFlowGraph(Phases phase)
         fprintf(fgxFile,            ">");
     }
 
-    static const char* kindImage[] = { "EHFINALLYRET", "EHFILTERRET", "EHCATCHRET", 
+    static const char* kindImage[] = { "EHFINALLYRET", "EHFILTERRET", "EHCATCHRET",
                                        "THROW", "RETURN", "NONE", "ALWAYS", "LEAVE",
                                        "CALLFINALLY", "COND", "SWITCH" };
 
@@ -19693,7 +19695,7 @@ void                Compiler::fgDispBasicBlocks(BasicBlock*  firstBlock,
         {
             printf("bad prev link!\n");
         }
-            
+
         if (block == fgFirstColdBlock)
         {
             printf("~~~~~~%*s~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~%*s~~~~~~~~~~~~~~~~~~~~~~~%*s~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n",
@@ -19794,7 +19796,7 @@ void                Compiler::fgDumpTrees(BasicBlock*  firstBlock,
 
     /* Walk the basic blocks */
 
-    // Note that typically we have already called fgDispBasicBlocks() 
+    // Note that typically we have already called fgDispBasicBlocks()
     //  so we don't need to print the preds and succs again here
     //
     for (BasicBlock* block = firstBlock; block; block = block->bbNext)
@@ -19819,7 +19821,7 @@ Compiler::fgWalkResult      Compiler::fgStress64RsltMulCB(GenTreePtr* pTree, fgW
 {
     GenTreePtr tree = *pTree;
     Compiler*  pComp = data->compiler;
-    
+
     if (tree->gtOper != GT_MUL || tree->gtType != TYP_INT || (tree->gtOverflow())) {
         return WALK_CONTINUE;
     }
@@ -19827,14 +19829,14 @@ Compiler::fgWalkResult      Compiler::fgStress64RsltMulCB(GenTreePtr* pTree, fgW
 #ifdef DEBUG
     if (pComp->verbose)
     {
-        printf("STRESS_64RSLT_MUL before:\n");              
+        printf("STRESS_64RSLT_MUL before:\n");
         pComp->gtDispTree(tree);
     }
 #endif // DEBUG
 
     // To ensure optNarrowTree() doesn't fold back to the original tree.
     tree->gtOp.gtOp1 = pComp->gtNewCastNode(TYP_LONG, tree->gtOp.gtOp1, TYP_LONG);
-    tree->gtOp.gtOp1 = pComp->gtNewOperNode(GT_NOP, TYP_LONG, tree->gtOp.gtOp1); 
+    tree->gtOp.gtOp1 = pComp->gtNewOperNode(GT_NOP, TYP_LONG, tree->gtOp.gtOp1);
     tree->gtOp.gtOp1 = pComp->gtNewCastNode(TYP_LONG, tree->gtOp.gtOp1, TYP_LONG);
     tree->gtOp.gtOp2 = pComp->gtNewCastNode(TYP_LONG, tree->gtOp.gtOp2, TYP_LONG);
     tree->gtType = TYP_LONG;
@@ -19843,7 +19845,7 @@ Compiler::fgWalkResult      Compiler::fgStress64RsltMulCB(GenTreePtr* pTree, fgW
 #ifdef DEBUG
     if (pComp->verbose)
     {
-        printf("STRESS_64RSLT_MUL after:\n");              
+        printf("STRESS_64RSLT_MUL after:\n");
         pComp->gtDispTree(*pTree);
     }
 #endif // DEBUG
@@ -19887,7 +19889,7 @@ void                Compiler::fgDebugCheckBBlist(bool checkBBNum  /* = false */,
 #endif // DEBUG
 
     fgDebugCheckBlockLinks();
-    
+
     if (fgBBcount > 10000 && expensiveDebugCheckLevel < 1)
     {
         // The basic block checks are too expensive if there are too many blocks,
@@ -20373,7 +20375,7 @@ void                Compiler::fgDebugCheckFlags(GenTreePtr tree)
             fgDebugCheckFlags(op2);
         }
 
-        if (op1) 
+        if (op1)
         {
             chkFlags   |= (op1->gtFlags & GTF_ALL_EFFECT);
         }
@@ -20442,8 +20444,8 @@ void                Compiler::fgDebugCheckFlags(GenTreePtr tree)
 
     /* See what kind of a special operator we have here */
 
-    else 
-    { 
+    else
+    {
         switch  (tree->OperGet())
         {
         case GT_CALL:
@@ -20451,7 +20453,7 @@ void                Compiler::fgDebugCheckFlags(GenTreePtr tree)
             GenTreePtr      args;
             GenTreePtr      argx;
             GenTreeCall*    call;
-        
+
             call = tree->AsCall();
 
             chkFlags |= GTF_CALL;
@@ -21020,7 +21022,7 @@ void                Compiler::fgInline()
                           (void *) this);
 
             // See if stmt is of the form GT_COMMA(call, nop)
-            // If yes, we can get rid of GT_COMMA.            
+            // If yes, we can get rid of GT_COMMA.
             if (expr->OperGet() == GT_COMMA &&
                 expr->gtOp.gtOp1->OperGet() == GT_CALL &&
                 expr->gtOp.gtOp2->OperGet() == GT_NOP)
@@ -21309,7 +21311,7 @@ Compiler::fgWalkResult      Compiler::fgUpdateInlineReturnExpressionPlaceHolder(
 
     if (tree->gtOper == GT_RET_EXPR)
     {
-        // We are going to copy the tree from the inlinee, 
+        // We are going to copy the tree from the inlinee,
         // so record the handle now.
         //
         if (varTypeIsStruct(tree))
@@ -21325,7 +21327,7 @@ Compiler::fgWalkResult      Compiler::fgUpdateInlineReturnExpressionPlaceHolder(
 #ifdef DEBUG
             if (comp->verbose)
             {
-                printf("\nReplacing the return expression placeholder ");              
+                printf("\nReplacing the return expression placeholder ");
                 printTreeID(tree);
                 printf(" with ");
                 printTreeID(inlineCandidate);
@@ -21335,7 +21337,7 @@ Compiler::fgWalkResult      Compiler::fgUpdateInlineReturnExpressionPlaceHolder(
             }
 #endif // DEBUG
 
-            tree->CopyFrom(inlineCandidate, comp);           
+            tree->CopyFrom(inlineCandidate, comp);
 
 #ifdef DEBUG
             if (comp->verbose)

@@ -1511,111 +1511,8 @@ void Compiler::compDisplayStaticSizes(FILE* fout)
 {
 
 #if MEASURE_NODE_SIZE
-    /*
-        IMPORTANT:  Use the following code to check the alignment of
-                    GenTree members (in a retail build, of course).
-     */
-
-    GenTree* gtDummy = nullptr;
-
-    fprintf(fout, "\n");
-    fprintf(fout, "Offset / size of gtOper         = %2u / %2u\n", offsetof(GenTree, gtOper), sizeof(gtDummy->gtOper));
-    fprintf(fout, "Offset / size of gtType         = %2u / %2u\n", offsetof(GenTree, gtType), sizeof(gtDummy->gtType));
-#if FEATURE_ANYCSE
-    fprintf(fout, "Offset / size of gtCSEnum       = %2u / %2u\n", offsetof(GenTree, gtCSEnum),
-            sizeof(gtDummy->gtCSEnum));
-#endif // FEATURE_ANYCSE
-#if ASSERTION_PROP
-    fprintf(fout, "Offset / size of gtAssertionNum = %2u / %2u\n", offsetof(GenTree, gtAssertionNum),
-            sizeof(gtDummy->gtAssertionNum));
-#endif // ASSERTION_PROP
-#if FEATURE_STACK_FP_X87
-    fprintf(fout, "Offset / size of gtFPlvl        = %2u / %2u\n", offsetof(GenTree, gtFPlvl),
-            sizeof(gtDummy->gtFPlvl));
-#endif // FEATURE_STACK_FP_X87
-    // TODO: The section that report GenTree sizes should be made into a public static member function of the GenTree
-    // class (see https://github.com/dotnet/coreclr/pull/493)
-    // fprintf(fout, "Offset / size of gtCostEx       = %2u / %2u\n", offsetof(GenTree, _gtCostEx     ),
-    // sizeof(gtDummy->_gtCostEx     ));
-    // fprintf(fout, "Offset / size of gtCostSz       = %2u / %2u\n", offsetof(GenTree, _gtCostSz     ),
-    // sizeof(gtDummy->_gtCostSz     ));
-    fprintf(fout, "Offset / size of gtFlags        = %2u / %2u\n", offsetof(GenTree, gtFlags),
-            sizeof(gtDummy->gtFlags));
-    fprintf(fout, "Offset / size of gtVNPair       = %2u / %2u\n", offsetof(GenTree, gtVNPair),
-            sizeof(gtDummy->gtVNPair));
-    fprintf(fout, "Offset / size of gtRsvdRegs     = %2u / %2u\n", offsetof(GenTree, gtRsvdRegs),
-            sizeof(gtDummy->gtRsvdRegs));
-#ifdef LEGACY_BACKEND
-    fprintf(fout, "Offset / size of gtUsedRegs     = %2u / %2u\n", offsetof(GenTree, gtUsedRegs),
-            sizeof(gtDummy->gtUsedRegs));
-#endif // LEGACY_BACKEND
-#ifndef LEGACY_BACKEND
-    fprintf(fout, "Offset / size of gtLsraInfo     = %2u / %2u\n", offsetof(GenTree, gtLsraInfo),
-            sizeof(gtDummy->gtLsraInfo));
-#endif // !LEGACY_BACKEND
-    fprintf(fout, "Offset / size of gtNext         = %2u / %2u\n", offsetof(GenTree, gtNext), sizeof(gtDummy->gtNext));
-    fprintf(fout, "Offset / size of gtPrev         = %2u / %2u\n", offsetof(GenTree, gtPrev), sizeof(gtDummy->gtPrev));
-    fprintf(fout, "\n");
-
-#if SMALL_TREE_NODES
-    fprintf(fout, "Small tree node size        = %3u\n", TREE_NODE_SZ_SMALL);
-#endif // SMALL_TREE_NODES
-    fprintf(fout, "Large tree node size        = %3u\n", TREE_NODE_SZ_LARGE);
-    fprintf(fout, "\n");
-    fprintf(fout, "Size of GenTree             = %3u\n", sizeof(GenTree));
-    fprintf(fout, "Size of GenTreeUnOp         = %3u\n", sizeof(GenTreeUnOp));
-    fprintf(fout, "Size of GenTreeOp           = %3u\n", sizeof(GenTreeOp));
-    fprintf(fout, "Size of GenTreeVal          = %3u\n", sizeof(GenTreeVal));
-    fprintf(fout, "Size of GenTreeIntConCommon = %3u\n", sizeof(GenTreeIntConCommon));
-    fprintf(fout, "Size of GenTreePhysReg      = %3u\n", sizeof(GenTreePhysReg));
-#ifndef LEGACY_BACKEND
-    fprintf(fout, "Size of GenTreeJumpTable    = %3u\n", sizeof(GenTreeJumpTable));
-#endif // !LEGACY_BACKEND
-    fprintf(fout, "Size of GenTreeIntCon       = %3u\n", sizeof(GenTreeIntCon));
-    fprintf(fout, "Size of GenTreeLngCon       = %3u\n", sizeof(GenTreeLngCon));
-    fprintf(fout, "Size of GenTreeDblCon       = %3u\n", sizeof(GenTreeDblCon));
-    fprintf(fout, "Size of GenTreeStrCon       = %3u\n", sizeof(GenTreeStrCon));
-    fprintf(fout, "Size of GenTreeLclVarCommon = %3u\n", sizeof(GenTreeLclVarCommon));
-    fprintf(fout, "Size of GenTreeLclVar       = %3u\n", sizeof(GenTreeLclVar));
-    fprintf(fout, "Size of GenTreeLclFld       = %3u\n", sizeof(GenTreeLclFld));
-    fprintf(fout, "Size of GenTreeRegVar       = %3u\n", sizeof(GenTreeRegVar));
-    fprintf(fout, "Size of GenTreeCast         = %3u\n", sizeof(GenTreeCast));
-    fprintf(fout, "Size of GenTreeJumpCC       = %3u\n", sizeof(GenTreeJumpCC));
-    fprintf(fout, "Size of GenTreeBox          = %3u\n", sizeof(GenTreeBox));
-    fprintf(fout, "Size of GenTreeField        = %3u\n", sizeof(GenTreeField));
-    fprintf(fout, "Size of GenTreeArgList      = %3u\n", sizeof(GenTreeArgList));
-    fprintf(fout, "Size of GenTreeColon        = %3u\n", sizeof(GenTreeColon));
-    fprintf(fout, "Size of GenTreeCall         = %3u\n", sizeof(GenTreeCall));
-    fprintf(fout, "Size of GenTreeCmpXchg      = %3u\n", sizeof(GenTreeCmpXchg));
-    fprintf(fout, "Size of GenTreeFptrVal      = %3u\n", sizeof(GenTreeFptrVal));
-    fprintf(fout, "Size of GenTreeQmark        = %3u\n", sizeof(GenTreeQmark));
-    fprintf(fout, "Size of GenTreeIntrinsic    = %3u\n", sizeof(GenTreeIntrinsic));
-    fprintf(fout, "Size of GenTreeIndex        = %3u\n", sizeof(GenTreeIndex));
-    fprintf(fout, "Size of GenTreeArrLen       = %3u\n", sizeof(GenTreeArrLen));
-    fprintf(fout, "Size of GenTreeBoundsChk    = %3u\n", sizeof(GenTreeBoundsChk));
-    fprintf(fout, "Size of GenTreeArrElem      = %3u\n", sizeof(GenTreeArrElem));
-    fprintf(fout, "Size of GenTreeAddrMode     = %3u\n", sizeof(GenTreeAddrMode));
-    fprintf(fout, "Size of GenTreeIndir        = %3u\n", sizeof(GenTreeIndir));
-    fprintf(fout, "Size of GenTreeStoreInd     = %3u\n", sizeof(GenTreeStoreInd));
-    fprintf(fout, "Size of GenTreeRetExpr      = %3u\n", sizeof(GenTreeRetExpr));
-    fprintf(fout, "Size of GenTreeStmt         = %3u\n", sizeof(GenTreeStmt));
-    fprintf(fout, "Size of GenTreeObj          = %3u\n", sizeof(GenTreeObj));
-    fprintf(fout, "Size of GenTreeClsVar       = %3u\n", sizeof(GenTreeClsVar));
-    fprintf(fout, "Size of GenTreeArgPlace     = %3u\n", sizeof(GenTreeArgPlace));
-    fprintf(fout, "Size of GenTreeLabel        = %3u\n", sizeof(GenTreeLabel));
-    fprintf(fout, "Size of GenTreePhiArg       = %3u\n", sizeof(GenTreePhiArg));
-    fprintf(fout, "Size of GenTreePutArgStk    = %3u\n", sizeof(GenTreePutArgStk));
-    fprintf(fout, "Size of GenTreeCopyOrReload = %3u\n", sizeof(GenTreeCopyOrReload));
-    fprintf(fout, "Size of GenTreeAllocObj     = %3u\n", sizeof(GenTreeAllocObj));
-    fprintf(fout, "Size of GenTreeBlk          = %3u\n", sizeof(GenTreeBlk));
-    fprintf(fout, "Size of GenTreeDynBlk       = %3u\n", sizeof(GenTreeDynBlk));
-    fprintf(fout, "Size of GenTreeArrIndex     = %3u\n", sizeof(GenTreeArrIndex));
-    fprintf(fout, "Size of GenTreeArrOffs      = %3u\n", sizeof(GenTreeArrOffs));
-#ifdef FEATURE_SIMD
-    fprintf(fout, "Size of GenTreeSIMD         = %3u\n", sizeof(GenTreeSIMD));
+    GenTree::DumpNodeSizes(fout);
 #endif
-    fprintf(fout, "\n");
-#endif // MEASURE_NODE_SIZE
 
 #if MEASURE_BLOCK_SIZE
 
@@ -1642,8 +1539,6 @@ void Compiler::compDisplayStaticSizes(FILE* fout)
             sizeof(bbDummy->bbJumpDest));
     fprintf(fout, "Offset / size of bbJumpSwt             = %3u / %3u\n", offsetof(BasicBlock, bbJumpSwt),
             sizeof(bbDummy->bbJumpSwt));
-    fprintf(fout, "Offset / size of bbTreeList            = %3u / %3u\n", offsetof(BasicBlock, bbTreeList),
-            sizeof(bbDummy->bbTreeList));
     fprintf(fout, "Offset / size of bbEntryState          = %3u / %3u\n", offsetof(BasicBlock, bbEntryState),
             sizeof(bbDummy->bbEntryState));
     fprintf(fout, "Offset / size of bbStkTempsIn          = %3u / %3u\n", offsetof(BasicBlock, bbStkTempsIn),
