@@ -3602,8 +3602,10 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* initBlkNode)
         emit->emitIns_AR_R(INS_mov, EA_4BYTE, valReg, dstAddr->gtRegNum, offset);
         offset += 4;
 #else // !_TARGET_X86_
+
         emit->emitIns_AR_R(INS_mov, EA_8BYTE, valReg, dstAddr->gtRegNum, offset);
         offset += 8;
+
 #endif // !_TARGET_X86_
     }
     if ((size & 4) != 0)
