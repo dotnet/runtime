@@ -156,18 +156,18 @@ int SsaBuilder::TopologicalSort(BasicBlock** postOrder, int count)
     Compiler* comp = m_pCompiler;
 
     BitVecTraits traits(comp->fgBBNumMax + 1, comp);
-    BitVec BITVEC_INIT_NOCOPY(visited, BitVecOps::MakeEmpty(&traits));
+    BitVec       BITVEC_INIT_NOCOPY(visited, BitVecOps::MakeEmpty(&traits));
 
     // Display basic blocks.
     DBEXEC(VERBOSE, comp->fgDispBasicBlocks());
     DBEXEC(VERBOSE, comp->fgDispHandlerTab());
 
     // Compute order.
-    int postIndex = 0;
-    BasicBlock* block = comp->fgFirstBB;
+    int         postIndex = 0;
+    BasicBlock* block     = comp->fgFirstBB;
     BitVecOps::AddElemD(&traits, visited, block->bbNum);
 
-    ArrayStack<BasicBlock *> blocks(comp);
+    ArrayStack<BasicBlock*>      blocks(comp);
     ArrayStack<AllSuccessorIter> iterators(comp);
     ArrayStack<AllSuccessorIter> ends(comp);
 
@@ -206,7 +206,7 @@ int SsaBuilder::TopologicalSort(BasicBlock** postOrder, int count)
         {
             // if the block on TOS still has unreached successors, visit them
             AllSuccessorIter& iter = iterators.TopRef();
-            BasicBlock* succ = *iter;
+            BasicBlock*       succ = *iter;
             ++iter;
 
             // push the children
@@ -225,7 +225,7 @@ int SsaBuilder::TopologicalSort(BasicBlock** postOrder, int count)
             iterators.Pop();
             ends.Pop();
 
-            postOrder[postIndex] = block;
+            postOrder[postIndex]  = block;
             block->bbPostOrderNum = postIndex;
             postIndex += 1;
 
