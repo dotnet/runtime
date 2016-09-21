@@ -11,7 +11,7 @@
     <OutputType>Library</OutputType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <ResourcesSourceOutputDirectory>../../src/Resources/</ResourcesSourceOutputDirectory>
-    <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
+    <NugetTargetMoniker Condition="'$(NugetTargetMoniker)'==''">.NETStandard,Version=v1.3</NugetTargetMoniker>
   </PropertyGroup>
   <!-- Help VS understand available configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
@@ -79,6 +79,10 @@
     <Compile Include="$(CommonTestPath)\System\PlatformDetection.cs">
       <Link>Common\tests\System\PlatformDetection.cs</Link>
     </Compile>
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard1.7'">
+    <Compile Include="NetworkAvailabilityChangeTest.cs" />
+    <Compile Include="NetworkInterfaceBasicTest.netstandard1.7.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\pkg\System.Net.NetworkInformation.pkgproj">
