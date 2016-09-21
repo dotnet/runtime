@@ -13,21 +13,17 @@ namespace System.Net.NetworkInformation
 
         public static event NetworkAddressChangedEventHandler NetworkAddressChanged;
 
-        public static event NetworkAvailabilityChangedEventHandler NetworkAvailabilityChanged
-        {
-            add { throw new NotImplementedException(); }
-            remove { throw new NotImplementedException(); }
-        }
+        public static event NetworkAvailabilityChangedEventHandler NetworkAvailabilityChanged;
 
         static NetworkChange()
         {
             RTConnectivity.NetworkInformation.NetworkStatusChanged += NetworkInformation_NetworkStatusChanged;
         }
 
-        private static void NetworkInformation_NetworkStatusChanged(Object sender)
+        private static void NetworkInformation_NetworkStatusChanged(object sender)
         {
             NetworkAddressChanged.Invoke(null, EventArgs.Empty);
-            return;
+            NetworkAvailabilityChanged.Invoke(null, new NetworkAvailabilityEventArgs(NetworkInterface.GetIsNetworkAvailable()));
         }
     }
 }
