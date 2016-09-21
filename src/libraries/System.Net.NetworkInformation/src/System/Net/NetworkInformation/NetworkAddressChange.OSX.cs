@@ -18,8 +18,11 @@ namespace System.Net.NetworkInformation
     {
         private static object s_lockObj = new object();
 
-        // The list of current subscribers.
+        // The list of current address-changed subscribers.
         private static NetworkAddressChangedEventHandler s_addressChangedSubscribers;
+
+        // The list of current availability-changed subscribers.
+        private static NetworkAvailabilityChangedEventHandler s_availabilityChangedSubscribers;
 
         // The dynamic store. We listen to changes in the IPv4 and IPv6 address keys.
         // When those keys change, our callback below is called (OnAddressChanged).
@@ -52,7 +55,7 @@ namespace System.Net.NetworkInformation
             {
                 lock (s_lockObj)
                 {
-                    if (s_addressChangedSubscribers == null)
+                    if (s_addressChangedSubscribers == null && s_availabilityChangedSubscribers == null)
                     {
                         CreateAndStartRunLoop();
                     }
@@ -64,10 +67,10 @@ namespace System.Net.NetworkInformation
             {
                 lock (s_lockObj)
                 {
-                    bool hadSubscribers = s_addressChangedSubscribers != null;
+                    bool hadSubscribers = s_addressChangedSubscribers != null || s_availabilityChangedSubscribers != null;
                     s_addressChangedSubscribers -= value;
 
-                    if (hadSubscribers && s_addressChangedSubscribers == null)
+                    if (hadSubscribers && s_addressChangedSubscribers == null && s_availabilityChangedSubscribers == null)
                     {
                         StopRunLoop();
                     }
@@ -77,8 +80,31 @@ namespace System.Net.NetworkInformation
 
         public static event NetworkAvailabilityChangedEventHandler NetworkAvailabilityChanged
         {
-            add { throw new NotImplementedException(); }
-            remove { throw new NotImplementedException(); }
+            add
+            {
+                lock (s_lockObj)
+                {
+                    if (s_addressChangedSubscribers == null && s_availabilityChangedSubscribers == null)
+                    {
+                        CreateAndStartRunLoop();
+                    }
+
+                    s_availabilityChangedSubscribers += value;
+                }
+            }
+            remove
+            {
+                lock (s_lockObj)
+                {
+                    bool hadSubscribers = s_addressChangedSubscribers != null || s_availabilityChangedSubscribers != null;
+                    s_availabilityChangedSubscribers -= value;
+
+                    if (hadSubscribers && s_addressChangedSubscribers == null && s_availabilityChangedSubscribers == null)
+                    {
+                        StopRunLoop();
+                    }
+                }
+            }
         }
 
         private static unsafe void CreateAndStartRunLoop()
@@ -190,10 +216,17 @@ namespace System.Net.NetworkInformation
 
         private static void OnAddressChanged(IntPtr store, IntPtr changedKeys, IntPtr info)
         {
-            NetworkAddressChangedEventHandler handler = s_addressChangedSubscribers;
-            if (handler != null)
+            NetworkAddressChangedEventHandler addressChangedHandler = s_addressChangedSubscribers;
+            if (addressChangedHandler != null)
             {
-                handler(null, EventArgs.Empty);
+                addressChangedHandler(null, EventArgs.Empty);
+            }
+
+            NetworkAvailabilityChangedEventHandler availabilityChangedHandler = s_availabilityChangedSubscribers;
+            if (availabilityChangedHandler != null)
+            {
+                bool isNetworkAvailable = NetworkInterface.GetIsNetworkAvailable();
+                availabilityChangedHandler(null, new NetworkAvailabilityEventArgs(isNetworkAvailable));
             }
         }
     }
