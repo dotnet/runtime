@@ -430,12 +430,14 @@ struct GenTree
         gtFPlvl = (unsigned char)level;
     }
 #else // FEATURE_STACK_FP_X87
+
     void gtCopyFPlvl(GenTree* other)
     {
     }
     void gtSetFPlvl(unsigned level)
     {
     }
+
 #endif // FEATURE_STACK_FP_X87
 
     //
