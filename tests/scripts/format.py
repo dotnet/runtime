@@ -176,18 +176,16 @@ def main(argv):
     my_env["PATH"] += os.pathsep + jitutilsBin
     current_dir = os.getcwd()
 
-    if os.path.isdir(jitutilsBin):
-        os.chdir(jitutilsBin)
-    else:
+    if not os.path.isdir(jitutilsBin):
         print("Jitutils not built!")
         return -1
 
-    jitformat = ""
+    jitformat = jitutilsBin
 
     if platform == 'Linux' or platform == 'OSX':
-        jitformat = "jit-format"
+        jitformat = os.path.join(jitformat, "jit-format")
     elif platform == 'Windows_NT':
-        jitformat = "jit-format.cmd"
+        jitformat = os.path.join(jitformat,"jit-format.cmd")
 
     for build in ["Checked", "Debug", "Release"]:
         for project in ["dll", "standalone", "crossgen"]:
