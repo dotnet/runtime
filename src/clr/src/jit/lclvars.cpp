@@ -4457,7 +4457,9 @@ int Compiler::lvaAssignVirtualFrameOffsetToArg(unsigned lclNum,
     noway_assert(argSize);
 
     if (Target::g_tgtArgOrder == Target::ARG_ORDER_L2R)
+    {
         argOffs -= argSize;
+    }
 
     unsigned fieldVarNum = BAD_VAR_NUM;
 
@@ -4547,7 +4549,9 @@ int Compiler::lvaAssignVirtualFrameOffsetToArg(unsigned lclNum,
     }
 
     if (Target::g_tgtArgOrder == Target::ARG_ORDER_R2L && !varDsc->lvIsRegArg)
+    {
         argOffs += argSize;
+    }
 
     return argOffs;
 }
@@ -5282,7 +5286,9 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
                 //  a local variable which will need stack frame space.
                 //
                 if (!varDsc->lvIsRegArg)
+                {
                     continue;
+                }
 
 #ifdef _TARGET_ARM64_
                 if (info.compIsVarArgs)
