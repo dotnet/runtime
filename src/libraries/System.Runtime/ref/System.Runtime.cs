@@ -5932,6 +5932,16 @@ namespace System.Text
         public override bool Equals(object value) { return default(bool); }
         public override int GetHashCode() { return default(int); }
     }
+    public sealed partial class DecoderReplacementFallbackBuffer : System.Text.DecoderFallbackBuffer
+    {
+        public DecoderReplacementFallbackBuffer(System.Text.DecoderReplacementFallback fallback) { }
+        public override int Remaining { get { throw null; } }
+        public override bool Fallback(byte[] bytesUnknown, int index) { throw null; }
+        public override char GetNextChar() { throw null; }
+        public override bool MovePrevious() { throw null; }
+        [System.Security.SecuritySafeCriticalAttribute]
+        public override void Reset() { }
+    }
     public abstract partial class Encoder
     {
         protected Encoder() { }

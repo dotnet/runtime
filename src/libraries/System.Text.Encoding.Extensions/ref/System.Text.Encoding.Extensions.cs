@@ -38,6 +38,7 @@ namespace System.Text
     }
     public partial class UnicodeEncoding : System.Text.Encoding
     {
+        public const int CharSize = 2;
         public UnicodeEncoding() { }
         public UnicodeEncoding(bool bigEndian, bool byteOrderMark) { }
         public UnicodeEncoding(bool bigEndian, bool byteOrderMark, bool throwOnInvalidBytes) { }
