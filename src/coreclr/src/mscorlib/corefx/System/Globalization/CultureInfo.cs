@@ -189,7 +189,7 @@ namespace System.Globalization
         }
 
 
-        internal CultureInfo(String name, bool useUserOverride)
+        public CultureInfo(String name, bool useUserOverride)
         {
             if (name == null)
             {
@@ -1123,7 +1123,7 @@ namespace System.Globalization
 
         // Gets a cached copy of the specified culture from an internal hashtable (or creates it
         // if not found).  (Named version)
-        internal static CultureInfo GetCultureInfo(string name)
+        public static CultureInfo GetCultureInfo(string name)
         {
             // Make sure we have a valid, non-zero length string as name
             if (name == null)
