@@ -80,10 +80,6 @@
       <Link>Common\tests\System\PlatformDetection.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard1.7'">
-    <Compile Include="NetworkAvailabilityChangeTest.cs" />
-    <Compile Include="NetworkInterfaceBasicTest.netstandard1.7.cs" />
-  </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\pkg\System.Net.NetworkInformation.pkgproj">
       <Project>{3CA89D6C-F8D1-4813-9775-F8D249686E31}</Project>
