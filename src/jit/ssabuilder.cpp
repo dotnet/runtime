@@ -27,87 +27,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 namespace
 {
 /**
- * Visits basic blocks in the depth first order and arranges them in the order of
- * their DFS finish time.
- *
- * @param block The fgFirstBB or entry block.
- * @param comp A pointer to compiler.
- * @param visited In pointer initialized to false and of size at least fgMaxBBNum.
- * @param count Out pointer for count of all nodes reachable by DFS.
- * @param postOrder Out poitner to arrange the blocks and of size at least fgMaxBBNum.
- */
-static void TopologicalSortHelper(BasicBlock* block, Compiler* comp, bool* visited, int* count, BasicBlock** postOrder)
-{
-    visited[block->bbNum] = true;
-
-    ArrayStack<BasicBlock*>      blocks(comp);
-    ArrayStack<AllSuccessorIter> iterators(comp);
-    ArrayStack<AllSuccessorIter> ends(comp);
-
-    // there are three stacks used here and all should be same height
-    // the first is for blocks
-    // the second is the iterator to keep track of what succ of the block we are looking at
-    // and the third is the end marker iterator
-    blocks.Push(block);
-    iterators.Push(block->GetAllSuccs(comp).begin());
-    ends.Push(block->GetAllSuccs(comp).end());
-
-    while (blocks.Height() > 0)
-    {
-        block = blocks.Top();
-
-#ifdef DEBUG
-        if (comp->verboseSsa)
-        {
-            printf("[SsaBuilder::TopologicalSortHelper] Visiting BB%02u: ", block->bbNum);
-            printf("[");
-            unsigned numSucc = block->NumSucc(comp);
-            for (unsigned i = 0; i < numSucc; ++i)
-            {
-                printf("BB%02u, ", block->GetSucc(i, comp)->bbNum);
-            }
-            EHSuccessorIter end = block->GetEHSuccs(comp).end();
-            for (EHSuccessorIter ehsi = block->GetEHSuccs(comp).begin(); ehsi != end; ++ehsi)
-            {
-                printf("[EH]BB%02u, ", (*ehsi)->bbNum);
-            }
-            printf("]\n");
-        }
-#endif
-
-        if (iterators.TopRef() != ends.TopRef())
-        {
-            // if the block on TOS still has unreached successors, visit them
-            AllSuccessorIter& iter = iterators.TopRef();
-            BasicBlock*       succ = *iter;
-            ++iter;
-            // push the child
-
-            if (!visited[succ->bbNum])
-            {
-                blocks.Push(succ);
-                iterators.Push(succ->GetAllSuccs(comp).begin());
-                ends.Push(succ->GetAllSuccs(comp).end());
-                visited[succ->bbNum] = true;
-            }
-        }
-        else
-        {
-            // all successors have been visited
-            blocks.Pop();
-            iterators.Pop();
-            ends.Pop();
-
-            postOrder[*count]     = block;
-            block->bbPostOrderNum = *count;
-            *count += 1;
-
-            DBG_SSA_JITDUMP("postOrder[%d] = [%p] and BB%02u\n", *count, dspPtr(block), block->bbNum);
-        }
-    }
-}
-
-/**
  * Method that finds a common IDom parent, much like least common ancestor.
  *
  * @param finger1 A basic block that might share IDom ancestor with finger2.
@@ -222,27 +141,97 @@ SsaBuilder::SsaBuilder(Compiler* pCompiler, IAllocator* pIAllocator)
 {
 }
 
-/**
- *  Topologically sort the graph and return the number of nodes visited.
- *
- *  @param postOrder The array in which the arranged basic blocks have to be returned.
- *  @param count The size of the postOrder array.
- *
- *  @return The number of nodes visited while performing DFS on the graph.
- */
+//------------------------------------------------------------------------
+//  TopologicalSort: Topologically sort the graph and return the number of nodes visited.
+//
+//  Arguments:
+//     postOrder - The array in which the arranged basic blocks have to be returned.
+//     count - The size of the postOrder array.
+//
+//  Return Value:
+//     The number of nodes visited while performing DFS on the graph.
+
 int SsaBuilder::TopologicalSort(BasicBlock** postOrder, int count)
 {
-    // Allocate and initialize visited flags.
-    bool* visited = (bool*)alloca(count * sizeof(bool));
-    memset(visited, 0, count * sizeof(bool));
+    Compiler* comp = m_pCompiler;
+
+    BitVecTraits traits(comp->fgBBNumMax + 1, comp);
+    BitVec BITVEC_INIT_NOCOPY(visited, BitVecOps::MakeEmpty(&traits));
 
     // Display basic blocks.
-    DBEXEC(VERBOSE, m_pCompiler->fgDispBasicBlocks());
-    DBEXEC(VERBOSE, m_pCompiler->fgDispHandlerTab());
+    DBEXEC(VERBOSE, comp->fgDispBasicBlocks());
+    DBEXEC(VERBOSE, comp->fgDispHandlerTab());
 
-    // Call the recursive helper.
+    // Compute order.
     int postIndex = 0;
-    TopologicalSortHelper(m_pCompiler->fgFirstBB, m_pCompiler, visited, &postIndex, postOrder);
+    BasicBlock* block = comp->fgFirstBB;
+    BitVecOps::AddElemD(&traits, visited, block->bbNum);
+
+    ArrayStack<BasicBlock *> blocks(comp);
+    ArrayStack<AllSuccessorIter> iterators(comp);
+    ArrayStack<AllSuccessorIter> ends(comp);
+
+    // there are three stacks used here and all should be same height
+    // the first is for blocks
+    // the second is the iterator to keep track of what succ of the block we are looking at
+    // and the third is the end marker iterator
+    blocks.Push(block);
+    iterators.Push(block->GetAllSuccs(comp).begin());
+    ends.Push(block->GetAllSuccs(comp).end());
+
+    while (blocks.Height() > 0)
+    {
+        block = blocks.Top();
+
+#ifdef DEBUG
+        if (comp->verboseSsa)
+        {
+            printf("[SsaBuilder::TopologicalSort] Visiting BB%02u: ", block->bbNum);
+            printf("[");
+            unsigned numSucc = block->NumSucc(comp);
+            for (unsigned i = 0; i < numSucc; ++i)
+            {
+                printf("BB%02u, ", block->GetSucc(i, comp)->bbNum);
+            }
+            EHSuccessorIter end = block->GetEHSuccs(comp).end();
+            for (EHSuccessorIter ehsi = block->GetEHSuccs(comp).begin(); ehsi != end; ++ehsi)
+            {
+                printf("[EH]BB%02u, ", (*ehsi)->bbNum);
+            }
+            printf("]\n");
+        }
+#endif
+
+        if (iterators.TopRef() != ends.TopRef())
+        {
+            // if the block on TOS still has unreached successors, visit them
+            AllSuccessorIter& iter = iterators.TopRef();
+            BasicBlock* succ = *iter;
+            ++iter;
+
+            // push the children
+            if (!BitVecOps::IsMember(&traits, visited, succ->bbNum))
+            {
+                blocks.Push(succ);
+                iterators.Push(succ->GetAllSuccs(comp).begin());
+                ends.Push(succ->GetAllSuccs(comp).end());
+                BitVecOps::AddElemD(&traits, visited, succ->bbNum);
+            }
+        }
+        else
+        {
+            // all successors have been visited
+            blocks.Pop();
+            iterators.Pop();
+            ends.Pop();
+
+            postOrder[postIndex] = block;
+            block->bbPostOrderNum = postIndex;
+            postIndex += 1;
+
+            DBG_SSA_JITDUMP("postOrder[%d] = [%p] and BB%02u\n", postIndex, dspPtr(block), block->bbNum);
+        }
+    }
 
     // In the absence of EH (because catch/finally have no preds), this should be valid.
     // assert(postIndex == (count - 1));
@@ -1686,7 +1675,17 @@ void SsaBuilder::Build()
     JITDUMP("[SsaBuilder] Max block count is %d.\n", blockCount);
 
     // Allocate the postOrder array for the graph.
-    BasicBlock** postOrder = (BasicBlock**)alloca(blockCount * sizeof(BasicBlock*));
+
+    BasicBlock** postOrder;
+
+    if (blockCount > DEFAULT_MIN_OPTS_BB_COUNT)
+    {
+        postOrder = new (m_pCompiler->getAllocator()) BasicBlock*[blockCount];
+    }
+    else
+    {
+        postOrder = (BasicBlock**)alloca(blockCount * sizeof(BasicBlock*));
+    }
 
     // Topologically sort the graph.
     int count = TopologicalSort(postOrder, blockCount);
