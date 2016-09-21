@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <Import Project="..\pkg\NETStandard.Library\NETStandard.Library.packages.targets" />
   <PropertyGroup>
     <LayoutBasePath>$(BaseOutputPath)/layout</LayoutBasePath>
   </PropertyGroup>
@@ -23,18 +24,6 @@
         $(PackagesDir)/System.Private.Xml.Linq\4.3.0-$(CoreFxExpectedPrerelease)\lib\netstandard1.3;
       </AdditionalBinaryPath>
     </TargetFrameworkMonikers>
-  <!--
-    <TargetFrameworkMonikers Include="uap10.0">
-      <RID>win10-x64-aot</RID>
-      <AdditionalBinaryPath>
-        $(PackagesDir)/Microsoft.TargetingPack.Private.NETNative/1.0.1-beta-24512-00/lib/netcore50;
-        $(PackagesDir)/runtime.win7.System.Private.Uri\4.3.0-$(CoreFxExpectedPrerelease)\runtimes\aot\lib\netcore50;
-        $(PackagesDir)/System.Private.DataContractSerialization\4.3.0-$(CoreFxExpectedPrerelease)\runtimes\aot\lib\netcore50;
-        $(PackagesDir)/System.Private.Xml\4.3.0-$(CoreFxExpectedPrerelease)\lib\netstandard1.3;
-        $(PackagesDir)/System.Private.Xml.Linq\4.3.0-$(CoreFxExpectedPrerelease)\lib\netstandard1.3;
-      </AdditionalBinaryPath>
-    </TargetFrameworkMonikers>
-  -->
     <TargetFrameworkMonikers Include="uap10.1">
       <RID>win10-x64-aot</RID>
       <AdditionalBinaryPath>
@@ -69,11 +58,10 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <!-- IsolatedStorage is not be supported on netstandard -->
-      <ReportsToExclude Condition="$(TargetFrameworkMoniker.StartsWith('netstandard'))" Include="$(PackageOutputPath)reports/System.IO.IsolatedStorage.json" />
-      <ReportsToExclude Include="$(PackageOutputPath)reports/System.Diagnostics.Debug.SymbolReader.json" />
+      <!-- Package item group comes from NETStandard.Library package list -->
+      <PackageReports Condition="$(TargetFrameworkMoniker.StartsWith('netstandard'))" Include="$(PackageOutputPath)reports/%(Package.Identity).json" />
 
-      <PackageReports Include="$(PackageOutputPath)reports/*.json" Exclude="@(ReportsToExclude)" />
+      <PackageReports Condition="!$(TargetFrameworkMoniker.StartsWith('netstandard'))" Include="$(PackageOutputPath)reports/*.json" />
       <AdditionalBinaryPaths Include="$(AdditionalBinaryPath)" />
     </ItemGroup>
 
