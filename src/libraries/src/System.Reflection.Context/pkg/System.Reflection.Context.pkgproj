@@ -9,8 +9,6 @@
     <InboxOnTargetFramework Include="net45" />
     <InboxOnTargetFramework Include="win8" />
     <InboxOnTargetFramework Include="portable-net45+win8" />
-    <!-- Xamarin doesn't include a DLL for this but is getting placeholders from portable-net45+win8 -->
-    <OutOfBoxFramework Include="$(AllXamarinFrameworks)" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

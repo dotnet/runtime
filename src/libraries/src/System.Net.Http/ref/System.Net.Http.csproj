@@ -4,7 +4,7 @@
   <PropertyGroup>
     <OutputType>Library</OutputType>
     <NuGetTargetMoniker>.NETStandard,Version=v1.3</NuGetTargetMoniker>
-    <PackageTargetFramework>netstandard1.3;net46</PackageTargetFramework>
+    <PackageTargetFramework>netstandard1.3;net46;netcore50</PackageTargetFramework>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Net.Http.cs" />
