@@ -473,6 +473,12 @@ check_image_may_reference_image(MonoImage *from, MonoImage *to)
 			// For each queued image visit all directly referenced images
 			int inner_idx;
 
+			// 'files' and 'modules' semantically contain the same items but because of lazy loading we must check both
+			for (inner_idx = 0; !success && inner_idx < checking->file_count; inner_idx++)
+			{
+				CHECK_IMAGE_VISIT (checking->files[inner_idx]);
+			}
+
 			for (inner_idx = 0; !success && inner_idx < checking->module_count; inner_idx++)
 			{
 				CHECK_IMAGE_VISIT (checking->modules[inner_idx]);
@@ -480,12 +486,7 @@ check_image_may_reference_image(MonoImage *from, MonoImage *to)
 
 			for (inner_idx = 0; !success && inner_idx < checking->nreferences; inner_idx++)
 			{
-				// References are lazy-loaded and thus allowed to be NULL.
-				// If they are NULL, we don't care about them for this search, because they haven't impacted ref_count yet.
-				if (checking->references[inner_idx])
-				{
-					CHECK_IMAGE_VISIT (checking->references[inner_idx]->image);
-				}
+				CHECK_IMAGE_VISIT (checking->references[inner_idx]->image);
 			}
 
 			mono_image_unlock (checking);

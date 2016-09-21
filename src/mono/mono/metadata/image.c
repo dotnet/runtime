@@ -66,16 +66,41 @@ enum {
 };
 static GHashTable *loaded_images_hashes [4] = {NULL, NULL, NULL, NULL};
 
-static GHashTable *get_loaded_images_hash (gboolean refonly)
+static GHashTable *
+get_loaded_images_hash (gboolean refonly)
 {
 	int idx = refonly ? IMAGES_HASH_PATH_REFONLY : IMAGES_HASH_PATH;
 	return loaded_images_hashes [idx];
 }
 
-static GHashTable *get_loaded_images_by_name_hash (gboolean refonly)
+static GHashTable *
+get_loaded_images_by_name_hash (gboolean refonly)
 {
 	int idx = refonly ? IMAGES_HASH_NAME_REFONLY : IMAGES_HASH_NAME;
 	return loaded_images_hashes [idx];
+}
+
+// Change the assembly set in `image` to the assembly set in `assemblyImage`. Halt if overwriting is attempted.
+// Can be used on modules loaded through either the "file" or "module" mechanism
+static gboolean
+assign_assembly_parent_for_netmodule (MonoImage *image, MonoImage *assemblyImage, MonoError *error)
+{
+	// Assembly to assign
+	MonoAssembly *assembly = assemblyImage->assembly;
+
+	while (1) {
+		// Assembly currently assigned
+		MonoAssembly *assemblyOld = image->assembly;
+		if (assemblyOld) {
+			if (assemblyOld == assembly)
+				return TRUE;
+			mono_error_set_bad_image (error, assemblyImage, "Attempted to load module %s which has already been loaded by assembly %s. This is not supported in Mono.", image->name, assemblyOld->image->name);
+			return FALSE;
+		}
+		gpointer result = InterlockedExchangePointer((gpointer *)&image->assembly, assembly);
+		if (result == assembly)
+			return TRUE;
+	}
 }
 
 static gboolean debug_assembly_unload = FALSE;
@@ -632,13 +657,13 @@ load_modules (MonoImage *image)
 }
 
 /**
- * mono_image_load_module:
+ * mono_image_load_module_checked:
  *
  *   Load the module with the one-based index IDX from IMAGE and return it. Return NULL if
- * it cannot be loaded.
+ * it cannot be loaded. NULL without MonoError being set will be interpreted as "not found".
  */
 MonoImage*
-mono_image_load_module (MonoImage *image, int idx)
+mono_image_load_module_checked (MonoImage *image, int idx, MonoError *error)
 {
 	MonoTableInfo *t;
 	MonoTableInfo *file_table;
@@ -647,6 +672,8 @@ mono_image_load_module (MonoImage *image, int idx)
 	gboolean refonly = image->ref_only;
 	GList *list_iter, *valid_modules = NULL;
 	MonoImageOpenStatus status;
+
+	mono_error_init (error);
 
 	if ((image->module_count == 0) || (idx > image->module_count || idx <= 0))
 		return NULL;
@@ -683,10 +710,18 @@ mono_image_load_module (MonoImage *image, int idx)
 		}
 		if (valid) {
 			module_ref = g_build_filename (base_dir, name, NULL);
-			image->modules [idx - 1] = mono_image_open_full (module_ref, &status, refonly);
-			if (image->modules [idx - 1]) {
-				mono_image_addref (image->modules [idx - 1]);
-				image->modules [idx - 1]->assembly = image->assembly;
+			MonoImage *moduleImage = mono_image_open_full (module_ref, &status, refonly);
+			if (moduleImage) {
+				if (!assign_assembly_parent_for_netmodule (moduleImage, image, error)) {
+					mono_image_close (moduleImage);
+					g_free (module_ref);
+					g_free (base_dir);
+					g_list_free (valid_modules);
+					return NULL;
+				}
+
+				image->modules [idx - 1] = image;
+
 #ifdef HOST_WIN32
 				if (image->modules [idx - 1]->is_module_handle)
 					mono_image_fixup_vtable (image->modules [idx - 1]);
@@ -703,6 +738,15 @@ mono_image_load_module (MonoImage *image, int idx)
 	g_list_free (valid_modules);
 
 	return image->modules [idx - 1];
+}
+
+MonoImage*
+mono_image_load_module (MonoImage *image, int idx)
+{
+	MonoError error;
+	MonoImage *result = mono_image_load_module_checked (image, idx, &error);
+	mono_error_assert_ok (&error);
+	return result;
 }
 
 static gpointer
@@ -1653,6 +1697,17 @@ mono_wrapper_caches_free (MonoWrapperCaches *cache)
 	free_hash (cache->thunk_invoke_cache);
 }
 
+static void
+mono_image_close_except_pools_all (MonoImage**images, int image_count)
+{
+	for (int i = 0; i < image_count; ++i) {
+		if (images [i]) {
+			if (!mono_image_close_except_pools (images [i]))
+				images [i] = NULL;
+		}
+	}
+}
+
 /*
  * Returns whether mono_image_close_finish() must be called as well.
  * We must unload images in two steps because clearing the domain in
@@ -1773,7 +1828,6 @@ mono_image_close_except_pools (MonoImage *image)
 		g_free (image->name);
 		g_free (image->guid);
 		g_free (image->version);
-		g_free (image->files);
 	}
 
 	if (image->method_cache)
@@ -1852,12 +1906,8 @@ mono_image_close_except_pools (MonoImage *image)
 		g_free (image->image_info);
 	}
 
-	for (i = 0; i < image->module_count; ++i) {
-		if (image->modules [i]) {
-			if (!mono_image_close_except_pools (image->modules [i]))
-				image->modules [i] = NULL;
-		}
-	}
+	mono_image_close_except_pools_all (image->files, image->file_count);
+	mono_image_close_except_pools_all (image->modules, image->module_count);
 	if (image->modules_loaded)
 		g_free (image->modules_loaded);
 
@@ -1876,6 +1926,17 @@ mono_image_close_except_pools (MonoImage *image)
 	return TRUE;
 }
 
+static void
+mono_image_close_all (MonoImage**images, int image_count)
+{
+	for (int i = 0; i < image_count; ++i) {
+		if (images [i])
+			mono_image_close_finish (images [i]);
+	}
+	if (images)
+		g_free (images);
+}
+
 void
 mono_image_close_finish (MonoImage *image)
 {
@@ -1891,12 +1952,8 @@ mono_image_close_finish (MonoImage *image)
 		image->references = NULL;
 	}
 
-	for (i = 0; i < image->module_count; ++i) {
-		if (image->modules [i])
-			mono_image_close_finish (image->modules [i]);
-	}
-	if (image->modules)
-		g_free (image->modules);
+	mono_image_close_all (image->files, image->file_count);
+	mono_image_close_all (image->modules, image->module_count);
 
 #ifndef DISABLE_PERFCOUNTERS
 	mono_perfcounters->loader_bytes -= mono_mempool_get_allocated (image->mempool);
@@ -2153,14 +2210,17 @@ mono_image_get_resource (MonoImage *image, guint32 offset, guint32 *size)
 	return data;
 }
 
+// Returning NULL with no error set will be interpeted as "not found"
 MonoImage*
-mono_image_load_file_for_image (MonoImage *image, int fileidx)
+mono_image_load_file_for_image_checked (MonoImage *image, int fileidx, MonoError *error)
 {
 	char *base_dir, *name;
 	MonoImage *res;
 	MonoTableInfo  *t = &image->tables [MONO_TABLE_FILE];
 	const char *fname;
 	guint32 fname_id;
+
+	mono_error_init (error);
 
 	if (fileidx < 1 || fileidx > t->rows)
 		return NULL;
@@ -2189,14 +2249,21 @@ mono_image_load_file_for_image (MonoImage *image, int fileidx)
 	} else {
 		int i;
 		/* g_print ("loaded file %s from %s (%p)\n", name, image->name, image->assembly); */
-		res->assembly = image->assembly;
+		if (!assign_assembly_parent_for_netmodule (res, image, error)) {
+			mono_image_unlock (image);
+			mono_image_close (res);
+			return NULL;
+		}
+
 		for (i = 0; i < res->module_count; ++i) {
 			if (res->modules [i] && !res->modules [i]->assembly)
 				res->modules [i]->assembly = image->assembly;
 		}
 
-		if (!image->files)
+		if (!image->files) {
 			image->files = g_new0 (MonoImage*, t->rows);
+			image->file_count = t->rows;
+		}
 		image->files [fileidx - 1] = res;
 		mono_image_unlock (image);
 		/* vtable fixup can't happen with the image lock held */
@@ -2210,6 +2277,15 @@ done:
 	g_free (name);
 	g_free (base_dir);
 	return res;
+}
+
+MonoImage*
+mono_image_load_file_for_image (MonoImage *image, int fileidx)
+{
+	MonoError error;
+	MonoImage *result = mono_image_load_file_for_image_checked (image, fileidx, &error);
+	mono_error_assert_ok (&error);
+	return result;
 }
 
 /**

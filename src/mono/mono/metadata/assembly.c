@@ -16,7 +16,9 @@
 #include <string.h>
 #include <stdlib.h>
 #include "assembly.h"
+#include "assembly-internals.h"
 #include "image.h"
+#include "image-internals.h"
 #include "object-internals.h"
 #include <mono/metadata/loader.h>
 #include <mono/metadata/tabledefs.h>
@@ -3433,8 +3435,18 @@ mono_assembly_close (MonoAssembly *assembly)
 MonoImage*
 mono_assembly_load_module (MonoAssembly *assembly, guint32 idx)
 {
-	return mono_image_load_file_for_image (assembly->image, idx);
+	MonoError error;
+	MonoImage *result = mono_assembly_load_module_checked (assembly, idx, &error);
+	mono_error_assert_ok (&error);
+	return result;
 }
+
+MONO_API MonoImage*
+mono_assembly_load_module_checked (MonoAssembly *assembly, uint32_t idx, MonoError *error)
+{
+	return mono_image_load_file_for_image_checked (assembly->image, idx, error);
+}
+
 
 /**
  * mono_assembly_foreach:
