@@ -4689,22 +4689,22 @@ void CodeGen::genCodeForArrOffset(GenTreeArrOffs* arrOffset)
     GenTreePtr arrObj     = arrOffset->gtArrObj;
 
     regNumber tgtReg = arrOffset->gtRegNum;
-
-    noway_assert(tgtReg != REG_NA);
+    assert(tgtReg != REG_NA);
 
     unsigned  dim      = arrOffset->gtCurrDim;
     unsigned  rank     = arrOffset->gtArrRank;
     var_types elemType = arrOffset->gtArrElemType;
 
-    // We will use a temp register for the offset*scale+effectiveIndex computation.
-    regMaskTP tmpRegMask = arrOffset->gtRsvdRegs;
-    regNumber tmpReg     = genRegNumFromMask(tmpRegMask);
-
     // First, consume the operands in the correct order.
     regNumber offsetReg = REG_NA;
+    regNumber tmpReg    = REG_NA;
     if (!offsetNode->IsIntegralConst(0))
     {
         offsetReg = genConsumeReg(offsetNode);
+
+        // We will use a temp register for the offset*scale+effectiveIndex computation.
+        regMaskTP tmpRegMask = arrOffset->gtRsvdRegs;
+        tmpReg               = genRegNumFromMask(tmpRegMask);
     }
     else
     {
@@ -4725,6 +4725,9 @@ void CodeGen::genCodeForArrOffset(GenTreeArrOffs* arrOffset)
 
     if (!offsetNode->IsIntegralConst(0))
     {
+        assert(tmpReg != REG_NA);
+        assert(arrReg != REG_NA);
+
         // Evaluate tgtReg = offsetReg*dim_size + indexReg.
         // tmpReg is used to load dim_size and the result of the multiplication.
         // Note that dim_size will never be negative.
