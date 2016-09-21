@@ -456,6 +456,28 @@
         <NuGetTargetMoniker>UAP,Version=v10.1</NuGetTargetMoniker>
       </PropertyGroup>
     </When>
+    <When Condition="'$(TargetGroup)'=='portable-net45+win8+sl5'">
+      <PropertyGroup>
+        <PackageTargetFramework>portable-net45+win8+sl5</PackageTargetFramework>
+        <NuGetTargetMoniker>.NETPortable,Version=v0.0,Profile=Profile47</NuGetTargetMoniker>
+      </PropertyGroup>
+      <ItemGroup>
+        <Compile Include="$(CommonPath)\System\Reflection\AssemblyMetadataAttribute.cs">
+          <Link>System\Reflection\AssemblyMetadataAttribute.cs</Link>
+        </Compile>
+      </ItemGroup>
+    </When>
+    <When Condition="'$(TargetGroup)'=='portable-net40+sl4+win8+wp8'">
+      <PropertyGroup>
+        <PackageTargetFramework>portable-net40+sl4+win8+wp8</PackageTargetFramework>
+        <NuGetTargetMoniker>.NETPortable,Version=v0.0,Profile=Profile36</NuGetTargetMoniker>
+      </PropertyGroup>
+      <ItemGroup>
+        <Compile Include="$(CommonPath)\System\Reflection\AssemblyMetadataAttribute.cs">
+          <Link>System\Reflection\AssemblyMetadataAttribute.cs</Link>
+        </Compile>
+      </ItemGroup>
+    </When>
     <Otherwise>
       <PropertyGroup>
         <ConfigurationErrorMsg>$(ConfigurationErrorMsg);Unknown TargetGroup [$(TargetGroup)] specificed in your project.</ConfigurationErrorMsg>
