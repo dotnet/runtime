@@ -486,7 +486,12 @@ check_image_may_reference_image(MonoImage *from, MonoImage *to)
 
 			for (inner_idx = 0; !success && inner_idx < checking->nreferences; inner_idx++)
 			{
-				CHECK_IMAGE_VISIT (checking->references[inner_idx]->image);
+				// Assembly references are lazy-loaded and thus allowed to be NULL.
+				// If they are NULL, we don't care about them for this search, because their images haven't impacted ref_count yet.
+				if (checking->references[inner_idx])
+				{
+					CHECK_IMAGE_VISIT (checking->references[inner_idx]->image);
+				}
 			}
 
 			mono_image_unlock (checking);
