@@ -557,7 +557,7 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
             if (scenario == 'formatting') {
                 assert configuration == 'Checked'
                 if (os == 'Windows_NT' || os == 'Ubuntu') {
-                    Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} Formatting", "(?i).*test\\W+${os}\\W+formatting.*")
+                    Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} Formatting")
                 }
                 break
             }
