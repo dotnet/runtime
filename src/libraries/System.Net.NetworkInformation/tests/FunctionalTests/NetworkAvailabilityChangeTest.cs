@@ -6,28 +6,8 @@ using Xunit;
 
 namespace System.Net.NetworkInformation.Tests
 {
-    public class NetworkChangeTest
+    public class NetworkAvailabilityChangeTest
     {
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/308
-        public void NetworkAddressChanged_AddRemove_Success()
-        {
-            NetworkAddressChangedEventHandler handler = NetworkChange_NetworkAddressChanged;
-            NetworkChange.NetworkAddressChanged += handler;
-            NetworkChange.NetworkAddressChanged -= handler;
-        }
-
-        [Fact]
-        public void NetworkAddressChanged_JustRemove_Success()
-        {
-            NetworkAddressChangedEventHandler handler = NetworkChange_NetworkAddressChanged;
-            NetworkChange.NetworkAddressChanged -= handler;
-        }
-        
-        private void NetworkChange_NetworkAvailabilityChanged(object sender, EventArgs e)
-        {
-            throw new NotImplementedException();
-        }
-
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/308
         public void NetworkAvailabilityChanged_AddRemove_Success()
         {
