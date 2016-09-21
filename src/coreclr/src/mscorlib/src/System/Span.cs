@@ -109,6 +109,11 @@ namespace System
             return new Span<T>(array);
         }
 
+        public static implicit operator Span<T>(ArraySegment<T> arraySegment)
+        {
+            return new Span<T>(arraySegment.Array, arraySegment.Offset, arraySegment.Count);
+        }
+
         public int Length
         {
             get { return _length; }
