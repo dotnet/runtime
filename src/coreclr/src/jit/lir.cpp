@@ -679,7 +679,7 @@ void LIR::Range::FinishInsertBefore(GenTree* insertionPoint, GenTree* first, Gen
             assert(m_lastNode != nullptr);
             assert(m_lastNode->gtNext == nullptr);
             m_lastNode->gtNext = first;
-            first->gtPrev = m_lastNode;
+            first->gtPrev      = m_lastNode;
         }
         m_lastNode = last;
     }
@@ -867,7 +867,7 @@ void LIR::Range::FinishInsertAfter(GenTree* insertionPoint, GenTree* first, GenT
             assert(m_firstNode != nullptr);
             assert(m_firstNode->gtPrev == nullptr);
             m_firstNode->gtPrev = last;
-            last->gtNext = m_firstNode;
+            last->gtNext        = m_firstNode;
         }
         m_firstNode = first;
     }
@@ -1157,7 +1157,6 @@ void LIR::Range::Delete(Compiler* compiler, BasicBlock* block, ReadOnlyRange&& r
 {
     Delete(compiler, block, range.m_firstNode, range.m_lastNode);
 }
-
 
 //------------------------------------------------------------------------
 // LIR::Range::TryGetUse: Try to find the use for a given node.
@@ -1617,22 +1616,21 @@ void LIR::InsertBeforeTerminator(BasicBlock* block, LIR::Range&& range)
 #if DEBUG
         switch (block->bbJumpKind)
         {
-        case BBJ_COND:
-            assert(insertionPoint->OperIsConditionalJump());
-            break;
+            case BBJ_COND:
+                assert(insertionPoint->OperIsConditionalJump());
+                break;
 
-        case BBJ_SWITCH:
-            assert((insertionPoint->OperGet() == GT_SWITCH) || (insertionPoint->OperGet() == GT_SWITCH_TABLE));
-            break;
+            case BBJ_SWITCH:
+                assert((insertionPoint->OperGet() == GT_SWITCH) || (insertionPoint->OperGet() == GT_SWITCH_TABLE));
+                break;
 
-        case BBJ_RETURN:
-            assert((insertionPoint->OperGet() == GT_RETURN) ||
-                (insertionPoint->OperGet() == GT_JMP) ||
-                (insertionPoint->OperGet() == GT_CALL));
-            break;
+            case BBJ_RETURN:
+                assert((insertionPoint->OperGet() == GT_RETURN) || (insertionPoint->OperGet() == GT_JMP) ||
+                       (insertionPoint->OperGet() == GT_CALL));
+                break;
 
-        default:
-            unreached();
+            default:
+                unreached();
         }
 #endif
     }
