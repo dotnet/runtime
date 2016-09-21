@@ -73,6 +73,7 @@ class My
         Test(WhenSourceDoesntFitIntoTargetLengthIsZero, "WhenSourceDoesntFitIntoTargetLengthIsZero", ref failedTestsCount);
         Test(WhenSourceFitsIntoTargetOnceLengthIsOne, "WhenSourceFitsIntoTargetOnceLengthIsOne", ref failedTestsCount);
         Test(WhenSourceTypeLargerThaTargetAndOverflowsInt32ThrowsException, "WhenSourceTypeLargerThaTargetAndOverflowsInt32ThrowsException", ref failedTestsCount);
+        Test(CanCreateSpanFromString, "CanCreateSpanFromString", ref failedTestsCount);
 
         Console.WriteLine(string.Format("{0} tests has failed", failedTestsCount));
         Environment.Exit(failedTestsCount);
@@ -608,6 +609,21 @@ class My
         }
     }
 
+    static void CanCreateSpanFromString()
+    {
+        const string fullText = "new Span<byte>()";
+        var spanFromFull = fullText.Slice();
+        AssertEqualContent(fullText, spanFromFull);
+
+        string firstHalfOfString = fullText.Substring(0, fullText.Length / 2);
+        var spanFromFirstHalf = fullText.Slice(0, fullText.Length / 2);
+        AssertEqualContent(firstHalfOfString, spanFromFirstHalf);
+
+        string secondHalfOfString = fullText.Substring(fullText.Length / 2);
+        var spanFromSecondHalf = fullText.Slice(fullText.Length / 2);
+        AssertEqualContent(secondHalfOfString, spanFromSecondHalf);
+    }
+
     static void Test(Action test, string testName, ref int failedTestsCount)
     {
         try
@@ -642,6 +658,15 @@ class My
         if (left.Equals(right) == false)
         {
             throw new Exception(string.Format("Values were not equal! {0} and {1}", left, right));
+        }
+    }
+
+    static void AssertEqualContent(string text, ReadOnlySpan<char> span)
+    {
+        AssertEqual(text.Length, span.Length);
+        for (int i = 0; i < text.Length; i++)
+        {
+            AssertEqual(text[i], span[i]);
         }
     }
 }

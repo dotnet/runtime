@@ -352,6 +352,7 @@ namespace System {
         addValueFactory,
         updateValueFactory,
         concurrencyLevel,
+        text,
 
     }
 
