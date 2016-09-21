@@ -251,7 +251,7 @@ namespace System.Net.NetworkInformation.Tests
             // This API is not actually IPv4 specific.
             foreach (NetworkInterface nic in NetworkInterface.GetAllNetworkInterfaces())
             {
-                IPInterfaceStatistics stats = nic.GetIPv4Statistics();
+                IPv4InterfaceStatistics stats = nic.GetIPv4Statistics();
 
                 _log.WriteLine("- Stats for : " + nic.Name);
                 _log.WriteLine("BytesReceived: " + stats.BytesReceived);
@@ -300,7 +300,7 @@ namespace System.Net.NetworkInformation.Tests
             // This API is not actually IPv4 specific.
             foreach (NetworkInterface nic in NetworkInterface.GetAllNetworkInterfaces())
             {
-                IPInterfaceStatistics stats = nic.GetIPv4Statistics();
+                IPv4InterfaceStatistics stats = nic.GetIPv4Statistics();
 
                 _log.WriteLine("- Stats for : " + nic.Name);
                 _log.WriteLine("BytesReceived: " + stats.BytesReceived);
