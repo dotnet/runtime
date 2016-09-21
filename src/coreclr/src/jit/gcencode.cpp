@@ -27,15 +27,15 @@ ReturnKind GCTypeToReturnKind(CorInfoGCType gcType)
 {
     switch (gcType)
     {
-    case TYPE_GC_NONE:
-        return RT_Scalar;
-    case TYPE_GC_REF:
-        return RT_Object;
-    case TYPE_GC_BYREF:
-        return RT_ByRef;
-    default:
-        _ASSERTE(!"TYP_GC_OTHER is unexpected");
-        return RT_Illegal;
+        case TYPE_GC_NONE:
+            return RT_Scalar;
+        case TYPE_GC_REF:
+            return RT_Object;
+        case TYPE_GC_BYREF:
+            return RT_ByRef;
+        default:
+            _ASSERTE(!"TYP_GC_OTHER is unexpected");
+            return RT_Illegal;
     }
 }
 
@@ -43,66 +43,66 @@ ReturnKind GCInfo::getReturnKind()
 {
     switch (compiler->info.compRetType)
     {
-    case TYP_REF:
-    case TYP_ARRAY:
-        return RT_Object;
-    case TYP_BYREF:
-        return RT_ByRef;
-    case TYP_STRUCT:
-    {
-        CORINFO_CLASS_HANDLE structType = compiler->info.compMethodInfo->args.retTypeClass;
-        var_types retType = compiler->getReturnTypeForStruct(structType);
-
-        switch (retType)
-        {
-        case TYP_ARRAY:
-            _ASSERTE(false && "TYP_ARRAY unexpected from getReturnTypeForStruct()");
-            // fall through
         case TYP_REF:
+        case TYP_ARRAY:
             return RT_Object;
-
         case TYP_BYREF:
             return RT_ByRef;
-
         case TYP_STRUCT:
-            if (compiler->IsHfa(structType))
+        {
+            CORINFO_CLASS_HANDLE structType = compiler->info.compMethodInfo->args.retTypeClass;
+            var_types            retType    = compiler->getReturnTypeForStruct(structType);
+
+            switch (retType)
             {
+                case TYP_ARRAY:
+                    _ASSERTE(false && "TYP_ARRAY unexpected from getReturnTypeForStruct()");
+                // fall through
+                case TYP_REF:
+                    return RT_Object;
+
+                case TYP_BYREF:
+                    return RT_ByRef;
+
+                case TYP_STRUCT:
+                    if (compiler->IsHfa(structType))
+                    {
 #ifdef _TARGET_X86_
-                _ASSERTE(false && "HFAs not expected for X86");
+                        _ASSERTE(false && "HFAs not expected for X86");
 #endif // _TARGET_X86_
 
-                return RT_Scalar;
-            }
-            else
-            {
-                // Multi-reg return
-                BYTE gcPtrs[2] = { TYPE_GC_NONE, TYPE_GC_NONE };
-                compiler->info.compCompHnd->getClassGClayout(structType, gcPtrs);
+                        return RT_Scalar;
+                    }
+                    else
+                    {
+                        // Multi-reg return
+                        BYTE gcPtrs[2] = {TYPE_GC_NONE, TYPE_GC_NONE};
+                        compiler->info.compCompHnd->getClassGClayout(structType, gcPtrs);
 
-                ReturnKind first = GCTypeToReturnKind((CorInfoGCType)gcPtrs[0]);
-                ReturnKind second = GCTypeToReturnKind((CorInfoGCType)gcPtrs[1]);
+                        ReturnKind first  = GCTypeToReturnKind((CorInfoGCType)gcPtrs[0]);
+                        ReturnKind second = GCTypeToReturnKind((CorInfoGCType)gcPtrs[1]);
 
-                return GetStructReturnKind(first, second);
+                        return GetStructReturnKind(first, second);
+                    }
+
+#ifdef _TARGET_X86_
+                case TYP_FLOAT:
+                case TYP_DOUBLE:
+                    return RT_Float;
+#endif // _TARGET_X86_
+                default:
+                    return RT_Scalar;
             }
+        }
 
 #ifdef _TARGET_X86_
         case TYP_FLOAT:
         case TYP_DOUBLE:
             return RT_Float;
 #endif // _TARGET_X86_
+
         default:
             return RT_Scalar;
-        }
-    }
-
-#ifdef _TARGET_X86_
-    case TYP_FLOAT:
-    case TYP_DOUBLE:
-        return RT_Float;
-#endif // _TARGET_X86_
-
-    default:
-        return RT_Scalar;
     }
 }
 
@@ -194,8 +194,8 @@ static void regenLog(unsigned encoding, InfoHdr* header, InfoHdr* state)
             state->prologSize, state->epilogSize, state->epilogCount, state->epilogAtEnd, state->ediSaved,
             state->esiSaved, state->ebxSaved, state->ebpSaved, state->ebpFrame, state->interruptible,
             state->doubleAlign, state->security, state->handlers, state->localloc, state->editNcontinue, state->varargs,
-            state->profCallbacks, state->genericsContext, state->genericsContextIsMethodDesc, 
-            state->returnKind, state->argCount, state->frameSize,
+            state->profCallbacks, state->genericsContext, state->genericsContextIsMethodDesc, state->returnKind,
+            state->argCount, state->frameSize,
             (state->untrackedCnt <= SET_UNTRACKED_MAX) ? state->untrackedCnt : HAS_UNTRACKED,
             (state->varPtrTableSize == 0) ? 0 : HAS_VARPTR,
             (state->gsCookieOffset == INVALID_GS_COOKIE_OFFSET) ? 0 : HAS_GS_COOKIE_OFFSET,
@@ -351,11 +351,11 @@ static int bigEncoding4(unsigned cur, unsigned tgt, unsigned max)
     return cnt;
 }
 
-BYTE FASTCALL encodeHeaderNext(const InfoHdr& header, InfoHdr* state, BYTE &codeSet)
+BYTE FASTCALL encodeHeaderNext(const InfoHdr& header, InfoHdr* state, BYTE& codeSet)
 {
     BYTE encoding = 0xff;
-    codeSet = 1; // codeSet is 1 or 2, depending on whether the returned encoding 
-                 // corresponds to InfoHdrAdjust, or InfoHdrAdjust2 enumerations.
+    codeSet       = 1; // codeSet is 1 or 2, depending on whether the returned encoding
+                       // corresponds to InfoHdrAdjust, or InfoHdrAdjust2 enumerations.
 
     if (state->argCount != header.argCount)
     {
@@ -638,8 +638,8 @@ BYTE FASTCALL encodeHeaderNext(const InfoHdr& header, InfoHdr* state, BYTE &code
     if (GCInfoEncodesReturnKind() && (state->returnKind != header.returnKind))
     {
         state->returnKind = header.returnKind;
-        codeSet = 2; // Two byte encoding
-        encoding = header.returnKind;
+        codeSet           = 2; // Two byte encoding
+        encoding          = header.returnKind;
         _ASSERTE(encoding < SET_RET_KIND_MAX);
         goto DO_RETURN;
     }
@@ -686,19 +686,20 @@ BYTE FASTCALL encodeHeaderNext(const InfoHdr& header, InfoHdr* state, BYTE &code
 
     if (GCInfoEncodesRevPInvokeFrame() && (state->revPInvokeOffset != header.revPInvokeOffset))
     {
-        assert(state->revPInvokeOffset == INVALID_REV_PINVOKE_OFFSET || state->revPInvokeOffset == HAS_REV_PINVOKE_FRAME_OFFSET);
+        assert(state->revPInvokeOffset == INVALID_REV_PINVOKE_OFFSET ||
+               state->revPInvokeOffset == HAS_REV_PINVOKE_FRAME_OFFSET);
 
         if (state->revPInvokeOffset == INVALID_REV_PINVOKE_OFFSET)
         {
-            // header.revPInvokeOffset is non-zero. 
+            // header.revPInvokeOffset is non-zero.
             state->revPInvokeOffset = HAS_REV_PINVOKE_FRAME_OFFSET;
-            encoding = FLIP_REV_PINVOKE_FRAME;
+            encoding                = FLIP_REV_PINVOKE_FRAME;
             goto DO_RETURN;
         }
         else if (header.revPInvokeOffset == INVALID_REV_PINVOKE_OFFSET)
         {
             state->revPInvokeOffset = INVALID_REV_PINVOKE_OFFSET;
-            encoding = FLIP_REV_PINVOKE_FRAME;
+            encoding                = FLIP_REV_PINVOKE_FRAME;
             goto DO_RETURN;
         }
     }
@@ -1297,7 +1298,7 @@ size_t GCInfo::gcInfoBlockHdrSave(
     header->genericsContextIsMethodDesc =
         header->genericsContext && (compiler->info.compMethodInfo->options & (CORINFO_GENERICS_CTXT_FROM_METHODDESC));
 
-    if (GCInfoEncodesReturnKind()) 
+    if (GCInfoEncodesReturnKind())
     {
         ReturnKind returnKind = getReturnKind();
         _ASSERTE(IsValidReturnKind(returnKind) && "Return Kind must be valid");
@@ -1368,7 +1369,7 @@ size_t GCInfo::gcInfoBlockHdrSave(
         *dest++ = headerEncoding;
 
         BYTE encoding = headerEncoding;
-        BYTE codeSet = 1;
+        BYTE codeSet  = 1;
         while (encoding & MORE_BYTES_TO_FOLLOW)
         {
             encoding = encodeHeaderNext(*header, &state, codeSet);
@@ -1376,8 +1377,7 @@ size_t GCInfo::gcInfoBlockHdrSave(
 #if REGEN_SHORTCUTS
             regenLog(headerEncoding, header, &state);
 #endif
-            _ASSERTE(codeSet == 1 || codeSet == 2 && 
-                     "Encoding must correspond to InfoHdrAdjust or InfoHdrAdjust2");
+            _ASSERTE(codeSet == 1 || codeSet == 2 && "Encoding must correspond to InfoHdrAdjust or InfoHdrAdjust2");
             if (codeSet == 2)
             {
                 *dest++ = NEXT_OPCODE | MORE_BYTES_TO_FOLLOW;
@@ -1925,12 +1925,12 @@ size_t GCInfo::gcMakeRegPtrTable(BYTE* dest, int mask, const InfoHdr& header, un
                 }
                 else
                 {
-                    /* Stack-passed arguments which are not enregistered
-                     * are always reported in this "untracked stack
-                     * pointers" section of the GC info even if lvTracked==true
-                     */
+/* Stack-passed arguments which are not enregistered
+ * are always reported in this "untracked stack
+ * pointers" section of the GC info even if lvTracked==true
+ */
 
-                    /* Has this argument been enregistered? */
+/* Has this argument been enregistered? */
 #ifndef LEGACY_BACKEND
                     if (!varDsc->lvOnFrame)
 #else  // LEGACY_BACKEND

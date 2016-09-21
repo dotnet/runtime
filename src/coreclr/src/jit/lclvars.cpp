@@ -1448,13 +1448,13 @@ void Compiler::lvaCanPromoteStructType(CORINFO_CLASS_HANDLE    typeHnd,
 
 #if 1 // TODO-Cleanup: Consider removing this entire #if block in the future
 
-        // This method has two callers. The one in Importer.cpp passes sortFields == false
-        // and the other passes sortFields == true.
-        // This is a workaround that leaves the inlining behavior the same as before while still
-        // performing extra struct promotions when compiling the method.
-        //
-        // The x86 legacy back-end can't handle the more general RyuJIT struct promotion (notably structs
-        // with holes), in genPushArgList(), so in that case always check for custom layout.
+// This method has two callers. The one in Importer.cpp passes sortFields == false
+// and the other passes sortFields == true.
+// This is a workaround that leaves the inlining behavior the same as before while still
+// performing extra struct promotions when compiling the method.
+//
+// The x86 legacy back-end can't handle the more general RyuJIT struct promotion (notably structs
+// with holes), in genPushArgList(), so in that case always check for custom layout.
 #if FEATURE_FIXED_OUT_ARGS || !defined(LEGACY_BACKEND)
         if (!sortFields) // the condition "!sortFields" really means "we are inlining"
 #endif
@@ -4457,7 +4457,9 @@ int Compiler::lvaAssignVirtualFrameOffsetToArg(unsigned lclNum,
     noway_assert(argSize);
 
     if (Target::g_tgtArgOrder == Target::ARG_ORDER_L2R)
+    {
         argOffs -= argSize;
+    }
 
     unsigned fieldVarNum = BAD_VAR_NUM;
 
@@ -4547,7 +4549,9 @@ int Compiler::lvaAssignVirtualFrameOffsetToArg(unsigned lclNum,
     }
 
     if (Target::g_tgtArgOrder == Target::ARG_ORDER_R2L && !varDsc->lvIsRegArg)
+    {
         argOffs += argSize;
+    }
 
     return argOffs;
 }
@@ -5282,7 +5286,9 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
                 //  a local variable which will need stack frame space.
                 //
                 if (!varDsc->lvIsRegArg)
+                {
                     continue;
+                }
 
 #ifdef _TARGET_ARM64_
                 if (info.compIsVarArgs)

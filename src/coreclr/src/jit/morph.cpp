@@ -2014,7 +2014,7 @@ GenTreePtr Compiler::fgMakeTmpArgNode(
 
         arg->gtFlags |= GTF_DONT_CSE;
 
-#else // !FEATURE_UNIX_AMD64_STRUCT_PASSING
+#else  // !FEATURE_UNIX_AMD64_STRUCT_PASSING
         // Can this type be passed in a single register?
         // If so, the following call will return the corresponding primitive type.
         // Otherwise, it will return TYP_UNKNOWN and we will pass by reference.
@@ -2759,18 +2759,18 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
         // so we record the stack depth on the first morph call when reMorphing
         // was false (via RecordStkLevel) and then retrieve that value here (via RetrieveStkLevel)
         //
-		unsigned callStkLevel = call->fgArgInfo->RetrieveStkLevel();
-		if (call->gtCallLateArgs != nullptr)
-		{
-			fgPtrArgCntCur += callStkLevel;
-			call->gtCallLateArgs = fgMorphTree(call->gtCallLateArgs)->AsArgList();
-			flagsSummary |= call->gtCallLateArgs->gtFlags;
-			fgPtrArgCntCur -= callStkLevel;
-		}
-		assert(call->fgArgInfo != nullptr);
-		call->fgArgInfo->RemorphReset();
+        unsigned callStkLevel = call->fgArgInfo->RetrieveStkLevel();
+        if (call->gtCallLateArgs != nullptr)
+        {
+            fgPtrArgCntCur += callStkLevel;
+            call->gtCallLateArgs = fgMorphTree(call->gtCallLateArgs)->AsArgList();
+            flagsSummary |= call->gtCallLateArgs->gtFlags;
+            fgPtrArgCntCur -= callStkLevel;
+        }
+        assert(call->fgArgInfo != nullptr);
+        call->fgArgInfo->RemorphReset();
 
-		numArgs = call->fgArgInfo->ArgCount();
+        numArgs = call->fgArgInfo->ArgCount();
     }
     else
     {
@@ -2807,19 +2807,20 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
         }
         // The x86 shift helpers have custom calling conventions and expect the lo part of the long to be in EAX and the
         // hi part to be in EDX. This sets the argument registers up correctly.
-        else if (call->IsHelperCall(this, CORINFO_HELP_LLSH) || call->IsHelperCall(this, CORINFO_HELP_LRSH) || call->IsHelperCall(this, CORINFO_HELP_LRSZ))
+        else if (call->IsHelperCall(this, CORINFO_HELP_LLSH) || call->IsHelperCall(this, CORINFO_HELP_LRSH) ||
+                 call->IsHelperCall(this, CORINFO_HELP_LRSZ))
         {
             GenTreeArgList* args = call->gtCallArgs;
-            GenTree* arg1 = args->Current();
+            GenTree*        arg1 = args->Current();
             assert(arg1 != nullptr);
             nonStandardArgs.Add(arg1, REG_LNGARG_LO);
 
-            args = args->Rest();
+            args          = args->Rest();
             GenTree* arg2 = args->Current();
             assert(arg2 != nullptr);
             nonStandardArgs.Add(arg2, REG_LNGARG_HI);
         }
-#else // !defined(_TARGET_X86_)
+#else  // !defined(_TARGET_X86_)
         // TODO-X86-CQ: Currently RyuJIT/x86 passes args on the stack, so this is not needed.
         // If/when we change that, the following code needs to be changed to correctly support the (TBD) managed calling
         // convention for x86/SSE.
@@ -3307,7 +3308,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
                     }
                 }
 #else  // !FEATURE_UNIX_AMD64_STRUCT_PASSING
-                size           = 1; // On AMD64, all primitives fit in a single (64-bit) 'slot'
+                size = 1; // On AMD64, all primitives fit in a single (64-bit) 'slot'
 #endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
 #elif defined(_TARGET_ARM64_)
                 if (isStructArg)
@@ -4134,7 +4135,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
         }
 #endif // !LEGACY_BACKEND
 
-#if defined (_TARGET_X86_) && !defined(LEGACY_BACKEND)
+#if defined(_TARGET_X86_) && !defined(LEGACY_BACKEND)
         if (isStructArg)
         {
             GenTree* lclNode = fgIsIndirOfAddrOfLocal(argx);
@@ -4142,9 +4143,9 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
                 (lvaGetPromotionType(lclNode->AsLclVarCommon()->gtLclNum) == Compiler::PROMOTION_TYPE_INDEPENDENT))
             {
                 // Make a GT_FIELD_LIST of the field lclVars.
-                GenTreeLclVarCommon* lcl = lclNode->AsLclVarCommon();
-                LclVarDsc* varDsc = &(lvaTable[lcl->gtLclNum]);
-                GenTreeFieldList* fieldList = nullptr;
+                GenTreeLclVarCommon* lcl       = lclNode->AsLclVarCommon();
+                LclVarDsc*           varDsc    = &(lvaTable[lcl->gtLclNum]);
+                GenTreeFieldList*    fieldList = nullptr;
                 for (unsigned fieldLclNum = varDsc->lvFieldLclStart;
                      fieldLclNum < varDsc->lvFieldLclStart + varDsc->lvFieldCnt; ++fieldLclNum)
                 {
@@ -4154,15 +4155,17 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
                         lcl->SetLclNum(fieldLclNum);
                         lcl->ChangeOper(GT_LCL_VAR);
                         lcl->gtType = fieldVarDsc->lvType;
-                        fieldList = new (this, GT_FIELD_LIST) GenTreeFieldList(lcl, fieldVarDsc->lvFldOffset, fieldVarDsc->lvType, nullptr);
+                        fieldList   = new (this, GT_FIELD_LIST)
+                            GenTreeFieldList(lcl, fieldVarDsc->lvFldOffset, fieldVarDsc->lvType, nullptr);
                         fgArgTabEntryPtr fp = Compiler::gtArgEntryByNode(call, argx);
                         fp->node            = fieldList;
-                        args->gtOp.gtOp1 = fieldList;
+                        args->gtOp.gtOp1    = fieldList;
                     }
                     else
                     {
                         GenTree* fieldLcl = gtNewLclvNode(fieldLclNum, fieldVarDsc->lvType);
-                        fieldList = new (this, GT_FIELD_LIST) GenTreeFieldList(fieldLcl, fieldVarDsc->lvFldOffset, fieldVarDsc->lvType, fieldList);
+                        fieldList         = new (this, GT_FIELD_LIST)
+                            GenTreeFieldList(fieldLcl, fieldVarDsc->lvFldOffset, fieldVarDsc->lvType, fieldList);
                     }
                 }
             }
@@ -4291,9 +4294,9 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
     // is added to make sure to call EvalArgsToTemp.
     if (!reMorphing && (call->fgArgInfo->HasRegArgs()
 #ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
-                              || hasStackArgCopy
+                        || hasStackArgCopy
 #endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
-                              ))
+                        ))
     {
         // This is the first time that we morph this call AND it has register arguments.
         // Follow into the code below and do the 'defer or eval to temp' analysis.
@@ -4442,8 +4445,8 @@ void Compiler::fgMorphSystemVStructArgs(GenTreeCall* call, bool hasStructArgumen
                                                               fgEntryPtr->structDesc.eightByteSizes[0]);
                         GenTreeFieldList* fieldList =
                             new (this, GT_FIELD_LIST) GenTreeFieldList(arg, 0, originalType, nullptr);
-                        fieldList->gtType          = originalType; // Preserve the type. It is a special case.
-                        arg = fieldList;
+                        fieldList->gtType = originalType; // Preserve the type. It is a special case.
+                        arg               = fieldList;
 
                         // Second eightbyte.
                         GenTreeLclFld* newLclField = new (this, GT_LCL_FLD)
@@ -4453,8 +4456,8 @@ void Compiler::fgMorphSystemVStructArgs(GenTreeCall* call, bool hasStructArgumen
                                           lclCommon->gtLclNum, fgEntryPtr->structDesc.eightByteOffsets[1]);
 
                         fieldList = new (this, GT_FIELD_LIST) GenTreeFieldList(newLclField, 0, originalType, fieldList);
-                        fieldList->gtType          = originalType; // Preserve the type. It is a special case.
-                        newLclField->gtFieldSeq    = FieldSeqStore::NotAField();
+                        fieldList->gtType       = originalType; // Preserve the type. It is a special case.
+                        newLclField->gtFieldSeq = FieldSeqStore::NotAField();
                     }
                     else
                     {
@@ -4871,7 +4874,7 @@ GenTreePtr Compiler::fgMorphMultiregStructArg(GenTreePtr arg, fgArgTabEntryPtr f
                     //    with a FIELD_LIST(LCLVAR-LO, FIELD_LIST(LCLVAR-HI, nullptr))
                     //
                     newArg = new (this, GT_FIELD_LIST) GenTreeFieldList(loLclVar, 0, loType, nullptr);
-                    (void) new (this, GT_FIELD_LIST) GenTreeFieldList(hiLclVar, TARGET_POINTER_SIZE, hiType, newArg);
+                    (void)new (this, GT_FIELD_LIST) GenTreeFieldList(hiLclVar, TARGET_POINTER_SIZE, hiType, newArg);
                 }
             }
         }
@@ -4941,11 +4944,11 @@ GenTreePtr Compiler::fgMorphMultiregStructArg(GenTreePtr arg, fgArgTabEntryPtr f
             //    replace the existing LDOBJ(ADDR(LCLVAR))
             //    with a FIELD_LIST(LCLFLD-LO, FIELD_LIST(LCLFLD-HI, nullptr) ...)
             //
-            unsigned offset = 0;
+            unsigned          offset    = 0;
             GenTreeFieldList* listEntry = nullptr;
             for (unsigned inx = 0; inx < elemCount; inx++)
             {
-                elemSize = genTypeSize(type[inx]);
+                elemSize              = genTypeSize(type[inx]);
                 GenTreePtr nextLclFld = gtNewLclFldNode(varNum, type[inx], offset);
                 listEntry = new (this, GT_FIELD_LIST) GenTreeFieldList(nextLclFld, offset, type[inx], listEntry);
                 if (newArg == nullptr)
@@ -4968,11 +4971,11 @@ GenTreePtr Compiler::fgMorphMultiregStructArg(GenTreePtr arg, fgArgTabEntryPtr f
             //    with a FIELD_LIST(IND(EXPR), FIELD_LIST(IND(EXPR+8), nullptr) ...)
             //
 
-            unsigned offset = 0;
+            unsigned          offset    = 0;
             GenTreeFieldList* listEntry = nullptr;
             for (unsigned inx = 0; inx < elemCount; inx++)
             {
-                elemSize = genTypeSize(type[inx]);
+                elemSize           = genTypeSize(type[inx]);
                 GenTreePtr curAddr = baseAddr;
                 if (offset != 0)
                 {
@@ -4985,7 +4988,7 @@ GenTreePtr Compiler::fgMorphMultiregStructArg(GenTreePtr arg, fgArgTabEntryPtr f
                     curAddr = baseAddr;
                 }
                 GenTreePtr curItem = gtNewOperNode(GT_IND, type[inx], curAddr);
-                listEntry = new (this, GT_FIELD_LIST) GenTreeFieldList(curItem, offset, type[inx], listEntry);
+                listEntry          = new (this, GT_FIELD_LIST) GenTreeFieldList(curItem, offset, type[inx], listEntry);
                 if (newArg == nullptr)
                 {
                     newArg = listEntry;
@@ -5716,8 +5719,7 @@ GenTreePtr Compiler::fgMorphArrayIndex(GenTreePtr tree)
     addr = gtNewOperNode(GT_ADD, TYP_BYREF, addr, cns);
 
 #if SMALL_TREE_NODES
-    assert((tree->gtDebugFlags & GTF_DEBUG_NODE_LARGE) ||
-           GenTree::s_gtNodeSizes[GT_IND] == TREE_NODE_SZ_SMALL);
+    assert((tree->gtDebugFlags & GTF_DEBUG_NODE_LARGE) || GenTree::s_gtNodeSizes[GT_IND] == TREE_NODE_SZ_SMALL);
 #endif
 
     // Change the orginal GT_INDEX node into a GT_IND node
@@ -6248,7 +6250,9 @@ GenTreePtr Compiler::fgMorphField(GenTreePtr tree, MorphAddrContext* mac)
             GenTreePtr baseOffset = gtNewIconEmbHndNode(tree->gtField.gtFieldLookup.addr, nullptr, GTF_ICON_FIELD_HDL);
 
             if (tree->gtField.gtFieldLookup.accessType == IAT_PVALUE)
+            {
                 baseOffset = gtNewOperNode(GT_IND, TYP_I_IMPL, baseOffset);
+            }
 
             addr =
                 gtNewOperNode(GT_ADD, (var_types)(objRefType == TYP_I_IMPL ? TYP_I_IMPL : TYP_BYREF), addr, baseOffset);

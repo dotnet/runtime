@@ -35,7 +35,7 @@ private:
     }
 
     // Driver functions
-    void DecomposeRangeHelper();
+    void     DecomposeRangeHelper();
     GenTree* DecomposeNode(GenTree* tree);
 
     // Per-node type decompose cases
