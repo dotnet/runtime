@@ -117,9 +117,7 @@ namespace Microsoft.Extensions.DependencyModel
         {
             return new JObject(
                 libraries.Select(library =>
-                    // TODO: remove the hack of calling "ToLowerInvariant()" on library Name and Version once
-                    // https://github.com/dotnet/core-setup/pull/64/ is merged and taken into the CLI
-                    new JProperty(library.Name.ToLowerInvariant() + DependencyContextStrings.VersionSeperator + library.Version.ToLowerInvariant(), WriteTargetLibrary(library))));
+                    new JProperty(library.Name + DependencyContextStrings.VersionSeperator + library.Version, WriteTargetLibrary(library))));
         }
 
         private JObject WritePortableTarget(IReadOnlyList<RuntimeLibrary> runtimeLibraries, IReadOnlyList<CompilationLibrary> compilationLibraries)
@@ -149,9 +147,7 @@ namespace Microsoft.Extensions.DependencyModel
 
                 var library = (Library)compilationLibrary ?? (Library)runtimeLibrary;
                 targetObject.Add(
-                    // TODO: remove the hack of calling "ToLowerInvariant()" on library Name and Version once
-                    // https://github.com/dotnet/core-setup/pull/64/ is merged and taken into the CLI
-                    new JProperty(library.Name.ToLowerInvariant() + DependencyContextStrings.VersionSeperator + library.Version.ToLowerInvariant(),
+                    new JProperty(library.Name + DependencyContextStrings.VersionSeperator + library.Version,
                         WritePortableTargetLibrary(runtimeLibrary, compilationLibrary)
                         )
                     );
@@ -319,9 +315,7 @@ namespace Microsoft.Extensions.DependencyModel
         {
             var allLibraries =
                 context.RuntimeLibraries.Cast<Library>().Concat(context.CompileLibraries)
-                    // TODO: remove the hack of calling "ToLowerInvariant()" on library Name and Version once
-                    // https://github.com/dotnet/core-setup/pull/64/ is merged and taken into the CLI
-                    .GroupBy(library => library.Name.ToLowerInvariant() + DependencyContextStrings.VersionSeperator + library.Version.ToLowerInvariant());
+                    .GroupBy(library => library.Name + DependencyContextStrings.VersionSeperator + library.Version);
 
             return new JObject(allLibraries.Select(libraries => new JProperty(libraries.Key, WriteLibrary(libraries.First()))));
         }

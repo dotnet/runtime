@@ -1,12 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
+using FluentAssertions;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Xunit;
-using FluentAssertions;
 
 namespace Microsoft.Extensions.DependencyModel.Tests
 {
@@ -133,7 +130,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
             // targets
             var targets = result.Should().HavePropertyAsObject("targets").Subject;
             var target = targets.Should().HavePropertyAsObject("Target").Subject;
-            var library = target.Should().HavePropertyAsObject("packagename/1.2.3").Subject;
+            var library = target.Should().HavePropertyAsObject("PackageName/1.2.3").Subject;
             var dependencies = library.Should().HavePropertyAsObject("dependencies").Subject;
             dependencies.Should().HavePropertyValue("Fruits.Abstract.dll", "2.0.0");
             library.Should().HavePropertyAsObject("compile")
@@ -141,7 +138,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
 
             //libraries
             var libraries = result.Should().HavePropertyAsObject("libraries").Subject;
-            library = libraries.Should().HavePropertyAsObject("packagename/1.2.3").Subject;
+            library = libraries.Should().HavePropertyAsObject("PackageName/1.2.3").Subject;
             library.Should().HavePropertyValue("sha512", "HASH");
             library.Should().HavePropertyValue("type", "package");
             library.Should().HavePropertyValue("serviceable", true);
@@ -176,7 +173,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
             // targets
             var targets = result.Should().HavePropertyAsObject("targets").Subject;
             var target = targets.Should().HavePropertyAsObject("Target").Subject;
-            var library = target.Should().HavePropertyAsObject("packagename/1.2.3").Subject;
+            var library = target.Should().HavePropertyAsObject("PackageName/1.2.3").Subject;
             var dependencies = library.Should().HavePropertyAsObject("dependencies").Subject;
             dependencies.Should().HavePropertyValue("Fruits.Abstract.dll", "2.0.0");
             library.Should().HavePropertyAsObject("compile")
@@ -184,7 +181,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
 
             //libraries
             var libraries = result.Should().HavePropertyAsObject("libraries").Subject;
-            library = libraries.Should().HavePropertyAsObject("packagename/1.2.3").Subject;
+            library = libraries.Should().HavePropertyAsObject("PackageName/1.2.3").Subject;
             library.Should().HavePropertyValue("sha512", "HASH");
             library.Should().HavePropertyValue("type", "package");
             library.Should().HavePropertyValue("serviceable", true);
@@ -227,7 +224,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
             // targets
             var targets = result.Should().HavePropertyAsObject("targets").Subject;
             var target = targets.Should().HavePropertyAsObject("Target").Subject;
-            var library = target.Should().HavePropertyAsObject("packagename/1.2.3").Subject;
+            var library = target.Should().HavePropertyAsObject("PackageName/1.2.3").Subject;
             var dependencies = library.Should().HavePropertyAsObject("dependencies").Subject;
             dependencies.Should().HavePropertyValue("Fruits.Abstract.dll", "2.0.0");
 
@@ -252,7 +249,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
 
             //libraries
             var libraries = result.Should().HavePropertyAsObject("libraries").Subject;
-            library = libraries.Should().HavePropertyAsObject("packagename/1.2.3").Subject;
+            library = libraries.Should().HavePropertyAsObject("PackageName/1.2.3").Subject;
             library.Should().HavePropertyValue("sha512", "HASH");
             library.Should().HavePropertyValue("type", "package");
             library.Should().HavePropertyValue("serviceable", true);
@@ -311,7 +308,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
             // targets
             var targets = result.Should().HavePropertyAsObject("targets").Subject;
             var target = targets.Should().HavePropertyAsObject("Target").Subject;
-            var library = target.Should().HavePropertyAsObject("packagename/1.2.3").Subject;
+            var library = target.Should().HavePropertyAsObject("PackageName/1.2.3").Subject;
             var dependencies = library.Should().HavePropertyAsObject("dependencies").Subject;
             dependencies.Should().HavePropertyValue("Fruits.Abstract.dll", "2.0.0");
 
@@ -335,7 +332,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
 
             //libraries
             var libraries = result.Should().HavePropertyAsObject("libraries").Subject;
-            library = libraries.Should().HavePropertyAsObject("packagename/1.2.3").Subject;
+            library = libraries.Should().HavePropertyAsObject("PackageName/1.2.3").Subject;
             library.Should().HavePropertyValue("sha512", "HASH");
             library.Should().HavePropertyValue("type", "package");
             library.Should().HavePropertyValue("serviceable", true);
@@ -376,7 +373,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
             // targets
             var targets = result.Should().HavePropertyAsObject("targets").Subject;
             var target = targets.Should().HavePropertyAsObject("Target/runtime").Subject;
-            var library = target.Should().HavePropertyAsObject("packagename/1.2.3").Subject;
+            var library = target.Should().HavePropertyAsObject("PackageName/1.2.3").Subject;
             var dependencies = library.Should().HavePropertyAsObject("dependencies").Subject;
             dependencies.Should().HavePropertyValue("Fruits.Abstract.dll", "2.0.0");
             library.Should().HavePropertyAsObject("runtime")
@@ -386,7 +383,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
 
             //libraries
             var libraries = result.Should().HavePropertyAsObject("libraries").Subject;
-            library = libraries.Should().HavePropertyAsObject("packagename/1.2.3").Subject;
+            library = libraries.Should().HavePropertyAsObject("PackageName/1.2.3").Subject;
             library.Should().HavePropertyValue("sha512", "HASH");
             library.Should().HavePropertyValue("type", "package");
             library.Should().HavePropertyValue("serviceable", true);
@@ -427,7 +424,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
             // targets
             var targets = result.Should().HavePropertyAsObject("targets").Subject;
             var target = targets.Should().HavePropertyAsObject("Target").Subject;
-            var library = target.Should().HavePropertyAsObject("packagename/1.2.3").Subject;
+            var library = target.Should().HavePropertyAsObject("PackageName/1.2.3").Subject;
 
             var runtimeTargets = library.Should().HavePropertyAsObject("runtimeTargets").Subject;
 
@@ -477,7 +474,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
 
             var targets = result.Should().HavePropertyAsObject("targets").Subject;
             var target = targets.Should().HavePropertyAsObject("Target/runtime").Subject;
-            var library = target.Should().HavePropertyAsObject("packagename/1.2.3").Subject;
+            var library = target.Should().HavePropertyAsObject("PackageName/1.2.3").Subject;
             var resources = library.Should().HavePropertyAsObject("resources").Subject;
             var resource = resources.Should().HavePropertyAsObject("en-US/Fruits.resources.dll").Subject;
             resource.Should().HavePropertyValue("locale", "en-US");
@@ -513,7 +510,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
 
             var targets = result.Should().HavePropertyAsObject("targets").Subject;
             var target = targets.Should().HavePropertyAsObject("Target").Subject;
-            var library = target.Should().HavePropertyAsObject("packagename/1.2.3").Subject;
+            var library = target.Should().HavePropertyAsObject("PackageName/1.2.3").Subject;
             var resources = library.Should().HavePropertyAsObject("resources").Subject;
             var resource = resources.Should().HavePropertyAsObject("en-US/Fruits.resources.dll").Subject;
             resource.Should().HavePropertyValue("locale", "en-US");
@@ -547,7 +544,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
             // targets
             var targets = result.Should().HavePropertyAsObject("targets").Subject;
             var target = targets.Should().HavePropertyAsObject("Target").Subject;
-            var library = target.Should().HavePropertyAsObject("packagename/1.2.3").Subject;
+            var library = target.Should().HavePropertyAsObject("PackageName/1.2.3").Subject;
             library.Should().HavePropertyValue("compileOnly", true);
         }
 
