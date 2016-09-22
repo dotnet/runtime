@@ -5929,6 +5929,7 @@
       <Member Name="Box(System.Void*,System.Type)" />
       <Member Name="Unbox(System.Object)" />
       <Member Name="System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
+      <Member Status="ImplRoot" Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
     </Type>
     <Type Name="System.Reflection.PortableExecutableKinds">
       <Member MemberType="Field" Name="NotAPortableExecutableImage" />
