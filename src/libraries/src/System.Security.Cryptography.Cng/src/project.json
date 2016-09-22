@@ -5,19 +5,19 @@
         "dotnet5.8"
       ],
       "dependencies": {
-        "Microsoft.NETCore.Platforms": "1.0.2-beta-24521-07",
-        "System.Diagnostics.Debug": "4.3.0-beta-24521-07",
-        "System.Diagnostics.Tools": "4.3.0-beta-24521-07",
-        "System.IO": "4.3.0-beta-24521-07",
-        "System.Resources.ResourceManager": "4.3.0-beta-24521-07",
-        "System.Runtime": "4.3.0-beta-24521-07",
-        "System.Runtime.Extensions": "4.3.0-beta-24521-07",
-        "System.Runtime.InteropServices": "4.3.0-beta-24521-07",
-        "System.Security.Cryptography.Algorithms": "4.3.0-beta-24521-07",
-        "System.Security.Cryptography.Encoding": "4.3.0-beta-24521-07",
-        "System.Security.Cryptography.Primitives": "4.3.0-beta-24521-07",
-        "System.Text.Encoding": "4.3.0-beta-24521-07",
-        "System.Threading.Tasks": "4.3.0-beta-24521-07"
+        "Microsoft.NETCore.Platforms": "1.0.2-beta-24522-03",
+        "System.Diagnostics.Debug": "4.3.0-beta-24522-03",
+        "System.Diagnostics.Tools": "4.3.0-beta-24522-03",
+        "System.IO": "4.3.0-beta-24522-03",
+        "System.Resources.ResourceManager": "4.3.0-beta-24522-03",
+        "System.Runtime": "4.3.0-beta-24522-03",
+        "System.Runtime.Extensions": "4.3.0-beta-24522-03",
+        "System.Runtime.InteropServices": "4.3.0-beta-24522-03",
+        "System.Security.Cryptography.Algorithms": "4.3.0-beta-24522-03",
+        "System.Security.Cryptography.Encoding": "4.3.0-beta-24522-03",
+        "System.Security.Cryptography.Primitives": "4.3.0-beta-24522-03",
+        "System.Text.Encoding": "4.3.0-beta-24522-03",
+        "System.Threading.Tasks": "4.3.0-beta-24522-03"
       }
     },
     "net463": {
