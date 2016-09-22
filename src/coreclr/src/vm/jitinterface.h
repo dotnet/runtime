@@ -28,6 +28,9 @@ class FieldDesc;
 enum RuntimeExceptionKind;
 class AwareLock;
 class PtrArray;
+#if defined(FEATURE_GDBJIT)
+class CalledMethod;
+#endif
 
 #include "genericdict.h"
 
@@ -1090,6 +1093,9 @@ public:
         m_pThread(GetThread()),
         m_hMethodForSecurity_Key(NULL),
         m_pMethodForSecurity_Value(NULL)
+#if defined(FEATURE_GDBJIT)
+        , m_pCalledMethods(NULL)
+#endif
     {
         LIMITED_METHOD_CONTRACT;
     }
@@ -1151,6 +1157,10 @@ public:
                                                    MethodDesc * pTemplateMD /* for method-based slots */,
                                                    CORINFO_LOOKUP *pResultLookup);
 
+#if defined(FEATURE_GDBJIT)
+    CalledMethod * GetCalledMethods() { return m_pCalledMethods; }
+#endif
+
 protected:
     // NGen provides its own modifications to EE-JIT interface. From technical reason it cannot simply inherit 
     // from code:CEEInfo class (because it has dependencies on VM that NGen does not want).
@@ -1173,6 +1183,10 @@ protected:
     // Cache of last GetMethodForSecurity() lookup
     CORINFO_METHOD_HANDLE   m_hMethodForSecurity_Key;
     MethodDesc *            m_pMethodForSecurity_Value;
+
+#if defined(FEATURE_GDBJIT)
+    CalledMethod *          m_pCalledMethods;
+#endif
 
     // Tracking of module activation dependencies. We have two flavors: 
     // - Fast one that gathers generic arguments from EE handles, but does not work inside generic context.

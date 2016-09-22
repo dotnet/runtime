@@ -3596,6 +3596,22 @@ inline BOOL MethodDesc::HasMethodInstantiation() const
     return mcInstantiated == GetClassification() && AsInstantiatedMethodDesc()->IMD_HasMethodInstantiation();
 }
 
+#if defined(FEATURE_GDBJIT)
+class CalledMethod
+{
+private:
+    MethodDesc * m_pMD;
+    void * m_CallAddr;
+    CalledMethod * m_pNext;
+public:
+    CalledMethod(MethodDesc *pMD, void * addr, CalledMethod * next) : m_pMD(pMD), m_CallAddr(addr), m_pNext(next)  {}
+    ~CalledMethod() {}
+    MethodDesc * GetMethodDesc() { return m_pMD; }
+    void * GetCallAddr() { return m_CallAddr; }
+    CalledMethod * GetNext() { return m_pNext; }
+};
+#endif
+
 #include "method.inl"
 
 #endif // !_METHOD_H
