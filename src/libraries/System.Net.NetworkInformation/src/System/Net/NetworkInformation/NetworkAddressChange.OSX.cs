@@ -47,6 +47,7 @@ namespace System.Net.NetworkInformation
         private static readonly AutoResetEvent s_runLoopEndedEvent = new AutoResetEvent(false);
 
         //introduced for supporting design-time loading of System.Windows.dll
+        [Obsolete("This API supports the .NET Framework infrastructure and is not intended to be used directly from your code.", true)]
         public static void RegisterNetworkChange(NetworkChange nc) { }
 
         public static event NetworkAddressChangedEventHandler NetworkAddressChanged
@@ -67,10 +68,10 @@ namespace System.Net.NetworkInformation
             {
                 lock (s_lockObj)
                 {
-                    bool hadSubscribers = s_addressChangedSubscribers != null || s_availabilityChangedSubscribers != null;
+                    bool hadAddressChangedSubscribers = s_addressChangedSubscribers != null;
                     s_addressChangedSubscribers -= value;
 
-                    if (hadSubscribers && s_addressChangedSubscribers == null && s_availabilityChangedSubscribers == null)
+                    if (hadAddressChangedSubscribers && s_addressChangedSubscribers == null && s_availabilityChangedSubscribers == null)
                     {
                         StopRunLoop();
                     }
@@ -87,6 +88,10 @@ namespace System.Net.NetworkInformation
                     if (s_addressChangedSubscribers == null && s_availabilityChangedSubscribers == null)
                     {
                         CreateAndStartRunLoop();
+                    }
+                    else
+                    {
+                        Debug.Assert(s_runLoop != IntPtr.Zero);
                     }
 
                     s_availabilityChangedSubscribers += value;
@@ -216,18 +221,8 @@ namespace System.Net.NetworkInformation
 
         private static void OnAddressChanged(IntPtr store, IntPtr changedKeys, IntPtr info)
         {
-            NetworkAddressChangedEventHandler addressChangedHandler = s_addressChangedSubscribers;
-            if (addressChangedHandler != null)
-            {
-                addressChangedHandler(null, EventArgs.Empty);
-            }
-
-            NetworkAvailabilityChangedEventHandler availabilityChangedHandler = s_availabilityChangedSubscribers;
-            if (availabilityChangedHandler != null)
-            {
-                bool isNetworkAvailable = NetworkInterface.GetIsNetworkAvailable();
-                availabilityChangedHandler(null, new NetworkAvailabilityEventArgs(isNetworkAvailable));
-            }
+            s_addressChangedSubscribers?.Invoke(null, EventArgs.Empty);
+            s_availabilityChangedSubscribers?.Invoke(null, new NetworkAvailabilityEventArgs(NetworkInterface.GetIsNetworkAvailable()));
         }
     }
 }

@@ -15,7 +15,9 @@ namespace System.Net.NetworkInformation
         private static NetworkAddressChangedEventHandler s_addressChangedSubscribers;
         private static NetworkAvailabilityChangedEventHandler s_availabilityChangedSubscribers;
         private static volatile int s_socket = 0;
-        private static readonly object s_lockObj = new object();
+        // Lock controlling access to delegate subscriptions and socket initialization.
+        private static readonly object s_subscriberLock = new object();
+        // Lock controlling access to availability-changed state and timer.
         private static readonly object s_availabilityLock = new object();
         private static readonly Interop.Sys.NetworkChangeEvent s_networkChangeCallback = ProcessEvent;
 
@@ -25,17 +27,19 @@ namespace System.Net.NetworkInformation
         // and we are not interested in all of them, just the fact that network availability
         // has potentially changed as a result.
         private const int AvailabilityTimerWindowMilliseconds = 150;
+        private static readonly TimerCallback s_availabilityTimerFiredCallback = OnAvailabilityTimerFired;
         private static Timer s_availabilityTimer;
         private static bool s_availabilityHasChanged;
 
         // Introduced for supporting design-time loading of System.Windows.dll
+        [Obsolete("This API supports the .NET Framework infrastructure and is not intended to be used directly from your code.", true)]
         public static void RegisterNetworkChange(NetworkChange nc) { }
 
         public static event NetworkAddressChangedEventHandler NetworkAddressChanged
         {
             add
             {
-                lock (s_lockObj)
+                lock (s_subscriberLock)
                 {
                     if (s_socket == 0)
                     {
@@ -47,7 +51,7 @@ namespace System.Net.NetworkInformation
             }
             remove
             {
-                lock (s_lockObj)
+                lock (s_subscriberLock)
                 {
                     if (s_addressChangedSubscribers == null && s_availabilityChangedSubscribers == null)
                     {
@@ -68,7 +72,7 @@ namespace System.Net.NetworkInformation
         {
             add
             {
-                lock (s_lockObj)
+                lock (s_subscriberLock)
                 {
                     if (s_socket == 0)
                     {
@@ -76,7 +80,7 @@ namespace System.Net.NetworkInformation
                     }
                     if (s_availabilityTimer == null)
                     {
-                        s_availabilityTimer = new Timer(OnAvailabilityTimerFired, null, -1, -1);
+                        s_availabilityTimer = new Timer(s_availabilityTimerFiredCallback, null, -1, -1);
                     }
 
                     s_availabilityChangedSubscribers += value;
@@ -84,7 +88,7 @@ namespace System.Net.NetworkInformation
             }
             remove
             {
-                lock (s_lockObj)
+                lock (s_subscriberLock)
                 {
                     if (s_addressChangedSubscribers == null && s_availabilityChangedSubscribers == null)
                     {
@@ -148,7 +152,7 @@ namespace System.Net.NetworkInformation
         {
             if (kind != Interop.Sys.NetworkChangeKind.None)
             {
-                lock (s_lockObj)
+                lock (s_subscriberLock)
                 {
                     if (socket == s_socket)
                     {
@@ -164,11 +168,7 @@ namespace System.Net.NetworkInformation
             {
                 case Interop.Sys.NetworkChangeKind.AddressAdded:
                 case Interop.Sys.NetworkChangeKind.AddressRemoved:
-                    NetworkAddressChangedEventHandler handler = s_addressChangedSubscribers;
-                    if (handler != null)
-                    {
-                        handler(null, EventArgs.Empty);
-                    }
+                    s_addressChangedSubscribers?.Invoke(null, EventArgs.Empty);
                     break;
                 case Interop.Sys.NetworkChangeKind.AvailabilityChanged:
                     lock (s_availabilityLock)
@@ -195,13 +195,7 @@ namespace System.Net.NetworkInformation
 
             if (changed)
             {
-                NetworkAvailabilityChangedEventHandler availabilityChangedHandler = s_availabilityChangedSubscribers;
-                if (availabilityChangedHandler != null)
-                {
-                    bool isNetworkAvailable = NetworkInterface.GetIsNetworkAvailable();
-                    availabilityChangedHandler(null, new NetworkAvailabilityEventArgs(isNetworkAvailable));
-                }
-
+                s_availabilityChangedSubscribers?.Invoke(null, new NetworkAvailabilityEventArgs(NetworkInterface.GetIsNetworkAvailable()));
             }
         }
     }
