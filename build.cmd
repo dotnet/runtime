@@ -167,6 +167,11 @@ if not exist "%__BinDir%"           md "%__BinDir%"
 if not exist "%__IntermediatesDir%" md "%__IntermediatesDir%"
 if not exist "%__LogsDir%"          md "%__LogsDir%"
 
+REM It is convinient to have your Nuget search path include the location where the build
+REM will plass packages.  However nuget used during the build will fail if that directory 
+REM does not exist.   Avoid this in at least one case by agressively creating the directory. 
+if not exist "%__BinDir%\.nuget\pkg"           md "%__BinDir%\.nuget\pkg"
+
 echo %__MsgPrefix%Commencing CoreCLR Repo build
 
 :: Set the remaining variables based upon the determined build configuration
@@ -344,13 +349,22 @@ if %__BuildCoreLib% EQU 1 (
     )
 )
 
+REM Need diasymreader.dll on your path for /CreatePdb
+set PATH=%PATH%;%WinDir%\Microsoft.Net\Framework64\V4.0.30319;%WinDir%\Microsoft.Net\Framework\V4.0.30319
+
 if %__BuildNativeCoreLib% EQU 1 (
     echo %__MsgPrefix%Generating native image of System.Private.CoreLib for %__BuildOS%.%__BuildArch%.%__BuildType%
 	
     echo "%__CrossgenExe%" /Platform_Assemblies_Paths "%__BinDir%" /out "%__BinDir%\System.Private.CoreLib.ni.dll" "%__BinDir%\System.Private.CoreLib.dll"
     "%__CrossgenExe%" /Platform_Assemblies_Paths "%__BinDir%" /out "%__BinDir%\System.Private.CoreLib.ni.dll" "%__BinDir%\System.Private.CoreLib.dll" > "%__CrossGenCoreLibLog%" 2>&1
     if NOT !errorlevel! == 0 (
-        echo %__MsgPrefix%Error: CrossGen System.Private.CoreLib build failed. Refer to the build log file for details:
+        echo %__MsgPrefix%Error: CrossGen System.Private.CoreLib build failed. Refer to %__CrossGenCoreLibLog%
+        echo     %__CrossGenCoreLibLog%
+        exit /b 1
+    )
+    "%__CrossgenExe%" /Platform_Assemblies_Paths "%__BinDir%" /CreatePdb "%__BinDir%\PDB" "%__BinDir%\System.Private.CoreLib.ni.dll" >> "%__CrossGenCoreLibLog%" 2>&1
+    if NOT !errorlevel! == 0 (
+        echo %__MsgPrefix%Error: CrossGen /CreatePdb System.Private.CoreLib build failed. Refer to %__CrossGenCoreLibLog%
         echo     %__CrossGenCoreLibLog%
         exit /b 1
     )
@@ -368,6 +382,8 @@ if %__BuildNativeCoreLib% EQU 1 (
 )
 
 if %__BuildPackages% EQU 1 (
+    echo %__MsgPrefix%Building Packages for %__BuildOS%.%__BuildArch%.%__BuildType%
+
     set __MsbuildLog=/flp:Verbosity=normal;LogFile="%__LogsDir%\Nuget_%__BuildOS%__%__BuildArch%__%__BuildType%.log"
 	set __MsbuildWrn=/flp1:WarningsOnly;LogFile="%__LogsDir%\Nuget_%__BuildOS%__%__BuildArch%__%__BuildType%.wrn"
 	set __MsbuildErr=/flp2:ErrorsOnly;LogFile="%__LogsDir%\Nuget_%__BuildOS%__%__BuildArch%__%__BuildType%.err"
