@@ -105,7 +105,6 @@
       <Project>{78452f3e-ba91-47e7-bb0f-02e8a5c116c4}</Project>
       <Name>System.Security.Cryptography.OpenSsl</Name>
     </ProjectReference>
-    <ProjectReference Include="..\..\System.Security.Cryptography.Algorithms\pkg\System.Security.Cryptography.Algorithms.pkgproj" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
