@@ -51,6 +51,9 @@ typedef struct _FakeHpRealCodeHdr
     LPVOID              phdrDebugInfo;
     LPVOID              phdrJitEHInfo;  // changed from EE_ILEXCEPTION*
     LPVOID              phdrJitGCInfo;  // changed from BYTE*
+#if defined (FEATURE_GDBJIT)
+    LPVOID              pCalledMethods;
+#endif
     LPVOID              hdrMDesc;       // changed from MethodDesc*
     DWORD               nUnwindInfos;
     T_RUNTIME_FUNCTION  unwindInfos[0];
