@@ -12,6 +12,7 @@
     <CoreFxExpectedPrerelease>beta-24521-07</CoreFxExpectedPrerelease>
     <CoreClrExpectedPrerelease>beta-24522-01</CoreClrExpectedPrerelease>
     <ExternalExpectedPrerelease>beta-24521-00</ExternalExpectedPrerelease>
+    <ProjectNTfsExpectedPrerelease>beta-24521-00</ProjectNTfsExpectedPrerelease>
   </PropertyGroup>
 
   <!-- Full package version strings that are used in other parts of the build. -->
@@ -63,6 +64,11 @@
       <Path>$(MSBuildThisFileFullPath)</Path>
       <ElementName>ExternalExpectedPrerelease</ElementName>
       <BuildInfoName>External</BuildInfoName>
+    </XmlUpdateStep>
+    <XmlUpdateStep Include="ProjectNTfs">
+      <Path>$(MSBuildThisFileFullPath)</Path>
+      <ElementName>ProjectNTfsExpectedPrerelease</ElementName>
+      <BuildInfoName>ProjectNTfs</BuildInfoName>
     </XmlUpdateStep>
   </ItemGroup>
 
