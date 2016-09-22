@@ -876,7 +876,7 @@ void ConfigMethodRange::InitRanges(const wchar_t* rangeStr, unsigned capacity)
 
 #endif // defined(DEBUG) || defined(INLINE_DATA)
 
-#if CALL_ARG_STATS || COUNT_BASIC_BLOCKS || COUNT_LOOPS || EMITTER_STATS || MEASURE_NODE_SIZE
+#if CALL_ARG_STATS || COUNT_BASIC_BLOCKS || COUNT_LOOPS || EMITTER_STATS || MEASURE_NODE_SIZE || MEASURE_MEM_ALLOC
 
 /*****************************************************************************
  *  Histogram class.
@@ -896,7 +896,8 @@ Histogram::Histogram(IAllocator* allocator, const unsigned* const sizeTable)
 
 Histogram::~Histogram()
 {
-    m_allocator->Free(m_counts);
+    if (m_counts != nullptr)
+        m_allocator->Free(m_counts);
 }
 
 // We need to lazy allocate the histogram data so static `Histogram` variables don't try to
