@@ -271,7 +271,7 @@ typedef struct {
 #define HEADER_LENGTH 11
 
 #define MAJOR_VERSION 2
-#define MINOR_VERSION 43
+#define MINOR_VERSION 44
 
 typedef enum {
 	CMD_SET_VM = 1,
@@ -499,6 +499,7 @@ typedef enum {
 	CMD_STACK_FRAME_GET_THIS = 2,
 	CMD_STACK_FRAME_SET_VALUES = 3,
 	CMD_STACK_FRAME_GET_DOMAIN = 4,
+	CMD_STACK_FRAME_SET_THIS = 5,
 } CmdStackFrame;
 
 typedef enum {
@@ -9269,6 +9270,25 @@ frame_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 			buffer_add_domainid (buf, frame->domain);
 		break;
 	}
+	case CMD_STACK_FRAME_SET_THIS: {
+		guint8 *val_buf;
+		MonoType *t;
+		MonoDebugVarInfo *var;
+
+		t = &frame->actual_method->klass->byval_arg;
+		/* Checked by the sender */
+		g_assert (MONO_TYPE_ISSTRUCT (t));
+		var = jit->this_var;
+		g_assert (var);
+
+		val_buf = (guint8 *)g_alloca (mono_class_instance_size (mono_class_from_mono_type (t)));
+		err = decode_value (t, frame->domain, val_buf, p, &p, end);
+		if (err != ERR_NONE)
+			return err;
+
+		set_var (&frame->actual_method->klass->this_arg, var, &frame->ctx, frame->domain, val_buf, frame->reg_locations, &tls->restore_state.ctx);
+		break;
+	}
 	default:
 		return ERR_NOT_IMPLEMENTED;
 	}
@@ -9688,6 +9708,7 @@ static const char* stack_frame_cmds_str[] = {
 	"GET_THIS",
 	"SET_VALUES",
 	"GET_DOMAIN",
+	"SET_THIS"
 };
 
 static const char* array_cmds_str[] = {
