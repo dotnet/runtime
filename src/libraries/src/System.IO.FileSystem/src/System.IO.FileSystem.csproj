@@ -9,6 +9,11 @@
     <AssemblyName>System.IO.FileSystem</AssemblyName>
     <AssemblyVersion Condition="'$(TargetGroup)'=='netstandard1.3' Or '$(TargetGroup)'=='net46' Or '$(TargetGroup)'=='netcore50'">4.0.2.0</AssemblyVersion>
     <ContractProject Condition="'$(AssemblyVersion)'=='4.0.2.0'">../ref/4.0.1/System.IO.FileSystem.depproj</ContractProject>
+    <!--
+      Disabling APICompat for the older builds because we are hitting
+      bug https://github.com/dotnet/buildtools/issues/1056
+    -->
+    <RunApiCompat Condition="'$(AssemblyVersion)'=='4.0.2.0'">false</RunApiCompat>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <EnableWinRT Condition="'$(PackageTargetFramework)' == 'netcore50'">true</EnableWinRT>
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'net46' or '$(TargetGroup)' == 'net463'">true</IsPartialFacadeAssembly>
