@@ -270,7 +270,7 @@ GenTree* DecomposeLongs::DecomposeNode(GenTree* tree)
         // The node returned by `use.User()` is the head of the field list. We need to find the actual node that uses
         // the `GT_LONG` so that we can split it.
         GenTreeFieldList* listNode = use.User()->AsFieldList();
-        for ( ; listNode != nullptr; listNode = listNode->Rest())
+        for (; listNode != nullptr; listNode = listNode->Rest())
         {
             if (listNode->Current() == value)
             {
@@ -285,10 +285,8 @@ GenTree* DecomposeLongs::DecomposeNode(GenTree* tree)
         loNode->gtOp1            = value->gtOp1;
         loNode->gtFieldType      = TYP_INT;
 
-        GenTreeFieldList* hiNode = new (m_compiler, GT_FIELD_LIST) GenTreeFieldList(value->gtOp2,
-                                                                                    loNode->gtFieldOffset + 4,
-                                                                                    TYP_INT,
-                                                                                    loNode);
+        GenTreeFieldList* hiNode =
+            new (m_compiler, GT_FIELD_LIST) GenTreeFieldList(value->gtOp2, loNode->gtFieldOffset + 4, TYP_INT, loNode);
 
         hiNode->gtOp2 = rest;
     }
