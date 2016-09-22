@@ -12,7 +12,7 @@ namespace System
     //
     // A developer must implement at least internal default .ctor to participate in the Uri extensibility game.
     //
-    internal abstract partial class UriParser
+    public abstract partial class UriParser
     {
         internal string SchemeName
         {
@@ -134,6 +134,33 @@ namespace System
         protected virtual bool IsWellFormedOriginalString(Uri uri)
         {
             return uri.InternalIsWellFormedOriginalString();
+        }
+
+        //
+        // Static Registration methods
+        //
+        //
+        // Registers a custom Uri parser based on a scheme string
+        //
+        public static void Register(UriParser uriParser, string schemeName, int defaultPort)
+        {
+            if (uriParser == null)
+                throw new ArgumentNullException("uriParser");
+ 
+            if (schemeName == null)
+                throw new ArgumentNullException("schemeName");
+ 
+            if (schemeName.Length == 1)
+                throw new ArgumentOutOfRangeException("schemeName");
+ 
+            if (!Uri.CheckSchemeName(schemeName))
+                throw new ArgumentOutOfRangeException("schemeName");
+ 
+            if ((defaultPort >= 0xFFFF || defaultPort < 0) && defaultPort != -1)
+                throw new ArgumentOutOfRangeException("defaultPort");
+ 
+            schemeName = schemeName.ToLower();
+            FetchSyntax(uriParser, schemeName, defaultPort);
         }
 
         //

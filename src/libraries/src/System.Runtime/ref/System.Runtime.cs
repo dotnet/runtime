@@ -2644,7 +2644,7 @@ namespace System
     }
     public delegate void UnhandledExceptionEventHandler(object sender, System.UnhandledExceptionEventArgs e);
 
-    public partial class Uri
+    public partial class Uri : System.Runtime.Serialization.ISerializable
     {
         public static readonly string SchemeDelimiter;
         public static readonly string UriSchemeFile;
@@ -2657,6 +2657,7 @@ namespace System
         public static readonly string UriSchemeNetTcp;
         public static readonly string UriSchemeNews;
         public static readonly string UriSchemeNntp;
+        protected Uri(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
         public Uri(string uriString) { }
         public Uri(string uriString, System.UriKind uriKind) { }
         [System.ObsoleteAttribute]
@@ -2687,8 +2688,12 @@ namespace System
         public string[] Segments { get { return default(string[]); } }
         public bool UserEscaped { get { return default(bool); } }
         public string UserInfo { get { return default(string); } }
+        [System.ObsoleteAttribute("The method has been deprecated. It is not used by the system. http://go.microsoft.com/fwlink/?linkid=14202")]
+        protected virtual void Canonicalize() { }
         public static System.UriHostNameType CheckHostName(string name) { return default(System.UriHostNameType); }
         public static bool CheckSchemeName(string schemeName) { return default(bool); }
+        [System.ObsoleteAttribute("The method has been deprecated. It is not used by the system. http://go.microsoft.com/fwlink/?linkid=14202")]
+        protected virtual void CheckSecurity() { }
         public static int Compare(System.Uri uri1, System.Uri uri2, System.UriComponents partsToCompare, System.UriFormat compareFormat, System.StringComparison comparisonType) { return default(int); }
         public override bool Equals(object comparand) { return default(bool); }
         [System.ObsoleteAttribute]
@@ -2702,6 +2707,7 @@ namespace System
         public override int GetHashCode() { return default(int); }
         public bool IsBaseOf(System.Uri uri) { return default(bool); }
         public string GetLeftPart(System.UriPartial part) { return default(string); }
+        protected void GetObjectData(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
         public static string HexEscape(char character) { return default(string); }
         public static char HexUnescape(string pattern, ref int index) { return default(char); }
         [System.ObsoleteAttribute]
@@ -2721,6 +2727,7 @@ namespace System
         public static bool operator !=(System.Uri uri1, System.Uri uri2) { return default(bool); }
         [System.ObsoleteAttribute("The method has been deprecated. It is not used by the system.")]
         protected virtual void Parse() { }
+        void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
         public override string ToString() { return default(string); }
         public static bool TryCreate(string uriString, System.UriKind uriKind, out System.Uri result) { result = default(System.Uri); return default(bool); }
         public static bool TryCreate(System.Uri baseUri, string relativeUri, out System.Uri result) { result = default(System.Uri); return default(bool); }
@@ -2756,11 +2763,13 @@ namespace System
         Unescaped = 2,
         UriEscaped = 1,
     }
-    public partial class UriFormatException : System.FormatException
+    public partial class UriFormatException : System.FormatException, System.Runtime.Serialization.ISerializable
     {
         public UriFormatException() { }
+        protected UriFormatException(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
         public UriFormatException(string textString) { }
         public UriFormatException(string textString, System.Exception e) { }
+        void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
     }
     public enum UriHostNameType
     {
@@ -2782,6 +2791,71 @@ namespace System
         Path = 2,
         Query = 3,
         Scheme = 0,
+    }
+    public abstract partial class UriParser
+    {
+        protected UriParser() { }
+        protected virtual string GetComponents(System.Uri uri, System.UriComponents components, System.UriFormat format) { throw null; }
+        protected virtual void InitializeAndValidate(System.Uri uri, out System.UriFormatException parsingError) { parsingError = default(System.UriFormatException); }
+        protected virtual bool IsBaseOf(System.Uri baseUri, System.Uri relativeUri) { throw null; }
+        public static bool IsKnownScheme(string schemeName) { throw null; }
+        protected virtual bool IsWellFormedOriginalString(System.Uri uri) { throw null; }
+        protected virtual System.UriParser OnNewUri() { throw null; }
+        protected virtual void OnRegister(string schemeName, int defaultPort) { }
+        public static void Register(System.UriParser uriParser, string schemeName, int defaultPort) { }
+        protected virtual string Resolve(System.Uri baseUri, System.Uri relativeUri, out System.UriFormatException parsingError) { parsingError = default(System.UriFormatException); throw null; }
+    }
+    public partial class GenericUriParser : System.UriParser
+    {
+        public GenericUriParser(System.GenericUriParserOptions options) { }
+    }
+    [System.FlagsAttribute]
+    public enum GenericUriParserOptions
+    {
+        AllowEmptyAuthority = 2,
+        Default = 0,
+        DontCompressPath = 128,
+        DontConvertPathBackslashes = 64,
+        DontUnescapePathDotsAndSlashes = 256,
+        GenericAuthority = 1,
+        Idn = 512,
+        IriParsing = 1024,
+        NoFragment = 32,
+        NoPort = 8,
+        NoQuery = 16,
+        NoUserInfo = 4,
+    }
+    public partial class FileStyleUriParser : System.UriParser
+    {
+        public FileStyleUriParser() { }
+    }
+    public partial class FtpStyleUriParser : System.UriParser
+    {
+        public FtpStyleUriParser() { }
+    }
+    public partial class GopherStyleUriParser : System.UriParser
+    {
+        public GopherStyleUriParser() { }
+    }
+    public partial class HttpStyleUriParser : System.UriParser
+    {
+        public HttpStyleUriParser() { }
+    }
+    public partial class LdapStyleUriParser : System.UriParser
+    {
+        public LdapStyleUriParser() { }
+    }
+    public partial class NetPipeStyleUriParser : System.UriParser
+    {
+        public NetPipeStyleUriParser() { }
+    }
+    public partial class NetTcpStyleUriParser : System.UriParser
+    {
+        public NetTcpStyleUriParser() { }
+    }
+    public partial class NewsStyleUriParser : System.UriParser
+    {
+        public NewsStyleUriParser() { }
     }
     public abstract partial class ValueType
     {
