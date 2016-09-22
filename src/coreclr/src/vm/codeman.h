@@ -140,6 +140,10 @@ public:
     PTR_EE_ILEXCEPTION  phdrJitEHInfo;
     PTR_BYTE            phdrJitGCInfo;
 
+#if defined(FEATURE_GDBJIT)
+    VOID*            pCalledMethods;
+#endif
+
     PTR_MethodDesc      phdrMDesc;
 
 #ifdef WIN64EXCEPTIONS
@@ -172,6 +176,13 @@ public:
         SUPPORTS_DAC;
         return phdrMDesc;
     }
+#if defined(FEATURE_GDBJIT)
+    PTR_BYTE                GetCalledMethods()
+    {
+        SUPPORTS_DAC;
+        return pCalledMethods;
+    }
+#endif
     TADDR                   GetCodeStartAddress()
     {
         SUPPORTS_DAC;
@@ -205,6 +216,12 @@ public:
     {
         phdrMDesc = pMD;
     }
+#if defined(FEATURE_GDBJIT)
+    void SetCalledMethods(VOID* pCM)
+    {
+        pCalledMethods = pCM;
+    }
+#endif
     void SetStubCodeBlockKind(StubCodeBlockKind kind)
     {
         phdrMDesc = (PTR_MethodDesc)kind;
@@ -248,6 +265,13 @@ public:
         SUPPORTS_DAC;
         return pRealCodeHeader->phdrMDesc;
     }
+#if defined(FEATURE_GDBJIT)
+    VOID*                GetCalledMethods()
+    {
+        SUPPORTS_DAC;
+        return pRealCodeHeader->pCalledMethods;
+    }
+#endif
     TADDR                   GetCodeStartAddress()
     {        
         SUPPORTS_DAC;
@@ -286,6 +310,12 @@ public:
     {
         pRealCodeHeader->phdrMDesc = pMD;
     }
+#if defined(FEATURE_GDBJIT)
+    void SetCalledMethods(VOID* pCM)
+    {
+        pRealCodeHeader->pCalledMethods = pCM;
+    }
+#endif
     void SetStubCodeBlockKind(StubCodeBlockKind kind)
     {
         pRealCodeHeader = (PTR_RealCodeHeader)kind;
