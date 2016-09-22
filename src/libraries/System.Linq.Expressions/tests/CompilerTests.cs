@@ -14,6 +14,7 @@ namespace System.Linq.Expressions.Tests
     {
         [Theory]
         [ClassData(typeof(CompilationTypes))]
+        [OuterLoop("Takes over a minute to complete")]
         public static void CompileDeepTree_NoStackOverflow(bool useInterpreter)
         {
             var e = (Expression)Expression.Constant(0);
