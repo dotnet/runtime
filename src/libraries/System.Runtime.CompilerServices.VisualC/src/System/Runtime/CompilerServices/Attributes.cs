@@ -4,8 +4,25 @@
 
 namespace System.Runtime.CompilerServices
 {
+    // Types used in Custom Modifier to specify calling conventions.
+    [System.Runtime.InteropServices.ComVisible(true)]
+    public class CallConvCdecl
+    {
+    }
+    [System.Runtime.InteropServices.ComVisible(true)]
+    public class CallConvStdcall
+    {
+    }
+    [System.Runtime.InteropServices.ComVisible(true)]
+    public class CallConvThiscall
+    {
+    }
+    [System.Runtime.InteropServices.ComVisible(true)]
+    public class CallConvFastcall
+    {
+    }
     // Indicates that the modified instance is pinned in memory.
-    public static class IsPinned 
+    public static class IsPinned
     {
     }
     public static partial class IsBoxed
@@ -54,5 +71,27 @@ namespace System.Runtime.CompilerServices
     public sealed class ScopelessEnumAttribute : Attribute
     {
         public ScopelessEnumAttribute(){}
+    }
+    [Serializable]
+    [AttributeUsage(AttributeTargets.Struct, Inherited = true),System.Runtime.InteropServices.ComVisible(true)]
+    public sealed class NativeCppClassAttribute : Attribute
+    {
+        public NativeCppClassAttribute(){}
+    }
+    [Serializable]
+    [AttributeUsage (AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Enum | AttributeTargets.Interface,AllowMultiple=true, Inherited=false)]
+    [System.Runtime.InteropServices.ComVisible(true)]
+    public sealed class RequiredAttributeAttribute : Attribute
+    {
+        private Type requiredContract;
+
+        public RequiredAttributeAttribute (Type requiredContract)
+        {
+            this.requiredContract= requiredContract;
+        }
+        public Type RequiredContract
+        {
+            get { return this.requiredContract; }
+        }
     }
 }

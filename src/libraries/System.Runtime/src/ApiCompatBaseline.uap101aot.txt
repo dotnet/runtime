@@ -410,7 +410,6 @@ TypesMustExist : Type 'System.Runtime.CompilerServices.CompilerGlobalScopeAttrib
 TypesMustExist : Type 'System.Runtime.CompilerServices.DefaultDependencyAttribute' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Runtime.CompilerServices.DependencyAttribute' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Runtime.CompilerServices.DiscardableAttribute' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Runtime.CompilerServices.IUnknownConstantAttribute' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Runtime.CompilerServices.LoadHint' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Runtime.CompilerServices.MethodImplOptions System.Runtime.CompilerServices.MethodImplOptions.ForwardRef' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Runtime.CompilerServices.MethodImplOptions System.Runtime.CompilerServices.MethodImplOptions.Synchronized' does not exist in the implementation but it does exist in the contract.
