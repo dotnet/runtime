@@ -1859,28 +1859,6 @@
       <resources>System.Web.Http.WebHost.Properties.CommonWebApiResources,../../../external/aspnetwebstack/src/Common/CommonWebApiResources.resx System.Web.Http.WebHost.Properties.SRResources,../../../external/aspnetwebstack/src/System.Web.Http.WebHost/Properties/SRResources.resx</resources>
       <response>System.Web.Http.WebHost.dll.sources</response>
     </project>
-    <project dir="class/Mono.Security.Providers.NewSystemSource" library="Mono.Security.Providers.NewSystemSource-net_4_x">
-      <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -nowarn:1699 -nostdlib -r:./../../class/lib/net_4_x/mscorlib.dll -debug -optimize /noconfig -d:SECURITY_DEP -unsafe -nowarn:1030 -keyfile:../mono.pub -delaysign -d:MONO -d:FEATURE_PAL -d:MONO_FEATURE_NEW_TLS -d:MONO_FEATURE_NEW_SYSTEM_SOURCE -d:DISABLE_CAS_USE -d:MONO_SECURITY_ALIAS -r:./../../class/lib/net_4_x/System.dll -r:MonoSecurity=./../../class/lib/net_4_x/Mono.Security.dll</flags>
-      <output>Mono.Security.Providers.NewSystemSource.dll</output>
-      <built_sources></built_sources>
-      <library_output>./../../class/lib/net_4_x/Mono.Security.Providers.NewSystemSource.dll</library_output>
-      <fx_version>4.5</fx_version>
-      <profile>net_4_x</profile>
-      <resources></resources>
-      <response>Mono.Security.Providers.NewSystemSource.dll.sources</response>
-    </project>
-    <project dir="class/Mono.Security.Providers.NewTls" library="Mono.Security.Providers.NewTls-net_4_x">
-      <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -nowarn:1699 -nostdlib -r:./../../class/lib/net_4_x/mscorlib.dll -debug -optimize /noconfig -unsafe -nowarn:1030 -keyfile:../mono.pub -delaysign -r:./../../class/lib/net_4_x/System.dll -r:./../../class/lib/net_4_x/Mono.Security.dll -r:NewSystemSource=./../../class/lib/net_4_x/Mono.Security.Providers.NewSystemSource.dll</flags>
-      <output>Mono.Security.Providers.NewTls.dll</output>
-      <built_sources></built_sources>
-      <library_output>./../../class/lib/net_4_x/Mono.Security.Providers.NewTls.dll</library_output>
-      <fx_version>4.5</fx_version>
-      <profile>net_4_x</profile>
-      <resources></resources>
-      <response>Mono.Security.Providers.NewTls.dll.sources</response>
-    </project>
     <project dir="class/System.Runtime.InteropServices.RuntimeInformation" library="System.Runtime.InteropServices.RuntimeInformation-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -nowarn:1699 -nostdlib -r:./../../class/lib/net_4_x/mscorlib.dll -debug -optimize /noconfig -r:./../../class/lib/net_4_x/System.dll</flags>
@@ -2683,28 +2661,6 @@
       <profile>net_4_x</profile>
       <resources></resources>
       <response>System.Xml.Serialization.dll.sources</response>
-    </project>
-    <project dir="class/Mono.Security.Providers.DotNet" library="Mono.Security.Providers.DotNet-net_4_x">
-      <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -nowarn:1699 -nostdlib -r:./../../class/lib/net_4_x/mscorlib.dll -debug -optimize /noconfig -unsafe -nowarn:1030 -keyfile:../mono.pub -delaysign -r:./../../class/lib/net_4_x/System.dll -r:./../../class/lib/net_4_x/Mono.Security.dll</flags>
-      <output>Mono.Security.Providers.DotNet.dll</output>
-      <built_sources></built_sources>
-      <library_output>./../../class/lib/net_4_x/Mono.Security.Providers.DotNet.dll</library_output>
-      <fx_version>4.5</fx_version>
-      <profile>net_4_x</profile>
-      <resources></resources>
-      <response>Mono.Security.Providers.DotNet.dll.sources</response>
-    </project>
-    <project dir="class/Mono.Security.Providers.OldTls" library="Mono.Security.Providers.OldTls-net_4_x">
-      <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -nowarn:1699 -nostdlib -r:./../../class/lib/net_4_x/mscorlib.dll -debug -optimize /noconfig -unsafe -nowarn:1030 -keyfile:../mono.pub -delaysign -d:SECURITY_DEP -r:./../../class/lib/net_4_x/System.dll -r:./../../class/lib/net_4_x/Mono.Security.dll</flags>
-      <output>Mono.Security.Providers.OldTls.dll</output>
-      <built_sources></built_sources>
-      <library_output>./../../class/lib/net_4_x/Mono.Security.Providers.OldTls.dll</library_output>
-      <fx_version>4.5</fx_version>
-      <profile>net_4_x</profile>
-      <resources></resources>
-      <response>Mono.Security.Providers.OldTls.dll.sources</response>
     </project>
     <project dir="class/System.DirectoryServices.Protocols" library="System.DirectoryServices.Protocols-net_4_x">
       <boot>false</boot>
