@@ -897,7 +897,9 @@ Histogram::Histogram(IAllocator* allocator, const unsigned* const sizeTable)
 Histogram::~Histogram()
 {
     if (m_counts != nullptr)
+    {
         m_allocator->Free(m_counts);
+    }
 }
 
 // We need to lazy allocate the histogram data so static `Histogram` variables don't try to
