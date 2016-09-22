@@ -4103,10 +4103,21 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
 #ifndef LEGACY_BACKEND
         if (argx->gtOper == GT_MKREFANY)
         {
-            NYI_X86("MKREFANY");
-
             // 'Lower' the MKREFANY tree and insert it.
             noway_assert(!reMorphing);
+
+#ifdef _TARGET_X86_
+
+            // Build the mkrefany as a GT_FIELD_LIST
+            GenTreeFieldList* fieldList = new (this, GT_FIELD_LIST)
+                GenTreeFieldList(argx->gtOp.gtOp1, offsetof(CORINFO_RefAny, dataPtr), TYP_I_IMPL, nullptr);
+            (void)new (this, GT_FIELD_LIST)
+                GenTreeFieldList(argx->gtOp.gtOp2, offsetof(CORINFO_RefAny, type), TYP_I_IMPL, fieldList);
+            fgArgTabEntryPtr fp = Compiler::gtArgEntryByNode(call, argx);
+            fp->node            = fieldList;
+            args->gtOp.gtOp1    = fieldList;
+
+#else  // !_TARGET_X86_
 
             // Get a new temp
             // Here we don't need unsafe value cls check since the addr of temp is used only in mkrefany
@@ -4132,6 +4143,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
             // EvalArgsToTemps will cause tmp to actually get loaded as the argument
             call->fgArgInfo->EvalToTmp(argIndex, tmp, asg);
             lvaSetVarAddrExposed(tmp);
+#endif // !_TARGET_X86_
         }
 #endif // !LEGACY_BACKEND
 
