@@ -11,6 +11,6 @@ namespace System.Net.Cache
         MaxAge = 0x2,
         MaxStale = 0x4,
         MaxAgeAndMinFresh = 0x3,
-        MaxAgeAndMaxStale = 0x6,
+        MaxAgeAndMaxStale = 0x6
     }
 }
