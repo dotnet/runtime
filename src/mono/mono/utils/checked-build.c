@@ -546,10 +546,10 @@ check_image_set_may_reference_image_set (MonoImageSet *from, MonoImageSet *to)
 		if (to->images[to_idx] == mono_defaults.corlib)
 			seen = TRUE;
 
-		// For each item in to->images, scan over from->images looking for it.
+		// For each item in to->images, scan over from->images seeking a path to it.
 		for (from_idx = 0; !seen && from_idx < from->nimages; from_idx++)
 		{
-			if (to->images[to_idx] == from->images[from_idx])
+			if (check_image_may_reference_image (from->images[from_idx], to->images[to_idx]))
 				seen = TRUE;
 		}
 
