@@ -1,10 +1,10 @@
 {
   "dependencies": {
-    "Microsoft.NETCore.Platforms": "1.0.2-beta-24520-06",
-    "System.Runtime": "4.3.0-beta-24520-06",
-    "System.Runtime.Extensions": "4.3.0-beta-24520-06",
-    "System.Reflection": "4.3.0-beta-24520-06",
-    "System.Threading.Thread": "4.3.0-beta-24520-06"
+    "Microsoft.NETCore.Platforms": "1.0.2-beta-24521-07",
+    "System.Runtime": "4.3.0-beta-24521-07",
+    "System.Runtime.Extensions": "4.3.0-beta-24521-07",
+    "System.Reflection": "4.3.0-beta-24521-07",
+    "System.Threading.Thread": "4.3.0-beta-24521-07"
   },
   "frameworks": {
     ".NETCoreApp,Version=v1.0": {},
