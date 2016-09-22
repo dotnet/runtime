@@ -1139,7 +1139,7 @@ namespace System
                 base.Dispose(disposing);
             }
 
-            public override int Read([In, Out] byte[] buffer, int offset, int count)
+            public override int Read(byte[] buffer, int offset, int count)
             {
                 ValidateRead(buffer, offset, count);
 
