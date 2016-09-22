@@ -2142,6 +2142,12 @@ HRESULT CordbProcess::QueryInterface(REFIID id, void **pInterface)
     {
         *pInterface = static_cast<ICorDebugProcess8*>(this);
     }
+#ifdef FEATURE_LEGACYNETCF_DBG_HOST_CONTROL
+    else if (id == IID_ICorDebugLegacyNetCFHostCallbackInvoker_PrivateWindowsPhoneOnly)
+    {
+        *pInterface = static_cast<ICorDebugLegacyNetCFHostCallbackInvoker_PrivateWindowsPhoneOnly*>(this);
+    }
+#endif
     else if (id == IID_IUnknown)
     {
         *pInterface = static_cast<IUnknown*>(static_cast<ICorDebugProcess*>(this));
@@ -2494,6 +2500,20 @@ COM_METHOD CordbProcess::EnableExceptionCallbacksOutsideOfMyCode(BOOL enableExce
     PUBLIC_API_END(hr);
     return hr;
 }
+
+#ifdef FEATURE_LEGACYNETCF_DBG_HOST_CONTROL
+
+COM_METHOD CordbProcess::InvokePauseCallback()
+{
+    return S_OK;
+}
+
+COM_METHOD CordbProcess::InvokeResumeCallback()
+{
+    return S_OK;
+}
+
+#endif
 
 HRESULT CordbProcess::GetTypeForObject(CORDB_ADDRESS addr, CordbType **ppType, CordbAppDomain **pAppDomain)
 {
