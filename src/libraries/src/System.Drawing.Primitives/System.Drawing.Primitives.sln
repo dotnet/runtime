@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
-VisualStudioVersion = 14.0.23107.0
+VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Drawing.Primitives", "src\System.Drawing.Primitives.csproj", "{F9DF2357-81B4-4317-908E-512DA9395583}"
 EndProject
@@ -9,18 +9,18 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Drawing.Primitives.T
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
-		Debug|Any CPU = Debug|Any CPU
-		Release|Any CPU = Release|Any CPU
+		netstandard1.7_Debug|Any CPU = netstandard1.7_Debug|Any CPU
+		netstandard1.7_Release|Any CPU = netstandard1.7_Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{F9DF2357-81B4-4317-908E-512DA9395583}.Debug|Any CPU.ActiveCfg = Release|Any CPU
-		{F9DF2357-81B4-4317-908E-512DA9395583}.Debug|Any CPU.Build.0 = Release|Any CPU
-		{F9DF2357-81B4-4317-908E-512DA9395583}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{F9DF2357-81B4-4317-908E-512DA9395583}.Release|Any CPU.Build.0 = Release|Any CPU
-		{297A9116-1005-499D-A895-2063D03E4C94}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{297A9116-1005-499D-A895-2063D03E4C94}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{297A9116-1005-499D-A895-2063D03E4C94}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{297A9116-1005-499D-A895-2063D03E4C94}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F9DF2357-81B4-4317-908E-512DA9395583}.netstandard1.7_Debug|Any CPU.ActiveCfg = netstandard1.7_Debug|Any CPU
+		{F9DF2357-81B4-4317-908E-512DA9395583}.netstandard1.7_Debug|Any CPU.Build.0 = netstandard1.7_Debug|Any CPU
+		{F9DF2357-81B4-4317-908E-512DA9395583}.netstandard1.7_Release|Any CPU.ActiveCfg = netstandard1.7_Release|Any CPU
+		{F9DF2357-81B4-4317-908E-512DA9395583}.netstandard1.7_Release|Any CPU.Build.0 = netstandard1.7_Release|Any CPU
+		{297A9116-1005-499D-A895-2063D03E4C94}.netstandard1.7_Debug|Any CPU.ActiveCfg = netstandard1.7_Debug|Any CPU
+		{297A9116-1005-499D-A895-2063D03E4C94}.netstandard1.7_Debug|Any CPU.Build.0 = netstandard1.7_Debug|Any CPU
+		{297A9116-1005-499D-A895-2063D03E4C94}.netstandard1.7_Release|Any CPU.ActiveCfg = netstandard1.7_Release|Any CPU
+		{297A9116-1005-499D-A895-2063D03E4C94}.netstandard1.7_Release|Any CPU.Build.0 = netstandard1.7_Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

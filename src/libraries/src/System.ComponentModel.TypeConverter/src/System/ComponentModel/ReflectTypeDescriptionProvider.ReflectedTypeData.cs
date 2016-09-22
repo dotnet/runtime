@@ -22,7 +22,7 @@ namespace System.ComponentModel
             private EventDescriptorCollection _events;
             private PropertyDescriptorCollection _properties;
             private TypeConverter _converter;
-#if FEATURE_EDITOR
+#if FEATURE_EDITORATTRIBUTE
             private object[] _editors;
             private Type[] _editorTypes;
             private int _editorCount;
@@ -321,7 +321,7 @@ namespace System.ComponentModel
                 return null;
             }
 
-#if FEATURE_EDITOR
+#if FEATURE_EDITORATTRIBUTE
             /// <summary>
             ///     Retrieves the editor for the given base type.
             /// </summary>
@@ -577,7 +577,7 @@ namespace System.ComponentModel
                 _events = null;
                 _properties = null;
                 _converter = null;
-#if FEATURE_EDITOR
+#if FEATURE_EDITORATTRIBUTE
                 _editors = null;
                 _editorTypes = null;
                 _editorCount = 0;

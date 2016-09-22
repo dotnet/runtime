@@ -119,7 +119,7 @@ namespace System.Drawing.PrimitivesTest
             Assert.False(rect1 == rect2);
             Assert.False(rect1.Equals(rect2));
         }
-        
+
         [Fact]
         public static void EqualityTest_NotRectangleF()
         {
@@ -159,7 +159,7 @@ namespace System.Drawing.PrimitivesTest
 
         [Theory]
         [InlineData(0, 0, 0, 0)]
-        [InlineData(float.MaxValue/2, float.MinValue/2, float.MinValue/2, float.MaxValue/2)]
+        [InlineData(float.MaxValue / 2, float.MinValue / 2, float.MinValue / 2, float.MaxValue / 2)]
         [InlineData(0, float.MinValue, float.MaxValue, 0)]
         public void InflateTest(float x, float y, float width, float height)
         {
@@ -177,7 +177,7 @@ namespace System.Drawing.PrimitivesTest
         }
 
         [Theory]
-        [InlineData(float.MaxValue, float.MinValue, float.MaxValue/2, float.MinValue/2)]
+        [InlineData(float.MaxValue, float.MinValue, float.MaxValue / 2, float.MinValue / 2)]
         [InlineData(0, float.MinValue, float.MaxValue, 0)]
         public void IntersectTest(float x, float y, float width, float height)
         {

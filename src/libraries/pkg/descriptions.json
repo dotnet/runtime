@@ -545,6 +545,7 @@
         "Name": "System.Drawing.Primitives",
         "Description": "Provides basic drawing primitive structures, that exposes the corresponding System.Drawing.dll types in .NET Core.",
         "CommonTypes": [
+            "System.Drawing.Color",
             "System.Drawing.Point",
             "System.Drawing.PointF",
             "System.Drawing.Size",
