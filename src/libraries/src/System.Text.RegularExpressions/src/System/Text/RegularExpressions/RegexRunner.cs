@@ -273,8 +273,8 @@ namespace System.Text.RegularExpressions
 
             if (runmatch == null)
             {
-                if (runregex._caps != null)
-                    runmatch = new MatchSparse(runregex, runregex._caps, runregex.capsize, runtext, runtextbeg, runtextend - runtextbeg, runtextstart);
+                if (runregex.caps != null)
+                    runmatch = new MatchSparse(runregex, runregex.caps, runregex.capsize, runtext, runtextbeg, runtextend - runtextbeg, runtextstart);
                 else
                     runmatch = new Match(runregex, runregex.capsize, runtext, runtextbeg, runtextend - runtextbeg, runtextstart);
             }

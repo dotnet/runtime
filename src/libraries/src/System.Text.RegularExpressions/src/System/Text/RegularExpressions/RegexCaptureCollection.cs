@@ -31,6 +31,8 @@ namespace System.Text.RegularExpressions
             _capcount = _group._capcount;
         }
 
+        public bool IsReadOnly => true;
+
         /// <summary>
         /// Returns the number of captures.
         /// </summary>
@@ -79,17 +81,17 @@ namespace System.Text.RegularExpressions
             return _captures[i];
         }
 
-        bool ICollection.IsSynchronized
+        public bool IsSynchronized
         {
             get { return false; }
         }
 
-        object ICollection.SyncRoot
+        public object SyncRoot
         {
             get { return _group; }
         }
 
-        void ICollection.CopyTo(Array array, int arrayIndex)
+        public void CopyTo(Array array, int arrayIndex)
         {
             if (array == null)
                 throw new ArgumentNullException(nameof(array));

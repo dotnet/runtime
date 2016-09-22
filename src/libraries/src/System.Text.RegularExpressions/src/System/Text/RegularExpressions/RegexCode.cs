@@ -15,6 +15,7 @@
 //
 // Strings and sets are indices into a string table.
 
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
@@ -91,7 +92,7 @@ namespace System.Text.RegularExpressions
         internal readonly int[] _codes;                     // the code
         internal readonly String[] _strings;                // the string/set table
         internal readonly int _trackcount;                  // how many instructions use backtracking
-        internal readonly Dictionary<Int32, Int32> _caps;   // mapping of user group numbers -> impl group slots
+        internal readonly Hashtable _caps;   // mapping of user group numbers -> impl group slots
         internal readonly int _capsize;                     // number of impl group slots
         internal readonly RegexPrefix _fcPrefix;            // the set of candidate first characters (may be null)
         internal readonly RegexBoyerMoore _bmPrefix;        // the fixed prefix string as a Boyer-Moore machine (may be null)
@@ -99,7 +100,7 @@ namespace System.Text.RegularExpressions
         internal readonly bool _rightToLeft;                // true if right to left
 
         internal RegexCode(int[] codes, List<String> stringlist, int trackcount,
-                           Dictionary<Int32, Int32> caps, int capsize,
+                           Hashtable caps, int capsize,
                            RegexBoyerMoore bmPrefix, RegexPrefix fcPrefix,
                            int anchors, bool rightToLeft)
         {

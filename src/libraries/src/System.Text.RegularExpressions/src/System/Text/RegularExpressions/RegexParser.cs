@@ -34,8 +34,8 @@ namespace System.Text.RegularExpressions
         internal int _captop;
         internal int _capsize;
 
-        internal Dictionary<Int32, Int32> _caps;
-        internal Dictionary<string, int> _capnames;
+        internal Hashtable _caps;
+        internal Hashtable _capnames;
 
         internal Int32[] _capnumlist;
         internal List<String> _capnamelist;
@@ -81,7 +81,7 @@ namespace System.Text.RegularExpressions
          * This static call constructs a flat concatenation node given
          * a replacement pattern.
          */
-        internal static RegexReplacement ParseReplacement(String rep, Dictionary<Int32, Int32> caps, int capsize, Dictionary<string, int> capnames, RegexOptions op)
+        internal static RegexReplacement ParseReplacement(String rep, Hashtable caps, int capsize, Hashtable capnames, RegexOptions op)
         {
             RegexParser p;
             RegexNode root;
@@ -194,7 +194,7 @@ namespace System.Text.RegularExpressions
         {
             _culture = culture;
             _optionsStack = new List<RegexOptions>();
-            _caps = new Dictionary<Int32, Int32>();
+            _caps = new Hashtable();
         }
 
         /*
@@ -1765,7 +1765,7 @@ namespace System.Text.RegularExpressions
         {
             if (_capnames == null)
             {
-                _capnames = new Dictionary<string, int>();
+                _capnames = new Hashtable();
                 _capnamelist = new List<String>();
             }
 
@@ -1779,7 +1779,7 @@ namespace System.Text.RegularExpressions
         /*
          * For when all the used captures are known: note them all at once
          */
-        internal void NoteCaptures(Dictionary<Int32, Int32> caps, int capsize, Dictionary<string, int> capnames)
+        internal void NoteCaptures(Hashtable caps, int capsize, Hashtable capnames)
         {
             _caps = caps;
             _capsize = capsize;
@@ -1813,9 +1813,9 @@ namespace System.Text.RegularExpressions
                 _capnumlist = new Int32[_capcount];
                 int i = 0;
 
-                foreach (KeyValuePair<int, int> kvp in _caps)
+                foreach (DictionaryEntry kvp in _caps)
                 {
-                    _capnumlist[i++] = kvp.Key;
+                    _capnumlist[i++] = (int) kvp.Key;
                 }
 
                 System.Array.Sort(_capnumlist, Comparer<Int32>.Default);
@@ -1832,7 +1832,7 @@ namespace System.Text.RegularExpressions
                 if (_capnames == null)
                 {
                     oldcapnamelist = null;
-                    _capnames = new Dictionary<string, int>();
+                    _capnames = new Hashtable();
                     _capnamelist = new List<String>();
                     next = -1;
                 }
