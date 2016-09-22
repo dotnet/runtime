@@ -1,12 +1,12 @@
 {
   "dependencies": {
-    "System.Collections.NonGeneric": "4.3.0-beta-24520-06",
-    "System.ComponentModel": "4.3.0-beta-24520-06",
-    "System.ComponentModel.Primitives": "4.3.0-beta-24520-06",
-    "System.Globalization": "4.3.0-beta-24520-06",
-    "System.Reflection": "4.3.0-beta-24520-06",
-    "System.Runtime": "4.3.0-beta-24520-06",
-    "System.Security.Permissions": "4.3.0-beta-24520-06"
+    "System.Collections.NonGeneric": "4.3.0-beta-24521-07",
+    "System.ComponentModel": "4.3.0-beta-24521-07",
+    "System.ComponentModel.Primitives": "4.3.0-beta-24521-07",
+    "System.Globalization": "4.3.0-beta-24521-07",
+    "System.Reflection": "4.3.0-beta-24521-07",
+    "System.Runtime": "4.3.0-beta-24521-07",
+    "System.Security.Permissions": "4.3.0-beta-24521-07"
   },
   "frameworks": {
     "netstandard1.7": {}

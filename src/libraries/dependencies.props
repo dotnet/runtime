@@ -1,17 +1,18 @@
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <!-- Source of truth for dependency tooling: the commit hash of the dotnet/versions master branch as of the last auto-upgrade. -->
   <PropertyGroup>
-    <CoreFxCurrentRef>752ed4883561cbde4a5ce74d5d97844938beeee4</CoreFxCurrentRef>
-    <CoreClrCurrentRef>752ed4883561cbde4a5ce74d5d97844938beeee4</CoreClrCurrentRef>
-    <ExternalCurrentRef>752ed4883561cbde4a5ce74d5d97844938beeee4</ExternalCurrentRef>
-    <ProjectNTfsCurrentRef>79a31958b29f924eeae8020370d07e34fca8caf2</ProjectNTfsCurrentRef>
+    <CoreFxCurrentRef>845f278c506271fd39197e263b7ea9012e97df08</CoreFxCurrentRef>
+    <CoreClrCurrentRef>845f278c506271fd39197e263b7ea9012e97df08</CoreClrCurrentRef>
+    <ExternalCurrentRef>845f278c506271fd39197e263b7ea9012e97df08</ExternalCurrentRef>
+    <ProjectNTfsCurrentRef>845f278c506271fd39197e263b7ea9012e97df08</ProjectNTfsCurrentRef>
   </PropertyGroup>
 
   <!-- Auto-upgraded properties for each build info dependency. -->
   <PropertyGroup>
-    <CoreFxExpectedPrerelease>beta-24520-06</CoreFxExpectedPrerelease>
-    <CoreClrExpectedPrerelease>beta-24520-03</CoreClrExpectedPrerelease>
-    <ExternalExpectedPrerelease>beta-24520-00</ExternalExpectedPrerelease>
+    <CoreFxExpectedPrerelease>beta-24521-07</CoreFxExpectedPrerelease>
+    <CoreClrExpectedPrerelease>beta-24522-01</CoreClrExpectedPrerelease>
+    <ExternalExpectedPrerelease>beta-24521-00</ExternalExpectedPrerelease>
+    <ProjectNTfsExpectedPrerelease>beta-24521-00</ProjectNTfsExpectedPrerelease>
   </PropertyGroup>
 
   <!-- Full package version strings that are used in other parts of the build. -->
@@ -63,6 +64,11 @@
       <Path>$(MSBuildThisFileFullPath)</Path>
       <ElementName>ExternalExpectedPrerelease</ElementName>
       <BuildInfoName>External</BuildInfoName>
+    </XmlUpdateStep>
+    <XmlUpdateStep Include="ProjectNTfs">
+      <Path>$(MSBuildThisFileFullPath)</Path>
+      <ElementName>ProjectNTfsExpectedPrerelease</ElementName>
+      <BuildInfoName>ProjectNTfs</BuildInfoName>
     </XmlUpdateStep>
   </ItemGroup>
 
