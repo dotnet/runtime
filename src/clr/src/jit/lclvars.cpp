@@ -1740,7 +1740,7 @@ void Compiler::lvaPromoteStructVar(unsigned lclNum, lvaStructPromotionInfo* Stru
     }
 }
 
-#if !defined(_TARGET_64BIT_)
+#if !defined(LEGACY_BACKEND) && !defined(_TARGET_64BIT_)
 //------------------------------------------------------------------------
 // lvaPromoteLongVars: "Struct promote" all register candidate longs as if they are structs of two ints.
 //
@@ -1762,21 +1762,9 @@ void Compiler::lvaPromoteLongVars()
     {
         LclVarDsc* varDsc = &lvaTable[lclNum];
         if (!varTypeIsLong(varDsc) || varDsc->lvDoNotEnregister || varDsc->lvIsMultiRegArgOrRet() ||
-            (varDsc->lvRefCnt == 0))
+            (varDsc->lvRefCnt == 0) || varDsc->lvIsStructField)
         {
             continue;
-        }
-
-        // Will this work ???
-        // We can't have nested promoted structs.
-        if (varDsc->lvIsStructField)
-        {
-            if (lvaGetPromotionType(varDsc->lvParentLcl) != PROMOTION_TYPE_INDEPENDENT)
-            {
-                continue;
-            }
-            varDsc->lvIsStructField = false;
-            varDsc->lvTracked       = false;
         }
 
         varDsc->lvFieldCnt      = 2;
@@ -1827,7 +1815,7 @@ void Compiler::lvaPromoteLongVars()
     }
 #endif // DEBUG
 }
-#endif // !_TARGET_64BIT_
+#endif // !defined(LEGACY_BACKEND) && !defined(_TARGET_64BIT_)
 
 /*****************************************************************************
  * Given a fldOffset in a promoted struct var, return the index of the local
