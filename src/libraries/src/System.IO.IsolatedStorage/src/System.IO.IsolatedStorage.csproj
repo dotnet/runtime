@@ -45,14 +45,6 @@
   <ItemGroup Condition="'$(TargetGroup)' != 'net463' and '$(EnableWinRT)' == 'true'">
     <Compile Include="System\IO\IsolatedStorage\Helper.WinRT.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' != 'net463'">
-    <ProjectReference Include="..\..\System.IO.FileSystem\ref\System.IO.FileSystem.csproj">
-      <UndefineProperties>OSGroup</UndefineProperties>
-    </ProjectReference>
-    <ProjectReference Include="..\..\System.Security.Cryptography.Algorithms\ref\System.Security.Cryptography.Algorithms.csproj">
-      <UndefineProperties>OSGroup</UndefineProperties>
-    </ProjectReference>
-  </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'net463'">
     <TargetingPackReference Include="mscorlib" />
   </ItemGroup>

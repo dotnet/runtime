@@ -20,9 +20,6 @@
     <Compile Include="System.IO.IsolatedStorage.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\System.IO.FileSystem\ref\System.IO.FileSystem.csproj" />
-  </ItemGroup>
-  <ItemGroup>
     <None Include="4.0\project.json" />
     <None Include="4.0\System.IO.IsolatedStorage.depproj" />
     <None Include="project.json" />

@@ -33,9 +33,5 @@
   <ItemGroup>
     <None Include="project.json" />
   </ItemGroup>
-  <ItemGroup>
-    <!-- ToDo: Remove this P2P reference once we update corefx package versions -->
-    <ProjectReference Include="..\..\System.IO.FileSystem\ref\System.IO.FileSystem.csproj" />
-  </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
