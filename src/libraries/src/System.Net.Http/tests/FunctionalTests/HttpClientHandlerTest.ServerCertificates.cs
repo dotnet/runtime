@@ -37,6 +37,31 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop] // TODO: Issue #11345
         [ConditionalFact(nameof(BackendSupportsCustomCertificateHandling))]
+        public void UseCallback_HaveNoCredsAndUseAuthenticatedCustomProxyAndPostToSecureServer_ProxyAuthenticationRequiredStatusCode()
+        {
+            int port;
+            Task<LoopbackGetRequestHttpProxy.ProxyResult> proxyTask = LoopbackGetRequestHttpProxy.StartAsync(
+                out port,
+                requireAuth: true,
+                expectCreds: false);
+            Uri proxyUrl = new Uri($"http://localhost:{port}");
+
+            var handler = new HttpClientHandler();
+            handler.Proxy = new UseSpecifiedUriWebProxy(proxyUrl, null);
+            handler.ServerCertificateCustomValidationCallback = delegate { return true; };
+            using (var client = new HttpClient(handler))
+            {
+                Task<HttpResponseMessage> responseTask = client.PostAsync(
+                    Configuration.Http.SecureRemoteEchoServer,
+                    new StringContent("This is a test"));
+                Task.WaitAll(proxyTask, responseTask);
+
+                Assert.Equal(HttpStatusCode.ProxyAuthenticationRequired, responseTask.Result.StatusCode);
+            }
+        }
+
+        [OuterLoop] // TODO: Issue #11345
+        [ConditionalFact(nameof(BackendSupportsCustomCertificateHandling))]
         public async Task UseCallback_NotSecureConnection_CallbackNotCalled()
         {
             var handler = new HttpClientHandler();
