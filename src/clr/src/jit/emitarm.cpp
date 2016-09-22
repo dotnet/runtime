@@ -4368,6 +4368,7 @@ void emitter::emitIns_J_R(instruction ins, emitAttr attr, BasicBlock* dst, regNu
  *
  * EC_FUNC_TOKEN       : addr is the method address
  * EC_FUNC_ADDR        : addr is the absolute address of the function
+ *                       if addr is NULL, it is a recursive call
  *
  * If callType is one of these emitCallTypes, addr has to be NULL.
  * EC_INDIR_R          : "call ireg".
@@ -4555,8 +4556,8 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
         assert(callType == EC_FUNC_TOKEN || callType == EC_FUNC_ADDR);
 
-        assert(addr != NULL);
-        assert(codeGen->validImmForBL((ssize_t)addr));
+        // if addr is nullptr then this call is treated as a recursive call.
+        assert(addr == nullptr || codeGen->arm_Valid_Imm_For_BL((ssize_t)addr));
 
         if (isJump)
         {
@@ -5266,8 +5267,8 @@ BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
                 else
 #endif
                 {
-                    assert(distVal >= -16777216);
-                    assert(distVal <= 16777214);
+                    assert(distVal >= CALL_DIST_MAX_NEG);
+                    assert(distVal <= CALL_DIST_MAX_POS);
 
                     if (distVal < 0)
                         code |= 1 << 26;
@@ -6211,7 +6212,14 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 sz = sizeof(instrDesc);
             }
 
-            addr = id->idAddr()->iiaAddr;
+            if (id->idAddr()->iiaAddr == NULL) /* a recursive call */
+            {
+                addr = emitCodeBlock;
+            }
+            else
+            {
+                addr = id->idAddr()->iiaAddr;
+            }
             code = emitInsCode(ins, fmt);
 
 #ifdef RELOC_SUPPORT
