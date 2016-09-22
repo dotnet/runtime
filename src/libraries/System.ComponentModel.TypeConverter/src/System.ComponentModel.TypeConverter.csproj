@@ -9,18 +9,11 @@
     <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NuGetTargetMoniker>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net45_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net45_Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(TargetGroup)'=='netstandard1.0'">
-    <DefineConstants>NETSTANDARD10</DefineConstants>
-  </PropertyGroup>
-  <ItemGroup Condition="'$(TargetGroup)'=='netstandard1.0'">
-    <Compile Include="System\ComponentModel\ReflectTypeDescriptionProvider.NetStandard10.cs" />
-    <Compile Include="System\ComponentModel\TypeDescriptor.NetStandard10.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)'=='' OR '$(TargetGroup)'=='netstandard1.0'">
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard1.7_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard1.7_Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Release|AnyCPU'" />
+  <ItemGroup Condition="'$(TargetGroup)'==''">
     <Compile Include="System\ComponentModel\ArrayConverter.cs" />
     <Compile Include="System\ComponentModel\BaseNumberConverter.cs" />
     <Compile Include="System\ComponentModel\BooleanConverter.cs" />
@@ -51,8 +44,6 @@
     <Compile Include="System\ComponentModel\UInt32Converter.cs" />
     <Compile Include="System\ComponentModel\UInt64Converter.cs" />
     <Compile Include="System\ComponentModel\UriTypeConverter.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)'==''">
     <Compile Include="System\Timers\ElapsedEventArgs.cs" />
     <Compile Include="System\Timers\ElapsedEventHandler.cs" />
     <Compile Include="System\Timers\System.ComponentModel.cs" />
@@ -97,16 +88,27 @@
     <Compile Include="System\ComponentModel\Design\IDictionaryService.cs" />
     <Compile Include="System\ComponentModel\Design\IExtenderListService.cs" />
     <Compile Include="System\ComponentModel\Design\ITypeDescriptorFilterService.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)'==''">
+    <Compile Include="$(CommonPath)/System/Drawing/ColorTable.cs">
+      <Link>System\Drawing\ColorTable.cs</Link>
+    </Compile>
+    <Compile Include="System\Drawing\ColorConverter.cs" />
+    <Compile Include="System\Drawing\PointConverter.cs" />
+    <Compile Include="System\Drawing\RectangleConverter.cs" />
+    <Compile Include="System\Drawing\SizeConverter.cs" />
+    <Compile Include="System\Drawing\SizeFConverter.cs" />
     <EmbeddedResource Include="$(MsBuildThisFileDirectory)Resources\$(AssemblyName).rd.xml" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)'=='net463'">
     <TargetingPackReference Include="mscorlib" />
     <TargetingPackReference Include="System" />
+    <TargetingPackReference Include="System.Drawing" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />
+  </ItemGroup>
+  <!-- TODO: Replace this with a package reference. -->
+  <ItemGroup Condition="'$(TargetGroup)'==''">
+    <ProjectReference Include="..\..\System.Drawing.Primitives\pkg\System.Drawing.Primitives.pkgproj"/>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

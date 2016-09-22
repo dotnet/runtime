@@ -1,17 +1,14 @@
 {
   "dependencies": {
-    "System.Collections.NonGeneric": "4.0.0",
-    "System.ComponentModel": "4.0.0",
-    "System.ComponentModel.Primitives": "4.1.0",
-    "System.Globalization": "4.0.0",
-    "System.Reflection": "4.0.0",
-    "System.Runtime": "4.0.0"
+    "System.Collections.NonGeneric": "4.3.0-beta-24520-06",
+    "System.ComponentModel": "4.3.0-beta-24520-06",
+    "System.ComponentModel.Primitives": "4.3.0-beta-24520-06",
+    "System.Globalization": "4.3.0-beta-24520-06",
+    "System.Reflection": "4.3.0-beta-24520-06",
+    "System.Runtime": "4.3.0-beta-24520-06",
+    "System.Security.Permissions": "4.3.0-beta-24520-06"
   },
   "frameworks": {
-    "netstandard1.7": {
-      "imports": [
-        "dotnet5.8"
-      ]
-    }
+    "netstandard1.7": {}
   }
 }

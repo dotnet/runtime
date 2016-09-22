@@ -242,5 +242,4 @@ namespace System.Drawing
             return "{Width=" + _width.ToString() + ", Height=" + _height.ToString() + "}";
         }
     }
-
 }

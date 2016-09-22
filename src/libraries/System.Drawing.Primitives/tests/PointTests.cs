@@ -36,7 +36,7 @@ namespace System.Drawing.PrimitivesTests
         {
             Point p1 = new Point(x);
             Point p2 = new Point((short)(x & 0xFFFF), (short)((x >> 16) & 0xFFFF));
-            
+
             Assert.Equal(p1, p2);
         }
 
