@@ -433,6 +433,11 @@ GenTree* DecomposeLongs::DecomposeStoreLclVar(LIR::Use& use)
         // at a def matters (e.g. dead store elimination, live-in sets, etc.). As
         // a result, we leave these stores as-is and generate the decomposed store
         // in the code generator.
+        //
+        // NOTE: this does extend the lifetime of the low half of the `GT_LONG`
+        // node as compared to the decomposed form. If we start doing more code
+        // motion in the backend, this may cause some CQ issues and some sort of
+        // decomposition could be beneficial.
         return tree->gtNext;
     }
 
