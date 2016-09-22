@@ -9716,6 +9716,15 @@ namespace System.Runtime
         public static System.Runtime.GCLargeObjectHeapCompactionMode LargeObjectHeapCompactionMode { [System.Security.SecuritySafeCriticalAttribute]get { throw null; } [System.Security.SecurityCriticalAttribute]set { } }
         public static System.Runtime.GCLatencyMode LatencyMode { [System.Security.SecuritySafeCriticalAttribute]get { throw null; } [System.Security.SecurityCriticalAttribute]set { } }
     }
+  
+    public sealed partial class MemoryFailPoint : System.Runtime.ConstrainedExecution.CriticalFinalizerObject, System.IDisposable 
+    {
+        [System.Security.SecurityCriticalAttribute]
+        public MemoryFailPoint(int sizeInMegabytes) { }
+        [System.Security.SecuritySafeCriticalAttribute]
+        public void Dispose() { }
+        ~MemoryFailPoint() { }
+    }
 }
 namespace System.Runtime.CompilerServices
 {
@@ -9773,26 +9782,6 @@ namespace System.Runtime.CompilerServices
         [System.Diagnostics.DebuggerStepThroughAttribute]
         [System.Security.SecuritySafeCriticalAttribute]
         public void Start<TStateMachine>(ref TStateMachine stateMachine) where TStateMachine : System.Runtime.CompilerServices.IAsyncStateMachine { }
-    }
-    [System.Runtime.InteropServices.ComVisibleAttribute(true)]
-    public partial class CallConvCdecl
-    {
-        internal CallConvCdecl() { }
-    }
-    [System.Runtime.InteropServices.ComVisibleAttribute(true)]
-    public partial class CallConvFastcall
-    {
-        internal CallConvFastcall() { }
-    }
-    [System.Runtime.InteropServices.ComVisibleAttribute(true)]
-    public partial class CallConvStdcall
-    {
-        internal CallConvStdcall() { }
-    }
-    [System.Runtime.InteropServices.ComVisibleAttribute(true)]
-    public partial class CallConvThiscall
-    {
-        internal CallConvThiscall() { }
     }
     [System.AttributeUsageAttribute((System.AttributeTargets)(2048), Inherited=false)]
     public sealed partial class CallerFilePathAttribute : System.Attribute
@@ -9991,52 +9980,10 @@ namespace System.Runtime.CompilerServices
         public bool AllInternalsVisible { get { throw null; } set { } }
         public string AssemblyName { get { throw null; } }
     }
-    public static partial class IsBoxed
-    {
-    }
-    public static partial class IsByValue
-    {
-    }
-    public static partial class IsConst
-    {
-    }
-    [System.Runtime.InteropServices.ComVisibleAttribute(true)]
-    public static partial class IsCopyConstructed
-    {
-    }
-    public static partial class IsExplicitlyDereferenced
-    {
-    }
-    public static partial class IsImplicitlyDereferenced
-    {
-    }
-    public static partial class IsJitIntrinsic
-    {
-    }
-    public static partial class IsLong
-    {
-    }
-    public static partial class IsSignUnspecifiedByte
-    {
-    }
-    public static partial class IsUdtReturn
-    {
-    }
-    [System.Runtime.InteropServices.ComVisibleAttribute(true)]
-    public static partial class IsVolatile
-    {
-    }
     [System.AttributeUsageAttribute((System.AttributeTargets)(64), Inherited=false, AllowMultiple=false)]
     public sealed partial class IteratorStateMachineAttribute : System.Runtime.CompilerServices.StateMachineAttribute
     {
         public IteratorStateMachineAttribute(System.Type stateMachineType) : base (default(System.Type)) { }
-    }
-    [System.AttributeUsageAttribute((System.AttributeTargets)(2304), Inherited=false)]
-    [System.Runtime.InteropServices.ComVisibleAttribute(true)]
-    public sealed partial class IUnknownConstantAttribute : System.Runtime.CompilerServices.CustomConstantAttribute 
-    {
-        public IUnknownConstantAttribute() { }
-        public override object Value { get { return default(object); } }
     }
     public enum LoadHint {
         Always = 1,
@@ -10075,25 +10022,12 @@ namespace System.Runtime.CompilerServices
         Synchronized = 32,
         Unmanaged = 4,
     }
-    [System.AttributeUsageAttribute((System.AttributeTargets)(8), Inherited=true)]
-    [System.Runtime.InteropServices.ComVisibleAttribute(true)]
-    public sealed partial class NativeCppClassAttribute : System.Attribute
-    {
-        public NativeCppClassAttribute() { }
-    }
     [System.AttributeUsageAttribute((System.AttributeTargets)(1), AllowMultiple=false)]
     public sealed partial class ReferenceAssemblyAttribute : System.Attribute
     {
         public ReferenceAssemblyAttribute() { }
         public ReferenceAssemblyAttribute(string description) { }
         public string Description { get { throw null; } }
-    }
-    [System.AttributeUsageAttribute((System.AttributeTargets)(1052), AllowMultiple=true, Inherited=false)]
-    [System.Runtime.InteropServices.ComVisibleAttribute(true)]
-    public sealed partial class RequiredAttributeAttribute : System.Attribute
-    {
-        public RequiredAttributeAttribute(System.Type requiredContract) { }
-        public System.Type RequiredContract { get { throw null; } }
     }
     [System.AttributeUsageAttribute((System.AttributeTargets)(1), Inherited=false, AllowMultiple=false)]
     public sealed partial class RuntimeCompatibilityAttribute : System.Attribute
@@ -10244,7 +10178,7 @@ namespace System.Runtime.ConstrainedExecution
         WillNotCorruptState = 3,
     }
     [System.AttributeUsageAttribute((System.AttributeTargets)(1133), Inherited=false)]
-    internal sealed partial class ReliabilityContractAttribute : System.Attribute 
+    public sealed partial class ReliabilityContractAttribute : System.Attribute
     {
         public ReliabilityContractAttribute(System.Runtime.ConstrainedExecution.Consistency consistencyGuarantee, System.Runtime.ConstrainedExecution.Cer cer) { }
         public System.Runtime.ConstrainedExecution.Cer Cer { get { return default(System.Runtime.ConstrainedExecution.Cer); } }
