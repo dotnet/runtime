@@ -1123,6 +1123,14 @@ cached_module_load (const char *name, int flags, char **err)
 	return res;
 }
 
+void
+mono_loader_register_module (const char *name, MonoDl *module)
+{
+	if (!global_module_map)
+		global_module_map = g_hash_table_new (g_str_hash, g_str_equal);
+	g_hash_table_insert (global_module_map, g_strdup (name), module);
+}
+
 static MonoDl *internal_module;
 
 static gboolean

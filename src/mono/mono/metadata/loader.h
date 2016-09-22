@@ -4,6 +4,7 @@
 #include <mono/metadata/metadata.h>
 #include <mono/metadata/image.h>
 #include <mono/utils/mono-error.h>
+#include <mono/utils/mono-dl.h>
 
 MONO_BEGIN_DECLS
 
@@ -63,6 +64,8 @@ mono_lookup_internal_call (MonoMethod *method);
 void*
 mono_lookup_internal_call_full (MonoMethod *method, mono_bool *uses_handles);
 
+void
+mono_loader_register_module (const char *name, MonoDl *module);
 
 MONO_API const char*
 mono_lookup_icall_symbol (MonoMethod *m);

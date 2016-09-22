@@ -35,6 +35,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <sys/types.h>
+#include <direct.h>
 
 #ifdef G_OS_WIN32
 #include <io.h>
@@ -68,6 +69,26 @@ int mkstemp (char *tmp_template)
 	return fd;
 }
 
+gchar *
+g_mkdtemp (char *tmp_template)
+{
+	gunichar2* utf16_template;
+
+	utf16_template  = u8to16 (tmp_template);
+
+	utf16_template = _wmktemp(utf16_template);
+	if (utf16_template && *utf16_template) {
+		if (_wmkdir (utf16_template) == 0){
+			char *ret = u16to8 (utf16_template);
+			g_free (utf16_template);
+			return ret;
+		}
+	}
+
+	g_free (utf16_template);
+	return NULL;
+}
+	     
 #ifdef _MSC_VER
 #pragma warning(disable:4701)
 #endif
