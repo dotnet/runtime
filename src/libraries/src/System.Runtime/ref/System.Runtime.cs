@@ -2847,7 +2847,6 @@ namespace System
 
 namespace System.Runtime.ConstrainedExecution
 {
-    [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public abstract partial class CriticalFinalizerObject
     {
         [System.Security.SecuritySafeCriticalAttribute]
@@ -5467,10 +5466,8 @@ namespace System.Runtime.CompilerServices
         public System.Runtime.CompilerServices.MethodImplOptions Value { get { return default(System.Runtime.CompilerServices.MethodImplOptions); } }
     }
     [System.FlagsAttribute]
-    [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public enum MethodImplOptions
     {
-        [System.Runtime.InteropServices.ComVisibleAttribute(false)]
         AggressiveInlining = 256,
         ForwardRef = 16,
         InternalCall = 4096,
@@ -6136,7 +6133,6 @@ namespace System.Text
         public virtual bool IsBrowserSave { get { return default(bool); } }
         public virtual bool IsMailNewsDisplay { get { return default(bool); } }
         public virtual bool IsMailNewsSave { get { return default(bool); } }
-        [System.Runtime.InteropServices.ComVisibleAttribute(false)]
         public bool IsReadOnly { get { return default(bool); } }
         public virtual bool IsSingleByte { get { return default(bool); } }
         public static System.Text.Encoding Unicode { get { return default(System.Text.Encoding); } }
@@ -6190,9 +6186,7 @@ namespace System.Text
         public unsafe string GetString(byte* bytes, int byteCount) { return default(string); }
         public virtual string GetString(byte[] bytes) { return default(string); }
         public virtual string GetString(byte[] bytes, int index, int count) { return default(string); }
-        [System.Runtime.InteropServices.ComVisibleAttribute(false)]
         public bool IsAlwaysNormalized() { return default(bool); }
-        [System.Runtime.InteropServices.ComVisibleAttribute(false)]
         public virtual bool IsAlwaysNormalized(System.Text.NormalizationForm form) { return default(bool); }
         [System.Security.SecurityCriticalAttribute]
         public static void RegisterProvider(System.Text.EncodingProvider provider) { }
@@ -6215,7 +6209,6 @@ namespace System.Text
         public abstract System.Text.Encoding GetEncoding(string name);
         public virtual System.Text.Encoding GetEncoding(string name, System.Text.EncoderFallback encoderFallback, System.Text.DecoderFallback decoderFallback) { return default(System.Text.Encoding); }
     }
-    [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public enum NormalizationForm
     {
         FormC = 1,
