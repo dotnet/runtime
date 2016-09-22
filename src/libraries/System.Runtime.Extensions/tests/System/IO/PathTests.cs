@@ -601,19 +601,30 @@ namespace System.IO.Tests
 
         [PlatformSpecific(Xunit.PlatformID.Windows)]
         [Theory]
-        [InlineData(@"\\server\share", @"\\server\share")]
-        [InlineData(@"\\server\share", @" \\server\share")]
-        [InlineData(@"\\server\share\dir", @"\\server\share\dir")]
-        [InlineData(@"\\server\share", @"\\server\share\.")]
-        [InlineData(@"\\server\share", @"\\server\share\..")]
-        [InlineData(@"\\server\share\", @"\\server\share\    ")]
-        [InlineData(@"\\server\  share\", @"\\server\  share\")]
-        [InlineData(@"\\?\UNC\server\share", @"\\?\UNC\server\share")]
-        [InlineData(@"\\?\UNC\server\share\dir", @"\\?\UNC\server\share\dir")]
-        [InlineData(@"\\?\UNC\server\share\. ", @"\\?\UNC\server\share\. ")]
-        [InlineData(@"\\?\UNC\server\share\.. ", @"\\?\UNC\server\share\.. ")]
-        [InlineData(@"\\?\UNC\server\share\    ", @"\\?\UNC\server\share\    ")]
-        [InlineData(@"\\?\UNC\server\  share\", @"\\?\UNC\server\  share\")]
+        // https://github.com/dotnet/corefx/issues/11965
+        [InlineData(@"\\LOCALHOST\share\test.txt.~SS", @"\\LOCALHOST\share\test.txt.~SS")]
+        [InlineData(@"\\LOCALHOST\share", @"\\LOCALHOST\share")]
+        [InlineData(@"\\LOCALHOST\share", @" \\LOCALHOST\share")]
+        [InlineData(@"\\LOCALHOST\share\dir", @"\\LOCALHOST\share\dir")]
+        [InlineData(@"\\LOCALHOST\share", @"\\LOCALHOST\share\.")]
+        [InlineData(@"\\LOCALHOST\share", @"\\LOCALHOST\share\..")]
+        [InlineData(@"\\LOCALHOST\share\", @"\\LOCALHOST\share\    ")]
+        [InlineData(@"\\LOCALHOST\  share\", @"\\LOCALHOST\  share\")]
+        [InlineData(@"\\?\UNC\LOCALHOST\share\test.txt.~SS", @"\\?\UNC\LOCALHOST\share\test.txt.~SS")]
+        [InlineData(@"\\?\UNC\LOCALHOST\share", @"\\?\UNC\LOCALHOST\share")]
+        [InlineData(@"\\?\UNC\LOCALHOST\share\dir", @"\\?\UNC\LOCALHOST\share\dir")]
+        [InlineData(@"\\?\UNC\LOCALHOST\share\. ", @"\\?\UNC\LOCALHOST\share\. ")]
+        [InlineData(@"\\?\UNC\LOCALHOST\share\.. ", @"\\?\UNC\LOCALHOST\share\.. ")]
+        [InlineData(@"\\?\UNC\LOCALHOST\share\    ", @"\\?\UNC\LOCALHOST\share\    ")]
+        [InlineData(@"\\.\UNC\LOCALHOST\  share\", @"\\.\UNC\LOCALHOST\  share\")]
+        [InlineData(@"\\.\UNC\LOCALHOST\share\test.txt.~SS", @"\\.\UNC\LOCALHOST\share\test.txt.~SS")]
+        [InlineData(@"\\.\UNC\LOCALHOST\share", @"\\.\UNC\LOCALHOST\share")]
+        [InlineData(@"\\.\UNC\LOCALHOST\share\dir", @"\\.\UNC\LOCALHOST\share\dir")]
+        [InlineData(@"\\.\UNC\LOCALHOST\share\", @"\\.\UNC\LOCALHOST\share\. ")]
+        [InlineData(@"\\.\UNC\LOCALHOST\share\", @"\\.\UNC\LOCALHOST\share\.. ")]
+        [InlineData(@"\\.\UNC\LOCALHOST\share\", @"\\.\UNC\LOCALHOST\share\    ")]
+        [InlineData(@"\\.\UNC\LOCALHOST\  share\", @"\\.\UNC\LOCALHOST\  share\")]
+
         public static void GetFullPath_Windows_UNC_Valid(string expected, string input)
         {
             Assert.Equal(expected, Path.GetFullPath(input));
@@ -622,10 +633,10 @@ namespace System.IO.Tests
         [PlatformSpecific(Xunit.PlatformID.Windows)]
         [Theory]
         [InlineData(@"\\")]
-        [InlineData(@"\\server")]
-        [InlineData(@"\\server\")]
-        [InlineData(@"\\server\\")]
-        [InlineData(@"\\server\..")]
+        [InlineData(@"\\LOCALHOST")]
+        [InlineData(@"\\LOCALHOST\")]
+        [InlineData(@"\\LOCALHOST\\")]
+        [InlineData(@"\\LOCALHOST\..")]
         public static void GetFullPath_Windows_UNC_Invalid(string invalidPath)
         {
             Assert.Throws<ArgumentException>(() => Path.GetFullPath(invalidPath));
