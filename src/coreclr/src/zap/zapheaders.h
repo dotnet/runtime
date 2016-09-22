@@ -269,6 +269,23 @@ public:
 };
 
 //
+// PE Style exports.  Currently can only save an empty list of exports
+// but this is useful because it avoids the DLL being seen as Resource Only
+// (which then causes SymServer to avoid copying its PDB to the cloud).  
+//
+
+class ZapPEExports : public ZapNode
+{
+	LPCWSTR m_dllFileName;	// Just he DLL name without the path.
+
+public:
+	ZapPEExports(LPCWSTR dllPath);
+	virtual DWORD GetSize();
+	virtual UINT GetAlignment() { return sizeof(DWORD);  }
+	virtual void Save(ZapWriter * pZapWriter);
+};
+
+//
 // List of all sections for diagnostic purposes
 
 class ZapVirtualSectionsTable : public ZapNode
