@@ -1915,10 +1915,7 @@ void Lowering::TreeNodeInfoInitPutArgStk(GenTree* tree)
         for (; fieldListPtr; fieldListPtr = fieldListPtr->Rest())
         {
             GenTree* fieldNode = fieldListPtr->Current();
-            if (fieldNode->OperGet() == GT_LONG)
-            {
-                NYI_X86("Promoted long field of TYP_STRUCT");
-            }
+            assert(fieldNode->TypeGet() != TYP_LONG);
             if (varTypeIsByte(fieldNode))
             {
                 fieldNode->gtLsraInfo.setSrcCandidates(l, l->allRegs(TYP_INT) & ~RBM_NON_BYTE_REGS);
