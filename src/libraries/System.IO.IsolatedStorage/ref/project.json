@@ -1,10 +1,10 @@
 {
   "dependencies": {
-    "System.IO": "4.3.0-beta-24520-06",
-    "System.IO.FileSystem": "4.3.0-beta-24520-06",
-    "System.IO.FileSystem.Primitives": "4.3.0-beta-24520-06",
-    "System.Runtime": "4.3.0-beta-24520-06",
-    "System.Threading.Tasks": "4.3.0-beta-24520-06"
+    "System.IO": "4.3.0-beta-24521-07",
+    "System.IO.FileSystem": "4.3.0-beta-24521-07",
+    "System.IO.FileSystem.Primitives": "4.3.0-beta-24521-07",
+    "System.Runtime": "4.3.0-beta-24521-07",
+    "System.Threading.Tasks": "4.3.0-beta-24521-07"
   },
   "frameworks": {
     "netstandard1.7": {
