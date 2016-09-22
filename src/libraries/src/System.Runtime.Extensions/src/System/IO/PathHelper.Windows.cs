@@ -238,15 +238,26 @@ namespace System.IO
         {
             uint length = content.Length;
 
-            length += isDosUnc ? (uint)PathInternal.UncExtendedPrefixToInsert.Length : (uint)PathInternal.ExtendedPathPrefix.Length;
+            length += isDosUnc
+                ? (uint)PathInternal.UncExtendedPrefixLength - PathInternal.UncPrefixLength
+                : PathInternal.DevicePrefixLength;
+
             buffer = new StringBuffer(length);
 
             if (isDosUnc)
             {
+                // Put the extended UNC prefix (\\?\UNC\) in front of the path
                 buffer.CopyFrom(bufferIndex: 0, source: PathInternal.UncExtendedPathPrefix);
-                uint prefixDifference = (uint)(PathInternal.UncExtendedPathPrefix.Length - PathInternal.UncPathPrefix.Length);
-                content.CopyTo(bufferIndex: prefixDifference, destination: buffer, destinationIndex: (uint)PathInternal.ExtendedPathPrefix.Length, count: content.Length - prefixDifference);
-                return prefixDifference;
+
+                // Copy the source buffer over after the existing UNC prefix
+                content.CopyTo(
+                    bufferIndex: PathInternal.UncPrefixLength,
+                    destination: buffer,
+                    destinationIndex: PathInternal.UncExtendedPrefixLength,
+                    count: content.Length - PathInternal.UncPrefixLength);
+
+                // Return the prefix difference
+                return (uint)PathInternal.UncExtendedPrefixLength - PathInternal.UncPrefixLength;
             }
             else
             {
@@ -360,6 +371,8 @@ namespace System.IO
 
             // Strip out the prefix and return the string
             StringBuffer bufferToUse = success ? outputBuffer : inputBuffer;
+
+            // Switch back from \\?\ to \\.\ if necessary
             if (wasDotDevice)
                 bufferToUse[2] = '.';
 
@@ -369,7 +382,7 @@ namespace System.IO
             if (isDosUnc)
             {
                 // Need to go from \\?\UNC\ to \\?\UN\\
-                bufferToUse[(uint)PathInternal.UncExtendedPathPrefix.Length - 1] = '\\';
+                bufferToUse[PathInternal.UncExtendedPrefixLength - PathInternal.UncPrefixLength] = '\\';
             }
 
             // We now need to strip out any added characters at the front of the string
