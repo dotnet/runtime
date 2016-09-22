@@ -25,6 +25,15 @@ namespace System
         public DllNotFoundException(string message, System.Exception inner) { }
     }
 }
+namespace System.Runtime.CompilerServices
+{
+    [System.AttributeUsageAttribute((System.AttributeTargets)(2304), Inherited=false)]
+    public sealed partial class IUnknownConstantAttribute : System.Runtime.CompilerServices.CustomConstantAttribute 
+    {
+        public IUnknownConstantAttribute() { }
+        public override object Value { get { return default(object); } }
+    }
+}
 namespace System.Runtime.InteropServices
 {
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
