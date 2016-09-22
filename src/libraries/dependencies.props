@@ -90,6 +90,15 @@
       <Version>1.0.0-prerelease-00807-03</Version>
     </StaticDependency>
 
+    <PerformancePackDependency Include="Microsoft.DotNet.xunit.performance" />
+    <PerformancePackDependency Include="Microsoft.DotNet.xunit.performance.analysis" />
+    <PerformancePackDependency Include="Microsoft.DotNet.xunit.performance.analysis.cli" />
+    <PerformancePackDependency Include="Microsoft.DotNet.xunit.performance.runner.cli" />
+    <PerformancePackDependency Include="Microsoft.DotNet.xunit.performance.runner.Windows" />
+    <StaticDependency Include="@(PerformancePackDependency)">
+      <Version>$(XunitPerfAnalysisPackageVersion)</Version>
+    </StaticDependency>
+
     <DependencyBuildInfo Include="@(StaticDependency)">
       <PackageId>%(Identity)</PackageId>
       <UpdateStableVersions>true</UpdateStableVersions>
@@ -100,9 +109,5 @@
       <Version>$(AppXRunnerVersion)</Version>
     </DependencyBuildInfo>
 
-    <DependencyBuildInfo Include="XunitPerfAnalysisPackageVersion">
-      <PackageId>Microsoft.DotNet.xunit.performance</PackageId>
-      <Version>$(XunitPerfAnalysisPackageVersion)</Version>
-    </DependencyBuildInfo>
   </ItemGroup>
 </Project>
