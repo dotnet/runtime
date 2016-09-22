@@ -6,10 +6,20 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Globalization;
 using System.Collections.Generic;
+#if netstandard10
+using System.Runtime.Serialization;
+#endif //netstandard10
+using System.Diagnostics.CodeAnalysis;
 
 namespace System
 {
-    public partial class Uri
+#if netstandard10
+    [Serializable]
+#endif //netstandard10
+    public partial class Uri 
+#if netstandard10
+    : ISerializable
+#endif
     {
         public static readonly string UriSchemeFile = UriParser.FileUri.SchemeName;
         public static readonly string UriSchemeFtp = UriParser.FtpUri.SchemeName;
@@ -387,6 +397,55 @@ namespace System
 
             CreateUri(baseUri, relativeUri, false);
         }
+#if netstandard10
+        //
+        // Uri(SerializationInfo, StreamingContext)
+        //
+        // ISerializable constructor
+        //
+        protected Uri(SerializationInfo serializationInfo, StreamingContext streamingContext)
+        {
+            string uriString = serializationInfo.GetString("AbsoluteUri");
+
+            if (uriString.Length != 0)
+            {
+                CreateThis(uriString, false, UriKind.Absolute);
+                return;
+            }
+
+            uriString = serializationInfo.GetString("RelativeUri");
+            if ((object)uriString == null)
+                throw new ArgumentNullException("uriString");
+
+            CreateThis(uriString, false, UriKind.Relative);
+        }
+
+        //
+        // ISerializable method
+        //
+        /// <internalonly/>
+        [SuppressMessage("Microsoft.Security", "CA2123:OverrideLinkDemandsShouldBeIdenticalToBase", Justification = "System.dll is still using pre-v4 security model and needs this demand")]
+        void ISerializable.GetObjectData(SerializationInfo serializationInfo, StreamingContext streamingContext)
+        {
+            GetObjectData(serializationInfo, streamingContext);
+        }
+
+        //
+        // FxCop: provide some way for derived classes to access GetObjectData even if the derived class
+        // explicitly re-inherits ISerializable.
+        //
+        protected void GetObjectData(SerializationInfo serializationInfo, StreamingContext streamingContext)
+        {
+
+            if (IsAbsoluteUri)
+                serializationInfo.AddValue("AbsoluteUri", GetParts(UriComponents.SerializationInfoString, UriFormat.UriEscaped));
+            else
+            {
+                serializationInfo.AddValue("AbsoluteUri", string.Empty);
+                serializationInfo.AddValue("RelativeUri", GetParts(UriComponents.SerializationInfoString, UriFormat.UriEscaped));
+            }
+        }
+#endif //netstandard10
 
         private void CreateUri(Uri baseUri, string relativeUri, bool dontEscape)
         {
